@@ -25,6 +25,16 @@ class DistributionTests(unittest.TestCase):
             self.assertIn("src/market_platform_foundation/credential_audit.py", manifest)
             self.assertIn("tests/phase0/test_credential_audit.py", manifest)
 
+    def test_revision_3_guidance_is_bound_into_distribution(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result = build_distribution(Path("."), Path(tmp))
+            manifest = (Path(tmp) / result["manifest_path"]).read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("docs/research/donors/DONOR_REUSE_MATRIX.md", manifest)
+            self.assertIn("docs/architecture/SWIM_WITH_THE_WHALES.md", manifest)
+            self.assertIn("docs/roadmap/REVISION_3_ROADMAP.md", manifest)
+
     def test_symlink_or_reparse_escape_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             outside = Path(tmp) / "outside.txt"
