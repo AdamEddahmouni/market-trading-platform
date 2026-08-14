@@ -22,6 +22,19 @@ class EvidenceTests(unittest.TestCase):
             {"files": [], "third_party_distribution_count": 0},
             {"attempt_count": 7, "denied_count": 7},
         )
+        authority = content["phase0.canonical_inventory"]["canonical_authority"]
+        self.assertEqual(authority["status"], "PASS")
+        self.assertEqual(
+            authority["active_logical_id"],
+            "foundation.canonical_specification.revision_3",
+        )
+        self.assertEqual(
+            authority["active_sha256"],
+            "7C6AE5FC9037CA37D44CD1A2FAACD0CB821192920C46CF001541DCD2121FEB35",
+        )
+        self.assertTrue(
+            content["phase0.canonical_inventory"]["one_canonical_specification"]
+        )
 
     def test_collector_excludes_generated_environment_paths(self):
         generated = Path(".venv-phase0-collector-test")

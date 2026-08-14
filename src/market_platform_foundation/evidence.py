@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .analysis import analyze_tree
 from .assertions import build_registry
+from .authority import resolve_canonical_authority
 from .canonical import canonical_bytes, sha256_bytes
 from .credential_audit import audit_path_inventory
 from .distribution import validate_lock
@@ -109,6 +110,7 @@ def build_preassertion_content(
     credential_history_report: dict[str, object] | None = None,
 ) -> dict[str, object]:
     root = repository_root.resolve()
+    authority = resolve_canonical_authority(root)
     analysis = analyze_tree(root / "src" / "market_platform_foundation")
     tracked_like_paths: list[str] = []
     for path in root.rglob("*"):
@@ -154,9 +156,12 @@ def build_preassertion_content(
     }
     return {
         "phase0.canonical_inventory": {
+            "canonical_authority": authority,
             "document_count": len(documents),
             "documents": documents,
-            "one_canonical_specification": True,
+            "one_canonical_specification": authority.get(
+                "one_canonical_specification", False
+            ),
         },
         "phase0.credential_audit": {
             "current_tree": current_audit,
