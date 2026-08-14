@@ -18,7 +18,10 @@ _AUDIT_SOURCE_EXCEPTIONS = {
 
 def classify_path(path: str, tracked: bool) -> dict[str, object]:
     normalized = path.replace("\\", "/")
-    if normalized in _AUDIT_SOURCE_EXCEPTIONS:
+    sanitized_evidence = re.fullmatch(
+        r"evidence/phase0/[0-9A-F]{64}/credential-audit\.json", normalized
+    )
+    if normalized in _AUDIT_SOURCE_EXCEPTIONS or sanitized_evidence:
         return {"classification": "CONTENT_SCAN_ELIGIBLE", "content_read": False}
     if _PRIVATE_PATH.search(normalized):
         return {

@@ -26,6 +26,12 @@ class CredentialAuditTests(unittest.TestCase):
         self.assertTrue(validate_public_example("EXAMPLE"))
         self.assertFalse(validate_public_example("looks-real"))
 
+    def test_hash_named_sanitized_evidence_is_content_eligible(self):
+        path = "evidence/phase0/" + "A" * 64 + "/credential-audit.json"
+        result = classify_path(path, tracked=True)
+        self.assertEqual(result["classification"], "CONTENT_SCAN_ELIGIBLE")
+        self.assertFalse(result["content_read"])
+
     def test_inventory_reports_only_opaque_ids(self):
         report = audit_path_inventory(["config/.env", "README.md"], tracked=True)
         self.assertEqual(report["prohibited_count"], 1)
