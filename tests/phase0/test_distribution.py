@@ -18,6 +18,13 @@ class DistributionTests(unittest.TestCase):
             self.assertEqual(one["archive_sha256"], two["archive_sha256"])
             self.assertEqual(one["manifest_sha256"], two["manifest_sha256"])
 
+    def test_named_audit_modules_are_distributable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result = build_distribution(Path("."), Path(tmp))
+            manifest = (Path(tmp) / result["manifest_path"]).read_text(encoding="utf-8")
+            self.assertIn("src/market_platform_foundation/credential_audit.py", manifest)
+            self.assertIn("tests/phase0/test_credential_audit.py", manifest)
+
     def test_symlink_or_reparse_escape_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             outside = Path(tmp) / "outside.txt"

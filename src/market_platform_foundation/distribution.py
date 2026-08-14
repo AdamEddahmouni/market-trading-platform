@@ -26,6 +26,10 @@ _EXCLUDED_PARTS = {
     "node_modules",
 }
 _MAX_FILE_BYTES = 10 * 1024 * 1024
+_SENSITIVE_NAME_EXCEPTIONS = {
+    "src/market_platform_foundation/credential_audit.py",
+    "tests/phase0/test_credential_audit.py",
+}
 
 
 def validate_lock(path: Path) -> dict[str, object]:
@@ -65,7 +69,13 @@ def _selected_files(root: Path) -> list[Path]:
                 raise ValueError(f"reparse or symlink path rejected: {relative.as_posix()}")
             if not path.is_file():
                 continue
-            if path.name.startswith(".env") or "credential" in path.name.lower() or "secret" in path.name.lower():
+            relative_name = relative.as_posix()
+            sensitive_name = (
+                path.name.startswith(".env")
+                or "credential" in path.name.lower()
+                or "secret" in path.name.lower()
+            )
+            if sensitive_name and relative_name not in _SENSITIVE_NAME_EXCEPTIONS:
                 raise ValueError("sensitive path rejected by distribution policy")
             if path.suffix.lower() in {".log", ".pyc", ".pyo"}:
                 continue
@@ -111,4 +121,3 @@ def build_distribution(root: Path, output_dir: Path) -> dict[str, object]:
         "manifest_path": manifest_path.name,
         "manifest_sha256": sha256_bytes(manifest_bytes),
     }
-
