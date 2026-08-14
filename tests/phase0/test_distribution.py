@@ -35,6 +35,17 @@ class DistributionTests(unittest.TestCase):
             self.assertIn("docs/architecture/SWIM_WITH_THE_WHALES.md", manifest)
             self.assertIn("docs/roadmap/REVISION_3_ROADMAP.md", manifest)
 
+    def test_lf_checkout_policy_is_bound_into_distribution(self):
+        attributes = Path(".gitattributes")
+        self.assertTrue(attributes.is_file())
+        self.assertEqual(attributes.read_bytes(), b"* text=auto eol=lf\n")
+        with tempfile.TemporaryDirectory() as tmp:
+            result = build_distribution(Path("."), Path(tmp))
+            manifest = (Path(tmp) / result["manifest_path"]).read_text(
+                encoding="utf-8"
+            )
+            self.assertIn('"path":".gitattributes"', manifest)
+
     def test_symlink_or_reparse_escape_is_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             outside = Path(tmp) / "outside.txt"

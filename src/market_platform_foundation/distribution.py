@@ -8,7 +8,12 @@ from pathlib import Path
 
 from .canonical import canonical_bytes, load_json_strict, sha256_bytes
 
-_TOP_FILES = (".gitignore", "README.md", "phase0-dependency-lock.json")
+_TOP_FILES = (
+    ".gitattributes",
+    ".gitignore",
+    "README.md",
+    "phase0-dependency-lock.json",
+)
 _TREES = (
     "docs/architecture",
     "docs/research",
