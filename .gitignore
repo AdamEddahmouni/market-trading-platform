@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv*/
+venv*/
+.pytest*/
+.coverage*
+build/
+dist/
+*.log
+.env*
+*credential*
+*secret*
+evidence/phase0/.staging-*/
+
