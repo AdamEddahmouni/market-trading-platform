@@ -3,10 +3,42 @@ import unittest
 from pathlib import Path
 
 from market_platform_foundation.canonical import load_json_strict, sha256_bytes
-from market_platform_foundation.evidence import finalize_artifact, publish_artifacts
+from market_platform_foundation.evidence import (
+    build_preassertion_content,
+    finalize_artifact,
+    publish_artifacts,
+)
 
 
 class EvidenceTests(unittest.TestCase):
+    def test_collector_produces_required_step_10_11_ids(self):
+        content = build_preassertion_content(
+            Path("."),
+            {
+                "archive_sha256": "A",
+                "file_count": 1,
+                "manifest_sha256": "B",
+            },
+            {"files": [], "third_party_distribution_count": 0},
+            {"attempt_count": 7, "denied_count": 7},
+        )
+        self.assertEqual(
+            set(content),
+            {
+                "phase0.canonical_inventory",
+                "phase0.credential_audit",
+                "phase0.denied_network_install",
+                "phase0.denied_network_protocol",
+                "phase0.dependency_lock_report",
+                "phase0.distribution_manifest",
+                "phase0.entrypoint_route_report",
+                "phase0.import_boundary_report",
+                "phase0.local_artifact_manifest",
+                "phase0.registry_snapshot",
+                "phase0.repository_preservation_difference",
+            },
+        )
+
     def test_finalized_artifact_cannot_be_overwritten(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "artifact.json"

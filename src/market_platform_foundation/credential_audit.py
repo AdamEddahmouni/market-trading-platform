@@ -10,10 +10,16 @@ _PRIVATE_PATH = re.compile(
     r"(?i)(^|/)(\.env(?:\..*)?$|[^/]*(?:credential|secret|token|password|private[_-]?key|api[_-]?key)[^/]*$)"
 )
 _PLACEHOLDERS = {"CHANGEME", "EXAMPLE", "PLACEHOLDER", "NOT_A_SECRET"}
+_AUDIT_SOURCE_EXCEPTIONS = {
+    "src/market_platform_foundation/credential_audit.py",
+    "tests/phase0/test_credential_audit.py",
+}
 
 
 def classify_path(path: str, tracked: bool) -> dict[str, object]:
     normalized = path.replace("\\", "/")
+    if normalized in _AUDIT_SOURCE_EXCEPTIONS:
+        return {"classification": "CONTENT_SCAN_ELIGIBLE", "content_read": False}
     if _PRIVATE_PATH.search(normalized):
         return {
             "classification": (

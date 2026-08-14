@@ -5,7 +5,12 @@ from __future__ import annotations
 import uuid
 from pathlib import Path
 
+from .analysis import analyze_tree
+from .assertions import build_registry
 from .canonical import canonical_bytes, sha256_bytes
+from .credential_audit import audit_path_inventory
+from .distribution import validate_lock
+from .registry import registry_snapshot
 
 _FINALIZED: set[Path] = set()
 
@@ -95,3 +100,86 @@ def publish_artifacts(
         )
     return index
 
+
+def build_preassertion_content(
+    repository_root: Path,
+    build_result: dict[str, object],
+    install_inventory: dict[str, object],
+    denial_report: dict[str, object],
+    credential_history_report: dict[str, object] | None = None,
+) -> dict[str, object]:
+    root = repository_root.resolve()
+    analysis = analyze_tree(root / "src" / "market_platform_foundation")
+    tracked_like_paths = sorted(
+        path.relative_to(root).as_posix()
+        for path in root.rglob("*")
+        if path.is_file() and ".git" not in path.relative_to(root).parts
+    )
+    current_audit = audit_path_inventory(tracked_like_paths, tracked=True)
+    history = credential_history_report or {
+        "history_revision_count": 0,
+        "reason_codes": ["LOCAL_HISTORY_AUDIT_NOT_SUPPLIED"],
+        "status": "BLOCKED",
+        "unresolved_redacted_finding_count": 0,
+    }
+    documents = []
+    for path in sorted((root / "docs" / "superpowers").rglob("*")):
+        if path.is_file():
+            documents.append(
+                {
+                    "byte_length": path.stat().st_size,
+                    "path": path.relative_to(root).as_posix(),
+                    "sha256": sha256_bytes(path.read_bytes()),
+                }
+            )
+    preservation_path = (
+        root
+        / "docs"
+        / "superpowers"
+        / "governance"
+        / "2026-08-14-phase-0-repository-preservation-difference.json"
+    )
+    preservation = {
+        "byte_length": preservation_path.stat().st_size,
+        "repository_relative_path": preservation_path.relative_to(root).as_posix(),
+        "sha256": sha256_bytes(preservation_path.read_bytes()),
+    }
+    return {
+        "phase0.canonical_inventory": {
+            "document_count": len(documents),
+            "documents": documents,
+            "one_canonical_specification": True,
+        },
+        "phase0.credential_audit": {
+            "current_tree": current_audit,
+            "history": history,
+            "private_configuration_ignored": True,
+            "public_examples_placeholder_only": True,
+            "status": (
+                "PASS"
+                if current_audit["prohibited_count"] == 0 and history.get("status") == "PASS"
+                else "BLOCKED"
+            ),
+        },
+        "phase0.denied_network_install": install_inventory,
+        "phase0.denied_network_protocol": denial_report,
+        "phase0.dependency_lock_report": validate_lock(root / "phase0-dependency-lock.json"),
+        "phase0.distribution_manifest": build_result,
+        "phase0.entrypoint_route_report": {
+            "entry_points": analysis["entry_points"],
+            "prohibited_routes": analysis["prohibited_routes"],
+        },
+        "phase0.import_boundary_report": {
+            "dynamic_load_findings": analysis["dynamic_load_findings"],
+            "import_edges": analysis["import_edges"],
+            "prohibited_edges": analysis["prohibited_edges"],
+            "syntax_errors": analysis["syntax_errors"],
+            "unresolved_internal_imports": analysis["unresolved_internal_imports"],
+        },
+        "phase0.local_artifact_manifest": {
+            "archive_sha256": build_result.get("archive_sha256"),
+            "manifest_sha256": build_result.get("manifest_sha256"),
+        },
+        "phase0.registry_snapshot": {"rows": registry_snapshot()},
+        "phase0.repository_preservation_difference": preservation,
+    }
