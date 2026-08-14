@@ -9,14 +9,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
-from market_platform_foundation.canonical import load_json_strict, write_canonical_json
-from market_platform_foundation.evidence import build_preassertion_content, publish_artifacts
 from market_platform_foundation.offline_guard import install_guard
 
 
 def main() -> int:
     events: list[dict[str, str]] = []
     install_guard(events)
+    from market_platform_foundation.canonical import load_json_strict, write_canonical_json
+    from market_platform_foundation.evidence import (
+        build_preassertion_content,
+        publish_artifacts,
+    )
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--content-map")
     parser.add_argument("--repository-root")
