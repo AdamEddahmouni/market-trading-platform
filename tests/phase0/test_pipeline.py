@@ -22,6 +22,26 @@ class EvidenceTests(unittest.TestCase):
             {"files": [], "third_party_distribution_count": 0},
             {"attempt_count": 7, "denied_count": 7},
         )
+
+    def test_collector_excludes_generated_environment_paths(self):
+        generated = Path(".venv-phase0-collector-test")
+        generated.mkdir(exist_ok=False)
+        sensitive = generated / "credential.txt"
+        sensitive.write_text("not inspected", encoding="utf-8")
+        try:
+            content = build_preassertion_content(
+                Path("."),
+                {"archive_sha256": "A", "file_count": 1, "manifest_sha256": "B"},
+                {"files": [], "third_party_distribution_count": 0},
+                {"attempt_count": 7, "denied_count": 7},
+            )
+            self.assertEqual(
+                content["phase0.credential_audit"]["current_tree"]["prohibited_count"],
+                0,
+            )
+        finally:
+            sensitive.unlink()
+            generated.rmdir()
         self.assertEqual(
             set(content),
             {

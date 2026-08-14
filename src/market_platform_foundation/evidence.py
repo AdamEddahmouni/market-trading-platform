@@ -110,11 +110,19 @@ def build_preassertion_content(
 ) -> dict[str, object]:
     root = repository_root.resolve()
     analysis = analyze_tree(root / "src" / "market_platform_foundation")
-    tracked_like_paths = sorted(
-        path.relative_to(root).as_posix()
-        for path in root.rglob("*")
-        if path.is_file() and ".git" not in path.relative_to(root).parts
-    )
+    tracked_like_paths: list[str] = []
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(root)
+        if any(
+            part in {".git", ".pytest_cache", "__pycache__", "build", "dist", "node_modules"}
+            or part.startswith(".venv")
+            for part in relative.parts
+        ):
+            continue
+        tracked_like_paths.append(relative.as_posix())
+    tracked_like_paths.sort()
     current_audit = audit_path_inventory(tracked_like_paths, tracked=True)
     history = credential_history_report or {
         "history_revision_count": 0,
