@@ -53,9 +53,12 @@ def main() -> int:
 
         evaluate_run(Path(args.run_manifest), Path(args.output_dir))
         return 0
-    from .errors import BlockedError
+    from pathlib import Path
 
-    raise BlockedError("verify-governance is registered but not implemented yet")
+    from .verifier import verify_evaluation
+
+    verify_evaluation(Path(args.evaluation_dir), Path(args.output_dir))
+    return 0
 
 
 if __name__ == "__main__":
