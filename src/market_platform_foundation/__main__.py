@@ -46,21 +46,10 @@ def main() -> int:
         result = analyze_tree(Path(args.input_manifest))
         write_canonical_json(Path(args.output_dir) / "structure-report.json", result)
         return 0
-    if args.command == "evaluate-phase0":
-        from pathlib import Path
+    from .errors import BlockedError
 
-        from .assertions import evaluate_run
-
-        evaluate_run(Path(args.run_manifest), Path(args.output_dir))
-        return 0
-    from pathlib import Path
-
-    from .verifier import verify_evaluation
-
-    verify_evaluation(Path(args.evaluation_dir), Path(args.output_dir))
-    return 0
+    raise BlockedError(f"entry point is registered but not implemented yet: {args.command}")
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
