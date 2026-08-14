@@ -125,6 +125,35 @@ class AuthorityTests(unittest.TestCase):
         self.assertEqual(result["status"], "FAIL")
         self.assertIn("AUTHORITY_PATH_INVALID", result["reason_codes"])
 
+    def test_missing_active_logical_id_fails_closed(self):
+        manifest = load_json_strict(self.manifest)
+        del manifest["active_specification"]["logical_id"]
+        write_canonical_json(self.manifest, manifest)
+
+        result = resolve_canonical_authority(self.root)
+
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("AUTHORITY_MANIFEST_SHAPE_INVALID", result["reason_codes"])
+
+    def test_conflicting_phase0_binding_fails(self):
+        conflicting = self.active_spec.parent / "phase0-conflict.md"
+        conflicting.write_bytes(b"conflicting phase 0 authority\n")
+        manifest = load_json_strict(self.manifest)
+        manifest["phase0_authority"]["path"] = conflicting.relative_to(
+            self.root
+        ).as_posix()
+        manifest["phase0_authority"]["sha256"] = sha256_bytes(
+            conflicting.read_bytes()
+        )
+        write_canonical_json(self.manifest, manifest)
+
+        result = resolve_canonical_authority(self.root)
+
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn(
+            "PHASE0_AUTHORITY_BINDING_MISMATCH", result["reason_codes"]
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

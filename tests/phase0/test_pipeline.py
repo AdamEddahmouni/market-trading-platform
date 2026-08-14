@@ -4,6 +4,7 @@ from pathlib import Path
 
 from market_platform_foundation.canonical import load_json_strict, sha256_bytes
 from market_platform_foundation.evidence import (
+    _revision3_preservation_summary,
     build_preassertion_content,
     finalize_artifact,
     publish_artifacts,
@@ -11,6 +12,21 @@ from market_platform_foundation.evidence import (
 
 
 class EvidenceTests(unittest.TestCase):
+    def test_donor_preservation_declared_pass_cannot_hide_failed_comparison(self):
+        summary = _revision3_preservation_summary(
+            {
+                "donor_comparisons": [
+                    {"result": "PASS", "root_id": "PROTO-DS340W-001"},
+                    {"result": "UNAUTHORIZED_DRIFT", "root_id": "PROTO-GRIDIQ-001"},
+                ],
+                "result": "PASS",
+                "unauthorized_drift": ["OPAQUE-DRIFT"],
+            }
+        )
+
+        self.assertEqual(summary["observed_result"], "FAIL")
+        self.assertFalse(summary["internally_consistent"])
+
     def test_collector_produces_required_step_10_11_ids(self):
         content = build_preassertion_content(
             Path("."),
@@ -37,6 +53,8 @@ class EvidenceTests(unittest.TestCase):
         )
         preservation = content["phase0.revision3_donor_preservation_difference"]
         self.assertEqual(preservation["declared_result"], "PASS")
+        self.assertEqual(preservation["observed_result"], "PASS")
+        self.assertTrue(preservation["internally_consistent"])
         self.assertEqual(
             preservation["donor_root_ids"],
             ["PROTO-DS340W-001", "PROTO-GRIDIQ-001"],

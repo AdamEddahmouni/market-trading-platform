@@ -102,6 +102,43 @@ def publish_artifacts(
     return index
 
 
+def _revision3_preservation_summary(record: dict[str, object]) -> dict[str, object]:
+    comparisons = record.get("donor_comparisons")
+    unauthorized_drift = record.get("unauthorized_drift")
+    if not isinstance(comparisons, list) or not isinstance(unauthorized_drift, list):
+        return {
+            "declared_result": str(record.get("result", "BLOCKED")),
+            "donor_root_ids": [],
+            "internally_consistent": False,
+            "observed_result": "BLOCKED",
+        }
+    if any(not isinstance(row, dict) for row in comparisons):
+        return {
+            "declared_result": str(record.get("result", "BLOCKED")),
+            "donor_root_ids": [],
+            "internally_consistent": False,
+            "observed_result": "BLOCKED",
+        }
+    root_ids = sorted(str(row.get("root_id", "")) for row in comparisons)
+    expected_root_ids = ["PROTO-DS340W-001", "PROTO-GRIDIQ-001"]
+    if root_ids != expected_root_ids:
+        observed_result = "BLOCKED"
+    elif unauthorized_drift or any(row.get("result") != "PASS" for row in comparisons):
+        observed_result = "FAIL"
+    else:
+        observed_result = "PASS"
+    declared_result = str(record.get("result", "BLOCKED"))
+    return {
+        "comparison_results": sorted(
+            str(row.get("result", "BLOCKED")) for row in comparisons
+        ),
+        "declared_result": declared_result,
+        "donor_root_ids": root_ids,
+        "internally_consistent": declared_result == observed_result,
+        "observed_result": observed_result,
+    }
+
+
 def build_preassertion_content(
     repository_root: Path,
     build_result: dict[str, object],
@@ -164,11 +201,9 @@ def build_preassertion_content(
     revision3_preservation = load_json_strict(revision3_preservation_path)
     if not isinstance(revision3_preservation, dict):
         raise ValueError("Revision 3 donor preservation record must be an object")
-    donor_comparisons = revision3_preservation.get("donor_comparisons", [])
-    if not isinstance(donor_comparisons, list) or any(
-        not isinstance(row, dict) for row in donor_comparisons
-    ):
-        raise ValueError("Revision 3 donor comparisons must be an object array")
+    revision3_preservation_summary = _revision3_preservation_summary(
+        revision3_preservation
+    )
     return {
         "phase0.canonical_inventory": {
             "canonical_authority": authority,
@@ -212,13 +247,10 @@ def build_preassertion_content(
         "phase0.repository_preservation_difference": preservation,
         "phase0.revision3_donor_preservation_difference": {
             "byte_length": revision3_preservation_path.stat().st_size,
-            "declared_result": revision3_preservation.get("result", "BLOCKED"),
-            "donor_root_ids": sorted(
-                str(row.get("root_id", "")) for row in donor_comparisons
-            ),
             "repository_relative_path": revision3_preservation_path.relative_to(
                 root
             ).as_posix(),
             "sha256": sha256_bytes(revision3_preservation_path.read_bytes()),
+            **revision3_preservation_summary,
         },
     }

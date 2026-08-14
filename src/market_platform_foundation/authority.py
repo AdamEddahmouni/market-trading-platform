@@ -49,6 +49,10 @@ def _status_for_reason(reason: str) -> str:
     return "FAIL"
 
 
+def _has_nonempty_strings(row: dict[str, object], fields: tuple[str, ...]) -> bool:
+    return all(isinstance(row.get(field), str) and bool(row[field]) for field in fields)
+
+
 def resolve_canonical_authority(repository_root: Path) -> dict[str, object]:
     root = repository_root.resolve()
     manifest_path = root / "manifests" / "phase0" / "canonical-authority.json"
@@ -79,6 +83,18 @@ def resolve_canonical_authority(repository_root: Path) -> dict[str, object]:
         not isinstance(active, dict)
         or not isinstance(phase0, dict)
         or not isinstance(incorporated, list)
+        or not _has_nonempty_strings(
+            active,
+            (
+                "approval_logical_id",
+                "approval_path",
+                "approval_sha256",
+                "logical_id",
+                "path",
+                "sha256",
+            ),
+        )
+        or not _has_nonempty_strings(phase0, ("logical_id", "path", "sha256"))
     ):
         return _result(
             "FAIL",
@@ -138,9 +154,11 @@ def resolve_canonical_authority(repository_root: Path) -> dict[str, object]:
         return _result(
             "FAIL", ["APPROVAL_BINDING_MISMATCH"], one_canonical_specification=False
         )
-    incorporated_ids: list[str] = []
+    incorporated_bindings: dict[str, tuple[str, str]] = {}
     for row in [phase0, *incorporated]:
-        if not isinstance(row, dict):
+        if not isinstance(row, dict) or not _has_nonempty_strings(
+            row, ("logical_id", "path", "sha256")
+        ):
             return _result(
                 "FAIL",
                 ["INCORPORATED_BINDING_INVALID"],
@@ -159,16 +177,28 @@ def resolve_canonical_authority(repository_root: Path) -> dict[str, object]:
                 one_canonical_specification=False,
             )
         if row is not phase0:
-            incorporated_ids.append(str(row.get("logical_id", "")))
-    if (
-        not incorporated_ids
-        or "" in incorporated_ids
-        or len(incorporated_ids) != len(set(incorporated_ids))
-        or str(phase0.get("logical_id", "")) not in incorporated_ids
-    ):
+            logical_id = str(row["logical_id"])
+            if logical_id in incorporated_bindings:
+                return _result(
+                    "FAIL",
+                    ["INCORPORATED_BINDING_INVALID"],
+                    one_canonical_specification=False,
+                )
+            incorporated_bindings[logical_id] = (str(row["path"]), str(row["sha256"]))
+    phase0_logical_id = str(phase0["logical_id"])
+    if phase0_logical_id not in incorporated_bindings:
         return _result(
             "FAIL",
             ["INCORPORATED_BINDING_INVALID"],
+            one_canonical_specification=False,
+        )
+    if incorporated_bindings[phase0_logical_id] != (
+        str(phase0["path"]),
+        str(phase0["sha256"]),
+    ):
+        return _result(
+            "FAIL",
+            ["PHASE0_AUTHORITY_BINDING_MISMATCH"],
             one_canonical_specification=False,
         )
     return _result(
