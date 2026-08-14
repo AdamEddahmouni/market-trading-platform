@@ -8,7 +8,7 @@ from pathlib import Path
 from .analysis import analyze_tree
 from .assertions import build_registry
 from .authority import resolve_canonical_authority
-from .canonical import canonical_bytes, sha256_bytes
+from .canonical import canonical_bytes, load_json_strict, sha256_bytes
 from .credential_audit import audit_path_inventory
 from .distribution import validate_lock
 from .registry import registry_snapshot
@@ -154,6 +154,21 @@ def build_preassertion_content(
         "repository_relative_path": preservation_path.relative_to(root).as_posix(),
         "sha256": sha256_bytes(preservation_path.read_bytes()),
     }
+    revision3_preservation_path = (
+        root
+        / "docs"
+        / "superpowers"
+        / "governance"
+        / "2026-08-14-revision-3-donor-preservation-difference.json"
+    )
+    revision3_preservation = load_json_strict(revision3_preservation_path)
+    if not isinstance(revision3_preservation, dict):
+        raise ValueError("Revision 3 donor preservation record must be an object")
+    donor_comparisons = revision3_preservation.get("donor_comparisons", [])
+    if not isinstance(donor_comparisons, list) or any(
+        not isinstance(row, dict) for row in donor_comparisons
+    ):
+        raise ValueError("Revision 3 donor comparisons must be an object array")
     return {
         "phase0.canonical_inventory": {
             "canonical_authority": authority,
@@ -195,4 +210,15 @@ def build_preassertion_content(
         },
         "phase0.registry_snapshot": {"rows": registry_snapshot()},
         "phase0.repository_preservation_difference": preservation,
+        "phase0.revision3_donor_preservation_difference": {
+            "byte_length": revision3_preservation_path.stat().st_size,
+            "declared_result": revision3_preservation.get("result", "BLOCKED"),
+            "donor_root_ids": sorted(
+                str(row.get("root_id", "")) for row in donor_comparisons
+            ),
+            "repository_relative_path": revision3_preservation_path.relative_to(
+                root
+            ).as_posix(),
+            "sha256": sha256_bytes(revision3_preservation_path.read_bytes()),
+        },
     }

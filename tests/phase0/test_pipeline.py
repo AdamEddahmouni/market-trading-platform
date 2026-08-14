@@ -35,6 +35,12 @@ class EvidenceTests(unittest.TestCase):
         self.assertTrue(
             content["phase0.canonical_inventory"]["one_canonical_specification"]
         )
+        preservation = content["phase0.revision3_donor_preservation_difference"]
+        self.assertEqual(preservation["declared_result"], "PASS")
+        self.assertEqual(
+            preservation["donor_root_ids"],
+            ["PROTO-DS340W-001", "PROTO-GRIDIQ-001"],
+        )
 
     def test_collector_excludes_generated_environment_paths(self):
         generated = Path(".venv-phase0-collector-test")
@@ -69,6 +75,7 @@ class EvidenceTests(unittest.TestCase):
                 "phase0.local_artifact_manifest",
                 "phase0.registry_snapshot",
                 "phase0.repository_preservation_difference",
+                "phase0.revision3_donor_preservation_difference",
             },
         )
 
