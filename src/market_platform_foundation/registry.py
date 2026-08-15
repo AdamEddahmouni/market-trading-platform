@@ -3,15 +3,21 @@ from __future__ import annotations
 from pathlib import Path
 
 from .canonical import sha256_bytes
+from .adapters.equity_intraday_jsonl import EquityIntradayJsonlAdapter
 from .execution.simulator import SimulatorDescriptor
 from .offline.fixture_manifest import ManifestOnlyReader
 
 _REGISTRY = {
+    "offline.equity_intraday_jsonl": EquityIntradayJsonlAdapter,
     "offline.fixture_manifest": ManifestOnlyReader,
     "simulation.noop": SimulatorDescriptor,
 }
 
 _CAPABILITIES = {
+    "offline.equity_intraday_jsonl": (
+        "Read and normalize the admitted equity intraday JSONL fixture from an "
+        "authorized collection path without network access."
+    ),
     "offline.fixture_manifest": (
         "Read an embedded, synthetic, non-market structural manifest without "
         "filesystem discovery."

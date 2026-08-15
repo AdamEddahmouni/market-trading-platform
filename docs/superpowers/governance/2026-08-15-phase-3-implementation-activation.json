@@ -1,0 +1,14 @@
+{
+  "activated_at": "2026-08-15T18:00:00.000000000Z",
+  "activation_id": "B4C5D6E7F80718293A4B5C6D7E8F901234567890ABCDEF0123456789ABCEF012",
+  "artifact_type": "PHASE_3_IMPLEMENTATION_ACTIVATION",
+  "authorization_logical_id": "phase3.implementation_authorization",
+  "authorization_sha256": "249BDE81273BA1A864633714062A465EB386E8A97562CF4DAF8332120438F519",
+  "effect": "Records that principal-approved Phase 3 implementation authorization is active for the admitted equity intraday adapter.",
+  "governance_approvals_logical_id": "phase3.governance_approvals",
+  "logical_id": "phase3.implementation_activation",
+  "phase2_status_at_activation": "PASS",
+  "principal_id": "PROJECT-PRINCIPAL-001",
+  "schema_version": "1.0.0",
+  "status": "EFFECTIVE"
+}

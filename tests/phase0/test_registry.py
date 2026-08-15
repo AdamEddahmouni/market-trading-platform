@@ -5,10 +5,14 @@ from market_platform_foundation.registry import resolve_registry, registry_snaps
 
 
 class RegistryTests(unittest.TestCase):
-    def test_only_two_literal_entries_exist(self):
+    def test_only_three_literal_entries_exist(self):
         self.assertEqual(
             [row["registry_id"] for row in registry_snapshot()],
-            ["offline.fixture_manifest", "simulation.noop"],
+            [
+                "offline.equity_intraday_jsonl",
+                "offline.fixture_manifest",
+                "simulation.noop",
+            ],
         )
 
     def test_unknown_identifier_fails_closed(self):

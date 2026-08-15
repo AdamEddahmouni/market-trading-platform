@@ -16,12 +16,29 @@ def _parser() -> argparse.ArgumentParser:
     registry = commands.add_parser("emit-registry")
     registry.add_argument("--registry", required=True)
     registry.add_argument("--output", required=True)
-    evaluate = commands.add_parser("evaluate-phase0")
-    evaluate.add_argument("--run-manifest", required=True)
-    evaluate.add_argument("--output-dir", required=True)
+    evaluate_phase0 = commands.add_parser("evaluate-phase0")
+    evaluate_phase0.add_argument("--run-manifest", required=True)
+    evaluate_phase0.add_argument("--output-dir", required=True)
     verify = commands.add_parser("verify-governance")
     verify.add_argument("--evaluation-dir", required=True)
     verify.add_argument("--output-dir", required=True)
+    evaluate_phase0a = commands.add_parser("evaluate-phase0a")
+    evaluate_phase0a.add_argument("--run-manifest", required=True)
+    evaluate_phase0a.add_argument("--output-dir", required=True)
+    verify_adr = commands.add_parser("verify-adr-registry")
+    verify_adr.add_argument("--output-dir", required=True)
+    evaluate_phase2 = commands.add_parser("evaluate-phase2")
+    evaluate_phase2.add_argument("--run-manifest", required=True)
+    evaluate_phase2.add_argument("--output-dir", required=True)
+    evaluate_phase3 = commands.add_parser("evaluate-phase3")
+    evaluate_phase3.add_argument("--run-manifest", required=True)
+    evaluate_phase3.add_argument("--output-dir", required=True)
+    evaluate_phase4 = commands.add_parser("evaluate-phase4")
+    evaluate_phase4.add_argument("--run-manifest", required=True)
+    evaluate_phase4.add_argument("--output-dir", required=True)
+    evaluate_phase5 = commands.add_parser("evaluate-phase5")
+    evaluate_phase5.add_argument("--run-manifest", required=True)
+    evaluate_phase5.add_argument("--output-dir", required=True)
     return parser
 
 
@@ -50,6 +67,48 @@ def main() -> int:
         from pathlib import Path
 
         from .assertions import evaluate_run
+
+        evaluate_run(Path(args.run_manifest), Path(args.output_dir))
+        return 0
+    if args.command == "evaluate-phase0a":
+        from pathlib import Path
+
+        from .phase0a_assertions import evaluate_run
+
+        evaluate_run(Path(args.run_manifest), Path(args.output_dir))
+        return 0
+    if args.command == "verify-adr-registry":
+        from pathlib import Path
+
+        from .adr_verifier import write_verifier_result
+
+        result = write_verifier_result(Path(args.output_dir))
+        return 0 if result["overall_status"] == "PASS" else 1
+    if args.command == "evaluate-phase2":
+        from pathlib import Path
+
+        from .phase2_assertions import evaluate_run
+
+        evaluate_run(Path(args.run_manifest), Path(args.output_dir))
+        return 0
+    if args.command == "evaluate-phase3":
+        from pathlib import Path
+
+        from .phase3_assertions import evaluate_run
+
+        evaluate_run(Path(args.run_manifest), Path(args.output_dir))
+        return 0
+    if args.command == "evaluate-phase4":
+        from pathlib import Path
+
+        from .phase4_assertions import evaluate_run
+
+        evaluate_run(Path(args.run_manifest), Path(args.output_dir))
+        return 0
+    if args.command == "evaluate-phase5":
+        from pathlib import Path
+
+        from .phase5_assertions import evaluate_run
 
         evaluate_run(Path(args.run_manifest), Path(args.output_dir))
         return 0

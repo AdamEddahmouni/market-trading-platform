@@ -1,5 +1,14 @@
 {
   "adr_id": "ADR-OFF-001",
+  "approval": {
+    "approval_scope": "EXACT_HASH_PRINCIPAL_APPROVAL",
+    "approved_at": "2026-08-15T14:30:00.000000000Z",
+    "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+    "approved_capacities": [
+      "PROJECT_OWNER",
+      "RELEASE_OWNER"
+    ]
+  },
   "artifact_type": "OFFLINE_DISTRIBUTION_CONFORMANCE_DESIGN",
   "authority_bindings": [
     {
@@ -32,6 +41,18 @@
     "discovery_rule": "No importlib metadata entry-point discovery, namespace scanning, filesystem plugin scanning, arbitrary import string, eval, exec, pickle load, marshal load, ctypes load, or subprocess-based discovery is permitted.",
     "snapshot_rule": "The implementation emits a canonical JSON array sorted by registry_id containing each identifier, implementation reference, source-file SHA-256, and capability statement."
   },
+  "conformance_evidence": [
+    {
+      "logical_id": "foundation.offline_guard",
+      "repository_relative_path": "src/market_platform_foundation/offline_guard.py",
+      "sha256": "72ECE1B39C3EC0304F0A94C1ADDE68FFC6F57A1BBB5D207FE37F57249F74B7E7"
+    },
+    {
+      "logical_id": "phase0.registry_snapshot",
+      "repository_relative_path": "manifests/phase0/registry.json",
+      "sha256": "36CBBCFF1A3E3663DE4A652CB7E00983FFDA5031F255F6BBEB9BCC90A2A7EA16"
+    }
+  ],
   "created_at": "2026-08-14T18:15:00Z",
   "denied_network_protocol": {
     "attempt_result": "Any blocked audit event or patched network function raises OfflineBoundaryViolation, appends only event category and reason code to the sanitized in-memory log, produces a terminal BLOCKED execution result for missing isolation or FAIL for an attempted prohibited action, and exits nonzero.",
@@ -118,7 +139,7 @@
       "GOVERNED_BOUNDARY_ESTABLISHED_WITH_NO_UNAUTHORIZED_PRESERVATION_DRIFT",
       "CANONICAL_SPECIFICATION_AND_CONTROLLING_PLAN_REGISTERED_IN_ROOT_2E7C91F4"
     ],
-    "current_state": "PREPARED_PENDING_EXACT_HASH_APPROVAL_AND_EXECUTION_ORDER_PREREQUISITES",
+    "current_state": "ACCEPTED",
     "implementation_authority": false,
     "statement": "This record selects the offline conformance design. It authorizes no file, repository, dependency, provider, broker, paper, or live operation."
   },
@@ -229,5 +250,5 @@
     "provider_payloads_in_evidence": false
   },
   "schema_version": "1.0.0",
-  "status": "PROPOSED_CONFORMANCE_DESIGN"
+  "status": "ACCEPTED"
 }

@@ -1,2 +1,5 @@
-"""Phase 0 structural namespace; no runtime capability."""
+"""Dataset cache namespace."""
 
+from .dataset_cache import DatasetCache
+
+__all__ = ["DatasetCache"]

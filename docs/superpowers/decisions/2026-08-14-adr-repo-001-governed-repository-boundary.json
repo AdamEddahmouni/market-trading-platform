@@ -46,6 +46,15 @@
       ]
     }
   ],
+  "approval": {
+    "approval_scope": "EXACT_HASH_PRINCIPAL_APPROVAL",
+    "approved_at": "2026-08-15T14:30:00.000000000Z",
+    "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+    "approved_capacities": [
+      "PROJECT_OWNER",
+      "RELEASE_OWNER"
+    ]
+  },
   "artifact_type": "ARCHITECTURE_DECISION_RECORD",
   "authority_bindings": [
     {
@@ -65,6 +74,13 @@
       "logical_id": "phase0.prototype_preservation",
       "logical_path": "docs/superpowers/governance/2026-08-14-phase-0-prototype-preservation-before.json",
       "sha256": "331AF8F6731EC6A7DA3785EE8021E38A0C055CCF59CA903EEB6EEBB2570856F0"
+    }
+  ],
+  "conformance_evidence": [
+    {
+      "logical_id": "phase0.repository_registration",
+      "repository_relative_path": "docs/superpowers/governance/2026-08-14-repository-registration.json",
+      "sha256": "DBE30DD81EB988905DE67EAA49D0D982374669E0D372EF64B5AED991753583E5"
     }
   ],
   "consequences": {
@@ -93,7 +109,7 @@
   },
   "effectivity": {
     "approval_requirement": "Attributable exact-hash approval by PROJECT-PRINCIPAL-001 acting as PROJECT_OWNER and RELEASE_OWNER.",
-    "current_state": "PENDING_EXACT_HASH_APPROVAL",
+    "current_state": "ACCEPTED",
     "decision_only": true,
     "non_authorization_statement": "Acceptance selects the root model only. It does not create a directory, initialize Git, configure a remote, copy a document, move a path, edit a repository, stage, commit, branch, or create a worktree."
   },
@@ -158,5 +174,5 @@
     "remote_url_included": false
   },
   "schema_version": "1.0.0",
-  "status": "PROPOSED_PENDING_EXACT_HASH_APPROVAL"
+  "status": "ACCEPTED"
 }
