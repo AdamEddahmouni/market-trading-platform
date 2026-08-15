@@ -1,10 +1,15 @@
 # Phase 0 Postroot Acceptance Contract Suite Design
 
-**Document date:** 2026-08-14  
-**Status:** WRITTEN_SPEC_REVIEW_PENDING  
-**Design scope:** Governance documentation only  
-**Intended suite logical ID:** `phase0.postroot_acceptance_contract_suite`  
-**Controlling review procedure:** `AI-REVIEW-PROCESS-001`  
+**Document date:** 2026-08-14
+
+**Status:** WRITTEN_SPEC_REVIEW_PENDING
+
+**Design scope:** Governance documentation only
+
+**Intended suite logical ID:** `phase0.postroot_acceptance_contract_suite`
+
+**Controlling review procedure:** `AI-REVIEW-PROCESS-001`
+
 **Target procedure SHA-256:** `EAAA84B1D0D6FF4B6A90F36CC35F5D88E9D1EB63173A6BDE18D9C911E63C69A8`
 
 ## 1. Purpose
