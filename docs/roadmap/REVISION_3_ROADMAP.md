@@ -6,7 +6,7 @@ authorized by this file.
 
 | Phase | Revision 3 projection | Authorization state |
 |---|---|---|
-| Phase 0 — governance and structural no-live safety | Preserve existing scope; bind the approved revision and fresh current-subject evidence. Candidate evidence is not final acceptance. | `BLOCKED_PENDING_POSTROOT_ACCEPTANCE` |
+| Phase 0 — governance and structural no-live safety | Structural no-live safety and governance evidence accepted for the current repository subject. | `PASS` |
 | Phase 0A — data feasibility and donor characterization | Characterize admitted sources and the two new donors without running remote fetches or importing donor code/data. | separately required and unauthorized |
 | Phase 1 — foundational decisions | Consider dataset identity, PIT feature semantics, model identity/reproducibility, cache semantics, institutional evidence, donor reuse, and provider-neutral LLM boundaries. | decision work only after separate authority |
 | Phase 2 — canonical contracts and replay | Establish identity, availability, revision, quality, and deterministic replay contracts before model work. | unchanged prerequisite |

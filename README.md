@@ -1,8 +1,7 @@
 # Integrated Market Platform — governed foundation
 
 This repository contains the governed, CPython 3.11 standard-library-only Phase
-0 structural and evidence subject. Its Phase 0 status is
-`BLOCKED_PENDING_POSTROOT_ACCEPTANCE`.
+0 structural and evidence subject. Its Phase 0 status is `PASS`, published per [phase-0-pass-publication](docs/superpowers/governance/2026-08-15-phase-0-pass-publication.json).
 
 The active forward-looking authority is
 [Canonical Foundation Design Revision 3](docs/superpowers/specs/2026-08-14-integrated-market-platform-foundation-design-revision-3.md),

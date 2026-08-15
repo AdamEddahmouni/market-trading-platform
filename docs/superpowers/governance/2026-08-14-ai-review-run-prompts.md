@@ -58,4 +58,4 @@ Built by `tools/postroot/build_postroot_gate.py` under `evidence/phase0/postrevi
 | `phase0.acceptance_index` | `33032B063BAA167981D10E28C6B69BF372B8A43703C0C28B63FD852721F36814` | index_sha256 `A03044C69F977A34BF19FAB405194CE36A47F8EA032A539A4DED76B522F879DB` |
 | `phase0.final_acceptance_result` | `ADF26F898F44E41EAA006EE9AF9AD6547AFB45CA3083ED2DAAE81DFA19A0E548` | outcome PASS |
 
-Principal validation of these artifacts remains a separate step before formal publication.
+Formal Phase 0 PASS was published in [2026-08-15-phase-0-pass-publication.json](./2026-08-15-phase-0-pass-publication.json) (SHA-256 `8992B4ACA21F2BD1F7CFF743DA2D084755100800E08F5234B0AB0B081324F0A7`).
