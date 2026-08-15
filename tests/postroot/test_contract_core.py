@@ -105,6 +105,18 @@ class ContractCoreTests(unittest.TestCase):
         result = validate_contract({"count": True}, contract_for({"count": {"type": "integer"}}))
         self.assertEqual(result.reason_codes, ("SCHEMA-TYPE-INVALID",))
 
+    def test_required_null_literal_has_an_exact_type(self):
+        valid = validate_contract(
+            {"superseded_by": None},
+            contract_for({"superseded_by": {"type": "null"}}),
+        )
+        invalid = validate_contract(
+            {"superseded_by": "NONE"},
+            contract_for({"superseded_by": {"type": "null"}}),
+        )
+        self.assertEqual(valid.status, "PASS")
+        self.assertEqual(invalid.reason_codes, ("SCHEMA-TYPE-INVALID",))
+
     def test_invalid_values_report_sorted_unique_independent_codes(self):
         value = {
             "identity": "not a logical id",

@@ -84,6 +84,8 @@ def hash_without_fields(value: dict[str, object], omitted: set[str]) -> str:
 
 
 def _matches_type(value: object, expected: object) -> bool:
+    if expected == "null":
+        return value is None
     if expected == "object":
         return isinstance(value, dict)
     if expected == "array":
