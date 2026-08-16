@@ -86,6 +86,97 @@ The system must explain accumulation, distribution, conflict, staleness, and
 unavailability from source to decision. Anonymous events receive no invented
 identity. Unknown aggressor remains unknown. Stale evidence remains stale.
 
+## Unified framework — traditional, crypto, influence, prediction markets
+
+Swim With the Whales evolves into four complementary perspectives on the same
+platform — not disconnected products:
+
+### Traditional markets
+
+Follow measurable institutional footprints: disclosures, large prints, order
+flow, options, depth. Uses the eight evidence families below.
+
+### Crypto (future)
+
+Follow observable capital movement: wallets, exchange flows, derivatives,
+cross-venue flow, order books. Size is normalized to liquidity and supply — no
+static dollar whale threshold. Exchange inflow is not assumed to mean sell;
+withdrawal is not assumed to mean buy. These are testable hypotheses.
+
+### Influence markets (future)
+
+Follow attention only when it demonstrably converts into capital:
+
+```text
+public event → attention → participation → order flow → positioning → price
+```
+
+Each transition must be verified. Do not trade because someone important said
+something. See [INFLUENCE_INTELLIGENCE.md](./INFLUENCE_INTELLIGENCE.md).
+
+### Prediction markets (future)
+
+Follow demonstrated information advantage where historical evidence shows relevant
+domain skill, observable latency permits action, and hedge blindness is acknowledged:
+
+```text
+public participant action (where legitimately observable)
+  → first observable time
+  → point-in-time participant quality and specialization
+  → position magnitude and liquidity context
+  → market price after detection
+  → remaining estimated edge
+  → simulation
+```
+
+Never implement `whale buys → automatically copy`. Prefer:
+
+> This wallet currently has a visible net YES position on this venue.
+
+over:
+
+> This trader believes YES.
+
+Kalshi-style anonymous large flow may support size and directional flow features
+without participant identity. Polymarket-style public wallet data may support
+wallet-level research where lawful — Polymarket is the platform; Polygon is a
+settlement network; do not conflate.
+
+**Prediction-market maxim:**
+
+> Do not copy the biggest bettor. Identify who repeatedly knows more than the
+> market, determine when that skill is relevant, and verify that the information
+> advantage still exists by the time you can act.
+
+See [PREDICTION_MARKET_WHALE_INTELLIGENCE.md](./PREDICTION_MARKET_WHALE_INTELLIGENCE.md)
+and [2026-08-16-prediction-markets-expansion-design.md](../superpowers/specs/2026-08-16-prediction-markets-expansion-design.md).
+
+### Central whale rule
+
+> Do not follow a whale merely because it appears large. Follow the wake only
+> when the wake is measurable, timely, economically relevant, and confirmed by
+> the surrounding market. Never assume the whale knows more than the market.
+
+### Whale confluence (transparent, not scored)
+
+Potential confluence components remain separately inspectable:
+
+```text
+verified public catalyst
++ historically influential actor/asset pair (empirical)
++ social acceleration
++ large wallet movement
++ aggressive market buying
++ OI expansion
++ acceptable funding
++ sufficient liquidity
+```
+
+No `WHALE SCORE 97` unless a rigorously validated model defines such a
+probability with full provenance. See
+[ON_CHAIN_INTELLIGENCE.md](./ON_CHAIN_INTELLIGENCE.md) and
+[CRYPTO_PROFITABILITY_RESEARCH.md](./CRYPTO_PROFITABILITY_RESEARCH.md).
+
 ## No-authority boundary
 
 Whale evidence is strategy input only. It cannot create an order intent by

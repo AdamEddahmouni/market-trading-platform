@@ -17,24 +17,47 @@ authorized by this file.
 | Phase 6 — preregistered strategy | Forecasts and whale evidence may be explicit inputs but cannot replace preregistration, abstention, or strategy semantics. | `PASS` — preregistered strategy proven on admitted fixture; Phase 7 remains unauthorized |
 | Phase 7 — risk, simulation, and accounting | Independent risk, conservative simulation, cash/position/P&L reconciliation, and attribution remain mandatory. | `PASS` — risk, simulation, and accounting proven on admitted fixture; Phase 8 remains unauthorized |
 | Phase 8 — deterministic end-to-end acceptance | Acceptance remains evidence-bound and makes no unsupported edge claim. | `PASS` — end-to-end acceptance proven on admitted fixture; ES session remains deferred |
+| UI-001 — replay-only research UI V1 | Read-only API and React frontend on admitted fixture; REPLAY mode only. | `PASS` — UI-001 proven on admitted fixture |
 
-## Proposed decisions before adoption
+## Accepted foundational ADRs (Phase 1 registry)
 
-- `ADR-DONOR-001`: component-level donor disposition and rights.
-- `ADR-RDATA-001`: immutable research dataset identity.
-- `ADR-PIT-001`: feature/label availability and leakage prevention.
-- `ADR-MODEL-001`: model spec, artifact, prediction, and reproduction identity.
-- `ADR-FCAST-001`: forecast interfaces and fallback reporting.
-- `ADR-DCACHE-001`: cache identity, byte bounds, invalidation, and replay.
-- `ADR-WHALE-001`: institutional evidence vocabulary and allowed claims.
-- `ADR-LLM-001`: provider-neutral inference and no-execution authority.
+All registry ADRs listed in Revision 3 Section 21 are `ACCEPTED`. Phase 1 is
+`PASS`. See `manifests/phase1/adr-registry.json`.
 
 An ADR cannot accept itself or authorize its own implementation.
 
 ## Later research tracks
 
-Institutional/Whale Intelligence, a grounded Market Research Assistant, and a
-Research UI remain later, separately authorized tracks. They do not run ahead of
-the serial foundation. No roadmap row grants provider access, broker access,
-model implementation, whale ingestion, AI integration, paper orders, or live
-orders.
+### Revision 3 tracks (deferred)
+
+Institutional/Whale Intelligence, a grounded Market Research Assistant, and
+expanded Research UI remain separately authorized tracks. They do not run ahead
+of the serial foundation.
+
+### Crypto & influence expansion (proposed — not authorized)
+
+Cryptocurrency as a first-class future asset family; on-chain intelligence;
+influence intelligence; cross-venue intelligence; crypto derivatives; and
+profitability research extensions are documented as a **future expansion track**:
+
+- [Crypto & Influence Expansion Design](../superpowers/specs/2026-08-16-crypto-influence-expansion-design.md)
+- [Expansion track roadmap](CRYPTO_INFLUENCE_EXPANSION_TRACK.md)
+
+No roadmap row grants provider access, broker access, on-chain ingestion, social
+API connection, model implementation, whale ingestion, AI integration, paper
+orders, or live orders.
+
+### Prediction markets expansion (proposed — not authorized)
+
+Prediction/event markets as a first-class future research and trading domain;
+event intelligence; fair-probability research; public participant intelligence;
+cross-platform and cross-asset intelligence; resolution semantics; and simulation
+extensions are documented as a **future expansion track**:
+
+- [Prediction Markets Expansion Design](../superpowers/specs/2026-08-16-prediction-markets-expansion-design.md)
+- [Prediction markets expansion track](PREDICTION_MARKETS_EXPANSION_TRACK.md)
+
+Initial provider candidates for feasibility characterization: Kalshi, Polymarket /
+Polymarket US, and other lawful API-accessible exchanges discovered during research.
+No roadmap row grants Kalshi/Polymarket adapter implementation, prediction-market
+ingestion, execution, or trading.

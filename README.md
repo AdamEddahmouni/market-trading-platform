@@ -24,6 +24,7 @@ Revision 2 remains the incorporated Phase 0 safety authority.
 | Phase 6 — preregistered strategy | `PASS` |
 | Phase 7 — risk, simulation, and accounting | `PASS` |
 | Phase 8 — deterministic end-to-end acceptance | `PASS` (ES session remains deferred per ADR-DATA-001) |
+| UI-001 — replay-only research UI V1 | `PASS` (stdlib API + `ui/` frontend subject) |
 
 The existing candidate evidence roots under `evidence/phase0/2E1E…` and
 `evidence/phase0/6B31…` bind older repository subjects. They remain immutable and
@@ -37,11 +38,37 @@ do not establish acceptance for the current repository subject.
 - [Swim With the Whales doctrine](docs/architecture/SWIM_WITH_THE_WHALES.md)
 - [Model research and historical datasets](docs/architecture/MODEL_RESEARCH_AND_DATASETS.md)
 
+## Future expansion (planning only — not authorized)
+
+- [Crypto & influence expansion design](docs/superpowers/specs/2026-08-16-crypto-influence-expansion-design.md)
+- [Crypto & influence expansion track](docs/roadmap/CRYPTO_INFLUENCE_EXPANSION_TRACK.md)
+- [Crypto architecture index](docs/architecture/CRYPTO_ASSET_AND_CAPABILITY_MODEL.md)
+- [Influence intelligence](docs/architecture/INFLUENCE_INTELLIGENCE.md)
+- [On-chain intelligence](docs/architecture/ON_CHAIN_INTELLIGENCE.md)
+- [Crypto profitability research](docs/architecture/CRYPTO_PROFITABILITY_RESEARCH.md)
+- [Experiment roadmap](docs/research/CRYPTO_INFLUENCE_EXPERIMENT_ROADMAP.md)
+- [Prediction markets expansion design](docs/superpowers/specs/2026-08-16-prediction-markets-expansion-design.md)
+- [Prediction markets expansion track](docs/roadmap/PREDICTION_MARKETS_EXPANSION_TRACK.md)
+- [Prediction market capability model](docs/architecture/PREDICTION_MARKET_CAPABILITY_MODEL.md)
+- [Prediction market probability research](docs/architecture/PREDICTION_MARKET_PROBABILITY_RESEARCH.md)
+- [Prediction market whale intelligence](docs/architecture/PREDICTION_MARKET_WHALE_INTELLIGENCE.md)
+- [Prediction markets experiment roadmap](docs/research/PREDICTION_MARKETS_EXPERIMENT_ROADMAP.md)
+
+Documentation of future interfaces is not implementation or authorization.
+
 ## Capability boundary
 
 This repository has no provider, broker, market-data runtime, whale ingestion,
-AI-trading, paper-trading, or live-trading capability. It has no Git remote.
-Documentation of future interfaces is not implementation or authorization.
+on-chain ingestion, social API connection, crypto adapter, AI-trading,
+paper-trading, or live-trading capability. It has no Git remote.
 ES-session acceptance remains blocked per `ADR-DATA-001` until lawful ES bytes
-are procured. Research UI, broker adapters, and whale ingestion require
-separate ADR authorization.
+are procured. UI-001 provides replay-only research UI on the admitted fixture.
+Broker adapters, whale ingestion, crypto expansion, and prediction-market expansion
+require separate ADR authorization and phase gates.
+
+## Research UI V1
+
+- [UI-001 design spec](docs/superpowers/specs/2026-08-18-ui-001-research-ui-v1-design.md)
+- [Short-squeeze read-only integration lane](docs/integration/SHORT_SQUEEZE_LANE.md)
+- Start API: `python tools/ui1/run_ui_api.py --serve --port 8766`
+- Frontend: see [ui/README.md](ui/README.md)
