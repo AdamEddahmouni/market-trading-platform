@@ -7,7 +7,7 @@ import uuid
 from collections.abc import Iterable
 
 _PRIVATE_PATH = re.compile(
-    r"(?i)(^|/)(\.env(?:\..*)?$|[^/]*(?:credential|secret|token|password|private[_-]?key|api[_-]?key)[^/]*$)"
+    r"(?i)(^|/)(\.env(?:\..*)?$|[^/]*(?:credential|secret|password|private[_-]?key|api[_-]?key|auth[_-]?token|access[_-]?token)[^/]*$)"
 )
 _PLACEHOLDERS = {"CHANGEME", "EXAMPLE", "PLACEHOLDER", "NOT_A_SECRET"}
 _AUDIT_SOURCE_EXCEPTIONS = {
