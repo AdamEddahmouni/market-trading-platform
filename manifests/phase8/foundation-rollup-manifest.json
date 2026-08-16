@@ -1,0 +1,21 @@
+{
+  "logical_id": "phase8.foundation_rollup_manifest",
+  "rollup_entries": [
+    {"foundation_assertion_id": "DF-001", "source_phase": "phase0a", "source_run_id": "C41AC9855C8307BFB54D836632061C521D0DE06DDA65D8467F53DB534F8D539C", "source_assertion_id": "DF-001"},
+    {"foundation_assertion_id": "DF-002", "source_phase": "phase0a", "source_run_id": "C41AC9855C8307BFB54D836632061C521D0DE06DDA65D8467F53DB534F8D539C", "source_assertion_id": "DF-002"},
+    {"foundation_assertion_id": "SC-001", "source_phase": "phase5", "source_run_id": "100C08AD0815EA015AE43D29D749A8C6E1166ED99109F20AEDEC46862213A362", "source_assertion_id": "CAP-001", "proxy": true},
+    {"foundation_assertion_id": "SC-002", "source_phase": "phase5", "source_run_id": "100C08AD0815EA015AE43D29D749A8C6E1166ED99109F20AEDEC46862213A362", "source_assertion_id": "CAP-001", "proxy": true},
+    {"foundation_assertion_id": "TC-001", "source_phase": "phase4", "source_run_id": "63ABCD8EC8CAF5C5468CD24063DC7CBC3CAC1F74F76673A47FE7E8A370C8C08A", "source_assertion_id": "TC-001"},
+    {"foundation_assertion_id": "TC-002", "source_phase": "phase2", "source_run_id": "6B44DF561E9A170A45556D1B8ADBA72275F04E1A28696BC37057D17AED22F4A5", "source_assertion_id": "TC-002"},
+    {"foundation_assertion_id": "TC-003", "source_phase": "phase4", "source_run_id": "63ABCD8EC8CAF5C5468CD24063DC7CBC3CAC1F74F76673A47FE7E8A370C8C08A", "source_assertion_id": "TC-003"},
+    {"foundation_assertion_id": "ADP-001", "source_phase": "phase3", "source_run_id": "6E7C5DAEFB52DF2EFDB1146F14766E4BE69AA2EF5855948942CF859FE445D9E0", "source_assertion_id": "ADP-001"},
+    {"foundation_assertion_id": "ADP-002", "source_phase": "phase3", "source_run_id": "6E7C5DAEFB52DF2EFDB1146F14766E4BE69AA2EF5855948942CF859FE445D9E0", "source_assertion_id": "ADP-002"},
+    {"foundation_assertion_id": "EXE-001", "source_phase": "phase7", "source_run_id": "B101693ACC598DA769ED39857E47B8F13FCC0F4E39BFF4F93282E0EDF93946B3", "source_assertion_id": "EXE-001"},
+    {"foundation_assertion_id": "EXE-002", "source_phase": "phase7", "source_run_id": "B101693ACC598DA769ED39857E47B8F13FCC0F4E39BFF4F93282E0EDF93946B3", "source_assertion_id": "EXE-002"},
+    {"foundation_assertion_id": "EXE-003", "source_phase": "phase7", "source_run_id": "B101693ACC598DA769ED39857E47B8F13FCC0F4E39BFF4F93282E0EDF93946B3", "source_assertion_id": "EXE-003"},
+    {"foundation_assertion_id": "SAFE-001", "source_phase": "phase3", "source_run_id": "6E7C5DAEFB52DF2EFDB1146F14766E4BE69AA2EF5855948942CF859FE445D9E0", "source_assertion_id": "SAFE-001"},
+    {"foundation_assertion_id": "SAFE-002", "source_phase": "phase3", "source_run_id": "6E7C5DAEFB52DF2EFDB1146F14766E4BE69AA2EF5855948942CF859FE445D9E0", "source_assertion_id": "SAFE-002"},
+    {"foundation_assertion_id": "SAFE-003", "source_phase": "phase7", "source_run_id": "B101693ACC598DA769ED39857E47B8F13FCC0F4E39BFF4F93282E0EDF93946B3", "source_assertion_id": "SAFE-003"}
+  ],
+  "schema_version": "1.0.0"
+}

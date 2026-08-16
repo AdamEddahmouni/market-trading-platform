@@ -1,7 +1,7 @@
 # Integrated Market Platform — governed foundation
 
 This repository contains the governed, CPython 3.11 standard-library-only
-foundation subject. Phases 0 through 7 are `PASS` on the admitted equity
+foundation subject. Phases 0 through 8 are `PASS` on the admitted equity
 intraday fixture (`ADMITTED-SHORTSQ-BIYA-BARS-001`). The machine-readable
 binding is [canonical-authority.json](manifests/phase0/canonical-authority.json).
 
@@ -23,7 +23,7 @@ Revision 2 remains the incorporated Phase 0 safety authority.
 | Phase 5R — research/model infrastructure | `PASS` |
 | Phase 6 — preregistered strategy | `PASS` |
 | Phase 7 — risk, simulation, and accounting | `PASS` |
-| Phase 8 — deterministic end-to-end acceptance | **next gate** (unauthorized) |
+| Phase 8 — deterministic end-to-end acceptance | `PASS` (ES session remains deferred per ADR-DATA-001) |
 
 The existing candidate evidence roots under `evidence/phase0/2E1E…` and
 `evidence/phase0/6B31…` bind older repository subjects. They remain immutable and

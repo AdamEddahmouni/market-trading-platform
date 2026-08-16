@@ -16,7 +16,7 @@ authorized by this file.
 | Phase 5R — research/model infrastructure | Under separate authority, may add research datasets, targets, model interfaces, baselines, manifests, PIT walk-forward evaluation, calibration, serialization, and artifact identity. | `PASS` — research/model infrastructure proven on admitted fixture; Phase 6 published |
 | Phase 6 — preregistered strategy | Forecasts and whale evidence may be explicit inputs but cannot replace preregistration, abstention, or strategy semantics. | `PASS` — preregistered strategy proven on admitted fixture; Phase 7 remains unauthorized |
 | Phase 7 — risk, simulation, and accounting | Independent risk, conservative simulation, cash/position/P&L reconciliation, and attribution remain mandatory. | `PASS` — risk, simulation, and accounting proven on admitted fixture; Phase 8 remains unauthorized |
-| Phase 8 — deterministic end-to-end acceptance | Acceptance remains evidence-bound and makes no unsupported edge claim. | unchanged prerequisite |
+| Phase 8 — deterministic end-to-end acceptance | Acceptance remains evidence-bound and makes no unsupported edge claim. | `PASS` — end-to-end acceptance proven on admitted fixture; ES session remains deferred |
 
 ## Proposed decisions before adoption
 
