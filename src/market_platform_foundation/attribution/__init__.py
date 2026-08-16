@@ -1,2 +1,5 @@
-"""Phase 0 structural namespace; no runtime capability."""
+"""Attribution records."""
 
+from .record import build_attribution_record
+
+__all__ = ["build_attribution_record"]

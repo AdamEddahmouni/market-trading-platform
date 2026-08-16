@@ -1,0 +1,28 @@
+{
+  "available_time": 2000000000000000010,
+  "bar_payload": {
+    "close": "110.0",
+    "high": "111.0",
+    "low": "109.0",
+    "open": "109.5",
+    "timeframe": "1_MINUTE",
+    "volume": 600
+  },
+  "channel_id": "SYNTH-CHANNEL-001",
+  "event_time": 2000000000000000009,
+  "event_type": "BAR_OHLCV_1M",
+  "historical_ingested_time": 2000000000000000010,
+  "ingest_run_id": "SYNTH-RUN-PHASE5R",
+  "instrument_id": "SYNTH-EQ-001",
+  "normalization_version": "phase5r.fixture/1.0.0",
+  "normalized_event_id": "00000000-0000-5000-8000-000000000110",
+  "operation": "UPSERT",
+  "publisher_id": "SYNTH-PUBLISHER-001",
+  "quality_observation_refs": [],
+  "raw_reference": "synthetic://fixture/phase5r/early-label",
+  "schema_version": "1.0.0",
+  "source_instance_id": "SYNTH-INSTANCE-001",
+  "source_record_id": "BAR-EARLY-LABEL",
+  "source_revision_id": "1",
+  "venue_id": "SYNTH-VENUE-001"
+}

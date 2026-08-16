@@ -39,6 +39,9 @@ def _parser() -> argparse.ArgumentParser:
     evaluate_phase5 = commands.add_parser("evaluate-phase5")
     evaluate_phase5.add_argument("--run-manifest", required=True)
     evaluate_phase5.add_argument("--output-dir", required=True)
+    evaluate_phase5r = commands.add_parser("evaluate-phase5r")
+    evaluate_phase5r.add_argument("--run-manifest", required=True)
+    evaluate_phase5r.add_argument("--output-dir", required=True)
     return parser
 
 
@@ -109,6 +112,13 @@ def main() -> int:
         from pathlib import Path
 
         from .phase5_assertions import evaluate_run
+
+        evaluate_run(Path(args.run_manifest), Path(args.output_dir))
+        return 0
+    if args.command == "evaluate-phase5r":
+        from pathlib import Path
+
+        from .phase5r_assertions import evaluate_run
 
         evaluate_run(Path(args.run_manifest), Path(args.output_dir))
         return 0

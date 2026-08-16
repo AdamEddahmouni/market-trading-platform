@@ -1,14 +1,29 @@
 # Integrated Market Platform — governed foundation
 
-This repository contains the governed, CPython 3.11 standard-library-only Phase
-0 structural and evidence subject. Its Phase 0 status is `PASS`, published per [phase-0-pass-publication](docs/superpowers/governance/2026-08-15-phase-0-pass-publication.json).
+This repository contains the governed, CPython 3.11 standard-library-only
+foundation subject. Phases 0 through 7 are `PASS` on the admitted equity
+intraday fixture (`ADMITTED-SHORTSQ-BIYA-BARS-001`). The machine-readable
+binding is [canonical-authority.json](manifests/phase0/canonical-authority.json).
 
 The active forward-looking authority is
 [Canonical Foundation Design Revision 3](docs/superpowers/specs/2026-08-14-integrated-market-platform-foundation-design-revision-3.md),
 approved at SHA-256
 `7C6AE5FC9037CA37D44CD1A2FAACD0CB821192920C46CF001541DCD2121FEB35`.
-Revision 2 remains the incorporated Phase 0 safety authority. The machine-readable
-binding is [canonical-authority.json](manifests/phase0/canonical-authority.json).
+Revision 2 remains the incorporated Phase 0 safety authority.
+
+| Phase | Status |
+|---|---|
+| Phase 0 — governance and no-live safety | `PASS` |
+| Phase 0A — data feasibility | `PASS` (non-ES equity intraday admitted) |
+| Phase 1 — foundational decisions | `PASS` |
+| Phase 2 — canonical contracts and replay | `PASS` |
+| Phase 3 — verified historical adapter | `PASS` |
+| Phase 4 — runtime quality and state | `PASS` |
+| Phase 5 — capability-supported features | `PASS` |
+| Phase 5R — research/model infrastructure | `PASS` |
+| Phase 6 — preregistered strategy | `PASS` |
+| Phase 7 — risk, simulation, and accounting | `PASS` |
+| Phase 8 — deterministic end-to-end acceptance | **next gate** (unauthorized) |
 
 The existing candidate evidence roots under `evidence/phase0/2E1E…` and
 `evidence/phase0/6B31…` bind older repository subjects. They remain immutable and
@@ -24,8 +39,9 @@ do not establish acceptance for the current repository subject.
 
 ## Capability boundary
 
-This repository has no provider, broker, market-data, model runtime, whale
-ingestion, AI-trading, strategy, paper-trading, or live-trading capability. It
-has no Git remote. Documentation of future interfaces is not implementation or
-authorization. Forecast, strategy, intent, independent risk, authorized
-execution, and accounting remain separate gates.
+This repository has no provider, broker, market-data runtime, whale ingestion,
+AI-trading, paper-trading, or live-trading capability. It has no Git remote.
+Documentation of future interfaces is not implementation or authorization.
+ES-session acceptance remains blocked per `ADR-DATA-001` until lawful ES bytes
+are procured. Research UI, broker adapters, and whale ingestion require
+separate ADR authorization.

@@ -4,12 +4,13 @@ from pathlib import Path
 
 from .canonical import sha256_bytes
 from .adapters.equity_intraday_jsonl import EquityIntradayJsonlAdapter
-from .execution.simulator import SimulatorDescriptor
+from .execution.simulator import BarConservativeSimulator, SimulatorDescriptor
 from .offline.fixture_manifest import ManifestOnlyReader
 
 _REGISTRY = {
     "offline.equity_intraday_jsonl": EquityIntradayJsonlAdapter,
     "offline.fixture_manifest": ManifestOnlyReader,
+    "simulation.bar_conservative": BarConservativeSimulator,
     "simulation.noop": SimulatorDescriptor,
 }
 
@@ -21,6 +22,10 @@ _CAPABILITIES = {
     "offline.fixture_manifest": (
         "Read an embedded, synthetic, non-market structural manifest without "
         "filesystem discovery."
+    ),
+    "simulation.bar_conservative": (
+        "Conservative bar-only execution simulation for BAR_OHLCV_1M capability; "
+        "no broker routing."
     ),
     "simulation.noop": (
         "Expose a non-routing simulator descriptor; no order, fill, account, "

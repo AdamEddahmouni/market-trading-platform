@@ -12,10 +12,10 @@ authorized by this file.
 | Phase 2 — canonical contracts and replay | Establish identity, availability, revision, quality, and deterministic replay contracts before model work. | `PASS` — contracts and replay proven on synthetics; Phase 3 remains unauthorized |
 | Phase 3 — verified historical adapter | Prove admitted source capability and dataset manifests before market-model evaluation. | `PASS` — admitted equity intraday source normalized; Phase 4 remains unauthorized |
 | Phase 4 — runtime quality and state | Establish quality and state behavior; caches may not weaken replay determinism. | `PASS` — bar quality replay and cache proven on admitted fixture; Phase 5 remains unauthorized |
-| Phase 5 — capability-supported features | Add only evidence dimensions actually supported by admitted data; institutional interfaces cannot imply unavailable capabilities. | `PASS` — capability-supported features proven on admitted fixture; Phase 5R remains unauthorized |
-| Phase 5R — research/model infrastructure | Under separate authority, may add research datasets, targets, model interfaces, baselines, manifests, PIT walk-forward evaluation, calibration, serialization, and artifact identity. | new gated phase; not authorized |
-| Phase 6 — preregistered strategy | Forecasts and whale evidence may be explicit inputs but cannot replace preregistration, abstention, or strategy semantics. | unchanged prerequisite |
-| Phase 7 — risk, simulation, and accounting | Independent risk, conservative simulation, cash/position/P&L reconciliation, and attribution remain mandatory. | unchanged prerequisite |
+| Phase 5 — capability-supported features | Add only evidence dimensions actually supported by admitted data; institutional interfaces cannot imply unavailable capabilities. | `PASS` — capability-supported features proven on admitted fixture; Phase 5R published |
+| Phase 5R — research/model infrastructure | Under separate authority, may add research datasets, targets, model interfaces, baselines, manifests, PIT walk-forward evaluation, calibration, serialization, and artifact identity. | `PASS` — research/model infrastructure proven on admitted fixture; Phase 6 published |
+| Phase 6 — preregistered strategy | Forecasts and whale evidence may be explicit inputs but cannot replace preregistration, abstention, or strategy semantics. | `PASS` — preregistered strategy proven on admitted fixture; Phase 7 remains unauthorized |
+| Phase 7 — risk, simulation, and accounting | Independent risk, conservative simulation, cash/position/P&L reconciliation, and attribution remain mandatory. | `PASS` — risk, simulation, and accounting proven on admitted fixture; Phase 8 remains unauthorized |
 | Phase 8 — deterministic end-to-end acceptance | Acceptance remains evidence-bound and makes no unsupported edge claim. | unchanged prerequisite |
 
 ## Proposed decisions before adoption
