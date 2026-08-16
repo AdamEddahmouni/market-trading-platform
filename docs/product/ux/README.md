@@ -1,41 +1,35 @@
 # UX Foundation V0 — Integrated Market Platform
 
-**Status:** `PROPOSED` — planning artifact; ADR-UX-001 `ACCEPTED` 2026-08-16  
+**Status:** Planning artifact + UI-001 implementation (`PASS`); ADR-UX-001 `ACCEPTED` 2026-08-16; ADR-UX-002 `ACCEPTED` 2026-08-18  
 **Created:** 2026-08-15  
-**Authority:** Subordinate to [Revision 3](../../superpowers/specs/2026-08-14-integrated-market-platform-foundation-design-revision-3.md) and [Swim With the Whales](../../architecture/SWIM_WITH_THE_WHALES.md)
+**Authority:** Subordinate to [Revision 3](../../superpowers/specs/2026-08-14-integrated-market-platform-foundation-design-revision-3.md), [Swim With the Whales](../../architecture/SWIM_WITH_THE_WHALES.md), [Crypto & Influence Expansion](../../superpowers/specs/2026-08-16-crypto-influence-expansion-design.md) (planning only), and [Prediction Markets Expansion](../../superpowers/specs/2026-08-16-prediction-markets-expansion-design.md) (planning only)
 
 ## Purpose
 
-This directory contains the **UX Foundation V0** planning workstream: information architecture, interaction models, explainability contracts, wireframes, and backend UI requirements for the future Integrated Market Platform interface.
-
-This is **not** frontend implementation authorization. No production UI, charting framework selection, broker controls, or live data connections are implied.
+This directory contains UX Foundation V0 planning plus UI-001 implementation
+bindings. Production frontend lives in [`ui/`](../../ui/) under separate npm subject.
 
 ## Governance placement
 
 | Property | Value |
 |---|---|
 | Location | `docs/product/ux/` |
-| Governed evidence root? | **No** — planning documentation outside `evidence/` |
-| Modifies canonical contracts? | **No** |
-| Authorizes implementation? | **No** |
+| Governed evidence root? | **No** for planning docs; UI-001 evidence under `evidence/ui1/` |
+| Modifies canonical contracts? | **No** — API projects existing contracts |
+| Authorizes implementation? | **UI-001 only** — replay-only V1 per [design spec](../../superpowers/specs/2026-08-18-ui-001-research-ui-v1-design.md) |
 | Donor project impact | **None** — reference only |
-
-If UX planning artifacts later require formal acceptance (e.g., as a phase gate input), a separate governance decision and evidence transition would be required.
 
 ## Current platform boundary (as of inspection)
 
 | Area | State |
 |---|---|
-| Phases 0–5 | `PASS` per `manifests/phase0/canonical-authority.json` |
-| Phase 5R | `PASS` per `manifests/phase0/canonical-authority.json` |
-| Phase 6 | `PASS` per `manifests/phase0/canonical-authority.json` |
-| ADR-UX-001 | `ACCEPTED` — UX architecture binding; not implementation authorization |
-| Research UI track | Explicitly **later, separately authorized** per Revision 3 roadmap |
-| Frontend code in canonical repo | **None** |
-| Admitted data capability | Non-ES equity intraday OHLCV fixture; institutional interfaces fail-closed to `unavailable` |
+| Phases 0–8 | `PASS` per `manifests/phase0/canonical-authority.json` |
+| UI-001 | `PASS` — replay-only API + React frontend on admitted fixture |
+| ADR-UX-001 | `ACCEPTED` — UX architecture binding |
+| ADR-UX-002 | `ACCEPTED` — Lightweight Charts + responsive web scope |
+| Frontend code | `ui/` React subject (npm isolated from foundation `src/`) |
+| Admitted data capability | Non-ES equity intraday OHLCV fixture; institutional interfaces fail-closed |
 | Live/paper/broker | **Not authorized** |
-
-**Documentation note:** Roadmap and UX README are aligned with canonical authority as of Phase 6 publication.
 
 ## Design thesis
 

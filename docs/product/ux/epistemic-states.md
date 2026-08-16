@@ -7,7 +7,7 @@
 
 | Class | Definition | Examples | Metadata to show |
 |---|---|---|---|
-| **OBSERVED** | Directly reported source data | Trade, quote, filing, price | Source, time, freshness, quality |
+| **OBSERVED** | Directly reported source data | Trade, quote, filing, price, on-chain tx, social post at first observation | Source, time, freshness, quality |
 | **DERIVED** | Deterministic transformation | CVD, OFI, rel volume, calculated Greeks | Method, version, inputs, source quality |
 | **INFERRED** | Heuristic/interpretive | Absorption, accumulation evidence, squeeze state | Supporting/conflicting evidence, confidence when meaningful |
 | **MODEL** | Statistical/ML prediction | Forecast, probability | Target, horizon, model ID, calibration, uncertainty |
@@ -83,6 +83,20 @@ Examples:
 - `ABSTAIN — evidence conflicting`
 - `ABSTAIN — liquidity insufficient`
 - `UNAVAILABLE — depth capability not entitled`
+
+## Crypto and influence examples
+
+| Display | Class | Notes |
+|---|---|---|
+| `Elon posted X` (verified actor) | OBSERVED | Link to raw post; first_observed_at |
+| `DOGE mentions +800% (5m)` | DERIVED | Snapshot-based velocity, not final engagement |
+| `Influence regime elevated` | INFERRED | Supporting/conflicting evidence listed |
+| `P(+return 5m)=0.64` | MODEL | Calibration required; not a buy score |
+| `MOMENTUM WATCH` | STRATEGY | Rule satisfaction explicit |
+| `REJECT — spread too wide` | RISK | Independent of strategy |
+| `Large exchange inflow` | OBSERVED/DERIVED | Flow observation vs normalized size |
+| `Wallet labeled: exchange` | INFERRED | Label confidence + source in inspector |
+| `Funding extremely positive` | DERIVED | May conflict with price action — show both |
 
 ## Quality states (orthogonal to epistemic class)
 

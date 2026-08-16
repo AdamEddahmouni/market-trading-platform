@@ -31,6 +31,14 @@ One unified shell per instrument (`NVDA`, `ES`, …). Users never hunt across di
 | Options | Options entitlement | `UNAVAILABLE — not entitled` |
 | Short Squeeze | Squeeze engine + data | `UNAVAILABLE` |
 | Institutional Flow | Any institutional family entitled | `UNAVAILABLE — no entitled sources` |
+| Derivatives | Perp/futures/options capability | `UNAVAILABLE — not entitled` |
+| On-Chain | On-chain ingestion entitled | `UNAVAILABLE — no on-chain source` |
+| Influence | Social/influence events entitled | `UNAVAILABLE — no influence source` |
+| Probability | Prediction market entitled | `UNAVAILABLE — no prediction source` |
+| Resolution | Prediction market rules entitled | `UNAVAILABLE — no resolution source` |
+| Whales (prediction) | Public participant data entitled | `UNAVAILABLE — participant data not exposed` |
+| Related Markets | Cross-mapped prediction events | Partial when mapping incomplete |
+| Narrative | Narrative engine + social data | `UNAVAILABLE` |
 | Catalysts | News/filing capability | Partial with delays labeled |
 | Models | Model artifacts exist | `UNAVAILABLE` |
 | Historical Context | Historical data | — |
@@ -51,6 +59,13 @@ Tier 1–2 content only:
 
 ## Capability-adaptive examples
 
+### DOGE (crypto — when admitted)
+- Adds 24/7 session context, venue identity, stablecoin quote awareness
+- Derivatives tab when perp/options entitled; funding/OI/liquidations labeled DERIVED
+- On-Chain tab when entitled; entity labels show confidence and source
+- Influence tab when entitled; first_observed_at and engagement snapshots in inspector
+- Order Flow when trade/depth entitled; aggressor provenance explicit
+
 ### NVDA (equity, OHLCV-only phase)
 - Order Flow tab: `UNAVAILABLE — aggressor classification requires trade feed`
 - Options: `UNAVAILABLE — options data not admitted`
@@ -59,6 +74,16 @@ Tier 1–2 content only:
 ### ES (futures — when admitted)
 - Adds session/contract context, roll awareness
 - Order Flow when depth entitled
+
+### FED CUT BY SEPTEMBER (prediction market — when admitted)
+- Probability tab: executable bid/ask vs midpoint vs model fair — labeled separately
+- Order Book and Trades when entitled; spread and liquidity quality explicit
+- Whales tab when public participant data entitled; identity only where legitimately public
+- Our Model tab: calibration, resolution risk, after-cost edge — not "guaranteed edge"
+- Resolution tab: full rules, version history, semantic risk, amendment alerts
+- Related Markets: cross-venue mapped contracts with `settlement_equivalent` flag
+- Underlying Data / News/Influence: macro feeds and influence events linked PIT
+- Cross-asset Market Story: prediction repricing → treasuries → ES/NQ → BTC when entitled
 
 ## Market Story integration
 
@@ -92,6 +117,8 @@ Open secondary instrument in split view or sync group without leaving cockpit sh
 | Institutional Flow | Institutional + Catalysts + Options |
 | Replay Analysis | Price + Order Flow + Story + Replay controls |
 | Model Research | Models + Historical + Evidence |
+| Prediction Market Research | Probability + Our Model + Resolution + Whales + Related Markets |
+| Cross-Asset Event | Probability + Related Markets + Story (multi-asset sync) |
 
 Users duplicate/customize; defaults ship first-run.
 

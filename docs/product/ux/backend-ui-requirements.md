@@ -1,6 +1,6 @@
 # Backend UI Contract Requirements
 
-**Status:** `PROPOSED` — requirements for future API design; **not** implementation authorization
+**Status:** `ACCEPTED` — contracts for UI-001 V1 API; bound to `manifests/ui1/`
 
 These contracts must be designed after canonical internal contracts (Phase 2+) and exposed via stable read-only research APIs (Revision 3 Section 17) before production UI.
 
@@ -145,9 +145,9 @@ Position, fill, P&L, risk evaluation — separate from strategy state.
 | DOM/depth | Not admitted |
 | Institutional data | Interfaces exist; fail-closed unavailable |
 | CVD/OFI | Not on admitted fixture (bar-only features) |
-| Replay UI | Phase 2 contracts exist; no UI API |
-| Explanation refs | Not implemented |
-| Attention ranking | Not implemented |
+| Replay UI | UI-001 stdlib API + React frontend on admitted fixture |
+| Explanation refs | UI-001 `/explain` and `/inspect` endpoints |
+| Attention ranking | UI-001 `/attention` with reason codes |
 
 UI prototypes must use **labeled mock boundaries** until contracts exist.
 

@@ -1,6 +1,6 @@
 # UX Design Decisions
 
-**Status registry** — UX-001 through UX-037 accepted via ADR-UX-001 principal review (2026-08-16), except UX-015/UX-016.
+**Status registry** — UX-001 through UX-037 accepted via ADR-UX-001 principal review (2026-08-16). UX-015/UX-016 accepted via [ADR-UX-002](ADR-UX-002-toolchain-decisions.md) (2026-08-18).
 
 | ID | Topic | Recommendation | Status |
 |---|---|---|---|
@@ -18,8 +18,8 @@
 | UX-012 | Command palette | Ctrl/Cmd+K | ACCEPTED — ADR-UX-001 |
 | UX-013 | Accessibility baseline | WCAG 2.2 AA target | ACCEPTED — ADR-UX-001 |
 | UX-014 | Attention ranking visibility | Reason codes yes; opaque score no | ACCEPTED — ADR-UX-001 |
-| UX-015 | Chart framework | **NEEDS DECISION** — defer until prototype | NEEDS DECISION |
-| UX-016 | PWA/offline scope | **NEEDS DECISION** | NEEDS DECISION |
+| UX-015 | Chart framework | Lightweight Charts for OHLCV; CSS/SVG sparklines for micro charts | ACCEPTED — [ADR-UX-002](ADR-UX-002-toolchain-decisions.md) |
+| UX-016 | PWA/offline scope | Responsive web only; no PWA/service worker in V1 | ACCEPTED — [ADR-UX-002](ADR-UX-002-toolchain-decisions.md) |
 | UX-017 | Research UI phase gate | Separate authorization before implementation | ACCEPTED (per Rev 3 roadmap) |
 | UX-018 | Live/paper execution UI | Separate activation; not in Foundation V0 | ACCEPTED (per no-live boundary) |
 | UX-019 | Inspector default tab | SUMMARY (EVIDENCE via preference later) | ACCEPTED — [design review](../design-review-2026-08-15.md) |
@@ -61,3 +61,8 @@ Open questions resolved in [design-review-2026-08-15.md](../design-review-2026-0
 **Governance approval:** [2026-08-15-adr-ux-001-governance-approval.json](2026-08-15-adr-ux-001-governance-approval.json)
 
 Acceptance records the UX architecture decision only — not production implementation authorization.
+
+## ADR-UX-002 (2026-08-18)
+
+**Status:** `ACCEPTED` — [ADR-UX-002](ADR-UX-002-toolchain-decisions.md)  
+Resolves UX-015 (Lightweight Charts) and UX-016 (responsive web only) for UI-001 authorization.

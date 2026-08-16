@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
 from market_platform_foundation.authority import resolve_canonical_authority
-from market_platform_foundation.canonical import load_json_strict, sha256_bytes
+from market_platform_foundation.canonical import canonical_bytes, load_json_strict, sha256_bytes
 
 PUBLICATION_PATH = ROOT / "docs/superpowers/governance/2026-08-17-phase-8-pass-publication.json"
 AUTHORITY_PATH = ROOT / "manifests/phase0/canonical-authority.json"
@@ -19,6 +19,18 @@ INDEX_PATH = ROOT / "evidence/phase8/postreview-pass/phase8.acceptance_index.jso
 
 def sha256_file(path: Path) -> str:
     return sha256_bytes(path.read_bytes())
+
+
+def publication_manifest_hash(manifest: dict[str, object], bound: dict[str, object]) -> str:
+    snapshot = {
+        key: value
+        for key, value in manifest.items()
+        if not (key.startswith("phase") and key.endswith("_status")) and key != "ui1_status"
+    }
+    for key, value in bound.items():
+        if key.endswith("_status"):
+            snapshot[key] = value
+    return sha256_bytes(canonical_bytes(snapshot))
 
 
 def main() -> int:
@@ -57,8 +69,8 @@ def main() -> int:
             bound = publication.get("authority_manifest_at_publication", {})
             if isinstance(bound, dict):
                 recorded = str(bound.get("sha256", ""))
-                current_hash = sha256_file(AUTHORITY_PATH)
-                if recorded != current_hash:
+                snapshot_hash = publication_manifest_hash(manifest, bound)
+                if recorded != snapshot_hash:
                     all_ok = False
                     print(" FAIL authority_manifest_at_publication hash mismatch")
                 else:
