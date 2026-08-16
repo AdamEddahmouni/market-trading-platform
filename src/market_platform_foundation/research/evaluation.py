@@ -6,7 +6,7 @@ from typing import Any
 
 from ..canonical import canonical_bytes, sha256_bytes
 from .baseline_naive import MODEL_FAMILY, NaiveLastValueModel, PREPROCESSING_STATE_HASH
-from .dataset_manifest import build_dataset_manifest, materialize_dataset_rows
+from .dataset_pipeline import build_research_dataset_from_events
 from .forecast import verify_forecast_interface
 from .model_spec import build_model_identity
 from .targets import DEFAULT_HORIZON_NS, build_target_rows, verify_label_availability
@@ -18,8 +18,7 @@ def run_walk_forward_evaluation(
     *,
     horizon_ns: int = DEFAULT_HORIZON_NS,
 ) -> dict[str, object]:
-    rows = materialize_dataset_rows(events)
-    manifest = build_dataset_manifest(rows)
+    rows, manifest = build_research_dataset_from_events(events)
     dataset_fp = str(manifest["dataset_fingerprint"])
     targets = build_target_rows(rows, horizon_ns=horizon_ns)
     label_status, label_reasons = verify_label_availability(targets, horizon_ns=horizon_ns)
