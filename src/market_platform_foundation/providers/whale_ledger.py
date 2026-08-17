@@ -13,7 +13,9 @@ from .composition import ProviderComposition, configure_provider_composition
 
 WHALE_ENTITLED_DISCLOSURE = "WHALE_ENTITLED_DISCLOSURE"
 WHALE_ENTITLED_ORDER_FLOW = "WHALE_ENTITLED_ORDER_FLOW"
+WHALE_ENTITLED_OPTIONS = "WHALE_ENTITLED_OPTIONS"
 ORDER_FLOW_FAMILY = "order_flow"
+OPTIONS_FAMILY = "options"
 LEDGER_LOGICAL_ID = "providers.whale_ledger"
 
 
@@ -130,6 +132,45 @@ class WhaleLedger:
             )
         return summaries
 
+    def query_options_summaries(
+        self,
+        *,
+        instrument_id: str,
+        prediction_cutoff: int,
+    ) -> list[dict[str, Any]]:
+        events = self.query_events(
+            family=OPTIONS_FAMILY,
+            instrument_id=instrument_id,
+            prediction_cutoff=prediction_cutoff,
+        )
+        summaries: list[dict[str, Any]] = []
+        for event in events:
+            payload = _event_payload(event)
+            if not isinstance(payload, dict):
+                continue
+            summaries.append(
+                {
+                    "ask": payload.get("ask"),
+                    "available_time": int(event.get("available_time", 0)),
+                    "bid": payload.get("bid"),
+                    "confirmation_score": payload.get("confirmation_score"),
+                    "direction_label": payload.get("direction_label"),
+                    "epistemic_class": payload.get("epistemic_class"),
+                    "event_time": payload.get("event_time"),
+                    "expiry": payload.get("expiry"),
+                    "iv_rank": payload.get("iv_rank"),
+                    "liquidity_ok": payload.get("liquidity_ok"),
+                    "liquidity_reasons": payload.get("liquidity_reasons"),
+                    "normalized_event_id": event.get("normalized_event_id"),
+                    "open_interest": payload.get("open_interest"),
+                    "option_type": payload.get("option_type"),
+                    "strike": payload.get("strike"),
+                    "volume": payload.get("volume"),
+                    "volume_oi_ratio": payload.get("volume_oi_ratio"),
+                }
+            )
+        return summaries
+
     def root_hash(self) -> str:
         body = {
             "events": [
@@ -213,6 +254,10 @@ def build_ledger_from_edgar_fixture(
 
 
 def build_combined_fixture_ledger(*, as_of_time_ns: int | None = None) -> WhaleLedger:
+    from .adapters.fixture_options import (
+        DEFAULT_OPTIONS_FIXTURE,
+        FixtureOptionsProvider,
+    )
     from .adapters.fixture_order_flow import (
         DEFAULT_ORDER_FLOW_FIXTURE,
         FixtureOrderFlowProvider,
@@ -224,6 +269,11 @@ def build_combined_fixture_ledger(*, as_of_time_ns: int | None = None) -> WhaleL
     result = order_flow.fetch_order_flow(symbol, as_of_time_ns=as_of_time_ns)
     if result.status == "available":
         ledger.ingest_provider_result(result.events)
+    options = FixtureOptionsProvider(fixture_path=DEFAULT_OPTIONS_FIXTURE)
+    options_symbol = str(options._fixture.get("symbol", "BIYA"))
+    options_result = options.fetch_options_activity(options_symbol, as_of_time_ns=as_of_time_ns)
+    if options_result.status == "available":
+        ledger.ingest_provider_result(options_result.events)
     return ledger
 
 
@@ -240,8 +290,10 @@ def bootstrap_default_providers(*, as_of_time_ns: int | None = None) -> WhaleLed
 
 __all__ = [
     "LEDGER_LOGICAL_ID",
+    "OPTIONS_FAMILY",
     "ORDER_FLOW_FAMILY",
     "WHALE_ENTITLED_DISCLOSURE",
+    "WHALE_ENTITLED_OPTIONS",
     "WHALE_ENTITLED_ORDER_FLOW",
     "WhaleLedger",
     "bootstrap_default_providers",

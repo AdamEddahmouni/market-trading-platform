@@ -115,6 +115,7 @@ export function WorkspacePage({
           <Link className="active" to={`/workspace/${instrumentId}`}>Overview</Link>
           <Link to={`/workspace/${instrumentId}/squeeze`}>Short Squeeze</Link>
           <Link to={`/workspace/${instrumentId}/order-flow`}>Order Flow</Link>
+          <Link to={`/workspace/${instrumentId}/options`}>Options</Link>
         </nav>
       </header>
 

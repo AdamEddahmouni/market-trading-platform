@@ -23,6 +23,7 @@ TEST_DIRECTORIES: tuple[str, ...] = (
     "phase8",
     "phase9",
     "phase10",
+    "phase11",
     "storage",
     "assistant",
     "donor_bridge",

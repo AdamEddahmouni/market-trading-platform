@@ -27,6 +27,7 @@ Revision 2 remains the incorporated Phase 0 safety authority.
 | UI-001 — replay-only research UI V1 | `PASS` (stdlib API + `ui/` frontend subject) |
 | Phase 9 — provider contracts and EDGAR whale ledger | `PASS` (fixture-first `regulatory_disclosure` on BIYA) |
 | Phase 10 — whale order_flow family | `PASS` (fixture-first `order_flow` on NVDA slice) |
+| Phase 11 — whale options family | `PASS` (fixture-first `options` on BIYA slice) |
 
 The existing candidate evidence roots under `evidence/phase0/2E1E…` and
 `evidence/phase0/6B31…` bind older repository subjects. They remain immutable and
@@ -63,8 +64,9 @@ Documentation of future interfaces is not implementation or authorization.
 This repository has no live broker, market-data runtime, on-chain ingestion,
 social API connection, crypto adapter, AI-trading, paper-trading, or live-trading
 capability. It has no Git remote. Phase 9 provides fixture-first SEC EDGAR
-disclosure ingestion for the `regulatory_disclosure` whale family on BIYA only and
-fixture-first order-flow ingestion for the `order_flow` family on NVDA only;
+disclosure ingestion for the `regulatory_disclosure` whale family on BIYA only,
+fixture-first order-flow ingestion for the `order_flow` family on NVDA only, and
+fixture-first options ingestion for the `options` family on BIYA only;
 all other provider capabilities remain fail-closed stubs.
 ES-session acceptance remains blocked per `ADR-DATA-001` until lawful ES bytes
 are procured. UI-001 provides replay-only research UI on the admitted fixture.

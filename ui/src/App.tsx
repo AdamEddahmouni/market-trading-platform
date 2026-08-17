@@ -18,6 +18,7 @@ import { ExplorePage } from "./components/ExplorePage";
 import { ResearchPage } from "./components/ResearchPage";
 import { SqueezeWorkspacePage } from "./components/squeeze/SqueezeWorkspacePage";
 import { OrderFlowWorkspacePage } from "./components/orderflow/OrderFlowWorkspacePage";
+import { OptionsWorkspacePage } from "./components/options/OptionsWorkspacePage";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { NavShell } from "./components/NavShell";
 import { NowPage } from "./components/NowPage";
@@ -210,6 +211,15 @@ function Shell() {
               path="/workspace/:symbol/order-flow"
               element={
                 <OrderFlowWorkspacePage
+                  onExplain={openExplainRef}
+                  onInspect={openInspectRef}
+                />
+              }
+            />
+            <Route
+              path="/workspace/:symbol/options"
+              element={
+                <OptionsWorkspacePage
                   onExplain={openExplainRef}
                   onInspect={openInspectRef}
                 />

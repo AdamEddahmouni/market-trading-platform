@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..features.institutional import WHALE_FAMILIES, ORDER_FLOW_FAMILY, REGULATORY_DISCLOSURE_FAMILY
-from ..providers.projections import disclosure_available, order_flow_available
+from ..features.institutional import OPTIONS_FAMILY, WHALE_FAMILIES, ORDER_FLOW_FAMILY, REGULATORY_DISCLOSURE_FAMILY
+from ..providers.projections import disclosure_available, options_available, order_flow_available
 from .store import ReplayStore
 
 CAPABILITY_DEFINITIONS: tuple[tuple[str, str], ...] = (
@@ -48,6 +48,10 @@ def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
     )
     order_flow_ready = order_flow_available(
         instrument_id="NVDA",
+        prediction_cutoff=store.prediction_cutoff(),
+    )
+    options_ready = options_available(
+        instrument_id=store.instrument_id,
         prediction_cutoff=store.prediction_cutoff(),
     )
     for capability_id, label in CAPABILITY_DEFINITIONS:
@@ -108,6 +112,15 @@ def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
             )
             continue
         if family == ORDER_FLOW_FAMILY and order_flow_ready:
+            rows.append(
+                {
+                    "capability_id": f"whale.{family}",
+                    "explanation_ref": f"cap:whale.{family}",
+                    "state": "AVAILABLE",
+                }
+            )
+            continue
+        if family == OPTIONS_FAMILY and options_ready:
             rows.append(
                 {
                     "capability_id": f"whale.{family}",
@@ -417,6 +430,24 @@ def build_explain_payload(store: ReplayStore, ref: str) -> dict[str, object]:
             "meaning": f"Regulatory disclosure feed for {symbol.upper()}",
             "ref": ref,
             "why": str(disclosure.get("disclaimer", "")),
+        }
+    elif ref.startswith("explain:options:"):
+        symbol = ref.removeprefix("explain:options:")
+        from ..providers.projections import build_workspace_options_payload
+
+        options = build_workspace_options_payload(
+            symbol,
+            as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
+        )
+        if not options.get("available"):
+            raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+        body = {
+            "alignment_summary": f"{options.get('activity_count', 0)} options activity event(s)",
+            "level": 2,
+            "meaning": f"Options unusual-activity feed for {symbol.upper()}",
+            "ref": ref,
+            "why": str(options.get("disclaimer", "")),
         }
     else:
         raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")

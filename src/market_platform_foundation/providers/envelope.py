@@ -153,6 +153,110 @@ def build_order_flow_envelope(
     return envelope
 
 
+def build_options_envelope(
+    *,
+    normalized_event_id: str,
+    source_record_id: str,
+    instrument_id: str,
+    event_time_ns: int,
+    available_time_ns: int,
+    ingest_run_id: str,
+    provider_metadata: dict[str, Any],
+    whale_event: dict[str, Any],
+) -> dict[str, Any]:
+    envelope = {
+        "available_time": available_time_ns,
+        "channel_id": str(
+            provider_metadata.get("symbol_mapping", {}).get("provider_symbol", instrument_id)
+        ),
+        "event_time": event_time_ns,
+        "event_type": "OPTIONS_EVENT",
+        "historical_ingested_time": available_time_ns,
+        "ingest_run_id": ingest_run_id,
+        "instrument_id": instrument_id,
+        "live_received_time": None,
+        "normalization_version": PROVIDER_NORMALIZATION_VERSION,
+        "normalized_event_id": normalized_event_id,
+        "operation": "UPSERT",
+        "provider_metadata": provider_metadata,
+        "publisher_id": str(provider_metadata.get("provider_id", "unknown")),
+        "quality_observation_refs": [],
+        "raw_reference": str(provider_metadata.get("raw_source_reference", "")),
+        "schema_version": PROVIDER_EVENT_SCHEMA,
+        "source_instance_id": str(provider_metadata.get("provider_id", "unknown")),
+        "source_publish_time": event_time_ns,
+        "source_record_id": source_record_id,
+        "source_revision_id": whale_event.get("source_revision_id", "1"),
+        "source_sequence": None,
+        "supersedes_event_id": None,
+        "venue_id": str(
+            provider_metadata.get("symbol_mapping", {}).get("venue_id", "US_EQUITY")
+        ),
+        "whale_event": whale_event,
+    }
+    timestamp_states = {
+        "event_time": "REQUIRED",
+        "source_publish_time": "REQUIRED",
+        "live_received_time": "FORBIDDEN",
+        "historical_ingested_time": "REQUIRED",
+        "available_time": "REQUIRED",
+    }
+    reasons = validate_envelope(
+        envelope,
+        timestamp_states=timestamp_states,
+        acquisition_mode="historical",
+    )
+    if reasons:
+        raise ValueError(f"PROVIDER_ENVELOPE_INVALID:{','.join(reasons)}")
+    return envelope
+
+
+def activity_to_options_event(
+    *,
+    event_time: str,
+    strike: float,
+    expiry: str,
+    option_type: str,
+    volume: int,
+    open_interest: int,
+    volume_oi_ratio: float,
+    iv_rank: float,
+    bid: float,
+    ask: float,
+    liquidity_ok: bool,
+    liquidity_reasons: list[str],
+    confirmation_score: float,
+    direction_label: str,
+    volume_ratio: float,
+    skew_signal: float,
+    source: str,
+    source_revision_id: str = "1",
+) -> dict[str, Any]:
+    return {
+        "ask": ask,
+        "bid": bid,
+        "confirmation_score": round(confirmation_score, 2),
+        "direction_label": direction_label,
+        "epistemic_class": "DERIVED",
+        "event_time": event_time,
+        "expiry": expiry,
+        "family": "options",
+        "iv_rank": iv_rank,
+        "liquidity_ok": liquidity_ok,
+        "liquidity_reasons": liquidity_reasons,
+        "open_interest": open_interest,
+        "option_type": option_type,
+        "research_only": True,
+        "skew_signal": skew_signal,
+        "source": source,
+        "source_revision_id": source_revision_id,
+        "strike": strike,
+        "volume": volume,
+        "volume_oi_ratio": volume_oi_ratio,
+        "volume_ratio": volume_ratio,
+    }
+
+
 def bar_to_order_flow_event(
     *,
     bar_time: str,
@@ -212,8 +316,10 @@ def filing_to_disclosure_event(
 __all__ = [
     "PROVIDER_EVENT_SCHEMA",
     "PROVIDER_NORMALIZATION_VERSION",
+    "activity_to_options_event",
     "bar_to_order_flow_event",
     "build_disclosure_envelope",
+    "build_options_envelope",
     "build_order_flow_envelope",
     "build_provider_metadata",
     "filing_to_disclosure_event",

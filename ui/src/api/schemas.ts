@@ -318,12 +318,46 @@ export const WorkspaceOrderFlowResponseSchema = z.object({
   as_of_context: AsOfContextSchema.optional(),
 });
 
+export const WorkspaceOptionsActivitySchema = z.object({
+  ask: z.number().optional(),
+  available_time: z.number().optional(),
+  bid: z.number().optional(),
+  confirmation_score: z.number().optional(),
+  direction_label: z.string().optional(),
+  epistemic_class: z.string().optional(),
+  event_time: z.string().nullable().optional(),
+  expiry: z.string().optional(),
+  iv_rank: z.number().optional(),
+  liquidity_ok: z.boolean().optional(),
+  liquidity_reasons: z.array(z.string()).optional(),
+  normalized_event_id: z.string().optional(),
+  open_interest: z.number().optional(),
+  option_type: z.string().optional(),
+  strike: z.number().optional(),
+  volume: z.number().optional(),
+  volume_oi_ratio: z.number().optional(),
+});
+
+export const WorkspaceOptionsResponseSchema = z.object({
+  symbol: z.string(),
+  available: z.boolean(),
+  reason: z.string().optional(),
+  disclaimer: z.string().optional(),
+  research_only: z.boolean().optional(),
+  activity_count: z.number().optional(),
+  activities: z.array(WorkspaceOptionsActivitySchema).optional(),
+  provider_id: z.string().optional(),
+  ledger_id: z.string().optional(),
+  as_of_context: AsOfContextSchema.optional(),
+});
+
 export type ResearchAnalyticsResponse = z.infer<typeof ResearchAnalyticsResponseSchema>;
 export type AsOfContext = z.infer<typeof AsOfContextSchema>;
 export type AttentionItem = z.infer<typeof AttentionItemSchema>;
 export type ExploreSqueezeResponse = z.infer<typeof ExploreSqueezeResponseSchema>;
 export type WorkspaceSqueezeResponse = z.infer<typeof WorkspaceSqueezeResponseSchema>;
 export type WorkspaceOrderFlowResponse = z.infer<typeof WorkspaceOrderFlowResponseSchema>;
+export type WorkspaceOptionsResponse = z.infer<typeof WorkspaceOptionsResponseSchema>;
 export type ReplaySession = z.infer<typeof ReplaySessionSchema>;
 
 export const ADMITTED_REPLAY_INSTRUMENT_ID = "BIYA";

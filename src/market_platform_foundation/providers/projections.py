@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..features.institutional import get_institutional_ledger
-from ..providers.whale_ledger import ORDER_FLOW_FAMILY
+from ..providers.whale_ledger import OPTIONS_FAMILY, ORDER_FLOW_FAMILY
 
 
 def disclosure_available(*, instrument_id: str, prediction_cutoff: int) -> bool:
@@ -26,6 +26,18 @@ def order_flow_available(*, instrument_id: str, prediction_cutoff: int) -> bool:
         return False
     events = ledger.query_events(
         family=ORDER_FLOW_FAMILY,
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    return bool(events)
+
+
+def options_available(*, instrument_id: str, prediction_cutoff: int) -> bool:
+    ledger = get_institutional_ledger()
+    if ledger is None:
+        return False
+    events = ledger.query_events(
+        family=OPTIONS_FAMILY,
         instrument_id=instrument_id,
         prediction_cutoff=prediction_cutoff,
     )
@@ -129,9 +141,60 @@ def build_workspace_order_flow_payload(
     }
 
 
+def build_workspace_options_payload(
+    symbol: str,
+    *,
+    as_of_context: dict[str, object],
+    prediction_cutoff: int,
+) -> dict[str, Any]:
+    instrument_id = symbol.upper()
+    ledger = get_institutional_ledger()
+    if ledger is None:
+        return {
+            "activities": [],
+            "as_of_context": as_of_context,
+            "available": False,
+            "disclaimer": "Options evidence not entitled. Fail-closed per ADR-WHALE-001.",
+            "reason": "WHALE_NO_ENTITLED_SOURCE",
+            "research_only": True,
+            "symbol": instrument_id,
+        }
+    activities = ledger.query_options_summaries(
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    if not activities:
+        return {
+            "activities": [],
+            "as_of_context": as_of_context,
+            "available": False,
+            "disclaimer": "No PIT-eligible options events for this symbol at replay cutoff.",
+            "reason": "WHALE_NO_PIT_ELIGIBLE_OPTIONS",
+            "research_only": True,
+            "symbol": instrument_id,
+        }
+    return {
+        "activities": activities,
+        "activity_count": len(activities),
+        "as_of_context": as_of_context,
+        "available": True,
+        "disclaimer": (
+            "Unusual options volume is not directional intent. "
+            "Direction labels remain ambiguous unless explicitly supported. "
+            "Research-only per ADR-WHALE-004."
+        ),
+        "ledger_id": ledger.ledger_id,
+        "provider_id": "options.fixture.activity",
+        "research_only": True,
+        "symbol": instrument_id,
+    }
+
+
 __all__ = [
     "build_workspace_disclosure_payload",
+    "build_workspace_options_payload",
     "build_workspace_order_flow_payload",
     "disclosure_available",
+    "options_available",
     "order_flow_available",
 ]

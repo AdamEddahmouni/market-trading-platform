@@ -7,7 +7,7 @@ from typing import Any
 
 from ..canonical import canonical_bytes, sha256_bytes
 from ..features.bar_features import BAR_FEATURE_IDS, SUPPORTED_CAPABILITY, derive_bar_features
-from ..features.institutional import NO_ENTITLED_SOURCE, ORDER_FLOW_FAMILY, REGULATORY_DISCLOSURE_FAMILY, query_all_institutional
+from ..features.institutional import NO_ENTITLED_SOURCE, OPTIONS_FAMILY, ORDER_FLOW_FAMILY, REGULATORY_DISCLOSURE_FAMILY, query_all_institutional
 from ..features.snapshot import build_feature_snapshot
 from .quality_lifecycle import QualityReplayState, run_quality_replay
 
@@ -97,6 +97,12 @@ def verify_capability_surface(snapshot: dict[str, object]) -> tuple[str, list[st
             from ..providers.whale_ledger import WHALE_ENTITLED_ORDER_FLOW
 
             if reason != WHALE_ENTITLED_ORDER_FLOW:
+                reasons.append("CAP001_INSTITUTIONAL_REASON_MISMATCH")
+            continue
+        if family == OPTIONS_FAMILY and status == "available":
+            from ..providers.whale_ledger import WHALE_ENTITLED_OPTIONS
+
+            if reason != WHALE_ENTITLED_OPTIONS:
                 reasons.append("CAP001_INSTITUTIONAL_REASON_MISMATCH")
             continue
         if status != "unavailable":

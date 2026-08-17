@@ -20,6 +20,7 @@ authorized by this file.
 | UI-001 — replay-only research UI V1 | Read-only API and React frontend on admitted fixture; REPLAY mode only. | `PASS` — UI-001 proven on admitted fixture |
 | Phase 9 — provider contracts and EDGAR whale ledger | Capability-split provider interfaces; fixture-first SEC EDGAR disclosure ingestion; whale ledger; `regulatory_disclosure` wiring. | `PASS` — offline fixture slice on BIYA admitted context |
 | Phase 10 — whale order_flow family | Fixture-first NVDA CVD order-flow slice; `order_flow` institutional family; read-only workspace API and UI panel. | `PASS` — ADMITTED-CVD-NVDA-ORDERFLOW-001 |
+| Phase 11 — whale options family | Fixture-first BIYA options-activity slice; `options` institutional family; read-only workspace API and UI panel. | `PASS` — ADMITTED-OPTIONS-BIYA-001 |
 
 ## Accepted foundational ADRs (Phase 1 registry)
 
