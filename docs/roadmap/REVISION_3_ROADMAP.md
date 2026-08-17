@@ -21,6 +21,7 @@ authorized by this file.
 | Phase 9 — provider contracts and EDGAR whale ledger | Capability-split provider interfaces; fixture-first SEC EDGAR disclosure ingestion; whale ledger; `regulatory_disclosure` wiring. | `PASS` — offline fixture slice on BIYA admitted context |
 | Phase 10 — whale order_flow family | Fixture-first NVDA CVD order-flow slice; `order_flow` institutional family; read-only workspace API and UI panel. | `PASS` — ADMITTED-CVD-NVDA-ORDERFLOW-001 |
 | Phase 11 — whale options family | Fixture-first BIYA options-activity slice; `options` institutional family; read-only workspace API and UI panel. | `PASS` — ADMITTED-OPTIONS-BIYA-001 |
+| Phase 12 — whale large_transactions family | Fixture-first NVDA large-print slice; `large_transactions` institutional family; read-only workspace API and UI panel. | `PASS` — ADMITTED-LARGE-PRINTS-NVDA-001 |
 
 ## Accepted foundational ADRs (Phase 1 registry)
 

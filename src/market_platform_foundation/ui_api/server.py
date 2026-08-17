@@ -185,6 +185,26 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     )
                 )
                 return
+            if path.startswith("/workspace/") and path.endswith("/large-transactions"):
+                symbol = path.removeprefix("/workspace/").removesuffix("/large-transactions").strip("/")
+                if not symbol:
+                    self._send_error_json(
+                        "UI_REQUEST_INVALID",
+                        "workspace large-transactions symbol is required",
+                        status=HTTPStatus.BAD_REQUEST,
+                    )
+                    return
+                as_of = projections.build_as_of_context(self.store)
+                from ..providers.projections import build_workspace_large_transactions_payload
+
+                self._send_json(
+                    build_workspace_large_transactions_payload(
+                        symbol,
+                        as_of_context=as_of,
+                        prediction_cutoff=self.store.prediction_cutoff(),
+                    )
+                )
+                return
             if path == "/assistant/status":
                 self._send_json(build_assistant_status(self.store))
                 return

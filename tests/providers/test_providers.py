@@ -200,6 +200,7 @@ class UiDisclosureProjectionTests(unittest.TestCase):
         self.assertEqual(by_id["whale.regulatory_disclosure"]["state"], "AVAILABLE")
         self.assertEqual(by_id["whale.order_flow"]["state"], "AVAILABLE")
         self.assertEqual(by_id["whale.options"]["state"], "AVAILABLE")
+        self.assertEqual(by_id["whale.large_transactions"]["state"], "AVAILABLE")
         self.assertEqual(by_id["whale.order_book"]["state"], "UNSUPPORTED")
 
     def test_workspace_disclosure_payload(self) -> None:

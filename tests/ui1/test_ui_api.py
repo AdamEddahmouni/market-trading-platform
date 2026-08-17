@@ -60,11 +60,18 @@ class Ui1ApiTests(unittest.TestCase):
         self.assertEqual(by_id["whale.regulatory_disclosure"]["state"], "AVAILABLE")
         self.assertEqual(by_id["whale.order_flow"]["state"], "AVAILABLE")
         self.assertEqual(by_id["whale.options"]["state"], "AVAILABLE")
+        self.assertEqual(by_id["whale.large_transactions"]["state"], "AVAILABLE")
         unsupported = [
             row
             for row in whale_rows
             if row["capability_id"]
-            not in {"whale.disclosure", "whale.regulatory_disclosure", "whale.order_flow", "whale.options"}
+            not in {
+                "whale.disclosure",
+                "whale.regulatory_disclosure",
+                "whale.order_flow",
+                "whale.options",
+                "whale.large_transactions",
+            }
         ]
         self.assertTrue(all(row["state"] == "UNSUPPORTED" for row in unsupported))
 

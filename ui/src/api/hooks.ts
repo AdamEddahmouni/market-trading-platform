@@ -9,6 +9,7 @@ export const queryKeys = {
   workspaceSqueeze: (symbol: string) => ["workspace", symbol, "squeeze"] as const,
   workspaceOrderFlow: (symbol: string) => ["workspace", symbol, "order-flow"] as const,
   workspaceOptions: (symbol: string) => ["workspace", symbol, "options"] as const,
+  workspaceLargeTransactions: (symbol: string) => ["workspace", symbol, "large-transactions"] as const,
   replaySession: ["replay", "session"] as const,
   researchAnalytics: ["research", "analytics"] as const,
   assistantStatus: ["assistant", "status"] as const,
@@ -56,6 +57,14 @@ export function useWorkspaceOptionsQuery(symbol: string) {
   return useQuery({
     queryKey: queryKeys.workspaceOptions(symbol),
     queryFn: () => api.getWorkspaceOptions(symbol),
+    enabled: symbol.length > 0,
+  });
+}
+
+export function useWorkspaceLargeTransactionsQuery(symbol: string) {
+  return useQuery({
+    queryKey: queryKeys.workspaceLargeTransactions(symbol),
+    queryFn: () => api.getWorkspaceLargeTransactions(symbol),
     enabled: symbol.length > 0,
   });
 }

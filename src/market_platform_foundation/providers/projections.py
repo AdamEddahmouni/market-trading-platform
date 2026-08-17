@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..features.institutional import get_institutional_ledger
-from ..providers.whale_ledger import OPTIONS_FAMILY, ORDER_FLOW_FAMILY
+from ..providers.whale_ledger import LARGE_TRANSACTIONS_FAMILY, OPTIONS_FAMILY, ORDER_FLOW_FAMILY
 
 
 def disclosure_available(*, instrument_id: str, prediction_cutoff: int) -> bool:
@@ -38,6 +38,18 @@ def options_available(*, instrument_id: str, prediction_cutoff: int) -> bool:
         return False
     events = ledger.query_events(
         family=OPTIONS_FAMILY,
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    return bool(events)
+
+
+def large_transactions_available(*, instrument_id: str, prediction_cutoff: int) -> bool:
+    ledger = get_institutional_ledger()
+    if ledger is None:
+        return False
+    events = ledger.query_events(
+        family=LARGE_TRANSACTIONS_FAMILY,
         instrument_id=instrument_id,
         prediction_cutoff=prediction_cutoff,
     )
@@ -190,11 +202,62 @@ def build_workspace_options_payload(
     }
 
 
+def build_workspace_large_transactions_payload(
+    symbol: str,
+    *,
+    as_of_context: dict[str, object],
+    prediction_cutoff: int,
+) -> dict[str, Any]:
+    instrument_id = symbol.upper()
+    ledger = get_institutional_ledger()
+    if ledger is None:
+        return {
+            "as_of_context": as_of_context,
+            "available": False,
+            "disclaimer": "Large-transaction evidence not entitled. Fail-closed per ADR-WHALE-001.",
+            "prints": [],
+            "reason": "WHALE_NO_ENTITLED_SOURCE",
+            "research_only": True,
+            "symbol": instrument_id,
+        }
+    prints = ledger.query_large_transaction_summaries(
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    if not prints:
+        return {
+            "as_of_context": as_of_context,
+            "available": False,
+            "disclaimer": "No PIT-eligible large-transaction events for this symbol at replay cutoff.",
+            "prints": [],
+            "reason": "WHALE_NO_PIT_ELIGIBLE_LARGE_TRANSACTIONS",
+            "research_only": True,
+            "symbol": instrument_id,
+        }
+    return {
+        "as_of_context": as_of_context,
+        "available": True,
+        "disclaimer": (
+            "Large prints are size anomalies normalized to rolling volume or ADV. "
+            "They are not directional intent or participant identity. "
+            "Research-only per ADR-WHALE-005."
+        ),
+        "ledger_id": ledger.ledger_id,
+        "print_count": len(prints),
+        "prints": prints,
+        "provider_id": "large_prints.fixture.activity",
+        "research_only": True,
+        "symbol": instrument_id,
+    }
+
+
 __all__ = [
     "build_workspace_disclosure_payload",
+    "build_workspace_large_transactions_payload",
     "build_workspace_options_payload",
     "build_workspace_order_flow_payload",
     "disclosure_available",
+    "large_transactions_available",
     "options_available",
     "order_flow_available",
 ]

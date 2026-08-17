@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..features.institutional import OPTIONS_FAMILY, WHALE_FAMILIES, ORDER_FLOW_FAMILY, REGULATORY_DISCLOSURE_FAMILY
-from ..providers.projections import disclosure_available, options_available, order_flow_available
+from ..features.institutional import LARGE_TRANSACTIONS_FAMILY, OPTIONS_FAMILY, WHALE_FAMILIES, ORDER_FLOW_FAMILY, REGULATORY_DISCLOSURE_FAMILY
+from ..providers.projections import disclosure_available, large_transactions_available, options_available, order_flow_available
 from .store import ReplayStore
 
 CAPABILITY_DEFINITIONS: tuple[tuple[str, str], ...] = (
@@ -52,6 +52,10 @@ def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
     )
     options_ready = options_available(
         instrument_id=store.instrument_id,
+        prediction_cutoff=store.prediction_cutoff(),
+    )
+    large_transactions_ready = large_transactions_available(
+        instrument_id="NVDA",
         prediction_cutoff=store.prediction_cutoff(),
     )
     for capability_id, label in CAPABILITY_DEFINITIONS:
@@ -121,6 +125,15 @@ def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
             )
             continue
         if family == OPTIONS_FAMILY and options_ready:
+            rows.append(
+                {
+                    "capability_id": f"whale.{family}",
+                    "explanation_ref": f"cap:whale.{family}",
+                    "state": "AVAILABLE",
+                }
+            )
+            continue
+        if family == LARGE_TRANSACTIONS_FAMILY and large_transactions_ready:
             rows.append(
                 {
                     "capability_id": f"whale.{family}",
@@ -448,6 +461,24 @@ def build_explain_payload(store: ReplayStore, ref: str) -> dict[str, object]:
             "meaning": f"Options unusual-activity feed for {symbol.upper()}",
             "ref": ref,
             "why": str(options.get("disclaimer", "")),
+        }
+    elif ref.startswith("explain:large-transactions:"):
+        symbol = ref.removeprefix("explain:large-transactions:")
+        from ..providers.projections import build_workspace_large_transactions_payload
+
+        large_transactions = build_workspace_large_transactions_payload(
+            symbol,
+            as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
+        )
+        if not large_transactions.get("available"):
+            raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+        body = {
+            "alignment_summary": f"{large_transactions.get('print_count', 0)} large-print event(s)",
+            "level": 2,
+            "meaning": f"Large-transaction feed for {symbol.upper()}",
+            "ref": ref,
+            "why": str(large_transactions.get("disclaimer", "")),
         }
     else:
         raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")

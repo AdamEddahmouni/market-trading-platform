@@ -257,6 +257,100 @@ def activity_to_options_event(
     }
 
 
+def build_large_transaction_envelope(
+    *,
+    normalized_event_id: str,
+    source_record_id: str,
+    instrument_id: str,
+    event_time_ns: int,
+    available_time_ns: int,
+    ingest_run_id: str,
+    provider_metadata: dict[str, Any],
+    whale_event: dict[str, Any],
+) -> dict[str, Any]:
+    envelope = {
+        "available_time": available_time_ns,
+        "channel_id": str(
+            provider_metadata.get("symbol_mapping", {}).get("provider_symbol", instrument_id)
+        ),
+        "event_time": event_time_ns,
+        "event_type": "LARGE_TRANSACTION_EVENT",
+        "historical_ingested_time": available_time_ns,
+        "ingest_run_id": ingest_run_id,
+        "instrument_id": instrument_id,
+        "live_received_time": None,
+        "normalization_version": PROVIDER_NORMALIZATION_VERSION,
+        "normalized_event_id": normalized_event_id,
+        "operation": "UPSERT",
+        "provider_metadata": provider_metadata,
+        "publisher_id": str(provider_metadata.get("provider_id", "unknown")),
+        "quality_observation_refs": [],
+        "raw_reference": str(provider_metadata.get("raw_source_reference", "")),
+        "schema_version": PROVIDER_EVENT_SCHEMA,
+        "source_instance_id": str(provider_metadata.get("provider_id", "unknown")),
+        "source_publish_time": event_time_ns,
+        "source_record_id": source_record_id,
+        "source_revision_id": whale_event.get("source_revision_id", "1"),
+        "source_sequence": None,
+        "supersedes_event_id": None,
+        "venue_id": str(
+            provider_metadata.get("symbol_mapping", {}).get("venue_id", "US_EQUITY")
+        ),
+        "whale_event": whale_event,
+    }
+    timestamp_states = {
+        "event_time": "REQUIRED",
+        "source_publish_time": "REQUIRED",
+        "live_received_time": "FORBIDDEN",
+        "historical_ingested_time": "REQUIRED",
+        "available_time": "REQUIRED",
+    }
+    reasons = validate_envelope(
+        envelope,
+        timestamp_states=timestamp_states,
+        acquisition_mode="historical",
+    )
+    if reasons:
+        raise ValueError(f"PROVIDER_ENVELOPE_INVALID:{','.join(reasons)}")
+    return envelope
+
+
+def print_to_large_transaction_event(
+    *,
+    event_time: str,
+    print_size: float,
+    price: float,
+    side: str,
+    reference_type: str,
+    reference_value: float,
+    size_ratio_value: float,
+    threshold_ok: bool,
+    threshold_reasons: list[str],
+    direction_label: str,
+    aggressor_provenance: str,
+    source: str,
+    source_revision_id: str = "1",
+) -> dict[str, Any]:
+    return {
+        "aggressor_provenance": aggressor_provenance,
+        "direction_label": direction_label,
+        "epistemic_class": "DERIVED",
+        "event_time": event_time,
+        "family": "large_transactions",
+        "price": price,
+        "print_size": print_size,
+        "reference_type": reference_type,
+        "reference_value": reference_value,
+        "research_only": True,
+        "side": side,
+        "size_ratio": size_ratio_value,
+        "source": source,
+        "source_revision_id": source_revision_id,
+        "threshold_gate_ok": threshold_ok,
+        "threshold_reasons": threshold_reasons,
+    }
+
+
 def bar_to_order_flow_event(
     *,
     bar_time: str,
@@ -319,8 +413,10 @@ __all__ = [
     "activity_to_options_event",
     "bar_to_order_flow_event",
     "build_disclosure_envelope",
+    "build_large_transaction_envelope",
     "build_options_envelope",
     "build_order_flow_envelope",
     "build_provider_metadata",
     "filing_to_disclosure_event",
+    "print_to_large_transaction_event",
 ]

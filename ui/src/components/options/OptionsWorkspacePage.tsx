@@ -26,6 +26,7 @@ export function OptionsWorkspacePage({ onExplain, onInspect }: Props) {
           <Link to={`/workspace/${instrumentId}/squeeze`}>Short Squeeze</Link>
           <Link to={`/workspace/${instrumentId}/order-flow`}>Order Flow</Link>
           <Link className="active" to={`/workspace/${instrumentId}/options`}>Options</Link>
+          <Link to={`/workspace/${instrumentId}/large-transactions`}>Large Transactions</Link>
         </nav>
       </header>
       <OptionsWorkspacePanel

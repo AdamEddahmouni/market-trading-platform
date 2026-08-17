@@ -14,8 +14,10 @@ from .composition import ProviderComposition, configure_provider_composition
 WHALE_ENTITLED_DISCLOSURE = "WHALE_ENTITLED_DISCLOSURE"
 WHALE_ENTITLED_ORDER_FLOW = "WHALE_ENTITLED_ORDER_FLOW"
 WHALE_ENTITLED_OPTIONS = "WHALE_ENTITLED_OPTIONS"
+WHALE_ENTITLED_LARGE_TRANSACTIONS = "WHALE_ENTITLED_LARGE_TRANSACTIONS"
 ORDER_FLOW_FAMILY = "order_flow"
 OPTIONS_FAMILY = "options"
+LARGE_TRANSACTIONS_FAMILY = "large_transactions"
 LEDGER_LOGICAL_ID = "providers.whale_ledger"
 
 
@@ -171,6 +173,42 @@ class WhaleLedger:
             )
         return summaries
 
+    def query_large_transaction_summaries(
+        self,
+        *,
+        instrument_id: str,
+        prediction_cutoff: int,
+    ) -> list[dict[str, Any]]:
+        events = self.query_events(
+            family=LARGE_TRANSACTIONS_FAMILY,
+            instrument_id=instrument_id,
+            prediction_cutoff=prediction_cutoff,
+        )
+        summaries: list[dict[str, Any]] = []
+        for event in events:
+            payload = _event_payload(event)
+            if not isinstance(payload, dict):
+                continue
+            summaries.append(
+                {
+                    "aggressor_provenance": payload.get("aggressor_provenance"),
+                    "available_time": int(event.get("available_time", 0)),
+                    "direction_label": payload.get("direction_label"),
+                    "epistemic_class": payload.get("epistemic_class"),
+                    "event_time": payload.get("event_time"),
+                    "normalized_event_id": event.get("normalized_event_id"),
+                    "price": payload.get("price"),
+                    "print_size": payload.get("print_size"),
+                    "reference_type": payload.get("reference_type"),
+                    "reference_value": payload.get("reference_value"),
+                    "side": payload.get("side"),
+                    "size_ratio": payload.get("size_ratio"),
+                    "threshold_gate_ok": payload.get("threshold_gate_ok"),
+                    "threshold_reasons": payload.get("threshold_reasons"),
+                }
+            )
+        return summaries
+
     def root_hash(self) -> str:
         body = {
             "events": [
@@ -254,6 +292,10 @@ def build_ledger_from_edgar_fixture(
 
 
 def build_combined_fixture_ledger(*, as_of_time_ns: int | None = None) -> WhaleLedger:
+    from .adapters.fixture_large_transactions import (
+        DEFAULT_LARGE_TRANSACTIONS_FIXTURE,
+        FixtureLargeTransactionsProvider,
+    )
     from .adapters.fixture_options import (
         DEFAULT_OPTIONS_FIXTURE,
         FixtureOptionsProvider,
@@ -274,6 +316,13 @@ def build_combined_fixture_ledger(*, as_of_time_ns: int | None = None) -> WhaleL
     options_result = options.fetch_options_activity(options_symbol, as_of_time_ns=as_of_time_ns)
     if options_result.status == "available":
         ledger.ingest_provider_result(options_result.events)
+    large_transactions = FixtureLargeTransactionsProvider(
+        fixture_path=DEFAULT_LARGE_TRANSACTIONS_FIXTURE
+    )
+    lt_symbol = str(large_transactions._fixture.get("symbol", "NVDA"))
+    lt_result = large_transactions.fetch_large_transactions(lt_symbol, as_of_time_ns=as_of_time_ns)
+    if lt_result.status == "available":
+        ledger.ingest_provider_result(lt_result.events)
     return ledger
 
 
@@ -289,10 +338,12 @@ def bootstrap_default_providers(*, as_of_time_ns: int | None = None) -> WhaleLed
 
 
 __all__ = [
+    "LARGE_TRANSACTIONS_FAMILY",
     "LEDGER_LOGICAL_ID",
     "OPTIONS_FAMILY",
     "ORDER_FLOW_FAMILY",
     "WHALE_ENTITLED_DISCLOSURE",
+    "WHALE_ENTITLED_LARGE_TRANSACTIONS",
     "WHALE_ENTITLED_OPTIONS",
     "WHALE_ENTITLED_ORDER_FLOW",
     "WhaleLedger",

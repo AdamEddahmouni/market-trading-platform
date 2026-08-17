@@ -28,6 +28,7 @@ Revision 2 remains the incorporated Phase 0 safety authority.
 | Phase 9 — provider contracts and EDGAR whale ledger | `PASS` (fixture-first `regulatory_disclosure` on BIYA) |
 | Phase 10 — whale order_flow family | `PASS` (fixture-first `order_flow` on NVDA slice) |
 | Phase 11 — whale options family | `PASS` (fixture-first `options` on BIYA slice) |
+| Phase 12 — whale large_transactions family | `PASS` (fixture-first `large_transactions` on NVDA slice) |
 
 The existing candidate evidence roots under `evidence/phase0/2E1E…` and
 `evidence/phase0/6B31…` bind older repository subjects. They remain immutable and

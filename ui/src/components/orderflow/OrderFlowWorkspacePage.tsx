@@ -27,6 +27,7 @@ export function OrderFlowWorkspacePage({ onExplain, onInspect }: Props) {
           <Link to={`/workspace/${instrumentId}/squeeze`}>Short Squeeze</Link>
           <Link className="active" to={`/workspace/${instrumentId}/order-flow`}>Order Flow</Link>
           <Link to={`/workspace/${instrumentId}/options`}>Options</Link>
+          <Link to={`/workspace/${instrumentId}/large-transactions`}>Large Transactions</Link>
         </nav>
       </header>
       <OrderFlowWorkspacePanel

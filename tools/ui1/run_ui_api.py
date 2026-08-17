@@ -69,7 +69,13 @@ def _safe003_report() -> dict[str, object]:
 
 
 ENTITLED_WHALE_CAPABILITIES = frozenset(
-    {"whale.disclosure", "whale.regulatory_disclosure", "whale.order_flow", "whale.options"}
+    {
+        "whale.disclosure",
+        "whale.regulatory_disclosure",
+        "whale.order_flow",
+        "whale.options",
+        "whale.large_transactions",
+    }
 )
 
 

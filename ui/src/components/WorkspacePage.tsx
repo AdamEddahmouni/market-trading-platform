@@ -116,6 +116,7 @@ export function WorkspacePage({
           <Link to={`/workspace/${instrumentId}/squeeze`}>Short Squeeze</Link>
           <Link to={`/workspace/${instrumentId}/order-flow`}>Order Flow</Link>
           <Link to={`/workspace/${instrumentId}/options`}>Options</Link>
+          <Link to={`/workspace/${instrumentId}/large-transactions`}>Large Transactions</Link>
         </nav>
       </header>
 

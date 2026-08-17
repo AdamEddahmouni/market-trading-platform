@@ -8,6 +8,7 @@ import {
   WorkspaceSqueezeResponseSchema,
   WorkspaceOrderFlowResponseSchema,
   WorkspaceOptionsResponseSchema,
+  WorkspaceLargeTransactionsResponseSchema,
   AssistantConversationSchema,
   AssistantStatusSchema,
   AssistantConversationsResponseSchema,
@@ -41,6 +42,11 @@ export const api = {
     fetchJson(`/workspace/${encodeURIComponent(symbol)}/order-flow`, WorkspaceOrderFlowResponseSchema),
   getWorkspaceOptions: (symbol: string) =>
     fetchJson(`/workspace/${encodeURIComponent(symbol)}/options`, WorkspaceOptionsResponseSchema),
+  getWorkspaceLargeTransactions: (symbol: string) =>
+    fetchJson(
+      `/workspace/${encodeURIComponent(symbol)}/large-transactions`,
+      WorkspaceLargeTransactionsResponseSchema,
+    ),
   getAssistantStatus: () => fetchJson("/assistant/status", AssistantStatusSchema),
   getAssistantConversations: (principalId?: string) => {
     const query = principalId ? `?principal_id=${encodeURIComponent(principalId)}` : "";

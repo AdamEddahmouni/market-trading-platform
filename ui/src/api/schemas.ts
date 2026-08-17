@@ -351,6 +351,36 @@ export const WorkspaceOptionsResponseSchema = z.object({
   as_of_context: AsOfContextSchema.optional(),
 });
 
+export const WorkspaceLargeTransactionsPrintSchema = z.object({
+  aggressor_provenance: z.string().optional(),
+  available_time: z.number().optional(),
+  direction_label: z.string().optional(),
+  epistemic_class: z.string().optional(),
+  event_time: z.string().nullable().optional(),
+  normalized_event_id: z.string().optional(),
+  price: z.number().optional(),
+  print_size: z.number().optional(),
+  reference_type: z.string().optional(),
+  reference_value: z.number().optional(),
+  side: z.string().optional(),
+  size_ratio: z.number().optional(),
+  threshold_gate_ok: z.boolean().optional(),
+  threshold_reasons: z.array(z.string()).optional(),
+});
+
+export const WorkspaceLargeTransactionsResponseSchema = z.object({
+  symbol: z.string(),
+  available: z.boolean(),
+  reason: z.string().optional(),
+  disclaimer: z.string().optional(),
+  research_only: z.boolean().optional(),
+  print_count: z.number().optional(),
+  prints: z.array(WorkspaceLargeTransactionsPrintSchema).optional(),
+  provider_id: z.string().optional(),
+  ledger_id: z.string().optional(),
+  as_of_context: AsOfContextSchema.optional(),
+});
+
 export type ResearchAnalyticsResponse = z.infer<typeof ResearchAnalyticsResponseSchema>;
 export type AsOfContext = z.infer<typeof AsOfContextSchema>;
 export type AttentionItem = z.infer<typeof AttentionItemSchema>;
@@ -358,6 +388,7 @@ export type ExploreSqueezeResponse = z.infer<typeof ExploreSqueezeResponseSchema
 export type WorkspaceSqueezeResponse = z.infer<typeof WorkspaceSqueezeResponseSchema>;
 export type WorkspaceOrderFlowResponse = z.infer<typeof WorkspaceOrderFlowResponseSchema>;
 export type WorkspaceOptionsResponse = z.infer<typeof WorkspaceOptionsResponseSchema>;
+export type WorkspaceLargeTransactionsResponse = z.infer<typeof WorkspaceLargeTransactionsResponseSchema>;
 export type ReplaySession = z.infer<typeof ReplaySessionSchema>;
 
 export const ADMITTED_REPLAY_INSTRUMENT_ID = "BIYA";
