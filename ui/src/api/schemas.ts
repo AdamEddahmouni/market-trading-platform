@@ -293,12 +293,39 @@ export const ResearchAnalyticsResponseSchema = z.object({
   }),
 });
 
+export const WorkspaceOrderFlowBarSchema = z.object({
+  aggressor_provenance: z.string().nullable().optional(),
+  available_time: z.number().optional(),
+  bar_time: z.string().nullable().optional(),
+  cumulative_delta: z.number().optional(),
+  delta: z.number().optional(),
+  epistemic_class: z.string().optional(),
+  normalized_event_id: z.string().optional(),
+  quality: z.string().nullable().optional(),
+  volume: z.number().optional(),
+});
+
+export const WorkspaceOrderFlowResponseSchema = z.object({
+  symbol: z.string(),
+  available: z.boolean(),
+  reason: z.string().optional(),
+  disclaimer: z.string().optional(),
+  research_only: z.boolean().optional(),
+  bar_count: z.number().optional(),
+  bars: z.array(WorkspaceOrderFlowBarSchema).optional(),
+  provider_id: z.string().optional(),
+  ledger_id: z.string().optional(),
+  as_of_context: AsOfContextSchema.optional(),
+});
+
 export type ResearchAnalyticsResponse = z.infer<typeof ResearchAnalyticsResponseSchema>;
 export type AsOfContext = z.infer<typeof AsOfContextSchema>;
 export type AttentionItem = z.infer<typeof AttentionItemSchema>;
 export type ExploreSqueezeResponse = z.infer<typeof ExploreSqueezeResponseSchema>;
 export type WorkspaceSqueezeResponse = z.infer<typeof WorkspaceSqueezeResponseSchema>;
+export type WorkspaceOrderFlowResponse = z.infer<typeof WorkspaceOrderFlowResponseSchema>;
 export type ReplaySession = z.infer<typeof ReplaySessionSchema>;
 
 export const ADMITTED_REPLAY_INSTRUMENT_ID = "BIYA";
+export const ADMITTED_ORDER_FLOW_INSTRUMENT_ID = "NVDA";
 export const FROZEN_DEMO_REFERENCE_SYMBOL = "AVTX";

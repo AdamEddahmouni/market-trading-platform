@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..features.institutional import WHALE_FAMILIES, REGULATORY_DISCLOSURE_FAMILY
-from ..providers.projections import disclosure_available
+from ..features.institutional import WHALE_FAMILIES, ORDER_FLOW_FAMILY, REGULATORY_DISCLOSURE_FAMILY
+from ..providers.projections import disclosure_available, order_flow_available
 from .store import ReplayStore
 
 CAPABILITY_DEFINITIONS: tuple[tuple[str, str], ...] = (
@@ -44,6 +44,10 @@ def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
     disclosure_ready = disclosure_available(
         instrument_id=store.instrument_id,
+        prediction_cutoff=store.prediction_cutoff(),
+    )
+    order_flow_ready = order_flow_available(
+        instrument_id="NVDA",
         prediction_cutoff=store.prediction_cutoff(),
     )
     for capability_id, label in CAPABILITY_DEFINITIONS:
@@ -95,6 +99,15 @@ def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
         )
     for family in WHALE_FAMILIES:
         if family == REGULATORY_DISCLOSURE_FAMILY and disclosure_ready:
+            rows.append(
+                {
+                    "capability_id": f"whale.{family}",
+                    "explanation_ref": f"cap:whale.{family}",
+                    "state": "AVAILABLE",
+                }
+            )
+            continue
+        if family == ORDER_FLOW_FAMILY and order_flow_ready:
             rows.append(
                 {
                     "capability_id": f"whale.{family}",

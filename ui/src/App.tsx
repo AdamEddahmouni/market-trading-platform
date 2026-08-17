@@ -17,6 +17,7 @@ import { ExplanationDrawer } from "./components/ExplanationDrawer";
 import { ExplorePage } from "./components/ExplorePage";
 import { ResearchPage } from "./components/ResearchPage";
 import { SqueezeWorkspacePage } from "./components/squeeze/SqueezeWorkspacePage";
+import { OrderFlowWorkspacePage } from "./components/orderflow/OrderFlowWorkspacePage";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { NavShell } from "./components/NavShell";
 import { NowPage } from "./components/NowPage";
@@ -202,6 +203,15 @@ function Shell() {
                   onExplain={openExplainRef}
                   onInspect={openInspectRef}
                   onOpenHistory={openSqueezeHistory}
+                />
+              }
+            />
+            <Route
+              path="/workspace/:symbol/order-flow"
+              element={
+                <OrderFlowWorkspacePage
+                  onExplain={openExplainRef}
+                  onInspect={openInspectRef}
                 />
               }
             />

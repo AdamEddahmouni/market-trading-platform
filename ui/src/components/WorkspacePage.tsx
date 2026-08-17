@@ -114,6 +114,7 @@ export function WorkspacePage({
         <nav className="workspace-module-nav" aria-label="Workspace modules">
           <Link className="active" to={`/workspace/${instrumentId}`}>Overview</Link>
           <Link to={`/workspace/${instrumentId}/squeeze`}>Short Squeeze</Link>
+          <Link to={`/workspace/${instrumentId}/order-flow`}>Order Flow</Link>
         </nav>
       </header>
 
@@ -169,6 +170,9 @@ export function WorkspacePage({
       <aside className="capability-panel unavailable">
         <h2>Institutional Flow</h2>
         <p>UNAVAILABLE — no entitled source on admitted fixture.</p>
+        <p className="workspace-hint">
+          Order-flow CVD evidence is available on the NVDA workspace module when replay cutoff permits.
+        </p>
       </aside>
     </section>
   );

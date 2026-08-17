@@ -10,6 +10,7 @@ Independent reimplementations of donor subproject patterns inside
 | short-squeeze-project | Frozen readiness summaries | `donor_patterns/provenance_gates.py` | Implemented |
 | Professor brief + squeeze SEC | EDGAR whale event vocabulary | `donor_patterns/edgar_whale.py` | Implemented |
 | Phase 9 whale ledger | Fixture-first SEC EDGAR ingestion + ledger | `providers/` | **Complete** — offline BIYA fixture |
+| Phase 10 order_flow | Fixture-first NVDA CVD slice + ledger | `providers/adapters/fixture_order_flow.py` | **Complete** — ADMITTED-CVD-NVDA-ORDERFLOW-001 |
 | internship-project | Catalyst confidence/lean gates | `donor_patterns/catalyst_lane.py` | Implemented |
 | internship-project | Options liquidity/score lane | `donor_patterns/options_lane.py` | Implemented |
 | internship-project | Read-only demo state bridge | `donor_bridge/internship_client.py` + `/explore/catalyst`, `/workspace/{symbol}/catalyst` | **Complete** — read-only lane closed |

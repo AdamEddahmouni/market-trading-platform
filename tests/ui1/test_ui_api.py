@@ -58,8 +58,12 @@ class Ui1ApiTests(unittest.TestCase):
         whale_rows = [row for row in caps if str(row["capability_id"]).startswith("whale.")]
         self.assertTrue(whale_rows)
         self.assertEqual(by_id["whale.regulatory_disclosure"]["state"], "AVAILABLE")
+        self.assertEqual(by_id["whale.order_flow"]["state"], "AVAILABLE")
         unsupported = [
-            row for row in whale_rows if row["capability_id"] not in {"whale.disclosure", "whale.regulatory_disclosure"}
+            row
+            for row in whale_rows
+            if row["capability_id"]
+            not in {"whale.disclosure", "whale.regulatory_disclosure", "whale.order_flow"}
         ]
         self.assertTrue(all(row["state"] == "UNSUPPORTED" for row in unsupported))
 

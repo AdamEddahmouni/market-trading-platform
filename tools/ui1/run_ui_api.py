@@ -68,7 +68,9 @@ def _safe003_report() -> dict[str, object]:
     }
 
 
-ENTITLED_WHALE_CAPABILITIES = frozenset({"whale.disclosure", "whale.regulatory_disclosure"})
+ENTITLED_WHALE_CAPABILITIES = frozenset(
+    {"whale.disclosure", "whale.regulatory_disclosure", "whale.order_flow"}
+)
 
 
 def _capability_report(store: ReplayStore) -> dict[str, object]:

@@ -7,6 +7,7 @@ export const queryKeys = {
   instrument: (id: string) => ["instrument", id] as const,
   exploreSqueeze: ["explore", "squeeze"] as const,
   workspaceSqueeze: (symbol: string) => ["workspace", symbol, "squeeze"] as const,
+  workspaceOrderFlow: (symbol: string) => ["workspace", symbol, "order-flow"] as const,
   replaySession: ["replay", "session"] as const,
   researchAnalytics: ["research", "analytics"] as const,
   assistantStatus: ["assistant", "status"] as const,
@@ -38,6 +39,14 @@ export function useWorkspaceSqueezeQuery(symbol: string) {
   return useQuery({
     queryKey: queryKeys.workspaceSqueeze(symbol),
     queryFn: () => api.getWorkspaceSqueeze(symbol),
+    enabled: symbol.length > 0,
+  });
+}
+
+export function useWorkspaceOrderFlowQuery(symbol: string) {
+  return useQuery({
+    queryKey: queryKeys.workspaceOrderFlow(symbol),
+    queryFn: () => api.getWorkspaceOrderFlow(symbol),
     enabled: symbol.length > 0,
   });
 }

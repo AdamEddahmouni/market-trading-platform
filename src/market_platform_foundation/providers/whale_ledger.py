@@ -12,6 +12,8 @@ from .adapters.edgar_disclosure import DEFAULT_FIXTURE, FixtureEdgarDisclosurePr
 from .composition import ProviderComposition, configure_provider_composition
 
 WHALE_ENTITLED_DISCLOSURE = "WHALE_ENTITLED_DISCLOSURE"
+WHALE_ENTITLED_ORDER_FLOW = "WHALE_ENTITLED_ORDER_FLOW"
+ORDER_FLOW_FAMILY = "order_flow"
 LEDGER_LOGICAL_ID = "providers.whale_ledger"
 
 
@@ -51,10 +53,10 @@ class WhaleLedger:
     ) -> list[dict[str, Any]]:
         rows: list[dict[str, Any]] = []
         for event in self.events:
-            disclosure = event.get("disclosure_event")
-            if not isinstance(disclosure, dict):
+            payload = _event_payload(event)
+            if not isinstance(payload, dict):
                 continue
-            if str(disclosure.get("family", "")) != family:
+            if str(payload.get("family", "")) != family:
                 continue
             if instrument_id is not None and str(event.get("instrument_id")) != instrument_id:
                 continue
@@ -97,6 +99,37 @@ class WhaleLedger:
             )
         return summaries
 
+    def query_order_flow_summaries(
+        self,
+        *,
+        instrument_id: str,
+        prediction_cutoff: int,
+    ) -> list[dict[str, Any]]:
+        events = self.query_events(
+            family=ORDER_FLOW_FAMILY,
+            instrument_id=instrument_id,
+            prediction_cutoff=prediction_cutoff,
+        )
+        summaries: list[dict[str, Any]] = []
+        for event in events:
+            payload = _event_payload(event)
+            if not isinstance(payload, dict):
+                continue
+            summaries.append(
+                {
+                    "aggressor_provenance": payload.get("aggressor_provenance"),
+                    "available_time": int(event.get("available_time", 0)),
+                    "bar_time": payload.get("bar_time"),
+                    "cumulative_delta": payload.get("cumulative_delta"),
+                    "delta": payload.get("delta"),
+                    "epistemic_class": payload.get("epistemic_class"),
+                    "normalized_event_id": event.get("normalized_event_id"),
+                    "quality": payload.get("quality"),
+                    "volume": payload.get("volume"),
+                }
+            )
+        return summaries
+
     def root_hash(self) -> str:
         body = {
             "events": [
@@ -135,6 +168,16 @@ class WhaleLedger:
         return ledger
 
 
+def _event_payload(event: dict[str, Any]) -> dict[str, Any] | None:
+    disclosure = event.get("disclosure_event")
+    if isinstance(disclosure, dict):
+        return disclosure
+    whale_event = event.get("whale_event")
+    if isinstance(whale_event, dict):
+        return whale_event
+    return None
+
+
 def _sort_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(
         events,
@@ -169,6 +212,21 @@ def build_ledger_from_edgar_fixture(
     return ledger
 
 
+def build_combined_fixture_ledger(*, as_of_time_ns: int | None = None) -> WhaleLedger:
+    from .adapters.fixture_order_flow import (
+        DEFAULT_ORDER_FLOW_FIXTURE,
+        FixtureOrderFlowProvider,
+    )
+
+    ledger = build_ledger_from_edgar_fixture(as_of_time_ns=as_of_time_ns)
+    order_flow = FixtureOrderFlowProvider(fixture_path=DEFAULT_ORDER_FLOW_FIXTURE)
+    symbol = str(order_flow._fixture.get("symbol", "NVDA"))
+    result = order_flow.fetch_order_flow(symbol, as_of_time_ns=as_of_time_ns)
+    if result.status == "available":
+        ledger.ingest_provider_result(result.events)
+    return ledger
+
+
 def load_default_biya_fixture_ledger(*, as_of_time_ns: int | None = None) -> WhaleLedger:
     return build_ledger_from_edgar_fixture(fixture_path=DEFAULT_FIXTURE, as_of_time_ns=as_of_time_ns)
 
@@ -177,19 +235,17 @@ def bootstrap_default_providers(*, as_of_time_ns: int | None = None) -> WhaleLed
     provider = build_edgar_provider()
     composition = ProviderComposition(disclosure=provider)
     configure_provider_composition(composition)
-    symbol = "BIYA"
-    result = provider.fetch_disclosures(symbol, as_of_time_ns=as_of_time_ns)
-    ledger = WhaleLedger()
-    if result.status == "available":
-        ledger.ingest_provider_result(result.events)
-    return ledger
+    return build_combined_fixture_ledger(as_of_time_ns=as_of_time_ns)
 
 
 __all__ = [
     "LEDGER_LOGICAL_ID",
+    "ORDER_FLOW_FAMILY",
     "WHALE_ENTITLED_DISCLOSURE",
+    "WHALE_ENTITLED_ORDER_FLOW",
     "WhaleLedger",
     "bootstrap_default_providers",
+    "build_combined_fixture_ledger",
     "build_ledger_from_edgar_fixture",
     "load_default_biya_fixture_ledger",
 ]

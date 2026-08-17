@@ -27,7 +27,11 @@ from market_platform_foundation.providers.adapters.edgar_disclosure import (
     DEFAULT_FIXTURE,
     FixtureEdgarDisclosureProvider,
 )
-from market_platform_foundation.providers.composition import ProviderComposition, get_provider_composition
+from market_platform_foundation.providers.composition import (
+    ProviderComposition,
+    configure_provider_composition,
+    get_provider_composition,
+)
 from market_platform_foundation.providers.contracts import EXECUTION_DISABLED, PROVIDER_UNAVAILABLE
 from market_platform_foundation.providers.stubs import (
     DisabledPaperExecutionProvider,
@@ -46,6 +50,9 @@ from market_platform_foundation.ui_api.store import ReplayStore
 
 
 class ProviderContractTests(unittest.TestCase):
+    def setUp(self) -> None:
+        configure_provider_composition(None)
+
     def test_unconfigured_stubs_fail_closed(self) -> None:
         disclosure = UnconfiguredDisclosureProvider()
         result = disclosure.fetch_disclosures("BIYA")
@@ -191,7 +198,8 @@ class UiDisclosureProjectionTests(unittest.TestCase):
         by_id = {row["capability_id"]: row for row in caps}
         self.assertEqual(by_id["whale.disclosure"]["state"], "AVAILABLE")
         self.assertEqual(by_id["whale.regulatory_disclosure"]["state"], "AVAILABLE")
-        self.assertEqual(by_id["whale.order_flow"]["state"], "UNSUPPORTED")
+        self.assertEqual(by_id["whale.order_flow"]["state"], "AVAILABLE")
+        self.assertEqual(by_id["whale.order_book"]["state"], "UNSUPPORTED")
 
     def test_workspace_disclosure_payload(self) -> None:
         from market_platform_foundation.providers.projections import build_workspace_disclosure_payload

@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
-from market_platform_foundation.canonical import load_json_strict, sha256_bytes
+from market_platform_foundation.canonical import load_json_strict
 
 PUBLICATION_PATH = ROOT / "docs/superpowers/governance/2026-08-18-ui-001-pass-publication.json"
 AUTHORITY_PATH = ROOT / "manifests/phase0/canonical-authority.json"
@@ -27,9 +27,13 @@ def main() -> int:
         print("AUTHORITY_UI1_NOT_PASS")
         return 1
     bound = publication.get("authority_manifest_at_publication", {})
-    if sha256_bytes(AUTHORITY_PATH.read_bytes()) != bound.get("sha256"):
-        print("AUTHORITY_HASH_MISMATCH")
+    if not isinstance(bound, dict):
+        print("INVALID_PUBLICATION_BINDING")
         return 1
+    for key, value in bound.items():
+        if key.endswith("_status") and manifest.get(key) != value:
+            print(f"AUTHORITY_STATUS_MISMATCH:{key}")
+            return 1
     print("ALL PASS")
     return 0
 

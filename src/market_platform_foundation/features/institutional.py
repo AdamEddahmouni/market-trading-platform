@@ -20,6 +20,7 @@ WHALE_FAMILIES = (
 
 NO_ENTITLED_SOURCE = "WHALE_NO_ENTITLED_SOURCE"
 REGULATORY_DISCLOSURE_FAMILY = "regulatory_disclosure"
+ORDER_FLOW_FAMILY = "order_flow"
 
 _LEDGER: WhaleLedger | None = None
 
@@ -62,6 +63,23 @@ def query_institutional_evidence(
                 "family": family,
                 "prediction_cutoff": prediction_cutoff,
                 "reason_code": WHALE_ENTITLED_DISCLOSURE,
+                "status": "available",
+            }
+    if family == ORDER_FLOW_FAMILY and _LEDGER is not None:
+        from ..providers.whale_ledger import WHALE_ENTITLED_ORDER_FLOW
+
+        events = _LEDGER.query_events(
+            family=family,
+            instrument_id=instrument_id,
+            prediction_cutoff=prediction_cutoff,
+        )
+        if events:
+            return {
+                "direction": "neutral",
+                "event_count": len(events),
+                "family": family,
+                "prediction_cutoff": prediction_cutoff,
+                "reason_code": WHALE_ENTITLED_ORDER_FLOW,
                 "status": "available",
             }
     return {

@@ -73,6 +73,21 @@ class OptionChainProvider(Protocol):
         ...
 
 
+class OrderFlowProvider(Protocol):
+    """Signed volume / CVD order-flow snapshots."""
+
+    provider_id: str
+    capability: str
+
+    def fetch_order_flow(
+        self,
+        symbol: str,
+        *,
+        as_of_time_ns: int | None = None,
+    ) -> ProviderResult:
+        ...
+
+
 class PaperExecutionProvider(Protocol):
     """Paper execution — disabled unless explicitly enabled."""
 
@@ -88,6 +103,7 @@ __all__ = [
     "EquityQuoteProvider",
     "EXECUTION_DISABLED",
     "OptionChainProvider",
+    "OrderFlowProvider",
     "PaperExecutionProvider",
     "PROVIDER_UNAVAILABLE",
     "ProviderResult",
