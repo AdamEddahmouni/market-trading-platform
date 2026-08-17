@@ -7,7 +7,7 @@ from typing import Any
 
 from ..canonical import canonical_bytes, sha256_bytes
 from ..features.bar_features import BAR_FEATURE_IDS, SUPPORTED_CAPABILITY, derive_bar_features
-from ..features.institutional import NO_ENTITLED_SOURCE, query_all_institutional
+from ..features.institutional import NO_ENTITLED_SOURCE, REGULATORY_DISCLOSURE_FAMILY, query_all_institutional
 from ..features.snapshot import build_feature_snapshot
 from .quality_lifecycle import QualityReplayState, run_quality_replay
 
@@ -84,9 +84,18 @@ def verify_capability_surface(snapshot: dict[str, object]) -> tuple[str, list[st
         if not isinstance(row, dict):
             reasons.append("CAP001_INVALID_INSTITUTIONAL_ROW")
             continue
-        if str(row.get("status")) != "unavailable":
+        family = str(row.get("family", ""))
+        status = str(row.get("status", ""))
+        reason = str(row.get("reason_code", ""))
+        if family == REGULATORY_DISCLOSURE_FAMILY and status == "available":
+            from ..providers.whale_ledger import WHALE_ENTITLED_DISCLOSURE
+
+            if reason != WHALE_ENTITLED_DISCLOSURE:
+                reasons.append("CAP001_INSTITUTIONAL_REASON_MISMATCH")
+            continue
+        if status != "unavailable":
             reasons.append("CAP001_INSTITUTIONAL_OVERCLAIM")
-        elif str(row.get("reason_code")) != NO_ENTITLED_SOURCE:
+        elif reason != NO_ENTITLED_SOURCE:
             reasons.append("CAP001_INSTITUTIONAL_REASON_MISMATCH")
     status = "PASS" if not reasons else "FAIL"
     return status, sorted(set(reasons))

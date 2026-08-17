@@ -1,0 +1,35 @@
+{
+  "predicates": [
+    {
+      "assertion_id": "P9-PROV-001",
+      "assertion_version": "1.0.0",
+      "predicate": "Capability-split provider Protocol contracts exist; unconfigured stubs return PROVIDER_UNAVAILABLE or EXECUTION_DISABLED"
+    },
+    {
+      "assertion_id": "P9-LEDGER-001",
+      "assertion_version": "1.0.0",
+      "predicate": "EDGAR BIYA fixture ingests deterministically into append-only whale ledger with stable root hash"
+    },
+    {
+      "assertion_id": "P9-PIT-001",
+      "assertion_version": "1.0.0",
+      "predicate": "PIT queries exclude disclosure events whose available_time exceeds prediction_cutoff; amendments sort after base filings"
+    },
+    {
+      "assertion_id": "P9-WHALE-001",
+      "assertion_version": "1.0.0",
+      "predicate": "regulatory_disclosure is available on BIYA when ledger is entitled; other seven whale families remain unavailable"
+    },
+    {
+      "assertion_id": "P9-UI-001",
+      "assertion_version": "1.0.0",
+      "predicate": "UI capability surface marks entitled whale disclosure AVAILABLE and workspace disclosure payload is research-only with lag labeling"
+    },
+    {
+      "assertion_id": "SAFE-003",
+      "assertion_version": "1.0.0",
+      "predicate": "Network-denied replay passes; route reachability to live order submission is empty"
+    }
+  ],
+  "registry_version": "1.0.0"
+}

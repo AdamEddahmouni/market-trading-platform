@@ -18,6 +18,7 @@ authorized by this file.
 | Phase 7 — risk, simulation, and accounting | Independent risk, conservative simulation, cash/position/P&L reconciliation, and attribution remain mandatory. | `PASS` — risk, simulation, and accounting proven on admitted fixture; Phase 8 remains unauthorized |
 | Phase 8 — deterministic end-to-end acceptance | Acceptance remains evidence-bound and makes no unsupported edge claim. | `PASS` — end-to-end acceptance proven on admitted fixture; ES session remains deferred |
 | UI-001 — replay-only research UI V1 | Read-only API and React frontend on admitted fixture; REPLAY mode only. | `PASS` — UI-001 proven on admitted fixture |
+| Phase 9 — provider contracts and EDGAR whale ledger | Capability-split provider interfaces; fixture-first SEC EDGAR disclosure ingestion; whale ledger; `regulatory_disclosure` wiring. | `PASS` — offline fixture slice on BIYA admitted context |
 
 ## Accepted foundational ADRs (Phase 1 registry)
 

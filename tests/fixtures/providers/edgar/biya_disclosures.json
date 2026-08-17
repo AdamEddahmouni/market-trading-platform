@@ -1,0 +1,62 @@
+{
+  "company_name": "BIYA International Inc",
+  "cik": "0001849639",
+  "filings": [
+    {
+      "accession_number": "0001849639-26-000010",
+      "accepted_at": "2026-07-10T16:30:00Z",
+      "filer": "Jane Officer",
+      "form_type": "4",
+      "is_amendment": false,
+      "issuer": "BIYA International Inc",
+      "source_revision_id": "1",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1849639/000184963926000010/xslF345X03/form4.xml",
+      "transaction_code": "P"
+    },
+    {
+      "accession_number": "0001849639-26-000011",
+      "accepted_at": "2026-07-12T18:00:00Z",
+      "filer": "John Director",
+      "form_type": "4",
+      "is_amendment": false,
+      "issuer": "BIYA International Inc",
+      "source_revision_id": "1",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1849639/000184963926000011/xslF345X03/form4.xml",
+      "transaction_code": "S"
+    },
+    {
+      "accession_number": "0001849639-26-000010",
+      "accepted_at": "2026-07-11T16:30:00Z",
+      "filer": "Jane Officer",
+      "form_type": "4/A",
+      "is_amendment": true,
+      "issuer": "BIYA International Inc",
+      "source_revision_id": "2",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1849639/000184963926000010/xslF345X03/form4a.xml",
+      "transaction_code": "P"
+    },
+    {
+      "accession_number": "0001849639-26-000020",
+      "accepted_at": "2026-07-01T12:00:00Z",
+      "filer": "Alpha Fund LP",
+      "form_type": "13F-HR",
+      "is_amendment": false,
+      "issuer": "BIYA International Inc",
+      "source_revision_id": "1",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1849639/000184963926000020/xslForm13F-HR.xml"
+    },
+    {
+      "accession_number": "0001849639-26-000099",
+      "accepted_at": "2026-07-20T12:00:00Z",
+      "filer": "Future Insider",
+      "form_type": "4",
+      "is_amendment": false,
+      "issuer": "BIYA International Inc",
+      "source_revision_id": "1",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1849639/000184963926000099/xslF345X03/form4.xml",
+      "transaction_code": "P"
+    }
+  ],
+  "fixture_id": "FIXTURE-EDGAR-BIYA-001",
+  "symbol": "BIYA"
+}

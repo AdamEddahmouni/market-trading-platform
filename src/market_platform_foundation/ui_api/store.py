@@ -12,6 +12,8 @@ from ..assistant.service import AssistantResearchService
 from ..canonical import canonical_bytes, sha256_bytes
 from ..contracts.identity import sort_events
 from ..features.bar_features import derive_bar_features
+from ..features.institutional import configure_institutional_ledger
+from ..providers.whale_ledger import bootstrap_default_providers
 from ..risk_simulation.evaluation import run_risk_simulation_evaluation
 from ..storage.bounded_memory_cache import BoundedMemoryCache
 from ..strategy.evaluation import run_strategy_evaluation
@@ -78,6 +80,8 @@ class ReplayStore:
                 }
             )
         )
+        ledger = bootstrap_default_providers()
+        configure_institutional_ledger(ledger)
         audit_root = self.assistant_audit_root
         if audit_root is None:
             audit_root = Path(__file__).resolve().parents[3] / "evidence" / "ui1" / "assistant-audit"

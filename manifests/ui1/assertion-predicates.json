@@ -3,7 +3,7 @@
     {
       "assertion_id": "UI-CAP-001",
       "assertion_version": "1.0.0",
-      "predicate": "Institutional, depth, options, live, and paper capabilities return UNSUPPORTED on the admitted fixture"
+      "predicate": "Depth, options, live, and paper capabilities return UNSUPPORTED; entitled whale disclosure capabilities return AVAILABLE; other whale families remain UNSUPPORTED"
     },
     {
       "assertion_id": "UI-CTX-001",

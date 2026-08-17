@@ -54,10 +54,14 @@ class Ui1ApiTests(unittest.TestCase):
         by_id = {row["capability_id"]: row for row in caps}
         self.assertEqual(by_id["bars.intraday_1m"]["state"], "AVAILABLE")
         self.assertEqual(by_id["depth.L2"]["state"], "UNSUPPORTED")
-        self.assertEqual(by_id["whale.disclosure"]["state"], "UNSUPPORTED")
+        self.assertEqual(by_id["whale.disclosure"]["state"], "AVAILABLE")
         whale_rows = [row for row in caps if str(row["capability_id"]).startswith("whale.")]
         self.assertTrue(whale_rows)
-        self.assertTrue(all(row["state"] == "UNSUPPORTED" for row in whale_rows))
+        self.assertEqual(by_id["whale.regulatory_disclosure"]["state"], "AVAILABLE")
+        unsupported = [
+            row for row in whale_rows if row["capability_id"] not in {"whale.disclosure", "whale.regulatory_disclosure"}
+        ]
+        self.assertTrue(all(row["state"] == "UNSUPPORTED" for row in unsupported))
 
     def test_attention_explain_chain(self) -> None:
         page = build_attention_page(self.store)

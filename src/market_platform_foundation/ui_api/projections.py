@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..features.institutional import WHALE_FAMILIES
+from ..features.institutional import WHALE_FAMILIES, REGULATORY_DISCLOSURE_FAMILY
+from ..providers.projections import disclosure_available
 from .store import ReplayStore
 
 CAPABILITY_DEFINITIONS: tuple[tuple[str, str], ...] = (
@@ -41,6 +42,10 @@ def build_quality_summary(store: ReplayStore) -> dict[str, object]:
 
 def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
+    disclosure_ready = disclosure_available(
+        instrument_id=store.instrument_id,
+        prediction_cutoff=store.prediction_cutoff(),
+    )
     for capability_id, label in CAPABILITY_DEFINITIONS:
         if capability_id == "bars.intraday_1m":
             rows.append(
@@ -50,6 +55,25 @@ def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
                     "state": "AVAILABLE",
                 }
             )
+            continue
+        if capability_id == "whale.disclosure":
+            if disclosure_ready:
+                rows.append(
+                    {
+                        "capability_id": capability_id,
+                        "explanation_ref": f"cap:{capability_id}",
+                        "state": "AVAILABLE",
+                    }
+                )
+            else:
+                rows.append(
+                    {
+                        "capability_id": capability_id,
+                        "explanation_ref": f"cap:{capability_id}",
+                        "reason": "No entitled institutional source on admitted fixture",
+                        "state": "UNSUPPORTED",
+                    }
+                )
             continue
         if capability_id.startswith("whale."):
             rows.append(
@@ -70,6 +94,15 @@ def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
             }
         )
     for family in WHALE_FAMILIES:
+        if family == REGULATORY_DISCLOSURE_FAMILY and disclosure_ready:
+            rows.append(
+                {
+                    "capability_id": f"whale.{family}",
+                    "explanation_ref": f"cap:whale.{family}",
+                    "state": "AVAILABLE",
+                }
+            )
+            continue
         rows.append(
             {
                 "capability_id": f"whale.{family}",
@@ -354,6 +387,24 @@ def build_explain_payload(store: ReplayStore, ref: str) -> dict[str, object]:
                 f"{catalyst.get('disclaimer', '')}"
             ),
         }
+    elif ref.startswith("explain:disclosure:"):
+        symbol = ref.removeprefix("explain:disclosure:")
+        from ..providers.projections import build_workspace_disclosure_payload
+
+        disclosure = build_workspace_disclosure_payload(
+            symbol,
+            as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
+        )
+        if not disclosure.get("available"):
+            raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+        body = {
+            "alignment_summary": f"{disclosure.get('event_count', 0)} disclosure event(s)",
+            "level": 2,
+            "meaning": f"Regulatory disclosure feed for {symbol.upper()}",
+            "ref": ref,
+            "why": str(disclosure.get("disclaimer", "")),
+        }
     else:
         raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
     return {
@@ -484,6 +535,34 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
                 "instrument_hint": trade.get("instrument_hint"),
                 "headline": trade.get("news_headline") or trade.get("reasoning"),
             }
+    if "disclosure" in ref:
+        symbol = ref.rsplit(":", 1)[-1]
+        from ..providers.projections import build_workspace_disclosure_payload
+
+        disclosure = build_workspace_disclosure_payload(
+            symbol,
+            as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
+        )
+        tabs["EVIDENCE"]["items"] = [
+            {
+                "evidence_id": ref,
+                "epistemic_class": "OBSERVED",
+                "family": "regulatory_disclosure",
+                "as_of": store.as_of_time(),
+                "quality": {"state": "DELAYED_DISCLOSURE"},
+            }
+        ]
+        tabs["DERIVATION"] = {
+            "method": "fixture-first SEC EDGAR adapter",
+            "inputs": ["tests/fixtures/providers/edgar/biya_disclosures.json"],
+            "source": "Phase 9 whale ledger (research-only)",
+        }
+        tabs["DISCLOSURE"] = {
+            "events": disclosure.get("events", []),
+            "disclosure_lag_note": disclosure.get("disclosure_lag_note"),
+            "research_only": disclosure.get("research_only"),
+        }
     return {
         "as_of_context": build_as_of_context(store),
         "capability_states": build_capabilities(store),

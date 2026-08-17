@@ -25,6 +25,7 @@ Revision 2 remains the incorporated Phase 0 safety authority.
 | Phase 7 — risk, simulation, and accounting | `PASS` |
 | Phase 8 — deterministic end-to-end acceptance | `PASS` (ES session remains deferred per ADR-DATA-001) |
 | UI-001 — replay-only research UI V1 | `PASS` (stdlib API + `ui/` frontend subject) |
+| Phase 9 — provider contracts and EDGAR whale ledger | `PASS` (fixture-first `regulatory_disclosure` on BIYA) |
 
 The existing candidate evidence roots under `evidence/phase0/2E1E…` and
 `evidence/phase0/6B31…` bind older repository subjects. They remain immutable and
@@ -58,13 +59,15 @@ Documentation of future interfaces is not implementation or authorization.
 
 ## Capability boundary
 
-This repository has no provider, broker, market-data runtime, whale ingestion,
-on-chain ingestion, social API connection, crypto adapter, AI-trading,
-paper-trading, or live-trading capability. It has no Git remote.
+This repository has no live broker, market-data runtime, on-chain ingestion,
+social API connection, crypto adapter, AI-trading, paper-trading, or live-trading
+capability. It has no Git remote. Phase 9 provides fixture-first SEC EDGAR
+disclosure ingestion for the `regulatory_disclosure` whale family on BIYA only;
+all other provider capabilities remain fail-closed stubs.
 ES-session acceptance remains blocked per `ADR-DATA-001` until lawful ES bytes
 are procured. UI-001 provides replay-only research UI on the admitted fixture.
-Broker adapters, whale ingestion, crypto expansion, and prediction-market expansion
-require separate ADR authorization and phase gates.
+Broker adapters, non-disclosure whale ingestion, crypto expansion, and
+prediction-market expansion require separate ADR authorization and phase gates.
 
 ## Research UI V1
 

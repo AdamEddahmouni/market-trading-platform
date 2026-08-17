@@ -68,23 +68,33 @@ def _safe003_report() -> dict[str, object]:
     }
 
 
+ENTITLED_WHALE_CAPABILITIES = frozenset({"whale.disclosure", "whale.regulatory_disclosure"})
+
+
 def _capability_report(store: ReplayStore) -> dict[str, object]:
     caps = build_capabilities(store)
-    failures = [
-        row["capability_id"]
-        for row in caps
-        if row["capability_id"] != "bars.intraday_1m" and row.get("state") != "UNSUPPORTED"
-    ]
-    whale_failures = [
-        row["capability_id"]
-        for row in caps
-        if str(row["capability_id"]).startswith("whale.") and row.get("state") != "UNSUPPORTED"
-    ]
+    failures: list[str] = []
+    for row in caps:
+        capability_id = str(row["capability_id"])
+        state = str(row.get("state", ""))
+        if capability_id == "bars.intraday_1m":
+            continue
+        if capability_id in ENTITLED_WHALE_CAPABILITIES:
+            if state != "AVAILABLE":
+                failures.append(capability_id)
+            continue
+        if capability_id.startswith("whale."):
+            if state != "UNSUPPORTED":
+                failures.append(capability_id)
+            continue
+        if state != "UNSUPPORTED":
+            failures.append(capability_id)
     return {
         "artifact_type": "UI1_CAPABILITY_REPORT",
-        "failures": sorted(set(failures + whale_failures)),
+        "entitled_whale_capabilities": sorted(ENTITLED_WHALE_CAPABILITIES),
+        "failures": sorted(set(failures)),
         "logical_id": "ui1.capability_report",
-        "status": "PASS" if not failures and not whale_failures else "FAIL",
+        "status": "PASS" if not failures else "FAIL",
         "unsupported_count": sum(1 for row in caps if row.get("state") == "UNSUPPORTED"),
     }
 
