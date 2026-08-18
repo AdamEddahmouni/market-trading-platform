@@ -25,9 +25,9 @@
 
 ## P3 — Baseline models
 
-- [ ] Mechanism labels adjudication dataset
-- [ ] Logistic/hazard horizon models + walk-forward harness
-- [ ] Calibration reports (Brier, PR-AUC)
+- [x] Mechanism labels adjudication dataset — fixture `tests/fixtures/squeeze/mechanism_labels.json`
+- [x] Logistic/hazard horizon models + walk-forward harness — `research/squeeze_models/`
+- [x] Calibration reports (Brier, PR-AUC) — `research/squeeze_models/calibration.py`
 
 ## P4 — Live ignition
 

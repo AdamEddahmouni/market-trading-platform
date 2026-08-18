@@ -8,6 +8,7 @@ from typing import Any
 
 from .contracts import (
     DisclosureProvider,
+    DistributionForecastProvider,
     EquityQuoteProvider,
     FuturesChainProvider,
     OptionChainProvider,
@@ -17,6 +18,7 @@ from .contracts import (
 from .stubs import (
     DisabledPaperExecutionProvider,
     UnconfiguredDisclosureProvider,
+    UnconfiguredDistributionForecastProvider,
     UnconfiguredEquityQuoteProvider,
     UnconfiguredFuturesChainProvider,
     UnconfiguredOptionChainProvider,
@@ -33,6 +35,9 @@ class ProviderComposition:
     equity_quote: EquityQuoteProvider = field(default_factory=UnconfiguredEquityQuoteProvider)
     option_chain: OptionChainProvider = field(default_factory=UnconfiguredOptionChainProvider)
     futures_chain: FuturesChainProvider = field(default_factory=UnconfiguredFuturesChainProvider)
+    distribution_forecast: DistributionForecastProvider = field(
+        default_factory=UnconfiguredDistributionForecastProvider
+    )
     paper_execution: PaperExecutionProvider = field(
         default_factory=lambda: DisabledPaperExecutionProvider(
             enabled=os.environ.get("EXECUTION_ENABLE") == "1"
@@ -46,6 +51,7 @@ class ProviderComposition:
             self.equity_quote,
             self.option_chain,
             self.futures_chain,
+            self.distribution_forecast,
             self.paper_execution,
         ]
         return {
@@ -76,12 +82,14 @@ def get_provider_composition() -> ProviderComposition:
 
 def configure_fixture_provider_composition() -> ProviderComposition:
     """Register admitted fixture chain providers without enabling live adapters."""
+    from .adapters.fixture_distribution import FixtureDistributionForecastProvider
     from .adapters.fixture_futures_chain import FixtureFuturesChainProvider
     from .adapters.fixture_option_chain import FixtureOptionChainProvider
 
     composition = ProviderComposition(
         option_chain=FixtureOptionChainProvider(),
         futures_chain=FixtureFuturesChainProvider(),
+        distribution_forecast=FixtureDistributionForecastProvider(),
     )
     configure_provider_composition(composition)
     return composition

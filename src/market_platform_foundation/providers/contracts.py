@@ -83,6 +83,21 @@ class FuturesChainProvider(Protocol):
         ...
 
 
+class DistributionForecastProvider(Protocol):
+    """Physical return distribution forecasts (SHARED P2)."""
+
+    provider_id: str
+    capability: str
+
+    def fetch_distribution_forecast(
+        self,
+        symbol: str,
+        *,
+        as_of_time_ns: int | None = None,
+    ) -> ProviderResult:
+        ...
+
+
 class OrderFlowProvider(Protocol):
     """Signed volume / CVD order-flow snapshots."""
 
@@ -110,6 +125,7 @@ class PaperExecutionProvider(Protocol):
 
 __all__ = [
     "DisclosureProvider",
+    "DistributionForecastProvider",
     "EquityQuoteProvider",
     "EXECUTION_DISABLED",
     "FuturesChainProvider",

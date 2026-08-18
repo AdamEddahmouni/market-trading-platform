@@ -65,6 +65,41 @@ class CrossLaneEvidenceTests(unittest.TestCase):
         ]
         self.assertEqual(validate_evidence_dag(items), [])
 
+    def test_validate_evidence_dag_detects_cycle(self) -> None:
+        signal = EvidenceSignal.CALL_DEMAND_ANOMALY
+        items = [
+            NormalizedLaneEvidence(
+                lane=LaneId.OPTIONS,
+                signal=signal,
+                strength="LOW",
+                available=True,
+                source_ref="model",
+                detail="model output",
+                provenance_class=EvidenceProvenanceClass.MODEL_OUTPUT,
+            ),
+            NormalizedLaneEvidence(
+                lane=LaneId.OPTIONS,
+                signal=signal,
+                strength="LOW",
+                available=True,
+                source_ref="cross",
+                detail="cross lane",
+                provenance_class=EvidenceProvenanceClass.CROSS_LANE_MODEL_OUTPUT,
+            ),
+        ]
+        violations = validate_evidence_dag(items)
+        self.assertTrue(violations)
+
+    def test_physical_distribution_signals_exist(self) -> None:
+        self.assertEqual(
+            EvidenceSignal.FORECAST_RV_ELEVATED.value,
+            "FORECAST_RV_ELEVATED",
+        )
+        self.assertEqual(
+            EvidenceSignal.UPSIDE_TAIL_PROBABILITY_PHYSICAL.value,
+            "UPSIDE_TAIL_PROBABILITY_PHYSICAL",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

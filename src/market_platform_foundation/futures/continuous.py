@@ -72,9 +72,56 @@ def continuous_series_to_dicts(points: Sequence[ContinuousSeriesPoint]) -> list[
     ]
 
 
+def ratio_adjusted_series(
+    prices: Sequence[tuple[str, Decimal, str]],
+    *,
+    roll_gaps: Sequence[Decimal] | None = None,
+) -> list[ContinuousSeriesPoint]:
+    """Build ratio-adjusted continuous series from contract price tuples."""
+    if not prices:
+        return []
+    cumulative_ratio = Decimal("1")
+    points: list[ContinuousSeriesPoint] = []
+    for index, (obs_time, price, contract_id) in enumerate(prices):
+        if roll_gaps and index > 0 and index - 1 < len(roll_gaps):
+            gap = roll_gaps[index - 1]
+            if gap != 0:
+                cumulative_ratio *= gap
+        adjusted = price * cumulative_ratio
+        points.append(
+            ContinuousSeriesPoint(
+                observation_time=obs_time,
+                price=adjusted,
+                contract_id=contract_id,
+                roll_adjustment=cumulative_ratio,
+                methodology="ratio_adjusted",
+            )
+        )
+    return points
+
+
+def roll_gaps_from_prices(
+    prices: Sequence[tuple[str, Decimal, str]],
+) -> list[Decimal]:
+    """Derive multiplicative roll gaps at contract switches."""
+    gaps: list[Decimal] = []
+    for index in range(1, len(prices)):
+        prev_price = prices[index - 1][1]
+        curr_price = prices[index][1]
+        prev_id = prices[index - 1][2]
+        curr_id = prices[index][2]
+        if prev_id != curr_id and prev_price > 0:
+            gaps.append(curr_price / prev_price)
+        else:
+            gaps.append(Decimal("1"))
+    return gaps
+
+
 __all__ = [
     "ContinuousSeriesPoint",
     "additive_back_adjusted_series",
     "continuous_series_to_dicts",
+    "ratio_adjusted_series",
+    "roll_gaps_from_prices",
     "unadjusted_continuous_series",
 ]

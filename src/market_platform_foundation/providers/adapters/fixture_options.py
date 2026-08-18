@@ -106,9 +106,21 @@ class FixtureOptionsProvider:
                 ask=ask,
                 open_interest=open_interest,
             )
+            from ...options.surface import build_surface_point
+
+            surface_point = build_surface_point(activity)
+            internal_iv = None
+            computed_skew = None
+            if surface_point:
+                internal_iv = surface_point.get("internal_iv")
+                provider_iv = surface_point.get("provider_iv")
+                if internal_iv and isinstance(internal_iv, (int, float)):
+                    computed_skew = round(float(internal_iv) * float(activity.get("skew_signal", 0.0) or 0.0), 4)
             iv_rank = float(activity.get("iv_rank", 0.0))
+            if internal_iv is not None:
+                iv_rank = round(float(internal_iv), 4)
             volume_ratio = float(activity.get("volume_ratio", 0.0))
-            skew_signal = float(activity.get("skew_signal", 0.0))
+            skew_signal = computed_skew if computed_skew is not None else float(activity.get("skew_signal", 0.0))
             score = confirmation_score(
                 iv_rank=iv_rank,
                 volume_ratio=volume_ratio,
@@ -137,6 +149,12 @@ class FixtureOptionsProvider:
                 skew_signal=skew_signal,
                 source=str(activity.get("source", "unknown")),
             )
+            if internal_iv is not None:
+                whale_event["internal_iv"] = internal_iv
+                whale_event["iv_source"] = "internal_bsm_solver"
+            if surface_point and surface_point.get("provider_iv") is not None:
+                whale_event["provider_iv"] = surface_point["provider_iv"]
+                whale_event["iv_source"] = "provider_tagged"
             canonical = activity_to_option_contract(
                 activity,
                 symbol=symbol,

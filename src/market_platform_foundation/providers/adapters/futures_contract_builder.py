@@ -9,6 +9,7 @@ from ...contracts.futures import (
     FuturesContract,
     FuturesContractSpec,
     FuturesFamily,
+    RollState,
     SettlementType,
     futures_contract_to_dict,
 )
@@ -24,6 +25,10 @@ def snapshot_to_futures_contract(
     fixture_id: str,
     provider_id: str,
     event_time: str,
+    lead_contract: bool = False,
+    roll_state: RollState | None = None,
+    volume: int | None = None,
+    open_interest: int | None = None,
 ) -> FuturesContract | None:
     bids = snapshot.get("bids", [])
     asks = snapshot.get("asks", [])
@@ -55,9 +60,10 @@ def snapshot_to_futures_contract(
         spec=spec,
         price=Decimal(str(round(mid, 4))),
         last_trade_price=Decimal(str(round(mid, 4))),
-        volume=int(snapshot.get("volume", 0) or 0),
-        open_interest=int(snapshot.get("open_interest", 0) or 0),
-        lead_contract=True,
+        volume=int(volume if volume is not None else snapshot.get("volume", 0) or 0),
+        open_interest=int(open_interest if open_interest is not None else snapshot.get("open_interest", 0) or 0),
+        lead_contract=lead_contract,
+        roll_state=roll_state,
         provider=provider_id,
         event_time=event_time,
         available_time=event_time,

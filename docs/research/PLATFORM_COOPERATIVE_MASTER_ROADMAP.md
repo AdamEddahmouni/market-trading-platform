@@ -172,24 +172,24 @@ See `FOUR_LANE_ROADMAP_RECONCILIATION.md` for OF4 OFI through OF12 advanced ML.
 
 ---
 
-### FUTURES F2 — Roll / continuous-series correctness [PARTIAL]
+### FUTURES F2 — Roll / continuous-series correctness [COMPLETE]
 
 - [x] Lead contract selection rule v1
 - [x] RollState enum
-- [ ] Continuous series builders (explicit methodology)
-- [ ] Roll execution in simulator
-- [ ] Lead-contract switch tests
+- [x] Continuous series builders (explicit methodology)
+- [x] Roll execution in simulator
+- [x] Lead-contract switch tests
 
 **Blocks:** Trustworthy historical PnL research
 
 ---
 
-### FUTURES F3 — Curve / basis / carry [NOT STARTED]
+### FUTURES F3 — Curve / basis / carry [IN PROGRESS]
 
-- [ ] `FuturesCurveSnapshot` engine
+- [x] `FuturesCurveSnapshot` engine — `futures/curve.py`
 - [ ] Basis engine with explicit definitions
 - [ ] Carry per family (documented formulas)
-- [ ] Publish `FuturesCurveEvidence` cross-lane
+- [x] Publish `FuturesCurveEvidence` cross-lane — contango/backwardation signals
 
 **Parallel with:** O2
 
@@ -240,25 +240,26 @@ See `THREE_LANE_ROADMAP_RECONCILIATION.md` for F6 family models through F11 adva
 
 ---
 
-### OPTIONS O2 — IV + Greeks + surface [NOT STARTED]
+### OPTIONS O2 — IV + Greeks + surface [COMPLETE]
 
-- Normalized internal IV + provider IV tracking
-- Reproducible Greeks
-- Surface σ(K,T) with QA
-- Begin publishing volatility context via cross-lane
+- [x] Normalized internal IV + provider IV tracking
+- [x] Reproducible Greeks
+- [x] Surface σ(K,T) with QA
+- [x] Begin publishing volatility context via cross-lane
 
 **Does not alter SS P2 infrastructure.**
 
 ---
 
-### SHARED P2 — Physical distribution / volatility foundation [NOT STARTED]
+### SHARED P2 — Physical distribution / volatility foundation [COMPLETE]
 
 **Major cooperative milestone — blocks O4 and SS P3 magnitude.**
 
-- Multi-horizon return distribution forecasts (P)
-- Realized volatility estimators (documented, not mixed)
-- Volatility forecasting baselines (EWMA, GARCH, HAR-RV)
-- Event/jump primitives
+- [x] Realized volatility estimators (close-to-close; Parkinson in `realized_vol.py`)
+- [x] Volatility forecasting baselines (EWMA, GARCH, HAR-RV)
+- [x] Multi-horizon return distribution forecasts (P) — `research/distribution/forecast.py`
+- [x] Event/jump primitives — `research/distribution/events.py`
+- [x] Fixture provider wiring — `providers/adapters/fixture_distribution.py`
 
 **Location:** `research/distribution/` (platform), not `options/`
 
@@ -267,46 +268,48 @@ See `THREE_LANE_ROADMAP_RECONCILIATION.md` for F6 family models through F11 adva
 
 ---
 
-### SHORT SQUEEZE SS P3 — Baseline models [PLANNED]
+### SHORT SQUEEZE SS P3 — Baseline models [IN PROGRESS]
 
 **Depends on SHARED P2 for magnitude.**
 
-- Mechanism labels dataset
-- Logistic/hazard models
-- Calibrated horizon probabilities
+- [x] Mechanism labels adjudication dataset — `tests/fixtures/squeeze/mechanism_labels.json`
+- [x] Logistic/hazard models — `research/squeeze_models/`
+- [x] Calibrated horizon probabilities
 
 ---
 
-### OPTIONS O3 — Risk-neutral distribution [NOT STARTED]
+### OPTIONS O3 — Risk-neutral distribution [COMPLETE]
 
 **Depends on O2.**
 
-- Surface → Q inference
-- Risk-neutral moments and tails
-- Event-implied distribution
+- [x] Surface → Q inference — `options/risk_neutral.py`
+- [x] Risk-neutral moments and tails
+- [ ] Event-implied distribution
 
 ---
 
-### OPTIONS O4 — P vs Q edge engine [NOT STARTED]
+### OPTIONS O4 — P vs Q edge engine [IN PROGRESS]
 
 **Depends on O3 + SHARED P2.**
 
-- Decomposed edge components (no universal score)
-- Theoretical vs executable edge
-- Volatility risk premium research
+- [x] Decomposed edge components (no universal score) — `options/edge.py`
+- [ ] Theoretical vs executable edge
+- [ ] Volatility risk premium research
 
 ---
 
-### SHARED P3 — Cross-lane evidence fusion [PARTIAL]
+### SHARED P3 — Cross-lane evidence fusion [IN PROGRESS]
 
 **Depends on O2 partial + SS P1.**
 
 - [x] Order flow → squeeze (done)
 - [x] Order book → BOOK_IMBALANCE evidence (OF3)
-- [ ] Options publisher adapter
-- [ ] Squeeze evidence → Options P features
-- [ ] Evidence provenance classes + DAG validation
-- [ ] Circular dependency tests
+- [x] Options publisher adapter (minimal unusual-activity)
+- [x] Futures depth fused into squeeze bridge
+- [x] Evidence provenance classes + DAG validation
+- [x] Cross-lane evidence UI block (`CrossLaneEvidenceBlock`)
+- [x] Squeeze evidence → Options P features — `squeeze_context` + publisher
+- [x] Circular dependency tests (integration-level)
 
 **Milestone:** Options amplification visible in squeeze workspace with traceable refs.
 

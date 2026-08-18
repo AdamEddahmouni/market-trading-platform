@@ -9,6 +9,22 @@
   "session": "RTH",
   "symbol": "ES",
   "synthetic": true,
+  "contracts": [
+    {
+      "contract_id": "ES202506",
+      "expiration": "2025-06-20",
+      "open_interest": 200000,
+      "price": 6001.75,
+      "volume": 120000
+    },
+    {
+      "contract_id": "ES202509",
+      "expiration": "2025-09-20",
+      "open_interest": 520000,
+      "price": 6008.0,
+      "volume": 95000
+    }
+  ],
   "snapshots": [
     {
       "asks": [
@@ -106,7 +122,9 @@
         {"price": 6001.0, "size": 20}
       ],
       "event_time": "2025-06-02T14:41:06.000000000Z",
-      "source": "fixture_synthetic"
+      "open_interest": 200000,
+      "source": "fixture_synthetic",
+      "volume": 120000
     },
     {
       "asks": [
@@ -119,8 +137,28 @@
         {"price": 6001.5, "size": 24},
         {"price": 6001.25, "size": 22}
       ],
+      "contract_month": "202506",
       "event_time": "2025-06-02T14:41:07.000000000Z",
-      "source": "fixture_synthetic"
+      "open_interest": 198000,
+      "source": "fixture_synthetic",
+      "volume": 118000
+    },
+    {
+      "asks": [
+        {"price": 6010.0, "size": 40},
+        {"price": 6010.25, "size": 42},
+        {"price": 6010.5, "size": 44}
+      ],
+      "bids": [
+        {"price": 6008.0, "size": 90},
+        {"price": 6007.75, "size": 95},
+        {"price": 6007.5, "size": 100}
+      ],
+      "contract_month": "202509",
+      "event_time": "2025-06-02T14:41:08.000000000Z",
+      "open_interest": 520000,
+      "source": "fixture_synthetic",
+      "volume": 95000
     }
   ]
 }

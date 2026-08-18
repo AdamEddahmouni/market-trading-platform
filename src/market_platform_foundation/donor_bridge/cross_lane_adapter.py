@@ -298,7 +298,7 @@ def build_cross_lane_snapshot_from_futures(
         "futures_imbalance_signal": imbalance_signal,
         "futures_imbalance_ratio": imbalance_ratio,
         "futures_book_pressure_side": book_pressure,
-        "futures_curve_available": False,
+        "futures_curve_available": bool(futures_payload.get("futures_curve_available")),
         "futures_positioning_available": False,
         "futures_carry_available": False,
         "futures_data_kind": "depth_derived",
@@ -355,7 +355,202 @@ def build_cross_lane_snapshot_from_futures(
             )
         )
 
+    curve = futures_payload.get("curve_snapshot")
+    if isinstance(curve, dict) and curve.get("available"):
+        regime = str(curve.get("regime", "flat"))
+        if regime == "contango":
+            evidence.append(
+                lane_evidence_to_dict(
+                    NormalizedLaneEvidence(
+                        lane=LaneId.FUTURES,
+                        signal=EvidenceSignal.FUTURES_CURVE_CONTANGO,
+                        strength="MODERATE",
+                        available=True,
+                        source_ref="futures:curve_engine",
+                        detail="Term structure in contango (back > front)",
+                        provenance_class=EvidenceProvenanceClass.DERIVED,
+                    )
+                )
+            )
+        elif regime == "backwardation":
+            evidence.append(
+                lane_evidence_to_dict(
+                    NormalizedLaneEvidence(
+                        lane=LaneId.FUTURES,
+                        signal=EvidenceSignal.FUTURES_CURVE_BACKWARDATION,
+                        strength="MODERATE",
+                        available=True,
+                        source_ref="futures:curve_engine",
+                        detail="Term structure in backwardation (front > back)",
+                        provenance_class=EvidenceProvenanceClass.DERIVED,
+                    )
+                )
+            )
+        snapshot["futures_curve_regime"] = regime
+
     return snapshot, evidence
+
+
+def build_cross_lane_snapshot_from_distribution(
+    distribution_payload: dict[str, Any] | None,
+) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+    """Publish physical P distribution MODEL_OUTPUT evidence for cross-lane consumers."""
+    if not distribution_payload or not distribution_payload.get("available"):
+        return None, []
+
+    forecast = distribution_payload.get("forecast")
+    if not isinstance(forecast, dict):
+        return None, []
+
+    vol = forecast.get("vol_forecast_annualized")
+    horizons = forecast.get("horizons", [])
+    snapshot = {
+        "distribution_available": True,
+        "distribution_vol_forecast": vol,
+        "distribution_model": forecast.get("model"),
+        "distribution_event_window_active": forecast.get("event_window_active", False),
+    }
+    evidence: list[dict[str, Any]] = []
+    rv_threshold = 0.15
+    if isinstance(vol, (int, float)) and vol >= rv_threshold:
+        evidence.append(
+            lane_evidence_to_dict(
+                NormalizedLaneEvidence(
+                    lane=LaneId.CATALYST,
+                    signal=EvidenceSignal.FORECAST_RV_ELEVATED,
+                    strength="MODERATE" if vol < 0.35 else "HIGH",
+                    available=True,
+                    source_ref="platform:distribution_forecast",
+                    detail=f"Annualized vol forecast {vol:.4f} above baseline threshold",
+                    provenance_class=EvidenceProvenanceClass.MODEL_OUTPUT,
+                )
+            )
+        )
+    if isinstance(horizons, list) and horizons:
+        latest = horizons[-1]
+        if isinstance(latest, dict):
+            upside = latest.get("upside_tail_probability")
+            downside = latest.get("downside_tail_probability")
+            if isinstance(upside, (int, float)) and upside >= 0.05:
+                evidence.append(
+                    lane_evidence_to_dict(
+                        NormalizedLaneEvidence(
+                            lane=LaneId.CATALYST,
+                            signal=EvidenceSignal.UPSIDE_TAIL_PROBABILITY_PHYSICAL,
+                            strength="MODERATE",
+                            available=True,
+                            source_ref="platform:distribution_forecast",
+                            detail=f"Physical upside tail probability {upside:.4f}",
+                            provenance_class=EvidenceProvenanceClass.MODEL_OUTPUT,
+                        )
+                    )
+                )
+            if isinstance(downside, (int, float)) and downside >= 0.05:
+                evidence.append(
+                    lane_evidence_to_dict(
+                        NormalizedLaneEvidence(
+                            lane=LaneId.CATALYST,
+                            signal=EvidenceSignal.DOWNSIDE_TAIL_PROBABILITY_PHYSICAL,
+                            strength="MODERATE",
+                            available=True,
+                            source_ref="platform:distribution_forecast",
+                            detail=f"Physical downside tail probability {downside:.4f}",
+                            provenance_class=EvidenceProvenanceClass.MODEL_OUTPUT,
+                        )
+                    )
+                )
+    return snapshot, evidence
+
+
+def build_cross_lane_snapshot_from_squeeze(
+    squeeze_detail: dict[str, Any] | None,
+) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+    """Publish squeeze MODEL_OUTPUT evidence for Options and cross-lane consumers."""
+    if not squeeze_detail or not isinstance(squeeze_detail, dict):
+        return None, []
+
+    causal = squeeze_detail.get("causal_intelligence")
+    if not isinstance(causal, dict):
+        causal = squeeze_detail
+
+    state = causal.get("state") or squeeze_detail.get("ignition_state")
+    if not state:
+        return None, []
+
+    ignition_strength = causal.get("ignition_strength") or causal.get("overall_confidence") or "LOW"
+    state_upper = str(state).upper()
+    strength = "LOW"
+    if state_upper in {"IGNITION_WATCH", "VULNERABLE"}:
+        strength = "MODERATE"
+    elif state_upper in {"ACTIVE_SQUEEZE", "LIVE_CONFIRMATION"}:
+        strength = "HIGH"
+
+    snapshot = {
+        "squeeze_available": True,
+        "squeeze_state": str(state),
+        "squeeze_ignition_strength": str(ignition_strength),
+        "squeeze_structural_vulnerability": state_upper in {
+            "VULNERABLE",
+            "IGNITION_WATCH",
+            "ACTIVE_SQUEEZE",
+        },
+    }
+    evidence: list[dict[str, Any]] = [
+        lane_evidence_to_dict(
+            NormalizedLaneEvidence(
+                lane=LaneId.SHORT_SQUEEZE,
+                signal=EvidenceSignal.SQUEEZE_STATE,
+                strength=strength,
+                available=True,
+                source_ref="squeeze:causal_intelligence",
+                detail=f"Causal state {state}",
+                provenance_class=EvidenceProvenanceClass.MODEL_OUTPUT,
+            )
+        ),
+        lane_evidence_to_dict(
+            NormalizedLaneEvidence(
+                lane=LaneId.SHORT_SQUEEZE,
+                signal=EvidenceSignal.SQUEEZE_IGNITION_STRENGTH,
+                strength=str(ignition_strength).upper() if ignition_strength else "LOW",
+                available=True,
+                source_ref="squeeze:causal_intelligence",
+                detail=f"Ignition strength context {ignition_strength}",
+                provenance_class=EvidenceProvenanceClass.MODEL_OUTPUT,
+            )
+        ),
+    ]
+    return snapshot, evidence
+
+
+def build_cross_lane_evidence_from_risk_neutral(
+    risk_neutral_payload: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    """Publish IMPLIED_UPSIDE_TAIL evidence when O3 Q inference is available."""
+    if not risk_neutral_payload or not risk_neutral_payload.get("available"):
+        return []
+    horizons = risk_neutral_payload.get("horizons", [])
+    if not isinstance(horizons, list) or not horizons:
+        return []
+    latest = horizons[-1]
+    if not isinstance(latest, dict):
+        return []
+    upside = latest.get("upside_tail_probability")
+    if not isinstance(upside, (int, float)) or upside < 0.03:
+        return []
+    strength = "MODERATE" if upside < 0.08 else "HIGH"
+    return [
+        lane_evidence_to_dict(
+            NormalizedLaneEvidence(
+                lane=LaneId.OPTIONS,
+                signal=EvidenceSignal.IMPLIED_UPSIDE_TAIL_PROBABILITY,
+                strength=strength,
+                available=True,
+                source_ref="options:risk_neutral_q",
+                detail=f"Risk-neutral upside tail probability {upside:.4f}",
+                provenance_class=EvidenceProvenanceClass.MODEL_OUTPUT,
+            )
+        )
+    ]
 
 
 def merge_cross_lane_snapshots(
@@ -366,6 +561,9 @@ def merge_cross_lane_snapshots(
         "order_flow_available": False,
         "options_available": False,
         "futures_available": False,
+        "order_book_available": False,
+        "distribution_available": False,
+        "squeeze_available": False,
         "attention_available": False,
     }
     for snapshot in snapshots:

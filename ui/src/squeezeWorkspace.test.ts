@@ -27,4 +27,27 @@ describe("WorkspaceSqueezeResponseSchema", () => {
     expect(parsed.state_machine?.current_state).toBe("WATCH");
     expect(parsed.readiness?.provenance_admissible).toBe(true);
   });
+
+  it("parses cross_lane_evidence with provenance fields", () => {
+    const parsed = WorkspaceSqueezeResponseSchema.parse({
+      symbol: "NVDA",
+      source: "short-squeeze-project",
+      bridge_mode: "READ_ONLY",
+      available: true,
+      replay_chart_available: false,
+      cross_lane_evidence: [
+        {
+          lane: "options",
+          signal: "CALL_DEMAND_ANOMALY",
+          strength: "MODERATE",
+          available: true,
+          source_ref: "whale:options",
+          detail: "elevated unusual activity",
+          provenance_class: "DERIVED",
+          quality_flags: ["FLOW_DIRECTION_UNCERTAIN"],
+        },
+      ],
+    });
+    expect(parsed.cross_lane_evidence?.[0]?.provenance_class).toBe("DERIVED");
+  });
 });

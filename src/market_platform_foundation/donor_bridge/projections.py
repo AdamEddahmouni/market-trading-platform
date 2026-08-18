@@ -324,17 +324,25 @@ def _merge_cross_lane_causal(
         return detail, []
 
     from ..providers.projections import (
+        build_workspace_distribution_payload,
+        build_workspace_futures_payload,
         build_workspace_options_payload,
         build_workspace_order_book_payload,
         build_workspace_order_flow_payload,
     )
     from .cross_lane_adapter import (
+        build_cross_lane_evidence_from_risk_neutral,
+        build_cross_lane_snapshot_from_distribution,
+        build_cross_lane_snapshot_from_futures,
         build_cross_lane_snapshot_from_options,
         build_cross_lane_snapshot_from_order_book,
         build_cross_lane_snapshot_from_order_flow,
+        build_cross_lane_snapshot_from_squeeze,
         merge_cross_lane_evidence,
         merge_cross_lane_snapshots,
     )
+    from ..options.risk_neutral import infer_risk_neutral_distribution
+    from ..options.surface import build_volatility_surface
 
     order_flow = build_workspace_order_flow_payload(
         symbol,
@@ -351,12 +359,48 @@ def _merge_cross_lane_causal(
         as_of_context=as_of_context or {},
         prediction_cutoff=prediction_cutoff,
     )
+    futures = build_workspace_futures_payload(
+        symbol,
+        as_of_context=as_of_context or {},
+        prediction_cutoff=prediction_cutoff,
+    )
+    distribution = build_workspace_distribution_payload(
+        symbol,
+        as_of_context=as_of_context or {},
+        prediction_cutoff=prediction_cutoff,
+    )
 
     of_snapshot, of_evidence = build_cross_lane_snapshot_from_order_flow(order_flow)
     opt_snapshot, opt_evidence = build_cross_lane_snapshot_from_options(options)
     ob_snapshot, ob_evidence = build_cross_lane_snapshot_from_order_book(order_book)
-    snapshot = merge_cross_lane_snapshots(of_snapshot, opt_snapshot, ob_snapshot)
-    evidence = merge_cross_lane_evidence(of_evidence, opt_evidence, ob_evidence)
+    fut_snapshot, fut_evidence = build_cross_lane_snapshot_from_futures(futures)
+    dist_snapshot, dist_evidence = build_cross_lane_snapshot_from_distribution(distribution)
+    risk_neutral = None
+    if options.get("available") and isinstance(options.get("activities"), list):
+        surface = build_volatility_surface(options.get("activities", []))
+        risk_neutral = infer_risk_neutral_distribution(
+            surface,
+            symbol=symbol.upper(),
+            as_of_time=str(options.get("activities", [{}])[0].get("event_time", ""))
+            if options.get("activities")
+            else "",
+        )
+    rn_evidence = build_cross_lane_evidence_from_risk_neutral(risk_neutral)
+    snapshot = merge_cross_lane_snapshots(
+        of_snapshot,
+        opt_snapshot,
+        ob_snapshot,
+        fut_snapshot,
+        dist_snapshot,
+    )
+    evidence = merge_cross_lane_evidence(
+        of_evidence,
+        opt_evidence,
+        ob_evidence,
+        fut_evidence,
+        dist_evidence,
+        rn_evidence,
+    )
 
     from ..cross_lane.evidence import (
         EvidenceProvenanceClass,
@@ -368,8 +412,8 @@ def _merge_cross_lane_causal(
 
     parsed_evidence = [
         NormalizedLaneEvidence(
-            lane=LaneId(str(item.get("lane", LaneId.ORDER_FLOW.value)),
-            signal=EvidenceSignal(str(item.get("signal", EvidenceSignal.CVD_POSITIVE_SLOPE.value)),
+            lane=LaneId(str(item.get("lane", LaneId.ORDER_FLOW.value))),
+            signal=EvidenceSignal(str(item.get("signal", EvidenceSignal.CVD_POSITIVE_SLOPE.value))),
             strength=str(item.get("strength", "LOW")),
             available=bool(item.get("available", False)),
             source_ref=str(item.get("source_ref", "")),
@@ -385,7 +429,15 @@ def _merge_cross_lane_causal(
     if dag_violations:
         snapshot["evidence_dag_violations"] = dag_violations
 
-    if not snapshot.get("order_flow_available") and not snapshot.get("options_available"):
+    if not any(
+        [
+            snapshot.get("order_flow_available"),
+            snapshot.get("options_available"),
+            snapshot.get("order_book_available"),
+            snapshot.get("futures_available"),
+            snapshot.get("distribution_available"),
+        ]
+    ):
         return detail, evidence
 
     merged_detail = dict(detail)
@@ -415,6 +467,12 @@ def _merge_cross_lane_causal(
                 }
     except (ConnectionError, ValueError):
         return detail, evidence
+
+    sq_snapshot, sq_evidence = build_cross_lane_snapshot_from_squeeze(merged_detail)
+    evidence = merge_cross_lane_evidence(evidence, sq_evidence)
+    if sq_snapshot:
+        snapshot = merge_cross_lane_snapshots(snapshot, sq_snapshot)
+
     return merged_detail, evidence
 
 

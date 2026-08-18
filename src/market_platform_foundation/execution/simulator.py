@@ -153,3 +153,33 @@ class BarConservativeSimulator:
             if int(bar["available_time"]) >= activation_time:
                 return bar
         return None
+
+
+def simulate_futures_roll(
+    *,
+    from_contract_id: str,
+    to_contract_id: str,
+    quantity: int,
+    roll_gap: float,
+) -> dict[str, Any]:
+    """F2 roll execution stub — records roll intent with explicit gap semantics."""
+    if quantity <= 0 or from_contract_id == to_contract_id:
+        return {
+            "available": False,
+            "reason": "ROLL_INVALID_PARAMETERS",
+        }
+    body = {
+        "from_contract_id": from_contract_id,
+        "gap_multiplier": roll_gap,
+        "quantity": quantity,
+        "simulator_version": SIMULATOR_VERSION,
+        "to_contract_id": to_contract_id,
+    }
+    return {
+        "available": True,
+        "roll_event": body,
+        "roll_id": sha256_bytes(canonical_bytes(body)),
+    }
+
+
+__all__ = ["BarConservativeSimulator", "SIMULATOR_VERSION", "simulate_futures_roll"]

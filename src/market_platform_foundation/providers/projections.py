@@ -228,6 +228,7 @@ def build_workspace_options_payload(
     *,
     as_of_context: dict[str, object],
     prediction_cutoff: int,
+    squeeze_causal: dict[str, object] | None = None,
 ) -> dict[str, Any]:
     instrument_id = symbol.upper()
     ledger = get_institutional_ledger()
@@ -255,6 +256,36 @@ def build_workspace_options_payload(
             "research_only": True,
             "symbol": instrument_id,
         }
+
+    from ..options.edge import compare_physical_vs_risk_neutral
+    from ..options.features.squeeze_context import build_squeeze_context_for_options
+    from ..options.risk_neutral import infer_risk_neutral_distribution
+    from ..options.surface import build_volatility_surface
+
+    causal = squeeze_causal if isinstance(squeeze_causal, dict) else _lightweight_squeeze_causal(
+        instrument_id, prediction_cutoff
+    )
+    squeeze_context = build_squeeze_context_for_options(causal if isinstance(causal, dict) else None)
+    distribution = build_workspace_distribution_payload(
+        instrument_id,
+        as_of_context=as_of_context,
+        prediction_cutoff=prediction_cutoff,
+    )
+    physical_forecast = distribution.get("forecast") if distribution.get("available") else None
+    surface = build_volatility_surface(activities)
+    as_of_time = ""
+    if activities and isinstance(activities[0], dict):
+        as_of_time = str(activities[0].get("event_time", ""))
+    risk_neutral_forecast = infer_risk_neutral_distribution(
+        surface,
+        symbol=instrument_id,
+        as_of_time=as_of_time,
+    )
+    p_vs_q_edge = compare_physical_vs_risk_neutral(
+        physical_forecast if isinstance(physical_forecast, dict) else None,
+        risk_neutral_forecast,
+    )
+
     return {
         "activities": activities,
         "activity_count": len(activities),
@@ -271,10 +302,29 @@ def build_workspace_options_payload(
             "Research-only per ADR-WHALE-004."
         ),
         "ledger_id": ledger.ledger_id,
+        "p_vs_q_edge": p_vs_q_edge,
         "provider_id": "options.fixture.activity",
         "research_only": True,
+        "risk_neutral_forecast": risk_neutral_forecast,
+        "squeeze_context": squeeze_context,
         "symbol": instrument_id,
+        "volatility_surface": surface,
     }
+
+
+def _lightweight_squeeze_causal(symbol: str, prediction_cutoff: int) -> dict[str, Any] | None:
+    """Fetch squeeze causal state without cross-lane fusion (avoids circular feedback)."""
+    del prediction_cutoff
+    try:
+        from ..donor_bridge.projections import DEFAULT_BASE_URL, fetch_frozen_candidate_detail, is_available
+
+        if not is_available(base_url=DEFAULT_BASE_URL):
+            return None
+        detail = fetch_frozen_candidate_detail(symbol.upper(), base_url=DEFAULT_BASE_URL)
+        causal = detail.get("causal_intelligence")
+        return causal if isinstance(causal, dict) else None
+    except (ConnectionError, ValueError, ImportError):
+        return None
 
 
 def build_workspace_large_transactions_payload(
@@ -514,7 +564,7 @@ def build_workspace_futures_payload(
             "symbol": instrument_id,
         }
     latest = snapshots[-1]
-    return {
+    payload = {
         "as_of_context": as_of_context,
         "available": True,
         "book_pressure_side": latest.get("book_pressure_side"),
@@ -541,6 +591,15 @@ def build_workspace_futures_payload(
         "symbol": instrument_id,
         "synthetic": True,
     }
+    if instrument_id == "ES":
+        from ..futures.curve import curve_snapshot_payload
+        from .adapters.fixture_futures_chain import FixtureFuturesChainProvider
+
+        chain = FixtureFuturesChainProvider().fetch_chain("ES")
+        curve = curve_snapshot_payload(chain)
+        payload["curve_snapshot"] = curve
+        payload["futures_curve_available"] = curve.get("available", False)
+    return payload
 
 
 def build_workspace_catalyst_payload(
@@ -650,9 +709,51 @@ def build_workspace_fund_etf_payload(
     }
 
 
+def build_workspace_distribution_payload(
+    symbol: str,
+    *,
+    as_of_context: dict[str, object],
+    prediction_cutoff: int | None = None,
+) -> dict[str, Any]:
+    """Physical distribution forecast from admitted fixture bars (SHARED P2)."""
+    del prediction_cutoff
+    instrument_id = symbol.upper()
+    from .adapters.fixture_distribution import FixtureDistributionForecastProvider
+
+    provider = FixtureDistributionForecastProvider()
+    result = provider.fetch_distribution_forecast(instrument_id)
+    if result.status != "available" or not result.events:
+        return {
+            "as_of_context": as_of_context,
+            "available": False,
+            "disclaimer": (
+                "Physical distribution forecast unavailable for this symbol. "
+                "Fail-closed per SHARED P2."
+            ),
+            "forecast": None,
+            "reason": result.reason_code or "DISTRIBUTION_NOT_AVAILABLE",
+            "research_only": True,
+            "symbol": instrument_id,
+        }
+    forecast = result.events[0]
+    return {
+        "as_of_context": as_of_context,
+        "available": True,
+        "disclaimer": (
+            "Physical (P) return distribution forecasts are platform-owned baselines. "
+            "Not mixed with risk-neutral (Q) inference. Research-only."
+        ),
+        "forecast": forecast,
+        "provider_id": provider.provider_id,
+        "research_only": True,
+        "symbol": instrument_id,
+    }
+
+
 __all__ = [
     "build_workspace_catalyst_payload",
     "build_workspace_disclosure_payload",
+    "build_workspace_distribution_payload",
     "build_workspace_fund_etf_payload",
     "build_workspace_futures_payload",
     "build_workspace_large_transactions_payload",

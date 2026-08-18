@@ -276,6 +276,9 @@ export const WorkspaceSqueezeResponseSchema = z.object({
         available: z.boolean(),
         source_ref: z.string(),
         detail: z.string(),
+        observed_at: z.string().nullable().optional(),
+        quality_flags: z.array(z.string()).optional(),
+        provenance_class: z.string().optional(),
       }),
     )
     .optional(),
