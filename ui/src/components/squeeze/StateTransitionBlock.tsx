@@ -22,28 +22,37 @@ export function StateTransitionBlock({ squeeze }: Props) {
     );
   }
 
+  const failedThresholds = machine.failed_thresholds ?? machine.changed_criteria ?? [];
+
   return (
-    <section className="squeeze-state-machine" aria-label="Ignition state machine">
+    <section className="squeeze-state-machine" aria-label="Causal squeeze state">
       <div className="squeeze-state-banner">
         <span className="squeeze-state-label">STATE: {machine.current_state}</span>
         <span className="squeeze-freshness">last Δ {machine.last_transition_label}</span>
+        {machine.overall_confidence ? (
+          <span className="squeeze-confidence">confidence {machine.overall_confidence}</span>
+        ) : null}
       </div>
       <div className="state-transition-grid">
         <div className="state-transition-column">
-          <h3>Changed criteria</h3>
-          <CriterionList items={machine.changed_criteria ?? []} emptyLabel="No failing criteria in frozen snapshot." />
+          <h3>Failed thresholds</h3>
+          <p className="state-transition-note">
+            Phase 3A rule outcomes that did not pass — not the same as a causal state transition.
+          </p>
+          <CriterionList items={failedThresholds} emptyLabel="No failing thresholds in this snapshot." />
         </div>
         <div className="state-transition-column">
-          <h3>Unchanged criteria</h3>
-          <CriterionList items={machine.unchanged_criteria ?? []} emptyLabel="No passing criteria recorded." />
+          <h3>Passing thresholds</h3>
+          <CriterionList items={machine.unchanged_criteria ?? []} emptyLabel="No passing thresholds recorded." />
         </div>
         {machine.unknown_criteria && machine.unknown_criteria.length > 0 ? (
           <div className="state-transition-column">
-            <h3>Unknown criteria</h3>
+            <h3>Unknown thresholds</h3>
             <CriterionList items={machine.unknown_criteria} emptyLabel="None" />
           </div>
         ) : null}
       </div>
+      <CausalTransitionLog transitions={machine.state_transitions ?? []} />
       <TransitionLog transitions={machine.transitions ?? []} />
     </section>
   );
@@ -55,7 +64,32 @@ type TransitionEvent = {
   to_state?: string;
   kind?: string;
   trigger?: string;
+  hysteresis_applied?: boolean;
 };
+
+function CausalTransitionLog({ transitions }: { transitions: TransitionEvent[] }) {
+  if (!transitions.length) {
+    return null;
+  }
+  return (
+    <div className="state-transition-log causal-transition-log">
+      <h3>Causal state transitions</h3>
+      <ul className="state-transition-event-list">
+        {transitions.map((event, index) => (
+          <li key={`causal-${event.from_state ?? "from"}-${event.to_state ?? "to"}-${index}`}>
+            <span className="transition-states">
+              {event.from_state ?? "UNKNOWN"} → {event.to_state ?? "UNKNOWN"}
+            </span>
+            {event.trigger ? <span className="transition-trigger">{event.trigger}</span> : null}
+            {event.hysteresis_applied ? (
+              <span className="transition-hysteresis">hysteresis applied</span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 function TransitionLog({ transitions }: { transitions: TransitionEvent[] }) {
   if (!transitions.length) {
@@ -63,7 +97,7 @@ function TransitionLog({ transitions }: { transitions: TransitionEvent[] }) {
   }
   return (
     <div className="state-transition-log">
-      <h3>Transition log</h3>
+      <h3>Snapshot log</h3>
       <ul className="state-transition-event-list">
         {transitions.map((event, index) => (
           <li key={`${event.kind ?? "event"}-${event.from_state ?? "from"}-${event.to_state ?? "to"}-${index}`}>

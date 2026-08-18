@@ -104,6 +104,13 @@ The status command reports donor health and IMP bridge URLs.
 `historical_context` from the Phase 3F n=30 calibration cohort fixture. RESEARCH analytics
 includes `squeeze_historical_cohort` panel with outcome/classification distributions.
 
+**Causal intelligence (experimental):** workspace payloads may include `causal_intelligence`
+from the donor (`squeeze_causal_baseline.v1`) with explicit states
+(BASELINE → VULNERABLE → … → ACTIVE_SQUEEZE → EXHAUSTION). This replaces using
+`research_detection.status` as the primary squeeze lifecycle label. Horizon
+probabilities remain `RESEARCH_ONLY` until calibrated models exist. See
+[SHORT_SQUEEZE_CAUSAL_RESEARCH_SPEC.md](../../short-squeeze-project/short-squeeze-core/docs/research/SHORT_SQUEEZE_CAUSAL_RESEARCH_SPEC.md).
+
 **Institutional options cross-ref** (replay-aware): when the IMP replay store is loaded and
 `ADMITTED-OPTIONS-BIYA-001` is entitled, workspace squeeze payloads replace the frozen-donor
 Options ignition card with admitted fixture summaries. BIYA shows this card even when donor

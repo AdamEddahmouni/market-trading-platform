@@ -200,6 +200,16 @@ export const WorkspaceSqueezeResponseSchema = z.object({
           reason: z.string(),
         }),
       ),
+      failed_thresholds: z
+        .array(
+          z.object({
+            rule_id: z.string(),
+            category: z.string(),
+            outcome: z.string(),
+            reason: z.string(),
+          }),
+        )
+        .optional(),
       unchanged_criteria: z.array(
         z.object({
           rule_id: z.string(),
@@ -217,7 +227,57 @@ export const WorkspaceSqueezeResponseSchema = z.object({
         }),
       ).optional(),
       transitions: z.array(z.record(z.string())).optional(),
+      state_transitions: z.array(z.record(z.string())).optional(),
+      causal_model_version: z.string().optional(),
+      overall_confidence: z.string().optional(),
+      mechanism_labels: z.array(z.string()).optional(),
     })
+    .optional(),
+  causal_intelligence: z
+    .object({
+      model_version: z.string(),
+      state: z.string(),
+      overall_confidence: z.string(),
+      research_status: z.string().optional(),
+      vulnerability: z.number().nullable().optional(),
+      constraint_pressure: z.number().nullable().optional(),
+      ignition_strength: z.number().nullable().optional(),
+      reflexivity_strength: z.number().nullable().optional(),
+      remaining_fuel: z.number().nullable().optional(),
+      exhaustion_risk: z.number().nullable().optional(),
+      mechanism_labels: z.array(z.string()).optional(),
+      quality_flags: z.array(z.string()).optional(),
+      missing_capabilities: z.array(z.string()).optional(),
+      explanation: z
+        .object({
+          summary: z.string(),
+          graph: z.record(z.unknown()).optional(),
+        })
+        .optional(),
+      horizon_probabilities: z
+        .array(
+          z.object({
+            horizon_days: z.number(),
+            value: z.number().nullable(),
+            status: z.string(),
+            note: z.string(),
+          }),
+        )
+        .optional(),
+    })
+    .nullable()
+    .optional(),
+  cross_lane_evidence: z
+    .array(
+      z.object({
+        lane: z.string(),
+        signal: z.string(),
+        strength: z.string(),
+        available: z.boolean(),
+        source_ref: z.string(),
+        detail: z.string(),
+      }),
+    )
     .optional(),
   rules: z
     .array(

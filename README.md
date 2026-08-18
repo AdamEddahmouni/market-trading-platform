@@ -84,6 +84,7 @@ prediction-market expansion require separate ADR authorization and phase gates.
 
 - [UI-001 design spec](docs/superpowers/specs/2026-08-18-ui-001-research-ui-v1-design.md)
 - [Short-squeeze read-only integration lane](docs/integration/SHORT_SQUEEZE_LANE.md)
+- [Order Flow / microstructure integration lane](docs/integration/ORDER_FLOW_LANE.md)
 - Start API: `python tools/ui1/run_ui_api.py --serve --port 8766`
 - Frontend: see [ui/README.md](ui/README.md)
 
@@ -96,9 +97,12 @@ prediction-market expansion require separate ADR authorization and phase gates.
 - Copy [`.env.example`](.env.example) and set `ANTHROPIC_API_KEY` before starting the API
 - Rollback to abstaining stub: `IMP_ASSISTANT_STUB=1`
 - Force grounded-only: `IMP_ASSISTANT_PROVIDER=grounded`
-- Acceptance evidence: `python tools/mra001/run_mra001_pipeline.py --output-dir evidence/mra001/build-run`
-- Publish PASS: `python tools/mra001/publish_mra001_pass.py`
-- Verify publication: `python tools/mra001/verify_mra001_publication.py`
+- MRA-001 acceptance evidence: `python tools/mra001/run_mra001_pipeline.py --output-dir evidence/mra001/build-run`
+- MRA-001 publish PASS: `python tools/mra001/publish_mra001_pass.py`
+- MRA-001 verify publication: `python tools/mra001/verify_mra001_publication.py`
+- MRA-002 acceptance evidence: `python tools/mra002/run_mra002_pipeline.py --output-dir evidence/mra002/build-run`
+- MRA-002 publish PASS: `python tools/mra002/publish_mra002_pass.py`
+- MRA-002 verify publication: `python tools/mra002/verify_mra002_publication.py`
 
 ```powershell
 $env:ANTHROPIC_API_KEY = "sk-ant-..."

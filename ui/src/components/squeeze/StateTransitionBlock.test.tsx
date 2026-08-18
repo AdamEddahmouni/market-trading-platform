@@ -6,7 +6,7 @@ import { frozenSqueezeFixture } from "./fixtures";
 describe("StateTransitionBlock", () => {
   it("renders transition log when transitions are present", () => {
     render(<StateTransitionBlock squeeze={frozenSqueezeFixture} />);
-    expect(screen.getByText("Transition log")).toBeInTheDocument();
+    expect(screen.getByText("Snapshot log")).toBeInTheDocument();
     expect(screen.getByText("INITIAL → WATCH")).toBeInTheDocument();
     expect(screen.getByText("at FROZEN")).toBeInTheDocument();
     expect(screen.getByText("FROZEN_DEMO aggregate load")).toBeInTheDocument();
@@ -18,6 +18,6 @@ describe("StateTransitionBlock", () => {
     render(<StateTransitionBlock squeeze={squeeze} />);
     expect(screen.getByText("STATE: UNKNOWN")).toBeInTheDocument();
     expect(screen.getByText("Freshness: FROZEN")).toBeInTheDocument();
-    expect(screen.queryByText("Transition log")).not.toBeInTheDocument();
+    expect(screen.queryByText("Snapshot log")).not.toBeInTheDocument();
   });
 });

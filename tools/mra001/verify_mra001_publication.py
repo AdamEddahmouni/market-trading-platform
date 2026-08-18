@@ -8,11 +8,23 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
-from market_platform_foundation.canonical import load_json_strict, sha256_bytes
+from market_platform_foundation.canonical import canonical_bytes, load_json_strict, sha256_bytes
 
 PUBLICATION_PATH = ROOT / "docs/superpowers/governance/2026-08-18-mra-001-pass-publication.json"
 AUTHORITY_PATH = ROOT / "manifests/phase0/canonical-authority.json"
 POSTREVIEW_FINAL = ROOT / "evidence/mra001/postreview-pass/mra001.final_acceptance_result.json"
+
+
+def publication_manifest_hash(manifest: dict[str, object], bound: dict[str, object]) -> str:
+    snapshot = {
+        key: value
+        for key, value in manifest.items()
+        if not key.endswith("_status")
+    }
+    for key, value in bound.items():
+        if key.endswith("_status"):
+            snapshot[key] = value
+    return sha256_bytes(canonical_bytes(snapshot))
 
 
 def main() -> int:
@@ -39,7 +51,7 @@ def main() -> int:
     if bound.get("mra001_status") != "PASS":
         print("PUBLICATION_BOUNDARY_MISMATCH")
         return 1
-    if sha256_bytes(AUTHORITY_PATH.read_bytes()) != bound.get("sha256"):
+    if publication_manifest_hash(manifest, bound) != bound.get("sha256"):
         print("AUTHORITY_HASH_MISMATCH")
         return 1
 

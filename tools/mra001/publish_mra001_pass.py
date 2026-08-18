@@ -11,13 +11,25 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
-from market_platform_foundation.canonical import load_json_strict, sha256_bytes, write_canonical_json
+from market_platform_foundation.canonical import canonical_bytes, load_json_strict, sha256_bytes, write_canonical_json
 from market_platform_foundation.offline_guard import install_guard
 
 BUILD_RUN_DIR = ROOT / "evidence/mra001/build-run"
 POSTREVIEW_DIR = ROOT / "evidence/mra001/postreview-pass"
 PUBLICATION_PATH = ROOT / "docs/superpowers/governance/2026-08-18-mra-001-pass-publication.json"
 AUTHORITY_PATH = ROOT / "manifests/phase0/canonical-authority.json"
+
+
+def publication_manifest_hash(manifest: dict[str, object], bound: dict[str, object]) -> str:
+    snapshot = {
+        key: value
+        for key, value in manifest.items()
+        if not key.endswith("_status")
+    }
+    for key, value in bound.items():
+        if key.endswith("_status"):
+            snapshot[key] = value
+    return sha256_bytes(canonical_bytes(snapshot))
 
 
 def _sync_postreview(build_run: Path, postreview: Path) -> None:
@@ -72,7 +84,16 @@ def publish(*, publication_path: Path, build_run_dir: Path) -> dict[str, object]
         "mra001_status": "PASS",
         "ui2_status": authority_manifest.get("ui2_status", "PASS"),
     }
-    authority_hash = write_canonical_json(AUTHORITY_PATH, updated_manifest)
+    authority_binding = {
+        "logical_id": "foundation.canonical_authority_manifest",
+        "mra001_status": "PASS",
+        "repository_relative_path": "manifests/phase0/canonical-authority.json",
+        "ui1_status": updated_manifest.get("ui1_status"),
+        "ui2_status": updated_manifest.get("ui2_status"),
+    }
+    authority_hash = publication_manifest_hash(updated_manifest, authority_binding)
+    authority_binding["sha256"] = authority_hash
+    write_canonical_json(AUTHORITY_PATH, updated_manifest)
 
     if publication_path.exists():
         raise FileExistsError(publication_path)
@@ -80,14 +101,7 @@ def publish(*, publication_path: Path, build_run_dir: Path) -> dict[str, object]
     publication_doc = {
         "artifact_type": "MRA001_PASS_PUBLICATION",
         "assertion_run_id": run_id,
-        "authority_manifest_at_publication": {
-            "logical_id": "foundation.canonical_authority_manifest",
-            "mra001_status": "PASS",
-            "repository_relative_path": "manifests/phase0/canonical-authority.json",
-            "sha256": authority_hash,
-            "ui1_status": updated_manifest.get("ui1_status"),
-            "ui2_status": updated_manifest.get("ui2_status"),
-        },
+        "authority_manifest_at_publication": authority_binding,
         "candidate_evidence_root": candidate_root,
         "effect": (
             "Publishes MRA-001 PASS for grounded Market Research Assistant "

@@ -89,6 +89,14 @@ class DonorPatternTests(unittest.TestCase):
         self.assertFalse(ok_wide)
         self.assertIn("WIDE_SPREAD", reasons_wide)
 
+    def test_options_confirmation_score_bounds(self) -> None:
+        score = confirmation_score(iv_rank=1.0, volume_ratio=1.0, skew_signal=1.0)
+        self.assertEqual(score, 100.0)
+        low = confirmation_score(iv_rank=0.0, volume_ratio=0.0, skew_signal=0.0)
+        self.assertEqual(low, 0.0)
+        mid = confirmation_score(iv_rank=0.5, volume_ratio=0.5, skew_signal=0.5)
+        self.assertAlmostEqual(mid, 50.0)
+
     def test_order_book_lane_helpers(self) -> None:
         snapshot = {
             "bids": [{"price": 10.0, "size": 100}, {"price": 9.9, "size": 50}],

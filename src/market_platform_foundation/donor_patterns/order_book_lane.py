@@ -61,4 +61,24 @@ def direction_from_imbalance(ratio: float, *, threshold: float = 1.2) -> str:
     return "neutral"
 
 
-__all__ = ["best_bid_ask", "depth_imbalance", "direction_from_imbalance", "snapshot_ofi"]
+def book_pressure_side(ratio: float, *, threshold: float = 1.2) -> str:
+    """Raw resting-book pressure without domain interpretation policy.
+
+    Order Flow owns this primitive; momentum vs contrarian lanes apply policy separately.
+    """
+    if ratio <= 0:
+        return "neutral"
+    if ratio >= threshold:
+        return "bid_heavy"
+    if ratio <= (1.0 / threshold):
+        return "ask_heavy"
+    return "neutral"
+
+
+__all__ = [
+    "best_bid_ask",
+    "book_pressure_side",
+    "depth_imbalance",
+    "direction_from_imbalance",
+    "snapshot_ofi",
+]

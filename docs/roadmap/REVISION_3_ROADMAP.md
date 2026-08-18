@@ -28,7 +28,7 @@ authorized by this file.
 | Phase 15 — whale public_catalyst family | Fixture-first BOXL catalyst slice; `public_catalyst` institutional family; read-only workspace API and UI panel. | `PASS` — ADMITTED-CATALYST-BOXL-001 |
 | Phase 16 — whale fund_etf_cross_asset family | Fixture-first NVDA fund/ETF flow proxy slice; `fund_etf_cross_asset` institutional family; read-only workspace API and UI panel. | `PASS` — ADMITTED-ETF-CROSSASSET-NVDA-001 |
 | MRA-001 — grounded Market Research Assistant | Deterministic evidence retrieval from explain/inspect projections; no LLM; citation-required answers. | `PASS` — grounded.evidence on admitted fixture |
-| MRA-002 — Anthropic LLM assistant | Anthropic Messages API with grounded evidence pack, env-injected credentials, grounded fallback. | `AUTHORIZED` — implementation complete; live inference when `ANTHROPIC_API_KEY` set |
+| MRA-002 — Anthropic LLM assistant | Anthropic Messages API with grounded evidence pack, env-injected credentials, grounded fallback. | `PASS` — mocked HTTP acceptance; live inference when `ANTHROPIC_API_KEY` set |
 
 ## Accepted foundational ADRs (Phase 1 registry)
 

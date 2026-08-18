@@ -1,4 +1,5 @@
 import type { WorkspaceSqueezeResponse } from "../../api/client";
+import { CausalIntelligenceBlock } from "./CausalIntelligenceBlock";
 import { HistoricalSqueezeContextBlock } from "./HistoricalSqueezeContextBlock";
 import { StateTransitionBlock } from "./StateTransitionBlock";
 
@@ -51,6 +52,7 @@ export function SqueezeWorkspacePanel({
             </p>
           ) : null}
           <StateTransitionBlock squeeze={squeeze} />
+          <CausalIntelligenceBlock squeeze={squeeze} />
           {squeeze.ignition_evidence && squeeze.ignition_evidence.length > 0 ? (
             <div className="ignition-evidence-grid">
               {squeeze.ignition_evidence.map((card) => (

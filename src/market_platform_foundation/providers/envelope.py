@@ -480,17 +480,21 @@ def snapshot_to_order_book_event(
     direction_label: str,
     snapshot_provenance: str,
     source_revision_id: str = "1",
+    book_pressure_side: str = "neutral",
+    interpretation_policy: str = "momentum",
 ) -> dict[str, Any]:
     return {
         "ask_size": ask_size,
         "best_ask": best_ask,
         "best_bid": best_bid,
         "bid_size": bid_size,
+        "book_pressure_side": book_pressure_side,
         "direction_label": direction_label,
         "epistemic_class": "DERIVED",
         "event_time": event_time,
         "family": "order_book",
         "imbalance_ratio": imbalance_ratio,
+        "interpretation_policy": interpretation_policy,
         "level_count": level_count,
         "ofi_value": ofi_value,
         "research_only": True,
@@ -516,19 +520,24 @@ def snapshot_to_futures_event(
     rth: bool,
     snapshot_provenance: str,
     source_revision_id: str = "1",
+    book_pressure_side: str = "neutral",
+    interpretation_policy: str = "contrarian_depth",
 ) -> dict[str, Any]:
     return {
         "ask_size": ask_size,
         "best_ask": best_ask,
         "best_bid": best_bid,
         "bid_size": bid_size,
+        "book_pressure_side": book_pressure_side,
         "contract_month": contract_month,
+        "data_kind": "depth_derived",
         "epistemic_class": "DERIVED",
         "event_time": event_time,
         "exchange": exchange,
         "family": "futures_positioning",
         "imbalance_ratio": imbalance_ratio,
         "imbalance_signal": imbalance_signal,
+        "interpretation_policy": interpretation_policy,
         "lane": "futures_depth",
         "level_count": level_count,
         "ofi_value": ofi_value,
@@ -537,6 +546,9 @@ def snapshot_to_futures_event(
         "session_state": session_state,
         "snapshot_provenance": snapshot_provenance,
         "source_revision_id": source_revision_id,
+        "whale_family_note": (
+            "Legacy whale family id futures_positioning; payload is L2 depth not COT positioning."
+        ),
     }
 
 

@@ -10,6 +10,7 @@ from ...canonical import canonical_bytes, sha256_bytes
 from ...contracts.identity import normalized_event_id
 from ...donor_patterns.order_book_lane import (
     best_bid_ask,
+    book_pressure_side,
     depth_imbalance,
     direction_from_imbalance,
     snapshot_ofi,
@@ -113,6 +114,7 @@ class FixtureOrderBookProvider:
                 continue
             ratio = depth_imbalance(bids, asks, level_count=level_count)
             ofi_value = 0.0 if prev_snapshot is None else snapshot_ofi(prev_snapshot, snapshot)
+            pressure = book_pressure_side(ratio, threshold=imbalance_threshold)
             label = direction_from_imbalance(ratio, threshold=imbalance_threshold)
             source_record_id = f"{event_time}:{index}"
             whale_event = snapshot_to_order_book_event(
@@ -126,6 +128,8 @@ class FixtureOrderBookProvider:
                 ofi_value=ofi_value,
                 direction_label=label,
                 snapshot_provenance=str(snapshot.get("source", "fixture_synthetic")),
+                book_pressure_side=pressure,
+                interpretation_policy="momentum",
             )
             normalized_id = normalized_event_id(
                 provider_id=self.provider_id,

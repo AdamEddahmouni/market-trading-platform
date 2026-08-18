@@ -16,6 +16,8 @@ from ..envelope import (
     build_options_envelope,
     build_provider_metadata,
 )
+from ...contracts.options import option_contract_to_dict
+from .option_contract_builder import activity_to_option_contract
 
 DEFAULT_OPTIONS_FIXTURE = (
     Path(__file__).resolve().parents[4]
@@ -135,6 +137,13 @@ class FixtureOptionsProvider:
                 skew_signal=skew_signal,
                 source=str(activity.get("source", "unknown")),
             )
+            canonical = activity_to_option_contract(
+                activity,
+                symbol=symbol,
+                fixture_id=str(self._fixture.get("fixture_id", "FIXTURE-OPTIONS")),
+                provider_id=self.provider_id,
+            )
+            whale_event["canonical_contract"] = option_contract_to_dict(canonical)
             normalized_id = normalized_event_id(
                 provider_id=self.provider_id,
                 venue_id="US_EQUITY",

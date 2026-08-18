@@ -193,13 +193,27 @@ def build_workspace_order_flow_payload(
             "research_only": True,
             "symbol": instrument_id,
         }
+    from ..order_flow.cvd import compute_cvd_state, provenance_fractions_from_bars
+
+    cvd_state = compute_cvd_state(bars)
+    provenance = provenance_fractions_from_bars(bars)
+    cvd_summary: dict[str, object] = {
+        **provenance,
+        "session_cvd": cvd_state.session_cvd if cvd_state else 0.0,
+        "cvd_slope": cvd_state.cvd_slope if cvd_state else None,
+        "cvd_acceleration": cvd_state.cvd_acceleration if cvd_state else None,
+        "aggressive_buy_volume": cvd_state.aggressive_buy_volume if cvd_state else 0.0,
+        "aggressive_sell_volume": cvd_state.aggressive_sell_volume if cvd_state else 0.0,
+    }
     return {
         "as_of_context": as_of_context,
         "available": True,
         "bars": bars,
         "bar_count": len(bars),
+        "cvd_summary": cvd_summary,
         "disclaimer": (
             "Order-flow metrics are derived from admitted fixture trade classification. "
+            "CVD = aggressive buy volume minus aggressive sell volume — not buyer count. "
             "Unknown aggressor remains unknown. Research-only per ADR-WHALE-003."
         ),
         "ledger_id": ledger.ledger_id,
@@ -246,6 +260,11 @@ def build_workspace_options_payload(
         "activity_count": len(activities),
         "as_of_context": as_of_context,
         "available": True,
+        "canonical_contracts": [
+            row.get("canonical_contract")
+            for row in activities
+            if isinstance(row, dict) and isinstance(row.get("canonical_contract"), dict)
+        ],
         "disclaimer": (
             "Unusual options volume is not directional intent. "
             "Direction labels remain ambiguous unless explicitly supported. "
@@ -340,15 +359,34 @@ def build_workspace_order_book_payload(
             "symbol": instrument_id,
         }
     latest = snapshots[-1]
+    from ..order_flow.l1 import compute_l1_state
+
+    l1_features: dict[str, object] | None = None
+    best_bid = latest.get("best_bid")
+    best_ask = latest.get("best_ask")
+    bid_size = latest.get("bid_size")
+    ask_size = latest.get("ask_size")
+    if all(value is not None for value in (best_bid, best_ask, bid_size, ask_size)):
+        l1_state = compute_l1_state(
+            best_bid=float(best_bid),
+            best_ask=float(best_ask),
+            bid_size=float(bid_size),
+            ask_size=float(ask_size),
+        )
+        if l1_state is not None:
+            from ..order_flow.contracts import l1_state_to_dict
+
+            l1_features = l1_state_to_dict(l1_state)
     return {
         "as_of_context": as_of_context,
         "available": True,
         "disclaimer": (
             "Visible liquidity and imbalance metrics are derived from admitted fixture snapshots. "
-            "They are not participant identity or directional intent. "
+            "Resting bid/ask size is not aggressive flow or participant identity. "
             "Research-only per ADR-WHALE-006."
         ),
         "latest_imbalance_ratio": latest.get("imbalance_ratio"),
+        "latest_l1": l1_features,
         "latest_ofi_value": latest.get("ofi_value"),
         "ledger_id": ledger.ledger_id,
         "provider_id": "depth.fixture.order_book",
@@ -479,12 +517,17 @@ def build_workspace_futures_payload(
     return {
         "as_of_context": as_of_context,
         "available": True,
+        "book_pressure_side": latest.get("book_pressure_side"),
         "contract_month": latest.get("contract_month"),
+        "data_kind": latest.get("data_kind", "depth_derived"),
         "disclaimer": (
             "ES depth and imbalance signals are derived from admitted synthetic fixture snapshots. "
-            "Not CFTC positioning or trade advice. Research-only per ADR-DATA-002."
+            "Legacy whale family futures_positioning is depth-derived, not CFTC positioning. "
+            "Research-only per ADR-DATA-002."
         ),
         "exchange": latest.get("exchange", "CME"),
+        "interpretation_policy": latest.get("interpretation_policy"),
+        "latest_book_pressure_side": latest.get("book_pressure_side"),
         "latest_imbalance_ratio": latest.get("imbalance_ratio"),
         "latest_imbalance_signal": latest.get("imbalance_signal"),
         "latest_ofi_value": latest.get("ofi_value"),

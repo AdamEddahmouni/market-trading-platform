@@ -73,6 +73,16 @@ class OptionChainProvider(Protocol):
         ...
 
 
+class FuturesChainProvider(Protocol):
+    """Futures chain snapshots with canonical contract metadata."""
+
+    provider_id: str
+    capability: str
+
+    def fetch_chain(self, symbol: str, *, as_of_time_ns: int | None = None) -> ProviderResult:
+        ...
+
+
 class OrderFlowProvider(Protocol):
     """Signed volume / CVD order-flow snapshots."""
 
@@ -102,6 +112,7 @@ __all__ = [
     "DisclosureProvider",
     "EquityQuoteProvider",
     "EXECUTION_DISABLED",
+    "FuturesChainProvider",
     "OptionChainProvider",
     "OrderFlowProvider",
     "PaperExecutionProvider",

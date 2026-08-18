@@ -13,6 +13,7 @@ from .institutional_ignition import (
 )
 from .squeeze_client import (
     DEFAULT_BASE_URL,
+    evaluate_causal_intelligence,
     fetch_current_candidate_detail,
     fetch_current_candidates,
     fetch_donor_deployment_mode,
@@ -20,6 +21,7 @@ from .squeeze_client import (
     fetch_frozen_candidates,
     fetch_manifest,
     is_available,
+    post_cross_lane_snapshot,
 )
 
 ADMITTED_REPLAY_INSTRUMENT_ID = "BIYA"
@@ -57,6 +59,9 @@ def _research_detection_label(detail: dict[str, Any]) -> str:
 
 
 def _ignition_state(detail: dict[str, Any]) -> str:
+    causal = detail.get("causal_intelligence")
+    if isinstance(causal, dict) and causal.get("state"):
+        return str(causal["state"])
     research = detail.get("research_detection", {})
     if isinstance(research, dict):
         for key in ("ignition_state", "state", "status"):
@@ -156,6 +161,8 @@ def _build_readiness(detail: dict[str, Any], rules: list[dict[str, Any]]) -> dic
 def _build_state_machine(detail: dict[str, Any], rules: list[dict[str, Any]]) -> dict[str, Any]:
     ignition_state = _ignition_state(detail)
     freshness = str(detail.get("freshness", "FROZEN"))
+    causal = detail.get("causal_intelligence") if isinstance(detail.get("causal_intelligence"), dict) else {}
+    transition_meta = causal.get("transition") if isinstance(causal.get("transition"), dict) else {}
     changed = [
         {
             "rule_id": rule["rule_id"],
@@ -186,27 +193,51 @@ def _build_state_machine(detail: dict[str, Any], rules: list[dict[str, Any]]) ->
         for rule in rules
         if str(rule.get("outcome", "")).upper() not in {"PASS", "FAIL"}
     ]
-    last_delta = "frozen aggregate snapshot"
-    if freshness.upper() == "FROZEN":
+    last_delta = str(transition_meta.get("trigger") or "frozen aggregate snapshot")
+    if freshness.upper() == "FROZEN" and not transition_meta:
         last_delta = "frozen — no live transition stream"
-    elif freshness:
+    elif freshness and not transition_meta:
         last_delta = f"freshness {freshness}"
+    from_state = transition_meta.get("from_state") or "INITIAL"
+    trigger = transition_meta.get("trigger") or "FROZEN_DEMO aggregate load"
     return {
         "changed_criteria": changed,
+        "failed_thresholds": changed,
         "current_state": ignition_state,
         "last_transition_label": last_delta,
         "transitions": [
             {
                 "at_label": freshness,
-                "from_state": "INITIAL",
-                "kind": "frozen_snapshot",
+                "from_state": from_state,
+                "kind": "causal_snapshot" if causal else "frozen_snapshot",
                 "to_state": ignition_state,
-                "trigger": "FROZEN_DEMO aggregate load",
+                "trigger": trigger,
             }
         ],
+        "state_transitions": _causal_state_transitions(detail),
         "unchanged_criteria": unchanged,
         "unknown_criteria": unknown,
+        "causal_model_version": causal.get("model_version"),
+        "overall_confidence": causal.get("overall_confidence"),
+        "mechanism_labels": causal.get("mechanism_labels"),
     }
+
+
+def _causal_state_transitions(detail: dict[str, Any]) -> list[dict[str, Any]]:
+    raw = detail.get("causal_state_transitions")
+    if isinstance(raw, list):
+        return [item for item in raw if isinstance(item, dict)]
+    causal = detail.get("causal_intelligence")
+    if isinstance(causal, dict):
+        transition = causal.get("transition")
+        if isinstance(transition, dict) and transition.get("from_state"):
+            return [
+                {
+                    **transition,
+                    "kind": "causal_state",
+                }
+            ]
+    return []
 
 
 def _ignition_evidence_cards(
@@ -277,6 +308,114 @@ def _coverage_label(row: dict[str, Any]) -> str:
     if isinstance(phase3a, dict) and phase3a.get("summary"):
         return str(phase3a["summary"])
     return "coverage unknown"
+
+
+def _merge_cross_lane_causal(
+    detail: dict[str, Any],
+    *,
+    symbol: str,
+    base_url: str,
+    mode_normalized: str,
+    prediction_cutoff: int | None,
+    as_of_context: dict[str, Any] | None,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Fuse IMP whale lane evidence into donor causal intelligence when available."""
+    if prediction_cutoff is None:
+        return detail, []
+
+    from ..providers.projections import (
+        build_workspace_options_payload,
+        build_workspace_order_book_payload,
+        build_workspace_order_flow_payload,
+    )
+    from .cross_lane_adapter import (
+        build_cross_lane_snapshot_from_options,
+        build_cross_lane_snapshot_from_order_book,
+        build_cross_lane_snapshot_from_order_flow,
+        merge_cross_lane_evidence,
+        merge_cross_lane_snapshots,
+    )
+
+    order_flow = build_workspace_order_flow_payload(
+        symbol,
+        as_of_context=as_of_context or {},
+        prediction_cutoff=prediction_cutoff,
+    )
+    options = build_workspace_options_payload(
+        symbol,
+        as_of_context=as_of_context or {},
+        prediction_cutoff=prediction_cutoff,
+    )
+    order_book = build_workspace_order_book_payload(
+        symbol,
+        as_of_context=as_of_context or {},
+        prediction_cutoff=prediction_cutoff,
+    )
+
+    of_snapshot, of_evidence = build_cross_lane_snapshot_from_order_flow(order_flow)
+    opt_snapshot, opt_evidence = build_cross_lane_snapshot_from_options(options)
+    ob_snapshot, ob_evidence = build_cross_lane_snapshot_from_order_book(order_book)
+    snapshot = merge_cross_lane_snapshots(of_snapshot, opt_snapshot, ob_snapshot)
+    evidence = merge_cross_lane_evidence(of_evidence, opt_evidence, ob_evidence)
+
+    from ..cross_lane.evidence import (
+        EvidenceProvenanceClass,
+        EvidenceSignal,
+        LaneId,
+        NormalizedLaneEvidence,
+        validate_evidence_dag,
+    )
+
+    parsed_evidence = [
+        NormalizedLaneEvidence(
+            lane=LaneId(str(item.get("lane", LaneId.ORDER_FLOW.value)),
+            signal=EvidenceSignal(str(item.get("signal", EvidenceSignal.CVD_POSITIVE_SLOPE.value)),
+            strength=str(item.get("strength", "LOW")),
+            available=bool(item.get("available", False)),
+            source_ref=str(item.get("source_ref", "")),
+            detail=str(item.get("detail", "")),
+            provenance_class=EvidenceProvenanceClass(
+                str(item.get("provenance_class", EvidenceProvenanceClass.DERIVED.value))
+            ),
+        )
+        for item in evidence
+        if isinstance(item, dict)
+    ]
+    dag_violations = validate_evidence_dag(parsed_evidence)
+    if dag_violations:
+        snapshot["evidence_dag_violations"] = dag_violations
+
+    if not snapshot.get("order_flow_available") and not snapshot.get("options_available"):
+        return detail, evidence
+
+    merged_detail = dict(detail)
+    try:
+        if mode_normalized == "current":
+            post_cross_lane_snapshot(symbol, snapshot, base_url=base_url)
+            merged_detail = fetch_current_candidate_detail(symbol, base_url=base_url)
+        else:
+            eval_row = {
+                **merged_detail,
+                "rules": merged_detail.get("rules") or [],
+                "pressure": merged_detail.get("pressure"),
+                "ignition": merged_detail.get("ignition"),
+                "adam_classification": merged_detail.get("adam_classification"),
+                "freshness": merged_detail.get("freshness", "FROZEN"),
+            }
+            causal = evaluate_causal_intelligence(
+                row=eval_row,
+                cross_lane=snapshot,
+                base_url=base_url,
+            )
+            merged_detail["causal_intelligence"] = causal
+            if isinstance(merged_detail.get("research_detection"), dict):
+                merged_detail["research_detection"] = {
+                    **merged_detail["research_detection"],
+                    "ignition_state": causal.get("state"),
+                }
+    except (ConnectionError, ValueError):
+        return detail, evidence
+    return merged_detail, evidence
 
 
 def build_explore_squeeze_payload(
@@ -569,6 +708,15 @@ def build_workspace_squeeze_payload(
             **unavailable_detail_fields,
         }
 
+    detail, cross_lane_evidence = _merge_cross_lane_causal(
+        detail,
+        symbol=symbol_upper,
+        base_url=base_url,
+        mode_normalized=mode_normalized,
+        prediction_cutoff=prediction_cutoff,
+        as_of_context=as_of_context,
+    )
+
     identity = detail.get("identity", {})
     mode_label = identity.get("mode_label") if isinstance(identity, dict) else None
     coverage = detail.get("evidence_coverage", {})
@@ -600,6 +748,10 @@ def build_workspace_squeeze_payload(
         "readiness": readiness,
         "rules": rules,
         "state_machine": state_machine,
+        "causal_intelligence": detail.get("causal_intelligence")
+        if isinstance(detail.get("causal_intelligence"), dict)
+        else None,
+        "cross_lane_evidence": cross_lane_evidence,
         "ignition_evidence": _ignition_evidence_cards(
             detail,
             symbol=symbol_upper,

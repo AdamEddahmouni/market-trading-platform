@@ -72,6 +72,20 @@ class UnconfiguredOptionChainProvider:
         )
 
 
+class UnconfiguredFuturesChainProvider:
+    provider_id = "stub.futures_chain.unconfigured"
+    capability = "futures_chain"
+
+    def fetch_chain(self, symbol: str, *, as_of_time_ns: int | None = None) -> ProviderResult:
+        del symbol, as_of_time_ns
+        return ProviderResult(
+            status="unavailable",
+            reason_code=PROVIDER_UNAVAILABLE,
+            provider_id=self.provider_id,
+            capability=self.capability,
+        )
+
+
 class DisabledPaperExecutionProvider:
     """Paper execution remains disabled unless EXECUTION_ENABLE=1 (never in CI)."""
 
@@ -102,6 +116,7 @@ __all__ = [
     "DisabledPaperExecutionProvider",
     "UnconfiguredDisclosureProvider",
     "UnconfiguredEquityQuoteProvider",
+    "UnconfiguredFuturesChainProvider",
     "UnconfiguredOptionChainProvider",
     "UnconfiguredReferenceDataProvider",
 ]

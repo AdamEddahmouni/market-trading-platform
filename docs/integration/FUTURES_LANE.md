@@ -111,6 +111,9 @@ Canonical lane-closure artifact: [`evidence/integration/futures-lane-acceptance.
 | Component | Path |
 |---|---|
 | Lane patterns | `src/market_platform_foundation/donor_patterns/futures_lane.py` |
+| Contract model (F1) | `src/market_platform_foundation/contracts/futures.py` |
+| Roll / notional | `src/market_platform_foundation/futures/` |
+| Redesign docs | `docs/research/FUTURES_*`, `docs/research/THREE_LANE_ROADMAP_RECONCILIATION.md` |
 | Fixture provider | `src/market_platform_foundation/providers/adapters/fixture_futures.py` |
 | Donor bridge client | `src/market_platform_foundation/donor_bridge/futures_client.py` |
 | UI workspace | `ui/src/components/futures/` |

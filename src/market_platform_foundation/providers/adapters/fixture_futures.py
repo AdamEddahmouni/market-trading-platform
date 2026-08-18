@@ -10,6 +10,7 @@ from typing import Any
 from ...canonical import canonical_bytes, sha256_bytes
 from ...contracts.identity import normalized_event_id
 from ...donor_patterns.futures_lane import depth_imbalance_signal, is_rth, snapshot_ofi
+from ...donor_patterns.order_book_lane import book_pressure_side
 from ...donor_patterns.order_book_lane import best_bid_ask
 from ...normalization.equity_bars import iso_to_epoch_ns
 from ..contracts import ProviderResult, SymbolMapping
@@ -121,6 +122,7 @@ class FixtureFuturesProvider:
                 level_count=min(level_count, 5),
                 threshold=imbalance_threshold,
             )
+            pressure = book_pressure_side(ratio, threshold=imbalance_threshold)
             ofi_value = 0.0 if prev_snapshot is None else snapshot_ofi(prev_snapshot, snapshot)
             event_dt = datetime.fromisoformat(event_time.replace("Z", "+00:00"))
             rth = is_rth(event_dt)
@@ -140,6 +142,8 @@ class FixtureFuturesProvider:
                 ofi_value=ofi_value,
                 rth=rth,
                 snapshot_provenance=str(snapshot.get("source", "fixture_synthetic")),
+                book_pressure_side=pressure,
+                interpretation_policy="contrarian_depth",
             )
             normalized_id = normalized_event_id(
                 provider_id=self.provider_id,

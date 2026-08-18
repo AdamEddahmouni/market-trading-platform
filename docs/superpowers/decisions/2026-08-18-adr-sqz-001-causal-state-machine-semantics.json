@@ -1,0 +1,56 @@
+{
+  "adr_id": "ADR-SQZ-001",
+  "alternatives": [
+    {
+      "decision": "REJECTED",
+      "name": "ADAM_PRIME_AS_LIFECYCLE_STATE",
+      "option_id": "SQZ-OPTION-001",
+      "tradeoffs": [
+        "Collapses pressure/ignition screening tiers into squeeze lifecycle semantics.",
+        "Cannot represent exhaustion, lender squeeze, or non-squeeze momentum."
+      ]
+    },
+    {
+      "decision": "ACCEPTED",
+      "name": "CAUSAL_STATE_MACHINE_WITH_HYSTERESIS",
+      "option_id": "SQZ-OPTION-002",
+      "tradeoffs": [
+        "Requires explicit evidence bundles per transition and separate cross-lane consumption.",
+        "Horizon probabilities remain research-only until calibrated models exist."
+      ]
+    }
+  ],
+  "approval": {
+    "approval_scope": "ARCHITECTURE_DECISION",
+    "approved_at": "2026-08-18T19:30:00.000000000Z",
+    "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+    "approved_capacities": ["ARCHITECTURE_LEAD", "PROJECT_OWNER"]
+  },
+  "artifact_type": "ARCHITECTURE_DECISION_RECORD",
+  "consequences": {
+    "negative": [
+      "Baseline causal evaluator is experimental until walk-forward validation.",
+      "Cross-lane fusion requires explicit normalized evidence contracts."
+    ],
+    "positive": [
+      "Separates structural vulnerability, ignition, live confirmation, and exhaustion.",
+      "Preserves Adam methodology as an independent comparative view.",
+      "Backward state transitions are cooldown-gated to reduce flapping."
+    ]
+  },
+  "created_at": "2026-08-18T19:30:00.000000000Z",
+  "decision": {
+    "selected_option_id": "SQZ-OPTION-002",
+    "summary": "Short Squeeze lane primary lifecycle is the causal state machine (BASELINE through POST_SQUEEZE) produced by squeeze_causal_baseline.v1. Adam Evidence-Gated Prime remains a parallel comparative methodology only. State downgrades require cooldown unless high-strength contradicting evidence is present. Order Flow, Options, and Attention publish normalized cross-lane evidence; Short Squeeze consumes but does not own CVD or gamma calculations.",
+    "title": "Causal short-squeeze state machine semantics"
+  },
+  "effectivity": {
+    "current_state": "ACCEPTED",
+    "decision_only": false,
+    "non_authorization_statement": "Acceptance authorizes the experimental causal baseline and bridge contracts. It does not authorize calibrated probabilities, trade recommendations, or production execution."
+  },
+  "logical_id": "phase.sqz.adr_causal_state_001",
+  "owner_capacities": ["ARCHITECTURE_LEAD", "PROJECT_OWNER"],
+  "schema_version": "1.0.0",
+  "status": "ACCEPTED"
+}
