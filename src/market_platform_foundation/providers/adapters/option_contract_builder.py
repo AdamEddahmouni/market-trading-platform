@@ -42,15 +42,21 @@ def activity_to_option_contract(
     bid = float(activity.get("bid", 0.0))
     ask = float(activity.get("ask", 0.0))
     open_interest = int(activity.get("open_interest", 0))
-    liquidity_ok, _ = liquidity_gate(bid=bid, ask=ask, open_interest=open_interest)
+    liquidity_ok, liquidity_reasons = liquidity_gate(bid=bid, ask=ask, open_interest=open_interest)
     quality_flags: list[str] = []
     if str(activity.get("direction_label", "ambiguous")) in {"ambiguous", "neutral"}:
         quality_flags.append(OptionQualityFlag.FLOW_DIRECTION_UNCERTAIN.value)
+    if bid <= 0 or ask <= 0:
+        quality_flags.append(OptionQualityFlag.NO_TWO_SIDED_MARKET.value)
     if not liquidity_ok:
         quality_flags.append(OptionQualityFlag.WIDE_OPTION_SPREAD.value)
     mid: Decimal | None = None
     if bid > 0 and ask > 0:
         mid = Decimal(str(round((bid + ask) / 2, 4)))
+    bid_size_raw = activity.get("bid_size")
+    ask_size_raw = activity.get("ask_size")
+    bid_size = int(bid_size_raw) if isinstance(bid_size_raw, int) else None
+    ask_size = int(ask_size_raw) if isinstance(ask_size_raw, int) else None
     return OptionContract(
         underlying_id=symbol.upper(),
         option_id=_option_id(symbol, expiry, option_type, float(strike)),
@@ -63,6 +69,8 @@ def activity_to_option_contract(
         bid=Decimal(str(bid)) if bid > 0 else None,
         ask=Decimal(str(ask)) if ask > 0 else None,
         mid=mid,
+        bid_size=bid_size,
+        ask_size=ask_size,
         volume=int(activity.get("volume", 0) or 0),
         open_interest=open_interest,
         provider=provider_id,

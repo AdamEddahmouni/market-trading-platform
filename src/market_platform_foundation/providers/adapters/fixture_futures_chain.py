@@ -15,6 +15,8 @@ from ...contracts.futures import (
     futures_contract_to_dict,
 )
 from ...futures.roll import contract_liquidity_from_dict, select_lead_contract
+from ...normalization.equity_bars import iso_to_epoch_ns
+from ..envelope import enrich_chain_contract_event
 from ..contracts import ProviderResult
 from .fixture_futures import DEFAULT_FUTURES_FIXTURE, FixtureFuturesProvider
 from .futures_contract_builder import contract_to_chain_dict, snapshot_to_futures_contract
@@ -25,12 +27,12 @@ class FixtureFuturesChainProvider:
 
     provider_id = "depth.fixture.futures_chain"
     capability = "futures_chain"
+    entitlement = "L2_ES_DEMO_FIXTURE"
 
     def __init__(self, *, fixture_path: Path | None = None) -> None:
         self._provider = FixtureFuturesProvider(fixture_path=fixture_path or DEFAULT_FUTURES_FIXTURE)
 
     def fetch_chain(self, symbol: str, *, as_of_time_ns: int | None = None) -> ProviderResult:
-        del as_of_time_ns
         symbol_upper = symbol.upper()
         fixture = self._provider._fixture
         fixture_symbol = str(fixture.get("symbol", "")).upper()
@@ -50,6 +52,21 @@ class FixtureFuturesChainProvider:
                 provider_id=self.provider_id,
                 capability=self.capability,
             )
+        if as_of_time_ns is not None:
+            snapshots = [
+                row
+                for row in snapshots
+                if isinstance(row, dict)
+                and row.get("event_time")
+                and iso_to_epoch_ns(str(row["event_time"])) <= as_of_time_ns
+            ]
+            if not snapshots:
+                return ProviderResult(
+                    status="unavailable",
+                    reason_code="FUTURES_CHAIN_NO_PIT_ELIGIBLE",
+                    provider_id=self.provider_id,
+                    capability=self.capability,
+                )
         exchange = str(fixture.get("exchange", "CME"))
         fixture_id = str(fixture.get("fixture_id", "FIXTURE-L2-ES"))
         lead_selection = None
@@ -89,9 +106,22 @@ class FixtureFuturesChainProvider:
                 provider_id=self.provider_id,
                 capability=self.capability,
             )
+        events = tuple(
+            enrich_chain_contract_event(
+                contract,
+                provider_id=self.provider_id,
+                entitlement=self.entitlement,
+                instrument_id=fixture_symbol,
+                event_time_ns=iso_to_epoch_ns(str(contract.get("event_time", ""))) if contract.get("event_time") else 0,
+                receive_time_ns=iso_to_epoch_ns(str(contract.get("event_time", ""))) if contract.get("event_time") else 0,
+                raw_source_reference=str(contract.get("provenance_ref", "")),
+                quality_flags=tuple(contract.get("quality_flags", [])),
+            )
+            for contract in contracts
+        )
         return ProviderResult(
             status="available",
-            events=tuple(contracts),
+            events=events,
             provider_id=self.provider_id,
             capability=self.capability,
         )

@@ -98,3 +98,55 @@ def option_contract_to_dict(contract: OptionContract) -> dict[str, Any]:
         "quality_flags": list(contract.quality_flags),
         "provenance_ref": contract.provenance_ref,
     }
+
+
+def _optional_decimal(value: Any) -> Decimal | None:
+    if value is None:
+        return None
+    return Decimal(str(value))
+
+
+def option_contract_from_dict(payload: dict[str, Any]) -> OptionContract:
+    """Deserialize OptionContract — fail-closed on missing required fields."""
+    required = ("underlying_id", "option_id", "call_put", "strike", "expiration", "dte")
+    missing = [key for key in required if not payload.get(key)]
+    if missing:
+        raise ValueError(f"OPTION_CONTRACT_MISSING_FIELDS:{','.join(missing)}")
+    deliverable_raw = payload.get("deliverable")
+    deliverable: DeliverableSpec | None = None
+    if isinstance(deliverable_raw, dict):
+        deliverable = DeliverableSpec(
+            shares_per_contract=Decimal(str(deliverable_raw.get("shares_per_contract", "100"))),
+            cash_component=Decimal(str(deliverable_raw.get("cash_component", "0"))),
+            description=str(deliverable_raw.get("description", "")),
+        )
+    quality = payload.get("quality_flags", [])
+    quality_flags = tuple(str(flag) for flag in quality) if isinstance(quality, list) else ()
+    return OptionContract(
+        underlying_id=str(payload["underlying_id"]),
+        option_id=str(payload["option_id"]),
+        call_put=str(payload["call_put"]),
+        strike=Decimal(str(payload["strike"])),
+        expiration=str(payload["expiration"]),
+        dte=int(payload["dte"]),
+        exercise_style=str(payload.get("exercise_style", "american")),
+        settlement_style=str(payload.get("settlement_style", "physical")),
+        multiplier=Decimal(str(payload.get("multiplier", "100"))),
+        deliverable=deliverable,
+        bid=_optional_decimal(payload.get("bid")),
+        ask=_optional_decimal(payload.get("ask")),
+        mid=_optional_decimal(payload.get("mid")),
+        last=_optional_decimal(payload.get("last")),
+        bid_size=int(payload["bid_size"]) if payload.get("bid_size") is not None else None,
+        ask_size=int(payload["ask_size"]) if payload.get("ask_size") is not None else None,
+        volume=int(payload["volume"]) if payload.get("volume") is not None else None,
+        open_interest=int(payload["open_interest"]) if payload.get("open_interest") is not None else None,
+        intrinsic_value=_optional_decimal(payload.get("intrinsic_value")),
+        extrinsic_value=_optional_decimal(payload.get("extrinsic_value")),
+        provider=str(payload.get("provider", "")),
+        exchange=str(payload.get("exchange")) if payload.get("exchange") else None,
+        event_time=str(payload.get("event_time", "")),
+        available_time=str(payload.get("available_time", "")),
+        quality_flags=quality_flags,
+        provenance_ref=str(payload.get("provenance_ref", "")),
+    )

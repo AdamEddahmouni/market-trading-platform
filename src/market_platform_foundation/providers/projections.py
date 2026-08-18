@@ -257,10 +257,16 @@ def build_workspace_options_payload(
             "symbol": instrument_id,
         }
 
-    from ..options.edge import compare_physical_vs_risk_neutral
+    from ..options.edge import (
+        apply_executable_edge,
+        compare_physical_vs_risk_neutral,
+        estimate_execution_friction,
+    )
     from ..options.features.squeeze_context import build_squeeze_context_for_options
+    from ..options.flow import build_flow_snapshot
     from ..options.risk_neutral import infer_risk_neutral_distribution
     from ..options.surface import build_volatility_surface
+    from ..options.vrp import vrp_research_snapshot
 
     causal = squeeze_causal if isinstance(squeeze_causal, dict) else _lightweight_squeeze_causal(
         instrument_id, prediction_cutoff
@@ -285,6 +291,13 @@ def build_workspace_options_payload(
         physical_forecast if isinstance(physical_forecast, dict) else None,
         risk_neutral_forecast,
     )
+    execution_friction = estimate_execution_friction(activities)
+    p_vs_q_executable_edge = apply_executable_edge(p_vs_q_edge, execution_friction)
+    vrp_research = vrp_research_snapshot(
+        physical_forecast if isinstance(physical_forecast, dict) else None,
+        risk_neutral_forecast,
+    )
+    signed_flow_snapshot = build_flow_snapshot(activities, as_of_time=as_of_time)
 
     return {
         "activities": activities,
@@ -303,12 +316,15 @@ def build_workspace_options_payload(
         ),
         "ledger_id": ledger.ledger_id,
         "p_vs_q_edge": p_vs_q_edge,
+        "p_vs_q_executable_edge": p_vs_q_executable_edge,
         "provider_id": "options.fixture.activity",
         "research_only": True,
         "risk_neutral_forecast": risk_neutral_forecast,
+        "signed_flow_snapshot": signed_flow_snapshot,
         "squeeze_context": squeeze_context,
         "symbol": instrument_id,
         "volatility_surface": surface,
+        "vrp_research": vrp_research,
     }
 
 
@@ -447,6 +463,51 @@ def build_workspace_order_book_payload(
     }
 
 
+def _enrich_es_futures_f3_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Attach F3 curve, basis, and carry for ES fixture chain."""
+    if payload.get("symbol", "").upper() != "ES":
+        return payload
+    from ..futures.basis import basis_payload
+    from ..futures.carry import carry_payload
+    from ..futures.curve import build_curve_snapshot_from_chain, curve_snapshot_payload
+    from .adapters.fixture_futures import FixtureFuturesProvider
+    from .adapters.fixture_futures_chain import FixtureFuturesChainProvider
+
+    chain_provider = FixtureFuturesChainProvider()
+    chain = chain_provider.fetch_chain("ES")
+    curve = curve_snapshot_payload(chain)
+    payload["curve_snapshot"] = curve
+    payload["futures_curve_available"] = curve.get("available", False)
+
+    snapshot = build_curve_snapshot_from_chain(chain)
+    fixture = FixtureFuturesProvider()._fixture
+    spot_ref = fixture.get("spot_reference")
+    spot_price = None
+    spot_id = ""
+    if isinstance(spot_ref, dict):
+        spot_price = spot_ref.get("price")
+        spot_id = str(spot_ref.get("id", ""))
+    if snapshot is not None:
+        if spot_price is not None:
+            payload["basis_observation"] = basis_payload(
+                snapshot,
+                spot_price,
+                spot_reference_id=spot_id,
+            )
+        else:
+            payload["basis_observation"] = {"available": False, "reason": "BASIS_REFERENCE_MISSING"}
+        payload["carry_observation"] = carry_payload(
+            snapshot,
+            spot_reference=spot_price,
+        )
+        payload["futures_carry_available"] = payload["carry_observation"].get("available", False)
+    else:
+        payload["basis_observation"] = {"available": False, "reason": "CURVE_SNAPSHOT_UNAVAILABLE"}
+        payload["carry_observation"] = {"available": False, "reason": "CURVE_SNAPSHOT_UNAVAILABLE"}
+        payload["futures_carry_available"] = False
+    return payload
+
+
 def build_workspace_futures_payload(
     symbol: str,
     *,
@@ -515,7 +576,8 @@ def build_workspace_futures_payload(
                     ratio = 0.0
                     ofi_value = 0.0
                     session_state = "UNKNOWN"
-                return {
+                return _enrich_es_futures_f3_payload(
+                    {
                     "as_of_context": as_of_context,
                     "available": True,
                     "contract_month": bridge.get("contract_month"),
@@ -535,7 +597,8 @@ def build_workspace_futures_payload(
                     "snapshot_count": 1 if bridge_row else 0,
                     "snapshots": [bridge_row] if bridge_row else [],
                     "symbol": instrument_id,
-                }
+                    }
+                )
         except (ConnectionError, ValueError, OfflineBoundaryViolation, OSError):
             pass
     ledger = get_institutional_ledger()
@@ -591,15 +654,7 @@ def build_workspace_futures_payload(
         "symbol": instrument_id,
         "synthetic": True,
     }
-    if instrument_id == "ES":
-        from ..futures.curve import curve_snapshot_payload
-        from .adapters.fixture_futures_chain import FixtureFuturesChainProvider
-
-        chain = FixtureFuturesChainProvider().fetch_chain("ES")
-        curve = curve_snapshot_payload(chain)
-        payload["curve_snapshot"] = curve
-        payload["futures_curve_available"] = curve.get("available", False)
-    return payload
+    return _enrich_es_futures_f3_payload(payload)
 
 
 def build_workspace_catalyst_payload(

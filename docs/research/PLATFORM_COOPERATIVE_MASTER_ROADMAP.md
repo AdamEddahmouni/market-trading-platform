@@ -54,12 +54,12 @@ PLATFORM ROADMAP
 | Futures contract model | Infra | — | Consumes | **Owns** | — | F1 | IN PROGRESS |
 | Historical option chains | Infra | — | **Owns** | — | — | O1 | NOT STARTED |
 | IV / Greeks / surface | Infra | Context | **Owns** | Consumes | — | O2 | NOT STARTED |
-| Futures curve / carry | Infra | Context | Consumes | **Owns** | Context | F3 | NOT STARTED |
+| Futures curve / carry | Infra | Context | Consumes | **Owns** | Context | F3 | DONE |
 | COT / futures positioning | Infra | Context | Context | **Owns** | — | F4 | NOT STARTED |
 | Physical distribution P | **Shared** | Consumes | Major consumer | Consumes | Inputs | **P2** | NOT STARTED |
 | Realized volatility engine | **Shared** | Consumes | **Owns** semantics | Consumes | — | P2/O2 | NOT STARTED |
 | Risk-neutral distribution Q | Shared contract | Context | **Owns** | Context | — | O3 | NOT STARTED |
-| P vs Q edge engine | — | — | **Owns** | — | — | O4 | NOT STARTED |
+| P vs Q edge engine | — | — | **Owns** | — | — | O4 | DONE |
 | Causal squeeze states | — | **Owns** | Consumes | No (different) | — | SS P0 | DONE |
 | Squeeze probabilities | — | **Owns** | Consumes | — | — | SS P3 | RESEARCH |
 | Options signed flow | — | Consumes | **Owns** | — | Confirms | O5 | NOT STARTED |
@@ -164,9 +164,9 @@ See `FOUR_LANE_ROADMAP_RECONCILIATION.md` for OF4 OFI through OF12 advanced ML.
 - [x] Futures quality taxonomy
 - [x] Notional / tick economics module
 - [x] COT point-in-time helper
-- [ ] Wire schema to fixture ingestion
+- [x] Wire schema to fixture ingestion — `futures_contract_from_dict`, chain PIT + envelopes
 - [ ] Versioned spec registry per product
-- [ ] `FuturesChainProvider` interface
+- [x] `FuturesChainProvider` interface — PIT + ADR-PROV-001 metadata on fixture chain
 
 **Deliverables:** `contracts/futures.py`, `contracts/futures_quality.py`, `futures/notional.py`
 
@@ -184,12 +184,12 @@ See `FOUR_LANE_ROADMAP_RECONCILIATION.md` for OF4 OFI through OF12 advanced ML.
 
 ---
 
-### FUTURES F3 — Curve / basis / carry [IN PROGRESS]
+### FUTURES F3 — Curve / basis / carry [COMPLETE]
 
 - [x] `FuturesCurveSnapshot` engine — `futures/curve.py`
-- [ ] Basis engine with explicit definitions
-- [ ] Carry per family (documented formulas)
-- [x] Publish `FuturesCurveEvidence` cross-lane — contango/backwardation signals
+- [x] Basis engine with explicit definitions — `futures/basis.py`
+- [x] Carry per family (documented formulas) — `futures/carry.py` (EQUITY_INDEX v1)
+- [x] Publish `FuturesCurveEvidence` cross-lane — contango/backwardation + carry signals
 
 **Parallel with:** O2
 
@@ -219,12 +219,12 @@ See `THREE_LANE_ROADMAP_RECONCILIATION.md` for F6 family models through F11 adva
 
 **Parallel with SS P2 — no mutual dependency.**
 
-- [ ] Canonical `OptionContract` schema
-- [ ] Options quality taxonomy
-- [ ] Extend Phase 11 envelope toward canonical model
+- [x] Canonical `OptionContract` schema
+- [x] Options quality taxonomy
+- [x] Extend Phase 11 envelope toward canonical model
 - [ ] Historical chain archive plan
 - [ ] Corporate action adjustment semantics
-- [ ] `OptionChainProvider` interface hardening
+- [x] `OptionChainProvider` interface hardening — PIT + ADR-PROV-001 chain envelopes
 
 **Deliverables:** `contracts/options.py`, `contracts/options_quality.py`
 
@@ -288,17 +288,17 @@ See `THREE_LANE_ROADMAP_RECONCILIATION.md` for F6 family models through F11 adva
 
 ---
 
-### OPTIONS O4 — P vs Q edge engine [IN PROGRESS]
+### OPTIONS O4 — P vs Q edge engine [COMPLETE]
 
 **Depends on O3 + SHARED P2.**
 
 - [x] Decomposed edge components (no universal score) — `options/edge.py`
-- [ ] Theoretical vs executable edge
-- [ ] Volatility risk premium research
+- [x] Theoretical vs executable edge — `apply_executable_edge`
+- [x] Volatility risk premium research — `options/vrp.py`
 
 ---
 
-### SHARED P3 — Cross-lane evidence fusion [IN PROGRESS]
+### SHARED P3 — Cross-lane evidence fusion [COMPLETE]
 
 **Depends on O2 partial + SS P1.**
 
@@ -323,13 +323,13 @@ See `THREE_LANE_ROADMAP_RECONCILIATION.md` for F6 family models through F11 adva
 
 ---
 
-### OPTIONS O5 — Signed flow [NOT STARTED]
+### OPTIONS O5 — Signed flow [COMPLETE — fixture scope]
 
-- Buy/sell initiation where available
-- Opening/closing where available
-- Delta/gamma/vega flow
-- Abnormal flow baselines
-- Complex order handling
+- [x] Buy/sell initiation where available — `options/flow.py`
+- [x] Opening/closing where available — fail-closed `OPEN_CLOSE_UNKNOWN`
+- [x] Delta/gamma/vega flow aggregates
+- [x] Abnormal flow baselines — fixture-bounded
+- [ ] Complex order handling — deferred
 
 **Improves:** Options forecasting + SS ignition/confirmation
 

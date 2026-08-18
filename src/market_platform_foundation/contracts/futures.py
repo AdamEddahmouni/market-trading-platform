@@ -255,6 +255,97 @@ def futures_curve_to_dict(snapshot: FuturesCurveSnapshot) -> dict[str, Any]:
     }
 
 
+def basis_observation_to_dict(observation: BasisObservation) -> dict[str, Any]:
+    return {
+        "instrument_family": observation.instrument_family,
+        "contract_id": observation.contract_id,
+        "basis_value": str(observation.basis_value),
+        "basis_definition": observation.basis_definition.value,
+        "spot_reference_id": observation.spot_reference_id,
+        "event_time": observation.event_time,
+        "available_time": observation.available_time,
+        "quality_flags": list(observation.quality_flags),
+    }
+
+
+def futures_contract_from_dict(payload: dict[str, Any]) -> FuturesContract:
+    """Deserialize FuturesContract — fail-closed on missing required fields."""
+    required = ("instrument_family", "contract_id", "underlying_id", "asset_class")
+    missing = [key for key in required if not payload.get(key)]
+    if missing:
+        raise ValueError(f"FUTURES_CONTRACT_MISSING_FIELDS:{','.join(missing)}")
+    spec_raw = payload.get("spec")
+    spec: FuturesContractSpec | None = None
+    if isinstance(spec_raw, dict):
+        spec = FuturesContractSpec(
+            multiplier=Decimal(str(spec_raw.get("multiplier", "1"))),
+            tick_size=Decimal(str(spec_raw.get("tick_size", "0.01"))),
+            tick_value=Decimal(str(spec_raw.get("tick_value", "0"))),
+            point_value=Decimal(str(spec_raw.get("point_value", "1"))),
+            spec_version=str(spec_raw.get("spec_version", "1")),
+            spec_effective_date=str(spec_raw.get("spec_effective_date", "")),
+        )
+    roll_raw = payload.get("roll_state")
+    roll_state: RollState | None = None
+    if roll_raw:
+        try:
+            roll_state = RollState(str(roll_raw))
+        except ValueError:
+            roll_state = None
+    settlement_raw = payload.get("settlement_type", SettlementType.UNKNOWN.value)
+    try:
+        settlement_type = SettlementType(str(settlement_raw))
+    except ValueError:
+        settlement_type = SettlementType.UNKNOWN
+    family_raw = payload.get("family", FuturesFamily.OTHER.value)
+    try:
+        family = FuturesFamily(str(family_raw))
+    except ValueError:
+        family = FuturesFamily.OTHER
+    quality = payload.get("quality_flags", [])
+    quality_flags = tuple(str(flag) for flag in quality) if isinstance(quality, list) else ()
+
+    def _dec(key: str) -> Decimal | None:
+        val = payload.get(key)
+        return Decimal(str(val)) if val is not None else None
+
+    return FuturesContract(
+        instrument_family=str(payload["instrument_family"]),
+        contract_id=str(payload["contract_id"]),
+        underlying_id=str(payload["underlying_id"]),
+        asset_class=str(payload["asset_class"]),
+        subclass=str(payload.get("subclass", "")),
+        family=family,
+        exchange=str(payload.get("exchange", "")),
+        currency=str(payload.get("currency", "USD")),
+        expiration=str(payload.get("expiration", "")),
+        first_notice_date=str(payload.get("first_notice_date")) if payload.get("first_notice_date") else None,
+        last_trade_date=str(payload.get("last_trade_date")) if payload.get("last_trade_date") else None,
+        delivery_start=str(payload.get("delivery_start")) if payload.get("delivery_start") else None,
+        delivery_end=str(payload.get("delivery_end")) if payload.get("delivery_end") else None,
+        settlement_type=settlement_type,
+        settlement_methodology=str(payload.get("settlement_methodology", "")),
+        physical_delivery_terms=str(payload.get("physical_delivery_terms", "")),
+        spec=spec,
+        price=_dec("price"),
+        settlement_price=_dec("settlement_price"),
+        last_trade_price=_dec("last_trade_price"),
+        close=_dec("close"),
+        volume=int(payload["volume"]) if payload.get("volume") is not None else None,
+        open_interest=int(payload["open_interest"]) if payload.get("open_interest") is not None else None,
+        initial_margin=_dec("initial_margin"),
+        maintenance_margin=_dec("maintenance_margin"),
+        lead_contract=bool(payload.get("lead_contract", False)),
+        roll_state=roll_state,
+        provider=str(payload.get("provider", "")),
+        event_time=str(payload.get("event_time", "")),
+        available_time=str(payload.get("available_time", "")),
+        ingested_time=str(payload.get("ingested_time", "")),
+        quality_flags=quality_flags,
+        provenance_ref=str(payload.get("provenance_ref", "")),
+    )
+
+
 def cot_point_in_time_valid(
     observation_time: str,
     publication_time: str,

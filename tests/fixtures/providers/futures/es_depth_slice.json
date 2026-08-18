@@ -9,6 +9,12 @@
   "session": "RTH",
   "symbol": "ES",
   "synthetic": true,
+  "spot_reference": {
+    "id": "SPX_PROXY",
+    "price": 5995.0,
+    "event_time": "2025-06-02T14:41:00.000000000Z",
+    "note": "Synthetic SPX proxy for ES basis research — not production spot feed"
+  },
   "contracts": [
     {
       "contract_id": "ES202506",

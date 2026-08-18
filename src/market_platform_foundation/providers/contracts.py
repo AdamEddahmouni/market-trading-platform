@@ -69,7 +69,13 @@ class OptionChainProvider(Protocol):
     provider_id: str
     capability: str
 
-    def fetch_chain(self, symbol: str, *, expiration: str | None = None) -> ProviderResult:
+    def fetch_chain(
+        self,
+        symbol: str,
+        *,
+        expiration: str | None = None,
+        as_of_time_ns: int | None = None,
+    ) -> ProviderResult:
         ...
 
 

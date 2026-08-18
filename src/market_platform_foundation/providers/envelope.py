@@ -153,6 +153,43 @@ def build_order_flow_envelope(
     return envelope
 
 
+def enrich_chain_contract_event(
+    contract: dict[str, Any],
+    *,
+    provider_id: str,
+    entitlement: str,
+    instrument_id: str,
+    event_time_ns: int,
+    receive_time_ns: int,
+    raw_source_reference: str,
+    quality_flags: tuple[str, ...] = (),
+) -> dict[str, Any]:
+    """Attach ADR-PROV-001 provider metadata to canonical chain contract dict."""
+    symbol_mapping = SymbolMapping(
+        instrument_id=instrument_id,
+        provider_symbol=instrument_id,
+        venue_id="US_EQUITY",
+    )
+    metadata = build_provider_metadata(
+        provider_id=provider_id,
+        entitlement=entitlement,
+        event_time_ns=event_time_ns,
+        receive_time_ns=receive_time_ns,
+        symbol_mapping=symbol_mapping,
+        raw_source_reference=raw_source_reference,
+        quality_state="GOOD" if not quality_flags else "DEGRADED",
+    )
+    enriched = dict(contract)
+    enriched["entitlement"] = entitlement
+    enriched["provider_metadata"] = metadata
+    enriched["event_time_ns"] = event_time_ns
+    if quality_flags:
+        existing = enriched.get("quality_flags", [])
+        if isinstance(existing, list):
+            enriched["quality_flags"] = sorted(set(existing) | set(quality_flags))
+    return enriched
+
+
 def build_options_envelope(
     *,
     normalized_event_id: str,
@@ -800,6 +837,7 @@ __all__ = [
     "build_fund_etf_envelope",
     "build_futures_envelope",
     "catalyst_to_event",
+    "enrich_chain_contract_event",
     "event_to_fund_etf_event",
     "build_large_transaction_envelope",
     "build_options_envelope",

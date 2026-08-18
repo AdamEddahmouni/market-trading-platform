@@ -13,6 +13,8 @@ from ...contracts.futures import (
     SettlementType,
     futures_contract_to_dict,
 )
+from ...contracts.futures_quality import FuturesQualityFlag
+from ...futures.notional import ES_CONTRACT_SPEC
 from ...donor_patterns.futures_lane import quarterly_contract_month
 
 
@@ -36,16 +38,21 @@ def snapshot_to_futures_contract(
         return None
     best_bid = max(bids, key=lambda row: float(row["price"]))
     best_ask = min(asks, key=lambda row: float(row["price"]))
-    mid = (float(best_bid["price"]) + float(best_ask["price"])) / 2
+    bid_price = float(best_bid["price"])
+    ask_price = float(best_ask["price"])
+    mid = (bid_price + ask_price) / 2
     contract_id = f"{symbol.upper()}{contract_month or quarterly_contract_month()}"
     spec = FuturesContractSpec(
-        multiplier=Decimal("50"),
-        tick_size=Decimal("0.25"),
-        tick_value=Decimal("12.5"),
-        point_value=Decimal("50"),
-        spec_version="1",
-        spec_effective_date="2020-01-01",
+        multiplier=ES_CONTRACT_SPEC.multiplier,
+        tick_size=ES_CONTRACT_SPEC.tick_size,
+        tick_value=ES_CONTRACT_SPEC.tick_value,
+        point_value=ES_CONTRACT_SPEC.point_value,
+        spec_version=ES_CONTRACT_SPEC.spec_version,
+        spec_effective_date=ES_CONTRACT_SPEC.spec_effective_date,
     )
+    quality_flags: tuple[str, ...] = ()
+    if bid_price <= 0 or ask_price <= 0:
+        quality_flags = (FuturesQualityFlag.CONTRACT_SPEC_UNKNOWN.value,)
     return FuturesContract(
         instrument_family=symbol.upper(),
         contract_id=contract_id,
@@ -68,6 +75,7 @@ def snapshot_to_futures_contract(
         event_time=event_time,
         available_time=event_time,
         ingested_time=event_time,
+        quality_flags=quality_flags,
         provenance_ref=f"{fixture_id}:{event_time}",
     )
 

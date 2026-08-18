@@ -27,6 +27,17 @@ class ChainProviderTests(unittest.TestCase):
         first = result.events[0]
         self.assertEqual(first["underlying_id"], "BIYA")
         self.assertIn(first["call_put"], {"call", "put"})
+        self.assertIn("provider_metadata", first)
+        self.assertIn("entitlement", first)
+
+    def test_fixture_option_chain_pit_cutoff(self) -> None:
+        from market_platform_foundation.normalization.equity_bars import iso_to_epoch_ns
+
+        provider = FixtureOptionChainProvider()
+        cutoff = iso_to_epoch_ns("2026-07-21T20:30:02.000000000Z")
+        result = provider.fetch_chain("BIYA", as_of_time_ns=cutoff)
+        self.assertEqual(result.status, "available")
+        self.assertEqual(len(result.events), 3)
 
     def test_fixture_option_chain_nvda_second_fixture(self) -> None:
         provider = FixtureOptionChainProvider()
@@ -40,6 +51,16 @@ class ChainProviderTests(unittest.TestCase):
         self.assertEqual(result.status, "available")
         self.assertGreater(len(result.events), 0)
         self.assertEqual(result.events[0]["instrument_family"], "ES")
+        self.assertIn("provider_metadata", result.events[0])
+
+    def test_fixture_futures_chain_pit_cutoff(self) -> None:
+        from market_platform_foundation.normalization.equity_bars import iso_to_epoch_ns
+
+        provider = FixtureFuturesChainProvider()
+        cutoff = iso_to_epoch_ns("2025-06-02T14:41:02.000000000Z")
+        result = provider.fetch_chain("ES", as_of_time_ns=cutoff)
+        self.assertEqual(result.status, "available")
+        self.assertGreater(len(result.events), 0)
 
     def test_configure_fixture_provider_composition(self) -> None:
         composition = configure_fixture_provider_composition()

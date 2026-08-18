@@ -220,6 +220,14 @@ def build_cross_lane_snapshot_from_options(
         if isinstance(score, (int, float)) and score >= 70:
             high_scores += 1
 
+    from ..options.flow import build_flow_snapshot
+
+    flow_snapshot = options_payload.get("signed_flow_snapshot")
+    if not isinstance(flow_snapshot, dict):
+        flow_snapshot = build_flow_snapshot(activities, as_of_time=str(activities[0].get("event_time", "")) if activities else "")
+
+    signed_flow_available = bool(flow_snapshot.get("signed_flow_available"))
+
     snapshot = {
         "options_available": True,
         "options_activity_count": len(activities),
@@ -227,7 +235,7 @@ def build_cross_lane_snapshot_from_options(
         "options_elevated_volume_count": elevated_volume,
         "options_ambiguous_direction_count": ambiguous_direction,
         "options_high_confirmation_count": high_scores,
-        "options_signed_flow_available": False,
+        "options_signed_flow_available": signed_flow_available,
         "options_dealer_position_available": False,
     }
 
@@ -247,6 +255,30 @@ def build_cross_lane_snapshot_from_options(
                     ),
                     provenance_class=EvidenceProvenanceClass.DERIVED,
                     quality_flags=("FLOW_DIRECTION_UNCERTAIN",),
+                )
+            )
+        )
+
+    if signed_flow_available:
+        dominant = str(flow_snapshot.get("dominant_direction", ""))
+        aggregate = flow_snapshot.get("aggregate", {})
+        net_delta = aggregate.get("net_delta_flow", 0) if isinstance(aggregate, dict) else 0
+        strength = "MODERATE"
+        if isinstance(net_delta, (int, float)) and abs(net_delta) > 5000:
+            strength = "HIGH"
+        detail = f"Signed flow dominant direction: {dominant}"
+        if isinstance(net_delta, (int, float)):
+            detail += f"; net_delta_flow={net_delta}"
+        evidence.append(
+            lane_evidence_to_dict(
+                NormalizedLaneEvidence(
+                    lane=LaneId.OPTIONS,
+                    signal=EvidenceSignal.OPTION_FLOW_DIRECTION,
+                    strength=strength,
+                    available=True,
+                    source_ref="options:signed_flow",
+                    detail=detail,
+                    provenance_class=EvidenceProvenanceClass.DERIVED,
                 )
             )
         )
@@ -300,7 +332,7 @@ def build_cross_lane_snapshot_from_futures(
         "futures_book_pressure_side": book_pressure,
         "futures_curve_available": bool(futures_payload.get("futures_curve_available")),
         "futures_positioning_available": False,
-        "futures_carry_available": False,
+        "futures_carry_available": bool(futures_payload.get("futures_carry_available")),
         "futures_data_kind": "depth_derived",
     }
 
@@ -356,6 +388,48 @@ def build_cross_lane_snapshot_from_futures(
         )
 
     curve = futures_payload.get("curve_snapshot")
+    carry_obs = futures_payload.get("carry_observation")
+    if isinstance(carry_obs, dict) and carry_obs.get("available"):
+        snapshot["futures_carry_available"] = True
+        annualized_carry = carry_obs.get("annualized_carry")
+        if isinstance(annualized_carry, (int, float)):
+            if annualized_carry > 0:
+                strength = "MODERATE" if annualized_carry > 0.02 else "LOW"
+                evidence.append(
+                    lane_evidence_to_dict(
+                        NormalizedLaneEvidence(
+                            lane=LaneId.FUTURES,
+                            signal=EvidenceSignal.FUTURES_CARRY_POSITIVE,
+                            strength=strength,
+                            available=True,
+                            source_ref="futures:carry_engine",
+                            detail=(
+                                f"Calendar implied carry positive ({annualized_carry:.4f} annualized); "
+                                "fair-value context, not directional forecast"
+                            ),
+                            provenance_class=EvidenceProvenanceClass.DERIVED,
+                        )
+                    )
+                )
+            elif annualized_carry < 0:
+                strength = "MODERATE" if annualized_carry < -0.02 else "LOW"
+                evidence.append(
+                    lane_evidence_to_dict(
+                        NormalizedLaneEvidence(
+                            lane=LaneId.FUTURES,
+                            signal=EvidenceSignal.FUTURES_CARRY_NEGATIVE,
+                            strength=strength,
+                            available=True,
+                            source_ref="futures:carry_engine",
+                            detail=(
+                                f"Calendar implied carry negative ({annualized_carry:.4f} annualized); "
+                                "fair-value context, not directional forecast"
+                            ),
+                            provenance_class=EvidenceProvenanceClass.DERIVED,
+                        )
+                    )
+                )
+
     if isinstance(curve, dict) and curve.get("available"):
         regime = str(curve.get("regime", "flat"))
         if regime == "contango":

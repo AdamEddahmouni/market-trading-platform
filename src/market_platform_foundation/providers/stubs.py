@@ -62,8 +62,14 @@ class UnconfiguredOptionChainProvider:
     provider_id = "stub.option_chain.unconfigured"
     capability = "option_chain"
 
-    def fetch_chain(self, symbol: str, *, expiration: str | None = None) -> ProviderResult:
-        del symbol, expiration
+    def fetch_chain(
+        self,
+        symbol: str,
+        *,
+        expiration: str | None = None,
+        as_of_time_ns: int | None = None,
+    ) -> ProviderResult:
+        del symbol, expiration, as_of_time_ns
         return ProviderResult(
             status="unavailable",
             reason_code=PROVIDER_UNAVAILABLE,

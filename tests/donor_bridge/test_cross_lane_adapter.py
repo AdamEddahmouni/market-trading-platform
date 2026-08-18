@@ -63,6 +63,46 @@ class CrossLaneAdapterTests(unittest.TestCase):
         signals = {item["signal"] for item in evidence}
         self.assertIn("CALL_DEMAND_ANOMALY", signals)
 
+    def test_builds_options_signed_flow_snapshot(self) -> None:
+        payload = {
+            "available": True,
+            "activities": [
+                {
+                    "option_type": "call",
+                    "flow_side": "buy",
+                    "open_close": "open",
+                    "size": 500,
+                    "strike": 130.0,
+                    "volume": 1000,
+                    "volume_oi_ratio": 2.0,
+                    "volume_ratio": 1.5,
+                    "confirmation_score": 80,
+                },
+                {
+                    "option_type": "call",
+                    "flow_side": "buy",
+                    "open_close": "open",
+                    "size": 800,
+                    "strike": 135.0,
+                    "volume": 1200,
+                    "volume_oi_ratio": 2.5,
+                    "volume_ratio": 1.8,
+                    "confirmation_score": 75,
+                },
+            ],
+            "signed_flow_snapshot": {
+                "available": True,
+                "signed_flow_available": True,
+                "dominant_direction": "buy_initiated",
+                "aggregate": {"net_delta_flow": 6000},
+            },
+        }
+        snapshot, evidence = build_cross_lane_snapshot_from_options(payload)
+        assert snapshot is not None
+        self.assertTrue(snapshot["options_signed_flow_available"])
+        signals = {item["signal"] for item in evidence}
+        self.assertIn("OPTION_FLOW_DIRECTION", signals)
+
     def test_builds_futures_depth_snapshot_fail_closed_on_curve(self) -> None:
         payload = {
             "available": True,

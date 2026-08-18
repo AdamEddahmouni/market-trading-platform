@@ -6,7 +6,6 @@ from decimal import Decimal
 from typing import Any
 
 from ..contracts.futures import (
-    BasisDefinition,
     FuturesCurveSnapshot,
     futures_curve_to_dict,
 )
@@ -93,18 +92,10 @@ def basis_observation_from_curve(
     *,
     spot_reference: Decimal | None = None,
 ) -> dict[str, Any]:
-    """Explicit basis stub — futures minus spot when spot reference supplied."""
-    if not snapshot.prices or spot_reference is None:
-        return {"available": False, "reason": "BASIS_REFERENCE_MISSING"}
-    front_price = snapshot.prices[0]
-    basis_value = front_price - spot_reference
-    return {
-        "available": True,
-        "basis_definition": BasisDefinition.FUTURES_MINUS_SPOT.value,
-        "basis_value": str(basis_value),
-        "contract_id": snapshot.contract_ids[0] if snapshot.contract_ids else "",
-        "instrument_family": snapshot.instrument_family,
-    }
+    """Build basis observation — delegates to basis engine."""
+    from .basis import basis_observation_from_curve as _basis_from_curve
+
+    return _basis_from_curve(snapshot, spot_reference=spot_reference)
 
 
 def curve_snapshot_payload(chain_result: ProviderResult) -> dict[str, Any]:
