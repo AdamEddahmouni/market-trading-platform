@@ -11,7 +11,14 @@ type Props = {
   selectionRef?: string | null;
   onClose: () => void;
   onSubmit: (prompt: string) => void;
+  onCitationClick?: (ref: string) => void;
 };
+
+const QUICK_ACTIONS = [
+  { label: "Explain selection", prompt: "Explain the selected evidence." },
+  { label: "What changed?", prompt: "What changed at this replay cursor?" },
+  { label: "Show conflicting evidence", prompt: "Show conflicting evidence across families." },
+] as const;
 
 export function AssistantSidecar({
   open,
@@ -22,6 +29,7 @@ export function AssistantSidecar({
   selectionRef,
   onClose,
   onSubmit,
+  onCitationClick,
 }: Props) {
   if (!open) return null;
 
@@ -33,6 +41,17 @@ export function AssistantSidecar({
     if (!value) return;
     onSubmit(value);
     input.value = "";
+  };
+
+  const handleCitation = (ref: string) => {
+    if (!onCitationClick) return;
+    if (ref.startsWith("explain:")) {
+      onCitationClick(ref);
+      return;
+    }
+    if (ref.startsWith("inspect:")) {
+      onCitationClick(ref);
+    }
   };
 
   return (
@@ -52,7 +71,23 @@ export function AssistantSidecar({
         Read-only citations. No order, risk, or execution authority.
         {status?.provider_id ? ` Provider: ${status.provider_id}.` : ""}
       </p>
-      {selectionRef ? <p className="assistant-selection">Selection: <code>{selectionRef}</code></p> : null}
+      {selectionRef ? (
+        <p className="assistant-selection">
+          Selection: <code>{selectionRef}</code>
+        </p>
+      ) : null}
+      <div className="assistant-quick-actions">
+        {QUICK_ACTIONS.map((action) => (
+          <button
+            key={action.label}
+            type="button"
+            disabled={!conversationId || loading}
+            onClick={() => onSubmit(action.prompt)}
+          >
+            {action.label}
+          </button>
+        ))}
+      </div>
       <div className="assistant-messages" aria-live="polite">
         {loading && messages.length === 0 ? <p>Loading conversation…</p> : null}
         {messages.map((message) => (
@@ -67,7 +102,15 @@ export function AssistantSidecar({
             {message.provenance?.citation_refs?.length ? (
               <ul className="assistant-citations">
                 {message.provenance.citation_refs.map((ref) => (
-                  <li key={ref}><code>{ref}</code></li>
+                  <li key={ref}>
+                    {onCitationClick && (ref.startsWith("explain:") || ref.startsWith("inspect:")) ? (
+                      <button type="button" className="link-button" onClick={() => handleCitation(ref)}>
+                        <code>{ref}</code>
+                      </button>
+                    ) : (
+                      <code>{ref}</code>
+                    )}
+                  </li>
                 ))}
               </ul>
             ) : null}
@@ -75,7 +118,9 @@ export function AssistantSidecar({
         ))}
       </div>
       <form className="assistant-form" onSubmit={handleSubmit}>
-        <label className="sr-only" htmlFor="assistant-prompt">Ask about visible context</label>
+        <label className="sr-only" htmlFor="assistant-prompt">
+          Ask about visible context
+        </label>
         <input
           id="assistant-prompt"
           name="prompt"
@@ -83,7 +128,9 @@ export function AssistantSidecar({
           placeholder={conversationId ? "Ask about this replay context…" : "Starting session…"}
           disabled={!conversationId || loading}
         />
-        <button type="submit" disabled={!conversationId || loading}>Send</button>
+        <button type="submit" disabled={!conversationId || loading}>
+          Send
+        </button>
       </form>
       <footer className="assistant-footer">
         <Link to="/assistant/history">Conversation history</Link>

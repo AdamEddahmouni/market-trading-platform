@@ -5,8 +5,17 @@ from __future__ import annotations
 from typing import Any
 
 from . import internship_client
+from .historical_cohort import build_historical_squeeze_context
+from .institutional_ignition import (
+    _OPTIONS_FROZEN_UNAVAILABLE,
+    build_supplemental_ignition_evidence,
+    merge_institutional_ignition_cards,
+)
 from .squeeze_client import (
     DEFAULT_BASE_URL,
+    fetch_current_candidate_detail,
+    fetch_current_candidates,
+    fetch_donor_deployment_mode,
     fetch_frozen_candidate_detail,
     fetch_frozen_candidates,
     fetch_manifest,
@@ -18,6 +27,14 @@ FROZEN_DEMO_REFERENCE_SYMBOL = "AVTX"
 _DONOR_UNAVAILABLE_REASON = (
     "Short squeeze FROZEN_DEMO server not reachable. "
     "Start: SQUEEZE_APP_MODE=FROZEN_DEMO python -m apps.research_screener --no-browser"
+)
+_SCANNER_UNAVAILABLE_REASON = (
+    "Short squeeze donor server not reachable for live scanner bridge. "
+    "Start the research screener with provider mode enabled."
+)
+_SCANNER_DISCLAIMER = (
+    "Ephemeral provider scanner snapshot. Not the frozen research cohort "
+    "(n=35 calibration cohort). Research-only. No trade recommendation."
 )
 
 
@@ -192,7 +209,14 @@ def _build_state_machine(detail: dict[str, Any], rules: list[dict[str, Any]]) ->
     }
 
 
-def _ignition_evidence_cards(detail: dict[str, Any]) -> list[dict[str, Any]]:
+def _ignition_evidence_cards(
+    detail: dict[str, Any],
+    *,
+    symbol: str,
+    prediction_cutoff: int | None = None,
+    as_of_context: dict[str, Any] | None = None,
+    frozen_aggregate_only: bool = True,
+) -> list[dict[str, Any]]:
     rules = _project_rules(detail)
     short_pressure = [rule for rule in rules if rule.get("category") == "SHORT_PRESSURE_CONFIRMATION"]
     borrow = [rule for rule in rules if "BORROW" in str(rule.get("rule_id", ""))]
@@ -222,15 +246,27 @@ def _ignition_evidence_cards(detail: dict[str, Any]) -> list[dict[str, Any]]:
             "epistemic_class": "OBSERVED",
         }
 
-    return [
+    cards = [
         card("SI / Float", [rule for rule in short_pressure if "BORROW" not in rule.get("rule_id", "")]),
         card("Borrow", borrow),
-        card(
-            "Options",
-            catalyst,
-            unavailable_reason="Options flow not included in sanitized frozen aggregate",
-        ),
     ]
+    if frozen_aggregate_only:
+        cards.append(
+            card(
+                "Options",
+                catalyst,
+                unavailable_reason=_OPTIONS_FROZEN_UNAVAILABLE,
+            )
+        )
+    else:
+        cards.append(card("Options", catalyst))
+    return merge_institutional_ignition_cards(
+        cards,
+        symbol=symbol,
+        prediction_cutoff=prediction_cutoff,
+        as_of_context=as_of_context,
+        frozen_aggregate_only=frozen_aggregate_only and prediction_cutoff is None,
+    )
 
 
 def _coverage_label(row: dict[str, Any]) -> str:
@@ -261,6 +297,7 @@ def build_explore_squeeze_payload(
             "rows": [],
             "row_count": 0,
             "outcome_summary": [],
+            "data_mode": "frozen",
         }
 
     manifest = fetch_manifest(base_url=base_url)
@@ -310,6 +347,115 @@ def build_explore_squeeze_payload(
         "rows": projected_rows,
         "outcome_summary": _outcome_summary(projected_rows),
         "disclaimer": "Donor screener rows are read-only research aggregates. No trade recommendation.",
+        "data_mode": "frozen",
+    }
+
+
+def _scanner_rank(row: dict[str, Any], fallback_index: int) -> int | None:
+    for key in ("provider_scanner_order", "scanner_order", "discovery_rank"):
+        value = row.get(key)
+        if value is not None:
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                continue
+    fields = row.get("fields")
+    if isinstance(fields, dict):
+        nested = fields.get("provider_scanner_order")
+        if isinstance(nested, dict) and nested.get("value") is not None:
+            try:
+                return int(nested["value"])
+            except (TypeError, ValueError):
+                pass
+    return fallback_index + 1
+
+
+def _project_scanner_explore_row(row: dict[str, Any], *, index: int) -> dict[str, Any]:
+    symbol = str(row.get("symbol", ""))
+    rank = _scanner_rank(row, index)
+    return {
+        "screener_id": f"squeeze:scanner:{symbol or index}",
+        "symbol": symbol,
+        "headline": f"{symbol} — current scanner candidate",
+        "outcome_status": "EPHEMERAL — no forward outcome label",
+        "evidence_coverage": _coverage_label(row),
+        "freshness": str(row.get("freshness", "CURRENT")),
+        "research_detection": (
+            row.get("research_detection", {}).get("status", "UNKNOWN")
+            if isinstance(row.get("research_detection"), dict)
+            else "UNKNOWN"
+        ),
+        "mode_label": str(row.get("mode_label", "CURRENT")),
+        "scanner_rank": rank,
+        "explanation_ref": f"explain:squeeze:scanner:{symbol}",
+        "capability_state": "AVAILABLE",
+        "epistemic_class": "OBSERVED",
+    }
+
+
+def _detection_summary(rows: list[dict[str, Any]]) -> list[dict[str, object]]:
+    counts: dict[str, int] = {}
+    for row in rows:
+        label = str(row.get("research_detection", "UNKNOWN"))
+        counts[label] = counts.get(label, 0) + 1
+    return [{"label": label, "count": count} for label, count in sorted(counts.items())]
+
+
+def build_explore_squeeze_scanner_payload(
+    *,
+    base_url: str = DEFAULT_BASE_URL,
+    as_of_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    unavailable = {
+        "source": "short-squeeze-project",
+        "bridge_mode": "READ_ONLY",
+        "donor_base_url": base_url,
+        "available": False,
+        "reason": _SCANNER_UNAVAILABLE_REASON,
+        "as_of_context": as_of_context,
+        "manifest": None,
+        "rows": [],
+        "row_count": 0,
+        "detection_summary": [],
+        "data_mode": "current",
+        "donor_deployment_mode": None,
+        "empty_reason": None,
+    }
+    if not is_available(base_url=base_url):
+        return {**unavailable, "disclaimer": _SCANNER_DISCLAIMER}
+
+    deployment_mode = fetch_donor_deployment_mode(base_url=base_url)
+    manifest = fetch_manifest(base_url=base_url)
+    current = fetch_current_candidates(base_url=base_url)
+    rows_raw = current.get("rows", [])
+    if not isinstance(rows_raw, list):
+        rows_raw = []
+
+    projected_rows = [
+        _project_scanner_explore_row(row, index=index)
+        for index, row in enumerate(rows_raw)
+        if isinstance(row, dict)
+    ]
+
+    return {
+        "source": "short-squeeze-project",
+        "bridge_mode": "READ_ONLY",
+        "donor_base_url": base_url,
+        "available": True,
+        "as_of_context": as_of_context,
+        "manifest": {
+            "api_version": manifest.get("api_version"),
+            "schema_version": manifest.get("schema_version"),
+            "prohibited_capabilities": manifest.get("prohibited_capabilities"),
+        },
+        "header": current.get("header"),
+        "row_count": len(projected_rows),
+        "rows": projected_rows,
+        "detection_summary": _detection_summary(projected_rows),
+        "data_mode": "current",
+        "donor_deployment_mode": deployment_mode,
+        "empty_reason": current.get("reason") if not projected_rows else None,
+        "disclaimer": _SCANNER_DISCLAIMER,
     }
 
 
@@ -326,27 +472,47 @@ def build_workspace_squeeze_payload(
     *,
     base_url: str = DEFAULT_BASE_URL,
     as_of_context: dict[str, Any] | None = None,
+    prediction_cutoff: int | None = None,
+    data_mode: str = "frozen",
     replay_instrument_id: str = ADMITTED_REPLAY_INSTRUMENT_ID,
 ) -> dict[str, Any]:
     symbol_upper = symbol.strip().upper()
     if not symbol_upper:
         raise ValueError("symbol is required")
 
+    mode_normalized = "current" if data_mode == "current" else "frozen"
     replay_chart_available = symbol_upper == replay_instrument_id.upper()
+    historical_context = build_historical_squeeze_context(symbol_upper)
     base_payload: dict[str, Any] = {
         "symbol": symbol_upper,
         "source": "short-squeeze-project",
         "bridge_mode": "READ_ONLY",
         "donor_base_url": base_url,
+        "data_mode": mode_normalized,
+        "donor_deployment_mode": None,
         "replay_chart_available": replay_chart_available,
         "as_of_context": as_of_context,
         "epistemic_class": "OBSERVED",
-        "explanation_ref": f"explain:squeeze:{symbol_upper}",
-        "disclaimer": "Donor squeeze evidence is read-only research. No trade recommendation.",
+        "explanation_ref": (
+            f"explain:squeeze:scanner:{symbol_upper}"
+            if mode_normalized == "current"
+            else f"explain:squeeze:{symbol_upper}"
+        ),
+        "disclaimer": (
+            _SCANNER_DISCLAIMER
+            if mode_normalized == "current"
+            else "Donor squeeze evidence is read-only research. No trade recommendation."
+        ),
         "rules": [],
         "ignition_evidence": [],
+        "historical_context": historical_context,
     }
 
+    supplemental_ignition = build_supplemental_ignition_evidence(
+        symbol_upper,
+        prediction_cutoff=prediction_cutoff,
+        as_of_context=as_of_context,
+    )
     unavailable_detail_fields = {
         "outcome_status": None,
         "evidence_coverage": None,
@@ -357,28 +523,45 @@ def build_workspace_squeeze_payload(
         "mode_label": None,
         "provenance": None,
         "rules": [],
-        "ignition_evidence": [],
+        "ignition_evidence": supplemental_ignition,
     }
+
+    donor_down_reason = (
+        _SCANNER_UNAVAILABLE_REASON if mode_normalized == "current" else _DONOR_UNAVAILABLE_REASON
+    )
 
     if not is_available(base_url=base_url):
         return {
             **base_payload,
             "available": False,
-            "reason": _DONOR_UNAVAILABLE_REASON,
+            "reason": donor_down_reason,
             **unavailable_detail_fields,
         }
 
+    base_payload["donor_deployment_mode"] = fetch_donor_deployment_mode(base_url=base_url)
+
     try:
-        detail = fetch_frozen_candidate_detail(symbol_upper, base_url=base_url)
+        if mode_normalized == "current":
+            detail = fetch_current_candidate_detail(symbol_upper, base_url=base_url)
+        else:
+            detail = fetch_frozen_candidate_detail(symbol_upper, base_url=base_url)
     except (ConnectionError, ValueError):
         return {
             **base_payload,
             "available": False,
-            "reason": _DONOR_UNAVAILABLE_REASON,
+            "reason": donor_down_reason,
             **unavailable_detail_fields,
         }
 
-    if detail.get("available") is False or detail.get("error"):
+    if detail.get("error"):
+        return {
+            **base_payload,
+            "available": False,
+            "reason": str(detail.get("error")),
+            **unavailable_detail_fields,
+        }
+
+    if mode_normalized == "frozen" and (detail.get("available") is False):
         return {
             **base_payload,
             "available": False,
@@ -396,21 +579,34 @@ def build_workspace_squeeze_payload(
     rules = _project_rules(detail)
     readiness = _build_readiness(detail, rules)
     state_machine = _build_state_machine(detail, rules)
+    default_freshness = "CURRENT" if mode_normalized == "current" else "FROZEN"
+    default_mode_label = "CURRENT" if mode_normalized == "current" else "FROZEN_RESEARCH"
+    outcome_status = (
+        "EPHEMERAL — no forward outcome label"
+        if mode_normalized == "current"
+        else _outcome_label(detail)
+    )
     return {
         **base_payload,
         "available": True,
-        "outcome_status": _outcome_label(detail),
+        "outcome_status": outcome_status,
         "evidence_coverage": coverage_label,
         "research_detection": _research_detection_label(detail),
         "ignition_state": _ignition_state(detail),
-        "freshness": str(detail.get("freshness", "FROZEN")),
+        "freshness": str(detail.get("freshness", default_freshness)),
         "phase3a_summary": _phase3a_summary(detail),
-        "mode_label": str(mode_label or "FROZEN_RESEARCH"),
+        "mode_label": str(mode_label or default_mode_label),
         "provenance": provenance if isinstance(provenance, dict) else None,
         "readiness": readiness,
         "rules": rules,
         "state_machine": state_machine,
-        "ignition_evidence": _ignition_evidence_cards(detail),
+        "ignition_evidence": _ignition_evidence_cards(
+            detail,
+            symbol=symbol_upper,
+            prediction_cutoff=prediction_cutoff,
+            as_of_context=as_of_context,
+            frozen_aggregate_only=mode_normalized == "frozen",
+        ),
         "capability_state": "AVAILABLE",
     }
 
@@ -446,6 +642,47 @@ def build_squeeze_attention_items(
                     {
                         "code": str(row.get("research_detection", "UNKNOWN")),
                         "label": str(row.get("outcome_status", "Research outcome")),
+                    },
+                ],
+                "tier": 2,
+            }
+        )
+    return items
+
+
+def build_squeeze_scanner_attention_items(
+    *,
+    base_url: str = DEFAULT_BASE_URL,
+    limit: int = 3,
+) -> list[dict[str, Any]]:
+    """Project ephemeral scanner rows into NOW attention items (read-only)."""
+    payload = build_explore_squeeze_scanner_payload(base_url=base_url)
+    if not payload.get("available"):
+        return []
+    rows = payload.get("rows", [])
+    if not isinstance(rows, list):
+        return []
+    items: list[dict[str, Any]] = []
+    for index, row in enumerate(rows[:limit]):
+        if not isinstance(row, dict):
+            continue
+        symbol = str(row.get("symbol", ""))
+        if not symbol:
+            continue
+        rank = row.get("scanner_rank")
+        rank_label = f"scanner rank {rank}" if rank is not None else "current scanner"
+        items.append(
+            {
+                "attention_id": f"att-squeeze-scanner-{symbol.lower()}",
+                "explanation_ref": f"explain:squeeze:scanner:{symbol}",
+                "headline": str(row.get("headline", f"{symbol} — current scanner candidate")),
+                "instrument_id": symbol,
+                "priority_rank": 15 + index,
+                "reasons": [
+                    {"code": "SQUEEZE_SCANNER", "label": "Ephemeral provider scanner (read-only)"},
+                    {
+                        "code": str(row.get("research_detection", "UNKNOWN")),
+                        "label": rank_label,
                     },
                 ],
                 "tier": 2,

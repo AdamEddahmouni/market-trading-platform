@@ -49,6 +49,14 @@ def gate_catalyst(
     return len(reasons) == 0, reasons
 
 
+def lean_to_direction_label(lean: str) -> str:
+    if lean == "BULLISH":
+        return "supports_long"
+    if lean == "BEARISH":
+        return "supports_short"
+    return "neutral"
+
+
 def project_catalyst_evidence(
     *,
     symbol: str,

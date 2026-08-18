@@ -1,86 +1,93 @@
-import { useResearchAnalyticsQuery } from "../api/hooks";
-import { CountBarChartPanel, SignalTimelineChartPanel } from "./charts/ResearchChartPanels";
+import { useState } from "react";
+import {
+  useResearchAnalyticsQuery,
+  useResearchModelsQuery,
+  useResearchSimulationQuery,
+} from "../api/hooks";
+import { ModelLabPanel } from "./research/ModelLabPanel";
+import { ResearchAnalyticsPanel } from "./research/ResearchAnalyticsPanel";
+import { SimulationLabPanel } from "./research/SimulationLabPanel";
+
+type ResearchTab = "analytics" | "models" | "simulation";
 
 export function ResearchPage() {
+  const [tab, setTab] = useState<ResearchTab>("analytics");
   const analyticsQuery = useResearchAnalyticsQuery();
+  const modelsQuery = useResearchModelsQuery();
+  const simulationQuery = useResearchSimulationQuery();
 
-  if (analyticsQuery.isLoading) {
-    return <div className="app-loading">Loading research analytics…</div>;
+  const loading =
+    (tab === "analytics" && analyticsQuery.isLoading) ||
+    (tab === "models" && modelsQuery.isLoading) ||
+    (tab === "simulation" && simulationQuery.isLoading);
+
+  if (loading) {
+    return <div className="app-loading">Loading research surface…</div>;
   }
-
-  if (analyticsQuery.error || !analyticsQuery.data) {
-    return (
-      <section className="page gated-page">
-        <h1>RESEARCH</h1>
-        <p>Research analytics unavailable.</p>
-      </section>
-    );
-  }
-
-  const payload = analyticsQuery.data;
-  const panels = payload.panels;
 
   return (
     <section className="page research-page">
       <header className="page-header">
-        <h1>Research analytics</h1>
-        <p>{payload.disclaimer}</p>
-        <p className="research-meta">
-          Epistemic class: {payload.epistemic_class} · Boundary: {payload.authority_boundary}
-        </p>
+        <h1>RESEARCH</h1>
+        <p>Replay-bound research projections. No trade authority.</p>
       </header>
-      <div className="chart-grid">
-        <CountBarChartPanel
-          title="Attention tier distribution"
-          series={panels.attention_tiers.series}
-          provenance={{
-            source: panels.attention_tiers.provenance.source,
-            method: panels.attention_tiers.provenance.method,
-          }}
-          ariaLabel="Attention tier bar chart"
-        />
-        <CountBarChartPanel
-          title="Squeeze screener outcomes"
-          series={panels.squeeze_outcomes.series}
-          provenance={{
-            source: panels.squeeze_outcomes.provenance.source,
-            method: panels.squeeze_outcomes.provenance.method,
-          }}
-          emptyMessage={
-            panels.squeeze_outcomes.available
-              ? "No squeeze rows in donor bridge."
-              : panels.squeeze_outcomes.reason ?? "Donor bridge unavailable."
-          }
-          ariaLabel="Squeeze outcome bar chart"
-        />
-        <CountBarChartPanel
-          title="Strategy interpretation outcomes"
-          series={panels.strategy_outcomes.series}
-          provenance={{
-            source: panels.strategy_outcomes.provenance.source,
-            method: panels.strategy_outcomes.provenance.method,
-          }}
-          ariaLabel="Strategy outcome bar chart"
-        />
-        <CountBarChartPanel
-          title="Risk simulation decisions"
-          series={panels.risk_decisions.series}
-          provenance={{
-            source: panels.risk_decisions.provenance.source,
-            method: panels.risk_decisions.provenance.method,
-          }}
-          ariaLabel="Risk decision bar chart"
-        />
-        <SignalTimelineChartPanel
-          title="Cumulative strategy signals (walk-forward)"
-          timeline={panels.strategy_outcomes.signal_timeline}
-          provenance={{
-            source: panels.strategy_outcomes.provenance.source,
-            method: "Cumulative signal count by observation index at cutoff",
-          }}
-          ariaLabel="Walk-forward signal timeline chart"
-        />
+
+      <div className="research-tabs" role="tablist" aria-label="Research sections">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "analytics"}
+          className={tab === "analytics" ? "active" : undefined}
+          onClick={() => setTab("analytics")}
+        >
+          Analytics
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "models"}
+          className={tab === "models" ? "active" : undefined}
+          onClick={() => setTab("models")}
+        >
+          Model Lab
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "simulation"}
+          className={tab === "simulation" ? "active" : undefined}
+          onClick={() => setTab("simulation")}
+        >
+          Simulation
+        </button>
       </div>
+
+      {tab === "analytics" ? (
+        analyticsQuery.data ? (
+          <>
+            <p className="research-meta">
+              Epistemic class: {analyticsQuery.data.epistemic_class} · Boundary:{" "}
+              {analyticsQuery.data.authority_boundary}
+            </p>
+            <p>{analyticsQuery.data.disclaimer}</p>
+            <ResearchAnalyticsPanel payload={analyticsQuery.data} />
+          </>
+        ) : (
+          <p>Research analytics unavailable.</p>
+        )
+      ) : null}
+
+      {tab === "models" ? (
+        modelsQuery.data ? <ModelLabPanel payload={modelsQuery.data} /> : <p>Model Lab unavailable.</p>
+      ) : null}
+
+      {tab === "simulation" ? (
+        simulationQuery.data ? (
+          <SimulationLabPanel payload={simulationQuery.data} />
+        ) : (
+          <p>Simulation Lab unavailable.</p>
+        )
+      ) : null}
     </section>
   );
 }

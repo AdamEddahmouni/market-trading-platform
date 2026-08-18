@@ -1,0 +1,76 @@
+{
+  "checks": [
+    {
+      "check_id": "projection_fail_closed",
+      "message": "Explore projection is fail-closed when internship demo state is missing.",
+      "passed": true
+    },
+    {
+      "check_id": "projection_workspace_fixture_fallback",
+      "message": "BOXL workspace projection serves admitted fixture.",
+      "passed": true
+    },
+    {
+      "check_id": "projection_explore_rows",
+      "message": "Explore projection returns 9 catalyst row(s).",
+      "passed": true
+    },
+    {
+      "check_id": "projection_reference_symbol",
+      "message": "Explore projection includes BOXL.",
+      "passed": true
+    },
+    {
+      "check_id": "projection_decision_summary",
+      "message": "Explore projection includes decision_summary aggregation.",
+      "passed": true
+    },
+    {
+      "check_id": "projection_workspace_catalyst",
+      "message": "BOXL donor workspace projection serves catalyst evidence.",
+      "passed": true
+    },
+    {
+      "check_id": "projection_attention_items",
+      "message": "Attention projection surfaces catalyst items with explain refs.",
+      "passed": true
+    },
+    {
+      "check_id": "imp_explore_http",
+      "message": "IMP /explore/catalyst responds over HTTP.",
+      "passed": true
+    },
+    {
+      "check_id": "imp_explore_available",
+      "message": "IMP explore catalyst bridge returns rows when demo state is seeded.",
+      "passed": true
+    },
+    {
+      "check_id": "imp_workspace_catalyst_http",
+      "message": "IMP workspace catalyst endpoint serves BOXL detail.",
+      "passed": true
+    },
+    {
+      "check_id": "imp_explain_catalyst",
+      "message": "IMP explain endpoint resolves catalyst refs.",
+      "passed": true
+    },
+    {
+      "check_id": "imp_attention_catalyst",
+      "message": "IMP attention feed includes catalyst items when demo state is seeded.",
+      "passed": true
+    }
+  ],
+  "lane": "catalyst-read-only",
+  "status": "PASS",
+  "summary": {
+    "http_status": "PASS",
+    "imp_live": true,
+    "imp_url": "http://127.0.0.1:8766",
+    "projection_status": "PASS",
+    "reference_symbol": "BOXL",
+    "seed_instruction": "Run: python scripts/seed_demo_state.py in internship-project-main/internship-project-main/news_momentum_agent/",
+    "state_dir": "C:\\Users\\adame\\Desktop\\market-trading-platform\\internship-project-main\\internship-project-main\\news_momentum_agent\\state",
+    "state_live": true
+  }
+}

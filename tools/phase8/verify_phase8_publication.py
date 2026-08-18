@@ -25,7 +25,7 @@ def publication_manifest_hash(manifest: dict[str, object], bound: dict[str, obje
     snapshot = {
         key: value
         for key, value in manifest.items()
-        if not (key.startswith("phase") and key.endswith("_status")) and key != "ui1_status"
+        if not key.endswith("_status")
     }
     for key, value in bound.items():
         if key.endswith("_status"):

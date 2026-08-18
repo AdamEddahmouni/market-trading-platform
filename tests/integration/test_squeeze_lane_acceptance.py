@@ -23,6 +23,10 @@ class SqueezeLaneAcceptanceTests(unittest.TestCase):
         self.assertIn("projection_fail_closed", check_ids)
         fail_closed = next(check for check in result.checks if check.check_id == "projection_fail_closed")
         self.assertTrue(fail_closed.passed)
+        scanner_fail_closed = next(
+            check for check in result.checks if check.check_id == "projection_scanner_fail_closed"
+        )
+        self.assertTrue(scanner_fail_closed.passed)
 
     def test_live_projection_when_donor_up(self) -> None:
         result = run_acceptance(donor_url="http://127.0.0.1:8787", imp_url="http://127.0.0.1:59998")
@@ -33,6 +37,11 @@ class SqueezeLaneAcceptanceTests(unittest.TestCase):
         self.assertIn("projection_workspace_squeeze", passed_ids)
         self.assertIn("projection_workspace_replay_only", passed_ids)
         self.assertIn("projection_attention_items", passed_ids)
+        self.assertTrue(
+            "projection_scanner_explore" in passed_ids
+            or "projection_scanner_attention_items" in passed_ids
+            or "projection_scanner_attention_empty" in passed_ids
+        )
 
 
 if __name__ == "__main__":

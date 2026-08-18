@@ -28,6 +28,7 @@ class ProviderNeutralInferenceBoundary(Protocol):
         prompt: str,
         *,
         context_citations: tuple[dict[str, str], ...] = (),
+        evidence_context: dict[str, object] | None = None,
     ) -> InferenceOutcome:
         ...
 
@@ -43,8 +44,9 @@ class AbstainingInferenceStub:
         prompt: str,
         *,
         context_citations: tuple[dict[str, str], ...] = (),
+        evidence_context: dict[str, object] | None = None,
     ) -> InferenceOutcome:
-        del prompt, context_citations
+        del prompt, context_citations, evidence_context
         return InferenceOutcome(
             content="",
             citations=(),

@@ -23,6 +23,10 @@ REGULATORY_DISCLOSURE_FAMILY = "regulatory_disclosure"
 ORDER_FLOW_FAMILY = "order_flow"
 OPTIONS_FAMILY = "options"
 LARGE_TRANSACTIONS_FAMILY = "large_transactions"
+FUTURES_FAMILY = "futures_positioning"
+ORDER_BOOK_FAMILY = "order_book"
+PUBLIC_CATALYST_FAMILY = "public_catalyst"
+FUND_ETF_FAMILY = "fund_etf_cross_asset"
 
 _LEDGER: WhaleLedger | None = None
 
@@ -116,6 +120,74 @@ def query_institutional_evidence(
                 "family": family,
                 "prediction_cutoff": prediction_cutoff,
                 "reason_code": WHALE_ENTITLED_LARGE_TRANSACTIONS,
+                "status": "available",
+            }
+    if family == ORDER_BOOK_FAMILY and _LEDGER is not None:
+        from ..providers.whale_ledger import WHALE_ENTITLED_ORDER_BOOK
+
+        events = _LEDGER.query_events(
+            family=family,
+            instrument_id=instrument_id,
+            prediction_cutoff=prediction_cutoff,
+        )
+        if events:
+            return {
+                "direction": "neutral",
+                "event_count": len(events),
+                "family": family,
+                "prediction_cutoff": prediction_cutoff,
+                "reason_code": WHALE_ENTITLED_ORDER_BOOK,
+                "status": "available",
+            }
+    if family == FUTURES_FAMILY and _LEDGER is not None:
+        from ..providers.whale_ledger import WHALE_ENTITLED_FUTURES
+
+        events = _LEDGER.query_events(
+            family=family,
+            instrument_id=instrument_id,
+            prediction_cutoff=prediction_cutoff,
+        )
+        if events:
+            return {
+                "direction": "neutral",
+                "event_count": len(events),
+                "family": family,
+                "prediction_cutoff": prediction_cutoff,
+                "reason_code": WHALE_ENTITLED_FUTURES,
+                "status": "available",
+            }
+    if family == PUBLIC_CATALYST_FAMILY and _LEDGER is not None:
+        from ..providers.whale_ledger import WHALE_ENTITLED_CATALYST
+
+        events = _LEDGER.query_events(
+            family=family,
+            instrument_id=instrument_id,
+            prediction_cutoff=prediction_cutoff,
+        )
+        if events:
+            return {
+                "direction": "neutral",
+                "event_count": len(events),
+                "family": family,
+                "prediction_cutoff": prediction_cutoff,
+                "reason_code": WHALE_ENTITLED_CATALYST,
+                "status": "available",
+            }
+    if family == FUND_ETF_FAMILY and _LEDGER is not None:
+        from ..providers.whale_ledger import WHALE_ENTITLED_FUND_ETF
+
+        events = _LEDGER.query_events(
+            family=family,
+            instrument_id=instrument_id,
+            prediction_cutoff=prediction_cutoff,
+        )
+        if events:
+            return {
+                "direction": "neutral",
+                "event_count": len(events),
+                "family": family,
+                "prediction_cutoff": prediction_cutoff,
+                "reason_code": WHALE_ENTITLED_FUND_ETF,
                 "status": "available",
             }
     return {

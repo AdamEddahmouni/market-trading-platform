@@ -1,0 +1,126 @@
+{
+  "admission_id": "ADMITTED-L2-ES-001",
+  "contract_month": "202506",
+  "exchange": "CME",
+  "fixture_id": "FIXTURE-L2-ES",
+  "imbalance_threshold": 1.5,
+  "level_count": 10,
+  "research_only": true,
+  "session": "RTH",
+  "symbol": "ES",
+  "synthetic": true,
+  "snapshots": [
+    {
+      "asks": [
+        {"price": 6002.0, "size": 10},
+        {"price": 6002.25, "size": 11},
+        {"price": 6002.5, "size": 12}
+      ],
+      "bids": [
+        {"price": 6000.0, "size": 50},
+        {"price": 5999.75, "size": 60},
+        {"price": 5999.5, "size": 70}
+      ],
+      "event_time": "2025-06-02T14:41:00.000000000Z",
+      "source": "fixture_synthetic"
+    },
+    {
+      "asks": [
+        {"price": 6002.25, "size": 12},
+        {"price": 6002.5, "size": 13},
+        {"price": 6002.75, "size": 14}
+      ],
+      "bids": [
+        {"price": 6000.25, "size": 48},
+        {"price": 6000.0, "size": 58},
+        {"price": 5999.75, "size": 68}
+      ],
+      "event_time": "2025-06-02T14:41:01.000000000Z",
+      "source": "fixture_synthetic"
+    },
+    {
+      "asks": [
+        {"price": 6002.5, "size": 14},
+        {"price": 6002.75, "size": 15},
+        {"price": 6003.0, "size": 16}
+      ],
+      "bids": [
+        {"price": 6000.5, "size": 46},
+        {"price": 6000.25, "size": 56},
+        {"price": 6000.0, "size": 66}
+      ],
+      "event_time": "2025-06-02T14:41:02.000000000Z",
+      "source": "fixture_synthetic"
+    },
+    {
+      "asks": [
+        {"price": 6002.75, "size": 16},
+        {"price": 6003.0, "size": 17},
+        {"price": 6003.25, "size": 18}
+      ],
+      "bids": [
+        {"price": 6000.75, "size": 44},
+        {"price": 6000.5, "size": 54},
+        {"price": 6000.25, "size": 64}
+      ],
+      "event_time": "2025-06-02T14:41:03.000000000Z",
+      "source": "fixture_synthetic"
+    },
+    {
+      "asks": [
+        {"price": 6003.0, "size": 80},
+        {"price": 6003.25, "size": 70},
+        {"price": 6003.5, "size": 60}
+      ],
+      "bids": [
+        {"price": 6001.0, "size": 20},
+        {"price": 6000.75, "size": 18},
+        {"price": 6000.5, "size": 16}
+      ],
+      "event_time": "2025-06-02T14:41:04.000000000Z",
+      "source": "fixture_synthetic"
+    },
+    {
+      "asks": [
+        {"price": 6003.25, "size": 75},
+        {"price": 6003.5, "size": 65},
+        {"price": 6003.75, "size": 55}
+      ],
+      "bids": [
+        {"price": 6001.25, "size": 22},
+        {"price": 6001.0, "size": 20},
+        {"price": 6000.75, "size": 18}
+      ],
+      "event_time": "2025-06-02T14:41:05.000000000Z",
+      "source": "fixture_synthetic"
+    },
+    {
+      "asks": [
+        {"price": 6003.5, "size": 70},
+        {"price": 6003.75, "size": 60},
+        {"price": 6004.0, "size": 50}
+      ],
+      "bids": [
+        {"price": 6001.5, "size": 24},
+        {"price": 6001.25, "size": 22},
+        {"price": 6001.0, "size": 20}
+      ],
+      "event_time": "2025-06-02T14:41:06.000000000Z",
+      "source": "fixture_synthetic"
+    },
+    {
+      "asks": [
+        {"price": 6003.75, "size": 65},
+        {"price": 6004.0, "size": 55},
+        {"price": 6004.25, "size": 45}
+      ],
+      "bids": [
+        {"price": 6001.75, "size": 26},
+        {"price": 6001.5, "size": 24},
+        {"price": 6001.25, "size": 22}
+      ],
+      "event_time": "2025-06-02T14:41:07.000000000Z",
+      "source": "fixture_synthetic"
+    }
+  ]
+}

@@ -5,7 +5,15 @@ from __future__ import annotations
 from typing import Any
 
 from ..features.institutional import get_institutional_ledger
-from ..providers.whale_ledger import LARGE_TRANSACTIONS_FAMILY, OPTIONS_FAMILY, ORDER_FLOW_FAMILY
+from ..providers.whale_ledger import (
+    FUND_ETF_FAMILY,
+    FUTURES_FAMILY,
+    LARGE_TRANSACTIONS_FAMILY,
+    OPTIONS_FAMILY,
+    ORDER_BOOK_FAMILY,
+    ORDER_FLOW_FAMILY,
+    PUBLIC_CATALYST_FAMILY,
+)
 
 
 def disclosure_available(*, instrument_id: str, prediction_cutoff: int) -> bool:
@@ -50,6 +58,54 @@ def large_transactions_available(*, instrument_id: str, prediction_cutoff: int) 
         return False
     events = ledger.query_events(
         family=LARGE_TRANSACTIONS_FAMILY,
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    return bool(events)
+
+
+def order_book_available(*, instrument_id: str, prediction_cutoff: int) -> bool:
+    ledger = get_institutional_ledger()
+    if ledger is None:
+        return False
+    events = ledger.query_events(
+        family=ORDER_BOOK_FAMILY,
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    return bool(events)
+
+
+def futures_available(*, instrument_id: str, prediction_cutoff: int) -> bool:
+    ledger = get_institutional_ledger()
+    if ledger is None:
+        return False
+    events = ledger.query_events(
+        family=FUTURES_FAMILY,
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    return bool(events)
+
+
+def catalyst_available(*, instrument_id: str, prediction_cutoff: int) -> bool:
+    ledger = get_institutional_ledger()
+    if ledger is None:
+        return False
+    events = ledger.query_events(
+        family=PUBLIC_CATALYST_FAMILY,
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    return bool(events)
+
+
+def fund_etf_available(*, instrument_id: str, prediction_cutoff: int) -> bool:
+    ledger = get_institutional_ledger()
+    if ledger is None:
+        return False
+    events = ledger.query_events(
+        family=FUND_ETF_FAMILY,
         instrument_id=instrument_id,
         prediction_cutoff=prediction_cutoff,
     )
@@ -251,13 +307,321 @@ def build_workspace_large_transactions_payload(
     }
 
 
+def build_workspace_order_book_payload(
+    symbol: str,
+    *,
+    as_of_context: dict[str, object],
+    prediction_cutoff: int,
+) -> dict[str, Any]:
+    instrument_id = symbol.upper()
+    ledger = get_institutional_ledger()
+    if ledger is None:
+        return {
+            "as_of_context": as_of_context,
+            "available": False,
+            "disclaimer": "Order-book evidence not entitled. Fail-closed per ADR-WHALE-001.",
+            "reason": "WHALE_NO_ENTITLED_SOURCE",
+            "research_only": True,
+            "snapshots": [],
+            "symbol": instrument_id,
+        }
+    snapshots = ledger.query_order_book_summaries(
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    if not snapshots:
+        return {
+            "as_of_context": as_of_context,
+            "available": False,
+            "disclaimer": "No PIT-eligible order-book snapshots for this symbol at replay cutoff.",
+            "reason": "WHALE_NO_PIT_ELIGIBLE_ORDER_BOOK",
+            "research_only": True,
+            "snapshots": [],
+            "symbol": instrument_id,
+        }
+    latest = snapshots[-1]
+    return {
+        "as_of_context": as_of_context,
+        "available": True,
+        "disclaimer": (
+            "Visible liquidity and imbalance metrics are derived from admitted fixture snapshots. "
+            "They are not participant identity or directional intent. "
+            "Research-only per ADR-WHALE-006."
+        ),
+        "latest_imbalance_ratio": latest.get("imbalance_ratio"),
+        "latest_ofi_value": latest.get("ofi_value"),
+        "ledger_id": ledger.ledger_id,
+        "provider_id": "depth.fixture.order_book",
+        "research_only": True,
+        "snapshot_count": len(snapshots),
+        "snapshots": snapshots,
+        "symbol": instrument_id,
+    }
+
+
+def build_workspace_futures_payload(
+    symbol: str,
+    *,
+    as_of_context: dict[str, object],
+    prediction_cutoff: int,
+) -> dict[str, Any]:
+    instrument_id = symbol.upper()
+    from ..donor_bridge.futures_client import fetch_depth_latest, is_available as futures_bridge_available
+    from ..errors import OfflineBoundaryViolation
+
+    bridge_available = False
+    try:
+        bridge_available = futures_bridge_available()
+    except (ConnectionError, OfflineBoundaryViolation, OSError):
+        bridge_available = False
+
+    if bridge_available:
+        try:
+            bridge = fetch_depth_latest()
+            if bridge.get("available"):
+                snap = bridge.get("snapshot", {})
+                if isinstance(snap, dict):
+                    from datetime import datetime
+
+                    from ..donor_patterns.futures_lane import (
+                        depth_imbalance_signal,
+                        is_rth,
+                        project_futures_depth,
+                    )
+
+                    bids = snap.get("bids", [])
+                    asks = snap.get("asks", [])
+                    if not isinstance(bids, list):
+                        bids = []
+                    if not isinstance(asks, list):
+                        asks = []
+                    signal, ratio = depth_imbalance_signal(bids, asks)
+                    ofi_value = 0.0
+                    event_time = str(snap.get("event_time", ""))
+                    if event_time:
+                        try:
+                            event_dt = datetime.fromisoformat(event_time.replace("Z", "+00:00"))
+                        except ValueError:
+                            event_dt = datetime.now()
+                    else:
+                        event_dt = datetime.now()
+                    rth = is_rth(event_dt)
+                    session_state = "RTH" if rth else "EXTENDED"
+                    contract_month = str(bridge.get("contract_month", ""))
+                    exchange = str(bridge.get("exchange", "CME"))
+                    bridge_row = project_futures_depth(
+                        symbol=instrument_id,
+                        contract_month=contract_month,
+                        exchange=exchange,
+                        session_state=session_state,
+                        snapshot=snap,
+                        imbalance_ratio=ratio,
+                        imbalance_signal=signal,
+                        ofi_value=ofi_value,
+                        rth=rth,
+                    )
+                    bridge_row["event_time"] = event_time or None
+                else:
+                    bridge_row = {}
+                    signal = "neutral"
+                    ratio = 0.0
+                    ofi_value = 0.0
+                    session_state = "UNKNOWN"
+                return {
+                    "as_of_context": as_of_context,
+                    "available": True,
+                    "contract_month": bridge.get("contract_month"),
+                    "disclaimer": (
+                        "Live donor-bridge ES depth snapshot. Not admitted into canonical replay. "
+                        "Research-only."
+                    ),
+                    "exchange": bridge.get("exchange", "CME"),
+                    "latest_imbalance_ratio": bridge_row.get("imbalance_ratio", ratio) if bridge_row else ratio,
+                    "latest_imbalance_signal": bridge_row.get("imbalance_signal", signal) if bridge_row else signal,
+                    "latest_ofi_value": bridge_row.get("ofi_value", ofi_value) if bridge_row else ofi_value,
+                    "provenance": "donor_bridge",
+                    "provider_id": "futuresx.donor_bridge",
+                    "research_only": True,
+                    "session_state": bridge_row.get("session_state", session_state) if bridge_row else session_state,
+                    "snapshot": snap,
+                    "snapshot_count": 1 if bridge_row else 0,
+                    "snapshots": [bridge_row] if bridge_row else [],
+                    "symbol": instrument_id,
+                }
+        except (ConnectionError, ValueError, OfflineBoundaryViolation, OSError):
+            pass
+    ledger = get_institutional_ledger()
+    if ledger is None:
+        return {
+            "as_of_context": as_of_context,
+            "available": False,
+            "disclaimer": "Futures depth evidence not entitled. Fail-closed per ADR-WHALE-001.",
+            "reason": "WHALE_NO_ENTITLED_SOURCE",
+            "research_only": True,
+            "snapshots": [],
+            "symbol": instrument_id,
+        }
+    snapshots = ledger.query_futures_summaries(
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    if not snapshots:
+        return {
+            "as_of_context": as_of_context,
+            "available": False,
+            "disclaimer": "No PIT-eligible futures depth snapshots for this symbol at replay cutoff.",
+            "reason": "WHALE_NO_PIT_ELIGIBLE_FUTURES",
+            "research_only": True,
+            "snapshots": [],
+            "symbol": instrument_id,
+        }
+    latest = snapshots[-1]
+    return {
+        "as_of_context": as_of_context,
+        "available": True,
+        "contract_month": latest.get("contract_month"),
+        "disclaimer": (
+            "ES depth and imbalance signals are derived from admitted synthetic fixture snapshots. "
+            "Not CFTC positioning or trade advice. Research-only per ADR-DATA-002."
+        ),
+        "exchange": latest.get("exchange", "CME"),
+        "latest_imbalance_ratio": latest.get("imbalance_ratio"),
+        "latest_imbalance_signal": latest.get("imbalance_signal"),
+        "latest_ofi_value": latest.get("ofi_value"),
+        "ledger_id": ledger.ledger_id,
+        "provenance": "fixture",
+        "provider_id": "depth.fixture.futures",
+        "research_only": True,
+        "session_state": latest.get("session_state"),
+        "snapshot_count": len(snapshots),
+        "snapshots": snapshots,
+        "symbol": instrument_id,
+        "synthetic": True,
+    }
+
+
+def build_workspace_catalyst_payload(
+    symbol: str,
+    *,
+    as_of_context: dict[str, object],
+    prediction_cutoff: int,
+) -> dict[str, Any]:
+    instrument_id = symbol.upper()
+    ledger = get_institutional_ledger()
+    if ledger is None:
+        return {
+            "as_of_context": as_of_context,
+            "available": False,
+            "catalysts": [],
+            "disclaimer": "Public catalyst evidence not entitled. Fail-closed per ADR-WHALE-001.",
+            "reason": "WHALE_NO_ENTITLED_SOURCE",
+            "research_only": True,
+            "symbol": instrument_id,
+        }
+    catalysts = ledger.query_catalyst_summaries(
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    if not catalysts:
+        return {
+            "as_of_context": as_of_context,
+            "available": False,
+            "catalysts": [],
+            "disclaimer": "No PIT-eligible catalyst events for this symbol at replay cutoff.",
+            "reason": "WHALE_NO_PIT_ELIGIBLE_CATALYST",
+            "research_only": True,
+            "symbol": instrument_id,
+        }
+    latest = catalysts[-1]
+    return {
+        "as_of_context": as_of_context,
+        "available": True,
+        "catalyst_count": len(catalysts),
+        "catalysts": catalysts,
+        "disclaimer": (
+            "Catalyst confidence and lean are inferred from admitted fixture signals. "
+            "They are not trade recommendations or paper execution state. "
+            "Research-only per ADR-WHALE-007."
+        ),
+        "latest_confidence": latest.get("confidence"),
+        "latest_gate_ok": latest.get("gate_ok"),
+        "latest_headline": latest.get("headline"),
+        "latest_lean": latest.get("lean"),
+        "ledger_id": ledger.ledger_id,
+        "provider_id": "catalyst.fixture.activity",
+        "research_only": True,
+        "symbol": instrument_id,
+    }
+
+
+def build_workspace_fund_etf_payload(
+    symbol: str,
+    *,
+    as_of_context: dict[str, object],
+    prediction_cutoff: int,
+) -> dict[str, Any]:
+    instrument_id = symbol.upper()
+    ledger = get_institutional_ledger()
+    if ledger is None:
+        return {
+            "as_of_context": as_of_context,
+            "available": False,
+            "disclaimer": "Fund/ETF cross-asset evidence not entitled. Fail-closed per ADR-WHALE-001.",
+            "events": [],
+            "reason": "WHALE_NO_ENTITLED_SOURCE",
+            "research_only": True,
+            "symbol": instrument_id,
+        }
+    events = ledger.query_fund_etf_summaries(
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    if not events:
+        return {
+            "as_of_context": as_of_context,
+            "available": False,
+            "disclaimer": "No PIT-eligible fund/ETF events for this symbol at replay cutoff.",
+            "events": [],
+            "reason": "WHALE_NO_PIT_ELIGIBLE_FUND_ETF",
+            "research_only": True,
+            "symbol": instrument_id,
+        }
+    latest = events[-1]
+    return {
+        "as_of_context": as_of_context,
+        "available": True,
+        "disclaimer": (
+            "ETF flow proxies and cross-asset context are derived from admitted synthetic fixture rows. "
+            "They are not live fund-flow feeds or trade recommendations. "
+            "Research-only per ADR-WHALE-008."
+        ),
+        "event_count": len(events),
+        "events": events,
+        "latest_correlation_20d": latest.get("correlation_20d"),
+        "latest_flow_proxy_ratio": latest.get("flow_proxy_ratio"),
+        "latest_regime_label": latest.get("regime_label"),
+        "ledger_id": ledger.ledger_id,
+        "provider_id": "fund_etf.fixture.activity",
+        "research_only": True,
+        "symbol": instrument_id,
+    }
+
+
 __all__ = [
+    "build_workspace_catalyst_payload",
     "build_workspace_disclosure_payload",
+    "build_workspace_fund_etf_payload",
+    "build_workspace_futures_payload",
     "build_workspace_large_transactions_payload",
     "build_workspace_options_payload",
+    "build_workspace_order_book_payload",
     "build_workspace_order_flow_payload",
+    "catalyst_available",
     "disclosure_available",
+    "fund_etf_available",
+    "futures_available",
     "large_transactions_available",
     "options_available",
+    "order_book_available",
     "order_flow_available",
 ]

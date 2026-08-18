@@ -18,10 +18,15 @@ from market_platform_foundation.donor_bridge.projections import (  # noqa: E402
     ADMITTED_REPLAY_INSTRUMENT_ID,
     FROZEN_DEMO_REFERENCE_SYMBOL,
     build_explore_squeeze_payload,
+    build_explore_squeeze_scanner_payload,
     build_squeeze_attention_items,
+    build_squeeze_scanner_attention_items,
     build_workspace_squeeze_payload,
 )
-from market_platform_foundation.donor_bridge.squeeze_client import is_available  # noqa: E402
+from market_platform_foundation.donor_bridge.squeeze_client import (  # noqa: E402
+    fetch_donor_deployment_mode,
+    is_available,
+)
 
 DEFAULT_DONOR_URL = "http://127.0.0.1:8787"
 DEFAULT_IMP_URL = "http://127.0.0.1:8766"
@@ -74,7 +79,7 @@ def _request_json(base_url: str, path: str) -> tuple[int | None, dict[str, Any] 
     url = base_url.rstrip("/") + path
     request = Request(url, method="GET")
     try:
-        with urlopen(request, timeout=10) as response:
+        with urlopen(request, timeout=180) as response:
             payload = json.loads(response.read().decode("utf-8"))
             if not isinstance(payload, dict):
                 return response.status, None
@@ -95,6 +100,15 @@ def _projection_checks(*, donor_url: str, donor_live: bool) -> list[AcceptanceCh
         offline.get("available") is False and offline.get("rows") == [],
         "Explore projection is fail-closed when donor is down.",
         "Explore projection did not fail closed when donor is down.",
+    )
+
+    offline_scanner = build_explore_squeeze_scanner_payload(base_url="http://127.0.0.1:59999")
+    _check(
+        checks,
+        "projection_scanner_fail_closed",
+        offline_scanner.get("available") is False and offline_scanner.get("rows") == [],
+        "Scanner explore projection is fail-closed when donor is down.",
+        "Scanner explore projection did not fail closed when donor is down.",
     )
 
     if not donor_live:
@@ -141,7 +155,7 @@ def _projection_checks(*, donor_url: str, donor_live: bool) -> list[AcceptanceCh
         "projection_workspace_rules",
         isinstance(squeeze.get("rules"), list)
         and len(squeeze.get("rules", [])) > 0
-        and len(squeeze.get("ignition_evidence", [])) == 3,
+        and len(squeeze.get("ignition_evidence", [])) >= 3,
         f"{squeeze_symbol} workspace projection includes rules and ignition evidence cards.",
         f"{squeeze_symbol} workspace projection missing rules or ignition evidence.",
     )
@@ -163,6 +177,63 @@ def _projection_checks(*, donor_url: str, donor_live: bool) -> list[AcceptanceCh
         "Attention projection surfaces five squeeze items with explain refs.",
         "Attention projection missing squeeze items or explain refs.",
     )
+
+    scanner_explore = build_explore_squeeze_scanner_payload(base_url=donor_url)
+    scanner_row_count = int(scanner_explore.get("row_count") or 0)
+    _check(
+        checks,
+        "projection_scanner_explore",
+        scanner_explore.get("available") is True and scanner_explore.get("data_mode") == "current",
+        "Scanner explore projection is available in current data mode.",
+        "Scanner explore projection unavailable or wrong data mode.",
+    )
+    scanner_attention = build_squeeze_scanner_attention_items(base_url=donor_url, limit=3)
+    if scanner_row_count > 0:
+        _check(
+            checks,
+            "projection_scanner_rows",
+            scanner_row_count >= 1 and len(scanner_explore.get("rows", [])) >= 1,
+            f"Scanner explore projection returns {scanner_row_count} current row(s).",
+            "Scanner explore projection missing current rows.",
+        )
+        _check(
+            checks,
+            "projection_scanner_attention_items",
+            len(scanner_attention) >= 1
+            and all(
+                str(item.get("attention_id", "")).startswith("att-squeeze-scanner-")
+                for item in scanner_attention
+            )
+            and all(
+                str(item.get("explanation_ref", "")).startswith("explain:squeeze:scanner:")
+                for item in scanner_attention
+            ),
+            "Scanner attention projection surfaces ephemeral rows with scanner explain refs.",
+            "Scanner attention projection missing items or explain refs.",
+        )
+        scanner_symbol = str(scanner_explore["rows"][0].get("symbol", "")).upper()
+        if scanner_symbol:
+            current_workspace = build_workspace_squeeze_payload(
+                scanner_symbol,
+                base_url=donor_url,
+                data_mode="current",
+            )
+            _check(
+                checks,
+                "projection_workspace_current",
+                current_workspace.get("available") is True
+                and current_workspace.get("data_mode") == "current",
+                f"{scanner_symbol} workspace current-mode projection serves scanner detail.",
+                f"{scanner_symbol} workspace current-mode projection unavailable.",
+            )
+    else:
+        _check(
+            checks,
+            "projection_scanner_attention_empty",
+            scanner_attention == [],
+            "Scanner attention projection stays empty when no current candidates.",
+            "Scanner attention projection returned items without scanner rows.",
+        )
     return checks
 
 
@@ -235,6 +306,51 @@ def _http_checks(*, imp_url: str, donor_live: bool) -> list[AcceptanceCheck]:
         "IMP attention feed missing squeeze items.",
     )
 
+    status, scanner_explore = _request_json(imp_url, "/explore/squeeze/scanner")
+    _check(
+        checks,
+        "imp_scanner_explore_http",
+        status == 200 and isinstance(scanner_explore, dict),
+        "IMP /explore/squeeze/scanner responds over HTTP.",
+        "IMP /explore/squeeze/scanner HTTP request failed.",
+    )
+    if isinstance(scanner_explore, dict):
+        scanner_row_count = int(scanner_explore.get("row_count") or 0)
+        _check(
+            checks,
+            "imp_scanner_explore_available",
+            scanner_explore.get("available") is True and scanner_explore.get("data_mode") == "current",
+            "IMP scanner explore bridge is available in current data mode.",
+            "IMP scanner explore bridge unavailable or wrong data mode.",
+        )
+        if scanner_row_count > 0:
+            scanner_rows = scanner_explore.get("rows", [])
+            scanner_symbol = ""
+            if isinstance(scanner_rows, list) and scanner_rows:
+                scanner_symbol = str(scanner_rows[0].get("symbol", "")).upper()
+            _check(
+                checks,
+                "imp_scanner_explore_rows",
+                scanner_row_count >= 1,
+                f"IMP scanner explore bridge returns {scanner_row_count} current row(s).",
+                "IMP scanner explore bridge missing current rows.",
+            )
+            if scanner_symbol:
+                ws_status, current_workspace = _request_json(
+                    imp_url,
+                    f"/workspace/{scanner_symbol}/squeeze?data_mode=current",
+                )
+                _check(
+                    checks,
+                    "imp_workspace_scanner_http",
+                    ws_status == 200
+                    and isinstance(current_workspace, dict)
+                    and current_workspace.get("available") is True
+                    and current_workspace.get("data_mode") == "current",
+                    f"IMP workspace current-mode squeeze serves {scanner_symbol} scanner detail.",
+                    f"IMP workspace current-mode squeeze failed for {scanner_symbol}.",
+                )
+
     if squeeze_items:
         ref = str(squeeze_items[0].get("explanation_ref", ""))
         explain_status, explain = _request_json(imp_url, f"/explain/{ref}")
@@ -245,6 +361,26 @@ def _http_checks(*, imp_url: str, donor_live: bool) -> list[AcceptanceCheck]:
             "IMP explain endpoint resolves squeeze attention refs.",
             "IMP explain endpoint failed for squeeze ref.",
         )
+
+    scanner_items = []
+    if isinstance(attention, dict):
+        items = attention.get("items", [])
+        if isinstance(items, list):
+            scanner_items = [
+                item for item in items if str(item.get("attention_id", "")).startswith("att-squeeze-scanner-")
+            ]
+    if scanner_items:
+        scanner_ref = str(scanner_items[0].get("explanation_ref", ""))
+        scanner_explain_status, scanner_explain = _request_json(imp_url, f"/explain/{scanner_ref}")
+        _check(
+            checks,
+            "imp_explain_squeeze_scanner",
+            scanner_explain_status == 200
+            and isinstance(scanner_explain, dict)
+            and scanner_explain.get("explanation"),
+            "IMP explain endpoint resolves scanner squeeze attention refs.",
+            "IMP explain endpoint failed for scanner squeeze ref.",
+        )
     return checks
 
 
@@ -254,8 +390,10 @@ def run_acceptance(
     imp_url: str = DEFAULT_IMP_URL,
     require_donor: bool = False,
     require_imp: bool = False,
+    require_scanner_rows: bool = False,
 ) -> AcceptanceResult:
     donor_live = is_available(base_url=donor_url)
+    donor_mode = fetch_donor_deployment_mode(base_url=donor_url) if donor_live else None
     imp_status, _ = _request_json(imp_url, "/context")
     imp_live = imp_status == 200
 
@@ -263,6 +401,7 @@ def run_acceptance(
         "donor_url": donor_url,
         "imp_url": imp_url,
         "donor_live": donor_live,
+        "donor_mode": donor_mode,
         "imp_live": imp_live,
         "frozen_row_count": FROZEN_ROW_COUNT,
     }
@@ -299,6 +438,19 @@ def run_acceptance(
             "IMP UI API HTTP checks skipped because server is down.",
         )
 
+    if donor_live:
+        scanner_explore = build_explore_squeeze_scanner_payload(base_url=donor_url)
+        summary["scanner_row_count"] = int(scanner_explore.get("row_count") or 0)
+    if require_scanner_rows and donor_live:
+        scanner_count = int(summary.get("scanner_row_count") or 0)
+        _check(
+            checks,
+            "scanner_rows_required",
+            scanner_count > 0,
+            f"Live scanner returned {scanner_count} current row(s).",
+            "Live scanner rows required but donor returned zero current candidates.",
+        )
+
     projection_passed = all(check.passed for check in checks if not check.check_id.startswith("imp_"))
     http_passed = all(check.passed for check in http_checks) if http_checks else True
     summary["projection_status"] = "PASS" if projection_passed else "FAIL"
@@ -315,6 +467,11 @@ def main() -> int:
     parser.add_argument("--imp-url", default=DEFAULT_IMP_URL)
     parser.add_argument("--require-donor", action="store_true")
     parser.add_argument("--require-imp", action="store_true")
+    parser.add_argument(
+        "--require-scanner-rows",
+        action="store_true",
+        help="Fail when donor is live but /api/current/candidates returns zero rows.",
+    )
     parser.add_argument("--output", type=Path, help="Write canonical JSON evidence to this path.")
     args = parser.parse_args()
 
@@ -323,6 +480,7 @@ def main() -> int:
         imp_url=args.imp_url,
         require_donor=args.require_donor,
         require_imp=args.require_imp,
+        require_scanner_rows=args.require_scanner_rows,
     )
     payload = result.public_dict()
     rendered = json.dumps(payload, sort_keys=True, indent=2)

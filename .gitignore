@@ -7,9 +7,12 @@ venv*/
 build/
 dist/
 *.log
-.env*
+.env
+.env.local
+!.env.example
 *credential*
 *secret*
 !src/market_platform_foundation/credential_audit.py
 !tests/phase0/test_credential_audit.py
 evidence/phase0/.staging-*/
+evidence/ui1/.debug-run/

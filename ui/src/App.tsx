@@ -20,6 +20,12 @@ import { SqueezeWorkspacePage } from "./components/squeeze/SqueezeWorkspacePage"
 import { OrderFlowWorkspacePage } from "./components/orderflow/OrderFlowWorkspacePage";
 import { OptionsWorkspacePage } from "./components/options/OptionsWorkspacePage";
 import { LargeTransactionsWorkspacePage } from "./components/largetransactions/LargeTransactionsWorkspacePage";
+import { OrderBookWorkspacePage } from "./components/orderbook/OrderBookWorkspacePage";
+import { FuturesWorkspacePage } from "./components/futures/FuturesWorkspacePage";
+import { CatalystWorkspacePage } from "./components/catalyst/CatalystWorkspacePage";
+import { FundEtfWorkspacePage } from "./components/fundetf/FundEtfWorkspacePage";
+import { DisclosureWorkspacePage } from "./components/disclosure/DisclosureWorkspacePage";
+import { InstitutionalFlowWorkspacePage } from "./components/institutional/InstitutionalFlowWorkspacePage";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { NavShell } from "./components/NavShell";
 import { NowPage } from "./components/NowPage";
@@ -218,6 +224,42 @@ function Shell() {
               }
             />
             <Route
+              path="/workspace/:symbol/order-book"
+              element={
+                <OrderBookWorkspacePage
+                  onExplain={openExplainRef}
+                  onInspect={openInspectRef}
+                />
+              }
+            />
+            <Route
+              path="/workspace/:symbol/futures"
+              element={
+                <FuturesWorkspacePage
+                  onExplain={openExplainRef}
+                  onInspect={openInspectRef}
+                />
+              }
+            />
+            <Route
+              path="/workspace/:symbol/catalyst"
+              element={
+                <CatalystWorkspacePage
+                  onExplain={openExplainRef}
+                  onInspect={openInspectRef}
+                />
+              }
+            />
+            <Route
+              path="/workspace/:symbol/fund-etf"
+              element={
+                <FundEtfWorkspacePage
+                  onExplain={openExplainRef}
+                  onInspect={openInspectRef}
+                />
+              }
+            />
+            <Route
               path="/workspace/:symbol/options"
               element={
                 <OptionsWorkspacePage
@@ -230,6 +272,24 @@ function Shell() {
               path="/workspace/:symbol/large-transactions"
               element={
                 <LargeTransactionsWorkspacePage
+                  onExplain={openExplainRef}
+                  onInspect={openInspectRef}
+                />
+              }
+            />
+            <Route
+              path="/workspace/:symbol/disclosure"
+              element={
+                <DisclosureWorkspacePage
+                  onExplain={openExplainRef}
+                  onInspect={openInspectRef}
+                />
+              }
+            />
+            <Route
+              path="/workspace/:symbol/institutional-flow"
+              element={
+                <InstitutionalFlowWorkspacePage
                   onExplain={openExplainRef}
                   onInspect={openInspectRef}
                 />
@@ -250,6 +310,13 @@ function Shell() {
           selectionRef={selectionRef}
           onClose={() => setAssistantOpen(false)}
           onSubmit={submitAssistantPrompt}
+          onCitationClick={async (ref) => {
+            if (ref.startsWith("inspect:")) {
+              await openInspectRef(ref);
+              return;
+            }
+            await openExplainRef(ref);
+          }}
         />
       </div>
       {!assistantOpen ? (

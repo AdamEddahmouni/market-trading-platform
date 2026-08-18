@@ -8,6 +8,7 @@ from typing import Any
 
 from ..adapters.equity_intraday_jsonl import EquityIntradayJsonlAdapter, SOURCE_OBJECT_ID
 from ..assistant.audit_store import AssistantAuditStore
+from ..assistant.inference_factory import resolve_assistant_inference
 from ..assistant.service import AssistantResearchService
 from ..canonical import canonical_bytes, sha256_bytes
 from ..contracts.identity import sort_events
@@ -85,7 +86,10 @@ class ReplayStore:
         audit_root = self.assistant_audit_root
         if audit_root is None:
             audit_root = Path(__file__).resolve().parents[3] / "evidence" / "ui1" / "assistant-audit"
-        self._assistant_service = AssistantResearchService(AssistantAuditStore(audit_root))
+        self._assistant_service = AssistantResearchService(
+            AssistantAuditStore(audit_root),
+            inference=resolve_assistant_inference(),
+        )
 
     @property
     def instrument_id(self) -> str:

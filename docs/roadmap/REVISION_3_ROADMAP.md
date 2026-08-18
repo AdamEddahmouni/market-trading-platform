@@ -18,10 +18,17 @@ authorized by this file.
 | Phase 7 — risk, simulation, and accounting | Independent risk, conservative simulation, cash/position/P&L reconciliation, and attribution remain mandatory. | `PASS` — risk, simulation, and accounting proven on admitted fixture; Phase 8 remains unauthorized |
 | Phase 8 — deterministic end-to-end acceptance | Acceptance remains evidence-bound and makes no unsupported edge claim. | `PASS` — end-to-end acceptance proven on admitted fixture; ES session remains deferred |
 | UI-001 — replay-only research UI V1 | Read-only API and React frontend on admitted fixture; REPLAY mode only. | `PASS` — UI-001 proven on admitted fixture |
+| UI-002 — expanded research UI | Institutional Flow composite, Disclosure workspace, Model Lab, Simulation Lab. | `PASS` — UI-002 proven on admitted fixture |
 | Phase 9 — provider contracts and EDGAR whale ledger | Capability-split provider interfaces; fixture-first SEC EDGAR disclosure ingestion; whale ledger; `regulatory_disclosure` wiring. | `PASS` — offline fixture slice on BIYA admitted context |
 | Phase 10 — whale order_flow family | Fixture-first NVDA CVD order-flow slice; `order_flow` institutional family; read-only workspace API and UI panel. | `PASS` — ADMITTED-CVD-NVDA-ORDERFLOW-001 |
 | Phase 11 — whale options family | Fixture-first BIYA options-activity slice; `options` institutional family; read-only workspace API and UI panel. | `PASS` — ADMITTED-OPTIONS-BIYA-001 |
 | Phase 12 — whale large_transactions family | Fixture-first NVDA large-print slice; `large_transactions` institutional family; read-only workspace API and UI panel. | `PASS` — ADMITTED-LARGE-PRINTS-NVDA-001 |
+| Phase 13 — whale order_book family | Fixture-first NVDA depth snapshot slice; `order_book` institutional family; `depth.L2` capability; read-only workspace API and UI panel. | `PASS` — ADMITTED-L2-NVDA-001 |
+| Phase 14 — whale futures_positioning family | Fixture-first ES depth slice; `futures_positioning` institutional family; read-only workspace API and UI panel. | `PASS` — ADMITTED-L2-ES-001 |
+| Phase 15 — whale public_catalyst family | Fixture-first BOXL catalyst slice; `public_catalyst` institutional family; read-only workspace API and UI panel. | `PASS` — ADMITTED-CATALYST-BOXL-001 |
+| Phase 16 — whale fund_etf_cross_asset family | Fixture-first NVDA fund/ETF flow proxy slice; `fund_etf_cross_asset` institutional family; read-only workspace API and UI panel. | `PASS` — ADMITTED-ETF-CROSSASSET-NVDA-001 |
+| MRA-001 — grounded Market Research Assistant | Deterministic evidence retrieval from explain/inspect projections; no LLM; citation-required answers. | `PASS` — grounded.evidence on admitted fixture |
+| MRA-002 — Anthropic LLM assistant | Anthropic Messages API with grounded evidence pack, env-injected credentials, grounded fallback. | `AUTHORIZED` — implementation complete; live inference when `ANTHROPIC_API_KEY` set |
 
 ## Accepted foundational ADRs (Phase 1 registry)
 

@@ -43,6 +43,10 @@ class ResearchAnalyticsProjectionTests(unittest.TestCase):
         self.assertIn("strategy_outcomes", panels)
         self.assertIn("risk_decisions", panels)
         self.assertIn("squeeze_outcomes", panels)
+        self.assertIn("squeeze_historical_cohort", panels)
+        historical = panels["squeeze_historical_cohort"]
+        self.assertTrue(historical["available"])
+        self.assertGreater(len(historical["series"]), 0)
         strategy = panels["strategy_outcomes"]
         self.assertIsInstance(strategy.get("signal_timeline"), list)
 

@@ -15,9 +15,17 @@ WHALE_ENTITLED_DISCLOSURE = "WHALE_ENTITLED_DISCLOSURE"
 WHALE_ENTITLED_ORDER_FLOW = "WHALE_ENTITLED_ORDER_FLOW"
 WHALE_ENTITLED_OPTIONS = "WHALE_ENTITLED_OPTIONS"
 WHALE_ENTITLED_LARGE_TRANSACTIONS = "WHALE_ENTITLED_LARGE_TRANSACTIONS"
+WHALE_ENTITLED_ORDER_BOOK = "WHALE_ENTITLED_ORDER_BOOK"
+WHALE_ENTITLED_FUTURES = "WHALE_ENTITLED_FUTURES"
+WHALE_ENTITLED_CATALYST = "WHALE_ENTITLED_CATALYST"
+WHALE_ENTITLED_FUND_ETF = "WHALE_ENTITLED_FUND_ETF"
 ORDER_FLOW_FAMILY = "order_flow"
 OPTIONS_FAMILY = "options"
 LARGE_TRANSACTIONS_FAMILY = "large_transactions"
+ORDER_BOOK_FAMILY = "order_book"
+FUTURES_FAMILY = "futures_positioning"
+PUBLIC_CATALYST_FAMILY = "public_catalyst"
+FUND_ETF_FAMILY = "fund_etf_cross_asset"
 LEDGER_LOGICAL_ID = "providers.whale_ledger"
 
 
@@ -209,6 +217,151 @@ class WhaleLedger:
             )
         return summaries
 
+    def query_order_book_summaries(
+        self,
+        *,
+        instrument_id: str,
+        prediction_cutoff: int,
+    ) -> list[dict[str, Any]]:
+        events = self.query_events(
+            family=ORDER_BOOK_FAMILY,
+            instrument_id=instrument_id,
+            prediction_cutoff=prediction_cutoff,
+        )
+        summaries: list[dict[str, Any]] = []
+        for event in events:
+            payload = _event_payload(event)
+            if not isinstance(payload, dict):
+                continue
+            summaries.append(
+                {
+                    "ask_size": payload.get("ask_size"),
+                    "available_time": int(event.get("available_time", 0)),
+                    "best_ask": payload.get("best_ask"),
+                    "best_bid": payload.get("best_bid"),
+                    "bid_size": payload.get("bid_size"),
+                    "direction_label": payload.get("direction_label"),
+                    "epistemic_class": payload.get("epistemic_class"),
+                    "event_time": payload.get("event_time"),
+                    "imbalance_ratio": payload.get("imbalance_ratio"),
+                    "level_count": payload.get("level_count"),
+                    "normalized_event_id": event.get("normalized_event_id"),
+                    "ofi_value": payload.get("ofi_value"),
+                    "snapshot_provenance": payload.get("snapshot_provenance"),
+                }
+            )
+        return summaries
+
+    def query_futures_summaries(
+        self,
+        *,
+        instrument_id: str,
+        prediction_cutoff: int,
+    ) -> list[dict[str, Any]]:
+        events = self.query_events(
+            family=FUTURES_FAMILY,
+            instrument_id=instrument_id,
+            prediction_cutoff=prediction_cutoff,
+        )
+        summaries: list[dict[str, Any]] = []
+        for event in events:
+            payload = _event_payload(event)
+            if not isinstance(payload, dict):
+                continue
+            summaries.append(
+                {
+                    "ask_size": payload.get("ask_size"),
+                    "available_time": int(event.get("available_time", 0)),
+                    "best_ask": payload.get("best_ask"),
+                    "best_bid": payload.get("best_bid"),
+                    "bid_size": payload.get("bid_size"),
+                    "contract_month": payload.get("contract_month"),
+                    "epistemic_class": payload.get("epistemic_class"),
+                    "event_time": payload.get("event_time"),
+                    "exchange": payload.get("exchange"),
+                    "imbalance_ratio": payload.get("imbalance_ratio"),
+                    "imbalance_signal": payload.get("imbalance_signal"),
+                    "level_count": payload.get("level_count"),
+                    "normalized_event_id": event.get("normalized_event_id"),
+                    "ofi_value": payload.get("ofi_value"),
+                    "rth": payload.get("rth"),
+                    "session_state": payload.get("session_state"),
+                    "snapshot_provenance": payload.get("snapshot_provenance"),
+                }
+            )
+        return summaries
+
+    def query_catalyst_summaries(
+        self,
+        *,
+        instrument_id: str,
+        prediction_cutoff: int,
+    ) -> list[dict[str, Any]]:
+        events = self.query_events(
+            family=PUBLIC_CATALYST_FAMILY,
+            instrument_id=instrument_id,
+            prediction_cutoff=prediction_cutoff,
+        )
+        summaries: list[dict[str, Any]] = []
+        for event in events:
+            payload = _event_payload(event)
+            if not isinstance(payload, dict):
+                continue
+            summaries.append(
+                {
+                    "available_time": int(event.get("available_time", 0)),
+                    "catalyst_type": payload.get("catalyst_type"),
+                    "confidence": payload.get("confidence"),
+                    "direction_label": payload.get("direction_label"),
+                    "epistemic_class": payload.get("epistemic_class"),
+                    "event_time": payload.get("event_time"),
+                    "gate_ok": payload.get("gate_ok"),
+                    "gate_reasons": payload.get("gate_reasons"),
+                    "headline": payload.get("headline"),
+                    "lean": payload.get("lean"),
+                    "normalized_event_id": event.get("normalized_event_id"),
+                    "signal_source": payload.get("signal_source"),
+                    "source": payload.get("source"),
+                }
+            )
+        return summaries
+
+    def query_fund_etf_summaries(
+        self,
+        *,
+        instrument_id: str,
+        prediction_cutoff: int,
+    ) -> list[dict[str, Any]]:
+        events = self.query_events(
+            family=FUND_ETF_FAMILY,
+            instrument_id=instrument_id,
+            prediction_cutoff=prediction_cutoff,
+        )
+        summaries: list[dict[str, Any]] = []
+        for event in events:
+            payload = _event_payload(event)
+            if not isinstance(payload, dict):
+                continue
+            summaries.append(
+                {
+                    "available_time": int(event.get("available_time", 0)),
+                    "correlation_20d": payload.get("correlation_20d"),
+                    "direction_label": payload.get("direction_label"),
+                    "epistemic_class": payload.get("epistemic_class"),
+                    "etf_ticker": payload.get("etf_ticker"),
+                    "event_time": payload.get("event_time"),
+                    "event_type": payload.get("event_type"),
+                    "flow_direction": payload.get("flow_direction"),
+                    "flow_proxy_ratio": payload.get("flow_proxy_ratio"),
+                    "normalized_event_id": event.get("normalized_event_id"),
+                    "reference_type": payload.get("reference_type"),
+                    "reference_value": payload.get("reference_value"),
+                    "regime_label": payload.get("regime_label"),
+                    "source": payload.get("source"),
+                }
+            )
+        return summaries
+
     def root_hash(self) -> str:
         body = {
             "events": [
@@ -292,9 +445,25 @@ def build_ledger_from_edgar_fixture(
 
 
 def build_combined_fixture_ledger(*, as_of_time_ns: int | None = None) -> WhaleLedger:
+    from .adapters.fixture_catalyst import (
+        DEFAULT_CATALYST_FIXTURE,
+        FixtureCatalystProvider,
+    )
+    from .adapters.fixture_fund_etf import (
+        DEFAULT_FUND_ETF_FIXTURE,
+        FixtureFundEtfProvider,
+    )
+    from .adapters.fixture_futures import (
+        DEFAULT_FUTURES_FIXTURE,
+        FixtureFuturesProvider,
+    )
     from .adapters.fixture_large_transactions import (
         DEFAULT_LARGE_TRANSACTIONS_FIXTURE,
         FixtureLargeTransactionsProvider,
+    )
+    from .adapters.fixture_order_book import (
+        DEFAULT_ORDER_BOOK_FIXTURE,
+        FixtureOrderBookProvider,
     )
     from .adapters.fixture_options import (
         DEFAULT_OPTIONS_FIXTURE,
@@ -323,6 +492,26 @@ def build_combined_fixture_ledger(*, as_of_time_ns: int | None = None) -> WhaleL
     lt_result = large_transactions.fetch_large_transactions(lt_symbol, as_of_time_ns=as_of_time_ns)
     if lt_result.status == "available":
         ledger.ingest_provider_result(lt_result.events)
+    order_book = FixtureOrderBookProvider(fixture_path=DEFAULT_ORDER_BOOK_FIXTURE)
+    ob_symbol = str(order_book._fixture.get("symbol", "NVDA"))
+    ob_result = order_book.fetch_order_book(ob_symbol, as_of_time_ns=as_of_time_ns)
+    if ob_result.status == "available":
+        ledger.ingest_provider_result(ob_result.events)
+    futures = FixtureFuturesProvider(fixture_path=DEFAULT_FUTURES_FIXTURE)
+    es_symbol = str(futures._fixture.get("symbol", "ES"))
+    futures_result = futures.fetch_futures_depth(es_symbol, as_of_time_ns=as_of_time_ns)
+    if futures_result.status == "available":
+        ledger.ingest_provider_result(futures_result.events)
+    catalyst = FixtureCatalystProvider(fixture_path=DEFAULT_CATALYST_FIXTURE)
+    catalyst_symbol = str(catalyst._fixture.get("symbol", "BOXL"))
+    catalyst_result = catalyst.fetch_catalyst_activity(catalyst_symbol, as_of_time_ns=as_of_time_ns)
+    if catalyst_result.status == "available":
+        ledger.ingest_provider_result(catalyst_result.events)
+    fund_etf = FixtureFundEtfProvider(fixture_path=DEFAULT_FUND_ETF_FIXTURE)
+    fund_symbol = str(fund_etf._fixture.get("symbol", "NVDA"))
+    fund_result = fund_etf.fetch_fund_etf_activity(fund_symbol, as_of_time_ns=as_of_time_ns)
+    if fund_result.status == "available":
+        ledger.ingest_provider_result(fund_result.events)
     return ledger
 
 
@@ -338,13 +527,21 @@ def bootstrap_default_providers(*, as_of_time_ns: int | None = None) -> WhaleLed
 
 
 __all__ = [
+    "FUND_ETF_FAMILY",
+    "FUTURES_FAMILY",
     "LARGE_TRANSACTIONS_FAMILY",
     "LEDGER_LOGICAL_ID",
     "OPTIONS_FAMILY",
+    "ORDER_BOOK_FAMILY",
     "ORDER_FLOW_FAMILY",
+    "PUBLIC_CATALYST_FAMILY",
+    "WHALE_ENTITLED_CATALYST",
     "WHALE_ENTITLED_DISCLOSURE",
+    "WHALE_ENTITLED_FUND_ETF",
+    "WHALE_ENTITLED_FUTURES",
     "WHALE_ENTITLED_LARGE_TRANSACTIONS",
     "WHALE_ENTITLED_OPTIONS",
+    "WHALE_ENTITLED_ORDER_BOOK",
     "WHALE_ENTITLED_ORDER_FLOW",
     "WhaleLedger",
     "bootstrap_default_providers",

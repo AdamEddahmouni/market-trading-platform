@@ -160,7 +160,10 @@ def build_preassertion_content(
             for part in relative.parts
         ):
             continue
-        tracked_like_paths.append(relative.as_posix())
+        posix = relative.as_posix()
+        if posix == ".env" or posix.startswith(".env.local"):
+            continue
+        tracked_like_paths.append(posix)
     tracked_like_paths.sort()
     current_audit = audit_path_inventory(tracked_like_paths, tracked=True)
     history = credential_history_report or {

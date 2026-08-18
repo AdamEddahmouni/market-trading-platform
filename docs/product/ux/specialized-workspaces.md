@@ -42,22 +42,25 @@ Side determination shown as heuristic with explanation path (bid/ask proximity).
 ## Short Squeeze
 
 **Module:** WORKSPACE → Short Squeeze  
-**Donor reference:** short-squeeze-project (CONCEPT_ONLY / PORT_ADAPT patterns)
+**Status:** `IMPLEMENTED` — FROZEN_DEMO read-only donor bridge ([SHORT_SQUEEZE_LANE.md](../../integration/SHORT_SQUEEZE_LANE.md))  
+**Donor reference:** short-squeeze-project (`:8787` when running locally)
 
 | Component | Notes |
 |---|---|
-| Ignition state machine | State-transition display |
+| Ignition state machine | State-transition display with criteria columns and frozen transition log |
 | Float / SI evidence | OBSERVED + delays |
-| Borrow (if entitled) | |
-| Options + flow cross-ref | Evidence alignment |
-| Historical squeeze context | |
+| Borrow (if entitled) | **Partial** — SEC disclosure cross-ref for BIYA; borrow fee unavailable |
+| Options + flow cross-ref | **Implemented** — Phase 11 BIYA options fixture on ignition card when entitled |
+| Depth / order book | **Implemented** — NVDA admitted depth fixture when entitled at replay cutoff |
+| Live scanner explore | **Implemented** — `/explore/squeeze/scanner` + workspace `?data_mode=current` |
+| Historical squeeze context | **Implemented** — Phase 3F n=30 calibration cohort fixture; per-symbol context in workspace + cohort summary on RESEARCH |
 
 No `Whale Score` or opaque squeeze probability without calibrated model.
 
 ## Institutional Flow
 
 **Module:** WORKSPACE → Institutional Flow  
-**Naming:** Professional — not "Whales"
+**Status:** `IMPLEMENTED` — eight-family composite via UI-002 (`/workspace/:symbol/institutional-flow`)
 
 Eight evidence families per Swim With the Whales doctrine:
 
@@ -74,7 +77,8 @@ Each family: separate sub-panel, own freshness/availability, explainable inferen
 
 ## Models
 
-**Module:** WORKSPACE → Models / RESEARCH → Model Lab
+**Module:** WORKSPACE → Models / RESEARCH → Model Lab  
+**Status:** `IMPLEMENTED` — RESEARCH Model Lab tab via UI-002 (`/research` → Model Lab)
 
 | Component | Notes |
 |---|---|
@@ -98,7 +102,8 @@ Phase 5R provides backend patterns; UI remains unauthorized until Research UI tr
 
 ## Simulation Lab
 
-**Domain:** RESEARCH (Phase 7+ — not authorized)
+**Domain:** RESEARCH (UI-002)  
+**Status:** `IMPLEMENTED` — Simulation tab with READ_ONLY_SIMULATION chrome
 
 - Deterministic simulation runs
 - Clear SIMULATION mode chrome

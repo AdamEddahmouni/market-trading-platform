@@ -1,5 +1,6 @@
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useWorkspaceOrderFlowQuery } from "../../api/hooks";
+import { WorkspaceModuleNav } from "../WorkspaceModuleNav";
 import { OrderFlowWorkspacePanel } from "./OrderFlowWorkspacePanel";
 
 const ORDER_FLOW_SYMBOL = "NVDA";
@@ -22,13 +23,7 @@ export function OrderFlowWorkspacePage({ onExplain, onInspect }: Props) {
           CVD series and signed-volume evidence from the admitted NVDA order-flow fixture.
           Unknown aggressor remains unknown.
         </p>
-        <nav className="workspace-module-nav" aria-label="Workspace modules">
-          <Link to={`/workspace/${instrumentId}`}>Overview</Link>
-          <Link to={`/workspace/${instrumentId}/squeeze`}>Short Squeeze</Link>
-          <Link className="active" to={`/workspace/${instrumentId}/order-flow`}>Order Flow</Link>
-          <Link to={`/workspace/${instrumentId}/options`}>Options</Link>
-          <Link to={`/workspace/${instrumentId}/large-transactions`}>Large Transactions</Link>
-        </nav>
+        <WorkspaceModuleNav instrumentId={instrumentId} active="order-flow" />
       </header>
       <OrderFlowWorkspacePanel
         instrumentId={instrumentId}

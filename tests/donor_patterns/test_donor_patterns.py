@@ -18,7 +18,17 @@ from market_platform_foundation.donor_patterns.cvd_formulas import (
     ofi_events,
 )
 from market_platform_foundation.donor_patterns.edgar_whale import normalize_edgar_filing, WhaleEventType
+from market_platform_foundation.donor_patterns.futures_lane import (
+    depth_imbalance_signal,
+    quarterly_contract_month,
+)
 from market_platform_foundation.donor_patterns.options_lane import confirmation_score, liquidity_gate
+from market_platform_foundation.donor_patterns.order_book_lane import (
+    best_bid_ask,
+    depth_imbalance,
+    direction_from_imbalance,
+    snapshot_ofi,
+)
 from market_platform_foundation.donor_patterns.provenance_gates import (
     FreshnessState,
     apply_missingness,
@@ -78,6 +88,33 @@ class DonorPatternTests(unittest.TestCase):
         ok_wide, reasons_wide = liquidity_gate(bid=1.0, ask=2.0, open_interest=500)
         self.assertFalse(ok_wide)
         self.assertIn("WIDE_SPREAD", reasons_wide)
+
+    def test_order_book_lane_helpers(self) -> None:
+        snapshot = {
+            "bids": [{"price": 10.0, "size": 100}, {"price": 9.9, "size": 50}],
+            "asks": [{"price": 10.1, "size": 80}, {"price": 10.2, "size": 40}],
+        }
+        bbo = best_bid_ask(snapshot)
+        self.assertIsNotNone(bbo)
+        assert bbo is not None
+        self.assertEqual(bbo["bid_price"], 10.0)
+        self.assertEqual(bbo["ask_price"], 10.1)
+        ratio = depth_imbalance(snapshot["bids"], snapshot["asks"])
+        self.assertGreater(ratio, 1.0)
+        self.assertEqual(direction_from_imbalance(ratio), "supports_long")
+        ofi = snapshot_ofi(snapshot, {**snapshot, "bids": [{"price": 10.05, "size": 120}]})
+        self.assertIsInstance(ofi, float)
+
+    def test_futures_contract_month(self) -> None:
+        value = quarterly_contract_month()
+        self.assertEqual(len(value), 6)
+
+    def test_futures_depth_signal(self) -> None:
+        bids = [{"size": 150}, {"size": 50}]
+        asks = [{"size": 10}, {"size": 10}]
+        signal, ratio = depth_imbalance_signal(bids, asks, threshold=1.5)
+        self.assertEqual(signal, "supports_short")
+        self.assertGreater(ratio, 1.0)
 
     def test_readiness_summary(self) -> None:
         rows = [{"outcome": {"status": "PASS"}}, {"outcome": {"status": "INCOMPLETE"}}]

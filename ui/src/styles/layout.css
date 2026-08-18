@@ -59,6 +59,27 @@ body,
   font-size: 16px;
 }
 
+.assistant-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.assistant-quick-actions button {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.45rem;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
 .assistant-meta,
 .assistant-disclaimer,
 .assistant-selection {
@@ -649,6 +670,51 @@ body,
   gap: 2px;
 }
 
+.state-transition-log {
+  margin-top: 12px;
+}
+
+.state-transition-log h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.state-transition-event-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+}
+
+.state-transition-event-list li {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  display: grid;
+  gap: 4px;
+}
+
+.transition-states {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.transition-at,
+.transition-trigger,
+.transition-kind {
+  color: var(--text-secondary);
+}
+
+.transition-kind {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .state-transition-empty {
   font-size: 12px;
   color: var(--text-secondary);
@@ -666,4 +732,62 @@ body,
 
 .squeeze-workspace-page .squeeze-panel {
   margin-top: 0;
+}
+
+.research-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+
+.research-tabs button {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-elevated);
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.research-tabs button.active {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.simulation-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border-subtle);
+  border-left: 4px solid var(--accent);
+  background: var(--surface-elevated);
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.compact-table {
+  margin-bottom: 16px;
+}
+
+.research-provenance {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  word-break: break-all;
 }

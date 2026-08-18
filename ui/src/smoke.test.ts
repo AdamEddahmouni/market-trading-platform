@@ -43,6 +43,11 @@ describe("ResearchAnalyticsResponseSchema", () => {
           provenance: { source: "donor" },
           series: [],
         },
+        squeeze_historical_cohort: {
+          available: true,
+          provenance: { source: "phase_3f_historical_calibration_v1", method: "fixture" },
+          series: [{ label: "outcome:NO_SUBSTANTIAL_UPWARD_MOVE", count: 20 }],
+        },
         strategy_outcomes: {
           available: true,
           provenance: { source: "strategy" },

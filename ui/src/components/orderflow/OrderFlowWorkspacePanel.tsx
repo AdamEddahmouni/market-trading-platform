@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import type { WorkspaceOrderFlowResponse } from "../../api/schemas";
 
 type Props = {
@@ -104,9 +105,12 @@ export function OrderFlowWorkspacePanel({
         </tbody>
       </table>
 
-      <aside className="capability-panel unavailable">
+      <aside className="capability-panel">
         <h3>Depth / DOM</h3>
-        <p>UNAVAILABLE — order_book family not entitled.</p>
+        <p>
+          Order-book depth is available on the dedicated{" "}
+          <Link to={`/workspace/${instrumentId}/order-book`}>Order Book workspace</Link>.
+        </p>
       </aside>
     </section>
   );

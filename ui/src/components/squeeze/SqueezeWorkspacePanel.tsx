@@ -1,4 +1,5 @@
 import type { WorkspaceSqueezeResponse } from "../../api/client";
+import { HistoricalSqueezeContextBlock } from "./HistoricalSqueezeContextBlock";
 import { StateTransitionBlock } from "./StateTransitionBlock";
 
 type Props = {
@@ -60,6 +61,11 @@ export function SqueezeWorkspacePanel({
                   <h3>{card.label}</h3>
                   <p className="ignition-state">{card.state}</p>
                   <p className="ignition-detail">{card.detail}</p>
+                  {card.explain_ref && onExplain ? (
+                    <button type="button" onClick={() => onExplain(card.explain_ref!)}>
+                      Explain
+                    </button>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -117,6 +123,7 @@ export function SqueezeWorkspacePanel({
               </table>
             </div>
           ) : null}
+          <HistoricalSqueezeContextBlock context={squeeze.historical_context} />
           {squeeze.explanation_ref && onExplain && onInspect ? (
             <div className="card-actions squeeze-actions">
               <button type="button" onClick={() => onExplain(squeeze.explanation_ref!)}>
@@ -137,7 +144,29 @@ export function SqueezeWorkspacePanel({
           ) : null}
         </>
       ) : (
-        <p>{squeeze.reason ?? "Donor squeeze bridge unavailable."}</p>
+        <>
+          <p>{squeeze.reason ?? "Donor squeeze bridge unavailable."}</p>
+          {squeeze.ignition_evidence && squeeze.ignition_evidence.length > 0 ? (
+            <div className="ignition-evidence-grid">
+              {squeeze.ignition_evidence.map((card) => (
+                <div
+                  key={card.label}
+                  className={`ignition-card ${card.state === "UNAVAILABLE" ? "unavailable" : "available"}`}
+                >
+                  <h3>{card.label}</h3>
+                  <p className="ignition-state">{card.state}</p>
+                  <p className="ignition-detail">{card.detail}</p>
+                  {card.explain_ref && onExplain ? (
+                    <button type="button" onClick={() => onExplain(card.explain_ref!)}>
+                      Explain
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <HistoricalSqueezeContextBlock context={squeeze.historical_context} />
+        </>
       )}
     </aside>
   );

@@ -115,6 +115,10 @@ export function WorkspacePage({
           <Link className="active" to={`/workspace/${instrumentId}`}>Overview</Link>
           <Link to={`/workspace/${instrumentId}/squeeze`}>Short Squeeze</Link>
           <Link to={`/workspace/${instrumentId}/order-flow`}>Order Flow</Link>
+          <Link to={`/workspace/${instrumentId}/order-book`}>Order Book</Link>
+          <Link to={`/workspace/${instrumentId}/futures`}>Futures</Link>
+          <Link to={`/workspace/${instrumentId}/catalyst`}>Catalyst</Link>
+          <Link to={`/workspace/${instrumentId}/fund-etf`}>Fund / ETF</Link>
           <Link to={`/workspace/${instrumentId}/options`}>Options</Link>
           <Link to={`/workspace/${instrumentId}/large-transactions`}>Large Transactions</Link>
         </nav>
@@ -169,11 +173,14 @@ export function WorkspacePage({
         compact
       />
 
-      <aside className="capability-panel unavailable">
+      <aside className="capability-panel">
         <h2>Institutional Flow</h2>
-        <p>UNAVAILABLE — no entitled source on admitted fixture.</p>
-        <p className="workspace-hint">
-          Order-flow CVD evidence is available on the NVDA workspace module when replay cutoff permits.
+        <p>
+          Eight whale evidence families — disclosure, large transactions, order flow, order book,
+          options, futures, fund/ETF, and catalyst.
+        </p>
+        <p>
+          <Link to={`/workspace/${instrumentId}/institutional-flow`}>Open Institutional Flow workspace</Link>
         </p>
       </aside>
     </section>

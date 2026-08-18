@@ -44,7 +44,39 @@ export function StateTransitionBlock({ squeeze }: Props) {
           </div>
         ) : null}
       </div>
+      <TransitionLog transitions={machine.transitions ?? []} />
     </section>
+  );
+}
+
+type TransitionEvent = {
+  at_label?: string;
+  from_state?: string;
+  to_state?: string;
+  kind?: string;
+  trigger?: string;
+};
+
+function TransitionLog({ transitions }: { transitions: TransitionEvent[] }) {
+  if (!transitions.length) {
+    return null;
+  }
+  return (
+    <div className="state-transition-log">
+      <h3>Transition log</h3>
+      <ul className="state-transition-event-list">
+        {transitions.map((event, index) => (
+          <li key={`${event.kind ?? "event"}-${event.from_state ?? "from"}-${event.to_state ?? "to"}-${index}`}>
+            <span className="transition-states">
+              {event.from_state ?? "UNKNOWN"} → {event.to_state ?? "UNKNOWN"}
+            </span>
+            {event.at_label ? <span className="transition-at">at {event.at_label}</span> : null}
+            {event.trigger ? <span className="transition-trigger">{event.trigger}</span> : null}
+            {event.kind ? <span className="transition-kind">{event.kind}</span> : null}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

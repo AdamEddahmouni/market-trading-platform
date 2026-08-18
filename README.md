@@ -25,10 +25,16 @@ Revision 2 remains the incorporated Phase 0 safety authority.
 | Phase 7 — risk, simulation, and accounting | `PASS` |
 | Phase 8 — deterministic end-to-end acceptance | `PASS` (ES session remains deferred per ADR-DATA-001) |
 | UI-001 — replay-only research UI V1 | `PASS` (stdlib API + `ui/` frontend subject) |
+| UI-002 — expanded research UI | `PASS` (Institutional Flow, Model Lab, Simulation Lab) |
 | Phase 9 — provider contracts and EDGAR whale ledger | `PASS` (fixture-first `regulatory_disclosure` on BIYA) |
 | Phase 10 — whale order_flow family | `PASS` (fixture-first `order_flow` on NVDA slice) |
 | Phase 11 — whale options family | `PASS` (fixture-first `options` on BIYA slice) |
 | Phase 12 — whale large_transactions family | `PASS` (fixture-first `large_transactions` on NVDA slice) |
+| Phase 13 — whale order_book family | `PASS` (fixture-first `order_book` on NVDA slice) |
+| Phase 14 — whale futures_positioning family | `PASS` (fixture-first ES depth on `ADMITTED-L2-ES-001`) |
+| Phase 15 — whale public_catalyst family | `PASS` (fixture-first catalyst on `ADMITTED-CATALYST-BOXL-001`) |
+| Phase 16 — whale fund_etf_cross_asset family | `PASS` (fixture-first fund/ETF on `ADMITTED-ETF-CROSSASSET-NVDA-001`) |
+| MRA-001 — grounded Market Research Assistant | `PASS` (deterministic evidence retrieval on admitted fixture) |
 
 The existing candidate evidence roots under `evidence/phase0/2E1E…` and
 `evidence/phase0/6B31…` bind older repository subjects. They remain immutable and
@@ -80,3 +86,22 @@ prediction-market expansion require separate ADR authorization and phase gates.
 - [Short-squeeze read-only integration lane](docs/integration/SHORT_SQUEEZE_LANE.md)
 - Start API: `python tools/ui1/run_ui_api.py --serve --port 8766`
 - Frontend: see [ui/README.md](ui/README.md)
+
+## Grounded research assistant (MRA-001 / MRA-002)
+
+- [MRA-001 design spec](docs/superpowers/specs/2026-08-18-mra-001-grounded-assistant-design.md)
+- [MRA-002 Anthropic design spec](docs/superpowers/specs/2026-08-18-mra-002-anthropic-assistant-design.md)
+- Default inference: `grounded.evidence` (deterministic explain/inspect retrieval)
+- **Anthropic LLM** (when `ANTHROPIC_API_KEY` is set): `anthropic.messages` with grounded evidence pack + fallback
+- Copy [`.env.example`](.env.example) and set `ANTHROPIC_API_KEY` before starting the API
+- Rollback to abstaining stub: `IMP_ASSISTANT_STUB=1`
+- Force grounded-only: `IMP_ASSISTANT_PROVIDER=grounded`
+- Acceptance evidence: `python tools/mra001/run_mra001_pipeline.py --output-dir evidence/mra001/build-run`
+- Publish PASS: `python tools/mra001/publish_mra001_pass.py`
+- Verify publication: `python tools/mra001/verify_mra001_publication.py`
+
+```powershell
+$env:ANTHROPIC_API_KEY = "sk-ant-..."
+$env:IMP_ASSISTANT_PROVIDER = "anthropic"
+python tools/ui1/run_ui_api.py --serve --port 8766
+```

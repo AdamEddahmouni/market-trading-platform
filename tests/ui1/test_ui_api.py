@@ -53,7 +53,7 @@ class Ui1ApiTests(unittest.TestCase):
         caps = build_capabilities(self.store)
         by_id = {row["capability_id"]: row for row in caps}
         self.assertEqual(by_id["bars.intraday_1m"]["state"], "AVAILABLE")
-        self.assertEqual(by_id["depth.L2"]["state"], "UNSUPPORTED")
+        self.assertEqual(by_id["depth.L2"]["state"], "AVAILABLE")
         self.assertEqual(by_id["whale.disclosure"]["state"], "AVAILABLE")
         whale_rows = [row for row in caps if str(row["capability_id"]).startswith("whale.")]
         self.assertTrue(whale_rows)
@@ -61,6 +61,10 @@ class Ui1ApiTests(unittest.TestCase):
         self.assertEqual(by_id["whale.order_flow"]["state"], "AVAILABLE")
         self.assertEqual(by_id["whale.options"]["state"], "AVAILABLE")
         self.assertEqual(by_id["whale.large_transactions"]["state"], "AVAILABLE")
+        self.assertEqual(by_id["whale.order_book"]["state"], "AVAILABLE")
+        self.assertEqual(by_id["whale.futures_positioning"]["state"], "AVAILABLE")
+        self.assertEqual(by_id["whale.public_catalyst"]["state"], "AVAILABLE")
+        self.assertEqual(by_id["whale.fund_etf_cross_asset"]["state"], "AVAILABLE")
         unsupported = [
             row
             for row in whale_rows
@@ -71,6 +75,10 @@ class Ui1ApiTests(unittest.TestCase):
                 "whale.order_flow",
                 "whale.options",
                 "whale.large_transactions",
+                "whale.order_book",
+                "whale.futures_positioning",
+                "whale.public_catalyst",
+                "whale.fund_etf_cross_asset",
             }
         ]
         self.assertTrue(all(row["state"] == "UNSUPPORTED" for row in unsupported))
@@ -99,6 +107,15 @@ class Ui1ApiTests(unittest.TestCase):
         ):
             payload = build_explain_payload(self.store, "explain:squeeze:BIYA")
         self.assertEqual(payload["explanation"]["ref"], "explain:squeeze:BIYA")
+
+    def test_futures_explain_payload(self) -> None:
+        payload = build_explain_payload(self.store, "explain:futures:ES")
+        self.assertEqual(payload["explanation"]["ref"], "explain:futures:ES")
+        inspect = build_inspect_payload(self.store, "inspect:futures:ES")
+        self.assertEqual(inspect["ref"], "inspect:futures:ES")
+        tabs = inspect["tabs"]
+        self.assertIn("DERIVATION", tabs)
+        self.assertEqual(tabs["EVIDENCE"]["items"][0]["family"], "futures_positioning")
 
     def test_determinism(self) -> None:
         index = self.store.cursor_index
@@ -151,7 +168,12 @@ class Ui1ApiTests(unittest.TestCase):
         conversation = create_assistant_conversation(self.store, title="UI test session")
         conversation_id = str(conversation["conversation_id"])
         prompt_result = submit_assistant_prompt(self.store, conversation_id, "Why is BIYA here?")
-        self.assertTrue(prompt_result["assistant_message"]["provenance"]["abstained"])
+        self.assertFalse(prompt_result["assistant_message"]["provenance"]["abstained"])
+        self.assertNotEqual(prompt_result["assistant_message"]["content"], "PROVIDER_NOT_AUTHORIZED")
+        self.assertEqual(
+            prompt_result["assistant_message"]["provenance"]["provider_id"],
+            "grounded.evidence",
+        )
 
 
 if __name__ == "__main__":

@@ -85,6 +85,35 @@ class UiApiHandler(BaseHTTPRequestHandler):
             if path == "/research/analytics":
                 self._send_json(projections.build_research_analytics_payload(self.store))
                 return
+            if path == "/research/models":
+                self._send_json(projections.build_research_models_payload(self.store))
+                return
+            if path == "/research/simulation":
+                self._send_json(projections.build_research_simulation_payload(self.store))
+                return
+            if path.startswith("/workspace/") and path.endswith("/institutional-flow"):
+                symbol = path.removeprefix("/workspace/").removesuffix("/institutional-flow").strip("/")
+                if not symbol:
+                    self._send_error_json(
+                        "UI_REQUEST_INVALID",
+                        "workspace institutional-flow symbol is required",
+                        status=HTTPStatus.BAD_REQUEST,
+                    )
+                    return
+                self._send_json(projections.build_workspace_institutional_flow_payload(self.store, symbol))
+                return
+            if path == "/explore/futures":
+                as_of = projections.build_as_of_context(self.store)
+                from ..donor_bridge.futures_projections import build_explore_futures_payload
+
+                self._send_json(build_explore_futures_payload(as_of_context=as_of))
+                return
+            if path == "/explore/squeeze/scanner":
+                as_of = projections.build_as_of_context(self.store)
+                from ..donor_bridge.projections import build_explore_squeeze_scanner_payload
+
+                self._send_json(build_explore_squeeze_scanner_payload(as_of_context=as_of))
+                return
             if path == "/explore/squeeze":
                 as_of = projections.build_as_of_context(self.store)
                 from ..donor_bridge.projections import build_explore_squeeze_payload
@@ -109,7 +138,15 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 as_of = projections.build_as_of_context(self.store)
                 from ..donor_bridge.projections import build_workspace_squeeze_payload
 
-                self._send_json(build_workspace_squeeze_payload(symbol, as_of_context=as_of))
+                data_mode = (query.get("data_mode") or ["frozen"])[0].strip().lower()
+                self._send_json(
+                    build_workspace_squeeze_payload(
+                        symbol,
+                        as_of_context=as_of,
+                        prediction_cutoff=self.store.prediction_cutoff(),
+                        data_mode=data_mode,
+                    )
+                )
                 return
             if path.startswith("/workspace/") and path.endswith("/catalyst"):
                 symbol = path.removeprefix("/workspace/").removesuffix("/catalyst").strip("/")
@@ -121,9 +158,17 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     )
                     return
                 as_of = projections.build_as_of_context(self.store)
-                from ..donor_bridge.projections import build_workspace_catalyst_payload
+                from ..providers.projections import build_workspace_catalyst_payload as build_fixture_catalyst
+                from ..donor_bridge.projections import build_workspace_catalyst_payload as build_bridge_catalyst
 
-                self._send_json(build_workspace_catalyst_payload(symbol, as_of_context=as_of))
+                payload = build_fixture_catalyst(
+                    symbol,
+                    as_of_context=as_of,
+                    prediction_cutoff=self.store.prediction_cutoff(),
+                )
+                if not payload.get("available"):
+                    payload = build_bridge_catalyst(symbol, as_of_context=as_of)
+                self._send_json(payload)
                 return
             if path.startswith("/workspace/") and path.endswith("/disclosure"):
                 symbol = path.removeprefix("/workspace/").removesuffix("/disclosure").strip("/")
@@ -199,6 +244,66 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
                 self._send_json(
                     build_workspace_large_transactions_payload(
+                        symbol,
+                        as_of_context=as_of,
+                        prediction_cutoff=self.store.prediction_cutoff(),
+                    )
+                )
+                return
+            if path.startswith("/workspace/") and path.endswith("/futures"):
+                symbol = path.removeprefix("/workspace/").removesuffix("/futures").strip("/")
+                if not symbol:
+                    self._send_error_json(
+                        "UI_REQUEST_INVALID",
+                        "workspace futures symbol is required",
+                        status=HTTPStatus.BAD_REQUEST,
+                    )
+                    return
+                as_of = projections.build_as_of_context(self.store)
+                from ..providers.projections import build_workspace_futures_payload
+
+                self._send_json(
+                    build_workspace_futures_payload(
+                        symbol,
+                        as_of_context=as_of,
+                        prediction_cutoff=self.store.prediction_cutoff(),
+                    )
+                )
+                return
+            if path.startswith("/workspace/") and path.endswith("/fund-etf"):
+                symbol = path.removeprefix("/workspace/").removesuffix("/fund-etf").strip("/")
+                if not symbol:
+                    self._send_error_json(
+                        "UI_REQUEST_INVALID",
+                        "workspace fund-etf symbol is required",
+                        status=HTTPStatus.BAD_REQUEST,
+                    )
+                    return
+                as_of = projections.build_as_of_context(self.store)
+                from ..providers.projections import build_workspace_fund_etf_payload
+
+                self._send_json(
+                    build_workspace_fund_etf_payload(
+                        symbol,
+                        as_of_context=as_of,
+                        prediction_cutoff=self.store.prediction_cutoff(),
+                    )
+                )
+                return
+            if path.startswith("/workspace/") and path.endswith("/order-book"):
+                symbol = path.removeprefix("/workspace/").removesuffix("/order-book").strip("/")
+                if not symbol:
+                    self._send_error_json(
+                        "UI_REQUEST_INVALID",
+                        "workspace order-book symbol is required",
+                        status=HTTPStatus.BAD_REQUEST,
+                    )
+                    return
+                as_of = projections.build_as_of_context(self.store)
+                from ..providers.projections import build_workspace_order_book_payload
+
+                self._send_json(
+                    build_workspace_order_book_payload(
                         symbol,
                         as_of_context=as_of,
                         prediction_cutoff=self.store.prediction_cutoff(),

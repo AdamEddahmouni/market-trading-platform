@@ -53,6 +53,10 @@ def submit_assistant_prompt(
     selection_ref: str | None = None,
     extra_citations: tuple[dict[str, str], ...] = (),
 ) -> dict[str, Any]:
+    evidence_context = store.assistant_service.build_evidence_context(
+        store,
+        selection_ref=selection_ref,
+    )
     context = store.assistant_service.build_context_citations(store)
     merged = context + extra_citations
     return store.assistant_service.submit_prompt(
@@ -60,4 +64,5 @@ def submit_assistant_prompt(
         prompt,
         context_citations=merged,
         selection_ref=selection_ref,
+        evidence_context=evidence_context,
     )

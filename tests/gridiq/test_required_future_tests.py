@@ -95,16 +95,22 @@ class GridIQRequiredFutureTests(unittest.TestCase):
     install_guard(log)
     with self.assertRaises(OfflineBoundaryViolation):
       socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    with patch(
-      "market_platform_foundation.donor_bridge.projections.build_explore_squeeze_payload",
-      return_value={
-        "available": False,
-        "bridge_mode": "READ_ONLY",
-        "row_count": 0,
-        "rows": [],
-        "outcome_summary": [],
-        "source": "short-squeeze-project",
-      },
+    with (
+      patch(
+        "market_platform_foundation.donor_bridge.projections.build_explore_squeeze_payload",
+        return_value={
+          "available": False,
+          "bridge_mode": "READ_ONLY",
+          "row_count": 0,
+          "rows": [],
+          "outcome_summary": [],
+          "source": "short-squeeze-project",
+        },
+      ),
+      patch(
+        "market_platform_foundation.donor_bridge.projections.build_squeeze_scanner_attention_items",
+        return_value=[],
+      ),
     ):
       payload = build_research_analytics_payload(self.store)
     self.assertIn("panels", payload)
@@ -114,16 +120,22 @@ class GridIQRequiredFutureTests(unittest.TestCase):
     self.assertTrue(values_within_tolerance(float(str(value)), 1.0))
 
   def test_dto_projection_no_internal_strategy_blob(self) -> None:
-    with patch(
-      "market_platform_foundation.donor_bridge.projections.build_explore_squeeze_payload",
-      return_value={
-        "available": False,
-        "bridge_mode": "READ_ONLY",
-        "row_count": 0,
-        "rows": [],
-        "outcome_summary": [],
-        "source": "short-squeeze-project",
-      },
+    with (
+      patch(
+        "market_platform_foundation.donor_bridge.projections.build_explore_squeeze_payload",
+        return_value={
+          "available": False,
+          "bridge_mode": "READ_ONLY",
+          "row_count": 0,
+          "rows": [],
+          "outcome_summary": [],
+          "source": "short-squeeze-project",
+        },
+      ),
+      patch(
+        "market_platform_foundation.donor_bridge.projections.build_squeeze_scanner_attention_items",
+        return_value=[],
+      ),
     ):
       payload = build_research_analytics_payload(self.store)
     self.assertNotIn("interpretations", payload)

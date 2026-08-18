@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from http.server import ThreadingHTTPServer
 from pathlib import Path
@@ -29,6 +30,22 @@ from market_platform_foundation.ui_api.projections import (
 )
 from market_platform_foundation.ui_api.server import UiApiHandler, canonical_response_bytes
 from market_platform_foundation.ui_api.store import ReplayStore
+
+
+def _load_local_env() -> None:
+    """Load KEY=VALUE lines from repository .env if present (never committed)."""
+    env_path = ROOT / ".env"
+    if not env_path.is_file():
+        return
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
 
 
 def _load_store() -> ReplayStore:
@@ -68,6 +85,8 @@ def _safe003_report() -> dict[str, object]:
     }
 
 
+ENTITLED_MARKET_DATA_CAPABILITIES = frozenset({"bars.intraday_1m", "depth.L2"})
+
 ENTITLED_WHALE_CAPABILITIES = frozenset(
     {
         "whale.disclosure",
@@ -75,6 +94,10 @@ ENTITLED_WHALE_CAPABILITIES = frozenset(
         "whale.order_flow",
         "whale.options",
         "whale.large_transactions",
+        "whale.order_book",
+        "whale.futures_positioning",
+        "whale.public_catalyst",
+        "whale.fund_etf_cross_asset",
     }
 )
 
@@ -85,7 +108,9 @@ def _capability_report(store: ReplayStore) -> dict[str, object]:
     for row in caps:
         capability_id = str(row["capability_id"])
         state = str(row.get("state", ""))
-        if capability_id == "bars.intraday_1m":
+        if capability_id in ENTITLED_MARKET_DATA_CAPABILITIES:
+            if state != "AVAILABLE":
+                failures.append(capability_id)
             continue
         if capability_id in ENTITLED_WHALE_CAPABILITIES:
             if state != "AVAILABLE":
@@ -298,6 +323,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    _load_local_env()
     args = parse_args()
     if not args.serve:
         install_guard([])

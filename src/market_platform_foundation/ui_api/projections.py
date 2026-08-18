@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..features.institutional import LARGE_TRANSACTIONS_FAMILY, OPTIONS_FAMILY, WHALE_FAMILIES, ORDER_FLOW_FAMILY, REGULATORY_DISCLOSURE_FAMILY
-from ..providers.projections import disclosure_available, large_transactions_available, options_available, order_flow_available
+from ..features.institutional import FUND_ETF_FAMILY, FUTURES_FAMILY, LARGE_TRANSACTIONS_FAMILY, OPTIONS_FAMILY, ORDER_BOOK_FAMILY, ORDER_FLOW_FAMILY, PUBLIC_CATALYST_FAMILY, REGULATORY_DISCLOSURE_FAMILY, WHALE_FAMILIES
+from ..providers.projections import catalyst_available, disclosure_available, fund_etf_available, futures_available, large_transactions_available, options_available, order_book_available, order_flow_available
 from .store import ReplayStore
 
 CAPABILITY_DEFINITIONS: tuple[tuple[str, str], ...] = (
@@ -58,6 +58,22 @@ def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
         instrument_id="NVDA",
         prediction_cutoff=store.prediction_cutoff(),
     )
+    order_book_ready = order_book_available(
+        instrument_id="NVDA",
+        prediction_cutoff=store.prediction_cutoff(),
+    )
+    futures_ready = futures_available(
+        instrument_id="ES",
+        prediction_cutoff=store.prediction_cutoff(),
+    )
+    catalyst_ready = catalyst_available(
+        instrument_id="BOXL",
+        prediction_cutoff=store.prediction_cutoff(),
+    )
+    fund_etf_ready = fund_etf_available(
+        instrument_id="NVDA",
+        prediction_cutoff=store.prediction_cutoff(),
+    )
     for capability_id, label in CAPABILITY_DEFINITIONS:
         if capability_id == "bars.intraday_1m":
             rows.append(
@@ -67,6 +83,25 @@ def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
                     "state": "AVAILABLE",
                 }
             )
+            continue
+        if capability_id == "depth.L2":
+            if order_book_ready:
+                rows.append(
+                    {
+                        "capability_id": capability_id,
+                        "explanation_ref": f"cap:{capability_id}",
+                        "state": "AVAILABLE",
+                    }
+                )
+            else:
+                rows.append(
+                    {
+                        "capability_id": capability_id,
+                        "explanation_ref": f"cap:{capability_id}",
+                        "reason": "No entitled L2 source on admitted fixture",
+                        "state": "UNSUPPORTED",
+                    }
+                )
             continue
         if capability_id == "whale.disclosure":
             if disclosure_ready:
@@ -134,6 +169,42 @@ def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
             )
             continue
         if family == LARGE_TRANSACTIONS_FAMILY and large_transactions_ready:
+            rows.append(
+                {
+                    "capability_id": f"whale.{family}",
+                    "explanation_ref": f"cap:whale.{family}",
+                    "state": "AVAILABLE",
+                }
+            )
+            continue
+        if family == ORDER_BOOK_FAMILY and order_book_ready:
+            rows.append(
+                {
+                    "capability_id": f"whale.{family}",
+                    "explanation_ref": f"cap:whale.{family}",
+                    "state": "AVAILABLE",
+                }
+            )
+            continue
+        if family == FUTURES_FAMILY and futures_ready:
+            rows.append(
+                {
+                    "capability_id": f"whale.{family}",
+                    "explanation_ref": f"cap:whale.{family}",
+                    "state": "AVAILABLE",
+                }
+            )
+            continue
+        if family == PUBLIC_CATALYST_FAMILY and catalyst_ready:
+            rows.append(
+                {
+                    "capability_id": f"whale.{family}",
+                    "explanation_ref": f"cap:whale.{family}",
+                    "state": "AVAILABLE",
+                }
+            )
+            continue
+        if family == FUND_ETF_FAMILY and fund_etf_ready:
             rows.append(
                 {
                     "capability_id": f"whale.{family}",
@@ -219,15 +290,51 @@ def _quality_attention_item(store: ReplayStore) -> dict[str, object] | None:
 
 
 def _squeeze_attention_items() -> list[dict[str, object]]:
-    from ..donor_bridge.projections import build_squeeze_attention_items
+    from ..donor_bridge.projections import (
+        build_squeeze_attention_items,
+        build_squeeze_scanner_attention_items,
+    )
 
-    return build_squeeze_attention_items()
+    return build_squeeze_attention_items() + build_squeeze_scanner_attention_items()
 
 
 def _catalyst_attention_items() -> list[dict[str, object]]:
     from ..donor_bridge.projections import build_catalyst_attention_items
 
     return build_catalyst_attention_items()
+
+
+def _futures_attention_items(store: ReplayStore) -> list[dict[str, object]]:
+    from ..providers.projections import build_workspace_futures_payload
+
+    futures = build_workspace_futures_payload(
+        "ES",
+        as_of_context=build_as_of_context(store),
+        prediction_cutoff=store.prediction_cutoff(),
+    )
+    if not futures.get("available"):
+        return []
+    signal = str(futures.get("latest_imbalance_signal", "neutral"))
+    if signal not in {"supports_long", "supports_short"}:
+        return []
+    ratio = futures.get("latest_imbalance_ratio")
+    ratio_label = f" (ratio {ratio})" if ratio is not None else ""
+    return [
+        {
+            "attention_id": "att-futures-es-imbalance",
+            "explanation_ref": "explain:futures:ES",
+            "headline": f"ES depth imbalance {signal}{ratio_label}",
+            "instrument_id": "ES",
+            "priority_rank": 2,
+            "reasons": [
+                {
+                    "code": "FUTURES_DEPTH_IMBALANCE",
+                    "label": f"Depth-derived signal from {futures.get('provenance', 'fixture')}",
+                },
+            ],
+            "tier": 2,
+        }
+    ]
 
 
 def _tier1_attention_items(store: ReplayStore) -> list[dict[str, object]]:
@@ -257,6 +364,7 @@ def _all_attention_items(store: ReplayStore) -> list[dict[str, object]]:
         _tier1_attention_items(store)
         + _squeeze_attention_items()
         + _catalyst_attention_items()
+        + _futures_attention_items(store)
         + _strategy_signal_items(store)
     )
 
@@ -384,6 +492,29 @@ def build_explain_payload(store: ReplayStore, ref: str) -> dict[str, object]:
             "ref": ref,
             "why": str(cap.get("reason", "Available on admitted fixture")),
         }
+    elif ref.startswith("explain:squeeze:scanner:"):
+        symbol = ref.removeprefix("explain:squeeze:scanner:")
+        from ..donor_bridge.projections import build_workspace_squeeze_payload
+
+        squeeze = build_workspace_squeeze_payload(
+            symbol,
+            as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
+            data_mode="current",
+        )
+        if not squeeze.get("available"):
+            raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+        body = {
+            "alignment_summary": str(squeeze.get("ignition_state", "UNKNOWN")),
+            "level": 2,
+            "meaning": f"Current scanner squeeze state for {symbol.upper()}",
+            "ref": ref,
+            "why": (
+                f"{squeeze.get('outcome_status', 'UNKNOWN')} · "
+                f"{squeeze.get('evidence_coverage', 'coverage unknown')} · "
+                f"{squeeze.get('disclaimer', '')}"
+            ),
+        }
     elif ref.startswith("explain:squeeze:"):
         symbol = ref.removeprefix("explain:squeeze:")
         from ..donor_bridge.projections import build_workspace_squeeze_payload
@@ -391,6 +522,8 @@ def build_explain_payload(store: ReplayStore, ref: str) -> dict[str, object]:
         squeeze = build_workspace_squeeze_payload(
             symbol,
             as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
+            data_mode="frozen",
         )
         if not squeeze.get("available"):
             raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
@@ -407,24 +540,33 @@ def build_explain_payload(store: ReplayStore, ref: str) -> dict[str, object]:
         }
     elif ref.startswith("explain:catalyst:"):
         symbol = ref.removeprefix("explain:catalyst:")
-        from ..donor_bridge.projections import build_workspace_catalyst_payload
+        from ..providers.projections import build_workspace_catalyst_payload as build_fixture_catalyst
 
-        catalyst = build_workspace_catalyst_payload(
+        catalyst = build_fixture_catalyst(
             symbol,
             as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
         )
         if not catalyst.get("available"):
+            from ..donor_bridge.projections import build_workspace_catalyst_payload as build_bridge_catalyst
+
+            catalyst = build_bridge_catalyst(symbol, as_of_context=build_as_of_context(store))
+        if not catalyst.get("available"):
             raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
-        trade = catalyst.get("trade_signal") or {}
+        if catalyst.get("catalysts"):
+            latest = catalyst["catalysts"][-1]
+            alignment = str(latest.get("lean", "UNKNOWN"))
+            why_headline = str(latest.get("headline", ""))
+        else:
+            trade = catalyst.get("trade_signal") or {}
+            alignment = str(trade.get("decision", "UNKNOWN"))
+            why_headline = str(trade.get("news_headline") or trade.get("reasoning", ""))
         body = {
-            "alignment_summary": str(trade.get("decision", "UNKNOWN")),
+            "alignment_summary": alignment,
             "level": 2,
-            "meaning": f"Catalyst paper signal for {symbol.upper()}",
+            "meaning": f"Public catalyst evidence for {symbol.upper()}",
             "ref": ref,
-            "why": (
-                f"{trade.get('news_headline') or trade.get('reasoning', '')} · "
-                f"{catalyst.get('disclaimer', '')}"
-            ),
+            "why": f"{why_headline} · {catalyst.get('disclaimer', '')}",
         }
     elif ref.startswith("explain:disclosure:"):
         symbol = ref.removeprefix("explain:disclosure:")
@@ -443,6 +585,24 @@ def build_explain_payload(store: ReplayStore, ref: str) -> dict[str, object]:
             "meaning": f"Regulatory disclosure feed for {symbol.upper()}",
             "ref": ref,
             "why": str(disclosure.get("disclaimer", "")),
+        }
+    elif ref.startswith("explain:order-flow:"):
+        symbol = ref.removeprefix("explain:order-flow:")
+        from ..providers.projections import build_workspace_order_flow_payload
+
+        order_flow = build_workspace_order_flow_payload(
+            symbol,
+            as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
+        )
+        if not order_flow.get("available"):
+            raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+        body = {
+            "alignment_summary": f"{order_flow.get('event_count', 0)} order-flow event(s)",
+            "level": 2,
+            "meaning": f"Signed order-flow / CVD feed for {symbol.upper()}",
+            "ref": ref,
+            "why": str(order_flow.get("disclaimer", "")),
         }
     elif ref.startswith("explain:options:"):
         symbol = ref.removeprefix("explain:options:")
@@ -479,6 +639,61 @@ def build_explain_payload(store: ReplayStore, ref: str) -> dict[str, object]:
             "meaning": f"Large-transaction feed for {symbol.upper()}",
             "ref": ref,
             "why": str(large_transactions.get("disclaimer", "")),
+        }
+    elif ref.startswith("explain:order-book:"):
+        symbol = ref.removeprefix("explain:order-book:")
+        from ..providers.projections import build_workspace_order_book_payload
+
+        order_book = build_workspace_order_book_payload(
+            symbol,
+            as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
+        )
+        if not order_book.get("available"):
+            raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+        body = {
+            "alignment_summary": f"{order_book.get('snapshot_count', 0)} depth snapshot(s)",
+            "level": 2,
+            "meaning": f"Order-book depth feed for {symbol.upper()}",
+            "ref": ref,
+            "why": str(order_book.get("disclaimer", "")),
+        }
+    elif ref.startswith("explain:fund-etf:"):
+        symbol = ref.removeprefix("explain:fund-etf:")
+        from ..providers.projections import build_workspace_fund_etf_payload
+
+        fund_etf = build_workspace_fund_etf_payload(
+            symbol,
+            as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
+        )
+        if not fund_etf.get("available"):
+            raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+        body = {
+            "alignment_summary": f"{fund_etf.get('event_count', 0)} fund/ETF context event(s)",
+            "level": 2,
+            "meaning": f"Fund/ETF cross-asset context for {symbol.upper()}",
+            "ref": ref,
+            "why": str(fund_etf.get("disclaimer", "")),
+        }
+    elif ref.startswith("explain:futures:"):
+        symbol = ref.removeprefix("explain:futures:")
+        from ..providers.projections import build_workspace_futures_payload
+
+        futures = build_workspace_futures_payload(
+            symbol,
+            as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
+        )
+        if not futures.get("available"):
+            raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+        snapshot_count = futures.get("snapshot_count", len(futures.get("snapshots", [])))
+        body = {
+            "alignment_summary": f"{snapshot_count} ES depth snapshot(s)",
+            "level": 2,
+            "meaning": f"ES futures depth / imbalance for {symbol.upper()}",
+            "ref": ref,
+            "why": str(futures.get("disclaimer", "")),
         }
     else:
         raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
@@ -528,13 +743,20 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
     if "squeeze" in ref:
         if ref.startswith("inspect:squeeze:timeline:"):
             symbol = ref.removeprefix("inspect:squeeze:timeline:")
+            squeeze_data_mode = "frozen"
+        elif ref.startswith("inspect:squeeze:scanner:"):
+            symbol = ref.removeprefix("inspect:squeeze:scanner:")
+            squeeze_data_mode = "current"
         else:
             symbol = ref.rsplit(":", 1)[-1]
+            squeeze_data_mode = "frozen"
         from ..donor_bridge.projections import build_workspace_squeeze_payload
 
         squeeze = build_workspace_squeeze_payload(
             symbol,
             as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
+            data_mode=squeeze_data_mode,
         )
         tabs["EVIDENCE"]["items"] = [
             {
@@ -546,8 +768,12 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
             }
         ]
         tabs["DERIVATION"] = {
-            "method": "short-squeeze-project FROZEN_DEMO bridge",
-            "inputs": ["donor /api/frozen/candidate"],
+            "method": (
+                "short-squeeze-project current scanner bridge"
+                if squeeze_data_mode == "current"
+                else "short-squeeze-project FROZEN_DEMO bridge"
+            ),
+            "inputs": ["donor /api/current/candidate" if squeeze_data_mode == "current" else "donor /api/frozen/candidate"],
             "source": "Read-only donor integration (no canonical admission)",
         }
         if squeeze.get("rules"):
@@ -576,31 +802,40 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
                 "rule_outcome_totals": readiness.get("rule_outcome_totals", {}),
                 "raw": squeeze.get("provenance"),
             }
-    if "catalyst" in ref:
+    if "catalyst" in ref and "fund-etf" not in ref:
         symbol = ref.rsplit(":", 1)[-1]
-        from ..donor_bridge.projections import build_workspace_catalyst_payload
+        from ..providers.projections import build_workspace_catalyst_payload as build_fixture_catalyst
 
-        catalyst = build_workspace_catalyst_payload(
+        catalyst = build_fixture_catalyst(
             symbol,
             as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
         )
-        trade = catalyst.get("trade_signal") or {}
+        source = "ADR-WHALE-007 admitted fixture"
+        if not catalyst.get("available"):
+            from ..donor_bridge.projections import build_workspace_catalyst_payload as build_bridge_catalyst
+
+            catalyst = build_bridge_catalyst(symbol, as_of_context=build_as_of_context(store))
+            source = "Read-only donor integration (no canonical admission)"
         tabs["EVIDENCE"]["items"] = [
             {
                 "evidence_id": ref,
                 "epistemic_class": "INFERRED",
-                "family": "catalyst",
+                "family": "public_catalyst",
                 "as_of": store.as_of_time(),
-                "quality": {"state": "DEMO"},
+                "quality": {"state": "FIXTURE" if catalyst.get("catalysts") else "DEMO"},
             }
         ]
         tabs["DERIVATION"] = {
-            "method": "internship-project demo state bridge",
-            "inputs": ["trade_log.json", "watchlist.json"],
-            "source": "Read-only donor integration (no canonical admission)",
+            "method": "catalyst_lane.confidence_score + gate_catalyst + lean_direction",
+            "inputs": ["news_score", "social_score", "volume_score", "liquidity_ok"],
+            "source": source,
         }
-        if catalyst.get("evidence_cards"):
+        if catalyst.get("catalysts"):
+            tabs["CATALYST"] = {"events": catalyst.get("catalysts", [])}
+        elif catalyst.get("evidence_cards"):
             tabs["SUMMARY"]["evidence_cards"] = catalyst.get("evidence_cards")
+        trade = catalyst.get("trade_signal") or {}
         if trade:
             tabs["SIGNAL"] = {
                 "decision": trade.get("decision"),
@@ -610,6 +845,34 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
                 "instrument_hint": trade.get("instrument_hint"),
                 "headline": trade.get("news_headline") or trade.get("reasoning"),
             }
+    if "fund-etf" in ref:
+        symbol = ref.rsplit(":", 1)[-1]
+        from ..providers.projections import build_workspace_fund_etf_payload
+
+        fund_etf = build_workspace_fund_etf_payload(
+            symbol,
+            as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
+        )
+        tabs["EVIDENCE"]["items"] = [
+            {
+                "evidence_id": ref,
+                "epistemic_class": "DERIVED",
+                "family": "fund_etf_cross_asset",
+                "as_of": store.as_of_time(),
+                "quality": {
+                    "state": "FIXTURE",
+                    "event_count": fund_etf.get("event_count", len(fund_etf.get("events", []))),
+                    "regime_label": fund_etf.get("latest_regime_label"),
+                },
+            }
+        ]
+        tabs["DERIVATION"] = {
+            "method": "fund_etf_lane.flow_direction_label + correlation_regime",
+            "inputs": ["etf_flow_proxy", "cross_asset_correlation", "regime_label"],
+            "source": "ADR-WHALE-008 admitted synthetic fixture",
+        }
+        tabs["FUND_ETF"] = {"events": fund_etf.get("events", [])}
     if "disclosure" in ref:
         symbol = ref.rsplit(":", 1)[-1]
         from ..providers.projections import build_workspace_disclosure_payload
@@ -637,6 +900,39 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
             "events": disclosure.get("events", []),
             "disclosure_lag_note": disclosure.get("disclosure_lag_note"),
             "research_only": disclosure.get("research_only"),
+        }
+    if "futures" in ref:
+        symbol = ref.rsplit(":", 1)[-1]
+        from ..providers.projections import build_workspace_futures_payload
+
+        futures = build_workspace_futures_payload(
+            symbol,
+            as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
+        )
+        provenance = str(futures.get("provenance", "fixture"))
+        tabs["EVIDENCE"]["items"] = [
+            {
+                "evidence_id": ref,
+                "epistemic_class": "DERIVED",
+                "family": "futures_positioning",
+                "as_of": store.as_of_time(),
+                "quality": {
+                    "state": provenance,
+                    "snapshot_count": futures.get("snapshot_count", len(futures.get("snapshots", []))),
+                    "imbalance_signal": futures.get("latest_imbalance_signal"),
+                    "imbalance_ratio": futures.get("latest_imbalance_ratio"),
+                },
+            }
+        ]
+        tabs["DERIVATION"] = {
+            "method": "futures_lane.depth_imbalance_signal + quarterly_contract_month + is_rth",
+            "inputs": ["ES depth ladder", "contract roll metadata", "RTH session gate"],
+            "source": (
+                "ADR-DATA-002 admitted synthetic fixture"
+                if provenance == "fixture"
+                else "FuturesX donor bridge (not replay-admitted)"
+            ),
         }
     return {
         "as_of_context": build_as_of_context(store),
@@ -685,6 +981,7 @@ def build_research_analytics_payload(store: ReplayStore) -> dict[str, object]:
     ]
     risk_outcomes = _count_series(risk_rows, "decision")
 
+    from ..donor_bridge.historical_cohort import build_historical_cohort_summary_panel
     from ..donor_bridge.projections import build_explore_squeeze_payload
 
     squeeze_payload = build_explore_squeeze_payload(as_of_context=build_as_of_context(store))
@@ -727,6 +1024,7 @@ def build_research_analytics_payload(store: ReplayStore) -> dict[str, object]:
                 },
                 "series": squeeze_summary,
             },
+            "squeeze_historical_cohort": build_historical_cohort_summary_panel(),
             "strategy_outcomes": {
                 "available": bool(interpretations),
                 "provenance": {
@@ -738,6 +1036,168 @@ def build_research_analytics_payload(store: ReplayStore) -> dict[str, object]:
                 "signal_timeline": signal_timeline,
             },
         },
+    }
+
+
+INSTITUTIONAL_FLOW_FAMILY_SPECS: tuple[tuple[str, str, str, str], ...] = (
+    (REGULATORY_DISCLOSURE_FAMILY, "Disclosure", "disclosure", "explain:disclosure"),
+    (LARGE_TRANSACTIONS_FAMILY, "Large Txn", "large-transactions", "explain:large-transactions"),
+    (ORDER_FLOW_FAMILY, "Order Flow", "order-flow", "explain:order-flow"),
+    (ORDER_BOOK_FAMILY, "Order Book", "order-book", "explain:order-book"),
+    (OPTIONS_FAMILY, "Options", "options", "explain:options"),
+    (FUTURES_FAMILY, "Futures", "futures", "explain:futures"),
+    (FUND_ETF_FAMILY, "Fund / ETF", "fund-etf", "explain:fund-etf"),
+    (PUBLIC_CATALYST_FAMILY, "Catalyst", "catalyst", "explain:catalyst"),
+)
+
+_INSTITUTIONAL_ENTITLED_SYMBOLS: dict[str, str] = {
+    REGULATORY_DISCLOSURE_FAMILY: "BIYA",
+    LARGE_TRANSACTIONS_FAMILY: "NVDA",
+    ORDER_FLOW_FAMILY: "NVDA",
+    ORDER_BOOK_FAMILY: "NVDA",
+    OPTIONS_FAMILY: "BIYA",
+    FUTURES_FAMILY: "ES",
+    FUND_ETF_FAMILY: "NVDA",
+    PUBLIC_CATALYST_FAMILY: "BOXL",
+}
+
+_INSTITUTIONAL_AVAILABILITY = {
+    REGULATORY_DISCLOSURE_FAMILY: disclosure_available,
+    LARGE_TRANSACTIONS_FAMILY: large_transactions_available,
+    ORDER_FLOW_FAMILY: order_flow_available,
+    ORDER_BOOK_FAMILY: order_book_available,
+    OPTIONS_FAMILY: options_available,
+    FUTURES_FAMILY: futures_available,
+    FUND_ETF_FAMILY: fund_etf_available,
+    PUBLIC_CATALYST_FAMILY: catalyst_available,
+}
+
+
+def _pit_filter_rows(rows: list[object], cutoff: int, time_key: str) -> list[dict[str, object]]:
+    filtered: list[dict[str, object]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        obs_time = row.get(time_key, row.get("prediction_cutoff", row.get("signal_prediction_cutoff")))
+        if obs_time is None:
+            continue
+        if int(obs_time) <= cutoff:
+            filtered.append(row)
+    return filtered
+
+
+def build_research_models_payload(store: ReplayStore) -> dict[str, object]:
+    cutoff = store.prediction_cutoff()
+    strategy = store.strategy
+    interpretations = _pit_filter_rows(
+        list(strategy.get("interpretations", [])),
+        cutoff,
+        "observation_time",
+    )
+    spec = strategy.get("strategy_spec", {})
+    manifest = strategy.get("dataset_manifest", {})
+    prereg = strategy.get("preregistration", {})
+    model_summary: dict[str, object] = {
+        "alignment_type": spec.get("alignment_type") if isinstance(spec, dict) else None,
+        "dataset_fingerprint": manifest.get("dataset_fingerprint") if isinstance(manifest, dict) else None,
+        "model_family": "naive_last_value.v1",
+        "strategy_identity_hash": spec.get("strategy_identity_hash") if isinstance(spec, dict) else None,
+        "target_horizon_ns": manifest.get("horizon_ns") if isinstance(manifest, dict) else None,
+    }
+    return {
+        "as_of_context": build_as_of_context(store),
+        "authority_boundary": "READ_ONLY_RESEARCH",
+        "capability_states": build_capabilities(store),
+        "disclaimer": "Model Lab projection only. Walk-forward on admitted fixture. No trade authority.",
+        "epistemic_class": "RESEARCH_PROJECTION",
+        "interpretations": interpretations,
+        "interpretation_summary": {
+            "abstention_count": strategy.get("abstention_count", 0),
+            "signal_count": strategy.get("signal_count", 0),
+            "total_at_cutoff": len(interpretations),
+        },
+        "model_summary": model_summary,
+        "preregistration": prereg if isinstance(prereg, dict) else {},
+        "preregistration_status": strategy.get("preregistration_status"),
+        "strategy_spec": spec if isinstance(spec, dict) else {},
+        "walk_forward_fold_count": strategy.get("walk_forward_fold_count", 0),
+        "dataset_manifest": manifest if isinstance(manifest, dict) else {},
+    }
+
+
+def build_research_simulation_payload(store: ReplayStore) -> dict[str, object]:
+    cutoff = store.prediction_cutoff()
+    evaluation = store.evaluation
+    risk_decisions = _pit_filter_rows(
+        list(evaluation.get("risk_decisions", [])),
+        cutoff,
+        "signal_prediction_cutoff",
+    )
+    fills = _pit_filter_rows(list(evaluation.get("fills", [])), cutoff, "fill_time")
+    orders = _pit_filter_rows(list(evaluation.get("orders", [])), cutoff, "activation_time")
+    intents = _pit_filter_rows(list(evaluation.get("intents", [])), cutoff, "observation_time")
+    attributions = _pit_filter_rows(list(evaluation.get("attributions", [])), cutoff, "observation_time")
+    ledger = evaluation.get("ledger", {})
+    reconciliation = evaluation.get("reconciliation", {})
+    return {
+        "as_of_context": build_as_of_context(store),
+        "attributions": attributions,
+        "authority_boundary": "READ_ONLY_SIMULATION",
+        "capability_states": build_capabilities(store),
+        "disclaimer": "Simulation Lab projection only. Deterministic bar-conservative simulator. No execution authority.",
+        "epistemic_class": "SIMULATION_PROJECTION",
+        "fill_audit": evaluation.get("fill_audit", {}),
+        "fills": fills,
+        "intents": intents,
+        "ledger_summary": {
+            "cash_minor": ledger.get("cash_minor") if isinstance(ledger, dict) else None,
+            "entry_count": len(ledger.get("entries", [])) if isinstance(ledger, dict) else 0,
+            "position_shares": ledger.get("position_shares") if isinstance(ledger, dict) else None,
+            "realized_pnl_minor": ledger.get("realized_pnl_minor") if isinstance(ledger, dict) else None,
+        },
+        "mode_label": "SIMULATION",
+        "orders": orders,
+        "reconciliation": reconciliation if isinstance(reconciliation, dict) else {},
+        "risk_decisions": risk_decisions,
+        "risk_policy_id": (
+            evaluation.get("risk_policy", {}).get("policy_id")
+            if isinstance(evaluation.get("risk_policy"), dict)
+            else None
+        ),
+    }
+
+
+def build_workspace_institutional_flow_payload(store: ReplayStore, symbol: str) -> dict[str, object]:
+    instrument_id = symbol.upper()
+    cutoff = store.prediction_cutoff()
+    as_of = build_as_of_context(store)
+    families: list[dict[str, object]] = []
+    for family_id, label, route_segment, explain_prefix in INSTITUTIONAL_FLOW_FAMILY_SPECS:
+        entitled_symbol = _INSTITUTIONAL_ENTITLED_SYMBOLS[family_id]
+        availability_fn = _INSTITUTIONAL_AVAILABILITY[family_id]
+        available = availability_fn(instrument_id=entitled_symbol, prediction_cutoff=cutoff)
+        reason = None if available else "WHALE_NO_PIT_ELIGIBLE_OR_UNSUPPORTED"
+        families.append(
+            {
+                "available": available,
+                "entitled_symbol": entitled_symbol,
+                "explanation_ref": f"{explain_prefix}:{entitled_symbol}",
+                "family_id": family_id,
+                "label": label,
+                "reason": reason,
+                "route_path": f"/workspace/{entitled_symbol}/{route_segment}",
+            }
+        )
+    return {
+        "as_of_context": as_of,
+        "available_family_count": sum(1 for row in families if row.get("available")),
+        "capability_states": build_capabilities(store),
+        "disclaimer": "Institutional Flow composite. Each family is separately inspectable. No invented identity.",
+        "epistemic_class": "INSTITUTIONAL_COMPOSITE",
+        "families": families,
+        "family_count": len(families),
+        "research_only": True,
+        "symbol": instrument_id,
     }
 
 

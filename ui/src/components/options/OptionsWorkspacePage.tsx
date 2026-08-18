@@ -1,6 +1,7 @@
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useWorkspaceOptionsQuery } from "../../api/hooks";
 import { ADMITTED_REPLAY_INSTRUMENT_ID } from "../../api/schemas";
+import { WorkspaceModuleNav } from "../WorkspaceModuleNav";
 import { OptionsWorkspacePanel } from "./OptionsWorkspacePanel";
 
 type Props = {
@@ -21,13 +22,7 @@ export function OptionsWorkspacePage({ onExplain, onInspect }: Props) {
           Unusual options activity from the admitted BIYA fixture. Unusual volume is not
           directional intent.
         </p>
-        <nav className="workspace-module-nav" aria-label="Workspace modules">
-          <Link to={`/workspace/${instrumentId}`}>Overview</Link>
-          <Link to={`/workspace/${instrumentId}/squeeze`}>Short Squeeze</Link>
-          <Link to={`/workspace/${instrumentId}/order-flow`}>Order Flow</Link>
-          <Link className="active" to={`/workspace/${instrumentId}/options`}>Options</Link>
-          <Link to={`/workspace/${instrumentId}/large-transactions`}>Large Transactions</Link>
-        </nav>
+        <WorkspaceModuleNav instrumentId={instrumentId} active="options" />
       </header>
       <OptionsWorkspacePanel
         instrumentId={instrumentId}

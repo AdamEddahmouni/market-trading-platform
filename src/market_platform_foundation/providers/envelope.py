@@ -351,6 +351,377 @@ def print_to_large_transaction_event(
     }
 
 
+def build_order_book_envelope(
+    *,
+    normalized_event_id: str,
+    source_record_id: str,
+    instrument_id: str,
+    event_time_ns: int,
+    available_time_ns: int,
+    ingest_run_id: str,
+    provider_metadata: dict[str, Any],
+    whale_event: dict[str, Any],
+) -> dict[str, Any]:
+    envelope = {
+        "available_time": available_time_ns,
+        "channel_id": str(
+            provider_metadata.get("symbol_mapping", {}).get("provider_symbol", instrument_id)
+        ),
+        "event_time": event_time_ns,
+        "event_type": "ORDER_BOOK_EVENT",
+        "historical_ingested_time": available_time_ns,
+        "ingest_run_id": ingest_run_id,
+        "instrument_id": instrument_id,
+        "live_received_time": None,
+        "normalization_version": PROVIDER_NORMALIZATION_VERSION,
+        "normalized_event_id": normalized_event_id,
+        "operation": "UPSERT",
+        "provider_metadata": provider_metadata,
+        "publisher_id": str(provider_metadata.get("provider_id", "unknown")),
+        "quality_observation_refs": [],
+        "raw_reference": str(provider_metadata.get("raw_source_reference", "")),
+        "schema_version": PROVIDER_EVENT_SCHEMA,
+        "source_instance_id": str(provider_metadata.get("provider_id", "unknown")),
+        "source_publish_time": event_time_ns,
+        "source_record_id": source_record_id,
+        "source_revision_id": whale_event.get("source_revision_id", "1"),
+        "source_sequence": None,
+        "supersedes_event_id": None,
+        "venue_id": str(
+            provider_metadata.get("symbol_mapping", {}).get("venue_id", "US_EQUITY")
+        ),
+        "whale_event": whale_event,
+    }
+    timestamp_states = {
+        "event_time": "REQUIRED",
+        "source_publish_time": "REQUIRED",
+        "live_received_time": "FORBIDDEN",
+        "historical_ingested_time": "REQUIRED",
+        "available_time": "REQUIRED",
+    }
+    reasons = validate_envelope(
+        envelope,
+        timestamp_states=timestamp_states,
+        acquisition_mode="historical",
+    )
+    if reasons:
+        raise ValueError(f"PROVIDER_ENVELOPE_INVALID:{','.join(reasons)}")
+    return envelope
+
+
+def build_futures_envelope(
+    *,
+    normalized_event_id: str,
+    source_record_id: str,
+    instrument_id: str,
+    event_time_ns: int,
+    available_time_ns: int,
+    ingest_run_id: str,
+    provider_metadata: dict[str, Any],
+    whale_event: dict[str, Any],
+) -> dict[str, Any]:
+    envelope = {
+        "available_time": available_time_ns,
+        "channel_id": str(
+            provider_metadata.get("symbol_mapping", {}).get("provider_symbol", instrument_id)
+        ),
+        "event_time": event_time_ns,
+        "event_type": "FUTURES_DEPTH_EVENT",
+        "historical_ingested_time": available_time_ns,
+        "ingest_run_id": ingest_run_id,
+        "instrument_id": instrument_id,
+        "live_received_time": None,
+        "normalization_version": PROVIDER_NORMALIZATION_VERSION,
+        "normalized_event_id": normalized_event_id,
+        "operation": "UPSERT",
+        "provider_metadata": provider_metadata,
+        "publisher_id": str(provider_metadata.get("provider_id", "unknown")),
+        "quality_observation_refs": [],
+        "raw_reference": str(provider_metadata.get("raw_source_reference", "")),
+        "schema_version": PROVIDER_EVENT_SCHEMA,
+        "source_instance_id": str(provider_metadata.get("provider_id", "unknown")),
+        "source_publish_time": event_time_ns,
+        "source_record_id": source_record_id,
+        "source_revision_id": whale_event.get("source_revision_id", "1"),
+        "source_sequence": None,
+        "supersedes_event_id": None,
+        "venue_id": str(
+            provider_metadata.get("symbol_mapping", {}).get("venue_id", "CME")
+        ),
+        "whale_event": whale_event,
+    }
+    timestamp_states = {
+        "event_time": "REQUIRED",
+        "source_publish_time": "REQUIRED",
+        "live_received_time": "FORBIDDEN",
+        "historical_ingested_time": "REQUIRED",
+        "available_time": "REQUIRED",
+    }
+    reasons = validate_envelope(
+        envelope,
+        timestamp_states=timestamp_states,
+        acquisition_mode="historical",
+    )
+    if reasons:
+        raise ValueError(f"PROVIDER_ENVELOPE_INVALID:{','.join(reasons)}")
+    return envelope
+
+
+def snapshot_to_order_book_event(
+    *,
+    event_time: str,
+    level_count: int,
+    best_bid: float,
+    best_ask: float,
+    bid_size: float,
+    ask_size: float,
+    imbalance_ratio: float,
+    ofi_value: float,
+    direction_label: str,
+    snapshot_provenance: str,
+    source_revision_id: str = "1",
+) -> dict[str, Any]:
+    return {
+        "ask_size": ask_size,
+        "best_ask": best_ask,
+        "best_bid": best_bid,
+        "bid_size": bid_size,
+        "direction_label": direction_label,
+        "epistemic_class": "DERIVED",
+        "event_time": event_time,
+        "family": "order_book",
+        "imbalance_ratio": imbalance_ratio,
+        "level_count": level_count,
+        "ofi_value": ofi_value,
+        "research_only": True,
+        "snapshot_provenance": snapshot_provenance,
+        "source_revision_id": source_revision_id,
+    }
+
+
+def snapshot_to_futures_event(
+    *,
+    event_time: str,
+    contract_month: str,
+    exchange: str,
+    session_state: str,
+    level_count: int,
+    best_bid: float,
+    best_ask: float,
+    bid_size: float,
+    ask_size: float,
+    imbalance_ratio: float,
+    imbalance_signal: str,
+    ofi_value: float,
+    rth: bool,
+    snapshot_provenance: str,
+    source_revision_id: str = "1",
+) -> dict[str, Any]:
+    return {
+        "ask_size": ask_size,
+        "best_ask": best_ask,
+        "best_bid": best_bid,
+        "bid_size": bid_size,
+        "contract_month": contract_month,
+        "epistemic_class": "DERIVED",
+        "event_time": event_time,
+        "exchange": exchange,
+        "family": "futures_positioning",
+        "imbalance_ratio": imbalance_ratio,
+        "imbalance_signal": imbalance_signal,
+        "lane": "futures_depth",
+        "level_count": level_count,
+        "ofi_value": ofi_value,
+        "research_only": True,
+        "rth": rth,
+        "session_state": session_state,
+        "snapshot_provenance": snapshot_provenance,
+        "source_revision_id": source_revision_id,
+    }
+
+
+def build_catalyst_envelope(
+    *,
+    normalized_event_id: str,
+    source_record_id: str,
+    instrument_id: str,
+    event_time_ns: int,
+    available_time_ns: int,
+    ingest_run_id: str,
+    provider_metadata: dict[str, Any],
+    whale_event: dict[str, Any],
+) -> dict[str, Any]:
+    envelope = {
+        "available_time": available_time_ns,
+        "channel_id": str(
+            provider_metadata.get("symbol_mapping", {}).get("provider_symbol", instrument_id)
+        ),
+        "event_time": event_time_ns,
+        "event_type": "CATALYST_EVENT",
+        "historical_ingested_time": available_time_ns,
+        "ingest_run_id": ingest_run_id,
+        "instrument_id": instrument_id,
+        "live_received_time": None,
+        "normalization_version": PROVIDER_NORMALIZATION_VERSION,
+        "normalized_event_id": normalized_event_id,
+        "operation": "UPSERT",
+        "provider_metadata": provider_metadata,
+        "publisher_id": str(provider_metadata.get("provider_id", "unknown")),
+        "quality_observation_refs": [],
+        "raw_reference": str(provider_metadata.get("raw_source_reference", "")),
+        "schema_version": PROVIDER_EVENT_SCHEMA,
+        "source_instance_id": str(provider_metadata.get("provider_id", "unknown")),
+        "source_publish_time": event_time_ns,
+        "source_record_id": source_record_id,
+        "source_revision_id": whale_event.get("source_revision_id", "1"),
+        "source_sequence": None,
+        "supersedes_event_id": None,
+        "venue_id": str(
+            provider_metadata.get("symbol_mapping", {}).get("venue_id", "US_EQUITY")
+        ),
+        "whale_event": whale_event,
+    }
+    timestamp_states = {
+        "event_time": "REQUIRED",
+        "source_publish_time": "REQUIRED",
+        "live_received_time": "FORBIDDEN",
+        "historical_ingested_time": "REQUIRED",
+        "available_time": "REQUIRED",
+    }
+    reasons = validate_envelope(
+        envelope,
+        timestamp_states=timestamp_states,
+        acquisition_mode="historical",
+    )
+    if reasons:
+        raise ValueError(f"PROVIDER_ENVELOPE_INVALID:{','.join(reasons)}")
+    return envelope
+
+
+def catalyst_to_event(
+    *,
+    event_time: str,
+    catalyst_type: str,
+    headline: str,
+    source: str,
+    confidence: float,
+    lean: str,
+    direction_label: str,
+    gate_ok: bool,
+    gate_reasons: list[str],
+    signal_source: str,
+    source_revision_id: str = "1",
+) -> dict[str, Any]:
+    return {
+        "catalyst_type": catalyst_type,
+        "confidence": round(confidence, 4),
+        "direction_label": direction_label,
+        "epistemic_class": "INFERRED",
+        "event_time": event_time,
+        "family": "public_catalyst",
+        "gate_ok": gate_ok,
+        "gate_reasons": gate_reasons,
+        "headline": headline,
+        "lean": lean,
+        "research_only": True,
+        "signal_source": signal_source,
+        "source": source,
+        "source_revision_id": source_revision_id,
+    }
+
+
+def build_fund_etf_envelope(
+    *,
+    normalized_event_id: str,
+    source_record_id: str,
+    instrument_id: str,
+    event_time_ns: int,
+    available_time_ns: int,
+    ingest_run_id: str,
+    provider_metadata: dict[str, Any],
+    whale_event: dict[str, Any],
+) -> dict[str, Any]:
+    envelope = {
+        "available_time": available_time_ns,
+        "channel_id": str(
+            provider_metadata.get("symbol_mapping", {}).get("provider_symbol", instrument_id)
+        ),
+        "event_time": event_time_ns,
+        "event_type": "FUND_ETF_EVENT",
+        "historical_ingested_time": available_time_ns,
+        "ingest_run_id": ingest_run_id,
+        "instrument_id": instrument_id,
+        "live_received_time": None,
+        "normalization_version": PROVIDER_NORMALIZATION_VERSION,
+        "normalized_event_id": normalized_event_id,
+        "operation": "UPSERT",
+        "provider_metadata": provider_metadata,
+        "publisher_id": str(provider_metadata.get("provider_id", "unknown")),
+        "quality_observation_refs": [],
+        "raw_reference": str(provider_metadata.get("raw_source_reference", "")),
+        "schema_version": PROVIDER_EVENT_SCHEMA,
+        "source_instance_id": str(provider_metadata.get("provider_id", "unknown")),
+        "source_publish_time": event_time_ns,
+        "source_record_id": source_record_id,
+        "source_revision_id": whale_event.get("source_revision_id", "1"),
+        "source_sequence": None,
+        "supersedes_event_id": None,
+        "venue_id": str(
+            provider_metadata.get("symbol_mapping", {}).get("venue_id", "US_EQUITY")
+        ),
+        "whale_event": whale_event,
+    }
+    timestamp_states = {
+        "event_time": "REQUIRED",
+        "source_publish_time": "REQUIRED",
+        "live_received_time": "FORBIDDEN",
+        "historical_ingested_time": "REQUIRED",
+        "available_time": "REQUIRED",
+    }
+    reasons = validate_envelope(
+        envelope,
+        timestamp_states=timestamp_states,
+        acquisition_mode="historical",
+    )
+    if reasons:
+        raise ValueError(f"PROVIDER_ENVELOPE_INVALID:{','.join(reasons)}")
+    return envelope
+
+
+def event_to_fund_etf_event(
+    *,
+    event_time: str,
+    event_type: str,
+    etf_ticker: str,
+    flow_direction: str,
+    flow_proxy_ratio: float,
+    reference_type: str,
+    reference_value: float,
+    correlation_20d: float,
+    regime_label: str,
+    direction_label: str,
+    source: str,
+    source_revision_id: str = "1",
+) -> dict[str, Any]:
+    return {
+        "correlation_20d": correlation_20d,
+        "direction_label": direction_label,
+        "epistemic_class": "DERIVED",
+        "etf_ticker": etf_ticker,
+        "event_time": event_time,
+        "event_type": event_type,
+        "family": "fund_etf_cross_asset",
+        "flow_direction": flow_direction,
+        "flow_proxy_ratio": flow_proxy_ratio,
+        "reference_type": reference_type,
+        "reference_value": reference_value,
+        "regime_label": regime_label,
+        "research_only": True,
+        "source": source,
+        "source_revision_id": source_revision_id,
+    }
+
+
 def bar_to_order_flow_event(
     *,
     bar_time: str,
@@ -412,11 +783,19 @@ __all__ = [
     "PROVIDER_NORMALIZATION_VERSION",
     "activity_to_options_event",
     "bar_to_order_flow_event",
+    "build_catalyst_envelope",
     "build_disclosure_envelope",
+    "build_fund_etf_envelope",
+    "build_futures_envelope",
+    "catalyst_to_event",
+    "event_to_fund_etf_event",
     "build_large_transaction_envelope",
     "build_options_envelope",
+    "build_order_book_envelope",
     "build_order_flow_envelope",
     "build_provider_metadata",
     "filing_to_disclosure_event",
     "print_to_large_transaction_event",
+    "snapshot_to_futures_event",
+    "snapshot_to_order_book_event",
 ]
