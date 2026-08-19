@@ -5,14 +5,23 @@
     "event_clustering",
     "syndication_lineage",
     "pit_cutoff",
-    "baseline_sentiment"
+    "baseline_sentiment",
+    "event_extraction",
+    "expectations_surprise",
+    "impact_components"
   ],
   "content_paths": [
     "tests/fixtures/market_context/boxl_raw_documents_slice.json",
     "tests/fixtures/market_context/boxl_entity_ambiguous_slice.json",
     "tests/fixtures/market_context/boxl_syndication_slice.json",
     "tests/fixtures/market_context/boxl_finbert_labels_slice.json",
-    "tests/fixtures/market_context/boxl_sentiment_expected.json"
+    "tests/fixtures/market_context/boxl_sentiment_expected.json",
+    "tests/fixtures/market_context/boxl_llm_extraction_slice.json",
+    "tests/fixtures/market_context/boxl_structured_metrics_slice.json",
+    "tests/fixtures/market_context/boxl_extraction_expected.json",
+    "tests/fixtures/market_context/boxl_expectations_slice.json",
+    "tests/fixtures/market_context/boxl_surprise_expected.json",
+    "tests/fixtures/market_context/boxl_impact_components_expected.json"
   ],
   "instrument_id": "BOXL",
   "logical_id": "market_context.mc2_mc3_fixture_admission",

@@ -46,6 +46,11 @@ from .curve import (
 )
 from .notional import ES_CONTRACT_SPEC, exposure_summary, notional_exposure, pnl_from_price_change
 from .roll import LeadContractSelection, select_lead_contract
+from .relative_value import (
+    RV_VERSION,
+    relative_value_payload,
+    relative_value_snapshot,
+)
 
 __all__ = [
     "BASELINES_VERSION",

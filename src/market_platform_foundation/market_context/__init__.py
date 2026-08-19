@@ -1,4 +1,4 @@
-"""Market Context lane — entity resolution, event clustering, and baseline sentiment."""
+"""Market Context lane — entity resolution, event clustering, baseline sentiment, extraction, expectations."""
 
 from .entity_resolution import (
     PRODUCER_VERSION as ENTITY_RESOLUTION_VERSION,
@@ -12,6 +12,37 @@ from .entity_resolution import (
 from .event_clustering import (
     cluster_fixture_records,
     cluster_information_events,
+)
+from .extraction import (
+    PRODUCER_VERSION as EXTRACTION_VERSION,
+    DocumentExtractionResult,
+    EventExtractionSummary,
+    LlmExtractionLabel,
+    build_event_extraction_summaries,
+    build_fixture_extraction_pipeline,
+    document_extraction_to_dict,
+    enrich_events_with_extraction,
+    enrich_information_event,
+    event_extraction_summary_to_dict,
+    extract_document,
+    extract_metrics_rule_v1,
+    infer_economic_channels,
+    load_llm_extraction_fixture,
+    load_structured_metrics_fixture,
+    map_canonical_event_type,
+)
+from .expectations import (
+    PRODUCER_VERSION as EXPECTATIONS_VERSION,
+    build_fixture_surprise_pipeline,
+    build_surprise_cross_lane_evidence,
+    load_expectations_fixture,
+    surprise_summary_to_dict,
+)
+from .impact_components import (
+    PRODUCER_VERSION as IMPACT_COMPONENTS_VERSION,
+    build_fixture_impact_pipeline,
+    build_impact_cross_lane_evidence,
+    impact_component_summary_to_dict,
 )
 from .sentiment import (
     PRODUCER_VERSION as SENTIMENT_VERSION,
@@ -28,22 +59,47 @@ from .sentiment import (
 
 __all__ = [
     "ENTITY_RESOLUTION_VERSION",
+    "EXPECTATIONS_VERSION",
+    "EXTRACTION_VERSION",
+    "IMPACT_COMPONENTS_VERSION",
     "SENTIMENT_VERSION",
     "ContextDocumentRecord",
+    "DocumentExtractionResult",
     "DocumentSentimentResult",
+    "EventExtractionSummary",
     "EventSentimentSummary",
+    "LlmExtractionLabel",
     "aggregate_event_sentiment",
+    "build_event_extraction_summaries",
     "build_event_sentiment_summaries",
+    "build_fixture_extraction_pipeline",
+    "build_fixture_impact_pipeline",
     "build_fixture_sentiment_pipeline",
+    "build_fixture_surprise_pipeline",
+    "build_impact_cross_lane_evidence",
     "build_sentiment_cross_lane_evidence",
+    "build_surprise_cross_lane_evidence",
     "build_symbol_mapping_registry",
     "cluster_fixture_records",
     "cluster_information_events",
+    "document_extraction_to_dict",
+    "enrich_events_with_extraction",
+    "enrich_information_event",
+    "event_extraction_summary_to_dict",
+    "extract_document",
+    "extract_metrics_rule_v1",
+    "impact_component_summary_to_dict",
+    "infer_economic_channels",
     "load_context_document_records",
+    "load_expectations_fixture",
     "load_finbert_fixture_labels",
+    "load_llm_extraction_fixture",
+    "load_structured_metrics_fixture",
+    "map_canonical_event_type",
     "raw_document_from_fixture_row",
     "resolve_document_entities",
     "resolve_entity_from_claims",
     "score_document_sentiment",
     "score_keyword_baseline",
+    "surprise_summary_to_dict",
 ]

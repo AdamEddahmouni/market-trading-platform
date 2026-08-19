@@ -83,7 +83,9 @@ class WorkspaceSqueezeBridgeTests(unittest.TestCase):
         self.assertEqual(len(payload["ignition_evidence"]), 3)
         self.assertIn("state_machine", payload)
         self.assertIn("readiness", payload)
-        self.assertEqual(payload["state_machine"]["current_state"], "INSUFFICIENT_EVIDENCE")
+        # D-01: current_state is causal lifecycle only — UNKNOWN when causal absent.
+        self.assertEqual(payload["state_machine"]["current_state"], "UNKNOWN")
+        self.assertIn("CAUSAL_INTELLIGENCE_UNAVAILABLE", payload["ignition_state_quality_flags"])
         self.assertTrue(payload["readiness"]["provenance_admissible"])
 
     def test_state_machine_partitions_rules(self) -> None:

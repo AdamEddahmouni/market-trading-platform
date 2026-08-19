@@ -46,6 +46,34 @@ class WorkspaceCausalProjectionTests(unittest.TestCase):
         self.assertEqual(payload["state_machine"]["current_state"], "VULNERABLE")
         self.assertEqual(payload["state_machine"]["causal_model_version"], "squeeze_causal_baseline.v1")
 
+    def test_ignition_state_ignores_research_detection_without_causal(self) -> None:
+        detail = {
+            "identity": {"symbol": "AVTX", "mode_label": "FROZEN_RESEARCH"},
+            "available": True,
+            "freshness": "FROZEN",
+            "phase3a": {"status": "PASS"},
+            "research_detection": {
+                "status": "INSUFFICIENT_EVIDENCE",
+                "ignition_state": "VULNERABLE",
+            },
+            "outcome": {"status": "UNKNOWN", "reasons": []},
+            "evidence_coverage": {"label": "15 / 25"},
+            "provenance": {"source_kind": "SANITIZED_AGGREGATE"},
+            "rules": [],
+        }
+        with patch(
+            "market_platform_foundation.donor_bridge.projections.is_available",
+            return_value=True,
+        ), patch(
+            "market_platform_foundation.donor_bridge.projections.fetch_frozen_candidate_detail",
+            return_value=detail,
+        ):
+            payload = build_workspace_squeeze_payload("AVTX")
+
+        self.assertEqual(payload["ignition_state"], "UNKNOWN")
+        self.assertIn("CAUSAL_INTELLIGENCE_UNAVAILABLE", payload["ignition_state_quality_flags"])
+        self.assertEqual(payload["state_machine"]["current_state"], "UNKNOWN")
+
 
 if __name__ == "__main__":
     unittest.main()

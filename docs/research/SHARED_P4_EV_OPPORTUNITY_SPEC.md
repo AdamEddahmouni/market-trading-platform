@@ -83,7 +83,7 @@ Cooperative path uses:
 
 | Item | Blocker |
 |---|---|
-| Futures outright/curve fusion | F8–F10 incomplete |
+| Futures outright/curve fusion | F8–F10 incomplete | **DONE** (fixture scope; `FuturesInput` + regime factor) |
 | Order Flow OF9 execution forecasts | DONE — `latest_execution_forecast` + P4 v1.2 liquidity enrichment |
 | Calibrated walk-forward strategy EV | R-O10 |
 | SHARED P5 portfolio ranking | Separate milestone |

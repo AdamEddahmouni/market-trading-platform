@@ -9,6 +9,7 @@ from typing import Any
 
 from .extractors import (
     extract_cost_input,
+    extract_futures_input,
     extract_liquidity_input,
     extract_payoff_input,
     extract_probability_input,
@@ -18,8 +19,10 @@ from .opportunity import (
     FUSION_METHOD,
     OPPORTUNITY_VERSION,
     OpportunityQualityFlag,
+    FuturesInput,
     cost_input_to_dict,
     fused_opportunity_to_dict,
+    futures_input_to_dict,
     liquidity_input_to_dict,
     payoff_input_to_dict,
     probability_input_to_dict,
@@ -68,6 +71,23 @@ def _liquidity_factor(liquidity: Any) -> float:
     return round(min(max(factor, 0.0), 1.0), 6)
 
 
+def _futures_regime_factor(futures: FuturesInput | None) -> float:
+    if futures is None or not futures.available:
+        return 1.0
+    factor = 1.0
+    if futures.leverage_stress_regime and str(futures.leverage_stress_regime).upper() == "ELEVATED":
+        factor *= 0.85
+    if futures.macro_event_risk:
+        factor *= 0.9
+    if futures.rv_spread_zscore is not None and abs(futures.rv_spread_zscore) > 2.0:
+        factor *= 0.92
+    if futures.trend_regime == "TREND_UP":
+        factor *= 1.03
+    elif futures.trend_regime == "TREND_DOWN":
+        factor *= 0.97
+    return round(min(max(factor, 0.0), 1.0), 6)
+
+
 def _occurrence_weight(probability: Any, template: str | None, squeeze_aligned: bool) -> float:
     if not squeeze_aligned:
         return 1.0
@@ -83,6 +103,7 @@ def fuse_opportunity_v1(
     payoff: Any,
     costs: Any,
     liquidity: Any,
+    futures: FuturesInput | None = None,
 ) -> dict[str, Any]:
     """Fuse lane inputs: (expected_pnl - friction_cost) × occurrence_weight × liquidity_factor."""
     quality_flags: list[str] = list(payoff.quality_flags) + list(liquidity.quality_flags)
@@ -107,20 +128,22 @@ def fuse_opportunity_v1(
     )
     occurrence_weight = _occurrence_weight(probability, payoff.template, squeeze_aligned)
     liquidity_factor = _liquidity_factor(liquidity)
-    fused_net_ev = round(gross_ev * occurrence_weight * liquidity_factor, 6)
+    futures_regime_factor = _futures_regime_factor(futures)
+    combined_liquidity_factor = round(liquidity_factor * futures_regime_factor, 6)
+    fused_net_ev = round(gross_ev * occurrence_weight * combined_liquidity_factor, 6)
 
     from .opportunity import FusedOpportunity
 
     fusion = FusedOpportunity(
         fused_net_ev=fused_net_ev,
         occurrence_weight=occurrence_weight,
-        liquidity_factor=liquidity_factor,
+        liquidity_factor=combined_liquidity_factor,
         gross_ev_before_weights=gross_ev,
         template=payoff.template,
         squeeze_aligned=squeeze_aligned,
     )
 
-    if liquidity_factor == 0.0:
+    if liquidity_factor == 0.0 or combined_liquidity_factor == 0.0:
         outcome = "NO_ACTIONABLE_EDGE"
         status = "NO_ACTIONABLE_EDGE"
         reason = "LIQUIDITY_BLOCKED"
@@ -141,6 +164,8 @@ def fuse_opportunity_v1(
         "reason": reason,
         "fused_net_ev": fusion.fused_net_ev,
         "fusion": fused_opportunity_to_dict(fusion),
+        "futures_regime_factor": futures_regime_factor,
+        "liquidity_factor_base": liquidity_factor,
         "quality_flags": list(dict.fromkeys(quality_flags)),
     }
 
@@ -156,6 +181,7 @@ def build_opportunity_snapshot(
     cross_lane_snapshot: dict[str, Any] | None = None,
     order_flow_payload: dict[str, Any] | None = None,
     execution_friction: dict[str, Any] | None = None,
+    futures_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Top-level SHARED P4 snapshot for workspace payloads."""
     payoff_dict = None
@@ -177,8 +203,9 @@ def build_opportunity_snapshot(
         order_flow_payload=order_flow_payload,
         execution_friction=execution_friction,
     )
+    futures = extract_futures_input(futures_payload)
 
-    fused = fuse_opportunity_v1(probability, payoff, costs, liquidity)
+    fused = fuse_opportunity_v1(probability, payoff, costs, liquidity, futures)
 
     if not fused.get("available"):
         result = {
@@ -192,6 +219,9 @@ def build_opportunity_snapshot(
             "payoff": payoff_input_to_dict(payoff),
             "costs": cost_input_to_dict(costs),
             "liquidity": liquidity_input_to_dict(liquidity),
+            "futures": futures_input_to_dict(futures),
+            "futures_regime_factor": fused.get("futures_regime_factor"),
+            "liquidity_factor_base": fused.get("liquidity_factor_base"),
             "fusion": fused.get("fusion"),
             "fused_net_ev": None,
             "method": FUSION_METHOD,
@@ -213,6 +243,9 @@ def build_opportunity_snapshot(
         "payoff": payoff_input_to_dict(payoff),
         "costs": cost_input_to_dict(costs),
         "liquidity": liquidity_input_to_dict(liquidity),
+        "futures": futures_input_to_dict(futures),
+        "futures_regime_factor": fused.get("futures_regime_factor"),
+        "liquidity_factor_base": fused.get("liquidity_factor_base"),
         "fusion": fused.get("fusion"),
         "fused_net_ev": fused.get("fused_net_ev"),
         "method": FUSION_METHOD,

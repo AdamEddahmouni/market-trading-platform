@@ -186,8 +186,11 @@ def simulate_futures_roll(
     to_contract_id: str,
     quantity: int,
     roll_gap: float,
+    previous_price: float | None = None,
+    current_price: float | None = None,
+    contract_multiplier: float = 50.0,
 ) -> dict[str, Any]:
-    """F2 roll execution stub — records roll intent with explicit gap semantics."""
+    """F2/F10 roll execution — records roll intent with optional variation margin."""
     if quantity <= 0 or from_contract_id == to_contract_id:
         return {
             "available": False,
@@ -200,11 +203,86 @@ def simulate_futures_roll(
         "simulator_version": SIMULATOR_VERSION,
         "to_contract_id": to_contract_id,
     }
+    vm_payload = None
+    if previous_price is not None and current_price is not None:
+        vm_payload = simulate_variation_margin_change(
+            previous_price=previous_price,
+            current_price=current_price,
+            quantity=quantity,
+            contract_multiplier=contract_multiplier,
+        )
+        body["variation_margin"] = vm_payload
     return {
         "available": True,
         "roll_event": body,
         "roll_id": sha256_bytes(canonical_bytes(body)),
+        "variation_margin": vm_payload,
     }
 
 
-__all__ = ["BarConservativeSimulator", "SIMULATOR_VERSION", "simulate_futures_roll"]
+def simulate_variation_margin_change(
+    *,
+    previous_price: float,
+    current_price: float,
+    quantity: int,
+    contract_multiplier: float = 50.0,
+) -> dict[str, Any]:
+    """F10 variation margin delta for one contract leg."""
+    if quantity <= 0:
+        return {"available": False, "reason": "VM_INVALID_QUANTITY"}
+    vm_change = (current_price - previous_price) * quantity * contract_multiplier
+    return {
+        "available": True,
+        "previous_price": previous_price,
+        "current_price": current_price,
+        "quantity": quantity,
+        "contract_multiplier": contract_multiplier,
+        "variation_margin_change": round(vm_change, 6),
+        "simulator_version": SIMULATOR_VERSION,
+    }
+
+
+def simulate_calendar_spread_pnl(
+    *,
+    front_price: float,
+    back_price: float,
+    quantity: int,
+    hedge_ratio: float = 1.0,
+    contract_multiplier: float = 50.0,
+    entry_spread: float | None = None,
+) -> dict[str, Any]:
+    """F10 spread-leg PnL for calendar relative-value templates."""
+    if quantity <= 0:
+        return {"available": False, "reason": "SPREAD_INVALID_QUANTITY"}
+    spread = back_price - front_price
+    pnl = spread * quantity * contract_multiplier * hedge_ratio
+    body = {
+        "front_price": front_price,
+        "back_price": back_price,
+        "spread_value": spread,
+        "quantity": quantity,
+        "hedge_ratio": hedge_ratio,
+        "contract_multiplier": contract_multiplier,
+        "spread_pnl": round(pnl, 6),
+        "simulator_version": SIMULATOR_VERSION,
+    }
+    if entry_spread is not None:
+        body["entry_spread"] = entry_spread
+        body["spread_pnl_vs_entry"] = round(
+            (spread - entry_spread) * quantity * contract_multiplier * hedge_ratio,
+            6,
+        )
+    return {
+        "available": True,
+        "spread_event": body,
+        "spread_id": sha256_bytes(canonical_bytes(body)),
+    }
+
+
+__all__ = [
+    "BarConservativeSimulator",
+    "SIMULATOR_VERSION",
+    "simulate_calendar_spread_pnl",
+    "simulate_futures_roll",
+    "simulate_variation_margin_change",
+]

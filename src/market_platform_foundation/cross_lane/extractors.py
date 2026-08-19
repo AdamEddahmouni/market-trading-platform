@@ -8,6 +8,7 @@ from ..contracts.options_quality import OptionQualityFlag
 from ..research.squeeze_models.logistic_hazard import predict_squeeze_probability
 from .opportunity import (
     CostInput,
+    FuturesInput,
     LiquidityInput,
     OpportunityQualityFlag,
     PayoffInput,
@@ -399,8 +400,63 @@ def is_squeeze_aligned_template(template: str | None, squeeze_state: str | None)
     }
 
 
+def extract_futures_input(futures_payload: dict[str, Any] | None) -> FuturesInput:
+    """Extract futures outright/curve regime modifiers from workspace futures payload."""
+    quality_flags: list[str] = []
+    if not futures_payload or not futures_payload.get("available"):
+        quality_flags.append(OpportunityQualityFlag.FUSION_INPUTS_INCOMPLETE.value)
+        return FuturesInput(
+            available=False,
+            quality_flags=tuple(quality_flags),
+            reason="FUTURES_WORKSPACE_UNAVAILABLE",
+        )
+
+    carry_baseline = futures_payload.get("carry_baseline")
+    carry_percentile: float | None = None
+    if isinstance(carry_baseline, dict):
+        raw = carry_baseline.get("carry_percentile")
+        if isinstance(raw, (int, float)):
+            carry_percentile = float(raw)
+
+    rv_snapshot = futures_payload.get("relative_value_snapshot")
+    rv_spread_zscore: float | None = None
+    curve_regime: str | None = None
+    if isinstance(rv_snapshot, dict):
+        z = rv_snapshot.get("spread_zscore")
+        if isinstance(z, (int, float)):
+            rv_spread_zscore = float(z)
+        regime = rv_snapshot.get("curve_regime")
+        if isinstance(regime, str):
+            curve_regime = regime
+
+    trend_regime = futures_payload.get("trend_regime")
+    stress_snapshot = futures_payload.get("leverage_stress_snapshot")
+    leverage_stress_regime: str | None = None
+    if isinstance(stress_snapshot, dict):
+        regime = stress_snapshot.get("stress_regime")
+        if isinstance(regime, str):
+            leverage_stress_regime = regime
+
+    macro_snapshot = futures_payload.get("macro_event_snapshot")
+    macro_event_risk = False
+    if isinstance(macro_snapshot, dict) and macro_snapshot.get("macro_event_risk"):
+        macro_event_risk = True
+
+    return FuturesInput(
+        available=True,
+        carry_percentile=carry_percentile,
+        rv_spread_zscore=rv_spread_zscore,
+        trend_regime=str(trend_regime) if trend_regime else None,
+        leverage_stress_regime=leverage_stress_regime,
+        macro_event_risk=macro_event_risk,
+        curve_regime=curve_regime,
+        quality_flags=tuple(quality_flags),
+    )
+
+
 __all__ = [
     "extract_cost_input",
+    "extract_futures_input",
     "extract_liquidity_input",
     "extract_payoff_input",
     "extract_probability_input",

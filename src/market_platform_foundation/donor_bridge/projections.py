@@ -59,20 +59,22 @@ def _research_detection_label(detail: dict[str, Any]) -> str:
     return "UNKNOWN"
 
 
-def _ignition_state(detail: dict[str, Any]) -> str:
+def _resolve_ignition_state(detail: dict[str, Any]) -> tuple[str, tuple[str, ...]]:
+    """D-01: ignition_state is causal lifecycle only — never research_detection / phase3a."""
     causal = detail.get("causal_intelligence")
     if isinstance(causal, dict) and causal.get("state"):
-        return str(causal["state"])
-    research = detail.get("research_detection", {})
-    if isinstance(research, dict):
-        for key in ("ignition_state", "state", "status"):
-            value = research.get(key)
-            if value:
-                return str(value)
-    phase3a = detail.get("phase3a", {})
-    if isinstance(phase3a, dict) and phase3a.get("status"):
-        return str(phase3a["status"])
-    return "UNKNOWN"
+        return str(causal["state"]), ()
+    flags: list[str] = []
+    if isinstance(causal, dict):
+        flags.append("CAUSAL_STATE_MISSING")
+    else:
+        flags.append("CAUSAL_INTELLIGENCE_UNAVAILABLE")
+    return "UNKNOWN", tuple(flags)
+
+
+def _ignition_state(detail: dict[str, Any]) -> str:
+    state, _ = _resolve_ignition_state(detail)
+    return state
 
 
 def _phase3a_summary(detail: dict[str, Any]) -> str:
@@ -895,6 +897,7 @@ def build_workspace_squeeze_payload(
         "evidence_coverage": coverage_label,
         "research_detection": _research_detection_label(detail),
         "ignition_state": _ignition_state(detail),
+        "ignition_state_quality_flags": list(_resolve_ignition_state(detail)[1]),
         "freshness": str(detail.get("freshness", default_freshness)),
         "phase3a_summary": _phase3a_summary(detail),
         "mode_label": str(mode_label or default_mode_label),

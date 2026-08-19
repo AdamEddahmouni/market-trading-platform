@@ -318,9 +318,11 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 - [x] Golden regression — `tests/fixtures/futures/es_leverage_stress_expected.json`
 - [x] UI — futures panel shows family context, macro risk, leverage stress disclaimers
 
-### FUTURES F9–F11 [PLANNED / FUTURE]
+### FUTURES F9–F11 [F9–F10 IMPLEMENTED (fixture scope)]
 
-See `THREE_LANE_ROADMAP_RECONCILIATION.md` for F9 relative value through F11 advanced modeling.
+- [x] F9 relative value spreads — `futures/relative_value.py`, ES calendar spread snapshot
+- [x] F10 simulator roll/VM/spread-leg — `simulate_variation_margin_change`, `simulate_calendar_spread_pnl`
+- [ ] F11 advanced modeling — PLANNED
 
 ---
 
@@ -610,30 +612,35 @@ See `THREE_LANE_ROADMAP_RECONCILIATION.md` for F9 relative value through F11 adv
 
 ---
 
-### MARKET CONTEXT MC5 — Event extraction [PLANNED]
+### MARKET CONTEXT MC5 — Event extraction [IMPLEMENTED (fixture)]
 
-- [ ] Company + macro event ontologies (versioned)
-- [ ] Schema-bound LLM extraction + `EvidenceSpan`
-- [ ] Deterministic numeric extraction (`ExtractedMetric`)
+- [x] Company + macro event ontologies (versioned) — `CompanyEventType` / `MacroEventType` mapping via `rule-v1`
+- [x] Schema-bound LLM extraction + `EvidenceSpan` — `boxl_llm_extraction_slice.json` with `ModelVersionRef`
+- [x] Deterministic numeric extraction (`ExtractedMetric`) — regex + `boxl_structured_metrics_slice.json`
+- [x] PIT adversarial tests + golden regression (`boxl_extraction_expected.json`)
+- [x] Workspace projection — `document_extractions`, `event_extraction_summaries` on BOXL scope
+- [x] `InformationEvent` enrichment — `economic_channels`, `extracted_metrics`
 
 **Depends on:** MC3
 
 ---
 
-### MARKET CONTEXT MC6 — Expectations / surprise [PLANNED]
+### MARKET CONTEXT MC6 — Expectations / surprise [IMPLEMENTED (fixture)]
 
-- [ ] `ExpectationSnapshot` PIT store
-- [ ] `SurpriseEvidence` — fail-closed when missing consensus
-- [ ] Revision surprise for macro releases
-
-**Major milestone** — blocks validated earnings/macro surprise research
+- [x] `ExpectationSnapshot` PIT store — `market_context/expectations.py`
+- [x] `SurpriseEvidence` — fail-closed when missing consensus
+- [x] Revision surprise for macro releases (BOXL + ES fixtures)
+- [x] Workspace + cross-lane `EVENT_SURPRISE_*` evidence
 
 ---
 
-### MARKET CONTEXT MC7 — Novelty / materiality / credibility [PLANNED]
+### MARKET CONTEXT MC7 — Novelty / materiality / credibility [IMPLEMENTED (fixture)]
 
-- [ ] Component evidence objects
-- [ ] Corroboration states + rumor verification history
+- [x] `NoveltyEvidence` — duplicate/syndication-aware scoring (`impact_components_v1`)
+- [x] `MaterialityEvidence` — event-type + metric boost with `materiality_basis`
+- [x] `CredibilityEvidence` — source tier + corroboration with fail-closed flags
+- [x] Workspace + cross-lane component metadata (`NOVELTY_HIGH`, `MATERIALITY_HIGH`, `CREDIBILITY_HIGH`)
+- [x] Golden regression (`boxl_impact_components_expected.json`); resolves MC-D07 (fixture scope)
 
 **Depends on:** MC6 (partial parallel with MC5)
 
@@ -710,9 +717,9 @@ See `MARKET_CONTEXT_TARGET_ARCHITECTURE.md`, `FIVE_LANE_ROADMAP_RECONCILIATION.m
 | Order Flow | OF10 MBO / queue semantics | OF9 (complete) |
 | SS | Live lending ingest wiring | Vendor authorization |
 | Platform | P1 catalyst runtime | Nothing |
-| Market Context | MC5 extraction schemas | MC4 complete |
+| Market Context | MC8 catalyst/thesis intelligence | MC7 complete |
 | Options | O10 advanced modeling research | O4 baseline (complete) |
-| SHARED P4 | Futures outright/curve fusion extension | F8–F10 |
+| SHARED P4 | Futures outright/curve fusion extension | F8–F10 | DONE (fixture) |
 | Discrepancy | D-01 ignition_state mapping, D-10 deploy mirror | Nothing |
 
 ---
@@ -775,7 +782,7 @@ Cross-domain lane: **Participant Identity + Intent + Influence + Flow + Copyabil
 | **PI15** | Prediction-market participant intel | NOT_AUTHORIZED | PM P-track |
 | **PI16** | Advanced models (embeddings, informed-flow P) | FUTURE | PI5–PI10 validated |
 
-**Parallel work (do not block):** SS P0–P7, O1–O9, F1–F8, OF1–OF9, MC1–MC4 continue independently.
+**Parallel work (do not block):** SS P0–P7, O1–O9, F1–F8, OF1–OF9, MC1–MC7 continue independently.
 
 **SHARED P3 extension:** Participant publishes `ParticipantEvidence`, `InsiderEvidence`, `ActivistEvidence`, `MetaorderEvidence`, `ForcedFlowEvidence`, `CopyabilityEvidence` to cross-lane bus.
 

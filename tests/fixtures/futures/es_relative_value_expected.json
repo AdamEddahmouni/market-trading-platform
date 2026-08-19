@@ -1,0 +1,19 @@
+{
+  "fixture_id": "ADMITTED-RV-ES-001",
+  "cutoff": "2025-06-02T14:41:07.000000000Z",
+  "symbol": "ES",
+  "expected": {
+    "futures_relative_value_available": true,
+    "relative_value_snapshot": {
+      "spread_type": "CALENDAR",
+      "front_contract_id": "ES202506",
+      "back_contract_id": "ES202509",
+      "front_price": 6001.75,
+      "back_price": 6008.0,
+      "spread_value": 6.25,
+      "hedge_ratio": 1.0,
+      "curve_regime": "contango",
+      "rv_version": "futures_relative_value_v1"
+    }
+  }
+}

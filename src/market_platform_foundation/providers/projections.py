@@ -360,6 +360,7 @@ def _opportunity_snapshot_enrichment(
     order_flow_payload: dict[str, Any] | None = None,
     options_payload: dict[str, Any] | None = None,
     execution_friction: dict[str, Any] | None = None,
+    futures_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """SHARED P4 — fuse cross-lane inputs into opportunity snapshot."""
     from ..donor_bridge.opportunity_adapter import build_opportunity_fusion_bundle
@@ -387,6 +388,7 @@ def _opportunity_snapshot_enrichment(
         order_flow_payload=order_flow_payload,
         options_payload=options_payload,
         execution_friction=execution_friction,
+        futures_payload=futures_payload,
     )
     return bundle["opportunity_snapshot"]
 
@@ -432,6 +434,14 @@ def build_workspace_opportunity_payload(
         activities = options_payload.get("activities", [])
         execution_friction = estimate_execution_friction(activities if isinstance(activities, list) else [])
 
+    futures_payload: dict[str, Any] | None = None
+    if instrument_id == "ES":
+        futures_payload = build_workspace_futures_payload(
+            instrument_id,
+            as_of_context=as_of_context,
+            prediction_cutoff=prediction_cutoff,
+        )
+
     as_of_time = ""
     if isinstance(strategy_snapshot, dict) and strategy_snapshot.get("as_of_time"):
         as_of_time = str(strategy_snapshot["as_of_time"])
@@ -449,6 +459,7 @@ def build_workspace_opportunity_payload(
         order_flow_payload=order_flow_payload,
         options_payload=options_payload if isinstance(options_payload, dict) else None,
         execution_friction=execution_friction if isinstance(execution_friction, dict) else None,
+        futures_payload=futures_payload if isinstance(futures_payload, dict) else None,
     )
 
     return {
@@ -1374,7 +1385,6 @@ def _enrich_es_futures_f6_payload(
     prediction_cutoff: int | None = None,
 ) -> dict[str, Any]:
     """Attach F6 asset-family context for ES fixture."""
-    del prediction_cutoff
     if payload.get("symbol", "").upper() != "ES":
         return payload
     from ..futures.families.registry import family_context_payload
@@ -1391,6 +1401,56 @@ def _enrich_es_futures_f6_payload(
     payload["futures_family_available"] = bool(f6_payload.get("futures_family_available"))
     if f6_payload.get("missing_capabilities"):
         payload["family_missing_capabilities"] = f6_payload.get("missing_capabilities")
+    return _enrich_es_futures_f9_payload(payload, prediction_cutoff=prediction_cutoff)
+
+
+def _enrich_es_futures_f9_payload(
+    payload: dict[str, Any],
+    *,
+    prediction_cutoff: int | None = None,
+) -> dict[str, Any]:
+    """Attach F9 relative-value spreads and MC6 macro surprise summaries for ES fixture."""
+    if payload.get("symbol", "").upper() != "ES":
+        return payload
+    from ..futures.relative_value import relative_value_payload
+    from ..futures.curve import build_curve_snapshot_from_chain
+    from ..market_context.expectations import (
+        build_fixture_surprise_pipeline,
+        load_expectations_fixture,
+        surprise_summary_to_dict,
+    )
+    from .adapters.fixture_futures_chain import FixtureFuturesChainProvider
+
+    decision_time = prediction_cutoff if prediction_cutoff is not None else 0
+    chain_result = FixtureFuturesChainProvider().fetch_chain(
+        "ES",
+        as_of_time_ns=decision_time,
+    )
+    curve_snapshot = build_curve_snapshot_from_chain(chain_result)
+    rv_payload = relative_value_payload(
+        curve_snapshot,
+        chain_result,
+        decision_time=decision_time,
+    )
+    payload["relative_value_snapshot"] = rv_payload.get("relative_value_snapshot")
+    payload["futures_relative_value_available"] = bool(
+        rv_payload.get("futures_relative_value_available")
+    )
+    if rv_payload.get("quality_flags"):
+        payload["relative_value_quality_flags"] = rv_payload.get("quality_flags")
+
+    if _DEFAULT_ES_MACRO_EXPECTATIONS_FIXTURE.is_file():
+        macro_rows = load_expectations_fixture(_DEFAULT_ES_MACRO_EXPECTATIONS_FIXTURE)
+        _, _, macro_summaries, _ = build_fixture_surprise_pipeline(
+            macro_rows,
+            prediction_cutoff=decision_time,
+        )
+        payload["macro_surprise_summaries"] = [
+            surprise_summary_to_dict(item) for item in macro_summaries
+        ]
+        payload["macro_surprise_available"] = any(
+            item.surprise_available for item in macro_summaries
+        )
     return payload
 
 
@@ -1779,6 +1839,34 @@ _DEFAULT_MC_FINBERT_FIXTURE = (
     / "market_context"
     / "boxl_finbert_labels_slice.json"
 )
+_DEFAULT_MC_LLM_EXTRACTION_FIXTURE = (
+    Path(__file__).resolve().parents[3]
+    / "tests"
+    / "fixtures"
+    / "market_context"
+    / "boxl_llm_extraction_slice.json"
+)
+_DEFAULT_MC_STRUCTURED_METRICS_FIXTURE = (
+    Path(__file__).resolve().parents[3]
+    / "tests"
+    / "fixtures"
+    / "market_context"
+    / "boxl_structured_metrics_slice.json"
+)
+_DEFAULT_MC_EXPECTATIONS_FIXTURE = (
+    Path(__file__).resolve().parents[3]
+    / "tests"
+    / "fixtures"
+    / "market_context"
+    / "boxl_expectations_slice.json"
+)
+_DEFAULT_ES_MACRO_EXPECTATIONS_FIXTURE = (
+    Path(__file__).resolve().parents[3]
+    / "tests"
+    / "fixtures"
+    / "market_context"
+    / "es_macro_expectations_slice.json"
+)
 _MC_FIXTURE_SYMBOL = "BOXL"
 
 
@@ -1797,16 +1885,44 @@ def build_workspace_market_context_payload(
     as_of_context: dict[str, object],
     prediction_cutoff: int,
 ) -> dict[str, Any]:
-    """Build MC4 baseline sentiment workspace payload (BOXL fixture scope)."""
+    """Build MC4–MC7 market context workspace payload (BOXL fixture scope)."""
     from ..market_context.entity_resolution import (
         build_symbol_mapping_registry,
         load_context_document_records,
+    )
+    from ..market_context.extraction import (
+        PRODUCER_VERSION as EXTRACTION_PRODUCER_VERSION,
+        build_fixture_extraction_pipeline,
+        document_extraction_to_dict,
+        event_extraction_summary_to_dict,
+        load_llm_extraction_fixture,
+        load_structured_metrics_fixture,
     )
     from ..market_context.sentiment import (
         PRODUCER_VERSION,
         build_fixture_sentiment_pipeline,
         build_sentiment_cross_lane_evidence,
         load_finbert_fixture_labels,
+    )
+    from ..market_context.expectations import (
+        PRODUCER_VERSION as EXPECTATIONS_PRODUCER_VERSION,
+        build_fixture_surprise_pipeline,
+        build_surprise_cross_lane_evidence,
+        load_expectations_fixture,
+        surprise_summary_to_dict,
+    )
+    from ..market_context.impact_components import (
+        PRODUCER_VERSION as IMPACT_PRODUCER_VERSION,
+        build_fixture_impact_pipeline,
+        build_impact_cross_lane_evidence,
+        impact_component_summary_to_dict,
+    )
+    from ..contracts.market_context import (
+        credibility_evidence_to_dict,
+        expectation_snapshot_to_dict,
+        materiality_evidence_to_dict,
+        novelty_evidence_to_dict,
+        surprise_evidence_to_dict,
     )
 
     instrument_id = symbol.upper()
@@ -1819,8 +1935,16 @@ def build_workspace_market_context_payload(
                 "Baseline financial sentiment is admitted on BOXL fixture scope only. "
                 "Semantic labels are not trade direction or catalyst strength."
             ),
+            "document_extractions": [],
             "document_sentiments": [],
+            "event_extraction_summaries": [],
+            "event_extraction_available": False,
             "event_sentiment_summaries": [],
+            "impact_component_summaries": [],
+            "impact_components_available": False,
+            "credibility_evidence": [],
+            "materiality_evidence": [],
+            "novelty_evidence": [],
             "reason": "MARKET_CONTEXT_FIXTURE_SYMBOL_UNSUPPORTED",
             "research_only": True,
             "symbol": instrument_id,
@@ -1832,8 +1956,16 @@ def build_workspace_market_context_payload(
             "available": False,
             "baseline_sentiment_available": False,
             "disclaimer": "Market context fixture not found. Fail-closed.",
+            "document_extractions": [],
             "document_sentiments": [],
+            "event_extraction_summaries": [],
+            "event_extraction_available": False,
             "event_sentiment_summaries": [],
+            "impact_component_summaries": [],
+            "impact_components_available": False,
+            "credibility_evidence": [],
+            "materiality_evidence": [],
+            "novelty_evidence": [],
             "reason": "MARKET_CONTEXT_FIXTURE_MISSING",
             "research_only": True,
             "symbol": instrument_id,
@@ -1847,6 +1979,23 @@ def build_workspace_market_context_payload(
         _DEFAULT_MC_RAW_FIXTURE,
         symbol_mappings=build_symbol_mapping_registry(instrument_id),
     )
+    llm_labels: dict[str, object] = {}
+    if _DEFAULT_MC_LLM_EXTRACTION_FIXTURE.is_file():
+        llm_labels = load_llm_extraction_fixture(_DEFAULT_MC_LLM_EXTRACTION_FIXTURE)
+
+    structured_metrics: dict[str, object] = {}
+    if _DEFAULT_MC_STRUCTURED_METRICS_FIXTURE.is_file():
+        structured_metrics = load_structured_metrics_fixture(
+            _DEFAULT_MC_STRUCTURED_METRICS_FIXTURE
+        )
+
+    extraction_results, enriched_events, extraction_summaries = build_fixture_extraction_pipeline(
+        records,
+        prediction_cutoff=prediction_cutoff,
+        llm_labels=llm_labels,
+        structured_metrics=structured_metrics,
+    )
+
     document_results, events, event_summaries = build_fixture_sentiment_pipeline(
         records,
         prediction_cutoff=prediction_cutoff,
@@ -1858,8 +2007,16 @@ def build_workspace_market_context_payload(
             "available": False,
             "baseline_sentiment_available": False,
             "disclaimer": "No PIT-eligible documents for baseline sentiment at replay cutoff.",
+            "document_extractions": [],
             "document_sentiments": [],
+            "event_extraction_summaries": [],
+            "event_extraction_available": False,
             "event_sentiment_summaries": [],
+            "impact_component_summaries": [],
+            "impact_components_available": False,
+            "credibility_evidence": [],
+            "materiality_evidence": [],
+            "novelty_evidence": [],
             "reason": "MARKET_CONTEXT_NO_PIT_ELIGIBLE_DOCUMENTS",
             "research_only": True,
             "symbol": instrument_id,
@@ -1893,11 +2050,46 @@ def build_workspace_market_context_payload(
         }
         for summary in event_summaries
     ]
+    event_extraction_summaries = [
+        event_extraction_summary_to_dict(summary) for summary in extraction_summaries
+    ]
+    document_extractions = [
+        document_extraction_to_dict(item) for item in extraction_results
+    ]
     cross_lane_evidence = build_sentiment_cross_lane_evidence(
         event_summaries,
         symbol=instrument_id,
         prediction_cutoff=prediction_cutoff,
     )
+
+    expectation_rows: list = []
+    if _DEFAULT_MC_EXPECTATIONS_FIXTURE.is_file():
+        expectation_rows = load_expectations_fixture(_DEFAULT_MC_EXPECTATIONS_FIXTURE)
+    expectations, surprises, surprise_summaries, _ = build_fixture_surprise_pipeline(
+        expectation_rows,
+        prediction_cutoff=prediction_cutoff,
+    )
+    surprise_cross_lane = build_surprise_cross_lane_evidence(
+        surprises,
+        symbol=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    cross_lane_evidence = list(cross_lane_evidence) + surprise_cross_lane
+
+    novelty_rows, materiality_rows, credibility_rows, impact_summaries = (
+        build_fixture_impact_pipeline(
+            records,
+            enriched_events,
+            prediction_cutoff=prediction_cutoff,
+            surprise_summaries=surprise_summaries,
+        )
+    )
+    impact_cross_lane = build_impact_cross_lane_evidence(
+        impact_summaries,
+        symbol=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    cross_lane_evidence = list(cross_lane_evidence) + impact_cross_lane
 
     return {
         "as_of_context": as_of_context,
@@ -1906,17 +2098,52 @@ def build_workspace_market_context_payload(
         "cross_lane_evidence": cross_lane_evidence,
         "disclaimer": (
             "BaselineFinancialSentiment is semantic tone only — not economic surprise, "
-            "catalyst strength, or trade recommendation. Keyword-v1 runs in stdlib; "
-            "FinBERT labels are fixture-precomputed. Research-only per MC4."
+            "catalyst strength, or trade recommendation. MC5 event extraction provides typed "
+            "facts and metrics only — not surprise or trade direction. MC6 SurpriseEvidence "
+            "is fail-closed when consensus is missing. MC7 impact components expose novelty, "
+            "materiality, and credibility separately — not fused catalyst strength. "
+            "Keyword-v1 runs in stdlib; FinBERT and LLM extractions are fixture-precomputed. "
+            "Research-only per MC4–MC7."
         ),
         "document_count": len(document_results),
+        "document_extractions": document_extractions,
         "document_sentiments": document_sentiments,
-        "event_cluster_count": len(events),
+        "event_cluster_count": len(enriched_events),
+        "event_extraction_available": bool(extraction_results),
+        "event_extraction_summaries": event_extraction_summaries,
         "event_sentiment_summaries": event_sentiment_summaries,
+        "expectation_snapshots": [
+            expectation_snapshot_to_dict(item) for item in expectations
+        ],
+        "expectations_available": bool(expectations),
+        "expectations_producer_id": "market_context.expectations",
+        "expectations_producer_version": EXPECTATIONS_PRODUCER_VERSION,
+        "extraction_document_count": len(extraction_results),
+        "extraction_producer_id": "market_context.extraction",
+        "extraction_producer_version": EXTRACTION_PRODUCER_VERSION,
+        "impact_component_summaries": [
+            impact_component_summary_to_dict(item) for item in impact_summaries
+        ],
+        "impact_components_available": bool(impact_summaries),
+        "impact_producer_id": "market_context.impact_components",
+        "impact_producer_version": IMPACT_PRODUCER_VERSION,
+        "credibility_evidence": [
+            credibility_evidence_to_dict(item) for item in credibility_rows
+        ],
+        "materiality_evidence": [
+            materiality_evidence_to_dict(item) for item in materiality_rows
+        ],
+        "novelty_evidence": [novelty_evidence_to_dict(item) for item in novelty_rows],
         "prediction_cutoff_ns": prediction_cutoff,
         "producer_id": "market_context.sentiment",
         "producer_version": PRODUCER_VERSION,
         "research_only": True,
+        "surprise_available": bool(surprises),
+        "surprise_count": len(surprises),
+        "surprise_evidence": [surprise_evidence_to_dict(item) for item in surprises],
+        "surprise_summaries": [
+            surprise_summary_to_dict(item) for item in surprise_summaries
+        ],
         "symbol": instrument_id,
     }
 

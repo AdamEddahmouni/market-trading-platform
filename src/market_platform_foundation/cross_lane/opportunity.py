@@ -29,6 +29,14 @@ SQUEEZE_ALIGNED_TEMPLATES = frozenset(
     }
 )
 
+FUTURES_REGIME_TEMPLATES = frozenset(
+    {
+        "calendar_spread",
+        "outright_trend_long",
+        "outright_trend_short",
+    }
+)
+
 
 @dataclass(frozen=True, slots=True)
 class ProbabilityInput:
@@ -71,6 +79,22 @@ class CostInput:
     entry_cost: float | None = None
     execution_fill_cost: float | None = None
     source_ref: str = "options:payoff"
+    quality_flags: tuple[str, ...] = field(default_factory=tuple)
+    reason: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class FuturesInput:
+    """Futures outright/curve regime modifiers for SHARED P4 fusion."""
+
+    available: bool
+    carry_percentile: float | None = None
+    rv_spread_zscore: float | None = None
+    trend_regime: str | None = None
+    leverage_stress_regime: str | None = None
+    macro_event_risk: bool = False
+    curve_regime: str | None = None
+    source_ref: str = "futures:workspace"
     quality_flags: tuple[str, ...] = field(default_factory=tuple)
     reason: str | None = None
 
@@ -157,6 +181,21 @@ def cost_input_to_dict(item: CostInput) -> dict[str, Any]:
     }
 
 
+def futures_input_to_dict(item: FuturesInput) -> dict[str, Any]:
+    return {
+        "available": item.available,
+        "carry_percentile": item.carry_percentile,
+        "rv_spread_zscore": item.rv_spread_zscore,
+        "trend_regime": item.trend_regime,
+        "leverage_stress_regime": item.leverage_stress_regime,
+        "macro_event_risk": item.macro_event_risk,
+        "curve_regime": item.curve_regime,
+        "source_ref": item.source_ref,
+        "quality_flags": list(item.quality_flags),
+        "reason": item.reason,
+    }
+
+
 def liquidity_input_to_dict(item: LiquidityInput) -> dict[str, Any]:
     return {
         "available": item.available,
@@ -197,8 +236,10 @@ def fused_opportunity_to_dict(item: FusedOpportunity) -> dict[str, Any]:
 
 __all__ = [
     "CostInput",
+    "FUTURES_REGIME_TEMPLATES",
     "FUSION_METHOD",
     "FusedOpportunity",
+    "FuturesInput",
     "LiquidityInput",
     "OPPORTUNITY_VERSION",
     "OpportunityOutcome",
@@ -209,6 +250,7 @@ __all__ = [
     "SQUEEZE_ALIGNED_TEMPLATES",
     "cost_input_to_dict",
     "fused_opportunity_to_dict",
+    "futures_input_to_dict",
     "liquidity_input_to_dict",
     "payoff_input_to_dict",
     "probability_input_to_dict",

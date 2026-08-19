@@ -222,6 +222,8 @@ class ContextQualityFlag(StrEnum):
     SOCIAL_DATA_STALE = "SOCIAL_DATA_STALE"
     ATTENTION_DATA_PARTIAL = "ATTENTION_DATA_PARTIAL"
     LLM_EXTRACTION_LOW_CONFIDENCE = "LLM_EXTRACTION_LOW_CONFIDENCE"
+    EXTRACTION_ENTITY_AMBIGUOUS = "EXTRACTION_ENTITY_AMBIGUOUS"
+    EXTRACTION_METRIC_CONFLICT = "EXTRACTION_METRIC_CONFLICT"
     REVISION_LINEAGE_INCOMPLETE = "REVISION_LINEAGE_INCOMPLETE"
     MARKET_REACTION_DATA_MISSING = "MARKET_REACTION_DATA_MISSING"
     RETROSPECTIVE_KNOWLEDGE_RISK = "RETROSPECTIVE_KNOWLEDGE_RISK"
@@ -608,8 +610,21 @@ def information_event_to_dict(item: InformationEvent) -> dict[str, Any]:
         "corroboration_state": item.corroboration_state.value,
         "revision_lineage": list(item.revision_lineage),
         "economic_channels": list(item.economic_channels),
+        "extracted_metrics": [extracted_metric_to_dict(metric) for metric in item.extracted_metrics],
         "publication_state": item.publication_state.value,
         "provenance_ref": item.provenance_ref,
+        "quality_flags": list(item.quality_flags),
+    }
+
+
+def extracted_metric_to_dict(item: ExtractedMetric) -> dict[str, Any]:
+    return {
+        "metric_name": item.metric_name,
+        "reported_value": str(item.reported_value) if item.reported_value is not None else None,
+        "units": item.units,
+        "period": item.period,
+        "currency": item.currency,
+        "comparison_period": item.comparison_period,
         "quality_flags": list(item.quality_flags),
     }
 
@@ -674,6 +689,52 @@ def catalyst_evidence_to_dict(item: CatalystEvidence) -> dict[str, Any]:
     }
 
 
+def novelty_evidence_to_dict(item: NoveltyEvidence) -> dict[str, Any]:
+    return {
+        "event_id": item.event_id,
+        "novelty_score": item.novelty_score,
+        "duplicate_probability": item.duplicate_probability,
+        "incremental_information_score": item.incremental_information_score,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "publication_state": item.publication_state.value,
+        "provenance_ref": item.provenance_ref,
+        "quality_flags": list(item.quality_flags),
+    }
+
+
+def materiality_evidence_to_dict(item: MaterialityEvidence) -> dict[str, Any]:
+    return {
+        "event_id": item.event_id,
+        "entity_id": item.entity_id,
+        "materiality_score": item.materiality_score,
+        "materiality_basis": item.materiality_basis,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "publication_state": item.publication_state.value,
+        "provenance_ref": item.provenance_ref,
+        "quality_flags": list(item.quality_flags),
+    }
+
+
+def credibility_evidence_to_dict(item: CredibilityEvidence) -> dict[str, Any]:
+    return {
+        "event_id": item.event_id,
+        "source_credibility": item.source_credibility,
+        "historical_signal_value": item.historical_signal_value,
+        "corroboration_state": item.corroboration_state.value,
+        "official_source_found": item.official_source_found,
+        "official_confirmation": item.official_confirmation,
+        "official_denial": item.official_denial,
+        "independent_source_count": item.independent_source_count,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "publication_state": item.publication_state.value,
+        "provenance_ref": item.provenance_ref,
+        "quality_flags": list(item.quality_flags),
+    }
+
+
 def context_evidence_envelope_to_dict(item: ContextEvidenceEnvelope) -> dict[str, Any]:
     return {
         "evidence_id": item.evidence_id,
@@ -688,6 +749,44 @@ def context_evidence_envelope_to_dict(item: ContextEvidenceEnvelope) -> dict[str
         "quality_flags": list(item.quality_flags),
         "payload_type": item.payload_type,
         "payload": dict(item.payload),
+    }
+
+
+def expectation_snapshot_to_dict(item: ExpectationSnapshot) -> dict[str, Any]:
+    return {
+        "metric_name": item.metric_name,
+        "entity_id": item.entity_id,
+        "expected_value": str(item.expected_value) if item.expected_value is not None else None,
+        "median": str(item.median) if item.median is not None else None,
+        "high": str(item.high) if item.high is not None else None,
+        "low": str(item.low) if item.low is not None else None,
+        "dispersion": str(item.dispersion) if item.dispersion is not None else None,
+        "sample_size": item.sample_size,
+        "source": item.source,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "publication_state": item.publication_state.value,
+        "provenance_ref": item.provenance_ref,
+        "quality_flags": list(item.quality_flags),
+    }
+
+
+def surprise_evidence_to_dict(item: SurpriseEvidence) -> dict[str, Any]:
+    return {
+        "metric_name": item.metric_name,
+        "entity_id": item.entity_id,
+        "actual_value": str(item.actual_value) if item.actual_value is not None else None,
+        "expectation_snapshot_id": item.expectation_snapshot_id,
+        "surprise": str(item.surprise) if item.surprise is not None else None,
+        "surprise_percent": str(item.surprise_percent) if item.surprise_percent is not None else None,
+        "standardized_surprise": (
+            str(item.standardized_surprise) if item.standardized_surprise is not None else None
+        ),
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "publication_state": item.publication_state.value,
+        "provenance_ref": item.provenance_ref,
+        "quality_flags": list(item.quality_flags),
     }
 
 

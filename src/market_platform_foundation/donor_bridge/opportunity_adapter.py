@@ -83,6 +83,7 @@ def build_opportunity_fusion_bundle(
     order_flow_payload: dict[str, Any] | None = None,
     options_payload: dict[str, Any] | None = None,
     execution_friction: dict[str, Any] | None = None,
+    futures_payload: dict[str, Any] | None = None,
     existing_evidence: list[dict[str, Any]] | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Merge lane snapshots, fuse opportunity, and append SHARED P4 evidence."""
@@ -116,6 +117,7 @@ def build_opportunity_fusion_bundle(
         cross_lane_snapshot=cross_lane_snapshot,
         order_flow_payload=order_flow_payload,
         execution_friction=execution_friction,
+        futures_payload=futures_payload,
     )
 
     opportunity_evidence = opportunity_evidence_from_snapshot(opportunity_snapshot)
