@@ -1684,6 +1684,40 @@ def build_workspace_catalyst_payload(
     prediction_cutoff: int,
 ) -> dict[str, Any]:
     instrument_id = symbol.upper()
+    if market_context_available(
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    ):
+        mc_payload = build_workspace_market_context_payload(
+            instrument_id,
+            as_of_context=as_of_context,
+            prediction_cutoff=prediction_cutoff,
+        )
+        if mc_payload.get("catalyst_available"):
+            adapter_rows = mc_payload.get("catalyst_adapter_rows") or []
+            gated = [row for row in adapter_rows if isinstance(row, dict) and row.get("gate_ok")]
+            latest = gated[-1] if gated else (adapter_rows[-1] if adapter_rows else None)
+            thesis = mc_payload.get("thesis_invalidation_evidence")
+            return {
+                "as_of_context": as_of_context,
+                "available": True,
+                "catalyst_count": len(adapter_rows),
+                "catalysts": adapter_rows,
+                "catalyst_evidence": mc_payload.get("catalyst_evidence") or [],
+                "catalyst_summaries": mc_payload.get("catalyst_summaries") or [],
+                "thesis_invalidation_evidence": thesis,
+                "disclaimer": (
+                    "MC8 CatalystEvidence fuses MC6–MC7 components with exposed scores. "
+                    "Not a trade recommendation. Research-only per MC8 design spec."
+                ),
+                "latest_confidence": latest.get("confidence") if isinstance(latest, dict) else None,
+                "latest_gate_ok": latest.get("gate_ok") if isinstance(latest, dict) else None,
+                "provider_id": "market_context.catalyst",
+                "research_only": True,
+                "symbol": instrument_id,
+                "source": "mc8_fixture_pipeline",
+            }
+
     ledger = get_institutional_ledger()
     if ledger is None:
         return {
@@ -1917,7 +1951,15 @@ def build_workspace_market_context_payload(
         build_impact_cross_lane_evidence,
         impact_component_summary_to_dict,
     )
+    from ..market_context.catalyst import (
+        PRODUCER_VERSION as CATALYST_PRODUCER_VERSION,
+        build_catalyst_cross_lane_evidence,
+        build_fixture_catalyst_pipeline,
+        catalyst_summary_to_dict,
+        short_thesis_invalidation_to_dict,
+    )
     from ..contracts.market_context import (
+        catalyst_evidence_to_dict,
         credibility_evidence_to_dict,
         expectation_snapshot_to_dict,
         materiality_evidence_to_dict,
@@ -2091,6 +2133,51 @@ def build_workspace_market_context_payload(
     )
     cross_lane_evidence = list(cross_lane_evidence) + impact_cross_lane
 
+    catalyst_evidence, catalyst_summaries, thesis_invalidation, catalyst_adapter_rows = (
+        build_fixture_catalyst_pipeline(
+            impact_summaries,
+            prediction_cutoff=prediction_cutoff,
+            entity_id=instrument_id,
+        )
+    )
+    catalyst_cross_lane = build_catalyst_cross_lane_evidence(
+        catalyst_summaries,
+        thesis_invalidation,
+        symbol=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    cross_lane_evidence = list(cross_lane_evidence) + catalyst_cross_lane
+
+    from ..runtime.catalyst_attention import (
+        CatalystAttentionRuntime,
+        catalyst_attention_snapshot_to_dict,
+    )
+    from ..runtime.corporate_events import (
+        CorporateEventRegistry,
+        corporate_event_to_dict,
+    )
+
+    corporate_registry = CorporateEventRegistry.from_extraction_summaries(
+        [
+            {
+                "event_id": item.event_id,
+                "canonical_event_type": item.canonical_event_type,
+                "event_time": item.event_time,
+                "available_time": item.available_time,
+            }
+            for item in catalyst_summaries
+        ],
+        instrument_id=instrument_id,
+    )
+    corporate_events = corporate_registry.query_events(
+        instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    catalyst_runtime = CatalystAttentionRuntime().build_snapshot(
+        [catalyst_summary_to_dict(item) for item in catalyst_summaries],
+        instrument_id=instrument_id,
+    )
+
     return {
         "as_of_context": as_of_context,
         "available": True,
@@ -2101,9 +2188,10 @@ def build_workspace_market_context_payload(
             "catalyst strength, or trade recommendation. MC5 event extraction provides typed "
             "facts and metrics only — not surprise or trade direction. MC6 SurpriseEvidence "
             "is fail-closed when consensus is missing. MC7 impact components expose novelty, "
-            "materiality, and credibility separately — not fused catalyst strength. "
+            "materiality, and credibility separately. MC8 fuses components into CatalystEvidence "
+            "with exposed scores — not a trade recommendation. "
             "Keyword-v1 runs in stdlib; FinBERT and LLM extractions are fixture-precomputed. "
-            "Research-only per MC4–MC7."
+            "Research-only per MC4–MC8."
         ),
         "document_count": len(document_results),
         "document_extractions": document_extractions,
@@ -2127,6 +2215,28 @@ def build_workspace_market_context_payload(
         "impact_components_available": bool(impact_summaries),
         "impact_producer_id": "market_context.impact_components",
         "impact_producer_version": IMPACT_PRODUCER_VERSION,
+        "catalyst_available": bool(catalyst_summaries),
+        "catalyst_count": len(catalyst_summaries),
+        "catalyst_evidence": [
+            catalyst_evidence_to_dict(item) for item in catalyst_evidence
+        ],
+        "catalyst_producer_id": "market_context.catalyst",
+        "catalyst_producer_version": CATALYST_PRODUCER_VERSION,
+        "catalyst_summaries": [
+            catalyst_summary_to_dict(item) for item in catalyst_summaries
+        ],
+        "catalyst_adapter_rows": catalyst_adapter_rows,
+        "catalyst_attention_runtime": catalyst_attention_snapshot_to_dict(catalyst_runtime),
+        "catalyst_runtime_available": catalyst_runtime.runtime_available,
+        "corporate_event_registry": [
+            corporate_event_to_dict(item) for item in corporate_events
+        ],
+        "corporate_event_registry_available": bool(corporate_events),
+        "thesis_invalidation_evidence": (
+            short_thesis_invalidation_to_dict(thesis_invalidation)
+            if thesis_invalidation
+            else None
+        ),
         "credibility_evidence": [
             credibility_evidence_to_dict(item) for item in credibility_rows
         ],

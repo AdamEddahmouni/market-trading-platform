@@ -44,6 +44,14 @@ from .impact_components import (
     build_impact_cross_lane_evidence,
     impact_component_summary_to_dict,
 )
+from .catalyst import (
+    PRODUCER_VERSION as CATALYST_VERSION,
+    build_catalyst_cross_lane_evidence,
+    build_fixture_catalyst_pipeline,
+    catalyst_summary_to_adapter_row,
+    catalyst_summary_to_dict,
+    short_thesis_invalidation_to_dict,
+)
 from .sentiment import (
     PRODUCER_VERSION as SENTIMENT_VERSION,
     DocumentSentimentResult,
@@ -63,6 +71,7 @@ __all__ = [
     "EXTRACTION_VERSION",
     "IMPACT_COMPONENTS_VERSION",
     "SENTIMENT_VERSION",
+    "CATALYST_VERSION",
     "ContextDocumentRecord",
     "DocumentExtractionResult",
     "DocumentSentimentResult",
@@ -72,7 +81,9 @@ __all__ = [
     "aggregate_event_sentiment",
     "build_event_extraction_summaries",
     "build_event_sentiment_summaries",
+    "build_fixture_catalyst_pipeline",
     "build_fixture_extraction_pipeline",
+    "build_catalyst_cross_lane_evidence",
     "build_fixture_impact_pipeline",
     "build_fixture_sentiment_pipeline",
     "build_fixture_surprise_pipeline",
@@ -82,6 +93,8 @@ __all__ = [
     "build_symbol_mapping_registry",
     "cluster_fixture_records",
     "cluster_information_events",
+    "catalyst_summary_to_adapter_row",
+    "catalyst_summary_to_dict",
     "document_extraction_to_dict",
     "enrich_events_with_extraction",
     "enrich_information_event",
@@ -101,5 +114,6 @@ __all__ = [
     "resolve_entity_from_claims",
     "score_document_sentiment",
     "score_keyword_baseline",
+    "short_thesis_invalidation_to_dict",
     "surprise_summary_to_dict",
 ]

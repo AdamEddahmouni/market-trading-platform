@@ -97,6 +97,26 @@ def build_ss_p2_structures_from_catalyst(
             "thesis_invalidation": None,
         }
 
+    mc8_thesis = catalyst_payload.get("thesis_invalidation_evidence")
+    if isinstance(mc8_thesis, dict) and mc8_thesis.get("invalidation_strength") is not None:
+        gated = _gated_catalysts(catalyst_payload)
+        latest = gated[-1] if gated else {}
+        observation_time = str(
+            mc8_thesis.get("available_time") or latest.get("event_time", "")
+        )
+        invalidation_raw = float(mc8_thesis["invalidation_strength"])
+        thesis_obj = ShortThesisInvalidation(
+            symbol=symbol,
+            invalidation_score=round(invalidation_raw * 100.0, 2),
+            mechanism=str(mc8_thesis.get("provenance_ref", "bullish_catalyst_cluster")).split(":")[-1],
+            observation_time=observation_time,
+            available_time=observation_time,
+            publication_state=PublicationState.PUBLISHED,
+            provenance_ref=str(catalyst_payload.get("provider_id", "market_context.catalyst")),
+        )
+    else:
+        thesis_obj = None
+
     gated = _gated_catalysts(catalyst_payload)
     if not gated:
         return {
@@ -143,8 +163,7 @@ def build_ss_p2_structures_from_catalyst(
         )
 
     invalidation_score = _thesis_invalidation_score(gated)
-    thesis_obj: ShortThesisInvalidation | None = None
-    if invalidation_score is not None:
+    if thesis_obj is None and invalidation_score is not None:
         thesis_obj = ShortThesisInvalidation(
             symbol=symbol,
             invalidation_score=round(invalidation_score * 100.0, 2),
@@ -184,6 +203,9 @@ def build_cross_lane_snapshot_from_catalyst(
 
     catalyst_strength = round(confidence * 100.0, 2)
     invalidation_raw = _thesis_invalidation_score(gated)
+    mc8_thesis = catalyst_payload.get("thesis_invalidation_evidence")
+    if isinstance(mc8_thesis, dict) and mc8_thesis.get("invalidation_strength") is not None:
+        invalidation_raw = float(mc8_thesis["invalidation_strength"])
     _attention_score, attention_acceleration = _attention_metrics(gated)
     attention_accel_scaled = (
         round(attention_acceleration * 100.0, 2) if attention_acceleration is not None else None

@@ -138,4 +138,4 @@ Surface contradictions (semantic positive + market negative) explicitly.
 
 `RESEARCHED` | `IMPLEMENTED` | `VALIDATED` | `EXPERIMENTAL` | `UNAVAILABLE`
 
-Current code: **MC1–MC7 IMPLEMENTED** (contracts + fixture entity resolution + event clustering + baseline sentiment + event extraction + expectations/surprise + impact components); downstream MC8+ **PLANNED**. Catalyst bridge remains fixture-direct until MC8 wiring.
+Current code: **MC1–MC8 IMPLEMENTED** (contracts + fixture entity resolution + event clustering + baseline sentiment + event extraction + expectations/surprise + impact components + catalyst/thesis); downstream MC9+ **PLANNED**. Catalyst bridge uses MC8 workspace output on BOXL fixtures.

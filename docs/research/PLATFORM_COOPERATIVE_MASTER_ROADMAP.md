@@ -114,8 +114,8 @@ PLATFORM ROADMAP
 - [x] Order flow fixture + CVD (Phase 10 PASS)
 - [x] Order Flow OF1–OF3 foundation module (`order_flow/`)
 - [ ] Liquidity features (spread, depth dynamics) — unified OF6
-- [ ] Catalyst/attention interfaces
-- [ ] Corporate event registry
+- [x] Catalyst/attention interfaces (fixture runtime registry)
+- [x] Corporate event registry (BOXL fixture scope)
 
 **Parallel with:** SS P2, O1
 
@@ -646,10 +646,10 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 
 ---
 
-### MARKET CONTEXT MC8 — Catalyst + thesis intelligence [PLANNED]
+### MARKET CONTEXT MC8 — Catalyst + thesis intelligence [IMPLEMENTED (fixture)]
 
-- [ ] `CatalystEvidence` with exposed components
-- [ ] `ShortThesisInvalidationEvidence` producer
+- [x] `CatalystEvidence` with exposed components (`catalyst_fusion_v1`)
+- [x] `ShortThesisInvalidationEvidence` producer (bullish cluster aggregation)
 - [ ] Bull/bear thesis graph (research)
 
 **Feeds:** SS P4+ ignition, SHARED P3
@@ -717,7 +717,7 @@ See `MARKET_CONTEXT_TARGET_ARCHITECTURE.md`, `FIVE_LANE_ROADMAP_RECONCILIATION.m
 | Order Flow | OF10 MBO / queue semantics | OF9 (complete) |
 | SS | Live lending ingest wiring | Vendor authorization |
 | Platform | P1 catalyst runtime | Nothing |
-| Market Context | MC8 catalyst/thesis intelligence | MC7 complete |
+| Market Context | MC8 catalyst/thesis intelligence | MC7 complete | DONE (fixture) |
 | Options | O10 advanced modeling research | O4 baseline (complete) |
 | SHARED P4 | Futures outright/curve fusion extension | F8–F10 | DONE (fixture) |
 | Discrepancy | D-01 ignition_state mapping, D-10 deploy mirror | Nothing |

@@ -8,7 +8,8 @@
     "baseline_sentiment",
     "event_extraction",
     "expectations_surprise",
-    "impact_components"
+    "impact_components",
+    "catalyst_thesis"
   ],
   "content_paths": [
     "tests/fixtures/market_context/boxl_raw_documents_slice.json",
@@ -21,7 +22,8 @@
     "tests/fixtures/market_context/boxl_extraction_expected.json",
     "tests/fixtures/market_context/boxl_expectations_slice.json",
     "tests/fixtures/market_context/boxl_surprise_expected.json",
-    "tests/fixtures/market_context/boxl_impact_components_expected.json"
+    "tests/fixtures/market_context/boxl_impact_components_expected.json",
+    "tests/fixtures/market_context/boxl_catalyst_expected.json"
   ],
   "instrument_id": "BOXL",
   "logical_id": "market_context.mc2_mc3_fixture_admission",

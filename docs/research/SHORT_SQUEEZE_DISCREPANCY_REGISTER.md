@@ -14,7 +14,7 @@
 | D-10 | `.railway-deploy` Adam LOW coverage drift | Deploy copy treats LOW as UNEVALUABLE | ADR 0069 vs deploy copy | Production misclassification | Sync deploy mirror | .railway-deploy/ | P0 — **RESOLVED** (adam_v1.py synced) |
 | D-11 | IMP maps FAIL rules to "changed criteria" | Semantically "failed thresholds" not "state change" | StateTransitionBlock | UX confusion | Rename to failed_criteria in UI (future) | UI | P3 |
 | D-12 | No ShortPainDistribution | Cannot estimate underwater shorts | No entry price data | Model gap | **PARTIAL (fixture scope)**: `ShortPainDistribution` contract + fail-closed estimator; `RESEARCH_PROXY` fixture only | squeeze_structural.py, pain_distribution.py | RESEARCH |
-| D-13 | Catalyst = generic news age step | Not thesis invalidation | adam catalyst_age_hours | Weak ignition signal | **PARTIAL (fixture scope)**: `market_context_adapter.py` wires BOXL catalyst → `CatalystStrength` / `ShortThesisInvalidation` / `AttentionFeature` | market_context_adapter.py, evaluator.py | P3 |
+| D-13 | Catalyst = generic news age step | Not thesis invalidation | adam catalyst_age_hours | Weak ignition signal | **RESOLVED (fixture scope)**: MC8 `CatalystEvidence` + `ShortThesisInvalidationEvidence` via `market_context_adapter.py` on BOXL fixtures | market_context/catalyst.py, market_context_adapter.py | P3 |
 | D-14 | Simulator ignores squeeze state | Non-reproducible lane replay | execution/simulator.py | Research gap | **RESOLVED (fixture scope)**: `squeeze_context` in simulator + `squeeze_replay_hash` in `risk_simulation_root_hash` | simulator, evaluation.py | P4 |
 
 ## Migration classification
