@@ -10,6 +10,8 @@ from ...canonical import canonical_bytes, sha256_bytes
 from ...contracts.identity import normalized_event_id
 from ...donor_patterns.cvd_formulas import cumulative_delta
 from ...normalization.equity_bars import iso_to_epoch_ns
+from ...order_flow.aggressor import classify_bar_delta
+from ...order_flow.contracts import AggressorSource
 from ..contracts import ProviderResult, SymbolMapping
 from ..envelope import (
     bar_to_order_flow_event,
@@ -28,9 +30,22 @@ DEFAULT_ORDER_FLOW_FIXTURE = (
 
 
 def _aggressor_provenance(*, quality: str, delta: float) -> str:
-    if quality in {"tick", "mixed"}:
+    classified = classify_bar_delta(
+        bar_time="",
+        delta=delta,
+        volume=abs(delta),
+        quality=quality,
+    )
+    return whale_aggressor_provenance_from_classified(classified)
+
+
+def whale_aggressor_provenance_from_classified(classified) -> str:
+    if classified.aggressor_source in {
+        AggressorSource.EXCHANGE_NATIVE,
+        AggressorSource.PROVIDER_NATIVE,
+    }:
         return "known"
-    if quality == "neutral" and delta == 0:
+    if classified.aggressor_source == AggressorSource.UNKNOWN:
         return "unknown"
     return "inferred"
 
@@ -112,6 +127,13 @@ class FixtureOrderFlowProvider:
             delta = float(bar.get("delta", 0.0))
             quality = str(bar.get("quality", "bvc"))
             source = str(bar.get("source", "unknown"))
+            classified = classify_bar_delta(
+                bar_time=bar_time,
+                delta=delta,
+                volume=float(bar.get("volume", 0.0)),
+                quality=quality,
+                source=source,
+            )
             source_record_id = f"{bar_time}:{index}"
             whale_event = bar_to_order_flow_event(
                 bar_time=bar_time,
@@ -120,7 +142,7 @@ class FixtureOrderFlowProvider:
                 volume=float(bar.get("volume", 0.0)),
                 quality=quality,
                 source=source,
-                aggressor_provenance=_aggressor_provenance(quality=quality, delta=delta),
+                aggressor_provenance=whale_aggressor_provenance_from_classified(classified),
                 source_revision_id="1",
             )
             normalized_id = normalized_event_id(
@@ -179,4 +201,5 @@ def _pairs_no_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 __all__ = [
     "DEFAULT_ORDER_FLOW_FIXTURE",
     "FixtureOrderFlowProvider",
+    "whale_aggressor_provenance_from_classified",
 ]

@@ -82,7 +82,9 @@ Read-only bridge on `:8788`; does **not** start `live_trader.py`.
 
 - ADR-DATA-002 admits bounded synthetic ES fixture only.
 - ADR-DATA-001 full ES session bundle remains **deferred**.
-- `futures_positioning` whale family carries depth-derived signals only — not CFTC positioning.
+- `futures_depth` is the canonical institutional family id for ES L2 depth; `futures_positioning` remains the legacy whale envelope id (Phase 14 stable).
+- `whale.futures_depth` and `whale.futures_positioning` capabilities both surface when entitled.
+- Donor-bridge OFI uses in-process prev-snapshot carry; first fetch degrades with `NO_PREV_SNAPSHOT` (not zero OFI).
 - No order execution in IMP; research-only by default.
 
 ## Phase 14 acceptance
@@ -118,3 +120,50 @@ Canonical lane-closure artifact: [`evidence/integration/futures-lane-acceptance.
 | Donor bridge client | `src/market_platform_foundation/donor_bridge/futures_client.py` |
 | UI workspace | `ui/src/components/futures/` |
 | Fixture | `tests/fixtures/providers/futures/es_depth_slice.json` |
+| COT fixture (F4) | `tests/fixtures/providers/futures/es_cot_positioning_slice.json` |
+| Settlement bars fixture (F5) | `tests/fixtures/providers/futures/es_settlement_bars_slice.json` |
+
+## F4 — COT / OI positioning (fixture scope)
+
+Module: `src/market_platform_foundation/futures/positioning.py`
+
+| Capability | ID | Scope |
+|---|---|---|
+| COT crowding features | `futures_positioning_v1` | Managed-money net percentile / z-score |
+| OI velocity hypotheses | `futures_positioning_v1` | Non-directional labels from chain OI history |
+
+**Boundary:** COT positioning is distinct from depth-derived `legacy_whale_family: futures_positioning`. OI change ≠ directional forecast.
+
+Workspace payload fields:
+
+- `positioning_snapshot` — net, net_percentile, participant_category, observation/publication times
+- `futures_positioning_available` — bool (COT PIT-valid)
+- `oi_velocity_hypothesis` — label + disclaimer
+
+Cross-lane signals: `FUTURES_POSITIONING_CROWDED_LONG`, `FUTURES_POSITIONING_CROWDED_SHORT`
+
+Golden regression: `tests/fixtures/futures/es_positioning_expected.json`
+
+## F5 — Trend + carry baselines (fixture scope)
+
+Module: `src/market_platform_foundation/futures/baselines.py`
+
+| Capability | ID | Scope |
+|---|---|---|
+| Vol-scaled trend features | `futures_baselines_v1` | trend_1m/3m/6m/12m from settlement bars + SHARED P2 EWMA vol |
+| Carry percentile/change | `futures_baselines_v1` | Extends F3 carry with fixture `carry_history` |
+| Curve momentum | `futures_baselines_v1` | Slope change + calendar spread momentum label |
+
+**Boundary:** Baseline features ≠ directional forecast; positive carry ≠ positive return.
+
+Workspace payload fields:
+
+- `trend_baseline_snapshot` — vol-scaled trends, vol_estimate, lookback_bars_used
+- `carry_baseline` — percentile, change, zscore (additive on `carry_observation`)
+- `curve_momentum` — slope, slope_change, calendar_spread_momentum
+- `futures_baselines_available` — bool
+- `trend_regime` — `TREND_UP` / `TREND_DOWN` / `NEUTRAL` label only
+
+Cross-lane signals: `FUTURES_TREND_UP`, `FUTURES_TREND_DOWN`
+
+Golden regression: `tests/fixtures/futures/es_baselines_expected.json`

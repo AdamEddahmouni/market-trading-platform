@@ -21,7 +21,19 @@
       "expiration": "2025-06-20",
       "open_interest": 200000,
       "price": 6001.75,
-      "volume": 120000
+      "volume": 120000,
+      "open_interest_history": [
+        {
+          "open_interest": 195000,
+          "price": 5998.5,
+          "event_time": "2025-06-02T14:40:00.000000000Z"
+        },
+        {
+          "open_interest": 200000,
+          "price": 6001.75,
+          "event_time": "2025-06-02T14:41:00.000000000Z"
+        }
+      ]
     },
     {
       "contract_id": "ES202509",

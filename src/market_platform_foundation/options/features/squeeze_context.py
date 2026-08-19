@@ -30,7 +30,9 @@ def build_squeeze_context_for_options(causal_intelligence: dict[str, Any] | None
         "ignition_strength": str(ignition_strength or "LOW"),
         "structural_vulnerability": bool(structural),
         "exhaustion_risk": causal_intelligence.get("exhaustion_risk"),
-        "remaining_squeeze_fuel": causal_intelligence.get("remaining_squeeze_fuel"),
+        "remaining_squeeze_fuel": causal_intelligence.get("remaining_fuel")
+        if causal_intelligence.get("remaining_fuel") is not None
+        else causal_intelligence.get("remaining_squeeze_fuel"),
         "model_version": causal_intelligence.get("model_version", ""),
         "provenance_ref": "squeeze:causal_intelligence",
     }

@@ -37,11 +37,12 @@ PLATFORM P0 (PIT, provenance, quality, replay)
     │
     ├── SS P3 [PLANNED] mechanism labels, logistic/hazard, calibration
     │
-    ├── SS P4 [PLANNED] streaming transitions, live order-flow confirmation
+    ├── SS P4 [COMPLETE — fixture scope] streaming transitions, live order-flow confirmation
     │
-    ├── SS P5 [PLANNED] exhaustion, remaining fuel
+    ├── SS P5 [COMPLETE — fixture scope] exhaustion, remaining fuel
     │
-    └── SS P6 [PLANNED] ShortPainDistribution, magnitude model, simulator replay
+    └── SS P6 [COMPLETE — fixture scope] temporal exhaustion, borrow normalization, O5/O6 reversal
+        └── SS P7 [COMPLETE — fixture scope] ShortPainDistribution, magnitude, ensemble, calibrated horizons, D-14 simulator replay
 ```
 
 ### 1.3 Short Squeeze state machine (owner: Short Squeeze)
@@ -60,7 +61,8 @@ Via `causal_intelligence` on donor API and IMP workspace projections:
 
 - `state`, `state_since`, `transition`
 - Dimensions: `vulnerability`, `constraint_pressure`, `short_stress`, `ignition_strength`, `reflexivity_strength`, `remaining_fuel`, `exhaustion_risk`
-- `mechanism_labels`, `horizon_probabilities` (RESEARCH_ONLY today)
+- `mechanism_labels`, `horizon_probabilities` (CALIBRATED when PIT walk-forward passes; otherwise RESEARCH_ONLY)
+- `magnitude_estimate` via `HorizonModelSnapshot.magnitude` (RESEARCH_ONLY baseline)
 - `explanation` graph, `supporting_evidence`, `contradicting_evidence`
 
 ### 1.5 What Short Squeeze already consumes (cross-lane)
@@ -81,18 +83,18 @@ Options phases use prefix **O** to avoid collision with Short Squeeze **P**/**SS
 ```text
 PLATFORM P0 — correctness foundation          [MOSTLY DONE]
 PLATFORM P1 — shared market primitives          [PARTIAL]
-OPTIONS O1 — contract/chain correctness       [NOT STARTED]
+OPTIONS O1 — contract/chain correctness       [COMPLETE — fixture scope]
 OPTIONS O2 — IV + Greeks + surface              [NOT STARTED]
 SHARED P2 — physical distribution / RV          [NOT STARTED]
 OPTIONS O3 — risk-neutral distribution Q        [NOT STARTED]
 OPTIONS O4 — P vs Q edge engine                 [NOT STARTED]
 SHARED P3 — cross-lane evidence fusion         [PARTIAL — order flow only]
 OPTIONS O5 — signed flow                        [NOT STARTED]
-OPTIONS O6 — dealer positioning                 [NOT STARTED]
-OPTIONS O7 — event volatility                   [NOT STARTED]
-OPTIONS O8 — strategy optimizer                 [NOT STARTED]
-SHARED P4 — EV / opportunity layer              [RESEARCH]
-OPTIONS O9 — execution / simulation             [NOT STARTED]
+OPTIONS O6 — dealer positioning                 [COMPLETE — fixture scope]
+OPTIONS O7 — event volatility                   [COMPLETE — fixture scope]
+OPTIONS O8 — strategy optimizer                 [COMPLETE — fixture scope]
+SHARED P4 — EV / opportunity layer              [COMPLETE — fixture scope]
+OPTIONS O9 — execution / simulation             [COMPLETE — fixture scope]
 OPTIONS O10 — advanced modeling                 [NOT STARTED]
 OPTIONS O11 — 0DTE specialization               [NOT STARTED]
 ```
@@ -169,7 +171,7 @@ OPTIONS O11 — 0DTE specialization               [NOT STARTED]
 |---|---|---|
 | D-07 | Options card UNAVAILABLE blocks fusion | Options O1/O2 must publish `NormalizedLaneEvidence`; wire `build_cross_lane_snapshot_from_options` (P3 milestone) |
 | D-06 | Horizon probabilities RESEARCH_ONLY | Options must not substitute IV rank for calibrated squeeze probability |
-| D-14 | Simulator ignores squeeze state | Options O9 and SS P6 share simulator extension; no separate Options-only simulator |
+| D-14 | Simulator ignores squeeze state | Options O9 and SS P7 share simulator extension; D-14 resolved (fixture scope) via `squeeze_replay_hash` |
 
 ### 4.4 New conflicts to prevent
 
@@ -190,11 +192,11 @@ OPTIONS O11 — 0DTE specialization               [NOT STARTED]
 | Signal | SS use case | Earliest phase |
 |---|---|---|
 | `CALL_DEMAND_ANOMALY` | IGNITION_WATCH | O5 (stub from O1 activity) |
-| `GAMMA_AMPLIFICATION_POTENTIAL` | LIVE_CONFIRMATION, ACTIVE_SQUEEZE | O6 |
+| `GAMMA_AMPLIFICATION_POTENTIAL` | LIVE_CONFIRMATION, ACTIVE_SQUEEZE | O6 — wired to donor `options_gamma_amplification` (SS P5) |
 | `UPSIDE_SKEW_ELEVATED` | reflexivity context | O2 |
 | `IMPLIED_UPSIDE_TAIL_PROBABILITY` | priced-in check | O3 |
 | `OPTION_FLOW_DIRECTION` | ignition supplement | O5 |
-| `ESTIMATED_HEDGING_PRESSURE` | reflexivity | O6 |
+| `ESTIMATED_HEDGING_PRESSURE` | reflexivity | O6 — boosts `reflexivity_strength` via `options_hedging_pressure` |
 
 ### 5.2 Short Squeeze publishes → Options consumes
 
@@ -202,8 +204,8 @@ OPTIONS O11 — 0DTE specialization               [NOT STARTED]
 |---|---|---|
 | `squeeze_state` | tail forecast feature | SHARED P3 |
 | `ignition_strength` | upside jump probability | SHARED P3 |
-| `remaining_squeeze_fuel` | duration/magnitude | SS P5 / SHARED P3 |
-| `exhaustion_risk` | IV crush / skew normalization | SS P5 / O7 |
+| `remaining_squeeze_fuel` | duration/magnitude | SS P5 — published as `REMAINING_SQUEEZE_FUEL` evidence |
+| `exhaustion_risk` | IV crush / skew normalization | SS P5/P6 fixture proxy; O7 `estimate_iv_crush` boosts crush when exhaustion_risk ≥ 70 (JQ-6) |
 | `structural_vulnerability` | event distribution conditioning | SHARED P3 |
 
 ### 5.3 Temporal semantics for cross-lane feedback
@@ -253,7 +255,7 @@ Strategy optimizer requires trustworthy P vs Q and executable quotes.
 | After O2 + SS P2 | SS P3 baseline models | O3 Q inference research | **SHARED P2** distribution |
 | After SHARED P2 | SS P4 live confirmation | O4 P vs Q edge | **SHARED P3** fusion wiring |
 | After SHARED P3 | SS P5 exhaustion | O5 signed flow | — |
-| Later | SS P6 advanced | O6–O11 | SHARED P4 EV |
+| Later | SS P7 advanced / simulator | O6–O11 | SHARED P4 EV |
 
 ---
 

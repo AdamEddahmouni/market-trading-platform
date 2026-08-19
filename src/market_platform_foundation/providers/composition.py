@@ -10,8 +10,11 @@ from .contracts import (
     DisclosureProvider,
     DistributionForecastProvider,
     EquityQuoteProvider,
+    FuturesBarsProvider,
     FuturesChainProvider,
+    FuturesPositioningProvider,
     OptionChainProvider,
+    OrderFlowProvider,
     PaperExecutionProvider,
     ReferenceDataProvider,
 )
@@ -20,8 +23,11 @@ from .stubs import (
     UnconfiguredDisclosureProvider,
     UnconfiguredDistributionForecastProvider,
     UnconfiguredEquityQuoteProvider,
+    UnconfiguredFuturesBarsProvider,
     UnconfiguredFuturesChainProvider,
+    UnconfiguredFuturesPositioningProvider,
     UnconfiguredOptionChainProvider,
+    UnconfiguredOrderFlowProvider,
     UnconfiguredReferenceDataProvider,
 )
 
@@ -35,9 +41,14 @@ class ProviderComposition:
     equity_quote: EquityQuoteProvider = field(default_factory=UnconfiguredEquityQuoteProvider)
     option_chain: OptionChainProvider = field(default_factory=UnconfiguredOptionChainProvider)
     futures_chain: FuturesChainProvider = field(default_factory=UnconfiguredFuturesChainProvider)
+    futures_positioning: FuturesPositioningProvider = field(
+        default_factory=UnconfiguredFuturesPositioningProvider
+    )
+    futures_bars: FuturesBarsProvider = field(default_factory=UnconfiguredFuturesBarsProvider)
     distribution_forecast: DistributionForecastProvider = field(
         default_factory=UnconfiguredDistributionForecastProvider
     )
+    order_flow: OrderFlowProvider = field(default_factory=UnconfiguredOrderFlowProvider)
     paper_execution: PaperExecutionProvider = field(
         default_factory=lambda: DisabledPaperExecutionProvider(
             enabled=os.environ.get("EXECUTION_ENABLE") == "1"
@@ -51,7 +62,10 @@ class ProviderComposition:
             self.equity_quote,
             self.option_chain,
             self.futures_chain,
+            self.futures_positioning,
+            self.futures_bars,
             self.distribution_forecast,
+            self.order_flow,
             self.paper_execution,
         ]
         return {
@@ -83,13 +97,19 @@ def get_provider_composition() -> ProviderComposition:
 def configure_fixture_provider_composition() -> ProviderComposition:
     """Register admitted fixture chain providers without enabling live adapters."""
     from .adapters.fixture_distribution import FixtureDistributionForecastProvider
+    from .adapters.fixture_futures_bars import FixtureFuturesBarsProvider
     from .adapters.fixture_futures_chain import FixtureFuturesChainProvider
+    from .adapters.fixture_futures_positioning import FixtureFuturesPositioningProvider
     from .adapters.fixture_option_chain import FixtureOptionChainProvider
+    from .adapters.order_flow_factory import build_order_flow_provider
 
     composition = ProviderComposition(
         option_chain=FixtureOptionChainProvider(),
         futures_chain=FixtureFuturesChainProvider(),
+        futures_positioning=FixtureFuturesPositioningProvider(),
+        futures_bars=FixtureFuturesBarsProvider(),
         distribution_forecast=FixtureDistributionForecastProvider(),
+        order_flow=build_order_flow_provider(),
     )
     configure_provider_composition(composition)
     return composition

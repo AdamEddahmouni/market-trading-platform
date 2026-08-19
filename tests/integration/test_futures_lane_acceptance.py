@@ -16,6 +16,7 @@ from market_platform_foundation.donor_patterns.futures_lane import (
     quarterly_contract_month,
 )
 from market_platform_foundation.features.institutional import (
+    FUTURES_DEPTH_FAMILY,
     FUTURES_FAMILY,
     configure_institutional_ledger,
     query_institutional_evidence,
@@ -70,6 +71,21 @@ class FuturesLaneAcceptanceTests(unittest.TestCase):
         self.assertEqual(nvda["status"], "unavailable")
         configure_institutional_ledger(None)
 
+    def test_futures_depth_alias_returns_same_events_as_legacy(self) -> None:
+        ledger = build_combined_fixture_ledger()
+        configure_institutional_ledger(ledger)
+        cutoff = iso_to_epoch_ns("2025-06-02T14:41:07.000000000Z")
+        legacy = query_institutional_evidence(FUTURES_FAMILY, prediction_cutoff=cutoff, instrument_id="ES")
+        canonical = query_institutional_evidence(
+            FUTURES_DEPTH_FAMILY,
+            prediction_cutoff=cutoff,
+            instrument_id="ES",
+        )
+        self.assertEqual(legacy["status"], "available")
+        self.assertEqual(canonical["status"], "available")
+        self.assertEqual(legacy["event_count"], canonical["event_count"])
+        configure_institutional_ledger(None)
+
     def test_workspace_payload_research_only(self) -> None:
         ledger = build_combined_fixture_ledger()
         configure_institutional_ledger(ledger)
@@ -81,7 +97,25 @@ class FuturesLaneAcceptanceTests(unittest.TestCase):
         )
         self.assertTrue(payload["available"])
         self.assertTrue(payload["research_only"])
+        self.assertEqual(payload.get("canonical_family"), "futures_depth")
+        self.assertEqual(payload.get("legacy_whale_family"), "futures_positioning")
         self.assertGreater(len(payload.get("snapshots", [])), 0)
+        self.assertTrue(payload.get("futures_positioning_available"))
+        self.assertEqual(payload.get("crowding_regime"), "CROWDED_LONG")
+        positioning = payload.get("positioning_snapshot")
+        self.assertIsInstance(positioning, dict)
+        assert isinstance(positioning, dict)
+        self.assertEqual(positioning.get("net"), 75000)
+        self.assertTrue(payload.get("futures_baselines_available"))
+        self.assertEqual(payload.get("trend_regime"), "TREND_UP")
+        trend = payload.get("trend_baseline_snapshot")
+        self.assertIsInstance(trend, dict)
+        assert isinstance(trend, dict)
+        self.assertEqual(trend.get("trend_3m"), 3.305202)
+        carry_baseline = payload.get("carry_baseline")
+        self.assertIsInstance(carry_baseline, dict)
+        assert isinstance(carry_baseline, dict)
+        self.assertEqual(carry_baseline.get("carry_percentile"), 0.0)
         configure_institutional_ledger(None)
 
     def test_explain_futures_ref(self) -> None:

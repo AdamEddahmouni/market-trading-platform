@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .cvd_formulas import ofi_events
+from ..order_flow.ofi import compute_bbo_ofi
 
 Level = dict[str, float | int]
 
@@ -38,17 +38,8 @@ def depth_imbalance(
 
 
 def snapshot_ofi(prev_snapshot: dict[str, Any], curr_snapshot: dict[str, Any]) -> float:
-    prev_bbo = best_bid_ask(prev_snapshot)
-    curr_bbo = best_bid_ask(curr_snapshot)
-    if prev_bbo is None or curr_bbo is None:
-        return 0.0
-    events = ofi_events(
-        [prev_bbo["bid_price"], curr_bbo["bid_price"]],
-        [prev_bbo["ask_price"], curr_bbo["ask_price"]],
-        [prev_bbo["bid_size"], curr_bbo["bid_size"]],
-        [prev_bbo["ask_size"], curr_bbo["ask_size"]],
-    )
-    return round(events[-1], 4) if events else 0.0
+    """Backward-compatible BBO OFI delegate to order_flow.ofi."""
+    return compute_bbo_ofi(prev_snapshot, curr_snapshot).value
 
 
 def direction_from_imbalance(ratio: float, *, threshold: float = 1.2) -> str:

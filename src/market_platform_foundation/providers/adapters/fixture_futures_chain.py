@@ -8,18 +8,22 @@ from typing import Any
 
 from ...contracts.futures import (
     FuturesContract,
-    FuturesContractSpec,
     FuturesFamily,
     RollState,
     SettlementType,
-    futures_contract_to_dict,
 )
+from ...contracts.futures_quality import FuturesQualityFlag
 from ...futures.roll import contract_liquidity_from_dict, select_lead_contract
+from ...futures.spec_registry import resolve_futures_spec
 from ...normalization.equity_bars import iso_to_epoch_ns
 from ..envelope import enrich_chain_contract_event
 from ..contracts import ProviderResult
 from .fixture_futures import DEFAULT_FUTURES_FIXTURE, FixtureFuturesProvider
-from .futures_contract_builder import contract_to_chain_dict, snapshot_to_futures_contract
+from .futures_contract_builder import (
+    _event_as_of,
+    contract_to_chain_dict,
+    snapshot_to_futures_contract,
+)
 
 
 class FixtureFuturesChainProvider:
@@ -116,6 +120,7 @@ class FixtureFuturesChainProvider:
                 receive_time_ns=iso_to_epoch_ns(str(contract.get("event_time", ""))) if contract.get("event_time") else 0,
                 raw_source_reference=str(contract.get("provenance_ref", "")),
                 quality_flags=tuple(contract.get("quality_flags", [])),
+                venue_id="CME",
             )
             for contract in contracts
         )
@@ -175,7 +180,11 @@ class FixtureFuturesChainProvider:
                     open_interest=int(row.get("open_interest", 0) or 0),
                 )
             if contract is not None:
-                contracts.append(contract_to_chain_dict(contract))
+                chain_dict = contract_to_chain_dict(contract)
+                oi_history = row.get("open_interest_history")
+                if isinstance(oi_history, list):
+                    chain_dict["open_interest_history"] = oi_history
+                contracts.append(chain_dict)
         return contracts
 
     def _contract_from_catalog_row(
@@ -196,14 +205,10 @@ class FixtureFuturesChainProvider:
             return None
         contract_id = str(row.get("contract_id", f"{symbol}{contract_month}"))
         expiration = str(row.get("expiration", ""))
-        spec = FuturesContractSpec(
-            multiplier=Decimal("50"),
-            tick_size=Decimal("0.25"),
-            tick_value=Decimal("12.5"),
-            point_value=Decimal("50"),
-            spec_version="1",
-            spec_effective_date="2020-01-01",
-        )
+        spec = resolve_futures_spec(symbol.upper(), _event_as_of(event_time))
+        quality_flags: tuple[str, ...] = ()
+        if spec is None:
+            quality_flags = (FuturesQualityFlag.CONTRACT_SPEC_UNKNOWN.value,)
         return FuturesContract(
             instrument_family=symbol.upper(),
             contract_id=contract_id,
@@ -226,6 +231,7 @@ class FixtureFuturesChainProvider:
             event_time=event_time,
             available_time=event_time,
             ingested_time=event_time,
+            quality_flags=quality_flags,
             provenance_ref=f"{fixture_id}:{contract_id}",
         )
 

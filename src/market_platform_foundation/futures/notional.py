@@ -6,6 +6,7 @@ from decimal import Decimal
 from typing import Any
 
 from ..contracts.futures import FuturesContract, FuturesContractSpec
+from .spec_registry import ES_CONTRACT_SPEC
 
 
 def tick_economics_from_spec(spec: FuturesContractSpec) -> dict[str, str]:
@@ -79,12 +80,5 @@ def exposure_summary(
     }
 
 
-# Canonical ES contract spec for fixture/research baselines
-ES_CONTRACT_SPEC = FuturesContractSpec(
-    multiplier=Decimal("50"),
-    tick_size=Decimal("0.25"),
-    tick_value=Decimal("12.50"),
-    point_value=Decimal("50"),
-    spec_version="es_cme_v1",
-    spec_effective_date="2020-01-01",
-)
+# Canonical ES contract spec — re-exported from versioned registry
+from .spec_registry import ES_CONTRACT_SPEC  # noqa: F401

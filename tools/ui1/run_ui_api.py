@@ -95,6 +95,7 @@ ENTITLED_WHALE_CAPABILITIES = frozenset(
         "whale.options",
         "whale.large_transactions",
         "whale.order_book",
+        "whale.futures_depth",
         "whale.futures_positioning",
         "whale.public_catalyst",
         "whale.fund_etf_cross_asset",

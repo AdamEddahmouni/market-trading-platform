@@ -137,16 +137,17 @@ See `OPTIONS_CAPABILITY_GAP_ANALYSIS.md`.
 
 ## Next shared milestone
 
-**SHARED P2 — Physical distribution / volatility foundation**
+**Futures F6–F8 + Platform P1 catalyst interfaces**
 
-This unblocks:
-- Options O4 (P vs Q edge engine)
-- Short Squeeze P3 (calibrated magnitude models)
+SHARED P2 (physical distribution), SHARED P3 (cross-lane evidence), and SHARED P4 (EV / opportunity fusion) are **COMPLETE (fixture scope)** as of 2026-08-19.
 
-Recommended next lane-parallel work while P2 is designed:
-- **SS P2** — securities lending interfaces
-- **Options O1** — wire `OptionContract` into fixture adapter; admit second chain fixture
-- **SHARED P3 partial** — wire `build_cross_lane_snapshot_from_options` into squeeze workspace bridge
+Recommended next lane-parallel work:
+
+- **Futures F6–F8** — family models, leverage stress, execution semantics
+- **Order Flow OF10** — MBO / queue research primitives
+- **Platform P1** — catalyst/attention runtime interfaces (contracts exist; runtime wiring deferred)
+- **SHARED P4 extension** — futures outright/curve fusion (blocked on F8–F10)
+- **Discrepancy P0** — D-01 `causal_intelligence.state` mapping, D-10 deploy mirror sync
 
 ---
 

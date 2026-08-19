@@ -35,6 +35,16 @@ Revision 2 remains the incorporated Phase 0 safety authority.
 | Phase 15 — whale public_catalyst family | `PASS` (fixture-first catalyst on `ADMITTED-CATALYST-BOXL-001`) |
 | Phase 16 — whale fund_etf_cross_asset family | `PASS` (fixture-first fund/ETF on `ADMITTED-ETF-CROSSASSET-NVDA-001`) |
 | MRA-001 — grounded Market Research Assistant | `PASS` (deterministic evidence retrieval on admitted fixture) |
+| MRA-002 — Anthropic LLM assistant | `PASS` (mocked HTTP acceptance; live inference when `ANTHROPIC_API_KEY` set) |
+
+## Four-lane cooperative expansion (fixture scope)
+
+Active forward work beyond governed Phases 0–16 is tracked in
+[Platform Cooperative Master Roadmap](docs/research/PLATFORM_COOPERATIVE_MASTER_ROADMAP.md).
+Latest cooperative milestone: **SHARED P4 — EV / opportunity fusion** (probability × payoff × costs × liquidity across Short Squeeze, Options, Order Flow, and Futures inputs).
+
+Completed cooperative milestones on admitted fixtures include O6–O9, OF6–OF9, F4–F5, SS P4–P7, and SHARED P2–P4. See
+[SHARED P4 EV / Opportunity Layer Spec](docs/research/SHARED_P4_EV_OPPORTUNITY_SPEC.md).
 
 The existing candidate evidence roots under `evidence/phase0/2E1E…` and
 `evidence/phase0/6B31…` bind older repository subjects. They remain immutable and

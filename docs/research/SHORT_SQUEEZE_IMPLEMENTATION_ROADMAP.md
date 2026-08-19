@@ -31,16 +31,34 @@
 
 ## P4 — Live ignition
 
-- [ ] Streaming transition log in session_state
-- [ ] Live confirmation from order flow adapter (non-fixture)
+- [x] Streaming transition log in session_state — donor `causal_transitions` + IMP `transition_stream` replay
+- [x] Cross-lane causal fusion in current mode — `_merge_cross_lane_causal` with `effective_cutoff`
+- [x] Recorded order-flow adapter — `RecordedOrderFlowProvider` + `IMP_ORDER_FLOW_LIVE=1` gate (fixture replay)
+- [x] Options O6 dealer evidence on cross_lane snapshot — `options_gamma_amplification` flag
+- [ ] Live broker tick ingest (deferred — requires adapter authorization)
 
-## P5 — Exhaustion
+## P5 — Active squeeze + remaining fuel
 
-- [ ] Exhaustion subsystem + ACTIVE_SQUEEZE → EXHAUSTION transitions
-- [ ] RemainingSqueezeFuel estimates
+- [x] Fuel subsystem (`intelligence/fuel.py`) — reflexivity, covering proxy, remaining fuel, exhaustion risk
+- [x] ACTIVE_SQUEEZE → EXHAUSTION transitions via exhaustion_risk threshold (fixture scope)
+- [x] RemainingSqueezeFuel estimates — structural vulnerability minus order-flow covering proxy
+- [x] IMP cross-lane `REMAINING_SQUEEZE_FUEL` + `EXHAUSTION_RISK` evidence for Options consumers
 
-## P6 — Advanced modeling
+## P6 — Advanced exhaustion
 
-- [ ] ShortPainDistribution research
-- [ ] Magnitude model separate from occurrence
-- [ ] Simulator squeeze state replay hash
+- [x] Temporal fuel decline — `FuelHistorySnapshot` wired from transition stream
+- [x] CVD divergence history — prior slope comparison in `fuel.py`
+- [x] Borrow normalization proxy — lending fixture + `borrow_normalization_score` on cross_lane
+- [x] O5/O6 exhaustion signals — flow reversal + gamma decay on donor snapshot
+- [x] ShortPainDistribution research interface — `ShortPainDistribution` contract + fail-closed estimator (fixture proxy only)
+- [x] Simulator squeeze state replay hash — D-14 resolved via `squeeze_simulation_context` + `squeeze_replay_hash`
+
+## P7 — Advanced models
+
+- [x] ShortPainDistribution contract — `contracts/squeeze_structural.py` + `pain_distribution.py` (`RESEARCH_PROXY` fixture scope)
+- [x] Magnitude baseline — separate from occurrence (`ss_magnitude_baseline_v1`)
+- [x] Rare-event logistic ensemble — `ss_rare_event_ensemble_v1` with precision@K in walk-forward harness
+- [x] Calibrated horizons in donor evaluator v4 — `HorizonModelSnapshot` + `horizon_model_bridge.py`
+- [x] Simulator squeeze-state replay — `BarConservativeSimulator` v1.1.0 + `risk_simulation_root_hash` extension
+- [ ] True entry-price inference pipeline — deferred (open research)
+- [ ] External ML libraries (XGBoost/sklearn) — deferred

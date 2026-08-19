@@ -33,8 +33,8 @@
 | F1 Contract correctness | Schema + ES spec + tests | Wire to ingestion; multi-product specs |
 | F2 Roll / continuous | Lead selection v1 | Roll execution in simulator; continuous series builders |
 | F3 Curve/basis/carry | Schema only | Engines, data feeds |
-| F4 OI/COT | COT PIT helper | Ingestion, crowding models |
-| F5 Trend/carry baselines | — | Empirical models |
+| F4 OI/COT | COT PIT helper + fixture ingest | Crowding models — **DONE** (fixture scope) |
+| F5 Trend/carry baselines | Settlement bars + carry history fixture | Empirical models — **DONE** (fixture scope) |
 | F6 Family models | Taxonomy enum | Per-family plugins |
 | F7 Macro/fundamentals | Catalyst lane partial | Family-specific interfaces |
 | F8 Leverage stress | Quality flags | Margin engine, liquidation models |

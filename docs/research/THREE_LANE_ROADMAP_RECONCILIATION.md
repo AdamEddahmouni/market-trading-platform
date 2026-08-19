@@ -28,7 +28,7 @@ Reconcile Short Squeeze, Options, and **Futures** cooperative redesigns into one
 ```text
 PLATFORM P0 — correctness foundation          [MOSTLY DONE]
 PLATFORM P1 — shared market primitives        [PARTIAL]
-FUTURES F1 — contract correctness             [IN PROGRESS — schema]
+FUTURES F1 — contract correctness             [COMPLETE — fixture scope]
 FUTURES F2 — roll / continuous series           [PARTIAL — roll v1]
 OPTIONS O1 — contract/chain correctness         [IN PROGRESS]
 SHORT SQUEEZE SS P2 — structural vulnerability  [PLANNED]

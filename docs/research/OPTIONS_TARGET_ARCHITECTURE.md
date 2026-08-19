@@ -119,7 +119,9 @@ provenance: ProvenanceRef
 
 ### 3.2 Corporate actions
 
-Adjusted contracts carry `CORPORATE_ACTION_ADJUSTED` quality flag and explicit `deliverable` spec. Unknown deliverables → `ADJUSTED_DELIVERABLE_UNKNOWN` → exclude from surface fit.
+Adjusted contracts carry `CORPORATE_ACTION_ADJUSTED` quality flag and explicit `deliverable` spec. Unknown deliverables → `ADJUSTED_DELIVERABLE_UNKNOWN` → exclude from surface fit (`quality_blocks_surface_fit`).
+
+Fixture implementation: `option_contract_builder._resolve_deliverable()` reads `corporate_action_adjusted`, `deliverable_shares`, `deliverable_unknown`, `adjusted_strike` from activity rows. Reference fixture: `tests/fixtures/providers/options/biya_adjusted_option_slice.json` (symbol `BIYA_ADJ`). No live adjustment pipeline in O1 fixture scope.
 
 ### 3.3 Chain state
 
@@ -283,6 +285,8 @@ Every value: `method`, `assumptions`, `confidence`.
 
 Publish to cross-lane for Order Flow confirmation and Short Squeeze reflexivity.
 
+**Implementation (fixture scope):** `options/dealer.py` — method `OI_GAMMA_PROXY_V1`, confidence `LOW`, fail-closed on missing OI or invalid IV. Workspace field `dealer_snapshot`; cross-lane signals `GAMMA_AMPLIFICATION_POTENTIAL` and `ESTIMATED_HEDGING_PRESSURE`. Terminology remains `estimated_dealer_gamma` — not `dealer_gamma`.
+
 ---
 
 ## 12. Event volatility flow (O7)
@@ -333,6 +337,8 @@ Extend **shared** simulator (not parallel Options-only sim):
 Single/multi-leg, stock-option combos, NBBO, spread crossing, partial fills, commissions, assignment, exercise, expiration.
 
 American early exercise: deep ITM calls, dividends, low extrinsic.
+
+**Implementation (fixture scope):** `options/execution.py` — method `NBBO_CONSERVATIVE_V1`; `execution/options_conservative.py` registered as `simulation.options_conservative`. Conservative spread crossing (long pays ask, short receives bid), multi-leg liquidity gating, expiration/assignment lifecycle via `portfolio/options_ledger.py`. Workspace field `execution_snapshot`; cross-lane signals `OPTIONS_EXECUTION_SIMULATED` and `ASSIGNMENT_RISK`. Equity `run_risk_simulation_evaluation` unchanged — options harness is separate for fixture scope.
 
 ---
 

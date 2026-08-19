@@ -9,7 +9,11 @@ from typing import Any
 
 from ..canonical import canonical_bytes, sha256_bytes
 from .adapters.edgar_disclosure import DEFAULT_FIXTURE, FixtureEdgarDisclosureProvider, build_edgar_provider
-from .composition import ProviderComposition, configure_provider_composition
+from .composition import (
+    ProviderComposition,
+    configure_fixture_provider_composition,
+    configure_provider_composition,
+)
 
 WHALE_ENTITLED_DISCLOSURE = "WHALE_ENTITLED_DISCLOSURE"
 WHALE_ENTITLED_ORDER_FLOW = "WHALE_ENTITLED_ORDER_FLOW"
@@ -23,7 +27,9 @@ ORDER_FLOW_FAMILY = "order_flow"
 OPTIONS_FAMILY = "options"
 LARGE_TRANSACTIONS_FAMILY = "large_transactions"
 ORDER_BOOK_FAMILY = "order_book"
-FUTURES_FAMILY = "futures_positioning"
+FUTURES_DEPTH_FAMILY = "futures_depth"
+FUTURES_FAMILY = "futures_positioning"  # legacy ledger envelope id
+FUTURES_FAMILY_ALIASES: dict[str, str] = {FUTURES_DEPTH_FAMILY: FUTURES_FAMILY}
 PUBLIC_CATALYST_FAMILY = "public_catalyst"
 FUND_ETF_FAMILY = "fund_etf_cross_asset"
 LEDGER_LOGICAL_ID = "providers.whale_ledger"
@@ -64,11 +70,12 @@ class WhaleLedger:
         prediction_cutoff: int,
     ) -> list[dict[str, Any]]:
         rows: list[dict[str, Any]] = []
+        ledger_family = FUTURES_FAMILY_ALIASES.get(family, family)
         for event in self.events:
             payload = _event_payload(event)
             if not isinstance(payload, dict):
                 continue
-            if str(payload.get("family", "")) != family:
+            if str(payload.get("family", "")) != ledger_family:
                 continue
             if instrument_id is not None and str(event.get("instrument_id")) != instrument_id:
                 continue
@@ -248,7 +255,53 @@ class WhaleLedger:
                     "level_count": payload.get("level_count"),
                     "normalized_event_id": event.get("normalized_event_id"),
                     "ofi_value": payload.get("ofi_value"),
+                    "ofi_method": payload.get("ofi_method"),
+                    "ofi_version": payload.get("ofi_version"),
+                    "book_state_valid": payload.get("book_state_valid"),
+                    "liquidity_method": payload.get("liquidity_method"),
+                    "liquidity_version": payload.get("liquidity_version"),
+                    "net_depth_delta": payload.get("net_depth_delta"),
+                    "depth_withdrawal": payload.get("depth_withdrawal"),
+                    "depth_replenishment": payload.get("depth_replenishment"),
+                    "fragility_score": payload.get("fragility_score"),
+                    "resiliency_score": payload.get("resiliency_score"),
+                    "total_depth": payload.get("total_depth"),
+                    "spread_delta": payload.get("spread_delta"),
                     "snapshot_provenance": payload.get("snapshot_provenance"),
+                    "impact_method": payload.get("impact_method"),
+                    "impact_version": payload.get("impact_version"),
+                    "absorption_score": payload.get("absorption_score"),
+                    "exhaustion_score": payload.get("exhaustion_score"),
+                    "price_efficiency": payload.get("price_efficiency"),
+                    "mid_delta": payload.get("mid_delta"),
+                    "aggression_signed_volume": payload.get("aggression_signed_volume"),
+                    "impact_regime": payload.get("impact_regime"),
+                    "impact_quality_flags": payload.get("impact_quality_flags"),
+                    "opposing_replenishment": payload.get("opposing_replenishment"),
+                    "forecast_method": payload.get("forecast_method"),
+                    "forecast_version": payload.get("forecast_version"),
+                    "forecast_horizon_seconds": payload.get("forecast_horizon_seconds"),
+                    "expected_mid_delta": payload.get("expected_mid_delta"),
+                    "direction_bias": payload.get("direction_bias"),
+                    "continuation_probability": payload.get("continuation_probability"),
+                    "reversal_probability": payload.get("reversal_probability"),
+                    "volatility_proxy": payload.get("volatility_proxy"),
+                    "composite_bias": payload.get("composite_bias"),
+                    "model_confidence": payload.get("model_confidence"),
+                    "forecast_quality_flags": payload.get("forecast_quality_flags"),
+                    "execution_method": payload.get("execution_method"),
+                    "execution_version": payload.get("execution_version"),
+                    "book_model_version": payload.get("book_model_version"),
+                    "queue_model_version": payload.get("queue_model_version"),
+                    "aggressive_fill_probability": payload.get("aggressive_fill_probability"),
+                    "passive_fill_probability": payload.get("passive_fill_probability"),
+                    "expected_slippage_spread_fraction": payload.get("expected_slippage_spread_fraction"),
+                    "expected_slippage_absolute": payload.get("expected_slippage_absolute"),
+                    "adverse_selection_risk": payload.get("adverse_selection_risk"),
+                    "touch_depth_bid": payload.get("touch_depth_bid"),
+                    "touch_depth_ask": payload.get("touch_depth_ask"),
+                    "displayed_depth_consumed_fraction": payload.get("displayed_depth_consumed_fraction"),
+                    "execution_quality_flags": payload.get("execution_quality_flags"),
                 }
             )
         return summaries
@@ -288,9 +341,55 @@ class WhaleLedger:
                     "level_count": payload.get("level_count"),
                     "normalized_event_id": event.get("normalized_event_id"),
                     "ofi_value": payload.get("ofi_value"),
+                    "ofi_method": payload.get("ofi_method"),
+                    "ofi_version": payload.get("ofi_version"),
+                    "book_state_valid": payload.get("book_state_valid"),
+                    "liquidity_method": payload.get("liquidity_method"),
+                    "liquidity_version": payload.get("liquidity_version"),
+                    "net_depth_delta": payload.get("net_depth_delta"),
+                    "depth_withdrawal": payload.get("depth_withdrawal"),
+                    "depth_replenishment": payload.get("depth_replenishment"),
+                    "fragility_score": payload.get("fragility_score"),
+                    "resiliency_score": payload.get("resiliency_score"),
+                    "total_depth": payload.get("total_depth"),
+                    "spread_delta": payload.get("spread_delta"),
                     "rth": payload.get("rth"),
                     "session_state": payload.get("session_state"),
                     "snapshot_provenance": payload.get("snapshot_provenance"),
+                    "impact_method": payload.get("impact_method"),
+                    "impact_version": payload.get("impact_version"),
+                    "absorption_score": payload.get("absorption_score"),
+                    "exhaustion_score": payload.get("exhaustion_score"),
+                    "price_efficiency": payload.get("price_efficiency"),
+                    "mid_delta": payload.get("mid_delta"),
+                    "aggression_signed_volume": payload.get("aggression_signed_volume"),
+                    "impact_regime": payload.get("impact_regime"),
+                    "impact_quality_flags": payload.get("impact_quality_flags"),
+                    "opposing_replenishment": payload.get("opposing_replenishment"),
+                    "forecast_method": payload.get("forecast_method"),
+                    "forecast_version": payload.get("forecast_version"),
+                    "forecast_horizon_seconds": payload.get("forecast_horizon_seconds"),
+                    "expected_mid_delta": payload.get("expected_mid_delta"),
+                    "direction_bias": payload.get("direction_bias"),
+                    "continuation_probability": payload.get("continuation_probability"),
+                    "reversal_probability": payload.get("reversal_probability"),
+                    "volatility_proxy": payload.get("volatility_proxy"),
+                    "composite_bias": payload.get("composite_bias"),
+                    "model_confidence": payload.get("model_confidence"),
+                    "forecast_quality_flags": payload.get("forecast_quality_flags"),
+                    "execution_method": payload.get("execution_method"),
+                    "execution_version": payload.get("execution_version"),
+                    "book_model_version": payload.get("book_model_version"),
+                    "queue_model_version": payload.get("queue_model_version"),
+                    "aggressive_fill_probability": payload.get("aggressive_fill_probability"),
+                    "passive_fill_probability": payload.get("passive_fill_probability"),
+                    "expected_slippage_spread_fraction": payload.get("expected_slippage_spread_fraction"),
+                    "expected_slippage_absolute": payload.get("expected_slippage_absolute"),
+                    "adverse_selection_risk": payload.get("adverse_selection_risk"),
+                    "touch_depth_bid": payload.get("touch_depth_bid"),
+                    "touch_depth_ask": payload.get("touch_depth_ask"),
+                    "displayed_depth_consumed_fraction": payload.get("displayed_depth_consumed_fraction"),
+                    "execution_quality_flags": payload.get("execution_quality_flags"),
                 }
             )
         return summaries
@@ -473,13 +572,11 @@ def build_combined_fixture_ledger(*, as_of_time_ns: int | None = None) -> WhaleL
         DEFAULT_OPTIONS_FIXTURE,
         FixtureOptionsProvider,
     )
-    from .adapters.fixture_order_flow import (
-        DEFAULT_ORDER_FLOW_FIXTURE,
-        FixtureOrderFlowProvider,
-    )
+    from .adapters.order_flow_factory import build_order_flow_provider
+    from .adapters.fixture_order_flow import DEFAULT_ORDER_FLOW_FIXTURE
 
     ledger = build_ledger_from_edgar_fixture(as_of_time_ns=as_of_time_ns)
-    order_flow = FixtureOrderFlowProvider(fixture_path=DEFAULT_ORDER_FLOW_FIXTURE)
+    order_flow = build_order_flow_provider(fixture_path=DEFAULT_ORDER_FLOW_FIXTURE)
     symbol = str(order_flow._fixture.get("symbol", "NVDA"))
     result = order_flow.fetch_order_flow(symbol, as_of_time_ns=as_of_time_ns)
     if result.status == "available":
@@ -525,14 +622,23 @@ def load_default_biya_fixture_ledger(*, as_of_time_ns: int | None = None) -> Wha
 
 def bootstrap_default_providers(*, as_of_time_ns: int | None = None) -> WhaleLedger:
     provider = build_edgar_provider()
-    composition = ProviderComposition(disclosure=provider)
+    fixture_comp = configure_fixture_provider_composition()
+    composition = ProviderComposition(
+        disclosure=provider,
+        option_chain=fixture_comp.option_chain,
+        futures_chain=fixture_comp.futures_chain,
+        distribution_forecast=fixture_comp.distribution_forecast,
+        order_flow=fixture_comp.order_flow,
+    )
     configure_provider_composition(composition)
     return build_combined_fixture_ledger(as_of_time_ns=as_of_time_ns)
 
 
 __all__ = [
     "FUND_ETF_FAMILY",
+    "FUTURES_DEPTH_FAMILY",
     "FUTURES_FAMILY",
+    "FUTURES_FAMILY_ALIASES",
     "LARGE_TRANSACTIONS_FAMILY",
     "LEDGER_LOGICAL_ID",
     "OPTIONS_FAMILY",

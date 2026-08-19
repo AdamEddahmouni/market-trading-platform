@@ -44,6 +44,8 @@ def estimate_vrp(
 def vrp_research_snapshot(
     physical_p: dict[str, Any] | None,
     risk_neutral_q: dict[str, Any] | None,
+    *,
+    event_vol_snapshot: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Compose VRP research from SHARED P2 physical forecast and O3 risk-neutral Q."""
     if not physical_p or not risk_neutral_q:
@@ -79,7 +81,11 @@ def vrp_research_snapshot(
         if isinstance(latest, dict) and latest.get("horizon_days") is not None:
             maturity_days = int(latest["horizon_days"])
 
-    event_state = "EVENT_WINDOW" if physical_p.get("event_window_active") else "NO_EVENT"
+    event_state = "NO_EVENT"
+    if isinstance(event_vol_snapshot, dict) and event_vol_snapshot.get("available"):
+        event_state = str(event_vol_snapshot.get("event_state", "NO_EVENT"))
+    elif physical_p.get("event_window_active"):
+        event_state = "EVENT_WINDOW"
     estimate = estimate_vrp(
         float(q_vol),
         float(p_vol),

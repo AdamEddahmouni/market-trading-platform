@@ -89,6 +89,36 @@ class FuturesChainProvider(Protocol):
         ...
 
 
+class FuturesPositioningProvider(Protocol):
+    """COT / futures positioning reports with publication-delay semantics."""
+
+    provider_id: str
+    capability: str
+
+    def fetch_positioning(
+        self,
+        symbol: str,
+        *,
+        as_of_time_ns: int | None = None,
+    ) -> ProviderResult:
+        ...
+
+
+class FuturesBarsProvider(Protocol):
+    """Settlement / continuous bar history for futures baseline features."""
+
+    provider_id: str
+    capability: str
+
+    def fetch_bars(
+        self,
+        symbol: str,
+        *,
+        as_of_time_ns: int | None = None,
+    ) -> ProviderResult:
+        ...
+
+
 class DistributionForecastProvider(Protocol):
     """Physical return distribution forecasts (SHARED P2)."""
 
@@ -134,7 +164,9 @@ __all__ = [
     "DistributionForecastProvider",
     "EquityQuoteProvider",
     "EXECUTION_DISABLED",
+    "FuturesBarsProvider",
     "FuturesChainProvider",
+    "FuturesPositioningProvider",
     "OptionChainProvider",
     "OrderFlowProvider",
     "PaperExecutionProvider",

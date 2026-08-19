@@ -92,11 +92,68 @@ class UnconfiguredFuturesChainProvider:
         )
 
 
+class UnconfiguredFuturesPositioningProvider:
+    provider_id = "stub.futures_positioning.unconfigured"
+    capability = "futures_positioning"
+
+    def fetch_positioning(
+        self,
+        symbol: str,
+        *,
+        as_of_time_ns: int | None = None,
+    ) -> ProviderResult:
+        del symbol, as_of_time_ns
+        return ProviderResult(
+            status="unavailable",
+            reason_code=PROVIDER_UNAVAILABLE,
+            provider_id=self.provider_id,
+            capability=self.capability,
+        )
+
+
+class UnconfiguredFuturesBarsProvider:
+    provider_id = "stub.futures_bars.unconfigured"
+    capability = "futures_bars"
+
+    def fetch_bars(
+        self,
+        symbol: str,
+        *,
+        as_of_time_ns: int | None = None,
+    ) -> ProviderResult:
+        del symbol, as_of_time_ns
+        return ProviderResult(
+            status="unavailable",
+            reason_code=PROVIDER_UNAVAILABLE,
+            provider_id=self.provider_id,
+            capability=self.capability,
+        )
+
+
 class UnconfiguredDistributionForecastProvider:
     provider_id = "stub.distribution.unconfigured"
     capability = "distribution_forecast"
 
     def fetch_distribution_forecast(
+        self,
+        symbol: str,
+        *,
+        as_of_time_ns: int | None = None,
+    ) -> ProviderResult:
+        del symbol, as_of_time_ns
+        return ProviderResult(
+            status="unavailable",
+            reason_code=PROVIDER_UNAVAILABLE,
+            provider_id=self.provider_id,
+            capability=self.capability,
+        )
+
+
+class UnconfiguredOrderFlowProvider:
+    provider_id = "stub.order_flow.unconfigured"
+    capability = "order_flow"
+
+    def fetch_order_flow(
         self,
         symbol: str,
         *,
@@ -142,7 +199,10 @@ __all__ = [
     "UnconfiguredDisclosureProvider",
     "UnconfiguredDistributionForecastProvider",
     "UnconfiguredEquityQuoteProvider",
+    "UnconfiguredFuturesBarsProvider",
     "UnconfiguredFuturesChainProvider",
+    "UnconfiguredFuturesPositioningProvider",
     "UnconfiguredOptionChainProvider",
+    "UnconfiguredOrderFlowProvider",
     "UnconfiguredReferenceDataProvider",
 ]

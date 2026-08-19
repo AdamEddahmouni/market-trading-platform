@@ -158,6 +158,135 @@ export const ExploreCatalystResponseSchema = z.object({
   as_of_context: AsOfContextSchema.optional(),
 });
 
+export const OpportunityFusionComponentSchema = z.object({
+  fused_net_ev: z.number().optional(),
+  occurrence_weight: z.number().optional(),
+  liquidity_factor: z.number().optional(),
+  gross_ev_before_weights: z.number().optional(),
+  template: z.string().nullable().optional(),
+  squeeze_aligned: z.boolean().optional(),
+});
+
+export const OpportunityInputComponentSchema = z.object({
+  available: z.boolean(),
+  source_ref: z.string().optional(),
+  quality_flags: z.array(z.string()).optional(),
+  reason: z.string().nullable().optional(),
+}).passthrough();
+
+export const OpportunitySnapshotSchema = z.object({
+  available: z.boolean(),
+  status: z.string().optional(),
+  outcome: z.string().optional(),
+  symbol: z.string().optional(),
+  as_of_time: z.string().optional(),
+  reason: z.string().nullable().optional(),
+  fused_net_ev: z.number().nullable().optional(),
+  probability: OpportunityInputComponentSchema.optional(),
+  payoff: OpportunityInputComponentSchema.optional(),
+  costs: OpportunityInputComponentSchema.optional(),
+  liquidity: OpportunityInputComponentSchema.optional(),
+  fusion: OpportunityFusionComponentSchema.nullable().optional(),
+  method: z.string().optional(),
+  model_version: z.string().optional(),
+  quality_flags: z.array(z.string()).optional(),
+  disclaimer: z.string().optional(),
+  replay_hash: z.string().optional(),
+});
+
+export const StrategyCandidateSchema = z.object({
+  template: z.string().optional(),
+  edge_alignment: z.string().optional(),
+  net_expected_pnl: z.number().nullable().optional(),
+  payoff: z.record(z.unknown()).optional(),
+  legs: z.array(z.record(z.unknown())).optional(),
+}).passthrough();
+
+export const StrategySnapshotSchema = z.object({
+  available: z.boolean(),
+  status: z.string().optional(),
+  outcome: z.string().optional(),
+  symbol: z.string().optional(),
+  as_of_time: z.string().optional(),
+  reason: z.string().nullable().optional(),
+  ranked_candidates: z.array(StrategyCandidateSchema).optional(),
+  best_candidate: StrategyCandidateSchema.nullable().optional(),
+  edge_summary: z.record(z.unknown()).optional(),
+  method: z.string().optional(),
+  model_version: z.string().optional(),
+  quality_flags: z.array(z.string()).optional(),
+  payoff_method: z.string().optional(),
+  replay_hash: z.string().optional(),
+});
+
+export const ExecutionFillSchema = z.object({
+  leg_index: z.number().optional(),
+  call_put: z.string().optional(),
+  strike: z.number().optional(),
+  expiry: z.string().optional(),
+  side: z.string().optional(),
+  fill_price: z.number().optional(),
+  quantity: z.number().optional(),
+  multiplier: z.number().optional(),
+  liquidity_ok: z.boolean().optional(),
+  liquidity_reasons: z.array(z.string()).optional(),
+}).passthrough();
+
+export const ExecutionSnapshotSchema = z.object({
+  available: z.boolean(),
+  status: z.string().optional(),
+  outcome: z.string().optional(),
+  symbol: z.string().optional(),
+  as_of_time: z.string().optional(),
+  reason: z.string().nullable().optional(),
+  entry_fills: z.array(ExecutionFillSchema).optional(),
+  lifecycle_events: z.array(z.record(z.unknown())).optional(),
+  realized_pnl: z.number().nullable().optional(),
+  unrealized_pnl: z.number().nullable().optional(),
+  ledger_summary: z.record(z.unknown()).optional(),
+  strategy_template: z.string().nullable().optional(),
+  method: z.string().optional(),
+  model_version: z.string().optional(),
+  simulator_registry_id: z.string().optional(),
+  quality_flags: z.array(z.string()).optional(),
+  execution_replay_hash: z.string().optional(),
+  squeeze_context: z.record(z.unknown()).optional(),
+});
+
+export const DealerSnapshotSchema = z.object({
+  available: z.boolean(),
+  reason: z.string().optional(),
+  as_of_time: z.string().optional(),
+  dealer_version: z.string().optional(),
+  method: z.string().optional(),
+  assumptions: z.array(z.string()).optional(),
+  confidence: z.string().optional(),
+  estimated_dealer_delta: z.number().optional(),
+  estimated_dealer_gamma: z.number().optional(),
+  estimated_dealer_vega: z.number().optional(),
+  gamma_regime: z.string().optional(),
+  hedging_pressure_estimate: z.number().optional(),
+  gamma_flip_estimate: z.number().nullable().optional(),
+  contract_count: z.number().optional(),
+  oi_backed_contract_count: z.number().optional(),
+  spot_used: z.number().optional(),
+  quality_flags: z.array(z.string()).optional(),
+  not_trade_signal: z.boolean().optional(),
+});
+
+export const EventVolSnapshotSchema = z.object({
+  available: z.boolean(),
+  reason: z.string().optional(),
+  symbol: z.string().optional(),
+  as_of_time: z.string().optional(),
+  event_type: z.string().optional(),
+  iv_crush_estimate: z.number().nullable().optional(),
+  straddle_cost: z.number().nullable().optional(),
+  method: z.string().optional(),
+  model_version: z.string().optional(),
+  quality_flags: z.array(z.string()).optional(),
+}).passthrough();
+
 export const WorkspaceSqueezeResponseSchema = z.object({
   symbol: z.string(),
   source: z.string(),
@@ -228,6 +357,8 @@ export const WorkspaceSqueezeResponseSchema = z.object({
       ).optional(),
       transitions: z.array(z.record(z.string())).optional(),
       state_transitions: z.array(z.record(z.string())).optional(),
+      transition_count: z.number().optional(),
+      latest_transition_at: z.string().optional(),
       causal_model_version: z.string().optional(),
       overall_confidence: z.string().optional(),
       mechanism_labels: z.array(z.string()).optional(),
@@ -355,6 +486,7 @@ export const WorkspaceSqueezeResponseSchema = z.object({
         .optional(),
     })
     .optional(),
+  opportunity_snapshot: OpportunitySnapshotSchema.optional(),
 });
 
 export const ReplaySessionSchema = z.object({
@@ -524,6 +656,13 @@ export const WorkspaceOptionsResponseSchema = z.object({
   research_only: z.boolean().optional(),
   activity_count: z.number().optional(),
   activities: z.array(WorkspaceOptionsActivitySchema).optional(),
+  chain_available: z.boolean().optional(),
+  dealer_position_available: z.boolean().optional(),
+  dealer_snapshot: DealerSnapshotSchema.optional(),
+  event_vol_snapshot: EventVolSnapshotSchema.optional(),
+  strategy_snapshot: StrategySnapshotSchema.optional(),
+  execution_snapshot: ExecutionSnapshotSchema.optional(),
+  opportunity_snapshot: OpportunitySnapshotSchema.optional(),
   provider_id: z.string().optional(),
   ledger_id: z.string().optional(),
   as_of_context: AsOfContextSchema.optional(),
@@ -559,6 +698,143 @@ export const WorkspaceLargeTransactionsResponseSchema = z.object({
   as_of_context: AsOfContextSchema.optional(),
 });
 
+export const LiquiditySummarySchema = z.object({
+  liquidity_method: z.string().optional(),
+  liquidity_version: z.string().optional(),
+  net_depth_delta: z.number().optional(),
+  depth_withdrawal: z.number().optional(),
+  depth_replenishment: z.number().optional(),
+  fragility_score: z.number().optional(),
+  resiliency_score: z.number().optional(),
+  total_depth: z.number().optional(),
+  spread_delta: z.number().optional(),
+});
+
+export const ImpactSummarySchema = z.object({
+  impact_method: z.string().optional(),
+  impact_version: z.string().optional(),
+  mid_delta: z.number().optional(),
+  impact_regime: z.string().optional(),
+  opposing_replenishment: z.boolean().optional(),
+  aggression_signed_volume: z.number().optional(),
+  price_efficiency: z.number().optional(),
+  absorption_score: z.number().optional(),
+  exhaustion_score: z.number().optional(),
+  impact_quality_flags: z.array(z.string()).optional(),
+});
+
+export const MicrostructureForecastSummarySchema = z.object({
+  forecast_method: z.string().optional(),
+  forecast_version: z.string().optional(),
+  forecast_horizon_seconds: z.number().optional(),
+  expected_mid_delta: z.number().optional(),
+  direction_bias: z.string().optional(),
+  continuation_probability: z.number().optional(),
+  reversal_probability: z.number().optional(),
+  volatility_proxy: z.number().optional(),
+  composite_bias: z.number().optional(),
+  model_confidence: z.number().optional(),
+  forecast_quality_flags: z.array(z.string()).optional(),
+});
+
+export const ExecutionForecastSummarySchema = z.object({
+  execution_method: z.string().optional(),
+  execution_version: z.string().optional(),
+  book_model_version: z.string().optional(),
+  queue_model_version: z.string().optional(),
+  aggressive_fill_probability: z.number().optional(),
+  passive_fill_probability: z.number().optional(),
+  expected_slippage_spread_fraction: z.number().optional(),
+  expected_slippage_absolute: z.number().optional(),
+  adverse_selection_risk: z.number().optional(),
+  touch_depth_bid: z.number().optional(),
+  touch_depth_ask: z.number().optional(),
+  displayed_depth_consumed_fraction: z.number().optional(),
+  execution_quality_flags: z.array(z.string()).optional(),
+});
+
+export const FuturesCurveSnapshotSchema = z.object({
+  available: z.boolean().optional(),
+  instrument_family: z.string().optional(),
+  regime: z.string().optional(),
+  observation_time: z.string().optional(),
+  contract_ids: z.array(z.string()).optional(),
+  prices: z.array(z.string()).optional(),
+  reason: z.string().optional(),
+});
+
+export const FuturesCarryObservationSchema = z.object({
+  available: z.boolean().optional(),
+  annualized_carry: z.number().optional(),
+  formula_tag: z.string().optional(),
+  front_contract_id: z.string().optional(),
+  back_contract_id: z.string().optional(),
+  fair_value_context: z.boolean().optional(),
+  carry_percentile: z.number().optional(),
+  carry_change: z.number().optional(),
+  carry_zscore: z.number().optional(),
+  reason: z.string().optional(),
+});
+
+export const TrendBaselineSnapshotSchema = z.object({
+  instrument_family: z.string().optional(),
+  trend_1m: z.number().optional(),
+  trend_3m: z.number().optional(),
+  trend_6m: z.number().optional(),
+  trend_12m: z.number().optional(),
+  vol_estimate: z.number().optional(),
+  lookback_bars_used: z.record(z.number()).optional(),
+  observation_time: z.string().optional(),
+  baselines_version: z.string().optional(),
+  quality_flags: z.array(z.string()).optional(),
+});
+
+export const CarryBaselineSchema = z.object({
+  annualized_carry: z.number().optional(),
+  carry_percentile: z.number().optional(),
+  carry_change: z.number().optional(),
+  carry_zscore: z.number().optional(),
+  formula_tag: z.string().optional(),
+  quality_flags: z.array(z.string()).optional(),
+});
+
+export const CurveMomentumSchema = z.object({
+  curve_slope: z.number().optional(),
+  slope_change: z.number().optional(),
+  calendar_spread_momentum: z.string().optional(),
+  regime: z.string().optional(),
+  quality_flags: z.array(z.string()).optional(),
+});
+
+export const FuturesPositioningSnapshotSchema = z.object({
+  available: z.boolean().optional(),
+  instrument_family: z.string().optional(),
+  report_type: z.string().optional(),
+  participant_category: z.string().optional(),
+  long_positions: z.number().optional(),
+  short_positions: z.number().optional(),
+  spreading: z.number().optional(),
+  net: z.number().optional(),
+  net_change: z.number().optional(),
+  net_percentile: z.number().optional(),
+  net_zscore: z.number().optional(),
+  observation_time: z.string().optional(),
+  publication_time: z.string().optional(),
+  data_age_days: z.number().optional(),
+  crowding_regime: z.string().optional(),
+  positioning_version: z.string().optional(),
+  quality_flags: z.array(z.string()).optional(),
+  reason: z.string().optional(),
+});
+
+export const OiVelocityHypothesisSchema = z.object({
+  label: z.string().optional(),
+  front_oi_delta: z.number().optional(),
+  front_price_delta: z.number().optional(),
+  disclaimer: z.string().optional(),
+  quality_flags: z.array(z.string()).optional(),
+});
+
 export const WorkspaceOrderBookSnapshotSchema = z.object({
   ask_size: z.number().optional(),
   available_time: z.number().optional(),
@@ -572,6 +848,18 @@ export const WorkspaceOrderBookSnapshotSchema = z.object({
   level_count: z.number().optional(),
   normalized_event_id: z.string().optional(),
   ofi_value: z.number().optional(),
+  ofi_method: z.string().optional(),
+  ofi_version: z.string().optional(),
+  book_state_valid: z.boolean().optional(),
+  liquidity_method: z.string().optional(),
+  liquidity_version: z.string().optional(),
+  net_depth_delta: z.number().optional(),
+  depth_withdrawal: z.number().optional(),
+  depth_replenishment: z.number().optional(),
+  fragility_score: z.number().optional(),
+  resiliency_score: z.number().optional(),
+  total_depth: z.number().optional(),
+  spread_delta: z.number().optional(),
   snapshot_provenance: z.string().optional(),
 });
 
@@ -584,6 +872,13 @@ export const WorkspaceOrderBookResponseSchema = z.object({
   snapshot_count: z.number().optional(),
   latest_imbalance_ratio: z.number().optional(),
   latest_ofi_value: z.number().optional(),
+  latest_ofi_method: z.string().optional(),
+  latest_ofi_version: z.string().optional(),
+  latest_book_state_valid: z.boolean().optional(),
+  latest_liquidity_summary: LiquiditySummarySchema.optional(),
+  latest_impact_summary: ImpactSummarySchema.optional(),
+  latest_microstructure_forecast: MicrostructureForecastSummarySchema.optional(),
+  latest_execution_forecast: ExecutionForecastSummarySchema.optional(),
   snapshots: z.array(WorkspaceOrderBookSnapshotSchema).optional(),
   provider_id: z.string().optional(),
   ledger_id: z.string().optional(),
@@ -605,6 +900,18 @@ export const WorkspaceFuturesSnapshotSchema = z.object({
   level_count: z.number().optional(),
   normalized_event_id: z.string().optional(),
   ofi_value: z.number().optional(),
+  ofi_method: z.string().optional(),
+  ofi_version: z.string().optional(),
+  book_state_valid: z.boolean().optional(),
+  liquidity_method: z.string().optional(),
+  liquidity_version: z.string().optional(),
+  net_depth_delta: z.number().optional(),
+  depth_withdrawal: z.number().optional(),
+  depth_replenishment: z.number().optional(),
+  fragility_score: z.number().optional(),
+  resiliency_score: z.number().optional(),
+  total_depth: z.number().optional(),
+  spread_delta: z.number().optional(),
   rth: z.boolean().optional(),
   session_state: z.string().optional(),
   snapshot_provenance: z.string().optional(),
@@ -688,7 +995,33 @@ export const WorkspaceFuturesResponseSchema = z.object({
   snapshot_count: z.number().optional(),
   latest_imbalance_ratio: z.number().optional(),
   latest_imbalance_signal: z.string().optional(),
-  latest_ofi_value: z.number().optional(),
+  latest_ofi_value: z.number().nullable().optional(),
+  latest_ofi_method: z.string().optional(),
+  latest_ofi_version: z.string().optional(),
+  latest_book_state_valid: z.boolean().optional(),
+  latest_ofi_degraded: z.boolean().optional(),
+  latest_ofi_quality_flags: z.array(z.string()).optional(),
+  latest_liquidity_summary: LiquiditySummarySchema.optional(),
+  latest_impact_summary: ImpactSummarySchema.optional(),
+  latest_microstructure_forecast: MicrostructureForecastSummarySchema.optional(),
+  latest_execution_forecast: ExecutionForecastSummarySchema.optional(),
+  curve_snapshot: FuturesCurveSnapshotSchema.optional(),
+  carry_observation: FuturesCarryObservationSchema.optional(),
+  futures_curve_available: z.boolean().optional(),
+  futures_carry_available: z.boolean().optional(),
+  positioning_snapshot: FuturesPositioningSnapshotSchema.optional(),
+  futures_positioning_available: z.boolean().optional(),
+  crowding_regime: z.string().optional(),
+  oi_velocity_hypothesis: OiVelocityHypothesisSchema.optional(),
+  positioning_quality_flags: z.array(z.string()).optional(),
+  trend_baseline_snapshot: TrendBaselineSnapshotSchema.optional(),
+  carry_baseline: CarryBaselineSchema.optional(),
+  curve_momentum: CurveMomentumSchema.optional(),
+  futures_baselines_available: z.boolean().optional(),
+  trend_regime: z.string().optional(),
+  baselines_quality_flags: z.array(z.string()).optional(),
+  canonical_family: z.string().optional(),
+  legacy_whale_family: z.string().optional(),
   provenance: z.string().optional(),
   synthetic: z.boolean().optional(),
   snapshot: z.record(z.unknown()).optional(),
@@ -796,6 +1129,11 @@ export type ExploreFuturesResponse = z.infer<typeof ExploreFuturesResponseSchema
 export type ExploreCatalystResponse = z.infer<typeof ExploreCatalystResponseSchema>;
 export type WorkspaceSqueezeResponse = z.infer<typeof WorkspaceSqueezeResponseSchema>;
 export type WorkspaceOrderFlowResponse = z.infer<typeof WorkspaceOrderFlowResponseSchema>;
+export type OpportunitySnapshot = z.infer<typeof OpportunitySnapshotSchema>;
+export type StrategySnapshot = z.infer<typeof StrategySnapshotSchema>;
+export type ExecutionSnapshot = z.infer<typeof ExecutionSnapshotSchema>;
+export type DealerSnapshot = z.infer<typeof DealerSnapshotSchema>;
+export type EventVolSnapshot = z.infer<typeof EventVolSnapshotSchema>;
 export type WorkspaceOptionsResponse = z.infer<typeof WorkspaceOptionsResponseSchema>;
 export type WorkspaceLargeTransactionsResponse = z.infer<typeof WorkspaceLargeTransactionsResponseSchema>;
 export type WorkspaceOrderBookResponse = z.infer<typeof WorkspaceOrderBookResponseSchema>;
@@ -809,6 +1147,7 @@ export type ResearchSimulationResponse = z.infer<typeof ResearchSimulationRespon
 export type ReplaySession = z.infer<typeof ReplaySessionSchema>;
 
 export const ADMITTED_REPLAY_INSTRUMENT_ID = "BIYA";
+export const ADMITTED_OPTIONS_RESEARCH_INSTRUMENT_ID = "NVDA";
 export const ADMITTED_ORDER_FLOW_INSTRUMENT_ID = "NVDA";
 export const ADMITTED_FUTURES_INSTRUMENT_ID = "ES";
 export const ADMITTED_CATALYST_INSTRUMENT_ID = "BOXL";

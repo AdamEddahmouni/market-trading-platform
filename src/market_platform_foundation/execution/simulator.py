@@ -8,7 +8,7 @@ from typing import Any
 from ..canonical import canonical_bytes, sha256_bytes
 from ..numeric import apply_participation_cap, decimal_to_minor_units
 
-SIMULATOR_VERSION = "phase7.bar-conservative/1.0.0"
+SIMULATOR_VERSION = "phase7.bar-conservative/1.1.0"
 SOURCE_CAPABILITY = "BAR_OHLCV_1M"
 
 
@@ -36,6 +36,7 @@ class BarConservativeSimulator:
         intent: dict[str, Any],
         risk_decision: dict[str, Any],
         bars: list[dict[str, Any]],
+        squeeze_context: dict[str, Any] | None = None,
     ) -> tuple[dict[str, Any], dict[str, Any] | None]:
         order_body = {
             "allocation_model": SIMULATOR_VERSION,
@@ -47,6 +48,12 @@ class BarConservativeSimulator:
             "risk_decision": risk_decision["decision"],
             "source_capability": SOURCE_CAPABILITY,
         }
+        if squeeze_context and squeeze_context.get("available"):
+            order_body["squeeze_context"] = {
+                "squeeze_state": squeeze_context.get("squeeze_state"),
+                "exhaustion_risk": squeeze_context.get("exhaustion_risk"),
+                "remaining_fuel": squeeze_context.get("remaining_fuel"),
+            }
         order_id = sha256_bytes(canonical_bytes(order_body))
         order: dict[str, Any] = {
             **order_body,
@@ -108,10 +115,11 @@ class BarConservativeSimulator:
             return order, None
 
         bar_volume = int(payload.get("volume", 0))
+        cap_num, cap_den = self._effective_participation_policy(squeeze_context)
         eligible = apply_participation_cap(
             bar_volume,
-            numerator=int(self.policy["participation_cap_numerator"]),
-            denominator=int(self.policy["participation_cap_denominator"]),
+            numerator=cap_num,
+            denominator=cap_den,
         )
         prior = self._bar_allocations.get(fill_time, 0)
         remaining = max(eligible - prior, 0)
@@ -132,6 +140,8 @@ class BarConservativeSimulator:
             "normalized_event_id": fill_bar.get("normalized_event_id"),
             "order_id": order_id,
         }
+        if squeeze_context and squeeze_context.get("available"):
+            fill_body["squeeze_context"] = order_body.get("squeeze_context")
         fill = {
             **fill_body,
             "fill_id": sha256_bytes(canonical_bytes(fill_body)),
@@ -139,6 +149,21 @@ class BarConservativeSimulator:
         order["state"] = "FILLED" if fill_qty == approved_qty else "PARTIALLY_FILLED"
         order["filled_quantity"] = fill_qty
         return order, fill
+
+    def _effective_participation_policy(
+        self,
+        squeeze_context: dict[str, Any] | None,
+    ) -> tuple[int, int]:
+        numerator = int(self.policy["participation_cap_numerator"])
+        denominator = int(self.policy["participation_cap_denominator"])
+        if not squeeze_context or not squeeze_context.get("available"):
+            return numerator, denominator
+        state = str(squeeze_context.get("squeeze_state", "")).upper()
+        if state == "ACTIVE_SQUEEZE":
+            return max(numerator // 2, 1), denominator
+        if state == "EXHAUSTION":
+            return max(numerator // 4, 1), denominator
+        return numerator, denominator
 
     @staticmethod
     def _next_bar_after(created_time: int, bars: list[dict[str, Any]]) -> dict[str, Any] | None:

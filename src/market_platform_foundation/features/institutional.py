@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 WHALE_FAMILIES = (
     "fund_etf_cross_asset",
+    "futures_depth",
     "futures_positioning",
     "large_transactions",
     "order_book",
@@ -23,6 +24,7 @@ REGULATORY_DISCLOSURE_FAMILY = "regulatory_disclosure"
 ORDER_FLOW_FAMILY = "order_flow"
 OPTIONS_FAMILY = "options"
 LARGE_TRANSACTIONS_FAMILY = "large_transactions"
+FUTURES_DEPTH_FAMILY = "futures_depth"
 FUTURES_FAMILY = "futures_positioning"
 ORDER_BOOK_FAMILY = "order_book"
 PUBLIC_CATALYST_FAMILY = "public_catalyst"
@@ -139,7 +141,7 @@ def query_institutional_evidence(
                 "reason_code": WHALE_ENTITLED_ORDER_BOOK,
                 "status": "available",
             }
-    if family == FUTURES_FAMILY and _LEDGER is not None:
+    if family in (FUTURES_FAMILY, FUTURES_DEPTH_FAMILY) and _LEDGER is not None:
         from ..providers.whale_ledger import WHALE_ENTITLED_FUTURES
 
         events = _LEDGER.query_events(

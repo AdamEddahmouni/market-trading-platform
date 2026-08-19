@@ -82,7 +82,7 @@ cross_lane_adapter → BOOK_IMBALANCE_BID/ASK evidence
 | Cross-lane publisher | `donor_bridge/cross_lane_adapter.py` | **ENHANCED** |
 | Book reconstruction (MBO) | — | NOT STARTED |
 | Liquidity engine | — | NOT STARTED (OF6) |
-| Execution forecasts | — | NOT STARTED (OF9) |
+| Execution forecasts | `execution_forecast.py` | DONE (fixture scope) |
 | Short-horizon forecasts | — | NOT STARTED (OF8) |
 
 ---

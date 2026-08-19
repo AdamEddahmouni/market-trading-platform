@@ -91,6 +91,20 @@ class ShortThesisInvalidation:
     quality_flags: tuple[str, ...] = field(default_factory=tuple)
 
 
+@dataclass(frozen=True, slots=True)
+class ShortPainDistribution:
+    """Research-only short pain distribution — fail-closed without entry-price proxy."""
+
+    symbol: str
+    status: str  # UNAVAILABLE | RESEARCH_PROXY | CALIBRATED
+    underwater_pct: float | None
+    pain_percentiles: tuple[float, ...] | None
+    method: str
+    observation_time: str
+    available_time: str
+    quality_flags: tuple[str, ...] = field(default_factory=tuple)
+
+
 def lending_snapshot_to_dict(snapshot: SecuritiesLendingSnapshot) -> dict[str, Any]:
     return {
         "symbol": snapshot.symbol,
@@ -121,13 +135,28 @@ def attention_feature_to_dict(feature: AttentionFeature) -> dict[str, Any]:
     }
 
 
+def short_pain_distribution_to_dict(dist: ShortPainDistribution) -> dict[str, Any]:
+    return {
+        "symbol": dist.symbol,
+        "status": dist.status,
+        "underwater_pct": dist.underwater_pct,
+        "pain_percentiles": list(dist.pain_percentiles) if dist.pain_percentiles else None,
+        "method": dist.method,
+        "observation_time": dist.observation_time,
+        "available_time": dist.available_time,
+        "quality_flags": list(dist.quality_flags),
+    }
+
+
 __all__ = [
     "AttentionFeature",
     "CatalystStrength",
     "PublicationState",
     "SecuritiesLendingSnapshot",
+    "ShortPainDistribution",
     "ShortThesisInvalidation",
     "VelocityAccelerationMetric",
     "attention_feature_to_dict",
     "lending_snapshot_to_dict",
+    "short_pain_distribution_to_dict",
 ]

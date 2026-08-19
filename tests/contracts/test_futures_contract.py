@@ -22,6 +22,11 @@ from market_platform_foundation.contracts.futures import (  # noqa: E402
     cot_point_in_time_valid,
     futures_contract_to_dict,
     futures_curve_to_dict,
+    positioning_snapshot_from_dict,
+    positioning_snapshot_to_dict,
+    trend_baseline_from_dict,
+    trend_baseline_to_dict,
+    FuturesTrendBaselineSnapshot,
 )
 from market_platform_foundation.contracts.futures_quality import (  # noqa: E402
     FuturesQualityFlag,
@@ -156,6 +161,45 @@ class FuturesCurveTests(unittest.TestCase):
         payload = futures_curve_to_dict(curve)
         self.assertEqual(len(payload["contract_ids"]), 2)
         self.assertEqual(payload["prices"], ["75.50", "72.25"])
+
+    def test_positioning_snapshot_round_trip(self) -> None:
+        snapshot = FuturesPositioningSnapshot(
+            instrument_family="ES",
+            report_type="disaggregated_futures_only",
+            participant_category="managed_money",
+            long_positions=190000,
+            short_positions=115000,
+            spreading=17000,
+            net=75000,
+            net_percentile=1.0,
+            observation_time="2025-05-27T00:00:00Z",
+            publication_time="2025-05-30T17:30:00Z",
+            data_age_days=6,
+            provenance_ref="cot.fixture:ADMITTED-COT-ES-001",
+        )
+        payload = positioning_snapshot_to_dict(snapshot)
+        restored = positioning_snapshot_from_dict(payload)
+        self.assertEqual(restored.net, 75000)
+        self.assertEqual(restored.participant_category, "managed_money")
+        self.assertEqual(restored.publication_time, "2025-05-30T17:30:00Z")
+
+    def test_trend_baseline_round_trip(self) -> None:
+        snapshot = FuturesTrendBaselineSnapshot(
+            instrument_family="ES",
+            trend_1m=1.32,
+            trend_3m=3.31,
+            trend_6m=8.23,
+            trend_12m=17.18,
+            vol_estimate=0.00511,
+            lookback_bars_used=(("trend_1m", 21), ("trend_3m", 63)),
+            observation_time="2025-06-02T14:40:00.000000000Z",
+            provenance_ref="bars.fixture.futures_settlement",
+        )
+        payload = trend_baseline_to_dict(snapshot)
+        restored = trend_baseline_from_dict(payload)
+        self.assertEqual(restored.trend_3m, 3.31)
+        self.assertEqual(restored.instrument_family, "ES")
+        self.assertEqual(restored.lookback_bars_used, (("trend_1m", 21), ("trend_3m", 63)))
 
 
 if __name__ == "__main__":

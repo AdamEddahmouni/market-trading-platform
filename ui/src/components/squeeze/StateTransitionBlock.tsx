@@ -29,6 +29,11 @@ export function StateTransitionBlock({ squeeze }: Props) {
       <div className="squeeze-state-banner">
         <span className="squeeze-state-label">STATE: {machine.current_state}</span>
         <span className="squeeze-freshness">last Δ {machine.last_transition_label}</span>
+        {machine.transition_count && machine.transition_count > 1 ? (
+          <span className="squeeze-transition-count">
+            {machine.transition_count} causal transitions
+          </span>
+        ) : null}
         {machine.overall_confidence ? (
           <span className="squeeze-confidence">confidence {machine.overall_confidence}</span>
         ) : null}
@@ -65,6 +70,7 @@ type TransitionEvent = {
   kind?: string;
   trigger?: string;
   hysteresis_applied?: boolean;
+  changed_at?: string;
 };
 
 function CausalTransitionLog({ transitions }: { transitions: TransitionEvent[] }) {
@@ -81,6 +87,7 @@ function CausalTransitionLog({ transitions }: { transitions: TransitionEvent[] }
               {event.from_state ?? "UNKNOWN"} → {event.to_state ?? "UNKNOWN"}
             </span>
             {event.trigger ? <span className="transition-trigger">{event.trigger}</span> : null}
+            {event.changed_at ? <span className="transition-at">at {event.changed_at}</span> : null}
             {event.hysteresis_applied ? (
               <span className="transition-hysteresis">hysteresis applied</span>
             ) : null}

@@ -1,0 +1,26 @@
+{
+  "fixture_id": "ADMITTED-COT-ES-001",
+  "cutoff": "2025-06-02T14:41:07.000000000Z",
+  "symbol": "ES",
+  "expected": {
+    "available": true,
+    "futures_positioning_available": true,
+    "crowding_regime": "CROWDED_LONG",
+    "positioning_snapshot": {
+      "net": 75000,
+      "net_percentile": 1.0,
+      "net_zscore": 2.380476,
+      "participant_category": "managed_money",
+      "observation_time": "2025-05-27T00:00:00Z",
+      "publication_time": "2025-05-30T17:30:00Z",
+      "crowding_regime": "CROWDED_LONG",
+      "positioning_version": "futures_positioning_v1"
+    },
+    "oi_velocity_hypothesis": {
+      "label": "OI_RISING_WITH_PRICE",
+      "front_oi_delta": 5000,
+      "front_price_delta": 3.25
+    },
+    "lookahead_excluded_net": 90000
+  }
+}

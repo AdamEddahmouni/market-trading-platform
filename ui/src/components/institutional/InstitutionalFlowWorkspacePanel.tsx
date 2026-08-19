@@ -71,7 +71,10 @@ export function InstitutionalFlowWorkspacePanel({
   const orderBookSymbol = families.find((f) => f.family_id === "order_book")?.entitled_symbol ?? "NVDA";
   const optionsSymbol = families.find((f) => f.family_id === "options")?.entitled_symbol ?? instrumentId;
   const largeTxnSymbol = families.find((f) => f.family_id === "large_transactions")?.entitled_symbol ?? "NVDA";
-  const futuresSymbol = families.find((f) => f.family_id === "futures_positioning")?.entitled_symbol ?? "ES";
+  const futuresSymbol =
+    families.find((f) => f.family_id === "futures_depth")?.entitled_symbol ??
+    families.find((f) => f.family_id === "futures_positioning")?.entitled_symbol ??
+    "ES";
   const catalystSymbol = families.find((f) => f.family_id === "public_catalyst")?.entitled_symbol ?? "BOXL";
   const fundEtfSymbol = families.find((f) => f.family_id === "fund_etf_cross_asset")?.entitled_symbol ?? "NVDA";
 

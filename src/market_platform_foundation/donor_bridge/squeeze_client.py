@@ -147,6 +147,8 @@ def evaluate_causal_intelligence(
     *,
     row: dict[str, Any],
     cross_lane: dict[str, Any] | None = None,
+    fuel_history: dict[str, Any] | None = None,
+    horizon_model: dict[str, Any] | None = None,
     previous_state: str | None = None,
     state_since: str | None = None,
     base_url: str = DEFAULT_BASE_URL,
@@ -154,6 +156,10 @@ def evaluate_causal_intelligence(
     body: dict[str, Any] = {"row": row}
     if cross_lane is not None:
         body["cross_lane"] = cross_lane
+    if fuel_history:
+        body["fuel_history"] = fuel_history
+    if horizon_model:
+        body["horizon_model"] = horizon_model
     if previous_state:
         body["previous_state"] = previous_state
     if state_since:

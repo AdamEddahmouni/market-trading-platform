@@ -1,4 +1,8 @@
-"""Fixture-first option chain provider (O1 — canonical OptionContract wiring)."""
+"""Fixture-first option chain provider (O1 — canonical OptionContract wiring).
+
+PIT semantics: chain provider filters activities on event_time (not envelope available_time).
+Activity whale path uses available_time on ingested envelopes — see providers/projections.py.
+"""
 
 from __future__ import annotations
 
@@ -27,6 +31,14 @@ NVDA_SIGNED_FLOW_FIXTURE = (
     / "options"
     / "nvda_signed_flow_slice.json"
 )
+BIYA_ADJUSTED_OPTIONS_FIXTURE = (
+    Path(__file__).resolve().parents[4]
+    / "tests"
+    / "fixtures"
+    / "providers"
+    / "options"
+    / "biya_adjusted_option_slice.json"
+)
 
 
 class FixtureOptionChainProvider:
@@ -41,6 +53,7 @@ class FixtureOptionChainProvider:
             DEFAULT_OPTIONS_FIXTURE,
             NVDA_OPTIONS_FIXTURE,
             NVDA_SIGNED_FLOW_FIXTURE,
+            BIYA_ADJUSTED_OPTIONS_FIXTURE,
         )
         self._providers = [FixtureOptionsProvider(fixture_path=path) for path in paths]
 
@@ -123,6 +136,7 @@ def _activity_event_time_ns(contract: dict[str, Any]) -> int:
 
 
 __all__ = [
+    "BIYA_ADJUSTED_OPTIONS_FIXTURE",
     "FixtureOptionChainProvider",
     "NVDA_OPTIONS_FIXTURE",
     "NVDA_SIGNED_FLOW_FIXTURE",

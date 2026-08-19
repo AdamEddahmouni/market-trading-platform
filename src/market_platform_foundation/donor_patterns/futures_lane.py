@@ -86,11 +86,16 @@ def project_futures_depth(
     snapshot: dict[str, Any],
     imbalance_ratio: float,
     imbalance_signal: str,
-    ofi_value: float,
+    ofi_value: float | None,
     rth: bool,
+    ofi_method: str | None = None,
+    ofi_version: str | None = None,
+    book_state_valid: bool | None = None,
+    ofi_degraded: bool | None = None,
+    ofi_quality_flags: tuple[str, ...] | list[str] | None = None,
 ) -> dict[str, Any]:
     bbo = best_bid_ask(snapshot)
-    return {
+    row: dict[str, Any] = {
         "ask_size": bbo["ask_size"] if bbo else None,
         "best_ask": bbo["ask_price"] if bbo else None,
         "best_bid": bbo["bid_price"] if bbo else None,
@@ -109,6 +114,17 @@ def project_futures_depth(
         "snapshot_provenance": str(snapshot.get("source", "fixture_synthetic")),
         "symbol": symbol,
     }
+    if ofi_method is not None:
+        row["ofi_method"] = ofi_method
+    if ofi_version is not None:
+        row["ofi_version"] = ofi_version
+    if book_state_valid is not None:
+        row["book_state_valid"] = book_state_valid
+    if ofi_degraded is not None:
+        row["ofi_degraded"] = ofi_degraded
+    if ofi_quality_flags is not None:
+        row["ofi_quality_flags"] = list(ofi_quality_flags)
+    return row
 
 
 __all__ = [

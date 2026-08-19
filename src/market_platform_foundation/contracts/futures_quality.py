@@ -51,6 +51,9 @@ class FuturesQualityFlag(StrEnum):
     # Continuous series
     CONTINUOUS_SERIES_ADJUSTED = "CONTINUOUS_SERIES_ADJUSTED"
 
+    # Trend / baseline features (F5)
+    TREND_HISTORY_INSUFFICIENT = "TREND_HISTORY_INSUFFICIENT"
+
 
 def quality_blocks_curve_analytics(flags: tuple[str, ...]) -> bool:
     """Return True when curve/carry analytics must not proceed."""
@@ -69,6 +72,16 @@ def quality_blocks_positioning_interpretation(flags: tuple[str, ...]) -> bool:
         FuturesQualityFlag.COT_STALE.value,
         FuturesQualityFlag.POSITIONING_UNKNOWN.value,
         FuturesQualityFlag.COT_PUBLICATION_PENDING.value,
+    }
+    return any(flag in blocking for flag in flags)
+
+
+def quality_blocks_baseline_interpretation(flags: tuple[str, ...]) -> bool:
+    """Return True when trend/carry baseline outputs must not proceed."""
+    blocking = {
+        FuturesQualityFlag.TREND_HISTORY_INSUFFICIENT.value,
+        FuturesQualityFlag.SETTLEMENT_STALE.value,
+        FuturesQualityFlag.CURVE_SPARSE.value,
     }
     return any(flag in blocking for flag in flags)
 

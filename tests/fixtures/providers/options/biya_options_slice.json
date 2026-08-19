@@ -15,6 +15,7 @@
       "skew_signal": 0.6,
       "source": "fixture_synthetic",
       "strike": 4.0,
+      "underlying_price": 4.25,
       "volume": 1200,
       "volume_oi_ratio": 2.67,
       "volume_ratio": 0.85
@@ -31,6 +32,7 @@
       "skew_signal": 0.75,
       "source": "fixture_synthetic",
       "strike": 3.5,
+      "underlying_price": 4.25,
       "volume": 2100,
       "volume_oi_ratio": 2.56,
       "volume_ratio": 0.92

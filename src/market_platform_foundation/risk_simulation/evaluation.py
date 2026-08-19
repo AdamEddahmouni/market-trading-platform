@@ -16,6 +16,10 @@ from ..risk.policy import DEFAULT_RISK_POLICY
 from ..strategy.evaluation import run_strategy_evaluation
 
 
+def _squeeze_replay_hash(timeline: list[dict[str, Any]]) -> str:
+    return sha256_bytes(canonical_bytes(timeline))
+
+
 def _bars_from_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     bars = [event for event in events if event.get("event_type") == "BAR_OHLCV_1M"]
     return sorted(bars, key=lambda row: (int(row["available_time"]), str(row["normalized_event_id"])))
@@ -90,7 +94,10 @@ def run_risk_simulation_evaluation(
     policy: dict[str, Any] | None = None,
     kill_switch: KillSwitchState | None = None,
     desired_quantity: int | None = None,
+    enable_squeeze_replay: bool = True,
 ) -> dict[str, object]:
+    from ..donor_bridge.squeeze_simulation_context import resolve_squeeze_context_at_cutoff
+
     active_policy = policy or DEFAULT_RISK_POLICY
     switch = kill_switch or KillSwitchState()
     qty_default = desired_quantity or 1
@@ -108,6 +115,7 @@ def run_risk_simulation_evaluation(
     ledger = build_ledger_state(initial_cash_minor=int(active_policy["initial_cash_minor"]))
     position = 0
     open_orders = 0
+    squeeze_timeline: list[dict[str, Any]] = []
 
     interpretations = strategy_result.get("interpretations", [])
     for interpretation in interpretations:
@@ -139,7 +147,24 @@ def run_risk_simulation_evaluation(
         if decision["decision"] in {"APPROVE", "RESIZE"}:
             open_orders += 1
 
-        order, fill = simulator.simulate(intent=intent, risk_decision=decision, bars=bars)
+        squeeze_context = None
+        if enable_squeeze_replay:
+            squeeze_context = resolve_squeeze_context_at_cutoff(obs_time)
+            squeeze_timeline.append(
+                {
+                    "cutoff": obs_time,
+                    "exhaustion_risk": squeeze_context.get("exhaustion_risk"),
+                    "remaining_fuel": squeeze_context.get("remaining_fuel"),
+                    "squeeze_state": squeeze_context.get("squeeze_state"),
+                }
+            )
+
+        order, fill = simulator.simulate(
+            intent=intent,
+            risk_decision=decision,
+            bars=bars,
+            squeeze_context=squeeze_context,
+        )
         orders.append(order)
 
         if decision["decision"] in {"APPROVE", "RESIZE"} and fill is None:
@@ -186,6 +211,8 @@ def run_risk_simulation_evaluation(
         "reconciliation": reconciliation,
         "risk_decisions": risk_decisions,
         "risk_policy": active_policy,
+        "squeeze_replay_hash": _squeeze_replay_hash(squeeze_timeline) if squeeze_timeline else None,
+        "squeeze_timeline": squeeze_timeline,
         "strategy_result": strategy_result,
     }
 
@@ -209,5 +236,6 @@ def risk_simulation_root_hash(result: dict[str, object]) -> str:
         ),
         "order_count": len(result.get("orders", [])),
         "reconciliation_status": result.get("reconciliation", {}).get("status"),
+        "squeeze_replay_hash": result.get("squeeze_replay_hash"),
     }
     return sha256_bytes(canonical_bytes(body))

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
 from typing import Any
 
@@ -14,8 +15,14 @@ from ...contracts.futures import (
     futures_contract_to_dict,
 )
 from ...contracts.futures_quality import FuturesQualityFlag
-from ...futures.notional import ES_CONTRACT_SPEC
+from ...futures.spec_registry import resolve_futures_spec
 from ...donor_patterns.futures_lane import quarterly_contract_month
+
+
+def _event_as_of(event_time: str) -> date:
+    if not event_time:
+        return date.today()
+    return date.fromisoformat(event_time[:10])
 
 
 def snapshot_to_futures_contract(
@@ -42,16 +49,11 @@ def snapshot_to_futures_contract(
     ask_price = float(best_ask["price"])
     mid = (bid_price + ask_price) / 2
     contract_id = f"{symbol.upper()}{contract_month or quarterly_contract_month()}"
-    spec = FuturesContractSpec(
-        multiplier=ES_CONTRACT_SPEC.multiplier,
-        tick_size=ES_CONTRACT_SPEC.tick_size,
-        tick_value=ES_CONTRACT_SPEC.tick_value,
-        point_value=ES_CONTRACT_SPEC.point_value,
-        spec_version=ES_CONTRACT_SPEC.spec_version,
-        spec_effective_date=ES_CONTRACT_SPEC.spec_effective_date,
-    )
+    spec = resolve_futures_spec(symbol.upper(), _event_as_of(event_time))
     quality_flags: tuple[str, ...] = ()
-    if bid_price <= 0 or ask_price <= 0:
+    if spec is None:
+        quality_flags = (FuturesQualityFlag.CONTRACT_SPEC_UNKNOWN.value,)
+    elif bid_price <= 0 or ask_price <= 0:
         quality_flags = (FuturesQualityFlag.CONTRACT_SPEC_UNKNOWN.value,)
     return FuturesContract(
         instrument_family=symbol.upper(),
@@ -93,6 +95,7 @@ def contract_to_chain_dict(contract: FuturesContract) -> dict[str, Any]:
 
 
 __all__ = [
+    "_event_as_of",
     "contract_to_chain_dict",
     "snapshot_to_futures_contract",
 ]

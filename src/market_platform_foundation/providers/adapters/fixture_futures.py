@@ -9,7 +9,16 @@ from typing import Any
 
 from ...canonical import canonical_bytes, sha256_bytes
 from ...contracts.identity import normalized_event_id
-from ...donor_patterns.futures_lane import depth_imbalance_signal, is_rth, snapshot_ofi
+from ...order_flow.impact import compute_impact_dynamics
+from ...order_flow.execution_forecast import compute_execution_forecast
+from ...order_flow.forecast import compute_microstructure_forecast
+from ...order_flow.liquidity import (
+    compute_liquidity_dynamics,
+    compute_trajectory_resiliency,
+    snapshot_total_depth,
+)
+from ...order_flow.ofi import OFI_METHOD_MULTILEVEL_CS, compute_ofi
+from ...donor_patterns.futures_lane import depth_imbalance_signal, is_rth
 from ...donor_patterns.order_book_lane import book_pressure_side
 from ...donor_patterns.order_book_lane import best_bid_ask
 from ...normalization.equity_bars import iso_to_epoch_ns
@@ -28,6 +37,60 @@ DEFAULT_FUTURES_FIXTURE = (
     / "futures"
     / "es_depth_slice.json"
 )
+
+
+def _impact_kwargs_from_result(result) -> dict[str, Any]:
+    fields: dict[str, Any] = {
+        "impact_method": result.impact_method,
+        "impact_version": result.impact_version,
+        "mid_delta": result.mid_delta,
+        "impact_regime": result.impact_regime.value,
+        "impact_quality_flags": list(result.quality_flags),
+        "opposing_replenishment": result.opposing_replenishment,
+    }
+    if result.aggression_signed_volume is not None:
+        fields["aggression_signed_volume"] = result.aggression_signed_volume
+    if result.price_efficiency is not None:
+        fields["price_efficiency"] = result.price_efficiency
+    if result.absorption_score is not None:
+        fields["absorption_score"] = result.absorption_score
+    if result.exhaustion_score is not None:
+        fields["exhaustion_score"] = result.exhaustion_score
+    return fields
+
+
+def _forecast_kwargs_from_result(result) -> dict[str, Any]:
+    return {
+        "forecast_method": result.forecast_method,
+        "forecast_version": result.forecast_version,
+        "forecast_horizon_seconds": result.forecast_horizon_seconds,
+        "expected_mid_delta": result.expected_mid_delta,
+        "direction_bias": result.direction_bias.value,
+        "continuation_probability": result.continuation_probability,
+        "reversal_probability": result.reversal_probability,
+        "volatility_proxy": result.volatility_proxy,
+        "composite_bias": result.composite_bias,
+        "model_confidence": result.model_confidence,
+        "forecast_quality_flags": list(result.quality_flags),
+    }
+
+
+def _execution_kwargs_from_result(result) -> dict[str, Any]:
+    return {
+        "execution_method": result.execution_method,
+        "execution_version": result.execution_version,
+        "book_model_version": result.book_model_version,
+        "queue_model_version": result.queue_model_version,
+        "aggressive_fill_probability": result.aggressive_fill_probability,
+        "passive_fill_probability": result.passive_fill_probability,
+        "expected_slippage_spread_fraction": result.expected_slippage_spread_fraction,
+        "expected_slippage_absolute": result.expected_slippage_absolute,
+        "adverse_selection_risk": result.adverse_selection_risk,
+        "touch_depth_bid": result.touch_depth_bid,
+        "touch_depth_ask": result.touch_depth_ask,
+        "displayed_depth_consumed_fraction": result.displayed_depth_consumed_fraction,
+        "execution_quality_flags": list(result.quality_flags),
+    }
 
 
 class FixtureFuturesProvider:
@@ -98,8 +161,19 @@ class FixtureFuturesProvider:
         contract_month = str(self._fixture.get("contract_month", ""))
         exchange = str(self._fixture.get("exchange", "CME"))
         session = str(self._fixture.get("session", "RTH"))
+        valid_snapshots = [
+            snapshot
+            for snapshot in snapshots
+            if isinstance(snapshot, dict) and snapshot.get("event_time")
+        ]
+        trajectory_resiliency = compute_trajectory_resiliency(
+            valid_snapshots,
+            level_count=level_count,
+        )
         envelopes: list[dict[str, Any]] = []
         prev_snapshot: dict[str, Any] | None = None
+        prev_mid: float | None = None
+        recent_mid_deltas: list[float] = []
         for index, snapshot in enumerate(snapshots):
             if not isinstance(snapshot, dict):
                 continue
@@ -123,7 +197,90 @@ class FixtureFuturesProvider:
                 threshold=imbalance_threshold,
             )
             pressure = book_pressure_side(ratio, threshold=imbalance_threshold)
-            ofi_value = 0.0 if prev_snapshot is None else snapshot_ofi(prev_snapshot, snapshot)
+            ofi_method: str | None = None
+            ofi_version: str | None = None
+            book_state_valid: bool | None = None
+            liquidity_method: str | None = None
+            liquidity_version: str | None = None
+            net_depth_delta: float | None = None
+            depth_withdrawal: float | None = None
+            depth_replenishment: float | None = None
+            fragility_score: float | None = None
+            resiliency_score: float | None = trajectory_resiliency
+            total_depth: float | None = None
+            spread_delta: float | None = None
+            impact_kwargs: dict[str, Any] = {}
+            if prev_snapshot is None:
+                ofi_value = 0.0
+                total_depth = snapshot_total_depth(snapshot, level_count=level_count)
+            else:
+                ofi_result = compute_ofi(
+                    prev_snapshot,
+                    snapshot,
+                    method=OFI_METHOD_MULTILEVEL_CS,
+                    level_count=level_count,
+                )
+                ofi_value = ofi_result.value
+                ofi_method = ofi_result.ofi_method
+                ofi_version = ofi_result.ofi_version
+                book_state_valid = ofi_result.book_state_valid
+                liquidity = compute_liquidity_dynamics(
+                    prev_snapshot,
+                    snapshot,
+                    level_count=level_count,
+                    trajectory_resiliency=trajectory_resiliency,
+                )
+                liquidity_method = liquidity.liquidity_method
+                liquidity_version = liquidity.liquidity_version
+                net_depth_delta = liquidity.net_depth_delta
+                depth_withdrawal = liquidity.depth_withdrawal
+                depth_replenishment = liquidity.depth_replenishment
+                fragility_score = liquidity.fragility_score
+                resiliency_score = liquidity.resiliency_score
+                total_depth = liquidity.total_depth
+                spread_delta = liquidity.spread_delta
+                impact = compute_impact_dynamics(
+                    prev_snapshot,
+                    snapshot,
+                    bar_delta=None,
+                    level_count=level_count,
+                    trajectory_resiliency=trajectory_resiliency,
+                )
+                impact_kwargs = _impact_kwargs_from_result(impact)
+            impact_regime = impact_kwargs.get("impact_regime")
+            absorption_score = impact_kwargs.get("absorption_score")
+            exhaustion_score = impact_kwargs.get("exhaustion_score")
+            forecast = compute_microstructure_forecast(
+                snapshot,
+                ofi_value=ofi_value,
+                book_state_valid=book_state_valid if book_state_valid is not None else True,
+                fragility_score=fragility_score,
+                resiliency_score=resiliency_score,
+                impact_regime=impact_regime,
+                absorption_score=absorption_score,
+                exhaustion_score=exhaustion_score,
+                bar_delta=None,
+                recent_mid_deltas=recent_mid_deltas,
+            )
+            forecast_kwargs = _forecast_kwargs_from_result(forecast)
+            execution = compute_execution_forecast(
+                snapshot,
+                book_state_valid=book_state_valid if book_state_valid is not None else True,
+                fragility_score=fragility_score,
+                continuation_probability=forecast.continuation_probability,
+                reversal_probability=forecast.reversal_probability,
+                direction_bias=forecast.direction_bias,
+                exhaustion_score=exhaustion_score,
+                impact_regime=impact_regime,
+                level_count=level_count,
+            )
+            execution_kwargs = _execution_kwargs_from_result(execution)
+            curr_mid = (bbo["bid_price"] + bbo["ask_price"]) / 2.0
+            if prev_mid is not None and (book_state_valid is None or book_state_valid):
+                recent_mid_deltas.append(curr_mid - prev_mid)
+                if len(recent_mid_deltas) > 5:
+                    recent_mid_deltas = recent_mid_deltas[-5:]
+            prev_mid = curr_mid
             event_dt = datetime.fromisoformat(event_time.replace("Z", "+00:00"))
             rth = is_rth(event_dt)
             source_record_id = f"{event_time}:{index}"
@@ -144,6 +301,21 @@ class FixtureFuturesProvider:
                 snapshot_provenance=str(snapshot.get("source", "fixture_synthetic")),
                 book_pressure_side=pressure,
                 interpretation_policy="contrarian_depth",
+                ofi_method=ofi_method,
+                ofi_version=ofi_version,
+                book_state_valid=book_state_valid,
+                liquidity_method=liquidity_method,
+                liquidity_version=liquidity_version,
+                net_depth_delta=net_depth_delta,
+                depth_withdrawal=depth_withdrawal,
+                depth_replenishment=depth_replenishment,
+                fragility_score=fragility_score,
+                resiliency_score=resiliency_score,
+                total_depth=total_depth,
+                spread_delta=spread_delta,
+                **impact_kwargs,
+                **forecast_kwargs,
+                **execution_kwargs,
             )
             normalized_id = normalized_event_id(
                 provider_id=self.provider_id,

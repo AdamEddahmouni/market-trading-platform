@@ -29,12 +29,12 @@
 | OF1 | ClassifiedTrade + aggressor provenance | **DONE** (module) |
 | OF2 | CVD + confidence metrics | **DONE** (module + workspace) |
 | OF3 | L1 + microprice + QI | **DONE** (module + workspace) |
-| OF4 | OFI book-flow (adds/cancels) | NOT STARTED |
-| OF5 | Multi-level OFI | NOT STARTED |
-| OF6 | Liquidity dynamics | NOT STARTED |
-| OF7 | Absorption / exhaustion | NOT STARTED |
-| OF8 | Short-horizon forecasts | NOT STARTED |
-| OF9 | Execution forecasts | NOT STARTED |
+| OF4 | OFI book-flow (adds/cancels) | **DONE** (module + workspace) |
+| OF5 | Multi-level OFI | **DONE** (within OF4 multilevel CS) |
+| OF6 | Liquidity dynamics | **DONE** (module + workspace) |
+| OF7 | Absorption / exhaustion | **DONE** (module + workspace) |
+| OF8 | Short-horizon forecasts | **DONE** (module + workspace) |
+| OF9 | Execution forecasts | **DONE** (module + workspace) |
 | OF10 | MBO / queue modeling | NOT STARTED |
 | OF11 | Metaorder research | NOT STARTED |
 | OF12 | Advanced LOB ML | NOT STARTED |

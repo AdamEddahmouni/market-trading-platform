@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..features.institutional import FUND_ETF_FAMILY, FUTURES_FAMILY, LARGE_TRANSACTIONS_FAMILY, OPTIONS_FAMILY, ORDER_BOOK_FAMILY, ORDER_FLOW_FAMILY, PUBLIC_CATALYST_FAMILY, REGULATORY_DISCLOSURE_FAMILY, WHALE_FAMILIES
+from ..features.institutional import FUND_ETF_FAMILY, FUTURES_DEPTH_FAMILY, FUTURES_FAMILY, LARGE_TRANSACTIONS_FAMILY, OPTIONS_FAMILY, ORDER_BOOK_FAMILY, ORDER_FLOW_FAMILY, PUBLIC_CATALYST_FAMILY, REGULATORY_DISCLOSURE_FAMILY, WHALE_FAMILIES
 from ..providers.projections import catalyst_available, disclosure_available, fund_etf_available, futures_available, large_transactions_available, options_available, order_book_available, order_flow_available
 from .store import ReplayStore
 
@@ -186,7 +186,7 @@ def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
                 }
             )
             continue
-        if family == FUTURES_FAMILY and futures_ready:
+        if family in (FUTURES_FAMILY, FUTURES_DEPTH_FAMILY) and futures_ready:
             rows.append(
                 {
                     "capability_id": f"whale.{family}",
@@ -915,7 +915,8 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
             {
                 "evidence_id": ref,
                 "epistemic_class": "DERIVED",
-                "family": "futures_positioning",
+                "family": "futures_depth",
+                "legacy_family": "futures_positioning",
                 "as_of": store.as_of_time(),
                 "quality": {
                     "state": provenance,
@@ -1045,7 +1046,7 @@ INSTITUTIONAL_FLOW_FAMILY_SPECS: tuple[tuple[str, str, str, str], ...] = (
     (ORDER_FLOW_FAMILY, "Order Flow", "order-flow", "explain:order-flow"),
     (ORDER_BOOK_FAMILY, "Order Book", "order-book", "explain:order-book"),
     (OPTIONS_FAMILY, "Options", "options", "explain:options"),
-    (FUTURES_FAMILY, "Futures", "futures", "explain:futures"),
+    (FUTURES_DEPTH_FAMILY, "Futures depth (L2)", "futures", "explain:futures"),
     (FUND_ETF_FAMILY, "Fund / ETF", "fund-etf", "explain:fund-etf"),
     (PUBLIC_CATALYST_FAMILY, "Catalyst", "catalyst", "explain:catalyst"),
 )
@@ -1056,7 +1057,7 @@ _INSTITUTIONAL_ENTITLED_SYMBOLS: dict[str, str] = {
     ORDER_FLOW_FAMILY: "NVDA",
     ORDER_BOOK_FAMILY: "NVDA",
     OPTIONS_FAMILY: "BIYA",
-    FUTURES_FAMILY: "ES",
+    FUTURES_DEPTH_FAMILY: "ES",
     FUND_ETF_FAMILY: "NVDA",
     PUBLIC_CATALYST_FAMILY: "BOXL",
 }
@@ -1067,7 +1068,7 @@ _INSTITUTIONAL_AVAILABILITY = {
     ORDER_FLOW_FAMILY: order_flow_available,
     ORDER_BOOK_FAMILY: order_book_available,
     OPTIONS_FAMILY: options_available,
-    FUTURES_FAMILY: futures_available,
+    FUTURES_DEPTH_FAMILY: futures_available,
     FUND_ETF_FAMILY: fund_etf_available,
     PUBLIC_CATALYST_FAMILY: catalyst_available,
 }

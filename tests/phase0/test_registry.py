@@ -5,14 +5,16 @@ from market_platform_foundation.registry import resolve_registry, registry_snaps
 
 
 class RegistryTests(unittest.TestCase):
-    def test_only_four_literal_entries_exist(self):
+    def test_only_six_literal_entries_exist(self):
         self.assertEqual(
             [row["registry_id"] for row in registry_snapshot()],
             [
                 "offline.equity_intraday_jsonl",
                 "offline.fixture_manifest",
                 "simulation.bar_conservative",
+                "simulation.book_aware_l2_v1",
                 "simulation.noop",
+                "simulation.options_conservative",
             ],
         )
 

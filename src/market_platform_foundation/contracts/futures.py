@@ -180,6 +180,45 @@ class BasisObservation:
     quality_flags: tuple[str, ...] = field(default_factory=tuple)
 
 
+@dataclass(frozen=True, slots=True)
+class FuturesTrendBaselineSnapshot:
+    """Vol-scaled trend features — research baseline, not directional forecast."""
+
+    instrument_family: str
+    trend_1m: float | None = None
+    trend_3m: float | None = None
+    trend_6m: float | None = None
+    trend_12m: float | None = None
+    vol_estimate: float | None = None
+    lookback_bars_used: tuple[tuple[str, int], ...] = field(default_factory=tuple)
+    observation_time: str = ""
+    quality_flags: tuple[str, ...] = field(default_factory=tuple)
+    provenance_ref: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class FuturesCarryBaseline:
+    """Carry level with historical percentile — not assumed predictive."""
+
+    annualized_carry: float | None = None
+    carry_percentile: float | None = None
+    carry_change: float | None = None
+    carry_zscore: float | None = None
+    formula_tag: str = ""
+    quality_flags: tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
+class FuturesCurveMomentum:
+    """Term-structure slope momentum — curve context, not directional forecast."""
+
+    curve_slope: float | None = None
+    slope_change: float | None = None
+    calendar_spread_momentum: str = ""
+    regime: str = ""
+    quality_flags: tuple[str, ...] = field(default_factory=tuple)
+
+
 def futures_contract_to_dict(contract: FuturesContract) -> dict[str, Any]:
     """Serialize for API envelopes and replay fixtures."""
     spec: dict[str, Any] | None = None
@@ -266,6 +305,105 @@ def basis_observation_to_dict(observation: BasisObservation) -> dict[str, Any]:
         "available_time": observation.available_time,
         "quality_flags": list(observation.quality_flags),
     }
+
+
+def positioning_snapshot_to_dict(snapshot: FuturesPositioningSnapshot) -> dict[str, Any]:
+    return {
+        "instrument_family": snapshot.instrument_family,
+        "report_type": snapshot.report_type,
+        "participant_category": snapshot.participant_category,
+        "long_positions": snapshot.long_positions,
+        "short_positions": snapshot.short_positions,
+        "spreading": snapshot.spreading,
+        "net": snapshot.net,
+        "net_change": snapshot.net_change,
+        "net_percentile": snapshot.net_percentile,
+        "net_zscore": snapshot.net_zscore,
+        "observation_time": snapshot.observation_time,
+        "publication_time": snapshot.publication_time,
+        "data_age_days": snapshot.data_age_days,
+        "quality_flags": list(snapshot.quality_flags),
+        "provenance_ref": snapshot.provenance_ref,
+    }
+
+
+def trend_baseline_to_dict(snapshot: FuturesTrendBaselineSnapshot) -> dict[str, Any]:
+    return {
+        "instrument_family": snapshot.instrument_family,
+        "trend_1m": round(snapshot.trend_1m, 6) if snapshot.trend_1m is not None else None,
+        "trend_3m": round(snapshot.trend_3m, 6) if snapshot.trend_3m is not None else None,
+        "trend_6m": round(snapshot.trend_6m, 6) if snapshot.trend_6m is not None else None,
+        "trend_12m": round(snapshot.trend_12m, 6) if snapshot.trend_12m is not None else None,
+        "vol_estimate": round(snapshot.vol_estimate, 8) if snapshot.vol_estimate is not None else None,
+        "lookback_bars_used": {key: value for key, value in snapshot.lookback_bars_used},
+        "observation_time": snapshot.observation_time,
+        "quality_flags": list(snapshot.quality_flags),
+        "provenance_ref": snapshot.provenance_ref,
+    }
+
+
+def trend_baseline_from_dict(payload: dict[str, Any]) -> FuturesTrendBaselineSnapshot:
+    quality = payload.get("quality_flags", [])
+    quality_flags = tuple(str(flag) for flag in quality) if isinstance(quality, list) else ()
+    lookback_raw = payload.get("lookback_bars_used", {})
+    lookback_bars_used: tuple[tuple[str, int], ...] = ()
+    if isinstance(lookback_raw, dict):
+        lookback_bars_used = tuple((str(k), int(v)) for k, v in lookback_raw.items())
+    return FuturesTrendBaselineSnapshot(
+        instrument_family=str(payload.get("instrument_family", "")),
+        trend_1m=float(payload["trend_1m"]) if payload.get("trend_1m") is not None else None,
+        trend_3m=float(payload["trend_3m"]) if payload.get("trend_3m") is not None else None,
+        trend_6m=float(payload["trend_6m"]) if payload.get("trend_6m") is not None else None,
+        trend_12m=float(payload["trend_12m"]) if payload.get("trend_12m") is not None else None,
+        vol_estimate=float(payload["vol_estimate"]) if payload.get("vol_estimate") is not None else None,
+        lookback_bars_used=lookback_bars_used,
+        observation_time=str(payload.get("observation_time", "")),
+        quality_flags=quality_flags,
+        provenance_ref=str(payload.get("provenance_ref", "")),
+    )
+
+
+def carry_baseline_to_dict(baseline: FuturesCarryBaseline) -> dict[str, Any]:
+    return {
+        "annualized_carry": round(baseline.annualized_carry, 8) if baseline.annualized_carry is not None else None,
+        "carry_percentile": baseline.carry_percentile,
+        "carry_change": round(baseline.carry_change, 8) if baseline.carry_change is not None else None,
+        "carry_zscore": round(baseline.carry_zscore, 6) if baseline.carry_zscore is not None else None,
+        "formula_tag": baseline.formula_tag,
+        "quality_flags": list(baseline.quality_flags),
+    }
+
+
+def curve_momentum_to_dict(momentum: FuturesCurveMomentum) -> dict[str, Any]:
+    return {
+        "curve_slope": round(momentum.curve_slope, 8) if momentum.curve_slope is not None else None,
+        "slope_change": round(momentum.slope_change, 8) if momentum.slope_change is not None else None,
+        "calendar_spread_momentum": momentum.calendar_spread_momentum,
+        "regime": momentum.regime,
+        "quality_flags": list(momentum.quality_flags),
+    }
+
+
+def positioning_snapshot_from_dict(payload: dict[str, Any]) -> FuturesPositioningSnapshot:
+    quality = payload.get("quality_flags", [])
+    quality_flags = tuple(str(flag) for flag in quality) if isinstance(quality, list) else ()
+    return FuturesPositioningSnapshot(
+        instrument_family=str(payload.get("instrument_family", "")),
+        report_type=str(payload.get("report_type", "")),
+        participant_category=str(payload.get("participant_category", "")),
+        long_positions=int(payload["long_positions"]) if payload.get("long_positions") is not None else None,
+        short_positions=int(payload["short_positions"]) if payload.get("short_positions") is not None else None,
+        spreading=int(payload["spreading"]) if payload.get("spreading") is not None else None,
+        net=int(payload["net"]) if payload.get("net") is not None else None,
+        net_change=int(payload["net_change"]) if payload.get("net_change") is not None else None,
+        net_percentile=float(payload["net_percentile"]) if payload.get("net_percentile") is not None else None,
+        net_zscore=float(payload["net_zscore"]) if payload.get("net_zscore") is not None else None,
+        observation_time=str(payload.get("observation_time", "")),
+        publication_time=str(payload.get("publication_time", "")),
+        data_age_days=int(payload["data_age_days"]) if payload.get("data_age_days") is not None else None,
+        quality_flags=quality_flags,
+        provenance_ref=str(payload.get("provenance_ref", "")),
+    )
 
 
 def futures_contract_from_dict(payload: dict[str, Any]) -> FuturesContract:

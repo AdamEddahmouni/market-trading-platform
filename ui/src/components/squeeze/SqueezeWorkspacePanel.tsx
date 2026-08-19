@@ -1,4 +1,5 @@
 import type { WorkspaceSqueezeResponse } from "../../api/client";
+import { OpportunityFusionBlock } from "../options/OpportunityFusionBlock";
 import { CausalIntelligenceBlock } from "./CausalIntelligenceBlock";
 import { CrossLaneEvidenceBlock } from "./CrossLaneEvidenceBlock";
 import { HistoricalSqueezeContextBlock } from "./HistoricalSqueezeContextBlock";
@@ -55,6 +56,7 @@ export function SqueezeWorkspacePanel({
           <StateTransitionBlock squeeze={squeeze} />
           <CausalIntelligenceBlock squeeze={squeeze} />
           <CrossLaneEvidenceBlock squeeze={squeeze} onExplain={onExplain} />
+          <OpportunityFusionBlock snapshot={squeeze.opportunity_snapshot} onExplain={onExplain} />
           {squeeze.ignition_evidence && squeeze.ignition_evidence.length > 0 ? (
             <div className="ignition-evidence-grid">
               {squeeze.ignition_evidence.map((card) => (

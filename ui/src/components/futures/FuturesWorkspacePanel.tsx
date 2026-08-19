@@ -33,6 +33,41 @@ export function FuturesWorkspacePanel({
 
   const snapshots = futures.snapshots ?? [];
   const latest = snapshots[snapshots.length - 1];
+  const liquidity = futures.latest_liquidity_summary ?? {
+    depth_withdrawal: latest?.depth_withdrawal,
+    fragility_score: latest?.fragility_score,
+    resiliency_score: latest?.resiliency_score,
+    liquidity_method: latest?.liquidity_method,
+  };
+  const impact = futures.latest_impact_summary ?? {
+    impact_regime: latest?.impact_regime,
+    absorption_score: latest?.absorption_score,
+    exhaustion_score: latest?.exhaustion_score,
+    price_efficiency: latest?.price_efficiency,
+    impact_method: latest?.impact_method,
+    impact_quality_flags: latest?.impact_quality_flags,
+  };
+  const forecast = futures.latest_microstructure_forecast ?? {
+    direction_bias: latest?.direction_bias,
+    continuation_probability: latest?.continuation_probability,
+    reversal_probability: latest?.reversal_probability,
+    expected_mid_delta: latest?.expected_mid_delta,
+    forecast_method: latest?.forecast_method,
+    forecast_quality_flags: latest?.forecast_quality_flags,
+  };
+  const execution = futures.latest_execution_forecast ?? {
+    aggressive_fill_probability: latest?.aggressive_fill_probability,
+    expected_slippage_spread_fraction: latest?.expected_slippage_spread_fraction,
+    adverse_selection_risk: latest?.adverse_selection_risk,
+    execution_method: latest?.execution_method,
+  };
+  const curve = futures.curve_snapshot;
+  const carry = futures.carry_observation;
+  const positioning = futures.positioning_snapshot;
+  const oiHypothesis = futures.oi_velocity_hypothesis;
+  const trendBaseline = futures.trend_baseline_snapshot;
+  const carryBaseline = futures.carry_baseline;
+  const curveMomentum = futures.curve_momentum;
 
   return (
     <section className="futures-panel">
@@ -86,7 +121,165 @@ export function FuturesWorkspacePanel({
           <dt>OFI</dt>
           <dd>{String(futures.latest_ofi_value ?? latest?.ofi_value ?? "—")}</dd>
         </div>
+        {liquidity.fragility_score != null ? (
+          <div>
+            <dt>Fragility score</dt>
+            <dd>{String(liquidity.fragility_score)}</dd>
+          </div>
+        ) : null}
+        {liquidity.depth_withdrawal != null && liquidity.depth_withdrawal > 0 ? (
+          <div>
+            <dt>Depth withdrawal</dt>
+            <dd>{String(liquidity.depth_withdrawal)}</dd>
+          </div>
+        ) : null}
+        {impact.impact_regime && impact.impact_regime !== "NEUTRAL" ? (
+          <div>
+            <dt>Book flow regime</dt>
+            <dd>{String(impact.impact_regime)}</dd>
+          </div>
+        ) : null}
+        {impact.impact_quality_flags?.includes("MISSING_TRADE_FLOW") ? (
+          <div>
+            <dt>Impact quality</dt>
+            <dd>Trade flow missing — absorption not asserted</dd>
+          </div>
+        ) : null}
+        {forecast.direction_bias && forecast.direction_bias !== "NEUTRAL" ? (
+          <div>
+            <dt>Micro forecast bias</dt>
+            <dd>{String(forecast.direction_bias)}</dd>
+          </div>
+        ) : null}
+        {forecast.continuation_probability != null ? (
+          <div>
+            <dt>Continuation prob</dt>
+            <dd>{String(forecast.continuation_probability)}</dd>
+          </div>
+        ) : null}
+        {forecast.reversal_probability != null ? (
+          <div>
+            <dt>Reversal prob</dt>
+            <dd>{String(forecast.reversal_probability)}</dd>
+          </div>
+        ) : null}
+        {forecast.forecast_quality_flags?.includes("MISSING_TRADE_FLOW") ? (
+          <div>
+            <dt>Forecast quality</dt>
+            <dd>Trade flow missing — book-only micro forecast</dd>
+          </div>
+        ) : null}
+        {execution.aggressive_fill_probability != null ? (
+          <div>
+            <dt>Aggressive fill prob</dt>
+            <dd>{String(execution.aggressive_fill_probability)}</dd>
+          </div>
+        ) : null}
+        {execution.expected_slippage_spread_fraction != null ? (
+          <div>
+            <dt>Expected slippage</dt>
+            <dd>{String(execution.expected_slippage_spread_fraction)}</dd>
+          </div>
+        ) : null}
+        {execution.adverse_selection_risk != null ? (
+          <div>
+            <dt>Adverse selection risk</dt>
+            <dd>{String(execution.adverse_selection_risk)}</dd>
+          </div>
+        ) : null}
+        {execution.execution_method ? (
+          <div>
+            <dt>Execution method</dt>
+            <dd>{execution.execution_method}</dd>
+          </div>
+        ) : null}
+        {curve?.available && curve.regime ? (
+          <div>
+            <dt>Curve regime</dt>
+            <dd>{curve.regime}</dd>
+          </div>
+        ) : null}
+        {carry?.available && carry.annualized_carry != null ? (
+          <div>
+            <dt>Annualized carry</dt>
+            <dd>{String(carry.annualized_carry)}</dd>
+          </div>
+        ) : null}
+        {futures.futures_positioning_available && positioning?.net != null ? (
+          <div>
+            <dt>COT net ({positioning.participant_category ?? "managed_money"})</dt>
+            <dd>{String(positioning.net)}</dd>
+          </div>
+        ) : null}
+        {positioning?.net_percentile != null ? (
+          <div>
+            <dt>COT net percentile</dt>
+            <dd>{String(positioning.net_percentile)}</dd>
+          </div>
+        ) : null}
+        {futures.crowding_regime && futures.crowding_regime !== "NEUTRAL" ? (
+          <div>
+            <dt>Crowding regime</dt>
+            <dd>{futures.crowding_regime}</dd>
+          </div>
+        ) : null}
+        {positioning?.publication_time ? (
+          <div>
+            <dt>COT publication time</dt>
+            <dd>{positioning.publication_time}</dd>
+          </div>
+        ) : null}
+        {oiHypothesis?.label && oiHypothesis.label !== "UNAVAILABLE" ? (
+          <div>
+            <dt>OI velocity hypothesis</dt>
+            <dd>{oiHypothesis.label}</dd>
+          </div>
+        ) : null}
+        {futures.futures_baselines_available && trendBaseline?.trend_3m != null ? (
+          <div>
+            <dt>Vol-scaled trend (3m)</dt>
+            <dd>{String(trendBaseline.trend_3m)}</dd>
+          </div>
+        ) : null}
+        {trendBaseline?.trend_1m != null ? (
+          <div>
+            <dt>Vol-scaled trend (1m)</dt>
+            <dd>{String(trendBaseline.trend_1m)}</dd>
+          </div>
+        ) : null}
+        {carryBaseline?.carry_percentile != null ? (
+          <div>
+            <dt>Carry percentile</dt>
+            <dd>{String(carryBaseline.carry_percentile)}</dd>
+          </div>
+        ) : null}
+        {curveMomentum?.calendar_spread_momentum ? (
+          <div>
+            <dt>Curve momentum</dt>
+            <dd>{curveMomentum.calendar_spread_momentum}</dd>
+          </div>
+        ) : null}
+        {futures.trend_regime && futures.trend_regime !== "NEUTRAL" ? (
+          <div>
+            <dt>Trend regime</dt>
+            <dd>{futures.trend_regime}</dd>
+          </div>
+        ) : null}
       </dl>
+
+      {oiHypothesis?.disclaimer ? (
+        <p className="workspace-hint">{oiHypothesis.disclaimer}</p>
+      ) : null}
+      {futures.futures_baselines_available ? (
+        <p className="workspace-hint">
+          Baseline features ≠ directional forecast; positive carry ≠ positive return.
+        </p>
+      ) : null}
+      {futures.futures_positioning_available ? (
+        <p className="workspace-hint">
+          COT positioning is distinct from depth-derived whale family futures_positioning.
+        </p>
+      ) : null}
 
       {latest ? (
         <dl className="metric-grid">

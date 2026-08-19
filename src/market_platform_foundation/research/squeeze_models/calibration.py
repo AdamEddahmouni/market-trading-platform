@@ -41,15 +41,38 @@ def pr_auc_approx(predictions: Sequence[float], labels: Sequence[bool]) -> float
     return round(auc, 6)
 
 
+def precision_at_k(
+    predictions: Sequence[float],
+    labels: Sequence[bool],
+    *,
+    k: int = 3,
+) -> float:
+    if not predictions or len(predictions) != len(labels) or k <= 0:
+        return 0.0
+    pairs = sorted(
+        [(float(pred), bool(label)) for pred, label in zip(predictions, labels)],
+        key=lambda row: row[0],
+        reverse=True,
+    )
+    top_k = pairs[: min(k, len(pairs))]
+    if not top_k:
+        return 0.0
+    hits = sum(1 for _, label in top_k if label)
+    return round(hits / len(top_k), 6)
+
+
 def calibration_report(
     predictions: Sequence[float],
     labels: Sequence[bool],
+    *,
+    precision_k: int = 3,
 ) -> dict[str, float]:
     return {
         "brier_score": brier_score(predictions, labels),
         "pr_auc": pr_auc_approx(predictions, labels),
+        "precision_at_k": precision_at_k(predictions, labels, k=precision_k),
         "sample_count": float(len(predictions)),
     }
 
 
-__all__ = ["brier_score", "calibration_report", "pr_auc_approx"]
+__all__ = ["brier_score", "calibration_report", "precision_at_k", "pr_auc_approx"]

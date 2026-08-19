@@ -42,7 +42,7 @@ class Ui2ApiTests(unittest.TestCase):
                 "order_flow",
                 "order_book",
                 "options",
-                "futures_positioning",
+                "futures_depth",
                 "fund_etf_cross_asset",
                 "public_catalyst",
             },

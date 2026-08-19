@@ -28,6 +28,7 @@ TEST_DIRECTORIES: tuple[str, ...] = (
     "assistant",
     "donor_bridge",
     "donor_patterns",
+    "execution",
     "order_flow",
     "contracts",
     "cross_lane",

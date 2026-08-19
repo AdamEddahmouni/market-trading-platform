@@ -62,6 +62,7 @@ class Ui1ApiTests(unittest.TestCase):
         self.assertEqual(by_id["whale.options"]["state"], "AVAILABLE")
         self.assertEqual(by_id["whale.large_transactions"]["state"], "AVAILABLE")
         self.assertEqual(by_id["whale.order_book"]["state"], "AVAILABLE")
+        self.assertEqual(by_id["whale.futures_depth"]["state"], "AVAILABLE")
         self.assertEqual(by_id["whale.futures_positioning"]["state"], "AVAILABLE")
         self.assertEqual(by_id["whale.public_catalyst"]["state"], "AVAILABLE")
         self.assertEqual(by_id["whale.fund_etf_cross_asset"]["state"], "AVAILABLE")
@@ -76,6 +77,7 @@ class Ui1ApiTests(unittest.TestCase):
                 "whale.options",
                 "whale.large_transactions",
                 "whale.order_book",
+                "whale.futures_depth",
                 "whale.futures_positioning",
                 "whale.public_catalyst",
                 "whale.fund_etf_cross_asset",
@@ -115,7 +117,8 @@ class Ui1ApiTests(unittest.TestCase):
         self.assertEqual(inspect["ref"], "inspect:futures:ES")
         tabs = inspect["tabs"]
         self.assertIn("DERIVATION", tabs)
-        self.assertEqual(tabs["EVIDENCE"]["items"][0]["family"], "futures_positioning")
+        self.assertEqual(tabs["EVIDENCE"]["items"][0]["family"], "futures_depth")
+        self.assertEqual(tabs["EVIDENCE"]["items"][0]["legacy_family"], "futures_positioning")
 
     def test_determinism(self) -> None:
         index = self.store.cursor_index

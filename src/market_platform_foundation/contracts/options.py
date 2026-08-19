@@ -106,6 +106,32 @@ def _optional_decimal(value: Any) -> Decimal | None:
     return Decimal(str(value))
 
 
+@dataclass(frozen=True, slots=True)
+class OptionChainSnapshot:
+    """Point-in-time option chain slice for O1 chain-level QA."""
+
+    underlying_id: str
+    as_of_time: str
+    contracts: tuple[dict[str, Any], ...]
+    chain_quality: str
+    provider_id: str
+    available: bool
+    reason: str | None = None
+
+
+def option_chain_snapshot_to_dict(snapshot: OptionChainSnapshot) -> dict[str, Any]:
+    return {
+        "underlying_id": snapshot.underlying_id,
+        "as_of_time": snapshot.as_of_time,
+        "contracts": list(snapshot.contracts),
+        "contract_count": len(snapshot.contracts),
+        "chain_quality": snapshot.chain_quality,
+        "provider_id": snapshot.provider_id,
+        "available": snapshot.available,
+        "reason": snapshot.reason,
+    }
+
+
 def option_contract_from_dict(payload: dict[str, Any]) -> OptionContract:
     """Deserialize OptionContract — fail-closed on missing required fields."""
     required = ("underlying_id", "option_id", "call_put", "strike", "expiration", "dte")
@@ -150,3 +176,16 @@ def option_contract_from_dict(payload: dict[str, Any]) -> OptionContract:
         quality_flags=quality_flags,
         provenance_ref=str(payload.get("provenance_ref", "")),
     )
+
+
+__all__ = [
+    "CallPut",
+    "DeliverableSpec",
+    "ExerciseStyle",
+    "OptionChainSnapshot",
+    "OptionContract",
+    "SettlementStyle",
+    "option_chain_snapshot_to_dict",
+    "option_contract_from_dict",
+    "option_contract_to_dict",
+]

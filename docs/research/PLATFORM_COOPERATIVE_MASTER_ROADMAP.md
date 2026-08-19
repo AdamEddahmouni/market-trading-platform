@@ -36,39 +36,41 @@ PLATFORM ROADMAP
 | Provider capability registry | **Owns** | Donor | Consumes | Consumes | Consumes | P0 | PARTIAL |
 | Deterministic replay | **Owns** | Partial | Fixture | Fixture | Fixture | P0 | DONE |
 | Feature/model versioning | **Owns** | P3 | O10 | F11 | — | P0 | PARTIAL |
-| Cross-lane evidence contract | **Owns** | Pub+Con | Pub+Con | Pub+Con | Pub | P0/P3 | PARTIAL |
+| Cross-lane evidence contract | **Owns** | Pub+Con | Pub+Con | Pub+Con | Pub | P0/P3 | DONE |
 | Explanation framework | **Owns** | Pub | Pub | Pub | — | P0 | PARTIAL |
 | Price/volume features | **Owns** | Consumes | Consumes | Consumes | Consumes | P1 | PARTIAL |
 | CVD / aggressor delta | Infra | Consumes | Consumes | Major consumer | **Owns** | P1/OF2 | DONE (fixture + OF2 module) |
 | L1/L2 normalization | Infra | Context | Context | Major consumer | **Owns** | P1/OF3 | PARTIAL (OF3 L1 done) |
 | Microprice / queue imbalance | Infra | Context | Context | Consumer | **Owns** | OF3 | DONE (module) |
-| OFI / book flow | Infra | Consumes | Context | Consumes | **Owns** | OF4 | PARTIAL (BBO OFI) |
-| Liquidity dynamics | Infra | Consumes | Context | Consumes | **Owns** | OF6 | NOT STARTED |
-| Execution forecasts | Shared contract | Consumes | Consumes | Consumes | **Major producer** | OF9 | NOT STARTED |
+| OFI / book flow | Infra | Consumes | Context | Consumes | **Owns** | OF4 | DONE (BBO + multilevel CS v1) |
+| OF6 | Liquidity dynamics | **DONE** (depth delta v1) |
+| Absorption / exhaustion | Infra | Consumes | Context | Consumes | **Owns** | OF7 | DONE (aggression-price v1) |
+| Short-horizon microstructure forecast | Infra | Consumes | Context | Consumes | **Owns** | OF8 | DONE (heuristic v1) |
+| Execution forecasts | Shared contract | Consumes | Consumes | Consumes | **Major producer** | OF9 | DONE (fixture scope) |
 | News/catalyst contracts | Infra | Consumes | O7 | F7 | — | P1 | PLANNED |
 | Attention contracts | Infra | SS P2 | Context | Context | — | P1 | PLANNED |
 | Corporate event registry | Infra | Context | O7 | F7 | — | P1 | PLANNED |
 | Short interest / float | Donor | **Owns** | Context | — | — | SS P0 | DONE |
 | Securities lending | Infra | **Owns** | Borrow for IV | — | — | SS P2 | PLANNED |
-| Option contract model | Infra | — | **Owns** | Context | — | O1 | IN PROGRESS |
-| Futures contract model | Infra | — | Consumes | **Owns** | — | F1 | IN PROGRESS |
-| Historical option chains | Infra | — | **Owns** | — | — | O1 | NOT STARTED |
-| IV / Greeks / surface | Infra | Context | **Owns** | Consumes | — | O2 | NOT STARTED |
+| Option contract model | Infra | — | **Owns** | Context | — | O1 | DONE (fixture) |
+| Futures contract model | Infra | — | Consumes | **Owns** | — | F1 | DONE (fixture) |
+| Historical option chains | Infra | — | **Owns** | — | — | O1 | PLAN (design doc) |
+| IV / Greeks / surface | Infra | Context | **Owns** | Consumes | — | O2 | DONE (fixture) |
 | Futures curve / carry | Infra | Context | Consumes | **Owns** | Context | F3 | DONE |
-| COT / futures positioning | Infra | Context | Context | **Owns** | — | F4 | NOT STARTED |
-| Physical distribution P | **Shared** | Consumes | Major consumer | Consumes | Inputs | **P2** | NOT STARTED |
-| Realized volatility engine | **Shared** | Consumes | **Owns** semantics | Consumes | — | P2/O2 | NOT STARTED |
-| Risk-neutral distribution Q | Shared contract | Context | **Owns** | Context | — | O3 | NOT STARTED |
+| COT / futures positioning | Infra | Context | Context | **Owns** | — | F4 | DONE (fixture scope) |
+| Physical distribution P | **Shared** | Consumes | Major consumer | Consumes | Inputs | **P2** | DONE (fixture) |
+| Realized volatility engine | **Shared** | Consumes | **Owns** semantics | Consumes | — | P2/O2 | PARTIAL (O2 surface) |
+| Risk-neutral distribution Q | Shared contract | Context | **Owns** | Context | — | O3 | DONE (fixture) |
 | P vs Q edge engine | — | — | **Owns** | — | — | O4 | DONE |
 | Causal squeeze states | — | **Owns** | Consumes | No (different) | — | SS P0 | DONE |
-| Squeeze probabilities | — | **Owns** | Consumes | — | — | SS P3 | RESEARCH |
-| Options signed flow | — | Consumes | **Owns** | — | Confirms | O5 | NOT STARTED |
-| Dealer / gamma exposure | Contract | Consumes | **Produces** | Context | Confirms | O6 | NOT STARTED |
-| Event volatility / IV crush | — | Context | **Owns** | F7 context | — | O7 | NOT STARTED |
+| Squeeze probabilities | — | **Owns** | Consumes | — | — | SS P3 | DONE (baselines) |
+| Options signed flow | — | Consumes | **Owns** | — | Confirms | O5 | DONE (fixture) |
+| Dealer / gamma exposure | Contract | Consumes | **Produces** | Context | Confirms | O6 | COMPLETE (fixture scope) |
+| Event volatility / IV crush | — | Context | **Owns** | F7 context | — | O7 | COMPLETE (fixture scope) |
 | Futures leverage stress | Contract | Context | Context | **Owns** | Confirms | F8 | NOT STARTED |
-| Strategy optimizer | — | — | **Owns** | Partial | — | O8 | NOT STARTED |
-| EV / opportunity layer | **Shared** | Domain inputs | Domain inputs | Domain inputs | Inputs | **P4** | RESEARCH |
-| Execution simulator | **Shared** | SS P6 | O9 | F10 | — | P4/O9/F10 | PARTIAL |
+| Strategy optimizer | — | — | **Owns** | Partial | — | O8 | COMPLETE (fixture scope) |
+| EV / opportunity layer | **Shared** | Domain inputs | Domain inputs | Domain inputs | Inputs | **P4** | DONE (fixture scope) |
+| Execution simulator | **Shared** | SS P6 | O9 | F10 | — | P4/O9/F10 | PARTIAL+ |
 | 0DTE specialization | — | — | **Owns** | — | Context | O11 | NOT STARTED |
 | Cross-lane portfolio | **Shared** | — | — | — | — | P5 | DEFERRED |
 
@@ -150,13 +152,69 @@ See `SHORT_SQUEEZE_IMPLEMENTATION_ROADMAP.md`.
 
 ---
 
-### ORDER FLOW OF4–OF12 [PLANNED]
+### ORDER FLOW OF4 — Versioned OFI book-flow [COMPLETE — fixture scope]
 
-See `FOUR_LANE_ROADMAP_RECONCILIATION.md` for OF4 OFI through OF12 advanced ML.
+- [x] `order_flow/ofi.py` — `ofi_bbo_delta_v1`, `ofi_multilevel_cs_v1`
+- [x] `book_state_valid` fail-closed guard on corrupt books
+- [x] Fixture ingest on `ADMITTED-L2-NVDA-001` + `ADMITTED-L2-ES-001`
+- [x] Workspace OFI metadata on order-book + futures depth payloads
+- [x] Golden fixture — `nvda_ofi_expected.json`
+- [x] UI — order-book panel shows OFI method/version
+
+### ORDER FLOW OF6 — Liquidity dynamics [COMPLETE — fixture scope]
+
+- [x] `order_flow/liquidity.py` — `liquidity_depth_delta_v1`
+- [x] Depth withdrawal / replenishment from L2 snapshot pairs
+- [x] Trajectory resiliency + fragility composite
+- [x] `LiquidityEvidence` cross-lane contract
+- [x] Fixture ingest on `ADMITTED-L2-NVDA-001` + `ADMITTED-L2-ES-001`
+- [x] Workspace `latest_liquidity_summary` on order-book + futures payloads
+- [x] Cross-lane signals — `LIQUIDITY_WITHDRAWAL`, `BOOK_FRAGILITY_ELEVATED`
+- [x] SHARED P4 v1.1 liquidity extractor enrichment
+- [x] Golden fixture — `nvda_liquidity_expected.json`
+- [x] UI — order-book + futures panels show fragility / withdrawal
+
+### ORDER FLOW OF7 — Absorption / exhaustion [COMPLETE — fixture scope]
+
+- [x] `order_flow/impact.py` — `impact_aggression_price_v1`
+- [x] Bar-aligned NVDA ingest (depth + order-flow fixture join)
+- [x] ES depth path degrades with `MISSING_TRADE_FLOW` (no false absorption)
+- [x] Workspace `latest_impact_summary` on order-book + futures payloads
+- [x] Cross-lane signals — `ABSORPTION_BUY/SELL`, `EXHAUSTION_BUY/SELL`
+- [x] SHARED P4 liquidity extractor enrichment (`absorption_score`, `exhaustion_score`)
+- [x] Golden fixture — `nvda_impact_expected.json`
+- [x] UI — order-book + futures panels show book-flow regime (not squeeze lifecycle)
+
+### ORDER FLOW OF8 — Short-horizon microstructure forecasts [COMPLETE — fixture scope]
+
+- [x] `order_flow/forecast.py` — `microstructure_heuristic_v1` (distinct from SHARED P2 physical P)
+- [x] Composes OF3–OF7 inputs into continuation / reversal probabilities
+- [x] Workspace `latest_microstructure_forecast` on order-book + futures payloads
+- [x] Cross-lane signals — `MICROSTRUCTURE_CONTINUATION_UP/DOWN`, `MICROSTRUCTURE_REVERSAL_RISK`
+- [x] SHARED P4 liquidity extractor enrichment (`continuation_probability`, `reversal_probability`, `microstructure_direction_bias`)
+- [x] Golden fixture — `nvda_forecast_expected.json`
+- [x] UI — short-horizon micro forecast block (not multi-day physical P)
+
+### ORDER FLOW OF9 — Execution forecasts [COMPLETE — fixture scope]
+
+- [x] `order_flow/execution_forecast.py` — `execution_book_aware_v1`
+- [x] Fill probability, expected slippage, adverse selection from L2 + OF3–OF8 composites
+- [x] `ExecutionForecast` cross-lane contract + evidence assembly
+- [x] Fixture ingest on `ADMITTED-L2-NVDA-001` + `ADMITTED-L2-ES-001`
+- [x] Workspace `latest_execution_forecast` on order-book + futures payloads
+- [x] Cross-lane signals — `EXECUTION_SLIPPAGE_ELEVATED`, `EXECUTION_FILL_RISK`, `ADVERSE_SELECTION_RISK_ELEVATED`
+- [x] SHARED P4 v1.2 liquidity enrichment (`fill_probability`, slippage, adverse selection)
+- [x] Book-aware simulator tier — `execution/book_aware.py` (`simulation.book_aware_l2_v1`, OF-D09)
+- [x] Golden fixture — `nvda_execution_forecast_expected.json`
+- [x] UI — order-book + futures panels show execution forecast block
+
+### ORDER FLOW OF10–OF12 [PLANNED]
+
+See `FOUR_LANE_ROADMAP_RECONCILIATION.md` for OF10 MBO queue through OF12 advanced ML.
 
 ---
 
-### FUTURES F1 — Contract correctness [IN PROGRESS]
+### FUTURES F1 — Contract correctness [COMPLETE — fixture scope]
 
 **Parallel with O1 and SS P2 — no mutual dependency.**
 
@@ -165,8 +223,9 @@ See `FOUR_LANE_ROADMAP_RECONCILIATION.md` for OF4 OFI through OF12 advanced ML.
 - [x] Notional / tick economics module
 - [x] COT point-in-time helper
 - [x] Wire schema to fixture ingestion — `futures_contract_from_dict`, chain PIT + envelopes
-- [ ] Versioned spec registry per product
+- [x] Versioned spec registry per product — `futures/spec_registry.py`
 - [x] `FuturesChainProvider` interface — PIT + ADR-PROV-001 metadata on fixture chain
+- [x] Composition wiring via `bootstrap_default_providers()`
 
 **Deliverables:** `contracts/futures.py`, `contracts/futures_quality.py`, `futures/notional.py`
 
@@ -195,17 +254,28 @@ See `FOUR_LANE_ROADMAP_RECONCILIATION.md` for OF4 OFI through OF12 advanced ML.
 
 ---
 
-### FUTURES F4 — OI / COT positioning [NOT STARTED]
+### FUTURES F4 — OI / COT positioning [COMPLETE — fixture scope]
 
-- [ ] COT ingestion with publication delay
-- [ ] Crowding / hedging pressure features
-- [ ] OI velocity — hypotheses only, not direction
+- [x] COT ingestion with publication delay — `cot.fixture.futures_positioning` on `ADMITTED-COT-ES-001`
+- [x] Crowding / hedging pressure features — `futures/positioning.py` (`futures_positioning_v1`)
+- [x] OI velocity hypotheses — non-directional labels from chain `open_interest_history`
+- [x] Workspace wiring — `positioning_snapshot`, `futures_positioning_available`, `oi_velocity_hypothesis`
+- [x] Cross-lane signals — `FUTURES_POSITIONING_CROWDED_LONG`, `FUTURES_POSITIONING_CROWDED_SHORT`
+- [x] Golden regression — `tests/fixtures/futures/es_positioning_expected.json`
+- [x] UI — futures panel shows COT net, crowding regime, OI velocity disclaimer
 
----
-
-### FUTURES F5 — Trend + carry baselines [NOT STARTED]
+### FUTURES F5 — Trend + carry baselines [COMPLETE — fixture scope]
 
 Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
+
+- [x] Vol-scaled trend features (1m/3m/6m/12m) — `futures/baselines.py` (`futures_baselines_v1`)
+- [x] Carry percentile/change extending F3 — fixture `carry_history`
+- [x] Curve momentum from term structure — `curve_slope_history`
+- [x] Settlement bar ingest — `bars.fixture.futures_settlement` on `ADMITTED-BARS-ES-001`
+- [x] Workspace wiring — `trend_baseline_snapshot`, `carry_baseline`, `curve_momentum`, `futures_baselines_available`
+- [x] Cross-lane signals — `FUTURES_TREND_UP`, `FUTURES_TREND_DOWN`
+- [x] Golden regression — `tests/fixtures/futures/es_baselines_expected.json`
+- [x] UI — futures panel shows vol-scaled trends, carry percentile, curve momentum disclaimer
 
 ---
 
@@ -215,26 +285,30 @@ See `THREE_LANE_ROADMAP_RECONCILIATION.md` for F6 family models through F11 adva
 
 ---
 
-### OPTIONS O1 — Contract / chain correctness [IN PROGRESS]
+### OPTIONS O1 — Contract / chain correctness [COMPLETE — fixture scope]
 
 **Parallel with SS P2 — no mutual dependency.**
 
 - [x] Canonical `OptionContract` schema
 - [x] Options quality taxonomy
 - [x] Extend Phase 11 envelope toward canonical model
-- [ ] Historical chain archive plan
-- [ ] Corporate action adjustment semantics
+- [x] Historical chain archive plan — `OPTIONS_HISTORICAL_CHAIN_ARCHIVE_PLAN.md` (design only)
+- [x] Corporate action adjustment semantics — fixture `biya_adjusted_option_slice.json`
 - [x] `OptionChainProvider` interface hardening — PIT + ADR-PROV-001 chain envelopes
+- [x] `OptionChainSnapshot` workspace wiring — `build_workspace_options_payload`
+- [x] Versioned product spec registry — `options/spec_registry.py`
 
 **Deliverables:** `contracts/options.py`, `contracts/options_quality.py`
 
 ---
 
-### SHORT SQUEEZE SS P2 — Structural vulnerability [PLANNED]
+### SHORT SQUEEZE SS P2 — Structural vulnerability [PARTIAL — contract scope]
 
-- Securities lending contract
-- Velocity/acceleration PIT metrics
-- Attention + catalyst interfaces
+- [x] Securities lending snapshot contract — `contracts/squeeze_structural.py`
+- [x] Velocity/acceleration PIT metrics — `VelocityAccelerationMetric`
+- [x] Attention + catalyst interfaces — `AttentionFeature`, `CatalystStrength`
+- [x] Lending cross-lane adapter (fixture scope) — `donor_bridge/lending_adapter.py`
+- [ ] Live securities lending ingest — deferred (requires vendor pipeline)
 
 **Options:** Does not block. May consume lending for borrow/carry in IV (O2).
 
@@ -268,7 +342,7 @@ See `THREE_LANE_ROADMAP_RECONCILIATION.md` for F6 family models through F11 adva
 
 ---
 
-### SHORT SQUEEZE SS P3 — Baseline models [IN PROGRESS]
+### SHORT SQUEEZE SS P3 — Baseline models [COMPLETE — fixture scope]
 
 **Depends on SHARED P2 for magnitude.**
 
@@ -315,11 +389,13 @@ See `THREE_LANE_ROADMAP_RECONCILIATION.md` for F6 family models through F11 adva
 
 ---
 
-### SHORT SQUEEZE SS P4 — Live confirmation [PLANNED]
+### SHORT SQUEEZE SS P4 — Live confirmation [COMPLETE — fixture scope]
 
-- Streaming transition log
-- Live order-flow adapter
-- Options evidence supplementary (degraded if unavailable)
+- [x] Streaming transition log in session_state (donor `causal_transitions` + IMP `transition_stream` replay)
+- [x] Cross-lane causal fusion in current mode (`_effective_prediction_cutoff`)
+- [x] Recorded order-flow adapter (`IMP_ORDER_FLOW_LIVE=1` → fixture replay, no broker HTTP)
+- [x] Options evidence supplementary wiring — `options_gamma_amplification` + O6 dealer proxy on cross_lane snapshot
+- [ ] Live broker tick ingest (deferred — blocked on adapter authorization)
 
 ---
 
@@ -335,74 +411,103 @@ See `THREE_LANE_ROADMAP_RECONCILIATION.md` for F6 family models through F11 adva
 
 ---
 
-### OPTIONS O6 — Dealer positioning [NOT STARTED]
+### OPTIONS O6 — Dealer positioning [COMPLETE — fixture scope]
 
-**Only after O5 + chain correctness (R-07).**
+**Depends on O5 + chain correctness (R-07).**
 
-- Confidence-aware dealer estimates
-- `estimated_gamma_exposure` (not claimed dealer gamma)
-- Publish hedging pressure for Order Flow confirmation
-
----
-
-### SHORT SQUEEZE SS P5 — Active squeeze + remaining fuel [PLANNED]
-
-- Feedback detection, covering estimates, remaining fuel
-- Options reflexivity via O6 evidence
+- [x] OI×gamma proxy with explicit uncertainty — `options/dealer.py` (`OI_GAMMA_PROXY_V1`, confidence LOW)
+- [x] `estimated_dealer_delta/gamma/vega`, `gamma_regime`, `hedging_pressure_estimate`, `gamma_flip_estimate`
+- [x] Workspace `dealer_snapshot` + `dealer_position_available` in `build_workspace_options_payload`
+- [x] Cross-lane `GAMMA_AMPLIFICATION_POTENTIAL` + `ESTIMATED_HEDGING_PRESSURE` evidence
+- [ ] True participant-side dealer positioning — deferred (requires vendor data)
 
 ---
 
-### OPTIONS O7 — Event volatility [NOT STARTED]
+### SHORT SQUEEZE SS P5 — Active squeeze + remaining fuel [COMPLETE — fixture scope]
 
-- Earnings-first event models
-- IV crush, post-event IV expectation
-- Options event state machine
-
-**Largely independent of SS P5.**
-
----
-
-### OPTIONS O8 — Strategy optimizer [NOT STARTED]
-
-**Only after O4 + liquidity (O1).**
-
-- Forecast-driven strategy generation
-- Expected P&L distributions
-- NO_CLEAR_EDGE support
+- [x] Fuel subsystem — `squeeze_core/intelligence/fuel.py` (`STRUCTURAL_CVD_GAMMA_PROXY_V1`)
+- [x] Reflexivity, covering pressure, remaining fuel, exhaustion risk proxies in donor evaluator (`squeeze_causal_baseline.v2`)
+- [x] `ACTIVE_SQUEEZE` reachable with order flow + O6 gamma amplification fixtures
+- [x] Cross-lane `REMAINING_SQUEEZE_FUEL` + `EXHAUSTION_RISK` evidence published to Options lane
+- [x] Chain-only NVDA options path wired into cross_lane snapshot
+- [ ] True SI-delta covering estimates — deferred (requires lending pipeline)
 
 ---
 
-### SHORT SQUEEZE SS P6 — Exhaustion [PLANNED]
+### OPTIONS O7 — Event volatility [COMPLETE — fixture scope]
 
-- Fuel decline, CVD divergence, borrow normalization
-- Options may contribute gamma decay, flow reversal (O6/O5)
+- [x] Earnings event state machine — `classify_event_state` (`NO_EVENT` → `POST_EVENT_NORMALIZATION`)
+- [x] Implied event move — ATM straddle from `nvda_earnings_event_slice.json`
+- [x] IV crush empirical baseline — `estimate_iv_crush` with fixture crush history
+- [x] SS exhaustion conditioning (JQ-6) — crush boost when `exhaustion_risk >= 70`
+- [x] Cross-lane evidence — `EVENT_VOL_PREMIUM`, `IV_CRUSH_RISK`, `POST_EVENT_IV_NORMALIZATION`
+- [x] Workspace wiring — `event_vol_snapshot` on options payload; VRP uses O7 `event_state`
+- [ ] Live earnings calendar ingest — deferred (O-23 centralized PIT joins)
 
 ---
 
-### SHARED P4 — EV / opportunity layer [RESEARCH]
+### OPTIONS O8 — Strategy optimizer [COMPLETE — fixture scope]
 
-- Single framework: probability × payoff × costs × liquidity
-- SS supplies event probability, magnitude, fuel
-- Options supplies strategy P&L, margin, assignment risk
+- [x] Payoff engine — `options/payoff.py` (`OptionLeg`, `payoff_at_spot`, `expected_pnl_under_physical_p`)
+- [x] P vs Q template candidates — `long_call_atm`, spreads, `long_straddle`, `long_otm_call`
+- [x] Liquidity gating — `liquidity_gate` per leg; multi-leg fail-closed
+- [x] Ranking by `net_expected_pnl` — no universal score; `NO_CLEAR_EDGE` when no positive candidate
+- [x] Workspace wiring — `strategy_snapshot` on options payload
+- [x] Cross-lane evidence — `STRATEGY_OPPORTUNITY_RANKED`, `NO_CLEAR_EDGE`
+- [ ] Calibrated walk-forward strategy EV — deferred (research milestone R-O10)
+
+---
+
+### SHORT SQUEEZE SS P6 — Advanced exhaustion [COMPLETE — fixture scope]
+
+- [x] Temporal fuel context — `FuelHistorySnapshot` + PIT transition stream `extract_fuel_history`
+- [x] CVD divergence history — `detect_cvd_divergence` with prior slope from transition stream
+- [x] Borrow normalization proxy — `lending_normalization_slice.json` + `estimate_borrow_normalization`
+- [x] O5/O6 exhaustion signals — `options_flow_reversal`, `options_gamma_decay` on cross_lane snapshot
+- [x] Donor evaluator v3 (`squeeze_causal_baseline.v3`, `STRUCTURAL_CVD_GAMMA_BORROW_PROXY_V2`)
+- [x] ShortPainDistribution / simulator replay — delivered in P7 (fixture scope)
+
+---
+
+### SHORT SQUEEZE SS P7 — Advanced models [COMPLETE — fixture scope]
+
+- [x] ShortPainDistribution contract — fail-closed without entry-price proxy; `short_pain_proxy_slice.json`
+- [x] Magnitude model — separate from occurrence (`predict_squeeze_magnitude`, `ss_magnitude_baseline_v1`)
+- [x] Rare-event ensemble — stdlib weighted logistic heads (`ss_rare_event_ensemble_v1`)
+- [x] Calibrated horizons — donor v4 (`squeeze_causal_baseline.v4`) via `HorizonModelSnapshot` when PIT harness passes
+- [x] Simulator squeeze-state replay — D-14: `squeeze_replay_hash` in `risk_simulation_root_hash`
+- [ ] True entry-price inference — deferred (open research Q)
+
+---
+
+### SHARED P4 — EV / opportunity layer [COMPLETE — fixture scope]
+
+- [x] Single framework: probability × payoff × costs × liquidity — `cross_lane/fusion.py`
+- [x] Input contracts — `cross_lane/opportunity.py`, `cross_lane/extractors.py`
+- [x] SS supplies event probability, magnitude, fuel (via cross-lane snapshot extractors)
+- [x] Options supplies strategy P&L, friction, liquidity gates (O8 payoff decomposition)
+- [x] Cross-lane evidence — `CROSS_LANE_OPPORTUNITY_FUSED`, `OPPORTUNITY_NO_ACTIONABLE_EDGE`
+- [x] Workspace wiring — `opportunity_snapshot` on options + squeeze payloads
+- [x] NVDA golden fixture — `nvda_opportunity_fusion_expected.json`
+- [x] Spec — `SHARED_P4_EV_OPPORTUNITY_SPEC.md`
+- [x] UI blocks — `OpportunityFusionBlock`, strategy/execution/dealer panels on options + squeeze workspaces
+- [ ] Futures outright opportunity fusion — deferred (F8–F10)
+- [x] Order Flow OF9 execution forecast inputs — `latest_execution_forecast` + P4 liquidity enrichment
 
 **Do not duplicate EV engines per lane.**
 
 ---
 
-### OPTIONS O9 — Execution / simulation [NOT STARTED]
+### OPTIONS O9 — Execution / simulation [COMPLETE — fixture scope]
 
-- Extend shared `execution/simulator.py`
-- Multi-leg, assignment, exercise
-- No Options-only parallel simulator
-
-**Coordinates with SS P6 simulator replay (D-14).**
-
----
-
-### SHORT SQUEEZE SS P7 — Advanced models [FUTURE]
-
-- Hazard models, boosting, rare-event ensembles
-- After baseline causal models validated
+- [x] Conservative NBBO fills — `options/execution.py` (long pays ask, short receives bid)
+- [x] Multi-leg entry — `simulate_multi_leg_entry` with per-leg `liquidity_gate`; fail-closed
+- [x] Options conservative simulator — `execution/options_conservative.py` registered as `simulation.options_conservative`
+- [x] Lifecycle — expiration settlement, early exercise, assignment (`portfolio/options_ledger.py`)
+- [x] Workspace wiring — `execution_snapshot` on options payload
+- [x] Cross-lane evidence — `OPTIONS_EXECUTION_SIMULATED`, `ASSIGNMENT_RISK`
+- [ ] Equity+options unified risk simulation loop — deferred (separate harness for fixture scope)
+- [x] Book-aware partial fills — `simulation.book_aware_l2_v1` (OF9 fixture scope)
 
 ---
 
@@ -432,13 +537,13 @@ See `THREE_LANE_ROADMAP_RECONCILIATION.md` for F6 family models through F11 adva
 
 | Track | Work | Blocked by |
 |---|---|---|
-| SS | SS P2 lending interfaces | Nothing |
-| Options | O1 contract schema + quality taxonomy | Nothing |
-| Options | Cross-lane evidence extension (SHARED P3 partial) | Nothing |
-| Platform | P1 catalyst/attention interfaces | Nothing |
-| Options | O2 IV engine research (offline) | O1 schema |
-| SS | SS P3 models | SHARED P2 |
-| Options | O4 P vs Q | O3 + SHARED P2 |
+| Futures | F6 family models + F8 leverage stress | Nothing (fixture research) |
+| Order Flow | OF10 MBO / queue semantics | OF9 (complete) |
+| SS | Live lending ingest wiring | Vendor authorization |
+| Platform | P1 catalyst/attention runtime interfaces | Nothing |
+| Options | O10 advanced modeling research | O4 baseline (complete) |
+| SHARED P4 | Futures outright/curve fusion extension | F8–F10 |
+| Discrepancy | D-01 ignition_state mapping, D-10 deploy mirror | Nothing |
 
 ---
 

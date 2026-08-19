@@ -163,12 +163,13 @@ def enrich_chain_contract_event(
     receive_time_ns: int,
     raw_source_reference: str,
     quality_flags: tuple[str, ...] = (),
+    venue_id: str = "US_EQUITY",
 ) -> dict[str, Any]:
     """Attach ADR-PROV-001 provider metadata to canonical chain contract dict."""
     symbol_mapping = SymbolMapping(
         instrument_id=instrument_id,
         provider_symbol=instrument_id,
-        venue_id="US_EQUITY",
+        venue_id=venue_id,
     )
     metadata = build_provider_metadata(
         provider_id=provider_id,
@@ -519,8 +520,54 @@ def snapshot_to_order_book_event(
     source_revision_id: str = "1",
     book_pressure_side: str = "neutral",
     interpretation_policy: str = "momentum",
+    ofi_method: str | None = None,
+    ofi_version: str | None = None,
+    book_state_valid: bool | None = None,
+    liquidity_method: str | None = None,
+    liquidity_version: str | None = None,
+    net_depth_delta: float | None = None,
+    depth_withdrawal: float | None = None,
+    depth_replenishment: float | None = None,
+    fragility_score: float | None = None,
+    resiliency_score: float | None = None,
+    total_depth: float | None = None,
+    spread_delta: float | None = None,
+    impact_method: str | None = None,
+    impact_version: str | None = None,
+    absorption_score: float | None = None,
+    exhaustion_score: float | None = None,
+    price_efficiency: float | None = None,
+    mid_delta: float | None = None,
+    aggression_signed_volume: float | None = None,
+    impact_regime: str | None = None,
+    impact_quality_flags: list[str] | None = None,
+    opposing_replenishment: bool | None = None,
+    forecast_method: str | None = None,
+    forecast_version: str | None = None,
+    forecast_horizon_seconds: int | None = None,
+    expected_mid_delta: float | None = None,
+    direction_bias: str | None = None,
+    continuation_probability: float | None = None,
+    reversal_probability: float | None = None,
+    volatility_proxy: float | None = None,
+    composite_bias: float | None = None,
+    model_confidence: float | None = None,
+    forecast_quality_flags: list[str] | None = None,
+    execution_method: str | None = None,
+    execution_version: str | None = None,
+    book_model_version: str | None = None,
+    queue_model_version: str | None = None,
+    aggressive_fill_probability: float | None = None,
+    passive_fill_probability: float | None = None,
+    expected_slippage_spread_fraction: float | None = None,
+    expected_slippage_absolute: float | None = None,
+    adverse_selection_risk: float | None = None,
+    touch_depth_bid: float | None = None,
+    touch_depth_ask: float | None = None,
+    displayed_depth_consumed_fraction: float | None = None,
+    execution_quality_flags: list[str] | None = None,
 ) -> dict[str, Any]:
-    return {
+    event: dict[str, Any] = {
         "ask_size": ask_size,
         "best_ask": best_ask,
         "best_bid": best_bid,
@@ -538,6 +585,99 @@ def snapshot_to_order_book_event(
         "snapshot_provenance": snapshot_provenance,
         "source_revision_id": source_revision_id,
     }
+    if ofi_method is not None:
+        event["ofi_method"] = ofi_method
+    if ofi_version is not None:
+        event["ofi_version"] = ofi_version
+    if book_state_valid is not None:
+        event["book_state_valid"] = book_state_valid
+    if liquidity_method is not None:
+        event["liquidity_method"] = liquidity_method
+    if liquidity_version is not None:
+        event["liquidity_version"] = liquidity_version
+    if net_depth_delta is not None:
+        event["net_depth_delta"] = net_depth_delta
+    if depth_withdrawal is not None:
+        event["depth_withdrawal"] = depth_withdrawal
+    if depth_replenishment is not None:
+        event["depth_replenishment"] = depth_replenishment
+    if fragility_score is not None:
+        event["fragility_score"] = fragility_score
+    if resiliency_score is not None:
+        event["resiliency_score"] = resiliency_score
+    if total_depth is not None:
+        event["total_depth"] = total_depth
+    if spread_delta is not None:
+        event["spread_delta"] = spread_delta
+    if impact_method is not None:
+        event["impact_method"] = impact_method
+    if impact_version is not None:
+        event["impact_version"] = impact_version
+    if absorption_score is not None:
+        event["absorption_score"] = absorption_score
+    if exhaustion_score is not None:
+        event["exhaustion_score"] = exhaustion_score
+    if price_efficiency is not None:
+        event["price_efficiency"] = price_efficiency
+    if mid_delta is not None:
+        event["mid_delta"] = mid_delta
+    if aggression_signed_volume is not None:
+        event["aggression_signed_volume"] = aggression_signed_volume
+    if impact_regime is not None:
+        event["impact_regime"] = impact_regime
+    if impact_quality_flags is not None:
+        event["impact_quality_flags"] = impact_quality_flags
+    if opposing_replenishment is not None:
+        event["opposing_replenishment"] = opposing_replenishment
+    if forecast_method is not None:
+        event["forecast_method"] = forecast_method
+    if forecast_version is not None:
+        event["forecast_version"] = forecast_version
+    if forecast_horizon_seconds is not None:
+        event["forecast_horizon_seconds"] = forecast_horizon_seconds
+    if expected_mid_delta is not None:
+        event["expected_mid_delta"] = expected_mid_delta
+    if direction_bias is not None:
+        event["direction_bias"] = direction_bias
+    if continuation_probability is not None:
+        event["continuation_probability"] = continuation_probability
+    if reversal_probability is not None:
+        event["reversal_probability"] = reversal_probability
+    if volatility_proxy is not None:
+        event["volatility_proxy"] = volatility_proxy
+    if composite_bias is not None:
+        event["composite_bias"] = composite_bias
+    if model_confidence is not None:
+        event["model_confidence"] = model_confidence
+    if forecast_quality_flags is not None:
+        event["forecast_quality_flags"] = forecast_quality_flags
+    if execution_method is not None:
+        event["execution_method"] = execution_method
+    if execution_version is not None:
+        event["execution_version"] = execution_version
+    if book_model_version is not None:
+        event["book_model_version"] = book_model_version
+    if queue_model_version is not None:
+        event["queue_model_version"] = queue_model_version
+    if aggressive_fill_probability is not None:
+        event["aggressive_fill_probability"] = aggressive_fill_probability
+    if passive_fill_probability is not None:
+        event["passive_fill_probability"] = passive_fill_probability
+    if expected_slippage_spread_fraction is not None:
+        event["expected_slippage_spread_fraction"] = expected_slippage_spread_fraction
+    if expected_slippage_absolute is not None:
+        event["expected_slippage_absolute"] = expected_slippage_absolute
+    if adverse_selection_risk is not None:
+        event["adverse_selection_risk"] = adverse_selection_risk
+    if touch_depth_bid is not None:
+        event["touch_depth_bid"] = touch_depth_bid
+    if touch_depth_ask is not None:
+        event["touch_depth_ask"] = touch_depth_ask
+    if displayed_depth_consumed_fraction is not None:
+        event["displayed_depth_consumed_fraction"] = displayed_depth_consumed_fraction
+    if execution_quality_flags is not None:
+        event["execution_quality_flags"] = execution_quality_flags
+    return event
 
 
 def snapshot_to_futures_event(
@@ -559,13 +699,60 @@ def snapshot_to_futures_event(
     source_revision_id: str = "1",
     book_pressure_side: str = "neutral",
     interpretation_policy: str = "contrarian_depth",
+    ofi_method: str | None = None,
+    ofi_version: str | None = None,
+    book_state_valid: bool | None = None,
+    liquidity_method: str | None = None,
+    liquidity_version: str | None = None,
+    net_depth_delta: float | None = None,
+    depth_withdrawal: float | None = None,
+    depth_replenishment: float | None = None,
+    fragility_score: float | None = None,
+    resiliency_score: float | None = None,
+    total_depth: float | None = None,
+    spread_delta: float | None = None,
+    impact_method: str | None = None,
+    impact_version: str | None = None,
+    absorption_score: float | None = None,
+    exhaustion_score: float | None = None,
+    price_efficiency: float | None = None,
+    mid_delta: float | None = None,
+    aggression_signed_volume: float | None = None,
+    impact_regime: str | None = None,
+    impact_quality_flags: list[str] | None = None,
+    opposing_replenishment: bool | None = None,
+    forecast_method: str | None = None,
+    forecast_version: str | None = None,
+    forecast_horizon_seconds: int | None = None,
+    expected_mid_delta: float | None = None,
+    direction_bias: str | None = None,
+    continuation_probability: float | None = None,
+    reversal_probability: float | None = None,
+    volatility_proxy: float | None = None,
+    composite_bias: float | None = None,
+    model_confidence: float | None = None,
+    forecast_quality_flags: list[str] | None = None,
+    execution_method: str | None = None,
+    execution_version: str | None = None,
+    book_model_version: str | None = None,
+    queue_model_version: str | None = None,
+    aggressive_fill_probability: float | None = None,
+    passive_fill_probability: float | None = None,
+    expected_slippage_spread_fraction: float | None = None,
+    expected_slippage_absolute: float | None = None,
+    adverse_selection_risk: float | None = None,
+    touch_depth_bid: float | None = None,
+    touch_depth_ask: float | None = None,
+    displayed_depth_consumed_fraction: float | None = None,
+    execution_quality_flags: list[str] | None = None,
 ) -> dict[str, Any]:
-    return {
+    event: dict[str, Any] = {
         "ask_size": ask_size,
         "best_ask": best_ask,
         "best_bid": best_bid,
         "bid_size": bid_size,
         "book_pressure_side": book_pressure_side,
+        "canonical_family": "futures_depth",
         "contract_month": contract_month,
         "data_kind": "depth_derived",
         "epistemic_class": "DERIVED",
@@ -587,6 +774,99 @@ def snapshot_to_futures_event(
             "Legacy whale family id futures_positioning; payload is L2 depth not COT positioning."
         ),
     }
+    if ofi_method is not None:
+        event["ofi_method"] = ofi_method
+    if ofi_version is not None:
+        event["ofi_version"] = ofi_version
+    if book_state_valid is not None:
+        event["book_state_valid"] = book_state_valid
+    if liquidity_method is not None:
+        event["liquidity_method"] = liquidity_method
+    if liquidity_version is not None:
+        event["liquidity_version"] = liquidity_version
+    if net_depth_delta is not None:
+        event["net_depth_delta"] = net_depth_delta
+    if depth_withdrawal is not None:
+        event["depth_withdrawal"] = depth_withdrawal
+    if depth_replenishment is not None:
+        event["depth_replenishment"] = depth_replenishment
+    if fragility_score is not None:
+        event["fragility_score"] = fragility_score
+    if resiliency_score is not None:
+        event["resiliency_score"] = resiliency_score
+    if total_depth is not None:
+        event["total_depth"] = total_depth
+    if spread_delta is not None:
+        event["spread_delta"] = spread_delta
+    if impact_method is not None:
+        event["impact_method"] = impact_method
+    if impact_version is not None:
+        event["impact_version"] = impact_version
+    if absorption_score is not None:
+        event["absorption_score"] = absorption_score
+    if exhaustion_score is not None:
+        event["exhaustion_score"] = exhaustion_score
+    if price_efficiency is not None:
+        event["price_efficiency"] = price_efficiency
+    if mid_delta is not None:
+        event["mid_delta"] = mid_delta
+    if aggression_signed_volume is not None:
+        event["aggression_signed_volume"] = aggression_signed_volume
+    if impact_regime is not None:
+        event["impact_regime"] = impact_regime
+    if impact_quality_flags is not None:
+        event["impact_quality_flags"] = impact_quality_flags
+    if opposing_replenishment is not None:
+        event["opposing_replenishment"] = opposing_replenishment
+    if forecast_method is not None:
+        event["forecast_method"] = forecast_method
+    if forecast_version is not None:
+        event["forecast_version"] = forecast_version
+    if forecast_horizon_seconds is not None:
+        event["forecast_horizon_seconds"] = forecast_horizon_seconds
+    if expected_mid_delta is not None:
+        event["expected_mid_delta"] = expected_mid_delta
+    if direction_bias is not None:
+        event["direction_bias"] = direction_bias
+    if continuation_probability is not None:
+        event["continuation_probability"] = continuation_probability
+    if reversal_probability is not None:
+        event["reversal_probability"] = reversal_probability
+    if volatility_proxy is not None:
+        event["volatility_proxy"] = volatility_proxy
+    if composite_bias is not None:
+        event["composite_bias"] = composite_bias
+    if model_confidence is not None:
+        event["model_confidence"] = model_confidence
+    if forecast_quality_flags is not None:
+        event["forecast_quality_flags"] = forecast_quality_flags
+    if execution_method is not None:
+        event["execution_method"] = execution_method
+    if execution_version is not None:
+        event["execution_version"] = execution_version
+    if book_model_version is not None:
+        event["book_model_version"] = book_model_version
+    if queue_model_version is not None:
+        event["queue_model_version"] = queue_model_version
+    if aggressive_fill_probability is not None:
+        event["aggressive_fill_probability"] = aggressive_fill_probability
+    if passive_fill_probability is not None:
+        event["passive_fill_probability"] = passive_fill_probability
+    if expected_slippage_spread_fraction is not None:
+        event["expected_slippage_spread_fraction"] = expected_slippage_spread_fraction
+    if expected_slippage_absolute is not None:
+        event["expected_slippage_absolute"] = expected_slippage_absolute
+    if adverse_selection_risk is not None:
+        event["adverse_selection_risk"] = adverse_selection_risk
+    if touch_depth_bid is not None:
+        event["touch_depth_bid"] = touch_depth_bid
+    if touch_depth_ask is not None:
+        event["touch_depth_ask"] = touch_depth_ask
+    if displayed_depth_consumed_fraction is not None:
+        event["displayed_depth_consumed_fraction"] = displayed_depth_consumed_fraction
+    if execution_quality_flags is not None:
+        event["execution_quality_flags"] = execution_quality_flags
+    return event
 
 
 def build_catalyst_envelope(

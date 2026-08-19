@@ -39,6 +39,24 @@ class MicrostructureCapabilityTier(StrEnum):
     MBO = "MBO"
 
 
+class ImpactRegime(StrEnum):
+    """Book-flow price-response regime — not Short Squeeze lifecycle exhaustion."""
+
+    NEUTRAL = "NEUTRAL"
+    BUY_ABSORPTION = "BUY_ABSORPTION"
+    SELL_ABSORPTION = "SELL_ABSORPTION"
+    BUY_EXHAUSTION = "BUY_EXHAUSTION"
+    SELL_EXHAUSTION = "SELL_EXHAUSTION"
+
+
+class ForecastDirection(StrEnum):
+    """Short-horizon microstructure direction bias (OF8)."""
+
+    UP = "UP"
+    DOWN = "DOWN"
+    NEUTRAL = "NEUTRAL"
+
+
 @dataclass(frozen=True, slots=True)
 class ClassifiedTrade:
     """Normalized trade with aggressor semantics and provenance."""
@@ -128,6 +146,231 @@ class OrderFlowEvidence:
     quality_flags: tuple[str, ...] = ()
     supporting_evidence: tuple[str, ...] = ()
     counter_evidence: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class LiquidityEvidence:
+    """Cross-lane liquidity dynamics evidence (OF6)."""
+
+    instrument: str
+    venue: str
+    horizon: str
+    event_time: str
+    available_time: str
+    producer_version: str
+    liquidity_method: str
+    liquidity_version: str
+    net_depth_delta: float
+    depth_withdrawal: float
+    depth_replenishment: float
+    fragility_score: float
+    spread_delta: float
+    total_depth: float
+    data_confidence: float
+    model_confidence: float = 0.0
+    resiliency_score: float | None = None
+    capability_tier: MicrostructureCapabilityTier = MicrostructureCapabilityTier.L2_MBP
+    quality_flags: tuple[str, ...] = ()
+    supporting_evidence: tuple[str, ...] = ()
+    counter_evidence: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ImpactEvidence:
+    """Cross-lane absorption / exhaustion evidence (OF7)."""
+
+    instrument: str
+    venue: str
+    horizon: str
+    event_time: str
+    available_time: str
+    producer_version: str
+    impact_method: str
+    impact_version: str
+    impact_regime: ImpactRegime
+    mid_delta: float
+    aggression_signed_volume: float | None
+    price_efficiency: float | None
+    absorption_score: float | None
+    exhaustion_score: float | None
+    opposing_replenishment: bool
+    data_confidence: float
+    model_confidence: float = 0.0
+    capability_tier: MicrostructureCapabilityTier = MicrostructureCapabilityTier.L2_MBP
+    quality_flags: tuple[str, ...] = ()
+    supporting_evidence: tuple[str, ...] = ()
+    counter_evidence: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class MicrostructureForecast:
+    """Cross-lane short-horizon microstructure forecast (OF8)."""
+
+    instrument: str
+    venue: str
+    horizon: str
+    event_time: str
+    available_time: str
+    producer_version: str
+    forecast_method: str
+    forecast_version: str
+    forecast_horizon_seconds: int
+    expected_mid_delta: float
+    direction_bias: ForecastDirection
+    continuation_probability: float
+    reversal_probability: float
+    volatility_proxy: float
+    composite_bias: float
+    data_confidence: float
+    model_confidence: float = 0.0
+    capability_tier: MicrostructureCapabilityTier = MicrostructureCapabilityTier.L2_MBP
+    quality_flags: tuple[str, ...] = ()
+    supporting_evidence: tuple[str, ...] = ()
+    counter_evidence: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionForecast:
+    """Cross-lane book-aware execution forecast (OF9)."""
+
+    instrument: str
+    venue: str
+    horizon: str
+    event_time: str
+    available_time: str
+    producer_version: str
+    execution_method: str
+    execution_version: str
+    book_model_version: str
+    queue_model_version: str
+    aggressive_fill_probability: float
+    passive_fill_probability: float
+    expected_slippage_spread_fraction: float
+    expected_slippage_absolute: float
+    adverse_selection_risk: float
+    touch_depth_bid: float
+    touch_depth_ask: float
+    displayed_depth_consumed_fraction: float
+    data_confidence: float
+    model_confidence: float = 0.0
+    capability_tier: MicrostructureCapabilityTier = MicrostructureCapabilityTier.L2_MBP
+    quality_flags: tuple[str, ...] = ()
+    supporting_evidence: tuple[str, ...] = ()
+    counter_evidence: tuple[str, ...] = ()
+
+
+def execution_forecast_to_dict(forecast: ExecutionForecast) -> dict[str, Any]:
+    return {
+        "instrument": forecast.instrument,
+        "venue": forecast.venue,
+        "horizon": forecast.horizon,
+        "event_time": forecast.event_time,
+        "available_time": forecast.available_time,
+        "producer_version": forecast.producer_version,
+        "execution_method": forecast.execution_method,
+        "execution_version": forecast.execution_version,
+        "book_model_version": forecast.book_model_version,
+        "queue_model_version": forecast.queue_model_version,
+        "aggressive_fill_probability": forecast.aggressive_fill_probability,
+        "passive_fill_probability": forecast.passive_fill_probability,
+        "expected_slippage_spread_fraction": forecast.expected_slippage_spread_fraction,
+        "expected_slippage_absolute": forecast.expected_slippage_absolute,
+        "adverse_selection_risk": forecast.adverse_selection_risk,
+        "touch_depth_bid": forecast.touch_depth_bid,
+        "touch_depth_ask": forecast.touch_depth_ask,
+        "displayed_depth_consumed_fraction": forecast.displayed_depth_consumed_fraction,
+        "data_confidence": forecast.data_confidence,
+        "model_confidence": forecast.model_confidence,
+        "capability_tier": forecast.capability_tier.value,
+        "quality_flags": list(forecast.quality_flags),
+        "supporting_evidence": list(forecast.supporting_evidence),
+        "counter_evidence": list(forecast.counter_evidence),
+    }
+
+
+def microstructure_forecast_to_dict(forecast: MicrostructureForecast) -> dict[str, Any]:
+    return {
+        "instrument": forecast.instrument,
+        "venue": forecast.venue,
+        "horizon": forecast.horizon,
+        "event_time": forecast.event_time,
+        "available_time": forecast.available_time,
+        "producer_version": forecast.producer_version,
+        "forecast_method": forecast.forecast_method,
+        "forecast_version": forecast.forecast_version,
+        "forecast_horizon_seconds": forecast.forecast_horizon_seconds,
+        "expected_mid_delta": forecast.expected_mid_delta,
+        "direction_bias": forecast.direction_bias.value,
+        "continuation_probability": forecast.continuation_probability,
+        "reversal_probability": forecast.reversal_probability,
+        "volatility_proxy": forecast.volatility_proxy,
+        "composite_bias": forecast.composite_bias,
+        "data_confidence": forecast.data_confidence,
+        "model_confidence": forecast.model_confidence,
+        "capability_tier": forecast.capability_tier.value,
+        "quality_flags": list(forecast.quality_flags),
+        "supporting_evidence": list(forecast.supporting_evidence),
+        "counter_evidence": list(forecast.counter_evidence),
+    }
+
+
+def impact_evidence_to_dict(evidence: ImpactEvidence) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "instrument": evidence.instrument,
+        "venue": evidence.venue,
+        "horizon": evidence.horizon,
+        "event_time": evidence.event_time,
+        "available_time": evidence.available_time,
+        "producer_version": evidence.producer_version,
+        "impact_method": evidence.impact_method,
+        "impact_version": evidence.impact_version,
+        "impact_regime": evidence.impact_regime.value,
+        "mid_delta": evidence.mid_delta,
+        "opposing_replenishment": evidence.opposing_replenishment,
+        "data_confidence": evidence.data_confidence,
+        "model_confidence": evidence.model_confidence,
+        "capability_tier": evidence.capability_tier.value,
+        "quality_flags": list(evidence.quality_flags),
+        "supporting_evidence": list(evidence.supporting_evidence),
+        "counter_evidence": list(evidence.counter_evidence),
+    }
+    if evidence.aggression_signed_volume is not None:
+        payload["aggression_signed_volume"] = evidence.aggression_signed_volume
+    if evidence.price_efficiency is not None:
+        payload["price_efficiency"] = evidence.price_efficiency
+    if evidence.absorption_score is not None:
+        payload["absorption_score"] = evidence.absorption_score
+    if evidence.exhaustion_score is not None:
+        payload["exhaustion_score"] = evidence.exhaustion_score
+    return payload
+
+
+def liquidity_evidence_to_dict(evidence: LiquidityEvidence) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "instrument": evidence.instrument,
+        "venue": evidence.venue,
+        "horizon": evidence.horizon,
+        "event_time": evidence.event_time,
+        "available_time": evidence.available_time,
+        "producer_version": evidence.producer_version,
+        "liquidity_method": evidence.liquidity_method,
+        "liquidity_version": evidence.liquidity_version,
+        "net_depth_delta": evidence.net_depth_delta,
+        "depth_withdrawal": evidence.depth_withdrawal,
+        "depth_replenishment": evidence.depth_replenishment,
+        "fragility_score": evidence.fragility_score,
+        "spread_delta": evidence.spread_delta,
+        "total_depth": evidence.total_depth,
+        "data_confidence": evidence.data_confidence,
+        "model_confidence": evidence.model_confidence,
+        "capability_tier": evidence.capability_tier.value,
+        "quality_flags": list(evidence.quality_flags),
+        "supporting_evidence": list(evidence.supporting_evidence),
+        "counter_evidence": list(evidence.counter_evidence),
+    }
+    if evidence.resiliency_score is not None:
+        payload["resiliency_score"] = evidence.resiliency_score
+    return payload
 
 
 def classified_trade_to_dict(trade: ClassifiedTrade) -> dict[str, Any]:

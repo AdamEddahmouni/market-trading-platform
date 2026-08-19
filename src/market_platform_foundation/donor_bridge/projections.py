@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from . import internship_client
@@ -193,8 +194,15 @@ def _build_state_machine(detail: dict[str, Any], rules: list[dict[str, Any]]) ->
         for rule in rules
         if str(rule.get("outcome", "")).upper() not in {"PASS", "FAIL"}
     ]
+    state_transitions = _causal_state_transitions(detail)
     last_delta = str(transition_meta.get("trigger") or "frozen aggregate snapshot")
-    if freshness.upper() == "FROZEN" and not transition_meta:
+    if state_transitions:
+        latest = state_transitions[0]
+        if latest.get("changed_at"):
+            last_delta = str(latest["changed_at"])
+        elif latest.get("trigger"):
+            last_delta = str(latest["trigger"])
+    elif freshness.upper() == "FROZEN" and not transition_meta:
         last_delta = "frozen — no live transition stream"
     elif freshness and not transition_meta:
         last_delta = f"freshness {freshness}"
@@ -214,7 +222,11 @@ def _build_state_machine(detail: dict[str, Any], rules: list[dict[str, Any]]) ->
                 "trigger": trigger,
             }
         ],
-        "state_transitions": _causal_state_transitions(detail),
+        "state_transitions": state_transitions,
+        "transition_count": len(state_transitions),
+        "latest_transition_at": (
+            state_transitions[0].get("changed_at") if state_transitions else None
+        ),
         "unchanged_criteria": unchanged,
         "unknown_criteria": unknown,
         "causal_model_version": causal.get("model_version"),
@@ -310,6 +322,23 @@ def _coverage_label(row: dict[str, Any]) -> str:
     return "coverage unknown"
 
 
+def _effective_prediction_cutoff(
+    *,
+    mode_normalized: str,
+    prediction_cutoff: int | None,
+    as_of_context: dict[str, Any] | None,
+) -> int | None:
+    if prediction_cutoff is not None:
+        return prediction_cutoff
+    ctx = as_of_context or {}
+    as_of_ns = ctx.get("as_of_time_ns")
+    if as_of_ns is not None:
+        return int(as_of_ns)
+    if mode_normalized == "current":
+        return time.time_ns()
+    return None
+
+
 def _merge_cross_lane_causal(
     detail: dict[str, Any],
     *,
@@ -320,7 +349,12 @@ def _merge_cross_lane_causal(
     as_of_context: dict[str, Any] | None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Fuse IMP whale lane evidence into donor causal intelligence when available."""
-    if prediction_cutoff is None:
+    effective_cutoff = _effective_prediction_cutoff(
+        mode_normalized=mode_normalized,
+        prediction_cutoff=prediction_cutoff,
+        as_of_context=as_of_context,
+    )
+    if effective_cutoff is None:
         return detail, []
 
     from ..providers.projections import (
@@ -341,37 +375,50 @@ def _merge_cross_lane_causal(
         merge_cross_lane_evidence,
         merge_cross_lane_snapshots,
     )
+    from .horizon_model_bridge import build_horizon_model_snapshot
+    from .lending_adapter import build_lending_cross_lane_fields
+    from .transition_stream import (
+        extract_fuel_history,
+        extract_prior_cross_lane,
+        replay_transition_stream,
+    )
     from ..options.risk_neutral import infer_risk_neutral_distribution
     from ..options.surface import build_volatility_surface
 
     order_flow = build_workspace_order_flow_payload(
         symbol,
         as_of_context=as_of_context or {},
-        prediction_cutoff=prediction_cutoff,
+        prediction_cutoff=effective_cutoff,
     )
     options = build_workspace_options_payload(
         symbol,
         as_of_context=as_of_context or {},
-        prediction_cutoff=prediction_cutoff,
+        prediction_cutoff=effective_cutoff,
     )
     order_book = build_workspace_order_book_payload(
         symbol,
         as_of_context=as_of_context or {},
-        prediction_cutoff=prediction_cutoff,
+        prediction_cutoff=effective_cutoff,
     )
     futures = build_workspace_futures_payload(
         symbol,
         as_of_context=as_of_context or {},
-        prediction_cutoff=prediction_cutoff,
+        prediction_cutoff=effective_cutoff,
     )
     distribution = build_workspace_distribution_payload(
         symbol,
         as_of_context=as_of_context or {},
-        prediction_cutoff=prediction_cutoff,
+        prediction_cutoff=effective_cutoff,
     )
 
     of_snapshot, of_evidence = build_cross_lane_snapshot_from_order_flow(order_flow)
-    opt_snapshot, opt_evidence = build_cross_lane_snapshot_from_options(options)
+    transitions = replay_transition_stream(as_of_time_ns=effective_cutoff)
+    prior_cross_lane = extract_prior_cross_lane(transitions)
+    fuel_history = extract_fuel_history(transitions)
+    opt_snapshot, opt_evidence = build_cross_lane_snapshot_from_options(
+        options,
+        prior_cross_lane=prior_cross_lane or None,
+    )
     ob_snapshot, ob_evidence = build_cross_lane_snapshot_from_order_book(order_book)
     fut_snapshot, fut_evidence = build_cross_lane_snapshot_from_futures(futures)
     dist_snapshot, dist_evidence = build_cross_lane_snapshot_from_distribution(distribution)
@@ -392,6 +439,7 @@ def _merge_cross_lane_causal(
         ob_snapshot,
         fut_snapshot,
         dist_snapshot,
+        build_lending_cross_lane_fields(),
     )
     evidence = merge_cross_lane_evidence(
         of_evidence,
@@ -454,9 +502,16 @@ def _merge_cross_lane_causal(
                 "adam_classification": merged_detail.get("adam_classification"),
                 "freshness": merged_detail.get("freshness", "FROZEN"),
             }
+            horizon_model = build_horizon_model_snapshot(
+                symbol=symbol,
+                row=eval_row,
+                prediction_cutoff=effective_cutoff,
+            )
             causal = evaluate_causal_intelligence(
                 row=eval_row,
                 cross_lane=snapshot,
+                fuel_history=fuel_history or None,
+                horizon_model=horizon_model,
                 base_url=base_url,
             )
             merged_detail["causal_intelligence"] = causal
@@ -792,6 +847,18 @@ def build_workspace_squeeze_payload(
         if mode_normalized == "current"
         else _outcome_label(detail)
     )
+    opportunity_payload: dict[str, Any] = {}
+    if as_of_context is not None and prediction_cutoff is not None:
+        from ..providers.projections import build_workspace_opportunity_payload
+
+        opportunity_payload = build_workspace_opportunity_payload(
+            symbol_upper,
+            as_of_context=as_of_context,
+            prediction_cutoff=prediction_cutoff,
+            squeeze_causal=detail.get("causal_intelligence")
+            if isinstance(detail.get("causal_intelligence"), dict)
+            else None,
+        )
     return {
         **base_payload,
         "available": True,
@@ -810,6 +877,7 @@ def build_workspace_squeeze_payload(
         if isinstance(detail.get("causal_intelligence"), dict)
         else None,
         "cross_lane_evidence": cross_lane_evidence,
+        "opportunity_snapshot": opportunity_payload.get("opportunity_snapshot"),
         "ignition_evidence": _ignition_evidence_cards(
             detail,
             symbol=symbol_upper,

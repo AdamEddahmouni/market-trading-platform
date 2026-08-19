@@ -13,6 +13,27 @@ describe("StateTransitionBlock", () => {
     expect(screen.getByText("frozen_snapshot")).toBeInTheDocument();
   });
 
+  it("renders causal transition stream with changed_at", () => {
+    render(<StateTransitionBlock squeeze={frozenSqueezeFixture} />);
+    expect(screen.getByText("Causal state transitions")).toBeInTheDocument();
+    expect(screen.getByText("IGNITION_WATCH → LIVE_CONFIRMATION")).toBeInTheDocument();
+    expect(screen.getByText("live_order_flow_confirmation")).toBeInTheDocument();
+    expect(screen.getByText("at 2026-08-18T14:10:00.000000000Z")).toBeInTheDocument();
+  });
+
+  it("hides causal log when state_transitions is empty", () => {
+    const squeeze = {
+      ...frozenSqueezeFixture,
+      state_machine: {
+        ...frozenSqueezeFixture.state_machine!,
+        state_transitions: [],
+        transition_count: 0,
+      },
+    };
+    render(<StateTransitionBlock squeeze={squeeze} />);
+    expect(screen.queryByText("Causal state transitions")).not.toBeInTheDocument();
+  });
+
   it("falls back to banner when state_machine is missing", () => {
     const squeeze = { ...frozenSqueezeFixture, state_machine: undefined, ignition_state: "UNKNOWN" };
     render(<StateTransitionBlock squeeze={squeeze} />);

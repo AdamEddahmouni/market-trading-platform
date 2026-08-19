@@ -65,6 +65,17 @@ export const frozenSqueezeFixture: WorkspaceSqueezeResponse = {
         trigger: "FROZEN_DEMO aggregate load",
       },
     ],
+    state_transitions: [
+      {
+        from_state: "IGNITION_WATCH",
+        to_state: "LIVE_CONFIRMATION",
+        changed_at: "2026-08-18T14:10:00.000000000Z",
+        trigger: "live_order_flow_confirmation",
+        kind: "causal_state",
+      },
+    ],
+    transition_count: 1,
+    latest_transition_at: "2026-08-18T14:10:00.000000000Z",
   },
   readiness: {
     freshness_state: "FROZEN",
