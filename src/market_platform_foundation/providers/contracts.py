@@ -119,6 +119,36 @@ class FuturesBarsProvider(Protocol):
         ...
 
 
+class FuturesMacroEventsProvider(Protocol):
+    """Macro calendar events for futures event-risk context (F7)."""
+
+    provider_id: str
+    capability: str
+
+    def fetch_macro_events(
+        self,
+        symbol: str,
+        *,
+        as_of_time_ns: int | None = None,
+    ) -> ProviderResult:
+        ...
+
+
+class FuturesMarginProvider(Protocol):
+    """Exchange/broker margin requirement history (F8)."""
+
+    provider_id: str
+    capability: str
+
+    def fetch_margin(
+        self,
+        symbol: str,
+        *,
+        as_of_time_ns: int | None = None,
+    ) -> ProviderResult:
+        ...
+
+
 class DistributionForecastProvider(Protocol):
     """Physical return distribution forecasts (SHARED P2)."""
 
@@ -166,6 +196,8 @@ __all__ = [
     "EXECUTION_DISABLED",
     "FuturesBarsProvider",
     "FuturesChainProvider",
+    "FuturesMacroEventsProvider",
+    "FuturesMarginProvider",
     "FuturesPositioningProvider",
     "OptionChainProvider",
     "OrderFlowProvider",

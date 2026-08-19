@@ -57,6 +57,8 @@ def query_institutional_evidence(
             "status": "unavailable",
         }
     if family == REGULATORY_DISCLOSURE_FAMILY and _LEDGER is not None:
+        from ..participant.bridge import query_participant_actions_from_ledger
+        from ..participant.evidence import summarize_participant_actions
         from ..providers.whale_ledger import WHALE_ENTITLED_DISCLOSURE
 
         events = _LEDGER.query_events(
@@ -64,9 +66,24 @@ def query_institutional_evidence(
             instrument_id=instrument_id,
             prediction_cutoff=prediction_cutoff,
         )
+        if events and instrument_id is not None:
+            actions = query_participant_actions_from_ledger(
+                events,
+                instrument_id=instrument_id,
+                prediction_cutoff=prediction_cutoff,
+            )
+            summary = summarize_participant_actions(actions)
+            return {
+                **summary,
+                "event_count": len(events),
+                "family": family,
+                "prediction_cutoff": prediction_cutoff,
+                "reason_code": WHALE_ENTITLED_DISCLOSURE,
+                "status": "available",
+            }
         if events:
             return {
-                "direction": "neutral",
+                "direction": "neutral_context",
                 "event_count": len(events),
                 "family": family,
                 "prediction_cutoff": prediction_cutoff,

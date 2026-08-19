@@ -1223,6 +1223,70 @@ def build_cross_lane_snapshot_from_futures(
                 )
             )
 
+    macro = futures_payload.get("macro_event_snapshot")
+    if bool(futures_payload.get("futures_macro_available")) and isinstance(macro, dict):
+        snapshot["futures_macro_available"] = True
+        snapshot["futures_macro_risk_regime"] = macro.get("macro_risk_regime")
+        if macro.get("macro_risk_regime") == "ELEVATED":
+            upcoming = macro.get("upcoming_event_type", "macro")
+            evidence.append(
+                lane_evidence_to_dict(
+                    NormalizedLaneEvidence(
+                        lane=LaneId.FUTURES,
+                        signal=EvidenceSignal.FUTURES_MACRO_EVENT_RISK,
+                        strength="MODERATE",
+                        available=True,
+                        source_ref="macro.fixture.futures_macro",
+                        detail=(
+                            f"Macro event window elevated (upcoming={upcoming}); "
+                            "event-risk context, not directional forecast"
+                        ),
+                        provenance_class=EvidenceProvenanceClass.DERIVED,
+                    )
+                )
+            )
+
+    leverage = futures_payload.get("leverage_stress_snapshot")
+    if bool(futures_payload.get("futures_leverage_stress_available")) and isinstance(
+        leverage, dict
+    ):
+        snapshot["futures_leverage_stress_available"] = True
+        snapshot["futures_stress_regime"] = leverage.get("stress_regime")
+        if leverage.get("long_liquidation_risk"):
+            evidence.append(
+                lane_evidence_to_dict(
+                    NormalizedLaneEvidence(
+                        lane=LaneId.FUTURES,
+                        signal=EvidenceSignal.FUTURES_LONG_LIQUIDATION_RISK,
+                        strength="MODERATE",
+                        available=True,
+                        source_ref="margin.fixture.futures_margin",
+                        detail=(
+                            "Elevated leveraged-long liquidation stress on futures "
+                            "(distinct from equity short squeeze mechanics)"
+                        ),
+                        provenance_class=EvidenceProvenanceClass.DERIVED,
+                    )
+                )
+            )
+        if leverage.get("short_liquidation_risk"):
+            evidence.append(
+                lane_evidence_to_dict(
+                    NormalizedLaneEvidence(
+                        lane=LaneId.FUTURES,
+                        signal=EvidenceSignal.FUTURES_SHORT_LIQUIDATION_RISK,
+                        strength="MODERATE",
+                        available=True,
+                        source_ref="margin.fixture.futures_margin",
+                        detail=(
+                            "Elevated leveraged-short liquidation stress on futures "
+                            "(distinct from equity short squeeze mechanics)"
+                        ),
+                        provenance_class=EvidenceProvenanceClass.DERIVED,
+                    )
+                )
+            )
+
     return snapshot, evidence
 
 
@@ -1435,6 +1499,8 @@ def merge_cross_lane_snapshots(
         "distribution_available": False,
         "squeeze_available": False,
         "attention_available": False,
+        "catalyst_available": False,
+        "lending_available": False,
     }
     for snapshot in snapshots:
         if not snapshot:

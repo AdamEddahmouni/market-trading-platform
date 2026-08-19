@@ -137,16 +137,16 @@ See `OPTIONS_CAPABILITY_GAP_ANALYSIS.md`.
 
 ## Next shared milestone
 
-**Futures F6–F8 + Platform P1 catalyst interfaces**
+**Futures F9–F10 + Platform P1 catalyst interfaces**
 
-SHARED P2 (physical distribution), SHARED P3 (cross-lane evidence), and SHARED P4 (EV / opportunity fusion) are **COMPLETE (fixture scope)** as of 2026-08-19.
+SHARED P2 (physical distribution), SHARED P3 (cross-lane evidence), SHARED P4 (EV / opportunity fusion), and **Futures F6–F8** (family models, macro events, leverage stress) are **COMPLETE (fixture scope)** as of 2026-08-19.
 
 Recommended next lane-parallel work:
 
-- **Futures F6–F8** — family models, leverage stress, execution semantics
+- **Futures F9–F10** — relative value spreads, simulator roll/VM extensions
 - **Order Flow OF10** — MBO / queue research primitives
 - **Platform P1** — catalyst/attention runtime interfaces (contracts exist; runtime wiring deferred)
-- **SHARED P4 extension** — futures outright/curve fusion (blocked on F8–F10)
+- **SHARED P4 extension** — futures outright/curve fusion (partially unblocked; F9–F10 remain)
 - **Discrepancy P0** — D-01 `causal_intelligence.state` mapping, D-10 deploy mirror sync
 
 ---

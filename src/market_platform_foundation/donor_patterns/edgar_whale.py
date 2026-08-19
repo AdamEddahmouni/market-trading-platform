@@ -5,6 +5,12 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any
 
+from ..contracts.participant import (
+    ActionDirection,
+    ParticipantActionType,
+    infer_action_from_form4_transaction,
+)
+
 
 class WhaleEventType(str, Enum):
     INSIDER_BUY = "insider_buy"
@@ -31,6 +37,32 @@ FORM_TYPE_MAP = {
 }
 
 
+def _event_type_from_form4(transaction_code: str | None) -> WhaleEventType:
+    action_type, direction, _ = infer_action_from_form4_transaction(transaction_code)
+    if action_type == ParticipantActionType.OPEN_MARKET_BUY:
+        return WhaleEventType.INSIDER_BUY
+    if action_type == ParticipantActionType.OPEN_MARKET_SELL:
+        return WhaleEventType.INSIDER_SELL
+    if direction == ActionDirection.AMBIGUOUS:
+        return WhaleEventType.PUBLIC_STATEMENT
+    return WhaleEventType.PUBLIC_STATEMENT
+
+
+def is_13f_form(form_type: str) -> bool:
+    return form_type.upper().replace("/A", "").startswith("13F")
+
+
+def resolve_holding_instrument_id(
+    holding: dict[str, Any],
+    *,
+    default_symbol: str,
+) -> str:
+    symbol = holding.get("symbol")
+    if symbol is not None and str(symbol).strip():
+        return str(symbol).strip().upper()
+    return default_symbol.upper()
+
+
 def normalize_edgar_filing(
     *,
     form_type: str,
@@ -44,10 +76,7 @@ def normalize_edgar_filing(
     base_type = FORM_TYPE_MAP.get(form_type.upper().replace("/A", ""), WhaleEventType.PUBLIC_STATEMENT)
     event_type = base_type
     if form_type.upper().startswith("4") and transaction_code:
-        if transaction_code.upper() in {"P", "A"}:
-            event_type = WhaleEventType.INSIDER_BUY
-        elif transaction_code.upper() in {"S", "D"}:
-            event_type = WhaleEventType.INSIDER_SELL
+        event_type = _event_type_from_form4(transaction_code)
     return {
         "event_type": event_type.value,
         "epistemic_class": EpistemicClass.OBSERVED.value,
@@ -59,8 +88,3 @@ def normalize_edgar_filing(
         "disclosure_lag_note": "SEC filings are delayed public disclosures, not a live tape.",
         "research_only": True,
     }
-
-
-def is_actionable_claim(event: dict[str, Any]) -> bool:
-    """Whale lane remains research-only by default."""
-    return bool(event.get("research_only"))

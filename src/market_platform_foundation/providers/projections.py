@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
+from ..contracts.market_context import baseline_sentiment_to_dict
 from ..features.institutional import get_institutional_ledger
 from ..providers.whale_ledger import (
     FUND_ETF_FAMILY,
@@ -118,6 +120,8 @@ def build_workspace_disclosure_payload(
     as_of_context: dict[str, object],
     prediction_cutoff: int,
 ) -> dict[str, Any]:
+    from ..donor_bridge.participant_adapter import build_participant_actions_bundle
+
     instrument_id = symbol.upper()
     ledger = get_institutional_ledger()
     if ledger is None:
@@ -144,17 +148,34 @@ def build_workspace_disclosure_payload(
             "research_only": True,
             "symbol": instrument_id,
         }
+    participant_bundle = build_participant_actions_bundle(
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
     return {
         "as_of_context": as_of_context,
         "available": True,
         "disclaimer": (
             "SEC filings are delayed public disclosures, not a live tape. "
+            "Participant semantics are research decomposition, not trade signals. "
             "Research-only per ADR-WHALE-001."
         ),
         "disclosure_lag_note": "SEC filings are delayed public disclosures, not a live tape.",
         "events": events,
         "event_count": len(events),
         "ledger_id": ledger.ledger_id,
+        "participant_actions": participant_bundle.get("actions", []),
+        "participant_summary": participant_bundle.get("summary", {}),
+        "participant_evidence": participant_bundle.get("typed_evidence", []),
+        "participant_skill_summary": (
+            participant_bundle.get("skill", {}).get("summary", {})
+            if isinstance(participant_bundle.get("skill"), dict)
+            else {}
+        ),
+        "participant_skill_available": bool(
+            isinstance(participant_bundle.get("skill"), dict)
+            and participant_bundle.get("skill", {}).get("available")
+        ),
         "provider_id": "sec.edgar.fixture",
         "research_only": True,
         "symbol": instrument_id,
@@ -205,12 +226,23 @@ def build_workspace_order_flow_payload(
         "aggressive_buy_volume": cvd_state.aggressive_buy_volume if cvd_state else 0.0,
         "aggressive_sell_volume": cvd_state.aggressive_sell_volume if cvd_state else 0.0,
     }
+    from ..order_flow.metaorder import classified_trades_from_bars, detect_metaorder_primitives
+    from ..order_flow.contracts import metaorder_primitive_to_dict
+
+    trades = classified_trades_from_bars(bars, instrument=instrument_id)
+    primitives = detect_metaorder_primitives(trades, instrument=instrument_id)
+    metaorder_summary = {
+        "primitive_count": len(primitives),
+        "metaorder_available": bool(primitives),
+        "primitives": [metaorder_primitive_to_dict(item) for item in primitives],
+    }
     return {
         "as_of_context": as_of_context,
         "available": True,
         "bars": bars,
         "bar_count": len(bars),
         "cvd_summary": cvd_summary,
+        "metaorder_summary": metaorder_summary,
         "disclaimer": (
             "Order-flow metrics are derived from admitted fixture trade classification. "
             "CVD = aggressive buy volume minus aggressive sell volume — not buyer count. "
@@ -876,6 +908,18 @@ def build_workspace_large_transactions_payload(
     }
 
 
+def _queue_summary_from_event(event_row: dict[str, Any]) -> dict[str, Any] | None:
+    """Extract OF10 MBO queue fields from a ledger summary row."""
+    if not event_row.get("mbo_capability_available"):
+        return None
+    return {
+        "queue_method": event_row.get("queue_method"),
+        "queue_version": event_row.get("queue_version"),
+        "queue_imbalance_mbo": event_row.get("queue_imbalance_mbo"),
+        "mbo_capability_available": event_row.get("mbo_capability_available"),
+    }
+
+
 def _liquidity_summary_from_event(event_row: dict[str, Any]) -> dict[str, Any] | None:
     """Extract OF6 liquidity dynamics fields from a ledger summary row."""
     if event_row.get("liquidity_method") is None and event_row.get("depth_withdrawal") is None:
@@ -1032,6 +1076,8 @@ def build_workspace_order_book_payload(
         "latest_impact_summary": _impact_summary_from_event(latest),
         "latest_microstructure_forecast": _microstructure_forecast_from_event(latest),
         "latest_execution_forecast": _execution_forecast_from_event(latest),
+        "latest_queue_snapshot": _queue_summary_from_event(latest),
+        "mbo_capability_available": latest.get("mbo_capability_available", False),
         "ledger_id": ledger.ledger_id,
         "provider_id": "depth.fixture.order_book",
         "research_only": True,
@@ -1214,6 +1260,137 @@ def _enrich_es_futures_f5_payload(
             carry_observation["carry_zscore"] = carry_baseline.get("carry_zscore")
         payload["carry_observation"] = carry_observation
 
+    return _enrich_es_futures_f7_payload(payload, prediction_cutoff=prediction_cutoff)
+
+
+def _enrich_es_futures_f7_payload(
+    payload: dict[str, Any],
+    *,
+    prediction_cutoff: int | None = None,
+) -> dict[str, Any]:
+    """Attach F7 macro event calendar for ES fixture."""
+    if payload.get("symbol", "").upper() != "ES":
+        return payload
+    from ..futures.macro_events import macro_events_payload
+    from .adapters.fixture_futures_macro import FixtureFuturesMacroEventsProvider
+    from .composition import get_provider_composition
+
+    composition = get_provider_composition()
+    macro_result = composition.futures_macro.fetch_macro_events(
+        "ES",
+        as_of_time_ns=prediction_cutoff,
+    )
+    if macro_result.status != "available":
+        macro_result = FixtureFuturesMacroEventsProvider().fetch_macro_events(
+            "ES",
+            as_of_time_ns=prediction_cutoff,
+        )
+
+    decision_time = prediction_cutoff if prediction_cutoff is not None else 0
+    f7_payload = macro_events_payload(
+        macro_result,
+        instrument_family="ES",
+        decision_time=decision_time,
+    )
+    payload["macro_event_snapshot"] = f7_payload.get("macro_event_snapshot")
+    payload["futures_macro_available"] = bool(f7_payload.get("futures_macro_available"))
+    payload["macro_risk_regime"] = f7_payload.get("macro_risk_regime")
+    payload["event_window_active"] = f7_payload.get("event_window_active")
+    if f7_payload.get("quality_flags"):
+        payload["macro_quality_flags"] = f7_payload.get("quality_flags")
+    return _enrich_es_futures_f8_payload(payload, prediction_cutoff=prediction_cutoff)
+
+
+def _enrich_es_futures_f8_payload(
+    payload: dict[str, Any],
+    *,
+    prediction_cutoff: int | None = None,
+) -> dict[str, Any]:
+    """Attach F8 leverage / liquidation stress for ES fixture."""
+    if payload.get("symbol", "").upper() != "ES":
+        return payload
+    from ..futures.leverage_stress import leverage_stress_payload
+    from .adapters.fixture_futures_margin import FixtureFuturesMarginProvider
+    from .composition import get_provider_composition
+
+    composition = get_provider_composition()
+    margin_result = composition.futures_margin.fetch_margin(
+        "ES",
+        as_of_time_ns=prediction_cutoff,
+    )
+    if margin_result.status != "available":
+        margin_result = FixtureFuturesMarginProvider().fetch_margin(
+            "ES",
+            as_of_time_ns=prediction_cutoff,
+        )
+
+    lead_price = None
+    snapshots = payload.get("snapshots")
+    if isinstance(snapshots, list) and snapshots:
+        latest = snapshots[-1]
+        if isinstance(latest, dict):
+            best_bid = latest.get("best_bid")
+            best_ask = latest.get("best_ask")
+            if best_bid is not None and best_ask is not None:
+                lead_price = (float(best_bid) + float(best_ask)) / 2.0
+    if lead_price is None:
+        curve = payload.get("curve_snapshot")
+        if isinstance(curve, dict):
+            prices = curve.get("prices")
+            if isinstance(prices, list) and prices:
+                lead_price = float(prices[0])
+
+    fragility_score = None
+    liquidity = payload.get("latest_liquidity_summary")
+    if isinstance(liquidity, dict):
+        raw_fragility = liquidity.get("fragility_score")
+        if raw_fragility is not None:
+            fragility_score = float(raw_fragility)
+
+    decision_time = prediction_cutoff if prediction_cutoff is not None else 0
+    f8_payload = leverage_stress_payload(
+        margin_result,
+        instrument_family="ES",
+        decision_time=decision_time,
+        crowding_regime=str(payload.get("crowding_regime", "")) or None,
+        lead_price=lead_price,
+        fragility_score=fragility_score,
+    )
+    payload["leverage_stress_snapshot"] = f8_payload.get("leverage_stress_snapshot")
+    payload["futures_leverage_stress_available"] = bool(
+        f8_payload.get("futures_leverage_stress_available")
+    )
+    payload["stress_regime"] = f8_payload.get("stress_regime")
+    payload["long_liquidation_risk"] = f8_payload.get("long_liquidation_risk")
+    payload["short_liquidation_risk"] = f8_payload.get("short_liquidation_risk")
+    if f8_payload.get("quality_flags"):
+        payload["leverage_quality_flags"] = f8_payload.get("quality_flags")
+    return _enrich_es_futures_f6_payload(payload, prediction_cutoff=prediction_cutoff)
+
+
+def _enrich_es_futures_f6_payload(
+    payload: dict[str, Any],
+    *,
+    prediction_cutoff: int | None = None,
+) -> dict[str, Any]:
+    """Attach F6 asset-family context for ES fixture."""
+    del prediction_cutoff
+    if payload.get("symbol", "").upper() != "ES":
+        return payload
+    from ..futures.families.registry import family_context_payload
+
+    macro_snapshot = payload.get("macro_event_snapshot")
+    leverage_snapshot = payload.get("leverage_stress_snapshot")
+    f6_payload = family_context_payload(
+        "ES",
+        payload,
+        macro_snapshot=macro_snapshot if isinstance(macro_snapshot, dict) else None,
+        leverage_snapshot=leverage_snapshot if isinstance(leverage_snapshot, dict) else None,
+    )
+    payload["family_context_snapshot"] = f6_payload.get("family_context_snapshot")
+    payload["futures_family_available"] = bool(f6_payload.get("futures_family_available"))
+    if f6_payload.get("missing_capabilities"):
+        payload["family_missing_capabilities"] = f6_payload.get("missing_capabilities")
     return payload
 
 
@@ -1424,6 +1601,8 @@ def build_workspace_futures_payload(
         "latest_impact_summary": _impact_summary_from_event(latest),
         "latest_microstructure_forecast": _microstructure_forecast_from_event(latest),
         "latest_execution_forecast": _execution_forecast_from_event(latest),
+        "latest_queue_snapshot": _queue_summary_from_event(latest),
+        "mbo_capability_available": latest.get("mbo_capability_available", False),
         "legacy_whale_family": "futures_positioning",
         "ledger_id": ledger.ledger_id,
         "provenance": "fixture",
@@ -1586,6 +1765,162 @@ def build_workspace_distribution_payload(
     }
 
 
+_DEFAULT_MC_RAW_FIXTURE = (
+    Path(__file__).resolve().parents[3]
+    / "tests"
+    / "fixtures"
+    / "market_context"
+    / "boxl_raw_documents_slice.json"
+)
+_DEFAULT_MC_FINBERT_FIXTURE = (
+    Path(__file__).resolve().parents[3]
+    / "tests"
+    / "fixtures"
+    / "market_context"
+    / "boxl_finbert_labels_slice.json"
+)
+_MC_FIXTURE_SYMBOL = "BOXL"
+
+
+def market_context_available(*, instrument_id: str, prediction_cutoff: int) -> bool:
+    """True when admitted MC4 fixture sentiment is available for the symbol."""
+    if instrument_id.upper() != _MC_FIXTURE_SYMBOL:
+        return False
+    if not _DEFAULT_MC_RAW_FIXTURE.is_file():
+        return False
+    return prediction_cutoff > 0
+
+
+def build_workspace_market_context_payload(
+    symbol: str,
+    *,
+    as_of_context: dict[str, object],
+    prediction_cutoff: int,
+) -> dict[str, Any]:
+    """Build MC4 baseline sentiment workspace payload (BOXL fixture scope)."""
+    from ..market_context.entity_resolution import (
+        build_symbol_mapping_registry,
+        load_context_document_records,
+    )
+    from ..market_context.sentiment import (
+        PRODUCER_VERSION,
+        build_fixture_sentiment_pipeline,
+        build_sentiment_cross_lane_evidence,
+        load_finbert_fixture_labels,
+    )
+
+    instrument_id = symbol.upper()
+    if instrument_id != _MC_FIXTURE_SYMBOL:
+        return {
+            "as_of_context": as_of_context,
+            "available": False,
+            "baseline_sentiment_available": False,
+            "disclaimer": (
+                "Baseline financial sentiment is admitted on BOXL fixture scope only. "
+                "Semantic labels are not trade direction or catalyst strength."
+            ),
+            "document_sentiments": [],
+            "event_sentiment_summaries": [],
+            "reason": "MARKET_CONTEXT_FIXTURE_SYMBOL_UNSUPPORTED",
+            "research_only": True,
+            "symbol": instrument_id,
+        }
+
+    if not _DEFAULT_MC_RAW_FIXTURE.is_file():
+        return {
+            "as_of_context": as_of_context,
+            "available": False,
+            "baseline_sentiment_available": False,
+            "disclaimer": "Market context fixture not found. Fail-closed.",
+            "document_sentiments": [],
+            "event_sentiment_summaries": [],
+            "reason": "MARKET_CONTEXT_FIXTURE_MISSING",
+            "research_only": True,
+            "symbol": instrument_id,
+        }
+
+    finbert_labels: dict[str, object] = {}
+    if _DEFAULT_MC_FINBERT_FIXTURE.is_file():
+        finbert_labels = load_finbert_fixture_labels(_DEFAULT_MC_FINBERT_FIXTURE)
+
+    records = load_context_document_records(
+        _DEFAULT_MC_RAW_FIXTURE,
+        symbol_mappings=build_symbol_mapping_registry(instrument_id),
+    )
+    document_results, events, event_summaries = build_fixture_sentiment_pipeline(
+        records,
+        prediction_cutoff=prediction_cutoff,
+        finbert_labels=finbert_labels,
+    )
+    if not document_results:
+        return {
+            "as_of_context": as_of_context,
+            "available": False,
+            "baseline_sentiment_available": False,
+            "disclaimer": "No PIT-eligible documents for baseline sentiment at replay cutoff.",
+            "document_sentiments": [],
+            "event_sentiment_summaries": [],
+            "reason": "MARKET_CONTEXT_NO_PIT_ELIGIBLE_DOCUMENTS",
+            "research_only": True,
+            "symbol": instrument_id,
+        }
+
+    document_sentiments = [
+        {
+            "document_id": item.document_id,
+            "keyword": baseline_sentiment_to_dict(item.keyword) if item.keyword else None,
+            "finbert": baseline_sentiment_to_dict(item.finbert) if item.finbert else None,
+            "targeted": (
+                {
+                    "entity_id": item.targeted.entity_id,
+                    "label": item.targeted.label.value,
+                    "confidence": item.targeted.confidence,
+                    "uncertainty_score": item.targeted.uncertainty_score,
+                }
+                if item.targeted
+                else None
+            ),
+        }
+        for item in document_results
+    ]
+    event_sentiment_summaries = [
+        {
+            "event_id": summary.event_id,
+            "canonical_event_type": summary.canonical_event_type,
+            "document_count": summary.document_count,
+            "keyword": baseline_sentiment_to_dict(summary.keyword) if summary.keyword else None,
+            "finbert": baseline_sentiment_to_dict(summary.finbert) if summary.finbert else None,
+        }
+        for summary in event_summaries
+    ]
+    cross_lane_evidence = build_sentiment_cross_lane_evidence(
+        event_summaries,
+        symbol=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+
+    return {
+        "as_of_context": as_of_context,
+        "available": True,
+        "baseline_sentiment_available": True,
+        "cross_lane_evidence": cross_lane_evidence,
+        "disclaimer": (
+            "BaselineFinancialSentiment is semantic tone only — not economic surprise, "
+            "catalyst strength, or trade recommendation. Keyword-v1 runs in stdlib; "
+            "FinBERT labels are fixture-precomputed. Research-only per MC4."
+        ),
+        "document_count": len(document_results),
+        "document_sentiments": document_sentiments,
+        "event_cluster_count": len(events),
+        "event_sentiment_summaries": event_sentiment_summaries,
+        "prediction_cutoff_ns": prediction_cutoff,
+        "producer_id": "market_context.sentiment",
+        "producer_version": PRODUCER_VERSION,
+        "research_only": True,
+        "symbol": instrument_id,
+    }
+
+
 __all__ = [
     "build_workspace_catalyst_payload",
     "build_workspace_disclosure_payload",
@@ -1593,6 +1928,7 @@ __all__ = [
     "build_workspace_fund_etf_payload",
     "build_workspace_futures_payload",
     "build_workspace_large_transactions_payload",
+    "build_workspace_market_context_payload",
     "build_workspace_opportunity_payload",
     "build_workspace_options_payload",
     "build_workspace_order_book_payload",
@@ -1602,6 +1938,7 @@ __all__ = [
     "fund_etf_available",
     "futures_available",
     "large_transactions_available",
+    "market_context_available",
     "options_available",
     "order_book_available",
     "order_flow_available",

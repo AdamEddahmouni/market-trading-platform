@@ -68,6 +68,9 @@ export function FuturesWorkspacePanel({
   const trendBaseline = futures.trend_baseline_snapshot;
   const carryBaseline = futures.carry_baseline;
   const curveMomentum = futures.curve_momentum;
+  const familyContext = futures.family_context_snapshot;
+  const macroEvent = futures.macro_event_snapshot;
+  const leverageStress = futures.leverage_stress_snapshot;
 
   return (
     <section className="futures-panel">
@@ -265,6 +268,78 @@ export function FuturesWorkspacePanel({
             <dd>{futures.trend_regime}</dd>
           </div>
         ) : null}
+        {futures.futures_family_available && familyContext?.family ? (
+          <div>
+            <dt>Family model</dt>
+            <dd>{familyContext.family}</dd>
+          </div>
+        ) : null}
+        {familyContext?.curve_read ? (
+          <div>
+            <dt>Family curve read</dt>
+            <dd>{familyContext.curve_read}</dd>
+          </div>
+        ) : null}
+        {familyContext?.positioning_read ? (
+          <div>
+            <dt>Family positioning read</dt>
+            <dd>{familyContext.positioning_read}</dd>
+          </div>
+        ) : null}
+        {futures.futures_macro_available && macroEvent?.upcoming_event_type ? (
+          <div>
+            <dt>Upcoming macro event</dt>
+            <dd>{macroEvent.upcoming_event_type}</dd>
+          </div>
+        ) : null}
+        {futures.macro_risk_regime && futures.macro_risk_regime !== "UNAVAILABLE" ? (
+          <div>
+            <dt>Macro risk regime</dt>
+            <dd>{futures.macro_risk_regime}</dd>
+          </div>
+        ) : null}
+        {futures.event_window_active ? (
+          <div>
+            <dt>Macro event window</dt>
+            <dd>Active</dd>
+          </div>
+        ) : null}
+        {macroEvent?.surprise_zscore != null ? (
+          <div>
+            <dt>Macro surprise (z)</dt>
+            <dd>{String(macroEvent.surprise_zscore)}</dd>
+          </div>
+        ) : null}
+        {futures.futures_leverage_stress_available && leverageStress?.stress_regime ? (
+          <div>
+            <dt>Leverage stress regime</dt>
+            <dd>{leverageStress.stress_regime}</dd>
+          </div>
+        ) : null}
+        {leverageStress?.margin_percentile != null ? (
+          <div>
+            <dt>Margin percentile</dt>
+            <dd>{String(leverageStress.margin_percentile)}</dd>
+          </div>
+        ) : null}
+        {leverageStress?.effective_leverage != null ? (
+          <div>
+            <dt>Effective leverage</dt>
+            <dd>{String(leverageStress.effective_leverage)}</dd>
+          </div>
+        ) : null}
+        {futures.long_liquidation_risk ? (
+          <div>
+            <dt>Long liquidation risk</dt>
+            <dd>Elevated</dd>
+          </div>
+        ) : null}
+        {futures.short_liquidation_risk ? (
+          <div>
+            <dt>Short liquidation risk</dt>
+            <dd>Elevated</dd>
+          </div>
+        ) : null}
       </dl>
 
       {oiHypothesis?.disclaimer ? (
@@ -278,6 +353,19 @@ export function FuturesWorkspacePanel({
       {futures.futures_positioning_available ? (
         <p className="workspace-hint">
           COT positioning is distinct from depth-derived whale family futures_positioning.
+        </p>
+      ) : null}
+      {futures.futures_macro_available ? (
+        <p className="workspace-hint">
+          Macro calendar is Futures-owned event risk — distinct from equity public_catalyst whale family.
+        </p>
+      ) : null}
+      {futures.futures_leverage_stress_available && leverageStress?.disclaimer ? (
+        <p className="workspace-hint">{leverageStress.disclaimer}</p>
+      ) : null}
+      {futures.futures_family_available ? (
+        <p className="workspace-hint">
+          Family context is interpretive metadata — not a directional forecast or universal Futures Score.
         </p>
       ) : null}
 

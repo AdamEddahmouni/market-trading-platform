@@ -172,5 +172,34 @@ from market_platform_foundation.order_flow import (
 
 ```powershell
 python -m unittest tests.order_flow.test_order_flow_engine
+python -m unittest tests.order_flow.test_queue
+python -m unittest tests.order_flow.test_metaorder
 python -m unittest tests.providers.test_order_flow
 ```
+
+## OF10 — MBO / queue semantics
+
+Module: `src/market_platform_foundation/order_flow/queue.py`
+
+| Method | ID | Scope |
+|---|---|---|
+| FIFO displayed queue | `fifo_displayed_mbo_v1` | MBO order reconstruction + queue position estimate |
+
+Fixture: `ADMITTED-MBO-ES-001` (`tests/fixtures/providers/order_flow/es_mbo_slice.json`)
+
+Workspace payload fields (ES futures depth):
+
+- `latest_queue_snapshot`, `mbo_capability_available`
+- Execution forecast `queue_model_version` upgrades from `none` when MBO present
+
+## OF11 — Metaorder detection primitives
+
+Module: `src/market_platform_foundation/order_flow/metaorder.py`
+
+| Method | ID | Scope |
+|---|---|---|
+| Persistent aggressive flow | `persistent_aggressive_flow_v1` | Consecutive same-side ClassifiedTrade clustering |
+
+Cross-lane signals: `PERSISTENT_AGGRESSIVE_BUY_FLOW`, `PERSISTENT_AGGRESSIVE_SELL_FLOW`
+
+Fixture regression: `tests/fixtures/providers/order_flow/nvda_metaorder_slice.json`

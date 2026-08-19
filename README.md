@@ -37,13 +37,13 @@ Revision 2 remains the incorporated Phase 0 safety authority.
 | MRA-001 — grounded Market Research Assistant | `PASS` (deterministic evidence retrieval on admitted fixture) |
 | MRA-002 — Anthropic LLM assistant | `PASS` (mocked HTTP acceptance; live inference when `ANTHROPIC_API_KEY` set) |
 
-## Four-lane cooperative expansion (fixture scope)
+## Five-lane cooperative expansion (fixture scope)
 
 Active forward work beyond governed Phases 0–16 is tracked in
 [Platform Cooperative Master Roadmap](docs/research/PLATFORM_COOPERATIVE_MASTER_ROADMAP.md).
 Latest cooperative milestone: **SHARED P4 — EV / opportunity fusion** (probability × payoff × costs × liquidity across Short Squeeze, Options, Order Flow, and Futures inputs).
 
-Completed cooperative milestones on admitted fixtures include O6–O9, OF6–OF9, F4–F5, SS P4–P7, and SHARED P2–P4. See
+Completed cooperative milestones on admitted fixtures include O6–O9, OF6–OF11, F4–F8, SS P4–P7, Market Context MC1–MC4, Participant PI1–PI6, and SHARED P2–P4. See
 [SHARED P4 EV / Opportunity Layer Spec](docs/research/SHARED_P4_EV_OPPORTUNITY_SPEC.md).
 
 The existing candidate evidence roots under `evidence/phase0/2E1E…` and
@@ -55,6 +55,8 @@ do not establish acceptance for the current repository subject.
 - [External donor index](docs/research/donors/README.md)
 - [Donor reuse and verification matrix](docs/research/donors/DONOR_REUSE_MATRIX.md)
 - [Revision 3 roadmap projection](docs/roadmap/REVISION_3_ROADMAP.md)
+- [Market Context target architecture](docs/research/MARKET_CONTEXT_TARGET_ARCHITECTURE.md)
+- [Five-lane roadmap reconciliation](docs/research/FIVE_LANE_ROADMAP_RECONCILIATION.md)
 - [Swim With the Whales doctrine](docs/architecture/SWIM_WITH_THE_WHALES.md)
 - [Model research and historical datasets](docs/architecture/MODEL_RESEARCH_AND_DATASETS.md)
 

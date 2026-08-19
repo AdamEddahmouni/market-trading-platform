@@ -1,0 +1,22 @@
+{
+  "admitted_fixture_id": "ADMITTED-MC-BOXL-001",
+  "capability_claims": [
+    "entity_resolution",
+    "event_clustering",
+    "syndication_lineage",
+    "pit_cutoff",
+    "baseline_sentiment"
+  ],
+  "content_paths": [
+    "tests/fixtures/market_context/boxl_raw_documents_slice.json",
+    "tests/fixtures/market_context/boxl_entity_ambiguous_slice.json",
+    "tests/fixtures/market_context/boxl_syndication_slice.json",
+    "tests/fixtures/market_context/boxl_finbert_labels_slice.json",
+    "tests/fixtures/market_context/boxl_sentiment_expected.json"
+  ],
+  "instrument_id": "BOXL",
+  "logical_id": "market_context.mc2_mc3_fixture_admission",
+  "research_only": true,
+  "schema_version": "1.0.0",
+  "status": "ADMITTED"
+}

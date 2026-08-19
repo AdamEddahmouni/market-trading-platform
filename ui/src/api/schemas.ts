@@ -413,6 +413,51 @@ export const WorkspaceSqueezeResponseSchema = z.object({
       }),
     )
     .optional(),
+  catalyst_strength: z
+    .object({
+      symbol: z.string(),
+      catalyst_id: z.string(),
+      strength: z.number().nullable().optional(),
+      catalyst_type: z.string(),
+      publication_state: z.string(),
+      provenance_ref: z.string().optional(),
+    })
+    .nullable()
+    .optional(),
+  attention_feature: z
+    .object({
+      symbol: z.string(),
+      attention_score: z.number().nullable().optional(),
+      attention_velocity: z.number().nullable().optional(),
+      attention_acceleration: z.number().nullable().optional(),
+      publication_state: z.string(),
+      provenance_ref: z.string().optional(),
+    })
+    .nullable()
+    .optional(),
+  thesis_invalidation: z
+    .object({
+      symbol: z.string(),
+      invalidation_score: z.number().nullable().optional(),
+      mechanism: z.string(),
+      publication_state: z.string(),
+      provenance_ref: z.string().optional(),
+    })
+    .nullable()
+    .optional(),
+  securities_lending_snapshot: z
+    .object({
+      symbol: z.string(),
+      utilization_rate: z.union([z.string(), z.number()]).nullable().optional(),
+      shares_on_loan: z.number().nullable().optional(),
+      shares_available: z.number().nullable().optional(),
+      fee_rate: z.union([z.string(), z.number()]).nullable().optional(),
+      publication_state: z.string().optional(),
+      provider: z.string().optional(),
+      borrow_utilization_velocity: z.number().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
   rules: z
     .array(
       z.object({
@@ -806,6 +851,48 @@ export const CurveMomentumSchema = z.object({
   quality_flags: z.array(z.string()).optional(),
 });
 
+export const FamilyContextSnapshotSchema = z.object({
+  family: z.string().optional(),
+  model_version: z.string().optional(),
+  curve_read: z.string().optional(),
+  positioning_read: z.string().optional(),
+  event_context_read: z.string().optional(),
+  risk_context: z.string().optional(),
+  quality_flags: z.array(z.string()).optional(),
+  provenance_ref: z.string().optional(),
+  available: z.boolean().optional(),
+});
+
+export const MacroEventSnapshotSchema = z.object({
+  instrument_family: z.string().optional(),
+  upcoming_event_id: z.string().nullable().optional(),
+  upcoming_event_type: z.string().nullable().optional(),
+  upcoming_scheduled_time: z.string().nullable().optional(),
+  nearest_past_event_id: z.string().nullable().optional(),
+  nearest_past_event_type: z.string().nullable().optional(),
+  event_window_active: z.boolean().optional(),
+  surprise_zscore: z.number().nullable().optional(),
+  macro_risk_regime: z.string().optional(),
+  macro_events_version: z.string().optional(),
+  available: z.boolean().optional(),
+});
+
+export const LeverageStressSnapshotSchema = z.object({
+  instrument_family: z.string().optional(),
+  stress_score: z.number().nullable().optional(),
+  stress_regime: z.string().optional(),
+  long_liquidation_risk: z.boolean().optional(),
+  short_liquidation_risk: z.boolean().optional(),
+  effective_leverage: z.number().nullable().optional(),
+  margin_percentile: z.number().nullable().optional(),
+  margin_change_pct: z.number().nullable().optional(),
+  crowding_regime: z.string().nullable().optional(),
+  fragility_score: z.number().nullable().optional(),
+  disclaimer: z.string().optional(),
+  leverage_stress_version: z.string().optional(),
+  available: z.boolean().optional(),
+});
+
 export const FuturesPositioningSnapshotSchema = z.object({
   available: z.boolean().optional(),
   instrument_family: z.string().optional(),
@@ -917,6 +1004,66 @@ export const WorkspaceFuturesSnapshotSchema = z.object({
   snapshot_provenance: z.string().optional(),
 });
 
+export const BaselineFinancialSentimentSchema = z.object({
+  target_entity_id: z.string().nullable().optional(),
+  label: z.enum(["positive", "negative", "neutral", "mixed", "unknown"]),
+  confidence: z.number().nullable().optional(),
+  uncertainty_score: z.number().nullable().optional(),
+  model: z.string(),
+  model_version: z.object({
+    model_id: z.string(),
+    model_version: z.string(),
+    prompt_version: z.string().nullable().optional(),
+    schema_version: z.string().optional(),
+    feature_version: z.string().nullable().optional(),
+  }),
+  event_time: z.string().optional(),
+  available_time: z.string().optional(),
+  publication_state: z.string().optional(),
+  provenance_ref: z.string().optional(),
+  quality_flags: z.array(z.string()).optional(),
+});
+
+export const WorkspaceMarketContextDocumentSentimentSchema = z.object({
+  document_id: z.string(),
+  keyword: BaselineFinancialSentimentSchema.nullable().optional(),
+  finbert: BaselineFinancialSentimentSchema.nullable().optional(),
+  targeted: z
+    .object({
+      entity_id: z.string(),
+      label: z.string(),
+      confidence: z.number().nullable().optional(),
+      uncertainty_score: z.number().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
+});
+
+export const WorkspaceMarketContextEventSentimentSchema = z.object({
+  event_id: z.string(),
+  canonical_event_type: z.string(),
+  document_count: z.number(),
+  keyword: BaselineFinancialSentimentSchema.nullable().optional(),
+  finbert: BaselineFinancialSentimentSchema.nullable().optional(),
+});
+
+export const WorkspaceMarketContextResponseSchema = z.object({
+  symbol: z.string(),
+  available: z.boolean(),
+  baseline_sentiment_available: z.boolean().optional(),
+  reason: z.string().optional(),
+  disclaimer: z.string().optional(),
+  research_only: z.boolean().optional(),
+  document_count: z.number().optional(),
+  document_sentiments: z.array(WorkspaceMarketContextDocumentSentimentSchema).optional(),
+  event_cluster_count: z.number().optional(),
+  event_sentiment_summaries: z.array(WorkspaceMarketContextEventSentimentSchema).optional(),
+  prediction_cutoff_ns: z.number().optional(),
+  producer_id: z.string().optional(),
+  producer_version: z.string().optional(),
+  as_of_context: AsOfContextSchema.optional(),
+});
+
 export const WorkspaceCatalystSnapshotSchema = z.object({
   available_time: z.number().optional(),
   catalyst_type: z.string().optional(),
@@ -1020,6 +1167,19 @@ export const WorkspaceFuturesResponseSchema = z.object({
   futures_baselines_available: z.boolean().optional(),
   trend_regime: z.string().optional(),
   baselines_quality_flags: z.array(z.string()).optional(),
+  family_context_snapshot: FamilyContextSnapshotSchema.optional(),
+  futures_family_available: z.boolean().optional(),
+  macro_event_snapshot: MacroEventSnapshotSchema.optional(),
+  futures_macro_available: z.boolean().optional(),
+  macro_risk_regime: z.string().optional(),
+  event_window_active: z.boolean().optional(),
+  macro_quality_flags: z.array(z.string()).optional(),
+  leverage_stress_snapshot: LeverageStressSnapshotSchema.optional(),
+  futures_leverage_stress_available: z.boolean().optional(),
+  stress_regime: z.string().optional(),
+  long_liquidation_risk: z.boolean().optional(),
+  short_liquidation_risk: z.boolean().optional(),
+  leverage_quality_flags: z.array(z.string()).optional(),
   canonical_family: z.string().optional(),
   legacy_whale_family: z.string().optional(),
   provenance: z.string().optional(),
@@ -1039,7 +1199,39 @@ export const WorkspaceDisclosureEventSchema = z.object({
   is_amendment: z.boolean().optional(),
   issuer: z.string().optional(),
   transaction_code: z.string().optional(),
+  transaction_date: z.string().optional(),
+  shares: z.number().optional(),
+  price_per_share: z.number().optional(),
+  shares_owned_following: z.number().optional(),
+  is_10b5_1: z.boolean().optional(),
+  stake_percent: z.number().optional(),
+  campaign_objective: z.string().optional(),
+  is_passive: z.boolean().optional(),
   source_url: z.string().optional(),
+});
+
+export const WorkspaceParticipantSummarySchema = z.object({
+  direction: z.string().optional(),
+  discretionary_buy_count: z.number().optional(),
+  activist_disclosure_count: z.number().optional(),
+  compensation_count: z.number().optional(),
+  open_market_sell_count: z.number().optional(),
+  ambiguous_count: z.number().optional(),
+  institutional_snapshot_count: z.number().optional(),
+  cross_lane_signals: z.array(z.string()).optional(),
+  action_count: z.number().optional(),
+});
+
+export const WorkspaceParticipantEvidenceSchema = z.object({
+  payload_type: z.string().optional(),
+  display_name: z.string().optional(),
+  action_type: z.string().optional(),
+  insider_discretion: z.string().nullable().optional(),
+  direction: z.string().optional(),
+  stake_percent: z.number().nullable().optional(),
+  campaign_objective: z.string().nullable().optional(),
+  is_passive: z.boolean().nullable().optional(),
+  cross_lane_signal: z.string().nullable().optional(),
 });
 
 export const WorkspaceDisclosureResponseSchema = z.object({
@@ -1051,6 +1243,8 @@ export const WorkspaceDisclosureResponseSchema = z.object({
   disclosure_lag_note: z.string().optional(),
   event_count: z.number().optional(),
   events: z.array(WorkspaceDisclosureEventSchema).optional(),
+  participant_summary: WorkspaceParticipantSummarySchema.optional(),
+  participant_evidence: z.array(WorkspaceParticipantEvidenceSchema).optional(),
   provider_id: z.string().optional(),
   ledger_id: z.string().optional(),
   as_of_context: AsOfContextSchema.optional(),

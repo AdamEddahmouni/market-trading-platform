@@ -23,6 +23,8 @@ from ...donor_patterns.order_book_lane import book_pressure_side
 from ...donor_patterns.order_book_lane import best_bid_ask
 from ...normalization.equity_bars import iso_to_epoch_ns
 from ..contracts import ProviderResult, SymbolMapping
+from ...order_flow.queue import compute_queue_imbalance_mbo
+from .fixture_mbo import FixtureMboProvider
 from ..envelope import (
     build_futures_envelope,
     build_provider_metadata,
@@ -93,6 +95,17 @@ def _execution_kwargs_from_result(result) -> dict[str, Any]:
     }
 
 
+def _queue_kwargs_from_snapshot(mbo_snapshot) -> dict[str, Any]:
+    if mbo_snapshot is None:
+        return {"mbo_capability_available": False}
+    return {
+        "queue_method": mbo_snapshot.queue_method,
+        "queue_version": mbo_snapshot.queue_version,
+        "queue_imbalance_mbo": compute_queue_imbalance_mbo(mbo_snapshot),
+        "mbo_capability_available": True,
+    }
+
+
 class FixtureFuturesProvider:
     """Offline ES futures depth adapter using bounded synthetic demo slice."""
 
@@ -106,6 +119,7 @@ class FixtureFuturesProvider:
             canonical_bytes({"fixture_path": str(self.fixture_path), "provider": self.provider_id})
         )
         self._fixture = self._load_fixture()
+        self._mbo_provider = FixtureMboProvider()
 
     def _load_fixture(self) -> dict[str, Any]:
         payload = json.loads(
@@ -263,6 +277,7 @@ class FixtureFuturesProvider:
                 recent_mid_deltas=recent_mid_deltas,
             )
             forecast_kwargs = _forecast_kwargs_from_result(forecast)
+            mbo_snapshot = self._mbo_provider.queue_snapshot_for_event_time(event_time)
             execution = compute_execution_forecast(
                 snapshot,
                 book_state_valid=book_state_valid if book_state_valid is not None else True,
@@ -273,8 +288,10 @@ class FixtureFuturesProvider:
                 exhaustion_score=exhaustion_score,
                 impact_regime=impact_regime,
                 level_count=level_count,
+                mbo_queue_snapshot=mbo_snapshot,
             )
             execution_kwargs = _execution_kwargs_from_result(execution)
+            queue_kwargs = _queue_kwargs_from_snapshot(mbo_snapshot)
             curr_mid = (bbo["bid_price"] + bbo["ask_price"]) / 2.0
             if prev_mid is not None and (book_state_valid is None or book_state_valid):
                 recent_mid_deltas.append(curr_mid - prev_mid)
@@ -316,6 +333,7 @@ class FixtureFuturesProvider:
                 **impact_kwargs,
                 **forecast_kwargs,
                 **execution_kwargs,
+                **queue_kwargs,
             )
             normalized_id = normalized_event_id(
                 provider_id=self.provider_id,

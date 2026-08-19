@@ -57,6 +57,21 @@ class ForecastDirection(StrEnum):
     NEUTRAL = "NEUTRAL"
 
 
+class MboOrderSide(StrEnum):
+    """Resting order side in MBO feed."""
+
+    BID = "bid"
+    ASK = "ask"
+
+
+class MetaorderFlowState(StrEnum):
+    """OF11 primitive flow state — not PI lifecycle."""
+
+    FLOW_ACTIVE = "FLOW_ACTIVE"
+    FLOW_WEAKENING = "FLOW_WEAKENING"
+    FLOW_STALLED = "FLOW_STALLED"
+
+
 @dataclass(frozen=True, slots=True)
 class ClassifiedTrade:
     """Normalized trade with aggressor semantics and provenance."""
@@ -227,6 +242,75 @@ class MicrostructureForecast:
     quality_flags: tuple[str, ...] = ()
     supporting_evidence: tuple[str, ...] = ()
     counter_evidence: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class MboOrder:
+    """Individual resting order from MBO feed — OF10."""
+
+    order_id: str
+    price: float
+    size: float
+    side: MboOrderSide
+    sequence: int
+    timestamp: str
+
+
+@dataclass(frozen=True, slots=True)
+class PriceLevelQueue:
+    """FIFO queue at one price level."""
+
+    price: float
+    side: MboOrderSide
+    orders: tuple[MboOrder, ...]
+    total_size: float
+
+
+@dataclass(frozen=True, slots=True)
+class QueueSnapshot:
+    """MBO-derived queue state at one event time — OF10."""
+
+    event_time: str
+    bid_queues: tuple[PriceLevelQueue, ...]
+    ask_queues: tuple[PriceLevelQueue, ...]
+    queue_method: str
+    queue_version: str
+    capability_tier: MicrostructureCapabilityTier = MicrostructureCapabilityTier.MBO
+    quality_flags: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class QueuePositionEstimate:
+    """Heuristic queue position for a hypothetical passive order."""
+
+    price: float
+    side: MboOrderSide
+    hypothetical_size: float
+    size_ahead: float
+    size_at_level: float
+    queue_method: str
+    queue_version: str
+    quality_flags: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class MetaorderPrimitive:
+    """OF11 detection output — raw persistent-flow primitive, not PI evidence."""
+
+    primitive_id: str
+    instrument: str
+    venue: str
+    aggressor_side: AggressorSide
+    signed_volume: float
+    trade_count: int
+    start_time: str
+    end_time: str
+    available_time: str
+    flow_state: MetaorderFlowState
+    detection_method: str
+    detection_version: str
+    mbo_corroborated: bool = False
+    quality_flags: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -403,6 +487,77 @@ def l1_state_to_dict(state: L1QuoteState) -> dict[str, Any]:
         "microprice": state.microprice,
         "microprice_minus_mid": state.microprice_minus_mid,
         "capability_tier": state.capability_tier.value,
+    }
+
+
+def mbo_order_to_dict(order: MboOrder) -> dict[str, Any]:
+    return {
+        "order_id": order.order_id,
+        "price": order.price,
+        "size": order.size,
+        "side": order.side.value,
+        "sequence": order.sequence,
+        "timestamp": order.timestamp,
+    }
+
+
+def queue_snapshot_to_dict(snapshot: QueueSnapshot) -> dict[str, Any]:
+    return {
+        "event_time": snapshot.event_time,
+        "bid_queues": [
+            {
+                "price": queue.price,
+                "side": queue.side.value,
+                "total_size": queue.total_size,
+                "order_count": len(queue.orders),
+            }
+            for queue in snapshot.bid_queues
+        ],
+        "ask_queues": [
+            {
+                "price": queue.price,
+                "side": queue.side.value,
+                "total_size": queue.total_size,
+                "order_count": len(queue.orders),
+            }
+            for queue in snapshot.ask_queues
+        ],
+        "queue_method": snapshot.queue_method,
+        "queue_version": snapshot.queue_version,
+        "capability_tier": snapshot.capability_tier.value,
+        "quality_flags": list(snapshot.quality_flags),
+    }
+
+
+def queue_position_to_dict(estimate: QueuePositionEstimate) -> dict[str, Any]:
+    return {
+        "price": estimate.price,
+        "side": estimate.side.value,
+        "hypothetical_size": estimate.hypothetical_size,
+        "size_ahead": estimate.size_ahead,
+        "size_at_level": estimate.size_at_level,
+        "queue_method": estimate.queue_method,
+        "queue_version": estimate.queue_version,
+        "quality_flags": list(estimate.quality_flags),
+    }
+
+
+def metaorder_primitive_to_dict(primitive: MetaorderPrimitive) -> dict[str, Any]:
+    return {
+        "primitive_id": primitive.primitive_id,
+        "instrument": primitive.instrument,
+        "venue": primitive.venue,
+        "aggressor_side": primitive.aggressor_side.value,
+        "signed_volume": primitive.signed_volume,
+        "trade_count": primitive.trade_count,
+        "start_time": primitive.start_time,
+        "end_time": primitive.end_time,
+        "available_time": primitive.available_time,
+        "flow_state": primitive.flow_state.value,
+        "detection_method": primitive.detection_method,
+        "detection_version": primitive.detection_version,
+        "mbo_corroborated": primitive.mbo_corroborated,
+        "quality_flags": list(primitive.quality_flags),
     }
 
 

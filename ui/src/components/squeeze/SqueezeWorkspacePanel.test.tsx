@@ -48,4 +48,30 @@ describe("SqueezeWorkspacePanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open Inspector" }));
     expect(onInspect).toHaveBeenCalledWith("inspect:squeeze:AVTX");
   });
+
+  it("renders catalyst attention block when ss p2 fields present", () => {
+    render(
+      <SqueezeWorkspacePanel
+        instrumentId="BOXL"
+        squeeze={{
+          ...frozenSqueezeFixture,
+          symbol: "BOXL",
+          catalyst_strength: {
+            symbol: "BOXL",
+            catalyst_id: "catalyst:boxl:1",
+            strength: 72,
+            catalyst_type: "earnings_beat",
+            publication_state: "PUBLISHED",
+          },
+          attention_feature: {
+            symbol: "BOXL",
+            attention_acceleration: 8.5,
+            publication_state: "PUBLISHED",
+          },
+        }}
+      />,
+    );
+    expect(screen.getByText("Catalyst & attention")).toBeInTheDocument();
+    expect(screen.getByText("earnings_beat")).toBeInTheDocument();
+  });
 });

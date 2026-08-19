@@ -170,6 +170,26 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     payload = build_bridge_catalyst(symbol, as_of_context=as_of)
                 self._send_json(payload)
                 return
+            if path.startswith("/workspace/") and path.endswith("/market-context"):
+                symbol = path.removeprefix("/workspace/").removesuffix("/market-context").strip("/")
+                if not symbol:
+                    self._send_error_json(
+                        "UI_REQUEST_INVALID",
+                        "workspace market-context symbol is required",
+                        status=HTTPStatus.BAD_REQUEST,
+                    )
+                    return
+                as_of = projections.build_as_of_context(self.store)
+                from ..providers.projections import build_workspace_market_context_payload
+
+                self._send_json(
+                    build_workspace_market_context_payload(
+                        symbol,
+                        as_of_context=as_of,
+                        prediction_cutoff=self.store.prediction_cutoff(),
+                    )
+                )
+                return
             if path.startswith("/workspace/") and path.endswith("/disclosure"):
                 symbol = path.removeprefix("/workspace/").removesuffix("/disclosure").strip("/")
                 if not symbol:

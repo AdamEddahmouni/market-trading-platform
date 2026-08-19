@@ -35,9 +35,9 @@
 | F3 Curve/basis/carry | Schema only | Engines, data feeds |
 | F4 OI/COT | COT PIT helper + fixture ingest | Crowding models — **DONE** (fixture scope) |
 | F5 Trend/carry baselines | Settlement bars + carry history fixture | Empirical models — **DONE** (fixture scope) |
-| F6 Family models | Taxonomy enum | Per-family plugins |
-| F7 Macro/fundamentals | Catalyst lane partial | Family-specific interfaces |
-| F8 Leverage stress | Quality flags | Margin engine, liquidation models |
+| F6 Family models | Taxonomy enum + EQUITY_INDEX plugin | Per-family plugins (CL/ZN/Treasury) — **DONE** (ES fixture scope) |
+| F7 Macro/fundamentals | Catalyst lane partial + macro calendar fixture | Family-specific interfaces — **DONE** (ES fixture scope) |
+| F8 Leverage stress | Quality flags + margin engine v1 | Live CME margin feeds — **DONE** (fixture scope) |
 | F9 Relative value | — | Spread objects, hedge ratios |
 | F10 Simulator | Bar equity only | Rolls, VM, limits, spreads |
 | Cross-lane | Depth publisher partial | Curve, positioning, stress publishers |

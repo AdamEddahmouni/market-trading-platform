@@ -309,6 +309,7 @@ def _ignition_evidence_cards(
         prediction_cutoff=prediction_cutoff,
         as_of_context=as_of_context,
         frozen_aggregate_only=frozen_aggregate_only and prediction_cutoff is None,
+        donor_detail=detail,
     )
 
 
@@ -358,11 +359,17 @@ def _merge_cross_lane_causal(
         return detail, []
 
     from ..providers.projections import (
+        build_workspace_catalyst_payload,
         build_workspace_distribution_payload,
         build_workspace_futures_payload,
         build_workspace_options_payload,
         build_workspace_order_book_payload,
         build_workspace_order_flow_payload,
+    )
+    from .participant_adapter import build_participant_cross_lane_bundle
+    from .market_context_adapter import (
+        build_cross_lane_snapshot_from_catalyst,
+        build_ss_p2_structures_from_catalyst,
     )
     from .cross_lane_adapter import (
         build_cross_lane_evidence_from_risk_neutral,
@@ -376,7 +383,7 @@ def _merge_cross_lane_causal(
         merge_cross_lane_snapshots,
     )
     from .horizon_model_bridge import build_horizon_model_snapshot
-    from .lending_adapter import build_lending_cross_lane_fields
+    from .lending_adapter import build_lending_cross_lane_fields, build_lending_cross_lane_snapshot
     from .transition_stream import (
         extract_fuel_history,
         extract_prior_cross_lane,
@@ -410,6 +417,11 @@ def _merge_cross_lane_causal(
         as_of_context=as_of_context or {},
         prediction_cutoff=effective_cutoff,
     )
+    catalyst = build_workspace_catalyst_payload(
+        symbol,
+        as_of_context=as_of_context or {},
+        prediction_cutoff=effective_cutoff,
+    )
 
     of_snapshot, of_evidence = build_cross_lane_snapshot_from_order_flow(order_flow)
     transitions = replay_transition_stream(as_of_time_ns=effective_cutoff)
@@ -422,6 +434,8 @@ def _merge_cross_lane_causal(
     ob_snapshot, ob_evidence = build_cross_lane_snapshot_from_order_book(order_book)
     fut_snapshot, fut_evidence = build_cross_lane_snapshot_from_futures(futures)
     dist_snapshot, dist_evidence = build_cross_lane_snapshot_from_distribution(distribution)
+    mc_snapshot, mc_evidence = build_cross_lane_snapshot_from_catalyst(catalyst)
+    ss_p2_fields = build_ss_p2_structures_from_catalyst(catalyst)
     risk_neutral = None
     if options.get("available") and isinstance(options.get("activities"), list):
         surface = build_volatility_surface(options.get("activities", []))
@@ -433,13 +447,20 @@ def _merge_cross_lane_causal(
             else "",
         )
     rn_evidence = build_cross_lane_evidence_from_risk_neutral(risk_neutral)
+    participant_snapshot, participant_evidence = build_participant_cross_lane_bundle(
+        instrument_id=symbol.upper(),
+        prediction_cutoff=effective_cutoff,
+    )
     snapshot = merge_cross_lane_snapshots(
         of_snapshot,
         opt_snapshot,
         ob_snapshot,
         fut_snapshot,
         dist_snapshot,
+        mc_snapshot,
         build_lending_cross_lane_fields(),
+        build_lending_cross_lane_snapshot(detail if isinstance(detail, dict) else None),
+        participant_snapshot,
     )
     evidence = merge_cross_lane_evidence(
         of_evidence,
@@ -447,7 +468,9 @@ def _merge_cross_lane_causal(
         ob_evidence,
         fut_evidence,
         dist_evidence,
+        mc_evidence,
         rn_evidence,
+        participant_evidence,
     )
 
     from ..cross_lane.evidence import (
@@ -484,9 +507,14 @@ def _merge_cross_lane_causal(
             snapshot.get("order_book_available"),
             snapshot.get("futures_available"),
             snapshot.get("distribution_available"),
+            snapshot.get("catalyst_available"),
+            snapshot.get("attention_available"),
+            snapshot.get("lending_available"),
         ]
     ):
-        return detail, evidence
+        merged_detail = dict(detail)
+        merged_detail["_ss_p2_fields"] = ss_p2_fields
+        return merged_detail, evidence
 
     merged_detail = dict(detail)
     try:
@@ -528,6 +556,7 @@ def _merge_cross_lane_causal(
     if sq_snapshot:
         snapshot = merge_cross_lane_snapshots(snapshot, sq_snapshot)
 
+    merged_detail["_ss_p2_fields"] = ss_p2_fields
     return merged_detail, evidence
 
 
@@ -878,6 +907,24 @@ def build_workspace_squeeze_payload(
         else None,
         "cross_lane_evidence": cross_lane_evidence,
         "opportunity_snapshot": opportunity_payload.get("opportunity_snapshot"),
+        "catalyst_strength": (
+            (detail.get("_ss_p2_fields") or {}).get("catalyst_strength")
+            if isinstance(detail.get("_ss_p2_fields"), dict)
+            else None
+        ),
+        "attention_feature": (
+            (detail.get("_ss_p2_fields") or {}).get("attention_feature")
+            if isinstance(detail.get("_ss_p2_fields"), dict)
+            else None
+        ),
+        "thesis_invalidation": (
+            (detail.get("_ss_p2_fields") or {}).get("thesis_invalidation")
+            if isinstance(detail.get("_ss_p2_fields"), dict)
+            else None
+        ),
+        "securities_lending_snapshot": detail.get("securities_lending_snapshot")
+        if isinstance(detail.get("securities_lending_snapshot"), dict)
+        else None,
         "ignition_evidence": _ignition_evidence_cards(
             detail,
             symbol=symbol_upper,

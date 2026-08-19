@@ -745,6 +745,10 @@ def snapshot_to_futures_event(
     touch_depth_ask: float | None = None,
     displayed_depth_consumed_fraction: float | None = None,
     execution_quality_flags: list[str] | None = None,
+    queue_method: str | None = None,
+    queue_version: str | None = None,
+    queue_imbalance_mbo: float | None = None,
+    mbo_capability_available: bool | None = None,
 ) -> dict[str, Any]:
     event: dict[str, Any] = {
         "ask_size": ask_size,
@@ -866,6 +870,14 @@ def snapshot_to_futures_event(
         event["displayed_depth_consumed_fraction"] = displayed_depth_consumed_fraction
     if execution_quality_flags is not None:
         event["execution_quality_flags"] = execution_quality_flags
+    if queue_method is not None:
+        event["queue_method"] = queue_method
+    if queue_version is not None:
+        event["queue_version"] = queue_version
+    if queue_imbalance_mbo is not None:
+        event["queue_imbalance_mbo"] = queue_imbalance_mbo
+    if mbo_capability_available is not None:
+        event["mbo_capability_available"] = mbo_capability_available
     return event
 
 
@@ -1088,6 +1100,16 @@ def filing_to_disclosure_event(
     is_amendment: bool = False,
     transaction_code: str | None = None,
     source_revision_id: str = "1",
+    transaction_date: str | None = None,
+    shares: float | int | None = None,
+    price_per_share: float | None = None,
+    shares_owned_following: float | int | None = None,
+    is_10b5_1: bool | None = None,
+    stake_percent: float | None = None,
+    campaign_objective: str | None = None,
+    is_passive: bool | None = None,
+    quarter_end: str | None = None,
+    holdings: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     normalized = normalize_edgar_filing(
         form_type=form_type,
@@ -1098,13 +1120,36 @@ def filing_to_disclosure_event(
         is_amendment=is_amendment,
         transaction_code=transaction_code,
     )
-    return {
+    event: dict[str, Any] = {
         **normalized,
         "accession_number": accession_number,
         "family": "regulatory_disclosure",
         "form_type": form_type,
         "source_revision_id": source_revision_id,
     }
+    if transaction_code is not None:
+        event["transaction_code"] = transaction_code
+    if transaction_date is not None:
+        event["transaction_date"] = transaction_date
+    if shares is not None:
+        event["shares"] = shares
+    if price_per_share is not None:
+        event["price_per_share"] = price_per_share
+    if shares_owned_following is not None:
+        event["shares_owned_following"] = shares_owned_following
+    if is_10b5_1 is not None:
+        event["is_10b5_1"] = is_10b5_1
+    if stake_percent is not None:
+        event["stake_percent"] = stake_percent
+    if campaign_objective is not None:
+        event["campaign_objective"] = campaign_objective
+    if is_passive is not None:
+        event["is_passive"] = is_passive
+    if quarter_end is not None:
+        event["quarter_end"] = quarter_end
+    if holdings is not None:
+        event["holdings"] = holdings
+    return event
 
 
 __all__ = [

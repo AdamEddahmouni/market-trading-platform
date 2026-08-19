@@ -122,6 +122,8 @@ Canonical lane-closure artifact: [`evidence/integration/futures-lane-acceptance.
 | Fixture | `tests/fixtures/providers/futures/es_depth_slice.json` |
 | COT fixture (F4) | `tests/fixtures/providers/futures/es_cot_positioning_slice.json` |
 | Settlement bars fixture (F5) | `tests/fixtures/providers/futures/es_settlement_bars_slice.json` |
+| Macro calendar fixture (F7) | `tests/fixtures/providers/futures/es_macro_events_slice.json` |
+| Margin history fixture (F8) | `tests/fixtures/providers/futures/es_margin_history_slice.json` |
 
 ## F4 — COT / OI positioning (fixture scope)
 
@@ -167,3 +169,61 @@ Workspace payload fields:
 Cross-lane signals: `FUTURES_TREND_UP`, `FUTURES_TREND_DOWN`
 
 Golden regression: `tests/fixtures/futures/es_baselines_expected.json`
+
+## F6 — Asset-family plugin models (fixture scope)
+
+Module: `src/market_platform_foundation/futures/families/`
+
+| Capability | ID | Scope |
+|---|---|---|
+| Family plugin interface | `futures_family_v1` | `FuturesFamilyModel` protocol + registry |
+| EQUITY_INDEX plugin | `futures_family_v1` | ES curve/carry/positioning/macro/leverage interpretation |
+
+**Boundary:** Family context is interpretive metadata — not a directional forecast or universal Futures Score.
+
+Workspace payload fields:
+
+- `family_context_snapshot` — curve_read, positioning_read, event_context_read, risk_context
+- `futures_family_available` — bool
+
+Golden regression: `tests/fixtures/futures/es_family_context_expected.json`
+
+## F7 — Macro / fundamental events (fixture scope)
+
+Module: `src/market_platform_foundation/futures/macro_events.py`
+
+| Capability | ID | Scope |
+|---|---|---|
+| Macro calendar ingest | `macro.fixture.futures_macro` on `ADMITTED-MACRO-ES-001` | FOMC/CPI/NFP/PPI-style events |
+| Event window + surprise | `futures_macro_events_v1` | 48h window, consensus vs actual surprise |
+
+**Boundary:** Distinct from equity `public_catalyst` whale family and SHARED P2 jump primitives.
+
+Workspace payload fields:
+
+- `macro_event_snapshot` — upcoming event, event_window_active, surprise_zscore, macro_risk_regime
+- `futures_macro_available` — bool
+
+Cross-lane signals: `FUTURES_MACRO_EVENT_RISK`
+
+Golden regression: `tests/fixtures/futures/es_macro_events_expected.json`
+
+## F8 — Leverage / liquidation stress (fixture scope)
+
+Module: `src/market_platform_foundation/futures/leverage_stress.py`
+
+| Capability | ID | Scope |
+|---|---|---|
+| Margin history ingest | `margin.fixture.futures_margin` on `ADMITTED-MARGIN-ES-001` | PIT-filtered maintenance margin rows |
+| Rule-based stress composite | `futures_leverage_stress_v1` | Margin percentile + crowding + liquidity fragility |
+
+**Boundary:** Futures liquidation taxonomy — distinct from Short Squeeze equity mechanics.
+
+Workspace payload fields:
+
+- `leverage_stress_snapshot` — stress_score, stress_regime, long/short_liquidation_risk, effective_leverage
+- `futures_leverage_stress_available` — bool
+
+Cross-lane signals: `FUTURES_LONG_LIQUIDATION_RISK`, `FUTURES_SHORT_LIQUIDATION_RISK`
+
+Golden regression: `tests/fixtures/futures/es_leverage_stress_expected.json`

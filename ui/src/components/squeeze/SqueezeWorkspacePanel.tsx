@@ -1,5 +1,6 @@
 import type { WorkspaceSqueezeResponse } from "../../api/client";
 import { OpportunityFusionBlock } from "../options/OpportunityFusionBlock";
+import { CatalystAttentionBlock } from "./CatalystAttentionBlock";
 import { CausalIntelligenceBlock } from "./CausalIntelligenceBlock";
 import { CrossLaneEvidenceBlock } from "./CrossLaneEvidenceBlock";
 import { HistoricalSqueezeContextBlock } from "./HistoricalSqueezeContextBlock";
@@ -55,6 +56,7 @@ export function SqueezeWorkspacePanel({
           ) : null}
           <StateTransitionBlock squeeze={squeeze} />
           <CausalIntelligenceBlock squeeze={squeeze} />
+          <CatalystAttentionBlock squeeze={squeeze} />
           <CrossLaneEvidenceBlock squeeze={squeeze} onExplain={onExplain} />
           <OpportunityFusionBlock snapshot={squeeze.opportunity_snapshot} onExplain={onExplain} />
           {squeeze.ignition_evidence && squeeze.ignition_evidence.length > 0 ? (

@@ -15,12 +15,12 @@
 | F-D-11 | No COT ingestion | Positioning unknown | None | Crowding blind spot | FuturesPositioningSnapshot + PIT | planned | Futures | F4 | P2 — **RESOLVED** (`cot.fixture.futures_positioning`) |
 | F-D-12 | No COT publication delay enforcement | Potential lookahead if added naively | None | Backtest invalidation | cot_point_in_time_valid + tests | contracts/futures.py | Futures | F4 | P0 — **RESOLVED** (PIT filter + lookahead golden) |
 | F-D-13 | OI rising interpreted nowhere but whale conflates depth | OI ≠ direction not enforced platform-wide | Phase 14 naming | False directional inference | Document + block inference without evidence | docs, quality flags | Futures | F4 | P2 — **RESOLVED** (OI velocity hypothesis labels) |
-| F-D-14 | No margin engine | Leverage stress impossible | None | Liquidation risk blind | Margin fields on contract F8 | planned | Futures | F8 | P2 |
+| F-D-14 | No margin engine | Leverage stress impossible | None | Liquidation risk blind | Margin fields on contract F8 | planned | Futures | F8 | P2 — **RESOLVED** (`margin.fixture.futures_margin` + `leverage_stress.py`) |
 | F-D-15 | Depth imbalance owned in futures_lane | Order Flow owns DOM/book semantics | futures_lane.py | Duplication vs Order Flow | Futures consumes OrderFlowEvidence | cross_lane | Order Flow | P1 | P1 |
 | F-D-16 | No cross-lane futures publisher | Options/Squeeze lack index futures context | cross_lane_adapter | Missed cooperative signals | build_cross_lane_snapshot_from_futures | cross_lane_adapter.py | Futures | P3 | P1 |
 | F-D-17 | Simulator bar-only | No rolls, VM, limits | simulator.py | Futures backtest invalid | Extend shared simulator F10 | execution/simulator.py | Platform | F10 | P3 |
 | F-D-18 | `imbalance_signal` contrarian without confidence | Single threshold 1.5 | futures_lane.py | Fragile signal | Quality flags + session baselines | futures_lane.py | Order Flow | P1 | P3 |
-| F-D-19 | No asset-family branching | ES treated as generic future | futures_lane.py | Wrong fundamentals for CL/ZN | FuturesFamily plugin interface F6 | planned | Futures | F6 | P2 |
+| F-D-19 | No asset-family branching | ES treated as generic future | futures_lane.py | Wrong fundamentals for CL/ZN | FuturesFamily plugin interface F6 | planned | Futures | F6 | P2 — **RESOLVED** (`futures/families/` EQUITY_INDEX v1) |
 | F-D-20 | No delivery guardrails | Accidental delivery exposure possible in future sim | None | Operational risk | DELIVERY_RISK quality flag | planned | Futures | F10 | P3 |
 | F-D-21 | ES full session deferred ADR-DATA-001 | Limited depth history | ADR | Research depth constrained | Lawful bytes + ADR update | ADR-DATA-001 | Platform | — | DEFERRED |
 | F-D-22 | FuturesX live trader not admitted | Donor experiments outside governance | FUTURESX_NOTES | Scope creep if merged | Keep bridge read-only | donor bridge | Platform | — | OK |

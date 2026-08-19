@@ -1,0 +1,17 @@
+{
+  "fixture_id": "ADMITTED-FAMILY-ES-001",
+  "cutoff": "2025-06-02T14:41:07.000000000Z",
+  "symbol": "ES",
+  "expected": {
+    "available": true,
+    "futures_family_available": true,
+    "family_context_snapshot": {
+      "family": "EQUITY_INDEX",
+      "model_version": "futures_family_v1",
+      "curve_read_contains": "contango",
+      "positioning_read_contains": "crowded long",
+      "event_context_read_contains": "PPI",
+      "risk_context_contains": "liquidation stress"
+    }
+  }
+}

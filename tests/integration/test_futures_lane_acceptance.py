@@ -116,6 +116,12 @@ class FuturesLaneAcceptanceTests(unittest.TestCase):
         self.assertIsInstance(carry_baseline, dict)
         assert isinstance(carry_baseline, dict)
         self.assertEqual(carry_baseline.get("carry_percentile"), 0.0)
+        self.assertTrue(payload.get("futures_macro_available"))
+        self.assertTrue(payload.get("futures_leverage_stress_available"))
+        self.assertTrue(payload.get("futures_family_available"))
+        self.assertEqual(payload.get("macro_risk_regime"), "ELEVATED")
+        self.assertEqual(payload.get("stress_regime"), "HIGH")
+        self.assertTrue(payload.get("long_liquidation_risk"))
         configure_institutional_ledger(None)
 
     def test_explain_futures_ref(self) -> None:

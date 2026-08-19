@@ -105,15 +105,24 @@ class WhaleLedger:
                     "accepted_at": disclosure.get("accepted_at"),
                     "accession_number": disclosure.get("accession_number"),
                     "available_time": int(event.get("available_time", 0)),
+                    "campaign_objective": disclosure.get("campaign_objective"),
                     "disclosure_lag_note": disclosure.get("disclosure_lag_note"),
                     "epistemic_class": disclosure.get("epistemic_class"),
                     "event_type": disclosure.get("event_type"),
                     "filer": disclosure.get("filer"),
                     "form_type": disclosure.get("form_type"),
+                    "is_10b5_1": disclosure.get("is_10b5_1"),
                     "is_amendment": disclosure.get("is_amendment"),
+                    "is_passive": disclosure.get("is_passive"),
                     "normalized_event_id": event.get("normalized_event_id"),
+                    "price_per_share": disclosure.get("price_per_share"),
                     "research_only": disclosure.get("research_only"),
+                    "shares": disclosure.get("shares"),
+                    "shares_owned_following": disclosure.get("shares_owned_following"),
                     "source_url": disclosure.get("source_url"),
+                    "stake_percent": disclosure.get("stake_percent"),
+                    "transaction_code": disclosure.get("transaction_code"),
+                    "transaction_date": disclosure.get("transaction_date"),
                 }
             )
         return summaries
@@ -302,6 +311,10 @@ class WhaleLedger:
                     "touch_depth_ask": payload.get("touch_depth_ask"),
                     "displayed_depth_consumed_fraction": payload.get("displayed_depth_consumed_fraction"),
                     "execution_quality_flags": payload.get("execution_quality_flags"),
+                    "queue_method": payload.get("queue_method"),
+                    "queue_version": payload.get("queue_version"),
+                    "queue_imbalance_mbo": payload.get("queue_imbalance_mbo"),
+                    "mbo_capability_available": payload.get("mbo_capability_available"),
                 }
             )
         return summaries
@@ -390,6 +403,10 @@ class WhaleLedger:
                     "touch_depth_ask": payload.get("touch_depth_ask"),
                     "displayed_depth_consumed_fraction": payload.get("displayed_depth_consumed_fraction"),
                     "execution_quality_flags": payload.get("execution_quality_flags"),
+                    "queue_method": payload.get("queue_method"),
+                    "queue_version": payload.get("queue_version"),
+                    "queue_imbalance_mbo": payload.get("queue_imbalance_mbo"),
+                    "mbo_capability_available": payload.get("mbo_capability_available"),
                 }
             )
         return summaries

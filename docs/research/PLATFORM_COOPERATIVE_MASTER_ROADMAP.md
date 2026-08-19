@@ -1,7 +1,7 @@
 # Platform Cooperative Master Roadmap (Deliverable 6)
 
-**Status:** Integrated dependency-aware roadmap for Short Squeeze + Options + Futures + Order Flow + shared platform  
-**Date:** 2026-08-18 (updated for Order Flow OF-series cooperative redesign)  
+**Status:** Integrated dependency-aware roadmap for Short Squeeze + Options + Futures + Order Flow + Market Context + **Participant Intelligence** + shared platform  
+**Date:** 2026-08-19 (updated for Participant Intelligence PI-series integration)  
 **Authority:** Supersedes independent lane sequencing for shared milestones only; lane-specific details remain in lane roadmaps
 
 ---
@@ -11,26 +11,32 @@
 ```text
 PLATFORM ROADMAP
     │
-    ├── Short Squeeze Lane (SS P0–P6)
+    ├── Short Squeeze Lane (SS P0–P7)
     ├── Options Lane (O1–O11)
     ├── Futures Lane (F1–F11)
     ├── Order Flow Lane (OF1–OF12)
+    ├── Market Context Lane (MC1–MC16)
+    ├── Participant Intelligence Lane (PI1–PI16) — cross-domain
     └── Future Domain Roadmaps (Crypto, Prediction Markets — planning only)
 ```
 
 **Numbering convention:**
 - **P0–P5** = Platform shared phases
-- **SS P0–P6** = Short Squeeze (existing `SHORT_SQUEEZE_IMPLEMENTATION_ROADMAP.md`)
+- **SS P0–P7** = Short Squeeze (existing `SHORT_SQUEEZE_IMPLEMENTATION_ROADMAP.md`)
 - **O1–O11** = Options
 - **F1–F11** = Futures
 - **OF1–OF12** = Order Flow / Market Microstructure (replaces narrow "CVD-only" framing)
+- **MC1–MC16** = Market Context / Information Intelligence (replaces isolated "sentiment" framing)
+- **PI1–PI16** = Participant / Whale Intelligence (identity + intent + copyability; cross-domain)
+
+**Whale Revision 3 Phases 9–16** remain the **ingestion substrate** (8 evidence families). PI-series adds participant semantics atop that ledger without replacing lane ownership.
 
 ---
 
 ## Dependency matrix
 
-| Capability | Platform | Squeeze | Options | Futures | Order Flow | Dependency | Status |
-|---|---|---|---|---|---|---|---|
+| Capability | Platform | Squeeze | Options | Futures | Order Flow | Market Context | Dependency | Status |
+|---|---|---|---|---|---|---|---|---|
 | Point-in-time semantics | **Owns** | Consumes | Consumes | Consumes | Consumes | P0 | DONE |
 | Quality + provenance | **Owns** | Consumes | Consumes | Consumes | Consumes | P0 | DONE |
 | Provider capability registry | **Owns** | Donor | Consumes | Consumes | Consumes | P0 | PARTIAL |
@@ -47,9 +53,14 @@ PLATFORM ROADMAP
 | Absorption / exhaustion | Infra | Consumes | Context | Consumes | **Owns** | OF7 | DONE (aggression-price v1) |
 | Short-horizon microstructure forecast | Infra | Consumes | Context | Consumes | **Owns** | OF8 | DONE (heuristic v1) |
 | Execution forecasts | Shared contract | Consumes | Consumes | Consumes | **Major producer** | OF9 | DONE (fixture scope) |
-| News/catalyst contracts | Infra | Consumes | O7 | F7 | — | P1 | PLANNED |
-| Attention contracts | Infra | SS P2 | Context | Context | — | P1 | PLANNED |
-| Corporate event registry | Infra | Context | O7 | F7 | — | P1 | PLANNED |
+| News/catalyst contracts | Infra | Consumes | O7 | F7 | — | **Owns semantics** | P1/MC1 | PARTIAL |
+| Attention contracts | Infra | SS P2 | Context | Context | — | **Owns measurement** | P1/MC9 | PARTIAL |
+| Corporate event registry | Infra | Context | O7 | F7 | — | **Owns events** | P1/MC6 | PLANNED |
+| Baseline semantic sentiment (FinBERT) | Infra | Display only | Context | — | — | **Owns BaselineFinancialSentiment** | MC4 | **IMPLEMENTED (fixture)** |
+| Expectations / surprise PIT | Infra | Context | Major consumer | Major consumer | — | **Owns** | MC6 | PLANNED |
+| Event clustering / dedupe | Infra | — | — | — | — | **Owns** | MC3 | **IMPLEMENTED** (fixture) |
+| Narrative / thesis evidence | Research | Consumer | Context | — | — | **Owns (experimental)** | MC10 | RESEARCH |
+| Market reaction interpretation | Contract | Context | Context | Context | Produces raw | **Owns classification** | MC12 | PLANNED |
 | Short interest / float | Donor | **Owns** | Context | — | — | SS P0 | DONE |
 | Securities lending | Infra | **Owns** | Borrow for IV | — | — | SS P2 | PLANNED |
 | Option contract model | Infra | — | **Owns** | Context | — | O1 | DONE (fixture) |
@@ -67,7 +78,7 @@ PLATFORM ROADMAP
 | Options signed flow | — | Consumes | **Owns** | — | Confirms | O5 | DONE (fixture) |
 | Dealer / gamma exposure | Contract | Consumes | **Produces** | Context | Confirms | O6 | COMPLETE (fixture scope) |
 | Event volatility / IV crush | — | Context | **Owns** | F7 context | — | O7 | COMPLETE (fixture scope) |
-| Futures leverage stress | Contract | Context | Context | **Owns** | Confirms | F8 | NOT STARTED |
+| Futures leverage stress | Contract | Context | Context | **Owns** | Confirms | F8 | DONE (fixture scope) |
 | Strategy optimizer | — | — | **Owns** | Partial | — | O8 | COMPLETE (fixture scope) |
 | EV / opportunity layer | **Shared** | Domain inputs | Domain inputs | Domain inputs | Inputs | **P4** | DONE (fixture scope) |
 | Execution simulator | **Shared** | SS P6 | O9 | F10 | — | P4/O9/F10 | PARTIAL+ |
@@ -208,9 +219,13 @@ See `SHORT_SQUEEZE_IMPLEMENTATION_ROADMAP.md`.
 - [x] Golden fixture — `nvda_execution_forecast_expected.json`
 - [x] UI — order-book + futures panels show execution forecast block
 
-### ORDER FLOW OF10–OF12 [PLANNED]
+### ORDER FLOW OF10–OF12 [OF10–OF11 IMPLEMENTED]
 
-See `FOUR_LANE_ROADMAP_RECONCILIATION.md` for OF10 MBO queue through OF12 advanced ML.
+- [x] OF10 MBO / queue semantics — `order_flow/queue.py`, `ADMITTED-MBO-ES-001`
+- [x] OF11 metaorder detection primitives — `order_flow/metaorder.py`
+- [ ] OF12 advanced LOB ML — PLANNED
+
+See `FOUR_LANE_ROADMAP_RECONCILIATION.md` for OF12 advanced ML.
 
 ---
 
@@ -279,9 +294,33 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 
 ---
 
-### FUTURES F6–F11 [PLANNED / FUTURE]
+### FUTURES F6 — Asset-family plugin models [COMPLETE — fixture scope]
 
-See `THREE_LANE_ROADMAP_RECONCILIATION.md` for F6 family models through F11 advanced modeling.
+- [x] `FuturesFamilyModel` protocol + registry — `futures/families/`
+- [x] EQUITY_INDEX plugin for ES — curve/carry/positioning/macro/leverage interpretation
+- [x] Workspace wiring — `family_context_snapshot`, `futures_family_available`
+- [x] Golden regression — `tests/fixtures/futures/es_family_context_expected.json`
+
+### FUTURES F7 — Macro / fundamental events [COMPLETE — fixture scope]
+
+- [x] Macro calendar fixture ingest — `macro.fixture.futures_macro` on `ADMITTED-MACRO-ES-001`
+- [x] Event window + surprise scoring — `futures/macro_events.py` (`futures_macro_events_v1`)
+- [x] Workspace wiring — `macro_event_snapshot`, `futures_macro_available`
+- [x] Cross-lane signal — `FUTURES_MACRO_EVENT_RISK`
+- [x] Golden regression — `tests/fixtures/futures/es_macro_events_expected.json`
+
+### FUTURES F8 — Leverage / liquidation stress [COMPLETE — fixture scope]
+
+- [x] Margin history fixture ingest — `margin.fixture.futures_margin` on `ADMITTED-MARGIN-ES-001`
+- [x] Rule-based stress composite — `futures/leverage_stress.py` (`futures_leverage_stress_v1`)
+- [x] Workspace wiring — `leverage_stress_snapshot`, `futures_leverage_stress_available`
+- [x] Cross-lane signals — `FUTURES_LONG_LIQUIDATION_RISK`, `FUTURES_SHORT_LIQUIDATION_RISK`
+- [x] Golden regression — `tests/fixtures/futures/es_leverage_stress_expected.json`
+- [x] UI — futures panel shows family context, macro risk, leverage stress disclaimers
+
+### FUTURES F9–F11 [PLANNED / FUTURE]
+
+See `THREE_LANE_ROADMAP_RECONCILIATION.md` for F9 relative value through F11 advanced modeling.
 
 ---
 
@@ -526,6 +565,136 @@ See `THREE_LANE_ROADMAP_RECONCILIATION.md` for F6 family models through F11 adva
 
 ---
 
+### MARKET CONTEXT MC1 — Source / document foundation [STARTED]
+
+- [x] Canonical contracts: `InformationSource`, `RawDocument`, quality flags
+- [x] `LaneId.MARKET_CONTEXT` + cross-lane signal enums
+- [ ] Raw document ingest admitted to replay
+- [ ] Revision lineage on documents
+- [ ] Source independence / syndication fields populated
+
+**Does not block:** SS structural, Options chain, Futures curve, Order Flow CVD
+
+---
+
+### MARKET CONTEXT MC2 — Entity resolution [IMPLEMENTED (fixture)]
+
+- [x] Entity extraction + `entity_id` linkage to instruments
+- [x] Ambiguity handling (`ENTITY_AMBIGUOUS` fail-closed)
+- [x] Reuse platform identity contracts; extend squeeze `identity_resolution.py` patterns
+
+**Depends on:** MC1, Platform P0 identity
+
+---
+
+### MARKET CONTEXT MC3 — Deduplication / event clustering [IMPLEMENTED (fixture)]
+
+- [x] `InformationEvent` clusters with document/source counts
+- [x] Independent source counting / syndication lineage
+- [x] Prevent article count = catalyst count
+
+**Depends on:** MC2
+
+---
+
+### MARKET CONTEXT MC4 — Baseline financial sentiment [IMPLEMENTED (fixture)]
+
+- [x] Bridge donor FinBERT → `BaselineFinancialSentiment` (fixture-precomputed labels)
+- [x] Stdlib `keyword-v1` baseline with MIXED tie handling (MC-D03)
+- [x] PIT adversarial tests + golden regression (`boxl_sentiment_expected.json`)
+- [x] Workspace projection — `build_workspace_market_context_payload` (BOXL scope)
+- [x] Display-only cross-lane evidence (`SEMANTIC_SENTIMENT_*`); no SHARED P4 fusion
+- [ ] Evaluation harness with labeled set (no in-repo labels yet)
+
+**Parallel with:** MC3 (partial)
+
+---
+
+### MARKET CONTEXT MC5 — Event extraction [PLANNED]
+
+- [ ] Company + macro event ontologies (versioned)
+- [ ] Schema-bound LLM extraction + `EvidenceSpan`
+- [ ] Deterministic numeric extraction (`ExtractedMetric`)
+
+**Depends on:** MC3
+
+---
+
+### MARKET CONTEXT MC6 — Expectations / surprise [PLANNED]
+
+- [ ] `ExpectationSnapshot` PIT store
+- [ ] `SurpriseEvidence` — fail-closed when missing consensus
+- [ ] Revision surprise for macro releases
+
+**Major milestone** — blocks validated earnings/macro surprise research
+
+---
+
+### MARKET CONTEXT MC7 — Novelty / materiality / credibility [PLANNED]
+
+- [ ] Component evidence objects
+- [ ] Corroboration states + rumor verification history
+
+**Depends on:** MC6 (partial parallel with MC5)
+
+---
+
+### MARKET CONTEXT MC8 — Catalyst + thesis intelligence [PLANNED]
+
+- [ ] `CatalystEvidence` with exposed components
+- [ ] `ShortThesisInvalidationEvidence` producer
+- [ ] Bull/bear thesis graph (research)
+
+**Feeds:** SS P4+ ignition, SHARED P3
+
+---
+
+### MARKET CONTEXT MC9 — Attention / diffusion [PLANNED]
+
+- [ ] `AttentionEvidence` — separate information vs reflexive impact
+- [ ] Diffusion metrics on event clusters
+
+**Capability-gated** — social sources optional
+
+---
+
+### MARKET CONTEXT MC10 — Narrative intelligence [EXPERIMENTAL]
+
+- [ ] Narrative clustering, velocity, dispersion
+- [ ] Validate before model decisions
+
+---
+
+### MARKET CONTEXT MC11 — Macro context [PLANNED]
+
+- [ ] Multi-dimensional macro regimes
+- [ ] Macro event ontology shared with Futures F7
+
+**Futures owns** curve/carry interpretation
+
+---
+
+### MARKET CONTEXT MC12 — Market reaction engine [PLANNED]
+
+- [ ] Consume price, Order Flow, Options, Futures evidence
+- [ ] `MarketReactionEvidence` + confirmation/contradiction
+- [ ] No internal CVD/IV reimplementation
+
+**Depends on:** SHARED P3, MC8 (partial)
+
+---
+
+### MARKET CONTEXT MC13–MC16 [RESEARCH / DEFERRED]
+
+- MC13: Information decay, priced-in, remaining edge (experimental)
+- MC14: Social / author intelligence (after provenance correct)
+- MC15: Cross-entity propagation (after entity graph quality)
+- MC16: Advanced multi-document LLM synthesis (after MC5 correctness)
+
+See `MARKET_CONTEXT_TARGET_ARCHITECTURE.md`, `FIVE_LANE_ROADMAP_RECONCILIATION.md`.
+
+---
+
 ### SHARED P5 — Cross-lane portfolio intelligence [DEFERRED]
 
 - Combine Squeeze, Options, Futures, Order Flow, Crypto, Prediction Markets
@@ -537,10 +706,11 @@ See `THREE_LANE_ROADMAP_RECONCILIATION.md` for F6 family models through F11 adva
 
 | Track | Work | Blocked by |
 |---|---|---|
-| Futures | F6 family models + F8 leverage stress | Nothing (fixture research) |
+| Futures | F9 RV spreads + F10 simulator extensions | F6–F8 complete (fixture scope) |
 | Order Flow | OF10 MBO / queue semantics | OF9 (complete) |
 | SS | Live lending ingest wiring | Vendor authorization |
-| Platform | P1 catalyst/attention runtime interfaces | Nothing |
+| Platform | P1 catalyst runtime | Nothing |
+| Market Context | MC5 extraction schemas | MC4 complete |
 | Options | O10 advanced modeling research | O4 baseline (complete) |
 | SHARED P4 | Futures outright/curve fusion extension | F8–F10 |
 | Discrepancy | D-01 ignition_state mapping, D-10 deploy mirror | Nothing |
@@ -575,14 +745,54 @@ If yes → update this roadmap + reconciliation doc + migrate consumers together
 | OF-Q1 | Does OFI outperform CVD for next ES mid move? | Order Flow |
 | OF-Q3 | Does liquidity withdrawal improve squeeze ignition beyond CVD? | Order Flow → SS |
 
-Empirical — not assumptions. See `OPTIONS_RESEARCH_PLAN.md`, `ORDER_FLOW_RESEARCH_PLAN.md`.
+| MC-Q1 | Does surprise beat semantic sentiment at earnings? | Market Context → Options |
+| MC-Q6 | Does attention acceleration improve ignition? | Market Context → SS |
+
+Empirical — not assumptions. See `OPTIONS_RESEARCH_PLAN.md`, `ORDER_FLOW_RESEARCH_PLAN.md`, `MARKET_CONTEXT_RESEARCH_PLAN.md`, `PARTICIPANT_RESEARCH_PLAN.md`.
+
+---
+
+## PARTICIPANT INTELLIGENCE (PI1–PI16)
+
+Cross-domain lane: **Participant Identity + Intent + Influence + Flow + Copyability**. Builds on Whale Phases 9–16; does not replace Options/OF/Futures/SS/MC ownership.
+
+| Phase | Name | Status | Depends on |
+|---|---|---|---|
+| **PI1** | Participant identity / provenance | **IMPLEMENTED** (contracts) | Platform P0 |
+| **PI2** | Action semantics + PIT fields | **IMPLEMENTED** (contracts + disclosure bridge) | PI1, Whale Phase 9 |
+| **PI3** | Public equity disclosures (Form 4, 13D, 13G) | **IMPLEMENTED** | PI2 |
+| **PI4** | 13F foundation (strict filing `available_time`) | **IMPLEMENTED** | PI2 |
+| **PI5** | Participant history / walk-forward skill | **IMPLEMENTED** | PI3–PI4 |
+| **PI6** | Metaorder cooperation | **IMPLEMENTED** | OF4+, OF11 |
+| **PI7** | Intent / mechanism engine + null hypotheses | EXPERIMENTAL (schema) | PI2 |
+| **PI8** | Contextual intent (pre/post catalyst) | PLANNED | MC8+, PI7 |
+| **PI9** | Copyability / entry quality | PLANNED | PI5, PI7 |
+| **PI10** | Consensus / disagreement / crowding | PLANNED | PI3–PI5 |
+| **PI11** | Cross-asset participant context (consume COT) | PLANNED | F4, PI10 |
+| **PI12** | Large derivatives participant research | PLANNED | O5 sound, PI6 |
+| **PI13** | Forced-flow / dislocation engine | PLANNED | PI6, OF, MC |
+| **PI14** | Crypto participant foundation | NOT_AUTHORIZED | Crypto E-track |
+| **PI15** | Prediction-market participant intel | NOT_AUTHORIZED | PM P-track |
+| **PI16** | Advanced models (embeddings, informed-flow P) | FUTURE | PI5–PI10 validated |
+
+**Parallel work (do not block):** SS P0–P7, O1–O9, F1–F8, OF1–OF9, MC1–MC4 continue independently.
+
+**SHARED P3 extension:** Participant publishes `ParticipantEvidence`, `InsiderEvidence`, `ActivistEvidence`, `MetaorderEvidence`, `ForcedFlowEvidence`, `CopyabilityEvidence` to cross-lane bus.
+
+**Conflict checklist (PI):** No invented identity; no 13F as live position; no COT/options/squeeze semantics duplication; no same-timestamp MODEL_OUTPUT cycles.
 
 ---
 
 ## Related documents
 
+- `FIVE_LANE_ROADMAP_RECONCILIATION.md`
 - `FOUR_LANE_ROADMAP_RECONCILIATION.md`
 - `THREE_LANE_ROADMAP_RECONCILIATION.md`
+- `MARKET_CONTEXT_TARGET_ARCHITECTURE.md`
+- `MARKET_CONTEXT_CURRENT_STATE_AUDIT.md`
+- `MARKET_CONTEXT_OWNERSHIP_MATRIX.md`
+- `MARKET_CONTEXT_DISCREPANCY_REGISTER.md`
+- `MARKET_CONTEXT_RESEARCH_PLAN.md`
 - `ORDER_FLOW_CURRENT_STATE_AUDIT.md`
 - `ORDER_FLOW_TARGET_ARCHITECTURE.md`
 - `FUTURES_TARGET_ARCHITECTURE.md`
@@ -590,3 +800,9 @@ Empirical — not assumptions. See `OPTIONS_RESEARCH_PLAN.md`, `ORDER_FLOW_RESEA
 - `SHORT_SQUEEZE_IMPLEMENTATION_ROADMAP.md`
 - `OPTIONS_TARGET_ARCHITECTURE.md`
 - `CROSS_LANE_BOUNDARY_MATRIX.md`
+- `PARTICIPANT_INTELLIGENCE_AUDIT.md`
+- `PARTICIPANT_TARGET_ARCHITECTURE.md`
+- `PARTICIPANT_DISCREPANCY_REGISTER.md`
+- `PARTICIPANT_DATA_CAPABILITY_GAP_ANALYSIS.md`
+- `PARTICIPANT_RESEARCH_PLAN.md`
+- `PARTICIPANT_GLOSSARY.md`

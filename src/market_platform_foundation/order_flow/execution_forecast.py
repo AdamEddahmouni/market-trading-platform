@@ -9,15 +9,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from .contracts import ForecastDirection, ImpactRegime
+from .contracts import ForecastDirection, ImpactRegime, MboOrderSide, QueueSnapshot
 from .l1 import compute_l1_state
 from .liquidity import snapshot_side_depths
 from .ofi import _best_bid_ask, snapshot_book_state_valid
+from .queue import QUEUE_METHOD as MBO_QUEUE_METHOD, estimate_queue_position
 
 EXECUTION_METHOD = "execution_book_aware_v1"
 EXECUTION_VERSION = "1"
 BOOK_MODEL_VERSION = "displayed_depth_l2_v1"
 QUEUE_MODEL_VERSION = "none"
+MBO_QUEUE_MODEL_VERSION = MBO_QUEUE_METHOD
 DEFAULT_ORDER_QTY = 100.0
 PASSIVE_BASE_FILL_PROB = 0.72
 SLIPPAGE_HALF_SPREAD = 0.5
@@ -62,6 +64,7 @@ def compute_execution_forecast(
     exhaustion_score: float | None = None,
     impact_regime: ImpactRegime | str | None = None,
     level_count: int = 10,
+    mbo_queue_snapshot: QueueSnapshot | None = None,
 ) -> ExecutionForecastResult:
     """Heuristic v1 execution forecast from displayed L2 book and microstructure context."""
     valid = book_state_valid if book_state_valid is not None else snapshot_book_state_valid(snapshot)
@@ -130,6 +133,9 @@ def compute_execution_forecast(
         )
 
     quality_flags: list[str] = []
+    queue_model_version = QUEUE_MODEL_VERSION
+    if mbo_queue_snapshot is None:
+        quality_flags.append("MBO_UNAVAILABLE")
     qty = max(float(order_qty), 1.0)
     side = str(order_side).lower()
     if side not in {"buy", "sell"}:
@@ -145,6 +151,20 @@ def compute_execution_forecast(
     aggressive_fill = _clamp01(touch_depth / qty)
     fragility = _clamp01(fragility_score if fragility_score is not None else 0.0)
     passive_fill = _clamp01(PASSIVE_BASE_FILL_PROB * (1.0 - 0.35 * fragility))
+    if mbo_queue_snapshot is not None:
+        queue_model_version = MBO_QUEUE_MODEL_VERSION
+        passive_side = MboOrderSide.BID if side == "sell" else MboOrderSide.ASK
+        passive_price = bid_price if passive_side == MboOrderSide.BID else ask_price
+        queue_estimate = estimate_queue_position(
+            mbo_queue_snapshot,
+            price=passive_price,
+            side=passive_side,
+            hypothetical_size=qty,
+        )
+        if queue_estimate.size_at_level > 0:
+            queue_penalty = min(queue_estimate.size_ahead / max(queue_estimate.size_at_level, 1.0), 1.0)
+            passive_fill = _clamp01(passive_fill * (1.0 - 0.4 * queue_penalty))
+        quality_flags.extend(list(queue_estimate.quality_flags))
     if fragility >= 0.25:
         passive_fill *= 0.85
 
@@ -205,7 +225,7 @@ def compute_execution_forecast(
         execution_method=EXECUTION_METHOD,
         execution_version=EXECUTION_VERSION,
         book_model_version=BOOK_MODEL_VERSION,
-        queue_model_version=QUEUE_MODEL_VERSION,
+        queue_model_version=queue_model_version,
         book_state_valid=True,
         quality_flags=tuple(quality_flags),
     )
@@ -235,6 +255,7 @@ __all__ = [
     "DEFAULT_ORDER_QTY",
     "EXECUTION_METHOD",
     "EXECUTION_VERSION",
+    "MBO_QUEUE_MODEL_VERSION",
     "QUEUE_MODEL_VERSION",
     "ExecutionForecastResult",
     "compute_execution_forecast",

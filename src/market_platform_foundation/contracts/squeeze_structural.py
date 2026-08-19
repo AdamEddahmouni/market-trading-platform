@@ -121,6 +121,33 @@ def lending_snapshot_to_dict(snapshot: SecuritiesLendingSnapshot) -> dict[str, A
     }
 
 
+def catalyst_strength_to_dict(feature: CatalystStrength) -> dict[str, Any]:
+    return {
+        "symbol": feature.symbol,
+        "catalyst_id": feature.catalyst_id,
+        "strength": feature.strength,
+        "catalyst_type": feature.catalyst_type,
+        "observation_time": feature.observation_time,
+        "available_time": feature.available_time,
+        "publication_state": feature.publication_state.value,
+        "provenance_ref": feature.provenance_ref,
+        "quality_flags": list(feature.quality_flags),
+    }
+
+
+def short_thesis_invalidation_to_dict(item: ShortThesisInvalidation) -> dict[str, Any]:
+    return {
+        "symbol": item.symbol,
+        "invalidation_score": item.invalidation_score,
+        "mechanism": item.mechanism,
+        "observation_time": item.observation_time,
+        "available_time": item.available_time,
+        "publication_state": item.publication_state.value,
+        "provenance_ref": item.provenance_ref,
+        "quality_flags": list(item.quality_flags),
+    }
+
+
 def attention_feature_to_dict(feature: AttentionFeature) -> dict[str, Any]:
     return {
         "symbol": feature.symbol,
@@ -157,6 +184,8 @@ __all__ = [
     "ShortThesisInvalidation",
     "VelocityAccelerationMetric",
     "attention_feature_to_dict",
+    "catalyst_strength_to_dict",
     "lending_snapshot_to_dict",
+    "short_thesis_invalidation_to_dict",
     "short_pain_distribution_to_dict",
 ]

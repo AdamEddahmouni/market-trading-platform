@@ -14,11 +14,13 @@ from ...canonical import canonical_bytes, sha256_bytes
 from ...contracts.identity import normalized_event_id
 from ...normalization.equity_bars import iso_to_epoch_ns
 from ..contracts import ProviderResult, SymbolMapping
+from ...donor_patterns.edgar_whale import is_13f_form, resolve_holding_instrument_id
 from ..envelope import (
     build_disclosure_envelope,
     build_provider_metadata,
     filing_to_disclosure_event,
 )
+from ...donor_patterns.edgar_whale import is_13f_form
 
 DEFAULT_FIXTURE = (
     Path(__file__).resolve().parents[4]
@@ -104,8 +106,71 @@ class FixtureEdgarDisclosureProvider:
                 continue
             accession = str(filing.get("accession_number", ""))
             revision = str(filing.get("source_revision_id", "1"))
+            form_type = str(filing.get("form_type", ""))
+            quarter_end = filing.get("quarter_end")
+            holdings = filing.get("holdings")
+            holdings_list = holdings if isinstance(holdings, list) else None
+            if is_13f_form(form_type) and holdings_list:
+                for holding in holdings_list:
+                    if not isinstance(holding, dict):
+                        continue
+                    holding_instrument = resolve_holding_instrument_id(
+                        holding,
+                        default_symbol=symbol,
+                    )
+                    cusip = str(holding.get("cusip", "")).strip()
+                    if not cusip:
+                        continue
+                    holding_mapping = SymbolMapping(
+                        provider_symbol=holding_instrument,
+                        instrument_id=holding_instrument,
+                    )
+                    disclosure = filing_to_disclosure_event(
+                        form_type=form_type,
+                        filer=str(filing.get("filer", "")),
+                        issuer=str(filing.get("issuer", symbol)),
+                        accepted_at=accepted_at,
+                        source_url=str(filing.get("source_url", "")),
+                        accession_number=accession,
+                        is_amendment=bool(filing.get("is_amendment")),
+                        source_revision_id=revision,
+                        quarter_end=str(quarter_end) if quarter_end is not None else None,
+                        holdings=[holding],
+                    )
+                    source_record_id = f"{accession}:{cusip}"
+                    normalized_id = normalized_event_id(
+                        provider_id=self.provider_id,
+                        venue_id="SEC",
+                        publisher_id="SEC_EDGAR",
+                        channel_id=holding_instrument,
+                        source_instance_id=str(self._fixture.get("fixture_id", "FIXTURE-EDGAR")),
+                        source_record_id=source_record_id,
+                        source_revision_id=revision,
+                        event_family="DISCLOSURE_EVENT",
+                    )
+                    provider_metadata = build_provider_metadata(
+                        provider_id=self.provider_id,
+                        entitlement=self.entitlement,
+                        event_time_ns=available_time_ns,
+                        receive_time_ns=available_time_ns,
+                        symbol_mapping=holding_mapping,
+                        raw_source_reference=f"{self.fixture_path.name}:{source_record_id}:{revision}",
+                    )
+                    envelopes.append(
+                        build_disclosure_envelope(
+                            normalized_event_id=normalized_id,
+                            source_record_id=source_record_id,
+                            instrument_id=holding_instrument,
+                            event_time_ns=available_time_ns,
+                            available_time_ns=available_time_ns,
+                            ingest_run_id=self.ingest_run_id,
+                            provider_metadata=provider_metadata,
+                            disclosure_event=disclosure,
+                        )
+                    )
+                continue
             disclosure = filing_to_disclosure_event(
-                form_type=str(filing.get("form_type", "")),
+                form_type=form_type,
                 filer=str(filing.get("filer", "")),
                 issuer=str(filing.get("issuer", symbol)),
                 accepted_at=accepted_at,
@@ -114,6 +179,16 @@ class FixtureEdgarDisclosureProvider:
                 is_amendment=bool(filing.get("is_amendment")),
                 transaction_code=filing.get("transaction_code"),
                 source_revision_id=revision,
+                transaction_date=filing.get("transaction_date"),
+                shares=filing.get("shares"),
+                price_per_share=filing.get("price_per_share"),
+                shares_owned_following=filing.get("shares_owned_following"),
+                is_10b5_1=filing.get("is_10b5_1"),
+                stake_percent=filing.get("stake_percent"),
+                campaign_objective=filing.get("campaign_objective"),
+                is_passive=filing.get("is_passive"),
+                quarter_end=str(quarter_end) if quarter_end is not None else None,
+                holdings=holdings_list,
             )
             event_time_ns = available_time_ns
             normalized_id = normalized_event_id(

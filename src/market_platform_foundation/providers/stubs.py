@@ -130,6 +130,44 @@ class UnconfiguredFuturesBarsProvider:
         )
 
 
+class UnconfiguredFuturesMacroEventsProvider:
+    provider_id = "stub.futures_macro.unconfigured"
+    capability = "futures_macro_events"
+
+    def fetch_macro_events(
+        self,
+        symbol: str,
+        *,
+        as_of_time_ns: int | None = None,
+    ) -> ProviderResult:
+        del symbol, as_of_time_ns
+        return ProviderResult(
+            status="unavailable",
+            reason_code=PROVIDER_UNAVAILABLE,
+            provider_id=self.provider_id,
+            capability=self.capability,
+        )
+
+
+class UnconfiguredFuturesMarginProvider:
+    provider_id = "stub.futures_margin.unconfigured"
+    capability = "futures_margin"
+
+    def fetch_margin(
+        self,
+        symbol: str,
+        *,
+        as_of_time_ns: int | None = None,
+    ) -> ProviderResult:
+        del symbol, as_of_time_ns
+        return ProviderResult(
+            status="unavailable",
+            reason_code=PROVIDER_UNAVAILABLE,
+            provider_id=self.provider_id,
+            capability=self.capability,
+        )
+
+
 class UnconfiguredDistributionForecastProvider:
     provider_id = "stub.distribution.unconfigured"
     capability = "distribution_forecast"
@@ -201,6 +239,8 @@ __all__ = [
     "UnconfiguredEquityQuoteProvider",
     "UnconfiguredFuturesBarsProvider",
     "UnconfiguredFuturesChainProvider",
+    "UnconfiguredFuturesMacroEventsProvider",
+    "UnconfiguredFuturesMarginProvider",
     "UnconfiguredFuturesPositioningProvider",
     "UnconfiguredOptionChainProvider",
     "UnconfiguredOrderFlowProvider",

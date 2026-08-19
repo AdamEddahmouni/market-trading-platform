@@ -12,6 +12,8 @@ from .contracts import (
     EquityQuoteProvider,
     FuturesBarsProvider,
     FuturesChainProvider,
+    FuturesMacroEventsProvider,
+    FuturesMarginProvider,
     FuturesPositioningProvider,
     OptionChainProvider,
     OrderFlowProvider,
@@ -25,6 +27,8 @@ from .stubs import (
     UnconfiguredEquityQuoteProvider,
     UnconfiguredFuturesBarsProvider,
     UnconfiguredFuturesChainProvider,
+    UnconfiguredFuturesMacroEventsProvider,
+    UnconfiguredFuturesMarginProvider,
     UnconfiguredFuturesPositioningProvider,
     UnconfiguredOptionChainProvider,
     UnconfiguredOrderFlowProvider,
@@ -45,6 +49,10 @@ class ProviderComposition:
         default_factory=UnconfiguredFuturesPositioningProvider
     )
     futures_bars: FuturesBarsProvider = field(default_factory=UnconfiguredFuturesBarsProvider)
+    futures_macro: FuturesMacroEventsProvider = field(
+        default_factory=UnconfiguredFuturesMacroEventsProvider
+    )
+    futures_margin: FuturesMarginProvider = field(default_factory=UnconfiguredFuturesMarginProvider)
     distribution_forecast: DistributionForecastProvider = field(
         default_factory=UnconfiguredDistributionForecastProvider
     )
@@ -64,6 +72,8 @@ class ProviderComposition:
             self.futures_chain,
             self.futures_positioning,
             self.futures_bars,
+            self.futures_macro,
+            self.futures_margin,
             self.distribution_forecast,
             self.order_flow,
             self.paper_execution,
@@ -99,6 +109,8 @@ def configure_fixture_provider_composition() -> ProviderComposition:
     from .adapters.fixture_distribution import FixtureDistributionForecastProvider
     from .adapters.fixture_futures_bars import FixtureFuturesBarsProvider
     from .adapters.fixture_futures_chain import FixtureFuturesChainProvider
+    from .adapters.fixture_futures_macro import FixtureFuturesMacroEventsProvider
+    from .adapters.fixture_futures_margin import FixtureFuturesMarginProvider
     from .adapters.fixture_futures_positioning import FixtureFuturesPositioningProvider
     from .adapters.fixture_option_chain import FixtureOptionChainProvider
     from .adapters.order_flow_factory import build_order_flow_provider
@@ -108,6 +120,8 @@ def configure_fixture_provider_composition() -> ProviderComposition:
         futures_chain=FixtureFuturesChainProvider(),
         futures_positioning=FixtureFuturesPositioningProvider(),
         futures_bars=FixtureFuturesBarsProvider(),
+        futures_macro=FixtureFuturesMacroEventsProvider(),
+        futures_margin=FixtureFuturesMarginProvider(),
         distribution_forecast=FixtureDistributionForecastProvider(),
         order_flow=build_order_flow_provider(),
     )

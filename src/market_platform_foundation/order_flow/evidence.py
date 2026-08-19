@@ -548,6 +548,50 @@ def build_execution_forecast_evidence(
     )
 
 
+def metaorder_primitive_cross_lane_evidence(
+    primitives: list,
+) -> list[dict[str, Any]]:
+    """Publish OF11 persistent-flow primitives as Order Flow cross-lane signals."""
+    from ..cross_lane.evidence import (
+        EvidenceProvenanceClass,
+        EvidenceSignal,
+        LaneId,
+        NormalizedLaneEvidence,
+        lane_evidence_to_dict,
+    )
+    from .contracts import AggressorSide, MetaorderFlowState
+
+    evidence: list[dict[str, Any]] = []
+    for primitive in primitives:
+        if primitive.flow_state != MetaorderFlowState.FLOW_ACTIVE:
+            continue
+        if primitive.aggressor_side == AggressorSide.BUY:
+            signal = EvidenceSignal.PERSISTENT_AGGRESSIVE_BUY_FLOW
+        elif primitive.aggressor_side == AggressorSide.SELL:
+            signal = EvidenceSignal.PERSISTENT_AGGRESSIVE_SELL_FLOW
+        else:
+            continue
+        detail = (
+            f"{primitive.instrument} persistent {primitive.aggressor_side.value} flow "
+            f"signed_volume={primitive.signed_volume:.0f}; OF11 research only"
+        )
+        evidence.append(
+            lane_evidence_to_dict(
+                NormalizedLaneEvidence(
+                    lane=LaneId.ORDER_FLOW,
+                    signal=signal,
+                    strength="MODERATE",
+                    available=True,
+                    source_ref=f"order_flow:metaorder:{primitive.primitive_id}",
+                    detail=detail,
+                    quality_flags=primitive.quality_flags,
+                    provenance_class=EvidenceProvenanceClass.DERIVED,
+                )
+            )
+        )
+    return evidence
+
+
 __all__ = [
     "ADVERSE_SELECTION_THRESHOLD",
     "FILL_RISK_THRESHOLD",
@@ -560,6 +604,7 @@ __all__ = [
     "build_liquidity_evidence",
     "build_microstructure_forecast_evidence",
     "build_order_flow_evidence",
+    "metaorder_primitive_cross_lane_evidence",
     "execution_forecast_result_to_dict",
     "impact_evidence_to_dict",
     "liquidity_evidence_to_dict",

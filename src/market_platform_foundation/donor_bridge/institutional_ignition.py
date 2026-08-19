@@ -12,6 +12,7 @@ from ..providers.projections import (
     order_book_available,
 )
 from ..providers.projections import build_workspace_options_payload
+from .lending_adapter import build_lending_snapshot_from_donor_detail
 
 _DONOR_SQUEEZE_UNAVAILABLE = "Donor squeeze evidence not available for this symbol"
 _OPTIONS_FROZEN_UNAVAILABLE = "Options flow not included in sanitized frozen aggregate"
@@ -33,8 +34,32 @@ def build_institutional_borrow_card(
     *,
     prediction_cutoff: int | None,
     as_of_context: dict[str, Any] | None = None,
+    donor_detail: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     symbol_upper = symbol.strip().upper()
+    lending_snapshot = build_lending_snapshot_from_donor_detail(donor_detail)
+    if lending_snapshot:
+        fee_rate = lending_snapshot.get("fee_rate")
+        shares_available = lending_snapshot.get("shares_available")
+        detail_parts: list[str] = []
+        if fee_rate is not None:
+            detail_parts.append(f"IBKR borrow fee {fee_rate}%")
+        if shares_available is not None:
+            detail_parts.append(f"shortable shares {shares_available:,}")
+        if lending_snapshot.get("utilization_rate") is None:
+            detail_parts.append("utilization UNAVAILABLE (provider omitted)")
+        velocity = lending_snapshot.get("borrow_utilization_velocity")
+        if velocity is not None:
+            detail_parts.append(f"fee velocity {velocity:+.2f}pp")
+        return {
+            "label": "Borrow",
+            "state": "ADMITTED",
+            "detail": " · ".join(detail_parts) if detail_parts else "IBKR lending snapshot",
+            "epistemic_class": "OBSERVED",
+            "explain_ref": f"explain:squeeze:{symbol_upper}",
+            "source": str(lending_snapshot.get("provenance_ref", "IBKR")),
+        }
+
     if prediction_cutoff is None:
         return _unavailable_card("Borrow", "Borrow institutional cross-ref requires replay context")
     if not disclosure_available(instrument_id=symbol_upper, prediction_cutoff=prediction_cutoff):
@@ -51,16 +76,32 @@ def build_institutional_borrow_card(
             str(payload.get("reason", _BORROW_NOT_ENTITLED)),
         )
 
-    events = payload.get("events", [])
-    if not isinstance(events, list):
-        events = []
+    summary = payload.get("participant_summary", {})
+    if not isinstance(summary, dict):
+        summary = {}
+    discretionary = int(summary.get("discretionary_buy_count", 0))
+    activist = int(summary.get("activist_disclosure_count", 0))
+    event_count = int(payload.get("event_count", 0))
+    detail_parts: list[str] = []
+    if discretionary:
+        detail_parts.append(f"{discretionary} discretionary insider buy(s)")
+    if activist:
+        detail_parts.append(f"{activist} activist disclosure(s)")
+    skill_summary = summary.get("participant_skill")
+    if isinstance(skill_summary, dict) and skill_summary.get("skill_available"):
+        elevated = int(skill_summary.get("elevated_participant_count", 0))
+        below = int(skill_summary.get("below_baseline_participant_count", 0))
+        if elevated:
+            detail_parts.append(f"{elevated} participant(s) elevated buy_skill")
+        if below:
+            detail_parts.append(f"{below} participant(s) below baseline buy_skill")
+    if not detail_parts:
+        detail_parts.append(f"{event_count} SEC filing(s) on admitted ledger")
+    detail_parts.append("borrow fee/availability not on fixture")
     return {
         "label": "Borrow",
         "state": "PARTIAL",
-        "detail": (
-            f"{len(events)} SEC filing(s) on admitted ledger — "
-            "borrow fee/availability not on fixture"
-        ),
+        "detail": " — ".join(detail_parts),
         "epistemic_class": "OBSERVED",
         "explain_ref": f"explain:disclosure:{symbol_upper}",
         "source": "ADMITTED-DISCLOSURE-BIYA-001",
@@ -212,6 +253,7 @@ def merge_institutional_ignition_cards(
     prediction_cutoff: int | None,
     as_of_context: dict[str, Any] | None = None,
     frozen_aggregate_only: bool = False,
+    donor_detail: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Merge institutional borrow, options, and depth cards when replay context exists."""
     if prediction_cutoff is None and frozen_aggregate_only:
@@ -223,6 +265,7 @@ def merge_institutional_ignition_cards(
             symbol,
             prediction_cutoff=prediction_cutoff,
             as_of_context=as_of_context,
+            donor_detail=donor_detail,
         )
         if borrow.get("state") != "UNAVAILABLE" or not any(
             card.get("label") == "Borrow" and card.get("state") != "UNAVAILABLE" for card in merged
