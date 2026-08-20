@@ -41,9 +41,9 @@ Revision 2 remains the incorporated Phase 0 safety authority.
 
 Active forward work beyond governed Phases 0–16 is tracked in
 [Platform Cooperative Master Roadmap](docs/research/PLATFORM_COOPERATIVE_MASTER_ROADMAP.md).
-Latest cooperative milestones: **MC11 — Macro context** (`MacroContextEvidence` with shared macro ontology on BOXL fixtures) and **PI8 — Contextual intent** (pre/post catalyst timing on admitted disclosure fixtures). **MC12 — Market reaction engine** and **MC10 — Narrative intelligence** (experimental) also complete on fixtures.
+Latest cooperative milestones: **MC13 — Information decay** (experimental priced-in enrichment on BOXL fixtures) and **PI9 — Copyability** (follower return scoring on admitted BIYA disclosure fixtures). **MC11 — Macro context** and **PI8 — Contextual intent** also complete on fixtures.
 
-Completed cooperative milestones on admitted fixtures include O6–O9, OF6–OF11, F4–F10, SS P4–P7, Market Context MC1–MC12, Participant PI1–PI8, and SHARED P2–P4 (incl. futures regime fusion). See
+Completed cooperative milestones on admitted fixtures include O6–O9, OF6–OF11, F4–F10, SS P4–P7, Market Context MC1–MC13, Participant PI1–PI9, and SHARED P2–P4 (incl. futures regime fusion). See
 [SHARED P4 EV / Opportunity Layer Spec](docs/research/SHARED_P4_EV_OPPORTUNITY_SPEC.md).
 
 The existing candidate evidence roots under `evidence/phase0/2E1E…` and

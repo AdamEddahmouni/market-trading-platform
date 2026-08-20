@@ -9,7 +9,7 @@
 | PI-D05 | No `participant_id` canonical model | Cannot track skill/history | High | `contracts/participant.py` | Participant | PI1 | P0 |
 | PI-D06 | Whale ledger `futures_positioning` holds ES depth, not COT | Naming confusion; cross-lane misinterpretation | Medium | Document alias; PI consumes F4 COT separately | Platform/Participant | PI11 | P1 |
 | PI-D07 | No cross-lane insider/activist signals | SS/Options cannot consume disclosure semantics | Medium | `EvidenceSignal` participant family | Participant | PI3 | P1 |
-| PI-D08 | Strategy `WHALE_ALIGNED` without mechanism | May align with passive/forced flow | High | Gate on mechanism + copyability (PI7/PI9) | Participant/Strategy | PI9 | P1 |
+| PI-D08 | Strategy `WHALE_ALIGNED` without mechanism | May align with passive/forced flow | High | Gate on mechanism + copyability (PI7/PI9) | Participant/Strategy | PI9 | P1 — **PARTIAL** (fixture scope: `ABSTAIN_COPYABILITY_UNAVAILABLE`) |
 | PI-D09 | Options whale family without participant identity | Correct fail-closed; no PI bridge | Low | `UNKNOWN_LARGE_OPTIONS_PARTICIPANT` when PI12 | Participant/Options | PI12 | P2 |
 | PI-D10 | Metaorder research not started (OF11) | Live whale-flow remaining unknown | Medium | PI6 cooperates with OF11 | Order Flow/Participant | PI6 | **RESOLVED (fixture scope)** |
 | PI-D11 | Activist 13D lacks structured campaign fields | Cannot research strategic influence | Medium | PI3 extraction schema | Participant | PI3 | P1 |

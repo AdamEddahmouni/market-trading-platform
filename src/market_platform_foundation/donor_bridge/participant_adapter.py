@@ -15,6 +15,10 @@ from ..participant.contextual_intent import (
     contextual_intent_summary_to_dict,
     publish_contextual_intent_signals,
 )
+from ..participant.copyability import (
+    build_participant_copyability_bundle,
+    publish_copyability_signals,
+)
 from ..participant.evidence import (
     build_evidence_payloads_from_actions,
     build_metaorder_evidence_envelope,
@@ -109,6 +113,7 @@ def build_participant_actions_bundle(
     prediction_cutoff: int,
     price_fixture_path: Path | str | None = None,
     metaorder_fixture_path: Path | str | None = None,
+    copyability_fixture_path: Path | str | None = None,
 ) -> dict[str, Any]:
     ledger = get_institutional_ledger()
     if ledger is None:
@@ -121,6 +126,7 @@ def build_participant_actions_bundle(
             "envelopes": [],
             "skill": {"available": False, "summary": {"skill_available": False}},
             "metaorder": {"available": False, "summary": {"metaorder_available": False}},
+            "copyability": {"available": False, "summary": {"copyability_available": False}},
         }
     events = ledger.query_events(
         family="regulatory_disclosure",
@@ -137,6 +143,7 @@ def build_participant_actions_bundle(
             "envelopes": [],
             "skill": {"available": False, "summary": {"skill_available": False}},
             "metaorder": {"available": False, "summary": {"metaorder_available": False}},
+            "copyability": {"available": False, "summary": {"copyability_available": False}},
         }
     actions = query_participant_actions_from_ledger(
         events,
@@ -148,6 +155,12 @@ def build_participant_actions_bundle(
         actions,
         prediction_cutoff=prediction_cutoff,
         price_fixture_path=price_fixture_path or DEFAULT_PRICE_OUTCOME_FIXTURE,
+    )
+    copyability_bundle = build_participant_copyability_bundle(
+        actions,
+        prediction_cutoff=prediction_cutoff,
+        price_fixture_path=price_fixture_path or DEFAULT_PRICE_OUTCOME_FIXTURE,
+        copyability_fixture_path=copyability_fixture_path,
     )
     metaorder_bundle = build_metaorder_bundle(
         instrument_id=instrument_id,
@@ -161,6 +174,8 @@ def build_participant_actions_bundle(
             summary["participant_skill"] = skill_summary
     if metaorder_bundle.get("available"):
         summary["metaorder"] = metaorder_bundle.get("summary", {})
+    if copyability_bundle.get("available"):
+        summary["copyability"] = copyability_bundle.get("summary", {})
     return {
         "available": True,
         "actions": actions,
@@ -169,6 +184,7 @@ def build_participant_actions_bundle(
         "envelopes": envelopes,
         "skill": skill_bundle,
         "metaorder": metaorder_bundle,
+        "copyability": copyability_bundle,
     }
 
 
@@ -180,6 +196,7 @@ def participant_evidence_from_actions(
     metaorder_primitives: list | None = None,
     catalyst_summaries: list | None = None,
     prediction_cutoff: int | None = None,
+    copyability_summaries: list | None = None,
 ) -> list[dict[str, Any]]:
     evidence = participant_cross_lane_evidence_from_actions(actions)
     if skill_summary:
@@ -200,6 +217,13 @@ def participant_evidence_from_actions(
                 prediction_cutoff=prediction_cutoff,
             )
         )
+    if copyability_summaries is not None and prediction_cutoff is not None:
+        evidence.extend(
+            publish_copyability_signals(
+                copyability_summaries,
+                prediction_cutoff=prediction_cutoff,
+            )
+        )
     return evidence
 
 
@@ -210,12 +234,14 @@ def build_participant_cross_lane_bundle(
     price_fixture_path: Path | str | None = None,
     metaorder_fixture_path: Path | str | None = None,
     catalyst_summaries: list | None = None,
+    copyability_fixture_path: Path | str | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     bundle = build_participant_actions_bundle(
         instrument_id=instrument_id,
         prediction_cutoff=prediction_cutoff,
         price_fixture_path=price_fixture_path,
         metaorder_fixture_path=metaorder_fixture_path,
+        copyability_fixture_path=copyability_fixture_path,
     )
     if not bundle.get("available"):
         return {}, []
@@ -226,6 +252,13 @@ def build_participant_cross_lane_bundle(
     skill_summary = skill_bundle.get("summary", {}) if isinstance(skill_bundle, dict) else {}
     metaorder_bundle = bundle.get("metaorder", {})
     metaorder_summary = metaorder_bundle.get("summary", {}) if isinstance(metaorder_bundle, dict) else {}
+    copyability_bundle = bundle.get("copyability", {})
+    copyability_summary = (
+        copyability_bundle.get("summary", {}) if isinstance(copyability_bundle, dict) else {}
+    )
+    copyability_summaries_raw = (
+        copyability_bundle.get("summaries", []) if isinstance(copyability_bundle, dict) else []
+    )
     contextual_intent_summaries: list[dict[str, Any]] = []
     if catalyst_summaries is not None:
         _, contextual_intent_summaries_raw = build_contextual_intent_evidence(
@@ -247,7 +280,32 @@ def build_participant_cross_lane_bundle(
         "participant_metaorder_available": bool(metaorder_summary.get("metaorder_available")),
         "participant_contextual_intent_available": bool(contextual_intent_summaries),
         "participant_contextual_intent_summaries": contextual_intent_summaries,
+        "participant_copyability_summary": copyability_summary,
+        "participant_copyability_available": bool(copyability_summary.get("copyability_available")),
+        "participant_copyability_summaries": copyability_summaries_raw,
     }
+    from ..participant.copyability import CopyabilitySummary
+
+    copyability_summary_objects = [
+        CopyabilitySummary(
+            action_id=str(row.get("action_id", "")),
+            participant_id=str(row.get("participant_id", "")),
+            display_name=str(row.get("display_name", "")),
+            instrument_id=str(row.get("instrument_id", "")),
+            mechanism=str(row.get("mechanism", "")),
+            copyability_class=str(row.get("copyability_class", "")),
+            participant_gross_return=row.get("participant_gross_return"),
+            follower_return_at_available=row.get("follower_return_at_available"),
+            cost_adjusted_follower_return=row.get("cost_adjusted_follower_return"),
+            copyability_score=row.get("copyability_score"),
+            event_time=str(row.get("event_time", "")),
+            available_time=str(row.get("available_time", "")),
+            quality_flags=tuple(row.get("quality_flags", [])),
+            cross_lane_signal=row.get("cross_lane_signal"),
+        )
+        for row in copyability_summaries_raw
+        if isinstance(row, dict)
+    ]
     evidence = participant_evidence_from_actions(
         actions,
         skill_summary=skill_summary,
@@ -255,5 +313,6 @@ def build_participant_cross_lane_bundle(
         metaorder_primitives=metaorder_bundle.get("primitives", []) if isinstance(metaorder_bundle, dict) else [],
         catalyst_summaries=catalyst_summaries,
         prediction_cutoff=prediction_cutoff,
+        copyability_summaries=copyability_summary_objects,
     )
     return snapshot, evidence

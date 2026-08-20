@@ -101,5 +101,5 @@ Compare:
 | PI5 skill | UNAVAILABLE → fixture scope | **IMPLEMENTED** (fixture) |
 | PI6 metaorder | UNAVAILABLE (blocked OF11) | **IMPLEMENTED** (fixture) |
 | PI7 mechanism engine | EXPERIMENTAL (schema only) |
-| PI9 copyability | UNAVAILABLE |
+| PI9 copyability | UNAVAILABLE → fixture scope | **IMPLEMENTED** (fixture) |
 | PI14 crypto | NOT_AUTHORIZED |

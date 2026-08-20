@@ -37,7 +37,7 @@ Participant Intelligence **strengthens** domain lanes via evidence contracts. It
 | Research classifications | `ParticipantResearchClassification` | PI7 schema |
 | Cross-lane envelope | `ParticipantEvidenceEnvelope` | PI3 schema |
 | Participant skill | Walk-forward shrinkage (PI5) | **PI5 IMPLEMENTED** |
-| Copyability / entry quality | TBD | PI9 PLANNED |
+| Copyability / entry quality | TBD | PI9 **IMPLEMENTED** (fixture) |
 | Metaorder interpretation | TBD | PI6 **IMPLEMENTED** (consumes OF) |
 
 ## Does NOT own
@@ -125,7 +125,7 @@ Each envelope requires: `event_time`, `available_time`, `identity_confidence`, `
 | `participant/skill.py` | PI5 walk-forward skill |
 | `participant/metaorder.py` | PI6 metaorder lifecycle |
 | `participant/mechanism.py` | PI7 (future) |
-| `participant/copyability.py` | PI9 (future) |
+| `participant/copyability.py` | PI9 copyability scoring |
 
 ---
 

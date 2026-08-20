@@ -787,7 +787,7 @@ Cross-domain lane: **Participant Identity + Intent + Influence + Flow + Copyabil
 | **PI6** | Metaorder cooperation | **IMPLEMENTED** | OF4+, OF11 |
 | **PI7** | Intent / mechanism engine + null hypotheses | EXPERIMENTAL (schema) | PI2 |
 | **PI8** | Contextual intent (pre/post catalyst) | **IMPLEMENTED** | MC8+, PI7 |
-| **PI9** | Copyability / entry quality | PLANNED | PI5, PI7 |
+| **PI9** | Copyability / entry quality | **IMPLEMENTED** (fixture) | PI5, PI7 |
 | **PI10** | Consensus / disagreement / crowding | PLANNED | PI3–PI5 |
 | **PI11** | Cross-asset participant context (consume COT) | PLANNED | F4, PI10 |
 | **PI12** | Large derivatives participant research | PLANNED | O5 sound, PI6 |

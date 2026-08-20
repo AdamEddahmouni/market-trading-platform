@@ -196,6 +196,13 @@ class SkillDimension(StrEnum):
     ACTIVISM_SUCCESS = "activism_success"
 
 
+class CopyabilityClass(StrEnum):
+    COPYABLE = "COPYABLE"
+    STALE = "STALE"
+    NOT_COPYABLE = "NOT_COPYABLE"
+    INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+
+
 class ParticipantQualityFlag(StrEnum):
     PARTICIPANT_UNKNOWN = "PARTICIPANT_UNKNOWN"
     IDENTITY_LOW_CONFIDENCE = "IDENTITY_LOW_CONFIDENCE"
@@ -219,6 +226,8 @@ class ParticipantQualityFlag(StrEnum):
     SKILL_STALE = "SKILL_STALE"
     OUTCOME_WINDOW_INCOMPLETE = "OUTCOME_WINDOW_INCOMPLETE"
     CATALYST_CONTEXT_MISSING = "CATALYST_CONTEXT_MISSING"
+    COPYABILITY_EXPERIMENTAL = "COPYABILITY_EXPERIMENTAL"
+    MECHANISM_UNKNOWN = "MECHANISM_UNKNOWN"
 
 
 class ResearchStatus(StrEnum):
@@ -400,6 +409,28 @@ class MechanismInference:
     intent_confidence: float | None
     alternative_explanations: tuple[MechanismHypothesis, ...] = field(default_factory=tuple)
     quality_flags: tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
+class CopyabilityEvidence:
+    """PI9 copyability / entry quality — follower return after available_time."""
+
+    action_id: str
+    participant_id: str
+    instrument_id: str
+    mechanism: ParticipantMechanism
+    horizon: ParticipantHorizon
+    identity_confidence: IdentityConfidence
+    copyability_class: CopyabilityClass
+    participant_gross_return: float | None
+    follower_return_at_available: float | None
+    cost_adjusted_follower_return: float | None
+    copyability_score: float | None
+    event_time: str
+    available_time: str
+    producer_version: str
+    quality_flags: tuple[str, ...] = field(default_factory=tuple)
+    cross_lane_signal: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -645,6 +676,29 @@ def metaorder_evidence_to_dict(item: MetaorderEvidence) -> dict[str, Any]:
         "producer_version": item.producer_version,
         "quality_flags": list(item.quality_flags),
         "cross_lane_signal": item.cross_lane_signal,
+        "schema_version": CONTRACT_SCHEMA_VERSION,
+    }
+
+
+def copyability_evidence_to_dict(item: CopyabilityEvidence) -> dict[str, Any]:
+    return {
+        "action_id": item.action_id,
+        "participant_id": item.participant_id,
+        "instrument_id": item.instrument_id,
+        "mechanism": item.mechanism.value,
+        "horizon": item.horizon.value,
+        "identity_confidence": item.identity_confidence.value,
+        "copyability_class": item.copyability_class.value,
+        "participant_gross_return": item.participant_gross_return,
+        "follower_return_at_available": item.follower_return_at_available,
+        "cost_adjusted_follower_return": item.cost_adjusted_follower_return,
+        "copyability_score": item.copyability_score,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "producer_version": item.producer_version,
+        "quality_flags": list(item.quality_flags),
+        "cross_lane_signal": item.cross_lane_signal,
+        "payload_type": "CopyabilityEvidence",
         "schema_version": CONTRACT_SCHEMA_VERSION,
     }
 
