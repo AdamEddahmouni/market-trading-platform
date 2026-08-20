@@ -19,12 +19,25 @@ from ..participant.copyability import (
     build_participant_copyability_bundle,
     publish_copyability_signals,
 )
+from ..participant.crowding import (
+    build_participant_crowding_bundle,
+    compute_crowding_evidence,
+    publish_crowding_signals,
+)
+from ..participant.cross_asset import (
+    build_cross_asset_participant_context_bundle,
+    publish_cross_asset_signals,
+)
+from ..participant.derivatives import build_derivatives_participant_bundle
+from ..participant.forced_flow import build_forced_flow_bundle
 from ..participant.evidence import (
     build_evidence_payloads_from_actions,
     build_metaorder_evidence_envelope,
     participant_cross_lane_evidence_from_actions,
     participant_skill_cross_lane_evidence,
     publish_metaorder_signals,
+    publish_derivatives_signals,
+    publish_forced_flow_signals,
     summarize_participant_actions,
 )
 from ..participant.metaorder import interpret_metaorder_primitives
@@ -37,6 +50,22 @@ DEFAULT_METAORDER_FIXTURE = (
     / "providers"
     / "order_flow"
     / "nvda_metaorder_slice.json"
+)
+
+DEFAULT_DERIVATIVES_FIXTURE = (
+    Path(__file__).resolve().parents[3]
+    / "tests"
+    / "fixtures"
+    / "participant"
+    / "nvda_derivatives_participant_slice.json"
+)
+
+DEFAULT_FORCED_FLOW_FIXTURE = (
+    Path(__file__).resolve().parents[3]
+    / "tests"
+    / "fixtures"
+    / "participant"
+    / "nvda_forced_flow_slice.json"
 )
 
 
@@ -114,6 +143,11 @@ def build_participant_actions_bundle(
     price_fixture_path: Path | str | None = None,
     metaorder_fixture_path: Path | str | None = None,
     copyability_fixture_path: Path | str | None = None,
+    crowding_fixture_path: Path | str | None = None,
+    cross_asset_fixture_path: Path | str | None = None,
+    cot_fixture_path: Path | str | None = None,
+    derivatives_fixture_path: Path | str | None = None,
+    forced_flow_fixture_path: Path | str | None = None,
 ) -> dict[str, Any]:
     ledger = get_institutional_ledger()
     if ledger is None:
@@ -127,6 +161,10 @@ def build_participant_actions_bundle(
             "skill": {"available": False, "summary": {"skill_available": False}},
             "metaorder": {"available": False, "summary": {"metaorder_available": False}},
             "copyability": {"available": False, "summary": {"copyability_available": False}},
+            "crowding": {"available": False, "summary": {"crowding_available": False}},
+            "cross_asset": {"available": False, "summary": {"cross_asset_available": False}},
+            "derivatives": {"available": False, "summary": {"derivatives_participant_available": False}},
+            "forced_flow": {"available": False, "summary": {"forced_flow_available": False}},
         }
     events = ledger.query_events(
         family="regulatory_disclosure",
@@ -144,6 +182,10 @@ def build_participant_actions_bundle(
             "skill": {"available": False, "summary": {"skill_available": False}},
             "metaorder": {"available": False, "summary": {"metaorder_available": False}},
             "copyability": {"available": False, "summary": {"copyability_available": False}},
+            "crowding": {"available": False, "summary": {"crowding_available": False}},
+            "cross_asset": {"available": False, "summary": {"cross_asset_available": False}},
+            "derivatives": {"available": False, "summary": {"derivatives_participant_available": False}},
+            "forced_flow": {"available": False, "summary": {"forced_flow_available": False}},
         }
     actions = query_participant_actions_from_ledger(
         events,
@@ -162,10 +204,40 @@ def build_participant_actions_bundle(
         price_fixture_path=price_fixture_path or DEFAULT_PRICE_OUTCOME_FIXTURE,
         copyability_fixture_path=copyability_fixture_path,
     )
+    crowding_bundle = build_participant_crowding_bundle(
+        actions,
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+        crowding_fixture_path=crowding_fixture_path,
+    )
+    cross_asset_bundle = build_cross_asset_participant_context_bundle(
+        actions,
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+        cross_asset_fixture_path=cross_asset_fixture_path,
+        crowding_fixture_path=crowding_fixture_path,
+        cot_fixture_path=cot_fixture_path,
+    )
     metaorder_bundle = build_metaorder_bundle(
         instrument_id=instrument_id,
         prediction_cutoff=str(prediction_cutoff),
         fixture_path=metaorder_fixture_path,
+    )
+    derivatives_bundle = build_derivatives_participant_bundle(
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+        derivatives_fixture_path=derivatives_fixture_path or DEFAULT_DERIVATIVES_FIXTURE,
+        metaorder_evidence=metaorder_bundle.get("evidence", [])
+        if isinstance(metaorder_bundle, dict)
+        else None,
+    )
+    forced_flow_bundle = build_forced_flow_bundle(
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+        forced_flow_fixture_path=forced_flow_fixture_path or DEFAULT_FORCED_FLOW_FIXTURE,
+        metaorder_evidence=metaorder_bundle.get("evidence", [])
+        if isinstance(metaorder_bundle, dict)
+        else None,
     )
     summary = summarize_participant_actions(actions)
     if skill_bundle.get("available"):
@@ -176,6 +248,14 @@ def build_participant_actions_bundle(
         summary["metaorder"] = metaorder_bundle.get("summary", {})
     if copyability_bundle.get("available"):
         summary["copyability"] = copyability_bundle.get("summary", {})
+    if crowding_bundle.get("available"):
+        summary["crowding"] = crowding_bundle.get("summary", {})
+    if cross_asset_bundle.get("available"):
+        summary["cross_asset"] = cross_asset_bundle.get("summary", {})
+    if derivatives_bundle.get("available"):
+        summary["derivatives"] = derivatives_bundle.get("summary", {})
+    if forced_flow_bundle.get("available"):
+        summary["forced_flow"] = forced_flow_bundle.get("summary", {})
     return {
         "available": True,
         "actions": actions,
@@ -185,6 +265,10 @@ def build_participant_actions_bundle(
         "skill": skill_bundle,
         "metaorder": metaorder_bundle,
         "copyability": copyability_bundle,
+        "crowding": crowding_bundle,
+        "cross_asset": cross_asset_bundle,
+        "derivatives": derivatives_bundle,
+        "forced_flow": forced_flow_bundle,
     }
 
 
@@ -197,6 +281,10 @@ def participant_evidence_from_actions(
     catalyst_summaries: list | None = None,
     prediction_cutoff: int | None = None,
     copyability_summaries: list | None = None,
+    crowding_evidence: Any | None = None,
+    cross_asset_evidence: Any | None = None,
+    derivatives_evidence: list | None = None,
+    forced_flow_evidence: list | None = None,
 ) -> list[dict[str, Any]]:
     evidence = participant_cross_lane_evidence_from_actions(actions)
     if skill_summary:
@@ -224,6 +312,34 @@ def participant_evidence_from_actions(
                 prediction_cutoff=prediction_cutoff,
             )
         )
+    if crowding_evidence is not None and prediction_cutoff is not None:
+        evidence.extend(
+            publish_crowding_signals(
+                crowding_evidence,
+                prediction_cutoff=prediction_cutoff,
+            )
+        )
+    if cross_asset_evidence is not None and prediction_cutoff is not None:
+        evidence.extend(
+            publish_cross_asset_signals(
+                cross_asset_evidence,
+                prediction_cutoff=prediction_cutoff,
+            )
+        )
+    if derivatives_evidence is not None and prediction_cutoff is not None:
+        evidence.extend(
+            publish_derivatives_signals(
+                derivatives_evidence,
+                prediction_cutoff=prediction_cutoff,
+            )
+        )
+    if forced_flow_evidence is not None and prediction_cutoff is not None:
+        evidence.extend(
+            publish_forced_flow_signals(
+                forced_flow_evidence,
+                prediction_cutoff=prediction_cutoff,
+            )
+        )
     return evidence
 
 
@@ -235,6 +351,11 @@ def build_participant_cross_lane_bundle(
     metaorder_fixture_path: Path | str | None = None,
     catalyst_summaries: list | None = None,
     copyability_fixture_path: Path | str | None = None,
+    crowding_fixture_path: Path | str | None = None,
+    cross_asset_fixture_path: Path | str | None = None,
+    cot_fixture_path: Path | str | None = None,
+    derivatives_fixture_path: Path | str | None = None,
+    forced_flow_fixture_path: Path | str | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     bundle = build_participant_actions_bundle(
         instrument_id=instrument_id,
@@ -242,6 +363,11 @@ def build_participant_cross_lane_bundle(
         price_fixture_path=price_fixture_path,
         metaorder_fixture_path=metaorder_fixture_path,
         copyability_fixture_path=copyability_fixture_path,
+        crowding_fixture_path=crowding_fixture_path,
+        cross_asset_fixture_path=cross_asset_fixture_path,
+        cot_fixture_path=cot_fixture_path,
+        derivatives_fixture_path=derivatives_fixture_path,
+        forced_flow_fixture_path=forced_flow_fixture_path,
     )
     if not bundle.get("available"):
         return {}, []
@@ -258,6 +384,20 @@ def build_participant_cross_lane_bundle(
     )
     copyability_summaries_raw = (
         copyability_bundle.get("summaries", []) if isinstance(copyability_bundle, dict) else []
+    )
+    crowding_bundle = bundle.get("crowding", {})
+    crowding_summary = crowding_bundle.get("summary", {}) if isinstance(crowding_bundle, dict) else {}
+    cross_asset_bundle = bundle.get("cross_asset", {})
+    cross_asset_summary = (
+        cross_asset_bundle.get("summary", {}) if isinstance(cross_asset_bundle, dict) else {}
+    )
+    derivatives_bundle = bundle.get("derivatives", {})
+    derivatives_summary = (
+        derivatives_bundle.get("summary", {}) if isinstance(derivatives_bundle, dict) else {}
+    )
+    forced_flow_bundle = bundle.get("forced_flow", {})
+    forced_flow_summary = (
+        forced_flow_bundle.get("summary", {}) if isinstance(forced_flow_bundle, dict) else {}
     )
     contextual_intent_summaries: list[dict[str, Any]] = []
     if catalyst_summaries is not None:
@@ -283,8 +423,43 @@ def build_participant_cross_lane_bundle(
         "participant_copyability_summary": copyability_summary,
         "participant_copyability_available": bool(copyability_summary.get("copyability_available")),
         "participant_copyability_summaries": copyability_summaries_raw,
+        "participant_crowding_summary": crowding_summary,
+        "participant_crowding_available": bool(crowding_summary.get("crowding_available")),
+        "participant_cross_asset_summary": cross_asset_summary,
+        "participant_cross_asset_available": bool(cross_asset_summary.get("cross_asset_available")),
+        "participant_derivatives_summary": derivatives_summary,
+        "participant_derivatives_available": bool(
+            derivatives_summary.get("derivatives_participant_available")
+        ),
+        "participant_forced_flow_summary": forced_flow_summary,
+        "participant_forced_flow_available": bool(
+            forced_flow_summary.get("forced_flow_available")
+        ),
     }
     from ..participant.copyability import CopyabilitySummary
+
+    crowding_evidence_item = compute_crowding_evidence(
+        actions,
+        instrument_id=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+        crowding_fixture_path=crowding_fixture_path,
+    )
+
+    cross_asset_evidence_item = (
+        cross_asset_bundle.get("evidence_object")
+        if isinstance(cross_asset_bundle, dict)
+        else None
+    )
+    derivatives_evidence_items = (
+        derivatives_bundle.get("evidence", [])
+        if isinstance(derivatives_bundle, dict)
+        else []
+    )
+    forced_flow_evidence_items = (
+        forced_flow_bundle.get("evidence", [])
+        if isinstance(forced_flow_bundle, dict)
+        else []
+    )
 
     copyability_summary_objects = [
         CopyabilitySummary(
@@ -314,5 +489,9 @@ def build_participant_cross_lane_bundle(
         catalyst_summaries=catalyst_summaries,
         prediction_cutoff=prediction_cutoff,
         copyability_summaries=copyability_summary_objects,
+        crowding_evidence=crowding_evidence_item,
+        cross_asset_evidence=cross_asset_evidence_item,
+        derivatives_evidence=derivatives_evidence_items,
+        forced_flow_evidence=forced_flow_evidence_items,
     )
     return snapshot, evidence

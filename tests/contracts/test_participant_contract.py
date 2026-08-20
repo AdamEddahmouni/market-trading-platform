@@ -81,6 +81,41 @@ class ParticipantContractTests(unittest.TestCase):
         self.assertIsNone(inference)
         self.assertIn(ParticipantQualityFlag.INTENT_UNKNOWN.value, flags)
 
+    def test_derivative_participant_evidence_round_trip(self) -> None:
+        from market_platform_foundation.contracts.participant import (
+            DerivativeFlowRegime,
+            DerivativeParticipantEvidence,
+            ParticipantHorizon,
+            ParticipantMechanism,
+            ParticipantResearchClassification,
+            derivative_participant_evidence_to_dict,
+        )
+
+        item = DerivativeParticipantEvidence(
+            evidence_id="participant:derivatives:nvda:test",
+            instrument_id="NVDA",
+            action_type=ParticipantActionType.DERIVATIVE_POSITION.value,
+            flow_regime=DerivativeFlowRegime.CONFIRMED_DIRECTIONAL,
+            dominant_signed_direction="buy_initiated",
+            open_close_summary="open_heavy",
+            net_delta_flow=100.0,
+            confirmed_trade_count=2,
+            participant_id="participant:anonymous:large_options",
+            participant_type=ParticipantType.UNKNOWN_LARGE_PARTICIPANT,
+            identity_confidence=IdentityConfidence.ANONYMOUS_INSTITUTIONAL_SCALE,
+            mechanism=ParticipantMechanism.FLOW_DRIVEN,
+            research_classification=ParticipantResearchClassification.FLOW_CONTINUATION_CANDIDATE,
+            horizon=ParticipantHorizon.INTRADAY,
+            metaorder_corroborated=False,
+            event_time="2026-07-21T19:45:02.000000000Z",
+            available_time="2026-07-21T19:45:02.000000000Z",
+            producer_version="participant_derivatives_v1",
+            cross_lane_signal="LARGE_DERIVATIVE_FLOW_CONFIRMED",
+        )
+        payload = derivative_participant_evidence_to_dict(item)
+        self.assertEqual(payload["payload_type"], "DerivativeParticipantEvidence")
+        self.assertEqual(payload["flow_regime"], "CONFIRMED_DIRECTIONAL")
+
     def test_disclosure_bridge_preserves_available_time(self) -> None:
         envelope = {
             "instrument_id": "BIYA",

@@ -203,6 +203,49 @@ class CopyabilityClass(StrEnum):
     INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
 
 
+class ParticipantAlignmentRegime(StrEnum):
+    """PI10 cross-participant alignment regime."""
+
+    CONSENSUS = "CONSENSUS"
+    DISAGREEMENT = "DISAGREEMENT"
+    MIXED = "MIXED"
+    INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+
+
+class ParticipantStanceDirection(StrEnum):
+    """Directional stance for PI10 cohort aggregation."""
+
+    BULLISH = "BULLISH"
+    BEARISH = "BEARISH"
+    NEUTRAL = "NEUTRAL"
+
+
+class CrossAssetAlignmentRegime(StrEnum):
+    """PI11 cross-asset alignment between equity crowding and F4 COT positioning."""
+
+    ALIGNED_BULLISH = "ALIGNED_BULLISH"
+    ALIGNED_BEARISH = "ALIGNED_BEARISH"
+    DIVERGENT = "DIVERGENT"
+    MIXED = "MIXED"
+    INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+
+
+class DerivativeFlowRegime(StrEnum):
+    """PI12 large anonymous derivatives flow classification."""
+
+    CONFIRMED_DIRECTIONAL = "CONFIRMED_DIRECTIONAL"
+    SCALE_ELEVATED_AMBIGUOUS = "SCALE_ELEVATED_AMBIGUOUS"
+    INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+
+
+class ForcedFlowRegime(StrEnum):
+    """PI13 forced-flow / dislocation classification."""
+
+    FORCED_FLOW_LIKELY = "FORCED_FLOW_LIKELY"
+    DISLOCATION_AMBIGUOUS = "DISLOCATION_AMBIGUOUS"
+    INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+
+
 class ParticipantQualityFlag(StrEnum):
     PARTICIPANT_UNKNOWN = "PARTICIPANT_UNKNOWN"
     IDENTITY_LOW_CONFIDENCE = "IDENTITY_LOW_CONFIDENCE"
@@ -228,6 +271,7 @@ class ParticipantQualityFlag(StrEnum):
     CATALYST_CONTEXT_MISSING = "CATALYST_CONTEXT_MISSING"
     COPYABILITY_EXPERIMENTAL = "COPYABILITY_EXPERIMENTAL"
     MECHANISM_UNKNOWN = "MECHANISM_UNKNOWN"
+    AFFILIATION_UNRESOLVED = "AFFILIATION_UNRESOLVED"
 
 
 class ResearchStatus(StrEnum):
@@ -426,6 +470,99 @@ class CopyabilityEvidence:
     follower_return_at_available: float | None
     cost_adjusted_follower_return: float | None
     copyability_score: float | None
+    event_time: str
+    available_time: str
+    producer_version: str
+    quality_flags: tuple[str, ...] = field(default_factory=tuple)
+    cross_lane_signal: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ParticipantCrowdingEvidence:
+    """PI10 consensus / disagreement / crowding — instrument-level participant alignment."""
+
+    instrument_id: str
+    alignment_regime: ParticipantAlignmentRegime
+    insider_direction: str | None
+    institutional_direction: str | None
+    activist_direction: str | None
+    independent_participant_count: int
+    affiliated_participant_count: int
+    crowding_score: float | None
+    disagreement_score: float | None
+    event_time: str
+    available_time: str
+    producer_version: str
+    quality_flags: tuple[str, ...] = field(default_factory=tuple)
+    cross_lane_signal: str | None = None
+    supporting_action_ids: tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
+class CrossAssetParticipantContextEvidence:
+    """PI11 cross-asset participant context — equity crowding fused with F4 COT."""
+
+    equity_symbol: str
+    futures_symbol: str
+    equity_crowding_regime: str | None
+    futures_cot_regime: str | None
+    alignment_regime: CrossAssetAlignmentRegime
+    alignment_score: float | None
+    equity_institutional_direction: str | None
+    futures_cot_net_percentile: float | None
+    event_time: str
+    available_time: str
+    producer_version: str
+    quality_flags: tuple[str, ...] = field(default_factory=tuple)
+    cross_lane_signal: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DerivativeParticipantEvidence:
+    """PI12 large anonymous derivatives flow evidence — no invented participant identity."""
+
+    evidence_id: str
+    instrument_id: str
+    action_type: str
+    flow_regime: DerivativeFlowRegime
+    dominant_signed_direction: str | None
+    open_close_summary: str
+    net_delta_flow: float | None
+    confirmed_trade_count: int
+    participant_id: str
+    participant_type: ParticipantType
+    identity_confidence: IdentityConfidence
+    mechanism: ParticipantMechanism
+    research_classification: ParticipantResearchClassification
+    horizon: ParticipantHorizon
+    metaorder_corroborated: bool
+    event_time: str
+    available_time: str
+    producer_version: str
+    quality_flags: tuple[str, ...] = field(default_factory=tuple)
+    cross_lane_signal: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ForcedFlowEvidence:
+    """PI13 forced-flow / dislocation evidence — no invented participant identity."""
+
+    evidence_id: str
+    instrument_id: str
+    flow_regime: ForcedFlowRegime
+    metaorder_lifecycle_state: str | None
+    reversal_probability: float | None
+    exhaustion_score: float | None
+    long_liquidation_risk: bool
+    short_liquidation_risk: bool
+    catalyst_registry_available: bool
+    active_catalyst_at_cutoff: bool
+    participant_id: str
+    participant_type: ParticipantType
+    identity_confidence: IdentityConfidence
+    mechanism: ParticipantMechanism
+    research_classification: ParticipantResearchClassification
+    horizon: ParticipantHorizon
     event_time: str
     available_time: str
     producer_version: str
@@ -699,6 +836,105 @@ def copyability_evidence_to_dict(item: CopyabilityEvidence) -> dict[str, Any]:
         "quality_flags": list(item.quality_flags),
         "cross_lane_signal": item.cross_lane_signal,
         "payload_type": "CopyabilityEvidence",
+        "schema_version": CONTRACT_SCHEMA_VERSION,
+    }
+
+
+def participant_crowding_evidence_to_dict(item: ParticipantCrowdingEvidence) -> dict[str, Any]:
+    return {
+        "instrument_id": item.instrument_id,
+        "alignment_regime": item.alignment_regime.value,
+        "insider_direction": item.insider_direction,
+        "institutional_direction": item.institutional_direction,
+        "activist_direction": item.activist_direction,
+        "independent_participant_count": item.independent_participant_count,
+        "affiliated_participant_count": item.affiliated_participant_count,
+        "crowding_score": item.crowding_score,
+        "disagreement_score": item.disagreement_score,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "producer_version": item.producer_version,
+        "quality_flags": list(item.quality_flags),
+        "cross_lane_signal": item.cross_lane_signal,
+        "supporting_action_ids": list(item.supporting_action_ids),
+        "payload_type": "ParticipantCrowdingEvidence",
+        "schema_version": CONTRACT_SCHEMA_VERSION,
+    }
+
+
+def cross_asset_participant_context_evidence_to_dict(
+    item: CrossAssetParticipantContextEvidence,
+) -> dict[str, Any]:
+    return {
+        "equity_symbol": item.equity_symbol,
+        "futures_symbol": item.futures_symbol,
+        "equity_crowding_regime": item.equity_crowding_regime,
+        "futures_cot_regime": item.futures_cot_regime,
+        "alignment_regime": item.alignment_regime.value,
+        "alignment_score": item.alignment_score,
+        "equity_institutional_direction": item.equity_institutional_direction,
+        "futures_cot_net_percentile": item.futures_cot_net_percentile,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "producer_version": item.producer_version,
+        "quality_flags": list(item.quality_flags),
+        "cross_lane_signal": item.cross_lane_signal,
+        "payload_type": "CrossAssetParticipantContextEvidence",
+        "schema_version": CONTRACT_SCHEMA_VERSION,
+    }
+
+
+def derivative_participant_evidence_to_dict(item: DerivativeParticipantEvidence) -> dict[str, Any]:
+    return {
+        "evidence_id": item.evidence_id,
+        "instrument_id": item.instrument_id,
+        "action_type": item.action_type,
+        "flow_regime": item.flow_regime.value,
+        "dominant_signed_direction": item.dominant_signed_direction,
+        "open_close_summary": item.open_close_summary,
+        "net_delta_flow": item.net_delta_flow,
+        "confirmed_trade_count": item.confirmed_trade_count,
+        "participant_id": item.participant_id,
+        "participant_type": item.participant_type.value,
+        "identity_confidence": item.identity_confidence.value,
+        "mechanism": item.mechanism.value,
+        "research_classification": item.research_classification.value,
+        "horizon": item.horizon.value,
+        "metaorder_corroborated": item.metaorder_corroborated,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "producer_version": item.producer_version,
+        "quality_flags": list(item.quality_flags),
+        "cross_lane_signal": item.cross_lane_signal,
+        "payload_type": "DerivativeParticipantEvidence",
+        "schema_version": CONTRACT_SCHEMA_VERSION,
+    }
+
+
+def forced_flow_evidence_to_dict(item: ForcedFlowEvidence) -> dict[str, Any]:
+    return {
+        "evidence_id": item.evidence_id,
+        "instrument_id": item.instrument_id,
+        "flow_regime": item.flow_regime.value,
+        "metaorder_lifecycle_state": item.metaorder_lifecycle_state,
+        "reversal_probability": item.reversal_probability,
+        "exhaustion_score": item.exhaustion_score,
+        "long_liquidation_risk": item.long_liquidation_risk,
+        "short_liquidation_risk": item.short_liquidation_risk,
+        "catalyst_registry_available": item.catalyst_registry_available,
+        "active_catalyst_at_cutoff": item.active_catalyst_at_cutoff,
+        "participant_id": item.participant_id,
+        "participant_type": item.participant_type.value,
+        "identity_confidence": item.identity_confidence.value,
+        "mechanism": item.mechanism.value,
+        "research_classification": item.research_classification.value,
+        "horizon": item.horizon.value,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "producer_version": item.producer_version,
+        "quality_flags": list(item.quality_flags),
+        "cross_lane_signal": item.cross_lane_signal,
+        "payload_type": "ForcedFlowEvidence",
         "schema_version": CONTRACT_SCHEMA_VERSION,
     }
 

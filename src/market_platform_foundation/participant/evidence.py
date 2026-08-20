@@ -14,6 +14,8 @@ from ..contracts.participant import (
     IdentityConfidence,
     InsiderDiscretion,
     MetaorderEvidence,
+    DerivativeParticipantEvidence,
+    ForcedFlowEvidence,
     ParticipantActionType,
     ParticipantEvidenceEnvelope,
     ParticipantHorizon,
@@ -23,6 +25,8 @@ from ..contracts.participant import (
     ParticipantType,
     metaorder_evidence_to_dict,
     participant_evidence_envelope_to_dict,
+    derivative_participant_evidence_to_dict,
+    forced_flow_evidence_to_dict,
 )
 from ..cross_lane.evidence import (
     EvidenceProvenanceClass,
@@ -31,6 +35,7 @@ from ..cross_lane.evidence import (
     NormalizedLaneEvidence,
     lane_evidence_to_dict,
 )
+from ..normalization.equity_bars import iso_to_epoch_ns
 
 PRODUCER_ID = "participant_intelligence"
 PRODUCER_VERSION = "participant_evidence_v1"
@@ -683,6 +688,140 @@ def publish_metaorder_signals(items: list[MetaorderEvidence]) -> list[dict[str, 
                     available=True,
                     source_ref=f"participant:metaorder:{item.primitive_id}",
                     detail=detail,
+                    quality_flags=item.quality_flags,
+                    provenance_class=EvidenceProvenanceClass.DERIVED,
+                )
+            )
+        )
+    return evidence
+
+
+def build_derivative_evidence_envelope(item: DerivativeParticipantEvidence) -> ParticipantEvidenceEnvelope:
+    """Wrap PI12 derivative participant evidence in cross-lane envelope."""
+    directional_clarity = (
+        DirectionalClarity.CLEAR
+        if item.flow_regime.value == "CONFIRMED_DIRECTIONAL"
+        else DirectionalClarity.AMBIGUOUS
+    )
+    return ParticipantEvidenceEnvelope(
+        evidence_id=item.evidence_id,
+        producer=PRODUCER_ID,
+        producer_version=item.producer_version,
+        event_time=item.event_time,
+        available_time=item.available_time,
+        participant_id=item.participant_id,
+        participant_type=item.participant_type,
+        identity_confidence=item.identity_confidence,
+        mechanism=item.mechanism,
+        mechanism_confidence=None,
+        directional_clarity=directional_clarity,
+        horizon=item.horizon,
+        freshness_hours=None,
+        research_classification=item.research_classification,
+        provenance_class=EvidenceProvenanceClass.DERIVED.value,
+        source_provenance="options:signed_flow",
+        quality_flags=item.quality_flags,
+        payload_type="DerivativeParticipantEvidence",
+        payload=derivative_participant_evidence_to_dict(item),
+    )
+
+
+def publish_derivatives_signals(
+    items: list[DerivativeParticipantEvidence],
+    *,
+    prediction_cutoff: int,
+) -> list[dict[str, Any]]:
+    """Publish PI12 derivatives participant cross-lane signals when gates pass."""
+    evidence: list[dict[str, Any]] = []
+    for item in items:
+        if item.cross_lane_signal is None:
+            continue
+        if iso_to_epoch_ns(item.available_time) > prediction_cutoff:
+            continue
+        if item.flow_regime.value == "INSUFFICIENT_DATA":
+            continue
+        detail = (
+            f"{item.instrument_id} derivatives flow_regime={item.flow_regime.value} "
+            f"confirmed_trades={item.confirmed_trade_count}; anonymous scale research only"
+        )
+        evidence.append(
+            lane_evidence_to_dict(
+                NormalizedLaneEvidence(
+                    lane=LaneId.PARTICIPANT_INTELLIGENCE,
+                    signal=EvidenceSignal(item.cross_lane_signal),
+                    strength="MODERATE",
+                    available=True,
+                    source_ref=f"participant:derivatives:{item.instrument_id}",
+                    detail=detail,
+                    observed_at=item.available_time,
+                    quality_flags=item.quality_flags,
+                    provenance_class=EvidenceProvenanceClass.DERIVED,
+                )
+            )
+        )
+    return evidence
+
+
+def build_forced_flow_evidence_envelope(item: ForcedFlowEvidence) -> ParticipantEvidenceEnvelope:
+    """Wrap PI13 forced-flow evidence in cross-lane envelope."""
+    directional_clarity = (
+        DirectionalClarity.AMBIGUOUS
+        if item.flow_regime.value == "DISLOCATION_AMBIGUOUS"
+        else DirectionalClarity.UNKNOWN
+        if item.flow_regime.value == "INSUFFICIENT_DATA"
+        else DirectionalClarity.CLEAR
+    )
+    return ParticipantEvidenceEnvelope(
+        evidence_id=item.evidence_id,
+        producer=PRODUCER_ID,
+        producer_version=item.producer_version,
+        event_time=item.event_time,
+        available_time=item.available_time,
+        participant_id=item.participant_id,
+        participant_type=item.participant_type,
+        identity_confidence=item.identity_confidence,
+        mechanism=item.mechanism,
+        mechanism_confidence=None,
+        directional_clarity=directional_clarity,
+        horizon=item.horizon,
+        freshness_hours=None,
+        research_classification=item.research_classification,
+        provenance_class=EvidenceProvenanceClass.DERIVED.value,
+        source_provenance="participant:forced_flow",
+        quality_flags=item.quality_flags,
+        payload_type="ForcedFlowEvidence",
+        payload=forced_flow_evidence_to_dict(item),
+    )
+
+
+def publish_forced_flow_signals(
+    items: list[ForcedFlowEvidence],
+    *,
+    prediction_cutoff: int,
+) -> list[dict[str, Any]]:
+    """Publish PI13 forced-flow cross-lane signals when gates pass."""
+    evidence: list[dict[str, Any]] = []
+    for item in items:
+        if item.cross_lane_signal is None:
+            continue
+        if iso_to_epoch_ns(item.available_time) > prediction_cutoff:
+            continue
+        if item.flow_regime.value != "FORCED_FLOW_LIKELY":
+            continue
+        detail = (
+            f"{item.instrument_id} forced_flow_regime={item.flow_regime.value} "
+            f"metaorder={item.metaorder_lifecycle_state}; fade research only"
+        )
+        evidence.append(
+            lane_evidence_to_dict(
+                NormalizedLaneEvidence(
+                    lane=LaneId.PARTICIPANT_INTELLIGENCE,
+                    signal=EvidenceSignal(item.cross_lane_signal),
+                    strength="MODERATE",
+                    available=True,
+                    source_ref=f"participant:forced_flow:{item.instrument_id}",
+                    detail=detail,
+                    observed_at=item.available_time,
                     quality_flags=item.quality_flags,
                     provenance_class=EvidenceProvenanceClass.DERIVED,
                 )
