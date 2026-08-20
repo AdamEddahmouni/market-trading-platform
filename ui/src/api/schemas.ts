@@ -432,9 +432,12 @@ export const WorkspaceSqueezeResponseSchema = z.object({
       attention_acceleration: z.number().nullable().optional(),
       publication_state: z.string(),
       provenance_ref: z.string().optional(),
+      quality_flags: z.array(z.string()).optional(),
     })
     .nullable()
     .optional(),
+  information_value: z.number().nullable().optional(),
+  reflexive_impact: z.number().nullable().optional(),
   thesis_invalidation: z
     .object({
       symbol: z.string(),

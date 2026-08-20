@@ -1,4 +1,4 @@
-"""Market Context → Short Squeeze cross-lane adapter (SS P2 / MC8 fixture scope)."""
+"""Market Context → Short Squeeze cross-lane adapter (SS P2 / MC8–MC9 fixture scope)."""
 
 from __future__ import annotations
 
@@ -20,10 +20,10 @@ from ..cross_lane.evidence import (
     NormalizedLaneEvidence,
     lane_evidence_to_dict,
 )
+from ..market_context.attention import ATTENTION_ACCELERATION_THRESHOLD
 
 CATALYST_STRENGTH_THRESHOLD = 0.5
 THESIS_INVALIDATION_THRESHOLD = 0.55
-ATTENTION_ACCELERATION_THRESHOLD = 0.05
 
 
 def _optional_float(value: Any) -> float | None:
@@ -49,6 +49,20 @@ def _gated_catalysts(catalyst_payload: dict[str, Any]) -> list[dict[str, Any]]:
     return gated
 
 
+def _attention_summaries(catalyst_payload: dict[str, Any]) -> list[dict[str, Any]]:
+    summaries = catalyst_payload.get("attention_summaries") or []
+    if not isinstance(summaries, list):
+        return []
+    return [row for row in summaries if isinstance(row, dict)]
+
+
+def _latest_attention_summary(catalyst_payload: dict[str, Any]) -> dict[str, Any] | None:
+    summaries = _attention_summaries(catalyst_payload)
+    if not summaries:
+        return None
+    return summaries[-1]
+
+
 def _thesis_invalidation_score(catalysts: list[dict[str, Any]]) -> float | None:
     """Bullish gated catalyst confidence — invalidates short thesis when elevated."""
     scores: list[float] = []
@@ -62,27 +76,6 @@ def _thesis_invalidation_score(catalysts: list[dict[str, Any]]) -> float | None:
     if not scores:
         return None
     return max(scores)
-
-
-def _attention_metrics(catalysts: list[dict[str, Any]]) -> tuple[float | None, float | None]:
-    """Derive attention velocity/acceleration from gated catalyst confidence series."""
-    confidences = [
-        value
-        for value in (_optional_float(row.get("confidence")) for row in catalysts)
-        if value is not None
-    ]
-    if not confidences:
-        return None, None
-    attention_score = confidences[-1]
-    if len(confidences) == 1:
-        return attention_score, attention_score * 0.5
-    velocity = confidences[-1] - confidences[-2]
-    if len(confidences) >= 3:
-        prior_velocity = confidences[-2] - confidences[-3]
-        acceleration = velocity - prior_velocity
-    else:
-        acceleration = velocity
-    return attention_score, acceleration
 
 
 def build_ss_p2_structures_from_catalyst(
@@ -118,15 +111,19 @@ def build_ss_p2_structures_from_catalyst(
         thesis_obj = None
 
     gated = _gated_catalysts(catalyst_payload)
-    if not gated:
+    if not gated and not _attention_summaries(catalyst_payload):
         return {
             "catalyst_strength": None,
             "attention_feature": None,
             "thesis_invalidation": None,
         }
 
-    latest = gated[-1]
-    observation_time = str(latest.get("event_time", ""))
+    latest = gated[-1] if gated else {}
+    attention_latest = _latest_attention_summary(catalyst_payload) or {}
+    observation_time = str(
+        attention_latest.get("available_time")
+        or latest.get("event_time", "")
+    )
     available_time = observation_time
     confidence = _optional_float(latest.get("confidence"))
     catalyst_type = str(latest.get("catalyst_type", "unknown"))
@@ -144,14 +141,19 @@ def build_ss_p2_structures_from_catalyst(
             provenance_ref=str(catalyst_payload.get("provider_id", "market_context")),
         )
 
-    attention_score, attention_acceleration = _attention_metrics(gated)
+    attention_level = _optional_float(attention_latest.get("attention_level"))
+    attention_velocity = _optional_float(attention_latest.get("attention_velocity"))
+    attention_acceleration = _optional_float(attention_latest.get("attention_acceleration"))
+    information_value = _optional_float(attention_latest.get("information_value"))
+    reflexive_impact = _optional_float(attention_latest.get("reflexive_impact"))
+
     attention_obj: AttentionFeature | None = None
-    if attention_score is not None:
+    if attention_level is not None:
         attention_obj = AttentionFeature(
             symbol=symbol,
-            attention_score=round(attention_score * 100.0, 2),
-            attention_velocity=round((attention_acceleration or 0.0) * 100.0, 2)
-            if attention_acceleration is not None
+            attention_score=round(attention_level * 100.0, 2),
+            attention_velocity=round(attention_velocity * 100.0, 2)
+            if attention_velocity is not None
             else None,
             attention_acceleration=round(attention_acceleration * 100.0, 2)
             if attention_acceleration is not None
@@ -159,7 +161,8 @@ def build_ss_p2_structures_from_catalyst(
             observation_time=observation_time,
             available_time=available_time,
             publication_state=PublicationState.PUBLISHED,
-            provenance_ref=str(catalyst_payload.get("provider_id", "market_context")),
+            provenance_ref="market_context.attention",
+            quality_flags=tuple(attention_latest.get("quality_flags") or ()),
         )
 
     invalidation_score = _thesis_invalidation_score(gated)
@@ -174,7 +177,7 @@ def build_ss_p2_structures_from_catalyst(
             provenance_ref=str(catalyst_payload.get("provider_id", "market_context")),
         )
 
-    return {
+    result = {
         "catalyst_strength": catalyst_strength_to_dict(catalyst_strength_obj)
         if catalyst_strength_obj
         else None,
@@ -183,6 +186,11 @@ def build_ss_p2_structures_from_catalyst(
         if thesis_obj
         else None,
     }
+    if information_value is not None:
+        result["information_value"] = round(information_value * 100.0, 2)
+    if reflexive_impact is not None:
+        result["reflexive_impact"] = round(reflexive_impact * 100.0, 2)
+    return result
 
 
 def build_cross_lane_snapshot_from_catalyst(
@@ -193,40 +201,59 @@ def build_cross_lane_snapshot_from_catalyst(
         return None, []
 
     gated = _gated_catalysts(catalyst_payload)
-    if not gated:
+    attention_latest = _latest_attention_summary(catalyst_payload)
+    if not gated and attention_latest is None:
         return None, []
 
-    latest = gated[-1]
+    latest = gated[-1] if gated else {}
     confidence = _optional_float(latest.get("confidence"))
-    if confidence is None:
-        return None, []
+    catalyst_strength = round(confidence * 100.0, 2) if confidence is not None else None
 
-    catalyst_strength = round(confidence * 100.0, 2)
     invalidation_raw = _thesis_invalidation_score(gated)
     mc8_thesis = catalyst_payload.get("thesis_invalidation_evidence")
     if isinstance(mc8_thesis, dict) and mc8_thesis.get("invalidation_strength") is not None:
         invalidation_raw = float(mc8_thesis["invalidation_strength"])
-    _attention_score, attention_acceleration = _attention_metrics(gated)
-    attention_accel_scaled = (
-        round(attention_acceleration * 100.0, 2) if attention_acceleration is not None else None
+
+    attention_acceleration = (
+        _optional_float(attention_latest.get("attention_acceleration"))
+        if attention_latest
+        else None
     )
     attention_available = (
-        attention_accel_scaled is not None
-        and abs(attention_accel_scaled) >= ATTENTION_ACCELERATION_THRESHOLD * 100.0
+        attention_acceleration is not None
+        and attention_acceleration >= ATTENTION_ACCELERATION_THRESHOLD
     )
+    diffusion_elevated = False
+    if attention_latest:
+        diffusion_score = _optional_float(attention_latest.get("diffusion_score"))
+        diffusion_elevated = (
+            diffusion_score is not None
+            and diffusion_score >= 0.60
+            and bool(attention_latest.get("corroboration_improving"))
+        )
 
     snapshot: dict[str, Any] = {
-        "catalyst_available": True,
+        "catalyst_available": catalyst_strength is not None,
         "catalyst_strength": catalyst_strength,
         "thesis_invalidation_score": round(invalidation_raw * 100.0, 2)
         if invalidation_raw is not None
         else None,
         "attention_available": attention_available,
-        "attention_acceleration": attention_accel_scaled,
+        "attention_acceleration": round(attention_acceleration * 100.0, 2)
+        if attention_acceleration is not None
+        else None,
+        "information_diffusion_elevated": diffusion_elevated,
     }
+    if attention_latest:
+        information_value = _optional_float(attention_latest.get("information_value"))
+        reflexive_impact = _optional_float(attention_latest.get("reflexive_impact"))
+        if information_value is not None:
+            snapshot["information_value"] = round(information_value * 100.0, 2)
+        if reflexive_impact is not None:
+            snapshot["reflexive_impact"] = round(reflexive_impact * 100.0, 2)
 
     evidence: list[dict[str, Any]] = []
-    if catalyst_strength >= CATALYST_STRENGTH_THRESHOLD * 100.0:
+    if catalyst_strength is not None and catalyst_strength >= CATALYST_STRENGTH_THRESHOLD * 100.0:
         strength_label = "HIGH" if catalyst_strength >= 75.0 else "MODERATE"
         evidence.append(
             lane_evidence_to_dict(
@@ -257,7 +284,7 @@ def build_cross_lane_snapshot_from_catalyst(
             )
         )
 
-    if attention_available and attention_accel_scaled is not None:
+    if attention_available and attention_acceleration is not None:
         evidence.append(
             lane_evidence_to_dict(
                 NormalizedLaneEvidence(
@@ -266,7 +293,22 @@ def build_cross_lane_snapshot_from_catalyst(
                     strength="MODERATE",
                     available=True,
                     source_ref="market_context:attention",
-                    detail=f"Attention acceleration {attention_accel_scaled:.1f}",
+                    detail=f"MC9 attention acceleration {attention_acceleration:.4f}",
+                    provenance_class=EvidenceProvenanceClass.DERIVED,
+                )
+            )
+        )
+
+    if diffusion_elevated:
+        evidence.append(
+            lane_evidence_to_dict(
+                NormalizedLaneEvidence(
+                    lane=LaneId.MARKET_CONTEXT,
+                    signal=EvidenceSignal.INFORMATION_DIFFUSION_ELEVATED,
+                    strength="MODERATE",
+                    available=True,
+                    source_ref="market_context:attention_diffusion",
+                    detail="MC9 information diffusion elevated with corroboration improving",
                     provenance_class=EvidenceProvenanceClass.DERIVED,
                 )
             )

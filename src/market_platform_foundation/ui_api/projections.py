@@ -568,6 +568,47 @@ def build_explain_payload(store: ReplayStore, ref: str) -> dict[str, object]:
             "ref": ref,
             "why": f"{why_headline} · {catalyst.get('disclaimer', '')}",
         }
+    elif ref.startswith("explain:attention:"):
+        remainder = ref.removeprefix("explain:attention:")
+        parts = remainder.split(":", 1)
+        symbol = parts[0].upper()
+        event_id = parts[1] if len(parts) > 1 else None
+        from ..providers.projections import build_workspace_market_context_payload
+
+        mc_payload = build_workspace_market_context_payload(
+            symbol,
+            as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
+        )
+        if not mc_payload.get("attention_available"):
+            raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+        summaries = mc_payload.get("attention_summaries") or []
+        selected = None
+        if event_id:
+            for row in summaries:
+                if isinstance(row, dict) and row.get("event_id") == event_id:
+                    selected = row
+                    break
+        if selected is None and summaries:
+            selected = summaries[-1] if isinstance(summaries[-1], dict) else None
+        if not isinstance(selected, dict):
+            raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+        info_value = selected.get("information_value")
+        reflexive = selected.get("reflexive_impact")
+        body = {
+            "alignment_summary": (
+                f"attention {selected.get('attention_level')} · "
+                f"info {info_value if info_value is not None else 'UNAVAILABLE'}"
+            ),
+            "level": 2,
+            "meaning": f"MC9 attention diffusion for {symbol}",
+            "ref": ref,
+            "why": (
+                f"{selected.get('headline', selected.get('canonical_event_type', 'event'))} · "
+                f"reflexive {reflexive if reflexive is not None else 'UNAVAILABLE'} · "
+                f"{mc_payload.get('disclaimer', '')}"
+            ),
+        }
     elif ref.startswith("explain:disclosure:"):
         symbol = ref.removeprefix("explain:disclosure:")
         from ..providers.projections import build_workspace_disclosure_payload

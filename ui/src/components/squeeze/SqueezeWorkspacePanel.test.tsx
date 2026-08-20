@@ -65,9 +65,12 @@ describe("SqueezeWorkspacePanel", () => {
           },
           attention_feature: {
             symbol: "BOXL",
+            attention_score: 37.5,
             attention_acceleration: 8.5,
             publication_state: "PUBLISHED",
           },
+          information_value: 78.38,
+          reflexive_impact: 0,
         }}
       />,
     );

@@ -222,6 +222,10 @@ class ContextQualityFlag(StrEnum):
     CORROBORATION_INCOMPLETE = "CORROBORATION_INCOMPLETE"
     SOCIAL_DATA_STALE = "SOCIAL_DATA_STALE"
     ATTENTION_DATA_PARTIAL = "ATTENTION_DATA_PARTIAL"
+    ATTENTION_HISTORY_INSUFFICIENT = "ATTENTION_HISTORY_INSUFFICIENT"
+    NARRATIVE_HISTORY_INSUFFICIENT = "NARRATIVE_HISTORY_INSUFFICIENT"
+    NARRATIVE_DATA_PARTIAL = "NARRATIVE_DATA_PARTIAL"
+    SOCIAL_ATTENTION_UNAVAILABLE = "SOCIAL_ATTENTION_UNAVAILABLE"
     LLM_EXTRACTION_LOW_CONFIDENCE = "LLM_EXTRACTION_LOW_CONFIDENCE"
     EXTRACTION_ENTITY_AMBIGUOUS = "EXTRACTION_ENTITY_AMBIGUOUS"
     EXTRACTION_METRIC_CONFLICT = "EXTRACTION_METRIC_CONFLICT"
@@ -728,6 +732,64 @@ def credibility_evidence_to_dict(item: CredibilityEvidence) -> dict[str, Any]:
         "official_confirmation": item.official_confirmation,
         "official_denial": item.official_denial,
         "independent_source_count": item.independent_source_count,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "publication_state": item.publication_state.value,
+        "provenance_ref": item.provenance_ref,
+        "quality_flags": list(item.quality_flags),
+    }
+
+
+def attention_evidence_to_dict(item: AttentionEvidence) -> dict[str, Any]:
+    return {
+        "entity_id": item.entity_id,
+        "attention_level": item.attention_level,
+        "attention_velocity": item.attention_velocity,
+        "attention_acceleration": item.attention_acceleration,
+        "attention_zscore": item.attention_zscore,
+        "attention_percentile": item.attention_percentile,
+        "information_value": item.information_value,
+        "reflexive_impact": item.reflexive_impact,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "publication_state": item.publication_state.value,
+        "provenance_ref": item.provenance_ref,
+        "quality_flags": list(item.quality_flags),
+    }
+
+
+def narrative_evidence_to_dict(item: NarrativeEvidence) -> dict[str, Any]:
+    return {
+        "narrative_id": item.narrative_id,
+        "narrative_text": item.narrative_text,
+        "entity_ids": list(item.entity_ids),
+        "prevalence": item.prevalence,
+        "velocity": item.velocity,
+        "acceleration": item.acceleration,
+        "sentiment_dispersion": item.sentiment_dispersion,
+        "narrative_dispersion": item.narrative_dispersion,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "publication_state": item.publication_state.value,
+        "provenance_ref": item.provenance_ref,
+        "quality_flags": list(item.quality_flags),
+    }
+
+
+def market_reaction_evidence_to_dict(item: MarketReactionEvidence) -> dict[str, Any]:
+    return {
+        "entity_id": item.entity_id,
+        "event_id": item.event_id,
+        "semantic_direction": item.semantic_direction,
+        "predicted_economic_direction": item.predicted_economic_direction,
+        "observed_market_direction": item.observed_market_direction,
+        "reaction_mismatch": item.reaction_mismatch,
+        "confirmation_state": item.confirmation_state.value,
+        "abnormal_return": item.abnormal_return,
+        "volume_multiple": item.volume_multiple,
+        "priced_in_probability": item.priced_in_probability,
+        "remaining_information_edge": item.remaining_information_edge,
+        "horizon": item.horizon,
         "event_time": item.event_time,
         "available_time": item.available_time,
         "publication_state": item.publication_state.value,

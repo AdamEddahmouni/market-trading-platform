@@ -1,4 +1,4 @@
-"""Tests for MC8 catalyst fusion and short-thesis invalidation."""
+"""Tests for MC9 attention diffusion evidence."""
 
 from __future__ import annotations
 
@@ -11,12 +11,14 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
 from market_platform_foundation.contracts.market_context import ContextQualityFlag  # noqa: E402
+from market_platform_foundation.market_context.attention import (  # noqa: E402
+    ATTENTION_ACCELERATION_THRESHOLD,
+    DIFFUSION_ELEVATED_THRESHOLD,
+    build_attention_cross_lane_evidence,
+    build_fixture_attention_pipeline,
+)
 from market_platform_foundation.market_context.catalyst import (  # noqa: E402
-    CATALYST_STRENGTH_THRESHOLD,
-    THESIS_INVALIDATION_THRESHOLD,
-    build_catalyst_cross_lane_evidence,
     build_fixture_catalyst_pipeline,
-    compute_catalyst_strength,
 )
 from market_platform_foundation.market_context.entity_resolution import (  # noqa: E402
     build_symbol_mapping_registry,
@@ -46,13 +48,13 @@ STRUCTURED_FIXTURE = (
     ROOT / "tests" / "fixtures" / "market_context" / "boxl_structured_metrics_slice.json"
 )
 EXPECTATIONS_FIXTURE = ROOT / "tests" / "fixtures" / "market_context" / "boxl_expectations_slice.json"
-EXPECTED_FIXTURE = ROOT / "tests" / "fixtures" / "market_context" / "boxl_catalyst_expected.json"
+EXPECTED_FIXTURE = ROOT / "tests" / "fixtures" / "market_context" / "boxl_attention_expected.json"
 CUTOFF = "2026-07-23T00:00:00.000000000Z"
 CUTOFF_NS = iso_to_epoch_ns(CUTOFF)
 EARLY_CUTOFF_NS = iso_to_epoch_ns("2026-07-16T00:00:00.000000000Z")
 
 
-def _catalyst_pipeline(*, cutoff_ns: int = CUTOFF_NS):
+def _attention_pipeline(*, cutoff_ns: int = CUTOFF_NS):
     records = load_context_document_records(
         RAW_FIXTURE,
         symbol_mappings=build_symbol_mapping_registry("BOXL"),
@@ -84,75 +86,82 @@ def _catalyst_pipeline(*, cutoff_ns: int = CUTOFF_NS):
         prediction_cutoff=cutoff_ns,
         surprise_summaries=surprise_summaries,
     )
-    return build_fixture_catalyst_pipeline(
+    _, catalyst_summaries, _, _ = build_fixture_catalyst_pipeline(
         impact_summaries,
+        prediction_cutoff=cutoff_ns,
+        entity_id="BOXL",
+    )
+    return build_fixture_attention_pipeline(
+        enriched_events,
+        catalyst_summaries,
         prediction_cutoff=cutoff_ns,
         entity_id="BOXL",
     )
 
 
-class TestMC8CatalystPipeline(unittest.TestCase):
-    def test_golden_workspace_catalyst_block(self) -> None:
+class TestMC9AttentionPipeline(unittest.TestCase):
+    def test_golden_workspace_attention_block(self) -> None:
         expected = json.loads(EXPECTED_FIXTURE.read_text(encoding="utf-8"))
         payload = build_workspace_market_context_payload(
             "BOXL",
             as_of_context={"replay_session_id": "test"},
             prediction_cutoff=CUTOFF_NS,
         )
-        self.assertTrue(payload["catalyst_available"])
-        self.assertEqual(payload["catalyst_count"], expected["catalyst_count"])
-        self.assertEqual(payload["catalyst_summaries"], expected["catalyst_summaries"])
-        thesis = payload.get("thesis_invalidation_evidence") or {}
-        self.assertEqual(
-            thesis.get("invalidation_strength"),
-            expected["thesis_invalidation_strength"],
-        )
+        self.assertTrue(payload["attention_available"])
+        self.assertEqual(payload["attention_count"], expected["attention_count"])
+        self.assertEqual(payload["attention_summaries"], expected["attention_summaries"])
 
-    def test_fail_closed_when_components_missing(self) -> None:
-        strength, flags = compute_catalyst_strength(
-            novelty_score=None,
-            materiality_score=0.8,
-            credibility_score=0.7,
-            surprise_score=0.5,
-        )
-        self.assertIsNone(strength)
-        self.assertIn(ContextQualityFlag.CATALYST_COMPONENTS_INCOMPLETE.value, flags)
+    def test_information_value_separate_from_attention_level(self) -> None:
+        _, summaries, _ = _attention_pipeline()
+        self.assertTrue(summaries)
+        for item in summaries:
+            if item.information_value is not None and item.attention_level is not None:
+                self.assertNotEqual(item.information_value, item.attention_level)
+
+    def test_social_attention_unavailable_on_fixture(self) -> None:
+        _, summaries, _ = _attention_pipeline()
+        for item in summaries:
+            self.assertIn(
+                ContextQualityFlag.SOCIAL_ATTENTION_UNAVAILABLE.value,
+                item.quality_flags,
+            )
 
     def test_pit_excludes_future_clusters(self) -> None:
-        _, summaries, thesis, _ = _catalyst_pipeline(cutoff_ns=EARLY_CUTOFF_NS)
+        _, summaries, _ = _attention_pipeline(cutoff_ns=EARLY_CUTOFF_NS)
         self.assertLess(len(summaries), 5)
-        self.assertIsNotNone(thesis)
-        self.assertLess(thesis.invalidation_strength or 0.0, 0.75)
 
-    def test_cross_lane_catalyst_and_thesis_signals(self) -> None:
-        _, summaries, thesis, _ = _catalyst_pipeline()
-        evidence = build_catalyst_cross_lane_evidence(
+    def test_first_cluster_velocity_fail_closed(self) -> None:
+        _, summaries, _ = _attention_pipeline()
+        self.assertIsNone(summaries[0].attention_velocity)
+        self.assertIn(
+            ContextQualityFlag.ATTENTION_HISTORY_INSUFFICIENT.value,
+            summaries[0].quality_flags,
+        )
+
+    def test_cross_lane_attention_signals(self) -> None:
+        _, summaries, _ = _attention_pipeline()
+        evidence = build_attention_cross_lane_evidence(
             summaries,
-            thesis,
             symbol="BOXL",
             prediction_cutoff=CUTOFF_NS,
         )
         signals = {row["signal"] for row in evidence}
-        self.assertIn("CATALYST_STRENGTH", signals)
-        self.assertIn("SHORT_THESIS_INVALIDATION", signals)
-        catalyst_rows = [row for row in evidence if row["signal"] == "CATALYST_STRENGTH"]
-        self.assertTrue(
-            all(
-                (row.get("metadata") or {}).get("catalyst_strength", 0)
-                >= CATALYST_STRENGTH_THRESHOLD
-                for row in catalyst_rows
+        accel_rows = [row for row in evidence if row["signal"] == "ATTENTION_ACCELERATION"]
+        for row in accel_rows:
+            metadata = row.get("metadata") or {}
+            self.assertGreaterEqual(
+                metadata.get("attention_acceleration", 0),
+                ATTENTION_ACCELERATION_THRESHOLD,
             )
-        )
-        thesis_rows = [row for row in evidence if row["signal"] == "SHORT_THESIS_INVALIDATION"]
-        self.assertTrue(
-            all(
-                (row.get("metadata") or {}).get("invalidation_strength", 0)
-                >= THESIS_INVALIDATION_THRESHOLD
-                for row in thesis_rows
-            )
-        )
+        diffusion_rows = [
+            row for row in evidence if row["signal"] == "INFORMATION_DIFFUSION_ELEVATED"
+        ]
+        for row in diffusion_rows:
+            metadata = row.get("metadata") or {}
+            self.assertGreaterEqual(metadata.get("diffusion_score", 0), DIFFUSION_ELEVATED_THRESHOLD)
+        self.assertTrue(signals.issubset({"ATTENTION_ACCELERATION", "INFORMATION_DIFFUSION_ELEVATED"}))
 
-    def test_catalyst_payload_uses_mc8_pipeline_for_boxl(self) -> None:
+    def test_catalyst_payload_uses_mc9_pipeline_for_boxl(self) -> None:
         payload = build_workspace_catalyst_payload(
             "BOXL",
             as_of_context={"replay_session_id": "test"},
@@ -160,9 +169,23 @@ class TestMC8CatalystPipeline(unittest.TestCase):
         )
         self.assertTrue(payload["available"])
         self.assertEqual(payload.get("source"), "mc9_fixture_pipeline")
-        self.assertEqual(payload.get("provider_id"), "market_context.catalyst")
-        self.assertTrue(payload.get("catalysts"))
-        self.assertIsNotNone(payload.get("thesis_invalidation_evidence"))
+        self.assertTrue(payload.get("attention_available"))
+        self.assertTrue(payload.get("attention_summaries"))
+
+    def test_cluster_attention_level_bounded(self) -> None:
+        _, summaries, _ = _attention_pipeline()
+        for item in summaries:
+            self.assertIsNotNone(item.attention_level)
+            assert item.attention_level is not None
+            self.assertGreaterEqual(item.attention_level, 0.0)
+            self.assertLessEqual(item.attention_level, 1.0)
+
+    def test_information_value_bounded(self) -> None:
+        _, summaries, _ = _attention_pipeline()
+        for item in summaries:
+            if item.information_value is not None:
+                self.assertGreaterEqual(item.information_value, 0.0)
+                self.assertLessEqual(item.information_value, 1.0)
 
 
 if __name__ == "__main__":

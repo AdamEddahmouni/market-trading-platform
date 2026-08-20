@@ -58,7 +58,9 @@ class CatalystBridgeTests(unittest.TestCase):
             self.skipTest("internship demo state not seeded")
         items = build_catalyst_attention_items(state_dir=state_dir, limit=3)
         self.assertGreaterEqual(len(items), 1)
-        self.assertTrue(items[0]["explanation_ref"].startswith("explain:catalyst:"))
+        self.assertTrue(
+            items[0]["explanation_ref"].startswith(("explain:catalyst:", "explain:attention:"))
+        )
 
 
 if __name__ == "__main__":

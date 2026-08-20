@@ -9,6 +9,8 @@ export function CatalystAttentionBlock({ squeeze }: Props) {
   const attention = squeeze.attention_feature;
   const thesis = squeeze.thesis_invalidation;
   const lending = squeeze.securities_lending_snapshot;
+  const informationValue = squeeze.information_value;
+  const reflexiveImpact = squeeze.reflexive_impact;
 
   if (!catalyst && !attention && !thesis && !lending) {
     return (
@@ -32,12 +34,24 @@ export function CatalystAttentionBlock({ squeeze }: Props) {
           </dd>
         </div>
         <div>
+          <dt>Attention level</dt>
+          <dd>{attention?.attention_score != null ? attention.attention_score : "UNAVAILABLE"}</dd>
+        </div>
+        <div>
           <dt>Attention acceleration</dt>
           <dd>
             {attention?.attention_acceleration != null
               ? attention.attention_acceleration
               : "UNAVAILABLE"}
           </dd>
+        </div>
+        <div>
+          <dt>Information value</dt>
+          <dd>{informationValue != null ? informationValue : "UNAVAILABLE"}</dd>
+        </div>
+        <div>
+          <dt>Reflexive impact</dt>
+          <dd>{reflexiveImpact != null ? reflexiveImpact : "UNAVAILABLE"}</dd>
         </div>
         <div>
           <dt>Short thesis invalidation</dt>

@@ -17,6 +17,9 @@ class CatalystAttentionSnapshot:
     bullish_catalyst_count: int
     attention_velocity: float | None
     attention_acceleration: float | None
+    max_attention_level: float | None
+    max_information_value: float | None
+    max_reflexive_impact: float | None
     runtime_available: bool
     provenance_ref: str = PRODUCER_VERSION
 
@@ -30,54 +33,78 @@ def catalyst_attention_snapshot_to_dict(item: CatalystAttentionSnapshot) -> dict
         "bullish_catalyst_count": item.bullish_catalyst_count,
         "attention_velocity": item.attention_velocity,
         "attention_acceleration": item.attention_acceleration,
+        "max_attention_level": item.max_attention_level,
+        "max_information_value": item.max_information_value,
+        "max_reflexive_impact": item.max_reflexive_impact,
         "runtime_available": item.runtime_available,
         "provenance_ref": item.provenance_ref,
     }
 
 
 class CatalystAttentionRuntime:
-    """Derive platform-level catalyst/attention snapshot from MC8 summaries."""
+    """Derive platform-level catalyst/attention snapshot from MC9 attention summaries."""
 
     def build_snapshot(
         self,
-        catalyst_summaries: list[dict[str, Any]],
+        attention_summaries: list[dict[str, Any]],
         *,
         instrument_id: str,
+        catalyst_summaries: list[dict[str, Any]] | None = None,
     ) -> CatalystAttentionSnapshot:
-        gated = [
+        catalyst_rows = catalyst_summaries or []
+        gated_catalyst = [
             row
-            for row in catalyst_summaries
+            for row in catalyst_rows
             if isinstance(row, dict) and row.get("gate_ok") is True
         ]
-        strengths = [
+        catalyst_strengths = [
             float(row["catalyst_strength"])
-            for row in gated
+            for row in gated_catalyst
             if row.get("catalyst_strength") is not None
         ]
-        bullish = [row for row in gated if str(row.get("lean", "")).upper() == "BULLISH"]
-        confidences = strengths[:]
-        attention_velocity = None
-        attention_acceleration = None
-        if len(confidences) >= 2:
-            attention_velocity = confidences[-1] - confidences[-2]
-        if len(confidences) >= 3:
-            prior_velocity = confidences[-2] - confidences[-3]
-            attention_acceleration = attention_velocity - prior_velocity if attention_velocity is not None else None
-        elif len(confidences) == 1:
-            attention_velocity = confidences[0] * 0.5
-            attention_acceleration = attention_velocity
+        bullish = [row for row in gated_catalyst if str(row.get("lean", "")).upper() == "BULLISH"]
+
+        attention_rows = [
+            row for row in attention_summaries if isinstance(row, dict) and row.get("attention_available")
+        ]
+        levels = [
+            float(row["attention_level"])
+            for row in attention_rows
+            if row.get("attention_level") is not None
+        ]
+        velocities = [
+            float(row["attention_velocity"])
+            for row in attention_rows
+            if row.get("attention_velocity") is not None
+        ]
+        accelerations = [
+            float(row["attention_acceleration"])
+            for row in attention_rows
+            if row.get("attention_acceleration") is not None
+        ]
+        information_values = [
+            float(row["information_value"])
+            for row in attention_rows
+            if row.get("information_value") is not None
+        ]
+        reflexive_impacts = [
+            float(row["reflexive_impact"])
+            for row in attention_rows
+            if row.get("reflexive_impact") is not None
+        ]
 
         return CatalystAttentionSnapshot(
             instrument_id=instrument_id.upper(),
-            catalyst_count=len(catalyst_summaries),
-            gated_catalyst_count=len(gated),
-            max_catalyst_strength=max(strengths) if strengths else None,
+            catalyst_count=len(catalyst_rows),
+            gated_catalyst_count=len(gated_catalyst),
+            max_catalyst_strength=max(catalyst_strengths) if catalyst_strengths else None,
             bullish_catalyst_count=len(bullish),
-            attention_velocity=round(attention_velocity, 6) if attention_velocity is not None else None,
-            attention_acceleration=round(attention_acceleration, 6)
-            if attention_acceleration is not None
-            else None,
-            runtime_available=bool(gated),
+            attention_velocity=velocities[-1] if velocities else None,
+            attention_acceleration=accelerations[-1] if accelerations else None,
+            max_attention_level=max(levels) if levels else None,
+            max_information_value=max(information_values) if information_values else None,
+            max_reflexive_impact=max(reflexive_impacts) if reflexive_impacts else None,
+            runtime_available=bool(attention_rows or gated_catalyst),
         )
 
 

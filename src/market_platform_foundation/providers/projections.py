@@ -1706,16 +1706,21 @@ def build_workspace_catalyst_payload(
                 "catalyst_evidence": mc_payload.get("catalyst_evidence") or [],
                 "catalyst_summaries": mc_payload.get("catalyst_summaries") or [],
                 "thesis_invalidation_evidence": thesis,
+                "attention_available": mc_payload.get("attention_available", False),
+                "attention_summaries": mc_payload.get("attention_summaries") or [],
+                "attention_evidence": mc_payload.get("attention_evidence") or [],
+                "attention_adapter_rows": mc_payload.get("attention_adapter_rows") or [],
                 "disclaimer": (
                     "MC8 CatalystEvidence fuses MC6–MC7 components with exposed scores. "
-                    "Not a trade recommendation. Research-only per MC8 design spec."
+                    "MC9 AttentionEvidence separates information value from reflexive impact. "
+                    "Not a trade recommendation. Research-only per MC8–MC9 design spec."
                 ),
                 "latest_confidence": latest.get("confidence") if isinstance(latest, dict) else None,
                 "latest_gate_ok": latest.get("gate_ok") if isinstance(latest, dict) else None,
                 "provider_id": "market_context.catalyst",
                 "research_only": True,
                 "symbol": instrument_id,
-                "source": "mc8_fixture_pipeline",
+                "source": "mc9_fixture_pipeline",
             }
 
     ledger = get_institutional_ledger()
@@ -1919,7 +1924,7 @@ def build_workspace_market_context_payload(
     as_of_context: dict[str, object],
     prediction_cutoff: int,
 ) -> dict[str, Any]:
-    """Build MC4–MC7 market context workspace payload (BOXL fixture scope)."""
+    """Build MC4–MC12 market context workspace payload (BOXL fixture scope)."""
     from ..market_context.entity_resolution import (
         build_symbol_mapping_registry,
         load_context_document_records,
@@ -1958,11 +1963,33 @@ def build_workspace_market_context_payload(
         catalyst_summary_to_dict,
         short_thesis_invalidation_to_dict,
     )
+    from ..market_context.attention import (
+        PRODUCER_VERSION as ATTENTION_PRODUCER_VERSION,
+        build_attention_cross_lane_evidence,
+        build_fixture_attention_pipeline,
+        attention_summary_to_dict,
+    )
+    from ..market_context.narrative import (
+        PRODUCER_VERSION as NARRATIVE_PRODUCER_VERSION,
+        build_fixture_narrative_pipeline,
+        build_narrative_cross_lane_evidence,
+        narrative_summary_to_dict,
+    )
+    from ..market_context.reaction import (
+        PRODUCER_VERSION as REACTION_PRODUCER_VERSION,
+        build_fixture_reaction_pipeline,
+        build_reaction_cross_lane_evidence,
+        load_reaction_fixture,
+        reaction_summary_to_dict,
+    )
     from ..contracts.market_context import (
+        attention_evidence_to_dict,
         catalyst_evidence_to_dict,
         credibility_evidence_to_dict,
         expectation_snapshot_to_dict,
+        market_reaction_evidence_to_dict,
         materiality_evidence_to_dict,
+        narrative_evidence_to_dict,
         novelty_evidence_to_dict,
         surprise_evidence_to_dict,
     )
@@ -2148,6 +2175,69 @@ def build_workspace_market_context_payload(
     )
     cross_lane_evidence = list(cross_lane_evidence) + catalyst_cross_lane
 
+    attention_evidence, attention_summaries, attention_adapter_rows = (
+        build_fixture_attention_pipeline(
+            enriched_events,
+            catalyst_summaries,
+            prediction_cutoff=prediction_cutoff,
+            entity_id=instrument_id,
+        )
+    )
+    attention_cross_lane = build_attention_cross_lane_evidence(
+        attention_summaries,
+        symbol=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    cross_lane_evidence = list(cross_lane_evidence) + attention_cross_lane
+
+    narrative_evidence, narrative_summaries, narrative_adapter_rows = (
+        build_fixture_narrative_pipeline(
+            catalyst_summaries,
+            event_summaries,
+            prediction_cutoff=prediction_cutoff,
+            entity_id=instrument_id,
+        )
+    )
+    narrative_cross_lane = build_narrative_cross_lane_evidence(
+        narrative_summaries,
+        symbol=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    cross_lane_evidence = list(cross_lane_evidence) + narrative_cross_lane
+
+    reaction_fixture_path = (
+        Path(__file__).resolve().parents[3]
+        / "tests"
+        / "fixtures"
+        / "market_context"
+        / "boxl_reaction_slice.json"
+    )
+    reaction_fixture = (
+        load_reaction_fixture(reaction_fixture_path)
+        if reaction_fixture_path.is_file()
+        else {}
+    )
+    reaction_evidence, reaction_summaries, reaction_adapter_rows = (
+        build_fixture_reaction_pipeline(
+            catalyst_summaries,
+            surprise_summaries,
+            reaction_fixture,
+            prediction_cutoff=prediction_cutoff,
+            entity_id=instrument_id,
+        )
+    )
+    reaction_cross_lane = build_reaction_cross_lane_evidence(
+        reaction_summaries,
+        symbol=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    cross_lane_evidence = list(cross_lane_evidence) + reaction_cross_lane
+    reaction_contradictions = [
+        reaction_summary_to_dict(item)
+        for item in reaction_summaries
+        if item.reaction_mismatch
+    ]
+
     from ..runtime.catalyst_attention import (
         CatalystAttentionRuntime,
         catalyst_attention_snapshot_to_dict,
@@ -2174,8 +2264,9 @@ def build_workspace_market_context_payload(
         prediction_cutoff=prediction_cutoff,
     )
     catalyst_runtime = CatalystAttentionRuntime().build_snapshot(
-        [catalyst_summary_to_dict(item) for item in catalyst_summaries],
+        [attention_summary_to_dict(item) for item in attention_summaries],
         instrument_id=instrument_id,
+        catalyst_summaries=[catalyst_summary_to_dict(item) for item in catalyst_summaries],
     )
 
     return {
@@ -2189,9 +2280,12 @@ def build_workspace_market_context_payload(
             "facts and metrics only — not surprise or trade direction. MC6 SurpriseEvidence "
             "is fail-closed when consensus is missing. MC7 impact components expose novelty, "
             "materiality, and credibility separately. MC8 fuses components into CatalystEvidence "
-            "with exposed scores — not a trade recommendation. "
+            "with exposed scores. MC9 separates attention diffusion from information value. "
+            "MC10 narrative intelligence is experimental — validate before model decisions. "
+            "MC12 classifies market reaction confirmation/contradiction from admitted fixtures "
+            "without reimplementing CVD/IV. "
             "Keyword-v1 runs in stdlib; FinBERT and LLM extractions are fixture-precomputed. "
-            "Research-only per MC4–MC8."
+            "Research-only per MC4–MC12."
         ),
         "document_count": len(document_results),
         "document_extractions": document_extractions,
@@ -2237,6 +2331,40 @@ def build_workspace_market_context_payload(
             if thesis_invalidation
             else None
         ),
+        "attention_available": bool(attention_summaries),
+        "attention_count": len(attention_summaries),
+        "attention_evidence": [
+            attention_evidence_to_dict(item) for item in attention_evidence
+        ],
+        "attention_producer_id": "market_context.attention",
+        "attention_producer_version": ATTENTION_PRODUCER_VERSION,
+        "attention_summaries": [
+            attention_summary_to_dict(item) for item in attention_summaries
+        ],
+        "attention_adapter_rows": attention_adapter_rows,
+        "narrative_available": bool(narrative_summaries),
+        "narrative_count": len(narrative_summaries),
+        "narrative_evidence": [
+            narrative_evidence_to_dict(item) for item in narrative_evidence
+        ],
+        "narrative_producer_id": "market_context.narrative",
+        "narrative_producer_version": NARRATIVE_PRODUCER_VERSION,
+        "narrative_summaries": [
+            narrative_summary_to_dict(item) for item in narrative_summaries
+        ],
+        "narrative_adapter_rows": narrative_adapter_rows,
+        "reaction_available": bool(reaction_summaries),
+        "reaction_count": len(reaction_summaries),
+        "reaction_evidence": [
+            market_reaction_evidence_to_dict(item) for item in reaction_evidence
+        ],
+        "reaction_producer_id": "market_context.reaction",
+        "reaction_producer_version": REACTION_PRODUCER_VERSION,
+        "reaction_summaries": [
+            reaction_summary_to_dict(item) for item in reaction_summaries
+        ],
+        "reaction_adapter_rows": reaction_adapter_rows,
+        "reaction_contradictions": reaction_contradictions,
         "credibility_evidence": [
             credibility_evidence_to_dict(item) for item in credibility_rows
         ],

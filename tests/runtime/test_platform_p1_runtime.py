@@ -43,16 +43,30 @@ class TestPlatformP1Runtime(unittest.TestCase):
 
     def test_catalyst_attention_runtime_from_summaries(self) -> None:
         summaries = [
-            {"gate_ok": True, "lean": "BULLISH", "catalyst_strength": 0.7},
-            {"gate_ok": True, "lean": "BULLISH", "catalyst_strength": 0.8},
+            {
+                "attention_available": True,
+                "attention_level": 0.5,
+                "attention_velocity": 0.1,
+                "attention_acceleration": 0.08,
+                "information_value": 0.7,
+                "reflexive_impact": 0.03,
+            },
+            {
+                "attention_available": True,
+                "attention_level": 0.6,
+                "attention_velocity": 0.15,
+                "attention_acceleration": 0.05,
+                "information_value": 0.8,
+                "reflexive_impact": 0.03,
+            },
         ]
         snapshot = CatalystAttentionRuntime().build_snapshot(
             summaries,
             instrument_id="BOXL",
         )
         self.assertTrue(snapshot.runtime_available)
-        self.assertEqual(snapshot.bullish_catalyst_count, 2)
-        self.assertEqual(snapshot.max_catalyst_strength, 0.8)
+        self.assertEqual(snapshot.attention_velocity, 0.15)
+        self.assertEqual(snapshot.max_attention_level, 0.6)
 
     def test_registry_from_extraction_summaries(self) -> None:
         registry = CorporateEventRegistry.from_extraction_summaries(

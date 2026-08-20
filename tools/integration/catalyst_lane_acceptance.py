@@ -24,6 +24,7 @@ from market_platform_foundation.donor_bridge.projections import (  # noqa: E402
 from market_platform_foundation.normalization.equity_bars import iso_to_epoch_ns  # noqa: E402
 from market_platform_foundation.features.institutional import configure_institutional_ledger  # noqa: E402
 from market_platform_foundation.providers.projections import build_workspace_catalyst_payload as build_fixture_catalyst  # noqa: E402
+from market_platform_foundation.providers.projections import build_workspace_market_context_payload  # noqa: E402
 from market_platform_foundation.providers.whale_ledger import build_combined_fixture_ledger  # noqa: E402
 
 DEFAULT_IMP_URL = "http://127.0.0.1:8766"
@@ -125,6 +126,34 @@ def _projection_checks(*, state_dir: Path | None, state_live: bool) -> list[Acce
         f"{REFERENCE_SYMBOL} workspace fixture fallback unavailable.",
     )
 
+    mc_payload = build_workspace_market_context_payload(
+        REFERENCE_SYMBOL,
+        as_of_context=as_of,
+        prediction_cutoff=FIXTURE_CUTOFF,
+    )
+    _check(
+        checks,
+        "projection_narrative_available",
+        mc_payload.get("narrative_available") is True,
+        f"{REFERENCE_SYMBOL} MC10 narrative evidence available on fixture.",
+        f"{REFERENCE_SYMBOL} MC10 narrative evidence unavailable.",
+    )
+    _check(
+        checks,
+        "projection_reaction_available",
+        mc_payload.get("reaction_available") is True,
+        f"{REFERENCE_SYMBOL} MC12 reaction evidence available on fixture.",
+        f"{REFERENCE_SYMBOL} MC12 reaction evidence unavailable.",
+    )
+    contradictions = mc_payload.get("reaction_contradictions") or []
+    _check(
+        checks,
+        "projection_reaction_contradiction",
+        isinstance(contradictions, list) and len(contradictions) >= 1,
+        f"{REFERENCE_SYMBOL} MC12 surfaces at least one reaction contradiction.",
+        f"{REFERENCE_SYMBOL} MC12 reaction contradictions not exposed.",
+    )
+
     if not state_live:
         _check(
             checks,
@@ -174,9 +203,12 @@ def _projection_checks(*, state_dir: Path | None, state_live: bool) -> list[Acce
         checks,
         "projection_attention_items",
         len(attention) >= 1
-        and all(str(item.get("explanation_ref", "")).startswith("explain:catalyst:") for item in attention),
-        "Attention projection surfaces catalyst items with explain refs.",
-        "Attention projection missing catalyst items or explain refs.",
+        and all(
+            str(item.get("explanation_ref", "")).startswith(("explain:catalyst:", "explain:attention:"))
+            for item in attention
+        ),
+        "Attention projection surfaces MC9/catalyst items with explain refs.",
+        "Attention projection missing MC9/catalyst items or explain refs.",
     )
     configure_institutional_ledger(None)
     return checks
@@ -236,14 +268,16 @@ def _http_checks(*, imp_url: str, state_live: bool) -> list[AcceptanceCheck]:
         items = attention.get("items", [])
         if isinstance(items, list):
             catalyst_items = [
-                item for item in items if str(item.get("attention_id", "")).startswith("att-catalyst-")
+                item
+                for item in items
+                if str(item.get("attention_id", "")).startswith(("att-catalyst-", "att-mc9-"))
             ]
     _check(
         checks,
         "imp_attention_catalyst",
         status == 200 and (len(catalyst_items) >= 1 if state_live else True),
-        "IMP attention feed includes catalyst items when demo state is seeded.",
-        "IMP attention feed missing catalyst items.",
+        "IMP attention feed includes MC9/catalyst items when demo state is seeded.",
+        "IMP attention feed missing MC9/catalyst items.",
     )
     return checks
 

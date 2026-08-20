@@ -1,0 +1,162 @@
+{
+  "reaction_available": true,
+  "reaction_count": 5,
+  "reaction_summaries": [
+    {
+      "entity_id": "BOXL",
+      "event_id": "df2e6ba5-46ab-5bb1-a867-745fe0a75c91",
+      "canonical_event_type": "earnings_beat",
+      "semantic_direction": "BULLISH",
+      "predicted_economic_direction": "BULLISH",
+      "observed_market_direction": "BULLISH",
+      "reaction_mismatch": false,
+      "confirmation_state": "CONFIRMED",
+      "abnormal_return": 0.0215,
+      "volume_multiple": 2.4,
+      "priced_in_probability": null,
+      "remaining_information_edge": null,
+      "horizon": "1D",
+      "cross_lane_refs": [
+        "CVD_POSITIVE_SLOPE",
+        "FUTURES_ORDER_FLOW_CONFIRMING"
+      ],
+      "event_time": "2026-07-15T14:30:00.000000000Z",
+      "available_time": "2026-07-15T14:45:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [],
+      "reaction_available": true,
+      "headline": "earnings beat",
+      "scoring_method": "market_reaction_v1"
+    },
+    {
+      "entity_id": "BOXL",
+      "event_id": "ad2c4547-e4cb-56a6-8f0c-f9a4d730d263",
+      "canonical_event_type": "fda_clearance",
+      "semantic_direction": "BULLISH",
+      "predicted_economic_direction": "BULLISH",
+      "observed_market_direction": "BULLISH",
+      "reaction_mismatch": false,
+      "confirmation_state": "CONFIRMED",
+      "abnormal_return": 0.0082,
+      "volume_multiple": 1.6,
+      "priced_in_probability": null,
+      "remaining_information_edge": null,
+      "horizon": "1D",
+      "cross_lane_refs": [
+        "CVD_POSITIVE_SLOPE"
+      ],
+      "event_time": "2026-07-18T16:00:00.000000000Z",
+      "available_time": "2026-07-18T16:10:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [],
+      "reaction_available": true,
+      "headline": "fda clearance",
+      "scoring_method": "market_reaction_v1"
+    },
+    {
+      "entity_id": "BOXL",
+      "event_id": "60e13d13-eaa2-57d1-9c9a-c23b612ef9ac",
+      "canonical_event_type": "analyst_upgrade",
+      "semantic_direction": "BULLISH",
+      "predicted_economic_direction": "BULLISH",
+      "observed_market_direction": "NEUTRAL",
+      "reaction_mismatch": false,
+      "confirmation_state": "PARTIALLY_CONFIRMED",
+      "abnormal_return": 0.002,
+      "volume_multiple": 1.1,
+      "priced_in_probability": null,
+      "remaining_information_edge": null,
+      "horizon": "1D",
+      "cross_lane_refs": [
+        "CVD_POSITIVE_SLOPE",
+        "OPTION_FLOW_DIRECTION"
+      ],
+      "event_time": "2026-07-21T13:15:00.000000000Z",
+      "available_time": "2026-07-21T13:25:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [],
+      "reaction_available": true,
+      "headline": "analyst upgrade",
+      "scoring_method": "market_reaction_v1"
+    },
+    {
+      "entity_id": "BOXL",
+      "event_id": "3fd7f172-8949-53b0-83d2-5e2341e72039",
+      "canonical_event_type": "offering_risk",
+      "semantic_direction": "BEARISH",
+      "predicted_economic_direction": "BEARISH",
+      "observed_market_direction": "BULLISH",
+      "reaction_mismatch": true,
+      "confirmation_state": "CONTRADICTED",
+      "abnormal_return": 0.015,
+      "volume_multiple": 3.2,
+      "priced_in_probability": null,
+      "remaining_information_edge": null,
+      "horizon": "1D",
+      "cross_lane_refs": [
+        "CVD_POSITIVE_SLOPE",
+        "AGGRESSIVE_BUY_PRESSURE"
+      ],
+      "event_time": "2026-07-21T18:45:00.000000000Z",
+      "available_time": "2026-07-21T18:46:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [],
+      "reaction_available": true,
+      "headline": "offering risk",
+      "scoring_method": "market_reaction_v1"
+    },
+    {
+      "entity_id": "BOXL",
+      "event_id": "63b5d445-4b4e-59f8-b7f7-66a8305c4e54",
+      "canonical_event_type": "macro_headwind",
+      "semantic_direction": "BEARISH",
+      "predicted_economic_direction": "BEARISH",
+      "observed_market_direction": null,
+      "reaction_mismatch": false,
+      "confirmation_state": "INSUFFICIENT_DATA",
+      "abnormal_return": null,
+      "volume_multiple": null,
+      "priced_in_probability": null,
+      "remaining_information_edge": null,
+      "horizon": null,
+      "cross_lane_refs": [],
+      "event_time": "2026-07-22T20:00:00.000000000Z",
+      "available_time": "2026-07-22T20:05:00.000000000Z",
+      "publication_state": "UNAVAILABLE",
+      "quality_flags": [
+        "MARKET_REACTION_DATA_MISSING"
+      ],
+      "reaction_available": false,
+      "headline": "macro headwind",
+      "scoring_method": "market_reaction_v1"
+    }
+  ],
+  "reaction_contradictions": [
+    {
+      "entity_id": "BOXL",
+      "event_id": "3fd7f172-8949-53b0-83d2-5e2341e72039",
+      "canonical_event_type": "offering_risk",
+      "semantic_direction": "BEARISH",
+      "predicted_economic_direction": "BEARISH",
+      "observed_market_direction": "BULLISH",
+      "reaction_mismatch": true,
+      "confirmation_state": "CONTRADICTED",
+      "abnormal_return": 0.015,
+      "volume_multiple": 3.2,
+      "priced_in_probability": null,
+      "remaining_information_edge": null,
+      "horizon": "1D",
+      "cross_lane_refs": [
+        "CVD_POSITIVE_SLOPE",
+        "AGGRESSIVE_BUY_PRESSURE"
+      ],
+      "event_time": "2026-07-21T18:45:00.000000000Z",
+      "available_time": "2026-07-21T18:46:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [],
+      "reaction_available": true,
+      "headline": "offering risk",
+      "scoring_method": "market_reaction_v1"
+    }
+  ]
+}

@@ -925,6 +925,16 @@ def build_workspace_squeeze_payload(
             if isinstance(detail.get("_ss_p2_fields"), dict)
             else None
         ),
+        "information_value": (
+            (detail.get("_ss_p2_fields") or {}).get("information_value")
+            if isinstance(detail.get("_ss_p2_fields"), dict)
+            else None
+        ),
+        "reflexive_impact": (
+            (detail.get("_ss_p2_fields") or {}).get("reflexive_impact")
+            if isinstance(detail.get("_ss_p2_fields"), dict)
+            else None
+        ),
         "securities_lending_snapshot": detail.get("securities_lending_snapshot")
         if isinstance(detail.get("securities_lending_snapshot"), dict)
         else None,
@@ -1287,6 +1297,57 @@ def build_catalyst_attention_items(
     state_dir: Any | None = None,
     limit: int = 5,
 ) -> list[dict[str, Any]]:
+    from ..normalization.equity_bars import iso_to_epoch_ns
+    from ..providers.projections import (
+        build_workspace_market_context_payload,
+        market_context_available,
+    )
+
+    if market_context_available(instrument_id="BOXL", prediction_cutoff=iso_to_epoch_ns("2099-01-01T00:00:00.000000000Z")):
+        mc_payload = build_workspace_market_context_payload(
+            "BOXL",
+            as_of_context={"replay_mode": "fixture"},
+            prediction_cutoff=iso_to_epoch_ns("2026-07-23T00:00:00.000000000Z"),
+        )
+        summaries = mc_payload.get("attention_summaries") or []
+        if isinstance(summaries, list) and summaries:
+            items: list[dict[str, Any]] = []
+            ranked = sorted(
+                [row for row in summaries if isinstance(row, dict)],
+                key=lambda row: (
+                    -(row.get("attention_acceleration") or 0.0),
+                    -(row.get("diffusion_score") or 0.0),
+                ),
+            )
+            for index, row in enumerate(ranked[:limit]):
+                symbol = str(row.get("entity_id", "BOXL"))
+                accel = row.get("attention_acceleration")
+                info_value = row.get("information_value")
+                reflexive = row.get("reflexive_impact")
+                tier = 1 if accel is not None and accel >= 0.05 else 2
+                items.append(
+                    {
+                        "attention_id": f"att-mc9-{row.get('event_id', index)}",
+                        "explanation_ref": f"explain:attention:{symbol}:{row.get('event_id', index)}",
+                        "headline": str(row.get("headline", f"{symbol} attention diffusion")),
+                        "instrument_id": symbol,
+                        "priority_rank": 10 + index,
+                        "reasons": [
+                            {"code": "MC9_ATTENTION", "label": "MC9 attention diffusion (fixture)"},
+                            {
+                                "code": "INFORMATION_VALUE",
+                                "label": f"information value {info_value:.2f}" if info_value is not None else "information value UNAVAILABLE",
+                            },
+                            {
+                                "code": "REFLEXIVE_IMPACT",
+                                "label": f"reflexive impact {reflexive:.2f}" if reflexive is not None else "reflexive impact UNAVAILABLE",
+                            },
+                        ],
+                        "tier": tier,
+                    }
+                )
+            return items
+
     payload = build_explore_catalyst_payload(state_dir=state_dir)
     if not payload.get("available"):
         return []

@@ -54,7 +54,7 @@ PLATFORM ROADMAP
 | Short-horizon microstructure forecast | Infra | Consumes | Context | Consumes | **Owns** | OF8 | DONE (heuristic v1) |
 | Execution forecasts | Shared contract | Consumes | Consumes | Consumes | **Major producer** | OF9 | DONE (fixture scope) |
 | News/catalyst contracts | Infra | Consumes | O7 | F7 | — | **Owns semantics** | P1/MC1 | PARTIAL |
-| Attention contracts | Infra | SS P2 | Context | Context | — | **Owns measurement** | P1/MC9 | PARTIAL |
+| Attention contracts | Infra | SS P2 | Context | Context | — | **Owns measurement** | P1/MC9 | **IMPLEMENTED (fixture)** |
 | Corporate event registry | Infra | Context | O7 | F7 | — | **Owns events** | P1/MC6 | PLANNED |
 | Baseline semantic sentiment (FinBERT) | Infra | Display only | Context | — | — | **Owns BaselineFinancialSentiment** | MC4 | **IMPLEMENTED (fixture)** |
 | Expectations / surprise PIT | Infra | Context | Major consumer | Major consumer | — | **Owns** | MC6 | PLANNED |
@@ -656,18 +656,20 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 
 ---
 
-### MARKET CONTEXT MC9 — Attention / diffusion [PLANNED]
+### MARKET CONTEXT MC9 — Attention / diffusion [IMPLEMENTED (fixture)]
 
-- [ ] `AttentionEvidence` — separate information vs reflexive impact
-- [ ] Diffusion metrics on event clusters
+- [x] `AttentionEvidence` — separate information vs reflexive impact (`attention_diffusion_v1`)
+- [x] Diffusion metrics on event clusters
+- [x] Cross-lane `ATTENTION_ACCELERATION` and `INFORMATION_DIFFUSION_ELEVATED`
+- [x] Golden fixture `boxl_attention_expected.json`; resolves MC-D19 (fixture scope)
 
-**Capability-gated** — social sources optional
+**Capability-gated** — social sources optional (`SOCIAL_ATTENTION_UNAVAILABLE` on fixture)
 
 ---
 
 ### MARKET CONTEXT MC10 — Narrative intelligence [EXPERIMENTAL]
 
-- [ ] Narrative clustering, velocity, dispersion
+- [x] Narrative clustering, velocity, dispersion
 - [ ] Validate before model decisions
 
 ---
@@ -683,9 +685,9 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 
 ### MARKET CONTEXT MC12 — Market reaction engine [PLANNED]
 
-- [ ] Consume price, Order Flow, Options, Futures evidence
-- [ ] `MarketReactionEvidence` + confirmation/contradiction
-- [ ] No internal CVD/IV reimplementation
+- [x] Consume price, Order Flow, Options, Futures evidence
+- [x] `MarketReactionEvidence` + confirmation/contradiction
+- [x] No internal CVD/IV reimplementation
 
 **Depends on:** SHARED P3, MC8 (partial)
 
@@ -717,7 +719,7 @@ See `MARKET_CONTEXT_TARGET_ARCHITECTURE.md`, `FIVE_LANE_ROADMAP_RECONCILIATION.m
 | Order Flow | OF10 MBO / queue semantics | OF9 (complete) |
 | SS | Live lending ingest wiring | Vendor authorization |
 | Platform | P1 catalyst runtime | Nothing |
-| Market Context | MC8 catalyst/thesis intelligence | MC7 complete | DONE (fixture) |
+| Market Context | MC9 attention/diffusion | MC8 complete | DONE (fixture) |
 | Options | O10 advanced modeling research | O4 baseline (complete) |
 | SHARED P4 | Futures outright/curve fusion extension | F8–F10 | DONE (fixture) |
 | Discrepancy | D-01 ignition_state mapping, D-10 deploy mirror | Nothing |

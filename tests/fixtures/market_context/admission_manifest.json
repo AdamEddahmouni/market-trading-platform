@@ -9,7 +9,10 @@
     "event_extraction",
     "expectations_surprise",
     "impact_components",
-    "catalyst_thesis"
+    "catalyst_thesis",
+    "attention_diffusion",
+    "narrative_intelligence",
+    "market_reaction"
   ],
   "content_paths": [
     "tests/fixtures/market_context/boxl_raw_documents_slice.json",
@@ -23,7 +26,11 @@
     "tests/fixtures/market_context/boxl_expectations_slice.json",
     "tests/fixtures/market_context/boxl_surprise_expected.json",
     "tests/fixtures/market_context/boxl_impact_components_expected.json",
-    "tests/fixtures/market_context/boxl_catalyst_expected.json"
+    "tests/fixtures/market_context/boxl_catalyst_expected.json",
+    "tests/fixtures/market_context/boxl_attention_expected.json",
+    "tests/fixtures/market_context/boxl_narrative_expected.json",
+    "tests/fixtures/market_context/boxl_reaction_slice.json",
+    "tests/fixtures/market_context/boxl_reaction_expected.json"
   ],
   "instrument_id": "BOXL",
   "logical_id": "market_context.mc2_mc3_fixture_admission",
