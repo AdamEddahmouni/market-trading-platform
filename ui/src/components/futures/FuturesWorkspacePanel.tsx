@@ -340,6 +340,30 @@ export function FuturesWorkspacePanel({
             <dd>Elevated</dd>
           </div>
         ) : null}
+        {futures.latest_futures_forecast?.futures_model_version ? (
+          <div>
+            <dt>F11 model</dt>
+            <dd>{futures.latest_futures_forecast.futures_model_version}</dd>
+          </div>
+        ) : null}
+        {futures.latest_futures_forecast?.outright_up_probability != null ? (
+          <div>
+            <dt>Outright up probability</dt>
+            <dd>{String(futures.latest_futures_forecast.outright_up_probability)}</dd>
+          </div>
+        ) : null}
+        {futures.latest_futures_forecast?.curve_steepen_probability != null ? (
+          <div>
+            <dt>Curve steepen probability</dt>
+            <dd>{String(futures.latest_futures_forecast.curve_steepen_probability)}</dd>
+          </div>
+        ) : null}
+        {futures.latest_futures_forecast?.direction_bias ? (
+          <div>
+            <dt>F11 direction bias</dt>
+            <dd>{futures.latest_futures_forecast.direction_bias}</dd>
+          </div>
+        ) : null}
       </dl>
 
       {oiHypothesis?.disclaimer ? (
@@ -366,6 +390,11 @@ export function FuturesWorkspacePanel({
       {futures.futures_family_available ? (
         <p className="workspace-hint">
           Family context is interpretive metadata — not a directional forecast or universal Futures Score.
+        </p>
+      ) : null}
+      {futures.latest_futures_forecast?.research_only ? (
+        <p className="workspace-hint">
+          F11 engineered baseline is research-only and experimental — not a trade recommendation.
         </p>
       ) : null}
 

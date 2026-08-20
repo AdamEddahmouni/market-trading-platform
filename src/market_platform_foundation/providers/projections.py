@@ -304,6 +304,69 @@ def _options_event_vol_enrichment(
     )
 
 
+def _maturity_days_from_expiry(expiry: str, as_of_time: str) -> int:
+    from datetime import date
+
+    try:
+        expiry_date = date.fromisoformat(expiry[:10])
+        as_of_date = date.fromisoformat(as_of_time[:10]) if as_of_time else expiry_date
+        return max((expiry_date - as_of_date).days, 1)
+    except ValueError:
+        return 30
+
+
+def _options_r_o6_enrichment(
+    symbol: str,
+    *,
+    as_of_time: str,
+    chain_rows: list[dict[str, Any]],
+    physical_forecast: dict[str, Any] | None,
+    risk_neutral_forecast: dict[str, Any] | None,
+) -> dict[str, Any]:
+    from ..options.r_o6 import compose_r_o6_research_snapshot
+    from ..options.strategy import select_atm_contracts
+    from .adapters.fixture_distribution import fetch_fixture_bar_closes
+
+    spot_path = fetch_fixture_bar_closes(symbol)
+    if not spot_path:
+        return {
+            "available": False,
+            "reason": "SPOT_PATH_UNAVAILABLE",
+            "gate_milestone": "R-O6",
+            "r_o6_version": "r_o6_research_v1",
+        }
+
+    atm = select_atm_contracts(chain_rows)
+    if not atm.get("available"):
+        return {
+            "available": False,
+            "reason": atm.get("reason", "ATM_CONTRACTS_MISSING"),
+            "gate_milestone": "R-O6",
+            "r_o6_version": "r_o6_research_v1",
+        }
+
+    atm_call = atm.get("atm_call")
+    if not isinstance(atm_call, dict):
+        return {
+            "available": False,
+            "reason": "ATM_CONTRACTS_MISSING",
+            "gate_milestone": "R-O6",
+            "r_o6_version": "r_o6_research_v1",
+        }
+
+    strike = float(atm_call["strike"])
+    expiry = str(atm.get("expiry", ""))
+    maturity_days = _maturity_days_from_expiry(expiry, as_of_time)
+
+    return compose_r_o6_research_snapshot(
+        physical_forecast,
+        risk_neutral_forecast,
+        spot_path=spot_path,
+        strike=strike,
+        maturity_days=maturity_days,
+    )
+
+
 def _options_strategy_enrichment(
     symbol: str,
     *,
@@ -666,6 +729,13 @@ def build_workspace_options_payload(
             execution_friction=execution_friction,
             squeeze_context=squeeze_context,
         )
+        r_o6_research = _options_r_o6_enrichment(
+            instrument_id,
+            as_of_time=chain_as_of_time,
+            chain_rows=chain_rows,
+            physical_forecast=physical_forecast if isinstance(physical_forecast, dict) else None,
+            risk_neutral_forecast=risk_neutral_forecast,
+        )
         execution_snapshot = _options_execution_enrichment(
             instrument_id,
             as_of_time=chain_as_of_time,
@@ -707,6 +777,7 @@ def build_workspace_options_payload(
             "disclaimer": "No PIT-eligible options events for this symbol at replay cutoff.",
             "reason": "WHALE_NO_PIT_ELIGIBLE_OPTIONS",
             "research_only": True,
+            "r_o6_research": r_o6_research,
             "symbol": instrument_id,
         }
 
@@ -782,6 +853,13 @@ def build_workspace_options_payload(
         risk_neutral_forecast,
         event_vol_snapshot=event_vol_snapshot,
     )
+    r_o6_research = _options_r_o6_enrichment(
+        instrument_id,
+        as_of_time=as_of_time or chain_as_of_time,
+        chain_rows=surface_source,
+        physical_forecast=physical_forecast if isinstance(physical_forecast, dict) else None,
+        risk_neutral_forecast=risk_neutral_forecast,
+    )
     strategy_snapshot = _options_strategy_enrichment(
         instrument_id,
         as_of_time=as_of_time or chain_as_of_time,
@@ -852,6 +930,7 @@ def build_workspace_options_payload(
         "symbol": instrument_id,
         "volatility_surface": surface,
         "vrp_research": vrp_research,
+        "r_o6_research": r_o6_research,
     }
 
 
@@ -974,6 +1053,29 @@ def _impact_summary_from_event(event_row: dict[str, Any]) -> dict[str, Any] | No
     return summary
 
 
+def _lob_forecast_from_event(event_row: dict[str, Any]) -> dict[str, Any] | None:
+    """Extract OF12 LOB baseline fields from a ledger summary row."""
+    if event_row.get("lob_model_version") is None and event_row.get("baseline_tier") is None:
+        return None
+    summary: dict[str, Any] = {
+        "lob_model_version": event_row.get("lob_model_version"),
+        "lob_model_version_number": event_row.get("lob_model_version_number"),
+        "baseline_tier": event_row.get("baseline_tier"),
+        "mid_up_probability": event_row.get("lob_mid_up_probability"),
+        "expected_mid_delta": event_row.get("lob_expected_mid_delta"),
+        "direction_bias": event_row.get("lob_direction_bias"),
+        "signal_half_life_ms": event_row.get("signal_half_life_ms"),
+        "composite_score": event_row.get("lob_composite_score"),
+        "model_confidence": event_row.get("lob_model_confidence"),
+        "book_state_valid": event_row.get("book_state_valid"),
+        "research_only": True,
+        "experimental": True,
+    }
+    if event_row.get("lob_quality_flags") is not None:
+        summary["lob_quality_flags"] = event_row.get("lob_quality_flags")
+    return summary
+
+
 def _microstructure_forecast_from_event(event_row: dict[str, Any]) -> dict[str, Any] | None:
     """Extract OF8 microstructure forecast fields from a ledger summary row."""
     if event_row.get("forecast_method") is None and event_row.get("direction_bias") is None:
@@ -992,6 +1094,9 @@ def _microstructure_forecast_from_event(event_row: dict[str, Any]) -> dict[str, 
     }
     if event_row.get("forecast_quality_flags") is not None:
         summary["forecast_quality_flags"] = event_row.get("forecast_quality_flags")
+    if event_row.get("lob_model_version") is not None:
+        summary["lob_baseline_tier"] = event_row.get("baseline_tier")
+        summary["lob_model_version"] = event_row.get("lob_model_version")
     return summary
 
 
@@ -1087,6 +1192,7 @@ def build_workspace_order_book_payload(
         "latest_impact_summary": _impact_summary_from_event(latest),
         "latest_microstructure_forecast": _microstructure_forecast_from_event(latest),
         "latest_execution_forecast": _execution_forecast_from_event(latest),
+        "latest_lob_forecast": _lob_forecast_from_event(latest),
         "latest_queue_snapshot": _queue_summary_from_event(latest),
         "mbo_capability_available": latest.get("mbo_capability_available", False),
         "ledger_id": ledger.ledger_id,
@@ -1451,6 +1557,22 @@ def _enrich_es_futures_f9_payload(
         payload["macro_surprise_available"] = any(
             item.surprise_available for item in macro_summaries
         )
+    return _enrich_es_futures_f11_payload(payload, prediction_cutoff=prediction_cutoff)
+
+
+def _enrich_es_futures_f11_payload(
+    payload: dict[str, Any],
+    *,
+    prediction_cutoff: int | None = None,
+) -> dict[str, Any]:
+    """Attach F11 family-engineered research forecast for ES fixture."""
+    if payload.get("symbol", "").upper() != "ES":
+        return payload
+    from ..futures.advanced_baseline import compute_futures_forecast_from_workspace
+
+    forecast = compute_futures_forecast_from_workspace(payload)
+    payload["latest_futures_forecast"] = forecast
+    payload["futures_advanced_forecast_available"] = bool(forecast.get("family_supported"))
     return payload
 
 
@@ -1661,6 +1783,7 @@ def build_workspace_futures_payload(
         "latest_impact_summary": _impact_summary_from_event(latest),
         "latest_microstructure_forecast": _microstructure_forecast_from_event(latest),
         "latest_execution_forecast": _execution_forecast_from_event(latest),
+        "latest_lob_forecast": _lob_forecast_from_event(latest),
         "latest_queue_snapshot": _queue_summary_from_event(latest),
         "mbo_capability_available": latest.get("mbo_capability_available", False),
         "legacy_whale_family": "futures_positioning",

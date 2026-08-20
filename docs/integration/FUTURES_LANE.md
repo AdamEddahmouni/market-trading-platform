@@ -227,3 +227,29 @@ Workspace payload fields:
 Cross-lane signals: `FUTURES_LONG_LIQUIDATION_RISK`, `FUTURES_SHORT_LIQUIDATION_RISK`
 
 Golden regression: `tests/fixtures/futures/es_leverage_stress_expected.json`
+
+## F11 — Advanced modeling baseline (experimental)
+
+Modules: `src/market_platform_foundation/futures/advanced_features.py`, `advanced_baseline.py`, `research/`
+
+| Method | ID | Scope |
+|---|---|---|
+| Feature vector | `futures_feature_vector_v1` | EQUITY_INDEX trend/carry/curve/COT/leverage/macro |
+| Engineered baseline | `futures_family_engineered_v1` | M8 outright + curve-steepen probabilities vs M1 trend-only |
+| Baseline gate | `F11-S1` | Walk-forward validation on `ADMITTED-F11-ES-001` |
+
+**Boundary:** Research-only forecast metadata — no new directional EvidenceSignal enums. ENERGY/TREASURY remain fail-closed.
+
+Workspace payload fields:
+
+- `latest_futures_forecast` — model version, outright_up_probability, curve_steepen_probability, research_only
+- `futures_advanced_forecast_available` — bool
+
+Fixtures:
+
+- `tests/fixtures/futures/es_f11_baseline_slice.json`
+- `tests/fixtures/futures/es_f11_cot_upgrade_slice.json`
+- `tests/fixtures/futures/es_f11_baseline_expected.json`
+
+CLI: `python tools/futures/run_f11_baseline_gate_validation.py`
+

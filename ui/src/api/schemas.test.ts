@@ -342,4 +342,28 @@ describe("WorkspaceFuturesResponseSchema", () => {
     expect(parsed.carry_baseline?.carry_percentile).toBe(0.0);
     expect(parsed.curve_momentum?.calendar_spread_momentum).toBe("FLATTENING");
   });
+
+  it("parses F11 advanced forecast without stripping fields", () => {
+    const parsed = WorkspaceFuturesResponseSchema.parse({
+      symbol: "ES",
+      available: true,
+      futures_advanced_forecast_available: true,
+      latest_futures_forecast: {
+        futures_model_version: "futures_family_engineered_v1",
+        baseline_tier: "M8",
+        outright_up_probability: 0.72,
+        curve_steepen_probability: 0.55,
+        direction_bias: "UP",
+        family: "EQUITY_INDEX",
+        research_only: true,
+        experimental: true,
+      },
+    });
+
+    expect(parsed.futures_advanced_forecast_available).toBe(true);
+    expect(parsed.latest_futures_forecast?.futures_model_version).toBe(
+      "futures_family_engineered_v1",
+    );
+    expect(parsed.latest_futures_forecast?.research_only).toBe(true);
+  });
 });

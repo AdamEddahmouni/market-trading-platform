@@ -51,6 +51,17 @@ from .relative_value import (
     relative_value_payload,
     relative_value_snapshot,
 )
+from .advanced_baseline import (
+    FUTURES_ENGINEERED_METHOD,
+    FUTURES_TREND_ONLY_METHOD,
+    compute_family_engineered_baseline,
+    compute_futures_forecast_from_workspace,
+    compute_trend_only_baseline,
+)
+from .advanced_features import (
+    FEATURE_METHOD as F11_FEATURE_METHOD,
+    build_futures_feature_vector,
+)
 
 __all__ = [
     "BASELINES_VERSION",
@@ -94,4 +105,11 @@ __all__ = [
     "roll_gaps_from_prices",
     "select_lead_contract",
     "unadjusted_continuous_series",
+    "FUTURES_ENGINEERED_METHOD",
+    "FUTURES_TREND_ONLY_METHOD",
+    "F11_FEATURE_METHOD",
+    "build_futures_feature_vector",
+    "compute_family_engineered_baseline",
+    "compute_futures_forecast_from_workspace",
+    "compute_trend_only_baseline",
 ]
