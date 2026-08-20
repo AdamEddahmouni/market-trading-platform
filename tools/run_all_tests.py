@@ -43,6 +43,8 @@ TEST_DIRECTORIES: tuple[str, ...] = (
     "ui2",
     "mra001",
     "mra002",
+    "market_context",
+    "participant",
 )
 
 

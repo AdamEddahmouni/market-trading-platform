@@ -85,11 +85,11 @@ Participant PI1–PI2 can proceed **without blocking** SS/O/F/OF/MC active phase
 | Track | Authorized work |
 |---|---|
 | SS | P2 live lending when vendor ready |
-| Options | O10 research |
-| Futures | F9 RV spreads |
-| Order Flow | OF10 MBO |
-| Market Context | MC2–MC4 |
-| **Participant** | **PI5 walk-forward skill + cross-lane publish** |
+| Options | O10-S5 fixture gates validated; Phase B OOS or O11 (Phase C) next |
+| Futures | Family ML beyond M8 F11 baseline |
+| Order Flow | LOB ML beyond M8 OF12 baseline |
+| Market Context | MC14 social / author intelligence (research) |
+| **Participant** | **PI10–PI13 IMPLEMENTED (fixture); PI14+ not authorized** |
 | Platform | P0 bitemporal store, P1 catalyst runtime |
 
 ---

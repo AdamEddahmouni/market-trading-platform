@@ -235,8 +235,8 @@ P vs Q → candidate structures → E[PnL] under P → liquidity filter → rank
 | R-O2 | IV solver accuracy vs vendor on admitted chain | O2 |
 | R-O3 | Surface QA rejects bad fixtures | O2 |
 | R-O4 | Q extraction on clean surface | O3 |
-| R-O5 | P baseline beats naive on RV (QLIKE) | SHARED P2 |
-| R-O6 | P vs Q edge correlates with delta-hedged returns | O4 |
+| R-O5 | P baseline beats naive on RV (QLIKE) | SHARED P2 | **PASS (fixture scope, O10-S5)** — `nvda_bars_slice.json`; Phase B multi-year OOS required for production |
+| R-O6 | P vs Q edge correlates with delta-hedged returns | O4 | **PASS (fixture scope, O10-S5)** — `nvda_r_o6_panel_slice.json`; dynamic panel from chain+bars deferred to Phase B |
 | R-O7 | Abnormal flow OOS predictability | O5 |
 | R-O8 | Proxy gamma OOS vs realized hedge pressure | O6 |
 | R-O9 | Earnings IV crush model calibration | O7 |

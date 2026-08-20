@@ -137,16 +137,17 @@ See `OPTIONS_CAPABILITY_GAP_ANALYSIS.md`.
 
 ## Next shared milestone
 
-**Futures F9–F10 + Platform P1 catalyst interfaces**
+**Options O10 critical path — Phase B re-validation or O11 design**
 
-SHARED P2 (physical distribution), SHARED P3 (cross-lane evidence), SHARED P4 (EV / opportunity fusion), and **Futures F6–F8** (family models, macro events, leverage stress) are **COMPLETE (fixture scope)** as of 2026-08-19.
+O10-S5 baseline gate validation **PASS (fixture scope)** as of 2026-08-19: R-O6 + R-O5 + R-O10-SURF on admitted NVDA fixtures via `tools/options/run_o10_baseline_gate_validation.py`.
 
 Recommended next lane-parallel work:
 
-- **Futures F9–F10** — relative value spreads, simulator roll/VM extensions
-- **Order Flow OF10** — MBO / queue research primitives
-- **Platform P1** — catalyst/attention runtime interfaces (contracts exist; runtime wiring deferred)
-- **SHARED P4 extension** — futures outright/curve fusion (partially unblocked; F9–F10 remain)
+- **Options O10 ML** — advance distributional/surface/option-return ML if baselines win OOS on Phase B chain history
+- **Options O11 design** — begin 0DTE specialization once Phase C intraday chain snapshots are admitted
+- **Futures** — family ML beyond M8 F11 baseline (F1–F11 fixture-complete)
+- **Order Flow** — LOB ML beyond M8 OF12 baseline (OF1–OF12 fixture-complete)
+- **Platform P0/P1** — bitemporal store and catalyst/attention runtime
 - **Discrepancy P0** — D-01 `causal_intelligence.state` mapping, D-10 deploy mirror sync
 
 ---

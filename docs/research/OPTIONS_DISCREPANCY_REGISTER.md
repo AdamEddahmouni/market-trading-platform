@@ -33,11 +33,12 @@
 | O-23 | No point-in-time on OI/earnings/dividends | Leakage risk when live | Whale ledger has cutoff; no earnings join | Backtest leakage | PIT joins centralized (PLATFORM P0) | replay, features | P0 | P0 |
 | O-24 | Wireframe shows chain/skew; UI is table only | UX expectation gap | `07-options.md` vs panel | User confusion | Progressive disclosure per O2/O4 milestones | UI | P2 | O2/O4 |
 | O-25 | No volatility risk premium model | IV−RV misread as sell signal | N/A | Systematic vol mis-trading | Explicit VRP research (O4) | research plan | P3 | O4 |
-| O-26 | No delta-hedged return research primitive | Cannot isolate vol edge | N/A | Research gap | Delta-hedged P&L path (O10) | research | P4 | O10 |
+| O-26 | No delta-hedged return research primitive | Cannot isolate vol edge | N/A | Research gap | **RESOLVED (fixture scope)** — `delta_hedged.py` + `r_o6.py` correlation gate wired in projections | `options/delta_hedged.py`, `options/r_o6.py`, `providers/projections.py` | P4 | O10 |
 | O-27 | SS squeeze evidence not consumed by Options | Tail forecasts miss reflexivity | `squeeze_context.py` + O7 crush conditioning | Suboptimal P | **PARTIAL (fixture scope)** — `exhaustion_risk` conditions IV crush in O7; full P forecast integration deferred | `options/event_vol.py`, `options/features/squeeze_context.py` | P2 | O7 |
 | O-28 | No circular-dependency guard in evidence DAG | Cross-lane loops possible | N/A | Model amplification | `EvidenceProvenanceClass` + DAG validation (SHARED P3) | `cross_lane/evidence.py` | P1 | SHARED P3 |
 | O-29 | `confirmation_score` unit test missing | Only liquidity_gate tested | `test_donor_patterns.py` | Regression risk | Add scoring boundary tests | tests | P1 | O1 |
 | O-30 | 0DTE treated as ordinary small DTE | Would mis-model gamma/theta | N/A | Path risk when implemented | 0DTE subdomain (O11) | dedicated module | P4 | O11 |
+| O-31 | Baseline gates not evidenced on admitted fixtures | O11 blocked without R-O6/R-O5/R-O10-SURF validation | N/A | Premature ML / 0DTE work | **RESOLVED (fixture scope)** — `run_o10_baseline_gate_validation()` + `nvda_o10_baseline_gates_expected.json`; aggregate PASS on admitted NVDA fixtures | `options/research/harness.py`, `tools/options/run_o10_baseline_gate_validation.py` | P4 | O10 |
 
 ---
 

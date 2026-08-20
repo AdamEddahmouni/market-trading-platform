@@ -107,8 +107,10 @@ Use shared platform identity keys; do not double-count affiliated funds without 
 | `ActivistEvidence` | Participant | SS, Context |
 | `InstitutionalHoldingEvidence` | Participant | SS crowding, Context | PI4 IMPLEMENTED |
 | `MetaorderEvidence` | Participant (from OF) | SS, OF execution | PI6 IMPLEMENTED |
-| `ForcedFlowEvidence` | Participant | SS, fade research |
-| `ParticipantCrowdingEvidence` | Participant | SS, Futures |
+| `ForcedFlowEvidence` | Participant | SS, fade research | PI13 IMPLEMENTED |
+| `ParticipantCrowdingEvidence` | Participant | SS, Futures | PI10 IMPLEMENTED |
+| `CrossAssetParticipantContextEvidence` | Participant | SS, Futures, EV | PI11 IMPLEMENTED |
+| `DerivativeParticipantEvidence` | Participant | SS, Options, EV | PI12 IMPLEMENTED |
 | `CopyabilityEvidence` | Participant | Shared EV |
 | `ParticipantSkillEvidence` | Participant | SS, Context, ignition cards | PI5 IMPLEMENTED |
 
@@ -126,6 +128,10 @@ Each envelope requires: `event_time`, `available_time`, `identity_confidence`, `
 | `participant/metaorder.py` | PI6 metaorder lifecycle |
 | `participant/mechanism.py` | PI7 (future) |
 | `participant/copyability.py` | PI9 copyability scoring |
+| `participant/crowding.py` | PI10 consensus / disagreement / crowding |
+| `participant/cross_asset.py` | PI11 cross-asset context (consumes F4 COT) |
+| `participant/derivatives.py` | PI12 large derivatives participant (consumes O5) |
+| `participant/forced_flow.py` | PI13 forced-flow / dislocation (consumes PI6, OF, F8, MC catalyst gate) |
 
 ---
 
@@ -137,4 +143,10 @@ PI1–PI2: **IMPLEMENTED** (contracts + disclosure bridge).
 PI3–PI4: **IMPLEMENTED** (disclosure enrichment + 13F QoQ).  
 PI5: **IMPLEMENTED** (walk-forward skill + cross-lane publish).  
 PI6: **IMPLEMENTED** (metaorder lifecycle + cross-lane publish).  
-PI7+: **PLANNED** until validated.
+PI7+: **PLANNED** until validated.  
+PI8: **IMPLEMENTED** (contextual intent on fixtures).  
+PI9: **IMPLEMENTED** (copyability on fixtures).  
+PI10: **IMPLEMENTED** (consensus / disagreement / crowding on fixtures).  
+PI11: **IMPLEMENTED** (cross-asset participant context on fixtures).  
+PI12: **IMPLEMENTED** (large derivatives participant on fixtures).  
+PI13: **IMPLEMENTED** (forced-flow / dislocation on fixtures).

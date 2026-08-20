@@ -26,6 +26,8 @@ SwimWithWhales ONLY WHEN
 | W9 | + Market Context timing | PI8 |
 | W10 | + Order Flow metaorder | PI6 + OF11 |
 | W11 | + cross-lane alignment | PI10 |
+| W12 | + cross-asset COT context | **PI11** |
+| W13 | + large anonymous derivatives flow | **PI12** |
 
 Retain complexity only with incremental OOS benefit.
 
@@ -39,6 +41,7 @@ Retain complexity only with incremental OOS benefit.
 | F-ACT-01 | 13D initiation | STRATEGIC | 60–252d | Activist objective success |
 | F-13F-01 | New 13F position | PORTFOLIO_ALLOCATION | 60d post-filing | Delay-adjusted alpha |
 | F-META-01 | Active metaorder buy | MECHANICAL | minutes–hours | Continuation vs OF baseline |
+| F-DERIV-01 | Confirmed signed open call flow at scale | FLOW_DRIVEN | intraday | Continuation vs matched baseline (PI-Q2/Q4) |
 | F-CON-01 | Cross-participant alignment | MIXED | strategy-dependent | W11 ablation |
 
 ## Fade hypotheses (contrarian research)
@@ -47,6 +50,7 @@ Retain complexity only with incremental OOS benefit.
 |---|---|---|---|
 | FD-FORCE-01 | Forced-flow probability high + no catalyst | FORCED | Post-flow reversal |
 | FD-META-01 | Metaorder LIKELY_COMPLETE | MECHANICAL | Post-execution decay |
+| FD-DERIV-01 | Flow with OPEN_CLOSE_UNKNOWN | UNKNOWN | No directional edge (fail-closed) |
 | FD-INS-01 | Insider 10b5-1 sale cluster | COMPENSATION | No short signal |
 | FD-13F-01 | Stale 13F + price +40% vs filing | PASSIVE | Underperformance of copy |
 
@@ -102,4 +106,6 @@ Compare:
 | PI6 metaorder | UNAVAILABLE (blocked OF11) | **IMPLEMENTED** (fixture) |
 | PI7 mechanism engine | EXPERIMENTAL (schema only) |
 | PI9 copyability | UNAVAILABLE → fixture scope | **IMPLEMENTED** (fixture) |
+| PI11 cross-asset context | UNAVAILABLE → fixture scope | **IMPLEMENTED** (fixture) |
+| PI12 large derivatives participant | PLANNED | **IMPLEMENTED** (fixture) |
 | PI14 crypto | NOT_AUTHORIZED |

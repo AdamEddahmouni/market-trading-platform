@@ -219,11 +219,11 @@ See `SHORT_SQUEEZE_IMPLEMENTATION_ROADMAP.md`.
 - [x] Golden fixture — `nvda_execution_forecast_expected.json`
 - [x] UI — order-book + futures panels show execution forecast block
 
-### ORDER FLOW OF10–OF12 [OF10–OF11 IMPLEMENTED]
+### ORDER FLOW OF10–OF12 [OF10–OF12 IMPLEMENTED (fixture scope)]
 
 - [x] OF10 MBO / queue semantics — `order_flow/queue.py`, `ADMITTED-MBO-ES-001`
 - [x] OF11 metaorder detection primitives — `order_flow/metaorder.py`
-- [ ] OF12 advanced LOB ML — PLANNED
+- [x] OF12 advanced LOB baseline — `order_flow/lob_features.py`, `order_flow/lob_baseline.py`, `order_flow/research/` (fixture scope; OF12-S1 gate PASS)
 
 See `FOUR_LANE_ROADMAP_RECONCILIATION.md` for OF12 advanced ML.
 
@@ -318,11 +318,11 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 - [x] Golden regression — `tests/fixtures/futures/es_leverage_stress_expected.json`
 - [x] UI — futures panel shows family context, macro risk, leverage stress disclaimers
 
-### FUTURES F9–F11 [F9–F10 IMPLEMENTED (fixture scope)]
+### FUTURES F9–F11 [F9–F11 IMPLEMENTED (fixture scope)]
 
 - [x] F9 relative value spreads — `futures/relative_value.py`, ES calendar spread snapshot
 - [x] F10 simulator roll/VM/spread-leg — `simulate_variation_margin_change`, `simulate_calendar_spread_pnl`
-- [ ] F11 advanced modeling — PLANNED
+- [x] F11 advanced modeling — `futures/advanced_features.py`, `futures/advanced_baseline.py`, F11-S1 walk-forward vs trend-only (EQUITY_INDEX experimental)
 
 ---
 
@@ -552,18 +552,24 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 
 ---
 
-### OPTIONS O10 — Advanced modeling [FUTURE]
+### OPTIONS O10 — Advanced modeling [IN PROGRESS — fixture scope]
 
-- Distributional ML, surface forecasting, option-return ML
-- Delta-hedged research primitive
-- Only after O4 baseline works
+- [x] Delta-hedged research primitive — `options/delta_hedged.py`
+- [x] R-O6 correlation gate — `options/r_o6.py` + `r_o6_research` workspace wiring
+- [x] Surface baseline research scaffold — `options/research/surface_baseline.py` (R-O10-SURF)
+- [x] Distributional baseline + walk-forward harness — `options/research/distributional_baseline.py`, `harness.py` (R-O5)
+- [x] Baseline gate validation report — `tools/options/run_o10_baseline_gate_validation.py` (O10-S5; R-O6 + R-O5 + R-O10-SURF on admitted fixtures; evidence `ADMITTED-OPTIONS-NVDA-R-O6-001`, `ADMITTED-DISTRIBUTION-NVDA-001`, `ADMITTED-OPTIONS-NVDA-001`; aggregate PASS fixture scope)
+- [ ] Distributional ML, surface forecasting ML, option-return ML — blocked until baselines validate OOS on Phase B data
+- Only after O4 baseline works (complete)
 
 ---
 
-### OPTIONS O11 — 0DTE specialization [FUTURE]
+### OPTIONS O11 — 0DTE specialization [FUTURE — blocked]
 
-- Only after O9 execution correctness
+- Baseline gates PASS (fixture scope via O10-S5); still blocked on Phase C intraday chain snapshots
+- Only after O9 execution correctness (complete on fixture scope)
 - Intraday surface, pinning, expiration effects
+- Requires Phase C intraday chain snapshots (not admitted)
 
 ---
 
@@ -727,12 +733,12 @@ See `MARKET_CONTEXT_TARGET_ARCHITECTURE.md`, `FIVE_LANE_ROADMAP_RECONCILIATION.m
 
 | Track | Work | Blocked by |
 |---|---|---|
-| Futures | F9 RV spreads + F10 simulator extensions | F6–F8 complete (fixture scope) |
-| Order Flow | OF10 MBO / queue semantics | OF9 (complete) |
+| Futures | Family ML beyond M8 F11 baseline | F11-S1 PASS (fixture) |
+| Order Flow | LOB ML beyond M8 OF12 baseline | OF12-S1 PASS (fixture) |
 | SS | Live lending ingest wiring | Vendor authorization |
-| Platform | P1 catalyst runtime | Nothing |
-| Market Context | MC9 attention/diffusion | MC8 complete | DONE (fixture) |
-| Options | O10 advanced modeling research | O4 baseline (complete) |
+| Platform | P0 bitemporal store / P1 catalyst runtime | Nothing |
+| Market Context | MC14 social / author intelligence | MC13 complete (research) |
+| Options | O10 ML (Phase B OOS) or O11 design | O10-S5 PASS (fixture); Phase C for O11 |
 | SHARED P4 | Futures outright/curve fusion extension | F8–F10 | DONE (fixture) |
 | Discrepancy | D-01 ignition_state mapping, D-10 deploy mirror | Nothing |
 
@@ -788,10 +794,10 @@ Cross-domain lane: **Participant Identity + Intent + Influence + Flow + Copyabil
 | **PI7** | Intent / mechanism engine + null hypotheses | EXPERIMENTAL (schema) | PI2 |
 | **PI8** | Contextual intent (pre/post catalyst) | **IMPLEMENTED** | MC8+, PI7 |
 | **PI9** | Copyability / entry quality | **IMPLEMENTED** (fixture) | PI5, PI7 |
-| **PI10** | Consensus / disagreement / crowding | PLANNED | PI3–PI5 |
-| **PI11** | Cross-asset participant context (consume COT) | PLANNED | F4, PI10 |
-| **PI12** | Large derivatives participant research | PLANNED | O5 sound, PI6 |
-| **PI13** | Forced-flow / dislocation engine | PLANNED | PI6, OF, MC |
+| **PI10** | Consensus / disagreement / crowding | **IMPLEMENTED** (fixture) | PI3–PI5 |
+| **PI11** | Cross-asset participant context (consume COT) | **IMPLEMENTED** (fixture) | F4, PI10 |
+| **PI12** | Large derivatives participant research | **IMPLEMENTED** (fixture) | O5 sound, PI6 |
+| **PI13** | Forced-flow / dislocation engine | **IMPLEMENTED** (fixture) | PI6, OF, MC |
 | **PI14** | Crypto participant foundation | NOT_AUTHORIZED | Crypto E-track |
 | **PI15** | Prediction-market participant intel | NOT_AUTHORIZED | PM P-track |
 | **PI16** | Advanced models (embeddings, informed-flow P) | FUTURE | PI5–PI10 validated |

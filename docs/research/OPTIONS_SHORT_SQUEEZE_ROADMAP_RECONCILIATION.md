@@ -95,8 +95,8 @@ OPTIONS O7 — event volatility                   [COMPLETE — fixture scope]
 OPTIONS O8 — strategy optimizer                 [COMPLETE — fixture scope]
 SHARED P4 — EV / opportunity layer              [COMPLETE — fixture scope]
 OPTIONS O9 — execution / simulation             [COMPLETE — fixture scope]
-OPTIONS O10 — advanced modeling                 [NOT STARTED]
-OPTIONS O11 — 0DTE specialization               [NOT STARTED]
+OPTIONS O10 — advanced modeling                 [IN PROGRESS — fixture gates validated (O10-S5)]
+OPTIONS O11 — 0DTE specialization               [FUTURE — blocked Phase C intraday]
 ```
 
 ---
@@ -115,8 +115,8 @@ OPTIONS O11 — 0DTE specialization               [NOT STARTED]
 | Cross-lane evidence contract | `cross_lane/evidence.py` | Publishes + consumes | Must publish |
 | Deterministic replay | `replay/feature_lifecycle.py` | Partial | Fixture PIT |
 | Bar simulator | `execution/simulator.py` | P6 planned | O9 planned |
-| Walk-forward harness | `research/walk_forward.py` | P3 planned | O10 planned |
-| Model spec identity | `research/model_spec.py` | P3 planned | O10 planned |
+| Walk-forward harness | `research/walk_forward.py`, `options/research/harness.py` | P3 planned | O10 fixture scope (O10-S5) |
+| Model spec identity | `research/model_spec.py` | P3 planned | O10 fixture scope |
 | UI API + capabilities | `ui_api/server.py` | Wired | BIYA workspace |
 
 ### 3.2 Short Squeeze owns (Options must not duplicate)
