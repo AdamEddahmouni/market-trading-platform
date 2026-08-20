@@ -1982,6 +1982,12 @@ def build_workspace_market_context_payload(
         load_reaction_fixture,
         reaction_summary_to_dict,
     )
+    from ..market_context.information_decay import (
+        PRODUCER_VERSION as INFORMATION_DECAY_PRODUCER_VERSION,
+        build_fixture_information_decay_pipeline,
+        information_decay_summary_to_dict,
+        load_decay_fixture,
+    )
     from ..market_context.macro import (
         PRODUCER_VERSION as MACRO_PRODUCER_VERSION,
         build_fixture_macro_pipeline,
@@ -2234,6 +2240,26 @@ def build_workspace_market_context_payload(
             entity_id=instrument_id,
         )
     )
+    decay_fixture_path = (
+        Path(__file__).resolve().parents[3]
+        / "tests"
+        / "fixtures"
+        / "market_context"
+        / "boxl_decay_slice.json"
+    )
+    decay_fixture = (
+        load_decay_fixture(decay_fixture_path) if decay_fixture_path.is_file() else {}
+    )
+    reaction_summaries, reaction_evidence, information_decay_summaries = (
+        build_fixture_information_decay_pipeline(
+            reaction_summaries,
+            catalyst_summaries=catalyst_summaries,
+            attention_summaries=attention_summaries,
+            surprise_summaries=surprise_summaries,
+            decay_fixture=decay_fixture,
+            prediction_cutoff=prediction_cutoff,
+        )
+    )
     reaction_cross_lane = build_reaction_cross_lane_evidence(
         reaction_summaries,
         symbol=instrument_id,
@@ -2396,6 +2422,14 @@ def build_workspace_market_context_payload(
         ],
         "reaction_adapter_rows": reaction_adapter_rows,
         "reaction_contradictions": reaction_contradictions,
+        "information_decay_available": bool(information_decay_summaries),
+        "information_decay_count": len(information_decay_summaries),
+        "information_decay_producer_id": "market_context.information_decay",
+        "information_decay_producer_version": INFORMATION_DECAY_PRODUCER_VERSION,
+        "information_decay_summaries": [
+            information_decay_summary_to_dict(item)
+            for item in information_decay_summaries
+        ],
         "macro_context_available": macro_summary.macro_context_available,
         "macro_context_evidence": macro_context_evidence_to_dict(macro_evidence),
         "macro_context_summary": macro_summary_to_dict(macro_summary),

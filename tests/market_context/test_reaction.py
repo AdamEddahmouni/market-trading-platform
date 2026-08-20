@@ -151,11 +151,12 @@ class TestMC12ReactionPipeline(unittest.TestCase):
         self.assertIn("REACTION_CONFIRMED", signals)
         self.assertIn("REACTION_CONTRADICTED", signals)
 
-    def test_priced_in_deferred(self) -> None:
+    def test_priced_in_deferred_before_mc13_enrichment(self) -> None:
         _, summaries, _ = _reaction_pipeline()
         for item in summaries:
             self.assertIsNone(item.priced_in_probability)
             self.assertIsNone(item.remaining_information_edge)
+            self.assertIsNone(item.information_decay_class)
 
     def test_workspace_contradictions_exposed(self) -> None:
         payload = build_workspace_market_context_payload(

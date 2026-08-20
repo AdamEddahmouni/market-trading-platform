@@ -10,6 +10,7 @@ from typing import Any
 
 from ..contracts.market_context import (
     ContextQualityFlag,
+    InformationDecayClass,
     MarketReactionEvidence,
     PublicationState,
     ReactionConfirmationState,
@@ -81,6 +82,7 @@ class ReactionSummary:
     volume_multiple: float | None
     priced_in_probability: float | None
     remaining_information_edge: float | None
+    information_decay_class: str | None
     horizon: str | None
     cross_lane_refs: tuple[str, ...]
     event_time: str
@@ -215,6 +217,11 @@ def build_market_reaction_evidence(summary: ReactionSummary) -> MarketReactionEv
         volume_multiple=summary.volume_multiple,
         priced_in_probability=summary.priced_in_probability,
         remaining_information_edge=summary.remaining_information_edge,
+        information_decay_class=(
+            InformationDecayClass(summary.information_decay_class)
+            if summary.information_decay_class
+            else None
+        ),
         horizon=summary.horizon,
         event_time=summary.event_time,
         available_time=summary.available_time,
@@ -285,6 +292,7 @@ def build_fixture_reaction_pipeline(
             volume_multiple=volume_multiple,
             priced_in_probability=None,
             remaining_information_edge=None,
+            information_decay_class=None,
             horizon=horizon,
             cross_lane_refs=cross_lane_refs,
             event_time=catalyst.event_time,
@@ -320,6 +328,7 @@ def reaction_summary_to_dict(item: ReactionSummary) -> dict[str, Any]:
         "volume_multiple": item.volume_multiple,
         "priced_in_probability": item.priced_in_probability,
         "remaining_information_edge": item.remaining_information_edge,
+        "information_decay_class": item.information_decay_class,
         "horizon": item.horizon,
         "cross_lane_refs": list(item.cross_lane_refs),
         "event_time": item.event_time,

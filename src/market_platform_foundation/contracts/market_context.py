@@ -231,6 +231,10 @@ class ContextQualityFlag(StrEnum):
     EXTRACTION_METRIC_CONFLICT = "EXTRACTION_METRIC_CONFLICT"
     REVISION_LINEAGE_INCOMPLETE = "REVISION_LINEAGE_INCOMPLETE"
     MARKET_REACTION_DATA_MISSING = "MARKET_REACTION_DATA_MISSING"
+    DECAY_CLASS_DEFAULTED = "DECAY_CLASS_DEFAULTED"
+    PRICED_IN_DATA_PARTIAL = "PRICED_IN_DATA_PARTIAL"
+    REMAINING_EDGE_DATA_PARTIAL = "REMAINING_EDGE_DATA_PARTIAL"
+    INFORMATION_DECAY_EXPERIMENTAL = "INFORMATION_DECAY_EXPERIMENTAL"
     MACRO_CONSENSUS_MISSING = "MACRO_CONSENSUS_MISSING"
     MACRO_SURPRISE_UNAVAILABLE = "MACRO_SURPRISE_UNAVAILABLE"
     MACRO_REGIME_PARTIAL = "MACRO_REGIME_PARTIAL"
@@ -565,6 +569,7 @@ class MarketReactionEvidence:
     volume_multiple: float | None
     priced_in_probability: float | None
     remaining_information_edge: float | None
+    information_decay_class: InformationDecayClass | None
     horizon: str | None
     event_time: str
     available_time: str
@@ -808,6 +813,9 @@ def market_reaction_evidence_to_dict(item: MarketReactionEvidence) -> dict[str, 
         "volume_multiple": item.volume_multiple,
         "priced_in_probability": item.priced_in_probability,
         "remaining_information_edge": item.remaining_information_edge,
+        "information_decay_class": (
+            item.information_decay_class.value if item.information_decay_class else None
+        ),
         "horizon": item.horizon,
         "event_time": item.event_time,
         "available_time": item.available_time,

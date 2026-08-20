@@ -13,8 +13,9 @@
       "confirmation_state": "CONFIRMED",
       "abnormal_return": 0.0215,
       "volume_multiple": 2.4,
-      "priced_in_probability": null,
-      "remaining_information_edge": null,
+      "priced_in_probability": 0.4,
+      "remaining_information_edge": 0.088,
+      "information_decay_class": "HOURS",
       "horizon": "1D",
       "cross_lane_refs": [
         "CVD_POSITIVE_SLOPE",
@@ -23,7 +24,10 @@
       "event_time": "2026-07-15T14:30:00.000000000Z",
       "available_time": "2026-07-15T14:45:00.000000000Z",
       "publication_state": "PUBLISHED",
-      "quality_flags": [],
+      "quality_flags": [
+        "PRICED_IN_DATA_PARTIAL",
+        "INFORMATION_DECAY_EXPERIMENTAL"
+      ],
       "reaction_available": true,
       "headline": "earnings beat",
       "scoring_method": "market_reaction_v1"
@@ -39,8 +43,9 @@
       "confirmation_state": "CONFIRMED",
       "abnormal_return": 0.0082,
       "volume_multiple": 1.6,
-      "priced_in_probability": null,
-      "remaining_information_edge": null,
+      "priced_in_probability": 0.293333,
+      "remaining_information_edge": 0.326009,
+      "information_decay_class": "DAYS",
       "horizon": "1D",
       "cross_lane_refs": [
         "CVD_POSITIVE_SLOPE"
@@ -48,7 +53,10 @@
       "event_time": "2026-07-18T16:00:00.000000000Z",
       "available_time": "2026-07-18T16:10:00.000000000Z",
       "publication_state": "PUBLISHED",
-      "quality_flags": [],
+      "quality_flags": [
+        "PRICED_IN_DATA_PARTIAL",
+        "INFORMATION_DECAY_EXPERIMENTAL"
+      ],
       "reaction_available": true,
       "headline": "fda clearance",
       "scoring_method": "market_reaction_v1"
@@ -64,8 +72,9 @@
       "confirmation_state": "PARTIALLY_CONFIRMED",
       "abnormal_return": 0.002,
       "volume_multiple": 1.1,
-      "priced_in_probability": null,
-      "remaining_information_edge": null,
+      "priced_in_probability": 0.257778,
+      "remaining_information_edge": 0.257304,
+      "information_decay_class": "WEEKS",
       "horizon": "1D",
       "cross_lane_refs": [
         "CVD_POSITIVE_SLOPE",
@@ -74,7 +83,10 @@
       "event_time": "2026-07-21T13:15:00.000000000Z",
       "available_time": "2026-07-21T13:25:00.000000000Z",
       "publication_state": "PUBLISHED",
-      "quality_flags": [],
+      "quality_flags": [
+        "PRICED_IN_DATA_PARTIAL",
+        "INFORMATION_DECAY_EXPERIMENTAL"
+      ],
       "reaction_available": true,
       "headline": "analyst upgrade",
       "scoring_method": "market_reaction_v1"
@@ -90,8 +102,9 @@
       "confirmation_state": "CONTRADICTED",
       "abnormal_return": 0.015,
       "volume_multiple": 3.2,
-      "priced_in_probability": null,
-      "remaining_information_edge": null,
+      "priced_in_probability": 0.537778,
+      "remaining_information_edge": 0.0832,
+      "information_decay_class": "MINUTES",
       "horizon": "1D",
       "cross_lane_refs": [
         "CVD_POSITIVE_SLOPE",
@@ -100,7 +113,10 @@
       "event_time": "2026-07-21T18:45:00.000000000Z",
       "available_time": "2026-07-21T18:46:00.000000000Z",
       "publication_state": "PUBLISHED",
-      "quality_flags": [],
+      "quality_flags": [
+        "PRICED_IN_DATA_PARTIAL",
+        "INFORMATION_DECAY_EXPERIMENTAL"
+      ],
       "reaction_available": true,
       "headline": "offering risk",
       "scoring_method": "market_reaction_v1"
@@ -116,15 +132,20 @@
       "confirmation_state": "INSUFFICIENT_DATA",
       "abnormal_return": null,
       "volume_multiple": null,
-      "priced_in_probability": null,
+      "priced_in_probability": 0.146667,
       "remaining_information_edge": null,
+      "information_decay_class": "DAYS",
       "horizon": null,
       "cross_lane_refs": [],
       "event_time": "2026-07-22T20:00:00.000000000Z",
       "available_time": "2026-07-22T20:05:00.000000000Z",
       "publication_state": "UNAVAILABLE",
       "quality_flags": [
-        "MARKET_REACTION_DATA_MISSING"
+        "MARKET_REACTION_DATA_MISSING",
+        "DECAY_CLASS_DEFAULTED",
+        "PRICED_IN_DATA_PARTIAL",
+        "REMAINING_EDGE_DATA_PARTIAL",
+        "INFORMATION_DECAY_EXPERIMENTAL"
       ],
       "reaction_available": false,
       "headline": "macro headwind",
@@ -143,8 +164,9 @@
       "confirmation_state": "CONTRADICTED",
       "abnormal_return": 0.015,
       "volume_multiple": 3.2,
-      "priced_in_probability": null,
-      "remaining_information_edge": null,
+      "priced_in_probability": 0.537778,
+      "remaining_information_edge": 0.0832,
+      "information_decay_class": "MINUTES",
       "horizon": "1D",
       "cross_lane_refs": [
         "CVD_POSITIVE_SLOPE",
@@ -153,7 +175,10 @@
       "event_time": "2026-07-21T18:45:00.000000000Z",
       "available_time": "2026-07-21T18:46:00.000000000Z",
       "publication_state": "PUBLISHED",
-      "quality_flags": [],
+      "quality_flags": [
+        "PRICED_IN_DATA_PARTIAL",
+        "INFORMATION_DECAY_EXPERIMENTAL"
+      ],
       "reaction_available": true,
       "headline": "offering risk",
       "scoring_method": "market_reaction_v1"

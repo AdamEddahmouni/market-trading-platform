@@ -16,13 +16,17 @@ from market_platform_foundation.contracts.market_context import (  # noqa: E402
     CatalystEvidence,
     ContextQualityFlag,
     ExpectationSnapshot,
+    InformationDecayClass,
     InformationSource,
     InformationSourceType,
+    MarketReactionEvidence,
     ModelVersionRef,
     PublicationState,
+    ReactionConfirmationState,
     SemanticSentimentLabel,
     baseline_sentiment_to_dict,
     catalyst_evidence_to_dict,
+    market_reaction_evidence_to_dict,
     surprise_unavailable_when_expectation_missing,
 )
 
@@ -114,6 +118,30 @@ class MarketContextContractTests(unittest.TestCase):
         )
         self.assertEqual(snap.metric_name, "revenue")
         self.assertEqual(snap.sample_size, 28)
+
+    def test_market_reaction_evidence_serializes_information_decay(self) -> None:
+        evidence = MarketReactionEvidence(
+            entity_id="BOXL",
+            event_id="evt-1",
+            semantic_direction="BULLISH",
+            predicted_economic_direction="BULLISH",
+            observed_market_direction="BULLISH",
+            reaction_mismatch=False,
+            confirmation_state=ReactionConfirmationState.CONFIRMED,
+            abnormal_return=0.02,
+            volume_multiple=1.5,
+            priced_in_probability=0.4,
+            remaining_information_edge=0.08,
+            information_decay_class=InformationDecayClass.HOURS,
+            horizon="1D",
+            event_time="2026-07-15T14:30:00.000000000Z",
+            available_time="2026-07-15T14:45:00.000000000Z",
+            publication_state=PublicationState.PUBLISHED,
+        )
+        payload = market_reaction_evidence_to_dict(evidence)
+        self.assertEqual(payload["information_decay_class"], "HOURS")
+        self.assertEqual(payload["priced_in_probability"], 0.4)
+        self.assertEqual(payload["remaining_information_edge"], 0.08)
 
 
 if __name__ == "__main__":

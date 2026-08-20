@@ -60,7 +60,7 @@ PLATFORM ROADMAP
 | Expectations / surprise PIT | Infra | Context | Major consumer | Major consumer | — | **Owns** | MC6 | PLANNED |
 | Event clustering / dedupe | Infra | — | — | — | — | **Owns** | MC3 | **IMPLEMENTED** (fixture) |
 | Narrative / thesis evidence | Research | Consumer | Context | — | — | **Owns (experimental)** | MC10 | RESEARCH |
-| Market reaction interpretation | Contract | Context | Context | Context | Produces raw | **Owns classification** | MC12 | PLANNED |
+| Market reaction interpretation | Contract | Context | Context | Context | Produces raw | **Owns classification** | MC12 | IMPLEMENTED |
 | Short interest / float | Donor | **Owns** | Context | — | — | SS P0 | DONE |
 | Securities lending | Infra | **Owns** | Borrow for IV | — | — | SS P2 | PLANNED |
 | Option contract model | Infra | — | **Owns** | Context | — | O1 | DONE (fixture) |
@@ -685,7 +685,7 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 
 ---
 
-### MARKET CONTEXT MC12 — Market reaction engine [PLANNED]
+### MARKET CONTEXT MC12 — Market reaction engine [IMPLEMENTED fixture-first]
 
 - [x] Consume price, Order Flow, Options, Futures evidence
 - [x] `MarketReactionEvidence` + confirmation/contradiction
@@ -695,9 +695,19 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 
 ---
 
-### MARKET CONTEXT MC13–MC16 [RESEARCH / DEFERRED]
+### MARKET CONTEXT MC13 — Information decay / priced-in [IMPLEMENTED fixture-first, experimental]
 
-- MC13: Information decay, priced-in, remaining edge (experimental)
+- [x] `information_decay_v1` enrichment on MC12 reaction rows
+- [x] `InformationDecayClass`, `priced_in_probability`, `remaining_information_edge`
+- [x] Golden fixtures `boxl_decay_slice.json`, `boxl_decay_expected.json`
+- [x] `research_only` experimental labeling — not validated for trading
+
+**Depends on:** MC6, MC7, MC9, MC12
+
+---
+
+### MARKET CONTEXT MC14–MC16 [RESEARCH / DEFERRED]
+
 - MC14: Social / author intelligence (after provenance correct)
 - MC15: Cross-entity propagation (after entity graph quality)
 - MC16: Advanced multi-document LLM synthesis (after MC5 correctness)
