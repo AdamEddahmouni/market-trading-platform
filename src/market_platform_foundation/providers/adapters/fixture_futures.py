@@ -12,6 +12,7 @@ from ...contracts.identity import normalized_event_id
 from ...order_flow.impact import compute_impact_dynamics
 from ...order_flow.execution_forecast import compute_execution_forecast
 from ...order_flow.forecast import compute_microstructure_forecast
+from ...order_flow.lob_baseline import compute_lob_forecast_for_snapshot
 from ...order_flow.liquidity import (
     compute_liquidity_dynamics,
     compute_trajectory_resiliency,
@@ -292,6 +293,15 @@ class FixtureFuturesProvider:
             )
             execution_kwargs = _execution_kwargs_from_result(execution)
             queue_kwargs = _queue_kwargs_from_snapshot(mbo_snapshot)
+            lob_kwargs = compute_lob_forecast_for_snapshot(
+                snapshot,
+                ofi_value=ofi_value,
+                book_state_valid=book_state_valid if book_state_valid is not None else True,
+                fragility_score=fragility_score,
+                resiliency_score=resiliency_score,
+                absorption_score=absorption_score,
+                mbo_queue_snapshot=mbo_snapshot,
+            )
             curr_mid = (bbo["bid_price"] + bbo["ask_price"]) / 2.0
             if prev_mid is not None and (book_state_valid is None or book_state_valid):
                 recent_mid_deltas.append(curr_mid - prev_mid)
@@ -335,6 +345,7 @@ class FixtureFuturesProvider:
                 **execution_kwargs,
                 **queue_kwargs,
             )
+            whale_event.update(lob_kwargs)
             normalized_id = normalized_event_id(
                 provider_id=self.provider_id,
                 venue_id="CME",

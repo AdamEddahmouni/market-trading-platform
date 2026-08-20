@@ -112,7 +112,17 @@ from .ofi import (
     snapshot_pair_book_state_valid,
     snapshot_pair_sequence_valid,
 )
-from .quality import OrderFlowQualityFlag
+from .lob_baseline import (
+    LOB_BASELINE_METHOD,
+    LOB_BASELINE_VERSION,
+    LOB_M1_METHOD,
+    LobBaselineForecast,
+    compute_lob_baseline_forecast,
+    compute_lob_forecast_for_snapshot,
+    compute_m1_cvd_baseline,
+    lob_baseline_forecast_to_dict,
+)
+from .lob_features import FEATURE_METHOD, FEATURE_VERSION, LobFeatureVector, build_lob_feature_vector
 
 __all__ = [
     "AggressorSide",
@@ -155,6 +165,18 @@ __all__ = [
     "OFI_METHOD_BBO_DELTA",
     "OFI_METHOD_MULTILEVEL_CS",
     "OFIResult",
+    "FEATURE_METHOD",
+    "FEATURE_VERSION",
+    "LOB_BASELINE_METHOD",
+    "LOB_BASELINE_VERSION",
+    "LOB_M1_METHOD",
+    "LobBaselineForecast",
+    "LobFeatureVector",
+    "build_lob_feature_vector",
+    "compute_lob_baseline_forecast",
+    "compute_lob_forecast_for_snapshot",
+    "compute_m1_cvd_baseline",
+    "lob_baseline_forecast_to_dict",
     "OrderFlowQualityFlag",
     "LiquidityDynamicsResult",
     "LiquidityEvidence",

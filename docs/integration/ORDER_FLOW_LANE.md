@@ -203,3 +203,40 @@ Module: `src/market_platform_foundation/order_flow/metaorder.py`
 Cross-lane signals: `PERSISTENT_AGGRESSIVE_BUY_FLOW`, `PERSISTENT_AGGRESSIVE_SELL_FLOW`
 
 Fixture regression: `tests/fixtures/providers/order_flow/nvda_metaorder_slice.json`
+
+## OF12 — Advanced LOB baseline (experimental)
+
+Modules: `src/market_platform_foundation/order_flow/lob_features.py`, `lob_baseline.py`, `research/`
+
+| Method | ID | Scope |
+|---|---|---|
+| LOB feature vector | `lob_feature_vector_v1` | M7 normalized OFI/QI/fragility/absorption (+ optional MBO queue-ahead) |
+| Engineered baseline | `lob_engineered_baseline_v1` | M8 mid-direction probability vs M1 CVD-only comparator |
+| Baseline gate | `OF12-S1` | Walk-forward validation on `ADMITTED-LOB-ES-001` |
+
+Fixtures:
+
+- `tests/fixtures/order_flow/es_lob_baseline_slice.json`
+- `tests/fixtures/order_flow/es_lob_baseline_expected.json`
+- `tests/fixtures/order_flow/es_lob_mbo_upgrade_slice.json`
+- `tests/fixtures/order_flow/nvda_lob_baseline_slice.json`
+
+Gate tool:
+
+```powershell
+python tools/order_flow/run_of12_baseline_gate_validation.py --dry-run
+```
+
+Workspace payload fields (order-book + futures depth):
+
+- `latest_lob_forecast` — `lob_model_version`, `baseline_tier`, `mid_up_probability`, `expected_mid_delta`, `signal_half_life_ms`
+- `latest_microstructure_forecast` — enriches with `lob_baseline_tier` / `lob_model_version` when OF12 present
+
+**Research-only / experimental** — not validated for trading decisions.
+
+Additional tests:
+
+```powershell
+python -m unittest tests.order_flow.test_lob_baseline
+python -m unittest tests.order_flow.test_of12_gates
+```
