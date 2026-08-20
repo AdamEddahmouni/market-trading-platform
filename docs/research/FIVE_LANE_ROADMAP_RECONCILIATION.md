@@ -25,7 +25,7 @@ PLATFORM ROADMAP
 ├── Futures F1–F11 [F1–F8 DONE; F9–F11 PLANNED]
 ├── Order Flow OF1–OF12 [OF1–OF11 IMPLEMENTED (fixture); OF12 PLANNED]
 │
-└── Market Context MC1–MC16 [MC1–MC12 IMPLEMENTED (fixture); MC11+ PLANNED]
+└── Market Context MC1–MC16 [MC1–MC12 IMPLEMENTED (fixture); MC11 macro IMPLEMENTED; MC13+ PLANNED]
 ```
 
 ---
@@ -106,7 +106,7 @@ flowchart TB
 | Options | O1–O9 | O10 research |
 | Futures | F1–F10 | F11 advanced modeling |
 | Order Flow | OF1–OF11 | OF12 advanced LOB ML |
-| Market Context | MC1–MC12 | MC11 macro context |
+| Market Context | MC1–MC12 | MC13 information decay |
 
 ---
 

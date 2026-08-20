@@ -166,8 +166,19 @@ def lane_evidence_to_dict(item: NormalizedLaneEvidence) -> dict[str, Any]:
     }
 
 
+_CONTEXT_OPTIONS_COUPLED_SIGNALS: tuple[tuple[EvidenceSignal, EvidenceSignal], ...] = (
+    (EvidenceSignal.EVENT_SURPRISE_POSITIVE, EvidenceSignal.EVENT_VOL_PREMIUM),
+    (EvidenceSignal.EVENT_SURPRISE_NEGATIVE, EvidenceSignal.IV_CRUSH_RISK),
+    (EvidenceSignal.SEMANTIC_SENTIMENT_POSITIVE, EvidenceSignal.OPTION_FLOW_DIRECTION),
+    (EvidenceSignal.SEMANTIC_SENTIMENT_NEGATIVE, EvidenceSignal.OPTIONS_FLOW_REVERSAL),
+    (EvidenceSignal.CATALYST_STRENGTH, EvidenceSignal.EVENT_VOL_PREMIUM),
+)
+
+
 def validate_evidence_dag(evidence_items: list[NormalizedLaneEvidence]) -> list[str]:
     """Detect illegal same-lane MODEL_OUTPUT → CROSS_LANE_MODEL_OUTPUT cycles.
+
+    Also flags MC-D20 same-timestamp Market Context ↔ Options model coupling.
 
     Returns human-readable violation messages. Empty list means no violations detected
   at the evidence-metadata level (full model DAG validation is lane-specific).
@@ -189,4 +200,77 @@ def validate_evidence_dag(evidence_items: list[NormalizedLaneEvidence]) -> list[
                 f"potential circular dependency: {item.lane.value} MODEL_OUTPUT "
                 f"feeds signal also present as CROSS_LANE_MODEL_OUTPUT ({item.signal.value})"
             )
+
+    model_outputs = [
+        item
+        for item in evidence_items
+        if item.provenance_class
+        in {EvidenceProvenanceClass.MODEL_OUTPUT, EvidenceProvenanceClass.CROSS_LANE_MODEL_OUTPUT}
+        and item.observed_at
+    ]
+    by_timestamp: dict[str, list[NormalizedLaneEvidence]] = {}
+    for item in model_outputs:
+        by_timestamp.setdefault(item.observed_at or "", []).append(item)
+
+    for observed_at, group in by_timestamp.items():
+        if not observed_at:
+            continue
+        mc_signals = {
+            item.signal
+            for item in group
+            if item.lane in {LaneId.MARKET_CONTEXT, LaneId.CATALYST, LaneId.ATTENTION}
+        }
+        options_signals = {item.signal for item in group if item.lane == LaneId.OPTIONS}
+        if not mc_signals or not options_signals:
+            continue
+        for mc_signal, options_signal in _CONTEXT_OPTIONS_COUPLED_SIGNALS:
+            if mc_signal in mc_signals and options_signal in options_signals:
+                violations.append(
+                    "MC-D20 same-timestamp Context↔Options coupling at "
+                    f"{observed_at}: {mc_signal.value} with {options_signal.value}"
+                )
     return violations
+
+
+def apply_evidence_lag_rules(
+    evidence_items: list[NormalizedLaneEvidence],
+) -> tuple[list[NormalizedLaneEvidence], list[str]]:
+    """Drop lower-priority same-timestamp coupled items to prevent circular reinforcement."""
+    violations = validate_evidence_dag(evidence_items)
+    if not violations:
+        return evidence_items, []
+
+    drop_keys: set[tuple[str, str, str]] = set()
+    by_timestamp: dict[str, list[NormalizedLaneEvidence]] = {}
+    for item in evidence_items:
+        if item.observed_at:
+            by_timestamp.setdefault(item.observed_at, []).append(item)
+
+    for observed_at, group in by_timestamp.items():
+        mc_signals = {
+            item.signal
+            for item in group
+            if item.lane in {LaneId.MARKET_CONTEXT, LaneId.CATALYST, LaneId.ATTENTION}
+        }
+        options_signals = {item.signal for item in group if item.lane == LaneId.OPTIONS}
+        for mc_signal, options_signal in _CONTEXT_OPTIONS_COUPLED_SIGNALS:
+            if mc_signal in mc_signals and options_signal in options_signals:
+                for item in group:
+                    if item.lane == LaneId.OPTIONS and item.signal == options_signal:
+                        if item.provenance_class in {
+                            EvidenceProvenanceClass.MODEL_OUTPUT,
+                            EvidenceProvenanceClass.CROSS_LANE_MODEL_OUTPUT,
+                        }:
+                            drop_keys.add(
+                                (item.lane.value, item.signal.value, item.source_ref)
+                            )
+
+    if not drop_keys:
+        return evidence_items, violations
+
+    filtered = [
+        item
+        for item in evidence_items
+        if (item.lane.value, item.signal.value, item.source_ref) not in drop_keys
+    ]
+    return filtered, violations

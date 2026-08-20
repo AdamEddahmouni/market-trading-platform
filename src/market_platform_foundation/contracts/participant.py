@@ -218,6 +218,7 @@ class ParticipantQualityFlag(StrEnum):
     SKILL_INSUFFICIENT_SAMPLE = "SKILL_INSUFFICIENT_SAMPLE"
     SKILL_STALE = "SKILL_STALE"
     OUTCOME_WINDOW_INCOMPLETE = "OUTCOME_WINDOW_INCOMPLETE"
+    CATALYST_CONTEXT_MISSING = "CATALYST_CONTEXT_MISSING"
 
 
 class ResearchStatus(StrEnum):
@@ -399,6 +400,23 @@ class MechanismInference:
     intent_confidence: float | None
     alternative_explanations: tuple[MechanismHypothesis, ...] = field(default_factory=tuple)
     quality_flags: tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
+class ContextualIntentEvidence:
+    """PI8 contextual intent — participant action timing relative to catalyst windows."""
+
+    action_id: str
+    participant_id: str
+    catalyst_event_id: str | None
+    timing_relation: str
+    intent_classification: str
+    days_offset_from_catalyst: float | None
+    event_time: str
+    available_time: str
+    producer_version: str
+    quality_flags: tuple[str, ...] = field(default_factory=tuple)
+    cross_lane_signal: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -627,6 +645,24 @@ def metaorder_evidence_to_dict(item: MetaorderEvidence) -> dict[str, Any]:
         "producer_version": item.producer_version,
         "quality_flags": list(item.quality_flags),
         "cross_lane_signal": item.cross_lane_signal,
+        "schema_version": CONTRACT_SCHEMA_VERSION,
+    }
+
+
+def contextual_intent_evidence_to_dict(item: ContextualIntentEvidence) -> dict[str, Any]:
+    return {
+        "action_id": item.action_id,
+        "participant_id": item.participant_id,
+        "catalyst_event_id": item.catalyst_event_id,
+        "timing_relation": item.timing_relation,
+        "intent_classification": item.intent_classification,
+        "days_offset_from_catalyst": item.days_offset_from_catalyst,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "producer_version": item.producer_version,
+        "quality_flags": list(item.quality_flags),
+        "cross_lane_signal": item.cross_lane_signal,
+        "payload_type": "ContextualIntentEvidence",
         "schema_version": CONTRACT_SCHEMA_VERSION,
     }
 

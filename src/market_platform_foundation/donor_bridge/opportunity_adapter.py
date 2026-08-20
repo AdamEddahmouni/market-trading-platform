@@ -9,6 +9,7 @@ from ..cross_lane.evidence import (
     EvidenceSignal,
     LaneId,
     NormalizedLaneEvidence,
+    apply_evidence_lag_rules,
     lane_evidence_to_dict,
     validate_evidence_dag,
 )
@@ -149,12 +150,13 @@ def build_opportunity_fusion_bundle(
             )
         )
 
-    dag_violations = validate_evidence_dag(normalized_items)
+    filtered_items, dag_violations = apply_evidence_lag_rules(normalized_items)
     if dag_violations:
         opportunity_snapshot = {
             **opportunity_snapshot,
             "dag_violations": dag_violations,
         }
+    normalized_items = filtered_items
 
     bundle = {
         "opportunity_snapshot": opportunity_snapshot,

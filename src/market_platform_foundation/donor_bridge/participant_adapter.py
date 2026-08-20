@@ -10,6 +10,11 @@ from ..features.institutional import get_institutional_ledger
 from ..order_flow.evidence import metaorder_primitive_cross_lane_evidence
 from ..order_flow.metaorder import classified_trades_from_bars, detect_metaorder_primitives
 from ..participant.bridge import query_participant_actions_from_ledger
+from ..participant.contextual_intent import (
+    build_contextual_intent_evidence,
+    contextual_intent_summary_to_dict,
+    publish_contextual_intent_signals,
+)
 from ..participant.evidence import (
     build_evidence_payloads_from_actions,
     build_metaorder_evidence_envelope,
@@ -173,6 +178,8 @@ def participant_evidence_from_actions(
     skill_summary: dict[str, Any] | None = None,
     metaorder_evidence: list | None = None,
     metaorder_primitives: list | None = None,
+    catalyst_summaries: list | None = None,
+    prediction_cutoff: int | None = None,
 ) -> list[dict[str, Any]]:
     evidence = participant_cross_lane_evidence_from_actions(actions)
     if skill_summary:
@@ -181,6 +188,18 @@ def participant_evidence_from_actions(
         evidence.extend(publish_metaorder_signals(metaorder_evidence))
     if metaorder_primitives:
         evidence.extend(metaorder_primitive_cross_lane_evidence(metaorder_primitives))
+    if catalyst_summaries is not None and prediction_cutoff is not None:
+        _, intent_summaries = build_contextual_intent_evidence(
+            actions,
+            catalyst_summaries,
+            prediction_cutoff=prediction_cutoff,
+        )
+        evidence.extend(
+            publish_contextual_intent_signals(
+                intent_summaries,
+                prediction_cutoff=prediction_cutoff,
+            )
+        )
     return evidence
 
 
@@ -190,6 +209,7 @@ def build_participant_cross_lane_bundle(
     prediction_cutoff: int,
     price_fixture_path: Path | str | None = None,
     metaorder_fixture_path: Path | str | None = None,
+    catalyst_summaries: list | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     bundle = build_participant_actions_bundle(
         instrument_id=instrument_id,
@@ -206,6 +226,16 @@ def build_participant_cross_lane_bundle(
     skill_summary = skill_bundle.get("summary", {}) if isinstance(skill_bundle, dict) else {}
     metaorder_bundle = bundle.get("metaorder", {})
     metaorder_summary = metaorder_bundle.get("summary", {}) if isinstance(metaorder_bundle, dict) else {}
+    contextual_intent_summaries: list[dict[str, Any]] = []
+    if catalyst_summaries is not None:
+        _, contextual_intent_summaries_raw = build_contextual_intent_evidence(
+            actions,
+            catalyst_summaries,
+            prediction_cutoff=prediction_cutoff,
+        )
+        contextual_intent_summaries = [
+            contextual_intent_summary_to_dict(item) for item in contextual_intent_summaries_raw
+        ]
     snapshot = {
         "participant_available": True,
         "participant_summary": bundle.get("summary", {}),
@@ -215,11 +245,15 @@ def build_participant_cross_lane_bundle(
         "participant_skill_available": bool(skill_summary.get("skill_available")),
         "participant_metaorder_summary": metaorder_summary,
         "participant_metaorder_available": bool(metaorder_summary.get("metaorder_available")),
+        "participant_contextual_intent_available": bool(contextual_intent_summaries),
+        "participant_contextual_intent_summaries": contextual_intent_summaries,
     }
     evidence = participant_evidence_from_actions(
         actions,
         skill_summary=skill_summary,
         metaorder_evidence=metaorder_bundle.get("evidence", []) if isinstance(metaorder_bundle, dict) else [],
         metaorder_primitives=metaorder_bundle.get("primitives", []) if isinstance(metaorder_bundle, dict) else [],
+        catalyst_summaries=catalyst_summaries,
+        prediction_cutoff=prediction_cutoff,
     )
     return snapshot, evidence

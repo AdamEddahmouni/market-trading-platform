@@ -1982,11 +1982,19 @@ def build_workspace_market_context_payload(
         load_reaction_fixture,
         reaction_summary_to_dict,
     )
+    from ..market_context.macro import (
+        PRODUCER_VERSION as MACRO_PRODUCER_VERSION,
+        build_fixture_macro_pipeline,
+        build_macro_cross_lane_evidence,
+        load_macro_context_fixture,
+        macro_summary_to_dict,
+    )
     from ..contracts.market_context import (
         attention_evidence_to_dict,
         catalyst_evidence_to_dict,
         credibility_evidence_to_dict,
         expectation_snapshot_to_dict,
+        macro_context_evidence_to_dict,
         market_reaction_evidence_to_dict,
         materiality_evidence_to_dict,
         narrative_evidence_to_dict,
@@ -2238,6 +2246,28 @@ def build_workspace_market_context_payload(
         if item.reaction_mismatch
     ]
 
+    macro_fixture_path = (
+        Path(__file__).resolve().parents[3]
+        / "tests"
+        / "fixtures"
+        / "market_context"
+        / "boxl_macro_context_slice.json"
+    )
+    macro_events = (
+        load_macro_context_fixture(macro_fixture_path)
+        if macro_fixture_path.is_file()
+        else []
+    )
+    macro_evidence, macro_summary, macro_adapter_row = build_fixture_macro_pipeline(
+        macro_events,
+        prediction_cutoff=prediction_cutoff,
+    )
+    macro_cross_lane = build_macro_cross_lane_evidence(
+        macro_summary,
+        prediction_cutoff=prediction_cutoff,
+    )
+    cross_lane_evidence = list(cross_lane_evidence) + macro_cross_lane
+
     from ..runtime.catalyst_attention import (
         CatalystAttentionRuntime,
         catalyst_attention_snapshot_to_dict,
@@ -2283,7 +2313,8 @@ def build_workspace_market_context_payload(
             "with exposed scores. MC9 separates attention diffusion from information value. "
             "MC10 narrative intelligence is experimental — validate before model decisions. "
             "MC12 classifies market reaction confirmation/contradiction from admitted fixtures "
-            "without reimplementing CVD/IV. "
+            "without reimplementing CVD/IV. MC11 publishes shared macro regime context; "
+            "Futures F7 owns calendar risk interpretation. "
             "Keyword-v1 runs in stdlib; FinBERT and LLM extractions are fixture-precomputed. "
             "Research-only per MC4–MC12."
         ),
@@ -2365,6 +2396,12 @@ def build_workspace_market_context_payload(
         ],
         "reaction_adapter_rows": reaction_adapter_rows,
         "reaction_contradictions": reaction_contradictions,
+        "macro_context_available": macro_summary.macro_context_available,
+        "macro_context_evidence": macro_context_evidence_to_dict(macro_evidence),
+        "macro_context_summary": macro_summary_to_dict(macro_summary),
+        "macro_context_adapter_row": macro_adapter_row,
+        "macro_context_producer_id": "market_context.macro",
+        "macro_context_producer_version": MACRO_PRODUCER_VERSION,
         "credibility_evidence": [
             credibility_evidence_to_dict(item) for item in credibility_rows
         ],

@@ -231,6 +231,9 @@ class ContextQualityFlag(StrEnum):
     EXTRACTION_METRIC_CONFLICT = "EXTRACTION_METRIC_CONFLICT"
     REVISION_LINEAGE_INCOMPLETE = "REVISION_LINEAGE_INCOMPLETE"
     MARKET_REACTION_DATA_MISSING = "MARKET_REACTION_DATA_MISSING"
+    MACRO_CONSENSUS_MISSING = "MACRO_CONSENSUS_MISSING"
+    MACRO_SURPRISE_UNAVAILABLE = "MACRO_SURPRISE_UNAVAILABLE"
+    MACRO_REGIME_PARTIAL = "MACRO_REGIME_PARTIAL"
     RETROSPECTIVE_KNOWLEDGE_RISK = "RETROSPECTIVE_KNOWLEDGE_RISK"
 
 
@@ -768,6 +771,22 @@ def narrative_evidence_to_dict(item: NarrativeEvidence) -> dict[str, Any]:
         "acceleration": item.acceleration,
         "sentiment_dispersion": item.sentiment_dispersion,
         "narrative_dispersion": item.narrative_dispersion,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "publication_state": item.publication_state.value,
+        "provenance_ref": item.provenance_ref,
+        "quality_flags": list(item.quality_flags),
+    }
+
+
+def macro_context_evidence_to_dict(item: MacroContextEvidence) -> dict[str, Any]:
+    return {
+        "growth_regime": item.growth_regime,
+        "inflation_regime": item.inflation_regime,
+        "monetary_policy_regime": item.monetary_policy_regime,
+        "risk_regime": item.risk_regime,
+        "volatility_regime": item.volatility_regime,
+        "liquidity_regime": item.liquidity_regime,
         "event_time": item.event_time,
         "available_time": item.available_time,
         "publication_state": item.publication_state.value,

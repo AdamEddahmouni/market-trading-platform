@@ -5,6 +5,7 @@ from .evidence import (
     EvidenceSignal,
     LaneId,
     NormalizedLaneEvidence,
+    apply_evidence_lag_rules,
     lane_evidence_to_dict,
     validate_evidence_dag,
 )
@@ -39,6 +40,7 @@ __all__ = [
     "PayoffInput",
     "ProbabilityInput",
     "SQUEEZE_ALIGNED_TEMPLATES",
+    "apply_evidence_lag_rules",
     "build_opportunity_snapshot",
     "fuse_opportunity_v1",
     "lane_evidence_to_dict",

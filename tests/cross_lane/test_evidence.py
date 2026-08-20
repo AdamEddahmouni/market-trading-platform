@@ -14,6 +14,7 @@ from market_platform_foundation.cross_lane.evidence import (  # noqa: E402
     EvidenceSignal,
     LaneId,
     NormalizedLaneEvidence,
+    apply_evidence_lag_rules,
     validate_evidence_dag,
 )
 
@@ -89,6 +90,62 @@ class CrossLaneEvidenceTests(unittest.TestCase):
         ]
         violations = validate_evidence_dag(items)
         self.assertTrue(violations)
+
+    def test_validate_evidence_dag_detects_context_options_coupling(self) -> None:
+        observed_at = "2026-07-15T14:45:00.000000000Z"
+        items = [
+            NormalizedLaneEvidence(
+                lane=LaneId.MARKET_CONTEXT,
+                signal=EvidenceSignal.EVENT_SURPRISE_POSITIVE,
+                strength="MODERATE",
+                available=True,
+                source_ref="mc6",
+                detail="surprise",
+                observed_at=observed_at,
+                provenance_class=EvidenceProvenanceClass.MODEL_OUTPUT,
+            ),
+            NormalizedLaneEvidence(
+                lane=LaneId.OPTIONS,
+                signal=EvidenceSignal.EVENT_VOL_PREMIUM,
+                strength="MODERATE",
+                available=True,
+                source_ref="o7",
+                detail="event vol",
+                observed_at=observed_at,
+                provenance_class=EvidenceProvenanceClass.MODEL_OUTPUT,
+            ),
+        ]
+        violations = validate_evidence_dag(items)
+        self.assertTrue(any("MC-D20" in item for item in violations))
+
+    def test_apply_evidence_lag_rules_filters_options_coupling(self) -> None:
+        observed_at = "2026-07-15T14:45:00.000000000Z"
+        items = [
+            NormalizedLaneEvidence(
+                lane=LaneId.MARKET_CONTEXT,
+                signal=EvidenceSignal.EVENT_SURPRISE_POSITIVE,
+                strength="MODERATE",
+                available=True,
+                source_ref="mc6",
+                detail="surprise",
+                observed_at=observed_at,
+                provenance_class=EvidenceProvenanceClass.MODEL_OUTPUT,
+            ),
+            NormalizedLaneEvidence(
+                lane=LaneId.OPTIONS,
+                signal=EvidenceSignal.EVENT_VOL_PREMIUM,
+                strength="MODERATE",
+                available=True,
+                source_ref="o7",
+                detail="event vol",
+                observed_at=observed_at,
+                provenance_class=EvidenceProvenanceClass.MODEL_OUTPUT,
+            ),
+        ]
+        filtered, violations = apply_evidence_lag_rules(items)
+        self.assertTrue(violations)
+        self.assertEqual(len(filtered), 1)
+        self.assertEqual(filtered[0].lane, LaneId.MARKET_CONTEXT)
 
     def test_physical_distribution_signals_exist(self) -> None:
         self.assertEqual(

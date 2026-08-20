@@ -11,7 +11,7 @@
 | MC-D07 | `CATALYST_STRENGTH` without components | Single scalar hides surprise/novelty | `cross_lane/evidence.py` | Over-trust | Expose component evidence objects | market_context contracts | Market Context | MC8 | P1 — **RESOLVED (fixture scope: MC8 catalyst fusion + component metadata)** |
 | MC-D08 | No expectations PIT store | Historical surprise leakage risk | No consensus module | Backtest invalidity | `ExpectationSnapshot` + TC001 | market_context/expectations.py | Market Context | MC6 | P0 — **RESOLVED** (fixture scope) |
 | MC-D09 | Missing consensus → neutral surprise (internship) | Violates fail-closed | decision_engine patterns | False in-line events | `SURPRISE_UNAVAILABLE` flags | internship + MC6 | Market Context | MC6 | P0 — **RESOLVED** (IMP fixture path) |
-| MC-D10 | Macro surprise in Futures only | Equity macro events fragmented | `macro_events.py` | Duplicate ontology | Shared macro taxonomy; Futures interprets | F7 + MC11 | Futures+MC | MC11 | P2 |
+| MC-D10 | Macro surprise in Futures only | Equity macro events fragmented | `macro_events.py` | Duplicate ontology | Shared macro taxonomy; Futures interprets | F7 + MC11 | Futures+MC | MC11 | **RESOLVED (fixture scope via MC11)** |
 | MC-D11 | O7 event vol without Context surprise | Options-only earnings semantics | `event_vol.py` | Split surprise definitions | Context publishes `SurpriseEvidence` | options + MC6 | Options+MC | MC6 | P2 |
 | MC-D12 | No reaction confirmation | Cannot detect contradiction | No MC12 module | Hidden disagreement | Consume OF/Options evidence | MC12 | Market Context | MC12 | **RESOLVED (fixture scope via MC12)** |
 | MC-D13 | Entity resolution donor-only | Cross-asset propagation blocked | squeeze `identity_resolution.py` | Wrong entity attribution | Platform entity graph MC2 | `market_context/entity_resolution.py` | Platform | MC2 | **RESOLVED (fixture scope)** |
@@ -21,7 +21,7 @@
 | MC-D17 | Phase 3d dropped `sentiment_label` without archive | Data archaeology confusion | batch01_discovery_rows.json | Mislabeled historical research | Dataset audit + version tag | intake batches | Research | MC4 | P2 |
 | MC-D18 | Catalyst lane fixture-only | No live ingest admitted | Phase 15 PASS scope | Production gap | MC1 ingest + provenance | catalyst_lane | Platform | MC1 | P2 |
 | MC-D19 | Attention UI without publisher lane | Attention metrics ungrounded | NowPage.tsx | Decorative attention | MC9 attention evidence producer | UI + MC9 | Market Context | MC9 | **RESOLVED (fixture scope via MC9)** |
-| MC-D20 | Same-timestamp Context↔Options risk | Circular reinforcement possible | fusion DAG not enforced for NLP | Self-fulfilling signals | Provenance class + lag rules | cross_lane fusion | Platform | P3 | P1 |
+| MC-D20 | Same-timestamp Context↔Options risk | Circular reinforcement possible | fusion DAG not enforced for NLP | Self-fulfilling signals | Provenance class + lag rules | cross_lane fusion | Platform | P3 | **RESOLVED (validate_evidence_dag + lag filter)** |
 
 ## Migration classification
 

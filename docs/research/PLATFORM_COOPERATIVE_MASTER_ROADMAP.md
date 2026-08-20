@@ -674,12 +674,14 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 
 ---
 
-### MARKET CONTEXT MC11 — Macro context [PLANNED]
+### MARKET CONTEXT MC11 — Macro context [IMPLEMENTED (fixture)]
 
-- [ ] Multi-dimensional macro regimes
-- [ ] Macro event ontology shared with Futures F7
+- [x] Shared macro event ontology (NFP, CPI, PPI, FOMC)
+- [x] `MacroContextEvidence` multi-dimensional regime tags
+- [x] Cross-lane `MACRO_REGIME_CONTEXT` publish
+- [x] Golden fixture `boxl_macro_context_expected.json`; resolves MC-D10 (fixture scope)
 
-**Futures owns** curve/carry interpretation
+**Futures F7** consumes calendar risk; MC11 owns event + surprise semantics.
 
 ---
 
@@ -774,7 +776,7 @@ Cross-domain lane: **Participant Identity + Intent + Influence + Flow + Copyabil
 | **PI5** | Participant history / walk-forward skill | **IMPLEMENTED** | PI3–PI4 |
 | **PI6** | Metaorder cooperation | **IMPLEMENTED** | OF4+, OF11 |
 | **PI7** | Intent / mechanism engine + null hypotheses | EXPERIMENTAL (schema) | PI2 |
-| **PI8** | Contextual intent (pre/post catalyst) | PLANNED | MC8+, PI7 |
+| **PI8** | Contextual intent (pre/post catalyst) | **IMPLEMENTED** | MC8+, PI7 |
 | **PI9** | Copyability / entry quality | PLANNED | PI5, PI7 |
 | **PI10** | Consensus / disagreement / crowding | PLANNED | PI3–PI5 |
 | **PI11** | Cross-asset participant context (consume COT) | PLANNED | F4, PI10 |
