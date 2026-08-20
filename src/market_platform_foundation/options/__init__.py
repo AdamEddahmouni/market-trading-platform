@@ -67,9 +67,27 @@ from .strategy import (
 from .surface import build_surface_point, build_volatility_surface
 from .surface_qa import evaluate_surface_qa
 from .risk_neutral import MODEL_VERSION as RISK_NEUTRAL_MODEL_VERSION, infer_risk_neutral_distribution
+from .delta_hedged import (
+    DELTA_HEDGED_VERSION,
+    DEFAULT_REBALANCE_COST_BPS,
+    compute_delta_hedged_period_return,
+    delta_hedged_research_snapshot,
+    simulate_delta_hedged_path,
+)
+from .r_o6 import (
+    MIN_PANEL_SIZE,
+    R_O6_VERSION,
+    SPEARMAN_PASS_THRESHOLD,
+    compose_r_o6_research_snapshot,
+    evaluate_r_o6_correlation,
+)
 from .vrp import VRP_VERSION, estimate_vrp, vrp_research_snapshot
 
 __all__ = [
+    "MIN_PANEL_SIZE",
+    "R_O6_VERSION",
+    "SPEARMAN_PASS_THRESHOLD",
+    "DELTA_HEDGED_VERSION",
     "DEALER_VERSION",
     "EDGE_VERSION",
     "EVENT_VOL_METHOD",
@@ -102,10 +120,14 @@ __all__ = [
     "build_surface_point",
     "build_volatility_surface",
     "compare_physical_vs_risk_neutral",
+    "compose_r_o6_research_snapshot",
+    "compute_delta_hedged_period_return",
     "classify_event_state",
     "classify_signed_flow",
+    "delta_hedged_research_snapshot",
     "dual_track_iv",
     "entry_cost",
+    "evaluate_r_o6_correlation",
     "expected_pnl_under_physical_p",
     "estimate_contract_dealer_greeks",
     "estimate_execution_friction",
@@ -129,6 +151,7 @@ __all__ = [
     "run_options_lifecycle",
     "select_atm_contracts",
     "settle_at_expiry",
+    "simulate_delta_hedged_path",
     "simulate_multi_leg_entry",
     "vrp_research_snapshot",
 ]

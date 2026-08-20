@@ -116,4 +116,25 @@ class FixtureDistributionForecastProvider:
         )
 
 
-__all__ = ["DEFAULT_DISTRIBUTION_FIXTURE", "FixtureDistributionForecastProvider"]
+def fetch_fixture_bar_closes(symbol: str) -> list[float] | None:
+    """Extract close prices from admitted distribution fixture for a symbol."""
+    provider = FixtureDistributionForecastProvider()
+    fixture_symbol = str(provider._fixture.get("symbol", "")).upper()
+    if symbol.upper() != fixture_symbol:
+        return None
+    bars = provider._fixture.get("bars", [])
+    if not isinstance(bars, list):
+        return None
+    closes = [
+        float(bar["close"])
+        for bar in bars
+        if isinstance(bar, dict) and bar.get("close") is not None
+    ]
+    return closes if len(closes) >= 2 else None
+
+
+__all__ = [
+    "DEFAULT_DISTRIBUTION_FIXTURE",
+    "FixtureDistributionForecastProvider",
+    "fetch_fixture_bar_closes",
+]
