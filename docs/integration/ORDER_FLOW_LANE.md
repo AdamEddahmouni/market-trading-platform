@@ -173,7 +173,7 @@ from market_platform_foundation.order_flow import (
 ```powershell
 python -m unittest tests.order_flow.test_order_flow_engine
 python -m unittest tests.order_flow.test_queue
-python -m unittest tests.order_flow.test_metaorder
+python -m unittest tests.order_flow.test_order_flow_metaorder
 python -m unittest tests.providers.test_order_flow
 ```
 
