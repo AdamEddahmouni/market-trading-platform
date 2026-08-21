@@ -1,0 +1,4 @@
+Symbol|CompanyName
+ARCX|Tradr 2X Long ACHR Daily ETF
+GMEU|T-REX 2X Long GME Daily Target ETF
+20250617030217
