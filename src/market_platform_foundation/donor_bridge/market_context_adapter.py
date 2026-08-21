@@ -63,6 +63,16 @@ def _latest_attention_summary(catalyst_payload: dict[str, Any]) -> dict[str, Any
     return summaries[-1]
 
 
+def _latest_author_summary(catalyst_payload: dict[str, Any]) -> dict[str, Any] | None:
+    summaries = catalyst_payload.get("author_intelligence_summaries") or []
+    if not isinstance(summaries, list):
+        return None
+    rows = [row for row in summaries if isinstance(row, dict)]
+    if not rows:
+        return None
+    return rows[-1]
+
+
 def _thesis_invalidation_score(catalysts: list[dict[str, Any]]) -> float | None:
     """Bullish gated catalyst confidence — invalidates short thesis when elevated."""
     scores: list[float] = []
@@ -190,6 +200,14 @@ def build_ss_p2_structures_from_catalyst(
         result["information_value"] = round(information_value * 100.0, 2)
     if reflexive_impact is not None:
         result["reflexive_impact"] = round(reflexive_impact * 100.0, 2)
+    author_latest = _latest_author_summary(catalyst_payload)
+    if author_latest:
+        result["author_influence_score"] = _optional_float(author_latest.get("influence_score"))
+        result["author_accuracy_score"] = _optional_float(author_latest.get("accuracy_score"))
+        result["author_handle"] = author_latest.get("handle")
+        result["author_intelligence_available"] = True
+    else:
+        result["author_intelligence_available"] = False
     return result
 
 

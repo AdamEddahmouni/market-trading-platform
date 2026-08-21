@@ -75,6 +75,33 @@ describe("SqueezeWorkspacePanel", () => {
       />,
     );
     expect(screen.getByText("Catalyst & attention")).toBeInTheDocument();
-    expect(screen.getByText("earnings_beat")).toBeInTheDocument();
+    expect(screen.getByText(/earnings_beat/)).toBeInTheDocument();
+  });
+
+  it("renders author influence and accuracy as separate fields", () => {
+    render(
+      <SqueezeWorkspacePanel
+        instrumentId="BOXL"
+        squeeze={{
+          ...frozenSqueezeFixture,
+          symbol: "BOXL",
+          catalyst_strength: {
+            symbol: "BOXL",
+            catalyst_id: "catalyst:boxl:1",
+            strength: 72,
+            catalyst_type: "earnings_beat",
+            publication_state: "PUBLISHED",
+          },
+          author_intelligence_available: true,
+          author_handle: "boxl_hype",
+          author_influence_score: 1,
+          author_accuracy_score: 0,
+        }}
+      />,
+    );
+    expect(screen.getByText("Author influence")).toBeInTheDocument();
+    expect(screen.getByText("Author accuracy")).toBeInTheDocument();
+    expect(screen.getByText(/@boxl_hype/)).toBeInTheDocument();
+    expect(screen.getByText("0")).toBeInTheDocument();
   });
 });

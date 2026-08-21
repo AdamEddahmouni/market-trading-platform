@@ -53,7 +53,7 @@ class TestMC2EntityResolution(unittest.TestCase):
             RAW_FIXTURE,
             symbol_mappings=build_symbol_mapping_registry("BOXL"),
         )
-        self.assertEqual(len(records), 8)
+        self.assertEqual(len(records), 9)
         for record in records:
             self.assertIsNotNone(record.entity_resolution.entity_id)
             self.assertEqual(record.document.associated_entity_ids[0], record.entity_resolution.entity_id)

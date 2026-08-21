@@ -154,6 +154,30 @@ def _projection_checks(*, state_dir: Path | None, state_live: bool) -> list[Acce
         f"{REFERENCE_SYMBOL} MC12 reaction contradictions not exposed.",
     )
 
+    _check(
+        checks,
+        "projection_author_intelligence_available",
+        mc_payload.get("author_intelligence_available") is True,
+        f"{REFERENCE_SYMBOL} MC14 author intelligence available on fixture.",
+        f"{REFERENCE_SYMBOL} MC14 author intelligence unavailable.",
+    )
+    summaries = mc_payload.get("author_intelligence_summaries") or []
+    split_ok = False
+    if isinstance(summaries, list):
+        for row in summaries:
+            if not isinstance(row, dict):
+                continue
+            if row.get("influence_score") == 1.0 and row.get("accuracy_score") == 0.0:
+                split_ok = True
+                break
+    _check(
+        checks,
+        "projection_author_influence_not_accuracy",
+        split_ok,
+        f"{REFERENCE_SYMBOL} MC14 keeps high influence separate from low accuracy.",
+        f"{REFERENCE_SYMBOL} MC14 did not expose influence≠accuracy split.",
+    )
+
     if not state_live:
         _check(
             checks,

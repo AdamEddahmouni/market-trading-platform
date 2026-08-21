@@ -10,6 +10,15 @@ _PRIVATE_PATH = re.compile(
     r"(?i)(^|/)(\.env(?:\..*)?$|[^/]*(?:credential|secret|password|private[_-]?key|api[_-]?key|auth[_-]?token|access[_-]?token)[^/]*$)"
 )
 _PLACEHOLDERS = {"CHANGEME", "EXAMPLE", "PLACEHOLDER", "NOT_A_SECRET"}
+SECRET_SCAN_RULES = {
+    "FINRA_CLIENT_ID": r"(?i)FINRA_CLIENT_ID\s*[:=]\s*(?!CHANGEME\b|EXAMPLE\b|$)\S+",
+    "FINRA_CLIENT_SECRET": r"(?i)FINRA_CLIENT_SECRET\s*[:=]\s*(?!CHANGEME\b|EXAMPLE\b|$)\S+",
+    "ACCESS_TOKEN": r'(?i)"access_token"\s*:\s*"(?!REDACTED)[^"]+"',
+    "AUTHORIZATION_HEADER": r"(?i)Authorization\s*[:=]\s*(Basic|Bearer)\s+\S+",
+    "FRED_API_KEY": r"(?i)FRED_API_KEY\s*[:=]\s*(?!CHANGEME\b|EXAMPLE\b|$)\S+",
+    "FRED_V1_API_KEY_PARAM": r"(?i)(api_key=)[^&\s\"']+",
+    "EIA_API_KEY": r"(?i)EIA_API_KEY\s*[:=]\s*(?!CHANGEME\b|EXAMPLE\b|$)\S+",
+}
 _AUDIT_SOURCE_EXCEPTIONS = {
     "src/market_platform_foundation/credential_audit.py",
     "tests/phase0/test_credential_audit.py",

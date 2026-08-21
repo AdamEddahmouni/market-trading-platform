@@ -145,15 +145,13 @@ def cluster_information_events(
             event_family="information_event",
         )
 
-        revision_lineage = tuple(
-            sorted(
-                {
-                    record.document.revision_of_document_id
-                    for record in cluster_records
-                    if record.document.revision_of_document_id
-                }
-            )
-        )
+        lineage_ids: set[str] = set()
+        for record in cluster_records:
+            parent_id = record.document.revision_of_document_id
+            if parent_id:
+                lineage_ids.add(parent_id)
+                lineage_ids.add(record.document.document_id)
+        revision_lineage = tuple(sorted(lineage_ids))
 
         events.append(
             InformationEvent(

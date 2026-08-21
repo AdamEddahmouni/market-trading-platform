@@ -2,15 +2,22 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from ..adapters.equity_intraday_jsonl import EquityIntradayJsonlAdapter, SOURCE_OBJECT_ID
+from ..adapters.equity_intraday_jsonl import (
+    COLLECTION_RELATIVE_PATH,
+    PINNED_SHA256,
+    EquityIntradayJsonlAdapter,
+    SOURCE_OBJECT_ID,
+)
 from ..assistant.audit_store import AssistantAuditStore
 from ..assistant.inference_factory import resolve_assistant_inference
 from ..assistant.service import AssistantResearchService
-from ..canonical import canonical_bytes, sha256_bytes
+from ..canonical import _pairs_no_duplicates, canonical_bytes, sha256_bytes
 from ..contracts.identity import sort_events
 from ..features.bar_features import derive_bar_features
 from ..features.institutional import configure_institutional_ledger
@@ -32,6 +39,58 @@ def _epoch_ns_to_iso(epoch_ns: int) -> str:
 
     dt = datetime.fromtimestamp(seconds, tz=timezone.utc)
     return dt.strftime("%Y-%m-%dT%H:%M:%S") + f".{nanos:09d}Z"
+
+
+def _replay_source_digest(collection_root: Any) -> str:
+    source_path = Path(collection_root) / COLLECTION_RELATIVE_PATH
+    if not source_path.is_file():
+        raise ValueError("UI_STORE_SOURCE_MISSING")
+    digest = sha256_bytes(source_path.read_bytes())
+    if digest != PINNED_SHA256:
+        raise ValueError("UI_STORE_SOURCE_HASH_MISMATCH")
+    return digest
+
+
+def _build_replay_payload(collection_root: str, source_digest: str) -> bytes:
+    """Build the immutable expensive portion of a replay store."""
+
+    if source_digest != PINNED_SHA256:
+        raise ValueError("UI_STORE_SOURCE_HASH_MISMATCH")
+    ingest_run_id = sha256_bytes(
+        canonical_bytes({"collection_root_id": "ROOT-2E7C91F4", "source_object_id": SOURCE_OBJECT_ID})
+    )
+    adapter = EquityIntradayJsonlAdapter(ingest_run_id=ingest_run_id)
+    result = adapter.ingest_collection(Path(collection_root))
+    events = sort_events(result.canonical_events)
+    bars = _bars_from_events(events)
+    if not bars:
+        raise ValueError("UI_STORE_NO_BARS")
+    instrument_id = str(bars[0]["instrument_id"])
+    session_id = sha256_bytes(
+        canonical_bytes(
+            {
+                "instrument_id": instrument_id,
+                "source_object_id": SOURCE_OBJECT_ID,
+                "bar_count": len(bars),
+            }
+        )
+    )
+    return canonical_bytes(
+        {
+            "evaluation": run_risk_simulation_evaluation(events),
+            "events": events,
+            "instrument_id": instrument_id,
+            "session_id": session_id,
+            "strategy": run_strategy_evaluation(events),
+        }
+    )
+
+
+@lru_cache(maxsize=4)
+def _cached_replay_payload(collection_root: str, source_digest: str) -> bytes:
+    """Cache only immutable canonical bytes keyed by verified source content."""
+
+    return _build_replay_payload(collection_root, source_digest)
 
 
 @dataclass
@@ -59,28 +118,25 @@ class ReplayStore:
 
     def load(self) -> None:
         self._feature_cache = BoundedMemoryCache(max_bytes=256 * 1024, max_entries=32)
-        ingest_run_id = sha256_bytes(
-            canonical_bytes({"collection_root_id": "ROOT-2E7C91F4", "source_object_id": SOURCE_OBJECT_ID})
-        )
-        adapter = EquityIntradayJsonlAdapter(ingest_run_id=ingest_run_id)
-        result = adapter.ingest_collection(self.collection_root)
-        self._events = sort_events(result.canonical_events)
+        collection_root = str(Path(self.collection_root).resolve())
+        source_digest = _replay_source_digest(collection_root)
+        encoded = _cached_replay_payload(collection_root, source_digest)
+        decoded = json.loads(encoded.decode("utf-8"), object_pairs_hook=_pairs_no_duplicates)
+        if not isinstance(decoded, dict) or not isinstance(decoded.get("events"), list):
+            raise ValueError("UI_STORE_CACHE_PAYLOAD_INVALID")
+        self._events = [event for event in decoded["events"] if isinstance(event, dict)]
         self._bars = _bars_from_events(self._events)
         if not self._bars:
             raise ValueError("UI_STORE_NO_BARS")
-        self._instrument_id = str(self._bars[0]["instrument_id"])
-        self._evaluation = run_risk_simulation_evaluation(self._events)
-        self._strategy = run_strategy_evaluation(self._events)
+        self._instrument_id = str(decoded.get("instrument_id", ""))
+        evaluation = decoded.get("evaluation")
+        strategy = decoded.get("strategy")
+        if not isinstance(evaluation, dict) or not isinstance(strategy, dict):
+            raise ValueError("UI_STORE_CACHE_PAYLOAD_INVALID")
+        self._evaluation = evaluation
+        self._strategy = strategy
         self.cursor_index = len(self._bars) - 1
-        self._session_id = sha256_bytes(
-            canonical_bytes(
-                {
-                    "instrument_id": self._instrument_id,
-                    "source_object_id": SOURCE_OBJECT_ID,
-                    "bar_count": len(self._bars),
-                }
-            )
-        )
+        self._session_id = str(decoded.get("session_id", ""))
         ledger = bootstrap_default_providers()
         configure_institutional_ledger(ledger)
         audit_root = self.assistant_audit_root
@@ -134,10 +190,6 @@ class ReplayStore:
             key,
             lambda: canonical_bytes(self._compute_bar_features_payload()),
         )
-        import json
-
-        from ..canonical import _pairs_no_duplicates
-
         decoded = json.loads(payload.decode("utf-8"), object_pairs_hook=_pairs_no_duplicates)
         if not isinstance(decoded, list):
             return []

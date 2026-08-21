@@ -59,6 +59,18 @@ from .attention import (
     attention_summary_to_adapter_row,
     attention_summary_to_dict,
 )
+from .information_decay import (
+    PRODUCER_VERSION as INFORMATION_DECAY_VERSION,
+    build_fixture_information_decay_pipeline,
+    information_decay_summary_to_dict,
+)
+from .author_intelligence import (
+    PRODUCER_VERSION as AUTHOR_INTELLIGENCE_VERSION,
+    build_author_intelligence_cross_lane_evidence,
+    build_fixture_author_intelligence_pipeline,
+    author_intelligence_summary_to_dict,
+    load_social_author_fixture,
+)
 from .sentiment import (
     PRODUCER_VERSION as SENTIMENT_VERSION,
     DocumentSentimentResult,
@@ -80,6 +92,8 @@ __all__ = [
     "SENTIMENT_VERSION",
     "CATALYST_VERSION",
     "ATTENTION_VERSION",
+    "AUTHOR_INTELLIGENCE_VERSION",
+    "INFORMATION_DECAY_VERSION",
     "ContextDocumentRecord",
     "DocumentExtractionResult",
     "DocumentSentimentResult",
@@ -94,6 +108,8 @@ __all__ = [
     "build_fixture_extraction_pipeline",
     "build_catalyst_cross_lane_evidence",
     "build_attention_cross_lane_evidence",
+    "build_author_intelligence_cross_lane_evidence",
+    "build_fixture_author_intelligence_pipeline",
     "build_fixture_impact_pipeline",
     "build_fixture_sentiment_pipeline",
     "build_fixture_surprise_pipeline",
@@ -120,6 +136,8 @@ __all__ = [
     "load_finbert_fixture_labels",
     "load_llm_extraction_fixture",
     "load_structured_metrics_fixture",
+    "load_social_author_fixture",
+    "author_intelligence_summary_to_dict",
     "map_canonical_event_type",
     "raw_document_from_fixture_row",
     "resolve_document_entities",

@@ -9,6 +9,9 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from ..contracts.options_quality import OptionQualityFlag
+from ..contracts.reference import ReferenceKind, ReferenceQualityFlag
+from ..runtime.bitemporal_store import BitemporalReferenceStore
+from ..runtime.pit_joins import join_as_of
 from .surface import build_surface_point, infer_underlying_price
 
 EVENT_VOL_VERSION = "options_event_vol_v1"
@@ -290,6 +293,8 @@ def build_event_vol_snapshot(
     empirical_crush_history: Sequence[dict[str, Any]] | None = None,
     post_event_chain: Sequence[dict[str, Any]] | None = None,
     catalyst_event_times: Sequence[str] | None = None,
+    reference_store: BitemporalReferenceStore | None = None,
+    knowledge_time: str | None = None,
 ) -> dict[str, Any]:
     """Top-level event volatility snapshot for workspace consumers."""
     quality_flags: list[str] = []
@@ -307,6 +312,40 @@ def build_event_vol_snapshot(
             post_event_chain = earnings_event.get("post_event_chain")
         if chain_rows is None:
             chain_rows = earnings_event.get("pre_event_chain")
+
+    if not event_time and reference_store is not None:
+        joined = join_as_of(
+            reference_store,
+            ReferenceKind.EARNINGS_CALENDAR,
+            symbol.upper(),
+            as_of_time,
+            knowledge_time or as_of_time,
+        )
+        if joined["status"] == "AVAILABLE":
+            event_time = str(joined["payload"].get("earnings_event_time") or "")
+            event_type = str(joined["payload"].get("event_type", "earnings"))
+            quality_flags.extend(str(flag) for flag in joined.get("quality_flags") or [])
+        else:
+            quality_flags.append(OptionQualityFlag.EARNINGS_DATE_UNKNOWN.value)
+            quality_flags.append(ReferenceQualityFlag.REFERENCE_UNAVAILABLE.value)
+            quality_flags.extend(str(flag) for flag in joined.get("quality_flags") or [])
+            return {
+                "available": False,
+                "status": "UNAVAILABLE",
+                "event_type": None,
+                "event_state": "NO_EVENT",
+                "event_time": None,
+                "implied_event_move": None,
+                "forecast_event_move": None,
+                "event_volatility_premium": None,
+                "expected_post_event_iv": None,
+                "expected_iv_crush": None,
+                "vega_risk": "LOW",
+                "method": EVENT_VOL_METHOD,
+                "model_version": EVENT_VOL_VERSION,
+                "quality_flags": quality_flags,
+                "reason": "EARNINGS_DATE_UNKNOWN",
+            }
 
     if not event_time and catalyst_event_times:
         for raw in catalyst_event_times:

@@ -313,7 +313,17 @@ class AssistantAuditStore:
 
     def contains_secret_like_content(self) -> bool:
         """Heuristic scan for credential-like strings in persisted messages."""
-        needles = ("api_key", "password", "secret", "token=", "BEGIN PRIVATE KEY")
+        needles = (
+            "api_key",
+            "password",
+            "secret",
+            "token=",
+            "BEGIN PRIVATE KEY",
+            "finra_client_id",
+            "finra_client_secret",
+            "access_token",
+            "authorization:",
+        )
         for message in self.list_messages_for_all():
             lowered = message.content.lower()
             if any(needle in lowered for needle in needles):

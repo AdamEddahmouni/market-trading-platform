@@ -8,6 +8,8 @@
       "canonical_event_type": "earnings_beat",
       "title": "BOXL reports stronger-than-expected revenue guidance",
       "body": "BOXL International reported quarterly revenue above consensus.",
+      "revision_id": "earnings-1-v1",
+      "revision_of_document_id": null,
       "associated_symbols": ["BOXL"],
       "event_time": "2026-07-15T14:30:00.000000000Z",
       "available_time": "2026-07-15T14:31:00.000000000Z",
@@ -201,6 +203,33 @@
         "provider": "fixture_synthetic",
         "event_time": "2026-07-22T20:00:00.000000000Z",
         "available_time": "2026-07-22T20:05:00.000000000Z"
+      }
+    },
+    {
+      "document_id": "mc-doc-earnings-1-v2",
+      "canonical_event_type": "earnings_beat",
+      "title": "BOXL reports stronger-than-expected revenue guidance",
+      "body": "CORRECTED: BOXL International revised quarterly revenue below consensus.",
+      "revision_id": "earnings-1-v2",
+      "revision_of_document_id": "mc-doc-earnings-1",
+      "associated_symbols": ["BOXL"],
+      "event_time": "2026-07-15T14:30:00.000000000Z",
+      "available_time": "2026-07-23T12:00:00.000000000Z",
+      "source": {
+        "source_id": "mc-src-earnings-1-v2",
+        "source_type": "NEWSWIRE",
+        "publisher": "GlobeNewswire",
+        "author": null,
+        "domain": "globenewswire.com",
+        "primary_or_secondary": "primary",
+        "official": false,
+        "first_party": false,
+        "source_tier": "wire",
+        "source_origin_id": "origin-earnings-wire",
+        "syndication_parent_id": null,
+        "provider": "fixture_synthetic",
+        "event_time": "2026-07-15T14:30:00.000000000Z",
+        "available_time": "2026-07-23T12:00:00.000000000Z"
       }
     }
   ]

@@ -11,6 +11,9 @@ export function CatalystAttentionBlock({ squeeze }: Props) {
   const lending = squeeze.securities_lending_snapshot;
   const informationValue = squeeze.information_value;
   const reflexiveImpact = squeeze.reflexive_impact;
+  const authorInfluence = squeeze.author_influence_score;
+  const authorAccuracy = squeeze.author_accuracy_score;
+  const authorHandle = squeeze.author_handle;
 
   if (!catalyst && !attention && !thesis && !lending) {
     return (
@@ -52,6 +55,18 @@ export function CatalystAttentionBlock({ squeeze }: Props) {
         <div>
           <dt>Reflexive impact</dt>
           <dd>{reflexiveImpact != null ? reflexiveImpact : "UNAVAILABLE"}</dd>
+        </div>
+        <div>
+          <dt>Author influence</dt>
+          <dd>
+            {authorInfluence != null
+              ? `${authorInfluence}${authorHandle ? ` (@${authorHandle})` : ""}`
+              : "UNAVAILABLE"}
+          </dd>
+        </div>
+        <div>
+          <dt>Author accuracy</dt>
+          <dd>{authorAccuracy != null ? authorAccuracy : "UNAVAILABLE"}</dd>
         </div>
         <div>
           <dt>Short thesis invalidation</dt>

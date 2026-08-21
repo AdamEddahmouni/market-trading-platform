@@ -16,6 +16,8 @@ _PROHIBITED_MODULE_ROOTS = {
     "ctypes",
     "ib_insync",
     "interactive_brokers",
+    "moomoo",
+    "futu",
     "requests",
     "websocket",
 }

@@ -438,6 +438,10 @@ export const WorkspaceSqueezeResponseSchema = z.object({
     .optional(),
   information_value: z.number().nullable().optional(),
   reflexive_impact: z.number().nullable().optional(),
+  author_influence_score: z.number().nullable().optional(),
+  author_accuracy_score: z.number().nullable().optional(),
+  author_handle: z.string().nullable().optional(),
+  author_intelligence_available: z.boolean().optional(),
   thesis_invalidation: z
     .object({
       symbol: z.string(),
@@ -1065,6 +1069,9 @@ export const WorkspaceMarketContextResponseSchema = z.object({
   surprise_available: z.boolean().optional(),
   surprise_count: z.number().optional(),
   surprise_summaries: z.array(z.record(z.string(), z.unknown())).optional(),
+  author_intelligence_available: z.boolean().optional(),
+  author_intelligence_count: z.number().optional(),
+  author_intelligence_summaries: z.array(z.record(z.string(), z.unknown())).optional(),
   impact_components_available: z.boolean().optional(),
   impact_component_summaries: z.array(z.record(z.string(), z.unknown())).optional(),
   novelty_evidence: z.array(z.record(z.string(), z.unknown())).optional(),

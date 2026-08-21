@@ -75,6 +75,46 @@ class TestMC3EventClustering(unittest.TestCase):
         self.assertEqual(event.independent_source_count, 3)
         self.assertEqual(event.corroboration_state, CorroborationState.CORROBORATED)
 
+    def test_revision_v2_hidden_before_available_time(self) -> None:
+        records = load_context_document_records(RAW_FIXTURE)
+        between_revisions = iso_to_epoch_ns("2026-07-15T14:35:00.000000000Z")
+        events = cluster_fixture_records(records, prediction_cutoff=between_revisions)
+        earnings = next(event for event in events if event.canonical_event_type == "earnings_beat")
+        visible_ids = set(earnings.document_ids)
+        self.assertIn("mc-doc-earnings-1", visible_ids)
+        self.assertNotIn("mc-doc-earnings-1-v2", visible_ids)
+        self.assertEqual(earnings.revision_lineage, ())
+        bodies = {
+            record.document.document_id: record.document.body
+            for record in records
+            if record.document.document_id in visible_ids
+        }
+        self.assertEqual(
+            bodies["mc-doc-earnings-1"],
+            "BOXL International reported quarterly revenue above consensus.",
+        )
+
+    def test_revision_v2_lineage_visible_after_available_time(self) -> None:
+        records = load_context_document_records(RAW_FIXTURE)
+        after_revision = iso_to_epoch_ns("2026-07-23T13:00:00.000000000Z")
+        events = cluster_fixture_records(records, prediction_cutoff=after_revision)
+        earnings = next(event for event in events if event.canonical_event_type == "earnings_beat")
+        self.assertIn("mc-doc-earnings-1-v2", earnings.document_ids)
+        self.assertEqual(
+            tuple(earnings.revision_lineage),
+            ("mc-doc-earnings-1", "mc-doc-earnings-1-v2"),
+        )
+        v2 = next(
+            record
+            for record in records
+            if record.document.document_id == "mc-doc-earnings-1-v2"
+        )
+        self.assertEqual(
+            v2.document.body,
+            "CORRECTED: BOXL International revised quarterly revenue below consensus.",
+        )
+        self.assertEqual(v2.document.revision_of_document_id, "mc-doc-earnings-1")
+
     def test_pit_cutoff_excludes_future_documents(self) -> None:
         records = load_context_document_records(RAW_FIXTURE)
         early_cutoff = iso_to_epoch_ns("2026-07-20T00:00:00.000000000Z")

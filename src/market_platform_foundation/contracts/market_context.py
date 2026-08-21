@@ -239,6 +239,10 @@ class ContextQualityFlag(StrEnum):
     MACRO_SURPRISE_UNAVAILABLE = "MACRO_SURPRISE_UNAVAILABLE"
     MACRO_REGIME_PARTIAL = "MACRO_REGIME_PARTIAL"
     RETROSPECTIVE_KNOWLEDGE_RISK = "RETROSPECTIVE_KNOWLEDGE_RISK"
+    SOCIAL_INFLUENCE_UNAVAILABLE = "SOCIAL_INFLUENCE_UNAVAILABLE"
+    AUTHOR_ACCURACY_UNVALIDATED = "AUTHOR_ACCURACY_UNVALIDATED"
+    INFLUENCE_NOT_ACCURACY = "INFLUENCE_NOT_ACCURACY"
+    SOCIAL_AUTHOR_EXPERIMENTAL = "SOCIAL_AUTHOR_EXPERIMENTAL"
 
 
 @dataclass(frozen=True, slots=True)
@@ -328,6 +332,12 @@ class EntityResolution:
 def entity_id_from_symbol(symbol: str, *, exchange: str = "US") -> str:
     """Deterministic entity identifier for fixture-scope symbol resolution."""
     normalized = "|".join(("entity", exchange.upper(), symbol.strip().upper()))
+    return str(uuid.uuid5(NAMESPACE, normalized))
+
+
+def author_id_from_handle(handle: str, *, platform: str = "fixture_social") -> str:
+    """Deterministic author identifier for fixture-scope social handles."""
+    normalized = "|".join(("author", platform.strip().lower(), handle.strip().lower()))
     return str(uuid.uuid5(NAMESPACE, normalized))
 
 
@@ -579,6 +589,59 @@ class MarketReactionEvidence:
 
 
 @dataclass(frozen=True, slots=True)
+class AuthorIdentity:
+    author_id: str
+    handle: str
+    platform: str
+    display_name: str | None = None
+    event_time: str = ""
+    available_time: str = ""
+    provenance_ref: str = ""
+    quality_flags: tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
+class InfluenceEvidence:
+    author_id: str
+    entity_id: str | None
+    influence_score: float | None
+    follower_count: int | None
+    repost_count: int | None
+    event_time: str
+    available_time: str
+    publication_state: PublicationState = PublicationState.UNAVAILABLE
+    provenance_ref: str = ""
+    quality_flags: tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
+class AccuracyEvidence:
+    author_id: str
+    entity_id: str | None
+    accuracy_score: float | None
+    labeled_correct: float | None
+    outcome_available_time: str | None
+    event_time: str
+    available_time: str
+    publication_state: PublicationState = PublicationState.UNAVAILABLE
+    provenance_ref: str = ""
+    quality_flags: tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
+class AuthorEvidence:
+    author: AuthorIdentity
+    influence: InfluenceEvidence
+    accuracy: AccuracyEvidence
+    document_id: str | None = None
+    event_time: str = ""
+    available_time: str = ""
+    publication_state: PublicationState = PublicationState.UNAVAILABLE
+    provenance_ref: str = ""
+    quality_flags: tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
 class ContextEvidenceEnvelope:
     """Cross-lane evidence root for Market Context producers."""
 
@@ -817,6 +880,63 @@ def market_reaction_evidence_to_dict(item: MarketReactionEvidence) -> dict[str, 
             item.information_decay_class.value if item.information_decay_class else None
         ),
         "horizon": item.horizon,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "publication_state": item.publication_state.value,
+        "provenance_ref": item.provenance_ref,
+        "quality_flags": list(item.quality_flags),
+    }
+
+
+def author_identity_to_dict(item: AuthorIdentity) -> dict[str, Any]:
+    return {
+        "author_id": item.author_id,
+        "handle": item.handle,
+        "platform": item.platform,
+        "display_name": item.display_name,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "provenance_ref": item.provenance_ref,
+        "quality_flags": list(item.quality_flags),
+    }
+
+
+def influence_evidence_to_dict(item: InfluenceEvidence) -> dict[str, Any]:
+    return {
+        "author_id": item.author_id,
+        "entity_id": item.entity_id,
+        "influence_score": item.influence_score,
+        "follower_count": item.follower_count,
+        "repost_count": item.repost_count,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "publication_state": item.publication_state.value,
+        "provenance_ref": item.provenance_ref,
+        "quality_flags": list(item.quality_flags),
+    }
+
+
+def accuracy_evidence_to_dict(item: AccuracyEvidence) -> dict[str, Any]:
+    return {
+        "author_id": item.author_id,
+        "entity_id": item.entity_id,
+        "accuracy_score": item.accuracy_score,
+        "labeled_correct": item.labeled_correct,
+        "outcome_available_time": item.outcome_available_time,
+        "event_time": item.event_time,
+        "available_time": item.available_time,
+        "publication_state": item.publication_state.value,
+        "provenance_ref": item.provenance_ref,
+        "quality_flags": list(item.quality_flags),
+    }
+
+
+def author_evidence_to_dict(item: AuthorEvidence) -> dict[str, Any]:
+    return {
+        "author": author_identity_to_dict(item.author),
+        "influence": influence_evidence_to_dict(item.influence),
+        "accuracy": accuracy_evidence_to_dict(item.accuracy),
+        "document_id": item.document_id,
         "event_time": item.event_time,
         "available_time": item.available_time,
         "publication_state": item.publication_state.value,

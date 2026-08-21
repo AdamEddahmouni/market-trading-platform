@@ -179,9 +179,7 @@ class FuturesCurveTests(unittest.TestCase):
         )
         payload = positioning_snapshot_to_dict(snapshot)
         restored = positioning_snapshot_from_dict(payload)
-        self.assertEqual(restored.net, 75000)
-        self.assertEqual(restored.participant_category, "managed_money")
-        self.assertEqual(restored.publication_time, "2025-05-30T17:30:00Z")
+        self.assertEqual(restored, snapshot)
 
     def test_trend_baseline_round_trip(self) -> None:
         snapshot = FuturesTrendBaselineSnapshot(

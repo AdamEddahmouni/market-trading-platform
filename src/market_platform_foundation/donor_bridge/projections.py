@@ -935,6 +935,26 @@ def build_workspace_squeeze_payload(
             if isinstance(detail.get("_ss_p2_fields"), dict)
             else None
         ),
+        "author_influence_score": (
+            (detail.get("_ss_p2_fields") or {}).get("author_influence_score")
+            if isinstance(detail.get("_ss_p2_fields"), dict)
+            else None
+        ),
+        "author_accuracy_score": (
+            (detail.get("_ss_p2_fields") or {}).get("author_accuracy_score")
+            if isinstance(detail.get("_ss_p2_fields"), dict)
+            else None
+        ),
+        "author_handle": (
+            (detail.get("_ss_p2_fields") or {}).get("author_handle")
+            if isinstance(detail.get("_ss_p2_fields"), dict)
+            else None
+        ),
+        "author_intelligence_available": (
+            (detail.get("_ss_p2_fields") or {}).get("author_intelligence_available")
+            if isinstance(detail.get("_ss_p2_fields"), dict)
+            else False
+        ),
         "securities_lending_snapshot": detail.get("securities_lending_snapshot")
         if isinstance(detail.get("securities_lending_snapshot"), dict)
         else None,

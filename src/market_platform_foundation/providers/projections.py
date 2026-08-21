@@ -1833,10 +1833,18 @@ def build_workspace_catalyst_payload(
                 "attention_summaries": mc_payload.get("attention_summaries") or [],
                 "attention_evidence": mc_payload.get("attention_evidence") or [],
                 "attention_adapter_rows": mc_payload.get("attention_adapter_rows") or [],
+                "author_intelligence_available": mc_payload.get(
+                    "author_intelligence_available", False
+                ),
+                "author_intelligence_summaries": mc_payload.get(
+                    "author_intelligence_summaries"
+                )
+                or [],
                 "disclaimer": (
                     "MC8 CatalystEvidence fuses MC6–MC7 components with exposed scores. "
                     "MC9 AttentionEvidence separates information value from reflexive impact. "
-                    "Not a trade recommendation. Research-only per MC8–MC9 design spec."
+                    "MC14 splits social influence from author accuracy. "
+                    "Not a trade recommendation. Research-only per MC8–MC14 design spec."
                 ),
                 "latest_confidence": latest.get("confidence") if isinstance(latest, dict) else None,
                 "latest_gate_ok": latest.get("gate_ok") if isinstance(latest, dict) else None,
@@ -2022,6 +2030,13 @@ _DEFAULT_MC_EXPECTATIONS_FIXTURE = (
     / "market_context"
     / "boxl_expectations_slice.json"
 )
+_DEFAULT_MC_SOCIAL_AUTHOR_FIXTURE = (
+    Path(__file__).resolve().parents[3]
+    / "tests"
+    / "fixtures"
+    / "market_context"
+    / "boxl_social_author_slice.json"
+)
 _DEFAULT_ES_MACRO_EXPECTATIONS_FIXTURE = (
     Path(__file__).resolve().parents[3]
     / "tests"
@@ -2047,7 +2062,7 @@ def build_workspace_market_context_payload(
     as_of_context: dict[str, object],
     prediction_cutoff: int,
 ) -> dict[str, Any]:
-    """Build MC4–MC12 market context workspace payload (BOXL fixture scope)."""
+    """Build MC4–MC14 market context workspace payload (BOXL fixture scope)."""
     from ..market_context.entity_resolution import (
         build_symbol_mapping_registry,
         load_context_document_records,
@@ -2111,6 +2126,13 @@ def build_workspace_market_context_payload(
         information_decay_summary_to_dict,
         load_decay_fixture,
     )
+    from ..market_context.author_intelligence import (
+        PRODUCER_VERSION as AUTHOR_INTELLIGENCE_PRODUCER_VERSION,
+        build_author_intelligence_cross_lane_evidence,
+        build_fixture_author_intelligence_pipeline,
+        author_intelligence_summary_to_dict,
+        load_social_author_fixture,
+    )
     from ..market_context.macro import (
         PRODUCER_VERSION as MACRO_PRODUCER_VERSION,
         build_fixture_macro_pipeline,
@@ -2120,6 +2142,7 @@ def build_workspace_market_context_payload(
     )
     from ..contracts.market_context import (
         attention_evidence_to_dict,
+        author_evidence_to_dict,
         catalyst_evidence_to_dict,
         credibility_evidence_to_dict,
         expectation_snapshot_to_dict,
@@ -2417,6 +2440,25 @@ def build_workspace_market_context_payload(
     )
     cross_lane_evidence = list(cross_lane_evidence) + macro_cross_lane
 
+    social_rows = (
+        load_social_author_fixture(_DEFAULT_MC_SOCIAL_AUTHOR_FIXTURE)
+        if _DEFAULT_MC_SOCIAL_AUTHOR_FIXTURE.is_file()
+        else []
+    )
+    author_evidence, author_summaries, author_adapter_rows = (
+        build_fixture_author_intelligence_pipeline(
+            social_rows,
+            prediction_cutoff=prediction_cutoff,
+            entity_id=instrument_id,
+        )
+    )
+    author_cross_lane = build_author_intelligence_cross_lane_evidence(
+        author_summaries,
+        symbol=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    cross_lane_evidence = list(cross_lane_evidence) + author_cross_lane
+
     from ..runtime.catalyst_attention import (
         CatalystAttentionRuntime,
         catalyst_attention_snapshot_to_dict,
@@ -2464,8 +2506,9 @@ def build_workspace_market_context_payload(
             "MC12 classifies market reaction confirmation/contradiction from admitted fixtures "
             "without reimplementing CVD/IV. MC11 publishes shared macro regime context; "
             "Futures F7 owns calendar risk interpretation. "
+            "MC14 splits social influence from author accuracy — high reach is not truth. "
             "Keyword-v1 runs in stdlib; FinBERT and LLM extractions are fixture-precomputed. "
-            "Research-only per MC4–MC12."
+            "Research-only per MC4–MC14."
         ),
         "document_count": len(document_results),
         "document_extractions": document_extractions,
@@ -2553,6 +2596,15 @@ def build_workspace_market_context_payload(
             information_decay_summary_to_dict(item)
             for item in information_decay_summaries
         ],
+        "author_intelligence_available": bool(author_summaries),
+        "author_intelligence_count": len(author_summaries),
+        "author_intelligence_producer_id": "market_context.author_intelligence",
+        "author_intelligence_producer_version": AUTHOR_INTELLIGENCE_PRODUCER_VERSION,
+        "author_intelligence_summaries": [
+            author_intelligence_summary_to_dict(item) for item in author_summaries
+        ],
+        "author_intelligence_adapter_rows": author_adapter_rows,
+        "author_evidence": [author_evidence_to_dict(item) for item in author_evidence],
         "macro_context_available": macro_summary.macro_context_available,
         "macro_context_evidence": macro_context_evidence_to_dict(macro_evidence),
         "macro_context_summary": macro_summary_to_dict(macro_summary),

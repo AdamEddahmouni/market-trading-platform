@@ -609,6 +609,46 @@ def build_explain_payload(store: ReplayStore, ref: str) -> dict[str, object]:
                 f"{mc_payload.get('disclaimer', '')}"
             ),
         }
+    elif ref.startswith("explain:author:"):
+        remainder = ref.removeprefix("explain:author:")
+        parts = remainder.split(":", 1)
+        symbol = parts[0].upper()
+        handle = parts[1] if len(parts) > 1 else None
+        from ..providers.projections import build_workspace_market_context_payload
+
+        mc_payload = build_workspace_market_context_payload(
+            symbol,
+            as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
+        )
+        if not mc_payload.get("author_intelligence_available"):
+            raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+        summaries = mc_payload.get("author_intelligence_summaries") or []
+        selected = None
+        if handle:
+            for row in summaries:
+                if isinstance(row, dict) and row.get("handle") == handle:
+                    selected = row
+                    break
+        if selected is None and summaries:
+            selected = summaries[-1] if isinstance(summaries[-1], dict) else None
+        if not isinstance(selected, dict):
+            raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+        influence = selected.get("influence_score")
+        accuracy = selected.get("accuracy_score")
+        body = {
+            "alignment_summary": (
+                f"influence {influence if influence is not None else 'UNAVAILABLE'} · "
+                f"accuracy {accuracy if accuracy is not None else 'UNVALIDATED'}"
+            ),
+            "level": 2,
+            "meaning": f"MC14 social author intelligence for {symbol} — influence is not accuracy",
+            "ref": ref,
+            "why": (
+                f"@{selected.get('handle', 'unknown')} · "
+                f"{mc_payload.get('disclaimer', '')}"
+            ),
+        }
     elif ref.startswith("explain:disclosure:"):
         symbol = ref.removeprefix("explain:disclosure:")
         from ..providers.projections import build_workspace_disclosure_payload

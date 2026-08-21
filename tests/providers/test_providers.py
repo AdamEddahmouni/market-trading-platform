@@ -6,6 +6,7 @@ import importlib
 import pkgutil
 import sys
 import unittest
+from dataclasses import fields
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -33,12 +34,6 @@ from market_platform_foundation.providers.composition import (
     get_provider_composition,
 )
 from market_platform_foundation.providers.contracts import EXECUTION_DISABLED, PROVIDER_UNAVAILABLE
-from market_platform_foundation.providers.stubs import (
-    DisabledPaperExecutionProvider,
-    UnconfiguredDisclosureProvider,
-    UnconfiguredEquityQuoteProvider,
-    UnconfiguredOptionChainProvider,
-)
 from market_platform_foundation.providers.whale_ledger import (
     WHALE_ENTITLED_DISCLOSURE,
     WhaleLedger,
@@ -54,19 +49,39 @@ class ProviderContractTests(unittest.TestCase):
         configure_provider_composition(None)
 
     def test_unconfigured_stubs_fail_closed(self) -> None:
-        disclosure = UnconfiguredDisclosureProvider()
-        result = disclosure.fetch_disclosures("BIYA")
-        self.assertEqual(result.status, "unavailable")
-        self.assertEqual(result.reason_code, PROVIDER_UNAVAILABLE)
+        composition = ProviderComposition()
+        results = {
+            "disclosure": composition.disclosure.fetch_disclosures("BIYA"),
+            "reference_data": composition.reference_data.resolve_symbol("BIYA"),
+            "equity_quote": composition.equity_quote.fetch_quote("BIYA"),
+            "option_chain": composition.option_chain.fetch_chain("BIYA"),
+            "futures_chain": composition.futures_chain.fetch_chain("ES"),
+            "futures_positioning": composition.futures_positioning.fetch_positioning("ES"),
+            "futures_bars": composition.futures_bars.fetch_bars("ES"),
+            "futures_macro": composition.futures_macro.fetch_macro_events("ES"),
+            "futures_margin": composition.futures_margin.fetch_margin("ES"),
+            "distribution_forecast": (
+                composition.distribution_forecast.fetch_distribution_forecast("BIYA")
+            ),
+            "order_flow": composition.order_flow.fetch_order_flow("BIYA"),
+            "paper_execution": composition.paper_execution.place_order({}),
+        }
+        default_provider_fields = {field.name for field in fields(ProviderComposition)}
+        self.assertEqual(set(results), default_provider_fields)
 
-        quote = UnconfiguredEquityQuoteProvider()
-        self.assertEqual(quote.fetch_quote("BIYA").reason_code, PROVIDER_UNAVAILABLE)
-
-        chain = UnconfiguredOptionChainProvider()
-        self.assertEqual(chain.fetch_chain("BIYA").reason_code, PROVIDER_UNAVAILABLE)
-
-        execution = DisabledPaperExecutionProvider(enabled=False)
-        self.assertEqual(execution.place_order({}).reason_code, EXECUTION_DISABLED)
+        for provider_name, result in results.items():
+            with self.subTest(provider_name=provider_name):
+                self.assertEqual(result.status, "unavailable")
+                self.assertEqual(
+                    result.capability,
+                    getattr(composition, provider_name).capability,
+                )
+                expected_reason = (
+                    EXECUTION_DISABLED
+                    if provider_name == "paper_execution"
+                    else PROVIDER_UNAVAILABLE
+                )
+                self.assertEqual(result.reason_code, expected_reason)
 
     def test_default_composition_uses_stubs(self) -> None:
         composition = get_provider_composition()

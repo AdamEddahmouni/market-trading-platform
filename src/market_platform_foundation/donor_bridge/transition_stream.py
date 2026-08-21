@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -17,14 +18,25 @@ DEFAULT_TRANSITION_STREAM_FIXTURE = (
 )
 
 
+@lru_cache(maxsize=1)
+def _default_transition_payload_bytes() -> bytes:
+    """Read the repository-pinned default fixture once as immutable bytes."""
+
+    return DEFAULT_TRANSITION_STREAM_FIXTURE.read_bytes()
+
+
 def replay_transition_stream(
     fixture_path: Path | None = None,
     *,
     as_of_time_ns: int | None = None,
 ) -> list[dict[str, Any]]:
     """Return causal transitions visible at as_of_time_ns (PIT-filtered, oldest first)."""
-    path = fixture_path or DEFAULT_TRANSITION_STREAM_FIXTURE
-    payload = json.loads(path.read_text(encoding="utf-8"))
+    raw = (
+        _default_transition_payload_bytes()
+        if fixture_path is None
+        else Path(fixture_path).read_bytes()
+    )
+    payload = json.loads(raw.decode("utf-8"))
     transitions = payload.get("causal_state_transitions", [])
     if not isinstance(transitions, list):
         return []

@@ -28,6 +28,7 @@ from market_platform_foundation.contracts.market_context import (  # noqa: E402
     catalyst_evidence_to_dict,
     market_reaction_evidence_to_dict,
     surprise_unavailable_when_expectation_missing,
+    author_id_from_handle,
 )
 
 
@@ -142,6 +143,12 @@ class MarketContextContractTests(unittest.TestCase):
         self.assertEqual(payload["information_decay_class"], "HOURS")
         self.assertEqual(payload["priced_in_probability"], 0.4)
         self.assertEqual(payload["remaining_information_edge"], 0.08)
+
+    def test_author_id_from_handle_is_deterministic(self) -> None:
+        first = author_id_from_handle("boxl_hype")
+        second = author_id_from_handle("BOXL_HYPE")
+        self.assertEqual(first, second)
+        self.assertNotEqual(first, author_id_from_handle("boxl_specialist"))
 
 
 if __name__ == "__main__":
