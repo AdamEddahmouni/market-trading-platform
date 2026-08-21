@@ -1,15 +1,24 @@
-"""Platform P1 corporate event registry (fixture scope)."""
+"""Platform P1 corporate event registry (fixture scope) — P0 visibility adapter."""
 
 from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from ..contracts.reference import ReferenceKind, ReferenceRecord
 from ..normalization.equity_bars import iso_to_epoch_ns
+from .bitemporal_store import record_is_visible
 
 PRODUCER_VERSION = "platform_corporate_event_registry_v1"
+
+
+def _epoch_ns_to_iso(ns: int) -> str:
+    seconds, nano = divmod(int(ns), 1_000_000_000)
+    stamp = datetime.fromtimestamp(seconds, tz=timezone.utc)
+    return stamp.strftime("%Y-%m-%dT%H:%M:%S") + f".{nano:09d}Z"
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,6 +30,22 @@ class CorporateEventRecord:
     available_time: str
     source_document_ids: tuple[str, ...] = ()
     provenance_ref: str = PRODUCER_VERSION
+
+    def as_reference(self) -> ReferenceRecord:
+        return ReferenceRecord(
+            kind=ReferenceKind.EARNINGS_CALENDAR,
+            entity_key=self.instrument_id,
+            record_id=self.event_id,
+            record_version=1,
+            valid_from=self.available_time,
+            valid_to="",
+            known_from=self.available_time,
+            known_to="",
+            payload={
+                "earnings_event_time": self.event_time,
+                "event_type": self.canonical_event_type,
+            },
+        )
 
 
 def corporate_event_to_dict(item: CorporateEventRecord) -> dict[str, Any]:
@@ -86,13 +111,15 @@ class CorporateEventRegistry:
         prediction_cutoff: int,
     ) -> list[CorporateEventRecord]:
         symbol = instrument_id.upper()
+        knowledge_time = _epoch_ns_to_iso(prediction_cutoff)
         eligible: list[CorporateEventRecord] = []
         for record in self._records:
             if record.instrument_id != symbol:
                 continue
-            if iso_to_epoch_ns(record.available_time) > prediction_cutoff:
+            if not record.available_time:
                 continue
-            eligible.append(record)
+            if record_is_visible(record.as_reference(), knowledge_time, knowledge_time):
+                eligible.append(record)
         eligible.sort(key=lambda item: iso_to_epoch_ns(item.available_time))
         return eligible
 
