@@ -15,7 +15,8 @@ from .distributional_baseline import (
 )
 from .surface_baseline import GATE_MILESTONE, evaluate_surface_baseline_oos, forecast_surface_baseline
 
-_FIXTURE_ROOT = Path(__file__).resolve().parents[4] / "tests" / "fixtures" / "providers"
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+_FIXTURE_ROOT = _REPO_ROOT / "tests" / "fixtures" / "providers"
 
 DEFAULT_OPTIONS_BASELINE_FIXTURE = (
     _FIXTURE_ROOT / "distribution" / "nvda_bars_slice.json"
@@ -23,6 +24,17 @@ DEFAULT_OPTIONS_BASELINE_FIXTURE = (
 DEFAULT_R_O6_PANEL_FIXTURE = _FIXTURE_ROOT / "options" / "nvda_r_o6_panel_slice.json"
 DEFAULT_CHAIN_FIXTURE = _FIXTURE_ROOT / "options" / "nvda_options_slice.json"
 DEFAULT_CHAIN_MANIFEST = _FIXTURE_ROOT / "options" / "nvda_admission_manifest.json"
+DEFAULT_PHASE_B_CHAIN_HISTORY_MANIFEST = (
+    _REPO_ROOT / "manifests" / "options" / "phase-b-chain-history-admission.json"
+)
+
+PHASE_B_ADMISSION_STATUS_ADMITTED = "ADMITTED"
+PHASE_B_ADMISSION_STATUS_PENDING = "PENDING"
+PHASE_B_GATE_MILESTONES = (GATE_MILESTONE_R_O5, "R-O6", GATE_MILESTONE)
+PHASE_B_HIGH_PRIORITY_REQUIREMENTS = (
+    "PHASE_B_CHAIN_SNAPSHOTS",
+    "PHASE_B_DAILY_CHAIN_HISTORY",
+)
 
 AGGREGATE_RULE = (
     "aggregate_status is PASS only when every gate_summary entry has gate_status PASS"
@@ -54,6 +66,264 @@ def load_chain_fixture(path: Path | None = None) -> dict[str, Any]:
 def load_chain_admission_manifest(path: Path | None = None) -> dict[str, Any]:
     fixture_path = path or DEFAULT_CHAIN_MANIFEST
     return _load_fixture_dict(fixture_path, error_code="OPTIONS_CHAIN_MANIFEST_INVALID")
+
+
+def load_phase_b_chain_history_admission_manifest(
+    path: Path | None = None,
+) -> dict[str, Any]:
+    manifest_path = path or DEFAULT_PHASE_B_CHAIN_HISTORY_MANIFEST
+    return _load_fixture_dict(
+        manifest_path,
+        error_code="OPTIONS_PHASE_B_CHAIN_HISTORY_MANIFEST_INVALID",
+    )
+
+
+def _phase_b_walk_forward_policy(manifest: dict[str, Any]) -> dict[str, Any]:
+    policy = manifest.get("walk_forward_policy", {})
+    if not isinstance(policy, dict):
+        policy = {}
+    return {
+        "chronological_only": bool(policy.get("chronological_only", True)),
+        "purge_overlapping_expirations": bool(policy.get("purge_overlapping_expirations", True)),
+        "event_clustering_aware": bool(policy.get("event_clustering_aware", True)),
+        "min_train_days": int(policy.get("min_train_days", 252)),
+        "test_size_days": int(policy.get("test_size_days", 21)),
+        "embargo_days": int(policy.get("embargo_days", 5)),
+    }
+
+
+def evaluate_phase_b_admission(
+    manifest: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Fail-closed admission check for Phase B chain-history datasets."""
+    payload = manifest or load_phase_b_chain_history_admission_manifest()
+    status = str(payload.get("status", PHASE_B_ADMISSION_STATUS_PENDING))
+    requirements = payload.get("admission_requirements", [])
+    slots = payload.get("dataset_slots", [])
+    if not isinstance(requirements, list):
+        requirements = []
+    if not isinstance(slots, list):
+        slots = []
+
+    requirement_rows: list[dict[str, Any]] = []
+    blocking_reasons: list[str] = []
+    for requirement in requirements:
+        if not isinstance(requirement, dict):
+            continue
+        requirement_id = str(requirement.get("requirement_id", ""))
+        requirement_status = str(requirement.get("status", "NOT_ADMITTED"))
+        admitted_slots = [
+            slot
+            for slot in slots
+            if isinstance(slot, dict)
+            and str(slot.get("requirement_id", "")) == requirement_id
+            and slot.get("content_path")
+        ]
+        row = {
+            "requirement_id": requirement_id,
+            "status": requirement_status,
+            "admitted_slot_count": len(admitted_slots),
+            "priority": requirement.get("priority"),
+        }
+        requirement_rows.append(row)
+        if requirement_status != PHASE_B_ADMISSION_STATUS_ADMITTED and not admitted_slots:
+            if requirement_id in PHASE_B_HIGH_PRIORITY_REQUIREMENTS:
+                blocking_reasons.append(f"{requirement_id}_NOT_ADMITTED")
+
+    admitted = status == PHASE_B_ADMISSION_STATUS_ADMITTED and not blocking_reasons
+    if status != PHASE_B_ADMISSION_STATUS_ADMITTED:
+        blocking_reasons.insert(0, "PHASE_B_MANIFEST_STATUS_PENDING")
+    if admitted and not slots:
+        admitted = False
+        blocking_reasons.append("PHASE_B_DATASET_SLOTS_EMPTY")
+
+    return {
+        "admitted": admitted,
+        "status": status,
+        "logical_id": payload.get("logical_id"),
+        "requirement_rows": requirement_rows,
+        "blocking_reasons": sorted(set(blocking_reasons)),
+        "research_only": True,
+    }
+
+
+def build_phase_b_walk_forward_partitions(
+    observation_times: list[int],
+    *,
+    manifest: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Chronological walk-forward partitions for Phase B chain-history OOS."""
+    payload = manifest or load_phase_b_chain_history_admission_manifest()
+    policy = _phase_b_walk_forward_policy(payload)
+    min_train = int(policy["min_train_days"])
+    test_size = int(policy["test_size_days"])
+    embargo = int(policy["embargo_days"])
+
+    times = sorted(set(int(value) for value in observation_times))
+    if len(times) < min_train + test_size + embargo:
+        return {
+            "available": False,
+            "reason": "INSUFFICIENT_OBSERVATIONS",
+            "partitions": [],
+            "fold_count": 0,
+            "observation_count": len(times),
+            "policy": policy,
+        }
+
+    partitions: list[dict[str, int]] = []
+    start = min_train
+    while start + test_size + embargo <= len(times):
+        train_times = times[:start]
+        test_times = times[start + embargo : start + embargo + test_size]
+        partitions.append(
+            {
+                "fold_id": len(partitions),
+                "train_start_cutoff": train_times[0],
+                "train_end_cutoff": train_times[-1],
+                "test_start_cutoff": test_times[0],
+                "test_end_cutoff": test_times[-1],
+                "embargo_days": embargo,
+            }
+        )
+        start += test_size
+
+    pit_rows = [
+        {"observation_time": index, "prediction_cutoff": index}
+        for index in times
+    ]
+    pit_status, pit_reasons = verify_fold_pit(partitions, pit_rows)
+
+    return {
+        "available": bool(partitions),
+        "reason": None if partitions else "NO_PARTITIONS_BUILT",
+        "partitions": partitions,
+        "fold_count": len(partitions),
+        "observation_count": len(times),
+        "policy": policy,
+        "pit_status": pit_status,
+        "pit_reasons": pit_reasons,
+    }
+
+
+def _load_phase_b_chain_history_observation_times(
+    manifest: dict[str, Any],
+) -> tuple[list[int], list[str]]:
+    slots = manifest.get("dataset_slots", [])
+    if not isinstance(slots, list):
+        return [], ["PHASE_B_DATASET_SLOTS_INVALID"]
+
+    reasons: list[str] = []
+    observation_times: list[int] = []
+    for slot in slots:
+        if not isinstance(slot, dict):
+            continue
+        if str(slot.get("requirement_id", "")) != "PHASE_B_DAILY_CHAIN_HISTORY":
+            continue
+        content_path = slot.get("content_path")
+        if not isinstance(content_path, str) or not content_path:
+            reasons.append("PHASE_B_CHAIN_HISTORY_CONTENT_PATH_MISSING")
+            continue
+        dataset_path = (_REPO_ROOT / content_path).resolve()
+        if not dataset_path.exists():
+            reasons.append("PHASE_B_CHAIN_HISTORY_CONTENT_MISSING")
+            continue
+        payload = _load_fixture_dict(
+            dataset_path,
+            error_code="OPTIONS_PHASE_B_CHAIN_HISTORY_FIXTURE_INVALID",
+        )
+        history = payload.get("daily_snapshots", payload.get("chain_history", []))
+        if not isinstance(history, list) or not history:
+            reasons.append("PHASE_B_CHAIN_HISTORY_EMPTY")
+            continue
+        for index, row in enumerate(history):
+            if not isinstance(row, dict):
+                continue
+            if isinstance(row.get("observation_index"), int):
+                observation_times.append(int(row["observation_index"]))
+            else:
+                observation_times.append(index)
+    return sorted(set(observation_times)), sorted(set(reasons))
+
+
+def run_o10_phase_b_walk_forward_harness(
+    *,
+    manifest: dict[str, Any] | None = None,
+    chain_history_observation_times: list[int] | None = None,
+) -> dict[str, Any]:
+    """Phase B OOS walk-forward scaffold — empty and fail-closed until data admitted."""
+    payload = manifest or load_phase_b_chain_history_admission_manifest()
+    admission = evaluate_phase_b_admission(payload)
+    policy = _phase_b_walk_forward_policy(payload)
+    base = {
+        "artifact_type": "O10_PHASE_B_WALK_FORWARD_REPORT",
+        "scope": "phase_b",
+        "research_only": True,
+        "not_trade_signal": True,
+        "gate_milestones": list(PHASE_B_GATE_MILESTONES),
+        "admission": admission,
+        "partition_scaffold": {
+            "policy": policy,
+            "partitions": [],
+            "fold_count": 0,
+            "observation_count": 0,
+        },
+    }
+
+    if not admission.get("admitted"):
+        return {
+            **base,
+            "available": False,
+            "gate_status": "BLOCKED",
+            "reason": "PHASE_B_DATA_NOT_ADMITTED",
+            "blocking_reasons": admission.get("blocking_reasons", []),
+        }
+
+    observation_times = chain_history_observation_times
+    load_reasons: list[str] = []
+    if observation_times is None:
+        observation_times, load_reasons = _load_phase_b_chain_history_observation_times(payload)
+    if not observation_times:
+        return {
+            **base,
+            "available": False,
+            "gate_status": "BLOCKED",
+            "reason": "PHASE_B_CHAIN_HISTORY_UNAVAILABLE",
+            "blocking_reasons": load_reasons or ["PHASE_B_CHAIN_HISTORY_EMPTY"],
+        }
+
+    partitions = build_phase_b_walk_forward_partitions(
+        observation_times,
+        manifest=payload,
+    )
+    base["partition_scaffold"] = {
+        "policy": partitions.get("policy", policy),
+        "partitions": partitions.get("partitions", []),
+        "fold_count": partitions.get("fold_count", 0),
+        "observation_count": partitions.get("observation_count", 0),
+        "pit_status": partitions.get("pit_status"),
+        "pit_reasons": partitions.get("pit_reasons"),
+    }
+    if not partitions.get("available"):
+        return {
+            **base,
+            "available": False,
+            "gate_status": "BLOCKED",
+            "reason": partitions.get("reason", "PHASE_B_PARTITIONS_UNAVAILABLE"),
+        }
+
+    return {
+        **base,
+        "available": True,
+        "gate_status": "READY",
+        "reason": None,
+        "fold_count": partitions.get("fold_count", 0),
+        "pit_status": partitions.get("pit_status"),
+        "pit_reasons": partitions.get("pit_reasons"),
+        "interpretation": (
+            "Phase B walk-forward partitions scaffold only — "
+            "distributional and surface ML evaluation deferred until OOS gates wired"
+        ),
+    }
 
 
 def _fixture_ref(
@@ -318,11 +588,20 @@ __all__ = [
     "DEFAULT_CHAIN_FIXTURE",
     "DEFAULT_CHAIN_MANIFEST",
     "DEFAULT_OPTIONS_BASELINE_FIXTURE",
+    "DEFAULT_PHASE_B_CHAIN_HISTORY_MANIFEST",
     "DEFAULT_R_O6_PANEL_FIXTURE",
+    "PHASE_B_ADMISSION_STATUS_ADMITTED",
+    "PHASE_B_ADMISSION_STATUS_PENDING",
+    "PHASE_B_GATE_MILESTONES",
+    "PHASE_B_HIGH_PRIORITY_REQUIREMENTS",
+    "build_phase_b_walk_forward_partitions",
+    "evaluate_phase_b_admission",
     "load_chain_admission_manifest",
     "load_chain_fixture",
     "load_options_baseline_dataset",
+    "load_phase_b_chain_history_admission_manifest",
     "load_r_o6_panel_dataset",
     "run_o10_baseline_gate_validation",
+    "run_o10_phase_b_walk_forward_harness",
     "run_options_baseline_walk_forward_harness",
 ]
