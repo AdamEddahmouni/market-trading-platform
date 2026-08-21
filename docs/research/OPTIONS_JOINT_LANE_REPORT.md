@@ -147,7 +147,7 @@ Recommended next lane-parallel work:
 - **Options O11 design** — begin 0DTE specialization once Phase C intraday chain snapshots are admitted
 - **Futures** — family ML beyond M8 F11 baseline (F1–F11 fixture-complete)
 - **Order Flow** — LOB ML beyond M8 OF12 baseline (OF1–OF12 fixture-complete)
-- **Platform P0/P1** — bitemporal store and catalyst/attention runtime
+- **Platform P0/P1** — bitemporal store P0-S1 PASS (fixture); catalyst/attention runtime fixture-complete; live ingest still deferred
 - **Discrepancy P0** — D-01 `causal_intelligence.state` mapping, D-10 deploy mirror sync
 
 ---

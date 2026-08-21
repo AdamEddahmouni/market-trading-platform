@@ -36,14 +36,31 @@ Revision 2 remains the incorporated Phase 0 safety authority.
 | Phase 16 — whale fund_etf_cross_asset family | `PASS` (fixture-first fund/ETF on `ADMITTED-ETF-CROSSASSET-NVDA-001`) |
 | MRA-001 — grounded Market Research Assistant | `PASS` (deterministic evidence retrieval on admitted fixture) |
 | MRA-002 — Anthropic LLM assistant | `PASS` (mocked HTTP acceptance; live inference when `ANTHROPIC_API_KEY` set) |
+| Platform P0 — bitemporal reference store + PIT joins | `PASS` (fixture scope; FAST + FULL invariants) |
+| Public-data providers — macro / energy / sec / short-intelligence / observational | `IMPLEMENTED` (fixture-first; live probes opt-in; captures **not admitted**) |
+
+## Validation cadence
+
+Manifest-driven validation replaces ad-hoc full-suite runs after every edit. See [AGENTS.md](AGENTS.md) and [Validation Architecture](docs/engineering/VALIDATION_ARCHITECTURE.md).
+
+```powershell
+python tools/validate.py changed          # after each edit
+python tools/validate.py domain <name>    # domain milestone
+python tools/validate.py full             # major checkpoint (offline only)
+python tools/validate.py live <provider>  # opt-in live boundary only
+```
+
+Legacy wrapper: `python tools/run_all_tests.py` (strictly offline, delegates to manifest).
+
+Pre-land acceptance (2026-08-21): FAST 18 passes; mutation 6/6 detected; FULL 1183 passes / 7 skips — [reports/pre-land-full.json](reports/pre-land-full.json).
 
 ## Five-lane cooperative expansion (fixture scope)
 
 Active forward work beyond governed Phases 0–16 is tracked in
 [Platform Cooperative Master Roadmap](docs/research/PLATFORM_COOPERATIVE_MASTER_ROADMAP.md).
-Latest cooperative milestones: **F11 — Advanced modeling baseline** (EQUITY_INDEX engineered forecaster + F11-S1 walk-forward gate vs F5 trend-only on admitted ES fixtures), **OF12 — Advanced LOB baseline** (M8 engineered forecaster + OF12-S1 walk-forward gate on admitted ES/NVDA fixtures), **PI13 — Forced-flow / dislocation engine** (metaorder completion + exhaustion + leverage stress without catalyst at cutoff on admitted NVDA fixtures), **PI12 — Large derivatives participant research**, **PI11 — Cross-asset participant context** (equity crowding fused with F4 COT on admitted BIYA/ES fixtures), **PI10 — Consensus / disagreement / crowding** (instrument-level alignment on admitted BIYA fixtures), and **PI9 — Copyability** (follower return scoring on admitted BIYA disclosure fixtures). **MC11 — Macro context** and **PI8 — Contextual intent** also complete on fixtures.
+Latest cooperative milestones: **MC14 — Social / author intelligence** (influence vs accuracy on admitted BOXL social fixtures), **F11 — Advanced modeling baseline** (EQUITY_INDEX engineered forecaster + F11-S1 walk-forward gate vs F5 trend-only on admitted ES fixtures), **OF12 — Advanced LOB baseline** (M8 engineered forecaster + OF12-S1 walk-forward gate on admitted ES/NVDA fixtures), **PI13 — Forced-flow / dislocation engine** (metaorder completion + exhaustion + leverage stress without catalyst at cutoff on admitted NVDA fixtures), **PI12 — Large derivatives participant research**, **PI11 — Cross-asset participant context** (equity crowding fused with F4 COT on admitted BIYA/ES fixtures), **PI10 — Consensus / disagreement / crowding** (instrument-level alignment on admitted BIYA fixtures), and **PI9 — Copyability** (follower return scoring on admitted BIYA disclosure fixtures). **MC11 — Macro context** and **PI8 — Contextual intent** also complete on fixtures.
 
-Completed cooperative milestones on admitted fixtures include O6–O9, OF6–OF12, F4–F11, SS P4–P7, Market Context MC1–MC13, Participant PI1–PI13, and SHARED P2–P4 (incl. futures regime fusion). See
+Completed cooperative milestones on admitted fixtures include O6–O9, OF6–OF12, F4–F11, SS P4–P7, Market Context MC1–MC14, Participant PI1–PI13, and SHARED P2–P4 (incl. futures regime fusion). See
 [SHARED P4 EV / Opportunity Layer Spec](docs/research/SHARED_P4_EV_OPPORTUNITY_SPEC.md).
 
 The existing candidate evidence roots under `evidence/phase0/2E1E…` and
@@ -80,13 +97,29 @@ Documentation of future interfaces is not implementation or authorization.
 
 ## Capability boundary
 
-This repository has no live broker, market-data runtime, on-chain ingestion,
-social API connection, crypto adapter, AI-trading, paper-trading, or live-trading
-capability. It has no Git remote. Phase 9 provides fixture-first SEC EDGAR
-disclosure ingestion for the `regulatory_disclosure` whale family on BIYA only,
-fixture-first order-flow ingestion for the `order_flow` family on NVDA only, and
-fixture-first options ingestion for the `options` family on BIYA only;
-all other provider capabilities remain fail-closed stubs.
+This repository has no production broker runtime, on-chain ingestion,
+live social API connection, crypto research adapter, AI-trading, paper-trading,
+or live-trading capability. It has no Git remote.
+
+### Observational and public-data providers (fixture-first)
+
+All live captures and observational probes are **not admitted research datasets**.
+Admission requires separate phase gates and lawful fixture procurement.
+
+| ADR | Source | Scope |
+|---|---|---|
+| [ADR-LIVE-001](docs/superpowers/decisions/2026-08-20-adr-live-001-observational-market-data-boundary.json) | Moomoo OpenD | Read-only observational boundary (`127.0.0.1:11111`); serialized canonical events only. See [Moomoo observational provider](docs/providers/MOOMOO_OBSERVATIONAL.md). |
+| [ADR-EDGAR-001](docs/superpowers/decisions/2026-08-20-adr-edgar-001-public-sec-source.json) | SEC EDGAR | Public read-only REGULATORY transport (`SEC_USER_AGENT`, 5 req/s Fair Access). Distinct from Phase 9 fixture whale ledger. See [SEC EDGAR provider](docs/providers/SEC_EDGAR.md). |
+| [ADR-FTD-001](docs/superpowers/decisions/2026-08-20-adr-ftd-001-sec-fails-to-deliver.json) | SEC FTD | Public fails-to-deliver files. See [SEC FTD provider](docs/providers/SEC_FAILS_TO_DELIVER.md). |
+| [ADR-SHORT-001](docs/superpowers/decisions/2026-08-20-adr-short-001-short-intelligence-sources.json) | FINRA / Nasdaq / NYSE / CBOE Reg SHO | Observational short-intelligence; threshold routing. See [FINRA / Nasdaq short intelligence](docs/providers/FINRA_NASDAQ_SHORT_INTELLIGENCE.md) and [US threshold coverage](docs/providers/US_THRESHOLD_COVERAGE.md). |
+| [ADR-FRED-001](docs/superpowers/decisions/2026-08-20-adr-fred-001-dual-api-macro-source.json) | FRED / ALFRED | Macro series with revision-aware PIT. See [FRED / ALFRED provider](docs/providers/FRED_ALFRED.md). |
+| [ADR-COT-001](docs/superpowers/decisions/2026-08-20-adr-cot-001-cftc-public-source.json) | CFTC COT | Futures positioning snapshots. See [CFTC COT provider](docs/providers/CFTC_COMMITMENTS_OF_TRADERS.md). |
+| — | EIA Open Data | Energy fundamentals. See [EIA provider](docs/providers/EIA_ENERGY_FUNDAMENTALS.md). |
+| — | NOAA / NWS / CPC | Weather-demand evidence; no credential required. See [Weather provider](docs/providers/NOAA_NWS_CPC_WEATHER.md). |
+| — | CBOE public options statistics | Publisher/venue semantics enforced. See [CBOE options statistics](docs/providers/CBOE_PUBLIC_OPTIONS_STATISTICS.md). |
+
+Phase 9 whale families remain **fixture-first** on admitted slices: `regulatory_disclosure` (BIYA), `order_flow` (NVDA), `options` (BIYA), and Phases 10–16 families on their admitted fixtures. Unconfigured whale capabilities remain fail-closed stubs.
+
 ES-session acceptance remains blocked per `ADR-DATA-001` until lawful ES bytes
 are procured. UI-001 provides replay-only research UI on the admitted fixture.
 Broker adapters, non-disclosure whale ingestion, crypto expansion, and

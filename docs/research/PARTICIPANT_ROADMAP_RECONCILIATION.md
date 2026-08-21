@@ -88,9 +88,9 @@ Participant PI1–PI2 can proceed **without blocking** SS/O/F/OF/MC active phase
 | Options | O10-S5 fixture gates validated; Phase B OOS or O11 (Phase C) next |
 | Futures | Family ML beyond M8 F11 baseline |
 | Order Flow | LOB ML beyond M8 OF12 baseline |
-| Market Context | MC14 social / author intelligence (research) |
+| Market Context | MC15 cross-entity propagation (research) |
 | **Participant** | **PI10–PI13 IMPLEMENTED (fixture); PI14+ not authorized** |
-| Platform | P0 bitemporal store, P1 catalyst runtime |
+| Platform | P0 bitemporal store (P0-S1) and P1 catalyst runtime IMPLEMENTED (fixture) |
 
 ---
 

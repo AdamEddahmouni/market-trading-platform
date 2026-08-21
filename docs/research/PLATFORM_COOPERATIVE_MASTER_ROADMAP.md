@@ -100,8 +100,9 @@ PLATFORM ROADMAP
 - [x] Deterministic replay lifecycle
 - [x] Cross-lane evidence interface stub
 - [x] Explanation contracts (partial)
-- [ ] Full bitemporal reference store
-- [ ] Centralized PIT joins for OI/earnings/dividends (O-23)
+- [x] Full bitemporal reference store — `runtime/bitemporal_store.py` (fixture scope; P0-S1 gate)
+- [x] Centralized PIT joins for OI/earnings/dividends (O-23) — `runtime/pit_joins.py` (fixture scope)
+- [ ] Live earnings calendar ingest — deferred (O-23 joins are fixture-complete)
 
 **SS benefit:** Prevents stale SI/lending leakage  
 **Options benefit:** Prevents OI/surface/earnings leakage
@@ -436,7 +437,8 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 - [x] Cross-lane causal fusion in current mode (`_effective_prediction_cutoff`)
 - [x] Recorded order-flow adapter (`IMP_ORDER_FLOW_LIVE=1` → fixture replay, no broker HTTP)
 - [x] Options evidence supplementary wiring — `options_gamma_amplification` + O6 dealer proxy on cross_lane snapshot
-- [ ] Live broker tick ingest (deferred — blocked on adapter authorization)
+- [ ] Live broker tick ingest (observational Moomoo capture authorized by `ADR-LIVE-001`; admission and squeeze-engine wiring still deferred)
+- [x] Observational FINRA short interest + Reg SHO daily short-sale volume + Nasdaq threshold list (`ADR-SHORT-001`; fixture-tested, live opt-in, **not admitted**, no squeeze-model retraining)
 
 ---
 
@@ -483,7 +485,7 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 - [x] SS exhaustion conditioning (JQ-6) — crush boost when `exhaustion_risk >= 70`
 - [x] Cross-lane evidence — `EVENT_VOL_PREMIUM`, `IV_CRUSH_RISK`, `POST_EVENT_IV_NORMALIZATION`
 - [x] Workspace wiring — `event_vol_snapshot` on options payload; VRP uses O7 `event_state`
-- [ ] Live earnings calendar ingest — deferred (O-23 centralized PIT joins)
+- [ ] Live earnings calendar ingest — deferred (O-23 fixture PIT joins complete)
 
 ---
 
@@ -577,9 +579,9 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 
 - [x] Canonical contracts: `InformationSource`, `RawDocument`, quality flags
 - [x] `LaneId.MARKET_CONTEXT` + cross-lane signal enums
-- [ ] Raw document ingest admitted to replay
-- [ ] Revision lineage on documents
-- [ ] Source independence / syndication fields populated
+- [x] Revision lineage on documents (BOXL V1/V2 pair; PIT hides V2 until `available_time`)
+- [x] Source independence / syndication fields populated (MC3 syndication fixture)
+- [ ] Raw document ingest admitted to replay (live news still deferred)
 
 **Does not block:** SS structural, Options chain, Futures curve, Order Flow CVD
 
@@ -712,9 +714,17 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 
 ---
 
-### MARKET CONTEXT MC14–MC16 [RESEARCH / DEFERRED]
+### MARKET CONTEXT MC14 — Social / author intelligence [IMPLEMENTED (fixture / experimental)]
 
-- MC14: Social / author intelligence (after provenance correct)
+- [x] `AuthorIdentity`, `InfluenceEvidence`, `AccuracyEvidence` (separate; no blended score)
+- [x] `author_intelligence_v1` heuristic on `boxl_social_author_slice.json`
+- [x] Fail-closed accuracy until admitted outcome `available_time`
+- [x] Cross-lane `SOCIAL_INFLUENCE_ELEVATED` / `AUTHOR_ACCURACY_LOW` (research-only metadata)
+- [x] Golden fixture `boxl_social_author_expected.json`; resolves MC-D15 (fixture scope)
+- [ ] Live social APIs — not authorized
+
+### MARKET CONTEXT MC15–MC16 [RESEARCH / DEFERRED]
+
 - MC15: Cross-entity propagation (after entity graph quality)
 - MC16: Advanced multi-document LLM synthesis (after MC5 correctness)
 
@@ -736,8 +746,8 @@ See `MARKET_CONTEXT_TARGET_ARCHITECTURE.md`, `FIVE_LANE_ROADMAP_RECONCILIATION.m
 | Futures | Family ML beyond M8 F11 baseline | F11-S1 PASS (fixture) |
 | Order Flow | LOB ML beyond M8 OF12 baseline | OF12-S1 PASS (fixture) |
 | SS | Live lending ingest wiring | Vendor authorization |
-| Platform | P0 bitemporal store / P1 catalyst runtime | Nothing |
-| Market Context | MC14 social / author intelligence | MC13 complete (research) |
+| Platform | P0 bitemporal store / P1 catalyst runtime | DONE (fixture) |
+| Market Context | MC15 cross-entity propagation | MC14 complete (research) |
 | Options | O10 ML (Phase B OOS) or O11 design | O10-S5 PASS (fixture); Phase C for O11 |
 | SHARED P4 | Futures outright/curve fusion extension | F8–F10 | DONE (fixture) |
 | Discrepancy | D-01 ignition_state mapping, D-10 deploy mirror | Nothing |
