@@ -1,0 +1,22 @@
+Moomoo observational probe 1.0.0 at 2026-08-20T04:30:45.119659Z
+SDK 10.10.7008 OpenD 1010
+
+Capabilities:
+- CRYPTO_SPOT_DEPTH: entitled=True tested=True fresh=True class=OBSERVED notes=
+- CRYPTO_SPOT_QUOTE: entitled=True tested=True fresh=True class=OBSERVED notes=Characterization only; PI14+ remains unauthorized.
+- CRYPTO_SPOT_TICKS: entitled=True tested=True fresh=True class=OBSERVED notes=
+- US_EQUITY_BARS: entitled=True tested=True fresh=True class=OBSERVED notes=
+- US_EQUITY_DEPTH: entitled=True tested=True fresh=True class=OBSERVED notes=depth=10 push_count=9 detailed_orderbook=not_requested
+- US_EQUITY_EXTENDED_HOURS: entitled=True tested=True fresh=True class=OBSERVED notes=pre_present=True after_present=True
+- US_EQUITY_L1: entitled=True tested=True fresh=True class=OBSERVED notes=subscribe_ret=0 cache_ret=0 push_count=1
+- US_EQUITY_OVERNIGHT: entitled=True tested=True fresh=True class=OBSERVED notes=overnight_* snapshot fields present
+- US_EQUITY_SNAPSHOT: entitled=True tested=True fresh=True class=OBSERVED notes=Snapshot inventory stored separately; raw rows not dumped.
+- US_EQUITY_TICKS: entitled=True tested=True fresh=True class=OBSERVED notes=cache_rows=20 push_count=1
+- US_FUTURES_QUOTE: entitled=False tested=True fresh=False class=OBSERVED notes=Insufficient quote permission. Please go to the Quote Store to purchase a quote card.
+- US_OPTIONS_QUOTE: entitled=False tested=True fresh=False class=OBSERVED notes=No permission to get quotes for US.AAPL. Please check US MarketOptions quote permissions.
+
+Limitations:
+- Crypto characterization does not authorize PI14+ research implementation.
+- US LV3 OpenAPI depth is MBP-style levels; detailed per-order book is documented as HK SF only.
+- US futures quotes unavailable on this account (CME/CBOT/NYMEX/COMEX expected).
+- US options quotes fail closed: account not entitled.
