@@ -734,9 +734,15 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 - [x] Gate tool `tools/market_context/run_mc15_gate_validation.py`
 - [ ] Live entity graph APIs — not authorized
 
-### MARKET CONTEXT MC16 [RESEARCH / DEFERRED]
+### MARKET CONTEXT MC16 — Multi-document LLM synthesis [DESIGN COMPLETE]
 
-- MC16: Advanced multi-document LLM synthesis (after MC5 correctness)
+- [x] Design spec `docs/superpowers/specs/2026-08-21-mc16-multi-document-llm-synthesis-design.md`
+- [x] Scoring model `multi_document_synthesis_v1` — separate fields, no universal news score
+- [x] PIT rules, revision supersession (MC-D14), contradiction fail-closed semantics
+- [x] Fixture scope `boxl_multidoc_synthesis_{slice,expected}.json` (BOXL earnings/FDA clusters)
+- [x] Cross-lane candidate signals `SYNTHESIS_THEME_ELEVATED`, `SYNTHESIS_CONTRADICTION_DETECTED`
+- [ ] Implementation (`synthesis.py`, tests, gate tool) — next session
+- [ ] Live LLM runtime — not authorized
 
 See `MARKET_CONTEXT_TARGET_ARCHITECTURE.md`, `FIVE_LANE_ROADMAP_RECONCILIATION.md`.
 
@@ -757,7 +763,7 @@ See `MARKET_CONTEXT_TARGET_ARCHITECTURE.md`, `FIVE_LANE_ROADMAP_RECONCILIATION.m
 | Order Flow | LOB ML beyond M8 OF12 baseline | OF12-S1 PASS (fixture) |
 | SS | Live lending ingest wiring | Vendor authorization |
 | Platform | P0 bitemporal store / P1 catalyst runtime | DONE (fixture) |
-| Market Context | MC16 multi-document LLM synthesis (research) | MC15 complete (fixture) |
+| Market Context | MC16 implementation (fixture synthesis pipeline) | MC16 design complete |
 | Options | Phase B chain history admission + OOS gate re-run | O10-S5 PASS; Phase B scaffold ready |
 | SHARED P4 | Futures outright/curve fusion extension | F8–F10 | DONE (fixture) |
 | Discrepancy | D-01 ignition_state mapping, D-10 deploy mirror | Nothing |
