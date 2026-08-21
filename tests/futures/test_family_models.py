@@ -33,10 +33,17 @@ class FamilyModelTests(unittest.TestCase):
 
     def test_unimplemented_family_fail_closed(self) -> None:
         payload = family_context_payload(
-            "CL",
+            "ZN",
             {"futures_carry_available": True},
         )
         self.assertFalse(payload.get("futures_family_available"))
+
+    def test_energy_family_resolves_for_cl(self) -> None:
+        self.assertEqual(resolve_family_for_symbol("CL"), FuturesFamily.ENERGY)
+        model = resolve_family_model(FuturesFamily.ENERGY)
+        self.assertIsNotNone(model)
+        assert model is not None
+        self.assertEqual(model.family, FuturesFamily.ENERGY)
 
     def test_es_family_context_golden_fixture_regression(self) -> None:
         expected_path = ROOT / "tests" / "fixtures" / "futures" / "es_family_context_expected.json"

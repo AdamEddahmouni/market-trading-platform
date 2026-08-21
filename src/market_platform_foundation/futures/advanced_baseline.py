@@ -99,8 +99,33 @@ def compute_trend_only_baseline(vector: FuturesFeatureVector) -> FuturesBaseline
     )
 
 
+def _engineered_composite(vector: FuturesFeatureVector) -> float:
+    """Family-conditioned weighted scorer for M8 engineered baseline."""
+    crowding_weight = (0.20 if vector.family == "ENERGY" else 0.18) if vector.cot_available else 0.0
+    base_weight = 1.0 - crowding_weight
+    if vector.family == "ENERGY":
+        composite = base_weight * (
+            0.40 * vector.trend_signal
+            + 0.30 * vector.carry_signal
+            + 0.20 * vector.curve_slope_signal
+            - 0.15 * vector.leverage_dampener * abs(vector.trend_signal)
+        ) + crowding_weight * vector.crowding_signal
+        curve_blend = 0.65 * vector.curve_slope_signal + 0.35 * vector.carry_signal
+    else:
+        composite = base_weight * (
+            0.58 * vector.trend_signal
+            + 0.16 * vector.carry_signal
+            + 0.14 * vector.curve_slope_signal
+            - 0.12 * vector.leverage_dampener * abs(vector.trend_signal)
+        ) + crowding_weight * vector.crowding_signal
+        curve_blend = vector.curve_slope_signal
+    if vector.macro_uncertainty > 0:
+        composite *= 0.92
+    return round(composite, 6), round(curve_blend, 6)
+
+
 def compute_family_engineered_baseline(vector: FuturesFeatureVector) -> FuturesBaselineForecast:
-    """M8 engineered EQUITY_INDEX baseline from F11 feature vector."""
+    """M8 engineered family-conditioned baseline from F11 feature vector."""
     if not vector.family_supported:
         return _fail_closed(
             method=FUTURES_ENGINEERED_METHOD,
@@ -109,22 +134,13 @@ def compute_family_engineered_baseline(vector: FuturesFeatureVector) -> FuturesB
             quality_flags=vector.quality_flags,
         )
 
-    crowding_weight = 0.18 if vector.cot_available else 0.0
-    base_weight = 1.0 - crowding_weight
-    composite = base_weight * (
-        0.58 * vector.trend_signal
-        + 0.16 * vector.carry_signal
-        + 0.14 * vector.curve_slope_signal
-        - 0.12 * vector.leverage_dampener * abs(vector.trend_signal)
-    ) + crowding_weight * vector.crowding_signal
-    if vector.macro_uncertainty > 0:
-        composite *= 0.92
-    composite = round(composite, 6)
+    composite, curve_blend = _engineered_composite(vector)
 
-    probability = round(_clamp01(0.5 + 0.5 * math.tanh(composite * 1.35)), 6)
-    curve_prob = round(_clamp01(0.5 + 0.5 * math.tanh(vector.curve_slope_signal * 1.2)), 6)
+    tanh_scale = 1.25 if vector.family == "ENERGY" else 1.35
+    probability = round(_clamp01(0.5 + 0.5 * math.tanh(composite * tanh_scale)), 6)
+    curve_prob = round(_clamp01(0.5 + 0.5 * math.tanh(curve_blend * 1.2)), 6)
 
-    confidence = 0.72
+    confidence = 0.68 if vector.family == "ENERGY" else 0.72
     if not vector.cot_available:
         confidence *= 0.88
     if vector.leverage_dampener >= 0.7:

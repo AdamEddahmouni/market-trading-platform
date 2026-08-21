@@ -28,6 +28,8 @@ _FIXTURE_ROOT = _REPO_ROOT / "tests" / "fixtures"
 
 DEFAULT_ES_F11_BASELINE_FIXTURE = _FIXTURE_ROOT / "futures" / "es_f11_baseline_slice.json"
 DEFAULT_ES_F11_COT_UPGRADE_FIXTURE = _FIXTURE_ROOT / "futures" / "es_f11_cot_upgrade_slice.json"
+DEFAULT_CL_F11_BASELINE_FIXTURE = _FIXTURE_ROOT / "futures" / "cl_f11_baseline_slice.json"
+DEFAULT_CL_F11_COT_UPGRADE_FIXTURE = _FIXTURE_ROOT / "futures" / "cl_f11_cot_upgrade_slice.json"
 
 AGGREGATE_RULE = (
     "aggregate_status is PASS only when every gate_summary entry has gate_status PASS"
@@ -70,6 +72,16 @@ def load_es_f11_baseline_dataset(path: Path | None = None) -> dict[str, Any]:
 def load_es_f11_cot_upgrade_dataset(path: Path | None = None) -> dict[str, Any]:
     fixture_path = path or DEFAULT_ES_F11_COT_UPGRADE_FIXTURE
     return _load_fixture_dict(fixture_path, error_code="ES_F11_COT_UPGRADE_FIXTURE_INVALID")
+
+
+def load_cl_f11_baseline_dataset(path: Path | None = None) -> dict[str, Any]:
+    fixture_path = path or DEFAULT_CL_F11_BASELINE_FIXTURE
+    return _load_fixture_dict(fixture_path, error_code="CL_F11_BASELINE_FIXTURE_INVALID")
+
+
+def load_cl_f11_cot_upgrade_dataset(path: Path | None = None) -> dict[str, Any]:
+    fixture_path = path or DEFAULT_CL_F11_COT_UPGRADE_FIXTURE
+    return _load_fixture_dict(fixture_path, error_code="CL_F11_COT_UPGRADE_FIXTURE_INVALID")
 
 
 def _load_nested(manifest: dict[str, Any], key: str) -> dict[str, Any]:
@@ -386,19 +398,25 @@ def _aggregate_gate_status(gate_summary: list[dict[str, Any]]) -> str:
     return "FAIL"
 
 
-def run_f11_baseline_gate_validation(
+def _run_family_gate_validation(
     *,
-    es_dataset: dict[str, Any] | None = None,
+    baseline_fixture_path: Path,
+    cot_fixture_path: Path,
+    baseline_dataset: dict[str, Any] | None = None,
     cot_dataset: dict[str, Any] | None = None,
-    es_fixture_path: Path | None = None,
-    cot_fixture_path: Path | None = None,
+    baseline_role: str,
+    cot_role: str,
 ) -> dict[str, Any]:
-    es_path = es_fixture_path or DEFAULT_ES_F11_BASELINE_FIXTURE
-    cot_path = cot_fixture_path or DEFAULT_ES_F11_COT_UPGRADE_FIXTURE
-    es_fixture = es_dataset or load_es_f11_baseline_dataset(es_path)
-    cot_fixture = cot_dataset or load_es_f11_cot_upgrade_dataset(cot_path)
+    baseline_fixture = baseline_dataset or _load_fixture_dict(
+        baseline_fixture_path,
+        error_code=f"{baseline_role.upper()}_FIXTURE_INVALID",
+    )
+    cot_fixture = cot_dataset or _load_fixture_dict(
+        cot_fixture_path,
+        error_code=f"{cot_role.upper()}_FIXTURE_INVALID",
+    )
 
-    walk_forward = run_f11_baseline_walk_forward_harness(es_fixture)
+    walk_forward = run_f11_baseline_walk_forward_harness(baseline_fixture)
     f11_s1 = walk_forward.get("f11_s1_evaluation") or {
         "available": False,
         "gate_milestone": "F11-S1",
@@ -424,12 +442,9 @@ def run_f11_baseline_gate_validation(
             "gate_status": fq8.get("gate_status", "INSUFFICIENT_SAMPLE"),
         },
     ]
-    aggregate_status = _aggregate_gate_status(gate_summary)
 
     return {
-        "artifact_type": "F11_BASELINE_GATE_VALIDATION_REPORT",
-        "aggregate_status": aggregate_status,
-        "aggregate_rule": AGGREGATE_RULE,
+        "aggregate_status": _aggregate_gate_status(gate_summary),
         "gate_summary": gate_summary,
         "f11_s1_evaluation": f11_s1,
         "fq8_evaluation": fq8,
@@ -441,20 +456,89 @@ def run_f11_baseline_gate_validation(
         },
         "latest_futures_forecast": walk_forward.get("latest_m8_forecast"),
         "fixture_refs": [
-            _fixture_ref(role="es_f11_baseline", relative_path=es_path, payload=es_fixture),
-            _fixture_ref(role="es_f11_cot_upgrade", relative_path=cot_path, payload=cot_fixture),
+            _fixture_ref(role=baseline_role, relative_path=baseline_fixture_path, payload=baseline_fixture),
+            _fixture_ref(role=cot_role, relative_path=cot_fixture_path, payload=cot_fixture),
         ],
+    }
+
+
+def run_f11_baseline_gate_validation(
+    *,
+    es_dataset: dict[str, Any] | None = None,
+    cot_dataset: dict[str, Any] | None = None,
+    es_fixture_path: Path | None = None,
+    cot_fixture_path: Path | None = None,
+) -> dict[str, Any]:
+    es_path = es_fixture_path or DEFAULT_ES_F11_BASELINE_FIXTURE
+    cot_path = cot_fixture_path or DEFAULT_ES_F11_COT_UPGRADE_FIXTURE
+    family_report = _run_family_gate_validation(
+        baseline_fixture_path=es_path,
+        cot_fixture_path=cot_path,
+        baseline_dataset=es_dataset,
+        cot_dataset=cot_dataset,
+        baseline_role="es_f11_baseline",
+        cot_role="es_f11_cot_upgrade",
+    )
+
+    return {
+        "artifact_type": "F11_BASELINE_GATE_VALIDATION_REPORT",
+        "aggregate_status": family_report["aggregate_status"],
+        "aggregate_rule": AGGREGATE_RULE,
+        "gate_summary": family_report["gate_summary"],
+        "f11_s1_evaluation": family_report["f11_s1_evaluation"],
+        "fq8_evaluation": family_report["fq8_evaluation"],
+        "walk_forward": family_report["walk_forward"],
+        "latest_futures_forecast": family_report["latest_futures_forecast"],
+        "fixture_refs": family_report["fixture_refs"],
+        "research_only": True,
+        "experimental": True,
+    }
+
+
+def run_f11_energy_baseline_gate_validation(
+    *,
+    cl_dataset: dict[str, Any] | None = None,
+    cot_dataset: dict[str, Any] | None = None,
+    cl_fixture_path: Path | None = None,
+    cot_fixture_path: Path | None = None,
+) -> dict[str, Any]:
+    cl_path = cl_fixture_path or DEFAULT_CL_F11_BASELINE_FIXTURE
+    cot_path = cot_fixture_path or DEFAULT_CL_F11_COT_UPGRADE_FIXTURE
+    family_report = _run_family_gate_validation(
+        baseline_fixture_path=cl_path,
+        cot_fixture_path=cot_path,
+        baseline_dataset=cl_dataset,
+        cot_dataset=cot_dataset,
+        baseline_role="cl_f11_baseline",
+        cot_role="cl_f11_cot_upgrade",
+    )
+
+    return {
+        "artifact_type": "F11_ENERGY_BASELINE_GATE_VALIDATION_REPORT",
+        "aggregate_status": family_report["aggregate_status"],
+        "aggregate_rule": AGGREGATE_RULE,
+        "gate_summary": family_report["gate_summary"],
+        "f11_s1_evaluation": family_report["f11_s1_evaluation"],
+        "fq8_evaluation": family_report["fq8_evaluation"],
+        "walk_forward": family_report["walk_forward"],
+        "latest_futures_forecast": family_report["latest_futures_forecast"],
+        "fixture_refs": family_report["fixture_refs"],
         "research_only": True,
         "experimental": True,
     }
 
 
 __all__ = [
+    "DEFAULT_CL_F11_BASELINE_FIXTURE",
+    "DEFAULT_CL_F11_COT_UPGRADE_FIXTURE",
     "DEFAULT_ES_F11_BASELINE_FIXTURE",
     "DEFAULT_ES_F11_COT_UPGRADE_FIXTURE",
+    "load_cl_f11_baseline_dataset",
+    "load_cl_f11_cot_upgrade_dataset",
     "load_es_f11_baseline_dataset",
     "load_es_f11_cot_upgrade_dataset",
     "run_f11_baseline_gate_validation",
     "run_f11_baseline_walk_forward_harness",
     "run_f11_cot_upgrade_harness",
+    "run_f11_energy_baseline_gate_validation",
 ]

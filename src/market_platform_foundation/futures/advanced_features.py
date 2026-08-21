@@ -1,4 +1,4 @@
-"""Futures F11 engineered feature vector (EQUITY_INDEX)."""
+"""Futures F11 engineered feature vector (EQUITY_INDEX + ENERGY)."""
 
 from __future__ import annotations
 

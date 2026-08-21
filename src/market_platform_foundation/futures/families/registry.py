@@ -5,15 +5,17 @@ from __future__ import annotations
 from typing import Any
 
 from ...contracts.futures import FuturesFamily
-from .base import FAMILY_MODEL_VERSION, family_context_to_dict
+from .base import FAMILY_MODEL_VERSION, FuturesFamilyModel, family_context_to_dict
+from .energy import EnergyFamilyModel
 from .equity_index import EquityIndexFamilyModel
 
-_IMPLEMENTATIONS: dict[FuturesFamily, EquityIndexFamilyModel] = {
+_IMPLEMENTATIONS: dict[FuturesFamily, FuturesFamilyModel] = {
     FuturesFamily.EQUITY_INDEX: EquityIndexFamilyModel(),
+    FuturesFamily.ENERGY: EnergyFamilyModel(),
 }
 
 
-def resolve_family_model(family: FuturesFamily) -> EquityIndexFamilyModel | None:
+def resolve_family_model(family: FuturesFamily) -> FuturesFamilyModel | None:
     """Return family plugin or None when unimplemented — fail-closed."""
     return _IMPLEMENTATIONS.get(family)
 

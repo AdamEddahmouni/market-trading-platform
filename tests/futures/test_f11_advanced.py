@@ -20,9 +20,11 @@ from market_platform_foundation.futures.advanced_features import (  # noqa: E402
     build_futures_feature_vector,
 )
 from market_platform_foundation.futures.research.baseline_harness import (  # noqa: E402
+    load_cl_f11_baseline_dataset,
     load_es_f11_baseline_dataset,
     run_f11_baseline_gate_validation,
     run_f11_baseline_walk_forward_harness,
+    run_f11_energy_baseline_gate_validation,
 )
 from market_platform_foundation.futures.research.gates import (  # noqa: E402
     GATE_MILESTONE_F11_S1,
@@ -40,7 +42,7 @@ from market_platform_foundation.providers.whale_ledger import build_combined_fix
 class F11FeatureTests(unittest.TestCase):
     def test_unimplemented_family_fail_closed(self) -> None:
         vector = build_futures_feature_vector(
-            instrument_family="CL",
+            instrument_family="ZN",
             trend_3m=1.2,
             cot_available=True,
             net_percentile=0.9,
@@ -50,6 +52,23 @@ class F11FeatureTests(unittest.TestCase):
         forecast = compute_family_engineered_baseline(vector)
         self.assertEqual(forecast.model_confidence, 0.0)
         self.assertEqual(forecast.outright_up_probability, 0.5)
+
+    def test_energy_family_supported(self) -> None:
+        vector = build_futures_feature_vector(
+            instrument_family="CL",
+            trend_3m=1.0,
+            annualized_carry=0.04,
+            curve_slope_change=0.0003,
+            cot_available=True,
+            net_percentile=0.8,
+            crowding_regime="CROWDED_LONG",
+        )
+        self.assertTrue(vector.family_supported)
+        self.assertEqual(vector.family, "ENERGY")
+        forecast = compute_family_engineered_baseline(vector)
+        self.assertTrue(forecast.family_supported)
+        self.assertEqual(forecast.family, "ENERGY")
+        self.assertGreater(forecast.outright_up_probability, 0.5)
 
     def test_stale_cot_omits_crowding(self) -> None:
         vector = build_futures_feature_vector(
@@ -113,6 +132,30 @@ class F11GoldenFixtureTests(unittest.TestCase):
         latest = expected["latest_futures_forecast"]
         self.assertEqual(latest["futures_model_version"], FUTURES_ENGINEERED_METHOD)
         self.assertEqual(latest["baseline_tier"], "M8")
+
+    def test_cl_f11_baseline_expected_matches_computed(self) -> None:
+        expected_path = ROOT / "tests" / "fixtures" / "futures" / "cl_f11_baseline_expected.json"
+        expected = json.loads(expected_path.read_text(encoding="utf-8"))
+        report = run_f11_energy_baseline_gate_validation()
+        self.assertEqual(report["aggregate_status"], expected["aggregate_status"])
+        self.assertEqual(report["gate_summary"], expected["gate_summary"])
+        latest = expected["latest_futures_forecast"]
+        assert isinstance(latest, dict)
+        self.assertEqual(latest["futures_model_version"], FUTURES_ENGINEERED_METHOD)
+        self.assertEqual(latest["baseline_tier"], "M8")
+        self.assertEqual(latest["family"], "ENERGY")
+
+
+class F11EnergyHarnessTests(unittest.TestCase):
+    def test_cl_walk_forward_gate_pass(self) -> None:
+        dataset = load_cl_f11_baseline_dataset()
+        harness = run_f11_baseline_walk_forward_harness(dataset)
+        self.assertTrue(harness.get("available"))
+        evaluation = harness.get("f11_s1_evaluation", {})
+        self.assertEqual(evaluation.get("gate_status"), "PASS")
+        latest = harness.get("latest_m8_forecast")
+        assert isinstance(latest, dict)
+        self.assertEqual(latest.get("family"), "ENERGY")
 
 
 class F11WorkspaceTests(unittest.TestCase):

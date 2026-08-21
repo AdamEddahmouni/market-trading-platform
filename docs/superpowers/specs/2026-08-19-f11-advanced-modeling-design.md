@@ -31,8 +31,8 @@ Labels remain separate. Never a single “Futures Prediction.”
 - `outright_up_probability` — 0..1
 - `curve_steepen_probability` — 0..1
 - `direction_bias` — `UP` | `DOWN` | `NEUTRAL`
-- `family` — `EQUITY_INDEX` when supported
-- `family_supported` — false fail-closes ENERGY/TREASURY/other unimplemented plugins
+- `family` — `EQUITY_INDEX` | `ENERGY` when supported
+- `family_supported` — false fail-closes TREASURY/METALS/other unimplemented plugins
 - `model_confidence`
 - `quality_flags`
 - `research_only: true`, `experimental: true`
@@ -41,7 +41,8 @@ Workspace: `latest_futures_forecast` on ES futures payloads.
 
 ## 4. Capability rules
 
-- EQUITY_INDEX (ES) only in v1. Unimplemented family → `FAMILY_MODEL_UNIMPLEMENTED`, zero confidence
+- EQUITY_INDEX (ES) and ENERGY (CL/NG/RB/HO) supported in v1 extension. Unimplemented family → `FAMILY_MODEL_UNIMPLEMENTED`, zero confidence
+- ENERGY uses carry/curve-heavy weighting vs EQUITY_INDEX trend-heavy weighting (same `futures_feature_vector_v1` inputs)
 - Missing COT → omit crowding; `POSITIONING_UNKNOWN` / `COT_PUBLICATION_PENDING`; never invent net percentile
 - COT visibility uses publication time (`available_time`), not observation Tuesday
 - Missing margin/macro → omit those terms with quality flags
@@ -63,12 +64,15 @@ Aggregate PASS when all gate_summary entries PASS; INSUFFICIENT_SAMPLE fail-clos
 | `es_f11_baseline_slice.json` | `ADMITTED-F11-ES-001` — thin manifest over admitted ES bars/COT/margin/macro |
 | `es_f11_baseline_expected.json` | Golden M8 forecast + gate summary |
 | `es_f11_cot_upgrade_slice.json` | Crowded-short vs COT-omitted comparison |
+| `cl_f11_baseline_slice.json` | `ADMITTED-F11-CL-001` — admitted CL bars/COT/margin/macro |
+| `cl_f11_baseline_expected.json` | Golden M8 ENERGY forecast + gate summary |
+| `cl_f11_cot_upgrade_slice.json` | CL crowding upgrade comparison |
 
 ## 7. Out of scope
 
 - Live CME / vendor feeds
 - sklearn / external ML libraries
-- ENERGY/TREASURY family plugins
+- TREASURY/METALS family plugins
 - New cross-lane EvidenceSignal enums (F8/F9 remain authoritative)
 - Auto-trading or universal Futures Score
 
