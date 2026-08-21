@@ -649,6 +649,49 @@ def build_explain_payload(store: ReplayStore, ref: str) -> dict[str, object]:
                 f"{mc_payload.get('disclaimer', '')}"
             ),
         }
+    elif ref.startswith("explain:propagation:"):
+        remainder = ref.removeprefix("explain:propagation:")
+        parts = remainder.split(":", 1)
+        symbol = parts[0].upper()
+        source_event_id = parts[1] if len(parts) > 1 else None
+        from ..providers.projections import build_workspace_market_context_payload
+
+        mc_payload = build_workspace_market_context_payload(
+            symbol,
+            as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
+        )
+        if not mc_payload.get("cross_entity_propagation_available"):
+            raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+        summaries = mc_payload.get("cross_entity_propagation_summaries") or []
+        selected = None
+        if source_event_id:
+            for row in summaries:
+                if isinstance(row, dict) and row.get("source_event_id") == source_event_id:
+                    selected = row
+                    break
+        if selected is None and summaries:
+            selected = summaries[-1] if isinstance(summaries[-1], dict) else None
+        if not isinstance(selected, dict):
+            raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+        catalyst = selected.get("propagated_catalyst_strength")
+        attention = selected.get("propagated_attention_level")
+        body = {
+            "alignment_summary": (
+                f"propagated catalyst {catalyst if catalyst is not None else 'UNAVAILABLE'} · "
+                f"propagated attention {attention if attention is not None else 'UNAVAILABLE'}"
+            ),
+            "level": 2,
+            "meaning": (
+                f"MC15 cross-entity propagation for {symbol} — separate fields, no fused score"
+            ),
+            "ref": ref,
+            "why": (
+                f"{selected.get('source_entity_id', 'unknown')} via "
+                f"{selected.get('link_type', 'unknown')} · "
+                f"{mc_payload.get('disclaimer', '')}"
+            ),
+        }
     elif ref.startswith("explain:disclosure:"):
         symbol = ref.removeprefix("explain:disclosure:")
         from ..providers.projections import build_workspace_disclosure_payload

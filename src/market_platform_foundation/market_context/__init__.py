@@ -71,6 +71,14 @@ from .author_intelligence import (
     author_intelligence_summary_to_dict,
     load_social_author_fixture,
 )
+from .propagation import (
+    PRODUCER_VERSION as PROPAGATION_VERSION,
+    build_fixture_propagation_pipeline,
+    build_propagation_cross_lane_evidence,
+    load_entity_link_fixture,
+    propagation_summary_to_dict,
+    run_mc15_gate_validation,
+)
 from .sentiment import (
     PRODUCER_VERSION as SENTIMENT_VERSION,
     DocumentSentimentResult,
@@ -93,6 +101,7 @@ __all__ = [
     "CATALYST_VERSION",
     "ATTENTION_VERSION",
     "AUTHOR_INTELLIGENCE_VERSION",
+    "PROPAGATION_VERSION",
     "INFORMATION_DECAY_VERSION",
     "ContextDocumentRecord",
     "DocumentExtractionResult",
@@ -110,6 +119,8 @@ __all__ = [
     "build_attention_cross_lane_evidence",
     "build_author_intelligence_cross_lane_evidence",
     "build_fixture_author_intelligence_pipeline",
+    "build_fixture_propagation_pipeline",
+    "build_propagation_cross_lane_evidence",
     "build_fixture_impact_pipeline",
     "build_fixture_sentiment_pipeline",
     "build_fixture_surprise_pipeline",
@@ -137,7 +148,10 @@ __all__ = [
     "load_llm_extraction_fixture",
     "load_structured_metrics_fixture",
     "load_social_author_fixture",
+    "load_entity_link_fixture",
     "author_intelligence_summary_to_dict",
+    "propagation_summary_to_dict",
+    "run_mc15_gate_validation",
     "map_canonical_event_type",
     "raw_document_from_fixture_row",
     "resolve_document_entities",

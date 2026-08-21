@@ -1840,11 +1840,19 @@ def build_workspace_catalyst_payload(
                     "author_intelligence_summaries"
                 )
                 or [],
+                "cross_entity_propagation_available": mc_payload.get(
+                    "cross_entity_propagation_available", False
+                ),
+                "cross_entity_propagation_summaries": mc_payload.get(
+                    "cross_entity_propagation_summaries"
+                )
+                or [],
                 "disclaimer": (
                     "MC8 CatalystEvidence fuses MC6–MC7 components with exposed scores. "
                     "MC9 AttentionEvidence separates information value from reflexive impact. "
                     "MC14 splits social influence from author accuracy. "
-                    "Not a trade recommendation. Research-only per MC8–MC14 design spec."
+                    "MC15 propagates separate donor fields across admitted entity links. "
+                    "Not a trade recommendation. Research-only per MC8–MC15 design spec."
                 ),
                 "latest_confidence": latest.get("confidence") if isinstance(latest, dict) else None,
                 "latest_gate_ok": latest.get("gate_ok") if isinstance(latest, dict) else None,
@@ -2037,6 +2045,13 @@ _DEFAULT_MC_SOCIAL_AUTHOR_FIXTURE = (
     / "market_context"
     / "boxl_social_author_slice.json"
 )
+_DEFAULT_MC_PROPAGATION_FIXTURE = (
+    Path(__file__).resolve().parents[3]
+    / "tests"
+    / "fixtures"
+    / "market_context"
+    / "boxl_nvda_propagation_slice.json"
+)
 _DEFAULT_ES_MACRO_EXPECTATIONS_FIXTURE = (
     Path(__file__).resolve().parents[3]
     / "tests"
@@ -2062,7 +2077,7 @@ def build_workspace_market_context_payload(
     as_of_context: dict[str, object],
     prediction_cutoff: int,
 ) -> dict[str, Any]:
-    """Build MC4–MC14 market context workspace payload (BOXL fixture scope)."""
+    """Build MC4–MC15 market context workspace payload (BOXL fixture scope)."""
     from ..market_context.entity_resolution import (
         build_symbol_mapping_registry,
         load_context_document_records,
@@ -2132,6 +2147,14 @@ def build_workspace_market_context_payload(
         build_fixture_author_intelligence_pipeline,
         author_intelligence_summary_to_dict,
         load_social_author_fixture,
+    )
+    from ..market_context.propagation import (
+        PRODUCER_VERSION as PROPAGATION_PRODUCER_VERSION,
+        build_fixture_propagation_pipeline,
+        build_propagation_cross_lane_evidence,
+        entity_link_to_dict,
+        load_entity_link_fixture,
+        propagation_summary_to_dict,
     )
     from ..market_context.macro import (
         PRODUCER_VERSION as MACRO_PRODUCER_VERSION,
@@ -2459,6 +2482,27 @@ def build_workspace_market_context_payload(
     )
     cross_lane_evidence = list(cross_lane_evidence) + author_cross_lane
 
+    propagation_links: list = []
+    propagation_donor_signals: list = []
+    if _DEFAULT_MC_PROPAGATION_FIXTURE.is_file():
+        propagation_links, propagation_donor_signals, _ = load_entity_link_fixture(
+            _DEFAULT_MC_PROPAGATION_FIXTURE
+        )
+    propagation_summaries, admitted_entity_links, propagation_adapter_rows = (
+        build_fixture_propagation_pipeline(
+            propagation_links,
+            propagation_donor_signals,
+            prediction_cutoff=prediction_cutoff,
+            entity_id=instrument_id,
+        )
+    )
+    propagation_cross_lane = build_propagation_cross_lane_evidence(
+        propagation_summaries,
+        symbol=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    cross_lane_evidence = list(cross_lane_evidence) + propagation_cross_lane
+
     from ..runtime.catalyst_attention import (
         CatalystAttentionRuntime,
         catalyst_attention_snapshot_to_dict,
@@ -2507,8 +2551,10 @@ def build_workspace_market_context_payload(
             "without reimplementing CVD/IV. MC11 publishes shared macro regime context; "
             "Futures F7 owns calendar risk interpretation. "
             "MC14 splits social influence from author accuracy — high reach is not truth. "
+            "MC15 propagates separate donor catalyst/attention fields across admitted entity "
+            "links — no universal news score. "
             "Keyword-v1 runs in stdlib; FinBERT and LLM extractions are fixture-precomputed. "
-            "Research-only per MC4–MC14."
+            "Research-only per MC4–MC15."
         ),
         "document_count": len(document_results),
         "document_extractions": document_extractions,
@@ -2605,6 +2651,16 @@ def build_workspace_market_context_payload(
         ],
         "author_intelligence_adapter_rows": author_adapter_rows,
         "author_evidence": [author_evidence_to_dict(item) for item in author_evidence],
+        "cross_entity_propagation_available": bool(propagation_summaries),
+        "cross_entity_propagation_count": len(propagation_summaries),
+        "cross_entity_propagation_producer_id": "market_context.propagation",
+        "cross_entity_propagation_producer_version": PROPAGATION_PRODUCER_VERSION,
+        "cross_entity_propagation_summaries": [
+            propagation_summary_to_dict(item) for item in propagation_summaries
+        ],
+        "cross_entity_propagation_adapter_rows": propagation_adapter_rows,
+        "entity_link_count": len(admitted_entity_links),
+        "entity_links": [entity_link_to_dict(item) for item in admitted_entity_links],
         "macro_context_available": macro_summary.macro_context_available,
         "macro_context_evidence": macro_context_evidence_to_dict(macro_evidence),
         "macro_context_summary": macro_summary_to_dict(macro_summary),

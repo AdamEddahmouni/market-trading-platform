@@ -13,7 +13,8 @@
     "attention_diffusion",
     "narrative_intelligence",
     "market_reaction",
-    "macro_context"
+    "macro_context",
+    "cross_entity_propagation"
   ],
   "content_paths": [
     "tests/fixtures/market_context/boxl_raw_documents_slice.json",
@@ -33,7 +34,11 @@
     "tests/fixtures/market_context/boxl_reaction_slice.json",
     "tests/fixtures/market_context/boxl_reaction_expected.json",
     "tests/fixtures/market_context/boxl_macro_context_slice.json",
-    "tests/fixtures/market_context/boxl_macro_context_expected.json"
+    "tests/fixtures/market_context/boxl_macro_context_expected.json",
+    "tests/fixtures/market_context/boxl_social_author_slice.json",
+    "tests/fixtures/market_context/boxl_social_author_expected.json",
+    "tests/fixtures/market_context/boxl_nvda_propagation_slice.json",
+    "tests/fixtures/market_context/boxl_nvda_propagation_expected.json"
   ],
   "instrument_id": "BOXL",
   "logical_id": "market_context.mc2_mc3_fixture_admission",
