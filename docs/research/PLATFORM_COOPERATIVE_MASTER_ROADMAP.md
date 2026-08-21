@@ -734,14 +734,14 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 - [x] Gate tool `tools/market_context/run_mc15_gate_validation.py`
 - [ ] Live entity graph APIs — not authorized
 
-### MARKET CONTEXT MC16 — Multi-document LLM synthesis [DESIGN COMPLETE]
+### MARKET CONTEXT MC16 — Multi-document LLM synthesis [IMPLEMENTED]
 
 - [x] Design spec `docs/superpowers/specs/2026-08-21-mc16-multi-document-llm-synthesis-design.md`
 - [x] Scoring model `multi_document_synthesis_v1` — separate fields, no universal news score
 - [x] PIT rules, revision supersession (MC-D14), contradiction fail-closed semantics
 - [x] Fixture scope `boxl_multidoc_synthesis_{slice,expected}.json` (BOXL earnings/FDA clusters)
 - [x] Cross-lane candidate signals `SYNTHESIS_THEME_ELEVATED`, `SYNTHESIS_CONTRADICTION_DETECTED`
-- [ ] Implementation (`synthesis.py`, tests, gate tool) — next session
+- [x] Implementation (`synthesis.py`, tests, gate tool `run_mc16_gate_validation.py`)
 - [ ] Live LLM runtime — not authorized
 
 See `MARKET_CONTEXT_TARGET_ARCHITECTURE.md`, `FIVE_LANE_ROADMAP_RECONCILIATION.md`.

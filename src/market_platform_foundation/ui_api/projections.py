@@ -692,6 +692,50 @@ def build_explain_payload(store: ReplayStore, ref: str) -> dict[str, object]:
                 f"{mc_payload.get('disclaimer', '')}"
             ),
         }
+    elif ref.startswith("explain:synthesis:"):
+        remainder = ref.removeprefix("explain:synthesis:")
+        parts = remainder.split(":", 1)
+        symbol = parts[0].upper()
+        cluster_id = parts[1] if len(parts) > 1 else None
+        from ..providers.projections import build_workspace_market_context_payload
+
+        mc_payload = build_workspace_market_context_payload(
+            symbol,
+            as_of_context=build_as_of_context(store),
+            prediction_cutoff=store.prediction_cutoff(),
+        )
+        if not mc_payload.get("multi_document_synthesis_available"):
+            raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+        summaries = mc_payload.get("multi_document_synthesis_summaries") or []
+        selected = None
+        if cluster_id:
+            for row in summaries:
+                if isinstance(row, dict) and row.get("cluster_id") == cluster_id:
+                    selected = row
+                    break
+        if selected is None and summaries:
+            selected = summaries[-1] if isinstance(summaries[-1], dict) else None
+        if not isinstance(selected, dict):
+            raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+        agreement = selected.get("theme_agreement_score")
+        contradiction = selected.get("contradiction_detected")
+        channels = selected.get("consolidated_channels") or []
+        body = {
+            "alignment_summary": (
+                f"theme agreement {agreement if agreement is not None else 'UNAVAILABLE'} · "
+                f"contradiction {contradiction if contradiction is not None else 'UNAVAILABLE'}"
+            ),
+            "level": 2,
+            "meaning": (
+                f"MC16 multi-document synthesis for {symbol} — separate fields, no fused score"
+            ),
+            "ref": ref,
+            "why": (
+                f"cluster {selected.get('cluster_id', 'unknown')} · "
+                f"channels {', '.join(channels) if channels else 'none'} · "
+                f"{mc_payload.get('disclaimer', '')}"
+            ),
+        }
     elif ref.startswith("explain:disclosure:"):
         symbol = ref.removeprefix("explain:disclosure:")
         from ..providers.projections import build_workspace_disclosure_payload

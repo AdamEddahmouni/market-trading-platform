@@ -1847,12 +1847,20 @@ def build_workspace_catalyst_payload(
                     "cross_entity_propagation_summaries"
                 )
                 or [],
+                "multi_document_synthesis_available": mc_payload.get(
+                    "multi_document_synthesis_available", False
+                ),
+                "multi_document_synthesis_summaries": mc_payload.get(
+                    "multi_document_synthesis_summaries"
+                )
+                or [],
                 "disclaimer": (
                     "MC8 CatalystEvidence fuses MC6–MC7 components with exposed scores. "
                     "MC9 AttentionEvidence separates information value from reflexive impact. "
                     "MC14 splits social influence from author accuracy. "
                     "MC15 propagates separate donor fields across admitted entity links. "
-                    "Not a trade recommendation. Research-only per MC8–MC15 design spec."
+                    "MC16 synthesizes separate cluster fields — no universal news score. "
+                    "Not a trade recommendation. Research-only per MC8–MC16 design spec."
                 ),
                 "latest_confidence": latest.get("confidence") if isinstance(latest, dict) else None,
                 "latest_gate_ok": latest.get("gate_ok") if isinstance(latest, dict) else None,
@@ -2052,6 +2060,13 @@ _DEFAULT_MC_PROPAGATION_FIXTURE = (
     / "market_context"
     / "boxl_nvda_propagation_slice.json"
 )
+_DEFAULT_MC_SYNTHESIS_FIXTURE = (
+    Path(__file__).resolve().parents[3]
+    / "tests"
+    / "fixtures"
+    / "market_context"
+    / "boxl_multidoc_synthesis_slice.json"
+)
 _DEFAULT_ES_MACRO_EXPECTATIONS_FIXTURE = (
     Path(__file__).resolve().parents[3]
     / "tests"
@@ -2077,7 +2092,7 @@ def build_workspace_market_context_payload(
     as_of_context: dict[str, object],
     prediction_cutoff: int,
 ) -> dict[str, Any]:
-    """Build MC4–MC15 market context workspace payload (BOXL fixture scope)."""
+    """Build MC4–MC16 market context workspace payload (BOXL fixture scope)."""
     from ..market_context.entity_resolution import (
         build_symbol_mapping_registry,
         load_context_document_records,
@@ -2155,6 +2170,13 @@ def build_workspace_market_context_payload(
         entity_link_to_dict,
         load_entity_link_fixture,
         propagation_summary_to_dict,
+    )
+    from ..market_context.synthesis import (
+        PRODUCER_VERSION as SYNTHESIS_PRODUCER_VERSION,
+        build_fixture_synthesis_pipeline,
+        build_synthesis_cross_lane_evidence,
+        load_synthesis_fixture,
+        synthesis_summary_to_dict,
     )
     from ..market_context.macro import (
         PRODUCER_VERSION as MACRO_PRODUCER_VERSION,
@@ -2503,6 +2525,27 @@ def build_workspace_market_context_payload(
     )
     cross_lane_evidence = list(cross_lane_evidence) + propagation_cross_lane
 
+    synthesis_fixture = (
+        load_synthesis_fixture(_DEFAULT_MC_SYNTHESIS_FIXTURE)
+        if _DEFAULT_MC_SYNTHESIS_FIXTURE.is_file()
+        else None
+    )
+    synthesis_summaries, synthesis_adapter_rows = build_fixture_synthesis_pipeline(
+        enriched_events,
+        records,
+        llm_labels,
+        synthesis_fixture,
+        prediction_cutoff=prediction_cutoff,
+        entity_id=instrument_id,
+        include_adversarial_clusters=False,
+    )
+    synthesis_cross_lane = build_synthesis_cross_lane_evidence(
+        synthesis_summaries,
+        symbol=instrument_id,
+        prediction_cutoff=prediction_cutoff,
+    )
+    cross_lane_evidence = list(cross_lane_evidence) + synthesis_cross_lane
+
     from ..runtime.catalyst_attention import (
         CatalystAttentionRuntime,
         catalyst_attention_snapshot_to_dict,
@@ -2553,8 +2596,10 @@ def build_workspace_market_context_payload(
             "MC14 splits social influence from author accuracy — high reach is not truth. "
             "MC15 propagates separate donor catalyst/attention fields across admitted entity "
             "links — no universal news score. "
+            "MC16 synthesizes separate cluster fields from admitted documents — no universal "
+            "news score. Fixture-precomputed LLM labels only. "
             "Keyword-v1 runs in stdlib; FinBERT and LLM extractions are fixture-precomputed. "
-            "Research-only per MC4–MC15."
+            "Research-only per MC4–MC16."
         ),
         "document_count": len(document_results),
         "document_extractions": document_extractions,
@@ -2661,6 +2706,14 @@ def build_workspace_market_context_payload(
         "cross_entity_propagation_adapter_rows": propagation_adapter_rows,
         "entity_link_count": len(admitted_entity_links),
         "entity_links": [entity_link_to_dict(item) for item in admitted_entity_links],
+        "multi_document_synthesis_available": bool(synthesis_summaries),
+        "multi_document_synthesis_count": len(synthesis_summaries),
+        "multi_document_synthesis_producer_id": "market_context.synthesis",
+        "multi_document_synthesis_producer_version": SYNTHESIS_PRODUCER_VERSION,
+        "multi_document_synthesis_summaries": [
+            synthesis_summary_to_dict(item) for item in synthesis_summaries
+        ],
+        "multi_document_synthesis_adapter_rows": synthesis_adapter_rows,
         "macro_context_available": macro_summary.macro_context_available,
         "macro_context_evidence": macro_context_evidence_to_dict(macro_evidence),
         "macro_context_summary": macro_summary_to_dict(macro_summary),

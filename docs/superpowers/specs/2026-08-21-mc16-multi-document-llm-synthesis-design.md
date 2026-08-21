@@ -1,6 +1,6 @@
 # MC16 — Multi-Document LLM Synthesis (fixture-first, experimental)
 
-**Status:** Design complete — implementation deferred  
+**Status:** Design complete — implemented (fixture-first)  
 **Spec date:** 2026-08-21  
 **Scope:** Cluster-level synthesis across multiple PIT-visible documents in an MC3 `InformationEvent` cluster, using fixture-precomputed LLM labels on admitted BOXL fixtures  
 **Prerequisites:** MC3 IMPLEMENTED (event clustering), MC5 IMPLEMENTED (per-document extraction), MC14 IMPLEMENTED, MC15 IMPLEMENTED, Platform P0 PIT
