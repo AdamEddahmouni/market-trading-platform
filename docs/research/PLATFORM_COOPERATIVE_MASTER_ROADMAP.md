@@ -323,7 +323,7 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 
 - [x] F9 relative value spreads — `futures/relative_value.py`, ES calendar spread snapshot
 - [x] F10 simulator roll/VM/spread-leg — `simulate_variation_margin_change`, `simulate_calendar_spread_pnl`
-- [x] F11 advanced modeling — `futures/advanced_features.py`, `futures/advanced_baseline.py`, F11-S1 walk-forward vs trend-only (EQUITY_INDEX experimental)
+- [x] F11 advanced modeling — `futures/advanced_features.py`, `futures/advanced_baseline.py`, F11-S1 walk-forward vs trend-only (EQUITY_INDEX + ENERGY/CL experimental; TREASURY/METALS fail-closed)
 
 ---
 
@@ -561,6 +561,7 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 - [x] Surface baseline research scaffold — `options/research/surface_baseline.py` (R-O10-SURF)
 - [x] Distributional baseline + walk-forward harness — `options/research/distributional_baseline.py`, `harness.py` (R-O5)
 - [x] Baseline gate validation report — `tools/options/run_o10_baseline_gate_validation.py` (O10-S5; R-O6 + R-O5 + R-O10-SURF on admitted fixtures; evidence `ADMITTED-OPTIONS-NVDA-R-O6-001`, `ADMITTED-DISTRIBUTION-NVDA-001`, `ADMITTED-OPTIONS-NVDA-001`; aggregate PASS fixture scope)
+- [x] Phase B walk-forward scaffold + admission manifest — `harness.py`, `manifests/options/phase-b-chain-history-admission.json`, [`OPTIONS_PHASE_B_ADMISSION.md`](../engineering/OPTIONS_PHASE_B_ADMISSION.md) (PENDING data; harness fail-closes)
 - [ ] Distributional ML, surface forecasting ML, option-return ML — blocked until baselines validate OOS on Phase B data
 - Only after O4 baseline works (complete)
 
@@ -723,9 +724,18 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 - [x] Golden fixture `boxl_social_author_expected.json`; resolves MC-D15 (fixture scope)
 - [ ] Live social APIs — not authorized
 
-### MARKET CONTEXT MC15–MC16 [RESEARCH / DEFERRED]
+### MARKET CONTEXT MC15 — Cross-entity propagation [IMPLEMENTED (fixture / experimental)]
 
-- MC15: Cross-entity propagation (after entity graph quality)
+- [x] `EntityLink` taxonomy (`ETF_CONSTITUENT`, `SECTOR_PEER`, `SUPPLY_CHAIN`) on BOXL/NVDA graph fixture
+- [x] `cross_entity_propagation_v1` with separate `propagated_*` fields (no universal news score)
+- [x] PIT link/signal cutoffs + fail-closed ambiguous/stale links
+- [x] Cross-lane `PROPAGATED_CATALYST_ELEVATED` / `PROPAGATED_ATTENTION_ELEVATED` (research-only metadata)
+- [x] Golden fixtures `boxl_nvda_propagation_slice.json`, `boxl_nvda_propagation_expected.json`
+- [x] Gate tool `tools/market_context/run_mc15_gate_validation.py`
+- [ ] Live entity graph APIs — not authorized
+
+### MARKET CONTEXT MC16 [RESEARCH / DEFERRED]
+
 - MC16: Advanced multi-document LLM synthesis (after MC5 correctness)
 
 See `MARKET_CONTEXT_TARGET_ARCHITECTURE.md`, `FIVE_LANE_ROADMAP_RECONCILIATION.md`.
@@ -743,12 +753,12 @@ See `MARKET_CONTEXT_TARGET_ARCHITECTURE.md`, `FIVE_LANE_ROADMAP_RECONCILIATION.m
 
 | Track | Work | Blocked by |
 |---|---|---|
-| Futures | Family ML beyond M8 F11 baseline | F11-S1 PASS (fixture) |
+| Futures | TREASURY/METALS family plugins or M9 macro conditioning | F11-S1 PASS (ES + CL/ENERGY) |
 | Order Flow | LOB ML beyond M8 OF12 baseline | OF12-S1 PASS (fixture) |
 | SS | Live lending ingest wiring | Vendor authorization |
 | Platform | P0 bitemporal store / P1 catalyst runtime | DONE (fixture) |
-| Market Context | MC15 cross-entity propagation | MC14 complete (research) |
-| Options | O10 ML (Phase B OOS) or O11 design | O10-S5 PASS (fixture); Phase C for O11 |
+| Market Context | MC16 multi-document LLM synthesis (research) | MC15 complete (fixture) |
+| Options | Phase B chain history admission + OOS gate re-run | O10-S5 PASS; Phase B scaffold ready |
 | SHARED P4 | Futures outright/curve fusion extension | F8–F10 | DONE (fixture) |
 | Discrepancy | D-01 ignition_state mapping, D-10 deploy mirror | Nothing |
 

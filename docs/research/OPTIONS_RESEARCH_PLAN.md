@@ -36,6 +36,8 @@ Secondary: publish evidence that improves Short Squeeze ignition/confirmation wi
 | Earnings dates + straddle prices | Event vol (O7) | MEDIUM |
 | FRED risk-free rate | Carry | LOW (free) |
 
+**Admission status:** `PENDING` — see [`OPTIONS_PHASE_B_ADMISSION.md`](../engineering/OPTIONS_PHASE_B_ADMISSION.md) and [`manifests/options/phase-b-chain-history-admission.json`](../../manifests/options/phase-b-chain-history-admission.json). O10 Phase B walk-forward scaffolding in `options/research/harness.py` fail-closes until datasets are admitted.
+
 ### 2.3 Phase C (O5+)
 
 | Dataset | Requirement |
