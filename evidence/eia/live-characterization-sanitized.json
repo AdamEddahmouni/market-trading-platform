@@ -1,0 +1,346 @@
+﻿{
+  "retrieved_at": "2026-08-20T20:01:21Z",
+  "eia_api_auth_success": true,
+  "api_version": "unknown",
+  "routes": {
+    "petroleum": "/v2/petroleum/sum/sndw/data",
+    "natural_gas": "/v2/natural-gas/stor/wkly/data"
+  },
+  "petroleum_metadata": {
+    "frequencies": [
+      {
+        "id": "weekly",
+        "description": "One data point for each week.",
+        "query": "W",
+        "format": "YYYY-MM-DD"
+      },
+      {
+        "id": "four-week-average",
+        "description": "One data point (average) for a four week period.",
+        "query": "4",
+        "format": "YYYY-MM-DD"
+      }
+    ],
+    "data_columns": [],
+    "facet_ids": [
+      "duoarea",
+      "product",
+      "process",
+      "series"
+    ],
+    "date_range": {}
+  },
+  "natural_gas_metadata": {
+    "frequencies": [
+      {
+        "id": "weekly",
+        "description": "One data point for each week.",
+        "query": "W",
+        "format": "YYYY-MM-DD"
+      }
+    ],
+    "data_columns": [],
+    "facet_ids": [
+      "duoarea",
+      "product",
+      "process",
+      "series"
+    ],
+    "date_range": {}
+  },
+  "response_echo": {
+    "raw_api_key_echo": "absent",
+    "sanitized_api_key": "absent",
+    "real_key_in_serialized_meta": false,
+    "real_key_in_sanitized_meta": false
+  },
+  "registry_audit": [
+    {
+      "concept": "COMMERCIAL_CRUDE_STOCKS",
+      "series": "WCESTUS1",
+      "region": "US_TOTAL",
+      "unit": "Thousand Barrels",
+      "metric_class": "STOCK",
+      "latest_period": "2026-08-14",
+      "latest_value": "428815",
+      "value_units": "MBBL",
+      "status": "OBSERVED"
+    },
+    {
+      "concept": "CUSHING_CRUDE_STOCKS",
+      "series": "WCESTP11",
+      "region": "CUSHING_OK",
+      "unit": "Thousand Barrels",
+      "metric_class": "STOCK",
+      "latest_period": "2026-08-14",
+      "latest_value": "7826",
+      "value_units": "MBBL",
+      "status": "OBSERVED"
+    },
+    {
+      "concept": "SPR_CRUDE_STOCKS",
+      "series": "WCSSTUS1",
+      "region": "US_TOTAL",
+      "unit": "Thousand Barrels",
+      "metric_class": "STOCK",
+      "latest_period": "2026-08-14",
+      "latest_value": "293426",
+      "value_units": "MBBL",
+      "status": "OBSERVED"
+    },
+    {
+      "concept": "TOTAL_MOTOR_GASOLINE_STOCKS",
+      "series": "WGTSTUS1",
+      "region": "US_TOTAL",
+      "unit": "Thousand Barrels",
+      "metric_class": "STOCK",
+      "latest_period": "2026-08-14",
+      "latest_value": "209378",
+      "value_units": "MBBL",
+      "status": "OBSERVED"
+    },
+    {
+      "concept": "DISTILLATE_FUEL_STOCKS",
+      "series": "WDISTUS1",
+      "region": "US_TOTAL",
+      "unit": "Thousand Barrels",
+      "metric_class": "STOCK",
+      "latest_period": "2026-08-14",
+      "latest_value": "105619",
+      "value_units": "MBBL",
+      "status": "OBSERVED"
+    },
+    {
+      "concept": "PROPANE_PROPYLENE_STOCKS",
+      "series": "WPRSTUS1",
+      "region": "US_TOTAL",
+      "unit": "Thousand Barrels",
+      "metric_class": "STOCK",
+      "latest_period": "2026-08-14",
+      "latest_value": "107013",
+      "value_units": "MBBL",
+      "status": "OBSERVED"
+    },
+    {
+      "concept": "CRUDE_OIL_PRODUCTION",
+      "series": "WCRFPUS2",
+      "region": "US_TOTAL",
+      "unit": "Thousand Barrels per Day",
+      "metric_class": "FLOW_RATE",
+      "latest_period": "2026-08-14",
+      "latest_value": "13830",
+      "value_units": "MBBL/D",
+      "status": "OBSERVED"
+    },
+    {
+      "concept": "REFINERY_CRUDE_INPUTS",
+      "series": "WCRRIUS2",
+      "region": "US_TOTAL",
+      "unit": "Thousand Barrels per Day",
+      "metric_class": "FLOW_RATE",
+      "latest_period": "2026-08-14",
+      "latest_value": "17395",
+      "value_units": "MBBL/D",
+      "status": "OBSERVED"
+    },
+    {
+      "concept": "REFINERY_UTILIZATION",
+      "series": "WPULEUS3",
+      "region": "US_TOTAL",
+      "unit": "Percent",
+      "metric_class": "UTILIZATION",
+      "latest_period": "2026-08-14",
+      "latest_value": "97.2",
+      "value_units": "%",
+      "status": "OBSERVED"
+    },
+    {
+      "concept": "CRUDE_OIL_IMPORTS",
+      "series": "WCRIMUS2",
+      "region": "US_TOTAL",
+      "unit": "Thousand Barrels per Day",
+      "metric_class": "FLOW_RATE",
+      "latest_period": "2026-08-14",
+      "latest_value": "6593",
+      "value_units": "MBBL/D",
+      "status": "OBSERVED"
+    },
+    {
+      "concept": "CRUDE_OIL_EXPORTS",
+      "series": "WCREXUS2",
+      "region": "US_TOTAL",
+      "unit": "Thousand Barrels per Day",
+      "metric_class": "FLOW_RATE",
+      "latest_period": "2026-08-14",
+      "latest_value": "4066",
+      "value_units": "MBBL/D",
+      "status": "OBSERVED"
+    },
+    {
+      "concept": "TOTAL_PETROLEUM_EXPORTS",
+      "series": "WTTEXUS2",
+      "region": "US_TOTAL",
+      "unit": "Thousand Barrels per Day",
+      "metric_class": "FLOW_RATE",
+      "latest_period": "2026-08-14",
+      "latest_value": "12342",
+      "value_units": "MBBL/D",
+      "status": "OBSERVED"
+    },
+    {
+      "concept": "TOTAL_PRODUCT_SUPPLIED",
+      "series": "WTTUPUS2",
+      "region": "US_TOTAL",
+      "unit": "Thousand Barrels per Day",
+      "metric_class": "FLOW_RATE",
+      "latest_period": "",
+      "latest_value": null,
+      "value_units": "",
+      "status": "NO_DATA"
+    },
+    {
+      "concept": "GASOLINE_PRODUCT_SUPPLIED",
+      "series": "WGFUPUS2",
+      "region": "US_TOTAL",
+      "unit": "Thousand Barrels per Day",
+      "metric_class": "FLOW_RATE",
+      "latest_period": "2026-08-14",
+      "latest_value": "8689",
+      "value_units": "MBBL/D",
+      "status": "OBSERVED"
+    },
+    {
+      "concept": "DISTILLATE_PRODUCT_SUPPLIED",
+      "series": "WDIUPUS2",
+      "region": "US_TOTAL",
+      "unit": "Thousand Barrels per Day",
+      "metric_class": "FLOW_RATE",
+      "latest_period": "2026-08-14",
+      "latest_value": "3953",
+      "value_units": "MBBL/D",
+      "status": "OBSERVED"
+    },
+    {
+      "concept": "CRUDE_DAYS_OF_SUPPLY",
+      "series": "WD0STUS1",
+      "region": "US_TOTAL",
+      "unit": "Days",
+      "metric_class": "RATIO",
+      "latest_period": "",
+      "latest_value": null,
+      "value_units": "",
+      "status": "NO_DATA"
+    },
+    {
+      "concept": "PADD2_COMMERCIAL_CRUDE_STOCKS",
+      "series": "WCESTP21",
+      "region": "PADD_2",
+      "unit": "Thousand Barrels",
+      "metric_class": "STOCK",
+      "latest_period": "2026-08-14",
+      "latest_value": "100382",
+      "value_units": "MBBL",
+      "status": "OBSERVED"
+    },
+    {
+      "concept": "LOWER48_WORKING_GAS_STORAGE",
+      "series": "NW2_EPG0_SWO_R48_BCF_W",
+      "region": "LOWER48",
+      "unit": "Billion Cubic Feet",
+      "metric_class": "STOCK",
+      "latest_period": "",
+      "latest_value": null,
+      "value_units": "",
+      "status": "NO_DATA"
+    },
+    {
+      "concept": "EAST_WORKING_GAS_STORAGE",
+      "series": "NW2_EPG0_SWO_R30_BCF_W",
+      "region": "EAST",
+      "unit": "Billion Cubic Feet",
+      "metric_class": "STOCK",
+      "latest_period": "",
+      "latest_value": null,
+      "value_units": "",
+      "status": "NO_DATA"
+    },
+    {
+      "concept": "MIDWEST_WORKING_GAS_STORAGE",
+      "series": "NW2_EPG0_SWO_R20_BCF_W",
+      "region": "MIDWEST",
+      "unit": "Billion Cubic Feet",
+      "metric_class": "STOCK",
+      "latest_period": "",
+      "latest_value": null,
+      "value_units": "",
+      "status": "NO_DATA"
+    },
+    {
+      "concept": "MOUNTAIN_WORKING_GAS_STORAGE",
+      "series": "NW2_EPG0_SWO_R40_BCF_W",
+      "region": "MOUNTAIN",
+      "unit": "Billion Cubic Feet",
+      "metric_class": "STOCK",
+      "latest_period": "",
+      "latest_value": null,
+      "value_units": "",
+      "status": "NO_DATA"
+    },
+    {
+      "concept": "PACIFIC_WORKING_GAS_STORAGE",
+      "series": "NW2_EPG0_SWO_R50_BCF_W",
+      "region": "PACIFIC",
+      "unit": "Billion Cubic Feet",
+      "metric_class": "STOCK",
+      "latest_period": "",
+      "latest_value": null,
+      "value_units": "",
+      "status": "NO_DATA"
+    },
+    {
+      "concept": "SOUTH_CENTRAL_WORKING_GAS_STORAGE",
+      "series": "NW2_EPG0_SWO_R31_BCF_W",
+      "region": "SOUTH_CENTRAL",
+      "unit": "Billion Cubic Feet",
+      "metric_class": "STOCK",
+      "latest_period": "",
+      "latest_value": null,
+      "value_units": "",
+      "status": "NO_DATA"
+    },
+    {
+      "concept": "SOUTH_CENTRAL_SALT_WORKING_GAS_STORAGE",
+      "series": "NW2_EPG0_SWO_R31_S1_BCF_W",
+      "region": "SOUTH_CENTRAL_SALT",
+      "unit": "Billion Cubic Feet",
+      "metric_class": "STOCK",
+      "latest_period": "",
+      "latest_value": null,
+      "value_units": "",
+      "status": "NO_DATA"
+    },
+    {
+      "concept": "SOUTH_CENTRAL_NONSALT_WORKING_GAS_STORAGE",
+      "series": "NW2_EPG0_SWO_R31_S2_BCF_W",
+      "region": "SOUTH_CENTRAL_NONSALT",
+      "unit": "Billion Cubic Feet",
+      "metric_class": "STOCK",
+      "latest_period": "",
+      "latest_value": null,
+      "value_units": "",
+      "status": "NO_DATA"
+    }
+  ],
+  "wpsr": {
+    "latest_period_end": "2026-08-14",
+    "scheduled_publication": "2026-08-19",
+    "next_publication": "2026-08-26"
+  },
+  "wngsr": {
+    "latest_period_end": "2026-08-14",
+    "scheduled_publication": "2026-08-20",
+    "next_publication": "2026-08-20"
+  },
+  "latest_petroleum_api_period": "2026-08-14",
+  "latest_ng_api_period": ""
+}
