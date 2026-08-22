@@ -2178,6 +2178,11 @@ def build_workspace_market_context_payload(
         load_synthesis_fixture,
         synthesis_summary_to_dict,
     )
+    from ..market_context.synthesis_enrichment import (
+        apply_synthesis_enrichment_to_catalyst,
+        apply_synthesis_enrichment_to_impact,
+        index_synthesis_by_cluster_id,
+    )
     from ..market_context.macro import (
         PRODUCER_VERSION as MACRO_PRODUCER_VERSION,
         build_fixture_macro_pipeline,
@@ -2545,6 +2550,18 @@ def build_workspace_market_context_payload(
         prediction_cutoff=prediction_cutoff,
     )
     cross_lane_evidence = list(cross_lane_evidence) + synthesis_cross_lane
+
+    synthesis_index = index_synthesis_by_cluster_id(synthesis_summaries)
+    impact_summaries = apply_synthesis_enrichment_to_impact(
+        impact_summaries,
+        synthesis_index,
+        prediction_cutoff,
+    )
+    catalyst_summaries = apply_synthesis_enrichment_to_catalyst(
+        catalyst_summaries,
+        synthesis_index,
+        prediction_cutoff,
+    )
 
     from ..runtime.catalyst_attention import (
         CatalystAttentionRuntime,

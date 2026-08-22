@@ -10,6 +10,8 @@ from ..contracts.market_context import (
     ContextQualityFlag,
     PublicationState,
     ShortThesisInvalidationEvidence,
+    SynthesisEnrichmentMetadata,
+    synthesis_enrichment_to_dict,
 )
 from ..cross_lane.evidence import (
     EvidenceProvenanceClass,
@@ -63,6 +65,7 @@ class CatalystSummary:
     quality_flags: tuple[str, ...] = field(default_factory=tuple)
     catalyst_available: bool = False
     headline: str = ""
+    synthesis_enrichment: SynthesisEnrichmentMetadata | None = None
 
 
 def _event_lean(canonical_event_type: str) -> str:
@@ -263,7 +266,7 @@ def build_fixture_catalyst_pipeline(
 
 
 def catalyst_summary_to_dict(item: CatalystSummary) -> dict[str, Any]:
-    return {
+    payload: dict[str, Any] = {
         "event_id": item.event_id,
         "canonical_event_type": item.canonical_event_type,
         "entity_ids": list(item.entity_ids),
@@ -282,6 +285,11 @@ def catalyst_summary_to_dict(item: CatalystSummary) -> dict[str, Any]:
         "headline": item.headline,
         "scoring_method": SCORING_METHOD,
     }
+    if item.synthesis_enrichment is not None:
+        payload["synthesis_enrichment"] = synthesis_enrichment_to_dict(
+            item.synthesis_enrichment
+        )
+    return payload
 
 
 def catalyst_summary_to_adapter_row(item: CatalystSummary) -> dict[str, Any]:

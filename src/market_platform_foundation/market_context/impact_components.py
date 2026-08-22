@@ -13,6 +13,8 @@ from ..contracts.market_context import (
     MaterialityEvidence,
     NoveltyEvidence,
     PublicationState,
+    SynthesisEnrichmentMetadata,
+    synthesis_enrichment_to_dict,
 )
 from ..cross_lane.evidence import (
     EvidenceProvenanceClass,
@@ -67,6 +69,7 @@ class ImpactComponentSummary:
     publication_state: str
     quality_flags: tuple[str, ...] = field(default_factory=tuple)
     impact_available: bool = False
+    synthesis_enrichment: SynthesisEnrichmentMetadata | None = None
 
 
 def _event_records(
@@ -328,7 +331,7 @@ def build_fixture_impact_pipeline(
 
 
 def impact_component_summary_to_dict(item: ImpactComponentSummary) -> dict[str, Any]:
-    return {
+    payload: dict[str, Any] = {
         "event_id": item.event_id,
         "canonical_event_type": item.canonical_event_type,
         "entity_id": item.entity_id,
@@ -347,6 +350,11 @@ def impact_component_summary_to_dict(item: ImpactComponentSummary) -> dict[str, 
         "quality_flags": list(item.quality_flags),
         "impact_available": item.impact_available,
     }
+    if item.synthesis_enrichment is not None:
+        payload["synthesis_enrichment"] = synthesis_enrichment_to_dict(
+            item.synthesis_enrichment
+        )
+    return payload
 
 
 def _component_strength(score: float | None, threshold: float) -> str:

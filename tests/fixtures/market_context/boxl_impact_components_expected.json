@@ -23,9 +23,22 @@
       "publication_state": "PUBLISHED",
       "quality_flags": [
         "EVENT_DUPLICATE",
-        "CORROBORATION_INCOMPLETE"
+        "CORROBORATION_INCOMPLETE",
+        "MULTI_DOCUMENT_SYNTHESIS_EXPERIMENTAL",
+        "SYNTHESIS_THEME_CORROBORATED"
       ],
-      "impact_available": true
+      "impact_available": true,
+      "synthesis_enrichment": {
+        "synthesis_id": "83aba611-60c1-55dc-8475-3422b1f2cb67",
+        "theme_agreement_score": 1.0,
+        "contradiction_detected": false,
+        "consolidated_channels": [
+          "REVENUE_UP"
+        ],
+        "synthesis_confidence": 0.88,
+        "enrichment_available": true,
+        "scoring_method": "synthesis_enrichment_v1"
+      }
     },
     {
       "event_id": "ad2c4547-e4cb-56a6-8f0c-f9a4d730d263",
@@ -45,9 +58,22 @@
       "publication_state": "PUBLISHED",
       "quality_flags": [
         "EVENT_DUPLICATE",
-        "CORROBORATION_INCOMPLETE"
+        "CORROBORATION_INCOMPLETE",
+        "MULTI_DOCUMENT_SYNTHESIS_EXPERIMENTAL",
+        "SYNTHESIS_THEME_CORROBORATED"
       ],
-      "impact_available": true
+      "impact_available": true,
+      "synthesis_enrichment": {
+        "synthesis_id": "9d668f9a-382f-5f65-b359-790fcd95bc2a",
+        "theme_agreement_score": 1.0,
+        "contradiction_detected": false,
+        "consolidated_channels": [
+          "REGULATORY_RISK_DOWN"
+        ],
+        "synthesis_confidence": 0.91,
+        "enrichment_available": true,
+        "scoring_method": "synthesis_enrichment_v1"
+      }
     },
     {
       "event_id": "60e13d13-eaa2-57d1-9c9a-c23b612ef9ac",
@@ -68,9 +94,22 @@
       "quality_flags": [
         "EVENT_DUPLICATE",
         "SOURCE_LOW_CREDIBILITY",
-        "CORROBORATION_INCOMPLETE"
+        "CORROBORATION_INCOMPLETE",
+        "MULTI_DOCUMENT_SYNTHESIS_EXPERIMENTAL",
+        "SYNTHESIS_THEME_CORROBORATED"
       ],
-      "impact_available": true
+      "impact_available": true,
+      "synthesis_enrichment": {
+        "synthesis_id": "f0d8ae71-d93c-5e52-a2a5-b4e7954d2179",
+        "theme_agreement_score": 1.0,
+        "contradiction_detected": false,
+        "consolidated_channels": [
+          "MARGIN_UP"
+        ],
+        "synthesis_confidence": 0.86,
+        "enrichment_available": true,
+        "scoring_method": "synthesis_enrichment_v1"
+      }
     },
     {
       "event_id": "3fd7f172-8949-53b0-83d2-5e2341e72039",

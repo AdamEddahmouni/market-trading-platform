@@ -252,7 +252,32 @@ class ContextQualityFlag(StrEnum):
     SYNTHESIS_EXTRACTION_PARTIAL = "SYNTHESIS_EXTRACTION_PARTIAL"
     SYNTHESIS_CONTRADICTION_PRESENT = "SYNTHESIS_CONTRADICTION_PRESENT"
     MULTI_DOCUMENT_SYNTHESIS_EXPERIMENTAL = "MULTI_DOCUMENT_SYNTHESIS_EXPERIMENTAL"
+    CATALYST_SYNTHESIS_CONTRADICTION = "CATALYST_SYNTHESIS_CONTRADICTION"
+    SYNTHESIS_THEME_CORROBORATED = "SYNTHESIS_THEME_CORROBORATED"
     NO_UNIVERSAL_NEWS_SCORE = "NO_UNIVERSAL_NEWS_SCORE"
+
+
+@dataclass(frozen=True, slots=True)
+class SynthesisEnrichmentMetadata:
+    synthesis_id: str
+    theme_agreement_score: float | None
+    contradiction_detected: bool
+    consolidated_channels: tuple[str, ...]
+    synthesis_confidence: float | None
+    enrichment_available: bool = True
+    scoring_method: str = "synthesis_enrichment_v1"
+
+
+def synthesis_enrichment_to_dict(item: SynthesisEnrichmentMetadata) -> dict[str, Any]:
+    return {
+        "synthesis_id": item.synthesis_id,
+        "theme_agreement_score": item.theme_agreement_score,
+        "contradiction_detected": item.contradiction_detected,
+        "consolidated_channels": list(item.consolidated_channels),
+        "synthesis_confidence": item.synthesis_confidence,
+        "enrichment_available": item.enrichment_available,
+        "scoring_method": item.scoring_method,
+    }
 
 
 @dataclass(frozen=True, slots=True)
