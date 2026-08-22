@@ -119,14 +119,34 @@ def capability_row(**kwargs: Any) -> dict[str, Any]:
     defaults = {
         "account_entitled": False,
         "adapter_implemented": True,
+        "configured": False,
         "data_currently_fresh": False,
+        "documented": True,
+        "entitled": False,
         "evidence_class": "UNTESTED",
+        "healthy": False,
+        "last_verified": None,
         "notes": "",
         "provider_supports": True,
+        "reason": None,
         "reason_code": None,
+        "receiving": False,
         "runtime_tested": False,
+        "subscribable": False,
+        "subscribed": False,
+        "verified_receiving": False,
     }
     defaults.update(kwargs)
+    if "entitled" not in kwargs:
+        defaults["entitled"] = bool(defaults.get("account_entitled"))
+    if "receiving" not in kwargs:
+        defaults["receiving"] = bool(defaults.get("verified_receiving"))
+    if "subscribable" not in kwargs:
+        defaults["subscribable"] = bool(defaults.get("account_entitled") and defaults.get("provider_supports"))
+    if "reason" not in kwargs:
+        defaults["reason"] = defaults.get("reason_code")
+    if "last_verified" not in kwargs:
+        defaults["last_verified"] = _utc_iso()
     return defaults
 
 
@@ -151,10 +171,15 @@ def run_probe(*, host: str, port: int, output: Path, subscribe_seconds: float) -
         raise RuntimeError("TRADE_MODULE_LOADED")
 
     report: dict[str, Any] = {
+        "connection": "CONNECTED",
+        "host": host,
+        "port": port,
+        "probe_timestamp": _utc_iso(),
         "probe_version": PROBE_VERSION,
-        "provider": "moomoo",
+        "provider": "MOOMOO",
         "sdk_version": getattr(ft, "__version__", "unknown"),
         "tested_at": _utc_iso(),
+        "verified_at": _utc_iso(),
         "connectivity": {},
         "markets": {},
         "entitlements": {},
@@ -173,6 +198,7 @@ def run_probe(*, host: str, port: int, output: Path, subscribe_seconds: float) -
     try:
         ret, state = quote_ctx.get_global_state()
         report["connectivity"] = {
+            "connection": "CONNECTED" if ret == ft.RET_OK else "DISCONNECTED",
             "evidence_class": "OBSERVED",
             "host": host,
             "opend_version": None if ret != ft.RET_OK else redact(state).get("server_ver"),
@@ -184,7 +210,7 @@ def run_probe(*, host: str, port: int, output: Path, subscribe_seconds: float) -
             "trd_logined": None if ret != ft.RET_OK else str(state.get("trd_logined")),
         }
         if ret == ft.RET_OK:
-            report["timestamps"]["opend_server_minus_local_s"] = None
+            report["opend_version"] = report["connectivity"].get("opend_version")
             try:
                 report["timestamps"]["opend_server_minus_local_s"] = float(state["timestamp"]) - float(
                     state["local_timestamp"]
@@ -219,6 +245,14 @@ def run_probe(*, host: str, port: int, output: Path, subscribe_seconds: float) -
         quote_ctx.close()
 
     report["limitations"] = sorted(set(report["limitations"]))
+    report["quota"] = _quota_summary(report)
+    for row in (report.get("capabilities") or {}).values():
+        if isinstance(row, dict):
+            row.setdefault("configured", False)
+            row.setdefault("documented", True)
+            row.setdefault("subscribable", bool(row.get("account_entitled")))
+            row.setdefault("receiving", bool(row.get("verified_receiving")))
+            row.setdefault("last_verified", report.get("verified_at"))
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     summary_path = output.with_suffix(".summary.txt")
@@ -360,6 +394,9 @@ def _probe_streaming(quote_ctx: Any, ft: Any, report: dict[str, Any], subscribe_
         runtime_tested=True,
         data_currently_fresh=bool(quote_rows),
         evidence_class="OBSERVED",
+        subscribed=ret_sub == ft.RET_OK,
+        verified_receiving=len(quote_events) > 0,
+        healthy=ret_q == ft.RET_OK and len(quote_events) > 0,
         notes=f"subscribe_ret={ret_sub} cache_ret={ret_q} push_count={len(quote_events)}",
         reason_code=None if ret_q == ft.RET_OK else str(quote_cache),
     )
@@ -369,6 +406,9 @@ def _probe_streaming(quote_ctx: Any, ft: Any, report: dict[str, Any], subscribe_
         runtime_tested=True,
         data_currently_fresh=bool(ticker_rows),
         evidence_class="OBSERVED",
+        subscribed=ret_sub == ft.RET_OK,
+        verified_receiving=len(ticker_events) > 0,
+        healthy=ret_t == ft.RET_OK and len(ticker_events) > 0,
         notes=f"cache_rows={len(ticker_rows) if isinstance(ticker_rows, list) else 0} push_count={len(ticker_events)}",
         reason_code=None if ret_t == ft.RET_OK else str(ticker_cache),
     )
@@ -381,6 +421,9 @@ def _probe_streaming(quote_ctx: Any, ft: Any, report: dict[str, Any], subscribe_
         runtime_tested=True,
         data_currently_fresh=depth > 0,
         evidence_class="OBSERVED",
+        subscribed=ret_sub == ft.RET_OK,
+        verified_receiving=len(book_events) > 0,
+        healthy=ret_b == ft.RET_OK and depth > 0 and len(book_events) > 0,
         notes=f"depth={depth} push_count={len(book_events)} detailed_orderbook=not_requested",
         reason_code=None if ret_b == ft.RET_OK else str(book_cache),
     )
@@ -608,6 +651,26 @@ def _probe_reconnect(host: str, port: int, ft: Any, report: dict[str, Any]) -> N
         }
     finally:
         ctx.close()
+
+
+def _quota_summary(report: dict[str, Any]) -> dict[str, Any]:
+    quota = report.get("subscription_quota") if isinstance(report.get("subscription_quota"), dict) else {}
+    payload = quota.get("payload") if isinstance(quota.get("payload"), dict) else {}
+    after = quota.get("after_stream") if isinstance(quota.get("after_stream"), dict) else {}
+    source = after or payload
+    try:
+        used = int(source.get("total_used") or 0)
+        remain = int(source.get("remain") or 0)
+        total = used + remain
+    except (TypeError, ValueError):
+        used = remain = total = None
+    return {
+        "imp_calculated_usage": None,
+        "provider_quota": total,
+        "provider_remain": remain,
+        "provider_usage": used,
+        "reconciliation": "PROVIDER_AUTHORITATIVE" if total is not None else "UNAVAILABLE",
+    }
 
 
 def _human_summary(report: dict[str, Any]) -> str:

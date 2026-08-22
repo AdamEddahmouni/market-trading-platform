@@ -48,8 +48,10 @@ def assess_ticker(payload: dict[str, Any], *, prior_sequence: int | None = None)
             current = int(sequence)
             if current < prior_sequence:
                 flags.append("TIMESTAMP_REVERSAL")
-            elif current > prior_sequence + 1:
-                flags.append(OrderFlowQualityFlag.SEQUENCE_GAP.value)
+            elif current > prior_sequence:
+                delta = current - prior_sequence
+                if 1 < delta < 10_000:
+                    flags.append(OrderFlowQualityFlag.SEQUENCE_GAP.value)
             elif current == prior_sequence:
                 flags.append("DUPLICATE_TICK")
         except (TypeError, ValueError):
