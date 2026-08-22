@@ -17,10 +17,28 @@ export default defineConfig({
       "/explain": "http://127.0.0.1:8766",
       "/inspect": "http://127.0.0.1:8766",
       "/replay": "http://127.0.0.1:8766",
-      "/explore": "http://127.0.0.1:8766",
-      "/workspace": "http://127.0.0.1:8766",
+      "/explore/futures": "http://127.0.0.1:8766",
+      "/explore/squeeze": "http://127.0.0.1:8766",
+      "/explore/catalyst": "http://127.0.0.1:8766",
+      "/workspace": {
+        target: "http://127.0.0.1:8766",
+        bypass(req) {
+          const accept = req.headers.accept ?? "";
+          if (req.method === "GET" && accept.includes("text/html")) {
+            return "/index.html";
+          }
+        },
+      },
       "/assistant": "http://127.0.0.1:8766",
       "/research": "http://127.0.0.1:8766",
+      "/paper": "http://127.0.0.1:8766",
+      "/provider": "http://127.0.0.1:8766",
+      "/symbols": "http://127.0.0.1:8766",
+      "/market-state": "http://127.0.0.1:8766",
+      "/subscriptions": "http://127.0.0.1:8766",
+      "/operator": "http://127.0.0.1:8766",
+      "/state": "http://127.0.0.1:8766",
+      "/captures": "http://127.0.0.1:8766",
     },
   },
 });

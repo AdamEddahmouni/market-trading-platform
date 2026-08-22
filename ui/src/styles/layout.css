@@ -786,8 +786,278 @@ body,
   color: var(--text-secondary);
 }
 
-.mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12px;
-  word-break: break-all;
+.portfolio-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 16px;
+}
+
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.portfolio-main {
+  min-width: 0;
+}
+
+.order-ticket-panel .order-ticket-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  margin: 12px 0;
+}
+
+.side-toggle button.active.long {
+  color: var(--direction-long);
+  border-color: var(--direction-long);
+}
+
+.side-toggle button.active.short {
+  color: var(--direction-short);
+  border-color: var(--direction-short);
+}
+
+.order-ticket-quantity {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.order-ticket-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.order-preview.pass {
+  border-left: 4px solid var(--direction-long);
+}
+
+.order-preview.blocked {
+  border-left: 4px solid var(--warning);
+}
+
+.order-ticket-error {
+  color: var(--warning);
+}
+
+.execution-trace-panel {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-elevated);
+  padding: 12px;
+  max-height: 80vh;
+  overflow: auto;
+}
+
+.trace-step pre {
+  font-size: 11px;
+  overflow: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table th,
+.data-table td {
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.live-panel,
+.provider-health-panel {
+  margin-bottom: 24px;
+}
+
+.live-search-input {
+  display: block;
+  width: 100%;
+  max-width: 240px;
+  margin-top: 6px;
+}
+
+.capability-badge-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.capability-badge {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.context-segment.mode-live strong {
+  color: #3dd68c;
+}
+
+.startup-recovery-banner {
+  padding: 8px 16px;
+  background: #2a3142;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.85rem;
+}
+
+.what-matters-panel {
+  margin-bottom: 20px;
+}
+
+.what-matters-table .link-button {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.relevance-high {
+  color: #3dd68c;
+}
+
+.relevance-medium {
+  color: #e8c547;
+}
+
+.evidence-drawer {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: min(420px, 100%);
+  background: #1a1f2b;
+  border-left: 1px solid var(--border-subtle);
+  padding: 16px;
+  z-index: 40;
+  overflow: auto;
+}
+
+.workspace-paper-row {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  margin-bottom: 20px;
+}
+
+.ticket-context-lanes ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.workspace-health-line {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.live-market-panel {
+  margin: 12px 16px;
+  padding: 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.live-dom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.settings-page .panel {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.discover-page {
+  padding: 16px;
+}
+
+.discover-header h1 {
+  margin: 0 0 4px;
+}
+
+.discover-subtitle {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.discover-controls {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  margin: 16px 0;
+}
+
+.discover-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.discover-candidates {
+  display: grid;
+  gap: 12px;
+}
+
+.discover-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+
+.discover-card-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.discover-why {
+  margin: 8px 0;
+  font-size: 0.9rem;
+}
+
+.discover-metrics {
+  display: flex;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.discover-card-footer {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 0.8rem;
+}
+
+.discover-error {
+  color: var(--danger, #c0392b);
+  margin: 8px 0;
+}
+
+.discover-screen-inspector pre {
+  font-size: 0.75rem;
+  overflow: auto;
 }

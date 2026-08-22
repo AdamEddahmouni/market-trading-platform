@@ -19,12 +19,46 @@ CAPABILITY_DEFINITIONS: tuple[tuple[str, str], ...] = (
 
 
 def build_as_of_context(store: ReplayStore) -> dict[str, object]:
-    return {
-        "as_of_time": store.as_of_time(),
-        "mode": store.mode,
-        "replay_session_id": store.session_id,
-        "timezone": store.timezone,
-    }
+    from ..operating_modes import build_operating_context
+    from .live_projections import resolve_live_operating_modes
+
+    data_mode, execution_mode, data_provider, execution_authority = resolve_live_operating_modes(store)
+    as_of_time = store.as_of_time()
+    if data_mode == "LIVE_OBSERVATIONAL":
+        import time
+
+        from ..market_data.live_runtime import get_live_runtime
+
+        runtime = get_live_runtime(create=False)
+        if runtime is not None:
+            from .operator_instrument import resolve_active_operator_instrument
+
+            focus, _source = resolve_active_operator_instrument(store)
+            quote = runtime.state.quote_for(focus) if focus else None
+            if quote is not None:
+                seconds = quote.received_ns // 1_000_000_000
+                nanos = quote.received_ns % 1_000_000_000
+                from datetime import datetime, timezone
+
+                as_of_time = datetime.fromtimestamp(seconds, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S") + f".{nanos:09d}Z"
+            else:
+                as_of_time = store.as_of_time()
+
+    exec_provider = None
+    if execution_mode == "INTERNAL_SIMULATION":
+        exec_provider = "INTERNAL"
+    elif execution_mode != "NONE":
+        exec_provider = store.execution_provider
+    return build_operating_context(
+        as_of_time=as_of_time,
+        timezone=store.timezone,
+        replay_session_id=store.session_id if data_mode == "FIXTURE_REPLAY" else None,
+        data_mode=data_mode,
+        execution_mode=execution_mode,
+        execution_authority=execution_authority,
+        data_provider=data_provider,
+        execution_provider=exec_provider,
+    )
 
 
 def build_quality_summary(store: ReplayStore) -> dict[str, object]:
@@ -122,6 +156,20 @@ def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
                     }
                 )
             continue
+        if capability_id == "paper.execution":
+            from ..market_data.live_config import live_internal_simulation_enabled
+            from ..operating_modes import paper_execution_env_enabled
+
+            paper_on = paper_execution_env_enabled() or live_internal_simulation_enabled()
+            row = {
+                "capability_id": capability_id,
+                "explanation_ref": f"cap:{capability_id}",
+                "state": "AVAILABLE" if paper_on else "UNSUPPORTED",
+            }
+            if not paper_on:
+                row["reason"] = "Paper execution requires IMP_PAPER_EXECUTION=1"
+            rows.append(row)
+            continue
         if capability_id.startswith("whale."):
             rows.append(
                 {
@@ -131,6 +179,27 @@ def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
                     "state": "UNSUPPORTED",
                 }
             )
+            continue
+        if capability_id == "live.quotes":
+            from ..market_data.live_config import live_observational_enabled
+
+            if live_observational_enabled():
+                rows.append(
+                    {
+                        "capability_id": capability_id,
+                        "explanation_ref": f"cap:{capability_id}",
+                        "state": "AVAILABLE",
+                    }
+                )
+            else:
+                rows.append(
+                    {
+                        "capability_id": capability_id,
+                        "explanation_ref": f"cap:{capability_id}",
+                        "reason": "Live observational mode not enabled",
+                        "state": "UNSUPPORTED",
+                    }
+                )
             continue
         rows.append(
             {
@@ -225,7 +294,24 @@ def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
 
 
 def build_context_payload(store: ReplayStore) -> dict[str, object]:
+    from .live_projections import build_live_context_overrides
+
+    from .operator_instrument import resolve_active_operator_instrument
+
+    active_instrument, active_source = resolve_active_operator_instrument(store)
+    overrides = build_live_context_overrides(store)
+    if overrides is not None:
+        return {
+            "active_instrument": active_instrument,
+            "active_instrument_source": active_source,
+            "as_of_context": build_as_of_context(store),
+            "capability_states": build_capabilities(store),
+            "quality_summary": overrides["quality_summary"],
+            "scope_symbols": overrides["scope_symbols"],
+        }
     return {
+        "active_instrument": active_instrument,
+        "active_instrument_source": active_source,
         "as_of_context": build_as_of_context(store),
         "capability_states": build_capabilities(store),
         "quality_summary": build_quality_summary(store),

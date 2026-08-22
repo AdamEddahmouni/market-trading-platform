@@ -18,6 +18,8 @@ SECRET_SCAN_RULES = {
     "FRED_API_KEY": r"(?i)FRED_API_KEY\s*[:=]\s*(?!CHANGEME\b|EXAMPLE\b|$)\S+",
     "FRED_V1_API_KEY_PARAM": r"(?i)(api_key=)[^&\s\"']+",
     "EIA_API_KEY": r"(?i)EIA_API_KEY\s*[:=]\s*(?!CHANGEME\b|EXAMPLE\b|$)\S+",
+    "FINVIZ_API_KEY": r"(?i)FINVIZ_API_KEY\s*[:=]\s*(?!CHANGEME\b|EXAMPLE\b|$)\S+",
+    "FINVIZ_AUTH_QUERY": r"(?i)([?&]auth=)[a-f0-9\-]{36}",
 }
 _AUDIT_SOURCE_EXCEPTIONS = {
     "src/market_platform_foundation/credential_audit.py",

@@ -10,8 +10,16 @@ type Props = {
 
 export function InstitutionalFlowWorkspacePage({ onExplain, onInspect }: Props) {
   const { symbol } = useParams<{ symbol: string }>();
-  const instrumentId = symbol?.toUpperCase() ?? "BIYA";
+  const instrumentId = symbol?.toUpperCase() ?? "";
   const flowQuery = useWorkspaceInstitutionalFlowQuery(instrumentId);
+
+  if (!instrumentId) {
+    return (
+      <section className="page">
+        <h1>SELECT AN INSTRUMENT</h1>
+      </section>
+    );
+  }
 
   return (
     <section className="page institutional-flow-workspace-page">

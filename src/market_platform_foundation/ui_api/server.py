@@ -9,6 +9,9 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from ..canonical import canonical_bytes, write_canonical_json
+from . import live_projections
+from . import operator_projections
+from . import paper_projections
 from . import projections
 from .assistant_projections import (
     build_assistant_conversations,
@@ -27,7 +30,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
         return
 
     def _send_json(self, payload: dict[str, Any], *, status: HTTPStatus = HTTPStatus.OK) -> None:
-        body = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        body = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
@@ -50,6 +53,63 @@ class UiApiHandler(BaseHTTPRequestHandler):
         path = parsed.path.rstrip("/") or "/"
         query = parse_qs(parsed.query)
         try:
+            if path == "/provider/health":
+                self._send_json(live_projections.build_provider_health_payload(self.store))
+                return
+            if path == "/provider/finviz/health":
+                from .discovery_projections import build_finviz_diagnostics_payload
+
+                self._send_json(build_finviz_diagnostics_payload())
+                return
+            if path == "/discover/screens":
+                from .discovery_projections import build_discover_screens_payload
+
+                self._send_json(build_discover_screens_payload())
+                return
+            if path == "/discover/run":
+                from .discovery_projections import build_discover_run_payload
+
+                screen_id = (query.get("screen") or ["SHORT_SQUEEZE_DISCOVERY"])[0]
+                force = (query.get("force") or ["0"])[0] in ("1", "true", "yes")
+                self._send_json(build_discover_run_payload(str(screen_id), force=force))
+                return
+            if path == "/state/startup":
+                self._send_json(operator_projections.build_startup_payload(self.store))
+                return
+            if path == "/operator/state":
+                self._send_json(operator_projections.build_operator_state_payload(self.store))
+                return
+            if path == "/captures":
+                try:
+                    self._send_json(operator_projections.refresh_captures())
+                except ValueError:
+                    self._send_json({"captures": [], "indexed": 0, "persistence_enabled": False})
+                return
+            if path == "/paper/sessions":
+                self._send_json(paper_projections.list_paper_sessions(self.store))
+                return
+            if path == "/symbols/search":
+                query_text = (query.get("q") or [""])[0]
+                self._send_json(live_projections.build_symbol_search_payload(str(query_text)))
+                return
+            if path.startswith("/instruments/") and path.endswith("/capabilities"):
+                instrument_id = path.removeprefix("/instruments/").removesuffix("/capabilities")
+                try:
+                    self._send_json(live_projections.build_instrument_capabilities_payload(instrument_id))
+                except Exception as exc:
+                    print(f"CAPABILITIES_ERROR {instrument_id}: {exc!r}", flush=True)
+                    self._send_json(
+                        {
+                            "capabilities": [],
+                            "instrument_id": instrument_id.upper(),
+                            "reason": f"CAPABILITIES_ERROR:{exc}",
+                        }
+                    )
+                return
+            if path.startswith("/market-state/"):
+                instrument_id = path.removeprefix("/market-state/").strip("/")
+                self._send_json(live_projections.build_market_state_payload(instrument_id))
+                return
             if path == "/context":
                 self._send_json(projections.build_context_payload(self.store))
                 return
@@ -125,6 +185,26 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 from ..donor_bridge.projections import build_explore_catalyst_payload
 
                 self._send_json(build_explore_catalyst_payload(as_of_context=as_of))
+                return
+            if path.startswith("/workspace/") and path.endswith("/evidence"):
+                symbol = path.removeprefix("/workspace/").removesuffix("/evidence").strip("/")
+                if not symbol:
+                    self._send_error_json(
+                        "UI_REQUEST_INVALID",
+                        "workspace evidence symbol is required",
+                        status=HTTPStatus.BAD_REQUEST,
+                    )
+                    return
+                from . import workspace_evidence
+
+                data_mode = query.get("data_mode", ["frozen"])[0]
+                self._send_json(
+                    workspace_evidence.build_workspace_evidence_payload(
+                        self.store,
+                        symbol,
+                        data_mode=str(data_mode),
+                    )
+                )
                 return
             if path.startswith("/workspace/") and path.endswith("/squeeze"):
                 symbol = path.removeprefix("/workspace/").removesuffix("/squeeze").strip("/")
@@ -220,6 +300,10 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     )
                     return
                 as_of = projections.build_as_of_context(self.store)
+                live_payload = live_projections.build_live_order_flow_payload(symbol)
+                if live_payload is not None and live_payload.get("available"):
+                    self._send_json(live_payload)
+                    return
                 from ..providers.projections import build_workspace_order_flow_payload
 
                 self._send_json(
@@ -320,6 +404,10 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     )
                     return
                 as_of = projections.build_as_of_context(self.store)
+                live_book = live_projections.build_live_order_book_payload(symbol)
+                if live_book is not None and live_book.get("available"):
+                    self._send_json(live_book)
+                    return
                 from ..providers.projections import build_workspace_order_book_payload
 
                 self._send_json(
@@ -332,6 +420,41 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 return
             if path == "/assistant/status":
                 self._send_json(build_assistant_status(self.store))
+                return
+            if path == "/paper/account":
+                self._send_json(paper_projections.build_paper_account_payload(self.store))
+                return
+            if path == "/paper/positions":
+                self._send_json(paper_projections.build_paper_positions_payload(self.store))
+                return
+            if path == "/paper/orders":
+                self._send_json(paper_projections.build_paper_orders_payload(self.store))
+                return
+            if path == "/paper/fills":
+                self._send_json(paper_projections.build_paper_fills_payload(self.store))
+                return
+            if path == "/paper/risk":
+                self._send_json(paper_projections.build_paper_risk_payload(self.store))
+                return
+            if path == "/paper/portfolio":
+                self._send_json(paper_projections.build_paper_portfolio_payload(self.store))
+                return
+            if path == "/paper/trace":
+                query = parse_qs(parsed.query)
+                intent_id = query.get("intent_id", [None])[0]
+                order_id = query.get("order_id", [None])[0]
+                fill_id = query.get("fill_id", [None])[0]
+                try:
+                    self._send_json(
+                        paper_projections.build_paper_trace_payload(
+                            self.store,
+                            intent_id=str(intent_id) if intent_id else None,
+                            order_id=str(order_id) if order_id else None,
+                            fill_id=str(fill_id) if fill_id else None,
+                        )
+                    )
+                except ValueError as exc:
+                    self._send_error_json("PAPER_TRACE_NOT_FOUND", str(exc), status=HTTPStatus.BAD_REQUEST)
                 return
             if path == "/assistant/conversations":
                 principal = query.get("principal_id", [None])[0]
@@ -353,6 +476,9 @@ class UiApiHandler(BaseHTTPRequestHandler):
             self._send_error_json("UI_REQUEST_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
         except KeyError:
             self._send_error_json("UI_ASSISTANT_NOT_FOUND", "conversation not found", status=HTTPStatus.NOT_FOUND)
+        except Exception as exc:
+            print(f"UI_INTERNAL_ERROR {path}: {exc!r}", flush=True)
+            self._send_error_json("UI_INTERNAL_ERROR", str(exc), status=HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
@@ -366,6 +492,148 @@ class UiApiHandler(BaseHTTPRequestHandler):
             return
         if not isinstance(body, dict):
             self._send_error_json("UI_JSON_INVALID", "Body must be an object", status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/paper/orders/preview":
+            try:
+                self._send_json(paper_projections.preview_paper_order(self.store, body))
+            except ValueError as exc:
+                self._send_error_json("PAPER_ORDER_PREVIEW_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+
+        if path == "/paper/orders":
+            try:
+                self._send_json(paper_projections.submit_paper_order(self.store, body))
+            except ValueError as exc:
+                code = "PAPER_EXECUTION_NOT_AUTHORIZED" if "NOT_AUTHORIZED" in str(exc) else "PAPER_ORDER_SUBMIT_FAILED"
+                self._send_error_json(code, str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+
+        if path == "/paper/sessions":
+            try:
+                self._send_json(paper_projections.open_paper_session(self.store, body))
+            except ValueError as exc:
+                self._send_error_json("PAPER_SESSION_OPEN_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+
+        if path == "/paper/sessions/close":
+            try:
+                self._send_json(paper_projections.close_paper_session(self.store))
+            except ValueError as exc:
+                self._send_error_json("PAPER_SESSION_CLOSE_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+
+        if path == "/operator/watchlist":
+            try:
+                self._send_json(operator_projections.update_watchlist(body))
+            except ValueError as exc:
+                self._send_error_json("OPERATOR_WATCHLIST_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/operator/recent":
+            try:
+                self._send_json(operator_projections.record_recent(body))
+            except ValueError as exc:
+                self._send_error_json("OPERATOR_RECENT_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/operator/workspace":
+            try:
+                self._send_json(operator_projections.save_workspace(body))
+            except ValueError as exc:
+                self._send_error_json("OPERATOR_WORKSPACE_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/operator/preferences":
+            try:
+                self._send_json(operator_projections.save_preferences(body))
+            except ValueError as exc:
+                self._send_error_json("OPERATOR_PREFERENCES_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/captures/replay":
+            try:
+                self._send_json(operator_projections.replay_capture(body))
+            except ValueError as exc:
+                self._send_error_json("CAPTURE_REPLAY_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+
+        if path == "/paper/orders/cancel":
+            try:
+                self._send_json(paper_projections.cancel_paper_order(self.store, body))
+            except ValueError as exc:
+                code = "PAPER_ORDER_CANCEL_FAILED"
+                if "NOT_AUTHORIZED" in str(exc):
+                    code = "PAPER_EXECUTION_NOT_AUTHORIZED"
+                elif "NOT_SUPPORTED" in str(exc):
+                    code = "PAPER_ORDER_CANCEL_NOT_SUPPORTED"
+                elif "NOT_FOUND" in str(exc):
+                    code = "PAPER_ORDER_NOT_FOUND"
+                self._send_error_json(code, str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+
+        if path == "/discover/promote-to-live-analysis":
+            from .discovery_projections import promote_to_live_analysis
+
+            instrument_id = str(body.get("instrument_id", "")).strip()
+            if not instrument_id:
+                self._send_error_json(
+                    "UI_REQUEST_INVALID",
+                    "instrument_id required",
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            self._send_json(promote_to_live_analysis(instrument_id))
+            return
+
+        if path == "/subscriptions":
+            from ..market_data.live_runtime import get_live_runtime
+
+            runtime = get_live_runtime(create=False)
+            if runtime is None:
+                self._send_error_json(
+                    "LIVE_OBSERVATIONAL_DISABLED",
+                    "IMP_LIVE_OBSERVATIONAL not enabled",
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            instrument_id = str(body.get("instrument_id", "")).strip()
+            capabilities = body.get("capabilities") or ["BASIC_QUOTE", "TRADES"]
+            consumer_id = str(body.get("consumer_id") or "ui-default")
+            priority = int(body.get("priority") or 1)
+            if not instrument_id:
+                self._send_error_json("UI_REQUEST_INVALID", "instrument_id required", status=HTTPStatus.BAD_REQUEST)
+                return
+            if not isinstance(capabilities, list):
+                self._send_error_json("UI_REQUEST_INVALID", "capabilities must be a list", status=HTTPStatus.BAD_REQUEST)
+                return
+            results = runtime.subscribe(
+                instrument_id=instrument_id,
+                capabilities=[str(item) for item in capabilities],
+                consumer_id=consumer_id,
+                priority=priority,
+            )
+            self._send_json({"instrument_id": instrument_id.upper(), "subscriptions": results})
+            return
+
+        if path == "/subscriptions/release":
+            from ..market_data.live_runtime import get_live_runtime
+
+            runtime = get_live_runtime(create=False)
+            if runtime is None:
+                self._send_error_json(
+                    "LIVE_OBSERVATIONAL_DISABLED",
+                    "IMP_LIVE_OBSERVATIONAL not enabled",
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            instrument_id = str(body.get("instrument_id", "")).strip()
+            capabilities = body.get("capabilities") or ["BASIC_QUOTE", "TRADES", "ORDER_BOOK"]
+            consumer_id = str(body.get("consumer_id") or "ui-default")
+            if not instrument_id:
+                self._send_error_json("UI_REQUEST_INVALID", "instrument_id required", status=HTTPStatus.BAD_REQUEST)
+                return
+            results = runtime.unsubscribe(
+                instrument_id=instrument_id,
+                capabilities=[str(item) for item in capabilities],
+                consumer_id=consumer_id,
+            )
+            self._send_json({"instrument_id": instrument_id.upper(), "subscriptions": results})
             return
 
         if path == "/replay/scrub":

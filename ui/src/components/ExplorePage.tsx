@@ -7,6 +7,7 @@ import {
 } from "../api/hooks";
 import { ADMITTED_CATALYST_INSTRUMENT_ID, ADMITTED_FUTURES_INSTRUMENT_ID } from "../api/schemas";
 import { CountBarChartPanel } from "./charts/ResearchChartPanels";
+import { LiveObservationalPanel } from "./live/LiveObservationalPanel";
 
 type Props = {
   onExplain?: (ref: string) => void;
@@ -105,7 +106,10 @@ export function ExplorePage({ onExplain }: Props) {
 
   return (
     <section className="page explore-page">
-      <h1>EXPLORE — Short Squeeze Screener (read-only bridge)</h1>
+      <h1>EXPLORE</h1>
+      <LiveObservationalPanel />
+
+      <h2>Short Squeeze Screener (read-only bridge)</h2>
 
       <section className="explore-section">
         <h2>Frozen research cohort</h2>

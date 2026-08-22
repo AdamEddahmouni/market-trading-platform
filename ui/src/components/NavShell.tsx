@@ -3,9 +3,12 @@ import { NavLink } from "react-router-dom";
 const links = [
   { to: "/", label: "NOW" },
   { to: "/explore", label: "EXPLORE" },
+  { to: "/discover", label: "DISCOVER" },
   { to: "/workspace", label: "WORKSPACE" },
   { to: "/research", label: "RESEARCH", gated: true },
-  { to: "/portfolio", label: "PORTFOLIO", gated: true },
+  { to: "/portfolio", label: "PORTFOLIO" },
+  { to: "/settings", label: "SETTINGS" },
+  { to: "/diagnostics/provider", label: "DIAGNOSTICS" },
 ];
 
 export function NavShell() {

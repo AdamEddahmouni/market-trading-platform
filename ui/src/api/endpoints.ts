@@ -1,4 +1,4 @@
-import { fetchJson, fetchRawJson } from "./fetchJson";
+import { fetchJson, fetchRawJson, postJson } from "./fetchJson";
 import {
   AttentionResponseSchema,
   ContextResponseSchema,
@@ -25,6 +25,17 @@ import {
   ResearchSimulationResponseSchema,
   WorkspaceDisclosureResponseSchema,
   WorkspaceInstitutionalFlowResponseSchema,
+  WorkspaceEvidenceResponseSchema,
+  PaperPortfolioResponseSchema,
+  PaperOrderPreviewResponseSchema,
+  PaperOrderSubmitResponseSchema,
+  PaperSessionResponseSchema,
+  PaperTraceResponseSchema,
+  ProviderHealthResponseSchema,
+  SymbolSearchResponseSchema,
+  InstrumentCapabilitiesResponseSchema,
+  MarketStateResponseSchema,
+  type PaperOrderRequest,
 } from "./schemas";
 
 export const api = {
@@ -67,6 +78,13 @@ export const api = {
   },
   getWorkspaceOrderFlow: (symbol: string) =>
     fetchJson(`/workspace/${encodeURIComponent(symbol)}/order-flow`, WorkspaceOrderFlowResponseSchema),
+  getWorkspaceEvidence: (symbol: string, dataMode: "frozen" | "current" = "frozen") => {
+    const suffix = dataMode === "current" ? "?data_mode=current" : "";
+    return fetchJson(
+      `/workspace/${encodeURIComponent(symbol)}/evidence${suffix}`,
+      WorkspaceEvidenceResponseSchema,
+    );
+  },
   getWorkspaceOptions: (symbol: string) =>
     fetchJson(`/workspace/${encodeURIComponent(symbol)}/options`, WorkspaceOptionsResponseSchema),
   getWorkspaceLargeTransactions: (symbol: string) =>
@@ -113,5 +131,45 @@ export const api = {
     );
     if (!response.ok) throw new Error("assistant prompt failed");
     return AssistantPromptResponseSchema.parse(await response.json());
+  },
+  getPaperPortfolio: () => fetchJson("/paper/portfolio", PaperPortfolioResponseSchema),
+  previewPaperOrder: (body: PaperOrderRequest) =>
+    postJson("/paper/orders/preview", body, PaperOrderPreviewResponseSchema),
+  submitPaperOrder: (body: PaperOrderRequest) =>
+    postJson("/paper/orders", body, PaperOrderSubmitResponseSchema),
+  openPaperSession: (executionMode = "INTERNAL_SIMULATION", preferredInstrument?: string) =>
+    postJson(
+      "/paper/sessions",
+      {
+        execution_mode: executionMode,
+        ...(preferredInstrument ? { preferred_instrument: preferredInstrument } : {}),
+      },
+      PaperSessionResponseSchema,
+    ),
+  closePaperSession: () => postJson("/paper/sessions/close", {}, PaperSessionResponseSchema),
+  cancelPaperOrder: (orderId: string) =>
+    postJson("/paper/orders/cancel", { order_id: orderId }, PaperOrderSubmitResponseSchema),
+  getPaperTrace: (params: { intentId?: string; orderId?: string; fillId?: string }) => {
+    const query = new URLSearchParams();
+    if (params.intentId) query.set("intent_id", params.intentId);
+    if (params.orderId) query.set("order_id", params.orderId);
+    if (params.fillId) query.set("fill_id", params.fillId);
+    return fetchJson(`/paper/trace?${query.toString()}`, PaperTraceResponseSchema);
+  },
+  searchSymbols: (query: string) =>
+    fetchJson(`/symbols/search?q=${encodeURIComponent(query)}`, SymbolSearchResponseSchema),
+  getInstrumentCapabilities: (instrumentId: string) =>
+    fetchJson(`/instruments/${encodeURIComponent(instrumentId)}/capabilities`, InstrumentCapabilitiesResponseSchema),
+  getProviderHealth: () => fetchJson("/provider/health", ProviderHealthResponseSchema),
+  getMarketState: (instrumentId: string) =>
+    fetchJson(`/market-state/${encodeURIComponent(instrumentId)}`, MarketStateResponseSchema),
+  subscribeLive: async (body: { instrument_id: string; capabilities: string[]; consumer_id?: string }) => {
+    const response = await fetch("/subscriptions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) throw new Error("subscription failed");
+    return response.json();
   },
 };

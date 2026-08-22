@@ -25,6 +25,7 @@ from ..providers.whale_ledger import bootstrap_default_providers
 from ..risk_simulation.evaluation import run_risk_simulation_evaluation
 from ..storage.bounded_memory_cache import BoundedMemoryCache
 from ..strategy.evaluation import run_strategy_evaluation
+from ..paper.ledger import PaperExecutionLedger
 
 
 def _bars_from_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -100,6 +101,11 @@ class ReplayStore:
     collection_root: Any
     timezone: str = "America/New_York"
     mode: str = "REPLAY"
+    data_mode: str = "FIXTURE_REPLAY"
+    execution_mode: str = "NONE"
+    execution_authority: str = "BLOCKED"
+    data_provider: str = "INTERNAL"
+    execution_provider: str = "INTERNAL"
     assistant_audit_root: Path | None = None
     cursor_index: int = 0
     page_size: int = 10
@@ -111,6 +117,9 @@ class ReplayStore:
     _session_id: str = field(default="", init=False, repr=False)
     _assistant_service: AssistantResearchService = field(init=False, repr=False)
     _feature_cache: BoundedMemoryCache = field(init=False, repr=False)
+    paper_ledger: PaperExecutionLedger = field(init=False, repr=False)
+    execution_deferred: bool = field(default=False, init=False)
+    restore_details: dict[str, Any] = field(default_factory=dict, init=False)
 
     @property
     def assistant_service(self) -> AssistantResearchService:
@@ -146,6 +155,50 @@ class ReplayStore:
             AssistantAuditStore(audit_root),
             inference=resolve_assistant_inference(),
         )
+        self.paper_ledger = PaperExecutionLedger.open_session(
+            replay_session_id=self._session_id,
+            instrument_id=self._instrument_id,
+            symbol=self.symbol,
+        )
+        self._bind_local_state()
+
+    def _bind_local_state(self) -> None:
+        from ..local_state.startup import (
+            persist_ledger,
+            persist_ledger_batch,
+            restore_open_ledger,
+            session_record_from_ledger,
+        )
+        from ..market_data.live_config import live_observational_enabled, moomoo_live_enabled
+
+        if live_observational_enabled():
+            self.data_mode = "LIVE_OBSERVATIONAL"
+            self.data_provider = "MOOMOO" if moomoo_live_enabled() else self.data_provider
+        self.paper_ledger.data_mode = self.data_mode
+        self.paper_ledger.data_provider = self.data_provider
+        self.execution_deferred = False
+        self.restore_details = {"reason": "PERSISTENCE_DISABLED"}
+        current = session_record_from_ledger(self.paper_ledger)
+        current["data_mode"] = self.data_mode
+        current["data_provider"] = self.data_provider
+        current["execution_provider"] = "INTERNAL"
+        restored, details = restore_open_ledger(current_config=current)
+        self.restore_details = details
+        if restored is not None:
+            self.paper_ledger = restored
+            self.execution_deferred = True
+            self.execution_mode = restored.execution_mode
+            self.execution_authority = restored.execution_authority
+            self.data_mode = restored.data_mode
+            self.data_provider = restored.data_provider
+            self.execution_provider = restored.execution_provider
+            return
+        self.paper_ledger.persist_sink = persist_ledger_batch
+        persist_ledger(self.paper_ledger)
+
+    @property
+    def symbol(self) -> str:
+        return self._instrument_id
 
     @property
     def instrument_id(self) -> str:
@@ -179,6 +232,12 @@ class ReplayStore:
     def bars_visible(self) -> list[dict[str, Any]]:
         cutoff = self.prediction_cutoff()
         return [bar for bar in self._bars if int(bar["available_time"]) <= cutoff]
+
+    def bars_for_execution(self) -> list[dict[str, Any]]:
+        """Admitted bars from replay cursor forward for deterministic fill simulation."""
+
+        cutoff = self.prediction_cutoff()
+        return [bar for bar in self._bars if int(bar["available_time"]) >= cutoff]
 
     def bar_features_at_cutoff(self) -> list[dict[str, object]]:
         key = self._feature_cache.cache_key(

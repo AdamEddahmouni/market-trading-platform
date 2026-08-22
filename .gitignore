@@ -16,5 +16,8 @@ dist/
 !tests/phase0/test_credential_audit.py
 evidence/phase0/.staging-*/
 evidence/ui1/.debug-run/
+.local/
+.private/
+data/
 tests/full_suite_output*.txt
 tests/short_intelligence_test_output.txt

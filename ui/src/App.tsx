@@ -15,6 +15,7 @@ import { AssistantSidecar } from "./components/AssistantSidecar";
 import { ContextBar } from "./components/ContextBar";
 import { ExplanationDrawer } from "./components/ExplanationDrawer";
 import { ExplorePage } from "./components/ExplorePage";
+import { DiscoverPage } from "./components/DiscoverPage";
 import { ResearchPage } from "./components/ResearchPage";
 import { SqueezeWorkspacePage } from "./components/squeeze/SqueezeWorkspacePage";
 import { OrderFlowWorkspacePage } from "./components/orderflow/OrderFlowWorkspacePage";
@@ -26,23 +27,40 @@ import { CatalystWorkspacePage } from "./components/catalyst/CatalystWorkspacePa
 import { FundEtfWorkspacePage } from "./components/fundetf/FundEtfWorkspacePage";
 import { DisclosureWorkspacePage } from "./components/disclosure/DisclosureWorkspacePage";
 import { InstitutionalFlowWorkspacePage } from "./components/institutional/InstitutionalFlowWorkspacePage";
+import { PortfolioPage } from "./components/PortfolioPage";
+import { OperatorSettingsPage } from "./components/OperatorSettingsPage";
+import { ProviderHealthPanel } from "./components/live/ProviderHealthPanel";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { NavShell } from "./components/NavShell";
 import { NowPage } from "./components/NowPage";
 import { WorkspaceRoute } from "./components/WorkspaceRoute";
+import { WorkspaceIndex } from "./components/WorkspaceIndex";
 import "./styles/tokens.css";
 import "./styles/layout.css";
 
 const queryClient = new QueryClient();
 
-function GatedPage({ title }: { title: string }) {
+function StartupRecoveryBanner() {
+  const [message, setMessage] = useState<string | null>(null);
+  useEffect(() => {
+    void fetch("/state/startup")
+      .then((response) => response.json())
+      .then((payload) => {
+        if (payload?.crash_recovery === "OPEN_SESSION_DETECTED") {
+          setMessage(
+            `Previous paper session detected (${payload.restore}). Positions restore from events; live marks wait for fresh Moomoo evidence.`,
+          );
+        } else if (payload?.crash_recovery === "CORRUPT_DB") {
+          setMessage("Local state database failed integrity check. Original file was preserved.");
+        }
+      })
+      .catch(() => undefined);
+  }, []);
+  if (!message) return null;
   return (
-    <section className="page gated-page">
-      <h1>{title}</h1>
-      <div className="capability-panel unavailable">
-        <p>UNAVAILABLE — separate authorization required.</p>
-      </div>
-    </section>
+    <div className="startup-recovery-banner" role="status">
+      {message}
+    </div>
   );
 }
 
@@ -169,6 +187,7 @@ function Shell() {
     <div className="app-shell">
       <NavShell />
       <ContextBar context={contextQuery.data} />
+      <StartupRecoveryBanner />
       <div className="app-body">
         <main className="main-content">
           <Routes>
@@ -190,7 +209,8 @@ function Shell() {
               }
             />
             <Route path="/explore" element={<ExplorePage onExplain={openExplainRef} />} />
-            <Route path="/workspace" element={<Navigate to="/workspace/BIYA" replace />} />
+            <Route path="/discover" element={<DiscoverPage />} />
+            <Route path="/workspace" element={<WorkspaceIndex />} />
             <Route
               path="/workspace/:symbol"
               element={
@@ -296,7 +316,9 @@ function Shell() {
               }
             />
             <Route path="/research" element={<ResearchPage />} />
-            <Route path="/portfolio" element={<GatedPage title="PORTFOLIO" />} />
+            <Route path="/portfolio" element={<PortfolioPage />} />
+            <Route path="/settings" element={<OperatorSettingsPage />} />
+            <Route path="/diagnostics/provider" element={<ProviderHealthPanel />} />
             <Route path="/assistant/history" element={<AssistantHistoryPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -2,6 +2,11 @@ import { z } from "zod";
 
 export const AsOfContextSchema = z.object({
   mode: z.enum(["LIVE", "REPLAY", "SIMULATION", "PAPER"]),
+  data_mode: z.enum(["FIXTURE_REPLAY", "HISTORICAL_CAPTURE", "LIVE_OBSERVATIONAL", "BROKER_DELAYED"]).optional(),
+  execution_mode: z.enum(["NONE", "INTERNAL_SIMULATION", "BROKER_PAPER", "LIVE"]).optional(),
+  execution_authority: z.enum(["BLOCKED", "AUTHORIZED", "PAPER_ONLY"]).optional(),
+  data_provider: z.string().optional(),
+  execution_provider: z.string().optional(),
   as_of_time: z.string(),
   replay_session_id: z.string().optional(),
   timezone: z.string(),
@@ -38,6 +43,67 @@ export const ContextResponseSchema = z.object({
     affected_symbols: z.array(z.string()).optional(),
   }),
   scope_symbols: z.array(z.string()).optional(),
+  active_instrument: z.string().nullable().optional(),
+  active_instrument_source: z.string().optional(),
+});
+
+export const SymbolSearchResponseSchema = z.object({
+  query: z.string(),
+  results: z.array(
+    z.object({
+      instrument_id: z.string(),
+      provider_symbol: z.string(),
+      venue_id: z.string(),
+    }),
+  ),
+});
+
+export const InstrumentCapabilitiesResponseSchema = z.object({
+  instrument_id: z.string(),
+  capabilities: z.array(
+    z.object({
+      capability_id: z.string(),
+      label: z.string().optional(),
+      state: z.string(),
+      reason: z.string().nullable().optional(),
+      data_provider: z.string().optional(),
+      freshness_ms: z.number().nullable().optional(),
+      subscribed: z.boolean().optional(),
+      registry_capability: z.string().optional(),
+    }),
+  ),
+  reason: z.string().optional(),
+});
+
+export const ProviderHealthResponseSchema = z.object({
+  available: z.boolean(),
+  reason: z.string().optional(),
+  data_mode: z.string().optional(),
+  lifecycle: z.record(z.string(), z.unknown()).optional(),
+  metrics: z.record(z.string(), z.number()).optional(),
+  quota: z
+    .object({
+      active_count: z.number(),
+      max_quota: z.number(),
+      remaining: z.number(),
+    })
+    .optional(),
+  scope_symbols: z.array(z.string()).optional(),
+  provider_summary: z.record(z.string(), z.unknown()).optional(),
+  execution_gate: z.record(z.string(), z.unknown()).optional(),
+  capability_registry: z.record(z.string(), z.unknown()).optional(),
+  execution_buffer: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const MarketStateResponseSchema = z.object({
+  available: z.boolean(),
+  instrument_id: z.string(),
+  freshness_ms: z.number().nullable().optional(),
+  quote: z.record(z.string(), z.unknown()).nullable().optional(),
+  trade_count: z.number().optional(),
+  trades_tail: z.array(z.record(z.string(), z.unknown())).optional(),
+  book: z.record(z.string(), z.unknown()).nullable().optional(),
+  live_mark: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
 export const AttentionResponseSchema = z.object({
@@ -668,7 +734,8 @@ export const WorkspaceOrderFlowBarSchema = z.object({
 });
 
 export const WorkspaceOrderFlowResponseSchema = z.object({
-  symbol: z.string(),
+  symbol: z.string().optional(),
+  instrument_id: z.string().optional(),
   available: z.boolean(),
   reason: z.string().optional(),
   disclaimer: z.string().optional(),
@@ -677,6 +744,9 @@ export const WorkspaceOrderFlowResponseSchema = z.object({
   bars: z.array(WorkspaceOrderFlowBarSchema).optional(),
   provider_id: z.string().optional(),
   ledger_id: z.string().optional(),
+  source: z.string().optional(),
+  quality: z.string().optional(),
+  cvd: z.unknown().optional(),
   as_of_context: AsOfContextSchema.optional(),
 });
 
@@ -1386,3 +1456,258 @@ export const ADMITTED_FUTURES_INSTRUMENT_ID = "ES";
 export const ADMITTED_CATALYST_INSTRUMENT_ID = "BOXL";
 export const ADMITTED_FUND_ETF_INSTRUMENT_ID = "NVDA";
 export const FROZEN_DEMO_REFERENCE_SYMBOL = "AVTX";
+
+export const PaperPortfolioResponseSchema = z.object({
+  as_of_context: AsOfContextSchema,
+  capability_states: z.array(CapabilityStateSchema).optional(),
+  authority_boundary: z.string(),
+  account: z.object({
+    paper_account_id: z.string(),
+    session_id: z.string(),
+    currency: z.string(),
+    cash_display: z.string(),
+    cash_minor: z.number(),
+    buying_power_minor: z.number(),
+    initial_cash_minor: z.number(),
+    realized_pnl_display: z.string(),
+    realized_pnl_minor: z.number(),
+    data_mode: z.string(),
+    data_provider: z.string(),
+    execution_mode: z.string(),
+    execution_authority: z.string(),
+    execution_provider: z.string(),
+  }),
+  positions: z.array(
+    z.object({
+      instrument_id: z.string(),
+      symbol: z.string(),
+      quantity: z.number(),
+      side: z.string(),
+      mark_display: z.string().nullable().optional(),
+      mark_source: z.string().nullable().optional(),
+      mark_provider: z.string().nullable().optional(),
+      mark_quality: z.string().nullable().optional(),
+      average_fill_display: z.string().nullable().optional(),
+      unrealized_pnl_display: z.string().optional(),
+    }),
+  ),
+  orders: z.array(z.record(z.unknown())),
+  fills: z.array(z.record(z.unknown())),
+  risk: z.object({
+    kill_switch_active: z.boolean(),
+    open_order_count: z.number(),
+    reconciliation_status: z.string(),
+    limits: z.object({
+      max_open_orders: z.number(),
+      max_order_shares: z.number(),
+      max_position_shares: z.number(),
+    }),
+    last_decision: z.record(z.unknown()).nullable().optional(),
+  }),
+  data_health: z.object({
+    state: z.string(),
+    detail: z.string().optional(),
+    simulation_model: z.string().optional(),
+  }),
+  reconciliation_status: z.string().optional(),
+  session: z
+    .object({
+      session_id: z.string(),
+      paper_account_id: z.string(),
+      execution_mode: z.string(),
+      execution_authority: z.string(),
+      starting_cash_minor: z.number().optional(),
+    })
+    .optional(),
+  active_instrument: z.string().nullable().optional(),
+  active_instrument_source: z.string().optional(),
+  exposure: z
+    .object({
+      gross_shares: z.number(),
+      net_shares: z.number(),
+    })
+    .optional(),
+  pnl: z
+    .object({
+      realized_display: z.string().optional(),
+      unrealized_display: z.string().nullable().optional(),
+      total_display: z.string().optional(),
+    })
+    .optional(),
+});
+
+export type PaperPortfolioResponse = z.infer<typeof PaperPortfolioResponseSchema>;
+
+export const PaperOrderPreviewResponseSchema = z.object({
+  as_of_context: AsOfContextSchema,
+  capability_states: z.array(CapabilityStateSchema).optional(),
+  preview: z.object({
+    risk_status: z.string(),
+    decision: z.string(),
+    reason_codes: z.array(z.string()).optional(),
+    side: z.string().optional(),
+    quantity: z.number().optional(),
+    order_type: z.string().optional(),
+    projected_position_shares: z.number().optional(),
+    estimated_notional_minor: z.number().optional(),
+    current_position_shares: z.number().optional(),
+    current_gross_exposure_shares: z.number().optional(),
+    current_net_exposure_shares: z.number().optional(),
+    estimated_gross_exposure_shares: z.number().optional(),
+    estimated_net_exposure_shares: z.number().optional(),
+    execution_model: z.string().optional(),
+    execution_model_version: z.string().optional(),
+    data_mode: z.string().optional(),
+    execution_mode: z.string().optional(),
+    execution_authority: z.string().optional(),
+    quality_state: z.string().optional(),
+    fill_preview_available: z.boolean().optional(),
+    fill_preview: z.record(z.unknown()).nullable().optional(),
+    order_preview: z.record(z.unknown()).optional(),
+    risk_limits: z
+      .object({
+        max_order_shares: z.number(),
+        max_position_shares: z.number(),
+        max_open_orders: z.number(),
+      })
+      .optional(),
+    risk_utilization: z.record(z.unknown()).optional(),
+    client_order_id: z.string().optional(),
+    idempotency_key: z.string().optional(),
+    instrument: z
+      .object({
+        instrument_id: z.string(),
+        symbol: z.string().optional(),
+      })
+      .optional(),
+    intent: z
+      .object({
+        instrument_id: z.string().optional(),
+        instrument: z
+          .object({
+            instrument_id: z.string(),
+            symbol: z.string().optional(),
+          })
+          .optional(),
+      })
+      .passthrough()
+      .optional(),
+  }),
+});
+
+export const PaperOrderSubmitResponseSchema = z.object({
+  as_of_context: AsOfContextSchema,
+  capability_states: z.array(CapabilityStateSchema).optional(),
+  submission: z.object({
+    duplicate: z.boolean(),
+    decision: z.string().optional(),
+    intent_id: z.string().optional(),
+    order_id: z.string().optional(),
+    order: z.record(z.unknown()).optional(),
+    fill: z.record(z.unknown()).nullable().optional(),
+    idempotency_key: z.string().optional(),
+  }),
+});
+
+export const PaperSessionResponseSchema = z.object({
+  as_of_context: AsOfContextSchema,
+  capability_states: z.array(CapabilityStateSchema).optional(),
+  session: z.object({
+    session_id: z.string(),
+    paper_account_id: z.string(),
+    execution_mode: z.string(),
+    execution_authority: z.string(),
+    starting_cash_minor: z.number().optional(),
+  }),
+});
+
+export const PaperTraceResponseSchema = z.object({
+  as_of_context: AsOfContextSchema,
+  trace: z.object({
+    correlation: z.object({
+      intent_id: z.string().nullable().optional(),
+      order_id: z.string().nullable().optional(),
+      fill_id: z.string().nullable().optional(),
+    }),
+    steps: z.array(
+      z.object({
+        stage: z.string(),
+        sequence: z.number(),
+        summary: z.string(),
+        metadata: z.record(z.unknown()).optional(),
+        event_id: z.string().optional(),
+      }),
+    ),
+    session_id: z.string().optional(),
+    execution_mode: z.string().optional(),
+    execution_authority: z.string().optional(),
+    execution_provider: z.string().optional(),
+    market_data_provider: z.string().optional(),
+    data_provider: z.string().optional(),
+    broker_order_id: z.string().nullable().optional(),
+    broker_order_submitted: z.boolean().optional(),
+    broker_modifications: z.number().optional(),
+    broker_cancels: z.number().optional(),
+  }),
+});
+
+export type PaperOrderPreviewResponse = z.infer<typeof PaperOrderPreviewResponseSchema>;
+export type PaperOrderSubmitResponse = z.infer<typeof PaperOrderSubmitResponseSchema>;
+export type PaperSessionResponse = z.infer<typeof PaperSessionResponseSchema>;
+export type PaperTraceResponse = z.infer<typeof PaperTraceResponseSchema>;
+
+export type PaperOrderRequest = {
+  side: "BUY" | "SELL";
+  quantity: number;
+  order_type?: "MARKET" | "LIMIT";
+  limit_price_minor?: number;
+  client_order_id?: string;
+  idempotency_key?: string;
+  correlation_id?: string;
+  instrument_id?: string;
+  symbol?: string;
+};
+
+export const WorkspaceEvidenceLaneSchema = z.object({
+  instrument: z.string(),
+  lane: z.string(),
+  evidence_type: z.string(),
+  as_of: z.string().nullable().optional(),
+  available_time: z.string().nullable().optional(),
+  quality: z.string(),
+  relevance: z.string(),
+  direction: z.string().nullable().optional(),
+  confidence: z.string().nullable().optional(),
+  probability: z.number().nullable().optional(),
+  expected_value: z.number().nullable().optional(),
+  summary: z.string(),
+  freshness_label: z.string(),
+  reason_codes: z.array(z.string()).optional(),
+  sources: z.array(z.string()).optional(),
+  details: z.record(z.unknown()).optional(),
+  explain_ref: z.string().nullable().optional(),
+  missing_evidence: z.array(z.string()).optional(),
+  research_only: z.boolean().optional(),
+});
+
+export const WorkspaceEvidenceResponseSchema = z.object({
+  instrument: z.string(),
+  active_instrument: z.string().nullable().optional(),
+  active_instrument_source: z.string().nullable().optional(),
+  coherence_warning: z.string().nullable().optional(),
+  as_of_context: AsOfContextSchema,
+  lanes: z.array(WorkspaceEvidenceLaneSchema),
+  what_matters_now: z.array(WorkspaceEvidenceLaneSchema),
+  evidence_mix_summary: z.string(),
+  research_context_execution_authority: z.string(),
+  data_provenance: z
+    .object({
+      mode: z.string().optional(),
+      provider: z.string().optional(),
+      replay_label: z.string().nullable().optional(),
+    })
+    .optional(),
+});
+
+export type WorkspaceEvidenceLane = z.infer<typeof WorkspaceEvidenceLaneSchema>;
+export type WorkspaceEvidenceResponse = z.infer<typeof WorkspaceEvidenceResponseSchema>;

@@ -58,9 +58,9 @@ Pre-land acceptance (2026-08-21): FAST 18 passes; mutation 6/6 detected; FULL 11
 
 Active forward work beyond governed Phases 0–16 is tracked in
 [Platform Cooperative Master Roadmap](docs/research/PLATFORM_COOPERATIVE_MASTER_ROADMAP.md).
-Latest cooperative milestones: **MC15 — Cross-entity propagation** (separate `propagated_*` fields on BOXL/NVDA graph fixtures; no universal news score), **MC14 — Social / author intelligence** (influence vs accuracy on admitted BOXL social fixtures), **F11 — Advanced modeling baseline** (EQUITY_INDEX + ENERGY/CL engineered forecaster + F11-S1 walk-forward gate vs F5 trend-only on admitted fixtures), **OF12 — Advanced LOB baseline** (M8 engineered forecaster + OF12-S1 walk-forward gate on admitted ES/NVDA fixtures), **PI13 — Forced-flow / dislocation engine** (metaorder completion + exhaustion + leverage stress without catalyst at cutoff on admitted NVDA fixtures), **PI12 — Large derivatives participant research**, **PI11 — Cross-asset participant context** (equity crowding fused with F4 COT on admitted BIYA/ES fixtures), **PI10 — Consensus / disagreement / crowding** (instrument-level alignment on admitted BIYA fixtures), and **PI9 — Copyability** (follower return scoring on admitted BIYA disclosure fixtures). **MC11 — Macro context** and **PI8 — Contextual intent** also complete on fixtures.
+Latest cooperative milestones: **MC16 — Multi-document LLM synthesis** (separate cluster synthesis fields with MC7/MC8 optional enrichment on BOXL fixtures; no universal news score), **MC15 — Cross-entity propagation** (separate `propagated_*` fields on BOXL/NVDA graph fixtures; no universal news score), **MC14 — Social / author intelligence** (influence vs accuracy on admitted BOXL social fixtures), **F11 — Advanced modeling baseline** (EQUITY_INDEX + ENERGY/CL engineered forecaster + F11-S1 walk-forward gate vs F5 trend-only on admitted fixtures), **OF12 — Advanced LOB baseline** (M8 engineered forecaster + OF12-S1 walk-forward gate on admitted ES/NVDA fixtures), **PI13 — Forced-flow / dislocation engine** (metaorder completion + exhaustion + leverage stress without catalyst at cutoff on admitted NVDA fixtures), **PI12 — Large derivatives participant research**, **PI11 — Cross-asset participant context** (equity crowding fused with F4 COT on admitted BIYA/ES fixtures), **PI10 — Consensus / disagreement / crowding** (instrument-level alignment on admitted BIYA fixtures), and **PI9 — Copyability** (follower return scoring on admitted BIYA disclosure fixtures). **MC11 — Macro context** and **PI8 — Contextual intent** also complete on fixtures.
 
-Completed cooperative milestones on admitted fixtures include O6–O9, OF6–OF12, F4–F11, SS P4–P7, Market Context MC1–MC15, Participant PI1–PI13, and SHARED P2–P4 (incl. futures regime fusion). See
+Completed cooperative milestones on admitted fixtures include O6–O9, OF6–OF12, F4–F11, SS P4–P7, Market Context MC1–MC16, Participant PI1–PI13, and SHARED P2–P4 (incl. futures regime fusion). See
 [SHARED P4 EV / Opportunity Layer Spec](docs/research/SHARED_P4_EV_OPPORTUNITY_SPEC.md).
 
 The existing candidate evidence roots under `evidence/phase0/2E1E…` and
@@ -131,6 +131,8 @@ prediction-market expansion require separate ADR authorization and phase gates.
 - [Short-squeeze read-only integration lane](docs/integration/SHORT_SQUEEZE_LANE.md)
 - [Order Flow / microstructure integration lane](docs/integration/ORDER_FLOW_LANE.md)
 - Start API: `python tools/ui1/run_ui_api.py --serve --port 8766`
+- Restart live observational API (no hot reload; kill stale `:8766` listeners first): `powershell -File tools/ui1/restart_ui_api.ps1`
+- `IMP_MOOMOO_LIVE=1` is observational market data only — it does not authorize execution
 - Frontend: see [ui/README.md](ui/README.md)
 
 ## Grounded research assistant (MRA-001 / MRA-002)

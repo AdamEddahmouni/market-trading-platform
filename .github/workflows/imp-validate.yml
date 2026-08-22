@@ -1,0 +1,23 @@
+# Manifest-driven offline validation (Platformization P0 CI).
+# FAST + CHANGED run on every push/PR; FULL is a local/checkpoint gate and stays
+# offline-only (see docs/engineering/VALIDATION_ARCHITECTURE.md and AGENTS.md).
+name: imp-validate
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Fast + changed validation
+        run: |
+          python tools/validate.py fast
+          python tools/validate.py changed
