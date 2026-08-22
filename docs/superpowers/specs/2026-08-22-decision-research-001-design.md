@@ -118,9 +118,28 @@ feature envelope:
 
 Rules:
 
-- `evidence_family` is a controlled vocabulary (SQUEEZE_STATE, ORDER_FLOW_CVD,
-  MICROSTRUCTURE, OPTIONS_DEALER, CATALYST, ATTENTION, PARTICIPANT_CROWDING,
-  FINVIZ_DISCOVERY, MACRO_CONTEXT).
+- `evidence_family` is a controlled vocabulary with an explicit mapping to the
+  P3.2 `WorkspaceEvidence` sources (verified 2026-08-22 code audit):
+
+  | evidence_family | P3.2 workspace source | Labelled direction today |
+  |---|---|---|
+  | `SQUEEZE_STATE` | SHORT_SQUEEZE lane (`build_workspace_squeeze_payload` ignition_state) | POSITIVE / NEUTRAL (via `adapt_short_squeeze_lane`) |
+  | `ORDER_FLOW_CVD` | ORDER_FLOW lane CVD summary | POSITIVE / NEGATIVE / NEUTRAL / UNKNOWN (via `_cvd_direction`) |
+  | `MICROSTRUCTURE` | ORDER_FLOW lane details (`latest_microstructure_forecast`: direction_bias, continuation/reversal) | forecast bias only; lane `direction` stays CVD-based |
+  | `OPTIONS_DEALER` | OPTIONS lane details (`dealer_snapshot`, `dealer_position_available`) | **not labelled today** (lane `direction` NEUTRAL) |
+  | `CATALYST` | CATALYST lane lean/classification + MC16 rows | POSITIVE / NEGATIVE / NEUTRAL (via lean) |
+  | `ATTENTION` | MARKET_CONTEXT lane details (`attention_summaries`) | **not a labelled lane direction today** |
+  | `PARTICIPANT_CROWDING` | WHALE_INSIDER lane details (`participant_actions`) | **not labelled today** (lane `direction` NEUTRAL) |
+  | `FINVIZ_DISCOVERY` | workspace `finviz_discovery` envelope (`what_matters_now`) | research-context only; no direction label |
+  | `MACRO_CONTEXT` | MARKET_CONTEXT lane (`MACRO_REGIME` regime_label) | POSITIVE / NEGATIVE / NEUTRAL (via regime) |
+
+  Families without a labelled direction on the admitted adapters
+  (`OPTIONS_DEALER`, `ATTENTION`, `PARTICIPANT_CROWDING`, and any
+  `FINVIZ_DISCOVERY` usage) are **declared-only**: usable in the `feature_spec`
+  vocabulary now, but excluded from decision examples unless an adapter produces a
+  directional label and it is backed by real fixture data. Missing families are
+  never coerced — they simply do not appear as example features, and example
+  construction fails closed when a declared feature has no available source.
 - Every feature carries `available_time_ns`; the PIT gate rejects any feature
   available after `decision_time_ns`.
 - Outcomes are **mark-based forward returns** over a declared horizon, with
@@ -154,9 +173,11 @@ Phase 6 preregistration semantics (`strategy/preregistration.py`):
 | `card_hash` | SHA-256 of canonical card bytes |
 
 Registry: `research/decision_research/registry.py` persists cards to
-`evidence/research/experiment-cards/` (committed, immutable, mirroring the
-hash-bound acceptance convention of `evidence/strategy/<hash>/`) and binds
-`card_hash` into every run record.
+`evidence/research/experiment-cards/<card_hash>.json` (committed, immutable,
+mirroring the repository's hash-bound acceptance-dir convention `evidence/phase6/<hash>/`
+— the path where Phase 6 strategy-evidence artifacts actually live;
+`evidence/strategy/` is not a repository path) and binds `card_hash` into every
+run record.
 `verify_experiment_card_registration(card, run)` fails closed when the hash is
 absent or unbound.
 
