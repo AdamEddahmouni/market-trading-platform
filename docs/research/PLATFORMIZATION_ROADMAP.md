@@ -18,6 +18,8 @@ with governed Phases 0–16.
 | **P2.1** | Live L1/trades/L2 admission, CVD, internal paper on live marks | **COMPLETE_WITH_LIMITATIONS** |
 | **P3** | Durable local SQLite state, operator workflow, restart recovery | **COMPLETE_WITH_LIMITATIONS** |
 | **P3.1** | Live internal paper on admitted L1, operator instrument, restart marks | **COMPLETE_WITH_LIMITATIONS** — [P3.1 closure](../superpowers/specs/2026-08-21-platform-p31-live-execution-closure.md) |
+| **P3.2** | Unified live decision workstation (`/workspace/{symbol}/evidence`, What Matters Now, evidence drawer) | **COMPLETE** — [P3.2](../superpowers/specs/2026-08-21-platform-p32-unified-live-workstation.md) |
+| **P3.3** | Finviz Elite discovery, prospective PIT capture, decision-research foundation | **COMPLETE** — [P3.3](../superpowers/specs/2026-08-21-platform-p33-finviz-discovery-research.md) |
 | **P4** | Tradier/Moomoo paper adapters, idempotency, reconciliation | Not started |
 | **P5** | Hosted platform, security, PROVIDER-COMMERCIAL-001 | Not started |
 | **P6** | Shadow/forward validation | Not started |
@@ -31,7 +33,7 @@ with governed Phases 0–16.
 4. **Execution bar window:** `bars_for_execution()` from replay cursor forward (no chart look-ahead, valid fill path).
 5. **Dual data admission:** research fixture pipeline vs runtime quality pipeline (documented in PLATFORM-PAPER-001).
 6. **Local durable state (P3):** SQLite event-sourced paper ledger + operator state. No custom JWT, no hosted auth.
-7. **CI in P0:** `.github/workflows/imp-validate.yml` before broker work.
+7. **CI in P0:** `.github/workflows/imp-validate.yml` (FAST + CHANGED offline on push/PR; landed 2026-08-22).
 
 ## Broker priority (P4)
 

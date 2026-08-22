@@ -37,7 +37,8 @@ Revision 2 remains the incorporated Phase 0 safety authority.
 | MRA-001 — grounded Market Research Assistant | `PASS` (deterministic evidence retrieval on admitted fixture) |
 | MRA-002 — Anthropic LLM assistant | `PASS` (mocked HTTP acceptance; live inference when `ANTHROPIC_API_KEY` set) |
 | Platform P0 — bitemporal reference store + PIT joins | `PASS` (fixture scope; FAST + FULL invariants) |
-| Public-data providers — macro / energy / sec / short-intelligence / observational | `IMPLEMENTED` (fixture-first; live probes opt-in; captures **not admitted**) |
+| Platformization P0–P3.3 — paper execution, live observational data, local state, unified workstation, discovery | `COMPLETE_WITH_LIMITATIONS` (see [platformization roadmap](docs/research/PLATFORMIZATION_ROADMAP.md)) |
+| Public-data providers — macro / energy / sec / short-intelligence / observational / finviz-discovery | `IMPLEMENTED` (fixture-first; live probes opt-in; captures **not admitted**) |
 
 ## Validation cadence
 
@@ -53,6 +54,7 @@ python tools/validate.py live <provider>  # opt-in live boundary only
 Legacy wrapper: `python tools/run_all_tests.py` (strictly offline, delegates to manifest).
 
 Pre-land acceptance (2026-08-21): FAST 18 passes; mutation 6/6 detected; FULL 1183 passes / 7 skips — [reports/pre-land-full.json](reports/pre-land-full.json).
+Post-land FULL (2026-08-22): 1391 tests / 7 skips with **one documented failure** — the Phase 1 ADR acceptance-index line-ending drift ([PHASE1_ADR_LINE_ENDING_DRIFT](docs/engineering/PHASE1_ADR_LINE_ENDING_DRIFT.md)); no other failures or errors.
 
 ## Five-lane cooperative expansion (fixture scope)
 
@@ -66,6 +68,26 @@ Completed cooperative milestones on admitted fixtures include O6–O9, OF6–OF1
 The existing candidate evidence roots under `evidence/phase0/2E1E…` and
 `evidence/phase0/6B31…` bind older repository subjects. They remain immutable and
 do not establish acceptance for the current repository subject.
+
+## Platformization (P0–P3.3)
+
+Transition from replay-only research UI to a provider-agnostic market
+operating workstation, tracked in the
+[platformization roadmap](docs/research/PLATFORMIZATION_ROADMAP.md):
+
+| Milestone | Delivered |
+|---|---|
+| P0 | Orthogonal `data_mode` × `execution_mode` × `execution_authority`, event-sourced paper ledger, `/paper/*` API, CI — [PLATFORM-PAPER-001](docs/superpowers/specs/2026-08-21-platform-paper-001-design.md) |
+| P1 | Interactive internal simulation (preview + submit → `BarConservativeSimulator`), trace/cancel, parity — [P1](docs/superpowers/specs/2026-08-21-platform-p1-interactive-terminal.md), [order lifecycle](docs/superpowers/specs/2026-08-21-platform-p1-order-lifecycle.md), [execution trace](docs/superpowers/specs/2026-08-21-platform-p1-execution-trace.md) |
+| P2/P2.1 | Live observational Moomoo runtime with display vs execution admission — [PLATFORM-DATA-001](docs/superpowers/specs/2026-08-21-platform-data-001-design.md) |
+| P3/P3.1 | Durable SQLite state, operator workflow, restart recovery, live internal paper closure — [PLATFORM-STATE-001](docs/superpowers/specs/2026-08-21-platform-state-001-design.md), [P3.1 closure](docs/superpowers/specs/2026-08-21-platform-p31-live-execution-closure.md) |
+| P3.2 | Unified live decision workstation (lane evidence envelope, What Matters Now, evidence drawer) — [P3.2](docs/superpowers/specs/2026-08-21-platform-p32-unified-live-workstation.md) |
+| P3.3 | Finviz Elite discovery, prospective PIT capture, decision-research foundation — [P3.3](docs/superpowers/specs/2026-08-21-platform-p33-finviz-discovery-research.md) |
+
+Not started: P4 (external broker paper adapters, idempotency, reconciliation),
+P5 (hosted platform, `PROVIDER-COMMERCIAL-001`), P6 (shadow/forward
+validation). Production execution (`LIVE-001`) is blocked pending separate
+authorization.
 
 ## Revision 3 guidance
 
@@ -98,8 +120,14 @@ Documentation of future interfaces is not implementation or authorization.
 ## Capability boundary
 
 This repository has no production broker runtime, on-chain ingestion,
-live social API connection, crypto research adapter, AI-trading, paper-trading,
-or live-trading capability. It has no Git remote.
+live social API connection, crypto research adapter, AI-trading, or
+live-trading capability. **Internal paper execution** (Platformization
+P0–P3.3) exists as an event-sourced simulation ledger and is reachable
+only under explicit env gates (`IMP_PAPER_EXECUTION=1`,
+`IMP_LIVE_INTERNAL_SIMULATION=1`); external broker paper/live trading
+requires Platformization P4+ and separate `LIVE-001` authorization.
+The repository remote is `origin` →
+`https://github.com/AdamEddahmouni/integrated-market-intelligence-platform.git`.
 
 ### Observational and public-data providers (fixture-first)
 
@@ -117,6 +145,7 @@ Admission requires separate phase gates and lawful fixture procurement.
 | — | EIA Open Data | Energy fundamentals. See [EIA provider](docs/providers/EIA_ENERGY_FUNDAMENTALS.md). |
 | — | NOAA / NWS / CPC | Weather-demand evidence; no credential required. See [Weather provider](docs/providers/NOAA_NWS_CPC_WEATHER.md). |
 | — | CBOE public options statistics | Publisher/venue semantics enforced. See [CBOE options statistics](docs/providers/CBOE_PUBLIC_OPTIONS_STATISTICS.md). |
+| — | Finviz Elite | Read-only DISCOVERY/CONTEXT exports (`FINVIZ_API_KEY`); prospective capture only, no retroactive screen reconstruction, never orders. See [Finviz capability matrix](docs/research/finviz-elite-capability-matrix.md). |
 
 Phase 9 whale families remain **fixture-first** on admitted slices: `regulatory_disclosure` (BIYA), `order_flow` (NVDA), `options` (BIYA), and Phases 10–16 families on their admitted fixtures. Unconfigured whale capabilities remain fail-closed stubs.
 
