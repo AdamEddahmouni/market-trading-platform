@@ -742,6 +742,7 @@ Empirical baselines before advanced ML. See `FUTURES_RESEARCH_PLAN.md`.
 - [x] Fixture scope `boxl_multidoc_synthesis_{slice,expected}.json` (BOXL earnings/FDA clusters)
 - [x] Cross-lane candidate signals `SYNTHESIS_THEME_ELEVATED`, `SYNTHESIS_CONTRADICTION_DETECTED`
 - [x] Implementation (`synthesis.py`, tests, gate tool `run_mc16_gate_validation.py`)
+- [x] MC7/MC8 optional enrichment (`synthesis_enrichment.py`, gate `run_mc16_mc78_enrichment_gate_validation.py`)
 - [ ] Live LLM runtime — not authorized
 
 See `MARKET_CONTEXT_TARGET_ARCHITECTURE.md`, `FIVE_LANE_ROADMAP_RECONCILIATION.md`.
@@ -763,7 +764,7 @@ See `MARKET_CONTEXT_TARGET_ARCHITECTURE.md`, `FIVE_LANE_ROADMAP_RECONCILIATION.m
 | Order Flow | LOB ML beyond M8 OF12 baseline | OF12-S1 PASS (fixture) |
 | SS | Live lending ingest wiring | Vendor authorization |
 | Platform | P0 bitemporal store / P1 catalyst runtime | DONE (fixture) |
-| Market Context | MC16 implementation (fixture synthesis pipeline) | MC16 design complete |
+| Market Context | MC16→MC7/MC8 synthesis enrichment | DONE (fixture metadata) |
 | Options | Phase B chain history admission + OOS gate re-run | O10-S5 PASS; Phase B scaffold ready |
 | SHARED P4 | Futures outright/curve fusion extension | F8–F10 | DONE (fixture) |
 | Discrepancy | D-01 ignition_state mapping, D-10 deploy mirror | Nothing |

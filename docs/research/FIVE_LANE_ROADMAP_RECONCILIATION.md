@@ -25,7 +25,7 @@ PLATFORM ROADMAP
 ├── Futures F1–F11 [F1–F11 IMPLEMENTED (fixture); F11 experimental baseline]
 ├── Order Flow OF1–OF12 [OF1–OF12 IMPLEMENTED (fixture); OF12 experimental baseline]
 │
-└── Market Context MC1–MC16 [MC1–MC15 IMPLEMENTED (fixture); MC16 DESIGN COMPLETE]
+└── Market Context MC1–MC16 [IMPLEMENTED (fixture); MC16→MC7/MC8 enrichment IMPLEMENTED]
 ```
 
 ---
@@ -65,7 +65,7 @@ flowchart TB
 | Options | O10 ML (Phase B OOS) or O11 (Phase C) | O10-S5 PASS (fixture) |
 | Futures | Family ML beyond M8 F11 baseline | F11-S1 PASS (fixture) |
 | Order Flow | LOB ML beyond M8 OF12 baseline | OF12-S1 PASS (fixture) |
-| Market Context | MC16 implementation (fixture synthesis pipeline) | MC16 design complete |
+| Market Context | MC16→MC7/MC8 synthesis enrichment | DONE (fixture metadata) |
 | Platform | P0 bitemporal store / P1 catalyst runtime | DONE (fixture) |
 
 **Market Context does NOT block:** SS structural work, Options chain/IV, Futures contract/curve, Order Flow CVD/trade work.
@@ -105,7 +105,7 @@ flowchart TB
 | Options | O1–O9, O10-S5 fixture gates | O10 ML (Phase B OOS) or O11 (Phase C) |
 | Futures | F1–F11 (fixture; F11-S1 gate PASS) | Future family ML beyond M8 baseline |
 | Order Flow | OF1–OF12 (fixture; OF12-S1 gate PASS) | Future LOB ML beyond M8 baseline |
-| Market Context | MC1–MC15 | MC16 multi-document synthesis (design complete; implementation next) |
+| Market Context | MC1–MC16 | Fixture lane complete; next cross-lane extensions or live ingest |
 | Platform | P0 bitemporal store (P0-S1), P1 catalyst runtime | Remaining live ingest / DatasetStore |
 
 ---

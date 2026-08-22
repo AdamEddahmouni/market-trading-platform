@@ -125,7 +125,7 @@ Publish display/research metadata only when thresholds met:
 - `SYNTHESIS_THEME_ELEVATED` when `theme_agreement_score >= 0.75` and `contradiction_detected == false`
 - `SYNTHESIS_CONTRADICTION_DETECTED` when `contradiction_detected == true`
 
-Does **not** fuse into SHARED P4. Does **not** replace MC8 catalyst rows or MC10 narrative velocity. Downstream MC7/MC8 may **read** `consolidated_channels` as optional enrichment in a future gated integration — not in MC16 v1.
+Does **not** fuse into SHARED P4. Does **not** replace MC8 catalyst rows or MC10 narrative velocity. Downstream MC7/MC8 read `consolidated_channels` as optional metadata enrichment via `synthesis_enrichment_v1` — see [`2026-08-21-mc16-mc78-synthesis-enrichment-design.md`](2026-08-21-mc16-mc78-synthesis-enrichment-design.md).
 
 ## 5. Fixtures
 
