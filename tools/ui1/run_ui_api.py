@@ -51,6 +51,12 @@ def _load_local_env() -> None:
 def _load_store() -> ReplayStore:
     store = ReplayStore(collection_root=COLLECTION_ROOT)
     store.load()
+    if os.environ.get("IMP_LIVE_OBSERVATIONAL") == "1":
+        from market_platform_foundation.market_data.live_runtime import get_live_runtime
+
+        store.data_mode = "LIVE_OBSERVATIONAL"
+        store.data_provider = "MOOMOO"
+        get_live_runtime(create=True)
     return store
 
 
@@ -307,6 +313,7 @@ def build_evidence(output_dir: Path) -> dict[str, object]:
 
 
 def serve(*, host: str, port: int) -> None:
+    os.environ.setdefault("IMP_PERSIST_STATE", "1")
     store = _load_store()
     handler = type("BoundUiApiHandler", (UiApiHandler,), {"store": store})
     server = ThreadingHTTPServer((host, port), handler)
