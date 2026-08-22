@@ -24,10 +24,45 @@ Vendor SDK (`moomoo-api`) is **not** a dependency of `market_platform_foundation
 The official Moomoo API Skill may assist agents; it is never on the runtime path.
 
 ```text
-tools/moomoo/probe.py + record.py   (optional process, moomoo-api)
+tools/moomoo/*   (optional processes, moomoo-api; probe.py / record.py /
+                 capture_live.py / push_feed.py / check_live_environment.py /
+                 smoke_live.py / smoke_paper.py / smoke_reconnect.py)
         ↓ serialized JSON/JSONL
 src/market_platform_foundation/market_data/   (CPython 3.11 stdlib)
+  live_config → live_runtime → live_admission → observational_state
+  ↓ subscription_manager / capability_registry / recorder
+ui_api/live_projections → Explore / Workspace / ContextBar
 ```
+
+## Live observational runtime (Platformization P2/P2.1)
+
+`LiveObservationalRuntime` is the operational ingest path (stdlib only,
+no `moomoo` import in `src/`): OpenD callbacks are normalized into canonical
+provider envelopes, checked by the quality pipeline, and admitted through a
+two-level gate:
+
+| Level | Use |
+|---|---|
+| `DISPLAY_ADMITTED` | UI may render with quality annotation |
+| `EXECUTION_ADMITTED` | Internal simulator may consume (only when enabled) |
+| `BLOCKED` | Fail closed |
+
+Live internal paper (`INTERNAL_SIMULATION`) is **not** enabled by live data
+alone: it requires `IMP_PAPER_EXECUTION=1` + `IMP_LIVE_INTERNAL_SIMULATION=1`
+and an `EXECUTION_ADMITTED` quote after the order intent time. Display-admitted
+tape is never executable. See [PLATFORM-DATA-001](../superpowers/specs/2026-08-21-platform-data-001-design.md)
+and [P3.1 closure](../superpowers/specs/2026-08-21-platform-p31-live-execution-closure.md).
+
+Env gates (all default off): `IMP_LIVE_OBSERVATIONAL`, `IMP_MOOMOO_LIVE`,
+`IMP_LIVE_INTERNAL_SIMULATION`, `IMP_LIVE_FIXTURE_FEED` (local JSONL feed for
+CI/offline), `IMP_LIVE_CAPTURE_ROOT`, `IMP_MOOMOO_SUBSCRIPTION_QUOTA`, and the
+freshness/wait knobs documented in [`.env.example`](../../.env.example).
+
+Tooling (all read-only observational): `probe.py` (capability report),
+`record.py` (bounded JSONL recorder), `capture_live.py` (bounded capture
+through the runtime ingest path), `push_feed.py` (fixture feed push),
+`check_live_environment.py` (OpenD environment preflight), and
+`smoke_live.py` / `smoke_paper.py` / `smoke_reconnect.py`.
 
 ## OpenD requirement
 

@@ -50,6 +50,8 @@ FINVIZ_API_KEY=...          # Elite export token
 IMP_FINVIZ_LIVE=1           # opt-in live probe
 IMP_PROVIDER_ENV=...        # optional credential file path
 IMP_FINVIZ_CAPTURE_DIR=...  # prospective capture root
+IMP_FINVIZ_EVIDENCE_DIR=... # evidence output override
+IMP_FINVIZ_SECRET_DIR=...   # token/login file store (default .private/)
 ```
 
 Run probe: `python tools/finviz/probe.py`

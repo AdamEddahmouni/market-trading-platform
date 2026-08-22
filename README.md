@@ -145,7 +145,7 @@ Admission requires separate phase gates and lawful fixture procurement.
 | — | EIA Open Data | Energy fundamentals. See [EIA provider](docs/providers/EIA_ENERGY_FUNDAMENTALS.md). |
 | — | NOAA / NWS / CPC | Weather-demand evidence; no credential required. See [Weather provider](docs/providers/NOAA_NWS_CPC_WEATHER.md). |
 | — | CBOE public options statistics | Publisher/venue semantics enforced. See [CBOE options statistics](docs/providers/CBOE_PUBLIC_OPTIONS_STATISTICS.md). |
-| — | Finviz Elite | Read-only DISCOVERY/CONTEXT exports (`FINVIZ_API_KEY`); prospective capture only, no retroactive screen reconstruction, never orders. See [Finviz capability matrix](docs/research/finviz-elite-capability-matrix.md). |
+| — | Finviz Elite | Read-only DISCOVERY/CONTEXT exports (`FINVIZ_API_KEY`); prospective capture only, no retroactive screen reconstruction, never orders. See [Finviz Elite provider](docs/providers/FINVIZ_ELITE.md) and [capability matrix](docs/research/finviz-elite-capability-matrix.md). |
 
 Phase 9 whale families remain **fixture-first** on admitted slices: `regulatory_disclosure` (BIYA), `order_flow` (NVDA), `options` (BIYA), and Phases 10–16 families on their admitted fixtures. Unconfigured whale capabilities remain fail-closed stubs.
 
