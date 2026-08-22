@@ -54,7 +54,7 @@ python tools/validate.py live <provider>  # opt-in live boundary only
 Legacy wrapper: `python tools/run_all_tests.py` (strictly offline, delegates to manifest).
 
 Pre-land acceptance (2026-08-21): FAST 18 passes; mutation 6/6 detected; FULL 1183 passes / 7 skips — [reports/pre-land-full.json](reports/pre-land-full.json).
-Post-land FULL (2026-08-22): 1391 tests / 7 skips with **one documented failure** — the Phase 1 ADR acceptance-index line-ending drift ([PHASE1_ADR_LINE_ENDING_DRIFT](docs/engineering/PHASE1_ADR_LINE_ENDING_DRIFT.md)); no other failures or errors.
+Post-land FULL (2026-08-22): 1391 tests / 7 skips with **one documented failure** — the Phase 1 ADR acceptance-index line-ending drift ([PHASE1_ADR_LINE_ENDING_DRIFT](docs/engineering/PHASE1_ADR_LINE_ENDING_DRIFT.md)); no other failures or errors. **Resolved the same day:** the Phase 1 decision bundle was re-published with true LF-byte hashes and the verifier constants updated; FULL is now green — 1485 tests / 7 skips / 0 failures / 0 errors ([reports/post-drift-fix-full.json](reports/post-drift-fix-full.json)).
 
 ## Five-lane cooperative expansion (fixture scope)
 
@@ -84,8 +84,12 @@ operating workstation, tracked in the
 | P3.2 | Unified live decision workstation (lane evidence envelope, What Matters Now, evidence drawer) — [P3.2](docs/superpowers/specs/2026-08-21-platform-p32-unified-live-workstation.md) |
 | P3.3 | Finviz Elite discovery, prospective PIT capture, decision-research foundation — [P3.3](docs/superpowers/specs/2026-08-21-platform-p33-finviz-discovery-research.md) · [DECISION-RESEARCH-001 milestone A](docs/superpowers/specs/2026-08-22-decision-research-001-design.md) |
 
-Not started: P4 (external broker paper adapters, idempotency, reconciliation),
-P5 (hosted platform, `PROVIDER-COMMERCIAL-001`), P6 (shadow/forward
+P4 (external broker paper adapters, idempotency, reconciliation) is **spec'd but
+not implemented** — [PLATFORM-P4-001](docs/superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md)
+is drafted and pending principal review (sub-milestones 4A Tradier sandbox
+adapter + idempotent submission, 4B reconciliation, 4C Moomoo execution; see the
+code-grounded audit in `.planning/2026-08-22-platform-p4-broker-paper-code-audit.md`).
+Not started: P5 (hosted platform, `PROVIDER-COMMERCIAL-001`), P6 (shadow/forward
 validation). Production execution (`LIVE-001`) is blocked pending separate
 authorization.
 
