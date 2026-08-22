@@ -27,9 +27,16 @@ Use the repository-local virtual environment for validation and tests:
 ```powershell
 $env:PYTHONPATH='src'
 .venv\Scripts\python.exe tools\validate.py changed          # after each edit
-.venv\Scripts\python.exe tools\validate.py domain research  # domain milestone
 .venv\Scripts\python.exe tools\validate.py full             # final checkpoint (offline only)
 .venv\Scripts\python.exe -m unittest tests.research.test_decision_research_p33 -v
+.venv\Scripts\python.exe tools/research/run_decision_research_gate_validation.py   # DECISION-RESEARCH-001 gate
+```
+
+Note: the validation manifest currently has **no `research` domain** (decision-research tests run under
+`validate.py changed` / `full` via the `research` suite, domain `core`, globs
+`src/market_platform_foundation/research/decision_research/**` + `tests/research/test_*.py`). Adding a
+`research` domain to `tools/validation_manifest.json` is a governed manifest edit — get principal approval
+first.
 ```
 
 `.venv/` is gitignored. One-time setup (CPython 3.11 + `tzdata`, the Windows companion for stdlib

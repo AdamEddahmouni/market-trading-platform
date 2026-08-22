@@ -756,6 +756,20 @@ See `MARKET_CONTEXT_TARGET_ARCHITECTURE.md`, `FIVE_LANE_ROADMAP_RECONCILIATION.m
 
 ---
 
+### DECISION-RESEARCH-001 — governed decision research, milestone A [COMPLETE — fixture scope, 2026-08-22]
+
+- [x] Design spec `docs/superpowers/specs/2026-08-22-decision-research-001-design.md` (preregistration, §5 cards/registry, §8 synthesis, DEC-* assertions)
+- [x] Hash-bound experiment cards + registry — `evidence/research/experiment-cards/<card_hash>.json` (6 SS cards at fixed hashes)
+- [x] PIT-gated deterministic example builder — `tests/fixtures/research/ss_family_examples.json` (2,808 BIYA-base examples, donor-lane caps measured)
+- [x] Walk-forward **OOS-only** harness + card-driven evaluation (`min_sample_oos` per card; SS-BASE anchors `oos_positive_base_rate`, never SUPPORTED)
+- [x] DecisionCandidate synthesis from P3.2 lane envelopes + MC16 — no composite score (`DEC-SYN-001`), contradiction → `MIXED`/`NO_HYPOTHESIS`, `execution_authority: NONE`
+- [x] DEC-* assertion + adversarial suite — milestone suite **101/101** tests; gate tool `tools/research/run_decision_research_gate_validation.py` → `evidence/research/decision-research-gate-report.json` (**aggregate PASS**)
+- [x] Paper-intent provenance (`research_candidate_id`, `DEC-MAN-001`) + import-boundary proof (research never imports the order path)
+- [x] Expected gate result on current fixtures (pinned): SS-BASE `INCONCLUSIVE` · SS-OF / SS-OF-CAT `INSUFFICIENT_DATA` · SS-CAT / SS-MKT / SS-FV-DISC `NEEDS_PROSPECTIVE_VALIDATION` — **no SUPPORTED**
+- [ ] **No P4 implementation began** — future families (`ORDER_FLOW`, `OPTIONS_VRP`, `MC_SURPRISE`, `PARTICIPANT_CROWDING`) remain declared-only (`OPTIONS_DEALER` / `ATTENTION` / `PARTICIPANT_CROWDING` / `FINVIZ_DISCOVERY`), card-creation only when a later milestone implements them
+
+---
+
 ## Parallelizable work (next 90 days)
 
 | Track | Work | Blocked by |

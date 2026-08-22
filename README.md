@@ -82,7 +82,7 @@ operating workstation, tracked in the
 | P2/P2.1 | Live observational Moomoo runtime with display vs execution admission — [PLATFORM-DATA-001](docs/superpowers/specs/2026-08-21-platform-data-001-design.md) |
 | P3/P3.1 | Durable SQLite state, operator workflow, restart recovery, live internal paper closure — [PLATFORM-STATE-001](docs/superpowers/specs/2026-08-21-platform-state-001-design.md), [P3.1 closure](docs/superpowers/specs/2026-08-21-platform-p31-live-execution-closure.md) |
 | P3.2 | Unified live decision workstation (lane evidence envelope, What Matters Now, evidence drawer) — [P3.2](docs/superpowers/specs/2026-08-21-platform-p32-unified-live-workstation.md) |
-| P3.3 | Finviz Elite discovery, prospective PIT capture, decision-research foundation — [P3.3](docs/superpowers/specs/2026-08-21-platform-p33-finviz-discovery-research.md) |
+| P3.3 | Finviz Elite discovery, prospective PIT capture, decision-research foundation — [P3.3](docs/superpowers/specs/2026-08-21-platform-p33-finviz-discovery-research.md) · [DECISION-RESEARCH-001 milestone A](docs/superpowers/specs/2026-08-22-decision-research-001-design.md) |
 
 Not started: P4 (external broker paper adapters, idempotency, reconciliation),
 P5 (hosted platform, `PROVIDER-COMMERCIAL-001`), P6 (shadow/forward

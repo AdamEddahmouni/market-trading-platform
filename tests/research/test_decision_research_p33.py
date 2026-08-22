@@ -1,10 +1,9 @@
 """P3.3 decision research tests.
 
-Includes the current P3.3 `evaluate_experiment` behavior lock
-(:class:`EvaluateExperimentLegacyBaselineP33`). DECISION-RESEARCH-001 Task 6
-replaces the hard-coded 5/20 thresholds with card-driven ``min_sample_oos``
-statuses; when it lands, update that class to the new contract explicitly
-instead of letting it break unnoticed.
+Contains the P3.3 structural tests and, since DECISION-RESEARCH-001 Task 6,
+:class:`EvaluateExperimentCardContractP33` — the card-driven, OOS-only contract
+that replaced the legacy hard-coded 5/20 thresholds. The OOS-only runner
+semantics (no in-sample TRAIN evaluation) are pinned here too.
 """
 
 from __future__ import annotations
@@ -23,8 +22,10 @@ from market_platform_foundation.research.decision_research import (
     run_short_squeeze_family,
     validate_temporal_example,
 )
+from market_platform_foundation.research.decision_research.examples import build_ss_family_examples
 from market_platform_foundation.research.decision_research.experiments import evaluate_experiment
 from market_platform_foundation.research.decision_research.pit_gate import chronological_split
+from market_platform_foundation.research.decision_research.ss_cards import build_ss_family_cards
 
 
 def _valid_example(*, decision_time_ns: int, positive: bool) -> dict:
@@ -83,7 +84,7 @@ class DecisionResearchP33Tests(unittest.TestCase):
         examples = [
             {
                 "decision_time_ns": i * 1000,
-                "features": [{"available_time_ns": i * 1000 - 100}],
+                "features": [{"available_time_ns": i * 1000 - 100, "evidence_family": "SQUEEZE_STATE"}],
                 "outcome_time_ns": i * 1000 + 5000,
                 "outcome": {"positive": i % 2 == 0},
             }
@@ -99,18 +100,22 @@ class DecisionResearchP33Tests(unittest.TestCase):
         splits = chronological_split(examples)
         self.assertGreater(len(splits["train"]), 0)
 
-    def test_insufficient_sample_inconclusive(self) -> None:
+    def test_tiny_nonempty_pool_is_prospective(self) -> None:
+        # One evidence-bearing example: non-empty pool below min_sample_oos =>
+        # NEEDS_PROSPECTIVE_VALIDATION (Task 6 semantics; there is evidence to
+        # gather more of, unlike a truly empty pool).
         examples = [
             {
                 "decision_time_ns": 1000,
-                "features": [{"available_time_ns": 900}],
+                "features": [{"available_time_ns": 900, "evidence_family": "SQUEEZE_STATE"}],
                 "outcome_time_ns": 2000,
                 "outcome": {"positive": True},
             }
         ]
         result = run_short_squeeze_family(examples)
         ss_base = next(r for r in result["experiments"] if r["experiment_id"] == "SS-BASE")
-        self.assertEqual(ss_base["status"], "INSUFFICIENT_DATA")
+        self.assertEqual(ss_base["status"], "NEEDS_PROSPECTIVE_VALIDATION")
+        self.assertEqual(ss_base["metrics"]["pool_count"], 1)
 
     def test_no_auto_strategy_promotion(self) -> None:
         result = run_short_squeeze_family([])
@@ -118,92 +123,122 @@ class DecisionResearchP33Tests(unittest.TestCase):
             self.assertEqual(row.get("strategy_promotion"), "NONE")
 
 
-class EvaluateExperimentLegacyBaselineP33(unittest.TestCase):
-    """Legacy lock on P3.3 ``evaluate_experiment`` (hard-coded 5/20 thresholds, in-sample).
+class EvaluateExperimentCardContractP33(unittest.TestCase):
+    """Task 6 card-driven, OOS-only evaluation contract.
 
-    Every assertion here documents behavior Task 6 of DECISION-RESEARCH-001 will
-    intentionally change to card-driven ``min_sample_oos`` with OOS-only metrics.
-    The runner's current in-sample (TRAIN split) evaluation is also pinned so the
-    switch to OOS-only reporting is an explicit, reviewable diff.
+    Replaces the pre-milestone legacy lock (hard-coded 5/20 thresholds and the
+    in-sample TRAIN-split runner). Status now derives from each card's
+    ``min_sample_oos`` / ``primary_metric`` / ``primary_metric_threshold`` on
+    the OOS subset only.
     """
 
-    SS_BASE = SHORT_SQUEEZE_EXPERIMENTS["SS-BASE"]
-    SS_CAT = SHORT_SQUEEZE_EXPERIMENTS["SS-CAT"]
+    CARDS = build_ss_family_cards()
 
-    # -- status thresholds ---------------------------------------------------
-    def test_legacy_threshold_insufficient_below_5(self) -> None:
-        for n in (0, 1, 4):
-            result = evaluate_experiment(self.SS_BASE, _make_examples(n))
-            self.assertEqual(result["status"], "INSUFFICIENT_DATA", f"n={n}")
-            self.assertEqual(result["sample_count"], n)
+    # -- fail-closed card requirement ----------------------------------------
+    def test_requires_experiment_card_fail_closed(self) -> None:
+        # Passing a legacy ResearchHypothesis (not a card) must be rejected.
+        with self.assertRaises(ValueError):
+            evaluate_experiment(SHORT_SQUEEZE_EXPERIMENTS["SS-BASE"], _make_examples(5))
 
-    def test_legacy_threshold_prospective_5_to_19(self) -> None:
-        for n in (5, 19):
-            result = evaluate_experiment(self.SS_BASE, _make_examples(n))
-            self.assertEqual(result["status"], "NEEDS_PROSPECTIVE_VALIDATION", f"n={n}")
-            self.assertEqual(result["sample_count"], n)
+    def test_registered_card_enforced_when_registry_given(self) -> None:
+        import tempfile
 
-    def test_legacy_threshold_inconclusive_at_20_and_above(self) -> None:
-        for n in (20, 24, 30):
-            result = evaluate_experiment(self.SS_BASE, _make_examples(n))
-            self.assertEqual(result["status"], "INCONCLUSIVE", f"n={n}")
-            self.assertEqual(result["sample_count"], n)
+        from market_platform_foundation.research.decision_research.registry import (
+            ExperimentCardRegistry,
+        )
 
-    def test_legacy_never_reports_supported(self) -> None:
-        # Current code has no SUPPORTED / NOT_SUPPORTED path at any sample count.
-        result = evaluate_experiment(self.SS_BASE, _make_examples(30))
-        self.assertEqual(result["status"], "INCONCLUSIVE")
-        self.assertNotIn(result["status"], {"SUPPORTED", "NOT_SUPPORTED"})
+        with tempfile.TemporaryDirectory() as tmp:
+            registry = ExperimentCardRegistry(Path(tmp))
+            card = self.CARDS["SS-BASE"]
+            with self.assertRaises(ValueError):
+                evaluate_experiment(card, _make_examples(10), registry=registry)
+            registry.register(card)
+            result = evaluate_experiment(card, _make_examples(10), registry=registry)
+            self.assertEqual(result["experiment_id"], "SS-BASE")
 
-    # -- PIT filtering --------------------------------------------------------
-    def test_legacy_pit_invalid_excluded_from_sample_count(self) -> None:
-        examples = _make_examples(5)
-        examples[0]["features"][0]["available_time_ns"] = examples[0]["decision_time_ns"] + 1
-        result = evaluate_experiment(self.SS_BASE, examples)
-        self.assertEqual(result["sample_count"], 4)
+    # -- status boundaries from min_sample_oos --------------------------------
+    def test_empty_subset_insufficient_data(self) -> None:
+        result = evaluate_experiment(self.CARDS["SS-BASE"], [])
         self.assertEqual(result["status"], "INSUFFICIENT_DATA")
+        self.assertEqual(result["sample_count"], 0)
 
-    # -- metrics --------------------------------------------------------------
-    def test_legacy_precision_and_false_positive_rate(self) -> None:
-        examples = _make_examples(6, positive_from=4)  # 2/6 positive
-        result = evaluate_experiment(self.SS_BASE, examples)
-        self.assertAlmostEqual(result["metrics"]["precision"], 2.0 / 6.0)
-        self.assertAlmostEqual(result["metrics"]["false_positive_rate"], 4.0 / 6.0)
+    def test_below_min_sample_is_prospective(self) -> None:
+        # SS-BASE min_sample_oos = 150; 5 positive PIT-valid OOS examples.
+        result = evaluate_experiment(self.CARDS["SS-BASE"], _make_examples(5, positive_from=0))
+        self.assertEqual(result["status"], "NEEDS_PROSPECTIVE_VALIDATION")
+        self.assertEqual(result["sample_count"], 5)
 
-    def test_legacy_false_positive_rate_is_none_at_zero_precision(self) -> None:
-        # Subtle legacy behavior: fpr short-circuits to None when precision == 0,
-        # rather than reporting 1.0.
-        examples = _make_examples(6, positive_from=999)  # all negative
-        result = evaluate_experiment(self.SS_BASE, examples)
-        self.assertEqual(result["metrics"]["precision"], 0.0)
-        self.assertIsNone(result["metrics"]["false_positive_rate"])
+    def test_base_anchor_inconclusive_never_supported(self) -> None:
+        # SS-BASE anchor (absolute metric) is INCONCLUSIVE at/above min_sample_oos
+        # and must NEVER report SUPPORTED — no tuning can change that.
+        many = _make_examples(200, positive_from=0)
+        result = evaluate_experiment(self.CARDS["SS-BASE"], many)
+        self.assertEqual(result["status"], "INCONCLUSIVE")
+        self.assertNotEqual(result["status"], "SUPPORTED")
+        self.assertAlmostEqual(result["metrics"]["oos_precision"], 1.0)
 
-    def test_legacy_identity_and_promotion_fields(self) -> None:
-        result = evaluate_experiment(self.SS_CAT, _make_examples(5))
-        self.assertEqual(result["experiment_id"], "SS-CAT")
-        self.assertEqual(result["baseline_id"], "SS-BASE")
-        self.assertEqual(result["added_evidence"], ["CATALYST"])
-        self.assertEqual(result["strategy_promotion"], "NONE")
+    def test_supported_requires_edge_confirmatory(self) -> None:
+        # SS-OF: all-positive OOS subset, baseline 0.5 -> delta +0.5, CONFIRMATORY.
+        result = evaluate_experiment(
+            self.CARDS["SS-OF"], _make_examples(30, positive_from=0), baseline_rate=0.5
+        )
+        self.assertEqual(result["status"], "SUPPORTED")
+        self.assertEqual(result["metrics"]["oos_count"], 30)
+        self.assertTrue(result["incremental_vs_baseline"]["delta_vs_baseline"] >= 0.05)
 
-    # -- family runner (in-sample TRAIN split) --------------------------------
-    def test_legacy_runner_evaluates_on_train_split_in_sample(self) -> None:
-        # 24 PIT-valid examples -> chronological_split train = int(24*0.6) = 14,
-        # so every family member is evaluated on 14 in-sample examples (not OOS).
-        result = run_short_squeeze_family(_make_examples(24))
-        self.assertEqual(result["splits"]["train"], 14)
-        for row in result["experiments"]:
-            self.assertEqual(row["sample_count"], 14)
-            self.assertEqual(row["status"], "NEEDS_PROSPECTIVE_VALIDATION")
+    def test_exploratory_edge_resolves_not_supported(self) -> None:
+        # SS-OF-CAT is EXPLORATORY: even with an edge it resolves NOT_SUPPORTED.
+        result = evaluate_experiment(
+            self.CARDS["SS-OF-CAT"], _make_examples(30, positive_from=0), baseline_rate=0.5
+        )
+        self.assertEqual(result["status"], "NOT_SUPPORTED")
 
-    def test_legacy_runner_statuses_follow_train_size(self) -> None:
-        # 8 total PIT-valid examples, but the runner evaluates on the TRAIN split
-        # only (int(8*0.6) = 4) — below the n<5 threshold despite 8 valid inputs.
-        # Pins the in-sample train-split semantics Task 6 replaces with OOS.
-        result = run_short_squeeze_family(_make_examples(8))
-        self.assertEqual(result["splits"]["train"], 4)
-        for row in result["experiments"]:
-            self.assertEqual(row["sample_count"], 4)
-            self.assertEqual(row["status"], "INSUFFICIENT_DATA")
+    def test_below_threshold_not_supported(self) -> None:
+        # Precision 0.4 vs baseline 0.5 -> delta -0.1, no edge.
+        result = evaluate_experiment(
+            self.CARDS["SS-OF"], _make_examples(30, positive_from=18), baseline_rate=0.5
+        )
+        self.assertEqual(result["status"], "NOT_SUPPORTED")
+
+    def test_metrics_are_oos_only(self) -> None:
+        result = evaluate_experiment(
+            self.CARDS["SS-CAT"], _make_examples(6, positive_from=4), baseline_rate=None
+        )
+        self.assertEqual(result["metrics"]["oos_count"], 6)
+        self.assertAlmostEqual(result["metrics"]["oos_precision"], 2.0 / 6.0, places=6)
+        self.assertAlmostEqual(
+            result["metrics"]["oos_positive_base_rate"], 2.0 / 6.0, places=6
+        )
+        self.assertEqual(result["card_hash"], self.CARDS["SS-CAT"].card_hash)
+
+    # -- runner is OOS-only on the real fixture -------------------------------
+    def test_runner_oos_only_expected_gate_report(self) -> None:
+        # Empirical gate report on current fixtures (pinned 2026-08-22):
+        # SS-BASE INCONCLUSIVE (anchor), SS-OF/SS-OF-CAT INSUFFICIENT_DATA,
+        # SS-CAT/SS-MKT/SS-FV-DISC NEEDS_PROSPECTIVE_VALIDATION. No SUPPORTED.
+        result = run_short_squeeze_family(build_ss_family_examples())
+        by_id = {row["experiment_id"]: row for row in result["experiments"]}
+        expected = {
+            "SS-BASE": "INCONCLUSIVE",
+            "SS-OF": "INSUFFICIENT_DATA",
+            "SS-CAT": "NEEDS_PROSPECTIVE_VALIDATION",
+            "SS-MKT": "NEEDS_PROSPECTIVE_VALIDATION",
+            "SS-OF-CAT": "INSUFFICIENT_DATA",
+            "SS-FV-DISC": "NEEDS_PROSPECTIVE_VALIDATION",
+        }
+        for eid, status in expected.items():
+            self.assertEqual(by_id[eid]["status"], status, eid)
+            self.assertNotEqual(by_id[eid]["status"], "SUPPORTED", eid)
+        # Pool sizes (evidence-bearing) vs evaluated-OOS counts on current fixtures:
+        # SS-BASE pool 2808 -> 1688 held-out evaluated (expanding folds); the tiny
+        # augmentation pools can't form folds, so evaluated-OOS is 0 but the pool
+        # gates the NEEDS_PROSPECTIVE_VALIDATION status.
+        self.assertEqual(by_id["SS-BASE"]["metrics"]["oos_count"], 1688)
+        self.assertEqual(by_id["SS-BASE"]["metrics"]["pool_count"], 2808)
+        self.assertEqual(by_id["SS-CAT"]["metrics"]["pool_count"], 2)
+        self.assertEqual(by_id["SS-MKT"]["metrics"]["pool_count"], 1)
+        self.assertEqual(by_id["SS-OF"]["metrics"]["pool_count"], 0)
+        self.assertEqual(by_id["SS-OF"]["metrics"]["oos_count"], 0)
 
 
 if __name__ == "__main__":

@@ -60,10 +60,10 @@ order-flow slice = 11 events; BOXL catalyst slice = 5 events; BIYA disclosures =
 | Card | min_sample_oos | primary_metric | primary_metric_threshold | Expected on current fixtures |
 |---|---|---|---|---|
 | SS-BASE | 150 | oos_positive_base_rate | — | INCONCLUSIVE (baseline anchor; never SUPPORTED) |
-| SS-OF | 30 | oos_precision_delta_vs_baseline | +0.05 | NEEDS_PROSPECTIVE_VALIDATION (slice = 11) |
-| SS-CAT | 30 | oos_precision_delta_vs_baseline | +0.05 | NEEDS_PROSPECTIVE_VALIDATION (slice = 5) |
-| SS-MKT | 45 | oos_precision_delta_vs_baseline | +0.05 | NEEDS_PROSPECTIVE_VALIDATION (small slice) |
-| SS-OF-CAT | 30 | oos_precision_delta_vs_baseline | +0.05 | NEEDS_PROSPECTIVE_VALIDATION (intersection smaller) |
+| SS-OF | 30 | oos_precision_delta_vs_baseline | +0.05 | INSUFFICIENT_DATA (0 attachable — see temporal-misalignment note) |
+| SS-CAT | 30 | oos_precision_delta_vs_baseline | +0.05 | NEEDS_PROSPECTIVE_VALIDATION (pool = 2) |
+| SS-MKT | 45 | oos_precision_delta_vs_baseline | +0.05 | NEEDS_PROSPECTIVE_VALIDATION (pool = 1) |
+| SS-OF-CAT | 30 | oos_precision_delta_vs_baseline | +0.05 | INSUFFICIENT_DATA (pool = 0) |
 | SS-FV-DISC | 30 | oos_precision_delta_vs_baseline | +0.05 | NEEDS_PROSPECTIVE_VALIDATION (no retroactive Finviz; needs prospective capture) |
 
 ### Consequences / guardrails
@@ -103,19 +103,24 @@ Method: load 2838 BIYA 1-min bars (2026-07-16 → 21); one example per bar, usab
 
 | Card (added evidence) | Donor | Donor size | Max possible OOS | Verdict |
 |---|---|---|---|---|
-| SS-OF | NVDA order-flow | 8 bars, all 2026-07-21 | ≤ 8 | NEEDS_PROSPECTIVE_VALIDATION |
-| SS-CAT | BOXL catalyst | 5 events (07-15/18/21/22) | ≤ 5 | NEEDS_PROSPECTIVE_VALIDATION |
-| SS-MKT | BOXL market-context + MC16 | 3 golden summaries | ≤ 3 | NEEDS_PROSPECTIVE_VALIDATION |
+| SS-OF | NVDA order-flow | 8 bars, all 07-21 20:30:00–20:30:07Z | **0 attachable** (after last BIYA decision 20:19) | INSUFFICIENT_DATA |
+| SS-CAT | BOXL catalyst | 5 events (07-15/18/21/22) | **2** (only 07-21 pair PIT-hosts) | NEEDS_PROSPECTIVE_VALIDATION |
+| SS-MKT | BOXL market-context + MC16 | 3 golden summaries | **1** (only 07-21 13:25 PIT-hosts) | NEEDS_PROSPECTIVE_VALIDATION |
 | SS-OF-CAT | ORDER_FLOW_CVD ∩ CATALYST | disjoint symbols/dates | 0 | INSUFFICIENT_DATA |
 | SS-FV-DISC | Finviz prospective | none in fixture scope | 0 | NEEDS_PROSPECTIVE_VALIDATION (DEC-FV-001 gate) |
 
-- **Structural finding:** SS-OF-CAT is not exercisable end-to-end on the current fixture scope — no decision
-  timestamp carries both NVDA order-flow and BOXL catalyst evidence (different symbols and dates). It stays
-  preregistered (hash-bound card) and deterministically returns `INSUFFICIENT_DATA`; no threshold tuning can or
-  should change that. Real co-temporal cross-lane data (or prospective captures) is required to move the
-  augmentation cards past their current verdicts.
-- **Expected gate report on current fixtures:** SS-BASE `INCONCLUSIVE` (baseline anchor), SS-OF / SS-CAT /
-  SS-MKT / SS-FV-DISC `NEEDS_PROSPECTIVE_VALIDATION`, SS-OF-CAT `INSUFFICIENT_DATA`, aggregate PASS.
+- **Structural finding — temporal misalignment (measured at Task 4 build):** SS-OF-CAT is not exercisable
+  end-to-end on the current fixture scope — no decision timestamp carries both NVDA order-flow and BOXL catalyst
+  evidence (different symbols and dates). SS-OF is *also* at `INSUFFICIENT_DATA`: the 8 NVDA order-flow rows are
+  the **newest data in the whole fixture** (07-21 20:30:00–20:30:07Z), landing *after* the last BIYA decision
+  example (07-21 20:19) — so no PIT-valid host exists and the evidence-bearing pool is 0, not ≤ 8 as the raw row
+  count suggested. This is correct fail-closed behavior, not a threshold artifact. Cards stay preregistered
+  (hash-bound) and deterministically report their honest verdict; no fold/threshold tuning can or should change
+  that. Real co-temporal cross-lane data (or prospective captures) is required to move the augmentation cards
+  past their current verdicts.
+- **Expected gate report on current fixtures (empirically verified):** SS-BASE `INCONCLUSIVE` (baseline anchor),
+  SS-OF / SS-OF-CAT `INSUFFICIENT_DATA`, SS-CAT / SS-MKT / SS-FV-DISC `NEEDS_PROSPECTIVE_VALIDATION`, aggregate
+  PASS.
 
 ### Evidence-family → source mapping (finalized 2026-08-22, for the example builder)
 
@@ -125,18 +130,18 @@ buildable (declared-only families produce **no** example features, never coerced
 | evidence_family | Source (admission) | Measured rows | available_time_ns | value fields | authority | quality_flags | Direction today | Builder outcome |
 |---|---|---|---|---|---|---|---|---|
 | `SQUEEZE_STATE` | BIYA bars 2838 + squeeze engine (via `build_workspace_squeeze_payload`) | ~2808 usable | bar/state time `<= decision_time_ns` | `{state, fuel_pct, ignition_state, evidence_coverage}` | `IMP_DERIVED` | PASS/STALE/UNKNOWN | POSITIVE / NEUTRAL (ignition) | SS-BASE: one example per usable BIYA bar → OOS ≈ 1700 ✓ |
-| `ORDER_FLOW_CVD` | NVDA order-flow bars (07-21) via `build_workspace_order_flow_payload` | **8** | OF bar `event_time` | `{session_cvd, cvd_slope, aggressive_buy/sell_volume}` | `IMP_DERIVED` (ledger) | PASS/DEGRADED/UNKNOWN-AGGRESSOR | POS/NEG/NEUTRAL/UNKNOWN (`_cvd_direction`) | SS-OF: OOS `<= 8` → `NEEDS_PROSPECTIVE_VALIDATION` |
+| `ORDER_FLOW_CVD` | NVDA order-flow bars (07-21) via `build_workspace_order_flow_payload` | **8** | OF bar `event_time` | `{session_cvd, cvd_slope, aggressive_buy/sell_volume}` | `IMP_DERIVED` (ledger) | PASS/DEGRADED/UNKNOWN-AGGRESSOR | POS/NEG/NEUTRAL/UNKNOWN (`_cvd_direction`) | SS-OF: pool = **0** (rows are 20:30Z, after last BIYA decision 20:19) → `INSUFFICIENT_DATA` |
 | `MICROSTRUCTURE` | NVDA L2 depth `ADMITTED-L2-NVDA-001`, OF9 exec forecast | **6** snapshots / 6 forecasts (07-21) | depth `event_time` | `direction_bias, continuation/reversal, expected_slippage_spread_fraction, fill probs` | `IMP_DERIVED` | BOOK_STATE_INVALID etc. | forecast bias only (not a lane label) | **Costs only** for SS-OF outcomes; not built as an SS feature → declared-only |
-| `CATALYST` | BOXL catalyst slice (`boxl_catalyst_slice.json`) + MC16 rows | **5** events (07-15/18/21/22); **3** MC16 summaries | catalyst `event_time` / MC16 `available_time` (max member) | `lean/classification, news_score, theme_agreement_score, contradiction_detected, consolidated_channels` | `MODEL_OUTPUT` / `IMPLIED` | `MULTI_DOCUMENT_SYNTHESIS_EXPERIMENTAL`, `NO_UNIVERSAL_NEWS_SCORE` | POS/NEG/NEUTRAL via lean (MC16 enrich-not-override) | SS-CAT: OOS `<= 5` → `NEEDS_PROSPECTIVE_VALIDATION` |
-| `MACRO_CONTEXT` | BOXL market-context + MC16 golden `boxl_multidoc_synthesis_expected.json` | **3** summaries | MC16 `available_time` | `regime_label, theme_agreement_score, consolidated_channels` | `MODEL_OUTPUT` | `MULTI_DOCUMENT_SYNTHESIS_EXPERIMENTAL` (+ `NO_UNIVERSAL_NEWS_SCORE`) | POS/NEG/NEUTRAL via regime | SS-MKT: OOS `<= 3` → `NEEDS_PROSPECTIVE_VALIDATION` |
+| `CATALYST` | BOXL catalyst slice (`boxl_catalyst_slice.json`) + MC16 rows | **5** events (07-15/18/21/22); **3** MC16 summaries | catalyst `event_time` / MC16 `available_time` (max member) | `lean/classification, news_score, theme_agreement_score, contradiction_detected, consolidated_channels` | `MODEL_OUTPUT` / `IMPLIED` | `MULTI_DOCUMENT_SYNTHESIS_EXPERIMENTAL`, `NO_UNIVERSAL_NEWS_SCORE` | POS/NEG/NEUTRAL via lean (MC16 enrich-not-override) | SS-CAT: pool = **2** (only 07-21 pair PIT-hosts) → `NEEDS_PROSPECTIVE_VALIDATION` |
+| `MACRO_CONTEXT` (normalized from card `MARKET_CONTEXT`) | BOXL market-context + MC16 golden `boxl_multidoc_synthesis_expected.json` | **3** summaries | MC16 `available_time` | `regime_label, theme_agreement_score, consolidated_channels` | `MODEL_OUTPUT` | `MULTI_DOCUMENT_SYNTHESIS_EXPERIMENTAL` (+ `NO_UNIVERSAL_NEWS_SCORE`) | POS/NEG/NEUTRAL via regime | SS-MKT: pool = **1** (07-15/07-18 rows lack a same-day at-or-after BIYA decision) → `NEEDS_PROSPECTIVE_VALIDATION` |
 | `FINVIZ_DISCOVERY` | none (prospective captures only) | 0 | — | requires `capture_present: true` | — | — | research-context only | SS-FV-DISC always `NEEDS_PROSPECTIVE_VALIDATION` (`DEC-FV-001`) |
 | `OPTIONS_DEALER` / `ATTENTION` / `PARTICIPANT_CROWDING` | — (no labelled adapter on this scope) | 0 | — | — | — | — | not labelled | **declared-only** — never built into examples |
 
-**Vocabulary reconciliation (needed before Task 4):** the SS cards' `added_evidence` uses `MARKET_CONTEXT`
-(existing `experiments.py`) but the §4 controlled vocabulary lists `MACRO_CONTEXT`. Resolution: the builder
-normalizes card `added_evidence = MARKET_CONTEXT` to canonical `evidence_family = MACRO_CONTEXT` (same
-P3.2 MARKET_CONTEXT lane source), and the §4 vocab table line is interpreted accordingly. All other card
-`added_evidence` values are exact §4 family names.
+**Vocabulary reconciliation (resolved in Task 4):** the SS cards' `added_evidence` uses `MARKET_CONTEXT`
+(existing `experiments.py`) but the §4 controlled vocabulary lists `MACRO_CONTEXT`. Resolution (implemented):
+`build_ss_family_examples` loads the P3.2 MARKET_CONTEXT lane (MC16 golden) source and emits the canonical
+`evidence_family = MACRO_CONTEXT`; the card-level `added_evidence` field keeps `MARKET_CONTEXT` verbatim. All
+other card `added_evidence` values are exact §4 family names.
 
 **Builder construction rule (from §4 declared-only rule):** an example is admitted for a card only if every
 family in `feature_spec.required` for that card has a buildable source **and** a labelled direction or a value
@@ -146,104 +151,111 @@ co-occur — NVDA OF bars are 07-21 only, BOXL catalyst spans 07-15/18/21/22).
 
 ## Task list (test-first; each task ends with its module's tests passing and `python tools/validate.py changed`)
 
-### Task 1 — `cards.py`: ExperimentCard model + canonical hashing
+### Task 1 — `cards.py`: ExperimentCard model + canonical hashing — DONE (15/15 incl. registry)
 
-- [ ] Add `ExperimentCard` dataclass (slots) mirroring spec §5 fields: `card_id`, `experiment_id`, `family`,
+- [x] Add `ExperimentCard` dataclass (slots) mirroring spec §5 fields: `card_id`, `experiment_id`, `family`,
       `hypothesis_label`, `baseline_id`, `added_evidence`, `feature_spec`, `outcome_spec`, `inclusion_criteria`,
       `exclusion_criteria`, `primary_metric`, `min_sample_oos`, `evaluation_window` (fold schema: expanding/rolling),
       `preregistered_at_ns`, `card_hash`.
-- [ ] Reuse the Phase 6 hashing pattern (`canonical_bytes` / `sha256_bytes` from `..canonical` — same helpers
+- [x] Reuse the Phase 6 hashing pattern (`canonical_bytes` / `sha256_bytes` from `..canonical` — same helpers
       `paper/contracts.py` already imports): `card_hash = sha256_bytes(canonical_bytes(card_body))` over the
       hash-relevant body (all fields except `card_id` / `card_hash`, mirroring identity-hash binding in
       `strategy/preregistration.py`).
-- [ ] `card_id = "CARD-" + uuid5(NAMESPACE, canonical_card_id_bytes)` — deterministic across runs and machines.
-- [ ] `to_dict` / `from_dict`; `from_dict` recomputes `card_hash` and rejects a hash mismatch at construction
+- [x] `card_id = "CARD-" + uuid5(NAMESPACE, canonical_card_id_bytes)` — deterministic across runs and machines
+      (uuid5 over a lossless latin-1 str decode of the canonical id-bytes).
+- [x] `to_dict` / `from_dict`; `from_dict` recomputes `card_hash` and rejects a hash mismatch at construction
       (`CARD_HASH_MISMATCH`).
-- [ ] Tests (`tests/research/test_decision_research_cards.py`): canonical bytes stability, hash recompute identity,
+- [x] Tests (`tests/research/test_decision_research_cards.py`): canonical bytes stability, hash recompute identity,
       card_id determinism, from_dict rejects altered body, added_evidence ordering canonicalized.
 
-### Task 2 — `registry.py`: hash-bound card registry
+### Task 2 — `registry.py`: hash-bound card registry — DONE (with Task 1)
 
-- [ ] `ExperimentCardRegistry` persisted under `evidence/research/experiment-cards/<card_hash>.json` (committed,
+- [x] `ExperimentCardRegistry` persisted under `evidence/research/experiment-cards/<card_hash>.json` (committed,
       immutable — mirrors the real hash-bound acceptance-dir convention `evidence/phase6/<hash>/`;
       `evidence/strategy/` does **not** exist — see code-audit finding F1).
-- [ ] `register(card)` — idempotent; refuses on body/hash mismatch; refuses mutation of an existing identical hash with
+- [x] `register(card)` — idempotent; refuses on body/hash mismatch; refuses mutation of an existing identical hash with
       different bytes.
-- [ ] `load(hash)`, `list_cards()`, `get(experiment_id)`.
-- [ ] `verify_experiment_card_registration(card, run)` — fails closed when `card_hash` absent from registry or not bound
+- [x] `load(hash)`, `list_cards()`, `get(experiment_id)`.
+- [x] `verify_experiment_card_registration(card, run)` — fails closed when `card_hash` absent from registry or not bound
       to the run record (`DEC-PRE-001`).
-- [ ] Tests: register + reload round-trip, idempotency, fail-closed verification, unregistered-card run reject
+- [x] Tests: register + reload round-trip, idempotency, fail-closed verification, unregistered-card run reject
       (adversarial), exported registry dir is byte-stable.
 
-### Task 3 — Fixed-hash SS-family card fixtures
+### Task 3 — Fixed-hash SS-family card fixtures — DONE (19 tests incl. registry)
 
-- [ ] `tests/fixtures/research/experiment_cards.json` with the 6 spec §6 cards (`SS-BASE`, `SS-OF`, `SS-CAT`, `SS-MKT`,
-      `SS-OF-CAT`, `SS-FV-DISC`) at **fixed committed hashes**, using the settled `min_sample_oos` / `primary_metric` /
+- [x] `tests/fixtures/research/experiment_cards.json` with the 6 spec §6 cards (`SS-BASE`, `SS-OF`, `SS-CAT`, `SS-MKT`,
+      `SS-OF-CAT`, `SS-FV-DISC`) at **fixed committed hashes** (recorded in
+      `tests/research/test_decision_research_fixtures.py`), using the settled `min_sample_oos` / `primary_metric` /
       `primary_metric_threshold` from the "Settled Task 6 definitions" block above.
-- [ ] A deterministic small builder module under `tools/research/` (or a test helper) that emits the fixture JSON;
+- [x] A deterministic small builder module under `tools/research/` (or a test helper) that emits the fixture JSON;
       tests assert the committed fixture matches the builder output byte-for-byte.
-- [ ] `min_sample_oos` / `evaluation_window` / `primary_metric` / `primary_metric_threshold` per card (SS-BASE uses
+- [x] `min_sample_oos` / `evaluation_window` / `primary_metric` / `primary_metric_threshold` per card (SS-BASE uses
       `oos_positive_base_rate`; all augmentation cards use `oos_precision_delta_vs_baseline` — see settled
       definitions); each card's `added_evidence` matches the spec §6 table.
 
-### Task 4 — `examples.py`: PIT-gated decision-example builder + fixture
+### Task 4 — `examples.py`: PIT-gated decision-example builder + fixture — DONE (12/12 tests)
 
-- [ ] `build_decision_examples(...)` producing `ResearchExample`-shaped rows from the admitted BIYA / NVDA / BOXL slices,
-      with mark-based forward returns over a declared `horizon_ns` and `execution_book_aware_v1` frictions
-      (SHARED P4 / OF9 cost model). No fill required.
+- [x] `build_short_squeeze_examples` / `attach_donor_evidence` / `build_ss_family_examples` produce
+      `ResearchExample`-shaped rows from the admitted BIYA / NVDA / BOXL slices, with mark-based forward returns
+      over a declared `horizon_ns` (default **30 min**) and `execution_book_aware_v1` frictions (deterministic
+      friction floor from each bar's own range proxy — `costs_bps = spread_proxy_bps*0.5 + 1.0`, stamped
+      `cost_model_version: execution_book_aware_v1`). No fill required.
       - Friction source (pinned 2026-08-22): `build_workspace_order_book_payload(...)["latest_execution_forecast"]`
         (builder `_execution_forecast_from_event` in `providers/projections.py`; producer
         `order_flow/execution_forecast.py::compute_execution_forecast`, `EXECUTION_METHOD="execution_book_aware_v1"`).
-        No `costs_bps` producer exists yet — milestone A adds a small deterministic conversion:
-        `costs_bps = round(expected_slippage_absolute / decision_mid * 10000, basis)`, plus optional
-        adverse-selection adder from `adverse_selection_risk`, stamped `cost_model_version: execution_book_aware_v1`.
-        `forward_return_bps = raw_mark_bps - costs_bps`.
-- [ ] CATALYST-family features in BOXL-derived examples read the admitted MC16 rows (confirmed present) at
-      `tests/fixtures/market_context/boxl_multidoc_synthesis_slice.json`,
-      `tests/fixtures/market_context/boxl_multidoc_synthesis_expected.json`,
-      `tests/fixtures/market_context/boxl_synthesis_enrichment_expected.json` (MC16 handoff, spec §4/§11).
-      Feature `available_time_ns` = `iso_to_epoch_ns(summary.available_time)` — MC16 already sets
-      `available_time = max(member.available_time)` over active members.
-- [ ] Every emitted example must pass `validate_temporal_example`; enforce
-      `reject_historical_finviz_screen_without_capture` for FINVIZ features (`DEC-FV-001`).
-- [ ] Implement the spec §4 family→source mapping table; `OPTIONS_DEALER`, `ATTENTION`, `PARTICIPANT_CROWDING`,
-      and `FINVIZ_DISCOVERY` remain declared-only (no labelled adapter → fail closed at example construction,
-      never coerced).
-- [ ] `tests/fixtures/research/ss_family_examples.json` — deterministic from fixtures (no RNG).
-- [ ] Tests: builder provenance determinism, all examples PIT-valid, adversarial fixture rejection cases
-      (feature-after-decision, outcome-before-decision, retroactive Finviz without capture).
+- [x] Donor-lane features read the admitted slices: NVDA OF bars (ORDER_FLOW_CVD), BOXL catalyst events
+      (CATALYST), MC16 golden summaries (MARKET_CONTEXT → canonical `MACRO_CONTEXT`). Feature
+      `available_time_ns` = `iso_to_epoch_ns(...)`: OF bar `date`, catalyst `event_time`, MC16 summary
+      `available_time` (which is already `max(member.available_time)`).
+- [x] Every emitted example validated by `validate_temporal_example` (build raises on violation) and each feature
+      runs `reject_historical_finviz_screen_without_capture` by `feature_source` (`DEC-FV-001`, fail-closed).
+- [x] `DECLARED_ONLY_FAMILIES = {OPTIONS_DEALER, ATTENTION, PARTICIPANT_CROWDING, FINVIZ_DISCOVERY}` raise
+      `ValueError` in `load_donor_rows` / attach — never coerced, never built.
+- [x] `tests/fixtures/research/ss_family_examples.json` — 2,808 deterministic examples; root hash
+      `D4F02032…E9115`. Builder: `tools/research/build_ss_family_examples.py`.
+- [x] Tests (12): fixture byte-for-byte parity, fixed root hash, no-RNG determinism, all PIT-valid, measured caps
+      (SQUEEZE_STATE=2808, CATALYST=2, MARKET_CONTEXT=1, ORDER_FLOW_CVD=0), declared-only rejection + 5
+      adversarial cases.
 
-### Task 5 — `harness.py`: walk-forward OOS harness
+### Task 5 — `harness.py`: walk-forward OOS harness — DONE (13/13 tests)
 
-- [ ] Deterministic folds: order examples by `decision_time_ns` with `example_id` tiebreak; folds derived from position —
-      no RNG. Default **expanding window**; optional rolling per card `evaluation_window`. Single-split case delegates to
-      existing `chronological_split` (0.6/0.2).
-- [ ] PIT gate re-applied per fold; no cross-fold leakage (spec §7).
-- [ ] Run record → `evidence/research/runs/<run_id>.json`: family, fold boundaries, per-experiment **OOS-only** metrics,
-      `incremental_vs_baseline`, bound `card_hash` list, `execution_authority: NONE`, `auto_strategy_promotion: False`.
-- [ ] Harness imports no provider path, performs no I/O beyond admitted fixtures (`DEC-DET-001`).
-- [ ] Tests: fold determinism (identical run hashes on repeat, `DEC-DET-001`), expanding vs rolling fold construction,
-      OOS-only metric extraction (`DEC-OOS-001`), adversarial fold-boundary leak attempt rejected.
+- [x] Deterministic folds (`build_folds`): order examples by `decision_time_ns` with `example_id` tiebreak; folds derived from
+      position — no RNG. Default **expanding window** (`schema: expanding_window`, `folds: 4`, `oos_block_frac: 0.15`,
+      `min_oos_block: 50`); optional rolling per card `evaluation_window`. Single-split fallback delegates to
+      `chronological_split` (0.6/0.2). Reproduces the settled SS-BASE math exactly: 2808 pool → 4×422 blocks → 1688 OOS.
+- [x] PIT gate re-applied per fold (`verify_harness_folds` re-checks every train+test member and boundary ordering);
+      adversarial leak (train-after-test-start) and PIT-violating member both rejected — no cross-fold leakage.
+- [x] Run record (`run_harness`): deterministic `RUN-<uuid5>` id + `run_root_hash` (identical on repeat, `DEC-DET-001`),
+      fold boundaries, per-experiment **OOS-only** metrics, `incremental_vs_baseline`, bound `card_hash` list,
+      `execution_authority: NONE`, `auto_strategy_promotion: False`. `MARKET_CONTEXT` card family aliased to canonical
+      `MACRO_CONTEXT` when matching example features.
+- [x] Harness imports no provider path, performs no I/O beyond the registry binding check (admitted fixtures only).
+- [x] Tests: fold determinism, expanding vs rolling fold construction, OOS-only metric extraction, single-split fallback,
+      adversarial fold-boundary leak attempt rejected, fail-closed unregistered-card run.
 
-### Task 6 — Bind `experiments.py` to cards; OOS-only evaluation
+### Task 6 — Bind `experiments.py` to cards; OOS-only evaluation — DONE (with p33 contract rewrite, 61/61 across suite)
 
-- [ ] `evaluate_experiment(card, oos_examples)` **requires a bound, registry-verified card** — raises fail-closed without one.
-- [ ] Status mapping per spec §6 + settled definitions: `n_oos < min_sample_oos` → `NEEDS_PROSPECTIVE_VALIDATION`;
-      `n_oos == 0` or gate failure → `INSUFFICIENT_DATA`; confirmatory OOS edge `>= primary_metric_threshold` →
-      `SUPPORTED`; otherwise `INCONCLUSIVE` / `NOT_SUPPORTED` per preregistered rule (`DEC-INC-001`). Emit the card's
-      `primary_metric` value (delta or base rate) in `metrics`; add the degenerate-baseline guard test (SS-BASE never
-      `SUPPORTED`).
-- [ ] Keep `SHORT_SQUEEZE_EXPERIMENTS` as the declared family source; `SHORT_SQUEEZE_EXPERIMENTS` now yields cards.
-- [ ] Tests: status boundary coverage (insufficient / prospective / supported / inconclusive), OOS-only metric assertion,
-      unregistered-card run fails closed (adversarial), thresholds driven by card `min_sample_oos`.
+- [x] `evaluate_experiment(card, oos_examples, *, baseline_rate, registry, pool_count)` **requires an `ExperimentCard`** —
+      raises fail-closed without one (`EXPERIMENT_CARD_REQUIRED`); registry presence enforced when a registry is given.
+- [x] Status mapping per spec §6 + settled definitions (pool-gated): `pool_count == 0` → `INSUFFICIENT_DATA` (or
+      `NEEDS_PROSPECTIVE_VALIDATION` when a required family is prospective-capture, e.g. `FINVIZ_DISCOVERY`);
+      `0 < pool < min_sample_oos` → `NEEDS_PROSPECTIVE_VALIDATION`; pool `>= min_sample_oos` → anchor `INCONCLUSIVE`
+      (SS-BASE never `SUPPORTED` — guard test) or augmentation `SUPPORTED`/`NOT_SUPPORTED` per preregistered edge rule
+      (EXPLORATORY edge → `NOT_SUPPORTED`). Metrics are OOS-only (`oos_count`, `oos_precision`, `oos_positive_base_rate`);
+      the card's `primary_metric` value lands in `metrics` + `incremental_vs_baseline.delta_vs_baseline`.
+- [x] `SHORT_SQUEEZE_EXPERIMENTS` kept as the declared family source; cards now sourced from `ss_cards.build_ss_family_cards()`.
+- [x] `runner.run_short_squeeze_family` rewritten to the OOS harness (uses committed registry when present). Tests: status
+      boundary coverage, OOS-only metrics, fail-closed card requirement, registry enforcement, empirically-pinned expected
+      gate report (SS-BASE `INCONCLUSIVE`, SS-OF/SS-OF-CAT `INSUFFICIENT_DATA`, SS-CAT/SS-MKT/SS-FV-DISC
+      `NEEDS_PROSPECTIVE_VALIDATION`).
 
-### Task 7 — `synthesis.py`: DecisionCandidate + build_decision_candidate
+### Task 7 — `synthesis.py`: DecisionCandidate + build_decision_candidate — DONE (14/14 tests)
 
-- [ ] `DecisionCandidate` dataclass per spec §8: `candidate_id` (`CAND-<uuid5>`), `instrument_id`, `generated_at_ns`,
+- [x] `DecisionCandidate` dataclass per spec §8: `candidate_id` (`CAND-<uuid5>`), `instrument_id`, `generated_at_ns`,
       `direction_hypothesis` (LONG/SHORT/NEUTRAL/NO_HYPOTHESIS), `thesis` (display-only narrative with evidence citations),
       `supporting_evidence` / `contradicting_evidence` (separate lists with per-piece quality + freshness), `evidence_mix`
       (ALIGNED/MIXED/INSUFFICIENT), `research_only: True`, `execution_authority: "NONE"`.
-- [ ] `build_decision_candidate(instrument, prediction_cutoff, lane_evidence)` consumes P3.2 `WorkspaceEvidence` lane
+- [x] `build_decision_candidate(instrument, prediction_cutoff, lane_evidence)` consumes P3.2 `WorkspaceEvidence` lane
       envelopes (relevance / direction / quality / freshness) and MC16 `MultiDocumentSynthesisSummary` fields for
       CATALYST / MARKET_CONTEXT lanes. Never recomputes lane scores. Phase 6 `StrategyInterpretation` is **not** a
       direction source.
@@ -258,45 +270,60 @@ co-occur — NVDA OF bars are 07-21 only, BOXL catalyst spans 07-15/18/21/22).
         thematic_summary, theme_agreement_score, contradiction_detected, consolidated_channels,
         supporting_document_ids, contradicting_document_ids, revision_superseded_ids, synthesis_confidence,
         model_version, quality_flags, available_time, publication_state, scoring_method`.
-- [ ] Contradiction between lanes → `evidence_mix = MIXED`, `direction_hypothesis = NO_HYPOTHESIS` (no averaging, no
-      vote, no % bullish — extends MC16 doctrine). Missing lanes → `INSUFFICIENT` / `NOT_CONFIGURED`, never coerced.
-- [ ] MC16 quality flags (e.g. `MULTI_DOCUMENT_SYNTHESIS_EXPERIMENTAL`) propagate verbatim into feature `quality_flags`;
+- [x] Contradiction (both LONG+SHORT lanes, any `MIXED` lane direction, or MC16 `contradiction_detected`) →
+      `evidence_mix = MIXED`, `direction_hypothesis = NO_HYPOTHESIS` (no averaging, no vote, no % bullish — extends MC16
+      doctrine). Lanes with unusable quality (`UNAVAILABLE`/`NOT_CONFIGURED`/`NOT_APPLICABLE`/`UNKNOWN`) and PIT-violating
+      availability are never directional; missing lanes → `INSUFFICIENT` / never coerced.
+- [x] MC16 quality flags (e.g. `MULTI_DOCUMENT_SYNTHESIS_EXPERIMENTAL`) propagate verbatim into piece `quality_flags`;
       `synthesis_confidence` / `theme_agreement_score` remain declared-features-only (never a direction source).
-      `available_time_ns` inherits cluster `available_time` (`max(member.available_time)`) preserving the PIT gate.
-- [ ] `to_dict`. Tests (`tests/research/test_decision_research_synthesis.py`): no composite score present (`DEC-SYN-001`),
-      aligned → ALIGNED/LONG|SHORT, contradiction → MIXED/NO_HYPOTHESIS, missing lane → INSUFFICIENT, MC16 flag
-      propagation, MC16 `contradiction_detected` enriches but never overrides.
+      MC16 `contradiction_detected` enriches the mix to `MIXED` but never rewrites a lane's own direction/scores.
+- [x] `to_dict`. Tests (`tests/research/test_decision_research_synthesis.py`, 14): no composite score present
+      (`DEC-SYN-001`), aligned → ALIGNED/LONG|SHORT|NEUTRAL, contradiction → MIXED/NO_HYPOTHESIS, missing/unusable lane →
+      INSUFFICIENT, PIT-violating lane excluded, MC16 flag propagation + contradiction enrichment, deterministic CAND id,
+      `research_only`/`execution_authority: NONE`.
 
-### Task 8 — Paper intent provenance: optional `research_candidate_id` (`DEC-MAN-001`)
+### Task 8 — Paper intent provenance: optional `research_candidate_id` — DONE (7/7 tests)
 
-- [ ] Add optional `research_candidate_id` parameter to `build_user_order_intent` in `paper/contracts.py`,
-      recorded on the intent body and into the ledger as additive provenance (no automation).
-- [ ] Unknown / unregistered candidate ids fail closed at intent build.
-- [ ] Add a static import-boundary test proving `research/` has no import path to order creation
-      (`DEC-MAN-001`: `research` package never imports `paper` order builders).
-- [ ] Tests: provenance recorded on manual paper order, unknown candidate id rejected, boundary import check.
+- [x] `build_user_order_intent(..., research_candidate_id)` records the candidate id on the intent body as additive
+      provenance (no automation); `normalize_execution_intent` forwards it (audit F6 fixed — copied-key list extended).
+- [x] Malformed / unknown candidate ids (`CAND-<uuid>` format check) fail closed at intent build (`DEC-MAN-001`).
+- [x] Import-boundary tests: clean-subprocess import of the research package loads **no** `paper.execution` /
+      `paper.ledger` / `execution.simulator` / `risk.decision`, plus a source-level scan of `research/` for forbidden
+      order-path references.
+- [x] Tests: provenance recorded + part of intent identity, preserved through normalize, absent dropped, malformed ids
+      rejected, both boundary checks.
 
-### Task 9 — `tests/research/test_decision_research_001.py`: DEC-* assertion + adversarial suite
+### Task 9 — `tests/research/test_decision_research_001.py`: DEC-* assertion + adversarial suite — DONE (19/19 tests)
 
-- [ ] Assertion coverage for every `DEC-*` id: `DEC-PIT-001`, `DEC-PRE-001`, `DEC-OOS-001`, `DEC-DET-001`,
-      `DEC-SYN-001`, `DEC-MAN-001`, `DEC-FV-001`, `DEC-INC-001`.
-- [ ] All spec §11 adversarial cases: feature-after-decision leakage, outcome-before-decision, retroactive Finviz without
-      capture, unregistered-card run, contradiction between lanes, insufficient-sample family, OOS-fold boundary leak.
-- [ ] End-to-end: fixtures → examples → cards → harness → OOS evaluation → synthesis → gate report.
+- [x] Assertion coverage for every `DEC-*` id: `DEC-PIT-001`, `DEC-PRE-001`, `DEC-OOS-001`, `DEC-DET-001`,
+      `DEC-SYN-001`, `DEC-MAN-001`, `DEC-FV-001`, `DEC-INC-001` — each asserted end-to-end over the committed
+      fixtures.
+- [x] All spec §11 adversarial cases: feature-after-decision leakage, outcome-before-decision, retroactive Finviz without
+      capture, unregistered-card run, contradiction between lanes, insufficient-sample family, OOS-fold boundary leak —
+      covered (several are re-asserted here on top of their task-specific suites).
+- [x] End-to-end (fixture-driven): cards fixture registered → examples fixture → harness → OOS evaluation → expected
+      gate report (all 6 statuses pinned) + synthesis candidate + authority-NONE audit. Milestone suite total: **101/101**.
 
-### Task 10 — Gate tool
+### Task 10 — Gate tool — DONE (gate PASS)
 
-- [ ] `tools/research/run_decision_research_gate_validation.py`: loads cards + fixtures, runs the harness, asserts all
-      `DEC-*`, writes `evidence/research/decision-research-gate-report.json`; aggregate PASS.
-- [ ] Wire into the `research` manifest domain so it runs under `python tools/validate.py domain research`.
+- [x] `tools/research/run_decision_research_gate_validation.py`: loads cards + fixtures, materializes the registry under
+      `evidence/research/experiment-cards/`, runs the harness, asserts all `DEC-*` + the pinned expected statuses, writes
+      `evidence/research/decision-research-gate-report.json`; **aggregate PASS** (SS-BASE INCONCLUSIVE · SS-OF /
+      SS-OF-CAT INSUFFICIENT_DATA · SS-CAT / SS-MKT / SS-FV-DISC NEEDS_PROSPECTIVE_VALIDATION, no SUPPORTED).
+- [x] Decision-research tests already run via the manifest `research` suite (source_globs `.../decision_research/**`,
+      test_globs `tests/research/test_*.py`) under `validate.py changed` / `full`. **Wiring a `research` domain into
+      `tools/validation_manifest.json` is a governed manifest edit — deferred for principal approval** (AGENTS.md and the
+      plan document this).
 
-### Task 11 — Docs / roadmap sync + completion review
+### Task 11 — Docs / roadmap sync + completion review — DONE
 
-- [ ] Mark milestone A complete on `docs/research/PLATFORMIZATION_ROADMAP.md` and
-      `docs/research/PLATFORM_COOPERATIVE_MASTER_ROADMAP.md` (add DECISION-RESEARCH-001 to "Latest cooperative
-      milestones"); update README status row.
-- [ ] Confirm **no P4 implementation began**; future families (`ORDER_FLOW`, `OPTIONS_VRP`, `MC_SURPRISE`,
-      `PARTICIPANT_CROWDING`) remain declared-only with cards created in the registry only before future implementation.
+- [x] `docs/research/PLATFORMIZATION_ROADMAP.md` P3.3 row + `docs/research/PLATFORM_COOPERATIVE_MASTER_ROADMAP.md`
+      new "DECISION-RESEARCH-001 — milestone A [COMPLETE — fixture scope]" block (deliverables, pinned expected gate
+      result, gate report path) + `README.md` P3.3 row all updated. `AGENTS.md` local-validation note corrected (no
+      `research` domain exists; gate tool command added; manifest-domain edit flagged for approval).
+- [x] **No P4 implementation began**; future families (`ORDER_FLOW`, `OPTIONS_VRP`, `MC_SURPRISE`,
+      `PARTICIPANT_CROWDING`) and declared-only families (`OPTIONS_DEALER` / `ATTENTION` / `PARTICIPANT_CROWDING` /
+      `FINVIZ_DISCOVERY`) remain declared-only — never built into examples, card-creation only in a later milestone.
 - [ ] Final `python tools/validate.py full` (offline) checkpoint; reconcile against `reports/pre-land-full.json`.
 
 ## Validation cadence

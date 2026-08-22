@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from decimal import Decimal
 from typing import Any
 
@@ -101,6 +102,24 @@ def direction_from_side(side: str) -> str:
     raise ValueError("ORDER_SIDE_INVALID")
 
 
+RESEARCH_CANDIDATE_ID_PREFIX = "CAND-"
+
+
+def _validate_research_candidate_id(research_candidate_id: str) -> None:
+    """Fail closed: a provenance id must be a well-formed ``CAND-<uuid>``.
+
+    Unrecognized / malformed ids are rejected at intent build rather than
+    silently dropped, so provenance is never silently lost (``DEC-MAN-001``).
+    """
+    if not research_candidate_id.startswith(RESEARCH_CANDIDATE_ID_PREFIX):
+        raise ValueError("RESEARCH_CANDIDATE_ID_INVALID")
+    tail = research_candidate_id[len(RESEARCH_CANDIDATE_ID_PREFIX):]
+    try:
+        uuid.UUID(tail)
+    except (ValueError, AttributeError):
+        raise ValueError("RESEARCH_CANDIDATE_ID_INVALID") from None
+
+
 def build_user_order_intent(
     *,
     instrument: dict[str, Any],
@@ -112,6 +131,7 @@ def build_user_order_intent(
     client_order_id: str,
     idempotency_key: str,
     correlation_id: str | None = None,
+    research_candidate_id: str | None = None,
 ) -> dict[str, Any]:
     if side not in ORDER_SIDES:
         raise ValueError("ORDER_SIDE_INVALID")
@@ -119,6 +139,8 @@ def build_user_order_intent(
         raise ValueError("ORDER_TYPE_INVALID")
     if quantity <= 0:
         raise ValueError("ORDER_QUANTITY_INVALID")
+    if research_candidate_id is not None:
+        _validate_research_candidate_id(research_candidate_id)
     direction = direction_from_side(side)
     body: dict[str, Any] = {
         "action": "OPEN",
@@ -137,6 +159,8 @@ def build_user_order_intent(
         body["limit_price_minor"] = limit_price_minor
     if correlation_id:
         body["correlation_id"] = correlation_id
+    if research_candidate_id:
+        body["research_candidate_id"] = research_candidate_id
     return {
         **body,
         "intent_id": sha256_bytes(canonical_bytes(body)),
@@ -157,7 +181,13 @@ def normalize_execution_intent(intent: dict[str, Any]) -> dict[str, Any]:
         "direction": intent["direction"],
         "instrument_id": intent["instrument_id"],
     }
-    for key in ("signal_prediction_cutoff", "strategy_identity_hash", "order_type", "limit_price_minor"):
+    for key in (
+        "research_candidate_id",
+        "signal_prediction_cutoff",
+        "strategy_identity_hash",
+        "order_type",
+        "limit_price_minor",
+    ):
         if key in intent:
             body[key] = intent[key]
     return {
