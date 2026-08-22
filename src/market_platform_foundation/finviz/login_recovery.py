@@ -215,12 +215,9 @@ def recover_token_via_login(
 
 
 def _default_session_factory() -> Any | None:
-    try:
-        import requests
+    from .http_client import UrllibSession
 
-        return requests.Session()
-    except ImportError:
-        return None
+    return UrllibSession()
 
 
 def dispose_session(session: Any) -> None:

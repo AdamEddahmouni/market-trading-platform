@@ -1,9 +1,21 @@
-"""OS-backed secure storage for Finviz credentials (Windows Credential Manager)."""
+"""Private-file secure storage for Finviz credentials.
+
+Phase 0 source invariants prohibit native-OS access (ctypes / Windows
+Credential Manager) inside ``src/market_platform_foundation``. Tokens
+and login credentials are stored as files under the gitignored
+``.private/`` directory (or ``IMP_FINVIZ_SECRET_DIR``), consistent with
+the documented ``IMP_PROVIDER_ENV=.private/providers.env`` posture.
+Best-effort restrictive permissions are applied on POSIX; on Windows
+the file ACLs are left to the owner. The public interface
+(read/write/clear token and login credentials) is unchanged so the
+credential manager and tests keep working.
+"""
 
 from __future__ import annotations
 
 import json
 import os
+import stat
 import sys
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -12,9 +24,8 @@ from typing import Any
 
 from .config import REPO_ROOT
 
-CREDENTIAL_TARGET = "IMP/FINVIZ_ELITE_API_TOKEN"
-LOGIN_USERNAME_TARGET = "IMP/FINVIZ_ELITE_USERNAME"
-LOGIN_PASSWORD_TARGET = "IMP/FINVIZ_ELITE_PASSWORD"
+TOKEN_FILENAME = "finviz-token.txt"
+LOGIN_FILENAME = "finviz-login.json"
 META_FILENAME = "finviz-auth-meta.json"
 
 
@@ -38,11 +49,45 @@ class FinvizCredentialMetadata:
         )
 
 
+def _secret_dir() -> Path:
+    override = os.environ.get("IMP_FINVIZ_SECRET_DIR")
+    if override:
+        return Path(override).expanduser().resolve()
+    return REPO_ROOT / ".private"
+
+
 def _meta_path() -> Path:
     override = os.environ.get("IMP_FINVIZ_AUTH_META")
     if override:
         return Path(override).expanduser().resolve()
-    return REPO_ROOT / ".private" / META_FILENAME
+    return _secret_dir() / META_FILENAME
+
+
+def _token_path() -> Path:
+    return _secret_dir() / TOKEN_FILENAME
+
+
+def _login_path() -> Path:
+    return _secret_dir() / LOGIN_FILENAME
+
+
+def _restrict_permissions(path: Path) -> None:
+    """Best-effort owner-only permissions; ignore platforms that lack chmod."""
+
+    try:
+        if sys.platform != "win32":
+            path.chmod(stat.S_IRUSR | stat.S_IWUSR)
+    except OSError:
+        pass
+
+
+def _atomic_write_text(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_suffix(path.suffix + ".tmp")
+    temp.write_text(content, encoding="utf-8")
+    _restrict_permissions(temp)
+    os.replace(temp, path)
+    _restrict_permissions(path)
 
 
 def load_metadata() -> FinvizCredentialMetadata:
@@ -59,137 +104,77 @@ def load_metadata() -> FinvizCredentialMetadata:
 
 
 def save_metadata(metadata: FinvizCredentialMetadata) -> None:
-    path = _meta_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temp = path.with_suffix(".tmp")
-    temp.write_text(json.dumps(metadata.to_dict(), indent=2), encoding="utf-8")
-    os.replace(temp, path)
+    _atomic_write_text(_meta_path(), json.dumps(metadata.to_dict(), indent=2))
 
 
 def _utc_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
-def _windows_cred_available() -> bool:
-    return sys.platform == "win32"
-
-
-def read_windows_credential(target: str) -> str | None:
-    if not _windows_cred_available():
-        return None
-    try:
-        import ctypes
-        from ctypes import wintypes
-
-        advapi32 = ctypes.windll.advapi32
-        pcred = ctypes.c_void_p()
-        if not advapi32.CredReadW(target, 1, 0, ctypes.byref(pcred)):
-            return None
-        try:
-            class CREDENTIAL(ctypes.Structure):
-                _fields_ = [
-                    ("Flags", wintypes.DWORD),
-                    ("Type", wintypes.DWORD),
-                    ("TargetName", wintypes.LPWSTR),
-                    ("Comment", wintypes.LPWSTR),
-                    ("LastWritten", wintypes.FILETIME),
-                    ("CredentialBlobSize", wintypes.DWORD),
-                    ("CredentialBlob", ctypes.POINTER(ctypes.c_char)),
-                    ("Persist", wintypes.DWORD),
-                    ("AttributeCount", wintypes.DWORD),
-                    ("Attributes", ctypes.c_void_p),
-                    ("TargetAlias", wintypes.LPWSTR),
-                    ("UserName", wintypes.LPWSTR),
-                ]
-
-            cred = ctypes.cast(pcred, ctypes.POINTER(CREDENTIAL)).contents
-            blob = ctypes.string_at(cred.CredentialBlob, cred.CredentialBlobSize)
-            return blob.decode("utf-16-le")
-        finally:
-            advapi32.CredFree(pcred)
-    except (AttributeError, OSError, UnicodeDecodeError):
-        return None
-
-
-def write_windows_credential(target: str, secret: str) -> bool:
-    if not _windows_cred_available() or not secret:
-        return False
-    try:
-        import ctypes
-        from ctypes import wintypes
-
-        advapi32 = ctypes.windll.advapi32
-        encoded = secret.encode("utf-16-le")
-        blob = (ctypes.c_char * len(encoded)).from_buffer_copy(encoded)
-
-        class CREDENTIAL(ctypes.Structure):
-            _fields_ = [
-                ("Flags", wintypes.DWORD),
-                ("Type", wintypes.DWORD),
-                ("TargetName", wintypes.LPWSTR),
-                ("Comment", wintypes.LPWSTR),
-                ("LastWritten", wintypes.FILETIME),
-                ("CredentialBlobSize", wintypes.DWORD),
-                ("CredentialBlob", ctypes.POINTER(ctypes.c_char)),
-                ("Persist", wintypes.DWORD),
-                ("AttributeCount", wintypes.DWORD),
-                ("Attributes", ctypes.c_void_p),
-                ("TargetAlias", wintypes.LPWSTR),
-                ("UserName", wintypes.LPWSTR),
-            ]
-
-        cred = CREDENTIAL()
-        cred.Flags = 0
-        cred.Type = 1  # CRED_TYPE_GENERIC
-        cred.TargetName = target
-        cred.CredentialBlobSize = len(encoded)
-        cred.CredentialBlob = ctypes.cast(blob, ctypes.POINTER(ctypes.c_char))
-        cred.Persist = 2  # CRED_PERSIST_LOCAL_MACHINE
-        cred.UserName = "IMP"
-        return bool(advapi32.CredWriteW(ctypes.byref(cred), 0))
-    except (AttributeError, OSError):
-        return False
-
-
-def delete_windows_credential(target: str) -> bool:
-    if not _windows_cred_available():
-        return False
-    try:
-        import ctypes
-
-        return bool(ctypes.windll.advapi32.CredDeleteW(target, 1, 0))
-    except (AttributeError, OSError):
-        return False
-
-
 def read_secure_token() -> str | None:
-    return read_windows_credential(CREDENTIAL_TARGET)
+    path = _token_path()
+    if not path.is_file():
+        return None
+    try:
+        token = path.read_text(encoding="utf-8").strip()
+        return token or None
+    except OSError:
+        return None
 
 
 def write_secure_token(token: str) -> bool:
-    return write_windows_credential(CREDENTIAL_TARGET, token)
+    if not token:
+        return False
+    try:
+        _atomic_write_text(_token_path(), token + "\n")
+        return True
+    except OSError:
+        return False
 
 
 def clear_secure_token() -> bool:
-    return delete_windows_credential(CREDENTIAL_TARGET)
+    try:
+        path = _token_path()
+        if path.is_file():
+            path.unlink()
+        return True
+    except OSError:
+        return False
 
 
 def read_login_credentials() -> tuple[str | None, str | None]:
-    return (
-        read_windows_credential(LOGIN_USERNAME_TARGET),
-        read_windows_credential(LOGIN_PASSWORD_TARGET),
-    )
+    path = _login_path()
+    if not path.is_file():
+        return None, None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        username = str(data.get("username") or "")
+        password = str(data.get("password") or "")
+        return (username or None, password or None)
+    except (OSError, json.JSONDecodeError, TypeError, ValueError):
+        return None, None
 
 
 def write_login_credentials(username: str, password: str) -> bool:
-    user_ok = write_windows_credential(LOGIN_USERNAME_TARGET, username)
-    pass_ok = write_windows_credential(LOGIN_PASSWORD_TARGET, password)
-    return user_ok and pass_ok
+    if not username or not password:
+        return False
+    try:
+        _atomic_write_text(
+            _login_path(),
+            json.dumps({"username": username, "password": password}, indent=2),
+        )
+        return True
+    except OSError:
+        return False
 
 
 def clear_login_credentials() -> None:
-    delete_windows_credential(LOGIN_USERNAME_TARGET)
-    delete_windows_credential(LOGIN_PASSWORD_TARGET)
+    try:
+        path = _login_path()
+        if path.is_file():
+            path.unlink()
+    except OSError:
+        pass
 
 
 def record_credential_activation(*, source: str, rotated: bool) -> FinvizCredentialMetadata:

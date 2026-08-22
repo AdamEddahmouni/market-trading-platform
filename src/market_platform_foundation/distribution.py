@@ -36,6 +36,7 @@ _EXCLUDED_PARTS = {
 _MAX_FILE_BYTES = 10 * 1024 * 1024
 _SENSITIVE_NAME_EXCEPTIONS = {
     "src/market_platform_foundation/credential_audit.py",
+    "src/market_platform_foundation/finviz/credential_manager.py",
     "tests/phase0/test_credential_audit.py",
 }
 

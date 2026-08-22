@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import time
 from dataclasses import dataclass, field
@@ -247,7 +248,7 @@ class FinvizScreenerClient:
             "columns": list(columns),
             "received_at": received_at,
             "available_time_ns": available_ns,
-            "raw_response_hash": __import__("hashlib").sha256(body.encode("utf-8")).hexdigest(),
+            "raw_response_hash": hashlib.sha256(body.encode("utf-8")).hexdigest(),
             "meta": meta,
         }
 

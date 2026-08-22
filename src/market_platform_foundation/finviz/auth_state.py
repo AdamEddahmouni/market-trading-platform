@@ -26,6 +26,10 @@ class FinvizAuthState(StrEnum):
 
 class FinvizCredentialSource(StrEnum):
     ENVIRONMENT = "ENVIRONMENT"
+    PRIVATE_FILE = "PRIVATE_FILE"
+    # Legacy label retained for historical evidence compatibility; the
+    # OS-backed Windows Credential Manager path is not used in src/
+    # (Phase 0 source invariants prohibit native-OS access).
     WINDOWS_CREDENTIAL_MANAGER = "WINDOWS_CREDENTIAL_MANAGER"
     PROVIDER_ENV_FILE = "PROVIDER_ENV_FILE"
     NONE = "NONE"

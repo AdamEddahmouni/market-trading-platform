@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -15,20 +14,46 @@ CAPTURE_SCHEMA_VERSION = "finviz.discovery_capture/1.0.0"
 NO_RETROACTIVE_INVARIANT = "NO_RETROACTIVE_FINVIZ_SCREEN_RECONSTRUCTION"
 
 
-def _imp_commit() -> str | None:
+def _imp_commit(root: Path | None = None) -> str | None:
+    """Resolve the repository HEAD commit without spawning subprocesses.
+
+    Reads ``.git/HEAD`` and the referenced ref file (or packed-refs)
+    directly. Returns ``None`` when the repository cannot be resolved
+    (e.g. running from a distributed source snapshot).
+    """
+
+    git_dir = (root or Path(__file__).resolve().parents[3]) / ".git"
+    head_path = git_dir / "HEAD"
     try:
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-            check=False,
-        )
-        if result.returncode == 0:
-            return result.stdout.strip()
-    except (OSError, subprocess.SubprocessError):
+        if not head_path.is_file():
+            return None
+        head = head_path.read_text(encoding="utf-8").strip()
+    except OSError:
         return None
-    return None
+    if not head:
+        return None
+    if head.startswith("ref: "):
+        ref = head[5:].strip()
+        ref_path = git_dir / ref
+        try:
+            if ref_path.is_file():
+                value = ref_path.read_text(encoding="utf-8").strip()
+                return value or None
+        except OSError:
+            return None
+        try:
+            packed = git_dir / "packed-refs"
+            if packed.is_file():
+                for line in packed.read_text(encoding="utf-8").splitlines():
+                    if line.startswith("#") or not line.strip():
+                        continue
+                    parts = line.split()
+                    if len(parts) == 2 and parts[1] == ref:
+                        return parts[0]
+        except OSError:
+            return None
+        return None
+    return head
 
 
 def capture_run_directory(candidate_set: CandidateSet) -> Path:

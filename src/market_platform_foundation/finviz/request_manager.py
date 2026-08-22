@@ -3,17 +3,18 @@
 from __future__ import annotations
 
 import hashlib
+import http.client
 import threading
 import time
+import urllib.error
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any
 
-import requests
-
 from .auth_classification import FinvizFailureKind
 from .config import MIN_REQUEST_INTERVAL_S
 from .credential_manager import get_finviz_credential_manager
+from .http_client import HttpResponse, is_network_error, urllib_get
 from .redaction import FinvizHTTPError, redact_payload, redact_text, sanitize_url
 
 
@@ -83,13 +84,8 @@ class FinvizRequestManager:
         *,
         params: dict[str, Any] | None = None,
         timeout: float = 15.0,
-    ) -> requests.Response:
-        return requests.get(
-            url,
-            params=params or {},
-            headers=self._headers,
-            timeout=timeout,
-        )
+    ) -> HttpResponse:
+        return urllib_get(url, params=params or {}, timeout=timeout, headers=self._headers)
 
     def _execute_request(
         self,
@@ -101,7 +97,9 @@ class FinvizRequestManager:
     ) -> tuple[int, str, str]:
         try:
             response = self._raw_get(url, params=params, timeout=timeout_s)
-        except requests.RequestException as exc:
+        except (urllib.error.URLError, http.client.HTTPException, OSError) as exc:
+            if not is_network_error(exc):
+                raise
             raise FinvizHTTPError(
                 f"network_error: {exc.__class__.__name__}",
                 url=sanitize_url(url, secret=api_key),

@@ -78,7 +78,7 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
         ):
             token = manager.load()
         self.assertEqual(token, TEST_TOKEN)
-        self.assertEqual(manager.health().source, FinvizCredentialSource.WINDOWS_CREDENTIAL_MANAGER)
+        self.assertEqual(manager.health().source, FinvizCredentialSource.PRIVATE_FILE)
 
     def test_missing_credential_reports_unconfigured(self) -> None:
         manager = FinvizCredentialManager()
@@ -115,7 +115,7 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
     def test_single_flight_refresh(self) -> None:
         manager = FinvizCredentialManager()
         manager._token = "old-token"
-        manager._source = FinvizCredentialSource.WINDOWS_CREDENTIAL_MANAGER
+        manager._source = FinvizCredentialSource.PRIVATE_FILE
         calls: list[int] = []
 
         def slow_recovery() -> bool:
@@ -150,7 +150,7 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
             return original()
 
         manager._token = "stale"
-        manager._source = FinvizCredentialSource.WINDOWS_CREDENTIAL_MANAGER
+        manager._source = FinvizCredentialSource.PRIVATE_FILE
         with patch.object(manager, "attempt_recovery", side_effect=counting_recovery):
             with patch(
                 "market_platform_foundation.finviz.credential_manager.recover_token_via_login",
@@ -184,7 +184,7 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
             return_value=("user", "pass"),
         ):
             manager._token = "old"
-            manager._source = FinvizCredentialSource.WINDOWS_CREDENTIAL_MANAGER
+            manager._source = FinvizCredentialSource.PRIVATE_FILE
             self.assertTrue(manager.attempt_recovery())
         self.assertIn(TEST_TOKEN, validated)
 
@@ -203,7 +203,7 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
             return_value=("user", "pass"),
         ):
             manager._token = "old"
-            manager._source = FinvizCredentialSource.WINDOWS_CREDENTIAL_MANAGER
+            manager._source = FinvizCredentialSource.PRIVATE_FILE
             self.assertFalse(manager.attempt_recovery())
         write_mock.assert_not_called()
 
@@ -218,7 +218,7 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
             updated = __import__(
                 "market_platform_foundation.finviz.secure_store",
                 fromlist=["record_credential_activation"],
-            ).record_credential_activation(source="WINDOWS_CREDENTIAL_MANAGER", rotated=True)
+            ).record_credential_activation(source="PRIVATE_FILE", rotated=True)
         self.assertEqual(updated.finviz_credential_generation, 3)
         save_mock.assert_called_once()
 
@@ -250,7 +250,7 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
     def test_recovery_loop_is_bounded(self) -> None:
         manager = FinvizCredentialManager()
         manager._token = "bad"
-        manager._source = FinvizCredentialSource.WINDOWS_CREDENTIAL_MANAGER
+        manager._source = FinvizCredentialSource.PRIVATE_FILE
         with patch(
             "market_platform_foundation.finviz.credential_manager.recover_token_via_login",
             return_value=MagicMock(status=LoginRecoveryStatus.AUTH_FAILED),
@@ -291,7 +291,7 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
                 store_cls.return_value = MagicMock(data_mode="LIVE")
                 cred_mock.return_value.health.return_value = MagicMock(
                     state=FinvizAuthState.AUTH_INVALID,
-                    source=FinvizCredentialSource.WINDOWS_CREDENTIAL_MANAGER,
+                    source=FinvizCredentialSource.PRIVATE_FILE,
                     credential_present=False,
                     finviz_credential_generation=1,
                     last_validated=None,
@@ -414,7 +414,7 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
             self.assertEqual(manager.load(), TEST_TOKEN)
             self.assertEqual(
                 manager.health().source,
-                FinvizCredentialSource.WINDOWS_CREDENTIAL_MANAGER,
+                FinvizCredentialSource.PRIVATE_FILE,
             )
 
     def test_login_host_allowlist(self) -> None:
@@ -461,7 +461,7 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
 
     def test_login_retry_is_bounded(self) -> None:
         manager = FinvizCredentialManager()
-        manager._source = FinvizCredentialSource.WINDOWS_CREDENTIAL_MANAGER
+        manager._source = FinvizCredentialSource.PRIVATE_FILE
         with patch(
             "market_platform_foundation.finviz.credential_manager.recover_token_via_login",
             return_value=MagicMock(status=LoginRecoveryStatus.NETWORK_ERROR),
