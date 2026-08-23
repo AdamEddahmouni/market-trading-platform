@@ -8,7 +8,7 @@
     "P4-PROV-001": true,
     "P4-SAFE-001": true
   },
-  "completed_at": "2026-08-23T00:01:09.4607440Z",
+  "completed_at": "2026-08-23T00:40:43.5565990Z",
   "failures": [],
   "fixture_paths": [
     "tests/fixtures/providers/tradier_sandbox_orders.json"

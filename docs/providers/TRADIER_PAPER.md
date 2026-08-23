@@ -53,6 +53,25 @@ being reconciled/deprecated so the composition slot has one explicit gate.
   fills**; fills are normalized into the shared `apply_fill` shape so the
   ledger, positions, and cash all derive from one source (P4-FILL-001).
 
+## Reconciliation (4B)
+
+`src/market_platform_foundation/platform/reconciliation/**` reconciles broker
+order/position/account snapshots against the event-sourced IMP ledger
+(PLATFORM-P4-001 §7):
+
+- Deterministic, replay-safe `ReconciliationReport` with a content-derived
+  report id (identical snapshots + ledger → identical report, `P4-REC-001`).
+- Reports are recorded as immutable `ReconciliationRecorded` ledger events;
+  mismatches are never patched. `project_risk.reconciliation_status` reports
+  `BROKER_RECONCILED` / `MISMATCH` / `RECONCILIATION_HOLD` (and
+  `RECONCILIATION_PENDING` before the first report) in `BROKER_PAPER` mode.
+- Every mismatch must be resolved by an operator correction event carrying the
+  observed broker value + raw-source reference, or explicitly held
+  (`P4-REC-002`); `assert_no_unexplained_mismatch` fails closed on silent
+  absorption.
+- Gate: `tools/platform/run_reconciliation_gate_validation.py` (offline,
+  fixture-first) → `evidence/platform/reconciliation-gate-report.json`.
+
 ## Sandbox limits (verified)
 
 - Free account: API token + paper sandbox.

@@ -190,6 +190,74 @@ class BrokerOrderStatusEvent:
         )
 
 
+@dataclass(frozen=True)
+class BrokerPositionSnapshot:
+    """Broker-side position observation (reconciliation input, P4 §4 canonical table).
+
+    Provider-native fields never leak past the broker-neutral boundary; this
+    model is the canonical reconciliation input for position quantity and
+    average price comparisons.
+    """
+
+    instrument_id: str
+    quantity: int
+    as_of_ns: int
+    avg_price_minor: int | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        body: dict[str, Any] = {
+            "as_of_ns": self.as_of_ns,
+            "instrument_id": self.instrument_id,
+            "quantity": self.quantity,
+        }
+        if self.avg_price_minor is not None:
+            body["avg_price_minor"] = self.avg_price_minor
+        return body
+
+    @classmethod
+    def from_record(cls, record: dict[str, Any]) -> BrokerPositionSnapshot:
+        return cls(
+            instrument_id=str(record["instrument_id"]),
+            quantity=int(record["quantity"]),
+            as_of_ns=int(record.get("as_of_ns", 0)),
+            avg_price_minor=(
+                int(record["avg_price_minor"])
+                if record.get("avg_price_minor") is not None
+                else None
+            ),
+        )
+
+
+@dataclass(frozen=True)
+class BrokerAccountSnapshot:
+    """Broker-side cash/buying-power observation (reconciliation input, P4 §4)."""
+
+    cash_minor: int
+    as_of_ns: int
+    buying_power_minor: int | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        body: dict[str, Any] = {
+            "as_of_ns": self.as_of_ns,
+            "cash_minor": self.cash_minor,
+        }
+        if self.buying_power_minor is not None:
+            body["buying_power_minor"] = self.buying_power_minor
+        return body
+
+    @classmethod
+    def from_record(cls, record: dict[str, Any]) -> BrokerAccountSnapshot:
+        return cls(
+            cash_minor=int(record["cash_minor"]),
+            as_of_ns=int(record.get("as_of_ns", 0)),
+            buying_power_minor=(
+                int(record["buying_power_minor"])
+                if record.get("buying_power_minor") is not None
+                else None
+            ),
+        )
+
+
 def build_broker_order_request(
     intent: dict[str, Any],
     *,
@@ -416,9 +484,11 @@ __all__ = [
     "BROKER_NORMALIZATION_VERSION",
     "BROKER_STATUSES",
     "BROKER_STATUS_TO_IMP",
+    "BrokerAccountSnapshot",
     "BrokerFillEvent",
     "BrokerOrderStatusEvent",
     "BrokerPaperOrderRequest",
+    "BrokerPositionSnapshot",
     "build_broker_execution_envelope",
     "build_broker_order",
     "build_broker_order_request",

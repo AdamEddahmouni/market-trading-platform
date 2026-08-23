@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any, Callable, Iterator
@@ -24,6 +25,8 @@ EVENT_TYPES: tuple[str, ...] = (
     "OrderStateChanged",
     "FillRecorded",
     "PositionChanged",
+    "ReconciliationRecorded",
+    "ReconciliationCorrectionRecorded",
 )
 
 
@@ -82,6 +85,10 @@ class PaperExecutionLedger:
             "opened_at_ns": time.time_ns(),
             "paper_account_id": paper_account_id,
             "replay_session_id": replay_session_id,
+            # Uniqueness nonce: wall-clock granularity is coarse (and can be
+            # frozen in virtualized environments), so two opens in the same
+            # tick would otherwise hash to the same session id.
+            "session_nonce": uuid.uuid4().hex,
         }
         session_id = sha256_bytes(canonical_bytes(session_body))
         ledger = cls(
@@ -347,12 +354,14 @@ class PaperExecutionLedger:
             if event["event_type"] == "RiskDecisionRecorded" and isinstance(event.get("payload"), dict)
         ]
         last = decisions[-1] if decisions else None
+        reconciliation_status, last_reconciliation = self._reconciliation_state()
         return {
             "authority_boundary": "PAPER_RISK_OBSERVABILITY",
             "execution_authority": self.execution_authority,
             "execution_mode": self.execution_mode,
             "kill_switch_active": self.kill_switch.active,
             "last_decision": last,
+            "last_reconciliation": last_reconciliation,
             "limits": {
                 "max_open_orders": int(self.policy["max_open_orders"]),
                 "max_order_shares": int(self.policy["max_order_shares"]),
@@ -360,8 +369,109 @@ class PaperExecutionLedger:
             },
             "open_order_count": self.open_order_count,
             "policy_version": self.policy["policy_version"],
-            "reconciliation_status": "INTERNAL_AUTHORITATIVE",
+            "reconciliation_status": reconciliation_status,
         }
+
+    def _reconciliation_state(self) -> tuple[str, dict[str, Any] | None]:
+        """Derive (reconciliation_status, last_report_payload) from ledger events.
+
+        P4 audit F7: in ``BROKER_PAPER`` mode the broker is authoritative, so the
+        status reflects the latest recorded reconciliation report and any
+        operator corrections against it. In every other mode the internal
+        simulator remains authoritative (``INTERNAL_AUTHORITATIVE``).
+
+        Status mapping:
+        - no report yet / report unavailable -> ``RECONCILIATION_PENDING``;
+        - last report overall MATCHED -> ``BROKER_RECONCILED``;
+        - last report MISMATCH with any HELD correction -> ``RECONCILIATION_HOLD``;
+        - last report MISMATCH fully covered by RESOLVED corrections
+          (every mismatch field has a root-cause event) -> ``BROKER_RECONCILED``;
+        - otherwise -> ``MISMATCH`` (never silently absorbed, P4-REC-002).
+        """
+        if self.execution_mode != "BROKER_PAPER":
+            return "INTERNAL_AUTHORITATIVE", None
+        reports = [
+            event["payload"]
+            for event in self.events
+            if event["event_type"] == "ReconciliationRecorded" and isinstance(event.get("payload"), dict)
+        ]
+        if not reports:
+            return "RECONCILIATION_PENDING", None
+        last = reports[-1]
+        overall = str(last.get("overall_status", "UNAVAILABLE"))
+        if overall == "MATCHED":
+            return "BROKER_RECONCILED", last
+        if overall == "UNAVAILABLE":
+            return "RECONCILIATION_PENDING", last
+        report_id = str(last.get("report_id", ""))
+        corrections = [
+            event["payload"]
+            for event in self.events
+            if event["event_type"] == "ReconciliationCorrectionRecorded"
+            and isinstance(event.get("payload"), dict)
+            and str(event["payload"].get("report_id", "")) == report_id
+        ]
+        if any(str(row.get("resolution")) == "HELD" for row in corrections):
+            return "RECONCILIATION_HOLD", last
+        mismatch_fields = {str(value) for value in last.get("mismatch_fields", [])}
+        resolved_fields = {
+            str(row.get("field"))
+            for row in corrections
+            if str(row.get("resolution")) == "RESOLVED" and row.get("field")
+        }
+        if mismatch_fields and mismatch_fields <= resolved_fields:
+            return "BROKER_RECONCILED", last
+        return "MISMATCH", last
+
+    def append_reconciliation_report(self, report: dict[str, Any]) -> dict[str, Any]:
+        """Record one reconciliation run as an immutable ledger event (P4-REC-001)."""
+        report_id = str(report.get("report_id", ""))
+        if not report_id:
+            raise ValueError("PAPER_RECONCILIATION_REPORT_ID_REQUIRED")
+        return self._append(
+            "ReconciliationRecorded",
+            {
+                "as_of_ns": int(report.get("as_of_ns", 0)),
+                "correlation_id": report_id,
+                "mismatch_fields": list(report.get("mismatch_fields", [])),
+                "overall_status": str(report.get("overall_status", "UNAVAILABLE")),
+                "report_id": report_id,
+            },
+        )
+
+    def append_reconciliation_correction(
+        self,
+        *,
+        report_id: str,
+        field: str | None,
+        resolution: str,
+        observed_value: Any = None,
+        raw_source_reference: str = "",
+        reason_codes: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Append an operator-initiated reconciliation correction event.
+
+        ``resolution`` is ``RESOLVED`` (root cause identified for one field,
+        carrying the observed broker value and raw-source reference) or
+        ``HELD`` (report-level, held open in ``RECONCILIATION_HOLD``).
+        Corrections are append-only; a ledger value is never patched.
+        """
+        if resolution not in {"RESOLVED", "HELD"}:
+            raise ValueError("PAPER_RECONCILIATION_RESOLUTION_INVALID")
+        if not report_id:
+            raise ValueError("PAPER_RECONCILIATION_REPORT_ID_REQUIRED")
+        return self._append(
+            "ReconciliationCorrectionRecorded",
+            {
+                "correlation_id": report_id,
+                "field": field,
+                "observed_value": observed_value,
+                "raw_source_reference": raw_source_reference,
+                "reason_codes": list(reason_codes or []),
+                "report_id": report_id,
+                "resolution": resolution,
+            },
+        )
 
     def lookup_order(self, order_id: str) -> dict[str, Any] | None:
         for order in self.project_orders():

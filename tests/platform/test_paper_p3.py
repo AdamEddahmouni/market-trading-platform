@@ -208,6 +208,35 @@ class PaperPersistenceTests(IsolatedStateTest):
         matching = [event for event in restored.events if event.get("correlation_id") == "corr-p3-trace"]
         self.assertGreaterEqual(len(matching), 1)
 
+    def test_open_session_ids_unique_under_frozen_clock(self) -> None:
+        """Regression: two opens in the same (coarse/frozen) clock tick differ.
+
+        session ids are content hashes of the session body, which includes
+        ``opened_at_ns``; on environments where ``time.time_ns()`` is frozen
+        for whole ticks, a uniqueness nonce keeps ids distinct.
+        """
+        from unittest import mock
+
+        frozen = 1787000000000000000
+        with mock.patch(
+            "market_platform_foundation.paper.ledger.time.time_ns", return_value=frozen
+        ):
+            first = PaperExecutionLedger.open_session(
+                replay_session_id="frozen-clock-1",
+                instrument_id="BIYA",
+                symbol="BIYA",
+                execution_mode="BROKER_PAPER",
+                execution_authority="PAPER_ONLY",
+            )
+            second = PaperExecutionLedger.open_session(
+                replay_session_id="frozen-clock-1",
+                instrument_id="BIYA",
+                symbol="BIYA",
+                execution_mode="BROKER_PAPER",
+                execution_authority="PAPER_ONLY",
+            )
+        self.assertNotEqual(first.session_id, second.session_id)
+
     def test_sessions_isolated_and_archive(self) -> None:
         store, bars = self._open_authorized()
         submit_interactive_order(

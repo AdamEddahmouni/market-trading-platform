@@ -37,7 +37,7 @@ Revision 2 remains the incorporated Phase 0 safety authority.
 | MRA-001 — grounded Market Research Assistant | `PASS` (deterministic evidence retrieval on admitted fixture) |
 | MRA-002 — Anthropic LLM assistant | `PASS` (mocked HTTP acceptance; live inference when `ANTHROPIC_API_KEY` set) |
 | Platform P0 — bitemporal reference store + PIT joins | `PASS` (fixture scope; FAST + FULL invariants) |
-| Platformization P0–P3.3 + P4-4A — paper execution, live observational data, local state, unified workstation, discovery, Tradier sandbox broker-paper adapter | `COMPLETE_WITH_LIMITATIONS` (see [platformization roadmap](docs/research/PLATFORMIZATION_ROADMAP.md)) |
+| Platformization P0–P4-4B — paper execution, live observational data, local state, unified workstation, discovery, Tradier sandbox broker-paper adapter, broker/ledger reconciliation | `COMPLETE_WITH_LIMITATIONS` (see [platformization roadmap](docs/research/PLATFORMIZATION_ROADMAP.md)) |
 | Public-data providers — macro / energy / sec / short-intelligence / observational / finviz-discovery | `IMPLEMENTED` (fixture-first; live probes opt-in; captures **not admitted**) |
 
 ## Validation cadence
@@ -69,7 +69,7 @@ The existing candidate evidence roots under `evidence/phase0/2E1E…` and
 `evidence/phase0/6B31…` bind older repository subjects. They remain immutable and
 do not establish acceptance for the current repository subject.
 
-## Platformization (P0–P3.3 + P4-4A)
+## Platformization (P0–P4-4B)
 
 Transition from replay-only research UI to a provider-agnostic market
 operating workstation, tracked in the
@@ -84,16 +84,18 @@ operating workstation, tracked in the
 | P3.2 | Unified live decision workstation (lane evidence envelope, What Matters Now, evidence drawer) — [P3.2](docs/superpowers/specs/2026-08-21-platform-p32-unified-live-workstation.md) |
 | P3.3 | Finviz Elite discovery, prospective PIT capture, decision-research foundation — [P3.3](docs/superpowers/specs/2026-08-21-platform-p33-finviz-discovery-research.md) · [DECISION-RESEARCH-001 milestone A](docs/superpowers/specs/2026-08-22-decision-research-001-design.md) |
 | P4-4A | Tradier sandbox broker-paper adapter, idempotent submission, broker lifecycle mapping, sandbox-contract fixtures, gate PASS — [PLATFORM-P4-001](docs/superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md) |
+| P4-4B | Broker/ledger reconciliation engine: deterministic reports (`P4-REC-001`), append-only `ReconciliationRecorded` events, `project_risk.reconciliation_status`, zero silent mismatches (`P4-REC-002`), gate PASS — [PLATFORM-P4-001](docs/superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md) |
 
-P4 sub-milestone **4A** (Tradier sandbox broker-paper adapter + idempotent
-submission) is **implemented and gate-passing** — offline and fixture-first;
-`tools/platform/run_broker_paper_gate_validation.py` reports aggregate PASS
-(`evidence/platform/broker-paper-gate-report.json`), with spec and code-grounded
-audit in [PLATFORM-P4-001](docs/superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md)
+P4 sub-milestones **4A** (Tradier sandbox broker-paper adapter + idempotent
+submission) and **4B** (broker/ledger reconciliation) are **implemented and
+gate-passing** — offline and fixture-first; the 4A and 4B gate tools report
+aggregate PASS (`evidence/platform/broker-paper-gate-report.json`,
+`evidence/platform/reconciliation-gate-report.json`), with spec and
+code-grounded audit in [PLATFORM-P4-001](docs/superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md)
 and `.planning/2026-08-22-platform-p4-broker-paper-code-audit.md`. Limitation:
 the `/paper/broker/*` observability endpoints remain spec'd, not implemented.
-Not started: P4-4B (reconciliation), P4-4C (Moomoo execution), P5 (hosted
-platform, `PROVIDER-COMMERCIAL-001`), P6 (shadow/forward validation). Production
+Not started: P4-4C (Moomoo execution), P5 (hosted platform,
+`PROVIDER-COMMERCIAL-001`), P6 (shadow/forward validation). Production
 execution (`LIVE-001`) is blocked pending separate authorization.
 
 ## Revision 3 guidance
@@ -131,13 +133,15 @@ live social API connection, crypto research adapter, AI-trading, or
 live-trading capability. **Internal paper execution** (Platformization
 P0–P3.3) exists as an event-sourced simulation ledger reachable only
 under explicit env gates (`IMP_PAPER_EXECUTION=1`,
-`IMP_LIVE_INTERNAL_SIMULATION=1`). **Broker paper execution** (P4-4A) is a
+`IMP_LIVE_INTERNAL_SIMULATION=1`). **Broker paper execution** (P4-4A/4B) is a
 Tradier **sandbox-only** adapter that fails closed unless all of
 `IMP_TRADIER_PAPER=1`, `IMP_BROKER_PAPER_EXECUTION=1`, a token, and the
 sandbox endpoint are set — it has no live order path, and its delayed-sandbox
 fills are authoritative only for the `BROKER_PAPER` ledger, never research
-data. Live execution (`LIVE-001`) remains blocked and requires separate
-authorization.
+data. Broker/ledger reconciliation (4B) is append-only and fail-closed: every
+mismatch surfaces as an immutable ledger event and is resolved or held open
+(`P4-REC-001/002`) — differences are never silently absorbed. Live execution
+(`LIVE-001`) remains blocked and requires separate authorization.
 The repository remote is `origin` →
 `https://github.com/AdamEddahmouni/integrated-market-intelligence-platform.git`.
 

@@ -1,0 +1,23 @@
+{
+  "aggregate_status": "passed",
+  "assertions": {
+    "P4-REC-001": true,
+    "P4-REC-001.append_only": true,
+    "P4-REC-001.status": true,
+    "P4-REC-002.drift_detected": true,
+    "P4-REC-002.fail_closed": true,
+    "P4-REC-002.hold": true,
+    "P4-REC-002.resolved": true,
+    "P4-REC-002.unresolved": true
+  },
+  "completed_at": "2026-08-23T00:40:43.7720250Z",
+  "failures": [],
+  "fixture_paths": [
+    "tests/fixtures/providers/tradier_sandbox_orders.json"
+  ],
+  "logical_id": "platform.reconciliation_gate_report",
+  "mode": "FIXTURE_REPLAY",
+  "offline": true,
+  "schema_version": "1.0.0",
+  "summary": "Broker paper 4B gate: passed with 0 failed assertion(s)."
+}

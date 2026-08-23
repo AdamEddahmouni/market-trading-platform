@@ -20,7 +20,7 @@ with governed Phases 0–16.
 | **P3.1** | Live internal paper on admitted L1, operator instrument, restart marks | **COMPLETE_WITH_LIMITATIONS** — [P3.1 closure](../superpowers/specs/2026-08-21-platform-p31-live-execution-closure.md) |
 | **P3.2** | Unified live decision workstation (`/workspace/{symbol}/evidence`, What Matters Now, evidence drawer) | **COMPLETE** — [P3.2](../superpowers/specs/2026-08-21-platform-p32-unified-live-workstation.md) |
 | **P3.3** | Finviz Elite discovery, prospective PIT capture, decision-research foundation | **COMPLETE** — [P3.3](../superpowers/specs/2026-08-21-platform-p33-finviz-discovery-research.md) · [DECISION-RESEARCH-001 milestone A](../superpowers/specs/2026-08-22-decision-research-001-design.md) (OOS gate PASS) |
-| **P4** | Tradier/Moomoo paper adapters, idempotency, reconciliation | **4A COMPLETE_WITH_LIMITATIONS** — Tradier sandbox adapter + idempotent submission landed, gate PASS ([PLATFORM-P4-001](../superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md)); **4B** reconciliation and **4C** Moomoo execution not started |
+| **P4** | Tradier/Moomoo paper adapters, idempotency, reconciliation | **4A + 4B COMPLETE_WITH_LIMITATIONS** — Tradier sandbox adapter + idempotent submission and the reconciliation engine landed, both gates PASS ([PLATFORM-P4-001](../superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md)); **4C** Moomoo execution not started |
 | **P5** | Hosted platform, security, PROVIDER-COMMERCIAL-001 | Not started |
 | **P6** | Shadow/forward validation | Not started |
 | **LIVE-001** | Production execution (separate authorization) | Blocked |
@@ -55,12 +55,31 @@ audit (`.planning/2026-08-22-platform-p4-broker-paper-code-audit.md`) verified
   `tests/platform/test_broker_paper_p4.py` is green. `LIVE` execution remains
   unreachable (`IMP_LIVE_EXECUTION` is never set in CI).
 
-**Limitations / remaining 4A scope:** the `/paper/broker/*` read-only
+**Sub-milestone 4B landed (offline, deterministic):**
+
+- Reconciliation engine at
+  `src/market_platform_foundation/platform/reconciliation/**`: pure,
+  replay-safe `build_reconciliation_report` (content-derived report id, no
+  wall clock), order/position/account comparisons against the ledger
+  projection, and broker-side order absence detection.
+- `ReconciliationRecorded` / `ReconciliationCorrectionRecorded` ledger event
+  types (append-only; a mismatch is never patched) and the
+  `project_risk.reconciliation_status` extension (`BROKER_RECONCILED` /
+  `MISMATCH` / `RECONCILIATION_HOLD`, `RECONCILIATION_PENDING` before the
+  first report; `INTERNAL_AUTHORITATIVE` unchanged outside `BROKER_PAPER`).
+- Operator correction path: per-field RESOLVED events carrying the observed
+  broker value + raw-source reference, or report-level HELD events;
+  `assert_no_unexplained_mismatch` fails closed on silent absorption
+  (`P4-REC-002`).
+- Gate: `tools/platform/run_reconciliation_gate_validation.py` → **aggregate
+  PASS** (`evidence/platform/reconciliation-gate-report.json`);
+  `tests/platform/test_reconciliation_p4.py` is green (18 tests).
+
+**Limitations / remaining P4 scope:** the `/paper/broker/*` read-only
 observability endpoints (orders/account/positions) are spec'd but not yet
 implemented; wire specifics depend on exercising the real Tradier sandbox and
-are tracked in `docs/providers/TRADIER_PAPER.md`. **4B** (reconciliation
-engine: `platform/reconciliation/**`, `P4-REC-001/002`) and **4C** (Moomoo
-execution adapter) are not started.
+are tracked in `docs/providers/TRADIER_PAPER.md`. **4C** (Moomoo execution
+adapter) is not started.
 
 ## Architecture decisions (locked)
 
