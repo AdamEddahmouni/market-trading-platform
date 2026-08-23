@@ -79,13 +79,12 @@ class ProviderComposition:
             self.paper_execution,
         ]
         return {
-            "capabilities": sorted(
-                {
-                    "capability": provider.capability,
-                    "provider_id": provider.provider_id,
-                }
-                for provider in providers
-            ),
+            "capabilities": [
+                {"capability": capability, "provider_id": provider_id}
+                for capability, provider_id in sorted(
+                    {(provider.capability, provider.provider_id) for provider in providers}
+                )
+            ],
             "logical_id": "providers.composition_manifest",
         }
 
@@ -129,6 +128,18 @@ def configure_fixture_provider_composition() -> ProviderComposition:
     return composition
 
 
+def _ensure_no_paper_execution_conflict(composition: ProviderComposition, incoming_provider_id: str) -> None:
+    """Fail closed if two broker paper adapters would share one composition.
+
+    At most one external paper execution provider (Tradier 4A or Moomoo 4C)
+    may be active in a single composition slot; mixing them is a
+    configuration error, not a fallback (P4-SAFE-001 discipline).
+    """
+    current = getattr(composition.paper_execution, "provider_id", "")
+    if current and current != "stub.execution.disabled" and current != incoming_provider_id:
+        raise ValueError(f"PAPER_EXECUTION_PROVIDER_CONFLICT: {current} already active")
+
+
 def with_broker_paper_execution(
     composition: ProviderComposition,
     *,
@@ -140,14 +151,41 @@ def with_broker_paper_execution(
 
     Additive (Platformization P4): the default composition keeps the disabled
     stub; this helper replaces ``paper_execution`` with the Tradier sandbox
-    adapter when a caller opts in.
+    adapter when a caller opts in. Mutually exclusive with the Moomoo paper
+    adapter (4C): both must never be active in one composition.
     """
-    from .adapters.tradier_paper import TradierPaperExecutionProvider
+    from .adapters.tradier_paper import TRADIER_PROVIDER_ID, TradierPaperExecutionProvider
 
+    _ensure_no_paper_execution_conflict(composition, TRADIER_PROVIDER_ID)
     composition.paper_execution = TradierPaperExecutionProvider(
         env=env,
         symbol_map=symbol_map,
         replay_store=replay_store,
+    )
+    return composition
+
+
+def with_moomoo_paper_execution(
+    composition: ProviderComposition,
+    *,
+    env: dict[str, str] | None = None,
+    symbol_map: dict[str, str] | None = None,
+    transport: Any = None,
+) -> ProviderComposition:
+    """Inject a fixture-first Moomoo paper provider into the composition slot.
+
+    Sub-milestone 4C: targets the separate Moomoo OpenAPI simulated trading
+    environment only, behind its own gates (``IMP_MOOMOO_PAPER*``), explicitly
+    distinct from both the observational Moomoo runtime and the Tradier 4A
+    adapter. Both must never be active simultaneously in one composition.
+    """
+    from .adapters.moomoo_paper import MOOMOO_PROVIDER_ID, MoomooPaperExecutionProvider
+
+    _ensure_no_paper_execution_conflict(composition, MOOMOO_PROVIDER_ID)
+    composition.paper_execution = MoomooPaperExecutionProvider(
+        env=env,
+        symbol_map=symbol_map,
+        transport=transport,
     )
     return composition
 
@@ -158,4 +196,5 @@ __all__ = [
     "configure_provider_composition",
     "get_provider_composition",
     "with_broker_paper_execution",
+    "with_moomoo_paper_execution",
 ]
