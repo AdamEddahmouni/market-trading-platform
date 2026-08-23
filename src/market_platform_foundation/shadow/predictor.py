@@ -55,12 +55,15 @@ def evaluate_prediction(
     decision_time_ns: int,
     config: FrozenPredictorConfig,
 ) -> dict[str, Any]:
-    if len(eligible) < config.minimum_trades:
-        return {"outcome": "ABSTAINED_MODEL", "reason": "INSUFFICIENT_TRADES"}
     window_start_ns = decision_time_ns - config.window_seconds * _NS
     window = [t for t in eligible if window_start_ns < int(t["event_time_ns"]) <= decision_time_ns]
     if not window:
         return {"outcome": "ABSTAINED_MODEL", "reason": "STALE_INPUT"}
+    newest_event = max(int(t["event_time_ns"]) for t in window)
+    if decision_time_ns - newest_event > config.stale_input_seconds * _NS:
+        return {"outcome": "ABSTAINED_MODEL", "reason": "STALE_INPUT"}
+    if len(window) < config.minimum_trades:
+        return {"outcome": "ABSTAINED_MODEL", "reason": "INSUFFICIENT_TRADES"}
 
     buyer_volume = sum(float(t["quantity"]) for t in window if t["aggressor_side"] == "BUY")
     seller_volume = sum(float(t["quantity"]) for t in window if t["aggressor_side"] == "SELL")

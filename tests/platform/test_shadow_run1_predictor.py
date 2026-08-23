@@ -49,25 +49,25 @@ class EvaluationTests(unittest.TestCase):
 
     def test_insufficient_trades_abstains(self):
         res = evaluate_prediction(
-            eligible_trades(_tape(self._uniform("BUY", 9)), decision_time_ns=500 * NS),
-            decision_time_ns=500 * NS, config=CONFIG,
+            eligible_trades(_tape(self._uniform("BUY", 9)), decision_time_ns=112 * NS),
+            decision_time_ns=112 * NS, config=CONFIG,
         )
         self.assertEqual(res, {"outcome": "ABSTAINED_MODEL", "reason": "INSUFFICIENT_TRADES"})
 
     def test_stale_input_abstains_when_newest_trade_too_old(self):
         tape = _tape(self._uniform("BUY", 12, start_s=100))  # newest at 111s
-        decision_s = 100 + 61 + 12 + 300  # inside window but newest is >60s old
+        decision_s = 200  # trades end at 111s; gap 89s exceeds the 60s stale bound
         res = evaluate_prediction(tape, decision_time_ns=decision_s * NS, config=CONFIG)
         self.assertEqual(res, {"outcome": "ABSTAINED_MODEL", "reason": "STALE_INPUT"})
 
     def test_flat_band_abstains_on_mixed_flow(self):
         rows = [(100 + i, "BUY" if i % 2 == 0 else "SELL", 10, 10.0) for i in range(12)]
-        res = evaluate_prediction(_tape(rows), decision_time_ns=200 * NS, config=CONFIG)
+        res = evaluate_prediction(_tape(rows), decision_time_ns=115 * NS, config=CONFIG)
         self.assertEqual(res, {"outcome": "ABSTAINED_MODEL", "reason": "FLAT_BAND"})
 
     def test_buy_skew_maps_to_up_with_clipped_transform(self):
         rows = self._uniform("BUY", 12)
-        res = evaluate_prediction(_tape(rows), decision_time_ns=200 * NS, config=CONFIG)
+        res = evaluate_prediction(_tape(rows), decision_time_ns=115 * NS, config=CONFIG)
         self.assertEqual(res["outcome"], "PREDICTED")
         self.assertEqual(res["direction"], "UP")
         self.assertAlmostEqual(res["raw_nss"], 1.0)
@@ -76,20 +76,20 @@ class EvaluationTests(unittest.TestCase):
 
     def test_sell_skew_inverts_selection_confidence(self):
         rows = self._uniform("SELL", 12)
-        res = evaluate_prediction(_tape(rows), decision_time_ns=200 * NS, config=CONFIG)
+        res = evaluate_prediction(_tape(rows), decision_time_ns=115 * NS, config=CONFIG)
         self.assertEqual(res["direction"], "DOWN")
         self.assertAlmostEqual(res["p_up"], 0.1)
         self.assertAlmostEqual(res["p_selected"], 0.9)
 
     def test_moderate_skew_unclipped(self):
         rows = [(100 + i, "BUY" if i < 8 else "SELL", 10, 10.0) for i in range(12)]
-        res = evaluate_prediction(_tape(rows), decision_time_ns=200 * NS, config=CONFIG)
+        res = evaluate_prediction(_tape(rows), decision_time_ns=115 * NS, config=CONFIG)
         self.assertAlmostEqual(res["raw_nss"], 4.0 / 12.0, places=12)
         self.assertAlmostEqual(res["p_up"], 0.5 + 0.5 * (4.0 / 12.0), places=12)
 
     def test_counts_and_volumes_reported(self):
         rows = [(100 + i, "BUY" if i < 8 else "SELL", 10, 10.0) for i in range(12)]
-        res = evaluate_prediction(_tape(rows), decision_time_ns=200 * NS, config=CONFIG)
+        res = evaluate_prediction(_tape(rows), decision_time_ns=115 * NS, config=CONFIG)
         self.assertEqual((res["buyer_count"], res["seller_count"], res["unknown_count"]), (8, 4, 0))
         self.assertAlmostEqual(res["total_volume"], 120.0)
 
@@ -97,7 +97,7 @@ class EvaluationTests(unittest.TestCase):
         # nss exactly +0.15 -> UP (>= band); construct 46 buy / 54 sell? No:
         # need nss >= 0.15 with buys>sell. 57.5/42.5 impossible; use 60/40 of 10 qty each
         rows = [(100 + i, "BUY" if i < 6 else "SELL", 10, 10.0) for i in range(10)]  # nss=+0.2
-        res = evaluate_prediction(_tape(rows), decision_time_ns=200 * NS, config=CONFIG)
+        res = evaluate_prediction(_tape(rows), decision_time_ns=115 * NS, config=CONFIG)
         self.assertEqual(res["outcome"], "PREDICTED")
 
 
