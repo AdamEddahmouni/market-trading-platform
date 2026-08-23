@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from ..local_state.capture_index import refresh_capture_catalog
@@ -130,11 +129,20 @@ def save_preferences(body: dict[str, Any]) -> dict[str, Any]:
     prefs = body.get("preferences")
     if not isinstance(prefs, dict):
         raise ValueError("PREFERENCES_REQUIRED")
-    forbidden = {"IMP_LIVE_EXECUTION", "IMP_PAPER_EXECUTION", "IMP_LIVE_OBSERVATIONAL", "IMP_LIVE_INTERNAL_SIMULATION"}
+    # Safety-relevant env keys must never be writable through preferences:
+    # the IMP_ catch-all plus any key carrying an execution/live/provider token.
+    blocked_exact = {"EXECUTION_ENABLE"}
+    blocked_substrings = ("EXECUTION", "LIVE", "TRADIER", "MOOMOO")
     for key, value in prefs.items():
-        if str(key) in forbidden or str(key).startswith("IMP_"):
+        key_str = str(key)
+        key_upper = key_str.upper()
+        if (
+            key_str.startswith("IMP_")
+            or key_str in blocked_exact
+            or any(token in key_upper for token in blocked_substrings)
+        ):
             raise ValueError("SAFETY_ENV_NOT_WRITABLE")
-        repo.set_preference(str(key), value)
+        repo.set_preference(key_str, value)
     return {"preferences": repo.get_preferences()}
 
 
@@ -157,11 +165,14 @@ def replay_capture(body: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("CAPTURE_NOT_FOUND")
     if row["status"] != "AVAILABLE":
         raise ValueError(f"CAPTURE_{row['status']}")
-    os.environ["IMP_LIVE_FIXTURE_FEED"] = str(row.get("events_path") or "")
+    # Provenance only: the caller (runtime/store) owns feed selection; mutating
+    # os.environ from a request thread leaked state across requests and had no
+    # unset path. data_mode uses the canonical DATA_MODES label accepted by
+    # build_operating_context.
     return {
         "capture_id": capture_id,
-        "data_mode": "CAPTURE_REPLAY",
+        "data_mode": "HISTORICAL_CAPTURE",
         "events_path": row.get("events_path"),
-        "provenance": "REPLAY · MOOMOO CAPTURE",
+        "provenance": f"HISTORICAL_CAPTURE · MOOMOO CAPTURE · {row.get('events_path')}",
         "status": "READY",
     }

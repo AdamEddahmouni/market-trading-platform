@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import json
+import threading
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from ..canonical import canonical_bytes, write_canonical_json
+from . import broker_projections
 from . import live_projections
 from . import operator_projections
 from . import paper_projections
@@ -21,6 +23,14 @@ from .assistant_projections import (
     submit_assistant_prompt,
 )
 from .store import ReplayStore
+
+# ThreadingHTTPServer dispatches every request on its own thread against ONE
+# shared ReplayStore. Ledger mutation is not individually thread-safe (the
+# next-event-sequence max+1 and the idempotency lookup->record are
+# read-modify-write pairs), so all ledger-mutating POST route bodies below
+# serialize on this single lock. Deliberately coarse: no server restructure,
+# no per-store locking; responses are sent after releasing the lock.
+LEDGER_ROUTE_LOCK = threading.Lock()
 
 
 class UiApiHandler(BaseHTTPRequestHandler):
@@ -456,6 +466,21 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 except ValueError as exc:
                     self._send_error_json("PAPER_TRACE_NOT_FOUND", str(exc), status=HTTPStatus.BAD_REQUEST)
                 return
+            if path == "/paper/broker/orders":
+                self._send_json(broker_projections.build_broker_orders_payload(self.store))
+                return
+            if path == "/paper/broker/account":
+                self._send_json(broker_projections.build_broker_account_payload(self.store))
+                return
+            if path == "/paper/broker/positions":
+                self._send_json(broker_projections.build_broker_positions_payload(self.store))
+                return
+            if path == "/paper/broker/reconciliation":
+                self._send_json(broker_projections.build_broker_reconciliation_payload(self.store))
+                return
+            if path == "/paper/broker/health":
+                self._send_json(broker_projections.build_broker_health_payload(self.store))
+                return
             if path == "/assistant/conversations":
                 principal = query.get("principal_id", [None])[0]
                 self._send_json(build_assistant_conversations(self.store, principal))
@@ -502,7 +527,9 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
         if path == "/paper/orders":
             try:
-                self._send_json(paper_projections.submit_paper_order(self.store, body))
+                with LEDGER_ROUTE_LOCK:
+                    payload = paper_projections.submit_paper_order(self.store, body)
+                self._send_json(payload)
             except ValueError as exc:
                 code = "PAPER_EXECUTION_NOT_AUTHORIZED" if "NOT_AUTHORIZED" in str(exc) else "PAPER_ORDER_SUBMIT_FAILED"
                 self._send_error_json(code, str(exc), status=HTTPStatus.BAD_REQUEST)
@@ -510,14 +537,18 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
         if path == "/paper/sessions":
             try:
-                self._send_json(paper_projections.open_paper_session(self.store, body))
+                with LEDGER_ROUTE_LOCK:
+                    payload = paper_projections.open_paper_session(self.store, body)
+                self._send_json(payload)
             except ValueError as exc:
                 self._send_error_json("PAPER_SESSION_OPEN_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
 
         if path == "/paper/sessions/close":
             try:
-                self._send_json(paper_projections.close_paper_session(self.store))
+                with LEDGER_ROUTE_LOCK:
+                    payload = paper_projections.close_paper_session(self.store)
+                self._send_json(payload)
             except ValueError as exc:
                 self._send_error_json("PAPER_SESSION_CLOSE_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
@@ -548,14 +579,18 @@ class UiApiHandler(BaseHTTPRequestHandler):
             return
         if path == "/captures/replay":
             try:
-                self._send_json(operator_projections.replay_capture(body))
+                with LEDGER_ROUTE_LOCK:
+                    payload = operator_projections.replay_capture(body)
+                self._send_json(payload)
             except ValueError as exc:
                 self._send_error_json("CAPTURE_REPLAY_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
 
         if path == "/paper/orders/cancel":
             try:
-                self._send_json(paper_projections.cancel_paper_order(self.store, body))
+                with LEDGER_ROUTE_LOCK:
+                    payload = paper_projections.cancel_paper_order(self.store, body)
+                self._send_json(payload)
             except ValueError as exc:
                 code = "PAPER_ORDER_CANCEL_FAILED"
                 if "NOT_AUTHORIZED" in str(exc):

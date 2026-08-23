@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..paper.broker_paper import cancel_broker_paper_order
 from ..paper.execution import cancel_interactive_order, preview_interactive_order, submit_interactive_order
 from ..paper.ledger import PaperExecutionLedger
 from .projections import build_as_of_context
@@ -198,9 +199,13 @@ def _assert_live_execution_allowed(store: ReplayStore, *, submit: bool = False) 
     restored = bool(getattr(store, "execution_deferred", False))
     if not submit and not restored:
         return
+    # Explicit over inherited: no deployment-level PIT adversarial verification
+    # exists at runtime, so pass None (gate records ATTESTED, never a fake
+    # PASS). Flip to True only when a verified PIT result backs this deployment.
     gate = evaluate_internal_simulation_gates(
         runtime=runtime,
         probe_stale=runtime.capability_registry.is_stale,
+        pit_tests_pass=None,
     )
     if gate.status != "AUTHORIZED":
         if restored:
@@ -311,7 +316,20 @@ def cancel_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, An
     order_id = str(body.get("order_id", "")).strip()
     if not order_id:
         raise ValueError("PAPER_ORDER_ID_REQUIRED")
-    result = cancel_interactive_order(ledger=store.paper_ledger, order_id=order_id)
+    ledger = store.paper_ledger
+    if ledger.execution_mode == "BROKER_PAPER":
+        # Broker paper orders must be cancelled through the composed broker
+        # adapter; appending a local-only CANCEL event would desynchronize the
+        # ledger from a broker order that keeps working. Fail closed when no
+        # adapter is composed (the disabled stub exposes no cancel_order).
+        from ..providers.composition import get_provider_composition
+
+        provider = get_provider_composition().paper_execution
+        if not callable(getattr(provider, "cancel_order", None)):
+            raise ValueError("PROVIDER_NOT_CONFIGURED")
+        result = cancel_broker_paper_order(ledger=ledger, provider=provider, order_id=order_id)
+    else:
+        result = cancel_interactive_order(ledger=ledger, order_id=order_id)
     return _paper_envelope(store, {"cancellation": result})
 
 
@@ -322,6 +340,10 @@ def open_paper_session(store: ReplayStore, body: dict[str, Any]) -> dict[str, An
     requested_mode = str(body.get("execution_mode", "INTERNAL_SIMULATION")).upper()
     if requested_mode not in {"NONE", "INTERNAL_SIMULATION", "BROKER_PAPER", "LIVE"}:
         raise ValueError("PAPER_SESSION_MODE_INVALID")
+    if requested_mode == "LIVE":
+        # No live execution capability is composed anywhere in the platform;
+        # opening a session labeled LIVE/AUTHORIZED would be a false attestation.
+        raise ValueError("OPERATING_MODE_UNSUPPORTED: LIVE execution is not implemented")
     closed = any(event["event_type"] == "PaperSessionClosed" for event in store.paper_ledger.events)
     if store.paper_ledger.events and not closed:
         store.paper_ledger.close_session()
