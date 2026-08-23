@@ -129,9 +129,33 @@ def configure_fixture_provider_composition() -> ProviderComposition:
     return composition
 
 
+def with_broker_paper_execution(
+    composition: ProviderComposition,
+    *,
+    env: dict[str, str] | None = None,
+    symbol_map: dict[str, str] | None = None,
+    replay_store: Any = None,
+) -> ProviderComposition:
+    """Inject a fixture-first Tradier paper provider into the composition slot.
+
+    Additive (Platformization P4): the default composition keeps the disabled
+    stub; this helper replaces ``paper_execution`` with the Tradier sandbox
+    adapter when a caller opts in.
+    """
+    from .adapters.tradier_paper import TradierPaperExecutionProvider
+
+    composition.paper_execution = TradierPaperExecutionProvider(
+        env=env,
+        symbol_map=symbol_map,
+        replay_store=replay_store,
+    )
+    return composition
+
+
 __all__ = [
     "ProviderComposition",
     "configure_fixture_provider_composition",
     "configure_provider_composition",
     "get_provider_composition",
+    "with_broker_paper_execution",
 ]

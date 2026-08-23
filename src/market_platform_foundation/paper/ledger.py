@@ -287,6 +287,8 @@ class PaperExecutionLedger:
                     orders_by_id[order_id]["state"] = payload.get("state")
                     if payload.get("reason_codes"):
                         orders_by_id[order_id]["reason_codes"] = payload.get("reason_codes")
+                    if payload.get("broker_order_id"):
+                        orders_by_id[order_id]["broker_order_id"] = payload["broker_order_id"]
             elif event["event_type"] == "OrderIntentCreated":
                 payload = event["payload"]
                 if isinstance(payload, dict) and isinstance(payload.get("intent"), dict):
@@ -300,6 +302,33 @@ class PaperExecutionLedger:
                 order["side"] = intent.get("side")
                 order["order_type"] = intent.get("order_type", "MARKET")
         return list(orders_by_id.values())
+
+    def append_order_state(
+        self,
+        *,
+        order_id: str,
+        state: str,
+        prior_state: str,
+        reason_codes: list[str] | None = None,
+        broker_order_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Append a validated OrderStateChanged transition (broker paper path).
+
+        Additive: the internal simulator path never calls this. Optional
+        ``broker_order_id`` (known only after broker submission) is attached to
+        the governing state event so projections and the execution trace can
+        resolve it.
+        """
+        validate_order_transition(prior_state=prior_state, next_state=state)
+        payload: dict[str, Any] = {
+            "order_id": order_id,
+            "prior_state": prior_state,
+            "reason_codes": list(reason_codes or []),
+            "state": state,
+        }
+        if broker_order_id:
+            payload["broker_order_id"] = broker_order_id
+        return self._append("OrderStateChanged", payload)
 
     def project_fills(self) -> list[dict[str, Any]]:
         fills: list[dict[str, Any]] = []
@@ -415,6 +444,8 @@ class PaperExecutionLedger:
         state_events: list[dict[str, Any]] = []
         fill_event = None
         position_event = None
+        broker_order_id: str | None = None
+        broker_cancels = 0
 
         for event in self.events:
             payload = event.get("payload")
@@ -437,9 +468,15 @@ class PaperExecutionLedger:
                     submit_event = event
                     resolved_order_id = str(payload["order"]["order_id"])
                     resolved_intent_id = str(payload.get("intent_id", resolved_intent_id))
+                    if isinstance(payload.get("order"), dict) and payload["order"].get("broker_order_id"):
+                        broker_order_id = str(payload["order"]["broker_order_id"])
             elif et == "OrderStateChanged":
                 if str(payload.get("order_id")) == resolved_order_id:
                     state_events.append(event)
+                    if payload.get("broker_order_id"):
+                        broker_order_id = str(payload["broker_order_id"])
+                    if "ORDER_CANCELLED" in (payload.get("reason_codes") or []):
+                        broker_cancels += 1
             elif et == "FillRecorded":
                 if str(payload.get("order_id")) == resolved_order_id or (
                     resolved_fill_id
@@ -552,10 +589,10 @@ class PaperExecutionLedger:
             "execution_mode": self.execution_mode,
             "execution_provider": self.execution_provider,
             "market_data_provider": self.data_provider,
-            "broker_order_id": None,
-            "broker_order_submitted": False,
+            "broker_order_id": broker_order_id,
+            "broker_order_submitted": broker_order_id is not None,
             "broker_modifications": 0,
-            "broker_cancels": 0,
+            "broker_cancels": broker_cancels,
             "session_id": self.session_id,
             "steps": sorted(steps, key=lambda row: int(row["sequence"])),
         }

@@ -36,8 +36,9 @@ the exact same fail-closed discipline as every prior milestone:
 
 This is Platformization **P4** per the [platformization roadmap](../research/PLATFORMIZATION_ROADMAP.md)
 and is explicitly deferred out of DECISION-RESEARCH-001's completion definition
-("no P4 implementation has begun"). It is split into two sub-milestones so the
-first execution-contract adapter (4A) can land and gate before the second (4B).
+("no P4 implementation has begun"). It is split into sub-milestones so the
+first execution-contract adapter (4A) can land and gate before reconciliation
+(4B) and the Moomoo execution adapter (4C).
 
 ## 2. Sub-milestones
 
@@ -63,8 +64,16 @@ first execution-contract adapter (4A) can land and gate before the second (4B).
 The Tradier sandbox executes at **simulated prices on delayed market data** —
 it is a contract and lifecycle test bed, not an L2/CVD source and not a
 fill-quality source. Nothing in P4 asserts Tradier fills are economically
-meaningful; fills remain the internal simulator's product. Broker paper is used
-to validate **execution-contract semantics**, not to produce research signals.
+meaningful, and broker fills are **not research data** (research continues to
+use the internal simulator and admitted fixtures).
+
+**Fill authority is per mode (audit F1):** inside a `BROKER_PAPER` account the
+broker is authoritative for order lifecycle **and fills** — broker fill events
+are normalized into the canonical fill shape and projected by the existing
+`apply_fill` path, so order state, fills, cash, and positions all derive from
+one source and reconciliation is meaningful. In `INTERNAL_SIMULATION` mode the
+`BarConservativeSimulator` remains authoritative and unchanged. The two modes
+never share a fill source.
 
 ## 4. Broker-neutral contract (frozen in 4A)
 
@@ -82,10 +91,16 @@ that every adapter maps onto and off of:
 | `BrokerAccountSnapshot` | Cash/buying-power reconciliation | cash_minor, as-of time |
 
 Every broker event envelope carries the ADR-PROV-001 provenance fields —
-`provider`, `entitlement`, `event_time`, `receive_time`, `symbol_mapping`,
-`latency_ms`, `quality_flags`, `raw_source_ref` — and is serialized as a
-canonical IMP event before any downstream consumer touches it. Provider-native
-fields live only in envelope provenance (same rule as PLATFORM-DATA-001).
+`provider_id`, `entitlement`, `event_time_ns`, `receive_time_ns`,
+`symbol_mapping`, `latency_quality` (`quality_state`), and
+`raw_source_reference` — built by reusing
+`providers/envelope.py::build_provider_metadata` and validated by
+`contracts/envelope.py::validate_envelope` verbatim (audit F2); the field
+vocabulary is the canonical one, not a new subset. Timestamps follow
+PLATFORM-DATA-001 semantics: `event_time` = broker/market time, `receive_time`
+= IMP receipt, and `available_time` defaults to `local_received_time` for live
+broker pushes. Provider-native fields live only in envelope provenance (same
+rule as PLATFORM-DATA-001).
 
 State mapping is explicit and fail-closed: a broker status with no IMP mapping
 maps to a broker-side state recorded verbatim in the envelope **and** the IMP
@@ -111,6 +126,24 @@ advance the IMP lifecycle.
 - `GET /paper/broker/orders`, `GET /paper/broker/account`,
   `GET /paper/broker/positions` — read-only observability of the broker-side
   view alongside the IMP ledger view (the two must never be conflated in the UI).
+- **Dedicated broker entry points (audit F3):** submission and cancel run
+  through new `submit_broker_paper_order` / `cancel_broker_paper_order`
+  functions. `paper/execution.py::submit_interactive_order` and
+  `cancel_interactive_order` are **not** loosened — their
+  `PAPER_EXECUTION_MODE_INVALID` guard for non-`INTERNAL_SIMULATION` modes is
+  the safety invariant that keeps `LIVE_OBSERVATIONAL + BROKER_PAPER`
+  unreachable (PLATFORM-DATA-001).
+- **Composition wiring (audit F5):** the adapter is injected into
+  `providers/composition.py::ProviderComposition.paper_execution`, replacing
+  `DisabledPaperExecutionProvider` (and its `EXECUTION_ADAPTER_NOT_IMPLEMENTED`
+  stub); `operating_modes.resolve_execution_authority` maps `BROKER_PAPER` →
+  `PAPER_ONLY` under `IMP_BROKER_PAPER_EXECUTION`, distinct from
+  `INTERNAL_SIMULATION → AUTHORIZED` on `IMP_PAPER_EXECUTION` (both already
+  accepted by `PAPER_EXECUTION_AUTHORITIES`).
+- **Trace integration (audit F6):** in `BROKER_PAPER` mode the reserved
+  `project_execution_trace` fields are populated — `broker_order_id`,
+  `broker_order_submitted: True`, `broker_modifications`, `broker_cancels` —
+  so the P3.2 trace panel no longer reports "broker order submitted = NO".
 
 ### 5.2 Sandbox semantics (verified limits — do not over-claim)
 
@@ -134,7 +167,7 @@ professor-supplied brief:
 | Variable | Default | Effect |
 |---|---|---|
 | `IMP_TRADIER_PAPER=1` | unset | Tradier paper adapter disabled |
-| `IMP_BROKER_PAPER_EXECUTION=1` | unset | `BROKER_PAPER` execution authority (separate from `IMP_PAPER_EXECUTION`; `resolve_execution_authority` must reject `BROKER_PAPER` without it) |
+| `IMP_BROKER_PAPER_EXECUTION=1` | unset | `BROKER_PAPER` execution authority, mapped to `PAPER_ONLY` (separate from `IMP_PAPER_EXECUTION`, which stays `AUTHORIZED` for `INTERNAL_SIMULATION`; both values already accepted by `PAPER_EXECUTION_AUTHORITIES`) |
 | `IMP_TRADIER_TOKEN` | unset | sandbox bearer token; read from env or `.private/providers.env` (never committed) |
 | `IMP_TRADIER_ENDPOINT` | sandbox URL | fails closed if set to a production endpoint |
 | `IMP_TRADIER_ACCOUNT_ID` | unset | sandbox account to address |
@@ -144,6 +177,11 @@ None of these are set in CI. The adapter must verify **all** of
 sandbox endpoint) before any request is possible; a missing gate is
 `PROVIDER_NOT_CONFIGURED` / `EXECUTION_NOT_ENABLED`, matching the existing
 `providers/contracts.py` sentinels.
+
+The legacy `EXECUTION_ENABLE=1` gate used by the current
+`DisabledPaperExecutionProvider` (`providers/stubs.py`) competes with the gates
+above; 4A must reconcile or deprecate it so the composition slot has a single
+explicit gate (audit F8).
 
 ## 6. Idempotency (4A)
 
@@ -184,6 +222,13 @@ boundary:
   difference is a P4 safety violation.
 - Reconciliation must be **replay-safe**: the same snapshots + ledger replay
   produce the same report deterministically.
+- **Ledger integration (audit F7):** reuse and extend the existing
+  `reconciliation_status` field exposed by `project_risk` (today
+  `INTERNAL_AUTHORITATIVE`) with `BROKER_RECONCILED` / `MISMATCH` /
+  `RECONCILIATION_HOLD` in `BROKER_PAPER` mode, and record each report as a new
+  `ReconciliationRecorded` ledger event added to the `EVENT_TYPES` tuple
+  (append-only; the established P0 pattern). No parallel reconciliation
+  vocabulary.
 
 ## 8. Architecture
 
@@ -192,33 +237,39 @@ operator OrderTicket (existing P1 path)
       ↓
 build_user_order_intent (idempotency_key, client_order_id, research_candidate_id)
       ↓
-evaluate_risk → internal simulator (unchanged; fills remain internal product)
+evaluate_risk (unchanged risk gate — same for both modes)
       ↓
-BROKER_PAPER execution_mode, TRADIER provider (gated)
+INTERNAL_SIMULATION mode → BarConservativeSimulator → ledger fill   (unchanged; research path)
+BROKER_PAPER mode      → submit_broker_paper_order (new entry point, gated)
+      ↓   [OrderSubmitted-class submission record appended BEFORE any network call]
+TradierPaperExecutionProvider (providers/adapters; ProviderComposition.paper_execution slot)
       ↓
-TradierPaperExecutionProvider (PaperExecutionProvider contract)
-      ↓   [submission record appended BEFORE any network call]
 broker HTTP (sandbox endpoint only)
       ↓
-broker status/fill events → normalization → canonical IMP events → ledger
+broker status/fill events → build_provider_metadata + validate_envelope → canonical events
+      → fills normalized into apply_fill shape → ledger (broker authoritative in BROKER_PAPER)
       ↓
-reconciliation engine (4B): broker snapshots vs ledger projection → report + correction events
+reconciliation engine (4B): broker snapshots vs ledger projection
+      → ReconciliationReport → ReconciliationRecorded events; project_risk.reconciliation_status
       ↓
-/paper/broker/* observability (broker view distinct from IMP view)
+observability: /paper/broker/* + populated trace broker fields (broker view distinct from IMP view)
 ```
 
 ## 9. Assertions
 
 | ID | Predicate |
 |---|---|
-| `P4-PROV-001` | Every broker event carries provider, entitlement, event_time, receive_time, symbol mapping, latency/quality, raw-source reference |
+| `P4-PROV-001` | Every broker event carries the canonical ADR-PROV-001 fields via `build_provider_metadata` (`provider_id`, `entitlement`, `event_time_ns`, `receive_time_ns`, `symbol_mapping`, `latency_quality`, `raw_source_reference`) and passes `validate_envelope` |
 | `P4-IDEM-001` | N retries of one `idempotency_key` produce exactly one broker submission record and ≤ 1 broker order id |
 | `P4-AMB-001` | A timeout/unknown-outcome broker response is recorded ambiguous and resolved only via fetch/reconciliation, never blind retry |
 | `P4-MAP-001` | Unknown broker statuses never advance the IMP lifecycle; unmapped symbols fail closed at intent build |
 | `P4-REC-001` | Reconciliation reports are deterministic under identical snapshots; mismatches are append-only events, never patched |
 | `P4-REC-002` | No unexplained ledger/broker mismatch is silently absorbed; unresolved differences hold in `RECONCILIATION_HOLD` |
+| `P4-FILL-001` | Fill authority is per mode: `BROKER_PAPER` fills derive from broker fill events via `apply_fill`; `INTERNAL_SIMULATION` fills derive from `BarConservativeSimulator`; no shared fill source |
+| `P4-TRACE-001` | In `BROKER_PAPER` mode `project_execution_trace` reports `broker_order_id`, `broker_order_submitted=True`, `broker_modifications`, `broker_cancels` |
 | `P4-SAFE-001` | No broker request possible without all of (`IMP_TRADIER_PAPER`, `IMP_BROKER_PAPER_EXECUTION`, token, sandbox endpoint) |
 | `P4-SAFE-002` | `LIVE` execution remains unreachable (`IMP_LIVE_EXECUTION` never set in CI); live observational data never feeds broker orders |
+| `P4-SAFE-003` | The `INTERNAL_SIMULATION` guard (`PAPER_EXECUTION_MODE_INVALID`) is unchanged; broker paper runs only via the dedicated broker entry points |
 | `P4-AUDIT-001` | 100% of broker orders carry audit/provenance ids (intent hash + client order id) |
 
 ## 10. Fixtures and adversarial cases
@@ -230,7 +281,8 @@ reconciliation engine (4B): broker snapshots vs ledger projection → report + c
   network drop (ambiguous), unknown broker status, unmapped symbol, partial-fill
   sequence out of order, reconciliation mismatch (quantity drift), stale
   position snapshot, production-endpoint guard attempt, gate-missing call
-  attempt.
+  attempt, and a fill-authority regression proving a broker fill drives the
+  ledger only in `BROKER_PAPER` mode (`P4-FILL-001`).
 - `tests/platform/test_broker_paper_p4.py` — assertion + adversarial suite
   (4A/4B), plus `tests/platform/test_reconciliation_p4.py` (4B).
 
@@ -242,14 +294,17 @@ reconciliation engine (4B): broker snapshots vs ledger projection → report + c
 - `tools/platform/run_reconciliation_gate_validation.py` — 4B counterpart.
 - Validation cadence: `python tools/validate.py changed` after edits; gate tools
   at each sub-milestone; `python tools/validate.py full` at the final
-  checkpoint. New modules live under
-  `src/market_platform_foundation/platform/broker/**` (4A) and
-  `src/market_platform_foundation/platform/reconciliation/**` (4B); the
+  checkpoint. The Tradier adapter lives at
+  `src/market_platform_foundation/providers/adapters/tradier_paper.py` (audit
+  F5, matching the per-provider adapter layout), wired through
+  `providers/composition.py`; the reconciliation engine lives under
+  `src/market_platform_foundation/platform/reconciliation/**` (4B). The
   manifest suites own them via test globs (a manifest edit, if needed, is a
   governed change requiring principal approval).
 - Deliverable docs: `docs/providers/TRADIER_PAPER.md` (verified wire contract
-  and limits), platformization roadmap and README capability boundary updated
-  to mark P4 status on landing.
+  and limits), `.env.example` updated with the new gates (audit F8), and the
+  platformization roadmap / README capability boundary updated to mark P4
+  status on landing.
 
 ## 12. Out of scope (P4)
 
@@ -259,9 +314,10 @@ reconciliation engine (4B): broker snapshots vs ledger projection → report + c
   adapter (4C) and Moomoo paper trading product behavior.
 - Hosted platform, security review, PROVIDER-COMMERCIAL-001 licensing
   (P5), shadow/forward validation (P6).
-- Using broker fills as research data: fills validate execution-contract
-  semantics only; research signals continue to use the internal simulator and
-  admitted fixtures.
+- Using broker fills as research data: broker fills are authoritative only for
+  the `BROKER_PAPER` account ledger and are not admitted research data;
+  research signals continue to use the internal simulator and admitted
+  fixtures.
 - Retroactive reconstruction of broker history as research fixtures.
 
 ## 13. Completion definition
@@ -275,9 +331,15 @@ P4 is complete when:
   (`P4-IDEM-001`, `P4-AMB-001`, `P4-AUDIT-001`);
 - the reconciliation engine produces deterministic reports and append-only
   correction events with zero silent mismatches (`P4-REC-001`, `P4-REC-002`);
+- fill authority is enforced per mode (`P4-FILL-001`), the execution trace
+  reports broker fields in `BROKER_PAPER` mode (`P4-TRACE-001`), and the
+  `INTERNAL_SIMULATION` guard is unchanged (`P4-SAFE-003`);
 - assertions `P4-*` and all adversarial fixtures pass; both gate tools report
   aggregate PASS;
+- the Tradier adapter is wired into `ProviderComposition.paper_execution`, the
+  `reconciliation_status` field and a new `ReconciliationRecorded` event type
+  are integrated, and `.env.example` + `docs/providers/TRADIER_PAPER.md`
+  document the gates and wire contract;
 - the platformization roadmap and README capability boundary mark P4 complete
-  (`COMPLETE_WITH_LIMITATIONS` if 4C/IBKR remain), `docs/providers/TRADIER_PAPER.md`
-  records the verified wire contract, and `LIVE-001` remains blocked and
-  unauthorized.
+  (`COMPLETE_WITH_LIMITATIONS` if 4C/IBKR remain), and `LIVE-001` remains
+  blocked and unauthorized.

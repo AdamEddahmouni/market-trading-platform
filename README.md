@@ -37,7 +37,7 @@ Revision 2 remains the incorporated Phase 0 safety authority.
 | MRA-001 — grounded Market Research Assistant | `PASS` (deterministic evidence retrieval on admitted fixture) |
 | MRA-002 — Anthropic LLM assistant | `PASS` (mocked HTTP acceptance; live inference when `ANTHROPIC_API_KEY` set) |
 | Platform P0 — bitemporal reference store + PIT joins | `PASS` (fixture scope; FAST + FULL invariants) |
-| Platformization P0–P3.3 — paper execution, live observational data, local state, unified workstation, discovery | `COMPLETE_WITH_LIMITATIONS` (see [platformization roadmap](docs/research/PLATFORMIZATION_ROADMAP.md)) |
+| Platformization P0–P3.3 + P4-4A — paper execution, live observational data, local state, unified workstation, discovery, Tradier sandbox broker-paper adapter | `COMPLETE_WITH_LIMITATIONS` (see [platformization roadmap](docs/research/PLATFORMIZATION_ROADMAP.md)) |
 | Public-data providers — macro / energy / sec / short-intelligence / observational / finviz-discovery | `IMPLEMENTED` (fixture-first; live probes opt-in; captures **not admitted**) |
 
 ## Validation cadence
@@ -69,7 +69,7 @@ The existing candidate evidence roots under `evidence/phase0/2E1E…` and
 `evidence/phase0/6B31…` bind older repository subjects. They remain immutable and
 do not establish acceptance for the current repository subject.
 
-## Platformization (P0–P3.3)
+## Platformization (P0–P3.3 + P4-4A)
 
 Transition from replay-only research UI to a provider-agnostic market
 operating workstation, tracked in the
@@ -83,15 +83,18 @@ operating workstation, tracked in the
 | P3/P3.1 | Durable SQLite state, operator workflow, restart recovery, live internal paper closure — [PLATFORM-STATE-001](docs/superpowers/specs/2026-08-21-platform-state-001-design.md), [P3.1 closure](docs/superpowers/specs/2026-08-21-platform-p31-live-execution-closure.md) |
 | P3.2 | Unified live decision workstation (lane evidence envelope, What Matters Now, evidence drawer) — [P3.2](docs/superpowers/specs/2026-08-21-platform-p32-unified-live-workstation.md) |
 | P3.3 | Finviz Elite discovery, prospective PIT capture, decision-research foundation — [P3.3](docs/superpowers/specs/2026-08-21-platform-p33-finviz-discovery-research.md) · [DECISION-RESEARCH-001 milestone A](docs/superpowers/specs/2026-08-22-decision-research-001-design.md) |
+| P4-4A | Tradier sandbox broker-paper adapter, idempotent submission, broker lifecycle mapping, sandbox-contract fixtures, gate PASS — [PLATFORM-P4-001](docs/superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md) |
 
-P4 (external broker paper adapters, idempotency, reconciliation) is **spec'd but
-not implemented** — [PLATFORM-P4-001](docs/superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md)
-is drafted and pending principal review (sub-milestones 4A Tradier sandbox
-adapter + idempotent submission, 4B reconciliation, 4C Moomoo execution; see the
-code-grounded audit in `.planning/2026-08-22-platform-p4-broker-paper-code-audit.md`).
-Not started: P5 (hosted platform, `PROVIDER-COMMERCIAL-001`), P6 (shadow/forward
-validation). Production execution (`LIVE-001`) is blocked pending separate
-authorization.
+P4 sub-milestone **4A** (Tradier sandbox broker-paper adapter + idempotent
+submission) is **implemented and gate-passing** — offline and fixture-first;
+`tools/platform/run_broker_paper_gate_validation.py` reports aggregate PASS
+(`evidence/platform/broker-paper-gate-report.json`), with spec and code-grounded
+audit in [PLATFORM-P4-001](docs/superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md)
+and `.planning/2026-08-22-platform-p4-broker-paper-code-audit.md`. Limitation:
+the `/paper/broker/*` observability endpoints remain spec'd, not implemented.
+Not started: P4-4B (reconciliation), P4-4C (Moomoo execution), P5 (hosted
+platform, `PROVIDER-COMMERCIAL-001`), P6 (shadow/forward validation). Production
+execution (`LIVE-001`) is blocked pending separate authorization.
 
 ## Revision 3 guidance
 
@@ -126,10 +129,15 @@ Documentation of future interfaces is not implementation or authorization.
 This repository has no production broker runtime, on-chain ingestion,
 live social API connection, crypto research adapter, AI-trading, or
 live-trading capability. **Internal paper execution** (Platformization
-P0–P3.3) exists as an event-sourced simulation ledger and is reachable
-only under explicit env gates (`IMP_PAPER_EXECUTION=1`,
-`IMP_LIVE_INTERNAL_SIMULATION=1`); external broker paper/live trading
-requires Platformization P4+ and separate `LIVE-001` authorization.
+P0–P3.3) exists as an event-sourced simulation ledger reachable only
+under explicit env gates (`IMP_PAPER_EXECUTION=1`,
+`IMP_LIVE_INTERNAL_SIMULATION=1`). **Broker paper execution** (P4-4A) is a
+Tradier **sandbox-only** adapter that fails closed unless all of
+`IMP_TRADIER_PAPER=1`, `IMP_BROKER_PAPER_EXECUTION=1`, a token, and the
+sandbox endpoint are set — it has no live order path, and its delayed-sandbox
+fills are authoritative only for the `BROKER_PAPER` ledger, never research
+data. Live execution (`LIVE-001`) remains blocked and requires separate
+authorization.
 The repository remote is `origin` →
 `https://github.com/AdamEddahmouni/integrated-market-intelligence-platform.git`.
 
@@ -155,8 +163,9 @@ Phase 9 whale families remain **fixture-first** on admitted slices: `regulatory_
 
 ES-session acceptance remains blocked per `ADR-DATA-001` until lawful ES bytes
 are procured. UI-001 provides replay-only research UI on the admitted fixture.
-Broker adapters, non-disclosure whale ingestion, crypto expansion, and
-prediction-market expansion require separate ADR authorization and phase gates.
+Additional broker execution adapters (IBKR, Alpaca, Moomoo execution),
+non-disclosure whale ingestion, crypto expansion, and prediction-market
+expansion require separate ADR authorization and phase gates.
 
 ## Research UI V1
 

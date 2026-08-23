@@ -20,20 +20,47 @@ with governed Phases 0–16.
 | **P3.1** | Live internal paper on admitted L1, operator instrument, restart marks | **COMPLETE_WITH_LIMITATIONS** — [P3.1 closure](../superpowers/specs/2026-08-21-platform-p31-live-execution-closure.md) |
 | **P3.2** | Unified live decision workstation (`/workspace/{symbol}/evidence`, What Matters Now, evidence drawer) | **COMPLETE** — [P3.2](../superpowers/specs/2026-08-21-platform-p32-unified-live-workstation.md) |
 | **P3.3** | Finviz Elite discovery, prospective PIT capture, decision-research foundation | **COMPLETE** — [P3.3](../superpowers/specs/2026-08-21-platform-p33-finviz-discovery-research.md) · [DECISION-RESEARCH-001 milestone A](../superpowers/specs/2026-08-22-decision-research-001-design.md) (OOS gate PASS) |
-| **P4** | Tradier/Moomoo paper adapters, idempotency, reconciliation | **SPEC DRAFTED — pending principal review** ([PLATFORM-P4-001](../superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md)); sub-milestones: 4A Tradier sandbox adapter + idempotency, 4B reconciliation, 4C Moomoo execution |
+| **P4** | Tradier/Moomoo paper adapters, idempotency, reconciliation | **4A COMPLETE_WITH_LIMITATIONS** — Tradier sandbox adapter + idempotent submission landed, gate PASS ([PLATFORM-P4-001](../superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md)); **4B** reconciliation and **4C** Moomoo execution not started |
 | **P5** | Hosted platform, security, PROVIDER-COMMERCIAL-001 | Not started |
 | **P6** | Shadow/forward validation | Not started |
 | **LIVE-001** | Production execution (separate authorization) | Blocked |
 
-### P4 design status (2026-08-22)
+### P4 status (2026-08-22)
 
 [PLATFORM-P4-001](../superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md)
-drafts the broker-neutral paper execution contract, the Tradier sandbox adapter,
-idempotent submission, and the reconciliation engine. Status: **design —
-pending principal review**; no implementation has begun. A code-grounded audit
-is filed at `.planning/2026-08-22-platform-p4-broker-paper-code-audit.md`
-(12/12 code-facing claims verified; one blocking design question on fill
-authority plus follow-ups F2–F9 pending review).
+defines the broker-neutral paper execution contract, the Tradier sandbox
+adapter, idempotent submission, and the reconciliation engine. The code-grounded
+audit (`.planning/2026-08-22-platform-p4-broker-paper-code-audit.md`) verified
+12/12 code-facing claims; findings F1–F8 are applied to the spec (F9 deferred).
+
+**Sub-milestone 4A landed (offline, fixture-first):**
+
+- `TradierPaperExecutionProvider` at
+  `src/market_platform_foundation/providers/adapters/tradier_paper.py` with
+  dedicated `submit_broker_paper_order` / `cancel_broker_paper_order` entry
+  points (`paper/broker_paper.py`); the `INTERNAL_SIMULATION` guard in
+  `paper/execution.py` is unchanged (`P4-SAFE-003`).
+- Idempotent submission (submission record appended **before** any broker call),
+  ambiguous-outcome handling with no blind retry (`P4-IDEM-001`, `P4-AMB-001`),
+  broker lifecycle mapping onto `ORDER_LIFECYCLE_STATES` (`P4-MAP-001`), and
+  per-mode fill authority (`P4-FILL-001`).
+- Composition wiring (`with_broker_paper_execution` into
+  `ProviderComposition.paper_execution`), `BROKER_PAPER → PAPER_ONLY` under
+  `IMP_BROKER_PAPER_EXECUTION` (`operating_modes.resolve_execution_authority`),
+  populated execution-trace broker fields (`P4-TRACE-001`), sandbox-contract
+  fixtures, and updated `.env.example` gates.
+- Gate: `tools/platform/run_broker_paper_gate_validation.py` → **aggregate
+  PASS** (P4-AMB/P4-AUDIT/P4-FILL/P4-IDEM/P4-PROV/P4-SAFE-001, 0 failures;
+  `evidence/platform/broker-paper-gate-report.json`); the P4 test suite
+  `tests/platform/test_broker_paper_p4.py` is green. `LIVE` execution remains
+  unreachable (`IMP_LIVE_EXECUTION` is never set in CI).
+
+**Limitations / remaining 4A scope:** the `/paper/broker/*` read-only
+observability endpoints (orders/account/positions) are spec'd but not yet
+implemented; wire specifics depend on exercising the real Tradier sandbox and
+are tracked in `docs/providers/TRADIER_PAPER.md`. **4B** (reconciliation
+engine: `platform/reconciliation/**`, `P4-REC-001/002`) and **4C** (Moomoo
+execution adapter) are not started.
 
 ## Architecture decisions (locked)
 

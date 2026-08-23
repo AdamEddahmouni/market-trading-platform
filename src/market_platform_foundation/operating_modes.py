@@ -101,9 +101,19 @@ def paper_execution_env_enabled() -> bool:
     return os.environ.get("IMP_PAPER_EXECUTION") == "1"
 
 
+def broker_paper_execution_env_enabled() -> bool:
+    import os
+
+    return os.environ.get("IMP_BROKER_PAPER_EXECUTION") == "1"
+
+
 def resolve_execution_authority(*, requested_mode: str) -> str:
     if requested_mode == "LIVE":
         return "AUTHORIZED" if live_execution_env_enabled() else "BLOCKED"
-    if requested_mode in {"INTERNAL_SIMULATION", "BROKER_PAPER"}:
+    if requested_mode == "INTERNAL_SIMULATION":
         return "AUTHORIZED" if paper_execution_env_enabled() else "BLOCKED"
+    if requested_mode == "BROKER_PAPER":
+        # Audit F4: broker paper runs under its own distinct gate and authority
+        # (PAPER_ONLY), separate from INTERNAL_SIMULATION's AUTHORIZED.
+        return "PAPER_ONLY" if broker_paper_execution_env_enabled() else "BLOCKED"
     return "BLOCKED"
