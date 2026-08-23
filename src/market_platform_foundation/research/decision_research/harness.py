@@ -294,7 +294,11 @@ def run_harness(
     fold_pit: dict[str, str] = {}
 
     ordered_cards = sorted(cards.values(), key=lambda c: c.experiment_id)
-    baseline_rate: float | None = None
+
+    # First pass: build and PIT-verify each card's OOS slice from its OWN
+    # evidence-bearing subset (DEC-OOS-001).
+    slices: dict[str, list[dict[str, Any]]] = {}
+    pools: dict[str, int] = {}
     for card in ordered_cards:
         required = list((card.feature_spec or {}).get("required", []))
         subset = evidence_bearing_subset(ordered, required)
@@ -306,25 +310,43 @@ def run_harness(
         oos_examples = [
             ex for fold in folds for ex in fold_test_examples(fold, order_examples(subset))
         ]
+        slices[card.experiment_id] = oos_examples
+        pools[card.experiment_id] = len(subset)
         oos_counts[card.experiment_id] = {
             "evidence_bearing": len(subset),
             "oos": len(oos_examples),
         }
+
+    # Second pass: evaluate. A baseline-relative metric must use the baseline
+    # card's OWN measured OOS slice — never another card's slice and never a
+    # 0.0 substitution (research integrity: fail closed rather than inventing
+    # a baseline).
+    for card in ordered_cards:
+        baseline_rate: float | None = None
+        if card.primary_metric != "oos_positive_base_rate":
+            base_slice = slices.get(card.baseline_id)
+            if base_slice is None:
+                # The family is mispreregistered: there is no baseline card
+                # result to measure against. Fail closed.
+                raise ValueError(f"HARNESS_BASELINE_MISSING:{card.baseline_id}")
+            if base_slice:
+                positives = sum(
+                    1 for ex in base_slice if ex.get("outcome", {}).get("positive")
+                )
+                baseline_rate = positives / len(base_slice)
+            # An empty baseline OOS slice stays ``None``: cards that cannot
+            # reach adjudication keep their negative results
+            # (NEEDS_PROSPECTIVE_VALIDATION / INSUFFICIENT_DATA), while the
+            # evaluator raises HARNESS_BASELINE_MISSING if a SUPPORTED-capable
+            # branch would run without a measured baseline.
         result = evaluator(
-            card, oos_examples, baseline_rate=baseline_rate, pool_count=len(subset)
+            card,
+            slices[card.experiment_id],
+            baseline_rate=baseline_rate,
+            pool_count=pools[card.experiment_id],
         )
         results[card.experiment_id] = result
-        fold_pit[card.experiment_id] = status
-        if card.experiment_id == card.baseline_id:
-            positives = sum(1 for ex in oos_examples if ex.get("outcome", {}).get("positive"))
-            baseline_rate = positives / len(oos_examples) if oos_examples else None
-        elif baseline_rate is None and card.baseline_id in results:
-            baseline_id = card.baseline_id
-            positives = sum(
-                1 for ex in oos_examples if ex.get("outcome", {}).get("positive")
-            )
-            baseline_rate = positives / len(oos_examples) if oos_examples else None
-            _ = baseline_id
+        fold_pit[card.experiment_id] = "PASS"
 
     body = _run_body(
         family=family,

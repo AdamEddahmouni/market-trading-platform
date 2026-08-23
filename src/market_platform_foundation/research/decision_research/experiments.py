@@ -127,7 +127,12 @@ def evaluate_experiment(
             status = ResearchResultStatus.INCONCLUSIVE
             delta = 0.0
         else:
-            base = baseline_rate if baseline_rate is not None else 0.0
+            if baseline_rate is None:
+                # Fail closed: a missing measured baseline may never be
+                # adjudicated as an edge (0.0 substitution would let raw
+                # precision masquerade as delta and reach SUPPORTED).
+                raise ValueError(f"HARNESS_BASELINE_MISSING:{card.baseline_id}")
+            base = baseline_rate
             delta = round(precision - base, 6)
             edge = delta >= card.primary_metric_threshold and delta > 0.0
             if not edge or card.hypothesis_label == HypothesisLabel.EXPLORATORY.value:
