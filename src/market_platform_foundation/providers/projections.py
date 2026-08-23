@@ -1600,6 +1600,7 @@ def build_workspace_futures_payload(
                 if isinstance(snap, dict):
                     from datetime import datetime
 
+                    from ..clock import monotonic_wall_ns
                     from ..donor_bridge.bridge_depth_state import resolve_bridge_ofi, update as update_bridge_depth
                     from ..donor_patterns.futures_lane import (
                         depth_imbalance_signal,
@@ -1620,7 +1621,7 @@ def build_workspace_futures_payload(
                         try:
                             event_dt = datetime.fromisoformat(event_time.replace("Z", "+00:00"))
                         except ValueError:
-                            event_dt = datetime.now()
+                            event_dt = datetime.fromtimestamp(monotonic_wall_ns() / 1_000_000_000)
                     else:
                         event_dt = datetime.now()
                     rth = is_rth(event_dt)

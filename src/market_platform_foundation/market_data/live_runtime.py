@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import threading
-import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from ..clock import monotonic_wall_ns
 from .capture import read_envelopes
 from .capabilities import CapabilityState, MarketCapability, merge_capability
 from .capability_registry import VerifiedCapabilityRegistry
@@ -205,8 +205,8 @@ class LiveObservationalRuntime:
     ) -> dict[str, Any]:
         with self._lock:
             clocks = record.get("clocks") if isinstance(record.get("clocks"), dict) else {}
-            received = int(clocks.get("received_time_ns") or time.time_ns())
-            effective_wall = wall_now_ns if wall_now_ns is not None else time.time_ns()
+            received = int(clocks.get("received_time_ns") or monotonic_wall_ns())
+            effective_wall = wall_now_ns if wall_now_ns is not None else monotonic_wall_ns()
             result = self.admission.evaluate_record(
                 record,
                 wall_now_ns=effective_wall,
@@ -217,7 +217,7 @@ class LiveObservationalRuntime:
                 admitted = self.state.apply_admitted(result)
                 if admitted:
                     clocks = record.get("clocks") if isinstance(record.get("clocks"), dict) else {}
-                    received = int(clocks.get("received_time_ns") or time.time_ns())
+                    received = int(clocks.get("received_time_ns") or monotonic_wall_ns())
                     self.lifecycle.record_event(received)
                     instrument = str(record.get("instrument_id") or "").upper()
                     if instrument and instrument not in self.scope_symbols:
@@ -236,7 +236,7 @@ class LiveObservationalRuntime:
         count = 0
         for record in read_envelopes(path):
             clocks = record.get("clocks") if isinstance(record.get("clocks"), dict) else {}
-            received = int(clocks.get("received_time_ns") or time.time_ns())
+            received = int(clocks.get("received_time_ns") or monotonic_wall_ns())
             self.ingest_record(record, wall_now_ns=received + 1_000_000)
             count += 1
         return count

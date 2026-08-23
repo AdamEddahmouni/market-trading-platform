@@ -212,14 +212,18 @@ class PaperPersistenceTests(IsolatedStateTest):
         """Regression: two opens in the same (coarse/frozen) clock tick differ.
 
         session ids are content hashes of the session body, which includes
-        ``opened_at_ns``; on environments where ``time.time_ns()`` is frozen
-        for whole ticks, a uniqueness nonce keeps ids distinct.
+        ``opened_at_ns``; ``market_platform_foundation.clock.monotonic_wall_ns`` keeps that value
+        strictly increasing in-process when ``time.time_ns()`` freezes, and a
+        uuid nonce covers cross-process ties.
         """
         from unittest import mock
 
+        from market_platform_foundation.clock import reset_clock_for_tests
+
         frozen = 1787000000000000000
+        reset_clock_for_tests()
         with mock.patch(
-            "market_platform_foundation.paper.ledger.time.time_ns", return_value=frozen
+            "market_platform_foundation.clock.time.time_ns", return_value=frozen
         ):
             first = PaperExecutionLedger.open_session(
                 replay_session_id="frozen-clock-1",
@@ -236,6 +240,37 @@ class PaperPersistenceTests(IsolatedStateTest):
                 execution_authority="PAPER_ONLY",
             )
         self.assertNotEqual(first.session_id, second.session_id)
+        reset_clock_for_tests()
+
+    def test_event_times_strictly_increasing_under_frozen_clock(self) -> None:
+        """Regression: event timestamps never tie while the wall clock freezes.
+
+        Previously ``_append`` read ``time.time_ns()`` directly, so a frozen
+        tick produced identical ``event_time`` / ``available_time`` values for
+        successive events; the paper clock guarantees strict increase.
+        """
+        from unittest import mock
+
+        from market_platform_foundation.clock import reset_clock_for_tests
+
+        frozen = 1787000000000000000
+        reset_clock_for_tests()
+        with mock.patch(
+            "market_platform_foundation.clock.time.time_ns", return_value=frozen
+        ):
+            ledger = PaperExecutionLedger.open_session(
+                replay_session_id="frozen-clock-events",
+                instrument_id="BIYA",
+                symbol="BIYA",
+                execution_mode="BROKER_PAPER",
+                execution_authority="PAPER_ONLY",
+            )
+            ledger.append_intent({"intent_id": "frozen-intent-1", "correlation_id": "frozen-corr-1"})
+        times = [int(event["event_time"]) for event in ledger.events]
+        self.assertGreaterEqual(len(times), 3)
+        self.assertEqual(sorted(times), times)
+        self.assertEqual(len(set(times)), len(times))
+        reset_clock_for_tests()
 
     def test_sessions_isolated_and_archive(self) -> None:
         store, bars = self._open_authorized()

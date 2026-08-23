@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import time
 import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -12,6 +11,7 @@ from ..canonical import canonical_bytes, sha256_bytes
 from ..portfolio.ledger import apply_fill, build_ledger_state
 from ..risk.kill_switch import KillSwitchState
 from ..risk.policy import DEFAULT_RISK_POLICY
+from ..clock import monotonic_wall_ns
 from .contracts import build_instrument_ref, decimal_minor_to_display, next_event_sequence, validate_order_transition
 
 
@@ -82,12 +82,13 @@ class PaperExecutionLedger:
         session_body = {
             "execution_authority": execution_authority,
             "execution_mode": execution_mode,
-            "opened_at_ns": time.time_ns(),
+            "opened_at_ns": monotonic_wall_ns(),
             "paper_account_id": paper_account_id,
             "replay_session_id": replay_session_id,
-            # Uniqueness nonce: wall-clock granularity is coarse (and can be
-            # frozen in virtualized environments), so two opens in the same
-            # tick would otherwise hash to the same session id.
+            # Cross-process uniqueness nonce: opened_at_ns is strictly
+            # increasing within a process (the shared clock), but two processes
+            # could still open in the same wall tick, so a random nonce keeps
+            # session ids globally distinct.
             "session_nonce": uuid.uuid4().hex,
         }
         session_id = sha256_bytes(canonical_bytes(session_body))
@@ -123,7 +124,7 @@ class PaperExecutionLedger:
     def _append(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         if event_type not in EVENT_TYPES:
             raise ValueError("PAPER_EVENT_TYPE_INVALID")
-        now_ns = time.time_ns()
+        now_ns = monotonic_wall_ns()
         correlation_id = _correlation_id_from_payload(payload)
         body = {
             "available_time": now_ns,

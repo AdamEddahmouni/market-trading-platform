@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import json
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from ..clock import monotonic_wall_ns
 from .capabilities import CapabilityState, MarketCapability, merge_capability
 
 DEFAULT_PROBE_PATH = (
@@ -212,4 +212,4 @@ def _age_seconds(iso_timestamp: str | None) -> int | None:
         return None
     if verified.tzinfo is None:
         verified = verified.replace(tzinfo=timezone.utc)
-    return max(0, int(time.time() - verified.timestamp()))
+    return max(0, int(monotonic_wall_ns() / 1_000_000_000 - verified.timestamp()))

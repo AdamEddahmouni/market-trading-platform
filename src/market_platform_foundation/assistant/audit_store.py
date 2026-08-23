@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from ..canonical import canonical_bytes, load_json_strict, sha256_bytes, write_canonical_json
+from ..clock import monotonic_wall_ns
 
 STORE_SCHEMA_VERSION = "1.0.0"
 
@@ -43,9 +44,7 @@ class ConversationRecord:
 
 
 def _now_ns() -> int:
-    import time
-
-    return time.time_ns()
+    return monotonic_wall_ns()
 
 
 def _message_body(message: MessageRecord) -> dict[str, Any]:

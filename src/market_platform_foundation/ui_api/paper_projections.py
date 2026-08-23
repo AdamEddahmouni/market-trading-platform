@@ -456,29 +456,27 @@ def _live_focus_instrument_id(store: ReplayStore) -> str | None:
 
 
 def _paper_observation_time(store: ReplayStore, *, instrument_id: str | None = None) -> int:
-    import time
-
     from ..market_data.live_config import live_observational_enabled, moomoo_live_enabled
     from ..market_data.live_runtime import get_live_runtime
+    from ..clock import monotonic_wall_ns
 
     del instrument_id
     if live_observational_enabled() and moomoo_live_enabled() and get_live_runtime(create=False) is not None:
-        return time.time_ns()
+        return monotonic_wall_ns()
     return store.prediction_cutoff()
 
 
 def _bars_for_paper_execution(store: ReplayStore, *, instrument_id: str | None = None) -> list[dict[str, Any]]:
-    import time
-
     from ..market_data.live_config import live_observational_enabled, moomoo_live_enabled
     from ..market_data.live_runtime import get_live_runtime
+    from ..clock import monotonic_wall_ns
 
     focus = instrument_id or _live_focus_instrument_id(store)
     if live_observational_enabled() and moomoo_live_enabled() and focus:
         runtime = get_live_runtime(create=False)
         if runtime is not None:
             live_bars = runtime.execution_buffer.bars_for_execution(
-                observation_time_ns=time.time_ns(),
+                observation_time_ns=monotonic_wall_ns(),
                 price_scale=int(store.paper_ledger.policy["price_scale"]),
                 instrument_id=focus,
             )
@@ -497,6 +495,7 @@ def _wait_for_post_intent_bars(
 
     from ..market_data.live_config import live_execution_wait_ms, live_observational_enabled, moomoo_live_enabled
     from ..market_data.live_runtime import get_live_runtime
+    from ..clock import monotonic_wall_ns
 
     if any(int(bar.get("available_time", 0)) > created_time_ns for bar in bars):
         return bars
@@ -505,19 +504,21 @@ def _wait_for_post_intent_bars(
     runtime = get_live_runtime(create=False)
     if runtime is None:
         return bars
-    deadline = time.time_ns() + live_execution_wait_ms() * 1_000_000
+    # Deadline uses monotonic elapsed time: a wall clock that freezes or jumps
+    # must never stall or truncate the wait (the shared clock for observation times).
+    deadline = time.monotonic() + live_execution_wait_ms() / 1000.0
     price_scale = int(store.paper_ledger.policy["price_scale"])
-    while time.time_ns() < deadline:
+    while time.monotonic() < deadline:
         time.sleep(0.05)
         latest = runtime.execution_buffer.bars_for_execution(
-            observation_time_ns=time.time_ns(),
+            observation_time_ns=monotonic_wall_ns(),
             price_scale=price_scale,
             instrument_id=instrument_id,
         )
         if any(int(bar.get("available_time", 0)) > created_time_ns for bar in latest):
             return latest
     return runtime.execution_buffer.bars_for_execution(
-        observation_time_ns=time.time_ns(),
+        observation_time_ns=monotonic_wall_ns(),
         price_scale=price_scale,
         instrument_id=instrument_id,
     )

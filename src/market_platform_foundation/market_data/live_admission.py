@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..clock import monotonic_wall_ns
 from ..data_quality.observations import QualityObservation, consumer_eligibility
 from ..order_flow.quality import OrderFlowQualityFlag
 from .live_config import clock_drift_threshold_ms, execution_freshness_threshold_ms, quote_stale_threshold_ms
@@ -124,7 +124,7 @@ class LiveAdmissionEngine:
         is_first_push: bool = False,
         is_cached: bool = False,
     ) -> dict[str, Any]:
-        now_ns = wall_now_ns if wall_now_ns is not None else time.time_ns()
+        now_ns = wall_now_ns if wall_now_ns is not None else monotonic_wall_ns()
         session_key = self._session_key(record)
         session = self.sessions.setdefault(session_key, ChannelSessionState())
         if session.subscription_started_ns is None:

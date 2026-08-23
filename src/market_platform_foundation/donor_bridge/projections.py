@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import time
 from typing import Any
 
+from ..clock import monotonic_wall_ns
 from . import internship_client
 from .historical_cohort import build_historical_squeeze_context
 from .institutional_ignition import (
@@ -338,7 +338,7 @@ def _effective_prediction_cutoff(
     if as_of_ns is not None:
         return int(as_of_ns)
     if mode_normalized == "current":
-        return time.time_ns()
+        return monotonic_wall_ns()
     return None
 
 

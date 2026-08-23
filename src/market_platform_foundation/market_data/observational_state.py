@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import time
 from collections import deque
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..clock import monotonic_wall_ns
 from .book_features import compute_book_features
 from .normalization import classified_trade_from_ticker, levels_from_order_book, l1_from_quote
 from .live_admission import ADMISSION_BLOCKED, ADMISSION_DISPLAY
@@ -87,7 +87,7 @@ class ObservationalStateStore:
         quality = "PASS" if admission == ADMISSION_DISPLAY else "DEGRADED"
         provider = str(record.get("provider") or "moomoo")
         clocks = record.get("clocks") if isinstance(record.get("clocks"), dict) else {}
-        received_ns = int(clocks.get("received_time_ns") or envelope.get("live_received_time") or time.time_ns())
+        received_ns = int(clocks.get("received_time_ns") or envelope.get("live_received_time") or monotonic_wall_ns())
         event_time_ns = int(envelope.get("event_time") or received_ns)
         available_ns = int(envelope.get("available_time") or received_ns)
 
@@ -184,7 +184,7 @@ class ObservationalStateStore:
         quote = self.quote_for(instrument_id)
         if quote is None:
             return None
-        now = wall_now_ns if wall_now_ns is not None else time.time_ns()
+        now = wall_now_ns if wall_now_ns is not None else monotonic_wall_ns()
         return max(0, (now - quote.received_ns) // 1_000_000)
 
     def metrics_report(self) -> dict[str, Any]:

@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import json
-import time
 from typing import Any
 from uuid import uuid4
 
 from ..canonical import canonical_bytes, sha256_bytes
+from ..clock import monotonic_wall_ns
 from .connection import LocalStateConnection
 from .schema import LAYOUT_SCHEMA_VERSION, PAPER_EVENT_SCHEMA_VERSION, RECENT_INSTRUMENT_LIMIT
 
@@ -31,7 +31,7 @@ CAPTURE_INCOMPATIBLE = "INCOMPATIBLE"
 
 
 def _ns() -> int:
-    return time.time_ns()
+    return monotonic_wall_ns()
 
 
 def reject_secret_key(key: str) -> None:
