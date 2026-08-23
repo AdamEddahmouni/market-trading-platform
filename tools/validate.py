@@ -44,6 +44,14 @@ SECRET_SUFFIXES = frozenset({".pem", ".key", ".p12", ".pfx", ".jks", ".keystore"
 CORE_DIAGNOSTIC_IDS = ("validation", "phase0", "contracts", "runtime", "providers")
 DEFAULT_WORKERS = 2
 LIVE_GATES: dict[str, tuple[str, ...]] = {
+    # Execution domain: IMP_LIVE_EXECUTION is the master live-execution enable
+    # (operating_modes.resolve_execution_authority). It must be stripped from every
+    # offline run so a leaked environment value can never arm real execution; it is
+    # only ever settable inside an explicit LIVE_EXCLUSIVE child run.
+    "execution": ("IMP_LIVE_EXECUTION",),
+    # Observational live market-data feed (market_data/live_config): a real external
+    # connection enable, stripped offline like every other provider gate.
+    "live_observational": ("IMP_LIVE_OBSERVATIONAL",),
     "cboe": ("IMP_CBOE_REGSHO_LIVE",),
     "cboe_options": ("IMP_CBOE_OPTIONS_LIVE",),
     "cftc": ("RUN_LIVE_CFTC",),
@@ -57,6 +65,14 @@ LIVE_GATES: dict[str, tuple[str, ...]] = {
     "sec_ftd": ("IMP_SEC_FTD_LIVE",),
     "weather": ("IMP_WEATHER_LIVE",),
 }
+# Deliberately NOT live gates (never stripped, never set by live runs):
+# - IMP_PAPER_EXECUTION / IMP_BROKER_PAPER_EXECUTION: paper/sandbox enables that
+#   never reach a real venue or broker; suites stay offline-safe because these are
+#   inert-by-default in CI rather than stripped.
+# - EXECUTION_ENABLE: stub paper-execution toggle only (providers/stubs.py).
+# - IMP_LIVE_INTERNAL_SIMULATION: internal fixture simulation that is inert unless
+#   BOTH IMP_LIVE_OBSERVATIONAL (stripped above) AND IMP_PAPER_EXECUTION are set,
+#   so it cannot activate in any offline validation run.
 ALL_LIVE_GATES = frozenset(gate for gates in LIVE_GATES.values() for gate in gates)
 
 
@@ -423,6 +439,7 @@ def _error_worker_result(suite_id: str, message: str) -> dict[str, Any]:
         "per_test_durations": [],
         "slowest_tests": [],
         "failure_details": [],
+        "skip_details": [],
         "error_details": [],
         "worker_error": _sanitize_worker_text(message),
     }
@@ -768,6 +785,14 @@ def execute_selection(
         "tests_run": sum(int(row.get("tests_run", 0)) for row in worker_results),
         "passes": sum(int(row.get("passes", 0)) for row in worker_results),
         "skips": sum(int(row.get("skips", 0)) for row in worker_results),
+        "skip_details": sorted(
+            (
+                {"suite_id": str(worker.get("suite_id", "")), **row}
+                for worker in worker_results
+                for row in worker.get("skip_details", [])
+            ),
+            key=lambda row: (row["suite_id"], row["selector"]),
+        ),
         "failures": sum(int(row.get("failures", 0)) for row in worker_results),
         "errors": sum(int(row.get("errors", 0)) for row in worker_results),
         "expected_failures": sum(

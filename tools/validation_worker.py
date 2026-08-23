@@ -224,6 +224,23 @@ def _failure_rows(
     )
 
 
+def _skip_rows(
+    rows: Iterable[tuple[unittest.TestCase, str]], repository_root: Path
+) -> list[dict[str, str]]:
+    """Serialize skip identities and reasons for audit-grade reporting."""
+
+    return sorted(
+        (
+            {
+                "selector": _selector_for_test(test, repository_root),
+                "reason": sanitize_diagnostic(details),
+            }
+            for test, details in rows
+        ),
+        key=lambda row: row["selector"],
+    )
+
+
 def _empty_result(suite_id: str, selectors: tuple[str, ...]) -> dict[str, Any]:
     return {
         "schema_version": "1.0",
@@ -240,6 +257,7 @@ def _empty_result(suite_id: str, selectors: tuple[str, ...]) -> dict[str, Any]:
         "errors": 0,
         "expected_failures": 0,
         "unexpected_successes": 0,
+        "skip_details": [],
         "per_test_durations": [],
         "slowest_tests": [],
         "failure_details": [],
@@ -300,7 +318,7 @@ def run_worker(
                 "expected_failures": len(structured.expectedFailures),
                 "unexpected_successes": len(structured.unexpectedSuccesses),
                 "per_test_durations": duration_rows,
-                "slowest_tests": slowest,
+                "skip_details": _skip_rows(structured.skipped, root),
                 "failure_details": _failure_rows(structured.failures, root),
                 "error_details": _failure_rows(structured.errors, root),
                 "worker_error": "",
