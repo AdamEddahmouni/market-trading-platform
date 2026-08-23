@@ -34,7 +34,10 @@ src/market_platform_foundation/market_data/live_config.py   MODIFY add gate read
 src/market_platform_foundation/market_data/live_runtime.py  MODIFY minimal gated
                            recorder field + ingest hook + health exposure
 tools/research/run_shadow_run.py  NEW  CLI open/status/close/label-due/report
-tests/shadow/             NEW test modules per task below
+tests/platform/           NEW test modules per task below, named
+                              test_shadow_run1_*.py (governed `platform` suite
+                              owns tests/platform/test_*.py; do NOT create
+                              tests/shadow — unclassified by the manifest)
 docs/research/PLATFORMIZATION_ROADMAP.md  MODIFY P6 row
 ```
 
@@ -44,8 +47,7 @@ docs/research/PLATFORMIZATION_ROADMAP.md  MODIFY P6 row
 
 **Files:**
 - Create: `src/market_platform_foundation/shadow/experiment.py`
-- Create: `tests/shadow/__init__.py` (empty)
-- Test: `tests/shadow/test_experiment_store.py`
+- Test: `tests/platform/test_shadow_run1_experiment_store.py`
 
 **Interfaces:**
 - Consumes: stdlib `sqlite3`, `json` only.
@@ -64,7 +66,7 @@ docs/research/PLATFORMIZATION_ROADMAP.md  MODIFY P6 row
 
 - [ ] **Step 1: Write failing tests**
 
-Create `tests/shadow/__init__.py` empty. Create `tests/shadow/test_experiment_store.py`:
+Create `tests/platform/test_shadow_run1_experiment_store.py`:`:
 
 ```python
 import sys
@@ -166,7 +168,7 @@ if __name__ == "__main__":
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `$env:PYTHONPATH='src'; .venv\Scripts\python.exe -m unittest tests.shadow.test_experiment_store -v`
+Run: `$env:PYTHONPATH='src'; .venv\Scripts\python.exe -m unittest tests.platform.test_shadow_run1_experiment_store -v`
 Expected: FAIL with `ModuleNotFoundError` for `shadow.experiment`.
 
 - [ ] **Step 3: Implement `shadow/experiment.py`**
@@ -457,7 +459,7 @@ class ShadowExperimentStore:
 Run: `$env:PYTHONPATH='src'; .venv\Scripts\python.exe tools\validate.py changed`  - expected PASSED.
 
 ```bash
-git add src/market_platform_foundation/shadow/experiment.py tests/shadow/__init__.py tests/shadow/test_experiment_store.py
+git add src/market_platform_foundation/shadow/experiment.py tests/platform/test_shadow_run1_experiment_store.pytest_shadow_run1_experiment_store.py
 git commit -m "feat,test: add append-only shadow experiment ledger"
 ```
 
@@ -467,7 +469,7 @@ git commit -m "feat,test: add append-only shadow experiment ledger"
 
 **Files:**
 - Create: `src/market_platform_foundation/shadow/session.py`
-- Test: `tests/shadow/test_session.py`
+- Test: `tests/platform/test_shadow_run1_session.py`
 
 **Interfaces:**
 - Produces (used by Tasks 4, 6, 7):
@@ -480,7 +482,7 @@ git commit -m "feat,test: add append-only shadow experiment ledger"
 
 - [ ] **Step 1: Write failing tests**
 
-Create `tests/shadow/test_session.py`:
+Create `tests/platform/test_shadow_run1_session.py`:
 
 ```python
 import sys
@@ -627,7 +629,7 @@ def grid_targets_ns(date_iso: str, horizon_seconds: int, tolerance_seconds: int)
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/market_platform_foundation/shadow/session.py tests/shadow/test_session.py
+git add src/market_platform_foundation/shadow/session.py tests/platform/test_shadow_run1_session.py
 git commit -m "feat,test: add frozen session calendar and decision buckets"
 ```
 
@@ -637,7 +639,7 @@ git commit -m "feat,test: add frozen session calendar and decision buckets"
 
 **Files:**
 - Create: `src/market_platform_foundation/shadow/predictor.py`
-- Test: `tests/shadow/test_predictor.py`
+- Test: `tests/platform/test_shadow_run1_predictor.py`
 
 **Interfaces:**
 - Consumes: trade-tape dicts exactly as stored by `ObservationalStateStore.apply_admitted` (keys include `event_time_ns`, `available_time_ns`, `price`, `quantity`, `aggressor_side` in {BUY, SELL, UNKNOWN}, `aggressor_provenance`, `trade_id`, `quality`, `admission`).
@@ -649,7 +651,7 @@ git commit -m "feat,test: add frozen session calendar and decision buckets"
 
 - [ ] **Step 1: Write failing tests**
 
-Create `tests/shadow/test_predictor.py`:
+Create `tests/platform/test_shadow_run1_predictor.py`:
 
 ```python
 import sys
@@ -877,7 +879,7 @@ Note: `UNKNOWN`-side trades count toward neither signed volume nor `total_volume
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/market_platform_foundation/shadow/predictor.py tests/shadow/test_predictor.py
+git add src/market_platform_foundation/shadow/predictor.py tests/platform/test_shadow_run1_predictor.py
 git commit -m "feat,test: add frozen NSS predictor with availability eligibility"
 ```
 
@@ -885,7 +887,7 @@ git commit -m "feat,test: add frozen NSS predictor with availability eligibility
 
 **Files:**
 - Create: `src/market_platform_foundation/shadow/recording.py`
-- Test: `tests/shadow/test_recording.py`
+- Test: `tests/platform/test_shadow_run1_recording.py`
 
 **Interfaces:**
 - Consumes: `ShadowExperimentStore.record_decision_once/log_error/run_state` (Task 1); `eligible_trades/evaluate_prediction/reference_price/FrozenPredictorConfig` (Task 3); `decision_bucket/outside_session_window/session_bounds_ns/ET` (Task 2); governed `shadow.runs.open_shadow_run`, `runs.record_prediction`; `ShadowStore`.
@@ -897,7 +899,7 @@ git commit -m "feat,test: add frozen NSS predictor with availability eligibility
 
 - [ ] **Step 1: Write failing tests**
 
-Create `tests/shadow/test_recording.py`:
+Create `tests/platform/test_shadow_run1_recording.py`:
 
 ```python
 import sys
@@ -1298,7 +1300,7 @@ class ShadowPredictionRecorder:
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/market_platform_foundation/shadow/recording.py tests/shadow/test_recording.py
+git add src/market_platform_foundation/shadow/recording.py tests/platform/test_shadow_run1_recording.py
 git commit -m "feat,test: add gated shadow opportunity recorder"
 ```
 
@@ -1310,7 +1312,7 @@ git commit -m "feat,test: add gated shadow opportunity recorder"
 - Modify: `src/market_platform_foundation/market_data/live_config.py` (append gate reader near existing readers like `moomoo_live_enabled`)
 - Modify: `src/market_platform_foundation/market_data/live_runtime.py` (field, construction in `configure()`, hook in `ingest_record`, exposure in `health_payload`)
 - Create helper: `attach_default_recorder(runtime)` appended to `src/market_platform_foundation/shadow/recording.py`
-- Test: `tests/shadow/test_runtime_attachment.py`
+- Test: `tests/platform/test_shadow_run1_runtime_attachment.py`
 
 **Interfaces:**
 - Consumes: Task 4 recorder; existing `LiveObservationalRuntime.configure()/ingest_record()/health_payload()`; local-state paths helper used elsewhere for durable storage (locate via `local_state.paths` module as done by `local_state.connection`).
@@ -1321,7 +1323,7 @@ git commit -m "feat,test: add gated shadow opportunity recorder"
 
 - [ ] **Step 1: Write failing tests**
 
-Create `tests/shadow/test_runtime_attachment.py`:
+Create `tests/platform/test_shadow_run1_runtime_attachment.py`:
 
 ```python
 import sys
@@ -1507,7 +1509,7 @@ In `live_runtime.py`:
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/market_platform_foundation/shadow/recording.py src/market_platform_foundation/shadow/experiment.py src/market_platform_foundation/market_data/live_config.py src/market_platform_foundation/market_data/live_runtime.py tests/shadow/test_runtime_attachment.py tests/shadow/test_experiment_store.py
+git add src/market_platform_foundation/shadow/recording.py src/market_platform_foundation/shadow/experiment.py src/market_platform_foundation/market_data/live_config.py src/market_platform_foundation/market_data/live_runtime.py tests/platform/test_shadow_run1_runtime_attachment.py tests/platform/test_shadow_run1_experiment_store.py
 git commit -m "feat,test: gate live-runtime shadow recording attachment"
 ```
 
@@ -1515,7 +1517,7 @@ git commit -m "feat,test: gate live-runtime shadow recording attachment"
 
 **Files:**
 - Create: `src/market_platform_foundation/shadow/labeling_job.py`
-- Test: `tests/shadow/test_labeling_job.py`
+- Test: `tests/platform/test_shadow_run1_labeling_job.py`
 
 **Interfaces:**
 - Consumes: governed `shadow.labeling.attach_label` (causality enforced there); Task 1 `iter_decisions/add_annotation`; capture envelopes via `market_data.capture.read_envelopes` (records carry `capability`, `instrument_id`, `clocks`, `raw_payload`; trade price/event time extracted identically to `ObservationalStateStore.apply_admitted` TICK branch  - reuse `market_platform_foundation.market_data.normalization.classified_trade_from_ticker` for price extraction).
@@ -1527,7 +1529,7 @@ git commit -m "feat,test: gate live-runtime shadow recording attachment"
 
 - [ ] **Step 1: Write failing tests**
 
-Create `tests/shadow/test_labeling_job.py`:
+Create `tests/platform/test_shadow_run1_labeling_job.py`:
 
 ```python
 import json
@@ -1862,7 +1864,7 @@ Engineer notes:
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/market_platform_foundation/shadow/labeling_job.py tests/shadow/test_labeling_job.py
+git add src/market_platform_foundation/shadow/labeling_job.py tests/platform/test_shadow_run1_labeling_job.py
 git commit -m "feat,test: add delayed capture-based shadow labeler"
 ```
 
@@ -1872,7 +1874,7 @@ git commit -m "feat,test: add delayed capture-based shadow labeler"
 
 **Files:**
 - Create: `tools/research/run_shadow_run.py`
-- Test: `tests/shadow/test_cli_shadow_run.py`
+- Test: `tests/platform/test_shadow_run1_cli.py`
 
 **Interfaces:**
 - Consumes: Tasks 1-6 modules; `git rev-parse HEAD` / `git status --porcelain` via `subprocess`.
@@ -1882,7 +1884,7 @@ Frozen defaults bound at `open` (spec sections 6-8, 13): window 300s, minimum tr
 
 - [ ] **Step 1: Write failing tests**
 
-Create `tests/shadow/test_cli_shadow_run.py`:
+Create `tests/platform/test_shadow_run1_cli.py`:
 
 ```python
 import contextlib
@@ -2391,7 +2393,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-Smoke tests to append to `tests/shadow/test_cli_shadow_run.py` (one per subcommand, temp store, exit-code assertions):
+Smoke tests to append to `tests/platform/test_shadow_run1_cli.py` (one per subcommand, temp store, exit-code assertions):
 
 ```python
     def test_status_close_report_smoke(self):
@@ -2429,7 +2431,7 @@ Add `import argparse` to the test module imports for the `Namespace` constructio
 - [ ] **Step 5: Commit**
 
 ```bash
-git add tools/research/run_shadow_run.py tests/shadow/test_cli_shadow_run.py
+git add tools/research/run_shadow_run.py tests/platform/test_shadow_run1_cli.py
 git commit -m "feat,test: add shadow run operator CLI with frozen open contract"
 ```
 
