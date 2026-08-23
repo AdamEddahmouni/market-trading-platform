@@ -110,6 +110,13 @@ class ShadowExperimentStore:
             "created_at_ns": row[3],
         }
 
+    def manifest_hash(self, run_id: str) -> str | None:
+        row = self._conn.execute(
+            "SELECT manifest_hash FROM run_contract WHERE run_id=?",
+            (run_id,),
+        ).fetchone()
+        return None if row is None else str(row[0])
+
     # -- lifecycle -------------------------------------------------------------
 
     def append_event(self, run_id: str, event_type: str, occurred_at_ns: int, detail: dict[str, Any] | None = None) -> None:

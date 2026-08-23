@@ -14,6 +14,11 @@ def moomoo_live_enabled() -> bool:
     return os.environ.get("IMP_MOOMOO_LIVE") == "1"
 
 
+def shadow_recording_enabled() -> bool:
+    """Run-1 prospective shadow recording opt-in gate (IMP_SHADOW_RECORDING)."""
+    return os.environ.get("IMP_SHADOW_RECORDING", "").strip().lower() in {"1", "true", "yes"}
+
+
 def live_internal_simulation_enabled() -> bool:
     from ..operating_modes import paper_execution_env_enabled
 

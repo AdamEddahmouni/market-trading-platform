@@ -24,6 +24,7 @@ class ExperimentStoreTests(unittest.TestCase):
         self.assertEqual(row["manifest"], {"a": 1})
         self.assertEqual(row["manifest_hash"], "HASH1")
         self.assertEqual(row["created_at_ns"], 100)
+        self.assertEqual(self.store.manifest_hash("R1"), "HASH1")
 
     def test_lifecycle_events_append_only_and_state_derived(self):
         self.store.ensure_run("R1", "{}", "H", 1)

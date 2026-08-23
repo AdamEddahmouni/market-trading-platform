@@ -23,6 +23,7 @@ from .live_config import (
     moomoo_port,
     probe_report_path,
     probe_staleness_seconds,
+    shadow_recording_enabled,
     subscription_quota,
 )
 from .connectivity import opend_reachable
@@ -64,6 +65,7 @@ class LiveObservationalRuntime:
     capability_probe: dict[str, CapabilityState] = field(default_factory=dict)
     feed: Any | None = field(default=None, repr=False)
     feed_metrics: dict[str, Any] = field(default_factory=dict)
+    shadow_recorder: Any | None = field(default=None, repr=False)
     _stop_event: threading.Event = field(default_factory=threading.Event, repr=False)
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
     _fresh_event_count: int = 0
@@ -97,6 +99,10 @@ class LiveObservationalRuntime:
             else:
                 self.lifecycle.connection_state = ProviderConnectionState.DISABLED
                 self.lifecycle.last_error = "IMP_MOOMOO_LIVE or IMP_LIVE_FIXTURE_FEED required"
+        if shadow_recording_enabled():
+            from ..shadow.recording import attach_default_recorder
+
+            self.shadow_recorder = attach_default_recorder(self)
 
     def _load_verified_capabilities(self) -> None:
         receiving = self._fresh_event_count > 0
@@ -230,6 +236,8 @@ class LiveObservationalRuntime:
                     )
             if self.recorder is not None and result.get("envelope"):
                 self.recorder.append(record, result)
+            if self.shadow_recorder is not None:
+                self.shadow_recorder.on_admitted(self.state, result.get("envelope") or {}, result)
             return result
 
     def feed_fixture_path(self, path: Path) -> int:
@@ -489,7 +497,7 @@ class LiveObservationalRuntime:
             runtime=self,
             probe_stale=self.capability_registry.is_stale,
         )
-        return {
+        report = {
             "capability_registry": self.capability_registry.to_dict(),
             "execution_buffer": self.execution_buffer.report(),
             "execution_gate": gate.to_dict(),
@@ -498,6 +506,11 @@ class LiveObservationalRuntime:
             "quota": self.subscriptions.quota_report(),
             "scope_symbols": list(self.scope_symbols),
         }
+        if self.shadow_recorder is not None:
+            report["shadow"] = self.shadow_recorder.health()
+        else:
+            report["shadow"] = {"shadow_recording_enabled": False}
+        return report
 
     def stop(self) -> None:
         self._stop_event.set()

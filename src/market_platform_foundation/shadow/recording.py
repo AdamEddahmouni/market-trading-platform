@@ -192,3 +192,83 @@ class ShadowPredictionRecorder:
             self._exp.log_error(self._manifest.run_id, int(self._clock()), code, detail)
         except Exception:  # even failure logging must never raise upward
             pass
+
+
+def default_experiment_store_path() -> Path:
+    """Durable experiment-store location under the local-state root."""
+    from pathlib import Path as _Path
+
+    from ..local_state.paths import state_dir
+
+    return _Path(state_dir()) / "shadow" / "experiment.sqlite3"
+
+
+def attach_default_recorder(runtime: Any) -> Any | None:
+    """Build the Run-1 recorder for a runtime, or return None when not armed.
+
+    Armed means: IMP_SHADOW_RECORDING gate truthy AND an OPEN run exists in
+    the experiment store AND its manifest embeds the frozen constants and
+    session dates. Never raises; returns None on any problem so observation
+    continues unshaded.
+    """
+    import os
+
+    if os.environ.get("IMP_SHADOW_RECORDING", "").strip().lower() not in {"1", "true", "yes"}:
+        return None
+    try:
+        from .experiment import ShadowExperimentStore
+        from .predictor import FrozenPredictorConfig
+        from .store import ShadowStore
+
+        exp = ShadowExperimentStore(default_experiment_store_path())
+        run_id = os.environ.get("IMP_SHADOW_RUN_ID", "").strip()
+        contract = exp.manifest(run_id) if run_id else None
+        if contract is None:
+            exp.close()
+            return None
+        if exp.run_state(run_id) != "OPEN":
+            exp.close()
+            return None
+        cfg_body = (contract["manifest"].get("config") or {}).get("constants") or {}
+        config = FrozenPredictorConfig(
+            window_seconds=int(cfg_body.get("window_seconds", 300)),
+            minimum_trades=int(cfg_body.get("minimum_trades", 10)),
+            band_upper=float(cfg_body.get("band_upper", 0.15)),
+            band_lower=float(cfg_body.get("band_lower", -0.15)),
+            p_up_clip_low=float(cfg_body.get("p_up_clip_low", 0.1)),
+            p_up_clip_high=float(cfg_body.get("p_up_clip_high", 0.9)),
+            stale_input_seconds=int(cfg_body.get("stale_input_seconds", 60)),
+        )
+        shadow_root = default_experiment_store_path().parent / "shadow_store.sqlite3"
+        session_dates = list((contract["manifest"].get("config") or {}).get("session_dates") or [])
+        recorder = ShadowPredictionRecorder(
+            shadow_store=ShadowStore(shadow_root),
+            experiment_store=exp,
+            manifest=_manifest_from_contract(exp, run_id),
+            config=config,
+            session_dates=session_dates,
+            capture_id=str((contract["manifest"].get("config") or {}).get("capture_id", "")),
+        )
+        return recorder if recorder.enabled else None
+    except Exception:
+        return None
+
+
+def _manifest_from_contract(exp: Any, run_id: str) -> Any:
+    """Rebuild the governed manifest object from stored canonical JSON."""
+    from .records import ShadowRunManifest
+
+    body = exp.manifest(run_id)["manifest"]
+    return ShadowRunManifest(
+        run_id=body["run_id"],
+        strategy_version=body["strategy_version"],
+        prediction_version=body["prediction_version"],
+        universe=tuple(body["universe"]),
+        data_window_refs=tuple(dict(r) for r in body["data_window_refs"]),
+        train_window_end_ns=int(body["train_window_end_ns"]),
+        eval_window_start_ns=int(body["eval_window_start_ns"]),
+        eval_window_end_ns=int(body["eval_window_end_ns"]),
+        created_at_ns=int(body["created_at_ns"]),
+        config=dict(body.get("config") or {}),
+        manifest_hash=exp.manifest_hash(run_id),
+    )
