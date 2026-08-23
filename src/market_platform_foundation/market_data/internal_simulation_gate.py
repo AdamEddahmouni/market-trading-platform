@@ -46,12 +46,33 @@ class GateEvaluation:
         }
 
 
+def external_execution_path_active() -> bool:
+    """Checkable fact: a real broker-paper adapter occupies the composition slot.
+
+    External Tradier/Moomoo paper adapters now exist, so the old hardcoded
+    PASS on NO_EXTERNAL_EXECUTION_PATH was stale. The disabled stub is not an
+    execution path; anything else composed is.
+    """
+    from ..providers.composition import get_provider_composition
+
+    return getattr(get_provider_composition().paper_execution, "provider_id", "") != "stub.execution.disabled"
+
+
 def evaluate_internal_simulation_gates(
     *,
     runtime: Any | None,
     probe_stale: bool = True,
-    pit_tests_pass: bool = True,
+    pit_tests_pass: bool | None = None,
+    external_path_active: bool | None = None,
 ) -> GateEvaluation:
+    """Evaluate the internal-simulation gate matrix.
+
+    ``pit_tests_pass``: True only when the caller has a verified PIT
+    adversarial result for this deployment; False when verified failing;
+    None (default) means unverified and is labeled ATTESTED, never PASS.
+    ``external_path_active``: override for the NO_EXTERNAL_EXECUTION_PATH
+    fact check (defaults to inspecting the composed provider).
+    """
     gates: dict[str, str] = {}
     blocking: list[str] = []
 
@@ -82,17 +103,23 @@ def evaluate_internal_simulation_gates(
         _defer("CAPABILITY_VERIFIED")
 
     _pass("AVAILABLE_TIME_VERIFIED")
-    if pit_tests_pass:
+    if pit_tests_pass is True:
         _pass("PIT_ADVERSARIAL")
-    else:
+    elif pit_tests_pass is False:
         _fail("PIT_ADVERSARIAL")
+    else:
+        # No verified fact available: attestation only, never labeled PASS.
+        gates["PIT_ADVERSARIAL"] = "ATTESTED"
     _pass("FIRST_PUSH_HANDLED")
     _pass("DUPLICATE_HANDLED")
     _pass("SEQUENCE_HANDLED")
     _pass("CLOCK_GATE")
     _pass("RISK_GATE")
     _pass("IDEMPOTENCY")
-    _pass("NO_EXTERNAL_EXECUTION_PATH")
+    if (external_path_active if external_path_active is not None else external_execution_path_active()):
+        _fail("NO_EXTERNAL_EXECUTION_PATH")
+    else:
+        _pass("NO_EXTERNAL_EXECUTION_PATH")
     _pass("NO_AUTOMATIC_TRADING")
 
     if runtime is not None:

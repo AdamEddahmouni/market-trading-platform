@@ -5,7 +5,10 @@ from __future__ import annotations
 from typing import Any
 
 from ..canonical import canonical_bytes, sha256_bytes
-from ..operating_modes import PAPER_EXECUTION_AUTHORITIES, paper_execution_env_enabled
+from ..operating_modes import (
+    PAPER_EXECUTION_AUTHORITIES,
+    resolve_execution_authority,
+)
 from ..paper.ledger import PaperExecutionLedger
 from .capture_index import refresh_capture_catalog
 from .connection import CorruptStateError, LocalStateConnection
@@ -140,7 +143,12 @@ def ledger_from_session(row: dict[str, Any], events: list[dict[str, Any]], idemp
         policy=dict(policy or {}),
         data_mode=str(row["data_mode"]),
         execution_mode=str(row["execution_mode"]),
-        execution_authority="BLOCKED",
+        # Restore derives authority from the stored execution mode so each
+        # mode is gated by its own env flag (INTERNAL_SIMULATION ->
+        # IMP_PAPER_EXECUTION, BROKER_PAPER -> IMP_BROKER_PAPER_EXECUTION,
+        # LIVE -> IMP_LIVE_EXECUTION); a stale IMP_PAPER_EXECUTION alone can
+        # no longer resurrect a BROKER_PAPER session.
+        execution_authority=resolve_execution_authority(requested_mode=str(row["execution_mode"])),
         data_provider=str(row["data_provider"]),
         execution_provider=str(row["execution_provider"]),
     )
@@ -232,11 +240,26 @@ def startup_report(*, live_healthy: bool = False) -> dict[str, Any]:
         "data_mode": previous["data_mode"],
         "execution_mode": previous["execution_mode"],
     }
+
+
     report["crash_recovery"] = "OPEN_SESSION_DETECTED"
     report["restore"] = "PENDING_OPERATOR"
-    if live_healthy and paper_execution_env_enabled():
+    if (
+        live_healthy
+        and resolve_execution_authority(requested_mode=str(previous.get("execution_mode") or ""))
+        in PAPER_EXECUTION_AUTHORITIES
+    ):
         report["execution_deferred"] = False
     return report
+
+
+def _execution_gate_env_name(execution_mode: str) -> str:
+    """Env flag that gates the given execution mode (for restore diagnostics)."""
+    if execution_mode == "BROKER_PAPER":
+        return "IMP_BROKER_PAPER_EXECUTION"
+    if execution_mode == "LIVE":
+        return "IMP_LIVE_EXECUTION"
+    return "IMP_PAPER_EXECUTION"
 
 
 def restore_open_ledger(*, current_config: dict[str, Any]) -> tuple[PaperExecutionLedger | None, dict[str, Any]]:
@@ -259,7 +282,6 @@ def restore_open_ledger(*, current_config: dict[str, Any]) -> tuple[PaperExecuti
     details["reason"] = "RESTORED"
     details["same_session"] = True
     details["session_id"] = ledger.session_id
-    if not paper_execution_env_enabled():
-        ledger.execution_authority = "BLOCKED"
-        details["env_override"] = "IMP_PAPER_EXECUTION"
+    if ledger.execution_authority == "BLOCKED":
+        details["env_override"] = _execution_gate_env_name(str(ledger.execution_mode))
     return ledger, details

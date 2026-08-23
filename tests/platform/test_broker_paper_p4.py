@@ -403,5 +403,68 @@ class BrokerPaperCompositionTests(unittest.TestCase):
         self.assertEqual(result.status, "ok")
 
 
+class BrokerPaperLifecycleFixtureTests(unittest.TestCase):
+    """Contract assertions for tradier_sandbox_lifecycle.json (P4 4A wire prep).
+
+    Covers the canonical statuses absent from tradier_sandbox_orders.json:
+    partially_filled, accepted, expired. Each asserts the adapter normalizes
+    the record into a canonical ORDER_STATUS envelope (ADR-PROV-001) without
+    dropping fill provenance.
+    """
+
+    def _place(self, client_order_id: str, idempotency_key: str) -> object:
+        return _provider().place_order(
+            {
+                "client_order_id": client_order_id,
+                "created_time": 1787000000000000000,
+                "desired_quantity": 100,
+                "idempotency_key": idempotency_key,
+                "instrument": {"instrument_id": "BIYA", "symbol": "BIYA"},
+                "instrument_id": "BIYA",
+                "intent_id": f"intent-{client_order_id}",
+                "side": "BUY",
+            }
+        )
+
+    def test_p4_wire_001_partially_filled_carries_split_fills(self) -> None:
+        result = self._place("cli-broker-partial-1", "key-broker-partial-1")
+        self.assertEqual(result.status, "ok")
+        envelope = result.events[0]
+        payload = envelope["payload"]
+        self.assertEqual(payload["status"], "partially_filled")
+        self.assertEqual(payload["broker_status_raw"], "partially_filled")
+        self.assertEqual(len(payload["fills"]), 2)
+        fill_ids = {fill["broker_fill_id"] for fill in payload["fills"]}
+        self.assertEqual(fill_ids, {"TR-FL-0010", "TR-FL-0011"})
+        self.assertEqual(sum(fill["quantity"] for fill in payload["fills"]), 40)
+        self.assertEqual(envelope["source_record_id"], "TR-PART-0001")
+        self.assertEqual(envelope["provider_metadata"]["provider_id"], "tradier.paper")
+
+    def test_p4_wire_002_accepted_maps_open_ack(self) -> None:
+        result = self._place("cli-broker-accepted-1", "key-broker-accepted-1")
+        self.assertEqual(result.status, "ok")
+        payload = result.events[0]["payload"]
+        self.assertEqual(payload["status"], "accepted")
+        self.assertEqual(payload["broker_status_raw"], "open")
+        self.assertNotIn("fills", payload)
+        # accepted is a real IMP state: ACTIVATED (P4-MAP-001)
+        self.assertEqual(map_broker_status("accepted"), "ACTIVATED")
+        self.assertNotIn("fills", payload)
+
+    def test_p4_wire_003_expired_is_terminal_without_fills(self) -> None:
+        result = self._place("cli-broker-expired-1", "key-broker-expired-1")
+        self.assertEqual(result.status, "ok")
+        payload = result.events[0]["payload"]
+        self.assertEqual(payload["status"], "expired")
+        self.assertEqual(payload["broker_status_raw"], "expired")
+        self.assertNotIn("fills", payload)
+
+    def test_p4_wire_004_lifecycle_fixture_records_are_distinct(self) -> None:
+        store = TradierReplayStore.load()
+        for operation in ("place_order",):
+            count = sum(1 for r in store._records if r["operation"] == operation)
+        self.assertGreaterEqual(count, 7)
+
+
 if __name__ == "__main__":
     unittest.main()

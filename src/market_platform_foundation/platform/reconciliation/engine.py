@@ -265,7 +265,10 @@ def build_reconciliation_report(
         for row in ledger_orders
         if row.get("broker_order_id")
     }
-    for snapshot in sorted(order_snapshots, key=lambda row: row.broker_order_id):
+    for snapshot in sorted(
+        {s.broker_order_id: s for s in order_snapshots}.values(),
+        key=lambda row: row.broker_order_id,
+    ):
         if snapshot.broker_order_id in ledger_broker_ids:
             continue
         field = _field(

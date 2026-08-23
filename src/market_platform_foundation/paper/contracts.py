@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from decimal import Decimal
+import math
 from typing import Any
 
 from ..canonical import canonical_bytes, sha256_bytes
@@ -36,7 +37,6 @@ ORDER_LIFECYCLE_STATES: tuple[str, ...] = (
 
 ORDER_LIFECYCLE_TERMINAL_STATES: tuple[str, ...] = (
     "FILLED",
-    "PARTIALLY_FILLED",
     "CANCELLED",
     "REJECTED",
     "EXPIRED",
@@ -137,8 +137,24 @@ def build_user_order_intent(
         raise ValueError("ORDER_SIDE_INVALID")
     if order_type not in ORDER_TYPES:
         raise ValueError("ORDER_TYPE_INVALID")
-    if quantity <= 0:
+    # Fail closed against adversarial numerics: NaN bypasses every ordering
+    # comparison and a float/bool quantity would poison content-derived ids
+    # and downstream int() coercions.
+    if (
+        not isinstance(quantity, int)
+        or isinstance(quantity, bool)
+        or quantity <= 0
+    ):
         raise ValueError("ORDER_QUANTITY_INVALID")
+    if limit_price_minor is not None and (
+        not isinstance(limit_price_minor, int)
+        or isinstance(limit_price_minor, bool)
+        or not math.isfinite(limit_price_minor)
+        or limit_price_minor < 0
+    ):
+        raise ValueError("ORDER_LIMIT_PRICE_INVALID")
+    if not isinstance(observation_time, int) or isinstance(observation_time, bool):
+        raise ValueError("ORDER_OBSERVATION_TIME_INVALID")
     if research_candidate_id is not None:
         _validate_research_candidate_id(research_candidate_id)
     direction = direction_from_side(side)

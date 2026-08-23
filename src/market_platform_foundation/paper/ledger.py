@@ -30,6 +30,25 @@ EVENT_TYPES: tuple[str, ...] = (
 )
 
 
+OPEN_ORDER_STATES: frozenset[str] = frozenset({"ACTIVATED", "WORKING", "PARTIALLY_FILLED"})
+
+
+def order_state_open_count_delta(prior_state: str | None, next_state: str) -> int:
+    """Pure open-order-count delta for one OrderStateChanged transition.
+
+    Mirrors the replay accounting in ``local_state/startup.py`` (+1 when the
+    order enters an open state, -1 when it enters a terminal state) so a
+    live-maintained counter and a replayed ledger agree. ``startup.py`` can
+    adopt this helper for its replay loop in a later change; keeping it pure
+    here means both call sites share one derivation with no ledger coupling.
+    ``prior_state=None`` models an order's first observed transition (the
+    implicit OrderStateChanged appended by ``append_order``).
+    """
+    before = 1 if prior_state in OPEN_ORDER_STATES else 0
+    after = 1 if next_state in OPEN_ORDER_STATES else 0
+    return after - before
+
+
 @dataclass
 class PaperExecutionLedger:
     """Immutable event log with derived portfolio projections."""
@@ -322,10 +341,14 @@ class PaperExecutionLedger:
     ) -> dict[str, Any]:
         """Append a validated OrderStateChanged transition (broker paper path).
 
-        Additive: the internal simulator path never calls this. Optional
-        ``broker_order_id`` (known only after broker submission) is attached to
-        the governing state event so projections and the execution trace can
-        resolve it.
+        Maintains ``open_order_count`` from the prior_state→state pair so the
+        max_open_orders risk gate observes BROKER_PAPER lifecycle progress
+        (SUBMITTED → WORKING/ACTIVATED → terminal) and not just the internal
+        simulator's synchronous append. The derivation lives in the pure
+        module-level helper so startup replay can share it.
+        Optional ``broker_order_id`` (known only after broker submission) is
+        attached to the governing state event so projections and the execution
+        trace can resolve it.
         """
         validate_order_transition(prior_state=prior_state, next_state=state)
         payload: dict[str, Any] = {
@@ -336,6 +359,7 @@ class PaperExecutionLedger:
         }
         if broker_order_id:
             payload["broker_order_id"] = broker_order_id
+        self.open_order_count = max(0, self.open_order_count + order_state_open_count_delta(prior_state, state))
         return self._append("OrderStateChanged", payload)
 
     def project_fills(self) -> list[dict[str, Any]]:
@@ -481,25 +505,19 @@ class PaperExecutionLedger:
         return None
 
     def cancel_order(self, *, order_id: str, prior_state: str) -> dict[str, Any]:
-        validate_order_transition(prior_state=prior_state, next_state="CANCEL_PENDING")
-        self._append(
-            "OrderStateChanged",
-            {
-                "order_id": order_id,
-                "prior_state": prior_state,
-                "reason_codes": ["ORDER_CANCEL_REQUESTED"],
-                "state": "CANCEL_PENDING",
-            },
+        # Routed through append_order_state (not raw _append) so the cancel
+        # transitions adjust open_order_count like every other lifecycle move.
+        self.append_order_state(
+            order_id=order_id,
+            state="CANCEL_PENDING",
+            prior_state=prior_state,
+            reason_codes=["ORDER_CANCEL_REQUESTED"],
         )
-        validate_order_transition(prior_state="CANCEL_PENDING", next_state="CANCELLED")
-        self._append(
-            "OrderStateChanged",
-            {
-                "order_id": order_id,
-                "prior_state": "CANCEL_PENDING",
-                "reason_codes": ["ORDER_CANCELLED"],
-                "state": "CANCELLED",
-            },
+        self.append_order_state(
+            order_id=order_id,
+            state="CANCELLED",
+            prior_state="CANCEL_PENDING",
+            reason_codes=["ORDER_CANCELLED"],
         )
         order = self.lookup_order(order_id)
         if order is None:
@@ -726,8 +744,10 @@ class PaperExecutionLedger:
                 },
             )
             state = str(order.get("state", ""))
-            if state in {"ACTIVATED", "PARTIALLY_FILLED"}:
-                self.open_order_count += 1
+            # The implicit first transition of a submitted order has no prior
+            # state; the shared pure helper keeps this counter consistent with
+            # append_order_state and with startup replay.
+            self.open_order_count = max(0, self.open_order_count + order_state_open_count_delta(None, state))
             return self._append(
                 "OrderStateChanged",
                 {
@@ -736,11 +756,12 @@ class PaperExecutionLedger:
                     "state": state,
                 },
             )
-
     def append_fill(self, fill: dict[str, Any], *, order: dict[str, Any]) -> dict[str, Any]:
         with self.atomic_append():
-            if self.open_order_count > 0:
-                self.open_order_count -= 1
+            # open_order_count is maintained exclusively by order-state
+            # transitions (entering an open state / entering a terminal
+            # state). Decrementing here double-counted fills that arrive with
+            # or after the FILLED transition on the broker paper path.
             self._append(
                 "FillRecorded",
                 {

@@ -121,13 +121,17 @@ class BrokerFillEvent:
 
     @classmethod
     def from_record(cls, record: dict[str, Any], *, broker_order_id: str) -> BrokerFillEvent:
+        if record.get("event_time_ns") is None:
+            # Fill timestamps are identity-bearing (see ensure_broker_fill_ids):
+            # a fill without one must fail closed, never coerce to 0.
+            raise ValueError("BROKER_FILL_TIMESTAMP_MISSING")
         return cls(
             broker_fill_id=str(record["broker_fill_id"]),
             broker_order_id=broker_order_id,
-            event_time_ns=int(record.get("event_time_ns", 0)),
+            event_time_ns=int(record["event_time_ns"]),
             price_minor=int(record["price_minor"]),
             quantity=int(record["quantity"]),
-            receive_time_ns=int(record.get("receive_time_ns", record.get("event_time_ns", 0))),
+            receive_time_ns=int(record.get("receive_time_ns", record["event_time_ns"])),
         )
 
 
@@ -448,6 +452,8 @@ def ensure_broker_fill_ids(status_event: BrokerOrderStatusEvent) -> BrokerOrderS
         body = {
             "broker_order_id": fill.broker_order_id,
             "index": index,
+            "event_time_ns": fill.event_time_ns,
+            "receive_time_ns": fill.receive_time_ns,
             "price_minor": fill.price_minor,
             "quantity": fill.quantity,
         }

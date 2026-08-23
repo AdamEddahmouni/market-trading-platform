@@ -18,14 +18,38 @@ from .ledger import PaperExecutionLedger
 TERMINAL_ORDER_STATES = ORDER_LIFECYCLE_TERMINAL_STATES
 
 
+def _ledger_simulator(ledger: PaperExecutionLedger) -> BarConservativeSimulator:
+    """One ``BarConservativeSimulator`` per ledger session (E9).
+
+    Participation-cap allocations live in the simulator instance
+    (``_bar_allocations``, keyed by bar fill time). Constructing a fresh
+    simulator per call let every submission on the same bar re-consume the
+    full cap; holding one per ledger keeps INTERNAL_SIMULATION accounting
+    cumulative across submissions, exactly like the ledger itself.
+    """
+    existing = getattr(ledger, "_bar_simulator", None)
+    if isinstance(existing, BarConservativeSimulator):
+        return existing
+    simulator = BarConservativeSimulator(policy=ledger.policy)
+    ledger._bar_simulator = simulator  # noqa: SLF001 — same-package session cache
+    return simulator
+
+
 def execute_order_intent(
     *,
     intent: dict[str, Any],
     ledger: PaperExecutionLedger,
     bars: list[dict[str, Any]],
     squeeze_context: dict[str, Any] | None = None,
+    simulator: BarConservativeSimulator | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any] | None]:
-    """Canonical risk + simulator path shared by preview and submit."""
+    """Canonical risk + simulator path shared by preview and submit.
+
+    Submissions share one per-ledger simulator so participation-cap
+    allocations accumulate across orders filling on the same bar (E9).
+    ``simulator`` overrides that cache for dry-run callers (preview) whose
+    fills are never recorded and therefore must not consume bar capacity.
+    """
     projection = ledger._project_ledger()
     decision = evaluate_risk(
         intent=intent,
@@ -34,8 +58,7 @@ def execute_order_intent(
         current_position_shares=int(projection["position_shares"]),
         open_order_count=ledger.open_order_count,
     )
-    simulator = BarConservativeSimulator(policy=ledger.policy)
-    order, fill = simulator.simulate(
+    order, fill = (simulator or _ledger_simulator(ledger)).simulate(
         intent=intent,
         risk_decision=decision,
         bars=bars,
@@ -162,11 +185,14 @@ def preview_interactive_order(
         idempotency_key=idempotency_key,
         correlation_id=correlation_id,
     )
+    # Dry-run: a preview fill is never recorded, so it must not consume the
+    # session's per-bar participation capacity (E9) — use a throwaway simulator.
     decision, order, fill = execute_order_intent(
         intent=intent,
         ledger=ledger,
         bars=bars,
         squeeze_context=squeeze_context,
+        simulator=BarConservativeSimulator(policy=ledger.policy),
     )
     return _build_preview_envelope(
         ledger=ledger,
@@ -286,7 +312,13 @@ def cancel_interactive_order(
             "state": state,
             "terminal": True,
         }
-    if state in {"CREATED", "ACTIVATED", "WORKING"}:
+    # CREATED is deliberately absent (E11): paper/contracts.py
+    # VALID_ORDER_TRANSITIONS defines no CREATED -> CANCEL_PENDING edge, so a
+    # cancel of a CREATED order would raise ORDER_TRANSITION_INVALID inside
+    # ledger.cancel_order anyway. Fall through to the explicit
+    # PAPER_ORDER_CANCEL_INVALID_STATE sentinel below — the same observable
+    # behaviour as the BROKER_PAPER path in broker_paper.py.
+    if state in {"ACTIVATED", "WORKING"}:
         cancelled = ledger.cancel_order(order_id=order_id, prior_state=state)
         return {
             "duplicate": False,
@@ -305,6 +337,7 @@ def execute_normalized_intent_for_parity(
     current_position_shares: int = 0,
     open_order_count: int = 0,
     squeeze_context: dict[str, Any] | None = None,
+    simulator: BarConservativeSimulator | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any] | None]:
     """Dry-run canonical execution for parity tests (no ledger writes)."""
     from ..risk.kill_switch import KillSwitchState
@@ -317,7 +350,10 @@ def execute_normalized_intent_for_parity(
         current_position_shares=current_position_shares,
         open_order_count=open_order_count,
     )
-    simulator = BarConservativeSimulator(policy=policy)
+    # Fresh instance by default keeps historical dry-run semantics (zero
+    # starting allocations); callers replaying a whole session can thread one
+    # shared simulator through to mirror INTERNAL_SIMULATION accumulation (E9).
+    simulator = simulator or BarConservativeSimulator(policy=policy)
     order, fill = simulator.simulate(
         intent=normalized,
         risk_decision=decision,

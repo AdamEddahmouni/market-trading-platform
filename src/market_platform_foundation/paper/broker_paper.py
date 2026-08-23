@@ -16,12 +16,13 @@ from ..providers.broker_execution import (
     BrokerOrderStatusEvent,
     build_broker_order,
     build_canonical_order_id,
+    ensure_broker_fill_ids,
     is_ambiguous_broker_status,
     map_broker_status,
     normalize_broker_fill,
 )
 from ..risk.decision import evaluate_risk
-from .contracts import build_user_order_intent
+from .contracts import ORDER_LIFECYCLE_TERMINAL_STATES, build_user_order_intent, validate_order_transition
 from .ledger import PaperExecutionLedger
 
 
@@ -289,6 +290,176 @@ def _broker_events_ambiguous(result: Any) -> bool:
     return is_ambiguous_broker_status(str(payload.get("status", "")))
 
 
+# Coarse forward-rank over the IMP order ladder, used only to drop lifecycle
+# states a polled order has already passed. Equal ranks (WORKING/ACTIVATED,
+# terminal states) are considered "not behind" so same-state re-polls stay
+# representable.
+_LIFECYCLE_RANK: dict[str, int] = {
+    "SUBMITTED": 0,
+    "WORKING": 1,
+    "ACTIVATED": 1,
+    "PARTIALLY_FILLED": 2,
+    "CANCEL_PENDING": 3,
+    "FILLED": 4,
+    "CANCELLED": 4,
+    "REJECTED": 4,
+    "EXPIRED": 4,
+}
+
+
+def _pending_lifecycle_states(current_state: str, target_path: list[str]) -> list[str]:
+    """Suffix of ``target_path`` the order in ``current_state`` has not reached.
+
+    Polls return cumulative broker state: an order already PARTIALLY_FILLED
+    re-mapped through ``ACTIVATED`` must not replay ``ACTIVATED``, and a
+    re-observed current state is idempotent (no duplicate transition event).
+    """
+    ceiling = len(_LIFECYCLE_RANK)
+    rank = _LIFECYCLE_RANK.get(current_state, ceiling)
+    forward = [s for s in target_path if _LIFECYCLE_RANK.get(s, ceiling) >= rank]
+    if forward and forward[0] == current_state:
+        forward = forward[1:]
+    return forward
+
+
+def apply_broker_status_event(
+    *,
+    ledger: PaperExecutionLedger,
+    provider: Any,
+    order_id: str,
+) -> dict[str, Any]:
+    """Poll the broker once and apply the observed ORDER_STATUS to a live order.
+
+    Nothing consumed ``fetch_order`` after submission (E1b), so an order that
+    reached the broker as partially_filled and only completed later froze in
+    PARTIALLY_FILLED forever. This orchestrator closes that loop:
+
+    - the polled canonical status is mapped through ``_broker_lifecycle_path``
+      and applied via ``append_order_state``, skipping states already recorded;
+    - fills are deduped on ``broker_fill_id`` (brokers replay cumulative fill
+      lists on every poll), so each fill is applied exactly once;
+    - it fails closed: malformed payloads, unmapped statuses, or invalid fills
+      raise ValueError with the ledger untouched (all validation happens
+      before the first append).
+    """
+    if ledger.execution_mode != "BROKER_PAPER":
+        raise ValueError("PAPER_EXECUTION_BROKER_MODE_INVALID")
+    if ledger.execution_authority not in PAPER_EXECUTION_AUTHORITIES:
+        raise ValueError("PAPER_EXECUTION_NOT_AUTHORIZED")
+
+    order = ledger.lookup_order(order_id)
+    if order is None:
+        raise ValueError("PAPER_ORDER_NOT_FOUND")
+    state = str(order.get("state", ""))
+    if state in ORDER_LIFECYCLE_TERMINAL_STATES:
+        return {
+            "advanced": False,
+            "order": order,
+            "order_id": order_id,
+            "previous_state": state,
+            "state": state,
+            "terminal": True,
+        }
+
+    broker_order_id = str(order.get("broker_order_id") or "")
+    if not broker_order_id:
+        raise ValueError("BROKER_ORDER_ID_UNKNOWN")
+
+    result = provider.fetch_order(broker_order_id)
+    status = str(getattr(result, "status", "error"))
+    reason_code = getattr(result, "reason_code", None)
+    if status == "ambiguous":
+        # No blind advance; the next successful poll resolves the drift.
+        return {
+            "advanced": False,
+            "ambiguous": True,
+            "order_id": order_id,
+            "previous_state": state,
+            "reason_code": reason_code or "BROKER_AMBIGUOUS_OUTCOME",
+        }
+    if status != "ok":
+        # Transport outage / provider error: no mutation, safe to re-poll.
+        return {
+            "advanced": False,
+            "order_id": order_id,
+            "previous_state": state,
+            "provider_status": status,
+            "reason_code": reason_code,
+        }
+
+    payload = _first_broker_status_payload(result)
+    if payload is None:
+        raise ValueError("BROKER_NO_STATUS")
+
+    try:
+        status_event = ensure_broker_fill_ids(BrokerOrderStatusEvent.from_record(payload))
+        target = map_broker_status(status_event.status)
+    except (KeyError, ValueError, TypeError) as exc:
+        raise ValueError(f"BROKER_STATUS_EVENT_INVALID: {exc}") from exc
+
+    # Pre-validate the whole transition chain before touching the ledger.
+    pending_states = _pending_lifecycle_states(state, _broker_lifecycle_path(target))
+    prior = state
+    for next_state in pending_states:
+        validate_order_transition(prior_state=prior, next_state=next_state)
+        prior = next_state
+
+    # Normalize + validate every new fill before any mutation.
+    known_fill_ids = {
+        str(existing["broker_fill_id"])
+        for existing in ledger.project_fills()
+        if existing.get("broker_fill_id")
+    }
+    new_fills: list[dict[str, Any]] = []
+    seen_in_event: set[str] = set()
+    for fill_event in status_event.fills:
+        broker_fill_id = str(fill_event.broker_fill_id)
+        if not broker_fill_id or broker_fill_id in known_fill_ids or broker_fill_id in seen_in_event:
+            continue
+        seen_in_event.add(broker_fill_id)
+        if int(fill_event.quantity) <= 0:
+            raise ValueError(f"BROKER_FILL_QUANTITY_INVALID: {broker_fill_id}")
+        if int(fill_event.price_minor) < 0:
+            raise ValueError(f"BROKER_FILL_PRICE_INVALID: {broker_fill_id}")
+        if int(fill_event.event_time_ns) > int(fill_event.receive_time_ns):
+            # Bitemporal sanity: a broker-side execution cannot be observed
+            # before it happened (event_time <= receive_time, E1b gap mining).
+            raise ValueError(f"BROKER_FILL_TIME_INVERSION: {broker_fill_id}")
+        new_fills.append(
+            normalize_broker_fill(
+                fill_event,
+                order_id=order_id,
+                instrument_id=str(order.get("instrument_id", "")),
+                direction=str(order.get("direction", "")),
+            )
+        )
+
+    prior = state
+    for next_state in pending_states:
+        ledger.append_order_state(
+            order_id=order_id,
+            state=next_state,
+            prior_state=prior,
+            broker_order_id=broker_order_id,
+        )
+        prior = next_state
+    for fill in new_fills:
+        ledger.append_fill(fill, order=ledger.lookup_order(order_id))
+
+    final_order = ledger.lookup_order(order_id)
+    final_state = str((final_order or {}).get("state", prior))
+    return {
+        "advanced": bool(pending_states or new_fills),
+        "applied_states": pending_states,
+        "broker_status": status_event.status,
+        "fills": new_fills,
+        "order": final_order,
+        "order_id": order_id,
+        "previous_state": state,
+        "state": final_state,
+    }
+
+
 def cancel_broker_paper_order(
     *,
     ledger: PaperExecutionLedger,
@@ -323,7 +494,12 @@ def cancel_broker_paper_order(
             "state": state,
             "terminal": True,
         }
-    if state not in {"CREATED", "ACTIVATED", "WORKING", "SUBMITTED"}:
+    # CREATED is deliberately absent (E11): paper/contracts.py
+    # VALID_ORDER_TRANSITIONS defines no CREATED -> CANCEL_PENDING edge, so a
+    # cancel here would raise ORDER_TRANSITION_INVALID inside ledger.cancel_order
+    # only *after* the provider.cancel_order call had already hit the broker.
+    # Fail closed before any provider call, consistently with the INTERNAL path.
+    if state not in {"ACTIVATED", "WORKING", "SUBMITTED"}:
         raise ValueError(f"PAPER_ORDER_CANCEL_INVALID_STATE: {state}")
 
     if not hasattr(provider, "cancel_order"):
@@ -361,6 +537,7 @@ def cancel_broker_paper_order(
 
 
 __all__ = [
+    "apply_broker_status_event",
     "cancel_broker_paper_order",
     "submit_broker_paper_order",
 ]
