@@ -127,8 +127,11 @@ admission stream degraded for the interval.
 Model-level outputs are exactly: `PREDICTED`, `ABSTAINED_MODEL(FLAT_BAND |
 INSUFFICIENT_TRADES | STALE_INPUT)`. Recorder/system-level outcomes are exactly:
 `SKIPPED_QUALITY`, `SKIPPED_SYSTEM`, `DUPLICATE_BUCKET`, `NO_OPEN_RUN`,
-`RECORDING_DISABLED`, `OUTSIDE_RUN_WINDOW`. Model abstentions and system skips are never
-merged; coverage reporting depends on the distinction.
+`RECORDING_DISABLED`, `OUTSIDE_RUN_WINDOW`, `OUTSIDE_SESSION_WINDOW`. Model abstentions
+and system skips are never merged; coverage reporting depends on the distinction.
+`OUTSIDE_SESSION_WINDOW`: any decision opportunity (dense or primary) whose
+`target_time + horizon_tolerance` would cross the 16:00 ET regular-session close is
+skipped - no prediction may label against after-hours trading (section 7.1).
 
 ## 7. Target variable (frozen before open)
 
@@ -155,6 +158,32 @@ Labelability policy (no silent substitution, ever):
 | `UNLABELABLE_PROVIDER_GAP` | runtime reports disconnect/degraded spanning the lookup |
 
 The maximum horizon tolerance is 5 minutes. A trade 45 minutes late is never used.
+
+### 7.1 Session boundary (frozen)
+
+All times are `America/New_York`. Eligible sessions are official regular sessions
+(09:30-16:00 ET) on exchange-calendar trading days. The run manifest embeds, frozen at
+open: the explicit list of expected trading dates within the run's maximum 8-session
+span, the NYSE/Nasdaq holiday dates falling in that span, and an exclusion of any
+early-close date (early-close sessions cannot host a full grid and are excluded from
+eligible sessions entirely). No decision opportunity - dense or primary - may have
+`target_time + tolerance` beyond 16:00 ET of its session; such opportunities resolve
+`OUTSIDE_SESSION_WINDOW` before prediction. Every label therefore lives inside one
+regular session's data regime.
+
+### 7.2 Instrument provenance (frozen)
+
+Run 1 instrument context, bound into the manifest and repeated in every report header:
+
+- BIYA (Nasdaq-listed); **1-for-10 reverse split effective 2026-07-13**. Any report that
+  compares across the split boundary must annotate it; price-series comparisons never
+  mix pre-/post-split levels silently.
+- Liquidity regime note: post-squeeze activity fell to roughly 50k-150k shares/day on
+  several August 2026 sessions (vs tens of millions during the July spike).
+  `INSUFFICIENT_TRADES` abstentions may be common; this is expected observation, not
+  failure. The low-activity regime is itself part of what Run 1 observes - which is
+  precisely why the stopping rule (section 13) is defined on scheduled opportunities,
+  never on emitted predictions.
 
 ## 8. Run manifest (the scientific contract)
 
@@ -197,7 +226,8 @@ run id. There is no mutation path.
 
 Lifecycle: `CREATED -> OPEN -> CLOSED -> LABELING -> FULLY_LABELED -> REPORTED`
 (`close` is explicit via CLI or automatic at the frozen boundary; `report` may run
-provisionally before `FULLY_LABELED` and must then say so).
+provisionally before `FULLY_LABELED` and must then say so). Lifecycle changes are
+append-only events; current state is derived from them (section 9).
 
 ## 9. Opportunity ledger (every eligible outcome durably recorded)
 
@@ -225,13 +255,24 @@ composition compatibility).
 append-only inserts only - no UPDATE/DELETE anywhere):
 
 ```sql
-runs(run_id PRIMARY KEY, manifest_json, manifest_hash, state, created_at_ns, closed_at_ns)
+run_contract(run_id PRIMARY KEY, manifest_json, manifest_hash, created_at_ns)
+            -- immutable scientific contract; no mutable columns
+run_events(id PRIMARY KEY, run_id, event_type, occurred_at_ns, detail_json,
+           UNIQUE(run_id, event_type, occurred_at_ns))
+           -- append-only lifecycle log: CREATED/OPEN/CLOSED/LABELING/
+           -- FULLY_LABELED/REPORTED; run state is always derived from the
+           -- latest event, never stored as an updatable field
 decisions(id PRIMARY KEY, run_id, instrument_id, decision_bucket, outcome,
           prediction_id NULL REFERENCES ShadowStore predictions, detail_json,
           record_hash, created_at_ns,
           UNIQUE(run_id, instrument_id, decision_bucket))
 recorder_errors(id PRIMARY KEY, run_id, occurred_at_ns, error_code, detail_json)
 ```
+
+Lifecycle transitions are appended events under tightly constrained transitions
+(forward-only); the invariant is that **nothing can rewrite what the system claimed to
+know at T0** - decision-time facts, the contract, and future outcomes live in separate
+immutable rows.
 
 `prediction_id` is set exactly when `outcome = 'PREDICTED'` and joins to the
 `ShadowStore` prediction; labels remain in `ShadowStore` (insert-once per
@@ -282,16 +323,48 @@ Every report carries: the section-2 terminology block, the observational-source/
 execution-authority provenance statement, and - unless state is `FULLY_LABELED` - an
 explicit provisional-results banner.
 
-## 13. Stopping rule (frozen before open)
+## 13. Stopping rule (frozen before open, unambiguous Boolean semantics)
 
-Run 1 closes at whichever comes first:
+Definitions:
 
-- **5 complete regular US trading sessions** with the recorder enabled, or
-- **65 primary-grid observations**, i.e. 65 labeled non-overlapping grid decisions, or
-- an absolute maximum of **8 elapsed regular sessions** (guards halts/holidays).
+- **Eligible session**: an exchange regular session (section 7.1) during which the
+  recorder was enabled and the runtime achieved at least `DEGRADED` coverage
+  (section 13.1).
+- **Scheduled primary-grid opportunity**: a grid slot (30-minute anchor from session
+  open) that fell within regular hours with the recorder enabled - regardless of whether
+  it produced a prediction, abstention, or skip. This is deliberately
+  outcome-independent: abstention patterns can never change when the experiment stops.
 
-No extension is permitted based on observed results (optional-stopping bias). The rule
-is bound in the manifest at open.
+Rule - all three clauses:
+
+```text
+STOP when (complete_sessions >= 5) AND (scheduled_grid_opportunities >= 65),
+OR unconditionally when elapsed_regular_sessions >= 8.
+```
+
+`65` counts scheduled primary-grid opportunities only. It never counts emitted
+predictions, model abstentions, or successful labels.
+
+### 13.1 Session completeness
+
+Per eligible session, computed from admitted-trade observation coverage of RTH minutes:
+
+| Class | Rule |
+|---|---|
+| `COMPLETE` | trade-present minutes >= 90% of session minutes AND no single gap >= 15 min |
+| `DEGRADED` | fails COMPLETE but total gap time <= 30 min |
+| `INCOMPLETE` | anything else |
+
+Only `COMPLETE` sessions count toward the "5 complete sessions" clause. Dense-set rows
+from `DEGRADED`/`INCOMPLETE` sessions remain in operational evidence; primary-grid
+observations from non-COMPLETE sessions are excluded from the primary evaluation set by
+this preregistered rule (never by post-hoc choice).
+
+### 13.2 Capture provenance for labels
+
+Each label's annotation records `capture_id` and, once the capture is sealed at session
+end, the sealed capture manifest digest (`{capture_id}.manifest.json` SHA-256) - immutable
+integrity identification of exactly which recorded material produced the outcome.
 
 ## 14. Kickoff sequence (order is mandatory)
 
@@ -323,15 +396,24 @@ observations; a changed constant is a new run.
 
 ## 16. Testing and validation
 
+**Frozen constants during implementation:** the +-0.15 bands, `<10 trades` minimum,
+5-minute window, probability transform, 30-minute horizon, and 60-second buckets are
+frozen by this spec. If implementation reveals they behave poorly (e.g., frequent
+abstention in BIYA's current low-liquidity regime), that observation is itself Run 1
+evidence - never a trigger to change constants inside this run. A changed constant is a
+new preregistered run.
+
 unittest suites under `tests/shadow/`: predictor purity, band/mapping edges (nss exactly
-+-0.15, clip bounds, zero volume), all abstain/skip taxonomy separation, availability-time
-eligibility (late-arrival exclusion), bucket determinism/idempotence across restarts,
-ledger uniqueness enforcement, runtime inertness when disabled, recorder-failure isolation
-and health fields, labeler tolerance/zero/unlabelable policies, causality interplay with
-`attach_label`, CLI smoke (open/status/close/label-due/report), manifest immutability
-(open-twice verification), stopping-rule boundary logic. Validation ladder per AGENTS.md:
-`validate.py changed` after edits, `full` at the pre-open checkpoint (step 14.2). No
-`validation_manifest.json` edit.
++-0.15, clip bounds, zero volume), all abstain/skip taxonomy separation,
+availability-time eligibility (late-arrival exclusion), bucket determinism/idempotence
+across restarts, ledger uniqueness enforcement, runtime inertness when disabled,
+recorder-failure isolation and health fields, labeler tolerance/zero/unlabelable
+policies, session-boundary guard (`OUTSIDE_SESSION_WINDOW` near the close), calendar/
+early-close exclusion, stopping-rule Boolean boundary logic, session-completeness
+classification, causality interplay with `attach_label`, CLI smoke
+(open/status/close/label-due/report), manifest immutability (open-twice verification).
+Validation ladder per AGENTS.md: `validate.py changed` after edits, `full` at the
+pre-open checkpoint (step 14.2). No `validation_manifest.json` edit.
 
 ## 17. Deliberate exclusions
 
