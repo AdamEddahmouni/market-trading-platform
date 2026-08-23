@@ -1,1 +1,0 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/smoke.test.ts","./src/api/client.ts","./src/components/contextbar.tsx","./src/components/explanationdrawer.tsx","./src/components/inspectorpanel.tsx","./src/components/navshell.tsx","./src/components/nowpage.tsx","./src/components/workspacepage.tsx"],"errors":true,"version":"5.9.3"}
