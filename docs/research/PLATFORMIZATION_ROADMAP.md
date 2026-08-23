@@ -20,9 +20,9 @@ with governed Phases 0–16.
 | **P3.1** | Live internal paper on admitted L1, operator instrument, restart marks | **COMPLETE_WITH_LIMITATIONS** — [P3.1 closure](../superpowers/specs/2026-08-21-platform-p31-live-execution-closure.md) |
 | **P3.2** | Unified live decision workstation (`/workspace/{symbol}/evidence`, What Matters Now, evidence drawer) | **COMPLETE** — [P3.2](../superpowers/specs/2026-08-21-platform-p32-unified-live-workstation.md) |
 | **P3.3** | Finviz Elite discovery, prospective PIT capture, decision-research foundation | **COMPLETE** — [P3.3](../superpowers/specs/2026-08-21-platform-p33-finviz-discovery-research.md) · [DECISION-RESEARCH-001 milestone A](../superpowers/specs/2026-08-22-decision-research-001-design.md) (OOS gate PASS) |
-| **P4** | Tradier/Moomoo paper adapters, idempotency, reconciliation | **4A + 4B COMPLETE_WITH_LIMITATIONS** — Tradier sandbox adapter + idempotent submission and the reconciliation engine landed, both gates PASS ([PLATFORM-P4-001](../superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md)); **4C** Moomoo execution not started |
-| **P5** | Hosted platform, security, PROVIDER-COMMERCIAL-001 | Not started |
-| **P6** | Shadow/forward validation | Not started |
+| **P4** | Tradier/Moomoo paper adapters, idempotency, reconciliation | **4A + 4B COMPLETE_WITH_LIMITATIONS** — Tradier sandbox adapter + idempotent submission and the reconciliation engine landed, both gates PASS ([PLATFORM-P4-001](../superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md)); **4C COMPLETE_WITH_LIMITATIONS** — Moomoo paper adapter landed fixture-first (`src/market_platform_foundation/providers/adapters/moomoo_paper.py`), real-wire unconfirmed (OpenD gateway TCP-only); `/paper/broker/*` observability implemented (fixture-level) |
+| **P5** | Hosted platform, security, PROVIDER-COMMERCIAL-001 | **Security foundations landed** (offline-proven): `platform/security/**` config validation/redaction/secret-audit/readiness/model-only roles with `ROLE_ENFORCEMENT_STATUS=MODEL_ONLY_NOT_ENFORCED` (36 tests); hosted deployment and auth enforcement remain a principal decision — not started |
+| **P6** | Shadow/forward validation | **Infrastructure implemented** (offline-proven): `shadow/**` records/store/labeling/metrics/runs — content-hash immutability, causality-enforced labeling, walk-forward leakage guard (23 tests relocated to `tests/platform/test_shadow_p6.py`); **no forward-validation evidence collected** |
 | **LIVE-001** | Production execution (separate authorization) | Blocked |
 
 ### P4 status (2026-08-22)
@@ -75,11 +75,34 @@ audit (`.planning/2026-08-22-platform-p4-broker-paper-code-audit.md`) verified
   PASS** (`evidence/platform/reconciliation-gate-report.json`);
   `tests/platform/test_reconciliation_p4.py` is green (18 tests).
 
-**Limitations / remaining P4 scope:** the `/paper/broker/*` read-only
-observability endpoints (orders/account/positions) are spec'd but not yet
-implemented; wire specifics depend on exercising the real Tradier sandbox and
-are tracked in `docs/providers/TRADIER_PAPER.md`. **4C** (Moomoo execution
-adapter) is not started.
+**Sub-milestone 4C landed (offline, fixture-first):**
+
+- `MoomooPaperExecutionProvider` at
+  `src/market_platform_foundation/providers/adapters/moomoo_paper.py`
+  (18-test module `tests/platform/test_moomoo_paper_p4c.py`), with a
+  composition mutual-exclusion guard against the Tradier broker-paper
+  adapter, a six-gate fail-closed enable matrix, and SIMULATE
+  trade-environment-only operation.
+- Transport is an injectable interface exercised by recorded-replay fixtures.
+  Limitation: the Moomoo OpenAPI is reachable only through the proprietary
+  OpenD gateway (TCP-only), so a stdlib transport is infeasible in this
+  repository; real-wire confirmation requires the proprietary SDK outside the
+  repository. Status: **COMPLETE_WITH_LIMITATIONS** — fixture-proven,
+  real-wire unconfirmed. Fixture tests here are not forward validation.
+
+**Broker observability endpoints landed (fixture-level):**
+
+- Read-only `/paper/broker/*` routes — orders / account / positions /
+  reconciliation / health — implemented in `ui_api/server.py` +
+  `ui_api/broker_projections.py` (18-test module
+  `tests/platform/test_broker_observability_p44.py`), smoke-tested over live
+  HTTP against the disabled stub. Still fixture-level until a Tradier sandbox
+  wire exercise; this is not yet observational-live or execution authority.
+
+**Limitations / remaining P4 scope:** wire specifics for 4A/4B depend on
+exercising the real Tradier sandbox and are tracked in
+`docs/providers/TRADIER_PAPER.md`; 4C real-wire behavior remains unconfirmed
+(OpenD gateway limitation above).
 
 ## Architecture decisions (locked)
 
@@ -108,3 +131,9 @@ adapter) is not started.
 | Duplicate submission under retries | 0 |
 | LIVE execution without `IMP_LIVE_EXECUTION=1` | 0 paths |
 | Unexplained ledger/broker mismatches (P4+) | 0 |
+
+Enforcement (F9, landed): `tools/validate.py` strips `IMP_LIVE_EXECUTION` —
+its `LIVE_GATES["execution"]` entry — from every offline run, so a leaked
+environment value can never arm real execution; `IMP_LIVE_OBSERVATIONAL`
+is stripped the same way offline. Both gates are settable only inside an
+explicit LIVE_EXCLUSIVE child run.

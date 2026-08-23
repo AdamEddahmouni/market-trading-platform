@@ -69,7 +69,7 @@ The existing candidate evidence roots under `evidence/phase0/2E1E…` and
 `evidence/phase0/6B31…` bind older repository subjects. They remain immutable and
 do not establish acceptance for the current repository subject.
 
-## Platformization (P0–P4-4B)
+## Platformization (P0–P4-4C)
 
 Transition from replay-only research UI to a provider-agnostic market
 operating workstation, tracked in the
@@ -87,16 +87,21 @@ operating workstation, tracked in the
 | P4-4B | Broker/ledger reconciliation engine: deterministic reports (`P4-REC-001`), append-only `ReconciliationRecorded` events, `project_risk.reconciliation_status`, zero silent mismatches (`P4-REC-002`), gate PASS — [PLATFORM-P4-001](docs/superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md) |
 
 P4 sub-milestones **4A** (Tradier sandbox broker-paper adapter + idempotent
-submission) and **4B** (broker/ledger reconciliation) are **implemented and
-gate-passing** — offline and fixture-first; the 4A and 4B gate tools report
-aggregate PASS (`evidence/platform/broker-paper-gate-report.json`,
-`evidence/platform/reconciliation-gate-report.json`), with spec and
-code-grounded audit in [PLATFORM-P4-001](docs/superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md)
-and `.planning/2026-08-22-platform-p4-broker-paper-code-audit.md`. Limitation:
-the `/paper/broker/*` observability endpoints remain spec'd, not implemented.
-Not started: P4-4C (Moomoo execution), P5 (hosted platform,
-`PROVIDER-COMMERCIAL-001`), P6 (shadow/forward validation). Production
-execution (`LIVE-001`) is blocked pending separate authorization.
+submission), **4B** (broker/ledger reconciliation), and **4C** (Moomoo paper
+adapter) plus the `/paper/broker/*` read-only observability endpoints
+(orders/account/positions/reconciliation/health) are **implemented** —
+offline and fixture-first; the 4A and 4B gate tools report aggregate PASS
+(`evidence/platform/broker-paper-gate-report.json`,
+`evidence/platform/reconciliation-gate-report.json`). Limitations: 4A/4B wire
+specifics depend on exercising the real Tradier sandbox (tracked in
+[Tradier provider notes](docs/providers/TRADIER_PAPER.md)); 4C is
+fixture-proven only — the Moomoo OpenAPI is reachable solely through the
+proprietary OpenD gateway (TCP-only), so real-wire behavior remains
+unconfirmed. P5 status: neutral security foundations landed
+(`ROLE_ENFORCEMENT_STATUS=MODEL_ONLY_NOT_ENFORCED`); hosted deployment and
+auth enforcement are not started. P6 status: shadow/forward-validation
+infrastructure landed; no forward-validation evidence has been collected.
+Production execution (`LIVE-001`) is blocked pending separate authorization.
 
 ## Revision 3 guidance
 

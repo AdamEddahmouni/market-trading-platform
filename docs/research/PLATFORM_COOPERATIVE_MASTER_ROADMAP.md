@@ -777,11 +777,42 @@ See `MARKET_CONTEXT_TARGET_ARCHITECTURE.md`, `FIVE_LANE_ROADMAP_RECONCILIATION.m
 | Futures | TREASURY/METALS family plugins or M9 macro conditioning | F11-S1 PASS (ES + CL/ENERGY) |
 | Order Flow | LOB ML beyond M8 OF12 baseline | OF12-S1 PASS (fixture) |
 | SS | Live lending ingest wiring | Vendor authorization |
-| Platform | P0 bitemporal store / P1 catalyst runtime | DONE (fixture) |
-| Market Context | MC16→MC7/MC8 synthesis enrichment | DONE (fixture metadata) |
 | Options | Phase B chain history admission + OOS gate re-run | O10-S5 PASS; Phase B scaffold ready |
-| SHARED P4 | Futures outright/curve fusion extension | F8–F10 | DONE (fixture) |
-| Discrepancy | D-01 ignition_state mapping, D-10 deploy mirror | Nothing |
+
+### Landed 2026-08-22 campaign (reconciled out of the table above)
+
+- F9 CI live-gate hardening — `tools/validate.py` `LIVE_GATES["execution"]`
+  strips `IMP_LIVE_EXECUTION` from every offline run (and
+  `IMP_LIVE_OBSERVATIONAL` likewise); gates settable only in an explicit
+  LIVE_EXCLUSIVE child run. [offline/CI-proven]
+- Platform P0/P1 runtime — DONE (fixture-proven).
+- MC16→MC7/MC8 synthesis enrichment — DONE (fixture-proven metadata).
+- SHARED P4 futures outright/curve fusion — DONE (fixture-proven).
+- Discrepancies D-01 (`ignition_state` mapping) and D-10 (deploy mirror sync)
+  — RESOLVED per `SHORT_SQUEEZE_DISCREPANCY_REGISTER.md`.
+- Platformization P4 sub-milestone 4C — Moomoo paper adapter
+  (`src/market_platform_foundation/providers/adapters/moomoo_paper.py`,
+  18-test module `tests/platform/test_moomoo_paper_p4c.py`).
+  [fixture-proven, complete-with-limitations: real-wire unconfirmed — OpenD
+  gateway TCP-only; fixture tests are not forward validation]
+- `/paper/broker/*` read-only observability endpoints
+  (orders/account/positions/reconciliation/health) in `ui_api/server.py` +
+  `ui_api/broker_projections.py`, HTTP-smoke-tested against the disabled stub.
+  [fixture-proven until Tradier sandbox wire exercise]
+- Platformization P5 security foundations — `platform/security/**`
+  config validation/redaction/secret-audit/readiness/model-only roles with
+  `ROLE_ENFORCEMENT_STATUS=MODEL_ONLY_NOT_ENFORCED` (36 tests). [sandbox-proven;
+  enforcement is model-only, hosted deployment/auth not started]
+- Platformization P6 shadow infrastructure — `shadow/**`
+  records/store/labeling/metrics/runs with content-hash immutability,
+  causality-enforced labeling, and a walk-forward leakage guard (23 tests in
+  `tests/platform/test_shadow_p6.py`). [shadow-infrastructure-implemented; no
+  forward-validation evidence collected]
+- O11 0DTE prerequisite scaffolding — `options/zerodte/**`; Phase C admission
+  PENDING and every entry point fails closed. [scaffold only, deferred]
+- Cross-lane portfolio view v1 —
+  `src/market_platform_foundation/cross_lane/portfolio.py::build_portfolio_view`.
+  [fixture-proven]
 
 ---
 
