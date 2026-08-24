@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import unittest
 from pathlib import Path
 
@@ -114,6 +115,82 @@ EXPECTED_PREELIGIBILITY_CHECK_IDS = [
     "PREELIG-NONCIRCULARITY-001",
     "PREELIG-NO-FALSE-EVIDENCE-001",
 ]
+
+EXPECTED_REASON_CODES = {
+    "APPROVAL-CAPACITY-DUPLICATE",
+    "APPROVAL-CAPACITY-EXTRA",
+    "APPROVAL-CAPACITY-MISSING",
+    "APPROVAL-HASH-BINDING-MISMATCH",
+    "APPROVAL-IDENTITY-INVALID",
+    "APPROVAL-NOT-EFFECTIVE",
+    "APPROVAL-PRINCIPAL-MISMATCH",
+    "APPROVAL-WAIVER-ATTEMPT",
+    "BYTE-CANONICAL-MISMATCH",
+    "BYTE-TRAILING-DATA",
+    "BYTE-UTF8-BOM",
+    "BYTE-UTF8-INVALID",
+    "COVERAGE-CLASS-INVALID",
+    "COVERAGE-DUPLICATE-IDENTITY",
+    "COVERAGE-EXTRA-ID",
+    "COVERAGE-ISOLATION-INVALID",
+    "COVERAGE-MISSING-ID",
+    "COVERAGE-SELECTION-CARDINALITY",
+    "GATE-FINAL-RESULT-ID-MISMATCH",
+    "GATE-OUTCOME-MISMATCH",
+    "GATE-PRECEDENCE-MISMATCH",
+    "HASH-CANDIDATE-ROOT-MISMATCH",
+    "HASH-CONTENT-MISMATCH",
+    "HASH-PROCEDURE-MISMATCH",
+    "HASH-REGISTRY-MISMATCH",
+    "HASH-REVIEW-OUTPUT-MISMATCH",
+    "HASH-RUN-MISMATCH",
+    "HASH-SUITE-MISMATCH",
+    "ID-DUPLICATE-SEMANTIC-IDENTITY",
+    "ID-LOGICAL-ID-INVALID",
+    "ID-RECORD-ID-MISMATCH",
+    "INDEX-ABSOLUTE-PATH",
+    "INDEX-DUPLICATE-LOGICAL-ID",
+    "INDEX-DUPLICATE-PATH",
+    "INDEX-EXTRA-MEMBER",
+    "INDEX-FINAL-RESULT-MEMBERSHIP",
+    "INDEX-MEMBER-BYTE-LENGTH-MISMATCH",
+    "INDEX-MEMBER-HASH-MISMATCH",
+    "INDEX-MISSING-MEMBER",
+    "INDEX-NONNORMALIZED-PATH",
+    "INDEX-ROOT-HASH-MISMATCH",
+    "INDEX-ROOT-ID-MISMATCH",
+    "INDEX-SELF-MEMBERSHIP",
+    "INDEX-SHA256-MISMATCH",
+    "INDEX-SYMLINK-OR-REPARSE-ESCAPE",
+    "JSON-DUPLICATE-KEY",
+    "JSON-PARSE-INVALID",
+    "REF-CONTRADICTORY-BINDING",
+    "REF-UNRESOLVED",
+    "REVIEW-AUTHORING-CONTEXT",
+    "REVIEW-CLASS-MISSING",
+    "REVIEW-DISQUALIFICATION-CODE-MISMATCH",
+    "REVIEW-GOVERNED-SUBJECT-MUTATION",
+    "REVIEW-OUTCOME-MISMATCH",
+    "REVIEW-UNDECLARED-TOOL-OR-EXTERNAL-ACCESS",
+    "SCHEMA-ARRAY-DUPLICATE",
+    "SCHEMA-ARRAY-ORDER",
+    "SCHEMA-ENUM-INVALID",
+    "SCHEMA-FORMAT-INVALID",
+    "SCHEMA-MISSING-REQUIRED-FIELD",
+    "SCHEMA-TYPE-INVALID",
+    "SCHEMA-UNDECLARED-FIELD",
+}
+
+EXPECTED_GOLDEN_FIXTURES = {
+    "GOLDEN-ACCEPTANCE-INDEX-001": "phase0.acceptance_index.contract",
+    "GOLDEN-AI-REVIEW-COVERAGE-001": "phase0.ai_review_coverage.contract",
+    "GOLDEN-AI-REVIEW-OUTPUT-001": "phase0.ai_review_output.contract",
+    "GOLDEN-AI-REVIEW-RUN-001": "phase0.ai_review_run.contract",
+    "GOLDEN-APPROVAL-RECORDS-001": "phase0.approval_records.contract",
+    "GOLDEN-FINAL-ACCEPTANCE-RESULT-001": "phase0.final_acceptance_result.contract",
+    "GOLDEN-PREAPPROVAL-ELIGIBILITY-001": "phase0.preapproval_reviewer_eligibility.contract",
+    "GOLDEN-SUITE-APPROVAL-001": "phase0.postroot_acceptance_contract_suite.approval.contract",
+}
 
 
 class SuiteDefinitionTests(unittest.TestCase):
@@ -239,10 +316,87 @@ class SuiteDefinitionTests(unittest.TestCase):
         self.assertEqual(PLAN_SHA256, "EE22C688167F5016D7ED1953BB1DAE516BC6AB343655A7D96535C6605D37E904")
         self.assertEqual(SPECIFICATION_SHA256, "7C6AE5FC9037CA37D44CD1A2FAACD0CB821192920C46CF001541DCD2121FEB35")
 
-    def test_contract_and_empty_catalogs_are_embedded(self):
+    def test_contract_catalog_is_embedded(self):
         self.assertEqual(self.suite["contract_schemas"], self.contracts)
-        self.assertEqual(self.suite["fixture_catalog"], [])
-        self.assertEqual(self.suite["reason_code_registry"], [])
+
+    def test_reason_registry_is_exact_unique_and_has_all_prefix_families(self):
+        registry = self.suite["reason_code_registry"]
+        codes = [row["reason_code"] for row in registry]
+        self.assertEqual(set(codes), EXPECTED_REASON_CODES)
+        self.assertEqual(codes, sorted(codes))
+        self.assertEqual(len(codes), len(set(codes)))
+        self.assertTrue(all(row["description"].endswith(".") for row in registry))
+        self.assertTrue(all(row["gate_effect"] in {"BLOCKED", "FAIL", "REJECTED"} for row in registry))
+        required_prefixes = (
+            "APPROVAL-",
+            "BYTE-",
+            "COVERAGE-",
+            "GATE-",
+            "HASH-",
+            "ID-",
+            "INDEX-",
+            "JSON-",
+            "REF-",
+            "REVIEW-",
+            "SCHEMA-",
+        )
+        self.assertTrue(
+            all(any(code.startswith(prefix) for code in codes) for prefix in required_prefixes)
+        )
+
+    def test_fixture_shape_golden_coverage_and_adversarial_reason_coverage(self):
+        fixtures = self.suite["fixture_catalog"]
+        fixture_ids = [row["fixture_id"] for row in fixtures]
+        self.assertGreater(len(fixtures), 40)
+        self.assertEqual(fixture_ids, sorted(fixture_ids))
+        self.assertEqual(len(fixture_ids), len(set(fixture_ids)))
+        exact_fields = {
+            "expected_derived_values",
+            "expected_reason_codes",
+            "expected_status",
+            "fixture_id",
+            "input_artifacts",
+            "invariant_under_test",
+            "target_contract_id",
+            "validation_phase",
+        }
+        for row in fixtures:
+            with self.subTest(fixture_id=row["fixture_id"]):
+                self.assertEqual(set(row), exact_fields)
+                self.assertEqual(row["expected_reason_codes"], sorted(set(row["expected_reason_codes"])))
+                self.assertTrue(all(isinstance(raw, str) for raw in row["input_artifacts"]))
+
+        actual_golden = {
+            row["fixture_id"]: row["target_contract_id"]
+            for row in fixtures
+            if row["fixture_id"].startswith("GOLDEN-")
+        }
+        self.assertEqual(actual_golden, EXPECTED_GOLDEN_FIXTURES)
+        for row in fixtures:
+            if not row["fixture_id"].startswith("GOLDEN-"):
+                continue
+            with self.subTest(fixture_id=row["fixture_id"], check="golden-schema"):
+                self.assertEqual(len(row["input_artifacts"]), 1)
+                subject = strict_loads(row["input_artifacts"][0].encode("utf-8"))
+                result = validate_contract(subject, self.by_id[row["target_contract_id"]])
+                self.assertEqual(result.status, "PASS", result.reason_codes)
+        covered_codes = {
+            code
+            for row in fixtures
+            if row["expected_status"] != "PASS"
+            for code in row["expected_reason_codes"]
+        }
+        self.assertEqual(covered_codes, EXPECTED_REASON_CODES)
+
+    def test_fixture_content_is_synthetic_and_contains_no_sensitive_locator(self):
+        prohibited = re.compile(
+            r"(?i)(?:https?://|[A-Z]:[/\\]|\\\\|credential|account.identifier|"
+            r"market.data|trade.data|donor.data|conversation.content)"
+        )
+        for row in self.suite["fixture_catalog"]:
+            serialized = " ".join(row["input_artifacts"])
+            with self.subTest(fixture_id=row["fixture_id"]):
+                self.assertIsNone(prohibited.search(serialized))
 
 
 if __name__ == "__main__":
