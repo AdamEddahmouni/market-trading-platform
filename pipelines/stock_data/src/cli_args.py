@@ -50,6 +50,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Inclusive refresh date in strict YYYY-MM-DD format.",
     )
+    parser.add_argument(
+        "--database",
+        type=str,
+        default=None,
+        help="Explicit existing SQLite database (required for refresh-ticker-metadata).",
+    )
 
     # ── Ticker filter flags ──
     filter_grp = parser.add_argument_group("Ticker filter (scrape & export)")

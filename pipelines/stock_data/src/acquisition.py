@@ -6,6 +6,10 @@ _SENSITIVE_DETAIL = re.compile(
     r"(?i)\b(authorization|cookie|set-cookie|api[-_]?key|token|secret|password|client[-_]?secret)"
     r"\b\s*[:=]\s*(?:bearer\s+)?[^\s,;]+"
 )
+_URL = re.compile(r"(?i)https?://[^\s]+")
+_WINDOWS_PROFILE = re.compile(r"(?i)\b[a-z]:\\users\\[^\s]+")
+_POSIX_PROFILE = re.compile(r"(?i)(?:/home|/users)/[^\s]+")
+_CONTROL_CHARACTER = re.compile(r"[\x00-\x1f\x7f-\x9f]")
 
 
 class AcquisitionOutcome(str, Enum):
@@ -42,9 +46,13 @@ def classify_failure(
 
 def safe_error_detail(exc: BaseException, *, limit: int = 500) -> str:
     """Serialize an exception for evidence without retaining common credentials."""
-    message = f"{type(exc).__name__}: {exc}".replace("\r", " ").replace("\n", " ")
+    message = f"{type(exc).__name__}: {exc}"
+    message = _URL.sub("[URL REDACTED]", message)
+    message = _WINDOWS_PROFILE.sub("[PROFILE REDACTED]", message)
+    message = _POSIX_PROFILE.sub("[PROFILE REDACTED]", message)
     sanitized = _SENSITIVE_DETAIL.sub(
         lambda match: f"{match.group(1)}=[REDACTED]",
         message,
     )
+    sanitized = _CONTROL_CHARACTER.sub(" ", sanitized)
     return sanitized[:limit]
