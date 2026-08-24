@@ -140,14 +140,19 @@ class MetadataRunner:
         schema_drift_streak = 0
         throttled_streak = 0
         ticker_iterator = iter(selection.tickers)
+        next_submission_sequence = 0
+        next_processing_sequence = 0
+        completed_by_sequence: dict[int, _TickerResult] = {}
 
         def submit_next(executor, futures) -> bool:
+            nonlocal next_submission_sequence
             try:
                 ticker = next(ticker_iterator)
             except StopIteration:
                 return False
             future = executor.submit(self._run_ticker, ticker, run_id, writer)
-            futures[future] = ticker
+            futures[future] = next_submission_sequence
+            next_submission_sequence += 1
             return True
 
         try:
@@ -155,16 +160,21 @@ class MetadataRunner:
                 max_workers=self._workers,
                 thread_name_prefix="ticker-metadata-provider",
             ) as executor:
-                futures: dict[Future[_TickerResult], TickerRef] = {}
+                futures: dict[Future[_TickerResult], int] = {}
                 for _ in range(self._workers):
                     if not submit_next(executor, futures):
                         break
                 while futures:
                     done, _ = wait(tuple(futures), return_when=FIRST_COMPLETED)
                     for future in done:
-                        futures.pop(future)
-                        result = future.result()
+                        sequence = futures.pop(future)
+                        completed_by_sequence[sequence] = future.result()
+                    while next_processing_sequence in completed_by_sequence:
+                        result = completed_by_sequence.pop(next_processing_sequence)
+                        next_processing_sequence += 1
                         completed_results.append(result)
+                        if circuit_reason is not None:
+                            continue
                         if result.final_outcome is AcquisitionOutcome.SCHEMA_DRIFT:
                             schema_drift_streak += 1
                         else:
@@ -177,8 +187,12 @@ class MetadataRunner:
                             circuit_reason = "consecutive_schema_drift"
                         elif throttled_streak >= 5:
                             circuit_reason = "consecutive_throttled"
-                        if circuit_reason is None:
-                            submit_next(executor, futures)
+                    while (
+                        circuit_reason is None
+                        and len(futures) + len(completed_by_sequence) < self._workers
+                        and submit_next(executor, futures)
+                    ):
+                        pass
         finally:
             writer.close()
 

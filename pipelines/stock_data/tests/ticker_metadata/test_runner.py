@@ -1,8 +1,10 @@
 from collections import Counter, defaultdict
+from concurrent.futures import ALL_COMPLETED, wait as wait_for_futures
 from datetime import datetime, timezone
 from threading import Lock
 import time
 
+import src.ticker_metadata.runner as runner_module
 from src.acquisition import AcquisitionOutcome
 from src.ticker_metadata.models import (
     ClassifiedResult,
@@ -231,3 +233,56 @@ def test_intervening_outcomes_reset_only_matching_circuit_counter():
     ).run(selection(8))
     assert report.calls == 6
     assert report.circuit_reason == "consecutive_schema_drift"
+
+
+def test_four_worker_circuit_uses_submission_order_for_one_completed_batch(monkeypatch):
+    outcomes = {
+        "T1": AcquisitionOutcome.SCHEMA_DRIFT,
+        "T2": AcquisitionOutcome.SCHEMA_DRIFT,
+        "T3": AcquisitionOutcome.NO_DATA,
+        "T4": AcquisitionOutcome.SCHEMA_DRIFT,
+    }
+
+    class Adapter:
+        def call(self, symbol, ordinal):
+            return call_result(ordinal, outcomes[symbol])
+
+    def unordered_completed_batch(futures, *, return_when):
+        done, pending = wait_for_futures(futures, return_when=ALL_COMPLETED)
+        return (
+            sorted(
+                done,
+                key=lambda future: (
+                    future.result().final_outcome is AcquisitionOutcome.NO_DATA
+                ),
+            ),
+            pending,
+        )
+
+    monkeypatch.setattr(runner_module, "wait", unordered_completed_batch)
+    report = MetadataRunner(
+        FakeStore(), Adapter(), PROVENANCE, limiter=NoopLimiter(), workers=4
+    ).run(selection(4))
+
+    assert report.circuit_reason is None
+    assert report.calls == 4
+
+
+def test_four_worker_circuit_does_not_replenish_a_batch_that_trips(monkeypatch):
+    calls = []
+
+    class Adapter:
+        def call(self, symbol, ordinal):
+            calls.append(symbol)
+            return call_result(ordinal, AcquisitionOutcome.SCHEMA_DRIFT)
+
+    def complete_whole_batch(futures, *, return_when):
+        return wait_for_futures(futures, return_when=ALL_COMPLETED)
+
+    monkeypatch.setattr(runner_module, "wait", complete_whole_batch)
+    report = MetadataRunner(
+        FakeStore(), Adapter(), PROVENANCE, limiter=NoopLimiter(), workers=4
+    ).run(selection(8))
+
+    assert report.circuit_reason == "consecutive_schema_drift"
+    assert sorted(calls) == ["T1", "T2", "T3", "T4"]

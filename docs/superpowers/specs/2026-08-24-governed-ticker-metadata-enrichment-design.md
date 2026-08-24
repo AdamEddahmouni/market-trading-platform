@@ -97,7 +97,7 @@ The only retained values are:
 | sector | `sector` | non-empty bounded string or null |
 | industry | `industry` | non-empty bounded string or null |
 | country | `country` | non-empty bounded string or null |
-| market cap | `marketCap` | integer greater than or equal to zero, excluding booleans, or null |
+| market cap | `marketCap` | integer from zero through SQLite's signed 64-bit maximum, excluding booleans, or null |
 
 Strings are trimmed, Unicode is preserved, control characters are rejected, and implementation-defined length bounds are part of the versioned request contract. Unknown keys are ignored and never stored. The adapter does not retain the response mapping, cookies, URLs, descriptions, officers, addresses, phone numbers, or provider diagnostics.
 

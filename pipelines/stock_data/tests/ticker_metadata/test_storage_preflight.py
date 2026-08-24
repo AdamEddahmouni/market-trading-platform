@@ -1,5 +1,6 @@
 import sqlite3
 from pathlib import Path
+import tempfile
 from unittest.mock import patch
 
 import pytest
@@ -169,3 +170,65 @@ def test_same_database_lock_is_exclusive_and_different_database_is_independent(t
 
     with MetadataRefreshLock(first_db):
         pass
+
+
+def test_lock_uses_temp_directory_keyed_only_by_database_identity(tmp_path):
+    database = tmp_path / "customer-secret-name.db"
+    make_registry(database)
+
+    lock = MetadataRefreshLock(database)
+
+    assert lock.path.parent == (
+        Path(tempfile.gettempdir()) / "market-platform-ticker-metadata-locks"
+    )
+    assert "customer-secret-name" not in lock.path.name
+
+
+def test_lock_file_creation_failure_is_a_stable_boundary_error(tmp_path):
+    database = tmp_path / "market.db"
+    make_registry(database)
+    lock = MetadataRefreshLock(database)
+
+    with patch.object(Path, "open", side_effect=PermissionError("profile path")):
+        with pytest.raises(MetadataBoundaryError) as captured:
+            with lock:
+                pass
+
+    assert captured.value.code == "metadata_refresh_lock_unavailable"
+
+
+@pytest.mark.parametrize(
+    ("ticker_type", "market_cap_type", "is_active_type", "code"),
+    [
+        ("INTEGER", "FLOAT", "BOOLEAN", "registry_symbol_type_invalid"),
+        ("BLOB", "FLOAT", "BOOLEAN", "registry_symbol_type_invalid"),
+        ("VARCHAR(10)", "TEXT", "BOOLEAN", "registry_filter_column_type_invalid"),
+        ("VARCHAR(10)", "FLOAT", "TEXT", "registry_filter_column_type_invalid"),
+    ],
+)
+def test_preflight_refuses_incompatible_registry_affinities(
+    tmp_path, ticker_type, market_cap_type, is_active_type, code
+):
+    target = tmp_path / "wrong-affinity.db"
+    with sqlite3.connect(target) as connection:
+        connection.execute(
+            f"""
+            CREATE TABLE tickers (
+                id INTEGER PRIMARY KEY,
+                ticker {ticker_type} NOT NULL,
+                company_name VARCHAR(255),
+                exchange VARCHAR(50),
+                sector VARCHAR(100),
+                industry VARCHAR(100),
+                country VARCHAR(100),
+                market_cap {market_cap_type},
+                is_etf BOOLEAN,
+                is_active {is_active_type}
+            )
+            """
+        )
+
+    with pytest.raises(MetadataBoundaryError) as captured:
+        MetadataStore.preflight(target)
+
+    assert captured.value.code == code

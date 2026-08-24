@@ -43,6 +43,7 @@ def test_request_contract_is_canonical_complete_and_self_identifying():
     assert decoded["provider"] == "yfinance"
     assert decoded["method"] == "get_info"
     assert decoded["outcome_classification_version"] == "1"
+    assert decoded["validators"]["marketCap"]["maximum"] == 2**63 - 1
 
 
 def test_complete_response_trims_strings_preserves_unicode_and_ignores_unknowns():
@@ -111,6 +112,7 @@ def test_partial_and_no_data_are_distinct():
         ({"symbol": "AAPL", "shortName": True}, "invalid_shortName"),
         ({"symbol": "AAPL", "marketCap": True}, "invalid_marketCap"),
         ({"symbol": "AAPL", "marketCap": -1}, "invalid_marketCap"),
+        ({"symbol": "AAPL", "marketCap": 2**63}, "invalid_marketCap"),
         ({"symbol": "AAPL", "sector": "Tech\nInjected"}, "invalid_sector"),
         ({"symbol": "AAPL", "shortName": "x" * 513}, "invalid_shortName"),
     ],

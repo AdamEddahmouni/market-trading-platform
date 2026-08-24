@@ -11,6 +11,7 @@ from src.ticker_metadata.models import ClassifiedResult
 
 
 REQUEST_CONTRACT_VERSION = "ticker-metadata-v1"
+MAX_SQLITE_INTEGER = 2**63 - 1
 ALLOWLIST = (
     "symbol",
     "shortName",
@@ -55,7 +56,13 @@ _CONTRACT = {
     "allowlisted_provider_keys": list(ALLOWLIST),
     "validators": {
         key: (
-            {"type": "integer", "minimum": 0, "boolean_allowed": False, "nullable": True}
+            {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": MAX_SQLITE_INTEGER,
+                "boolean_allowed": False,
+                "nullable": True,
+            }
             if key == "marketCap"
             else {
                 "type": "string",
@@ -118,7 +125,12 @@ def classify_response(requested_symbol: str, payload: object) -> ClassifiedResul
         value = payload[provider_key]
         spec = _FIELDS[provider_key]
         if provider_key == "marketCap":
-            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, int)
+                or value < 0
+                or value > MAX_SQLITE_INTEGER
+            ):
                 return _invalid("invalid_marketCap", observed_provider_fields)
             projected[spec.column] = value
             continue

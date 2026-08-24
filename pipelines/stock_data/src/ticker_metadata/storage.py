@@ -131,6 +131,16 @@ _RETRY_ERRORED = {
     AcquisitionOutcome.SCHEMA_DRIFT.value,
 }
 
+_TEXT_REGISTRY_COLUMNS = {
+    "ticker",
+    "company_name",
+    "exchange",
+    "sector",
+    "industry",
+    "country",
+}
+_NUMERIC_REGISTRY_COLUMNS = {"market_cap", "is_etf", "is_active"}
+
 
 class MetadataBoundaryError(RuntimeError):
     def __init__(self, code: str, message: str):
@@ -175,6 +185,19 @@ def _connect_rw(path: Path) -> sqlite3.Connection:
         ) from exc
     connection.execute("PRAGMA foreign_keys=ON")
     return connection
+
+
+def _sqlite_affinity(declared_type: object) -> str:
+    value = str(declared_type or "").upper()
+    if "INT" in value:
+        return "INTEGER"
+    if any(token in value for token in ("CHAR", "CLOB", "TEXT")):
+        return "TEXT"
+    if not value or "BLOB" in value:
+        return "BLOB"
+    if any(token in value for token in ("REAL", "FLOA", "DOUB")):
+        return "REAL"
+    return "NUMERIC"
 
 
 class MetadataStore:
@@ -235,6 +258,11 @@ class MetadataStore:
                     raise MetadataBoundaryError(
                         "registry_symbol_nullable", "tickers.ticker must be non-null"
                     )
+                if _sqlite_affinity(symbol[2]) != "TEXT":
+                    raise MetadataBoundaryError(
+                        "registry_symbol_type_invalid",
+                        "tickers.ticker must have SQLite TEXT affinity",
+                    )
                 missing = [
                     name for name in REQUIRED_REGISTRY_COLUMNS if name not in columns
                 ]
@@ -242,6 +270,22 @@ class MetadataStore:
                     raise MetadataBoundaryError(
                         "registry_filter_columns_missing",
                         "Required ticker registry filter columns are missing",
+                    )
+                incompatible = [
+                    name
+                    for name in sorted(_TEXT_REGISTRY_COLUMNS - {"ticker"})
+                    if _sqlite_affinity(columns[name][2]) != "TEXT"
+                ]
+                incompatible.extend(
+                    name
+                    for name in sorted(_NUMERIC_REGISTRY_COLUMNS)
+                    if _sqlite_affinity(columns[name][2])
+                    not in {"INTEGER", "REAL", "NUMERIC"}
+                )
+                if incompatible:
+                    raise MetadataBoundaryError(
+                        "registry_filter_column_type_invalid",
+                        "Ticker registry filter columns have incompatible SQLite affinity",
                     )
                 ticker_count = int(
                     connection.execute("SELECT COUNT(*) FROM tickers").fetchone()[0]
