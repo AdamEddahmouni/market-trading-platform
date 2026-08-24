@@ -314,13 +314,14 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
             reset_finviz_credential_manager()
             manager = FinvizCredentialManager()
             self.assertEqual(manager.health().state, FinvizAuthState.UNCONFIGURED)
-        from market_platform_foundation.finra.client_config import load_finra_credentials
+        from market_platform_foundation.finra import client_config as finra_client_config
 
-        with patch(
-            "market_platform_foundation.finra.client_config.load_finra_credentials",
+        with patch.object(
+            finra_client_config,
+            "load_finra_credentials",
             return_value=MagicMock(present=lambda: True),
         ):
-            creds = load_finra_credentials()
+            creds = finra_client_config.load_finra_credentials()
         self.assertTrue(creds.present())
 
     def test_finvis_request_queue_resumes_after_recovery(self) -> None:
