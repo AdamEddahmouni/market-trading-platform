@@ -4,8 +4,14 @@ from __future__ import annotations
 
 import math
 import os
+import json
 import sys
+import threading
+import tempfile
 import unittest
+import urllib.error
+import urllib.request
+from http.server import ThreadingHTTPServer
 from pathlib import Path
 from unittest.mock import patch
 
@@ -30,6 +36,14 @@ from market_platform_foundation.market_data.subscription_manager import (  # noq
     LiveSubscriptionManager,
     SubscriptionPriority,
 )
+from market_platform_foundation.discovery.screens import SCREEN_LIBRARY  # noqa: E402
+from market_platform_foundation.ui_api.mixed_discovery_projections import (  # noqa: E402
+    MixedDiscoveryService,
+)
+from market_platform_foundation.ui_api.discovery_projections import (  # noqa: E402
+    load_latest_capture_for_screen,
+)
+from market_platform_foundation.ui_api.server import UiApiHandler  # noqa: E402
 
 
 def candidate_set(
@@ -412,6 +426,242 @@ class MoomooEnrichmentTests(unittest.TestCase):
                 {"IMP_DISCOVERY_LIVE_CANDIDATES": bad},
             ):
                 self.assertEqual(discovery_live_candidate_cap(), 12)
+
+
+class FakeEngine:
+    def __init__(self, results: dict[str, object]) -> None:
+        self.results = results
+        self.calls: list[dict[str, object]] = []
+
+    def run_screen(self, screen_id: str, **kwargs: object) -> object:
+        self.calls.append({"screen_id": screen_id, **kwargs})
+        result = self.results[screen_id]
+        if isinstance(result, Exception):
+            raise result
+        return result
+
+
+class RuntimeGetterSpy:
+    def __init__(self, runtime: object | None) -> None:
+        self.runtime = runtime
+        self.calls: list[dict[str, bool]] = []
+
+    def __call__(self, *, create: bool = True) -> object | None:
+        self.calls.append({"create": create})
+        return self.runtime
+
+
+class MixedProjectionTests(unittest.TestCase):
+    def make_service(
+        self,
+        *,
+        engine: FakeEngine,
+        captures: dict[str, dict[str, object] | None] | None = None,
+        runtime: FakeRuntime | None = None,
+    ) -> tuple[MixedDiscoveryService, RuntimeGetterSpy, list[str]]:
+        capture_calls: list[str] = []
+
+        def capture_loader(screen_id: str) -> dict[str, object] | None:
+            capture_calls.append(screen_id)
+            return (captures or {}).get(screen_id)
+
+        runtime_getter = RuntimeGetterSpy(runtime)
+        service = MixedDiscoveryService(
+            engine_factory=lambda: engine,
+            capture_loader=capture_loader,
+            runtime_getter=runtime_getter,
+            now_ns=lambda: 2_000_000_000,
+            generated_at=lambda: "2026-08-24T13:00:02Z",
+        )
+        return service, runtime_getter, capture_calls
+
+    def test_refresh_runs_all_screens_deduplicates_and_reports_outcomes(self) -> None:
+        results = {
+            screen_id: candidate_set(
+                screen_id=screen_id,
+                available_time_ns=1_000_000_000 + index,
+                reasons=[f"Matched {screen_id}"],
+            )
+            for index, screen_id in enumerate(SCREEN_LIBRARY)
+        }
+        engine = FakeEngine(results)
+        service, runtime_getter, _ = self.make_service(engine=engine)
+
+        payload = service.refresh()
+
+        self.assertEqual([call["screen_id"] for call in engine.calls], list(SCREEN_LIBRARY))
+        self.assertTrue(all(call["force"] and call["persist"] for call in engine.calls))
+        self.assertEqual(len(payload["candidates"]), 1)
+        self.assertEqual(len(payload["candidates"][0]["screen_matches"]), 8)
+        self.assertEqual({row["status"] for row in payload["screen_outcomes"]}, {"PASS"})
+        self.assertEqual(runtime_getter.calls[0], {"create": True})
+        self.assertEqual(payload["candidate_role"], "INVESTIGATE")
+        self.assertEqual(payload["refresh_interval_seconds"], 120)
+        self.assertEqual(payload["poll_interval_seconds"], 3)
+
+    def test_partial_failure_uses_capture_and_all_failure_is_unavailable(self) -> None:
+        first, second = list(SCREEN_LIBRARY)[:2]
+        engine = FakeEngine(
+            {
+                first: RuntimeError("FINVIZ_AUTH_REQUIRED"),
+                second: candidate_set(screen_id=second, symbol="MSFT"),
+            }
+        )
+        service, _, _ = self.make_service(
+            engine=engine,
+            captures={first: candidate_set(screen_id=first, symbol="AAPL")},
+        )
+
+        payload = service.refresh([first, second])
+
+        self.assertTrue(payload["available"])
+        self.assertEqual({row["instrument_id"] for row in payload["candidates"]}, {"AAPL", "MSFT"})
+        outcomes = {row["screen_id"]: row for row in payload["screen_outcomes"]}
+        self.assertEqual(outcomes[first]["status"], "FALLBACK")
+        self.assertIn("FINVIZ_AUTH_REQUIRED", outcomes[first]["reason"])
+        self.assertEqual(outcomes[second]["status"], "PASS")
+
+        unavailable_engine = FakeEngine({first: RuntimeError("DOWN")})
+        unavailable, _, _ = self.make_service(engine=unavailable_engine)
+        empty = unavailable.refresh([first])
+        self.assertFalse(empty["available"])
+        self.assertEqual(empty["candidates"], [])
+        self.assertEqual(empty["screen_outcomes"][0]["status"], "UNAVAILABLE")
+
+    def test_read_uses_current_runtime_without_finviz_or_subscription_side_effects(self) -> None:
+        screen_id = "UNUSUAL_VOLUME_DISCOVERY"
+        engine = FakeEngine({screen_id: candidate_set(screen_id=screen_id)})
+        runtime = FakeRuntime()
+        service, runtime_getter, _ = self.make_service(engine=engine, runtime=runtime)
+        service.refresh([screen_id])
+        engine.calls.clear()
+        runtime_getter.calls.clear()
+        runtime.subscribe_calls.clear()
+        runtime.unsubscribe_calls.clear()
+
+        payload = service.read()
+
+        self.assertEqual(engine.calls, [])
+        self.assertEqual(runtime_getter.calls, [{"create": False}])
+        self.assertEqual(runtime.subscribe_calls, [])
+        self.assertEqual(runtime.unsubscribe_calls, [])
+        self.assertEqual(payload["candidates"][0]["candidate_role"], "INVESTIGATE")
+
+    def test_read_reconstructs_latest_captures_without_starting_finviz(self) -> None:
+        screen_id = "SHORT_SQUEEZE_DISCOVERY"
+        engine = FakeEngine({})
+        service, runtime_getter, capture_calls = self.make_service(
+            engine=engine,
+            captures={screen_id: candidate_set(screen_id=screen_id)},
+        )
+
+        payload = service.read()
+
+        self.assertEqual(engine.calls, [])
+        self.assertEqual(capture_calls, list(SCREEN_LIBRARY))
+        self.assertEqual(runtime_getter.calls, [{"create": False}])
+        self.assertTrue(payload["available"])
+        self.assertEqual(payload["screen_outcomes"][0]["status"], "FALLBACK")
+
+    def test_refresh_is_single_flight_and_second_caller_gets_current_result(self) -> None:
+        screen_id = "UNUSUAL_VOLUME_DISCOVERY"
+        entered = threading.Event()
+        release = threading.Event()
+
+        class BlockingEngine(FakeEngine):
+            def run_screen(self, screen_id: str, **kwargs: object) -> object:
+                self.calls.append({"screen_id": screen_id, **kwargs})
+                entered.set()
+                release.wait(timeout=5)
+                return candidate_set(screen_id=screen_id)
+
+        engine = BlockingEngine({})
+        service, _, _ = self.make_service(engine=engine)
+        first_result: list[dict[str, object]] = []
+        worker = threading.Thread(target=lambda: first_result.append(service.refresh([screen_id])))
+        worker.start()
+        self.assertTrue(entered.wait(timeout=2))
+
+        concurrent = service.refresh([screen_id])
+        release.set()
+        worker.join(timeout=5)
+
+        self.assertEqual(len(engine.calls), 1)
+        self.assertTrue(concurrent["refresh_in_progress"])
+        self.assertFalse(first_result[0]["refresh_in_progress"])
+
+    def test_unknown_requested_screen_is_rejected(self) -> None:
+        service, _, _ = self.make_service(engine=FakeEngine({}))
+        with self.assertRaisesRegex(ValueError, "UNKNOWN_SCREEN"):
+            service.refresh(["NOT_A_SCREEN"])
+
+    def test_capture_loader_returns_newest_artifact(self) -> None:
+        screen_id = "SHORT_SQUEEZE_DISCOVERY"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            older = root / "2026-08-23" / screen_id / "run-old" / "candidate-set.json"
+            newer = root / "2026-08-24" / screen_id / "run-new" / "candidate-set.json"
+            older.parent.mkdir(parents=True)
+            newer.parent.mkdir(parents=True)
+            older.write_text(json.dumps({"run_id": "old"}), encoding="utf-8")
+            newer.write_text(json.dumps({"run_id": "new"}), encoding="utf-8")
+            with patch.dict(os.environ, {"IMP_FINVIZ_CAPTURE_DIR": temporary}):
+                loaded = load_latest_capture_for_screen(screen_id)
+
+        self.assertIsNotNone(loaded)
+        self.assertEqual(loaded["run_id"], "new")
+
+
+class MixedRouteTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.handler = type("MixedBoundHandler", (UiApiHandler,), {"store": object()})
+        self.server = ThreadingHTTPServer(("127.0.0.1", 0), self.handler)
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+        self.base_url = f"http://127.0.0.1:{self.server.server_address[1]}"
+
+    def tearDown(self) -> None:
+        self.server.shutdown()
+        self.server.server_close()
+        self.thread.join(timeout=5)
+
+    def test_mixed_get_and_refresh_routes_return_projection_payload(self) -> None:
+        expected = {
+            "available": True,
+            "candidate_role": "INVESTIGATE",
+            "candidates": [],
+        }
+        target = "market_platform_foundation.ui_api.mixed_discovery_projections"
+        with patch(f"{target}.build_mixed_discover_payload", return_value=expected) as read_mock:
+            with urllib.request.urlopen(f"{self.base_url}/discover/mixed", timeout=5) as response:
+                get_payload = json.loads(response.read())
+        request = urllib.request.Request(
+            f"{self.base_url}/discover/mixed/refresh",
+            data=json.dumps({"screen_ids": ["SHORT_SQUEEZE_DISCOVERY"]}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with patch(f"{target}.refresh_mixed_discovery", return_value=expected) as refresh_mock:
+            with urllib.request.urlopen(request, timeout=5) as response:
+                post_payload = json.loads(response.read())
+
+        self.assertEqual(get_payload, expected)
+        self.assertEqual(post_payload, expected)
+        read_mock.assert_called_once_with()
+        refresh_mock.assert_called_once_with(["SHORT_SQUEEZE_DISCOVERY"])
+
+    def test_mixed_refresh_rejects_invalid_screen_ids(self) -> None:
+        request = urllib.request.Request(
+            f"{self.base_url}/discover/mixed/refresh",
+            data=json.dumps({"screen_ids": "NOT_A_LIST"}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with self.assertRaises(urllib.error.HTTPError) as captured:
+            urllib.request.urlopen(request, timeout=5)
+        self.assertEqual(captured.exception.code, 400)
+        payload = json.loads(captured.exception.read())
+        self.assertEqual(payload["reason_code"], "UI_REQUEST_INVALID")
 
 
 if __name__ == "__main__":

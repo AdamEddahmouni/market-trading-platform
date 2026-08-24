@@ -83,6 +83,11 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 force = (query.get("force") or ["0"])[0] in ("1", "true", "yes")
                 self._send_json(build_discover_run_payload(str(screen_id), force=force))
                 return
+            if path == "/discover/mixed":
+                from .mixed_discovery_projections import build_mixed_discover_payload
+
+                self._send_json(build_mixed_discover_payload())
+                return
             if path == "/state/startup":
                 self._send_json(operator_projections.build_startup_payload(self.store))
                 return
@@ -517,6 +522,29 @@ class UiApiHandler(BaseHTTPRequestHandler):
             return
         if not isinstance(body, dict):
             self._send_error_json("UI_JSON_INVALID", "Body must be an object", status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/discover/mixed/refresh":
+            from .mixed_discovery_projections import refresh_mixed_discovery
+
+            screen_ids = body.get("screen_ids")
+            if screen_ids is not None and (
+                not isinstance(screen_ids, list)
+                or any(not isinstance(screen_id, str) for screen_id in screen_ids)
+            ):
+                self._send_error_json(
+                    "UI_REQUEST_INVALID",
+                    "screen_ids must be a list of screen id strings",
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            try:
+                self._send_json(refresh_mixed_discovery(screen_ids))
+            except ValueError as exc:
+                self._send_error_json(
+                    "UI_REQUEST_INVALID",
+                    str(exc),
+                    status=HTTPStatus.BAD_REQUEST,
+                )
             return
         if path == "/paper/orders/preview":
             try:

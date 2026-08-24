@@ -97,7 +97,15 @@ def load_latest_capture_for_screen(screen_id: str) -> dict[str, Any] | None:
                     matches.append(artifact)
     if not matches:
         return None
-    return load_discovery_capture(matches[-1])
+    newest = max(
+        matches,
+        key=lambda artifact: (
+            artifact.parents[2].name,
+            artifact.stat().st_mtime_ns,
+            str(artifact),
+        ),
+    )
+    return load_discovery_capture(newest)
 
 
 def promote_to_live_analysis(instrument_id: str) -> dict[str, Any]:
