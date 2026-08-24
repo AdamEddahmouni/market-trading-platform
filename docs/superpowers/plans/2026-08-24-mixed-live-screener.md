@@ -45,7 +45,7 @@
 - Consumes: `CandidateSet.to_dict()` payloads from the existing Finviz discovery engine or capture loader.
 - Produces: `LANES_BY_SCREEN`, `MixedCandidate`, and `aggregate_candidate_sets(candidate_sets, *, now_ns, market_by_symbol=None) -> list[MixedCandidate]`.
 
-- [ ] **Step 1: Write failing aggregate tests**
+- [x] **Step 1: Write failing aggregate tests**
 
 Add fixtures that build two candidate-set dictionaries for the same symbol from `SHORT_SQUEEZE_DISCOVERY` and `UNUSUAL_VOLUME_DISCOVERY`, then assert:
 
@@ -61,13 +61,13 @@ self.assertEqual(mixed[0].candidate_role, "INVESTIGATE")
 
 Add separate tests for invalid/non-US symbols, non-finite/negative prices, candidates without reasons, `None` metrics not becoming zero, component caps (`45/20/20/15`), quality penalties, and tie-breaking by newest observation then screen count then symbol.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `$env:PYTHONPATH='src'; .venv\Scripts\python.exe -m unittest tests.platform.test_mixed_discovery.MixedDomainTests -v`
 
 Expected: import failure for `market_platform_foundation.discovery.mixed`.
 
-- [ ] **Step 3: Implement the pure domain model**
+- [x] **Step 3: Implement the pure domain model**
 
 Define the exact lane map from the approved spec and these serializable models:
 
@@ -95,13 +95,13 @@ class MixedCandidate:
 
 Implement finite-number helpers; merge only canonical symbols matching `^[A-Z][A-Z0-9.-]{0,9}$`; union sorted lanes/screens/reasons; select each metric from the contributing candidate with greatest `available_time_ns`; keep all provenance. Compute capped setup/freshness/liquidity/live components and explicit penalties, then sort by `(-attention_score, -available_time_ns, -len(screen_matches), instrument_id)` and assign one-based `queue_rank`.
 
-- [ ] **Step 4: Verify GREEN and changed validation**
+- [x] **Step 4: Verify GREEN and changed validation**
 
 Run the Task 1 unittest command, then `$env:PYTHONPATH='src'; .venv\Scripts\python.exe tools\validate.py changed`.
 
 Expected: all Task 1 tests pass and changed validation is green.
 
-- [ ] **Step 5: Commit the domain slice**
+- [x] **Step 5: Commit the domain slice**
 
 ```powershell
 git add src/market_platform_foundation/discovery/mixed.py src/market_platform_foundation/discovery/__init__.py tests/platform/test_mixed_discovery.py
@@ -119,7 +119,7 @@ git commit -m "feat(discovery): aggregate mixed screener candidates"
 - Consumes: ranked `MixedCandidate` instances and optional `LiveObservationalRuntime` compatible objects.
 - Produces: `MarketCandidateEnricher` protocol and `MoomooCandidateEnricher(runtime, *, cap=12, stale_after_ms=5000)` with `reconcile(candidates)`, `enrich(candidates)`, and `health()`.
 
-- [ ] **Step 1: Write failing adapter tests**
+- [x] **Step 1: Write failing adapter tests**
 
 Use a real `LiveSubscriptionManager(max_quota=...)` inside a lightweight fake runtime and real `ObservationalStateStore` quotes. Assert that reconciliation:
 
@@ -132,13 +132,13 @@ self.assertEqual(fake_runtime.subscribe_calls[0]["priority"], int(SubscriptionPr
 
 Also assert cap/quota bounding; incumbent retention within three ranks; release removes only `discover-live-screener`; no runtime returns `UNAVAILABLE`; no quote returns `SNAPSHOT/AWAITING_FIRST_EVENT`; fresh quote returns `LIVE`; >5-second quote returns `STALE`; crossed bid/ask yields `spread_pct=None`, `DEGRADED`, `CROSSED_MARKET`; and configuration parses a positive integer cap with invalid values falling back to `12`.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `$env:PYTHONPATH='src'; .venv\Scripts\python.exe -m unittest tests.platform.test_mixed_discovery.MoomooEnrichmentTests -v`
 
 Expected: import failure for `discovery.live_enrichment` or missing `BACKGROUND_RESEARCH`.
 
-- [ ] **Step 3: Implement the contract and adapter**
+- [x] **Step 3: Implement the contract and adapter**
 
 Add the priority alias without renumbering existing priorities:
 
@@ -162,13 +162,13 @@ class MarketCandidateEnricher(Protocol):
 
 Track only symbols successfully acquired by this instance. Choose the top `cap`, retaining incumbents whose new rank is at most `cap + 3`; ask the existing manager for remaining quota; call runtime `subscribe`/`unsubscribe` only during `reconcile`. `enrich` reads `runtime.state.quote_for` and `freshness_ms`, validates finite/non-crossed fields, and emits the provider-neutral keys from the spec without zeros for missing fields.
 
-- [ ] **Step 4: Verify GREEN and live-boundary offline validation**
+- [x] **Step 4: Verify GREEN and live-boundary offline validation**
 
 Run the Task 2 unittest command, then `$env:PYTHONPATH='src'; .venv\Scripts\python.exe tools\validate.py changed`.
 
 Expected: adapter tests pass; offline validation remains green. Do not run the opt-in live suite without configured provider authority.
 
-- [ ] **Step 5: Commit the enrichment slice**
+- [x] **Step 5: Commit the enrichment slice**
 
 ```powershell
 git add src/market_platform_foundation/discovery/live_enrichment.py src/market_platform_foundation/market_data/subscription_manager.py tests/platform/test_mixed_discovery.py
@@ -186,7 +186,7 @@ git commit -m "feat(discovery): enrich candidates with moomoo quotes"
 - Consumes: injectable `engine_factory`, `capture_loader`, `runtime_getter`, and `MoomooCandidateEnricher`.
 - Produces: singleton `MixedDiscoveryService`; `build_mixed_discover_payload() -> dict[str, Any]`; `refresh_mixed_discovery(screen_ids=None) -> dict[str, Any]`.
 
-- [ ] **Step 1: Write failing service and route tests**
+- [x] **Step 1: Write failing service and route tests**
 
 Assert an eight-screen refresh deduplicates symbols, records per-screen `PASS/FALLBACK/UNAVAILABLE`, uses the latest capture after a screen exception, preserves successful screens when one fails, returns `available=False` only when every screen lacks live/captured candidates, and never changes `candidate_role`.
 
@@ -202,13 +202,13 @@ self.assertEqual(fake_runtime.unsubscribe_calls, [])
 
 Use a blocking fake engine from two threads to assert the second refresh returns the current result with `refresh_in_progress=True`. Start `ThreadingHTTPServer` with `UiApiHandler` and assert `GET /discover/mixed` and `POST /discover/mixed/refresh` return the schema while existing routes still respond.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `$env:PYTHONPATH='src'; .venv\Scripts\python.exe -m unittest tests.platform.test_mixed_discovery.MixedProjectionTests tests.platform.test_mixed_discovery.MixedRouteTests -v`
 
 Expected: missing projection functions and 404 mixed routes.
 
-- [ ] **Step 3: Implement service and routes**
+- [x] **Step 3: Implement service and routes**
 
 Use a non-blocking `threading.Lock` around refresh. On success, cache raw candidate-set dictionaries, reconcile subscriptions once, then return a projection. On per-screen exception, load its latest capture and record the failure reason. On process start/read with no memory snapshot, reconstruct from all latest captures. `read()` calls `get_live_runtime(create=False)`, never `DiscoveryEngine`, then attaches current enrichment and reruns attention ranking.
 
@@ -233,13 +233,13 @@ Return the stable envelope:
 
 Validate optional POST `screen_ids` as a list of known screen ids; reject unknown ids through the existing `ValueError -> 400` path. Add the mixed routes before the generic not-found responses.
 
-- [ ] **Step 4: Verify GREEN and UI-domain validation**
+- [x] **Step 4: Verify GREEN and UI-domain validation**
 
 Run the Task 3 unittest command, then `$env:PYTHONPATH='src'; .venv\Scripts\python.exe tools\validate.py changed` and `$env:PYTHONPATH='src'; .venv\Scripts\python.exe tools\validate.py domain ui`.
 
 Expected: service/routes pass; changed and UI-domain validators pass.
 
-- [ ] **Step 5: Commit the API slice**
+- [x] **Step 5: Commit the API slice**
 
 ```powershell
 git add src/market_platform_foundation/ui_api/mixed_discovery_projections.py src/market_platform_foundation/ui_api/server.py tests/platform/test_mixed_discovery.py
@@ -258,19 +258,19 @@ git commit -m "feat(api): expose mixed live discovery queue"
 - Consumes: the mixed envelope from Task 3 plus unchanged single-screen endpoints and promotion endpoint.
 - Produces: `/discover` UI defaulting to Mixed Live with lane filters, evidence disclosure, explicit market status, and visibility-aware cadence.
 
-- [ ] **Step 1: Write failing component tests**
+- [x] **Step 1: Write failing component tests**
 
 Mock `fetch` with a representative mixed payload and render inside `MemoryRouter`. Assert the page defaults to a `Mixed Live` selected control, includes the exact disclosure “Candidates are INVESTIGATE, not trade signals.”, renders `MOOMOO LIVE` and `FINVIZ SNAPSHOT` text, filters a squeeze-only candidate after clicking `SQUEEZE`, reveals components/screens/provenance from a details element, and POSTs promotion before navigating to the workspace.
 
 With Vitest fake timers, assert one initial POST, GET polls every 3000 ms, the next POST occurs at 120000 ms, `document.hidden=true` plus `visibilitychange` stops both, and becoming visible triggers a read/refresh cycle without duplicate intervals.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `npm run test -- DiscoverPage.test.tsx` from `ui`.
 
 Expected: tests fail because the current page only exposes Single Screen cards.
 
-- [ ] **Step 3: Implement the component and intentional styling**
+- [x] **Step 3: Implement the component and intentional styling**
 
 Add typed `MixedEnvelope`, `MixedCandidate`, and `MarketEnrichment` interfaces. Keep modes `MIXED` and `SINGLE`, default `MIXED`; issue immediate POST refresh and GET read; use one visibility-aware effect that owns and cleans both intervals. Preserve existing `refresh()` and inspector behavior for Single Screen.
 
@@ -278,13 +278,13 @@ Render wide rows with columns `Symbol / Setup / Attention / Price / Change / RVO
 
 Add `"/discover": "http://127.0.0.1:8766"` to Vite proxy configuration.
 
-- [ ] **Step 4: Verify GREEN and build**
+- [x] **Step 4: Verify GREEN and build**
 
 Run `npm run test -- DiscoverPage.test.tsx`, `npm run test`, and `npm run build` from `ui`, then run `$env:PYTHONPATH='src'; .venv\Scripts\python.exe tools\validate.py changed` from the repository root.
 
 Expected: component suite, UI suite, production build, and changed validation pass.
 
-- [ ] **Step 5: Commit the UI slice**
+- [x] **Step 5: Commit the UI slice**
 
 ```powershell
 git add ui/src/components/DiscoverPage.test.tsx ui/src/components/DiscoverPage.tsx ui/src/styles/layout.css ui/vite.config.ts
@@ -302,21 +302,21 @@ git commit -m "feat(ui): add mixed live discovery board"
 - Consumes: the completed vertical slice.
 - Produces: executable safety regression coverage and an implementation record.
 
-- [ ] **Step 1: Add the final failing safety regression**
+- [x] **Step 1: Add the final failing safety regression**
 
 Traverse refresh and read payloads and assert every candidate has `candidate_role == "INVESTIGATE"`, no payload contains `buy_score`, `sell_score`, `order_intent`, `paper_order`, or `broker_order`, and mixed refresh subscription calls contain only `BASIC_QUOTE`.
 
-- [ ] **Step 2: Verify RED for the broad invariant**
+- [x] **Step 2: Verify RED for the broad invariant**
 
 Run: `$env:PYTHONPATH='src'; .venv\Scripts\python.exe -m unittest tests.platform.test_mixed_discovery.MixedSafetyInvariantTests -v`
 
 Expected: fail on any incomplete invariant reporting or pass only after the assertion is first made stricter than the current payload; if it passes immediately, revise the fixture with forbidden nested keys to prove the walker catches them before exercising production output.
 
-- [ ] **Step 3: Make the minimum correction and record completion**
+- [x] **Step 3: Make the minimum correction and record completion**
 
 Remove or rename only the offending field/path, if any. Check off completed plan steps and append an `Implementation outcome` section to the spec listing the shipped routes, Moomoo-first boundary, configuration variable, and validation commands—without credentials or claims that opt-in live checks ran.
 
-- [ ] **Step 4: Run final verification once**
+- [x] **Step 4: Run final verification once**
 
 Run:
 
@@ -331,7 +331,7 @@ npm run build
 
 Expected: every command exits 0 with no failed tests. Run `.venv\Scripts\python.exe tools\validate.py live moomoo` only if the local Moomoo provider is already configured and explicitly safe to probe.
 
-- [ ] **Step 5: Review diff and commit the completed slice**
+- [x] **Step 5: Review diff and commit the completed slice**
 
 Confirm `git diff --check` is clean and `git status --short` contains only intended feature files plus the two pre-existing user-owned audit JSON edits. Stage exact paths only, then commit:
 

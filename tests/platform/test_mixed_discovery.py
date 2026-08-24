@@ -344,6 +344,14 @@ class MoomooEnrichmentTests(unittest.TestCase):
         self.assertEqual([row["instrument_id"] for row in outcomes if row["accepted"]], ["AAPL"])
         self.assertEqual(enricher.subscribed_symbols, {"AAPL"})
         self.assertEqual(len(runtime.subscriptions.active_keys), 2)
+        market = enricher.enrich(
+            [ranked_candidate("AAPL", 1), ranked_candidate("MSFT", 2), ranked_candidate("NVDA", 3)]
+        )
+        self.assertEqual(market["MSFT"]["reason"], "QUOTA_EXHAUSTED")
+        self.assertEqual(market["NVDA"]["reason"], "QUOTA_EXHAUSTED")
+        enricher.reconcile([ranked_candidate("AAPL", 1)])
+        no_longer_targeted = enricher.enrich([ranked_candidate("MSFT", 2)])
+        self.assertEqual(no_longer_targeted["MSFT"]["reason"], "NOT_SUBSCRIBED")
 
     def test_hysteresis_retains_incumbent_within_three_places_of_cutoff(self) -> None:
         runtime = FakeRuntime()
@@ -610,6 +618,59 @@ class MixedProjectionTests(unittest.TestCase):
 
         self.assertIsNotNone(loaded)
         self.assertEqual(loaded["run_id"], "new")
+
+
+FORBIDDEN_MIXED_KEYS = {"buy_score", "sell_score", "order_intent", "paper_order", "broker_order"}
+
+
+def forbidden_payload_paths(value: object, path: str = "$") -> list[str]:
+    found: list[str] = []
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            key_path = f"{path}.{key}"
+            if str(key) in FORBIDDEN_MIXED_KEYS:
+                found.append(key_path)
+            found.extend(forbidden_payload_paths(nested, key_path))
+    elif isinstance(value, list):
+        for index, nested in enumerate(value):
+            found.extend(forbidden_payload_paths(nested, f"{path}[{index}]"))
+    return found
+
+
+class MixedSafetyInvariantTests(unittest.TestCase):
+    def test_forbidden_key_walker_catches_nested_execution_fields(self) -> None:
+        fixture = {"candidates": [{"evidence": {"broker_order": {"side": "BUY"}}}]}
+        self.assertEqual(
+            forbidden_payload_paths(fixture),
+            ["$.candidates[0].evidence.broker_order"],
+        )
+
+    def test_refresh_and_read_are_investigate_only_and_quote_only(self) -> None:
+        screen_id = "UNUSUAL_VOLUME_DISCOVERY"
+        runtime = FakeRuntime()
+        engine = FakeEngine({screen_id: candidate_set(screen_id=screen_id)})
+        service = MixedDiscoveryService(
+            engine_factory=lambda: engine,
+            capture_loader=lambda _screen_id: None,
+            runtime_getter=lambda **_kwargs: runtime,
+            now_ns=lambda: 2_000_000_000,
+            generated_at=lambda: "2026-08-24T13:00:02Z",
+        )
+
+        refresh_payload = service.refresh([screen_id])
+        read_payload = service.read()
+
+        for payload in (refresh_payload, read_payload):
+            self.assertEqual(payload["execution_authority"], "NONE")
+            self.assertEqual(payload["candidate_role"], "INVESTIGATE")
+            self.assertEqual(forbidden_payload_paths(payload), [])
+            self.assertTrue(
+                all(candidate["candidate_role"] == "INVESTIGATE" for candidate in payload["candidates"])
+            )
+        self.assertGreater(len(runtime.subscribe_calls), 0)
+        self.assertTrue(
+            all(call["capabilities"] == ["BASIC_QUOTE"] for call in runtime.subscribe_calls)
+        )
 
 
 class MixedRouteTests(unittest.TestCase):

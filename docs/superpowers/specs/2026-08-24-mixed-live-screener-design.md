@@ -146,6 +146,7 @@ Manual refresh remains available. A refresh can take tens of seconds because the
   "available": true,
   "mode": "SEMI_LIVE",
   "candidate_role": "INVESTIGATE",
+  "execution_authority": "NONE",
   "generated_at": "2026-08-24T00:00:00Z",
   "discovery_as_of": "2026-08-24T00:00:00Z",
   "refresh_in_progress": false,
@@ -255,3 +256,16 @@ Implementation follows test-first development.
 - Research stricter liquidity/marketability gates using captured prospective data.
 - Calibrate lane-specific ranking components against forward outcomes without turning them into execution signals.
 - Add news/catalyst verification and richer trade/order-book confirmation after the L1 slice is stable.
+
+## Implementation outcome
+
+Implemented on `feat/mixed-live-screener` as an isolated vertical slice:
+
+- `GET /discover/mixed` reads the current queue without starting Finviz or changing subscriptions.
+- `POST /discover/mixed/refresh` runs the selected Finviz screens through a single-flight refresh, retains per-screen fallback outcomes, and reconciles live candidates once.
+- Moomoo is the first live enrichment adapter. It uses the dedicated `discover-live-screener` consumer, requests only `BASIC_QUOTE`, preserves other consumers' references, and reports quota rejection as `QUOTA_EXHAUSTED`.
+- `IMP_DISCOVERY_LIVE_CANDIDATES` controls the quote-enrichment cap and defaults to 12.
+- `/discover` now defaults to Mixed Live, retains Single Screen, filters by lane, pauses polling while hidden, and labels Finviz snapshots separately from Moomoo market status.
+- The response includes `candidate_role: INVESTIGATE` and `execution_authority: NONE`; regression coverage rejects nested order and buy/sell score fields.
+
+Offline verification includes the mixed discovery unittest module, repository changed/domain/full validation, the Vitest UI suite, and a Vite production build. Real Finviz and Moomoo probes remain opt-in and were not required for the offline implementation record.

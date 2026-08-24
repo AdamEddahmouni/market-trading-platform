@@ -7,6 +7,7 @@ const mixedPayload = {
   available: true,
   mode: "SEMI_LIVE",
   candidate_role: "INVESTIGATE",
+  execution_authority: "NONE",
   generated_at: "2026-08-24T15:00:00Z",
   discovery_as_of: "2026-08-24T14:59:00Z",
   refresh_in_progress: false,
@@ -102,6 +103,7 @@ describe("DiscoverPage mixed live mode", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    Object.defineProperty(document, "hidden", { configurable: true, value: false });
     vi.unstubAllGlobals();
   });
 
@@ -111,11 +113,12 @@ describe("DiscoverPage mixed live mode", () => {
     expect(await screen.findByRole("heading", { name: "Mixed live screener" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Mixed Live" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("INVESTIGATE — no order authority")).toBeInTheDocument();
+    expect(screen.getByText("Candidates are INVESTIGATE, not trade signals.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "AAPL" })).toBeInTheDocument();
-    expect(screen.getByText("MOMENTUM")).toBeInTheDocument();
+    expect(screen.getAllByText("MOMENTUM").length).toBeGreaterThan(0);
     expect(screen.getByText("LIVE · 480 ms")).toBeInTheDocument();
-    expect(screen.getAllByText("FINVIZ ELITE").length).toBeGreaterThan(0);
-    expect(screen.getByText("MOOMOO")).toBeInTheDocument();
+    expect(screen.getAllByText("FINVIZ SNAPSHOT").length).toBeGreaterThan(0);
+    expect(screen.getByText("MOOMOO LIVE")).toBeInTheDocument();
     expect(screen.getByText("SNAPSHOT")).toBeInTheDocument();
 
     await waitFor(() => {
@@ -126,11 +129,25 @@ describe("DiscoverPage mixed live mode", () => {
     });
   });
 
+  it("filters lanes and keeps inspectable ranking evidence", async () => {
+    renderPage();
+    await screen.findByRole("link", { name: "AAPL" });
+
+    fireEvent.click(screen.getByRole("button", { name: "SQUEEZE" }));
+
+    expect(screen.queryByRole("link", { name: "AAPL" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "GME" })).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Evidence"));
+    expect(screen.getByText(/SHORT_FLOAT_22.4_PCT/)).toBeInTheDocument();
+    expect(screen.getByText(/SHORT_SQUEEZE_DISCOVERY/)).toBeInTheDocument();
+  });
+
   it("uses the read-only projection for three-second polling", async () => {
     vi.useFakeTimers();
     renderPage();
 
     await act(async () => {
+      await Promise.resolve();
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -142,6 +159,33 @@ describe("DiscoverPage mixed live mode", () => {
     });
 
     expect(fetch).toHaveBeenCalledWith("/discover/mixed", expect.objectContaining({ method: "GET" }));
+
+    await act(async () => {
+      vi.advanceTimersByTime(117_000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    const refreshCalls = vi.mocked(fetch).mock.calls.filter(
+      ([url]) => url === "/discover/mixed/refresh",
+    );
+    expect(refreshCalls).toHaveLength(2);
+
+    const callsBeforeHidden = vi.mocked(fetch).mock.calls.length;
+    Object.defineProperty(document, "hidden", { configurable: true, value: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+    await act(async () => {
+      vi.advanceTimersByTime(120_000);
+      await Promise.resolve();
+    });
+    expect(fetch).toHaveBeenCalledTimes(callsBeforeHidden);
+
+    Object.defineProperty(document, "hidden", { configurable: true, value: false });
+    document.dispatchEvent(new Event("visibilitychange"));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(vi.mocked(fetch).mock.calls.length).toBe(callsBeforeHidden + 2);
   });
 
   it("keeps the single-screen diagnostic available", async () => {
@@ -153,5 +197,18 @@ describe("DiscoverPage mixed live mode", () => {
     expect(screen.getByLabelText("Screen")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Refresh screen" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Single Screen" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("promotes only after an explicit workspace action", async () => {
+    renderPage();
+    await screen.findByRole("link", { name: "AAPL" });
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Open Workspace" })[0]);
+
+    expect(await screen.findByText("Workspace opened")).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith(
+      "/discover/promote-to-live-analysis",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ instrument_id: "AAPL" }) }),
+    );
   });
 });

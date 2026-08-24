@@ -75,6 +75,7 @@ class MoomooCandidateEnricher:
         self._stale_after_ms = stale_after_ms
         self._now_ns = now_ns
         self._subscribed_symbols: set[str] = set()
+        self._admission_reasons: dict[str, str] = {}
 
     @property
     def subscribed_symbols(self) -> set[str]:
@@ -103,6 +104,8 @@ class MoomooCandidateEnricher:
         if self._runtime is None:
             return []
         targets = self._targets(candidates)
+        for symbol in set(self._admission_reasons).difference(targets):
+            self._admission_reasons.pop(symbol, None)
         outcomes: list[dict[str, Any]] = []
 
         for symbol in sorted(self._subscribed_symbols.difference(targets)):
@@ -113,6 +116,7 @@ class MoomooCandidateEnricher:
             )
             outcomes.extend(dict(row) for row in released)
             self._subscribed_symbols.discard(symbol)
+            self._admission_reasons.pop(symbol, None)
 
         for symbol in targets:
             if symbol in self._subscribed_symbols:
@@ -128,6 +132,9 @@ class MoomooCandidateEnricher:
                 outcomes.append(normalized)
                 if normalized.get("accepted"):
                     self._subscribed_symbols.add(symbol)
+                    self._admission_reasons.pop(symbol, None)
+                elif normalized.get("reason"):
+                    self._admission_reasons[symbol] = str(normalized["reason"])
         return outcomes
 
     def enrich(self, candidates: Sequence[MixedCandidate]) -> dict[str, dict[str, Any]]:
@@ -142,7 +149,11 @@ class MoomooCandidateEnricher:
             symbol = candidate.instrument_id
             quote = self._runtime.state.quote_for(symbol)
             if quote is None:
-                reason = "AWAITING_FIRST_EVENT" if symbol in self._subscribed_symbols else "NOT_SUBSCRIBED"
+                reason = (
+                    "AWAITING_FIRST_EVENT"
+                    if symbol in self._subscribed_symbols
+                    else self._admission_reasons.get(symbol, "NOT_SUBSCRIBED")
+                )
                 record = _unavailable_record(reason)
                 record["status"] = "SNAPSHOT"
                 record["provider"] = "FINVIZ_ELITE"

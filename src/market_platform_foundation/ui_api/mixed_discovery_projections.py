@@ -140,6 +140,7 @@ class MixedDiscoveryService:
             "available": bool(candidate_payloads),
             "mode": "SEMI_LIVE",
             "candidate_role": "INVESTIGATE",
+            "execution_authority": "NONE",
             "generated_at": self._generated_at(),
             "discovery_as_of": max(discovery_times) if discovery_times else None,
             "refresh_in_progress": self._refresh_in_progress

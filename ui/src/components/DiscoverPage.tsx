@@ -72,6 +72,7 @@ type MixedPayload = {
   available: boolean;
   mode: "SEMI_LIVE";
   candidate_role: "INVESTIGATE";
+  execution_authority: "NONE";
   generated_at: string;
   discovery_as_of: string | null;
   refresh_in_progress: boolean;
@@ -115,6 +116,7 @@ async function readJson<T>(url: string, init?: RequestInit): Promise<T> {
 export function DiscoverPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<DiscoverMode>("MIXED");
+  const [activeLane, setActiveLane] = useState("ALL");
   const [mixed, setMixed] = useState<MixedPayload | null>(null);
   const [screens, setScreens] = useState<Screen[]>([]);
   const [selectedScreen, setSelectedScreen] = useState("SHORT_SQUEEZE_DISCOVERY");
@@ -210,10 +212,10 @@ export function DiscoverPage() {
     };
     const handleVisibility = () => {
       startTimers();
-      if (!document.hidden) void readMixed();
+      if (!document.hidden) void readMixed().then(() => refreshMixed());
     };
 
-    if (!document.hidden) void refreshMixed();
+    if (!document.hidden) void readMixed().then(() => refreshMixed());
     startTimers();
     document.addEventListener("visibilitychange", handleVisibility);
     return () => {
@@ -228,6 +230,10 @@ export function DiscoverPage() {
 
   const candidateSet = run?.candidate_set;
   const singleCandidates = candidateSet?.candidates ?? [];
+  const mixedCandidates = mixed?.candidates ?? [];
+  const visibleMixedCandidates = activeLane === "ALL"
+    ? mixedCandidates
+    : mixedCandidates.filter((candidate) => candidate.lanes.includes(activeLane));
 
   return (
     <div className="discover-page">
@@ -254,6 +260,8 @@ export function DiscoverPage() {
         </button>
       </nav>
 
+      <p className="discover-disclosure">Candidates are INVESTIGATE, not trade signals.</p>
+
       {error ? <div className="discover-error" role="alert">{error}</div> : null}
 
       {mode === "MIXED" ? (
@@ -275,8 +283,19 @@ export function DiscoverPage() {
           </div>
 
           <div className="discover-lane-summary" aria-label="Candidate lanes">
+            <button type="button" aria-label="ALL" aria-pressed={activeLane === "ALL"} onClick={() => setActiveLane("ALL")}>
+              ALL <strong>{mixedCandidates.length}</strong>
+            </button>
             {Object.entries(mixed?.lane_counts ?? {}).map(([lane, count]) => (
-              <span key={lane}>{lane.charAt(0) + lane.slice(1).toLowerCase()} <strong>{count}</strong></span>
+              <button
+                key={lane}
+                type="button"
+                aria-label={lane}
+                aria-pressed={activeLane === lane}
+                onClick={() => setActiveLane(lane)}
+              >
+                {lane} <strong>{count}</strong>
+              </button>
             ))}
             <span className="discover-as-of">
               Discovery {mixed?.discovery_as_of ?? "awaiting snapshot"} · Market poll every {mixed?.poll_interval_seconds ?? 3}s
@@ -284,7 +303,7 @@ export function DiscoverPage() {
           </div>
 
           <div className="discover-queue" aria-live="polite">
-            {(mixed?.candidates ?? []).map((candidate) => (
+            {visibleMixedCandidates.map((candidate) => (
               <article
                 key={candidate.instrument_id}
                 className={`discover-queue-row data-${candidate.data_status.toLowerCase()}`}
@@ -306,9 +325,11 @@ export function DiscoverPage() {
                   <span>Vol {formatNumber(candidate.market.volume ?? candidate.metrics.volume, 0)}</span>
                 </div>
                 <div className="discover-sources">
-                  <span className="source-badge">FINVIZ ELITE</span>
+                  <span className="source-badge">FINVIZ SNAPSHOT</span>
                   {candidate.market.provider !== "FINVIZ_ELITE" ? (
-                    <span className="source-badge source-live">{sourceBadge(candidate.market.provider)}</span>
+                    <span className={`source-badge source-${candidate.data_status.toLowerCase()}`}>
+                      {sourceBadge(candidate.market.provider)} {candidate.data_status}
+                    </span>
                   ) : null}
                 </div>
                 <div className="discover-data-state">
