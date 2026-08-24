@@ -1,7 +1,12 @@
-# Market Data Pipeline - Stealth Web Scraper Suite
+# Market Data Pipeline — Acquisition Subsystem
 
-> **Free, comprehensive financial market data collection without paid APIs.**
+> **Mutable collection staging for the integrated market platform.**
 > Version 2.0 | July 2026
+
+This is an isolated nested project under `pipelines/stock_data`. Its SQLite
+output is not research-admitted data. See
+`../../docs/data/EQUITY_DATA_ACQUISITION.md` for the operator workflow and data
+authority boundary.
 
 ## Overview
 
@@ -82,24 +87,26 @@ stock-data/
 
 ### Installation
 
-```bash
-# Clone the repository (private)
-git clone https://github.com/AdamEddahmouni/market-data-pipeline.git stock-data
-cd stock-data
-
-# (Recommended) Install with pip
-pip install -e .
-
-# OR install dependencies manually
-pip install -r requirements.txt
-
-# (Optional) Install stealth scraping support
-pip install curl_cffi
+```powershell
+# From the monorepo root
+cd pipelines/stock_data
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install -e ".[test]"
 ```
 
 ### Running the Pipeline
 
-```bash
+```powershell
+# Governed V1 sequence, bounded for development
+.venv\Scripts\python.exe -m src.pipeline v1 --limit 25
+
+# Governed V1 sequence, with no hidden ticker cap
+.venv\Scripts\python.exe -m src.pipeline v1
+
+# Incremental daily prices and corporate actions
+.venv\Scripts\python.exe -m src.pipeline refresh-prices --through 2026-08-23
+
+# Legacy individual acquisition stages remain available explicitly
 # Stage 1: Discover all tickers from NASDAQ, NYSE, and other exchanges
 python scripts/run.py discover
 
@@ -156,10 +163,22 @@ All data is collected from **completely free, public sources**:
 
 ## System Requirements
 
-- **Python 3.9+**
+- **Python 3.11+**
 - **~10GB free disk space** (for full data collection with all exports)
 - **Internet connection** (for scraping)
 - **curl_cffi** optional (for enhanced browser impersonation)
+
+## Research and Distribution Safety
+
+- Raw SQLite is mutable staging, not a training, evaluation, feature, formula,
+  or backtest authority.
+- Current membership and active-symbol status are not historical truth.
+- Existing weekly/monthly tables are non-authoritative; V1 research periods are
+  regenerated from admitted daily data.
+- Non-price domains are not training-safe until each has a point-in-time
+  contract, quality policy, and explicit admission.
+- Provider access does not automatically grant redistribution rights. Distribute
+  data only under an affirmative allowlist; otherwise ship code-only artifacts.
 
 ## License
 

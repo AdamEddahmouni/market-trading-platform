@@ -20,6 +20,8 @@ evidence/ui1/.debug-run/
 .local/
 .private/
 data/
+!docs/data/
+!docs/data/**
 tests/full_suite_output*.txt
 tests/short_intelligence_test_output.txt
 pipelines/stock_data/database/
