@@ -44,6 +44,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--execute", action="store_true",
         help="Actually apply cleanup / validation changes (otherwise dry-run).",
     )
+    parser.add_argument(
+        "--through",
+        type=str,
+        default=None,
+        help="Inclusive refresh date in strict YYYY-MM-DD format.",
+    )
 
     # ── Ticker filter flags ──
     filter_grp = parser.add_argument_group("Ticker filter (scrape & export)")

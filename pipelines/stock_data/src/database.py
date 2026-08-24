@@ -744,6 +744,24 @@ def get_tickers_for_scraping() -> List[Dict[str, Any]]:
         return [{"id": r[0], "ticker": r[1]} for r in rows]
 
 
+def latest_daily_price_dates() -> dict[int, date]:
+    """Return the latest stored daily-price date for each instrument."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            text(
+                "SELECT ticker_id, MAX(date) AS latest_date "
+                "FROM daily_prices GROUP BY ticker_id"
+            )
+        ).fetchall()
+    return {
+        int(ticker_id): (
+            latest if isinstance(latest, date) else date.fromisoformat(str(latest))
+        )
+        for ticker_id, latest in rows
+        if latest is not None
+    }
+
+
 def save_progress(stage: str, ticker: str, status: str, details: str = ""):
     """Log scraping progress to the progress tracking table."""
     with get_connection() as conn:
@@ -817,6 +835,30 @@ def latest_attempt(stage: str, ticker: str) -> dict[str, object] | None:
             {"stage": stage, "ticker": ticker},
         ).mappings().first()
         return dict(row) if row is not None else None
+
+
+def latest_attempts_for_stage(stage: str) -> dict[str, dict[str, object]]:
+    """Load the latest attempt for every ticker in a stage with one query."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            text(
+                """
+                SELECT a.id, a.stage, a.ticker, a.outcome, a.started_at, a.finished_at,
+                       a.requested_start, a.requested_end,
+                       a.observed_start, a.observed_end, a.detail
+                FROM acquisition_attempts AS a
+                JOIN (
+                    SELECT ticker, MAX(id) AS latest_id
+                    FROM acquisition_attempts
+                    WHERE stage = :stage
+                    GROUP BY ticker
+                ) AS latest ON latest.latest_id = a.id
+                ORDER BY a.ticker
+                """
+            ),
+            {"stage": stage},
+        ).mappings().all()
+    return {str(row["ticker"]): dict(row) for row in rows}
 
 
 def mark_in_progress(stage: str, ticker: str):

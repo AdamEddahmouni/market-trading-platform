@@ -5,6 +5,7 @@ Coordinates the entire data collection, storage, and export pipeline.
 Usage:
     python -m src.pipeline discover       # Stage 1: Discover all tickers
     python -m src.pipeline prices         # Stage 2: Scrape all price data
+    python -m src.pipeline refresh-prices # Incrementally refresh daily prices/actions
     python -m src.pipeline fundamentals   # Stage 3: Scrape all fundamentals
     python -m src.pipeline supplemental   # Stage 4: Supplemental web scraping
     python -m src.pipeline indexes        # Stage 5: Index membership
@@ -26,7 +27,7 @@ Usage:
 
 import sys
 import time
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -573,6 +574,9 @@ def main():
     args = parse_pipeline_argv(raw_args)
     filter_spec = parse_filter_args(args)
     retry_errored = getattr(args, "retry_errored", False)
+    explicit_limit = (
+        args.max_tickers if args.max_tickers is not None else getattr(args, "limit", None)
+    )
     command = (raw_args[0] or "").lower() if raw_args else ""
 
     # Make sure the DB exists before any stage runs.
@@ -590,32 +594,41 @@ def main():
         stage_prices(
             retry_errored=retry_errored,
             ticker_filter=filter_spec,
-            max_tickers=args.max_tickers,
+            max_tickers=explicit_limit,
         )
+    elif command == "refresh-prices":
+        through = date.fromisoformat(args.through) if args.through else date.today()
+        from src.scrapers.prices import PriceScraper
+
+        scraper = PriceScraper()
+        try:
+            scraper.refresh(
+                through,
+                retry_errored=retry_errored,
+                max_items=explicit_limit,
+            )
+        finally:
+            scraper.cleanup()
     elif command == "fundamentals":
         stage_fundamentals(retry_errored=retry_errored, ticker_filter=filter_spec)
     elif command == "supplemental":
-        max_t = int(raw_args[1]) if len(raw_args) > 1 and raw_args[1].isdigit() else None
-        stage_supplemental(max_tickers=max_t, retry_errored=retry_errored,
+        stage_supplemental(max_tickers=explicit_limit, retry_errored=retry_errored,
                            ticker_filter=filter_spec)
     elif command == "indexes":
         stage_indexes()
     elif command == "options":
-        max_t = int(raw_args[1]) if len(raw_args) > 1 and raw_args[1].isdigit() else None
-        stage_options(max_tickers=max_t, retry_errored=retry_errored,
+        stage_options(max_tickers=explicit_limit, retry_errored=retry_errored,
                       ticker_filter=filter_spec)
     elif command == "earnings":
-        max_t = int(raw_args[1]) if len(raw_args) > 1 and raw_args[1].isdigit() else None
-        stage_earnings(max_tickers=max_t, retry_errored=retry_errored,
+        stage_earnings(max_tickers=explicit_limit, retry_errored=retry_errored,
                        ticker_filter=filter_spec)
     elif command == "insiders":
-        max_t = int(raw_args[1]) if len(raw_args) > 1 and raw_args[1].isdigit() else None
-        stage_insiders(max_tickers=max_t, retry_errored=retry_errored,
+        stage_insiders(max_tickers=explicit_limit, retry_errored=retry_errored,
                        ticker_filter=filter_spec)
     elif command == "v1":
         run_v1(
             PipelineRunConfig(
-                limit=args.max_tickers,
+                limit=explicit_limit,
                 retry_errored=retry_errored,
                 aggregate=False,
             )
@@ -635,7 +648,7 @@ def main():
     elif command == "all":
         _run_all_with_dashboard(
             retry_errored=retry_errored,
-            max_tickers=args.max_tickers,
+            max_tickers=explicit_limit,
         )
     else:
         print(f"Unknown command: {command}")

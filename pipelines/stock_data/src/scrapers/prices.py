@@ -9,7 +9,8 @@ Now uses BaseScraper for signal handling and progress infrastructure.
 """
 
 import time
-from datetime import date
+from collections import Counter
+from datetime import date, datetime, timezone
 from typing import List, Dict, Optional, Any, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -17,14 +18,17 @@ import pandas as pd
 import yfinance as yf
 import numpy as np
 
+from src.acquisition import AcquisitionOutcome, classify_failure, safe_error_detail
 from src.config import (
     CONCURRENT_WORKERS, MAX_RETRIES, MAX_HISTORY_PERIOD, PRICE_FIELDS,
     PRICE_BATCH_SIZE,
 )
+from src.refresh import FetchRange, plan_fetch_range
 from src.database import (
     get_all_ticker_ids, fast_bulk_insert,
     get_connection, save_progress, mark_in_progress,
-    ensure_progress_table
+    ensure_progress_table, latest_attempts_for_stage,
+    latest_daily_price_dates, record_attempt,
 )
 from src.scrapers.base import BaseScraper
 from src.ui import LiveProgress
@@ -84,10 +88,66 @@ def fetch_ticker_history(ticker: str) -> Optional[pd.DataFrame]:
                 return None
 
 
-def store_combined_data(ticker_id: int, ticker: str, df: pd.DataFrame):
+def fetch_ticker_range(ticker: str, fetch_range: FetchRange) -> pd.DataFrame | None:
+    """Fetch one ticker for a planned full-history or bounded date range."""
+    client = yf.Ticker(ticker)
+    kwargs: dict[str, object] = {"auto_adjust": False, "actions": True}
+    if fetch_range.full_history:
+        kwargs["period"] = MAX_HISTORY_PERIOD
+    else:
+        if fetch_range.start is None:
+            raise ValueError("bounded fetch requires a start date")
+        kwargs["start"] = fetch_range.start.isoformat()
+        kwargs["end"] = fetch_range.end.isoformat()
+    last_error: BaseException | None = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            result = client.history(**kwargs)
+            if result is not None and not result.empty and result.index.tz is not None:
+                result.index = result.index.tz_localize(None)
+            return result
+        except Exception as exc:
+            last_error = exc
+            outcome = classify_failure(exc)
+            if outcome not in (
+                AcquisitionOutcome.TRANSIENT,
+                AcquisitionOutcome.THROTTLED,
+            ):
+                raise
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(0.5 * (2 ** attempt))
+    if last_error is not None:
+        raise last_error
+    return None
+
+
+def store_combined_data(
+    ticker_id: int,
+    ticker: str,
+    df: pd.DataFrame,
+    *,
+    replace_existing: bool = False,
+):
     """Store ALL data (prices, dividends, splits) from the DataFrame."""
     if df is None or df.empty:
         return
+
+    if replace_existing:
+        minimum_date = df.index.min().date()
+        maximum_date = df.index.max().date()
+        with get_connection() as conn:
+            for table_name in ("daily_prices", "dividends", "splits"):
+                conn.execute(
+                    text(
+                        f"DELETE FROM {table_name} "
+                        "WHERE ticker_id = :ticker_id AND date BETWEEN :start AND :end"
+                    ),
+                    {
+                        "ticker_id": ticker_id,
+                        "start": minimum_date,
+                        "end": maximum_date,
+                    },
+                )
 
     price_cols = [c for c in PRICE_FIELDS if c in df.columns]
     if price_cols:
@@ -100,7 +160,11 @@ def store_combined_data(ticker_id: int, ticker: str, df: pd.DataFrame):
             "low": price_df["Low"].values,
             "close": price_df["Close"].values,
             "volume": price_df["Volume"].values,
-            "adj_close": price_df.get("Adj Close", np.nan).values,
+            "adj_close": (
+                price_df["Adj Close"].values
+                if "Adj Close" in price_df.columns
+                else np.full(len(price_df), np.nan)
+            ),
         }).dropna(subset=["open", "close"])
 
         if not daily.empty:
@@ -355,6 +419,105 @@ class PriceScraper(BaseScraper):
             print("\n  [PRICES] Skipping aggregation (shutdown requested).")
 
         self._restore_signal_handler()
+
+    def refresh(
+        self,
+        through: date,
+        retry_errored: bool = False,
+        max_items: Optional[int] = None,
+    ) -> dict[str, int]:
+        """Incrementally refresh daily prices and actions without aggregation."""
+        tickers = get_all_ticker_ids()
+        latest_dates = latest_daily_price_dates()
+        latest_attempts = latest_attempts_for_stage("price_refresh")
+        terminal_outcomes = {
+            AcquisitionOutcome.INVALID_SYMBOL.value,
+            AcquisitionOutcome.NO_DATA.value,
+            AcquisitionOutcome.SCHEMA_DRIFT.value,
+        }
+        skipped_terminal = 0
+        if not retry_errored:
+            eligible = []
+            for item in tickers:
+                attempt = latest_attempts.get(str(item["ticker"]))
+                if attempt is not None and attempt["outcome"] in terminal_outcomes:
+                    skipped_terminal += 1
+                else:
+                    eligible.append(item)
+            tickers = eligible
+        if max_items is not None:
+            tickers = tickers[:max_items]
+
+        outcomes: Counter[str] = Counter()
+        if skipped_terminal:
+            outcomes["skipped_terminal"] = skipped_terminal
+        with ThreadPoolExecutor(max_workers=CONCURRENT_WORKERS) as executor:
+            futures = {
+                executor.submit(
+                    self._refresh_one,
+                    item,
+                    latest_dates.get(int(item["id"])),
+                    through,
+                ): item
+                for item in tickers
+            }
+            for future in as_completed(futures):
+                outcome = future.result()
+                outcomes[outcome.value] += 1
+
+        print(
+            f"  [PRICE_REFRESH] Processed {len(tickers)} tickers "
+            f"through {through.isoformat()}: {dict(outcomes)}"
+        )
+        return dict(outcomes)
+
+    def _refresh_one(
+        self,
+        item: dict[str, object],
+        latest_stored: date | None,
+        through: date,
+    ) -> AcquisitionOutcome:
+        ticker_id = int(item["id"])
+        ticker = str(item["ticker"])
+        started_at = datetime.now(timezone.utc)
+        fetch_range: FetchRange | None = None
+        outcome = AcquisitionOutcome.TRANSIENT
+        observed_start: date | None = None
+        observed_end: date | None = None
+        detail = ""
+        try:
+            fetch_range = plan_fetch_range(latest_stored, through)
+            result = fetch_ticker_range(ticker, fetch_range)
+            if result is None or result.empty:
+                outcome = AcquisitionOutcome.NO_DATA
+            else:
+                observed_start = result.index.min().date()
+                observed_end = result.index.max().date()
+                store_combined_data(
+                    ticker_id,
+                    ticker,
+                    result,
+                    replace_existing=True,
+                )
+                outcome = AcquisitionOutcome.COMPLETE
+        except Exception as exc:
+            outcome = classify_failure(exc)
+            detail = safe_error_detail(exc)
+        finally:
+            finished_at = datetime.now(timezone.utc)
+            record_attempt(
+                "price_refresh",
+                ticker,
+                outcome.value,
+                started_at,
+                finished_at,
+                requested_start=fetch_range.start if fetch_range else None,
+                requested_end=fetch_range.end if fetch_range else None,
+                observed_start=observed_start,
+                observed_end=observed_end,
+                detail=detail,
+            )
+        return outcome
 
     def _process_batches(self, batches, remaining):
         """Process all batches with parallel workers. Results stored in self.*_count."""

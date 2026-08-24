@@ -133,3 +133,16 @@ def test_v1_cli_dispatches_explicit_limit_without_aggregation():
     runner.assert_called_once_with(
         PipelineRunConfig(limit=17, retry_errored=True, aggregate=False)
     )
+
+
+def test_v1_cli_accepts_named_development_limit():
+    with (
+        patch.object(sys, "argv", ["pipeline", "v1", "--limit", "25"]),
+        patch("src.pipeline.init_database"),
+        patch("src.pipeline.ensure_progress_table"),
+        patch("src.pipeline.run_v1") as runner,
+    ):
+        main()
+    runner.assert_called_once_with(
+        PipelineRunConfig(limit=25, retry_errored=False, aggregate=False)
+    )
