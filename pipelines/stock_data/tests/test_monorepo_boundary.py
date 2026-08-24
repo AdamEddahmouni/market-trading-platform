@@ -10,6 +10,7 @@ class MonorepoBoundaryTests(unittest.TestCase):
     def test_collector_is_nested_without_mutable_data(self):
         self.assertTrue((COLLECTOR / "pyproject.toml").is_file())
         self.assertTrue((COLLECTOR / "src" / "pipeline.py").is_file())
+        self.assertTrue((COLLECTOR / "src" / "ticker_metadata" / "provider.py").is_file())
         self.assertFalse((COLLECTOR / ".git").exists())
         self.assertFalse((COLLECTOR / "database" / "market_data.db").exists())
 

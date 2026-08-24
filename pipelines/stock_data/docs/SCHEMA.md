@@ -167,6 +167,35 @@ Full cash flow statement data with 17+ line items including:
 | `details` | TEXT | Error details if failed |
 | `updated_at` | DATETIME | Last update timestamp |
 
+### 17. `ticker_metadata_attempts` -- Governed Acquisition Evidence
+
+One row records one `yfinance.get_info()` interaction or surfaced exception.
+It includes the opaque run ID, raw ticker ID and requested symbol, provider and
+method, canonical request-contract JSON/version/SHA-256, retry ordinal, UTC
+start/completion times, canonical requested/observed field lists, classified
+outcome and stable reason, bounded sanitized detail, collector Git state,
+Python version, and provider-library version. Raw responses, URLs, cookies,
+headers, tokens, tracebacks, and unknown provider fields are prohibited.
+
+Rows are append-only. Database triggers reject every `UPDATE` and `DELETE`.
+The `(raw_ticker_id, request_contract_sha256, attempt_id)` and outcome indexes
+support deterministic resume and bounded summaries.
+
+### 18. `ticker_metadata_observations` -- Noncanonical Provider Values
+
+Complete and partial attempts produce exactly one observation linked by a
+unique foreign-keyed `attempt_id`. Typed nullable columns retain only provider
+symbol, names, exchange forms, quote type, currency, sector, industry, country,
+and nonnegative integer market cap. The row repeats request-contract and
+collector provenance and records the successful call-completion time plus a
+canonical present-field list.
+
+Observations are append-only, provider-reported, noncanonical evidence. They do
+not overwrite `tickers`, establish effective or listing dates, populate an
+`available_at` boundary, or grant research authority. Failed, throttled,
+transient, invalid-symbol, no-data, and schema-drift attempts have no linked
+observation. Attempt and observation insertion is one SQLite transaction.
+
 ---
 
 ## Indexes

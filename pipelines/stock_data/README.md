@@ -106,6 +106,11 @@ python -m venv .venv
 # Incremental daily prices and corporate actions
 .venv\Scripts\python.exe -m src.pipeline refresh-prices --through 2026-08-23
 
+# Governed noncanonical ticker metadata (explicit existing database required)
+.venv\Scripts\python.exe -m src.pipeline refresh-ticker-metadata `
+  --database C:\path\to\existing\market_data.db `
+  --limit 25
+
 # Legacy individual acquisition stages remain available explicitly
 # Stage 1: Discover all tickers from NASDAQ, NYSE, and other exchanges
 python scripts/run.py discover
@@ -179,6 +184,27 @@ All data is collected from **completely free, public sources**:
   contract, quality policy, and explicit admission.
 - Provider access does not automatically grant redistribution rights. Distribute
   data only under an affirmative allowlist; otherwise ship code-only artifacts.
+
+### Governed ticker-metadata acquisition
+
+`refresh-ticker-metadata` is isolated from the legacy fundamentals scraper. It
+requires `--database` naming an existing, writable SQLite file; it never falls
+back to the configured collector database and cannot create the selected file.
+The command calls only `yfinance.Ticker(symbol).get_info()`, retains an explicit
+identity/classification allowlist, and writes append-only attempts and
+observations. It does not update the `tickers` projection.
+
+The observations are provider-reported, noncanonical acquisition evidence.
+They have no research authority and do not establish security type, MIC,
+country, currency, listing history, symbol-effective history, universe
+membership, or point-in-time availability. Normal runs resume terminal
+outcomes for the same request-contract hash; `--retry-errored` retries only the
+documented non-complete outcomes and never refreshes complete evidence.
+
+Offline tests use fake providers. A live canary of 10–25 reviewed symbols must
+pass before any unbounded provider run. Live collection, price/action refresh,
+source freeze, and inventory are separate operator-approved actions; this
+command does not perform them automatically.
 
 ## License
 

@@ -1,12 +1,12 @@
 # Governed Ticker-Metadata Enrichment Design
 
-**Status:** Approved direction, pending principal review of this specification
+**Status:** Approved for implementation
 
 **Date:** 2026-08-24
 
 **Decision owner:** Principal
 
-**Implementation state:** Not started
+**Implementation state:** Offline collector implemented; live canary, acquisition, refresh, freeze, and inventory not started
 
 ## 1. Decision
 

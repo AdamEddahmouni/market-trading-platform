@@ -6,6 +6,7 @@ Usage:
     python -m src.pipeline discover       # Stage 1: Discover all tickers
     python -m src.pipeline prices         # Stage 2: Scrape all price data
     python -m src.pipeline refresh-prices # Incrementally refresh daily prices/actions
+    python -m src.pipeline refresh-ticker-metadata --database <existing.db>
     python -m src.pipeline fundamentals   # Stage 3: Scrape all fundamentals
     python -m src.pipeline supplemental   # Stage 4: Supplemental web scraping
     python -m src.pipeline indexes        # Stage 5: Index membership
@@ -579,6 +580,16 @@ def main():
     )
     command = (raw_args[0] or "").lower() if raw_args else ""
 
+    if command == "refresh-ticker-metadata":
+        from src.ticker_metadata.cli import run_refresh_ticker_metadata
+
+        return run_refresh_ticker_metadata(
+            database=args.database,
+            filter_spec=filter_spec,
+            limit=explicit_limit,
+            retry_errored=retry_errored,
+        )
+
     # Make sure the DB exists before any stage runs.
     init_database()
     ensure_progress_table()
@@ -664,4 +675,4 @@ def run_watch():
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main() or 0)
