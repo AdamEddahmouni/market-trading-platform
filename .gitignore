@@ -22,3 +22,10 @@ evidence/ui1/.debug-run/
 data/
 tests/full_suite_output*.txt
 tests/short_intelligence_test_output.txt
+pipelines/stock_data/database/
+pipelines/stock_data/data/
+pipelines/stock_data/.venv*/
+pipelines/stock_data/.pytest_cache/
+pipelines/stock_data/htmlcov/
+pipelines/stock_data/*.log
+pipelines/stock_data/*.egg-info/
