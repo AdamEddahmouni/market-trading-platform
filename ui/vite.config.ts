@@ -13,6 +13,7 @@ export default defineConfig({
       "/context": "http://127.0.0.1:8766",
       "/capabilities": "http://127.0.0.1:8766",
       "/attention": "http://127.0.0.1:8766",
+      "/discover": "http://127.0.0.1:8766",
       "/instruments": "http://127.0.0.1:8766",
       "/explain": "http://127.0.0.1:8766",
       "/inspect": "http://127.0.0.1:8766",
