@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-24
 
-**Status:** Approved direction; written-design review pending
+**Status:** Approved
 
 **Primary surface:** `/discover`
 
