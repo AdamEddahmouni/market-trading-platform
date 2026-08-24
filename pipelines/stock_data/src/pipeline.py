@@ -12,6 +12,7 @@ Usage:
     python -m src.pipeline options        # Stage 7: Options chain data
     python -m src.pipeline earnings       # Stage 8: Earnings calendar
     python -m src.pipeline insiders       # Stage 9: Insider trading (SEC Form 4)
+    python -m src.pipeline v1             # Governed V1: discovery, daily prices, indexes, validation
     python -m src.pipeline all            # Run all stages sequentially
     python -m src.pipeline all-dash       # Run all stages with progress dashboard
     python -m src.pipeline filter         # Interactive ticker filter wizard
@@ -27,7 +28,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 from src.config import CONCURRENT_WORKERS
 from src.database import (
@@ -35,6 +36,7 @@ from src.database import (
     ensure_progress_table,
 )
 from src.cli_args import parse_pipeline_argv, parse_filter_args
+from src.run_config import PipelineRunConfig
 
 
 # Forward / direct-dispatch table for commands handled outside the plain
@@ -80,20 +82,32 @@ def stage_discover():
     return count
 
 
-def stage_prices(retry_errored: bool = False, ticker_filter=None):
+def stage_prices(
+    retry_errored: bool = False,
+    ticker_filter=None,
+    max_tickers: Optional[int] = None,
+    aggregate: bool = True,
+):
     """Stage 2: Scrape all historical price data."""
     print_header("STAGE 2: HISTORICAL PRICES")
     from src.scrapers.prices import run_price_scraper
 
     print_filter_summary(ticker_filter)
     count = get_ticker_count()
+    if max_tickers is not None:
+        count = min(count, max_tickers)
     est_batches = max(1, count // 50)
     print(f"Estimated time: ~{est_batches * 2 / 60:.1f} min "
           f"({est_batches} batches of 50 @ ~2s/batch)")
     print(f"Starting at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
     start = time.time()
-    run_price_scraper(retry_errored=retry_errored, ticker_filter=ticker_filter)
+    run_price_scraper(
+        retry_errored=retry_errored,
+        ticker_filter=ticker_filter,
+        max_tickers=max_tickers,
+        aggregate=aggregate,
+    )
     elapsed = time.time() - start
 
     stats = get_data_stats()
@@ -367,7 +381,10 @@ def test_single_ticker(ticker: str):
     show_stats()
 
 
-def run_all(retry_errored: bool = False):
+def run_all(
+    retry_errored: bool = False,
+    max_tickers: Optional[int] = None,
+):
     """Run the complete pipeline (plain text output)."""
     print_header("COMPLETE DATA PIPELINE")
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -380,14 +397,14 @@ def run_all(retry_errored: bool = False):
     ensure_progress_table()
 
     stage_discover()
-    stage_prices(retry_errored=retry_errored)
+    stage_prices(retry_errored=retry_errored, max_tickers=max_tickers)
     stage_fundamentals(retry_errored=retry_errored)
-    stage_supplemental(max_tickers=100, retry_errored=retry_errored)
+    stage_supplemental(max_tickers=max_tickers, retry_errored=retry_errored)
     stage_indexes()
     stage_export()
-    stage_options(max_tickers=100, retry_errored=retry_errored)
-    stage_earnings(max_tickers=100, retry_errored=retry_errored)
-    stage_insiders(max_tickers=50, retry_errored=retry_errored)
+    stage_options(max_tickers=max_tickers, retry_errored=retry_errored)
+    stage_earnings(max_tickers=max_tickers, retry_errored=retry_errored)
+    stage_insiders(max_tickers=max_tickers, retry_errored=retry_errored)
 
     overall_elapsed = time.time() - overall_start
     print_header("PIPELINE COMPLETE")
@@ -396,10 +413,40 @@ def run_all(retry_errored: bool = False):
     show_stats()
 
 
+def v1_stages(
+    config: PipelineRunConfig,
+) -> tuple[tuple[str, Callable[[], object]], ...]:
+    """Return the explicit, ordered V1 acquisition stage contract."""
+    return (
+        ("discover", stage_discover),
+        (
+            "prices",
+            lambda: stage_prices(
+                retry_errored=config.retry_errored,
+                max_tickers=config.limit,
+                aggregate=config.aggregate,
+            ),
+        ),
+        ("indexes", stage_indexes),
+        ("validate", stage_validate),
+    )
+
+
+def run_v1(config: PipelineRunConfig) -> None:
+    """Run the governed V1 acquisition stages with explicit limits."""
+    init_database()
+    ensure_progress_table()
+    for _, stage in v1_stages(config):
+        stage()
+
+
 # ── Dashboard + interactive command handlers ─────────────────
 
 
-def _run_all_with_dashboard(retry_errored: bool = False):
+def _run_all_with_dashboard(
+    retry_errored: bool = False,
+    max_tickers: Optional[int] = None,
+):
     """Like run_all() but with a multi-stage dashboard rendered between stages."""
     from src.ui.dashboard import LivePipelineDashboard
 
@@ -421,17 +468,18 @@ def _run_all_with_dashboard(retry_errored: bool = False):
 
     for stage_name, fn, stat_key in [
         ("Discover",   stage_discover,                                                None),
-        ("Prices",     lambda: stage_prices(retry_errored=retry_errored),             "daily_prices"),
+        ("Prices",     lambda: stage_prices(retry_errored=retry_errored,
+                                            max_tickers=max_tickers),                "daily_prices"),
         ("Fundamentals", lambda: stage_fundamentals(retry_errored=retry_errored),     "fundamentals"),
-        ("Supplemental", lambda: stage_supplemental(max_tickers=100,
+        ("Supplemental", lambda: stage_supplemental(max_tickers=max_tickers,
                                                    retry_errored=retry_errored),     "supplemental_data"),
         ("Indexes",    stage_indexes,                                                 "index_membership"),
         ("Export",     stage_export,                                                  None),
-        ("Options",    lambda: stage_options(max_tickers=100,
+        ("Options",    lambda: stage_options(max_tickers=max_tickers,
                                               retry_errored=retry_errored),          "options_chain"),
-        ("Earnings",   lambda: stage_earnings(max_tickers=100,
+        ("Earnings",   lambda: stage_earnings(max_tickers=max_tickers,
                                               retry_errored=retry_errored),          "earnings_calendar"),
-        ("Insiders",   lambda: stage_insiders(max_tickers=50,
+        ("Insiders",   lambda: stage_insiders(max_tickers=max_tickers,
                                               retry_errored=retry_errored),          "insider_trades"),
     ]:
         dash.start(stage_name)
@@ -539,7 +587,11 @@ def main():
     if command == "discover":
         stage_discover()
     elif command == "prices":
-        stage_prices(retry_errored=retry_errored, ticker_filter=filter_spec)
+        stage_prices(
+            retry_errored=retry_errored,
+            ticker_filter=filter_spec,
+            max_tickers=args.max_tickers,
+        )
     elif command == "fundamentals":
         stage_fundamentals(retry_errored=retry_errored, ticker_filter=filter_spec)
     elif command == "supplemental":
@@ -560,6 +612,14 @@ def main():
         max_t = int(raw_args[1]) if len(raw_args) > 1 and raw_args[1].isdigit() else None
         stage_insiders(max_tickers=max_t, retry_errored=retry_errored,
                        ticker_filter=filter_spec)
+    elif command == "v1":
+        run_v1(
+            PipelineRunConfig(
+                limit=args.max_tickers,
+                retry_errored=retry_errored,
+                aggregate=False,
+            )
+        )
     elif command == "export":
         stage_export()
     elif command == "stats":
@@ -573,7 +633,10 @@ def main():
     elif command == "test" and len(raw_args) > 1:
         test_single_ticker(raw_args[1])
     elif command == "all":
-        _run_all_with_dashboard(retry_errored=retry_errored)
+        _run_all_with_dashboard(
+            retry_errored=retry_errored,
+            max_tickers=args.max_tickers,
+        )
     else:
         print(f"Unknown command: {command}")
         print(__doc__)

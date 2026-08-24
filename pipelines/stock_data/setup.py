@@ -13,7 +13,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Market Data Pipeline",
     packages=find_packages(exclude=["tests", "tests.*"]),
-    python_requires=">=3.9",
+    python_requires=">=3.11",
     install_requires=[
         "yfinance>=0.2.0",
         "pandas>=2.0.0",
@@ -23,6 +23,7 @@ setup(
         "beautifulsoup4>=4.12.0",
         "lxml>=4.9.0",
         "pyarrow>=12.0.0",
+        "rich>=13.0.0",
     ],
     extras_require={
         "stealth": ["curl_cffi>=0.7.0"],

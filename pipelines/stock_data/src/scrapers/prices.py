@@ -293,7 +293,12 @@ class PriceScraper(BaseScraper):
     def __init__(self):
         super().__init__(stage="prices", name="PRICES")
 
-    def run(self, retry_errored: bool = False, max_items: Optional[int] = None):
+    def run(
+        self,
+        retry_errored: bool = False,
+        max_items: Optional[int] = None,
+        aggregate: bool = True,
+    ):
         """Override run() with batch-based price scraping logic."""
         self._setup_signal_handler()
         self._reset_stale_progress()
@@ -341,9 +346,11 @@ class PriceScraper(BaseScraper):
             self._process_batches(batches, remaining)
 
         # Post-processing
-        if not self.shutdown_requested:
+        if not self.shutdown_requested and aggregate:
             print("\n  [PRICES] Computing weekly/monthly aggregates...")
             aggregate_weekly_monthly(scraper_instance=self)
+        elif not self.shutdown_requested:
+            print("\n  [PRICES] Weekly/monthly aggregation disabled for this run.")
         else:
             print("\n  [PRICES] Skipping aggregation (shutdown requested).")
 
@@ -496,13 +503,22 @@ class PriceScraper(BaseScraper):
 
 # ── Convenience Entry Point ────────────────────────────────────
 
-def run_price_scraper(retry_errored: bool = False, ticker_filter=None):
+def run_price_scraper(
+    retry_errored: bool = False,
+    ticker_filter=None,
+    max_tickers: Optional[int] = None,
+    aggregate: bool = True,
+):
     """Run price scraper (convenience wrapper)."""
     scraper = PriceScraper()
     if ticker_filter is not None:
         scraper._ticker_filter = ticker_filter
     try:
-        scraper.run(retry_errored=retry_errored)
+        scraper.run(
+            retry_errored=retry_errored,
+            max_items=max_tickers,
+            aggregate=aggregate,
+        )
     finally:
         scraper.cleanup()
 
