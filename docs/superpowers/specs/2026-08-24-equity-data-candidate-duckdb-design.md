@@ -1,6 +1,6 @@
 # Equity Data Phase 2 — Deterministic Candidate DuckDB Design
 
-**Status:** Approved design, pending principal review of this specification
+**Status:** Approved base design; governed metadata Amendment 1 pending principal review
 
 **Date:** 2026-08-24
 
@@ -16,6 +16,8 @@ The result is deliberately not research-ready. Every Phase 2 artifact is marked 
 
 This specification narrows Phase 2 of [Equity Data Pipeline Integration — V1 Design and Delivery Plan](2026-08-23-equity-data-pipeline-integration-design.md). Where that parent design assumes facts that the legacy snapshot does not contain, this specification controls Phase 2. It does not weaken the parent design's requirements for an eventually admitted dataset.
 
+Amendment 1 incorporates the output of [Governed Ticker-Metadata Enrichment Design](2026-08-24-governed-ticker-metadata-enrichment-design.md). It changes only source-table disposition, candidate preservation of provider-reported metadata, and the related provenance and availability language. It does not authorize metadata as canonical truth, change admission policy, implement the builder, or begin Phase 3.
+
 ## 2. Evidence that constrains the design
 
 The committed V1 inventory describes a mutable source file, not a frozen build input. At audit time it recorded:
@@ -28,7 +30,7 @@ The committed V1 inventory describes a mutable source file, not a frozen build i
 
 The audit also established these limitations:
 
-- the legacy database has no acquisition-attempt table and no row-level retrieval timestamp, provider revision, collector version, or `yfinance` version;
+- the audited pre-enrichment database has no acquisition-attempt table and no row-level retrieval timestamp, provider revision, collector version, or `yfinance` version; a later frozen build input may add governed ticker-metadata attempts and observations under Amendment 1;
 - the current collector requests unadjusted OHLC with `auto_adjust=False`, but the database cannot prove that every historical row was collected under that code and configuration;
 - the ticker registry is a current observation, not listing history, and contains heuristic ETF flags, mostly null countries, and securities such as units, warrants, rights, preferred shares, tests, and foreign listings;
 - currency is absent from price and dividend rows;
@@ -109,6 +111,8 @@ Each entry includes its source row count and a stable reason code. The initial p
 | Source table | Phase 2 disposition | Reason |
 | --- | --- | --- |
 | `tickers` | `CONSUMED` | observed registry and source identity |
+| `ticker_metadata_observations` | `CONSUMED` when present under the governed enrichment contract | append-only provider-reported metadata observations |
+| `ticker_metadata_attempts` | `EXCLUDED_BY_POLICY` when present | operational acquisition evidence, not candidate facts |
 | `daily_prices` | `CONSUMED` | raw daily bars |
 | `dividends` | `CONSUMED` | raw provider dividend events |
 | `splits` | `CONSUMED` | raw provider split events |
@@ -118,7 +122,7 @@ Each entry includes its source row count and a stable reason code. The initial p
 | `scraping_progress` | `EXCLUDED_BY_POLICY` | mutable operational state, not research data |
 | fundamentals and statement tables | `EXCLUDED_BY_POLICY` when present and empty | no point-in-time contract in this dataset |
 | supplemental tables | `EXCLUDED_BY_POLICY` when present and empty | no point-in-time contract in this dataset |
-| `acquisition_attempts` | `ABSENT` for the legacy snapshot | the audited database predates that schema |
+| `acquisition_attempts` | `EXCLUDED_BY_POLICY` when present; `ABSENT` for the audited pre-enrichment snapshot | operational acquisition evidence, not candidate facts |
 
 An unexpected table or schema does not disappear silently. It is recorded as `UNSUPPORTED_SCHEMA`, and the build fails before publication until policy is explicitly revised.
 
@@ -134,6 +138,8 @@ The Phase 2 instrument record preserves source assertions but does not elevate t
 - canonical `country_code` and `currency_code` are null unless directly evidenced by the frozen source, which the legacy snapshot does not provide reliably;
 - listing, delisting, and symbol-effective dates are null;
 - no default research cohort is assigned.
+
+Governed metadata observations never overwrite these registry assertions during acquisition or Phase 2. Provider-reported exchange forms, quote type, currency, sector, industry, country, market cap, and names remain separate observations with their own provider, request contract, and observation time. They do not populate canonical instrument fields.
 
 `symbol_history` contains the observed source symbol tied to the instrument but leaves effective bounds unknown. It must not turn registry observation times into listing dates or fabricate ticker-change history.
 
@@ -175,16 +181,24 @@ Contains the logical dataset ID, schema version, build profile, source snapshot 
 
 It does not contain the DuckDB file's own checksum, the manifest checksum, an admission timestamp, or any field that creates a hash cycle.
 
+### 8.8 `instrument_metadata_observations`
+
+One row per consumed `ticker_metadata_observations` source row. It retains source observation and attempt linkage, raw ticker ID, stable instrument UUID, requested and provider-reported symbols, provider and method, canonical request contract and identity, provider observation time, present-field inventory, allowlisted names and exchange forms, quote type, currency, sector, industry, country, market cap, collector revision/dirty state, Python version, and provider-library name/version.
+
+All values are labeled `PROVIDER_REPORTED_NONCANONICAL`. The table does not resolve conflicts across observations, select a latest truth, project values into `instruments`, infer security type, invent listing or symbol-effective dates, normalize currency or country into canonical codes, or assign exchange calendars. Attempt diagnostics and failed-call rows are not copied into this table.
+
 ## 9. Time and availability semantics
 
 The build keeps four different concepts separate:
 
 1. `session_date` is the market date represented by a daily bar.
-2. `source_observed_at` is the frozen snapshot's observation timestamp. For the legacy snapshot this is a dataset-level timestamp and therefore may be identical across all rows and instruments. It is not claimed to be the time each value was originally collected.
+2. `source_observed_at` is the frozen snapshot's observation timestamp. For legacy price, action, and registry rows this is a dataset-level timestamp and therefore may be identical across all rows and instruments. For a governed metadata observation it is the recorded provider-call completion time under that observation's request contract.
 3. `market_available_at` is a modeled market-time lower bound. For a raw daily bar only, it is the pinned reference-session close plus a declared ingestion delay. It varies by session date. It is null for legacy corporate actions because their announcement/publication time is unknown.
 4. `available_at` is the research-admission boundary. It remains null for every legacy Phase 2 observation.
 
 Every row also has an `availability_basis`. Legacy rows use `UNRESOLVED_LEGACY_SNAPSHOT`; modeled bar times separately record the calendar version and delay policy. No query may substitute `source_observed_at` or `market_available_at` for null `available_at`.
+
+Governed metadata observations use `UNRESOLVED_PROVIDER_METADATA_OBSERVATION` and retain null `market_available_at` and null `available_at`. Observation time proves when the collector saw a value; it does not prove when the underlying issuer or listing fact became public or effective.
 
 This means availability fields do affect downstream calculations by design: null `available_at` causes fail-closed exclusion. Phase 2 itself performs no calculations, formulas, model fitting, or backtests.
 
@@ -199,6 +213,8 @@ Provenance strength is explicit rather than implied:
 - `auto_adjust=False` is recorded as the current pipeline declaration, not proof about every stored row;
 - source table and source row ID are retained for traceability;
 - the frozen snapshot time is labeled `source_observed_at`, never `collected_at` or `retrieved_at`.
+
+Amendment 1 adds stronger attempt-level provenance only for governed metadata observations: provider, method, request-contract hash, provider observation time, collector revision/dirty state, Python version, and provider-library version. Provider revision, original publication/effective time, response identity, and the semantics of values before observation remain unknown. Excluded attempt rows may be summarized by outcome and contract in the manifest without copying diagnostics.
 
 The manifest contains both value and evidence basis so a consumer cannot confuse a declared configuration with measured row provenance.
 
@@ -297,6 +313,7 @@ Worker tests cover:
 - source-table disposition completeness;
 - instrument UUID stability within a lineage and change across reassigned lineages;
 - exact preservation of anomalous floats, duplicates, source row IDs, and null canonical facts;
+- exact preservation of governed metadata observations as noncanonical rows, with attempt tables excluded and no projection into `instruments`;
 - availability semantics and fail-closed null `available_at`;
 - typed hash codec edge cases and hash-cycle absence;
 - fixed ordering and bounded batches;
@@ -327,6 +344,7 @@ Phase 2 is complete only when all of the following are demonstrated:
 13. Publication is atomic, immutable, collision-safe, and covered by disk preflight.
 14. Worker dependencies remain isolated from the platform core.
 15. Worker, collector, boundary, platform changed/domain, and final full offline validation pass.
+16. Every governed metadata observation is consumed exactly once, attempt rows remain excluded, and all metadata `available_at` values and canonical projections remain null.
 
 ## 18. Explicit handoff to Phase 3
 
@@ -334,6 +352,7 @@ Phase 3 owns all decisions that can grant or deny research use:
 
 - resolve or conservatively reject legacy availability;
 - establish supported instrument types, exchange/calendar mapping, currency, symbol history, and universe policy;
+- reconcile or reject conflicting provider-reported metadata observations and establish any safe effective-time policy;
 - execute structural, market-logic, corporate-action, coverage, and drift rules;
 - preserve flags and assign admitted, quarantined, or rejected dispositions;
 - reconcile duplicates and anomalous observations without erasing raw candidate evidence;
@@ -343,4 +362,4 @@ Until Phase 3 satisfies those gates, Phase 2 output must remain unusable by form
 
 ## 19. Review and implementation gate
 
-Principal approval of this specification authorizes a task-level implementation plan for Phase 2 only. It does not authorize a real candidate build until a frozen source copy, inventory 2.0, dependency lock, disk preflight, and benchmark checkpoint are present. Any change that assigns a non-null legacy `available_at`, elevates legacy source assertions to canonical facts, removes anomalous rows, weakens deterministic identity, or grants research authority requires renewed design review.
+Principal approval of this specification, including Amendment 1, authorizes a task-level implementation plan for Phase 2 only. It does not authorize a real candidate build until a frozen source copy, inventory 2.0, dependency lock, disk preflight, and benchmark checkpoint are present. Any change that assigns a non-null legacy or metadata `available_at`, projects provider metadata into canonical facts, removes anomalous rows, weakens deterministic identity, or grants research authority requires renewed design review.
