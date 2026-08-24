@@ -8,9 +8,14 @@
 
 **Feature branch:** `feat/equity-data-v1`
 
-**Feature HEAD:** `9da57e129245b456e462b7a5056e98048e5e9ccb`
+**Validated implementation baseline:** `9da57e129245b456e462b7a5056e98048e5e9ccb`
 
 **Base/main HEAD at handoff:** `60250919e65c6a4f88d947d787791e6475b3a6b2`
+
+The handoff itself is committed on the feature branch after the validated
+implementation baseline. Resolve the branch's current moving HEAD with
+`git rev-parse HEAD`; do not hard-code the documentation commit as an
+implementation boundary.
 
 ## 1. Read this first
 
@@ -321,7 +326,7 @@ failure.
 
 The feature branch has not been merged into `main`.
 
-Commits after `main` at handoff, oldest first:
+Acquisition implementation commits after `main`, oldest first:
 
 ```text
 90d2de96a45727326e8bd6846801bab82b01edc0  build(data): import isolated stock collector
@@ -413,8 +418,8 @@ bars under an explicit trading-session period convention.
 
 1. Read `AGENTS.md`.
 2. Inspect both main and feature worktree status.
-3. Confirm `feat/equity-data-v1` still points to this handoff commit or a known
-   descendant.
+3. Confirm `feat/equity-data-v1` contains the validated implementation baseline
+   and this handoff, and inspect any newer descendant commits.
 4. Re-run a merge simulation against the current `main`.
 5. Preserve all unrelated dirty files.
 6. Integrate the validated V1 branch before starting Phase 2, or create the
@@ -589,9 +594,11 @@ docs/data/EQUITY_DATA_V1_HANDOFF.md completely, then read the integration design
 acquisition plan, operations guide, and raw inventory referenced by the handoff.
 
 First audit current main/feature Git state and preserve all unrelated dirty
-files. The validated feature HEAD at handoff was 9da57e1 and main was 6025091;
-re-verify rather than assuming those pointers are unchanged. Do not merge,
-discard, push, or create a PR without the required branch-integration choice.
+files. The validated implementation baseline was 9da57e1 and main was 6025091;
+the handoff documentation was committed afterward, so resolve the current
+feature HEAD and inspect descendants rather than treating 9da57e1 as the moving
+branch tip. Do not merge, discard, push, or create a PR without the required
+branch-integration choice.
 
 The next milestone is a deterministic, isolated SQLite-to-candidate-DuckDB
 builder with manifest, provenance, checksums, build report, and benchmark-backed
