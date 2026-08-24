@@ -496,6 +496,22 @@ def define_schema() -> MetaData:
         Index("idx_earnings_ticker_date", "ticker_id", "earnings_date"),
     )
 
+    # -- Append-only acquisition evidence ----------------------------
+    Table(
+        "acquisition_attempts", meta,
+        Column("id", Integer, primary_key=True, autoincrement=True),
+        Column("stage", String(50), nullable=False),
+        Column("ticker", String(32), nullable=False),
+        Column("outcome", String(32), nullable=False),
+        Column("started_at", DateTime, nullable=False),
+        Column("finished_at", DateTime, nullable=False),
+        Column("requested_start", Date),
+        Column("requested_end", Date),
+        Column("observed_start", Date),
+        Column("observed_end", Date),
+        Column("detail", Text, nullable=False, default=""),
+    )
+
     return meta
 
 
@@ -741,6 +757,66 @@ def save_progress(stage: str, ticker: str, status: str, details: str = ""):
             "status": status,
             "details": details,
         })
+
+
+def record_attempt(
+    stage: str,
+    ticker: str,
+    outcome: str,
+    started_at: datetime,
+    finished_at: datetime,
+    requested_start: date | None = None,
+    requested_end: date | None = None,
+    observed_start: date | None = None,
+    observed_end: date | None = None,
+    detail: str = "",
+) -> int:
+    """Insert one immutable acquisition-attempt record."""
+    with get_connection() as conn:
+        result = conn.execute(
+            text(
+                """
+                INSERT INTO acquisition_attempts (
+                    stage, ticker, outcome, started_at, finished_at,
+                    requested_start, requested_end, observed_start, observed_end, detail
+                ) VALUES (
+                    :stage, :ticker, :outcome, :started_at, :finished_at,
+                    :requested_start, :requested_end, :observed_start, :observed_end, :detail
+                )
+                """
+            ),
+            {
+                "stage": stage,
+                "ticker": ticker,
+                "outcome": outcome,
+                "started_at": started_at,
+                "finished_at": finished_at,
+                "requested_start": requested_start,
+                "requested_end": requested_end,
+                "observed_start": observed_start,
+                "observed_end": observed_end,
+                "detail": detail,
+            },
+        )
+        return int(result.lastrowid)
+
+
+def latest_attempt(stage: str, ticker: str) -> dict[str, object] | None:
+    """Return the most recently inserted attempt for a stage and ticker."""
+    with get_connection() as conn:
+        row = conn.execute(
+            text(
+                """
+                SELECT id, stage, ticker, outcome, started_at, finished_at,
+                       requested_start, requested_end, observed_start, observed_end, detail
+                FROM acquisition_attempts
+                WHERE stage = :stage AND ticker = :ticker
+                ORDER BY id DESC LIMIT 1
+                """
+            ),
+            {"stage": stage, "ticker": ticker},
+        ).mappings().first()
+        return dict(row) if row is not None else None
 
 
 def mark_in_progress(stage: str, ticker: str):
