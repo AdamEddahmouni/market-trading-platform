@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import math
+import os
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
@@ -13,7 +15,20 @@ sys.path.insert(0, str(SRC))
 
 from market_platform_foundation.discovery.mixed import (  # noqa: E402
     LANES_BY_SCREEN,
+    MixedCandidate,
     aggregate_candidate_sets,
+)
+from market_platform_foundation.discovery.live_enrichment import (  # noqa: E402
+    MoomooCandidateEnricher,
+    discovery_live_candidate_cap,
+)
+from market_platform_foundation.market_data.observational_state import (  # noqa: E402
+    ObservationalStateStore,
+    QuoteSnapshot,
+)
+from market_platform_foundation.market_data.subscription_manager import (  # noqa: E402
+    LiveSubscriptionManager,
+    SubscriptionPriority,
 )
 
 
@@ -194,6 +209,209 @@ class MixedDomainTests(unittest.TestCase):
 
         self.assertEqual([row.instrument_id for row in mixed], ["BBB", "AAA", "ZZZ"])
         self.assertEqual([row.queue_rank for row in mixed], [1, 2, 3])
+
+
+def ranked_candidate(symbol: str, rank: int) -> MixedCandidate:
+    return MixedCandidate(
+        instrument_id=symbol,
+        lanes=["MOMENTUM"],
+        screen_matches=["UNUSUAL_VOLUME_DISCOVERY"],
+        matched_reasons=["RVOL 2.0"],
+        metrics={"price": 10.0, "rel_volume": 2.0},
+        discovery_as_of="2026-08-24T13:00:00Z",
+        available_time_ns=1_000_000_000,
+        quality="PASS",
+        provenance=[],
+        attention_score=float(100 - rank),
+        queue_rank=rank,
+    )
+
+
+class FakeRuntime:
+    def __init__(self, *, quota: int = 100) -> None:
+        self.subscriptions = LiveSubscriptionManager(max_quota=quota)
+        self.state = ObservationalStateStore()
+        self.subscribe_calls: list[dict[str, object]] = []
+        self.unsubscribe_calls: list[dict[str, object]] = []
+
+    def subscribe(self, **kwargs: object) -> list[dict[str, object]]:
+        self.subscribe_calls.append(dict(kwargs))
+        results = []
+        for capability in kwargs["capabilities"]:
+            result = self.subscriptions.acquire(
+                instrument_id=str(kwargs["instrument_id"]),
+                capability=str(capability),
+                consumer_id=str(kwargs["consumer_id"]),
+                priority=int(kwargs["priority"]),
+            )
+            results.append(
+                {
+                    "accepted": result.accepted,
+                    "instrument_id": result.key.instrument_id,
+                    "capability": result.key.capability,
+                    "reason": result.reason,
+                }
+            )
+        return results
+
+    def unsubscribe(self, **kwargs: object) -> list[dict[str, object]]:
+        self.unsubscribe_calls.append(dict(kwargs))
+        results = []
+        for capability in kwargs["capabilities"]:
+            result = self.subscriptions.release(
+                instrument_id=str(kwargs["instrument_id"]),
+                capability=str(capability),
+                consumer_id=str(kwargs["consumer_id"]),
+            )
+            results.append(
+                {
+                    "accepted": result.accepted,
+                    "instrument_id": result.key.instrument_id,
+                    "capability": result.key.capability,
+                }
+            )
+        return results
+
+
+def quote(
+    symbol: str,
+    *,
+    received_ns: int,
+    bid: float = 9.99,
+    ask: float = 10.01,
+    last: float = 10.0,
+) -> QuoteSnapshot:
+    return QuoteSnapshot(
+        instrument_id=symbol,
+        bid_price=bid,
+        ask_price=ask,
+        bid_size=100.0,
+        ask_size=100.0,
+        last_price=last,
+        volume=1_000_000.0,
+        event_time_ns=received_ns,
+        available_time_ns=received_ns,
+        received_ns=received_ns,
+        quality="PASS",
+        provider="moomoo",
+        admission="DISPLAY",
+    )
+
+
+class MoomooEnrichmentTests(unittest.TestCase):
+    def test_reconcile_uses_quote_only_dedicated_consumer_and_background_priority(self) -> None:
+        runtime = FakeRuntime()
+        enricher = MoomooCandidateEnricher(runtime, cap=2, now_ns=lambda: 2_000_000_000)
+
+        outcomes = enricher.reconcile([ranked_candidate("AAPL", 1), ranked_candidate("MSFT", 2)])
+
+        self.assertTrue(all(row["accepted"] for row in outcomes))
+        self.assertEqual(len(runtime.subscribe_calls), 2)
+        self.assertEqual(runtime.subscribe_calls[0]["capabilities"], ["BASIC_QUOTE"])
+        self.assertEqual(runtime.subscribe_calls[0]["consumer_id"], "discover-live-screener")
+        self.assertEqual(
+            runtime.subscribe_calls[0]["priority"],
+            int(SubscriptionPriority.BACKGROUND_RESEARCH),
+        )
+
+    def test_reconcile_respects_cap_and_remaining_provider_quota(self) -> None:
+        runtime = FakeRuntime(quota=2)
+        runtime.subscriptions.acquire(
+            instrument_id="SPY",
+            capability="BASIC_QUOTE",
+            consumer_id="workspace",
+        )
+        enricher = MoomooCandidateEnricher(runtime, cap=3)
+
+        outcomes = enricher.reconcile(
+            [ranked_candidate("AAPL", 1), ranked_candidate("MSFT", 2), ranked_candidate("NVDA", 3)]
+        )
+
+        self.assertEqual([row["instrument_id"] for row in outcomes if row["accepted"]], ["AAPL"])
+        self.assertEqual(enricher.subscribed_symbols, {"AAPL"})
+        self.assertEqual(len(runtime.subscriptions.active_keys), 2)
+
+    def test_hysteresis_retains_incumbent_within_three_places_of_cutoff(self) -> None:
+        runtime = FakeRuntime()
+        enricher = MoomooCandidateEnricher(runtime, cap=2)
+        enricher.reconcile([ranked_candidate("AAPL", 1), ranked_candidate("MSFT", 2)])
+
+        enricher.reconcile(
+            [
+                ranked_candidate("NVDA", 1),
+                ranked_candidate("TSLA", 2),
+                ranked_candidate("META", 3),
+                ranked_candidate("AAPL", 4),
+                ranked_candidate("MSFT", 7),
+            ]
+        )
+
+        self.assertEqual(enricher.subscribed_symbols, {"AAPL", "NVDA"})
+        self.assertTrue(any(call["instrument_id"] == "MSFT" for call in runtime.unsubscribe_calls))
+
+    def test_release_removes_only_screener_consumer_reference(self) -> None:
+        runtime = FakeRuntime()
+        runtime.subscriptions.acquire(
+            instrument_id="AAPL",
+            capability="BASIC_QUOTE",
+            consumer_id="workspace",
+        )
+        enricher = MoomooCandidateEnricher(runtime, cap=1)
+        enricher.reconcile([ranked_candidate("AAPL", 1)])
+
+        enricher.reconcile([ranked_candidate("MSFT", 1)])
+
+        key = "AAPL:US_EQUITY_L1"
+        self.assertIn(key, runtime.subscriptions.active_keys)
+        self.assertEqual(set(runtime.subscriptions.refs[key]), {"workspace"})
+
+    def test_unavailable_runtime_and_awaiting_first_event_are_explicit(self) -> None:
+        candidate = ranked_candidate("AAPL", 1)
+        unavailable = MoomooCandidateEnricher(None).enrich([candidate])["AAPL"]
+        runtime = FakeRuntime()
+        awaiting_enricher = MoomooCandidateEnricher(runtime)
+        awaiting_enricher.reconcile([candidate])
+        awaiting = awaiting_enricher.enrich([candidate])["AAPL"]
+
+        self.assertEqual(unavailable["status"], "UNAVAILABLE")
+        self.assertEqual(unavailable["reason"], "MOOMOO_RUNTIME_UNAVAILABLE")
+        self.assertIsNone(unavailable["last_price"])
+        self.assertEqual(awaiting["status"], "SNAPSHOT")
+        self.assertEqual(awaiting["reason"], "AWAITING_FIRST_EVENT")
+
+    def test_quote_status_spread_and_crossed_market_quality(self) -> None:
+        now_ns = 10_000_000_000
+        runtime = FakeRuntime()
+        runtime.state.quotes["AAPL"] = quote("AAPL", received_ns=now_ns - 1_000_000_000)
+        runtime.state.quotes["MSFT"] = quote("MSFT", received_ns=now_ns - 6_000_000_000)
+        runtime.state.quotes["NVDA"] = quote(
+            "NVDA",
+            received_ns=now_ns - 1_000_000_000,
+            bid=10.1,
+            ask=10.0,
+        )
+        enricher = MoomooCandidateEnricher(runtime, now_ns=lambda: now_ns)
+
+        market = enricher.enrich(
+            [ranked_candidate("AAPL", 1), ranked_candidate("MSFT", 2), ranked_candidate("NVDA", 3)]
+        )
+
+        self.assertEqual(market["AAPL"]["status"], "LIVE")
+        self.assertAlmostEqual(market["AAPL"]["spread_pct"], 0.2)
+        self.assertEqual(market["MSFT"]["status"], "STALE")
+        self.assertEqual(market["NVDA"]["quality"], "DEGRADED")
+        self.assertEqual(market["NVDA"]["reason"], "CROSSED_MARKET")
+        self.assertIsNone(market["NVDA"]["spread_pct"])
+
+    def test_candidate_cap_configuration_is_positive_and_fail_closed(self) -> None:
+        with patch.dict(os.environ, {"IMP_DISCOVERY_LIVE_CANDIDATES": "7"}):
+            self.assertEqual(discovery_live_candidate_cap(), 7)
+        for bad in ("", "0", "-2", "abc"):
+            with self.subTest(value=bad), patch.dict(
+                os.environ,
+                {"IMP_DISCOVERY_LIVE_CANDIDATES": bad},
+            ):
+                self.assertEqual(discovery_live_candidate_cap(), 12)
 
 
 if __name__ == "__main__":
