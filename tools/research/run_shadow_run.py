@@ -17,9 +17,13 @@ annotations, which are operational facts, not decision-time claims.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
+import re
 import subprocess
 import sys
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -42,6 +46,19 @@ FROZEN_CONSTANTS = {
     "quote_staleness_seconds": 30,
 }
 STOPPING_RULE = "(complete_sessions >= 5 AND scheduled_grid_opportunities >= 65) OR elapsed_regular_sessions >= 8"
+PREFLIGHT_SCHEMA_VERSION = "platform/shadow-run-1-preflight/1.0.0"
+PREFLIGHT_PROTOCOL = "SHADOW_RUN_1_BIYA_FROZEN"
+_SHA256_PATTERN = re.compile(r"[0-9a-fA-F]{64}")
+_HEAD_PATTERN = re.compile(r"[0-9a-fA-F]{40}")
+_LOCALHOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+_INERT_RUNTIME_GATES = (
+    "IMP_SHADOW_RECORDING",
+    "IMP_LIVE_EXECUTION",
+    "IMP_LIVE_INTERNAL_SIMULATION",
+    "IMP_PAPER_EXECUTION",
+    "IMP_BROKER_PAPER_EXECUTION",
+    "EXECUTION_ENABLE",
+)
 
 
 def repo_root() -> Path:
@@ -104,6 +121,319 @@ def _worktree_dirty(status: Any) -> bool:
         if any(ch in mutation_codes for ch in line[:2]):
             return True
     return False
+
+
+def _strict_sha256(value: Any) -> str:
+    text = str(value or "").strip().lower()
+    if _SHA256_PATTERN.fullmatch(text) is None:
+        raise ValueError("SHA256_PIN_INVALID")
+    return text
+
+
+def _strict_head(value: Any) -> str:
+    text = str(value or "").strip().lower()
+    if _HEAD_PATTERN.fullmatch(text) is None:
+        raise ValueError("EXPECTED_HEAD_INVALID")
+    return text
+
+
+def _read_pinned_json(path_value: Any, expected_digest: Any) -> tuple[dict[str, Any], str]:
+    path = Path(path_value)
+    expected = _strict_sha256(expected_digest)
+    try:
+        raw = path.read_bytes()
+    except OSError as exc:
+        raise ValueError(f"EVIDENCE_UNREADABLE:{path}") from exc
+    actual = hashlib.sha256(raw).hexdigest()
+    if actual != expected:
+        raise ValueError("EVIDENCE_DIGEST_MISMATCH")
+    try:
+        payload = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("EVIDENCE_JSON_INVALID") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("EVIDENCE_ROOT_NOT_OBJECT")
+    return payload, actual
+
+
+def _expected_offline_full_suites() -> list[str]:
+    path = repo_root() / "tools" / "validation_manifest.json"
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        suites = manifest["suites"]
+    except (OSError, UnicodeError, json.JSONDecodeError, KeyError, TypeError) as exc:
+        raise ValueError("VALIDATION_MANIFEST_UNREADABLE") from exc
+    if not isinstance(suites, list):
+        raise ValueError("VALIDATION_MANIFEST_SUITES_INVALID")
+    selected: list[str] = []
+    for row in suites:
+        if not isinstance(row, dict):
+            raise ValueError("VALIDATION_MANIFEST_SUITE_INVALID")
+        if row.get("classification") == "offline" and "full" in (row.get("tiers") or []):
+            suite_id = row.get("id")
+            if not isinstance(suite_id, str) or not suite_id:
+                raise ValueError("VALIDATION_MANIFEST_SUITE_ID_INVALID")
+            selected.append(suite_id)
+    if not selected:
+        raise ValueError("VALIDATION_MANIFEST_FULL_EMPTY")
+    return selected
+
+
+def _validation_evidence_detail(args: dict[str, Any]) -> dict[str, Any]:
+    payload, digest = _read_pinned_json(
+        args.get("validation_evidence"), args.get("validation_sha256")
+    )
+    expected_suites = _expected_offline_full_suites()
+    conditions = {
+        "schema_version": payload.get("schema_version") == "1.0",
+        "mode_full": payload.get("mode") == "full",
+        "status_passed": payload.get("status") == "passed",
+        "zero_failures": payload.get("failures") == 0,
+        "zero_errors": payload.get("errors") == 0,
+        "not_interrupted": payload.get("interrupted") is False,
+        "all_suites_ran": payload.get("not_run_suites") == [],
+        "exact_offline_full_suites": payload.get("selected_suites") == expected_suites,
+    }
+    if not all(conditions.values()):
+        failed = [name for name, passed in conditions.items() if not passed]
+        raise ValueError("FULL_VALIDATION_INVALID:" + ",".join(failed))
+    return {
+        "path": str(Path(args["validation_evidence"])),
+        "sha256": digest,
+        "started_at": payload.get("started_at"),
+        "selected_suite_count": len(expected_suites),
+    }
+
+
+def _runtime_health_evidence_detail(args: dict[str, Any]) -> dict[str, Any]:
+    payload, digest = _read_pinned_json(
+        args.get("runtime_health_evidence"), args.get("runtime_health_sha256")
+    )
+    opend = payload.get("opend")
+    quote = payload.get("quote_context")
+    conditions = {
+        "provider_moomoo": payload.get("provider") == "MOOMOO",
+        "status_ready": payload.get("status") == "READY",
+        "observational_ready": payload.get("ready_for_live_observational") is True,
+        "moomoo_configured": payload.get("imp_moomoo_live") is True,
+        "opend_object": isinstance(opend, dict),
+        "quote_context_object": isinstance(quote, dict),
+    }
+    if isinstance(opend, dict):
+        conditions["opend_localhost"] = opend.get("host") in _LOCALHOSTS
+        conditions["opend_reachable"] = opend.get("reachable") is True
+    if isinstance(quote, dict):
+        conditions["quote_context_ok"] = quote.get("ok") is True
+    if not all(conditions.values()):
+        failed = [name for name, passed in conditions.items() if not passed]
+        raise ValueError("RUNTIME_HEALTH_INVALID:" + ",".join(failed))
+    return {
+        "path": str(Path(args["runtime_health_evidence"])),
+        "sha256": digest,
+        "provider": "MOOMOO",
+        "verified_at": payload.get("verified_at"),
+        "opend": {
+            "host": opend.get("host"),
+            "port": opend.get("port"),
+        },
+    }
+
+
+def _environment_configuration(environ: Any) -> dict[str, Any]:
+    values = {key: environ.get(key) for key in (
+        "IMP_LIVE_OBSERVATIONAL", "IMP_MOOMOO_LIVE", *_INERT_RUNTIME_GATES
+    )}
+
+    def disabled(value: Any) -> bool:
+        return value is None or str(value).strip().lower() in {"", "0", "false", "no", "off"}
+
+    conditions = {
+        "observational_enabled": values["IMP_LIVE_OBSERVATIONAL"] == "1",
+        "moomoo_enabled": values["IMP_MOOMOO_LIVE"] == "1",
+        **{f"{key.lower()}_disabled": disabled(values[key]) for key in _INERT_RUNTIME_GATES},
+    }
+    if not all(conditions.values()):
+        failed = [name for name, passed in conditions.items() if not passed]
+        raise ValueError("RUNTIME_CONFIGURATION_UNSAFE:" + ",".join(failed))
+    return {
+        "IMP_LIVE_OBSERVATIONAL": "1",
+        "IMP_MOOMOO_LIVE": "1",
+        **{key: "DISABLED" for key in _INERT_RUNTIME_GATES},
+    }
+
+
+def _calendar_declaration(value: Any, name: str) -> list[str]:
+    text = str(value or "").strip()
+    if not text:
+        raise ValueError(f"{name.upper()}_DECLARATION_REQUIRED")
+    if text.upper() == "NONE":
+        return []
+    parts = [part.strip() for part in text.split(",")]
+    if any(not part for part in parts):
+        raise ValueError(f"{name.upper()}_DECLARATION_INVALID")
+    try:
+        normalized = [datetime.strptime(part, "%Y-%m-%d").date().isoformat() for part in parts]
+    except ValueError as exc:
+        raise ValueError(f"{name.upper()}_DATE_INVALID") from exc
+    if normalized != sorted(set(normalized)):
+        raise ValueError(f"{name.upper()}_DATES_NOT_UNIQUE_SORTED")
+    return normalized
+
+
+def _session_calendar_detail(args: dict[str, Any]) -> dict[str, Any]:
+    try:
+        first = datetime.strptime(str(args.get("first_session") or ""), "%Y-%m-%d").date()
+    except ValueError as exc:
+        raise ValueError("FIRST_SESSION_INVALID") from exc
+    holidays = _calendar_declaration(args.get("holidays"), "holidays")
+    early_closes = _calendar_declaration(args.get("early_closes"), "early_closes")
+    overlap = sorted(set(holidays) & set(early_closes))
+    if overlap:
+        raise ValueError("CALENDAR_DECLARATIONS_OVERLAP")
+    first_iso = first.isoformat()
+    if first.weekday() >= 5 or first_iso in holidays or first_iso in early_closes:
+        raise ValueError("FIRST_SESSION_NOT_ELIGIBLE")
+    _bootstrap_src()
+    from market_platform_foundation.shadow.session import build_session_list
+
+    dates = build_session_list(first_iso, 8, frozenset(holidays), frozenset(early_closes))
+    if not dates or dates[0] != first_iso or len(dates) != 8:
+        raise ValueError("SESSION_LIST_INVALID")
+    return {
+        "timezone": "America/New_York",
+        "hours": "09:30-16:00",
+        "first_session": first_iso,
+        "holidays": holidays,
+        "early_closes": early_closes,
+        "session_dates": dates,
+    }
+
+
+def _powershell_quote(value: Any) -> str:
+    return "'" + str(value).replace("'", "''") + "'"
+
+
+def _opening_handoff(args: dict[str, Any], calendar: dict[str, Any]) -> dict[str, Any]:
+    holidays = ",".join(calendar["holidays"]) or "NONE"
+    early_closes = ",".join(calendar["early_closes"]) or "NONE"
+    argv = [
+        str(Path(".venv") / "Scripts" / "python.exe"),
+        "tools/research/run_shadow_run.py",
+        "open",
+        "--instrument",
+        "BIYA",
+        "--first-session",
+        calendar["first_session"],
+        "--holidays",
+        holidays,
+        "--early-closes",
+        early_closes,
+        "--capture-id",
+        str(args.get("capture_id") or ""),
+        "--store-root",
+        str(Path(args["store_root"])),
+    ]
+    return {"argv": argv, "powershell": "& " + " ".join(_powershell_quote(v) for v in argv)}
+
+
+def _check(name: str, operation: Any) -> tuple[dict[str, Any], Any | None]:
+    try:
+        detail = operation()
+        return {"name": name, "passed": True, "detail": detail}, detail
+    except Exception as exc:  # Fail closed at the operator boundary.
+        return {"name": name, "passed": False, "error": str(exc)}, None
+
+
+def cmd_preflight(args: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    """Verify section-14 opening prerequisites without network or run mutation."""
+
+    git = args.get("_git_head", _git)
+
+    def worktree() -> dict[str, Any]:
+        expected = _strict_head(args.get("expected_head"))
+        actual_raw = git("rev-parse")
+        actual = _as_status_text(actual_raw).strip().lower()
+        if _HEAD_PATTERN.fullmatch(actual) is None:
+            raise ValueError("GIT_HEAD_UNRESOLVED")
+        status = _as_status_text(git("status"))
+        if actual != expected:
+            raise ValueError("GIT_HEAD_PIN_MISMATCH")
+        if status.strip():
+            raise ValueError("WORKTREE_NOT_CLEAN")
+        return {"expected_head": expected, "actual_head": actual, "clean": True}
+
+    checks: list[dict[str, Any]] = []
+    worktree_check, worktree_detail = _check("worktree", worktree)
+    checks.append(worktree_check)
+    validation_check, validation_detail = _check(
+        "offline_full_validation", lambda: _validation_evidence_detail(args)
+    )
+    checks.append(validation_check)
+    runtime_health_check, runtime_health_detail = _check(
+        "observational_runtime_health", lambda: _runtime_health_evidence_detail(args)
+    )
+    checks.append(runtime_health_check)
+    runtime_config_check, runtime_config_detail = _check(
+        "runtime_configuration",
+        lambda: _environment_configuration(args.get("_environ", os.environ)),
+    )
+    checks.append(runtime_config_check)
+
+    def instrument() -> dict[str, str]:
+        value = str(args.get("instrument") or "").strip().upper()
+        if value != "BIYA":
+            raise ValueError("FROZEN_INSTRUMENT_MUST_BE_BIYA")
+        if not str(args.get("capture_id") or "").strip():
+            raise ValueError("CAPTURE_ID_REQUIRED")
+        if not str(args.get("store_root") or "").strip():
+            raise ValueError("STORE_ROOT_REQUIRED")
+        return {"instrument": value, "provider_identity": "moomoo-observational"}
+
+    instrument_check, instrument_detail = _check("frozen_instrument", instrument)
+    checks.append(instrument_check)
+    calendar_check, calendar_detail = _check(
+        "session_calendar", lambda: _session_calendar_detail(args)
+    )
+    checks.append(calendar_check)
+
+    ready = all(check["passed"] for check in checks)
+    handoff = _opening_handoff(args, calendar_detail) if ready else None
+    report = {
+        "schema_version": PREFLIGHT_SCHEMA_VERSION,
+        "protocol": PREFLIGHT_PROTOCOL,
+        "status": "READY" if ready else "BLOCKED",
+        "checks": checks,
+        "worktree": worktree_detail,
+        "evidence": {
+            "validation": validation_detail,
+            "runtime_health": runtime_health_detail,
+        },
+        "runtime_configuration": runtime_config_detail,
+        "instrument": instrument_detail,
+        "calendar": calendar_detail,
+        "opening_handoff": handoff,
+        "side_effects": {"network_calls": False, "run_opened": False},
+    }
+    return (0 if ready else 2), report
+
+
+def _write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{target.name}.", suffix=".tmp", dir=str(target.parent)
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
+            json.dump(payload, handle, sort_keys=True, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, target)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
 
 
 def build_manifest_body(args: dict[str, Any], head_sha: bytes, session_dates: list[str]) -> tuple[Any, bool]:
@@ -466,6 +796,23 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="run_shadow_run")
     sub = parser.add_subparsers(dest="command", required=True)
 
+    p_preflight = sub.add_parser(
+        "preflight",
+        help="verify frozen BIYA Run 1 opening prerequisites without opening a run",
+    )
+    p_preflight.add_argument("--instrument", required=True)
+    p_preflight.add_argument("--first-session", required=True)
+    p_preflight.add_argument("--holidays", required=True, help="NONE or sorted ISO dates")
+    p_preflight.add_argument("--early-closes", required=True, help="NONE or sorted ISO dates")
+    p_preflight.add_argument("--capture-id", required=True)
+    p_preflight.add_argument("--store-root", default=str(store_root_default()))
+    p_preflight.add_argument("--expected-head", required=True)
+    p_preflight.add_argument("--validation-evidence", required=True)
+    p_preflight.add_argument("--validation-sha256", required=True)
+    p_preflight.add_argument("--runtime-health-evidence", required=True)
+    p_preflight.add_argument("--runtime-health-sha256", required=True)
+    p_preflight.add_argument("--report", default="")
+
     p_open = sub.add_parser("open")
     p_open.add_argument("--instrument", required=True)
     p_open.add_argument("--first-session", required=True)
@@ -492,6 +839,7 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     handlers = {
+        "preflight": lambda a: cmd_preflight(vars(a)),
         "open": lambda a: cmd_open(vars(a)),  # cmd_open speaks plain dicts
         "status": cmd_status,
         "close": cmd_close,
@@ -499,6 +847,8 @@ def main(argv: list[str] | None = None) -> int:
         "report": cmd_report,
     }
     rc, payload = handlers[args.command](args)
+    if args.command == "preflight" and args.report:
+        _write_json_atomic(Path(args.report), payload)
     if args.command != "report":  # report already printed its document
         print(json.dumps(payload, sort_keys=True))
     return rc
