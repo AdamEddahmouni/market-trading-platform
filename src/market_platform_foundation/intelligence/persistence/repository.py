@@ -12,6 +12,7 @@ from ..contracts.forecast import ForecastV1
 from ..contracts.hypothesis import HypothesisV1
 from ..contracts.opportunity import OpportunityV1
 from ..contracts.outcome import OutcomeV1
+from ..contracts.prediction_ledger import PredictionLedgerEntryV1
 from ..contracts.run_manifest import RunManifestV1
 from ..contracts.signal import SignalV1
 from ..contracts.snapshot import SnapshotV1
@@ -80,6 +81,14 @@ class IntelligenceRepository(Protocol):
     def put_outcome(self, outcome: OutcomeV1) -> RepositoryPutResult: ...
 
     def get_outcome(self, outcome_id: str) -> OutcomeV1 | None: ...
+
+    def put_prediction_ledger_entry(self, entry: PredictionLedgerEntryV1) -> RepositoryPutResult: ...
+
+    def get_prediction_ledger_entry(self, ledger_entry_id: str) -> PredictionLedgerEntryV1 | None: ...
+
+    def get_prediction_ledger_entries_by_forecast(
+        self, forecast_id: str
+    ) -> tuple[PredictionLedgerEntryV1, ...]: ...
 
     def put_run_manifest(self, manifest: RunManifestV1) -> RepositoryPutResult: ...
 

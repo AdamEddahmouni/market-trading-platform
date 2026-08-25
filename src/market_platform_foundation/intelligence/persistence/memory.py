@@ -13,6 +13,7 @@ from ..contracts.forecast import ForecastV1
 from ..contracts.hypothesis import HypothesisV1
 from ..contracts.opportunity import OpportunityV1
 from ..contracts.outcome import OutcomeV1
+from ..contracts.prediction_ledger import PredictionLedgerEntryV1
 from ..contracts.run_manifest import RunManifestV1
 from ..contracts.signal import SignalV1
 from ..contracts.snapshot import SnapshotV1
@@ -27,6 +28,7 @@ from .queries import (
     filter_forecasts_by_instrument,
     filter_opportunities_by_instrument,
     filter_outcomes_by_forecast,
+    filter_prediction_ledger_entries_by_forecast,
     query_events_as_of,
     query_signals_as_of,
 )
@@ -135,6 +137,22 @@ class InMemoryIntelligenceRepository:
 
     def get_outcome(self, outcome_id: str) -> OutcomeV1 | None:
         return self._get(OutcomeV1, "outcomes", outcome_id)
+
+    def put_prediction_ledger_entry(self, entry: PredictionLedgerEntryV1) -> RepositoryPutResult:
+        return self._put(entry)
+
+    def get_prediction_ledger_entry(self, ledger_entry_id: str) -> PredictionLedgerEntryV1 | None:
+        return self._get(PredictionLedgerEntryV1, "prediction_ledger", ledger_entry_id)
+
+    def get_prediction_ledger_entries_by_forecast(
+        self, forecast_id: str
+    ) -> tuple[PredictionLedgerEntryV1, ...]:
+        with self._lock:
+            rows = [
+                self._decode(PredictionLedgerEntryV1, body)
+                for body in self._stores["prediction_ledger"].values()
+            ]
+        return filter_prediction_ledger_entries_by_forecast(rows, forecast_id)
 
     def put_run_manifest(self, manifest: RunManifestV1) -> RepositoryPutResult:
         return self._put(manifest)

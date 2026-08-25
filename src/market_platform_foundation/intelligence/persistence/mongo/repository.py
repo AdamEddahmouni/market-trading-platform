@@ -19,6 +19,7 @@ from ..queries import (
     filter_forecasts_by_instrument,
     filter_opportunities_by_instrument,
     filter_outcomes_by_forecast,
+    filter_prediction_ledger_entries_by_forecast,
     mongo_event_availability_range_filter,
     mongo_event_candidate_filter,
     mongo_event_sort,
@@ -34,6 +35,7 @@ from ...contracts.forecast import ForecastV1
 from ...contracts.hypothesis import HypothesisV1
 from ...contracts.opportunity import OpportunityV1
 from ...contracts.outcome import OutcomeV1
+from ...contracts.prediction_ledger import PredictionLedgerEntryV1
 from ...contracts.run_manifest import RunManifestV1
 from ...contracts.signal import SignalV1
 from ...contracts.snapshot import SnapshotV1
@@ -207,6 +209,20 @@ class MongoIntelligenceRepository:
 
     def get_outcome(self, outcome_id: str) -> OutcomeV1 | None:
         return self._get("outcomes", outcome_id, OutcomeV1)
+
+    def put_prediction_ledger_entry(self, entry: PredictionLedgerEntryV1) -> RepositoryPutResult:
+        return self._put(entry)
+
+    def get_prediction_ledger_entry(self, ledger_entry_id: str) -> PredictionLedgerEntryV1 | None:
+        return self._get("prediction_ledger", ledger_entry_id, PredictionLedgerEntryV1)
+
+    def get_prediction_ledger_entries_by_forecast(
+        self, forecast_id: str
+    ) -> tuple[PredictionLedgerEntryV1, ...]:
+        codec = _CODEC_BY_COLLECTION["prediction_ledger"]
+        cursor = self._database["prediction_ledger"].find({"forecast_id": forecast_id})
+        rows = [decode_document(document, codec) for document in cursor]
+        return filter_prediction_ledger_entries_by_forecast(rows, forecast_id)
 
     def put_run_manifest(self, manifest: RunManifestV1) -> RepositoryPutResult:
         return self._put(manifest)

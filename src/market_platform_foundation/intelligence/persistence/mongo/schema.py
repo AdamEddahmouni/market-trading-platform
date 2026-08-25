@@ -272,6 +272,55 @@ def _outcome_validator() -> dict[str, Any]:
     }
 
 
+def _prediction_ledger_validator() -> dict[str, Any]:
+    return {
+        "bsonType": "object",
+        "required": [
+            "schema_version",
+            "ledger_entry_id",
+            "forecast_id",
+            "forecast_ref",
+            "target",
+            "horizon_ns",
+            "scope",
+            "instrument_id",
+            "forecast_decision_time_ns",
+            "anchor_observation",
+            "target_time_ns",
+            "target_window_start_ns",
+            "target_window_end_ns",
+            "availability_cutoff_ns",
+            "settlement_policy_identity",
+            "observation_source_policy",
+            "mode",
+            "registered_at_ns",
+        ],
+        "properties": {
+            "schema_version": _STRING,
+            "ledger_entry_id": _STRING,
+            "forecast_id": _STRING,
+            "forecast_ref": {"bsonType": "object"},
+            "target": {"bsonType": "object"},
+            "horizon_ns": _INT_OR_LONG,
+            "scope": {"bsonType": "object"},
+            "instrument_id": _STRING,
+            "forecast_decision_time_ns": _INT_OR_LONG,
+            "anchor_observation": {"bsonType": "object"},
+            "target_time_ns": _INT_OR_LONG,
+            "target_window_start_ns": _INT_OR_LONG,
+            "target_window_end_ns": _INT_OR_LONG,
+            "availability_cutoff_ns": _INT_OR_LONG,
+            "settlement_policy_identity": _STRING,
+            "observation_source_policy": {"bsonType": "object"},
+            "mode": _STRING,
+            "registered_at_ns": _INT_OR_LONG,
+            "scenario_id": _STRING,
+            "lineage_refs": {"bsonType": "array"},
+            "metadata": {"bsonType": "object"},
+        },
+    }
+
+
 def _run_manifest_validator() -> dict[str, Any]:
     return {
         "bsonType": "object",
@@ -343,6 +392,7 @@ _VALIDATOR_BUILDERS = {
     "forecasts": _forecast_validator,
     "opportunities": _opportunity_validator,
     "outcomes": _outcome_validator,
+    "prediction_ledger": _prediction_ledger_validator,
     "run_manifests": _run_manifest_validator,
 }
 
@@ -427,6 +477,11 @@ def _indexes_for(codec: RecordCodec) -> tuple[MongoIndexSpec, ...]:
         )
     if codec.collection_name == "outcomes":
         return (MongoIndexSpec(name="idx_outcomes_forecast_id", keys=[("forecast_id", 1)]),)
+    if codec.collection_name == "prediction_ledger":
+        return (
+            MongoIndexSpec(name="idx_prediction_ledger_forecast_id", keys=[("forecast_id", 1)]),
+            MongoIndexSpec(name="idx_prediction_ledger_cutoff", keys=[("availability_cutoff_ns", 1)]),
+        )
     if codec.collection_name == "opportunities":
         return (
             MongoIndexSpec(

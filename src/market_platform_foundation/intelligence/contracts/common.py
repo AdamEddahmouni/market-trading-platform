@@ -32,6 +32,7 @@ class ContractKind(StrEnum):
     FORECAST = "forecast"
     OPPORTUNITY = "opportunity"
     OUTCOME = "outcome"
+    PREDICTION_LEDGER_ENTRY = "prediction_ledger_entry"
     RUN_MANIFEST = "run_manifest"
 
 

@@ -1,0 +1,44 @@
+{
+  "generated_at": "2026-08-25T23:20:00+00:00",
+  "build_frontier": "BUILD_15_PREDICTION_LEDGER_OUTCOME_SETTLEMENT",
+  "head": "2fd3e32",
+  "file_count": 2900,
+  "previous_manifest": "artifacts/cloud-handoff/CLOUD_POST_BUILD14_MANIFEST.json",
+  "tests": {
+    "intelligence": "500 passed, 20 skipped",
+    "build_15_outcome": "25 passed",
+    "shadow_p6": "23 passed",
+    "replay_integration": "18 passed"
+  },
+  "supported_targets": [
+    "direction_up_down"
+  ],
+  "settlement_policies": [
+    "DIRECTION_UP_DOWN_5M_POLICY",
+    "P6_DIRECTION_POLICY"
+  ],
+  "prediction_ledger_persistence": {
+    "collection": "prediction_ledger",
+    "schema_version": "1",
+    "ttl": false
+  },
+  "outcome_modes": [
+    "ACTUAL_LIVE",
+    "COUNTERFACTUAL"
+  ],
+  "p6_reuse": [
+    "eligible_trades",
+    "reference_price",
+    "terminal window selection",
+    "ZERO_RETURN",
+    "UNLABELABLE_NO_REFERENCE_PRICE",
+    "UNLABELABLE_NO_HORIZON_TRADE"
+  ],
+  "limitations": [
+    "No production BUILD 14 final forecasts in default fusion path",
+    "Only direction_up_down target supported in v1 adjudicator",
+    "Mongo integration opt-in only",
+    "Market session calendar not generalized beyond P6-compatible policies",
+    "Platform UI_STORE_SOURCE_MISSING errors remain pre-existing"
+  ]
+}

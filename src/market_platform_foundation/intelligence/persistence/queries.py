@@ -7,6 +7,7 @@ from ..contracts.evidence import EvidenceV1
 from ..contracts.forecast import ForecastV1
 from ..contracts.opportunity import OpportunityV1
 from ..contracts.outcome import OutcomeV1
+from ..contracts.prediction_ledger import PredictionLedgerEntryV1
 from ..contracts.signal import SignalV1
 from ..temporal.policy import TemporalIntegrityPolicy
 from ..temporal.selection import select_events_as_of
@@ -118,6 +119,14 @@ def filter_outcomes_by_forecast(
     return tuple(sorted(rows, key=lambda row: row.outcome_id))
 
 
+def filter_prediction_ledger_entries_by_forecast(
+    entries: list[PredictionLedgerEntryV1] | tuple[PredictionLedgerEntryV1, ...],
+    forecast_id: str,
+) -> tuple[PredictionLedgerEntryV1, ...]:
+    rows = [row for row in entries if row.forecast_id == forecast_id]
+    return tuple(sorted(rows, key=lambda row: row.ledger_entry_id))
+
+
 def filter_opportunities_by_instrument(
     opportunities: list[OpportunityV1] | tuple[OpportunityV1, ...],
     instrument_id: str,
@@ -227,6 +236,7 @@ __all__ = [
     "filter_forecasts_by_instrument",
     "filter_opportunities_by_instrument",
     "filter_outcomes_by_forecast",
+    "filter_prediction_ledger_entries_by_forecast",
     "mongo_event_availability_range_filter",
     "mongo_event_candidate_filter",
     "mongo_event_sort",

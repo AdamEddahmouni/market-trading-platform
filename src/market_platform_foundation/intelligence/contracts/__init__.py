@@ -41,6 +41,11 @@ from .forecast import ForecastV1, forecast_v1_from_dict, forecast_v1_to_dict
 from .hypothesis import HypothesisV1, hypothesis_v1_from_dict, hypothesis_v1_to_dict
 from .opportunity import OpportunityV1, opportunity_v1_from_dict, opportunity_v1_to_dict
 from .outcome import OutcomeV1, outcome_v1_from_dict, outcome_v1_to_dict
+from .prediction_ledger import (
+    PredictionLedgerEntryV1,
+    prediction_ledger_entry_v1_from_dict,
+    prediction_ledger_entry_v1_to_dict,
+)
 from .run_manifest import RunManifestV1, run_manifest_v1_from_dict, run_manifest_v1_to_dict
 from .routing_decision import (
     ExpertDomain,
@@ -77,6 +82,7 @@ __all__ = [
     "OpportunityV1",
     "OutcomeResolutionStatus",
     "OutcomeV1",
+    "PredictionLedgerEntryV1",
     "QualityState",
     "QualitySummary",
     "RunManifestV1",
@@ -105,6 +111,8 @@ __all__ = [
     "opportunity_v1_to_dict",
     "outcome_v1_from_dict",
     "outcome_v1_to_dict",
+    "prediction_ledger_entry_v1_from_dict",
+    "prediction_ledger_entry_v1_to_dict",
     "round_trip_contract_dict",
     "run_manifest_v1_from_dict",
     "run_manifest_v1_to_dict",

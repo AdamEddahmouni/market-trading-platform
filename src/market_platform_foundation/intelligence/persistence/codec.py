@@ -14,6 +14,11 @@ from ..contracts.forecast import ForecastV1, forecast_v1_from_dict, forecast_v1_
 from ..contracts.hypothesis import HypothesisV1, hypothesis_v1_from_dict, hypothesis_v1_to_dict
 from ..contracts.opportunity import OpportunityV1, opportunity_v1_from_dict, opportunity_v1_to_dict
 from ..contracts.outcome import OutcomeV1, outcome_v1_from_dict, outcome_v1_to_dict
+from ..contracts.prediction_ledger import (
+    PredictionLedgerEntryV1,
+    prediction_ledger_entry_v1_from_dict,
+    prediction_ledger_entry_v1_to_dict,
+)
 from ..contracts.run_manifest import RunManifestV1, run_manifest_v1_from_dict, run_manifest_v1_to_dict
 from ..contracts.signal import SignalV1, signal_v1_from_dict, signal_v1_to_dict
 from ..contracts.snapshot import SnapshotV1, snapshot_v1_from_dict, snapshot_v1_to_dict
@@ -46,6 +51,7 @@ RecordT = (
     | ForecastV1
     | OpportunityV1
     | OutcomeV1
+    | PredictionLedgerEntryV1
     | RunManifestV1
 )
 
@@ -155,6 +161,7 @@ _KIND_TO_TYPE: dict[ContractKind, type] = {
     ContractKind.FORECAST: ForecastV1,
     ContractKind.OPPORTUNITY: OpportunityV1,
     ContractKind.OUTCOME: OutcomeV1,
+    ContractKind.PREDICTION_LEDGER_ENTRY: PredictionLedgerEntryV1,
     ContractKind.RUN_MANIFEST: RunManifestV1,
 }
 
@@ -237,6 +244,13 @@ RECORD_CODECS: tuple[RecordCodec, ...] = (
         from_dict=outcome_v1_from_dict,
     ),
     RecordCodec(
+        kind=ContractKind.PREDICTION_LEDGER_ENTRY,
+        collection_name="prediction_ledger",
+        id_field="ledger_entry_id",
+        to_dict=prediction_ledger_entry_v1_to_dict,
+        from_dict=prediction_ledger_entry_v1_from_dict,
+    ),
+    RecordCodec(
         kind=ContractKind.RUN_MANIFEST,
         collection_name="run_manifests",
         id_field="run_id",
@@ -245,7 +259,7 @@ RECORD_CODECS: tuple[RecordCodec, ...] = (
     ),
 )
 
-MONGO_SCHEMA_PLAN_VERSION = 3
+MONGO_SCHEMA_PLAN_VERSION = 4
 
 CODEC_BY_TYPE = {_KIND_TO_TYPE[codec.kind]: codec for codec in RECORD_CODECS}
 
