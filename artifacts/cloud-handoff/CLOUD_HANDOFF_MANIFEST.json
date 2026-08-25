@@ -58,18 +58,22 @@
   "third_party_dependencies": ["numpy", "pymongo", "scikit-learn", "tzdata"],
   "node_version_target": "20.x",
   "expected_test_counts": {
-    "intelligence_local_before_handoff": {
-      "ran": 340,
-      "failures": 9,
-      "errors": 9,
+    "intelligence_cloud_verified": {
+      "ran": 363,
+      "passed": 363,
       "skipped": 20,
-      "note": "7 baseline import errors due to missing numpy/sklearn in local .venv; 11 BUILD 09 test failures/errors"
+      "failures": 0,
+      "verified_at_commit": "8441a9012bc80546b783968295d230845d10f77c",
+      "verified_branch": "cloud/build-09-event-detector-router"
     },
-    "target_after_cloud_setup": "312+ passed, 20 skipped (approximate prior baseline)"
+    "shadow_p6_cloud_verified": {
+      "ran": 23,
+      "passed": 23,
+      "verified_at_commit": "8441a9012bc80546b783968295d230845d10f77c"
+    }
   },
   "known_validation_failures": {
-    "local_broad": "test_collector_excludes_generated_environment_paths — .worktrees/mixed-live-screener prohibited paths",
-    "build_09": "Route identity, detection policy, routing contract, and persistence tests failing locally"
+    "local_broad": "test_collector_excludes_generated_environment_paths — .worktrees/mixed-live-screener prohibited paths"
   },
   "files_intentionally_excluded": "See artifacts/cloud-handoff/CLOUD_EXCLUSIONS.md",
   "required_secrets_by_name": [
@@ -106,5 +110,22 @@
     "artifacts/cloud-handoff/PRE_HANDOFF_REMOTES.txt",
     "artifacts/cloud-handoff/PRE_HANDOFF_HEAD.txt",
     "artifacts/cloud-handoff/PRE_HANDOFF_BRANCH.txt"
-  ]
+  ],
+  "cloud_verification": {
+    "verified_at": "2026-08-25T19:45:00Z",
+    "agent_id": "bc-e5c9df99-8cae-4075-be52-cfd74c72ae65",
+    "branch": "cloud/build-09-event-detector-router",
+    "commit": "8441a9012bc80546b783968295d230845d10f77c",
+    "python_version": "3.11.16",
+    "node_version": "20.20.2",
+    "hash_manifest_regenerated_at_commit": "8441a9012bc80546b783968295d230845d10f77c",
+    "hash_manifest_file_count": 2782,
+    "prior_hash_mismatch_note": "Original handoff manifest at 8b2ab2b predated BUILD 09 fixes; 11 mismatches on first cloud run were expected stale-manifest drift",
+    "environment_id": "2ac1ad12-a0bb-11f1-b532-320a589b8025",
+    "environment_build_status": "no_finished_builds",
+    "intelligence_tests": "363 passed, 20 skipped",
+    "shadow_p6_tests": "23 passed",
+    "validate_changed": "green (0 tests on clean tree)",
+    "cloud_independent": true
+  }
 }

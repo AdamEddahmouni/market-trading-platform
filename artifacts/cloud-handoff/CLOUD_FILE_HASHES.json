@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-25T19:13:53.562790+00:00",
+  "generated_at": "2026-08-25T19:32:34.152902+00:00",
   "repository_root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\integrated-market-platform",
   "algorithm": "sha256",
-  "file_count": 2780,
+  "file_count": 2782,
   "files": [
     {
       "path": ".cursor/Dockerfile",
@@ -103,6 +103,16 @@
       "path": "artifacts/cloud-handoff/CLOUD_EXCLUSIONS.md",
       "size": 3105,
       "sha256": "8da7b8498eb068837efdb2801bf99a314fc32479f9c3efcbba8cc99b3496e7d2"
+    },
+    {
+      "path": "artifacts/cloud-handoff/CLOUD_FILE_HASHES.json",
+      "size": 548704,
+      "sha256": "435007d4003fa257f3ce8a6adba22cd56ca4186d0067764af441c172121efd42"
+    },
+    {
+      "path": "artifacts/cloud-handoff/CLOUD_HANDOFF_MANIFEST.json",
+      "size": 4498,
+      "sha256": "dc50e6de0697b6d997e7a7cf37a77bfa4208b2e4b72d083098af4b9e8d2b7325"
     },
     {
       "path": "artifacts/cloud-handoff/PRE_HANDOFF_BRANCH.txt",
@@ -7671,8 +7681,8 @@
     },
     {
       "path": "src/market_platform_foundation/intelligence/contracts/detection.py",
-      "size": 6942,
-      "sha256": "40eb6114029ee33bd3e4cc8a90329f7c29c10a5e257b7b6801aa07a39abc790a"
+      "size": 7068,
+      "sha256": "11e34ece2b04c2c54d18304274139499c03d76d601183b1584c43910ca05f3bd"
     },
     {
       "path": "src/market_platform_foundation/intelligence/contracts/event.py",
@@ -7706,8 +7716,8 @@
     },
     {
       "path": "src/market_platform_foundation/intelligence/contracts/routing_decision.py",
-      "size": 7571,
-      "sha256": "150b5250bfe1f5bd536c08fa5381df19c86672da78bf7beb39e471ced2b7d5d8"
+      "size": 8157,
+      "sha256": "f8925fdc015d37fc1d586e2f17996b20cb2aa38d401e7170242265a8bd7feb02"
     },
     {
       "path": "src/market_platform_foundation/intelligence/contracts/run_manifest.py",
@@ -7831,8 +7841,8 @@
     },
     {
       "path": "src/market_platform_foundation/intelligence/persistence/memory.py",
-      "size": 10686,
-      "sha256": "2770a45f61590bb690069266506aaa62acac4922e9a3de91b8fca9ae040a4616"
+      "size": 10722,
+      "sha256": "d184222967c6c6039fb08c156246ba348bbd0fa8cc57c9722e176f2f11f2bc47"
     },
     {
       "path": "src/market_platform_foundation/intelligence/persistence/mongo/__init__.py",
@@ -7946,8 +7956,8 @@
     },
     {
       "path": "src/market_platform_foundation/intelligence/replay/pipeline.py",
-      "size": 10268,
-      "sha256": "7bba10a7af37412c033d32d0242f384401ab118b0ee7232c0784c69a1770c4fb"
+      "size": 10320,
+      "sha256": "9517fd56d87c642be33e53f06e8453f24a984d5270a626c31f9191beaf0d8833"
     },
     {
       "path": "src/market_platform_foundation/intelligence/replay/runtime.py",
@@ -7976,8 +7986,8 @@
     },
     {
       "path": "src/market_platform_foundation/intelligence/routing/detector_engine.py",
-      "size": 18706,
-      "sha256": "8f6d8ed8aa451e46a7be7c211ed1b3c0a8eedf12eb678a805d613ad1b34a29a8"
+      "size": 19204,
+      "sha256": "9e77746fff9d3ca57d2ccc8835370c6a79e07db9ae23c758bfa76a842a1e36e6"
     },
     {
       "path": "src/market_platform_foundation/intelligence/routing/errors.py",
@@ -7986,8 +7996,8 @@
     },
     {
       "path": "src/market_platform_foundation/intelligence/routing/identity.py",
-      "size": 2425,
-      "sha256": "010866ac9ed0ecdf505a94a7121e12c5aa58301320fe48e050f8d1c344626ab9"
+      "size": 2403,
+      "sha256": "d0af1ab1f712e113084382843710240034284261edbba9648bee96909758b20f"
     },
     {
       "path": "src/market_platform_foundation/intelligence/routing/models.py",
@@ -7996,13 +8006,13 @@
     },
     {
       "path": "src/market_platform_foundation/intelligence/routing/policy.py",
-      "size": 6628,
-      "sha256": "9499b12021b3f804e5a088f9b3961cb723ebcde15e34bd292d144ce544b77506"
+      "size": 8540,
+      "sha256": "b0426fe291df064781cc7ab2cbbeffaed82016a3d961aba637db887b85d7af19"
     },
     {
       "path": "src/market_platform_foundation/intelligence/routing/router.py",
-      "size": 6520,
-      "sha256": "89406f869e5390a5258551f18360d38416ef82b902ddd44f969760d58817891b"
+      "size": 9242,
+      "sha256": "16426acfa06475a941d92014aeab4126b5fd747b27711a10a0540f5213cc1f55"
     },
     {
       "path": "src/market_platform_foundation/intelligence/signals/__init__.py",
