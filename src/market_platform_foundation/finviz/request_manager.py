@@ -84,8 +84,14 @@ class FinvizRequestManager:
         *,
         params: dict[str, Any] | None = None,
         timeout: float = 15.0,
+        headers: dict[str, str] | None = None,
     ) -> HttpResponse:
-        return urllib_get(url, params=params or {}, timeout=timeout, headers=self._headers)
+        return urllib_get(
+            url,
+            params=params or {},
+            timeout=timeout,
+            headers={**self._headers, **(headers or {})},
+        )
 
     def _execute_request(
         self,

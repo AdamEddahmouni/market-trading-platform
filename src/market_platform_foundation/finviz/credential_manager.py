@@ -64,6 +64,19 @@ def read_login_credentials_from_env() -> tuple[str | None, str | None]:
     return username, password
 
 
+def _configured_token_with_source() -> tuple[str | None, FinvizCredentialSource]:
+    env_token = _env_override_token()
+    if env_token:
+        return env_token, FinvizCredentialSource.ENVIRONMENT
+    secure = read_secure_token()
+    if secure:
+        return secure, FinvizCredentialSource.PRIVATE_FILE
+    file_token = _provider_env_token()
+    if file_token:
+        return file_token, FinvizCredentialSource.PROVIDER_ENV_FILE
+    return None, FinvizCredentialSource.NONE
+
+
 @dataclass
 class FinvizAuthHealth:
     state: FinvizAuthState
@@ -97,22 +110,10 @@ class FinvizCredentialManager:
 
     def load(self) -> str | None:
         with self._lock:
-            env_token = _env_override_token()
-            if env_token:
-                self._token = env_token
-                self._source = FinvizCredentialSource.ENVIRONMENT
-                self._state = FinvizAuthState.LOADED
-                return self._token
-            secure = read_secure_token()
-            if secure:
-                self._token = secure
-                self._source = FinvizCredentialSource.PRIVATE_FILE
-                self._state = FinvizAuthState.LOADED
-                return self._token
-            file_token = _provider_env_token()
-            if file_token:
-                self._token = file_token
-                self._source = FinvizCredentialSource.PROVIDER_ENV_FILE
+            token, source = _configured_token_with_source()
+            if token:
+                self._token = token
+                self._source = source
                 self._state = FinvizAuthState.LOADED
                 return self._token
             self._token = None
@@ -147,6 +148,8 @@ class FinvizCredentialManager:
     def _recovery_mode_unlocked(self) -> FinvizRecoveryMode:
         if self._source == FinvizCredentialSource.ENVIRONMENT:
             return FinvizRecoveryMode.MANUAL
+        if self._source not in (FinvizCredentialSource.NONE,):
+            return FinvizRecoveryMode.AUTO
         username, password = read_login_credentials()
         if not username or not password:
             username, password = read_login_credentials_from_env()
@@ -155,6 +158,8 @@ class FinvizCredentialManager:
         return FinvizRecoveryMode.MANUAL
 
     def _automatic_recovery_label(self, mode: FinvizRecoveryMode) -> str:
+        if mode == FinvizRecoveryMode.AUTO:
+            return "AUTOMATIC"
         if mode == FinvizRecoveryMode.LOGIN_REQUIRED:
             return "PARTIAL"
         if mode == FinvizRecoveryMode.MANUAL:
@@ -291,6 +296,26 @@ class FinvizCredentialManager:
                     return False
                 self._recovery_attempts += 1
                 self._state = FinvizAuthState.REFRESHING
+
+                current_token = self._token
+
+            candidate_token, candidate_source = _configured_token_with_source()
+            if (
+                candidate_token
+                and candidate_token != current_token
+                and candidate_source != FinvizCredentialSource.ENVIRONMENT
+                and self.validate_token(candidate_token)
+            ):
+                with self._lock:
+                    self._token = candidate_token
+                    self._source = candidate_source
+                    self._state = FinvizAuthState.HEALTHY
+                    self._last_auth_error = None
+                    self._metadata = record_credential_activation(
+                        source=candidate_source.value,
+                        rotated=True,
+                    )
+                return True
 
             username, password = read_login_credentials()
             if not username or not password:

@@ -189,6 +189,108 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
             self.assertTrue(manager.attempt_recovery())
         self.assertIn(TEST_TOKEN, validated)
 
+    def test_recovery_adopts_changed_secure_token_before_login(self) -> None:
+        manager = FinvizCredentialManager()
+        manager._token = "old-token"
+        manager._source = FinvizCredentialSource.PRIVATE_FILE
+
+        with patch(
+            "market_platform_foundation.finviz.credential_manager._env_override_token",
+            return_value=None,
+        ), patch(
+            "market_platform_foundation.finviz.credential_manager.read_secure_token",
+            return_value=TEST_TOKEN,
+        ), patch.object(
+            manager,
+            "validate_token",
+            return_value=True,
+        ) as validate_mock, patch(
+            "market_platform_foundation.finviz.credential_manager.record_credential_activation",
+            return_value=FinvizCredentialMetadata(finviz_credential_generation=1),
+        ), patch(
+            "market_platform_foundation.finviz.credential_manager.recover_token_via_login",
+        ) as login_mock:
+            recovered = manager.attempt_recovery()
+
+        self.assertTrue(recovered)
+        self.assertEqual(manager.get_token(), TEST_TOKEN)
+        self.assertEqual(manager.health().source, FinvizCredentialSource.PRIVATE_FILE)
+        self.assertEqual(manager.health().state, FinvizAuthState.HEALTHY)
+        validate_mock.assert_called_once_with(TEST_TOKEN)
+        login_mock.assert_not_called()
+
+    def test_file_credentials_report_automatic_reload_capability(self) -> None:
+        manager = FinvizCredentialManager()
+        manager._token = TEST_TOKEN
+        manager._source = FinvizCredentialSource.PRIVATE_FILE
+
+        with patch(
+            "market_platform_foundation.finviz.credential_manager.read_login_credentials",
+            return_value=(None, None),
+        ), patch(
+            "market_platform_foundation.finviz.credential_manager.read_login_credentials_from_env",
+            return_value=(None, None),
+        ):
+            health = manager.health()
+
+        self.assertEqual(health.recovery_mode.value, "AUTO")
+        self.assertEqual(health.automatic_recovery, "AUTOMATIC")
+
+    def test_unchanged_secure_token_falls_through_to_login(self) -> None:
+        manager = FinvizCredentialManager()
+        manager._token = "old-token"
+        manager._source = FinvizCredentialSource.PRIVATE_FILE
+
+        with patch(
+            "market_platform_foundation.finviz.credential_manager._env_override_token",
+            return_value=None,
+        ), patch(
+            "market_platform_foundation.finviz.credential_manager.read_secure_token",
+            return_value="old-token",
+        ), patch(
+            "market_platform_foundation.finviz.credential_manager.read_login_credentials",
+            return_value=("operator@example.com", "secret"),
+        ), patch(
+            "market_platform_foundation.finviz.credential_manager.recover_token_via_login",
+            return_value=MagicMock(
+                status=LoginRecoveryStatus.REFRESHED,
+                token=TEST_TOKEN,
+            ),
+        ) as login_mock, patch.object(
+            manager,
+            "validate_token",
+            return_value=True,
+        ), patch(
+            "market_platform_foundation.finviz.credential_manager.write_secure_token",
+            return_value=True,
+        ):
+            recovered = manager.attempt_recovery()
+
+        self.assertTrue(recovered)
+        self.assertEqual(manager.get_token(), TEST_TOKEN)
+        login_mock.assert_called_once_with(
+            username="operator@example.com",
+            password="secret",
+        )
+
+    def test_request_raw_get_accepts_validation_headers(self) -> None:
+        manager = FinvizRequestManager(min_interval_s=0.01)
+        response = MagicMock(status_code=200, text="Ticker\nAAPL", headers={})
+
+        with patch(
+            "market_platform_foundation.finviz.request_manager.urllib_get",
+            return_value=response,
+        ) as get_mock:
+            returned = manager._raw_get(
+                "https://elite.finviz.com/export/screener",
+                params={"v": "152"},
+                timeout=15,
+                headers={"Accept": "text/csv"},
+            )
+
+        self.assertIs(returned, response)
+        self.assertEqual(get_mock.call_args.kwargs["headers"]["Accept"], "text/csv")
+
     def test_bad_candidate_not_persisted(self) -> None:
         manager = FinvizCredentialManager()
         with patch.object(manager, "validate_token", return_value=False), patch(
