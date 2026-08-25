@@ -23,6 +23,8 @@ from market_platform_foundation.discovery.mixed import (  # noqa: E402
     LANES_BY_SCREEN,
     MixedCandidate,
     aggregate_candidate_sets,
+    build_candidate_caveats,
+    build_supporting_evidence,
 )
 from market_platform_foundation.discovery.live_enrichment import (  # noqa: E402
     MoomooCandidateEnricher,
@@ -224,6 +226,40 @@ class MixedDomainTests(unittest.TestCase):
         self.assertEqual([row.instrument_id for row in mixed], ["BBB", "AAA", "ZZZ"])
         self.assertEqual([row.queue_rank for row in mixed], [1, 2, 3])
 
+    def test_supporting_evidence_and_caveats_are_deterministic(self) -> None:
+        candidate = MixedCandidate(
+            instrument_id="GME",
+            lanes=["SQUEEZE", "CATALYST"],
+            screen_matches=["SHORT_SQUEEZE_DISCOVERY", "GAP_CATALYST_DISCOVERY"],
+            matched_reasons=["HIGH_SHORT_FLOAT"],
+            metrics={"price": 24.0, "short_float_pct": 22.4, "rel_volume": 2.5},
+            discovery_as_of="2026-08-24T13:00:00Z",
+            available_time_ns=1_000_000_000,
+            quality="PASS",
+            provenance=[],
+        )
+        evidence = build_supporting_evidence(candidate)
+        self.assertIn("elevated short float 22.4%", evidence)
+        caveats = build_candidate_caveats(candidate, market_status="SNAPSHOT")
+        self.assertIn("short-interest data is delayed snapshot, not live borrow", caveats)
+        self.assertIn("catalyst inferred from discovery screen only; not independently verified", caveats)
+        self.assertIn("live market confirmation unavailable for this row", caveats)
+
+    def test_payload_includes_evidence_and_caveats(self) -> None:
+        ranked = aggregate_candidate_sets(
+            [
+                candidate_set(
+                    screen_id="SHORT_SQUEEZE_DISCOVERY",
+                    symbol="GME",
+                    metrics={"price": 24.0, "short_float_pct": 22.0, "rel_volume": 2.0},
+                )
+            ],
+            now_ns=2_000_000_000,
+        )
+        payload = ranked[0].to_dict()
+        self.assertTrue(payload["supporting_evidence"])
+        self.assertTrue(payload["caveats"])
+
 
 def ranked_candidate(symbol: str, rank: int) -> MixedCandidate:
     return MixedCandidate(
@@ -383,6 +419,25 @@ class MoomooEnrichmentTests(unittest.TestCase):
 
         enricher.reconcile([ranked_candidate("MSFT", 1)])
 
+        key = "AAPL:US_EQUITY_L1"
+        self.assertIn(key, runtime.subscriptions.active_keys)
+        self.assertEqual(set(runtime.subscriptions.refs[key]), {"workspace"})
+
+    def test_release_all_drops_only_screener_symbols(self) -> None:
+        runtime = FakeRuntime()
+        runtime.subscriptions.acquire(
+            instrument_id="AAPL",
+            capability="BASIC_QUOTE",
+            consumer_id="workspace",
+        )
+        enricher = MoomooCandidateEnricher(runtime, cap=2)
+        enricher.reconcile([ranked_candidate("AAPL", 1), ranked_candidate("MSFT", 2)])
+        self.assertEqual(enricher.subscribed_symbols, {"AAPL", "MSFT"})
+
+        outcomes = enricher.release_all()
+
+        self.assertEqual(len(outcomes), 2)
+        self.assertEqual(enricher.subscribed_symbols, set())
         key = "AAPL:US_EQUITY_L1"
         self.assertIn(key, runtime.subscriptions.active_keys)
         self.assertEqual(set(runtime.subscriptions.refs[key]), {"workspace"})
@@ -558,9 +613,13 @@ class MixedProjectionTests(unittest.TestCase):
     def test_read_reconstructs_latest_captures_without_starting_finviz(self) -> None:
         screen_id = "SHORT_SQUEEZE_DISCOVERY"
         engine = FakeEngine({})
+        captures = {
+            screen: candidate_set(screen_id=screen, symbol=f"SYM{index}")
+            for index, screen in enumerate(SCREEN_LIBRARY)
+        }
         service, runtime_getter, capture_calls = self.make_service(
             engine=engine,
-            captures={screen_id: candidate_set(screen_id=screen_id)},
+            captures=captures,
         )
 
         payload = service.read()
@@ -570,6 +629,23 @@ class MixedProjectionTests(unittest.TestCase):
         self.assertEqual(runtime_getter.calls, [{"create": False}])
         self.assertTrue(payload["available"])
         self.assertEqual(payload["screen_outcomes"][0]["status"], "FALLBACK")
+        self.assertEqual(payload["provider_health"][0]["connection"], "HEALTHY")
+
+    def test_release_live_subscriptions_endpoint(self) -> None:
+        screen_id = "UNUSUAL_VOLUME_DISCOVERY"
+        engine = FakeEngine({screen_id: candidate_set(screen_id=screen_id)})
+        runtime = FakeRuntime()
+        service, _, _ = self.make_service(engine=engine, runtime=runtime)
+
+        service.refresh([screen_id])
+        self.assertGreater(len(runtime.subscribe_calls), 0)
+
+        payload = service.release_live_subscriptions()
+
+        self.assertEqual(payload["consumer_id"], "discover-live-screener")
+        self.assertEqual(payload["execution_authority"], "NONE")
+        self.assertGreater(payload["released_symbols"], 0)
+        self.assertTrue(runtime.unsubscribe_calls)
 
     def test_refresh_is_single_flight_and_second_caller_gets_current_result(self) -> None:
         screen_id = "UNUSUAL_VOLUME_DISCOVERY"

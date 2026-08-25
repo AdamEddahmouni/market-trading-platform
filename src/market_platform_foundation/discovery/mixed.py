@@ -85,11 +85,70 @@ class MixedCandidate:
             "attention_score": self.attention_score,
             "attention_components": dict(self.attention_components),
             "ranking_reasons": list(self.ranking_reasons),
+            "supporting_evidence": build_supporting_evidence(self),
+            "caveats": build_candidate_caveats(self, market_status=status),
             "market": market,
             "data_status": status,
             "freshness_label": freshness_label,
             "queue_rank": self.queue_rank,
         }
+
+
+_CATALYST_SCREENS = frozenset(
+    {
+        "GAP_CATALYST_DISCOVERY",
+        "EARNINGS_MOVER_DISCOVERY",
+        "ANALYST_EVENT_DISCOVERY",
+        "INSIDER_ACTIVITY_DISCOVERY",
+    }
+)
+
+
+def build_supporting_evidence(candidate: MixedCandidate) -> list[str]:
+    """Deterministic human-readable evidence derived from pipeline facts."""
+
+    evidence: list[str] = []
+    rel_volume = _finite_number(candidate.metrics.get("rel_volume"))
+    change_pct = _finite_number(candidate.metrics.get("change_pct"))
+    short_float = _finite_number(candidate.metrics.get("short_float_pct"))
+    if rel_volume is not None and rel_volume > 1.0:
+        evidence.append(f"relative volume {rel_volume:.2f}x exceeds baseline")
+    if change_pct is not None and abs(change_pct) > 0:
+        direction = "positive" if change_pct > 0 else "negative"
+        evidence.append(f"{direction} intraday change {abs(change_pct):.1f}%")
+    if short_float is not None and short_float > 0:
+        evidence.append(f"elevated short float {short_float:.1f}%")
+    if len(candidate.screen_matches) > 1:
+        evidence.append(f"matched {len(candidate.screen_matches)} discovery screens")
+    for reason in candidate.matched_reasons:
+        normalized = str(reason).strip()
+        if normalized and normalized not in evidence:
+            evidence.append(normalized)
+    return evidence
+
+
+def build_candidate_caveats(candidate: MixedCandidate, *, market_status: str) -> list[str]:
+    """Explicit limitations; never invent catalyst narratives."""
+
+    caveats: list[str] = []
+    if "CATALYST" in candidate.lanes:
+        if candidate.screen_matches and all(screen not in _CATALYST_SCREENS for screen in candidate.screen_matches):
+            caveats.append("catalyst lane assigned without catalyst-oriented screen evidence")
+        else:
+            caveats.append("catalyst inferred from discovery screen only; not independently verified")
+    if _finite_number(candidate.metrics.get("short_float_pct")) is not None:
+        caveats.append("short-interest data is delayed snapshot, not live borrow")
+    if market_status in {"SNAPSHOT", "UNAVAILABLE"}:
+        caveats.append("live market confirmation unavailable for this row")
+    elif market_status == "STALE":
+        caveats.append("live quote is stale; ranking uses degraded confirmation")
+    elif market_status == "DELAYED":
+        caveats.append("market data is delayed, not live")
+    if candidate.quality != "PASS":
+        caveats.append("discovery quality is degraded for one or more contributing captures")
+    if "CATALYST" not in candidate.lanes:
+        caveats.append("no verified catalyst")
+    return caveats
 
 
 def _snapshot_market_record(candidate: MixedCandidate) -> dict[str, Any]:

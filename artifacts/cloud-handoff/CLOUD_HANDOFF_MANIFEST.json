@@ -1,0 +1,110 @@
+{
+  "handoff_version": "1.0.0",
+  "timestamp": "2026-08-25T19:30:00Z",
+  "local_repository_root": "C:/Users/adame/Desktop/market-trading-platform/integrated-market-platform",
+  "original_branch": "main",
+  "original_head": "b89027a20274fc71a1dba8eb859c11f575510f97",
+  "handoff_branch": "cloud-handoff/full-state-2026-08-25",
+  "handoff_commit": "PENDING_COMMIT",
+  "remote": "origin",
+  "remote_url": "https://github.com/AdamEddahmouni/integrated-market-intelligence-platform.git",
+  "remote_visibility": "PRIVATE",
+  "build_frontier": "BUILD 08 complete locally; BUILD 09 partially implemented with test failures",
+  "important_directories": [
+    "src/market_platform_foundation/intelligence/",
+    "tests/intelligence/",
+    "docs/engineering/",
+    "artifacts/cloud-handoff/",
+    ".cursor/",
+    "tools/cloud/",
+    "ui/"
+  ],
+  "preserved_worktree_branches": [
+    {
+      "worktree_path": "integrated-market-platform/.worktrees/mixed-live-screener",
+      "branch": "feat/mixed-live-screener",
+      "head": "d675e94c8e3fc55c8dff6753380f31676e70e477",
+      "dirty": true,
+      "dirty_files": ["evidence/ui1/assistant-audit/conversations.json", "evidence/ui1/assistant-audit/messages.json"],
+      "cloud_preservation_branch": null,
+      "note": "Branch d675e94 already in remote history; dirty evidence audit files included in main handoff"
+    },
+    {
+      "worktree_path": "governed-ticker-metadata-enrichment",
+      "branch": "feat/governed-ticker-metadata-enrichment",
+      "head": "8afb11d814dabf31b22e643881fa1744ea61e85e",
+      "dirty": false,
+      "cloud_preservation_branch": null,
+      "note": "Clean; branch exists locally, may exist on remote separately"
+    },
+    {
+      "worktree_path": "equity-data-v1-worktree",
+      "branch": "feat/equity-data-v1",
+      "head": "825dd8ba2afd31cc3fc9666adada95618cc74138",
+      "dirty": "unknown",
+      "cloud_preservation_branch": null,
+      "note": "Dubious ownership prevented local inspection; not required for BUILD 09"
+    },
+    {
+      "worktree_path": ".worktrees/postroot-acceptance-suite",
+      "branch": "postroot-acceptance-suite",
+      "head": "269146409f5a23b89fe64f6adae9f0987b4704f0",
+      "dirty": "unknown",
+      "cloud_preservation_branch": null,
+      "note": "Worktree path missing on disk (stale registration)"
+    }
+  ],
+  "python_version": "3.11.15",
+  "third_party_dependencies": ["numpy", "pymongo", "scikit-learn", "tzdata"],
+  "node_version_target": "20.x",
+  "expected_test_counts": {
+    "intelligence_local_before_handoff": {
+      "ran": 340,
+      "failures": 9,
+      "errors": 9,
+      "skipped": 20,
+      "note": "7 baseline import errors due to missing numpy/sklearn in local .venv; 11 BUILD 09 test failures/errors"
+    },
+    "target_after_cloud_setup": "312+ passed, 20 skipped (approximate prior baseline)"
+  },
+  "known_validation_failures": {
+    "local_broad": "test_collector_excludes_generated_environment_paths — .worktrees/mixed-live-screener prohibited paths",
+    "build_09": "Route identity, detection policy, routing contract, and persistence tests failing locally"
+  },
+  "files_intentionally_excluded": "See artifacts/cloud-handoff/CLOUD_EXCLUSIONS.md",
+  "required_secrets_by_name": [
+    "IMP_MONGODB_URI",
+    "IMP_MONGODB_DATABASE",
+    "IMP_TEST_MONGODB_URI",
+    "IMP_TEST_MONGODB_DATABASE",
+    "IMP_MOOMOO_HOST",
+    "IMP_MOOMOO_PORT",
+    "IMP_MOOMOO_LIVE",
+    "IMP_IBKR_GATEWAY_URL",
+    "IMP_IBKR_LIVE",
+    "FINVIZ_API_KEY",
+    "IMP_FINVIZ_LIVE"
+  ],
+  "local_only_external_services": [
+    "Moomoo OpenD (127.0.0.1:11111)",
+    "IBKR Client Portal Gateway (127.0.0.1:5000)",
+    "Optional local MongoDB (127.0.0.1:27017)"
+  ],
+  "cloud_environment": {
+    "config_path": ".cursor/environment.json",
+    "dockerfile": ".cursor/Dockerfile",
+    "install_script": ".cursor/install-cloud-deps.sh",
+    "documentation": "docs/engineering/CURSOR_CLOUD_ENVIRONMENT.md"
+  },
+  "file_hash_manifest": "artifacts/cloud-handoff/CLOUD_FILE_HASHES.json",
+  "exclusion_manifest": "artifacts/cloud-handoff/CLOUD_EXCLUSIONS.md",
+  "pre_handoff_artifacts": [
+    "artifacts/cloud-handoff/PRE_HANDOFF_GIT_STATUS.txt",
+    "artifacts/cloud-handoff/PRE_HANDOFF_GIT_DIFF_STAT.txt",
+    "artifacts/cloud-handoff/PRE_HANDOFF_WORKTREES.txt",
+    "artifacts/cloud-handoff/PRE_HANDOFF_BRANCHES.txt",
+    "artifacts/cloud-handoff/PRE_HANDOFF_REMOTES.txt",
+    "artifacts/cloud-handoff/PRE_HANDOFF_HEAD.txt",
+    "artifacts/cloud-handoff/PRE_HANDOFF_BRANCH.txt"
+  ]
+}

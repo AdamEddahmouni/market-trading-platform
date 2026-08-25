@@ -220,13 +220,23 @@ def verify_dependency_lock(lock_path: Path) -> tuple[str, list[str]]:
         return "BLOCKED", ["SAFE001_LOCK_MISSING"]
     payload = json.loads(lock_path.read_text(encoding="utf-8"))
     third_party = payload.get("third_party")
-    if isinstance(third_party, list) and not third_party:
-        return "PASS", []
+    if not isinstance(third_party, list):
+        return "FAIL", ["SAFE001_THIRD_PARTY_LIST_INVALID"]
+    authorized = {str(item) for item in third_party}
     groups = payload.get("distribution_groups", {})
     if isinstance(groups, dict):
         for group in groups.values():
-            if isinstance(group, dict) and group.get("third_party"):
-                return "FAIL", ["SAFE001_THIRD_PARTY_DEPENDENCY_PRESENT"]
-    if payload.get("third_party_dependency_count") == 0:
-        return "PASS", []
-    return "FAIL", ["SAFE001_THIRD_PARTY_DEPENDENCY_PRESENT"]
+            if not isinstance(group, dict):
+                continue
+            for package in group.get("third_party") or []:
+                if str(package) not in authorized:
+                    return "FAIL", ["SAFE001_UNAUTHORIZED_THIRD_PARTY"]
+    prohibited = payload.get("prohibited_patterns", [])
+    for package in third_party:
+        if any(pattern in str(package) for pattern in prohibited):
+            return "FAIL", ["SAFE001_PROHIBITED_THIRD_PARTY"]
+    if not third_party:
+        if payload.get("third_party_dependency_count") == 0:
+            return "PASS", []
+        return "FAIL", ["SAFE001_THIRD_PARTY_DEPENDENCY_PRESENT"]
+    return "PASS", []

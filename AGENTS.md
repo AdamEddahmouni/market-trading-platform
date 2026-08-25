@@ -53,3 +53,28 @@ interpreters are PEP 668 externally managed, so install `tzdata` into the venv, 
 interpreter. `tzdata` is data-only (read by stdlib `zoneinfo` on Windows); the foundation itself imports no
 third-party modules per the dependency lock. On Linux the system tz database satisfies `zoneinfo` without
 `tzdata`.
+
+## Cursor Cloud specific instructions
+
+Cloud Agents run on Ubuntu using `.cursor/environment.json`. Install dependencies with:
+
+```bash
+bash .cursor/install-cloud-deps.sh
+export PYTHONPATH=src
+source .venv/bin/activate
+```
+
+Intelligence BUILD 04.5–09 additionally requires `numpy`, `pymongo`, and `scikit-learn` (installed by the script above).
+
+Validation in cloud:
+
+```bash
+python -m unittest discover -s tests/intelligence -q
+python -m unittest tests.platform.test_shadow_p6 -q
+python tools/validate.py changed
+```
+
+- **MongoDB**: optional. Unit tests use `InMemoryIntelligenceRepository`; Mongo integration tests skip without `IMP_TEST_MONGODB_URI`.
+- **Moomoo OpenD / IBKR gateway**: not available on cloud VM. Use fixtures, replay, and mock paths; keep live gates off.
+- **Handoff branch**: start from `cloud-handoff/full-state-2026-08-25` and verify against `artifacts/cloud-handoff/CLOUD_FILE_HASHES.json`.
+- See `docs/engineering/CURSOR_CLOUD_ENVIRONMENT.md` for secret names (values via Cursor Cloud Secrets only).

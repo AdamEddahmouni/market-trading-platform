@@ -52,6 +52,8 @@ type MixedCandidate = {
   attention_score: number;
   attention_components: Record<string, number>;
   ranking_reasons: string[];
+  supporting_evidence?: string[];
+  caveats?: string[];
   market: {
     provider: string;
     status: "LIVE" | "DELAYED" | "SNAPSHOT" | "STALE" | "UNAVAILABLE";
@@ -73,8 +75,11 @@ type MixedPayload = {
   mode: "SEMI_LIVE";
   candidate_role: "INVESTIGATE";
   execution_authority: "NONE";
+  market_session?: string;
   generated_at: string;
   discovery_as_of: string | null;
+  candidate_count?: number;
+  live_subscription_summary?: { active: number; cap: number };
   refresh_in_progress: boolean;
   refresh_interval_seconds: number;
   poll_interval_seconds: number;
@@ -195,8 +200,29 @@ export function DiscoverPage() {
 
   useEffect(() => {
     if (mode !== "MIXED") return;
+    if (!document.hidden) {
+      void readMixed().then(() => refreshMixed());
+    }
+  }, [mode, readMixed, refreshMixed]);
+
+  useEffect(() => {
+    if (mode !== "MIXED") return;
+    return () => {
+      void fetch(new URL("/discover/mixed/release", window.location.href), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+        keepalive: true,
+      });
+    };
+  }, [mode]);
+
+  useEffect(() => {
+    if (mode !== "MIXED") return;
     let pollTimer: number | undefined;
     let refreshTimer: number | undefined;
+    const pollMs = (mixed?.poll_interval_seconds ?? 3) * 1_000;
+    const refreshMs = (mixed?.refresh_interval_seconds ?? 120) * 1_000;
 
     const stopTimers = () => {
       if (pollTimer !== undefined) window.clearInterval(pollTimer);
@@ -207,22 +233,21 @@ export function DiscoverPage() {
     const startTimers = () => {
       stopTimers();
       if (document.hidden) return;
-      pollTimer = window.setInterval(() => void readMixed(), 3_000);
-      refreshTimer = window.setInterval(() => void refreshMixed(), 120_000);
+      pollTimer = window.setInterval(() => void readMixed(), pollMs);
+      refreshTimer = window.setInterval(() => void refreshMixed(), refreshMs);
     };
     const handleVisibility = () => {
       startTimers();
-      if (!document.hidden) void readMixed().then(() => refreshMixed());
+      if (!document.hidden) void readMixed();
     };
 
-    if (!document.hidden) void readMixed().then(() => refreshMixed());
     startTimers();
     document.addEventListener("visibilitychange", handleVisibility);
     return () => {
       stopTimers();
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [mode, readMixed, refreshMixed]);
+  }, [mode, mixed?.poll_interval_seconds, mixed?.refresh_interval_seconds, readMixed, refreshMixed]);
 
   useEffect(() => {
     if (mode === "SINGLE" && screens.length === 0) void loadScreens();
@@ -234,6 +259,7 @@ export function DiscoverPage() {
   const visibleMixedCandidates = activeLane === "ALL"
     ? mixedCandidates
     : mixedCandidates.filter((candidate) => candidate.lanes.includes(activeLane));
+  const degradedScreens = (mixed?.screen_outcomes ?? []).filter((row) => row.status !== "PASS");
 
   return (
     <div className="discover-page">
@@ -246,8 +272,8 @@ export function DiscoverPage() {
           </p>
         </div>
         <div className="discover-authority" aria-label="Screener execution boundary">
-          <span>SEMI-LIVE</span>
-          <strong>INVESTIGATE — no order authority</strong>
+          <span>SEMI-LIVE DATA</span>
+          <strong>EXEC NONE · INVESTIGATE only</strong>
         </div>
       </header>
 
@@ -266,6 +292,23 @@ export function DiscoverPage() {
 
       {mode === "MIXED" ? (
         <section aria-label="Mixed live discovery queue">
+          <div className="discover-live-banner" aria-label="Live screener status">
+            <span className="discover-session">
+              {mixed?.market_session?.replaceAll("_", " ") ?? "SESSION —"}
+            </span>
+            <span>
+              Candidates <strong>{mixed?.candidate_count ?? mixedCandidates.length}</strong>
+            </span>
+            {mixed?.live_subscription_summary ? (
+              <span>
+                Live quotes{" "}
+                <strong>
+                  {mixed.live_subscription_summary.active} / {mixed.live_subscription_summary.cap}
+                </strong>
+              </span>
+            ) : null}
+            <span className="discover-exec-none">EXEC {mixed?.execution_authority ?? "NONE"}</span>
+          </div>
           <div className="discover-status-strip">
             <div className="discover-provider-health" aria-label="Provider health">
               {(mixed?.provider_health ?? []).map((provider) => (
@@ -281,6 +324,20 @@ export function DiscoverPage() {
               {loading || mixed?.refresh_in_progress ? "Refreshing discovery…" : "Refresh all screens"}
             </button>
           </div>
+
+          {degradedScreens.length > 0 ? (
+            <details className="discover-screen-outcomes">
+              <summary>{degradedScreens.length} discovery screen(s) degraded or using saved captures</summary>
+              <ul>
+                {degradedScreens.map((row) => (
+                  <li key={String(row.screen_id)}>
+                    {String(row.screen_id)} · {String(row.status)}
+                    {row.reason ? ` · ${String(row.reason)}` : ""}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
 
           <div className="discover-lane-summary" aria-label="Candidate lanes">
             <button type="button" aria-label="ALL" aria-pressed={activeLane === "ALL"} onClick={() => setActiveLane("ALL")}>
@@ -312,7 +369,7 @@ export function DiscoverPage() {
                   {String(candidate.queue_rank).padStart(2, "0")}
                 </div>
                 <div className="discover-instrument">
-                  <Link to={`/workspace/${candidate.instrument_id}`}>{candidate.instrument_id}</Link>
+                  <strong className="discover-symbol">{candidate.instrument_id}</strong>
                   <span className="discover-score">ATTN {formatNumber(candidate.attention_score, 1)}</span>
                   <div className="discover-lanes">
                     {candidate.lanes.map((lane) => <span key={lane}>{lane}</span>)}
@@ -320,22 +377,33 @@ export function DiscoverPage() {
                 </div>
                 <div className="discover-market">
                   <strong>${formatNumber(candidate.market.last_price)}</strong>
-                  <span>{formatPercent(candidate.metrics.change_pct)}</span>
+                  <span>
+                    {formatPercent(candidate.metrics.change_pct)}
+                    {candidate.data_status === "LIVE" ? " snapshot chg" : ""}
+                  </span>
                   <span>RVOL {formatNumber(candidate.metrics.rel_volume)}</span>
+                  <span>Spread {formatPercent(candidate.market.spread_pct)}</span>
                   <span>Vol {formatNumber(candidate.market.volume ?? candidate.metrics.volume, 0)}</span>
                 </div>
                 <div className="discover-sources">
-                  <span className="source-badge">FINVIZ SNAPSHOT</span>
-                  {candidate.market.provider !== "FINVIZ_ELITE" ? (
+                  {candidate.data_status !== "LIVE" ? (
+                    <span className="source-badge">FINVIZ SNAPSHOT</span>
+                  ) : null}
+                  {candidate.market.provider !== "FINVIZ_ELITE" && candidate.data_status === "LIVE" ? (
                     <span className={`source-badge source-${candidate.data_status.toLowerCase()}`}>
                       {sourceBadge(candidate.market.provider)} {candidate.data_status}
                     </span>
+                  ) : null}
+                  {candidate.market.reason && candidate.data_status !== "LIVE" ? (
+                    <span className="source-badge source-unavailable">{String(candidate.market.reason)}</span>
                   ) : null}
                 </div>
                 <div className="discover-data-state">
                   <span className="data-status-pill">
                     {candidate.data_status}
-                    {candidate.data_status !== "SNAPSHOT" ? ` · ${candidate.freshness_label}` : ""}
+                    {candidate.data_status !== "SNAPSHOT" && candidate.data_status !== "UNAVAILABLE"
+                      ? ` · ${candidate.freshness_label}`
+                      : ""}
                   </span>
                   {candidate.market.bid_price != null && candidate.market.ask_price != null ? (
                     <span>{formatNumber(candidate.market.bid_price)} × {formatNumber(candidate.market.ask_price)}</span>
@@ -346,9 +414,12 @@ export function DiscoverPage() {
                   <details>
                     <summary>Evidence</summary>
                     <div className="discover-evidence">
-                      <p><strong>Matched:</strong> {candidate.matched_reasons.join(" · ")}</p>
+                      <p><strong>Why:</strong> {(candidate.supporting_evidence ?? candidate.matched_reasons).join(" · ")}</p>
                       <p><strong>Ranking:</strong> {candidate.ranking_reasons.join(" · ")}</p>
                       <p><strong>Screens:</strong> {candidate.screen_matches.join(" · ")}</p>
+                      {candidate.caveats && candidate.caveats.length > 0 ? (
+                        <p><strong>Caveats:</strong> {candidate.caveats.join(" · ")}</p>
+                      ) : null}
                       <pre>{JSON.stringify(candidate.attention_components, null, 2)}</pre>
                     </div>
                   </details>

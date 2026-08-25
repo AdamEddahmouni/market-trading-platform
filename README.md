@@ -53,6 +53,29 @@ python tools/validate.py live <provider>  # opt-in live boundary only
 
 Legacy wrapper: `python tools/run_all_tests.py` (strictly offline, delegates to manifest).
 
+## One-click local start and stop (Windows)
+
+From File Explorer, double-click [START_PLATFORM.cmd](START_PLATFORM.cmd)
+to start the API and UI, wait for both to become ready, and open the Mixed Live
+screener. Double-click [STOP_PLATFORM.cmd](STOP_PLATFORM.cmd) to stop only
+the launcher-owned API/UI process trees. [PLATFORM_CONTROL.cmd](PLATFORM_CONTROL.cmd)
+provides Start/Open, Open Browser, Status, Finviz Status, Stop/Exit, and
+leave-running choices in one menu.
+
+The platform binds only to `127.0.0.1`: API port `8766`, UI port `5173`. Child
+output is retained in `.local/platform-backend.log` and
+`.local/platform-ui.log`; lifecycle state is in the gitignored
+`.local/platform-launcher.json`. A stale state file cannot make Stop kill an
+unrelated process because the current Windows command identity must still match
+the launcher record.
+
+Prerequisites are the repository CPython 3.11 `.venv`, Node.js/npm, and a prior
+`npm install` in `ui/`. When `%USERPROFILE%\moomoo-api-test\.venv` exists, the
+API automatically uses it so the Moomoo SDK is available; otherwise it uses the
+repository venv. Moomoo OpenD must be running separately on loopback port
+`11111` for Moomoo quotes. The launcher enables observational data and internal
+paper simulation but never enables live order execution.
+
 Pre-land acceptance (2026-08-21): FAST 18 passes; mutation 6/6 detected; FULL 1183 passes / 7 skips — [reports/pre-land-full.json](reports/pre-land-full.json).
 Post-land FULL (2026-08-22): 1391 tests / 7 skips with **one documented failure** — the Phase 1 ADR acceptance-index line-ending drift ([PHASE1_ADR_LINE_ENDING_DRIFT](docs/engineering/PHASE1_ADR_LINE_ENDING_DRIFT.md)); no other failures or errors. **Resolved the same day:** the Phase 1 decision bundle was re-published with true LF-byte hashes and the verifier constants updated; FULL is now green — 1485 tests / 7 skips / 0 failures / 0 errors ([reports/post-drift-fix-full.json](reports/post-drift-fix-full.json)).
 

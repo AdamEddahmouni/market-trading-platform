@@ -1,1 +1,66 @@
-{"allowed_standard_library_modules":["argparse","ast","collections","contextlib","dataclasses","datetime","enum","hashlib","io","json","os","os.path","pathlib","platform","re","shutil","socket","subprocess","sys","sysconfig","tempfile","types","typing","unittest","uuid","venv","zipfile"],"distribution_groups":{"build":{"third_party":[]},"development":{"third_party":[]},"runtime":{"third_party":[]}},"implementation":"CPython","major_minor":"3.11","module_exceptions":{"socket":"market_platform_foundation.offline_guard and denial tests only","sysconfig":"tools/phase0/offline_install.py only"},"prohibited_patterns":["aiohttp","alpaca","binance","ccxt","ctypes","ib_insync","importlib.metadata","numpy","pandas","pickle","requests","websocket"],"schema_version":"1.0.0","tested_patch":"3.11.15","third_party":[]}
+{
+  "allowed_standard_library_modules": [
+    "argparse",
+    "ast",
+    "collections",
+    "contextlib",
+    "dataclasses",
+    "datetime",
+    "enum",
+    "hashlib",
+    "io",
+    "json",
+    "os",
+    "os.path",
+    "pathlib",
+    "platform",
+    "re",
+    "shutil",
+    "socket",
+    "subprocess",
+    "sys",
+    "sysconfig",
+    "tempfile",
+    "threading",
+    "types",
+    "typing",
+    "unittest",
+    "uuid",
+    "venv",
+    "zipfile"
+  ],
+  "distribution_groups": {
+    "build": {
+      "third_party": []
+    },
+    "development": {
+      "third_party": ["numpy", "pymongo", "scikit-learn"]
+    },
+    "runtime": {
+      "third_party": ["numpy", "pymongo", "scikit-learn"]
+    }
+  },
+  "implementation": "CPython",
+  "major_minor": "3.11",
+  "module_exceptions": {
+    "socket": "market_platform_foundation.offline_guard and denial tests only",
+    "sysconfig": "tools/phase0/offline_install.py only"
+  },
+  "prohibited_patterns": [
+    "aiohttp",
+    "alpaca",
+    "binance",
+    "ccxt",
+    "ctypes",
+    "ib_insync",
+    "importlib.metadata",
+    "motor",
+    "pandas",
+    "pickle",
+    "requests",
+    "websocket"
+  ],
+  "schema_version": "1.0.0",
+  "tested_patch": "3.11.15",
+  "third_party": ["numpy", "pymongo", "scikit-learn"]
+}

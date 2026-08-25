@@ -11,6 +11,21 @@ Requires the stdlib API:
 python tools/ui1/run_ui_api.py --serve --port 8766
 ```
 
+## One-click Windows launcher
+
+The easiest normal path is to return to the repository root and double-click
+`START_PLATFORM.cmd`. It starts the API and this Vite UI, waits for loopback
+ports 8766 and 5173, then opens `/discover`. Use `STOP_PLATFORM.cmd` to stop
+only launcher-owned processes, or `PLATFORM_CONTROL.cmd` for Start/Open,
+Status, Finviz Status, and Stop/Exit choices. Logs are kept at
+`.local/platform-backend.log` and `.local/platform-ui.log` relative to the
+repository root.
+
+Run `npm install` once in this directory before the first launch. Moomoo OpenD
+is a separate local gateway and must already be listening on `127.0.0.1:11111`
+for Moomoo live quotes; the platform remains usable with provider health shown
+as disconnected when OpenD is absent.
+
 Code changes are not picked up until that process is restarted. For
 live observational / paper flags (`IMP_LIVE_OBSERVATIONAL`,
 `IMP_MOOMOO_LIVE` observational-only, `IMP_PAPER_EXECUTION`,

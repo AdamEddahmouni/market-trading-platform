@@ -137,6 +137,25 @@ class MoomooCandidateEnricher:
                     self._admission_reasons[symbol] = str(normalized["reason"])
         return outcomes
 
+    def release_all(self) -> list[dict[str, Any]]:
+        """Drop every screener-owned quote subscription without touching other consumers."""
+
+        if self._runtime is None:
+            self._subscribed_symbols.clear()
+            self._admission_reasons.clear()
+            return []
+        outcomes: list[dict[str, Any]] = []
+        for symbol in sorted(self._subscribed_symbols):
+            released = self._runtime.unsubscribe(
+                instrument_id=symbol,
+                capabilities=["BASIC_QUOTE"],
+                consumer_id=CONSUMER_ID,
+            )
+            outcomes.extend(dict(row) for row in released)
+        self._subscribed_symbols.clear()
+        self._admission_reasons.clear()
+        return outcomes
+
     def enrich(self, candidates: Sequence[MixedCandidate]) -> dict[str, dict[str, Any]]:
         if self._runtime is None:
             return {
@@ -149,18 +168,22 @@ class MoomooCandidateEnricher:
             symbol = candidate.instrument_id
             quote = self._runtime.state.quote_for(symbol)
             if quote is None:
-                reason = (
-                    "AWAITING_FIRST_EVENT"
-                    if symbol in self._subscribed_symbols
-                    else self._admission_reasons.get(symbol, "NOT_SUBSCRIBED")
-                )
+                if symbol in self._subscribed_symbols:
+                    reason = "AWAITING_FIRST_EVENT"
+                    record = _unavailable_record(reason)
+                    record["status"] = "SNAPSHOT"
+                    record["provider"] = "FINVIZ_ELITE"
+                    record["quality"] = candidate.quality
+                    record["as_of_ns"] = candidate.available_time_ns
+                    record["last_price"] = _finite(candidate.metrics.get("price"))
+                    record["volume"] = _finite(candidate.metrics.get("volume"))
+                    result[symbol] = record
+                    continue
+                reason = self._admission_reasons.get(symbol, "NOT_SUBSCRIBED")
                 record = _unavailable_record(reason)
-                record["status"] = "SNAPSHOT"
-                record["provider"] = "FINVIZ_ELITE"
-                record["quality"] = candidate.quality
-                record["as_of_ns"] = candidate.available_time_ns
                 record["last_price"] = _finite(candidate.metrics.get("price"))
                 record["volume"] = _finite(candidate.metrics.get("volume"))
+                record["as_of_ns"] = candidate.available_time_ns
                 result[symbol] = record
                 continue
 

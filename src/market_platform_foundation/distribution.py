@@ -51,8 +51,30 @@ def validate_lock(path: Path) -> dict[str, object]:
     if not isinstance(third_party, list):
         raise ValueError("third_party must be a list")
     prohibited = value.get("prohibited_patterns", [])
-    matches = [str(item) for item in third_party if any(p in str(item) for p in prohibited)]
-    return {"prohibited_matches": sorted(matches), "third_party_count": len(third_party)}
+    authorized = {str(item) for item in third_party}
+    matches = [
+        str(item)
+        for item in third_party
+        if any(p in str(item) for p in prohibited)
+    ]
+    groups = value.get("distribution_groups", {})
+    if isinstance(groups, dict):
+        for group_name, group in groups.items():
+            if not isinstance(group, dict):
+                continue
+            group_packages = group.get("third_party") or []
+            if not isinstance(group_packages, list):
+                raise ValueError(f"distribution group {group_name} third_party must be a list")
+            for package in group_packages:
+                package_name = str(package)
+                if package_name not in authorized:
+                    matches.append(f"unauthorized:{package_name}")
+                if any(pattern in package_name for pattern in prohibited):
+                    matches.append(package_name)
+    return {
+        "prohibited_matches": sorted(set(matches)),
+        "third_party_count": len(third_party),
+    }
 
 
 def _is_reparse(path: Path) -> bool:

@@ -546,6 +546,11 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     status=HTTPStatus.BAD_REQUEST,
                 )
             return
+        if path == "/discover/mixed/release":
+            from .mixed_discovery_projections import release_mixed_live_subscriptions
+
+            self._send_json(release_mixed_live_subscriptions())
+            return
         if path == "/paper/orders/preview":
             try:
                 self._send_json(paper_projections.preview_paper_order(self.store, body))

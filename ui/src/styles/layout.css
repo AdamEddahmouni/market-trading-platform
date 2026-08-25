@@ -1076,6 +1076,34 @@ body,
   font-size: 0.78rem;
 }
 
+.discover-live-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  align-items: center;
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.5rem;
+  background: var(--surface-elevated, rgba(255, 255, 255, 0.03));
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.discover-live-banner strong {
+  font-weight: 700;
+}
+
+.discover-session {
+  color: var(--accent, #7dd3fc);
+}
+
+.discover-exec-none {
+  margin-left: auto;
+  color: var(--text-muted);
+}
+
 .discover-mode-switch button:hover,
 .discover-status-strip button:hover,
 .discover-row-actions button:hover {
@@ -1236,12 +1264,24 @@ body,
   align-items: baseline;
 }
 
-.discover-instrument > a {
+.discover-instrument > a,
+.discover-symbol {
   color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: 1.15rem;
   font-weight: 800;
   text-decoration: none;
+}
+
+.discover-screen-outcomes {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.discover-screen-outcomes ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
 }
 
 .discover-instrument > a:hover {

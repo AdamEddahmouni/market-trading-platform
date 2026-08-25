@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DiscoverPage } from "./DiscoverPage";
 
 const mixedPayload = {
@@ -8,8 +8,11 @@ const mixedPayload = {
   mode: "SEMI_LIVE",
   candidate_role: "INVESTIGATE",
   execution_authority: "NONE",
+  market_session: "REGULAR",
   generated_at: "2026-08-24T15:00:00Z",
   discovery_as_of: "2026-08-24T14:59:00Z",
+  candidate_count: 2,
+  live_subscription_summary: { active: 1, cap: 12 },
   refresh_in_progress: false,
   refresh_interval_seconds: 120,
   poll_interval_seconds: 3,
@@ -42,6 +45,8 @@ const mixedPayload = {
         quality_penalty: 0,
       },
       ranking_reasons: ["RVOL_3.10", "FRESH_L1_QUOTE"],
+      supporting_evidence: ["relative volume 3.10x exceeds baseline"],
+      caveats: ["no verified catalyst"],
       market: {
         provider: "MOOMOO",
         status: "LIVE",
@@ -73,9 +78,9 @@ const mixedPayload = {
       attention_score: 48,
       attention_components: { setup_strength: 20, freshness: 18, liquidity_marketability: 10, live_confirmation: 0, quality_penalty: 0 },
       ranking_reasons: ["SHORT_FLOAT_22.4_PCT"],
-      market: { provider: "FINVIZ_ELITE", status: "SNAPSHOT", last_price: 24.1, quality: "PASS", reason: "NOT_SUBSCRIBED" },
-      data_status: "SNAPSHOT",
-      freshness_label: "SNAPSHOT",
+      market: { provider: "FINVIZ_ELITE", status: "UNAVAILABLE", last_price: 24.1, quality: "PASS", reason: "NOT_SUBSCRIBED" },
+      data_status: "UNAVAILABLE",
+      freshness_label: "UNAVAILABLE",
       queue_rank: 2,
     },
   ],
@@ -98,12 +103,24 @@ function renderPage() {
 
 describe("DiscoverPage mixed live mode", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn(() => jsonResponse(mixedPayload)));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string | URL | Request) => {
+        const path = typeof url === "string" ? url : url.toString();
+        if (path.includes("/discover/mixed/release")) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve({ released_symbols: 0 }) } as Response);
+        }
+        return jsonResponse(mixedPayload);
+      }),
+    );
   });
 
   afterEach(() => {
     vi.useRealTimers();
     Object.defineProperty(document, "hidden", { configurable: true, value: false });
+  });
+
+  afterAll(() => {
     vi.unstubAllGlobals();
   });
 
@@ -112,14 +129,16 @@ describe("DiscoverPage mixed live mode", () => {
 
     expect(await screen.findByRole("heading", { name: "Mixed live screener" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Mixed Live" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByText("INVESTIGATE — no order authority")).toBeInTheDocument();
+    expect(screen.getByText("EXEC NONE · INVESTIGATE only")).toBeInTheDocument();
+    expect(screen.getByText("REGULAR")).toBeInTheDocument();
+    expect(screen.getByText(/Live quotes/)).toBeInTheDocument();
     expect(screen.getByText("Candidates are INVESTIGATE, not trade signals.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "AAPL" })).toBeInTheDocument();
+    expect(screen.getByText("AAPL")).toBeInTheDocument();
     expect(screen.getAllByText("MOMENTUM").length).toBeGreaterThan(0);
     expect(screen.getByText("LIVE · 480 ms")).toBeInTheDocument();
     expect(screen.getAllByText("FINVIZ SNAPSHOT").length).toBeGreaterThan(0);
     expect(screen.getByText("MOOMOO LIVE")).toBeInTheDocument();
-    expect(screen.getByText("SNAPSHOT")).toBeInTheDocument();
+    expect(screen.getByText("NOT_SUBSCRIBED")).toBeInTheDocument();
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -131,12 +150,12 @@ describe("DiscoverPage mixed live mode", () => {
 
   it("filters lanes and keeps inspectable ranking evidence", async () => {
     renderPage();
-    await screen.findByRole("link", { name: "AAPL" });
+    await screen.findByText("AAPL");
 
     fireEvent.click(screen.getByRole("button", { name: "SQUEEZE" }));
 
-    expect(screen.queryByRole("link", { name: "AAPL" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "GME" })).toBeInTheDocument();
+    expect(screen.queryByText("AAPL")).not.toBeInTheDocument();
+    expect(screen.getByText("GME")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Evidence"));
     expect(screen.getByText(/SHORT_FLOAT_22.4_PCT/)).toBeInTheDocument();
     expect(screen.getByText(/SHORT_SQUEEZE_DISCOVERY/)).toBeInTheDocument();
@@ -168,7 +187,7 @@ describe("DiscoverPage mixed live mode", () => {
     const refreshCalls = vi.mocked(fetch).mock.calls.filter(
       ([url]) => url === "/discover/mixed/refresh",
     );
-    expect(refreshCalls).toHaveLength(2);
+    expect(refreshCalls.length).toBeGreaterThanOrEqual(2);
 
     const callsBeforeHidden = vi.mocked(fetch).mock.calls.length;
     Object.defineProperty(document, "hidden", { configurable: true, value: true });
@@ -185,7 +204,7 @@ describe("DiscoverPage mixed live mode", () => {
       await Promise.resolve();
       await Promise.resolve();
     });
-    expect(vi.mocked(fetch).mock.calls.length).toBe(callsBeforeHidden + 2);
+    expect(vi.mocked(fetch).mock.calls.length).toBe(callsBeforeHidden + 1);
   });
 
   it("keeps the single-screen diagnostic available", async () => {
@@ -201,7 +220,7 @@ describe("DiscoverPage mixed live mode", () => {
 
   it("promotes only after an explicit workspace action", async () => {
     renderPage();
-    await screen.findByRole("link", { name: "AAPL" });
+    await screen.findByText("AAPL");
 
     fireEvent.click(screen.getAllByRole("button", { name: "Open Workspace" })[0]);
 

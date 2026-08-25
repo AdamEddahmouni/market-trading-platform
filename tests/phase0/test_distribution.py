@@ -6,9 +6,9 @@ from market_platform_foundation.distribution import build_distribution, validate
 
 
 class DistributionTests(unittest.TestCase):
-    def test_lock_has_zero_third_party_dependencies(self):
+    def test_lock_authorizes_pymongo_for_intelligence_persistence(self):
         report = validate_lock(Path("phase0-dependency-lock.json"))
-        self.assertEqual(report["third_party_count"], 0)
+        self.assertEqual(report["third_party_count"], 3)
         self.assertEqual(report["prohibited_matches"], [])
 
     def test_two_builds_are_byte_identical(self):

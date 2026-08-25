@@ -9,9 +9,10 @@ from typing import Any
 
 from ..clock import monotonic_wall_ns
 from ..discovery import DiscoveryEngine, aggregate_candidate_sets
-from ..discovery.live_enrichment import MoomooCandidateEnricher
+from ..discovery.live_enrichment import MoomooCandidateEnricher, discovery_live_candidate_cap
 from ..discovery.screens import SCREEN_LIBRARY
 from ..market_data.live_runtime import get_live_runtime
+from ..market_sessions import us_equity_session_label
 from .discovery_projections import load_latest_capture_for_screen
 
 
@@ -53,6 +54,20 @@ class MixedDiscoveryService:
         self._refresh_in_progress = False
         self._runtime: Any | None = None
         self._enricher: MoomooCandidateEnricher | None = None
+        self._rank_anchor_ns: int | None = None
+
+    def _ranking_now_ns(self) -> int:
+        return self._rank_anchor_ns if self._rank_anchor_ns is not None else self._now_ns()
+
+    def _ranked_candidates(self, enricher: MoomooCandidateEnricher) -> list[Any]:
+        rank_ns = self._ranking_now_ns()
+        preliminary = aggregate_candidate_sets(self._candidate_sets, now_ns=rank_ns)
+        market_by_symbol = enricher.enrich(preliminary)
+        return aggregate_candidate_sets(
+            self._candidate_sets,
+            now_ns=rank_ns,
+            market_by_symbol=market_by_symbol,
+        )
 
     def _validate_screens(self, screen_ids: Sequence[str] | None) -> list[str]:
         selected = list(SCREEN_LIBRARY) if screen_ids is None else [str(item).upper() for item in screen_ids]
@@ -98,17 +113,27 @@ class MixedDiscoveryService:
             self._enricher = MoomooCandidateEnricher(runtime)
         return self._enricher
 
+    def _finviz_connection_state(self) -> tuple[str, str | None]:
+        if not self._screen_outcomes:
+            return "UNAVAILABLE", "NO_SCREEN_OUTCOMES"
+        finviz_states = {str(row.get("status") or "") for row in self._screen_outcomes}
+        if finviz_states == {"PASS"}:
+            return "HEALTHY", None
+        if finviz_states == {"FALLBACK"} and self._candidate_sets:
+            reasons = {str(row.get("reason") or "") for row in self._screen_outcomes}
+            if reasons <= {"LATEST_SAVED_CAPTURE"}:
+                return "HEALTHY", None
+        if finviz_states == {"UNAVAILABLE"}:
+            return "UNAVAILABLE", "DISCOVERY_UNAVAILABLE"
+        if "PASS" in finviz_states or "FALLBACK" in finviz_states:
+            return "DEGRADED", "USING_PARTIAL_OR_SAVED_DISCOVERY"
+        return "UNAVAILABLE", "DISCOVERY_UNAVAILABLE"
+
     def _project(self, *, refresh_in_progress: bool | None = None) -> dict[str, Any]:
         self._ensure_capture_snapshot()
         runtime = self._runtime_getter(create=False)
         enricher = self._set_runtime(runtime)
-        preliminary = aggregate_candidate_sets(self._candidate_sets, now_ns=self._now_ns())
-        market_by_symbol = enricher.enrich(preliminary)
-        ranked = aggregate_candidate_sets(
-            self._candidate_sets,
-            now_ns=self._now_ns(),
-            market_by_symbol=market_by_symbol,
-        )
+        ranked = self._ranked_candidates(enricher)
         candidate_payloads = [candidate.to_dict() for candidate in ranked]
         lane_counts = {
             lane: sum(1 for candidate in ranked if lane in candidate.lanes)
@@ -119,30 +144,33 @@ class MixedDiscoveryService:
             for candidate_set in self._candidate_sets
             if candidate_set.get("received_at")
         ]
-        finviz_states = {row["status"] for row in self._screen_outcomes}
-        if "PASS" in finviz_states and finviz_states == {"PASS"}:
-            finviz_connection = "HEALTHY"
-        elif finviz_states.intersection({"PASS", "FALLBACK"}):
-            finviz_connection = "DEGRADED"
-        else:
-            finviz_connection = "UNAVAILABLE"
+        finviz_connection, finviz_reason = self._finviz_connection_state()
+        moomoo_health = enricher.health()
+        live_cap = discovery_live_candidate_cap()
+        subscribed = int(moomoo_health.get("subscribed_candidates") or 0)
         provider_health = [
             {
                 "provider": "FINVIZ_ELITE",
                 "connection": finviz_connection,
                 "role": "DISCOVERY",
-                "reason": None if finviz_connection == "HEALTHY" else "USING_PARTIAL_OR_SAVED_DISCOVERY",
+                "reason": finviz_reason,
                 "setup_command": "python tools/finviz/auth.py status",
             },
-            enricher.health(),
+            moomoo_health,
         ]
         return {
             "available": bool(candidate_payloads),
             "mode": "SEMI_LIVE",
             "candidate_role": "INVESTIGATE",
             "execution_authority": "NONE",
+            "market_session": us_equity_session_label(),
             "generated_at": self._generated_at(),
             "discovery_as_of": max(discovery_times) if discovery_times else None,
+            "candidate_count": len(candidate_payloads),
+            "live_subscription_summary": {
+                "active": subscribed,
+                "cap": live_cap,
+            },
             "refresh_in_progress": self._refresh_in_progress
             if refresh_in_progress is None
             else refresh_in_progress,
@@ -158,6 +186,18 @@ class MixedDiscoveryService:
         """Read current admitted state without Finviz calls or subscription mutation."""
 
         return self._project()
+
+    def release_live_subscriptions(self) -> dict[str, Any]:
+        """Release screener-owned quote subscriptions when the UI is no longer active."""
+
+        runtime = self._runtime_getter(create=False)
+        enricher = self._set_runtime(runtime)
+        outcomes = enricher.release_all()
+        return {
+            "consumer_id": "discover-live-screener",
+            "released_symbols": len(outcomes),
+            "execution_authority": "NONE",
+        }
 
     def refresh(self, screen_ids: Sequence[str] | None = None) -> dict[str, Any]:
         selected = self._validate_screens(screen_ids)
@@ -205,9 +245,11 @@ class MixedDiscoveryService:
                 )
             self._candidate_sets = candidate_sets
             self._screen_outcomes = outcomes
-            preliminary = aggregate_candidate_sets(candidate_sets, now_ns=self._now_ns())
+            self._rank_anchor_ns = self._now_ns()
             runtime = self._runtime_getter(create=True)
-            self._set_runtime(runtime).reconcile(preliminary)
+            enricher = self._set_runtime(runtime)
+            ranked = self._ranked_candidates(enricher)
+            enricher.reconcile(ranked)
         finally:
             self._refresh_in_progress = False
             self._refresh_lock.release()
@@ -223,3 +265,7 @@ def build_mixed_discover_payload() -> dict[str, Any]:
 
 def refresh_mixed_discovery(screen_ids: Sequence[str] | None = None) -> dict[str, Any]:
     return _SERVICE.refresh(screen_ids)
+
+
+def release_mixed_live_subscriptions() -> dict[str, Any]:
+    return _SERVICE.release_live_subscriptions()
