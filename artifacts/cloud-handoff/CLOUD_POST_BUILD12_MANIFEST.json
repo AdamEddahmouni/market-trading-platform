@@ -1,0 +1,24 @@
+{
+  "generated_at": "2026-08-25T21:02:54.130582+00:00",
+  "build_frontier": "BUILD_12_BLIND_COUNCIL_BLACKBOARD",
+  "branch": "cloud/build-12-blind-council-blackboard",
+  "head": "5f401319f0703104e1db59bdf7436395ce103d22",
+  "parent_build_11_head": "a7c5112cfb0ec180234ac3125b95acdf36e16d66",
+  "file_count": 2847,
+  "previous_manifest": "artifacts/cloud-handoff/CLOUD_POST_BUILD11_MANIFEST.json",
+  "tests": {
+    "intelligence": "458 passed, 20 skipped",
+    "shadow_p6": "23 passed",
+    "build_12_council": "27 passed"
+  },
+  "limitations": [
+    "Only MICROSTRUCTURE production specialist implemented",
+    "Multi-expert production council awaits additional BUILD 11-style specialists",
+    "Mongo integration opt-in only",
+    "Production specialists do not require deliberation second pass in v1",
+    "Platform UI/store fixture validation errors remain pre-existing"
+  ],
+  "production_specialist_registry": [
+    "MICROSTRUCTURE"
+  ]
+}
