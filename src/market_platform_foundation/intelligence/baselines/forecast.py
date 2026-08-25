@@ -21,6 +21,7 @@ from ..contracts.signal import SignalV1
 from ..contracts.snapshot import SnapshotV1
 from .errors import BaselinePredictionError
 from .identity import derive_forecast_id
+from ..fusion.types import CONTROL_FORECAST_STAGE, ForecastContributorRole
 from .types import BaselineClassLabel, BaselineModelDescriptor, BaselineModelOutput
 
 
@@ -108,6 +109,8 @@ def build_forecast_v1(
         lineage_refs=lineage_refs,
         metadata={
             "calibration_status": "UNCALIBRATED",
+            "contributor_role": ForecastContributorRole.CONTROL.value,
+            "forecast_stage": CONTROL_FORECAST_STAGE,
             "baseline_model_kind": descriptor.model_kind,
             "predicted_direction": predicted_class.value,
             "feature_schema_fingerprint": descriptor.feature_schema_fingerprint,
