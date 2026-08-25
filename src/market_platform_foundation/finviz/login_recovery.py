@@ -5,13 +5,15 @@ from __future__ import annotations
 import csv
 import io
 import re
+import threading
 import time
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable, Protocol
 from urllib.parse import urlparse
 
-LOGIN_URL = "https://finviz.com/login_submit.ashx"
+LOGIN_PAGE_URL = "https://finviz.com/login-email?remember=true"
+LOGIN_SUBMIT_URL = "https://finviz.com/login_submit"
 TOKEN_PAGE_URL = "https://elite.finviz.com/api_explanation"
 EXPORT_URL = "https://elite.finviz.com/export/screener"
 EXPORT_VERSION = "152"
@@ -51,6 +53,9 @@ MANUAL_AUTH_MARKERS = (
     "verification code",
     "security challenge",
 )
+
+_SESSION_FACTORY: Callable[[], Any] | None = None
+_SESSION_FACTORY_LOCK = threading.Lock()
 
 
 class StrEnum(str, Enum):
@@ -126,6 +131,24 @@ def validate_export_response(response: ResponseLike) -> tuple[bool, str | None]:
     return True, None
 
 
+def set_login_session_factory(factory: Callable[[], Any]) -> None:
+    """Register an optional tool-layer session for login recovery only."""
+    global _SESSION_FACTORY
+    with _SESSION_FACTORY_LOCK:
+        _SESSION_FACTORY = factory
+
+
+def reset_login_session_factory() -> None:
+    global _SESSION_FACTORY
+    with _SESSION_FACTORY_LOCK:
+        _SESSION_FACTORY = None
+
+
+def _registered_session_factory() -> Callable[[], Any] | None:
+    with _SESSION_FACTORY_LOCK:
+        return _SESSION_FACTORY
+
+
 def recover_token_via_login(
     *,
     username: str,
@@ -134,14 +157,31 @@ def recover_token_via_login(
 ) -> LoginRecoveryResult:
     if not username or not password:
         return LoginRecoveryResult(LoginRecoveryStatus.CONFIG_MISSING)
-    factory = session_factory or _default_session_factory
+    factory = session_factory or _registered_session_factory() or _default_session_factory
     if factory is None:
         return LoginRecoveryResult(LoginRecoveryStatus.DEPENDENCY_MISSING)
+    session: Any | None = None
     try:
         session = factory()
+        login_page = session.get(LOGIN_PAGE_URL, timeout=15)
+        if not validate_host(str(login_page.url)):
+            return LoginRecoveryResult(
+                LoginRecoveryStatus.REDIRECT_REJECTED,
+                http_status=int(login_page.status_code),
+                detail="login_page_redirect",
+            )
+        login_page_text = (login_page.text or "")[:10_000].lower()
+        if _requires_manual_auth(login_page_text):
+            return LoginRecoveryResult(LoginRecoveryStatus.MANUAL_AUTH_REQUIRED)
+        if int(login_page.status_code) != 200:
+            return LoginRecoveryResult(
+                LoginRecoveryStatus.AUTH_FAILED,
+                http_status=int(login_page.status_code),
+            )
+
         login = session.post(
-            LOGIN_URL,
-            data={"email": username, "password": password},
+            LOGIN_SUBMIT_URL,
+            data={"email": username, "password": password, "remember": "on"},
             timeout=15,
             allow_redirects=True,
         )
@@ -154,7 +194,7 @@ def recover_token_via_login(
         login_text = (login.text or "")[:10_000].lower()
         if _requires_manual_auth(login_text):
             return LoginRecoveryResult(LoginRecoveryStatus.MANUAL_AUTH_REQUIRED)
-        if int(login.status_code) != 200 or "elite.finviz.com" not in str(login.url).lower():
+        if int(login.status_code) != 200:
             return LoginRecoveryResult(
                 LoginRecoveryStatus.AUTH_FAILED,
                 http_status=int(login.status_code),
@@ -212,6 +252,9 @@ def recover_token_via_login(
         )
     except Exception:
         return LoginRecoveryResult(LoginRecoveryStatus.NETWORK_ERROR)
+    finally:
+        if session is not None:
+            dispose_session(session)
 
 
 def _default_session_factory() -> Any | None:

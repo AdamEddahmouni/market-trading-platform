@@ -101,11 +101,13 @@ class UrllibSession:
     def _finalize(response: Any, url: str) -> HttpResponse:
         body = response.read().decode("utf-8", errors="replace")
         headers = {str(key).lower(): str(value) for key, value in response.headers.items()}
+        geturl = getattr(response, "geturl", None)
+        final_url = geturl() if callable(geturl) else url
         return HttpResponse(
             status_code=int(getattr(response, "status", 200)),
             text=body,
             headers=headers,
-            url=str(url),
+            url=str(final_url),
         )
 
     def get(

@@ -8,7 +8,7 @@ import sys
 import threading
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
@@ -23,6 +23,7 @@ from market_platform_foundation.finviz.credential_manager import (  # noqa: E402
     FinvizCredentialManager,
     reset_finviz_credential_manager,
 )
+from market_platform_foundation.finviz.http_client import UrllibSession  # noqa: E402
 from market_platform_foundation.finviz.login_recovery import (  # noqa: E402
     LoginRecoveryStatus,
     recover_token_via_login,
@@ -422,6 +423,70 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
         self.assertTrue(validate_host("https://elite.finviz.com/api_explanation"))
         self.assertFalse(validate_host("https://evil.example.com/login"))
 
+    def test_session_records_final_redirect_url(self) -> None:
+        response = MagicMock()
+        response.status = 200
+        response.headers = {"content-type": "text/plain"}
+        response.read.return_value = b"ok"
+        response.geturl.return_value = "https://elite.finviz.com/api_explanation"
+
+        finalized = UrllibSession._finalize(response, "https://finviz.com/login_submit")
+
+        self.assertEqual(finalized.url, "https://elite.finviz.com/api_explanation")
+
+    def test_current_login_flow_primes_session_and_validates_export(self) -> None:
+        session = MagicMock()
+        session.get.side_effect = [
+            MagicMock(
+                status_code=200,
+                text='<form action="/login_submit"></form>',
+                url="https://finviz.com/login-email?remember=true",
+                headers={"content-type": "text/html"},
+            ),
+            MagicMock(
+                status_code=200,
+                text=f'<a href="/export/screener?auth={TEST_TOKEN}">API</a>',
+                url="https://elite.finviz.com/api_explanation",
+                headers={"content-type": "text/html"},
+            ),
+            MagicMock(
+                status_code=200,
+                text="Ticker,Price\nAAPL,100\n",
+                url="https://elite.finviz.com/export/screener",
+                headers={"content-type": "text/csv"},
+            ),
+        ]
+        session.post.return_value = MagicMock(
+            status_code=200,
+            text="account",
+            url="https://finviz.com/",
+            headers={"content-type": "text/html"},
+        )
+
+        result = recover_token_via_login(
+            username="operator@example.com",
+            password="secret",
+            session_factory=lambda: session,
+        )
+
+        self.assertEqual(result.status, LoginRecoveryStatus.REFRESHED)
+        self.assertEqual(result.token, TEST_TOKEN)
+        self.assertEqual(
+            session.get.call_args_list[0],
+            call("https://finviz.com/login-email?remember=true", timeout=15),
+        )
+        session.post.assert_called_once_with(
+            "https://finviz.com/login_submit",
+            data={
+                "email": "operator@example.com",
+                "password": "secret",
+                "remember": "on",
+            },
+            timeout=15,
+            allow_redirects=True,
+        )
+        session.close.assert_called_once_with()
+
     def test_unknown_redirect_fails_closed(self) -> None:
         session = MagicMock()
         session.post.return_value = MagicMock(
@@ -439,6 +504,12 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
 
     def test_mfa_returns_operator_action_required(self) -> None:
         session = MagicMock()
+        session.get.return_value = MagicMock(
+            status_code=200,
+            text="login",
+            url="https://finviz.com/login-email?remember=true",
+            headers={"content-type": "text/html"},
+        )
         session.post.return_value = MagicMock(
             status_code=200,
             text="two-factor authentication required",
