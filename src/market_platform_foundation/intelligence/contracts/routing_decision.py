@@ -106,6 +106,8 @@ class RoutingDecisionV1:
             validate_timestamp_ns(self.ttl_ns, field_name="ttl_ns")
             if self.ttl_ns <= 0:
                 raise ValueError("ROUTE_TTL_MUST_BE_POSITIVE")
+            if not isinstance(self.ttl_ns, int):
+                raise ValueError("TTL_NS_NOT_INTEGER")
             if self.deadline_time_ns <= self.decision_time_ns:
                 raise ValueError("ROUTE_DEADLINE_NOT_FUTURE")
             if self.deadline_time_ns > self.expires_at_ns:
@@ -147,6 +149,12 @@ def routing_decision_v1_to_dict(record: RoutingDecisionV1) -> dict[str, Any]:
 
 def routing_decision_v1_from_dict(payload: dict[str, Any]) -> RoutingDecisionV1:
     reject_unknown_keys(payload, _ROUTING_ALLOWED)
+    for field_name in ("reason_codes", "required_capabilities", "optional_capabilities"):
+        value = payload.get(field_name, () if field_name != "reason_codes" else None)
+        if field_name == "reason_codes" and not isinstance(value, (list, tuple)):
+            raise ValueError("ROUTING_STRING_LIST_INVALID")
+        if field_name != "reason_codes" and value is not None and not isinstance(value, (list, tuple)):
+            raise ValueError("ROUTING_STRING_LIST_INVALID")
     lineage = component_lineage_from_dict(payload.get("router_lineage"))
     if lineage is None:
         raise ValueError("ROUTER_LINEAGE_REQUIRED")

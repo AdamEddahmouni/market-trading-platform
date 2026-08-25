@@ -102,9 +102,11 @@ class EventDetectorEngine:
     def __init__(self, policy: DetectionPolicyV1 | None = None) -> None:
         self.policy = policy or DetectionPolicyV1()
         self._states: OrderedDict[str, _ScopeState] = OrderedDict()
+        self._last_decision_time_ns: int | None = None
 
     def reset(self) -> None:
         self._states.clear()
+        self._last_decision_time_ns = None
 
     def state_snapshot(self) -> DetectorStateSnapshot:
         return DetectorStateSnapshot(
@@ -156,6 +158,11 @@ class EventDetectorEngine:
         )
 
     def detect(self, frame: DetectionFrame) -> DetectionEngineResult:
+        if (
+            self._last_decision_time_ns is not None
+            and frame.snapshot.decision_time_ns <= self._last_decision_time_ns
+        ):
+            return DetectionEngineResult((), ("FRAME_DECISION_TIME_NOT_MONOTONIC",))
         if frame.snapshot.quality.state == QualityState.INVALID:
             return DetectionEngineResult((), ("FRAME_SNAPSHOT_QUALITY_INVALID",))
         action = frame.quality_decision.action
@@ -182,6 +189,7 @@ class EventDetectorEngine:
                 ),
             )
         )
+        self._last_decision_time_ns = frame.snapshot.decision_time_ns
         return DetectionEngineResult(ordered, tuple(sorted(set(diagnostics))))
 
     def _state_for(self, key: str) -> _ScopeState:
@@ -251,10 +259,13 @@ class EventDetectorEngine:
             source_event_refs=event_refs,
             detector_id=detector_id,
             detector_version="1",
-            policy_id=self.policy.policy_id,
-            policy_version=self.policy.policy_version,
+            detector_policy_identity=self.policy.identity,
             identity_context=identity_context,
         )
+        merged_metadata = {
+            "detector_policy_identity": self.policy.identity,
+            **metadata,
+        }
         return DetectionV1(
             detection_id=detection_id,
             schema_version="1",
@@ -269,7 +280,7 @@ class EventDetectorEngine:
             reason_codes=(reason_code,),
             quality=_quality_summary(frame, (*source_signals, *source_events)),
             identity_context=identity_context,
-            metadata=metadata,
+            metadata=merged_metadata,
         )
 
     def _detect_order_flow(

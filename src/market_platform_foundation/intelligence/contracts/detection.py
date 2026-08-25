@@ -142,6 +142,8 @@ def detection_v1_to_dict(record: DetectionV1) -> dict[str, Any]:
 
 def detection_v1_from_dict(payload: dict[str, Any]) -> DetectionV1:
     reject_unknown_keys(payload, _DETECTION_ALLOWED)
+    if not isinstance(payload.get("reason_codes"), (list, tuple)):
+        raise ValueError("DETECTION_REASON_CODES_INVALID")
     lineage = component_lineage_from_dict(payload.get("detector_lineage"))
     if lineage is None:
         raise ValueError("DETECTION_LINEAGE_REQUIRED")

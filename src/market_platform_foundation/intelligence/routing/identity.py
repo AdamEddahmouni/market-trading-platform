@@ -26,8 +26,7 @@ def derive_detection_id(
     source_event_refs: tuple[ContractReference, ...] = (),
     detector_id: str,
     detector_version: str,
-    policy_id: str,
-    policy_version: str,
+    detector_policy_identity: str,
     identity_context: dict[str, str] | None = None,
 ) -> str:
     payload: dict[str, Any] = {
@@ -39,8 +38,7 @@ def derive_detection_id(
         "source_event_refs": _refs_payload(source_event_refs),
         "detector_id": detector_id,
         "detector_version": detector_version,
-        "policy_id": policy_id,
-        "policy_version": policy_version,
+        "detector_policy_identity": detector_policy_identity,
         "identity_context": dict(sorted((identity_context or {}).items())),
     }
     return f"DET-{sha256_bytes(canonical_bytes(payload))}"

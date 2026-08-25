@@ -42,11 +42,19 @@ class SmartRouter:
     def route(self, detection: DetectionV1, *, quality_decision: QualityDecision) -> RoutingDecisionV1:
         if quality_decision.assessment.decision_time_ns != detection.detected_at_ns:
             raise ValueError("ROUTING_QUALITY_DECISION_TIME_MISMATCH")
+        if detection.quality.state == QualityState.INVALID:
+            return self._abstain_route(
+                detection,
+                quality_decision=quality_decision,
+                reason_codes=("DETECTION_QUALITY_INVALID",),
+                quality=QualitySummary(state=QualityState.INVALID, flags=detection.quality.flags),
+            )
         template = self.policy.template_for(detection.semantic_event_type)
         required = tuple(cap.value for cap in template.required_capabilities)
         optional = tuple(cap.value for cap in template.optional_capabilities)
-        satisfied = {cap for cap in quality_decision.satisfied_requirements}
-        degraded = {cap for cap in quality_decision.degraded_requirements}
+        relevant_caps = set(template.required_capabilities) | set(template.optional_capabilities)
+        satisfied = {cap for cap in quality_decision.satisfied_requirements if cap in relevant_caps}
+        degraded = {cap for cap in quality_decision.degraded_requirements if cap in relevant_caps}
         required_missing = set(template.required_capabilities) - satisfied - degraded
         optional_missing = set(template.optional_capabilities) - satisfied - degraded
         reasons = {f"{detection.semantic_event_type.value}_DETECTED"}
@@ -71,7 +79,7 @@ class SmartRouter:
         degraded_route = bool(
             quality_decision.action == DecisionAction.DEGRADE
             or degraded
-            or optional_missing
+            or (optional_missing and template.degrade_on_optional_missing)
             or detection.quality.state in {QualityState.DEGRADED, QualityState.UNKNOWN}
         )
         if route_action == RouteAction.ROUTE:
@@ -91,6 +99,8 @@ class SmartRouter:
 
         routing_context = {
             "quality_action": quality_decision.action.value,
+            "detection_severity": detection.severity.value,
+            "detection_quality_state": detection.quality.state.value,
             "satisfied": sorted(cap.value for cap in satisfied),
             "degraded": sorted(cap.value for cap in degraded),
             "required_missing": sorted(cap.value for cap in required_missing),
@@ -145,6 +155,54 @@ class SmartRouter:
                 routed,
                 key=lambda row: (row.expert_domain.value, row.detection_ref.id, row.routing_decision_id),
             )
+        )
+
+
+    def _abstain_route(
+        self,
+        detection: DetectionV1,
+        *,
+        quality_decision: QualityDecision,
+        reason_codes: tuple[str, ...],
+        quality: QualitySummary,
+    ) -> RoutingDecisionV1:
+        template = self.policy.template_for(detection.semantic_event_type)
+        required = tuple(cap.value for cap in template.required_capabilities)
+        routing_context = {
+            "quality_action": quality_decision.action.value,
+            "detection_severity": detection.severity.value,
+            "detection_quality_state": detection.quality.state.value,
+            "satisfied": [],
+            "degraded": [],
+            "required_missing": [],
+            "optional_missing": [],
+        }
+        route_id = derive_routing_decision_id(
+            detection_id=detection.detection_id,
+            router_policy_identity=self.policy.identity,
+            expert_domain=template.expert_domain.value,
+            required_capabilities=required,
+            routing_context=routing_context,
+        )
+        return RoutingDecisionV1(
+            routing_decision_id=route_id,
+            schema_version="1",
+            detection_ref=ContractReference(kind=ContractKind.DETECTION.value, id=detection.detection_id),
+            decision_time_ns=detection.detected_at_ns,
+            expert_domain=template.expert_domain,
+            route_action=RouteAction.ABSTAIN,
+            priority=template.base_priority,
+            reason_codes=reason_codes,
+            required_capabilities=required,
+            optional_capabilities=tuple(cap.value for cap in template.optional_capabilities),
+            quality=quality,
+            router_lineage=ComponentLineage(component_id="smart-router", component_version="1"),
+            metadata={
+                "routing_policy_id": self.policy.policy_id,
+                "routing_policy_version": self.policy.policy_version,
+                "routing_policy_identity": self.policy.identity,
+                "route_is_scheduled_job": False,
+            },
         )
 
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import math
 from types import MappingProxyType
 from typing import Mapping
 
@@ -28,8 +29,21 @@ class DetectionPolicyV1:
     max_seen_news_events: int = 4096
 
     def __post_init__(self) -> None:
-        if self.order_flow_window_ns <= 0 or self.order_flow_threshold <= 0:
-            raise ValueError("ORDER_FLOW_POLICY_INVALID")
+        if not self.policy_id or not self.policy_version:
+            raise ValueError("DETECTION_POLICY_IDENTITY_INVALID")
+        if (
+            isinstance(self.order_flow_window_ns, bool)
+            or not isinstance(self.order_flow_window_ns, int)
+            or self.order_flow_window_ns <= 0
+        ):
+            raise ValueError("ORDER_FLOW_WINDOW_NS_INVALID")
+        if (
+            isinstance(self.order_flow_threshold, bool)
+            or not isinstance(self.order_flow_threshold, (int, float))
+            or not math.isfinite(float(self.order_flow_threshold))
+            or self.order_flow_threshold <= 0
+        ):
+            raise ValueError("ORDER_FLOW_THRESHOLD_INVALID")
         if self.liquidity_entry_bps <= 0 or self.liquidity_exit_bps < 0:
             raise ValueError("LIQUIDITY_THRESHOLDS_INVALID")
         if self.liquidity_exit_bps >= self.liquidity_entry_bps:
@@ -38,6 +52,22 @@ class DetectionPolicyV1:
             raise ValueError("SHORT_INTEREST_THRESHOLD_INVALID")
         if self.max_scopes <= 0 or self.max_seen_news_events <= 0:
             raise ValueError("DETECTOR_STATE_BOUND_INVALID")
+
+    @property
+    def identity(self) -> str:
+        payload = {
+            "policy_id": self.policy_id,
+            "policy_version": self.policy_version,
+            "order_flow_window_ns": self.order_flow_window_ns,
+            "order_flow_threshold": self.order_flow_threshold,
+            "liquidity_entry_bps": self.liquidity_entry_bps,
+            "liquidity_exit_bps": self.liquidity_exit_bps,
+            "short_interest_relative_change_threshold": self.short_interest_relative_change_threshold,
+            "allow_degraded_inputs": self.allow_degraded_inputs,
+            "max_scopes": self.max_scopes,
+            "max_seen_news_events": self.max_seen_news_events,
+        }
+        return f"DTPOL-{sha256_bytes(canonical_bytes(payload))}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,6 +79,7 @@ class RouteTemplate:
     base_priority: RoutingPriority
     deadline_offset_ns: int
     ttl_ns: int
+    degrade_on_optional_missing: bool = True
 
 
 _DEFAULT_TEMPLATES = {
@@ -60,6 +91,7 @@ _DEFAULT_TEMPLATES = {
         RoutingPriority.HIGH,
         5 * ONE_SECOND_NS,
         30 * ONE_SECOND_NS,
+        False,
     ),
     SemanticEventType.LIQUIDITY_EVENT: RouteTemplate(
         SemanticEventType.LIQUIDITY_EVENT,
@@ -119,8 +151,18 @@ class RoutingPolicyV1:
     ttl_overrides_ns: Mapping[SemanticEventType, int] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        if not self.policy_id:
+            raise ValueError("ROUTING_POLICY_IDENTITY_INVALID")
         object.__setattr__(self, "deadline_overrides_ns", MappingProxyType(dict(self.deadline_overrides_ns)))
         object.__setattr__(self, "ttl_overrides_ns", MappingProxyType(dict(self.ttl_overrides_ns)))
+        for mapping in (self.deadline_overrides_ns, self.ttl_overrides_ns):
+            for value in mapping.values():
+                if (
+                    isinstance(value, bool)
+                    or not isinstance(value, int)
+                    or value <= 0
+                ):
+                    raise ValueError("ROUTING_TIME_OFFSET_INVALID")
         for event_type in SemanticEventType:
             template = self.template_for(event_type, validate=False)
             if template.deadline_offset_ns <= 0 or template.ttl_ns <= 0:
@@ -139,6 +181,7 @@ class RoutingPolicyV1:
             base_priority=base.base_priority,
             deadline_offset_ns=self.deadline_overrides_ns.get(event_type, base.deadline_offset_ns),
             ttl_ns=self.ttl_overrides_ns.get(event_type, base.ttl_ns),
+            degrade_on_optional_missing=base.degrade_on_optional_missing,
         )
 
     @property

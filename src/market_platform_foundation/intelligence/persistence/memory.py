@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import threading
 from typing import Any
 
@@ -257,7 +258,7 @@ class InMemoryIntelligenceRepository:
             store = self._stores[codec.collection_name]
             existing = store.get(record_id)
             if existing is None:
-                store[record_id] = dict(document)
+                store[record_id] = copy.deepcopy(document)
                 return RepositoryPutResult.INSERTED
             if canonical_semantic_equal(existing, document):
                 return RepositoryPutResult.ALREADY_PRESENT
@@ -275,7 +276,7 @@ class InMemoryIntelligenceRepository:
 
     def _decode(self, record_type: type, body: dict[str, Any]) -> Any:
         codec = _CODEC_BY_TYPE[record_type]
-        return codec.from_dict({k: v for k, v in body.items() if k != "_id"})
+        return codec.from_dict(copy.deepcopy({k: v for k, v in body.items() if k != "_id"}))
 
 
 __all__ = ["InMemoryIntelligenceRepository"]
