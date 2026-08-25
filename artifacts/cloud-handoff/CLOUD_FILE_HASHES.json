@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-08-25T20:01:40.528792+00:00",
+  "generated_at": "2026-08-25T20:39:44.934262+00:00",
   "repository_root": "/workspace",
   "algorithm": "sha256",
-  "file_count": 2782,
+  "file_count": 2823,
   "files": [
     {
       "path": ".cursor/Dockerfile",
@@ -106,13 +106,33 @@
     },
     {
       "path": "artifacts/cloud-handoff/CLOUD_FILE_HASHES.json",
-      "size": 535163,
-      "sha256": "497d3387ce1c88e03fb2a1952c0ac6a38dd03332500855115d2d42b83277843e"
+      "size": 535095,
+      "sha256": "ccea9455cee52020a079a598a7b625324c6bfe68b46b1cdb1c747c0df77a0767"
     },
     {
       "path": "artifacts/cloud-handoff/CLOUD_HANDOFF_MANIFEST.json",
       "size": 5353,
       "sha256": "4e570da3ead4220e4d21ce796d8e8e9ee4d4d61594f4a9211839db8a0bed8d39"
+    },
+    {
+      "path": "artifacts/cloud-handoff/CLOUD_POST_BUILD10_FILE_HASHES.json",
+      "size": 535095,
+      "sha256": "ccea9455cee52020a079a598a7b625324c6bfe68b46b1cdb1c747c0df77a0767"
+    },
+    {
+      "path": "artifacts/cloud-handoff/CLOUD_POST_BUILD10_MANIFEST.json",
+      "size": 711,
+      "sha256": "68fd5983d9b9078a87505785c0e605015245d879ccc993d9c9f5a0652fa40b55"
+    },
+    {
+      "path": "artifacts/cloud-handoff/CLOUD_POST_BUILD11_FILE_HASHES.json",
+      "size": 1993,
+      "sha256": "895eed434679c1ff781d75210ce3610bc9733b9c3c50f3fdbb95a9af4e2b64b3"
+    },
+    {
+      "path": "artifacts/cloud-handoff/CLOUD_POST_BUILD11_MANIFEST.json",
+      "size": 1004,
+      "sha256": "3994e3ce0106e7d3214e45e8db49b4d41d3c888d3cb6f53feb8b8429f4fe0dff"
     },
     {
       "path": "artifacts/cloud-handoff/PRE_HANDOFF_BRANCH.txt",
@@ -275,6 +295,11 @@
       "sha256": "ac427d99022d2026e8d7960a6ef5cea561d8e7c7ae073fc995147a1be7ab24b6"
     },
     {
+      "path": "docs/engineering/INFERENCE_SCHEDULER_V1.md",
+      "size": 5097,
+      "sha256": "abc4110b809d795e6b8031efb1c9dd4d73113cf468b2d565f6e5ad2c25f802b7"
+    },
+    {
       "path": "docs/engineering/INTELLIGENCE_CONTRACTS_V1.md",
       "size": 6852,
       "sha256": "22245e3eebee25efcdc0eb25921f35e0802695c181e1cc418225fbb3351789cc"
@@ -283,6 +308,11 @@
       "path": "docs/engineering/INTELLIGENCE_PERSISTENCE_ARCHITECTURE_V1.md",
       "size": 10354,
       "sha256": "bc0c0055e1cd3d254413ff46b4ee21efd58768e3e0faa7a5244e1174482c0cfb"
+    },
+    {
+      "path": "docs/engineering/MICROSTRUCTURE_SPECIALIST_V1.md",
+      "size": 5408,
+      "sha256": "640707d65f0d684161a2ea357acfdcc4cd784ed3f83fe256dd7564919d22c8f6"
     },
     {
       "path": "docs/engineering/OPTIONS_PHASE_B_ADMISSION.md",
@@ -7705,6 +7735,11 @@
       "sha256": "882db779b86d12a777b5a0e37dea56f73471e38ca6564355475933f2f8b024f8"
     },
     {
+      "path": "src/market_platform_foundation/intelligence/contracts/inference_job.py",
+      "size": 7074,
+      "sha256": "1356e48ecc633cae6c6e57863e430aadd1899bc54b8eb88be5a95895de7bc399"
+    },
+    {
       "path": "src/market_platform_foundation/intelligence/contracts/opportunity.py",
       "size": 6663,
       "sha256": "100cbaa89d0875dbe62df5165d2af92da264a392bd64f1d170fcfe5732b73311"
@@ -8015,6 +8050,66 @@
       "sha256": "16426acfa06475a941d92014aeab4126b5fd747b27711a10a0540f5213cc1f55"
     },
     {
+      "path": "src/market_platform_foundation/intelligence/scheduling/__init__.py",
+      "size": 2548,
+      "sha256": "03eccea33c700369048921935f5457054296a5bd0ee436b31bc274104b76200b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/batching.py",
+      "size": 2016,
+      "sha256": "c64295b1c21e33c7c02c641d648b38c41b5caf68db6bcf012899f79e5624fe27"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/errors.py",
+      "size": 1023,
+      "sha256": "e85d1d3ba905f1be29dbaae194c308e992085454fafebde9070607c9d52a720c"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/executor.py",
+      "size": 2358,
+      "sha256": "d4ab8a7f45ecb82a720291b0f1f4541d5d71703d526e1ca1859808d4bd6ca76b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/identity.py",
+      "size": 1155,
+      "sha256": "0e8a8ea44458819804e1f0478d2cfe8895cc1c82bee7a7283510ca56311bf60e"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/models.py",
+      "size": 6440,
+      "sha256": "1048e4163eb35332a8c2200ce7a887a05903d99db7ee27a9d81afea6ba8678c2"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/observer.py",
+      "size": 1547,
+      "sha256": "1b1d75f79db0eafe0d6cbe094230c2f61c2ac8c334a4d7f55eec1e9ebe9b8996"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/policy.py",
+      "size": 2042,
+      "sha256": "852f46931d0f2cca98e0e34c7973348214cd9823eadc19ac8156a214c6f4d1a8"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/profiles.py",
+      "size": 6000,
+      "sha256": "f25f32e675835cdc3764c7b32bc082e2f0ec73c5beadea6a6dfe97695f423e27"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/residency.py",
+      "size": 1906,
+      "sha256": "56c38b25f5236d8c38d1d5575f63c37394e4949104877416102dcf1f4681d9a8"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/resources.py",
+      "size": 3061,
+      "sha256": "4786b9a898d4b2c78e1cdbe7bdbaf13c74f8703e20e3e98cbb54638b61795289"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/scheduler.py",
+      "size": 23091,
+      "sha256": "be22f6abf67aa40f5601fcfeabb1653e722eefe0d268126b08ca9209b569fbf5"
+    },
+    {
       "path": "src/market_platform_foundation/intelligence/signals/__init__.py",
       "size": 975,
       "sha256": "3cad47b75eea4b3861a84fa9fb13166c24cbf072547065ea4912983073ddd3b8"
@@ -8118,6 +8213,61 @@
       "path": "src/market_platform_foundation/intelligence/snapshots/resolver.py",
       "size": 7912,
       "sha256": "fc3f146f78d822047943e9a7a133ea58d526f7414b48be0803d5f736f690443d"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/__init__.py",
+      "size": 1508,
+      "sha256": "950e7cd9e57db7082a80f0b0894914f04213070f7bdb424115c74331e8a2da7f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/context.py",
+      "size": 888,
+      "sha256": "4dc618436a06b65911f820ee049b31e4c3bf1af39c367c0b1792a0f6a1aaaaf3"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/executor.py",
+      "size": 3830,
+      "sha256": "4629e9d9ddf738e6d855c7d768a6bc536c58fa70e0444ebb02367b96f1f3eb61"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/identity.py",
+      "size": 1787,
+      "sha256": "d17de82da9af4962acbc27fe0ead24edd063bf02a849b03efe21660eacea702f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/microstructure.py",
+      "size": 14088,
+      "sha256": "1e0643ab59cebc3639232fe3a3228d8867c40590b23651b1f0c468405cf69dd7"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/models.py",
+      "size": 2030,
+      "sha256": "131977b5c1bed850d25f56c44da169abeca1e45e89f2cdc7c307f45d2c3b5849"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/policy.py",
+      "size": 1760,
+      "sha256": "90742b6f53b40ea63d6aaa4b193caaf049a812ea853c38f65d1854be7cc260cb"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/profiles.py",
+      "size": 858,
+      "sha256": "213553d133abd7ef64f2eb23e9fa948a855322629e0fccf5cad1049f7587a2ae"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/protocol.py",
+      "size": 497,
+      "sha256": "e130a75c52cb6aaa45da63b07cf1c980cc41d3dfd9b568400fc82f094009e2df"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/resolver.py",
+      "size": 5693,
+      "sha256": "523322d21916da2b0a77ea8f5e4236becf45ac63143bfdd14e7202c20b54170f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/runner.py",
+      "size": 4608,
+      "sha256": "72dfd2a878f300ff497650d8d7d4bad833d81c902e5e3a5d4134aa34bf599f5d"
     },
     {
       "path": "src/market_platform_foundation/intelligence/temporal/__init__.py",
@@ -11370,6 +11520,16 @@
       "sha256": "3244a737c4e93cd7e40b43110c35a3219c0a59113d8bc4ca9dcca526116edc11"
     },
     {
+      "path": "tests/intelligence/scheduling_fixtures.py",
+      "size": 2058,
+      "sha256": "6d1349b40db3a9b6f0c5d71308b068fb49e18f34604e565ea3be5907842d7eae"
+    },
+    {
+      "path": "tests/intelligence/specialists_fixtures.py",
+      "size": 7272,
+      "sha256": "cf38bbe27ed10e5a13e9e303cf9b6fa39c0e580e34b1570c520465b8fad76f1e"
+    },
+    {
       "path": "tests/intelligence/test_baseline_controls.py",
       "size": 4156,
       "sha256": "a3d266a546b7e16f4fbf62f5ace6a1da8eaabc0d4eb0862f8a9d03c240ab9617"
@@ -11405,6 +11565,16 @@
       "sha256": "8fef559ea17b80474d4981148bb2711c8ba3a44d1a8d447edc3a147eb2a46c34"
     },
     {
+      "path": "tests/intelligence/test_build01_10_lifecycle.py",
+      "size": 4770,
+      "sha256": "c4cdede1af8c7cea70d1d4961970612c855b1d1fbb4d89ab2274792f5a3fa72c"
+    },
+    {
+      "path": "tests/intelligence/test_build01_11_lifecycle.py",
+      "size": 4677,
+      "sha256": "2407fffa3193db930d10becc0aa7a5c2dcdfc14af1a862b10aca9fbe110ad5f0"
+    },
+    {
       "path": "tests/intelligence/test_capability_engine.py",
       "size": 13663,
       "sha256": "4c06419c1eeaa38188e58030b608596e13c139d906aa3f6af1b67749de6493e1"
@@ -11413,6 +11583,11 @@
       "path": "tests/intelligence/test_event_detector.py",
       "size": 16121,
       "sha256": "132e20e53106bc677cb6bd1943595e22651aed196f0f08bfded85bc370fc0fa3"
+    },
+    {
+      "path": "tests/intelligence/test_inference_scheduler.py",
+      "size": 19065,
+      "sha256": "059f007af822b336ec2a1a781e6fd63fcf169a25059a21ea8705d475ec218055"
     },
     {
       "path": "tests/intelligence/test_intelligence_adapters.py",
@@ -11435,6 +11610,16 @@
       "sha256": "84d86065376d05d823a017276584395625277637a426d94f885f781f6eb4e07b"
     },
     {
+      "path": "tests/intelligence/test_microstructure_executor.py",
+      "size": 7808,
+      "sha256": "b25efbeeceab575097c3b44ace5f859baecc6efdd9279348953aff8ac34088db"
+    },
+    {
+      "path": "tests/intelligence/test_microstructure_specialist.py",
+      "size": 13614,
+      "sha256": "c9e76a0712275854fe857e2140ae12dbbcc4e97e001438e032c434e673a54f61"
+    },
+    {
       "path": "tests/intelligence/test_normalization.py",
       "size": 13360,
       "sha256": "135d68f10b1ea91855e03b7a96420b6eb2cf78f60ee1009df0521c1a1b107938"
@@ -11446,8 +11631,8 @@
     },
     {
       "path": "tests/intelligence/test_persistence_conformance.py",
-      "size": 7156,
-      "sha256": "5e451f8061a605447ff8e6d3d3f1fd2117144b916ef2f71ec6ce4d935e10fa7a"
+      "size": 7206,
+      "sha256": "f3245a419968dd5224149cd30905e3c5f90e33b0839000771d73f52b27e41242"
     },
     {
       "path": "tests/intelligence/test_persistence_fixtures.py",
@@ -11510,6 +11695,16 @@
       "sha256": "20fa6a380ff9abc2789a4a1acde64ddc1743d7216c3d4362dc085bc580ebcc37"
     },
     {
+      "path": "tests/intelligence/test_scheduler_contracts.py",
+      "size": 3100,
+      "sha256": "63fdb7a02f079c48f3a280163794898269247c905d2dfe41cfce28c04fdaef65"
+    },
+    {
+      "path": "tests/intelligence/test_scheduler_persistence.py",
+      "size": 1350,
+      "sha256": "8415f9455875efeb45743ee330a2ecc29fd0ecf1e25d12f49078d5794b542b4a"
+    },
+    {
       "path": "tests/intelligence/test_signal_calculators.py",
       "size": 12733,
       "sha256": "025a0bc4e3105b4a09791965b3c40ed4549f5153978bc15cfd596824cb52a617"
@@ -11558,6 +11753,16 @@
       "path": "tests/intelligence/test_snapshot_resolution.py",
       "size": 4619,
       "sha256": "30df75cac2fb0da064eef917ec41ed57e40aa9a175c899a15c31709e57823a69"
+    },
+    {
+      "path": "tests/intelligence/test_specialist_models.py",
+      "size": 1230,
+      "sha256": "fef3b5e48c4935d9dbf834e0f55a173c9bd65ff2fcb79bbcd7f21131e9a34bab"
+    },
+    {
+      "path": "tests/intelligence/test_specialist_replay_integration.py",
+      "size": 2439,
+      "sha256": "2b7028150d2ac82bbd5171ab9f3b0c8510effc2f95a63ed59fda2abd6b78decc"
     },
     {
       "path": "tests/intelligence/test_temporal_integrity.py",

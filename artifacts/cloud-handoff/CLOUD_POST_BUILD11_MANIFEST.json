@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-08-25T20:39:38.582987+00:00",
+  "generated_at": "2026-08-25T20:39:50.686222+00:00",
   "build_frontier": "BUILD_11_MICROSTRUCTURE_SPECIALIST",
   "branch": "cloud/build-11-microstructure-specialist",
-  "head": "6acbcb8ea582251da9f6a77672a854710540d42c",
+  "head": "46596f7b29d34f67cefaca1df05d5b2fd0f463fc",
   "parent_build_10_head": "6acbcb8ea582251da9f6a77672a854710540d42c",
-  "file_count": 10,
+  "file_count": 2823,
   "previous_manifest": "artifacts/cloud-handoff/CLOUD_POST_BUILD10_MANIFEST.json",
   "tests": {
     "intelligence": "411 passed, 20 skipped",
