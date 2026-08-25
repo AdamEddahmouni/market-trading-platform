@@ -1,7 +1,9 @@
 {
   "generated_at": "2026-08-25T23:20:00+00:00",
   "build_frontier": "BUILD_15_PREDICTION_LEDGER_OUTCOME_SETTLEMENT",
-  "head": "2fd3e32",
+  "branch": "cloud/build-15-prediction-ledger-outcomes",
+  "head": "bbaeadd",
+  "parent_build_14_head": "ba803727985a75903a3e964b03ba79b6d8d70bdf",
   "file_count": 2900,
   "previous_manifest": "artifacts/cloud-handoff/CLOUD_POST_BUILD14_MANIFEST.json",
   "tests": {
