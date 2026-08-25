@@ -17,6 +17,7 @@ from ..contracts.run_manifest import RunManifestV1
 from ..contracts.signal import SignalV1
 from ..contracts.snapshot import SnapshotV1
 from ..contracts.routing_decision import RoutingDecisionV1
+from ..contracts.inference_job import InferenceJobV1
 from ..temporal.policy import TemporalIntegrityPolicy
 from .codec import CODEC_BY_TYPE, RECORD_CODECS, RecordT, canonical_semantic_equal, codec_for_record, encode_document
 from .errors import RepositoryConflictError
@@ -78,6 +79,12 @@ class InMemoryIntelligenceRepository:
         with self._lock:
             rows = [self._decode(RoutingDecisionV1, body) for body in self._stores["routing_decisions"].values()]
         return tuple(sorted((row for row in rows if row.detection_ref.id == detection_id), key=lambda row: row.routing_decision_id))
+
+    def put_inference_job(self, job: InferenceJobV1) -> RepositoryPutResult:
+        return self._put(job)
+
+    def get_inference_job(self, job_id: str) -> InferenceJobV1 | None:
+        return self._get(InferenceJobV1, "inference_jobs", job_id)
 
     def put_snapshot(self, snapshot: SnapshotV1) -> RepositoryPutResult:
         return self._put(snapshot)

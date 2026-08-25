@@ -23,15 +23,18 @@ from market_platform_foundation.intelligence.persistence.mongo.schema import (  
 
 class SchemaPlanTests(unittest.TestCase):
     def test_schema_plan_version(self) -> None:
-        self.assertEqual(MONGO_SCHEMA_PLAN_VERSION, 2)
+        self.assertEqual(MONGO_SCHEMA_PLAN_VERSION, 3)
 
     def test_routing_collections_have_no_ttl_deletion_indexes(self) -> None:
         specs = {spec.codec.collection_name: spec for spec in COLLECTION_SPECS}
         self.assertIn("detections", specs)
         self.assertIn("routing_decisions", specs)
+        self.assertIn("inference_jobs", specs)
         route_indexes = specs["routing_decisions"].indexes
+        job_indexes = specs["inference_jobs"].indexes
         self.assertIn("idx_routes_expires_at", {index.name for index in route_indexes})
-        for index in route_indexes:
+        self.assertIn("idx_inference_jobs_expires_at", {index.name for index in job_indexes})
+        for index in (*route_indexes, *job_indexes):
             self.assertFalse(hasattr(index, "expire_after_seconds"))
 
     def test_all_codecs_have_collection_specs(self) -> None:

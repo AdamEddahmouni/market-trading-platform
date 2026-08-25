@@ -50,6 +50,7 @@ from .routing_decision import (
     routing_decision_v1_from_dict,
     routing_decision_v1_to_dict,
 )
+from .inference_job import InferenceJobV1, inference_job_v1_from_dict, inference_job_v1_to_dict
 from .signal import SignalV1, signal_v1_from_dict, signal_v1_to_dict
 from .snapshot import SnapshotV1, snapshot_v1_from_dict, snapshot_v1_to_dict
 
@@ -70,6 +71,7 @@ __all__ = [
     "ForecastTarget",
     "ExpertDomain",
     "HypothesisV1",
+    "InferenceJobV1",
     "IntelligenceScope",
     "OpportunitySide",
     "OpportunityV1",
@@ -97,6 +99,8 @@ __all__ = [
     "forecast_v1_to_dict",
     "hypothesis_v1_from_dict",
     "hypothesis_v1_to_dict",
+    "inference_job_v1_from_dict",
+    "inference_job_v1_to_dict",
     "opportunity_v1_from_dict",
     "opportunity_v1_to_dict",
     "outcome_v1_from_dict",

@@ -38,6 +38,7 @@ from ...contracts.run_manifest import RunManifestV1
 from ...contracts.signal import SignalV1
 from ...contracts.snapshot import SnapshotV1
 from ...contracts.routing_decision import RoutingDecisionV1
+from ...contracts.inference_job import InferenceJobV1
 from ...temporal.policy import TemporalIntegrityPolicy
 from .config import MongoRepositoryConfig, redact_mongo_uri
 from .schema import MongoSchemaManager
@@ -150,6 +151,12 @@ class MongoIntelligenceRepository:
         codec = _CODEC_BY_COLLECTION["routing_decisions"]
         documents = self._database["routing_decisions"].find({"detection_ref.id": detection_id}).sort("routing_decision_id", 1)
         return tuple(decode_document(document, codec) for document in documents)
+
+    def put_inference_job(self, job: InferenceJobV1) -> RepositoryPutResult:
+        return self._put(job)
+
+    def get_inference_job(self, job_id: str) -> InferenceJobV1 | None:
+        return self._get("inference_jobs", job_id, InferenceJobV1)
 
     def put_snapshot(self, snapshot: SnapshotV1) -> RepositoryPutResult:
         return self._put(snapshot)

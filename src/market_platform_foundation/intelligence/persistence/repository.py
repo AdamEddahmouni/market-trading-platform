@@ -16,6 +16,7 @@ from ..contracts.run_manifest import RunManifestV1
 from ..contracts.signal import SignalV1
 from ..contracts.snapshot import SnapshotV1
 from ..contracts.routing_decision import RoutingDecisionV1
+from ..contracts.inference_job import InferenceJobV1
 from ..temporal.policy import TemporalIntegrityPolicy
 
 
@@ -45,6 +46,10 @@ class IntelligenceRepository(Protocol):
     def get_routing_decision(self, routing_decision_id: str) -> RoutingDecisionV1 | None: ...
 
     def get_routes_by_detection(self, detection_id: str) -> tuple[RoutingDecisionV1, ...]: ...
+
+    def put_inference_job(self, job: InferenceJobV1) -> RepositoryPutResult: ...
+
+    def get_inference_job(self, job_id: str) -> InferenceJobV1 | None: ...
 
     def put_snapshot(self, snapshot: SnapshotV1) -> RepositoryPutResult: ...
 

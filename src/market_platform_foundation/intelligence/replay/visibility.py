@@ -15,6 +15,7 @@ from ..contracts.run_manifest import RunManifestV1
 from ..contracts.signal import SignalV1
 from ..contracts.snapshot import SnapshotV1
 from ..contracts.routing_decision import RoutingDecisionV1
+from ..contracts.inference_job import InferenceJobV1
 from ..persistence.queries import query_events_as_of, query_signals_as_of
 from ..persistence.repository import IntelligenceRepository, RepositoryPutResult
 from ..temporal.policy import TemporalIntegrityPolicy
@@ -115,6 +116,12 @@ class ReplayVisibleRepository:
 
     def get_routes_by_detection(self, detection_id: str) -> tuple[RoutingDecisionV1, ...]:
         return self._output.get_routes_by_detection(detection_id)
+
+    def put_inference_job(self, job: InferenceJobV1) -> RepositoryPutResult:
+        return self._output.put_inference_job(job)
+
+    def get_inference_job(self, job_id: str) -> InferenceJobV1 | None:
+        return self._output.get_inference_job(job_id)
 
     def put_snapshot(self, snapshot: SnapshotV1) -> RepositoryPutResult:
         return self._output.put_snapshot(snapshot)

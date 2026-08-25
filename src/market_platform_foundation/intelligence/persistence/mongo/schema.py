@@ -287,10 +287,55 @@ def _run_manifest_validator() -> dict[str, Any]:
     }
 
 
+def _inference_job_validator() -> dict[str, Any]:
+    return {
+        "bsonType": "object",
+        "required": [
+            "schema_version",
+            "job_id",
+            "routing_decision_ref",
+            "detection_ref",
+            "expert_domain",
+            "priority",
+            "decision_time_ns",
+            "submitted_at_ns",
+            "deadline_time_ns",
+            "expires_at_ns",
+            "execution_profile_id",
+            "batch_key",
+            "residency_key",
+            "scheduler_policy_identity",
+            "scheduler_lineage",
+        ],
+        "properties": {
+            "schema_version": _STRING,
+            "job_id": _STRING,
+            "routing_decision_ref": {"bsonType": "object"},
+            "detection_ref": {"bsonType": "object"},
+            "source_snapshot_ref": {"bsonType": "object"},
+            "expert_domain": _STRING,
+            "priority": _STRING,
+            "decision_time_ns": _INT_OR_LONG,
+            "submitted_at_ns": _INT_OR_LONG,
+            "deadline_time_ns": _INT_OR_LONG,
+            "expires_at_ns": _INT_OR_LONG,
+            "execution_profile_id": _STRING,
+            "batch_key": _STRING,
+            "residency_key": _STRING,
+            "adapter_key": _STRING,
+            "scheduler_policy_identity": _STRING,
+            "scheduler_lineage": {"bsonType": "object"},
+            "required_capabilities": {"bsonType": "array"},
+            "metadata": {"bsonType": "object"},
+        },
+    }
+
+
 _VALIDATOR_BUILDERS = {
     "events": _event_validator,
     "detections": _detection_validator,
     "routing_decisions": _routing_decision_validator,
+    "inference_jobs": _inference_job_validator,
     "snapshots": _snapshot_validator,
     "signals": _signal_validator,
     "evidence": _evidence_validator,
@@ -355,6 +400,12 @@ def _indexes_for(codec: RecordCodec) -> tuple[MongoIndexSpec, ...]:
             MongoIndexSpec(name="idx_routes_detection", keys=[("detection_ref.id", 1)]),
             MongoIndexSpec(name="idx_routes_domain_time", keys=[("expert_domain", 1), ("decision_time_ns", 1)]),
             MongoIndexSpec(name="idx_routes_expires_at", keys=[("expires_at_ns", 1)]),
+        )
+    if codec.collection_name == "inference_jobs":
+        return (
+            MongoIndexSpec(name="idx_inference_jobs_route", keys=[("routing_decision_ref.id", 1)]),
+            MongoIndexSpec(name="idx_inference_jobs_detection", keys=[("detection_ref.id", 1)]),
+            MongoIndexSpec(name="idx_inference_jobs_expires_at", keys=[("expires_at_ns", 1)]),
         )
     if codec.collection_name == "signals":
         return (

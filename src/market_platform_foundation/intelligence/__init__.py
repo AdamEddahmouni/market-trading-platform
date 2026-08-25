@@ -1,4 +1,4 @@
-"""Intelligence plane — canonical contracts through BUILD 09 routing."""
+"""Intelligence plane — canonical contracts through BUILD 10 scheduling."""
 
 from .contracts import (
     EventV1,
@@ -86,6 +86,11 @@ from .routing import (
     RoutingPolicyV1,
     SmartRouter,
 )
+from .scheduling import (
+    InferenceScheduler,
+    RecordingInferenceExecutor,
+    SchedulerPolicyV1,
+)
 from .temporal import (
     DEFAULT_TEMPORAL_POLICY,
     TemporalIntegrityError,
@@ -120,6 +125,7 @@ __all__ = [
     "FastSignalEngine",
     "ForecastV1",
     "HypothesisV1",
+    "InferenceScheduler",
     "IntelligenceCapability",
     "NormalizationContext",
     "NormalizationError",
@@ -139,11 +145,13 @@ __all__ = [
     "ReplayRuntime",
     "ReplayScenario",
     "RegimeContext",
+    "RecordingInferenceExecutor",
     "RequirementSet",
     "RunManifestV1",
     "RouteAction",
     "RoutingDecisionV1",
     "RoutingPolicyV1",
+    "SchedulerPolicyV1",
     "RoutingPriority",
     "SemanticEventType",
     "SignalComputationRequest",

@@ -27,6 +27,7 @@ from tests.intelligence.test_persistence_fixtures import (  # noqa: E402
     sample_snapshot,
 )
 from tests.intelligence.test_routing_contracts import sample_detection, sample_route  # noqa: E402
+from tests.intelligence.test_scheduler_contracts import sample_job  # noqa: E402
 
 
 class RepositoryConformanceTests(unittest.TestCase):
@@ -39,12 +40,14 @@ class RepositoryConformanceTests(unittest.TestCase):
         populate_all_record_types(self.repo)
         self.repo.put_detection(sample_detection())
         self.repo.put_routing_decision(sample_route())
+        self.repo.put_inference_job(sample_job())
         self.assertEqual(self.repo.get_event("evt-1").event_id, "evt-1")
         self.assertEqual(self.repo.get_detection("DET-abc").detection_id, "DET-abc")
         self.assertEqual(
             self.repo.get_routing_decision("ROUTE-abc").routing_decision_id,
             "ROUTE-abc",
         )
+        self.assertEqual(self.repo.get_inference_job("IJOB-test").job_id, "IJOB-test")
         self.assertEqual(self.repo.get_snapshot("snap-1").snapshot_id, "snap-1")
         self.assertEqual(self.repo.get_signal("sig-1").signal_id, "sig-1")
         self.assertEqual(self.repo.get_evidence("ev-1").evidence_id, "ev-1")

@@ -22,6 +22,11 @@ from ..contracts.routing_decision import (
     routing_decision_v1_from_dict,
     routing_decision_v1_to_dict,
 )
+from ..contracts.inference_job import (
+    InferenceJobV1,
+    inference_job_v1_from_dict,
+    inference_job_v1_to_dict,
+)
 from .errors import RepositorySerializationError
 
 BSON_MAX_INT64 = (1 << 63) - 1
@@ -33,6 +38,7 @@ RecordT = (
     EventV1
     | DetectionV1
     | RoutingDecisionV1
+    | InferenceJobV1
     | SnapshotV1
     | SignalV1
     | EvidenceV1
@@ -141,6 +147,7 @@ _KIND_TO_TYPE: dict[ContractKind, type] = {
     ContractKind.EVENT: EventV1,
     ContractKind.DETECTION: DetectionV1,
     ContractKind.ROUTING_DECISION: RoutingDecisionV1,
+    ContractKind.INFERENCE_JOB: InferenceJobV1,
     ContractKind.SNAPSHOT: SnapshotV1,
     ContractKind.SIGNAL: SignalV1,
     ContractKind.EVIDENCE: EvidenceV1,
@@ -172,6 +179,13 @@ RECORD_CODECS: tuple[RecordCodec, ...] = (
         id_field="routing_decision_id",
         to_dict=routing_decision_v1_to_dict,
         from_dict=routing_decision_v1_from_dict,
+    ),
+    RecordCodec(
+        kind=ContractKind.INFERENCE_JOB,
+        collection_name="inference_jobs",
+        id_field="job_id",
+        to_dict=inference_job_v1_to_dict,
+        from_dict=inference_job_v1_from_dict,
     ),
     RecordCodec(
         kind=ContractKind.SNAPSHOT,
@@ -231,7 +245,7 @@ RECORD_CODECS: tuple[RecordCodec, ...] = (
     ),
 )
 
-MONGO_SCHEMA_PLAN_VERSION = 2
+MONGO_SCHEMA_PLAN_VERSION = 3
 
 CODEC_BY_TYPE = {_KIND_TO_TYPE[codec.kind]: codec for codec in RECORD_CODECS}
 

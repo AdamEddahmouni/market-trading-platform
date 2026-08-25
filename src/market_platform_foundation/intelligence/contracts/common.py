@@ -24,6 +24,7 @@ class ContractKind(StrEnum):
     EVENT = "event"
     DETECTION = "detection"
     ROUTING_DECISION = "routing_decision"
+    INFERENCE_JOB = "inference_job"
     SNAPSHOT = "snapshot"
     SIGNAL = "signal"
     EVIDENCE = "evidence"
