@@ -103,6 +103,132 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
         self.assertEqual(result.kind, FinvizFailureKind.RATE_LIMITED)
         self.assertFalse(result.triggers_recovery)
 
+    def test_429_uses_bounded_exponential_backoff(self) -> None:
+        manager = FinvizRequestManager(min_interval_s=5.0)
+        manager._last_request_at = -5.0
+        responses = [
+            MagicMock(status_code=429, text="rate limit", headers={}),
+            MagicMock(status_code=429, text="rate limit", headers={}),
+            MagicMock(
+                status_code=200,
+                text="Ticker,Price\nAAPL,100\n",
+                headers={"content-type": "text/csv"},
+            ),
+        ]
+        elapsed = {"value": 0.0}
+        delays: list[float] = []
+
+        def fake_sleep(delay: float) -> None:
+            delays.append(delay)
+            elapsed["value"] += delay
+
+        with patch.object(
+            manager._credential_manager,
+            "get_token",
+            return_value=TEST_TOKEN,
+        ), patch.object(
+            manager,
+            "_raw_get",
+            side_effect=responses,
+        ), patch(
+            "market_platform_foundation.finviz.request_manager.time.monotonic",
+            side_effect=lambda: elapsed["value"],
+        ), patch(
+            "market_platform_foundation.finviz.request_manager.time.sleep",
+            side_effect=fake_sleep,
+        ):
+            status, body, _ = manager.get(
+                "https://elite.finviz.com/export/screener",
+                params={"v": "152"},
+            )
+
+        self.assertEqual(status, 200)
+        self.assertIn("AAPL", body)
+        self.assertEqual(delays, [5.0, 10.0])
+        self.assertEqual(manager.metrics.http_429_count, 2)
+
+    def test_429_honors_larger_retry_after(self) -> None:
+        manager = FinvizRequestManager(min_interval_s=5.0)
+        manager._last_request_at = -5.0
+        responses = [
+            MagicMock(
+                status_code=429,
+                text="rate limit",
+                headers={"retry-after": "12"},
+            ),
+            MagicMock(
+                status_code=200,
+                text="Ticker,Price\nAAPL,100\n",
+                headers={"content-type": "text/csv"},
+            ),
+        ]
+        elapsed = {"value": 0.0}
+        delays: list[float] = []
+
+        def fake_sleep(delay: float) -> None:
+            delays.append(delay)
+            elapsed["value"] += delay
+
+        with patch.object(
+            manager._credential_manager,
+            "get_token",
+            return_value=TEST_TOKEN,
+        ), patch.object(
+            manager,
+            "_raw_get",
+            side_effect=responses,
+        ), patch(
+            "market_platform_foundation.finviz.request_manager.time.monotonic",
+            side_effect=lambda: elapsed["value"],
+        ), patch(
+            "market_platform_foundation.finviz.request_manager.time.sleep",
+            side_effect=fake_sleep,
+        ):
+            status, _, _ = manager.get(
+                "https://elite.finviz.com/export/screener",
+                params={"v": "152"},
+            )
+
+        self.assertEqual(status, 200)
+        self.assertEqual(delays, [12.0])
+
+    def test_login_html_is_never_cached(self) -> None:
+        manager = FinvizRequestManager(min_interval_s=0.0)
+        login_html = MagicMock(
+            status_code=200,
+            text="<html><form>Login Password</form></html>",
+            headers={"content-type": "text/html"},
+        )
+
+        with patch.object(
+            manager._credential_manager,
+            "get_token",
+            return_value=TEST_TOKEN,
+        ), patch.object(
+            manager._credential_manager,
+            "should_attempt_recovery",
+            return_value=False,
+        ), patch.object(
+            manager,
+            "_raw_get",
+            side_effect=[login_html, login_html],
+        ) as raw_get:
+            first = manager.get(
+                "https://elite.finviz.com/export/screener",
+                params={"v": "152"},
+                cache_ttl_s=60,
+            )
+            second = manager.get(
+                "https://elite.finviz.com/export/screener",
+                params={"v": "152"},
+                cache_ttl_s=60,
+            )
+
+        self.assertEqual(first[0], 200)
+        self.assertEqual(second[0], 200)
+        self.assertEqual(raw_get.call_count, 2)
+        self.assertEqual(manager.metrics.cache_hits, 0)
+
     def test_network_error_does_not_trigger_rotation(self) -> None:
         result = classify_http_response(status_code=None, network_error=True)
         self.assertEqual(result.kind, FinvizFailureKind.NETWORK_ERROR)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import http.client
+import math
 import threading
 import time
 import urllib.error
@@ -51,8 +52,16 @@ class FinvizRequestMetrics:
 class FinvizRequestManager:
     """Single-flight Finviz HTTP access with credential recovery integration."""
 
-    def __init__(self, *, min_interval_s: float = MIN_REQUEST_INTERVAL_S) -> None:
+    def __init__(
+        self,
+        *,
+        min_interval_s: float = MIN_REQUEST_INTERVAL_S,
+        max_429_retries: int = 2,
+        sleeper=None,
+    ) -> None:
         self._min_interval_s = min_interval_s
+        self._max_429_retries = max(0, int(max_429_retries))
+        self._sleeper = sleeper
         self._lock = threading.Lock()
         self._last_request_at = 0.0
         self._cache: dict[str, _CacheEntry] = {}
@@ -75,8 +84,25 @@ class FinvizRequestManager:
         elapsed = now - self._last_request_at
         if elapsed < self._min_interval_s:
             self.metrics.rate_limit_waits += 1
-            time.sleep(self._min_interval_s - elapsed)
+            self._sleep(self._min_interval_s - elapsed)
         self._last_request_at = time.monotonic()
+
+    def _sleep(self, delay_s: float) -> None:
+        sleeper = self._sleeper or time.sleep
+        sleeper(delay_s)
+
+    @staticmethod
+    def _retry_after_seconds(headers: dict[str, str]) -> float | None:
+        raw = headers.get("retry-after")
+        if raw is None:
+            return None
+        try:
+            parsed = float(raw)
+        except (TypeError, ValueError):
+            return None
+        if not math.isfinite(parsed) or parsed < 0:
+            return None
+        return parsed
 
     def _raw_get(
         self,
@@ -100,7 +126,7 @@ class FinvizRequestManager:
         *,
         timeout_s: float,
         api_key: str,
-    ) -> tuple[int, str, str]:
+    ) -> tuple[int, str, str, dict[str, str]]:
         try:
             response = self._raw_get(url, params=params, timeout=timeout_s)
         except (urllib.error.URLError, http.client.HTTPException, OSError) as exc:
@@ -113,7 +139,8 @@ class FinvizRequestManager:
             ) from exc
         body = response.text or ""
         content_type = str(response.headers.get("content-type", ""))
-        return response.status_code, body, content_type
+        headers = {str(key).lower(): str(value) for key, value in response.headers.items()}
+        return response.status_code, body, content_type, headers
 
     def _handle_response_classification(
         self,
@@ -183,10 +210,11 @@ class FinvizRequestManager:
             try:
                 self.metrics.cache_misses += 1
                 retried_auth = False
-                retried_429 = False
+                retries_429 = 0
                 active_token = ""
                 status = 0
                 body = ""
+                final_classification = None
                 while True:
                     self._wait_rate_limit()
                     active_token = self._credential_manager.get_token() or ""
@@ -194,7 +222,7 @@ class FinvizRequestManager:
                     if active_token:
                         request_params["auth"] = active_token
                     started = time.perf_counter()
-                    status, body, content_type = self._execute_request(
+                    status, body, content_type, response_headers = self._execute_request(
                         url,
                         request_params,
                         timeout_s=timeout_s,
@@ -206,9 +234,13 @@ class FinvizRequestManager:
                     if status == 429:
                         self.metrics.http_429_count += 1
                         self._credential_manager.mark_rate_limited()
-                        if not retried_429:
-                            retried_429 = True
-                            time.sleep(self._min_interval_s)
+                        if retries_429 < self._max_429_retries:
+                            backoff_s = self._min_interval_s * (2**retries_429)
+                            retry_after_s = self._retry_after_seconds(response_headers)
+                            if retry_after_s is not None:
+                                backoff_s = max(backoff_s, retry_after_s)
+                            retries_429 += 1
+                            self._sleep(backoff_s)
                             continue
                         break
 
@@ -217,6 +249,7 @@ class FinvizRequestManager:
                         body=body,
                         content_type=content_type,
                     )
+                    final_classification = classification
                     if classification.kind != FinvizFailureKind.AUTH_OK:
                         if status in (401, 403) or classification.triggers_recovery:
                             self.metrics.auth_failures += 1
@@ -229,7 +262,12 @@ class FinvizRequestManager:
                             continue
                     break
 
-                if cache_ttl_s is not None and status == 200:
+                if (
+                    cache_ttl_s is not None
+                    and status == 200
+                    and final_classification is not None
+                    and final_classification.kind == FinvizFailureKind.AUTH_OK
+                ):
                     self._cache[key] = _CacheEntry(
                         body=body,
                         status_code=status,
