@@ -2,7 +2,7 @@
   "generated_at": "2026-08-25T21:02:54.130582+00:00",
   "build_frontier": "BUILD_12_BLIND_COUNCIL_BLACKBOARD",
   "branch": "cloud/build-12-blind-council-blackboard",
-  "head": "5f401319f0703104e1db59bdf7436395ce103d22",
+  "head": "0c13e9059fb72f14f2ec72a447f1816d6ce235ca",
   "parent_build_11_head": "a7c5112cfb0ec180234ac3125b95acdf36e16d66",
   "file_count": 2847,
   "previous_manifest": "artifacts/cloud-handoff/CLOUD_POST_BUILD11_MANIFEST.json",
