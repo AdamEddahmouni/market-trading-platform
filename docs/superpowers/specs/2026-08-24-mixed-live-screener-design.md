@@ -137,6 +137,21 @@ In Live mode, the browser:
 
 Manual refresh remains available. A refresh can take tens of seconds because the existing Finviz request manager spaces requests; the current queue stays visible with a refreshing indicator. The API server's threaded request model keeps unrelated UI requests responsive.
 
+## Automatic Finviz refresh and credential recovery
+
+Finviz is a periodic request/response discovery source, not a streaming feed. The mixed browser requests a new universe every 120 seconds while visible, and the request manager serializes exports at no more than one request per five seconds. Eight-screen refreshes may therefore span tens of seconds. The previous mixed snapshot remains visible until the new refresh completes.
+
+The Finviz request manager applies bounded exponential backoff after HTTP 429 responses. It honors a valid `Retry-After` header when available and otherwise waits 5, then 10 seconds before returning the final rate-limited response. Rate-limited, login HTML, invalid-auth, and provider-error responses are never cached. Successful classified CSV responses may use their declared cache TTL. Per-screen capture fallback preserves the last valid snapshot when retries are exhausted.
+
+An authentication failure enters one single-flight recovery sequence:
+
+1. Re-read the configured credential sources using the existing precedence rules. If a different non-environment token is present, validate it and atomically adopt it.
+2. If no changed token succeeds and stored Finviz login credentials exist, establish a cookie session by first loading the current email-login page, submit the current `email`, `password`, and `remember` fields to `https://finviz.com/login_submit`, then fetch the Elite API explanation page and extract its API key.
+3. Validate the recovered key against a small Elite screener export before persisting or swapping it, then retry the original export once.
+4. If Finviz requires MFA, CAPTCHA, subscription repair, or repeated recovery fails, stop automated retries for the cooldown window and expose `AUTH_OPERATOR_ACTION_REQUIRED`. Existing snapshots remain available.
+
+The standard-library `urllib` export transport remains the governed provider boundary. Login recovery accepts an injected session factory. The UI/API launcher may register an optional `curl_cffi` session with Chrome impersonation for the login/key-recovery sequence only; when that package is absent, recovery falls back to the standard-library cookie session. No secret, cookie, form body, API key, or credential-bearing URL is logged or returned to the UI.
+
 ## API contract
 
 `GET /discover/mixed`
@@ -195,6 +210,9 @@ Status is conveyed with text in addition to color. A persistent disclosure says:
 ## Failure behavior
 
 - **Finviz not configured/auth required:** show the latest saved captures if present, label them `SNAPSHOT` or `STALE`, show the existing local setup command, and keep Live mode degraded rather than blank.
+- **Finviz token changed on disk:** automatically reload and validate the changed token before attempting a login-based recovery.
+- **Finviz rate limited:** retry with bounded exponential backoff, do not cache the error, and retain the latest successful captures.
+- **Finviz login challenged:** stop at `AUTH_OPERATOR_ACTION_REQUIRED`; never attempt to automate MFA or CAPTCHA.
 - **One Finviz screen fails:** keep successful screens, return the failed screen's reason, and mark aggregate quality `DEGRADED`.
 - **All screens fail with no captures:** return `available: false` and an empty queue with actionable provider status.
 - **Moomoo disabled/disconnected/unentitled:** keep Finviz candidates; market records are `UNAVAILABLE` with a reason code.
@@ -249,6 +267,7 @@ Implementation follows test-first development.
 6. Single-screen diagnostics and manual workspace promotion still work.
 7. No refresh, poll, classification, ranking, or subscription path can create an order.
 8. Tests and repository validation pass, with live provider checks opt-in.
+9. Finviz discovery continues to refresh without operator action across transient 429 responses and a changed stored API key; login/key recovery is attempted automatically when credentials permit it.
 
 ## Follow-on work
 
