@@ -2,7 +2,7 @@
   "generated_at": "2026-08-25T21:26:14.940392+00:00",
   "build_frontier": "BUILD_13_COMPOSITE_HYPOTHESIS_ENGINE",
   "branch": "cloud/build-13-composite-hypothesis-engine",
-  "head": "caade8ebc673ddaef30d9c7dfd14be53fdfea947",
+  "head": "30db011315430979f3fc1a0698caea4e68cd1667",
   "parent_build_12_head": "caade8ebc673ddaef30d9c7dfd14be53fdfea947",
   "file_count": 2869,
   "previous_manifest": "artifacts/cloud-handoff/CLOUD_POST_BUILD12_MANIFEST.json",
