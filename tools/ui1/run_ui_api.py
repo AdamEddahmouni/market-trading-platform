@@ -16,6 +16,7 @@ REGISTRY_PATH = ROOT / "manifests/ui1/assertion-predicates.json"
 EVALUATED_AT = "2026-08-18T01:00:00.000000000Z"
 ENTRYPOINT_GLOB = "evidence/phase0/*/entrypoint-route-report.json"
 
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
 from market_platform_foundation.canonical import canonical_bytes, load_json_strict, sha256_bytes, write_canonical_json
@@ -30,6 +31,7 @@ from market_platform_foundation.ui_api.projections import (
 )
 from market_platform_foundation.ui_api.server import UiApiHandler, canonical_response_bytes
 from market_platform_foundation.ui_api.store import ReplayStore
+from tools.finviz.login_transport import configure_login_transport
 
 
 def _load_local_env() -> None:
@@ -332,6 +334,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     _load_local_env()
+    configure_login_transport()
     args = parse_args()
     if not args.serve:
         install_guard([])

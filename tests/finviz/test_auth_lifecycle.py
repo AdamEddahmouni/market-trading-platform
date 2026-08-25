@@ -27,6 +27,7 @@ from market_platform_foundation.finviz.http_client import UrllibSession  # noqa:
 from market_platform_foundation.finviz.login_recovery import (  # noqa: E402
     LoginRecoveryStatus,
     recover_token_via_login,
+    reset_login_session_factory,
     validate_host,
 )
 from market_platform_foundation.finviz.redaction import (  # noqa: E402
@@ -67,6 +68,7 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
             os.environ.pop(key, None)
 
     def tearDown(self) -> None:
+        reset_login_session_factory()
         reset_finviz_credential_manager()
         reset_finviz_request_manager()
         self._env_patch.stop()
@@ -772,6 +774,76 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
             for _ in range(3):
                 manager.attempt_recovery()
         self.assertEqual(manager.health().state, FinvizAuthState.AUTH_OPERATOR_ACTION_REQUIRED)
+
+    def test_login_transport_urllib_mode(self) -> None:
+        from tools.finviz.login_transport import configure_login_transport
+
+        with patch(
+            "tools.finviz.login_transport.reset_login_session_factory",
+        ) as reset_factory:
+            selected = configure_login_transport("urllib")
+
+        self.assertEqual(selected, "URLLIB")
+        reset_factory.assert_called_once_with()
+
+    def test_login_transport_registers_chrome_impersonation(self) -> None:
+        from tools.finviz.login_transport import configure_login_transport
+
+        fake_requests = MagicMock()
+        fake_session = MagicMock()
+        fake_requests.Session.return_value = fake_session
+        captured: list[object] = []
+
+        with patch(
+            "tools.finviz.login_transport.set_login_session_factory",
+            side_effect=captured.append,
+        ):
+            selected = configure_login_transport(
+                "curl_cffi",
+                requests_module=fake_requests,
+            )
+
+        self.assertEqual(selected, "CURL_CFFI")
+        self.assertEqual(len(captured), 1)
+        self.assertIs(captured[0](), fake_session)
+        fake_requests.Session.assert_called_once_with(impersonate="chrome")
+
+    def test_login_transport_auto_falls_back_without_dependency(self) -> None:
+        from tools.finviz.login_transport import configure_login_transport
+
+        with patch(
+            "tools.finviz.login_transport.reset_login_session_factory",
+        ) as reset_factory:
+            selected = configure_login_transport("auto", requests_module=None)
+
+        self.assertEqual(selected, "URLLIB")
+        reset_factory.assert_called_once_with()
+
+    def test_ui_launcher_configures_login_transport_after_env_load(self) -> None:
+        from tools.ui1 import run_ui_api
+
+        events: list[str] = []
+        args = MagicMock(serve=True, host="127.0.0.1", port=0, output_dir=None)
+        with patch.object(
+            run_ui_api,
+            "_load_local_env",
+            side_effect=lambda: events.append("env"),
+        ), patch.object(
+            run_ui_api,
+            "configure_login_transport",
+            side_effect=lambda: events.append("transport"),
+        ), patch.object(
+            run_ui_api,
+            "parse_args",
+            return_value=args,
+        ), patch.object(
+            run_ui_api,
+            "serve",
+        ):
+            result = run_ui_api.main()
+
+        self.assertEqual(result, 0)
+        self.assertEqual(events, ["env", "transport"])
 
     def test_redact_payload_covers_api_token(self) -> None:
         cleaned = redact_payload({"api_token": "secret", "auth": "secret"})

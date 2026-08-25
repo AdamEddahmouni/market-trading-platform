@@ -9,6 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(SRC))
 
 from market_platform_foundation.finviz.credential_manager import (  # noqa: E402
@@ -19,6 +20,7 @@ from market_platform_foundation.finviz.request_manager import reset_finviz_reque
 from market_platform_foundation.finviz.secure_store import (  # noqa: E402
     write_login_credentials,
 )
+from tools.finviz.login_transport import configure_login_transport  # noqa: E402
 
 
 def _print_status() -> int:
@@ -100,6 +102,11 @@ def _clear() -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    try:
+        configure_login_transport()
+    except RuntimeError as exc:
+        print(f"ERROR: {exc}")
+        return 2
     parser = argparse.ArgumentParser(description="Finviz Elite authentication maintenance")
     sub = parser.add_subparsers(dest="command", required=True)
 
