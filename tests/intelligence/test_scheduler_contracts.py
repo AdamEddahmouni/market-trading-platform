@@ -33,10 +33,10 @@ def sample_job() -> InferenceJobV1:
         deadline_time_ns=SCHEDULER_T + 5_000_000_000,
         expires_at_ns=SCHEDULER_T + 30_000_000_000,
         required_capabilities=("QUOTES", "TRADES"),
-        execution_profile_id="microstructure-gpu-v1",
-        batch_key="microstructure-batch",
-        residency_key="base-llm-micro",
-        adapter_key="microstructure-adapter",
+        execution_profile_id="microstructure-cpu-v1",
+        batch_key="microstructure-specialist-v1",
+        residency_key="microstructure-cpu",
+        adapter_key=None,
         scheduler_policy_identity="SCHPOL-test",
         scheduler_lineage=ComponentLineage(component_id="inference-scheduler", component_version="1"),
     )
@@ -51,12 +51,12 @@ class InferenceJobContractTests(unittest.TestCase):
         first = derive_inference_job_id(
             routing_decision_id="ROUTE-abc",
             scheduler_policy_identity="SCHPOL-test",
-            execution_profile_id="microstructure-gpu-v1",
+            execution_profile_id="microstructure-cpu-v1",
         )
         second = derive_inference_job_id(
             routing_decision_id="ROUTE-abc",
             scheduler_policy_identity="SCHPOL-test",
-            execution_profile_id="microstructure-gpu-v1",
+            execution_profile_id="microstructure-cpu-v1",
         )
         self.assertEqual(first, second)
         self.assertTrue(first.startswith("IJOB-"))
@@ -65,7 +65,7 @@ class InferenceJobContractTests(unittest.TestCase):
         base = derive_inference_job_id(
             routing_decision_id="ROUTE-abc",
             scheduler_policy_identity="SCHPOL-test",
-            execution_profile_id="microstructure-gpu-v1",
+            execution_profile_id="microstructure-cpu-v1",
         )
         changed = derive_inference_job_id(
             routing_decision_id="ROUTE-abc",

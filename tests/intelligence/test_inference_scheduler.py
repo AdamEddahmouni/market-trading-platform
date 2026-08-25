@@ -147,7 +147,10 @@ class InferenceSchedulerTests(unittest.TestCase):
         executor = RecordingInferenceExecutor()
         blocked = gpu_resources(gpu_available=0, vram_available=0)
         scheduler = InferenceScheduler(executor=executor, resource_provider=StaticResourceProvider(blocked))
-        route = sample_route()
+        route = dataclasses.replace(
+            sample_route("ROUTE-deriv-block"),
+            expert_domain=ExpertDomain.DERIVATIVES,
+        )
         admitted = scheduler.submit_route(route, scheduler_time_ns=SCHEDULER_T)
         assert admitted.job is not None
         scheduler.schedule_once(SCHEDULER_T)
@@ -158,7 +161,10 @@ class InferenceSchedulerTests(unittest.TestCase):
 
     def test_vram_blocked(self) -> None:
         scheduler = InferenceScheduler(resource_provider=StaticResourceProvider(gpu_resources(vram_available=1024)))
-        route = sample_route()
+        route = dataclasses.replace(
+            sample_route("ROUTE-deriv-vram"),
+            expert_domain=ExpertDomain.DERIVATIVES,
+        )
         admitted = scheduler.submit_route(route, scheduler_time_ns=SCHEDULER_T)
         assert admitted.job is not None
         scheduler.schedule_once(SCHEDULER_T)
@@ -179,7 +185,10 @@ class InferenceSchedulerTests(unittest.TestCase):
         scheduler = InferenceScheduler(
             resource_provider=StaticResourceProvider(cpu_resources()),
         )
-        route = sample_route()
+        route = dataclasses.replace(
+            sample_route("ROUTE-deriv-reject"),
+            expert_domain=ExpertDomain.DERIVATIVES,
+        )
         admitted = scheduler.submit_route(route, scheduler_time_ns=SCHEDULER_T)
         assert admitted.job is not None
         scheduler.schedule_once(SCHEDULER_T)
@@ -187,13 +196,12 @@ class InferenceSchedulerTests(unittest.TestCase):
 
     def test_batching_compatible_jobs(self) -> None:
         executor = RecordingInferenceExecutor()
-        scheduler = InferenceScheduler(executor=executor, resource_provider=StaticResourceProvider(gpu_resources()))
+        scheduler = InferenceScheduler(executor=executor, resource_provider=StaticResourceProvider(cpu_resources(cpu_available=8)))
         for index in range(3):
             scheduler.submit_route(sample_route(f"ROUTE-batch-{index}"), scheduler_time_ns=SCHEDULER_T)
         scheduler.schedule_once(SCHEDULER_T)
-        self.assertEqual(len(executor.dispatches), 2)
-        self.assertEqual(len(executor.dispatches[0].jobs), 2)
-        self.assertEqual(len(executor.dispatches[1].jobs), 1)
+        self.assertEqual(len(executor.dispatches), 1)
+        self.assertEqual(len(executor.dispatches[0].jobs), 3)
 
     def test_batch_identity_deterministic(self) -> None:
         job_ids = ("IJOB-a", "IJOB-b")
@@ -204,7 +212,8 @@ class InferenceSchedulerTests(unittest.TestCase):
 
     def test_residency_keep_current(self) -> None:
         executor = RecordingInferenceExecutor()
-        resources = gpu_resources(residency="base-llm-micro", adapter="microstructure-adapter")
+        resources = cpu_resources()
+        resources = dataclasses.replace(resources, current_residency_key="microstructure-cpu")
         scheduler = InferenceScheduler(executor=executor, resource_provider=StaticResourceProvider(resources))
         route = sample_route()
         scheduler.submit_route(route, scheduler_time_ns=SCHEDULER_T)
@@ -306,7 +315,7 @@ class InferenceSchedulerTests(unittest.TestCase):
 
     def test_resource_release_on_complete(self) -> None:
         executor = RecordingInferenceExecutor()
-        resources = gpu_resources(gpu_available=1)
+        resources = cpu_resources(cpu_available=1)
         scheduler = InferenceScheduler(executor=executor, resource_provider=StaticResourceProvider(resources))
         first = scheduler.submit_route(sample_route("ROUTE-1"), scheduler_time_ns=SCHEDULER_T)
         second = scheduler.submit_route(sample_route("ROUTE-2"), scheduler_time_ns=SCHEDULER_T)
@@ -337,7 +346,7 @@ class InferenceSchedulerTests(unittest.TestCase):
         job_id = derive_inference_job_id(
             routing_decision_id=route.routing_decision_id,
             scheduler_policy_identity=left.policy.identity,
-            execution_profile_id="microstructure-gpu-v1",
+            execution_profile_id="microstructure-cpu-v1",
         )
         self.assertIsNone(right.get_job(job_id))
 
@@ -372,11 +381,11 @@ class LiveReplayParityTests(unittest.TestCase):
         job_id = derive_inference_job_id(
             routing_decision_id=route.routing_decision_id,
             scheduler_policy_identity=policy,
-            execution_profile_id="microstructure-gpu-v1",
+            execution_profile_id="microstructure-cpu-v1",
         )
         replay_job_id = derive_inference_job_id(
             routing_decision_id=route.routing_decision_id,
             scheduler_policy_identity=policy,
-            execution_profile_id="microstructure-gpu-v1",
+            execution_profile_id="microstructure-cpu-v1",
         )
         self.assertEqual(job_id, replay_job_id)

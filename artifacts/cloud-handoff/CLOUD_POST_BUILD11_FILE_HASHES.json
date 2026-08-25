@@ -1,0 +1,58 @@
+{
+  "generated_at": "2026-08-25T20:39:38.582987+00:00",
+  "repository_root": "/workspace",
+  "algorithm": "sha256",
+  "file_count": 10,
+  "files": [
+    {
+      "path": "docs/engineering/MICROSTRUCTURE_SPECIALIST_V1.md",
+      "size": 5408,
+      "sha256": "640707D65F0D684161A2EA357ACFDCC4CD784ED3F83FE256DD7564919D22C8F6"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/profiles.py",
+      "size": 6000,
+      "sha256": "F25F32E675835CDC3764C7B32BC082E2F0EC73C5BEADEA6A6DFE97695F423E27"
+    },
+    {
+      "path": "tests/intelligence/specialists_fixtures.py",
+      "size": 7272,
+      "sha256": "CF38BBE27ED10E5A13E9E303CF9B6FA39C0E580E34B1570C520465B8FAD76F1E"
+    },
+    {
+      "path": "tests/intelligence/test_build01_11_lifecycle.py",
+      "size": 4677,
+      "sha256": "2407FFFA3193DB930D10BECC0AA7A5C2DCDFC14AF1A862B10ACA9FBE110AD5F0"
+    },
+    {
+      "path": "tests/intelligence/test_inference_scheduler.py",
+      "size": 19065,
+      "sha256": "059F007AF822B336EC2A1A781E6FD63FCF169A25059A21EA8705D475EC218055"
+    },
+    {
+      "path": "tests/intelligence/test_microstructure_executor.py",
+      "size": 7808,
+      "sha256": "B25EFBEECEAB575097C3B44ACE5F859BAECC6EFDD9279348953AFF8AC34088DB"
+    },
+    {
+      "path": "tests/intelligence/test_microstructure_specialist.py",
+      "size": 13614,
+      "sha256": "C9E76A0712275854FE857E2140AE12DBBCC4E97E001438E032C434E673A54F61"
+    },
+    {
+      "path": "tests/intelligence/test_scheduler_contracts.py",
+      "size": 3100,
+      "sha256": "63FDB7A02F079C48F3A280163794898269247C905D2DFE41CFCE28C04FDAEF65"
+    },
+    {
+      "path": "tests/intelligence/test_specialist_models.py",
+      "size": 1230,
+      "sha256": "FEF3B5E48C4935D9DBF834E0F55A173C9BD65FF2FCB79BBCD7F21131E9A34BAB"
+    },
+    {
+      "path": "tests/intelligence/test_specialist_replay_integration.py",
+      "size": 2439,
+      "sha256": "2B7028150D2AC82BBD5171AB9F3B0C8510EFFC2F95A63ED59FDA2ABD6B78DECC"
+    }
+  ]
+}

@@ -76,17 +76,17 @@ class InferenceExecutionProfile:
 
 _DEFAULT_PROFILES: dict[ExpertDomain, InferenceExecutionProfile] = {
     ExpertDomain.MICROSTRUCTURE: InferenceExecutionProfile(
-        profile_id="microstructure-gpu-v1",
+        profile_id="microstructure-cpu-v1",
         expert_domain=ExpertDomain.MICROSTRUCTURE,
-        resource_class=ResourceClass.GPU,
-        min_vram_bytes=8 * 1024**3,
+        resource_class=ResourceClass.CPU,
+        min_vram_bytes=0,
         cpu_slots=1,
-        max_concurrency=1,
-        batch_key="microstructure-batch",
-        max_batch_size=2,
-        residency_key="base-llm-micro",
-        adapter_key="microstructure-adapter",
-        estimated_duration_ns=2 * ONE_SECOND_NS,
+        max_concurrency=2,
+        batch_key="microstructure-specialist-v1",
+        max_batch_size=4,
+        residency_key="microstructure-cpu",
+        adapter_key=None,
+        estimated_duration_ns=ONE_SECOND_NS // 10,
     ),
     ExpertDomain.DERIVATIVES: InferenceExecutionProfile(
         profile_id="derivatives-gpu-v1",
