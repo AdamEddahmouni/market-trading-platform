@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import App from "../../App";
 import { ApplicationBootstrap } from "./ApplicationBootstrap";
 import { ModePlaceholderDashboard } from "./ModePlaceholderDashboard";
 
@@ -13,7 +14,27 @@ function deferred<T>() {
   return { promise, reject, resolve };
 }
 
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
 describe("ApplicationBootstrap", () => {
+  it("uses platform context as the default startup readiness boundary", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <ApplicationBootstrap>{(mode) => <div>{mode} selected</div>}</ApplicationBootstrap>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: /choose how you enter/i }),
+    ).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith("/context", {
+      headers: { Accept: "application/json" },
+    });
+  });
+
   it("shows startup readiness before the launcher", async () => {
     const readiness = deferred<void>();
 
@@ -33,6 +54,29 @@ describe("ApplicationBootstrap", () => {
     expect(
       await screen.findByRole("heading", { name: /choose how you enter/i }),
     ).toBeInTheDocument();
+  });
+
+  it("tracks completed, active, and pending startup stages", () => {
+    const readiness = deferred<void>();
+    render(
+      <ApplicationBootstrap readinessTask={() => readiness.promise}>
+        {() => <div>Selected dashboard</div>}
+      </ApplicationBootstrap>,
+    );
+
+    expect(screen.getByText("Starting interface").closest("li")).toHaveAttribute(
+      "data-state",
+      "complete",
+    );
+    expect(screen.getByText("Connecting to platform").closest("li")).toHaveAttribute(
+      "data-state",
+      "active",
+    );
+    expect(screen.getByText("Checking environment readiness").closest("li")).toHaveAttribute(
+      "data-state",
+      "pending",
+    );
+    expect(screen.getByText("Ready").closest("li")).toHaveAttribute("data-state", "pending");
   });
 
   it("retries a failed startup check without reloading", async () => {
@@ -121,6 +165,20 @@ describe("ApplicationBootstrap", () => {
     fireEvent.keyDown(dialog, { key: "Tab", shiftKey: true });
 
     expect(enter).toHaveFocus();
+  });
+
+  it("locks background scrolling while the Live confirmation is open", async () => {
+    render(
+      <ApplicationBootstrap readinessTask={() => Promise.resolve()}>
+        {() => <div>Selected dashboard</div>}
+      </ApplicationBootstrap>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /Live/i }));
+    expect(document.body.style.overflow).toBe("hidden");
+
+    fireEvent.click(screen.getByRole("button", { name: "Go back" }));
+    expect(document.body.style.overflow).toBe("");
   });
 
   it("shows honest mode readiness until the selected environment resolves", async () => {
@@ -267,5 +325,21 @@ describe("ModePlaceholderDashboard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Switch mode" }));
 
     expect(onSwitchMode).toHaveBeenCalledOnce();
+  });
+});
+
+describe("App mode gate", () => {
+  it("opens on the launcher instead of the workstation shell", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({}) }),
+    );
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", { name: /choose how you enter/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/API unavailable/i)).not.toBeInTheDocument();
   });
 });

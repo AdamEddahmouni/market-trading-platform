@@ -15,8 +15,13 @@ export function LiveModeConfirmation({
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     cancelRef.current?.focus();
-    return () => triggerRef.current?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      triggerRef.current?.focus();
+    };
   }, [triggerRef]);
 
   return (

@@ -6,15 +6,22 @@ import type { Mode, ModeReadinessTask, ReadinessTask } from "./types";
 type ApplicationBootstrapProps = {
   children: (mode: Mode, switchMode: () => void) => ReactNode;
   modeReadinessTask?: ModeReadinessTask;
-  readinessTask: ReadinessTask;
+  readinessTask?: ReadinessTask;
 };
 
 type StartupState = "CONNECTING" | "ERROR" | "READY";
 
+const defaultModeReadinessTask: ModeReadinessTask = () => Promise.resolve();
+
+export const defaultReadinessTask: ReadinessTask = async () => {
+  const response = await fetch("/context", { headers: { Accept: "application/json" } });
+  if (!response.ok) throw new Error("Platform readiness check failed");
+};
+
 export function ApplicationBootstrap({
   children,
-  modeReadinessTask = () => Promise.resolve(),
-  readinessTask,
+  modeReadinessTask = defaultModeReadinessTask,
+  readinessTask = defaultReadinessTask,
 }: ApplicationBootstrapProps) {
   const [attempt, setAttempt] = useState(0);
   const [mode, setMode] = useState<Mode | null>(null);
@@ -40,8 +47,14 @@ export function ApplicationBootstrap({
     return (
       <main className="mode-session-surface">
         <section className="startup-progress" role="status" aria-live="polite">
-          <p>Starting interface</p>
-          <h1>Connecting to platform</h1>
+          <p className="mode-eyebrow">Application launch</p>
+          <h1>Opening market workstation</h1>
+          <ol className="mode-transition-steps" aria-label="Application startup stages">
+            <li data-state="complete">Starting interface</li>
+            <li data-state="active">Connecting to platform</li>
+            <li data-state="pending">Checking environment readiness</li>
+            <li data-state="pending">Ready</li>
+          </ol>
           <div role="progressbar" aria-label="Application startup" />
         </section>
       </main>

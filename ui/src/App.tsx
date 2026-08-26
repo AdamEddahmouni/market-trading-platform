@@ -36,8 +36,11 @@ import { NavShell } from "./components/NavShell";
 import { NowPage } from "./components/NowPage";
 import { WorkspaceRoute } from "./components/WorkspaceRoute";
 import { WorkspaceIndex } from "./components/WorkspaceIndex";
+import { ApplicationBootstrap } from "./components/mode-session/ApplicationBootstrap";
+import { ModePlaceholderDashboard } from "./components/mode-session/ModePlaceholderDashboard";
 import "./styles/tokens.css";
 import "./styles/layout.css";
+import "./styles/mode-session.css";
 
 const queryClient = new QueryClient();
 
@@ -370,7 +373,11 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Shell />
+        <ApplicationBootstrap>
+          {(mode, switchMode) => (
+            <ModePlaceholderDashboard mode={mode} onSwitchMode={switchMode} />
+          )}
+        </ApplicationBootstrap>
       </BrowserRouter>
     </QueryClientProvider>
   );
