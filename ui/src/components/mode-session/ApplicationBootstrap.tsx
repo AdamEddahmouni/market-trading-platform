@@ -1,15 +1,21 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ModeLauncher } from "./ModeLauncher";
-import type { Mode, ReadinessTask } from "./types";
+import { ModeTransition } from "./ModeTransition";
+import type { Mode, ModeReadinessTask, ReadinessTask } from "./types";
 
 type ApplicationBootstrapProps = {
   children: (mode: Mode, switchMode: () => void) => ReactNode;
+  modeReadinessTask?: ModeReadinessTask;
   readinessTask: ReadinessTask;
 };
 
 type StartupState = "CONNECTING" | "ERROR" | "READY";
 
-export function ApplicationBootstrap({ children, readinessTask }: ApplicationBootstrapProps) {
+export function ApplicationBootstrap({
+  children,
+  modeReadinessTask = () => Promise.resolve(),
+  readinessTask,
+}: ApplicationBootstrapProps) {
   const [attempt, setAttempt] = useState(0);
   const [mode, setMode] = useState<Mode | null>(null);
   const [startupState, setStartupState] = useState<StartupState>("CONNECTING");
@@ -57,7 +63,17 @@ export function ApplicationBootstrap({ children, readinessTask }: ApplicationBoo
     );
   }
 
-  if (mode) return children(mode, () => setMode(null));
+  if (mode) {
+    return (
+      <ModeTransition
+        mode={mode}
+        readinessTask={modeReadinessTask}
+        onReturn={() => setMode(null)}
+      >
+        {children(mode, () => setMode(null))}
+      </ModeTransition>
+    );
+  }
 
   return <ModeLauncher onSelect={setMode} />;
 }
