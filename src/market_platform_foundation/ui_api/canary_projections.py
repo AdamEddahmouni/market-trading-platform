@@ -224,6 +224,38 @@ def build_canary_pilot_payload() -> dict[str, Any]:
     return build_pilot_snapshot(ctx=ctx, pilot_accounting=accounting, as_of_ns=_now_ns())
 
 
+def build_canary_deployment_payload() -> dict[str, Any]:
+    from ..intelligence.live_canary.deployment import (
+        build_deployment_snapshot,
+        build_release_manifest,
+        run_full_successful_deployment_fixture,
+    )
+
+    fixture = run_full_successful_deployment_fixture(allow_dirty=True)
+    release_result = build_release_manifest(
+        build_timestamp_ns=_now_ns(),
+        build33_qualification_ref="BUILD33-SUPERVISED-PRODUCTION-PILOT-QUALIFIED",
+        allow_dirty=True,
+    )
+    release_id = release_result.manifest.release_manifest_id if not release_result.blocked else "BLOCKED"
+    commit_sha = release_result.manifest.source_commit_sha if not release_result.blocked else ""
+    config_hash = fixture.deployment_id and "fixture-hash" or ""
+    return build_deployment_snapshot(
+        release_id=release_id,
+        commit_sha=commit_sha,
+        environment_kind="SUPERVISED_LIVE",
+        config_hash=config_hash or "unavailable",
+        deployment_state="QUALIFIED" if not fixture.release_blocked else "BLOCKED",
+        service_health={"operator-api": "HEALTHY", "reconciliation-worker": "NOT_READY"},
+        canary_state=fixture.canary_disposition,
+        rollback_target=fixture.release_id if fixture.release_id else None,
+        pending_change_request=None,
+        migration_state="COMPATIBLE",
+        expected_release=release_id,
+        expected_config_hash=config_hash or "unavailable",
+    )
+
+
 def build_canary_action_inventory() -> dict[str, Any]:
     return {
         "actions": [

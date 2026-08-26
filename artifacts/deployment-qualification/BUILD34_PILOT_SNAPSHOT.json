@@ -1,0 +1,26 @@
+{
+  "authority_boundary": "DEPLOYMENT_READ_ONLY",
+  "canary_state": "CANARY_PASSED",
+  "commit_sha": "16bf0f3e854e99ac2e992d8c7245b8f1742979b9",
+  "config_hash": "fixture-hash",
+  "deployment_state": "QUALIFIED",
+  "disclaimer": "deployment healthy does not imply live trading enabled",
+  "drift_assessment": {
+    "blocking_impact": false,
+    "drift_classification": "NONE"
+  },
+  "environment_kind": "SUPERVISED_LIVE",
+  "live_authorization": {
+    "deployment_grants_authority": false,
+    "per_order_confirmation_required": true,
+    "session_authorized": false
+  },
+  "migration_state": "COMPATIBLE",
+  "pending_change_request": null,
+  "release_id": "REL-f27924d6383a2dafe94ce0718d049ad9031775dbf5cd79acc506e1a315aac9eb",
+  "rollback_target": "REL-f27924d6383a2dafe94ce0718d049ad9031775dbf5cd79acc506e1a315aac9eb",
+  "service_health": {
+    "operator-api": "HEALTHY",
+    "reconciliation-worker": "NOT_READY"
+  }
+}

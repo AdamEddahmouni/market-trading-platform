@@ -1,0 +1,11 @@
+{
+  "artifact_hashes": {
+    "bundle_content": "5b09a53ad4de15d2a74bf31b1d843ec6c349d0ec332628c766dcb4ea76339be4",
+    "dependency_lock": "7400896aad7c1884fa3cec4a9e690402a459e40bad0c5902dbb7919f133a63db",
+    "source_tree": "5b9fecc46b8954f20e6b73f0ecf058ebba0cefa0bd25e4786580ff69059e8da0"
+  },
+  "dependency_lock_hash": "7400896aad7c1884fa3cec4a9e690402a459e40bad0c5902dbb7919f133a63db",
+  "release_manifest_id": "REL-f27924d6383a2dafe94ce0718d049ad9031775dbf5cd79acc506e1a315aac9eb",
+  "source_commit_sha": "16bf0f3e854e99ac2e992d8c7245b8f1742979b9",
+  "source_tree_hash": "5b9fecc46b8954f20e6b73f0ecf058ebba0cefa0bd25e4786580ff69059e8da0"
+}

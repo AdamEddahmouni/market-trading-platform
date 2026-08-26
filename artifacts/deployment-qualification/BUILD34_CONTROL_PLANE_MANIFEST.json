@@ -1,0 +1,8 @@
+{
+  "build": "BUILD34",
+  "build33_source_ref": "16bf0f3e854e99ac2e992d8c7245b8f1742979b9",
+  "disposition": "DEPLOYMENT_QUALIFIED_WITH_LIMITATIONS",
+  "release_id": "REL-f27924d6383a2dafe94ce0718d049ad9031775dbf5cd79acc506e1a315aac9eb",
+  "schema_version": "1",
+  "source_head": "16bf0f3e854e99ac2e992d8c7245b8f1742979b9"
+}

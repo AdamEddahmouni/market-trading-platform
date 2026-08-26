@@ -461,6 +461,9 @@ class UiApiHandler(BaseHTTPRequestHandler):
             if path == "/canary/pilot":
                 self._send_json(canary_projections.build_canary_pilot_payload())
                 return
+            if path == "/canary/deployment":
+                self._send_json(canary_projections.build_canary_deployment_payload())
+                return
             if path == "/paper/account":
                 self._send_json(paper_projections.build_paper_account_payload(self.store))
                 return
