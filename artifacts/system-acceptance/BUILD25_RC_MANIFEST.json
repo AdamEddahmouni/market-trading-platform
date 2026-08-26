@@ -3,10 +3,10 @@
   "build_frontier": "BUILD_25_SYSTEM_ACCEPTANCE_FREEZE",
   "branch": "cloud/build-25-system-acceptance-freeze",
   "source_build_24_head": "00421583fad7825d5f97ee5541b0cb5cdb0a8584",
-  "candidate_head": "c96530cd35e7699271037bb79a6b18ead524c155",
+  "candidate_head": "2ad87722e09a5616a9db44a39ac033c5b8b05cda",
   "python_version": "3.11.15",
   "acceptance_spec_id": "ACCSPEC-cabfc83200e7fbb77a62acbc9ec21da35da7669b388b25d109f353b9d1aaca52",
-  "acceptance_report_id": "ACCREP-0a7883430b7f30c3fc8bd67affbf90415a6d3c4097a6e7f19f8f5fde2555c557",
+  "acceptance_report_id": "ACCREP-5e7630e86cf41fe1c839cc99969fc09e11a436a9d14aaaba4fdadbff22e9c5e6",
   "acceptance_disposition": "ACCEPTED_WITH_LIMITATIONS",
   "contract_inventory_hash": "CTRINV-25af0a79f08c6a4d7abe374467c593d095b667073d8647755e1a232627704388",
   "file_hash_manifest": "artifacts/system-acceptance/BUILD25_FILE_HASHES.json",
@@ -124,11 +124,11 @@
     }
   },
   "acceptance_report": {
-    "acceptance_report_id": "ACCREP-0a7883430b7f30c3fc8bd67affbf90415a6d3c4097a6e7f19f8f5fde2555c557",
+    "acceptance_report_id": "ACCREP-5e7630e86cf41fe1c839cc99969fc09e11a436a9d14aaaba4fdadbff22e9c5e6",
     "schema_version": "1",
     "acceptance_spec_ref": "ACCSPEC-cabfc83200e7fbb77a62acbc9ec21da35da7669b388b25d109f353b9d1aaca52",
     "source_head": "00421583fad7825d5f97ee5541b0cb5cdb0a8584",
-    "candidate_head": "c96530cd35e7699271037bb79a6b18ead524c155",
+    "candidate_head": "2ad87722e09a5616a9db44a39ac033c5b8b05cda",
     "scenario_results": [
       {
         "scenario_id": "A01",
