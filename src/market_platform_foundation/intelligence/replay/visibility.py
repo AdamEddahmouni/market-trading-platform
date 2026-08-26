@@ -318,6 +318,45 @@ class ReplayVisibleRepository:
             limit=limit,
         )
 
+    def put_research_finding(self, finding) -> RepositoryPutResult:
+        return self._output.put_research_finding(finding)
+
+    def get_research_finding(self, finding_id: str):
+        return self._output.get_research_finding(finding_id) or self._source.get_research_finding(
+            finding_id
+        )
+
+    def put_research_hypothesis(self, hypothesis) -> RepositoryPutResult:
+        return self._output.put_research_hypothesis(hypothesis)
+
+    def get_research_hypothesis(self, research_hypothesis_id: str):
+        return self._output.get_research_hypothesis(
+            research_hypothesis_id
+        ) or self._source.get_research_hypothesis(research_hypothesis_id)
+
+    def put_experiment_manifest(self, manifest) -> RepositoryPutResult:
+        return self._output.put_experiment_manifest(manifest)
+
+    def get_experiment_manifest(self, experiment_id: str):
+        return self._output.get_experiment_manifest(experiment_id) or self._source.get_experiment_manifest(
+            experiment_id
+        )
+
+    def query_experiment_manifests_by_hypothesis(self, research_hypothesis_id: str) -> tuple:
+        output_rows = self._output.query_experiment_manifests_by_hypothesis(research_hypothesis_id)
+        if output_rows:
+            return output_rows
+        return self._source.query_experiment_manifests_by_hypothesis(research_hypothesis_id)
+
+    def put_research_lifecycle_event(self, event) -> RepositoryPutResult:
+        return self._output.put_research_lifecycle_event(event)
+
+    def get_research_lifecycle_events(self, entity_id: str) -> tuple:
+        output_rows = self._output.get_research_lifecycle_events(entity_id)
+        if output_rows:
+            return output_rows
+        return self._source.get_research_lifecycle_events(entity_id)
+
     def iter_events_by_availability(
         self,
         *,

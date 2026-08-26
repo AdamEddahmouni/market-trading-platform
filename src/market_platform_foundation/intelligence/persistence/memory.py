@@ -47,6 +47,10 @@ class InMemoryIntelligenceRepository:
             codec.collection_name: {} for codec in RECORD_CODECS
         }
         self._stores["evaluation_reports"] = {}
+        self._stores["research_findings"] = {}
+        self._stores["research_hypotheses"] = {}
+        self._stores["experiment_manifests"] = {}
+        self._stores["research_lifecycle_events"] = {}
 
     def put_event(self, event: EventV1) -> RepositoryPutResult:
         return self._put(event)
@@ -210,6 +214,126 @@ class InMemoryIntelligenceRepository:
             return None
         payload = {k: v for k, v in body.items() if k != "_id"}
         return evaluation_report_v1_from_dict(payload)
+
+    def put_research_finding(self, finding) -> RepositoryPutResult:
+        from ..research_experiments.serialization import research_finding_v1_to_dict
+
+        return self._put_sidecar(
+            collection="research_findings",
+            record_id=finding.finding_id,
+            document=research_finding_v1_to_dict(finding),
+            kind="research_finding",
+        )
+
+    def get_research_finding(self, finding_id: str):
+        from ..research_experiments.serialization import research_finding_v1_from_dict
+
+        return self._get_sidecar("research_findings", finding_id, research_finding_v1_from_dict)
+
+    def put_research_hypothesis(self, hypothesis) -> RepositoryPutResult:
+        from ..research_experiments.serialization import research_hypothesis_v1_to_dict
+
+        return self._put_sidecar(
+            collection="research_hypotheses",
+            record_id=hypothesis.research_hypothesis_id,
+            document=research_hypothesis_v1_to_dict(hypothesis),
+            kind="research_hypothesis",
+        )
+
+    def get_research_hypothesis(self, research_hypothesis_id: str):
+        from ..research_experiments.serialization import research_hypothesis_v1_from_dict
+
+        return self._get_sidecar(
+            "research_hypotheses", research_hypothesis_id, research_hypothesis_v1_from_dict
+        )
+
+    def put_experiment_manifest(self, manifest) -> RepositoryPutResult:
+        from ..research_experiments.serialization import experiment_manifest_v1_to_dict
+
+        return self._put_sidecar(
+            collection="experiment_manifests",
+            record_id=manifest.experiment_id,
+            document=experiment_manifest_v1_to_dict(manifest),
+            kind="experiment_manifest",
+        )
+
+    def get_experiment_manifest(self, experiment_id: str):
+        from ..research_experiments.serialization import experiment_manifest_v1_from_dict
+
+        return self._get_sidecar(
+            "experiment_manifests", experiment_id, experiment_manifest_v1_from_dict
+        )
+
+    def query_experiment_manifests_by_hypothesis(
+        self, research_hypothesis_id: str
+    ) -> tuple:
+        from ..research_experiments.serialization import experiment_manifest_v1_from_dict
+
+        with self._lock:
+            bodies = list(self._stores["experiment_manifests"].values())
+        rows = []
+        for body in bodies:
+            manifest = experiment_manifest_v1_from_dict(
+                {k: v for k, v in body.items() if k != "_id"}
+            )
+            if manifest.research_hypothesis_id == research_hypothesis_id:
+                rows.append(manifest)
+        return tuple(sorted(rows, key=lambda row: row.experiment_id))
+
+    def put_research_lifecycle_event(self, event) -> RepositoryPutResult:
+        from ..research_experiments.serialization import research_lifecycle_event_v1_to_dict
+
+        return self._put_sidecar(
+            collection="research_lifecycle_events",
+            record_id=event.event_id,
+            document=research_lifecycle_event_v1_to_dict(event),
+            kind="research_lifecycle_event",
+        )
+
+    def get_research_lifecycle_events(self, entity_id: str) -> tuple:
+        from ..research_experiments.serialization import research_lifecycle_event_v1_from_dict
+
+        with self._lock:
+            bodies = list(self._stores["research_lifecycle_events"].values())
+        rows = []
+        for body in bodies:
+            event = research_lifecycle_event_v1_from_dict(
+                {k: v for k, v in body.items() if k != "_id"}
+            )
+            if event.entity_id == entity_id:
+                rows.append(event)
+        return tuple(sorted(rows, key=lambda row: (row.recorded_at_ns, row.event_id)))
+
+    def _put_sidecar(
+        self,
+        *,
+        collection: str,
+        record_id: str,
+        document: dict,
+        kind: str,
+    ) -> RepositoryPutResult:
+        document = dict(document)
+        document["_id"] = record_id
+        with self._lock:
+            store = self._stores[collection]
+            existing = store.get(record_id)
+            if existing is None:
+                store[record_id] = copy.deepcopy(document)
+                return RepositoryPutResult.INSERTED
+            if canonical_semantic_equal(existing, document):
+                return RepositoryPutResult.ALREADY_PRESENT
+            raise RepositoryConflictError(
+                f"IMMUTABLE_CONFLICT:{kind}:{record_id}",
+                details={"kind": kind, "id": record_id},
+            )
+
+    def _get_sidecar(self, collection: str, record_id: str, decoder):
+        with self._lock:
+            body = self._stores[collection].get(record_id)
+        if body is None:
+            return None
+        payload = {k: v for k, v in body.items() if k != "_id"}
+        return decoder(payload)
 
     def put_run_manifest(self, manifest: RunManifestV1) -> RepositoryPutResult:
         return self._put(manifest)

@@ -287,6 +287,113 @@ class MongoIntelligenceRepository:
         payload = {k: v for k, v in document.items() if k != "_id"}
         return evaluation_report_v1_from_dict(payload)
 
+    def _put_sidecar_document(
+        self,
+        collection_name: str,
+        record_id: str,
+        document: dict[str, Any],
+        kind: str,
+    ) -> RepositoryPutResult:
+        document = dict(document)
+        document["_id"] = record_id
+        collection = self._database[collection_name]
+        existing = collection.find_one({"_id": record_id})
+        if existing is None:
+            collection.insert_one(document)
+            return RepositoryPutResult.INSERTED
+        if canonical_semantic_equal(existing, document):
+            return RepositoryPutResult.ALREADY_PRESENT
+        raise RepositoryConflictError(
+            f"IMMUTABLE_CONFLICT:{kind}:{record_id}",
+            details={"kind": kind, "id": record_id},
+        )
+
+    def put_research_finding(self, finding) -> RepositoryPutResult:
+        from ...research_experiments.serialization import research_finding_v1_to_dict
+
+        return self._put_sidecar_document(
+            "research_findings",
+            finding.finding_id,
+            research_finding_v1_to_dict(finding),
+            "research_finding",
+        )
+
+    def get_research_finding(self, finding_id: str):
+        from ...research_experiments.serialization import research_finding_v1_from_dict
+
+        document = self._database["research_findings"].find_one({"_id": finding_id})
+        if document is None:
+            return None
+        return research_finding_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_research_hypothesis(self, hypothesis) -> RepositoryPutResult:
+        from ...research_experiments.serialization import research_hypothesis_v1_to_dict
+
+        return self._put_sidecar_document(
+            "research_hypotheses",
+            hypothesis.research_hypothesis_id,
+            research_hypothesis_v1_to_dict(hypothesis),
+            "research_hypothesis",
+        )
+
+    def get_research_hypothesis(self, research_hypothesis_id: str):
+        from ...research_experiments.serialization import research_hypothesis_v1_from_dict
+
+        document = self._database["research_hypotheses"].find_one({"_id": research_hypothesis_id})
+        if document is None:
+            return None
+        return research_hypothesis_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_experiment_manifest(self, manifest) -> RepositoryPutResult:
+        from ...research_experiments.serialization import experiment_manifest_v1_to_dict
+
+        return self._put_sidecar_document(
+            "experiment_manifests",
+            manifest.experiment_id,
+            experiment_manifest_v1_to_dict(manifest),
+            "experiment_manifest",
+        )
+
+    def get_experiment_manifest(self, experiment_id: str):
+        from ...research_experiments.serialization import experiment_manifest_v1_from_dict
+
+        document = self._database["experiment_manifests"].find_one({"_id": experiment_id})
+        if document is None:
+            return None
+        return experiment_manifest_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def query_experiment_manifests_by_hypothesis(self, research_hypothesis_id: str) -> tuple:
+        from ...research_experiments.serialization import experiment_manifest_v1_from_dict
+
+        cursor = self._database["experiment_manifests"].find(
+            {"research_hypothesis_id": research_hypothesis_id}
+        )
+        rows = [
+            experiment_manifest_v1_from_dict({k: v for k, v in doc.items() if k != "_id"})
+            for doc in cursor
+        ]
+        return tuple(sorted(rows, key=lambda row: row.experiment_id))
+
+    def put_research_lifecycle_event(self, event) -> RepositoryPutResult:
+        from ...research_experiments.serialization import research_lifecycle_event_v1_to_dict
+
+        return self._put_sidecar_document(
+            "research_lifecycle_events",
+            event.event_id,
+            research_lifecycle_event_v1_to_dict(event),
+            "research_lifecycle_event",
+        )
+
+    def get_research_lifecycle_events(self, entity_id: str) -> tuple:
+        from ...research_experiments.serialization import research_lifecycle_event_v1_from_dict
+
+        cursor = self._database["research_lifecycle_events"].find({"entity_id": entity_id})
+        rows = [
+            research_lifecycle_event_v1_from_dict({k: v for k, v in doc.items() if k != "_id"})
+            for doc in cursor
+        ]
+        return tuple(sorted(rows, key=lambda row: (row.recorded_at_ns, row.event_id)))
+
     def put_run_manifest(self, manifest: RunManifestV1) -> RepositoryPutResult:
         return self._put(manifest)
 
