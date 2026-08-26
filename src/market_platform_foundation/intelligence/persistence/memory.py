@@ -51,6 +51,10 @@ class InMemoryIntelligenceRepository:
         self._stores["research_hypotheses"] = {}
         self._stores["experiment_manifests"] = {}
         self._stores["research_lifecycle_events"] = {}
+        self._stores["training_dataset_manifests"] = {}
+        self._stores["training_run_manifests"] = {}
+        self._stores["candidate_artifacts"] = {}
+        self._stores["distillation_dataset_manifests"] = {}
 
     def put_event(self, event: EventV1) -> RepositoryPutResult:
         return self._put(event)
@@ -303,6 +307,74 @@ class InMemoryIntelligenceRepository:
             if event.entity_id == entity_id:
                 rows.append(event)
         return tuple(sorted(rows, key=lambda row: (row.recorded_at_ns, row.event_id)))
+
+    def put_training_dataset_manifest(self, manifest) -> RepositoryPutResult:
+        from ..training.serialization import training_dataset_manifest_v1_to_dict
+
+        return self._put_sidecar(
+            collection="training_dataset_manifests",
+            record_id=manifest.training_dataset_id,
+            document=training_dataset_manifest_v1_to_dict(manifest),
+            kind="training_dataset_manifest",
+        )
+
+    def get_training_dataset_manifest(self, training_dataset_id: str):
+        from ..training.serialization import training_dataset_manifest_v1_from_dict
+
+        return self._get_sidecar(
+            "training_dataset_manifests", training_dataset_id, training_dataset_manifest_v1_from_dict
+        )
+
+    def put_training_run_manifest(self, run) -> RepositoryPutResult:
+        from ..training.serialization import training_run_manifest_v1_to_dict
+
+        return self._put_sidecar(
+            collection="training_run_manifests",
+            record_id=run.training_run_id,
+            document=training_run_manifest_v1_to_dict(run),
+            kind="training_run_manifest",
+        )
+
+    def get_training_run_manifest(self, training_run_id: str):
+        from ..training.serialization import training_run_manifest_v1_from_dict
+
+        return self._get_sidecar(
+            "training_run_manifests", training_run_id, training_run_manifest_v1_from_dict
+        )
+
+    def put_candidate_artifact(self, candidate) -> RepositoryPutResult:
+        from ..training.serialization import candidate_artifact_v1_to_dict
+
+        return self._put_sidecar(
+            collection="candidate_artifacts",
+            record_id=candidate.candidate_id,
+            document=candidate_artifact_v1_to_dict(candidate),
+            kind="candidate_artifact",
+        )
+
+    def get_candidate_artifact(self, candidate_id: str):
+        from ..training.serialization import candidate_artifact_v1_from_dict
+
+        return self._get_sidecar("candidate_artifacts", candidate_id, candidate_artifact_v1_from_dict)
+
+    def put_distillation_dataset_manifest(self, manifest) -> RepositoryPutResult:
+        from ..training.serialization import distillation_dataset_manifest_v1_to_dict
+
+        return self._put_sidecar(
+            collection="distillation_dataset_manifests",
+            record_id=manifest.distillation_dataset_id,
+            document=distillation_dataset_manifest_v1_to_dict(manifest),
+            kind="distillation_dataset_manifest",
+        )
+
+    def get_distillation_dataset_manifest(self, distillation_dataset_id: str):
+        from ..training.serialization import distillation_dataset_manifest_v1_from_dict
+
+        return self._get_sidecar(
+            "distillation_dataset_manifests",
+            distillation_dataset_id,
+            distillation_dataset_manifest_v1_from_dict,
+        )
 
     def _put_sidecar(
         self,

@@ -394,6 +394,82 @@ class MongoIntelligenceRepository:
         ]
         return tuple(sorted(rows, key=lambda row: (row.recorded_at_ns, row.event_id)))
 
+    def put_training_dataset_manifest(self, manifest) -> RepositoryPutResult:
+        from ...training.serialization import training_dataset_manifest_v1_to_dict
+
+        return self._put_sidecar_document(
+            "training_dataset_manifests",
+            manifest.training_dataset_id,
+            training_dataset_manifest_v1_to_dict(manifest),
+            "training_dataset_manifest",
+        )
+
+    def get_training_dataset_manifest(self, training_dataset_id: str):
+        from ...training.serialization import training_dataset_manifest_v1_from_dict
+
+        document = self._database["training_dataset_manifests"].find_one({"_id": training_dataset_id})
+        if document is None:
+            return None
+        return training_dataset_manifest_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_training_run_manifest(self, run) -> RepositoryPutResult:
+        from ...training.serialization import training_run_manifest_v1_to_dict
+
+        return self._put_sidecar_document(
+            "training_run_manifests",
+            run.training_run_id,
+            training_run_manifest_v1_to_dict(run),
+            "training_run_manifest",
+        )
+
+    def get_training_run_manifest(self, training_run_id: str):
+        from ...training.serialization import training_run_manifest_v1_from_dict
+
+        document = self._database["training_run_manifests"].find_one({"_id": training_run_id})
+        if document is None:
+            return None
+        return training_run_manifest_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_candidate_artifact(self, candidate) -> RepositoryPutResult:
+        from ...training.serialization import candidate_artifact_v1_to_dict
+
+        return self._put_sidecar_document(
+            "candidate_artifacts",
+            candidate.candidate_id,
+            candidate_artifact_v1_to_dict(candidate),
+            "candidate_artifact",
+        )
+
+    def get_candidate_artifact(self, candidate_id: str):
+        from ...training.serialization import candidate_artifact_v1_from_dict
+
+        document = self._database["candidate_artifacts"].find_one({"_id": candidate_id})
+        if document is None:
+            return None
+        return candidate_artifact_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_distillation_dataset_manifest(self, manifest) -> RepositoryPutResult:
+        from ...training.serialization import distillation_dataset_manifest_v1_to_dict
+
+        return self._put_sidecar_document(
+            "distillation_dataset_manifests",
+            manifest.distillation_dataset_id,
+            distillation_dataset_manifest_v1_to_dict(manifest),
+            "distillation_dataset_manifest",
+        )
+
+    def get_distillation_dataset_manifest(self, distillation_dataset_id: str):
+        from ...training.serialization import distillation_dataset_manifest_v1_from_dict
+
+        document = self._database["distillation_dataset_manifests"].find_one(
+            {"_id": distillation_dataset_id}
+        )
+        if document is None:
+            return None
+        return distillation_dataset_manifest_v1_from_dict(
+            {k: v for k, v in document.items() if k != "_id"}
+        )
+
     def put_run_manifest(self, manifest: RunManifestV1) -> RepositoryPutResult:
         return self._put(manifest)
 

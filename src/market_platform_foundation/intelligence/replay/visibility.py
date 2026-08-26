@@ -357,6 +357,38 @@ class ReplayVisibleRepository:
             return output_rows
         return self._source.get_research_lifecycle_events(entity_id)
 
+    def put_training_dataset_manifest(self, manifest) -> RepositoryPutResult:
+        return self._output.put_training_dataset_manifest(manifest)
+
+    def get_training_dataset_manifest(self, training_dataset_id: str):
+        return self._output.get_training_dataset_manifest(
+            training_dataset_id
+        ) or self._source.get_training_dataset_manifest(training_dataset_id)
+
+    def put_training_run_manifest(self, run) -> RepositoryPutResult:
+        return self._output.put_training_run_manifest(run)
+
+    def get_training_run_manifest(self, training_run_id: str):
+        return self._output.get_training_run_manifest(
+            training_run_id
+        ) or self._source.get_training_run_manifest(training_run_id)
+
+    def put_candidate_artifact(self, candidate) -> RepositoryPutResult:
+        return self._output.put_candidate_artifact(candidate)
+
+    def get_candidate_artifact(self, candidate_id: str):
+        return self._output.get_candidate_artifact(
+            candidate_id
+        ) or self._source.get_candidate_artifact(candidate_id)
+
+    def put_distillation_dataset_manifest(self, manifest) -> RepositoryPutResult:
+        return self._output.put_distillation_dataset_manifest(manifest)
+
+    def get_distillation_dataset_manifest(self, distillation_dataset_id: str):
+        return self._output.get_distillation_dataset_manifest(
+            distillation_dataset_id
+        ) or self._source.get_distillation_dataset_manifest(distillation_dataset_id)
+
     def iter_events_by_availability(
         self,
         *,
