@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import subprocess
 from typing import Any
+
+from market_platform_foundation.git_ref import read_git_head, read_remote_ref
 
 from .identity import derive_acceptance_report_id
 from .invariants import invariant_failures, run_invariant_checks
@@ -19,23 +20,11 @@ from .types import (
 
 
 def _git_head() -> str:
-    result = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
+    return read_git_head() or ""
 
 
 def _build24_head() -> str:
-    result = subprocess.run(
-        ["git", "rev-parse", "origin/cloud/build-24-controlled-adaptation"],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
+    return read_remote_ref("origin", "cloud/build-24-controlled-adaptation") or _git_head()
 
 
 def run_acceptance(
