@@ -10,6 +10,10 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT))
+
 from market_platform_foundation.intelligence.system_acceptance import (
     build_acceptance_spec,
     contract_inventory_hash,
@@ -47,6 +51,14 @@ def repo_root() -> Path:
         text=True,
     )
     return Path(result.stdout.strip())
+
+
+def _bootstrap_import_paths(root: Path) -> None:
+    src = str(root / "src")
+    if src not in sys.path:
+        sys.path.insert(0, src)
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
 
 
 def git_head(root: Path) -> str:
@@ -111,6 +123,7 @@ def sha256_file(path: Path) -> str:
 
 def main() -> int:
     root = repo_root()
+    _bootstrap_import_paths(root)
     candidate_head = git_head(root)
     source_head = build24_head(root)
     spec = build_acceptance_spec(source_build_head=source_head)
