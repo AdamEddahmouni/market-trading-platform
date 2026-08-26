@@ -1,0 +1,121 @@
+[
+  {
+    "certification_id": "BROKCERT-1538ad5748caff0a96bcc0e1e4b03ab053abef6af6a227bae51dd4a2a081fecb",
+    "broker": "tradier.paper",
+    "adapter_version": "build28-inventory-v1",
+    "disposition": "ZERO_SUBMIT_SAFETY_CERTIFIED_WITH_LIMITATIONS",
+    "certification_mode": "ZERO_SUBMIT",
+    "account_environment": "SANDBOX",
+    "tested_capabilities": [
+      "paper",
+      "cancel_dry_run",
+      "dry_run_translation"
+    ],
+    "untested_capabilities": [
+      "broker_preview_what_if"
+    ],
+    "limitations": [
+      "REPLACE_NOT_CERTIFIED",
+      "BROKER_PREVIEW_NOT_IMPLEMENTED"
+    ]
+  },
+  {
+    "certification_id": "BROKCERT-ded96ad539f61d4c38dd701b25f7a2e8df0c24882417e4e2cc398ef44e354a7f",
+    "broker": "moomoo.paper",
+    "adapter_version": "build28-inventory-v1",
+    "disposition": "ZERO_SUBMIT_SAFETY_CERTIFIED_WITH_LIMITATIONS",
+    "certification_mode": "ZERO_SUBMIT",
+    "account_environment": "SIMULATED",
+    "tested_capabilities": [
+      "paper",
+      "cancel_dry_run",
+      "dry_run_translation"
+    ],
+    "untested_capabilities": [
+      "broker_preview_what_if"
+    ],
+    "limitations": [
+      "REPLACE_NOT_CERTIFIED",
+      "BROKER_PREVIEW_NOT_IMPLEMENTED"
+    ]
+  },
+  {
+    "certification_id": "BROKCERT-6951c82c2168a1ee6536d763ca715bf018048deb4f04313ad455e9518e058b1e",
+    "broker": "moomoo.observational",
+    "adapter_version": "build28-inventory-v1",
+    "disposition": "ZERO_SUBMIT_SAFETY_CERTIFIED_WITH_LIMITATIONS",
+    "certification_mode": "ZERO_SUBMIT",
+    "account_environment": "UNKNOWN",
+    "tested_capabilities": [
+      "market_data",
+      "dry_run_translation"
+    ],
+    "untested_capabilities": [
+      "cancel",
+      "broker_preview_what_if"
+    ],
+    "limitations": [
+      "REPLACE_NOT_CERTIFIED",
+      "BROKER_PREVIEW_NOT_IMPLEMENTED",
+      "MARKET_DATA_ONLY_NO_EXECUTION"
+    ]
+  },
+  {
+    "certification_id": "BROKCERT-34df8ccbcc8987a17bfdc66d4fd988e9980b3b755c8d22daae1a8e3f63d8f7dd",
+    "broker": "ibkr.observational",
+    "adapter_version": "build28-inventory-v1",
+    "disposition": "ZERO_SUBMIT_SAFETY_CERTIFIED_WITH_LIMITATIONS",
+    "certification_mode": "ZERO_SUBMIT",
+    "account_environment": "UNKNOWN",
+    "tested_capabilities": [
+      "market_data",
+      "dry_run_translation"
+    ],
+    "untested_capabilities": [
+      "cancel",
+      "broker_preview_what_if"
+    ],
+    "limitations": [
+      "REPLACE_NOT_CERTIFIED",
+      "BROKER_PREVIEW_NOT_IMPLEMENTED",
+      "MARKET_DATA_ONLY_NO_EXECUTION"
+    ]
+  },
+  {
+    "certification_id": "BROKCERT-3feadfadd9413e0121601e1f14cc6c2fa09d53c9c26d8506464fd0fa2021a070",
+    "broker": "tastytrade",
+    "adapter_version": "build28-inventory-v1",
+    "disposition": "INSUFFICIENT_BROKER_CAPABILITY",
+    "certification_mode": "ZERO_SUBMIT",
+    "account_environment": "UNKNOWN",
+    "tested_capabilities": [
+      "dry_run_translation"
+    ],
+    "untested_capabilities": [
+      "cancel",
+      "broker_preview_what_if"
+    ],
+    "limitations": [
+      "REPLACE_NOT_CERTIFIED",
+      "BROKER_PREVIEW_NOT_IMPLEMENTED"
+    ]
+  },
+  {
+    "certification_id": "BROKCERT-9fe7b45492ba289d440044522b47fecae749c7f2bd5641f694c1983273b8ef02",
+    "broker": "internal.simulator",
+    "adapter_version": "build28-inventory-v1",
+    "disposition": "ZERO_SUBMIT_SAFETY_CERTIFIED_WITH_LIMITATIONS",
+    "certification_mode": "ZERO_SUBMIT",
+    "account_environment": "PAPER",
+    "tested_capabilities": [
+      "paper",
+      "cancel_dry_run",
+      "preview",
+      "dry_run_translation"
+    ],
+    "untested_capabilities": [],
+    "limitations": [
+      "REPLACE_NOT_CERTIFIED"
+    ]
+  }
+]

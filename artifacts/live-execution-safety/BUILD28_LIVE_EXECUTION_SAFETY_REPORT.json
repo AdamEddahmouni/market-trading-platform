@@ -1,0 +1,20 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-08-26T04:21:19.493834+00:00",
+  "source_build27_ref": "6f278aaf2f7d741d8669861b907b3a7fd3db4995",
+  "source_build26_ref": "8812720989244d08a436a73cc0a27595538c7f21",
+  "source_release_candidate_ref": "15e7a4f6fc88e5a1c90c6bc3b1b4f8c3a861d2f2",
+  "source_head": "6f278aaf2f7d741d8669861b907b3a7fd3db4995",
+  "build27_integrity_status": "PASS",
+  "build27_disposition": "PAPER_EXECUTION_QUALIFIED_WITH_LIMITATIONS",
+  "disposition": "PRELIVE_SAFETY_GATE_COMPLETE_WITH_LIMITATIONS",
+  "live_authorization": "NOT_AUTHORIZED",
+  "real_submit_count": 0,
+  "metadata": {
+    "spec_id": "LESSPEC-f4aabf585e86ba8a4e12c4ef3610ccb104aa954558fc8011c9d64a955d176cd4",
+    "report_id": "LESREP-83af47c2720df9c5d9668f0e575da709a3f3bf76848d493a782210bd79d9c7d1",
+    "build27_disposition": "PAPER_EXECUTION_QUALIFIED_WITH_LIMITATIONS",
+    "scenario_count": 15,
+    "live_authorization": "NOT_AUTHORIZED"
+  }
+}
