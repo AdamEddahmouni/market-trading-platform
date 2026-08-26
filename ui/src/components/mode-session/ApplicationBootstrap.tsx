@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { ModeLauncher } from "./ModeLauncher";
 import type { Mode, ReadinessTask } from "./types";
 
 type ApplicationBootstrapProps = {
@@ -8,8 +9,9 @@ type ApplicationBootstrapProps = {
 
 type StartupState = "CONNECTING" | "ERROR" | "READY";
 
-export function ApplicationBootstrap({ children: _children, readinessTask }: ApplicationBootstrapProps) {
+export function ApplicationBootstrap({ children, readinessTask }: ApplicationBootstrapProps) {
   const [attempt, setAttempt] = useState(0);
+  const [mode, setMode] = useState<Mode | null>(null);
   const [startupState, setStartupState] = useState<StartupState>("CONNECTING");
 
   useEffect(() => {
@@ -55,12 +57,7 @@ export function ApplicationBootstrap({ children: _children, readinessTask }: App
     );
   }
 
-  return (
-    <main className="mode-session-surface">
-      <section>
-        <p>Initialize session</p>
-        <h1>Choose how you enter the market.</h1>
-      </section>
-    </main>
-  );
+  if (mode) return children(mode, () => setMode(null));
+
+  return <ModeLauncher onSelect={setMode} />;
 }

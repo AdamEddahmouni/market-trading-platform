@@ -54,4 +54,71 @@ describe("ApplicationBootstrap", () => {
     ).toBeInTheDocument();
     expect(readinessTask).toHaveBeenCalledTimes(2);
   });
+
+  it.each([
+    ["Demo", "DEMO"],
+    ["Paper", "PAPER"],
+  ] as const)("selects %s directly", async (label, mode) => {
+    render(
+      <ApplicationBootstrap readinessTask={() => Promise.resolve()}>
+        {(selectedMode) => <div>{selectedMode} selected</div>}
+      </ApplicationBootstrap>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: new RegExp(label, "i") }));
+
+    expect(screen.getByText(`${mode} selected`)).toBeInTheDocument();
+  });
+
+  it("requires confirmation for Live and restores focus when canceled", async () => {
+    render(
+      <ApplicationBootstrap readinessTask={() => Promise.resolve()}>
+        {(selectedMode) => <div>{selectedMode} selected</div>}
+      </ApplicationBootstrap>,
+    );
+
+    const liveTrigger = await screen.findByRole("button", { name: /Live/i });
+    fireEvent.click(liveTrigger);
+
+    const dialog = screen.getByRole("dialog", { name: "Enter the live-data environment?" });
+    expect(screen.getByText(/Data environment: LIVE/i)).toBeInTheDocument();
+    expect(screen.getByText(/Execution authority: LOCKED/i)).toBeInTheDocument();
+    expect(screen.queryByText("LIVE selected")).not.toBeInTheDocument();
+
+    fireEvent.keyDown(dialog, { key: "Escape" });
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(liveTrigger).toHaveFocus();
+  });
+
+  it("enters Live only after explicit confirmation", async () => {
+    render(
+      <ApplicationBootstrap readinessTask={() => Promise.resolve()}>
+        {(selectedMode) => <div>{selectedMode} selected</div>}
+      </ApplicationBootstrap>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /Live/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Enter live data" }));
+
+    expect(screen.getByText("LIVE selected")).toBeInTheDocument();
+  });
+
+  it("traps focus inside the Live confirmation", async () => {
+    render(
+      <ApplicationBootstrap readinessTask={() => Promise.resolve()}>
+        {() => <div>Selected dashboard</div>}
+      </ApplicationBootstrap>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /Live/i }));
+    const dialog = screen.getByRole("dialog");
+    const goBack = screen.getByRole("button", { name: "Go back" });
+    const enter = screen.getByRole("button", { name: "Enter live data" });
+    expect(goBack).toHaveFocus();
+
+    fireEvent.keyDown(dialog, { key: "Tab", shiftKey: true });
+
+    expect(enter).toHaveFocus();
+  });
 });
