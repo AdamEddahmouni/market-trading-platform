@@ -1,0 +1,21 @@
+{
+  "actual_observation_duration_ns": 5400000000000,
+  "disposition": "SUPERVISED_PRODUCTION_PILOT_QUALIFIED_WITH_LIMITATIONS",
+  "limitations": [
+    "bounded supervised production pilot \u2014 not unrestricted production rollout",
+    "no autonomous live trading authority added by BUILD 33",
+    "human session authorization and per-order confirmation remain mandatory",
+    "market-data provider failover is deterministic; live broker failover is NOT automatic",
+    "fallback provider must independently satisfy freshness and health requirements",
+    "pilot caps are additional ceilings and cannot increase from operational success",
+    "runbook exercises use fixtures and isolated stores only",
+    "long-duration evidence limited to deterministic virtual endurance in CI",
+    "single-host local qualification only",
+    "external alert delivery not configured by default (local/console adapter only)",
+    "no alternate live broker certified for automatic failover",
+    "provider redundancy may be fixture-tested when only one live provider available",
+    "real multi-day pilot not completed"
+  ],
+  "real_broker_side_effects_observed": 0,
+  "report_id": "PILQRP-bd1175f67a7cfae919d70046da74f240ed365c0376727d62982aeae0563a3380"
+}

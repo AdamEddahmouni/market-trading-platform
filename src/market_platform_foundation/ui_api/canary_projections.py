@@ -216,6 +216,14 @@ def build_canary_reliability_payload() -> dict[str, Any]:
     return build_operational_reliability_snapshot(ctx, as_of_ns=_now_ns())
 
 
+def build_canary_pilot_payload() -> dict[str, Any]:
+    from ..intelligence.live_canary.supervised_production_pilot import PilotAccounting, build_pilot_snapshot
+
+    ctx = _get_or_init_context()
+    accounting = PilotAccounting()
+    return build_pilot_snapshot(ctx=ctx, pilot_accounting=accounting, as_of_ns=_now_ns())
+
+
 def build_canary_action_inventory() -> dict[str, Any]:
     return {
         "actions": [

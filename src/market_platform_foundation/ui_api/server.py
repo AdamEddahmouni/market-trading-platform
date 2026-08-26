@@ -458,6 +458,9 @@ class UiApiHandler(BaseHTTPRequestHandler):
             if path == "/canary/reliability":
                 self._send_json(canary_projections.build_canary_reliability_payload())
                 return
+            if path == "/canary/pilot":
+                self._send_json(canary_projections.build_canary_pilot_payload())
+                return
             if path == "/paper/account":
                 self._send_json(paper_projections.build_paper_account_payload(self.store))
                 return
