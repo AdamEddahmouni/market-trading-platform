@@ -11,6 +11,7 @@ from ...evaluation.provenance import extract_probabilities, predicted_direction_
 from ...evaluation.types import ProbabilityView
 from ...persistence.repository import IntelligenceRepository
 from ..types import EvidenceClass, ForwardIntegrityStatus
+from .continuity import maximum_qualifying_gap_ns
 from .identity import (
     derive_forward_evidence_assessment_id,
     derive_forward_evidence_report_id,
@@ -177,10 +178,7 @@ def build_forward_observation_summary(
         else:
             unsettled += 1
 
-    max_gap = 0
-    if len(decision_times) > 1:
-        for prev, nxt in zip(decision_times, decision_times[1:]):
-            max_gap = max(max_gap, nxt - prev)
+    max_gap = maximum_qualifying_gap_ns(decision_times)
 
     settlement_rate: float | None
     if eligible:

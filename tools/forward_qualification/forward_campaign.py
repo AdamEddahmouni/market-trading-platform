@@ -1,4 +1,4 @@
-"""Operator CLI for EVIDENCE-01A forward observation campaigns."""
+"""Operator CLI for EVIDENCE-01A/01B forward observation campaigns."""
 
 from __future__ import annotations
 
@@ -15,6 +15,9 @@ from market_platform_foundation.intelligence.forward_qualification.evidence01a i
     CampaignEvidenceOrigin,
     CampaignService,
     SessionTerminationReason,
+)
+from market_platform_foundation.intelligence.forward_qualification.evidence01b import (
+    CampaignRuntimeService,
 )
 
 DEFAULT_CAMPAIGN_ROOT = ROOT / "artifacts" / "forward-qualification" / "campaigns"
@@ -34,7 +37,7 @@ def _campaign_dir(args: argparse.Namespace) -> Path:
 
 
 def cmd_create(args: argparse.Namespace) -> None:
-    service = CampaignService.create_campaign(
+    service = CampaignRuntimeService.create_campaign(
         campaign_root=DEFAULT_CAMPAIGN_ROOT,
         campaign_name=args.name,
         provider_id=args.provider,
@@ -44,16 +47,42 @@ def cmd_create(args: argparse.Namespace) -> None:
     print(json.dumps({"campaign_id": spec.campaign_id, "campaign_dir": str(service.store.root)}, indent=2))
 
 
+def cmd_preflight(args: argparse.Namespace) -> None:
+    service = CampaignRuntimeService.open(_campaign_dir(args))
+    result = service.preflight(check_provider=args.check_provider)
+    print(json.dumps({
+        "disposition": result.disposition.value,
+        "blockers": list(result.blockers),
+        "warnings": list(result.warnings),
+        "source_sha": result.source_sha,
+        "configuration_fingerprint": result.configuration_fingerprint,
+    }, indent=2))
+    if result.disposition.value == "NOT_READY":
+        raise SystemExit(1)
+
+
 def cmd_start(args: argparse.Namespace) -> None:
-    service = CampaignService.open(_campaign_dir(args))
-    state = service.start_campaign()
-    print(json.dumps({"campaign_state": state.campaign_state.value}, indent=2))
+    service = CampaignRuntimeService.open(_campaign_dir(args))
+    service.start()
+    print(json.dumps({"status": "started"}, indent=2))
+
+
+def cmd_pause(args: argparse.Namespace) -> None:
+    service = CampaignRuntimeService.open(_campaign_dir(args))
+    service.pause(reason=args.reason)
+    print(json.dumps({"status": "paused"}, indent=2))
+
+
+def cmd_resume(args: argparse.Namespace) -> None:
+    service = CampaignRuntimeService.open(_campaign_dir(args))
+    service.resume()
+    print(json.dumps({"status": "resumed"}, indent=2))
 
 
 def cmd_session_start(args: argparse.Namespace) -> None:
-    service = CampaignService.open(_campaign_dir(args))
-    session = service.start_session()
-    print(json.dumps({"session_id": session.session_id}, indent=2))
+    service = CampaignRuntimeService.open(_campaign_dir(args))
+    service.runtime.start_session()
+    print(json.dumps({"status": "session_started"}, indent=2))
 
 
 def cmd_session_stop(args: argparse.Namespace) -> None:
@@ -63,20 +92,36 @@ def cmd_session_stop(args: argparse.Namespace) -> None:
 
 
 def cmd_settle(args: argparse.Namespace) -> None:
-    service = CampaignService.open(_campaign_dir(args))
-    count = service.settle_mature()
+    service = CampaignRuntimeService.open(_campaign_dir(args))
+    count = service.settle()
     print(json.dumps({"settled": count}, indent=2))
 
 
 def cmd_checkpoint(args: argparse.Namespace) -> None:
-    service = CampaignService.open(_campaign_dir(args))
-    checkpoint = service.generate_checkpoint()
-    print(json.dumps({"checkpoint_id": checkpoint.checkpoint_id, "disposition": checkpoint.qualification_disposition}, indent=2))
+    service = CampaignRuntimeService.open(_campaign_dir(args))
+    checkpoint_id = service.checkpoint()
+    print(json.dumps({"checkpoint_id": checkpoint_id}, indent=2))
 
 
 def cmd_status(args: argparse.Namespace) -> None:
-    service = CampaignService.open(_campaign_dir(args))
-    print(service.show_progress())
+    service = CampaignRuntimeService.open(_campaign_dir(args))
+    print(service.status())
+
+
+def cmd_health(args: argparse.Namespace) -> None:
+    service = CampaignRuntimeService.open(_campaign_dir(args))
+    print(json.dumps(service.health(), indent=2))
+
+
+def cmd_shakedown(args: argparse.Namespace) -> None:
+    service = CampaignRuntimeService.open(_campaign_dir(args))
+    if args.action == "start":
+        status = service.shakedown_start()
+    elif args.action == "status":
+        status = service.shakedown_status()
+    else:
+        raise SystemExit("shakedown action required: start or status")
+    print(json.dumps({"shakedown_status": status.value}, indent=2))
 
 
 def cmd_finalize(args: argparse.Namespace) -> None:
@@ -91,8 +136,14 @@ def cmd_abort(args: argparse.Namespace) -> None:
     print(json.dumps({"campaign_state": state.campaign_state.value}, indent=2))
 
 
+def cmd_invalidate(args: argparse.Namespace) -> None:
+    service = CampaignRuntimeService.open(_campaign_dir(args))
+    service.invalidate(reason=args.reason)
+    print(json.dumps({"status": "invalidated"}, indent=2))
+
+
 def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(description="EVIDENCE-01A forward observation campaign")
+    parser = argparse.ArgumentParser(description="EVIDENCE-01A/01B forward observation campaign")
     sub = parser.add_subparsers(dest="command", required=True)
 
     create = sub.add_parser("create")
@@ -101,9 +152,23 @@ def main(argv: list[str] | None = None) -> None:
     create.add_argument("--origin", default=CampaignEvidenceOrigin.LIVE_FORWARD.value)
     create.set_defaults(func=cmd_create)
 
+    preflight = sub.add_parser("preflight")
+    _add_campaign_args(preflight)
+    preflight.add_argument("--check-provider", action="store_true")
+    preflight.set_defaults(func=cmd_preflight)
+
     start = sub.add_parser("start")
     _add_campaign_args(start)
     start.set_defaults(func=cmd_start)
+
+    pause = sub.add_parser("pause")
+    _add_campaign_args(pause)
+    pause.add_argument("--reason", default="operator_pause")
+    pause.set_defaults(func=cmd_pause)
+
+    resume = sub.add_parser("resume")
+    _add_campaign_args(resume)
+    resume.set_defaults(func=cmd_resume)
 
     session_start = sub.add_parser("session-start")
     _add_campaign_args(session_start)
@@ -125,6 +190,15 @@ def main(argv: list[str] | None = None) -> None:
     _add_campaign_args(status)
     status.set_defaults(func=cmd_status)
 
+    health = sub.add_parser("health")
+    _add_campaign_args(health)
+    health.set_defaults(func=cmd_health)
+
+    shakedown = sub.add_parser("shakedown")
+    _add_campaign_args(shakedown)
+    shakedown.add_argument("action", choices=["start", "status"])
+    shakedown.set_defaults(func=cmd_shakedown)
+
     finalize = sub.add_parser("finalize")
     _add_campaign_args(finalize)
     finalize.set_defaults(func=cmd_finalize)
@@ -132,6 +206,11 @@ def main(argv: list[str] | None = None) -> None:
     abort = sub.add_parser("abort")
     _add_campaign_args(abort)
     abort.set_defaults(func=cmd_abort)
+
+    invalidate = sub.add_parser("invalidate")
+    _add_campaign_args(invalidate)
+    invalidate.add_argument("--reason", required=True)
+    invalidate.set_defaults(func=cmd_invalidate)
 
     args = parser.parse_args(argv)
     args.func(args)

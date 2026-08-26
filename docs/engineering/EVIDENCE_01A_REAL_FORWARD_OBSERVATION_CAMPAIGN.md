@@ -97,3 +97,43 @@ When `eligible_predictions = 0`, settlement rate is `NOT_EVALUABLE` (not a measu
 ## Validation
 
 `tests/intelligence/test_evidence01a_forward_campaign.py`
+
+## EVIDENCE-01B operational procedures (extends this runbook)
+
+See `docs/engineering/EVIDENCE_01B_REAL_PROVIDER_RUNTIME_OPERATIONALIZATION.md`.
+
+### Before launch
+
+1. Confirm OpenD reachable (`preflight --check-provider`)
+2. Verify source SHA and config fingerprint (`preflight`)
+3. Confirm policy ID matches frozen EVIDENCE-01
+4. Confirm execution authority BLOCKED
+5. Check market state (`health`)
+
+### During runtime
+
+- `status` — full operational view
+- `health` — machine-readable health
+- `settle` — trigger settlement batch
+- `checkpoint` — explicit checkpoint
+
+### Restart
+
+1. `session-stop` or graceful stop
+2. `start` — recovers state, validates compatibility
+3. `resume` if paused
+
+### Incident
+
+- Provider outage: health shows `PROVIDER_DISCONNECTED`; evidence during disconnect excluded
+- Config drift: resume blocked; use `invalidate` if contamination suspected
+- Clock drift: observations excluded with `CLOCK_DRIFT`
+
+### Shakedown
+
+```powershell
+.venv\Scripts\python.exe tools/forward_qualification/forward_campaign.py shakedown start --campaign-dir <dir>
+.venv\Scripts\python.exe tools/forward_qualification/forward_campaign.py status --campaign-dir <dir>
+```
+
+Shakedown data excluded from qualification cohort.
