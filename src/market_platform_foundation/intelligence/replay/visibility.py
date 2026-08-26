@@ -429,6 +429,118 @@ class ReplayVisibleRepository:
             validation_report_id
         ) or self._source.get_validation_report(validation_report_id)
 
+    def put_promotion_policy(self, policy) -> RepositoryPutResult:
+        return self._output.put_promotion_policy(policy)
+
+    def get_promotion_policy(self, promotion_policy_id: str):
+        return self._output.get_promotion_policy(
+            promotion_policy_id
+        ) or self._source.get_promotion_policy(promotion_policy_id)
+
+    def put_promotion_eligibility_assessment(self, assessment) -> RepositoryPutResult:
+        return self._output.put_promotion_eligibility_assessment(assessment)
+
+    def get_promotion_eligibility_assessment(self, assessment_id: str):
+        return self._output.get_promotion_eligibility_assessment(
+            assessment_id
+        ) or self._source.get_promotion_eligibility_assessment(assessment_id)
+
+    def put_challenger_registration(self, registration) -> RepositoryPutResult:
+        return self._output.put_challenger_registration(registration)
+
+    def get_challenger_registration(self, challenger_registration_id: str):
+        return self._output.get_challenger_registration(
+            challenger_registration_id
+        ) or self._source.get_challenger_registration(challenger_registration_id)
+
+    def put_shadow_evidence_manifest(self, manifest) -> RepositoryPutResult:
+        return self._output.put_shadow_evidence_manifest(manifest)
+
+    def get_shadow_evidence_manifest(self, shadow_evidence_id: str):
+        return self._output.get_shadow_evidence_manifest(
+            shadow_evidence_id
+        ) or self._source.get_shadow_evidence_manifest(shadow_evidence_id)
+
+    def put_promotion_decision(self, decision) -> RepositoryPutResult:
+        return self._output.put_promotion_decision(decision)
+
+    def get_promotion_decision(self, promotion_decision_id: str):
+        return self._output.get_promotion_decision(
+            promotion_decision_id
+        ) or self._source.get_promotion_decision(promotion_decision_id)
+
+    def put_champion_assignment(self, assignment) -> RepositoryPutResult:
+        return self._output.put_champion_assignment(assignment)
+
+    def get_champion_assignment(self, assignment_id: str):
+        return self._output.get_champion_assignment(
+            assignment_id
+        ) or self._source.get_champion_assignment(assignment_id)
+
+    def get_champion_assignments_for_scope(
+        self,
+        *,
+        component: str,
+        target_kind: str,
+        horizon_ns: int,
+        mode: str,
+        scenario_id: str | None = None,
+    ) -> tuple:
+        output_rows = self._output.get_champion_assignments_for_scope(
+            component=component,
+            target_kind=target_kind,
+            horizon_ns=horizon_ns,
+            mode=mode,
+            scenario_id=scenario_id,
+        )
+        if output_rows:
+            return output_rows
+        return self._source.get_champion_assignments_for_scope(
+            component=component,
+            target_kind=target_kind,
+            horizon_ns=horizon_ns,
+            mode=mode,
+            scenario_id=scenario_id,
+        )
+
+    def get_current_champion_assignment(
+        self,
+        *,
+        component: str,
+        target_kind: str,
+        horizon_ns: int,
+        mode: str,
+        as_of_ns: int,
+        scenario_id: str | None = None,
+    ):
+        current = self._output.get_current_champion_assignment(
+            component=component,
+            target_kind=target_kind,
+            horizon_ns=horizon_ns,
+            mode=mode,
+            as_of_ns=as_of_ns,
+            scenario_id=scenario_id,
+        )
+        if current is not None:
+            return current
+        return self._source.get_current_champion_assignment(
+            component=component,
+            target_kind=target_kind,
+            horizon_ns=horizon_ns,
+            mode=mode,
+            as_of_ns=as_of_ns,
+            scenario_id=scenario_id,
+        )
+
+    def put_challenger_lifecycle_event(self, event) -> RepositoryPutResult:
+        return self._output.put_challenger_lifecycle_event(event)
+
+    def get_challenger_lifecycle_events(self, challenger_registration_id: str) -> tuple:
+        output_rows = self._output.get_challenger_lifecycle_events(challenger_registration_id)
+        if output_rows:
+            return output_rows
+        return self._source.get_challenger_lifecycle_events(challenger_registration_id)
+
     def iter_events_by_availability(
         self,
         *,

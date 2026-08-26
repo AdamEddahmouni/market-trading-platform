@@ -562,6 +562,202 @@ class MongoIntelligenceRepository:
             return None
         return validation_report_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
 
+    def put_promotion_policy(self, policy) -> RepositoryPutResult:
+        from ...promotion.serialization import promotion_policy_v1_to_dict
+
+        return self._put_sidecar_document(
+            "promotion_policies",
+            policy.promotion_policy_id,
+            promotion_policy_v1_to_dict(policy),
+            "promotion_policy",
+        )
+
+    def get_promotion_policy(self, promotion_policy_id: str):
+        from ...promotion.serialization import promotion_policy_v1_from_dict
+
+        document = self._database["promotion_policies"].find_one({"_id": promotion_policy_id})
+        if document is None:
+            return None
+        return promotion_policy_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_promotion_eligibility_assessment(self, assessment) -> RepositoryPutResult:
+        from ...promotion.serialization import promotion_eligibility_assessment_v1_to_dict
+
+        return self._put_sidecar_document(
+            "promotion_eligibility_assessments",
+            assessment.assessment_id,
+            promotion_eligibility_assessment_v1_to_dict(assessment),
+            "promotion_eligibility_assessment",
+        )
+
+    def get_promotion_eligibility_assessment(self, assessment_id: str):
+        from ...promotion.serialization import promotion_eligibility_assessment_v1_from_dict
+
+        document = self._database["promotion_eligibility_assessments"].find_one({"_id": assessment_id})
+        if document is None:
+            return None
+        return promotion_eligibility_assessment_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_challenger_registration(self, registration) -> RepositoryPutResult:
+        from ...promotion.serialization import challenger_registration_v1_to_dict
+
+        return self._put_sidecar_document(
+            "challenger_registrations",
+            registration.challenger_registration_id,
+            challenger_registration_v1_to_dict(registration),
+            "challenger_registration",
+        )
+
+    def get_challenger_registration(self, challenger_registration_id: str):
+        from ...promotion.serialization import challenger_registration_v1_from_dict
+
+        document = self._database["challenger_registrations"].find_one({"_id": challenger_registration_id})
+        if document is None:
+            return None
+        return challenger_registration_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_shadow_evidence_manifest(self, manifest) -> RepositoryPutResult:
+        from ...promotion.serialization import shadow_evidence_manifest_v1_to_dict
+
+        return self._put_sidecar_document(
+            "shadow_evidence_manifests",
+            manifest.shadow_evidence_id,
+            shadow_evidence_manifest_v1_to_dict(manifest),
+            "shadow_evidence_manifest",
+        )
+
+    def get_shadow_evidence_manifest(self, shadow_evidence_id: str):
+        from ...promotion.serialization import shadow_evidence_manifest_v1_from_dict
+
+        document = self._database["shadow_evidence_manifests"].find_one({"_id": shadow_evidence_id})
+        if document is None:
+            return None
+        return shadow_evidence_manifest_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_promotion_decision(self, decision) -> RepositoryPutResult:
+        from ...promotion.serialization import promotion_decision_v1_to_dict
+
+        return self._put_sidecar_document(
+            "promotion_decisions",
+            decision.promotion_decision_id,
+            promotion_decision_v1_to_dict(decision),
+            "promotion_decision",
+        )
+
+    def get_promotion_decision(self, promotion_decision_id: str):
+        from ...promotion.serialization import promotion_decision_v1_from_dict
+
+        document = self._database["promotion_decisions"].find_one({"_id": promotion_decision_id})
+        if document is None:
+            return None
+        return promotion_decision_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_champion_assignment(self, assignment) -> RepositoryPutResult:
+        from ...promotion.serialization import champion_assignment_v1_to_dict
+
+        return self._put_sidecar_document(
+            "champion_assignments",
+            assignment.assignment_id,
+            champion_assignment_v1_to_dict(assignment),
+            "champion_assignment",
+        )
+
+    def get_champion_assignment(self, assignment_id: str):
+        from ...promotion.serialization import champion_assignment_v1_from_dict
+
+        document = self._database["champion_assignments"].find_one({"_id": assignment_id})
+        if document is None:
+            return None
+        return champion_assignment_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def get_champion_assignments_for_scope(
+        self,
+        *,
+        component: str,
+        target_kind: str,
+        horizon_ns: int,
+        mode: str,
+        scenario_id: str | None = None,
+    ) -> tuple:
+        from ...promotion.serialization import champion_assignment_v1_from_dict
+        from ..champion_queries import scope_matches
+
+        query: dict[str, object] = {
+            "champion_scope.component": component,
+            "champion_scope.target_kind": target_kind,
+            "champion_scope.horizon_ns": horizon_ns,
+            "champion_scope.mode": mode,
+        }
+        if scenario_id is not None:
+            query["champion_scope.scenario_id"] = scenario_id
+        documents = self._database["champion_assignments"].find(query)
+        assignments = tuple(
+            champion_assignment_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+            for document in documents
+        )
+        return tuple(
+            assignment
+            for assignment in assignments
+            if scope_matches(
+                assignment,
+                component=component,
+                target_kind=target_kind,
+                horizon_ns=horizon_ns,
+                mode=mode,
+                scenario_id=scenario_id,
+            )
+        )
+
+    def get_current_champion_assignment(
+        self,
+        *,
+        component: str,
+        target_kind: str,
+        horizon_ns: int,
+        mode: str,
+        as_of_ns: int,
+        scenario_id: str | None = None,
+    ):
+        from ..champion_queries import get_current_champion_assignment
+
+        assignments = self.get_champion_assignments_for_scope(
+            component=component,
+            target_kind=target_kind,
+            horizon_ns=horizon_ns,
+            mode=mode,
+            scenario_id=scenario_id,
+        )
+        return get_current_champion_assignment(
+            assignments,
+            component=component,
+            target_kind=target_kind,
+            horizon_ns=horizon_ns,
+            mode=mode,
+            as_of_ns=as_of_ns,
+            scenario_id=scenario_id,
+        )
+
+    def put_challenger_lifecycle_event(self, event) -> RepositoryPutResult:
+        from ...promotion.serialization import challenger_lifecycle_event_v1_to_dict
+
+        return self._put_sidecar_document(
+            "challenger_lifecycle_events",
+            event.event_id,
+            challenger_lifecycle_event_v1_to_dict(event),
+            "challenger_lifecycle_event",
+        )
+
+    def get_challenger_lifecycle_events(self, challenger_registration_id: str) -> tuple:
+        from ...promotion.serialization import challenger_lifecycle_event_v1_from_dict
+
+        documents = self._database["challenger_lifecycle_events"].find(
+            {"challenger_registration_id": challenger_registration_id}
+        ).sort("effective_at_ns", 1)
+        return tuple(
+            challenger_lifecycle_event_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+            for document in documents
+        )
+
     def put_run_manifest(self, manifest: RunManifestV1) -> RepositoryPutResult:
         return self._put(manifest)
 

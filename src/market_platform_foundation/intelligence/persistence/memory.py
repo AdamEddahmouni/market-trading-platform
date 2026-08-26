@@ -60,6 +60,13 @@ class InMemoryIntelligenceRepository:
         self._stores["holdout_unlock_receipts"] = {}
         self._stores["contamination_records"] = {}
         self._stores["validation_reports"] = {}
+        self._stores["promotion_policies"] = {}
+        self._stores["promotion_eligibility_assessments"] = {}
+        self._stores["challenger_registrations"] = {}
+        self._stores["shadow_evidence_manifests"] = {}
+        self._stores["promotion_decisions"] = {}
+        self._stores["champion_assignments"] = {}
+        self._stores["challenger_lifecycle_events"] = {}
 
     def put_event(self, event: EventV1) -> RepositoryPutResult:
         return self._put(event)
@@ -463,6 +470,195 @@ class InMemoryIntelligenceRepository:
         return self._get_sidecar(
             "validation_reports", validation_report_id, validation_report_v1_from_dict
         )
+
+    def put_promotion_policy(self, policy) -> RepositoryPutResult:
+        from ..promotion.serialization import promotion_policy_v1_to_dict
+
+        return self._put_sidecar(
+            collection="promotion_policies",
+            record_id=policy.promotion_policy_id,
+            document=promotion_policy_v1_to_dict(policy),
+            kind="promotion_policy",
+        )
+
+    def get_promotion_policy(self, promotion_policy_id: str):
+        from ..promotion.serialization import promotion_policy_v1_from_dict
+
+        return self._get_sidecar("promotion_policies", promotion_policy_id, promotion_policy_v1_from_dict)
+
+    def put_promotion_eligibility_assessment(self, assessment) -> RepositoryPutResult:
+        from ..promotion.serialization import promotion_eligibility_assessment_v1_to_dict
+
+        return self._put_sidecar(
+            collection="promotion_eligibility_assessments",
+            record_id=assessment.assessment_id,
+            document=promotion_eligibility_assessment_v1_to_dict(assessment),
+            kind="promotion_eligibility_assessment",
+        )
+
+    def get_promotion_eligibility_assessment(self, assessment_id: str):
+        from ..promotion.serialization import promotion_eligibility_assessment_v1_from_dict
+
+        return self._get_sidecar(
+            "promotion_eligibility_assessments",
+            assessment_id,
+            promotion_eligibility_assessment_v1_from_dict,
+        )
+
+    def put_challenger_registration(self, registration) -> RepositoryPutResult:
+        from ..promotion.serialization import challenger_registration_v1_to_dict
+
+        return self._put_sidecar(
+            collection="challenger_registrations",
+            record_id=registration.challenger_registration_id,
+            document=challenger_registration_v1_to_dict(registration),
+            kind="challenger_registration",
+        )
+
+    def get_challenger_registration(self, challenger_registration_id: str):
+        from ..promotion.serialization import challenger_registration_v1_from_dict
+
+        return self._get_sidecar(
+            "challenger_registrations",
+            challenger_registration_id,
+            challenger_registration_v1_from_dict,
+        )
+
+    def put_shadow_evidence_manifest(self, manifest) -> RepositoryPutResult:
+        from ..promotion.serialization import shadow_evidence_manifest_v1_to_dict
+
+        return self._put_sidecar(
+            collection="shadow_evidence_manifests",
+            record_id=manifest.shadow_evidence_id,
+            document=shadow_evidence_manifest_v1_to_dict(manifest),
+            kind="shadow_evidence_manifest",
+        )
+
+    def get_shadow_evidence_manifest(self, shadow_evidence_id: str):
+        from ..promotion.serialization import shadow_evidence_manifest_v1_from_dict
+
+        return self._get_sidecar(
+            "shadow_evidence_manifests",
+            shadow_evidence_id,
+            shadow_evidence_manifest_v1_from_dict,
+        )
+
+    def put_promotion_decision(self, decision) -> RepositoryPutResult:
+        from ..promotion.serialization import promotion_decision_v1_to_dict
+
+        return self._put_sidecar(
+            collection="promotion_decisions",
+            record_id=decision.promotion_decision_id,
+            document=promotion_decision_v1_to_dict(decision),
+            kind="promotion_decision",
+        )
+
+    def get_promotion_decision(self, promotion_decision_id: str):
+        from ..promotion.serialization import promotion_decision_v1_from_dict
+
+        return self._get_sidecar(
+            "promotion_decisions", promotion_decision_id, promotion_decision_v1_from_dict
+        )
+
+    def put_champion_assignment(self, assignment) -> RepositoryPutResult:
+        from ..promotion.serialization import champion_assignment_v1_to_dict
+
+        return self._put_sidecar(
+            collection="champion_assignments",
+            record_id=assignment.assignment_id,
+            document=champion_assignment_v1_to_dict(assignment),
+            kind="champion_assignment",
+        )
+
+    def get_champion_assignment(self, assignment_id: str):
+        from ..promotion.serialization import champion_assignment_v1_from_dict
+
+        return self._get_sidecar(
+            "champion_assignments", assignment_id, champion_assignment_v1_from_dict
+        )
+
+    def get_champion_assignments_for_scope(
+        self,
+        *,
+        component: str,
+        target_kind: str,
+        horizon_ns: int,
+        mode: str,
+        scenario_id: str | None = None,
+    ) -> tuple:
+        from ..promotion.serialization import champion_assignment_v1_from_dict
+        from .champion_queries import scope_matches
+
+        with self._lock:
+            bodies = list(self._stores["champion_assignments"].values())
+        assignments = tuple(
+            champion_assignment_v1_from_dict({k: v for k, v in body.items() if k != "_id"})
+            for body in bodies
+        )
+        return tuple(
+            assignment
+            for assignment in assignments
+            if scope_matches(
+                assignment,
+                component=component,
+                target_kind=target_kind,
+                horizon_ns=horizon_ns,
+                mode=mode,
+                scenario_id=scenario_id,
+            )
+        )
+
+    def get_current_champion_assignment(
+        self,
+        *,
+        component: str,
+        target_kind: str,
+        horizon_ns: int,
+        mode: str,
+        as_of_ns: int,
+        scenario_id: str | None = None,
+    ):
+        from .champion_queries import get_current_champion_assignment
+
+        assignments = self.get_champion_assignments_for_scope(
+            component=component,
+            target_kind=target_kind,
+            horizon_ns=horizon_ns,
+            mode=mode,
+            scenario_id=scenario_id,
+        )
+        return get_current_champion_assignment(
+            assignments,
+            component=component,
+            target_kind=target_kind,
+            horizon_ns=horizon_ns,
+            mode=mode,
+            as_of_ns=as_of_ns,
+            scenario_id=scenario_id,
+        )
+
+    def put_challenger_lifecycle_event(self, event) -> RepositoryPutResult:
+        from ..promotion.serialization import challenger_lifecycle_event_v1_to_dict
+
+        return self._put_sidecar(
+            collection="challenger_lifecycle_events",
+            record_id=event.event_id,
+            document=challenger_lifecycle_event_v1_to_dict(event),
+            kind="challenger_lifecycle_event",
+        )
+
+    def get_challenger_lifecycle_events(self, challenger_registration_id: str) -> tuple:
+        from ..promotion.serialization import challenger_lifecycle_event_v1_from_dict
+
+        with self._lock:
+            bodies = list(self._stores["challenger_lifecycle_events"].values())
+        events = [
+            challenger_lifecycle_event_v1_from_dict({k: v for k, v in body.items() if k != "_id"})
+            for body in bodies
+            if body.get("challenger_registration_id") == challenger_registration_id
+        ]
+        events.sort(key=lambda item: item.effective_at_ns)
+        return tuple(events)
 
     def _put_sidecar(
         self,
