@@ -22,7 +22,8 @@
     "exclusions_by_reason": {},
     "up_support": 0,
     "down_support": 0,
-    "settlement_rate": 0.0,
+    "settlement_rate": null,
+    "settlement_rate_state": "NOT_EVALUABLE",
     "maximum_observation_gap_ns": 0,
     "provider_disconnected_exclusions": 0
   },
@@ -36,7 +37,7 @@
   "remaining_requirements": [
     "50 additional eligible predictions",
     "25 additional settled eligible predictions",
-    "settlement rate below 80%",
+    "settlement rate threshold (80%) not yet evaluable",
     "5 additional qualifying calendar days of span",
     "5 additional qualifying trading days",
     "5 additional qualifying observation sessions"

@@ -9,10 +9,12 @@ from .evidence01 import (
     ForwardEvidenceQualificationPolicyV1,
     ForwardEvidenceQualificationReportV1,
     ForwardObservationInputV1,
+    SettlementRateState,
     forward_evidence_assessment_v1_to_dict,
     forward_evidence_policy_v1_to_dict,
     forward_evidence_report_v1_to_dict,
 )
+from .evidence01a import CampaignEvidenceOrigin, CampaignService
 from .fixture_lifecycle import FixtureLifecycleResult, run_prospective_fixture_lifecycle
 from .identity import (
     derive_forward_cohort_fingerprint,
@@ -66,6 +68,8 @@ from .types import (
 )
 
 __all__ = [
+    "CampaignEvidenceOrigin",
+    "CampaignService",
     "ForwardEvidenceDisposition",
     "ForwardEvidenceQualificationAssessmentV1",
     "ForwardEvidenceQualificationPolicyV1",
@@ -104,6 +108,7 @@ __all__ = [
     "SCENARIO_REGISTRY",
     "ScenarioResultV1",
     "ScenarioStatus",
+    "SettlementRateState",
     "build_forward_prediction_receipt",
     "build_forward_qualification_report",
     "build_forward_qualification_run",

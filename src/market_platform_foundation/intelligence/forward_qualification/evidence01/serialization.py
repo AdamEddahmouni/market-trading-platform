@@ -31,6 +31,7 @@ def forward_observation_summary_v1_to_dict(summary: ForwardObservationSummaryV1)
         "up_support": summary.up_support,
         "down_support": summary.down_support,
         "settlement_rate": summary.settlement_rate,
+        "settlement_rate_state": summary.settlement_rate_state.value,
         "maximum_observation_gap_ns": summary.maximum_observation_gap_ns,
         "provider_disconnected_exclusions": summary.provider_disconnected_exclusions,
     }

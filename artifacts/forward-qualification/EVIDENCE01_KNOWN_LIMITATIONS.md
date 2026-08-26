@@ -10,7 +10,7 @@
 
 - 50 additional eligible predictions
 - 25 additional settled eligible predictions
-- settlement rate below 80%
+- settlement rate threshold (80%) not yet evaluable
 - 5 additional qualifying calendar days of span
 - 5 additional qualifying trading days
 - 5 additional qualifying observation sessions

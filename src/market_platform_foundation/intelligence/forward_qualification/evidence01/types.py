@@ -31,6 +31,12 @@ EVIDENCE01_MINIMUM_DISTINCT_SESSIONS = 5
 EVIDENCE01_MINIMUM_CLASS_SUPPORT = 3
 EVIDENCE01_MAX_ADMISSIBLE_GAP_NS = 24 * 60 * 60 * 1_000_000_000
 EVIDENCE01_DEFAULT_HORIZON_NS = 5 * 60 * 1_000_000_000
+EVIDENCE01_BOOTSTRAP_CUTOFF_NS = 1_700_000_000_000_000_000
+
+
+class SettlementRateState(StrEnum):
+    NOT_EVALUABLE = "NOT_EVALUABLE"
+    DEFINED = "DEFINED"
 
 
 class ForwardEvidenceDisposition(StrEnum):
@@ -101,7 +107,8 @@ class ForwardObservationSummaryV1:
     exclusions_by_reason: dict[str, int]
     up_support: int
     down_support: int
-    settlement_rate: float
+    settlement_rate: float | None
+    settlement_rate_state: SettlementRateState
     maximum_observation_gap_ns: int
     provider_disconnected_exclusions: int
 

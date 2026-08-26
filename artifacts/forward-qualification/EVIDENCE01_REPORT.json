@@ -24,14 +24,15 @@
     "exclusions_by_reason": {},
     "up_support": 0,
     "down_support": 0,
-    "settlement_rate": 0.0,
+    "settlement_rate": null,
+    "settlement_rate_state": "NOT_EVALUABLE",
     "maximum_observation_gap_ns": 0,
     "provider_disconnected_exclusions": 0
   },
   "remaining_requirements": [
     "50 additional eligible predictions",
     "25 additional settled eligible predictions",
-    "settlement rate below 80%",
+    "settlement rate threshold (80%) not yet evaluable",
     "5 additional qualifying calendar days of span",
     "5 additional qualifying trading days",
     "5 additional qualifying observation sessions"
@@ -40,8 +41,9 @@
   "metadata": {
     "prior_limitation": "INSUFFICIENT_FORWARD_EVIDENCE"
   },
-  "generated_at": "2026-08-26T15:26:41.678445+00:00",
-  "source_head": "234c05567efb560a2cb7b70d644401e83e802ee1",
+  "generated_at": "2026-08-26T17:03:33.939445+00:00",
+  "source_head": "6de125c62a68b26f0e658cac5089aea0dc2dbc4d",
   "mechanism_status": "MECHANISM_VALIDATED_BY_FIXTURE",
-  "forward_evidence_status": "INSUFFICIENT_FORWARD_OBSERVATION"
+  "forward_evidence_status": "INSUFFICIENT_FORWARD_OBSERVATION",
+  "cutoff_kind": "BOOTSTRAP_ZERO_EVIDENCE"
 }

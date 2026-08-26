@@ -580,3 +580,8 @@ class Evidence01DefaultPolicyCurrentEvidenceTests(unittest.TestCase):
             ForwardEvidenceDisposition.INSUFFICIENT_FORWARD_EVIDENCE,
         )
         self.assertTrue(assessment.remaining_requirements)
+        self.assertIsNone(assessment.observation_summary.settlement_rate)
+        self.assertEqual(
+            assessment.observation_summary.settlement_rate_state.value,
+            "NOT_EVALUABLE",
+        )

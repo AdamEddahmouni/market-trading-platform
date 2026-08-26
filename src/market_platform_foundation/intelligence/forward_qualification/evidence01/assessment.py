@@ -26,6 +26,7 @@ from .types import (
     ForwardObservationInputV1,
     ForwardObservationSummaryV1,
     ObservationExclusionReason,
+    SettlementRateState,
 )
 
 _ET = ZoneInfo("America/New_York")
@@ -181,7 +182,13 @@ def build_forward_observation_summary(
         for prev, nxt in zip(decision_times, decision_times[1:]):
             max_gap = max(max_gap, nxt - prev)
 
-    settlement_rate = settled / len(eligible) if eligible else 0.0
+    settlement_rate: float | None
+    if eligible:
+        settlement_rate = settled / len(eligible)
+        settlement_rate_state = SettlementRateState.DEFINED
+    else:
+        settlement_rate = None
+        settlement_rate_state = SettlementRateState.NOT_EVALUABLE
     excluded_total = raw_count - len(eligible)
 
     return ForwardObservationSummaryV1(
@@ -202,6 +209,7 @@ def build_forward_observation_summary(
         up_support=up_support,
         down_support=down_support,
         settlement_rate=settlement_rate,
+        settlement_rate_state=settlement_rate_state,
         maximum_observation_gap_ns=max_gap,
         provider_disconnected_exclusions=exclusions.get(
             ObservationExclusionReason.PROVIDER_DISCONNECTED.value, 0
@@ -220,9 +228,13 @@ def _remaining_requirements(
     if summary.settled_predictions < policy.minimum_settled_predictions:
         deficit = policy.minimum_settled_predictions - summary.settled_predictions
         remaining.append(f"{deficit} additional settled eligible predictions")
-    if summary.settlement_rate < policy.minimum_settlement_rate:
+    if summary.settlement_rate_state == SettlementRateState.DEFINED and summary.settlement_rate is not None:
+        if summary.settlement_rate < policy.minimum_settlement_rate:
+            pct = int(policy.minimum_settlement_rate * 100)
+            remaining.append(f"settlement rate below {pct}%")
+    elif summary.eligible_predictions == 0:
         pct = int(policy.minimum_settlement_rate * 100)
-        remaining.append(f"settlement rate below {pct}%")
+        remaining.append(f"settlement rate threshold ({pct}%) not yet evaluable")
     if summary.elapsed_qualifying_duration_ns < policy.minimum_duration_ns:
         deficit_ns = policy.minimum_duration_ns - summary.elapsed_qualifying_duration_ns
         deficit_days = max(1, int(deficit_ns / (24 * 60 * 60 * 1_000_000_000)))
@@ -266,10 +278,15 @@ def _derive_disposition(
                 False,
             )
 
+    settlement_rate_ok = (
+        summary.settlement_rate_state == SettlementRateState.DEFINED
+        and summary.settlement_rate is not None
+        and summary.settlement_rate >= policy.minimum_settlement_rate
+    )
     sufficiency_gates = (
         summary.eligible_predictions >= policy.minimum_eligible_predictions,
         summary.settled_predictions >= policy.minimum_settled_predictions,
-        summary.settlement_rate >= policy.minimum_settlement_rate,
+        settlement_rate_ok,
         summary.elapsed_qualifying_duration_ns >= policy.minimum_duration_ns,
         summary.distinct_trading_days >= policy.minimum_distinct_trading_days,
         summary.distinct_sessions >= policy.minimum_distinct_sessions,
@@ -282,7 +299,9 @@ def _derive_disposition(
             summary.eligible_predictions >= policy.minimum_eligible_predictions
             and summary.settled_predictions < policy.minimum_settled_predictions
         ) or (
-            summary.settlement_rate < policy.minimum_settlement_rate
+            summary.settlement_rate_state == SettlementRateState.DEFINED
+            and summary.settlement_rate is not None
+            and summary.settlement_rate < policy.minimum_settlement_rate
             and summary.eligible_predictions > 0
         ):
             return (

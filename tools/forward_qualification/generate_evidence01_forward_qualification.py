@@ -21,6 +21,9 @@ from market_platform_foundation.intelligence.forward_qualification import (
     forward_evidence_policy_v1_to_dict,
     forward_evidence_report_v1_to_dict,
 )
+from market_platform_foundation.intelligence.forward_qualification.evidence01 import (
+    EVIDENCE01_BOOTSTRAP_CUTOFF_NS,
+)
 from market_platform_foundation.intelligence.persistence import InMemoryIntelligenceRepository
 
 ARTIFACT_DIR = ROOT / "artifacts" / "forward-qualification"
@@ -35,8 +38,8 @@ def main() -> None:
     head = read_git_head() or ""
     policy = build_forward_evidence_qualification_policy()
     repo = InMemoryIntelligenceRepository()
-    observation_cutoff_ns = 1_700_000_000_000_000_000
-    settlement_cutoff_ns = observation_cutoff_ns
+    observation_cutoff_ns = EVIDENCE01_BOOTSTRAP_CUTOFF_NS
+    settlement_cutoff_ns = EVIDENCE01_BOOTSTRAP_CUTOFF_NS
     assessment = assess_forward_evidence_qualification(
         policy=policy,
         observations=(),
@@ -64,9 +67,8 @@ def main() -> None:
                 "generated_at": datetime.now(timezone.utc).isoformat(),
                 "source_head": head,
                 "mechanism_status": "MECHANISM_VALIDATED_BY_FIXTURE",
-                "forward_evidence_status": "FORWARD_EVIDENCE_OBSERVED"
-                if assessment.observation_summary.eligible_predictions > 0
-                else "INSUFFICIENT_FORWARD_OBSERVATION",
+                "forward_evidence_status": "INSUFFICIENT_FORWARD_OBSERVATION",
+                "cutoff_kind": "BOOTSTRAP_ZERO_EVIDENCE",
             },
             indent=2,
         ),
