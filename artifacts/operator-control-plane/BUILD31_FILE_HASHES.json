@@ -1,7 +1,7 @@
 {
   "docs/engineering/OPERATOR_CONTROL_PLANE_V1.md": "7be0784aa691e77214453b58fa1a673e8b1a5515d016ae64ff1b19209fc8fe83",
   "src/market_platform_foundation/intelligence/live_canary/operator_control/__init__.py": "9744d9ffbca8bc1c0c9fb25bdafa519f546e2c61a90231f62774b5775437eab7",
-  "src/market_platform_foundation/intelligence/live_canary/operator_control/commands.py": "b36130c8de7a0a05342fa242522c92ed7a679052ee6e65bb1ed913fb1da63fa6",
+  "src/market_platform_foundation/intelligence/live_canary/operator_control/commands.py": "3f22fe24e78ad72f0bb97cd75cd5c27f3dd4e41103d2b1055cf79f2593cf3196",
   "src/market_platform_foundation/intelligence/live_canary/operator_control/context.py": "08e4b27e9be6f5d2adc65fb0a1d2544d3730684e81d23c0e23bb958f258f988a",
   "src/market_platform_foundation/intelligence/live_canary/operator_control/drills.py": "274d183421fd58f33a18d071f3a4892bfed18941de3a95e649d305b5933f9989",
   "src/market_platform_foundation/intelligence/live_canary/operator_control/identity.py": "c1d2523e278c80d9d45e83f5342f2f6b56d26ed28e3b68ad5aef75e788a06d78",

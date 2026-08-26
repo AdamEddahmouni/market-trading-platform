@@ -522,6 +522,10 @@ def approve_resume(
     )
     ctx.resume_approvals.append(approval)
     ctx.kill_switch.permit_program("RESUME_APPROVED")
+    if ctx.authorization is not None:
+        ctx.authorization = revoke_authorization(ctx.authorization)
+    ctx.authorization_preview = None
+    ctx.session_state = "SESSION_PREPARED"
     receipt = _record_receipt(
         ctx,
         action_type=OperatorActionType.APPROVE_RESUME.value,
