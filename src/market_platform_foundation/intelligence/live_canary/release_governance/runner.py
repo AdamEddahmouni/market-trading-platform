@@ -112,7 +112,7 @@ def assemble_release_candidate_fixture(
         policy=gov_policy,
         candidate=candidate,
         evidence_bundle=evidence,
-        source_clean=allow_dirty or True,
+        source_clean=True if allow_dirty else None,
     )
     acceptance_spec = build_full_system_acceptance_spec(source_sha=head)
     acceptance_report = build_full_system_acceptance_report(

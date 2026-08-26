@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +15,7 @@ from .types import (
     ReleaseEvidenceBundleV1,
 )
 
-ROOT = Path(__file__).resolve().parents[6]
+ROOT = Path(__file__).resolve().parents[5]
 
 # Canonical evidence refs from BUILD25-BUILD34 artifacts at BUILD34 HEAD
 DEFAULT_EVIDENCE_REFS: dict[str, str] = {
@@ -94,6 +95,22 @@ def load_build_dispositions_from_artifacts() -> dict[str, str]:
     return dispositions
 
 
+def _is_ancestor_or_equal(ancestor_sha: str, descendant_sha: str) -> bool:
+    """Return True if ancestor_sha is an ancestor of (or equal to) descendant_sha."""
+    if ancestor_sha == descendant_sha:
+        return True
+    try:
+        merge_base = subprocess.check_output(
+            ["git", "merge-base", ancestor_sha, descendant_sha],
+            cwd=ROOT,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+        return merge_base == ancestor_sha
+    except (subprocess.CalledProcessError, OSError):
+        return False
+
+
 def verify_evidence_lineage(
     evidence_refs: dict[str, str],
     *,
@@ -102,14 +119,11 @@ def verify_evidence_lineage(
     """Verify evidence refs correspond to compatible release lineage."""
     violations: list[str] = []
     build34_head = DEFAULT_SOURCE_HEADS.get("BUILD34", BUILD34_HEAD)
-    # Release must be BUILD34 HEAD or a descendant (BUILD35 branch)
-    if release_source_sha != build34_head:
-        # Descendant check: release SHA must have BUILD34 as ancestor
-        # For fixture qualification, allow same major lineage prefix
-        if not (release_source_sha.startswith(build34_head[:7]) or build34_head.startswith(release_source_sha[:7])):
-            violations.append(
-                f"release_source_sha {release_source_sha} incompatible with BUILD34 evidence at {build34_head}"
-            )
+    # Release must be BUILD34 HEAD or a git descendant (e.g. BUILD35 branch)
+    if not _is_ancestor_or_equal(build34_head, release_source_sha):
+        violations.append(
+            f"release_source_sha {release_source_sha} is not a descendant of BUILD34 evidence at {build34_head}"
+        )
     return len(violations) == 0, violations
 
 

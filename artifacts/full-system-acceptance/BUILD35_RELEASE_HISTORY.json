@@ -2,11 +2,11 @@
   "event_count": 2,
   "events": [
     {
-      "event_id": "RELHIST-867e27b3074ed0233853cc726c0dac8afdc76a9e4fc1a9a58e410a443257c852",
+      "event_id": "RELHIST-47f6911b252f9fcd558717ade92ca41758f8a4eb218c40a6fdb1bb654ab12cc4",
       "event_type": "CANDIDATE_ASSEMBLED"
     },
     {
-      "event_id": "RELHIST-31102434df59a072dc9b8a3c9b47245f3d84044cdebdb624d2a5eb70a637b0aa",
+      "event_id": "RELHIST-dda293d2ea8e063a2e71088ef98c9b3a4b620f18b1115175bef35cb2352b28b8",
       "event_type": "APPROVED"
     }
   ]
