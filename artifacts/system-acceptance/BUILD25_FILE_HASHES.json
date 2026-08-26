@@ -1,8 +1,8 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-08-26T03:01:26.215892+00:00",
+  "generated_at": "2026-08-26T03:01:51.415114+00:00",
   "algorithm": "sha256",
-  "file_count": 418,
+  "file_count": 420,
   "excluded_categories": [
     ".git/",
     ".venv/",
@@ -16,9 +16,19 @@
   ],
   "files": [
     {
+      "path": "artifacts/system-acceptance/BUILD25_FILE_HASHES.json",
+      "size": 84306,
+      "sha256": "67d7558c1f0cef0302d024560a1092b75c2eacdfb4feb9780e4b23b2f894bb48"
+    },
+    {
       "path": "artifacts/system-acceptance/BUILD25_KNOWN_LIMITATIONS.md",
       "size": 4306,
       "sha256": "d2b6e8a3861a4c584fa762f7643b8a93722a0a17c0aaba0ef13a908e8fc62767"
+    },
+    {
+      "path": "artifacts/system-acceptance/BUILD25_RC_MANIFEST.json",
+      "size": 11935,
+      "sha256": "8fd40ee02311eb390b9a599b5217d4363c9063187aabb9ee13a43734181b7915"
     },
     {
       "path": "docs/engineering/SYSTEM_ACCEPTANCE_BUILD25.md",
