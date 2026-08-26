@@ -7,6 +7,7 @@ const links = [
   { to: "/workspace", label: "WORKSPACE" },
   { to: "/research", label: "RESEARCH", gated: true },
   { to: "/portfolio", label: "PORTFOLIO" },
+  { to: "/live-canary", label: "LIVE CANARY" },
   { to: "/settings", label: "SETTINGS" },
   { to: "/diagnostics/provider", label: "DIAGNOSTICS" },
 ];

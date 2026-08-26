@@ -1,0 +1,31 @@
+{
+  "disposition": "OPERATOR_CONTROL_PLANE_QUALIFIED_WITH_LIMITATIONS",
+  "drill_results": {
+    "D01": "PASS",
+    "D02": "PASS",
+    "D03": "PASS",
+    "D04": "PASS",
+    "D05": "PASS",
+    "D06": "PASS",
+    "D07": "PASS",
+    "D08": "PASS",
+    "D09": "PASS",
+    "D10": "PASS",
+    "D11": "PASS",
+    "D12": "PASS",
+    "D13": "PASS",
+    "D14": "FAIL",
+    "D15": "PASS"
+  },
+  "limitations": [
+    "single-user/local operator control plane only",
+    "incident drills use fixtures and mock transports only",
+    "no mobile operator UI",
+    "no external pager or push notification delivery",
+    "replace-order controls intentionally absent (NOT CERTIFIED)",
+    "no emergency liquidation automation",
+    "role enforcement remains MODEL_ONLY_NOT_ENFORCED"
+  ],
+  "real_broker_side_effects_observed": 0,
+  "report_id": "OPQUAL-49e7775c0d4567abe61a4e44000c48bd7dbd1294227760152d7ba102fd70a83a"
+}

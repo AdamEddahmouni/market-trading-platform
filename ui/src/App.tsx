@@ -30,6 +30,7 @@ import { InstitutionalFlowWorkspacePage } from "./components/institutional/Insti
 import { PortfolioPage } from "./components/PortfolioPage";
 import { OperatorSettingsPage } from "./components/OperatorSettingsPage";
 import { ProviderHealthPanel } from "./components/live/ProviderHealthPanel";
+import { LiveCanaryControlPlanePage } from "./components/live/LiveCanaryControlPlanePage";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { NavShell } from "./components/NavShell";
 import { NowPage } from "./components/NowPage";
@@ -317,6 +318,7 @@ function Shell() {
             />
             <Route path="/research" element={<ResearchPage />} />
             <Route path="/portfolio" element={<PortfolioPage />} />
+            <Route path="/live-canary" element={<LiveCanaryControlPlanePage />} />
             <Route path="/settings" element={<OperatorSettingsPage />} />
             <Route path="/diagnostics/provider" element={<ProviderHealthPanel />} />
             <Route path="/assistant/history" element={<AssistantHistoryPage />} />

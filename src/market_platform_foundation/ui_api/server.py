@@ -11,6 +11,7 @@ from urllib.parse import parse_qs, urlparse
 
 from ..canonical import canonical_bytes, write_canonical_json
 from . import broker_projections
+from . import canary_projections
 from . import live_projections
 from . import operator_projections
 from . import paper_projections
@@ -436,6 +437,24 @@ class UiApiHandler(BaseHTTPRequestHandler):
             if path == "/assistant/status":
                 self._send_json(build_assistant_status(self.store))
                 return
+            if path == "/canary/snapshot":
+                self._send_json(canary_projections.build_canary_snapshot_payload())
+                return
+            if path == "/canary/authorization/preview":
+                self._send_json(canary_projections.build_canary_authorization_preview_payload())
+                return
+            if path == "/canary/timeline":
+                self._send_json(canary_projections.build_canary_timeline_payload())
+                return
+            if path == "/canary/reconciliation":
+                self._send_json(canary_projections.build_canary_reconciliation_payload())
+                return
+            if path == "/canary/incidents":
+                self._send_json(canary_projections.build_canary_incidents_payload())
+                return
+            if path == "/canary/action-inventory":
+                self._send_json(canary_projections.build_canary_action_inventory())
+                return
             if path == "/paper/account":
                 self._send_json(paper_projections.build_paper_account_payload(self.store))
                 return
@@ -551,6 +570,15 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
             self._send_json(release_mixed_live_subscriptions())
             return
+        if path == "/canary/command":
+            try:
+                with LEDGER_ROUTE_LOCK:
+                    payload = canary_projections.handle_canary_command(body)
+                self._send_json(payload)
+            except (KeyError, TypeError, ValueError) as exc:
+                self._send_error_json("CANARY_COMMAND_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+
         if path == "/paper/orders/preview":
             try:
                 self._send_json(paper_projections.preview_paper_order(self.store, body))
