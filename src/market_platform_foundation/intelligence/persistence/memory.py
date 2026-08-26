@@ -28,6 +28,7 @@ from .queries import (
     filter_forecasts_by_instrument,
     filter_opportunities_by_instrument,
     filter_outcomes_by_forecast,
+    filter_prediction_ledger_entries,
     filter_prediction_ledger_entries_by_forecast,
     query_events_as_of,
     query_signals_as_of,
@@ -45,6 +46,7 @@ class InMemoryIntelligenceRepository:
         self._stores: dict[str, dict[str, dict[str, Any]]] = {
             codec.collection_name: {} for codec in RECORD_CODECS
         }
+        self._stores["evaluation_reports"] = {}
 
     def put_event(self, event: EventV1) -> RepositoryPutResult:
         return self._put(event)
@@ -153,6 +155,61 @@ class InMemoryIntelligenceRepository:
                 for body in self._stores["prediction_ledger"].values()
             ]
         return filter_prediction_ledger_entries_by_forecast(rows, forecast_id)
+
+    def query_prediction_ledger_entries(
+        self,
+        *,
+        decision_start_ns: int,
+        decision_end_ns: int,
+        mode: str | None = None,
+        scenario_id: str | None = None,
+        target_kind: str | None = None,
+        horizon_ns: int | None = None,
+        limit: int = 1000,
+    ) -> tuple[PredictionLedgerEntryV1, ...]:
+        with self._lock:
+            rows = [
+                self._decode(PredictionLedgerEntryV1, body)
+                for body in self._stores["prediction_ledger"].values()
+            ]
+        return filter_prediction_ledger_entries(
+            rows,
+            decision_start_ns=decision_start_ns,
+            decision_end_ns=decision_end_ns,
+            mode=mode,
+            scenario_id=scenario_id,
+            target_kind=target_kind,
+            horizon_ns=horizon_ns,
+            limit=limit,
+        )
+
+    def put_evaluation_report(self, report) -> RepositoryPutResult:
+        from ..evaluation.report import evaluation_report_v1_to_dict
+
+        document = evaluation_report_v1_to_dict(report)
+        document["_id"] = report.report_id
+        with self._lock:
+            store = self._stores["evaluation_reports"]
+            existing = store.get(report.report_id)
+            if existing is None:
+                store[report.report_id] = copy.deepcopy(document)
+                return RepositoryPutResult.INSERTED
+            if canonical_semantic_equal(existing, document):
+                return RepositoryPutResult.ALREADY_PRESENT
+            raise RepositoryConflictError(
+                f"IMMUTABLE_CONFLICT:evaluation_report:{report.report_id}",
+                details={"kind": "evaluation_report", "id": report.report_id},
+            )
+
+    def get_evaluation_report(self, report_id: str):
+        from ..evaluation.report import evaluation_report_v1_from_dict
+
+        with self._lock:
+            body = self._stores["evaluation_reports"].get(report_id)
+        if body is None:
+            return None
+        payload = {k: v for k, v in body.items() if k != "_id"}
+        return evaluation_report_v1_from_dict(payload)
 
     def put_run_manifest(self, manifest: RunManifestV1) -> RepositoryPutResult:
         return self._put(manifest)

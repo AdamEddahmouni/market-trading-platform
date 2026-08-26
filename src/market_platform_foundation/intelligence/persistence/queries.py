@@ -119,6 +119,42 @@ def filter_outcomes_by_forecast(
     return tuple(sorted(rows, key=lambda row: row.outcome_id))
 
 
+def filter_prediction_ledger_entries(
+    entries: list[PredictionLedgerEntryV1] | tuple[PredictionLedgerEntryV1, ...],
+    *,
+    decision_start_ns: int,
+    decision_end_ns: int,
+    mode: str | None = None,
+    scenario_id: str | None = None,
+    target_kind: str | None = None,
+    horizon_ns: int | None = None,
+    limit: int = DEFAULT_QUERY_LIMIT,
+) -> tuple[PredictionLedgerEntryV1, ...]:
+    """Return ledger entries with half-open decision range [start, end)."""
+    if decision_start_ns >= decision_end_ns:
+        raise ValueError("DECISION_RANGE_INVALID")
+    active_limit = validate_limit(limit)
+    rows: list[PredictionLedgerEntryV1] = []
+    for entry in entries:
+        if entry.forecast_decision_time_ns < decision_start_ns:
+            continue
+        if entry.forecast_decision_time_ns >= decision_end_ns:
+            continue
+        if mode is not None and entry.mode != mode:
+            continue
+        if scenario_id is not None and entry.scenario_id != scenario_id:
+            continue
+        if target_kind is not None and entry.target.target_kind != target_kind:
+            continue
+        if horizon_ns is not None and entry.horizon_ns != horizon_ns:
+            continue
+        rows.append(entry)
+    ordered = sorted(rows, key=lambda row: (row.forecast_decision_time_ns, row.ledger_entry_id))
+    if len(ordered) <= active_limit:
+        return tuple(ordered)
+    return tuple(ordered[:active_limit])
+
+
 def filter_prediction_ledger_entries_by_forecast(
     entries: list[PredictionLedgerEntryV1] | tuple[PredictionLedgerEntryV1, ...],
     forecast_id: str,
@@ -236,6 +272,7 @@ __all__ = [
     "filter_forecasts_by_instrument",
     "filter_opportunities_by_instrument",
     "filter_outcomes_by_forecast",
+    "filter_prediction_ledger_entries",
     "filter_prediction_ledger_entries_by_forecast",
     "mongo_event_availability_range_filter",
     "mongo_event_candidate_filter",

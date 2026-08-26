@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from types import MappingProxyType
 from typing import Mapping
@@ -147,7 +147,9 @@ _DEFAULT_PROFILES: dict[ExpertDomain, InferenceExecutionProfile] = {
 class ExecutionProfileRegistry:
     """Deterministic expert-domain to execution-profile mapping."""
 
-    profiles: Mapping[ExpertDomain, InferenceExecutionProfile] = MappingProxyType(_DEFAULT_PROFILES)
+    profiles: Mapping[ExpertDomain, InferenceExecutionProfile] = field(
+        default_factory=lambda: MappingProxyType(_DEFAULT_PROFILES)
+    )
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "profiles", MappingProxyType(dict(self.profiles)))

@@ -190,6 +190,38 @@ class ReplayVisibleRepository:
             return output_rows
         return self._source.get_prediction_ledger_entries_by_forecast(forecast_id)
 
+    def query_prediction_ledger_entries(
+        self,
+        *,
+        decision_start_ns: int,
+        decision_end_ns: int,
+        mode: str | None = None,
+        scenario_id: str | None = None,
+        target_kind: str | None = None,
+        horizon_ns: int | None = None,
+        limit: int = 1000,
+    ) -> tuple[PredictionLedgerEntryV1, ...]:
+        output_rows = self._output.query_prediction_ledger_entries(
+            decision_start_ns=decision_start_ns,
+            decision_end_ns=decision_end_ns,
+            mode=mode,
+            scenario_id=scenario_id,
+            target_kind=target_kind,
+            horizon_ns=horizon_ns,
+            limit=limit,
+        )
+        if output_rows:
+            return output_rows
+        return self._source.query_prediction_ledger_entries(
+            decision_start_ns=decision_start_ns,
+            decision_end_ns=decision_end_ns,
+            mode=mode,
+            scenario_id=scenario_id,
+            target_kind=target_kind,
+            horizon_ns=horizon_ns,
+            limit=limit,
+        )
+
     def put_run_manifest(self, manifest: RunManifestV1) -> RepositoryPutResult:
         return self._output.put_run_manifest(manifest)
 

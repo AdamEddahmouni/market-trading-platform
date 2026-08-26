@@ -90,6 +90,18 @@ class IntelligenceRepository(Protocol):
         self, forecast_id: str
     ) -> tuple[PredictionLedgerEntryV1, ...]: ...
 
+    def query_prediction_ledger_entries(
+        self,
+        *,
+        decision_start_ns: int,
+        decision_end_ns: int,
+        mode: str | None = None,
+        scenario_id: str | None = None,
+        target_kind: str | None = None,
+        horizon_ns: int | None = None,
+        limit: int = 1000,
+    ) -> tuple[PredictionLedgerEntryV1, ...]: ...
+
     def put_run_manifest(self, manifest: RunManifestV1) -> RepositoryPutResult: ...
 
     def get_run_manifest(self, run_id: str) -> RunManifestV1 | None: ...

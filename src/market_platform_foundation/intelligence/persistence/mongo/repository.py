@@ -19,6 +19,7 @@ from ..queries import (
     filter_forecasts_by_instrument,
     filter_opportunities_by_instrument,
     filter_outcomes_by_forecast,
+    filter_prediction_ledger_entries,
     filter_prediction_ledger_entries_by_forecast,
     mongo_event_availability_range_filter,
     mongo_event_candidate_filter,
@@ -223,6 +224,68 @@ class MongoIntelligenceRepository:
         cursor = self._database["prediction_ledger"].find({"forecast_id": forecast_id})
         rows = [decode_document(document, codec) for document in cursor]
         return filter_prediction_ledger_entries_by_forecast(rows, forecast_id)
+
+    def query_prediction_ledger_entries(
+        self,
+        *,
+        decision_start_ns: int,
+        decision_end_ns: int,
+        mode: str | None = None,
+        scenario_id: str | None = None,
+        target_kind: str | None = None,
+        horizon_ns: int | None = None,
+        limit: int = 1000,
+    ) -> tuple[PredictionLedgerEntryV1, ...]:
+        query: dict[str, Any] = {
+            "forecast_decision_time_ns": {"$gte": decision_start_ns, "$lt": decision_end_ns},
+        }
+        if mode is not None:
+            query["mode"] = mode
+        if scenario_id is not None:
+            query["scenario_id"] = scenario_id
+        if target_kind is not None:
+            query["target.target_kind"] = target_kind
+        if horizon_ns is not None:
+            query["horizon_ns"] = horizon_ns
+        codec = _CODEC_BY_COLLECTION["prediction_ledger"]
+        cursor = self._database["prediction_ledger"].find(query).limit(limit * 2)
+        rows = [decode_document(document, codec) for document in cursor]
+        return filter_prediction_ledger_entries(
+            rows,
+            decision_start_ns=decision_start_ns,
+            decision_end_ns=decision_end_ns,
+            mode=mode,
+            scenario_id=scenario_id,
+            target_kind=target_kind,
+            horizon_ns=horizon_ns,
+            limit=limit,
+        )
+
+    def put_evaluation_report(self, report) -> RepositoryPutResult:
+        from ...evaluation.report import evaluation_report_v1_to_dict
+
+        document = evaluation_report_v1_to_dict(report)
+        document["_id"] = report.report_id
+        collection = self._database["evaluation_reports"]
+        existing = collection.find_one({"_id": report.report_id})
+        if existing is None:
+            collection.insert_one(document)
+            return RepositoryPutResult.INSERTED
+        if canonical_semantic_equal(existing, document):
+            return RepositoryPutResult.ALREADY_PRESENT
+        raise RepositoryConflictError(
+            f"IMMUTABLE_CONFLICT:evaluation_report:{report.report_id}",
+            details={"kind": "evaluation_report", "id": report.report_id},
+        )
+
+    def get_evaluation_report(self, report_id: str):
+        from ...evaluation.report import evaluation_report_v1_from_dict
+
+        document = self._database["evaluation_reports"].find_one({"_id": report_id})
+        if document is None:
+            return None
+        payload = {k: v for k, v in document.items() if k != "_id"}
+        return evaluation_report_v1_from_dict(payload)
 
     def put_run_manifest(self, manifest: RunManifestV1) -> RepositoryPutResult:
         return self._put(manifest)

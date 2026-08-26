@@ -23,7 +23,7 @@ from market_platform_foundation.intelligence.persistence.mongo.schema import (  
 
 class SchemaPlanTests(unittest.TestCase):
     def test_schema_plan_version(self) -> None:
-        self.assertEqual(MONGO_SCHEMA_PLAN_VERSION, 3)
+        self.assertEqual(MONGO_SCHEMA_PLAN_VERSION, 4)
 
     def test_routing_collections_have_no_ttl_deletion_indexes(self) -> None:
         specs = {spec.codec.collection_name: spec for spec in COLLECTION_SPECS}
