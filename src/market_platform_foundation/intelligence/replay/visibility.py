@@ -389,6 +389,46 @@ class ReplayVisibleRepository:
             distillation_dataset_id
         ) or self._source.get_distillation_dataset_manifest(distillation_dataset_id)
 
+    def put_validation_plan(self, plan) -> RepositoryPutResult:
+        return self._output.put_validation_plan(plan)
+
+    def get_validation_plan(self, validation_plan_id: str):
+        return self._output.get_validation_plan(
+            validation_plan_id
+        ) or self._source.get_validation_plan(validation_plan_id)
+
+    def put_holdout_commitment(self, commitment) -> RepositoryPutResult:
+        return self._output.put_holdout_commitment(commitment)
+
+    def get_holdout_commitment(self, holdout_commitment_id: str):
+        return self._output.get_holdout_commitment(
+            holdout_commitment_id
+        ) or self._source.get_holdout_commitment(holdout_commitment_id)
+
+    def put_holdout_unlock_receipt(self, receipt) -> RepositoryPutResult:
+        return self._output.put_holdout_unlock_receipt(receipt)
+
+    def get_holdout_unlock_receipt(self, receipt_id: str):
+        return self._output.get_holdout_unlock_receipt(
+            receipt_id
+        ) or self._source.get_holdout_unlock_receipt(receipt_id)
+
+    def put_contamination_record(self, record) -> RepositoryPutResult:
+        return self._output.put_contamination_record(record)
+
+    def get_contamination_record(self, contamination_record_id: str):
+        return self._output.get_contamination_record(
+            contamination_record_id
+        ) or self._source.get_contamination_record(contamination_record_id)
+
+    def put_validation_report(self, report) -> RepositoryPutResult:
+        return self._output.put_validation_report(report)
+
+    def get_validation_report(self, validation_report_id: str):
+        return self._output.get_validation_report(
+            validation_report_id
+        ) or self._source.get_validation_report(validation_report_id)
+
     def iter_events_by_availability(
         self,
         *,

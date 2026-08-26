@@ -55,6 +55,11 @@ class InMemoryIntelligenceRepository:
         self._stores["training_run_manifests"] = {}
         self._stores["candidate_artifacts"] = {}
         self._stores["distillation_dataset_manifests"] = {}
+        self._stores["validation_plans"] = {}
+        self._stores["holdout_commitments"] = {}
+        self._stores["holdout_unlock_receipts"] = {}
+        self._stores["contamination_records"] = {}
+        self._stores["validation_reports"] = {}
 
     def put_event(self, event: EventV1) -> RepositoryPutResult:
         return self._put(event)
@@ -374,6 +379,89 @@ class InMemoryIntelligenceRepository:
             "distillation_dataset_manifests",
             distillation_dataset_id,
             distillation_dataset_manifest_v1_from_dict,
+        )
+
+    def put_validation_plan(self, plan) -> RepositoryPutResult:
+        from ..validation.serialization import validation_plan_v1_to_dict
+
+        return self._put_sidecar(
+            collection="validation_plans",
+            record_id=plan.validation_plan_id,
+            document=validation_plan_v1_to_dict(plan),
+            kind="validation_plan",
+        )
+
+    def get_validation_plan(self, validation_plan_id: str):
+        from ..validation.serialization import validation_plan_v1_from_dict
+
+        return self._get_sidecar("validation_plans", validation_plan_id, validation_plan_v1_from_dict)
+
+    def put_holdout_commitment(self, commitment) -> RepositoryPutResult:
+        from ..validation.serialization import holdout_commitment_v1_to_dict
+
+        return self._put_sidecar(
+            collection="holdout_commitments",
+            record_id=commitment.holdout_commitment_id,
+            document=holdout_commitment_v1_to_dict(commitment),
+            kind="holdout_commitment",
+        )
+
+    def get_holdout_commitment(self, holdout_commitment_id: str):
+        from ..validation.serialization import holdout_commitment_v1_from_dict
+
+        return self._get_sidecar(
+            "holdout_commitments", holdout_commitment_id, holdout_commitment_v1_from_dict
+        )
+
+    def put_holdout_unlock_receipt(self, receipt) -> RepositoryPutResult:
+        from ..validation.serialization import holdout_unlock_receipt_v1_to_dict
+
+        return self._put_sidecar(
+            collection="holdout_unlock_receipts",
+            record_id=receipt.receipt_id,
+            document=holdout_unlock_receipt_v1_to_dict(receipt),
+            kind="holdout_unlock_receipt",
+        )
+
+    def get_holdout_unlock_receipt(self, receipt_id: str):
+        from ..validation.serialization import holdout_unlock_receipt_v1_from_dict
+
+        return self._get_sidecar(
+            "holdout_unlock_receipts", receipt_id, holdout_unlock_receipt_v1_from_dict
+        )
+
+    def put_contamination_record(self, record) -> RepositoryPutResult:
+        from ..validation.serialization import contamination_record_v1_to_dict
+
+        return self._put_sidecar(
+            collection="contamination_records",
+            record_id=record.contamination_record_id,
+            document=contamination_record_v1_to_dict(record),
+            kind="contamination_record",
+        )
+
+    def get_contamination_record(self, contamination_record_id: str):
+        from ..validation.serialization import contamination_record_v1_from_dict
+
+        return self._get_sidecar(
+            "contamination_records", contamination_record_id, contamination_record_v1_from_dict
+        )
+
+    def put_validation_report(self, report) -> RepositoryPutResult:
+        from ..validation.serialization import validation_report_v1_to_dict
+
+        return self._put_sidecar(
+            collection="validation_reports",
+            record_id=report.validation_report_id,
+            document=validation_report_v1_to_dict(report),
+            kind="validation_report",
+        )
+
+    def get_validation_report(self, validation_report_id: str):
+        from ..validation.serialization import validation_report_v1_from_dict
+
+        return self._get_sidecar(
+            "validation_reports", validation_report_id, validation_report_v1_from_dict
         )
 
     def _put_sidecar(
