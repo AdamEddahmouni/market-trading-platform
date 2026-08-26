@@ -541,6 +541,30 @@ class ReplayVisibleRepository:
             return output_rows
         return self._source.get_challenger_lifecycle_events(challenger_registration_id)
 
+    def put_opportunity_policy(self, policy) -> RepositoryPutResult:
+        return self._output.put_opportunity_policy(policy)
+
+    def get_opportunity_policy(self, opportunity_policy_id: str):
+        row = self._output.get_opportunity_policy(opportunity_policy_id)
+        if row is not None:
+            return row
+        return self._source.get_opportunity_policy(opportunity_policy_id)
+
+    def put_opportunity_assessment(self, assessment) -> RepositoryPutResult:
+        return self._output.put_opportunity_assessment(assessment)
+
+    def get_opportunity_assessment(self, assessment_id: str):
+        row = self._output.get_opportunity_assessment(assessment_id)
+        if row is not None:
+            return row
+        return self._source.get_opportunity_assessment(assessment_id)
+
+    def get_opportunity_assessments_by_forecast(self, forecast_id: str) -> tuple:
+        output_rows = self._output.get_opportunity_assessments_by_forecast(forecast_id)
+        if output_rows:
+            return output_rows
+        return self._source.get_opportunity_assessments_by_forecast(forecast_id)
+
     def iter_events_by_availability(
         self,
         *,

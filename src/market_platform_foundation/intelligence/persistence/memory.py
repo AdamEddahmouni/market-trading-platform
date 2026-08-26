@@ -67,6 +67,8 @@ class InMemoryIntelligenceRepository:
         self._stores["promotion_decisions"] = {}
         self._stores["champion_assignments"] = {}
         self._stores["challenger_lifecycle_events"] = {}
+        self._stores["opportunity_policies"] = {}
+        self._stores["opportunity_assessments"] = {}
 
     def put_event(self, event: EventV1) -> RepositoryPutResult:
         return self._put(event)
@@ -659,6 +661,51 @@ class InMemoryIntelligenceRepository:
         ]
         events.sort(key=lambda item: item.effective_at_ns)
         return tuple(events)
+
+    def put_opportunity_policy(self, policy) -> RepositoryPutResult:
+        from ..opportunity.serialization import opportunity_policy_v1_to_dict
+
+        return self._put_sidecar(
+            collection="opportunity_policies",
+            record_id=policy.opportunity_policy_id,
+            document=opportunity_policy_v1_to_dict(policy),
+            kind="opportunity_policy",
+        )
+
+    def get_opportunity_policy(self, opportunity_policy_id: str):
+        from ..opportunity.serialization import opportunity_policy_v1_from_dict
+
+        return self._get_sidecar("opportunity_policies", opportunity_policy_id, opportunity_policy_v1_from_dict)
+
+    def put_opportunity_assessment(self, assessment) -> RepositoryPutResult:
+        from ..opportunity.serialization import opportunity_assessment_v1_to_dict
+
+        return self._put_sidecar(
+            collection="opportunity_assessments",
+            record_id=assessment.assessment_id,
+            document=opportunity_assessment_v1_to_dict(assessment),
+            kind="opportunity_assessment",
+        )
+
+    def get_opportunity_assessment(self, assessment_id: str):
+        from ..opportunity.serialization import opportunity_assessment_v1_from_dict
+
+        return self._get_sidecar(
+            "opportunity_assessments", assessment_id, opportunity_assessment_v1_from_dict
+        )
+
+    def get_opportunity_assessments_by_forecast(self, forecast_id: str) -> tuple:
+        from ..opportunity.serialization import opportunity_assessment_v1_from_dict
+
+        with self._lock:
+            bodies = list(self._stores["opportunity_assessments"].values())
+        rows = [
+            opportunity_assessment_v1_from_dict({k: v for k, v in body.items() if k != "_id"})
+            for body in bodies
+            if body.get("forecast_id") == forecast_id
+        ]
+        rows.sort(key=lambda item: (item.opportunity_decision_time_ns, item.assessment_id))
+        return tuple(rows)
 
     def _put_sidecar(
         self,

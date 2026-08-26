@@ -758,6 +758,53 @@ class MongoIntelligenceRepository:
             for document in documents
         )
 
+    def put_opportunity_policy(self, policy) -> RepositoryPutResult:
+        from ...opportunity.serialization import opportunity_policy_v1_to_dict
+
+        return self._put_sidecar_document(
+            "opportunity_policies",
+            policy.opportunity_policy_id,
+            opportunity_policy_v1_to_dict(policy),
+            "opportunity_policy",
+        )
+
+    def get_opportunity_policy(self, opportunity_policy_id: str):
+        from ...opportunity.serialization import opportunity_policy_v1_from_dict
+
+        document = self._database["opportunity_policies"].find_one({"_id": opportunity_policy_id})
+        if document is None:
+            return None
+        return opportunity_policy_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_opportunity_assessment(self, assessment) -> RepositoryPutResult:
+        from ...opportunity.serialization import opportunity_assessment_v1_to_dict
+
+        return self._put_sidecar_document(
+            "opportunity_assessments",
+            assessment.assessment_id,
+            opportunity_assessment_v1_to_dict(assessment),
+            "opportunity_assessment",
+        )
+
+    def get_opportunity_assessment(self, assessment_id: str):
+        from ...opportunity.serialization import opportunity_assessment_v1_from_dict
+
+        document = self._database["opportunity_assessments"].find_one({"_id": assessment_id})
+        if document is None:
+            return None
+        return opportunity_assessment_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def get_opportunity_assessments_by_forecast(self, forecast_id: str) -> tuple:
+        from ...opportunity.serialization import opportunity_assessment_v1_from_dict
+
+        documents = self._database["opportunity_assessments"].find({"forecast_id": forecast_id}).sort(
+            [("opportunity_decision_time_ns", 1), ("assessment_id", 1)]
+        )
+        return tuple(
+            opportunity_assessment_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+            for document in documents
+        )
+
     def put_run_manifest(self, manifest: RunManifestV1) -> RepositoryPutResult:
         return self._put(manifest)
 
