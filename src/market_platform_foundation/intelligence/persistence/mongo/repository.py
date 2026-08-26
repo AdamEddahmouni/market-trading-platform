@@ -805,6 +805,78 @@ class MongoIntelligenceRepository:
             for document in documents
         )
 
+    def put_execution_policy(self, policy) -> RepositoryPutResult:
+        from ...execution.serialization import execution_policy_v1_to_dict
+
+        return self._put_sidecar_document(
+            "execution_policies",
+            policy.execution_policy_id,
+            execution_policy_v1_to_dict(policy),
+            "execution_policy",
+        )
+
+    def get_execution_policy(self, execution_policy_id: str):
+        from ...execution.serialization import execution_policy_v1_from_dict
+
+        document = self._database["execution_policies"].find_one({"_id": execution_policy_id})
+        if document is None:
+            return None
+        return execution_policy_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_paper_portfolio_snapshot(self, snapshot) -> RepositoryPutResult:
+        from ...execution.serialization import paper_portfolio_snapshot_v1_to_dict
+
+        return self._put_sidecar_document(
+            "paper_portfolio_snapshots",
+            snapshot.snapshot_id,
+            paper_portfolio_snapshot_v1_to_dict(snapshot),
+            "paper_portfolio_snapshot",
+        )
+
+    def get_paper_portfolio_snapshot(self, snapshot_id: str):
+        from ...execution.serialization import paper_portfolio_snapshot_v1_from_dict
+
+        document = self._database["paper_portfolio_snapshots"].find_one({"_id": snapshot_id})
+        if document is None:
+            return None
+        return paper_portfolio_snapshot_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_trade_proposal(self, proposal) -> RepositoryPutResult:
+        from ...contracts.trade_proposal import trade_proposal_v1_to_dict
+
+        return self._put_sidecar_document(
+            "trade_proposals",
+            proposal.proposal_id,
+            trade_proposal_v1_to_dict(proposal),
+            "trade_proposal",
+        )
+
+    def get_trade_proposal(self, proposal_id: str):
+        from ...contracts.trade_proposal import trade_proposal_v1_from_dict
+
+        document = self._database["trade_proposals"].find_one({"_id": proposal_id})
+        if document is None:
+            return None
+        return trade_proposal_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_risk_decision(self, decision) -> RepositoryPutResult:
+        from ...execution.serialization import risk_decision_v1_to_dict
+
+        return self._put_sidecar_document(
+            "risk_decisions",
+            decision.risk_decision_id,
+            risk_decision_v1_to_dict(decision),
+            "risk_decision",
+        )
+
+    def get_risk_decision(self, risk_decision_id: str):
+        from ...execution.serialization import risk_decision_v1_from_dict
+
+        document = self._database["risk_decisions"].find_one({"_id": risk_decision_id})
+        if document is None:
+            return None
+        return risk_decision_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
     def put_run_manifest(self, manifest: RunManifestV1) -> RepositoryPutResult:
         return self._put(manifest)
 

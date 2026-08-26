@@ -40,6 +40,7 @@ from .evidence import EvidenceV1, evidence_v1_from_dict, evidence_v1_to_dict
 from .forecast import ForecastV1, forecast_v1_from_dict, forecast_v1_to_dict
 from .hypothesis import HypothesisV1, hypothesis_v1_from_dict, hypothesis_v1_to_dict
 from .opportunity import OpportunityV1, opportunity_v1_from_dict, opportunity_v1_to_dict
+from .trade_proposal import TradeProposalV1, trade_proposal_v1_from_dict, trade_proposal_v1_to_dict
 from .outcome import OutcomeV1, outcome_v1_from_dict, outcome_v1_to_dict
 from .prediction_ledger import (
     PredictionLedgerEntryV1,
@@ -93,6 +94,7 @@ __all__ = [
     "SignalV1",
     "SnapshotV1",
     "SourceReference",
+    "TradeProposalV1",
     "TimeHorizonNs",
     "event_v1_from_dict",
     "event_v1_to_dict",
@@ -121,6 +123,8 @@ __all__ = [
     "shadow_label_to_outcome_v1",
     "shadow_manifest_to_run_manifest_v1",
     "shadow_prediction_to_forecast_v1",
+    "trade_proposal_v1_from_dict",
+    "trade_proposal_v1_to_dict",
     "signal_v1_from_dict",
     "signal_v1_to_dict",
     "snapshot_v1_from_dict",

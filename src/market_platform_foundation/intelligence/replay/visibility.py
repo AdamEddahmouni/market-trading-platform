@@ -565,6 +565,42 @@ class ReplayVisibleRepository:
             return output_rows
         return self._source.get_opportunity_assessments_by_forecast(forecast_id)
 
+    def put_execution_policy(self, policy) -> RepositoryPutResult:
+        return self._output.put_execution_policy(policy)
+
+    def get_execution_policy(self, execution_policy_id: str):
+        row = self._output.get_execution_policy(execution_policy_id)
+        if row is not None:
+            return row
+        return self._source.get_execution_policy(execution_policy_id)
+
+    def put_paper_portfolio_snapshot(self, snapshot) -> RepositoryPutResult:
+        return self._output.put_paper_portfolio_snapshot(snapshot)
+
+    def get_paper_portfolio_snapshot(self, snapshot_id: str):
+        row = self._output.get_paper_portfolio_snapshot(snapshot_id)
+        if row is not None:
+            return row
+        return self._source.get_paper_portfolio_snapshot(snapshot_id)
+
+    def put_trade_proposal(self, proposal) -> RepositoryPutResult:
+        return self._output.put_trade_proposal(proposal)
+
+    def get_trade_proposal(self, proposal_id: str):
+        row = self._output.get_trade_proposal(proposal_id)
+        if row is not None:
+            return row
+        return self._source.get_trade_proposal(proposal_id)
+
+    def put_risk_decision(self, decision) -> RepositoryPutResult:
+        return self._output.put_risk_decision(decision)
+
+    def get_risk_decision(self, risk_decision_id: str):
+        row = self._output.get_risk_decision(risk_decision_id)
+        if row is not None:
+            return row
+        return self._source.get_risk_decision(risk_decision_id)
+
     def iter_events_by_availability(
         self,
         *,

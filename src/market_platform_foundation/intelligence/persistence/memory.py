@@ -69,6 +69,10 @@ class InMemoryIntelligenceRepository:
         self._stores["challenger_lifecycle_events"] = {}
         self._stores["opportunity_policies"] = {}
         self._stores["opportunity_assessments"] = {}
+        self._stores["execution_policies"] = {}
+        self._stores["paper_portfolio_snapshots"] = {}
+        self._stores["trade_proposals"] = {}
+        self._stores["risk_decisions"] = {}
 
     def put_event(self, event: EventV1) -> RepositoryPutResult:
         return self._put(event)
@@ -706,6 +710,68 @@ class InMemoryIntelligenceRepository:
         ]
         rows.sort(key=lambda item: (item.opportunity_decision_time_ns, item.assessment_id))
         return tuple(rows)
+
+    def put_execution_policy(self, policy) -> RepositoryPutResult:
+        from ..execution.serialization import execution_policy_v1_to_dict
+
+        return self._put_sidecar(
+            collection="execution_policies",
+            record_id=policy.execution_policy_id,
+            document=execution_policy_v1_to_dict(policy),
+            kind="execution_policy",
+        )
+
+    def get_execution_policy(self, execution_policy_id: str):
+        from ..execution.serialization import execution_policy_v1_from_dict
+
+        return self._get_sidecar("execution_policies", execution_policy_id, execution_policy_v1_from_dict)
+
+    def put_paper_portfolio_snapshot(self, snapshot) -> RepositoryPutResult:
+        from ..execution.serialization import paper_portfolio_snapshot_v1_to_dict
+
+        return self._put_sidecar(
+            collection="paper_portfolio_snapshots",
+            record_id=snapshot.snapshot_id,
+            document=paper_portfolio_snapshot_v1_to_dict(snapshot),
+            kind="paper_portfolio_snapshot",
+        )
+
+    def get_paper_portfolio_snapshot(self, snapshot_id: str):
+        from ..execution.serialization import paper_portfolio_snapshot_v1_from_dict
+
+        return self._get_sidecar(
+            "paper_portfolio_snapshots", snapshot_id, paper_portfolio_snapshot_v1_from_dict
+        )
+
+    def put_trade_proposal(self, proposal) -> RepositoryPutResult:
+        from ..contracts.trade_proposal import trade_proposal_v1_to_dict
+
+        return self._put_sidecar(
+            collection="trade_proposals",
+            record_id=proposal.proposal_id,
+            document=trade_proposal_v1_to_dict(proposal),
+            kind="trade_proposal",
+        )
+
+    def get_trade_proposal(self, proposal_id: str):
+        from ..contracts.trade_proposal import trade_proposal_v1_from_dict
+
+        return self._get_sidecar("trade_proposals", proposal_id, trade_proposal_v1_from_dict)
+
+    def put_risk_decision(self, decision) -> RepositoryPutResult:
+        from ..execution.serialization import risk_decision_v1_to_dict
+
+        return self._put_sidecar(
+            collection="risk_decisions",
+            record_id=decision.risk_decision_id,
+            document=risk_decision_v1_to_dict(decision),
+            kind="risk_decision",
+        )
+
+    def get_risk_decision(self, risk_decision_id: str):
+        from ..execution.serialization import risk_decision_v1_from_dict
+
+        return self._get_sidecar("risk_decisions", risk_decision_id, risk_decision_v1_from_dict)
 
     def _put_sidecar(
         self,
