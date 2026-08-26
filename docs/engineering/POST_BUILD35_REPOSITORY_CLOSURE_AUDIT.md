@@ -1,8 +1,8 @@
 # Post-BUILD35 Whole-Repository Closure Audit
 
-Campaign: `POST-BUILD35-REPOSITORY-CLOSURE-001`  
-Predecessor: `BUILD35` (accepted baseline `1133242f759cc8176c75dc8573691e91f57bbbea`)  
-Result: `PASS`  
+Campaign: `POST-BUILD35-REPOSITORY-CLOSURE-001`
+Predecessor: `BUILD35` (accepted baseline `1133242f759cc8176c75dc8573691e91f57bbbea`)
+Result: `PASS`
 Classification-time changes: `NONE`
 
 ## Important acceptance semantics
@@ -104,6 +104,29 @@ Classification used four independent signals:
 Directory naming, age, and repeated structural shape were not sufficient by
 themselves to assign `DEAD`, `SUPERSEDED`, or `DUPLICATE`.
 
+## Closure validation evidence
+
+Closure commit: `ac1ba852414607a5218bcbc341ba64cd99e24f00` (`ac1ba85`)
+BUILD35 accepted baseline: `1133242f759cc8176c75dc8573691e91f57bbbea` (`1133242`)
+
+All checks below were run on 2026-08-26 against the closure worktree state
+committed as `ac1ba85`. Live probes were not run; no live-provider boundary
+changed during this campaign.
+
+| Check | Command | Result | Report |
+|---|---|---|---|
+| Closure inventory validator | `tools/repository_closure.py --audit artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` | PASS — 180 classified paths, `DEAD` count 1 | CLI JSON |
+| Changed validation | `tools/validate.py changed` | PASS — 282 passes / 1 skip / 0 failures / 62.87s | [`reports/postbuild35-closure-changed.json`](../../reports/postbuild35-closure-changed.json) |
+| Core domain validation | `tools/validate.py domain core` | PASS — 2118 passes / 34 skips / 0 failures / 319.45s | [`reports/postbuild35-closure-domain-core.json`](../../reports/postbuild35-closure-domain-core.json) |
+| Full offline validation | `tools/validate.py full` | PASS — 2858 passes / 34 skips / 0 failures / 533.29s | [`reports/postbuild35-closure-full.json`](../../reports/postbuild35-closure-full.json) |
+| Closure diff whitespace | `git diff --check 1133242..ac1ba85` | trailing whitespace on three audit header lines in `ac1ba85` (cosmetic; corrected in validation-evidence doc update) | — |
+| Worktree whitespace | `git diff --check` on closure doc paths | clean after header-line correction | — |
+| Worktree review | `git status --short` | closure commit isolated; unrelated BUILD33/UI audit and `.cursor/settings.json` changes preserved outside the closure commit | — |
+
+Focused closure tests (`tests/validation/test_repository_closure.py`,
+`tests/phase0/test_analysis.py`) are included in the changed, core-domain, and
+full offline tiers above.
+
 ## Canonical closure
 
 The BUILD35 authority map remains controlling. The audit groups its concrete
@@ -184,6 +207,7 @@ is `DEFER` until a separate data-admission/integration decision defines:
    tool namespace, or required surface is added or removed.
 
 The audit is complete when the canonical JSON validates and the repository's
-changed, core-domain, and full offline validation tiers pass. Live probes are
-not part of this campaign because no live-provider boundary changed.
-
+changed, core-domain, and full offline validation tiers pass, with a clean
+`git diff --check` on the closure commit range. See
+[Closure validation evidence](#closure-validation-evidence). Live probes are not
+part of this campaign because no live-provider boundary changed.

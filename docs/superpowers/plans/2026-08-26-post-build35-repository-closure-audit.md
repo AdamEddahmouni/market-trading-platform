@@ -98,7 +98,7 @@ Document scope, definitions, classification summary, canonical authority conclus
 
 Link the closure audit from `README.md` and state that the next campaign is post-BUILD35 closure, not BUILD36.
 
-- [ ] **Step 4: Run changed and domain validation**
+- [x] **Step 4: Run changed and domain validation**
 
 Run: `.venv\Scripts\python.exe tools\validate.py changed`
 
@@ -115,21 +115,20 @@ Expected: PASS.
 - Consumes: completed audit changes.
 - Produces: offline full-suite evidence and final worktree review.
 
-- [ ] **Step 1: Run the audit CLI**
+- [x] **Step 1: Run the audit CLI**
 
 Run: `.venv\Scripts\python.exe tools\repository_closure.py --audit artifacts\repository-closure\POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json --repository-root .`
 
 Expected: JSON summary with `status` equal to `PASS`.
 
-- [ ] **Step 2: Run full offline validation**
+- [x] **Step 2: Run full offline validation**
 
 Run: `.venv\Scripts\python.exe tools\validate.py full`
 
 Expected: PASS with no live tests.
 
-- [ ] **Step 3: Review diffs and preserve unrelated user changes**
+- [x] **Step 3: Review diffs and preserve unrelated user changes**
 
 Run: `git status --short` and `git diff --check`.
 
 Expected: only closure-audit changes plus pre-existing user changes; no whitespace errors.
-
