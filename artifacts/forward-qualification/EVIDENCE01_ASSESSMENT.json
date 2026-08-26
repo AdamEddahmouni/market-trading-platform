@@ -1,0 +1,48 @@
+{
+  "assessment_id": "FEASM-b0b4d22aad76884b5cd0ea3589ab6ff71e06f81541a60804789c8516e0668c2a",
+  "schema_version": "1",
+  "policy_ref": "FEPOL-2f34a5a175890869faa8456a9af2a49244ed702ac667bd495f590de266cc165e",
+  "observation_cutoff_ns": 1700000000000000000,
+  "settlement_cutoff_ns": 1700000000000000000,
+  "source_evidence_fingerprint": "FESRC-f489343f94df01b7e25f647837cbbf167093405eaa7b1a511a4e713fd7259f51",
+  "observation_summary": {
+    "observation_cutoff_ns": 1700000000000000000,
+    "settlement_cutoff_ns": 1700000000000000000,
+    "first_eligible_decision_ns": null,
+    "last_eligible_decision_ns": null,
+    "elapsed_qualifying_duration_ns": 0,
+    "distinct_trading_days": 0,
+    "distinct_sessions": 0,
+    "raw_observations": 0,
+    "eligible_predictions": 0,
+    "settled_predictions": 0,
+    "unsettled_predictions": 0,
+    "abstentions": 0,
+    "excluded_observations": 0,
+    "exclusions_by_reason": {},
+    "up_support": 0,
+    "down_support": 0,
+    "settlement_rate": 0.0,
+    "maximum_observation_gap_ns": 0,
+    "provider_disconnected_exclusions": 0
+  },
+  "evidence_sufficiency_passed": false,
+  "performance_evaluated": false,
+  "qualification_disposition": "INSUFFICIENT_FORWARD_EVIDENCE",
+  "disposition_reason_codes": [
+    "EVIDENCE_SUFFICIENCY_NOT_MET"
+  ],
+  "limitations": [],
+  "remaining_requirements": [
+    "50 additional eligible predictions",
+    "25 additional settled eligible predictions",
+    "settlement rate below 80%",
+    "5 additional qualifying calendar days of span",
+    "5 additional qualifying trading days",
+    "5 additional qualifying observation sessions"
+  ],
+  "implementation_version": "evidence01-v1",
+  "metadata": {
+    "mechanism": "EVIDENCE-01"
+  }
+}

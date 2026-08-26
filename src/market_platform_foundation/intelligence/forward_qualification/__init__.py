@@ -1,5 +1,18 @@
 """Forward shadow qualification package (BUILD 26)."""
 
+from .evidence01 import (
+    assess_forward_evidence_qualification,
+    build_forward_evidence_qualification_policy,
+    build_forward_evidence_qualification_report,
+    ForwardEvidenceDisposition,
+    ForwardEvidenceQualificationAssessmentV1,
+    ForwardEvidenceQualificationPolicyV1,
+    ForwardEvidenceQualificationReportV1,
+    ForwardObservationInputV1,
+    forward_evidence_assessment_v1_to_dict,
+    forward_evidence_policy_v1_to_dict,
+    forward_evidence_report_v1_to_dict,
+)
 from .fixture_lifecycle import FixtureLifecycleResult, run_prospective_fixture_lifecycle
 from .identity import (
     derive_forward_cohort_fingerprint,
@@ -53,6 +66,17 @@ from .types import (
 )
 
 __all__ = [
+    "ForwardEvidenceDisposition",
+    "ForwardEvidenceQualificationAssessmentV1",
+    "ForwardEvidenceQualificationPolicyV1",
+    "ForwardEvidenceQualificationReportV1",
+    "ForwardObservationInputV1",
+    "assess_forward_evidence_qualification",
+    "build_forward_evidence_qualification_policy",
+    "build_forward_evidence_qualification_report",
+    "forward_evidence_assessment_v1_to_dict",
+    "forward_evidence_policy_v1_to_dict",
+    "forward_evidence_report_v1_to_dict",
     "BUILD25_RC_BRANCH",
     "DEFAULT_HORIZON_NS",
     "DEFAULT_INSTRUMENT_UNIVERSE",
