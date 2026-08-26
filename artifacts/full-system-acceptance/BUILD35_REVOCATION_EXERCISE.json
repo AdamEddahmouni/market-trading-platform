@@ -1,0 +1,6 @@
+{
+  "approval_state_after": "REVOKED",
+  "deployment_blocked": true,
+  "result": "PASS",
+  "scenario": "post-approval critical safety defect"
+}

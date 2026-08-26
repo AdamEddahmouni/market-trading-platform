@@ -1,0 +1,10 @@
+{
+  "build": "BUILD35",
+  "build34_source_ref": "1cbfb415c398b37056030c6037b91744f7a33b90",
+  "disposition": "FULL_SYSTEM_ACCEPTED_WITH_LIMITATIONS",
+  "lifecycle_result": "PASS",
+  "release_approval_status": "APPROVED_SUPERVISED_OPERATION",
+  "release_id": "REL-199551b531f487bd64959893e0a3e530a71487251b33717e37b46aefff450ff4",
+  "schema_version": "1",
+  "source_head": "1cbfb415c398b37056030c6037b91744f7a33b90"
+}

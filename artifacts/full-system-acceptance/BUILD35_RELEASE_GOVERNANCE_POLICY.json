@@ -1,0 +1,30 @@
+{
+  "forbidden_authority_expansions": [
+    "automatic_broker_failover",
+    "autonomous_live_trading",
+    "deployment_creates_live_authorization",
+    "enable_crypto",
+    "enable_futures",
+    "enable_live_shorts",
+    "enable_margin",
+    "enable_options",
+    "raise_live_caps",
+    "release_approval_creates_live_authorization",
+    "remove_manual_incident_resume",
+    "remove_order_confirmation",
+    "remove_session_authorization"
+  ],
+  "release_governance_policy_id": "RELGOV-1bb8f53fffb8195f99476811c4f3b8ad7a4a52801ce86b8bd504025b0e8dfbaf",
+  "required_build_evidence": [
+    "BUILD25",
+    "BUILD26",
+    "BUILD27",
+    "BUILD28",
+    "BUILD29",
+    "BUILD30",
+    "BUILD31",
+    "BUILD32",
+    "BUILD33",
+    "BUILD34"
+  ]
+}
