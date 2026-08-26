@@ -151,8 +151,8 @@ class CanonicalRepositoryClosureAuditTests(unittest.TestCase):
 
         self.assertEqual(audit.predecessor, "BUILD35")
         self.assertEqual(audit.classification_time_changes, "NONE")
-        self.assertEqual(
-            {entry.classification for entry in audit.entries},
+        used_classifications = {entry.classification for entry in audit.entries}
+        self.assertTrue(used_classifications.issubset(
             {
                 "CANONICAL",
                 "WRAPPED",
@@ -161,8 +161,15 @@ class CanonicalRepositoryClosureAuditTests(unittest.TestCase):
                 "DUPLICATE",
                 "DEAD",
                 "UNINTEGRATED",
-            },
-        )
+            }
+        ))
+        self.assertIn("CANONICAL", used_classifications)
+        self.assertIn("WRAPPED", used_classifications)
+        self.assertIn("RETAINED_SUPPORTING", used_classifications)
+        self.assertIn("SUPERSEDED", used_classifications)
+        self.assertIn("DUPLICATE", used_classifications)
+        self.assertIn("UNINTEGRATED", used_classifications)
+        self.assertNotIn("DEAD", used_classifications)
         self.assertEqual(audit.covered_paths, audit.discovered_paths)
 
 

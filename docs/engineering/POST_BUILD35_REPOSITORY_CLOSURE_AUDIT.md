@@ -45,8 +45,11 @@ repository tree.
 
 ## Result
 
-The audit classifies 180 discovered paths through 25 subsystem entries. Every
-audited path has exactly one owner and all seven closure classes are exercised.
+The audit classifies 179 discovered paths through 24 subsystem entries after
+`POST-BUILD35-CLEANUP-01` removed the proven-empty `strategies` namespace
+(`DEAD` count `0`). Every audited path has exactly one owner. Six closure
+classes remain exercised in the inventory; `DEAD` has no current paths after
+cleanup.
 
 | Classification | Entries | Closure meaning |
 |---|---:|---|
@@ -55,7 +58,7 @@ audited path has exactly one owner and all seven closure classes are exercised.
 | `RETAINED_SUPPORTING` | 9 | Necessary contracts, tests, fixtures, tools, evidence, or documentation without independent decision authority |
 | `SUPERSEDED` | 2 | Historical generation retained for reproducibility but replaced for active operation |
 | `DUPLICATE` | 1 | Competing surface without a justified separate responsibility |
-| `DEAD` | 1 | No runtime capability, consumer, or unique retention purpose |
+| `DEAD` | 0 | No current paths; vocabulary retained for future closure audits |
 | `UNINTEGRATED` | 1 | Viable unique subsystem present in the repository but not composed into canonical authority |
 
 ## Classification rules
@@ -115,7 +118,7 @@ changed during this campaign.
 
 | Check | Command | Result | Report |
 |---|---|---|---|
-| Closure inventory validator | `tools/repository_closure.py --audit artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` | PASS — 180 classified paths, `DEAD` count 1 | CLI JSON |
+| Closure inventory validator | `tools/repository_closure.py --audit artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` | PASS — 179 classified paths, `DEAD` count 0 (post-CLEANUP-01) | CLI JSON |
 | Changed validation | `tools/validate.py changed` | PASS — 282 passes / 1 skip / 0 failures / 62.87s | [`reports/postbuild35-closure-changed.json`](../../reports/postbuild35-closure-changed.json) |
 | Core domain validation | `tools/validate.py domain core` | PASS — 2118 passes / 34 skips / 0 failures / 319.45s | [`reports/postbuild35-closure-domain-core.json`](../../reports/postbuild35-closure-domain-core.json) |
 | Full offline validation | `tools/validate.py full` | PASS — 2858 passes / 34 skips / 0 failures / 533.29s | [`reports/postbuild35-closure-full.json`](../../reports/postbuild35-closure-full.json) |
@@ -164,14 +167,12 @@ Governance.
   should consolidate the useful collector status projection into the canonical
   UI or remove the nested dashboard after confirming no operator dependency.
 
-### Dead
+### Dead (resolved by CLEANUP-01)
 
-- `src/market_platform_foundation/strategies` is an empty structural namespace;
-  active strategy code is in `strategy`.
-
-Marked `REMOVE`, but removal requires a separate cleanup change with import
-search, changed validation, core-domain validation, and full offline
-validation.
+- `src/market_platform_foundation/strategies` was an empty structural namespace;
+  active strategy code is in `strategy`. Removed in `POST-BUILD35-CLEANUP-01`
+  after proving zero runtime imports, configuration dependence, and test/tool
+  dependency beyond the closure inventory itself.
 
 ### Platform foundations (canonical — not dead)
 
@@ -198,7 +199,7 @@ is `DEFER` until a separate data-admission/integration decision defines:
 ## Follow-on order
 
 1. Preserve the validated inventory as the closure baseline.
-2. Remove the dead `strategies` namespace in a dedicated, reversible cleanup change.
+2. ~~Remove the dead `strategies` namespace~~ — completed in `POST-BUILD35-CLEANUP-01`.
 3. Resolve the nested collector dashboard duplication without coupling collector
    dependencies into the platform core.
 4. Keep the collector deferred until a separate admission authority approves

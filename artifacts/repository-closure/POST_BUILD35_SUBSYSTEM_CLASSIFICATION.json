@@ -495,17 +495,6 @@
       "disposition": "CONSOLIDATE"
     },
     {
-      "id": "empty-strategies-namespace",
-      "classification": "DEAD",
-      "scope": ["src/market_platform_foundation/strategies"],
-      "responsibility": "Empty Phase 0 structural namespace with no runtime imports or capability.",
-      "evidence": [
-        "The package contains only an __init__.py declaring that it has no runtime capability.",
-        "Repository import search finds no consumers; active strategy code lives in src/market_platform_foundation/strategy."
-      ],
-      "disposition": "REMOVE"
-    },
-    {
       "id": "nested-stock-data-collector",
       "classification": "UNINTEGRATED",
       "scope": [
