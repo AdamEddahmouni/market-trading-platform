@@ -32,6 +32,8 @@ from .types import (
     RiskReasonCode,
 )
 
+from ..governance.types import RuntimeGovernanceState
+
 
 _GATE_REASON_MAP = {
     "OPPORTUNITY_EXPIRED": RiskReasonCode.OPPORTUNITY_EXPIRED,
@@ -40,6 +42,7 @@ _GATE_REASON_MAP = {
     "QUALITY_NOT_ELIGIBLE": RiskReasonCode.QUALITY_NOT_ELIGIBLE,
     "PORTFOLIO_STATE_STALE": RiskReasonCode.PORTFOLIO_STATE_STALE,
     "PORTFOLIO_SNAPSHOT_FUTURE": RiskReasonCode.PORTFOLIO_INVALID,
+    "RUNTIME_GOVERNANCE_DISABLED": RiskReasonCode.RUNTIME_GOVERNANCE_DISABLED,
 }
 
 
@@ -127,11 +130,14 @@ class PreTradeRiskEngine:
         instrument_id: str,
         symbol: str,
         scenario_id: str | None = None,
+        runtime_governance: RuntimeGovernanceState | None = None,
     ) -> TradeProposalV1:
         if isinstance(opportunity, ForecastV1):
             raise DirectForecastTradeForbidden("FORECAST_TO_TRADE_FORBIDDEN")
         if policy.mode.value != "PAPER":
             raise LiveExecutionForbidden("LIVE_POLICY_REJECTED")
+        if runtime_governance is not None and not runtime_governance.paper_execution_allowed:
+            raise OpportunityGateError("RUNTIME_GOVERNANCE_DISABLED")
 
         _validate_opportunity_gate(opportunity, decision_time_ns=proposal_time_ns, scenario_id=scenario_id)
         _validate_portfolio_snapshot(portfolio, policy=policy, decision_time_ns=proposal_time_ns)
@@ -446,6 +452,7 @@ class PaperExecutionOrchestrator:
         symbol: str,
         execution_authority: str,
         submitted_opportunity_ids: frozenset[str] = frozenset(),
+        runtime_governance: RuntimeGovernanceState | None = None,
     ) -> PaperExecutionResult:
         from ...operating_modes import PAPER_EXECUTION_AUTHORITIES
 
@@ -463,6 +470,7 @@ class PaperExecutionOrchestrator:
             instrument_id=instrument_id,
             symbol=symbol,
             scenario_id=portfolio.scenario_id,
+            runtime_governance=runtime_governance,
         )
         risk = self._risk.assess(
             proposal=proposal,

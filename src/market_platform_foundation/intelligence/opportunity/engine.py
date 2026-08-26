@@ -29,6 +29,7 @@ from .economics import (
 )
 from .errors import OpportunityError
 from .identity import derive_opportunity_assessment_id, derive_opportunity_id
+from ..governance.types import RuntimeGovernanceState
 from .types import (
     AssessmentAction,
     AssessmentReasonCode,
@@ -75,9 +76,29 @@ class OpportunityEngine:
         champion_at_forecast: ChampionAssignmentV1,
         champion_at_opportunity: ChampionAssignmentV1,
         opportunity_decision_time_ns: int,
+        runtime_governance: RuntimeGovernanceState | None = None,
     ) -> OpportunityAssessmentResult:
         reason_codes: list[AssessmentReasonCode] = []
         action = AssessmentAction.EMIT
+
+        if runtime_governance is not None and not runtime_governance.opportunities_allowed:
+            return self._finalize(
+                forecast=forecast,
+                policy=policy,
+                context=context,
+                champion_assignment=champion_at_opportunity,
+                opportunity_decision_time_ns=opportunity_decision_time_ns,
+                action=AssessmentAction.FAIL_CLOSED,
+                reason_codes=[AssessmentReasonCode.RUNTIME_GOVERNANCE_DISABLED],
+                probability=None,
+                probability_edge=None,
+                side=None,
+                quality_action=None,
+                uncertainty_entropy=None,
+                spread_bps=None,
+                economic_status=EconomicValueStatus.UNAVAILABLE,
+                expires_at_ns=None,
+            )
 
         if opportunity_decision_time_ns < forecast.decision_time_ns:
             return self._finalize(

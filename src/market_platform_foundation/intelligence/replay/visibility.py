@@ -601,6 +601,108 @@ class ReplayVisibleRepository:
             return row
         return self._source.get_risk_decision(risk_decision_id)
 
+    def put_runtime_activation_policy(self, policy) -> RepositoryPutResult:
+        return self._output.put_runtime_activation_policy(policy)
+
+    def get_runtime_activation_policy(self, activation_policy_id: str):
+        row = self._output.get_runtime_activation_policy(activation_policy_id)
+        if row is not None:
+            return row
+        return self._source.get_runtime_activation_policy(activation_policy_id)
+
+    def put_runtime_activation(self, activation) -> RepositoryPutResult:
+        return self._output.put_runtime_activation(activation)
+
+    def get_runtime_activation(self, activation_id: str):
+        row = self._output.get_runtime_activation(activation_id)
+        if row is not None:
+            return row
+        return self._source.get_runtime_activation(activation_id)
+
+    def get_runtime_activations_for_scope(self, **kwargs) -> tuple:
+        output_rows = self._output.get_runtime_activations_for_scope(**kwargs)
+        if output_rows:
+            return output_rows
+        return self._source.get_runtime_activations_for_scope(**kwargs)
+
+    def get_current_runtime_activation(self, **kwargs):
+        row = self._output.get_current_runtime_activation(**kwargs)
+        if row is not None:
+            return row
+        return self._source.get_current_runtime_activation(**kwargs)
+
+    def put_drift_policy(self, policy) -> RepositoryPutResult:
+        return self._output.put_drift_policy(policy)
+
+    def get_drift_policy(self, drift_policy_id: str):
+        row = self._output.get_drift_policy(drift_policy_id)
+        if row is not None:
+            return row
+        return self._source.get_drift_policy(drift_policy_id)
+
+    def put_drift_assessment(self, assessment) -> RepositoryPutResult:
+        return self._output.put_drift_assessment(assessment)
+
+    def get_drift_assessment(self, drift_assessment_id: str):
+        row = self._output.get_drift_assessment(drift_assessment_id)
+        if row is not None:
+            return row
+        return self._source.get_drift_assessment(drift_assessment_id)
+
+    def put_governance_alert(self, alert) -> RepositoryPutResult:
+        return self._output.put_governance_alert(alert)
+
+    def get_governance_alert(self, alert_id: str):
+        row = self._output.get_governance_alert(alert_id)
+        if row is not None:
+            return row
+        return self._source.get_governance_alert(alert_id)
+
+    def put_fail_safe_policy(self, policy) -> RepositoryPutResult:
+        return self._output.put_fail_safe_policy(policy)
+
+    def get_fail_safe_policy(self, fail_safe_policy_id: str):
+        row = self._output.get_fail_safe_policy(fail_safe_policy_id)
+        if row is not None:
+            return row
+        return self._source.get_fail_safe_policy(fail_safe_policy_id)
+
+    def put_fail_safe_decision(self, decision) -> RepositoryPutResult:
+        return self._output.put_fail_safe_decision(decision)
+
+    def get_fail_safe_decision(self, decision_id: str):
+        row = self._output.get_fail_safe_decision(decision_id)
+        if row is not None:
+            return row
+        return self._source.get_fail_safe_decision(decision_id)
+
+    def put_rollback_policy(self, policy) -> RepositoryPutResult:
+        return self._output.put_rollback_policy(policy)
+
+    def get_rollback_policy(self, rollback_policy_id: str):
+        row = self._output.get_rollback_policy(rollback_policy_id)
+        if row is not None:
+            return row
+        return self._source.get_rollback_policy(rollback_policy_id)
+
+    def put_rollback_decision(self, decision) -> RepositoryPutResult:
+        return self._output.put_rollback_decision(decision)
+
+    def get_rollback_decision(self, rollback_decision_id: str):
+        row = self._output.get_rollback_decision(rollback_decision_id)
+        if row is not None:
+            return row
+        return self._source.get_rollback_decision(rollback_decision_id)
+
+    def put_governance_event(self, event) -> RepositoryPutResult:
+        return self._output.put_governance_event(event)
+
+    def get_governance_event(self, event_id: str):
+        row = self._output.get_governance_event(event_id)
+        if row is not None:
+            return row
+        return self._source.get_governance_event(event_id)
+
     def iter_events_by_availability(
         self,
         *,

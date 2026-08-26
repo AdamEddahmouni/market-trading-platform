@@ -877,6 +877,240 @@ class MongoIntelligenceRepository:
             return None
         return risk_decision_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
 
+    def put_runtime_activation_policy(self, policy) -> RepositoryPutResult:
+        from ...governance.serialization import runtime_activation_policy_v1_to_dict
+
+        return self._put_sidecar_document(
+            "runtime_activation_policies",
+            policy.activation_policy_id,
+            runtime_activation_policy_v1_to_dict(policy),
+            "runtime_activation_policy",
+        )
+
+    def get_runtime_activation_policy(self, activation_policy_id: str):
+        from ...governance.serialization import runtime_activation_policy_v1_from_dict
+
+        document = self._database["runtime_activation_policies"].find_one({"_id": activation_policy_id})
+        if document is None:
+            return None
+        return runtime_activation_policy_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_runtime_activation(self, activation) -> RepositoryPutResult:
+        from ...governance.serialization import runtime_activation_v1_to_dict
+
+        return self._put_sidecar_document(
+            "runtime_activations",
+            activation.activation_id,
+            runtime_activation_v1_to_dict(activation),
+            "runtime_activation",
+        )
+
+    def get_runtime_activation(self, activation_id: str):
+        from ...governance.serialization import runtime_activation_v1_from_dict
+
+        document = self._database["runtime_activations"].find_one({"_id": activation_id})
+        if document is None:
+            return None
+        return runtime_activation_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def get_runtime_activations_for_scope(
+        self,
+        *,
+        component: str,
+        target_kind: str,
+        horizon_ns: int,
+        mode: str,
+        scenario_id: str | None = None,
+    ) -> tuple:
+        from ...governance.serialization import runtime_activation_v1_from_dict
+
+        query: dict[str, object] = {
+            "champion_scope.component": component,
+            "champion_scope.target_kind": target_kind,
+            "champion_scope.horizon_ns": horizon_ns,
+            "champion_scope.mode": mode,
+        }
+        if scenario_id is not None:
+            query["champion_scope.scenario_id"] = scenario_id
+        documents = self._database["runtime_activations"].find(query)
+        return tuple(
+            runtime_activation_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+            for document in documents
+        )
+
+    def get_current_runtime_activation(
+        self,
+        *,
+        component: str,
+        target_kind: str,
+        horizon_ns: int,
+        mode: str,
+        as_of_ns: int,
+        scenario_id: str | None = None,
+    ):
+        from ...governance.activation_queries import get_current_runtime_activation
+
+        activations = self.get_runtime_activations_for_scope(
+            component=component,
+            target_kind=target_kind,
+            horizon_ns=horizon_ns,
+            mode=mode,
+            scenario_id=scenario_id,
+        )
+        return get_current_runtime_activation(
+            activations,
+            component=component,
+            target_kind=target_kind,
+            horizon_ns=horizon_ns,
+            mode=mode,
+            as_of_ns=as_of_ns,
+            scenario_id=scenario_id,
+        )
+
+    def put_drift_policy(self, policy) -> RepositoryPutResult:
+        from ...governance.serialization import drift_policy_v1_to_dict
+
+        return self._put_sidecar_document(
+            "drift_policies",
+            policy.drift_policy_id,
+            drift_policy_v1_to_dict(policy),
+            "drift_policy",
+        )
+
+    def get_drift_policy(self, drift_policy_id: str):
+        from ...governance.serialization import drift_policy_v1_from_dict
+
+        document = self._database["drift_policies"].find_one({"_id": drift_policy_id})
+        if document is None:
+            return None
+        return drift_policy_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_drift_assessment(self, assessment) -> RepositoryPutResult:
+        from ...governance.serialization import drift_assessment_v1_to_dict
+
+        return self._put_sidecar_document(
+            "drift_assessments",
+            assessment.drift_assessment_id,
+            drift_assessment_v1_to_dict(assessment),
+            "drift_assessment",
+        )
+
+    def get_drift_assessment(self, drift_assessment_id: str):
+        from ...governance.serialization import drift_assessment_v1_from_dict
+
+        document = self._database["drift_assessments"].find_one({"_id": drift_assessment_id})
+        if document is None:
+            return None
+        return drift_assessment_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_governance_alert(self, alert) -> RepositoryPutResult:
+        from ...governance.serialization import governance_alert_v1_to_dict
+
+        return self._put_sidecar_document(
+            "governance_alerts",
+            alert.alert_id,
+            governance_alert_v1_to_dict(alert),
+            "governance_alert",
+        )
+
+    def get_governance_alert(self, alert_id: str):
+        from ...governance.serialization import governance_alert_v1_from_dict
+
+        document = self._database["governance_alerts"].find_one({"_id": alert_id})
+        if document is None:
+            return None
+        return governance_alert_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_fail_safe_policy(self, policy) -> RepositoryPutResult:
+        from ...governance.serialization import fail_safe_policy_v1_to_dict
+
+        return self._put_sidecar_document(
+            "fail_safe_policies",
+            policy.fail_safe_policy_id,
+            fail_safe_policy_v1_to_dict(policy),
+            "fail_safe_policy",
+        )
+
+    def get_fail_safe_policy(self, fail_safe_policy_id: str):
+        from ...governance.serialization import fail_safe_policy_v1_from_dict
+
+        document = self._database["fail_safe_policies"].find_one({"_id": fail_safe_policy_id})
+        if document is None:
+            return None
+        return fail_safe_policy_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_fail_safe_decision(self, decision) -> RepositoryPutResult:
+        from ...governance.serialization import fail_safe_decision_v1_to_dict
+
+        return self._put_sidecar_document(
+            "fail_safe_decisions",
+            decision.decision_id,
+            fail_safe_decision_v1_to_dict(decision),
+            "fail_safe_decision",
+        )
+
+    def get_fail_safe_decision(self, decision_id: str):
+        from ...governance.serialization import fail_safe_decision_v1_from_dict
+
+        document = self._database["fail_safe_decisions"].find_one({"_id": decision_id})
+        if document is None:
+            return None
+        return fail_safe_decision_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_rollback_policy(self, policy) -> RepositoryPutResult:
+        from ...governance.serialization import rollback_policy_v1_to_dict
+
+        return self._put_sidecar_document(
+            "rollback_policies",
+            policy.rollback_policy_id,
+            rollback_policy_v1_to_dict(policy),
+            "rollback_policy",
+        )
+
+    def get_rollback_policy(self, rollback_policy_id: str):
+        from ...governance.serialization import rollback_policy_v1_from_dict
+
+        document = self._database["rollback_policies"].find_one({"_id": rollback_policy_id})
+        if document is None:
+            return None
+        return rollback_policy_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_rollback_decision(self, decision) -> RepositoryPutResult:
+        from ...governance.serialization import rollback_decision_v1_to_dict
+
+        return self._put_sidecar_document(
+            "rollback_decisions",
+            decision.rollback_decision_id,
+            rollback_decision_v1_to_dict(decision),
+            "rollback_decision",
+        )
+
+    def get_rollback_decision(self, rollback_decision_id: str):
+        from ...governance.serialization import rollback_decision_v1_from_dict
+
+        document = self._database["rollback_decisions"].find_one({"_id": rollback_decision_id})
+        if document is None:
+            return None
+        return rollback_decision_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_governance_event(self, event) -> RepositoryPutResult:
+        from ...governance.serialization import governance_event_v1_to_dict
+
+        return self._put_sidecar_document(
+            "governance_events",
+            event.event_id,
+            governance_event_v1_to_dict(event),
+            "governance_event",
+        )
+
+    def get_governance_event(self, event_id: str):
+        from ...governance.serialization import governance_event_v1_from_dict
+
+        document = self._database["governance_events"].find_one({"_id": event_id})
+        if document is None:
+            return None
+        return governance_event_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
     def put_run_manifest(self, manifest: RunManifestV1) -> RepositoryPutResult:
         return self._put(manifest)
 

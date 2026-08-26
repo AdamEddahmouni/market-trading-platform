@@ -73,6 +73,16 @@ class InMemoryIntelligenceRepository:
         self._stores["paper_portfolio_snapshots"] = {}
         self._stores["trade_proposals"] = {}
         self._stores["risk_decisions"] = {}
+        self._stores["runtime_activation_policies"] = {}
+        self._stores["runtime_activations"] = {}
+        self._stores["drift_policies"] = {}
+        self._stores["drift_assessments"] = {}
+        self._stores["governance_alerts"] = {}
+        self._stores["fail_safe_policies"] = {}
+        self._stores["fail_safe_decisions"] = {}
+        self._stores["rollback_policies"] = {}
+        self._stores["rollback_decisions"] = {}
+        self._stores["governance_events"] = {}
 
     def put_event(self, event: EventV1) -> RepositoryPutResult:
         return self._put(event)
@@ -772,6 +782,218 @@ class InMemoryIntelligenceRepository:
         from ..execution.serialization import risk_decision_v1_from_dict
 
         return self._get_sidecar("risk_decisions", risk_decision_id, risk_decision_v1_from_dict)
+
+    def put_runtime_activation_policy(self, policy) -> RepositoryPutResult:
+        from ..governance.serialization import runtime_activation_policy_v1_to_dict
+
+        return self._put_sidecar(
+            collection="runtime_activation_policies",
+            record_id=policy.activation_policy_id,
+            document=runtime_activation_policy_v1_to_dict(policy),
+            kind="runtime_activation_policy",
+        )
+
+    def get_runtime_activation_policy(self, activation_policy_id: str):
+        from ..governance.serialization import runtime_activation_policy_v1_from_dict
+
+        return self._get_sidecar(
+            "runtime_activation_policies", activation_policy_id, runtime_activation_policy_v1_from_dict
+        )
+
+    def put_runtime_activation(self, activation) -> RepositoryPutResult:
+        from ..governance.serialization import runtime_activation_v1_to_dict
+
+        return self._put_sidecar(
+            collection="runtime_activations",
+            record_id=activation.activation_id,
+            document=runtime_activation_v1_to_dict(activation),
+            kind="runtime_activation",
+        )
+
+    def get_runtime_activation(self, activation_id: str):
+        from ..governance.serialization import runtime_activation_v1_from_dict
+
+        return self._get_sidecar("runtime_activations", activation_id, runtime_activation_v1_from_dict)
+
+    def get_runtime_activations_for_scope(
+        self,
+        *,
+        component: str,
+        target_kind: str,
+        horizon_ns: int,
+        mode: str,
+        scenario_id: str | None = None,
+    ) -> tuple:
+        from ..governance.serialization import runtime_activation_v1_from_dict
+
+        with self._lock:
+            bodies = list(self._stores["runtime_activations"].values())
+        activations = []
+        for body in bodies:
+            payload = {k: v for k, v in body.items() if k != "_id"}
+            activation = runtime_activation_v1_from_dict(payload)
+            scope = activation.champion_scope
+            if scope.component != component:
+                continue
+            if scope.target_kind != target_kind:
+                continue
+            if scope.horizon_ns != horizon_ns:
+                continue
+            if scope.mode != mode:
+                continue
+            if scenario_id is not None and scope.scenario_id != scenario_id:
+                continue
+            activations.append(activation)
+        return tuple(activations)
+
+    def get_current_runtime_activation(
+        self,
+        *,
+        component: str,
+        target_kind: str,
+        horizon_ns: int,
+        mode: str,
+        as_of_ns: int,
+        scenario_id: str | None = None,
+    ):
+        from ..governance.activation_queries import get_current_runtime_activation
+
+        activations = self.get_runtime_activations_for_scope(
+            component=component,
+            target_kind=target_kind,
+            horizon_ns=horizon_ns,
+            mode=mode,
+            scenario_id=scenario_id,
+        )
+        return get_current_runtime_activation(
+            activations,
+            component=component,
+            target_kind=target_kind,
+            horizon_ns=horizon_ns,
+            mode=mode,
+            as_of_ns=as_of_ns,
+            scenario_id=scenario_id,
+        )
+
+    def put_drift_policy(self, policy) -> RepositoryPutResult:
+        from ..governance.serialization import drift_policy_v1_to_dict
+
+        return self._put_sidecar(
+            collection="drift_policies",
+            record_id=policy.drift_policy_id,
+            document=drift_policy_v1_to_dict(policy),
+            kind="drift_policy",
+        )
+
+    def get_drift_policy(self, drift_policy_id: str):
+        from ..governance.serialization import drift_policy_v1_from_dict
+
+        return self._get_sidecar("drift_policies", drift_policy_id, drift_policy_v1_from_dict)
+
+    def put_drift_assessment(self, assessment) -> RepositoryPutResult:
+        from ..governance.serialization import drift_assessment_v1_to_dict
+
+        return self._put_sidecar(
+            collection="drift_assessments",
+            record_id=assessment.drift_assessment_id,
+            document=drift_assessment_v1_to_dict(assessment),
+            kind="drift_assessment",
+        )
+
+    def get_drift_assessment(self, drift_assessment_id: str):
+        from ..governance.serialization import drift_assessment_v1_from_dict
+
+        return self._get_sidecar("drift_assessments", drift_assessment_id, drift_assessment_v1_from_dict)
+
+    def put_governance_alert(self, alert) -> RepositoryPutResult:
+        from ..governance.serialization import governance_alert_v1_to_dict
+
+        return self._put_sidecar(
+            collection="governance_alerts",
+            record_id=alert.alert_id,
+            document=governance_alert_v1_to_dict(alert),
+            kind="governance_alert",
+        )
+
+    def get_governance_alert(self, alert_id: str):
+        from ..governance.serialization import governance_alert_v1_from_dict
+
+        return self._get_sidecar("governance_alerts", alert_id, governance_alert_v1_from_dict)
+
+    def put_fail_safe_policy(self, policy) -> RepositoryPutResult:
+        from ..governance.serialization import fail_safe_policy_v1_to_dict
+
+        return self._put_sidecar(
+            collection="fail_safe_policies",
+            record_id=policy.fail_safe_policy_id,
+            document=fail_safe_policy_v1_to_dict(policy),
+            kind="fail_safe_policy",
+        )
+
+    def get_fail_safe_policy(self, fail_safe_policy_id: str):
+        from ..governance.serialization import fail_safe_policy_v1_from_dict
+
+        return self._get_sidecar("fail_safe_policies", fail_safe_policy_id, fail_safe_policy_v1_from_dict)
+
+    def put_fail_safe_decision(self, decision) -> RepositoryPutResult:
+        from ..governance.serialization import fail_safe_decision_v1_to_dict
+
+        return self._put_sidecar(
+            collection="fail_safe_decisions",
+            record_id=decision.decision_id,
+            document=fail_safe_decision_v1_to_dict(decision),
+            kind="fail_safe_decision",
+        )
+
+    def get_fail_safe_decision(self, decision_id: str):
+        from ..governance.serialization import fail_safe_decision_v1_from_dict
+
+        return self._get_sidecar("fail_safe_decisions", decision_id, fail_safe_decision_v1_from_dict)
+
+    def put_rollback_policy(self, policy) -> RepositoryPutResult:
+        from ..governance.serialization import rollback_policy_v1_to_dict
+
+        return self._put_sidecar(
+            collection="rollback_policies",
+            record_id=policy.rollback_policy_id,
+            document=rollback_policy_v1_to_dict(policy),
+            kind="rollback_policy",
+        )
+
+    def get_rollback_policy(self, rollback_policy_id: str):
+        from ..governance.serialization import rollback_policy_v1_from_dict
+
+        return self._get_sidecar("rollback_policies", rollback_policy_id, rollback_policy_v1_from_dict)
+
+    def put_rollback_decision(self, decision) -> RepositoryPutResult:
+        from ..governance.serialization import rollback_decision_v1_to_dict
+
+        return self._put_sidecar(
+            collection="rollback_decisions",
+            record_id=decision.rollback_decision_id,
+            document=rollback_decision_v1_to_dict(decision),
+            kind="rollback_decision",
+        )
+
+    def get_rollback_decision(self, rollback_decision_id: str):
+        from ..governance.serialization import rollback_decision_v1_from_dict
+
+        return self._get_sidecar("rollback_decisions", rollback_decision_id, rollback_decision_v1_from_dict)
+
+    def put_governance_event(self, event) -> RepositoryPutResult:
+        from ..governance.serialization import governance_event_v1_to_dict
+
+        return self._put_sidecar(
+            collection="governance_events",
+            record_id=event.event_id,
+            document=governance_event_v1_to_dict(event),
+            kind="governance_event",
+        )
+
+    def get_governance_event(self, event_id: str):
+        from ..governance.serialization import governance_event_v1_from_dict
+
+        return self._get_sidecar("governance_events", event_id, governance_event_v1_from_dict)
 
     def _put_sidecar(
         self,
