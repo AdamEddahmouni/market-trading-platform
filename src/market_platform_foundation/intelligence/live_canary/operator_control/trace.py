@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..identity import derive_preview_hash
 from .context import OperatorControlContext, PendingOrderReview
 
 
@@ -148,9 +149,6 @@ def build_authorization_review_model(
         "kill_switch_state": preview.kill_switch_state,
         "known_limitations": list(preview.known_limitations),
         "preview_id": preview.preview_id,
-        "preview_hash": __import__(
-            "market_platform_foundation.intelligence.live_canary.identity",
-            fromlist=["derive_preview_hash"],
-        ).derive_preview_hash(preview),
+        "preview_hash": derive_preview_hash(preview),
         "as_of_ns": as_of_ns,
     }
