@@ -14,11 +14,19 @@ from .types import (
     CanaryAuthorizationPreviewV1,
     HumanCanaryApprovalV1,
     LiveCanaryPolicyV1,
+    LiveCanaryProgramPolicyV1,
+    LiveCanaryProgramReportV1,
+    LiveCanaryProgramRunV1,
     LiveCanaryQualificationReportV1,
     LiveCanaryRunV1,
+    LiveCanarySessionReportV1,
+    LiveExecutionIncidentV1,
     LiveFillReceiptV1,
+    LiveIncidentResponsePolicyV1,
+    LiveOperationalResumeApprovalV1,
     LiveOrderConfirmationV1,
     LivePortfolioSnapshotV1,
+    LiveReconciliationCheckpointV1,
 )
 
 
@@ -178,6 +186,86 @@ def derive_canary_report_id(report: LiveCanaryQualificationReportV1) -> str:
     return _sha256_prefix("CANREP", payload)
 
 
+def derive_program_policy_id(policy: LiveCanaryProgramPolicyV1) -> str:
+    payload = {
+        "allowed_brokers": list(policy.allowed_brokers),
+        "allowed_accounts": list(policy.allowed_accounts),
+        "max_sessions": policy.max_sessions,
+        "max_program_order_count": policy.max_program_order_count,
+        "max_program_live_notional_minor": policy.max_program_live_notional_minor,
+        "implementation_version": policy.implementation_version,
+    }
+    return _sha256_prefix("PROGPOL", payload)
+
+
+def derive_program_run_id(run: LiveCanaryProgramRunV1) -> str:
+    payload = {
+        "program_policy_ref": run.program_policy_ref,
+        "source_head": run.source_head,
+        "program_start_ns": run.program_start_ns,
+    }
+    return _sha256_prefix("PROGRUN", payload)
+
+
+def derive_checkpoint_id(checkpoint: LiveReconciliationCheckpointV1) -> str:
+    payload = {
+        "as_of_ns": checkpoint.as_of_ns,
+        "broker": checkpoint.broker,
+        "account_ref": checkpoint.account_ref,
+        "known_local_orders": list(checkpoint.known_local_orders),
+        "broker_open_orders": list(checkpoint.broker_open_orders),
+        "health": checkpoint.health,
+    }
+    return _sha256_prefix("RECONCP", payload)
+
+
+def derive_incident_id(incident: LiveExecutionIncidentV1) -> str:
+    payload = {
+        "incident_type": incident.incident_type.value,
+        "severity": incident.severity.value,
+        "detected_at_ns": incident.detected_at_ns,
+        "session_ref": incident.session_ref,
+        "program_run_ref": incident.program_run_ref,
+    }
+    return _sha256_prefix("INCID", payload)
+
+
+def derive_response_policy_id(policy: LiveIncidentResponsePolicyV1) -> str:
+    payload = {
+        "critical_actions": list(policy.critical_actions),
+        "implementation_version": policy.implementation_version,
+    }
+    return _sha256_prefix("INCRESP", payload)
+
+
+def derive_resume_approval_id(approval: LiveOperationalResumeApprovalV1) -> str:
+    payload = {
+        "incident_refs": list(approval.incident_refs),
+        "program_run_ref": approval.program_run_ref,
+        "approved_at_ns": approval.approved_at_ns,
+        "approved_by": approval.approved_by,
+    }
+    return _sha256_prefix("RESUME", payload)
+
+
+def derive_session_report_id(report: LiveCanarySessionReportV1) -> str:
+    payload = {
+        "session_ref": report.session_ref,
+        "program_run_ref": report.program_run_ref,
+        "disposition": report.disposition.value,
+    }
+    return _sha256_prefix("SESREP", payload)
+
+
+def derive_program_report_id(report: LiveCanaryProgramReportV1) -> str:
+    payload = {
+        "program_run_ref": report.program_run_ref,
+        "disposition": report.disposition.value,
+        "sessions_executed": report.sessions_executed,
+    }
+    return _sha256_prefix("PROGREP", payload)
+
+
 def authorization_semantics_hash(auth: LiveExecutionAuthorizationV1) -> str:
     return derive_payload_hash(
         {
@@ -203,11 +291,19 @@ __all__ = [
     "derive_canary_policy_id",
     "derive_canary_report_id",
     "derive_canary_run_id",
+    "derive_checkpoint_id",
     "derive_fill_receipt_id",
     "derive_human_approval_id",
+    "derive_incident_id",
     "derive_order_confirmation_id",
     "derive_portfolio_snapshot_id",
     "derive_preview_hash",
     "derive_preview_id",
+    "derive_program_policy_id",
+    "derive_program_report_id",
+    "derive_program_run_id",
+    "derive_response_policy_id",
+    "derive_resume_approval_id",
+    "derive_session_report_id",
     "derive_submission_receipt_id",
 ]

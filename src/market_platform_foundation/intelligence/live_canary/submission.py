@@ -46,6 +46,7 @@ class MockBrokerTransport:
     ambiguous: set[str] = field(default_factory=set)
     acks: dict[str, MockBrokerAck] = field(default_factory=dict)
     fills: list[MockBrokerFill] = field(default_factory=list)
+    filled_qty_by_order: dict[str, int] = field(default_factory=dict)
     simulate_ambiguous: bool = False
     simulate_disconnect: bool = False
 
@@ -146,7 +147,105 @@ class MockBrokerTransport:
         )
         object.__setattr__(receipt, "submission_receipt_id", derive_submission_receipt_id(receipt))
         self.submitted[order_intent.client_order_id] = receipt
+        receipt_meta = dict(receipt.metadata)
+        receipt_meta["order_quantity"] = order_intent.quantity
+        object.__setattr__(
+            receipt,
+            "metadata",
+            receipt_meta,
+        )
         return receipt
+
+    def apply_partial_fill(
+        self,
+        *,
+        broker_order_id: str,
+        quantity: int,
+        price_minor: int,
+        fill_time_ns: int,
+        fill_suffix: str = "",
+    ) -> LiveFillReceiptV1 | None:
+        ack = self.acks.get(broker_order_id)
+        if ack is None:
+            return None
+        already = self.filled_qty_by_order.get(broker_order_id, 0)
+        if already + quantity > ack.quantity:
+            quantity = ack.quantity - already
+        if quantity <= 0:
+            return None
+        fill_id = f"FILL-{broker_order_id}{fill_suffix}"
+        fill = MockBrokerFill(
+            broker_fill_id=fill_id,
+            broker_order_id=broker_order_id,
+            client_order_id=ack.client_order_id,
+            quantity=quantity,
+            price_minor=price_minor,
+            fill_time_ns=fill_time_ns,
+        )
+        self.fills.append(fill)
+        self.filled_qty_by_order[broker_order_id] = already + quantity
+        receipt = LiveFillReceiptV1(
+            fill_receipt_id="",
+            schema_version=LIVE_CANARY_SCHEMA_VERSION,
+            broker_order_id=broker_order_id,
+            client_order_id=ack.client_order_id,
+            broker_fill_id=fill.broker_fill_id,
+            fill_time_ns=fill_time_ns,
+            quantity=quantity,
+            price_minor=price_minor,
+            fees_minor=0,
+            liquidity_metadata={},
+            source="MOCK_BROKER",
+        )
+        object.__setattr__(receipt, "fill_receipt_id", derive_fill_receipt_id(receipt))
+        return receipt
+
+    def get_open_orders(self) -> tuple[str, ...]:
+        open_ids: list[str] = []
+        for broker_order_id, ack in self.acks.items():
+            filled = self.filled_qty_by_order.get(broker_order_id, 0)
+            if filled < ack.quantity:
+                open_ids.append(ack.client_order_id)
+        return tuple(open_ids)
+
+    def restore_from_persistence(
+        self,
+        *,
+        receipts: list[BrokerSubmissionReceiptV1],
+        fills: list[LiveFillReceiptV1],
+    ) -> None:
+        """Restore broker transport state after restart."""
+        self.submitted = {}
+        self.acks = {}
+        self.fills = []
+        self.filled_qty_by_order = {}
+        for receipt in receipts:
+            self.submitted[receipt.client_order_id] = receipt
+            if receipt.broker_order_id and receipt.submission_state.value == "ACKNOWLEDGED":
+                qty = int(receipt.metadata.get("order_quantity", 0))
+                self.acks[receipt.broker_order_id] = MockBrokerAck(
+                    broker_order_id=receipt.broker_order_id,
+                    client_order_id=receipt.client_order_id,
+                    symbol="",
+                    side="",
+                    quantity=qty,
+                    order_type="",
+                    ack_time_ns=receipt.ack_time_ns or receipt.submit_attempt_time_ns,
+                )
+        for fill in fills:
+            self.fills.append(
+                MockBrokerFill(
+                    broker_fill_id=fill.broker_fill_id,
+                    broker_order_id=fill.broker_order_id,
+                    client_order_id=fill.client_order_id,
+                    quantity=fill.quantity,
+                    price_minor=fill.price_minor,
+                    fill_time_ns=fill.fill_time_ns,
+                )
+            )
+            self.filled_qty_by_order[fill.broker_order_id] = (
+                self.filled_qty_by_order.get(fill.broker_order_id, 0) + fill.quantity
+            )
 
     def resubmit_blocked(self, client_order_id: str) -> bool:
         """Blind resubmit must be blocked for ambiguous or existing submissions."""
@@ -174,6 +273,9 @@ class MockBrokerTransport:
             fill_time_ns=fill_time_ns,
         )
         self.fills.append(fill)
+        self.filled_qty_by_order[broker_order_id] = (
+            self.filled_qty_by_order.get(broker_order_id, 0) + quantity
+        )
         receipt = LiveFillReceiptV1(
             fill_receipt_id="",
             schema_version=LIVE_CANARY_SCHEMA_VERSION,

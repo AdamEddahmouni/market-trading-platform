@@ -12,6 +12,17 @@ from typing import Any
 
 LIVE_CANARY_SCHEMA_VERSION = "1"
 LIVE_CANARY_IMPLEMENTATION_VERSION = "build29-v1"
+LIVE_CANARY_PROGRAM_IMPLEMENTATION_VERSION = "build30-v1"
+
+# Program defaults — frozen operational envelope, not sizing authority.
+DEFAULT_MAX_PROGRAM_SESSIONS = 3
+DEFAULT_MAX_PROGRAM_ORDER_COUNT = 3
+DEFAULT_MAX_PROGRAM_NOTIONAL_MINOR = 75_00
+DEFAULT_MAX_PROGRAM_REALIZED_LOSS_MINOR = 50_00
+DEFAULT_PROGRAM_COOLDOWN_NS = 60_000_000_000
+DEFAULT_PROGRAM_DURATION_NS = 86_400_000_000_000
+DEFAULT_SESSION_MAX_DURATION_NS = 3_600_000_000_000
+DEFAULT_STATUS_FEED_STALE_THRESHOLD_NS = 300_000_000_000
 
 # Absolute micro-notional caps for first canary — not NAV-scaled.
 DEFAULT_MAX_SINGLE_ORDER_NOTIONAL_MINOR = 25_00  # $25.00
@@ -38,6 +49,81 @@ class CanaryDisposition(StrEnum):
     CANARY_HALTED_SAFE = "CANARY_HALTED_SAFE"
     CANARY_INVALID_RECONCILIATION = "CANARY_INVALID_RECONCILIATION"
     CANARY_INVALID_EXECUTION_INTEGRITY = "CANARY_INVALID_EXECUTION_INTEGRITY"
+
+
+class ProgramGovernanceState(StrEnum):
+    PROGRAM_PREPARED = "PROGRAM_PREPARED"
+    PROGRAM_ACTIVE = "PROGRAM_ACTIVE"
+    SESSION_PREPARED = "SESSION_PREPARED"
+    SESSION_AUTHORIZED = "SESSION_AUTHORIZED"
+    SESSION_ACTIVE = "SESSION_ACTIVE"
+    SESSION_RECONCILING = "SESSION_RECONCILING"
+    SESSION_COMPLETE = "SESSION_COMPLETE"
+    PROGRAM_PAUSED = "PROGRAM_PAUSED"
+    PROGRAM_HALTED = "PROGRAM_HALTED"
+    PROGRAM_COMPLETE = "PROGRAM_COMPLETE"
+
+
+class ProgramDisposition(StrEnum):
+    SUPERVISED_CANARY_PROGRAM_COMPLETE = "SUPERVISED_CANARY_PROGRAM_COMPLETE"
+    SUPERVISED_CANARY_PROGRAM_COMPLETE_WITH_LIMITATIONS = (
+        "SUPERVISED_CANARY_PROGRAM_COMPLETE_WITH_LIMITATIONS"
+    )
+    MORE_SUPERVISED_EVIDENCE_REQUIRED = "MORE_SUPERVISED_EVIDENCE_REQUIRED"
+    PROGRAM_HALTED_SAFE = "PROGRAM_HALTED_SAFE"
+    PROGRAM_INVALID_RECONCILIATION = "PROGRAM_INVALID_RECONCILIATION"
+    PROGRAM_INVALID_EXECUTION_INTEGRITY = "PROGRAM_INVALID_EXECUTION_INTEGRITY"
+
+
+class SessionDisposition(StrEnum):
+    SESSION_NOT_EXECUTED = "SESSION_NOT_EXECUTED"
+    SESSION_EXECUTED_CLEAN = "SESSION_EXECUTED_CLEAN"
+    SESSION_EXECUTED_WITH_LIMITATIONS = "SESSION_EXECUTED_WITH_LIMITATIONS"
+    SESSION_HALTED_SAFE = "SESSION_HALTED_SAFE"
+    SESSION_INVALID_RECONCILIATION = "SESSION_INVALID_RECONCILIATION"
+    SESSION_TIMEOUT = "SESSION_TIMEOUT"
+
+
+class IncidentSeverity(StrEnum):
+    INFO = "INFO"
+    WARNING = "WARNING"
+    CRITICAL = "CRITICAL"
+
+
+class IncidentType(StrEnum):
+    BROKER_DISCONNECT = "BROKER_DISCONNECT"
+    ACCOUNT_ENVIRONMENT_CHANGED = "ACCOUNT_ENVIRONMENT_CHANGED"
+    ACCOUNT_IDENTITY_MISMATCH = "ACCOUNT_IDENTITY_MISMATCH"
+    AMBIGUOUS_SUBMISSION = "AMBIGUOUS_SUBMISSION"
+    BROKER_ONLY_ORDER = "BROKER_ONLY_ORDER"
+    LOCAL_ONLY_ORDER = "LOCAL_ONLY_ORDER"
+    UNEXPECTED_FILL = "UNEXPECTED_FILL"
+    UNKNOWN_POSITION = "UNKNOWN_POSITION"
+    QUANTITY_MISMATCH = "QUANTITY_MISMATCH"
+    PRICE_MISMATCH = "PRICE_MISMATCH"
+    ORDER_STATE_MISMATCH = "ORDER_STATE_MISMATCH"
+    DUPLICATE_ACK = "DUPLICATE_ACK"
+    STATUS_FEED_STALE = "STATUS_FEED_STALE"
+    RECONCILIATION_FAILED = "RECONCILIATION_FAILED"
+    AUTHORIZATION_VIOLATION_ATTEMPT = "AUTHORIZATION_VIOLATION_ATTEMPT"
+    CAP_VIOLATION_ATTEMPT = "CAP_VIOLATION_ATTEMPT"
+    KILL_SWITCH_TRIGGERED = "KILL_SWITCH_TRIGGERED"
+    EXTERNAL_ACCOUNT_ACTIVITY = "EXTERNAL_ACCOUNT_ACTIVITY"
+
+
+class IncidentState(StrEnum):
+    OPEN = "OPEN"
+    RESOLVED = "RESOLVED"
+    HALTED = "HALTED"
+
+
+class IncidentAction(StrEnum):
+    LOG_ONLY = "LOG_ONLY"
+    PAUSE_PROGRAM = "PAUSE_PROGRAM"
+    HALT_PROGRAM = "HALT_PROGRAM"
+    BLOCK_NEW_SUBMITS = "BLOCK_NEW_SUBMITS"
+    RECONCILE_REQUIRED = "RECONCILE_REQUIRED"
+    MANUAL_REVIEW_REQUIRED = "MANUAL_REVIEW_REQUIRED"
 
 
 class SubmissionState(StrEnum):
@@ -255,6 +341,175 @@ class LiveCanaryQualificationReportV1:
     final_reconciliation_ref: str | None
     flat_end_status: str
     disposition: CanaryDisposition
+    limitations: tuple[str, ...]
+    lineage: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class LiveCanaryProgramPolicyV1:
+    program_policy_id: str
+    schema_version: str
+    allowed_brokers: tuple[str, ...]
+    allowed_accounts: tuple[str, ...]
+    allowed_asset_classes: tuple[str, ...]
+    allowed_canary_policy_refs: tuple[str, ...]
+    max_sessions: int
+    max_program_order_count: int
+    max_program_live_notional_minor: int
+    max_program_realized_loss_minor: int
+    max_consecutive_incidents: int
+    require_fresh_authorization_per_session: bool
+    require_order_confirmation: bool
+    require_clean_reconciliation_before_session: bool
+    require_clean_reconciliation_after_session: bool
+    minimum_cooldown_between_sessions_ns: int
+    incident_halt_rules: tuple[str, ...]
+    program_effective_from_ns: int
+    program_effective_until_ns: int
+    manual_resume_required: bool
+    session_max_duration_ns: int
+    status_feed_stale_threshold_ns: int
+    invalidate_confirmation_on_restart: bool
+    implementation_version: str
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class LiveCanaryProgramRunV1:
+    program_run_id: str
+    schema_version: str
+    source_build29_ref: str
+    source_build28_ref: str
+    source_head: str
+    program_policy_ref: str
+    broker_certification_refs: tuple[str, ...]
+    starting_reconciliation_ref: str | None
+    starting_portfolio_ref: str | None
+    program_start_ns: int
+    program_end_ns: int | None
+    allowed_session_count: int
+    session_refs: tuple[str, ...]
+    lineage: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class LiveExecutionIncidentV1:
+    incident_id: str
+    schema_version: str
+    incident_type: IncidentType
+    severity: IncidentSeverity
+    state: IncidentState
+    session_ref: str | None
+    program_run_ref: str | None
+    detected_at_ns: int
+    description: str
+    resolution_evidence_ref: str | None
+    resolved_at_ns: int | None
+    actions_taken: tuple[str, ...]
+    lineage: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class LiveIncidentResponsePolicyV1:
+    response_policy_id: str
+    schema_version: str
+    info_actions: tuple[str, ...]
+    warning_actions: tuple[str, ...]
+    critical_actions: tuple[str, ...]
+    implementation_version: str
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class LiveOperationalResumeApprovalV1:
+    resume_approval_id: str
+    schema_version: str
+    incident_refs: tuple[str, ...]
+    resolution_evidence_ref: str
+    reconciliation_checkpoint_ref: str
+    program_run_ref: str
+    approved_at_ns: int
+    approved_by: str
+    approval_source: HumanApprovalSource
+    lineage: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class LiveReconciliationCheckpointV1:
+    checkpoint_id: str
+    schema_version: str
+    as_of_ns: int
+    broker: str
+    account_ref: str
+    known_local_orders: tuple[str, ...]
+    broker_open_orders: tuple[str, ...]
+    known_local_fills: tuple[str, ...]
+    broker_fills: tuple[str, ...]
+    local_positions: tuple[dict[str, Any], ...]
+    broker_positions: tuple[dict[str, Any], ...]
+    matched: tuple[str, ...]
+    local_only: tuple[str, ...]
+    broker_only: tuple[str, ...]
+    conflicts: tuple[str, ...]
+    health: str
+    incident_refs: tuple[str, ...]
+    session_ref: str | None
+    program_run_ref: str | None
+    lineage: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class LiveCanarySessionReportV1:
+    session_report_id: str
+    schema_version: str
+    session_ref: str
+    program_run_ref: str
+    authorization_ref: str | None
+    confirmations: tuple[str, ...]
+    submit_attempts: int
+    acks: int
+    fills: int
+    rejections: int
+    cancels: int
+    max_exposure_minor: int
+    fees_minor: int
+    incident_refs: tuple[str, ...]
+    reconciliation_checkpoint_ref: str | None
+    final_authorization_state: str
+    disposition: SessionDisposition
+    limitations: tuple[str, ...]
+    lineage: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class LiveCanaryProgramReportV1:
+    program_report_id: str
+    schema_version: str
+    program_run_ref: str
+    program_policy_ref: str
+    session_refs: tuple[str, ...]
+    sessions_prepared: int
+    sessions_authorized: int
+    sessions_executed: int
+    sessions_clean: int
+    sessions_halted: int
+    total_orders: int
+    total_fills: int
+    aggregate_notional_minor: int
+    fees_minor: int
+    incident_counts: dict[str, int]
+    reconciliation_outcomes: tuple[str, ...]
+    restart_events: int
+    external_activity_detected: bool
+    program_cap_usage: dict[str, int]
+    final_kill_switch_state: str
+    disposition: ProgramDisposition
     limitations: tuple[str, ...]
     lineage: dict[str, Any] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)

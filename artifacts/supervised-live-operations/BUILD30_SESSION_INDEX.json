@@ -1,0 +1,20 @@
+[
+  {
+    "session_id": "CANRUN-51ecae00de7cbd7eec434f6795604deb7132f65707da68757541c474aab4638d",
+    "authorization_ref": "CANAUTH-fa73c2cc5b40199b325f7c19e5a82a7d169c6c9cafe9df5c3281455be50b619b",
+    "order_count": 1,
+    "fill_count": 1,
+    "incident_count": 0,
+    "reconciliation_status": "RECONCP-230fa8c4930d619318ac9e873ed806b8054307bb9d0e6e85ed6c28c7963f92ea",
+    "disposition": "SESSION_EXECUTED_CLEAN"
+  },
+  {
+    "session_id": "CANRUN-d406670da930c243b8991b7c422ae70fa0ef28fe9c255554a1efe9be73964588",
+    "authorization_ref": "CANAUTH-7cb46391c5c7bf3b9298556e75f404a7179c8ed6f9ac79a6f9b1fe249b0fbfa0",
+    "order_count": 1,
+    "fill_count": 2,
+    "incident_count": 0,
+    "reconciliation_status": "RECONCP-29eb0d68c1d963c7162089a79b7fa0210b35a225c0b064f36c1d84dd3951dbf3",
+    "disposition": "SESSION_EXECUTED_CLEAN"
+  }
+]

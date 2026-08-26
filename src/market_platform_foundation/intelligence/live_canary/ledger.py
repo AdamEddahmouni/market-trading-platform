@@ -42,9 +42,45 @@ class LiveExecutionLedger:
             return
         self.fill_receipts.append(fill)
         self.total_notional_minor += fill.quantity * fill.price_minor
+        filled_qty = self.filled_quantity_for_order(fill.broker_order_id)
+        order_qty = self.order_quantity_for(fill.broker_order_id)
+        if order_qty is not None and filled_qty >= order_qty:
+            state = BrokerOrderStateKind.FILLED
+        else:
+            state = BrokerOrderStateKind.PARTIALLY_FILLED
         self.order_states.append(
-            (fill.client_order_id, BrokerOrderStateKind.FILLED, fill.fill_time_ns)
+            (fill.client_order_id, state, fill.fill_time_ns)
         )
+
+    def filled_quantity_for_order(self, broker_order_id: str) -> int:
+        return sum(
+            f.quantity
+            for f in self.fill_receipts
+            if f.broker_order_id == broker_order_id
+        )
+
+    def order_quantity_for(self, broker_order_id: str) -> int | None:
+        for receipt in self.submission_receipts:
+            if receipt.broker_order_id == broker_order_id:
+                meta = receipt.metadata.get("order_quantity")
+                if meta is not None:
+                    return int(meta)
+        return None
+
+    def remaining_quantity_for(self, broker_order_id: str, total_quantity: int) -> int:
+        return max(0, total_quantity - self.filled_quantity_for_order(broker_order_id))
+
+    def get_open_local_orders(self) -> tuple[str, ...]:
+        open_ids: list[str] = []
+        for receipt in self.submission_receipts:
+            if not receipt.broker_order_id:
+                open_ids.append(receipt.client_order_id)
+                continue
+            filled = self.filled_quantity_for_order(receipt.broker_order_id)
+            total = int(receipt.metadata.get("order_quantity", 0))
+            if total <= 0 or filled < total:
+                open_ids.append(receipt.client_order_id)
+        return tuple(open_ids)
 
     def has_ambiguous_submission(self, client_order_id: str) -> bool:
         return client_order_id in self.ambiguous_client_order_ids
