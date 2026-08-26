@@ -28,6 +28,38 @@ class AnalysisTests(unittest.TestCase):
                 "NONCONSTANT_DYNAMIC_IMPORT",
             )
 
+    def test_constant_internal_dynamic_import_is_audited_as_a_static_edge(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "loader.py").write_text(
+                '__import__("internal.module", fromlist=["Thing"])\n',
+                encoding="utf-8",
+            )
+
+            report = analyze_tree(root)
+
+            self.assertEqual(report["dynamic_load_findings"], [])
+            self.assertIn(
+                {"path": "loader.py", "target": "internal.module"},
+                report["import_edges"],
+            )
+
+    def test_constant_prohibited_dynamic_import_remains_prohibited(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "loader.py").write_text(
+                '__import__("requests.sessions", fromlist=["Session"])\n',
+                encoding="utf-8",
+            )
+
+            report = analyze_tree(root)
+
+            self.assertEqual(report["dynamic_load_findings"], [])
+            self.assertIn(
+                {"path": "loader.py", "target": "requests.sessions"},
+                report["prohibited_edges"],
+            )
+
     def test_governed_source_has_no_prohibited_route(self):
         report = analyze_tree(Path("src/market_platform_foundation"))
         self.assertEqual(report["prohibited_edges"], [])

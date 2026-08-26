@@ -155,7 +155,16 @@ def build_preassertion_content(
             continue
         relative = path.relative_to(root)
         if any(
-            part in {".git", ".pytest_cache", "__pycache__", "build", "dist", "node_modules"}
+            part
+            in {
+                ".git",
+                ".pytest_cache",
+                ".worktrees",
+                "__pycache__",
+                "build",
+                "dist",
+                "node_modules",
+            }
             or part.startswith(".venv")
             for part in relative.parts
         ):

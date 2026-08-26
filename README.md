@@ -40,6 +40,13 @@ Revision 2 remains the incorporated Phase 0 safety authority.
 | Platformization P0–P4-4B — paper execution, live observational data, local state, unified workstation, discovery, Tradier sandbox broker-paper adapter, broker/ledger reconciliation | `COMPLETE_WITH_LIMITATIONS` (see [platformization roadmap](docs/research/PLATFORMIZATION_ROADMAP.md)) |
 | Public-data providers — macro / energy / sec / short-intelligence / observational / finviz-discovery | `IMPLEMENTED` (fixture-first; live probes opt-in; captures **not admitted**) |
 
+The next campaign after BUILD35 is the
+[whole-repository closure audit](docs/engineering/POST_BUILD35_REPOSITORY_CLOSURE_AUDIT.md),
+`POST-BUILD35-REPOSITORY-CLOSURE-001`—not BUILD36. Its canonical inventory
+classifies every significant historical subsystem as `CANONICAL`, `WRAPPED`,
+`RETAINED_SUPPORTING`, `SUPERSEDED`, `DUPLICATE`, `DEAD`, or `UNINTEGRATED`
+before any cleanup or integration action is taken.
+
 ## Validation cadence
 
 Manifest-driven validation replaces ad-hoc full-suite runs after every edit. See [AGENTS.md](AGENTS.md) and [Validation Architecture](docs/engineering/VALIDATION_ARCHITECTURE.md).

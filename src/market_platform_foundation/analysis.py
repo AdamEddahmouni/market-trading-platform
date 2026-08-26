@@ -110,10 +110,19 @@ def analyze_tree(root: Path) -> dict[str, object]:
                 continue
             call = _call_name(node)
             if call in {"__import__", "importlib.import_module"}:
-                reason = "NONCONSTANT_DYNAMIC_IMPORT"
                 if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
-                    reason = "CONSTANT_DYNAMIC_IMPORT_PROHIBITED"
-                dynamic.append({"path": relative, "reason": reason})
+                    target = node.args[0].value
+                    imports.append({"path": relative, "target": target})
+                    root_name = target.split(".", 1)[0]
+                    if root_name in _PROHIBITED_MODULE_ROOTS:
+                        prohibited.append({"path": relative, "target": target})
+                    elif module and (
+                        target in modules
+                        or any(name.startswith(target + ".") for name in modules)
+                    ):
+                        graph.setdefault(module, set()).add(target)
+                    continue
+                dynamic.append({"path": relative, "reason": "NONCONSTANT_DYNAMIC_IMPORT"})
             elif call.endswith(".entry_points"):
                 dynamic.append({"path": relative, "reason": "ENTRY_POINT_DISCOVERY_PROHIBITED"})
             elif call in _PROHIBITED_CALLS and not (
