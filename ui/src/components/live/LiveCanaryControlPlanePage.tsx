@@ -29,6 +29,28 @@ type SnapshotPayload = {
   real_money_warning: string;
 };
 
+type ReliabilityPayload = {
+  observability_state: string;
+  as_of_ns: number;
+  health_matrix: {
+    entries: Array<{
+      component: string;
+      state: string;
+      freshness_ns: number | null;
+      blocking_live: boolean;
+      current_issue: string | null;
+    }>;
+    blocking_dependencies: string[];
+  };
+  slo_summary: {
+    overall_status: string;
+    objectives: Array<{ objective_id: string; status: string }>;
+  };
+  persistence_health: { disposition: string; blocking_live: boolean };
+  backup_status: { integrity_status: string; last_backup_id: string };
+  alert_delivery_configured: boolean;
+};
+
 async function fetchJson<T>(path: string): Promise<T> {
   const response = await fetch(path);
   if (!response.ok) {
@@ -53,6 +75,11 @@ export function LiveCanaryControlPlanePage() {
   const { data, refetch, isLoading, error } = useQuery({
     queryKey: ["canary-snapshot"],
     queryFn: () => fetchJson<SnapshotPayload>("/canary/snapshot"),
+    refetchInterval: 15000,
+  });
+  const { data: reliability } = useQuery({
+    queryKey: ["canary-reliability"],
+    queryFn: () => fetchJson<ReliabilityPayload>("/canary/reliability"),
     refetchInterval: 15000,
   });
   const [commandStatus, setCommandStatus] = useState<string | null>(null);
@@ -176,6 +203,48 @@ export function LiveCanaryControlPlanePage() {
         ) : (
           <p>No unresolved critical incidents.</p>
         )}
+      </section>
+
+      <section className="control-section" data-testid="operational-reliability">
+        <h2>Operational Reliability (BUILD 32)</h2>
+        {reliability ? (
+          <>
+            <p>
+              Observability: <strong>{reliability.observability_state}</strong> | SLO:{" "}
+              <strong>{reliability.slo_summary.overall_status}</strong> | Persistence:{" "}
+              <strong>{reliability.persistence_health.disposition}</strong>
+            </p>
+            <p>As of: {reliability.as_of_ns}</p>
+            <p>Backup integrity: {reliability.backup_status.integrity_status}</p>
+            <p>
+              Alert delivery configured: {reliability.alert_delivery_configured ? "yes (console)" : "no"}
+            </p>
+            <table className="health-matrix-table">
+              <thead>
+                <tr>
+                  <th>Component</th>
+                  <th>State</th>
+                  <th>Blocking live?</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reliability.health_matrix.entries.map((entry) => (
+                  <tr key={entry.component}>
+                    <td>{entry.component}</td>
+                    <td>{entry.state}</td>
+                    <td>{entry.blocking_live ? "YES" : "NO"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        ) : (
+          <p className="loading">Loading operational reliability state…</p>
+        )}
+        <p className="hint">
+          Operational health does not authorize trading. Session authorization and per-order confirmation
+          remain required.
+        </p>
       </section>
 
       <section className="control-section">

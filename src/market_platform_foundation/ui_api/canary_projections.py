@@ -209,6 +209,13 @@ def handle_canary_command(body: dict[str, Any]) -> dict[str, Any]:
     return {"error": "UNKNOWN_COMMAND", "command": command}
 
 
+def build_canary_reliability_payload() -> dict[str, Any]:
+    from ..intelligence.live_canary.operational_reliability import build_operational_reliability_snapshot
+
+    ctx = _get_or_init_context()
+    return build_operational_reliability_snapshot(ctx, as_of_ns=_now_ns())
+
+
 def build_canary_action_inventory() -> dict[str, Any]:
     return {
         "actions": [

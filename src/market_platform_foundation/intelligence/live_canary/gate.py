@@ -53,6 +53,9 @@ def evaluate_canary_live_gate(
     orders_submitted: int = 0,
     ambiguous_client_order_ids: frozenset[str] | None = None,
     allow_live_submit_in_test: bool = False,
+    persistence_healthy: bool = True,
+    telemetry_evaluator_ok: bool = True,
+    recovered_runtime_blocked: bool = False,
 ) -> LiveExecutionGateDecisionV1:
     """Evaluate canary gates; live submit only when all gates pass and test flag set."""
     common = {
@@ -267,6 +270,27 @@ def evaluate_canary_live_gate(
         return _blocked(
             **common,
             reason_codes=(LiveGateReasonCode.AMBIGUOUS_SUBMISSION_BLOCK,),
+        )
+
+    if not persistence_healthy:
+        return _blocked(
+            **common,
+            reason_codes=(LiveGateReasonCode.PERSISTENCE_UNHEALTHY,),
+            authorization_ref=authorization.authorization_id,
+        )
+
+    if not telemetry_evaluator_ok:
+        return _blocked(
+            **common,
+            reason_codes=(LiveGateReasonCode.OBSERVABILITY_DEGRADED,),
+            authorization_ref=authorization.authorization_id,
+        )
+
+    if recovered_runtime_blocked:
+        return _blocked(
+            **common,
+            reason_codes=(LiveGateReasonCode.RECOVERED_RUNTIME_BLOCKED,),
+            authorization_ref=authorization.authorization_id,
         )
 
     if used_client_order_ids and order_intent.client_order_id in used_client_order_ids:

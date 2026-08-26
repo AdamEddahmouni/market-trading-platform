@@ -1,0 +1,7 @@
+{
+  "build": "BUILD32",
+  "build31_source_ref": "844ce17edf0d100079c30c36b1cca2da3aa2870f",
+  "disposition": "OPERATIONAL_RELIABILITY_QUALIFIED_WITH_LIMITATIONS",
+  "schema_version": "1",
+  "source_head": "844ce17edf0d100079c30c36b1cca2da3aa2870f"
+}
