@@ -239,16 +239,3 @@ def derive_feature_reference_id(reference: FeatureReferenceDistributionV1) -> st
     }
     return _sha256_prefix("FEATREF", payload)
 
-
-def derive_research_trigger_id(
-    *,
-    champion_scope: dict[str, Any],
-    window: MonitoringWindowV1,
-    drift_assessment_ids: tuple[str, ...],
-) -> str:
-    payload = {
-        "champion_scope": champion_scope,
-        "window": monitoring_window_identity_payload(window),
-        "drift_assessment_ids": list(drift_assessment_ids),
-    }
-    return _sha256_prefix("RSRTRG", payload)

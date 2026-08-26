@@ -1111,6 +1111,105 @@ class MongoIntelligenceRepository:
             return None
         return governance_event_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
 
+    def put_adaptation_policy(self, policy) -> RepositoryPutResult:
+        from ...adaptation.serialization import adaptation_policy_v1_to_dict
+
+        return self._put_sidecar_document(
+            "adaptation_policies",
+            policy.adaptation_policy_id,
+            adaptation_policy_v1_to_dict(policy),
+            "adaptation_policy",
+        )
+
+    def get_adaptation_policy(self, adaptation_policy_id: str):
+        from ...adaptation.serialization import adaptation_policy_v1_from_dict
+
+        document = self._database["adaptation_policies"].find_one({"_id": adaptation_policy_id})
+        if document is None:
+            return None
+        return adaptation_policy_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_adaptation_assessment(self, assessment) -> RepositoryPutResult:
+        from ...adaptation.serialization import adaptation_assessment_v1_to_dict
+
+        return self._put_sidecar_document(
+            "adaptation_assessments",
+            assessment.adaptation_assessment_id,
+            adaptation_assessment_v1_to_dict(assessment),
+            "adaptation_assessment",
+        )
+
+    def get_adaptation_assessment(self, adaptation_assessment_id: str):
+        from ...adaptation.serialization import adaptation_assessment_v1_from_dict
+
+        document = self._database["adaptation_assessments"].find_one({"_id": adaptation_assessment_id})
+        if document is None:
+            return None
+        return adaptation_assessment_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_research_trigger(self, trigger) -> RepositoryPutResult:
+        from ...adaptation.serialization import research_trigger_v1_to_dict
+
+        return self._put_sidecar_document(
+            "research_triggers",
+            trigger.research_trigger_id,
+            research_trigger_v1_to_dict(trigger),
+            "research_trigger",
+        )
+
+    def get_research_trigger(self, research_trigger_id: str):
+        from ...adaptation.serialization import research_trigger_v1_from_dict
+
+        document = self._database["research_triggers"].find_one({"_id": research_trigger_id})
+        if document is None:
+            return None
+        return research_trigger_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def query_research_triggers_by_dedup_key(self, dedup_key: str) -> tuple:
+        from ...adaptation.serialization import research_trigger_v1_from_dict
+
+        cursor = self._database["research_triggers"].find({"dedup_key": dedup_key}).sort("_id", 1)
+        return tuple(
+            research_trigger_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+            for document in cursor
+        )
+
+    def put_adaptation_campaign(self, campaign) -> RepositoryPutResult:
+        from ...adaptation.serialization import adaptation_campaign_v1_to_dict
+
+        return self._put_sidecar_document(
+            "adaptation_campaigns",
+            campaign.adaptation_campaign_id,
+            adaptation_campaign_v1_to_dict(campaign),
+            "adaptation_campaign",
+        )
+
+    def get_adaptation_campaign(self, adaptation_campaign_id: str):
+        from ...adaptation.serialization import adaptation_campaign_v1_from_dict
+
+        document = self._database["adaptation_campaigns"].find_one({"_id": adaptation_campaign_id})
+        if document is None:
+            return None
+        return adaptation_campaign_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def put_adaptation_event(self, event) -> RepositoryPutResult:
+        from ...adaptation.serialization import adaptation_event_v1_to_dict
+
+        return self._put_sidecar_document(
+            "adaptation_events",
+            event.event_id,
+            adaptation_event_v1_to_dict(event),
+            "adaptation_event",
+        )
+
+    def get_adaptation_event(self, event_id: str):
+        from ...adaptation.serialization import adaptation_event_v1_from_dict
+
+        document = self._database["adaptation_events"].find_one({"_id": event_id})
+        if document is None:
+            return None
+        return adaptation_event_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
     def put_run_manifest(self, manifest: RunManifestV1) -> RepositoryPutResult:
         return self._put(manifest)
 

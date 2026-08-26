@@ -83,6 +83,11 @@ class InMemoryIntelligenceRepository:
         self._stores["rollback_policies"] = {}
         self._stores["rollback_decisions"] = {}
         self._stores["governance_events"] = {}
+        self._stores["adaptation_policies"] = {}
+        self._stores["adaptation_assessments"] = {}
+        self._stores["research_triggers"] = {}
+        self._stores["adaptation_campaigns"] = {}
+        self._stores["adaptation_events"] = {}
 
     def put_event(self, event: EventV1) -> RepositoryPutResult:
         return self._put(event)
@@ -994,6 +999,100 @@ class InMemoryIntelligenceRepository:
         from ..governance.serialization import governance_event_v1_from_dict
 
         return self._get_sidecar("governance_events", event_id, governance_event_v1_from_dict)
+
+    def put_adaptation_policy(self, policy) -> RepositoryPutResult:
+        from ..adaptation.serialization import adaptation_policy_v1_to_dict
+
+        return self._put_sidecar(
+            collection="adaptation_policies",
+            record_id=policy.adaptation_policy_id,
+            document=adaptation_policy_v1_to_dict(policy),
+            kind="adaptation_policy",
+        )
+
+    def get_adaptation_policy(self, adaptation_policy_id: str):
+        from ..adaptation.serialization import adaptation_policy_v1_from_dict
+
+        return self._get_sidecar("adaptation_policies", adaptation_policy_id, adaptation_policy_v1_from_dict)
+
+    def put_adaptation_assessment(self, assessment) -> RepositoryPutResult:
+        from ..adaptation.serialization import adaptation_assessment_v1_to_dict
+
+        return self._put_sidecar(
+            collection="adaptation_assessments",
+            record_id=assessment.adaptation_assessment_id,
+            document=adaptation_assessment_v1_to_dict(assessment),
+            kind="adaptation_assessment",
+        )
+
+    def get_adaptation_assessment(self, adaptation_assessment_id: str):
+        from ..adaptation.serialization import adaptation_assessment_v1_from_dict
+
+        return self._get_sidecar(
+            "adaptation_assessments",
+            adaptation_assessment_id,
+            adaptation_assessment_v1_from_dict,
+        )
+
+    def put_research_trigger(self, trigger) -> RepositoryPutResult:
+        from ..adaptation.serialization import research_trigger_v1_to_dict
+
+        return self._put_sidecar(
+            collection="research_triggers",
+            record_id=trigger.research_trigger_id,
+            document=research_trigger_v1_to_dict(trigger),
+            kind="research_trigger",
+        )
+
+    def get_research_trigger(self, research_trigger_id: str):
+        from ..adaptation.serialization import research_trigger_v1_from_dict
+
+        return self._get_sidecar("research_triggers", research_trigger_id, research_trigger_v1_from_dict)
+
+    def query_research_triggers_by_dedup_key(self, dedup_key: str) -> tuple:
+        from ..adaptation.serialization import research_trigger_v1_from_dict
+
+        with self._lock:
+            rows = [
+                research_trigger_v1_from_dict({k: v for k, v in body.items() if k != "_id"})
+                for body in self._stores["research_triggers"].values()
+                if body.get("dedup_key") == dedup_key
+            ]
+        return tuple(sorted(rows, key=lambda row: row.research_trigger_id))
+
+    def put_adaptation_campaign(self, campaign) -> RepositoryPutResult:
+        from ..adaptation.serialization import adaptation_campaign_v1_to_dict
+
+        return self._put_sidecar(
+            collection="adaptation_campaigns",
+            record_id=campaign.adaptation_campaign_id,
+            document=adaptation_campaign_v1_to_dict(campaign),
+            kind="adaptation_campaign",
+        )
+
+    def get_adaptation_campaign(self, adaptation_campaign_id: str):
+        from ..adaptation.serialization import adaptation_campaign_v1_from_dict
+
+        return self._get_sidecar(
+            "adaptation_campaigns",
+            adaptation_campaign_id,
+            adaptation_campaign_v1_from_dict,
+        )
+
+    def put_adaptation_event(self, event) -> RepositoryPutResult:
+        from ..adaptation.serialization import adaptation_event_v1_to_dict
+
+        return self._put_sidecar(
+            collection="adaptation_events",
+            record_id=event.event_id,
+            document=adaptation_event_v1_to_dict(event),
+            kind="adaptation_event",
+        )
+
+    def get_adaptation_event(self, event_id: str):
+        from ..adaptation.serialization import adaptation_event_v1_from_dict
+
+        return self._get_sidecar("adaptation_events", event_id, adaptation_event_v1_from_dict)
 
     def _put_sidecar(
         self,

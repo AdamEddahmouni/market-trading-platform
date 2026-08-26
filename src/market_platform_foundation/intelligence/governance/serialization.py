@@ -31,7 +31,6 @@ from .types import (
     OpportunityHealthSnapshotV1,
     OverrideAction,
     ProviderHealthSnapshotV1,
-    ResearchTriggerV1,
     RollbackDecisionKind,
     RollbackDecisionV1,
     RollbackPolicyV1,

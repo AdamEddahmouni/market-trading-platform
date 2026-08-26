@@ -703,6 +703,54 @@ class ReplayVisibleRepository:
             return row
         return self._source.get_governance_event(event_id)
 
+    def put_adaptation_policy(self, policy) -> RepositoryPutResult:
+        return self._output.put_adaptation_policy(policy)
+
+    def get_adaptation_policy(self, adaptation_policy_id: str):
+        row = self._output.get_adaptation_policy(adaptation_policy_id)
+        if row is not None:
+            return row
+        return self._source.get_adaptation_policy(adaptation_policy_id)
+
+    def put_adaptation_assessment(self, assessment) -> RepositoryPutResult:
+        return self._output.put_adaptation_assessment(assessment)
+
+    def get_adaptation_assessment(self, adaptation_assessment_id: str):
+        row = self._output.get_adaptation_assessment(adaptation_assessment_id)
+        if row is not None:
+            return row
+        return self._source.get_adaptation_assessment(adaptation_assessment_id)
+
+    def put_research_trigger(self, trigger) -> RepositoryPutResult:
+        return self._output.put_research_trigger(trigger)
+
+    def get_research_trigger(self, research_trigger_id: str):
+        row = self._output.get_research_trigger(research_trigger_id)
+        if row is not None:
+            return row
+        return self._source.get_research_trigger(research_trigger_id)
+
+    def query_research_triggers_by_dedup_key(self, dedup_key: str) -> tuple:
+        return self._output.query_research_triggers_by_dedup_key(dedup_key)
+
+    def put_adaptation_campaign(self, campaign) -> RepositoryPutResult:
+        return self._output.put_adaptation_campaign(campaign)
+
+    def get_adaptation_campaign(self, adaptation_campaign_id: str):
+        row = self._output.get_adaptation_campaign(adaptation_campaign_id)
+        if row is not None:
+            return row
+        return self._source.get_adaptation_campaign(adaptation_campaign_id)
+
+    def put_adaptation_event(self, event) -> RepositoryPutResult:
+        return self._output.put_adaptation_event(event)
+
+    def get_adaptation_event(self, event_id: str):
+        row = self._output.get_adaptation_event(event_id)
+        if row is not None:
+            return row
+        return self._source.get_adaptation_event(event_id)
+
     def iter_events_by_availability(
         self,
         *,

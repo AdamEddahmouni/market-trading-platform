@@ -514,20 +514,6 @@ class RuntimeHealthSnapshotV1:
 
 
 @dataclass(frozen=True, slots=True)
-class ResearchTriggerV1:
-    trigger_id: str
-    schema_version: str
-    champion_scope: ChampionScopeV1
-    window: MonitoringWindowV1
-    drift_assessment_refs: tuple[ContractReference, ...] = ()
-    health_snapshot_refs: tuple[ContractReference, ...] = ()
-    activation_ref: ContractReference | None = None
-    reason_codes: tuple[GovernanceReasonCode, ...] = ()
-    lineage_refs: tuple[ContractReference, ...] = ()
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass(frozen=True, slots=True)
 class RuntimeGovernanceState:
     """Resolved operational authorization for BUILD 21/22 gates."""
 
@@ -566,7 +552,6 @@ __all__ = [
     "OpportunityHealthSnapshotV1",
     "OverrideAction",
     "ProviderHealthSnapshotV1",
-    "ResearchTriggerV1",
     "RollbackDecisionKind",
     "RollbackDecisionV1",
     "RollbackPolicyV1",
