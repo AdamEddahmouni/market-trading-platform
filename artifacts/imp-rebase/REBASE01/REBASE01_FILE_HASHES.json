@@ -1,0 +1,100 @@
+{
+  "artifact_count": 18,
+  "artifact_type": "IMP_REBASE_FILE_HASH_MANIFEST",
+  "files": [
+    {
+      "bytes": 5840,
+      "path": "AGENTS.md",
+      "sha256": "8695d3312738bea9a7685b80903bb47f2abdf43bda23f6adfb1c4807f63f7d22"
+    },
+    {
+      "bytes": 1261,
+      "path": "artifacts/imp-rebase/REBASE01/README.md",
+      "sha256": "7a14bbd6459db821c2a9539ed5f9d4059763d8f22f7f36af633508c5e433bf07"
+    },
+    {
+      "bytes": 10365,
+      "path": "artifacts/imp-rebase/REBASE01/REBASE01_ACCEPTANCE_REPORT.md",
+      "sha256": "5ba98d412cefe4c8f9af3f8f304a0522b4a82da366afd6548ef67530c7ca06df"
+    },
+    {
+      "bytes": 2419,
+      "path": "artifacts/imp-rebase/REBASE01/REBASE01_DOCUMENT_MAP.md",
+      "sha256": "57a7f8499867140c3362c92347069029730271a7f37b9a4c4afa10daaf969d31"
+    },
+    {
+      "bytes": 1565,
+      "path": "artifacts/imp-rebase/REBASE01/REBASE01_KNOWN_LIMITATIONS.md",
+      "sha256": "ea764effab8b4aac41779797dd432acad8febbddf44cb24b9980d2361aa46f1e"
+    },
+    {
+      "bytes": 4249,
+      "path": "artifacts/imp-rebase/REBASE01/REBASE01_MIGRATION_CHANGES.md",
+      "sha256": "b779d82bb6dc103f5b5d523b0b6a5650fa9e6429124bf02205e9b7ec37371868"
+    },
+    {
+      "bytes": 5140,
+      "path": "docs/platform/AUTHORITY_MODEL.md",
+      "sha256": "ff0f72d5a6ac9e33d924b72f4f4c542410db4d7a42ba593c95192cd9233d6407"
+    },
+    {
+      "bytes": 5134,
+      "path": "docs/platform/CANONICAL_TRUTH_MAP.md",
+      "sha256": "042ebbe2a856b252dd0b8d2a49631a3e4f6797f3e5dd96aa9b0d537cec3381ef"
+    },
+    {
+      "bytes": 4868,
+      "path": "docs/platform/DATA_AND_EPISTEMIC_MODEL.md",
+      "sha256": "a1ac4dd26bab62246450f115553af00c17ead71ae557ad803c19e9862428dd52"
+    },
+    {
+      "bytes": 5488,
+      "path": "docs/platform/DOCUMENTATION_STANDARD.md",
+      "sha256": "4d2e0e78135c5d790329e0aa4141c6d39c3a250498181e0f0a59aee50c182bdb"
+    },
+    {
+      "bytes": 3777,
+      "path": "docs/platform/GLOSSARY.md",
+      "sha256": "d53ee9ecca21c61b6b445cdccb517d27aa97d0ac1f3a866351926d9657e01b90"
+    },
+    {
+      "bytes": 8739,
+      "path": "docs/platform/MASTER_ARCHITECTURE.md",
+      "sha256": "a6c65d2d86ee9c74b8a2ad12551b432b12a6d70aefa8a65bd5cd068bff01de92"
+    },
+    {
+      "bytes": 4196,
+      "path": "docs/platform/MASTER_ROADMAP.md",
+      "sha256": "4457dca264011113505cb5c4664c95c9572270353583094654fec1c417d33e70"
+    },
+    {
+      "bytes": 4086,
+      "path": "docs/platform/PROGRAM_STATUS.md",
+      "sha256": "62dcf3eeef41ed9d205f93c7dce794d805df93714a2709e55810348969c7231c"
+    },
+    {
+      "bytes": 3196,
+      "path": "docs/platform/README.md",
+      "sha256": "3b88e08b2d9b1c1789aa548c01e691c8e04dfa7bbb338056999331bd476883d4"
+    },
+    {
+      "bytes": 6316,
+      "path": "docs/platform/SYSTEM_BOUNDARIES.md",
+      "sha256": "74d54d52e1664c25ec7b4e2156a5fadc929d6e5901fa17498ff9a228f1711a5d"
+    },
+    {
+      "bytes": 7672,
+      "path": "docs/roadmap/REVISION_3_ROADMAP.md",
+      "sha256": "3c157bc1f56bd70df180d90a325b03527ae7f5f384010447126ff70c206076b9"
+    },
+    {
+      "bytes": 20782,
+      "path": "README.md",
+      "sha256": "5a7172238dc222b6cfe4ba8ec5ba73ae977805492400ca62dc8f0f9b8ea67a98"
+    }
+  ],
+  "generated_for": "IMP-REBASE-01",
+  "hash_algorithm": "SHA-256",
+  "schema_version": "1.0.0",
+  "source_base": "eb36f7ee9b25344f61977fbffedfb1dad8e4e0cc"
+}

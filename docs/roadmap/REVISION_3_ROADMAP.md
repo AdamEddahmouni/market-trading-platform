@@ -4,6 +4,10 @@ This is a navigational projection of Revision 3 Section 20, not an independent
 authority. Revision 3 controls on conflict. No phase is started, completed, or
 authorized by this file.
 
+> **Historical/supporting notice:** This roadmap remains historical and
+> supporting material for the Revision 3 projection. Current post-core program
+> planning is canonical in [IMP Master Roadmap](../platform/MASTER_ROADMAP.md).
+
 | Phase | Revision 3 projection | Authorization state |
 |---|---|---|
 | Phase 0 — governance and structural no-live safety | Structural no-live safety and governance evidence accepted for the current repository subject. | `PASS` |

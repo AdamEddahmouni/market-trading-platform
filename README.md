@@ -1,5 +1,22 @@
 # Integrated Market Platform — governed foundation
 
+Current whole-program truth begins at the
+[canonical platform documentation](docs/platform/README.md). See
+[Program Status](docs/platform/PROGRAM_STATUS.md) for current maturity and
+safety posture, [Master Architecture](docs/platform/MASTER_ARCHITECTURE.md) for
+the program shape, and [Master Roadmap](docs/platform/MASTER_ROADMAP.md) for
+post-core sequencing.
+
+Current post-core status: the original BUILD01-35 architecture campaign is
+historically `COMPLETE_WITH_LIMITATIONS`; repository closure is complete;
+EVIDENCE is `IN_PROGRESS` through EVIDENCE-01B with EVIDENCE-01C next; and
+IMP-REBASE-01 establishes the current program documentation layer. Autonomous
+live execution is disabled, human live-session and per-order authorization
+remain required, automatic broker failover is disabled, and no production live
+broker transport is implemented or operationally accepted.
+
+## Historical foundation baseline
+
 This repository contains the governed, CPython 3.11 standard-library-only
 foundation subject. Phases 0 through 8 are `PASS` on the admitted equity
 intraday fixture (`ADMITTED-SHORTSQ-BIYA-BARS-001`). The machine-readable
@@ -40,12 +57,11 @@ Revision 2 remains the incorporated Phase 0 safety authority.
 | Platformization P0–P4-4B — paper execution, live observational data, local state, unified workstation, discovery, Tradier sandbox broker-paper adapter, broker/ledger reconciliation | `COMPLETE_WITH_LIMITATIONS` (see [platformization roadmap](docs/research/PLATFORMIZATION_ROADMAP.md)) |
 | Public-data providers — macro / energy / sec / short-intelligence / observational / finviz-discovery | `IMPLEMENTED` (fixture-first; live probes opt-in; captures **not admitted**) |
 
-The next campaign after BUILD35 is the
-[whole-repository closure audit](docs/engineering/POST_BUILD35_REPOSITORY_CLOSURE_AUDIT.md),
-`POST-BUILD35-REPOSITORY-CLOSURE-001`—not BUILD36. Its canonical inventory
-classifies every significant historical subsystem as `CANONICAL`, `WRAPPED`,
-`RETAINED_SUPPORTING`, `SUPERSEDED`, `DUPLICATE`, `DEAD`, or `UNINTEGRATED`
-before any cleanup or integration action is taken.
+The post-BUILD35 [whole-repository closure audit](docs/engineering/POST_BUILD35_REPOSITORY_CLOSURE_AUDIT.md)
+and CLEANUP-01 are complete historical milestones. EVIDENCE-01, EVIDENCE-01A,
+and EVIDENCE-01B followed; their current status and independent continuation
+are recorded in [Program Status](docs/platform/PROGRAM_STATUS.md) and
+[Master Roadmap](docs/platform/MASTER_ROADMAP.md).
 
 ## Validation cadence
 
@@ -129,8 +145,9 @@ fixture-proven only — the Moomoo OpenAPI is reachable solely through the
 proprietary OpenD gateway (TCP-only), so real-wire behavior remains
 unconfirmed. P5 status: neutral security foundations landed
 (`ROLE_ENFORCEMENT_STATUS=MODEL_ONLY_NOT_ENFORCED`); hosted deployment and
-auth enforcement are not started. P6 status: shadow/forward-validation
-infrastructure landed; no forward-validation evidence has been collected.
+auth enforcement are not started. P6 shadow/forward-validation infrastructure
+later became the basis for the independent EVIDENCE campaign, now implemented
+through EVIDENCE-01B; EVIDENCE-01C operational acceptance remains pending.
 Production execution (`LIVE-001`) is blocked pending separate authorization.
 
 ## Revision 3 guidance

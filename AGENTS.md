@@ -78,3 +78,37 @@ python tools/validate.py changed
 - **Moomoo OpenD / IBKR gateway**: not available on cloud VM. Use fixtures, replay, and mock paths; keep live gates off.
 - **Handoff branch**: start from `cloud-handoff/full-state-2026-08-25` and verify against `artifacts/cloud-handoff/CLOUD_FILE_HASHES.json`.
 - See `docs/engineering/CURSOR_CLOUD_ENVIRONMENT.md` for secret names (values via Cursor Cloud Secrets only).
+
+## Canonical program and evidence rules
+
+Before editing, recover repository truth: root, branch, HEAD, upstream,
+ahead/behind, worktrees, tracked and untracked changes, and recent lineage. Use
+a clean worktree for scoped milestone work when the source worktree contains
+unrelated changes; never reset, clean, stash, move, or stage someone else's
+work merely to make the tree look clean.
+
+Read `docs/platform/README.md` and the canonical document for the subject being
+changed. Apply the truth classes and precedence in
+`docs/platform/DOCUMENTATION_STANDARD.md`:
+
+- preserve immutable BUILD, Phase, EVIDENCE, prediction-ledger, settlement,
+  release, closure, and CLEANUP history;
+- use historical artifacts for their accepted subject and cutoff, and current
+  canonical documents for current program interpretation;
+- reference executable schemas, policies, gates, manifests, and registries
+  rather than copying mutable values into prose;
+- preserve EVIDENCE-01/01A/01B semantics and keep the active EVIDENCE track
+  independent unless a separately approved change explicitly integrates it;
+- preserve temporal cutoffs, source/revision provenance, contradictory
+  evidence, and authority boundaries;
+- never infer trading authority from observation, prediction, qualification,
+  release approval, AI/agent output, provider availability, or reconnect;
+- update the applicable canonical documents when accepted architecture,
+  status, roadmap, authority, boundaries, epistemics, or terminology changes;
+- run the required manifest-driven validation and inspect both unstaged and
+  staged diffs, including `git diff --check`, before acceptance or commit.
+
+Future-system guidance must be conditional. For example: when a canonical
+run, workflow, capability, skill, or SOP registry exists, use or generate from
+it. Do not describe a planned Universal Run Ledger, Workflow Engine, registry,
+or fabric as a current executable authority.
