@@ -6,7 +6,7 @@
 | Classification | `ACTIVE_SUPPORTING` |
 | Truth class | `APPROVED_FUTURE_DESIGN` (pending principal acceptance) |
 | Status | `DESIGN_COMPLETE_NOT_IMPLEMENTED` |
-| Version | `1.0` |
+| Version | `1.1` |
 | Last verified | `2026-08-27` |
 | Establishing milestone | `IMP-ADAPT-00` |
 | Supersedes | None |
@@ -199,29 +199,68 @@ UI on the hot path.
 Classification: `EXISTING_STRONG` | `EXISTING_PARTIAL` | `EXPERIMENTAL` |
 `HISTORICAL` | `ABSENT`.
 
+**Material correction (v1.1):** IMP already implements a **governed offline
+research re-entry loop**, not a missing learning scaffold. Slogan from
+`docs/engineering/CONTROLLED_ADAPTATION_V1.md`: *Live learns evidence, not
+weights.* Encoded forbidden shortcuts include
+`FORBIDDEN_AUTHORITY_PATHS` in
+`intelligence/system_acceptance/inventory.py`
+(`outcome→model_update`, `drift→model_fit`, `research_trigger→training`,
+`llm→order`, and related edges).
+
+Canonical existing loop:
+
+```text
+observe → predict → record → settle → measure → monitor → detect
+  → qualify (BUILD 24) → trigger research → finding (BUILD 17)
+  → experiment → train (BUILD 18) → validate (BUILD 19)
+  → promote (BUILD 20) → activate (BUILD 23) → monitor
+```
+
+BUILD 24 emits `ResearchTriggerV1` only. It does **not** train, calibrate,
+promote, activate, auto-generate hypotheses/experiments, or mutate
+`ExperimentManifestV1`.
+
 | Capability | Class | Evidence | Gap vs governed learning loop |
 |---|---|---|---|
-| Prediction identity | EXISTING_STRONG | `PredictionLedgerEntryV1` frozen settlement plan, cutoff, horizon, policy identity | Experience record not yet a first-class object |
-| Outcome settlement | EXISTING_STRONG | `OutcomeSettlementService` / scheduler / adjudicator / modes | Need experience wrapping around settlement, not a second settlement authority |
+| Prediction identity | EXISTING_STRONG | `PredictionLedgerEntryV1` | Experience record not first-class; ledger does not retrain |
+| Outcome settlement | EXISTING_STRONG | `outcomes/` including `COUNTERFACTUAL` + `scenario_id` | Needs forward data volume; keep modes disjoint |
 | Temporal eligibility | EXISTING_STRONG | `available_time_ns <= decision_time_ns` | Keep as law |
-| Specialists | EXISTING_STRONG | `DEFAULT_SPECIALIST_REGISTRY`, `DeliberatingSpecialist` | Do not rebuild as LangGraph “analysts” |
-| Evidence blackboard | EXISTING_STRONG | `BlackboardSnapshot`, hashed blackboard identity | Not a lesson store |
-| Blind Council | EXISTING_STRONG | `BlindCouncilOrchestrator`, `BlindExecutionBarrier` | Bounded debate already exists; do not import TradingAgents debate as authority |
-| Fusion / calibration | EXISTING_PARTIAL | sklearn isotonic + logistic calibrators | No online/bounded adaptive policy yet |
-| Hypotheses | EXISTING_PARTIAL | `HypothesisV1` + hypothesis service over blackboard | Not statistically validated lessons |
-| Counterfactuals | EXISTING_PARTIAL | settlement `mode` / scenario_id patterns | Must keep ACTUAL vs COUNTERFACTUAL vs SIMULATED disjoint |
-| Forward qualification / EVIDENCE | EXISTING_STRONG | evidence01a/01b stores, campaign records | Independent of ADAPT; do not contaminate |
-| Training / evaluation | EXISTING_PARTIAL | sklearn trainers, baselines, evaluation cohort/provenance | No challenger factory or Run Ledger yet |
-| Release governance | EXISTING_PARTIAL | BUILD35 release/acceptance | Not adaptive promotion |
-| Assistant / AI | EXISTING_PARTIAL | read-only assistant, audit store | IMP-AI-01 still required for attributable research |
-| Checkpoint / resume | EXISTING_PARTIAL | REBASE-02 semantics specified; runtime Universal Ledger absent | Graph identity not yet defined |
-| Online learning / drift / lessons / memory retrieval | ABSENT | no River, no vector index, no reflection store | ADAPT-01+ |
-| Agent graph orchestration library | ABSENT | no LangGraph/MAF import | Optional adapter later |
-| Self-promotion | ABSENT (correct) | authority model forbids it | Keep absent |
+| Evaluation / calibration diagnostics | EXISTING_STRONG | `intelligence/evaluation/` | Regime slice unsupported; true-prediction coverage unavailable |
+| Research experiments (BUILD 17) | EXISTING_STRONG | `research_experiments/`; finding → frozen `ExperimentManifestV1` | Trigger ≠ auto-hypothesis; humans/policy climb the ladder |
+| Training / distillation (BUILD 18) | EXISTING_STRONG | `training/` sklearn JSON artifacts | No `partial_fit`; not auto-invoked from adaptation |
+| Independent validation (BUILD 19) | EXISTING_STRONG | `validation/` firewall, embargo, walk-forward | Separate from live runtime |
+| Champion–challenger promotion (BUILD 20) | EXISTING_STRONG | `promotion/` | Needs sufficient forward shadow evidence; ≠ deploy |
+| Runtime governance / drift / rollback (BUILD 23) | EXISTING_STRONG | `governance/` | Monitoring ≠ weight change |
+| Controlled adaptation (BUILD 24) | EXISTING_STRONG | `adaptation/`; `ResearchTriggerV1`; cooldown/dedup | Explicitly does not mutate runtime |
+| Baselines / control forecasts | EXISTING_STRONG | `baselines/` logistic/GBM/naive | Tagged `CONTROL`; excluded from production fusion by default |
+| Event detector + router | EXISTING_STRONG | `routing/` | `REGIME_SHIFT` consumes **external** keys only |
+| Replay runtime | EXISTING_STRONG | `replay/` | Science/proof, not self-learning |
+| Release / canary / pilot | EXISTING_STRONG | `live_canary/` + BUILD 35 | Human-gated; not autonomous trading |
+| Specialists | EXISTING_PARTIAL | production `MicrostructureSpecialist`; council registry | Only one production domain specialist; no production **probabilistic** forecast specialist |
+| Expert blackboard / Blind Council | EXISTING_PARTIAL | infrastructure strong; multi-expert often synthetic in tests | Blackboard ≠ agent memory |
+| Fusion / calibration | EXISTING_PARTIAL | machinery + sklearn calibrators; **static** weights | Production fusion **abstains** without eligible PRODUCTION probabilistic contributors |
+| Hypotheses | EXISTING_PARTIAL | `HypothesisV1` + BUILD 17 hypotheses | Not validated lessons; not auto-generated from BUILD 24 |
+| Forward qualification / EVIDENCE | EXISTING_PARTIAL | campaigns exist; historical insufficiency | Operational bottleneck; independent of ADAPT |
+| Assistant / AI | EXISTING_PARTIAL | read-only assistant; `llm→order` forbidden | Not a trading/learning agent; AI-01 still required |
+| Checkpoint / resume | EXISTING_PARTIAL | ops/pilot/EVIDENCE resume | Not ML/experience-buffer resume; graph identity absent |
+| Regime generator | ABSENT | router/priors consume keys | Evaluation regime dimension unsupported |
+| Online `partial_fit` / live weight learning | ABSENT (correct) | deferred in adaptation + baseline docs | Continual adaptation ≠ continual gradients |
+| Reflection / episodic memory / vector retrieval | ABSENT | `persistence/memory.py` is in-memory **repository** | ADAPT-02; do not confuse with Mongo/in-memory store |
+| Agent graph orchestration library | ABSENT | no LangGraph/MAF | Optional adapter later |
+| Self-promotion / autonomous agent | ABSENT (correct) | forbidden authority paths | Keep absent |
+| Decision-research / squeeze / distribution | EXPERIMENTAL | `research/decision_research/` etc. | Parallel harness, not BUILD 24 control plane |
+| P6 shadow labeling | HISTORICAL | `shadow/` + `outcomes/p6_compat.py` | Promoted into BUILD 15; not current control plane |
 
-**Reuse before inventing:** prediction ledger, settlement, specialists, council,
-blackboard, fusion, EVIDENCE, and risk/execution gates are domain authority.
-External agent frameworks must not re-implement them.
+**Reuse before inventing:** do **not** rebuild BUILD 15–24, specialists, council,
+blackboard, fusion, EVIDENCE, or risk/execution gates as generic agent-framework
+features. ADAPT-* extends this loop (experience records, validated lessons,
+optional River **research**, graph identity). External libraries must not
+become a second promotion or training authority.
+
+Largest practical gaps to **closing the intended loop** are production
+probabilistic forecast contributors and forward-evidence sufficiency — **not**
+missing online gradient machinery.
 
 ---
 
@@ -259,9 +298,11 @@ Owners: REBASE-02 standards → OF-01 ledger → OF-02 adapters → OF-03 regist
 
 ## Adaptive Intelligence Fabric
 
-Experience, evaluation, error analysis, reflection, lesson validation, memory,
-pattern discovery, hypotheses, experiments, challengers, graph learning,
-promotion **evidence**. Never a broker path.
+Indexes and extends BUILDs 15–24 rather than replacing them: experience records,
+LLM reflection (labeled `MODEL_OUTPUT`), validated lessons, retrieval, optional
+River **research**, graph-challenger identity, and promotion **evidence
+packaging**. Never a broker path. BUILD 24 remains the only path from
+monitoring/drift to research re-entry.
 
 ```text
 OUTCOME → ADAPTIVE FABRIC → LESSONS / EXPERIMENTS / CHALLENGERS
@@ -912,21 +953,21 @@ store; LangGraph as canonical authority; MLflow IDs as IMP run IDs.
 
 | Primitive | Existing IMP foundation | Missing gap | External help | Owner |
 |---|---|---|---|---|
-| experience | settlement + ledger + forecast | experience record kernel | — | IMP ADAPT-01 |
-| error attribution | evaluation/diagnostics partial | taxonomy expansion | — | IMP |
-| reflection | absent (assistant is not this) | post-settlement MODEL_OUTPUT | LLM via AI-01 | IMP |
-| lesson | HypothesisV1 partial | validation + decay | — | IMP ADAPT-02 |
-| memory | audit/evidence stores | layered memory | FAISS later | IMP |
-| retrieval | none | policy + contradictions | FAISS/Qdrant | IMP + adapter |
-| drift | regime features partial | detectors | River | IMP + River research |
-| pattern detection | evaluation cohorts | grouping + stats | SciPy | IMP |
-| hypothesis | HypothesisV1 | competing auto-gen | DSPy optional | IMP |
-| experiment | shadow/training partial | generator + freeze rules | Optuna/MLflow adapter | IMP + OF |
-| model challenger | sklearn trainers | factory + gates | sklearn/LightGBM | IMP |
+| experience | ledger + settlement + evaluation reports | first-class experience object citing those IDs | — | IMP ADAPT-01 |
+| error attribution | evaluation diagnostics | taxonomy expansion | — | IMP |
+| reflection | absent as LLM post-outcome memory | post-settlement MODEL_OUTPUT | LLM via AI-01 | IMP ADAPT-02 |
+| lesson | HypothesisV1 / research findings | validation, decay, contradiction retrieval | — | IMP ADAPT-02 |
+| memory | evidence stores, adaptation events, in-memory **repo** | layered lesson/experience memory | FAISS later | IMP |
+| retrieval | none for lessons | policy + contradictions | FAISS/Qdrant | IMP + adapter |
+| drift | BUILD 23 assessments + BUILD 24 qualification | finance-specific vs generic detectors | River research only | IMP + optional River |
+| pattern detection | evaluation cohorts / slices | grouping + stats | SciPy | IMP |
+| hypothesis | BUILD 17 hypotheses (not auto from trigger) | optional competing-candidate drafts | DSPy optional | IMP; must enter BUILD 17 |
+| experiment | frozen `ExperimentManifestV1` | auto-draft **candidates** only | Optuna | IMP BUILD 17; ADAPT-04 must not skip ladder |
+| model challenger | BUILD 18 sklearn factory + BUILD 20 | additional GBDT behind same gates | LightGBM later | IMP |
 | prompt challenger | assistant templates | candidate-only | DSPy | IMP-AI |
 | graph challenger | council topology implicit | identity + lifecycle | LangGraph/MAF adapter | IMP ADAPT-06 |
-| promotion | release governance | adaptive promotion evidence | — | IMP ADAPT-07 |
-| bounded online | calibration static | approved policy envelope | River | IMP ADAPT-08 |
+| promotion | BUILD 20 + live release governance | graph/prompt consequence classes; Run Ledger cites | — | IMP ADAPT-07 wraps BUILD 20 |
+| bounded online | static fusion weights; BUILD 24 forbids live fit | approved **state** envelope only | River | IMP ADAPT-08; still not `partial_fit` by default |
 
 ---
 
@@ -936,7 +977,7 @@ store; LangGraph as canonical authority; MLflow IDs as IMP run IDs.
 |---|---|---|---|---|
 | reflection | YES (after settlement) | YES (schema) | NO | NO |
 | lesson | YES (candidate) | YES (stats gates) | NO | NO |
-| experiment | YES (candidate) | YES (defined protocol) | NO | NO |
+| experiment | Draft candidate only; frozen `ExperimentManifestV1` **NO** unless BUILD 17 policy/human climb | YES (defined protocol) | NO | NO |
 | feature | YES (candidate) | YES | NO | NO |
 | model | YES (candidate) | YES | NO | NO |
 | prompt | YES (candidate) | YES | NO | NO |
@@ -1041,11 +1082,11 @@ NOT CANONICAL IMP AUTHORITY
 | statistics | partial | domain metrics | SciPy/statsmodels | — | — |
 | econometrics | absent | — | arch/statsmodels | — | — |
 | ML | sklearn | keep baselines | LightGBM | — | PyTorch |
-| online learning | absent | policy owner | River | — | VW |
-| drift | regime partial | finance regimes | River detectors | — | Evidently |
+| online learning | absent by design (BUILD 24) | keep prohibition | River research extra | — | VW |
+| drift | BUILD 23/24 | keep qualification owner | River detectors research | — | Evidently |
 | optimization | absent | — | Optuna/SciPy/CVXPY | — | Ray Tune |
 | agent orchestration | council/specialists | graph identity | one adapter | IMP+adapter | TradingAgents |
-| experiment tracking | manifests | Run Ledger OF-01 | MLflow adapter | IMP id + export | W&B |
+| experiment tracking | BUILD 17 manifests + future OF-01 | keep IMP ids | MLflow adapter | IMP id + export | W&B |
 | workflow orchestration | runbooks | OF-03 | Temporal/Dagster later | — | — |
 | vector retrieval | absent | policy | FAISS | — | Qdrant later |
 | RL env/algos | absent | — | Gymnasium/SB3 | — | FinRL |
@@ -1081,14 +1122,14 @@ REBASE-02 REMAINS APPROVED FOR IMPLEMENTATION
 | ID | Name | Depends |
 |---|---|---|
 | ADAPT-00 | this architecture/ecosystem study | done (this document) |
-| ADAPT-01 | Outcome-Grounded Experience Kernel | REBASE-02 + OF-01 (HARD for durable run cites; design PARALLEL_SAFE after REBASE-02) |
+| ADAPT-01 | Outcome-Grounded Experience Kernel | Wrap BUILD 15–16; OF-01 HARD for durable run cites |
 | ADAPT-02 | Reflection + Validated Learning Memory | ADAPT-01; AI-01 SOFT for LLM reflection |
-| ADAPT-03 | Adaptive Evaluation + Drift + Pattern Discovery | ADAPT-01; River/SciPy pilots |
-| ADAPT-04 | Hypothesis & Experiment Generator | ADAPT-03; Optuna optional |
-| ADAPT-05 | Feature/Model/Prompt/Routing Challenger Factory | ADAPT-04; sklearn/LightGBM |
+| ADAPT-03 | Pattern discovery + optional River **research** beside BUILD 23 drift | Must not bypass BUILD 24 qualification |
+| ADAPT-04 | Candidate hypothesis/experiment **drafts** into BUILD 17 | Must not auto-freeze `ExperimentManifestV1` |
+| ADAPT-05 | Extra challenger types on BUILD 18/20 | sklearn/LightGBM behind existing factory |
 | ADAPT-06 | Agent-Graph Challenger System | ADAPT-05; AI-02 LATER; single orchestrator adapter |
-| ADAPT-07 | Adaptive Promotion Governance | ADAPT-05/06; OF-03 SOFT |
-| ADAPT-08 | Bounded Online Adaptation | ADAPT-07 policy + RT-01 measurement |
+| ADAPT-07 | Promotion evidence packaging | Extends BUILD 20; does not replace it |
+| ADAPT-08 | Bounded Online Adaptation | Explicit policy exception to “evidence not weights”; RT-01 first |
 
 Do not implement ADAPT-01 runtime before OF-01 if experience records must cite
 canonical runs. Conceptual design of ADAPT-01 may proceed in parallel after
@@ -1163,11 +1204,11 @@ principal approval.
 - Nautilus LGPL linking needs counsel before any binary ship.
 - No workload benchmarks were run (planning-only; Numba/Polars/orjson remain
   unmeasured).
-- Adaptive systems explore agent (`e6e362be`) may still have been in flight;
-  foundation audit used direct source inspection of ledger, settlement,
-  council, lock, and pipeline manifests.
 - PyPI latest version pins for SciPy/River/Optuna were not frozen into a lock
   (no installs).
+- BUILD 17–24 audit was completed after the first design draft; v1.1
+  incorporates it. Remaining limitation: production fusion abstention and
+  forward-evidence volume were not re-measured in this milestone.
 
 ---
 
