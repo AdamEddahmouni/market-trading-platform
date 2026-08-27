@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0",
+  "entries": [
+    {
+      "path": "artifacts/imp-rebase/REBASE02/README.md",
+      "bytes": 1532,
+      "sha256": "4b9e9d6f05e116ca7689a927ed4576abdc22733bcf6247436e21faf71967c044"
+    },
+    {
+      "path": "artifacts/imp-rebase/REBASE02/REBASE02_ACCEPTANCE_REPORT.md",
+      "bytes": 6711,
+      "sha256": "661407a52e0615393a9cfbe78c1b486f82b2bea121a001c44d3c2d031a4bfe79"
+    },
+    {
+      "path": "artifacts/imp-rebase/REBASE02/REBASE02_KNOWN_LIMITATIONS.md",
+      "bytes": 1201,
+      "sha256": "86808c7f230a9e69db517bf3e92c3f84fcbfb4bb5f01166916b157ffd7203484"
+    },
+    {
+      "path": "docs/platform/CANONICAL_TRUTH_MAP.md",
+      "bytes": 11406,
+      "sha256": "f457c20a7c5a1e298f881bd9298b3ede6acfe143ad2a708f62eae9d695b62a93"
+    },
+    {
+      "path": "docs/platform/DOCUMENTATION_STANDARD.md",
+      "bytes": 8835,
+      "sha256": "be4115dc289365c7fce4f309dcceeb0f212bcc93d114dfe6ba9c501a0266ba70"
+    },
+    {
+      "path": "docs/platform/GLOSSARY.md",
+      "bytes": 8796,
+      "sha256": "8387cfdd7b531dfedeb4a7df6240a6898db19df189304df58a49e39d332986f8"
+    },
+    {
+      "path": "docs/platform/MASTER_ARCHITECTURE.md",
+      "bytes": 8041,
+      "sha256": "c11e7e5cfc4e49578e49507730aad0755d08b6c587640c723f2b246656d544de"
+    },
+    {
+      "path": "docs/platform/MASTER_ROADMAP.md",
+      "bytes": 8065,
+      "sha256": "25bca6a28b857c2e1db44b52973d815f2d96ea3ec4ffc7eb517e18d46582d734"
+    },
+    {
+      "path": "docs/platform/OBSERVABILITY_STANDARD.md",
+      "bytes": 10815,
+      "sha256": "81e5e7e5627af70cc8e23ee687dac5ceeae32f5b30f4bd9df2e27b30e1d72726"
+    },
+    {
+      "path": "docs/platform/PROGRAM_STATUS.md",
+      "bytes": 7019,
+      "sha256": "25786188de498071e08cf9659882b7ee697b1e2f6f8c14793db475ab231a7935"
+    },
+    {
+      "path": "docs/platform/README.md",
+      "bytes": 3491,
+      "sha256": "e59ad62fc9f2a1ae98fcfbf640e0c910062ace2efc4ad9d0c80bac5f4411f7a1"
+    },
+    {
+      "path": "docs/platform/REPRODUCIBILITY_AND_RUN_STANDARD.md",
+      "bytes": 34777,
+      "sha256": "8d2e941d25301ec178bcc938dfff6811b7ecab342196dff48102511d1614a0ba"
+    },
+    {
+      "path": "docs/platform/TEST_AND_EVALUATION_STANDARD.md",
+      "bytes": 13034,
+      "sha256": "ce03b49050dccbdb05b75986e0b4b82c0e33a5c5b3773ad26e881f614d4cb117"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-27-imp-rebase-02-reproducibility-observability-evaluation-operational-standards-implementation-spec.md",
+      "bytes": 51004,
+      "sha256": "1be15d0be64a1c14446bcc80fbeeea609bbd15316dc668b0c660fb36483148e0"
+    }
+  ]
+}

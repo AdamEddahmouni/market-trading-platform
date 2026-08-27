@@ -6,8 +6,8 @@
 | Classification | `CANONICAL` |
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Controlled program terminology |
-| Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.0` |
+| Establishing Milestone | `IMP-REBASE-01`; extended by `IMP-REBASE-02` |
+| Version | `1.1` |
 | Last Verified | `2026-08-27` |
 | Supersedes | No single current whole-program controlled vocabulary |
 | Superseded By | None |
@@ -89,3 +89,22 @@ a valid program-status value.
 | `HOT` | Current time-sensitive bounded workload; no latency guarantee |
 | `WARM` | Recent durable/derived workload that tolerates non-immediate processing |
 | `COLD` | Historical, immutable, or reproducibility-oriented workload |
+
+## Run, reproducibility, and observability terms
+
+| Term | Controlled meaning |
+|---|---|
+| Run | One durable logical invocation of a declared consequential objective under stable identity and evaluation intent; not a process, span, or log line — see [Reproducibility and Run Standard](REPRODUCIBILITY_AND_RUN_STANDARD.md) |
+| Attempt | One bounded technical execution of a run; attempt history is append-preserving |
+| Outcome | Typed domain result after execution under declared protocol; separate from technical execution and disposition |
+| Outcome validity | Whether a result is interpretable under protocol (`VALID`, `INVALID`, `INDETERMINATE`, `NOT_EVALUATED`); invalid does not mean negative analytical result |
+| Disposition | Governed decision about an outcome; append-only; domain codes remain domain-owned |
+| Consequence class | `C0`–`C4` profile governing durability, audit strength, and required-record fail-closed behavior; orthogonal to `HOT`/`WARM`/`COLD` |
+| Reproducibility class | `R5`–`R0` taxonomy describing what repeatability may be claimed; orthogonal to evidence strength |
+| Evidence strength | `E3`–`E0` dimension describing real-world evidential value; orthogonal to reproducibility |
+| Artifact | Durable output with logical identity and content/version identity; path alone is insufficient |
+| Logical append-only | Prior records recoverable from authoritative history source; mutable aggregate alone is insufficient |
+| Physical append-only | Storage appends within active segment; prior committed bytes not rewritten in place |
+| Trace | One causal processing path; may cross run boundaries — see [Observability Standard](OBSERVABILITY_STANDARD.md) |
+| Correlation | Groups related records without asserting strict causality; not a trace alias |
+| Benchmark comparability | `COMPARABLE`, `CONDITIONALLY_COMPARABLE`, or `NOT_COMPARABLE`; distinct from benchmark execution capability |

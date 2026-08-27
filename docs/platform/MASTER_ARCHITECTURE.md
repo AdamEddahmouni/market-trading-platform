@@ -7,7 +7,7 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Whole-program composition and architectural relationships |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.0` |
+| Version | `1.1` |
 | Last Verified | `2026-08-27` |
 | Supersedes | No accepted post-EVIDENCE whole-program architecture |
 | Superseded By | None |
@@ -64,7 +64,7 @@ hypotheses and models              |
        [IMPLEMENTED] reconciliation foundations
                      |
                      v
-       [IMPLEMENTED foundations / PARTIAL family]
+       [IMPLEMENTED standards / PARTIAL family]
        operations, runbooks and Operating Fabric
                      |
                      v
@@ -124,7 +124,9 @@ New program families must extend rather than fork these foundations:
 | Settlement | [`OutcomeSettlementService`](../../src/market_platform_foundation/intelligence/outcomes/service.py) |
 | Risk and execution state | Risk, execution, live-safety, authorization, and confirmation implementations indexed by the truth map |
 | External-state closure | Reconciliation authorities under `portfolio/`, `platform/reconciliation/`, and live-canary reconciliation |
-| Reproducibility | Existing run manifests, frozen policies, hashes, validation reports, and campaign records; future ledger work indexes them rather than replacing them |
+| Reproducibility | [Reproducibility and Run Standard](REPRODUCIBILITY_AND_RUN_STANDARD.md) defines run, attempt, outcome, disposition, artifact, and reproducibility semantics; existing run manifests, frozen policies, hashes, validation reports, and campaign records remain authoritative within their scope; future ledger work indexes them rather than replacing them |
+| Observability | [Observability Standard](OBSERVABILITY_STANDARD.md) defines logs, metrics, traces, and correlation semantics; end-to-end propagation remains future work under `IMP-RT-01` |
+| Test and evaluation | [Test and Evaluation Standard](TEST_AND_EVALUATION_STANDARD.md) defines validation, benchmark, backtest, replay, and evaluation semantics; executable validation remains under `tools/validate.py` |
 
 ## Family attachment points
 

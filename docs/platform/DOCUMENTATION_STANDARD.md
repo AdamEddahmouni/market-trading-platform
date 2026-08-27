@@ -6,8 +6,8 @@
 | Classification | `CANONICAL` |
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Prospective documentation classification, metadata, precedence, and drift control |
-| Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.0` |
+| Establishing Milestone | `IMP-REBASE-01`; extended by `IMP-REBASE-02` |
+| Version | `1.1` |
 | Last Verified | `2026-08-27` |
 | Supersedes | Fragmented program-level documentation conventions |
 | Superseded By | None |
@@ -101,7 +101,8 @@ documentation milestone into `COMPLETE_WITH_LIMITATIONS`.
 
 ## Canonical metadata
 
-The ten `docs/platform/` documents use a compact table with these fields:
+The ten core `docs/platform/` documents plus the three REBASE-02 standards use a
+compact table with these fields:
 
 | Field | Rule |
 |---|---|
@@ -182,7 +183,10 @@ trigger an update.
 Any material canonical change must update all affected documents in one
 coherent change, validate local links and terminology, inspect the staged diff,
 and regenerate the accepted-surface hash manifest when the milestone contract
-includes one.
+includes one. Acceptance evidence for documentation milestones SHOULD record
+repository state, implementation base, spec verification, validation attempt
+history, protected-history result, and hash verification per consequence
+profile of the milestone.
 
 ## Required future standard
 

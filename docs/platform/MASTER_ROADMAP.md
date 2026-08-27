@@ -7,7 +7,7 @@
 | Primary Truth Class | `APPROVED_FUTURE_DESIGN` |
 | Canonical Subject | Post-core milestone ownership and dependency graph |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.0` |
+| Version | `1.1` |
 | Last Verified | `2026-08-27` |
 | Supersedes | [Revision 3 roadmap projection](../roadmap/REVISION_3_ROADMAP.md) as whole-program master only |
 | Superseded By | None |
@@ -34,7 +34,7 @@ an independent semantic track.
 
 | ID | Canonical name | Boundary |
 |---|---|---|
-| `IMP-REBASE-02` | Reproducibility, Observability, Evaluation & Operational Standards | Define shared standards; do not implement the Universal Run Ledger, adapters, workflow registry, end-to-end tracing, or documentation automation |
+| `IMP-REBASE-02` | Reproducibility, Observability, Evaluation & Operational Standards | `COMPLETE` — shared standards established; do not implement Universal Run Ledger, adapters, workflow registry, end-to-end tracing, or documentation automation |
 | `IMP-OF-01` | Append-Only Run and Artifact Ledger | Implement durable run identity, artifact linkage, history, attribution, relationships, and retry/attempt preservation |
 | `IMP-OF-02` | Operation Adapters | Connect bounded operation classes to the accepted ledger without rewriting their frozen records |
 | `IMP-RT-01` | End-to-End Instrumentation | Implement trace semantics, benchmark baselines, stage instrumentation, and provider/network versus internal latency separation |
@@ -95,13 +95,13 @@ This does not make all runtime integration parallel-safe.
 
 ### IMP-REBASE-02
 
-Define reproducibility; operation taxonomy; run, attempt, outcome, and
-disposition semantics; artifact identity and linkage; data, model, config, and
-code provenance; retry-history preservation; retention and redaction;
-structured logging; correlation/trace identity; evaluation and benchmark
-reproducibility; documentation validation expectations; and change/evidence
-workflow. Reconcile these requirements with existing `RunManifestV1`,
-validation reports, subsystem ledgers, and frozen records. Do not implement the
+`COMPLETE`. Established reproducibility; operation taxonomy; run, attempt,
+outcome, and disposition semantics; artifact identity and linkage; data,
+model, config, and code provenance; retry-history preservation; retention and
+redaction; structured logging and correlation/trace identity; evaluation and
+benchmark reproducibility; documentation validation expectations; and
+change/evidence workflow. Reconciled with existing `RunManifestV1`, validation
+reports, subsystem ledgers, and frozen records. Did not implement the
 Universal Run Ledger, adapters, workflow registry, end-to-end tracing, or
 documentation automation.
 

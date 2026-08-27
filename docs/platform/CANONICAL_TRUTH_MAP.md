@@ -7,7 +7,7 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Topic-to-authority routing and conflict disposition |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.0` |
+| Version | `1.1` |
 | Last Verified | `2026-08-27` |
 | Supersedes | No single current whole-program authority index |
 | Superseded By | None |
@@ -38,6 +38,10 @@ validation counts, or gate logic.
 | Current program state | [Program Status](PROGRAM_STATUS.md) | Canonical explanation | `CURRENT_CANONICAL_TRUTH` | Material milestone, family, authority, and limitation state | None |
 | Post-core planning | [Master Roadmap](MASTER_ROADMAP.md) | Canonical roadmap | `APPROVED_FUTURE_DESIGN` | Milestone boundaries and dependencies only | None |
 | Documentation governance | [Documentation Standard](DOCUMENTATION_STANDARD.md) | Canonical explanation | `CURRENT_CANONICAL_TRUTH` | Prospective documentation rules | None |
+| Run, attempt, and reproducibility semantics | [Reproducibility and Run Standard](REPRODUCIBILITY_AND_RUN_STANDARD.md) | Canonical explanation | `CURRENT_CANONICAL_TRUTH` | Run identity, attempts, outcomes, dispositions, artifacts, attribution, and reproducibility classes | None |
+| Observability semantics | [Observability Standard](OBSERVABILITY_STANDARD.md) | Canonical explanation | `CURRENT_CANONICAL_TRUTH` | Logs, audit records, events, metrics, traces, correlation, clocks, and latency stages | None |
+| Test and evaluation semantics | [Test and Evaluation Standard](TEST_AND_EVALUATION_STANDARD.md) | Canonical explanation | `CURRENT_CANONICAL_TRUTH` | Validation, benchmarks, backtest, replay, simulation, provider smoke, model evaluation, experiment, and research | None |
+| REBASE-02 acceptance | [REBASE-02 package](../../artifacts/imp-rebase/REBASE02/README.md) | Accepted audit evidence | `HISTORICAL_TRUTH` | Standards implementation at acceptance cutoff | None |
 | Foundation design binding | [`canonical-authority.json`](../../manifests/phase0/canonical-authority.json) and [authority enforcement](../../src/market_platform_foundation/authority.py) | Manifest and code | `CURRENT_CANONICAL_TRUTH` | Exact-hash Foundation specification scope only | None |
 | Repository validation selection | [validation manifest](../../tools/validation_manifest.json), [manifest loader](../../tools/validation_manifest.py), [validator](../../tools/validate.py), and [CI workflow](../../.github/workflows/imp-validate.yml) | Manifest, code, workflow | `CURRENT_CANONICAL_TRUTH` | Suites, domains, invalidators, selection, and result semantics | None |
 | BUILD35 acceptance | [BUILD35 report](../../artifacts/full-system-acceptance/BUILD35_FULL_ACCEPTANCE_REPORT.json), [authority map](../../artifacts/full-system-acceptance/BUILD35_AUTHORITY_MAP.json), and hashes in that package | Immutable acceptance evidence | `HISTORICAL_TRUTH` | Recorded BUILD35 candidate and cutoff | None |
@@ -60,7 +64,7 @@ validation counts, or gate logic.
 | Broker external reality | Broker transport response when an authorized transport exists; current live canary uses [`MockBrokerTransport`](../../src/market_platform_foundation/intelligence/live_canary/submission.py) | External system plus transport code | `CURRENT_CANONICAL_TRUTH` | Acceptance, rejection, and fill | Production live transport is absent |
 | Reconciliation | [portfolio reconciliation](../../src/market_platform_foundation/portfolio/reconciliation.py), [platform reconciliation](../../src/market_platform_foundation/platform/reconciliation/engine.py), and [live-canary reconciliation](../../src/market_platform_foundation/intelligence/live_canary/reconciliation.py) | Code and records | `CURRENT_CANONICAL_TRUTH` | Incorporates external state into canonical state within each path | None |
 | Release governance | [release-governance implementation](../../src/market_platform_foundation/intelligence/live_canary/release_governance) and BUILD35 historical policy/evidence | Current code plus historical evidence | `HISTORICAL_TRUTH` / `CURRENT_CANONICAL_TRUTH` | Release eligibility and approval; not session or order authorization | None |
-| Future OF/RT/XA/AI/Narrative work | [Master Roadmap](MASTER_ROADMAP.md) and accepted REBASE-01 implementation specification | Canonical roadmap and accepted spec | `APPROVED_FUTURE_DESIGN` | Requirements and ownership only | None |
+| Future OF/RT/XA/AI/Narrative work | [Master Roadmap](MASTER_ROADMAP.md) and accepted REBASE-02 standards | Canonical roadmap and standards | `CURRENT_CANONICAL_TRUTH` / `APPROVED_FUTURE_DESIGN` | Requirements, ownership, and semantic contracts | None |
 
 ## Conflict handling
 

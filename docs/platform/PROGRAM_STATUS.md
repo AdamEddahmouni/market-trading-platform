@@ -7,7 +7,7 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Mutable current program state and material limitations |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.0` |
+| Version | `1.1` |
 | Last Verified | `2026-08-27` |
 | Supersedes | Root README as whole-program status authority |
 | Superseded By | None |
@@ -26,6 +26,7 @@ links to evidence; it does not redefine architecture or executable behavior.
 | EVIDENCE-01B | `IMPLEMENTED` runtime operationalization; not operationally accepted and not qualification closure | `CURRENT_CANONICAL_TRUTH` | [EVIDENCE-01B](../engineering/EVIDENCE_01B_REAL_PROVIDER_RUNTIME_OPERATIONALIZATION.md) |
 | EVIDENCE-01C | `IN_PROGRESS` as the next bounded real-provider shakedown and operational-acceptance record; no accepted outcome exists | `APPROVED_FUTURE_DESIGN` | [REBASE-00 limitation 6](../../artifacts/imp-rebase/REBASE00/07_KNOWN_LIMITATIONS.md) and [Master Roadmap](MASTER_ROADMAP.md) |
 | IMP-REBASE-01 | `COMPLETE` documentation-only canonicalization | `CURRENT_CANONICAL_TRUTH` | [REBASE-01 acceptance report](../../artifacts/imp-rebase/REBASE01/REBASE01_ACCEPTANCE_REPORT.md) |
+| IMP-REBASE-02 | `COMPLETE` reproducibility, observability, and evaluation standards | `CURRENT_CANONICAL_TRUTH` | [REBASE-02 acceptance report](../../artifacts/imp-rebase/REBASE02/REBASE02_ACCEPTANCE_REPORT.md) |
 | Autonomous live execution | `DISABLED`; no analytical or automation output can grant order authority | `CURRENT_CANONICAL_TRUTH` | [Authority Model](AUTHORITY_MODEL.md) and current live-safety/authorization implementations |
 | Accepted production live broker transport | `ABSENT`; mock, paper, broker abstractions, live gates, and reconciliation foundations do exist | `CURRENT_CANONICAL_TRUTH` | [Live-canary runner](../../src/market_platform_foundation/intelligence/live_canary/runner.py), [mock transport](../../src/market_platform_foundation/intelligence/live_canary/submission.py), and [broker inventory](../../src/market_platform_foundation/intelligence/live_execution_safety/broker_inventory.py) |
 
@@ -39,8 +40,8 @@ or release authority.
 
 | Family | Assessment | Existing reusable foundations | Missing universal or consolidated capability | Next owning milestone |
 |---|---|---|---|---|
-| Operating Fabric | `PARTIAL` | Run manifests, schedulers, pipelines, subsystem ledgers, operations, runbooks, and incident evidence | Common run/operation/artifact identity, append-only disposition and attempt history, program trace semantics, and workflow/control indexing | `IMP-REBASE-02`, then `IMP-OF-01` |
-| Real-Time Opportunity Fabric | `PARTIAL` | Callback ingestion, bounded queues, observational state, features, routing, opportunity economics, and local metrics | Accepted end-to-end correlation/trace contract, benchmark baseline, and measured integration plan | `IMP-RT-01` after standards/run identity |
+| Operating Fabric | `PARTIAL` | Run manifests, schedulers, pipelines, subsystem ledgers, operations, runbooks, and incident evidence | Common run/operation/artifact identity runtime, append-only disposition and attempt history, program trace implementation, and workflow/control indexing | `IMP-OF-01` (standards established by `IMP-REBASE-02`) |
+| Real-Time Opportunity Fabric | `PARTIAL` | Callback ingestion, bounded queues, observational state, features, routing, opportunity economics, and local metrics | Accepted end-to-end correlation/trace implementation, benchmark baseline, and measured integration plan | `IMP-RT-01` (contract defined by `IMP-REBASE-02`) |
 | Cross-Asset | `PARTIAL` | Temporal/provenance/quality contracts plus bounded macro, futures, energy, options, and participant foundations | Shared canonical identity participation, relationship extensions, source-admission template, and bounded reference vertical | `IMP-XA-01` |
 | Narrative/Motive | `PARTIAL` | Event, participant, hypothesis, contradiction, market-context, and bounded narrative features | Canonical uncertain motive/thesis method, source-treatment standard, and admitted runtime | `IMP-NARRATIVE-01` |
 | AI/Agents | `PARTIAL` | Read-only assistant, bounded evidence packs, citation references, and versioned fixture outputs | Universal run attribution, prompt/tool provenance, evaluation, workflow and approval lifecycle | `IMP-AI-01` |
@@ -68,8 +69,8 @@ mandatory. Automatic broker failover remains disabled.
 
 ## Material current limitations
 
-- No universal append-only run and artifact ledger or common attempt/disposition
-  authority exists.
+- No universal append-only run and artifact ledger runtime or common
+  attempt/disposition authority exists (`IMP-OF-01` not implemented).
 - End-to-end provider-to-user-or-broker trace and accepted performance baseline
   are incomplete.
 - Cross-asset, Narrative/Motive, Real-Time Opportunity, Operating Fabric, and

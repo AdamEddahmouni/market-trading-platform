@@ -6,8 +6,8 @@
 | Classification | `CANONICAL` |
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Program documentation navigation |
-| Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.0` |
+| Establishing Milestone | `IMP-REBASE-01`; extended by `IMP-REBASE-02` |
+| Version | `1.1` |
 | Last Verified | `2026-08-27` |
 | Supersedes | No single current program-documentation index |
 | Superseded By | None |
@@ -48,6 +48,9 @@ scope.
 | How are evidence, claims, inferences, narratives, and model outputs treated? | [Data and Epistemic Model](DATA_AND_EPISTEMIC_MODEL.md) |
 | How are documents classified and kept current? | [Documentation Standard](DOCUMENTATION_STANDARD.md) |
 | What does a controlled term mean? | [Glossary](GLOSSARY.md) |
+| How are runs, attempts, and reproducibility represented? | [Reproducibility and Run Standard](REPRODUCIBILITY_AND_RUN_STANDARD.md) |
+| How are logs, metrics, traces, and correlation defined? | [Observability Standard](OBSERVABILITY_STANDARD.md) |
+| How are validation, benchmarks, and evaluation governed? | [Test and Evaluation Standard](TEST_AND_EVALUATION_STANDARD.md) |
 
 ## Recommended reading order
 
