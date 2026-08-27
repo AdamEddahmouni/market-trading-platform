@@ -78,3 +78,37 @@ python tools/validate.py changed
 - **Moomoo OpenD / IBKR gateway**: not available on cloud VM. Use fixtures, replay, and mock paths; keep live gates off.
 - **Handoff branch**: start from `cloud-handoff/full-state-2026-08-25` and verify against `artifacts/cloud-handoff/CLOUD_FILE_HASHES.json`.
 - See `docs/engineering/CURSOR_CLOUD_ENVIRONMENT.md` for secret names (values via Cursor Cloud Secrets only).
+
+## Canonical program truth and change isolation
+
+Before implementation work, recover repository truth: root, branch, HEAD,
+upstream/ahead-behind state, worktrees, tracked modifications, untracked paths,
+and recent lineage. Do not assume a clean checkout.
+
+- Use [`docs/platform/`](docs/platform/README.md) for current program
+  explanation, status, roadmap, boundaries, authority routing, terminology, and
+  documentation governance.
+- Executable schemas, policies, gates, registries, manifests, frozen policies,
+  and implementation authorities control behavior within their scopes.
+  Canonical prose must reference mutable values rather than shadow them.
+- Preserve accepted BUILD, Phase, repository-closure, and EVIDENCE artifacts as
+  historical truth at their recorded cutoffs. Current prose may route to them
+  but may not rewrite them.
+- Keep EVIDENCE-01/01A/01B semantics and records isolated. EVIDENCE-01C remains
+  independent of REBASE, Operating Fabric, Real-Time, Cross-Asset, Narrative,
+  and AI roadmap work unless a separately accepted authority changes that
+  relationship.
+- Information, research, prediction, narrative, LLM/agent output,
+  qualification, release approval, provider connectivity, and mode flags do not
+  grant broker authority. Preserve independent risk, live-safety, session
+  authorization, per-order confirmation, broker, and reconciliation boundaries.
+- When the current checkout contains unrelated work, use a clean dedicated
+  worktree from the approved base. Do not reset, clean, broadly stash, stage,
+  or copy the unrelated changes.
+- Validate with the manifest-driven ladder above. Before committing, inspect
+  `git status --short`, the complete diff, `git diff --check`, the exact staged
+  path list, the complete staged diff, and `git diff --cached --check`. Stage
+  explicit intended paths only.
+- Future run-ledger, workflow-registry, documentation-automation, or capability
+  registry requirements apply only after their owning milestones are
+  implemented and accepted; do not require nonexistent systems.

@@ -1,0 +1,90 @@
+# IMP program status
+
+| Field | Value |
+|---|---|
+| Document ID | `IMP-PROGRAM-STATUS` |
+| Classification | `CANONICAL` |
+| Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
+| Canonical Subject | Mutable current program state and material limitations |
+| Establishing Milestone | `IMP-REBASE-01` |
+| Version | `1.0` |
+| Last Verified | `2026-08-27` |
+| Supersedes | Root README as whole-program status authority |
+| Superseded By | None |
+
+This is the current program-state authority. It summarizes accepted state and
+links to evidence; it does not redefine architecture or executable behavior.
+
+## Current accepted state
+
+| Subject | Current state | Truth class | Controlling evidence |
+|---|---|---|---|
+| BUILD01-35 core campaign | Historical disposition `FULL_SYSTEM_ACCEPTED_WITH_LIMITATIONS` for the recorded BUILD35 candidate | `HISTORICAL_TRUTH` | [BUILD35 acceptance report](../../artifacts/full-system-acceptance/BUILD35_FULL_ACCEPTANCE_REPORT.json) and [known limitations](../../artifacts/full-system-acceptance/BUILD35_KNOWN_LIMITATIONS.md) |
+| Repository closure | `COMPLETE` for its recorded source; the audit passed with no classification-time changes | `HISTORICAL_TRUTH` | [Closure audit](../engineering/POST_BUILD35_REPOSITORY_CLOSURE_AUDIT.md) and [classification](../../artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json) |
+| EVIDENCE-01 | `COMPLETE` policy and assessment machinery; evidence sufficiency only | `HISTORICAL_TRUTH` / `CURRENT_CANONICAL_TRUTH` | [EVIDENCE-01](../engineering/EVIDENCE_01_LONGER_FORWARD_QUALIFICATION.md) |
+| EVIDENCE-01A | `COMPLETE` campaign framework and real-forward origin controls | `HISTORICAL_TRUTH` / `CURRENT_CANONICAL_TRUTH` | [EVIDENCE-01A](../engineering/EVIDENCE_01A_REAL_FORWARD_OBSERVATION_CAMPAIGN.md) |
+| EVIDENCE-01B | `IMPLEMENTED` runtime operationalization; not operationally accepted and not qualification closure | `CURRENT_CANONICAL_TRUTH` | [EVIDENCE-01B](../engineering/EVIDENCE_01B_REAL_PROVIDER_RUNTIME_OPERATIONALIZATION.md) |
+| EVIDENCE-01C | `IN_PROGRESS` as the next bounded real-provider shakedown and operational-acceptance record; no accepted outcome exists | `APPROVED_FUTURE_DESIGN` | [REBASE-00 limitation 6](../../artifacts/imp-rebase/REBASE00/07_KNOWN_LIMITATIONS.md) and [Master Roadmap](MASTER_ROADMAP.md) |
+| IMP-REBASE-01 | `COMPLETE` documentation-only canonicalization | `CURRENT_CANONICAL_TRUTH` | [REBASE-01 acceptance report](../../artifacts/imp-rebase/REBASE01/REBASE01_ACCEPTANCE_REPORT.md) |
+| Autonomous live execution | `DISABLED`; no analytical or automation output can grant order authority | `CURRENT_CANONICAL_TRUTH` | [Authority Model](AUTHORITY_MODEL.md) and current live-safety/authorization implementations |
+| Accepted production live broker transport | `ABSENT`; mock, paper, broker abstractions, live gates, and reconciliation foundations do exist | `CURRENT_CANONICAL_TRUTH` | [Live-canary runner](../../src/market_platform_foundation/intelligence/live_canary/runner.py), [mock transport](../../src/market_platform_foundation/intelligence/live_canary/submission.py), and [broker inventory](../../src/market_platform_foundation/intelligence/live_execution_safety/broker_inventory.py) |
+
+BUILD35 acceptance does not prove current production readiness or autonomous
+trading approval. EVIDENCE status does not grant risk, session, order, broker,
+or release authority.
+
+## Program-family consolidation
+
+`PARTIAL` is a consolidation assessment, never a percentage or readiness claim.
+
+| Family | Assessment | Existing reusable foundations | Missing universal or consolidated capability | Next owning milestone |
+|---|---|---|---|---|
+| Operating Fabric | `PARTIAL` | Run manifests, schedulers, pipelines, subsystem ledgers, operations, runbooks, and incident evidence | Common run/operation/artifact identity, append-only disposition and attempt history, program trace semantics, and workflow/control indexing | `IMP-REBASE-02`, then `IMP-OF-01` |
+| Real-Time Opportunity Fabric | `PARTIAL` | Callback ingestion, bounded queues, observational state, features, routing, opportunity economics, and local metrics | Accepted end-to-end correlation/trace contract, benchmark baseline, and measured integration plan | `IMP-RT-01` after standards/run identity |
+| Cross-Asset | `PARTIAL` | Temporal/provenance/quality contracts plus bounded macro, futures, energy, options, and participant foundations | Shared canonical identity participation, relationship extensions, source-admission template, and bounded reference vertical | `IMP-XA-01` |
+| Narrative/Motive | `PARTIAL` | Event, participant, hypothesis, contradiction, market-context, and bounded narrative features | Canonical uncertain motive/thesis method, source-treatment standard, and admitted runtime | `IMP-NARRATIVE-01` |
+| AI/Agents | `PARTIAL` | Read-only assistant, bounded evidence packs, citation references, and versioned fixture outputs | Universal run attribution, prompt/tool provenance, evaluation, workflow and approval lifecycle | `IMP-AI-01` |
+
+Production live broker transport is `ABSENT`, not `PARTIAL`. Its future work is
+a separate safety and qualification program; no REBASE milestone authorizes it.
+
+## Live-readiness state
+
+The current program preserves this non-equivalence:
+
+```text
+real observational market data
+!= live provider connectivity
+!= production live execution transport
+!= operationally accepted live execution
+!= authorized live session
+!= authorized individual order
+!= broker acceptance or fill
+```
+
+Broker fill then requires reconciliation before canonical state changes.
+Human live-session authorization and per-order human confirmation remain
+mandatory. Automatic broker failover remains disabled.
+
+## Material current limitations
+
+- No universal append-only run and artifact ledger or common attempt/disposition
+  authority exists.
+- End-to-end provider-to-user-or-broker trace and accepted performance baseline
+  are incomplete.
+- Cross-asset, Narrative/Motive, Real-Time Opportunity, Operating Fabric, and
+  AI/Agent capabilities are not consolidated.
+- EVIDENCE-01C has no accepted operational outcome.
+- Accepted production live broker transport and operationally accepted live
+  execution are absent.
+
+These are program limitations, not defects in REBASE-01 acceptance.
+
+## Update rule
+
+Update this document only for a material accepted state change: milestone
+acceptance or invalidation, family-consolidation or implementation-maturity
+change, material authority creation/removal/transfer, a major limitation opening
+or closing, or a qualification/production-eligibility change. Routine commits,
+refactors, wording fixes, and ordinary test-count changes do not require an
+update.
