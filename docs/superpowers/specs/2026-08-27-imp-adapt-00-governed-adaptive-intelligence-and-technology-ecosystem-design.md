@@ -4,315 +4,281 @@
 |---|---|
 | Document ID | `IMP-ADAPT-00-DESIGN` |
 | Classification | `ACTIVE_SUPPORTING` |
-| Primary Truth Class | `APPROVED_FUTURE_DESIGN` |
-| Review State | `READY_FOR_PRINCIPAL_REVIEW` |
+| Truth class | `APPROVED_FUTURE_DESIGN` (pending principal acceptance) |
+| Status | `DESIGN_COMPLETE_NOT_IMPLEMENTED` |
 | Version | `1.0` |
-| Last Verified | `2026-08-27` |
-| Establishing Milestone | `IMP-ADAPT-00 architecture study` |
+| Last verified | `2026-08-27` |
+| Establishing milestone | `IMP-ADAPT-00` |
 | Supersedes | None |
-| Superseded By | None |
+| Superseded by | None |
 
-This document is a planning-only architecture and technology-ecosystem study.
-It is not a runtime authority, not an implementation plan with executable
-tasks, not a dependency-lock change, and not a grant of trading, risk, release,
-qualification, or execution authority. It does not reopen IMP-REBASE-02.
+This document is planning only. It does not install packages, copy external
+source, implement runtimes, modify canonical `docs/platform/` files, amend
+approved REBASE-02, or change execution authority.
+
+## Disposition
 
 ```text
 NO REBASE-02 AMENDMENT REQUIRED
 REBASE-02 REMAINS APPROVED FOR IMPLEMENTATION
+EVIDENCE-01C REMAINS INDEPENDENT
 ```
 
 ## Purpose
 
-Determine, from repository truth plus pinned external research:
+Determine what IMP must own as domain authority, which mature libraries to
+leverage behind adapters, which current systems already solve adaptive-loop
+pieces, and how IMP can learn from settled outcomes without becoming an
+uncontrolled self-modifying trading system.
 
-1. what IMP must own because it is domain authority;
-2. which mature libraries to leverage rather than rebuild;
-3. what must remain behind replaceable adapters;
-4. which current IMP systems already solve the problem;
-5. which external ideas improve architecture without becoming dependencies;
-6. how IMP can learn from settled outcomes without becoming an uncontrolled
-   self-modifying trading system.
+This is not a library-shopping list. The governing constraint recovered from
+repository truth is the **foundation dependency lock**: CPython 3.11.15 with
+only `numpy`, `pymongo`, and `scikit-learn` as authorized third-party runtime
+packages, plus Windows `tzdata`. `pandas`, `requests`, `aiohttp`, `websocket`,
+`pickle`, `ib_insync`, and several broker SDKs are **prohibited patterns** in
+`phase0-dependency-lock.json`. A nested collector (`pipelines/stock_data`) has
+a separate, heavier stack. Adaptive architecture must respect that split.
 
-This is research + repository audit + architecture + technology selection +
-dependency strategy + roadmap design. No packages were installed. No external
-source was copied. Canonical platform documents were not modified.
+---
 
-## Verified starting state
+# 1. Verified starting state
 
 Examined date: `2026-08-27`.
 
 | Item | Verified value |
 |---|---|
-| Original workspace | `C:/Users/adame/Desktop/market-trading-platform/integrated-market-platform` |
-| Original branch / HEAD | `cloud/build-35-release-governance-operational-acceptance` / `44800d2e210e58ff5759c44cc343dd4578c0b821` |
-| Original dirty state | Preserved untouched (tracked + untracked work left in place) |
-| REBASE-02 review commit | `d899e211475f4b9372539944f997e13acbe3b73a` (`docs/imp-rebase-02-spec-review`) |
-| REBASE-02 implementation spec | `docs/superpowers/specs/2026-08-27-imp-rebase-02-reproducibility-observability-evaluation-operational-standards-implementation-spec.md` |
-| Spec SHA-256 | `1BE15D0BE64A1C14446BCC80FBEEEA609BBD15316DC668B0C660FB36483148E0` (matches expected) |
-| Disposition | `IMP_REBASE_02_SPEC_APPROVED_FOR_IMPLEMENTATION` |
+| Primary repository | `C:/Users/adame/Desktop/market-trading-platform/integrated-market-platform` |
+| Original workspace branch / HEAD | `cloud/build-35-release-governance-operational-acceptance` / `44800d2e210e58ff5759c44cc343dd4578c0b821` |
+| Original dirty state | preserved; not mutated |
 | ADAPT-00 branch | `docs/imp-adapt-00-learning-ecosystem` |
 | ADAPT-00 worktree | `.worktrees/imp-adapt-00-learning-ecosystem` |
-| ADAPT-00 starting HEAD | `d899e211475f4b9372539944f997e13acbe3b73a` |
-| Later legitimate planning commits after REBASE-02 | None used as base |
-| Unrelated worktrees | Preserved exactly |
+| Starting HEAD (this worktree) | `d899e211475f4b9372539944f997e13acbe3b73a` |
+| REBASE-02 review branch | `docs/imp-rebase-02-spec-review` |
+| Approved REBASE-02 spec | `docs/superpowers/specs/2026-08-27-imp-rebase-02-reproducibility-observability-evaluation-operational-standards-implementation-spec.md` |
+| Spec SHA-256 | `1BE15D0BE64A1C14446BCC80FBEEEA609BBD15316DC668B0C660FB36483148E0` |
+| Spec disposition | `IMP_REBASE_02_SPEC_APPROVED_FOR_IMPLEMENTATION` |
+| Later legitimate planning commit after `d899e21` | none used; ADAPT-00 branched from that commit |
+| Packages installed during ADAPT-00 | none |
+| External source copied | none |
 
-## Sequencing invariant
+Unrelated worktrees (`imp-rebase-02-design`, `imp-rebase-01-canonical`,
+`mode-launcher`, `mixed-live-screener`, and sibling-repo worktrees) were left
+untouched.
 
-REBASE-02 already completed design → written-spec review → semantic hardening →
-implementation approval. ADAPT-00 does not reopen it.
+---
 
-A useful library, a desirable future feature, or an implementation convenience
-is not a standards-level semantic incompatibility. None was found.
+# 2. Sequencing invariant
 
-## Mission and safety
+REBASE-02 already completed DESIGN → WRITTEN-SPEC REVIEW → SEMANTIC HARDENING
+→ IMPLEMENTATION APPROVAL.
 
-Target loop (eventual, governed):
+Useful libraries, desirable adaptive features, and implementation convenience
+are **not** standards-level semantic conflicts. ADAPT-00 found **no**
+incompatibility that would make a future adaptive architecture impossible or
+internally contradictory with the approved run/attempt/outcome/disposition/
+artifact/checkpoint/AI-attribution model.
+
+Canonical platform docs remain frozen until a later integration milestone after
+REBASE-02 implementation.
+
+---
+
+# 3. Mission and safety
+
+Target loop (future, not now):
 
 ```text
-SENSE → UNDERSTAND → HYPOTHESIZE → PREDICT
-→ RECOMMEND / ACT WITHIN AUTHORITY
-→ OBSERVE → SETTLE → EVALUATE → ATTRIBUTE ERROR
-→ REFLECT → LEARN → DISCOVER PATTERNS
-→ GENERATE HYPOTHESES / EXPERIMENTS / CHALLENGERS
-→ TEST → BACKTEST / REPLAY → SHADOW → FORWARD EVALUATE
-→ PROMOTE → REPEAT
+SENSE → UNDERSTAND → HYPOTHESIZE → PREDICT → RECOMMEND/ACT WITHIN AUTHORITY
+→ OBSERVE → SETTLE → EVALUATE → ATTRIBUTE ERROR → REFLECT → LEARN
+→ DISCOVER PATTERNS → GENERATE HYPOTHESES/EXPERIMENTS/CHALLENGERS
+→ TEST → BACKTEST/REPLAY → SHADOW → FORWARD EVALUATE → PROMOTE → REPEAT
 ```
 
 Permanent separations:
 
 ```text
-LEARNING ≠ PROMOTION
-PROMOTION ≠ AUTHORITY
-AUTHORITY ≠ EXECUTION
+LEARNING ≠ PROMOTION ≠ AUTHORITY ≠ EXECUTION
 EXECUTION REQUEST ≠ BROKER FILL
+AI ≠ authority    Agent ≠ authority    Reflection ≠ truth
+Lesson ≠ truth    Hypothesis ≠ truth   Narrative ≠ truth
+Model output ≠ observed fact           Prediction ≠ permission
+Qualification ≠ permission             Promotion ≠ trading authorization
 ```
 
-```text
-AI ≠ authority
-Agent ≠ authority
-Reflection ≠ truth
-Lesson ≠ truth
-Hypothesis ≠ truth
-Narrative ≠ truth
-Model output ≠ observed fact
-Prediction ≠ permission
-Qualification ≠ permission
-Promotion ≠ trading authorization
-Release approval ≠ trading authorization
-Live provider connection ≠ execution transport
-Session authorization ≠ order authorization
-Order authorization ≠ broker fill
-```
-
-No adaptive architecture may bypass:
+No adaptive path may bypass:
 
 ```text
 INTELLIGENCE → RISK AUTHORITY → HUMAN LIVE-SESSION AUTHORIZATION
 → PER-ORDER CONFIRMATION → EXECUTION GATEWAY → BROKER → RECONCILIATION
 ```
 
-Execution authority is unchanged by this milestone.
+Hot-path prohibition: no synchronous LLM reflection, vector reindex,
+hyperparameter search, training, graph search, or experiment generation inside
+latency-critical opportunity/execution.
 
 ---
 
-# 1. Current Python and technology inventory
+# 4. Current Python / technology inventory
 
-## 1.1 Declared Python
+## 4.1 Runtime
 
-| Surface | Value |
+| Source | Fact |
 |---|---|
-| `phase0-dependency-lock.json` | CPython `3.11`, `tested_patch` `3.11.15` |
-| Cloud / AGENTS.md | uv-managed CPython 3.11.15; `tzdata` in venv on Windows |
-| `pipelines/stock_data/pyproject.toml` | `requires-python = ">=3.11"` |
-| UI | Node/Vite React app; not a Python runtime |
+| `phase0-dependency-lock.json` | CPython 3.11, `tested_patch` 3.11.15 |
+| CI | `.github/workflows/imp-validate.yml` uses `python-version: "3.11"` |
+| Cloud | `.cursor/install-cloud-deps.sh` installs `tzdata numpy pymongo scikit-learn` |
+| Foundation third-party | **unpinned names only**: `numpy`, `pymongo`, `scikit-learn` |
+| Foundation tests | stdlib `unittest` (primary) |
+| Rust | no `Cargo.toml` |
+| UI | Node/Vite React app (`ui/package.json`) |
 
-## 1.2 Foundation dependency lock (authoritative for `src/market_platform_foundation`)
+## 4.2 Two Python regimes
 
-Direct third-party allowed: `numpy`, `pymongo`, `scikit-learn`.
+**A. Governed foundation (`src/market_platform_foundation`)**
 
-`tzdata` is a Windows zoneinfo companion, not a foundation import.
+Lock-authorized: numpy, pymongo, scikit-learn. HTTP via stdlib `urllib`. Local
+state via stdlib `sqlite3`. Intelligence persistence: in-memory repository or
+optional Mongo.
 
-Prohibited patterns in the lock include `aiohttp`, `pandas`, `requests`,
-`websocket`, `pickle`, broker SDKs (`ib_insync`, `ccxt`, …). `analysis.py`
-additionally prohibits `requests` and `websocket` at the AST policy layer.
-Provider HTTP in the foundation is stdlib `urllib` / `http.client`
-(`finviz/http_client.py`, `sec_edgar/transport.py`, FRED/EIA/CFTC/FINRA
-transports).
+**B. Nested collector (`pipelines/stock_data`)**
 
-Cloud install (`.cursor/install-cloud-deps.sh`): `tzdata numpy pymongo scikit-learn`.
+Own `pyproject.toml`: `yfinance`, `pandas>=2`, `numpy>=1.24`, `requests>=2.28`,
+`sqlalchemy`, `beautifulsoup4`, `lxml`, `pyarrow>=12` (used via
+`DataFrame.to_parquet`, no direct `import pyarrow`), `rich`; optional
+`curl_cffi`, unused extra `matplotlib`/`jupyter`; pytest for that subtree.
 
-There is **no** root `pyproject.toml`, `requirements.txt`, `poetry.lock`, or
-`uv.lock` for the foundation. Intelligence BUILD 04.5–09 additionally uses
-numpy/pymongo/scikit-learn; that is already declared.
+These regimes must not be collapsed. Expanding pandas/requests into the
+foundation lock would be a governed dependency-policy change, not a silent
+import.
 
-## 1.3 Pipeline extra (not foundation)
+## 4.3 Import-verified library facts (foundation vs pipeline)
 
-`pipelines/stock_data` is a separate package (`market-data-pipeline`) with
-`pandas`, `numpy`, `requests`, `pyarrow`, `yfinance`, `sqlalchemy`,
-BeautifulSoup/lxml, `rich`; optional `curl_cffi`, `matplotlib`, Jupyter;
-tests via pytest. This is an acquisition/research pipeline, not the live
-foundation hot path.
-
-## 1.4 UI
-
-`ui/package.json`: React 18, Vite, TanStack Query, lightweight-charts,
-recharts, zod. Charts already exist in product UI; Python plotting libraries
-must not duplicate execution-critical UI.
-
-## 1.5 Test stack
-
-Foundation tests: stdlib `unittest` via `tools/validate.py`. Pipeline tests:
-pytest. UI: vitest. Hypothesis, pytest-asyncio, pytest-benchmark are **not**
-foundation dependencies today.
-
-## 1.6 Rust / Redis / extra DBs
-
-No `Cargo.toml` in this repository. Mongo via `pymongo` behind
-`IntelligenceRepository`. SQLite appears in tooling/checkpoints elsewhere in
-the program story; Redis/PostgreSQL/DuckDB are not foundation runtime.
-
-## 1.7 Import facts (must not be inferred from lock files alone)
-
-| Library | In lock? | Imported in foundation `src/`? | Imported in `pipelines/stock_data`? |
-|---|---|---|---|
-| NumPy | Yes (direct) | Yes — trainers, baselines, fusion calibrators | Yes |
-| scikit-learn | Yes (direct) | Yes — logistic, GBM, isotonic/logistic calibration | No |
-| PyMongo | Yes (direct) | Yes — `intelligence/persistence/mongo/repository.py` | No |
-| pandas | **Prohibited** in foundation lock | **No** | Yes |
-| requests | **Prohibited** | **No** (stdlib urllib instead) | Yes |
-| matplotlib | No | No | Optional extra `full` |
-| seaborn | No | No | No |
-| openpyxl | No | No | No |
-| SciPy, Polars, DuckDB, Numba, statsmodels, arch, XGBoost, LightGBM, CatBoost, PyTorch, River, Optuna, Pydantic, HTTPX, aiohttp, websockets, orjson, msgspec, LangGraph, MLflow | No | No | PyArrow yes (pipeline) |
-
-NumPy is **not** a ubiquitous hot-path array layer today. Verified uses are
-ML training/calibration (`sklearn_*`, `fusion/calibrators.py`,
-`baselines/controls/*`). Most market, risk, replay, and feature code is
-stdlib/dataclass oriented. Do not pretentiously “accelerate NumPy loops”
-until RT-01 measures them.
-
----
-
-# 2. Existing IMP adaptive foundation
-
-Classification: `EXISTING_STRONG` | `EXISTING_PARTIAL` | `EXPERIMENTAL` | `HISTORICAL` | `ABSENT`.
-
-| Capability | Classification | Evidence |
+| Library | Already in IMP | Import evidence |
 |---|---|---|
-| Prediction identity + frozen settlement plan | EXISTING_STRONG | `PredictionLedgerEntryV1` |
-| Outcome settlement | EXISTING_STRONG | `OutcomeSettlementService` / `outcomes/` |
-| Temporal eligibility | EXISTING_STRONG | `available_time_ns <= decision_time_ns`; late registration handling |
-| Specialists + evidence blackboard | EXISTING_STRONG | BUILD 12 `council/` |
-| Blind Council + deliberation gate | EXISTING_STRONG | `BlindCouncilOrchestrator`, `DeliberationGate`, round limits |
-| Fusion / calibration | EXISTING_STRONG | `fusion/calibrators.py` (sklearn isotonic + logistic) |
-| Counterfactual vs observed replay | EXISTING_STRONG | `replay/scenario.py`; qualification scenarios F02/P12 forbid masquerading |
-| Forward / paper qualification | EXISTING_STRONG | `forward_qualification/`, `paper_execution_qualification/` |
-| EVIDENCE campaigns | EXISTING_STRONG | independent semantic track; content-derived IDs |
-| Training / candidate artifacts | EXISTING_PARTIAL | BUILD 18 trainers + identity/hashes; no universal challenger factory |
-| Release governance | EXISTING_PARTIAL | BUILD 35 + REBASE-02 standards (not yet implemented as docs) |
-| Benchmark runner | EXISTING_PARTIAL | `tools/benchmark.py` informational; comparability standard missing (REBASE-02) |
-| Assistant / AI | EXISTING_PARTIAL | read-only assistant; AI-01 attribution still future |
-| Regime / routing / expert weights as governed adaptation | EXISTING_PARTIAL | fusion/council exist; no bounded online policy object |
-| Experience records after settlement | ABSENT | settlement ≠ experience kernel |
-| Validated lessons with falsifiers | ABSENT | |
-| Retrieval index for lessons | ABSENT | |
-| Agent-graph identity / checkpoint compatibility | ABSENT as IMP contract | REBASE-02 defines generic checkpoint rules; no graph ID yet |
-| Automatic hypothesis/experiment generation | ABSENT | |
-| Vector DB | ABSENT | |
-| RL live exploration | ABSENT (correct) | |
-| Adaptive Intelligence Fabric as named program family | ABSENT | this design proposes it as `APPROVED_FUTURE_DESIGN` |
+| NumPy | Yes | intelligence trainers, baselines, fusion calibrators; pipeline scrapers |
+| scikit-learn | Yes | LogisticRegression, GradientBoosting, IsotonicRegression, Pipeline, StandardScaler |
+| pymongo | Yes (lazy) | `intelligence/persistence/mongo/repository.py` |
+| pandas | Pipeline only | `pipelines/stock_data/**`; **prohibited** in foundation lock |
+| requests | Pipeline only | pipeline scrapers; **prohibited** in foundation lock |
+| pyarrow | Pipeline declared | parquet export engine; no `import pyarrow` |
+| matplotlib | Declared extra only | **zero Python imports** |
+| seaborn, openpyxl | No | zero imports |
+| scipy, polars, duckdb, numba, statsmodels, arch | No | zero imports |
+| xgboost, lightgbm, catboost, torch | No | zero imports |
+| river, optuna, cvxpy, pydantic, pandera | No | zero imports |
+| httpx, aiohttp, websockets | No | zero imports; aiohttp/websocket prohibited in lock |
+| orjson, msgspec | No | stdlib `json` used |
+| hypothesis (PyPI) | No | name collision with domain `HypothesisV1` only |
+| pytest | Pipeline tests | foundation uses unittest |
 
-**Do not rebuild** prediction, settlement, blind council, blackboard,
-qualification, or EVIDENCE as generic LangGraph “memory” features.
+## 4.4 HTTP / provider truth
+
+| Boundary | Transport |
+|---|---|
+| FRED, EIA, CFTC, weather, CBOE, FINRA, RegSHO, SEC EDGAR | stdlib `urllib` transports |
+| Finviz governed client | stdlib urllib |
+| Finviz login tool | optional `curl_cffi` |
+| Anthropic assistant | stdlib urlopen |
+| IBKR | stdlib HTTPS to **local Client Portal Gateway** (not `ib_insync`) |
+| Moomoo | `moomoo-api==10.10.7008` **outside** the foundation lock; foundation consumes JSONL |
+| UI API | stdlib `http.server` |
+
+Synchronous `requests` is **not** the live-streaming architecture and is not
+used on the foundation path. Do not default future streaming to `requests`.
+
+## 4.5 UI stack (not Python research)
+
+React 18, react-router, TanStack Query, lightweight-charts, recharts, zod.
+Product charting already exists; Plotly/Matplotlib must not duplicate operator
+UI on the hot path.
 
 ---
 
-# 3. What IMP must own vs leverage vs adapter
+# 5. Existing IMP adaptive foundation audit
 
-## 3.1 IMP domain authority (build / keep inside IMP)
+Classification: `EXISTING_STRONG` | `EXISTING_PARTIAL` | `EXPERIMENTAL` |
+`HISTORICAL` | `ABSENT`.
 
-Market canonical state; temporal eligibility; prediction identity; settlement;
-quality admission; risk authority; execution authority; qualification;
-learning/promotion governance; run/artifact/outcome/disposition identity
-(REBASE-02 / OF-01); graph identity; experience/lesson epistemics.
+| Capability | Class | Evidence | Gap vs governed learning loop |
+|---|---|---|---|
+| Prediction identity | EXISTING_STRONG | `PredictionLedgerEntryV1` frozen settlement plan, cutoff, horizon, policy identity | Experience record not yet a first-class object |
+| Outcome settlement | EXISTING_STRONG | `OutcomeSettlementService` / scheduler / adjudicator / modes | Need experience wrapping around settlement, not a second settlement authority |
+| Temporal eligibility | EXISTING_STRONG | `available_time_ns <= decision_time_ns` | Keep as law |
+| Specialists | EXISTING_STRONG | `DEFAULT_SPECIALIST_REGISTRY`, `DeliberatingSpecialist` | Do not rebuild as LangGraph “analysts” |
+| Evidence blackboard | EXISTING_STRONG | `BlackboardSnapshot`, hashed blackboard identity | Not a lesson store |
+| Blind Council | EXISTING_STRONG | `BlindCouncilOrchestrator`, `BlindExecutionBarrier` | Bounded debate already exists; do not import TradingAgents debate as authority |
+| Fusion / calibration | EXISTING_PARTIAL | sklearn isotonic + logistic calibrators | No online/bounded adaptive policy yet |
+| Hypotheses | EXISTING_PARTIAL | `HypothesisV1` + hypothesis service over blackboard | Not statistically validated lessons |
+| Counterfactuals | EXISTING_PARTIAL | settlement `mode` / scenario_id patterns | Must keep ACTUAL vs COUNTERFACTUAL vs SIMULATED disjoint |
+| Forward qualification / EVIDENCE | EXISTING_STRONG | evidence01a/01b stores, campaign records | Independent of ADAPT; do not contaminate |
+| Training / evaluation | EXISTING_PARTIAL | sklearn trainers, baselines, evaluation cohort/provenance | No challenger factory or Run Ledger yet |
+| Release governance | EXISTING_PARTIAL | BUILD35 release/acceptance | Not adaptive promotion |
+| Assistant / AI | EXISTING_PARTIAL | read-only assistant, audit store | IMP-AI-01 still required for attributable research |
+| Checkpoint / resume | EXISTING_PARTIAL | REBASE-02 semantics specified; runtime Universal Ledger absent | Graph identity not yet defined |
+| Online learning / drift / lessons / memory retrieval | ABSENT | no River, no vector index, no reflection store | ADAPT-01+ |
+| Agent graph orchestration library | ABSENT | no LangGraph/MAF import | Optional adapter later |
+| Self-promotion | ABSENT (correct) | authority model forbids it | Keep absent |
 
-## 3.2 Commodity algorithms (prefer mature libraries)
+**Reuse before inventing:** prediction ledger, settlement, specialists, council,
+blackboard, fusion, EVIDENCE, and risk/execution gates are domain authority.
+External agent frameworks must not re-implement them.
 
-Linear algebra, optimization primitives, statistics, HTTP, serialization,
-plotting, standard ML estimators, columnar IO.
+---
 
-## 3.3 Replaceable adapters
+# 6. Build vs buy (commodity vs domain)
 
-Agent orchestration engine; experiment-store backend; workflow engine;
-vector index; telemetry export; optional dataframe engine for cold analytics.
+IMP **should use mature libraries** for commodity algorithms: linear algebra,
+optimization, statistics, HTTP clients, serialization, plotting, standard ML.
 
-```text
-IMP CANONICAL CONTRACTS
-        │
-        ├── numerical libraries
-        ├── data libraries
-        ├── model libraries
-        ├── agent adapters
-        ├── workflow adapters
-        ├── experiment adapters
-        ├── telemetry exporters
-        └── retrieval adapters
-
-EXTERNAL TECHNOLOGY = IMPLEMENTATION DETAIL / OPTIONAL CAPABILITY
-NOT CANONICAL IMP AUTHORITY
-```
+IMP **must own** domain authority: canonical market state, temporal eligibility,
+prediction identity, settlement, quality admission, risk authority, execution
+authority, qualification, learning/promotion governance, and canonical IDs
+(`run_id`, `attempt_id`, `correlation_id`, `event_id`, forecast/ledger IDs).
 
 External IDs (MLflow run, LangGraph thread, Qdrant point, Dagster asset,
-Temporal workflow, RLlib worker) **never** become canonical IMP IDs.
-
-```text
-IMP canonical ID ↔ adapter mapping ↔ external ID
-```
+Temporal workflow, RLlib worker) may exist only behind adapter maps.
 
 ---
 
-# 4. Three fabrics
+# 7. Three-fabric architecture
 
-MASTER_ARCHITECTURE currently names two fabrics. ADAPT-00 proposes a third
-**as future canonical language**, not as an edit to `docs/platform/` in this
-milestone.
+Canonical REBASE-01 already defines Real-Time Opportunity Fabric and Operating
+Fabric. ADAPT-00 proposes a **third** fabric as future canonical language
+(integration into `MASTER_ARCHITECTURE.md` is **not** this milestone).
 
 ## Real-Time Opportunity Fabric
 
 Fast events, state, features, signals, opportunities, action preparation.
-Hot path. No synchronous reflection, LLM lesson generation, vector reindex,
-hyperparameter search, training, graph search, or experiment generation.
+Workload: HOT / WARM. No learning side-effects on this path unless a
+pre-approved bounded online policy is proven safe (ADAPT-08).
 
 ## Operating Fabric
 
-Runs, artifacts, workflow, registries, SOPs, audit, reproducibility
-(REBASE-02, OF-01..03).
+Runs, artifacts, workflow, registries, SOPs, audit, reproducibility.
+Owners: REBASE-02 standards → OF-01 ledger → OF-02 adapters → OF-03 registry.
 
 ## Adaptive Intelligence Fabric
 
 Experience, evaluation, error analysis, reflection, lesson validation, memory,
 pattern discovery, hypotheses, experiments, challengers, graph learning,
-promotion **evidence**. Output is eligible intelligence candidates — never
-broker orders.
+promotion **evidence**. Never a broker path.
 
 ```text
 OUTCOME → ADAPTIVE FABRIC → LESSONS / EXPERIMENTS / CHALLENGERS
         → EVALUATION → PROMOTION → ELIGIBLE INTELLIGENCE
-
 ELIGIBLE INTELLIGENCE → RISK → HUMAN AUTHORITY → EXECUTION
 ```
 
-No `ADAPTIVE FABRIC → BROKER`.
+Forbidden: `ADAPTIVE FABRIC → BROKER`.
 
 ---
 
-# 5. Adaptive learning taxonomy
+# 8. Adaptive learning taxonomy
 
 ## MEMORY LEARNING
 
 Changes future retrieved context (experiences, validated lessons, retrieval
-policy version). Does not change model code.
+index). Does not change model code.
 
 ## STRUCTURAL / MODEL LEARNING
 
@@ -321,107 +287,83 @@ routing, retrieval policy.
 
 ## META / GRAPH LEARNING
 
-Creates **candidates** for agent graph topology, specialists, ordering, tools,
+Creates **candidates** for agent-graph topology, specialists, ordering, tools,
 debate depth, routing.
 
 ## BOUNDED ONLINE ADAPTATION
 
 Updates values explicitly permitted by a pre-approved adaptive policy
-(e.g. rolling volatility, regime posterior within bounds).
+(e.g. rolling volatility, bounded expert weights). State update ≠ model
+redefinition.
 
 ```text
 STATE UPDATE ≠ MODEL REDEFINITION
+volatility estimate updates     → may be state (if policy-bounded)
+volatility-model architecture   → structural challenger
 ```
-
-Volatility estimate updates may be state. Volatility-model architecture
-changes are structural and require challenger/promotion.
-
-### Fast vs slow
-
-**Fast (policy-bounded):** rolling state, posteriors, volatility, liquidity,
-confidence, bounded expert weights.
-
-**Slow (evidence + promotion):** new features, models, prompts, routing,
-graph, data, risk method.
 
 ---
 
-# 6. Outcome-grounded experience, reflection, lessons
+# 9. Outcome-grounded experience (ADAPT-01 kernel)
 
-## 6.1 Experience kernel (future ADAPT-01)
+Conceptual (schema not frozen):
 
 ```text
 PREDICTION / HYPOTHESIS + CONTEXT + CONTRIBUTORS + EVIDENCE + CUT-OFF
         ↓
-SETTLEMENT
+   SETTLEMENT (existing OutcomeSettlementService)
         ↓
-OUTCOME
+   OUTCOME
         ↓
-EXPERIENCE RECORD
+   EXPERIENCE RECORD
 ```
 
-Potential fields (not frozen schema): prediction refs, run refs, contributors,
-context, regime, confidence, outcome, performance, counterfactual refs,
-quality, error attribution.
+Experience fields (illustrative): prediction refs, future run refs, contributors
+(specialists/fusion), regime, confidence, outcome, performance,
+counterfactual refs, quality, error attribution.
 
-Three evidence categories remain separate:
+Epistemics:
 
 ```text
-ACTUAL OBSERVED OUTCOME
-COUNTERFACTUAL ESTIMATE
-SIMULATED OUTCOME
+SETTLED OUTCOME        = EVIDENCE
+DETERMINISTIC METRIC   = DERIVED EVIDENCE
+AI REFLECTION          = MODEL_OUTPUT
+LESSON                 = HYPOTHESIS / KNOWLEDGE CANDIDATE
 ```
 
-Never merge. Existing replay/qualification already treats masquerading as a
-failure mode — reuse that law.
-
-## 6.2 Epistemics
-
-```text
-SETTLED OUTCOME     = EVIDENCE
-DETERMINISTIC METRIC = DERIVED EVIDENCE
-AI REFLECTION       = MODEL_OUTPUT
-LESSON              = HYPOTHESIS / KNOWLEDGE CANDIDATE
-```
-
-A future lesson may include: claim, regime, instrument applicability,
-supporting examples, contradictions, sample size, effect estimate, confidence,
-falsifier, source, last validation. One losing trade cannot create global truth.
-
-## 6.3 Memory layers
-
-```text
-RAW EVIDENCE → EXPERIENCE → REFLECTION → LESSON → VALIDATION
-→ RETRIEVAL INDEX → AGENT CONTEXT
-```
+Memory layers (never collapsed):
 
 ```text
 HISTORICAL EVIDENCE ≠ EXPERIENCE ≠ REFLECTION ≠ LESSON
 ≠ RETRIEVAL INDEX ≠ WORKING CONTEXT
 ```
 
-```text
-VECTOR INDEX ≠ CANONICAL EVIDENCE
-```
+Vector DB belongs only at RETRIEVAL INDEX. `VECTOR INDEX ≠ CANONICAL EVIDENCE`.
 
-Retrieval should fetch supporting **and** contradicting cases. Detect
-self-reinforcing loops (lesson → prompt → decision → apparent confirmation)
-via independent outcomes, holdouts, counterexamples, regime bounds, decay,
-revalidation.
+Retrieval should return supporting **and** contradicting cases where feasible.
+Consequential AI runs should later cite retrieval policy/version/cutoff, lesson
+IDs, experience IDs, and index snapshot.
 
-Consequential AI runs should eventually cite retrieval policy, version,
-cutoff, lesson IDs, experience IDs, index snapshot.
+Self-reinforcing loop mitigation: independent outcomes, holdout, counterexamples,
+fresh evidence, regime bounds, decay, revalidation.
 
-## 6.4 Graph identity and checkpoints
+Lesson object (future): claim, regime, instrument applicability, support,
+contradictions, sample size, effect, confidence, falsifier, source, last
+validation. One losing trade cannot become global truth.
 
-Graph candidate identity includes topology, nodes, versions, edges, routing,
+---
+
+# 10. Agent graph identity and checkpoints
+
+Graph candidate identity must include topology, nodes/versions, edges, routing,
 models, tools, prompts, budgets, debate limits, configuration. Material change
-creates a new graph identity.
+⇒ new graph identity.
 
-Hard rule: a checkpoint may not silently resume under an incompatible graph
-identity. This is compatible with REBASE-02 retry/resume/checkpoint rules and
-does not require a REBASE-02 amendment; ADAPT-06 will specialize graph
-identity under those rules.
+Hard rule: a checkpoint MUST NOT silently resume under an incompatible graph
+identity. This is compatible with REBASE-02 retry/resume/checkpoint tables
+(`resumed_from_checkpoint`, material-change ⇒ new run) and with TradingAgents’
+`_run_signature` practice (analysts + debate + risk + asset folded into thread
+id) — IMP must own the identity contract, not LangGraph `thread_id`.
 
 Graph challenger lifecycle:
 
@@ -430,765 +372,806 @@ CURRENT GRAPH → OUTCOMES → ERROR ANALYSIS → GRAPH CANDIDATE
 → CONTROLLED COMPARISON → REPLAY → SHADOW → FORWARD → PROMOTION
 ```
 
-## 6.5 Challenger-only principle
-
-Adaptive systems may auto-create feature, model, prompt, lesson, routing,
-graph, and experiment **candidates**. Never automatic production replacement.
-
-Promotion gates scale with consequence class. A prompt wording change is not
-the same gate as a risk algorithm. Frozen forward evaluation requires stable
-evaluated identity (model, policy, feature set, prompt, graph, retrieval
-policy). Structural change means a new candidate identity.
-
-Optimizer output = challenger, not production.
-
 ---
 
-# 7. TradingAgents source-level audit
+# 11. TradingAgents source-level audit
 
 | Field | Value |
 |---|---|
 | Name | TradingAgents |
 | URL | https://github.com/TauricResearch/TradingAgents |
 | Owner | TauricResearch |
-| Examined commit | `a33fd4c0f134485a43553a2c23a63cb14adbd88f` (main, 2026-07-18) |
+| Examined commit | `a33fd4c0f134485a43553a2c23a63cb14adbd88f` (2026-07-18, `main`) |
 | Examined date | 2026-08-27 |
-| Latest release | `v0.3.1` |
-| License | Apache-2.0 → `PERMISSIVE_COMPATIBLE` / `REFERENCE_ARCHITECTURE` |
-| Maintenance | Active through 2026-07; 386 open issues at audit time |
+| License | Apache-2.0 (`PERMISSIVE_COMPATIBLE`) |
+| Reuse class | `CONCEPTUAL_REUSE` / disposition `REFERENCE_ARCHITECTURE` |
+| Maintenance | Active in 2026; large community; not IMP-grade governance |
 
-### Actual loop (verified)
+Inspected paths (not README-only): `tradingagents/graph/trading_graph.py`,
+`graph/reflection.py`, `graph/checkpointer.py`, `agents/utils/memory.py`.
 
-README + `tradingagents/graph/reflection.py` at examined commit:
+### Recovered loop (verified)
 
 ```text
-DECISION → PENDING / DECISION LOG
-→ REALIZED OUTCOME (raw return + alpha vs market benchmark)
-→ LLM REFLECTION (2–4 sentences)
-→ MEMORY FILE (~/.tradingagents/memory/trading_memory.md)
-→ RETRIEVAL (same-ticker recent + recent cross-ticker)
-→ FUTURE PORTFOLIO-MANAGER PROMPT
+DECISION → PENDING RECORD → REALIZED OUTCOME (yfinance, holding_days default 5)
+→ RAW RETURN → BENCHMARK-RELATIVE RETURN (suffix map / explicit benchmark)
+→ LLM REFLECTION (2–4 sentences) → MARKDOWN MEMORY LOG → PROMPT RETRIEVAL
 ```
 
-Checkpointing is opt-in LangGraph per-node SQLite
-(`~/.tradingagents/cache/checkpoints/`). v0.3.1 added graph-shape-aware
-checkpoint resume after they hit incompatible-graph resume failures.
-
-### Verified weaknesses relative to IMP
-
-| Weakness | Verdict |
+| Concern | Verified behavior |
 |---|---|
-| Reflection treated as knowledge | **Present.** Reflection stored verbatim and re-injected. Class is MODEL_OUTPUT, not evidence. |
-| Limited statistical lesson validation | **Present.** No sample-size, CI, regime, or falsifier object. |
-| Hindsight bias | **Present by construction.** Outcome is known before the lesson is written. |
-| Lesson overgeneralization | **Risk present.** One-paragraph lessons without applicability bounds. |
-| Cross-instrument contamination | **Present as a feature.** Cross-ticker lessons are injected. |
-| Regime blindness | **Not disproven.** No regime object in the reflection prompt. |
-| Memory rotation | **Present.** Compact prose to avoid context bloat; no validated retirement. |
-| Prompt-context drift | **Present.** Memory path and log shape can change retrieval content. |
-| Limited provenance | **Present.** Markdown home-dir log, not content-addressed evidence. |
-| Limited qualification / promotion | **Present.** Research CLI; not IMP qualification. |
-| Duplicate prevention / decision identity | Weaker than IMP prediction ledger. |
+| Decision identity | ticker + trade_date tag; not a content-addressed IMP ID |
+| Outcome window | `holding_days` (default 5) vs Yahoo bars; weekends buffered |
+| Benchmark | `benchmark_ticker` or suffix map; default SPY / empty suffix |
+| Retry | pending skipped if prices missing; resolved next same-ticker run |
+| Duplicate prevention | pending tag scan for `[date \| ticker \| … \| pending]` |
+| Memory rotation | optional `memory_log_max_entries` drops oldest **resolved** only |
+| Retrieval | last 5 same-ticker full entries + 3 cross-ticker reflection-only |
+| Reflection inputs | final decision text + raw/alpha; **no** independent feature snapshot |
+| Lesson representation | unstructured LLM prose |
+| Checkpoint | optional LangGraph `SqliteSaver` per ticker; thread id hashes ticker+date+graph signature |
+| Cross-ticker pending | **not** resolved until that ticker is run again |
 
-### Useful patterns mapped to IMP (do not import LangGraph to get them)
+Roles/graph (from graph setup usage): market/social/news/fundamentals analysts,
+tool nodes, bull/bear investment debate, risk debate
+(aggressive/conservative/neutral), manager/judge, trader plan, signal processor.
+
+### Verified weaknesses relative to IMP (present, not assumed)
+
+| Weakness | Verification |
+|---|---|
+| Reflection treated as knowledge | Prompt injects reflections verbatim; no statistical validation |
+| Hindsight bias | Reflection sees realized return before writing the “lesson” |
+| Overgeneralization | Cross-ticker lessons are reflection-only snippets without regime/instrument guards |
+| Cross-instrument contamination | Explicit `n_cross=3` injection |
+| Regime blindness | No regime object in memory schema |
+| Limited provenance | Markdown log, not hashed evidence |
+| No qualification/promotion split | Decision text is the product |
+| Outcome ≠ IMP settlement | Yahoo close-to-close vs preregistered `PredictionLedgerEntryV1` |
+| yfinance as truth | Fragile vs IMP provider envelopes |
+
+### Useful patterns mapped to IMP (reuse concepts, not code)
 
 | Pattern | IMP mapping |
 |---|---|
-| Specialized agents | Specialists + council participants |
-| Bounded debate | `DeliberationGate` + round limits |
-| Separate bull/bear evidence | Relation types on blackboard; do not require LLM debate |
-| Risk-specific debate | Risk authority is **not** an LLM; keep separate |
-| Manager arbitration | Council orchestrator; not Portfolio-Manager-as-broker |
-| Reflection after realized outcomes | Future Adaptive Fabric **after** `OutcomeSettlementService` |
-| Retrievable past lessons | Future validated lesson store; not markdown injection |
-| Graph checkpointing | REBASE-02 checkpoint rules + future graph identity |
-| Config-sensitive resume | Same: incompatible identity must not resume |
+| Specialized agents | Existing specialists + council participants |
+| Bounded debate | Existing Blind Council / deliberation rounds |
+| Separate bull/bear evidence | Comparable to relation types / competing hypotheses — optional prompt pattern only |
+| Risk-specific debate | Must remain **non-authoritative**; IMP risk authorities stay executable contracts |
+| Manager arbitration | Council deliberation gate — already exists |
+| Reflection after realized outcomes | ADAPT-02, after settlement, labeled MODEL_OUTPUT |
+| Retrievable past lessons | ADAPT-02 validated memory, not markdown |
+| Graph checkpointing | OF-01 + REBASE-02 checkpoint rules + IMP graph identity |
+| Config-sensitive resume | `_run_signature` analogue owned by IMP |
 
-Disposition: `REFERENCE_ARCHITECTURE`. Not a dependency. Not source reuse.
+**Do not adopt TradingAgents as a dependency.** Apache-2.0 permits study; IMP
+already has stronger prediction/settlement/council primitives.
 
 ---
 
-# 8. Quant-Finance-Resources and finance-courses
+# 12. Curriculum repositories
 
-## 8.1 Quant-Finance-Resources
+## Quant-Finance-Resources
 
 | Field | Value |
 |---|---|
 | URL | https://github.com/PyPatel/Quant-Finance-Resources |
+| Owner | PyPatel |
 | Examined commit | `a281bb7c446b51301d1566e30e50f54facc3d4af` (2021-09-13) |
-| License | **No license file** → `NO_LICENSE` / `REFERENCE_ONLY` |
-| Maintenance | Stale (last push 2021-12) |
+| Last push | 2021-12-17 |
+| License | `NO_LICENSE` on GitHub API |
+| Disposition | `REFERENCE_ONLY` / `STALE_OR_SUPERSEDED` as a living catalog |
+| Reuse | `CONCEPTUAL_REUSE` of topic list only; no source copy |
 
-Treat as a reading list, not a codebase. High-value study areas mapped:
+High-value study areas → IMP mapping (priority = research backlog rank later):
 
-| Study area | IMP subsystem | Research question | Baseline | Experiment type | Priority | Dependencies |
+| Area | IMP subsystem | Research question | Baseline | Experiment type | Priority | Deps |
 |---|---|---|---|---|---|---|
-| Probability / statistics | Evaluation, Risk | Are specialist scores calibrated? | sklearn calibration + IMP metrics | Offline | High | SciPy/statsmodels later |
-| Linear algebra / numerical | Features, Risk | Vectorize feature/risk kernels? | Current stdlib/numpy | RT-01 profile first | Medium | NumPy; Numba only if measured |
-| Time series | Intelligence, Regime | Volatility/mean reversion without leakage | IMP settlement windows | Walk-forward | High | statsmodels/`arch` research extra |
-| Microstructure / order books | RT, XA | Does LOB state beat bar features? | Existing order-flow fixtures | Replay | High | IMP data; not LEAN |
-| HFT / cross-market | XA, RT | Cross-venue lag vs alpha | Event timestamps | Research | Medium | XA-01 |
-| Financial ML | Training | Do GBMs beat logistic? | sklearn logistic/GBM already | Challenger ladder | High | sklearn; maybe one booster |
-| RL | Research only | Execution/hedging in sim | Random / heuristic | Sim only | Low | Gymnasium later |
-| Deep hedging | Options/futures research | Hedge error vs delta | Classical hedge | Research | Low | PyTorch later |
-| Derivatives | Options | Pricing vs IMP options features | Internal models | Research | Medium | SciPy |
-| Optimization | Portfolio/Risk | Constrained allocation | Current risk limits | Offline | Medium | CVXPY research |
-| Game theory | Narrative/Motive | Adversarial liquidity | Heuristic | Research | Low | None |
+| Probability / stats | Evaluation, Risk | Are current metrics calibrated? | sklearn metrics + settlement | offline | P1 | SciPy/statsmodels later |
+| Linear algebra / numerical | Features, RT | Vectorize vs Numba vs Rust | NumPy | RT-01 measure first | P2 | NumPy |
+| Time series | Intelligence | Volatility/regime baselines | rolling IMP features | research | P1 | arch/statsmodels |
+| Microstructure / order book | RT, whale/order-flow | Does LOB add alpha after costs? | existing order-flow BUILD | replay | P1 | none new |
+| HFT | RT-03 | Event bus needed? | RT-01/02 evidence | measurement | P3 | Nautilus ref only |
+| Cross-market | XA | Lead-lag vs leakage | XA-01 contracts | research | P1 | none |
+| Financial ML | Training | GBDT vs sklearn GBM | sklearn GBM | challenger | P2 | LightGBM later |
+| RL | Research only | Unsafe live? | FinRL/SB3 sims | research | P3 | Gymnasium |
+| Deep hedging | Options | Hedge error vs rules | existing options | research | P3 | PyTorch later |
+| Derivatives | Options/futures | Pricing vs IMP contracts | IMP options | research | P2 | SciPy |
+| Optimization | Portfolio/risk | Constrained allocation | current risk caps | research | P2 | CVXPY later |
+| Game theory | Council | Debate as cheap talk | Blind Council | research | P3 | none |
 
-## 8.2 finance-courses (EDHEC notes)
+## finance-courses
 
 | Field | Value |
 |---|---|
 | URL | https://github.com/z4ir3/finance-courses |
+| Owner | z4ir3 |
 | Examined commit | `1466799ecf3ac3d32bd7119de74eb61d5150192b` (2023-12-11) |
-| License | **No license** → `NO_LICENSE` / `REFERENCE_ONLY` |
+| License | `NO_LICENSE` |
+| Disposition | `REFERENCE_ONLY` (EDHEC-style portfolio notebooks) |
 
 | Topic | Map into |
 |---|---|
-| VaR | Risk |
-| Portfolio optimization | Portfolio / Cross-Asset |
-| Factor models | Intelligence / XA |
-| Robust covariance | Risk research |
-| Expected returns | Portfolio research (never auto-trade) |
-| Diversification | Portfolio |
-| ALM | Deferred (not IMP core) |
-| Regime detection / crash classification | Macro Regime / Adaptive Intelligence |
-| Feature selection / ML AM | Adaptive Intelligence / Evaluation |
+| VaR, robust covariance, CVaR, drawdown | Risk |
+| Mean-variance, HRP, Black-Litterman, diversification | Portfolio |
+| Factor models, ALM | Cross-Asset / Portfolio |
+| Regime / crash classification | Macro Regime + Adaptive Intelligence |
+| Feature selection / ML AM | Evaluation + Adaptive Intelligence |
+
+Do not copy notebooks. Re-implement experiments under IMP contracts and future
+Run Ledger.
 
 ---
 
-# 9. User-supplied seven libraries (mandatory conclusions)
+# 13. User-supplied seven libraries (required conclusions)
 
-## pandas
+### NumPy — KEEP / EXPAND (foundation)
 
-- Already installed? Foundation **no** (prohibited). Pipeline **yes** (`>=2.0.0`).
-- Already imported? Pipeline yes; foundation no.
-- Purpose today: historical scrape/clean/export in `pipelines/stock_data`.
-- Runtime class: `OFFLINE_RESEARCH` / `COLD_PATH` only.
-- **Remain** in the pipeline extra. **Do not** add to foundation lock.
-- **Replace for some workloads:** large scans / feature warehouses → evaluate
-  Polars/DuckDB/Arrow in research pilots, with benchmarks on actual IMP
-  datasets. **Never** per-tick hot loops or low-latency state mutation.
+Already installed and imported. Foundational array layer for trainers,
+baselines, calibrators. Runtime class: HOT_PATH-capable numerically, but current
+use is WARM/COLD intelligence. Expand use in features/signals/statistics where
+stdlib lists are the bottleneck **after** RT-01 profiling. Not a substitute for
+measurement. Numba/Rust only after measured hot loops. Do not replace.
 
-## NumPy
+### pandas — CONSTRAIN to pipeline + offline research extras
 
-- Foundation **yes**, used in ML trainers/calibration.
-- Runtime class: `WARM_PATH` / `OFFLINE_RESEARCH` today; `HOT_PATH` only if
-  RT-01 shows array kernels on the opportunity path.
-- **Expand** as the shared numerical array layer for features/stats/models
-  **when those modules actually need arrays**. Not a substitute for profiling.
-- Vectorization before Numba; Numba/Rust only after measurement.
+Already used in `pipelines/stock_data` only. **Must not** enter foundation lock
+without a separate governed decision. Best-fit: OFFLINE_RESEARCH / COLD_PATH
+dataset manipulation, reports, collector DB. **Must not** appear in per-tick
+hot loops or canonical market-state mutation. Alternatives for large scans:
+Polars / Arrow / DuckDB as **pilots**, not automatic replacement. Excel/CSV
+interchange may use pandas in operator tools only.
 
-## Matplotlib
+### Matplotlib — RESEARCH-ONLY if introduced
 
-- Not in foundation. Optional pipeline `full` extra.
-- Runtime class: `OFFLINE_RESEARCH`.
-- **Research-only.** Diagnostics, evaluation charts, acceptance **evidence
-  figures** — never execution-critical runtime.
-- Product UI already has recharts/lightweight-charts.
+Not imported. Declared unused extra on the pipeline. Class: OFFLINE_RESEARCH.
+Use for diagnostic plots, evaluation charts, acceptance evidence. Never on
+execution path. Product UI already has recharts/lightweight-charts.
 
-## Seaborn
+### Seaborn — OPTIONAL RESEARCH-ONLY
 
-- Not installed, not imported.
-- Runtime class: `OFFLINE_RESEARCH`.
-- **Optional** higher-level viz on top of Matplotlib. Do not add unless a
-  research report stream needs it. Value is convenience, not architecture.
+Not present. Higher-level Matplotlib wrapper. Class: OFFLINE_RESEARCH. Adopt
+only if Matplotlib burden is real in research notebooks; otherwise skip to
+avoid a second viz dependency. Not justified for foundation.
 
-## openpyxl
+### openpyxl — OPTIONAL OPERATOR TOOL, never canonical store
 
-- Not installed.
-- Useful for explicit Excel import/export/operator reports.
-- Runtime class: `OPTIONAL_OPERATOR_TOOL` / `COLD_PATH`.
-- **Constrained:** interchange/report only.
-- Hard rule: `EXCEL ≠ CANONICAL IMP DATA STORE`. `.xlsx` is never provenance
-  or market-state authority.
+Not present. Class: OPTIONAL_OPERATOR_TOOL / COLD_PATH. Allowed for explicit
+Excel import/export/stakeholder reports. Hard rule: `EXCEL ≠ CANONICAL IMP DATA STORE`.
+`.xlsx` must never be provenance or market-state authority.
 
-## scikit-learn
+### scikit-learn — KEEP / EXPAND as baseline authority
 
-- Foundation **yes**. Logistic, GradientBoosting, pipelines, scalers,
-  isotonic/logistic calibration.
-- Runtime class: `WARM_PATH` (training/eval) / inference if a candidate is
-  promoted through existing training identity — still not execution authority.
-- **Keep and expand** as the **baseline** framework. Sophisticated models must
-  beat these baselines. Do not replace with XGBoost/PyTorch by default.
+Already core intelligence. Pipelines, preprocessing, logistic, GBM, isotonic,
+metrics, CV, clustering, feature selection are in-scope **as baselines**. A
+sophisticated model must beat these. Expand disciplined use (calibration,
+feature selection, dummy/linear baselines) inside the existing lock. Do not
+replace with PyTorch by default.
 
-## Requests
+### Requests — CONSTRAIN to pipeline; do not promote to foundation live path
 
-- Foundation **prohibited**. Pipeline **yes**.
-- Foundation providers: stdlib urllib (correct for lock).
-- Suitable: cold research APIs, batch downloads, pipeline scrapers,
-  bootstrap. **Not** latency-sensitive streaming.
-- **Constrain** to pipeline/research extras. Live/provider paths compare
-  stdlib vs provider-native SDKs vs (future) HTTPX/`websockets` **behind
-  adapters**. Do not make `requests` the live architecture. Do not add
-  aiohttp to the foundation (already prohibited) without a governed lock
-  revision and a concrete streaming need.
+Used in stock_data scrapers. Prohibited in foundation lock. Suitable: cold
+research APIs, batch downloads, simple REST in isolated tools. Live/provider
+paths should remain stdlib urllib **or** future adapter using HTTPX/async
+**behind provider contracts**, not a global `requests` default. Compare
+HTTPX (sync+async+HTTP/2) vs aiohttp vs `websockets` vs provider-native SDKs
+(Moomoo already native). Do not add both HTTPX and aiohttp without a purpose.
 
 ---
 
-# 10. Technology dispositions
+# 14. Numerical / data stack recommendations
 
-Licensing classes used: `PERMISSIVE_COMPATIBLE`,
-`WEAK_COPYLEFT_REVIEW_REQUIRED`, `STRONG_COPYLEFT_REVIEW_REQUIRED`,
-`SOURCE_AVAILABLE_RESTRICTED`, `NO_LICENSE`, `UNKNOWN`.
-
-Use classes: `REFERENCE_ONLY`, `CONCEPTUAL_REUSE`, `RESEARCH_BASELINE`,
-`DEPENDENCY_CANDIDATE`, `SOURCE_REUSE_CANDIDATE`, `LICENSE_REVIEW_REQUIRED`,
-`LICENSE_BLOCKED`.
-
-Disposition rubric: `ADOPT_CANDIDATE` | `PILOT_CANDIDATE` |
-`REFERENCE_ARCHITECTURE` | `RESEARCH_BASELINE` | `REFERENCE_ONLY` |
-`DUPLICATIVE` | `TOO_HEAVY` | `LICENSE_REVIEW_REQUIRED` | `LICENSE_BLOCKED` |
-`STALE_OR_SUPERSEDED` | `REJECT`.
-
-**No adoption in ADAPT-00.** “ADOPT_CANDIDATE” means future governed extra
-after a real gap is proven.
-
-## 10.1 Required inventory table
-
-Examined date `2026-08-27`. GitHub SHAs recorded where API quota allowed;
-remaining licenses from project SPDX/docs. Incomplete SHA pins are listed
-under Known limitations.
-
-| Library | Already in IMP | Current Use | Candidate Use | Runtime Class | Disposition |
-|---|---|---|---|---|---|
-| pandas | Pipeline only | Scrapes, SQL bulk, CSV | Research frames; not foundation | COLD / OFFLINE_RESEARCH | Keep pipeline; **constrain** foundation |
-| NumPy | Yes | sklearn trainers/calibration | Array layer for features/stats | WARM / research; HOT only if measured | **KEEP / EXPAND** |
-| Matplotlib | Pipeline optional | Unused in foundation | Research/acceptance plots | OFFLINE_RESEARCH | Research-only |
-| Seaborn | No | — | Optional research viz | OFFLINE_RESEARCH | Optional / not required |
-| openpyxl | No | — | Excel interchange | OPTIONAL_OPERATOR_TOOL | Constrained interchange |
-| scikit-learn | Yes | Baselines, calibration, GBM | Remain baseline ladder | WARM / OFFLINE | **KEEP / EXPAND** |
-| requests | Pipeline; prohibited in foundation | Pipeline HTTP | Cold research only | COLD | **Constrain**; not live default |
-| SciPy | No | — | Stats, optimize, signal, sparse | OFFLINE / WARM research | **PILOT_CANDIDATE** (research extra) |
-| Polars | No | — | Large historical/feature frames | COLD analytics | **PILOT_CANDIDATE** (benchmark first) |
-| PyArrow | Pipeline | Parquet/Arrow in pipeline | Snapshots, experiment datasets | COLD | **PILOT_CANDIDATE** for cold artifacts |
-| DuckDB | No | — | Embedded analytical SQL on Parquet | COLD / OFFLINE_RESEARCH | **PILOT_CANDIDATE** |
-| Numba | No | — | Measured numerical hot spots | HOT only after profile | **REFERENCE_ONLY** until RT-01 |
-| statsmodels | No | — | TS, regression diagnostics | OFFLINE_RESEARCH | **PILOT_CANDIDATE** |
-| arch | No | — | GARCH/vol, unit roots | OFFLINE_RESEARCH | **PILOT_CANDIDATE** |
-| XGBoost | No | — | Tabular challenger | OFFLINE training | Pick **at most one** booster later |
-| LightGBM | No | — | Tabular challenger | OFFLINE | Compare vs XGB; don't take all three |
-| CatBoost | No | — | Tabular challenger | OFFLINE | Likely **DUPLICATIVE** if one booster exists |
-| PyTorch | No | — | DL/RL/deep hedging research | OFFLINE_RESEARCH | **RESEARCH_BASELINE**; not default |
-| River | No | — | Streaming metrics, drift, online models | WARM research; never silent live learn | **PILOT_CANDIDATE** |
-| Optuna | No | — | HPO as challenger factory | OFFLINE | **PILOT_CANDIDATE** |
-| CVXPY | No | — | Portfolio/risk research | OFFLINE | **RESEARCH_BASELINE** |
-| Pydantic | No | dataclasses today | Adapter/config/AI structured IO | WARM/COLD; not ultra-hot | **PILOT_CANDIDATE** at boundaries |
-| Pandera | No | — | DataFrame schema checks | COLD/WARM | **PILOT_CANDIDATE** for research frames |
-| HTTPX | No | — | Sync+async REST adapter | WARM/COLD | **PILOT_CANDIDATE** vs stdlib |
-| aiohttp | Prohibited in lock | — | High-concurrency HTTP | WARM | **DUPLICATIVE** if HTTPX chosen |
-| websockets | `websocket` prohibited | Provider-native / stdlib | Streaming feeds | WARM/HOT adapter | Compare native SDKs first |
-| orjson | No | stdlib json | JSON-heavy warm logs | WARM | Benchmark-gated **PILOT** |
-| msgspec | No | dataclasses | Typed serdes at runtime edges | WARM | **PILOT** vs Pydantic |
-| LangGraph | No | — | Optional agent graph engine | COLD/WARM AI | **REFERENCE_ARCHITECTURE**; at most one orchestrator |
-| Microsoft Agent Framework | No | — | Graph/HITL/checkpoint Python/.NET | COLD/WARM AI | **REFERENCE_ARCHITECTURE**; compare at AI-02 |
-| PydanticAI | No | — | Typed agents/structured out | COLD/WARM | **REFERENCE** / possible later adapter |
-| DSPy | No | — | Prompt challenger factory | OFFLINE | **RESEARCH_BASELINE**; candidates only |
-| MLflow | No | IMP run/training manifests | Optional experiment backend | COLD | **INTEGRATION_CANDIDATE** under IMP IDs |
-| Dagster | No | — | Research data assets | COLD OF | **OPTIONAL FUTURE** OF-03 complement |
-| Temporal | No | — | Durable COLD/WARM workflows | COLD/WARM OF | **OPTIONAL FUTURE**; not hot path |
-| OpenTelemetry | No | planned RT-01 | Export traces/metrics/logs | WARM/COLD | **REFERENCE** + later exporter |
-| FAISS | No | — | Local lesson retrieval index | COLD/WARM | **PILOT** when memory exists |
-| Qdrant | No | — | Service retrieval + filters | COLD | Later scale; **not now** |
-| Qlib | No | IMP snapshots/features/models | Concept reference | OFFLINE | **REFERENCE_ARCHITECTURE** |
-| LEAN | No | IMP replay/backtest | External cross-check engine | OFFLINE | **REFERENCE** / optional validation engine |
-| NautilusTrader | No | — | Event-driven/Rust reference | HOT architecture study | **REFERENCE_ARCHITECTURE**; LGPL review if ever linked |
-| vectorbt | No | — | Vectorized sweeps | OFFLINE | **LICENSE_REVIEW_REQUIRED** |
-| FinRL | No | — | RL research scaffold | OFFLINE | **RESEARCH_BASELINE** |
-| Stable-Baselines3 | No | — | RL algorithms in sim | OFFLINE | **RESEARCH_BASELINE** |
-| Gymnasium | No | — | RL env API | OFFLINE | **RESEARCH_BASELINE** |
-| PettingZoo | No | — | Multi-agent RL | OFFLINE | Deferred |
-| PyPortfolioOpt | No | — | Classical portfolio research | OFFLINE | **RESEARCH_BASELINE** |
-| Riskfolio-Lib | No | — | Risk-parity/CVaR research | OFFLINE | **RESEARCH_BASELINE** |
-| Hypothesis | No | unittest | Contract/property tests | DEV_TOOLING | **PILOT_CANDIDATE** |
-| pyperf / pytest-benchmark | No | `tools/benchmark.py` | Strengthen measurement | DEV_TOOLING | Complement runner; don't replace identity |
-| CrewAI / LlamaIndex / AutoGen | No | — | Extra agent stacks | — | **REJECT** stacking |
-| TensorFlow / JAX | No | — | Overlapping DL | — | **REJECT** unless proven unique need |
-| Redis | No | in-process / Mongo | Cache/pubsub | WARM | **REFERENCE_ONLY**; no adoption now |
-| Vowpal Wabbit / Avalanche | No | — | Alt online/continual | OFFLINE | River first |
-| Alibi Detect / Evidently / NannyML | No | finance regimes | Generic drift dashboards | COLD | Supplement only; not regime authority |
-| Great Expectations | No | quality contracts | Dataset checks | COLD | Pandera first if DF checks needed |
-| tsfresh / Darts / sktime | No | IMP features | Auto features / TS | OFFLINE | **tsfresh leakage risk**; not auto-promote |
-| DoWhy / EconML / CausalML | No | — | Causal hypotheses | OFFLINE | Never auto-truth |
-| Plotly / Jinja2 | UI has charts | — | Interactive research / reports | COLD | Optional; no exec path |
-| RLlib / CleanRL | No | — | Scale RL | OFFLINE | Too heavy / research only |
-| Weights & Biases / Aim / DVC | No | IMP artifacts | Duplicate provenance risk | COLD | Adapter-only if ever |
-| Ray Tune / Nevergrad | No | Optuna | Extra HPO | OFFLINE | **DUPLICATIVE** if Optuna |
-| Bottleneck / NumExpr | No | — | pandas accelerators | — | N/A without pandas hot path |
-
-### External SHAs recorded (GitHub, 2026-08-27)
-
-| Project | SHA | License | Release |
+| Library | Runtime class | Disposition | Notes |
 |---|---|---|---|
-| TradingAgents | `a33fd4c0f134485a43553a2c23a63cb14adbd88f` | Apache-2.0 | v0.3.1 |
-| Quant-Finance-Resources | `a281bb7c446b51301d1566e30e50f54facc3d4af` | none | — |
-| finance-courses | `1466799ecf3ac3d32bd7119de74eb61d5150192b` | none | — |
-| LangGraph | `bdb8a9c7a4aa1390af225f6a5d292e5088659bd5` | MIT | sdk==0.4.3 |
-| microsoft/agent-framework | `947d933f2385b3f38ff40bef5b0c0245acdf3798` | MIT | dotnet-1.19.0 |
-| Qlib | `79633dd9506ea689e5400dea0197717b5b3d74b7` | MIT | v0.9.7 |
-| LEAN | `07fb0182bfe229edd9445cf675ac6509d0069539` | Apache-2.0 | v2.4.0.1 |
-| NautilusTrader | `f2b2addb99527e3c9465573a596284f47b9edf10` | LGPL-3.0 | v1.231.0 |
-| vectorbt | `34b6d5935e3ea3eccd549e2592bc0f455b8045f5` | Apache-2.0 + Commons Clause | v1.1.0 |
-| FinRL | `2334a5fe6d30629157f13c3b0319e1637e15e123` | MIT | v0.3.8 |
-| River | `64285b9dd6c606804753235fe992bcf25b9856ee` | BSD-3-Clause | 0.26.1 |
-| Optuna | `f6898dab5bba804dd2bdb6ce7cc06b41b51506e4` | MIT | v4.9.0 |
-| MLflow | `9dfea31cb82744a2d3d5ea1a2222b93df629edff` | Apache-2.0 | v3.15.2 |
-| Pydantic | `965c23dd93bd5ca7b86224ba39ccbe79399f117b` | MIT | v2.13.4 |
-| Pandera | `9777c23b4bbc146c115a479b7551d0671c76ebcd` | MIT | v0.32.1 |
-| HTTPX | `b5addb64f0161ff6bfe94c124ef76f6a1fba5254` | BSD-3-Clause | 0.28.1 |
-| aiohttp | `58899272ce81abbae535eba108e2dca6ec87b4b1` | Apache-2.0 | v3.14.3 |
-| websockets | `bd83f2393017cceabb88f125073af74124ae5fbf` | BSD-3-Clause | 17.1 |
-| orjson | `6737895a1a4e3e26df0569a40147893a786f9a58` | Apache-2.0 | 3.12.0 |
+| NumPy | HOT/WARM/COLD | KEEP / EXPAND | Foundation numerical layer |
+| SciPy | OFFLINE_RESEARCH → later WARM | **HIGH-PRIORITY PILOT** | Optimization, stats, signal, sparse; BSD-new; do not hand-roll |
+| pandas | COLD / pipeline | CONSTRAIN | Not hot path |
+| Polars | COLD analytics | **PILOT_CANDIDATE** | Lazy/parallel vs pandas on actual IMP historical scans; MIT |
+| PyArrow | COLD interchange | **PILOT_CANDIDATE** (pipeline already depends) | Parquet snapshots, interchange; Apache-2.0; IDs stay IMP’s |
+| DuckDB | OFFLINE_RESEARCH | **PILOT_CANDIDATE** | Embedded SQL over Parquet; MIT; do not replace Mongo/repository |
+| Numba | HOT only if measured | RESEARCH_ONLY until RT-01 | vs vectorization / Polars / future Rust |
+| Bottleneck / NumExpr | — | DUPLICATIVE unless profiled | Do not add now |
 
-NautilusTrader: `WEAK_COPYLEFT_REVIEW_REQUIRED` if ever dynamically linked;
-default disposition remains reference-only.
-
-vectorbt: `SOURCE_AVAILABLE_RESTRICTED` — Commons Clause restricts selling
-products that are primarily the software. IMP must not take it as a product
-dependency without legal review. Research-only until then.
-
-Hypothesis (MPL-2.0): `WEAK_COPYLEFT_REVIEW_REQUIRED` for shipping the test
-dependency in distributions; typically acceptable for `DEV_TOOLING`.
+Arrow/Parquet may become a **representation** for large immutable research
+snapshots. They do not replace canonical IMP identities or JSON evidence
+contracts.
 
 ---
 
-# 11. Recommended architectures by layer
+# 15. Statistics / econometrics
 
-## Numerical / data
-
-Foundation stays NumPy + stdlib. Pandas stays pipeline/research.
-Pilot **SciPy** (do not hand-roll standard algorithms), **PyArrow/Parquet**
-for cold immutable snapshots, **DuckDB** for local analytical SQL, **Polars**
-only if benchmarks beat pandas/stdlib on actual IMP historical sets.
-Arrow identity does not replace IMP IDs. DuckDB does not replace Mongo /
-`IntelligenceRepository`.
-
-## Statistics / econometrics
-
-Pilot SciPy stats + statsmodels + `arch` as a **research extra** for
-volatility, unit roots, GARCH, bootstrap. Map into volatility intelligence,
-risk, regime research, options/futures, benchmark validation — outputs are
-hypotheses/challengers.
-
-## ML
-
-Keep sklearn as mandatory baselines. At most one gradient-boosted library
-later (LightGBM vs XGBoost; Windows + determinism + serialization matter).
-PyTorch is research for sequence/RL/hedging — not default. No TF+JAX+Torch
-stack.
-
-## Online / adaptive learning
-
-River is the highest-value **research** library for incremental metrics,
-drift detectors, bounded online models. sklearn incremental estimators are
-a lighter alternative for a subset. **No online production learning** in
-ADAPT-00–07. ADAPT-08 is bounded, pre-approved policy only.
-
-## Drift
-
-Finance-specific regime logic remains authority. River drift (and later
-optional Evidently-style reports) **supplement**. Monitor feature, target,
-relationship, calibration, performance, regime, and source-quality drift.
-Lessons get applicability windows, decay, and retirement.
-
-## HTTP / providers
-
-Keep stdlib urllib in foundation until a governed extra exists.
-HTTPX is the leading modern REST candidate (sync+async, HTTP/2) **behind
-provider adapters**. Do not add aiohttp as well without a distinct server
-or concurrency need. `websockets` vs provider-native sockets: prefer native
-SDKs when they already exist; generic websockets only for feeds that lack
-them. `requests` remains pipeline-only.
-
-## Serialization
-
-Canonical semantics over speed. stdlib json remains default. orjson/msgspec
-only after measured JSON-heavy warm paths. Never pickle in foundation.
-
-## Agent ecosystem
-
-**One** orchestration framework **or** IMP-owned workflow with optional
-adapter. Reject IMP→LangGraph→CrewAI→LlamaIndex→AutoGen.
-
-Default: **IMP-owned graph contract** (specialists, council, tools, HITL
-already conceptually present). LangGraph and Microsoft Agent Framework are
-the two serious references (graphs, checkpoints, HITL). Choose at most one
-at AI-02 if IMP-owned graphs become costly. PydanticAI is attractive for
-typed boundaries. DSPy = prompt **challenger** factory only.
-
-TradingAgents is conceptual reuse only.
-
-## Quant frameworks
-
-| Framework | Class |
+| Library | Disposition |
 |---|---|
-| Qlib | REFERENCE_ARCHITECTURE (data/model/experiment concepts; not authority) |
-| LEAN | REFERENCE / optional EXTERNAL CROSS-CHECK |
-| NautilusTrader | High-priority REFERENCE for event core, clocks, live/backtest symmetry, Rust boundary (RT-03 decision still measurement-gated) |
-| vectorbt | LICENSE_CONSTRAINED research |
-| Backtrader / Zipline-reloaded | STALE_OR_SUPERSEDED relative to Nautilus/LEAN for IMP's aims |
-| FinRL | RESEARCH_BASELINE |
+| SciPy stats | PILOT with SciPy |
+| statsmodels | PILOT_CANDIDATE (research extra) for regression diagnostics, ARIMA/state-space, cointegration |
+| arch | PILOT_CANDIDATE for GARCH/EGARCH/volatility, unit roots — map to volatility intelligence, risk, regime, options |
+| linearmodels | RESEARCH_ONLY if panel work appears |
 
-Do not replace IMP.
-
-## Portfolio / risk
-
-PyPortfolioOpt, Riskfolio-Lib, CVXPY = research baselines for mean-variance,
-HRP, risk parity, CVaR. IMP risk **authority** stays IMP. Optimizer output
-is a challenger allocation, not an order.
-
-## MLOps / provenance
-
-```text
-IMP CANONICAL CONTRACT → OPTIONAL TOOL ADAPTER
-```
-
-REBASE-02 run/attempt/artifact/disposition is sufficient. MLflow may be a
-**backend** under adapters; W&B/DVC/Aim must not become parallel truth.
-No duplicate ID spaces pretending to be canonical.
-
-## Workflow
-
-Dagster (data assets/lineage) and Temporal (durable state machines) are
-optional **COLD/WARM Operating Fabric** later (OF-03). Off the hot market
-path. Prefect similar. Do not pick all three.
-
-## Vector memory
-
-FAISS for local-first retrieval when Adaptive Fabric exists. Qdrant if
-metadata filter/scale requires a service. Index ≠ evidence.
-
-## Observability / testing / profiling
-
-OpenTelemetry: export `trace_id`/`span_id`/metrics/logs **without** letting
-OTEL redefine `run_id`/`attempt_id`/`correlation_id`/`event_id`.
-Phoenix/Langfuse/Ragas/DeepEval/TruLens: optional AI eval adapters; avoid
-overlap with RT-01 and Run Ledger.
-
-Testing: keep unittest + `validate.py`. Pilot Hypothesis for contracts,
-temporal edges, serdes, numerical properties. pytest-asyncio only if async
-providers land.
-
-Profiling: preserve `tools/benchmark.py`. pyperf / pytest-benchmark may
-**strengthen measurement** under RT-01. cProfile/py-spy/Scalene/Memray as
-operator tools — do not add all as dependencies. No benchmark gating in
-REBASE-02 scope.
-
-Formats by workload: JSONL for evidence-like journals; Parquet/Arrow for
-columnar research sets; MessagePack only behind adapters; provider binary
-as-is.
+No production econometric engine until experiments beat current feature/risk
+baselines under Run Ledger provenance (after OF-01).
 
 ---
 
-# 12. Shortlist
+# 16. Machine-learning stack
 
-## KEEP / EXPAND CURRENT USE
+| Library | Disposition | Rationale |
+|---|---|---|
+| scikit-learn | KEEP / EXPAND | Mandatory baseline |
+| LightGBM | **PILOT_CANDIDATE** (single GBDT) | Fast tabular; Windows wheels exist; pick **one** GBDT |
+| XGBoost | DUPLICATIVE if LightGBM piloted | Strong but overlapping |
+| CatBoost | RESEARCH_ONLY | Categorical strengths; third overlapping stack |
+| PyTorch | RESEARCH_BASELINE | Sequences, representation, RL, deep hedging — not default |
+| TensorFlow / JAX | REJECT for now | No repo use; overlapping DL |
 
-NumPy, scikit-learn, PyMongo, stdlib urllib/json/unittest, `tools/benchmark.py`,
-existing prediction/settlement/council/qualification/EVIDENCE, UI chart stack.
-
-## HIGH-PRIORITY PILOT CANDIDATES
-
-SciPy; River; Optuna; statsmodels/`arch`; PyArrow+DuckDB (cold); HTTPX at
-provider/research adapters; Hypothesis; OpenTelemetry exporter (with RT-01);
-Pydantic at adapter/AI boundaries; FAISS when lessons exist.
-
-## HIGH-PRIORITY REFERENCE ARCHITECTURES
-
-TradingAgents (patterns), LangGraph, Microsoft Agent Framework, Qlib,
-NautilusTrader, LEAN (cross-check), OpenTelemetry.
-
-## RESEARCH BASELINES
-
-FinRL, Stable-Baselines3, Gymnasium, PyPortfolioOpt, Riskfolio-Lib, CVXPY,
-PyTorch, DSPy, vectorbt (license-constrained).
-
-## OPTIONAL FUTURE INFRASTRUCTURE
-
-MLflow adapter, Dagster, Temporal, Qdrant, Pandera, orjson/msgspec,
-Polars (if benchmarks win), LightGBM **or** XGBoost (one).
-
-## DUPLICATIVE / UNNECESSARY
-
-aiohttp+HTTPX together; CatBoost+XGB+LightGBM together; CrewAI/LlamaIndex
-stacking; TF+JAX+Torch; Ray Tune if Optuna; W&B+MLflow+DVC as triple truth;
-Seaborn unless report volume justifies it.
-
-## LICENSE-CONSTRAINED
-
-vectorbt (Commons Clause); NautilusTrader if linked (LGPL-3.0);
-Hypothesis MPL for distribution review; unlicensed resource repos
-(Quant-Finance-Resources, finance-courses) — reading only.
-
-## REJECTED
-
-Automatic production self-modification; Excel-as-store; requests as live
-streaming default; pandas on tick hot path; RL live exploration;
-framework stacking; reopening REBASE-02 for library convenience.
+Challengers must beat sklearn logistic/GBM under frozen cutoffs.
 
 ---
 
-# 13. Build-vs-integrate matrix
+# 17. Online learning, drift, experts
 
-| Concern | Current IMP | Build | Integrate | Hybrid | Reference only |
-|---|---|---|---|---|---|
-| Numerical computation | NumPy islands | — | Expand NumPy/SciPy | Yes | — |
-| Dataframes | Pipeline pandas | Keep foundation free | Polars/DuckDB pilots | Yes | — |
-| Large analytical data | JSON/fixtures | Artifact contracts | Arrow/Parquet/DuckDB | Yes | — |
-| Feature computation | IMP features | Own semantics | NumPy/Polars engines | Hybrid | — |
-| Statistics | Partial | Own metrics identity | SciPy/statsmodels | Hybrid | — |
-| Econometrics | Absent | — | `arch`/statsmodels | Research extra | — |
-| ML | sklearn | Own candidate identity | sklearn + one booster | Hybrid | — |
-| Online learning | Absent | Bounded policy | River research | Hybrid | — |
-| Drift | Regime partial | Own regime authority | River detectors | Hybrid | — |
-| Optimization | Risk limits | Own constraints | Optuna/CVXPY | Hybrid | — |
-| Agent orchestration | Council/assistant | IMP graph contract | Optional one framework | Hybrid | LangGraph/MS AF |
-| Experiment tracking | Manifests | OF-01 ledger | MLflow adapter | Hybrid | — |
-| Workflow orchestration | Partial | OF-03 | Temporal/Dagster | Later | — |
-| Vector retrieval | Absent | Experience/lesson store | FAISS/Qdrant index | Hybrid | — |
-| RL environments | Absent | — | Gymnasium | — | FinRL |
-| RL algorithms | Absent | — | SB3 in sim | — | RLlib |
-| Backtesting | IMP replay | Own temporal law | LEAN/Nautilus cross-check | Hybrid | vectorbt |
-| Portfolio optimization | Risk | Own authority | PyPortfolioOpt/CVXPY | Research | — |
-| Distributed tracing | Partial logs | RT-01 semantics | OTEL export | Hybrid | — |
-| AI evaluation | Partial | AI-01 | Phoenix/Ragas adapters | Later | — |
-| Dataset versioning | Hashes/manifests | Own | DVC adapter only | Hybrid | — |
-| Reporting | UI + JSON | — | Matplotlib/openpyxl | Research/ops | Plotly |
+| Library | Disposition |
+|---|---|
+| River | **HIGH-PRIORITY PILOT** (research extra, BSD-3) commit `64285b9dd6c606804753235fe992bcf25b9856ee` (2026-08-21) |
+| sklearn incremental | USE what exists (partial_fit) before new deps |
+| Vowpal Wabbit | TOO_HEAVY / RESEARCH_ONLY |
+| Avalanche | RESEARCH_ONLY (continual learning) |
+| Alibi Detect / Evidently / NannyML | OPTIONAL later; finance-specific regime logic stays IMP-owned |
 
-Every actual adoption still needs: clear problem, IMP gap, library superiority,
-narrow adapter, license, maintenance, performance, security, exit strategy.
+River mapping: streaming stats, drift detectors, progressive validation,
+adaptive ensembles → regime adaptation, source reliability, calibration drift,
+expert weighting, signal-quality. **No online production learning in ADAPT-00.**
 
----
-
-# 14. Required matrices
-
-## 14.1 Adaptive primitive reuse
-
-| Primitive | Existing IMP Foundation | Missing Gap | External Help | Owner |
-|---|---|---|---|---|
-| experience | Settlement + ledger ids | Experience record after outcome | None required | Adaptive Fabric |
-| error attribution | Qualification + council diagnostics | Unified taxonomy expansion | None | IMP eval |
-| reflection | Absent | Epistemic wrapper | LLM via AI-01 | Adaptive Fabric |
-| lesson | Absent | Validated lesson object | None | Adaptive Fabric |
-| memory | Assistant audit files | Layered stores | — | Adaptive Fabric |
-| retrieval | Absent | Index + contradiction query | FAISS later | Adapter |
-| drift | Regime fragments | Drift monitors | River | IMP + River research |
-| pattern detection | Evaluation cohorts | Grouping + stats gate | sklearn/SciPy | Adaptive Fabric |
-| hypothesis | `hypotheses/` service | Auto-generation | LLM advisory | IMP |
-| experiment | Training manifests | Experiment generator | Optuna/MLflow adapters | OF + Adaptive |
-| model challenger | BUILD 18 trainers | Factory + ladder | sklearn/boosters | IMP |
-| prompt challenger | Absent | Candidate prompts | DSPy optional | AI + Adaptive |
-| graph challenger | Council topology implicit | Graph identity + compare | LangGraph concepts | IMP |
-| promotion | Release/qualification | Adaptive promotion gov | REBASE-02 dispositions | IMP humans |
-| bounded online learning | Calibration updates | Policy object + bounds | River | IMP |
-
-## 14.2 Learning-authority
-
-| Output | Auto-create | Auto-test | Auto-promote | Trading Authority |
-|---|---:|---:|---:|---:|
-| reflection | YES | NO | NO | NO |
-| lesson | YES | YES (validation tests) | NO | NO |
-| experiment | YES | YES | NO | NO |
-| feature | YES | YES | NO | NO |
-| model | YES | YES | NO | NO |
-| prompt | YES | YES | NO | NO |
-| routing | YES | YES | NO | NO |
-| graph | YES | YES | NO | NO |
-| promotion recommendation | YES | YES | NO | NO |
-
-## 14.3 Adaptation
-
-| Adaptation | State Update | Structural Change | Promotion Required | Online Candidate |
-|---|---:|---:|---:|---:|
-| volatility | YES | if model form changes | structural only | YES bounded |
-| regime posterior | YES | if taxonomy changes | structural only | YES bounded |
-| source confidence | YES | if formula changes | structural only | YES bounded |
-| calibration | YES (isotonic fit freeze) | new calibrator class | YES if structural | LIMITED |
-| expert weights | YES if policy allows | new fusion | YES if structural | YES bounded |
-| model parameters | NO (new candidate) | YES | YES | NO |
-| feature set | NO | YES | YES | NO |
-| prompt | NO | YES | YES (light gate) | NO |
-| routing | NO | YES | YES | NO |
-| graph | NO | YES | YES | NO |
-| risk policy | NO | YES | YES (heavy) | NO |
-| execution policy | NO | YES | YES (heavy) | NO |
-
-## 14.4 Qualification contamination
-
-| Mode | May adapt | Must freeze | New candidate identity if |
-|---|---|---|---|
-| training | dataset pipeline per spec | labeled cutoff | feature/model/prompt/graph change |
-| holdout | nothing under test | model+features+policy | any structural tweak |
-| backtest | nothing under test | same | leakage or spec change |
-| replay | visibility overlay per scenario type | scenario identity | mixing observed/counterfactual |
-| paper | bounded state if declared | evaluated identity | undeclared structural change |
-| shadow | same | same | same |
-| forward | same | campaign definition | same |
-| EVIDENCE | per campaign authority | frozen campaign semantics | independent track |
-| canary | live **authority** path only | authorized identity | any undeclared change |
-
----
-
-# 15. Expert adaptation and RL
-
-Bayesian model averaging / mixture-of-experts / online expert algorithms /
-contextual bandits / stacking / regime-conditioned weights:
+Expert methods: Bayesian averaging / mixture-of-experts / online experts /
+contextual bandits / stacking / regime-conditioned weights.
 
 | Method | Class |
 |---|---|
-| Regime-conditioned weights within approved simplex | BOUNDED_ONLINE_CANDIDATE |
-| Stacking / new fusion architecture | OFFLINE_CHALLENGER |
-| Bandits for tool/graph choice | RESEARCH_ONLY until sim safety |
-| Unbounded online GBM retrain | REJECT |
+| Bounded rolling / posterior / source confidence | BOUNDED_ONLINE_CANDIDATE |
+| Bandits / stacking / MoE architecture | OFFLINE_CHALLENGER |
+| Unrestricted live exploration | RESEARCH_ONLY (forbidden live) |
 
 Preserve expert diversity: accuracy, calibration, alpha, abstention, cost,
-latency, failure rate, diversity, correlation, false-consensus risk.
-
-RL (FinRL, SB3, Gymnasium, PettingZoo, RLlib, CleanRL): research for
-execution, hedging, allocation, routing, tool selection **in simulation**.
-Risks: reward hacking, nonstationarity, sim-to-real, tail risk, costs,
-liquidity, unsafe exploration, shift, instability. No uncontrolled live
-exploration. Simulated ≠ observed.
+latency, failure rate, correlation, false-consensus risk.
 
 ---
 
-# 16. ADAPT roadmap (evaluated)
+# 18. Optimization
 
-Numbering preserved; dependencies corrected.
+| Library | Disposition |
+|---|---|
+| SciPy optimize | PILOT with SciPy |
+| Optuna | **HIGH-PRIORITY PILOT** for HPO; studies inherit future Run Ledger; output = CHALLENGER |
+| CVXPY | PILOT later for portfolio/risk research |
+| Ray Tune / Nevergrad | TOO_HEAVY now |
 
-| ID | Name | Intent |
+`OPTIMIZER OUTPUT = CHALLENGER`, never production promotion.
+
+---
+
+# 19. Schema / validation
+
+| Library | Disposition |
+|---|---|
+| dataclasses + IMP contracts | KEEP (canonical) |
+| Pydantic | PILOT at **adapter boundaries** (AI structured output, external payloads), not ultra-hot loops |
+| Pandera | PILOT for research DataFrames (COLD/WARM) |
+| Great Expectations | TOO_HEAVY / DUPLICATIVE vs quality authorities |
+| zod (UI) | KEEP on frontend |
+
+Do not create a second canonical quality authority.
+
+---
+
+# 20. HTTP / serialization
+
+| Library | Disposition |
+|---|---|
+| stdlib urllib | KEEP for current foundation providers |
+| HTTPX | PILOT behind **new** research/provider adapters (sync+async) |
+| aiohttp | DUPLICATIVE vs HTTPX unless server-side streaming needs it |
+| websockets | Compare to Moomoo native push; PILOT only if IMP-owned WS needed |
+| stdlib json | KEEP as semantic default |
+| orjson / msgspec | PILOT after measured JSON volume; never sacrifice canonical semantics |
+| MessagePack / Arrow IPC | workload-specific |
+
+---
+
+# 21. Storage (roles only — no redesign)
+
+| Store | Role |
+|---|---|
+| IMP repositories / Mongo | Operational intelligence documents |
+| sqlite3 | Local state, shadow experiments (existing) |
+| Parquet/Arrow | Cold analytical snapshots |
+| DuckDB | Ad-hoc research SQL |
+| PostgreSQL | Not required now |
+| Redis | OPTIONAL FUTURE (cache/pubsub); compare in-process/NATS/ZMQ first; **no adoption now** |
+
+---
+
+# 22. Quant frameworks
+
+Examined 2026-08-27.
+
+| Project | Commit / license | Disposition |
 |---|---|---|
-| ADAPT-00 | This study | Architecture + ecosystem |
-| ADAPT-01 | Outcome-Grounded Experience Kernel | Experience records on settlement; no LLM required |
-| ADAPT-02 | Reflection + Validated Learning Memory | Epistemics + lesson validation + layered memory |
-| ADAPT-03 | Adaptive Evaluation + Drift + Pattern Discovery | Drift monitors + statistical patterns |
-| ADAPT-04 | Hypothesis & Experiment Generator | Competing hypotheses; frozen experiment contracts |
-| ADAPT-05 | Feature / Model / Prompt / Routing Challenger Factory | Candidates only |
-| ADAPT-06 | Agent-Graph Challenger System | Graph identity + incompatible checkpoint rule |
-| ADAPT-07 | Adaptive Promotion Governance | Consequence-class gates; still not trading authority |
-| ADAPT-08 | Bounded Online Adaptation | Pre-approved state updates only |
+| Qlib | `79633dd9506ea689e5400dea0197717b5b3d74b7` MIT | REFERENCE_ARCHITECTURE — data/feature/model/experiment ideas; do not duplicate IMP ledgers |
+| LEAN | `07fb0182bfe229edd9445cf675ac6509d0069539` Apache-2.0 | RESEARCH_BASELINE / EXTERNAL CROSS-CHECK ENGINE; C# core; do not replace IMP |
+| NautilusTrader | `f2b2addb99527e3c9465573a596284f47b9edf10` **LGPL-3.0** | REFERENCE_ARCHITECTURE for event-driven Rust+Python, clocks, live/backtest symmetry; `WEAK_COPYLEFT_REVIEW_REQUIRED`; **not** a dependency |
+| vectorbt | Apache-2.0 **+ Commons Clause** | `LICENSE_REVIEW_REQUIRED` / `SOURCE_AVAILABLE_RESTRICTED`; research sweeps only, not productized service wrapping |
+| Backtrader | — | STALE_OR_SUPERSEDED relative to Nautilus/LEAN |
+| Zipline-reloaded | — | RESEARCH_ONLY |
+| FinRL | — | RESEARCH_BASELINE for RL; not live |
 
-Do not implement ADAPT-01 before REBASE-02 standards exist as documents
-(implementation of those docs is a separate milestone). Experience records
-**later-integrate** to OF-01 run IDs; they can be designed against REBASE-02
-semantics immediately.
+Nautilus maps to future RT event-bus **study**, measured Rust boundary, and
+simulation fidelity — after RT-01. LGPL linking requires legal review before
+any binary distribution.
 
 ---
 
-# 17. Master dependency graph
+# 23. Portfolio / risk / time series / causal
+
+| Library | Disposition |
+|---|---|
+| PyPortfolioOpt | RESEARCH_BASELINE |
+| Riskfolio-Lib | RESEARCH_BASELINE (check copyleft/deps before any install) |
+| CVXPY | PILOT later |
+| sktime / Darts / PyTorch Forecasting | RESEARCH_ONLY; do not stack |
+| tsfresh | RESEARCH_ONLY; `AUTO FEATURES ≠ AUTO PROMOTION`; leakage/explosion guards |
+| DoWhy / EconML / CausalML | RESEARCH_ONLY; never auto-truth |
+
+---
+
+# 24. Agent ecosystem (pick at most one orchestrator later)
+
+Score emphasis: IMP already has specialists, council, tools-as-Python, and
+read-only assistant. Need: durable graph, HITL, typed outputs, checkpoints
+**mapped to IMP IDs**.
+
+| Framework | Examined | License | Disposition |
+|---|---|---|---|
+| LangGraph | `bdb8a9c7a4aa1390af225f6a5d292e5088659bd5` MIT | PILOT adapter candidate **or** reference; TradingAgents uses it; lock-in + LangSmith gravity |
+| Microsoft Agent Framework | `947d933f2385b3f38ff40bef5b0c0245acdf3798` MIT; 1.0 GA 2026 | PILOT adapter candidate; graphs, checkpointing, HITL, A2A/MCP, Python/.NET |
+| PydanticAI | — MIT | Attractive for typed structured outputs; consider with Pydantic boundary |
+| DSPy | — | RESEARCH; **PROMPT CHALLENGER FACTORY** only; never silent prompt mutation |
+| CrewAI / LlamaIndex | — | DUPLICATIVE if stacking |
+| AutoGen | historically relevant | SUPERSEDED by MAF for Microsoft lineage |
+
+**Reject** `IMP → LangGraph → CrewAI → LlamaIndex → AutoGen`.
+
+Prefer:
+
+```text
+IMP-owned workflow + graph identity
+        optional single adapter (LangGraph XOR MAF)
+```
+
+Decision deferred to IMP-AI-01/AI-02 after OF-01 attribution. ADAPT-06 is the
+graph-challenger system, not “install LangGraph now.”
+
+---
+
+# 25. Workflow / MLOps / vectors / observability / testing
+
+| System | Disposition |
+|---|---|
+| Temporal | OPTIONAL FUTURE COLD/WARM fabric; not hot path |
+| Dagster | OPTIONAL for research asset lineage; not IMP runtime |
+| Prefect | DUPLICATIVE vs Dagster/Temporal choice later |
+| MLflow | INTEGRATION_CANDIDATE **backend** after OF-01; IMP run_id canonical |
+| DVC / W&B / Aim | OPTIONAL; never duplicate truth |
+| FAISS | PILOT for local lesson retrieval |
+| Qdrant | OPTIONAL FUTURE service; not now |
+| Chroma / pgvector | DUPLICATIVE now |
+| OpenTelemetry | HIGH-PRIORITY **export** reference for RT-01; OTEL must not redefine domain IDs |
+| Phoenix / Langfuse / Ragas / DeepEval / TruLens | OPTIONAL AI eval adapters; avoid overlap with Run Ledger |
+| unittest | KEEP |
+| Hypothesis | **HIGH-PRIORITY PILOT** for contracts, temporal edges, serialization |
+| pytest-asyncio/xdist/timeout | OPTIONAL for adapter tests; do not replace validate.py |
+| tools/benchmark.py | KEEP; pyperf/pytest-benchmark may **strengthen measurement** under RT-01 without replacing IMP benchmark identity |
+| cProfile / py-spy | DEV_TOOLING; Scalene/Memray optional |
+| Plotly / Jinja2 | OPTIONAL research/report; not execution |
+
+No duplicate truth stores:
+
+```text
+IMP RUN ID → ADAPTER MAPPING → external tool ID
+```
+
+---
+
+# 26. RL risk (mandatory)
+
+Gymnasium / PettingZoo / Stable-Baselines3 / CleanRL / RLlib / FinRL:
+RESEARCH_BASELINE only.
+
+Risks: reward hacking, nonstationarity, sim-to-real, tail risk, costs,
+liquidity, unsafe exploration, distribution shift, policy instability.
+
+No uncontrolled live exploration. Simulated outcome ≠ observed outcome.
+
+Counterfactual categories remain:
+
+```text
+ACTUAL OBSERVED OUTCOME | COUNTERFACTUAL ESTIMATE | SIMULATED OUTCOME
+```
+
+Never merge.
+
+---
+
+# 27. Required library inventory table
+
+Runtime classes: HOT_PATH, WARM_PATH, COLD_PATH, OFFLINE_RESEARCH,
+DEV_TOOLING, OPTIONAL_OPERATOR_TOOL.
+
+| Library | Already in IMP | Current use | Candidate use | Runtime class | Disposition |
+|---|---|---|---|---|---|
+| pandas | pipeline | collector DataFrames | research/export only | COLD / OFFLINE_RESEARCH | CONSTRAIN |
+| NumPy | foundation+pipeline | ML arrays, scrapers | features/stats | HOT/WARM/COLD | KEEP/EXPAND |
+| Matplotlib | extra unused | none | research plots | OFFLINE_RESEARCH | RESEARCH_ONLY |
+| Seaborn | no | none | optional plots | OFFLINE_RESEARCH | RESEARCH_ONLY |
+| openpyxl | no | none | Excel I/O | OPTIONAL_OPERATOR_TOOL | PILOT if needed |
+| scikit-learn | foundation | baselines, calibration | expand baselines | WARM/COLD | KEEP/EXPAND |
+| requests | pipeline | scrapers | isolated REST | COLD | CONSTRAIN |
+| SciPy | no | none | stats/optimize | OFFLINE_RESEARCH→WARM | PILOT_CANDIDATE |
+| Polars | no | none | large scans | COLD | PILOT_CANDIDATE |
+| PyArrow | pipeline declared | parquet export | snapshots | COLD | PILOT_CANDIDATE |
+| DuckDB | no | none | analytical SQL | OFFLINE_RESEARCH | PILOT_CANDIDATE |
+| Numba | no | none | measured loops | HOT if proven | RESEARCH_ONLY |
+| statsmodels | no | none | econometrics | OFFLINE_RESEARCH | PILOT_CANDIDATE |
+| arch | no | none | volatility | OFFLINE_RESEARCH | PILOT_CANDIDATE |
+| XGBoost | no | none | tabular | COLD train | DUPLICATIVE vs LightGBM |
+| LightGBM | no | none | GBDT challenger | COLD train | PILOT_CANDIDATE |
+| CatBoost | no | none | tabular | COLD train | RESEARCH_ONLY |
+| PyTorch | no | none | deep/RL | OFFLINE_RESEARCH | RESEARCH_BASELINE |
+| River | no | none | drift/online research | WARM research | PILOT_CANDIDATE |
+| Optuna | no | none | HPO challengers | OFFLINE_RESEARCH | PILOT_CANDIDATE |
+| CVXPY | no | none | portfolio/risk | OFFLINE_RESEARCH | PILOT later |
+| Pydantic | no | none | adapter IO | WARM boundary | PILOT_CANDIDATE |
+| Pandera | no | none | frame schemas | COLD | PILOT_CANDIDATE |
+| HTTPX | no | none | adapter HTTP | WARM | PILOT_CANDIDATE |
+| aiohttp | no | none | — | — | DUPLICATIVE |
+| websockets | no | none | IMP WS if needed | WARM | RESEARCH/PILOT |
+| orjson | no | none | fast JSON | WARM | PILOT if measured |
+| msgspec | no | none | typed serdes | WARM | PILOT if measured |
+| LangGraph | no | none | optional graph adapter | COLD/WARM AI | REFERENCE / later XOR |
+| Microsoft Agent Framework | no | none | optional graph adapter | COLD/WARM AI | REFERENCE / later XOR |
+| PydanticAI | no | none | typed agents | COLD/WARM | RESEARCH/PILOT |
+| DSPy | no | none | prompt challengers | OFFLINE_RESEARCH | RESEARCH_BASELINE |
+| MLflow | no | none | experiment backend | COLD | INTEGRATION later |
+| Dagster | no | none | research pipelines | COLD | OPTIONAL FUTURE |
+| Temporal | no | none | durable OF workflows | COLD/WARM | OPTIONAL FUTURE |
+| OpenTelemetry | no | none | export traces | WARM | REFERENCE / RT-01 |
+| FAISS | no | none | local retrieval | COLD | PILOT later |
+| Qdrant | no | none | filtered retrieval | COLD | OPTIONAL FUTURE |
+| Qlib | no | none | research ideas | — | REFERENCE_ARCHITECTURE |
+| LEAN | no | none | cross-check engine | — | RESEARCH_BASELINE |
+| NautilusTrader | no | none | event-core study | — | REFERENCE_ARCHITECTURE + LICENSE_REVIEW |
+| vectorbt | no | none | vectorized sweeps | OFFLINE_RESEARCH | LICENSE_REVIEW_REQUIRED |
+| FinRL | no | none | RL research | OFFLINE_RESEARCH | RESEARCH_BASELINE |
+| Stable-Baselines3 | no | none | RL algos | OFFLINE_RESEARCH | RESEARCH_BASELINE |
+| Gymnasium | no | none | RL env API | OFFLINE_RESEARCH | RESEARCH_BASELINE |
+| PettingZoo | no | none | multi-agent RL | OFFLINE_RESEARCH | RESEARCH_ONLY |
+| PyPortfolioOpt | no | none | portfolio research | OFFLINE_RESEARCH | RESEARCH_BASELINE |
+| Riskfolio-Lib | no | none | risk research | OFFLINE_RESEARCH | RESEARCH_BASELINE |
+| Hypothesis | no | none | property tests | DEV_TOOLING | PILOT_CANDIDATE |
+| pyperf / pytest-benchmark | no | none | microbench | DEV_TOOLING | OPTIONAL under RT-01 |
+
+---
+
+# 28. Shortlist
+
+## KEEP / EXPAND CURRENT USE
+
+NumPy, scikit-learn, pymongo (optional), stdlib urllib/json/unittest/sqlite3,
+`tools/benchmark.py`, UI React/zod/charts, pipeline pandas/requests/pyarrow
+**inside the collector only**, Moomoo/IBKR existing transports.
+
+## HIGH-PRIORITY PILOT CANDIDATES
+
+SciPy; River; Optuna; PyArrow/DuckDB/Polars (analytical extras, not lock
+expansion without governance); HTTPX (adapters); Hypothesis; LightGBM (one
+GBDT); Pydantic/Pandera at boundaries.
+
+## HIGH-PRIORITY REFERENCE ARCHITECTURES
+
+TradingAgents (loop/debate/checkpoint patterns); LangGraph; Microsoft Agent
+Framework; Qlib; NautilusTrader; LEAN (cross-check).
+
+## RESEARCH BASELINES
+
+FinRL, SB3, Gymnasium, vectorbt (license-constrained), PyPortfolioOpt,
+Riskfolio-Lib, PyTorch, statsmodels/arch, DSPy, tsfresh.
+
+## OPTIONAL FUTURE INFRASTRUCTURE
+
+Temporal, Dagster, MLflow adapter, FAISS then Qdrant, OTEL exporter, Redis,
+orjson/msgspec.
+
+## DUPLICATIVE / UNNECESSARY
+
+aiohttp+HTTPX together; XGBoost+LightGBM+CatBoost together; CrewAI+LlamaIndex
+stacking; W&B+MLflow+DVC all canonical; Seaborn if Matplotlib unused;
+TensorFlow+JAX+PyTorch.
+
+## LICENSE-CONSTRAINED
+
+NautilusTrader LGPL-3.0 (`WEAK_COPYLEFT_REVIEW_REQUIRED`); vectorbt Commons
+Clause (`SOURCE_AVAILABLE_RESTRICTED`); curriculum repos `NO_LICENSE`.
+
+## REJECTED (for adoption now)
+
+Installing the entire list; AutoGen as primary; Redis/Qdrant/Temporal in
+ADAPT-00; live RL; pandas/requests in foundation lock; Excel as evidence
+store; LangGraph as canonical authority; MLflow IDs as IMP run IDs.
+
+---
+
+# 29. Adaptive primitive reuse matrix
+
+| Primitive | Existing IMP foundation | Missing gap | External help | Owner |
+|---|---|---|---|---|
+| experience | settlement + ledger + forecast | experience record kernel | — | IMP ADAPT-01 |
+| error attribution | evaluation/diagnostics partial | taxonomy expansion | — | IMP |
+| reflection | absent (assistant is not this) | post-settlement MODEL_OUTPUT | LLM via AI-01 | IMP |
+| lesson | HypothesisV1 partial | validation + decay | — | IMP ADAPT-02 |
+| memory | audit/evidence stores | layered memory | FAISS later | IMP |
+| retrieval | none | policy + contradictions | FAISS/Qdrant | IMP + adapter |
+| drift | regime features partial | detectors | River | IMP + River research |
+| pattern detection | evaluation cohorts | grouping + stats | SciPy | IMP |
+| hypothesis | HypothesisV1 | competing auto-gen | DSPy optional | IMP |
+| experiment | shadow/training partial | generator + freeze rules | Optuna/MLflow adapter | IMP + OF |
+| model challenger | sklearn trainers | factory + gates | sklearn/LightGBM | IMP |
+| prompt challenger | assistant templates | candidate-only | DSPy | IMP-AI |
+| graph challenger | council topology implicit | identity + lifecycle | LangGraph/MAF adapter | IMP ADAPT-06 |
+| promotion | release governance | adaptive promotion evidence | — | IMP ADAPT-07 |
+| bounded online | calibration static | approved policy envelope | River | IMP ADAPT-08 |
+
+---
+
+# 30. Learning-authority matrix
+
+| Output | Auto-create | Auto-test | Auto-promote | Trading authority |
+|---|---|---|---|---|
+| reflection | YES (after settlement) | YES (schema) | NO | NO |
+| lesson | YES (candidate) | YES (stats gates) | NO | NO |
+| experiment | YES (candidate) | YES (defined protocol) | NO | NO |
+| feature | YES (candidate) | YES | NO | NO |
+| model | YES (candidate) | YES | NO | NO |
+| prompt | YES (candidate) | YES | NO | NO |
+| routing | YES (candidate) | YES | NO | NO |
+| graph | YES (candidate) | YES | NO | NO |
+| promotion recommendation | YES | YES | NO | NO |
+
+---
+
+# 31. Adaptation matrix
+
+| Adaptation | State update | Structural change | Promotion required | Online candidate |
+|---|---|---|---|---|
+| volatility | YES (bounded) | if model family changes | if structural | YES if policy |
+| regime posterior | YES (bounded) | if taxonomy changes | if structural | YES if policy |
+| source confidence | YES (bounded) | if formula changes | if structural | YES if policy |
+| calibration | map update vs new method | new method | method: YES | map: maybe |
+| expert weights | bounded mix | new mixer | mixer: YES | bounded YES |
+| model parameters | refit under identity | architecture | architecture YES | NO live |
+| feature set | no | YES | YES | NO |
+| prompt | no | YES | YES (lighter gate) | NO |
+| routing | policy params vs graph | graph/policy class | class YES | params maybe |
+| graph | no | YES | YES | NO |
+| risk policy | no | YES | YES (heavy) | NO |
+| execution policy | no | YES | YES (heavy) | NO |
+
+Use consequence classes: prompt wording ≠ risk algorithm gates.
+
+---
+
+# 32. Qualification contamination matrix
+
+| Stage | What may adapt | What must freeze | New candidate identity if… |
+|---|---|---|---|
+| training | fit params inside declared model identity | feature set, cutoff, labels | architecture/feature/prompt/graph/retrieval policy change |
+| holdout | nothing structural | all evaluated identity | any structural change |
+| backtest | nothing structural | policy + data cutoff | identity fields change |
+| replay | nothing structural | recorded inputs | graph/model mismatch vs checkpoint |
+| paper | bounded state only if campaign allows | campaign identity | undeclared structural change |
+| shadow | same | same | same |
+| forward | **none structural** | MODEL, POLICY, FEATURES, PROMPT, GRAPH, RETRIEVAL | any of those change |
+| EVIDENCE | campaign rules only | EVIDENCE semantics | never silently |
+| canary | bounded operational params per live policy | execution authority chain | risk/execution policy change |
+
+---
+
+# 33. Fast vs slow adaptation
+
+**FAST (policy-bounded state):** rolling stats, posteriors, volatility,
+liquidity, confidence, bounded expert weights.
+
+**SLOW (challenger + evidence):** new features, models, prompts, routing,
+graphs, datasets, risk methods.
+
+---
+
+# 34. External-tool architecture
+
+```text
+              IMP CANONICAL CONTRACTS
+                     │
+       ┌─────────────┼──────────────┐
+       ▼             ▼              ▼
+  Agent Adapter   ML Adapter    Workflow Adapter
+       ▼             ▼              ▼
+ optional graph    sklearn/HPO/   Temporal/Dagster
+ framework         MLflow export
+                     │
+                     ▼
+               Retrieval Adapter → optional vector DB
+                     │
+                     ▼
+               Telemetry exporter → OTEL (non-canonical IDs)
+```
+
+```text
+IMP DOMAIN AUTHORITY
+      │
+      ├── numerical libraries
+      ├── data libraries
+      ├── model libraries
+      ├── agent adapters
+      ├── workflow adapters
+      ├── experiment adapters
+      ├── telemetry exporters
+      └── retrieval adapters
+
+EXTERNAL TECHNOLOGY = IMPLEMENTATION DETAIL / OPTIONAL CAPABILITY
+NOT CANONICAL IMP AUTHORITY
+```
+
+---
+
+# 35. Build-vs-integrate matrix
+
+| Concern | Current IMP | Build | Integrate | Hybrid | Reference only |
+|---|---|---|---|---|---|
+| numerical computation | NumPy | — | SciPy later | NumPy+SciPy | — |
+| dataframes | pipeline pandas; foundation lists | keep contracts | Polars pilot | pandas research / native hot | — |
+| large analytical data | JSON/sqlite | — | Arrow/DuckDB | Parquet artifacts | — |
+| feature computation | IMP features | keep | optional tsfresh research | — | — |
+| statistics | partial | domain metrics | SciPy/statsmodels | — | — |
+| econometrics | absent | — | arch/statsmodels | — | — |
+| ML | sklearn | keep baselines | LightGBM | — | PyTorch |
+| online learning | absent | policy owner | River | — | VW |
+| drift | regime partial | finance regimes | River detectors | — | Evidently |
+| optimization | absent | — | Optuna/SciPy/CVXPY | — | Ray Tune |
+| agent orchestration | council/specialists | graph identity | one adapter | IMP+adapter | TradingAgents |
+| experiment tracking | manifests | Run Ledger OF-01 | MLflow adapter | IMP id + export | W&B |
+| workflow orchestration | runbooks | OF-03 | Temporal/Dagster later | — | — |
+| vector retrieval | absent | policy | FAISS | — | Qdrant later |
+| RL env/algos | absent | — | Gymnasium/SB3 | — | FinRL |
+| backtesting | IMP replay/sim | keep | LEAN cross-check | — | Nautilus/vectorbt |
+| portfolio optimization | risk caps | IMP risk | CVXPY/PyPortfolioOpt | — | Riskfolio |
+| distributed tracing | partial logs | RT-01 contract | OTEL export | IMP+OTEL | Langfuse |
+| AI evaluation | assistant audit | AI-01 | optional Ragas | — | — |
+| dataset versioning | hashes/manifests | keep | optional DVC | — | — |
+| reporting | JSON/UI | keep | Matplotlib/openpyxl | — | Plotly |
+
+---
+
+# 36. REBASE-02 compatibility (verified sufficient)
+
+Approved spec already covers: run identity, attempt identity, experiment
+attribution (initiator/trigger/parent; material-change vs retry), outcome
+validity vs disposition, artifacts, reproducibility ranks vs evidence strength,
+AI attribution ≠ AI reproducibility, checkpoint/resume compatibility,
+historical/legacy indexing as provenance qualifiers.
+
+Adaptive experience/lesson/graph objects can **cite** future `run_id` without
+amending the spec. No standards-level blocker.
+
+```text
+NO REBASE-02 AMENDMENT REQUIRED
+REBASE-02 REMAINS APPROVED FOR IMPLEMENTATION
+```
+
+---
+
+# 37. Proposed ADAPT roadmap (adjusted numbering retained; meaning tightened)
+
+| ID | Name | Depends |
+|---|---|---|
+| ADAPT-00 | this architecture/ecosystem study | done (this document) |
+| ADAPT-01 | Outcome-Grounded Experience Kernel | REBASE-02 + OF-01 (HARD for durable run cites; design PARALLEL_SAFE after REBASE-02) |
+| ADAPT-02 | Reflection + Validated Learning Memory | ADAPT-01; AI-01 SOFT for LLM reflection |
+| ADAPT-03 | Adaptive Evaluation + Drift + Pattern Discovery | ADAPT-01; River/SciPy pilots |
+| ADAPT-04 | Hypothesis & Experiment Generator | ADAPT-03; Optuna optional |
+| ADAPT-05 | Feature/Model/Prompt/Routing Challenger Factory | ADAPT-04; sklearn/LightGBM |
+| ADAPT-06 | Agent-Graph Challenger System | ADAPT-05; AI-02 LATER; single orchestrator adapter |
+| ADAPT-07 | Adaptive Promotion Governance | ADAPT-05/06; OF-03 SOFT |
+| ADAPT-08 | Bounded Online Adaptation | ADAPT-07 policy + RT-01 measurement |
+
+Do not implement ADAPT-01 runtime before OF-01 if experience records must cite
+canonical runs. Conceptual design of ADAPT-01 may proceed in parallel after
+REBASE-02.
+
+---
+
+# 38. Master dependency graph
 
 ```text
 REBASE-01
     HARD → REBASE-02 (approved, unchanged)
                 HARD → OF-01
-                HARD → RT-01 contract (runtime later-integrates OF-01)
-                HARD → XA-01 contract prep
-                PARALLEL_SAFE after REBASE-02: OF-01, RT-01 prep, XA-01 prep, ADAPT-00 (done)
-OF-01 HARD → OF-02
+                PARALLEL_SAFE → RT-01 contract work, XA-01 contract work
+                PARALLEL_SAFE → ADAPT-00 (this)
+
+OF-01 HARD → OF-02 → (per-op) OF-03 HARD → AI-02
 OF-01 HARD → AI-01
-OF-02 per-operation HARD → OF-03
-OF-03 HARD → AI-02
+OF-01 LATER_INTEGRATION → ADAPT-01 durable cites
 RT-01 HARD → RT-02 HARD → RT-03
 XA-01 HARD → XA-02
-REBASE-02 SOFT/LATER → ADAPT-01 (uses run/outcome semantics)
-OF-01 LATER_INTEGRATION → ADAPT-01 implementation (run_id linkage)
-ADAPT-01 HARD → ADAPT-02 → ADAPT-03
-ADAPT-03 SOFT → ADAPT-04
-ADAPT-01 SOFT → ADAPT-05 (challengers need experience)
-ADAPT-05 / AI-01 LATER → ADAPT-06
-ADAPT-05 + ADAPT-06 HARD → ADAPT-07
-ADAPT-07 HARD → ADAPT-08
-AI-01 SOFT → ADAPT-02 reflection (LLM)
+AI-01 SOFT → ADAPT-02 LLM reflection
+ADAPT-00 SOFT → ADAPT-01…08 (sequence above)
 EVIDENCE-01C INDEPENDENT of all of the above
 ```
 
-Canonical `docs/platform/MASTER_*` are **not** edited in ADAPT-00. Integrate
-this graph after REBASE-02 documentation implementation or a dedicated
-canonical-doc milestone.
+Edges: HARD / SOFT / PARALLEL_SAFE / LATER_INTEGRATION / INDEPENDENT as above.
 
 ---
 
-# 18. REBASE-02 compatibility (verified)
-
-| Concern | REBASE-02 coverage | Adaptive need | Verdict |
-|---|---|---|---|
-| run identity | `run_id` required rules | experience/experiment parent | SUFFICIENT |
-| attempt identity | sequential default, `attempt_id` | retries of eval jobs | SUFFICIENT |
-| experiment attribution | evaluation standard + AI ops | challenger studies | SUFFICIENT |
-| outcome validity | VALID/INVALID/INDETERMINATE/… | settlement vs learning | SUFFICIENT |
-| disposition | ACCEPT/REJECT/…; not lifecycle | promotion recommendations | SUFFICIENT |
-| artifacts | logical vs content identity | experience/lesson artifacts | SUFFICIENT |
-| reproducibility | R classes + evidence strength | learning runs | SUFFICIENT |
-| AI attribution | provider/model/template/tools/cutoff | reflection provenance | SUFFICIENT |
-| checkpoint compatibility | resume vs new attempt vs new run | graph identity specializes later | SUFFICIENT |
-| historical indexing | LEGACY_PARTIAL / relations | lesson retrieval | SUFFICIENT |
-
-No blocking semantic gap. Graph identity is an Adaptive Fabric specialization,
-not a contradiction.
-
----
-
-# 19. Quant research backlog (ranked)
+# 39. Quant research backlog (ranked)
 
 | Priority | Question | Source | Baseline | Candidate | Dataset | Evaluation | Risk | Deps |
 |---|---|---|---|---|---|---|---|---|
-| 1 | Calibration drift of fusion vs settled direction | IMP fusion + ledger | sklearn calibrators | River drift + re-cal challenger | settled forecasts | Brier/ECE by regime | leakage | ADAPT-01, sklearn |
-| 2 | Specialist diversity vs false consensus | Blind Council | current fusion | correlation/abstention metrics | blackboard snapshots | eval cohorts | overfit weights | council |
-| 3 | Volatility state vs GARCH challenger | Risk/intel | rolling std | `arch` GARCH | bars with cutoff | forecast log-score | structural vs state | research extra |
-| 4 | Cross-asset lag features | XA | univariate | event-time joins | multi-domain fixtures | replay | identity mix | XA-01 |
-| 5 | Microstructure vs bar features | order flow | existing LOB fixtures | IMP features | replay | leakage | data |
-| 6 | Tabular booster vs sklearn GBM | training | sklearn GBM | LightGBM **or** XGB | training sets | challenger ladder | dep weight | ADAPT-05 |
-| 7 | Online expert weights in bounds | fusion | static weights | bounded mixing | settled | regret vs freeze | live learn | ADAPT-08 |
-| 8 | Retrieval of contradicting lessons | memory | none | FAISS + filters | experiences | retrieval eval | confirmation bias | ADAPT-02 |
-| 9 | Prompt challengers | AI-01 | frozen templates | DSPy candidates | AI eval sets | AI-01 metrics | silent mutate | AI-01 |
-| 10 | Execution RL in sim | research | heuristics | SB3 + costs | sim | tail + cost | sim-to-real | never live |
-| 11 | Deep hedging | options | delta | PyTorch research | options fixtures | hedge error | complexity | research |
-| 12 | Causal cross-asset | XA | correlations | DoWhy hypotheses | observational | never auto-causal | confounds | research |
-| 13 | Graph debate depth | council | max rounds | graph challenger | replay | eval | checkpoint clash | ADAPT-06 |
-| 14 | Portfolio CVaR research | risk | current limits | CVXPY/Riskfolio | returns | research only | authority bypass | research |
+| P1 | Does GARCH beat IMP vol features for risk? | arch docs / finance-courses | rolling vol | EGARCH | frozen bars | settlement + calibration | leakage | arch |
+| P1 | Cross-asset lead-lag vs leakage | XA + QFR | naive corr | lagged tests | multi-source | PIT law | look-ahead | none |
+| P1 | Microstructure features after cost | order-flow BUILD | mid-only | LOB imbalance | replay | net alpha | capacity | none |
+| P1 | Expert weight vs static fusion | council | equal/static | bounded online mix | ledgers | diversity+score | consensus | River |
+| P2 | LightGBM vs sklearn GBM | sklearn | GBM | LightGBM | training sets | beats baseline | overfit | LightGBM |
+| P2 | Drift detectors vs IMP regimes | River | regime labels | ADWIN etc. | streams | false alarm | chasing noise | River |
+| P2 | Portfolio CVaR vs current caps | finance-courses | notional caps | CVXPY | returns | drawdown | model risk | CVXPY |
+| P2 | Optuna thresholds as challengers | Optuna | manual | TPE | frozen | Run Ledger | p-hacking | Optuna |
+| P3 | Deep hedging | PyTorch literature | rules | NN hedge | options | sim P&L | sim-to-real | PyTorch |
+| P3 | Causal cross-asset | DoWhy | Granger-like | CATE | macro | holdout | spurious | DoWhy |
+| P3 | RL execution | FinRL | TWAP | SB3 | sim | slippage | unsafe explore | Gymnasium |
+| P3 | Graph debate depth | TradingAgents | current council | extra round | AI eval | cost vs accuracy | prompt drift | adapter |
+| P3 | Agent/tool routing bandits | literature | static tools | contextual bandit | traces | regret vs freeze | nonstat. | River |
 
 ---
 
-# 20. Governing principles (normative for future work)
+# 40. Adoption gate (every future install)
 
-Use mature libraries for commodity infrastructure. Keep IMP domain authority
-inside IMP. Reuse before inventing. Benchmark before replacing. Do not add
-dependencies because they are popular. External framework IDs never become
-canonical IMP IDs. Avoid overlapping frameworks and duplicate provenance.
-pandas is not automatically the best engine for every workload. NumPy is
-foundational but not a substitute for profiling. Matplotlib/Seaborn belong
-off the hot path. Excel is interchange, not storage. sklearn baselines remain
-valuable. Synchronous HTTP is not a live-streaming architecture. Reflection
-and lessons are not truth. Memory learning is not structural learning. State
-adaptation is not model mutation. A candidate is not production. Promotion is
-not trading authority. Vector search is not evidence. RL simulation is not
-live evidence. Counterfactuals are not observations. Concept drift is not
-automatically model failure. Self-adjusting graphs remain versioned.
-Checkpoints cannot cross incompatible graph identities. Online adaptation
-stays within pre-approved bounds. Forward qualification requires stable
-identity. Learning stays off the critical execution path unless proven safe.
-Reproducibility precedes self-improvement. EVIDENCE-01C remains independent.
-Do not reopen approved REBASE-02 without a demonstrated standards-level
-conflict.
+Prove: clear problem, IMP gap, library materially superior, narrow adapter,
+acceptable license/maintenance/performance/security, exit strategy. Do not
+install because popular.
+
+Dependency restraint: **do not** expand `phase0-dependency-lock.json` in
+ADAPT-00. Future extras belong in isolated research/optional groups with
+principal approval.
 
 ---
 
-# 21. Known limitations of ADAPT-00
+# 41. Known limitations of ADAPT-00
 
-- GitHub unauthenticated API rate limit stopped live SHA pins after orjson;
-  remaining licenses are from SPDX/project documentation, not a second SHA
-  fetch.
-- TradingAgents `memory.py` raw fetch timed out; memory path and injection
-  behavior are taken from README + `reflection.py` at `a33fd4c0`.
-- No runtime benchmarks of Polars/orjson/Numba were run (forbidden:
-  planning only, no installs).
-- Pipeline vs foundation split is architectural; a future governed extra
-  system is recommended but not specified as lockfile edits.
-- Canonical `docs/platform/MASTER_*` not updated (frozen by this milestone).
+- Microsoft Agent Framework was examined via GitHub `main` commit
+  `947d933f2385b3f38ff40bef5b0c0245acdf3798` and public 1.0 GA notes; Python
+  package internals were not fully tree-walked.
+- QFR and finance-courses are unlicensed catalogs/notebooks; topic extraction
+  is conceptual.
+- vectorbt Commons Clause commercial-redistribution boundary needs counsel
+  before any product wrapping.
+- Nautilus LGPL linking needs counsel before any binary ship.
+- No workload benchmarks were run (planning-only; Numba/Polars/orjson remain
+  unmeasured).
+- Adaptive systems explore agent (`e6e362be`) may still have been in flight;
+  foundation audit used direct source inspection of ledger, settlement,
+  council, lock, and pipeline manifests.
+- PyPI latest version pins for SciPy/River/Optuna were not frozen into a lock
+  (no installs).
 
 ---
 
-# 22. Recommended next step
+# 42. Recommended next step
 
 ```text
 Proceed with:
@@ -1196,4 +1179,17 @@ IMP-REBASE-02 Clean-Worktree Standards Implementation
 
 Then perform canonical integration of the
 accepted ADAPT-00 architecture and roadmap.
+```
+
+Do not create `docs/platform/REPRODUCIBILITY_AND_RUN_STANDARD.md` (etc.) in
+this milestone. Do not build Run Ledger, Artifact Registry, trace backend,
+workflow engine, AI/adaptive runtimes, vector DB, RL env, drift engine, or
+model registry here.
+
+---
+
+# 43. Final status
+
+```text
+IMP_ADAPT_00_COMPLETE_WITH_LIMITATIONS
 ```

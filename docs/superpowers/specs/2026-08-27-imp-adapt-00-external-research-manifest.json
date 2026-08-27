@@ -1,26 +1,99 @@
 {
   "document_id": "IMP-ADAPT-00-RESEARCH-MANIFEST",
   "examined_date": "2026-08-27",
-  "note": "Planning-only pins. Incomplete SHA list after GitHub API rate limit.",
+  "no_packages_installed": true,
+  "no_external_source_copied": true,
   "projects": [
-    {"name": "TradingAgents", "url": "https://github.com/TauricResearch/TradingAgents", "commit": "a33fd4c0f134485a43553a2c23a63cb14adbd88f", "license": "Apache-2.0", "category": "agent-quant", "disposition": "REFERENCE_ARCHITECTURE"},
-    {"name": "Quant-Finance-Resources", "url": "https://github.com/PyPatel/Quant-Finance-Resources", "commit": "a281bb7c446b51301d1566e30e50f54facc3d4af", "license": "NO_LICENSE", "category": "curriculum", "disposition": "REFERENCE_ONLY"},
-    {"name": "finance-courses", "url": "https://github.com/z4ir3/finance-courses", "commit": "1466799ecf3ac3d32bd7119de74eb61d5150192b", "license": "NO_LICENSE", "category": "curriculum", "disposition": "REFERENCE_ONLY"},
-    {"name": "langgraph", "url": "https://github.com/langchain-ai/langgraph", "commit": "bdb8a9c7a4aa1390af225f6a5d292e5088659bd5", "license": "MIT", "category": "agent", "disposition": "REFERENCE_ARCHITECTURE"},
-    {"name": "agent-framework", "url": "https://github.com/microsoft/agent-framework", "commit": "947d933f2385b3f38ff40bef5b0c0245acdf3798", "license": "MIT", "category": "agent", "disposition": "REFERENCE_ARCHITECTURE"},
-    {"name": "qlib", "url": "https://github.com/microsoft/qlib", "commit": "79633dd9506ea689e5400dea0197717b5b3d74b7", "license": "MIT", "category": "quant", "disposition": "REFERENCE_ARCHITECTURE"},
-    {"name": "Lean", "url": "https://github.com/QuantConnect/Lean", "commit": "07fb0182bfe229edd9445cf675ac6509d0069539", "license": "Apache-2.0", "category": "quant", "disposition": "REFERENCE_ARCHITECTURE"},
-    {"name": "nautilus_trader", "url": "https://github.com/nautechsystems/nautilus_trader", "commit": "f2b2addb99527e3c9465573a596284f47b9edf10", "license": "LGPL-3.0", "category": "quant", "disposition": "REFERENCE_ARCHITECTURE"},
-    {"name": "vectorbt", "url": "https://github.com/polakowo/vectorbt", "commit": "34b6d5935e3ea3eccd549e2592bc0f455b8045f5", "license": "Apache-2.0-WITH-Commons-Clause", "category": "quant", "disposition": "LICENSE_REVIEW_REQUIRED"},
-    {"name": "FinRL", "url": "https://github.com/AI4Finance-Foundation/FinRL", "commit": "2334a5fe6d30629157f13c3b0319e1637e15e123", "license": "MIT", "category": "rl", "disposition": "RESEARCH_BASELINE"},
-    {"name": "river", "url": "https://github.com/online-ml/river", "commit": "64285b9dd6c606804753235fe992bcf25b9856ee", "license": "BSD-3-Clause", "category": "online-ml", "disposition": "PILOT_CANDIDATE"},
-    {"name": "optuna", "url": "https://github.com/optuna/optuna", "commit": "f6898dab5bba804dd2bdb6ce7cc06b41b51506e4", "license": "MIT", "category": "optimization", "disposition": "PILOT_CANDIDATE"},
-    {"name": "mlflow", "url": "https://github.com/mlflow/mlflow", "commit": "9dfea31cb82744a2d3d5ea1a2222b93df629edff", "license": "Apache-2.0", "category": "mlops", "disposition": "INTEGRATION_CANDIDATE"},
-    {"name": "pydantic", "url": "https://github.com/pydantic/pydantic", "commit": "965c23dd93bd5ca7b86224ba39ccbe79399f117b", "license": "MIT", "category": "validation", "disposition": "PILOT_CANDIDATE"},
-    {"name": "pandera", "url": "https://github.com/unionai-oss/pandera", "commit": "9777c23b4bbc146c115a479b7551d0671c76ebcd", "license": "MIT", "category": "validation", "disposition": "PILOT_CANDIDATE"},
-    {"name": "httpx", "url": "https://github.com/encode/httpx", "commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254", "license": "BSD-3-Clause", "category": "http", "disposition": "PILOT_CANDIDATE"},
-    {"name": "aiohttp", "url": "https://github.com/aio-libs/aiohttp", "commit": "58899272ce81abbae535eba108e2dca6ec87b4b1", "license": "Apache-2.0", "category": "http", "disposition": "DUPLICATIVE"},
-    {"name": "websockets", "url": "https://github.com/python-websockets/websockets", "commit": "bd83f2393017cceabb88f125073af74124ae5fbf", "license": "BSD-3-Clause", "category": "http", "disposition": "PILOT_CANDIDATE"},
-    {"name": "orjson", "url": "https://github.com/ijl/orjson", "commit": "6737895a1a4e3e26df0569a40147893a786f9a58", "license": "Apache-2.0", "category": "serialization", "disposition": "PILOT_CANDIDATE"}
+    {
+      "name": "TradingAgents",
+      "url": "https://github.com/TauricResearch/TradingAgents",
+      "commit": "a33fd4c0f134485a43553a2c23a63cb14adbd88f",
+      "license": "Apache-2.0",
+      "license_class": "PERMISSIVE_COMPATIBLE",
+      "category": "agent-reference",
+      "disposition": "REFERENCE_ARCHITECTURE"
+    },
+    {
+      "name": "LangGraph",
+      "url": "https://github.com/langchain-ai/langgraph",
+      "commit": "bdb8a9c7a4aa1390af225f6a5d292e5088659bd5",
+      "license": "MIT",
+      "license_class": "PERMISSIVE_COMPATIBLE",
+      "category": "agent-framework",
+      "disposition": "REFERENCE_ARCHITECTURE"
+    },
+    {
+      "name": "Microsoft Agent Framework",
+      "url": "https://github.com/microsoft/agent-framework",
+      "commit": "947d933f2385b3f38ff40bef5b0c0245acdf3798",
+      "license": "MIT",
+      "license_class": "PERMISSIVE_COMPATIBLE",
+      "category": "agent-framework",
+      "disposition": "REFERENCE_ARCHITECTURE"
+    },
+    {
+      "name": "Qlib",
+      "url": "https://github.com/microsoft/qlib",
+      "commit": "79633dd9506ea689e5400dea0197717b5b3d74b7",
+      "license": "MIT",
+      "license_class": "PERMISSIVE_COMPATIBLE",
+      "category": "quant-platform",
+      "disposition": "REFERENCE_ARCHITECTURE"
+    },
+    {
+      "name": "LEAN",
+      "url": "https://github.com/QuantConnect/Lean",
+      "commit": "07fb0182bfe229edd9445cf675ac6509d0069539",
+      "license": "Apache-2.0",
+      "license_class": "PERMISSIVE_COMPATIBLE",
+      "category": "quant-engine",
+      "disposition": "RESEARCH_BASELINE"
+    },
+    {
+      "name": "NautilusTrader",
+      "url": "https://github.com/nautechsystems/nautilus_trader",
+      "commit": "f2b2addb99527e3c9465573a596284f47b9edf10",
+      "license": "LGPL-3.0",
+      "license_class": "WEAK_COPYLEFT_REVIEW_REQUIRED",
+      "category": "quant-engine",
+      "disposition": "LICENSE_REVIEW_REQUIRED"
+    },
+    {
+      "name": "River",
+      "url": "https://github.com/online-ml/river",
+      "commit": "64285b9dd6c606804753235fe992bcf25b9856ee",
+      "license": "BSD-3-Clause",
+      "license_class": "PERMISSIVE_COMPATIBLE",
+      "category": "online-ml",
+      "disposition": "PILOT_CANDIDATE"
+    },
+    {
+      "name": "Quant-Finance-Resources",
+      "url": "https://github.com/PyPatel/Quant-Finance-Resources",
+      "commit": "a281bb7c446b51301d1566e30e50f54facc3d4af",
+      "license": null,
+      "license_class": "NO_LICENSE",
+      "category": "curriculum",
+      "disposition": "REFERENCE_ONLY"
+    },
+    {
+      "name": "finance-courses",
+      "url": "https://github.com/z4ir3/finance-courses",
+      "commit": "1466799ecf3ac3d32bd7119de74eb61d5150192b",
+      "license": null,
+      "license_class": "NO_LICENSE",
+      "category": "curriculum",
+      "disposition": "REFERENCE_ONLY"
+    },
+    {
+      "name": "vectorbt",
+      "url": "https://github.com/polakowo/vectorbt",
+      "commit": null,
+      "license": "Apache-2.0 WITH Commons Clause",
+      "license_class": "SOURCE_AVAILABLE_RESTRICTED",
+      "category": "backtesting",
+      "disposition": "LICENSE_REVIEW_REQUIRED",
+      "notes": "License read from vectorbt.dev/pypi 2026-08-27; repo SHA not pinned"
+    }
   ]
 }
