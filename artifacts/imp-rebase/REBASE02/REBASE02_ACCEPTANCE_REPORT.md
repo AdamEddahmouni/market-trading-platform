@@ -169,10 +169,15 @@ Disposition: `PASS_WITH_RETRY` (environment failure then success).
 
 | Item | Value |
 |---|---|
-| Entries | 13 |
+| Entries | 14 |
 | Self-excluding | YES |
 | Sorted unique paths | YES |
 | Accepted surface complete | YES |
+
+Corrective audit note: the initial report transcribed the entry count as 13.
+The manifest and approved accepted surface contain 14 entries: three canonical
+standards, seven modified platform documents, the implementation specification,
+and three non-manifest acceptance files. No accepted path was absent.
 
 ## Git disposition
 
