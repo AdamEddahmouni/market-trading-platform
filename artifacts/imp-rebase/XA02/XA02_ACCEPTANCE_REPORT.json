@@ -42,5 +42,6 @@
     "broker_transport_changed": false,
     "adapt_specific_execution_added": false,
     "autonomous_adaptation_enabled": false
-  }
+  },
+  "final_head": "c8311de9533cb7ba45bb7a03abf605a6c46ac91b"
 }
