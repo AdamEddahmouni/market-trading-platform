@@ -224,6 +224,19 @@
       "disposition": "KEEP"
     },
     {
+      "id": "of01-run-and-artifact-ledger",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/of01"
+      ],
+      "responsibility": "Canonical authoritative run, attempt, artifact, and provenance ledger for IMP operating-fabric identity.",
+      "evidence": [
+        "tools/validation_manifest.json registers the of01 offline suite against src/market_platform_foundation/of01.",
+        "tests/of01 and artifacts/imp-rebase/OF01 record the accepted OF-01 runtime contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
       "id": "legacy-full-suite-wrapper",
       "classification": "WRAPPED",
       "scope": ["tools/run_all_tests.py"],
