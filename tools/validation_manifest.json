@@ -1769,6 +1769,34 @@
         "market_data",
         "of03"
       ]
+    },
+    {
+      "id": "xa01",
+      "path": "tests/xa01",
+      "classification": "offline",
+      "tiers": [
+        "full",
+        "changed"
+      ],
+      "domains": [
+        "core"
+      ],
+      "parallel_safety": "PARALLEL_SAFE",
+      "resource_weight": 1,
+      "source_globs": [
+        "src/market_platform_foundation/xa01/**",
+        "docs/operations/xa-01/**",
+        "docs/superpowers/specs/2026-08-29-imp-xa-01-cross-asset-canonical-domain-instrument-identity-kernel-implementation-spec.md"
+      ],
+      "test_globs": [
+        "tests/xa01/test_*.py"
+      ],
+      "neighbors": [
+        "futures",
+        "options",
+        "market_data",
+        "of03"
+      ]
     }
   ]
 }
