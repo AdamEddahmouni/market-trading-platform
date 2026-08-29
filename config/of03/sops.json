@@ -1,1 +1,1241 @@
-[{"automation_policy":"HUMAN_APPROVAL_REQUIRED","consequence_profile":"C4_AUTHORITY_CRITICAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-001","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"7F790DA7A230FBFE1D19F5D3145A41810CFBE35A0CAE47115B3DBA3B190B42E0","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.STATUS","capability_version":1},{"capability_id":"OF01.OP.INTEGRITY_QUICK","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF01-018","workflow_version":1}],"required_authority_refs":["LEDGER_RUNTIME"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-001","title":"Startup"},{"automation_policy":"AUTOMATION_ALLOWED_WITH_GUARD","consequence_profile":"C4_AUTHORITY_CRITICAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-002","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"1E449CD1E4CEDF627887C4B6AA270128833A80E312E2A9E1C31A638BE5CEA1FB","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.SHUTDOWN","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF01-017","workflow_version":1}],"required_authority_refs":["LEDGER_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-002","title":"Graceful shutdown"},{"automation_policy":"AUTOMATION_ALLOWED","consequence_profile":"C2_GOVERNED","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-003","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"FF2260C5116D1664E6D1AE0D2545F46E4A73401683BE1B6A3AE2CEDF210CE7C2","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.INTEGRITY_QUICK","capability_version":1},{"capability_id":"OF01.OP.INTEGRITY_FULL","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF01-012","workflow_version":1}],"required_authority_refs":["LEDGER_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-003","title":"Integrity check"},{"automation_policy":"HUMAN_APPROVAL_REQUIRED","consequence_profile":"C3_EVIDENCE_CRITICAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-004","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"CD807FC56621FCD77892A9998300FBE9246219680A13180C852B0D2F6C123871","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.BACKUP_CREATE","capability_version":1},{"capability_id":"OF01.OP.BACKUP_VERIFY","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF01-013","workflow_version":1}],"required_authority_refs":["BACKUP_RECOVERY_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-004","title":"Verified backup"},{"automation_policy":"AGENT_PROHIBITED","consequence_profile":"C4_AUTHORITY_CRITICAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-005","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"6A889C29B83B708E5E6CD00E15EFC1983C23EF8135A21EB2BB4FC067B0319018","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.RESTORE_VALIDATE","capability_version":1},{"capability_id":"OF01.OP.RESTORE_ACTIVATE","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF01-014","workflow_version":1}],"required_authority_refs":["LEDGER_RECOVERY"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-005","title":"Restore and activation"},{"automation_policy":"HUMAN_APPROVAL_REQUIRED","consequence_profile":"C4_AUTHORITY_CRITICAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-006","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"74A1DB31F8AF7F05A023031DDF46839560863546C773B0097B3E07A660CCF94C","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.MAINTENANCE_ENTER","capability_version":1}],"related_workflow_refs":[],"required_authority_refs":["LEDGER_MAINTENANCE"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-006","title":"Enter maintenance mode"},{"automation_policy":"HUMAN_APPROVAL_REQUIRED","consequence_profile":"C4_AUTHORITY_CRITICAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-007","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"86EE2543B7767E5348F2A8CFAD5EBF6B882ECFA89C711C966B3D8DFC176E9301","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.MAINTENANCE_EXIT","capability_version":1}],"related_workflow_refs":[],"required_authority_refs":["LEDGER_MAINTENANCE"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-007","title":"Exit maintenance mode"},{"automation_policy":"AUTOMATION_ALLOWED","consequence_profile":"C1_OPERATIONAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-008","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"D854F0F1F2160D70574581DA2D6855E5FF9D613BFDB0AA309970361D242BE987","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.CAS_ORPHAN_SCAN","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF01-016","workflow_version":1}],"required_authority_refs":["LEDGER_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-008","title":"CAS orphan scan"},{"automation_policy":"AGENT_PROHIBITED","consequence_profile":"C4_AUTHORITY_CRITICAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-009","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"7BE71BF8BD4B0FB97C132FD3EAF5E940CB908513A91A2052A7C3F21412865A37","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.CAS_GC_DRY_RUN","capability_version":1},{"capability_id":"OF01.OP.CAS_GC_EXECUTE","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF01-016","workflow_version":1}],"required_authority_refs":["LEDGER_MAINTENANCE"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-009","title":"CAS garbage collection"},{"automation_policy":"HUMAN_APPROVAL_REQUIRED","consequence_profile":"C2_GOVERNED","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-010","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"555C057B321F1A0E27A105B3052117719C52C53921BE1AB9B976CC8A96865C63","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.PROJECTION_REBUILD","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF01-011","workflow_version":1}],"required_authority_refs":["LEDGER_PROJECTION"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-010","title":"Projection rebuild"},{"automation_policy":"AUTOMATION_ALLOWED","consequence_profile":"C2_GOVERNED","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-011","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"C61A5811ADCF13CBE0A8BEB24BB0A3EB50D593B8B3380FC4E5BF06A46C59961B","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.PROJECTION_RESUME","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF01-010","workflow_version":1}],"required_authority_refs":["LEDGER_PROJECTION"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-011","title":"Projection resume"},{"automation_policy":"AGENT_PROHIBITED","consequence_profile":"C4_AUTHORITY_CRITICAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-012","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"E0B6E16A9E873F8969E0FE55F3072F9CE06747554864A510347D0F9B076B4551","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.MIGRATION_APPLY","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF01-015","workflow_version":1}],"required_authority_refs":["LEDGER_MAINTENANCE"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-012","title":"Schema migration"},{"automation_policy":"AUTOMATION_ALLOWED_WITH_GUARD","consequence_profile":"C4_AUTHORITY_CRITICAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-013","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"3098D345E947FF3424D856B7FD4AC0011285773B78D618CF73C25DD46E614846","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.COMMAND_RESOLVE","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF01-009","workflow_version":1}],"required_authority_refs":["LEDGER_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-013","title":"Ambiguous command commit resolution"},{"automation_policy":"AGENT_PROHIBITED","consequence_profile":"C4_AUTHORITY_CRITICAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-014","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"5AFBD68F6892E1533F08042045FA405417C6F79C4D78AE9742CF2127FD8C0A7C","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.WRITE_DISABLE","capability_version":1},{"capability_id":"OF01.OP.INTEGRITY_FORENSIC","capability_version":1}],"related_workflow_refs":[],"required_authority_refs":["LEDGER_RECOVERY"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-014","title":"Corruption response"},{"automation_policy":"HUMAN_APPROVAL_REQUIRED","consequence_profile":"C4_AUTHORITY_CRITICAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-015","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"EC82A883014E6C62ED9AA5252857F9870EBE5797E8D2C659F93CD296097602FF","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.WRITE_DISABLE","capability_version":1}],"related_workflow_refs":[],"required_authority_refs":["LEDGER_MAINTENANCE"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-015","title":"Disk-full / storage-failure response"},{"automation_policy":"AGENT_PROHIBITED","consequence_profile":"C4_AUTHORITY_CRITICAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-016","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"7B2ED3F8176CDA4ADA2EAF88EBAB3098A58EC80AB7F153571681E3416D07095D","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.AUTHORITY_CLONE_VALIDATE","capability_version":1},{"capability_id":"OF01.OP.AUTHORITY_REIDENTIFY","capability_version":1}],"related_workflow_refs":[],"required_authority_refs":["LEDGER_RECOVERY"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-016","title":"Authority clone / development fork"},{"automation_policy":"AGENT_PROHIBITED","consequence_profile":"C3_EVIDENCE_CRITICAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-017","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"57C605BAB4D4F9601DE7F447074BA45EA4FB52F2995EC059CDC36389167081CD","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.BACKUP_ATTEST_RESTORE_TEST","capability_version":1}],"related_workflow_refs":[],"required_authority_refs":["LEDGER_RECOVERY"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-017","title":"Disaster-recovery exercise"},{"automation_policy":"AGENT_PROHIBITED","consequence_profile":"C4_AUTHORITY_CRITICAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF01-018","document_path":"docs/operations/of-01/SOPS.md","document_section_hash":"E9955645E8CDFDF4884475706C0B0A98CBC6ADDDC34B2F1D7B46F179C1AE984B","maturity":"DRAFT","owner_subsystem":"of01","prerequisites":[],"related_capability_refs":[{"capability_id":"OF01.OP.MIGRATION_APPLY","capability_version":1}],"related_workflow_refs":[],"required_authority_refs":["RELEASE_AUTHORITY"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF01-018","title":"Release / upgrade"},{"automation_policy":"AUTOMATION_ALLOWED","consequence_profile":"C1_OPERATIONAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF02-001","document_path":"docs/operations/of-02/SOPS.md","document_section_hash":"247A5D7F96C1CEE0D1A61B8A93A73BFDDDF53AD5EDC32289AF5C3251CF1A863E","maturity":"NORMATIVE","owner_subsystem":"of02","prerequisites":[],"related_capability_refs":[{"capability_id":"OF02.OP.STATUS","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF02-001","workflow_version":1}],"required_authority_refs":["OPERATOR_INSPECT"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF02-001","title":"Inspect adapter status"},{"automation_policy":"AUTOMATION_ALLOWED_WITH_GUARD","consequence_profile":"C2_GOVERNED","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF02-002","document_path":"docs/operations/of-02/SOPS.md","document_section_hash":"8629519E913FAFC3016533693388EF8DD55B9EE28F754FC2CA88B5380DEB583B","maturity":"NORMATIVE","owner_subsystem":"of02","prerequisites":[],"related_capability_refs":[{"capability_id":"OF02.OP.RETROSPECTIVE_DRY_RUN","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF02-002","workflow_version":1}],"required_authority_refs":["LEDGER_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF02-002","title":"Retrospective-index dry run"},{"automation_policy":"HUMAN_APPROVAL_REQUIRED","consequence_profile":"C2_GOVERNED","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF02-003","document_path":"docs/operations/of-02/SOPS.md","document_section_hash":"081D33B8563BF9F88BC8281667E31CC753EF396E16F521DC15A253395345A0A9","maturity":"NORMATIVE","owner_subsystem":"of02","prerequisites":[],"related_capability_refs":[{"capability_id":"OF02.OP.RETROSPECTIVE_EXECUTE","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF02-002","workflow_version":1}],"required_authority_refs":["LEDGER_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF02-003","title":"Execute retrospective indexing"},{"automation_policy":"AUTOMATION_ALLOWED_WITH_GUARD","consequence_profile":"C2_GOVERNED","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF02-004","document_path":"docs/operations/of-02/SOPS.md","document_section_hash":"0D8BC0AE4574D5C41C71E265AFF248E104883DCB27432539CB6176EB23ED04A0","maturity":"NORMATIVE","owner_subsystem":"of02","prerequisites":[],"related_capability_refs":[{"capability_id":"OF02.OP.RETROSPECTIVE_RESUME","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF02-002","workflow_version":1}],"required_authority_refs":["LEDGER_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF02-004","title":"Resume interrupted indexing"},{"automation_policy":"HUMAN_APPROVAL_REQUIRED","consequence_profile":"C3_EVIDENCE_CRITICAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF02-005","document_path":"docs/operations/of-02/SOPS.md","document_section_hash":"CF0AE46809BD5D80EB9EB2F37FC5B3CA7BB9A61E2C5AA76B8CD072EA8E9EAE69","maturity":"NORMATIVE","owner_subsystem":"of02","prerequisites":[],"related_capability_refs":[{"capability_id":"OF02.OP.RESOLVE_CONFLICT","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF02-003","workflow_version":1}],"required_authority_refs":["LEDGER_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF02-005","title":"Resolve attribution conflict"},{"automation_policy":"AUTOMATION_ALLOWED","consequence_profile":"C2_GOVERNED","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF02-006","document_path":"docs/operations/of-02/SOPS.md","document_section_hash":"1C176934998B403076F49C61BBCCE1A150DFB6446F2771F614F31583412D4AA9","maturity":"NORMATIVE","owner_subsystem":"of02","prerequisites":[],"related_capability_refs":[{"capability_id":"OF02.OP.ENABLEMENT_INSPECT","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF02-001","workflow_version":1}],"required_authority_refs":["OPERATOR_INSPECT"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF02-006","title":"Investigate missing native attribution"},{"automation_policy":"AUTOMATION_ALLOWED_WITH_GUARD","consequence_profile":"C2_GOVERNED","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF02-007","document_path":"docs/operations/of-02/SOPS.md","document_section_hash":"2C1ADB09187C3DC524624A389EE47F74C8DD4895E75236F0D0AE3E1F0D8A0621","maturity":"NORMATIVE","owner_subsystem":"of02","prerequisites":[],"related_capability_refs":[{"capability_id":"OF02.OP.RECONCILE","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF02-001","workflow_version":1}],"required_authority_refs":["LEDGER_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF02-007","title":"Reconcile domain result with OF records"},{"automation_policy":"HUMAN_APPROVAL_REQUIRED","consequence_profile":"C1_OPERATIONAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF02-008","document_path":"docs/operations/of-02/SOPS.md","document_section_hash":"B3FF0F1D62A507E92CF4348705099B9D84966A13BE46982FD9EB4ACA61EAC7EA","maturity":"NORMATIVE","owner_subsystem":"of02","prerequisites":[],"related_capability_refs":[{"capability_id":"OF02.OP.STATUS","capability_version":1}],"related_workflow_refs":[],"required_authority_refs":["OPERATOR_INSPECT"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF02-008","title":"Disable / re-enable adapter safely"},{"automation_policy":"AUTOMATION_ALLOWED","consequence_profile":"C1_OPERATIONAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF03-001","document_path":"docs/operations/of-03/SOPS.md","document_section_hash":"0824D9B2EE91B87460D4D521C306C3AF7D0B55F67690061F10B7325E700C46C8","maturity":"NORMATIVE","owner_subsystem":"of03","prerequisites":[],"related_capability_refs":[{"capability_id":"OF03.OP.STATUS","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF03-003","workflow_version":1}],"required_authority_refs":["REGISTRY_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF03-001","title":"Inspect registry status"},{"automation_policy":"AUTOMATION_ALLOWED","consequence_profile":"C1_OPERATIONAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF03-002","document_path":"docs/operations/of-03/SOPS.md","document_section_hash":"FA973937717E9F7DD838DEE2FC58D97648296A0FEDFCF475C1BE047CC3ACDCB4","maturity":"NORMATIVE","owner_subsystem":"of03","prerequisites":[],"related_capability_refs":[{"capability_id":"OF03.OP.VALIDATE","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF03-003","workflow_version":1}],"required_authority_refs":["REGISTRY_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF03-002","title":"Validate registry"},{"automation_policy":"HUMAN_APPROVAL_REQUIRED","consequence_profile":"C2_GOVERNED","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF03-003","document_path":"docs/operations/of-03/SOPS.md","document_section_hash":"2ADB51F2F6A1C43602E75D30FF193C3A26DFF4F3F803B0E4D4C8991C96DC256C","maturity":"NORMATIVE","owner_subsystem":"of03","prerequisites":[],"related_capability_refs":[{"capability_id":"OF03.OP.VALIDATE","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF03-001","workflow_version":1}],"required_authority_refs":["REGISTRY_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF03-003","title":"Register a new capability version"},{"automation_policy":"HUMAN_APPROVAL_REQUIRED","consequence_profile":"C2_GOVERNED","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF03-004","document_path":"docs/operations/of-03/SOPS.md","document_section_hash":"E7F1D6E2506B2918E3A5334CE5F9E5DAF5FED5D09B6361EF641B0CB66CA6ACBB","maturity":"NORMATIVE","owner_subsystem":"of03","prerequisites":[],"related_capability_refs":[{"capability_id":"OF03.OP.VALIDATE","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF03-001","workflow_version":1}],"required_authority_refs":["REGISTRY_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF03-004","title":"Register/version an SOP definition"},{"automation_policy":"HUMAN_APPROVAL_REQUIRED","consequence_profile":"C2_GOVERNED","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF03-005","document_path":"docs/operations/of-03/SOPS.md","document_section_hash":"4538327AD3CCCC158D64770ED1D48B1740D30FBD8953B10BB32F2AC1148FF9C7","maturity":"NORMATIVE","owner_subsystem":"of03","prerequisites":[],"related_capability_refs":[{"capability_id":"OF03.OP.VALIDATE","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF03-002","workflow_version":1}],"required_authority_refs":["REGISTRY_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF03-005","title":"Register/version a workflow"},{"automation_policy":"AUTOMATION_ALLOWED","consequence_profile":"C1_OPERATIONAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF03-006","document_path":"docs/operations/of-03/SOPS.md","document_section_hash":"354BCDAE2082DCE67B3354ED18CC26DD3C5905F5060EFE1F8FBE595B1DC77AA5","maturity":"NORMATIVE","owner_subsystem":"of03","prerequisites":[],"related_capability_refs":[{"capability_id":"OF03.OP.VERIFY_BINDINGS","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF03-004","workflow_version":1}],"required_authority_refs":["REGISTRY_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF03-006","title":"Verify implementation bindings"},{"automation_policy":"HUMAN_APPROVAL_REQUIRED","consequence_profile":"C2_GOVERNED","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF03-007","document_path":"docs/operations/of-03/SOPS.md","document_section_hash":"759C824CD1821E691BB22C16A8A7C5E7EABF43142D1EEB8948FA69AC358C96D0","maturity":"NORMATIVE","owner_subsystem":"of03","prerequisites":[],"related_capability_refs":[{"capability_id":"OF03.OP.VALIDATE","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF03-006","workflow_version":1}],"required_authority_refs":["REGISTRY_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF03-007","title":"Deprecate/supersede a definition"},{"automation_policy":"HUMAN_APPROVAL_REQUIRED","consequence_profile":"C2_GOVERNED","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF03-008","document_path":"docs/operations/of-03/SOPS.md","document_section_hash":"849467773E02A4BB15EA592EDAA1E715316939C1DDA3D38D5155DBD3C15ECCC2","maturity":"NORMATIVE","owner_subsystem":"of03","prerequisites":[],"related_capability_refs":[{"capability_id":"OF03.OP.VALIDATE","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF03-003","workflow_version":1}],"required_authority_refs":["REGISTRY_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF03-008","title":"Resolve registry integrity conflict"},{"automation_policy":"AUTOMATION_ALLOWED_WITH_GUARD","consequence_profile":"C2_GOVERNED","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF03-009","document_path":"docs/operations/of-03/SOPS.md","document_section_hash":"6314AA3C0B11E1D095EF02FE7D49B98FAD999C2012437C8FE69295E348B11873","maturity":"NORMATIVE","owner_subsystem":"of03","prerequisites":[],"related_capability_refs":[{"capability_id":"OF03.OP.CHECK_DRIFT","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF03-007","workflow_version":1}],"required_authority_refs":["REGISTRY_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF03-009","title":"Reconcile documentation/binding drift"},{"automation_policy":"AUTOMATION_ALLOWED","consequence_profile":"C2_GOVERNED","definition_version":1,"deprecation":null,"document_anchor":"SOP-OF03-010","document_path":"docs/operations/of-03/SOPS.md","document_section_hash":"AF1474C1EF5C32A0536AE4B512A3EAF3591B1A91D28F73F4CDF8A9956A29E0B0","maturity":"NORMATIVE","owner_subsystem":"of03","prerequisites":[],"related_capability_refs":[{"capability_id":"OF03.OP.SNAPSHOT","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-OF03-008","workflow_version":1}],"required_authority_refs":["REGISTRY_OPERATOR"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-OF03-010","title":"Produce and verify registry snapshot"},{"automation_policy":"AUTOMATION_ALLOWED","consequence_profile":"C1_OPERATIONAL","definition_version":1,"deprecation":null,"document_anchor":"SOP-RT01-001","document_path":"docs/operations/rt-01/SOPS.md","document_section_hash":"184655D05696E1EBF74AFCC84552A61840A0A6738BAC11AD14770805DD75B28A","maturity":"NORMATIVE","owner_subsystem":"rt01","prerequisites":[],"related_capability_refs":[{"capability_id":"RT01.OP.STATUS","capability_version":1}],"related_workflow_refs":[{"workflow_id":"WF-RT01-001","workflow_version":1}],"required_authority_refs":["OPERATOR_INSPECT"],"required_evidence_classes":["OPERATION_EVIDENCE"],"schema_version":1,"sop_id":"SOP-RT01-001","title":"Inspect trace status"}]
+[
+  {
+    "automation_policy": "HUMAN_APPROVAL_REQUIRED",
+    "consequence_profile": "C4_AUTHORITY_CRITICAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-001",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "7F790DA7A230FBFE1D19F5D3145A41810CFBE35A0CAE47115B3DBA3B190B42E0",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.STATUS",
+        "capability_version": 1
+      },
+      {
+        "capability_id": "OF01.OP.INTEGRITY_QUICK",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF01-018",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "LEDGER_RUNTIME"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-001",
+    "title": "Startup"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED_WITH_GUARD",
+    "consequence_profile": "C4_AUTHORITY_CRITICAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-002",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "1E449CD1E4CEDF627887C4B6AA270128833A80E312E2A9E1C31A638BE5CEA1FB",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.SHUTDOWN",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF01-017",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "LEDGER_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-002",
+    "title": "Graceful shutdown"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "consequence_profile": "C2_GOVERNED",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-003",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "FF2260C5116D1664E6D1AE0D2545F46E4A73401683BE1B6A3AE2CEDF210CE7C2",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.INTEGRITY_QUICK",
+        "capability_version": 1
+      },
+      {
+        "capability_id": "OF01.OP.INTEGRITY_FULL",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF01-012",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "LEDGER_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-003",
+    "title": "Integrity check"
+  },
+  {
+    "automation_policy": "HUMAN_APPROVAL_REQUIRED",
+    "consequence_profile": "C3_EVIDENCE_CRITICAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-004",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "CD807FC56621FCD77892A9998300FBE9246219680A13180C852B0D2F6C123871",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.BACKUP_CREATE",
+        "capability_version": 1
+      },
+      {
+        "capability_id": "OF01.OP.BACKUP_VERIFY",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF01-013",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "BACKUP_RECOVERY_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-004",
+    "title": "Verified backup"
+  },
+  {
+    "automation_policy": "AGENT_PROHIBITED",
+    "consequence_profile": "C4_AUTHORITY_CRITICAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-005",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "6A889C29B83B708E5E6CD00E15EFC1983C23EF8135A21EB2BB4FC067B0319018",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.RESTORE_VALIDATE",
+        "capability_version": 1
+      },
+      {
+        "capability_id": "OF01.OP.RESTORE_ACTIVATE",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF01-014",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "LEDGER_RECOVERY"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-005",
+    "title": "Restore and activation"
+  },
+  {
+    "automation_policy": "HUMAN_APPROVAL_REQUIRED",
+    "consequence_profile": "C4_AUTHORITY_CRITICAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-006",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "74A1DB31F8AF7F05A023031DDF46839560863546C773B0097B3E07A660CCF94C",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.MAINTENANCE_ENTER",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [],
+    "required_authority_refs": [
+      "LEDGER_MAINTENANCE"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-006",
+    "title": "Enter maintenance mode"
+  },
+  {
+    "automation_policy": "HUMAN_APPROVAL_REQUIRED",
+    "consequence_profile": "C4_AUTHORITY_CRITICAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-007",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "86EE2543B7767E5348F2A8CFAD5EBF6B882ECFA89C711C966B3D8DFC176E9301",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.MAINTENANCE_EXIT",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [],
+    "required_authority_refs": [
+      "LEDGER_MAINTENANCE"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-007",
+    "title": "Exit maintenance mode"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-008",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "D854F0F1F2160D70574581DA2D6855E5FF9D613BFDB0AA309970361D242BE987",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.CAS_ORPHAN_SCAN",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF01-016",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "LEDGER_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-008",
+    "title": "CAS orphan scan"
+  },
+  {
+    "automation_policy": "AGENT_PROHIBITED",
+    "consequence_profile": "C4_AUTHORITY_CRITICAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-009",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "7BE71BF8BD4B0FB97C132FD3EAF5E940CB908513A91A2052A7C3F21412865A37",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.CAS_GC_DRY_RUN",
+        "capability_version": 1
+      },
+      {
+        "capability_id": "OF01.OP.CAS_GC_EXECUTE",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF01-016",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "LEDGER_MAINTENANCE"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-009",
+    "title": "CAS garbage collection"
+  },
+  {
+    "automation_policy": "HUMAN_APPROVAL_REQUIRED",
+    "consequence_profile": "C2_GOVERNED",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-010",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "555C057B321F1A0E27A105B3052117719C52C53921BE1AB9B976CC8A96865C63",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.PROJECTION_REBUILD",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF01-011",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "LEDGER_PROJECTION"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-010",
+    "title": "Projection rebuild"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "consequence_profile": "C2_GOVERNED",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-011",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "C61A5811ADCF13CBE0A8BEB24BB0A3EB50D593B8B3380FC4E5BF06A46C59961B",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.PROJECTION_RESUME",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF01-010",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "LEDGER_PROJECTION"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-011",
+    "title": "Projection resume"
+  },
+  {
+    "automation_policy": "AGENT_PROHIBITED",
+    "consequence_profile": "C4_AUTHORITY_CRITICAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-012",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "E0B6E16A9E873F8969E0FE55F3072F9CE06747554864A510347D0F9B076B4551",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.MIGRATION_APPLY",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF01-015",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "LEDGER_MAINTENANCE"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-012",
+    "title": "Schema migration"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED_WITH_GUARD",
+    "consequence_profile": "C4_AUTHORITY_CRITICAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-013",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "3098D345E947FF3424D856B7FD4AC0011285773B78D618CF73C25DD46E614846",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.COMMAND_RESOLVE",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF01-009",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "LEDGER_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-013",
+    "title": "Ambiguous command commit resolution"
+  },
+  {
+    "automation_policy": "AGENT_PROHIBITED",
+    "consequence_profile": "C4_AUTHORITY_CRITICAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-014",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "5AFBD68F6892E1533F08042045FA405417C6F79C4D78AE9742CF2127FD8C0A7C",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.WRITE_DISABLE",
+        "capability_version": 1
+      },
+      {
+        "capability_id": "OF01.OP.INTEGRITY_FORENSIC",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [],
+    "required_authority_refs": [
+      "LEDGER_RECOVERY"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-014",
+    "title": "Corruption response"
+  },
+  {
+    "automation_policy": "HUMAN_APPROVAL_REQUIRED",
+    "consequence_profile": "C4_AUTHORITY_CRITICAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-015",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "EC82A883014E6C62ED9AA5252857F9870EBE5797E8D2C659F93CD296097602FF",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.WRITE_DISABLE",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [],
+    "required_authority_refs": [
+      "LEDGER_MAINTENANCE"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-015",
+    "title": "Disk-full / storage-failure response"
+  },
+  {
+    "automation_policy": "AGENT_PROHIBITED",
+    "consequence_profile": "C4_AUTHORITY_CRITICAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-016",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "7B2ED3F8176CDA4ADA2EAF88EBAB3098A58EC80AB7F153571681E3416D07095D",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.AUTHORITY_CLONE_VALIDATE",
+        "capability_version": 1
+      },
+      {
+        "capability_id": "OF01.OP.AUTHORITY_REIDENTIFY",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [],
+    "required_authority_refs": [
+      "LEDGER_RECOVERY"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-016",
+    "title": "Authority clone / development fork"
+  },
+  {
+    "automation_policy": "AGENT_PROHIBITED",
+    "consequence_profile": "C3_EVIDENCE_CRITICAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-017",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "57C605BAB4D4F9601DE7F447074BA45EA4FB52F2995EC059CDC36389167081CD",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.BACKUP_ATTEST_RESTORE_TEST",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [],
+    "required_authority_refs": [
+      "LEDGER_RECOVERY"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-017",
+    "title": "Disaster-recovery exercise"
+  },
+  {
+    "automation_policy": "AGENT_PROHIBITED",
+    "consequence_profile": "C4_AUTHORITY_CRITICAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF01-018",
+    "document_path": "docs/operations/of-01/SOPS.md",
+    "document_section_hash": "E9955645E8CDFDF4884475706C0B0A98CBC6ADDDC34B2F1D7B46F179C1AE984B",
+    "maturity": "DRAFT",
+    "owner_subsystem": "of01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF01.OP.MIGRATION_APPLY",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [],
+    "required_authority_refs": [
+      "RELEASE_AUTHORITY"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF01-018",
+    "title": "Release / upgrade"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF02-001",
+    "document_path": "docs/operations/of-02/SOPS.md",
+    "document_section_hash": "247A5D7F96C1CEE0D1A61B8A93A73BFDDDF53AD5EDC32289AF5C3251CF1A863E",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of02",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF02.OP.STATUS",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF02-001",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF02-001",
+    "title": "Inspect adapter status"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED_WITH_GUARD",
+    "consequence_profile": "C2_GOVERNED",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF02-002",
+    "document_path": "docs/operations/of-02/SOPS.md",
+    "document_section_hash": "8629519E913FAFC3016533693388EF8DD55B9EE28F754FC2CA88B5380DEB583B",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of02",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF02.OP.RETROSPECTIVE_DRY_RUN",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF02-002",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "LEDGER_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF02-002",
+    "title": "Retrospective-index dry run"
+  },
+  {
+    "automation_policy": "HUMAN_APPROVAL_REQUIRED",
+    "consequence_profile": "C2_GOVERNED",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF02-003",
+    "document_path": "docs/operations/of-02/SOPS.md",
+    "document_section_hash": "081D33B8563BF9F88BC8281667E31CC753EF396E16F521DC15A253395345A0A9",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of02",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF02.OP.RETROSPECTIVE_EXECUTE",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF02-002",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "LEDGER_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF02-003",
+    "title": "Execute retrospective indexing"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED_WITH_GUARD",
+    "consequence_profile": "C2_GOVERNED",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF02-004",
+    "document_path": "docs/operations/of-02/SOPS.md",
+    "document_section_hash": "0D8BC0AE4574D5C41C71E265AFF248E104883DCB27432539CB6176EB23ED04A0",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of02",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF02.OP.RETROSPECTIVE_RESUME",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF02-002",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "LEDGER_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF02-004",
+    "title": "Resume interrupted indexing"
+  },
+  {
+    "automation_policy": "HUMAN_APPROVAL_REQUIRED",
+    "consequence_profile": "C3_EVIDENCE_CRITICAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF02-005",
+    "document_path": "docs/operations/of-02/SOPS.md",
+    "document_section_hash": "CF0AE46809BD5D80EB9EB2F37FC5B3CA7BB9A61E2C5AA76B8CD072EA8E9EAE69",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of02",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF02.OP.RESOLVE_CONFLICT",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF02-003",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "LEDGER_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF02-005",
+    "title": "Resolve attribution conflict"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "consequence_profile": "C2_GOVERNED",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF02-006",
+    "document_path": "docs/operations/of-02/SOPS.md",
+    "document_section_hash": "1C176934998B403076F49C61BBCCE1A150DFB6446F2771F614F31583412D4AA9",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of02",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF02.OP.ENABLEMENT_INSPECT",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF02-001",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF02-006",
+    "title": "Investigate missing native attribution"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED_WITH_GUARD",
+    "consequence_profile": "C2_GOVERNED",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF02-007",
+    "document_path": "docs/operations/of-02/SOPS.md",
+    "document_section_hash": "2C1ADB09187C3DC524624A389EE47F74C8DD4895E75236F0D0AE3E1F0D8A0621",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of02",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF02.OP.RECONCILE",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF02-001",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "LEDGER_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF02-007",
+    "title": "Reconcile domain result with OF records"
+  },
+  {
+    "automation_policy": "HUMAN_APPROVAL_REQUIRED",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF02-008",
+    "document_path": "docs/operations/of-02/SOPS.md",
+    "document_section_hash": "B3FF0F1D62A507E92CF4348705099B9D84966A13BE46982FD9EB4ACA61EAC7EA",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of02",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF02.OP.STATUS",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [],
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF02-008",
+    "title": "Disable / re-enable adapter safely"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF03-001",
+    "document_path": "docs/operations/of-03/SOPS.md",
+    "document_section_hash": "0824D9B2EE91B87460D4D521C306C3AF7D0B55F67690061F10B7325E700C46C8",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of03",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF03.OP.STATUS",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF03-003",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "REGISTRY_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF03-001",
+    "title": "Inspect registry status"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF03-002",
+    "document_path": "docs/operations/of-03/SOPS.md",
+    "document_section_hash": "FA973937717E9F7DD838DEE2FC58D97648296A0FEDFCF475C1BE047CC3ACDCB4",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of03",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF03.OP.VALIDATE",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF03-003",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "REGISTRY_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF03-002",
+    "title": "Validate registry"
+  },
+  {
+    "automation_policy": "HUMAN_APPROVAL_REQUIRED",
+    "consequence_profile": "C2_GOVERNED",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF03-003",
+    "document_path": "docs/operations/of-03/SOPS.md",
+    "document_section_hash": "2ADB51F2F6A1C43602E75D30FF193C3A26DFF4F3F803B0E4D4C8991C96DC256C",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of03",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF03.OP.VALIDATE",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF03-001",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "REGISTRY_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF03-003",
+    "title": "Register a new capability version"
+  },
+  {
+    "automation_policy": "HUMAN_APPROVAL_REQUIRED",
+    "consequence_profile": "C2_GOVERNED",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF03-004",
+    "document_path": "docs/operations/of-03/SOPS.md",
+    "document_section_hash": "E7F1D6E2506B2918E3A5334CE5F9E5DAF5FED5D09B6361EF641B0CB66CA6ACBB",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of03",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF03.OP.VALIDATE",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF03-001",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "REGISTRY_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF03-004",
+    "title": "Register/version an SOP definition"
+  },
+  {
+    "automation_policy": "HUMAN_APPROVAL_REQUIRED",
+    "consequence_profile": "C2_GOVERNED",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF03-005",
+    "document_path": "docs/operations/of-03/SOPS.md",
+    "document_section_hash": "4538327AD3CCCC158D64770ED1D48B1740D30FBD8953B10BB32F2AC1148FF9C7",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of03",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF03.OP.VALIDATE",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF03-002",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "REGISTRY_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF03-005",
+    "title": "Register/version a workflow"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF03-006",
+    "document_path": "docs/operations/of-03/SOPS.md",
+    "document_section_hash": "354BCDAE2082DCE67B3354ED18CC26DD3C5905F5060EFE1F8FBE595B1DC77AA5",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of03",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF03.OP.VERIFY_BINDINGS",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF03-004",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "REGISTRY_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF03-006",
+    "title": "Verify implementation bindings"
+  },
+  {
+    "automation_policy": "HUMAN_APPROVAL_REQUIRED",
+    "consequence_profile": "C2_GOVERNED",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF03-007",
+    "document_path": "docs/operations/of-03/SOPS.md",
+    "document_section_hash": "759C824CD1821E691BB22C16A8A7C5E7EABF43142D1EEB8948FA69AC358C96D0",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of03",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF03.OP.VALIDATE",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF03-006",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "REGISTRY_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF03-007",
+    "title": "Deprecate/supersede a definition"
+  },
+  {
+    "automation_policy": "HUMAN_APPROVAL_REQUIRED",
+    "consequence_profile": "C2_GOVERNED",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF03-008",
+    "document_path": "docs/operations/of-03/SOPS.md",
+    "document_section_hash": "849467773E02A4BB15EA592EDAA1E715316939C1DDA3D38D5155DBD3C15ECCC2",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of03",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF03.OP.VALIDATE",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF03-003",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "REGISTRY_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF03-008",
+    "title": "Resolve registry integrity conflict"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED_WITH_GUARD",
+    "consequence_profile": "C2_GOVERNED",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF03-009",
+    "document_path": "docs/operations/of-03/SOPS.md",
+    "document_section_hash": "6314AA3C0B11E1D095EF02FE7D49B98FAD999C2012437C8FE69295E348B11873",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of03",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF03.OP.CHECK_DRIFT",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF03-007",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "REGISTRY_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF03-009",
+    "title": "Reconcile documentation/binding drift"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "consequence_profile": "C2_GOVERNED",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-OF03-010",
+    "document_path": "docs/operations/of-03/SOPS.md",
+    "document_section_hash": "AF1474C1EF5C32A0536AE4B512A3EAF3591B1A91D28F73F4CDF8A9956A29E0B0",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "of03",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "OF03.OP.SNAPSHOT",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-OF03-008",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "REGISTRY_OPERATOR"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-OF03-010",
+    "title": "Produce and verify registry snapshot"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-RT01-001",
+    "document_path": "docs/operations/rt-01/SOPS.md",
+    "document_section_hash": "184655D05696E1EBF74AFCC84552A61840A0A6738BAC11AD14770805DD75B28A",
+    "maturity": "NORMATIVE",
+    "owner_subsystem": "rt01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "RT01.OP.STATUS",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [
+      {
+        "workflow_id": "WF-RT01-001",
+        "workflow_version": 1
+      }
+    ],
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [
+      "OPERATION_EVIDENCE"
+    ],
+    "schema_version": 1,
+    "sop_id": "SOP-RT01-001",
+    "title": "Inspect trace status"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-XA01-001",
+    "document_path": "docs/operations/xa-01/SOPS.md",
+    "document_section_hash": "D8C1815FCE12F21BBF8A9E1D9933D01B38E812EBD62C78B5FAE3C9C5E8152E2C",
+    "maturity": "DRAFT",
+    "owner_subsystem": "xa01",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "XA01.OP.STATUS",
+        "capability_version": 1
+      },
+      {
+        "capability_id": "XA01.OP.VALIDATE_REGISTRY",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [],
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "schema_version": 1,
+    "sop_id": "SOP-XA01-001",
+    "title": "XA-01 identity inspection"
+  }
+]
