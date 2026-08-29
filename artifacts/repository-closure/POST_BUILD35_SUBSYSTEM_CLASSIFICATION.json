@@ -302,6 +302,19 @@
       "disposition": "KEEP"
     },
     {
+      "id": "xa02-cross-asset-source-admission",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/xa02"
+      ],
+      "responsibility": "First admitted cross-asset source vertical: FRED rates reference admission, point-in-time observation provenance, and typed indicator-to-XA reference relationships.",
+      "evidence": [
+        "tools/validation_manifest.json registers the xa02 offline suite against src/market_platform_foundation/xa02.",
+        "docs/operations/xa-02, tests/xa02, and artifacts/imp-rebase/XA02 record the accepted XA-02 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
       "id": "legacy-full-suite-wrapper",
       "classification": "WRAPPED",
       "scope": [

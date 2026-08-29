@@ -1237,5 +1237,35 @@
     "schema_version": 1,
     "sop_id": "SOP-XA01-001",
     "title": "XA-01 identity inspection"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-XA02-001",
+    "document_path": "docs/operations/xa-02/SOPS.md",
+    "document_section_hash": "14B8EBCCAD01CE54C2AEDDC85D1E18A7FBBCB1A2169C0B72F52F6C9C71D1542E",
+    "maturity": "DRAFT",
+    "owner_subsystem": "xa02",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "XA02.OP.STATUS",
+        "capability_version": 1
+      },
+      {
+        "capability_id": "XA02.OP.VALIDATE",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [],
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "schema_version": 1,
+    "sop_id": "SOP-XA02-001",
+    "title": "XA-02 admitted source inspection"
   }
 ]

@@ -2842,5 +2842,205 @@
       }
     ],
     "title": "Validate registry"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa02.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa02.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "status"
+    },
+    "capability_id": "XA02.OP.STATUS",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "Inspect XA-02 admitted source registry status.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa02",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA02-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "XA-02 status"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa02.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa02.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "validate"
+    },
+    "capability_id": "XA02.OP.VALIDATE",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "Validate XA-02 admitted catalog and relationships.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa02",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA02-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "Validate admitted catalog"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa02.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa02.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "show-indicator"
+    },
+    "capability_id": "XA02.OP.SHOW_INDICATOR",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "Show admitted indicator observations, provenance, and relationships.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa02",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA02-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "Show admitted indicator"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa02.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa02.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "list-relationships"
+    },
+    "capability_id": "XA02.OP.LIST_RELATIONSHIPS",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "List cross-asset reference relationships for indicators or XA targets.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa02",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA02-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "List relationships"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa02.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa02.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "admit-fixture"
+    },
+    "capability_id": "XA02.OP.ADMIT_FIXTURE",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "Admit fixture-backed FRED rates observations into the XA-02 registry.",
+    "domain_reference_requirements": [],
+    "effect_class": "NON_DESTRUCTIVE_MUTATION",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa02",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA02-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "Admit fixture"
   }
 ]

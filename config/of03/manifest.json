@@ -72,7 +72,12 @@
     "XA01.OP.RESOLVE": 1,
     "XA01.OP.SHOW_INSTRUMENT": 1,
     "XA01.OP.LIST_DOMAINS": 1,
-    "XA01.OP.VALIDATE_REGISTRY": 1
+    "XA01.OP.VALIDATE_REGISTRY": 1,
+    "XA02.OP.STATUS": 1,
+    "XA02.OP.VALIDATE": 1,
+    "XA02.OP.SHOW_INDICATOR": 1,
+    "XA02.OP.LIST_RELATIONSHIPS": 1,
+    "XA02.OP.ADMIT_FIXTURE": 1
   },
   "active_sops": {
     "SOP-OF01-001": 1,
@@ -112,7 +117,8 @@
     "SOP-OF03-009": 1,
     "SOP-OF03-010": 1,
     "SOP-RT01-001": 1,
-    "SOP-XA01-001": 1
+    "SOP-XA01-001": 1,
+    "SOP-XA02-001": 1
   },
   "active_workflows": {
     "WF-OF01-001": 1,
@@ -147,5 +153,5 @@
     "WF-RT01-001": 1
   },
   "registry_schema_version": 1,
-  "registry_snapshot_hash": "45302765199B3F5E5A4796BBBBB0798E87E2C9146C3A4761BBF7618B83AD22A0"
+  "registry_snapshot_hash": "DB9410EA83FC12B6FFD39C62F6304000172DE8C47942BD5BD4EE6F9B0B90FB03"
 }

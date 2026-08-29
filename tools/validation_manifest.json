@@ -1797,6 +1797,36 @@
         "market_data",
         "of03"
       ]
+    },
+    {
+      "id": "xa02",
+      "path": "tests/xa02",
+      "classification": "offline",
+      "tiers": [
+        "full",
+        "changed"
+      ],
+      "domains": [
+        "core",
+        "macro"
+      ],
+      "parallel_safety": "PARALLEL_SAFE",
+      "resource_weight": 1,
+      "source_globs": [
+        "src/market_platform_foundation/xa02/**",
+        "docs/operations/xa-02/**",
+        "docs/superpowers/specs/2026-08-29-imp-xa-02-first-admitted-cross-asset-source-vertical-implementation-spec.md",
+        "tests/fixtures/xa02/**"
+      ],
+      "test_globs": [
+        "tests/xa02/test_*.py"
+      ],
+      "neighbors": [
+        "xa01",
+        "fred",
+        "futures",
+        "of03"
+      ]
     }
   ]
 }
