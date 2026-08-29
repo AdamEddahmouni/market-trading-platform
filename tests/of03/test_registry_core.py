@@ -82,9 +82,9 @@ class CanonicalRegistryTests(unittest.TestCase):
     def test_canonical_registry_loads(self) -> None:
         registry = load_registry(fail_closed=True)
         self.assertTrue(registry.is_valid())
-        self.assertGreaterEqual(len(registry.capabilities), 60)
-        self.assertEqual(len(registry.sops), 36)
-        self.assertEqual(len(registry.workflows), 29)
+        self.assertGreaterEqual(len(registry.capabilities), 68)
+        self.assertEqual(len(registry.sops), 37)
+        self.assertEqual(len(registry.workflows), 30)
         self.assertEqual(registry.capability("OF01.OP.RESTORE_ACTIVATE", 1).binding.binding_kind.value, "UNBOUND")
         smoke = registry.capability("OF02.ADAPTER.provider_smoke", 1)
         self.assertEqual(smoke.availability_probe if False else smoke.raw.get("availability_probe"), "LIVE_PROVIDER")

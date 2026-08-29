@@ -275,6 +275,20 @@
       "disposition": "KEEP"
     },
     {
+      "id": "rt01-trace-latency",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/rt01",
+        "tools/rt01"
+      ],
+      "responsibility": "End-to-end causal tracing and measured latency baselines for executable runtime paths. Observability only; does not grant authority or replace OF-01 history.",
+      "evidence": [
+        "tools/validation_manifest.json registers the rt01 offline suite against src/market_platform_foundation/rt01.",
+        "docs/operations/rt-01, tests/rt01, and artifacts/imp-rebase/RT01 record the accepted RT-01 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
       "id": "legacy-full-suite-wrapper",
       "classification": "WRAPPED",
       "scope": [

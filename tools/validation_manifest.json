@@ -1743,6 +1743,32 @@
         "of01",
         "of02"
       ]
+    },
+    {
+      "id": "rt01",
+      "path": "tests/rt01",
+      "classification": "offline",
+      "tiers": [
+        "full",
+        "changed"
+      ],
+      "domains": [
+        "core"
+      ],
+      "parallel_safety": "PARALLEL_SAFE",
+      "resource_weight": 1,
+      "source_globs": [
+        "src/market_platform_foundation/rt01/**",
+        "docs/operations/rt-01/**",
+        "docs/superpowers/specs/2026-08-29-imp-rt-01-end-to-end-trace-latency-baseline-implementation-spec.md"
+      ],
+      "test_globs": [
+        "tests/rt01/test_*.py"
+      ],
+      "neighbors": [
+        "market_data",
+        "of03"
+      ]
     }
   ]
 }
