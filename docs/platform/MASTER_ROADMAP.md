@@ -42,7 +42,7 @@ an independent semantic track.
 | `IMP-RT-03` | Event-Bus or Native Hot-Path Decision | Decide only if measured need remains after RT-02 |
 | `IMP-XA-01` | Cross-Asset Kernel | Define shared extension/source contracts and one bounded sovereign/rates reference vertical |
 | `IMP-XA-02` | First Admitted Cross-Asset Source Vertical | Admit a bounded vertical under XA-01 and ledger requirements |
-| `IMP-OF-03` | Workflow and Control Registry | Index governed workflows, controls, runbooks, incidents, debt, and limitations after operation adapters exist |
+| `IMP-OF-03` | Workflow and Control Registry | `IMP_OF_03_COMPLETE_WITH_LIMITATIONS` — machine-readable capability/SOP/workflow registry; not an execution engine or second ledger |
 | `IMP-AI-01` | Attributable Read-Only AI Research | Add reproducible attribution and evaluation while preserving no-execution authority |
 | `IMP-AI-02` | Governed AI Workflows and Tools | Expand only after the workflow/control registry |
 | `IMP-NARRATIVE-01` | Narrative and Motive Method | Define uncertain thesis/motive treatment and admitted boundaries |

@@ -7,32 +7,44 @@
     {
       "root": "src/market_platform_foundation",
       "include": "CHILD_DIRECTORIES",
-      "exclude": ["__pycache__"]
+      "exclude": [
+        "__pycache__"
+      ]
     },
     {
       "root": "src/market_platform_foundation",
       "include": "PYTHON_FILES",
-      "exclude": ["__init__.py"]
+      "exclude": [
+        "__init__.py"
+      ]
     },
     {
       "root": "tools",
       "include": "CHILD_DIRECTORIES",
-      "exclude": ["__pycache__"]
+      "exclude": [
+        "__pycache__"
+      ]
     },
     {
       "root": "tools",
       "include": "PYTHON_FILES",
-      "exclude": ["__init__.py"]
+      "exclude": [
+        "__init__.py"
+      ]
     },
     {
       "root": "pipelines/stock_data/src",
       "include": "CHILD_DIRECTORIES",
-      "exclude": ["__pycache__"]
+      "exclude": [
+        "__pycache__"
+      ]
     },
     {
       "root": "pipelines/stock_data/src",
       "include": "PYTHON_FILES",
-      "exclude": ["__init__.py"]
+      "exclude": [
+        "__init__.py"
+      ]
     }
   ],
   "required_paths": [
@@ -250,9 +262,24 @@
       "disposition": "KEEP"
     },
     {
+      "id": "of03-governed-registry",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/of03"
+      ],
+      "responsibility": "Machine-readable capability, SOP, and workflow registry with binding verification and policy metadata. Does not execute workflows, grant authority, or replace OF-01 history.",
+      "evidence": [
+        "tools/validation_manifest.json registers the of03 offline suite against src/market_platform_foundation/of03.",
+        "config/of03, docs/operations/of-03, and tests/of03 record the OF-03 registry contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
       "id": "legacy-full-suite-wrapper",
       "classification": "WRAPPED",
-      "scope": ["tools/run_all_tests.py"],
+      "scope": [
+        "tools/run_all_tests.py"
+      ],
       "responsibility": "Backward-compatible full-suite command that delegates to the canonical validation control plane.",
       "evidence": [
         "tests/validation/test_run_all_tests_wrapper.py proves delegation to validate.py full and exit-status preservation."
@@ -499,7 +526,9 @@
     {
       "id": "phase4-bar-book-state",
       "classification": "SUPERSEDED",
-      "scope": ["src/market_platform_foundation/state"],
+      "scope": [
+        "src/market_platform_foundation/state"
+      ],
       "responsibility": "Historical Phase 4 in-memory bar-book state, replaced for platform operation by durable local state and canonical runtime stores.",
       "evidence": [
         "Runtime imports are confined to historical Phase 4 validation while platform operation uses local_state and runtime storage.",
@@ -511,7 +540,9 @@
     {
       "id": "nested-stock-data-dashboard",
       "classification": "DUPLICATE",
-      "scope": ["pipelines/stock_data/src/ui"],
+      "scope": [
+        "pipelines/stock_data/src/ui"
+      ],
       "responsibility": "A separate collector dashboard that duplicates operator-facing inventory/filter/export responsibilities outside the canonical workstation.",
       "evidence": [
         "pipelines/stock_data/src/ui defines its own dashboard while ui/ and ui_api are the canonical workstation surfaces.",

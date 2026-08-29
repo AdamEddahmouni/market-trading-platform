@@ -85,12 +85,13 @@ model. It is `PARTIAL` because no accepted trace and benchmark spans provider,
 platform, feature, model, risk, UI, human, and broker stages. Its next owner is
 `IMP-RT-01` after common standards and durable run identity.
 
-The **Operating Fabric** is the operation-to-evidence control plane. Existing
-run manifests, schedulers, pipelines, ledgers, health controls, runbooks, and
-release operations are reusable. It is `PARTIAL` because IMP has no universal
-run/operation/artifact authority, attempt history, workflow registry, or
-program-wide trace contract. Its next owners are `IMP-REBASE-02` and then
-`IMP-OF-01`.
+The **Operating Fabric** is the operation-to-evidence control plane. OF-01
+provides the append-only run/artifact ledger, OF-02 attributes existing
+subsystems onto that ledger, and OF-03 indexes governed capabilities, SOPs, and
+workflows. Existing run manifests, schedulers, pipelines, health controls,
+runbooks, and release operations remain reusable. The family is still `PARTIAL`
+because program-wide end-to-end trace/latency is not accepted. Its next owner
+is `IMP-RT-01`. OF-03 does not execute workflows or grant domain authority.
 
 Neither fabric grants order authority. Their detailed responsibility boundaries
 are in [System Boundaries](SYSTEM_BOUNDARIES.md).
