@@ -3,8 +3,8 @@
   "status": "IMP_XA_01_COMPLETE_WITH_LIMITATIONS",
   "canonical_base_head": "f323884e3d2610537d2f950c31faa7f8f8bf36f5",
   "implementation_spec": {
-    "path": "config/of03/manifest.json",
-    "sha256": "BEDF392F954F3DA5D1C24C2E5E925CE02E965A41272743ECDDE1DFE9CE1DB845"
+    "path": "docs/superpowers/specs/2026-08-29-imp-xa-01-cross-asset-canonical-domain-instrument-identity-kernel-implementation-spec.md",
+    "sha256": "BA2237D0DA3A619C724F598A504ECE6C066368317426E63A35EB6883C7D3C1B7"
   },
   "registry_snapshot_hash": "45302765199B3F5E5A4796BBBBB0798E87E2C9146C3A4761BBF7618B83AD22A0",
   "representative_cases": [
@@ -39,5 +39,6 @@
     "risk_authority_changed": false,
     "execution_authority_changed": false,
     "broker_transport_changed": false
-  }
+  },
+  "final_head": "ae974940eaa412e8fbf7af1f88e71882b2198735"
 }
