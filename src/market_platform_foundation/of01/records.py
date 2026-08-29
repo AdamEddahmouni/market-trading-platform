@@ -9,7 +9,7 @@ from typing import Any
 
 from .canonical import RECORD_PROFILE, record_hash_from_obj
 from .errors import OF01Error, OF01ErrorCode
-from .ids import validate_uuid
+from .ids import validate_ledger_identity, validate_uuid
 
 RECORD_SCHEMA_VERSION = 1
 
@@ -264,7 +264,10 @@ class RunRecord:
     temporal_cutoff_bundle_ref: str | None
 
     def __post_init__(self) -> None:
-        validate_uuid(self.run_id, field="run_id")
+        if self.provenance_qualifier == ProvenanceQualifier.NATIVE:
+            validate_uuid(self.run_id, field="run_id")
+        else:
+            validate_ledger_identity(self.run_id, field="run_id")
         _validate_code(self.operation_class, field="operation_class")
         if (self.trigger_type is None) != (self.trigger_ref is None):
             raise OF01Error(
@@ -330,8 +333,8 @@ class AttemptRecord:
     sensitivity_class: SensitivityClass
 
     def __post_init__(self) -> None:
-        validate_uuid(self.attempt_id, field="attempt_id")
-        validate_uuid(self.run_id, field="run_id")
+        validate_ledger_identity(self.attempt_id, field="attempt_id")
+        validate_ledger_identity(self.run_id, field="run_id")
         if self.attempt_sequence < 1:
             raise OF01Error(
                 OF01ErrorCode.INVALID_COMMAND,
@@ -339,7 +342,7 @@ class AttemptRecord:
                 {},
             )
         if self.predecessor_attempt_id is not None:
-            validate_uuid(self.predecessor_attempt_id, field="predecessor_attempt_id")
+            validate_ledger_identity(self.predecessor_attempt_id, field="predecessor_attempt_id")
 
     @property
     def record_type(self) -> str:
@@ -378,10 +381,10 @@ class RunTransitionRecord:
     terminal_disposition_id: str | None
 
     def __post_init__(self) -> None:
-        validate_uuid(self.transition_id, field="transition_id")
-        validate_uuid(self.run_id, field="run_id")
+        validate_ledger_identity(self.transition_id, field="transition_id")
+        validate_ledger_identity(self.run_id, field="run_id")
         if self.predecessor_transition_id is not None:
-            validate_uuid(self.predecessor_transition_id, field="predecessor_transition_id")
+            validate_ledger_identity(self.predecessor_transition_id, field="predecessor_transition_id")
         if self.to_state == RunState.CLOSED and self.terminal_disposition_id is None:
             raise OF01Error(
                 OF01ErrorCode.INVALID_COMMAND,
@@ -434,10 +437,10 @@ class AttemptTransitionRecord:
     evidence_ref: str | None
 
     def __post_init__(self) -> None:
-        validate_uuid(self.transition_id, field="transition_id")
-        validate_uuid(self.attempt_id, field="attempt_id")
+        validate_ledger_identity(self.transition_id, field="transition_id")
+        validate_ledger_identity(self.attempt_id, field="attempt_id")
         if self.predecessor_transition_id is not None:
-            validate_uuid(self.predecessor_transition_id, field="predecessor_transition_id")
+            validate_ledger_identity(self.predecessor_transition_id, field="predecessor_transition_id")
         if self.to_phase == AttemptPhase.TERMINAL and self.terminal_result is None:
             raise OF01Error(
                 OF01ErrorCode.INVALID_COMMAND,
@@ -498,10 +501,10 @@ class OutcomeRecord:
     sensitivity_class: SensitivityClass
 
     def __post_init__(self) -> None:
-        validate_uuid(self.outcome_id, field="outcome_id")
-        validate_uuid(self.run_id, field="run_id")
+        validate_ledger_identity(self.outcome_id, field="outcome_id")
+        validate_ledger_identity(self.run_id, field="run_id")
         if self.attempt_id is not None:
-            validate_uuid(self.attempt_id, field="attempt_id")
+            validate_ledger_identity(self.attempt_id, field="attempt_id")
         _validate_code(self.outcome_type, field="outcome_type")
 
     @property
@@ -544,12 +547,12 @@ class DispositionRecord:
     sensitivity_class: SensitivityClass
 
     def __post_init__(self) -> None:
-        validate_uuid(self.disposition_id, field="disposition_id")
-        validate_uuid(self.run_id, field="run_id")
+        validate_ledger_identity(self.disposition_id, field="disposition_id")
+        validate_ledger_identity(self.run_id, field="run_id")
         if self.outcome_id is not None:
-            validate_uuid(self.outcome_id, field="outcome_id")
+            validate_ledger_identity(self.outcome_id, field="outcome_id")
         if self.prior_disposition_id is not None:
-            validate_uuid(self.prior_disposition_id, field="prior_disposition_id")
+            validate_ledger_identity(self.prior_disposition_id, field="prior_disposition_id")
         _validate_code(self.domain_code, field="domain_code")
 
     @property
@@ -598,10 +601,10 @@ class ArtifactRecord:
     redaction_state: RedactionState
 
     def __post_init__(self) -> None:
-        validate_uuid(self.artifact_id, field="artifact_id")
-        validate_uuid(self.producer_run_id, field="producer_run_id")
+        validate_ledger_identity(self.artifact_id, field="artifact_id")
+        validate_ledger_identity(self.producer_run_id, field="producer_run_id")
         if self.producer_attempt_id is not None:
-            validate_uuid(self.producer_attempt_id, field="producer_attempt_id")
+            validate_ledger_identity(self.producer_attempt_id, field="producer_attempt_id")
         if self.byte_size < 0:
             raise OF01Error(
                 OF01ErrorCode.INVALID_COMMAND,
@@ -653,9 +656,9 @@ class RelationshipRecord:
     relation_code: str | None
 
     def __post_init__(self) -> None:
-        validate_uuid(self.relationship_id, field="relationship_id")
-        validate_uuid(self.source_record_id, field="source_record_id")
-        validate_uuid(self.target_record_id, field="target_record_id")
+        validate_ledger_identity(self.relationship_id, field="relationship_id")
+        validate_ledger_identity(self.source_record_id, field="source_record_id")
+        validate_ledger_identity(self.target_record_id, field="target_record_id")
         if self.source_record_type == "RELATIONSHIP" or self.target_record_type == "RELATIONSHIP":
             raise OF01Error(
                 OF01ErrorCode.INVALID_COMMAND,
@@ -696,8 +699,8 @@ class SourceAttributionRecord:
     limitations: str | None
 
     def __post_init__(self) -> None:
-        validate_uuid(self.source_attribution_id, field="source_attribution_id")
-        validate_uuid(self.run_id, field="run_id")
+        validate_ledger_identity(self.source_attribution_id, field="source_attribution_id")
+        validate_ledger_identity(self.run_id, field="run_id")
 
     @property
     def record_type(self) -> str:
@@ -735,12 +738,12 @@ class ProvenanceReferenceRecord:
     limitations: str | None
 
     def __post_init__(self) -> None:
-        validate_uuid(self.provenance_ref_id, field="provenance_ref_id")
-        validate_uuid(self.run_id, field="run_id")
+        validate_ledger_identity(self.provenance_ref_id, field="provenance_ref_id")
+        validate_ledger_identity(self.run_id, field="run_id")
         if self.attempt_id is not None:
-            validate_uuid(self.attempt_id, field="attempt_id")
+            validate_ledger_identity(self.attempt_id, field="attempt_id")
         if self.artifact_id is not None:
-            validate_uuid(self.artifact_id, field="artifact_id")
+            validate_ledger_identity(self.artifact_id, field="artifact_id")
 
     @property
     def record_type(self) -> str:

@@ -291,7 +291,7 @@ class CommandEnvelope:
     command: LedgerCommand
 
     def __post_init__(self) -> None:
-        validate_uuid(self.command_id, field="command_id")
+        validate_uuid(self.command_id, field="command_id", allowed_versions=frozenset({4, 5}))
         validate_hash(self.command_hash, field="command_hash")
         if self.command_schema_version != COMMAND_SCHEMA_VERSION:
             raise OF01Error(

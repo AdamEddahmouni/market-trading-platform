@@ -12,6 +12,13 @@ _UUID_RE = re.compile(
 )
 _HASH_RE = re.compile(r"^[0-9A-F]{64}$")
 _NIL_UUID = "00000000-0000-0000-0000-000000000000"
+IMPORT_UUID_VERSIONS = frozenset({4, 5})
+
+
+def validate_ledger_identity(value: str, *, field: str) -> str:
+    """Accept native UUIDv4 or declared import UUIDv5 identities."""
+
+    return validate_uuid(value, field=field, allowed_versions=IMPORT_UUID_VERSIONS)
 
 
 def new_uuid() -> str:

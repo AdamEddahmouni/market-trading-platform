@@ -46,6 +46,14 @@ class TestIds(unittest.TestCase):
                 provenance_qualifier="NATIVE",
             )
 
+    def test_ledger_identity_accepts_uuid5_for_import_records(self) -> None:
+        from market_platform_foundation.of01.ids import validate_ledger_identity
+
+        self.assertEqual(
+            validate_ledger_identity("6ba7b811-9dad-51d1-80b4-00c04fd430c8", field="run_id"),
+            "6ba7b811-9dad-51d1-80b4-00c04fd430c8",
+        )
+
 
 class TestGoldenVectors(unittest.TestCase):
     @classmethod

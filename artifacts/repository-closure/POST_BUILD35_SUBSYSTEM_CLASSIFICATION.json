@@ -237,6 +237,19 @@
       "disposition": "KEEP"
     },
     {
+      "id": "of02-attribution-adapters",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/of02"
+      ],
+      "responsibility": "Existing-system run and artifact attribution adapters that emit typed OF-01 commands without replacing subsystem domain authority.",
+      "evidence": [
+        "tools/validation_manifest.json registers the of02 offline suite against src/market_platform_foundation/of02.",
+        "docs/operations/of-02 and tests/of02 record the OF-02 adapter contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
       "id": "legacy-full-suite-wrapper",
       "classification": "WRAPPED",
       "scope": ["tools/run_all_tests.py"],

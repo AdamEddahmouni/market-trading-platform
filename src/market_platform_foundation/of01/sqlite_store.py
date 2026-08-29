@@ -571,7 +571,7 @@ class SQLiteAuthorityStore:
             """
             SELECT to_state FROM run_transitions
             WHERE run_id = ?
-            ORDER BY effective_at_ns DESC, transition_id DESC
+            ORDER BY commit_sequence DESC, item_ordinal DESC
             LIMIT 1
             """,
             (run_id,),
@@ -583,7 +583,7 @@ class SQLiteAuthorityStore:
             """
             SELECT transition_id FROM run_transitions
             WHERE run_id = ?
-            ORDER BY effective_at_ns DESC, transition_id DESC
+            ORDER BY commit_sequence DESC, item_ordinal DESC
             LIMIT 1
             """,
             (run_id,),
@@ -595,7 +595,7 @@ class SQLiteAuthorityStore:
             """
             SELECT to_phase FROM attempt_transitions
             WHERE attempt_id = ?
-            ORDER BY transition_id DESC
+            ORDER BY commit_sequence DESC, item_ordinal DESC
             LIMIT 1
             """,
             (attempt_id,),
