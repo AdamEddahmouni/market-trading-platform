@@ -7,8 +7,8 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Topic-to-authority routing and conflict disposition |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.1` |
-| Last Verified | `2026-08-27` |
+| Version | `1.2` |
+| Last Verified | `2026-08-29` |
 | Supersedes | No single current whole-program authority index |
 | Superseded By | None |
 
@@ -55,6 +55,7 @@ validation counts, or gate logic.
 | Quality | [shared quality models](../../src/market_platform_foundation/intelligence/quality/models.py) plus domain taxonomies | Code and contracts | `CURRENT_CANONICAL_TRUTH` | Quality assessment within each defined domain | None |
 | Provider capability and admission | [provider contracts](../../src/market_platform_foundation/providers/contracts.py), [capability registry](../../src/market_platform_foundation/market_data/capability_registry.py), adapters, probes, and provider-specific evidence | Fragmented executable authorities | `CURRENT_CANONICAL_TRUTH` | Support, entitlement, runtime evidence, and admission within each provider scope | Provider-domain registries remain authoritative in their scopes; OF-03 indexes operating capabilities, not provider admission |
 | Governed operating capabilities, SOPs, and workflows | [`config/of03/`](../../config/of03) and [`of03/`](../../src/market_platform_foundation/of03) | Versioned JSON plus typed loader | `CURRENT_CANONICAL_TRUTH` | Registry identity, versions, bindings, policy metadata, and snapshot hash | Registration is not authorization; OF-01 remains execution history |
+| Ingest-path trace and latency baseline | [`rt01/`](../../src/market_platform_foundation/rt01), [RT-01 acceptance](../../artifacts/imp-rebase/RT01/RT01_ACCEPTANCE_REPORT.json), and [Observability Standard](OBSERVABILITY_STANDARD.md) | Code plus accepted evidence | `CURRENT_CANONICAL_TRUTH` | Causal spans, named latency profiles, fixture baseline measurements, and tracing equivalence on executable ingest paths | Does not span broker, reconciliation, or unified order pipeline |
 | Prediction record | [`PredictionLedgerEntryV1`](../../src/market_platform_foundation/intelligence/contracts/prediction_ledger.py) and persistence consumers | Code and contracts | `CURRENT_CANONICAL_TRUTH` | Immutable prediction lineage | None |
 | Outcome settlement | [`OutcomeSettlementService`](../../src/market_platform_foundation/intelligence/outcomes/service.py) and frozen settlement policy | Code and policy | `CURRENT_CANONICAL_TRUTH` | Outcome maturity, policy matching, and settlement | None |
 | Risk | [risk decision](../../src/market_platform_foundation/risk/decision.py), [risk policy](../../src/market_platform_foundation/risk/policy.py), and current scoped risk implementations | Code and policy | `CURRENT_CANONICAL_TRUTH` | May permit or block within risk scope; does not submit orders | None |

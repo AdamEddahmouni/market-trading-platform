@@ -1,0 +1,11 @@
+{
+  "limitations": [
+    "No unified live opportunity-risk-order_ready chain instrumented",
+    "Broker and reconciliation not on observational ingest hot path",
+    "Real-provider observational trace not exercised in acceptance",
+    "Intelligence replay signal path not in default baseline workload",
+    "Queue instrumentation implemented but queue baseline workload not exercised",
+    "receive_to_signal profile defined but acceptance-measured as NOT_EXERCISED",
+    "queue_wait profile defined but acceptance-measured as NOT_EXERCISED"
+  ]
+}

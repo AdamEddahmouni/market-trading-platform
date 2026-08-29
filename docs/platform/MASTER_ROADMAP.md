@@ -7,8 +7,8 @@
 | Primary Truth Class | `APPROVED_FUTURE_DESIGN` |
 | Canonical Subject | Post-core milestone ownership and dependency graph |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.1` |
-| Last Verified | `2026-08-27` |
+| Version | `1.2` |
+| Last Verified | `2026-08-29` |
 | Supersedes | [Revision 3 roadmap projection](../roadmap/REVISION_3_ROADMAP.md) as whole-program master only |
 | Superseded By | None |
 
@@ -37,7 +37,7 @@ an independent semantic track.
 | `IMP-REBASE-02` | Reproducibility, Observability, Evaluation & Operational Standards | `COMPLETE` — shared standards established; do not implement Universal Run Ledger, adapters, workflow registry, end-to-end tracing, or documentation automation |
 | `IMP-OF-01` | Append-Only Run and Artifact Ledger | Implement durable run identity, artifact linkage, history, attribution, relationships, and retry/attempt preservation |
 | `IMP-OF-02` | Operation Adapters | Connect bounded operation classes to the accepted ledger without rewriting their frozen records |
-| `IMP-RT-01` | End-to-End Instrumentation | Implement trace semantics, benchmark baselines, stage instrumentation, and provider/network versus internal latency separation |
+| `IMP-RT-01` | End-to-End Instrumentation | `IMP_RT_01_COMPLETE_WITH_LIMITATIONS` — trace semantics, fixture baseline measurements, and ingest-path stage instrumentation; queue/signal/real-provider paths remain follow-ons |
 | `IMP-RT-02` | Measured State and Feature Optimization | Optimize only bottlenecks demonstrated by RT-01 evidence |
 | `IMP-RT-03` | Event-Bus or Native Hot-Path Decision | Decide only if measured need remains after RT-02 |
 | `IMP-XA-01` | Cross-Asset Kernel | Define shared extension/source contracts and one bounded sovereign/rates reference vertical |
@@ -115,9 +115,12 @@ index immutable records rather than replacing them.
 
 ### IMP-RT-01
 
-Implement actual measurement: trace stages, benchmark baseline, provider/network
-versus internal latency separation, queue wait versus processing, and relevant
-user/human/broker stages. No optimization claim precedes measurement.
+`IMP_RT_01_COMPLETE_WITH_LIMITATIONS`. Executable ingest-path tracing, named
+latency profiles with root-to-terminal elapsed semantics, fixture baseline
+evidence, and tracing OFF/ON domain equivalence are accepted. Queue workload,
+signal path, real-provider observational trace, and unified
+opportunity→risk→order_ready chain remain follow-ons rather than acceptance
+blockers.
 
 ### IMP-XA-01
 
