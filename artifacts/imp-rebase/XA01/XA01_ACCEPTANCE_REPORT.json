@@ -1,0 +1,43 @@
+{
+  "milestone": "IMP-XA-01",
+  "status": "IMP_XA_01_COMPLETE_WITH_LIMITATIONS",
+  "canonical_base_head": "f323884e3d2610537d2f950c31faa7f8f8bf36f5",
+  "implementation_spec": {
+    "path": "config/of03/manifest.json",
+    "sha256": "BEDF392F954F3DA5D1C24C2E5E925CE02E965A41272743ECDDE1DFE9CE1DB845"
+  },
+  "registry_snapshot_hash": "45302765199B3F5E5A4796BBBBB0798E87E2C9146C3A4761BBF7618B83AD22A0",
+  "representative_cases": [
+    "equity:AAPL",
+    "sovereign:912828ZT0",
+    "commodity:GOLD",
+    "future_contract:GC202506",
+    "fx_pair:EUR/USD"
+  ],
+  "validation": {
+    "changed": {
+      "tests": 682,
+      "skipped": 4,
+      "failures": 0,
+      "errors": 0
+    },
+    "full": {
+      "tests": 3143,
+      "passes": 3101,
+      "skipped": 42,
+      "failures": 0,
+      "errors": 0,
+      "duration_s": 505.235
+    }
+  },
+  "protected_boundaries": {
+    "of01_invariants_changed": false,
+    "of02_semantics_changed": false,
+    "of03_authority_changed": false,
+    "rt01_trace_changed": false,
+    "evidence01c_new_dependency": false,
+    "risk_authority_changed": false,
+    "execution_authority_changed": false,
+    "broker_transport_changed": false
+  }
+}

@@ -289,6 +289,19 @@
       "disposition": "KEEP"
     },
     {
+      "id": "xa01-cross-asset-identity-kernel",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/xa01"
+      ],
+      "responsibility": "Cross-asset canonical instrument identity, analytical-domain participation, typed relationships, and provider alias resolution. Identity foundation only; does not implement cross-asset analytics.",
+      "evidence": [
+        "tools/validation_manifest.json registers the xa01 offline suite against src/market_platform_foundation/xa01.",
+        "docs/operations/xa-01, tests/xa01, and artifacts/imp-rebase/XA01 record the accepted XA-01 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
       "id": "legacy-full-suite-wrapper",
       "classification": "WRAPPED",
       "scope": [

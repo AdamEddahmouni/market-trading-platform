@@ -134,10 +134,11 @@ New program families must extend rather than fork these foundations:
 
 ## Family attachment points
 
-- **Cross-Asset — `PARTIAL`.** Existing temporal, provenance, quality, macro,
-  energy, futures, options, and participant foundations are reusable. The
-  missing shared identity/relationship/source-extension contract belongs to
-  `IMP-XA-01`.
+- **Cross-Asset — `PARTIAL`.** IMP-XA-01 implemented the cross-asset canonical
+  identity and analytical-domain participation kernel (`src/market_platform_foundation/xa01`).
+  Existing temporal, provenance, quality, macro, energy, futures, options, and
+  participant foundations remain reusable. Cross-asset analytics and additional
+  admitted reference verticals remain future work under `IMP-XA-02`.
 - **Narrative/Motive — `PARTIAL`.** Existing events, participants, hypotheses,
   bounded narrative features, and contradiction flags are reusable. The
   uncertain motive/thesis method and admitted runtime remain future work under
