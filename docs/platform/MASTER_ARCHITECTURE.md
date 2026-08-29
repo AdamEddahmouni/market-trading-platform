@@ -136,9 +136,12 @@ New program families must extend rather than fork these foundations:
 
 - **Cross-Asset — `PARTIAL`.** IMP-XA-01 implemented the cross-asset canonical
   identity and analytical-domain participation kernel (`src/market_platform_foundation/xa01`).
-  Existing temporal, provenance, quality, macro, energy, futures, options, and
-  participant foundations remain reusable. Cross-asset analytics and additional
-  admitted reference verticals remain future work under `IMP-XA-02`.
+  IMP-XA-02 admitted the first bounded FRED rates reference vertical with
+  point-in-time observation provenance and typed indicator-to-XA reference
+  relationships (`src/market_platform_foundation/xa02`). Existing temporal,
+  provenance, quality, macro, energy, futures, options, and participant foundations
+  remain reusable. Cross-asset analytics and additional admitted reference
+  verticals remain future work beyond the first rates slice.
 - **Narrative/Motive — `PARTIAL`.** Existing events, participants, hypotheses,
   bounded narrative features, and contradiction flags are reusable. The
   uncertain motive/thesis method and admitted runtime remain future work under
