@@ -77,7 +77,13 @@
     "XA02.OP.VALIDATE": 1,
     "XA02.OP.SHOW_INDICATOR": 1,
     "XA02.OP.LIST_RELATIONSHIPS": 1,
-    "XA02.OP.ADMIT_FIXTURE": 1
+    "XA02.OP.ADMIT_FIXTURE": 1,
+    "XA03.OP.STATUS": 1,
+    "XA03.OP.VALIDATE": 1,
+    "XA03.OP.SHOW_SOURCE": 1,
+    "XA03.OP.SHOW_OBSERVATION": 1,
+    "XA03.OP.LIST_RELATIONSHIPS": 1,
+    "XA03.OP.ADMIT_FIXTURE": 1
   },
   "active_sops": {
     "SOP-OF01-001": 1,
@@ -118,7 +124,8 @@
     "SOP-OF03-010": 1,
     "SOP-RT01-001": 1,
     "SOP-XA01-001": 1,
-    "SOP-XA02-001": 1
+    "SOP-XA02-001": 1,
+    "SOP-XA03-001": 1
   },
   "active_workflows": {
     "WF-OF01-001": 1,
@@ -153,5 +160,5 @@
     "WF-RT01-001": 1
   },
   "registry_schema_version": 1,
-  "registry_snapshot_hash": "DB9410EA83FC12B6FFD39C62F6304000172DE8C47942BD5BD4EE6F9B0B90FB03"
+  "registry_snapshot_hash": "A9F49126BCD75DF06F08A888C79E01783072185D85EBD0C7E673B9A604679DA4"
 }

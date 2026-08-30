@@ -315,6 +315,19 @@
       "disposition": "KEEP"
     },
     {
+      "id": "xa03-second-admitted-source-vertical",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/xa03"
+      ],
+      "responsibility": "Second admitted cross-asset source vertical: CFTC positioning reference admission through source-neutral envelope, point-in-time provenance, and typed market-report-to-XA reference relationships.",
+      "evidence": [
+        "tools/validation_manifest.json registers the xa03 offline suite against src/market_platform_foundation/xa03.",
+        "docs/operations/xa-03, tests/xa03, and artifacts/imp-rebase/XA03 record the accepted XA-03 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
       "id": "legacy-full-suite-wrapper",
       "classification": "WRAPPED",
       "scope": [

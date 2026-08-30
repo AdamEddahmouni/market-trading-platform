@@ -3042,5 +3042,245 @@
       }
     ],
     "title": "Admit fixture"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa03.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa03.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "status"
+    },
+    "capability_id": "XA03.OP.STATUS",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "Inspect unified XA-03 admitted source registry status across verticals.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa03",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA03-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "XA-03 status"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa03.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa03.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "validate"
+    },
+    "capability_id": "XA03.OP.VALIDATE",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "Validate XA-03 admitted CFTC catalog and cross-asset relationships.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa03",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA03-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "XA-03 validate"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa03.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa03.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "show-source"
+    },
+    "capability_id": "XA03.OP.SHOW_SOURCE",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "Show admitted CFTC market report observations and relationships.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa03",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA03-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "Show source"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa03.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa03.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "show-observation"
+    },
+    "capability_id": "XA03.OP.SHOW_OBSERVATION",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "Show a single admitted positioning observation envelope.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa03",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA03-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "Show observation"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa03.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa03.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "list-relationships"
+    },
+    "capability_id": "XA03.OP.LIST_RELATIONSHIPS",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "List CFTC market report to XA instrument reference relationships.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa03",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA03-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "List relationships"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa03.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa03.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "admit-fixture"
+    },
+    "capability_id": "XA03.OP.ADMIT_FIXTURE",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "Admit fixture-backed CFTC positioning observations into the XA-03 registry.",
+    "domain_reference_requirements": [],
+    "effect_class": "NON_DESTRUCTIVE_MUTATION",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa03",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA03-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "Admit fixture"
   }
 ]

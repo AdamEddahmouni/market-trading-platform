@@ -48,8 +48,8 @@ class CliTests(unittest.TestCase):
         sops = execute("OF03.OP.LIST_SOPS")
         wfs = execute("OF03.OP.LIST_WORKFLOWS")
         snap = execute("OF03.OP.SNAPSHOT")
-        self.assertEqual(len(caps.verification["capabilities"]), 78)
-        self.assertEqual(len(sops.verification["sops"]), 39)
+        self.assertEqual(len(caps.verification["capabilities"]), 84)
+        self.assertEqual(len(sops.verification["sops"]), 40)
         self.assertEqual(len(wfs.verification["workflows"]), 30)
         self.assertEqual(len(snap.verification["registry_snapshot_hash"]), 64)
 

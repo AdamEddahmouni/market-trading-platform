@@ -1267,5 +1267,35 @@
     "schema_version": 1,
     "sop_id": "SOP-XA02-001",
     "title": "XA-02 admitted source inspection"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-XA03-001",
+    "document_path": "docs/operations/xa-03/SOPS.md",
+    "document_section_hash": "85D3F78EF90F2CA4994C38EA4BB678D2D382D823C2311BB082440B84619372F2",
+    "maturity": "DRAFT",
+    "owner_subsystem": "xa03",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "XA03.OP.STATUS",
+        "capability_version": 1
+      },
+      {
+        "capability_id": "XA03.OP.VALIDATE",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [],
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "schema_version": 1,
+    "sop_id": "SOP-XA03-001",
+    "title": "XA-03 second admitted source inspection"
   }
 ]

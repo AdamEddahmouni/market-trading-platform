@@ -1825,6 +1825,41 @@
         "xa01",
         "fred",
         "futures",
+        "of03",
+        "xa03"
+      ]
+    },
+    {
+      "id": "xa03",
+      "path": "tests/xa03",
+      "classification": "offline",
+      "tiers": [
+        "full",
+        "changed"
+      ],
+      "domains": [
+        "core",
+        "futures"
+      ],
+      "parallel_safety": "PARALLEL_SAFE",
+      "resource_weight": 1,
+      "source_globs": [
+        "src/market_platform_foundation/xa03/**",
+        "src/market_platform_foundation/xa02/envelope.py",
+        "src/market_platform_foundation/xa02/contracts.py",
+        "src/market_platform_foundation/xa02/enums.py",
+        "docs/operations/xa-03/**",
+        "docs/superpowers/specs/2026-08-29-imp-xa-03-second-admitted-source-vertical-implementation-spec.md",
+        "tests/fixtures/xa03/**"
+      ],
+      "test_globs": [
+        "tests/xa03/test_*.py"
+      ],
+      "neighbors": [
+        "xa01",
+        "xa02",
+        "cftc",
+        "futures",
         "of03"
       ]
     }
