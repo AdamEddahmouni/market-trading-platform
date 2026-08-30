@@ -1889,6 +1889,36 @@
         "xa01",
         "xa02",
         "xa03",
+        "of03",
+        "xa05"
+      ]
+    },
+    {
+      "id": "xa05",
+      "path": "tests/xa05",
+      "classification": "offline",
+      "tiers": [
+        "full",
+        "changed"
+      ],
+      "domains": [
+        "core"
+      ],
+      "parallel_safety": "PARALLEL_SAFE",
+      "resource_weight": 1,
+      "source_globs": [
+        "src/market_platform_foundation/xa05/**",
+        "docs/operations/xa-05/**",
+        "docs/superpowers/specs/2026-08-30-imp-xa-05-cross-asset-strategic-state-regime-kernel-implementation-spec.md"
+      ],
+      "test_globs": [
+        "tests/xa05/test_*.py"
+      ],
+      "neighbors": [
+        "xa01",
+        "xa02",
+        "xa03",
+        "xa04",
         "of03"
       ]
     }

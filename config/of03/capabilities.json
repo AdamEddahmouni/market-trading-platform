@@ -3442,5 +3442,205 @@
       }
     ],
     "title": "List catalog"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa05.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa05.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "status"
+    },
+    "capability_id": "XA05.OP.STATUS",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "Inspect cross-asset strategic state engine status and authority boundaries.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa05",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA05-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "XA-05 status"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa05.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa05.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "validate"
+    },
+    "capability_id": "XA05.OP.VALIDATE",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "Validate XA-05 classifier versions and authority audit matrix.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa05",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA05-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "XA-05 validate"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa05.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa05.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "construct-state"
+    },
+    "capability_id": "XA05.OP.CONSTRUCT_STATE",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "Construct a point-in-time cross-asset strategic state snapshot from durable catalog evidence.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa05",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA05-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "Construct strategic state"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa05.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa05.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "show-state"
+    },
+    "capability_id": "XA05.OP.SHOW_STATE",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "Show a reconstructed cross-asset strategic state snapshot for a decision time.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa05",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA05-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "Show strategic state"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa05.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa05.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "compare-states"
+    },
+    "capability_id": "XA05.OP.COMPARE_STATES",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "Compare two point-in-time cross-asset strategic state snapshots.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa05",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA05-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "Compare strategic states"
   }
 ]

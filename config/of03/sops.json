@@ -1335,5 +1335,47 @@
     "schema_version": 1,
     "sop_id": "SOP-XA04-001",
     "title": "XA-04 durable catalog persistence inspection"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-XA05-001",
+    "document_path": "docs/operations/xa-05/SOPS.md",
+    "document_section_hash": "6A2408F08D52732C16626573CA31C3017DC6D8C81C26F3F7AD14EF4C448D77CD",
+    "maturity": "DRAFT",
+    "owner_subsystem": "xa05",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "XA05.OP.STATUS",
+        "capability_version": 1
+      },
+      {
+        "capability_id": "XA05.OP.VALIDATE",
+        "capability_version": 1
+      },
+      {
+        "capability_id": "XA05.OP.CONSTRUCT_STATE",
+        "capability_version": 1
+      },
+      {
+        "capability_id": "XA05.OP.SHOW_STATE",
+        "capability_version": 1
+      },
+      {
+        "capability_id": "XA05.OP.COMPARE_STATES",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [],
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "schema_version": 1,
+    "sop_id": "SOP-XA05-001",
+    "title": "XA-05 cross-asset strategic state inspection"
   }
 ]

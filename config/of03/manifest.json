@@ -87,7 +87,12 @@
     "XA04.OP.STATUS": 1,
     "XA04.OP.VALIDATE": 1,
     "XA04.OP.SHOW_RECORD": 1,
-    "XA04.OP.LIST_CATALOG": 1
+    "XA04.OP.LIST_CATALOG": 1,
+    "XA05.OP.STATUS": 1,
+    "XA05.OP.VALIDATE": 1,
+    "XA05.OP.CONSTRUCT_STATE": 1,
+    "XA05.OP.SHOW_STATE": 1,
+    "XA05.OP.COMPARE_STATES": 1
   },
   "active_sops": {
     "SOP-OF01-001": 1,
@@ -130,7 +135,8 @@
     "SOP-XA01-001": 1,
     "SOP-XA02-001": 1,
     "SOP-XA03-001": 1,
-    "SOP-XA04-001": 1
+    "SOP-XA04-001": 1,
+    "SOP-XA05-001": 1
   },
   "active_workflows": {
     "WF-OF01-001": 1,
@@ -165,5 +171,5 @@
     "WF-RT01-001": 1
   },
   "registry_schema_version": 1,
-  "registry_snapshot_hash": "2E345CE72799DDC42C5C4435BECA45CFF7D2AB4D7B281498D7693A28AF69C3AE"
+  "registry_snapshot_hash": "8D14BB91C1EA511C253987500AB0E7D70A44386FD361B95D47A5A463877D2619"
 }

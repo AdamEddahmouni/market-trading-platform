@@ -341,6 +341,19 @@
       "disposition": "KEEP"
     },
     {
+      "id": "xa05-strategic-state-regime-kernel",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/xa05"
+      ],
+      "responsibility": "Deterministic, provenance-aware cross-asset strategic state construction above XA-01 through XA-04 without trading or adaptation authority.",
+      "evidence": [
+        "tools/validation_manifest.json registers the xa05 offline suite against src/market_platform_foundation/xa05.",
+        "docs/operations/xa-05, tests/xa05, and artifacts/imp-rebase/XA05 record the accepted XA-05 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
       "id": "legacy-full-suite-wrapper",
       "classification": "WRAPPED",
       "scope": [
