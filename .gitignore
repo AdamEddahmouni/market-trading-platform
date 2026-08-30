@@ -3,6 +3,7 @@ __pycache__/
 .venv*/
 venv*/
 .worktrees/
+.superpowers/
 .pytest*/
 .coverage*
 build/
