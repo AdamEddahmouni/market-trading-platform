@@ -1860,6 +1860,35 @@
         "xa02",
         "cftc",
         "futures",
+        "of03",
+        "xa04"
+      ]
+    },
+    {
+      "id": "xa04",
+      "path": "tests/xa04",
+      "classification": "offline",
+      "tiers": [
+        "full",
+        "changed"
+      ],
+      "domains": [
+        "core"
+      ],
+      "parallel_safety": "PARALLEL_SAFE",
+      "resource_weight": 1,
+      "source_globs": [
+        "src/market_platform_foundation/xa04/**",
+        "docs/operations/xa-04/**",
+        "docs/superpowers/specs/2026-08-29-imp-xa-04-durable-cross-asset-source-identity-catalog-persistence-implementation-spec.md"
+      ],
+      "test_globs": [
+        "tests/xa04/test_*.py"
+      ],
+      "neighbors": [
+        "xa01",
+        "xa02",
+        "xa03",
         "of03"
       ]
     }

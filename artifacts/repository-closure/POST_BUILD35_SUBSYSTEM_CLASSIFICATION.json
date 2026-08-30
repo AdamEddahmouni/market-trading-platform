@@ -328,6 +328,19 @@
       "disposition": "KEEP"
     },
     {
+      "id": "xa04-durable-catalog-persistence",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/xa04"
+      ],
+      "responsibility": "Durable backend-independent persistence for cross-asset instrument, admitted observation, admission envelope, and reference relationship catalog truth without changing XA-01/02/03 semantics.",
+      "evidence": [
+        "tools/validation_manifest.json registers the xa04 offline suite against src/market_platform_foundation/xa04.",
+        "docs/operations/xa-04, tests/xa04, and artifacts/imp-rebase/XA04 record the accepted XA-04 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
       "id": "legacy-full-suite-wrapper",
       "classification": "WRAPPED",
       "scope": [

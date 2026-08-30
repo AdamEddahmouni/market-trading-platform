@@ -1297,5 +1297,43 @@
     "schema_version": 1,
     "sop_id": "SOP-XA03-001",
     "title": "XA-03 second admitted source inspection"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "document_anchor": "SOP-XA04-001",
+    "document_path": "docs/operations/xa-04/SOPS.md",
+    "document_section_hash": "D04BC6953C17C27C5DDFDB210F4141482F488C62F0371187432A9557BECEF750",
+    "maturity": "DRAFT",
+    "owner_subsystem": "xa04",
+    "prerequisites": [],
+    "related_capability_refs": [
+      {
+        "capability_id": "XA04.OP.STATUS",
+        "capability_version": 1
+      },
+      {
+        "capability_id": "XA04.OP.VALIDATE",
+        "capability_version": 1
+      },
+      {
+        "capability_id": "XA04.OP.SHOW_RECORD",
+        "capability_version": 1
+      },
+      {
+        "capability_id": "XA04.OP.LIST_CATALOG",
+        "capability_version": 1
+      }
+    ],
+    "related_workflow_refs": [],
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "schema_version": 1,
+    "sop_id": "SOP-XA04-001",
+    "title": "XA-04 durable catalog persistence inspection"
   }
 ]

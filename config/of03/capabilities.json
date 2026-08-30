@@ -3282,5 +3282,165 @@
       }
     ],
     "title": "Admit fixture"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa04.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa04.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "status"
+    },
+    "capability_id": "XA04.OP.STATUS",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "Inspect durable XA catalog repository backend health and collection counts.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa04",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA04-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "XA-04 status"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa04.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa04.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "validate"
+    },
+    "capability_id": "XA04.OP.VALIDATE",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "Validate XA registries and durable catalog repository health.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa04",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA04-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "XA-04 validate"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa04.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa04.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "show-record"
+    },
+    "capability_id": "XA04.OP.SHOW_RECORD",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "Show a persisted XA catalog record by kind and identifier.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa04",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA04-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "Show record"
+  },
+  {
+    "automation_policy": "AUTOMATION_ALLOWED",
+    "binding": {
+      "binding_kind": "PYTHON_API",
+      "module": "market_platform_foundation.xa04.operations",
+      "qualname": "execute",
+      "cli_module": "market_platform_foundation.xa04.cli",
+      "cli_parser_attr": "_parser",
+      "cli_subcommand": "list-catalog"
+    },
+    "capability_id": "XA04.OP.LIST_CATALOG",
+    "consequence_profile": "C1_OPERATIONAL",
+    "definition_version": 1,
+    "deprecation": null,
+    "description": "List persisted XA catalog instrument identifiers and audit matrix coverage.",
+    "domain_reference_requirements": [],
+    "effect_class": "READ_ONLY",
+    "feature_gates": [],
+    "human_approval_policy": "NOT_REQUIRED",
+    "idempotency_class": "SAFE_REPEATABLE",
+    "input_contract_ref": "none",
+    "of_attribution_requirement": "OPTIONAL",
+    "output_contract_ref": "structured_verification",
+    "owner_subsystem": "xa04",
+    "registration_state": "DECLARED",
+    "required_authority_refs": [
+      "OPERATOR_INSPECT"
+    ],
+    "required_evidence_classes": [],
+    "required_role_refs": [],
+    "retry_class": "UNKNOWN",
+    "schema_version": 1,
+    "sop_refs": [
+      {
+        "sop_id": "SOP-XA04-001",
+        "sop_version": 1
+      }
+    ],
+    "title": "List catalog"
   }
 ]
