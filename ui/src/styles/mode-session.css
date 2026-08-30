@@ -82,8 +82,7 @@
 }
 
 .mode-launch-header h1,
-.mode-progress-surface h1,
-.mode-dashboard-card h1 {
+.mode-progress-surface h1 {
   margin: 0;
   color: var(--mode-text);
   font-size: clamp(2.35rem, 6vw, 5.4rem);
@@ -283,15 +282,13 @@
 }
 
 .mode-session-startup,
-.mode-session-transition,
-.mode-dashboard {
+.mode-session-transition {
   display: grid;
   place-items: center;
   padding: 1.25rem;
 }
 
-.mode-progress-surface,
-.mode-dashboard-card {
+.mode-progress-surface {
   width: min(720px, 100%);
   padding: clamp(1.5rem, 5vw, 3.5rem);
   background: rgba(11, 27, 43, 0.92);
@@ -300,14 +297,12 @@
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.34);
 }
 
-.mode-progress-surface h1,
-.mode-dashboard-card h1 {
+.mode-progress-surface h1 {
   font-size: clamp(2rem, 5vw, 3.8rem);
 }
 
 .mode-progress-surface > p,
-.mode-progress-surface [role="status"],
-.mode-dashboard-card > p {
+.mode-progress-surface [role="status"] {
   color: var(--mode-secondary);
   line-height: 1.6;
 }
@@ -368,7 +363,6 @@
 }
 
 .mode-transition-actions button,
-.mode-dashboard-card button,
 .mode-dialog-actions button {
   padding: 0.7rem 1rem;
   color: var(--mode-text);
@@ -384,35 +378,6 @@
   font-weight: 750;
   background: var(--mode-focus);
   border-color: var(--mode-focus);
-}
-
-.mode-dashboard-card {
-  border-top: 3px solid var(--mode-demo);
-}
-
-.mode-dashboard[data-mode="PAPER"] .mode-dashboard-card {
-  border-top-color: var(--mode-paper);
-}
-
-.mode-dashboard[data-mode="LIVE"] .mode-dashboard-card {
-  border-top-color: var(--mode-live);
-}
-
-.mode-dashboard-boundary {
-  margin: 1.5rem 0 0;
-  color: var(--mode-text) !important;
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.mode-dashboard-card button {
-  margin-top: 1rem;
-}
-
-.mode-dashboard-content {
-  width: 100%;
 }
 
 .mode-dialog-backdrop {
@@ -546,8 +511,7 @@
 @media (forced-colors: active) {
   .mode-card,
   .mode-dialog,
-  .mode-progress-surface,
-  .mode-dashboard-card {
+  .mode-progress-surface {
     border: 2px solid CanvasText;
   }
 

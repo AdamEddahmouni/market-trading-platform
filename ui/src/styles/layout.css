@@ -17,7 +17,7 @@ body,
 .app-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto auto auto 1fr;
 }
 
 .app-body {
@@ -198,6 +198,11 @@ body,
   height: var(--context-bar-height);
   background: var(--replay-bg);
   border-bottom: 1px solid var(--border-subtle);
+}
+
+.context-bar-unavailable {
+  color: var(--text-muted);
+  font-size: 0.78rem;
 }
 
 .context-segment {

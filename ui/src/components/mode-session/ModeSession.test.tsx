@@ -1,7 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ApplicationBootstrap } from "./ApplicationBootstrap";
-import { ModePlaceholderDashboard } from "./ModePlaceholderDashboard";
 import type { Mode } from "./types";
 
 function deferred<T>() {
@@ -30,6 +29,23 @@ type ReadyTestApplicationProps = {
   modeReadinessTask?: (mode: Mode) => Promise<void>;
 };
 
+function TestModeDestination({
+  mode,
+  onSwitchMode,
+}: {
+  mode: Mode;
+  onSwitchMode: () => void;
+}) {
+  return (
+    <main>
+      <h1>{mode} workstation</h1>
+      <button type="button" onClick={onSwitchMode}>
+        Switch mode
+      </button>
+    </main>
+  );
+}
+
 function ReadyTestApplication({
   modeReadinessTask = () => new Promise<void>(() => undefined),
 }: ReadyTestApplicationProps = {}) {
@@ -39,7 +55,7 @@ function ReadyTestApplication({
       modeReadinessTask={modeReadinessTask}
     >
       {(mode, switchMode) => (
-        <ModePlaceholderDashboard mode={mode} onSwitchMode={switchMode} />
+        <TestModeDestination mode={mode} onSwitchMode={switchMode} />
       )}
     </ApplicationBootstrap>
   );
@@ -107,7 +123,7 @@ describe("Mode session", () => {
 
     const dialog = screen.getByRole("dialog", { name: "Enter the live-data environment?" });
     expect(within(dialog).getByText(/Execution authority: LOCKED/i)).toBeInTheDocument();
-    expect(screen.queryByText("Live environment ready")).not.toBeInTheDocument();
+    expect(screen.queryByText("LIVE workstation")).not.toBeInTheDocument();
 
     fireEvent.keyDown(dialog, { key: "Escape" });
 
@@ -153,14 +169,14 @@ describe("Mode session", () => {
   });
 
   it.each(["DEMO", "PAPER", "LIVE"] as const)(
-    "shows the %s placeholder and switches mode",
+    "shows the %s workstation destination and switches mode",
     async (mode) => {
       render(<ReadyTestApplication modeReadinessTask={async () => undefined} />);
 
       await selectMode(mode);
 
       expect(
-        await screen.findByRole("heading", { name: `${modeTitle(mode)} environment ready` }),
+        await screen.findByRole("heading", { name: `${mode} workstation` }),
       ).toBeInTheDocument();
       fireEvent.click(screen.getByRole("button", { name: "Switch mode" }));
       expect(
@@ -181,7 +197,7 @@ describe("Mode session", () => {
     expect(await screen.findByText(/could not prepare Paper/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(
-      await screen.findByRole("heading", { name: "Paper environment ready" }),
+      await screen.findByRole("heading", { name: "PAPER workstation" }),
     ).toBeInTheDocument();
     expect(modeReadinessTask).toHaveBeenCalledTimes(2);
   });
@@ -192,7 +208,7 @@ describe("Mode session", () => {
     );
     await selectMode("DEMO");
     expect(
-      await screen.findByRole("heading", { name: "Demo environment ready" }),
+      await screen.findByRole("heading", { name: "DEMO workstation" }),
     ).toBeInTheDocument();
 
     first.unmount();
@@ -207,7 +223,7 @@ describe("Mode session", () => {
     render(<ReadyTestApplication modeReadinessTask={async () => undefined} />);
     await selectMode("LIVE");
     expect(
-      await screen.findByRole("heading", { name: "Live environment ready" }),
+      await screen.findByRole("heading", { name: "LIVE workstation" }),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Switch mode" }));

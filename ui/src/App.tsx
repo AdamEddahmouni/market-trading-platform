@@ -17,7 +17,8 @@ import { LazyBoundary } from "./components/LazyBoundary";
 import { NavShell } from "./components/NavShell";
 import { NowPage } from "./components/NowPage";
 import { ApplicationBootstrap } from "./components/mode-session/ApplicationBootstrap";
-import { ModePlaceholderDashboard } from "./components/mode-session/ModePlaceholderDashboard";
+import { ModeEnvironmentBar } from "./components/mode-session/ModeEnvironmentBar";
+import type { Mode } from "./components/mode-session/types";
 import "./styles/tokens.css";
 import "./styles/layout.css";
 import "./styles/mode-session.css";
@@ -142,7 +143,12 @@ function StartupRecoveryBanner() {
   );
 }
 
-export function WorkstationShell() {
+type WorkstationShellProps = {
+  mode: Mode;
+  onSwitchMode: () => void;
+};
+
+export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) {
   const navigate = useNavigate();
   const client = useQueryClient();
   const [drawerPayload, setDrawerPayload] = useState<Record<string, unknown> | null>(null);
@@ -160,6 +166,11 @@ export function WorkstationShell() {
   const replaySessionQuery = useReplaySessionQuery();
   const assistantStatusQuery = useAssistantStatusQuery(assistantOpen);
   const assistantMessagesQuery = useAssistantMessagesQuery(conversationId);
+  const contextState = contextQuery.isLoading
+    ? "loading"
+    : contextQuery.error || !contextQuery.data
+      ? "error"
+      : "ready";
 
   useEffect(() => {
     if (replaySessionQuery.data) {
@@ -250,21 +261,27 @@ export function WorkstationShell() {
     }
   };
 
-  if (contextQuery.isLoading) {
-    return <div className="app-loading">Loading replay context…</div>;
-  }
-  if (contextQuery.error || !contextQuery.data) {
-    return (
-      <div className="app-loading">
-        API unavailable. Start backend: python tools/ui1/run_ui_api.py --serve
-      </div>
-    );
-  }
+  const returnToLauncher = () => {
+    navigate("/", { replace: true });
+    onSwitchMode();
+  };
 
   return (
     <div className="app-shell">
+      <ModeEnvironmentBar
+        mode={mode}
+        context={contextQuery.data?.as_of_context}
+        contextState={contextState}
+        onSwitchMode={returnToLauncher}
+      />
       <NavShell />
-      <ContextBar context={contextQuery.data} />
+      {contextQuery.data ? (
+        <ContextBar context={contextQuery.data} />
+      ) : (
+        <div className="context-bar context-bar-unavailable" aria-hidden="true">
+          Backend context is not available.
+        </div>
+      )}
       <StartupRecoveryBanner />
       <div className="app-body">
         <main className="main-content">
@@ -454,9 +471,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ApplicationBootstrap>
-          {(mode, switchMode) => (
-            <ModePlaceholderDashboard mode={mode} onSwitchMode={switchMode} />
-          )}
+          {(mode, switchMode) => <WorkstationShell mode={mode} onSwitchMode={switchMode} />}
         </ApplicationBootstrap>
       </BrowserRouter>
     </QueryClientProvider>
