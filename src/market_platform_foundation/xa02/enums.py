@@ -7,6 +7,12 @@ from enum import StrEnum
 
 class SourceProvider(StrEnum):
     FRED = "FRED"
+    CFTC = "CFTC"
+
+
+class ObservationPayloadKind(StrEnum):
+    SCALAR_MACRO = "SCALAR_MACRO"
+    POSITIONING_STRUCTURED = "POSITIONING_STRUCTURED"
 
 
 class AdmissionStatus(StrEnum):
@@ -30,6 +36,7 @@ class CrossAssetReferenceType(StrEnum):
 
 class ReferenceSubjectType(StrEnum):
     CANONICAL_INDICATOR = "CANONICAL_INDICATOR"
+    CFTC_MARKET_REPORT = "CFTC_MARKET_REPORT"
 
 
 class ReferenceTargetType(StrEnum):
@@ -38,4 +45,6 @@ class ReferenceTargetType(StrEnum):
 
 SCHEMA_VERSION = 1
 IDENTITY_PROFILE = "imp-xa02-admitted-observation-v1"
+ENVELOPE_IDENTITY_PROFILE = "imp-xa03-admission-envelope-v1"
+POSITIONING_IDENTITY_PROFILE = "imp-xa03-positioning-observation-v1"
 RELATIONSHIP_PROFILE = "imp-xa02-cross-asset-reference-v1"

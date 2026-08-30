@@ -53,14 +53,18 @@ def derive_observation_id_from_macro(obs: MacroObservation) -> str:
 
 def derive_relationship_id(
     *,
-    canonical_indicator_id: str,
+    canonical_indicator_id: str = "",
+    subject_id: str = "",
     relationship_type: CrossAssetReferenceType,
     target_xa_canonical_id: str,
     domain: AnalyticalDomain,
 ) -> str:
+    resolved_subject = subject_id or canonical_indicator_id
+    if not resolved_subject:
+        raise ValueError("subject_id or canonical_indicator_id required")
     material = {
         "profile": RELATIONSHIP_PROFILE,
-        "subject_id": canonical_indicator_id,
+        "subject_id": resolved_subject,
         "relationship_type": relationship_type.value,
         "target_xa_canonical_id": target_xa_canonical_id,
         "domain": domain.value,
