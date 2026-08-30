@@ -65,7 +65,7 @@ export function ResearchAnalyticsPanel({ payload }: Props) {
       />
       <SignalTimelineChartPanel
         title="Cumulative strategy signals (walk-forward)"
-        timeline={panels.strategy_outcomes.signal_timeline}
+        timeline={panels.strategy_outcomes.signal_timeline ?? []}
         provenance={{
           source: panels.strategy_outcomes.provenance.source,
           method: "Cumulative signal count by observation index at cutoff",

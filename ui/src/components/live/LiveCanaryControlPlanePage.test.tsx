@@ -32,14 +32,36 @@ const snapshotPayload = {
   real_money_warning: "LIVE CANARY — REAL MONEY — HUMAN CONFIRMATION REQUIRED",
 };
 
+const reliabilityPayload = {
+  observability_state: "OBSERVABILITY_HEALTHY",
+  as_of_ns: 1,
+  health_matrix: {
+    entries: [],
+    blocking_dependencies: [],
+  },
+  slo_summary: {
+    overall_status: "HEALTHY",
+    objectives: [],
+  },
+  persistence_health: {
+    disposition: "HEALTHY",
+    blocking_live: false,
+  },
+  backup_status: {
+    integrity_status: "VERIFIED",
+    last_backup_id: "BACKUP-test",
+  },
+  alert_delivery_configured: true,
+};
+
 describe("LiveCanaryControlPlanePage", () => {
   beforeEach(() => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
+      vi.fn().mockImplementation(async (path: string) => ({
         ok: true,
-        json: async () => snapshotPayload,
-      }),
+        json: async () => (path === "/canary/reliability" ? reliabilityPayload : snapshotPayload),
+      })),
     );
   });
 

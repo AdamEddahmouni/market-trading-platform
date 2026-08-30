@@ -94,11 +94,11 @@ type DiscoverMode = "MIXED" | "SINGLE";
 function displayProvider(provider: string) {
   if (provider === "FINVIZ_ELITE") return "Finviz Elite";
   if (provider === "MOOMOO") return "Moomoo";
-  return provider.replaceAll("_", " ");
+  return provider.replace(/_/g, " ");
 }
 
 function sourceBadge(provider: string) {
-  return provider === "FINVIZ_ELITE" ? "FINVIZ ELITE" : provider.replaceAll("_", " ");
+  return provider === "FINVIZ_ELITE" ? "FINVIZ ELITE" : provider.replace(/_/g, " ");
 }
 
 function formatNumber(value: unknown, digits = 2) {
@@ -294,7 +294,7 @@ export function DiscoverPage() {
         <section aria-label="Mixed live discovery queue">
           <div className="discover-live-banner" aria-label="Live screener status">
             <span className="discover-session">
-              {mixed?.market_session?.replaceAll("_", " ") ?? "SESSION —"}
+              {mixed?.market_session?.replace(/_/g, " ") ?? "SESSION —"}
             </span>
             <span>
               Candidates <strong>{mixed?.candidate_count ?? mixedCandidates.length}</strong>

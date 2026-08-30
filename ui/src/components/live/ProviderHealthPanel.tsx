@@ -18,7 +18,7 @@ export function ProviderHealthPanel() {
   }
   const lifecycle = health.lifecycle ?? {};
   const summary = health.provider_summary ?? {};
-  const registry = (health as { capability_registry?: { capabilities?: Record<string, { capability?: string; account_entitled?: boolean; runtime_tested?: boolean }> } }).capability_registry;
+  const registry = health.capability_registry;
   const capabilities = registry?.capabilities ?? {};
   const l1 = capabilities.US_EQUITY_L1;
   const trades = capabilities.US_EQUITY_TICKER;
@@ -90,15 +90,15 @@ export function ProviderHealthPanel() {
         </div>
         <div>
           <dt>Dropped events</dt>
-          <dd>{summary.dropped ?? 0}</dd>
+          <dd>{String(summary.dropped ?? 0)}</dd>
         </div>
         <div>
           <dt>Duplicates</dt>
-          <dd>{summary.duplicates ?? 0}</dd>
+          <dd>{String(summary.duplicates ?? 0)}</dd>
         </div>
         <div>
           <dt>Reconnect count</dt>
-          <dd>{lifecycle.reconnect_count ?? 0}</dd>
+          <dd>{String(lifecycle.reconnect_count ?? 0)}</dd>
         </div>
         <div>
           <dt>Quota</dt>
@@ -108,7 +108,7 @@ export function ProviderHealthPanel() {
         </div>
         <div>
           <dt>Last error</dt>
-          <dd>{lifecycle.last_error ?? "—"}</dd>
+          <dd>{String(lifecycle.last_error ?? "—")}</dd>
         </div>
       </dl>
       <h3>Active subscriptions</h3>

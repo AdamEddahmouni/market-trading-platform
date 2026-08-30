@@ -64,7 +64,7 @@ export function ExecutionSimulationBlock({ snapshot, onExplain }: Props) {
         </div>
         <div>
           <dt>Open positions</dt>
-          <dd>{ledger.open_positions ?? "—"}</dd>
+          <dd>{String(ledger.open_positions ?? "—")}</dd>
         </div>
         <div>
           <dt>Entry fills</dt>

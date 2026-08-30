@@ -27,7 +27,7 @@ export function LiveObservationalPanel() {
     <section className="live-panel">
       <h2>LIVE OBSERVATIONAL · MOOMOO</h2>
       <p className="live-health-summary">
-        {health.lifecycle?.connection_state ?? "UNKNOWN"} · quota{" "}
+        {String(health.lifecycle?.connection_state ?? "UNKNOWN")} · quota{" "}
         {health.quota?.active_count ?? 0}/{health.quota?.max_quota ?? "?"}
       </p>
       <label className="live-search-label">

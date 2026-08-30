@@ -79,7 +79,29 @@ export const ProviderHealthResponseSchema = z.object({
   available: z.boolean(),
   reason: z.string().optional(),
   data_mode: z.string().optional(),
-  lifecycle: z.record(z.string(), z.unknown()).optional(),
+  lifecycle: z
+    .object({
+      connection_state: z.string().optional(),
+      provider_role: z.string().optional(),
+      execution_use: z.string().optional(),
+      sdk_version: z.string().optional(),
+      opend_version: z.string().optional(),
+      provider_generation_id: z.union([z.string(), z.number()]).optional(),
+      market_session: z.string().optional(),
+      reconnect_count: z.number().optional(),
+      last_error: z.string().nullable().optional(),
+      active_subscriptions: z
+        .array(
+          z.object({
+            instrument_id: z.string(),
+            capability: z.string(),
+            consumer_count: z.number(),
+          }),
+        )
+        .optional(),
+    })
+    .passthrough()
+    .optional(),
   metrics: z.record(z.string(), z.number()).optional(),
   quota: z
     .object({
@@ -89,10 +111,42 @@ export const ProviderHealthResponseSchema = z.object({
     })
     .optional(),
   scope_symbols: z.array(z.string()).optional(),
-  provider_summary: z.record(z.string(), z.unknown()).optional(),
+  provider_summary: z
+    .object({
+      provider: z.string().optional(),
+      opend: z.string().optional(),
+      provider_generation: z.union([z.string(), z.number()]).optional(),
+      execution_eligibility: z.string().optional(),
+      quote_lag_ms_p50: z.number().nullable().optional(),
+      quote_lag_ms_p95: z.number().nullable().optional(),
+      trade_lag_ms_p50: z.number().nullable().optional(),
+      trade_lag_ms_p95: z.number().nullable().optional(),
+      book_lag_ms_p50: z.number().nullable().optional(),
+      book_lag_ms_p95: z.number().nullable().optional(),
+      queue_high_water: z.number().nullable().optional(),
+      dropped: z.number().nullable().optional(),
+      duplicates: z.number().nullable().optional(),
+    })
+    .passthrough()
+    .optional(),
   execution_gate: z.record(z.string(), z.unknown()).optional(),
-  capability_registry: z.record(z.string(), z.unknown()).optional(),
+  capability_registry: z
+    .object({
+      capabilities: z
+        .record(
+          z.string(),
+          z.object({
+            capability: z.string().optional(),
+            account_entitled: z.boolean().optional(),
+            runtime_tested: z.boolean().optional(),
+          }),
+        )
+        .optional(),
+    })
+    .passthrough()
+    .optional(),
   execution_buffer: z.record(z.string(), z.unknown()).optional(),
+  finviz: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const MarketStateResponseSchema = z.object({
@@ -692,7 +746,12 @@ export const ChartCountPointSchema = z.object({
 
 export const ResearchAnalyticsPanelSchema = z.object({
   available: z.boolean(),
-  provenance: z.record(z.unknown()),
+  provenance: z
+    .object({
+      source: z.string(),
+      method: z.string().optional(),
+    })
+    .passthrough(),
   series: z.array(ChartCountPointSchema),
   reason: z.string().optional(),
   cohort_metadata: z.record(z.unknown()).optional(),
@@ -1025,7 +1084,10 @@ export const WorkspaceOrderBookSnapshotSchema = z.object({
   total_depth: z.number().optional(),
   spread_delta: z.number().optional(),
   snapshot_provenance: z.string().optional(),
-});
+})
+  .merge(ImpactSummarySchema)
+  .merge(MicrostructureForecastSummarySchema)
+  .merge(ExecutionForecastSummarySchema);
 
 export const WorkspaceOrderBookResponseSchema = z.object({
   symbol: z.string(),
@@ -1079,7 +1141,10 @@ export const WorkspaceFuturesSnapshotSchema = z.object({
   rth: z.boolean().optional(),
   session_state: z.string().optional(),
   snapshot_provenance: z.string().optional(),
-});
+})
+  .merge(ImpactSummarySchema)
+  .merge(MicrostructureForecastSummarySchema)
+  .merge(ExecutionForecastSummarySchema);
 
 export const BaselineFinancialSentimentSchema = z.object({
   target_entity_id: z.string().nullable().optional(),
@@ -1426,6 +1491,7 @@ export const ResearchSimulationResponseSchema = z.object({
 
 export type ResearchAnalyticsResponse = z.infer<typeof ResearchAnalyticsResponseSchema>;
 export type AsOfContext = z.infer<typeof AsOfContextSchema>;
+export type ContextResponse = z.infer<typeof ContextResponseSchema>;
 export type AttentionItem = z.infer<typeof AttentionItemSchema>;
 export type ExploreSqueezeResponse = z.infer<typeof ExploreSqueezeResponseSchema>;
 export type ExploreFuturesResponse = z.infer<typeof ExploreFuturesResponseSchema>;
@@ -1487,6 +1553,7 @@ export const PaperPortfolioResponseSchema = z.object({
       mark_source: z.string().nullable().optional(),
       mark_provider: z.string().nullable().optional(),
       mark_quality: z.string().nullable().optional(),
+      mark_as_of_ns: z.number().nullable().optional(),
       average_fill_display: z.string().nullable().optional(),
       unrealized_pnl_display: z.string().optional(),
     }),

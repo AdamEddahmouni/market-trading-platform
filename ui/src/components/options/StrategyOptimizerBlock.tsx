@@ -51,15 +51,15 @@ export function StrategyOptimizerBlock({ snapshot, onExplain }: Props) {
         </div>
         <div>
           <dt>Expected P&amp;L</dt>
-          <dd>{payoff?.expected_pnl ?? "—"}</dd>
+          <dd>{String(payoff?.expected_pnl ?? "—")}</dd>
         </div>
         <div>
           <dt>Win probability</dt>
-          <dd>{payoff?.win_probability ?? "—"}</dd>
+          <dd>{String(payoff?.win_probability ?? "—")}</dd>
         </div>
         <div>
           <dt>Friction cost</dt>
-          <dd>{payoff?.friction_cost ?? "—"}</dd>
+          <dd>{String(payoff?.friction_cost ?? "—")}</dd>
         </div>
         <div>
           <dt>Model</dt>
