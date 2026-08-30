@@ -1,0 +1,44 @@
+{
+  "milestone": "IMP-XA-03",
+  "status": "IMP_XA_03_COMPLETE_WITH_LIMITATIONS",
+  "canonical_base_head": "f8a363469cb45663a094f3acd5fd75ed8bfb4e44",
+  "preferred_source": "CFTC",
+  "selected_source": "CFTC",
+  "selection_reason": "Existing CFTC parser, normalize, mapping, release schedule, and deterministic fixtures with materially different structured positioning semantics.",
+  "second_provider_source_proven": "YES",
+  "fixture_backed": "YES",
+  "real_source_smoke": "NO",
+  "implementation_spec": {
+    "path": "docs\\superpowers\\specs\\2026-08-29-imp-xa-03-second-admitted-source-vertical-implementation-spec.md",
+    "sha256": "619CF38ECAC88CB98DBDD6E54A821BBCDDFE7959AF5074A7F6AF774D15E09FB9"
+  },
+  "admitted_market_count": 5,
+  "fixture_observation_count": 23,
+  "validation": {
+    "full": {
+      "tests": 3195,
+      "passes": 3153,
+      "skipped": 42,
+      "failures": 0,
+      "errors": 0,
+      "duration_s": 669.168
+    }
+  },
+  "protected_boundaries": {
+    "xa01_identity_semantics_changed": false,
+    "xa02_fred_semantics_changed": false,
+    "of01_invariants_changed": false,
+    "of02_semantics_changed": false,
+    "of03_authority_changed": false,
+    "rt01_trace_changed": false,
+    "evidence01c_new_dependency": false,
+    "evidence_semantics_changed": false,
+    "prediction_semantics_changed": false,
+    "settlement_semantics_changed": false,
+    "risk_authority_changed": false,
+    "execution_authority_changed": false,
+    "broker_transport_changed": false,
+    "adapt_specific_execution_added": false,
+    "autonomous_adaptation_enabled": false
+  }
+}
