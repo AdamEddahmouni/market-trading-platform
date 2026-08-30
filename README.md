@@ -135,6 +135,11 @@ Production execution (`LIVE-001`) is blocked pending separate authorization.
 
 ## Revision 3 guidance
 
+Revision 3 is **effective** (exact-hash approval 2026-08-14;
+`resolve_canonical_authority()` → `PASS`). The frozen specification header still
+says `PROPOSED_PENDING_EXACT_HASH_APPROVAL` — see
+[effectivity notice](docs/superpowers/governance/2026-08-14-foundation-revision-3-effectivity-notice.md).
+
 - [External donor index](docs/research/donors/README.md)
 - [Donor reuse and verification matrix](docs/research/donors/DONOR_REUSE_MATRIX.md)
 - [Revision 3 roadmap projection](docs/roadmap/REVISION_3_ROADMAP.md)

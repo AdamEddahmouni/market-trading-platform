@@ -4,6 +4,17 @@ This is a navigational projection of Revision 3 Section 20, not an independent
 authority. Revision 3 controls on conflict. No phase is started, completed, or
 authorized by this file.
 
+## Authority status
+
+Revision 3 is **effective** under exact-hash principal approval recorded
+2026-08-14. Approved specification SHA-256:
+`7C6AE5FC9037CA37D44CD1A2FAACD0CB821192920C46CF001541DCD2121FEB35`.
+`resolve_canonical_authority()` returns `PASS`.
+
+The specification file header still reads `PROPOSED_PENDING_EXACT_HASH_APPROVAL`
+because that text is frozen inside the approved bytes. See
+[Revision 3 effectivity notice](../superpowers/governance/2026-08-14-foundation-revision-3-effectivity-notice.md).
+
 | Phase | Revision 3 projection | Authorization state |
 |---|---|---|
 | Phase 0 — governance and structural no-live safety | Structural no-live safety and governance evidence accepted for the current repository subject. | `PASS` |
