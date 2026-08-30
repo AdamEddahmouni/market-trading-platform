@@ -201,6 +201,87 @@
   font-size: 1.1rem;
 }
 
+.mode-environment-bar {
+  --mode-environment-edge: #91a5b9;
+  display: grid;
+  grid-template-columns: minmax(230px, 0.9fr) minmax(320px, 1.8fr) auto;
+  gap: 1rem;
+  align-items: center;
+  min-height: 76px;
+  padding: 0.75rem 1rem;
+  color: #f4f7fb;
+  background: #0b1b2b;
+  border-bottom: 1px solid #294158;
+  border-left: 4px solid var(--mode-environment-edge);
+}
+
+.mode-environment-bar[data-mode="PAPER"] {
+  --mode-environment-edge: #56c596;
+}
+
+.mode-environment-bar[data-mode="LIVE"] {
+  --mode-environment-edge: #e0a94b;
+}
+
+.mode-environment-identity {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.7rem;
+  align-items: baseline;
+}
+
+.mode-environment-label {
+  grid-column: 1 / -1;
+  color: #7f94a9;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.mode-environment-identity strong {
+  color: var(--mode-environment-edge);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+}
+
+.mode-environment-identity > span:last-child,
+.mode-environment-status,
+.mode-environment-alert {
+  margin: 0;
+  color: #b9c8d8;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.mode-environment-alert {
+  color: #f6cf87;
+}
+
+.mode-environment-bar button {
+  min-width: 112px;
+  min-height: 44px;
+  padding: 0.6rem 0.9rem;
+  color: #f4f7fb;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  background: #10243a;
+  border: 1px solid #52708c;
+  border-radius: 3px;
+}
+
+.mode-environment-bar button:hover {
+  border-color: var(--mode-environment-edge);
+}
+
+.mode-environment-bar button:focus-visible {
+  outline: 3px solid #8cc8ff;
+  outline-offset: 3px;
+}
+
 .mode-session-startup,
 .mode-session-transition,
 .mode-dashboard {
@@ -436,6 +517,14 @@
   .mode-transition-actions button {
     width: 100%;
   }
+
+  .mode-environment-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .mode-environment-bar button {
+    width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -459,6 +548,11 @@
   .mode-dialog,
   .mode-progress-surface,
   .mode-dashboard-card {
+    border: 2px solid CanvasText;
+  }
+
+  .mode-environment-bar,
+  .mode-environment-bar button {
     border: 2px solid CanvasText;
   }
 }
