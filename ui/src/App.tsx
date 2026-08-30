@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { api, type AttentionItem } from "./api/client";
@@ -10,34 +10,108 @@ import {
   useContextQuery,
   useReplaySessionQuery,
 } from "./api/hooks";
-import { AssistantHistoryPage } from "./components/AssistantHistoryPage";
-import { AssistantSidecar } from "./components/AssistantSidecar";
 import { ContextBar } from "./components/ContextBar";
 import { ExplanationDrawer } from "./components/ExplanationDrawer";
-import { ExplorePage } from "./components/ExplorePage";
-import { DiscoverPage } from "./components/DiscoverPage";
-import { ResearchPage } from "./components/ResearchPage";
-import { SqueezeWorkspacePage } from "./components/squeeze/SqueezeWorkspacePage";
-import { OrderFlowWorkspacePage } from "./components/orderflow/OrderFlowWorkspacePage";
-import { OptionsWorkspacePage } from "./components/options/OptionsWorkspacePage";
-import { LargeTransactionsWorkspacePage } from "./components/largetransactions/LargeTransactionsWorkspacePage";
-import { OrderBookWorkspacePage } from "./components/orderbook/OrderBookWorkspacePage";
-import { FuturesWorkspacePage } from "./components/futures/FuturesWorkspacePage";
-import { CatalystWorkspacePage } from "./components/catalyst/CatalystWorkspacePage";
-import { FundEtfWorkspacePage } from "./components/fundetf/FundEtfWorkspacePage";
-import { DisclosureWorkspacePage } from "./components/disclosure/DisclosureWorkspacePage";
-import { InstitutionalFlowWorkspacePage } from "./components/institutional/InstitutionalFlowWorkspacePage";
-import { PortfolioPage } from "./components/PortfolioPage";
-import { OperatorSettingsPage } from "./components/OperatorSettingsPage";
-import { ProviderHealthPanel } from "./components/live/ProviderHealthPanel";
-import { LiveCanaryControlPlanePage } from "./components/live/LiveCanaryControlPlanePage";
 import { InspectorPanel } from "./components/InspectorPanel";
+import { LazyBoundary } from "./components/LazyBoundary";
 import { NavShell } from "./components/NavShell";
 import { NowPage } from "./components/NowPage";
-import { WorkspaceRoute } from "./components/WorkspaceRoute";
-import { WorkspaceIndex } from "./components/WorkspaceIndex";
 import "./styles/tokens.css";
 import "./styles/layout.css";
+
+const AssistantHistoryPage = lazy(() =>
+  import("./components/AssistantHistoryPage").then((module) => ({
+    default: module.AssistantHistoryPage,
+  })),
+);
+const AssistantSidecar = lazy(() =>
+  import("./components/AssistantSidecar").then((module) => ({
+    default: module.AssistantSidecar,
+  })),
+);
+const ExplorePage = lazy(() =>
+  import("./components/ExplorePage").then((module) => ({ default: module.ExplorePage })),
+);
+const DiscoverPage = lazy(() =>
+  import("./components/DiscoverPage").then((module) => ({ default: module.DiscoverPage })),
+);
+const ResearchPage = lazy(() =>
+  import("./components/ResearchPage").then((module) => ({ default: module.ResearchPage })),
+);
+const SqueezeWorkspacePage = lazy(() =>
+  import("./components/squeeze/SqueezeWorkspacePage").then((module) => ({
+    default: module.SqueezeWorkspacePage,
+  })),
+);
+const OrderFlowWorkspacePage = lazy(() =>
+  import("./components/orderflow/OrderFlowWorkspacePage").then((module) => ({
+    default: module.OrderFlowWorkspacePage,
+  })),
+);
+const OptionsWorkspacePage = lazy(() =>
+  import("./components/options/OptionsWorkspacePage").then((module) => ({
+    default: module.OptionsWorkspacePage,
+  })),
+);
+const LargeTransactionsWorkspacePage = lazy(() =>
+  import("./components/largetransactions/LargeTransactionsWorkspacePage").then((module) => ({
+    default: module.LargeTransactionsWorkspacePage,
+  })),
+);
+const OrderBookWorkspacePage = lazy(() =>
+  import("./components/orderbook/OrderBookWorkspacePage").then((module) => ({
+    default: module.OrderBookWorkspacePage,
+  })),
+);
+const FuturesWorkspacePage = lazy(() =>
+  import("./components/futures/FuturesWorkspacePage").then((module) => ({
+    default: module.FuturesWorkspacePage,
+  })),
+);
+const CatalystWorkspacePage = lazy(() =>
+  import("./components/catalyst/CatalystWorkspacePage").then((module) => ({
+    default: module.CatalystWorkspacePage,
+  })),
+);
+const FundEtfWorkspacePage = lazy(() =>
+  import("./components/fundetf/FundEtfWorkspacePage").then((module) => ({
+    default: module.FundEtfWorkspacePage,
+  })),
+);
+const DisclosureWorkspacePage = lazy(() =>
+  import("./components/disclosure/DisclosureWorkspacePage").then((module) => ({
+    default: module.DisclosureWorkspacePage,
+  })),
+);
+const InstitutionalFlowWorkspacePage = lazy(() =>
+  import("./components/institutional/InstitutionalFlowWorkspacePage").then((module) => ({
+    default: module.InstitutionalFlowWorkspacePage,
+  })),
+);
+const PortfolioPage = lazy(() =>
+  import("./components/PortfolioPage").then((module) => ({ default: module.PortfolioPage })),
+);
+const OperatorSettingsPage = lazy(() =>
+  import("./components/OperatorSettingsPage").then((module) => ({
+    default: module.OperatorSettingsPage,
+  })),
+);
+const ProviderHealthPanel = lazy(() =>
+  import("./components/live/ProviderHealthPanel").then((module) => ({
+    default: module.ProviderHealthPanel,
+  })),
+);
+const LiveCanaryControlPlanePage = lazy(() =>
+  import("./components/live/LiveCanaryControlPlanePage").then((module) => ({
+    default: module.LiveCanaryControlPlanePage,
+  })),
+);
+const WorkspaceRoute = lazy(() =>
+  import("./components/WorkspaceRoute").then((module) => ({ default: module.WorkspaceRoute })),
+);
+const WorkspaceIndex = lazy(() =>
+  import("./components/WorkspaceIndex").then((module) => ({ default: module.WorkspaceIndex })),
+);
 
 const queryClient = new QueryClient();
 
@@ -163,7 +237,7 @@ function Shell() {
     if (!conversationId) return;
     setAssistantBusy(true);
     try {
-      await api.submitAssistantPrompt(conversationId, prompt, selectionRef);
+      await api.submitAssistantPrompt(conversationId, prompt, selectionRef ?? undefined);
       await client.invalidateQueries({
         queryKey: queryKeys.assistantMessages(conversationId),
       });
@@ -191,7 +265,8 @@ function Shell() {
       <StartupRecoveryBanner />
       <div className="app-body">
         <main className="main-content">
-          <Routes>
+          <LazyBoundary>
+            <Routes>
             <Route
               path="/"
               element={
@@ -323,25 +398,30 @@ function Shell() {
             <Route path="/diagnostics/provider" element={<ProviderHealthPanel />} />
             <Route path="/assistant/history" element={<AssistantHistoryPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+            </Routes>
+          </LazyBoundary>
         </main>
-        <AssistantSidecar
-          open={assistantOpen}
-          status={assistantStatusQuery.data}
-          messages={assistantMessagesQuery.data?.messages ?? []}
-          loading={assistantBusy || assistantMessagesQuery.isLoading}
-          conversationId={conversationId}
-          selectionRef={selectionRef}
-          onClose={() => setAssistantOpen(false)}
-          onSubmit={submitAssistantPrompt}
-          onCitationClick={async (ref) => {
-            if (ref.startsWith("inspect:")) {
-              await openInspectRef(ref);
-              return;
-            }
-            await openExplainRef(ref);
-          }}
-        />
+        {assistantOpen ? (
+          <LazyBoundary label="Loading assistant…">
+            <AssistantSidecar
+              open
+              status={assistantStatusQuery.data}
+              messages={assistantMessagesQuery.data?.messages ?? []}
+              loading={assistantBusy || assistantMessagesQuery.isLoading}
+              conversationId={conversationId}
+              selectionRef={selectionRef}
+              onClose={() => setAssistantOpen(false)}
+              onSubmit={submitAssistantPrompt}
+              onCitationClick={async (ref) => {
+                if (ref.startsWith("inspect:")) {
+                  await openInspectRef(ref);
+                  return;
+                }
+                await openExplainRef(ref);
+              }}
+            />
+          </LazyBoundary>
+        ) : null}
       </div>
       {!assistantOpen ? (
         <button
