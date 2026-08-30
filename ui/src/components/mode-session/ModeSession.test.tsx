@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ApplicationBootstrap } from "./ApplicationBootstrap";
 
@@ -19,6 +19,17 @@ type TestApplicationProps = {
 function TestApplication({ readinessTask }: TestApplicationProps) {
   return (
     <ApplicationBootstrap readinessTask={readinessTask}>
+      {() => <div>Environment ready</div>}
+    </ApplicationBootstrap>
+  );
+}
+
+function ReadyTestApplication() {
+  return (
+    <ApplicationBootstrap
+      readinessTask={async () => undefined}
+      modeReadinessTask={() => new Promise<void>(() => undefined)}
+    >
       {() => <div>Environment ready</div>}
     </ApplicationBootstrap>
   );
@@ -55,5 +66,31 @@ describe("Mode session", () => {
       await screen.findByRole("heading", { name: /choose how you enter/i }),
     ).toBeInTheDocument();
     expect(readinessTask).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(["Demo", "Paper"])("enters the %s transition directly", async (label) => {
+    render(<ReadyTestApplication />);
+
+    fireEvent.click(await screen.findByRole("button", { name: new RegExp(label, "i") }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      new RegExp(`Preparing ${label}`, "i"),
+    );
+  });
+
+  it("requires explicit confirmation for read-only Live and restores focus on cancel", async () => {
+    render(<ReadyTestApplication />);
+
+    const live = await screen.findByRole("button", { name: /Live/i });
+    fireEvent.click(live);
+
+    const dialog = screen.getByRole("dialog", { name: "Enter the live-data environment?" });
+    expect(within(dialog).getByText(/Execution authority: LOCKED/i)).toBeInTheDocument();
+    expect(screen.queryByText("Live environment ready")).not.toBeInTheDocument();
+
+    fireEvent.keyDown(dialog, { key: "Escape" });
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(live).toHaveFocus();
   });
 });

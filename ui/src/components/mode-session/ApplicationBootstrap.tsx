@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { ModeLauncher } from "./ModeLauncher";
 import {
   defaultModeReadinessTask,
   defaultReadinessTask,
@@ -8,6 +9,7 @@ import {
 } from "./types";
 
 type StartupState = "STARTING" | "READY" | "ERROR";
+type ModeState = "IDLE" | "PREPARING" | "READY" | "ERROR";
 
 type Props = {
   children: (mode: Mode, switchMode: () => void) => ReactNode;
@@ -17,11 +19,13 @@ type Props = {
 
 export function ApplicationBootstrap({
   readinessTask = defaultReadinessTask,
-  modeReadinessTask: _modeReadinessTask = defaultModeReadinessTask,
-  children: _children,
+  modeReadinessTask = defaultModeReadinessTask,
+  children,
 }: Props) {
   const [startupState, setStartupState] = useState<StartupState>("STARTING");
   const [attempt, setAttempt] = useState(0);
+  const [selectedMode, setSelectedMode] = useState<Mode | null>(null);
+  const [modeState, setModeState] = useState<ModeState>("IDLE");
 
   useEffect(() => {
     let active = true;
@@ -38,6 +42,26 @@ export function ApplicationBootstrap({
       active = false;
     };
   }, [attempt, readinessTask]);
+
+  useEffect(() => {
+    if (!selectedMode) {
+      setModeState("IDLE");
+      return;
+    }
+    let active = true;
+    setModeState("PREPARING");
+    void modeReadinessTask(selectedMode).then(
+      () => {
+        if (active) setModeState("READY");
+      },
+      () => {
+        if (active) setModeState("ERROR");
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [modeReadinessTask, selectedMode]);
 
   if (startupState === "STARTING") {
     return (
@@ -75,9 +99,26 @@ export function ApplicationBootstrap({
     );
   }
 
-  return (
-    <main className="mode-session mode-session-launcher">
-      <h1>Choose how you enter the market.</h1>
-    </main>
-  );
+  if (!selectedMode) return <ModeLauncher onSelect={setSelectedMode} />;
+
+  if (modeState === "PREPARING") {
+    const label = selectedMode === "DEMO" ? "Demo" : selectedMode === "PAPER" ? "Paper" : "Live";
+    return (
+      <main className="mode-session mode-session-transition">
+        <div role="status" aria-live="polite">
+          Preparing {label} environment
+        </div>
+      </main>
+    );
+  }
+
+  if (modeState === "ERROR") {
+    return <div>Could not prepare selected environment</div>;
+  }
+
+  if (modeState === "READY") {
+    return children(selectedMode, () => setSelectedMode(null));
+  }
+
+  return null;
 }
