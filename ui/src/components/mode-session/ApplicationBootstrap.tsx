@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ModeLauncher } from "./ModeLauncher";
+import { ModeTransition } from "./ModeTransition";
 import {
   defaultModeReadinessTask,
   defaultReadinessTask,
@@ -9,7 +10,6 @@ import {
 } from "./types";
 
 type StartupState = "STARTING" | "READY" | "ERROR";
-type ModeState = "IDLE" | "PREPARING" | "READY" | "ERROR";
 
 type Props = {
   children: (mode: Mode, switchMode: () => void) => ReactNode;
@@ -25,7 +25,7 @@ export function ApplicationBootstrap({
   const [startupState, setStartupState] = useState<StartupState>("STARTING");
   const [attempt, setAttempt] = useState(0);
   const [selectedMode, setSelectedMode] = useState<Mode | null>(null);
-  const [modeState, setModeState] = useState<ModeState>("IDLE");
+  const [readyMode, setReadyMode] = useState<Mode | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -42,26 +42,6 @@ export function ApplicationBootstrap({
       active = false;
     };
   }, [attempt, readinessTask]);
-
-  useEffect(() => {
-    if (!selectedMode) {
-      setModeState("IDLE");
-      return;
-    }
-    let active = true;
-    setModeState("PREPARING");
-    void modeReadinessTask(selectedMode).then(
-      () => {
-        if (active) setModeState("READY");
-      },
-      () => {
-        if (active) setModeState("ERROR");
-      },
-    );
-    return () => {
-      active = false;
-    };
-  }, [modeReadinessTask, selectedMode]);
 
   if (startupState === "STARTING") {
     return (
@@ -99,26 +79,30 @@ export function ApplicationBootstrap({
     );
   }
 
-  if (!selectedMode) return <ModeLauncher onSelect={setSelectedMode} />;
-
-  if (modeState === "PREPARING") {
-    const label = selectedMode === "DEMO" ? "Demo" : selectedMode === "PAPER" ? "Paper" : "Live";
+  if (!selectedMode) {
     return (
-      <main className="mode-session mode-session-transition">
-        <div role="status" aria-live="polite">
-          Preparing {label} environment
-        </div>
-      </main>
+      <ModeLauncher
+        onSelect={(mode) => {
+          setReadyMode(null);
+          setSelectedMode(mode);
+        }}
+      />
     );
   }
 
-  if (modeState === "ERROR") {
-    return <div>Could not prepare selected environment</div>;
-  }
+  const switchMode = () => {
+    setReadyMode(null);
+    setSelectedMode(null);
+  };
 
-  if (modeState === "READY") {
-    return children(selectedMode, () => setSelectedMode(null));
-  }
+  if (readyMode === selectedMode) return children(selectedMode, switchMode);
 
-  return null;
+  return (
+    <ModeTransition
+      mode={selectedMode}
+      readinessTask={modeReadinessTask}
+      onReady={() => setReadyMode(selectedMode)}
+      onReturn={switchMode}
+    />
+  );
 }

@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ApplicationBootstrap } from "./ApplicationBootstrap";
+import { ModePlaceholderDashboard } from "./ModePlaceholderDashboard";
+import type { Mode } from "./types";
 
 function deferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
@@ -24,15 +26,34 @@ function TestApplication({ readinessTask }: TestApplicationProps) {
   );
 }
 
-function ReadyTestApplication() {
+type ReadyTestApplicationProps = {
+  modeReadinessTask?: (mode: Mode) => Promise<void>;
+};
+
+function ReadyTestApplication({
+  modeReadinessTask = () => new Promise<void>(() => undefined),
+}: ReadyTestApplicationProps = {}) {
   return (
     <ApplicationBootstrap
       readinessTask={async () => undefined}
-      modeReadinessTask={() => new Promise<void>(() => undefined)}
+      modeReadinessTask={modeReadinessTask}
     >
-      {() => <div>Environment ready</div>}
+      {(mode, switchMode) => (
+        <ModePlaceholderDashboard mode={mode} onSwitchMode={switchMode} />
+      )}
     </ApplicationBootstrap>
   );
+}
+
+function modeTitle(mode: Mode) {
+  return mode === "DEMO" ? "Demo" : mode === "PAPER" ? "Paper" : "Live";
+}
+
+async function selectMode(mode: Mode) {
+  fireEvent.click(await screen.findByRole("button", { name: new RegExp(modeTitle(mode), "i") }));
+  if (mode === "LIVE") {
+    fireEvent.click(screen.getByRole("button", { name: "Enter live data" }));
+  }
 }
 
 describe("Mode session", () => {
@@ -92,5 +113,56 @@ describe("Mode session", () => {
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(live).toHaveFocus();
+  });
+
+  it.each(["DEMO", "PAPER", "LIVE"] as const)(
+    "shows the %s placeholder and switches mode",
+    async (mode) => {
+      render(<ReadyTestApplication modeReadinessTask={async () => undefined} />);
+
+      await selectMode(mode);
+
+      expect(
+        await screen.findByRole("heading", { name: `${modeTitle(mode)} environment ready` }),
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Switch mode" }));
+      expect(
+        await screen.findByRole("heading", { name: /choose how you enter/i }),
+      ).toBeInTheDocument();
+    },
+  );
+
+  it("keeps a failed mode visible and supports retry", async () => {
+    const modeReadinessTask = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("unavailable"))
+      .mockResolvedValueOnce(undefined);
+    render(<ReadyTestApplication modeReadinessTask={modeReadinessTask} />);
+
+    await selectMode("PAPER");
+
+    expect(await screen.findByText(/could not prepare Paper/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(
+      await screen.findByRole("heading", { name: "Paper environment ready" }),
+    ).toBeInTheDocument();
+    expect(modeReadinessTask).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not remember a mode across mounts", async () => {
+    const first = render(
+      <ReadyTestApplication modeReadinessTask={async () => undefined} />,
+    );
+    await selectMode("DEMO");
+    expect(
+      await screen.findByRole("heading", { name: "Demo environment ready" }),
+    ).toBeInTheDocument();
+
+    first.unmount();
+    render(<ReadyTestApplication modeReadinessTask={async () => undefined} />);
+
+    expect(
+      await screen.findByRole("heading", { name: /choose how you enter/i }),
+    ).toBeInTheDocument();
   });
 });
