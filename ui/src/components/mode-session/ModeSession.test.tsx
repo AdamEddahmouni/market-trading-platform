@@ -115,6 +115,43 @@ describe("Mode session", () => {
     expect(live).toHaveFocus();
   });
 
+  it("traps focus within the Live confirmation", async () => {
+    render(<ReadyTestApplication />);
+    fireEvent.click(await screen.findByRole("button", { name: /Live/i }));
+
+    const dialog = screen.getByRole("dialog", { name: "Enter the live-data environment?" });
+    const goBack = within(dialog).getByRole("button", { name: "Go back" });
+    const enterLive = within(dialog).getByRole("button", { name: "Enter live data" });
+    expect(goBack).toHaveFocus();
+
+    fireEvent.keyDown(dialog, { key: "Tab", shiftKey: true });
+    expect(enterLive).toHaveFocus();
+    fireEvent.keyDown(dialog, { key: "Tab" });
+    expect(goBack).toHaveFocus();
+  });
+
+  it("renders mode cards with explicit non-color labels", async () => {
+    render(<ReadyTestApplication />);
+
+    expect(
+      await screen.findByRole("button", { name: /Demo.*Historical replay/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Paper.*Simulated execution/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Live.*Read-only market data/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("announces transition changes politely", async () => {
+    render(<ReadyTestApplication />);
+
+    await selectMode("DEMO");
+
+    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
+  });
+
   it.each(["DEMO", "PAPER", "LIVE"] as const)(
     "shows the %s placeholder and switches mode",
     async (mode) => {
@@ -163,6 +200,21 @@ describe("Mode session", () => {
 
     expect(
       await screen.findByRole("heading", { name: /choose how you enter/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("requires Live confirmation again after switching modes", async () => {
+    render(<ReadyTestApplication modeReadinessTask={async () => undefined} />);
+    await selectMode("LIVE");
+    expect(
+      await screen.findByRole("heading", { name: "Live environment ready" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Switch mode" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Live/i }));
+
+    expect(
+      screen.getByRole("dialog", { name: "Enter the live-data environment?" }),
     ).toBeInTheDocument();
   });
 });

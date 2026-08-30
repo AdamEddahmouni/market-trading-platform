@@ -16,8 +16,11 @@ import { InspectorPanel } from "./components/InspectorPanel";
 import { LazyBoundary } from "./components/LazyBoundary";
 import { NavShell } from "./components/NavShell";
 import { NowPage } from "./components/NowPage";
+import { ApplicationBootstrap } from "./components/mode-session/ApplicationBootstrap";
+import { ModePlaceholderDashboard } from "./components/mode-session/ModePlaceholderDashboard";
 import "./styles/tokens.css";
 import "./styles/layout.css";
+import "./styles/mode-session.css";
 
 const AssistantHistoryPage = lazy(() =>
   import("./components/AssistantHistoryPage").then((module) => ({
@@ -139,7 +142,7 @@ function StartupRecoveryBanner() {
   );
 }
 
-function Shell() {
+export function WorkstationShell() {
   const navigate = useNavigate();
   const client = useQueryClient();
   const [drawerPayload, setDrawerPayload] = useState<Record<string, unknown> | null>(null);
@@ -450,7 +453,11 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Shell />
+        <ApplicationBootstrap>
+          {(mode, switchMode) => (
+            <ModePlaceholderDashboard mode={mode} onSwitchMode={switchMode} />
+          )}
+        </ApplicationBootstrap>
       </BrowserRouter>
     </QueryClientProvider>
   );
