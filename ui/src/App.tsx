@@ -1,7 +1,7 @@
 import { lazy, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
-import { api, type AttentionItem } from "./api/client";
+import { ADMITTED_REPLAY_INSTRUMENT_ID, api, type AttentionItem } from "./api/client";
 import {
   queryKeys,
   useAttentionQuery,
@@ -15,7 +15,8 @@ import { ExplanationDrawer } from "./components/ExplanationDrawer";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { LazyBoundary } from "./components/LazyBoundary";
 import { NavShell } from "./components/NavShell";
-import { NowPage } from "./components/NowPage";
+import { ModeNowRoute } from "./components/ModeNowRoute";
+import type { ScrubState } from "./components/demo-now/DemoNowPage";
 import { ApplicationBootstrap } from "./components/mode-session/ApplicationBootstrap";
 import { ModeEnvironmentBar } from "./components/mode-session/ModeEnvironmentBar";
 import { evaluateModeContext } from "./components/mode-session/modeAuthority";
@@ -23,6 +24,7 @@ import type { Mode } from "./components/mode-session/types";
 import "./styles/tokens.css";
 import "./styles/layout.css";
 import "./styles/mode-session.css";
+import "./styles/demo-now.css";
 
 const AssistantHistoryPage = lazy(() =>
   import("./components/AssistantHistoryPage").then((module) => ({
@@ -157,6 +159,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
   const [inspectorTab, setInspectorTab] = useState<string | null>(null);
   const [cursorIndex, setCursorIndex] = useState(0);
   const [maxIndex, setMaxIndex] = useState(0);
+  const [scrubState, setScrubState] = useState<ScrubState>("idle");
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [assistantBusy, setAssistantBusy] = useState(false);
@@ -175,6 +178,16 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
   const modeEvaluation = evaluateModeContext(mode, contextQuery.data?.as_of_context);
   const paperActionsPermitted =
     contextState === "ready" && modeEvaluation.paperActionsPermitted;
+  const attentionState = attentionQuery.isLoading
+    ? "loading"
+    : attentionQuery.error || !attentionQuery.data
+      ? "error"
+      : "ready";
+  const replayState = replaySessionQuery.isLoading
+    ? "loading"
+    : replaySessionQuery.error || !replaySessionQuery.data
+      ? "error"
+      : "ready";
 
   useEffect(() => {
     if (replaySessionQuery.data) {
@@ -245,10 +258,16 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
   };
 
   const scrub = async (index: number) => {
-    await api.scrubReplay(index);
-    setCursorIndex(index);
-    setMaxIndex(Math.max(maxIndex, index));
-    await refreshAll();
+    setScrubState("pending");
+    try {
+      await api.scrubReplay(index);
+      setCursorIndex(index);
+      setMaxIndex(Math.max(maxIndex, index));
+      await refreshAll();
+      setScrubState("idle");
+    } catch {
+      setScrubState("error");
+    }
   };
 
   const submitAssistantPrompt = async (prompt: string) => {
@@ -294,16 +313,24 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
             <Route
               path="/"
               element={
-                <NowPage
+                <ModeNowRoute
+                  mode={mode}
                   items={attentionQuery.data?.items ?? []}
                   tierSummary={attentionQuery.data?.tier_summary}
+                  attentionState={attentionState}
+                  replayState={replayState}
+                  cursorIndex={cursorIndex}
+                  eventCount={replaySessionQuery.data?.event_count}
+                  scrubState={scrubState}
+                  onScrub={(index) => {
+                    void scrub(index);
+                  }}
+                  onOpenTimeline={() => navigate(`/workspace/${ADMITTED_REPLAY_INSTRUMENT_ID}`)}
                   onWhy={openExplain}
                   onExplain={openExplain}
                   onInspect={openInspect}
                   onOpenWorkspace={(item) => {
-                    if (item.instrument_id) {
-                      navigate(`/workspace/${item.instrument_id}`);
-                    }
+                    if (item.instrument_id) navigate(`/workspace/${item.instrument_id}`);
                   }}
                 />
               }
