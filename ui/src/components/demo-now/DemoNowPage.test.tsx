@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { AttentionItem, PaperPortfolioResponse } from "../../api/client";
+import demoNowCss from "../../styles/demo-now.css?raw";
 import { DemoNowPage, type DemoNowPageProps } from "./DemoNowPage";
 
 const attention: AttentionItem = {
@@ -94,5 +95,16 @@ describe("Demo Now layout structure", () => {
     expect(document.querySelector(".demo-portfolio-panel")).toBeTruthy();
     expect(document.querySelector(".demo-attention-panel")).toBeTruthy();
     expect(document.querySelector(".demo-inspect-panel")).toBeTruthy();
+  });
+});
+
+describe("Demo Now visual accessibility contract", () => {
+  it("keeps targets, focus, responsive, reduced-motion, and forced-color rules explicit", () => {
+    expect(demoNowCss).toContain("min-height: 44px");
+    expect(demoNowCss).toContain(":focus-visible");
+    expect(demoNowCss).toContain("@media (max-width: 980px)");
+    expect(demoNowCss).toContain("@media (max-width: 720px)");
+    expect(demoNowCss).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(demoNowCss).toContain("@media (forced-colors: active)");
   });
 });
