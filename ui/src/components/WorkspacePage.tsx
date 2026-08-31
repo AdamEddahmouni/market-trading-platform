@@ -20,6 +20,7 @@ import { OrderTicket } from "./paper/OrderTicket";
 import { ExecutionTracePanel } from "./paper/ExecutionTracePanel";
 import { canUsePaperActions } from "./mode-session/modeAuthority";
 import type { Mode } from "./mode-session/types";
+import type { PaperOrderDraft } from "./paper-now/paperOrderDraft";
 
 type Bar = {
   time: string;
@@ -32,6 +33,7 @@ type Bar = {
 type Props = {
   mode: Mode;
   paperActionsPermitted: boolean;
+  initialPaperOrderDraft?: PaperOrderDraft;
   instrumentId: string;
   bars: Bar[];
   features: Array<{ feature_id: string; value: string; epistemic_class: string }>;
@@ -65,6 +67,7 @@ function formatDataHealthLabel(context: { data_mode?: string; data_provider?: st
 export function WorkspacePage({
   mode,
   paperActionsPermitted,
+  initialPaperOrderDraft,
   instrumentId,
   bars,
   features,
@@ -208,6 +211,7 @@ export function WorkspacePage({
         {portfolio && paperActionsAvailable ? (
           <OrderTicket
             symbol={instrumentId}
+            initialDraft={initialPaperOrderDraft}
             executionAuthority={portfolio.account.execution_authority}
             executionMode={portfolio.account.execution_mode}
             dataMode={portfolio.account.data_mode}

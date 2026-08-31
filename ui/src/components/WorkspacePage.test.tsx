@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mode } from "./mode-session/types";
+import type { PaperOrderDraft } from "./paper-now/paperOrderDraft";
 import { WorkspacePage } from "./WorkspacePage";
 
 const portfolio = {
@@ -39,7 +40,7 @@ vi.mock("./live/LiveMarketPanel", () => ({
   LiveMarketPanel: () => null,
 }));
 
-function renderPage(mode: Mode, paperActionsPermitted: boolean) {
+function renderPage(mode: Mode, paperActionsPermitted: boolean, initialPaperOrderDraft?: PaperOrderDraft) {
   const client = new QueryClient();
   return render(
     <QueryClientProvider client={client}>
@@ -47,6 +48,7 @@ function renderPage(mode: Mode, paperActionsPermitted: boolean) {
         <WorkspacePage
           mode={mode}
           paperActionsPermitted={paperActionsPermitted}
+          initialPaperOrderDraft={initialPaperOrderDraft}
           instrumentId="BIYA"
           bars={[]}
           features={[]}
@@ -92,5 +94,18 @@ describe("WorkspacePage mode restrictions", () => {
     renderPage("PAPER", true);
 
     expect(screen.getByText("Order ticket")).toBeInTheDocument();
+  });
+
+  it("passes an accepted draft into the authorized Paper ticket", async () => {
+    renderPage("PAPER", true, {
+      version: 1,
+      instrumentId: "BIYA",
+      side: "SELL",
+      quantity: 12,
+      orderType: "MARKET",
+    });
+
+    expect(await screen.findByDisplayValue("12")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "SELL" })).toHaveAttribute("aria-pressed", "true");
   });
 });

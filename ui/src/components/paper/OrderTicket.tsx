@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiRequestError } from "../../api/fetchJson";
 import {
   useOpenPaperSessionMutation,
@@ -6,7 +6,13 @@ import {
   usePreviewPaperOrderMutation,
   useSubmitPaperOrderMutation,
 } from "../../api/hooks";
-import type { PaperOrderPreviewResponse } from "../../api/schemas";
+import type { PaperOrderPreviewResponse, PaperOrderRequest } from "../../api/schemas";
+import {
+  buildPaperOrderRequest,
+  createPaperOrderDraft,
+  createPaperPreviewAttemptKey,
+  type PaperOrderDraft,
+} from "../paper-now/paperOrderDraft";
 
 type OrderTicketProps = {
   symbol: string | null;
@@ -14,6 +20,7 @@ type OrderTicketProps = {
   executionMode: string;
   dataMode: string;
   maxOrderShares: number;
+  initialDraft?: PaperOrderDraft;
   contextLanes?: Array<{ lane: string; relevance: string; summary: string }>;
   onSubmitted?: (intentId?: string) => void;
 };
@@ -24,25 +31,24 @@ export function OrderTicket({
   executionMode,
   dataMode,
   maxOrderShares,
+  initialDraft,
   contextLanes = [],
   onSubmitted,
 }: OrderTicketProps) {
-  const [side, setSide] = useState<"BUY" | "SELL">("BUY");
-  const [quantity, setQuantity] = useState(1);
+  const [side, setSide] = useState<"BUY" | "SELL">(() => initialDraft?.side ?? "BUY");
+  const [quantity, setQuantity] = useState(() => initialDraft?.quantity ?? 1);
   const [explicitSymbol, setExplicitSymbol] = useState("");
   const [preview, setPreview] = useState<PaperOrderPreviewResponse["preview"] | null>(null);
+  const [confirmedRequest, setConfirmedRequest] = useState<PaperOrderRequest | null>(null);
+  const [previewOrigin, setPreviewOrigin] = useState<"manual" | "workspace" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const automaticPreviewAttempted = useRef(false);
 
   const previewMutation = usePreviewPaperOrderMutation();
   const submitMutation = useSubmitPaperOrderMutation();
   const sessionMutation = useOpenPaperSessionMutation();
   const portfolioQuery = usePaperPortfolioQuery();
-
-  const idempotencyKey = useMemo(
-    () => `ticket-${side}-${quantity}-${Date.now()}`,
-    [side, quantity, preview],
-  );
 
   const authorized =
     (executionAuthority === "AUTHORIZED" || executionAuthority === "PAPER_ONLY") &&
@@ -56,49 +62,57 @@ export function OrderTicket({
     ticketSymbol;
   const canPreview = Boolean(ticketSymbol) && quantity > 0 && quantity <= maxOrderShares;
 
-  async function handlePreview() {
-    if (!ticketSymbol) {
-      setError("SELECT AN INSTRUMENT");
+  function invalidatePreview() {
+    setPreview(null);
+    setConfirmedRequest(null);
+    setPreviewOrigin(null);
+    setError(null);
+  }
+
+  async function performPreview(origin: "manual" | "workspace") {
+    const currentDraft = createPaperOrderDraft({
+      instrumentId: ticketSymbol,
+      side,
+      quantity,
+      maxOrderShares,
+      sourceAttentionId: initialDraft?.sourceAttentionId,
+    });
+    if (!currentDraft) {
+      setError(ticketSymbol ? "ENTER A VALID QUANTITY" : "SELECT AN INSTRUMENT");
       return;
     }
+    const request = buildPaperOrderRequest(currentDraft, createPaperPreviewAttemptKey("workspace-ticket"));
     setError(null);
     setPreview(null);
+    setConfirmedRequest(null);
+    setPreviewOrigin(null);
     try {
-      const response = await previewMutation.mutateAsync({
-        side,
-        quantity,
-        order_type: "MARKET",
-        instrument_id: ticketSymbol,
-        symbol: ticketSymbol,
-        client_order_id: idempotencyKey,
-        idempotency_key: idempotencyKey,
-      });
+      const response = await previewMutation.mutateAsync(request);
       setPreview(response.preview);
+      setConfirmedRequest(request);
+      setPreviewOrigin(origin);
     } catch (err) {
       setError(err instanceof ApiRequestError ? `${err.code}: ${err.message}` : "Preview failed");
     }
   }
 
+  useEffect(() => {
+    if (!initialDraft || !authorized || automaticPreviewAttempted.current) return;
+    if (!createPaperOrderDraft({ instrumentId: initialDraft.instrumentId, side: initialDraft.side, quantity: initialDraft.quantity, maxOrderShares, sourceAttentionId: initialDraft.sourceAttentionId })) return;
+    automaticPreviewAttempted.current = true;
+    void performPreview("workspace");
+  }, [authorized, initialDraft, maxOrderShares]);
+
   async function handleSubmit() {
-    if (!preview || preview.risk_status !== "PASS") return;
-    if (!previewInstrument) {
-      setError("SELECT AN INSTRUMENT");
-      return;
-    }
+    if (!preview || preview.risk_status !== "PASS" || !confirmedRequest) return;
     setSubmitting(true);
     setError(null);
     try {
-      const response = await submitMutation.mutateAsync({
-        side,
-        quantity,
-        order_type: "MARKET",
-        instrument_id: previewInstrument,
-        symbol: previewInstrument,
-        client_order_id: idempotencyKey,
-        idempotency_key: idempotencyKey,
-      });
+      const response = await submitMutation.mutateAsync(confirmedRequest);
       onSubmitted?.(response.submission.intent_id);
       setPreview(null);
+      setConfirmedRequest(null);
+      setPreviewOrigin(null);
     } catch (err) {
       setError(err instanceof ApiRequestError ? `${err.code}: ${err.message}` : "Submit failed");
     } finally {
@@ -150,7 +164,10 @@ export function OrderTicket({
         <input
           aria-label="Order ticket symbol"
           value={explicitSymbol}
-          onChange={(event) => setExplicitSymbol(event.target.value.toUpperCase())}
+          onChange={(event) => {
+            invalidatePreview();
+            setExplicitSymbol(event.target.value.toUpperCase());
+          }}
           placeholder={symbol ?? "SELECT AN INSTRUMENT"}
         />
       </label>
@@ -163,14 +180,22 @@ export function OrderTicket({
           <button
             type="button"
             className={side === "BUY" ? "active long" : ""}
-            onClick={() => setSide("BUY")}
+            aria-pressed={side === "BUY"}
+            onClick={() => {
+              invalidatePreview();
+              setSide("BUY");
+            }}
           >
             BUY
           </button>
           <button
             type="button"
             className={side === "SELL" ? "active short" : ""}
-            onClick={() => setSide("SELL")}
+            aria-pressed={side === "SELL"}
+            onClick={() => {
+              invalidatePreview();
+              setSide("SELL");
+            }}
           >
             SELL
           </button>
@@ -182,7 +207,10 @@ export function OrderTicket({
             min={1}
             max={maxOrderShares}
             value={quantity}
-            onChange={(event) => setQuantity(Number(event.target.value))}
+            onChange={(event) => {
+              invalidatePreview();
+              setQuantity(Number(event.target.value));
+            }}
           />
         </label>
       </div>
@@ -202,13 +230,13 @@ export function OrderTicket({
       ) : null}
 
       <div className="order-ticket-actions">
-        <button type="button" onClick={() => void handlePreview()} disabled={!canPreview || previewMutation.isPending}>
+        <button type="button" onClick={() => void performPreview("manual")} disabled={!canPreview || previewMutation.isPending}>
           Preview
         </button>
         <button
           type="button"
           onClick={() => void handleSubmit()}
-          disabled={!authorized || !preview || preview.risk_status !== "PASS" || submitting}
+          disabled={!authorized || !preview || preview.risk_status !== "PASS" || !confirmedRequest || submitting}
         >
           Submit
         </button>
@@ -218,7 +246,7 @@ export function OrderTicket({
 
       {preview ? (
         <div className={`order-preview ${preview.risk_status === "PASS" ? "pass" : "blocked"}`}>
-          <h3>Preview</h3>
+          <h3>{previewOrigin === "workspace" ? "Revalidated in workspace" : "Preview"}</h3>
           <p>
             Risk: <strong>{preview.risk_status}</strong> ({preview.decision})
           </p>

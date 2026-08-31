@@ -1,8 +1,10 @@
-import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useNavigationType, useParams } from "react-router-dom";
 import { ADMITTED_REPLAY_INSTRUMENT_ID } from "../api/client";
 import { useInstrumentQuery, useWorkspaceSqueezeQuery } from "../api/hooks";
 import { WorkspacePage } from "./WorkspacePage";
 import type { Mode } from "./mode-session/types";
+import { parsePaperOrderDraft } from "./paper-now/paperOrderDraft";
 
 type Props = {
   mode: Mode;
@@ -27,7 +29,17 @@ export function WorkspaceRoute({
 }: Props) {
   const { symbol } = useParams<{ symbol: string }>();
   const instrumentId = symbol?.toUpperCase() ?? ADMITTED_REPLAY_INSTRUMENT_ID;
+  const location = useLocation();
+  const navigate = useNavigate();
+  const navigationType = useNavigationType();
+  const [initialPaperOrderDraft] = useState(() =>
+    navigationType === "PUSH" ? parsePaperOrderDraft(location.state, instrumentId) : undefined,
+  );
   const replayChartAvailable = instrumentId === ADMITTED_REPLAY_INSTRUMENT_ID;
+
+  useEffect(() => {
+    if (location.state !== null) navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
 
   const instrumentQuery = useInstrumentQuery(instrumentId, replayChartAvailable);
   const squeezeQuery = useWorkspaceSqueezeQuery(instrumentId);
@@ -47,6 +59,7 @@ export function WorkspaceRoute({
     <WorkspacePage
       mode={mode}
       paperActionsPermitted={paperActionsPermitted}
+      initialPaperOrderDraft={initialPaperOrderDraft}
       instrumentId={instrumentId}
       bars={instrumentQuery.data?.bars ?? []}
       features={instrumentQuery.data?.features ?? []}
