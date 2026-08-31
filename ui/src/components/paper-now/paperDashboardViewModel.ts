@@ -6,13 +6,23 @@ export type LimitUtilization = { raw: number; limit: number; percent: number; av
 
 const HEALTHY = new Set(["PASS", "HEALTHY", "CURRENT", "AVAILABLE"]);
 const RECONCILED = new Set(["PASS", "HEALTHY", "CLEAN", "RECONCILED", "INTERNAL_AUTHORITATIVE"]);
+const HEALTHY_RISK_DECISION = new Set(["PASS", "ALLOW", "APPROVE", "RESIZE"]);
 const PROBLEM_ORDER_STATE = /(BLOCKED|REJECTED|WAITING|FAILED)/;
 
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
+}
+
 function recordString(value: unknown, keys: string[]): string | undefined {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
-  const row = value as Record<string, unknown>;
+  const row = asRecord(value);
+  if (!row) return undefined;
   for (const key of keys) if (typeof row[key] === "string" && row[key]) return row[key] as string;
   return undefined;
+}
+
+function recordStrings(value: unknown, key: string): string[] {
+  const candidate = asRecord(value)?.[key];
+  return Array.isArray(candidate) ? candidate.filter((item): item is string => typeof item === "string" && item.length > 0) : [];
 }
 
 export function sortPaperCandidates(items: AttentionItem[]): AttentionItem[] {
@@ -60,8 +70,17 @@ export function derivePaperExceptions(portfolio: PaperPortfolioResponse): PaperE
   if (!HEALTHY.has(health)) add({ code: `DATA_${health}`, severity: 0, message: `Data health is ${health}.`, detail: portfolio.data_health.detail });
   const reconciliation = (portfolio.reconciliation_status ?? portfolio.risk.reconciliation_status).toUpperCase();
   if (!RECONCILED.has(reconciliation)) add({ code: `RECONCILIATION_${reconciliation}`, severity: 0, message: `Reconciliation is ${reconciliation}.` });
-  const decision = recordString(portfolio.risk.last_decision, ["risk_status", "decision", "status"]);
-  if (decision && decision.toUpperCase() !== "PASS") add({ code: `RISK_${decision.toUpperCase()}`, severity: 1, message: `Last risk decision: ${decision}.`, detail: recordString(portfolio.risk.last_decision, ["reason_code", "reason", "decision_code"]) });
+  const lastDecision = asRecord(portfolio.risk.last_decision);
+  const decisionPayload = asRecord(lastDecision?.decision) ?? lastDecision;
+  const decision = recordString(decisionPayload, ["risk_status", "decision", "status"]);
+  const normalizedDecision = decision?.toUpperCase();
+  const decisionReasons = recordStrings(decisionPayload, "reason_codes");
+  if (decision && normalizedDecision && !HEALTHY_RISK_DECISION.has(normalizedDecision)) add({
+    code: `RISK_${normalizedDecision}`,
+    severity: 1,
+    message: `Last risk decision: ${decision}.`,
+    detail: decisionReasons.length ? decisionReasons.join(", ") : recordString(decisionPayload, ["reason_code", "reason", "decision_code"]),
+  });
   portfolio.orders.forEach((order) => {
     const state = recordString(order, ["state", "status", "order_state"]);
     if (state && PROBLEM_ORDER_STATE.test(state.toUpperCase())) add({ code: `ORDER_${state.toUpperCase()}`, severity: 1, message: `Order ${recordString(order, ["order_id", "id"]) ?? "state"}: ${state}.` });

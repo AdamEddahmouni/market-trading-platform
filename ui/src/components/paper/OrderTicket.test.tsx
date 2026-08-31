@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PaperOrderPreviewResponse } from "../../api/schemas";
 import type { PaperOrderDraft } from "../paper-now/paperOrderDraft";
@@ -67,6 +67,19 @@ describe("OrderTicket workspace revalidation", () => {
     renderTicket(validDraft);
     expect(await screen.findByRole("heading", { name: "Revalidated in workspace" })).toBeInTheDocument();
     fireEvent.change(screen.getByRole("spinbutton", { name: "Quantity" }), { target: { value: "13" } });
+    expect(screen.queryByRole("heading", { name: "Revalidated in workspace" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
+  });
+
+  it("ignores an in-flight workspace preview after the visible order changes", async () => {
+    let resolvePreview!: (value: PaperOrderPreviewResponse) => void;
+    mocks.previewPaperOrder.mockReturnValueOnce(new Promise((resolve) => { resolvePreview = resolve; }));
+    renderTicket(validDraft);
+    await waitFor(() => expect(mocks.previewPaperOrder).toHaveBeenCalledTimes(1));
+
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Quantity" }), { target: { value: "13" } });
+    await act(async () => { resolvePreview(previewResponse({ risk_status: "PASS", decision: "ALLOW" })); });
+
     expect(screen.queryByRole("heading", { name: "Revalidated in workspace" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
   });

@@ -31,13 +31,13 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
   const [quantityText, setQuantityText] = useState("");
   const [confirmedPreview, setConfirmedPreview] = useState<ConfirmedPreview | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
-  const currentFingerprintRef = useRef("");
+  const previewGeneration = useRef(0);
   const previewMutation = usePreviewPaperOrderMutation();
 
   useEffect(() => {
     const next = nextPaperCandidateId(items, selectedAttentionId);
     if (next !== selectedAttentionId) {
-      currentFingerprintRef.current = "";
+      previewGeneration.current += 1;
       setConfirmedPreview(null);
       setPreviewError(null);
       setSelectedAttentionId(next);
@@ -48,19 +48,26 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
   const authorized = Boolean(paperActionsPermitted && portfolio && portfolio.account.execution_mode === "INTERNAL_SIMULATION" && portfolio.account.execution_authority === "PAPER_ONLY");
   const draft = selected?.instrument_id && portfolio ? createPaperOrderDraft({ instrumentId: selected.instrument_id, side, quantity, maxOrderShares: portfolio.risk.limits.max_order_shares, sourceAttentionId: selected.attention_id }) : null;
   const fingerprint = draft ? paperOrderDraftFingerprint(draft) : "";
-  currentFingerprintRef.current = fingerprint;
-  const canContinue = Boolean(draft && confirmedPreview?.fingerprint === fingerprint && confirmedPreview.value.risk_status === "PASS");
+  const canContinue = Boolean(authorized && portfolioState === "ready" && draft && confirmedPreview?.fingerprint === fingerprint && confirmedPreview.value.risk_status === "PASS");
 
-  function invalidatePreview() { currentFingerprintRef.current = ""; setConfirmedPreview(null); setPreviewError(null); }
+  useEffect(() => {
+    if (authorized && portfolioState === "ready") return;
+    previewGeneration.current += 1;
+    setConfirmedPreview(null);
+    setPreviewError(null);
+  }, [authorized, portfolioState]);
+
+  function invalidatePreview() { previewGeneration.current += 1; setConfirmedPreview(null); setPreviewError(null); }
   async function previewDraft() {
     if (!draft) return;
+    const generation = ++previewGeneration.current;
     const requestFingerprint = paperOrderDraftFingerprint(draft);
     setPreviewError(null); setConfirmedPreview(null);
     try {
       const response = await previewMutation.mutateAsync(buildPaperOrderRequest(draft, createPaperPreviewAttemptKey("paper-now")));
-      if (currentFingerprintRef.current === requestFingerprint) setConfirmedPreview({ fingerprint: requestFingerprint, value: response.preview });
+      if (previewGeneration.current === generation) setConfirmedPreview({ fingerprint: requestFingerprint, value: response.preview });
     } catch (error) {
-      if (currentFingerprintRef.current === requestFingerprint) setPreviewError(error instanceof ApiRequestError ? `${error.code}: ${error.message}` : "Preview failed. Retry when ready.");
+      if (previewGeneration.current === generation) setPreviewError(error instanceof ApiRequestError ? `${error.code}: ${error.message}` : "Preview failed. Retry when ready.");
     }
   }
 

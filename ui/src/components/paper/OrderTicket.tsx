@@ -44,6 +44,7 @@ export function OrderTicket({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const automaticPreviewAttempted = useRef(false);
+  const previewGeneration = useRef(0);
 
   const previewMutation = usePreviewPaperOrderMutation();
   const submitMutation = useSubmitPaperOrderMutation();
@@ -63,6 +64,7 @@ export function OrderTicket({
   const canPreview = Boolean(ticketSymbol) && quantity > 0 && quantity <= maxOrderShares;
 
   function invalidatePreview() {
+    previewGeneration.current += 1;
     setPreview(null);
     setConfirmedRequest(null);
     setPreviewOrigin(null);
@@ -81,6 +83,7 @@ export function OrderTicket({
       setError(ticketSymbol ? "ENTER A VALID QUANTITY" : "SELECT AN INSTRUMENT");
       return;
     }
+    const generation = ++previewGeneration.current;
     const request = buildPaperOrderRequest(currentDraft, createPaperPreviewAttemptKey("workspace-ticket"));
     setError(null);
     setPreview(null);
@@ -88,10 +91,12 @@ export function OrderTicket({
     setPreviewOrigin(null);
     try {
       const response = await previewMutation.mutateAsync(request);
+      if (previewGeneration.current !== generation) return;
       setPreview(response.preview);
       setConfirmedRequest(request);
       setPreviewOrigin(origin);
     } catch (err) {
+      if (previewGeneration.current !== generation) return;
       setError(err instanceof ApiRequestError ? `${err.code}: ${err.message}` : "Preview failed");
     }
   }

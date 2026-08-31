@@ -49,6 +49,25 @@ describe("Paper dashboard view model", () => {
     expect(exceptions.map((item) => item.message).join(" ")).not.toContain("mystery");
   });
 
+  it("derives a blocked exception from the ledger's nested last-decision payload", () => {
+    const payload = paperPortfolio({
+      risk: {
+        kill_switch_active: false,
+        open_order_count: 0,
+        reconciliation_status: "RECONCILED",
+        limits: { max_open_orders: 5, max_order_shares: 100, max_position_shares: 500 },
+        last_decision: { decision: { decision: "BLOCK", reason_codes: ["POSITION_LIMIT", "ORDER_LIMIT"] } },
+      },
+    });
+
+    expect(derivePaperExceptions(payload)).toContainEqual({
+      code: "RISK_BLOCK",
+      severity: 1,
+      message: "Last risk decision: BLOCK.",
+      detail: "POSITION_LIMIT, ORDER_LIMIT",
+    });
+  });
+
   it("returns no exceptions for explicitly healthy states", () => {
     expect(derivePaperExceptions(paperPortfolio({ positions: [] }))).toEqual([]);
   });

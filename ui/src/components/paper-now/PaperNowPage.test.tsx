@@ -185,6 +185,35 @@ describe("PaperNowPage", () => {
     expect(screen.getByText("11 sh")).toBeInTheDocument();
   });
 
+  it("ignores a stale preview after the draft changes away and back", async () => {
+    let resolvePreview!: (value: PaperOrderPreviewResponse) => void;
+    mocks.previewPaperOrder.mockReturnValueOnce(new Promise((resolve) => { resolvePreview = resolve; }));
+    renderPage();
+    completeDraft("10");
+    fireEvent.click(screen.getByRole("button", { name: "Preview order" }));
+    fireEvent.click(screen.getByRole("radio", { name: /NVDA candidate/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /BIYA candidate/ }));
+
+    await act(async () => { resolvePreview(previewResponse({ projected_position_shares: 10 })); });
+
+    expect(screen.queryByRole("heading", { name: "Preview result" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Open workspace and revalidate" })).not.toBeInTheDocument();
+  });
+
+  it("withdraws continuation when current Paper authority is revoked after PASS", async () => {
+    mocks.previewPaperOrder.mockResolvedValueOnce(previewResponse());
+    const props = pageProps();
+    const view = render(<MemoryRouter><PaperNowPage {...props} /></MemoryRouter>);
+    completeDraft();
+    fireEvent.click(screen.getByRole("button", { name: "Preview order" }));
+    expect(await screen.findByRole("button", { name: "Open workspace and revalidate" })).toBeInTheDocument();
+
+    view.rerender(<MemoryRouter><PaperNowPage {...props} portfolio={paperPortfolio({ account: { execution_authority: "NONE" } })} /></MemoryRouter>);
+
+    expect(screen.queryByRole("button", { name: "Open workspace and revalidate" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Preview order" })).toBeDisabled();
+  });
+
   it("preserves the draft and offers Retry after preview failure", async () => {
     mocks.previewPaperOrder.mockRejectedValueOnce(new Error("offline"));
     renderPage();
@@ -208,6 +237,8 @@ describe("Paper Command visual accessibility contract", () => {
   it("defines the Decision Canvas layout and accessibility media rules", () => {
     expect(paperNowCss).toContain("grid-template-columns: minmax(260px, 0.9fr) minmax(340px, 1.35fr) minmax(250px, 0.8fr)");
     expect(paperNowCss).toContain("min-height: 44px");
+    expect(paperNowCss).toContain(".paper-now-page a { display: inline-flex");
+    expect(paperNowCss).toContain(".paper-preview-result h3:focus { outline: 3px solid var(--paper-accent)");
     expect(paperNowCss).toContain(":focus-visible");
     expect(paperNowCss).toContain("@media (max-width: 1080px)");
     expect(paperNowCss).toContain("@media (max-width: 720px)");
