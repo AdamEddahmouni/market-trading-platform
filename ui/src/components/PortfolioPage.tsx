@@ -6,6 +6,8 @@ import {
 } from "../api/hooks";
 import { ExecutionTracePanel } from "./paper/ExecutionTracePanel";
 import { OrderTicket } from "./paper/OrderTicket";
+import { canUsePaperActions } from "./mode-session/modeAuthority";
+import type { Mode } from "./mode-session/types";
 
 type StoredSession = {
   session_id: string;
@@ -16,7 +18,12 @@ type StoredSession = {
   execution_mode?: string;
 };
 
-export function PortfolioPage() {
+type Props = {
+  mode: Mode;
+  paperActionsPermitted: boolean;
+};
+
+export function PortfolioPage({ mode, paperActionsPermitted }: Props) {
   const portfolioQuery = usePaperPortfolioQuery();
   const openSession = useOpenPaperSessionMutation();
   const closeSession = useClosePaperSessionMutation();
@@ -54,6 +61,7 @@ export function PortfolioPage() {
   const data = portfolioQuery.data;
   const { account, positions, orders, fills, risk, data_health, session, pnl, exposure } = data;
   const symbol = data.active_instrument ?? null;
+  const actionEligible = canUsePaperActions(mode, paperActionsPermitted, account);
 
   return (
     <section className="page portfolio-page">
@@ -71,36 +79,45 @@ export function PortfolioPage() {
             {session.starting_cash_minor ? `${session.starting_cash_minor} minor` : "UNAVAILABLE"}
           </p>
         ) : null}
-        <div className="live-actions">
-          <button
-            type="button"
-            onClick={() => void closeSession.mutateAsync()}
-            disabled={closeSession.isPending}
-          >
-            Archive session
-          </button>
-          <button
-            type="button"
-            onClick={() => void openSession.mutateAsync(symbol ?? undefined)}
-            disabled={openSession.isPending}
-          >
-            New Paper Session
-          </button>
-        </div>
+        {actionEligible ? (
+          <div className="live-actions">
+            <button
+              type="button"
+              onClick={() => void closeSession.mutateAsync()}
+              disabled={closeSession.isPending}
+            >
+              Archive session
+            </button>
+            <button
+              type="button"
+              onClick={() => void openSession.mutateAsync(symbol ?? undefined)}
+              disabled={openSession.isPending}
+            >
+              New Paper Session
+            </button>
+          </div>
+        ) : null}
       </header>
 
       <div className="portfolio-layout">
         <div className="portfolio-main">
-          <OrderTicket
-            symbol={symbol}
-            executionAuthority={account.execution_authority}
-            executionMode={account.execution_mode}
-            dataMode={account.data_mode}
-            maxOrderShares={risk.limits.max_order_shares}
-            onSubmitted={(intentId) => {
-              if (intentId) setTraceIntentId(intentId);
-            }}
-          />
+          {actionEligible ? (
+            <OrderTicket
+              symbol={symbol}
+              executionAuthority={account.execution_authority}
+              executionMode={account.execution_mode}
+              dataMode={account.data_mode}
+              maxOrderShares={risk.limits.max_order_shares}
+              onSubmitted={(intentId) => {
+                if (intentId) setTraceIntentId(intentId);
+              }}
+            />
+          ) : (
+            <aside className="panel mode-restriction-note" role="note">
+              <strong>{mode} is read-only here.</strong>
+              <p>Order and paper-session controls are unavailable for this context.</p>
+            </aside>
+          )}
 
           <div className="portfolio-grid">
             <section className="panel account-panel">

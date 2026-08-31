@@ -2,8 +2,11 @@ import { useParams } from "react-router-dom";
 import { ADMITTED_REPLAY_INSTRUMENT_ID } from "../api/client";
 import { useInstrumentQuery, useWorkspaceSqueezeQuery } from "../api/hooks";
 import { WorkspacePage } from "./WorkspacePage";
+import type { Mode } from "./mode-session/types";
 
 type Props = {
+  mode: Mode;
+  paperActionsPermitted: boolean;
   onScrub: (index: number) => void;
   onExplain: (ref: string) => void;
   onInspect: (ref: string) => void;
@@ -12,7 +15,16 @@ type Props = {
   maxIndex: number;
 };
 
-export function WorkspaceRoute({ onScrub, onExplain, onInspect, onOpenSqueezeHistory, cursorIndex, maxIndex }: Props) {
+export function WorkspaceRoute({
+  mode,
+  paperActionsPermitted,
+  onScrub,
+  onExplain,
+  onInspect,
+  onOpenSqueezeHistory,
+  cursorIndex,
+  maxIndex,
+}: Props) {
   const { symbol } = useParams<{ symbol: string }>();
   const instrumentId = symbol?.toUpperCase() ?? ADMITTED_REPLAY_INSTRUMENT_ID;
   const replayChartAvailable = instrumentId === ADMITTED_REPLAY_INSTRUMENT_ID;
@@ -33,6 +45,8 @@ export function WorkspaceRoute({ onScrub, onExplain, onInspect, onOpenSqueezeHis
 
   return (
     <WorkspacePage
+      mode={mode}
+      paperActionsPermitted={paperActionsPermitted}
       instrumentId={instrumentId}
       bars={instrumentQuery.data?.bars ?? []}
       features={instrumentQuery.data?.features ?? []}

@@ -18,6 +18,8 @@ import { WhatMattersNowPanel } from "./workspace/WhatMattersNowPanel";
 import { WorkspaceEvidenceDrawer } from "./workspace/WorkspaceEvidenceDrawer";
 import { OrderTicket } from "./paper/OrderTicket";
 import { ExecutionTracePanel } from "./paper/ExecutionTracePanel";
+import { canUsePaperActions } from "./mode-session/modeAuthority";
+import type { Mode } from "./mode-session/types";
 
 type Bar = {
   time: string;
@@ -28,6 +30,8 @@ type Bar = {
 };
 
 type Props = {
+  mode: Mode;
+  paperActionsPermitted: boolean;
   instrumentId: string;
   bars: Bar[];
   features: Array<{ feature_id: string; value: string; epistemic_class: string }>;
@@ -59,6 +63,8 @@ function formatDataHealthLabel(context: { data_mode?: string; data_provider?: st
 }
 
 export function WorkspacePage({
+  mode,
+  paperActionsPermitted,
   instrumentId,
   bars,
   features,
@@ -88,6 +94,11 @@ export function WorkspacePage({
   const isLive = context?.as_of_context.data_mode === "LIVE_OBSERVATIONAL";
   const dataLabel = formatDataHealthLabel(context?.as_of_context);
   const healthState = context?.quality_summary.state ?? "UNKNOWN";
+  const paperActionsAvailable = canUsePaperActions(
+    mode,
+    paperActionsPermitted,
+    portfolio?.account,
+  );
 
   useEffect(() => {
     void fetch("/operator/workspace", {
@@ -194,7 +205,7 @@ export function WorkspacePage({
       <LiveMarketPanel instrumentId={instrumentId} />
 
       <div className="workspace-paper-row">
-        {portfolio ? (
+        {portfolio && paperActionsAvailable ? (
           <OrderTicket
             symbol={instrumentId}
             executionAuthority={portfolio.account.execution_authority}
@@ -206,8 +217,13 @@ export function WorkspacePage({
               if (intentId) setTraceIntentId(intentId);
             }}
           />
+        ) : portfolio ? (
+          <aside className="panel mode-restriction-note" role="note">
+            <strong>{mode} is read-only here.</strong>
+            <p>Order and paper-session controls are unavailable for this context.</p>
+          </aside>
         ) : null}
-        {traceIntentId ? (
+        {paperActionsAvailable && traceIntentId ? (
           <ExecutionTracePanel
             intentId={traceIntentId}
             onClose={() => setTraceIntentId(undefined)}

@@ -18,6 +18,7 @@ import { NavShell } from "./components/NavShell";
 import { NowPage } from "./components/NowPage";
 import { ApplicationBootstrap } from "./components/mode-session/ApplicationBootstrap";
 import { ModeEnvironmentBar } from "./components/mode-session/ModeEnvironmentBar";
+import { evaluateModeContext } from "./components/mode-session/modeAuthority";
 import type { Mode } from "./components/mode-session/types";
 import "./styles/tokens.css";
 import "./styles/layout.css";
@@ -171,6 +172,9 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
     : contextQuery.error || !contextQuery.data
       ? "error"
       : "ready";
+  const modeEvaluation = evaluateModeContext(mode, contextQuery.data?.as_of_context);
+  const paperActionsPermitted =
+    contextState === "ready" && modeEvaluation.paperActionsPermitted;
 
   useEffect(() => {
     if (replaySessionQuery.data) {
@@ -311,6 +315,8 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
               path="/workspace/:symbol"
               element={
                 <WorkspaceRoute
+                  mode={mode}
+                  paperActionsPermitted={paperActionsPermitted}
                   cursorIndex={cursorIndex}
                   maxIndex={maxIndex}
                   onScrub={scrub}
@@ -412,7 +418,15 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
               }
             />
             <Route path="/research" element={<ResearchPage />} />
-            <Route path="/portfolio" element={<PortfolioPage />} />
+            <Route
+              path="/portfolio"
+              element={
+                <PortfolioPage
+                  mode={mode}
+                  paperActionsPermitted={paperActionsPermitted}
+                />
+              }
+            />
             <Route path="/live-canary" element={<LiveCanaryControlPlanePage />} />
             <Route path="/settings" element={<OperatorSettingsPage />} />
             <Route path="/diagnostics/provider" element={<ProviderHealthPanel />} />

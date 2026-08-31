@@ -1,10 +1,11 @@
 import type { AsOfContext } from "../../api/client";
 import type { Mode } from "./types";
 
-type ExecutionContext = Pick<
-  AsOfContext,
-  "data_mode" | "execution_mode" | "execution_authority"
->;
+type ExecutionContext = {
+  data_mode?: string;
+  execution_mode?: string;
+  execution_authority?: string;
+};
 
 export type ModeContextEvaluation = {
   status: "compatible" | "mismatch" | "unavailable";
