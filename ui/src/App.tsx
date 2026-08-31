@@ -427,7 +427,10 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
                 />
               }
             />
-            <Route path="/live-canary" element={<LiveCanaryControlPlanePage />} />
+            <Route
+              path="/live-canary"
+              element={<LiveCanaryControlPlanePage mode={mode} />}
+            />
             <Route path="/settings" element={<OperatorSettingsPage />} />
             <Route path="/diagnostics/provider" element={<ProviderHealthPanel />} />
             <Route path="/assistant/history" element={<AssistantHistoryPage />} />

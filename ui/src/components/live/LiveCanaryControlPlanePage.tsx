@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
+import type { Mode } from "../mode-session/types";
 
 type SnapshotPayload = {
   snapshot: {
@@ -59,20 +59,12 @@ async function fetchJson<T>(path: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-async function postJson<T>(path: string, body: Record<string, unknown>): Promise<T> {
-  const response = await fetch(path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
-  }
-  return response.json() as Promise<T>;
-}
+type Props = {
+  mode: Mode;
+};
 
-export function LiveCanaryControlPlanePage() {
-  const { data, refetch, isLoading, error } = useQuery({
+export function LiveCanaryControlPlanePage({ mode }: Props) {
+  const { data, isLoading, error } = useQuery({
     queryKey: ["canary-snapshot"],
     queryFn: () => fetchJson<SnapshotPayload>("/canary/snapshot"),
     refetchInterval: 15000,
@@ -82,26 +74,6 @@ export function LiveCanaryControlPlanePage() {
     queryFn: () => fetchJson<ReliabilityPayload>("/canary/reliability"),
     refetchInterval: 15000,
   });
-  const [commandStatus, setCommandStatus] = useState<string | null>(null);
-  const [authPreview, setAuthPreview] = useState<Record<string, unknown> | null>(null);
-
-  const activateKillSwitch = useCallback(async () => {
-    await postJson("/canary/command", {
-      command: "activate_kill_switch",
-      scope: "PROGRAM",
-      reason: "OPERATOR_ACTIVATED",
-      request_id: `ks-${Date.now()}`,
-    });
-    setCommandStatus("Kill switch activated — blocks new submissions; does not liquidate.");
-    void refetch();
-  }, [refetch]);
-
-  const loadAuthorizationPreview = useCallback(async () => {
-    const payload = await fetchJson<Record<string, unknown>>("/canary/authorization/preview");
-    setAuthPreview(payload);
-    setCommandStatus("Authorization preview loaded — review required before authorize.");
-  }, []);
-
   if (isLoading) {
     return <p className="loading">Loading live canary control plane…</p>;
   }
@@ -124,6 +96,9 @@ export function LiveCanaryControlPlanePage() {
           <span className="mode-label">PAPER TERMINAL:</span>
           <strong className="mode-paper">PAPER — INTERNAL SIMULATION ONLY</strong>
         </div>
+        <p className="live-observability-boundary">
+          {mode} workstation · Read-only operational observability
+        </p>
       </header>
 
       <section className="control-section">
@@ -164,10 +139,9 @@ export function LiveCanaryControlPlanePage() {
           <dt>Session</dt>
           <dd>{snap.kill_switch_session}</dd>
         </dl>
-        <button type="button" onClick={() => void activateKillSwitch()}>
-          Activate program kill switch
-        </button>
-        <p className="hint">Blocks new submissions. Does not automatically close existing positions.</p>
+        <p className="hint">
+          Reported state only. Execution controls are unavailable in the mode-aware workstation.
+        </p>
       </section>
 
       <section className="control-section">
@@ -263,17 +237,6 @@ export function LiveCanaryControlPlanePage() {
         <p className="hint">No generic ENABLE LIVE button. Authorization and confirmation remain separate.</p>
       </section>
 
-      <section className="control-section">
-        <h2>Authorization Review</h2>
-        <button type="button" onClick={() => void loadAuthorizationPreview()}>
-          Prepare session authorization preview
-        </button>
-        {authPreview?.authorization_review ? (
-          <pre className="review-panel">{JSON.stringify(authPreview.authorization_review, null, 2)}</pre>
-        ) : null}
-      </section>
-
-      {commandStatus ? <p className="command-status">{commandStatus}</p> : null}
     </div>
   );
 }

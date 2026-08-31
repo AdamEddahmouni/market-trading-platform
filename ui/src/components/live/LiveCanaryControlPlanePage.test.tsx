@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import type { Mode } from "../mode-session/types";
 import { LiveCanaryControlPlanePage } from "./LiveCanaryControlPlanePage";
 
 const snapshotPayload = {
@@ -65,20 +66,39 @@ describe("LiveCanaryControlPlanePage", () => {
     );
   });
 
-  it("renders without submitting orders", async () => {
-    const client = new QueryClient();
-    render(
-      <QueryClientProvider client={client}>
-        <MemoryRouter>
-          <LiveCanaryControlPlanePage />
-        </MemoryRouter>
-      </QueryClientProvider>,
-    );
-    expect(await screen.findByTestId("live-canary-control-plane")).toBeInTheDocument();
-    expect(screen.getByText(/REAL MONEY/i)).toBeInTheDocument();
-    expect(screen.getByText(/PAPER — INTERNAL SIMULATION ONLY/i)).toBeInTheDocument();
-    expect(fetch).toHaveBeenCalledWith("/canary/snapshot");
-    const calls = (fetch as ReturnType<typeof vi.fn>).mock.calls;
-    expect(calls.every((call) => String(call[0]).includes("/canary/orders") === false)).toBe(true);
-  });
+  it.each(["DEMO", "PAPER", "LIVE"] as const)(
+    "keeps %s canary observability read-only",
+    async (mode: Mode) => {
+      const client = new QueryClient();
+      render(
+        <QueryClientProvider client={client}>
+          <MemoryRouter>
+            <LiveCanaryControlPlanePage mode={mode} />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      );
+      expect(await screen.findByTestId("live-canary-control-plane")).toBeInTheDocument();
+      expect(screen.getByText(/REAL MONEY/i)).toBeInTheDocument();
+      expect(screen.getByText(/PAPER — INTERNAL SIMULATION ONLY/i)).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Safety State" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Incidents" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: /Operational Reliability/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(new RegExp(`${mode} workstation.*read-only`, "i")),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Activate program kill switch" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Prepare session authorization preview" }),
+      ).not.toBeInTheDocument();
+      expect(fetch).toHaveBeenCalledWith("/canary/snapshot");
+      const calls = (fetch as ReturnType<typeof vi.fn>).mock.calls;
+      expect(
+        calls.every((call) => (call[1] as RequestInit | undefined)?.method !== "POST"),
+      ).toBe(true);
+    },
+  );
 });
