@@ -43,6 +43,7 @@ vi.mock("./api/hooks", () => ({
     isError: true,
     data: undefined,
   }),
+  usePreviewPaperOrderMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 describe("App mode launcher integration", () => {
@@ -81,12 +82,21 @@ describe("App mode launcher integration", () => {
     expect(screen.getByRole("region", { name: "Session environment" })).toHaveTextContent("DEMO");
     expect(screen.getByRole("heading", { name: "See the market unfold" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Command Center" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Paper Command" })).not.toBeInTheDocument();
   });
 
-  it.each([["Paper", "PAPER"], ["Live", "LIVE"]] as const)("keeps %s on Command Center", async (label, mode) => {
+  it("opens Paper Command in Paper mode", async () => {
     render(<App />);
-    await enterMode(label);
-    expect(screen.getByRole("region", { name: "Session environment" })).toHaveTextContent(mode);
+    await enterMode("Paper");
+    expect(screen.getByRole("region", { name: "Session environment" })).toHaveTextContent("PAPER");
+    expect(screen.getByRole("heading", { name: "Paper Command" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Command Center" })).not.toBeInTheDocument();
+  });
+
+  it("keeps Live on Command Center", async () => {
+    render(<App />);
+    await enterMode("Live");
+    expect(screen.getByRole("region", { name: "Session environment" })).toHaveTextContent("LIVE");
     expect(screen.getByRole("heading", { name: "Command Center" })).toBeInTheDocument();
   });
 

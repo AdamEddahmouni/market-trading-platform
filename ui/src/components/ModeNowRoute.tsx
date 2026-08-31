@@ -1,15 +1,20 @@
+import { useNavigate } from "react-router-dom";
 import { usePaperPortfolioQuery } from "../api/hooks";
 import type { ChartCountPoint } from "../lib/chartTransforms";
 import type { Mode } from "./mode-session/types";
 import { NowPage } from "./NowPage";
 import { DemoNowPage, type DemoNowPageProps } from "./demo-now/DemoNowPage";
+import { PaperNowPage } from "./paper-now/PaperNowPage";
 
-type Props = Omit<DemoNowPageProps, "portfolio" | "portfolioState"> & {
+type SharedProps = Omit<DemoNowPageProps, "portfolio" | "portfolioState">;
+
+type Props = SharedProps & {
   mode: Mode;
+  paperActionsPermitted: boolean;
   tierSummary?: ChartCountPoint[];
 };
 
-function DemoNowRoute(props: Omit<Props, "mode" | "tierSummary">) {
+function DemoNowRoute(props: SharedProps) {
   const portfolioQuery = usePaperPortfolioQuery();
   const portfolioState = portfolioQuery.isLoading
     ? "loading"
@@ -19,8 +24,33 @@ function DemoNowRoute(props: Omit<Props, "mode" | "tierSummary">) {
   return <DemoNowPage {...props} portfolio={portfolioQuery.data} portfolioState={portfolioState} />;
 }
 
-export function ModeNowRoute({ mode, tierSummary, ...props }: Props) {
+function PaperNowRoute({ paperActionsPermitted, ...props }: SharedProps & { paperActionsPermitted: boolean }) {
+  const navigate = useNavigate();
+  const portfolioQuery = usePaperPortfolioQuery();
+  const portfolioState = portfolioQuery.isLoading
+    ? "loading"
+    : portfolioQuery.isError || !portfolioQuery.data
+      ? "error"
+      : "ready";
+  return (
+    <PaperNowPage
+      items={props.items}
+      attentionState={props.attentionState}
+      portfolio={portfolioQuery.data}
+      portfolioState={portfolioState}
+      paperActionsPermitted={paperActionsPermitted}
+      onWhy={props.onWhy}
+      onExplain={props.onExplain}
+      onInspect={props.onInspect}
+      onOpenWorkspace={props.onOpenWorkspace}
+      onContinue={(draft) => navigate(`/workspace/${draft.instrumentId}`, { state: draft })}
+    />
+  );
+}
+
+export function ModeNowRoute({ mode, tierSummary, paperActionsPermitted, ...props }: Props) {
   if (mode === "DEMO") return <DemoNowRoute {...props} />;
+  if (mode === "PAPER") return <PaperNowRoute {...props} paperActionsPermitted={paperActionsPermitted} />;
   return (
     <NowPage
       items={props.items}

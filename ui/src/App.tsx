@@ -315,6 +315,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
               element={
                 <ModeNowRoute
                   mode={mode}
+                  paperActionsPermitted={paperActionsPermitted}
                   items={attentionQuery.data?.items ?? []}
                   tierSummary={attentionQuery.data?.tier_summary}
                   attentionState={attentionState}
