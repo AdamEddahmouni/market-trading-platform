@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PaperOrderPreviewResponse } from "../../api/schemas";
+import paperNowCss from "../../styles/paper-now.css?raw";
 import { PaperNowPage, type PaperNowPageProps } from "./PaperNowPage";
 import { attentionItem, paperPortfolio } from "./paperNowTestFixtures";
 
@@ -200,5 +201,17 @@ describe("PaperNowPage", () => {
     for (const name of ["Submit", "Cancel order", "Open session", "Close session", "Archive session", "New Paper Session"]) {
       expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
     }
+  });
+});
+
+describe("Paper Command visual accessibility contract", () => {
+  it("defines the Decision Canvas layout and accessibility media rules", () => {
+    expect(paperNowCss).toContain("grid-template-columns: minmax(260px, 0.9fr) minmax(340px, 1.35fr) minmax(250px, 0.8fr)");
+    expect(paperNowCss).toContain("min-height: 44px");
+    expect(paperNowCss).toContain(":focus-visible");
+    expect(paperNowCss).toContain("@media (max-width: 1080px)");
+    expect(paperNowCss).toContain("@media (max-width: 720px)");
+    expect(paperNowCss).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(paperNowCss).toContain("@media (forced-colors: active)");
   });
 });

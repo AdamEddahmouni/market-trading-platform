@@ -25,6 +25,7 @@ import "./styles/tokens.css";
 import "./styles/layout.css";
 import "./styles/mode-session.css";
 import "./styles/demo-now.css";
+import "./styles/paper-now.css";
 
 const AssistantHistoryPage = lazy(() =>
   import("./components/AssistantHistoryPage").then((module) => ({
