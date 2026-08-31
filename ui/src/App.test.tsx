@@ -89,7 +89,7 @@ describe("App mode launcher integration", () => {
     render(<App />);
     await enterMode("Paper");
     expect(screen.getByRole("region", { name: "Session environment" })).toHaveTextContent("PAPER");
-    expect(screen.getByRole("heading", { name: "Paper Command" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Paper Command" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Command Center" })).not.toBeInTheDocument();
   });
 

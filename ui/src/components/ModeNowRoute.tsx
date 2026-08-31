@@ -1,10 +1,14 @@
+import { lazy } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePaperPortfolioQuery } from "../api/hooks";
 import type { ChartCountPoint } from "../lib/chartTransforms";
 import type { Mode } from "./mode-session/types";
 import { NowPage } from "./NowPage";
 import { DemoNowPage, type DemoNowPageProps } from "./demo-now/DemoNowPage";
-import { PaperNowPage } from "./paper-now/PaperNowPage";
+
+const PaperNowPage = lazy(() =>
+  import("./paper-now/PaperNowPage").then((module) => ({ default: module.PaperNowPage })),
+);
 
 type SharedProps = Omit<DemoNowPageProps, "portfolio" | "portfolioState">;
 
