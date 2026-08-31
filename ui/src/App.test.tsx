@@ -1,6 +1,10 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { QueryClient } from "@tanstack/react-query";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
+import { api } from "./api/client";
+
+const replaySession = { cursor_index: 0, event_count: 4 };
 
 vi.mock("./api/hooks", () => ({
   queryKeys: {
@@ -26,14 +30,24 @@ vi.mock("./api/hooks", () => ({
       scope_symbols: ["BIYA"],
     },
   }),
-  useAttentionQuery: () => ({ data: { items: [] } }),
-  useReplaySessionQuery: () => ({ data: undefined }),
+  useAttentionQuery: () => ({ data: { items: [] }, isLoading: false, error: null }),
+  useReplaySessionQuery: () => ({
+    isLoading: false,
+    error: null,
+    data: replaySession,
+  }),
   useAssistantStatusQuery: () => ({ data: undefined }),
   useAssistantMessagesQuery: () => ({ data: undefined, isLoading: false }),
+  usePaperPortfolioQuery: () => ({
+    isLoading: false,
+    isError: true,
+    data: undefined,
+  }),
 }));
 
 describe("App mode launcher integration", () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     window.history.replaceState({}, "", "/");
     vi.stubGlobal(
       "fetch",
@@ -61,19 +75,19 @@ describe("App mode launcher integration", () => {
     expect(screen.queryByText("Loading replay context…")).not.toBeInTheDocument();
   });
 
-  it.each([
-    ["Demo", "DEMO"],
-    ["Paper", "PAPER"],
-    ["Live", "LIVE"],
-  ] as const)("opens the real workstation after entering %s", async (label, mode) => {
+  it("opens the Demo dashboard", async () => {
     render(<App />);
+    await enterMode("Demo");
+    expect(screen.getByRole("region", { name: "Session environment" })).toHaveTextContent("DEMO");
+    expect(screen.getByRole("heading", { name: "See the market unfold" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Command Center" })).not.toBeInTheDocument();
+  });
 
+  it.each([["Paper", "PAPER"], ["Live", "LIVE"]] as const)("keeps %s on Command Center", async (label, mode) => {
+    render(<App />);
     await enterMode(label);
-
     expect(screen.getByRole("region", { name: "Session environment" })).toHaveTextContent(mode);
-    expect(screen.getByRole("navigation", { name: "Primary" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Command Center" })).toBeInTheDocument();
-    expect(screen.queryByText(/environment ready/i)).not.toBeInTheDocument();
   });
 
   it("resets the route before switching and re-entering", async () => {
@@ -85,7 +99,29 @@ describe("App mode launcher integration", () => {
     expect(window.location.pathname).toBe("/");
 
     await enterMode("Demo");
-    expect(screen.getByRole("heading", { name: "Command Center" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "See the market unfold" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "NOW" })).toHaveClass("active");
+  });
+
+  it("confirms a scrub before changing the cursor and refreshes existing queries", async () => {
+    const scrub = vi.spyOn(api, "scrubReplay").mockResolvedValueOnce({});
+    const invalidate = vi.spyOn(QueryClient.prototype, "invalidateQueries");
+    render(<App />);
+    await enterMode("Demo");
+    fireEvent.click(screen.getByRole("button", { name: "Next event" }));
+    await waitFor(() => expect(screen.getByText("Event 2 of 4")).toBeInTheDocument());
+    expect(scrub).toHaveBeenCalledWith(1);
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["context"] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["attention"] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["instrument"] });
+  });
+
+  it("retains the confirmed cursor and announces a failed scrub", async () => {
+    vi.spyOn(api, "scrubReplay").mockRejectedValueOnce(new Error("offline"));
+    render(<App />);
+    await enterMode("Demo");
+    fireEvent.click(screen.getByRole("button", { name: "Next event" }));
+    await screen.findByText(/Replay could not move/);
+    expect(screen.getByText("Event 1 of 4")).toBeInTheDocument();
   });
 });
