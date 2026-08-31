@@ -21,8 +21,12 @@ function previewResponse(preview: Partial<PaperOrderPreviewResponse["preview"]>)
   };
 }
 
-function renderTicket(initialDraft?: PaperOrderDraft) {
-  return render(<OrderTicket symbol="BIYA" executionAuthority="PAPER_ONLY" executionMode="INTERNAL_SIMULATION" dataMode="FIXTURE_REPLAY" maxOrderShares={100} initialDraft={initialDraft} />);
+function ticket(initialDraft?: PaperOrderDraft, maxOrderShares = 100) {
+  return <OrderTicket symbol="BIYA" executionAuthority="PAPER_ONLY" executionMode="INTERNAL_SIMULATION" dataMode="FIXTURE_REPLAY" maxOrderShares={maxOrderShares} initialDraft={initialDraft} />;
+}
+
+function renderTicket(initialDraft?: PaperOrderDraft, maxOrderShares = 100) {
+  return render(ticket(initialDraft, maxOrderShares));
 }
 
 describe("OrderTicket workspace revalidation", () => {
@@ -82,5 +86,17 @@ describe("OrderTicket workspace revalidation", () => {
 
     expect(screen.queryByRole("heading", { name: "Revalidated in workspace" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
+  });
+
+  it("invalidates a PASS when the current account share limit drops", async () => {
+    mocks.previewPaperOrder.mockResolvedValueOnce(previewResponse({ risk_status: "PASS", decision: "ALLOW" }));
+    const view = renderTicket(validDraft);
+    expect(await screen.findByRole("heading", { name: "Revalidated in workspace" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Submit" })).toBeEnabled();
+
+    view.rerender(ticket(validDraft, 10));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled());
+    expect(screen.queryByRole("heading", { name: "Revalidated in workspace" })).not.toBeInTheDocument();
   });
 });

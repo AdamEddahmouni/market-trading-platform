@@ -62,6 +62,15 @@ export function OrderTicket({
     preview?.instrument?.instrument_id ||
     ticketSymbol;
   const canPreview = Boolean(ticketSymbol) && quantity > 0 && quantity <= maxOrderShares;
+  const confirmedRequestIsCurrent = Boolean(
+    confirmedRequest &&
+    confirmedRequest.instrument_id === ticketSymbol &&
+    confirmedRequest.side === side &&
+    confirmedRequest.quantity === quantity &&
+    confirmedRequest.order_type === "MARKET" &&
+    quantity > 0 &&
+    quantity <= maxOrderShares,
+  );
 
   function invalidatePreview() {
     previewGeneration.current += 1;
@@ -70,6 +79,10 @@ export function OrderTicket({
     setPreviewOrigin(null);
     setError(null);
   }
+
+  useEffect(() => {
+    if (confirmedRequest && !confirmedRequestIsCurrent) invalidatePreview();
+  }, [confirmedRequest, confirmedRequestIsCurrent]);
 
   async function performPreview(origin: "manual" | "workspace") {
     const currentDraft = createPaperOrderDraft({
@@ -109,7 +122,7 @@ export function OrderTicket({
   }, [authorized, initialDraft, maxOrderShares]);
 
   async function handleSubmit() {
-    if (!preview || preview.risk_status !== "PASS" || !confirmedRequest) return;
+    if (!preview || preview.risk_status !== "PASS" || !confirmedRequest || !confirmedRequestIsCurrent) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -241,7 +254,7 @@ export function OrderTicket({
         <button
           type="button"
           onClick={() => void handleSubmit()}
-          disabled={!authorized || !preview || preview.risk_status !== "PASS" || !confirmedRequest || submitting}
+          disabled={!authorized || !preview || preview.risk_status !== "PASS" || !confirmedRequestIsCurrent || submitting}
         >
           Submit
         </button>
