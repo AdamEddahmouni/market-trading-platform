@@ -68,6 +68,7 @@
         "src/market_platform_foundation/market_sessions.py",
         "src/market_platform_foundation/numeric.py",
         "src/market_platform_foundation/operating_modes.py",
+        "src/market_platform_foundation/operational_identity.py",
         "src/market_platform_foundation/policy.py",
         "src/market_platform_foundation/registry.py"
       ],

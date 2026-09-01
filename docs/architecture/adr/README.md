@@ -23,6 +23,8 @@ Use [0000-template.md](0000-template.md). Number sequentially: `0001-short-title
 | [0003](0003-correlation-provenance-snapshot-semantics.md) | Correlation, provenance, and snapshot semantics | Accepted |
 | [0004](0004-react-query-key-invariants.md) | React Query key semantic invariants | Accepted |
 | [0005](0005-initial-bundle-budget.md) | Initial JavaScript bundle budget | Accepted |
+| [0006](0006-lane-provenance-envelope.md) | Lane provenance envelope | Accepted |
+| [0007](0007-operational-account-identity.md) | Operational account identity and snapshot isolation | Accepted |
 
 ## Related existing decisions
 

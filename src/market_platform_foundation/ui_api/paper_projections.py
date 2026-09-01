@@ -5,9 +5,11 @@ from __future__ import annotations
 import time
 from typing import Any
 
+from ..operational_identity import attach_operational_identity
 from ..paper.broker_paper import cancel_broker_paper_order
 from ..paper.execution import cancel_interactive_order, preview_interactive_order, submit_interactive_order
 from ..paper.ledger import PaperExecutionLedger
+from .account_registry import resolve_paper_portfolio_identity
 from .lane_provenance import attach_lane_provenance
 from .projections import build_as_of_context
 from .store import ReplayStore
@@ -124,11 +126,12 @@ def build_paper_risk_payload(store: ReplayStore) -> dict[str, Any]:
     return _paper_envelope(store, {"risk": store.paper_ledger.project_risk()})
 
 
-def build_paper_portfolio_payload(store: ReplayStore) -> dict[str, Any]:
+def build_paper_portfolio_payload(store: ReplayStore, *, view_mode: str | None = None) -> dict[str, Any]:
     from . import live_projections
 
     live_projections.apply_live_marks_to_ledger(store)
     ledger = store.paper_ledger
+    identity = resolve_paper_portfolio_identity(store, view_mode=view_mode)
     account = ledger.project_account()
     positions = ledger.project_positions()
     orders = ledger.project_orders()
@@ -179,6 +182,7 @@ def build_paper_portfolio_payload(store: ReplayStore) -> dict[str, Any]:
             **_active_instrument_fields(store),
         },
     )
+    envelope = attach_operational_identity(envelope, identity)
     return attach_lane_provenance(envelope, lane_id="paper-portfolio", retrieved_at_ns=time.time_ns())
 
 

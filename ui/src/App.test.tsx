@@ -189,7 +189,8 @@ vi.mock("./api/hooks", () => ({
   queryKeys: {
     context: ["context"],
     attention: ["attention"],
-    liveCanarySnapshot: (laneId?: string) => ["live", "canary-snapshot", laneId ?? "account"],
+    liveCanarySnapshot: (laneId?: string, accountId?: string) =>
+      ["live", "canary-snapshot", laneId ?? "account", accountId ?? "fp-canary-local"],
     assistantMessages: (conversationId: string | null) => ["assistant", conversationId],
     assistantConversations: ["assistant-conversations"],
   },
@@ -271,6 +272,15 @@ vi.mock("./api/hooks", () => ({
       unresolved_critical_incidents: [],
       live_positions: [{ instrument_id: "AAPL", quantity: 3, side: "LONG" }],
       open_broker_orders: [{ order_id: "ord-live-1", side: "BUY", quantity: 1 }],
+    },
+  }),
+  useLiveCanaryReconciliationQuery: () => ({
+    isLoading: false,
+    isError: false,
+    data: {
+      reconciliation_health: "CLEAN",
+      local_open_orders: [],
+      ambiguous_states: [],
     },
   }),
   useSymbolSearchQuery: () => ({ data: { results: [] }, isLoading: false }),

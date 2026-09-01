@@ -9,7 +9,7 @@ type Props = {
 
 export function LiveLaneOperationalStrip({ laneId }: Props) {
   const providerQuery = useProviderHealthQuery();
-  const canaryQuery = useLiveCanarySnapshotQuery(laneId, true);
+  const canaryQuery = useLiveCanarySnapshotQuery(laneId, "fp-canary-local", true);
 
   const provider = providerQuery.data;
   const canary = canaryQuery.data;

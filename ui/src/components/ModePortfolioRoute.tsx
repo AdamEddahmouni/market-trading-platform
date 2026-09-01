@@ -1,6 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
 import { lazy } from "react";
-import { useLiveCanarySnapshotQuery } from "../api/hooks";
+import { useLiveCanaryReconciliationQuery, useLiveCanarySnapshotQuery } from "../api/hooks";
 
 const DemoPortfolioPage = lazy(() =>
   import("./demo-portfolio/DemoPortfolioPage").then((module) => ({
@@ -18,20 +17,6 @@ const LivePortfolioPage = lazy(() =>
   })),
 );
 
-type ReconciliationPayload = {
-  reconciliation_health: string;
-  local_open_orders: string[];
-  ambiguous_states: string[];
-};
-
-async function fetchLiveReconciliation(): Promise<ReconciliationPayload> {
-  const response = await fetch("/canary/reconciliation");
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
-  }
-  return response.json() as Promise<ReconciliationPayload>;
-}
-
 type Props = {
   mode: import("./mode-session/types").Mode;
   paperActionsPermitted: boolean;
@@ -39,11 +24,7 @@ type Props = {
 
 function LivePortfolioRoute() {
   const snapshotQuery = useLiveCanarySnapshotQuery("portfolio");
-  const reconciliationQuery = useQuery({
-    queryKey: ["canary-reconciliation"],
-    queryFn: fetchLiveReconciliation,
-    refetchInterval: 15000,
-  });
+  const reconciliationQuery = useLiveCanaryReconciliationQuery();
 
   const state = snapshotQuery.isLoading
     ? "loading"

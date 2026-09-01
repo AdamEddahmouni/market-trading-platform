@@ -44,11 +44,12 @@ Phases 0–16, UI-001/002, MRA-001/002, Platform P0–P4-4C, and mode-specific U
 
 None tracked as in-progress in WORK_LOG. Remaining increments are authorization-gated or external-dependency blocked — see [PRODUCT_BACKLOG](product/PRODUCT_BACKLOG.md).
 
+**Recently completed:** TD-003 multi-account snapshot architecture (2026-09-01).
+
 ---
 
 ## Next likely work (not committed)
 
-- Per-account broker lane snapshots when backend multi-account API exists (TD-003 remainder)
 - TD-004 Moomoo OpenD real-wire when connectivity available
 - Hosted deployment / auth enforcement (P5 — not started)
 
@@ -76,14 +77,15 @@ None tracked as in-progress in WORK_LOG. Remaining increments are authorization-
 
 ## Validation snapshot (2026-09-01)
 
-Recorded at operational hardening pass; re-run before release:
+Recorded at TD-003 multi-account snapshot increment; re-run before release:
 
 | Gate | Last recorded |
 |------|---------------|
-| Vitest | 417 passed |
+| Vitest | 421 passed |
 | UI typecheck | Pass (`tsconfig.typecheck.json`) |
-| `validate.py changed` | 864 passed, 0 failures |
+| `validate.py changed` | 874 passed, 0 failures, 0 errors |
+| `validate.py full` | 2984 passed, 0 failures, 0 errors |
 | `test_repository_closure` | OK |
-| Initial bundle | 199.89 KiB gzip (budget 200 KiB) |
+| Initial bundle | 200.00 KiB gzip (budget 201 KiB) |
 
 Do not treat counts as permanent — verify with [VALIDATION.md](engineering/VALIDATION.md).

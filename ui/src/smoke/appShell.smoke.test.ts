@@ -15,4 +15,9 @@ describe("application smoke invariants", () => {
     expect(queryKeys.paperPortfolio[0]).toBe("paper");
     expect(queryKeys.paperPortfolio).not.toEqual(queryKeys.liveCanarySnapshot());
   });
+
+  it("demo portfolio key is isolated from paper portfolio", () => {
+    expect(queryKeys.demoPortfolio[0]).toBe("demo");
+    expect(queryKeys.demoPortfolio).not.toEqual(queryKeys.paperPortfolio);
+  });
 });

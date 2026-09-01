@@ -2,7 +2,7 @@ import { usePaperPortfolioQuery } from "../../api/hooks";
 import { PaperPortfolioObservability } from "../portfolio-shared/PaperPortfolioObservability";
 
 export function DemoPortfolioPage() {
-  const portfolioQuery = usePaperPortfolioQuery();
+  const portfolioQuery = usePaperPortfolioQuery("DEMO");
 
   if (portfolioQuery.isLoading) {
     return (
