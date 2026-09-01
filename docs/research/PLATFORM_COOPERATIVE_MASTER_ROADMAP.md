@@ -805,9 +805,9 @@ See `MARKET_CONTEXT_TARGET_ARCHITECTURE.md`, `FIVE_LANE_ROADMAP_RECONCILIATION.m
   enforcement is model-only, hosted deployment/auth not started]
 - Platformization P6 shadow infrastructure — `shadow/**`
   records/store/labeling/metrics/runs with content-hash immutability,
-  causality-enforced labeling, and a walk-forward leakage guard (23 tests in
-  `tests/platform/test_shadow_p6.py`). [shadow-infrastructure-implemented; no
-  forward-validation evidence collected]
+  causality-enforced labeling, and a walk-forward leakage guard (23+ tests in
+  `tests/platform/test_shadow_p6.py` and `test_shadow_run1_*`). **P6 IN PROGRESS**
+  — protocol preregistered 2026-09-01; forward observations blocked pending Moomoo/OpenD
 - O11 0DTE prerequisite scaffolding — `options/zerodte/**`; Phase C admission
   PENDING and every entry point fails closed. [scaffold only, deferred]
 - Cross-lane portfolio view v1 —

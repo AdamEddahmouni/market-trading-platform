@@ -26,6 +26,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-01 — P6 Shadow Run 1 forward-validation evidence phase (preregistration)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `shadow`, `docs`, `tools/research` |
+| **Summary** | Preregistered P6 Shadow Run 1 protocol, source availability audit, acceptance evaluator (`shadow/acceptance.py`, CLI `acceptance` subcommand), operator SOP, and reconciled project status docs. Initialized resumable run machinery on Build-35 baseline; forward observations **blocked** (Moomoo/OpenD not configured). Honest disposition: IN_PROGRESS_EVIDENCE_COLLECTION. |
+| **Key files** | `artifacts/shadow-run-1/*`, `docs/engineering/P6_SHADOW_RUN_1_PROTOCOL.md`, `docs/engineering/sops/FORWARD_SHADOW_VALIDATION.md`, `src/market_platform_foundation/shadow/acceptance.py`, `tools/research/run_shadow_run.py`, `tests/platform/test_shadow_run1_acceptance.py`, `docs/PROJECT_STATUS.md`, `docs/product/PRODUCT_BACKLOG.md`, `docs/research/PLATFORMIZATION_ROADMAP.md` |
+| **Tests** | `test_shadow_run1_acceptance`; targeted shadow suite; `validate.py changed` |
+| **Related** | [P6 protocol](P6_SHADOW_RUN_1_PROTOCOL.md), [completion](../superpowers/plans/2026-09-01-p6-shadow-run-1-forward-validation-completion.md) |
+| **Notes** | Do not mark P6 CLOSED until ACTUAL_FORWARD observation window completes. Fixture/replay remains infrastructure proof only. |
+
 ## 2026-09-01 — TD-005 operator authentication and account-scoped authorization
 
 | Field | Value |

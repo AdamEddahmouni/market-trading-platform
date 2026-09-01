@@ -4,13 +4,17 @@
 
 ## Near-term candidates
 
+- **P6 Shadow Run 1** — complete forward observation window when Moomoo/OpenD observational path available ([protocol](../engineering/P6_SHADOW_RUN_1_PROTOCOL.md))
 - TD-004 Moomoo OpenD real-wire when connectivity available
-- TD-004 Moomoo real-wire when OpenD available
+
+## In progress
+
+- P6 forward-validation evidence collection (preregistered protocol; resumable run machinery verified offline)
 
 ## Deferred (requires authorization)
 
 - LIVE-001 production execution
-- Hosted deployment + auth enforcement (P5)
+- Hosted deployment / OIDC/SSO (local P5 auth enforcement **complete** — TD-005 closed)
 - Crypto / prediction-market expansion tracks
 - ES-session acceptance (ADR-DATA-001)
 

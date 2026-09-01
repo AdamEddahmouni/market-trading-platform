@@ -1,6 +1,6 @@
 # Platformization P6 - Shadow Run 1: prospective forward-validation kickoff (design spec)
 
-**Status:** Design - not implemented; no run opened
+**Status:** Implemented — machinery landed 2026-08-23; **P6 forward evidence IN PROGRESS** (protocol preregistered 2026-09-01; observational path blocked pending Moomoo/OpenD)
 **Date:** 2026-08-23
 **Prerequisites:** P6 shadow infrastructure (`shadow/**`, landed 2026-08-22), live observational runtime (`market_data/live_runtime.py`, P2/P2.1), DECISION-RESEARCH-001 terminology
 **Scope guard:** offline code paths only during development. Run operation uses the already-authorized observational Moomoo path (`IMP_LIVE_OBSERVATIONAL`). No execution-path contact of any kind. No network calls added by this increment.

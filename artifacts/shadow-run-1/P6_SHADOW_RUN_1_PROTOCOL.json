@@ -1,0 +1,107 @@
+{
+  "admissibility": {
+    "allowed_at_decision_time": [
+      "admitted trades with available_time_ns <= decision_time_ns",
+      "prevailing quote at or before decision_time (freshness <= 2s) for aggressor inference",
+      "tick-rule fallback for aggressor when quote unavailable",
+      "frozen NSS predictor constants bound in manifest"
+    ],
+    "forbidden_at_decision_time": [
+      "outcome labels or P30 prices",
+      "trades with available_time_ns > decision_time_ns",
+      "post-horizon capture data",
+      "revised source files after decision cutoff",
+      "portfolio execution state or order submission authority"
+    ]
+  },
+  "baseline_commit": "96032bea83925cd89d6d16c56f8950e78472962f",
+  "baseline_branch": "cloud/build-35-release-governance-operational-acceptance",
+  "evidence_class": "ACTUAL_FORWARD",
+  "execution_authority": "NONE",
+  "frozen_constants": {
+    "band_lower": -0.15,
+    "band_upper": 0.15,
+    "bucket_seconds": 60,
+    "horizon_seconds": 1800,
+    "horizon_tolerance_seconds": 300,
+    "minimum_trades": 10,
+    "p_up_clip_high": 0.9,
+    "p_up_clip_low": 0.1,
+    "quote_staleness_seconds": 30,
+    "stale_input_seconds": 60,
+    "window_seconds": 300
+  },
+  "instrument": {
+    "capture_id_required": true,
+    "liquidity_regime_note": "post-squeeze low-activity; INSUFFICIENT_TRADES abstentions expected",
+    "reverse_split_note": "1-for-10 reverse split effective 2026-07-13",
+    "symbol": "BIYA",
+    "venue": "Nasdaq"
+  },
+  "modes": {
+    "demo": "not involved",
+    "live": "observational read-only ingress only",
+    "paper": "not involved in shadow decisions",
+    "shadow": "non-executing observation and recording"
+  },
+  "observation_cadence_seconds": 60,
+  "observation_window": {
+    "first_session": "2026-09-02",
+    "holidays": [],
+    "early_closes": [],
+    "max_regular_sessions": 8,
+    "session_timezone": "America/New_York",
+    "session_hours": "09:30-16:00"
+  },
+  "operational_mode": "LIVE_OBSERVATIONAL_NO_EXECUTION",
+  "preregistration_timestamp_ns": 1756740780000000000,
+  "preregistration_timestamp_utc": "2026-09-01T15:33:00Z",
+  "protocol_id": "P6-SR1-BIYA-2026-09",
+  "protocol_version": "SHADOW_RUN_1_BIYA_FROZEN/1.0.0",
+  "provider_identity": "moomoo-observational",
+  "schema_version": "platform/shadow-run-1-protocol/1.0.0",
+  "spec_reference": "docs/superpowers/specs/2026-08-23-platform-p6-shadow-run-1-design.md",
+  "stopping_rule": "(complete_sessions >= 5 AND scheduled_grid_opportunities >= 65) OR elapsed_regular_sessions >= 8",
+  "strategies_observed": [
+    "nss-direction-v1"
+  ],
+  "time_semantics": {
+    "decision_time": "event_time of first qualifying admitted trade in bucket (or explicit skip time)",
+    "evaluation_time": "after target_time_ns + horizon_tolerance; labeling only",
+    "ingestion_time": "live_received_time on admitted envelope",
+    "persistence_time": "append-only created_at_ns on ledger rows",
+    "source_time": "provider event_time_ns on admitted trade"
+  },
+  "acceptance_thresholds": {
+    "causality_violations_max": 0,
+    "complete_sessions_min": 5,
+    "scheduled_grid_opportunities_min": 65,
+    "elapsed_regular_sessions_max": 8,
+    "duplicate_decisions_max": 0,
+    "minimum_forward_observations": 1
+  },
+  "evaluation_metrics_preregistered": {
+    "decision": [
+      "decisions_generated",
+      "abstentions_by_reason",
+      "action_rate",
+      "confidence_distribution",
+      "risk_block_rate"
+    ],
+    "operational": [
+      "observation_count",
+      "successful_processing_rate",
+      "missing_data_rate",
+      "stale_data_rate",
+      "provenance_completeness",
+      "source_time_completeness",
+      "recorder_error_count"
+    ],
+    "outcome_descriptive": [
+      "brier_score_primary_grid",
+      "directional_accuracy_primary_grid",
+      "calibration_buckets",
+      "labelability_by_outcome_code"
+    ]
+  }
+}

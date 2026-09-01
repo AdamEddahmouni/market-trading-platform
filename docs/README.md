@@ -82,6 +82,8 @@ When documents disagree, resolve in this order (highest first):
 | AI agent guide | [AI_AGENT_GUIDE.md](engineering/AI_AGENT_GUIDE.md) |
 | AI model/tool strategy | [AI_MODEL_STRATEGY.md](engineering/AI_MODEL_STRATEGY.md) |
 | Technical debt | [TECH_DEBT.md](engineering/TECH_DEBT.md) |
+| P6 Shadow Run 1 protocol | [P6_SHADOW_RUN_1_PROTOCOL.md](engineering/P6_SHADOW_RUN_1_PROTOCOL.md) |
+| Forward shadow qualification | [FORWARD_SHADOW_QUALIFICATION_V1.md](engineering/FORWARD_SHADOW_QUALIFICATION_V1.md) |
 
 ### SOPs
 
@@ -93,6 +95,7 @@ When documents disagree, resolve in this order (highest first):
 | Add workspace lane | [sops/ADD_WORKSPACE_LANE.md](engineering/sops/ADD_WORKSPACE_LANE.md) |
 | Add mode-aware surface | [sops/ADD_MODE_AWARE_SURFACE.md](engineering/sops/ADD_MODE_AWARE_SURFACE.md) |
 | Debugging | [sops/DEBUGGING.md](engineering/sops/DEBUGGING.md) |
+| Forward shadow validation (P6) | [sops/FORWARD_SHADOW_VALIDATION.md](engineering/sops/FORWARD_SHADOW_VALIDATION.md) |
 | Dependency update | [sops/DEPENDENCY_UPDATE.md](engineering/sops/DEPENDENCY_UPDATE.md) |
 | Release | [sops/RELEASE.md](engineering/sops/RELEASE.md) |
 | Production bug fix | [sops/BUG_FIX.md](engineering/sops/BUG_FIX.md) |

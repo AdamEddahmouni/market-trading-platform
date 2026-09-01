@@ -1,0 +1,22 @@
+{
+  "run_id": "SHRUN-D3AA0CCD4FA92F76F755049F570DC71DDEEA71CF35D1F0375EA03E0E5917FB06",
+  "schema_version": "platform/shadow-run-1-data-health/1.0.0",
+  "generated_at_utc": "2026-09-01T15:46:00Z",
+  "sources": {
+    "MOOMOO_BIYA_OBSERVATIONAL": {
+      "availability": "unavailable",
+      "freshness": null,
+      "parse_failures": 0,
+      "schema_drift": 0,
+      "provenance_gaps": 0,
+      "delayed_observations": 0,
+      "notes": "IMP_MOOMOO_LIVE not enabled; no live ingress during this increment"
+    }
+  },
+  "timestamp_anomalies": 0,
+  "missing_fields": 0,
+  "observations_collected": 0,
+  "decisions": 0,
+  "abstentions": 0,
+  "recorder_errors": 0
+}
