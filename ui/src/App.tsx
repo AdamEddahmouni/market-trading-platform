@@ -21,6 +21,8 @@ import { ModeNowRoute } from "./components/ModeNowRoute";
 import { ModePortfolioRoute } from "./components/ModePortfolioRoute";
 import { ModeResearchRoute } from "./components/ModeResearchRoute";
 import type { ScrubState } from "./components/demo-now/DemoNowPage";
+import { AuthProvider, useOptionalAuth } from "./auth/AuthProvider";
+import { OperatorLoginGate } from "./auth/OperatorLoginGate";
 import { ApplicationBootstrap } from "./components/mode-session/ApplicationBootstrap";
 import { ModeEnvironmentBar } from "./components/mode-session/ModeEnvironmentBar";
 import { evaluateModeContext } from "./components/mode-session/modeAuthority";
@@ -189,6 +191,9 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
   const modeEvaluation = evaluateModeContext(mode, contextQuery.data?.as_of_context);
   const paperActionsPermitted =
     contextState === "ready" && modeEvaluation.paperActionsPermitted;
+  const auth = useOptionalAuth();
+  const operatorPaperSubmitPermitted =
+    paperActionsPermitted && (auth?.permitsCapability("paper.order.submit") ?? true);
   const attentionState = attentionQuery.isLoading
     ? "loading"
     : attentionQuery.error || !attentionQuery.data
@@ -326,7 +331,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
               element={
                 <ModeNowRoute
                   mode={mode}
-                  paperActionsPermitted={paperActionsPermitted}
+                  paperActionsPermitted={operatorPaperSubmitPermitted}
                   items={attentionQuery.data?.items ?? []}
                   tierSummary={attentionQuery.data?.tier_summary}
                   attentionState={attentionState}
@@ -358,7 +363,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
               element={
                 <WorkspaceRoute
                   mode={mode}
-                  paperActionsPermitted={paperActionsPermitted}
+                  paperActionsPermitted={operatorPaperSubmitPermitted}
                   cursorIndex={cursorIndex}
                   maxIndex={maxIndex}
                   onScrub={scrub}
@@ -475,7 +480,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
               element={
                 <ModePortfolioRoute
                   mode={mode}
-                  paperActionsPermitted={paperActionsPermitted}
+                  paperActionsPermitted={operatorPaperSubmitPermitted}
                 />
               }
             />
@@ -537,12 +542,16 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <ApplicationBootstrap>
-          {(mode, switchMode) => <WorkstationShell mode={mode} onSwitchMode={switchMode} />}
-        </ApplicationBootstrap>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <AuthProvider>
+      <OperatorLoginGate>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <ApplicationBootstrap>
+              {(mode, switchMode) => <WorkstationShell mode={mode} onSwitchMode={switchMode} />}
+            </ApplicationBootstrap>
+          </BrowserRouter>
+        </QueryClientProvider>
+      </OperatorLoginGate>
+    </AuthProvider>
   );
 }

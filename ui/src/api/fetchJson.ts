@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import { authHeaders } from "../auth/session";
 
 export class ApiRequestError extends Error {
   code: string;
@@ -23,7 +24,7 @@ async function parseError(response: Response, path: string): Promise<never> {
 }
 
 export async function fetchJson<T>(path: string, schema: z.ZodSchema<T>): Promise<T> {
-  const response = await fetch(path);
+  const response = await fetch(path, { headers: authHeaders() });
   if (!response.ok) {
     await parseError(response, path);
   }
@@ -33,7 +34,7 @@ export async function fetchJson<T>(path: string, schema: z.ZodSchema<T>): Promis
 export async function postJson<T>(path: string, body: unknown, schema: z.ZodSchema<T>): Promise<T> {
   const response = await fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(body),
   });
   if (!response.ok) {
@@ -43,7 +44,7 @@ export async function postJson<T>(path: string, body: unknown, schema: z.ZodSche
 }
 
 export async function fetchRawJson(path: string): Promise<Record<string, unknown>> {
-  const response = await fetch(path);
+  const response = await fetch(path, { headers: authHeaders() });
   if (!response.ok) {
     throw new Error(`Request failed: ${path}`);
   }

@@ -7,6 +7,30 @@ current localhost surface — see docs/superpowers/specs/
 2026-08-22-platform-p5-hosted-security-foundations-design.md.
 """
 
+from .access_control import (
+    ROLE_ENFORCEMENT_ENFORCED,
+    ROLE_ENFORCEMENT_LOOPBACK_TRUST,
+    AuthorizationErrorCode,
+    AuthorizationFailure,
+    AuthorizedPrincipal,
+    authenticate_session_token,
+    authorize_account_access,
+    authorize_capability,
+    authorize_operational_identity,
+    login_principal,
+    logout_session,
+    loopback_trust_principal,
+    reset_principal_registry_for_tests,
+    role_enforcement_status,
+)
+from .auth_config import (
+    AUTH_CONFIG_SCHEMA,
+    AuthConfig,
+    AuthConfigError,
+    AuthEnforcementMode,
+    load_auth_config,
+    parse_auth_config,
+)
 from .config import (
     DEFAULT_BIND_HOST,
     DEFAULT_BIND_PORT,

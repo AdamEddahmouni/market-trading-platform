@@ -11,6 +11,8 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from ..canonical import canonical_bytes, write_canonical_json
+from ..platform.security.access_control import AuthorizationFailure, authenticate_session_token
+from ..platform.security.leak_audit import assert_no_secrets_in_payload
 from . import broker_projections
 from . import canary_projections
 from . import live_projections
@@ -19,6 +21,14 @@ from . import paper_projections
 from . import projections
 from .account_registry import build_accounts_payload
 from ..operational_identity import OperationalIdentityError
+from .auth_projections import (
+    build_auth_status_payload,
+    build_auth_session_payload,
+    build_security_readiness_payload,
+    handle_auth_login,
+    handle_auth_logout,
+    unauthenticated_session_payload,
+)
 from .assistant_projections import (
     build_assistant_conversations,
     build_assistant_messages,
@@ -27,6 +37,12 @@ from .assistant_projections import (
     submit_assistant_prompt,
 )
 from .lane_provenance import attach_lane_provenance
+from .request_auth import (
+    authorization_http_status,
+    authorize_http_request,
+    extract_session_token,
+    log_server_event,
+)
 from .store import ReplayStore
 
 
@@ -49,6 +65,16 @@ class UiApiHandler(BaseHTTPRequestHandler):
         return
 
     def _send_json(self, payload: dict[str, Any], *, status: HTTPStatus = HTTPStatus.OK) -> None:
+        try:
+            assert_no_secrets_in_payload(payload)
+        except Exception as exc:
+            log_server_event("ui_api.secret_leak_blocked", error=str(exc))
+            self._send_error_json(
+                "UI_SECRET_LEAK_BLOCKED",
+                "Response blocked by secret-leak audit",
+                status=HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+            return
         body = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
@@ -64,13 +90,55 @@ class UiApiHandler(BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.NO_CONTENT)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-IMP-Session")
         self.end_headers()
+
+    def _authorize_request(
+        self,
+        method: str,
+        path: str,
+        query: dict[str, list[str]],
+        body: dict[str, Any] | None = None,
+    ) -> bool:
+        auth = authorize_http_request(
+            self.store,
+            method=method,
+            path=path,
+            headers=dict(self.headers.items()),
+            query=query,
+            body=body,
+        )
+        if isinstance(auth, AuthorizationFailure):
+            self._send_error_json(
+                auth.code.value,
+                auth.message,
+                status=authorization_http_status(auth),
+            )
+            return False
+        return True
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
         query = parse_qs(parsed.query)
+        if path == "/auth/status":
+            self._send_json(build_auth_status_payload())
+            return
+        if path == "/auth/session":
+            token = extract_session_token(dict(self.headers.items()))
+            principal = authenticate_session_token(token)
+            if isinstance(principal, AuthorizationFailure):
+                self._send_json(unauthenticated_session_payload())
+                return
+            self._send_json(build_auth_session_payload(principal, token=token))
+            return
+        if path == "/security/readiness":
+            if not self._authorize_request("GET", path, query):
+                return
+            self._send_json(build_security_readiness_payload())
+            return
+        if not self._authorize_request("GET", path, query):
+            return
         try:
             if path == "/provider/health":
                 self._send_json(live_projections.build_provider_health_payload(self.store))
@@ -613,7 +681,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
         except KeyError:
             self._send_error_json("UI_ASSISTANT_NOT_FOUND", "conversation not found", status=HTTPStatus.NOT_FOUND)
         except Exception as exc:
-            print(f"UI_INTERNAL_ERROR {path}: {exc!r}", flush=True)
+            log_server_event("ui_api.internal_error", path=path, error=repr(exc))
             self._send_error_json("UI_INTERNAL_ERROR", str(exc), status=HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def do_POST(self) -> None:
@@ -628,6 +696,23 @@ class UiApiHandler(BaseHTTPRequestHandler):
             return
         if not isinstance(body, dict):
             self._send_error_json("UI_JSON_INVALID", "Body must be an object", status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/auth/login":
+            result = handle_auth_login(body)
+            if isinstance(result, AuthorizationFailure):
+                self._send_error_json(
+                    result.code.value,
+                    result.message,
+                    status=HTTPStatus.UNAUTHORIZED,
+                )
+                return
+            self._send_json(result)
+            return
+        if path == "/auth/logout":
+            token = extract_session_token(dict(self.headers.items()))
+            self._send_json(handle_auth_logout(token))
+            return
+        if not self._authorize_request("POST", path, parse_qs(parsed.query), body):
             return
         if path == "/discover/mixed/refresh":
             from .mixed_discovery_projections import refresh_mixed_discovery

@@ -1,15 +1,11 @@
-"""Operator roles model — data only, no enforcement (Platformization P5).
+"""Operator roles model with enforceable capability matrix (Platformization P5, TD-005).
 
-Records, as plain data, the minimal role/capability matrix a future hosted
-deployment would enforce. NOTHING in the platform enforces these roles
-today: the localhost UI API is unauthenticated by design (roadmap decision 6,
-"No custom JWT, no hosted auth" — P0-locked). This module exists so the
-future enforcement conversation starts from a written model instead of
-ad-hoc role strings.
+Records the minimal role/capability matrix enforced when auth enforcement mode is
+``ENFORCED``. Under default ``LOOPBACK_TRUST``, the UI API grants implicit local ADMIN
+without session validation (roadmap decision 6 preserved for loopback).
 
-Enforcement status is carried in :data:`ROLE_ENFORCEMENT_STATUS` and must be
-surfaced wherever this matrix is consumed, so the model can never be mistaken
-for an active control.
+Enforcement status is carried via :func:`role_enforcement_status` and must be
+surfaced wherever this matrix is consumed.
 """
 
 from __future__ import annotations
@@ -18,7 +14,10 @@ from enum import Enum
 
 ROLE_MODEL_SCHEMA = "platform/roles/1.0.0"
 
-ROLE_ENFORCEMENT_STATUS = "MODEL_ONLY_NOT_ENFORCED"
+ROLE_ENFORCEMENT_LOOPBACK_TRUST = "LOOPBACK_TRUST"
+ROLE_ENFORCEMENT_ENFORCED = "ENFORCED"
+# Default at import reflects loopback-trust posture; use role_enforcement_status() for runtime value.
+ROLE_ENFORCEMENT_STATUS = ROLE_ENFORCEMENT_LOOPBACK_TRUST
 
 
 class OperatorRole(str, Enum):
@@ -111,6 +110,14 @@ def capabilities_for_role(role: OperatorRole) -> frozenset[str]:
 
 
 def role_allows(role: OperatorRole, capability: str) -> bool:
-    """Pure capability check. NOT wired to any request path (see module docstring)."""
+    """Pure capability check against the operator role matrix."""
 
     return capability in ROLE_CAPABILITY_MATRIX[role]
+
+
+def role_enforcement_status() -> str:
+    """Return enforcement sentinel for the active auth configuration."""
+
+    from .access_control import role_enforcement_status as _runtime_status
+
+    return _runtime_status()
