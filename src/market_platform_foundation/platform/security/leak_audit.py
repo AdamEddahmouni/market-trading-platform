@@ -19,9 +19,18 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from ...credential_audit import SECRET_SCAN_RULES
-from .redaction import is_secret_key
+from .redaction import is_secret_key, normalize_key
 
 SECRET_AUDIT_SCHEMA = "platform/secret-audit/1.0.0"
+
+# Operational field names that contain secret-shaped substrings but are not credentials.
+BENIGN_SECRET_SHAPED_KEYS: frozenset[str] = frozenset(
+    normalize_key(name)
+    for name in (
+        "idempotency_key",
+        "execution_authority",
+    )
+)
 
 PLACEHOLDER_VALUES: frozenset[str] = frozenset(
     {"", "CHANGEME", "EXAMPLE", "PLACEHOLDER", "NOT_A_SECRET"}
@@ -65,7 +74,7 @@ def scan_snapshot(
     if isinstance(snapshot, Mapping):
         for key, value in snapshot.items():
             child_path = f"{path}.{key}" if path else str(key)
-            if is_secret_key(str(key)):
+            if is_secret_key(str(key)) and normalize_key(str(key)) not in BENIGN_SECRET_SHAPED_KEYS:
                 if isinstance(value, str) and value.strip().upper() not in PLACEHOLDER_VALUES:
                     findings.append(
                         SecretFinding(

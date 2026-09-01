@@ -43,9 +43,17 @@ class IsolatedStateTest(unittest.TestCase):
         self._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         os.environ["IMP_STATE_DIR"] = self._tmp.name
         os.environ["IMP_PERSIST_STATE"] = "1"
-        os.environ.pop("IMP_LIVE_EXECUTION", None)
-        os.environ.pop("IMP_PAPER_EXECUTION", None)
-        os.environ.pop("IMP_BROKER_PAPER_EXECUTION", None)
+        for key in (
+            "IMP_LIVE_EXECUTION",
+            "IMP_PAPER_EXECUTION",
+            "IMP_BROKER_PAPER_EXECUTION",
+            "IMP_LIVE_OBSERVATIONAL",
+            "IMP_MOOMOO_LIVE",
+            "IMP_LIVE_INTERNAL_SIMULATION",
+            "IMP_SHADOW_RECORDING",
+            "IMP_SHADOW_RUN_ID",
+        ):
+            os.environ.pop(key, None)
         reset_local_state_for_tests()
 
     def tearDown(self) -> None:

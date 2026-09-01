@@ -320,17 +320,20 @@ class ActiveOperatorInstrumentTests(unittest.TestCase):
         from market_platform_foundation.ui_api.paper_projections import preview_paper_order
 
         os.environ["IMP_LIVE_OBSERVATIONAL"] = "1"
-        store = self._store()
-        instrument, source = resolve_active_operator_instrument(store)
-        self.assertIsNone(instrument)
-        self.assertEqual(source, SOURCE_NONE)
-        self.assertNotEqual(instrument, store.instrument_id)
-        with self.assertRaises(ValueError) as raised:
-            preview_paper_order(
-                store,
-                {"side": "BUY", "quantity": 1, "client_order_id": "p31-live", "idempotency_key": "p31-live"},
-            )
-        self.assertEqual(str(raised.exception), "OPERATOR_INSTRUMENT_REQUIRED")
+        try:
+            store = self._store()
+            instrument, source = resolve_active_operator_instrument(store)
+            self.assertIsNone(instrument)
+            self.assertEqual(source, SOURCE_NONE)
+            self.assertNotEqual(instrument, store.instrument_id)
+            with self.assertRaises(ValueError) as raised:
+                preview_paper_order(
+                    store,
+                    {"side": "BUY", "quantity": 1, "client_order_id": "p31-live", "idempotency_key": "p31-live"},
+                )
+            self.assertEqual(str(raised.exception), "OPERATOR_INSTRUMENT_REQUIRED")
+        finally:
+            os.environ.pop("IMP_LIVE_OBSERVATIONAL", None)
 
     def test_explicit_ticket_symbol_wins(self) -> None:
         from market_platform_foundation.local_state.startup import open_local_state

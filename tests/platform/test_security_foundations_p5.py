@@ -270,6 +270,15 @@ class SecretAuditTest(unittest.TestCase):
             context="readiness",
         )
 
+    def test_assert_no_secrets_allows_operational_key_shaped_fields(self) -> None:
+        assert_no_secrets_in_payload(
+            {
+                "submission": {"idempotency_key": "e5-0", "order_id": "ord-1"},
+                "data_health": {"execution_authority": "AUTHORIZED"},
+            },
+            context="paper_order_response",
+        )
+
     def test_assert_no_secrets_fails_on_structural_leak(self) -> None:
         with self.assertRaises(SecretLeakError):
             assert_no_secrets_in_payload(
