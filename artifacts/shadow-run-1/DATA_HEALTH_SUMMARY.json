@@ -16,11 +16,13 @@
   },
   "timestamp_anomalies": 0,
   "missing_fields": 0,
-  "observations_collected": 5,
-  "decisions": 5,
-  "abstentions": 5,
+  "observations_collected": 8,
+  "decisions": 8,
+  "abstentions": 8,
   "predictions": 0,
   "recorder_errors": 0,
-  "scheduled_grid_opportunities": 0,
+  "scheduled_grid_opportunities": 12,
+  "decisions_with_full_provenance": 3,
+  "legacy_provenance_gap": 5,
   "stopping_rule_met": false
 }

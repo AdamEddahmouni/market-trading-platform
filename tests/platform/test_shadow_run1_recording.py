@@ -132,6 +132,7 @@ class RecordingTests(RecorderHarness):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["outcome"], "ABSTAINED_MODEL")
         self.assertEqual(rows[0]["detail"]["reason"], "FLAT_BAND")
+        self.assertEqual(rows[0]["detail"]["decision_time_ns"], decision_s * NS)
         self.assertIsNone(rows[0]["prediction_id"])
         self.assertEqual(self.recorder.stats().model_abstentions, 1)
 
@@ -192,6 +193,26 @@ class RecordingTests(RecorderHarness):
         rows = list(self.exp.iter_decisions(self.manifest.run_id))
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["outcome"], "PREDICTED")
+
+    def test_stale_input_abstention_records_decision_time_provenance(self):
+        base = self.open_ns // NS
+        decision_s = base + 120
+        self.recorder.on_admitted(
+            FakeState([]),
+            {
+                "capability": "TICK",
+                "instrument_id": "BIYA",
+                "event_time": decision_s * NS,
+                "available_time": (decision_s + 1) * NS,
+            },
+            {},
+        )
+        rows = list(self.exp.iter_decisions(self.manifest.run_id))
+        self.assertEqual(len(rows), 1)
+        detail = rows[0]["detail"]
+        self.assertEqual(detail["reason"], "STALE_INPUT")
+        self.assertEqual(detail["decision_time_ns"], decision_s * NS)
+        self.assertEqual(detail["available_time_ns"], (decision_s + 1) * NS)
 
     def test_health_exposes_required_fields(self):
         health = self.recorder.health()

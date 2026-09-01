@@ -38,6 +38,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [P6 protocol](P6_SHADOW_RUN_1_PROTOCOL.md), [completion](../superpowers/plans/2026-09-01-p6-shadow-run-1-forward-validation-completion.md) |
 | **Notes** | Do not mark P6 CLOSED until ACTUAL_FORWARD observation window completes. Fixture/replay remains infrastructure proof only. |
 
+## 2026-09-01 — P6 Shadow Run 1 live forward evidence (session 1)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `shadow`, `tools/research`, `artifacts/shadow-run-1` |
+| **Summary** | Live Moomoo/OpenD forward collection on default-store run `SHRUN-00C5…`: 5 `ABSTAINED_MODEL` decisions, 0 recorder errors. Pinned green `validate.py full` receipt (P6-AC-011), `PREFLIGHT_EVIDENCE.json`, acceptance matrix 15/15 with honest `IN_PROGRESS_EVIDENCE_COLLECTION`. Fixed SQLite thread safety, `event_type` envelope handling, validation flakes, and abstention provenance (`decision_time_ns` / `available_time_ns`) for grid counting. |
+| **Key files** | `collect_shadow_observations.py`, `shadow/recording.py`, `shadow/experiment.py`, `PREFLIGHT_EVIDENCE.json`, `P6_VALIDATION_RECEIPT.json` |
+| **Tests** | `test_shadow_run1_*`; `validate.py full` green |
+| **Related** | [completion](../superpowers/plans/2026-09-01-p6-shadow-run-1-forward-validation-completion.md), [PR #8](https://github.com/AdamEddahmouni/integrated-market-intelligence-platform/pull/8) |
+| **Notes** | Stopping rule not met (0 scheduled grid opportunities on legacy abstention rows; recorder fix applies to new decisions). |
+
 ## 2026-09-01 — TD-005 operator authentication and account-scoped authorization
 
 | Field | Value |

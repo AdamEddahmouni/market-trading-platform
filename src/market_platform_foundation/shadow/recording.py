@@ -118,6 +118,13 @@ class ShadowPredictionRecorder:
         evaluation = evaluate_prediction(eligible, decision_time_ns=event_time_ns, config=self._config)
         ref = reference_price(eligible, decision_time_ns=event_time_ns)
         detail = dict(evaluation)
+        detail["decision_time_ns"] = event_time_ns
+        detail["event_time_ns"] = event_time_ns
+        available_ns = envelope.get("available_time") or envelope.get("available_time_ns")
+        if available_ns is not None:
+            detail["available_time_ns"] = int(available_ns)
+        elif eligible:
+            detail["available_time_ns"] = max(int(t["available_time_ns"]) for t in eligible)
         detail["reference_price"] = ref
         detail["capture_id"] = self._capture_id
         detail["quality_state"] = sorted({

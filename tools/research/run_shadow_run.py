@@ -573,6 +573,14 @@ def _scheduled_grid_count(manifest_config: dict[str, Any], decided_dates: set[st
     return total
 
 
+def _detail_has_provenance(detail: dict[str, Any]) -> bool:
+    if not detail.get("capture_id"):
+        return False
+    if not isinstance(detail.get("available_time_ns"), int) or detail["available_time_ns"] <= 0:
+        return False
+    return _decision_time_from_detail(detail) is not None
+
+
 def _decision_time_from_detail(detail: dict[str, Any]) -> int | None:
     """Recover the decision time recorded by the recorder for any outcome.
 
@@ -761,7 +769,7 @@ def cmd_acceptance(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             for decision in exp.iter_decisions(run_id):
                 total_decisions += 1
                 detail = decision.get("detail")
-                if isinstance(detail, dict) and detail.get("capture_id"):
+                if isinstance(detail, dict) and _detail_has_provenance(detail):
                     decisions_with_provenance += 1
             cfg = contract["manifest"].get("config") or {}
             refs = contract["manifest"].get("data_window_refs") or []

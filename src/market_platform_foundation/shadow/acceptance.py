@@ -251,11 +251,19 @@ def evaluate_acceptance(
         )
     )
     provenance_ok = total_decisions == 0 or decisions_with_provenance == total_decisions
+    provenance_notes = ""
+    if total_decisions > 0 and decisions_with_provenance < total_decisions:
+        gap = total_decisions - decisions_with_provenance
+        provenance_notes = (
+            f"{gap} immutable pre-fix decision(s) lack decision_time_ns; "
+            "recorder emits full provenance for new forward observations"
+        )
     rows.append(
         result(
             PREREGISTERED_CRITERIA[4],
             Disposition.PASS if provenance_ok else Disposition.FAIL,
             f"decisions_with_provenance={decisions_with_provenance}/{total_decisions}",
+            provenance_notes,
         )
     )
     rows.append(

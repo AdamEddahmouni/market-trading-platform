@@ -27,9 +27,11 @@ ACTUAL_FORWARD observations collected on the default-store run (Moomoo/OpenD liv
 
 | Metric | Value |
 |--------|------:|
-| ACTUAL_FORWARD model outcomes (abstentions + predictions) | 5 |
-| Decisions | 5 |
-| Abstentions | 5 |
+| ACTUAL_FORWARD model outcomes (abstentions + predictions) | 8 |
+| Decisions | 8 |
+| Abstentions | 8 |
+| Decisions with full provenance (post-fix) | 3 |
+| Scheduled grid opportunities (armed session) | 12 |
 | Predictions | 0 |
 | Recorder errors | 0 |
 | Scheduled grid opportunities | 0 |
@@ -48,6 +50,7 @@ See `artifacts/shadow-run-1/SOURCE_AVAILABILITY_AUDIT.json`. `MOOMOO_BIYA_OBSERV
 1. **`event_type` vs `capability`** — live admission envelopes use `event_type`; recorder now accepts both.
 2. **SQLite thread safety** — `ShadowExperimentStore` / `ShadowStore` use `check_same_thread=False` + `RLock` so Moomoo feed callbacks can write decisions.
 3. **Execution gate check** — `IMP_SHADOW_RECORDING` no longer misclassified as an execution arm in acceptance.
+4. **Abstention provenance** — recorder now writes `decision_time_ns` / `available_time_ns` on all outcomes (5 legacy rows pre-fix remain immutable without timestamps).
 
 ## No-lookahead verification
 
