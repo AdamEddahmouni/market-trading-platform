@@ -27,14 +27,13 @@ ACTUAL_FORWARD observations collected on the default-store run (Moomoo/OpenD liv
 
 | Metric | Value |
 |--------|------:|
-| ACTUAL_FORWARD model outcomes (abstentions + predictions) | 8 |
-| Decisions | 8 |
-| Abstentions | 8 |
-| Decisions with full provenance (post-fix) | 3 |
+| ACTUAL_FORWARD model outcomes (abstentions + predictions) | 10 |
+| Decisions | 10 |
+| Abstentions | 10 |
+| Decisions with full provenance | 10/10 (5 inline + 5 sealed-capture reconciliation) |
 | Scheduled grid opportunities (armed session) | 12 |
 | Predictions | 0 |
 | Recorder errors | 0 |
-| Scheduled grid opportunities | 0 |
 | Run state | OPEN (resumable) |
 
 ## Source availability
@@ -50,7 +49,9 @@ See `artifacts/shadow-run-1/SOURCE_AVAILABILITY_AUDIT.json`. `MOOMOO_BIYA_OBSERV
 1. **`event_type` vs `capability`** — live admission envelopes use `event_type`; recorder now accepts both.
 2. **SQLite thread safety** — `ShadowExperimentStore` / `ShadowStore` use `check_same_thread=False` + `RLock` so Moomoo feed callbacks can write decisions.
 3. **Execution gate check** — `IMP_SHADOW_RECORDING` no longer misclassified as an execution arm in acceptance.
-4. **Abstention provenance** — recorder now writes `decision_time_ns` / `available_time_ns` on all outcomes (5 legacy rows pre-fix remain immutable without timestamps).
+4. **Abstention provenance** — recorder now writes `decision_time_ns` / `available_time_ns` on all outcomes; legacy immutable rows reconciled via `reconcile_shadow_provenance.py` + `LEGACY_PROVENANCE_RECONCILIATION.json`.
+5. **P6-AC-010 default matrix write** — `acceptance` subcommand now always emits the preregistered matrix path.
+6. **Acceptance source reproducibility** — P6-AC-002 now derives live-source availability from the immutable run reference and sealed capture, so acceptance does not depend on the operator’s current process environment.
 
 ## No-lookahead verification
 
@@ -62,7 +63,7 @@ See `artifacts/shadow-run-1/SOURCE_AVAILABILITY_AUDIT.json`. `MOOMOO_BIYA_OBSERV
 
 ## Operational findings
 
-- Live 90s collection via `collect_shadow_observations.py` with external Moomoo SDK venv
+- Live 90s + 120s collections via `collect_shadow_observations.py` with external Moomoo SDK venv
 - Shadow recorder wrote `ABSTAINED_MODEL` during live ingest (0 `RECORDER_EXCEPTION`)
 - Preflight remains fail-closed without pinned validation + runtime health receipts
 

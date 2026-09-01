@@ -26,6 +26,54 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-01 — P6 Shadow Run 1 duplicate-bucket operational check
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `shadow`, `tools/research`, `artifacts/shadow-run-1` |
+| **Summary** | Completed another 120-second live Moomoo/OpenD collection increment. No new decision rows were emitted because the observed buckets were already recorded; append-only deduplication held, with zero recorder errors. |
+| **Key files** | `.local/shadow/experiment.sqlite3`, `.local/shadow/captures/CAP-BIYA-SR1-20260901.jsonl`, `artifacts/shadow-run-1/P6_ACCEPTANCE_MATRIX.json` |
+| **Tests** | Acceptance refreshed with environment variables cleared: 15/15 pass; reconciliation 5/5, 0 unreconciled |
+| **Related** | [completion](../superpowers/plans/2026-09-01-p6-shadow-run-1-forward-validation-completion.md), [SOP](sops/FORWARD_SHADOW_VALIDATION.md) |
+| **Notes** | Stopping rule remains unmet at 12/65 scheduled grid opportunities. |
+
+## 2026-09-01 — P6 acceptance source reproducibility hardening
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `shadow`, `tools/research`, `tests` |
+| **Summary** | Acceptance now derives P6-AC-002 from the immutable run’s `live_observation` reference and non-empty sealed capture, rather than requiring live environment variables at evaluation time. This keeps acceptance reproducible and prevents a valid stored run from being incorrectly blocked offline. |
+| **Key files** | `tools/research/run_shadow_run.py`, `tests/platform/test_shadow_run1_cli.py` |
+| **Tests** | Complete `test_shadow_run1*.py` subset — 59 tests passed; acceptance regenerated with environment variables cleared — 15/15 pass |
+| **Related** | [completion](../superpowers/plans/2026-09-01-p6-shadow-run-1-forward-validation-completion.md), [SOP](sops/FORWARD_SHADOW_VALIDATION.md) |
+| **Notes** | P6 remains `IN_PROGRESS_EVIDENCE_COLLECTION`; stopping rule is not met. |
+
+## 2026-09-01 — P6 Shadow Run 1 live forward evidence (additional bounded session)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `shadow`, `tools/research`, `artifacts/shadow-run-1` |
+| **Summary** | Completed an additional 120-second live Moomoo/OpenD observation session for BIYA on the existing preregistered run. The run now contains 10 ACTUAL_FORWARD model outcomes and 10/10 provenance-complete decisions with zero recorder errors; the stopping rule remains unmet. |
+| **Key files** | `.local/shadow/experiment.sqlite3`, `.local/shadow/captures/CAP-BIYA-SR1-20260901.jsonl`, `artifacts/shadow-run-1/P6_ACCEPTANCE_MATRIX.json` |
+| **Tests** | Complete `test_shadow_run1*.py` subset — 58 tests passed; `git diff --check` clean apart from CRLF normalization warning |
+| **Related** | [completion](../superpowers/plans/2026-09-01-p6-shadow-run-1-forward-validation-completion.md), [SOP](sops/FORWARD_SHADOW_VALIDATION.md) |
+| **Notes** | Acceptance remains `IN_PROGRESS_EVIDENCE_COLLECTION`; current scheduled grid count is 12/65. |
+
+## 2026-09-01 — P6 legacy provenance reconciliation (P6-AC-005 closure)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `shadow`, `tools/research` |
+| **Summary** | Added `reconcile_shadow_provenance.py` to map 5 immutable pre-fix decisions to sealed capture buckets without mutating store rows. Wired acceptance to count reconciled IDs; fixed P6-AC-010 default matrix emission. Honest disposition remains `IN_PROGRESS_EVIDENCE_COLLECTION` (stopping rule not met). |
+| **Key files** | `tools/research/reconcile_shadow_provenance.py`, `tools/research/run_shadow_run.py`, `artifacts/shadow-run-1/LEGACY_PROVENANCE_RECONCILIATION.json`, `tests/platform/test_shadow_run1_provenance_reconcile.py` |
+| **Tests** | `test_shadow_run1_provenance_reconcile`, `test_shadow_run1_acceptance` — pass |
+| **Related** | [completion](../superpowers/plans/2026-09-01-p6-shadow-run-1-forward-validation-completion.md), [SOP](sops/FORWARD_SHADOW_VALIDATION.md) |
+| **Notes** | P6 not CLOSED until stopping rule + close/label/report cycle completes. |
+
 ## 2026-09-01 — P6 Shadow Run 1 forward-validation evidence phase (preregistration)
 
 | Field | Value |

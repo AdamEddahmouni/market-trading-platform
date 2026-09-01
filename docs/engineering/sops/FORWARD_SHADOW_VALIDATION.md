@@ -29,7 +29,7 @@ Never label fixture or replay results as forward validation.
 
 ```powershell
 $env:PYTHONPATH='src'
-$store = ".local/state/shadow"   # default via run_shadow_run store_root_default()
+$store = ".local/shadow"   # default via run_shadow_run store_root_default()
 ```
 
 ### 1. Preflight (no side effects)
@@ -98,13 +98,20 @@ Repeat until `FULLY_LABELED` or capture gaps documented.
 
 ### 7. Report and acceptance
 
+If any decisions predate the provenance recorder fix, reconcile legacy rows from sealed captures (does not mutate store rows):
+
+```powershell
+.venv\Scripts\python.exe tools/research/reconcile_shadow_provenance.py --run-id <run_id> --store-root .local/shadow
+```
+
 ```powershell
 .venv\Scripts\python.exe tools/research/run_shadow_run.py report --run-id <run_id>
 .venv\Scripts\python.exe tools/research/run_shadow_run.py acceptance `
   --run-id <run_id> `
-  --matrix-out artifacts/shadow-run-1/P6_ACCEPTANCE_MATRIX.json `
   --validation-green
 ```
+
+`acceptance` writes `artifacts/shadow-run-1/P6_ACCEPTANCE_MATRIX.json` by default.
 
 ## Resume behavior
 
@@ -126,11 +133,12 @@ Repeat until `FULLY_LABELED` or capture gaps documented.
 | Protocol | `artifacts/shadow-run-1/P6_SHADOW_RUN_1_PROTOCOL.json` |
 | Source audit | `artifacts/shadow-run-1/SOURCE_AVAILABILITY_AUDIT.json` |
 | Acceptance matrix | `artifacts/shadow-run-1/P6_ACCEPTANCE_MATRIX.json` |
-| Experiment store | `.local/state/shadow/experiment.sqlite3` |
-| Captures | `.local/state/shadow/captures/*.jsonl` |
+| Legacy provenance reconciliation | `artifacts/shadow-run-1/LEGACY_PROVENANCE_RECONCILIATION.json` |
+| Experiment store | `.local/shadow/experiment.sqlite3` |
+| Captures | `.local/shadow/captures/*.jsonl` |
 
 ## Blockers (current baseline)
 
-- Moomoo OpenD not configured → forward observations **blocked**; machinery remains resumable.
+- Stopping rule not met (12/65 scheduled grid opportunities; need 5 complete sessions + 65 grid OR 8 elapsed sessions).
 - ES data (ADR-DATA-001) excluded — do not fabricate ES forward evidence.
 - TD-004 Moomoo paper real-wire separate from shadow observational path.

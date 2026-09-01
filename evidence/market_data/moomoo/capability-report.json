@@ -10,7 +10,7 @@
       "entitled": true,
       "evidence_class": "OBSERVED",
       "healthy": false,
-      "last_verified": "2026-08-22T01:03:59.353738Z",
+      "last_verified": "2026-09-01T17:59:55.692528Z",
       "notes": "",
       "provider_supports": true,
       "reason": null,
@@ -31,7 +31,7 @@
       "entitled": true,
       "evidence_class": "OBSERVED",
       "healthy": false,
-      "last_verified": "2026-08-22T01:03:59.353738Z",
+      "last_verified": "2026-09-01T17:59:55.692528Z",
       "notes": "Characterization only; PI14+ remains unauthorized.",
       "provider_supports": true,
       "reason": null,
@@ -52,7 +52,7 @@
       "entitled": true,
       "evidence_class": "OBSERVED",
       "healthy": false,
-      "last_verified": "2026-08-22T01:03:59.353738Z",
+      "last_verified": "2026-09-01T17:59:55.692528Z",
       "notes": "",
       "provider_supports": true,
       "reason": null,
@@ -73,7 +73,7 @@
       "entitled": true,
       "evidence_class": "OBSERVED",
       "healthy": false,
-      "last_verified": "2026-08-22T01:03:54.738003Z",
+      "last_verified": "2026-09-01T17:59:52.060210Z",
       "notes": "",
       "provider_supports": true,
       "reason": null,
@@ -94,8 +94,8 @@
       "entitled": true,
       "evidence_class": "OBSERVED",
       "healthy": true,
-      "last_verified": "2026-08-22T01:03:54.610214Z",
-      "notes": "depth=10 push_count=1 detailed_orderbook=not_requested",
+      "last_verified": "2026-09-01T17:59:51.985188Z",
+      "notes": "depth=10 push_count=45 detailed_orderbook=not_requested",
       "provider_supports": true,
       "reason": null,
       "reason_code": null,
@@ -115,7 +115,7 @@
       "entitled": true,
       "evidence_class": "OBSERVED",
       "healthy": false,
-      "last_verified": "2026-08-22T01:03:46.461209Z",
+      "last_verified": "2026-09-01T17:59:43.897250Z",
       "notes": "pre_present=True after_present=True",
       "provider_supports": true,
       "reason": null,
@@ -136,8 +136,8 @@
       "entitled": true,
       "evidence_class": "OBSERVED",
       "healthy": true,
-      "last_verified": "2026-08-22T01:03:54.610214Z",
-      "notes": "subscribe_ret=0 cache_ret=0 push_count=1",
+      "last_verified": "2026-09-01T17:59:51.985188Z",
+      "notes": "subscribe_ret=0 cache_ret=0 push_count=36",
       "provider_supports": true,
       "reason": null,
       "reason_code": null,
@@ -157,7 +157,7 @@
       "entitled": true,
       "evidence_class": "OBSERVED",
       "healthy": false,
-      "last_verified": "2026-08-22T01:03:46.461209Z",
+      "last_verified": "2026-09-01T17:59:43.897250Z",
       "notes": "overnight_* snapshot fields present",
       "provider_supports": true,
       "reason": null,
@@ -178,7 +178,7 @@
       "entitled": true,
       "evidence_class": "OBSERVED",
       "healthy": false,
-      "last_verified": "2026-08-22T01:03:46.461209Z",
+      "last_verified": "2026-09-01T17:59:43.897250Z",
       "notes": "Snapshot inventory stored separately; raw rows not dumped.",
       "provider_supports": true,
       "reason": null,
@@ -199,8 +199,8 @@
       "entitled": true,
       "evidence_class": "OBSERVED",
       "healthy": true,
-      "last_verified": "2026-08-22T01:03:54.610214Z",
-      "notes": "cache_rows=20 push_count=1",
+      "last_verified": "2026-09-01T17:59:51.985188Z",
+      "notes": "cache_rows=20 push_count=68",
       "provider_supports": true,
       "reason": null,
       "reason_code": null,
@@ -220,7 +220,7 @@
       "entitled": false,
       "evidence_class": "OBSERVED",
       "healthy": false,
-      "last_verified": "2026-08-22T01:03:58.430857Z",
+      "last_verified": "2026-09-01T17:59:54.942830Z",
       "notes": "Insufficient quote permission. Please go to the Quote Store to purchase a quote card.",
       "provider_supports": true,
       "reason": "ACCOUNT_NOT_ENTITLED_OR_NO_LISTING",
@@ -241,7 +241,7 @@
       "entitled": false,
       "evidence_class": "OBSERVED",
       "healthy": false,
-      "last_verified": "2026-08-22T01:03:54.742029Z",
+      "last_verified": "2026-09-01T17:59:52.067002Z",
       "notes": "No permission to get quotes for US.AAPL. Please check US MarketOptions quote permissions.",
       "provider_supports": true,
       "reason": "ACCOUNT_NOT_ENTITLED",
@@ -258,12 +258,12 @@
     "connection": "CONNECTED",
     "evidence_class": "OBSERVED",
     "host": "127.0.0.1",
-    "local_timestamp": 1787360626.399783,
+    "local_timestamp": 1788285583.789402,
     "opend_version": "1010",
     "port": 11111,
     "qot_logined": "True",
     "ret": 0,
-    "server_timestamp": "1787360626",
+    "server_timestamp": "1788285583",
     "trd_logined": "True"
   },
   "entitlements": {
@@ -313,7 +313,7 @@
         "US.SPY",
         "US.BIYA"
       ],
-      "received_time_ns": 1787360626402864300,
+      "received_time_ns": 1788285583817952800,
       "ret": 0,
       "row_count": 4
     },
@@ -337,7 +337,7 @@
       "option_used_quota": 0,
       "own_option_used_quota": 0,
       "own_security_firm": "N/A",
-      "own_used": 0,
+      "own_used": 3,
       "remain": 97,
       "sub_list": {
         "ORDER_BOOK": [
@@ -357,7 +357,7 @@
       "option_used_quota": 0,
       "own_option_used_quota": 0,
       "own_security_firm": "N/A",
-      "own_used": 0,
+      "own_used": 3,
       "remain": 97,
       "sub_list": {
         "ORDER_BOOK": [
@@ -382,20 +382,20 @@
   ],
   "markets": {
     "market_hk": "CLOSED",
-    "market_hkfuture": "NIGHT_END",
+    "market_hkfuture": "NIGHT_OPEN",
     "market_jp": "CLOSED",
-    "market_jpfuture": "NIGHT_END",
+    "market_jpfuture": "NIGHT_OPEN",
     "market_my": "CLOSED",
     "market_sg": "CLOSED",
-    "market_sgfuture": "NIGHT_END",
+    "market_sgfuture": "NIGHT_OPEN",
     "market_sh": "ASHARE_AFTER_HOURS_END",
     "market_sz": "ASHARE_AFTER_HOURS_END",
-    "market_us": "AFTER_HOURS_END",
-    "market_usfuture": "FUTURE_CLOSE"
+    "market_us": "AFTERNOON",
+    "market_usfuture": "FUTURE_OPEN"
   },
   "opend_version": "1010",
   "port": 11111,
-  "probe_timestamp": "2026-08-22T01:03:46.394801Z",
+  "probe_timestamp": "2026-09-01T17:59:43.765313Z",
   "probe_version": "1.0.0",
   "provider": "MOOMOO",
   "quality_findings": {
@@ -416,8 +416,8 @@
       }
     },
     "order_book": {
-      "best_ask": 309.66,
-      "best_bid": 309.65,
+      "best_ask": 325.21,
+      "best_bid": 325.18,
       "depth_ask": 10,
       "depth_bid": 10
     },
@@ -448,62 +448,62 @@
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.66,
-            "size": 25.0
+            "price": 325.21,
+            "size": 38.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.7,
-            "size": 500.0
+            "price": 325.23,
+            "size": 128.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.74,
-            "size": 1.0
+            "price": 325.24,
+            "size": 93.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.82,
-            "size": 65.0
+            "price": 325.25,
+            "size": 198.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.87,
-            "size": 10.0
+            "price": 325.26,
+            "size": 84.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.9,
-            "size": 80.0
+            "price": 325.27,
+            "size": 88.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.91,
-            "size": 80.0
+            "price": 325.28,
+            "size": 90.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.95,
-            "size": 13.0
+            "price": 325.29,
+            "size": 89.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.96,
-            "size": 100.0
+            "price": 325.3,
+            "size": 274.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.99,
-            "size": 1011.0
+            "price": 325.31,
+            "size": 160.0
           }
         ]
       },
@@ -513,62 +513,62 @@
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.65,
-            "size": 2.0
+            "price": 325.18,
+            "size": 51.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.63,
-            "size": 10.0
+            "price": 325.17,
+            "size": 122.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.6,
-            "size": 5.0
+            "price": 325.16,
+            "size": 249.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.52,
-            "size": 54.0
+            "price": 325.15,
+            "size": 81.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.51,
-            "size": 20.0
+            "price": 325.14,
+            "size": 208.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.5,
-            "size": 172.0
+            "price": 325.13,
+            "size": 133.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.47,
-            "size": 100.0
+            "price": 325.12,
+            "size": 92.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.4,
-            "size": 289.0
+            "price": 325.11,
+            "size": 132.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.38,
-            "size": 4.0
+            "price": 325.1,
+            "size": 374.0
           },
           {
             "order_count": 0,
             "order_details_keys": [],
-            "price": 309.36,
-            "size": 5.0
+            "price": 325.09,
+            "size": 86.0
           }
         ]
       },
@@ -582,63 +582,63 @@
         "svr_recv_time_ask",
         "svr_recv_time_bid"
       ],
-      "svr_recv_time_ask": "",
-      "svr_recv_time_bid": ""
+      "svr_recv_time_ask": "2026-09-01 13:59:51.829",
+      "svr_recv_time_bid": "2026-09-01 13:59:51.829"
     },
     "equity_quote": [
       {
         "field": "after_amplitude",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 0.2262
+        "sample": 0.325
       },
       {
         "field": "after_change_rate",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 0.109
+        "sample": 0.046
       },
       {
         "field": "after_change_val",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 0.34
+        "sample": 0.1461
       },
       {
         "field": "after_high_price",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 309.7
+        "sample": 317.25
       },
       {
         "field": "after_low_price",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 309.0
+        "sample": 316.22
       },
       {
         "field": "after_price",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 309.69
+        "sample": 316.9961
       },
       {
         "field": "after_turnover",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 1795369282.532
+        "sample": 1889554958.199
       },
       {
         "field": "after_volume",
         "non_null_count": 1,
         "python_type": "int",
-        "sample": 5803953
+        "sample": 5963580
       },
       {
         "field": "amplitude",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 1.725
+        "sample": 3.965
       },
       {
         "field": "code",
@@ -674,13 +674,13 @@
         "field": "data_date",
         "non_null_count": 1,
         "python_type": "str",
-        "sample": "2026-08-21"
+        "sample": "2026-09-01"
       },
       {
         "field": "data_time",
         "non_null_count": 1,
         "python_type": "str",
-        "sample": "16:00:00"
+        "sample": "13:59:51.776"
       },
       {
         "field": "delta",
@@ -704,7 +704,7 @@
         "field": "high_price",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 312.38
+        "sample": 327.3
       },
       {
         "field": "implied_volatility",
@@ -722,7 +722,7 @@
         "field": "last_price",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 309.35
+        "sample": 325.18
       },
       {
         "field": "last_settle_price",
@@ -740,7 +740,7 @@
         "field": "low_price",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 307.01
+        "sample": 314.737
       },
       {
         "field": "name",
@@ -764,7 +764,7 @@
         "field": "open_price",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 312.05
+        "sample": 317.01
       },
       {
         "field": "option_area_type",
@@ -776,49 +776,49 @@
         "field": "overnight_amplitude",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 0.4111
+        "sample": 0.4418
       },
       {
         "field": "overnight_change_rate",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": -0.028
+        "sample": -0.268
       },
       {
         "field": "overnight_change_val",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": -0.09
+        "sample": -0.85
       },
       {
         "field": "overnight_high_price",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 312.37
+        "sample": 317.4
       },
       {
         "field": "overnight_low_price",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 311.09
+        "sample": 316.0
       },
       {
         "field": "overnight_price",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 311.21
+        "sample": 316.0
       },
       {
         "field": "overnight_turnover",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 16140521.95
+        "sample": 12547126.99
       },
       {
         "field": "overnight_volume",
         "non_null_count": 1,
         "python_type": "int",
-        "sample": 51775
+        "sample": 39628
       },
       {
         "field": "owner_lot_multiplier",
@@ -842,49 +842,49 @@
         "field": "pre_amplitude",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 0.8673
+        "sample": 0.6952
       },
       {
         "field": "pre_change_rate",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": -0.089
+        "sample": 0.069
       },
       {
         "field": "pre_change_val",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": -0.28
+        "sample": 0.22
       },
       {
         "field": "pre_high_price",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 312.7
+        "sample": 317.7
       },
       {
         "field": "pre_low_price",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 310.0
+        "sample": 315.497
       },
       {
         "field": "pre_price",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 311.02
+        "sample": 317.07
       },
       {
         "field": "pre_turnover",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 492239686.792
+        "sample": 196097844.385
       },
       {
         "field": "pre_volume",
         "non_null_count": 1,
         "python_type": "int",
-        "sample": 1580691
+        "sample": 619290
       },
       {
         "field": "premium",
@@ -896,7 +896,7 @@
         "field": "prev_close_price",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 311.3
+        "sample": 316.85
       },
       {
         "field": "price_spread",
@@ -938,13 +938,13 @@
         "field": "turnover",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 14517834813.0
+        "sample": 10622568398.728
       },
       {
         "field": "turnover_rate",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 0.321
+        "sample": 0.225
       },
       {
         "field": "vega",
@@ -956,7 +956,7 @@
         "field": "volume",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 46876815.0
+        "sample": 32849551.0
       }
     ],
     "equity_snapshot": [
@@ -964,103 +964,103 @@
         "field": "after_amplitude",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 0.2262
+        "sample": 0.325
       },
       {
         "field": "after_change_rate",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 0.109
+        "sample": 0.046
       },
       {
         "field": "after_change_val",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 0.34
+        "sample": 0.1461
       },
       {
         "field": "after_high_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 309.7
+        "sample": 317.25
       },
       {
         "field": "after_low_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 309.0
+        "sample": 316.22
       },
       {
         "field": "after_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 309.69
+        "sample": 316.9961
       },
       {
         "field": "after_turnover",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 1795369282.532
+        "sample": 1889554958.199
       },
       {
         "field": "after_volume",
         "non_null_count": 4,
         "python_type": "int",
-        "sample": 5803953
+        "sample": 5963580
       },
       {
         "field": "amplitude",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 1.725
+        "sample": 3.965
       },
       {
         "field": "ask_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 309.69
+        "sample": 325.17
       },
       {
         "field": "ask_vol",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 40.0
+        "sample": 24.0
       },
       {
         "field": "avg_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 309.701811681
+        "sample": 323.370018817
       },
       {
         "field": "bid_ask_ratio",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 0.0
+        "sample": 78.855
       },
       {
         "field": "bid_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 309.55
+        "sample": 325.14
       },
       {
         "field": "bid_vol",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 40.0
+        "sample": 203.0
       },
       {
         "field": "circular_market_val",
         "non_null_count": 3,
         "python_type": "float",
-        "sample": 4511541743410.851
+        "sample": 4742258210928.501
       },
       {
         "field": "close_price_5min",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 309.96
+        "sample": 324.655
       },
       {
         "field": "code",
@@ -1078,13 +1078,13 @@
         "field": "dividend_lfy_ratio",
         "non_null_count": 3,
         "python_type": "float",
-        "sample": 0.329
+        "sample": 0.313
       },
       {
         "field": "dividend_ratio_ttm",
         "non_null_count": 3,
         "python_type": "float",
-        "sample": 0.34
+        "sample": 0.32
       },
       {
         "field": "dividend_ttm",
@@ -1162,7 +1162,7 @@
         "field": "high_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 312.38
+        "sample": 327.3
       },
       {
         "field": "highest52weeks_price",
@@ -1216,7 +1216,7 @@
         "field": "last_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 309.35
+        "sample": 325.1699
       },
       {
         "field": "listing_date",
@@ -1240,13 +1240,13 @@
         "field": "low_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 307.01
+        "sample": 314.737
       },
       {
         "field": "lowest52weeks_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 223.86304598
+        "sample": 225.118408649
       },
       {
         "field": "lowest_history_price",
@@ -1288,7 +1288,7 @@
         "field": "open_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 312.05
+        "sample": 317.01
       },
       {
         "field": "option_area_type",
@@ -1408,67 +1408,67 @@
         "field": "overnight_amplitude",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 0.4111
+        "sample": 0.4418
       },
       {
         "field": "overnight_change_rate",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": -0.028
+        "sample": -0.268
       },
       {
         "field": "overnight_change_val",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": -0.09
+        "sample": -0.85
       },
       {
         "field": "overnight_high_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 312.37
+        "sample": 317.4
       },
       {
         "field": "overnight_low_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 311.09
+        "sample": 316.0
       },
       {
         "field": "overnight_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 311.21
+        "sample": 316.0
       },
       {
         "field": "overnight_turnover",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 16140521.95
+        "sample": 12547126.99
       },
       {
         "field": "overnight_volume",
         "non_null_count": 4,
         "python_type": "int",
-        "sample": 51775
+        "sample": 39628
       },
       {
         "field": "pb_ratio",
         "non_null_count": 3,
         "python_type": "float",
-        "sample": 41.991
+        "sample": 44.138
       },
       {
         "field": "pe_ratio",
         "non_null_count": 3,
         "python_type": "float",
-        "sample": 41.467
+        "sample": 43.588
       },
       {
         "field": "pe_ttm_ratio",
         "non_null_count": 3,
         "python_type": "float",
-        "sample": 35.475
+        "sample": 37.29
       },
       {
         "field": "plate_equal_count",
@@ -1498,55 +1498,55 @@
         "field": "pre_amplitude",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 0.8673
+        "sample": 0.6952
       },
       {
         "field": "pre_change_rate",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": -0.089
+        "sample": 0.069
       },
       {
         "field": "pre_change_val",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": -0.28
+        "sample": 0.22
       },
       {
         "field": "pre_high_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 312.7
+        "sample": 317.7
       },
       {
         "field": "pre_low_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 310.0
+        "sample": 315.497
       },
       {
         "field": "pre_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 311.02
+        "sample": 317.07
       },
       {
         "field": "pre_turnover",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 492239686.792
+        "sample": 196097844.385
       },
       {
         "field": "pre_volume",
         "non_null_count": 4,
         "python_type": "int",
-        "sample": 1580691
+        "sample": 619290
       },
       {
         "field": "prev_close_price",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 311.3
+        "sample": 316.85
       },
       {
         "field": "price_spread",
@@ -1600,7 +1600,7 @@
         "field": "total_market_val",
         "non_null_count": 3,
         "python_type": "float",
-        "sample": 4514709583000.0
+        "sample": 4745588051182.0
       },
       {
         "field": "trust_assetClass",
@@ -1612,31 +1612,31 @@
         "field": "trust_aum",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 817866713533.548
+        "sample": 811937532788.756
       },
       {
         "field": "trust_dividend_yield",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 0.98
+        "sample": 0.99
       },
       {
         "field": "trust_netAssetValue",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 769.06
+        "sample": 769.35
       },
       {
         "field": "trust_outstanding_units",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 1066732116.0
+        "sample": 1058532116.0
       },
       {
         "field": "trust_premium",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": -0.434
+        "sample": -0.985
       },
       {
         "field": "trust_valid",
@@ -1648,31 +1648,31 @@
         "field": "turnover",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 14517834813.0
+        "sample": 10620556140.387
       },
       {
         "field": "turnover_rate",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 0.321
+        "sample": 0.225
       },
       {
         "field": "update_time",
         "non_null_count": 4,
         "python_type": "str",
-        "sample": "2026-08-21 19:59:59.839"
+        "sample": "2026-09-01 13:59:42"
       },
       {
         "field": "volume",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 46876815.0
+        "sample": 32843354.0
       },
       {
         "field": "volume_ratio",
         "non_null_count": 4,
         "python_type": "float",
-        "sample": 1.07
+        "sample": 1.381
       },
       {
         "field": "wrt_break_even_point",
@@ -1830,43 +1830,43 @@
         "field": "price",
         "non_null_count": 20,
         "python_type": "float",
-        "sample": 309.5259
+        "sample": 325.2
       },
       {
         "field": "sequence",
         "non_null_count": 20,
         "python_type": "int",
-        "sample": 7676638422462627840
+        "sample": 7680628124958064656
       },
       {
         "field": "ticker_direction",
         "non_null_count": 20,
         "python_type": "str",
-        "sample": "SELL"
+        "sample": "BUY"
       },
       {
         "field": "time",
         "non_null_count": 20,
         "python_type": "str",
-        "sample": "2026-08-21 19:57:45.324"
+        "sample": "2026-09-01 13:59:50.605"
       },
       {
         "field": "turnover",
         "non_null_count": 20,
         "python_type": "float",
-        "sample": 23214.442499999997
+        "sample": 8455.199999999999
       },
       {
         "field": "type",
         "non_null_count": 20,
         "python_type": "str",
-        "sample": "AUTO_MATCH"
+        "sample": "ODD_LOT"
       },
       {
         "field": "volume",
         "non_null_count": 20,
         "python_type": "float",
-        "sample": 75.0
+        "sample": 26.0
       }
     ],
     "history_kline": [
@@ -1874,13 +1874,13 @@
         "field": "change_rate",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": -0.49112871086311016
+        "sample": -1.0424743685908602
       },
       {
         "field": "close",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 224.072273092
+        "sample": 228.874533458
       },
       {
         "field": "code",
@@ -1892,19 +1892,19 @@
         "field": "high",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 225.686310808
+        "sample": 230.000374581
       },
       {
         "field": "last_close",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 225.178187823
+        "sample": 231.285626836
       },
       {
         "field": "low",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 222.956793692
+        "sample": 226.134654618
       },
       {
         "field": "name",
@@ -1916,37 +1916,37 @@
         "field": "open",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 225.437230914
+        "sample": 228.406263256
       },
       {
         "field": "pe_ratio",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 36.99
+        "sample": 37.782
       },
       {
         "field": "time_key",
         "non_null_count": 1,
         "python_type": "str",
-        "sample": "2025-08-21 00:00:00"
+        "sample": "2025-09-02 00:00:00"
       },
       {
         "field": "turnover",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 6889633743.0
+        "sample": 10137097619.0
       },
       {
         "field": "turnover_rate",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 0.00206
+        "sample": 0.00297
       },
       {
         "field": "volume",
         "non_null_count": 1,
         "python_type": "float",
-        "sample": 30621249.0
+        "sample": 44075638.0
       }
     ],
     "snapshot_session_fields": [
@@ -1994,60 +1994,60 @@
     "history_extended_time": true,
     "snapshot": [
       {
-        "after_price": 309.69,
-        "ask_price": 309.69,
-        "bid_price": 309.55,
+        "after_price": 316.9961,
+        "ask_price": 325.17,
+        "bid_price": 325.14,
         "code": "US.AAPL",
-        "last_price": 309.35,
+        "last_price": 325.1699,
         "lot_size": 1,
-        "overnight_price": 311.21,
-        "pre_price": 311.02,
+        "overnight_price": 316.0,
+        "pre_price": 317.07,
         "sec_status": "NORMAL",
         "suspension": false,
-        "update_time": "2026-08-21 19:59:59.839",
-        "volume": 46876815.0
+        "update_time": "2026-09-01 13:59:42",
+        "volume": 32843354.0
       },
       {
-        "after_price": 215.38,
-        "ask_price": 215.38,
-        "bid_price": 215.35,
+        "after_price": 220.2699,
+        "ask_price": 218.01,
+        "bid_price": 218.0,
         "code": "US.NVDA",
-        "last_price": 214.72,
+        "last_price": 218.0,
         "lot_size": 1,
-        "overnight_price": 218.0,
-        "pre_price": 217.79,
+        "overnight_price": 219.98,
+        "pre_price": 217.05,
         "sec_status": "NORMAL",
         "suspension": false,
-        "update_time": "2026-08-21 19:59:59.034",
-        "volume": 98869300.0
+        "update_time": "2026-09-01 13:59:43",
+        "volume": 62809264.0
       },
       {
-        "after_price": 767.0,
-        "ask_price": 767.39,
-        "bid_price": 767.0,
+        "after_price": 767.51,
+        "ask_price": 761.78,
+        "bid_price": 761.76,
         "code": "US.SPY",
-        "last_price": 765.72,
+        "last_price": 761.77,
         "lot_size": 1,
-        "overnight_price": 764.51,
-        "pre_price": 765.89,
+        "overnight_price": 766.35,
+        "pre_price": 761.96,
         "sec_status": "NORMAL",
         "suspension": false,
-        "update_time": "2026-08-21 19:59:45.641",
-        "volume": 39188673.0
+        "update_time": "2026-09-01 13:59:42",
+        "volume": 19764218.0
       },
       {
-        "after_price": 2.46,
-        "ask_price": 2.46,
-        "bid_price": 2.37,
+        "after_price": 2.2,
+        "ask_price": 2.25,
+        "bid_price": 2.15,
         "code": "US.BIYA",
-        "last_price": 2.37,
+        "last_price": 2.1895,
         "lot_size": 1,
-        "overnight_price": 2.42,
-        "pre_price": 2.37,
+        "overnight_price": 2.17,
+        "pre_price": 2.2,
         "sec_status": "NORMAL",
         "suspension": false,
-        "update_time": "2026-08-21 20:02:23.808",
-        "volume": 70682.0
+        "update_time": "2026-09-01 13:23:47",
+        "volume": 29829.0
       }
     ]
   },
@@ -2079,30 +2079,20 @@
       "own_option_used_quota": 0,
       "own_security_firm": "N/A",
       "own_used": 0,
-      "remain": 97,
-      "sub_list": {
-        "ORDER_BOOK": [
-          "US.AAPL"
-        ],
-        "QUOTE": [
-          "US.AAPL"
-        ],
-        "TICKER": [
-          "US.AAPL"
-        ]
-      },
-      "total_used": 3
+      "remain": 100,
+      "sub_list": {},
+      "total_used": 0
     },
     "ret": 0
   },
-  "tested_at": "2026-08-22T01:03:46.394801Z",
+  "tested_at": "2026-09-01T17:59:43.765313Z",
   "timestamps": {
-    "opend_server_minus_local_s": -0.3997828960418701,
+    "opend_server_minus_local_s": -0.7894020080566406,
     "streaming": {
-      "book_push_count": 1,
-      "quote_push_count": 1,
-      "ticker_push_count": 1
+      "book_push_count": 45,
+      "quote_push_count": 36,
+      "ticker_push_count": 68
     }
   },
-  "verified_at": "2026-08-22T01:03:46.394801Z"
+  "verified_at": "2026-09-01T17:59:43.765313Z"
 }

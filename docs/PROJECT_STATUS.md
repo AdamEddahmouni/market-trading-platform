@@ -42,7 +42,7 @@ Phases 0–16, UI-001/002, MRA-001/002, Platform P0–P4-4C, and mode-specific U
 
 ## Current work
 
-**P6 Shadow Run 1** — forward-validation evidence collection **IN PROGRESS** (protocol preregistered 2026-09-01; 4 ACTUAL_FORWARD abstentions on default-store run `SHRUN-00C5…`; stopping rule not met — see [P6 protocol](engineering/P6_SHADOW_RUN_1_PROTOCOL.md)).
+**P6 Shadow Run 1** — forward-validation evidence collection **IN PROGRESS** (protocol preregistered 2026-09-01; 10 ACTUAL_FORWARD abstentions on default-store run `SHRUN-00C5…`; stopping rule not met — see [P6 protocol](engineering/P6_SHADOW_RUN_1_PROTOCOL.md)).
 
 ---
 
@@ -55,7 +55,7 @@ Phases 0–16, UI-001/002, MRA-001/002, Platform P0–P4-4C, and mode-specific U
 
 ## Next likely work (not committed)
 
-- Complete P6 Shadow Run 1 forward observation window when Moomoo/OpenD available
+- Continue P6 Shadow Run 1 forward observation window across the preregistered sessions
 - TD-004 Moomoo OpenD real-wire when connectivity available
 - Hosted deployment (P5 hosted/OIDC — local auth enforcement complete)
 
@@ -70,7 +70,7 @@ Phases 0–16, UI-001/002, MRA-001/002, Platform P0–P4-4C, and mode-specific U
 | Crypto / prediction-market expansion | Planning only — not authorized |
 | P4-4C Moomoo paper real-wire | Fixture-proven; OpenD TCP protocol |
 | Auth / multi-user enforcement | TD-005 closed — `LOOPBACK_TRUST` default; `ENFORCED` via `IMP_AUTH_ENFORCEMENT_MODE` + principals registry (ADR-0008); hosted OIDC/SSO deferred |
-| P6 forward validation | Protocol preregistered; observational Moomoo path blocked — [P6 protocol](engineering/P6_SHADOW_RUN_1_PROTOCOL.md) |
+| P6 forward validation | Protocol preregistered; 10 ACTUAL_FORWARD observations collected; stopping rule not met — [P6 protocol](engineering/P6_SHADOW_RUN_1_PROTOCOL.md) |
 
 ---
 

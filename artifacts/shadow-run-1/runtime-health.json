@@ -17,7 +17,7 @@
   },
   "operator_message": "MOOMOO LIVE ENVIRONMENT\nOpenD installed     YES  (C:\\Users\\adame\\AppData\\Roaming\\moomoo_OpenD\\moomoo_OpenD.exe)\nOpenD running       YES\n127.0.0.1:11111     REACHABLE\nSDK                  10.10.7008\nQuote context        PASS\nREADY",
   "probe_report": "C:\\Users\\adame\\Desktop\\market-trading-platform\\integrated-market-platform\\evidence\\market_data\\moomoo\\capability-report.json",
-  "probe_stale": true,
+  "probe_stale": false,
   "provider": "MOOMOO",
   "quote_context": {
     "ok": true,
@@ -33,28 +33,28 @@
     "version": "10.10.7008"
   },
   "status": "READY",
-  "verified_at": "2026-08-22T01:03:46.394801Z",
+  "verified_at": "2026-09-01T17:59:43.765313Z",
   "verified_capabilities": [
     {
       "capability_id": "BASIC_QUOTE",
-      "entitled": false,
-      "notes": "subscribe_ret=0 cache_ret=0 push_count=1",
-      "reason_code": "PROBE_STALE",
-      "verified": false
+      "entitled": true,
+      "notes": "subscribe_ret=0 cache_ret=0 push_count=36",
+      "reason_code": null,
+      "verified": true
     },
     {
       "capability_id": "TRADES",
-      "entitled": false,
-      "notes": "cache_rows=20 push_count=1",
-      "reason_code": "PROBE_STALE",
-      "verified": false
+      "entitled": true,
+      "notes": "cache_rows=20 push_count=68",
+      "reason_code": null,
+      "verified": true
     },
     {
       "capability_id": "ORDER_BOOK",
-      "entitled": false,
-      "notes": "depth=10 push_count=1 detailed_orderbook=not_requested",
-      "reason_code": "PROBE_STALE",
-      "verified": false
+      "entitled": true,
+      "notes": "depth=10 push_count=45 detailed_orderbook=not_requested",
+      "reason_code": null,
+      "verified": true
     }
   ]
 }

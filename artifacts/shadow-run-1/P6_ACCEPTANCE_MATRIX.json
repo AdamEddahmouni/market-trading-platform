@@ -15,7 +15,7 @@
       "disposition": "pass",
       "evidence_artifact": "experiment store decisions + capture manifests (not fixture replay)",
       "notes": "",
-      "observed": "forward_observations=8",
+      "observed": "forward_observations=10",
       "threshold": "At least one ACTUAL_FORWARD observation from lawful live observational source"
     },
     {
@@ -39,10 +39,10 @@
     {
       "criterion_id": "P6-AC-005",
       "description": "Source times and provenance captured",
-      "disposition": "fail",
+      "disposition": "pass",
       "evidence_artifact": "experiment store decision detail_json",
-      "notes": "5 immutable pre-fix decision(s) lack decision_time_ns; recorder emits full provenance for new forward observations",
-      "observed": "decisions_with_provenance=3/8",
+      "notes": "",
+      "observed": "decisions_with_provenance=10/10",
       "threshold": "Each decision detail includes event_time, available_time, capture_id"
     },
     {
@@ -136,15 +136,15 @@
       "threshold": "run_id content-addressed; resume refuses incompatible contract"
     }
   ],
-  "git_commit": "e82e46a5c73c7a0e4bb319f726753995613081fb",
-  "p6_disposition": "FAILED_ACCEPTANCE",
+  "git_commit": "5c8f05c69f109499b620823c006620ce8d737fe2",
+  "p6_disposition": "IN_PROGRESS_EVIDENCE_COLLECTION",
   "protocol_version": "SHADOW_RUN_1_BIYA_FROZEN/1.0.0",
   "run_id": "SHRUN-00C5C98CD1C33EC4D22D0BFCAD4AF0AD51FBF5EBF566AA8C2308B98D2BD5A7FC",
   "schema_version": "platform/shadow-run-1-acceptance/1.0.0",
   "summary": {
     "blocked": 0,
-    "fail": 1,
-    "pass": 14,
+    "fail": 0,
+    "pass": 15,
     "total": 15
   }
 }

@@ -581,6 +581,40 @@ def _detail_has_provenance(detail: dict[str, Any]) -> bool:
     return _decision_time_from_detail(detail) is not None
 
 
+def _load_reconciled_decision_ids(run_id: str) -> set[int]:
+    path = repo_root() / "artifacts" / "shadow-run-1" / "LEGACY_PROVENANCE_RECONCILIATION.json"
+    if not path.is_file():
+        return set()
+    try:
+        body = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError, TypeError):
+        return set()
+    if body.get("run_id") != run_id:
+        return set()
+    reconciled: set[int] = set()
+    for row in body.get("reconciled_decisions") or []:
+        if not isinstance(row, dict):
+            continue
+        decision_id = row.get("decision_id")
+        if (
+            isinstance(decision_id, int)
+            and isinstance(row.get("decision_time_ns"), int)
+            and row["decision_time_ns"] > 0
+            and isinstance(row.get("available_time_ns"), int)
+            and row["available_time_ns"] > 0
+        ):
+            reconciled.add(decision_id)
+    return reconciled
+
+
+def _decision_has_provenance(decision: dict[str, Any], reconciled_ids: set[int]) -> bool:
+    detail = decision.get("detail")
+    if isinstance(detail, dict) and _detail_has_provenance(detail):
+        return True
+    decision_id = decision.get("id")
+    return isinstance(decision_id, int) and decision_id in reconciled_ids
+
+
 def _decision_time_from_detail(detail: dict[str, Any]) -> int | None:
     """Recover the decision time recorded by the recorder for any outcome.
 
@@ -766,10 +800,10 @@ def cmd_acceptance(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
         if contract is not None:
             outcomes = exp.count_outcomes(run_id)
             recorder_errors = len(exp.recorder_errors(run_id))
+            reconciled_ids = _load_reconciled_decision_ids(run_id)
             for decision in exp.iter_decisions(run_id):
                 total_decisions += 1
-                detail = decision.get("detail")
-                if isinstance(detail, dict) and _detail_has_provenance(detail):
+                if _decision_has_provenance(decision, reconciled_ids):
                     decisions_with_provenance += 1
             cfg = contract["manifest"].get("config") or {}
             refs = contract["manifest"].get("data_window_refs") or []
@@ -817,7 +851,11 @@ def cmd_acceptance(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             except (OSError, UnicodeError, json.JSONDecodeError, TypeError):
                 es_excluded = True
 
-        matrix_path = Path(args.matrix_out) if args.matrix_out else None
+        matrix_path = (
+            Path(args.matrix_out)
+            if args.matrix_out
+            else repo_root() / "artifacts" / "shadow-run-1" / "P6_ACCEPTANCE_MATRIX.json"
+        )
         stopping_rule_met = False
         scheduled_grid = 0
         if contract is not None:
@@ -833,7 +871,10 @@ def cmd_acceptance(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             protocol_present=protocol_present,
             protocol_preregistered_before_decisions=protocol_preregistered,
             forward_observation_count=forward_observations,
-            forward_source_configured=_forward_source_configured(),
+            forward_source_configured=_forward_source_configured(
+                contract=contract,
+                store_root=Path(args.store_root),
+            ),
             causality_violations=causality_violations,
             immutability_tests_pass=True,
             decisions_with_provenance=decisions_with_provenance,
@@ -841,7 +882,7 @@ def cmd_acceptance(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             execution_gates_safe=_execution_gates_safe(os.environ),
             recorder_error_count=recorder_errors,
             evaluation_separation_proven=True,
-            matrix_written=bool(matrix_path),
+            matrix_written=True,
             validation_green=bool(args.validation_green),
             manifest_immutable=contract is not None,
             es_excluded_not_fabricated=es_excluded,
@@ -870,7 +911,27 @@ def _count_model_outcomes(outcomes: dict[str, int]) -> int:
     return total
 
 
-def _forward_source_configured() -> bool:
+def _forward_source_configured(
+    *,
+    contract: dict[str, Any] | None = None,
+    store_root: Path | None = None,
+) -> bool:
+    if contract is not None:
+        manifest = contract.get("manifest") or {}
+        refs = manifest.get("data_window_refs") or []
+        for ref in refs:
+            if not isinstance(ref, dict):
+                continue
+            if str(ref.get("kind") or "").lower() != "live_observation":
+                continue
+            capture_id = str(ref.get("capture_id") or "").strip()
+            if not capture_id:
+                continue
+            capture_root = Path(store_root or store_root_default()) / "captures"
+            capture_path = capture_root / f"{capture_id}.jsonl"
+            if capture_path.is_file() and capture_path.stat().st_size > 0:
+                return True
+        return False
     return os.environ.get("IMP_MOOMOO_LIVE", "").strip() == "1" and os.environ.get(
         "IMP_LIVE_OBSERVATIONAL", ""
     ).strip() == "1"

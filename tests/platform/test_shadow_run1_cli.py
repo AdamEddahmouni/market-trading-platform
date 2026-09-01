@@ -334,5 +334,76 @@ class ExecutionGateSafetyTests(unittest.TestCase):
         self.assertFalse(cli._execution_gates_safe(env))
 
 
+class AcceptanceSourceEvidenceTests(unittest.TestCase):
+    def test_acceptance_uses_sealed_live_reference_without_process_environment(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            store_root = root / "shadow"
+            capture_root = store_root / "captures"
+            capture_root.mkdir(parents=True)
+            (capture_root / "CAP-TEST.jsonl").write_text(
+                '{"clocks":{"event_time_ns":1,"received_time_ns":1}}\n',
+                encoding="utf-8",
+            )
+            protocol_root = root / "artifacts" / "shadow-run-1"
+            protocol_root.mkdir(parents=True)
+            (protocol_root / "P6_SHADOW_RUN_1_PROTOCOL.json").write_text(
+                '{"preregistration_timestamp_ns":0}\n',
+                encoding="utf-8",
+            )
+            (protocol_root / "SOURCE_AVAILABILITY_AUDIT.json").write_text(
+                '{"sources":[]}\n',
+                encoding="utf-8",
+            )
+
+            run_id = "SHRUN-TEST"
+            manifest = {
+                "config": {"capture_id": "CAP-TEST", "session_dates": []},
+                "data_window_refs": [
+                    {"kind": "live_observation", "capture_id": "CAP-TEST"},
+                ],
+            }
+            exp = cli.open_experiment_store(store_root)
+            try:
+                exp.ensure_run(run_id, json.dumps(manifest), "HASH", 1)
+                exp.record_decision(
+                    run_id,
+                    "BIYA",
+                    1,
+                    "ABSTAINED_MODEL",
+                    detail={
+                        "capture_id": "CAP-TEST",
+                        "decision_time_ns": 1,
+                        "event_time_ns": 1,
+                        "available_time_ns": 1,
+                    },
+                    created_at_ns=1,
+                )
+            finally:
+                exp.close()
+
+            args = argparse.Namespace(
+                run_id=run_id,
+                store_root=store_root,
+                matrix_out=str(root / "matrix.json"),
+                validation_green=True,
+            )
+            with (
+                mock.patch.object(cli, "repo_root", return_value=root),
+                mock.patch.object(cli, "_git", return_value=b"a" * 40),
+                mock.patch.dict(
+                    os.environ,
+                    {"IMP_LIVE_OBSERVATIONAL": "", "IMP_MOOMOO_LIVE": ""},
+                    clear=False,
+                ),
+            ):
+                _, matrix = cli.cmd_acceptance(args)
+
+            forward = next(
+                row for row in matrix["criteria"] if row["criterion_id"] == "P6-AC-002"
+            )
+            self.assertEqual(forward["disposition"], "pass")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -69,6 +69,18 @@ class AcceptanceEvaluatorTests(unittest.TestCase):
         self.assertEqual(summarize_p6_disposition(rows, stopping_rule_met=False), "IN_PROGRESS_EVIDENCE_COLLECTION")
         self.assertEqual(summarize_p6_disposition(rows, stopping_rule_met=True), "CLOSED")
 
+    def test_provenance_passes_when_all_decisions_have_inline_fields(self):
+        rows = evaluate_acceptance(
+            **self._base_kwargs(
+                forward_source_configured=True,
+                forward_observation_count=2,
+                total_decisions=2,
+                decisions_with_provenance=2,
+            )
+        )
+        provenance = next(r for r in rows if r.criterion.criterion_id == "P6-AC-005")
+        self.assertEqual(provenance.disposition, Disposition.PASS)
+
 
 if __name__ == "__main__":
     unittest.main()

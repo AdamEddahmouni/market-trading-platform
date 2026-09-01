@@ -255,8 +255,7 @@ def evaluate_acceptance(
     if total_decisions > 0 and decisions_with_provenance < total_decisions:
         gap = total_decisions - decisions_with_provenance
         provenance_notes = (
-            f"{gap} immutable pre-fix decision(s) lack decision_time_ns; "
-            "recorder emits full provenance for new forward observations"
+            f"{gap} decision(s) lack inline provenance and sealed-capture reconciliation"
         )
     rows.append(
         result(
