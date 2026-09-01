@@ -63,7 +63,7 @@ None tracked as in-progress in WORK_LOG. Remaining increments are authorization-
 | LIVE-001 production execution | Blocked pending separate authorization |
 | Crypto / prediction-market expansion | Planning only — not authorized |
 | P4-4C Moomoo paper real-wire | Fixture-proven; OpenD TCP protocol |
-| Auth / multi-user enforcement | `ROLE_ENFORCEMENT_STATUS=MODEL_ONLY_NOT_ENFORCED` |
+| Auth / multi-user enforcement | TD-005 closed — `LOOPBACK_TRUST` default; `ENFORCED` via `IMP_AUTH_ENFORCEMENT_MODE` + principals registry (ADR-0008) |
 
 ---
 

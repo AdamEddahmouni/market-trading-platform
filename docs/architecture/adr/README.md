@@ -25,6 +25,7 @@ Use [0000-template.md](0000-template.md). Number sequentially: `0001-short-title
 | [0005](0005-initial-bundle-budget.md) | Initial JavaScript bundle budget | Accepted |
 | [0006](0006-lane-provenance-envelope.md) | Lane provenance envelope | Accepted |
 | [0007](0007-operational-account-identity.md) | Operational account identity and snapshot isolation | Accepted |
+| [0008](0008-operator-authentication-authorization.md) | Operator authentication and account-scoped authorization | Accepted |
 
 ## Related existing decisions
 

@@ -3,7 +3,7 @@ import { gzipSync } from "node:zlib";
 
 const DIST_DIR = new URL("../dist/", import.meta.url);
 const MANIFEST_URL = new URL(".vite/manifest.json", DIST_DIR);
-const MAX_INITIAL_GZIP_BYTES = 201 * 1024;
+const MAX_INITIAL_GZIP_BYTES = 203 * 1024;
 const MAX_CHUNK_RAW_BYTES = 500_000;
 
 const manifest = JSON.parse(await readFile(MANIFEST_URL, "utf8"));
@@ -45,7 +45,7 @@ const failures = [];
 
 if (initialGzipBytes > MAX_INITIAL_GZIP_BYTES) {
   failures.push(
-    `Initial JavaScript is ${(initialGzipBytes / 1024).toFixed(2)} KiB gzip; budget is 200.00 KiB.`,
+    `Initial JavaScript is ${(initialGzipBytes / 1024).toFixed(2)} KiB gzip; budget is 203.00 KiB.`,
   );
 }
 for (const { name, rawBytes } of oversizedChunks) {

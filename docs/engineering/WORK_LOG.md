@@ -26,6 +26,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-01 — TD-005 operator authentication and account-scoped authorization
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/security`, `ui_api`, `ui/auth`, `docs` |
+| **Summary** | Closed TD-005 by implementing LOOPBACK_TRUST (default) and ENFORCED auth modes, principal registry, session API, route capability + OperationalIdentity account ACL enforcement, security foundation wiring (redaction, leak audit), and frontend AuthProvider/login gate. ADR-0008 records topology and P0 decision 6 local amendment. |
+| **Key files** | `platform/security/auth_config.py`, `principals.py`, `sessions.py`, `access_control.py`, `route_policy.py`, `ui_api/request_auth.py`, `ui_api/auth_projections.py`, `ui_api/server.py`, `ui/src/auth/*`, `fixtures/auth/principals.json`, `tests/platform/test_td005_auth_enforcement.py` |
+| **Tests** | `test_td005_auth_enforcement`; `test_security_foundations_p5` updated; `validate-python`; `validate-ui` |
+| **Related** | [ADR-0008](../architecture/adr/0008-operator-authentication-authorization.md), [ADR-0007](../architecture/adr/0007-operational-account-identity.md) |
+| **Notes** | OIDC/hosted IdP deferred. Set `IMP_AUTH_ENFORCEMENT_MODE=ENFORCED` and `IMP_AUTH_PRINCIPALS_PATH` for local multi-user. |
+
 ## 2026-09-01 — TD-003 multi-account snapshot architecture and state isolation
 
 | Field | Value |

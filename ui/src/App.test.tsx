@@ -376,6 +376,28 @@ describe("App mode launcher integration", () => {
         const url = typeof input === "string" ? input : input.url;
         const method =
           init?.method ?? (typeof input !== "string" && "method" in input ? input.method : "GET");
+        if (url.endsWith("/auth/status")) {
+          return {
+            ok: true,
+            json: async () => ({
+              enforcement_mode: "LOOPBACK_TRUST",
+              role_enforcement_status: "LOOPBACK_TRUST",
+              session_required: false,
+            }),
+          };
+        }
+        if (url.endsWith("/auth/session")) {
+          return {
+            ok: true,
+            json: async () => ({
+              authenticated: true,
+              enforcement_mode: "LOOPBACK_TRUST",
+              role_enforcement_status: "LOOPBACK_TRUST",
+              principal_id: "loopback-trust",
+              role: "ADMIN",
+            }),
+          };
+        }
         if (url.endsWith("/canary/snapshot")) {
           return {
             ok: true,

@@ -347,8 +347,8 @@ class RolesModelTest(unittest.TestCase):
         self.assertFalse(role_allows(OperatorRole.OPERATOR, "role.manage"))
         self.assertTrue(role_allows(OperatorRole.ADMIN, "security.config.write"))
 
-    def test_enforcement_explicitly_deferred(self) -> None:
-        self.assertEqual(ROLE_ENFORCEMENT_STATUS, "MODEL_ONLY_NOT_ENFORCED")
+    def test_enforcement_default_loopback_trust(self) -> None:
+        self.assertEqual(ROLE_ENFORCEMENT_STATUS, "LOOPBACK_TRUST")
 
     def test_roles_are_distinct_str_enum_members(self) -> None:
         self.assertEqual({r.value for r in OperatorRole}, {"VIEWER", "OPERATOR", "ADMIN"})
