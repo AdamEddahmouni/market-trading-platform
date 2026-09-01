@@ -115,6 +115,8 @@ def _quote_context_check(host: str, port: int) -> dict[str, Any]:
         import moomoo as ft  # type: ignore
     except ImportError as exc:
         return {"ok": False, "error": str(exc)}
+    if not hasattr(ft, "OpenQuoteContext"):
+        return {"ok": False, "error": "OpenQuoteContext unavailable"}
     ctx = ft.OpenQuoteContext(host=host, port=port)
     try:
         ret, state = ctx.get_global_state()
@@ -159,7 +161,7 @@ def run_check(
     sdk = _check_sdk()
     port_state = _check_port(target_host, target_port)
     quote = {"ok": False}
-    if sdk.get("installed") and port_state.get("reachable"):
+    if sdk.get("installed") and sdk.get("open_quote_context") and port_state.get("reachable"):
         quote = _quote_context_check(target_host, target_port)
     registry = VerifiedCapabilityRegistry.from_probe_file(
         probe_report_path(),
