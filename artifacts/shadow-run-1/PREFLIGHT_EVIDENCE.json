@@ -1,0 +1,29 @@
+{
+  "schema_version": "platform/shadow-run-1-preflight-evidence/1.0.0",
+  "pinned_at_utc": "2026-09-01T17:10:00Z",
+  "git_commit": "d10f35aa6ab95d0547584eb075990e0934529db1",
+  "protocol_ref": "artifacts/shadow-run-1/P6_SHADOW_RUN_1_PROTOCOL.json",
+  "validation": {
+    "path": "artifacts/shadow-run-1/P6_VALIDATION_RECEIPT.json",
+    "sha256": "57622be2413aa7e4c510032f0142cd1c2d51c2043ef67813e9c3a049299d23e5",
+    "mode": "full",
+    "status": "passed",
+    "tests": 3003,
+    "failures": 0,
+    "errors": 0
+  },
+  "runtime_health": {
+    "path": "artifacts/shadow-run-1/runtime-health.json",
+    "sha256": "3f25aedeb7569851b0cd60dc72d445538b0a12834a0bd290fd7983e49196f421",
+    "provider": "MOOMOO",
+    "status": "READY"
+  },
+  "live_run": {
+    "run_id": "SHRUN-00C5C98CD1C33EC4D22D0BFCAD4AF0AD51FBF5EBF566AA8C2308B98D2BD5A7FC",
+    "store_root": ".local/shadow",
+    "capture_id": "CAP-BIYA-SR1-20260901",
+    "first_session": "2026-09-01",
+    "state": "OPEN"
+  },
+  "notes": "SHA-256 pins for operator preflight; worktree must be clean at pinned HEAD for READY status."
+}

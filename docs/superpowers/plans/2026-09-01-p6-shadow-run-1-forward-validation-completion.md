@@ -27,9 +27,9 @@ ACTUAL_FORWARD observations collected on the default-store run (Moomoo/OpenD liv
 
 | Metric | Value |
 |--------|------:|
-| ACTUAL_FORWARD model outcomes (abstentions + predictions) | 4 |
-| Decisions | 4 |
-| Abstentions | 4 |
+| ACTUAL_FORWARD model outcomes (abstentions + predictions) | 5 |
+| Decisions | 5 |
+| Abstentions | 5 |
 | Predictions | 0 |
 | Recorder errors | 0 |
 | Scheduled grid opportunities | 0 |
@@ -74,7 +74,6 @@ See `artifacts/shadow-run-1/SOURCE_AVAILABILITY_AUDIT.json`. `MOOMOO_BIYA_OBSERV
 
 1. Complete preregistered observation window (stopping rule: 5 sessions + 65 grid opportunities OR 8 sessions)
 2. `close` → `label-due` → `report` after horizons mature
-3. Pin validation receipt at operator preflight for P6-AC-011 pass
 
 ## Git state
 
