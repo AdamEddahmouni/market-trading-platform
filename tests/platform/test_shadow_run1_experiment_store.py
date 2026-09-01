@@ -1,5 +1,6 @@
 import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 
@@ -90,6 +91,34 @@ class ExperimentStoreTests(unittest.TestCase):
         self.store.log_error("R1", 42, "STORE_BUSY", {"attempt": 1})
         errors = self.store.recorder_errors("R1")
         self.assertEqual(errors[0]["error_code"], "STORE_BUSY")
+
+    def test_record_decision_once_from_worker_thread(self):
+        self.store.ensure_run("R1", "{}", "H", 1)
+        errors: list[Exception] = []
+
+        def worker(bucket: int) -> None:
+            try:
+                _, ok = self.store.record_decision_once(
+                    "R1",
+                    "BIYA",
+                    bucket,
+                    "ABSTAINED_MODEL",
+                    detail={"reason": "STALE_INPUT"},
+                    created_at_ns=bucket,
+                )
+                if not ok:
+                    raise AssertionError(f"expected insert for bucket {bucket}")
+            except Exception as exc:  # pragma: no cover - surfaced via errors list
+                errors.append(exc)
+
+        threads = [threading.Thread(target=worker, args=(i,)) for i in range(8)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        self.assertEqual(errors, [])
+        self.assertEqual(self.store.count_outcomes("R1"), {"ABSTAINED_MODEL": 8})
 
 
 if __name__ == "__main__":

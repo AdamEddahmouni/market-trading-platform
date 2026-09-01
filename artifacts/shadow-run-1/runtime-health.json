@@ -1,0 +1,60 @@
+{
+  "config_dir": "C:\\Users\\adame\\AppData\\Roaming\\com.moomoo.OpenD",
+  "connection": "CONNECTED",
+  "imp_moomoo_live": true,
+  "opend": {
+    "executable": "C:\\Users\\adame\\AppData\\Roaming\\moomoo_OpenD\\moomoo_OpenD.exe",
+    "file_version": "10.10.7008",
+    "host": "127.0.0.1",
+    "installed": true,
+    "peer": [
+      "127.0.0.1",
+      11111
+    ],
+    "port": 11111,
+    "reachable": true,
+    "running": true
+  },
+  "operator_message": "MOOMOO LIVE ENVIRONMENT\nOpenD installed     YES  (C:\\Users\\adame\\AppData\\Roaming\\moomoo_OpenD\\moomoo_OpenD.exe)\nOpenD running       YES\n127.0.0.1:11111     REACHABLE\nSDK                  10.10.7008\nQuote context        PASS\nREADY",
+  "probe_report": "C:\\Users\\adame\\Desktop\\market-trading-platform\\integrated-market-platform\\evidence\\market_data\\moomoo\\capability-report.json",
+  "probe_stale": true,
+  "provider": "MOOMOO",
+  "quote_context": {
+    "ok": true,
+    "qot_logined": "True",
+    "ret": 0,
+    "server_ver": "1010"
+  },
+  "ready_for_live_observational": true,
+  "sdk": {
+    "installed": true,
+    "mismatch": false,
+    "open_quote_context": true,
+    "version": "10.10.7008"
+  },
+  "status": "READY",
+  "verified_at": "2026-08-22T01:03:46.394801Z",
+  "verified_capabilities": [
+    {
+      "capability_id": "BASIC_QUOTE",
+      "entitled": false,
+      "notes": "subscribe_ret=0 cache_ret=0 push_count=1",
+      "reason_code": "PROBE_STALE",
+      "verified": false
+    },
+    {
+      "capability_id": "TRADES",
+      "entitled": false,
+      "notes": "cache_rows=20 push_count=1",
+      "reason_code": "PROBE_STALE",
+      "verified": false
+    },
+    {
+      "capability_id": "ORDER_BOOK",
+      "entitled": false,
+      "notes": "depth=10 push_count=1 detailed_orderbook=not_requested",
+      "reason_code": "PROBE_STALE",
+      "verified": false
+    }
+  ]
+}

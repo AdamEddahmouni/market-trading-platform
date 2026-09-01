@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -23,7 +24,8 @@ class ShadowExperimentStore:
     def __init__(self, path: Path | str) -> None:
         self._path = Path(path)
         self._path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(self._path, timeout=30.0)
+        self._lock = threading.RLock()
+        self._conn = sqlite3.connect(self._path, timeout=30.0, check_same_thread=False)
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA busy_timeout=30000")
         self._apply_schema()
@@ -84,23 +86,25 @@ class ShadowExperimentStore:
     # -- runs ---------------------------------------------------------------
 
     def ensure_run(self, run_id: str, manifest_json: str, manifest_hash: str, created_at_ns: int) -> bool:
-        try:
-            self._conn.execute(
-                "INSERT INTO run_contract(run_id, manifest_json, manifest_hash, created_at_ns)"
-                " VALUES (?, ?, ?, ?)",
-                (run_id, manifest_json, manifest_hash, int(created_at_ns)),
-            )
-            self._conn.commit()
-            return True
-        except sqlite3.IntegrityError:
-            return False
+        with self._lock:
+            try:
+                self._conn.execute(
+                    "INSERT INTO run_contract(run_id, manifest_json, manifest_hash, created_at_ns)"
+                    " VALUES (?, ?, ?, ?)",
+                    (run_id, manifest_json, manifest_hash, int(created_at_ns)),
+                )
+                self._conn.commit()
+                return True
+            except sqlite3.IntegrityError:
+                return False
 
     def manifest(self, run_id: str) -> dict[str, Any] | None:
-        row = self._conn.execute(
-            "SELECT run_id, manifest_json, manifest_hash, created_at_ns"
-            " FROM run_contract WHERE run_id=?",
-            (run_id,),
-        ).fetchone()
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT run_id, manifest_json, manifest_hash, created_at_ns"
+                " FROM run_contract WHERE run_id=?",
+                (run_id,),
+            ).fetchone()
         if row is None:
             return None
         return {
@@ -111,10 +115,11 @@ class ShadowExperimentStore:
         }
 
     def manifest_hash(self, run_id: str) -> str | None:
-        row = self._conn.execute(
-            "SELECT manifest_hash FROM run_contract WHERE run_id=?",
-            (run_id,),
-        ).fetchone()
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT manifest_hash FROM run_contract WHERE run_id=?",
+                (run_id,),
+            ).fetchone()
         return None if row is None else str(row[0])
 
     # -- lifecycle -------------------------------------------------------------
@@ -122,19 +127,21 @@ class ShadowExperimentStore:
     def append_event(self, run_id: str, event_type: str, occurred_at_ns: int, detail: dict[str, Any] | None = None) -> None:
         if event_type not in LIFECYCLE_EVENTS:
             raise ValueError(f"LIFECYCLE_EVENT_UNKNOWN:{event_type}")
-        self._conn.execute(
-            "INSERT INTO run_events(run_id, event_type, occurred_at_ns, detail_json)"
-            " VALUES (?, ?, ?, ?)",
-            (run_id, event_type, int(occurred_at_ns), json.dumps(dict(detail or {}), sort_keys=True)),
-        )
-        self._conn.commit()
+        with self._lock:
+            self._conn.execute(
+                "INSERT INTO run_events(run_id, event_type, occurred_at_ns, detail_json)"
+                " VALUES (?, ?, ?, ?)",
+                (run_id, event_type, int(occurred_at_ns), json.dumps(dict(detail or {}), sort_keys=True)),
+            )
+            self._conn.commit()
 
     def events(self, run_id: str) -> list[dict[str, Any]]:
-        rows = self._conn.execute(
-            "SELECT event_type, occurred_at_ns, detail_json FROM run_events"
-            " WHERE run_id=? ORDER BY id",
-            (run_id,),
-        ).fetchall()
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT event_type, occurred_at_ns, detail_json FROM run_events"
+                " WHERE run_id=? ORDER BY id",
+                (run_id,),
+            ).fetchall()
         return [
             {"event_type": r[0], "occurred_at_ns": r[1], "detail": json.loads(r[2])}
             for r in rows
@@ -159,29 +166,30 @@ class ShadowExperimentStore:
         detail: dict[str, Any] | None = None,
         created_at_ns: int,
     ) -> tuple[int, bool]:
-        try:
-            cursor = self._conn.execute(
-                "INSERT INTO decisions(run_id, instrument_id, decision_bucket, outcome,"
-                " prediction_id, detail_json, created_at_ns) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (
-                    run_id,
-                    instrument_id,
-                    int(decision_bucket),
-                    outcome,
-                    prediction_id,
-                    json.dumps(dict(detail or {}), sort_keys=True),
-                    int(created_at_ns),
-                ),
-            )
-            self._conn.commit()
-            return int(cursor.lastrowid), True
-        except sqlite3.IntegrityError:
-            self._conn.rollback()
-            row = self._conn.execute(
-                "SELECT id FROM decisions WHERE run_id=? AND instrument_id=? AND decision_bucket=?",
-                (run_id, instrument_id, int(decision_bucket)),
-            ).fetchone()
-            return (int(row[0]) if row is not None else -1), False
+        with self._lock:
+            try:
+                cursor = self._conn.execute(
+                    "INSERT INTO decisions(run_id, instrument_id, decision_bucket, outcome,"
+                    " prediction_id, detail_json, created_at_ns) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        run_id,
+                        instrument_id,
+                        int(decision_bucket),
+                        outcome,
+                        prediction_id,
+                        json.dumps(dict(detail or {}), sort_keys=True),
+                        int(created_at_ns),
+                    ),
+                )
+                self._conn.commit()
+                return int(cursor.lastrowid), True
+            except sqlite3.IntegrityError:
+                self._conn.rollback()
+                row = self._conn.execute(
+                    "SELECT id FROM decisions WHERE run_id=? AND instrument_id=? AND decision_bucket=?",
+                    (run_id, instrument_id, int(decision_bucket)),
+                ).fetchone()
+                return (int(row[0]) if row is not None else -1), False
 
     def record_decision_once(self, *args: Any, **kwargs: Any) -> tuple[int | None, bool]:
         """Insert-once variant: returns (None, False) when the bucket is taken."""
@@ -189,10 +197,11 @@ class ShadowExperimentStore:
         return (decision_id if inserted else None), inserted
 
     def has_decision(self, run_id: str, instrument_id: str, decision_bucket: int) -> bool:
-        row = self._conn.execute(
-            "SELECT 1 FROM decisions WHERE run_id=? AND instrument_id=? AND decision_bucket=?",
-            (run_id, instrument_id, int(decision_bucket)),
-        ).fetchone()
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT 1 FROM decisions WHERE run_id=? AND instrument_id=? AND decision_bucket=?",
+                (run_id, instrument_id, int(decision_bucket)),
+            ).fetchone()
         return row is not None
 
     def _decision_row(self, row: tuple) -> dict[str, Any]:
@@ -213,9 +222,10 @@ class ShadowExperimentStore:
     )
 
     def decision(self, decision_id: int) -> dict[str, Any] | None:
-        row = self._conn.execute(
-            self._DECISION_SELECT + " WHERE id=?", (int(decision_id),)
-        ).fetchone()
+        with self._lock:
+            row = self._conn.execute(
+                self._DECISION_SELECT + " WHERE id=?", (int(decision_id),)
+            ).fetchone()
         return None if row is None else self._decision_row(row)
 
     def iter_decisions(self, run_id: str, outcome: str | None = None) -> Iterator[dict[str, Any]]:
@@ -224,14 +234,17 @@ class ShadowExperimentStore:
         if outcome is not None:
             sql += " AND outcome=?"
             params.append(outcome)
-        for row in self._conn.execute(sql + " ORDER BY decision_bucket", params):
+        with self._lock:
+            rows = list(self._conn.execute(sql + " ORDER BY decision_bucket", params))
+        for row in rows:
             yield self._decision_row(row)
 
     def count_outcomes(self, run_id: str) -> dict[str, int]:
-        rows = self._conn.execute(
-            "SELECT outcome, COUNT(*) FROM decisions WHERE run_id=? GROUP BY outcome",
-            (run_id,),
-        ).fetchall()
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT outcome, COUNT(*) FROM decisions WHERE run_id=? GROUP BY outcome",
+                (run_id,),
+            ).fetchall()
         return {r[0]: r[1] for r in rows}
 
     # -- annotations ---------------------------------------------------------
@@ -239,20 +252,22 @@ class ShadowExperimentStore:
     def add_annotation(self, decision_id: int, kind: str, payload: dict[str, Any], created_at_ns: int) -> bool:
         if self.decision(decision_id) is None:
             return False
-        self._conn.execute(
-            "INSERT INTO decision_annotations(decision_id, kind, payload_json, created_at_ns)"
-            " VALUES (?, ?, ?, ?)",
-            (int(decision_id), kind, json.dumps(dict(payload), sort_keys=True), int(created_at_ns)),
-        )
-        self._conn.commit()
+        with self._lock:
+            self._conn.execute(
+                "INSERT INTO decision_annotations(decision_id, kind, payload_json, created_at_ns)"
+                " VALUES (?, ?, ?, ?)",
+                (int(decision_id), kind, json.dumps(dict(payload), sort_keys=True), int(created_at_ns)),
+            )
+            self._conn.commit()
         return True
 
     def annotations(self, decision_id: int) -> list[dict[str, Any]]:
-        rows = self._conn.execute(
-            "SELECT kind, payload_json, created_at_ns FROM decision_annotations"
-            " WHERE decision_id=? ORDER BY id",
-            (int(decision_id),),
-        ).fetchall()
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT kind, payload_json, created_at_ns FROM decision_annotations"
+                " WHERE decision_id=? ORDER BY id",
+                (int(decision_id),),
+            ).fetchall()
         return [
             {"kind": r[0], "payload": json.loads(r[1]), "created_at_ns": r[2]}
             for r in rows
@@ -261,26 +276,29 @@ class ShadowExperimentStore:
     # -- operational failures ----------------------------------------------------
 
     def log_error(self, run_id: str, occurred_at_ns: int, error_code: str, detail: dict[str, Any]) -> None:
-        self._conn.execute(
-            "INSERT INTO recorder_errors(run_id, occurred_at_ns, error_code, detail_json)"
-            " VALUES (?, ?, ?, ?)",
-            (run_id, int(occurred_at_ns), error_code, json.dumps(dict(detail), sort_keys=True)),
-        )
-        self._conn.commit()
+        with self._lock:
+            self._conn.execute(
+                "INSERT INTO recorder_errors(run_id, occurred_at_ns, error_code, detail_json)"
+                " VALUES (?, ?, ?, ?)",
+                (run_id, int(occurred_at_ns), error_code, json.dumps(dict(detail), sort_keys=True)),
+            )
+            self._conn.commit()
 
     def recorder_errors(self, run_id: str) -> list[dict[str, Any]]:
-        rows = self._conn.execute(
-            "SELECT occurred_at_ns, error_code, detail_json FROM recorder_errors"
-            " WHERE run_id=? ORDER BY id",
-            (run_id,),
-        ).fetchall()
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT occurred_at_ns, error_code, detail_json FROM recorder_errors"
+                " WHERE run_id=? ORDER BY id",
+                (run_id,),
+            ).fetchall()
         return [
             {"occurred_at_ns": r[0], "error_code": r[1], "detail": json.loads(r[2])}
             for r in rows
         ]
 
     def close(self) -> None:
-        self._conn.close()
+        with self._lock:
+            self._conn.close()
 
     def __enter__(self) -> "ShadowExperimentStore":
         return self

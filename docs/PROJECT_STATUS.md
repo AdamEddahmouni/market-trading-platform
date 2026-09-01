@@ -42,7 +42,7 @@ Phases 0–16, UI-001/002, MRA-001/002, Platform P0–P4-4C, and mode-specific U
 
 ## Current work
 
-**P6 Shadow Run 1** — forward-validation evidence collection **IN PROGRESS** (protocol preregistered 2026-09-01; Moomoo observational path blocked — see [P6 protocol](engineering/P6_SHADOW_RUN_1_PROTOCOL.md)).
+**P6 Shadow Run 1** — forward-validation evidence collection **IN PROGRESS** (protocol preregistered 2026-09-01; 4 ACTUAL_FORWARD abstentions on default-store run `SHRUN-00C5…`; stopping rule not met — see [P6 protocol](engineering/P6_SHADOW_RUN_1_PROTOCOL.md)).
 
 ---
 

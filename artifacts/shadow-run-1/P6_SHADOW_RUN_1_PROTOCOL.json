@@ -46,7 +46,7 @@
   },
   "observation_cadence_seconds": 60,
   "observation_window": {
-    "first_session": "2026-09-02",
+    "first_session": "2026-09-01",
     "holidays": [],
     "early_closes": [],
     "max_regular_sessions": 8,
@@ -55,7 +55,7 @@
   },
   "operational_mode": "LIVE_OBSERVATIONAL_NO_EXECUTION",
   "preregistration_timestamp_ns": 1756740780000000000,
-  "preregistration_timestamp_utc": "2026-09-01T15:33:00Z",
+  "preregistration_timestamp_utc": "2026-09-01T16:04:00Z",
   "protocol_id": "P6-SR1-BIYA-2026-09",
   "protocol_version": "SHADOW_RUN_1_BIYA_FROZEN/1.0.0",
   "provider_identity": "moomoo-observational",

@@ -1,14 +1,14 @@
 {
-  "audit_timestamp_utc": "2026-09-01T15:33:00Z",
+  "audit_timestamp_utc": "2026-09-01T16:27:00Z",
   "baseline_commit": "96032bea83925cd89d6d16c56f8950e78472962f",
   "schema_version": "platform/shadow-run-1-source-audit/1.0.0",
   "sources": [
     {
       "source_id": "MOOMOO_BIYA_OBSERVATIONAL",
-      "classification": "externally_blocked",
+      "classification": "available_live",
       "component": "shadow_run_1_primary",
-      "notes": "IMP_MOOMOO_LIVE not enabled; OpenD not reachable in current environment",
-      "qualification_eligible": false,
+      "notes": "OpenD reachable at 127.0.0.1:11111; quote context PASS; forward capture CAP-BIYA-SR1-20260901 with live DISPLAY_ADMITTED ingress",
+      "qualification_eligible": true,
       "required_for_p6_forward": true
     },
     {
@@ -53,15 +53,15 @@
     }
   ],
   "p6_forward_scope": {
-    "included": [],
+    "included": [
+      "MOOMOO_BIYA_OBSERVATIONAL"
+    ],
     "excluded": [
       "ES_SESSION",
       "INTERNAL_FIXTURE_REPLAY",
       "HISTORICAL_LIVE_CAPTURES"
     ],
-    "blocked_pending_connectivity": [
-      "MOOMOO_BIYA_OBSERVATIONAL"
-    ]
+    "blocked_pending_connectivity": []
   },
-  "disposition_note": "P6 Shadow Run 1 may proceed for supported lawful inputs once Moomoo observational path is armed; current increment preregisters protocol and initializes resumable run machinery without fabricating forward evidence."
+  "disposition_note": "Moomoo observational path verified live on 2026-09-01; Shadow Run 1 default-store run SHRUN-00C5... collected ACTUAL_FORWARD abstentions with zero recorder errors after SQLite thread-safety fix."
 }

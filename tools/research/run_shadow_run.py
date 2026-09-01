@@ -51,14 +51,14 @@ PREFLIGHT_PROTOCOL = "SHADOW_RUN_1_BIYA_FROZEN"
 _SHA256_PATTERN = re.compile(r"[0-9a-fA-F]{64}")
 _HEAD_PATTERN = re.compile(r"[0-9a-fA-F]{40}")
 _LOCALHOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
-_INERT_RUNTIME_GATES = (
-    "IMP_SHADOW_RECORDING",
+_EXECUTION_ARM_GATES = (
     "IMP_LIVE_EXECUTION",
     "IMP_LIVE_INTERNAL_SIMULATION",
     "IMP_PAPER_EXECUTION",
     "IMP_BROKER_PAPER_EXECUTION",
     "EXECUTION_ENABLE",
 )
+_INERT_RUNTIME_GATES = ("IMP_SHADOW_RECORDING", *_EXECUTION_ARM_GATES)
 
 
 def repo_root() -> Path:
@@ -862,7 +862,7 @@ def _execution_gates_safe(environ: Any) -> bool:
     def disabled(value: Any) -> bool:
         return value is None or str(value).strip().lower() in {"", "0", "false", "no", "off"}
 
-    for key in _INERT_RUNTIME_GATES:
+    for key in _EXECUTION_ARM_GATES:
         if not disabled(environ.get(key)):
             return False
     return True

@@ -320,5 +320,19 @@ class CliPreflightTests(unittest.TestCase):
             self.assertEqual(printed["status"], "BLOCKED")
 
 
+class ExecutionGateSafetyTests(unittest.TestCase):
+    def test_shadow_recording_armed_is_not_execution_unsafe(self):
+        env = {
+            "IMP_SHADOW_RECORDING": "1",
+            "IMP_LIVE_EXECUTION": "0",
+            "IMP_PAPER_EXECUTION": "0",
+        }
+        self.assertTrue(cli._execution_gates_safe(env))
+
+    def test_live_execution_armed_is_unsafe(self):
+        env = {"IMP_LIVE_EXECUTION": "1"}
+        self.assertFalse(cli._execution_gates_safe(env))
+
+
 if __name__ == "__main__":
     unittest.main()

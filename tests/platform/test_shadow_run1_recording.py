@@ -179,6 +179,20 @@ class RecordingTests(RecorderHarness):
         errors = self.exp.recorder_errors(self.manifest.run_id)
         self.assertEqual(errors[-1]["error_code"], "RECORDER_EXCEPTION")
 
+    def test_live_admission_envelope_uses_event_type_for_ticks(self):
+        base = self.open_ns // NS
+        decision_s = base + 120
+        state = FakeState([_trade(i, decision_s - 11 + i) for i in range(12)])
+        envelope = {
+            "event_type": "US_EQUITY_TICKS",
+            "instrument_id": "BIYA",
+            "event_time": decision_s * NS,
+        }
+        self.recorder.on_admitted(state, envelope, {})
+        rows = list(self.exp.iter_decisions(self.manifest.run_id))
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["outcome"], "PREDICTED")
+
     def test_health_exposes_required_fields(self):
         health = self.recorder.health()
         for key in (

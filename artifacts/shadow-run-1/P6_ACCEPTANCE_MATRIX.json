@@ -12,10 +12,10 @@
     {
       "criterion_id": "P6-AC-002",
       "description": "Valid forward observation window collected",
-      "disposition": "blocked",
+      "disposition": "pass",
       "evidence_artifact": "experiment store decisions + capture manifests (not fixture replay)",
-      "notes": "Moomoo observational path not configured (IMP_MOOMOO_LIVE/OpenD unavailable)",
-      "observed": "forward_observations=0",
+      "notes": "",
+      "observed": "forward_observations=4",
       "threshold": "At least one ACTUAL_FORWARD observation from lawful live observational source"
     },
     {
@@ -42,7 +42,7 @@
       "disposition": "pass",
       "evidence_artifact": "experiment store decision detail_json",
       "notes": "",
-      "observed": "decisions_with_provenance=0/0",
+      "observed": "decisions_with_provenance=4/4",
       "threshold": "Each decision detail includes event_time, available_time, capture_id"
     },
     {
@@ -136,15 +136,15 @@
       "threshold": "run_id content-addressed; resume refuses incompatible contract"
     }
   ],
-  "git_commit": "96032bea83925cd89d6d16c56f8950e78472962f",
-  "p6_disposition": "IN_PROGRESS_EVIDENCE_COLLECTION",
+  "git_commit": "323190e0d21125cbb7991a07ad48315e7238573c",
+  "p6_disposition": "PARTIALLY_ACCEPTED",
   "protocol_version": "SHADOW_RUN_1_BIYA_FROZEN/1.0.0",
-  "run_id": "SHRUN-D3AA0CCD4FA92F76F755049F570DC71DDEEA71CF35D1F0375EA03E0E5917FB06",
+  "run_id": "SHRUN-00C5C98CD1C33EC4D22D0BFCAD4AF0AD51FBF5EBF566AA8C2308B98D2BD5A7FC",
   "schema_version": "platform/shadow-run-1-acceptance/1.0.0",
   "summary": {
-    "blocked": 2,
+    "blocked": 1,
     "fail": 0,
-    "pass": 13,
+    "pass": 14,
     "total": 15
   }
 }

@@ -94,7 +94,8 @@ class ShadowPredictionRecorder:
         instrument = str(envelope.get("instrument_id") or "").upper()
         if instrument == "" or instrument not in {str(s).upper() for s in self._manifest.universe}:
             return
-        if "TICK" not in str(envelope.get("capability") or ""):
+        capability = str(envelope.get("event_type") or envelope.get("capability") or "")
+        if "TICK" not in capability:
             return
         event_time_ns = int(envelope.get("event_time") or 0)
         if event_time_ns <= 0:
