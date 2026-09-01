@@ -1,0 +1,49 @@
+.live-workspace-page {
+  --live-accent: #f0b45c;
+  --live-line: rgba(188, 156, 112, 0.24);
+  display: grid;
+  gap: 18px;
+  max-width: 1580px;
+  margin: 0 auto;
+}
+
+.live-workspace-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--live-line);
+}
+
+.live-workspace-header h1 {
+  margin: 4px 0 8px;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  letter-spacing: -0.04em;
+}
+
+.live-workspace-header p {
+  max-width: 760px;
+  margin: 0 0 8px;
+  color: var(--text-secondary);
+}
+
+.live-workspace-header a {
+  align-self: start;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--live-line);
+}
+
+.live-workspace-page .live-eyebrow {
+  color: var(--live-accent);
+  font: 0.7rem var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.live-workspace-page .mode-restriction-note {
+  border-color: rgba(240, 180, 92, 0.35);
+}

@@ -15,7 +15,11 @@ import { ExplanationDrawer } from "./components/ExplanationDrawer";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { LazyBoundary } from "./components/LazyBoundary";
 import { NavShell } from "./components/NavShell";
+import { ModeDiscoverRoute } from "./components/ModeDiscoverRoute";
+import { ModeExploreRoute } from "./components/ModeExploreRoute";
 import { ModeNowRoute } from "./components/ModeNowRoute";
+import { ModePortfolioRoute } from "./components/ModePortfolioRoute";
+import { ModeResearchRoute } from "./components/ModeResearchRoute";
 import type { ScrubState } from "./components/demo-now/DemoNowPage";
 import { ApplicationBootstrap } from "./components/mode-session/ApplicationBootstrap";
 import { ModeEnvironmentBar } from "./components/mode-session/ModeEnvironmentBar";
@@ -26,6 +30,24 @@ import "./styles/layout.css";
 import "./styles/mode-session.css";
 import "./styles/demo-now.css";
 import "./styles/paper-now.css";
+import "./styles/live-now.css";
+import "./styles/demo-portfolio.css";
+import "./styles/paper-portfolio.css";
+import "./styles/live-portfolio.css";
+import "./styles/demo-workspace.css";
+import "./styles/paper-workspace.css";
+import "./styles/live-workspace.css";
+import "./styles/demo-explore.css";
+import "./styles/paper-explore.css";
+import "./styles/live-explore.css";
+import "./styles/demo-research.css";
+import "./styles/paper-research.css";
+import "./styles/live-research.css";
+import "./styles/demo-discover.css";
+import "./styles/paper-discover.css";
+import "./styles/live-discover.css";
+import "./styles/workspace-module-mode.css";
+import "./styles/shared-ui.css";
 
 const AssistantHistoryPage = lazy(() =>
   import("./components/AssistantHistoryPage").then((module) => ({
@@ -37,67 +59,55 @@ const AssistantSidecar = lazy(() =>
     default: module.AssistantSidecar,
   })),
 );
-const ExplorePage = lazy(() =>
-  import("./components/ExplorePage").then((module) => ({ default: module.ExplorePage })),
-);
-const DiscoverPage = lazy(() =>
-  import("./components/DiscoverPage").then((module) => ({ default: module.DiscoverPage })),
-);
-const ResearchPage = lazy(() =>
-  import("./components/ResearchPage").then((module) => ({ default: module.ResearchPage })),
-);
-const SqueezeWorkspacePage = lazy(() =>
-  import("./components/squeeze/SqueezeWorkspacePage").then((module) => ({
-    default: module.SqueezeWorkspacePage,
+const ModeSqueezeWorkspaceRoute = lazy(() =>
+  import("./components/squeeze/ModeSqueezeWorkspaceRoute").then((module) => ({
+    default: module.ModeSqueezeWorkspaceRoute,
   })),
 );
-const OrderFlowWorkspacePage = lazy(() =>
-  import("./components/orderflow/OrderFlowWorkspacePage").then((module) => ({
-    default: module.OrderFlowWorkspacePage,
+const ModeOrderFlowWorkspaceRoute = lazy(() =>
+  import("./components/orderflow/ModeOrderFlowWorkspaceRoute").then((module) => ({
+    default: module.ModeOrderFlowWorkspaceRoute,
   })),
 );
-const OptionsWorkspacePage = lazy(() =>
-  import("./components/options/OptionsWorkspacePage").then((module) => ({
-    default: module.OptionsWorkspacePage,
+const ModeOptionsWorkspaceRoute = lazy(() =>
+  import("./components/options/ModeOptionsWorkspaceRoute").then((module) => ({
+    default: module.ModeOptionsWorkspaceRoute,
   })),
 );
-const LargeTransactionsWorkspacePage = lazy(() =>
-  import("./components/largetransactions/LargeTransactionsWorkspacePage").then((module) => ({
-    default: module.LargeTransactionsWorkspacePage,
+const ModeLargeTransactionsWorkspaceRoute = lazy(() =>
+  import("./components/largetransactions/ModeLargeTransactionsWorkspaceRoute").then((module) => ({
+    default: module.ModeLargeTransactionsWorkspaceRoute,
   })),
 );
-const OrderBookWorkspacePage = lazy(() =>
-  import("./components/orderbook/OrderBookWorkspacePage").then((module) => ({
-    default: module.OrderBookWorkspacePage,
+const ModeOrderBookWorkspaceRoute = lazy(() =>
+  import("./components/orderbook/ModeOrderBookWorkspaceRoute").then((module) => ({
+    default: module.ModeOrderBookWorkspaceRoute,
   })),
 );
-const FuturesWorkspacePage = lazy(() =>
-  import("./components/futures/FuturesWorkspacePage").then((module) => ({
-    default: module.FuturesWorkspacePage,
+const ModeFuturesWorkspaceRoute = lazy(() =>
+  import("./components/futures/ModeFuturesWorkspaceRoute").then((module) => ({
+    default: module.ModeFuturesWorkspaceRoute,
   })),
 );
-const CatalystWorkspacePage = lazy(() =>
-  import("./components/catalyst/CatalystWorkspacePage").then((module) => ({
-    default: module.CatalystWorkspacePage,
+const ModeCatalystWorkspaceRoute = lazy(() =>
+  import("./components/catalyst/ModeCatalystWorkspaceRoute").then((module) => ({
+    default: module.ModeCatalystWorkspaceRoute,
   })),
 );
-const FundEtfWorkspacePage = lazy(() =>
-  import("./components/fundetf/FundEtfWorkspacePage").then((module) => ({
-    default: module.FundEtfWorkspacePage,
+const ModeFundEtfWorkspaceRoute = lazy(() =>
+  import("./components/fundetf/ModeFundEtfWorkspaceRoute").then((module) => ({
+    default: module.ModeFundEtfWorkspaceRoute,
   })),
 );
-const DisclosureWorkspacePage = lazy(() =>
-  import("./components/disclosure/DisclosureWorkspacePage").then((module) => ({
-    default: module.DisclosureWorkspacePage,
+const ModeDisclosureWorkspaceRoute = lazy(() =>
+  import("./components/disclosure/ModeDisclosureWorkspaceRoute").then((module) => ({
+    default: module.ModeDisclosureWorkspaceRoute,
   })),
 );
-const InstitutionalFlowWorkspacePage = lazy(() =>
-  import("./components/institutional/InstitutionalFlowWorkspacePage").then((module) => ({
-    default: module.InstitutionalFlowWorkspacePage,
+const ModeInstitutionalFlowWorkspaceRoute = lazy(() =>
+  import("./components/institutional/ModeInstitutionalFlowWorkspaceRoute").then((module) => ({
+    default: module.ModeInstitutionalFlowWorkspaceRoute,
   })),
-);
-const PortfolioPage = lazy(() =>
-  import("./components/PortfolioPage").then((module) => ({ default: module.PortfolioPage })),
 );
 const OperatorSettingsPage = lazy(() =>
   import("./components/OperatorSettingsPage").then((module) => ({
@@ -298,7 +308,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
         contextState={contextState}
         onSwitchMode={returnToLauncher}
       />
-      <NavShell />
+      <NavShell mode={mode} />
       {contextQuery.data ? (
         <ContextBar context={contextQuery.data} />
       ) : (
@@ -337,8 +347,11 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
                 />
               }
             />
-            <Route path="/explore" element={<ExplorePage onExplain={openExplainRef} />} />
-            <Route path="/discover" element={<DiscoverPage />} />
+            <Route
+              path="/explore"
+              element={<ModeExploreRoute mode={mode} onExplain={openExplainRef} />}
+            />
+            <Route path="/discover" element={<ModeDiscoverRoute mode={mode} />} />
             <Route path="/workspace" element={<WorkspaceIndex />} />
             <Route
               path="/workspace/:symbol"
@@ -358,7 +371,8 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
             <Route
               path="/workspace/:symbol/squeeze"
               element={
-                <SqueezeWorkspacePage
+                <ModeSqueezeWorkspaceRoute
+                  mode={mode}
                   onExplain={openExplainRef}
                   onInspect={openInspectRef}
                   onOpenHistory={openSqueezeHistory}
@@ -368,7 +382,8 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
             <Route
               path="/workspace/:symbol/order-flow"
               element={
-                <OrderFlowWorkspacePage
+                <ModeOrderFlowWorkspaceRoute
+                  mode={mode}
                   onExplain={openExplainRef}
                   onInspect={openInspectRef}
                 />
@@ -377,7 +392,8 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
             <Route
               path="/workspace/:symbol/order-book"
               element={
-                <OrderBookWorkspacePage
+                <ModeOrderBookWorkspaceRoute
+                  mode={mode}
                   onExplain={openExplainRef}
                   onInspect={openInspectRef}
                 />
@@ -386,7 +402,8 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
             <Route
               path="/workspace/:symbol/futures"
               element={
-                <FuturesWorkspacePage
+                <ModeFuturesWorkspaceRoute
+                  mode={mode}
                   onExplain={openExplainRef}
                   onInspect={openInspectRef}
                 />
@@ -395,7 +412,8 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
             <Route
               path="/workspace/:symbol/catalyst"
               element={
-                <CatalystWorkspacePage
+                <ModeCatalystWorkspaceRoute
+                  mode={mode}
                   onExplain={openExplainRef}
                   onInspect={openInspectRef}
                 />
@@ -404,7 +422,8 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
             <Route
               path="/workspace/:symbol/fund-etf"
               element={
-                <FundEtfWorkspacePage
+                <ModeFundEtfWorkspaceRoute
+                  mode={mode}
                   onExplain={openExplainRef}
                   onInspect={openInspectRef}
                 />
@@ -413,7 +432,8 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
             <Route
               path="/workspace/:symbol/options"
               element={
-                <OptionsWorkspacePage
+                <ModeOptionsWorkspaceRoute
+                  mode={mode}
                   onExplain={openExplainRef}
                   onInspect={openInspectRef}
                 />
@@ -422,7 +442,8 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
             <Route
               path="/workspace/:symbol/large-transactions"
               element={
-                <LargeTransactionsWorkspacePage
+                <ModeLargeTransactionsWorkspaceRoute
+                  mode={mode}
                   onExplain={openExplainRef}
                   onInspect={openInspectRef}
                 />
@@ -431,7 +452,8 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
             <Route
               path="/workspace/:symbol/disclosure"
               element={
-                <DisclosureWorkspacePage
+                <ModeDisclosureWorkspaceRoute
+                  mode={mode}
                   onExplain={openExplainRef}
                   onInspect={openInspectRef}
                 />
@@ -440,17 +462,18 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
             <Route
               path="/workspace/:symbol/institutional-flow"
               element={
-                <InstitutionalFlowWorkspacePage
+                <ModeInstitutionalFlowWorkspaceRoute
+                  mode={mode}
                   onExplain={openExplainRef}
                   onInspect={openInspectRef}
                 />
               }
             />
-            <Route path="/research" element={<ResearchPage />} />
+            <Route path="/research" element={<ModeResearchRoute mode={mode} />} />
             <Route
               path="/portfolio"
               element={
-                <PortfolioPage
+                <ModePortfolioRoute
                   mode={mode}
                   paperActionsPermitted={paperActionsPermitted}
                 />
@@ -460,7 +483,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
               path="/live-canary"
               element={<LiveCanaryControlPlanePage mode={mode} />}
             />
-            <Route path="/settings" element={<OperatorSettingsPage />} />
+            <Route path="/settings" element={<OperatorSettingsPage mode={mode} />} />
             <Route path="/diagnostics/provider" element={<ProviderHealthPanel />} />
             <Route path="/assistant/history" element={<AssistantHistoryPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

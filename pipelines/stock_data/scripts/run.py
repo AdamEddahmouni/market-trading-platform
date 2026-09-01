@@ -73,7 +73,7 @@ def main():
 
     if not args:
         # No args → show interactive menu
-        from src.ui import show_menu
+        from src.operator_console import show_menu
         cmd = show_menu()
         if cmd is None or cmd == "quit":
             return
@@ -104,7 +104,7 @@ def _invoke(handler_name: str):
 
 
 def _show_help():
-    from src.ui import print_help
+    from src.operator_console import print_help
     print_help()
 
 
@@ -115,8 +115,8 @@ def _run_watch():
 
 def _run_filter_picker():
     """Interactive filter wizard followed by count/preview + optional export."""
-    from src.ui import console
-    from src.ui.filter import (
+    from src.operator_console import console
+    from src.operator_console.filter import (
         FilterSpec,
         apply_filter,
         count_filter,
@@ -148,7 +148,7 @@ def _run_filter_picker():
         return
 
     if Confirm.ask("Export a slice using this filter?", default=True):
-        from src.ui.export import ExportRequest, execute_filtered_export
+        from src.operator_console.export import ExportRequest, execute_filtered_export
         from rich.prompt import Prompt
         fmt = Prompt.ask("Format", choices=["csv", "parquet", "both"], default="both")
         request = ExportRequest(
@@ -169,7 +169,7 @@ def _run_filter_picker():
 
 def _run_export_menu():
     """Run the interactive export sub-menu from the dispatch menu."""
-    from src.ui.export import (
+    from src.operator_console.export import (
         execute_filtered_export,
         show_export_menu,
     )

@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from ..paper.broker_paper import cancel_broker_paper_order
 from ..paper.execution import cancel_interactive_order, preview_interactive_order, submit_interactive_order
 from ..paper.ledger import PaperExecutionLedger
+from .lane_provenance import attach_lane_provenance
 from .projections import build_as_of_context
 from .store import ReplayStore
 
@@ -57,6 +59,63 @@ def build_paper_orders_payload(store: ReplayStore) -> dict[str, Any]:
     return _paper_envelope(store, {"orders": store.paper_ledger.project_orders()})
 
 
+_TERMINAL_ORDER_STATES = frozenset({"FILLED", "CANCELLED", "REJECTED", "EXPIRED", "RISK_REJECTED"})
+
+
+def _is_terminal_order_state(state: str | None) -> bool:
+    if not state:
+        return False
+    return str(state).upper() in _TERMINAL_ORDER_STATES
+
+
+def _sort_orders_desc(orders: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def sort_key(order: dict[str, Any]) -> tuple[int, str]:
+        seq = order.get("submitted_sequence")
+        seq_val = int(seq) if isinstance(seq, (int, float)) else -1
+        return (seq_val, str(order.get("order_id", "")))
+
+    return sorted(orders, key=sort_key, reverse=True)
+
+
+def build_paper_order_history_page(
+    store: ReplayStore,
+    *,
+    cursor: str | None = None,
+    limit: int | None = None,
+) -> dict[str, Any]:
+    page_size = min(max(int(limit or 25), 1), 100)
+    all_orders = _sort_orders_desc(store.paper_ledger.project_orders())
+    terminal_orders = [order for order in all_orders if _is_terminal_order_state(str(order.get("state", "")))]
+    start = 0
+    if cursor:
+        for idx, order in enumerate(terminal_orders):
+            if str(order.get("order_id", "")) == cursor:
+                start = idx + 1
+                break
+    page = terminal_orders[start : start + page_size]
+    next_cursor = (
+        str(page[-1].get("order_id", ""))
+        if len(page) == page_size and start + page_size < len(terminal_orders)
+        else None
+    )
+    order_ids = {str(order.get("order_id", "")) for order in page}
+    page_fills = [
+        fill
+        for fill in store.paper_ledger.project_fills()
+        if str(fill.get("order_id", "")) in order_ids
+    ]
+    return _paper_envelope(
+        store,
+        {
+            "fills": page_fills,
+            "next_cursor": next_cursor,
+            "orders": page,
+            "page_size": page_size,
+            "total_count": len(terminal_orders),
+        },
+    )
+
+
 def build_paper_fills_payload(store: ReplayStore) -> dict[str, Any]:
     return _paper_envelope(store, {"fills": store.paper_ledger.project_fills()})
 
@@ -77,11 +136,13 @@ def build_paper_portfolio_payload(store: ReplayStore) -> dict[str, Any]:
     risk = ledger.project_risk()
     gross_exposure = sum(abs(int(row.get("quantity", 0))) for row in positions)
     net_exposure = sum(int(row.get("quantity", 0)) for row in positions)
-    return _paper_envelope(
+    observation_time = _paper_observation_time(store)
+    envelope = _paper_envelope(
         store,
         {
             "account": account,
             "authority_boundary": "PAPER_OBSERVABILITY",
+            "observation_time": observation_time,
             "data_health": {
                 "data_mode": ledger.data_mode,
                 "data_provider": "MOOMOO" if ledger.data_mode == "LIVE_OBSERVATIONAL" else ledger.data_provider,
@@ -118,6 +179,7 @@ def build_paper_portfolio_payload(store: ReplayStore) -> dict[str, Any]:
             **_active_instrument_fields(store),
         },
     )
+    return attach_lane_provenance(envelope, lane_id="paper-portfolio", retrieved_at_ns=time.time_ns())
 
 
 def build_paper_trace_payload(
@@ -142,6 +204,11 @@ def build_paper_trace_payload(
 
 
 def _parse_order_body(body: dict[str, Any], store: ReplayStore) -> dict[str, Any]:
+    from ..paper.decision_source import (
+        parse_decision_source_snapshot,
+        validate_snapshot_against_correlation,
+    )
+
     side = str(body.get("side", "")).upper()
     quantity = int(body.get("quantity", 0))
     if quantity <= 0:
@@ -158,9 +225,18 @@ def _parse_order_body(body: dict[str, Any], store: ReplayStore) -> dict[str, Any
     idempotency_key = str(body.get("idempotency_key", "")).strip() or client_order_id
     correlation_id = str(body.get("correlation_id", "")).strip() or client_order_id
     explicit = body.get("instrument_id") or body.get("symbol")
+    raw_snapshot = body.get("decision_source_snapshot")
+    decision_source_snapshot = None
+    if raw_snapshot is not None:
+        decision_source_snapshot = parse_decision_source_snapshot(raw_snapshot)
+        decision_source_snapshot = validate_snapshot_against_correlation(
+            snapshot=decision_source_snapshot,
+            correlation_id=correlation_id,
+        )
     return {
         "client_order_id": client_order_id,
         "correlation_id": correlation_id,
+        "decision_source_snapshot": decision_source_snapshot,
         "explicit_instrument": explicit,
         "idempotency_key": idempotency_key,
         "limit_price_minor": int(limit_price_minor) if limit_price_minor is not None else None,
@@ -259,6 +335,7 @@ def preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
         order_type=parsed["order_type"],
         limit_price_minor=parsed["limit_price_minor"],
         correlation_id=parsed["correlation_id"],
+        decision_source_snapshot=parsed["decision_source_snapshot"],
     )
     return _paper_envelope(store, {"preview": preview})
 
@@ -308,6 +385,7 @@ def submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, An
         order_type=parsed["order_type"],
         limit_price_minor=parsed["limit_price_minor"],
         correlation_id=parsed["correlation_id"],
+        decision_source_snapshot=parsed["decision_source_snapshot"],
     )
     return _paper_envelope(store, {"submission": result})
 

@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PaperOrderPreviewResponse } from "../../api/schemas";
 import paperNowCss from "../../styles/paper-now.css?raw";
@@ -40,15 +40,21 @@ function pageProps(overrides: Partial<PaperNowPageProps> = {}): PaperNowPageProp
     onWhy: vi.fn(),
     onExplain: vi.fn(),
     onInspect: vi.fn(),
-    onOpenWorkspace: vi.fn(),
-    onContinue: vi.fn(),
     ...overrides,
   };
 }
 
 function renderPage(overrides: Partial<PaperNowPageProps> = {}) {
   const props = pageProps(overrides);
-  return { props, ...render(<MemoryRouter><PaperNowPage {...props} /></MemoryRouter>) };
+  const result = render(
+    <MemoryRouter initialEntries={["/"]}>
+      <Routes>
+        <Route path="/" element={<PaperNowPage {...props} />} />
+        <Route path="/workspace/:symbol" element={<output data-testid="workspace-draft" />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+  return { props, ...result };
 }
 
 function completeDraft(quantity = "10") {
@@ -136,14 +142,7 @@ describe("PaperNowPage", () => {
     expect(screen.getByText(/Quality CURRENT/)).toBeInTheDocument();
     expect(screen.getByText(/Model INTERNAL_FILL · v1/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Open workspace and revalidate" }));
-    expect(props.onContinue).toHaveBeenCalledWith({
-      version: 1,
-      instrumentId: "BIYA",
-      side: "BUY",
-      quantity: 10,
-      orderType: "MARKET",
-      sourceAttentionId: "attention-biya",
-    });
+    expect(await screen.findByTestId("workspace-draft")).toBeInTheDocument();
   });
 
   it("shows BLOCKED reasons without offering continuation", async () => {

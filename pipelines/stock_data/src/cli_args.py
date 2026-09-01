@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 from typing import List, Optional, Sequence
 
-from src.ui.filter import FilterSpec, parse_filter_args
+from src.operator_console.filter import FilterSpec, parse_filter_args
 
 
 # ── Parser construction ─────────────────────────────────────

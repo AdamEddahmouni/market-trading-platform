@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import threading
+import time
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 from typing import Any
@@ -23,7 +24,12 @@ from .assistant_projections import (
     create_assistant_conversation,
     submit_assistant_prompt,
 )
+from .lane_provenance import attach_lane_provenance
 from .store import ReplayStore
+
+
+def _enrich_lane_payload(payload: dict[str, Any], *, lane_id: str) -> dict[str, Any]:
+    return attach_lane_provenance(payload, lane_id=lane_id, retrieved_at_ns=time.time_ns())
 
 # ThreadingHTTPServer dispatches every request on its own thread against ONE
 # shared ReplayStore. Ledger mutation is not individually thread-safe (the
@@ -176,7 +182,12 @@ class UiApiHandler(BaseHTTPRequestHandler):
                         status=HTTPStatus.BAD_REQUEST,
                     )
                     return
-                self._send_json(projections.build_workspace_institutional_flow_payload(self.store, symbol))
+                self._send_json(
+                    _enrich_lane_payload(
+                        projections.build_workspace_institutional_flow_payload(self.store, symbol),
+                        lane_id="institutional-flow",
+                    )
+                )
                 return
             if path == "/explore/futures":
                 as_of = projections.build_as_of_context(self.store)
@@ -215,10 +226,13 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
                 data_mode = query.get("data_mode", ["frozen"])[0]
                 self._send_json(
-                    workspace_evidence.build_workspace_evidence_payload(
-                        self.store,
-                        symbol,
-                        data_mode=str(data_mode),
+                    _enrich_lane_payload(
+                        workspace_evidence.build_workspace_evidence_payload(
+                            self.store,
+                            symbol,
+                            data_mode=str(data_mode),
+                        ),
+                        lane_id="evidence",
                     )
                 )
                 return
@@ -236,11 +250,14 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
                 data_mode = (query.get("data_mode") or ["frozen"])[0].strip().lower()
                 self._send_json(
-                    build_workspace_squeeze_payload(
-                        symbol,
-                        as_of_context=as_of,
-                        prediction_cutoff=self.store.prediction_cutoff(),
-                        data_mode=data_mode,
+                    _enrich_lane_payload(
+                        build_workspace_squeeze_payload(
+                            symbol,
+                            as_of_context=as_of,
+                            prediction_cutoff=self.store.prediction_cutoff(),
+                            data_mode=data_mode,
+                        ),
+                        lane_id="squeeze",
                     )
                 )
                 return
@@ -264,7 +281,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 )
                 if not payload.get("available"):
                     payload = build_bridge_catalyst(symbol, as_of_context=as_of)
-                self._send_json(payload)
+                self._send_json(_enrich_lane_payload(payload, lane_id="catalyst"))
                 return
             if path.startswith("/workspace/") and path.endswith("/market-context"):
                 symbol = path.removeprefix("/workspace/").removesuffix("/market-context").strip("/")
@@ -279,10 +296,13 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 from ..providers.projections import build_workspace_market_context_payload
 
                 self._send_json(
-                    build_workspace_market_context_payload(
-                        symbol,
-                        as_of_context=as_of,
-                        prediction_cutoff=self.store.prediction_cutoff(),
+                    _enrich_lane_payload(
+                        build_workspace_market_context_payload(
+                            symbol,
+                            as_of_context=as_of,
+                            prediction_cutoff=self.store.prediction_cutoff(),
+                        ),
+                        lane_id="market-context",
                     )
                 )
                 return
@@ -299,10 +319,13 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 from ..providers.projections import build_workspace_disclosure_payload
 
                 self._send_json(
-                    build_workspace_disclosure_payload(
-                        symbol,
-                        as_of_context=as_of,
-                        prediction_cutoff=self.store.prediction_cutoff(),
+                    _enrich_lane_payload(
+                        build_workspace_disclosure_payload(
+                            symbol,
+                            as_of_context=as_of,
+                            prediction_cutoff=self.store.prediction_cutoff(),
+                        ),
+                        lane_id="disclosure",
                     )
                 )
                 return
@@ -318,15 +341,18 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 as_of = projections.build_as_of_context(self.store)
                 live_payload = live_projections.build_live_order_flow_payload(symbol)
                 if live_payload is not None and live_payload.get("available"):
-                    self._send_json(live_payload)
+                    self._send_json(_enrich_lane_payload(live_payload, lane_id="order-flow"))
                     return
                 from ..providers.projections import build_workspace_order_flow_payload
 
                 self._send_json(
-                    build_workspace_order_flow_payload(
-                        symbol,
-                        as_of_context=as_of,
-                        prediction_cutoff=self.store.prediction_cutoff(),
+                    _enrich_lane_payload(
+                        build_workspace_order_flow_payload(
+                            symbol,
+                            as_of_context=as_of,
+                            prediction_cutoff=self.store.prediction_cutoff(),
+                        ),
+                        lane_id="order-flow",
                     )
                 )
                 return
@@ -343,10 +369,13 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 from ..providers.projections import build_workspace_options_payload
 
                 self._send_json(
-                    build_workspace_options_payload(
-                        symbol,
-                        as_of_context=as_of,
-                        prediction_cutoff=self.store.prediction_cutoff(),
+                    _enrich_lane_payload(
+                        build_workspace_options_payload(
+                            symbol,
+                            as_of_context=as_of,
+                            prediction_cutoff=self.store.prediction_cutoff(),
+                        ),
+                        lane_id="options",
                     )
                 )
                 return
@@ -363,10 +392,13 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 from ..providers.projections import build_workspace_large_transactions_payload
 
                 self._send_json(
-                    build_workspace_large_transactions_payload(
-                        symbol,
-                        as_of_context=as_of,
-                        prediction_cutoff=self.store.prediction_cutoff(),
+                    _enrich_lane_payload(
+                        build_workspace_large_transactions_payload(
+                            symbol,
+                            as_of_context=as_of,
+                            prediction_cutoff=self.store.prediction_cutoff(),
+                        ),
+                        lane_id="large-transactions",
                     )
                 )
                 return
@@ -383,10 +415,13 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 from ..providers.projections import build_workspace_futures_payload
 
                 self._send_json(
-                    build_workspace_futures_payload(
-                        symbol,
-                        as_of_context=as_of,
-                        prediction_cutoff=self.store.prediction_cutoff(),
+                    _enrich_lane_payload(
+                        build_workspace_futures_payload(
+                            symbol,
+                            as_of_context=as_of,
+                            prediction_cutoff=self.store.prediction_cutoff(),
+                        ),
+                        lane_id="futures",
                     )
                 )
                 return
@@ -403,10 +438,13 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 from ..providers.projections import build_workspace_fund_etf_payload
 
                 self._send_json(
-                    build_workspace_fund_etf_payload(
-                        symbol,
-                        as_of_context=as_of,
-                        prediction_cutoff=self.store.prediction_cutoff(),
+                    _enrich_lane_payload(
+                        build_workspace_fund_etf_payload(
+                            symbol,
+                            as_of_context=as_of,
+                            prediction_cutoff=self.store.prediction_cutoff(),
+                        ),
+                        lane_id="fund-etf",
                     )
                 )
                 return
@@ -422,15 +460,18 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 as_of = projections.build_as_of_context(self.store)
                 live_book = live_projections.build_live_order_book_payload(symbol)
                 if live_book is not None and live_book.get("available"):
-                    self._send_json(live_book)
+                    self._send_json(_enrich_lane_payload(live_book, lane_id="order-book"))
                     return
                 from ..providers.projections import build_workspace_order_book_payload
 
                 self._send_json(
-                    build_workspace_order_book_payload(
-                        symbol,
-                        as_of_context=as_of,
-                        prediction_cutoff=self.store.prediction_cutoff(),
+                    _enrich_lane_payload(
+                        build_workspace_order_book_payload(
+                            symbol,
+                            as_of_context=as_of,
+                            prediction_cutoff=self.store.prediction_cutoff(),
+                        ),
+                        lane_id="order-book",
                     )
                 )
                 return
@@ -472,6 +513,19 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 return
             if path == "/paper/orders":
                 self._send_json(paper_projections.build_paper_orders_payload(self.store))
+                return
+            if path == "/paper/order-history":
+                query = parse_qs(parsed.query)
+                cursor = query.get("cursor", [None])[0]
+                limit_raw = query.get("limit", [None])[0]
+                limit = int(limit_raw) if limit_raw else None
+                self._send_json(
+                    paper_projections.build_paper_order_history_page(
+                        self.store,
+                        cursor=str(cursor) if cursor else None,
+                        limit=limit,
+                    )
+                )
                 return
             if path == "/paper/fills":
                 self._send_json(paper_projections.build_paper_fills_payload(self.store))

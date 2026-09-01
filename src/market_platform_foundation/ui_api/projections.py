@@ -352,6 +352,7 @@ def _strategy_signal_items(store: ReplayStore) -> list[dict[str, object]]:
                     },
                 ],
                 "tier": 2,
+                "surfaced_time": obs_time,
             }
         )
         rank += 1
@@ -372,6 +373,7 @@ def _quality_attention_item(store: ReplayStore) -> dict[str, object] | None:
             {"code": "QUALITY_DEGRADED", "label": str(quality.get("detail", "Quality notice"))},
         ],
         "tier": 1,
+        "surfaced_time": store.prediction_cutoff(),
     }
 
 
@@ -419,6 +421,7 @@ def _futures_attention_items(store: ReplayStore) -> list[dict[str, object]]:
                 },
             ],
             "tier": 2,
+            "surfaced_time": store.prediction_cutoff(),
         }
     ]
 
@@ -440,6 +443,7 @@ def _tier1_attention_items(store: ReplayStore) -> list[dict[str, object]]:
                 {"code": "BAR_OHLCV", "label": "Admitted equity intraday bars"},
             ],
             "tier": 1,
+            "surfaced_time": store.prediction_cutoff(),
         }
     )
     return tier1

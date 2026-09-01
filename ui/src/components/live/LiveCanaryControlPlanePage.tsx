@@ -1,33 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
+import { useLiveCanarySnapshotQuery } from "../../api/hooks";
 import type { Mode } from "../mode-session/types";
-
-type SnapshotPayload = {
-  snapshot: {
-    live_blocked: boolean;
-    block_reasons: string[];
-    execution_mode_label: string;
-    program_state: string | null;
-    session_state: string | null;
-    broker: string | null;
-    account_environment: string | null;
-    account_fingerprint: string | null;
-    broker_health: string;
-    reconciliation_health: string;
-    kill_switch_global: string;
-    kill_switch_program: string;
-    kill_switch_session: string;
-    authorization_status: string | null;
-    authorization_expires_at_ns: number | null;
-    program_cap_remaining: Record<string, number>;
-    incident_summary: Record<string, number>;
-    unresolved_critical_incidents: string[];
-    allowed_next_actions: string[];
-    action_queue: Array<Record<string, unknown>>;
-    snapshot_id: string;
-    as_of_ns: number;
-  };
-  real_money_warning: string;
-};
+import { LoadingState } from "../shared/LoadingState";
 
 type ReliabilityPayload = {
   observability_state: string;
@@ -64,24 +38,21 @@ type Props = {
 };
 
 export function LiveCanaryControlPlanePage({ mode }: Props) {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["canary-snapshot"],
-    queryFn: () => fetchJson<SnapshotPayload>("/canary/snapshot"),
-    refetchInterval: 15000,
-  });
+  const { data: snap, isLoading, error } = useLiveCanarySnapshotQuery("canary-plane");
   const { data: reliability } = useQuery({
     queryKey: ["canary-reliability"],
     queryFn: () => fetchJson<ReliabilityPayload>("/canary/reliability"),
     refetchInterval: 15000,
   });
   if (isLoading) {
-    return <p className="loading">Loading live canary control plane…</p>;
+    return <LoadingState label="Loading live canary control plane…" />;
   }
-  if (error || !data) {
+  if (error || !snap) {
     return <p className="error">Failed to load operator control plane.</p>;
   }
 
-  const snap = data.snapshot;
+  const programCapRemaining = snap.program_cap_remaining ?? {};
+  const actionQueue = (snap as { action_queue?: Array<Record<string, unknown>> }).action_queue ?? [];
 
   return (
     <div className="live-canary-control-plane" data-testid="live-canary-control-plane">
@@ -125,7 +96,7 @@ export function LiveCanaryControlPlanePage({ mode }: Props) {
           <dt>Reconciliation</dt>
           <dd>{snap.reconciliation_health}</dd>
           <dt>As of</dt>
-          <dd>{snap.as_of_ns}</dd>
+          <dd>{snap.as_of_ns ?? "—"}</dd>
         </dl>
       </section>
 
@@ -154,11 +125,11 @@ export function LiveCanaryControlPlanePage({ mode }: Props) {
           <dt>Authorization</dt>
           <dd>{snap.authorization_status ?? "NONE"}</dd>
           <dt>Remaining sessions</dt>
-          <dd>{snap.program_cap_remaining.sessions ?? 0}</dd>
+          <dd>{programCapRemaining.sessions ?? 0}</dd>
           <dt>Remaining orders</dt>
-          <dd>{snap.program_cap_remaining.orders ?? 0}</dd>
+          <dd>{programCapRemaining.orders ?? 0}</dd>
           <dt>Remaining notional (minor)</dt>
-          <dd>{snap.program_cap_remaining.notional_minor ?? 0}</dd>
+          <dd>{programCapRemaining.notional_minor ?? 0}</dd>
         </dl>
       </section>
 
@@ -223,11 +194,11 @@ export function LiveCanaryControlPlanePage({ mode }: Props) {
 
       <section className="control-section">
         <h2>Action Queue</h2>
-        {snap.action_queue.length === 0 ? (
+        {actionQueue.length === 0 ? (
           <p>No pending operator decisions.</p>
         ) : (
           <ul>
-            {snap.action_queue.map((item, index) => (
+            {actionQueue.map((item, index) => (
               <li key={`${item.item_type}-${index}`}>
                 {String(item.item_type)} — requires explicit review
               </li>

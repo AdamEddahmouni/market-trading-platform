@@ -210,6 +210,7 @@
       "id": "validation-control-plane",
       "classification": "CANONICAL",
       "scope": [
+        "tools/check_docs_links.py",
         "tools/repository_closure.py",
         "tools/validate.py",
         "tools/validation_manifest.json",
@@ -485,11 +486,12 @@
     {
       "id": "nested-stock-data-dashboard",
       "classification": "DUPLICATE",
-      "scope": ["pipelines/stock_data/src/ui"],
-      "responsibility": "A separate collector dashboard that duplicates operator-facing inventory/filter/export responsibilities outside the canonical workstation.",
+      "scope": ["pipelines/stock_data/src/operator_console"],
+      "responsibility": "Pipeline-local Rich CLI console (renamed from src/ui). Not a competing web workstation — consolidation complete.",
       "evidence": [
-        "pipelines/stock_data/src/ui defines its own dashboard while ui/ and ui_api are the canonical workstation surfaces.",
-        "The nested collector boundary test prohibits coupling it into the standard-library platform core."
+        "Renamed pipelines/stock_data/src/ui → operator_console (2026-09-01) to eliminate false duplicate-UI classification.",
+        "pipelines/stock_data/src/operator_console/README.md documents CLI-only scope vs canonical ui/ workstation.",
+        "pipelines/stock_data/tests/test_monorepo_boundary.py prohibits coupling collector into platform core."
       ],
       "canonical_target": "operator-ui-and-assistant",
       "disposition": "CONSOLIDATE"

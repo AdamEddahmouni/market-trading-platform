@@ -328,6 +328,20 @@ class PaperExecutionLedger:
                 intent = intent_meta[intent_id]
                 order["side"] = intent.get("side")
                 order["order_type"] = intent.get("order_type", "MARKET")
+                if intent.get("correlation_id"):
+                    order["correlation_id"] = intent.get("correlation_id")
+                if isinstance(intent.get("decision_source_snapshot"), dict):
+                    order["decision_source_snapshot"] = intent.get("decision_source_snapshot")
+                if intent.get("created_time") is not None:
+                    order["created_time"] = intent.get("created_time")
+                if intent.get("desired_quantity") is not None:
+                    order["desired_quantity"] = intent.get("desired_quantity")
+                instrument = intent.get("instrument")
+                if isinstance(instrument, dict):
+                    if instrument.get("symbol"):
+                        order["symbol"] = instrument.get("symbol")
+                    if instrument.get("instrument_id"):
+                        order["instrument_id"] = instrument.get("instrument_id")
         return list(orders_by_id.values())
 
     def append_order_state(

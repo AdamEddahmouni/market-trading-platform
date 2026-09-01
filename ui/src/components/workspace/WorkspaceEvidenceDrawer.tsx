@@ -1,4 +1,5 @@
 import type { WorkspaceEvidenceLane } from "../../api/schemas";
+import { JsonDetailPanel } from "../shared/JsonDetailPanel";
 
 type Props = {
   lane: WorkspaceEvidenceLane | null;
@@ -73,10 +74,7 @@ export function WorkspaceEvidenceDrawer({ lane, onClose, onExplain }: Props) {
         </section>
       ) : null}
       {lane.details && Object.keys(lane.details).length > 0 ? (
-        <section>
-          <h4>Underlying observations</h4>
-          <pre>{JSON.stringify(lane.details, null, 2)}</pre>
-        </section>
+        <JsonDetailPanel title="Underlying observations" value={lane.details} />
       ) : null}
       {lane.explain_ref && onExplain ? (
         <button type="button" onClick={() => onExplain(lane.explain_ref!)}>Open explain</button>

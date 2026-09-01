@@ -23,7 +23,11 @@ from market_platform_foundation.paper.execution import (
 from market_platform_foundation.paper.ledger import PaperExecutionLedger
 from market_platform_foundation.risk.kill_switch import KillSwitchState
 from market_platform_foundation.risk.policy import DEFAULT_RISK_POLICY
-from market_platform_foundation.ui_api.paper_projections import open_paper_session, submit_paper_order
+from market_platform_foundation.ui_api.paper_projections import (
+    build_paper_order_history_page,
+    open_paper_session,
+    submit_paper_order,
+)
 from market_platform_foundation.ui_api.store import ReplayStore
 
 COLLECTION_ROOT = ROOT.parent
@@ -264,6 +268,120 @@ class PaperP1SimulationTests(unittest.TestCase):
         self.assertIn("FILL", stages)
         self.assertIn("PORTFOLIO_IMPACT", stages)
 
+    def test_project_orders_preserves_decision_correlation(self) -> None:
+        lane = submit_paper_order(
+            self.store,
+            {
+                "side": "BUY",
+                "quantity": 1,
+                "client_order_id": "lane-client",
+                "idempotency_key": "lane-key",
+                "correlation_id": "lane:squeeze",
+            },
+        )
+        attention = submit_paper_order(
+            self.store,
+            {
+                "side": "BUY",
+                "quantity": 1,
+                "client_order_id": "attention-client",
+                "idempotency_key": "attention-key",
+                "correlation_id": "attention-biya",
+            },
+        )
+        manual = submit_paper_order(
+            self.store,
+            {
+                "side": "BUY",
+                "quantity": 1,
+                "client_order_id": "manual-client",
+                "idempotency_key": "manual-key",
+            },
+        )
+        orders = {row["order_id"]: row for row in self.store.paper_ledger.project_orders()}
+        lane_order = orders[str(lane["submission"]["order_id"])]
+        attention_order = orders[str(attention["submission"]["order_id"])]
+        manual_order = orders[str(manual["submission"]["order_id"])]
+        self.assertEqual(lane_order.get("correlation_id"), "lane:squeeze")
+        self.assertEqual(attention_order.get("correlation_id"), "attention-biya")
+        self.assertEqual(manual_order.get("correlation_id"), "manual-client")
+        self.assertEqual(lane_order.get("desired_quantity"), 1)
+        self.assertEqual(lane_order.get("symbol"), self.store.symbol)
+
+    def test_project_orders_preserves_decision_source_snapshot(self) -> None:
+        source_time = 1_700_000_000_000_000_000
+        attention_snapshot = {
+            "source_type": "paper_command_attention",
+            "source_id": "attention-biya",
+            "headline": "Short interest elevated into catalyst window",
+            "tier": 1,
+            "reasons": [{"code": "SI", "label": "Short interest elevated"}],
+            "source_time": source_time,
+        }
+        lane_snapshot = {
+            "source_type": "workspace_lane",
+            "source_id": "squeeze",
+            "source_module": "squeeze",
+            "source_time": source_time + 100_000_000_000,
+        }
+        attention = submit_paper_order(
+            self.store,
+            {
+                "side": "BUY",
+                "quantity": 1,
+                "client_order_id": "snapshot-attention",
+                "idempotency_key": "snapshot-attention-key",
+                "correlation_id": "attention-biya",
+                "decision_source_snapshot": attention_snapshot,
+            },
+        )
+        lane = submit_paper_order(
+            self.store,
+            {
+                "side": "BUY",
+                "quantity": 1,
+                "client_order_id": "snapshot-lane",
+                "idempotency_key": "snapshot-lane-key",
+                "correlation_id": "lane:squeeze",
+                "decision_source_snapshot": lane_snapshot,
+            },
+        )
+        manual = submit_paper_order(
+            self.store,
+            {
+                "side": "BUY",
+                "quantity": 1,
+                "client_order_id": "snapshot-manual",
+                "idempotency_key": "snapshot-manual-key",
+            },
+        )
+        orders = {row["order_id"]: row for row in self.store.paper_ledger.project_orders()}
+        attention_order = orders[str(attention["submission"]["order_id"])]
+        lane_order = orders[str(lane["submission"]["order_id"])]
+        manual_order = orders[str(manual["submission"]["order_id"])]
+        self.assertEqual(attention_order.get("decision_source_snapshot"), attention_snapshot)
+        self.assertEqual(lane_order.get("decision_source_snapshot"), lane_snapshot)
+        self.assertEqual(attention_order.get("decision_source_snapshot", {}).get("source_time"), source_time)
+        self.assertNotIn("decision_source_snapshot", manual_order)
+
+    def test_submit_rejects_snapshot_correlation_mismatch(self) -> None:
+        with self.assertRaises(ValueError) as ctx:
+            submit_paper_order(
+                self.store,
+                {
+                    "side": "BUY",
+                    "quantity": 1,
+                    "client_order_id": "mismatch-client",
+                    "idempotency_key": "mismatch-key",
+                    "correlation_id": "lane:squeeze",
+                    "decision_source_snapshot": {
+                        "source_type": "paper_command_attention",
+                        "source_id": "ATT-1",
+                    },
+                },
+            )
+        self.assertIn("MISMATCH", str(ctx.exception))
+
     def test_cancel_filled_order_not_supported(self) -> None:
         result = submit_paper_order(
             self.store,
@@ -301,6 +419,32 @@ class PaperP1SimulationTests(unittest.TestCase):
                 idempotency_key="blocked-key",
             )
         self.assertIn("NOT_AUTHORIZED", str(ctx.exception))
+
+    def test_paper_order_history_page_paginates_terminal_orders(self) -> None:
+        for index in range(3):
+            submit_paper_order(
+                self.store,
+                {
+                    "side": "BUY",
+                    "quantity": 1,
+                    "client_order_id": f"hist-{index}",
+                    "idempotency_key": f"hist-key-{index}",
+                },
+            )
+        first_page = build_paper_order_history_page(self.store, limit=2)
+        self.assertEqual(len(first_page["orders"]), 2)
+        self.assertEqual(first_page["total_count"], 3)
+        self.assertIsNotNone(first_page["next_cursor"])
+        second_page = build_paper_order_history_page(
+            self.store,
+            cursor=str(first_page["next_cursor"]),
+            limit=2,
+        )
+        self.assertEqual(len(second_page["orders"]), 1)
+        self.assertIsNone(second_page["next_cursor"])
+        first_ids = {row["order_id"] for row in first_page["orders"]}
+        second_ids = {row["order_id"] for row in second_page["orders"]}
+        self.assertTrue(first_ids.isdisjoint(second_ids))
 
 
 if __name__ == "__main__":

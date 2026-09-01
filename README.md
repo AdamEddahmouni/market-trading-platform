@@ -1,5 +1,14 @@
 # Integrated Market Platform — governed foundation
 
+Local market operating workstation: **Demo** (fixture replay), **Paper**
+(internal simulation under env gates), **Live** (broker-observed read-only).
+**Live production execution is not authorized** in this repository.
+
+**Documentation:** [docs/README.md](docs/README.md) · [AGENTS.md](AGENTS.md) ·
+[Engineering Handbook](docs/engineering/ENGINEERING_HANDBOOK.md) ·
+[Architecture](docs/architecture/ARCHITECTURE.md) ·
+[Project Status](docs/PROJECT_STATUS.md)
+
 This repository contains the governed, CPython 3.11 standard-library-only
 foundation subject. Phases 0 through 8 are `PASS` on the admitted equity
 intraday fixture (`ADMITTED-SHORTSQ-BIYA-BARS-001`). The machine-readable

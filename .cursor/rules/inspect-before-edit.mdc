@@ -1,0 +1,14 @@
+---
+description: Inspect existing patterns before creating new abstractions
+alwaysApply: true
+---
+
+# Inspect before edit
+
+Before adding routes, hooks, services, or docs:
+
+1. Search for existing `Mode*`, `*Observability`, `queryKeys`, domain modules
+2. Read authoritative doc in [docs/README.md](docs/README.md) — do not duplicate architecture
+3. Prefer extending established patterns over parallel implementations
+
+Completion records under `docs/superpowers/plans/` are **historical** — verify against code.

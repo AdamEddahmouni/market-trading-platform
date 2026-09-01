@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useNavigationType, useParams } from "react-router-dom";
 import { ADMITTED_REPLAY_INSTRUMENT_ID } from "../api/client";
 import { useInstrumentQuery, useWorkspaceSqueezeQuery } from "../api/hooks";
-import { WorkspacePage } from "./WorkspacePage";
+import { ModeWorkspacePage } from "./ModeWorkspacePage";
 import type { Mode } from "./mode-session/types";
 import { parsePaperOrderDraft } from "./paper-now/paperOrderDraft";
+import { LoadingState } from "./shared/LoadingState";
 
 type Props = {
   mode: Mode;
@@ -45,18 +46,16 @@ export function WorkspaceRoute({
   const squeezeQuery = useWorkspaceSqueezeQuery(instrumentId);
 
   if (replayChartAvailable && instrumentQuery.isLoading) {
-    return <div className="app-loading">Loading instrument…</div>;
+    return <LoadingState label="Loading instrument…" />;
   }
   if (replayChartAvailable && (instrumentQuery.error || !instrumentQuery.data)) {
     return (
-      <div className="app-loading">
-        Instrument overview unavailable for {instrumentId}. Ensure the UI API is running.
-      </div>
+      <LoadingState label={`Instrument overview unavailable for ${instrumentId}. Ensure the UI API is running.`} />
     );
   }
 
   return (
-    <WorkspacePage
+    <ModeWorkspacePage
       mode={mode}
       paperActionsPermitted={paperActionsPermitted}
       initialPaperOrderDraft={initialPaperOrderDraft}

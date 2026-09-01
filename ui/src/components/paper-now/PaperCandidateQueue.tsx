@@ -31,7 +31,15 @@ export function PaperCandidateQueue({ items, state, selectedAttentionId, onSelec
                   <button type="button" aria-label={`Why here? ${item.headline}`} onClick={() => onWhy(item)}>Why here?</button>
                   <button type="button" aria-label={`Explain ${item.headline}`} onClick={() => onExplain(item)}>Explain</button>
                   <button type="button" aria-label={`Inspect ${item.headline}`} onClick={() => onInspect(item)}>Inspect</button>
-                  {item.instrument_id ? <button type="button" aria-label={`Open ${item.instrument_id} workspace`} onClick={() => onOpenWorkspace(item)}>Open workspace</button> : null}
+                  {item.instrument_id ? (
+                    <button
+                      type="button"
+                      aria-label={`Draft ${item.instrument_id} in Paper workspace`}
+                      onClick={() => onOpenWorkspace(item)}
+                    >
+                      Open in Paper workspace
+                    </button>
+                  ) : null}
                 </div>
               </article>
             );

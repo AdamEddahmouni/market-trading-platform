@@ -1,0 +1,12 @@
+---
+description: Link to authoritative docs; avoid duplicating governance prose in rules
+alwaysApply: true
+---
+
+# Authoritative documentation
+
+Entry point: [docs/README.md](docs/README.md)
+
+When behavior or architecture changes, update the **authoritative** doc — not only WORK_LOG or completion records.
+
+Hierarchy: safety → AGENTS.md → architecture → handbook/SOPs → historical plans.

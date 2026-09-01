@@ -172,6 +172,7 @@ def preview_interactive_order(
     order_type: str = "MARKET",
     limit_price_minor: int | None = None,
     correlation_id: str | None = None,
+    decision_source_snapshot: dict[str, Any] | None = None,
     squeeze_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     intent = build_user_order_intent(
@@ -184,6 +185,7 @@ def preview_interactive_order(
         client_order_id=client_order_id,
         idempotency_key=idempotency_key,
         correlation_id=correlation_id,
+        decision_source_snapshot=decision_source_snapshot,
     )
     # Dry-run: a preview fill is never recorded, so it must not consume the
     # session's per-bar participation capacity (E9) — use a throwaway simulator.
@@ -220,6 +222,7 @@ def submit_interactive_order(
     order_type: str = "MARKET",
     limit_price_minor: int | None = None,
     correlation_id: str | None = None,
+    decision_source_snapshot: dict[str, Any] | None = None,
     squeeze_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     existing_order_id = ledger.lookup_idempotent_order(idempotency_key)
@@ -253,6 +256,7 @@ def submit_interactive_order(
         client_order_id=client_order_id,
         idempotency_key=idempotency_key,
         correlation_id=correlation_id or client_order_id,
+        decision_source_snapshot=decision_source_snapshot,
     )
     ledger.append_intent(intent)
     decision, order, fill = execute_order_intent(

@@ -8,7 +8,7 @@ from src.ticker_metadata.models import CollectorProvenance
 from src.ticker_metadata.provider import YFinanceMetadataAdapter
 from src.ticker_metadata.runner import MetadataRunner
 from src.ticker_metadata.storage import MetadataStore
-from src.ui.filter import FilterSpec
+from src.operator_console.filter import FilterSpec
 
 
 ROOT = Path(__file__).resolve().parents[2]

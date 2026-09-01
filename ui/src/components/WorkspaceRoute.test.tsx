@@ -7,8 +7,8 @@ vi.mock("../api/hooks", () => ({
   useInstrumentQuery: () => ({ isLoading: false, error: null, data: { bars: [], features: [] } }),
   useWorkspaceSqueezeQuery: () => ({ isLoading: false, data: null }),
 }));
-vi.mock("./WorkspacePage", () => ({
-  WorkspacePage: ({ initialPaperOrderDraft }: { initialPaperOrderDraft?: unknown }) => <output data-testid="draft">{initialPaperOrderDraft ? JSON.stringify(initialPaperOrderDraft) : "none"}</output>,
+vi.mock("./ModeWorkspacePage", () => ({
+  ModeWorkspacePage: ({ initialPaperOrderDraft }: { initialPaperOrderDraft?: unknown }) => <output data-testid="draft">{initialPaperOrderDraft ? JSON.stringify(initialPaperOrderDraft) : "none"}</output>,
 }));
 
 const validDraft = { version: 1, instrumentId: "BIYA", side: "SELL", quantity: 12, orderType: "MARKET" };

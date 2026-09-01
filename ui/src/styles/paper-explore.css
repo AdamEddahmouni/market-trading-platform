@@ -1,0 +1,35 @@
+.paper-explore-page {
+  display: grid;
+  gap: 18px;
+  max-width: 1540px;
+  margin: 0 auto;
+}
+
+.paper-explore-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(92, 196, 138, 0.25);
+}
+
+.paper-explore-header h1 {
+  margin: 4px 0 8px;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  letter-spacing: -0.04em;
+}
+
+.paper-explore-header p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.paper-explore-portfolio-link {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--paper-accent, #5cc48a);
+}

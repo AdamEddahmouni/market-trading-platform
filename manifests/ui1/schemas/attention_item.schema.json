@@ -21,7 +21,8 @@
     },
     "instrument_id": { "type": "string" },
     "headline": { "type": "string" },
-    "explanation_ref": { "type": "string" }
+    "explanation_ref": { "type": "string" },
+    "surfaced_time": { "type": "integer", "description": "Epoch nanoseconds when attention was surfaced (optional)" }
   },
   "additionalProperties": true
 }

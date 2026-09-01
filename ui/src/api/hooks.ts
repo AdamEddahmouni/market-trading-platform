@@ -1,5 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./endpoints";
+import { fetchLiveCanarySnapshot } from "./liveCanary";
 import type { PaperOrderRequest } from "./schemas";
 
 export const queryKeys = {
@@ -31,7 +32,10 @@ export const queryKeys = {
   assistantConversations: ["assistant", "conversations"] as const,
   assistantMessages: (conversationId: string) => ["assistant", conversationId, "messages"] as const,
   paperPortfolio: ["paper", "portfolio"] as const,
+  paperOrderHistory: ["paper", "order-history"] as const,
   paperTrace: (intentId?: string, orderId?: string) => ["paper", "trace", intentId, orderId] as const,
+  /** Live-mode broker canary snapshot — mode-scoped to prevent Demo/Paper cache bleed. */
+  liveCanarySnapshot: (laneId?: string) => ["live", "canary-snapshot", laneId ?? "account"] as const,
   providerHealth: ["provider", "health"] as const,
   symbolSearch: (query: string) => ["symbols", "search", query] as const,
   instrumentCapabilities: (id: string) => ["instruments", id, "capabilities"] as const,
@@ -207,6 +211,16 @@ export function usePaperPortfolioQuery() {
   return useQuery({ queryKey: queryKeys.paperPortfolio, queryFn: api.getPaperPortfolio });
 }
 
+export function usePaperOrderHistoryInfiniteQuery(enabled = true) {
+  return useInfiniteQuery({
+    queryKey: queryKeys.paperOrderHistory,
+    queryFn: ({ pageParam }) => api.getPaperOrderHistory({ cursor: pageParam }),
+    getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
+    initialPageParam: undefined as string | undefined,
+    enabled,
+  });
+}
+
 export function usePaperTraceQuery(params: { intentId?: string; orderId?: string; fillId?: string }, enabled = true) {
   return useQuery({
     queryKey: queryKeys.paperTrace(params.intentId, params.orderId),
@@ -219,6 +233,7 @@ function useInvalidatePaper() {
   const queryClient = useQueryClient();
   return () => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.paperPortfolio });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.paperOrderHistory });
     void queryClient.invalidateQueries({ queryKey: ["context"] });
   };
 }
@@ -256,6 +271,17 @@ export function useProviderHealthQuery() {
     queryKey: queryKeys.providerHealth,
     queryFn: api.getProviderHealth,
     refetchInterval: 5000,
+  });
+}
+
+/** Live canary snapshot — lane-scoped cache identity; shared fetch semantics within Live mode. */
+export function useLiveCanarySnapshotQuery(laneId = "account", enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.liveCanarySnapshot(laneId),
+    queryFn: fetchLiveCanarySnapshot,
+    enabled,
+    staleTime: 15000,
+    refetchInterval: enabled ? 15000 : false,
   });
 }
 

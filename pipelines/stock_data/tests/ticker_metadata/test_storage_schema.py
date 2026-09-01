@@ -12,7 +12,7 @@ from src.ticker_metadata.contract import (
 )
 from src.ticker_metadata.models import AttemptRecord, ObservationRecord
 from src.ticker_metadata.storage import MetadataBoundaryError, MetadataStore
-from src.ui.filter import FilterSpec
+from src.operator_console.filter import FilterSpec
 
 
 REGISTRY_SQL = """

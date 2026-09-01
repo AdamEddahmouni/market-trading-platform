@@ -31,7 +31,7 @@ from src.database import (
     latest_daily_price_dates, record_attempt,
 )
 from src.scrapers.base import BaseScraper
-from src.ui import LiveProgress
+from src.operator_console import LiveProgress
 from sqlalchemy.sql import text
 
 

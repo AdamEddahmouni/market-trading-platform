@@ -1345,27 +1345,32 @@ def build_catalyst_attention_items(
                 info_value = row.get("information_value")
                 reflexive = row.get("reflexive_impact")
                 tier = 1 if accel is not None and accel >= 0.05 else 2
-                items.append(
-                    {
-                        "attention_id": f"att-mc9-{row.get('event_id', index)}",
-                        "explanation_ref": f"explain:attention:{symbol}:{row.get('event_id', index)}",
-                        "headline": str(row.get("headline", f"{symbol} attention diffusion")),
-                        "instrument_id": symbol,
-                        "priority_rank": 10 + index,
-                        "reasons": [
-                            {"code": "MC9_ATTENTION", "label": "MC9 attention diffusion (fixture)"},
-                            {
-                                "code": "INFORMATION_VALUE",
-                                "label": f"information value {info_value:.2f}" if info_value is not None else "information value UNAVAILABLE",
-                            },
-                            {
-                                "code": "REFLEXIVE_IMPACT",
-                                "label": f"reflexive impact {reflexive:.2f}" if reflexive is not None else "reflexive impact UNAVAILABLE",
-                            },
-                        ],
-                        "tier": tier,
-                    }
-                )
+                item: dict[str, Any] = {
+                    "attention_id": f"att-mc9-{row.get('event_id', index)}",
+                    "explanation_ref": f"explain:attention:{symbol}:{row.get('event_id', index)}",
+                    "headline": str(row.get("headline", f"{symbol} attention diffusion")),
+                    "instrument_id": symbol,
+                    "priority_rank": 10 + index,
+                    "reasons": [
+                        {"code": "MC9_ATTENTION", "label": "MC9 attention diffusion (fixture)"},
+                        {
+                            "code": "INFORMATION_VALUE",
+                            "label": f"information value {info_value:.2f}" if info_value is not None else "information value UNAVAILABLE",
+                        },
+                        {
+                            "code": "REFLEXIVE_IMPACT",
+                            "label": f"reflexive impact {reflexive:.2f}" if reflexive is not None else "reflexive impact UNAVAILABLE",
+                        },
+                    ],
+                    "tier": tier,
+                }
+                available_time = row.get("available_time")
+                if available_time:
+                    try:
+                        item["surfaced_time"] = iso_to_epoch_ns(str(available_time))
+                    except (TypeError, ValueError):
+                        pass
+                items.append(item)
             return items
 
     payload = build_explore_catalyst_payload(state_dir=state_dir)

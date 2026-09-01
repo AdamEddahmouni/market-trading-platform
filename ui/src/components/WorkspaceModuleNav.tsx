@@ -1,17 +1,12 @@
 import { Link } from "react-router-dom";
+import {
+  WORKSPACE_LANE_REGISTRY,
+  workspaceLanePath,
+  type LaneRegistryEntry,
+  type WorkspaceModuleId,
+} from "./workspace-module-shared/laneRegistry";
 
-export type WorkspaceModuleId =
-  | "overview"
-  | "institutional-flow"
-  | "disclosure"
-  | "squeeze"
-  | "order-flow"
-  | "order-book"
-  | "futures"
-  | "catalyst"
-  | "fund-etf"
-  | "options"
-  | "large-transactions";
+export type { WorkspaceModuleId };
 
 type Props = {
   instrumentId: string;
@@ -19,35 +14,19 @@ type Props = {
   squeezeQuery?: string;
 };
 
-const LINKS: { id: WorkspaceModuleId; label: string; suffix: string }[] = [
-  { id: "overview", label: "Overview", suffix: "" },
-  { id: "institutional-flow", label: "Institutional Flow", suffix: "/institutional-flow" },
-  { id: "disclosure", label: "Disclosure", suffix: "/disclosure" },
-  { id: "squeeze", label: "Short Squeeze", suffix: "/squeeze" },
-  { id: "order-flow", label: "Order Flow", suffix: "/order-flow" },
-  { id: "order-book", label: "Order Book", suffix: "/order-book" },
-  { id: "futures", label: "Futures", suffix: "/futures" },
-  { id: "catalyst", label: "Catalyst", suffix: "/catalyst" },
-  { id: "fund-etf", label: "Fund / ETF", suffix: "/fund-etf" },
-  { id: "options", label: "Options", suffix: "/options" },
-  { id: "large-transactions", label: "Large Transactions", suffix: "/large-transactions" },
-];
-
 export function WorkspaceModuleNav({ instrumentId, active, squeezeQuery = "" }: Props) {
+  const links = [...WORKSPACE_LANE_REGISTRY].sort((left, right) => left.navOrder - right.navOrder);
   return (
     <nav className="workspace-module-nav" aria-label="Workspace modules">
-      {LINKS.map((link) => {
-        const suffix = link.id === "squeeze" ? `${link.suffix}${squeezeQuery}` : link.suffix;
-        return (
-          <Link
-            key={link.id}
-            className={active === link.id ? "active" : undefined}
-            to={`/workspace/${instrumentId}${suffix}`}
-          >
-            {link.label}
-          </Link>
-        );
-      })}
+      {links.map((link: LaneRegistryEntry) => (
+        <Link
+          key={link.id}
+          className={active === link.id ? "active" : undefined}
+          to={workspaceLanePath(instrumentId, link.id, link.id === "squeeze" ? squeezeQuery : "")}
+        >
+          {link.label}
+        </Link>
+      ))}
     </nav>
   );
 }

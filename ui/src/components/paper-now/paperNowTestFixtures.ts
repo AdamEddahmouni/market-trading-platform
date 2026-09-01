@@ -9,6 +9,7 @@ export function attentionItem(overrides: Partial<AttentionItem> = {}): Attention
     headline: "BIYA setup",
     explanation_ref: "explain:attention:biya",
     tier: 1,
+    surfaced_time: 1_787_000_000_000_000_000,
     ...overrides,
   };
 }

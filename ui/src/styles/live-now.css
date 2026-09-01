@@ -1,0 +1,322 @@
+.live-now-page {
+  --live-accent: #f0b45c;
+  --live-accent-soft: rgba(240, 180, 92, 0.12);
+  --live-line: rgba(188, 156, 112, 0.24);
+  --live-panel: rgba(24, 20, 14, 0.94);
+  display: grid;
+  gap: 18px;
+  width: min(100%, 1580px);
+  margin: 0 auto;
+  padding: clamp(4px, 1vw, 16px);
+}
+
+.live-now-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 28px;
+  padding: 18px 4px;
+  border-bottom: 1px solid var(--live-line);
+}
+
+.live-now-header h1 {
+  margin: 4px 0 8px;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.live-now-header p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.live-eyebrow,
+.live-panel-heading a,
+.live-safety-grid dt,
+.live-provider-ribbon dt {
+  font: 0.7rem var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.live-eyebrow {
+  color: var(--live-accent);
+}
+
+.live-now-header dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.live-now-header dl div,
+.live-provider-ribbon dl > div,
+.live-safety-grid > div {
+  padding: 9px 11px;
+  border: 1px solid var(--live-line);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.live-now-header dt,
+.live-provider-ribbon dt,
+.live-safety-grid dt {
+  color: var(--text-muted);
+}
+
+.live-now-header dd,
+.live-provider-ribbon dd,
+.live-safety-grid dd {
+  margin: 5px 0 0;
+  font-family: var(--font-mono);
+}
+
+.live-provider-ribbon {
+  padding: 16px 18px;
+  border: 1px solid rgba(240, 180, 92, 0.28);
+  background: linear-gradient(120deg, rgba(240, 180, 92, 0.08), rgba(24, 20, 14, 0.96));
+}
+
+.live-provider-ribbon h2 {
+  margin: 0 0 12px;
+  font-size: 0.92rem;
+}
+
+.live-provider-ribbon dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  background: var(--live-line);
+}
+
+.live-provider-ribbon dl > div {
+  min-width: 0;
+  background: #17130f;
+}
+
+.live-provider-ribbon dd {
+  font-size: clamp(0.9rem, 1.4vw, 1.1rem);
+  overflow-wrap: anywhere;
+}
+
+.live-provider-ribbon span {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.live-now-grid {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+.live-now-grid-top {
+  grid-template-columns: minmax(320px, 1.1fr) minmax(300px, 0.9fr);
+}
+
+.live-panel {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--live-line);
+  border-radius: 9px;
+  background: var(--live-panel);
+}
+
+.live-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 14px;
+}
+
+.live-panel-heading h2 {
+  margin: 0;
+}
+
+.live-panel-heading a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 8px;
+  color: var(--live-accent);
+}
+
+.live-safety-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.live-safety-alerts {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.live-safety-alerts li {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border-left: 3px solid var(--live-line);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.live-safety-alerts li[data-severity="0"] {
+  border-left-color: var(--danger, #e36d77);
+}
+
+.live-safety-alerts li[data-severity="1"] {
+  border-left-color: var(--warning, #e1b85b);
+}
+
+.live-safety-alerts span,
+.live-safety-hint {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.live-search-label {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 12px;
+}
+
+.live-search-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 11px;
+  border: 1px solid var(--live-line);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.live-search-results,
+.live-capability-list {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.live-search-results button,
+.live-symbol-actions button,
+.live-now-page button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--live-line);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.live-symbol-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.live-symbol-actions a,
+.live-now-page a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 8px;
+}
+
+.live-capability-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--live-line);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.live-attention-panel {
+  border-color: rgba(240, 180, 92, 0.22);
+}
+
+.live-now-page button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.live-now-page button:focus-visible,
+.live-now-page a:focus-visible,
+.live-now-page input:focus-visible {
+  outline: 3px solid var(--live-accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 1080px) {
+  .live-provider-ribbon dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .live-now-grid-top {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .live-now-page {
+    padding: 0;
+  }
+
+  .live-now-header {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .live-now-header dl,
+  .live-provider-ribbon dl,
+  .live-safety-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .live-panel,
+  .live-provider-ribbon {
+    border-radius: 6px;
+  }
+
+  .live-symbol-actions {
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-provider-ribbon,
+  .live-panel {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .live-panel,
+  .live-provider-ribbon,
+  .live-safety-alerts li,
+  .live-now-page button,
+  .live-now-page input {
+    border: 2px solid CanvasText;
+  }
+
+  .live-now-page button:focus-visible,
+  .live-now-page a:focus-visible,
+  .live-now-page input:focus-visible {
+    outline-color: Highlight;
+  }
+}

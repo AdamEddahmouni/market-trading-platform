@@ -131,6 +131,7 @@ def build_user_order_intent(
     client_order_id: str,
     idempotency_key: str,
     correlation_id: str | None = None,
+    decision_source_snapshot: dict[str, Any] | None = None,
     research_candidate_id: str | None = None,
 ) -> dict[str, Any]:
     if side not in ORDER_SIDES:
@@ -175,6 +176,8 @@ def build_user_order_intent(
         body["limit_price_minor"] = limit_price_minor
     if correlation_id:
         body["correlation_id"] = correlation_id
+    if decision_source_snapshot:
+        body["decision_source_snapshot"] = decision_source_snapshot
     if research_candidate_id:
         body["research_candidate_id"] = research_candidate_id
     return {

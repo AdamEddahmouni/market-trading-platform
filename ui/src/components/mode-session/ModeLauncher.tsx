@@ -1,31 +1,13 @@
 import { useRef, useState } from "react";
 import { LiveModeConfirmation } from "./LiveModeConfirmation";
+import { MODE_LAUNCH_ORDER, modeMetadata } from "./modeMetadata";
 import type { Mode } from "./types";
 
 type Props = {
   onSelect: (mode: Mode) => void;
 };
 
-const modes = [
-  {
-    mode: "DEMO" as const,
-    label: "Demo",
-    descriptor: "Historical replay",
-    copy: "Explore historical market conditions with replay data and no execution.",
-  },
-  {
-    mode: "PAPER" as const,
-    label: "Paper",
-    descriptor: "Simulated execution",
-    copy: "Practice decisions and place simulated orders against market data.",
-  },
-  {
-    mode: "LIVE" as const,
-    label: "Live",
-    descriptor: "Read-only market data",
-    copy: "Watch current market data. Order execution remains locked by default.",
-  },
-];
+const modes = MODE_LAUNCH_ORDER.map((mode) => modeMetadata(mode));
 
 export function ModeLauncher({ onSelect }: Props) {
   const [liveConfirmationOpen, setLiveConfirmationOpen] = useState(false);
@@ -43,7 +25,7 @@ export function ModeLauncher({ onSelect }: Props) {
           </p>
         </header>
         <div className="mode-card-grid">
-          {modes.map(({ mode, label, descriptor, copy }) => (
+          {modes.map(({ id: mode, label, descriptor, launchCopy }) => (
             <button
               key={mode}
               type="button"
@@ -61,7 +43,7 @@ export function ModeLauncher({ onSelect }: Props) {
               <span className="mode-card-index">{mode === "DEMO" ? "D" : mode === "PAPER" ? "P" : "L"}</span>
               <span className="mode-card-title">{label}</span>
               <span className="mode-card-descriptor">{descriptor}</span>
-              <span className="mode-card-copy">{copy}</span>
+              <span className="mode-card-copy">{launchCopy}</span>
               <span className="mode-card-action">Enter environment</span>
             </button>
           ))}

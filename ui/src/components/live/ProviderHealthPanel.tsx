@@ -1,4 +1,5 @@
 import { useProviderHealthQuery } from "../../api/hooks";
+import { JsonDetailPanel } from "../shared/JsonDetailPanel";
 
 function channelState(entitled: boolean, verified: boolean): string {
   if (!entitled) return "UNAVAILABLE";
@@ -120,10 +121,7 @@ export function ProviderHealthPanel() {
         ))}
       </ul>
       {health.execution_gate ? (
-        <>
-          <h3>Internal simulation gate</h3>
-          <pre>{JSON.stringify(health.execution_gate, null, 2)}</pre>
-        </>
+        <JsonDetailPanel title="Internal simulation gate" value={health.execution_gate} />
       ) : null}
       {health.finviz ? (
         <>

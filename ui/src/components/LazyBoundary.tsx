@@ -1,4 +1,5 @@
 import { Suspense, type ReactNode } from "react";
+import { LoadingState } from "./shared/LoadingState";
 
 type Props = {
   children: ReactNode;
@@ -6,15 +7,5 @@ type Props = {
 };
 
 export function LazyBoundary({ children, label = "Loading view…" }: Props) {
-  return (
-    <Suspense
-      fallback={
-        <div className="app-loading" role="status">
-          {label}
-        </div>
-      }
-    >
-      {children}
-    </Suspense>
-  );
+  return <Suspense fallback={<LoadingState label={label} />}>{children}</Suspense>;
 }

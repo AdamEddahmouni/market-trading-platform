@@ -24,7 +24,7 @@ from src.database import (
 )
 from src.scrapers.http_client import StealthSession
 from src.scrapers.rate_limiter import DomainThrottler
-from src.ui import LiveProgress
+from src.operator_console import LiveProgress
 from sqlalchemy.sql import text
 
 
@@ -130,7 +130,7 @@ class BaseScraper(ABC):
           2. Otherwise, fall back to `get_all_ticker_ids()`.
         """
         if self._ticker_filter:
-            from src.ui.filter import apply_filter
+            from src.operator_console.filter import apply_filter
             all_items = apply_filter(self._ticker_filter)
         else:
             all_items = get_all_ticker_ids()

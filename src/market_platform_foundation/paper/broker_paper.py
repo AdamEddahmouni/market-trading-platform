@@ -58,6 +58,7 @@ def submit_broker_paper_order(
     order_type: str = "MARKET",
     limit_price_minor: int | None = None,
     correlation_id: str | None = None,
+    decision_source_snapshot: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Broker paper execution (Platformization P4) — dedicated entry point.
 
@@ -95,6 +96,7 @@ def submit_broker_paper_order(
         client_order_id=client_order_id,
         idempotency_key=idempotency_key,
         correlation_id=correlation_id or client_order_id,
+        decision_source_snapshot=decision_source_snapshot,
     )
     ledger.append_intent(intent)
 

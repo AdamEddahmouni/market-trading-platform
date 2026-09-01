@@ -190,6 +190,16 @@ body,
   color: var(--text-muted);
 }
 
+.nav-mode-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 9px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
 .context-bar {
   display: flex;
   gap: 16px;
@@ -1007,7 +1017,8 @@ body,
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.discover-header h1 {
+.discover-header h1,
+.discover-header h2 {
   margin: 2px 0 4px;
   font-size: clamp(1.65rem, 3vw, 2.35rem);
   letter-spacing: -0.035em;

@@ -1,0 +1,18 @@
+---
+name: Safety issue
+about: Paper/Live authority or execution safety concern
+title: "[safety] "
+labels: safety
+---
+
+## Concern
+
+## Mode(s) affected
+
+## Authority / execution impact
+
+## Steps to reproduce
+
+## Suggested mitigation
+
+Reference: [MODE_AUTHORITY.md](docs/architecture/MODE_AUTHORITY.md)

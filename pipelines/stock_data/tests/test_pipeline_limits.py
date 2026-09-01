@@ -113,7 +113,7 @@ def test_dashboard_all_uses_one_explicit_limit_without_hidden_caps():
         patch("src.pipeline.stage_insiders") as insiders,
         patch("src.pipeline.get_data_stats", return_value={}),
         patch("src.pipeline.show_stats"),
-        patch("src.ui.dashboard.LivePipelineDashboard"),
+        patch("src.operator_console.dashboard.LivePipelineDashboard"),
     ):
         _run_all_with_dashboard(retry_errored=True, max_tickers=17)
     supplemental.assert_called_once_with(max_tickers=17, retry_errored=True)

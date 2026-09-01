@@ -11,8 +11,16 @@ import {
   buildPaperOrderRequest,
   createPaperOrderDraft,
   createPaperPreviewAttemptKey,
+  formatPaperDraftSourceLabel,
+  isLanePaperOrderDraft,
+  isAttentionPaperOrderDraft,
+  parseLaneProvenance,
   type PaperOrderDraft,
 } from "../paper-now/paperOrderDraft";
+import {
+  derivePreviewPresentationState,
+  type PaperPreviewPresentationState,
+} from "../paper-workspace/paperPreviewPresentation";
 
 type OrderTicketProps = {
   symbol: string | null;
@@ -23,6 +31,8 @@ type OrderTicketProps = {
   initialDraft?: PaperOrderDraft;
   contextLanes?: Array<{ lane: string; relevance: string; summary: string }>;
   onSubmitted?: (intentId?: string) => void;
+  onPreviewStateChange?: (state: PaperPreviewPresentationState) => void;
+  showLaneBanner?: boolean;
 };
 
 export function OrderTicket({
@@ -34,6 +44,8 @@ export function OrderTicket({
   initialDraft,
   contextLanes = [],
   onSubmitted,
+  onPreviewStateChange,
+  showLaneBanner = true,
 }: OrderTicketProps) {
   const [side, setSide] = useState<"BUY" | "SELL">(() => initialDraft?.side ?? "BUY");
   const [quantity, setQuantity] = useState(() => initialDraft?.quantity ?? 1);
@@ -84,6 +96,29 @@ export function OrderTicket({
     if (confirmedRequest && !confirmedRequestIsCurrent) invalidatePreview();
   }, [confirmedRequest, confirmedRequestIsCurrent]);
 
+  useEffect(() => {
+    onPreviewStateChange?.(
+      derivePreviewPresentationState({
+        authorized,
+        preview,
+        confirmedRequest,
+        confirmedRequestIsCurrent,
+        previewMutationPending: previewMutation.isPending,
+        error,
+        previewOrigin,
+      }),
+    );
+  }, [
+    authorized,
+    preview,
+    confirmedRequest,
+    confirmedRequestIsCurrent,
+    previewMutation.isPending,
+    error,
+    previewOrigin,
+    onPreviewStateChange,
+  ]);
+
   async function performPreview(origin: "manual" | "workspace") {
     const currentDraft = createPaperOrderDraft({
       instrumentId: ticketSymbol,
@@ -91,6 +126,7 @@ export function OrderTicket({
       quantity,
       maxOrderShares,
       sourceAttentionId: initialDraft?.sourceAttentionId,
+      sourceContext: initialDraft?.sourceContext,
     });
     if (!currentDraft) {
       setError(ticketSymbol ? "ENTER A VALID QUANTITY" : "SELECT AN INSTRUMENT");
@@ -116,7 +152,7 @@ export function OrderTicket({
 
   useEffect(() => {
     if (!initialDraft || !authorized || automaticPreviewAttempted.current) return;
-    if (!createPaperOrderDraft({ instrumentId: initialDraft.instrumentId, side: initialDraft.side, quantity: initialDraft.quantity, maxOrderShares, sourceAttentionId: initialDraft.sourceAttentionId })) return;
+    if (!createPaperOrderDraft({ instrumentId: initialDraft.instrumentId, side: initialDraft.side, quantity: initialDraft.quantity, maxOrderShares, sourceAttentionId: initialDraft.sourceAttentionId, sourceContext: initialDraft.sourceContext })) return;
     automaticPreviewAttempted.current = true;
     void performPreview("workspace");
   }, [authorized, initialDraft, maxOrderShares]);
@@ -148,9 +184,26 @@ export function OrderTicket({
     }
   }
 
+  const laneProvenance = parseLaneProvenance(initialDraft?.sourceAttentionId);
+  const fromLane = isLanePaperOrderDraft(initialDraft);
+  const fromAttention = isAttentionPaperOrderDraft(initialDraft);
+  const draftSourceLabel = formatPaperDraftSourceLabel(initialDraft);
+
   return (
     <section className="panel order-ticket-panel">
       <h2>Order ticket</h2>
+      {fromLane && laneProvenance && showLaneBanner ? (
+        <aside className="lane-draft-arrival-banner" role="note">
+          <strong>Draft from {laneProvenance.label} lane</strong>
+          <p>Placeholder values — edit and re-preview before submit.</p>
+        </aside>
+      ) : null}
+      {fromAttention && draftSourceLabel && showLaneBanner ? (
+        <aside className="attention-draft-arrival-banner" role="note">
+          <strong>Draft source: {draftSourceLabel}</strong>
+          <p>Placeholder values — edit and re-preview before submit.</p>
+        </aside>
+      ) : null}
       <p className="simulation-banner">
         DATA: {dataMode.replace(/_/g, " ")} · EXEC: {executionMode.replace(/_/g, " ")} · AUTH:{" "}
         {executionAuthority === "AUTHORIZED" || executionAuthority === "PAPER_ONLY"

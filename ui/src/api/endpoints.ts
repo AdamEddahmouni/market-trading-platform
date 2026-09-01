@@ -27,6 +27,7 @@ import {
   WorkspaceInstitutionalFlowResponseSchema,
   WorkspaceEvidenceResponseSchema,
   PaperPortfolioResponseSchema,
+  PaperOrderHistoryPageSchema,
   PaperOrderPreviewResponseSchema,
   PaperOrderSubmitResponseSchema,
   PaperSessionResponseSchema,
@@ -133,6 +134,13 @@ export const api = {
     return AssistantPromptResponseSchema.parse(await response.json());
   },
   getPaperPortfolio: () => fetchJson("/paper/portfolio", PaperPortfolioResponseSchema),
+  getPaperOrderHistory: (params?: { cursor?: string; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.cursor) query.set("cursor", params.cursor);
+    if (params?.limit) query.set("limit", String(params.limit));
+    const suffix = query.toString();
+    return fetchJson(`/paper/order-history${suffix ? `?${suffix}` : ""}`, PaperOrderHistoryPageSchema);
+  },
   previewPaperOrder: (body: PaperOrderRequest) =>
     postJson("/paper/orders/preview", body, PaperOrderPreviewResponseSchema),
   submitPaperOrder: (body: PaperOrderRequest) =>

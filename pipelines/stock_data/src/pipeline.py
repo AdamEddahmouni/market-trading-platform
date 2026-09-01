@@ -54,7 +54,7 @@ _DIRECT_DISPATCH = {
 def print_header(title: str):
     """Print a section header (rich if available, plain fallback otherwise)."""
     try:
-        from src.ui import print_header as rich_header
+        from src.operator_console import print_header as rich_header
         rich_header(title)
     except Exception:
         print()
@@ -66,7 +66,7 @@ def print_header(title: str):
 
 def print_filter_summary(filter_spec):
     """Echo the active ticker filter to the user."""
-    from src.ui.filter import count_filter
+    from src.operator_console.filter import count_filter
     if filter_spec is None or not filter_spec:
         return
     n = count_filter(filter_spec)
@@ -264,7 +264,7 @@ def stage_insiders(max_tickers: Optional[int] = None,
 
 def stage_export():
     """Stage 6: Export data to Parquet + CSV."""
-    from src.ui import print_stage_header
+    from src.operator_console import print_stage_header
     print_stage_header(6, "DATA EXPORT")
 
     start = time.time()
@@ -297,16 +297,16 @@ def stage_export():
 def show_stats():
     """Display database statistics."""
     try:
-        from src.ui import _build_stats_table
+        from src.operator_console import _build_stats_table
         stats = get_data_stats()
         table = _build_stats_table(stats)
-        from src.ui import console
+        from src.operator_console import console
         console.print(table)
         return
     except Exception:
         pass
 
-    from src.ui import print_header as rich_header
+    from src.operator_console import print_header as rich_header
     rich_header("DATABASE STATISTICS")
     stats = get_data_stats()
 
@@ -450,7 +450,7 @@ def _run_all_with_dashboard(
     max_tickers: Optional[int] = None,
 ):
     """Like run_all() but with a multi-stage dashboard rendered between stages."""
-    from src.ui.dashboard import LivePipelineDashboard
+    from src.operator_console.dashboard import LivePipelineDashboard
 
     print_header("COMPLETE DATA PIPELINE (Dashboard)")
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -500,8 +500,8 @@ def _run_all_with_dashboard(
 
 def _run_interactive_filter():
     """Interactive filter wizard then offer scrape / export follow-ups."""
-    from src.ui import console
-    from src.ui.filter import (
+    from src.operator_console import console
+    from src.operator_console.filter import (
         apply_filter,
         count_filter,
         prompt_for_filters,
@@ -533,7 +533,7 @@ def _run_interactive_filter():
         return
 
     if Confirm.ask("Export a slice using this filter?", default=True):
-        from src.ui.export import ExportRequest, execute_filtered_export
+        from src.operator_console.export import ExportRequest, execute_filtered_export
         from rich.prompt import Prompt
         fmt = Prompt.ask("Format", choices=["csv", "parquet", "both"], default="both")
         request = ExportRequest(
@@ -555,7 +555,7 @@ def _run_interactive_filter():
 
 def _run_interactive_export():
     """Run the interactive export sub-menu."""
-    from src.ui.export import execute_filtered_export, show_export_menu
+    from src.operator_console.export import execute_filtered_export, show_export_menu
     request = show_export_menu()
     if request is None:
         return
@@ -668,7 +668,7 @@ def main():
 
 def run_watch():
     """Live stats monitor. Refreshes every 3s."""
-    from src.ui import watch_stats
+    from src.operator_console import watch_stats
     from src.database import get_data_stats
     print("\n  [WATCH] Live stats monitor. Press Ctrl+C to stop.\n")
     watch_stats(get_stats_fn=get_data_stats, refresh_seconds=3.0)

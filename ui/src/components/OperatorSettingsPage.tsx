@@ -1,4 +1,11 @@
 import { useEffect, useState } from "react";
+import type { Mode } from "./mode-session/types";
+import {
+  canMutateOperatorSettings,
+  operatorSettingsRestrictionNote,
+} from "./operator-settings/operatorSettingsMode";
+import { JsonDetailPanel } from "./shared/JsonDetailPanel";
+import { PageHeader } from "./shared/PageHeader";
 
 type OperatorState = {
   persistence_enabled?: boolean;
@@ -22,11 +29,17 @@ type StartupState = {
   safety?: Record<string, unknown>;
 };
 
-export function OperatorSettingsPage() {
+type Props = {
+  mode: Mode;
+};
+
+export function OperatorSettingsPage({ mode }: Props) {
   const [startup, setStartup] = useState<StartupState | null>(null);
   const [state, setState] = useState<OperatorState | null>(null);
   const [watchInput, setWatchInput] = useState("AAPL");
   const [error, setError] = useState<string | null>(null);
+  const mutationsEnabled = canMutateOperatorSettings(mode);
+  const restrictionNote = operatorSettingsRestrictionNote(mode);
 
   async function refresh() {
     const [boot, operator] = await Promise.all([
@@ -42,6 +55,7 @@ export function OperatorSettingsPage() {
   }, []);
 
   async function addWatch() {
+    if (!mutationsEnabled) return;
     const current = state?.watchlists?.[0];
     const existing = (current?.items ?? []).map((item) => item.instrument_id);
     const response = await fetch("/operator/watchlist", {
@@ -61,12 +75,32 @@ export function OperatorSettingsPage() {
 
   return (
     <section className="page settings-page">
-      <h1>SETTINGS / OPERATOR</h1>
+      <PageHeader title="Settings" eyebrow="Operator" subtitle="Persistence, provider readiness, watchlists, and replay controls." />
+      {restrictionNote ? (
+        <aside className="panel mode-restriction-note" role="note">
+          <strong>Operator settings are read-only in {mode} mode.</strong>
+          <p>{restrictionNote}</p>
+        </aside>
+      ) : null}
       {error ? <p className="order-ticket-error">{error}</p> : null}
 
       <section className="panel">
         <h2>Provider</h2>
-        <pre>{startup?.opend?.operator_message ?? JSON.stringify(startup?.opend ?? {}, null, 2)}</pre>
+        {startup?.opend?.operator_message ? (
+          <p>{startup.opend.operator_message}</p>
+        ) : (
+          <dl className="metric-list">
+            <div>
+              <dt>OpenD status</dt>
+              <dd>{startup?.opend?.status ?? "—"}</dd>
+            </div>
+            <div>
+              <dt>Ready for live observational</dt>
+              <dd>{startup?.opend?.ready_for_live_observational ? "Yes" : "No"}</dd>
+            </div>
+          </dl>
+        )}
+        {startup?.opend ? <JsonDetailPanel title="OpenD technical details" value={startup.opend} /> : null}
       </section>
 
       <section className="panel">
@@ -111,23 +145,25 @@ export function OperatorSettingsPage() {
       <section className="panel">
         <h2>Storage</h2>
         <p>Captures remain file-backed. Catalog statuses:</p>
-        <div className="live-actions">
-          <button
-            type="button"
-            onClick={() => {
-              void fetch("/captures")
-                .then((response) => response.json())
-                .then(() => refresh());
-            }}
-          >
-            Reindex captures
-          </button>
-        </div>
+        {mutationsEnabled ? (
+          <div className="live-actions">
+            <button
+              type="button"
+              onClick={() => {
+                void fetch("/captures")
+                  .then((response) => response.json())
+                  .then(() => refresh());
+              }}
+            >
+              Reindex captures
+            </button>
+          </div>
+        ) : null}
         <ul>
           {(state?.captures ?? []).slice(0, 12).map((capture) => (
             <li key={capture.capture_id}>
               {capture.capture_id} · {capture.status} · {capture.provider}{" "}
-              {capture.status === "AVAILABLE" ? (
+              {mutationsEnabled && capture.status === "AVAILABLE" ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -163,12 +199,14 @@ export function OperatorSettingsPage() {
           ))}
         </ul>
         <p>Default watchlist</p>
-        <div className="live-actions">
-          <input value={watchInput} onChange={(event) => setWatchInput(event.target.value.toUpperCase())} />
-          <button type="button" onClick={() => void addWatch()}>
-            Add to watchlist
-          </button>
-        </div>
+        {mutationsEnabled ? (
+          <div className="live-actions">
+            <input value={watchInput} onChange={(event) => setWatchInput(event.target.value.toUpperCase())} />
+            <button type="button" onClick={() => void addWatch()}>
+              Add to watchlist
+            </button>
+          </div>
+        ) : null}
         <ul>
           {(state?.watchlists?.[0]?.items ?? []).map((item) => (
             <li key={item.instrument_id}>{item.instrument_id}</li>
@@ -178,7 +216,7 @@ export function OperatorSettingsPage() {
 
       <section className="panel">
         <h2>Safety env (read-only)</h2>
-        <pre>{JSON.stringify(state?.safety ?? startup?.safety ?? {}, null, 2)}</pre>
+        <JsonDetailPanel title="Safety configuration" value={state?.safety ?? startup?.safety ?? {}} />
       </section>
     </section>
   );

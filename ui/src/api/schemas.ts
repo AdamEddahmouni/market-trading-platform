@@ -32,6 +32,8 @@ export const AttentionItemSchema = z.object({
   headline: z.string(),
   explanation_ref: z.string(),
   tier: z.number().optional(),
+  /** Epoch nanoseconds when the attention item was surfaced/created (server-derived when available). */
+  surfaced_time: z.number().optional(),
 });
 
 export const ContextResponseSchema = z.object({
@@ -1605,6 +1607,18 @@ export const PaperPortfolioResponseSchema = z.object({
 
 export type PaperPortfolioResponse = z.infer<typeof PaperPortfolioResponseSchema>;
 
+export const PaperOrderHistoryPageSchema = z.object({
+  as_of_context: AsOfContextSchema,
+  capability_states: z.array(CapabilityStateSchema).optional(),
+  orders: z.array(z.record(z.unknown())),
+  fills: z.array(z.record(z.unknown())),
+  next_cursor: z.string().nullable(),
+  total_count: z.number(),
+  page_size: z.number(),
+});
+
+export type PaperOrderHistoryPage = z.infer<typeof PaperOrderHistoryPageSchema>;
+
 export const PaperOrderPreviewResponseSchema = z.object({
   as_of_context: AsOfContextSchema,
   capability_states: z.array(CapabilityStateSchema).optional(),
@@ -1731,6 +1745,15 @@ export type PaperOrderRequest = {
   client_order_id?: string;
   idempotency_key?: string;
   correlation_id?: string;
+  decision_source_snapshot?: {
+    source_type: "paper_command_attention" | "workspace_lane";
+    source_id: string;
+    source_module?: string;
+    headline?: string;
+    tier?: number;
+    reasons?: Array<{ code: string; label: string }>;
+    source_time?: number;
+  };
   instrument_id?: string;
   symbol?: string;
 };
