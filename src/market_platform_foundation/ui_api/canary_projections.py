@@ -23,51 +23,108 @@ from ..intelligence.live_canary.operator_control import (
     revoke_session_authorization,
     submit_resolution_evidence,
 )
+from ..operational_identity import attach_operational_identity, derive_live_canary_identity
 from ..intelligence.live_canary.policy import build_default_canary_policy
 from ..intelligence.live_canary.program_policy import build_default_program_policy
 from ..intelligence.live_canary.types import ProgramGovernanceState
+from .account_snapshot_cache import get_account_snapshot_cache
 
-# Module-level fixture context for local operator control plane API.
+# Account-keyed fixture contexts for local operator control plane API.
 # Canonical trading state remains in live_canary modules; this is the UI bridge.
-_OPERATOR_CTX: OperatorControlContext | None = None
+_OPERATOR_CONTEXTS: dict[str, OperatorControlContext] = {}
+_DEFAULT_CANARY_ACCOUNT = "fp-canary-local"
 
 
 def _now_ns() -> int:
     return time.time_ns()
 
 
-def _get_or_init_context() -> OperatorControlContext:
-    global _OPERATOR_CTX
-    if _OPERATOR_CTX is None:
-        t = _now_ns()
-        _OPERATOR_CTX = OperatorControlContext(
-            program_policy=build_default_program_policy(program_effective_from_ns=t),
-            canary_policy=build_default_canary_policy(
-                broker="tradier.paper", account_ref="fp-canary-local"
-            ),
-            governance_state=ProgramGovernanceState.PROGRAM_ACTIVE,
-            session_ref="session-local-1",
+def _build_fixture_context(
+  *,
+  account_ref: str,
+  broker: str,
+  broker_health: str,
+  reconciliation_health: str,
+  session_ref: str,
+) -> OperatorControlContext:
+    t = _now_ns()
+    ctx = OperatorControlContext(
+        program_policy=build_default_program_policy(program_effective_from_ns=t),
+        canary_policy=build_default_canary_policy(broker=broker, account_ref=account_ref),
+        governance_state=ProgramGovernanceState.PROGRAM_ACTIVE,
+        session_ref=session_ref,
+        broker_health=broker_health,
+        reconciliation_health=reconciliation_health,
+    )
+    ctx.kill_switch.permit_program("OPERATOR_CONTROL_PLANE_INIT")
+    return ctx
+
+
+def _init_operator_contexts() -> dict[str, OperatorControlContext]:
+    return {
+        "fp-canary-local": _build_fixture_context(
+            account_ref="fp-canary-local",
+            broker="tradier.paper",
             broker_health="HEALTHY",
             reconciliation_health="CLEAN",
-        )
-        _OPERATOR_CTX.kill_switch.permit_program("OPERATOR_CONTROL_PLANE_INIT")
-    return _OPERATOR_CTX
+            session_ref="session-local-1",
+        ),
+        "fp-canary-alt": _build_fixture_context(
+            account_ref="fp-canary-alt",
+            broker="tradier.paper",
+            broker_health="DEGRADED",
+            reconciliation_health="UNKNOWN",
+            session_ref="session-local-2",
+        ),
+    }
+
+
+def list_operator_contexts() -> dict[str, OperatorControlContext]:
+    global _OPERATOR_CONTEXTS
+    if not _OPERATOR_CONTEXTS:
+        _OPERATOR_CONTEXTS = _init_operator_contexts()
+    return _OPERATOR_CONTEXTS
+
+
+def _resolve_context(account_id: str | None = None) -> OperatorControlContext:
+    contexts = list_operator_contexts()
+    resolved = account_id or _DEFAULT_CANARY_ACCOUNT
+    ctx = contexts.get(resolved)
+    if ctx is None:
+        raise ValueError(f"OPERATIONAL_ACCOUNT_UNKNOWN: {resolved}")
+    return ctx
+
+
+def _get_or_init_context(account_id: str | None = None) -> OperatorControlContext:
+    return _resolve_context(account_id)
 
 
 def reset_operator_context_for_tests() -> None:
-    global _OPERATOR_CTX
-    _OPERATOR_CTX = None
+    global _OPERATOR_CONTEXTS
+    _OPERATOR_CONTEXTS = {}
+    from .account_snapshot_cache import reset_account_snapshot_cache_for_tests
+
+    reset_account_snapshot_cache_for_tests()
 
 
 def _snapshot_payload(ctx: OperatorControlContext, *, as_of_ns: int) -> dict[str, Any]:
     snap = build_operator_control_snapshot(ctx, as_of_ns=as_of_ns)
-    return {
+    identity = derive_live_canary_identity(
+        account_ref=ctx.canary_policy.account_ref,
+        broker=ctx.canary_policy.broker,
+    )
+    payload = {
         "authority_boundary": "OPERATOR_CONTROL_PLANE",
         "execution_mode_label": "LIVE_CANARY",
         "paper_live_distinct": True,
         "real_money_warning": "LIVE CANARY — REAL MONEY — HUMAN CONFIRMATION REQUIRED",
         "snapshot": _dataclass_to_dict(snap),
+        "account_id": ctx.canary_policy.account_ref,
+        "broker": ctx.canary_policy.broker,
+        "source_time": as_of_ns,
+        "retrieved_at": as_of_ns,
     }
+    return attach_operational_identity(payload, identity)
 
 
 def _dataclass_to_dict(obj: object) -> dict[str, Any]:
@@ -86,9 +143,26 @@ def _dataclass_to_dict(obj: object) -> dict[str, Any]:
     return {"value": str(obj)}
 
 
-def build_canary_snapshot_payload() -> dict[str, Any]:
-    ctx = _get_or_init_context()
-    return _snapshot_payload(ctx, as_of_ns=_now_ns())
+def build_canary_snapshot_payload(account_id: str | None = None) -> dict[str, Any]:
+    ctx = _get_or_init_context(account_id)
+    identity = derive_live_canary_identity(
+        account_ref=ctx.canary_policy.account_ref,
+        broker=ctx.canary_policy.broker,
+    )
+    cache = get_account_snapshot_cache()
+
+    def _load() -> tuple[dict[str, Any], int | None]:
+        as_of = _now_ns()
+        return _snapshot_payload(ctx, as_of_ns=as_of), as_of
+
+    entry = cache.get_or_refresh(identity, "canary.snapshot", _load)
+    provenance = cache.provenance_fields(entry)
+    payload = dict(entry.value)
+    payload["stale"] = provenance["stale"]
+    payload["refresh_failed"] = provenance["refresh_failed"]
+    if provenance["refresh_error"]:
+        payload["refresh_error"] = provenance["refresh_error"]
+    return payload
 
 
 def build_canary_authorization_preview_payload() -> dict[str, Any]:
@@ -116,16 +190,23 @@ def build_canary_timeline_payload() -> dict[str, Any]:
     }
 
 
-def build_canary_reconciliation_payload() -> dict[str, Any]:
-    ctx = _get_or_init_context()
+def build_canary_reconciliation_payload(account_id: str | None = None) -> dict[str, Any]:
+    ctx = _get_or_init_context(account_id)
     checkpoint = ctx.latest_checkpoint()
-    return {
+    identity = derive_live_canary_identity(
+        account_ref=ctx.canary_policy.account_ref,
+        broker=ctx.canary_policy.broker,
+    )
+    payload = {
         "authority_boundary": "OPERATOR_CONTROL_PLANE",
         "reconciliation_health": ctx.reconciliation_health,
         "checkpoint": _dataclass_to_dict(checkpoint) if checkpoint else None,
         "local_open_orders": list(ctx.ledger.get_open_local_orders()),
         "ambiguous_states": list(ctx.ledger.ambiguous_client_order_ids),
+        "account_id": ctx.canary_policy.account_ref,
+        "broker": ctx.canary_policy.broker,
     }
+    return attach_operational_identity(payload, identity)
 
 
 def build_canary_incidents_payload() -> dict[str, Any]:

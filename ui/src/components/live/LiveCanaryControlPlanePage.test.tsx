@@ -61,7 +61,8 @@ describe("LiveCanaryControlPlanePage", () => {
       "fetch",
       vi.fn().mockImplementation(async (path: string) => ({
         ok: true,
-        json: async () => (path === "/canary/reliability" ? reliabilityPayload : snapshotPayload),
+        json: async () =>
+          path.includes("/canary/reliability") ? reliabilityPayload : snapshotPayload,
       })),
     );
   });
@@ -94,7 +95,7 @@ describe("LiveCanaryControlPlanePage", () => {
       expect(
         screen.queryByRole("button", { name: "Prepare session authorization preview" }),
       ).not.toBeInTheDocument();
-      expect(fetch).toHaveBeenCalledWith("/canary/snapshot");
+      expect(fetch).toHaveBeenCalledWith("/canary/snapshot?account_id=fp-canary-local");
       const calls = (fetch as ReturnType<typeof vi.fn>).mock.calls;
       expect(
         calls.every((call) => (call[1] as RequestInit | undefined)?.method !== "POST"),

@@ -4,7 +4,7 @@
 
 ## Near-term candidates
 
-- Per-account broker lane snapshots (TD-003 remainder — backend API)
+- TD-004 Moomoo OpenD real-wire when connectivity available
 - TD-004 Moomoo real-wire when OpenD available
 
 ## Deferred (requires authorization)

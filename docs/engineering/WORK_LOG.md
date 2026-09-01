@@ -26,6 +26,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-01 — TD-003 multi-account snapshot architecture and state isolation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `ui/api`, `docs` |
+| **Summary** | Closed TD-003 by introducing `OperationalIdentity`, account discovery (`GET /accounts`), account-scoped canary snapshots/reconciliation, `AccountSnapshotCache` with per-account refresh locks, demo/paper portfolio view isolation, and frontend account-aware query keys. ADR-0007 records the decision. |
+| **Key files** | `operational_identity.py`, `account_registry.py`, `account_snapshot_cache.py`, `canary_projections.py`, `paper_projections.py`, `broker_projections.py`, `server.py`, `ui/src/api/hooks.ts`, `ui/src/api/liveCanary.ts`, `tests/platform/test_operational_identity.py`, `tests/platform/test_account_isolation.py` |
+| **Tests** | `test_operational_identity 5 passed`; `test_account_isolation 5 passed`; `ui vitest`; `validate.py changed/full` |
+| **Related** | [ADR-0007](../architecture/adr/0007-operational-account-identity.md), [completion](../superpowers/plans/2026-09-01-td-003-multi-account-snapshot-completion.md) |
+| **Notes** | TD-004 unchanged (OpenD unavailable). No Live execution added. Moomoo adapter conforms to identity contract at interface level only. |
+
 ## 2026-09-01 — Operational hardening, data provenance, CI closure, repository consolidation
 
 | Field | Value |

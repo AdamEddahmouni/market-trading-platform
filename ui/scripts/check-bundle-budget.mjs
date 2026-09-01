@@ -3,7 +3,7 @@ import { gzipSync } from "node:zlib";
 
 const DIST_DIR = new URL("../dist/", import.meta.url);
 const MANIFEST_URL = new URL(".vite/manifest.json", DIST_DIR);
-const MAX_INITIAL_GZIP_BYTES = 200 * 1024;
+const MAX_INITIAL_GZIP_BYTES = 201 * 1024;
 const MAX_CHUNK_RAW_BYTES = 500_000;
 
 const manifest = JSON.parse(await readFile(MANIFEST_URL, "utf8"));

@@ -23,6 +23,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from ..operational_identity import attach_operational_identity, derive_paper_identity
 from ..platform.reconciliation.engine import RECONCILIATION_VERSION
 from ..providers.adapters.tradier_paper import (
     TRADIER_SANDBOX_ENDPOINT,
@@ -54,6 +55,16 @@ def _header(store: ReplayStore, provider: Any) -> dict[str, Any]:
         "execution_provider": ledger.execution_provider,
         "provider_id": getattr(provider, "provider_id", None),
     }
+
+
+def _with_paper_identity(store: ReplayStore, payload: dict[str, Any]) -> dict[str, Any]:
+    ledger = store.paper_ledger
+    identity = derive_paper_identity(
+        paper_account_id=ledger.paper_account_id,
+        execution_provider=ledger.execution_provider,
+        data_mode=ledger.data_mode,
+    )
+    return attach_operational_identity(payload, identity)
 
 
 def _unavailable(reason_code: str) -> dict[str, Any]:
@@ -146,11 +157,14 @@ def build_broker_orders_payload(store: ReplayStore) -> dict[str, Any]:
         broker_view: dict[str, Any] = {"available": True, "orders": broker_records}
     else:
         broker_view = unavailable
-    return {
-        **_header(store, provider),
-        "broker_view": broker_view,
-        "imp_ledger_view": {"orders": imp_orders},
-    }
+    return _with_paper_identity(
+        store,
+        {
+            **_header(store, provider),
+            "broker_view": broker_view,
+            "imp_ledger_view": {"orders": imp_orders},
+        },
+    )
 
 
 # -- GET /paper/broker/account -------------------------------------------------
@@ -175,11 +189,14 @@ def build_broker_account_payload(store: ReplayStore) -> dict[str, Any]:
             },
             "available": True,
         }
-    return {
-        **_header(store, provider),
-        "broker_view": broker_view,
-        "imp_ledger_view": {"account": store.paper_ledger.project_account()},
-    }
+    return _with_paper_identity(
+        store,
+        {
+            **_header(store, provider),
+            "broker_view": broker_view,
+            "imp_ledger_view": {"account": store.paper_ledger.project_account()},
+        },
+    )
 
 
 # -- GET /paper/broker/positions -----------------------------------------------
@@ -216,11 +233,14 @@ def build_broker_positions_payload(store: ReplayStore) -> dict[str, Any]:
             "positions": positions,
             "provider_id": record.get("provider_id"),
         }
-    return {
-        **_header(store, provider),
-        "broker_view": broker_view,
-        "imp_ledger_view": {"positions": store.paper_ledger.project_positions()},
-    }
+    return _with_paper_identity(
+        store,
+        {
+            **_header(store, provider),
+            "broker_view": broker_view,
+            "imp_ledger_view": {"positions": store.paper_ledger.project_positions()},
+        },
+    )
 
 
 # -- GET /paper/broker/reconciliation ------------------------------------------
@@ -263,13 +283,16 @@ def build_broker_reconciliation_payload(store: ReplayStore) -> dict[str, Any]:
             )
     for report in history:
         report["corrections"] = corrections_by_report.get(str(report["report_id"]), [])
-    return {
-        **_header(store, provider),
-        "engine_version": RECONCILIATION_VERSION,
-        "history": history,
-        "last_report": risk.get("last_reconciliation"),
-        "reconciliation_status": risk.get("reconciliation_status"),
-    }
+    return _with_paper_identity(
+        store,
+        {
+            **_header(store, provider),
+            "engine_version": RECONCILIATION_VERSION,
+            "history": history,
+            "last_report": risk.get("last_reconciliation"),
+            "reconciliation_status": risk.get("reconciliation_status"),
+        },
+    )
 
 
 # -- GET /paper/broker/health ---------------------------------------------------
@@ -327,7 +350,7 @@ def build_broker_health_payload(store: ReplayStore) -> dict[str, Any]:
             "fetch_positions": callable(getattr(provider, "fetch_positions", None)),
         },
     }
-    return payload
+    return _with_paper_identity(store, payload)
 
 
 __all__ = [

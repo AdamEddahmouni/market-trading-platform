@@ -17,6 +17,8 @@ from . import live_projections
 from . import operator_projections
 from . import paper_projections
 from . import projections
+from .account_registry import build_accounts_payload
+from ..operational_identity import OperationalIdentityError
 from .assistant_projections import (
     build_assistant_conversations,
     build_assistant_messages,
@@ -478,8 +480,16 @@ class UiApiHandler(BaseHTTPRequestHandler):
             if path == "/assistant/status":
                 self._send_json(build_assistant_status(self.store))
                 return
+            if path == "/accounts":
+                self._send_json(build_accounts_payload(self.store))
+                return
             if path == "/canary/snapshot":
-                self._send_json(canary_projections.build_canary_snapshot_payload())
+                query = parse_qs(parsed.query)
+                account_id = query.get("account_id", [None])[0]
+                try:
+                    self._send_json(canary_projections.build_canary_snapshot_payload(account_id=account_id))
+                except ValueError as exc:
+                    self._send_error_json("OPERATIONAL_ACCOUNT_UNKNOWN", str(exc), status=HTTPStatus.BAD_REQUEST)
                 return
             if path == "/canary/authorization/preview":
                 self._send_json(canary_projections.build_canary_authorization_preview_payload())
@@ -488,7 +498,14 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(canary_projections.build_canary_timeline_payload())
                 return
             if path == "/canary/reconciliation":
-                self._send_json(canary_projections.build_canary_reconciliation_payload())
+                query = parse_qs(parsed.query)
+                account_id = query.get("account_id", [None])[0]
+                try:
+                    self._send_json(
+                        canary_projections.build_canary_reconciliation_payload(account_id=account_id)
+                    )
+                except ValueError as exc:
+                    self._send_error_json("OPERATIONAL_ACCOUNT_UNKNOWN", str(exc), status=HTTPStatus.BAD_REQUEST)
                 return
             if path == "/canary/incidents":
                 self._send_json(canary_projections.build_canary_incidents_payload())
@@ -534,7 +551,14 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(paper_projections.build_paper_risk_payload(self.store))
                 return
             if path == "/paper/portfolio":
-                self._send_json(paper_projections.build_paper_portfolio_payload(self.store))
+                query = parse_qs(parsed.query)
+                view_mode = query.get("view_mode", [None])[0]
+                try:
+                    self._send_json(
+                        paper_projections.build_paper_portfolio_payload(self.store, view_mode=view_mode)
+                    )
+                except OperationalIdentityError as exc:
+                    self._send_error_json("OPERATIONAL_IDENTITY_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
                 return
             if path == "/paper/trace":
                 query = parse_qs(parsed.query)

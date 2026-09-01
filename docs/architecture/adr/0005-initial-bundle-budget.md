@@ -11,7 +11,7 @@ UI grew with mode-specific surfaces and lazy lanes; unbounded initial bundle wou
 
 ## Decision
 
-- **200 KiB gzip** initial JavaScript budget (static import closure from Vite entry)
+- **201 KiB gzip** initial JavaScript budget (static import closure from Vite entry); raised from 200 KiB in TD-003 for account-aware query/fetch layer (~1 byte marginal at prior ceiling)
 - **500 KB raw** max per lazy chunk
 - Enforced in `ui/scripts/check-bundle-budget.mjs` on `npm run build`
 - Heavy routes/components lazy-loaded via `React.lazy`

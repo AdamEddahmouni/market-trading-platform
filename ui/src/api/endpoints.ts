@@ -133,7 +133,8 @@ export const api = {
     if (!response.ok) throw new Error("assistant prompt failed");
     return AssistantPromptResponseSchema.parse(await response.json());
   },
-  getPaperPortfolio: () => fetchJson("/paper/portfolio", PaperPortfolioResponseSchema),
+  getPaperPortfolio: (viewMode: "DEMO" | "PAPER" = "PAPER") =>
+    fetchJson(`/paper/portfolio?view_mode=${viewMode}`, PaperPortfolioResponseSchema),
   getPaperOrderHistory: (params?: { cursor?: string; limit?: number }) => {
     const query = new URLSearchParams();
     if (params?.cursor) query.set("cursor", params.cursor);

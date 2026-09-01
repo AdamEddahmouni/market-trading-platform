@@ -24,15 +24,25 @@ export type LiveCanarySnapshot = {
   snapshot_id?: string;
 };
 
-type SnapshotPayload = {
-  snapshot: LiveCanarySnapshot;
+export type LiveCanaryReconciliation = {
+  reconciliation_health: string;
+  local_open_orders: string[];
+  ambiguous_states: string[];
 };
 
-export async function fetchLiveCanarySnapshot(): Promise<LiveCanarySnapshot> {
-  const response = await fetch("/canary/snapshot");
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
-  }
-  const payload = (await response.json()) as SnapshotPayload;
+const DEFAULT_ACCOUNT = "fp-canary-local";
+
+async function fetchCanaryJson<T>(path: string, accountId = DEFAULT_ACCOUNT): Promise<T> {
+  const response = await fetch(`${path}?account_id=${encodeURIComponent(accountId)}`);
+  if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+  return response.json() as Promise<T>;
+}
+
+export async function fetchLiveCanarySnapshot(accountId = DEFAULT_ACCOUNT): Promise<LiveCanarySnapshot> {
+  const payload = await fetchCanaryJson<{ snapshot: LiveCanarySnapshot }>("/canary/snapshot", accountId);
   return payload.snapshot;
+}
+
+export async function fetchLiveCanaryReconciliation(accountId = DEFAULT_ACCOUNT): Promise<LiveCanaryReconciliation> {
+  return fetchCanaryJson<LiveCanaryReconciliation>("/canary/reconciliation", accountId);
 }
