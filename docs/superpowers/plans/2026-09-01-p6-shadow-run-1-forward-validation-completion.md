@@ -41,7 +41,7 @@ See `artifacts/shadow-run-1/SOURCE_AVAILABILITY_AUDIT.json`. `MOOMOO_BIYA_OBSERV
 
 ## Acceptance matrix
 
-`artifacts/shadow-run-1/P6_ACCEPTANCE_MATRIX.json` — regenerated after live collection; P6-AC-002 pass (forward observations). P6-AC-011 pending pinned `validate.py full` receipt.
+`artifacts/shadow-run-1/P6_ACCEPTANCE_MATRIX.json` — 15 pass, 0 fail, 0 blocked. P6-AC-011 pass with pinned `P6_VALIDATION_RECEIPT.json` (`validate.py full`: 3003 tests, 0 failures, 0 errors). **p6_disposition: IN_PROGRESS_EVIDENCE_COLLECTION** (stopping rule not met).
 
 ## Bug fixes (this increment)
 
@@ -68,7 +68,7 @@ See `artifacts/shadow-run-1/SOURCE_AVAILABILITY_AUDIT.json`. `MOOMOO_BIYA_OBSERV
 | Command | Result |
 |---------|--------|
 | `unittest tests.platform.test_shadow_run1_*` (targeted) | pass (incl. thread-safety + event_type) |
-| `validate.py full` | pinned to `artifacts/shadow-run-1/P6_VALIDATION_RECEIPT.json` (in progress at handoff) |
+| `validate.py full` | **passed** — pinned `artifacts/shadow-run-1/P6_VALIDATION_RECEIPT.json` (3003 tests, 0 failures, 0 errors) |
 
 ## Remaining blockers
 

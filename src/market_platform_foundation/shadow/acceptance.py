@@ -332,8 +332,17 @@ def evaluate_acceptance(
     return rows
 
 
-def summarize_p6_disposition(rows: list[AcceptanceResult]) -> str:
-    """Derive honest P6 disposition from acceptance rows."""
+def summarize_p6_disposition(
+    rows: list[AcceptanceResult],
+    *,
+    stopping_rule_met: bool = False,
+) -> str:
+    """Derive honest P6 disposition from acceptance rows.
+
+    All preregistered acceptance criteria may pass while the forward run is
+    still open and below the frozen stopping rule; that state is evidence
+    collection in progress, not P6 CLOSED.
+    """
     if any(r.disposition == Disposition.FAIL for r in rows):
         return "FAILED_ACCEPTANCE"
     blocked = [r for r in rows if r.disposition == Disposition.BLOCKED]
@@ -343,7 +352,7 @@ def summarize_p6_disposition(rows: list[AcceptanceResult]) -> str:
             return "IN_PROGRESS_EVIDENCE_COLLECTION"
         return "PARTIALLY_ACCEPTED"
     if all(r.disposition == Disposition.PASS for r in rows):
-        return "CLOSED"
+        return "CLOSED" if stopping_rule_met else "IN_PROGRESS_EVIDENCE_COLLECTION"
     return "IN_PROGRESS_EVIDENCE_COLLECTION"
 
 
@@ -353,8 +362,9 @@ def build_acceptance_matrix(
     run_id: str | None,
     git_commit: str | None,
     protocol_version: str = PROTOCOL_VERSION,
+    stopping_rule_met: bool = False,
 ) -> dict[str, Any]:
-    disposition = summarize_p6_disposition(rows)
+    disposition = summarize_p6_disposition(rows, stopping_rule_met=stopping_rule_met)
     return {
         "schema_version": ACCEPTANCE_SCHEMA_VERSION,
         "protocol_version": protocol_version,

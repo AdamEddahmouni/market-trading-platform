@@ -93,10 +93,10 @@
     {
       "criterion_id": "P6-AC-011",
       "description": "Required offline validation green at preregistration",
-      "disposition": "blocked",
+      "disposition": "pass",
       "evidence_artifact": "evidence referenced in preflight validation receipt",
       "notes": "Blocked when full validation receipt not yet pinned at preregistration",
-      "observed": "validation_green=False",
+      "observed": "validation_green=True",
       "threshold": "validate.py full: status=passed, failures=0, errors=0"
     },
     {
@@ -136,15 +136,15 @@
       "threshold": "run_id content-addressed; resume refuses incompatible contract"
     }
   ],
-  "git_commit": "323190e0d21125cbb7991a07ad48315e7238573c",
-  "p6_disposition": "PARTIALLY_ACCEPTED",
+  "git_commit": "a71f9c3638e4d906c1560369a5543112ba41087c",
+  "p6_disposition": "IN_PROGRESS_EVIDENCE_COLLECTION",
   "protocol_version": "SHADOW_RUN_1_BIYA_FROZEN/1.0.0",
   "run_id": "SHRUN-00C5C98CD1C33EC4D22D0BFCAD4AF0AD51FBF5EBF566AA8C2308B98D2BD5A7FC",
   "schema_version": "platform/shadow-run-1-acceptance/1.0.0",
   "summary": {
-    "blocked": 1,
+    "blocked": 0,
     "fail": 0,
-    "pass": 14,
+    "pass": 15,
     "total": 15
   }
 }

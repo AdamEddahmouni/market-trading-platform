@@ -810,6 +810,17 @@ def cmd_acceptance(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
                 es_excluded = True
 
         matrix_path = Path(args.matrix_out) if args.matrix_out else None
+        stopping_rule_met = False
+        scheduled_grid = 0
+        if contract is not None:
+            status_rc, status_payload = cmd_status(args)
+            if status_rc == 0:
+                scheduled_grid = int(status_payload.get("scheduled_grid_opportunities") or 0)
+                verdict = evaluate_stopping_rule(
+                    session_states=_session_states_from_captures(args),
+                    scheduled_grid=scheduled_grid,
+                )
+                stopping_rule_met = bool(verdict.get("stop"))
         rows = evaluate_acceptance(
             protocol_present=protocol_present,
             protocol_preregistered_before_decisions=protocol_preregistered,
@@ -834,6 +845,7 @@ def cmd_acceptance(args: argparse.Namespace) -> tuple[int, dict[str, Any]]:
             rows,
             run_id=run_id,
             git_commit=_as_status_text(head).strip() or None,
+            stopping_rule_met=stopping_rule_met,
         )
         if matrix_path is not None:
             write_acceptance_matrix(matrix_path, matrix)

@@ -63,6 +63,12 @@ class AcceptanceEvaluatorTests(unittest.TestCase):
         self.assertEqual(causality.disposition, Disposition.FAIL)
         self.assertEqual(summarize_p6_disposition(rows), "FAILED_ACCEPTANCE")
 
+    def test_all_criteria_pass_without_stopping_rule_stays_in_progress(self):
+        rows = evaluate_acceptance(**self._base_kwargs(forward_source_configured=True, forward_observation_count=2))
+        self.assertTrue(all(r.disposition == Disposition.PASS for r in rows))
+        self.assertEqual(summarize_p6_disposition(rows, stopping_rule_met=False), "IN_PROGRESS_EVIDENCE_COLLECTION")
+        self.assertEqual(summarize_p6_disposition(rows, stopping_rule_met=True), "CLOSED")
+
 
 if __name__ == "__main__":
     unittest.main()
