@@ -23,12 +23,19 @@ class IbkrStructuralSafetyTests(unittest.TestCase):
                     roots = {node.module.split(".", 1)[0]}
                 else:
                     continue
+                if path.name == "tws_client.py":
+                    roots.discard("ib_insync")
                 self.assertTrue(roots.isdisjoint(prohibited), f"{path}: {roots & prohibited}")
                 for root in roots:
                     self.assertTrue(
                         root in sys.stdlib_module_names or root == "tools",
                         f"non-stdlib import {root!r} in {path}",
                     )
+
+    def test_optional_tws_module_has_no_mutation_surface(self) -> None:
+        source = (TOOLS / "tws_client.py").read_text(encoding="utf-8")
+        for marker in ("placeOrder", "modifyOrder", "cancelOrder", "reqFundTransfer"):
+            self.assertNotIn(marker, source)
 
     def test_allowlist_contains_no_order_execution_or_fund_routes(self) -> None:
         source = (TOOLS / "client.py").read_text(encoding="utf-8")

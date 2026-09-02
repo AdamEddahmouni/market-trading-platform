@@ -10,6 +10,9 @@ from urllib.parse import urlsplit
 
 
 DEFAULT_GATEWAY_URL = "https://127.0.0.1:5000/v1/api"
+DEFAULT_TWS_HOST = "127.0.0.1"
+DEFAULT_TWS_PORT = 4001
+DEFAULT_TWS_CLIENT_ID = 37
 
 
 class ConfigError(ValueError):
@@ -46,6 +49,20 @@ def validate_gateway_url(value: str) -> str:
     return value.rstrip("/")
 
 
+def validate_tws_host(value: str) -> str:
+    """Return a loopback TWS host or fail closed."""
+
+    host = value.strip().lower()
+    if host == "localhost":
+        return value.strip()
+    try:
+        if ipaddress.ip_address(host).is_loopback:
+            return value.strip()
+    except ValueError:
+        pass
+    raise ConfigError("IMP_IBKR_TWS_HOST must use a loopback host")
+
+
 def _gate(value: str | None) -> bool:
     normalized = (value or "").strip().lower()
     if normalized in {"", "0", "false"}:
@@ -74,6 +91,10 @@ class IbkrConfig:
     live_enabled: bool
     gateway_url: str
     capture_root: Path
+    transport: str = "client_portal"
+    tws_host: str = DEFAULT_TWS_HOST
+    tws_port: int = DEFAULT_TWS_PORT
+    tws_client_id: int = DEFAULT_TWS_CLIENT_ID
     requests_per_second: float = 10.0
     history_min_spacing_seconds: float = 15.0
     history_window_max: int = 50
@@ -83,6 +104,15 @@ class IbkrConfig:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "gateway_url", validate_gateway_url(self.gateway_url))
+        transport = self.transport.strip().lower()
+        if transport not in {"client_portal", "tws"}:
+            raise ConfigError("IMP_IBKR_TRANSPORT must be client_portal or tws")
+        object.__setattr__(self, "transport", transport)
+        object.__setattr__(self, "tws_host", validate_tws_host(self.tws_host))
+        if self.tws_port not in {4001, 4002}:
+            raise ConfigError("IMP_IBKR_TWS_PORT must be 4001 or 4002")
+        if self.tws_client_id <= 0:
+            raise ConfigError("IMP_IBKR_TWS_CLIENT_ID must be positive")
         if not 0 < self.requests_per_second <= 10:
             raise ConfigError("IMP_IBKR_PACING_RPS must be in (0, 10]")
         if self.history_min_spacing_seconds < 15:
@@ -106,6 +136,10 @@ class IbkrConfig:
             live_enabled=_gate(env.get("IMP_IBKR_LIVE")),
             gateway_url=env.get("IMP_IBKR_GATEWAY_URL", DEFAULT_GATEWAY_URL).strip(),
             capture_root=capture_root,
+            transport=env.get("IMP_IBKR_TRANSPORT", "client_portal"),
+            tws_host=env.get("IMP_IBKR_TWS_HOST", DEFAULT_TWS_HOST),
+            tws_port=_integer(env, "IMP_IBKR_TWS_PORT", DEFAULT_TWS_PORT),
+            tws_client_id=_integer(env, "IMP_IBKR_TWS_CLIENT_ID", DEFAULT_TWS_CLIENT_ID),
             requests_per_second=_float(env, "IMP_IBKR_PACING_RPS", 10.0),
             history_min_spacing_seconds=_float(env, "IMP_IBKR_HIST_MIN_SPACING_SEC", 15.0),
             history_window_max=_integer(env, "IMP_IBKR_HIST_WINDOW_MAX", 50),
@@ -113,4 +147,13 @@ class IbkrConfig:
         )
 
 
-__all__ = ["ConfigError", "DEFAULT_GATEWAY_URL", "IbkrConfig", "validate_gateway_url"]
+__all__ = [
+    "ConfigError",
+    "DEFAULT_GATEWAY_URL",
+    "DEFAULT_TWS_CLIENT_ID",
+    "DEFAULT_TWS_HOST",
+    "DEFAULT_TWS_PORT",
+    "IbkrConfig",
+    "validate_gateway_url",
+    "validate_tws_host",
+]

@@ -850,6 +850,30 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
         self.assertEqual(cleaned["api_token"], "REDACTED")
         self.assertEqual(cleaned["auth"], "REDACTED")
 
+    def test_configure_login_stores_credentials_and_recovers_token(self) -> None:
+        from tools.finviz import auth
+
+        manager = MagicMock()
+        manager.attempt_recovery.return_value = True
+        with patch.object(auth, "configure_login_transport"), patch.object(
+            auth.getpass,
+            "getpass",
+            return_value="password",
+        ), patch("builtins.input", return_value="user@example.com"), patch.object(
+            auth,
+            "write_login_credentials",
+            return_value=True,
+        ) as write_credentials, patch.object(
+            auth,
+            "get_finviz_credential_manager",
+            return_value=manager,
+        ):
+            result = auth.main(["configure-login"])
+
+        self.assertEqual(result, 0)
+        write_credentials.assert_called_once_with("user@example.com", "password")
+        manager.attempt_recovery.assert_called_once_with()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -72,8 +72,10 @@ IBKR DOCUMENTED pacing (Client Portal Web API):
 
 ## Env gates (all default off/fail-closed)
 
-`IMP_IBKR_LIVE`, `IMP_IBKR_GATEWAY_URL` (must be loopback or refused),
-`IMP_IBKR_CAPTURE_ROOT`, `IMP_IBKR_PACING_*` knobs, credential file
+`IMP_IBKR_LIVE`, `IMP_IBKR_TRANSPORT`, `IMP_IBKR_GATEWAY_URL` (must be loopback
+or refused), `IMP_IBKR_TWS_HOST`, `IMP_IBKR_TWS_PORT`,
+`IMP_IBKR_TWS_CLIENT_ID`, `IMP_IBKR_CAPTURE_ROOT`, `IMP_IBKR_PACING_*` knobs,
+credential file
 `.private/providers.env` (`IBKR_USERNAME`, `IBKR_PASSWORD`, `IBKR_TOTP_SECRET`;
 never commit; redacted from every log/journal). See [`.env.example`](../../.env.example).
 
@@ -86,9 +88,27 @@ credentials. Captures are observational only and never inputs to execution.
 
 ## How to probe (after gateway install + first login)
 
+Client Portal Gateway (the default):
+
 ```powershell
 .venv\Scripts\python.exe tools\ibkr\probe.py --output evidence/market_data/ibkr/capability-report.json
 ```
+
+Desktop IB Gateway / TWS socket:
+
+```powershell
+$env:IMP_IBKR_LIVE = "1"
+$env:IMP_IBKR_TRANSPORT = "tws"
+$env:IMP_IBKR_TWS_HOST = "127.0.0.1"
+$env:IMP_IBKR_TWS_PORT = "4001"
+.venv\Scripts\python.exe -m pip install ib_insync
+.venv\Scripts\python.exe tools\ibkr\probe.py --symbol AAPL --output "$env:TEMP\ibkr-tws-capability-report.json"
+```
+
+The desktop Gateway must already be logged in and configured to accept local
+socket API connections. The TWS adapter is observational only; it does not
+expose order, funding, or execution operations. The optional `ib_insync`
+dependency is loaded only when `IMP_IBKR_TRANSPORT=tws` is selected.
 
 Bounded snapshot capture:
 

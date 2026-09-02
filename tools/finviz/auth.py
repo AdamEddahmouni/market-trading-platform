@@ -67,6 +67,43 @@ def _configure(*, token: str | None, username: str | None, password: str | None)
     return 1
 
 
+def _configure_login() -> int:
+    try:
+        username = input("Finviz Elite email: ").strip()
+    except (EOFError, KeyboardInterrupt):
+        print("ERROR: email required")
+        return 2
+    if not username:
+        print("ERROR: email required")
+        return 2
+
+    try:
+        password = getpass.getpass("Finviz password: ")
+    except (EOFError, KeyboardInterrupt):
+        print("ERROR: password required")
+        return 2
+    if not password:
+        print("ERROR: password required")
+        return 2
+
+    if not write_login_credentials(username, password):
+        print("ERROR: failed to store login credentials")
+        return 2
+
+    manager = get_finviz_credential_manager()
+    if manager.attempt_recovery():
+        print("Recovery                PASS")
+        print("READY")
+        return 0
+
+    health = manager.health()
+    if health.state.value == "AUTH_OPERATOR_ACTION_REQUIRED":
+        print("Operator action required — complete Finviz MFA/CAPTCHA in browser, then retry.")
+    else:
+        print(f"Recovery                FAIL ({health.state.value})")
+    return 1
+
+
 def _validate() -> int:
     manager = get_finviz_credential_manager()
     token = manager.get_token()
@@ -115,6 +152,7 @@ def main(argv: list[str] | None = None) -> int:
     configure.add_argument("--token", help="API token (omit to prompt securely)")
     configure.add_argument("--username", help="Optional Finviz login for automatic recovery")
     configure.add_argument("--password", help="Optional Finviz password (omit to prompt)")
+    sub.add_parser("configure-login", help="Store login securely and recover an API token")
     sub.add_parser("validate", help="Validate stored credential")
     sub.add_parser("repair", help="Attempt automatic credential recovery")
     sub.add_parser("clear", help="Remove stored Finviz credentials")
@@ -127,6 +165,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.username and not password:
             password = getpass.getpass("Finviz password: ")
         return _configure(token=args.token, username=args.username, password=password)
+    if args.command == "configure-login":
+        return _configure_login()
     if args.command == "validate":
         return _validate()
     if args.command == "repair":

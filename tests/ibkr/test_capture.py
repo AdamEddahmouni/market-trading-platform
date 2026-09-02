@@ -79,6 +79,23 @@ class JsonlCaptureTests(unittest.TestCase):
         encoded = json.dumps(record)
         self.assertTrue(all(secret not in encoded for secret in SECRETS))
 
+    def test_observation_capture_accepts_tws_provider_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "observations.jsonl"
+            capture = ObservationCapture(path)
+            capture.record(
+                method="GET",
+                path="/iserver/auth/status",
+                params=None,
+                request_body=None,
+                status=200,
+                headers={},
+                response_payload={"connected": True},
+                provider="IBKR_TWS_GATEWAY",
+            )
+            record = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(record["provider"], "IBKR_TWS_GATEWAY")
+
     def test_client_writes_redacted_capture_and_penalty_journal_by_default(self) -> None:
         responses = [
             TransportResponse(

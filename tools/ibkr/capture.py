@@ -102,12 +102,13 @@ class ObservationCapture:
         status: int,
         headers: Mapping[str, str],
         response_payload: object,
+        provider: str = "IBKR_CLIENT_PORTAL_GATEWAY",
     ) -> None:
         self.journal.append(
             {
                 "schema_version": "1.0",
                 "classification": "CAPTURED_NOT_ADMITTED",
-                "provider": "IBKR_CLIENT_PORTAL_GATEWAY",
+                "provider": provider,
                 "captured_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 "request": {
                     "method": method,

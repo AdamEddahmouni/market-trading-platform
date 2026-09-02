@@ -24,11 +24,32 @@ class IbkrConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             config = IbkrConfig.from_env({}, root=Path(tmp))
         self.assertFalse(config.live_enabled)
+        self.assertEqual(config.transport, "client_portal")
         self.assertEqual(config.gateway_url, "https://127.0.0.1:5000/v1/api")
         self.assertEqual(config.requests_per_second, 10.0)
         self.assertEqual(config.history_min_spacing_seconds, 15.0)
         self.assertEqual(config.history_window_max, 50)
         self.assertEqual(config.penalty_box_seconds, 900.0)
+
+    def test_tws_configuration_defaults_to_loopback_port_4001(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = IbkrConfig.from_env({"IMP_IBKR_TRANSPORT": "tws"}, root=Path(tmp))
+        self.assertEqual(config.transport, "tws")
+        self.assertEqual(config.tws_host, "127.0.0.1")
+        self.assertEqual(config.tws_port, 4001)
+        self.assertGreater(config.tws_client_id, 0)
+
+    def test_tws_configuration_rejects_unsafe_or_invalid_values(self) -> None:
+        invalid = (
+            {"IMP_IBKR_TRANSPORT": "unknown"},
+            {"IMP_IBKR_TRANSPORT": "tws", "IMP_IBKR_TWS_HOST": "example.com"},
+            {"IMP_IBKR_TRANSPORT": "tws", "IMP_IBKR_TWS_PORT": "5000"},
+            {"IMP_IBKR_TRANSPORT": "tws", "IMP_IBKR_TWS_CLIENT_ID": "0"},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            for env in invalid:
+                with self.subTest(env=env), self.assertRaises(ConfigError):
+                    IbkrConfig.from_env(env, root=Path(tmp))
 
     def test_https_loopback_gateway_variants_are_accepted(self) -> None:
         for value in (

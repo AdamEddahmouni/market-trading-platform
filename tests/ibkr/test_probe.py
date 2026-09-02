@@ -4,8 +4,11 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+from tools.ibkr.config import IbkrConfig
 from tools.ibkr.probe import CapabilityProbe, main, write_report
+from tools.ibkr import probe as probe_module
 
 
 class FakeClient:
@@ -38,6 +41,25 @@ def successful_responses() -> dict[str, object]:
 
 
 class CapabilityProbeTests(unittest.TestCase):
+    def test_tws_config_selects_tws_client_factory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = IbkrConfig.from_env(
+                {"IMP_IBKR_LIVE": "1", "IMP_IBKR_TRANSPORT": "tws"},
+                root=Path(tmp),
+            )
+        expected = object()
+        with patch.object(probe_module, "TwsIbkrClient", return_value=expected) as factory:
+            self.assertIs(probe_module.build_client(config), expected)
+        factory.assert_called_once_with(config)
+
+    def test_report_includes_client_transport_identity(self) -> None:
+        client = FakeClient(successful_responses())
+        client.transport = "tws"
+        client.provider = "IBKR_TWS_GATEWAY"
+        report = CapabilityProbe(client).run("AAPL")
+        self.assertEqual(report["transport"], "tws")
+        self.assertEqual(report["provider"], "IBKR_TWS_GATEWAY")
+
     def test_successful_probe_records_observed_capabilities_and_snapshot_preflight(self) -> None:
         client = FakeClient(successful_responses())
         probe = CapabilityProbe(client, observed_at=lambda: "2026-08-24T12:00:00Z")

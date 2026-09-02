@@ -15,11 +15,13 @@ if __package__:
     from .capture import redact, redact_text
     from .client import IbkrClient
     from .config import IbkrConfig
+    from .tws_client import TwsIbkrClient
 else:  # Support the documented ``python tools/ibkr/probe.py`` entry point.
     sys.path.insert(0, str(ROOT))
     from tools.ibkr.capture import redact, redact_text
     from tools.ibkr.client import IbkrClient
     from tools.ibkr.config import IbkrConfig
+    from tools.ibkr.tws_client import TwsIbkrClient
 
 
 DEFAULT_OUTPUT = ROOT / "evidence" / "market_data" / "ibkr" / "capability-report.json"
@@ -69,6 +71,14 @@ def _untested(reason: str) -> dict[str, object]:
     return {"evidence_class": "UNTESTED", "status": "UNTESTED", "reason": reason}
 
 
+def build_client(config: IbkrConfig) -> Any:
+    """Construct the explicitly selected observational transport."""
+
+    if config.transport == "tws":
+        return TwsIbkrClient(config)
+    return IbkrClient(config)
+
+
 class CapabilityProbe:
     """Probe each observational surface independently through a restricted client."""
 
@@ -114,7 +124,8 @@ class CapabilityProbe:
         report: dict[str, object] = {
             "schema_version": "1.0",
             "adr_id": "ADR-LIVE-002",
-            "provider": "IBKR_CLIENT_PORTAL_GATEWAY",
+            "provider": getattr(self._client, "provider", "IBKR_CLIENT_PORTAL_GATEWAY"),
+            "transport": getattr(self._client, "transport", "client_portal"),
             "classification": "OBSERVED_CAPABILITY_REPORT_NOT_ADMITTED",
             "observed_at": self._observed_at(),
             "symbol": normalized_symbol,
@@ -192,7 +203,7 @@ def main(
     argv: Sequence[str] | None = None,
     *,
     env: Mapping[str, str] | None = None,
-    client_factory: Callable[[IbkrConfig], Any] = IbkrClient,
+    client_factory: Callable[[IbkrConfig], Any] | None = None,
 ) -> int:
     parser = argparse.ArgumentParser(description="Probe read-only IBKR Gateway capabilities")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
@@ -202,9 +213,14 @@ def main(
     if not config.live_enabled:
         print("IMP_IBKR_LIVE=1 is required; no gateway request was made", file=sys.stderr)
         return 2
-    client = client_factory(config)
-    report = CapabilityProbe(client).run(arguments.symbol)
-    write_report(arguments.output, report)
+    client = (client_factory or build_client)(config)
+    try:
+        report = CapabilityProbe(client).run(arguments.symbol)
+        write_report(arguments.output, report)
+    finally:
+        close = getattr(client, "close", None)
+        if callable(close):
+            close()
     print(f"Wrote {arguments.output}")
     return 0
 
@@ -213,4 +229,4 @@ if __name__ == "__main__":
     raise SystemExit(main())
 
 
-__all__ = ["CapabilityProbe", "DEFAULT_OUTPUT", "main", "write_report"]
+__all__ = ["CapabilityProbe", "DEFAULT_OUTPUT", "build_client", "main", "write_report"]

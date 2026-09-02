@@ -78,9 +78,11 @@ for the verified API surfaces, rate limits, and fixture-verified fields.
 - MFA, CAPTCHA, an inactive Elite subscription, or repeated recovery failure
   stops automatic attempts at `AUTH_OPERATOR_ACTION_REQUIRED`. The last valid
   discovery captures remain available as `SNAPSHOT` or `STALE`.
-- Run `python tools/finviz/auth.py configure` to store a token securely. Add
-  `--username <email>` and enter the password at the secure prompt if automatic
-  login/key recovery is desired. Never put credentials in committed files.
+- Run `python tools/finviz/auth.py configure` to store an existing token
+  securely. For login-only setup, run
+  `python tools/finviz/auth.py configure-login`; it prompts for the email and
+  password without echoing the password, stores them in `.private/`, and
+  attempts read-only token recovery. Never put credentials in committed files.
 
 ## Tooling
 
