@@ -7,32 +7,44 @@
     {
       "root": "src/market_platform_foundation",
       "include": "CHILD_DIRECTORIES",
-      "exclude": ["__pycache__"]
+      "exclude": [
+        "__pycache__"
+      ]
     },
     {
       "root": "src/market_platform_foundation",
       "include": "PYTHON_FILES",
-      "exclude": ["__init__.py"]
+      "exclude": [
+        "__init__.py"
+      ]
     },
     {
       "root": "tools",
       "include": "CHILD_DIRECTORIES",
-      "exclude": ["__pycache__"]
+      "exclude": [
+        "__pycache__"
+      ]
     },
     {
       "root": "tools",
       "include": "PYTHON_FILES",
-      "exclude": ["__init__.py"]
+      "exclude": [
+        "__init__.py"
+      ]
     },
     {
       "root": "pipelines/stock_data/src",
       "include": "CHILD_DIRECTORIES",
-      "exclude": ["__pycache__"]
+      "exclude": [
+        "__pycache__"
+      ]
     },
     {
       "root": "pipelines/stock_data/src",
       "include": "PYTHON_FILES",
-      "exclude": ["__init__.py"]
+      "exclude": [
+        "__init__.py"
+      ]
     }
   ],
   "required_paths": [
@@ -229,9 +241,129 @@
       "disposition": "KEEP"
     },
     {
+      "id": "of01-run-and-artifact-ledger",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/of01"
+      ],
+      "responsibility": "Canonical authoritative run, attempt, artifact, and provenance ledger for IMP operating-fabric identity.",
+      "evidence": [
+        "tools/validation_manifest.json registers the of01 offline suite against src/market_platform_foundation/of01.",
+        "tests/of01 and artifacts/imp-rebase/OF01 record the accepted OF-01 runtime contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "of02-attribution-adapters",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/of02"
+      ],
+      "responsibility": "Existing-system run and artifact attribution adapters that emit typed OF-01 commands without replacing subsystem domain authority.",
+      "evidence": [
+        "tools/validation_manifest.json registers the of02 offline suite against src/market_platform_foundation/of02.",
+        "docs/operations/of-02 and tests/of02 record the OF-02 adapter contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "of03-governed-registry",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/of03"
+      ],
+      "responsibility": "Machine-readable capability, SOP, and workflow registry with binding verification and policy metadata. Does not execute workflows, grant authority, or replace OF-01 history.",
+      "evidence": [
+        "tools/validation_manifest.json registers the of03 offline suite against src/market_platform_foundation/of03.",
+        "config/of03, docs/operations/of-03, and tests/of03 record the OF-03 registry contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "rt01-trace-latency",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/rt01",
+        "tools/rt01"
+      ],
+      "responsibility": "End-to-end causal tracing and measured latency baselines for executable runtime paths. Observability only; does not grant authority or replace OF-01 history.",
+      "evidence": [
+        "tools/validation_manifest.json registers the rt01 offline suite against src/market_platform_foundation/rt01.",
+        "docs/operations/rt-01, tests/rt01, and artifacts/imp-rebase/RT01 record the accepted RT-01 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "xa01-cross-asset-identity-kernel",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/xa01"
+      ],
+      "responsibility": "Cross-asset canonical instrument identity, analytical-domain participation, typed relationships, and provider alias resolution. Identity foundation only; does not implement cross-asset analytics.",
+      "evidence": [
+        "tools/validation_manifest.json registers the xa01 offline suite against src/market_platform_foundation/xa01.",
+        "docs/operations/xa-01, tests/xa01, and artifacts/imp-rebase/XA01 record the accepted XA-01 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "xa02-cross-asset-source-admission",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/xa02"
+      ],
+      "responsibility": "First admitted cross-asset source vertical: FRED rates reference admission, point-in-time observation provenance, and typed indicator-to-XA reference relationships.",
+      "evidence": [
+        "tools/validation_manifest.json registers the xa02 offline suite against src/market_platform_foundation/xa02.",
+        "docs/operations/xa-02, tests/xa02, and artifacts/imp-rebase/XA02 record the accepted XA-02 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "xa03-second-admitted-source-vertical",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/xa03"
+      ],
+      "responsibility": "Second admitted cross-asset source vertical: CFTC positioning reference admission through source-neutral envelope, point-in-time provenance, and typed market-report-to-XA reference relationships.",
+      "evidence": [
+        "tools/validation_manifest.json registers the xa03 offline suite against src/market_platform_foundation/xa03.",
+        "docs/operations/xa-03, tests/xa03, and artifacts/imp-rebase/XA03 record the accepted XA-03 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "xa04-durable-catalog-persistence",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/xa04"
+      ],
+      "responsibility": "Durable backend-independent persistence for cross-asset instrument, admitted observation, admission envelope, and reference relationship catalog truth without changing XA-01/02/03 semantics.",
+      "evidence": [
+        "tools/validation_manifest.json registers the xa04 offline suite against src/market_platform_foundation/xa04.",
+        "docs/operations/xa-04, tests/xa04, and artifacts/imp-rebase/XA04 record the accepted XA-04 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "xa05-strategic-state-regime-kernel",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/xa05"
+      ],
+      "responsibility": "Deterministic, provenance-aware cross-asset strategic state construction above XA-01 through XA-04 without trading or adaptation authority.",
+      "evidence": [
+        "tools/validation_manifest.json registers the xa05 offline suite against src/market_platform_foundation/xa05.",
+        "docs/operations/xa-05, tests/xa05, and artifacts/imp-rebase/XA05 record the accepted XA-05 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
       "id": "legacy-full-suite-wrapper",
       "classification": "WRAPPED",
-      "scope": ["tools/run_all_tests.py"],
+      "scope": [
+        "tools/run_all_tests.py"
+      ],
       "responsibility": "Backward-compatible full-suite command that delegates to the canonical validation control plane.",
       "evidence": [
         "tests/validation/test_run_all_tests_wrapper.py proves delegation to validate.py full and exit-status preservation."
@@ -480,7 +612,9 @@
     {
       "id": "phase4-bar-book-state",
       "classification": "SUPERSEDED",
-      "scope": ["src/market_platform_foundation/state"],
+      "scope": [
+        "src/market_platform_foundation/state"
+      ],
       "responsibility": "Historical Phase 4 in-memory bar-book state, replaced for platform operation by durable local state and canonical runtime stores.",
       "evidence": [
         "Runtime imports are confined to historical Phase 4 validation while platform operation uses local_state and runtime storage.",

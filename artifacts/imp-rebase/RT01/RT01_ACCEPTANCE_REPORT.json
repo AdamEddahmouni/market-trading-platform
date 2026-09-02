@@ -1,0 +1,41 @@
+{
+  "milestone": "IMP-RT-01",
+  "status": "IMP_RT_01_COMPLETE_WITH_LIMITATIONS",
+  "canonical_base_head": "ba394012c10e9625a088dba5ecfb80927bd6f10f",
+  "implementation_head": "d6a945b40ef5013ba333b104dfbdb3c8f840808b",
+  "closure_head": null,
+  "measurement_integrity_finding": "C",
+  "measurement_integrity_resolution": "Fixed collect_profile_samples to compute root_to_terminal_elapsed_ns; prior reports used terminal span duration only.",
+  "baseline_profile": "receive_to_canonical_state",
+  "measurement_class": "MEASURED_BASELINE",
+  "aggregation": "root_to_terminal_elapsed_ns",
+  "domain_equivalent": true,
+  "registry_snapshot_hash": "724BE2D81E1C8A43FBD2F54A8B31BD14775A8AB6C08628082445EFF57FAA2513",
+  "queue_profile": {
+    "measurement_class": "NOT_EXERCISED",
+    "raw_sample_count": 0
+  },
+  "signal_profile": {
+    "measurement_class": "NOT_EXERCISED",
+    "raw_sample_count": 0
+  },
+  "validation": {
+    "changed": {
+      "tests": 123,
+      "skipped": 0,
+      "failures": 0,
+      "errors": 0,
+      "full_suite_required": false
+    },
+    "full": {
+      "raw_summary": "PASSED full: 3131 tests, 42 skipped, 0 failures, 0 errors in 547.100s",
+      "tests": 3131,
+      "skipped": 42,
+      "failures": 0,
+      "errors": 0,
+      "passes": 3089,
+      "duration_s": 547.1
+    },
+    "accounting_note": "validate.py reports tests as total executed methods; passes = tests - skipped - failures - errors. Prior report used inconsistent pass count (3072) against 3128 tests."
+  }
+}

@@ -209,6 +209,16 @@ class LiveObservationalRuntime:
         is_cached: bool = False,
         wall_now_ns: int | None = None,
     ) -> dict[str, Any]:
+        from ..rt01.instrumentation.live import (
+            complete_ingest_spans,
+            complete_process_span,
+            complete_provider_receive,
+            instrument_ingest_record,
+            instrument_provider_receive,
+        )
+
+        record = instrument_provider_receive(record)
+        ingest_spans = instrument_ingest_record(record)
         with self._lock:
             clocks = record.get("clocks") if isinstance(record.get("clocks"), dict) else {}
             received = int(clocks.get("received_time_ns") or monotonic_wall_ns())
@@ -219,7 +229,12 @@ class LiveObservationalRuntime:
                 is_first_push=is_first_push,
                 is_cached=is_cached,
             )
-            if result.get("envelope"):
+            envelope = result.get("envelope")
+            envelope_id = None
+            if isinstance(envelope, dict):
+                envelope_id = str(envelope.get("envelope_id") or envelope.get("normalized_event_id") or "")
+            admitted = False
+            if envelope:
                 admitted = self.state.apply_admitted(result)
                 if admitted:
                     clocks = record.get("clocks") if isinstance(record.get("clocks"), dict) else {}
@@ -238,6 +253,14 @@ class LiveObservationalRuntime:
                 self.recorder.append(record, result)
             if self.shadow_recorder is not None:
                 self.shadow_recorder.on_admitted(self.state, result.get("envelope") or {}, result)
+            complete_ingest_spans(
+                ingest_spans,
+                admitted=bool(envelope) and admitted,
+                envelope_id=envelope_id,
+                terminated=bool(envelope) and not admitted,
+            )
+            complete_provider_receive(record, output_ref=envelope_id or "no_envelope")
+            complete_process_span(record, output_ref=envelope_id or "no_envelope")
             return result
 
     def feed_fixture_path(self, path: Path) -> int:

@@ -7,8 +7,8 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Whole-program composition and architectural relationships |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.0` |
-| Last Verified | `2026-08-27` |
+| Version | `1.2` |
+| Last Verified | `2026-08-29` |
 | Supersedes | No accepted post-EVIDENCE whole-program architecture |
 | Superseded By | None |
 
@@ -64,7 +64,7 @@ hypotheses and models              |
        [IMPLEMENTED] reconciliation foundations
                      |
                      v
-       [IMPLEMENTED foundations / PARTIAL family]
+       [IMPLEMENTED standards / PARTIAL family]
        operations, runbooks and Operating Fabric
                      |
                      v
@@ -80,17 +80,20 @@ never a substitute for that flow.
 
 The **Real-Time Opportunity Fabric** is the data-to-decision-support path. It
 owns bounded callback ingestion, observational state, feature calculation,
-detection, routing, opportunity economics, and the future end-to-end timing
-model. It is `PARTIAL` because no accepted trace and benchmark spans provider,
-platform, feature, model, risk, UI, human, and broker stages. Its next owner is
-`IMP-RT-01` after common standards and durable run identity.
+detection, routing, opportunity economics, and the ingest-path timing baseline.
+It is `PARTIAL` because accepted tracing covers executable ingest paths only;
+no accepted trace spans the unified opportunity→risk→order_ready chain or
+broker/reconciliation stages. Follow-on work extends RT-01 rather than replacing
+its ingest-path baseline.
 
-The **Operating Fabric** is the operation-to-evidence control plane. Existing
-run manifests, schedulers, pipelines, ledgers, health controls, runbooks, and
-release operations are reusable. It is `PARTIAL` because IMP has no universal
-run/operation/artifact authority, attempt history, workflow registry, or
-program-wide trace contract. Its next owners are `IMP-REBASE-02` and then
-`IMP-OF-01`.
+The **Operating Fabric** is the operation-to-evidence control plane. OF-01
+provides the append-only run/artifact ledger, OF-02 attributes existing
+subsystems onto that ledger, and OF-03 indexes governed capabilities, SOPs, and
+workflows. RT-01 adds causal trace and latency instrumentation for executable
+ingest paths. Existing run manifests, schedulers, pipelines, health controls,
+runbooks, and release operations remain reusable. The family is still `PARTIAL`
+because unified opportunity-risk-order_ready tracing is not accepted. OF-03 does
+not execute workflows or grant domain authority.
 
 Neither fabric grants order authority. Their detailed responsibility boundaries
 are in [System Boundaries](SYSTEM_BOUNDARIES.md).
@@ -107,9 +110,10 @@ guarantees:
 - `COLD`: immutable evidence, historical datasets, manifests, reports, and
   reproducibility records.
 
-No latency target is implied. `IMP-RT-01` must measure end-to-end behavior
-before `IMP-RT-02` may optimize it or `IMP-RT-03` may consider an event bus or
-native hot path.
+No latency target is implied. `IMP-RT-01` accepted fixture baseline measurements
+for executable ingest paths; `IMP-RT-02` may optimize only after measured need
+and `IMP-RT-03` may consider an event bus or native hot path only if measured
+need remains.
 
 ## Required reuse
 
@@ -124,14 +128,20 @@ New program families must extend rather than fork these foundations:
 | Settlement | [`OutcomeSettlementService`](../../src/market_platform_foundation/intelligence/outcomes/service.py) |
 | Risk and execution state | Risk, execution, live-safety, authorization, and confirmation implementations indexed by the truth map |
 | External-state closure | Reconciliation authorities under `portfolio/`, `platform/reconciliation/`, and live-canary reconciliation |
-| Reproducibility | Existing run manifests, frozen policies, hashes, validation reports, and campaign records; future ledger work indexes them rather than replacing them |
+| Reproducibility | [Reproducibility and Run Standard](REPRODUCIBILITY_AND_RUN_STANDARD.md) defines run, attempt, outcome, disposition, artifact, and reproducibility semantics; existing run manifests, frozen policies, hashes, validation reports, and campaign records remain authoritative within their scope; future ledger work indexes them rather than replacing them |
+| Observability | [Observability Standard](OBSERVABILITY_STANDARD.md) defines logs, metrics, traces, and correlation semantics; RT-01 provides accepted ingest-path causal tracing and latency profiles; platform-wide propagation beyond ingest remains follow-on work |
+| Test and evaluation | [Test and Evaluation Standard](TEST_AND_EVALUATION_STANDARD.md) defines validation, benchmark, backtest, replay, and evaluation semantics; executable validation remains under `tools/validate.py` |
 
 ## Family attachment points
 
-- **Cross-Asset — `PARTIAL`.** Existing temporal, provenance, quality, macro,
-  energy, futures, options, and participant foundations are reusable. The
-  missing shared identity/relationship/source-extension contract belongs to
-  `IMP-XA-01`.
+- **Cross-Asset — `PARTIAL`.** IMP-XA-01 implemented the cross-asset canonical
+  identity and analytical-domain participation kernel (`src/market_platform_foundation/xa01`).
+  IMP-XA-02 admitted the first bounded FRED rates reference vertical with
+  point-in-time observation provenance and typed indicator-to-XA reference
+  relationships (`src/market_platform_foundation/xa02`). Existing temporal,
+  provenance, quality, macro, energy, futures, options, and participant foundations
+  remain reusable. Cross-asset analytics and additional admitted reference
+  verticals remain future work beyond the first rates slice.
 - **Narrative/Motive — `PARTIAL`.** Existing events, participants, hypotheses,
   bounded narrative features, and contradiction flags are reusable. The
   uncertain motive/thesis method and admitted runtime remain future work under

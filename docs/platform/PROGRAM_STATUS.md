@@ -7,8 +7,8 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Mutable current program state and material limitations |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.0` |
-| Last Verified | `2026-08-27` |
+| Version | `1.3` |
+| Last Verified | `2026-08-29` |
 | Supersedes | Root README as whole-program status authority |
 | Superseded By | None |
 
@@ -26,6 +26,14 @@ links to evidence; it does not redefine architecture or executable behavior.
 | EVIDENCE-01B | `IMPLEMENTED` runtime operationalization; not operationally accepted and not qualification closure | `CURRENT_CANONICAL_TRUTH` | [EVIDENCE-01B](../engineering/EVIDENCE_01B_REAL_PROVIDER_RUNTIME_OPERATIONALIZATION.md) |
 | EVIDENCE-01C | `IN_PROGRESS` as the next bounded real-provider shakedown and operational-acceptance record; no accepted outcome exists | `APPROVED_FUTURE_DESIGN` | [REBASE-00 limitation 6](../../artifacts/imp-rebase/REBASE00/07_KNOWN_LIMITATIONS.md) and [Master Roadmap](MASTER_ROADMAP.md) |
 | IMP-REBASE-01 | `COMPLETE` documentation-only canonicalization | `CURRENT_CANONICAL_TRUTH` | [REBASE-01 acceptance report](../../artifacts/imp-rebase/REBASE01/REBASE01_ACCEPTANCE_REPORT.md) |
+| IMP-REBASE-02 | `COMPLETE` reproducibility, observability, and evaluation standards | `CURRENT_CANONICAL_TRUTH` | [REBASE-02 acceptance report](../../artifacts/imp-rebase/REBASE02/REBASE02_ACCEPTANCE_REPORT.md) |
+| IMP-OF-01 | `IMP_OF_01_COMPLETE_WITH_LIMITATIONS` — append-only run/artifact ledger runtime | `CURRENT_CANONICAL_TRUTH` | [OF-01 acceptance](../../artifacts/imp-rebase/OF01/README.md) |
+| IMP-OF-02 | `IMP_OF_02_COMPLETE_WITH_LIMITATIONS` — existing-system attribution adapters | `CURRENT_CANONICAL_TRUTH` | [OF-02 acceptance](../../artifacts/imp-rebase/OF02/README.md) |
+| IMP-OF-03 | `IMP_OF_03_COMPLETE_WITH_LIMITATIONS` — governed capability/SOP/workflow registry | `CURRENT_CANONICAL_TRUTH` | [OF-03 acceptance](../../artifacts/imp-rebase/OF03/README.md) |
+| IMP-RT-01 | `IMP_RT_01_COMPLETE_WITH_LIMITATIONS` — causal trace and latency baseline for executable ingest paths | `CURRENT_CANONICAL_TRUTH` | [RT-01 acceptance](../../artifacts/imp-rebase/RT01/RT01_ACCEPTANCE_REPORT.json) |
+| IMP-XA-01 | `IMP_XA_01_COMPLETE_WITH_LIMITATIONS` — cross-asset canonical identity and analytical-domain participation kernel | `CURRENT_CANONICAL_TRUTH` | [XA-01 acceptance](../../artifacts/imp-rebase/XA01/XA01_ACCEPTANCE_REPORT.json) |
+| IMP-XA-02 | `IMP_XA_02_COMPLETE_WITH_LIMITATIONS` — first admitted FRED rates reference vertical with PIT provenance and typed cross-asset reference relationships | `CURRENT_CANONICAL_TRUTH` | [XA-02 acceptance](../../artifacts/imp-rebase/XA02/XA02_ACCEPTANCE_REPORT.json) |
+| IMP-XA-03 | `IMP_XA_03_COMPLETE_WITH_LIMITATIONS` — second admitted CFTC positioning vertical with source-neutral admission envelope and typed market-report-to-XA reference relationships | `CURRENT_CANONICAL_TRUTH` | [XA-03 acceptance](../../artifacts/imp-rebase/XA03/XA03_ACCEPTANCE_REPORT.json) |
 | Autonomous live execution | `DISABLED`; no analytical or automation output can grant order authority | `CURRENT_CANONICAL_TRUTH` | [Authority Model](AUTHORITY_MODEL.md) and current live-safety/authorization implementations |
 | Accepted production live broker transport | `ABSENT`; mock, paper, broker abstractions, live gates, and reconciliation foundations do exist | `CURRENT_CANONICAL_TRUTH` | [Live-canary runner](../../src/market_platform_foundation/intelligence/live_canary/runner.py), [mock transport](../../src/market_platform_foundation/intelligence/live_canary/submission.py), and [broker inventory](../../src/market_platform_foundation/intelligence/live_execution_safety/broker_inventory.py) |
 
@@ -39,9 +47,9 @@ or release authority.
 
 | Family | Assessment | Existing reusable foundations | Missing universal or consolidated capability | Next owning milestone |
 |---|---|---|---|---|
-| Operating Fabric | `PARTIAL` | Run manifests, schedulers, pipelines, subsystem ledgers, operations, runbooks, and incident evidence | Common run/operation/artifact identity, append-only disposition and attempt history, program trace semantics, and workflow/control indexing | `IMP-REBASE-02`, then `IMP-OF-01` |
-| Real-Time Opportunity Fabric | `PARTIAL` | Callback ingestion, bounded queues, observational state, features, routing, opportunity economics, and local metrics | Accepted end-to-end correlation/trace contract, benchmark baseline, and measured integration plan | `IMP-RT-01` after standards/run identity |
-| Cross-Asset | `PARTIAL` | Temporal/provenance/quality contracts plus bounded macro, futures, energy, options, and participant foundations | Shared canonical identity participation, relationship extensions, source-admission template, and bounded reference vertical | `IMP-XA-01` |
+| Operating Fabric | `PARTIAL` | OF-01 ledger runtime, OF-02 attribution adapters, OF-03 capability/SOP/workflow registry, IMP-RT-01 trace/latency baseline for executable ingest paths, plus existing run manifests, schedulers, pipelines, operations, and runbooks | Remaining OF-01 operator wiring; unified opportunity-risk live chain tracing | `IMP-RT-01` follow-on |
+| Real-Time Opportunity Fabric | `PARTIAL` | Callback ingestion, bounded queues, observational state, RT-01 spans on ingest path, features, routing, opportunity economics, and local metrics | Measured integration on unified order pipeline; real-provider observational campaign | `IMP-RT-01` follow-on |
+| Cross-Asset | `PARTIAL` | XA-01 canonical identity kernel, XA-02 first admitted FRED rates reference vertical, XA-03 second admitted CFTC positioning vertical with source-neutral admission envelope, temporal/provenance/quality contracts, and bounded macro, futures, energy, options, and participant foundations | Cross-asset analytics, relationship intelligence engines, durable admitted-source persistence, and additional admitted reference verticals | `IMP-XA-04` |
 | Narrative/Motive | `PARTIAL` | Event, participant, hypothesis, contradiction, market-context, and bounded narrative features | Canonical uncertain motive/thesis method, source-treatment standard, and admitted runtime | `IMP-NARRATIVE-01` |
 | AI/Agents | `PARTIAL` | Read-only assistant, bounded evidence packs, citation references, and versioned fixture outputs | Universal run attribution, prompt/tool provenance, evaluation, workflow and approval lifecycle | `IMP-AI-01` |
 
@@ -68,10 +76,15 @@ mandatory. Automatic broker failover remains disabled.
 
 ## Material current limitations
 
-- No universal append-only run and artifact ledger or common attempt/disposition
-  authority exists.
-- End-to-end provider-to-user-or-broker trace and accepted performance baseline
-  are incomplete.
+- OF-01 remains accepted with limitations (declared operator stubs, draft ops pack).
+  OF-02 native attribution remains default-disabled. OF-03 registers capabilities,
+  SOPs, and workflows but is not an execution engine and does not grant authority.
+- IMP-RT-01 provides accepted ingest-path tracing and fixture baseline measurements
+  with limitations: no unified opportunity→risk→order_ready chain, no broker or
+  reconciliation tracing, queue and signal profiles defined but not acceptance-measured,
+  and no real-provider observational trace campaign.
+- End-to-end provider-to-user-or-broker trace remains incomplete beyond the RT-01
+  ingest-path baseline.
 - Cross-asset, Narrative/Motive, Real-Time Opportunity, Operating Fabric, and
   AI/Agent capabilities are not consolidated.
 - EVIDENCE-01C has no accepted operational outcome.

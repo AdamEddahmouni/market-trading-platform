@@ -917,6 +917,20 @@ def _print_explanation(selection: ValidationSelection) -> None:
         print("omitted_domains=" + ",".join(selection.omitted_domains))
 
 
+def _maybe_attribute_validation(result: dict[str, Any]) -> None:
+    """Best-effort native attribution. Disabled by default; never changes selection."""
+
+    try:
+        from market_platform_foundation.of02.adapters.validation import attribute_validation
+        from market_platform_foundation.of02.config import load_adapter_config
+    except Exception:
+        return
+    config = load_adapter_config("validation")
+    if not config.is_enabled():
+        return
+    attribute_validation(result, writer=None, enabled=True)
+
+
 def main(argv: list[str] | None = None) -> int:
     arguments = build_parser().parse_args(argv)
     repository_root = Path(__file__).resolve().parents[1]
@@ -957,6 +971,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     if arguments.json_path is not None:
         write_json_atomic(arguments.json_path, result)
+    _maybe_attribute_validation(result)
     print(
         f"{result['status'].upper()} {result['mode']}: {result['tests_run']} tests, "
         f"{result['skips']} skipped, {result['failures']} failures, "

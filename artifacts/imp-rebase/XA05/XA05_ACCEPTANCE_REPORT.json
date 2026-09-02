@@ -1,0 +1,56 @@
+{
+  "milestone": "IMP-XA-05",
+  "status": "IMP_XA_05_COMPLETE",
+  "canonical_base_head": "77754e4f8640b993832e90169fcd7b740ff10687",
+  "implementation_spec": {
+    "path": "docs/superpowers/specs/2026-08-30-imp-xa-05-cross-asset-strategic-state-regime-kernel-implementation-spec.md",
+    "sha256": "C8D052A705EF6EDC6EBE154E7DC13625F66A4264BD44239E215503AAA4758358"
+  },
+  "central_object": "CrossAssetStrategicState",
+  "persistence_mode": "EPHEMERAL_RECONSTRUCTABLE",
+  "operator_capabilities": [
+    "XA05.OP.STATUS",
+    "XA05.OP.VALIDATE",
+    "XA05.OP.CONSTRUCT_STATE",
+    "XA05.OP.SHOW_STATE",
+    "XA05.OP.COMPARE_STATES"
+  ],
+  "initial_dimensions": [
+    "RATES_CURVE_CONFIGURATION",
+    "POLICY_RATE_LEVEL",
+    "POSITIONING_CONCENTRATION",
+    "DATA_FRESHNESS",
+    "CROSS_DOMAIN_PARTICIPATION"
+  ],
+  "cost_guardrail": {
+    "paid_infrastructure_required": false,
+    "estimated_recurring_infrastructure_cost_usd": 0
+  },
+  "validation": {
+    "changed": {
+      "tests": 550,
+      "passes": 540,
+      "skipped": 10,
+      "failures": 0,
+      "errors": 0
+    },
+    "full": {
+      "tests": 3240,
+      "passes": 3192,
+      "skipped": 48,
+      "failures": 0,
+      "errors": 0,
+      "duration_s": 496.665
+    }
+  },
+  "protected_boundaries": {
+    "xa01_identity_semantics_changed": false,
+    "xa02_fred_semantics_changed": false,
+    "xa03_cftc_semantics_changed": false,
+    "xa04_catalog_persistence_semantics_changed": false,
+    "execution_authority_changed": false,
+    "risk_authority_changed": false,
+    "of03_authority_changed": false,
+    "analytical_authority_granted": false
+  }
+}

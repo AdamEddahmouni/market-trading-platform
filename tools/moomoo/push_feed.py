@@ -345,10 +345,20 @@ class MoomooPushFeed:
             "raw_payload": payload,
             "sequence": sequence if sequence is not None else received,
         }
+        from market_platform_foundation.rt01.instrumentation.live import (
+            instrument_provider_receive,
+            instrument_queue_enqueue,
+        )
+
+        record = instrument_provider_receive(record, received_time_ns=received)
+        record = instrument_queue_enqueue(record)
         if not self.queue.enqueue(record) and self.on_overflow:
             self.on_overflow()
 
     def _process_envelope(self, record: dict[str, Any]) -> None:
+        from market_platform_foundation.rt01.instrumentation.live import instrument_queue_dequeue
+
+        record = instrument_queue_dequeue(record)
         clocks = record.get("clocks") if isinstance(record.get("clocks"), dict) else {}
         ingested = int(clocks.get("ingested_time_ns") or time.time_ns())
         self._processing_lag_ns.append(max(0, time.time_ns() - ingested))
