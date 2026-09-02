@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Mapping
 
 from ..execution.simulator import SIMULATOR_VERSION, BarConservativeSimulator
 from ..operating_modes import PAPER_EXECUTION_AUTHORITIES
@@ -58,12 +58,51 @@ def execute_order_intent(
         current_position_shares=int(projection["position_shares"]),
         open_order_count=ledger.open_order_count,
     )
+    if intent.get("lineage_refs"):
+        decision["lineage_refs"] = intent["lineage_refs"]
+    if intent.get("quantity_facts"):
+        decision["quantity_facts"] = intent["quantity_facts"]
+    if intent.get("risk_decision_id"):
+        decision["risk_decision_id"] = intent["risk_decision_id"]
     order, fill = (simulator or _ledger_simulator(ledger)).simulate(
         intent=intent,
         risk_decision=decision,
         bars=bars,
         squeeze_context=squeeze_context,
     )
+    for key in (
+        "lineage_refs",
+        "quantity_facts",
+        "risk_decision_id",
+        "allocation_desired_quantity",
+        "allocation_desired_notional_minor",
+        "proposal_requested_quantity",
+        "proposal_requested_notional_minor",
+        "risk_approved_quantity",
+        "risk_approved_notional_minor",
+    ):
+        if key in intent:
+            order[key] = intent[key]
+    facts = intent.get("quantity_facts")
+    if isinstance(facts, dict):
+        if facts.get("proposal_requested_quantity") is not None:
+            order["requested_quantity"] = facts["proposal_requested_quantity"]
+        if facts.get("risk_approved_quantity") is not None:
+            order["approved_quantity"] = facts["risk_approved_quantity"]
+    order["submitted_quantity"] = int(decision.get("approved_quantity", 0))
+    if fill is not None:
+        for key in ("lineage_refs", "quantity_facts"):
+            if key in intent:
+                fill[key] = intent[key]
+        fill["submitted_quantity"] = int(decision.get("approved_quantity", 0))
+        fill["filled_quantity"] = int(fill["fill_quantity"])
+        if intent.get("risk_decision_id"):
+            fill["risk_decision_id"] = intent["risk_decision_id"]
+        if isinstance(facts, dict):
+            if facts.get("proposal_requested_quantity") is not None:
+                fill["requested_quantity"] = facts["proposal_requested_quantity"]
+            if facts.get("risk_approved_quantity") is not None:
+                fill["approved_quantity"] = facts["risk_approved_quantity"]
     return decision, order, fill
 
 
@@ -173,6 +212,9 @@ def preview_interactive_order(
     limit_price_minor: int | None = None,
     correlation_id: str | None = None,
     decision_source_snapshot: dict[str, Any] | None = None,
+    lineage_refs: tuple[Any, ...] | list[Any] = (),
+    quantity_facts: Mapping[str, Any] | None = None,
+    risk_decision_id: str | None = None,
     squeeze_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     intent = build_user_order_intent(
@@ -186,6 +228,9 @@ def preview_interactive_order(
         idempotency_key=idempotency_key,
         correlation_id=correlation_id,
         decision_source_snapshot=decision_source_snapshot,
+        lineage_refs=lineage_refs,
+        quantity_facts=quantity_facts,
+        risk_decision_id=risk_decision_id,
     )
     # Dry-run: a preview fill is never recorded, so it must not consume the
     # session's per-bar participation capacity (E9) — use a throwaway simulator.
@@ -223,6 +268,9 @@ def submit_interactive_order(
     limit_price_minor: int | None = None,
     correlation_id: str | None = None,
     decision_source_snapshot: dict[str, Any] | None = None,
+    lineage_refs: tuple[Any, ...] | list[Any] = (),
+    quantity_facts: Mapping[str, Any] | None = None,
+    risk_decision_id: str | None = None,
     squeeze_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     existing_order_id = ledger.lookup_idempotent_order(idempotency_key)
@@ -257,6 +305,9 @@ def submit_interactive_order(
         idempotency_key=idempotency_key,
         correlation_id=correlation_id or client_order_id,
         decision_source_snapshot=decision_source_snapshot,
+        lineage_refs=lineage_refs,
+        quantity_facts=quantity_facts,
+        risk_decision_id=risk_decision_id,
     )
     ledger.append_intent(intent)
     decision, order, fill = execute_order_intent(
@@ -281,7 +332,7 @@ def submit_interactive_order(
         "intent_id": intent["intent_id"],
         "order": order,
         "order_id": order.get("order_id"),
-        "risk_decision_id": decision.get("intent_id"),
+        "risk_decision_id": decision.get("risk_decision_id") or intent.get("risk_decision_id"),
     }
 
 

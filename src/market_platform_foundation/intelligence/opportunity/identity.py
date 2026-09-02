@@ -43,6 +43,8 @@ def context_identity_payload(context: OpportunityContext) -> dict[str, Any]:
         "mode": context.mode,
         "scenario_id": context.scenario_id,
     }
+    if context.account_id is not None:
+        body["account_id"] = context.account_id
     return body
 
 

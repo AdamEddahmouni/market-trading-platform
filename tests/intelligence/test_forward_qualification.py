@@ -254,13 +254,20 @@ class RunnerTests(unittest.TestCase):
         )
         self.assertTrue(result.fixture_lifecycle_ok)
         self.assertEqual(result.scenario_failures, ())
-        self.assertIn(
-            result.disposition,
-            {
-                QualificationDisposition.INSUFFICIENT_FORWARD_EVIDENCE,
-                QualificationDisposition.QUALIFIED_WITH_LIMITATIONS,
-            },
-        )
+        if result.rc_integrity_status == "PASS":
+            self.assertIn(
+                result.disposition,
+                {
+                    QualificationDisposition.INSUFFICIENT_FORWARD_EVIDENCE,
+                    QualificationDisposition.QUALIFIED_WITH_LIMITATIONS,
+                },
+            )
+        else:
+            self.assertEqual(result.rc_integrity_status, "RC_INTEGRITY_MISMATCH")
+            self.assertEqual(
+                result.disposition,
+                QualificationDisposition.INVALID_RUNTIME_INTEGRITY,
+            )
 
 
 class SpecDefaultsTests(unittest.TestCase):

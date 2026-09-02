@@ -229,6 +229,22 @@ class PaperExecutionResult:
   proposal: "TradeProposalV1 | None"
   risk_decision: RiskDecisionV1 | None
   paper_submit: dict[str, Any] | None = None
+  prepared: "PreparedPaperExecution | None" = None
+
+
+@dataclass(frozen=True, slots=True)
+class PreparedPaperExecution:
+    """Persistable proposal/risk pair awaiting Paper submission."""
+
+    proposal: "TradeProposalV1"
+    risk_decision: RiskDecisionV1
+    execution_authority: str
+    instrument_id: str
+    symbol: str
+    decision_time_ns: int
+    idempotency_key: str
+    lineage_refs: tuple[Any, ...] = ()
+    quantity_facts: dict[str, int] = field(default_factory=dict)
 
 
 __all__ = [
@@ -238,6 +254,7 @@ __all__ = [
     "ExposureSnapshot",
     "MarketQuoteV1",
     "PaperExecutionResult",
+    "PreparedPaperExecution",
     "PaperOpenOrderSnapshot",
     "PaperPortfolioSnapshotV1",
     "PaperPositionSnapshot",

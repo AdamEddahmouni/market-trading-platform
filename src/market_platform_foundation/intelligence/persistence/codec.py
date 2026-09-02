@@ -20,6 +20,11 @@ from ..contracts.prediction_ledger import (
     prediction_ledger_entry_v1_to_dict,
 )
 from ..contracts.run_manifest import RunManifestV1, run_manifest_v1_from_dict, run_manifest_v1_to_dict
+from ..contracts.strategy_match import (
+    StrategyMatch,
+    strategy_match_from_dict,
+    strategy_match_to_dict,
+)
 from ..contracts.signal import SignalV1, signal_v1_from_dict, signal_v1_to_dict
 from ..contracts.snapshot import SnapshotV1, snapshot_v1_from_dict, snapshot_v1_to_dict
 from ..contracts.routing_decision import (
@@ -53,6 +58,7 @@ RecordT = (
     | OutcomeV1
     | PredictionLedgerEntryV1
     | RunManifestV1
+    | StrategyMatch
 )
 
 
@@ -137,7 +143,13 @@ def decode_document(document: dict[str, Any], codec: RecordCodec) -> RecordT:
 
 def codec_for_record(record: RecordT) -> RecordCodec:
     for codec in RECORD_CODECS:
-        if isinstance(record, _KIND_TO_TYPE[codec.kind]):
+        if codec.kind == ContractKind.STRATEGY_ATTRIBUTION:
+            from ...portfolio.attribution import StrategyAttributionV1
+
+            record_type = StrategyAttributionV1
+        else:
+            record_type = _KIND_TO_TYPE[codec.kind]
+        if isinstance(record, record_type):
             return codec
     raise TypeError(f"UNSUPPORTED_RECORD_TYPE:{type(record).__name__}")
 
@@ -163,7 +175,22 @@ _KIND_TO_TYPE: dict[ContractKind, type] = {
     ContractKind.OUTCOME: OutcomeV1,
     ContractKind.PREDICTION_LEDGER_ENTRY: PredictionLedgerEntryV1,
     ContractKind.RUN_MANIFEST: RunManifestV1,
+    ContractKind.STRATEGY_MATCH: StrategyMatch,
 }
+
+
+def _attribution_to_dict(record: Any) -> dict[str, Any]:
+    from ...portfolio.attribution import attribution_v1_to_dict
+
+    return attribution_v1_to_dict(record)
+
+
+def _attribution_from_dict(payload: dict[str, Any]) -> Any:
+    from ...portfolio.attribution import attribution_v1_from_dict
+
+    return attribution_v1_from_dict(payload)
+
+
 
 RECORD_CODECS: tuple[RecordCodec, ...] = (
     RecordCodec(
@@ -257,11 +284,25 @@ RECORD_CODECS: tuple[RecordCodec, ...] = (
         to_dict=run_manifest_v1_to_dict,
         from_dict=run_manifest_v1_from_dict,
     ),
+    RecordCodec(
+        kind=ContractKind.STRATEGY_MATCH,
+        collection_name="strategy_matches",
+        id_field="match_id",
+        to_dict=strategy_match_to_dict,
+        from_dict=strategy_match_from_dict,
+    ),
+    RecordCodec(
+        kind=ContractKind.STRATEGY_ATTRIBUTION,
+        collection_name="strategy_attributions",
+        id_field="attribution_id",
+        to_dict=_attribution_to_dict,
+        from_dict=_attribution_from_dict,
+    ),
 )
 
-MONGO_SCHEMA_PLAN_VERSION = 4
+MONGO_SCHEMA_PLAN_VERSION = 5
 
-CODEC_BY_TYPE = {_KIND_TO_TYPE[codec.kind]: codec for codec in RECORD_CODECS}
+CODEC_BY_TYPE = {_KIND_TO_TYPE[codec.kind]: codec for codec in RECORD_CODECS if codec.kind in _KIND_TO_TYPE}
 
 
 __all__ = [

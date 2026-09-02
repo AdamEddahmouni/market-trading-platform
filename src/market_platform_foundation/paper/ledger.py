@@ -250,7 +250,7 @@ class PaperExecutionLedger:
         symbol = self._primary_symbol()
         scale = int(self.policy["price_scale"])
         mark = self._latest_mark_minor()
-        avg_fill = self._average_fill_minor()
+        avg_fill = abs(int(projection["position_cost_basis_minor"])) // abs(position_shares)
         notional_minor = abs(position_shares) * mark if mark is not None else 0
         unrealized_minor = 0
         if mark is not None and avg_fill is not None and position_shares != 0:
@@ -336,6 +336,25 @@ class PaperExecutionLedger:
                     order["created_time"] = intent.get("created_time")
                 if intent.get("desired_quantity") is not None:
                     order["desired_quantity"] = intent.get("desired_quantity")
+                if intent.get("lineage_refs"):
+                    order["lineage_refs"] = intent.get("lineage_refs")
+                if intent.get("quantity_facts"):
+                    order["quantity_facts"] = intent.get("quantity_facts")
+                if intent.get("risk_decision_id"):
+                    order["risk_decision_id"] = intent.get("risk_decision_id")
+                for key in (
+                    "allocation_desired_quantity",
+                    "allocation_desired_notional_minor",
+                    "proposal_requested_quantity",
+                    "proposal_requested_notional_minor",
+                    "risk_approved_quantity",
+                    "risk_approved_notional_minor",
+                    "submitted_quantity",
+                    "requested_quantity",
+                    "approved_quantity",
+                ):
+                    if intent.get(key) is not None:
+                        order[key] = intent.get(key)
                 instrument = intent.get("instrument")
                 if isinstance(instrument, dict):
                     if instrument.get("symbol"):
@@ -789,6 +808,7 @@ class PaperExecutionLedger:
                 {
                     "cash_minor": int(projection["cash_minor"]),
                     "fill_id": fill.get("fill_id"),
+                    "position_cost_basis_minor": int(projection["position_cost_basis_minor"]),
                     "position_shares": int(projection["position_shares"]),
                     "realized_pnl_minor": int(projection["realized_pnl_minor"]),
                 },
@@ -837,6 +857,11 @@ class PaperExecutionLedger:
         return int(fills[-1]["fill_price_minor"])
 
     def _average_fill_minor(self) -> int | None:
+        projection = self._project_ledger()
+        position_shares = int(projection["position_shares"])
+        if position_shares != 0 and "position_cost_basis_minor" in projection:
+            return abs(int(projection["position_cost_basis_minor"])) // abs(position_shares)
+
         fills = self.project_fills()
         if not fills:
             return None

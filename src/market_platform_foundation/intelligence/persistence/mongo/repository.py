@@ -42,6 +42,7 @@ from ...contracts.signal import SignalV1
 from ...contracts.snapshot import SnapshotV1
 from ...contracts.routing_decision import RoutingDecisionV1
 from ...contracts.inference_job import InferenceJobV1
+from ...contracts.strategy_match import StrategyMatch
 from ...temporal.policy import TemporalIntegrityPolicy
 from .config import MongoRepositoryConfig, redact_mongo_uri
 from .schema import MongoSchemaManager
@@ -204,6 +205,136 @@ class MongoIntelligenceRepository:
 
     def get_opportunity(self, opportunity_id: str) -> OpportunityV1 | None:
         return self._get("opportunities", opportunity_id, OpportunityV1)
+
+    def put_allocation_decision(self, decision) -> RepositoryPutResult:
+        from ...opportunity.allocation_persistence import allocation_decision_v1_to_dict
+
+        return self._put_sidecar_document(
+            "allocation_decisions",
+            decision.allocation_decision_id,
+            allocation_decision_v1_to_dict(decision),
+            "allocation_decision",
+        )
+
+    def get_allocation_decision(self, allocation_decision_id: str):
+        from ...opportunity.allocation_persistence import allocation_decision_v1_from_dict
+
+        document = self._database["allocation_decisions"].find_one(
+            {"_id": allocation_decision_id}
+        )
+        if document is None:
+            return None
+        return allocation_decision_v1_from_dict(
+            {key: value for key, value in document.items() if key != "_id"}
+        )
+
+    def get_allocation_decisions_by_set(
+        self,
+        decision_set_id: str,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+    ) -> tuple:
+        from ...opportunity.allocation_persistence import allocation_decision_v1_from_dict
+
+        query: dict[str, object] = {"decision_set_id": decision_set_id}
+        if account_id is not None:
+            query["account_id"] = account_id
+        if mode is not None:
+            query["mode"] = mode
+        documents = self._database["allocation_decisions"].find(query).sort(
+            [("rank", 1), ("allocation_decision_id", 1)]
+        )
+        return tuple(
+            allocation_decision_v1_from_dict(
+                {key: value for key, value in document.items() if key != "_id"}
+            )
+            for document in documents
+        )
+
+    def put_strategy_match(self, match: StrategyMatch) -> RepositoryPutResult:
+        return self._put(match)
+
+    def get_strategy_match(self, match_id: str) -> StrategyMatch | None:
+        return self._get("strategy_matches", match_id, StrategyMatch)
+
+    def put_strategy_attribution(self, attribution: StrategyAttributionV1) -> RepositoryPutResult:
+        return self._put(attribution)
+
+    def get_strategy_attribution(
+        self,
+        attribution_id: str,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+        as_of_ns: int | None = None,
+    ) -> StrategyAttributionV1 | None:
+        from ....portfolio.attribution import StrategyAttributionV1, validate_attribution_scope
+
+        record = self._get("strategy_attributions", attribution_id, StrategyAttributionV1)
+        if record is None:
+            return None
+        if account_id is not None or mode is not None or as_of_ns is not None:
+            if account_id is None or mode is None or as_of_ns is None:
+                raise ValueError("ATTRIBUTION_SCOPE_GUARDS_INCOMPLETE")
+            validate_attribution_scope(
+                record,
+                account_id=account_id,
+                mode=mode,
+                as_of_ns=as_of_ns,
+            )
+        return record
+
+    def get_strategy_attributions_by_allocation(
+        self,
+        allocation_decision_id: str,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+        as_of_ns: int | None = None,
+    ) -> tuple:
+        from ....portfolio.attribution import (
+            StrategyAttributionV1,
+            validate_attribution_scope,
+        )
+
+        query: dict[str, Any] = {
+            "allocation_ref.id": allocation_decision_id,
+            "allocation_ref.kind": {"$in": ["allocation", "allocation_decision"]},
+        }
+        if account_id is not None:
+            query["account_id"] = account_id
+        if mode is not None:
+            normalized_mode = str(mode).strip().upper()
+            query["mode"] = {"LIVE": "ACTUAL_LIVE"}.get(normalized_mode, normalized_mode)
+        cursor = self._database["strategy_attributions"].find(query).sort(
+            [("point_in_time_ns", 1), ("attribution_id", 1)]
+        )
+        rows = [
+            self._get("strategy_attributions", document["_id"], StrategyAttributionV1)
+            for document in cursor
+        ]
+        resolved = [row for row in rows if row is not None]
+        if account_id is not None or mode is not None or as_of_ns is not None:
+            if account_id is None or mode is None or as_of_ns is None:
+                raise ValueError("ATTRIBUTION_SCOPE_GUARDS_INCOMPLETE")
+            for row in resolved:
+                validate_attribution_scope(
+                    row,
+                    account_id=account_id,
+                    mode=mode,
+                    as_of_ns=as_of_ns,
+                )
+        return tuple(
+            sorted(
+                resolved,
+                key=lambda row: (
+                    len(row.fill_refs),
+                    max((fill.fill_time_ns for fill in row.fills), default=-1),
+                    row.attribution_id,
+                ),
+            )
+        )
 
     def put_outcome(self, outcome: OutcomeV1) -> RepositoryPutResult:
         return self._put(outcome)
@@ -804,6 +935,29 @@ class MongoIntelligenceRepository:
             opportunity_assessment_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
             for document in documents
         )
+
+    def put_economic_assessment(self, assessment) -> RepositoryPutResult:
+        from ...opportunity.economic_assessment import economic_assessment_v1_to_dict
+
+        return self._put_sidecar_document(
+            "economic_assessments",
+            assessment.assessment_id,
+            economic_assessment_v1_to_dict(assessment),
+            "economic_assessment",
+        )
+
+    def get_economic_assessment(self, assessment_id: str):
+        from ...opportunity.economic_assessment import economic_assessment_v1_from_dict
+
+        document = self._database["economic_assessments"].find_one({"_id": assessment_id})
+        if document is None:
+            return None
+        return economic_assessment_v1_from_dict(
+            {k: v for k, v in document.items() if k != "_id"}
+        )
+
+    put_universal_economic_assessment = put_economic_assessment
+    get_universal_economic_assessment = get_economic_assessment
 
     def put_execution_policy(self, policy) -> RepositoryPutResult:
         from ...execution.serialization import execution_policy_v1_to_dict

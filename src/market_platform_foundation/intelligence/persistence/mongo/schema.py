@@ -336,6 +336,182 @@ def _run_manifest_validator() -> dict[str, Any]:
     }
 
 
+def _strategy_match_validator() -> dict[str, Any]:
+    return {
+        "bsonType": "object",
+        "required": [
+            "schema_version",
+            "match_id",
+            "strategy_id",
+            "strategy_identity_hash",
+            "match_identity_hash",
+            "scope",
+            "decision_time_ns",
+            "disposition",
+            "capability_state",
+            "quality",
+            "condition_results",
+        ],
+        "properties": {
+            "schema_version": _STRING,
+            "match_id": _STRING,
+            "strategy_id": _STRING,
+            "strategy_identity_hash": _STRING,
+            "match_identity_hash": _STRING,
+            "scope": {"bsonType": "object"},
+            "decision_time_ns": _INT_OR_LONG,
+            "disposition": _STRING,
+            "capability_state": _STRING,
+            "quality": {"bsonType": "object"},
+            "source_snapshot_ref": {"bsonType": "object"},
+            "source_evidence_refs": {"bsonType": "array"},
+            "source_signal_refs": {"bsonType": "array"},
+            "condition_results": {"bsonType": "array"},
+            "rejection_reasons": {"bsonType": "array"},
+            "abstention_reasons": {"bsonType": "array"},
+            "unavailability_reasons": {"bsonType": "array"},
+            "regime": _STRING,
+            "context": {"bsonType": "object"},
+            "source_forecast_refs": {"bsonType": "array"},
+            "valid_from_ns": _INT_OR_LONG,
+            "expires_at_ns": _INT_OR_LONG,
+            "lineage_refs": {"bsonType": "array"},
+            "correlation_id": _STRING,
+        },
+    }
+
+
+def _strategy_attribution_validator() -> dict[str, Any]:
+    return {
+        "bsonType": "object",
+        "required": [
+            "schema_version",
+            "attribution_id",
+            "account_id",
+            "mode",
+            "instrument_id",
+            "allocation_ref",
+            "strategy_match_ref",
+            "strategy_id",
+            "strategy_identity_hash",
+            "allocation_quantity",
+            "allocation_direction",
+            "allocation_time_ns",
+            "point_in_time_ns",
+            "fills",
+            "execution_refs",
+            "fill_refs",
+            "forecast_refs",
+            "prediction_outcome_refs",
+            "materialization_semantics",
+            "coverage_algorithm_version",
+            "prediction_outcome_kind",
+            "trading_outcome_kind",
+            "initial_position_quantity",
+            "initial_cost_basis_minor",
+            "created_at_ns",
+        ],
+        "properties": {
+            "schema_version": _STRING,
+            "attribution_id": _STRING,
+            "account_id": _STRING,
+            "mode": _STRING,
+            "instrument_id": _STRING,
+            "allocation_ref": {"bsonType": "object"},
+            "intent_ref": {"bsonType": "object"},
+            "opportunity_ref": {"bsonType": "object"},
+            "cluster_thesis_ref": {"bsonType": "object"},
+            "strategy_match_ref": {"bsonType": "object"},
+            "strategy_id": _STRING,
+            "strategy_identity_hash": _STRING,
+            "allocation_quantity": _INT_OR_LONG,
+            "allocation_direction": _STRING,
+            "allocation_time_ns": _INT_OR_LONG,
+            "point_in_time_ns": _INT_OR_LONG,
+            "fills": {"bsonType": "array"},
+            "execution_refs": {"bsonType": "array"},
+            "fill_refs": {"bsonType": "array"},
+            "forecast_refs": {"bsonType": "array"},
+            "prediction_outcome_refs": {"bsonType": "array"},
+            "materialization_semantics": _STRING,
+            "coverage_algorithm_version": _STRING,
+            "prediction_outcome_kind": _STRING,
+            "trading_outcome_kind": _STRING,
+            "initial_position_quantity": _INT_OR_LONG,
+            "initial_cost_basis_minor": _INT_OR_LONG,
+            "created_at_ns": _INT_OR_LONG,
+            "identity_hash": _STRING,
+        },
+    }
+
+
+def _allocation_decision_validator() -> dict[str, Any]:
+    return {
+        "bsonType": "object",
+        "required": [
+            "schema_version",
+            "allocation_decision_id",
+            "decision_set_id",
+            "status",
+            "account_id",
+            "mode",
+            "decision_time_ns",
+            "currency",
+            "scale",
+            "opportunity_ref",
+            "cluster_ref",
+            "economic_assessment_ref",
+            "portfolio_snapshot_ref",
+            "comparison_id",
+            "rank",
+            "competing_opportunity_refs",
+            "comparison_constraints",
+            "allocation_constraints",
+            "comparison_vector",
+            "allocated_capital",
+            "allocated_buying_power",
+            "allocated_maximum_loss",
+            "reason_codes",
+        ],
+        "properties": {
+            "schema_version": _STRING,
+            "allocation_decision_id": _STRING,
+            "decision_set_id": _STRING,
+            "status": _STRING,
+            "account_id": _STRING,
+            "mode": _STRING,
+            "decision_time_ns": _INT_OR_LONG,
+            "currency": _STRING,
+            "scale": _INT_OR_LONG,
+            "opportunity_ref": {"bsonType": "object"},
+            "cluster_ref": {"bsonType": "object"},
+            "economic_assessment_ref": {"bsonType": "object"},
+            "strategy_match_ref": {"bsonType": ["object", "null"]},
+            "forecast_refs": {"bsonType": "array"},
+            "allocation_intent_ref": {"bsonType": ["object", "null"]},
+            "portfolio_snapshot_ref": {"bsonType": "object"},
+            "comparison_id": _STRING,
+            "comparator_version": _STRING,
+            "allocator_version": _STRING,
+            "rank": _INT_OR_LONG,
+            "competing_opportunity_refs": {"bsonType": "array"},
+            "comparison_constraints": {"bsonType": "object"},
+            "allocation_constraints": {"bsonType": "object"},
+            "comparison_vector": {"bsonType": "object"},
+            "requested_capital": {"bsonType": ["object", "null"]},
+            "requested_buying_power": {"bsonType": ["object", "null"]},
+            "requested_maximum_loss": {"bsonType": ["object", "null"]},
+            "allocated_capital": {"bsonType": "object"},
+            "allocated_buying_power": {"bsonType": "object"},
+            "allocated_maximum_loss": {"bsonType": "object"},
+            "reason_codes": {"bsonType": "array"},
+            "lineage_refs": {"bsonType": "array"},
+            "source_refs": {"bsonType": "array"},
+            "implementation_version": _STRING,
+        },
+    }
+
+
 def _inference_job_validator() -> dict[str, Any]:
     return {
         "bsonType": "object",
@@ -394,6 +570,8 @@ _VALIDATOR_BUILDERS = {
     "outcomes": _outcome_validator,
     "prediction_ledger": _prediction_ledger_validator,
     "run_manifests": _run_manifest_validator,
+    "strategy_matches": _strategy_match_validator,
+    "strategy_attributions": _strategy_attribution_validator,
 }
 
 
@@ -409,6 +587,19 @@ class MongoCollectionSpec:
     codec: RecordCodec
     validator: dict[str, Any]
     indexes: tuple[MongoIndexSpec, ...]
+
+
+ALLOCATION_DECISION_VALIDATOR = _allocation_decision_validator()
+ALLOCATION_DECISION_INDEXES = (
+    MongoIndexSpec(
+        name="idx_allocation_decisions_decision_set",
+        keys=[("decision_set_id", 1), ("rank", 1)],
+    ),
+    MongoIndexSpec(
+        name="idx_allocation_decisions_account_mode",
+        keys=[("account_id", 1), ("mode", 1), ("decision_time_ns", 1)],
+    ),
+)
 
 
 def _indexes_for(codec: RecordCodec) -> tuple[MongoIndexSpec, ...]:
@@ -492,6 +683,37 @@ def _indexes_for(codec: RecordCodec) -> tuple[MongoIndexSpec, ...]:
         )
     if codec.collection_name == "run_manifests":
         return (MongoIndexSpec(name="idx_run_manifests_created_at", keys=[("created_at_ns", 1)]),)
+    if codec.collection_name == "strategy_matches":
+        return (
+            MongoIndexSpec(
+                name="idx_strategy_matches_strategy_decision",
+                keys=[("strategy_id", 1), ("decision_time_ns", 1)],
+            ),
+            MongoIndexSpec(
+                name="idx_strategy_matches_scope_decision",
+                keys=[("scope.instrument_ids", 1), ("decision_time_ns", 1)],
+            ),
+            MongoIndexSpec(name="idx_strategy_matches_expires_at", keys=[("expires_at_ns", 1)]),
+        )
+    if codec.collection_name == "strategy_attributions":
+        return (
+            MongoIndexSpec(
+                name="idx_strategy_attributions_allocation",
+                keys=[("allocation_ref.kind", 1), ("allocation_ref.id", 1)],
+            ),
+            MongoIndexSpec(
+                name="idx_strategy_attributions_account_mode",
+                keys=[("account_id", 1), ("mode", 1), ("point_in_time_ns", 1)],
+            ),
+            MongoIndexSpec(
+                name="idx_strategy_attributions_strategy",
+                keys=[("strategy_id", 1), ("allocation_time_ns", 1)],
+            ),
+            MongoIndexSpec(
+                name="idx_strategy_attributions_fill",
+                keys=[("fill_refs.id", 1)],
+            ),
+        )
     return ()
 
 
@@ -526,11 +748,18 @@ class MongoSchemaManager:
         for spec in COLLECTION_SPECS:
             self._ensure_collection(spec)
             self._ensure_indexes(spec)
+        self._ensure_named_collection(
+            "allocation_decisions",
+            ALLOCATION_DECISION_VALIDATOR,
+        )
+        self._ensure_named_indexes("allocation_decisions", ALLOCATION_DECISION_INDEXES)
 
     def _ensure_collection(self, spec: MongoCollectionSpec) -> None:
-        name = spec.codec.collection_name
+        self._ensure_named_collection(spec.codec.collection_name, spec.validator)
+
+    def _ensure_named_collection(self, name: str, validator: dict[str, Any]) -> None:
         existing = self._database.list_collection_names()
-        validator_doc = {"$jsonSchema": spec.validator}
+        validator_doc = {"$jsonSchema": validator}
         options = {
             "validator": validator_doc,
             "validationLevel": "strict",
@@ -550,9 +779,16 @@ class MongoSchemaManager:
             )
 
     def _ensure_indexes(self, spec: MongoCollectionSpec) -> None:
-        collection = self._database[spec.codec.collection_name]
+        self._ensure_named_indexes(spec.codec.collection_name, spec.indexes)
+
+    def _ensure_named_indexes(
+        self,
+        collection_name: str,
+        indexes: tuple[MongoIndexSpec, ...],
+    ) -> None:
+        collection = self._database[collection_name]
         existing = {index["name"]: index for index in collection.list_indexes()}
-        for index_spec in spec.indexes:
+        for index_spec in indexes:
             current = existing.get(index_spec.name)
             expected_key = [(field, direction) for field, direction in index_spec.keys]
             if current is None:
@@ -564,9 +800,9 @@ class MongoSchemaManager:
                 continue
             if list(current.get("key", {}).items()) != expected_key:
                 raise RepositorySchemaError(
-                    f"INDEX_DRIFT:{spec.codec.collection_name}:{index_spec.name}",
+                    f"INDEX_DRIFT:{collection_name}:{index_spec.name}",
                     details={
-                        "collection": spec.codec.collection_name,
+                        "collection": collection_name,
                         "index": index_spec.name,
                         "expected": expected_key,
                         "actual": current.get("key"),
@@ -574,12 +810,14 @@ class MongoSchemaManager:
                 )
             if bool(current.get("unique")) != index_spec.unique:
                 raise RepositorySchemaError(
-                    f"INDEX_UNIQUE_DRIFT:{spec.codec.collection_name}:{index_spec.name}",
-                    details={"collection": spec.codec.collection_name, "index": index_spec.name},
+                    f"INDEX_UNIQUE_DRIFT:{collection_name}:{index_spec.name}",
+                    details={"collection": collection_name, "index": index_spec.name},
                 )
 
 
 __all__ = [
+    "ALLOCATION_DECISION_INDEXES",
+    "ALLOCATION_DECISION_VALIDATOR",
     "COLLECTION_SPECS",
     "MONGO_SCHEMA_PLAN_VERSION",
     "MongoCollectionSpec",

@@ -22,6 +22,62 @@ flowchart LR
   J --> K[Portfolio / Trace]
 ```
 
+## Backend-only strategy Paper lineage
+
+The deterministic strategy Paper loop is a backend orchestration path. It
+does not add a UI route, replace the workspace submit boundary, or create a
+second execution or allocation authority:
+
+```text
+StrategyDefinition
+  -> StrategyMatch (MATCHED)
+  -> ForecastV1 + prediction-ledger registration
+  -> canonical OpportunityV1 + universal economic assessment
+  -> clustering -> comparison -> capital allocation
+  -> persisted allocation decision set
+  -> TradeProposalV1 -> RiskDecisionV1
+  -> Paper order/fill events -> portfolio accounting
+  -> cumulative strategy attribution from actual fills
+```
+
+`CapitalAllocationDecisionV1` is an immutable IntelligenceRepository sidecar.
+It freezes the account, mode, point-in-time decision, ordered allocator
+candidate set, comparison/allocation constraints, rank, reason codes, and
+references to the StrategyMatch, ForecastV1, opportunity, economic
+assessment, cluster, and portfolio snapshot. `SELECTED`, `NOT_SELECTED`, and
+`NO_ALLOCATION` remain distinct; comparator-excluded and scanner-rejected
+items are not duplicated as allocation records.
+
+Quantity facts remain separate throughout the path:
+
+- desired allocation quantity/notional is recorded on the allocation decision;
+- requested proposal quantity/notional is recorded on the trade proposal;
+- approved or reduced risk quantity/notional is recorded on the risk decision;
+- submitted quantity is recorded on the Paper order;
+- actual filled quantity is recorded only by the Paper fill event.
+
+Strategy attribution is a P&L sidecar, not portfolio-ledger authority. Its
+materializer selects persisted Paper orders carrying backend allocation,
+proposal, or risk lineage, then creates immutable cumulative snapshots whose
+identity covers the exact fill set. The latest complete snapshot is selected
+by coverage and time; cumulative snapshots are never summed. Account P&L
+continues to come from fill-driven portfolio accounting, and reconciliation
+expects the strategy slice to agree with that authoritative result.
+
+Forecast registration and outcome settlement are independent of trade
+closure. A closed Paper trade may therefore remain `NOT_DUE` until the
+forecast availability cutoff. Due settlement joins the persisted
+StrategyMatch, ForecastV1, prediction outcome, and latest complete trading
+attribution through the governed learning boundary; any research handoff is
+non-promotional and cannot promote a champion or authorize execution.
+
+Reconstruction resolves these persisted references and Paper/portfolio
+projections by account and mode. The runtime receipt is ephemeral: no
+persisted story object becomes authoritative. Replays with the same
+deterministic IDs and content are idempotent, while changed content for an
+existing ID is an immutable conflict. Missing, expired, future, mismatched,
+or unauthorized inputs stop before downstream Paper mutation.
+
 ## Stages
 
 ### 1. Attention / lane origin

@@ -87,6 +87,8 @@ def opportunity_context_to_dict(context: OpportunityContext) -> dict[str, Any]:
         "scenario_id": context.scenario_id,
         "metadata": dict(context.metadata),
     }
+    if context.account_id is not None:
+        body["account_id"] = context.account_id
     if context.snapshot_ref is not None:
         body["snapshot_ref"] = contract_reference_to_dict(context.snapshot_ref)
     if context.snapshot_available_time_ns is not None:
@@ -145,6 +147,7 @@ def opportunity_context_from_dict(payload: dict[str, Any]) -> OpportunityContext
         regime_available_time_ns=payload.get("regime_available_time_ns"),
         mode=str(payload.get("mode", "ACTUAL_LIVE")),
         scenario_id=payload.get("scenario_id"),
+        account_id=payload.get("account_id"),
         metadata=dict(payload.get("metadata") or {}),
     )
 

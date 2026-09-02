@@ -59,6 +59,17 @@ from .routing_decision import (
 from .inference_job import InferenceJobV1, inference_job_v1_from_dict, inference_job_v1_to_dict
 from .signal import SignalV1, signal_v1_from_dict, signal_v1_to_dict
 from .snapshot import SnapshotV1, snapshot_v1_from_dict, snapshot_v1_to_dict
+from .strategy_match import (
+    StrategyConditionResult,
+    StrategyMatch,
+    StrategyMatchDisposition,
+    strategy_condition_result_from_dict,
+    strategy_condition_result_to_dict,
+    strategy_match_canonical_bytes,
+    strategy_match_from_dict,
+    strategy_match_identity_hash,
+    strategy_match_to_dict,
+)
 
 __all__ = [
     "INTELLIGENCE_CONTRACTS_VERSION",
@@ -94,6 +105,9 @@ __all__ = [
     "SignalV1",
     "SnapshotV1",
     "SourceReference",
+    "StrategyConditionResult",
+    "StrategyMatch",
+    "StrategyMatchDisposition",
     "TradeProposalV1",
     "TimeHorizonNs",
     "event_v1_from_dict",
@@ -129,4 +143,10 @@ __all__ = [
     "signal_v1_to_dict",
     "snapshot_v1_from_dict",
     "snapshot_v1_to_dict",
+    "strategy_condition_result_from_dict",
+    "strategy_condition_result_to_dict",
+    "strategy_match_canonical_bytes",
+    "strategy_match_from_dict",
+    "strategy_match_identity_hash",
+    "strategy_match_to_dict",
 ]

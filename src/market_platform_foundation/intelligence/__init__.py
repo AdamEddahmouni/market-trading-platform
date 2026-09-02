@@ -17,6 +17,9 @@ from .contracts import (
     RoutingDecisionV1,
     RoutingPriority,
     SemanticEventType,
+    StrategyConditionResult,
+    StrategyMatch,
+    StrategyMatchDisposition,
 )
 from .normalization import (
     NormalizationContext,
@@ -157,6 +160,9 @@ __all__ = [
     "SignalComputationRequest",
     "SignalComputationResult",
     "SignalV1",
+    "StrategyConditionResult",
+    "StrategyMatch",
+    "StrategyMatchDisposition",
     "SnapshotBuildRequest",
     "SnapshotBuildResult",
     "SnapshotBuilder",

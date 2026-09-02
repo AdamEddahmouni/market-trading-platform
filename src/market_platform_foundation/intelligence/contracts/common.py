@@ -34,6 +34,8 @@ class ContractKind(StrEnum):
     OUTCOME = "outcome"
     PREDICTION_LEDGER_ENTRY = "prediction_ledger_entry"
     RUN_MANIFEST = "run_manifest"
+    STRATEGY_MATCH = "strategy_match"
+    STRATEGY_ATTRIBUTION = "strategy_attribution"
 
 
 class QualityState(StrEnum):

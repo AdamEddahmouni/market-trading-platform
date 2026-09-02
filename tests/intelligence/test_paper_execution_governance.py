@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest import mock
 
 from market_platform_foundation.intelligence.contracts import ForecastV1, TradeProposalV1
-from market_platform_foundation.intelligence.contracts.common import OpportunitySide
+from market_platform_foundation.intelligence.contracts.common import ContractReference, OpportunitySide
 from market_platform_foundation.intelligence.execution import (
     DirectForecastTradeForbidden,
     ExecutionMode,
@@ -19,6 +19,7 @@ from market_platform_foundation.intelligence.execution import (
     PreTradeRiskEngine,
     RiskDecisionKind,
     RiskReasonCode,
+    build_portfolio_snapshot,
     build_execution_policy,
     execution_policy_v1_from_dict,
     execution_policy_v1_to_dict,
@@ -335,6 +336,194 @@ class PaperIntegrationTests(unittest.TestCase):
         second = orchestrator.execute_paper(**kwargs)
         self.assertIsNotNone(second.paper_submit)
         self.assertTrue(second.paper_submit.get("duplicate"))
+
+    def test_prepared_execution_preserves_lineage_and_quantity_facts(self) -> None:
+        ledger = PaperExecutionLedger.open_session(
+            replay_session_id="task2-prepared",
+            instrument_id="inst-biya",
+            symbol="BIYA",
+            execution_mode="INTERNAL_SIMULATION",
+            execution_authority="AUTHORIZED",
+        )
+        opportunity = sample_opportunity(
+            opportunity_id="opp-task2-prepared",
+            created_at_ns=T + 1_000_000_000,
+            valid_until_ns=T + 10_000_000_000,
+        )
+        lineage = (
+            ContractReference(kind="allocation_decision", id="allocation-task2"),
+            ContractReference(kind="strategy_match", id="match-task2"),
+            ContractReference(kind="forecast", id="forecast-task2"),
+        )
+        orchestrator = PaperExecutionOrchestrator()
+        prepared = orchestrator.prepare_paper(
+            opportunity=opportunity,
+            policy=default_execution_policy(max_symbol_concentration_fraction=1.0),
+            portfolio=build_portfolio_snapshot(
+                equity_minor=10_000_000,
+                cash_minor=10_000_000,
+                captured_at_ns=T + 2_000_000_000,
+                positions=(
+                    PaperPositionSnapshot(
+                        instrument_id="inst-biya",
+                        symbol="BIYA",
+                        quantity=-2,
+                        market_value_minor=20_200,
+                    ),
+                ),
+            ),
+            quote=sample_quote(
+                bid_minor=9_900,
+                ask_minor=10_100,
+                available_time_ns=T + 2_000_000_000,
+            ),
+            decision_time_ns=T + 2_000_000_000,
+            instrument_id="inst-biya",
+            symbol="BIYA",
+            execution_authority="AUTHORIZED",
+            allocation_desired_quantity=5,
+            lineage_refs=lineage,
+        )
+
+        self.assertEqual(prepared.proposal.requested_quantity, 5)
+        self.assertEqual(prepared.risk_decision.requested_quantity, 5)
+        self.assertLess(prepared.risk_decision.approved_quantity, 5)
+        self.assertEqual(prepared.proposal.metadata["allocation_desired_quantity"], 5)
+        self.assertEqual(
+            {ref.kind for ref in prepared.proposal.lineage_refs},
+            {"allocation_decision", "strategy_match", "forecast", "execution_policy", "portfolio_snapshot"},
+        )
+        self.assertEqual(
+            {ref.kind for ref in prepared.lineage_refs},
+            {
+                "allocation_decision",
+                "strategy_match",
+                "forecast",
+                "execution_policy",
+                "portfolio_snapshot",
+                "trade_proposal",
+                "risk_decision",
+            },
+        )
+
+        submitted = orchestrator.submit_prepared(
+            prepared=prepared,
+            ledger=ledger,
+            bars=[
+                {
+                    "available_time": T + 3_000_000_000,
+                    "normalized_event_id": "bar-task2",
+                    "bar_payload": {"high": "101.00", "low": "99.00", "volume": 1000},
+                }
+            ],
+        )
+        order = submitted.paper_submit["order"]
+        fill = submitted.paper_submit["fill"]
+        self.assertEqual(order["submitted_quantity"], prepared.risk_decision.approved_quantity)
+        self.assertEqual(order["lineage_refs"], [
+            {"kind": ref.kind, "id": ref.id, "schema_version": ref.schema_version}
+            for ref in prepared.lineage_refs
+        ])
+        self.assertEqual(submitted.paper_submit["risk_decision_id"], prepared.risk_decision.risk_decision_id)
+        self.assertEqual(fill["filled_quantity"], fill["fill_quantity"])
+        self.assertEqual(fill["filled_quantity"], prepared.risk_decision.approved_quantity)
+        self.assertEqual(ledger.project_orders()[0]["proposal_requested_quantity"], 5)
+        self.assertEqual(ledger.project_orders()[0]["allocation_desired_quantity"], 5)
+
+    def test_existing_execute_paper_delegates_prepared_path(self) -> None:
+        ledger = PaperExecutionLedger.open_session(
+            replay_session_id="task2-compatible",
+            instrument_id="inst-biya",
+            symbol="BIYA",
+            execution_mode="INTERNAL_SIMULATION",
+            execution_authority="AUTHORIZED",
+        )
+        result = PaperExecutionOrchestrator().execute_paper(
+            opportunity=sample_opportunity(
+                opportunity_id="opp-task2-compatible",
+                created_at_ns=T + 1_000_000_000,
+                valid_until_ns=T + 10_000_000_000,
+            ),
+            policy=default_execution_policy(),
+            portfolio=flat_portfolio(captured_at_ns=T + 2_000_000_000),
+            quote=sample_quote(available_time_ns=T + 2_000_000_000),
+            ledger=ledger,
+            bars=[
+                {
+                    "available_time": T + 3_000_000_000,
+                    "normalized_event_id": "bar-task2-compatible",
+                    "bar_payload": {"high": "101.00", "low": "99.00", "volume": 1000},
+                }
+            ],
+            decision_time_ns=T + 2_000_000_000,
+            instrument_id="inst-biya",
+            symbol="BIYA",
+            execution_authority="AUTHORIZED",
+        )
+        self.assertIsNotNone(result.paper_submit)
+        self.assertEqual(len(ledger.project_orders()), 1)
+
+    def test_bounded_sell_close_reuses_entry_lineage(self) -> None:
+        ledger = PaperExecutionLedger.open_session(
+            replay_session_id="task2-close",
+            instrument_id="inst-biya",
+            symbol="BIYA",
+            execution_mode="INTERNAL_SIMULATION",
+            execution_authority="AUTHORIZED",
+        )
+        portfolio = build_portfolio_snapshot(
+            equity_minor=10_000_000,
+            cash_minor=10_000_000,
+            captured_at_ns=T + 2_000_000_000,
+            positions=(
+                PaperPositionSnapshot(
+                    instrument_id="inst-biya",
+                    symbol="BIYA",
+                    quantity=5,
+                    market_value_minor=50_500,
+                ),
+            ),
+        )
+        close = sample_opportunity(
+            opportunity_id="opp-task2-close",
+            side=OpportunitySide.SHORT,
+            created_at_ns=T + 2_000_000_000,
+            valid_until_ns=T + 10_000_000_000,
+        )
+        result = PaperExecutionOrchestrator().close_paper(
+            opportunity=close,
+            policy=default_execution_policy(max_symbol_concentration_fraction=1.0),
+            portfolio=portfolio,
+            quote=sample_quote(
+                bid_minor=9_900,
+                ask_minor=10_100,
+                available_time_ns=T + 2_000_000_000,
+            ),
+            ledger=ledger,
+            bars=[
+                {
+                    "available_time": T + 3_000_000_000,
+                    "normalized_event_id": "bar-task2-close",
+                    "bar_payload": {"high": "101.00", "low": "99.00", "volume": 1000},
+                }
+            ],
+            decision_time_ns=T + 2_000_000_000,
+            instrument_id="inst-biya",
+            symbol="BIYA",
+            execution_authority="AUTHORIZED",
+            close_quantity=5,
+            entry_lineage_refs=(
+                ContractReference(kind="allocation_decision", id="allocation-task2-close"),
+                ContractReference(kind="strategy_match", id="match-task2-close"),
+            ),
+        )
+        self.assertEqual(result.proposal.side, "SELL")
+        self.assertEqual(result.proposal.requested_quantity, 5)
+        self.assertEqual(
+            {ref.kind for ref in result.proposal.lineage_refs},
+            {"allocation_decision", "strategy_match", "execution_policy", "portfolio_snapshot"},
+        )
+        self.assertIsNotNone(result.paper_submit)
 
 
 class PersistenceTests(unittest.TestCase):

@@ -25,6 +25,38 @@ End-to-end Paper decision linkage — display in Portfolio and Execution Trace. 
 
 `ExecutionTracePanel` — intent → order → fill chain with provenance and source snapshot.
 
+## Strategy Paper runtime diagnostics
+
+The backend-only `StrategyPaperRuntime` returns a bounded, ephemeral receipt
+for each entry, close, reconstruction, or settlement/learning operation.
+Persisted IntelligenceRepository records, Paper ledger events, and portfolio
+projections remain authoritative. Each stage diagnostic contains a stage,
+status, sorted reason codes, and non-secret identifiers; it does not include
+credentials, raw provider payloads, or a second decision record.
+
+The receipt joins these identifiers when they exist: scan, StrategyMatch,
+ForecastV1, prediction-ledger entry, opportunity, economic assessment, thesis
+cluster, comparison, allocation decision/set, trade proposal, risk decision,
+Paper order, fill, and cumulative attribution. Quantity facts are reported
+separately as allocation desired, proposal requested, risk approved,
+submitted, and filled quantities.
+
+Terminal and stop statuses are explicit and machine-readable:
+`SCREENED_OUT`, `STRATEGY_REJECTED`, `FORECAST_UNAVAILABLE`,
+`OPPORTUNITY_SUPPRESSED`, `NOT_ACTIONABLE`, `NOT_ALLOCATED`,
+`RISK_REJECTED`, `EXECUTION_FAILED`, `FILLED`, and `CLOSED`. These statuses
+describe the bounded runtime attempt; they do not authorize execution.
+Failures for account/mode, point-in-time, expiry, authority, or lineage
+guards stop before downstream Paper mutation and retain only the evidence
+already persisted by the relevant authority.
+
+Attribution diagnostics must be interpreted using cumulative fill-set
+semantics. A later snapshot covers the complete persisted fill set through
+that materialization and is selected as the latest complete result; snapshots
+must never be added together. Prediction quality and trading quality are
+separate learning outputs, and a closed trade can legitimately have a
+`NOT_DUE` prediction outcome until its availability cutoff.
+
 ## Provider health
 
 `/diagnostics/provider` — channel health, generation, quota.

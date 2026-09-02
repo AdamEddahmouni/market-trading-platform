@@ -18,6 +18,7 @@ from ..contracts.signal import SignalV1
 from ..contracts.snapshot import SnapshotV1
 from ..contracts.routing_decision import RoutingDecisionV1
 from ..contracts.inference_job import InferenceJobV1
+from ..contracts.strategy_match import StrategyMatch
 from ..temporal.policy import TemporalIntegrityPolicy
 
 
@@ -77,6 +78,42 @@ class IntelligenceRepository(Protocol):
     def put_opportunity(self, opportunity: OpportunityV1) -> RepositoryPutResult: ...
 
     def get_opportunity(self, opportunity_id: str) -> OpportunityV1 | None: ...
+
+    def put_allocation_decision(self, decision) -> RepositoryPutResult: ...
+
+    def get_allocation_decision(self, allocation_decision_id: str): ...
+
+    def get_allocation_decisions_by_set(
+        self,
+        decision_set_id: str,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+    ) -> tuple: ...
+
+    def put_strategy_match(self, match: StrategyMatch) -> RepositoryPutResult: ...
+
+    def get_strategy_match(self, match_id: str) -> StrategyMatch | None: ...
+
+    def put_strategy_attribution(self, attribution: StrategyAttributionV1) -> RepositoryPutResult: ...
+
+    def get_strategy_attribution(
+        self,
+        attribution_id: str,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+        as_of_ns: int | None = None,
+    ) -> StrategyAttributionV1 | None: ...
+
+    def get_strategy_attributions_by_allocation(
+        self,
+        allocation_decision_id: str,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+        as_of_ns: int | None = None,
+    ) -> tuple[StrategyAttributionV1, ...]: ...
 
     def put_outcome(self, outcome: OutcomeV1) -> RepositoryPutResult: ...
 
@@ -274,6 +311,14 @@ class IntelligenceRepository(Protocol):
     def get_opportunity_assessment(self, assessment_id: str): ...
 
     def get_opportunity_assessments_by_forecast(self, forecast_id: str) -> tuple: ...
+
+    def put_economic_assessment(self, assessment) -> RepositoryPutResult: ...
+
+    def get_economic_assessment(self, assessment_id: str): ...
+
+    def put_universal_economic_assessment(self, assessment) -> RepositoryPutResult: ...
+
+    def get_universal_economic_assessment(self, assessment_id: str): ...
 
     def put_execution_policy(self, policy) -> RepositoryPutResult: ...
 

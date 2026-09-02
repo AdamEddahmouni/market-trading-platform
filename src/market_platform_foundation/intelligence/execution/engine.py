@@ -4,7 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..contracts.common import INTELLIGENCE_SCHEMA_VERSION, ContractKind, ContractReference, OpportunitySide, QualityState
+from ..contracts.common import (
+    INTELLIGENCE_SCHEMA_VERSION,
+    ContractKind,
+    ContractReference,
+    OpportunitySide,
+    QualityState,
+    normalize_unique_refs,
+)
 from ..contracts.forecast import ForecastV1
 from ..contracts.opportunity import OpportunityV1
 from ..contracts.trade_proposal import TradeProposalV1
@@ -27,6 +34,7 @@ from .types import (
     MarketQuoteV1,
     PaperExecutionResult,
     PaperPortfolioSnapshotV1,
+    PreparedPaperExecution,
     RiskDecisionKind,
     RiskDecisionV1,
     RiskReasonCode,
@@ -131,6 +139,11 @@ class PreTradeRiskEngine:
         symbol: str,
         scenario_id: str | None = None,
         runtime_governance: RuntimeGovernanceState | None = None,
+        lineage_refs: tuple[ContractReference, ...] = (),
+        allocation_decision: Any | None = None,
+        allocation_desired_quantity: int | None = None,
+        allocation_desired_notional_minor: int | None = None,
+        requested_quantity: int | None = None,
     ) -> TradeProposalV1:
         if isinstance(opportunity, ForecastV1):
             raise DirectForecastTradeForbidden("FORECAST_TO_TRADE_FORBIDDEN")
@@ -166,6 +179,60 @@ class PreTradeRiskEngine:
             quantity=sizing.quantity,
         )
         quantity = min(sizing.quantity, permitted_qty)
+        allocation_quantity: int | None = None
+        allocation_notional: int | None = None
+        allocation_id = getattr(allocation_decision, "allocation_decision_id", None)
+        if requested_quantity is not None:
+            if (
+                isinstance(requested_quantity, bool)
+                or not isinstance(requested_quantity, int)
+                or requested_quantity <= 0
+            ):
+                raise OpportunityGateError("REQUESTED_QUANTITY_INVALID")
+            quantity = requested_quantity
+        elif allocation_desired_quantity is not None:
+            if (
+                isinstance(allocation_desired_quantity, bool)
+                or not isinstance(allocation_desired_quantity, int)
+                or allocation_desired_quantity <= 0
+            ):
+                raise OpportunityGateError("ALLOCATION_QUANTITY_INVALID")
+            allocation_quantity = allocation_desired_quantity
+            allocation_notional = allocation_desired_notional_minor
+            if allocation_notional is not None and (
+                isinstance(allocation_notional, bool)
+                or not isinstance(allocation_notional, int)
+                or allocation_notional <= 0
+            ):
+                raise OpportunityGateError("ALLOCATION_NOTIONAL_INVALID")
+            if allocation_notional is None:
+                allocation_notional = allocation_quantity * reference_price_minor
+        elif allocation_desired_notional_minor is not None:
+            if (
+                isinstance(allocation_desired_notional_minor, bool)
+                or not isinstance(allocation_desired_notional_minor, int)
+                or allocation_desired_notional_minor <= 0
+            ):
+                raise OpportunityGateError("ALLOCATION_NOTIONAL_INVALID")
+            allocation_notional = allocation_desired_notional_minor
+        elif allocation_decision is not None:
+            allocated_capital = getattr(allocation_decision, "allocated_capital_minor", None)
+            if allocated_capital is None:
+                allocated_capital = getattr(allocation_decision, "allocated_capital", None)
+                allocated_capital = getattr(allocated_capital, "amount_minor", None)
+            if not isinstance(allocated_capital, int) or allocated_capital <= 0:
+                raise OpportunityGateError("ALLOCATION_CAPITAL_INVALID")
+            allocation_quantity = allocated_capital // reference_price_minor
+            allocation_notional = allocated_capital
+            if allocation_quantity <= 0:
+                raise OpportunityGateError("ALLOCATION_QUANTITY_INVALID")
+        if allocation_quantity is not None and requested_quantity is None:
+            # Allocation is an upstream desired quantity. Keep it in the
+            # proposal so the independent risk authority can reduce it
+            # without mutating the allocation sidecar.
+            quantity = min(allocation_quantity, sizing.quantity)
+            if quantity <= 0:
+                raise OpportunityGateError("ALLOCATION_QUANTITY_INVALID")
         notional = quantity * reference_price_minor
         expires_at_ns = opportunity.valid_until_ns or proposal_time_ns
         proposal_id = derive_trade_proposal_id(
@@ -177,6 +244,30 @@ class PreTradeRiskEngine:
             reference_price_minor=reference_price_minor,
             proposal_time_ns=proposal_time_ns,
         )
+        proposal_lineage = list(lineage_refs)
+        if allocation_id is not None:
+            proposal_lineage.append(
+                ContractReference(kind="allocation_decision", id=str(allocation_id))
+            )
+        proposal_lineage.extend(
+            (
+                ContractReference(kind="execution_policy", id=policy.execution_policy_id),
+                ContractReference(kind="portfolio_snapshot", id=portfolio.snapshot_id),
+            )
+        )
+        metadata = {
+            "symbol": symbol,
+            "sizing_capped_by": list(sizing.capped_by),
+        }
+        if allocation_id is not None:
+            metadata["allocation_decision_id"] = str(allocation_id)
+        if allocation_quantity is not None:
+            metadata["allocation_desired_quantity"] = allocation_quantity
+            metadata["allocation_desired_notional_minor"] = allocation_notional
+        elif allocation_notional is not None:
+            metadata["allocation_desired_notional_minor"] = allocation_notional
+        if requested_quantity is not None:
+            metadata["requested_quantity_source"] = "CLOSE_AUTHORITY"
         return TradeProposalV1(
             proposal_id=proposal_id,
             schema_version=INTELLIGENCE_SCHEMA_VERSION,
@@ -191,14 +282,8 @@ class PreTradeRiskEngine:
             expires_at_ns=expires_at_ns,
             execution_mode="PAPER",
             opportunity_ref=ContractReference(kind=ContractKind.OPPORTUNITY.value, id=opportunity.opportunity_id),
-            lineage_refs=(
-                ContractReference(kind="execution_policy", id=policy.execution_policy_id),
-                ContractReference(kind="portfolio_snapshot", id=portfolio.snapshot_id),
-            ),
-            metadata={
-                "symbol": symbol,
-                "sizing_capped_by": list(sizing.capped_by),
-            },
+            lineage_refs=tuple(normalize_unique_refs(proposal_lineage)),
+            metadata=metadata,
         )
 
     def assess(
@@ -428,7 +513,13 @@ class PreTradeRiskEngine:
             pre_trade_exposure=pre_trade,
             post_trade_exposure=post_trade,
             lineage_refs=proposal.lineage_refs,
-            metadata={"requested_preserved": True},
+            metadata={
+                "requested_preserved": True,
+                "allocation_desired_quantity": proposal.metadata.get("allocation_desired_quantity"),
+                "allocation_desired_notional_minor": proposal.metadata.get(
+                    "allocation_desired_notional_minor"
+                ),
+            },
         )
 
 
@@ -437,6 +528,202 @@ class PaperExecutionOrchestrator:
 
     def __init__(self, *, risk_engine: PreTradeRiskEngine | None = None) -> None:
         self._risk = risk_engine or PreTradeRiskEngine()
+
+    @staticmethod
+    def _check_paper_authority(*, ledger: Any, execution_authority: str) -> None:
+        from ...operating_modes import PAPER_EXECUTION_AUTHORITIES
+
+        if execution_authority not in PAPER_EXECUTION_AUTHORITIES:
+            raise LiveExecutionForbidden("EXECUTION_AUTHORITY_LIVE")
+        if execution_authority == "AUTHORIZED" and ledger.execution_mode == "LIVE":
+            raise LiveExecutionForbidden("EXECUTION_MODE_LIVE")
+
+    def prepare_paper(
+        self,
+        *,
+        opportunity: OpportunityV1,
+        policy: ExecutionPolicyV1,
+        portfolio: PaperPortfolioSnapshotV1,
+        quote: MarketQuoteV1,
+        ledger: Any | None = None,
+        decision_time_ns: int,
+        instrument_id: str,
+        symbol: str,
+        execution_authority: str,
+        submitted_opportunity_ids: frozenset[str] = frozenset(),
+        runtime_governance: RuntimeGovernanceState | None = None,
+        lineage_refs: tuple[ContractReference, ...] = (),
+        allocation_decision: Any | None = None,
+        allocation_desired_quantity: int | None = None,
+        allocation_desired_notional_minor: int | None = None,
+        requested_quantity: int | None = None,
+    ) -> PreparedPaperExecution:
+        if ledger is not None:
+            self._check_paper_authority(
+                ledger=ledger,
+                execution_authority=execution_authority,
+            )
+        proposal = self._risk.build_proposal(
+            opportunity=opportunity,
+            policy=policy,
+            portfolio=portfolio,
+            quote=quote,
+            proposal_time_ns=decision_time_ns,
+            instrument_id=instrument_id,
+            symbol=symbol,
+            scenario_id=portfolio.scenario_id,
+            runtime_governance=runtime_governance,
+            lineage_refs=lineage_refs,
+            allocation_decision=allocation_decision,
+            allocation_desired_quantity=allocation_desired_quantity,
+            allocation_desired_notional_minor=allocation_desired_notional_minor,
+            requested_quantity=requested_quantity,
+        )
+        risk = self._risk.assess(
+            proposal=proposal,
+            opportunity=opportunity,
+            policy=policy,
+            portfolio=portfolio,
+            decision_time_ns=decision_time_ns,
+            symbol=symbol,
+            submitted_opportunity_ids=submitted_opportunity_ids,
+        )
+        from .identity import derive_paper_order_idempotency_key
+
+        idempotency_key = derive_paper_order_idempotency_key(risk.risk_decision_id)
+        quantity_facts: dict[str, int] = {
+            "proposal_requested_quantity": proposal.requested_quantity,
+            "proposal_requested_notional_minor": proposal.requested_notional_minor,
+            "risk_approved_quantity": risk.approved_quantity,
+            "risk_approved_notional_minor": risk.approved_notional_minor,
+            "submitted_quantity": risk.approved_quantity,
+        }
+        if "allocation_desired_quantity" in proposal.metadata:
+            quantity_facts["allocation_desired_quantity"] = int(
+                proposal.metadata["allocation_desired_quantity"]
+            )
+        if "allocation_desired_notional_minor" in proposal.metadata:
+            quantity_facts["allocation_desired_notional_minor"] = int(
+                proposal.metadata["allocation_desired_notional_minor"]
+            )
+        paper_lineage = tuple(
+            normalize_unique_refs(
+                (
+                    *proposal.lineage_refs,
+                    ContractReference(kind="trade_proposal", id=proposal.proposal_id),
+                    ContractReference(kind="risk_decision", id=risk.risk_decision_id),
+                )
+            )
+        )
+        return PreparedPaperExecution(
+            proposal=proposal,
+            risk_decision=risk,
+            execution_authority=execution_authority,
+            instrument_id=instrument_id,
+            symbol=symbol,
+            decision_time_ns=decision_time_ns,
+            idempotency_key=idempotency_key,
+            lineage_refs=paper_lineage,
+            quantity_facts=quantity_facts,
+        )
+
+    def submit_prepared(
+        self,
+        *,
+        prepared: PreparedPaperExecution,
+        ledger: Any,
+        bars: list[dict[str, Any]],
+    ) -> PaperExecutionResult:
+        self._check_paper_authority(
+            ledger=ledger,
+            execution_authority=prepared.execution_authority,
+        )
+        risk = prepared.risk_decision
+        if (
+            risk.decision not in {RiskDecisionKind.APPROVE, RiskDecisionKind.REDUCE}
+            or risk.approved_quantity <= 0
+        ):
+            return PaperExecutionResult(
+                proposal=prepared.proposal,
+                risk_decision=risk,
+                paper_submit=None,
+                prepared=prepared,
+            )
+
+        from ...paper.execution import submit_interactive_order
+
+        submit = submit_interactive_order(
+            ledger=ledger,
+            bars=bars,
+            symbol=prepared.symbol,
+            instrument_id=prepared.instrument_id,
+            side=prepared.proposal.side,
+            quantity=risk.approved_quantity,
+            observation_time=prepared.decision_time_ns,
+            client_order_id=risk.risk_decision_id,
+            idempotency_key=prepared.idempotency_key,
+            correlation_id=prepared.proposal.opportunity_id,
+            lineage_refs=prepared.lineage_refs,
+            quantity_facts=prepared.quantity_facts,
+            risk_decision_id=risk.risk_decision_id,
+        )
+        return PaperExecutionResult(
+            proposal=prepared.proposal,
+            risk_decision=risk,
+            paper_submit=submit,
+            prepared=prepared,
+        )
+
+    def close_paper(
+        self,
+        *,
+        opportunity: OpportunityV1,
+        policy: ExecutionPolicyV1,
+        portfolio: PaperPortfolioSnapshotV1,
+        quote: MarketQuoteV1,
+        ledger: Any,
+        bars: list[dict[str, Any]],
+        decision_time_ns: int,
+        instrument_id: str,
+        symbol: str,
+        execution_authority: str,
+        close_quantity: int | None = None,
+        entry_lineage_refs: tuple[ContractReference, ...] = (),
+        entry_allocation_decision: Any | None = None,
+        runtime_governance: RuntimeGovernanceState | None = None,
+    ) -> PaperExecutionResult:
+        """Submit a supplied canonical SELL opportunity as a bounded close."""
+        if opportunity.side != OpportunitySide.SHORT:
+            raise OpportunityGateError("CLOSE_SELL_OPPORTUNITY_REQUIRED")
+        if close_quantity is None:
+            close_quantity = sum(
+                abs(position.quantity)
+                for position in portfolio.positions
+                if position.instrument_id == instrument_id and position.quantity > 0
+            )
+        if close_quantity <= 0:
+            raise OpportunityGateError("CLOSE_QUANTITY_UNAVAILABLE")
+        lineage = list(entry_lineage_refs)
+        allocation_id = getattr(entry_allocation_decision, "allocation_decision_id", None)
+        if allocation_id is not None:
+            lineage.append(
+                ContractReference(kind="allocation_decision", id=str(allocation_id))
+            )
+        return self.execute_paper(
+            opportunity=opportunity,
+            policy=policy,
+            portfolio=portfolio,
+            quote=quote,
+            ledger=ledger,
+            bars=bars,
+            decision_time_ns=decision_time_ns,
+            instrument_id=instrument_id,
+            symbol=symbol,
+            execution_authority=execution_authority,
+            runtime_governance=runtime_governance,
+            lineage_refs=tuple(normalize_unique_refs(lineage)),
+            requested_quantity=close_quantity,
+        )
 
     def execute_paper(
         self,
@@ -453,54 +740,38 @@ class PaperExecutionOrchestrator:
         execution_authority: str,
         submitted_opportunity_ids: frozenset[str] = frozenset(),
         runtime_governance: RuntimeGovernanceState | None = None,
+        lineage_refs: tuple[ContractReference, ...] = (),
+        allocation_decision: Any | None = None,
+        allocation_desired_quantity: int | None = None,
+        allocation_desired_notional_minor: int | None = None,
+        requested_quantity: int | None = None,
     ) -> PaperExecutionResult:
-        from ...operating_modes import PAPER_EXECUTION_AUTHORITIES
-
-        if execution_authority not in PAPER_EXECUTION_AUTHORITIES:
-            raise LiveExecutionForbidden("EXECUTION_AUTHORITY_LIVE")
-        if execution_authority == "AUTHORIZED" and ledger.execution_mode == "LIVE":
-            raise LiveExecutionForbidden("EXECUTION_MODE_LIVE")
-
-        proposal = self._risk.build_proposal(
+        prepared = self.prepare_paper(
             opportunity=opportunity,
             policy=policy,
             portfolio=portfolio,
             quote=quote,
-            proposal_time_ns=decision_time_ns,
-            instrument_id=instrument_id,
-            symbol=symbol,
-            scenario_id=portfolio.scenario_id,
-            runtime_governance=runtime_governance,
-        )
-        risk = self._risk.assess(
-            proposal=proposal,
-            opportunity=opportunity,
-            policy=policy,
-            portfolio=portfolio,
-            decision_time_ns=decision_time_ns,
-            symbol=symbol,
-            submitted_opportunity_ids=submitted_opportunity_ids,
-        )
-        if risk.decision not in {RiskDecisionKind.APPROVE, RiskDecisionKind.REDUCE} or risk.approved_quantity <= 0:
-            return PaperExecutionResult(proposal=proposal, risk_decision=risk, paper_submit=None)
-
-        from ...paper.execution import submit_interactive_order
-        from .identity import derive_paper_order_idempotency_key
-
-        idempotency_key = derive_paper_order_idempotency_key(risk.risk_decision_id)
-        submit = submit_interactive_order(
             ledger=ledger,
-            bars=bars,
-            symbol=symbol,
+            decision_time_ns=decision_time_ns,
             instrument_id=instrument_id,
-            side=proposal.side,
-            quantity=risk.approved_quantity,
-            observation_time=decision_time_ns,
-            client_order_id=risk.risk_decision_id,
-            idempotency_key=idempotency_key,
-            correlation_id=opportunity.opportunity_id,
+            symbol=symbol,
+            execution_authority=execution_authority,
+            submitted_opportunity_ids=submitted_opportunity_ids,
+            runtime_governance=runtime_governance,
+            lineage_refs=lineage_refs,
+            allocation_decision=allocation_decision,
+            allocation_desired_quantity=allocation_desired_quantity,
+            allocation_desired_notional_minor=allocation_desired_notional_minor,
+            requested_quantity=requested_quantity,
         )
-        return PaperExecutionResult(proposal=proposal, risk_decision=risk, paper_submit=submit)
+        return self.submit_prepared(prepared=prepared, ledger=ledger, bars=bars)
+
+    # Explicit aliases keep the seam discoverable while retaining the concise
+    # API used by the existing BUILD 22 convenience path.
+    prepare_paper_execution = prepare_paper
+    submit_prepared_execution = submit_prepared
+    execute_paper_close = close_paper
+    close = close_paper
 
 
 __all__ = [

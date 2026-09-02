@@ -15,6 +15,8 @@ from market_platform_foundation.intelligence.persistence.mongo.config import (  
     TEST_DATABASE_PREFIX,
 )
 from market_platform_foundation.intelligence.persistence.mongo.schema import (  # noqa: E402
+    ALLOCATION_DECISION_INDEXES,
+    ALLOCATION_DECISION_VALIDATOR,
     COLLECTION_SPECS,
     MONGO_SCHEMA_PLAN_VERSION,
     MongoSchemaManager,
@@ -23,7 +25,7 @@ from market_platform_foundation.intelligence.persistence.mongo.schema import (  
 
 class SchemaPlanTests(unittest.TestCase):
     def test_schema_plan_version(self) -> None:
-        self.assertEqual(MONGO_SCHEMA_PLAN_VERSION, 4)
+        self.assertEqual(MONGO_SCHEMA_PLAN_VERSION, 5)
 
     def test_routing_collections_have_no_ttl_deletion_indexes(self) -> None:
         specs = {spec.codec.collection_name: spec for spec in COLLECTION_SPECS}
@@ -52,6 +54,25 @@ class SchemaPlanTests(unittest.TestCase):
         names = {index.name for index in event_spec.indexes}
         self.assertIn("idx_events_available_time", names)
         self.assertIn("idx_events_point_in_time_sort", names)
+
+    def test_strategy_matches_have_identity_and_expiry_indexes(self) -> None:
+        match_spec = next(
+            spec for spec in COLLECTION_SPECS if spec.codec.collection_name == "strategy_matches"
+        )
+        self.assertIn("match_identity_hash", match_spec.validator["required"])
+        names = {index.name for index in match_spec.indexes}
+        self.assertIn("idx_strategy_matches_strategy_decision", names)
+        self.assertIn("idx_strategy_matches_expires_at", names)
+
+    def test_allocation_decision_sidecar_has_validator_and_indexes(self) -> None:
+        self.assertIn("allocation_decision_id", ALLOCATION_DECISION_VALIDATOR["required"])
+        self.assertEqual(
+            {index.name for index in ALLOCATION_DECISION_INDEXES},
+            {
+                "idx_allocation_decisions_decision_set",
+                "idx_allocation_decisions_account_mode",
+            },
+        )
 
     def test_test_database_prefix_guard(self) -> None:
         assert_safe_test_database_name(f"{TEST_DATABASE_PREFIX}abc")
@@ -111,7 +132,17 @@ class SchemaBootstrapTests(unittest.TestCase):
         manager = MongoSchemaManager(database)
         manager.ensure_schema()
         manager.ensure_schema()
-        self.assertEqual(len(database.created), len(COLLECTION_SPECS))
+        self.assertEqual(len(database.created), len(COLLECTION_SPECS) + 1)
+        self.assertIn("allocation_decisions", database.collections)
+        allocation_options = dict(database.created)["allocation_decisions"]
+        self.assertEqual(
+            allocation_options["validator"],
+            {"$jsonSchema": ALLOCATION_DECISION_VALIDATOR},
+        )
+        self.assertEqual(
+            set(database.collections["allocation_decisions"]["indexes"]),
+            {index.name for index in ALLOCATION_DECISION_INDEXES},
+        )
 
 
 if __name__ == "__main__":

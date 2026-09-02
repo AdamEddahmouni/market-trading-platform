@@ -117,7 +117,12 @@ class OpportunityContext:
     regime_available_time_ns: int | None = None
     mode: str = "ACTUAL_LIVE"
     scenario_id: str | None = None
+    account_id: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.account_id is not None and not str(self.account_id).strip():
+            raise ValueError("OPPORTUNITY_ACCOUNT_ID_INVALID")
 
 
 @dataclass(frozen=True, slots=True)

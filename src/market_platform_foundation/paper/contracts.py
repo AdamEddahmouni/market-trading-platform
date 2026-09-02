@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from decimal import Decimal
 import math
-from typing import Any
+from typing import Any, Mapping
 
 from ..canonical import canonical_bytes, sha256_bytes
 
@@ -120,6 +120,56 @@ def _validate_research_candidate_id(research_candidate_id: str) -> None:
         raise ValueError("RESEARCH_CANDIDATE_ID_INVALID") from None
 
 
+def _lineage_ref_to_dict(value: Any) -> dict[str, Any]:
+    """Serialize a backend lineage reference without coupling Paper to a domain type."""
+    if isinstance(value, Mapping):
+        kind = value.get("kind")
+        identifier = value.get("id")
+        schema_version = value.get("schema_version", "1")
+    else:
+        kind = getattr(value, "kind", None)
+        identifier = getattr(value, "id", None)
+        schema_version = getattr(value, "schema_version", "1")
+    if not isinstance(kind, str) or not kind.strip():
+        raise ValueError("PAPER_LINEAGE_REFERENCE_KIND_REQUIRED")
+    if not isinstance(identifier, str) or not identifier.strip():
+        raise ValueError("PAPER_LINEAGE_REFERENCE_ID_REQUIRED")
+    if not isinstance(schema_version, str) or not schema_version.strip():
+        raise ValueError("PAPER_LINEAGE_REFERENCE_SCHEMA_INVALID")
+    return {
+        "kind": kind,
+        "id": identifier,
+        "schema_version": schema_version,
+    }
+
+
+def _quantity_facts_to_dict(value: Mapping[str, Any] | None) -> dict[str, int]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise ValueError("PAPER_QUANTITY_FACTS_INVALID")
+    facts: dict[str, int] = {}
+    allowed = {
+        "allocation_desired_quantity",
+        "allocation_desired_notional_minor",
+        "proposal_requested_quantity",
+        "proposal_requested_notional_minor",
+        "risk_approved_quantity",
+        "risk_approved_notional_minor",
+        "submitted_quantity",
+        "filled_quantity",
+    }
+    for key, raw in value.items():
+        if not isinstance(key, str) or not key.strip():
+            raise ValueError("PAPER_QUANTITY_FACT_KEY_INVALID")
+        if key not in allowed:
+            raise ValueError("PAPER_QUANTITY_FACT_KEY_UNSUPPORTED")
+        if not isinstance(raw, int) or isinstance(raw, bool) or raw < 0:
+            raise ValueError("PAPER_QUANTITY_FACT_INVALID")
+        facts[key] = raw
+    return facts
+
+
 def build_user_order_intent(
     *,
     instrument: dict[str, Any],
@@ -133,6 +183,9 @@ def build_user_order_intent(
     correlation_id: str | None = None,
     decision_source_snapshot: dict[str, Any] | None = None,
     research_candidate_id: str | None = None,
+    lineage_refs: tuple[Any, ...] | list[Any] = (),
+    quantity_facts: Mapping[str, Any] | None = None,
+    risk_decision_id: str | None = None,
 ) -> dict[str, Any]:
     if side not in ORDER_SIDES:
         raise ValueError("ORDER_SIDE_INVALID")
@@ -180,6 +233,15 @@ def build_user_order_intent(
         body["decision_source_snapshot"] = decision_source_snapshot
     if research_candidate_id:
         body["research_candidate_id"] = research_candidate_id
+    if risk_decision_id:
+        body["risk_decision_id"] = risk_decision_id
+    serialized_lineage = [_lineage_ref_to_dict(ref) for ref in lineage_refs]
+    if serialized_lineage:
+        body["lineage_refs"] = serialized_lineage
+    facts = _quantity_facts_to_dict(quantity_facts)
+    if facts:
+        body["quantity_facts"] = facts
+        body.update(facts)
     return {
         **body,
         "intent_id": sha256_bytes(canonical_bytes(body)),
@@ -206,6 +268,16 @@ def normalize_execution_intent(intent: dict[str, Any]) -> dict[str, Any]:
         "strategy_identity_hash",
         "order_type",
         "limit_price_minor",
+        "lineage_refs",
+        "quantity_facts",
+        "risk_decision_id",
+        "allocation_desired_quantity",
+        "allocation_desired_notional_minor",
+        "proposal_requested_quantity",
+        "proposal_requested_notional_minor",
+        "risk_approved_quantity",
+        "risk_approved_notional_minor",
+        "submitted_quantity",
     ):
         if key in intent:
             body[key] = intent[key]

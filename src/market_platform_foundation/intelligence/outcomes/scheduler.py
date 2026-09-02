@@ -24,7 +24,7 @@ class OutcomeSettlementScheduler:
             if outcome.metadata.get("ledger_entry_id") == entry.ledger_entry_id and outcome.metadata.get("mode") == entry.mode:
                 if entry.scenario_id is None or outcome.metadata.get("scenario_id") == entry.scenario_id:
                     return SettlementStatus.ALREADY_SETTLED
-        return SettlementStatus.NOT_DUE if now_ns < self.due_time_ns(entry) else SettlementStatus.NOT_DUE
+        return SettlementStatus.DUE
 
     def is_due(self, entry: PredictionLedgerEntryV1, *, now_ns: int) -> bool:
         return now_ns >= self.due_time_ns(entry)

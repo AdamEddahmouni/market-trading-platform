@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from ..canonical import canonical_bytes, sha256_bytes
@@ -9,7 +10,7 @@ from ..research.evaluation import run_walk_forward_evaluation
 from ..research.forecast import verify_forecast_interface
 from .interpretation import interpret_strategy
 from .preregistration import build_preregistration
-from .strategy_spec import build_strategy_spec
+from .strategy_spec import StrategyDefinition, build_strategy_spec, coerce_strategy_spec
 
 DEFAULT_REGISTERED_AT = "2026-08-16T00:00:00.000000000Z"
 
@@ -33,11 +34,11 @@ def default_whale_aligned_spec() -> dict[str, Any]:
 def run_strategy_evaluation(
     events: list[dict[str, Any]],
     *,
-    strategy_spec: dict[str, Any] | None = None,
+    strategy_spec: StrategyDefinition | Mapping[str, Any] | None = None,
     preregistration: dict[str, Any] | None = None,
     registered_at: str = DEFAULT_REGISTERED_AT,
 ) -> dict[str, object]:
-    spec = strategy_spec or default_forecast_momentum_spec()
+    spec = coerce_strategy_spec(strategy_spec or default_forecast_momentum_spec())
     prereg = preregistration or build_preregistration(spec, registered_at=registered_at)
     evaluation = run_walk_forward_evaluation(events)
     interpretations: list[dict[str, object]] = []

@@ -19,8 +19,17 @@ from ..contracts.signal import SignalV1
 from ..contracts.snapshot import SnapshotV1
 from ..contracts.routing_decision import RoutingDecisionV1
 from ..contracts.inference_job import InferenceJobV1
+from ..contracts.strategy_match import StrategyMatch
 from ..temporal.policy import TemporalIntegrityPolicy
-from .codec import CODEC_BY_TYPE, RECORD_CODECS, RecordT, canonical_semantic_equal, codec_for_record, encode_document
+from .codec import (
+    CODEC_BY_TYPE,
+    RECORD_CODECS,
+    RecordT,
+    canonical_semantic_equal,
+    codec_for_kind,
+    codec_for_record,
+    encode_document,
+)
 from .errors import RepositoryConflictError
 from .queries import (
     filter_evidence_by_snapshot,
@@ -69,6 +78,8 @@ class InMemoryIntelligenceRepository:
         self._stores["challenger_lifecycle_events"] = {}
         self._stores["opportunity_policies"] = {}
         self._stores["opportunity_assessments"] = {}
+        self._stores["economic_assessments"] = {}
+        self._stores["allocation_decisions"] = {}
         self._stores["execution_policies"] = {}
         self._stores["paper_portfolio_snapshots"] = {}
         self._stores["trade_proposals"] = {}
@@ -174,6 +185,135 @@ class InMemoryIntelligenceRepository:
 
     def get_opportunity(self, opportunity_id: str) -> OpportunityV1 | None:
         return self._get(OpportunityV1, "opportunities", opportunity_id)
+
+    def put_allocation_decision(self, decision) -> RepositoryPutResult:
+        from ..opportunity.allocation_persistence import allocation_decision_v1_to_dict
+
+        return self._put_sidecar(
+            collection="allocation_decisions",
+            record_id=decision.allocation_decision_id,
+            document=allocation_decision_v1_to_dict(decision),
+            kind="allocation_decision",
+        )
+
+    def get_allocation_decision(self, allocation_decision_id: str):
+        from ..opportunity.allocation_persistence import allocation_decision_v1_from_dict
+
+        return self._get_sidecar(
+            "allocation_decisions",
+            allocation_decision_id,
+            allocation_decision_v1_from_dict,
+        )
+
+    def get_allocation_decisions_by_set(
+        self,
+        decision_set_id: str,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+    ) -> tuple:
+        from ..opportunity.allocation_persistence import allocation_decision_v1_from_dict
+
+        with self._lock:
+            bodies = list(self._stores["allocation_decisions"].values())
+        rows = []
+        for body in bodies:
+            payload = {key: value for key, value in body.items() if key != "_id"}
+            decision = allocation_decision_v1_from_dict(payload)
+            if decision.decision_set_id != decision_set_id:
+                continue
+            if account_id is not None and decision.account_id != account_id:
+                continue
+            if mode is not None and decision.mode != mode:
+                continue
+            rows.append(decision)
+        return tuple(sorted(rows, key=lambda row: (row.rank, row.allocation_decision_id)))
+
+    def put_strategy_match(self, match: StrategyMatch) -> RepositoryPutResult:
+        return self._put(match)
+
+    def get_strategy_match(self, match_id: str) -> StrategyMatch | None:
+        return self._get(StrategyMatch, "strategy_matches", match_id)
+
+    def put_strategy_attribution(self, attribution: StrategyAttributionV1) -> RepositoryPutResult:
+        return self._put(attribution)
+
+    def get_strategy_attribution(
+        self,
+        attribution_id: str,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+        as_of_ns: int | None = None,
+    ) -> StrategyAttributionV1 | None:
+        from ...portfolio.attribution import StrategyAttributionV1, validate_attribution_scope
+
+        record = self._get(StrategyAttributionV1, "strategy_attributions", attribution_id)
+        if record is None:
+            return None
+        if account_id is not None or mode is not None or as_of_ns is not None:
+            if account_id is None or mode is None or as_of_ns is None:
+                raise ValueError("ATTRIBUTION_SCOPE_GUARDS_INCOMPLETE")
+            validate_attribution_scope(
+                record,
+                account_id=account_id,
+                mode=mode,
+                as_of_ns=as_of_ns,
+            )
+        return record
+
+    def get_strategy_attributions_by_allocation(
+        self,
+        allocation_decision_id: str,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+        as_of_ns: int | None = None,
+    ) -> tuple:
+        from ...portfolio.attribution import (
+            StrategyAttributionV1,
+            validate_attribution_scope,
+        )
+
+        with self._lock:
+            bodies = list(self._stores["strategy_attributions"].values())
+        rows = []
+        for body in bodies:
+            record = self._decode(StrategyAttributionV1, body)
+            if record.allocation_ref.id != allocation_decision_id:
+                continue
+            if record.allocation_ref.kind not in {"allocation", "allocation_decision"}:
+                continue
+            if account_id is not None and record.account_id != account_id:
+                continue
+            if mode is not None:
+                normalized_mode = str(mode).strip().upper()
+                normalized_mode = {"LIVE": "ACTUAL_LIVE"}.get(
+                    normalized_mode,
+                    normalized_mode,
+                )
+                if record.mode != normalized_mode:
+                    continue
+            if as_of_ns is not None:
+                if account_id is None or mode is None:
+                    raise ValueError("ATTRIBUTION_SCOPE_GUARDS_INCOMPLETE")
+                validate_attribution_scope(
+                    record,
+                    account_id=account_id,
+                    mode=mode,
+                    as_of_ns=as_of_ns,
+                )
+            rows.append(record)
+        return tuple(
+            sorted(
+                rows,
+                key=lambda row: (
+                    len(row.fill_refs),
+                    max((fill.fill_time_ns for fill in row.fills), default=-1),
+                    row.attribution_id,
+                ),
+            )
+        )
 
     def put_outcome(self, outcome: OutcomeV1) -> RepositoryPutResult:
         return self._put(outcome)
@@ -726,6 +866,28 @@ class InMemoryIntelligenceRepository:
         rows.sort(key=lambda item: (item.opportunity_decision_time_ns, item.assessment_id))
         return tuple(rows)
 
+    def put_economic_assessment(self, assessment) -> RepositoryPutResult:
+        from ..opportunity.economic_assessment import economic_assessment_v1_to_dict
+
+        return self._put_sidecar(
+            collection="economic_assessments",
+            record_id=assessment.assessment_id,
+            document=economic_assessment_v1_to_dict(assessment),
+            kind="economic_assessment",
+        )
+
+    def get_economic_assessment(self, assessment_id: str):
+        from ..opportunity.economic_assessment import economic_assessment_v1_from_dict
+
+        return self._get_sidecar(
+            "economic_assessments",
+            assessment_id,
+            economic_assessment_v1_from_dict,
+        )
+
+    put_universal_economic_assessment = put_economic_assessment
+    get_universal_economic_assessment = get_economic_assessment
+
     def put_execution_policy(self, policy) -> RepositoryPutResult:
         from ..execution.serialization import execution_policy_v1_to_dict
 
@@ -1271,7 +1433,14 @@ class InMemoryIntelligenceRepository:
             return self._decode(record_type, body)
 
     def _decode(self, record_type: type, body: dict[str, Any]) -> Any:
-        codec = _CODEC_BY_TYPE[record_type]
+        codec = _CODEC_BY_TYPE.get(record_type)
+        if codec is None:
+            from ...portfolio.attribution import StrategyAttributionV1
+            from ..contracts.common import ContractKind
+
+            if record_type is not StrategyAttributionV1:
+                raise KeyError(record_type)
+            codec = codec_for_kind(ContractKind.STRATEGY_ATTRIBUTION)
         return codec.from_dict(copy.deepcopy({k: v for k, v in body.items() if k != "_id"}))
 
 

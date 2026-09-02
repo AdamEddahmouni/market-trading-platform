@@ -17,13 +17,15 @@ def reconcile_ledgers(
     for fill in fills:
         recomputed = apply_fill(recomputed, fill=fill, policy=policy)
 
-    fields = (
+    fields = [
         "cash_minor",
         "position_shares",
         "realized_pnl_minor",
         "total_commission_minor",
         "total_fees_minor",
-    )
+    ]
+    if "position_cost_basis_minor" in authoritative:
+        fields.append("position_cost_basis_minor")
     mismatches: list[str] = []
     for field in fields:
         if int(authoritative[field]) != int(recomputed[field]):

@@ -168,6 +168,100 @@ class ReplayVisibleRepository:
     def get_opportunity(self, opportunity_id: str) -> OpportunityV1 | None:
         return self._output.get_opportunity(opportunity_id) or self._source.get_opportunity(opportunity_id)
 
+    def put_allocation_decision(self, decision) -> RepositoryPutResult:
+        return self._output.put_allocation_decision(decision)
+
+    def get_allocation_decision(self, allocation_decision_id: str):
+        return self._output.get_allocation_decision(
+            allocation_decision_id
+        ) or self._source.get_allocation_decision(allocation_decision_id)
+
+    def get_allocation_decisions_by_set(
+        self,
+        decision_set_id: str,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+    ) -> tuple:
+        output_rows = self._output.get_allocation_decisions_by_set(
+            decision_set_id,
+            account_id=account_id,
+            mode=mode,
+        )
+        if output_rows:
+            return output_rows
+        return self._source.get_allocation_decisions_by_set(
+            decision_set_id,
+            account_id=account_id,
+            mode=mode,
+        )
+
+    def put_strategy_match(self, match) -> RepositoryPutResult:
+        return self._output.put_strategy_match(match)
+
+    def get_strategy_match(self, match_id: str):
+        return self._output.get_strategy_match(match_id) or self._source.get_strategy_match(match_id)
+
+    def put_strategy_attribution(self, attribution) -> RepositoryPutResult:
+        return self._output.put_strategy_attribution(attribution)
+
+    def get_strategy_attribution(
+        self,
+        attribution_id: str,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+        as_of_ns: int | None = None,
+    ):
+        row = self._output.get_strategy_attribution(
+            attribution_id,
+            account_id=account_id,
+            mode=mode,
+            as_of_ns=as_of_ns,
+        )
+        if row is not None:
+            return row
+        return self._source.get_strategy_attribution(
+            attribution_id,
+            account_id=account_id,
+            mode=mode,
+            as_of_ns=as_of_ns,
+        )
+
+    def get_strategy_attributions_by_allocation(
+        self,
+        allocation_decision_id: str,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+        as_of_ns: int | None = None,
+    ) -> tuple:
+        output_rows = self._output.get_strategy_attributions_by_allocation(
+            allocation_decision_id,
+            account_id=account_id,
+            mode=mode,
+            as_of_ns=as_of_ns,
+        )
+        if output_rows:
+            return output_rows
+        return self._source.get_strategy_attributions_by_allocation(
+            allocation_decision_id,
+            account_id=account_id,
+            mode=mode,
+            as_of_ns=as_of_ns,
+        )
+
+    def put_economic_assessment(self, assessment) -> RepositoryPutResult:
+        return self._output.put_economic_assessment(assessment)
+
+    def get_economic_assessment(self, assessment_id: str):
+        return self._output.get_economic_assessment(
+            assessment_id
+        ) or self._source.get_economic_assessment(assessment_id)
+
+    put_universal_economic_assessment = put_economic_assessment
+    get_universal_economic_assessment = get_economic_assessment
+
     def put_outcome(self, outcome: OutcomeV1) -> RepositoryPutResult:
         return self._output.put_outcome(outcome)
 

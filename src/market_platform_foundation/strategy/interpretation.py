@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from ..features.institutional import query_all_institutional
 from .abstention import ABSTAIN_CONFLICTING_EVIDENCE, evaluate_abstention
 from .preregistration import verify_preregistration
+from .strategy_spec import StrategyDefinition, coerce_strategy_spec
 
 
 def _forecast_direction(forecast: dict[str, Any]) -> str | None:
@@ -26,7 +28,7 @@ def _forecast_direction(forecast: dict[str, Any]) -> str | None:
 
 def interpret_strategy(
     *,
-    strategy_spec: dict[str, Any],
+    strategy_spec: StrategyDefinition | Mapping[str, Any],
     preregistration: dict[str, Any] | None,
     forecast: dict[str, Any],
     forecast_status: str,
@@ -34,16 +36,17 @@ def interpret_strategy(
     observation_time: int,
     force_signal: bool = False,
 ) -> dict[str, Any]:
+    spec = coerce_strategy_spec(strategy_spec)
     prereg_status = "FAIL"
     prereg_reasons: list[str] = ["ABSTAIN_NO_PREREGISTRATION"]
     if preregistration is not None:
-        prereg_status, prereg_reasons = verify_preregistration(preregistration, strategy_spec)
+        prereg_status, prereg_reasons = verify_preregistration(preregistration, spec)
 
     institutional = query_all_institutional(prediction_cutoff=prediction_cutoff)
     should_abstain, abstain_reasons = evaluate_abstention(
         prereg_status=prereg_status,
         forecast_status=forecast_status,
-        alignment_type=str(strategy_spec["alignment_type"]),
+        alignment_type=str(spec["alignment_type"]),
         institutional_rows=institutional,
         prediction_cutoff=prediction_cutoff,
         observation_time=observation_time,
@@ -55,25 +58,25 @@ def interpret_strategy(
             reasons.append(ABSTAIN_CONFLICTING_EVIDENCE)
         return {
             "abstention_reason_codes": reasons,
-            "alignment_type": strategy_spec["alignment_type"],
+            "alignment_type": spec["alignment_type"],
             "direction": None,
             "outcome": "abstention",
             "prediction_cutoff": prediction_cutoff,
-            "strategy_identity_hash": strategy_spec["strategy_identity_hash"],
+            "strategy_identity_hash": spec["strategy_identity_hash"],
         }
 
     if force_signal:
         return {
             "abstention_reason_codes": [ABSTAIN_CONFLICTING_EVIDENCE],
-            "alignment_type": strategy_spec["alignment_type"],
+            "alignment_type": spec["alignment_type"],
             "direction": None,
             "outcome": "abstention",
             "prediction_cutoff": prediction_cutoff,
-            "strategy_identity_hash": strategy_spec["strategy_identity_hash"],
+            "strategy_identity_hash": spec["strategy_identity_hash"],
         }
 
     direction = _forecast_direction(forecast)
-    alignment = str(strategy_spec["alignment_type"])
+    alignment = str(spec["alignment_type"])
     if alignment == "WHALE_CONTRARIAN" and direction in ("long", "short"):
         direction = "short" if direction == "long" else "long"
 
@@ -83,5 +86,5 @@ def interpret_strategy(
         "direction": direction,
         "outcome": "signal",
         "prediction_cutoff": prediction_cutoff,
-        "strategy_identity_hash": strategy_spec["strategy_identity_hash"],
+        "strategy_identity_hash": spec["strategy_identity_hash"],
     }
