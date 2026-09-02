@@ -34,7 +34,7 @@ Use FAST for very quick catastrophic-invariant feedback. Normal implementation w
 
 ### CHANGED
 
-`changed` discovers tracked unstaged changes, staged changes, tracked deletions, and nonignored untracked files. With `--baseline`, it compares the current safe file inventory with the supplied snapshot instead of using the entire pre-existing Git dirty tree.
+`changed` discovers tracked unstaged changes, staged changes, tracked deletions, and nonignored untracked files. With `--baseline`, it compares the current safe file inventory with the supplied snapshot instead of using the entire pre-existing Git dirty tree. CI clean checkouts use `--paths-file` with a newline-delimited merge-base diff, so affected selection reflects the pull request rather than an empty working tree.
 
 Selection is deterministic:
 
@@ -119,6 +119,11 @@ The allowed safety classes are `PARALLEL_SAFE`, `SERIAL_REQUIRED`, `LIVE_EXCLUSI
 - bitemporal store and PIT join implementation.
 
 The exact globs live only in `tools/validation_manifest.json`.
+
+The canonical developer facade is `python tools/imp.py`; it delegates to this
+implementation and adds safe environment diagnostics, format/lint gates,
+focused selectors, review orchestration, and closure evidence. It is not a
+second inventory or authority.
 
 ### `full_suite_required` is a gate, not an expansion
 

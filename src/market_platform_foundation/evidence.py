@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import uuid
 from pathlib import Path
 
@@ -139,6 +140,26 @@ def _revision3_preservation_summary(record: dict[str, object]) -> dict[str, obje
     }
 
 
+_GENERATED_DIRECTORY_NAMES = frozenset(
+    {".git", ".pytest_cache", ".worktrees", "__pycache__", "build", "dist", "node_modules"}
+)
+
+
+def _iter_repository_files(root: Path):
+    """Yield repository files while pruning generated dependency trees early."""
+
+    repository = root.resolve()
+    for directory, child_directories, filenames in os.walk(repository, topdown=True):
+        child_directories[:] = [
+            name
+            for name in child_directories
+            if name not in _GENERATED_DIRECTORY_NAMES and not name.startswith(".venv")
+        ]
+        directory_path = Path(directory)
+        for filename in filenames:
+            yield directory_path / filename
+
+
 def build_preassertion_content(
     repository_root: Path,
     build_result: dict[str, object],
@@ -150,25 +171,8 @@ def build_preassertion_content(
     authority = resolve_canonical_authority(root)
     analysis = analyze_tree(root / "src" / "market_platform_foundation")
     tracked_like_paths: list[str] = []
-    for path in root.rglob("*"):
-        if not path.is_file():
-            continue
+    for path in _iter_repository_files(root):
         relative = path.relative_to(root)
-        if any(
-            part
-            in {
-                ".git",
-                ".pytest_cache",
-                ".worktrees",
-                "__pycache__",
-                "build",
-                "dist",
-                "node_modules",
-            }
-            or part.startswith(".venv")
-            for part in relative.parts
-        ):
-            continue
         posix = relative.as_posix()
         if posix == ".env" or posix.startswith(".env.local"):
             continue

@@ -304,6 +304,16 @@ def changed_paths_from_git(repository_root: Path) -> tuple[str, ...]:
     return tuple(sorted(set(unstaged) | set(staged) | set(untracked)))
 
 
+def changed_paths_from_file(path: Path) -> tuple[str, ...]:
+    """Read an explicit newline-delimited changed-path list safely."""
+
+    try:
+        values = Path(path).read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError) as exc:
+        raise ValidationSelectionError(f"Git path list cannot be read: {exc}") from exc
+    return tuple(sorted({normalize_repository_path(value.strip()) for value in values if value.strip()}))
+
+
 def _is_secret_path(path: str) -> bool:
     leaf = PurePosixPath(path).name.lower()
     return (
@@ -609,6 +619,7 @@ def _run_parallel_jobs(
                 job = next(iterator)
             except StopIteration:
                 break
+            print(f"VALIDATING {job.id}...", flush=True)
             pending[executor.submit(run_job, job)] = job
         stop = False
         while pending:
@@ -619,6 +630,7 @@ def _run_parallel_jobs(
                 job = pending.pop(future)
                 payload = future.result()
                 results.append((job, payload))
+                print(f"COMPLETED {job.id}: {payload.get('status', 'unknown')}", flush=True)
                 if fail_fast and payload.get("status") != "passed":
                     stop = True
             while not stop and len(pending) < max(1, concurrency):
@@ -703,8 +715,10 @@ def execute_selection(
     interrupted = False
     try:
         for job in mandatory_jobs:
+            print(f"VALIDATING {job.id}...", flush=True)
             payload = run_job(job)
             executed.append((job, payload))
+            print(f"COMPLETED {job.id}: {payload.get('status', 'unknown')}", flush=True)
             if fail_fast and payload.get("status") != "passed":
                 stopped = True
                 break
@@ -719,8 +733,10 @@ def execute_selection(
         )
         if not stopped:
             for job in groups[0]:
+                print(f"VALIDATING {job.id}...", flush=True)
                 payload = run_job(job)
                 executed.append((job, payload))
+                print(f"COMPLETED {job.id}: {payload.get('status', 'unknown')}", flush=True)
                 if fail_fast and payload.get("status") != "passed":
                     stopped = True
                     break
@@ -842,6 +858,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("target", nargs="?")
     parser.add_argument("--baseline", type=Path)
+    parser.add_argument("--paths-file", type=Path, help="newline-delimited paths for CI merge-base selection")
     parser.add_argument("--json", dest="json_path", type=Path)
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--explain", action="store_true")
@@ -866,6 +883,8 @@ def _selection_for_arguments(
         paths = (
             changed_paths_from_baseline(repository_root, arguments.baseline)
             if arguments.baseline is not None
+            else changed_paths_from_file(arguments.paths_file)
+            if arguments.paths_file is not None
             else changed_paths_from_git(repository_root)
         )
         return select_changed(manifest, paths)
@@ -967,6 +986,7 @@ __all__ = [
     "execute_selection",
     "run_worker_process",
     "changed_paths_from_baseline",
+    "changed_paths_from_file",
     "changed_paths_from_git",
     "create_baseline_snapshot",
     "normalize_repository_path",

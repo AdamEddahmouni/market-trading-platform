@@ -17,6 +17,10 @@ npm test
 npm run build   # includes 200 KiB gzip budget
 ```
 
+From the repository root, `python tools/imp.py lint` runs the UI typecheck
+when UI paths are affected, and `python tools/imp.py closure` runs the final
+UI test, typecheck, and build gates when UI changes are present.
+
 Update `App.test.tsx` when routes, nav, or mode handoffs change.
 
 ## Guides

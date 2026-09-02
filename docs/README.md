@@ -37,6 +37,7 @@ When documents disagree, resolve in this order (highest first):
 | Current status & roadmap | [PROJECT_STATUS.md](PROJECT_STATUS.md) |
 | Developer setup | [LOCAL_DEVELOPMENT.md](engineering/LOCAL_DEVELOPMENT.md) |
 | System architecture | [ARCHITECTURE.md](architecture/ARCHITECTURE.md) |
+| Developer operating system | [DEVELOPER_OPERATING_SYSTEM.md](engineering/DEVELOPER_OPERATING_SYSTEM.md) |
 | Demo / Paper / Live safety | [MODE_AUTHORITY.md](architecture/MODE_AUTHORITY.md) |
 | Engineering rules | [ENGINEERING_HANDBOOK.md](engineering/ENGINEERING_HANDBOOK.md) |
 | AI agent workflow | [AI_AGENT_GUIDE.md](engineering/AI_AGENT_GUIDE.md) |
@@ -55,6 +56,7 @@ When documents disagree, resolve in this order (highest first):
 | Data contracts & timestamps | [DATA_CONTRACTS.md](architecture/DATA_CONTRACTS.md) |
 | Threat model (lite) | [THREAT_MODEL.md](architecture/THREAT_MODEL.md) |
 | Architecture decisions | [adr/README.md](architecture/adr/README.md) |
+| Multi-source data foundation | [MULTI_SOURCE_DATA_FOUNDATION.md](providers/MULTI_SOURCE_DATA_FOUNDATION.md) |
 | Foundation Revision 3 | [spec](superpowers/specs/2026-08-14-integrated-market-platform-foundation-design-revision-3.md) |
 | Platformization | [roadmap](research/PLATFORMIZATION_ROADMAP.md) |
 
@@ -70,11 +72,13 @@ When documents disagree, resolve in this order (highest first):
 | Testing strategy | [TESTING.md](engineering/TESTING.md) |
 | Validation commands | [VALIDATION.md](engineering/VALIDATION.md) |
 | Validation system internals | [VALIDATION_ARCHITECTURE.md](engineering/VALIDATION_ARCHITECTURE.md) |
+| Current workflow audit | [DEVELOPER_OPERATING_SYSTEM_AUDIT.md](engineering/DEVELOPER_OPERATING_SYSTEM_AUDIT.md) |
 | Definition of done | [DEFINITION_OF_DONE.md](engineering/DEFINITION_OF_DONE.md) |
 | Coding standards | [CODING_STANDARDS.md](engineering/CODING_STANDARDS.md) |
 | Dependencies | [DEPENDENCIES.md](engineering/DEPENDENCIES.md) |
 | Stack inventory | [STACK.md](engineering/STACK.md) |
 | Configuration / env vars | [CONFIGURATION.md](engineering/CONFIGURATION.md) |
+| Provider readiness | [PROVIDER_READINESS.md](engineering/PROVIDER_READINESS.md) |
 | Performance & bundle budget | [PERFORMANCE.md](engineering/PERFORMANCE.md) |
 | Accessibility | [ACCESSIBILITY.md](engineering/ACCESSIBILITY.md) |
 | Observability & logging | [OBSERVABILITY.md](engineering/OBSERVABILITY.md) |
@@ -114,6 +118,8 @@ When documents disagree, resolve in this order (highest first):
 |-------|----------|
 | Runbook | [operations/RUNBOOK.md](operations/RUNBOOK.md) |
 | Provider docs | [providers/](providers/) |
+| Provider integration foundation | [MULTI_SOURCE_DATA_FOUNDATION.md](providers/MULTI_SOURCE_DATA_FOUNDATION.md) |
+| NewsAPI / Finnhub | [NEWS_SOURCES.md](providers/NEWS_SOURCES.md) |
 | Cursor Cloud | [CURSOR_CLOUD_ENVIRONMENT.md](engineering/CURSOR_CLOUD_ENVIRONMENT.md) |
 
 ---

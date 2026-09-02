@@ -4,21 +4,36 @@ on:
   pull_request:
   push:
     branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: imp-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   validate-python:
+    uses: ./.github/workflows/imp-python.yml
+    with:
+      mode: fast
+      workers: "2"
+
+  validate-python-changed:
+    uses: ./.github/workflows/imp-python.yml
+    with:
+      mode: changed
+      workers: "2"
+
+  validate-docs:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Fast + changed validation
-        run: |
-          python tools/validate.py fast
-          python tools/validate.py changed
-      - name: Docs link check
+      - name: Check documentation links
         run: python tools/check_docs_links.py
 
   validate-ui:
@@ -31,10 +46,12 @@ jobs:
           node-version: "20"
           cache: npm
           cache-dependency-path: ui/package-lock.json
-      - name: Install and test UI
+      - name: Install UI dependencies
+        working-directory: ui
+        run: npm ci
+      - name: Typecheck, test, and build UI
         working-directory: ui
         run: |
-          npm ci
           npm run typecheck
-          npm test
+          npm test -- --run
           npm run build

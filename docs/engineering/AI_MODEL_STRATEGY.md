@@ -4,7 +4,13 @@
 
 Do not hard-code marketing model names as permanent truth. When the project standardizes specific models, add an easily-updated table below.
 
-## Fast / low-cost model
+## Routing tiers
+
+The canonical machine-readable policy is
+[`.cursor/model-routing.json`](../../.cursor/model-routing.json). Use workload
+risk, not model branding, to choose a tier.
+
+### Cheap exploration / mechanical
 
 - Simple edits, formatting
 - Repetitive test case expansion
@@ -12,7 +18,13 @@ Do not hard-code marketing model names as permanent truth. When the project stan
 - CSS adjustments
 - Boilerplate adapters
 
-## Strong coding / reasoning model
+### Normal implementation
+
+- Ordinary backend or frontend implementation
+- Focused debugging with a clear reproduction
+- Routine documentation and test maintenance
+
+### High-reasoning architecture / safety / review
 
 - Architecture decisions
 - Complex debugging (cache, authority, preview state)
@@ -20,6 +32,7 @@ Do not hard-code marketing model names as permanent truth. When the project stan
 - Schema migration design
 - Security-sensitive work
 - Large cross-cutting refactors
+- Final closure and baseline-failure interpretation
 
 ## Research / web-capable model
 
@@ -57,3 +70,10 @@ Use highest-reasoning tier for any change touching:
 - Paper preview/submit/intent path
 - Query key registry
 - Env gates affecting execution
+
+## Delegation
+
+Use `.cursor/agents/` role prompts. Parallel delegation is limited to
+independent discovery, pure isolated implementation slices, and manifest
+`PARALLEL_SAFE` tests. Keep shared-state, authority, persistence, execution,
+validation-inventory, and final documentation work serial.

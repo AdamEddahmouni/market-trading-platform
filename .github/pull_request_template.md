@@ -21,10 +21,11 @@
 
 ## Validation
 
-- [ ] `python tools/validate.py changed`
+- [ ] `python tools/imp.py test affected`
 - [ ] `cd ui && npm test` (if UI)
 - [ ] `cd ui && npm run build` (if UI)
-- [ ] `python tools/validate.py full` (if Paper safety or release)
+- [ ] `python tools/imp.py validate full` (if Paper safety or release)
+- [ ] `python tools/imp.py closure` (final evidence and closure report)
 
 ## Documentation
 

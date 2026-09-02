@@ -14,6 +14,7 @@ try:
     from tools.validate import (
         ValidationSelectionError,
         changed_paths_from_baseline,
+        changed_paths_from_file,
         changed_paths_from_git,
         create_baseline_snapshot,
         normalize_repository_path,
@@ -225,6 +226,14 @@ class ValidateSelectionTests(unittest.TestCase):
         self.assertEqual(
             changed_paths_from_baseline(self.root, baseline_path),
             ("added.txt", "removed.txt", "tracked.txt"),
+        )
+
+    def test_explicit_paths_file_supports_clean_ci_checkouts(self) -> None:
+        paths = self.root / "changed-paths.txt"
+        paths.write_text("ui\\src\\App.tsx\nsrc/core/new.py\n", encoding="utf-8")
+        self.assertEqual(
+            changed_paths_from_file(paths),
+            ("src/core/new.py", "ui/src/App.tsx"),
         )
 
 

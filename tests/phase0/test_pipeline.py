@@ -1,9 +1,11 @@
 import tempfile
 import unittest
+import uuid
 from pathlib import Path
 
 from market_platform_foundation.canonical import load_json_strict, sha256_bytes
 from market_platform_foundation.evidence import (
+    _iter_repository_files,
     _revision3_preservation_summary,
     build_preassertion_content,
     finalize_artifact,
@@ -12,6 +14,20 @@ from market_platform_foundation.evidence import (
 
 
 class EvidenceTests(unittest.TestCase):
+    def test_repository_file_walk_prunes_generated_dependency_trees(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "src").mkdir()
+            (root / "src/kept.py").write_text("kept", encoding="utf-8")
+            (root / "node_modules/deep").mkdir(parents=True)
+            (root / "node_modules/deep/ignored.js").write_text("ignored", encoding="utf-8")
+            (root / ".venv/Scripts").mkdir(parents=True)
+            (root / ".venv/Scripts/ignored.py").write_text("ignored", encoding="utf-8")
+
+            paths = {path.relative_to(root).as_posix() for path in _iter_repository_files(root)}
+
+            self.assertEqual(paths, {"src/kept.py"})
+
     def test_donor_preservation_declared_pass_cannot_hide_failed_comparison(self):
         summary = _revision3_preservation_summary(
             {
@@ -61,7 +77,7 @@ class EvidenceTests(unittest.TestCase):
         )
 
     def test_collector_excludes_generated_environment_paths(self):
-        generated = Path(".venv-phase0-collector-test")
+        generated = Path(f".venv-phase0-collector-test-{uuid.uuid4().hex}")
         generated.mkdir(exist_ok=False)
         sensitive = generated / "credential.txt"
         sensitive.write_text("not inspected", encoding="utf-8")

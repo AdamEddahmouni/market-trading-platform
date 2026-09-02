@@ -79,6 +79,13 @@ Live pages never submit orders. Canary is observational.
 
 Hierarchy in [TESTING.md](TESTING.md). Regression rule: every real bug fix gets a test where practical.
 
+## Developer operating system
+
+Use [DEVELOPER_OPERATING_SYSTEM.md](DEVELOPER_OPERATING_SYSTEM.md) and the
+`python tools/imp.py` router for discovery, progressive validation, review, and
+closure. It delegates to the existing manifest and preserves all safety
+authorities.
+
 ## Performance budgets
 
 200 KiB gzip initial JS — [PERFORMANCE.md](PERFORMANCE.md).

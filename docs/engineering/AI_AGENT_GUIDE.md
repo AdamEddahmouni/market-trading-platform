@@ -5,16 +5,15 @@
 ## First reads (new session)
 
 1. [AGENTS.md](../../AGENTS.md)
-2. [docs/README.md](../README.md)
+2. [DEVELOPER_OPERATING_SYSTEM.md](DEVELOPER_OPERATING_SYSTEM.md)
 3. [MODE_AUTHORITY.md](../architecture/MODE_AUTHORITY.md) if touching Paper/Live
 4. [WORK_LOG.md](WORK_LOG.md) — recent changes (newest first)
 
 ## Establish baseline
 
 ```powershell
-$env:PYTHONPATH='src'
-.venv\Scripts\python.exe tools\validate.py changed
-cd ui && npm test
+python tools/imp.py env
+python tools/imp.py test affected
 ```
 
 Inspect relevant code before editing — search for existing patterns.
@@ -65,10 +64,11 @@ Report exact commands and results — never claim tests you did not run.
 ## Large tasks
 
 1. Audit relevant docs and code
-2. Implement in coherent increments
-3. Validate each increment
-4. Update authoritative docs (not only completion record)
-5. Work log entry per increment
+2. Use the cheapest relevant validation-pyramid stage
+3. Implement in coherent increments
+4. Run changed validation before closure and full validation once at closure
+5. Update authoritative docs (not only completion record)
+6. Work log entry per increment
 
 ## Avoid duplicate architecture
 

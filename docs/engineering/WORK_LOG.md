@@ -26,6 +26,174 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-02 — IMP Developer Operating System
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `developer-tooling`, `validation`, `governance`, `ci`, `docs` |
+| **Summary** | Added a thin canonical `tools/imp.py` developer command router, explicit validation pyramid routing, merge-base affected-path support for clean CI checkouts, local telemetry, machine-readable repository metadata, closure-report generation, project hooks, scoped agent guidance, reusable skills, specialized subagent prompts, Bugbot safety instructions, and reusable cancellable CI validation. Existing manifest, worker, backend authority, and Demo/Paper/Live safety boundaries remain authoritative. |
+| **Key files** | `tools/imp.py`; `tools/validate.py`; `tools/validation_manifest.json`; `.cursor/hooks.json`; `.cursor/rules/developer-workflow.mdc`; `.cursor/skills/`; `.cursor/agents/`; `.cursor/BUGBOT.md`; `manifests/developer-operating-system.json`; `.github/workflows/imp-python.yml`; `docs/engineering/DEVELOPER_OPERATING_SYSTEM.md`; `docs/engineering/DEVELOPER_OPERATING_SYSTEM_AUDIT.md`; `artifacts/developer-workflow/baseline.json` |
+| **Tests** | Focused router/selection/hook tests: 16 passed; routed FAST: 21 passed; docs links: 136 governance markdown files checked; JSON manifests and GitHub workflow YAML parsed successfully; final affected validation: 2,176 tests, 34 skipped, 3 failures, 1 error in 425.317s; final closure FULL: 3,157 tests, 34 skipped, 3 failures, 1 error in 575.479s; UI closure: 421 tests passed, typecheck passed, build passed at 201.18 KiB gzip. Aggregate failures remain the dirty-tree baseline. |
+| **Related** | [Developer Operating System](DEVELOPER_OPERATING_SYSTEM.md); [Current workflow audit](DEVELOPER_OPERATING_SYSTEM_AUDIT.md); [validation architecture](VALIDATION_ARCHITECTURE.md) |
+| **Notes** | Closure report: `artifacts/developer-workflow/closure-report.json`, status `blocked_by_validation` because the pre-existing dirty tree retains three failures and one error. The first closure attempt exposed and then fixed Windows `npm.cmd` lookup; the final closure report was produced successfully. No commit, push, merge, deploy, reset, or product behavior change was performed. |
+
+## 2026-09-02 — Equity Paper loop validation and handoff
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `architecture`, `observability`, `validation` |
+| **Summary** | Completed the final Task 7 handoff for the deterministic equity-like Paper loop. Documented the backend-only persisted lineage path, separate allocation/proposal/risk/order/fill quantities, cumulative actual-fill attribution, independent forecast settlement, structured runtime diagnostics, and reconstruction from authoritative records without introducing UI or duplicate authority. |
+| **Key files** | `docs/architecture/PAPER_DECISION_LIFECYCLE.md`; `docs/engineering/OBSERVABILITY.md`; `docs/engineering/WORK_LOG.md`; `task_plan.md`; `findings.md`; `progress.md` |
+| **Tests** | Focused pass: phase-6 strategy definitions `7/7`; strategy scanning/match `9/9`; baseline forecasts `5/5`; opportunity/bridge, clustering, comparison/allocation, and allocation persistence `31/31`; Paper execution governance `18/18`; runtime integration `11/11` (including the `equity-paper-runtime-suite` validation worker); strategy attribution `12/12`; portfolio accounting `7/7`; outcome settlement `15/15`; strategy learning `8/8`. `PYTHONPATH=src .venv\Scripts\python.exe -m compileall -q src tests`: pass. `git diff --check`: pass, with a non-failing pre-existing CRLF normalization warning. `tools/check_docs_links.py`: 134 governance markdown files checked, pass. `ui`: `npm test -- --reporter=dot --maxWorkers=1` pass; `npm run build` pass, 1085 modules transformed, initial bundle `201.18 KiB gzip`. `tools/validate.py changed`: blocked by dirty baseline (`1232 tests, 9 skipped, 1 failure, 91 errors in 530.542s`). `tools/validate.py full`: blocked by dirty baseline (`2209 tests, 9 skipped, 1 failure, 92 errors in 734.902s`). |
+| **Related** | [Equity Paper profitability loop plan](C:/Users/adame/.cursor/plans/equity-paper-loop_5c6b4402.plan.md); [Paper decision lifecycle](../architecture/PAPER_DECISION_LIFECYCLE.md); [Observability](OBSERVABILITY.md) |
+| **Notes** | Final status is `FOCUSED CLOSED / GLOBAL VALIDATION BLOCKED`. Aggregate failures span `finviz`, `platform`, `intelligence`, `ui1`, `ui2`, and `validation` and are retained as the pre-existing dirty-tree/global validation classification. No commit, push, deploy, reset, clean, plan-file edit, secret, UI authority, allocation authority, attribution authority, or unfinished diagnostic was introduced. |
+
+## 2026-09-02 — Bounded governed strategy learning boundary
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/strategy`, `tests` |
+| **Summary** | Added an immutable, reference-preserving learning observation/join boundary over the existing StrategyDefinition identity, StrategyMatch, ForecastV1, OutcomeV1, and StrategyAttributionV1 records. Versioned policy gates enforce point-in-time lineage, settled/labelable prediction outcomes, evidence allow-lists, minimum samples, account/mode isolation, and optional attributed trading sidecars while preserving independent prediction and trading quality. |
+| **Key files** | `src/market_platform_foundation/strategy/learning.py`; `src/market_platform_foundation/strategy/__init__.py`; `tests/intelligence/test_strategy_learning.py` |
+| **Tests** | Focused learning boundary `8/8`; StrategyMatch `5/5`; StrategyDefinition `3/3`; StrategyAttribution `7/7`; compileall, package export, and new/modified-file whitespace checks passed. `tools/validate.py changed` completed with the dirty-tree aggregate result: `1206 tests, 9 skipped, 1 failure, 91 errors` across `finviz`, `platform`, `intelligence`, `ui1`, and `validation`. |
+| **Related** | `C:/Users/adame/.cursor/plans/imp_universal_opportunity_23f67055.plan.md` (read-only) |
+| **Notes** | Research handoffs are fixed non-promotional seeds requiring ResearchHypothesisV1, ExperimentManifestV1, validation, locked holdout, contamination, shadow, and PromotionEngine authorities; they cannot promote, execute, or change a champion. No frozen contract, PromotionEngine, plan, BUILD/TD record, UI, ranking, allocation, risk, broker, or unrelated dirty file was changed. |
+
+## 2026-09-02 — Durable strategy attribution boundary
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/portfolio`, `backend/persistence`, `tests` |
+| **Summary** | Added an immutable strategy-to-realized-P&L attribution sidecar that retains virtual allocation slices and explicit fill lineage independently of broker-netted positions, risk decisions, and the authoritative portfolio ledger. Deterministic canonical identity, integer cost-basis accounting, account/mode/PIT guards, explicitly labeled prediction/trading outcomes, and in-memory/Mongo persistence support durable joins without inferring attribution from net positions. |
+| **Key files** | `src/market_platform_foundation/portfolio/attribution.py`; `src/market_platform_foundation/portfolio/__init__.py`; `src/market_platform_foundation/intelligence/persistence/{codec,memory,repository}.py`; `src/market_platform_foundation/intelligence/persistence/mongo/{repository,schema}.py`; `src/market_platform_foundation/intelligence/contracts/common.py`; `tests/platform/test_strategy_attribution.py` |
+| **Tests** | Focused attribution `7/7`; authoritative portfolio ledger `6/6`; intelligence contracts `18/18`; Mongo schema bootstrap `8/8`; StrategyMatch `5/5`; compileall and tracked/new-file whitespace checks passed. `tools/validate.py changed` reached `1198 tests, 9 skipped` but reported `1 failure, 91 errors` from the pre-existing dirty repository baseline and direct-script package import assumptions. |
+| **Related** | `C:/Users/adame/.cursor/plans/imp_universal_opportunity_23f67055.plan.md` (read-only) |
+| **Notes** | No plan, BUILD/TD record, commit, reset, checkout, order/risk decision, authoritative ledger, or unrelated dirty file was changed. |
+
+## 2026-09-02 — Account-scoped opportunity comparison and allocation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/intelligence/opportunity`, `tests` |
+| **Summary** | Added immutable, bounded account/mode/PIT-scoped comparison inputs and explicit comparison vectors over OpportunityV1 plus required universal economic sidecars. Added deterministic one-expression-per-thesis comparison, duplicate/exclusion reasons, observability counters, and an independent capital allocator that emits capital intents only; risk and execution authorities remain unchanged. |
+| **Key files** | `src/market_platform_foundation/intelligence/opportunity/comparison.py`; `src/market_platform_foundation/intelligence/opportunity/__init__.py`; `tests/intelligence/test_opportunity_comparison.py` |
+| **Tests** | Focused comparison/allocation `8/8`; thesis clustering compatibility `8/8`; compileall passed; focused whitespace checks produced no diagnostics. `tools/validate.py changed` completed with the pre-existing dirty-tree baseline result: `1151 tests, 9 skipped, 1 failure, 102 errors`. |
+| **Related** | `C:/Users/adame/.cursor/plans/imp_universal_opportunity_23f67055.plan.md` (read-only) |
+| **Notes** | Changed validation remains blocked by the existing `portfolio.attribution` circular import and other dirty-tree suite failures. No frozen contracts, BUILD/TD records, plan files, UI, proposals, risk decisions, orders, broker calls, or unrelated dirty files were modified. |
+
+## 2026-09-02 — Bounded opportunity thesis clustering
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/intelligence/opportunity`, `tests` |
+| **Summary** | Added an immutable, account/mode/PIT-scoped thesis clustering projection over OpportunityV1, StrategyMatch, and optional universal economic sidecars. Deterministic explicit/fallback thesis identities group duplicate strategies and expressions while preserving lineage; the duplicate view only marks exposure and does not rank, allocate, or collapse opportunities. |
+| **Key files** | `src/market_platform_foundation/intelligence/opportunity/clustering.py`; `src/market_platform_foundation/intelligence/opportunity/__init__.py`; `tests/intelligence/test_opportunity_clustering.py` |
+| **Tests** | Focused clustering `8/8`; bridge/sidecar regressions `7/7`; StrategyMatch regressions `5/5`; compileall and changed-file whitespace checks passed. |
+| **Related** | `C:/Users/adame/.cursor/plans/imp_universal_opportunity_23f67055.plan.md` (read-only) |
+| **Notes** | No frozen V1 contracts, BUILD/TD records, plan files, persistence, ranking, allocation, UI, execution, or unrelated dirty files were changed. |
+
+## 2026-09-02 — Universal economic sidecar and opportunity bridge
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/intelligence/opportunity`, `backend/persistence`, `tests` |
+| **Summary** | Added an immutable, dimension-preserving universal economic-assessment sidecar with integer minor-unit money, explicit ns/bps/probability semantics, versioned assumptions, liquidity/capacity, uncertainty, factor exposure, and account actionability. Added a strict SHARED P4 adapter and a canonical MATCHED StrategyMatch bridge that delegates to the existing OpportunityEngine and preserves sidecar/match lineage without changing V1 authorities. |
+| **Key files** | `src/market_platform_foundation/intelligence/opportunity/{economic_assessment,p4_adapter,bridge}.py`; `src/market_platform_foundation/intelligence/opportunity/{__init__,identity,serialization,types}.py`; `src/market_platform_foundation/intelligence/persistence/{memory,repository}.py`; `src/market_platform_foundation/intelligence/persistence/mongo/repository.py`; `tests/intelligence/test_universal_opportunity.py` |
+| **Tests** | Focused universal sidecar/bridge `7/7`; opportunity and contract regression `54/54`; persistence/strategy regression `31/31`; compileall and bounded `git diff --check` passed. Full changed validation remains blocked by the pre-existing dirty-tree platform baseline (`437 tests, 3 skipped, 0 failures, 4 errors`). |
+| **Related** | `C:/Users/adame/.cursor/plans/imp_universal_opportunity_23f67055.plan.md` (read-only) |
+| **Notes** | No BUILD/TD records, plan file, commit, reset, checkout, clustering, ranking, allocation, UI, multi-asset accounting, or execution authority was changed. |
+
+## 2026-09-02 — Bounded universal strategy scanning
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/strategy`, `tests` |
+| **Summary** | Added a deterministic one-pass universal strategy scanner with explicit point-in-time universes, capability/context snapshots, Stage A eligibility, Stage B cheap screening, bounded evaluator budgets, trigger metadata, account/mode scope, and immutable StrategyMatch persistence. Coarse screen/evaluator failures remain diagnostics and counters without fabricating decision records. |
+| **Key files** | `src/market_platform_foundation/strategy/scanning.py`; `src/market_platform_foundation/strategy/__init__.py`; `tests/intelligence/test_strategy_scanning.py` |
+| **Tests** | Focused scanner `3/3`; StrategyMatch contract `5/5`; compileall and focused whitespace checks passed. Repository changed validation was run; final baseline result is reported in the handoff. |
+| **Related** | `C:/Users/adame/.cursor/plans/imp_universal_opportunity_23f67055.plan.md` (read-only) |
+| **Notes** | No BUILD/TD records, plan file, commit, reset, checkout, UI, economics, ranking, allocation, daemon, or execution behavior was changed. |
+
+## 2026-09-02 — Immutable StrategyMatch contract
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/intelligence`, `tests` |
+| **Summary** | Added an immutable typed `StrategyMatch` evaluation record with explicit MATCHED, REJECTED, ABSTAINED, UNAVAILABLE, and EXPIRED dispositions. Canonical identity/serialization and immutable repository persistence retain source references, condition outcomes, reasons, capability/quality state, context, validity, and lineage without adding scanner or execution behavior. |
+| **Key files** | `src/market_platform_foundation/intelligence/contracts/strategy_match.py`; `src/market_platform_foundation/intelligence/contracts/{__init__,common}.py`; `src/market_platform_foundation/intelligence/persistence/{codec,memory,repository}.py`; `src/market_platform_foundation/intelligence/persistence/mongo/{repository,schema}.py`; `tests/intelligence/test_strategy_match.py`; `tests/intelligence/test_persistence_mongo_schema.py` |
+| **Tests** | Focused StrategyMatch `5/5`; existing intelligence contracts `18/18`; Mongo schema `8/8`; validator worker persistence selector `1/1`; compileall and tracked-file whitespace check passed. `tools/validate.py changed` completed with `1170 tests, 9 skipped, 1 failure, 90 errors`; failures were across dirty-tree `finviz`, `platform`, `intelligence`, `ui1`, and `validation` suites. |
+| **Related** | `C:/Users/adame/.cursor/plans/imp_universal_opportunity_23f67055.plan.md` (read-only) |
+| **Notes** | No BUILD/TD records, plan files, commits, resets, checkouts, scanner orchestration, economics, ranking, allocation, UI, or execution behavior were changed. |
+
+## 2026-09-02 — Portfolio fill accounting and settlement scheduler correctness
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/portfolio`, `backend/intelligence`, `tests` |
+| **Summary** | Corrected authoritative fill accounting with signed net-position cost basis, including weighted scale-in/scale-out, long/short closes, and reversals. Due unsettled prediction entries now report `SettlementStatus.DUE` through the scheduler. |
+| **Key files** | `src/market_platform_foundation/portfolio/ledger.py`; `src/market_platform_foundation/portfolio/reconciliation.py`; `src/market_platform_foundation/portfolio/__init__.py`; `src/market_platform_foundation/paper/ledger.py`; `src/market_platform_foundation/intelligence/outcomes/scheduler.py`; `tests/platform/test_portfolio_ledger_accounting.py` |
+| **Tests** | Focused accounting/scheduler unittest `6/6`; paper compatibility `74/74`; ledger durability `9/9`; reconciliation `18/18`; compileall passed; phase7 validation worker `3/3`; focused manifest selectors `6/6`. `validate.py changed` and `validate.py domain core` remain blocked by unrelated dirty-tree import/auth failures (`1165 tests, 9 skipped, 1 failure, 90 errors`; `431 tests, 3 skipped, 4 errors`). |
+| **Related** | `C:/Users/adame/.cursor/plans/imp_universal_opportunity_23f67055.plan.md` (read-only) |
+| **Notes** | No BUILD/TD records or plan files were modified. Existing unrelated dirty-tree changes were preserved. |
+
+## 2026-09-01 — Typed strategy identity/catalog boundary
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/strategy`, `tests` |
+| **Summary** | Added an immutable, typed `StrategyDefinition` with versioned optional taxonomy fields for family, style, asset class, and timeframe. Legacy dictionary strategy specs retain their prior identity-hash and serialization behavior when taxonomy is absent, while preregistration, interpretation, and evaluation explicitly accept either representation. |
+| **Key files** | `src/market_platform_foundation/strategy/{strategy_spec,preregistration,interpretation,evaluation,__init__}.py`; `tests/phase6/test_strategy_definition.py` |
+| **Tests** | Focused typed strategy tests `3/3`; complete strategy subset `7/7`; strategy compile check passed. Repository `tools/validate.py changed` ran `953` tests with `1` failure and `7` errors in unrelated dirty-tree suites (`finviz`, `platform`, `ui1`, `validation`). |
+| **Related** | `C:/Users/adame/.cursor/plans/imp_universal_opportunity_23f67055.plan.md` (read-only) |
+| **Notes** | No BUILD/TD records, plan file, commit, reset, checkout, or unrelated changes were modified. |
+
+## 2026-09-01 — Multi-source foundation extension and identity hardening
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `backend/providers`, `tests`, `docs` |
+| **Summary** | Added bounded, structured, deeply immutable provider extensions across observations, envelopes, and normalization, and made raw content identity source-scoped by provider and source instance. Recognized credential patterns remain redacted; opaque strings without markers are documented as caller-prohibited secret input. |
+| **Key files** | `src/market_platform_foundation/providers/{observations,raw_records}.py`; `tests/providers/test_multi_source_foundation.py`; foundation provider docs, ADR, and plan |
+| **Tests** | Focused foundation `25/25`; complete providers `125/125` after this change. Full/changed validation remains blocked by unrelated dirty-tree suites; current counts are recorded in the plan. |
+| **Related** | [implementation plan](../superpowers/plans/2026-09-01-multi-source-data-foundation.md), [ADR-0009](../architecture/adr/0009-multi-source-data-integration-foundation.md) |
+| **Notes** | No commit, push, reset, checkout, stash, or unrelated-file overwrite performed. |
+
+## 2026-09-01 — Multi-source foundation remediation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `backend/providers`, `tests`, `docs` |
+| **Summary** | Remediated foundation contract gaps without changing execution lifecycle or unrelated provider work. Envelopes now preserve explicit clocks/acquisition/revision lineage; mappings fail closed; raw and normalized records are deeply immutable; planner and reconciliation policies are operational and deterministic. |
+| **Key files** | `src/market_platform_foundation/providers/{identity,observations,raw_records,planner,reconciliation,registry,storage}.py`; `tests/providers/test_multi_source_foundation.py`; foundation ADR/provider docs and implementation plan |
+| **Tests** | Focused foundation `23/23`; complete providers `123/123`; IBKR `47/47`; news `5/5`; provider-readiness `6/6`; compileall and linter passed. Changed/full repository validation remains blocked by unrelated dirty-tree baseline failures documented in the plan. |
+| **Related** | [implementation plan](../superpowers/plans/2026-09-01-multi-source-data-foundation.md), [ADR-0009](../architecture/adr/0009-multi-source-data-integration-foundation.md) |
+| **Notes** | No commit, push, reset, checkout, deployment, or unrelated-file overwrite performed. |
+
+## 2026-09-01 — Multi-source data integration foundation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `backend/providers`, `docs`, `tests` |
+| **Summary** | Added a stdlib-only provider foundation for operational capability registration, namespaced instrument identity, immutable raw lineage, explicit PIT observation clocks, deterministic planning, bounded storage boundaries, and multi-source reconciliation. Existing runtime composition, paper execution, mode authority, account isolation, and Live execution block were left unchanged. |
+| **Key files** | `src/market_platform_foundation/providers/{registry,identity,observations,raw_records,planner,reconciliation,storage,testing}.py`; `tests/providers/test_multi_source_foundation.py`; `docs/providers/MULTI_SOURCE_DATA_FOUNDATION.md`; `docs/architecture/adr/0009-multi-source-data-integration-foundation.md`; `docs/superpowers/plans/2026-09-01-multi-source-data-foundation.md` |
+| **Tests** | Focused foundation `13/13`; complete providers `111/111`; fast validation `21` passed; docs links `134` files checked; UI `421/421`, typecheck, and build passed. Full/changed validation remains blocked by existing adjacent dirty-tree finviz/platform/intelligence/ui1/ui2/validation failures; exact evidence is in the plan. |
+| **Related** | [implementation plan](../superpowers/plans/2026-09-01-multi-source-data-foundation.md), [ADR-0009](../architecture/adr/0009-multi-source-data-integration-foundation.md) |
+| **Notes** | No commit, push, deploy, reset, checkout, or unrelated user-change overwrite performed. Existing IBKR/news/Finviz/readiness/evidence work remains preserved. |
+
 ## 2026-09-01 — P6 Shadow Run 1 duplicate-bucket operational check
 
 | Field | Value |

@@ -5,6 +5,25 @@
 
 Run from repository root unless noted. Use `.venv\Scripts\python.exe` on Windows (CPython 3.11).
 
+## Canonical command interface
+
+Use `python tools/imp.py` for the stable developer surface:
+
+```powershell
+python tools/imp.py env
+python tools/imp.py format
+python tools/imp.py lint
+python tools/imp.py test focused <selector>
+python tools/imp.py test affected
+python tools/imp.py validate changed
+python tools/imp.py validate full
+python tools/imp.py review
+python tools/imp.py closure
+```
+
+The router delegates Python execution to the manifest validator and keeps the
+existing direct commands below available for compatibility.
+
 ## Commands
 
 ### Python (manifest)
@@ -50,7 +69,10 @@ $env:PYTHONPATH='src'
 
 ## CI (GitHub)
 
-`.github/workflows/imp-validate.yml`: `fast` + `changed` on PR/push to `main`. FULL and UI tests are local/checkpoint gates unless CI is extended.
+`.github/workflows/imp-validate.yml`: cancellable parallel FAST, merge-base
+CHANGED, docs-link, and UI typecheck/test/build jobs on PR/push to `main`.
+FULL remains the final local closure gate through `python tools/imp.py closure`
+unless a release workflow explicitly promotes it.
 
 ## Dependency audit
 

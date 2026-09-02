@@ -6,6 +6,7 @@
 
 - [ ] Authoritative doc updated if behavior/architecture changed
 - [ ] [WORK_LOG.md](WORK_LOG.md) entry (substantive work)
+- [ ] `python tools/imp.py closure` produced a machine-readable closure report
 - [ ] Completion record if large feature (`docs/superpowers/plans/*-completion.md`)
 - [ ] No stale plan checkboxes claiming incomplete for shipped work
 
@@ -23,6 +24,13 @@
 - [ ] Unittest coverage in manifest-owned suite
 - [ ] Backward compatible schema unless migration authorized
 - [ ] `validate.py changed`; `full` if cross-cutting
+
+## Developer workflow
+
+- [ ] Changes are classified by the validation pyramid
+- [ ] `python tools/imp.py test affected` ran before closure
+- [ ] Baseline failures are separated from newly introduced failures
+- [ ] `artifacts/developer-workflow/closure-report.json` records final evidence
 
 ## API / schema
 

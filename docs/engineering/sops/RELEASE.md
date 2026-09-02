@@ -5,7 +5,7 @@ Local/manual release process (no hosted deploy pipeline in repo).
 ## Pre-release
 
 - [ ] Clean git tree (intentional changes only)
-- [ ] `validate.py full` — offline
+- [ ] `python tools/imp.py closure` — offline FULL plus closure report
 - [ ] `cd ui && npm test && npm run build`
 - [ ] `tools/check_docs_links.py` if docs changed
 - [ ] [PROJECT_STATUS.md](../../PROJECT_STATUS.md) updated if milestone

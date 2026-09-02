@@ -68,3 +68,17 @@ separate learning outputs, and a closed trade can legitimately have a
 ## Backend logs
 
 Launcher captures API output to `.local/platform-backend.log`. Redact secrets manually if sharing logs.
+
+## Developer workflow telemetry
+
+`python tools/imp.py` records one JSON object per command in
+`.local/developer-workflow/telemetry.jsonl` (or `IMP_TELEMETRY_PATH`). Events
+contain a schema version, command identity, exit status, and wall time only;
+environment values, credentials, test output, and market data are excluded.
+This is intentionally a local, lightweight measurement surface rather than a
+remote analytics system.
+
+Aggregate the events when needed to measure validation runtime, CI/local
+runtime, repeated command fingerprints, agent iterations, or command adoption.
+`artifacts/developer-workflow/closure-report.json` records the telemetry path
+used for a closure run.

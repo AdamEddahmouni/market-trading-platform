@@ -1,0 +1,15 @@
+---
+description: Route IMP agent work through the canonical developer operating system
+alwaysApply: true
+---
+
+# IMP developer workflow
+
+- Start at root `AGENTS.md`; use `docs/engineering/DEVELOPER_OPERATING_SYSTEM.md`
+  for commands, validation tiers, delegation, and closure.
+- Prefer `python tools/imp.py` over assembling equivalent commands manually.
+- Use FAST/focused/affected during iteration; reserve FULL for a major checkpoint
+  or closure. A `full_suite_required` flag is a gate, not permission to skip FULL.
+- Preserve the sole suite inventory in `tools/validation_manifest.json`.
+- Record exact evidence and baseline failures; never convert a dirty baseline
+  into a new failure claim.

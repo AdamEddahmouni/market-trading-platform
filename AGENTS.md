@@ -1,88 +1,67 @@
-# Integrated Market Platform — Agent Instructions
+# Integrated Market Platform — agent router
 
-**Mission:** Governed local market operating workstation (Demo replay, Paper simulation, Live observational). Safety and source-backed data are non-negotiable.
+IMP is a governed market workstation: Demo replay, Paper internal simulation,
+and Live observational monitoring. This file routes agents; authoritative
+details live in the linked architecture and engineering references.
 
-## Required first reads
+## First reads
 
-1. [docs/README.md](docs/README.md) — documentation map and authority hierarchy
-2. [docs/architecture/MODE_AUTHORITY.md](docs/architecture/MODE_AUTHORITY.md) — **safety invariants**
-3. [docs/engineering/ENGINEERING_HANDBOOK.md](docs/engineering/ENGINEERING_HANDBOOK.md)
-4. [docs/engineering/WORK_LOG.md](docs/engineering/WORK_LOG.md) — recent changes (newest first)
+1. [docs/README.md](docs/README.md) — authority map
+2. [docs/architecture/MODE_AUTHORITY.md](docs/architecture/MODE_AUTHORITY.md) —
+   non-negotiable safety model
+3. [docs/engineering/DEVELOPER_OPERATING_SYSTEM.md](docs/engineering/DEVELOPER_OPERATING_SYSTEM.md) —
+   command and delegation contract
+4. [docs/engineering/WORK_LOG.md](docs/engineering/WORK_LOG.md) — current history
 
-Scoped guides: [ui/AGENTS.md](ui/AGENTS.md), [paper/AGENTS.md](src/market_platform_foundation/paper/AGENTS.md)
+Read [ui/AGENTS.md](ui/AGENTS.md) for UI work and
+[paper/AGENTS.md](src/market_platform_foundation/paper/AGENTS.md) for Paper
+backend work. Use the relevant SOP from `docs/engineering/sops/`.
 
-## Critical safety invariants
+## Safety invariants
 
-- **No Live production execution** — LIVE-001 blocked; Live mode is read-only
-- **Paper** requires backend `INTERNAL_SIMULATION` + `PAPER_ONLY` + env gates — frontend `canUsePaperActions` is UX only
-- **Workspace** is the canonical Paper submit boundary — Paper Command hands off, does not submit
-- **Fail closed** on authority loss, stale preview, schema mismatch on write
-- **Never fabricate** market data, authority, or API shapes — inspect schemas
-- **Backward compatibility** — optional fields by default; legacy records stay valid
+- Demo mutations are prohibited; Live is observational only; `LIVE-001` remains
+  blocked.
+- Paper mutations require backend `INTERNAL_SIMULATION` + `PAPER_ONLY` authority
+  and explicit environment gates. Frontend gating is UX, not security.
+- Workspace is the canonical Paper submit boundary. Preserve preview
+  revalidation, risk authority, execution controls, account isolation,
+  source-time semantics, immutable provenance, persistence correctness, and
+  offline network denial.
+- Fail closed on authority loss, stale preview, schema mismatch, unknown
+  identifiers, and unconfigured providers. Never fabricate data or API shapes.
 
-## Inspect before inventing
+## Canonical command path
 
-Search existing `Mode*Route`, `*Observability`, `paper/`, `queryKeys` before new abstractions.
-
-## Query-key rule
-
-Same React Query key ⇒ same fetch semantics and response shape. Add keys to `ui/src/api/hooks.ts` `queryKeys`. See [ADR-0004](docs/architecture/adr/0004-react-query-key-invariants.md).
-
-## Validation minimums
-
-```powershell
-$env:PYTHONPATH='src'
-.venv\Scripts\python.exe tools\validate.py changed    # after each edit
-cd ui && npm test && npm run build                    # UI changes
-.venv\Scripts\python.exe tools\validate.py full       # major checkpoint / Paper safety
-```
-
-CI runs `fast` + `changed` only. Details: [VALIDATION.md](docs/engineering/VALIDATION.md), [VALIDATION_ARCHITECTURE.md](docs/engineering/VALIDATION_ARCHITECTURE.md).
-
-| Change | Minimum validation |
-|--------|-------------------|
-| Docs only | `tools/check_docs_links.py` if links changed |
-| UI | vitest + build + validate changed |
-| Backend | validate changed |
-| Paper safety | full + vitest + build |
-
-## Work logging (required)
-
-After substantive work, append to [WORK_LOG.md](docs/engineering/WORK_LOG.md) **before ending the turn** — template at top of file. Enforced by `.cursor/rules/work-logging.mdc`.
-
-Large features: completion record under `docs/superpowers/plans/`.
-
-## Local environment (Windows)
-
-CPython **3.11** in `.venv` (not system Python):
+Run from the repository root:
 
 ```powershell
-$env:PYTHONPATH='src'
-.venv\Scripts\python.exe tools\validate.py changed
+python tools/imp.py env
+python tools/imp.py format
+python tools/imp.py lint
+python tools/imp.py validate fast
+python tools/imp.py test focused <selector>
+python tools/imp.py test affected
+python tools/imp.py validate changed
+python tools/imp.py validate full
+python tools/imp.py review
+python tools/imp.py closure
 ```
 
-Setup: [LOCAL_DEVELOPMENT.md](docs/engineering/LOCAL_DEVELOPMENT.md)
+Use the cheapest relevant stage: FAST → focused/affected → domain/changed →
+FULL closure. `tools/validation_manifest.json` remains the sole test inventory;
+`tools/validate.py` remains the Python validation authority.
 
-## Cursor Cloud
+## Working rules
 
-```bash
-bash .cursor/install-cloud-deps.sh
-export PYTHONPATH=src
-python tools/validate.py changed
-```
+- Inspect existing patterns, schemas, ownership metadata, and authoritative
+  docs before editing. Extend established abstractions.
+- Keep changes minimal and preserve unrelated dirty-tree work.
+- Add regression tests for real bugs and do not weaken tests or safety gates.
+- Substantive work updates `WORK_LOG.md`; behavior/architecture changes update
+  the authoritative doc, not only a completion record.
+- Use repo-local skills/subagents only for their declared scope. Parallelize
+  independent read-only or isolated validation work; keep authority,
+  persistence, execution, and shared-state changes serial.
 
-See [CURSOR_CLOUD_ENVIRONMENT.md](docs/engineering/CURSOR_CLOUD_ENVIRONMENT.md).
-
-## SOPs (when applicable)
-
-- API/schema: [API_SCHEMA_CHANGE.md](docs/engineering/sops/API_SCHEMA_CHANGE.md)
-- Paper execution: [PAPER_EXECUTION_CHANGE.md](docs/engineering/sops/PAPER_EXECUTION_CHANGE.md)
-- Debugging: [DEBUGGING.md](docs/engineering/sops/DEBUGGING.md)
-
-## AI workflow
-
-[AI_AGENT_GUIDE.md](docs/engineering/AI_AGENT_GUIDE.md) · [AI_MODEL_STRATEGY.md](docs/engineering/AI_MODEL_STRATEGY.md)
-
-## Definition of done
-
-[DEFINITION_OF_DONE.md](docs/engineering/DEFINITION_OF_DONE.md)
+Detailed validation, closure, model routing, and delegation rules:
+[Developer Operating System](docs/engineering/DEVELOPER_OPERATING_SYSTEM.md).

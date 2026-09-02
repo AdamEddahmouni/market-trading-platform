@@ -1,12 +1,11 @@
 ---
-description: Link to authoritative docs; avoid duplicating governance prose in rules
+description: Route behavior and architecture changes to authoritative docs
 alwaysApply: true
 ---
 
 # Authoritative documentation
 
-Entry point: [docs/README.md](docs/README.md)
-
-When behavior or architecture changes, update the **authoritative** doc — not only WORK_LOG or completion records.
-
-Hierarchy: safety → AGENTS.md → architecture → handbook/SOPs → historical plans.
+Use [docs/README.md](../../docs/README.md) to locate the authoritative document.
+When behavior or architecture changes, update that document—not only the work
+log or a historical completion record. Keep rules as references, not duplicate
+architecture or SOP prose.

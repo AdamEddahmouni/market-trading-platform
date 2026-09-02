@@ -30,4 +30,6 @@ Run `validate.py full` for execution-path changes.
 
 ## Tests
 
-Manifest-owned suites under `tests/` — run via `tools/validate.py changed` / `full`.
+Manifest-owned suites under `tests/` — run via
+`python tools/imp.py test affected`; use
+`python tools/imp.py validate full` for the required execution-path checkpoint.

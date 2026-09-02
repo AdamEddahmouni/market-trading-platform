@@ -103,7 +103,8 @@
       "classification": "CANONICAL",
       "scope": [
         "src/market_platform_foundation/market_data",
-        "src/market_platform_foundation/providers"
+        "src/market_platform_foundation/providers",
+        "src/market_platform_foundation/tests"
       ],
       "responsibility": "Provider capability composition, observational admission, envelopes, and fail-closed unconfigured behavior.",
       "evidence": [
@@ -125,6 +126,7 @@
         "src/market_platform_foundation/fred",
         "src/market_platform_foundation/nasdaq_regsho",
         "src/market_platform_foundation/nyse_regsho",
+        "src/market_platform_foundation/news",
         "src/market_platform_foundation/sec_edgar",
         "src/market_platform_foundation/sec_ftd",
         "src/market_platform_foundation/weather"
@@ -213,15 +215,16 @@
       "scope": [
         "tools/check_docs_links.py",
         "tools/repository_closure.py",
+        "tools/imp.py",
         "tools/validate.py",
         "tools/validation_manifest.json",
         "tools/validation_manifest.py",
         "tools/validation_worker.py"
       ],
-      "responsibility": "Canonical manifest-driven offline validation selection, execution, reporting, and repository closure enforcement.",
+      "responsibility": "Canonical developer command routing plus manifest-driven offline validation selection, execution, reporting, and repository closure enforcement.",
       "evidence": [
-        "AGENTS.md prescribes tools/validate.py for changed, domain, full, and opt-in live validation.",
-        "README.md states that manifest-driven validation replaced ad-hoc full-suite execution."
+        "AGENTS.md routes developer work through tools/imp.py while preserving tools/validate.py as the Python validator.",
+        "README.md and docs/engineering/DEVELOPER_OPERATING_SYSTEM.md state that manifest-driven validation replaced ad-hoc full-suite execution."
       ],
       "disposition": "KEEP"
     },
@@ -386,6 +389,7 @@
         "tools/integration",
         "tools/market_context",
         "tools/moomoo",
+        "tools/news",
         "tools/options",
         "tools/order_flow",
         "tools/providers",
@@ -411,6 +415,7 @@
         "tools/live_execution_safety",
         "tools/paper_execution_qualification",
         "tools/platform",
+        "tools/provider_readiness.py",
         "tools/research",
         "tools/state",
         "tools/system_acceptance"
