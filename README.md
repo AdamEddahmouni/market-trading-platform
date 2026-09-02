@@ -1,4 +1,4 @@
-# Integrated Market Platform — governed foundation
+# Integrated Market Platform
 
 Local market operating workstation: **Demo** (fixture replay), **Paper**
 (internal simulation under env gates), **Live** (broker-observed read-only).
@@ -11,51 +11,32 @@ Local market operating workstation: **Demo** (fixture replay), **Paper**
 [Provider readiness](docs/engineering/PROVIDER_READINESS.md)
 
 This repository contains the governed, CPython 3.11 standard-library-only
-foundation subject. Phases 0 through 8 are `PASS` on the admitted equity
-intraday fixture (`ADMITTED-SHORTSQ-BIYA-BARS-001`). The machine-readable
-binding is [canonical-authority.json](manifests/phase0/canonical-authority.json).
+foundation together with the later research, evidence, supervised-execution,
+operations, and user-surface work built on it. Phases 0 through 8 are `PASS`
+on the admitted equity intraday fixture
+(`ADMITTED-SHORTSQ-BIYA-BARS-001`). The exact-hash Foundation binding remains
+[canonical-authority.json](manifests/phase0/canonical-authority.json).
 
-The active forward-looking authority is
-[Canonical Foundation Design Revision 3](docs/superpowers/specs/2026-08-14-integrated-market-platform-foundation-design-revision-3.md),
-approved at SHA-256
-`7C6AE5FC9037CA37D44CD1A2FAACD0CB821192920C46CF001541DCD2121FEB35`.
-Revision 2 remains the incorporated Phase 0 safety authority.
+Current whole-program truth now lives in [`docs/platform/`](docs/platform/README.md):
 
-| Phase | Status |
-|---|---|
-| Phase 0 — governance and no-live safety | `PASS` |
-| Phase 0A — data feasibility | `PASS` (non-ES equity intraday admitted) |
-| Phase 1 — foundational decisions | `PASS` |
-| Phase 2 — canonical contracts and replay | `PASS` |
-| Phase 3 — verified historical adapter | `PASS` |
-| Phase 4 — runtime quality and state | `PASS` |
-| Phase 5 — capability-supported features | `PASS` |
-| Phase 5R — research/model infrastructure | `PASS` |
-| Phase 6 — preregistered strategy | `PASS` |
-| Phase 7 — risk, simulation, and accounting | `PASS` |
-| Phase 8 — deterministic end-to-end acceptance | `PASS` (ES session remains deferred per ADR-DATA-001) |
-| UI-001 — replay-only research UI V1 | `PASS` (stdlib API + `ui/` frontend subject) |
-| UI-002 — expanded research UI | `PASS` (Institutional Flow, Model Lab, Simulation Lab) |
-| Phase 9 — provider contracts and EDGAR whale ledger | `PASS` (fixture-first `regulatory_disclosure` on BIYA) |
-| Phase 10 — whale order_flow family | `PASS` (fixture-first `order_flow` on NVDA slice) |
-| Phase 11 — whale options family | `PASS` (fixture-first `options` on BIYA slice) |
-| Phase 12 — whale large_transactions family | `PASS` (fixture-first `large_transactions` on NVDA slice) |
-| Phase 13 — whale order_book family | `PASS` (fixture-first `order_book` on NVDA slice) |
-| Phase 14 — whale futures_positioning family | `PASS` (fixture-first ES depth on `ADMITTED-L2-ES-001`) |
-| Phase 15 — whale public_catalyst family | `PASS` (fixture-first catalyst on `ADMITTED-CATALYST-BOXL-001`) |
-| Phase 16 — whale fund_etf_cross_asset family | `PASS` (fixture-first fund/ETF on `ADMITTED-ETF-CROSSASSET-NVDA-001`) |
-| MRA-001 — grounded Market Research Assistant | `PASS` (deterministic evidence retrieval on admitted fixture) |
-| MRA-002 — Anthropic LLM assistant | `PASS` (mocked HTTP acceptance; live inference when `ANTHROPIC_API_KEY` set) |
-| Platform P0 — bitemporal reference store + PIT joins | `PASS` (fixture scope; FAST + FULL invariants) |
-| Platformization P0–P4-4B — paper execution, live observational data, local state, unified workstation, discovery, Tradier sandbox broker-paper adapter, broker/ledger reconciliation | `COMPLETE_WITH_LIMITATIONS` (see [platformization roadmap](docs/research/PLATFORMIZATION_ROADMAP.md)) |
-| Public-data providers — macro / energy / sec / short-intelligence / observational / finviz-discovery | `IMPLEMENTED` (fixture-first; live probes opt-in; captures **not admitted**) |
+- [Program Status](docs/platform/PROGRAM_STATUS.md) records the accepted state
+  now, including BUILD history, repository closure, EVIDENCE, future-family
+  consolidation, and material limitations.
+- [Master Architecture](docs/platform/MASTER_ARCHITECTURE.md) explains how the
+  program fits together.
+- [Master Roadmap](docs/platform/MASTER_ROADMAP.md) owns post-core planning and
+  dependencies.
+- [Canonical Truth Map](docs/platform/CANONICAL_TRUTH_MAP.md) routes executable,
+  historical, explanatory, and future-design questions to the right source.
 
-The next campaign after BUILD35 is the
-[whole-repository closure audit](docs/engineering/POST_BUILD35_REPOSITORY_CLOSURE_AUDIT.md),
-`POST-BUILD35-REPOSITORY-CLOSURE-001`—not BUILD36. Its canonical inventory
-classifies every significant historical subsystem as `CANONICAL`, `WRAPPED`,
-`RETAINED_SUPPORTING`, `SUPERSEDED`, `DUPLICATE`, `DEAD`, or `UNINTEGRATED`
-before any cleanup or integration action is taken.
+BUILD01-35 acceptance and repository closure remain historical truth.
+EVIDENCE-01B is implemented runtime operationalization; EVIDENCE-01C is the
+next independent bounded shakedown and operational-acceptance record.
+Autonomous live trading is disabled, human live-session authorization and
+per-order confirmation remain required, automatic broker failover is disabled,
+and accepted production live broker transport is absent. These statements do
+not deny the existing broker abstractions, guarded paper/mock paths, safety
+gates, or reconciliation foundations.
 
 ## Validation cadence
 

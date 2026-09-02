@@ -14,6 +14,11 @@ Revision 3 is **effective** under exact-hash principal approval recorded
 The specification file header still reads `PROPOSED_PENDING_EXACT_HASH_APPROVAL`
 because that text is frozen inside the approved bytes. See
 [Revision 3 effectivity notice](../superpowers/governance/2026-08-14-foundation-revision-3-effectivity-notice.md).
+> **Current post-core planning:** This Revision 3 projection remains supporting
+> context for its original scope. Current whole-program milestones and
+> dependency semantics are maintained in the
+> [IMP Master Roadmap](../platform/MASTER_ROADMAP.md). That canonical roadmap
+> does not retroactively change this projection or its historical meaning.
 
 | Phase | Revision 3 projection | Authorization state |
 |---|---|---|
