@@ -116,10 +116,10 @@ class LocalLauncherTests(unittest.TestCase):
             controller = PlatformController(root=root, system=fake, environ={"USERPROFILE": str(Path(tmp) / "profile")})
 
             self.assertEqual(controller.start(open_browser=False), 0)
-            self.assertEqual(len(fake.spawn_calls), 2)
+            self.assertEqual(len(fake.spawn_calls), 3)
             self.assertEqual(controller.start(open_browser=True), 0)
 
-            self.assertEqual(len(fake.spawn_calls), 2)
+            self.assertEqual(len(fake.spawn_calls), 3)
             self.assertEqual(fake.opened, ["http://127.0.0.1:5173/discover"])
 
     def test_failed_readiness_rolls_back_every_process_started(self) -> None:
@@ -136,7 +136,7 @@ class LocalLauncherTests(unittest.TestCase):
 
             self.assertEqual(controller.start(open_browser=False), 1)
 
-            self.assertEqual(fake.terminated, [1001, 1000])
+            self.assertEqual(fake.terminated, [1002, 1001, 1000])
             self.assertFalse((root / ".local/platform-launcher.json").exists())
 
     def test_stop_never_kills_a_reused_pid_with_changed_identity(self) -> None:
@@ -177,7 +177,7 @@ class LocalLauncherTests(unittest.TestCase):
 
             self.assertEqual(controller.stop(), 0)
 
-            self.assertEqual(fake.terminated, [1001, 1000])
+            self.assertEqual(fake.terminated, [1002, 1001, 1000])
 
     def test_root_command_files_expose_start_stop_and_control(self) -> None:
         repository = Path(__file__).resolve().parents[2]

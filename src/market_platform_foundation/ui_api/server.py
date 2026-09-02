@@ -7,6 +7,7 @@ import threading
 import time
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
+from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
@@ -170,6 +171,27 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 return
             if path == "/operator/state":
                 self._send_json(operator_projections.build_operator_state_payload(self.store))
+                return
+            if path == "/operator/readiness":
+                self._send_json(operator_projections.build_operator_readiness_payload(self.store))
+                return
+            if path == "/operator/config":
+                self._send_json(operator_projections.build_operator_config_payload())
+                return
+            if path == "/operator/lifecycle/status":
+                from tools.platform.control_service import build_control_status
+
+                self._send_json(build_control_status())
+                return
+            if path.startswith("/operator/lifecycle/operations/"):
+                from tools.platform.control_service import _read_operations
+
+                operation_id = path.removeprefix("/operator/lifecycle/operations/")
+                operation = _read_operations(Path(__file__).resolve().parents[3]).get(operation_id)
+                if operation is None:
+                    self._send_error_json("OPERATION_NOT_FOUND", "Operation not found", status=HTTPStatus.NOT_FOUND)
+                else:
+                    self._send_json(operation)
                 return
             if path == "/captures":
                 try:
@@ -714,6 +736,18 @@ class UiApiHandler(BaseHTTPRequestHandler):
             return
         if not self._authorize_request("POST", path, parse_qs(parsed.query), body):
             return
+        if path == "/operator/lifecycle/actions":
+            from tools.platform.control_service import _spawn_action, normalize_action
+
+            action = normalize_action(body.get("action"))
+            if action is None:
+                self._send_error_json("OPERATOR_LIFECYCLE_ACTION_INVALID", "Unsupported lifecycle action", status=HTTPStatus.BAD_REQUEST)
+                return
+            try:
+                self._send_json(_spawn_action(Path(__file__).resolve().parents[3], action), status=HTTPStatus.ACCEPTED)
+            except (OSError, ValueError) as exc:
+                self._send_error_json("OPERATOR_LIFECYCLE_ACTION_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
         if path == "/discover/mixed/refresh":
             from .mixed_discovery_projections import refresh_mixed_discovery
 
@@ -791,6 +825,19 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(operator_projections.update_watchlist(body))
             except ValueError as exc:
                 self._send_error_json("OPERATOR_WATCHLIST_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/operator/config/provider":
+            try:
+                self._send_json(operator_projections.save_provider_config(body))
+            except ValueError as exc:
+                self._send_error_json("OPERATOR_CONFIG_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path.startswith("/operator/providers/") and path.endswith("/refresh"):
+            provider = path.removeprefix("/operator/providers/").removesuffix("/refresh").strip("/")
+            try:
+                self._send_json(operator_projections.queue_provider_refresh(provider), status=HTTPStatus.ACCEPTED)
+            except ValueError as exc:
+                self._send_error_json("OPERATOR_PROVIDER_REFRESH_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
         if path == "/operator/recent":
             try:

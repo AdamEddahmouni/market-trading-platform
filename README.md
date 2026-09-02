@@ -7,7 +7,8 @@ Local market operating workstation: **Demo** (fixture replay), **Paper**
 **Documentation:** [docs/README.md](docs/README.md) · [AGENTS.md](AGENTS.md) ·
 [Engineering Handbook](docs/engineering/ENGINEERING_HANDBOOK.md) ·
 [Architecture](docs/architecture/ARCHITECTURE.md) ·
-[Project Status](docs/PROJECT_STATUS.md)
+[Project Status](docs/PROJECT_STATUS.md) ·
+[Provider readiness](docs/engineering/PROVIDER_READINESS.md)
 
 This repository contains the governed, CPython 3.11 standard-library-only
 foundation subject. Phases 0 through 8 are `PASS` on the admitted equity
@@ -58,18 +59,29 @@ before any cleanup or integration action is taken.
 
 ## Validation cadence
 
-Manifest-driven validation replaces ad-hoc full-suite runs after every edit. See [AGENTS.md](AGENTS.md) and [Validation Architecture](docs/engineering/VALIDATION_ARCHITECTURE.md).
+Manifest-driven validation replaces ad-hoc full-suite runs after every edit.
+Use the canonical developer router described in [AGENTS.md](AGENTS.md) and
+[Developer Operating System](docs/engineering/DEVELOPER_OPERATING_SYSTEM.md).
 
 ```powershell
-python tools/validate.py changed          # after each edit
-python tools/validate.py domain <name>    # domain milestone
-python tools/validate.py full             # major checkpoint (offline only)
-python tools/validate.py live <provider>  # opt-in live boundary only
+python tools/imp.py test affected         # after each edit
+python tools/imp.py validate domain <name> # domain milestone
+python tools/imp.py validate full         # major checkpoint (offline only)
+python tools/imp.py validate live <provider> # opt-in live boundary only
+python tools/provider_readiness.py --probe-local  # value-blind provider check
 ```
 
 Legacy wrapper: `python tools/run_all_tests.py` (strictly offline, delegates to manifest).
 
 ## One-click local start and stop (Windows)
+
+For a new checkout, double-click [SETUP_PLATFORM.cmd](SETUP_PLATFORM.cmd).
+It runs a value-blind preflight, repairs the project `.venv`, installs the
+declared Python and UI dependencies, creates `.local`/`.private`, and checks
+`.env` syntax without printing secrets. Missing Windows software is reported
+with an install instruction; it is never installed silently. After successful
+setup, choose **Enter Demo** to launch the workstation or **Continue setup**
+to exit and configure providers later.
 
 From File Explorer, double-click [START_PLATFORM.cmd](START_PLATFORM.cmd)
 to start the API and UI, wait for both to become ready, and open the Mixed Live
@@ -78,12 +90,21 @@ the launcher-owned API/UI process trees. [PLATFORM_CONTROL.cmd](PLATFORM_CONTROL
 provides Start/Open, Open Browser, Status, Finviz Status, Stop/Exit, and
 leave-running choices in one menu.
 
-The platform binds only to `127.0.0.1`: API port `8766`, UI port `5173`. Child
-output is retained in `.local/platform-backend.log` and
-`.local/platform-ui.log`; lifecycle state is in the gitignored
-`.local/platform-launcher.json`. A stale state file cannot make Stop kill an
-unrelated process because the current Windows command identity must still match
-the launcher record.
+The platform binds only to `127.0.0.1`: API port `8766`, UI port `5173`. The
+browser control center is `/control`, and the launcher-owned loopback
+supervisor is `127.0.0.1:8767`. Child output is retained in
+`.local/platform-backend.log`, `.local/platform-ui.log`, and
+`.local/platform-control.log`; lifecycle state is in the gitignored
+`.local/platform-launcher.json`. The control center shows independent provider
+readiness, masked configuration, refresh/restart actions, and guarded update
+checks. Updates are blocked for dirty worktrees and only use explicit
+fast-forward pulls; no reset, stash, or force operation is performed.
+
+A stale state file cannot make Stop kill an unrelated process because the
+current Windows command identity must still match the launcher record. Provider
+secrets stay in the existing `.env`/`.private` locations, are allowlisted and
+written atomically, and are never included in status, operation, or error
+responses.
 
 Prerequisites are the repository CPython 3.11 `.venv`, Node.js/npm, and a prior
 `npm install` in `ui/`. When `%USERPROFILE%\moomoo-api-test\.venv` exists, the

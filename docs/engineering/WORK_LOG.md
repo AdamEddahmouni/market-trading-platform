@@ -26,6 +26,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-02 — Windows Operator Center and lifecycle UX
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/lifecycle`, `platform/security`, `ui/control`, `developer-setup` |
+| **Summary** | Added an idempotent Windows setup entry point, launcher-owned loopback supervisor, authorized lifecycle/configuration/readiness API contracts, guarded fast-forward update workflow, and canonical browser control center. Provider status remains independent and value-masked; Demo, Paper, Live-observational, and live-execution authority boundaries are unchanged. |
+| **Key files** | `SETUP_PLATFORM.cmd`; `tools/platform/bootstrap.py`; `tools/platform/control_service.py`; `tools/platform/local_launcher.py`; `src/market_platform_foundation/ui_api/operator_config.py`; `src/market_platform_foundation/ui_api/operator_projections.py`; `ui/src/components/OperatorControlCenterPage.tsx` |
+| **Tests** | Platform manifest worker: 436 tests, 434 passed, 2 expected skips, 0 failures/errors. Operator Control Center: 2/2 passed. UI typecheck and production build passed; bundle budget passed at 201.69 KiB gzip. The combined affected gate completed earlier with 2,222 tests, 34 expected skips, and 0 failures/errors. |
+| **Related** | [Local development](LOCAL_DEVELOPMENT.md); [Provider readiness](PROVIDER_READINESS.md); [Mode authority](../architecture/MODE_AUTHORITY.md) |
+| **Notes** | Supervisor binds to `127.0.0.1:8767`, verifies process identity before termination, and never resets, stashes, overwrites, or force-updates a dirty checkout. Provider secrets remain in the existing `.env`/`.private` stores with allowlisted atomic writes and masked responses. |
+
 ## 2026-09-02 — IMP Developer Operating System
 
 | Field | Value |

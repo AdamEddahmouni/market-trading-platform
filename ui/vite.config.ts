@@ -50,6 +50,7 @@ export default defineConfig({
       "/market-state": "http://127.0.0.1:8766",
       "/subscriptions": "http://127.0.0.1:8766",
       "/operator": "http://127.0.0.1:8766",
+      "/control": "http://127.0.0.1:8767",
       "/state": "http://127.0.0.1:8766",
       "/captures": "http://127.0.0.1:8766",
     },

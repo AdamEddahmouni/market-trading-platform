@@ -64,6 +64,7 @@ const links: NavLinkDef[] = [
     },
   },
   { to: "/settings", label: "SETTINGS" },
+  { to: "/control", label: "CONTROL" },
   { to: "/diagnostics/provider", label: "DIAGNOSTICS" },
 ];
 

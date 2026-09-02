@@ -36,6 +36,11 @@ import {
   SymbolSearchResponseSchema,
   InstrumentCapabilitiesResponseSchema,
   MarketStateResponseSchema,
+  OperatorLifecycleStatusSchema,
+  OperatorReadinessSchema,
+  OperatorConfigSchema,
+  OperationStatusSchema,
+  type LifecycleAction,
   type PaperOrderRequest,
 } from "./schemas";
 
@@ -172,6 +177,16 @@ export const api = {
   getProviderHealth: () => fetchJson("/provider/health", ProviderHealthResponseSchema),
   getMarketState: (instrumentId: string) =>
     fetchJson(`/market-state/${encodeURIComponent(instrumentId)}`, MarketStateResponseSchema),
+  getOperatorLifecycleStatus: () =>
+    fetchJson("/operator/lifecycle/status", OperatorLifecycleStatusSchema),
+  getOperatorReadiness: () => fetchJson("/operator/readiness", OperatorReadinessSchema),
+  getOperatorConfig: () => fetchJson("/operator/config", OperatorConfigSchema),
+  runOperatorLifecycleAction: (action: LifecycleAction) =>
+    postJson("/operator/lifecycle/actions", { action }, OperationStatusSchema),
+  refreshOperatorProvider: (provider: string) =>
+    postJson(`/operator/providers/${encodeURIComponent(provider)}/refresh`, {}, OperationStatusSchema),
+  saveOperatorProviderConfig: (provider: string, values: Record<string, string>) =>
+    postJson("/operator/config/provider", { provider, values }, OperatorConfigSchema),
   subscribeLive: async (body: { instrument_id: string; capabilities: string[]; consumer_id?: string }) => {
     const response = await fetch("/subscriptions", {
       method: "POST",

@@ -42,6 +42,7 @@ CAPABILITIES: tuple[str, ...] = (
     "audit.read",
     "security.config.read",
     "security.config.write",
+    "operator.lifecycle.write",
     "role.manage",
 )
 
@@ -68,6 +69,7 @@ ROLE_CAPABILITY_MATRIX: dict[OperatorRole, frozenset[str]] = {
         "paper.order.cancel",
         "audit.read",
         "security.config.read",
+        "operator.lifecycle.write",
     ),
     # ADMIN holds every capability by construction (invariant-checked below).
     OperatorRole.ADMIN: _CAPABILITY_SET,

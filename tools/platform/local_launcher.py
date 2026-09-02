@@ -24,8 +24,11 @@ API_HOST = "127.0.0.1"
 API_PORT = 8766
 UI_HOST = "127.0.0.1"
 UI_PORT = 5173
+CONTROL_HOST = "127.0.0.1"
+CONTROL_PORT = 8767
 API_URL = f"http://{API_HOST}:{API_PORT}/context"
 UI_URL = f"http://{UI_HOST}:{UI_PORT}/"
+CONTROL_URL = f"http://{CONTROL_HOST}:{CONTROL_PORT}/control/status"
 DISCOVER_URL = f"http://{UI_HOST}:{UI_PORT}/discover"
 STATE_RELATIVE_PATH = Path(".local/platform-launcher.json")
 
@@ -293,7 +296,14 @@ class PlatformController:
 
     def start(self, *, open_browser: bool) -> int:
         existing = self._read_state()
-        if existing and len(existing) == 2 and all(self._is_owned(service) for service in existing) and self._both_ready():
+        required_services = {service.name for service in existing}
+        if (
+            existing
+            and {"api", "ui"}.issubset(required_services)
+            and all(self._is_owned(service) for service in existing)
+            and "control" in required_services
+            and self._both_ready()
+        ):
             print("Platform is already running.")
             if open_browser:
                 self.system.open_browser(DISCOVER_URL)
@@ -301,7 +311,7 @@ class PlatformController:
         if existing:
             self.stop()
 
-        for name, host, port in (("API", API_HOST, API_PORT), ("UI", UI_HOST, UI_PORT)):
+        for name, host, port in (("API", API_HOST, API_PORT), ("UI", UI_HOST, UI_PORT), ("CONTROL", CONTROL_HOST, CONTROL_PORT)):
             if self.system.port_is_open(host, port):
                 print(f"ERROR: {name} port {port} is already in use by a process not owned by this launcher.")
                 return 1
@@ -356,6 +366,30 @@ class PlatformController:
                 )
             )
             self._write_state(services)
+
+            control_pid = self.system.spawn(
+                [
+                    str(backend_python),
+                    str(self.root / "tools/platform/control_service.py"),
+                    "serve",
+                    "--host",
+                    CONTROL_HOST,
+                    "--port",
+                    str(CONTROL_PORT),
+                ],
+                cwd=self.root,
+                env=environment,
+                log_path=self.root / ".local/platform-control.log",
+            )
+            services.append(
+                ServiceRecord(
+                    name="control",
+                    pid=control_pid,
+                    identity=["control_service.py", "serve", str(CONTROL_PORT)],
+                    log_path=".local/platform-control.log",
+                )
+            )
+            self._write_state(services)
         except (OSError, LauncherError) as exc:
             self._rollback(services)
             print(f"ERROR: platform process start failed: {exc}")
@@ -363,7 +397,7 @@ class PlatformController:
 
         if not self._wait_until_ready():
             self._rollback(services)
-            print("ERROR: platform did not become ready; both launcher-owned processes were stopped.")
+            print("ERROR: platform did not become ready; launcher-owned processes were stopped.")
             print(f"Backend log: {backend_log}")
             print(f"UI log:      {ui_log}")
             return 1
@@ -424,6 +458,47 @@ class PlatformController:
             return 1
         return subprocess.call([str(backend_python), str(self.root / "tools/finviz/auth.py"), "status"], cwd=self.root)
 
+    def setup(self) -> int:
+        from tools.platform.bootstrap import setup_project
+
+        try:
+            report = setup_project(self.root)
+        except (OSError, RuntimeError) as exc:
+            print(f"ERROR: setup failed: {exc}")
+            return 1
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return 0 if report["status"] == "READY" else 1
+
+    def check_update(self) -> int:
+        from tools.platform.control_service import check_update
+
+        report = check_update(self.root)
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return 0 if report["status"] in {"CURRENT", "AVAILABLE"} else 1
+
+    def apply_update(self) -> int:
+        from tools.platform.control_service import check_update
+
+        report = check_update(self.root)
+        if report.get("status") != "AVAILABLE":
+            print(json.dumps({"status": "BLOCKED", "update": report}, indent=2, sort_keys=True))
+            return 1
+        git = self.system.which("git.exe") or self.system.which("git")
+        npm = self.system.which("npm.cmd") or self.system.which("npm")
+        if not git or not npm:
+            print("ERROR: Git and npm are required to apply an update.")
+            return 1
+        self.stop()
+        pulled = subprocess.run([git, "pull", "--ff-only"], cwd=self.root, capture_output=True, text=True, check=False)
+        if pulled.returncode:
+            print("ERROR: fast-forward update failed; no reset or overwrite was attempted.")
+            return 1
+        synced = subprocess.run([npm, "ci"], cwd=self.root / "ui", capture_output=True, text=True, check=False)
+        if synced.returncode:
+            print("ERROR: application updated, but UI dependency sync failed. Run SETUP_PLATFORM.cmd.")
+            return 1
+        return self.start(open_browser=True)
+
     def menu(self) -> int:
         while True:
             print()
@@ -454,32 +529,57 @@ class PlatformController:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Start, open, inspect, or stop the local market platform")
     subcommands = parser.add_subparsers(dest="command", required=True)
-    start = subcommands.add_parser("start", help="Start API and UI")
+    start = subcommands.add_parser("start", help="Start API, UI, and local control service")
     start.add_argument("--open", action="store_true", dest="open_browser", help="Open Mixed Live after readiness")
-    subcommands.add_parser("stop", help="Stop launcher-owned API and UI process trees")
+    subcommands.add_parser("stop", help="Stop launcher-owned API, UI, and control process trees")
     subcommands.add_parser("status", help="Show process ownership and local readiness")
     subcommands.add_parser("open", help="Open Mixed Live if the UI is ready")
     subcommands.add_parser("finviz-status", help="Show sanitized Finviz credential status")
     subcommands.add_parser("menu", help="Show interactive local control menu")
+    subcommands.add_parser("setup", help="Create or repair project-local dependencies")
+    subcommands.add_parser("check-update", help="Check for a safe fast-forward application update")
+    subcommands.add_parser("apply-update", help="Apply a confirmed safe fast-forward update")
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     controller = PlatformController()
+    result: int
     if args.command == "start":
-        return controller.start(open_browser=bool(args.open_browser))
-    if args.command == "stop":
-        return controller.stop()
-    if args.command == "status":
-        return controller.status()
-    if args.command == "open":
-        return controller.open()
-    if args.command == "finviz-status":
-        return controller.finviz_status()
-    if args.command == "menu":
-        return controller.menu()
-    return 2
+        result = controller.start(open_browser=bool(args.open_browser))
+    elif args.command == "stop":
+        result = controller.stop()
+    elif args.command == "status":
+        result = controller.status()
+    elif args.command == "open":
+        result = controller.open()
+    elif args.command == "finviz-status":
+        result = controller.finviz_status()
+    elif args.command == "menu":
+        result = controller.menu()
+    elif args.command == "setup":
+        result = controller.setup()
+    elif args.command == "check-update":
+        result = controller.check_update()
+    elif args.command == "apply-update":
+        result = controller.apply_update()
+    else:
+        result = 2
+    operation_id = str(os.environ.get("IMP_OPERATOR_OPERATION_ID") or "").strip()
+    if operation_id:
+        try:
+            from tools.platform.control_service import update_operation
+
+            update_operation(
+                controller.root,
+                operation_id,
+                status="SUCCEEDED" if result == 0 else "FAILED",
+                detail=None if result == 0 else "Lifecycle action failed; inspect the sanitized local log.",
+            )
+        except (OSError, RuntimeError):
+            pass
+    return result
 
 
 if __name__ == "__main__":

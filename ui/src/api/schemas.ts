@@ -1,5 +1,98 @@
 import { z } from "zod";
 
+export const PreflightCheckSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  status: z.string(),
+  detail: z.string(),
+  required: z.boolean(),
+  next_action: z.string().optional(),
+});
+
+export const LifecycleActionSchema = z.enum([
+  "setup",
+  "start",
+  "stop",
+  "restart",
+  "open",
+  "check_update",
+  "apply_update",
+]);
+
+export const UpdateStatusSchema = z.object({
+  status: z.string(),
+  detail: z.string().optional(),
+  branch: z.string().optional(),
+  ahead: z.number().optional(),
+  behind: z.number().optional(),
+  upstream: z.string().optional(),
+});
+
+export const OperationStatusSchema = z.object({
+  operation_id: z.string(),
+  action: z.string().optional(),
+  provider: z.string().optional(),
+  status: z.string(),
+  created_at: z.number().optional(),
+  detail: z.string().optional(),
+  secrets_included: z.literal(false).optional(),
+});
+
+export const ProviderReadinessSchema = z.object({
+  provider: z.string(),
+  label: z.string().optional(),
+  credential_state: z.string(),
+  gate_state: z.string(),
+  transport_state: z.string(),
+  freshness: z.string().optional(),
+  last_updated: z.string().nullable().optional(),
+  next_action: z.string(),
+});
+
+export const OperatorReadinessSchema = z.object({
+  schema_version: z.string().optional(),
+  status: z.string(),
+  checks: z.array(PreflightCheckSchema),
+  providers: z.array(ProviderReadinessSchema),
+  secrets_included: z.literal(false).optional(),
+});
+
+export const OperatorLifecycleStatusSchema = z.object({
+  schema_version: z.string().optional(),
+  status: z.string(),
+  services: z.array(z.record(z.unknown())).optional(),
+  logs: z.array(z.string()).optional(),
+  last_action: z.string().nullable().optional(),
+  update: UpdateStatusSchema.optional(),
+});
+
+export const OperatorConfigSchema = z.object({
+  schema_version: z.string().optional(),
+  providers: z.array(
+    z.object({
+      provider: z.string(),
+      label: z.string(),
+      fields: z.array(
+        z.object({
+          key: z.string(),
+          label: z.string(),
+          sensitive: z.boolean(),
+          configured: z.boolean(),
+          value: z.string().optional(),
+        }),
+      ),
+    }),
+  ),
+  secrets_included: z.literal(false).optional(),
+});
+
+export type PreflightCheck = z.infer<typeof PreflightCheckSchema>;
+export type LifecycleAction = z.infer<typeof LifecycleActionSchema>;
+export type OperationStatus = z.infer<typeof OperationStatusSchema>;
+export type UpdateStatus = z.infer<typeof UpdateStatusSchema>;
+export type ProviderReadiness = z.infer<typeof ProviderReadinessSchema>;
+export type ProviderConfigField = z.infer<typeof OperatorConfigSchema>["providers"][number]["fields"][number];
+
 export const AsOfContextSchema = z.object({
   mode: z.enum(["LIVE", "REPLAY", "SIMULATION", "PAPER"]),
   data_mode: z.enum(["FIXTURE_REPLAY", "HISTORICAL_CAPTURE", "LIVE_OBSERVATIONAL", "BROKER_DELAYED"]).optional(),

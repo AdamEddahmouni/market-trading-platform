@@ -31,6 +31,7 @@ const ROLE_CAPABILITIES: Record<string, string[]> = {
     "paper.order.cancel",
     "audit.read",
     "security.config.read",
+    "operator.lifecycle.write",
   ],
   ADMIN: [
     "state.read",

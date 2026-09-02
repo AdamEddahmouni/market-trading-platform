@@ -13,13 +13,14 @@ python tools/ui1/run_ui_api.py --serve --port 8766
 
 ## One-click Windows launcher
 
-The easiest normal path is to return to the repository root and double-click
-`START_PLATFORM.cmd`. It starts the API and this Vite UI, waits for loopback
-ports 8766 and 5173, then opens `/discover`. Use `STOP_PLATFORM.cmd` to stop
-only launcher-owned processes, or `PLATFORM_CONTROL.cmd` for Start/Open,
-Status, Finviz Status, and Stop/Exit choices. Logs are kept at
-`.local/platform-backend.log` and `.local/platform-ui.log` relative to the
-repository root.
+The easiest first-run path is to return to the repository root and double-click
+`SETUP_PLATFORM.cmd`. It repairs the project environment and offers an
+**Enter Demo** choice. For normal launches, double-click `START_PLATFORM.cmd`;
+it starts the API, this Vite UI, and the loopback lifecycle supervisor, then
+opens `/discover`. Use `STOP_PLATFORM.cmd` to stop only launcher-owned
+processes, or `PLATFORM_CONTROL.cmd` for the compatibility menu. Logs are kept
+under `.local/`, including `platform-control.log`; the supervisor listens only
+on `127.0.0.1:8767`.
 
 Run `npm install` once in this directory before the first launch. Moomoo OpenD
 is a separate local gateway and must already be listening on `127.0.0.1:11111`
@@ -62,6 +63,8 @@ npm run dev
 - `/portfolio` — paper account, positions, orders, fills, execution trace
 - `/settings` — operator settings (watchlist, recents, workspace, provider prefs)
 - `/diagnostics/provider` — provider health (channel health, generation, quota)
+- `/control` — canonical operator center for setup checks, lifecycle actions,
+  provider readiness/configuration, refreshes, and guarded update checks
 - `/research` — Model Lab / Simulation Lab (UI-002)
 - `/assistant/history` — assistant conversation history
 

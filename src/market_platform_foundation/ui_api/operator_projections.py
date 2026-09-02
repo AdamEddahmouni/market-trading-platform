@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import os
+import socket
+import time
+from pathlib import Path
 from typing import Any
 
 from ..local_state.capture_index import refresh_capture_catalog
@@ -14,6 +18,7 @@ from ..market_data.live_config import (
     moomoo_live_enabled,
 )
 from ..operating_modes import live_execution_env_enabled, paper_execution_env_enabled
+from .operator_config import PROVIDER_FIELDS, build_config_payload, provider_env_path, write_provider_values
 from .store import ReplayStore
 
 
@@ -82,6 +87,98 @@ def build_operator_state_payload(store: ReplayStore) -> dict[str, Any]:
         "watchlists": watchlists,
         "workspace": workspace,
     }
+
+
+def build_operator_readiness_payload(store: ReplayStore) -> dict[str, Any]:
+    from tools.platform.bootstrap import collect_preflight
+    from tools.provider_readiness import collect_readiness
+
+    def probe_local(host: str, port: int) -> bool:
+        try:
+            with socket.create_connection((host, port), timeout=0.25):
+                return True
+        except OSError:
+            return False
+
+    preflight = collect_preflight()
+    provider_report = collect_readiness(
+        os.environ,
+        repository_root=Path(__file__).resolve().parents[3],
+        probe_local=probe_local,
+        probe_local_services=True,
+    )
+    labels = {
+        "finviz": "Finviz discovery",
+        "moomoo_observational": "Moomoo observational",
+        "ibkr_observational": "IBKR observational",
+        "anthropic": "Anthropic assistant",
+    }
+    providers: list[dict[str, Any]] = []
+    for row in provider_report.get("providers", []):
+        item = dict(row)
+        provider_id = str(row.get("provider", "provider"))
+        item["label"] = labels.get(provider_id, provider_id.replace("_", " ").title())
+        item["next_action"] = str(row.get("next_action") or "No action required.")
+        providers.append(item)
+    provider_action = any(
+        row.get("gate_state") == "ENABLED"
+        and row.get("transport_state") in {"UNAVAILABLE", "BLOCKED_NON_LOOPBACK"}
+        for row in providers
+    )
+    status = str(preflight["status"])
+    if status == "READY" and provider_action:
+        status = "ACTION_REQUIRED"
+    return {
+        "schema_version": "operator-readiness/1.0",
+        "status": status,
+        "checks": preflight["checks"],
+        "providers": providers,
+        "secrets_included": False,
+        "as_of_context": {
+            "data_mode": store.data_mode,
+            "execution_mode": store.execution_mode,
+            "execution_authority": store.execution_authority,
+        },
+    }
+
+
+def build_operator_config_payload() -> dict[str, Any]:
+    root = Path(__file__).resolve().parents[3]
+    return build_config_payload(
+        path=provider_env_path(root=root),
+        environment=os.environ,
+        environment_path=root / ".env",
+    )
+
+
+def save_provider_config(body: dict[str, Any]) -> dict[str, Any]:
+    provider = str(body.get("provider") or "").strip().lower()
+    values = body.get("values")
+    if not provider or not isinstance(values, dict):
+        raise ValueError("PROVIDER_AND_VALUES_REQUIRED")
+    root = Path(__file__).resolve().parents[3]
+    destination = root / ".env" if provider == "anthropic" else provider_env_path(root=root)
+    write_provider_values(provider, {str(key): str(value) for key, value in values.items()}, path=destination)
+    return build_operator_config_payload()
+
+
+def queue_provider_refresh(provider: str) -> dict[str, Any]:
+    normalized = str(provider or "").strip().lower()
+    if normalized not in {provider_id for provider_id, _, _ in PROVIDER_FIELDS}:
+        raise ValueError("PROVIDER_NOT_SUPPORTED")
+    operation = {
+        "operation_id": f"provider-refresh-{normalized}-{os.getpid()}-{int(time.time() * 1000)}",
+        "action": "provider_refresh",
+        "provider": normalized,
+        "status": "QUEUED",
+        "created_at": time.time(),
+        "secrets_included": False,
+    }
+    root = Path(__file__).resolve().parents[3]
+    from tools.platform.control_service import _write_operation
+
+    _write_operation(root, operation)
+    return operation
 
 
 def update_watchlist(body: dict[str, Any]) -> dict[str, Any]:

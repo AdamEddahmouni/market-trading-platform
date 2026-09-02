@@ -54,6 +54,9 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
             "/replay/session",
             "/state/startup",
             "/operator/state",
+            "/operator/readiness",
+            "/operator/config",
+            "/operator/lifecycle/status",
             "/accounts",
             "/assistant/status",
             "/provider/health",
@@ -70,6 +73,8 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
         }:
             return RoutePolicy(capability="state.read")
         if path.startswith("/instruments/") or path.startswith("/market-state/"):
+            return RoutePolicy(capability="state.read")
+        if path.startswith("/operator/lifecycle/operations/"):
             return RoutePolicy(capability="state.read")
         if path.startswith("/workspace/") or path.startswith("/explain/") or path.startswith("/inspect/"):
             return RoutePolicy(capability="state.read")
@@ -102,6 +107,12 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
         if path == "/paper/sessions" or path == "/paper/sessions/close":
             return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)
         if path.startswith("/operator/"):
+            if path == "/operator/config/provider":
+                return RoutePolicy(capability="security.config.write")
+            if path.startswith("/operator/providers/") and path.endswith("/refresh"):
+                return RoutePolicy(capability="state.write")
+            if path == "/operator/lifecycle/actions":
+                return RoutePolicy(capability="operator.lifecycle.write")
             return RoutePolicy(capability="state.write")
         if path == "/captures/replay":
             return RoutePolicy(capability="state.write")

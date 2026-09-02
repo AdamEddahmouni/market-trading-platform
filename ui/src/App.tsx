@@ -50,6 +50,7 @@ import "./styles/paper-discover.css";
 import "./styles/live-discover.css";
 import "./styles/workspace-module-mode.css";
 import "./styles/shared-ui.css";
+import "./styles/operator-control.css";
 
 const AssistantHistoryPage = lazy(() =>
   import("./components/AssistantHistoryPage").then((module) => ({
@@ -114,6 +115,11 @@ const ModeInstitutionalFlowWorkspaceRoute = lazy(() =>
 const OperatorSettingsPage = lazy(() =>
   import("./components/OperatorSettingsPage").then((module) => ({
     default: module.OperatorSettingsPage,
+  })),
+);
+const OperatorControlCenterPage = lazy(() =>
+  import("./components/OperatorControlCenterPage").then((module) => ({
+    default: module.OperatorControlCenterPage,
   })),
 );
 const ProviderHealthPanel = lazy(() =>
@@ -489,6 +495,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
               element={<LiveCanaryControlPlanePage mode={mode} />}
             />
             <Route path="/settings" element={<OperatorSettingsPage mode={mode} />} />
+            <Route path="/control" element={<OperatorControlCenterPage />} />
             <Route path="/diagnostics/provider" element={<ProviderHealthPanel />} />
             <Route path="/assistant/history" element={<AssistantHistoryPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
