@@ -136,7 +136,7 @@
       "threshold": "run_id content-addressed; resume refuses incompatible contract"
     }
   ],
-  "git_commit": "5c8f05c69f109499b620823c006620ce8d737fe2",
+  "git_commit": "be67b4954cde59ed19c66d9d90b3fe7a4b698bfa",
   "p6_disposition": "IN_PROGRESS_EVIDENCE_COLLECTION",
   "protocol_version": "SHADOW_RUN_1_BIYA_FROZEN/1.0.0",
   "run_id": "SHRUN-00C5C98CD1C33EC4D22D0BFCAD4AF0AD51FBF5EBF566AA8C2308B98D2BD5A7FC",

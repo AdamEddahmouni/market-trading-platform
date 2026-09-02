@@ -1,29 +1,161 @@
 {
-  "schema_version": "platform/shadow-run-1-preflight-evidence/1.0.0",
-  "pinned_at_utc": "2026-09-01T17:10:00Z",
-  "git_commit": "d10f35aa6ab95d0547584eb075990e0934529db1",
-  "protocol_ref": "artifacts/shadow-run-1/P6_SHADOW_RUN_1_PROTOCOL.json",
-  "validation": {
-    "path": "artifacts/shadow-run-1/P6_VALIDATION_RECEIPT.json",
-    "sha256": "57622be2413aa7e4c510032f0142cd1c2d51c2043ef67813e9c3a049299d23e5",
-    "mode": "full",
-    "status": "passed",
-    "tests": 3003,
-    "failures": 0,
-    "errors": 0
-  },
-  "runtime_health": {
-    "path": "artifacts/shadow-run-1/runtime-health.json",
-    "sha256": "3f25aedeb7569851b0cd60dc72d445538b0a12834a0bd290fd7983e49196f421",
-    "provider": "MOOMOO",
-    "status": "READY"
-  },
-  "live_run": {
-    "run_id": "SHRUN-00C5C98CD1C33EC4D22D0BFCAD4AF0AD51FBF5EBF566AA8C2308B98D2BD5A7FC",
-    "store_root": ".local/shadow",
-    "capture_id": "CAP-BIYA-SR1-20260901",
+  "calendar": {
+    "early_closes": [],
     "first_session": "2026-09-01",
-    "state": "OPEN"
+    "holidays": [],
+    "hours": "09:30-16:00",
+    "session_dates": [
+      "2026-09-01",
+      "2026-09-02",
+      "2026-09-03",
+      "2026-09-04",
+      "2026-09-07",
+      "2026-09-08",
+      "2026-09-09",
+      "2026-09-10"
+    ],
+    "timezone": "America/New_York"
   },
-  "notes": "SHA-256 pins for operator preflight; worktree must be clean at pinned HEAD for READY status."
+  "checks": [
+    {
+      "detail": {
+        "actual_head": "be67b4954cde59ed19c66d9d90b3fe7a4b698bfa",
+        "clean": true,
+        "expected_head": "be67b4954cde59ed19c66d9d90b3fe7a4b698bfa"
+      },
+      "name": "worktree",
+      "passed": true
+    },
+    {
+      "detail": {
+        "path": "artifacts\\shadow-run-1\\P6_VALIDATION_RECEIPT.json",
+        "selected_suite_count": 49,
+        "sha256": "91a37ca55868f2f21222ac5018aefceb1e001b365771de7061ffbf34865088d3",
+        "started_at": "2026-09-01T18:07:55.216292+00:00"
+      },
+      "name": "offline_full_validation",
+      "passed": true
+    },
+    {
+      "detail": {
+        "opend": {
+          "host": "127.0.0.1",
+          "port": 11111
+        },
+        "path": "artifacts\\shadow-run-1\\runtime-health.json",
+        "provider": "MOOMOO",
+        "sha256": "9eb050e4b1caa3bc5152a35fa42daf878672fd4805cc01a2badc676e68242793",
+        "verified_at": "2026-09-01T17:59:43.765313Z"
+      },
+      "name": "observational_runtime_health",
+      "passed": true
+    },
+    {
+      "detail": {
+        "EXECUTION_ENABLE": "DISABLED",
+        "IMP_BROKER_PAPER_EXECUTION": "DISABLED",
+        "IMP_LIVE_EXECUTION": "DISABLED",
+        "IMP_LIVE_INTERNAL_SIMULATION": "DISABLED",
+        "IMP_LIVE_OBSERVATIONAL": "1",
+        "IMP_MOOMOO_LIVE": "1",
+        "IMP_PAPER_EXECUTION": "DISABLED",
+        "IMP_SHADOW_RECORDING": "DISABLED"
+      },
+      "name": "runtime_configuration",
+      "passed": true
+    },
+    {
+      "detail": {
+        "instrument": "BIYA",
+        "provider_identity": "moomoo-observational"
+      },
+      "name": "frozen_instrument",
+      "passed": true
+    },
+    {
+      "detail": {
+        "early_closes": [],
+        "first_session": "2026-09-01",
+        "holidays": [],
+        "hours": "09:30-16:00",
+        "session_dates": [
+          "2026-09-01",
+          "2026-09-02",
+          "2026-09-03",
+          "2026-09-04",
+          "2026-09-07",
+          "2026-09-08",
+          "2026-09-09",
+          "2026-09-10"
+        ],
+        "timezone": "America/New_York"
+      },
+      "name": "session_calendar",
+      "passed": true
+    }
+  ],
+  "evidence": {
+    "runtime_health": {
+      "opend": {
+        "host": "127.0.0.1",
+        "port": 11111
+      },
+      "path": "artifacts\\shadow-run-1\\runtime-health.json",
+      "provider": "MOOMOO",
+      "sha256": "9eb050e4b1caa3bc5152a35fa42daf878672fd4805cc01a2badc676e68242793",
+      "verified_at": "2026-09-01T17:59:43.765313Z"
+    },
+    "validation": {
+      "path": "artifacts\\shadow-run-1\\P6_VALIDATION_RECEIPT.json",
+      "selected_suite_count": 49,
+      "sha256": "91a37ca55868f2f21222ac5018aefceb1e001b365771de7061ffbf34865088d3",
+      "started_at": "2026-09-01T18:07:55.216292+00:00"
+    }
+  },
+  "instrument": {
+    "instrument": "BIYA",
+    "provider_identity": "moomoo-observational"
+  },
+  "opening_handoff": {
+    "argv": [
+      ".venv\\Scripts\\python.exe",
+      "tools/research/run_shadow_run.py",
+      "open",
+      "--instrument",
+      "BIYA",
+      "--first-session",
+      "2026-09-01",
+      "--holidays",
+      "NONE",
+      "--early-closes",
+      "NONE",
+      "--capture-id",
+      "CAP-BIYA-SR1-20260901",
+      "--store-root",
+      ".local\\shadow"
+    ],
+    "powershell": "& '.venv\\Scripts\\python.exe' 'tools/research/run_shadow_run.py' 'open' '--instrument' 'BIYA' '--first-session' '2026-09-01' '--holidays' 'NONE' '--early-closes' 'NONE' '--capture-id' 'CAP-BIYA-SR1-20260901' '--store-root' '.local\\shadow'"
+  },
+  "protocol": "SHADOW_RUN_1_BIYA_FROZEN",
+  "runtime_configuration": {
+    "EXECUTION_ENABLE": "DISABLED",
+    "IMP_BROKER_PAPER_EXECUTION": "DISABLED",
+    "IMP_LIVE_EXECUTION": "DISABLED",
+    "IMP_LIVE_INTERNAL_SIMULATION": "DISABLED",
+    "IMP_LIVE_OBSERVATIONAL": "1",
+    "IMP_MOOMOO_LIVE": "1",
+    "IMP_PAPER_EXECUTION": "DISABLED",
+    "IMP_SHADOW_RECORDING": "DISABLED"
+  },
+  "schema_version": "platform/shadow-run-1-preflight/1.0.0",
+  "side_effects": {
+    "network_calls": false,
+    "run_opened": false
+  },
+  "status": "READY",
+  "worktree": {
+    "actual_head": "be67b4954cde59ed19c66d9d90b3fe7a4b698bfa",
+    "clean": true,
+    "expected_head": "be67b4954cde59ed19c66d9d90b3fe7a4b698bfa"
+  }
 }
