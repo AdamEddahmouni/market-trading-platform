@@ -8,6 +8,7 @@ from typing import Any
 from ..operational_identity import attach_operational_identity
 from ..paper.broker_paper import cancel_broker_paper_order
 from ..paper.execution import cancel_interactive_order, preview_interactive_order, submit_interactive_order
+from ..paper.contracts import decimal_minor_to_display
 from ..paper.ledger import PaperExecutionLedger
 from .account_registry import resolve_paper_portfolio_identity
 from .lane_provenance import attach_lane_provenance
@@ -156,18 +157,33 @@ def build_paper_portfolio_payload(store: ReplayStore, *, view_mode: str | None =
                 "state": _portfolio_mark_quality(store),
             },
             "exposure": {
+                "gross_notional_display": account.get("gross_exposure_display"),
+                "gross_notional_minor": account.get("gross_exposure_minor"),
                 "gross_shares": gross_exposure,
                 "net_shares": net_exposure,
+                "valuation_quality": account.get("valuation_quality"),
             },
             "fills": fills,
             "orders": orders,
             "pnl": {
                 "realized_minor": int(account.get("realized_pnl_minor", 0)),
                 "realized_display": account.get("realized_pnl_display"),
-                "total_display": account.get("realized_pnl_display"),
-                "total_minor": int(account.get("realized_pnl_minor", 0)),
-                "unrealized_display": _sum_unrealized_display(positions),
-                "unrealized_minor": _sum_unrealized_minor(positions),
+                "total_display": (
+                    decimal_minor_to_display(
+                        int(account.get("realized_pnl_minor", 0)) + int(account["unrealized_pnl_minor"])
+                    )
+                    if account.get("unrealized_pnl_minor") is not None
+                    else None
+                ),
+                "total_minor": (
+                    int(account.get("realized_pnl_minor", 0)) + int(account["unrealized_pnl_minor"])
+                    if account.get("unrealized_pnl_minor") is not None
+                    else None
+                ),
+                "unrealized_display": account.get("unrealized_pnl_display"),
+                "unrealized_minor": account.get("unrealized_pnl_minor"),
+                "valuation_quality": account.get("valuation_quality"),
+                "valuation_reasons": account.get("valuation_reasons", []),
             },
             "positions": positions,
             "reconciliation_status": risk.get("reconciliation_status"),
@@ -585,7 +601,22 @@ def _bars_for_paper_execution(store: ReplayStore, *, instrument_id: str | None =
                 instrument_id=focus,
             )
             return live_bars
-    return store.bars_for_execution()
+    replay_bars = store.bars_for_execution()
+    if not focus:
+        return replay_bars
+    matching = [
+        bar
+        for bar in replay_bars
+        if str(bar.get("instrument_id", "")).upper() == str(focus).upper()
+    ]
+    if matching:
+        return matching
+    if any(str(bar.get("instrument_id", "")).strip() for bar in replay_bars):
+        raise ValueError("PAPER_INSTRUMENT_DATA_UNAVAILABLE")
+    primary = str(getattr(store, "instrument_id", "")).upper()
+    if primary and primary == str(focus).upper():
+        return replay_bars
+    raise ValueError("PAPER_INSTRUMENT_DATA_UNAVAILABLE")
 
 
 def _wait_for_post_intent_bars(

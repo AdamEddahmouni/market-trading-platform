@@ -9,7 +9,7 @@ from ..operating_modes import (
     PAPER_EXECUTION_AUTHORITIES,
     resolve_execution_authority,
 )
-from ..paper.ledger import PaperExecutionLedger
+from ..paper.ledger import PaperExecutionLedger, order_state_open_count_delta
 from .capture_index import refresh_capture_catalog
 from .connection import CorruptStateError, LocalStateConnection
 from .opend import diagnose_opend
@@ -118,6 +118,9 @@ def persist_ledger(ledger: PaperExecutionLedger, *, events: list[dict[str, Any]]
             "live_mark_minor": ledger._live_mark_minor,
             "live_mark_provider": ledger._live_mark_provider,
             "live_mark_quality": ledger._live_mark_quality,
+            "marks_by_instrument": {
+                key: dict(value) for key, value in ledger._marks_by_instrument.items()
+            },
         },
     )
 
@@ -133,8 +136,13 @@ def ledger_from_session(row: dict[str, Any], events: list[dict[str, Any]], idemp
     if not isinstance(policy, dict):
         raw_policy = row.get("policy_json")
         policy = json.loads(raw_policy) if raw_policy else {}
-    if "initial_cash_minor" not in policy:
-        policy = {**DEFAULT_RISK_POLICY, **policy}
+    legacy_cash_account = "cash_account" not in policy
+    legacy_long_only = "long_only" not in policy
+    policy = {**DEFAULT_RISK_POLICY, **policy}
+    if legacy_cash_account:
+        policy["cash_account"] = False
+    if legacy_long_only:
+        policy["long_only"] = False
     ledger = PaperExecutionLedger(
         paper_account_id=str(row["paper_account_id"]),
         session_id=str(row["session_id"]),
@@ -161,22 +169,39 @@ def ledger_from_session(row: dict[str, Any], events: list[dict[str, Any]], idemp
         reconstructed.setdefault("paper_account_id", ledger.paper_account_id)
         ledger.events.append(reconstructed)
     open_orders = 0
+    order_states: dict[str, str] = {}
     for event in ledger.events:
         if event["event_type"] != "OrderStateChanged":
             continue
         payload = event.get("payload")
         if not isinstance(payload, dict):
             continue
-        if payload.get("state") in {"ACTIVATED", "PARTIALLY_FILLED", "WORKING"}:
-            open_orders += 1
-        if payload.get("state") in {"FILLED", "CANCELLED", "REJECTED", "EXPIRED"}:
-            open_orders = max(0, open_orders - 1)
+        order_id = str(payload.get("order_id", ""))
+        state = str(payload.get("state", ""))
+        prior = order_states.get(order_id)
+        open_orders = max(0, open_orders + order_state_open_count_delta(prior, state))
+        order_states[order_id] = state
     ledger.open_order_count = open_orders
     ledger.persist_sink = persist_ledger_batch
     repo = open_local_state()
     snapshot = repo.load_snapshot(str(row["session_id"])) if repo is not None else None
-    if snapshot and snapshot.get("live_mark_minor") is not None:
+    marks = snapshot.get("marks_by_instrument") if isinstance(snapshot, dict) else None
+    if isinstance(marks, dict):
+        for instrument_id, mark in marks.items():
+            if not isinstance(mark, dict) or mark.get("mark_minor") is None:
+                continue
+            ledger.apply_live_mark(
+                instrument_id=str(instrument_id),
+                mark_minor=int(mark["mark_minor"]),
+                mark_provider=str(mark.get("mark_provider") or "UNKNOWN"),
+                mark_as_of_ns=int(mark.get("mark_as_of_ns") or 0),
+                # A persisted mark is evidence of the last observation, not a
+                # fresh live health assertion after restart.
+                mark_quality="RESTORED",
+            )
+    elif snapshot and snapshot.get("live_mark_minor") is not None:
         ledger.apply_live_mark(
+            instrument_id=ledger._primary_instrument_id(),
             mark_minor=int(snapshot["live_mark_minor"]),
             mark_provider=str(snapshot.get("live_mark_provider") or "MOOMOO"),
             mark_as_of_ns=int(snapshot.get("live_mark_as_of_ns") or 0),
@@ -187,6 +212,7 @@ def ledger_from_session(row: dict[str, Any], events: list[dict[str, Any]], idemp
         if fills:
             last = fills[-1]
             ledger.apply_live_mark(
+                instrument_id=str(last.get("instrument_id") or ledger._primary_instrument_id()),
                 mark_minor=int(last["fill_price_minor"]),
                 mark_provider=str(ledger.data_provider or "MOOMOO"),
                 mark_as_of_ns=int(last.get("fill_time") or 0),
@@ -200,12 +226,33 @@ def persist_ledger_batch(ledger: PaperExecutionLedger, events: list[dict[str, An
 
 
 def compatible_resume(*, stored: dict[str, Any], current: dict[str, Any]) -> bool:
+    current_policy_identity = _policy_identity(current)
     return (
         stored.get("data_mode") == current.get("data_mode")
         and stored.get("data_provider") == current.get("data_provider")
         and stored.get("execution_provider") == current.get("execution_provider")
         and int(stored.get("starting_cash_minor") or 0) == int(current.get("starting_cash_minor") or 0)
+        # Older direct restore callers supplied only transport/session fields.
+        # The persisted current session record remains authoritative in that
+        # compatibility case; normal startup callers include the identity and
+        # therefore enforce exact policy matching.
+        and (
+            not current_policy_identity
+            or _policy_identity(stored) == current_policy_identity
+        )
     )
+
+
+def _policy_identity(record: dict[str, Any]) -> str:
+    import json
+
+    policy = record.get("policy")
+    if isinstance(policy, str):
+        policy = json.loads(policy)
+    if not isinstance(policy, dict):
+        raw = record.get("policy_json")
+        policy = json.loads(raw) if isinstance(raw, str) and raw else {}
+    return str(policy.get("risk_policy_identity_hash") or "")
 
 
 def startup_report(*, live_healthy: bool = False) -> dict[str, Any]:
@@ -275,6 +322,13 @@ def restore_open_ledger(*, current_config: dict[str, Any]) -> tuple[PaperExecuti
         details["reason"] = "CONFIG_INCOMPATIBLE"
         details["stored_hash"] = previous.get("configuration_hash")
         details["current_hash"] = current_config.get("configuration_hash")
+        current_policy_identity = _policy_identity(current_config)
+        if current_policy_identity and _policy_identity(previous) != current_policy_identity:
+            events = repo.load_events(str(previous["session_id"]))
+            idempotency = repo.load_idempotency(str(previous["session_id"]))
+            legacy = ledger_from_session(previous, events, idempotency)
+            legacy.close_session(reason_code="POLICY_INCOMPATIBLE")
+            details["legacy_session_closed"] = True
         return None, details
     events = repo.load_events(str(previous["session_id"]))
     idempotency = repo.load_idempotency(str(previous["session_id"]))

@@ -26,6 +26,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-03 — Paper cash-account accounting and risk foundation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/paper`, `risk`, `ui/paper`, `architecture` |
+| **Summary** | Upgraded Paper projections to replay-derived multi-instrument positions with long-only cash accounting, per-order cash/share reservations, monetary risk caps, instrument-aware pricing, incomplete valuation semantics, and policy-compatible restart behavior. Internal and broker-paper admission now share the monetary risk contract; broker fills are validated before lifecycle or portfolio mutation. |
+| **Key files** | `src/market_platform_foundation/portfolio/ledger.py`; `src/market_platform_foundation/paper/ledger.py`; `src/market_platform_foundation/paper/execution.py`; `src/market_platform_foundation/paper/broker_paper.py`; `src/market_platform_foundation/risk/decision.py`; `src/market_platform_foundation/local_state/startup.py`; `src/market_platform_foundation/ui_api/paper_projections.py`; `ui/src/api/schemas.ts`; `docs/architecture/PAPER_DECISION_LIFECYCLE.md` |
+| **Tests** | Focused paper/risk regressions: 86 passed; full platform suite: 460 passed, 2 skipped; intelligence suite: 1,123 passed, 25 skipped; full UI suite: 81 files and 425 tests passed with the repository's single-threaded runner and 10-second test/hook timeout; UI typecheck and production build passed; `git diff --check` and compileall passed. Canonical domain validation passed all affected product suites but remains non-green on the pre-existing repository-closure validation error (`src/market_platform_foundation/tests` missing). |
+| **Related** | [Paper accounting and risk plan](../superpowers/plans/2026-09-03-paper-accounting-risk-foundation.md); [Paper decision lifecycle](../architecture/PAPER_DECISION_LIFECYCLE.md) |
+| **Notes** | LIMIT controls, public broker routing, and richer fill realism remain separate follow-up milestones. |
+
 ## 2026-09-02 — Windows Operator Center and lifecycle UX
 
 | Field | Value |

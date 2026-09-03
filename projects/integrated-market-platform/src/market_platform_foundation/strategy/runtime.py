@@ -633,7 +633,8 @@ class StrategyPaperRuntime:
         current_position = sum(
             int(position.get("quantity", 0))
             for position in self.ledger.project_positions()
-            if str(position.get("instrument_id")) == self._instrument_id(opportunity)
+            if str(position.get("instrument_id", "")).upper()
+            == self._instrument_id(opportunity).upper()
             and int(position.get("quantity", 0)) > 0
         )
         close_quantity = min(close_quantity, current_position)

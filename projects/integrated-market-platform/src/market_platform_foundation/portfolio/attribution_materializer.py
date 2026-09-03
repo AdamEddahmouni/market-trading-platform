@@ -123,6 +123,7 @@ def materialize_strategy_attribution(
         order_id = str(order.get("order_id", ""))
         if order_id:
             execution_refs.append(ContractReference(kind="order", id=order_id))
+    charged_fee_order_ids: set[str] = set()
     for fill in active_ledger.project_fills():
         order_id = str(fill.get("order_id", ""))
         if order_id not in selected_order_ids:
@@ -154,10 +155,15 @@ def materialize_strategy_attribution(
                 fees_minor=int(
                     fill["fees_minor"]
                     if "fees_minor" in fill
-                    else policy.get("fee_minor_per_order", 0)
+                    else (
+                        policy.get("fee_minor_per_order", 0)
+                        if order_id not in charged_fee_order_ids
+                        else 0
+                    )
                 ),
             )
         )
+        charged_fee_order_ids.add(order_id)
 
     if not fills:
         return None
