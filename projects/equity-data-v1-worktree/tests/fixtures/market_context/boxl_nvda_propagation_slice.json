@@ -1,0 +1,101 @@
+{
+  "admission_id": "ADMITTED-MC-BOXL-NVDA-PROP-001",
+  "fixture_id": "FIXTURE-MC-BOXL-NVDA-PROPAGATION",
+  "target_symbol": "BOXL",
+  "entity_links": [
+    {
+      "link_id": "mc15-link-smh-nvda-etf",
+      "source_entity_id": "SMH",
+      "target_entity_id": "NVDA",
+      "link_type": "ETF_CONSTITUENT",
+      "link_weight": 0.8,
+      "event_time": "2026-07-01T00:00:00.000000000Z",
+      "available_time": "2026-07-01T00:00:00.000000000Z"
+    },
+    {
+      "link_id": "mc15-link-nvda-boxl-peer",
+      "source_entity_id": "NVDA",
+      "target_entity_id": "BOXL",
+      "link_type": "SECTOR_PEER",
+      "link_weight": 0.65,
+      "event_time": "2026-07-01T00:00:00.000000000Z",
+      "available_time": "2026-07-01T00:00:00.000000000Z"
+    },
+    {
+      "link_id": "mc15-link-nvda-boxl-supply",
+      "source_entity_id": "NVDA",
+      "target_entity_id": "BOXL",
+      "link_type": "SUPPLY_CHAIN",
+      "link_weight": 0.45,
+      "event_time": "2026-07-01T00:00:00.000000000Z",
+      "available_time": "2026-07-01T00:00:00.000000000Z"
+    },
+    {
+      "link_id": "mc15-link-nvda-boxl-ambiguous",
+      "source_entity_id": "NVDA",
+      "target_entity_id": "BOXL",
+      "link_type": "SECTOR_PEER",
+      "link_weight": 0.5,
+      "ambiguous": true,
+      "event_time": "2026-07-01T00:00:00.000000000Z",
+      "available_time": "2026-07-01T00:00:00.000000000Z",
+      "quality_flags": ["ENTITY_LINK_AMBIGUOUS"]
+    },
+    {
+      "link_id": "mc15-link-nvda-boxl-stale",
+      "source_entity_id": "NVDA",
+      "target_entity_id": "BOXL",
+      "link_type": "SUPPLY_CHAIN",
+      "link_weight": 0.35,
+      "event_time": "2026-06-01T00:00:00.000000000Z",
+      "available_time": "2026-06-01T00:00:00.000000000Z",
+      "expires_time": "2026-07-10T00:00:00.000000000Z"
+    }
+  ],
+  "donor_signals": [
+    {
+      "entity_id": "NVDA",
+      "event_id": "nvda-earnings-beat",
+      "canonical_event_type": "earnings_beat",
+      "catalyst_strength": 0.85,
+      "attention_level": 0.72,
+      "information_value": 0.68,
+      "diffusion_score": 0.55,
+      "event_time": "2026-07-20T09:30:00.000000000Z",
+      "available_time": "2026-07-20T10:00:00.000000000Z"
+    },
+    {
+      "entity_id": "NVDA",
+      "event_id": "nvda-guidance-cut",
+      "canonical_event_type": "macro_headwind",
+      "catalyst_strength": 0.75,
+      "attention_level": 0.6,
+      "information_value": 0.55,
+      "diffusion_score": 0.4,
+      "event_time": "2026-07-22T14:00:00.000000000Z",
+      "available_time": "2026-07-22T14:30:00.000000000Z"
+    },
+    {
+      "entity_id": "NVDA",
+      "event_id": "nvda-future-signal",
+      "canonical_event_type": "analyst_upgrade",
+      "catalyst_strength": 0.9,
+      "attention_level": 0.8,
+      "information_value": 0.7,
+      "diffusion_score": 0.6,
+      "event_time": "2026-07-24T11:00:00.000000000Z",
+      "available_time": "2026-07-24T12:00:00.000000000Z"
+    },
+    {
+      "entity_id": "SMH",
+      "event_id": "smh-flow-spike",
+      "canonical_event_type": "sector_rotation",
+      "catalyst_strength": 0.6,
+      "attention_level": 0.5,
+      "information_value": 0.45,
+      "diffusion_score": 0.35,
+      "event_time": "2026-07-19T15:00:00.000000000Z",
+      "available_time": "2026-07-19T15:30:00.000000000Z"
+    }
+  ]
+}

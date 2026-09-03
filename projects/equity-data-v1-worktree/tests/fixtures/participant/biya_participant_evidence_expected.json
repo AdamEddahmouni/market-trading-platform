@@ -1,0 +1,22 @@
+{
+  "prediction_cutoff": "2026-07-16T23:59:59Z",
+  "instrument_id": "BIYA",
+  "summary": {
+    "direction": "bullish_participant",
+    "discretionary_buy_count": 2,
+    "activist_disclosure_count": 1,
+    "compensation_count": 1,
+    "open_market_sell_count": 1,
+    "ambiguous_count": 0,
+    "institutional_snapshot_count": 2,
+    "action_count": 7
+  },
+  "cross_lane_signals": [
+    "ACTIVIST_STAKE_DISCLOSED",
+    "INSIDER_DISCRETIONARY_PURCHASE",
+    "INSIDER_SALE_NON_DISCRETIONARY",
+    "PARTICIPANT_DATA_CONFIDENCE"
+  ],
+  "pit_excludes_accession": "0001849639-26-000099",
+  "producer_version": "participant_evidence_v1"
+}

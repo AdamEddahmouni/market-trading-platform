@@ -1,0 +1,1 @@
+"""Supported market state namespaces."""

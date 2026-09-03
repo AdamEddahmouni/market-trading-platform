@@ -1,0 +1,14 @@
+{
+  "accession_number": "0001045810-25-000011",
+  "form_type": "4",
+  "issuer_cik": "0001045810",
+  "reporting_person": "Officer Example",
+  "transaction_date": "2025-01-15",
+  "transaction_code": "P",
+  "acquired_disposed": "A",
+  "shares": 2500,
+  "price": 120.5,
+  "shares_owned_following": 12500,
+  "direct_indirect": "D",
+  "is_derivative": false
+}

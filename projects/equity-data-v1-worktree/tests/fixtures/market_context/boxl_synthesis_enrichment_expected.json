@@ -1,0 +1,112 @@
+{
+  "early_cutoff_enriched_count": 1,
+  "non_enriched_event_ids": [
+    "3fd7f172-8949-53b0-83d2-5e2341e72039",
+    "63b5d445-4b4e-59f8-b7f7-66a8305c4e54"
+  ],
+  "enriched_events": [
+    {
+      "event_id": "df2e6ba5-46ab-5bb1-a867-745fe0a75c91",
+      "quality_flags_append": [
+        "MULTI_DOCUMENT_SYNTHESIS_EXPERIMENTAL",
+        "SYNTHESIS_THEME_CORROBORATED"
+      ],
+      "synthesis_enrichment": {
+        "synthesis_id": "83aba611-60c1-55dc-8475-3422b1f2cb67",
+        "theme_agreement_score": 1.0,
+        "contradiction_detected": false,
+        "consolidated_channels": [
+          "REVENUE_UP"
+        ],
+        "synthesis_confidence": 0.88,
+        "enrichment_available": true,
+        "scoring_method": "synthesis_enrichment_v1"
+      }
+    },
+    {
+      "event_id": "ad2c4547-e4cb-56a6-8f0c-f9a4d730d263",
+      "quality_flags_append": [
+        "MULTI_DOCUMENT_SYNTHESIS_EXPERIMENTAL",
+        "SYNTHESIS_THEME_CORROBORATED"
+      ],
+      "synthesis_enrichment": {
+        "synthesis_id": "9d668f9a-382f-5f65-b359-790fcd95bc2a",
+        "theme_agreement_score": 1.0,
+        "contradiction_detected": false,
+        "consolidated_channels": [
+          "REGULATORY_RISK_DOWN"
+        ],
+        "synthesis_confidence": 0.91,
+        "enrichment_available": true,
+        "scoring_method": "synthesis_enrichment_v1"
+      }
+    },
+    {
+      "event_id": "60e13d13-eaa2-57d1-9c9a-c23b612ef9ac",
+      "quality_flags_append": [
+        "MULTI_DOCUMENT_SYNTHESIS_EXPERIMENTAL",
+        "SYNTHESIS_THEME_CORROBORATED"
+      ],
+      "synthesis_enrichment": {
+        "synthesis_id": "f0d8ae71-d93c-5e52-a2a5-b4e7954d2179",
+        "theme_agreement_score": 1.0,
+        "contradiction_detected": false,
+        "consolidated_channels": [
+          "MARGIN_UP"
+        ],
+        "synthesis_confidence": 0.86,
+        "enrichment_available": true,
+        "scoring_method": "synthesis_enrichment_v1"
+      }
+    }
+  ],
+  "score_invariance_impact": [
+    {
+      "event_id": "df2e6ba5-46ab-5bb1-a867-745fe0a75c91",
+      "novelty_score": 0.5,
+      "materiality_score": 0.9,
+      "source_credibility": 0.65,
+      "surprise_score": null
+    },
+    {
+      "event_id": "ad2c4547-e4cb-56a6-8f0c-f9a4d730d263",
+      "novelty_score": 0.5,
+      "materiality_score": 0.85,
+      "source_credibility": 0.95,
+      "surprise_score": null
+    },
+    {
+      "event_id": "60e13d13-eaa2-57d1-9c9a-c23b612ef9ac",
+      "novelty_score": 0.5,
+      "materiality_score": 0.5,
+      "source_credibility": 0.55,
+      "surprise_score": null
+    }
+  ],
+  "score_invariance_catalyst": [
+    {
+      "event_id": "df2e6ba5-46ab-5bb1-a867-745fe0a75c91",
+      "catalyst_strength": 0.7125,
+      "novelty_score": 0.5,
+      "materiality_score": 0.9,
+      "credibility_score": 0.65,
+      "gate_ok": true
+    },
+    {
+      "event_id": "ad2c4547-e4cb-56a6-8f0c-f9a4d730d263",
+      "catalyst_strength": 0.7975,
+      "novelty_score": 0.5,
+      "materiality_score": 0.85,
+      "credibility_score": 0.95,
+      "gate_ok": true
+    },
+    {
+      "event_id": "60e13d13-eaa2-57d1-9c9a-c23b612ef9ac",
+      "catalyst_strength": 0.5175,
+      "novelty_score": 0.5,
+      "materiality_score": 0.5,
+      "credibility_score": 0.55,
+      "gate_ok": true
+    }
+  ]
+}

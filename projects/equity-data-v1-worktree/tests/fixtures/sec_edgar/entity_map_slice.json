@@ -1,0 +1,28 @@
+{
+  "records": [
+    {
+      "cik": "0001045810",
+      "tickers": ["NVDA"],
+      "entity_name": "NVIDIA CORP",
+      "valid_from": "1999-01-22T00:00:00Z",
+      "valid_to": "",
+      "instrument_id": "NVDA"
+    },
+    {
+      "cik": "0001849639",
+      "tickers": ["BIYA"],
+      "entity_name": "BIYA International Inc",
+      "valid_from": "2021-01-01T00:00:00Z",
+      "valid_to": "",
+      "instrument_id": "BIYA"
+    },
+    {
+      "cik": "0000320193",
+      "tickers": ["AAPL"],
+      "entity_name": "Apple Inc.",
+      "valid_from": "1980-12-12T00:00:00Z",
+      "valid_to": "",
+      "instrument_id": "AAPL"
+    }
+  ]
+}

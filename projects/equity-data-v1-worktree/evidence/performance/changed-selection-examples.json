@@ -1,0 +1,107 @@
+{
+  "examples": {
+    "docs_only": {
+      "changed_files": [
+        "docs/engineering/VALIDATION_ARCHITECTURE.md"
+      ],
+      "cheap_checks": [
+        "documentation"
+      ],
+      "full_suite_required": false,
+      "global_reasons": [],
+      "mandatory_invariant_count": 0,
+      "omitted_domains": [],
+      "selected_suites": [],
+      "selection_reasons": {}
+    },
+    "provider_leaf": {
+      "changed_files": [
+        "src/market_platform_foundation/providers/projections.py"
+      ],
+      "cheap_checks": [],
+      "full_suite_required": false,
+      "global_reasons": [],
+      "mandatory_invariant_count": 14,
+      "omitted_domains": [
+        "short-intelligence",
+        "macro",
+        "energy",
+        "sec"
+      ],
+      "selected_suites": [
+        "donor_bridge",
+        "contracts",
+        "integration",
+        "providers",
+        "market_data"
+      ],
+      "selection_reasons": {
+        "contracts": [
+          "neighbor of providers"
+        ],
+        "donor_bridge": [
+          "neighbor of providers"
+        ],
+        "integration": [
+          "neighbor of providers"
+        ],
+        "market_data": [
+          "neighbor of providers"
+        ],
+        "providers": [
+          "src/market_platform_foundation/providers/projections.py: direct source ownership"
+        ]
+      }
+    },
+    "shared_core": {
+      "changed_files": [
+        "src/market_platform_foundation/runtime/bitemporal_store.py"
+      ],
+      "cheap_checks": [],
+      "full_suite_required": true,
+      "global_reasons": [
+        "FULL_INVALIDATOR"
+      ],
+      "mandatory_invariant_count": 14,
+      "omitted_domains": [
+        "short-intelligence",
+        "sec"
+      ],
+      "selected_suites": [
+        "phase0",
+        "storage",
+        "contracts",
+        "providers",
+        "runtime",
+        "market_context",
+        "validation"
+      ],
+      "selection_reasons": {
+        "contracts": [
+          "neighbor of runtime",
+          "broad core diagnostic for required full checkpoint"
+        ],
+        "market_context": [
+          "neighbor of runtime"
+        ],
+        "phase0": [
+          "broad core diagnostic for required full checkpoint"
+        ],
+        "providers": [
+          "broad core diagnostic for required full checkpoint"
+        ],
+        "runtime": [
+          "src/market_platform_foundation/runtime/bitemporal_store.py: direct source ownership",
+          "broad core diagnostic for required full checkpoint"
+        ],
+        "storage": [
+          "neighbor of runtime"
+        ],
+        "validation": [
+          "broad core diagnostic for required full checkpoint"
+        ]
+      }
+    }
+  },
+  "schema_version": "1.0"
+}

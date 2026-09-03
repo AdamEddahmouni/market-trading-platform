@@ -1,0 +1,30 @@
+{
+  "acquisition_mode": "live",
+  "available_time": 2000000000000000000,
+  "channel_id": "SYNTH-CHANNEL-002",
+  "event_time": 1999999999999999999,
+  "event_type": "TRADE",
+  "ingest_run_id": "SYNTH-RUN-002",
+  "instrument_id": "SYNTH-ES-001",
+  "live_received_time": 2000000000000000000,
+  "normalization_version": "1.0.0",
+  "normalized_event_id": "00000000-0000-5000-8000-000000000003",
+  "operation": "UPSERT",
+  "publisher_id": "SYNTH-PUBLISHER-002",
+  "quality_observation_refs": [],
+  "raw_reference": "synthetic://fixture/live-trade-001",
+  "schema_version": "1.0.0",
+  "source_instance_id": "SYNTH-INSTANCE-002",
+  "source_record_id": "TRADE-001",
+  "source_revision_id": "REV-001",
+  "source_sequence": 1,
+  "supersedes_event_id": null,
+  "timestamp_states": {
+    "available_time": "DERIVED",
+    "event_time": "REQUIRED",
+    "historical_ingested_time": "FORBIDDEN",
+    "live_received_time": "REQUIRED",
+    "source_publish_time": "UNAVAILABLE"
+  },
+  "venue_id": "SYNTH-VENUE-001"
+}

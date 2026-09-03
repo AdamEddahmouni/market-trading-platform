@@ -1,0 +1,159 @@
+{
+  "impact_components_available": true,
+  "impact_summary_count": 5,
+  "novelty_count": 5,
+  "materiality_count": 5,
+  "credibility_count": 5,
+  "impact_component_summaries": [
+    {
+      "event_id": "df2e6ba5-46ab-5bb1-a867-745fe0a75c91",
+      "canonical_event_type": "earnings_beat",
+      "entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+      "novelty_score": 0.5,
+      "duplicate_probability": 0.5,
+      "incremental_information_score": 0.5,
+      "materiality_score": 0.9,
+      "materiality_basis": "event_type:earnings_beat+metric:revenue=42.5MILLION",
+      "source_credibility": 0.65,
+      "corroboration_state": "UNVERIFIED",
+      "official_source_found": false,
+      "surprise_score": null,
+      "event_time": "2026-07-15T14:30:00.000000000Z",
+      "available_time": "2026-07-15T14:45:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [
+        "EVENT_DUPLICATE",
+        "CORROBORATION_INCOMPLETE",
+        "MULTI_DOCUMENT_SYNTHESIS_EXPERIMENTAL",
+        "SYNTHESIS_THEME_CORROBORATED"
+      ],
+      "impact_available": true,
+      "synthesis_enrichment": {
+        "synthesis_id": "83aba611-60c1-55dc-8475-3422b1f2cb67",
+        "theme_agreement_score": 1.0,
+        "contradiction_detected": false,
+        "consolidated_channels": [
+          "REVENUE_UP"
+        ],
+        "synthesis_confidence": 0.88,
+        "enrichment_available": true,
+        "scoring_method": "synthesis_enrichment_v1"
+      }
+    },
+    {
+      "event_id": "ad2c4547-e4cb-56a6-8f0c-f9a4d730d263",
+      "canonical_event_type": "fda_clearance",
+      "entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+      "novelty_score": 0.5,
+      "duplicate_probability": 0.5,
+      "incremental_information_score": 0.5,
+      "materiality_score": 0.85,
+      "materiality_basis": "event_type:fda_clearance",
+      "source_credibility": 0.95,
+      "corroboration_state": "UNVERIFIED",
+      "official_source_found": true,
+      "surprise_score": null,
+      "event_time": "2026-07-18T16:00:00.000000000Z",
+      "available_time": "2026-07-18T16:10:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [
+        "EVENT_DUPLICATE",
+        "CORROBORATION_INCOMPLETE",
+        "MULTI_DOCUMENT_SYNTHESIS_EXPERIMENTAL",
+        "SYNTHESIS_THEME_CORROBORATED"
+      ],
+      "impact_available": true,
+      "synthesis_enrichment": {
+        "synthesis_id": "9d668f9a-382f-5f65-b359-790fcd95bc2a",
+        "theme_agreement_score": 1.0,
+        "contradiction_detected": false,
+        "consolidated_channels": [
+          "REGULATORY_RISK_DOWN"
+        ],
+        "synthesis_confidence": 0.91,
+        "enrichment_available": true,
+        "scoring_method": "synthesis_enrichment_v1"
+      }
+    },
+    {
+      "event_id": "60e13d13-eaa2-57d1-9c9a-c23b612ef9ac",
+      "canonical_event_type": "analyst_upgrade",
+      "entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+      "novelty_score": 0.5,
+      "duplicate_probability": 0.5,
+      "incremental_information_score": 0.5,
+      "materiality_score": 0.5,
+      "materiality_basis": "event_type:analyst_upgrade+metric:price_target=12.00USD",
+      "source_credibility": 0.55,
+      "corroboration_state": "UNVERIFIED",
+      "official_source_found": false,
+      "surprise_score": null,
+      "event_time": "2026-07-21T13:15:00.000000000Z",
+      "available_time": "2026-07-21T13:25:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [
+        "EVENT_DUPLICATE",
+        "SOURCE_LOW_CREDIBILITY",
+        "CORROBORATION_INCOMPLETE",
+        "MULTI_DOCUMENT_SYNTHESIS_EXPERIMENTAL",
+        "SYNTHESIS_THEME_CORROBORATED"
+      ],
+      "impact_available": true,
+      "synthesis_enrichment": {
+        "synthesis_id": "f0d8ae71-d93c-5e52-a2a5-b4e7954d2179",
+        "theme_agreement_score": 1.0,
+        "contradiction_detected": false,
+        "consolidated_channels": [
+          "MARGIN_UP"
+        ],
+        "synthesis_confidence": 0.86,
+        "enrichment_available": true,
+        "scoring_method": "synthesis_enrichment_v1"
+      }
+    },
+    {
+      "event_id": "3fd7f172-8949-53b0-83d2-5e2341e72039",
+      "canonical_event_type": "offering_risk",
+      "entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+      "novelty_score": 1.0,
+      "duplicate_probability": 0.0,
+      "incremental_information_score": 1.0,
+      "materiality_score": 0.7,
+      "materiality_basis": "event_type:offering_risk",
+      "source_credibility": 0.95,
+      "corroboration_state": "UNVERIFIED",
+      "official_source_found": true,
+      "surprise_score": null,
+      "event_time": "2026-07-21T18:45:00.000000000Z",
+      "available_time": "2026-07-21T18:46:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [
+        "CORROBORATION_INCOMPLETE"
+      ],
+      "impact_available": true
+    },
+    {
+      "event_id": "63b5d445-4b4e-59f8-b7f7-66a8305c4e54",
+      "canonical_event_type": "macro_headwind",
+      "entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+      "novelty_score": 1.0,
+      "duplicate_probability": 0.0,
+      "incremental_information_score": 1.0,
+      "materiality_score": 0.35,
+      "materiality_basis": "event_type:macro_headwind",
+      "source_credibility": 0.45,
+      "corroboration_state": "UNVERIFIED",
+      "official_source_found": false,
+      "surprise_score": null,
+      "event_time": "2026-07-22T20:00:00.000000000Z",
+      "available_time": "2026-07-22T20:05:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [
+        "MATERIALITY_UNKNOWN",
+        "SOURCE_LOW_CREDIBILITY",
+        "CORROBORATION_INCOMPLETE"
+      ],
+      "impact_available": true
+    }
+  ]
+}

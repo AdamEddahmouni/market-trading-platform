@@ -1,0 +1,6 @@
+Product: Daily Heating Degree Days
+Regions: CPC::Regions::CensusDivisions
+Weights: Population
+Region|20250816|20250817|20250818
+1|2|3|M
+CONUS|1|1|0

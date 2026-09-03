@@ -1,0 +1,5 @@
+ST|State|Census Division ID|Census Division Name
+AZ|Arizona|8|MOUNTAIN
+CT|Connecticut|1|NEW ENGLAND
+NH|New Hampshire|1|NEW ENGLAND
+VT|Vermont|8|MOUNTAIN
