@@ -1,0 +1,56 @@
+.live-portfolio-page {
+  --live-accent: #f0b45c;
+  --live-line: rgba(188, 156, 112, 0.24);
+  display: grid;
+  gap: 18px;
+  max-width: 1580px;
+  margin: 0 auto;
+}
+
+.live-portfolio-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--live-line);
+}
+
+.live-portfolio-header h1 {
+  margin: 4px 0 8px;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  letter-spacing: -0.04em;
+}
+
+.live-portfolio-header p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.live-portfolio-header a {
+  align-self: start;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--live-line);
+}
+
+.live-portfolio-summary {
+  padding: 18px;
+  border: 1px solid rgba(240, 180, 92, 0.28);
+  background: linear-gradient(120deg, rgba(240, 180, 92, 0.08), rgba(24, 20, 14, 0.96));
+}
+
+.live-portfolio-page .live-eyebrow {
+  color: var(--live-accent);
+  font: 0.7rem var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.live-portfolio-page .live-safety-hint {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}

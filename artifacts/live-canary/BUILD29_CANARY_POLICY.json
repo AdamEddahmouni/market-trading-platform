@@ -1,0 +1,36 @@
+{
+  "canary_policy_id": "CANPOL-a986c9e60c088a6de8fcb49f664153001262283f0f2c6e7012c1128c888ccf4a",
+  "schema_version": "1",
+  "broker": "tradier.paper",
+  "account_ref": "fp-canary-preview",
+  "account_environment": "LIVE",
+  "allowed_asset_classes": [
+    "US_EQUITY"
+  ],
+  "allowed_instruments": [
+    "inst-aapl"
+  ],
+  "allowed_sides": [
+    "BUY"
+  ],
+  "allowed_order_types": [
+    "MARKET",
+    "LIMIT"
+  ],
+  "max_single_order_notional_minor": 2500,
+  "max_total_canary_notional_minor": 2500,
+  "max_net_live_exposure_minor": 2500,
+  "max_gross_live_exposure_minor": 2500,
+  "max_order_count": 1,
+  "max_fill_count": 1,
+  "allow_fractional": false,
+  "allow_margin": false,
+  "allow_short": false,
+  "allow_outside_rth": false,
+  "authorization_duration_ns": 3600000000000,
+  "require_flat_start": true,
+  "require_flat_end": false,
+  "require_manual_authorization": true,
+  "require_manual_order_confirmation": true,
+  "implementation_version": "build29-v1"
+}

@@ -1,0 +1,7 @@
+{
+  "alert_policy_id": "ALTPOL-c82183cc99b0c213fa15833948179b9d76937c8859d5a50601b08514e6c7f92a",
+  "critical_requires_delivery": true,
+  "delivery_channels": [
+    "console"
+  ]
+}

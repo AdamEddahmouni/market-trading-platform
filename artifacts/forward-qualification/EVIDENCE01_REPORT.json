@@ -1,0 +1,49 @@
+{
+  "report_id": "FEREP-ff07f9016e755a45a87b0b3f6c4d6db844002e704a979df04c92ea6ea85715db",
+  "schema_version": "1",
+  "policy_ref": "FEPOL-2f34a5a175890869faa8456a9af2a49244ed702ac667bd495f590de266cc165e",
+  "assessment_ref": "FEASM-b0b4d22aad76884b5cd0ea3589ab6ff71e06f81541a60804789c8516e0668c2a",
+  "build26_historical_disposition": "INSUFFICIENT_FORWARD_EVIDENCE",
+  "build26_historical_report_ref": "FQREP-ba32338a3b7b5c69f8ce52edfef337995141665e45fe446606218292656b31e5",
+  "evidence01_disposition": "INSUFFICIENT_FORWARD_EVIDENCE",
+  "limitation_status": "STILL_OPEN",
+  "observation_summary": {
+    "observation_cutoff_ns": 1700000000000000000,
+    "settlement_cutoff_ns": 1700000000000000000,
+    "first_eligible_decision_ns": null,
+    "last_eligible_decision_ns": null,
+    "elapsed_qualifying_duration_ns": 0,
+    "distinct_trading_days": 0,
+    "distinct_sessions": 0,
+    "raw_observations": 0,
+    "eligible_predictions": 0,
+    "settled_predictions": 0,
+    "unsettled_predictions": 0,
+    "abstentions": 0,
+    "excluded_observations": 0,
+    "exclusions_by_reason": {},
+    "up_support": 0,
+    "down_support": 0,
+    "settlement_rate": null,
+    "settlement_rate_state": "NOT_EVALUABLE",
+    "maximum_observation_gap_ns": 0,
+    "provider_disconnected_exclusions": 0
+  },
+  "remaining_requirements": [
+    "50 additional eligible predictions",
+    "25 additional settled eligible predictions",
+    "settlement rate threshold (80%) not yet evaluable",
+    "5 additional qualifying calendar days of span",
+    "5 additional qualifying trading days",
+    "5 additional qualifying observation sessions"
+  ],
+  "implementation_version": "evidence01-v1",
+  "metadata": {
+    "prior_limitation": "INSUFFICIENT_FORWARD_EVIDENCE"
+  },
+  "generated_at": "2026-08-26T17:03:33.939445+00:00",
+  "source_head": "6de125c62a68b26f0e658cac5089aea0dc2dbc4d",
+  "mechanism_status": "MECHANISM_VALIDATED_BY_FIXTURE",
+  "forward_evidence_status": "INSUFFICIENT_FORWARD_OBSERVATION",
+  "cutoff_kind": "BOOTSTRAP_ZERO_EVIDENCE"
+}

@@ -1,0 +1,7 @@
+Product: Daily Cooling Degree Days Forecast Based on NDFD Data Issued 0000UTC 20250818
+Regions: CPC::Regions::StatesCONUS
+Weights: Population
+Region|20250818|20250819|20250820|20250821|20250822|20250823|20250824|Total
+TX|18|19|20|21|21|20|19|138
+VT|2|2|3|3|2|2|1|15
+CONUS|12|13|14|15|15|14|13|96

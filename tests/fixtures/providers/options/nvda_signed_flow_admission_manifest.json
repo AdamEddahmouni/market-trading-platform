@@ -1,0 +1,15 @@
+{
+  "admitted_fixture_id": "ADMITTED-OPTIONS-NVDA-SIGNED-001",
+  "capability_claims": [
+    "signed_flow",
+    "flow_direction",
+    "open_close"
+  ],
+  "content_path": "tests/fixtures/providers/options/nvda_signed_flow_slice.json",
+  "donor_reference": "O5 signed flow fixture with explicit buy/sell initiation",
+  "instrument_id": "NVDA",
+  "logical_id": "phase11.options_nvda_signed_flow_admission",
+  "research_only": true,
+  "schema_version": "1.0.0",
+  "status": "ADMITTED"
+}

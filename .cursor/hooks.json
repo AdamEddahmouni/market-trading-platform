@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": "python .cursor/hooks/policy.py",
+        "failClosed": true
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "python .cursor/hooks/after-file-edit.py",
+        "timeout": 15,
+        "failClosed": false
+      }
+    ]
+  }
+}

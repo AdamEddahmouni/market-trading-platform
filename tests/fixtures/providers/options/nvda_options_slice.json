@@ -1,0 +1,41 @@
+{
+  "admission_id": "ADMITTED-OPTIONS-NVDA-001",
+  "fixture_id": "FIXTURE-OPTIONS-NVDA",
+  "symbol": "NVDA",
+  "activities": [
+    {
+      "ask": 1.85,
+      "bid": 1.80,
+      "direction_label": "ambiguous",
+      "event_time": "2026-07-21T19:45:00.000000000Z",
+      "expiry": "2026-08-15",
+      "iv_rank": 0.55,
+      "open_interest": 2200,
+      "option_type": "call",
+      "skew_signal": 0.45,
+      "source": "fixture_synthetic",
+      "strike": 130.0,
+      "underlying_price": 128.0,
+      "volume": 3400,
+      "volume_oi_ratio": 1.55,
+      "volume_ratio": 1.2
+    },
+    {
+      "ask": 2.10,
+      "bid": 2.05,
+      "direction_label": "supports_long",
+      "event_time": "2026-07-21T19:45:01.000000000Z",
+      "expiry": "2026-08-15",
+      "iv_rank": 0.58,
+      "open_interest": 1800,
+      "option_type": "call",
+      "skew_signal": 0.52,
+      "source": "fixture_synthetic",
+      "strike": 135.0,
+      "underlying_price": 128.0,
+      "volume": 4100,
+      "volume_oi_ratio": 2.28,
+      "volume_ratio": 1.6
+    }
+  ]
+}

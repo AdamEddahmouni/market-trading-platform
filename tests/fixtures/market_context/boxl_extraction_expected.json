@@ -1,0 +1,252 @@
+{
+  "document_extractions": [
+    {
+      "document_id": "mc-doc-earnings-1",
+      "company_event_type": "EARNINGS",
+      "macro_event_type": null,
+      "economic_channels": [
+        "REVENUE_UP"
+      ],
+      "extracted_metrics": [
+        {
+          "metric_name": "revenue",
+          "reported_value": "42.5",
+          "units": "MILLION",
+          "period": "Q2-2026",
+          "currency": "USD",
+          "comparison_period": null,
+          "quality_flags": []
+        }
+      ],
+      "extraction_models": [
+        "rule-v1",
+        "fixture-llm-v1",
+        "structured-fixture-v1"
+      ],
+      "llm_confidence": 0.86,
+      "quality_flags": []
+    },
+    {
+      "document_id": "mc-doc-earnings-2",
+      "company_event_type": "EARNINGS",
+      "macro_event_type": null,
+      "economic_channels": [
+        "REVENUE_UP"
+      ],
+      "extracted_metrics": [],
+      "extraction_models": [
+        "rule-v1",
+        "fixture-llm-v1"
+      ],
+      "llm_confidence": 0.82,
+      "quality_flags": []
+    },
+    {
+      "document_id": "mc-doc-fda-1",
+      "company_event_type": "FDA_APPROVAL",
+      "macro_event_type": null,
+      "economic_channels": [
+        "REGULATORY_RISK_DOWN"
+      ],
+      "extracted_metrics": [],
+      "extraction_models": [
+        "rule-v1",
+        "fixture-llm-v1"
+      ],
+      "llm_confidence": 0.9,
+      "quality_flags": []
+    },
+    {
+      "document_id": "mc-doc-fda-2",
+      "company_event_type": "FDA_APPROVAL",
+      "macro_event_type": null,
+      "economic_channels": [
+        "REGULATORY_RISK_DOWN"
+      ],
+      "extracted_metrics": [],
+      "extraction_models": [
+        "rule-v1",
+        "fixture-llm-v1"
+      ],
+      "llm_confidence": 0.84,
+      "quality_flags": []
+    },
+    {
+      "document_id": "mc-doc-upgrade-1",
+      "company_event_type": "ANALYST_UPGRADE",
+      "macro_event_type": null,
+      "economic_channels": [
+        "MARGIN_UP"
+      ],
+      "extracted_metrics": [
+        {
+          "metric_name": "price_target",
+          "reported_value": "12.00",
+          "units": "USD",
+          "period": null,
+          "currency": "USD",
+          "comparison_period": null,
+          "quality_flags": []
+        }
+      ],
+      "extraction_models": [
+        "rule-v1",
+        "fixture-llm-v1",
+        "structured-fixture-v1"
+      ],
+      "llm_confidence": 0.88,
+      "quality_flags": []
+    },
+    {
+      "document_id": "mc-doc-upgrade-2",
+      "company_event_type": "ANALYST_UPGRADE",
+      "macro_event_type": null,
+      "economic_channels": [
+        "MARGIN_UP"
+      ],
+      "extracted_metrics": [],
+      "extraction_models": [
+        "rule-v1",
+        "fixture-llm-v1"
+      ],
+      "llm_confidence": 0.8,
+      "quality_flags": []
+    },
+    {
+      "document_id": "mc-doc-offering-1",
+      "company_event_type": "EQUITY_ISSUANCE",
+      "macro_event_type": null,
+      "economic_channels": [
+        "DILUTION_UP",
+        "LIQUIDITY_RISK_UP"
+      ],
+      "extracted_metrics": [],
+      "extraction_models": [
+        "rule-v1",
+        "fixture-llm-v1"
+      ],
+      "llm_confidence": 0.91,
+      "quality_flags": []
+    },
+    {
+      "document_id": "mc-doc-macro-1",
+      "company_event_type": null,
+      "macro_event_type": null,
+      "economic_channels": [
+        "UNCERTAINTY_UP"
+      ],
+      "extracted_metrics": [],
+      "extraction_models": [
+        "rule-v1",
+        "fixture-llm-v1"
+      ],
+      "llm_confidence": 0.72,
+      "quality_flags": []
+    }
+  ],
+  "event_extraction_summaries": [
+    {
+      "event_id": "df2e6ba5-46ab-5bb1-a867-745fe0a75c91",
+      "canonical_event_type": "earnings_beat",
+      "company_event_type": "EARNINGS",
+      "macro_event_type": null,
+      "economic_channels": [
+        "REVENUE_UP"
+      ],
+      "extracted_metrics": [
+        {
+          "metric_name": "revenue",
+          "reported_value": "42.5",
+          "units": "MILLION",
+          "period": "Q2-2026",
+          "currency": "USD",
+          "comparison_period": null,
+          "quality_flags": []
+        }
+      ],
+      "extraction_models": [
+        "rule-v1",
+        "fixture-llm-v1",
+        "structured-fixture-v1"
+      ],
+      "document_count": 2,
+      "quality_flags": []
+    },
+    {
+      "event_id": "ad2c4547-e4cb-56a6-8f0c-f9a4d730d263",
+      "canonical_event_type": "fda_clearance",
+      "company_event_type": "FDA_APPROVAL",
+      "macro_event_type": null,
+      "economic_channels": [
+        "REGULATORY_RISK_DOWN"
+      ],
+      "extracted_metrics": [],
+      "extraction_models": [
+        "rule-v1",
+        "fixture-llm-v1"
+      ],
+      "document_count": 2,
+      "quality_flags": []
+    },
+    {
+      "event_id": "60e13d13-eaa2-57d1-9c9a-c23b612ef9ac",
+      "canonical_event_type": "analyst_upgrade",
+      "company_event_type": "ANALYST_UPGRADE",
+      "macro_event_type": null,
+      "economic_channels": [
+        "MARGIN_UP"
+      ],
+      "extracted_metrics": [
+        {
+          "metric_name": "price_target",
+          "reported_value": "12.00",
+          "units": "USD",
+          "period": null,
+          "currency": "USD",
+          "comparison_period": null,
+          "quality_flags": []
+        }
+      ],
+      "extraction_models": [
+        "rule-v1",
+        "fixture-llm-v1",
+        "structured-fixture-v1"
+      ],
+      "document_count": 2,
+      "quality_flags": []
+    },
+    {
+      "event_id": "3fd7f172-8949-53b0-83d2-5e2341e72039",
+      "canonical_event_type": "offering_risk",
+      "company_event_type": "EQUITY_ISSUANCE",
+      "macro_event_type": null,
+      "economic_channels": [
+        "DILUTION_UP",
+        "LIQUIDITY_RISK_UP"
+      ],
+      "extracted_metrics": [],
+      "extraction_models": [
+        "rule-v1",
+        "fixture-llm-v1"
+      ],
+      "document_count": 1,
+      "quality_flags": []
+    },
+    {
+      "event_id": "63b5d445-4b4e-59f8-b7f7-66a8305c4e54",
+      "canonical_event_type": "macro_headwind",
+      "company_event_type": null,
+      "macro_event_type": null,
+      "economic_channels": [
+        "UNCERTAINTY_UP"
+      ],
+      "extracted_metrics": [],
+      "extraction_models": [
+        "rule-v1",
+        "fixture-llm-v1"
+      ],
+      "document_count": 1,
+      "quality_flags": []
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "qualification_spec_id": "FQSPEC-c64caac4e5b4b0562e92b54d1b1242c1fecca9480255aa9a8bc2c1f75122a9d1",
+  "schema_version": "1",
+  "release_candidate_ref": "15e7a4f6fc88e5a1c90c6bc3b1b4f8c3a861d2f2",
+  "source_head": "15e7a4f6fc88e5a1c90c6bc3b1b4f8c3a861d2f2",
+  "contract_inventory_hash": "CTRINV-25af0a79f08c6a4d7abe374467c593d095b667073d8647755e1a232627704388",
+  "qualification_kind": "FORWARD_SHADOW",
+  "allowed_providers": [
+    "MOOMOO"
+  ],
+  "instrument_universe": [
+    "AAPL",
+    "NVDA",
+    "MSFT",
+    "AMD",
+    "TSLA",
+    "SPY",
+    "QQQ"
+  ],
+  "target_kind": "direction_up_down",
+  "horizon_ns": 300000000000,
+  "champion_scope": "QUALIFICATION_SHADOW",
+  "qualification_start_ns": 1700000000000000000,
+  "qualification_end_ns": null,
+  "minimum_prediction_count": 10,
+  "minimum_labelable_count": 5,
+  "minimum_duration_ns": 3600000000000,
+  "required_quality_states": [
+    "GOOD",
+    "DEGRADED"
+  ],
+  "control_set": [
+    "ALWAYS_UP",
+    "PRIOR"
+  ],
+  "execution_mode_requirement": "NONE",
+  "execution_authority_requirement": "BLOCKED",
+  "implementation_version": "build26-v1",
+  "metadata": {
+    "build": "BUILD_26_FORWARD_SHADOW_QUALIFICATION"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "providers": {
+    "finviz": {
+      "capabilities": [
+        "QUOTES"
+      ],
+      "live_availability": "fixture"
+    },
+    "polygon": {
+      "capabilities": [
+        "QUOTES",
+        "TRADES"
+      ],
+      "live_availability": "fixture"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "milestone": "IMP-XA-01",
+  "limitations": [
+    "no live rates provider integration",
+    "no live commodity provider integration",
+    "no live FX provider integration",
+    "no cross-asset regime engine",
+    "some legacy records still require compatibility resolution at ingest boundaries",
+    "historical provider alias validity incomplete beyond explicit alias rows",
+    "in-memory registry is default; durable cross-asset identity store deferred"
+  ]
+}

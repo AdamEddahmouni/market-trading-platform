@@ -1,0 +1,15 @@
+{
+  "admission_id": "ADMITTED-F11-ES-001",
+  "admitted_fixture_id": "ADMITTED-F11-ES-001",
+  "fixture_id": "ADMITTED-F11-ES-001",
+  "symbol": "ES",
+  "instrument_family": "ES",
+  "research_only": true,
+  "synthetic": true,
+  "bars_relative_path": "tests/fixtures/providers/futures/es_settlement_bars_slice.json",
+  "cot_relative_path": "tests/fixtures/providers/futures/es_cot_positioning_slice.json",
+  "macro_relative_path": "tests/fixtures/providers/futures/es_macro_events_slice.json",
+  "margin_relative_path": "tests/fixtures/providers/futures/es_margin_history_slice.json",
+  "min_history_bars": 63,
+  "embargo_bars": 1
+}

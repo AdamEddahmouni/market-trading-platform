@@ -1,0 +1,28 @@
+{
+  "adr_id": "ADR-SIM-CRYPTO-001",
+  "alternatives": [
+    {
+      "decision": "PROPOSED",
+      "name": "INSTRUMENT_TYPED_FILL_MODELS",
+      "option_id": "SIM-CRYPTO-OPTION-001",
+      "tradeoffs": [
+        "Multiple simulator modes increase test surface; bar-only path remains for bar-declared research."
+      ]
+    }
+  ],
+  "artifact_type": "ARCHITECTURE_DECISION_RECORD",
+  "created_at": "2026-08-16T04:30:00.000000000Z",
+  "decision": {
+    "selected_option_id": "SIM-CRYPTO-OPTION-001",
+    "summary": "Crypto simulation extends the canonical deterministic simulator with venue-specific fees, funding, 24/7 sessions, and instrument-typed fill models. Broker paper trading is not canonical simulation.",
+    "title": "Crypto simulation extensions"
+  },
+  "effectivity": {
+    "current_state": "PROPOSED",
+    "decision_only": true,
+    "non_authorization_statement": "Proposed status does not authorize simulator implementation or live crypto trading."
+  },
+  "logical_id": "expansion.adr_sim_crypto_001",
+  "schema_version": "1.0.0",
+  "status": "PROPOSED"
+}

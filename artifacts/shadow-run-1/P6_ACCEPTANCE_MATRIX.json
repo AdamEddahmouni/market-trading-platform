@@ -1,0 +1,150 @@
+{
+  "criteria": [
+    {
+      "criterion_id": "P6-AC-001",
+      "description": "Prospective protocol preregistered before outcome interpretation",
+      "disposition": "pass",
+      "evidence_artifact": "artifacts/shadow-run-1/P6_SHADOW_RUN_1_PROTOCOL.json",
+      "notes": "",
+      "observed": "protocol_present=True, preregistered_before_decisions=True",
+      "threshold": "Protocol artifact exists with preregistration timestamp before first decision"
+    },
+    {
+      "criterion_id": "P6-AC-002",
+      "description": "Valid forward observation window collected",
+      "disposition": "pass",
+      "evidence_artifact": "experiment store decisions + capture manifests (not fixture replay)",
+      "notes": "",
+      "observed": "forward_observations=10",
+      "threshold": "At least one ACTUAL_FORWARD observation from lawful live observational source"
+    },
+    {
+      "criterion_id": "P6-AC-003",
+      "description": "No-lookahead at decision time",
+      "disposition": "pass",
+      "evidence_artifact": "tests/platform/test_shadow_run1_predictor.py; report.integrity.causality_violations",
+      "notes": "",
+      "observed": "causality_violations=0",
+      "threshold": "causality_violations=0; late-arrival trades excluded from predictor windows"
+    },
+    {
+      "criterion_id": "P6-AC-004",
+      "description": "Decision-time evidence preserved immutably",
+      "disposition": "pass",
+      "evidence_artifact": "tests/platform/test_shadow_run1_experiment_store.py",
+      "notes": "",
+      "observed": "immutability_proven_offline=True",
+      "threshold": "run_contract insert-once; no UPDATE/DELETE on decisions"
+    },
+    {
+      "criterion_id": "P6-AC-005",
+      "description": "Source times and provenance captured",
+      "disposition": "pass",
+      "evidence_artifact": "experiment store decision detail_json",
+      "notes": "",
+      "observed": "decisions_with_provenance=10/10",
+      "threshold": "Each decision detail includes event_time, available_time, capture_id"
+    },
+    {
+      "criterion_id": "P6-AC-006",
+      "description": "Operational identity isolation",
+      "disposition": "pass",
+      "evidence_artifact": "ADR-0007 account isolation; shadow path is observational-only",
+      "notes": "",
+      "observed": "Shadow path is observational-only; account ACL enforced on account-scoped APIs (TD-005)",
+      "threshold": "Shadow recording does not cross account/mode boundaries"
+    },
+    {
+      "criterion_id": "P6-AC-007",
+      "description": "Demo/Paper/Live execution safety",
+      "disposition": "pass",
+      "evidence_artifact": "preflight runtime_configuration checks",
+      "notes": "",
+      "observed": "execution_gates_safe=True",
+      "threshold": "No order submission; execution gates disabled during open"
+    },
+    {
+      "criterion_id": "P6-AC-008",
+      "description": "Operational failures recorded",
+      "disposition": "pass",
+      "evidence_artifact": "experiment store recorder_errors; runtime health_payload",
+      "notes": "",
+      "observed": "recorder_errors=0 (failures recorded, not hidden)",
+      "threshold": "recorder_errors table append-only; health payload surfaces errors"
+    },
+    {
+      "criterion_id": "P6-AC-009",
+      "description": "Evaluation separated from decision generation",
+      "disposition": "pass",
+      "evidence_artifact": "tests/platform/test_shadow_run1_labeling_job.py",
+      "notes": "",
+      "observed": "evaluation_separation_proven=True",
+      "threshold": "Labels attached only after horizon; labeling_job does not feed predictor"
+    },
+    {
+      "criterion_id": "P6-AC-010",
+      "description": "Acceptance matrix exists",
+      "disposition": "pass",
+      "evidence_artifact": "artifacts/shadow-run-1/P6_ACCEPTANCE_MATRIX.json",
+      "notes": "",
+      "observed": "matrix_written=True",
+      "threshold": "Machine-readable matrix with criterion/threshold/evidence/disposition"
+    },
+    {
+      "criterion_id": "P6-AC-011",
+      "description": "Required offline validation green at preregistration",
+      "disposition": "pass",
+      "evidence_artifact": "evidence referenced in preflight validation receipt",
+      "notes": "Blocked when full validation receipt not yet pinned at preregistration",
+      "observed": "validation_green=True",
+      "threshold": "validate.py full: status=passed, failures=0, errors=0"
+    },
+    {
+      "criterion_id": "P6-AC-012",
+      "description": "Run manifest immutability",
+      "disposition": "pass",
+      "evidence_artifact": "tools/research/run_shadow_run.py open idempotence",
+      "notes": "",
+      "observed": "manifest_immutable=True",
+      "threshold": "Second open with same args verifies without rewriting contract"
+    },
+    {
+      "criterion_id": "P6-AC-013",
+      "description": "Stopping rule frozen pre-outcome",
+      "disposition": "pass",
+      "evidence_artifact": "run_shadow_run.evaluate_stopping_rule",
+      "notes": "",
+      "observed": "Stopping rule encoded in run_shadow_run.evaluate_stopping_rule (frozen Boolean)",
+      "threshold": "evaluate_stopping_rule uses outcome-independent session/grid counts"
+    },
+    {
+      "criterion_id": "P6-AC-014",
+      "description": "ES-data governance preserved",
+      "disposition": "pass",
+      "evidence_artifact": "SOURCE_AVAILABILITY_AUDIT.json",
+      "notes": "",
+      "observed": "es_excluded_not_fabricated=True",
+      "threshold": "No fabricated ES forward evidence; ADR-DATA-001 respected"
+    },
+    {
+      "criterion_id": "P6-AC-015",
+      "description": "Resumable run identity",
+      "disposition": "pass",
+      "evidence_artifact": "experiment store ensure_run collision detection",
+      "notes": "",
+      "observed": "run_id_present=True",
+      "threshold": "run_id content-addressed; resume refuses incompatible contract"
+    }
+  ],
+  "git_commit": "be67b4954cde59ed19c66d9d90b3fe7a4b698bfa",
+  "p6_disposition": "IN_PROGRESS_EVIDENCE_COLLECTION",
+  "protocol_version": "SHADOW_RUN_1_BIYA_FROZEN/1.0.0",
+  "run_id": "SHRUN-00C5C98CD1C33EC4D22D0BFCAD4AF0AD51FBF5EBF566AA8C2308B98D2BD5A7FC",
+  "schema_version": "platform/shadow-run-1-acceptance/1.0.0",
+  "summary": {
+    "blocked": 0,
+    "fail": 0,
+    "pass": 15,
+    "total": 15
+  }
+}

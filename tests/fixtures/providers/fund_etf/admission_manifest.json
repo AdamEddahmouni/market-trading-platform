@@ -1,0 +1,16 @@
+{
+  "admitted_fixture_id": "ADMITTED-ETF-CROSSASSET-NVDA-001",
+  "capability_claims": [
+    "etf_flow_proxy",
+    "cross_asset_correlation",
+    "regime_label",
+    "flow_direction"
+  ],
+  "content_path": "tests/fixtures/providers/fund_etf/nvda_fund_etf_slice.json",
+  "donor_reference": "synthetic fund/ETF flow and cross-asset context (no live fund-flow API)",
+  "instrument_id": "NVDA",
+  "logical_id": "phase16.fund_etf_fixture_admission",
+  "research_only": true,
+  "schema_version": "1.0.0",
+  "status": "ADMITTED"
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": "1",
+  "policy_ref": "BUILD28_LIVE_EXECUTION_GATE_V1",
+  "production_kill_switch": "ACTIVE_BLOCK",
+  "production_live_submit": "FORBIDDEN",
+  "required_gates": [
+    "runtime_activation_allows_live",
+    "live_authorization_enabled",
+    "broker_capability_certified",
+    "opportunity_valid",
+    "trade_proposal_valid",
+    "risk_decision_approved",
+    "order_intent_unexpired",
+    "broker_health_healthy",
+    "reconciliation_healthy",
+    "kill_switch_inactive",
+    "idempotency_key_unused"
+  ],
+  "build28_law": "PRELIVE_SAFETY_CERTIFICATION_ONLY"
+}

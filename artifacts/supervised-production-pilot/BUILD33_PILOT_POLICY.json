@@ -1,0 +1,12 @@
+{
+  "allowed_data_providers": [
+    "polygon",
+    "finviz"
+  ],
+  "human_order_confirmation_required": true,
+  "human_session_authorization_required": true,
+  "max_pilot_sessions": 20,
+  "pilot_end_ns": 1700604800000000000,
+  "pilot_policy_id": "PILPOL-022afcbf31acc5e32741e0849ea7472b68a7bc5c3691d4d730c704911019e0a5",
+  "pilot_start_ns": 1700000000000000000
+}

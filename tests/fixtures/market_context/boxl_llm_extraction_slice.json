@@ -1,0 +1,136 @@
+{
+  "admission_id": "ADMITTED-MC-BOXL-LLM-001",
+  "fixture_id": "FIXTURE-MC-BOXL-LLM-EXTRACTION",
+  "symbol": "BOXL",
+  "extractions": [
+    {
+      "document_id": "mc-doc-earnings-1",
+      "company_event_type": "EARNINGS",
+      "economic_channels": ["REVENUE_UP"],
+      "confidence": 0.86,
+      "model_id": "fixture-llm-v1",
+      "model_version": "1.0.0",
+      "prompt_version": "mc5_extraction_prompt_v1",
+      "schema_version": "mc5_extraction_schema_v1",
+      "source_span": {
+        "source_document_id": "mc-doc-earnings-1",
+        "start_offset": 0,
+        "end_offset": 52,
+        "excerpt": "quarterly revenue above consensus"
+      }
+    },
+    {
+      "document_id": "mc-doc-earnings-2",
+      "company_event_type": "EARNINGS",
+      "economic_channels": ["REVENUE_UP"],
+      "confidence": 0.82,
+      "model_id": "fixture-llm-v1",
+      "model_version": "1.0.0",
+      "prompt_version": "mc5_extraction_prompt_v1",
+      "schema_version": "mc5_extraction_schema_v1",
+      "source_span": {
+        "source_document_id": "mc-doc-earnings-2",
+        "start_offset": 0,
+        "end_offset": 28,
+        "excerpt": "Republished earnings headline"
+      }
+    },
+    {
+      "document_id": "mc-doc-fda-1",
+      "company_event_type": "FDA_APPROVAL",
+      "economic_channels": ["REGULATORY_RISK_DOWN"],
+      "confidence": 0.9,
+      "model_id": "fixture-llm-v1",
+      "model_version": "1.0.0",
+      "prompt_version": "mc5_extraction_prompt_v1",
+      "schema_version": "mc5_extraction_schema_v1",
+      "source_span": {
+        "source_document_id": "mc-doc-fda-1",
+        "start_offset": 0,
+        "end_offset": 52,
+        "excerpt": "FDA clearance for device trial"
+      }
+    },
+    {
+      "document_id": "mc-doc-fda-2",
+      "company_event_type": "FDA_APPROVAL",
+      "economic_channels": ["REGULATORY_RISK_DOWN"],
+      "confidence": 0.84,
+      "model_id": "fixture-llm-v1",
+      "model_version": "1.0.0",
+      "prompt_version": "mc5_extraction_prompt_v1",
+      "schema_version": "mc5_extraction_schema_v1",
+      "source_span": {
+        "source_document_id": "mc-doc-fda-2",
+        "start_offset": 0,
+        "end_offset": 35,
+        "excerpt": "Wire pickup of FDA clearance announcement"
+      }
+    },
+    {
+      "document_id": "mc-doc-upgrade-1",
+      "company_event_type": "ANALYST_UPGRADE",
+      "economic_channels": ["MARGIN_UP"],
+      "confidence": 0.88,
+      "model_id": "fixture-llm-v1",
+      "model_version": "1.0.0",
+      "prompt_version": "mc5_extraction_prompt_v1",
+      "schema_version": "mc5_extraction_schema_v1",
+      "source_span": {
+        "source_document_id": "mc-doc-upgrade-1",
+        "start_offset": 0,
+        "end_offset": 45,
+        "excerpt": "raised price target citing margins"
+      }
+    },
+    {
+      "document_id": "mc-doc-upgrade-2",
+      "company_event_type": "ANALYST_UPGRADE",
+      "economic_channels": ["MARGIN_UP"],
+      "confidence": 0.8,
+      "model_id": "fixture-llm-v1",
+      "model_version": "1.0.0",
+      "prompt_version": "mc5_extraction_prompt_v1",
+      "schema_version": "mc5_extraction_schema_v1",
+      "source_span": {
+        "source_document_id": "mc-doc-upgrade-2",
+        "start_offset": 0,
+        "end_offset": 27,
+        "excerpt": "Media recap of analyst upgrade"
+      }
+    },
+    {
+      "document_id": "mc-doc-offering-1",
+      "company_event_type": "EQUITY_ISSUANCE",
+      "economic_channels": ["DILUTION_UP", "LIQUIDITY_RISK_UP"],
+      "confidence": 0.91,
+      "model_id": "fixture-llm-v1",
+      "model_version": "1.0.0",
+      "prompt_version": "mc5_extraction_prompt_v1",
+      "schema_version": "mc5_extraction_schema_v1",
+      "source_span": {
+        "source_document_id": "mc-doc-offering-1",
+        "start_offset": 0,
+        "end_offset": 35,
+        "excerpt": "shelf offering registration statement"
+      }
+    },
+    {
+      "document_id": "mc-doc-macro-1",
+      "company_event_type": null,
+      "macro_event_type": null,
+      "economic_channels": ["UNCERTAINTY_UP"],
+      "confidence": 0.72,
+      "model_id": "fixture-llm-v1",
+      "model_version": "1.0.0",
+      "prompt_version": "mc5_extraction_prompt_v1",
+      "schema_version": "mc5_extraction_schema_v1",
+      "source_span": {
+        "source_document_id": "mc-doc-macro-1",
+        "start_offset": 0,
+        "end_offset": 42,
+        "excerpt": "Sector-wide risk-off move pressures"
+      }
+    }
+  ]
+}

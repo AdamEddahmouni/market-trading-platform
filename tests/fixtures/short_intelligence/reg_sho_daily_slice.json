@@ -1,0 +1,29 @@
+[
+  {
+    "reportingFacilityCode": "NQTRF",
+    "totalParQuantity": 1000,
+    "shortParQuantity": 400,
+    "marketCode": "Q",
+    "tradeReportDate": "2026-07-28",
+    "securitiesInformationProcessorSymbolIdentifier": "BIYA",
+    "shortExemptParQuantity": 10
+  },
+  {
+    "reportingFacilityCode": "NYTRF",
+    "totalParQuantity": 500,
+    "shortParQuantity": 100,
+    "marketCode": "N",
+    "tradeReportDate": "2026-07-28",
+    "securitiesInformationProcessorSymbolIdentifier": "BIYA",
+    "shortExemptParQuantity": 0
+  },
+  {
+    "reportingFacilityCode": "NQTRF",
+    "totalParQuantity": 800,
+    "shortParQuantity": 500,
+    "marketCode": "Q",
+    "tradeReportDate": "2026-07-29",
+    "securitiesInformationProcessorSymbolIdentifier": "BIYA",
+    "shortExemptParQuantity": 5
+  }
+]

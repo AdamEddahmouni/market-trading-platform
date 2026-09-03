@@ -1,0 +1,52 @@
+{
+  "provider": "FINVIZ_ELITE",
+  "verified_at": "2026-08-22T07:30:00.000000Z",
+  "auth_type": "EXPORT_API_TOKEN_QUERY_PARAM",
+  "token_required": true,
+  "token_format": "UUID (8-4-4-4-12 lowercase hex)",
+  "token_location": "https://elite.finviz.com/api_explanation",
+  "expiry": {
+    "known": false,
+    "duration": null,
+    "source": "No expiry metadata in token or official API documentation observed"
+  },
+  "rotation": {
+    "automatic_observed": "NOT_OBSERVED",
+    "manual_regeneration_available": "VERIFIED — token visible on elite.finviz.com/api_explanation after Elite login",
+    "old_token_behavior": "UNKNOWN — rotation test not executed for account safety",
+    "multiple_tokens_supported": "UNKNOWN"
+  },
+  "refresh": {
+    "official_programmatic_refresh": "NOT_OBSERVED — no documented refresh endpoint",
+    "interactive_login_required": "VERIFIED — token retrieval requires authenticated Elite session",
+    "mfa_possible": "VERIFIED — login flow may present MFA/CAPTCHA (detected in HTML markers)",
+    "captcha_possible": "VERIFIED"
+  },
+  "validation": {
+    "method": "Low-cost screener export GET with auth query param",
+    "endpoint": "elite.finviz.com/export/screener",
+    "success_signal": "HTTP 200 CSV with Ticker column"
+  },
+  "failure_differentiation": {
+    "INVALID_TOKEN": "HTTP 401/403 or HTML login page on export",
+    "EXPIRED_TOKEN": "NOT_OBSERVED as distinct code — treated as AUTH_INVALID",
+    "REVOKED_TOKEN": "NOT_OBSERVED as distinct code",
+    "SUBSCRIPTION_NOT_ELITE": "Possible HTML upgrade messaging — classified separately when detected",
+    "RATE_LIMITED": "HTTP 429 — does not trigger credential rotation",
+    "ACCOUNT_DISABLED": "UNKNOWN",
+    "NETWORK_ERROR": "Request exception — no rotation",
+    "SERVER_ERROR": "HTTP 5xx — no rotation"
+  },
+  "imp_recovery": {
+    "storage": "WINDOWS_CREDENTIAL_MANAGER with ENVIRONMENT override",
+    "login_automation": "IMPLEMENTED — official login + api_explanation page when login creds stored",
+    "single_flight": true,
+    "bounded_retries": true,
+    "rate_budget_invariant": "TOKEN_ROTATION_DOES_NOT_RESET_RATE_BUDGET"
+  },
+  "rotation_test": {
+    "executed": false,
+    "result": "NOT_EXECUTED_FOR_ACCOUNT_SAFETY",
+    "reason": "Controlled regeneration would invalidate active production token"
+  }
+}

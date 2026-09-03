@@ -1,0 +1,52 @@
+{
+  "fixture_id": "ADMITTED-L2-NVDA-001",
+  "level_count": 10,
+  "symbol": "NVDA",
+  "transitions": [
+    {
+      "index": 1,
+      "event_time": "2026-07-21T20:30:01.000000000Z",
+      "bbo_ofi": 720.0,
+      "multilevel_ofi": 1830.0,
+      "ofi_method": "ofi_multilevel_cs_v1",
+      "ofi_version": "1",
+      "book_state_valid": true
+    },
+    {
+      "index": 2,
+      "event_time": "2026-07-21T20:30:02.000000000Z",
+      "bbo_ofi": 660.0,
+      "multilevel_ofi": 1660.0,
+      "ofi_method": "ofi_multilevel_cs_v1",
+      "ofi_version": "1",
+      "book_state_valid": true
+    },
+    {
+      "index": 3,
+      "event_time": "2026-07-21T20:30:03.000000000Z",
+      "bbo_ofi": 610.0,
+      "multilevel_ofi": 1550.0,
+      "ofi_method": "ofi_multilevel_cs_v1",
+      "ofi_version": "1",
+      "book_state_valid": true
+    },
+    {
+      "index": 4,
+      "event_time": "2026-07-21T20:30:04.000000000Z",
+      "bbo_ofi": 440.0,
+      "multilevel_ofi": 1130.0,
+      "ofi_method": "ofi_multilevel_cs_v1",
+      "ofi_version": "1",
+      "book_state_valid": true
+    },
+    {
+      "index": 5,
+      "event_time": "2026-07-21T20:30:06.000000000Z",
+      "bbo_ofi": 800.0,
+      "multilevel_ofi": 2130.0,
+      "ofi_method": "ofi_multilevel_cs_v1",
+      "ofi_version": "1",
+      "book_state_valid": true
+    }
+  ]
+}

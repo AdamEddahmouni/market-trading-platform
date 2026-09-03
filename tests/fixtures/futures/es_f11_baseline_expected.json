@@ -1,0 +1,22 @@
+{
+  "admission_id": "ADMITTED-F11-ES-001",
+  "aggregate_status": "PASS",
+  "gate_summary": [
+    {
+      "gate_milestone": "F11-S1",
+      "gate_status": "PASS"
+    },
+    {
+      "gate_milestone": "FQ-8",
+      "gate_status": "PASS"
+    }
+  ],
+  "latest_futures_forecast": {
+    "futures_model_version": "futures_family_engineered_v1",
+    "baseline_tier": "M8",
+    "outright_up_probability": 0.841375,
+    "curve_steepen_probability": 0.713384,
+    "direction_bias": "UP",
+    "family": "EQUITY_INDEX"
+  }
+}

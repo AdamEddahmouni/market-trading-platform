@@ -1,0 +1,30 @@
+{
+  "daily_prices": {
+    "instrument_count": 6570,
+    "maximum_date": "2026-07-27",
+    "minimum_date": "1962-01-02"
+  },
+  "database_path": "C:\\Users\\adame\\Desktop\\stock-data\\database\\market_data.db",
+  "modified_time_ns": 1785225946137277700,
+  "quick_check": "ok",
+  "sha256": "8670c385ad4b5d8c9917f0633bca74d98f50095065ff507792673536e6f9b8c4",
+  "size_bytes": 2484719616,
+  "tables": {
+    "balance_sheets_annual": 0,
+    "balance_sheets_quarterly": 0,
+    "cash_flow_annual": 0,
+    "cash_flow_quarterly": 0,
+    "daily_prices": 18044890,
+    "dividends": 206243,
+    "fundamentals": 0,
+    "income_statements_annual": 0,
+    "income_statements_quarterly": 0,
+    "index_membership": 734,
+    "monthly_prices": 433837,
+    "scraping_progress": 12847,
+    "splits": 4802,
+    "supplemental_data": 0,
+    "tickers": 13052,
+    "weekly_prices": 1881131
+  }
+}

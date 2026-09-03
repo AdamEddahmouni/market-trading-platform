@@ -1,0 +1,11 @@
+---
+description: Route behavior and architecture changes to authoritative docs
+alwaysApply: true
+---
+
+# Authoritative documentation
+
+Use [docs/README.md](../../docs/README.md) to locate the authoritative document.
+When behavior or architecture changes, update that document—not only the work
+log or a historical completion record. Keep rules as references, not duplicate
+architecture or SOP prose.

@@ -1,0 +1,44 @@
+{
+  "files": [
+    {
+      "path": "src/market_platform_foundation/xa02/__init__.py",
+      "bytes": 150,
+      "sha256": "EE8BE462523F1BB75FE0C0DAD24B929646396DBC7CCF1B1E96794D58362678DB"
+    },
+    {
+      "path": "src/market_platform_foundation/xa02/admission.py",
+      "bytes": 6216,
+      "sha256": "49E068696CB494E5670B17088A1EE095B53124F729EC94053F9857BBF876CE28"
+    },
+    {
+      "path": "src/market_platform_foundation/xa02/catalog.py",
+      "bytes": 5052,
+      "sha256": "4C1CA59CC210B63A6FA21E0391C5F59213BE0892718A6E843DA7184D33CB431B"
+    },
+    {
+      "path": "src/market_platform_foundation/xa02/contracts.py",
+      "bytes": 4242,
+      "sha256": "0FB3FA6A14C86A6C232EDA0662A38A7DE49197141ACCA2834B98C14042EBA639"
+    },
+    {
+      "path": "src/market_platform_foundation/xa02/registry.py",
+      "bytes": 9703,
+      "sha256": "42AEA6E0E6BB044A457290CFA7B34D838C5917F89F8B24D40C4FD6F91ABA3EE2"
+    },
+    {
+      "path": "tests/xa02/test_xa02_admission.py",
+      "bytes": 4958,
+      "sha256": "BF71DC937D33ADC02D1281D92C44E743A303AC9FC46817736E79CCEE80E9C5AA"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-29-imp-xa-02-first-admitted-cross-asset-source-vertical-implementation-spec.md",
+      "bytes": 3118,
+      "sha256": "57C0BE6B4A33A1F4458A72F2C984CC2DA0BB9B9EBF17C94F7F401A3CA7F132BB"
+    },
+    {
+      "path": "artifacts/imp-rebase/XA02/XA02_ACCEPTANCE_REPORT.json",
+      "bytes": 1505,
+      "sha256": "E56B0F29A384929AD20C82A71A269B55721737ECCC1B823EC9B15F1F3F8579C7"
+    }
+  ]
+}

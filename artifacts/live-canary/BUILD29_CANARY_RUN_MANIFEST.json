@@ -1,0 +1,15 @@
+{
+  "canary_run_id": "CANRUN-cbe47140146174cf99549a1570ade21e39e5703b852cf16df83ab1a985bf9f08",
+  "schema_version": "1",
+  "source_build28_ref": "53e104e55de000009bf3d0374e25692ccda386d0",
+  "source_build27_ref": "6f278aaf2f7d741d8669861b907b3a7fd3db4995",
+  "source_head": "53e104e55de000009bf3d0374e25692ccda386d0",
+  "canary_policy_ref": "CANPOL-a986c9e60c088a6de8fcb49f664153001262283f0f2c6e7012c1128c888ccf4a",
+  "authorization_ref": null,
+  "broker": "tradier.paper",
+  "account_ref": "fp-canary-preview",
+  "start_time_ns": 1700000000000000000,
+  "end_time_ns": null,
+  "allowed_order_count": 1,
+  "allowed_notional_minor": 2500
+}

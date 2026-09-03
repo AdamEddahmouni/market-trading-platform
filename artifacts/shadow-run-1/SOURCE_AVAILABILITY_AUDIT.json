@@ -1,0 +1,67 @@
+{
+  "audit_timestamp_utc": "2026-09-01T16:27:00Z",
+  "baseline_commit": "96032bea83925cd89d6d16c56f8950e78472962f",
+  "schema_version": "platform/shadow-run-1-source-audit/1.0.0",
+  "sources": [
+    {
+      "source_id": "MOOMOO_BIYA_OBSERVATIONAL",
+      "classification": "available_live",
+      "component": "shadow_run_1_primary",
+      "notes": "OpenD reachable at 127.0.0.1:11111; quote context PASS; forward capture CAP-BIYA-SR1-20260901 with live DISPLAY_ADMITTED ingress",
+      "qualification_eligible": true,
+      "required_for_p6_forward": true
+    },
+    {
+      "source_id": "INTERNAL_FIXTURE_REPLAY",
+      "classification": "fixture_only",
+      "component": "ci_infrastructure_proof",
+      "notes": "Deterministic replay for offline tests — not ACTUAL_FORWARD evidence",
+      "qualification_eligible": true,
+      "required_for_p6_forward": false
+    },
+    {
+      "source_id": "ES_SESSION",
+      "classification": "unavailable",
+      "component": "es_dependent_acceptance",
+      "notes": "ADR-DATA-001 — lawful ES bytes not procured; excluded from acceptance claims",
+      "qualification_eligible": false,
+      "required_for_p6_forward": false
+    },
+    {
+      "source_id": "MOOMOO_OPEND_PAPER_WIRE",
+      "classification": "externally_blocked",
+      "component": "td_004",
+      "notes": "TD-004 OpenD TCP real-wire separate from shadow observational path",
+      "qualification_eligible": false,
+      "required_for_p6_forward": false
+    },
+    {
+      "source_id": "TRADIER_SANDBOX",
+      "classification": "unavailable",
+      "component": "broker_paper",
+      "notes": "Credentials/connectivity not configured; fixture paths only",
+      "qualification_eligible": false,
+      "required_for_p6_forward": false
+    },
+    {
+      "source_id": "HISTORICAL_LIVE_CAPTURES",
+      "classification": "delayed_forward_valid",
+      "component": "labeling_reference_only",
+      "notes": "evidence/live-captures/* are sealed historical captures — not prospective Run 1 observations",
+      "qualification_eligible": false,
+      "required_for_p6_forward": false
+    }
+  ],
+  "p6_forward_scope": {
+    "included": [
+      "MOOMOO_BIYA_OBSERVATIONAL"
+    ],
+    "excluded": [
+      "ES_SESSION",
+      "INTERNAL_FIXTURE_REPLAY",
+      "HISTORICAL_LIVE_CAPTURES"
+    ],
+    "blocked_pending_connectivity": []
+  },
+  "disposition_note": "Moomoo observational path verified live on 2026-09-01; Shadow Run 1 default-store run SHRUN-00C5... collected ACTUAL_FORWARD abstentions with zero recorder errors after SQLite thread-safety fix."
+}

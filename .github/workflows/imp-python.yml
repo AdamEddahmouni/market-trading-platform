@@ -1,0 +1,70 @@
+name: imp-python-validation
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        required: true
+        type: string
+      workers:
+        required: false
+        default: "2"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Cache Python validation state
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            .pytest_cache
+          key: imp-python-${{ runner.os }}-${{ hashFiles('phase0-dependency-lock.json') }}
+      - name: Select merge-base paths
+        if: inputs.mode == 'changed'
+        shell: bash
+        run: |
+          mkdir -p .local/developer-workflow
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            base="${{ github.event.before }}"
+            if [[ -z "$base" || "$base" == "0000000000000000000000000000000000000000" ]]; then
+              base="$(git rev-parse HEAD^)"
+            fi
+          fi
+          git diff --name-only "$base...${{ github.sha }}" > .local/developer-workflow/changed-paths.txt
+          printf 'Selected %s changed paths\n' "$(wc -l < .local/developer-workflow/changed-paths.txt)"
+      - name: Run manifest validation
+        shell: bash
+        run: |
+          mkdir -p .local/developer-workflow
+          if [[ "${{ inputs.mode }}" == "changed" ]]; then
+            python tools/imp.py validate changed \
+              --paths-file .local/developer-workflow/changed-paths.txt \
+              --workers "${{ inputs.workers }}" \
+              --json .local/developer-workflow/validation.json
+          else
+            python tools/imp.py validate "${{ inputs.mode }}" \
+              --workers "${{ inputs.workers }}" \
+              --json .local/developer-workflow/validation.json
+          fi
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: imp-python-${{ inputs.mode }}
+          path: .local/developer-workflow/
+          if-no-files-found: ignore

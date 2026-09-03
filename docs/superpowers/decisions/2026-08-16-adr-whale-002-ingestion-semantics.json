@@ -1,0 +1,76 @@
+{
+  "adr_id": "ADR-WHALE-002",
+  "alternatives": [
+    {
+      "decision": "ACCEPTED",
+      "name": "APPEND_ONLY_LEDGER_WITH_PIT_AND_AMENDMENT_ORDERING",
+      "option_id": "WHALE2-OPTION-001",
+      "tradeoffs": [
+        "Append-only ledger is simpler than a relational store but requires explicit dedup and amendment ordering rules."
+      ]
+    }
+  ],
+  "approval": {
+    "approval_scope": "EXACT_HASH_PRINCIPAL_APPROVAL",
+    "approved_at": "2026-08-16T20:00:00.000000000Z",
+    "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+    "approved_capacities": [
+      "PROJECT_OWNER",
+      "RELEASE_OWNER"
+    ]
+  },
+  "artifact_type": "ARCHITECTURE_DECISION_RECORD",
+  "authority_bindings": [
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase1.adr_whale_001",
+      "logical_path": "docs/superpowers/decisions/2026-08-15-adr-whale-001-institutional-evidence-vocabulary.json",
+      "sha256": "65267008C87C42D1317C87A39B47EE04EFB80F1D5353D5BEF5FA07EF140C7F0B"
+    },
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase9.provider_whale_ingestion_design",
+      "logical_path": "docs/superpowers/specs/2026-08-16-phase-9-provider-whale-ingestion-design.md",
+      "sha256": "880EB5D2754EDAB563B0FA50C4E3319FDB8621B0CF1F92A1245F641AA7820A21"
+    }
+  ],
+  "conformance_evidence": [
+    {
+      "logical_id": "phase9.whale_ledger_tests",
+      "repository_relative_path": "tests/providers/test_providers.py",
+      "sha256": "98627871C8EB792B9FDC1AAC5DF1D94CCD7D36A05DEB6FB7CF4107C90AD59226"
+    }
+  ],
+  "consequences": {
+    "negative": [
+      "Delayed SEC filings remain delayed in replay; no live-tape claims are permitted."
+    ],
+    "positive": [
+      "regulatory_disclosure family can surface entitled fixture data without weakening other whale families."
+    ]
+  },
+  "created_at": "2026-08-16T20:00:00.000000000Z",
+  "decision": {
+    "selected_option_id": "WHALE2-OPTION-001",
+    "summary": "Whale disclosure events are stored in an append-only JSONL ledger keyed by accession_number and source_revision_id. Amendment filings sort after base filings. PIT queries exclude events whose available_time exceeds prediction_cutoff. All events retain disclosure_lag_note and research_only defaults.",
+    "title": "Whale ledger ingestion semantics and PIT eligibility"
+  },
+  "effectivity": {
+    "current_state": "ACCEPTED",
+    "decision_only": false,
+    "non_authorization_statement": "Acceptance authorizes fixture-first EDGAR ingestion for regulatory_disclosure only. Other whale families remain blocked until separately entitled."
+  },
+  "logical_id": "phase9.adr_whale_002",
+  "owner_capacities": [
+    "ARCHITECTURE_LEAD",
+    "PROJECT_OWNER"
+  ],
+  "sanitization": {
+    "absolute_paths_included": false,
+    "account_identifiers_included": false,
+    "credential_values_included": false,
+    "remote_urls_included": false
+  },
+  "schema_version": "1.0.0",
+  "status": "ACCEPTED"
+}

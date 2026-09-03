@@ -1,0 +1,68 @@
+{
+  "fixture_id": "ADMITTED-L2-NVDA-001",
+  "level_count": 10,
+  "symbol": "NVDA",
+  "trajectory_resiliency": 0.755102,
+  "transitions": [
+    {
+      "index": 1,
+      "event_time": "2026-07-21T20:30:01.000000000Z",
+      "net_depth_delta": -240.0,
+      "depth_withdrawal": 240.0,
+      "depth_replenishment": 0.0,
+      "fragility_score": 0.096,
+      "resiliency_score": 0.755102,
+      "liquidity_method": "liquidity_depth_delta_v1",
+      "liquidity_version": "1",
+      "book_state_valid": true
+    },
+    {
+      "index": 2,
+      "event_time": "2026-07-21T20:30:02.000000000Z",
+      "net_depth_delta": -140.0,
+      "depth_withdrawal": 140.0,
+      "depth_replenishment": 0.0,
+      "fragility_score": 0.063636,
+      "resiliency_score": 0.755102,
+      "liquidity_method": "liquidity_depth_delta_v1",
+      "liquidity_version": "1",
+      "book_state_valid": true
+    },
+    {
+      "index": 3,
+      "event_time": "2026-07-21T20:30:03.000000000Z",
+      "net_depth_delta": -110.0,
+      "depth_withdrawal": 110.0,
+      "depth_replenishment": 0.0,
+      "fragility_score": 0.054321,
+      "resiliency_score": 0.755102,
+      "liquidity_method": "liquidity_depth_delta_v1",
+      "liquidity_version": "1",
+      "book_state_valid": true
+    },
+    {
+      "index": 4,
+      "event_time": "2026-07-21T20:30:04.000000000Z",
+      "net_depth_delta": 370.0,
+      "depth_withdrawal": 0.0,
+      "depth_replenishment": 370.0,
+      "fragility_score": 0.0,
+      "resiliency_score": 0.755102,
+      "liquidity_method": "liquidity_depth_delta_v1",
+      "liquidity_version": "1",
+      "book_state_valid": true
+    },
+    {
+      "index": 5,
+      "event_time": "2026-07-21T20:30:06.000000000Z",
+      "net_depth_delta": -260.0,
+      "depth_withdrawal": 260.0,
+      "depth_replenishment": 0.0,
+      "fragility_score": 0.110638,
+      "resiliency_score": 0.755102,
+      "liquidity_method": "liquidity_depth_delta_v1",
+      "liquidity_version": "1",
+      "book_state_valid": true
+    }
+  ]
+}

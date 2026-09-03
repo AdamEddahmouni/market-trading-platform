@@ -1,0 +1,8 @@
+- external alert delivery not configured by default (local/console adapter only)
+- disaster-recovery drills use fixtures and isolated stores only
+- no geographic redundancy or standby broker connection
+- Mongo backup/restore optional when IMP_TEST_MONGODB_URI unavailable
+- wall-clock soak limited to deterministic virtual endurance in CI
+- single-host local qualification only
+- broker status feed may be unavailable in local development
+- no autonomous live trading authority added by BUILD 32

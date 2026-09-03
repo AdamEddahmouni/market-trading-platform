@@ -1,0 +1,14 @@
+---
+description: React Query key invariants for UI paths
+globs: ui/src/**/*
+alwaysApply: false
+---
+
+# Query key invariants
+
+- Define keys in `ui/src/api/hooks.ts` as `queryKeys`
+- **Same key ⇒ same `queryFn` semantics and response shape**
+- Include `symbol`, `dataMode`, IDs when response depends on them
+- Document intentional shared caches (e.g. `canary-snapshot`)
+
+See [ADR-0004](docs/architecture/adr/0004-react-query-key-invariants.md) and [FRONTEND_GUIDE.md](docs/engineering/FRONTEND_GUIDE.md).

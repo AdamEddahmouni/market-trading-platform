@@ -1,0 +1,15 @@
+{
+  "authority_boundary": "SUPERVISED_PRODUCTION_PILOT_READ_ONLY",
+  "auto_broker_failover": "NOT_AUTHORIZED",
+  "broker_health": "HEALTHY",
+  "human_order_confirmation_required": true,
+  "human_session_authorization_required": true,
+  "orders_submitted": 0,
+  "pilot_cap_exceeded": false,
+  "pilot_cap_reason": null,
+  "pilot_policy_id": "PILPOL-1c2645ce93213d5c58882754c36c1fc23157325768ec45fcf51d82a2baccc82c",
+  "pilot_state": "PILOT_ACTIVE",
+  "provider_redundancy_policy_id": "PRPOL-3f1e5954d81c9c64d61b1e775ee045580edd33489ef44c540fb39e7d8aca5317",
+  "reconciliation_health": "CLEAN",
+  "sessions_completed": 0
+}
