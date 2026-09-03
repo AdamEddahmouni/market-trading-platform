@@ -1,6 +1,11 @@
 import unittest
 
-from tools.monorepo_guard import GuardError, validate_manifest_data, validate_snapshot_entries
+from tools.monorepo_guard import (
+    GuardError,
+    normalize_remote_url,
+    validate_manifest_data,
+    validate_snapshot_entries,
+)
 
 
 class MonorepoGuardTests(unittest.TestCase):
@@ -66,6 +71,12 @@ class MonorepoGuardTests(unittest.TestCase):
                     ("160000", "projects/example/nested-repository"),
                 ]
             )
+
+    def test_remote_url_comparison_ignores_git_suffix(self):
+        self.assertEqual(
+            normalize_remote_url("https://github.com/owner/repo"),
+            normalize_remote_url("https://github.com/owner/repo.git"),
+        )
 
 
 if __name__ == "__main__":

@@ -19,6 +19,12 @@ class GuardError(RuntimeError):
     """Raised when a monorepo safety invariant is violated."""
 
 
+def normalize_remote_url(value: str) -> str:
+    """Normalize GitHub's checkout URL form and explicit .git form."""
+
+    return value.rstrip("/").removesuffix(".git")
+
+
 def validate_manifest_data(manifest: dict[str, Any]) -> list[str]:
     """Return contract violations without touching Git or child repositories."""
 
@@ -187,7 +193,7 @@ def validate_repository(root: Path, *, ci: bool = False, remote: bool = False) -
 
     expected_remote = f"https://github.com/{manifest['parent']['repository']}.git"
     actual_remote = _git(root, "remote", "get-url", "origin", check=False)
-    if not actual_remote or actual_remote.rstrip("/") != expected_remote.rstrip("/"):
+    if not actual_remote or normalize_remote_url(actual_remote) != normalize_remote_url(expected_remote):
         raise GuardError(f"origin must be {expected_remote}, found {actual_remote}")
 
     for project in manifest["projects"]:
@@ -209,7 +215,7 @@ def validate_repository(root: Path, *, ci: bool = False, remote: bool = False) -
         if not source.exists():
             raise GuardError(f"missing local source repository: {source}")
         source_remote = _source_git(source, "remote", "get-url", "origin", check=False)
-        if source_remote.rstrip("/") != project["source_remote"].rstrip("/"):
+        if normalize_remote_url(source_remote) != normalize_remote_url(project["source_remote"]):
             raise GuardError(
                 f"{project['id']} origin mismatch: expected {project['source_remote']}, "
                 f"found {source_remote}"
