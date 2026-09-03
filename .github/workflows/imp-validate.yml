@@ -17,6 +17,8 @@ defaults:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}/projects/integrated-market-platform/src
     steps:
       - uses: actions/checkout@v4
 
