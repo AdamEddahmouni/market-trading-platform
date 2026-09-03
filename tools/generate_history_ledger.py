@@ -155,6 +155,23 @@ def _all_commits(repo: Path, *, source_worktree: bool = False) -> list[str]:
     )
 
 
+def _commits_from_tips(
+    repo: Path,
+    tips: dict[str, str],
+    *,
+    source_worktree: bool = False,
+) -> list[str]:
+    commits: set[str] = set()
+    for tip in tips.values():
+        output = (
+            _source_git(repo, "rev-list", tip)
+            if source_worktree
+            else _git(repo, "rev-list", tip)
+        )
+        commits.update(output.splitlines())
+    return sorted(commits)
+
+
 def _build_record(
     repository: str,
     repo: Path,
@@ -203,6 +220,7 @@ def _build_record(
 def collect_repository_history(
     root: Path,
     repository: str,
+    tips_override: dict[str, str] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, str]]:
     """Collect every commit reachable from every local ref for one repo."""
 
@@ -215,10 +233,15 @@ def collect_repository_history(
         repo = root / project["source_path"]
     else:
         repo = root
-    tips = _ref_tips(repo, source_worktree=source_worktree)
+    tips = tips_override or _ref_tips(repo, source_worktree=source_worktree)
     refs_by_commit: dict[str, list[str]] = defaultdict(list)
     for ref, commit in tips.items():
         refs_by_commit[commit].append(ref)
+    commit_shas = (
+        _commits_from_tips(repo, tips, source_worktree=source_worktree)
+        if tips_override is not None
+        else _all_commits(repo, source_worktree=source_worktree)
+    )
     records = [
         _build_record(
             repository,
@@ -227,7 +250,7 @@ def collect_repository_history(
             sorted(refs_by_commit.get(commit, [])),
             source_worktree=source_worktree,
         )
-        for commit in _all_commits(repo, source_worktree=source_worktree)
+        for commit in commit_shas
     ]
     records.sort(key=lambda record: (record["committer"].get("timestamp", ""), record["commit"]))
     return records, tips
@@ -370,16 +393,23 @@ def _write_outputs(
         )
 
 
-def generate(root: Path, output_dir: Path) -> None:
+def generate(
+    root: Path,
+    output_dir: Path,
+    refs_override: dict[str, dict[str, str]] | None = None,
+) -> None:
     """Generate all audit artifacts from the current local refs."""
 
     records_by_repo: dict[str, list[dict[str, Any]]] = {}
     refs_by_repo: dict[str, dict[str, str]] = {}
     repository_ids = ["parent"] + [project["id"] for project in _manifest_projects(root)]
     for repository in repository_ids:
-        records_by_repo[repository], refs_by_repo[repository] = collect_repository_history(
-            root,
-            repository,
+        records_by_repo[repository], refs_by_repo[repository] = (
+            collect_repository_history(
+                root,
+                repository,
+                (refs_override or {}).get(repository),
+            )
         )
     _write_outputs(output_dir, records_by_repo, refs_by_repo)
 
@@ -387,9 +417,14 @@ def generate(root: Path, output_dir: Path) -> None:
 def check_generated(root: Path, output_dir: Path) -> None:
     """Regenerate in isolation and fail when tracked audit output is stale."""
 
+    refs_path = output_dir / REFS_NAME
+    try:
+        refs_override = json.loads(refs_path.read_text(encoding="utf-8"))["repositories"]
+    except (OSError, KeyError, json.JSONDecodeError) as exc:
+        raise GuardError(f"cannot read captured ref snapshot: {refs_path}: {exc}") from exc
     with tempfile.TemporaryDirectory(prefix="history-audit-") as temporary:
         generated_dir = Path(temporary)
-        generate(root, generated_dir)
+        generate(root, generated_dir, refs_override=refs_override)
         expected = sorted(
             path.relative_to(generated_dir).as_posix()
             for path in generated_dir.rglob("*")

@@ -62,3 +62,6 @@ git-subtree-split: 825dd8ba2afd31cc3fc9666adada95618cc74138
 - `a1c82da8b74f` — chore: add monorepo synchronization guardrails (#1) — refs: `refs/heads/main`, `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
   - Author: AdamEddahmouni (2026-09-03T17:49:07-04:00)
   - Rationale (commit-subject-and-body): * chore: add monorepo synchronization guardrails
+- `9756a91ff66e` — docs: add complete workspace history audit — refs: `refs/heads/chore/monorepo-history-audit`
+  - Author: AdamEddahmouni (2026-09-03T19:19:12-04:00)
+  - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>

@@ -19,7 +19,7 @@ repository available at generation time.
 | `equity-data-v1` | 575 | 109 | 2026-08-01 | 2026-09-03 |
 | `governed-ticker-metadata` | 575 | 109 | 2026-08-01 | 2026-09-03 |
 | `integrated-platform` | 575 | 109 | 2026-08-01 | 2026-09-03 |
-| `parent` | 18 | 6 | 2026-09-03 | 2026-09-03 |
+| `parent` | 19 | 7 | 2026-09-03 | 2026-09-03 |
 | `short-squeeze` | 66 | 5 | 2026-07-26 | 2026-08-16 |
 
 The `integrated-platform`, `governed-ticker-metadata`, and
