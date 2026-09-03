@@ -1,0 +1,236 @@
+[
+ {
+  "symbol": "XNCR",
+  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+  "csv_relative_path": "raw/XNCR-detection-context.csv",
+  "csv_sha256": "2be36238ccc3d4496d6eec5f6fd77175f93931b2280c59b13138637360cffa0b",
+  "csv_byte_length": 100000,
+  "jsonl_sha256": "f379eb9351c12cf99c3e8b0d0fb26c9f8c7d81349d31ce9e1861d98b1c68f772",
+  "jsonl_byte_length": 200000
+ },
+ {
+  "symbol": "XNCR",
+  "request_name": "FROZEN_FORWARD_24H",
+  "csv_relative_path": "raw/XNCR-frozen-forward-24h.csv",
+  "csv_sha256": "fa81fb6a58282691763c1695fd29a3837c534f3d025a39553ec888ef779cb4ea",
+  "csv_byte_length": 100001,
+  "jsonl_sha256": "a66f7e2b6be31c2df711fe51ec5b9936e179b308628f2859d19f82d7a62ba6dd",
+  "jsonl_byte_length": 200000
+ },
+ {
+  "symbol": "PESI",
+  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+  "csv_relative_path": "raw/PESI-detection-context.csv",
+  "csv_sha256": "42b7dacf371d5376823132e0837677e434600ceb287ec423dd4d5bb59602530c",
+  "csv_byte_length": 100011,
+  "jsonl_sha256": "abb2433f29c5e16d381ec7d1b33a0ae63782cc23fb7ca512ae0af8e47c40e411",
+  "jsonl_byte_length": 200001
+ },
+ {
+  "symbol": "PESI",
+  "request_name": "FROZEN_FORWARD_24H",
+  "csv_relative_path": "raw/PESI-frozen-forward-24h.csv",
+  "csv_sha256": "3b0af92240b7ab6a516efd33ef9abe1492d5566ea6ed5b96f7828dc1cfeca606",
+  "csv_byte_length": 100012,
+  "jsonl_sha256": "c37fb3e9ef597f06240dbd670fe32e389c574e761a0c6519c0b631e2986aeb17",
+  "jsonl_byte_length": 200001
+ },
+ {
+  "symbol": "SLS",
+  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+  "csv_relative_path": "raw/SLS-detection-context.csv",
+  "csv_sha256": "b86acd4e7c87e9de1657d332b2c1afe68341695694a800f5627eb9c5a5f93a51",
+  "csv_byte_length": 100022,
+  "jsonl_sha256": "3f1c7cd264f23c18b33c0cc0bae90018f30fbad304d01cdf9c8a56aa49d03f0b",
+  "jsonl_byte_length": 200002
+ },
+ {
+  "symbol": "SLS",
+  "request_name": "FROZEN_FORWARD_24H",
+  "csv_relative_path": "raw/SLS-frozen-forward-24h.csv",
+  "csv_sha256": "8abddd0ec2172fccd51176c8c13c87724633708726f5de2aa71bc26557843c30",
+  "csv_byte_length": 100023,
+  "jsonl_sha256": "fa0ecf65bc9e910db6cf035bb5f7d3a225c72e8b881d48bdf03e969eff57102f",
+  "jsonl_byte_length": 200002
+ },
+ {
+  "symbol": "ZNTL",
+  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+  "csv_relative_path": "raw/ZNTL-detection-context.csv",
+  "csv_sha256": "96cd8d7b54e2d2f33cc18ed0814a07cc8076ebb58b4f97c712db48ad4c2486fd",
+  "csv_byte_length": 100033,
+  "jsonl_sha256": "4c1f3cc42f75f438784aeb34b0a75fa6824dbe6208bb06d6cd6c249d8bf084c2",
+  "jsonl_byte_length": 200003
+ },
+ {
+  "symbol": "ZNTL",
+  "request_name": "FROZEN_FORWARD_24H",
+  "csv_relative_path": "raw/ZNTL-frozen-forward-24h.csv",
+  "csv_sha256": "d9e767827a7838d1ffd1dc07b3484bf80a2f2d4ea46a8768bbad4385208e89eb",
+  "csv_byte_length": 100034,
+  "jsonl_sha256": "75b98f1ea05da9a9085248662c0ab7ccd937971551c94d00f9ad7a43a29455cc",
+  "jsonl_byte_length": 200003
+ },
+ {
+  "symbol": "GPRE",
+  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+  "csv_relative_path": "raw/GPRE-detection-context.csv",
+  "csv_sha256": "c767e5ca2d89e771d668382fd6d2f4dd971fb77669bbfcd6b4ffa72b67f1b01c",
+  "csv_byte_length": 100044,
+  "jsonl_sha256": "9545a312817bbbdc7efe6e847d385431dfc63f1c27af23405b04976fac1e1e05",
+  "jsonl_byte_length": 200004
+ },
+ {
+  "symbol": "GPRE",
+  "request_name": "FROZEN_FORWARD_24H",
+  "csv_relative_path": "raw/GPRE-frozen-forward-24h.csv",
+  "csv_sha256": "1cfe234de95e4c3ab5e83223153782db07cb8aec061d7fa3eed8e4814293e2e6",
+  "csv_byte_length": 100045,
+  "jsonl_sha256": "2274edca841c89e5f27b6fe5e753d9a508686f25b678b7a855ab573e953e9d3d",
+  "jsonl_byte_length": 200004
+ },
+ {
+  "symbol": "SSPC",
+  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+  "csv_relative_path": "raw/SSPC-detection-context.csv",
+  "csv_sha256": "19fa423531caffe74937f2b64cdc5252e07efe919714790b09790a3e1d849c0a",
+  "csv_byte_length": 100055,
+  "jsonl_sha256": "9bad85b3b9c64d2a3ad80e38e22a91ef455224dddea887f8c0032ad71352e692",
+  "jsonl_byte_length": 200005
+ },
+ {
+  "symbol": "SSPC",
+  "request_name": "FROZEN_FORWARD_24H",
+  "csv_relative_path": "raw/SSPC-frozen-forward-24h.csv",
+  "csv_sha256": "e6e6adbf1ddc7804ef021b23e3cfe589b4e703fe13b637e8528b90b6c92591ef",
+  "csv_byte_length": 100056,
+  "jsonl_sha256": "8e09d486934d14837cca2152f57e0caf8be2480a1893d72344a3e684546feb7d",
+  "jsonl_byte_length": 200005
+ },
+ {
+  "symbol": "LBGJ",
+  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+  "csv_relative_path": "raw/LBGJ-detection-context.csv",
+  "csv_sha256": "4b073413b682f9085f7a8a9a3805d9fff52dbdc1f87fb212b5c6b191b9822965",
+  "csv_byte_length": 100066,
+  "jsonl_sha256": "9807f1ae3f68f4bbbd61200ae23747d9c27e1efe8c85ea177e19fea54cc9426f",
+  "jsonl_byte_length": 200006
+ },
+ {
+  "symbol": "LBGJ",
+  "request_name": "FROZEN_FORWARD_24H",
+  "csv_relative_path": "raw/LBGJ-frozen-forward-24h.csv",
+  "csv_sha256": "9892c72a4535c5751f7e662192f089f674dbdba2cd10d830e619d3aac89dbae1",
+  "csv_byte_length": 100067,
+  "jsonl_sha256": "6d2db3e28c7cecf49eb1033e89541e7a8d319886032214cfc0276d312b0ac336",
+  "jsonl_byte_length": 200006
+ },
+ {
+  "symbol": "TRVI",
+  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+  "csv_relative_path": "raw/TRVI-detection-context.csv",
+  "csv_sha256": "66054459d86a02dfead03bf215df9afc2bd1abf241165e48a7995a7c16eb4d7a",
+  "csv_byte_length": 100077,
+  "jsonl_sha256": "6243e29525b5752a52ba5d4805572d20af1101eff77dce95788d5212162cb201",
+  "jsonl_byte_length": 200007
+ },
+ {
+  "symbol": "TRVI",
+  "request_name": "FROZEN_FORWARD_24H",
+  "csv_relative_path": "raw/TRVI-frozen-forward-24h.csv",
+  "csv_sha256": "c5f52025e1dabda6d7045651b543924a334c6ff90dd96deeaacd40451de33575",
+  "csv_byte_length": 100078,
+  "jsonl_sha256": "180b1d5cf66dfb20c15e98dda5c011f8fc94aad88076a103d285e3bbc9f7fbe5",
+  "jsonl_byte_length": 200007
+ },
+ {
+  "symbol": "LMNX",
+  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+  "csv_relative_path": "raw/LMNX-detection-context.csv",
+  "csv_sha256": "bcd8d938eefacd265e10c09886780850e7ccb859db3c5bb9f980e2d407f878f0",
+  "csv_byte_length": 100088,
+  "jsonl_sha256": "2ed4168d7fce0b4bcc57e2eb8003523e8f0c7beaf10c36bc731f0d87d43b91b7",
+  "jsonl_byte_length": 200008
+ },
+ {
+  "symbol": "LMNX",
+  "request_name": "FROZEN_FORWARD_24H",
+  "csv_relative_path": "raw/LMNX-frozen-forward-24h.csv",
+  "csv_sha256": "065a6064191588bf87eead07cd86fb27364a119fd29e4fc4a071f794145806ca",
+  "csv_byte_length": 100089,
+  "jsonl_sha256": "db19796e8192a11bdcce5fe35be1578c3f10b15171ed2e42dc7fdfb6134b27ed",
+  "jsonl_byte_length": 200008
+ },
+ {
+  "symbol": "MGNX",
+  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+  "csv_relative_path": "raw/MGNX-detection-context.csv",
+  "csv_sha256": "6ad3f37084d66dd4e2ceb957b75b96c28f7b840bc58b7cbb033e14238508a075",
+  "csv_byte_length": 100099,
+  "jsonl_sha256": "5316789466940045f41c56b1da55d0180b0b11a1b8ec0015c17989f4372bb2a4",
+  "jsonl_byte_length": 200009
+ },
+ {
+  "symbol": "MGNX",
+  "request_name": "FROZEN_FORWARD_24H",
+  "csv_relative_path": "raw/MGNX-frozen-forward-24h.csv",
+  "csv_sha256": "2940eb8aef087e4ba05fad6816b1e2d36b8d6107ef4fb32ab9d035cdef09ab58",
+  "csv_byte_length": 100100,
+  "jsonl_sha256": "5f4f250b6870113c657058c0f089f0885d21c9ba2f9c4972f7b0b1221fb35ea8",
+  "jsonl_byte_length": 200009
+ },
+ {
+  "symbol": "BHVN",
+  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+  "csv_relative_path": "raw/BHVN-detection-context.csv",
+  "csv_sha256": "a98cee6d69480443f0b67caae0b9c22fdeb61346657d62796df66f2170078433",
+  "csv_byte_length": 100110,
+  "jsonl_sha256": "554c2a3525ab4b0c906ed33d76bb4909139360c3d4b591509295f74f314188ae",
+  "jsonl_byte_length": 200010
+ },
+ {
+  "symbol": "BHVN",
+  "request_name": "FROZEN_FORWARD_24H",
+  "csv_relative_path": "raw/BHVN-frozen-forward-24h.csv",
+  "csv_sha256": "8e70ab25d64ffc193b7327e3feb20a63c6466aa306e0f21f4b5729ff1070ab2f",
+  "csv_byte_length": 100111,
+  "jsonl_sha256": "6ccf86023dd7ba163e7110cd2c4d9f953caea895f95425c99455a10094182726",
+  "jsonl_byte_length": 200010
+ },
+ {
+  "symbol": "OBE",
+  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+  "csv_relative_path": "raw/OBE-detection-context.csv",
+  "csv_sha256": "cf949bcedfdcb1ebf6c73fed4142ef25d50658a5e66401ecfc501e25a40aad53",
+  "csv_byte_length": 100121,
+  "jsonl_sha256": "500a4079b2aaf8f9df179b3d6a6f3311a1299dc3d3e8664a4ef40aad2d08e89e",
+  "jsonl_byte_length": 200011
+ },
+ {
+  "symbol": "OBE",
+  "request_name": "FROZEN_FORWARD_24H",
+  "csv_relative_path": "raw/OBE-frozen-forward-24h.csv",
+  "csv_sha256": "1d208c1d5f79713bc8dfe1ead02141960a43dc9ff756cabf468e5ae37d46b457",
+  "csv_byte_length": 100122,
+  "jsonl_sha256": "c00e38524c0c10e34a708cf74c6f1ccde8b24cf125db585e01f61ded58ab4f3a",
+  "jsonl_byte_length": 200011
+ },
+ {
+  "symbol": "AVTX",
+  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+  "csv_relative_path": "raw/AVTX-detection-context.csv",
+  "csv_sha256": "6eae60e81aa59cf1db35f2ff0b3953647da38069cd12740db7beb85d2aba3655",
+  "csv_byte_length": 100132,
+  "jsonl_sha256": "02e8710f4b685dafd129fec54d50c4c8a4be6aad50e07c0fec7585d2d963515f",
+  "jsonl_byte_length": 200012
+ },
+ {
+  "symbol": "AVTX",
+  "request_name": "FROZEN_FORWARD_24H",
+  "csv_relative_path": "raw/AVTX-frozen-forward-24h.csv",
+  "csv_sha256": "9c7837f40354744c658c2cd118937a31aa3323c293930060d558252d46baf865",
+  "csv_byte_length": 100133,
+  "jsonl_sha256": "560b192936b06bc682891dfc78df2d1180c61f984b13ed76a28de2883f5ab8a5",
+  "jsonl_byte_length": 200012
+ }
+]

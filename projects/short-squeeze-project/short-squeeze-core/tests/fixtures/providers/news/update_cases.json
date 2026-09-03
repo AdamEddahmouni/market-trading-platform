@@ -1,0 +1,395 @@
+{
+  "schema_version": "1.0.0",
+  "cases": [
+    {
+      "metadata": {
+        "fixture_id": "news-updated",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED",
+        "source_shape_basis": "DOCUMENTED_OFFLINE_ALIAS",
+        "contains_credentials": false,
+        "contains_account_data": false,
+        "contains_real_symbols": false,
+        "contains_live_urls": false,
+        "provider_record_id_status": "SUPPLIED",
+        "publication_timestamp_status": "EXACT",
+        "updated_timestamp_status": "EXACT",
+        "received_timestamp_status": "CONTEXT_SUPPLIED",
+        "symbol_association_status": "EXPLICIT",
+        "revision_status": "EXPLICIT_PROVIDER_ID",
+        "expected_normalization_result": "ACCEPT_COMPLETE"
+      },
+      "record": {
+        "source_record_id": "u1",
+        "provider_schema": "NEWS_ITEM_V1",
+        "record_type": "NEWS_ITEM",
+        "fixture_origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "source_shape": "PROVIDER_NEUTRAL",
+        "provider": "OFFLINE_NEWS_REPRESENTATIVE",
+        "provider_record_id": "news-101",
+        "headline": "TESTA opens a new research facility",
+        "summary": "Provider supplied factual summary.",
+        "publisher": "Example Wire",
+        "author": "A. Reporter",
+        "url": "https://news.example.invalid/articles/1?id=7",
+        "published_at": "2026-01-15T14:00:00Z",
+        "provider_available_at": "2026-01-15T14:20:30Z",
+        "capture_timestamp": "2026-01-15T14:01:30Z",
+        "symbols": [
+          "TESTA"
+        ],
+        "language": "en",
+        "content_type": "article",
+        "status": "UPDATED",
+        "updated_at": "2026-01-15T14:20:00Z",
+        "supersedes_provider_record_id": "news-001"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "news-corrected",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED",
+        "source_shape_basis": "DOCUMENTED_OFFLINE_ALIAS",
+        "contains_credentials": false,
+        "contains_account_data": false,
+        "contains_real_symbols": false,
+        "contains_live_urls": false,
+        "provider_record_id_status": "SUPPLIED",
+        "publication_timestamp_status": "EXACT",
+        "updated_timestamp_status": "EXACT",
+        "received_timestamp_status": "CONTEXT_SUPPLIED",
+        "symbol_association_status": "EXPLICIT",
+        "revision_status": "EXPLICIT_PROVIDER_ID",
+        "expected_normalization_result": "ACCEPT_COMPLETE"
+      },
+      "record": {
+        "source_record_id": "u2",
+        "provider_schema": "NEWS_ITEM_V1",
+        "record_type": "NEWS_ITEM",
+        "fixture_origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "source_shape": "PROVIDER_NEUTRAL",
+        "provider": "OFFLINE_NEWS_REPRESENTATIVE",
+        "provider_record_id": "news-102",
+        "headline": "TESTA opens a new research facility",
+        "summary": "Provider supplied factual summary.",
+        "publisher": "Example Wire",
+        "author": "A. Reporter",
+        "url": "https://news.example.invalid/articles/1?id=7",
+        "published_at": "2026-01-15T14:00:00Z",
+        "provider_available_at": "2026-01-15T14:01:00Z",
+        "capture_timestamp": "2026-01-15T14:01:30Z",
+        "symbols": [
+          "TESTA"
+        ],
+        "language": "en",
+        "content_type": "article",
+        "status": "CORRECTED",
+        "updated_at": "2026-01-15T14:30:00Z",
+        "supersedes_provider_record_id": "news-001"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "news-withdrawn",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED",
+        "source_shape_basis": "DOCUMENTED_OFFLINE_ALIAS",
+        "contains_credentials": false,
+        "contains_account_data": false,
+        "contains_real_symbols": false,
+        "contains_live_urls": false,
+        "provider_record_id_status": "SUPPLIED",
+        "publication_timestamp_status": "EXACT",
+        "updated_timestamp_status": "EXACT",
+        "received_timestamp_status": "CONTEXT_SUPPLIED",
+        "symbol_association_status": "EXPLICIT",
+        "revision_status": "EXPLICIT_PROVIDER_ID",
+        "expected_normalization_result": "ACCEPT_COMPLETE"
+      },
+      "record": {
+        "source_record_id": "u3",
+        "provider_schema": "NEWS_ITEM_V1",
+        "record_type": "NEWS_ITEM",
+        "fixture_origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "source_shape": "PROVIDER_NEUTRAL",
+        "provider": "OFFLINE_NEWS_REPRESENTATIVE",
+        "provider_record_id": "news-103",
+        "headline": "TESTA opens a new research facility",
+        "summary": "Provider supplied factual summary.",
+        "publisher": "Example Wire",
+        "author": "A. Reporter",
+        "url": "https://news.example.invalid/articles/1?id=7",
+        "published_at": "2026-01-15T14:00:00Z",
+        "provider_available_at": "2026-01-15T15:00:00Z",
+        "capture_timestamp": "2026-01-15T14:01:30Z",
+        "symbols": [
+          "TESTA"
+        ],
+        "language": "en",
+        "content_type": "article",
+        "status": "WITHDRAWN",
+        "updated_at": "2026-01-15T15:00:00Z",
+        "supersedes_provider_record_id": "news-101"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "news-deleted",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED",
+        "source_shape_basis": "DOCUMENTED_OFFLINE_ALIAS",
+        "contains_credentials": false,
+        "contains_account_data": false,
+        "contains_real_symbols": false,
+        "contains_live_urls": false,
+        "provider_record_id_status": "SUPPLIED",
+        "publication_timestamp_status": "EXACT",
+        "updated_timestamp_status": "EXACT",
+        "received_timestamp_status": "CONTEXT_SUPPLIED",
+        "symbol_association_status": "EXPLICIT",
+        "revision_status": "EXPLICIT_PROVIDER_ID",
+        "expected_normalization_result": "ACCEPT_COMPLETE"
+      },
+      "record": {
+        "source_record_id": "u4",
+        "provider_schema": "NEWS_ITEM_V1",
+        "record_type": "NEWS_ITEM",
+        "fixture_origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "source_shape": "PROVIDER_NEUTRAL",
+        "provider": "OFFLINE_NEWS_REPRESENTATIVE",
+        "provider_record_id": "news-104",
+        "headline": "TESTA opens a new research facility",
+        "summary": "Provider supplied factual summary.",
+        "publisher": "Example Wire",
+        "author": "A. Reporter",
+        "url": "https://news.example.invalid/articles/1?id=7",
+        "published_at": "2026-01-15T14:00:00Z",
+        "provider_available_at": "2026-01-15T14:01:00Z",
+        "capture_timestamp": "2026-01-15T14:01:30Z",
+        "symbols": [
+          "TESTA"
+        ],
+        "language": "en",
+        "content_type": "article",
+        "status": "DELETED",
+        "updated_at": "2026-01-15T15:10:00Z",
+        "supersedes_provider_record_id": "news-101"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "news-exact-duplicate",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED",
+        "source_shape_basis": "DOCUMENTED_OFFLINE_ALIAS",
+        "contains_credentials": false,
+        "contains_account_data": false,
+        "contains_real_symbols": false,
+        "contains_live_urls": false,
+        "provider_record_id_status": "SUPPLIED",
+        "publication_timestamp_status": "EXACT",
+        "updated_timestamp_status": "MISSING",
+        "received_timestamp_status": "CONTEXT_SUPPLIED",
+        "symbol_association_status": "EXPLICIT",
+        "revision_status": "NOT_APPLICABLE",
+        "expected_normalization_result": "ACCEPT_COMPLETE"
+      },
+      "record": {
+        "source_record_id": "news-complete",
+        "provider_schema": "NEWS_ITEM_V1",
+        "record_type": "NEWS_ITEM",
+        "fixture_origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "source_shape": "PROVIDER_NEUTRAL",
+        "provider": "OFFLINE_NEWS_REPRESENTATIVE",
+        "provider_record_id": "news-001",
+        "headline": "TESTA opens a new research facility",
+        "summary": "Provider supplied factual summary.",
+        "publisher": "Example Wire",
+        "author": "A. Reporter",
+        "url": "https://news.example.invalid/articles/1?id=7",
+        "published_at": "2026-01-15T14:00:00Z",
+        "provider_available_at": "2026-01-15T14:01:00Z",
+        "capture_timestamp": "2026-01-15T14:01:30Z",
+        "symbols": [
+          "TESTA"
+        ],
+        "language": "en",
+        "content_type": "article"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "news-same-id-conflict",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED",
+        "source_shape_basis": "DOCUMENTED_OFFLINE_ALIAS",
+        "contains_credentials": false,
+        "contains_account_data": false,
+        "contains_real_symbols": false,
+        "contains_live_urls": false,
+        "provider_record_id_status": "SUPPLIED",
+        "publication_timestamp_status": "EXACT",
+        "updated_timestamp_status": "MISSING",
+        "received_timestamp_status": "CONTEXT_SUPPLIED",
+        "symbol_association_status": "EXPLICIT",
+        "revision_status": "NOT_APPLICABLE",
+        "expected_normalization_result": "ACCEPT_COMPLETE"
+      },
+      "record": {
+        "source_record_id": "u6",
+        "provider_schema": "NEWS_ITEM_V1",
+        "record_type": "NEWS_ITEM",
+        "fixture_origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "source_shape": "PROVIDER_NEUTRAL",
+        "provider": "OFFLINE_NEWS_REPRESENTATIVE",
+        "provider_record_id": "news-001",
+        "headline": "TESTA opens a revised research facility",
+        "summary": "Provider supplied factual summary.",
+        "publisher": "Example Wire",
+        "author": "A. Reporter",
+        "url": "https://news.example.invalid/articles/1?id=7",
+        "published_at": "2026-01-15T14:00:00Z",
+        "provider_available_at": "2026-01-15T14:01:00Z",
+        "capture_timestamp": "2026-01-15T14:01:30Z",
+        "symbols": [
+          "TESTA"
+        ],
+        "language": "en",
+        "content_type": "article"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "news-sanitized-provider-metadata",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED",
+        "source_shape_basis": "DOCUMENTED_OFFLINE_ALIAS",
+        "contains_credentials": false,
+        "contains_account_data": false,
+        "contains_real_symbols": false,
+        "contains_live_urls": false,
+        "provider_record_id_status": "SUPPLIED",
+        "publication_timestamp_status": "EXACT",
+        "updated_timestamp_status": "MISSING",
+        "received_timestamp_status": "CONTEXT_SUPPLIED",
+        "symbol_association_status": "EXPLICIT",
+        "revision_status": "NOT_APPLICABLE",
+        "expected_normalization_result": "ACCEPT_COMPLETE"
+      },
+      "record": {
+        "source_record_id": "u7",
+        "provider_schema": "NEWS_ITEM_V1",
+        "record_type": "NEWS_ITEM",
+        "fixture_origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "source_shape": "PROVIDER_NEUTRAL",
+        "provider": "OFFLINE_NEWS_REPRESENTATIVE",
+        "provider_record_id": "news-107",
+        "headline": "TESTA opens a new research facility",
+        "summary": "Provider supplied factual summary.",
+        "publisher": "Example Wire",
+        "author": "A. Reporter",
+        "url": "https://news.example.invalid/articles/1?id=7",
+        "published_at": "2026-01-15T14:00:00Z",
+        "provider_available_at": "2026-01-15T14:01:00Z",
+        "capture_timestamp": "2026-01-15T14:01:30Z",
+        "symbols": [
+          "TESTA"
+        ],
+        "language": "en",
+        "content_type": "article",
+        "provider_metadata": {
+          "section": "business",
+          "edition": "synthetic"
+        }
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "news-explicit-revision",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED",
+        "source_shape_basis": "DOCUMENTED_OFFLINE_ALIAS",
+        "contains_credentials": false,
+        "contains_account_data": false,
+        "contains_real_symbols": false,
+        "contains_live_urls": false,
+        "provider_record_id_status": "SUPPLIED",
+        "publication_timestamp_status": "EXACT",
+        "updated_timestamp_status": "EXACT",
+        "received_timestamp_status": "CONTEXT_SUPPLIED",
+        "symbol_association_status": "EXPLICIT",
+        "revision_status": "EXPLICIT_PROVIDER_ID",
+        "expected_normalization_result": "ACCEPT_COMPLETE"
+      },
+      "record": {
+        "source_record_id": "u8",
+        "provider_schema": "NEWS_ITEM_V1",
+        "record_type": "NEWS_ITEM",
+        "fixture_origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "source_shape": "PROVIDER_NEUTRAL",
+        "provider": "OFFLINE_NEWS_REPRESENTATIVE",
+        "provider_record_id": "news-108",
+        "headline": "TESTA opens a new research facility",
+        "summary": "Provider supplied factual summary.",
+        "publisher": "Example Wire",
+        "author": "A. Reporter",
+        "url": "https://news.example.invalid/articles/1?id=7",
+        "published_at": "2026-01-15T14:00:00Z",
+        "provider_available_at": "2026-01-15T14:01:00Z",
+        "capture_timestamp": "2026-01-15T14:01:30Z",
+        "symbols": [
+          "TESTA"
+        ],
+        "language": "en",
+        "content_type": "article",
+        "status": "UPDATED",
+        "updated_at": "2026-01-15T14:40:00Z",
+        "supersedes_provider_record_id": "news-001"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "news-revision-missing-relation",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED",
+        "source_shape_basis": "DOCUMENTED_OFFLINE_ALIAS",
+        "contains_credentials": false,
+        "contains_account_data": false,
+        "contains_real_symbols": false,
+        "contains_live_urls": false,
+        "provider_record_id_status": "SUPPLIED",
+        "publication_timestamp_status": "EXACT",
+        "updated_timestamp_status": "EXACT",
+        "received_timestamp_status": "CONTEXT_SUPPLIED",
+        "symbol_association_status": "EXPLICIT",
+        "revision_status": "MISSING",
+        "expected_normalization_result": "ACCEPT_PARTIAL"
+      },
+      "record": {
+        "source_record_id": "u9",
+        "provider_schema": "NEWS_ITEM_V1",
+        "record_type": "NEWS_ITEM",
+        "fixture_origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "source_shape": "PROVIDER_NEUTRAL",
+        "provider": "OFFLINE_NEWS_REPRESENTATIVE",
+        "provider_record_id": "news-109",
+        "headline": "TESTA opens a new research facility",
+        "summary": "Provider supplied factual summary.",
+        "publisher": "Example Wire",
+        "author": "A. Reporter",
+        "url": "https://news.example.invalid/articles/1?id=7",
+        "published_at": "2026-01-15T14:00:00Z",
+        "provider_available_at": "2026-01-15T14:01:00Z",
+        "capture_timestamp": "2026-01-15T14:01:30Z",
+        "symbols": [
+          "TESTA"
+        ],
+        "language": "en",
+        "content_type": "article",
+        "status": "UPDATED",
+        "updated_at": "2026-01-15T14:40:00Z"
+      }
+    }
+  ]
+}

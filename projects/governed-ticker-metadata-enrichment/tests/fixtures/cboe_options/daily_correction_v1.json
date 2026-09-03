@@ -1,0 +1,18 @@
+{
+  "tradeDate": "2026-08-19",
+  "lastUpdated": "2026-08-19T17:30:00-05:00",
+  "availableTime": "2026-08-19T17:30:00-05:00",
+  "contentHash": "daily-equity-v1-abc111",
+  "putCallRatios": [
+    {"name": "EQUITY", "value": "0.82", "call": 2100000, "put": 1722000}
+  ],
+  "volumeAndOpenInterest": [
+    {
+      "product": "EQUITY",
+      "name": "EQUITY VOLUME",
+      "call": 2100000,
+      "put": 1722000,
+      "total": 3822000
+    }
+  ]
+}

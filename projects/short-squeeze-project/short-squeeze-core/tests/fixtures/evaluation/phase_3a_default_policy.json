@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0.0",
+  "policy_version": "phase_3a_transparent_candidate_policy.v1",
+  "evaluation_version": "candidate_evaluation.v1",
+  "enabled_rule_ids": [
+    "BORROW_AVAILABILITY_CHANGE_MAXIMUM", "BORROW_AVAILABILITY_MAXIMUM",
+    "BORROW_FEE_CHANGE_MINIMUM", "BORROW_FEE_MINIMUM", "COMPLETED_BAR_AVAILABLE",
+    "CORPORATE_ACTION_CONTEXT_AVAILABLE", "DAYS_TO_COVER_MINIMUM", "FLOAT_MAXIMUM",
+    "MARKET_DATA_AVAILABLE", "NEWS_AVAILABLE", "NEWS_AVAILABLE_BEFORE_AS_OF",
+    "NEWS_TIMESTAMP_KNOWN", "NO_DEFAULT_SUBSTITUTION", "NO_MATERIAL_CONFLICTS",
+    "PERCENTAGE_CHANGE_MINIMUM", "POINT_IN_TIME_ELIGIBLE", "PRICE_RANGE",
+    "PROVIDER_SCOPE_EXPLICIT", "PUBLISHED_SHORT_INTEREST_AVAILABLE",
+    "RELATIVE_VOLUME_MINIMUM", "REQUIRED_DOMAINS_PRESENT", "REQUIRED_HISTORY_SUFFICIENT",
+    "REQUIRED_UNITS_COMPATIBLE", "SEC_FILING_AVAILABLE",
+    "SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM"
+  ],
+  "rules": [
+    {"rule_id":"PRICE_RANGE","rule_version":"price_range.v1","category":"MOMENTUM_DISCOVERY","required_domains":["MARKET_BARS"],"provider_scope_required":true,"thresholds":[
+      {"threshold_id":"price-min-v1","rule_id":"PRICE_RANGE","value":"2","unit":"PRICE","operator":"GREATER_THAN_OR_EQUAL","policy_version":"phase_3a_transparent_candidate_policy.v1","source_type":"ORIGINAL_PLATFORM","source_reference":"phase-2v-original-rule-manifest:RULE-001","rationale_code":"ORIGINAL_PRICE_BAND_MINIMUM","provisional":true},
+      {"threshold_id":"price-max-v1","rule_id":"PRICE_RANGE","value":"20","unit":"PRICE","operator":"LESS_THAN_OR_EQUAL","policy_version":"phase_3a_transparent_candidate_policy.v1","source_type":"ORIGINAL_PLATFORM","source_reference":"phase-2v-original-rule-manifest:RULE-001","rationale_code":"ORIGINAL_PRICE_BAND_MAXIMUM","provisional":true}]},
+    {"rule_id":"PERCENTAGE_CHANGE_MINIMUM","rule_version":"percentage_change_minimum.v1","category":"MOMENTUM_DISCOVERY","required_metrics":["PERCENTAGE_RETURN"],"thresholds":[{"threshold_id":"percentage-change-min-v1","rule_id":"PERCENTAGE_CHANGE_MINIMUM","value":"10","unit":"PERCENT","operator":"GREATER_THAN_OR_EQUAL","policy_version":"phase_3a_transparent_candidate_policy.v1","source_type":"ORIGINAL_PLATFORM","source_reference":"phase-2v-original-rule-manifest:RULE-001","rationale_code":"ORIGINAL_PERCENTAGE_CHANGE_MINIMUM","provisional":true}]},
+    {"rule_id":"RELATIVE_VOLUME_MINIMUM","rule_version":"relative_volume_minimum.v1","category":"MOMENTUM_DISCOVERY","required_metrics":["RELATIVE_VOLUME"],"thresholds":[{"threshold_id":"relative-volume-min-v1","rule_id":"RELATIVE_VOLUME_MINIMUM","value":"5","unit":"RATIO","operator":"GREATER_THAN_OR_EQUAL","policy_version":"phase_3a_transparent_candidate_policy.v1","source_type":"ORIGINAL_PLATFORM","source_reference":"phase-2v-original-rule-manifest:RULE-001","rationale_code":"ORIGINAL_RELATIVE_VOLUME_MINIMUM","provisional":true}]},
+    {"rule_id":"FLOAT_MAXIMUM","rule_version":"float_maximum.v1","category":"MOMENTUM_DISCOVERY","required_domains":["CANDIDATE_SNAPSHOT"],"provider_scope_required":true,"thresholds":[{"threshold_id":"float-max-v1","rule_id":"FLOAT_MAXIMUM","value":"20000000","unit":"SHARES","operator":"LESS_THAN_OR_EQUAL","policy_version":"phase_3a_transparent_candidate_policy.v1","source_type":"ADVISOR_GUIDANCE","source_reference":"phase-3a-handoff:threshold-policy","rationale_code":"LOW_FLOAT_RESEARCH_MAXIMUM","provisional":true}]},
+    {"rule_id":"MARKET_DATA_AVAILABLE","rule_version":"market_data_available.v1","category":"MOMENTUM_DISCOVERY","required_domains":["MARKET_BARS"]},
+    {"rule_id":"COMPLETED_BAR_AVAILABLE","rule_version":"completed_bar_available.v1","category":"MOMENTUM_DISCOVERY","required_domains":["MARKET_BARS"]},
+
+    {"rule_id":"PUBLISHED_SHORT_INTEREST_AVAILABLE","rule_version":"published_short_interest_available.v1","category":"SHORT_PRESSURE_CONFIRMATION","required_domains":["PUBLISHED_SHORT_INTEREST"],"provider_scope_required":true},
+    {"rule_id":"SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM","rule_version":"short_interest_percentage_change_minimum.v1","category":"SHORT_PRESSURE_CONFIRMATION","required_metrics":["PUBLISHED_SHORT_INTEREST_PERCENTAGE_CHANGE"],"thresholds":[{"threshold_id":"short-interest-change-min-v1","rule_id":"SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM","value":"10","unit":"PERCENT","operator":"GREATER_THAN_OR_EQUAL","policy_version":"phase_3a_transparent_candidate_policy.v1","source_type":"RESEARCH_POLICY","source_reference":"phase-3a-design:initial-policy","rationale_code":"PROVISIONAL_SHORT_INTEREST_CHANGE_MINIMUM","provisional":true}]},
+    {"rule_id":"DAYS_TO_COVER_MINIMUM","rule_version":"days_to_cover_minimum.v1","category":"SHORT_PRESSURE_CONFIRMATION","required_metrics":["DAYS_TO_COVER"],"thresholds":[{"threshold_id":"days-to-cover-min-v1","rule_id":"DAYS_TO_COVER_MINIMUM","value":"2","unit":"DAYS","operator":"GREATER_THAN_OR_EQUAL","policy_version":"phase_3a_transparent_candidate_policy.v1","source_type":"RESEARCH_POLICY","source_reference":"phase-3a-design:initial-policy","rationale_code":"PROVISIONAL_DAYS_TO_COVER_MINIMUM","provisional":true}]},
+    {"rule_id":"BORROW_FEE_MINIMUM","rule_version":"borrow_fee_minimum.v1","category":"SHORT_PRESSURE_CONFIRMATION","required_domains":["BORROW_FEE"],"provider_scope_required":true,"thresholds":[{"threshold_id":"borrow-fee-min-v1","rule_id":"BORROW_FEE_MINIMUM","value":"10","unit":"PERCENT","operator":"GREATER_THAN_OR_EQUAL","policy_version":"phase_3a_transparent_candidate_policy.v1","source_type":"RESEARCH_POLICY","source_reference":"phase-3a-design:initial-policy","rationale_code":"PROVISIONAL_BORROW_FEE_MINIMUM","provisional":true}]},
+    {"rule_id":"BORROW_FEE_CHANGE_MINIMUM","rule_version":"borrow_fee_change_minimum.v1","category":"SHORT_PRESSURE_CONFIRMATION","required_metrics":["BORROW_FEE_ABSOLUTE_CHANGE"],"thresholds":[{"threshold_id":"borrow-fee-change-min-v1","rule_id":"BORROW_FEE_CHANGE_MINIMUM","value":"2","unit":"PERCENTAGE_POINTS","operator":"GREATER_THAN_OR_EQUAL","policy_version":"phase_3a_transparent_candidate_policy.v1","source_type":"RESEARCH_POLICY","source_reference":"phase-3a-design:initial-policy","rationale_code":"PROVISIONAL_BORROW_FEE_CHANGE_MINIMUM","provisional":true}]},
+    {"rule_id":"BORROW_AVAILABILITY_MAXIMUM","rule_version":"borrow_availability_maximum.v1","category":"SHORT_PRESSURE_CONFIRMATION","required_domains":["BORROW_AVAILABILITY"],"provider_scope_required":true,"thresholds":[{"threshold_id":"borrow-availability-max-v1","rule_id":"BORROW_AVAILABILITY_MAXIMUM","value":"100000","unit":"SHARES","operator":"LESS_THAN_OR_EQUAL","policy_version":"phase_3a_transparent_candidate_policy.v1","source_type":"RESEARCH_POLICY","source_reference":"phase-3a-design:initial-policy","rationale_code":"PROVISIONAL_BORROW_AVAILABILITY_MAXIMUM","provisional":true}]},
+    {"rule_id":"BORROW_AVAILABILITY_CHANGE_MAXIMUM","rule_version":"borrow_availability_change_maximum.v1","category":"SHORT_PRESSURE_CONFIRMATION","required_metrics":["BORROW_AVAILABILITY_ABSOLUTE_CHANGE"],"thresholds":[{"threshold_id":"borrow-availability-change-max-v1","rule_id":"BORROW_AVAILABILITY_CHANGE_MAXIMUM","value":"-10000","unit":"SHARES","operator":"LESS_THAN_OR_EQUAL","policy_version":"phase_3a_transparent_candidate_policy.v1","source_type":"RESEARCH_POLICY","source_reference":"phase-3a-design:initial-policy","rationale_code":"PROVISIONAL_BORROW_AVAILABILITY_CHANGE_MAXIMUM","provisional":true}]},
+
+    {"rule_id":"NEWS_AVAILABLE","rule_version":"news_available.v1","category":"CATALYST_EVIDENCE","required_domains":["NEWS"]},
+    {"rule_id":"NEWS_AVAILABLE_BEFORE_AS_OF","rule_version":"news_available_before_as_of.v1","category":"CATALYST_EVIDENCE","required_domains":["NEWS"]},
+    {"rule_id":"NEWS_TIMESTAMP_KNOWN","rule_version":"news_timestamp_known.v1","category":"CATALYST_EVIDENCE","required_domains":["NEWS"]},
+    {"rule_id":"SEC_FILING_AVAILABLE","rule_version":"sec_filing_available.v1","category":"CATALYST_EVIDENCE","required_domains":["SEC_FILINGS"]},
+    {"rule_id":"CORPORATE_ACTION_CONTEXT_AVAILABLE","rule_version":"corporate_action_context_available.v1","category":"CATALYST_EVIDENCE"},
+
+    {"rule_id":"REQUIRED_DOMAINS_PRESENT","rule_version":"required_domains_present.v1","category":"EVIDENCE_VALIDITY"},
+    {"rule_id":"NO_MATERIAL_CONFLICTS","rule_version":"no_material_conflicts.v1","category":"EVIDENCE_VALIDITY"},
+    {"rule_id":"POINT_IN_TIME_ELIGIBLE","rule_version":"point_in_time_eligible.v1","category":"EVIDENCE_VALIDITY"},
+    {"rule_id":"REQUIRED_UNITS_COMPATIBLE","rule_version":"required_units_compatible.v1","category":"EVIDENCE_VALIDITY"},
+    {"rule_id":"REQUIRED_HISTORY_SUFFICIENT","rule_version":"required_history_sufficient.v1","category":"EVIDENCE_VALIDITY"},
+    {"rule_id":"NO_DEFAULT_SUBSTITUTION","rule_version":"no_default_substitution.v1","category":"EVIDENCE_VALIDITY"},
+    {"rule_id":"PROVIDER_SCOPE_EXPLICIT","rule_version":"provider_scope_explicit.v1","category":"EVIDENCE_VALIDITY"}
+  ]
+}

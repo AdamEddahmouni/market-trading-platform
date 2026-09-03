@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "recorded_sample_found": false,
+  "news_snapshot_is_objective_fixture": false,
+  "archive_findings": "No provider response preserved defensible provider identity, availability, receipt, and explicit symbol semantics.",
+  "allowed_origins": [
+    "SANITIZED_REPRESENTATIVE_SAMPLE",
+    "SYNTHETIC_EDGE_CASE"
+  ],
+  "url_policy_version": "news-url-v1",
+  "case_count": 35
+}

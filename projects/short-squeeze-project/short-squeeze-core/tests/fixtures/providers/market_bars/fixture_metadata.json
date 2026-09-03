@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0.0",
+  "recorded_sample_found": false,
+  "archive_findings": "Only provider-shape code and mocks were found; no bar row has defensible publication, capture, and receipt provenance.",
+  "allowed_origins": [
+    "SANITIZED_REPRESENTATIVE_SAMPLE",
+    "SYNTHETIC_EDGE_CASE"
+  ],
+  "case_count": 43
+}

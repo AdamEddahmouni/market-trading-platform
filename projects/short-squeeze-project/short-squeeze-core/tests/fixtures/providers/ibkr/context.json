@@ -1,0 +1,14 @@
+{
+  "ingested_at": "2026-01-02T15:05:00Z",
+  "source_timezone": "-05:00",
+  "provider": "INTERACTIVE_BROKERS",
+  "adapter_version": "ibkr-offline-v1",
+  "normalization_version": "ibkr-normalization-v1",
+  "entitlement_status": "UNKNOWN",
+  "collection_method": "LOADED_FIXTURE",
+  "account_scope": null,
+  "request_id": "sanitized-fixture-build",
+  "session_id": null,
+  "expected_delay_ms": 900000,
+  "source_endpoint_name": "short-stock-file-shape"
+}

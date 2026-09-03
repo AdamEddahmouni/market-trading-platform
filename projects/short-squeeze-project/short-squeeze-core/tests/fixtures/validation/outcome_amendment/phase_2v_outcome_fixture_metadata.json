@@ -1,0 +1,1 @@
+{"classification":"SANITIZED_PUBLIC_HISTORICAL_DATA","prohibition":"Unavailable domains contain no invented historical values.","schema_version":"1.0.0","synthetic_edge_cases":["partial_acquisition_manifest","network_failure_manifest","entitlement_failure_manifest"],"unavailable_domains":["TRADING_HALTS","BORROW_FEE","BORROW_AVAILABILITY"]}

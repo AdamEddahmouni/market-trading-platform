@@ -1,0 +1,2569 @@
+{
+  "analysis_unit": "CASE_BOUNDARY",
+  "baseline_variant_id": "baseline",
+  "calibration_version": "phase_3d_calibration.v1",
+  "cohort_type": "SYNTHETIC_CASES",
+  "experiment_type": "DETECTION_ABLATION",
+  "experiment_version": "detection_ablation_baseline.v1",
+  "limitations": [
+    {
+      "code": "COUNTERFACTUAL_EXPLORATION_ONLY",
+      "statement": "Calibration results are counterfactual explorations, not predictive validation."
+    },
+    {
+      "code": "NO_THRESHOLD_AUTO_PROMOTION",
+      "statement": "No variant in this report is authorized for automatic promotion to production policy."
+    },
+    {
+      "code": "SMALL_SAMPLE_WARNING",
+      "statement": "Small labeled cohorts limit interpretability; intervals do not repair representativeness."
+    },
+    {
+      "code": "OUTCOME_BLIND_BOUNDARY_SELECTION",
+      "statement": "Boundary selection reuses Phase 3C outcome-blind cohort policies."
+    }
+  ],
+  "schema_version": "1.0.0",
+  "source_dataset_path": "../research/phase_3b_research_dataset.json",
+  "variant_results": [
+    {
+      "analysis": {
+        "analysis_unit": "CASE_BOUNDARY",
+        "analysis_version": "phase_3c_analysis.v1",
+        "boundary_count": 11,
+        "boundary_selection": {
+          "analysis_unit": "CASE_BOUNDARY",
+          "boundary_count_by_symbol": [
+            [
+              "SYNCFL",
+              1
+            ],
+            [
+              "SYNDOWN",
+              1
+            ],
+            [
+              "SYNFN",
+              1
+            ],
+            [
+              "SYNFP",
+              1
+            ],
+            [
+              "SYNINS",
+              1
+            ],
+            [
+              "SYNMIX",
+              1
+            ],
+            [
+              "SYNOINS",
+              1
+            ],
+            [
+              "SYNOUNK",
+              1
+            ],
+            [
+              "SYNTN",
+              1
+            ],
+            [
+              "SYNTP",
+              1
+            ],
+            [
+              "SYNUNK",
+              1
+            ]
+          ],
+          "deterministic_id": "29dde73c-8d53-5c57-be50-5299ed007af3",
+          "diagnostics": [],
+          "excluded_case_ids": [],
+          "outcome_blind": true,
+          "policy_version": "all_case_boundaries.v1",
+          "rationale_code": "ALL_ELIGIBLE_CASE_BOUNDARIES_RETAINED",
+          "selected_case_ids": [
+            "SYN_FALSE_NEGATIVE",
+            "SYN_FALSE_POSITIVE",
+            "SYN_MIXED_VOLATILE",
+            "SYN_OUTCOME_INSUFFICIENT",
+            "SYN_OUTCOME_UNKNOWN",
+            "SYN_SUBSTANTIAL_DOWNWARD",
+            "SYN_TRUE_NEGATIVE",
+            "SYN_TRUE_POSITIVE",
+            "SYN_UNEVALUABLE_CONFLICTED",
+            "SYN_UNEVALUABLE_INSUFFICIENT",
+            "SYN_UNEVALUABLE_UNKNOWN"
+          ]
+        },
+        "boundary_selection_policy_version": "all_case_boundaries.v1",
+        "case_count": 11,
+        "classification_prevalence": {
+          "counts": [
+            [
+              "TRUE_POSITIVE",
+              1
+            ],
+            [
+              "FALSE_POSITIVE",
+              1
+            ],
+            [
+              "TRUE_NEGATIVE",
+              1
+            ],
+            [
+              "FALSE_NEGATIVE",
+              1
+            ],
+            [
+              "UNEVALUABLE",
+              7
+            ],
+            [
+              "NOT_APPLICABLE",
+              0
+            ]
+          ],
+          "deterministic_id": "930a84fe-a2e1-566d-b388-1779822ff9fd",
+          "dimension": "RESEARCH_CLASSIFICATION",
+          "proportions": [
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.09090909090909090909090909091",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "190eb44c-5e97-5453-bf87-284589dab57d",
+              "exact_fraction": "1/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "f3a7263e-f154-54fb-a16d-f0c715fdacf1",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.016232172886",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.377358436452"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "true_positive_prevalence_among_all_cases",
+              "numerator": 1,
+              "percentage_value": "9.090909090909090909090909091",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.09090909090909090909090909091",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "b30ab07b-7166-5b7d-b75d-77d1e27fb024",
+              "exact_fraction": "1/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "f3a7263e-f154-54fb-a16d-f0c715fdacf1",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.016232172886",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.377358436452"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "false_positive_prevalence_among_all_cases",
+              "numerator": 1,
+              "percentage_value": "9.090909090909090909090909091",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.09090909090909090909090909091",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "23245e2d-abde-5dd2-b12b-bc86b587d4bf",
+              "exact_fraction": "1/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "f3a7263e-f154-54fb-a16d-f0c715fdacf1",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.016232172886",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.377358436452"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "true_negative_prevalence_among_all_cases",
+              "numerator": 1,
+              "percentage_value": "9.090909090909090909090909091",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.09090909090909090909090909091",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "b6d38b2f-28dc-5ccb-8079-8f274ff9e6bc",
+              "exact_fraction": "1/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "f3a7263e-f154-54fb-a16d-f0c715fdacf1",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.016232172886",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.377358436452"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "false_negative_prevalence_among_all_cases",
+              "numerator": 1,
+              "percentage_value": "9.090909090909090909090909091",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.6363636363636363636363636364",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "7a165f1a-09b6-54b0-808a-a56b20987e06",
+              "exact_fraction": "7/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "4ffcb43e-2212-5fb2-869e-81f95e06b9f7",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.353801174508",
+                "method": "WILSON_SCORE",
+                "numerator": 7,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.848335289046"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "unevaluable_prevalence_among_all_cases",
+              "numerator": 7,
+              "percentage_value": "63.63636363636363636363636364",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "a69d7f91-a531-57c9-a708-3cf08c9273b9",
+              "exact_fraction": "0/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "1b4d089a-b9e5-5e85-934a-504a7cd5c840",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0",
+                "method": "WILSON_SCORE",
+                "numerator": 0,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.258832966968"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "not_applicable_prevalence_among_all_cases",
+              "numerator": 0,
+              "percentage_value": "0",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.3636363636363636363636363636",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "a678a6bb-6dae-574c-abf0-d807629a9d02",
+              "exact_fraction": "4/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "61217f56-0370-54e2-9967-e421e9932bcd",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.151664710954",
+                "method": "WILSON_SCORE",
+                "numerator": 4,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.646198825492"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "research_classification_evaluability_rate_among_all_cases",
+              "numerator": 4,
+              "percentage_value": "36.36363636363636363636363636",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            }
+          ]
+        },
+        "cohort_membership": {
+          "cohort_definition": {
+            "analysis_unit": "CASE_BOUNDARY",
+            "boundary_selection_policy_version": "all_case_boundaries.v1",
+            "cohort_type": "SYNTHETIC_CASES",
+            "provenance_classifications": [
+              "SYNTHETIC_EDGE_CASE"
+            ],
+            "required_complete_cases": true,
+            "schema_version": "1.0.0"
+          },
+          "deterministic_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+          "exclusions": [],
+          "fixture_classifications": [
+            "SYNTHETIC_EDGE_CASE"
+          ],
+          "included_case_ids": [
+            "SYN_FALSE_NEGATIVE",
+            "SYN_FALSE_POSITIVE",
+            "SYN_MIXED_VOLATILE",
+            "SYN_OUTCOME_INSUFFICIENT",
+            "SYN_OUTCOME_UNKNOWN",
+            "SYN_SUBSTANTIAL_DOWNWARD",
+            "SYN_TRUE_NEGATIVE",
+            "SYN_TRUE_POSITIVE",
+            "SYN_UNEVALUABLE_CONFLICTED",
+            "SYN_UNEVALUABLE_INSUFFICIENT",
+            "SYN_UNEVALUABLE_UNKNOWN"
+          ],
+          "included_symbols": [
+            "SYNCFL",
+            "SYNDOWN",
+            "SYNFN",
+            "SYNFP",
+            "SYNINS",
+            "SYNMIX",
+            "SYNOINS",
+            "SYNOUNK",
+            "SYNTN",
+            "SYNTP",
+            "SYNUNK"
+          ],
+          "schema_version": "1.0.0",
+          "source_dataset_id": "a4c73eaf-b26a-5659-a37b-3b5734db14ac",
+          "source_registry_id": null
+        },
+        "confidence_level": "0.95",
+        "confusion_matrix": {
+          "dependence_warning": null,
+          "descriptive_rates": [
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.5",
+              "defined": true,
+              "denominator": 2,
+              "deterministic_id": "8d5bf4b8-47be-52db-b741-203df26dfab4",
+              "exact_fraction": "1/2",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 2,
+                "deterministic_id": "b4be7726-9340-5350-b5fa-f39f911d3e78",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.094531205734",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.905468794266"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "sensitivity_descriptive_research_classification_rate",
+              "numerator": 1,
+              "percentage_value": "50",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.5",
+              "defined": true,
+              "denominator": 2,
+              "deterministic_id": "311408a2-1ef6-570b-8b43-cb5404c09b88",
+              "exact_fraction": "1/2",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 2,
+                "deterministic_id": "b4be7726-9340-5350-b5fa-f39f911d3e78",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.094531205734",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.905468794266"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "specificity_descriptive_research_classification_rate",
+              "numerator": 1,
+              "percentage_value": "50",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.5",
+              "defined": true,
+              "denominator": 2,
+              "deterministic_id": "c93d5a2a-ef9e-522c-99fa-9c4c0da2a71c",
+              "exact_fraction": "1/2",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 2,
+                "deterministic_id": "b4be7726-9340-5350-b5fa-f39f911d3e78",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.094531205734",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.905468794266"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "positive_predictive_value_descriptive_research_classification_rate",
+              "numerator": 1,
+              "percentage_value": "50",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.5",
+              "defined": true,
+              "denominator": 2,
+              "deterministic_id": "a6594129-24d6-5aac-9166-bba45e481599",
+              "exact_fraction": "1/2",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 2,
+                "deterministic_id": "b4be7726-9340-5350-b5fa-f39f911d3e78",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.094531205734",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.905468794266"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "negative_predictive_value_descriptive_research_classification_rate",
+              "numerator": 1,
+              "percentage_value": "50",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.5",
+              "defined": true,
+              "denominator": 2,
+              "deterministic_id": "08e4513c-7d1f-5203-b136-20153bd4407b",
+              "exact_fraction": "1/2",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 2,
+                "deterministic_id": "b4be7726-9340-5350-b5fa-f39f911d3e78",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.094531205734",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.905468794266"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "false_positive_descriptive_research_classification_rate",
+              "numerator": 1,
+              "percentage_value": "50",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.5",
+              "defined": true,
+              "denominator": 2,
+              "deterministic_id": "1f66613e-931e-5769-9152-ffc2c966d9a1",
+              "exact_fraction": "1/2",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 2,
+                "deterministic_id": "b4be7726-9340-5350-b5fa-f39f911d3e78",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.094531205734",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.905468794266"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "false_negative_descriptive_research_classification_rate",
+              "numerator": 1,
+              "percentage_value": "50",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            }
+          ],
+          "deterministic_id": "6ce9d649-cb3c-552b-9ec1-33b7b401ab2c",
+          "false_negative_count": 1,
+          "false_positive_count": 1,
+          "sample_size_assessment": {
+            "allowed_interpretation": [
+              "DESCRIBE_COHORT_COUNTS",
+              "DESCRIBE_UNCERTAINTY"
+            ],
+            "analysis_unit": "CASE_BOUNDARY",
+            "deterministic_id": "06ca3b3b-38ae-501d-80c8-1db52106230b",
+            "forbidden_interpretation": [
+              "CAUSAL_INFERENCE",
+              "PREDICTIVE_VALIDATION",
+              "STATISTICAL_VALIDATION"
+            ],
+            "limitations": [
+              "The cohort remains descriptive only and is not a predictive-validation sample."
+            ],
+            "policy_version": "phase_3c_sample_size_policy.v1",
+            "sample_size": 4,
+            "state": "VERY_SMALL",
+            "unique_symbol_count": 4
+          },
+          "true_negative_count": 1,
+          "true_positive_count": 1,
+          "unevaluable_count": 7
+        },
+        "data_quality_summary": null,
+        "detection_prevalence": {
+          "counts": [
+            [
+              "DETECTED",
+              6
+            ],
+            [
+              "NOT_DETECTED",
+              2
+            ],
+            [
+              "UNEVALUABLE",
+              3
+            ]
+          ],
+          "deterministic_id": "5413c785-bb53-5c9c-88a3-3a57640ad380",
+          "dimension": "RESEARCH_DETECTION_STATUS",
+          "proportions": [
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.5454545454545454545454545455",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "8eea86ce-5124-5075-8e3b-af3b993853d1",
+              "exact_fraction": "6/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "511653b8-75ee-5f2f-8415-a6741c060063",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.280091537409",
+                "method": "WILSON_SCORE",
+                "numerator": 6,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.787287283775"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "detected_prevalence_among_all_cases",
+              "numerator": 6,
+              "percentage_value": "54.54545454545454545454545455",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.1818181818181818181818181818",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "1d2c6ed8-12f1-58b7-8c3d-0b448b2fc8b7",
+              "exact_fraction": "2/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "033ccd78-10ee-5add-8451-5ed64fbc7440",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.051367689746",
+                "method": "WILSON_SCORE",
+                "numerator": 2,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.476980561961"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "not_detected_prevalence_among_all_cases",
+              "numerator": 2,
+              "percentage_value": "18.18181818181818181818181818",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.2727272727272727272727272727",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "9b297d8a-e261-51f2-80fd-18e7e5a90606",
+              "exact_fraction": "3/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "75418b15-6e27-5295-870c-9c7f679322d8",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.0974605929",
+                "method": "WILSON_SCORE",
+                "numerator": 3,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.565645301176"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "unevaluable_prevalence_among_all_cases",
+              "numerator": 3,
+              "percentage_value": "27.27272727272727272727272727",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.75",
+              "defined": true,
+              "denominator": 8,
+              "deterministic_id": "9180cea4-4137-5e69-9572-32d8d1a15cc9",
+              "exact_fraction": "6/8",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 8,
+                "deterministic_id": "e5b4fe21-d81e-5c77-96f9-fb7fd7f02b7c",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.40927543031",
+                "method": "WILSON_SCORE",
+                "numerator": 6,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.928520787248"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "detection_rate_among_evaluable_cases",
+              "numerator": 6,
+              "percentage_value": "75",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            }
+          ]
+        },
+        "deterministic_id": "ab24ccda-3b15-542b-bcde-16e5a204125e",
+        "diagnostics": [
+          {
+            "case_id": null,
+            "code": "ANALYSIS_DESCRIPTIVE_ONLY",
+            "cohort_id": null,
+            "domain_id": null,
+            "input_ids": [],
+            "metric_name": null,
+            "rule_id": null,
+            "severity": "INFO",
+            "symbol": null
+          },
+          {
+            "case_id": null,
+            "code": "ANALYSIS_NO_PREDICTIVE_VALIDATION",
+            "cohort_id": null,
+            "domain_id": null,
+            "input_ids": [],
+            "metric_name": null,
+            "rule_id": null,
+            "severity": "WARNING",
+            "symbol": null
+          },
+          {
+            "case_id": null,
+            "code": "ANALYSIS_THRESHOLD_OPTIMIZATION_NOT_PERFORMED",
+            "cohort_id": null,
+            "domain_id": null,
+            "input_ids": [],
+            "metric_name": null,
+            "rule_id": null,
+            "severity": "INFO",
+            "symbol": null
+          }
+        ],
+        "domain_missingness_summary": [],
+        "interval_policy_version": "phase_3c_interval_policy.v1",
+        "limitations": [
+          {
+            "affected_case_ids": [],
+            "affected_symbols": [],
+            "code": "SYNTHETIC_CASES_ARE_NOT_EMPIRICAL_EVIDENCE",
+            "statement": "Synthetic cases test software behavior and classification coverage. They do not provide empirical evidence about market performance."
+          },
+          {
+            "affected_case_ids": [],
+            "affected_symbols": [],
+            "code": "THRESHOLDS_AND_POLICIES_NOT_OPTIMIZED",
+            "statement": "Thresholds and policies were not optimized."
+          }
+        ],
+        "outcome_prevalence": null,
+        "provenance_classifications": [
+          "SYNTHETIC_EDGE_CASE"
+        ],
+        "request_id": "a6ce8b42-7886-504b-90c6-b99bb49835f4",
+        "rule_outcome_prevalence": [],
+        "sample_size_assessments": [
+          {
+            "allowed_interpretation": [
+              "DESCRIBE_COHORT_COUNTS",
+              "DESCRIBE_UNCERTAINTY"
+            ],
+            "analysis_unit": "CASE_BOUNDARY",
+            "deterministic_id": "016866bb-4854-5fdf-b083-1d9f33f8cca9",
+            "forbidden_interpretation": [
+              "CAUSAL_INFERENCE",
+              "PREDICTIVE_VALIDATION",
+              "STATISTICAL_VALIDATION"
+            ],
+            "limitations": [
+              "The cohort remains descriptive only and is not a predictive-validation sample."
+            ],
+            "policy_version": "phase_3c_sample_size_policy.v1",
+            "sample_size": 11,
+            "state": "SMALL",
+            "unique_symbol_count": 11
+          }
+        ],
+        "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+        "schema_version": "1.0.0",
+        "source_dataset_id": "a4c73eaf-b26a-5659-a37b-3b5734db14ac",
+        "source_registry_id": null,
+        "statistics_policy_version": "phase_3c_descriptive_statistics_policy.v1",
+        "symbol_dependence_summary": {
+          "boundary_ids_by_symbol": [
+            [
+              "SYNCFL",
+              [
+                "SYN_UNEVALUABLE_CONFLICTED"
+              ]
+            ],
+            [
+              "SYNDOWN",
+              [
+                "SYN_SUBSTANTIAL_DOWNWARD"
+              ]
+            ],
+            [
+              "SYNFN",
+              [
+                "SYN_FALSE_NEGATIVE"
+              ]
+            ],
+            [
+              "SYNFP",
+              [
+                "SYN_FALSE_POSITIVE"
+              ]
+            ],
+            [
+              "SYNINS",
+              [
+                "SYN_UNEVALUABLE_INSUFFICIENT"
+              ]
+            ],
+            [
+              "SYNMIX",
+              [
+                "SYN_MIXED_VOLATILE"
+              ]
+            ],
+            [
+              "SYNOINS",
+              [
+                "SYN_OUTCOME_INSUFFICIENT"
+              ]
+            ],
+            [
+              "SYNOUNK",
+              [
+                "SYN_OUTCOME_UNKNOWN"
+              ]
+            ],
+            [
+              "SYNTN",
+              [
+                "SYN_TRUE_NEGATIVE"
+              ]
+            ],
+            [
+              "SYNTP",
+              [
+                "SYN_TRUE_POSITIVE"
+              ]
+            ],
+            [
+              "SYNUNK",
+              [
+                "SYN_UNEVALUABLE_UNKNOWN"
+              ]
+            ]
+          ],
+          "case_count": 11,
+          "dependence_detected": false,
+          "deterministic_id": "a84b23d2-b475-5ce9-89e9-3595080b536e",
+          "independence_assumption_satisfied": true,
+          "limitations": [
+            "No symbol is repeated within this cohort; broader market representativeness is not established."
+          ],
+          "maximum_boundaries_per_symbol": 1,
+          "recommended_analysis_unit": "CASE_BOUNDARY",
+          "repeated_boundary_count": 0,
+          "symbols_with_multiple_boundaries": [],
+          "unique_symbol_count": 11
+        },
+        "unique_symbol_count": 11
+      },
+      "case_count": 11,
+      "description": "Current Phase 3B momentum discovery predicate (3 rules).",
+      "flips_from_baseline": [],
+      "variant_id": "baseline"
+    },
+    {
+      "analysis": {
+        "analysis_unit": "CASE_BOUNDARY",
+        "analysis_version": "phase_3c_analysis.v1",
+        "boundary_count": 11,
+        "boundary_selection": {
+          "analysis_unit": "CASE_BOUNDARY",
+          "boundary_count_by_symbol": [
+            [
+              "SYNCFL",
+              1
+            ],
+            [
+              "SYNDOWN",
+              1
+            ],
+            [
+              "SYNFN",
+              1
+            ],
+            [
+              "SYNFP",
+              1
+            ],
+            [
+              "SYNINS",
+              1
+            ],
+            [
+              "SYNMIX",
+              1
+            ],
+            [
+              "SYNOINS",
+              1
+            ],
+            [
+              "SYNOUNK",
+              1
+            ],
+            [
+              "SYNTN",
+              1
+            ],
+            [
+              "SYNTP",
+              1
+            ],
+            [
+              "SYNUNK",
+              1
+            ]
+          ],
+          "deterministic_id": "29dde73c-8d53-5c57-be50-5299ed007af3",
+          "diagnostics": [],
+          "excluded_case_ids": [],
+          "outcome_blind": true,
+          "policy_version": "all_case_boundaries.v1",
+          "rationale_code": "ALL_ELIGIBLE_CASE_BOUNDARIES_RETAINED",
+          "selected_case_ids": [
+            "SYN_FALSE_NEGATIVE",
+            "SYN_FALSE_POSITIVE",
+            "SYN_MIXED_VOLATILE",
+            "SYN_OUTCOME_INSUFFICIENT",
+            "SYN_OUTCOME_UNKNOWN",
+            "SYN_SUBSTANTIAL_DOWNWARD",
+            "SYN_TRUE_NEGATIVE",
+            "SYN_TRUE_POSITIVE",
+            "SYN_UNEVALUABLE_CONFLICTED",
+            "SYN_UNEVALUABLE_INSUFFICIENT",
+            "SYN_UNEVALUABLE_UNKNOWN"
+          ]
+        },
+        "boundary_selection_policy_version": "all_case_boundaries.v1",
+        "case_count": 11,
+        "classification_prevalence": {
+          "counts": [
+            [
+              "TRUE_POSITIVE",
+              0
+            ],
+            [
+              "FALSE_POSITIVE",
+              0
+            ],
+            [
+              "TRUE_NEGATIVE",
+              1
+            ],
+            [
+              "FALSE_NEGATIVE",
+              1
+            ],
+            [
+              "UNEVALUABLE",
+              9
+            ],
+            [
+              "NOT_APPLICABLE",
+              0
+            ]
+          ],
+          "deterministic_id": "647495fe-a880-53c1-85ef-f3dd82040bf1",
+          "dimension": "RESEARCH_CLASSIFICATION",
+          "proportions": [
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "1935c780-f65c-597a-b925-dc9667ae6adf",
+              "exact_fraction": "0/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "1b4d089a-b9e5-5e85-934a-504a7cd5c840",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0",
+                "method": "WILSON_SCORE",
+                "numerator": 0,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.258832966968"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "true_positive_prevalence_among_all_cases",
+              "numerator": 0,
+              "percentage_value": "0",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "b81b2875-2669-5248-b7c2-7464ecf5a579",
+              "exact_fraction": "0/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "1b4d089a-b9e5-5e85-934a-504a7cd5c840",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0",
+                "method": "WILSON_SCORE",
+                "numerator": 0,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.258832966968"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "false_positive_prevalence_among_all_cases",
+              "numerator": 0,
+              "percentage_value": "0",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.09090909090909090909090909091",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "23245e2d-abde-5dd2-b12b-bc86b587d4bf",
+              "exact_fraction": "1/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "f3a7263e-f154-54fb-a16d-f0c715fdacf1",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.016232172886",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.377358436452"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "true_negative_prevalence_among_all_cases",
+              "numerator": 1,
+              "percentage_value": "9.090909090909090909090909091",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.09090909090909090909090909091",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "b6d38b2f-28dc-5ccb-8079-8f274ff9e6bc",
+              "exact_fraction": "1/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "f3a7263e-f154-54fb-a16d-f0c715fdacf1",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.016232172886",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.377358436452"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "false_negative_prevalence_among_all_cases",
+              "numerator": 1,
+              "percentage_value": "9.090909090909090909090909091",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.8181818181818181818181818182",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "dddf3de6-d808-530b-ab7e-770e394ef0b6",
+              "exact_fraction": "9/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "a1fd167f-8aed-539e-a351-e5573cf59100",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.523019438039",
+                "method": "WILSON_SCORE",
+                "numerator": 9,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.948632310254"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "unevaluable_prevalence_among_all_cases",
+              "numerator": 9,
+              "percentage_value": "81.81818181818181818181818182",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "a69d7f91-a531-57c9-a708-3cf08c9273b9",
+              "exact_fraction": "0/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "1b4d089a-b9e5-5e85-934a-504a7cd5c840",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0",
+                "method": "WILSON_SCORE",
+                "numerator": 0,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.258832966968"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "not_applicable_prevalence_among_all_cases",
+              "numerator": 0,
+              "percentage_value": "0",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.1818181818181818181818181818",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "48c3d476-b6c0-592d-a8a7-824b8fc3ffaa",
+              "exact_fraction": "2/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "033ccd78-10ee-5add-8451-5ed64fbc7440",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.051367689746",
+                "method": "WILSON_SCORE",
+                "numerator": 2,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.476980561961"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "research_classification_evaluability_rate_among_all_cases",
+              "numerator": 2,
+              "percentage_value": "18.18181818181818181818181818",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            }
+          ]
+        },
+        "cohort_membership": {
+          "cohort_definition": {
+            "analysis_unit": "CASE_BOUNDARY",
+            "boundary_selection_policy_version": "all_case_boundaries.v1",
+            "cohort_type": "SYNTHETIC_CASES",
+            "provenance_classifications": [
+              "SYNTHETIC_EDGE_CASE"
+            ],
+            "required_complete_cases": true,
+            "schema_version": "1.0.0"
+          },
+          "deterministic_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+          "exclusions": [],
+          "fixture_classifications": [
+            "SYNTHETIC_EDGE_CASE"
+          ],
+          "included_case_ids": [
+            "SYN_FALSE_NEGATIVE",
+            "SYN_FALSE_POSITIVE",
+            "SYN_MIXED_VOLATILE",
+            "SYN_OUTCOME_INSUFFICIENT",
+            "SYN_OUTCOME_UNKNOWN",
+            "SYN_SUBSTANTIAL_DOWNWARD",
+            "SYN_TRUE_NEGATIVE",
+            "SYN_TRUE_POSITIVE",
+            "SYN_UNEVALUABLE_CONFLICTED",
+            "SYN_UNEVALUABLE_INSUFFICIENT",
+            "SYN_UNEVALUABLE_UNKNOWN"
+          ],
+          "included_symbols": [
+            "SYNCFL",
+            "SYNDOWN",
+            "SYNFN",
+            "SYNFP",
+            "SYNINS",
+            "SYNMIX",
+            "SYNOINS",
+            "SYNOUNK",
+            "SYNTN",
+            "SYNTP",
+            "SYNUNK"
+          ],
+          "schema_version": "1.0.0",
+          "source_dataset_id": "a4c73eaf-b26a-5659-a37b-3b5734db14ac",
+          "source_registry_id": null
+        },
+        "confidence_level": "0.95",
+        "confusion_matrix": {
+          "dependence_warning": null,
+          "descriptive_rates": [
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0",
+              "defined": true,
+              "denominator": 1,
+              "deterministic_id": "e450ef0d-782d-59a5-a8b0-1155b97d8be6",
+              "exact_fraction": "0/1",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 1,
+                "deterministic_id": "3afc2f98-4487-5650-891f-a29a90edce35",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0",
+                "method": "WILSON_SCORE",
+                "numerator": 0,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.793450685623"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "sensitivity_descriptive_research_classification_rate",
+              "numerator": 0,
+              "percentage_value": "0",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "1",
+              "defined": true,
+              "denominator": 1,
+              "deterministic_id": "e2cdc082-f033-508d-93ec-c10a96c52c1a",
+              "exact_fraction": "1/1",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 1,
+                "deterministic_id": "eca0ab8f-d095-5045-960c-aa81785ae2cd",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.206549314377",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "1"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "specificity_descriptive_research_classification_rate",
+              "numerator": 1,
+              "percentage_value": "100",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": null,
+              "defined": false,
+              "denominator": 0,
+              "deterministic_id": "fe001c41-ff5a-5dae-a90a-6616ba797013",
+              "exact_fraction": "0/0",
+              "interval": null,
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "positive_predictive_value_descriptive_research_classification_rate",
+              "numerator": 0,
+              "percentage_value": null,
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": "ZERO_DENOMINATOR"
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.5",
+              "defined": true,
+              "denominator": 2,
+              "deterministic_id": "a6594129-24d6-5aac-9166-bba45e481599",
+              "exact_fraction": "1/2",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 2,
+                "deterministic_id": "b4be7726-9340-5350-b5fa-f39f911d3e78",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.094531205734",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.905468794266"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "negative_predictive_value_descriptive_research_classification_rate",
+              "numerator": 1,
+              "percentage_value": "50",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0",
+              "defined": true,
+              "denominator": 1,
+              "deterministic_id": "a43dfe26-40ea-5e8e-8e7b-41c764cf2e84",
+              "exact_fraction": "0/1",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 1,
+                "deterministic_id": "3afc2f98-4487-5650-891f-a29a90edce35",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0",
+                "method": "WILSON_SCORE",
+                "numerator": 0,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.793450685623"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "false_positive_descriptive_research_classification_rate",
+              "numerator": 0,
+              "percentage_value": "0",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "1",
+              "defined": true,
+              "denominator": 1,
+              "deterministic_id": "915ee191-99e5-51dd-be0a-b28ccfc52ca1",
+              "exact_fraction": "1/1",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 1,
+                "deterministic_id": "eca0ab8f-d095-5045-960c-aa81785ae2cd",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.206549314377",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "1"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "false_negative_descriptive_research_classification_rate",
+              "numerator": 1,
+              "percentage_value": "100",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            }
+          ],
+          "deterministic_id": "3f5b5a67-5d35-5cd3-9db8-b0cb5817eb06",
+          "false_negative_count": 1,
+          "false_positive_count": 0,
+          "sample_size_assessment": {
+            "allowed_interpretation": [
+              "DESCRIBE_COHORT_COUNTS",
+              "DESCRIBE_UNCERTAINTY"
+            ],
+            "analysis_unit": "CASE_BOUNDARY",
+            "deterministic_id": "cd741bc6-8299-5ab3-a76c-3315e40e07e8",
+            "forbidden_interpretation": [
+              "CAUSAL_INFERENCE",
+              "PREDICTIVE_VALIDATION",
+              "STATISTICAL_VALIDATION"
+            ],
+            "limitations": [
+              "The cohort remains descriptive only and is not a predictive-validation sample."
+            ],
+            "policy_version": "phase_3c_sample_size_policy.v1",
+            "sample_size": 2,
+            "state": "VERY_SMALL",
+            "unique_symbol_count": 2
+          },
+          "true_negative_count": 1,
+          "true_positive_count": 0,
+          "unevaluable_count": 9
+        },
+        "data_quality_summary": null,
+        "detection_prevalence": {
+          "counts": [
+            [
+              "DETECTED",
+              0
+            ],
+            [
+              "NOT_DETECTED",
+              2
+            ],
+            [
+              "UNEVALUABLE",
+              9
+            ]
+          ],
+          "deterministic_id": "8386424a-15f3-5e6d-8201-baecd3cf13d5",
+          "dimension": "RESEARCH_DETECTION_STATUS",
+          "proportions": [
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "20082708-36b4-5e50-aaa3-09aabad680ab",
+              "exact_fraction": "0/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "1b4d089a-b9e5-5e85-934a-504a7cd5c840",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0",
+                "method": "WILSON_SCORE",
+                "numerator": 0,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.258832966968"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "detected_prevalence_among_all_cases",
+              "numerator": 0,
+              "percentage_value": "0",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.1818181818181818181818181818",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "1d2c6ed8-12f1-58b7-8c3d-0b448b2fc8b7",
+              "exact_fraction": "2/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "033ccd78-10ee-5add-8451-5ed64fbc7440",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.051367689746",
+                "method": "WILSON_SCORE",
+                "numerator": 2,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.476980561961"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "not_detected_prevalence_among_all_cases",
+              "numerator": 2,
+              "percentage_value": "18.18181818181818181818181818",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.8181818181818181818181818182",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "dddf3de6-d808-530b-ab7e-770e394ef0b6",
+              "exact_fraction": "9/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "a1fd167f-8aed-539e-a351-e5573cf59100",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.523019438039",
+                "method": "WILSON_SCORE",
+                "numerator": 9,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.948632310254"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "unevaluable_prevalence_among_all_cases",
+              "numerator": 9,
+              "percentage_value": "81.81818181818181818181818182",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0",
+              "defined": true,
+              "denominator": 2,
+              "deterministic_id": "fb8a946d-1875-5bd4-b8d9-520eda3cd063",
+              "exact_fraction": "0/2",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 2,
+                "deterministic_id": "ac99b15a-0e47-5f55-b324-ea5e2cdd188a",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0",
+                "method": "WILSON_SCORE",
+                "numerator": 0,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.657619772493"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "detection_rate_among_evaluable_cases",
+              "numerator": 0,
+              "percentage_value": "0",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            }
+          ]
+        },
+        "deterministic_id": "2115e96e-a969-5735-a7c1-62874cac9ea1",
+        "diagnostics": [
+          {
+            "case_id": null,
+            "code": "ANALYSIS_DESCRIPTIVE_ONLY",
+            "cohort_id": null,
+            "domain_id": null,
+            "input_ids": [],
+            "metric_name": null,
+            "rule_id": null,
+            "severity": "INFO",
+            "symbol": null
+          },
+          {
+            "case_id": null,
+            "code": "ANALYSIS_NO_PREDICTIVE_VALIDATION",
+            "cohort_id": null,
+            "domain_id": null,
+            "input_ids": [],
+            "metric_name": null,
+            "rule_id": null,
+            "severity": "WARNING",
+            "symbol": null
+          },
+          {
+            "case_id": null,
+            "code": "ANALYSIS_THRESHOLD_OPTIMIZATION_NOT_PERFORMED",
+            "cohort_id": null,
+            "domain_id": null,
+            "input_ids": [],
+            "metric_name": null,
+            "rule_id": null,
+            "severity": "INFO",
+            "symbol": null
+          }
+        ],
+        "domain_missingness_summary": [],
+        "interval_policy_version": "phase_3c_interval_policy.v1",
+        "limitations": [
+          {
+            "affected_case_ids": [],
+            "affected_symbols": [],
+            "code": "SYNTHETIC_CASES_ARE_NOT_EMPIRICAL_EVIDENCE",
+            "statement": "Synthetic cases test software behavior and classification coverage. They do not provide empirical evidence about market performance."
+          },
+          {
+            "affected_case_ids": [],
+            "affected_symbols": [],
+            "code": "THRESHOLDS_AND_POLICIES_NOT_OPTIMIZED",
+            "statement": "Thresholds and policies were not optimized."
+          }
+        ],
+        "outcome_prevalence": null,
+        "provenance_classifications": [
+          "SYNTHETIC_EDGE_CASE"
+        ],
+        "request_id": "a6ce8b42-7886-504b-90c6-b99bb49835f4",
+        "rule_outcome_prevalence": [],
+        "sample_size_assessments": [
+          {
+            "allowed_interpretation": [
+              "DESCRIBE_COHORT_COUNTS",
+              "DESCRIBE_UNCERTAINTY"
+            ],
+            "analysis_unit": "CASE_BOUNDARY",
+            "deterministic_id": "016866bb-4854-5fdf-b083-1d9f33f8cca9",
+            "forbidden_interpretation": [
+              "CAUSAL_INFERENCE",
+              "PREDICTIVE_VALIDATION",
+              "STATISTICAL_VALIDATION"
+            ],
+            "limitations": [
+              "The cohort remains descriptive only and is not a predictive-validation sample."
+            ],
+            "policy_version": "phase_3c_sample_size_policy.v1",
+            "sample_size": 11,
+            "state": "SMALL",
+            "unique_symbol_count": 11
+          }
+        ],
+        "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+        "schema_version": "1.0.0",
+        "source_dataset_id": "a4c73eaf-b26a-5659-a37b-3b5734db14ac",
+        "source_registry_id": null,
+        "statistics_policy_version": "phase_3c_descriptive_statistics_policy.v1",
+        "symbol_dependence_summary": {
+          "boundary_ids_by_symbol": [
+            [
+              "SYNCFL",
+              [
+                "SYN_UNEVALUABLE_CONFLICTED"
+              ]
+            ],
+            [
+              "SYNDOWN",
+              [
+                "SYN_SUBSTANTIAL_DOWNWARD"
+              ]
+            ],
+            [
+              "SYNFN",
+              [
+                "SYN_FALSE_NEGATIVE"
+              ]
+            ],
+            [
+              "SYNFP",
+              [
+                "SYN_FALSE_POSITIVE"
+              ]
+            ],
+            [
+              "SYNINS",
+              [
+                "SYN_UNEVALUABLE_INSUFFICIENT"
+              ]
+            ],
+            [
+              "SYNMIX",
+              [
+                "SYN_MIXED_VOLATILE"
+              ]
+            ],
+            [
+              "SYNOINS",
+              [
+                "SYN_OUTCOME_INSUFFICIENT"
+              ]
+            ],
+            [
+              "SYNOUNK",
+              [
+                "SYN_OUTCOME_UNKNOWN"
+              ]
+            ],
+            [
+              "SYNTN",
+              [
+                "SYN_TRUE_NEGATIVE"
+              ]
+            ],
+            [
+              "SYNTP",
+              [
+                "SYN_TRUE_POSITIVE"
+              ]
+            ],
+            [
+              "SYNUNK",
+              [
+                "SYN_UNEVALUABLE_UNKNOWN"
+              ]
+            ]
+          ],
+          "case_count": 11,
+          "dependence_detected": false,
+          "deterministic_id": "a84b23d2-b475-5ce9-89e9-3595080b536e",
+          "independence_assumption_satisfied": true,
+          "limitations": [
+            "No symbol is repeated within this cohort; broader market representativeness is not established."
+          ],
+          "maximum_boundaries_per_symbol": 1,
+          "recommended_analysis_unit": "CASE_BOUNDARY",
+          "repeated_boundary_count": 0,
+          "symbols_with_multiple_boundaries": [],
+          "unique_symbol_count": 11
+        },
+        "unique_symbol_count": 11
+      },
+      "case_count": 11,
+      "description": "Require all six momentum discovery rules to pass.",
+      "flips_from_baseline": [
+        {
+          "baseline": "FALSE_POSITIVE",
+          "baseline_detection": "DETECTED",
+          "baseline_outcome": "NO_SUBSTANTIAL_UPWARD_MOVE",
+          "case_id": "SYN_FALSE_POSITIVE",
+          "symbol": "SYNFP",
+          "variant": "UNEVALUABLE",
+          "variant_detection": "UNEVALUABLE",
+          "variant_outcome": "NO_SUBSTANTIAL_UPWARD_MOVE"
+        },
+        {
+          "baseline": "TRUE_POSITIVE",
+          "baseline_detection": "DETECTED",
+          "baseline_outcome": "SUBSTANTIAL_UPWARD_MOVE",
+          "case_id": "SYN_TRUE_POSITIVE",
+          "symbol": "SYNTP",
+          "variant": "UNEVALUABLE",
+          "variant_detection": "UNEVALUABLE",
+          "variant_outcome": "SUBSTANTIAL_UPWARD_MOVE"
+        }
+      ],
+      "variant_id": "momentum_full"
+    },
+    {
+      "analysis": {
+        "analysis_unit": "CASE_BOUNDARY",
+        "analysis_version": "phase_3c_analysis.v1",
+        "boundary_count": 11,
+        "boundary_selection": {
+          "analysis_unit": "CASE_BOUNDARY",
+          "boundary_count_by_symbol": [
+            [
+              "SYNCFL",
+              1
+            ],
+            [
+              "SYNDOWN",
+              1
+            ],
+            [
+              "SYNFN",
+              1
+            ],
+            [
+              "SYNFP",
+              1
+            ],
+            [
+              "SYNINS",
+              1
+            ],
+            [
+              "SYNMIX",
+              1
+            ],
+            [
+              "SYNOINS",
+              1
+            ],
+            [
+              "SYNOUNK",
+              1
+            ],
+            [
+              "SYNTN",
+              1
+            ],
+            [
+              "SYNTP",
+              1
+            ],
+            [
+              "SYNUNK",
+              1
+            ]
+          ],
+          "deterministic_id": "29dde73c-8d53-5c57-be50-5299ed007af3",
+          "diagnostics": [],
+          "excluded_case_ids": [],
+          "outcome_blind": true,
+          "policy_version": "all_case_boundaries.v1",
+          "rationale_code": "ALL_ELIGIBLE_CASE_BOUNDARIES_RETAINED",
+          "selected_case_ids": [
+            "SYN_FALSE_NEGATIVE",
+            "SYN_FALSE_POSITIVE",
+            "SYN_MIXED_VOLATILE",
+            "SYN_OUTCOME_INSUFFICIENT",
+            "SYN_OUTCOME_UNKNOWN",
+            "SYN_SUBSTANTIAL_DOWNWARD",
+            "SYN_TRUE_NEGATIVE",
+            "SYN_TRUE_POSITIVE",
+            "SYN_UNEVALUABLE_CONFLICTED",
+            "SYN_UNEVALUABLE_INSUFFICIENT",
+            "SYN_UNEVALUABLE_UNKNOWN"
+          ]
+        },
+        "boundary_selection_policy_version": "all_case_boundaries.v1",
+        "case_count": 11,
+        "classification_prevalence": {
+          "counts": [
+            [
+              "TRUE_POSITIVE",
+              0
+            ],
+            [
+              "FALSE_POSITIVE",
+              0
+            ],
+            [
+              "TRUE_NEGATIVE",
+              1
+            ],
+            [
+              "FALSE_NEGATIVE",
+              1
+            ],
+            [
+              "UNEVALUABLE",
+              9
+            ],
+            [
+              "NOT_APPLICABLE",
+              0
+            ]
+          ],
+          "deterministic_id": "647495fe-a880-53c1-85ef-f3dd82040bf1",
+          "dimension": "RESEARCH_CLASSIFICATION",
+          "proportions": [
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "1935c780-f65c-597a-b925-dc9667ae6adf",
+              "exact_fraction": "0/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "1b4d089a-b9e5-5e85-934a-504a7cd5c840",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0",
+                "method": "WILSON_SCORE",
+                "numerator": 0,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.258832966968"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "true_positive_prevalence_among_all_cases",
+              "numerator": 0,
+              "percentage_value": "0",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "b81b2875-2669-5248-b7c2-7464ecf5a579",
+              "exact_fraction": "0/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "1b4d089a-b9e5-5e85-934a-504a7cd5c840",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0",
+                "method": "WILSON_SCORE",
+                "numerator": 0,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.258832966968"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "false_positive_prevalence_among_all_cases",
+              "numerator": 0,
+              "percentage_value": "0",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.09090909090909090909090909091",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "23245e2d-abde-5dd2-b12b-bc86b587d4bf",
+              "exact_fraction": "1/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "f3a7263e-f154-54fb-a16d-f0c715fdacf1",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.016232172886",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.377358436452"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "true_negative_prevalence_among_all_cases",
+              "numerator": 1,
+              "percentage_value": "9.090909090909090909090909091",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.09090909090909090909090909091",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "b6d38b2f-28dc-5ccb-8079-8f274ff9e6bc",
+              "exact_fraction": "1/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "f3a7263e-f154-54fb-a16d-f0c715fdacf1",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.016232172886",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.377358436452"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "false_negative_prevalence_among_all_cases",
+              "numerator": 1,
+              "percentage_value": "9.090909090909090909090909091",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.8181818181818181818181818182",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "dddf3de6-d808-530b-ab7e-770e394ef0b6",
+              "exact_fraction": "9/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "a1fd167f-8aed-539e-a351-e5573cf59100",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.523019438039",
+                "method": "WILSON_SCORE",
+                "numerator": 9,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.948632310254"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "unevaluable_prevalence_among_all_cases",
+              "numerator": 9,
+              "percentage_value": "81.81818181818181818181818182",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "a69d7f91-a531-57c9-a708-3cf08c9273b9",
+              "exact_fraction": "0/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "1b4d089a-b9e5-5e85-934a-504a7cd5c840",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0",
+                "method": "WILSON_SCORE",
+                "numerator": 0,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.258832966968"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "not_applicable_prevalence_among_all_cases",
+              "numerator": 0,
+              "percentage_value": "0",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.1818181818181818181818181818",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "48c3d476-b6c0-592d-a8a7-824b8fc3ffaa",
+              "exact_fraction": "2/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "033ccd78-10ee-5add-8451-5ed64fbc7440",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.051367689746",
+                "method": "WILSON_SCORE",
+                "numerator": 2,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.476980561961"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "research_classification_evaluability_rate_among_all_cases",
+              "numerator": 2,
+              "percentage_value": "18.18181818181818181818181818",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            }
+          ]
+        },
+        "cohort_membership": {
+          "cohort_definition": {
+            "analysis_unit": "CASE_BOUNDARY",
+            "boundary_selection_policy_version": "all_case_boundaries.v1",
+            "cohort_type": "SYNTHETIC_CASES",
+            "provenance_classifications": [
+              "SYNTHETIC_EDGE_CASE"
+            ],
+            "required_complete_cases": true,
+            "schema_version": "1.0.0"
+          },
+          "deterministic_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+          "exclusions": [],
+          "fixture_classifications": [
+            "SYNTHETIC_EDGE_CASE"
+          ],
+          "included_case_ids": [
+            "SYN_FALSE_NEGATIVE",
+            "SYN_FALSE_POSITIVE",
+            "SYN_MIXED_VOLATILE",
+            "SYN_OUTCOME_INSUFFICIENT",
+            "SYN_OUTCOME_UNKNOWN",
+            "SYN_SUBSTANTIAL_DOWNWARD",
+            "SYN_TRUE_NEGATIVE",
+            "SYN_TRUE_POSITIVE",
+            "SYN_UNEVALUABLE_CONFLICTED",
+            "SYN_UNEVALUABLE_INSUFFICIENT",
+            "SYN_UNEVALUABLE_UNKNOWN"
+          ],
+          "included_symbols": [
+            "SYNCFL",
+            "SYNDOWN",
+            "SYNFN",
+            "SYNFP",
+            "SYNINS",
+            "SYNMIX",
+            "SYNOINS",
+            "SYNOUNK",
+            "SYNTN",
+            "SYNTP",
+            "SYNUNK"
+          ],
+          "schema_version": "1.0.0",
+          "source_dataset_id": "a4c73eaf-b26a-5659-a37b-3b5734db14ac",
+          "source_registry_id": null
+        },
+        "confidence_level": "0.95",
+        "confusion_matrix": {
+          "dependence_warning": null,
+          "descriptive_rates": [
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0",
+              "defined": true,
+              "denominator": 1,
+              "deterministic_id": "e450ef0d-782d-59a5-a8b0-1155b97d8be6",
+              "exact_fraction": "0/1",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 1,
+                "deterministic_id": "3afc2f98-4487-5650-891f-a29a90edce35",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0",
+                "method": "WILSON_SCORE",
+                "numerator": 0,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.793450685623"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "sensitivity_descriptive_research_classification_rate",
+              "numerator": 0,
+              "percentage_value": "0",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "1",
+              "defined": true,
+              "denominator": 1,
+              "deterministic_id": "e2cdc082-f033-508d-93ec-c10a96c52c1a",
+              "exact_fraction": "1/1",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 1,
+                "deterministic_id": "eca0ab8f-d095-5045-960c-aa81785ae2cd",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.206549314377",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "1"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "specificity_descriptive_research_classification_rate",
+              "numerator": 1,
+              "percentage_value": "100",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": null,
+              "defined": false,
+              "denominator": 0,
+              "deterministic_id": "fe001c41-ff5a-5dae-a90a-6616ba797013",
+              "exact_fraction": "0/0",
+              "interval": null,
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "positive_predictive_value_descriptive_research_classification_rate",
+              "numerator": 0,
+              "percentage_value": null,
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": "ZERO_DENOMINATOR"
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.5",
+              "defined": true,
+              "denominator": 2,
+              "deterministic_id": "a6594129-24d6-5aac-9166-bba45e481599",
+              "exact_fraction": "1/2",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 2,
+                "deterministic_id": "b4be7726-9340-5350-b5fa-f39f911d3e78",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.094531205734",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.905468794266"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "negative_predictive_value_descriptive_research_classification_rate",
+              "numerator": 1,
+              "percentage_value": "50",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0",
+              "defined": true,
+              "denominator": 1,
+              "deterministic_id": "a43dfe26-40ea-5e8e-8e7b-41c764cf2e84",
+              "exact_fraction": "0/1",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 1,
+                "deterministic_id": "3afc2f98-4487-5650-891f-a29a90edce35",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0",
+                "method": "WILSON_SCORE",
+                "numerator": 0,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.793450685623"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "false_positive_descriptive_research_classification_rate",
+              "numerator": 0,
+              "percentage_value": "0",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "1",
+              "defined": true,
+              "denominator": 1,
+              "deterministic_id": "915ee191-99e5-51dd-be0a-b28ccfc52ca1",
+              "exact_fraction": "1/1",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 1,
+                "deterministic_id": "eca0ab8f-d095-5045-960c-aa81785ae2cd",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.206549314377",
+                "method": "WILSON_SCORE",
+                "numerator": 1,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "1"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "false_negative_descriptive_research_classification_rate",
+              "numerator": 1,
+              "percentage_value": "100",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            }
+          ],
+          "deterministic_id": "3f5b5a67-5d35-5cd3-9db8-b0cb5817eb06",
+          "false_negative_count": 1,
+          "false_positive_count": 0,
+          "sample_size_assessment": {
+            "allowed_interpretation": [
+              "DESCRIBE_COHORT_COUNTS",
+              "DESCRIBE_UNCERTAINTY"
+            ],
+            "analysis_unit": "CASE_BOUNDARY",
+            "deterministic_id": "cd741bc6-8299-5ab3-a76c-3315e40e07e8",
+            "forbidden_interpretation": [
+              "CAUSAL_INFERENCE",
+              "PREDICTIVE_VALIDATION",
+              "STATISTICAL_VALIDATION"
+            ],
+            "limitations": [
+              "The cohort remains descriptive only and is not a predictive-validation sample."
+            ],
+            "policy_version": "phase_3c_sample_size_policy.v1",
+            "sample_size": 2,
+            "state": "VERY_SMALL",
+            "unique_symbol_count": 2
+          },
+          "true_negative_count": 1,
+          "true_positive_count": 0,
+          "unevaluable_count": 9
+        },
+        "data_quality_summary": null,
+        "detection_prevalence": {
+          "counts": [
+            [
+              "DETECTED",
+              0
+            ],
+            [
+              "NOT_DETECTED",
+              2
+            ],
+            [
+              "UNEVALUABLE",
+              9
+            ]
+          ],
+          "deterministic_id": "8386424a-15f3-5e6d-8201-baecd3cf13d5",
+          "dimension": "RESEARCH_DETECTION_STATUS",
+          "proportions": [
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "20082708-36b4-5e50-aaa3-09aabad680ab",
+              "exact_fraction": "0/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "1b4d089a-b9e5-5e85-934a-504a7cd5c840",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0",
+                "method": "WILSON_SCORE",
+                "numerator": 0,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.258832966968"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "detected_prevalence_among_all_cases",
+              "numerator": 0,
+              "percentage_value": "0",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.1818181818181818181818181818",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "1d2c6ed8-12f1-58b7-8c3d-0b448b2fc8b7",
+              "exact_fraction": "2/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "033ccd78-10ee-5add-8451-5ed64fbc7440",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.051367689746",
+                "method": "WILSON_SCORE",
+                "numerator": 2,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.476980561961"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "not_detected_prevalence_among_all_cases",
+              "numerator": 2,
+              "percentage_value": "18.18181818181818181818181818",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0.8181818181818181818181818182",
+              "defined": true,
+              "denominator": 11,
+              "deterministic_id": "dddf3de6-d808-530b-ab7e-770e394ef0b6",
+              "exact_fraction": "9/11",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 11,
+                "deterministic_id": "a1fd167f-8aed-539e-a351-e5573cf59100",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0.523019438039",
+                "method": "WILSON_SCORE",
+                "numerator": 9,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.948632310254"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "unevaluable_prevalence_among_all_cases",
+              "numerator": 9,
+              "percentage_value": "81.81818181818181818181818182",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            },
+            {
+              "analysis_unit": "CASE_BOUNDARY",
+              "cohort_id": "7cecbc34-b2f2-50c5-badb-f2b14c27b870",
+              "confidence_level": "0.95",
+              "decimal_value": "0",
+              "defined": true,
+              "denominator": 2,
+              "deterministic_id": "fb8a946d-1875-5bd4-b8d9-520eda3cd063",
+              "exact_fraction": "0/2",
+              "interval": {
+                "confidence_level": "0.95",
+                "denominator": 2,
+                "deterministic_id": "ac99b15a-0e47-5f55-b324-ea5e2cdd188a",
+                "independence_assumption_satisfied": true,
+                "lower_bound": "0",
+                "method": "WILSON_SCORE",
+                "numerator": 0,
+                "policy_version": "phase_3c_interval_policy.v1",
+                "upper_bound": "0.657619772493"
+              },
+              "interval_policy_version": "phase_3c_interval_policy.v1",
+              "metric_name": "detection_rate_among_evaluable_cases",
+              "numerator": 0,
+              "percentage_value": "0",
+              "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+              "undefined_reason": null
+            }
+          ]
+        },
+        "deterministic_id": "2115e96e-a969-5735-a7c1-62874cac9ea1",
+        "diagnostics": [
+          {
+            "case_id": null,
+            "code": "ANALYSIS_DESCRIPTIVE_ONLY",
+            "cohort_id": null,
+            "domain_id": null,
+            "input_ids": [],
+            "metric_name": null,
+            "rule_id": null,
+            "severity": "INFO",
+            "symbol": null
+          },
+          {
+            "case_id": null,
+            "code": "ANALYSIS_NO_PREDICTIVE_VALIDATION",
+            "cohort_id": null,
+            "domain_id": null,
+            "input_ids": [],
+            "metric_name": null,
+            "rule_id": null,
+            "severity": "WARNING",
+            "symbol": null
+          },
+          {
+            "case_id": null,
+            "code": "ANALYSIS_THRESHOLD_OPTIMIZATION_NOT_PERFORMED",
+            "cohort_id": null,
+            "domain_id": null,
+            "input_ids": [],
+            "metric_name": null,
+            "rule_id": null,
+            "severity": "INFO",
+            "symbol": null
+          }
+        ],
+        "domain_missingness_summary": [],
+        "interval_policy_version": "phase_3c_interval_policy.v1",
+        "limitations": [
+          {
+            "affected_case_ids": [],
+            "affected_symbols": [],
+            "code": "SYNTHETIC_CASES_ARE_NOT_EMPIRICAL_EVIDENCE",
+            "statement": "Synthetic cases test software behavior and classification coverage. They do not provide empirical evidence about market performance."
+          },
+          {
+            "affected_case_ids": [],
+            "affected_symbols": [],
+            "code": "THRESHOLDS_AND_POLICIES_NOT_OPTIMIZED",
+            "statement": "Thresholds and policies were not optimized."
+          }
+        ],
+        "outcome_prevalence": null,
+        "provenance_classifications": [
+          "SYNTHETIC_EDGE_CASE"
+        ],
+        "request_id": "a6ce8b42-7886-504b-90c6-b99bb49835f4",
+        "rule_outcome_prevalence": [],
+        "sample_size_assessments": [
+          {
+            "allowed_interpretation": [
+              "DESCRIBE_COHORT_COUNTS",
+              "DESCRIBE_UNCERTAINTY"
+            ],
+            "analysis_unit": "CASE_BOUNDARY",
+            "deterministic_id": "016866bb-4854-5fdf-b083-1d9f33f8cca9",
+            "forbidden_interpretation": [
+              "CAUSAL_INFERENCE",
+              "PREDICTIVE_VALIDATION",
+              "STATISTICAL_VALIDATION"
+            ],
+            "limitations": [
+              "The cohort remains descriptive only and is not a predictive-validation sample."
+            ],
+            "policy_version": "phase_3c_sample_size_policy.v1",
+            "sample_size": 11,
+            "state": "SMALL",
+            "unique_symbol_count": 11
+          }
+        ],
+        "sample_size_policy_version": "phase_3c_sample_size_policy.v1",
+        "schema_version": "1.0.0",
+        "source_dataset_id": "a4c73eaf-b26a-5659-a37b-3b5734db14ac",
+        "source_registry_id": null,
+        "statistics_policy_version": "phase_3c_descriptive_statistics_policy.v1",
+        "symbol_dependence_summary": {
+          "boundary_ids_by_symbol": [
+            [
+              "SYNCFL",
+              [
+                "SYN_UNEVALUABLE_CONFLICTED"
+              ]
+            ],
+            [
+              "SYNDOWN",
+              [
+                "SYN_SUBSTANTIAL_DOWNWARD"
+              ]
+            ],
+            [
+              "SYNFN",
+              [
+                "SYN_FALSE_NEGATIVE"
+              ]
+            ],
+            [
+              "SYNFP",
+              [
+                "SYN_FALSE_POSITIVE"
+              ]
+            ],
+            [
+              "SYNINS",
+              [
+                "SYN_UNEVALUABLE_INSUFFICIENT"
+              ]
+            ],
+            [
+              "SYNMIX",
+              [
+                "SYN_MIXED_VOLATILE"
+              ]
+            ],
+            [
+              "SYNOINS",
+              [
+                "SYN_OUTCOME_INSUFFICIENT"
+              ]
+            ],
+            [
+              "SYNOUNK",
+              [
+                "SYN_OUTCOME_UNKNOWN"
+              ]
+            ],
+            [
+              "SYNTN",
+              [
+                "SYN_TRUE_NEGATIVE"
+              ]
+            ],
+            [
+              "SYNTP",
+              [
+                "SYN_TRUE_POSITIVE"
+              ]
+            ],
+            [
+              "SYNUNK",
+              [
+                "SYN_UNEVALUABLE_UNKNOWN"
+              ]
+            ]
+          ],
+          "case_count": 11,
+          "dependence_detected": false,
+          "deterministic_id": "a84b23d2-b475-5ce9-89e9-3595080b536e",
+          "independence_assumption_satisfied": true,
+          "limitations": [
+            "No symbol is repeated within this cohort; broader market representativeness is not established."
+          ],
+          "maximum_boundaries_per_symbol": 1,
+          "recommended_analysis_unit": "CASE_BOUNDARY",
+          "repeated_boundary_count": 0,
+          "symbols_with_multiple_boundaries": [],
+          "unique_symbol_count": 11
+        },
+        "unique_symbol_count": 11
+      },
+      "case_count": 11,
+      "description": "Baseline momentum rules plus published SI availability.",
+      "flips_from_baseline": [
+        {
+          "baseline": "FALSE_POSITIVE",
+          "baseline_detection": "DETECTED",
+          "baseline_outcome": "NO_SUBSTANTIAL_UPWARD_MOVE",
+          "case_id": "SYN_FALSE_POSITIVE",
+          "symbol": "SYNFP",
+          "variant": "UNEVALUABLE",
+          "variant_detection": "UNEVALUABLE",
+          "variant_outcome": "NO_SUBSTANTIAL_UPWARD_MOVE"
+        },
+        {
+          "baseline": "TRUE_POSITIVE",
+          "baseline_detection": "DETECTED",
+          "baseline_outcome": "SUBSTANTIAL_UPWARD_MOVE",
+          "case_id": "SYN_TRUE_POSITIVE",
+          "symbol": "SYNTP",
+          "variant": "UNEVALUABLE",
+          "variant_detection": "UNEVALUABLE",
+          "variant_outcome": "SUBSTANTIAL_UPWARD_MOVE"
+        }
+      ],
+      "variant_id": "short_pressure_core"
+    }
+  ]
+}

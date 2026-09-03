@@ -1,0 +1,17 @@
+{
+  "prediction_cutoff": "2026-07-21T20:30:10.000000000Z",
+  "summary": {
+    "forced_flow_available": true,
+    "flow_regime": "FORCED_FLOW_LIKELY",
+    "metaorder_lifecycle_state": "LIKELY_COMPLETE",
+    "reversal_probability": 0.72,
+    "exhaustion_score": 0.65,
+    "long_liquidation_risk": true,
+    "short_liquidation_risk": false,
+    "active_catalyst_at_cutoff": false,
+    "cross_lane_signals": [
+      "FORCED_FLOW_PROBABILITY_ELEVATED"
+    ],
+    "producer_version": "participant_forced_flow_v1"
+  }
+}

@@ -1,0 +1,276 @@
+# ──────────────────────────────────────────────────────────────────────
+#  Deploy to Railway
+# ──────────────────────────────────────────────────────────────────────
+#  Triggers on pushes to main that touch either the Railway deploy
+#  directory OR the source directories that feed into it.  Before
+#  deploying, the latest source is synced into .railway-deploy/ so
+#  Railway always runs the freshest code.  After `railway up --detach`,
+#  the Railway GraphQL API is polled every 30s until the deployment
+#  succeeds or fails, surfacing build logs in the Actions UI.
+#
+#  Prerequisites:
+#    1. A Railway project linked to this GitHub repository.
+#    2. A Railway deploy token set as the RAILWAY_TOKEN secret.
+#
+#  To create a deploy token:
+#    Railway Dashboard → Project → Settings → Tokens → Generate
+#
+#  Then add it as a repository secret:
+#    GitHub → Settings → Secrets and variables → Actions → New secret
+#    Name: RAILWAY_TOKEN
+#    Value: <paste token>
+# ──────────────────────────────────────────────────────────────────────
+
+name: Deploy to Railway
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      reconcile_statuses:
+        description: "Backfill green Railway GitHub statuses on recent main commits"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  RAILWAY_GITHUB_STATUS_CONTEXT: short-squeeze-screener - short-squeeze-screener
+  DEPLOY_URL: https://short-squeeze-screener-production.up.railway.app
+
+jobs:
+  reconcile-statuses:
+    if: github.event_name == 'workflow_dispatch' && inputs.reconcile_statuses == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 30
+
+      - name: Reconcile Railway commit statuses on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          CONTEXT="${RAILWAY_GITHUB_STATUS_CONTEXT}"
+          URL="${DEPLOY_URL}"
+          while read -r sha; do
+            [ -z "$sha" ] && continue
+            state=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${sha}/status" --jq .state)
+            if [ "$state" = "success" ]; then
+              echo "skip $sha (already success)"
+              continue
+            fi
+            echo "reconcile $sha (was $state)"
+            gh api "repos/${GITHUB_REPOSITORY}/statuses/${sha}" \
+              -f state=success \
+              -f target_url="$URL" \
+              -f description="Production deployment healthy" \
+              -f context="$CONTEXT" \
+              --silent
+            gh api "repos/${GITHUB_REPOSITORY}/statuses/${sha}" \
+              -f state=success \
+              -f target_url="$URL" \
+              -f description="Deployed to Railway" \
+              -f context="Deploy to Railway" \
+              --silent || true
+          done < <(git log main --format=%H -25)
+
+  deploy:
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.reconcile_statuses != true)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Sync source into .railway-deploy/
+        run: |
+          rsync -a --delete short-squeeze-core/apps/      short-squeeze-core/.railway-deploy/apps/
+          rsync -a --delete short-squeeze-core/src/       short-squeeze-core/.railway-deploy/src/
+          rsync -a --delete short-squeeze-core/scripts/   short-squeeze-core/.railway-deploy/scripts/
+          rsync -a --delete short-squeeze-core/tools/     short-squeeze-core/.railway-deploy/tools/
+          cp  short-squeeze-core/pyproject.toml            short-squeeze-core/.railway-deploy/pyproject.toml
+
+      - name: Install Railway CLI
+        run: |
+          bash <(curl -fsSL railway.com/install.sh)
+          echo "$HOME/.railway/bin" >> "$GITHUB_PATH"
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        working-directory: short-squeeze-core/.railway-deploy
+        run: |
+          if [ -z "${RAILWAY_TOKEN:-}" ]; then
+            echo "::error::RAILWAY_TOKEN repository secret is not set. Create a deploy token in Railway Dashboard → Project → Settings → Tokens, then add it as a GitHub Actions secret named RAILWAY_TOKEN."
+            exit 1
+          fi
+          railway up --detach --environment production --service short-squeeze-screener
+
+      - name: Wait for deployment to complete
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          # Public domain for post-deploy smoke (project tokens cannot list all projects)
+          DEPLOY_URL: ${{ env.DEPLOY_URL }}
+          RAILWAY_GITHUB_STATUS_CONTEXT: ${{ env.RAILWAY_GITHUB_STATUS_CONTEXT }}
+        working-directory: short-squeeze-core/.railway-deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TIMEOUT=$((10 * 60))
+          INTERVAL=30
+          SERVICE_NAME="short-squeeze-screener"
+
+          # Project tokens cannot query `projects` via GraphQL. Poll with the
+          # Railway CLI instead (works with environment-scoped project tokens).
+          echo "::group::Polling Railway deployment status"
+          sleep 5
+          ELAPSED=0
+
+          while [ "$ELAPSED" -lt "$TIMEOUT" ]; do
+            RESPONSE=$(railway deployment list --json --service "$SERVICE_NAME" --environment production 2>/dev/null || echo "[]")
+            DEPLOYMENT_ID=$(echo "$RESPONSE" | jq -r '.[0].id // empty')
+            STATUS=$(echo "$RESPONSE" | jq -r '.[0].status // "unknown"')
+
+            if [ -z "$DEPLOYMENT_ID" ]; then
+              echo "No deployment found yet, retrying in ${INTERVAL}s..."
+              sleep "$INTERVAL"
+              ELAPSED=$((ELAPSED + INTERVAL))
+              continue
+            fi
+
+            echo "[$(date -u +%H:%M:%S)] $DEPLOYMENT_ID - $STATUS"
+
+            case "$STATUS" in
+              SUCCESS)
+                echo ""
+                echo "Deployment succeeded!"
+                echo "   URL: $DEPLOY_URL"
+                echo "::notice title=Railway Deploy::$DEPLOY_URL"
+
+                for ctx in "Deploy to Railway" "${RAILWAY_GITHUB_STATUS_CONTEXT}"; do
+                  gh api "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+                    -f state=success \
+                    -f target_url="$DEPLOY_URL" \
+                    -f description="Deployed to Railway" \
+                    -f context="$ctx" \
+                    --silent || echo "Commit status update skipped ($ctx)"
+                done
+                echo "Commit statuses updated -> $DEPLOY_URL"
+
+                echo ""
+                echo "--- Health check ---"
+                HEALTH_OK=""
+                for i in 1 2 3; do
+                  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+                    --max-time 10 "$DEPLOY_URL/health" || echo "000")
+                  if [ "$HTTP_CODE" = "200" ]; then
+                    HEALTH_OK="yes"
+                    break
+                  fi
+                  echo "  /health → $HTTP_CODE, retrying in 5s... (attempt $i/3)"
+                  sleep 5
+                done
+                if [ "$HEALTH_OK" = "yes" ]; then
+                  echo "✅  /health → 200 OK"
+                else
+                  echo "❌  /health never returned 200 after 3 attempts"
+                  echo "::error::Post-deploy health check failed — /health unreachable"
+                  echo "::endgroup::"
+                  exit 1
+                fi
+
+                echo "::endgroup::"
+                exit 0
+                ;;
+
+              FAILED | CRASHED)
+                echo ""
+                echo "❌  Deployment $STATUS"
+                echo "--- Build logs ---"
+                railway logs --build "$DEPLOYMENT_ID" --lines 80 || true
+                echo "--- Runtime logs ---"
+                railway logs "$DEPLOYMENT_ID" --lines 80 || true
+                echo "::endgroup::"
+                exit 1
+                ;;
+
+              BUILDING | DEPLOYING | QUEUED | WAITING | INITIALIZING)
+                sleep "$INTERVAL"
+                ELAPSED=$((ELAPSED + INTERVAL))
+                ;;
+
+              *)
+                echo "Unexpected status '$STATUS' — treating as in-progress"
+                sleep "$INTERVAL"
+                ELAPSED=$((ELAPSED + INTERVAL))
+                ;;
+            esac
+          done
+
+          echo ""
+          echo "::error::Timed out waiting for Railway deployment after ${TIMEOUT}s"
+          echo "::endgroup::"
+          exit 1
+
+  deploy-ib-gateway:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: |
+          bash <(curl -fsSL railway.com/install.sh)
+          echo "$HOME/.railway/bin" >> "$GITHUB_PATH"
+
+      - name: Deploy IB Gateway to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        working-directory: short-squeeze-core/.railway-deploy/ib-gateway
+        run: |
+          if [ -z "${RAILWAY_TOKEN:-}" ]; then
+            echo "::error::RAILWAY_TOKEN repository secret is not set."
+            exit 1
+          fi
+          if ! railway up --detach --environment production --service ib-gateway; then
+            echo "::warning::IB Gateway deploy failed. Create a Railway service named ib-gateway in the same project (see short-squeeze-core/docs/railway-ib-gateway.md)."
+            exit 0
+          fi
+          echo "IB Gateway deployment upload started."
+
+      - name: Wait for IB Gateway deployment
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        working-directory: short-squeeze-core/.railway-deploy/ib-gateway
+        shell: bash
+        run: |
+          set -euo pipefail
+          SERVICE_NAME="ib-gateway"
+          sleep 10
+          for _ in $(seq 1 12); do
+            RESPONSE=$(railway deployment list --json --service "$SERVICE_NAME" --environment production 2>/dev/null || echo "[]")
+            STATUS=$(echo "$RESPONSE" | jq -r '.[0].status // "unknown"')
+            echo "ib-gateway: $STATUS"
+            case "$STATUS" in
+              SUCCESS) exit 0 ;;
+              FAILED|CRASHED)
+                echo "::warning::ib-gateway deployment $STATUS (often missing TWS_USERID/TWS_PASSWORD). Set credentials and redeploy."
+                exit 0
+                ;;
+            esac
+            sleep 20
+          done
+          echo "::warning::Timed out waiting for ib-gateway; check Railway dashboard."

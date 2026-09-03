@@ -1,0 +1,24 @@
+{
+  "cases": [
+    {
+      "metadata": {"fixture_id":"finra-corrected-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"immutable correction relationship","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"SAME_AS_ORIGINAL","publication_date_status":"LATER_EXACT_TIMESTAMP","received_date_status":"LATER_EXPLICIT_CONTEXT","revision_status":"CORRECTED","expected_normalization_result":"ACCEPT_NEW_OBSERVATION"},
+      "record": {"source_record_id":"finra-correction-001","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_shares":"2600000","settlement_date":"2026-01-15","publication_date":"2026-01-29T19:00:00Z","days_to_cover":"2.6","revision_status":"CORRECTED","revision_number":1,"supersedes_source_record_id":"finra-complete-001"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-revised-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"immutable revision relationship","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"SAME_AS_ORIGINAL","publication_date_status":"LATER_EXACT_TIMESTAMP","received_date_status":"LATER_EXPLICIT_CONTEXT","revision_status":"REVISED","expected_normalization_result":"ACCEPT_NEW_OBSERVATION"},
+      "record": {"source_record_id":"finra-revision-001","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_shares":"2550000","settlement_date":"2026-01-15","publication_date":"2026-01-28T19:00:00Z","revision_status":"REVISED","revision_number":1,"supersedes_source_record_id":"finra-complete-001"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-duplicate-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"exact duplicate detection","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"SAME_AS_ORIGINAL","publication_date_status":"SAME_AS_ORIGINAL","received_date_status":"SAME_BATCH","revision_status":"ORIGINAL","expected_normalization_result":"SUPPRESS_DUPLICATE"},
+      "record": {"source_record_id":"finra-complete-001","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_shares":"2500000","settlement_date":"2026-01-15","publication_date":"2026-01-22T19:00:00Z","revision_status":"ORIGINAL"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-conflicting-same-period-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"unlinked same-period disagreement","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"SAME_AS_ORIGINAL","publication_date_status":"EXACT_TIMESTAMP","received_date_status":"EXPLICIT_CONTEXT","revision_status":"UNKNOWN","expected_normalization_result":"ACCEPT_CONFLICT"},
+      "record": {"source_record_id":"finra-conflict-001","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_shares":"2700000","settlement_date":"2026-01-15","publication_date":"2026-01-22T19:00:00Z","revision_status":"UNKNOWN"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-different-period-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"different settlement period comparison","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"DIFFERENT_PERIOD","publication_date_status":"LATER_EXACT_TIMESTAMP","received_date_status":"LATER_EXPLICIT_CONTEXT","revision_status":"ORIGINAL","expected_normalization_result":"ACCEPT_TEMPORAL_DIFFERENCE"},
+      "record": {"source_record_id":"finra-period-002","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_shares":"2800000","settlement_date":"2026-01-31","publication_date":"2026-02-07T19:00:00Z","revision_status":"ORIGINAL"}
+    }
+  ]
+}

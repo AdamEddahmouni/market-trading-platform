@@ -1,0 +1,12 @@
+{
+  "fixture_family": "phase-1e-sec-shaped-offline-filings",
+  "recorded_sample_found": false,
+  "archive_sec_metadata_found": false,
+  "allowed_origins": ["SANITIZED_REPRESENTATIVE_SAMPLE", "SYNTHETIC_EDGE_CASE"],
+  "source_shape_basis": "SEC filing metadata conventions and the existing canonical SecFilingPayload; no archived SEC metadata record was found.",
+  "archive_classification": "Archive matches were unrelated news headlines only and are not usable filing metadata.",
+  "contains_credentials": false,
+  "contains_account_data": false,
+  "contains_real_symbols": false,
+  "contains_remote_urls": false
+}

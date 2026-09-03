@@ -1,0 +1,17 @@
+{
+  "adr_id": "ADR-CHAIN-002",
+  "artifact_type": "ARCHITECTURE_DECISION_RECORD",
+  "created_at": "2026-08-16T04:30:00.000000000Z",
+  "decision": {
+    "summary": "On-chain entity labels bind source, confidence, evidence, label version, and verification times. Unknown remains unknown; social claims do not establish identity. Retroactive updates preserve prior versions.",
+    "title": "On-chain entity attribution"
+  },
+  "effectivity": {
+    "current_state": "PROPOSED",
+    "decision_only": true,
+    "non_authorization_statement": "Proposed status does not authorize entity labeling ingestion or wallet following strategies."
+  },
+  "logical_id": "expansion.adr_chain_002",
+  "schema_version": "1.0.0",
+  "status": "PROPOSED"
+}

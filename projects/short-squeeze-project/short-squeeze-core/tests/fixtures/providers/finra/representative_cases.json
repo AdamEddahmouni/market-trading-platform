@@ -1,0 +1,20 @@
+{
+  "cases": [
+    {
+      "metadata": {"fixture_id":"finra-complete-v1","origin":"SANITIZED_REPRESENTATIVE_SAMPLE","sanitization_status":"invented values and synthetic symbol","source_shape_basis":"archived Yahoo metadata concepts plus documented representative FINRA-shaped design","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"EXACT_DATE","publication_date_status":"EXACT_TIMESTAMP","received_date_status":"EXPLICIT_CONTEXT","revision_status":"ORIGINAL","expected_normalization_result":"ACCEPT_COMPLETE"},
+      "record": {"source_record_id":"finra-complete-001","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SANITIZED_REPRESENTATIVE_SAMPLE","Symbol":"TESTA","Short Shares":"2500000","Settlement Date":"2026-01-15","Publication Date":"2026-01-22T14:00:00-05:00","previous_short_shares":"2250000","average_daily_volume":"1000000","average_daily_volume_reference":"provider-defined trailing average","days_to_cover":"2.5","float_shares":"20000000","short_float_percent":"12.5%","short_float_percent_unit":"FORMATTED_PERCENT_STRING","market":"US EQUITY","exchange":"XTEST","record_status":"ORIGINAL","revision_number":0,"provider_record_id":"representative-row-001","provider_timestamp":"2026-01-22T19:05:00Z","capture_timestamp":"2026-01-22T19:30:00Z"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-zero-short-shares-v1","origin":"SANITIZED_REPRESENTATIVE_SAMPLE","sanitization_status":"invented values and synthetic symbol","source_shape_basis":"representative published position row","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"EXACT_DATE","publication_date_status":"EXACT_TIMESTAMP","received_date_status":"EXPLICIT_CONTEXT","revision_status":"ORIGINAL","expected_normalization_result":"ACCEPT_KNOWN_ZERO"},
+      "record": {"source_record_id":"finra-zero-001","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SANITIZED_REPRESENTATIVE_SAMPLE","symbol":"TESTB","short_shares":"0","settlement_date":"2026-01-15","publication_date":"2026-01-22T19:00:00Z","days_to_cover":"0","revision_status":"ORIGINAL"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-missing-float-v1","origin":"SANITIZED_REPRESENTATIVE_SAMPLE","sanitization_status":"invented values and synthetic symbol","source_shape_basis":"representative partial published position row","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"EXACT_DATE","publication_date_status":"EXACT_TIMESTAMP","received_date_status":"EXPLICIT_CONTEXT","revision_status":"ORIGINAL","expected_normalization_result":"ACCEPT_PARTIAL"},
+      "record": {"source_record_id":"finra-missing-float-001","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SANITIZED_REPRESENTATIVE_SAMPLE","symbol":"TESTC","short_shares":"100000","settlement_date":"2026-01-15","publication_date":"2026-01-22T19:00:00Z","float_shares":null,"revision_status":"ORIGINAL"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-partial-defensible-v1","origin":"SANITIZED_REPRESENTATIVE_SAMPLE","sanitization_status":"invented values and synthetic symbol","source_shape_basis":"minimal identity value and availability fields","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"EXACT_DATE","publication_date_status":"EXACT_TIMESTAMP","received_date_status":"EXPLICIT_CONTEXT","revision_status":"UNKNOWN","expected_normalization_result":"ACCEPT_PARTIAL"},
+      "record": {"source_record_id":"finra-partial-001","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SANITIZED_REPRESENTATIVE_SAMPLE","symbol":"TESTA","short_shares":"125000","settlement_date":"2026-01-15","publication_date":"2026-01-22T19:00:00Z","revision_status":"UNKNOWN"}
+    }
+  ]
+}

@@ -1,0 +1,306 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Short Squeeze Research Screener API",
+    "version": "1.0.0",
+    "description": "Read-only research and integration API. No trading or account capabilities. CSRF enforcement and sensitive-route locks are opt-in via CSRF_PROTECTION and LOCK_SENSITIVE_API (default off)."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8787",
+      "description": "Default local / frozen bind (PORT, default 8787)"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Liveness",
+        "responses": {
+          "200": {
+            "description": "Application and provider health",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "operationId": "getReadiness",
+        "summary": "Readiness",
+        "responses": {
+          "200": {
+            "description": "Mode-specific readiness",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/csrf-token": {
+      "get": {
+        "operationId": "getCsrfToken",
+        "summary": "Issue CSRF cookie and token",
+        "description": "Sets HttpOnly cookie squeeze_csrf and returns the matching token. Enforcement is off unless CSRF_PROTECTION=1. When enabled, send header X-CSRF-Token on state-changing requests.",
+        "responses": {
+          "200": {
+            "description": "CSRF token payload and Set-Cookie",
+            "headers": {
+              "Set-Cookie": {
+                "description": "squeeze_csrf=<token>; Path=/; SameSite=Strict; HttpOnly",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CsrfTokenResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/meta": {
+      "get": {
+        "operationId": "getMeta",
+        "summary": "Application metadata",
+        "responses": {
+          "200": {
+            "description": "Title, disclaimer, sort keys, modes"
+          }
+        }
+      }
+    },
+    "/api/providers": {
+      "get": {
+        "operationId": "getProviders",
+        "summary": "Provider health",
+        "responses": {
+          "200": {
+            "description": "Provider capabilities and status"
+          }
+        }
+      }
+    },
+    "/api/capabilities": {
+      "get": {
+        "operationId": "getCapabilities",
+        "summary": "Provider capability matrix",
+        "responses": {
+          "200": {
+            "description": "Capability panel for the active deployment mode"
+          }
+        }
+      }
+    },
+    "/api/coverage": {
+      "get": {
+        "operationId": "getCoverage",
+        "summary": "Field coverage summary",
+        "responses": {
+          "200": {
+            "description": "Coverage summary for tracked candidates"
+          }
+        }
+      }
+    },
+    "/api/frozen/candidates": {
+      "get": {
+        "operationId": "getFrozenCandidates",
+        "summary": "Frozen research candidates",
+        "responses": {
+          "200": {
+            "description": "Sanitized deterministic candidates"
+          }
+        }
+      }
+    },
+    "/api/current/candidates": {
+      "get": {
+        "operationId": "getCurrentCandidates",
+        "summary": "Current research candidates",
+        "responses": {
+          "200": {
+            "description": "Current research candidates"
+          }
+        }
+      }
+    },
+    "/api/methodologies": {
+      "get": {
+        "operationId": "getMethodologies",
+        "summary": "Methodology definitions",
+        "responses": {
+          "200": {
+            "description": "Methodology definitions"
+          }
+        }
+      }
+    },
+    "/api/v1/integration/manifest": {
+      "get": {
+        "operationId": "getIntegrationManifest",
+        "summary": "Integration manifest",
+        "responses": {
+          "200": {
+            "description": "Versioned integration manifest"
+          }
+        }
+      }
+    },
+    "/api/collectors/status": {
+      "get": {
+        "operationId": "getCollectorsStatus",
+        "summary": "Collector scheduler status",
+        "description": "When LOCK_SENSITIVE_API=1 in cloud mode, requires a valid CSRF cookie + X-CSRF-Token pair (LOCAL_FULL remains open).",
+        "responses": {
+          "200": {
+            "description": "Collector scheduler status"
+          },
+          "403": {
+            "description": "Sensitive API locked"
+          }
+        }
+      }
+    },
+    "/api/collectors/symbol": {
+      "get": {
+        "operationId": "getCollectorsSymbol",
+        "summary": "Per-symbol collector debug snapshot",
+        "description": "When LOCK_SENSITIVE_API=1 in cloud mode, requires a valid CSRF cookie + X-CSRF-Token pair (LOCAL_FULL remains open).",
+        "parameters": [
+          {
+            "name": "symbol",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Per-symbol collector snapshot"
+          },
+          "403": {
+            "description": "Sensitive API locked"
+          }
+        }
+      }
+    },
+    "/api/export": {
+      "post": {
+        "operationId": "createResearchExport",
+        "summary": "Sanitized research export",
+        "description": "When CSRF_PROTECTION=1, requires cookie squeeze_csrf and header X-CSRF-Token. When LOCK_SENSITIVE_API=1 in cloud mode, the same pair is required.",
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required when CSRF_PROTECTION=1 (or when LOCK_SENSITIVE_API=1 blocks this route in cloud mode)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sanitized research export metadata"
+          },
+          "403": {
+            "description": "CSRF invalid or sensitive API locked"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Envelope": {
+        "type": "object",
+        "required": [
+          "api_version",
+          "schema_version",
+          "mode",
+          "as_of",
+          "data",
+          "status",
+          "missingness",
+          "provenance"
+        ],
+        "properties": {
+          "api_version": {
+            "const": "1.0.0"
+          },
+          "schema_version": {
+            "const": "batch14.integration.v1"
+          },
+          "mode": {
+            "enum": [
+              "LOCAL_FULL",
+              "CLOUD_PROVIDER_MODE",
+              "FROZEN_DEMO"
+            ]
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "data": {},
+          "status": {
+            "type": "string"
+          },
+          "missingness": {},
+          "provenance": {
+            "type": "object"
+          }
+        }
+      },
+      "CsrfTokenResponse": {
+        "type": "object",
+        "required": [
+          "csrf_token",
+          "header",
+          "cookie",
+          "csrf_protection",
+          "note"
+        ],
+        "properties": {
+          "csrf_token": {
+            "type": "string",
+            "description": "Opaque token; also set as the squeeze_csrf cookie"
+          },
+          "header": {
+            "const": "X-CSRF-Token"
+          },
+          "cookie": {
+            "const": "squeeze_csrf"
+          },
+          "csrf_protection": {
+            "type": "boolean",
+            "description": "True when CSRF_PROTECTION is enabled in this process"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

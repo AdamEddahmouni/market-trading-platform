@@ -1,0 +1,77 @@
+{
+  "manifest_schema_version": "1.0.0",
+  "observation_schema_version": "1.0.0",
+  "description": "Centralized Phase 1 compatibility anchor manifest. Every value is a retained deterministic anchor that must not change without a proven, documented reason. Anchors are cross-checked against the committed per-phase expected metadata files and against freshly regenerated artifacts by tests/compatibility/test_phase_1_anchor_manifest.py.",
+  "generated_from": {
+    "phase_1g": "tests/fixtures/evidence/expected_phase_1g_bundle_metadata.json",
+    "phase_1h": "tests/fixtures/evidence/expected_phase_1h_bundle_metadata.json",
+    "phase_1i": "tests/fixtures/evidence/expected_phase_1i_bundle_metadata.json"
+  },
+  "phase_1g": {
+    "mixed_jsonl_sha256": "7eab70a7aac2526c2b76d8af4d7c6c246fb6738beabfc71b8075580e0a4e4001",
+    "strict_replay_sha256": "8ac4ffb2e15ee2a4f19e6e6eb8320527cdbbd24f36d99261c007b14394d74aee",
+    "final_bundle_sha256": "90ab29e174a258d5c873a0c12bf425297cb7ee8636ec369730837ab4a3153763",
+    "serialized_final_bundle_sha256": "b328c8789073f3bccc9dcb15e31fe776e40e7daf955ac87179f4b43e8859e2ec"
+  },
+  "phase_1h": {
+    "partial_bar_observation_sha256": "474f3ebcf2a7ff65e931b60ae0e23eca4dc415f63f67f257c6b2c7c12b9aadfd",
+    "completed_bar_observation_sha256": "8004110b85fc8dbde14a905ba62110b2484e764c8c52b1001a661be8a944dc3a",
+    "corrected_bar_observation_sha256": "2a1d7f1359f1d09832a279be95aa819802506e2861af07746e81b37ae7fcbdcd",
+    "cancelled_bar_observation_sha256": "fde8a01f379ff7f5d0476ba72241d06769652da651640114774035fde384d5ab",
+    "mixed_jsonl_sha256": "17a2be8548045e6234afbd5e5ccf7be4d298ed6eb18ab499e9762316eec96f64",
+    "strict_replay_sha256": "95b367cb292593066412c5157b96d9c6b67113829a0ed0b8e3cf1144baf87652",
+    "final_bar_series_sha256": "219b568d777df52bc6e4288a932a5595779ff64579c7ccc0494936067a163952",
+    "final_bundle_sha256": "76c21c05fcf3d37cfd09c23a6e7a034eca99c7edadae3457e19a4d10504b3649",
+    "serialized_final_bundle_sha256": "9bb344dc9e908cda1579e2b195da747a1019c18248a42b4add8304cd2a996d3b"
+  },
+  "phase_1i": {
+    "original_trade_observation_sha256": "9f329e756df247ddc50762b4adfb599648fd05143a6bc3285575863ed05343ea",
+    "corrected_trade_observation_sha256": "689b1620f3574db605973ba4d8cc940db91fcd5e1f7f5fe488145c80cf5b2fdb",
+    "cancelled_trade_observation_sha256": "ab16212f35ed7987b9f38e62ca2c3b64a1721c06893c57907c62b5fa37d4eeee",
+    "original_quote_observation_sha256": "a2572c0458398b81a3c3cf80f22bfc87df78e40e674719f85b946cd7b73c8ede",
+    "corrected_quote_observation_sha256": "f3898d9ad7698b3defe6ed918581afe22df4423e5f674cc1c9582f246d6909a7",
+    "cancelled_quote_observation_sha256": "8ab7e85f7e9fe01fa3c2fbf83a880cc00ecbe52b766318da0fdcc34fa2780c54",
+    "mixed_jsonl_sha256": "856fc303d57e502dee3841b3fe160d6cfd1e0fb1195919f05d119e2d62430a37",
+    "strict_replay_sha256": "738e66b4573aec86d4ac226247b9b01ee89dc0423fb7935e78ae2e4db22b2f92",
+    "trade_quote_series_sha256": "68e96fa792d11976c6f1447e1ecf198cb8b05a6c62f01f138b1f0d6a0abc96e8",
+    "final_bundle_sha256": "f24280a778ca4348ca954c57c174372897ee1a999b3f22a2952d9f7e88dc7295",
+    "serialized_final_bundle_sha256": "a6c29c1dc171db0f5d26c602733ca676f7304d6fe20cf3aecda2ae028f38d8eb"
+  },
+  "cross_phase_embeddings": {
+    "phase_1h_embeds_phase_1g": {
+      "phase_1g_mixed_jsonl_sha256": "7eab70a7aac2526c2b76d8af4d7c6c246fb6738beabfc71b8075580e0a4e4001",
+      "phase_1g_strict_replay_sha256": "8ac4ffb2e15ee2a4f19e6e6eb8320527cdbbd24f36d99261c007b14394d74aee",
+      "phase_1g_final_bundle_sha256": "90ab29e174a258d5c873a0c12bf425297cb7ee8636ec369730837ab4a3153763",
+      "phase_1g_serialized_final_bundle_sha256": "b328c8789073f3bccc9dcb15e31fe776e40e7daf955ac87179f4b43e8859e2ec"
+    },
+    "phase_1i_embeds_phase_1h": {
+      "phase_1h_mixed_jsonl_sha256": "17a2be8548045e6234afbd5e5ccf7be4d298ed6eb18ab499e9762316eec96f64",
+      "phase_1h_strict_replay_sha256": "95b367cb292593066412c5157b96d9c6b67113829a0ed0b8e3cf1144baf87652",
+      "phase_1h_final_bundle_sha256": "76c21c05fcf3d37cfd09c23a6e7a034eca99c7edadae3457e19a4d10504b3649",
+      "phase_1h_serialized_final_bundle_sha256": "9bb344dc9e908cda1579e2b195da747a1019c18248a42b4add8304cd2a996d3b"
+    }
+  },
+  "standalone_fixture_sha256": {
+    "minimal_session.jsonl": "ceeba255e569c3efc61c92f60a763057a9b68bb4c19cea4b12999f95ec8aabec",
+    "quality_edge_cases.jsonl": "475e5a6eb0070ae7586cecf3055fbec779b0f5ab410a1e8b070d1f6792289025",
+    "out_of_order_session.jsonl": "1d22c176cacbb6e46210d458a4bdbb7b371aa13386db89c7c83072d788e8a18c"
+  },
+  "provider_fixture_content_sha256": {
+    "phase_1h": {
+      "provider_edge_cases_sha256": "2e2c6c8f60de60ed2a47f12f1165adecbb4d2450908752c10c1ce075ca9adb4e",
+      "provider_lifecycle_cases_sha256": "28473db10aaa707a352cd17a18fbff3647f75881c4da40fa2f985d72512d16d9",
+      "provider_representative_cases_sha256": "f4366b1eb81e60ff890deb2fc4756c28271be43bb5d3a3a5a4a31548a729e2c8",
+      "provider_session_cases_sha256": "53b47e417d8490b444b7534b6bc80fc7696d4f439aa7a6ed2b0173d60e20ff28"
+    },
+    "phase_1i": {
+      "provider_context_sha256": "ccf43e00aa3a2e733982a89242bfcf8dd11e444d909482d6632fe24101eee9b3",
+      "provider_fixture_metadata_sha256": "8aa6ba475472e30a68543b045a2fe58e7a0cf584f35b63374f16e35244178096",
+      "provider_trade_representative_cases_sha256": "37992e999e63c1ecc4cf28041b6c823b2390dc04dd1d449ebe14f201f1bcafea",
+      "provider_trade_edge_cases_sha256": "520408785fbc0a7d0a7691047e4a76059009359a3efe50b3cb12c3aa3e3147df",
+      "provider_trade_lifecycle_cases_sha256": "0db03956e285bf1285be8d5c39de3c934244c0812ea8ff821ef0a878fdee886c",
+      "provider_quote_representative_cases_sha256": "085f39b404498a55834793150d52ef020ee882b060794a68192acca1b90643b5",
+      "provider_quote_edge_cases_sha256": "e267afb6072a42d04633cdc7602f1932d58ca31bab86872dd56930451b4d8d60",
+      "provider_quote_lifecycle_cases_sha256": "867998d76a2964bee60ea32cdfd2c4d6ebed83bc33c14871c0bdc947de1745d6"
+    }
+  }
+}

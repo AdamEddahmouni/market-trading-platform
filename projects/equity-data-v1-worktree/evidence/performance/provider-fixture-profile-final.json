@@ -1,0 +1,623 @@
+{
+  "discovery_seconds": 0.26216680000015913,
+  "error_details": [],
+  "errors": 0,
+  "expected_failures": 0,
+  "failure_details": [],
+  "failures": 0,
+  "fixture_io": {
+    "estimated_bytes": 67919893,
+    "files": [
+      {
+        "bytes": 3344,
+        "opens": 106,
+        "path": "tests/fixtures/providers/order_flow/nvda_order_flow_slice.json"
+      },
+      {
+        "bytes": 2285,
+        "opens": 69,
+        "path": "tests/fixtures/providers/options/biya_options_slice.json"
+      },
+      {
+        "bytes": 4331,
+        "opens": 65,
+        "path": "tests/fixtures/providers/edgar/biya_disclosures.json"
+      },
+      {
+        "bytes": 4872,
+        "opens": 62,
+        "path": "tests/fixtures/providers/futures/es_depth_slice.json"
+      },
+      {
+        "bytes": 2506,
+        "opens": 62,
+        "path": "tests/fixtures/providers/order_flow/es_mbo_slice.json"
+      },
+      {
+        "bytes": 4775,
+        "opens": 57,
+        "path": "tests/fixtures/providers/distribution/nvda_bars_slice.json"
+      },
+      {
+        "bytes": 2301,
+        "opens": 41,
+        "path": "tests/fixtures/providers/options/nvda_earnings_event_slice.json"
+      },
+      {
+        "bytes": 1906,
+        "opens": 39,
+        "path": "tests/fixtures/providers/large_transactions/nvda_large_prints_slice.json"
+      },
+      {
+        "bytes": 2514,
+        "opens": 39,
+        "path": "tests/fixtures/providers/order_book/nvda_depth_slice.json"
+      },
+      {
+        "bytes": 2138,
+        "opens": 38,
+        "path": "tests/fixtures/providers/catalyst/boxl_catalyst_slice.json"
+      },
+      {
+        "bytes": 2360,
+        "opens": 34,
+        "path": "tests/fixtures/providers/fund_etf/nvda_fund_etf_slice.json"
+      },
+      {
+        "bytes": 1698,
+        "opens": 30,
+        "path": "tests/fixtures/providers/options/nvda_signed_flow_slice.json"
+      },
+      {
+        "bytes": 939,
+        "opens": 29,
+        "path": "tests/fixtures/providers/options/biya_adjusted_option_slice.json"
+      },
+      {
+        "bytes": 1042,
+        "opens": 29,
+        "path": "tests/fixtures/providers/options/nvda_options_slice.json"
+      },
+      {
+        "bytes": 4861,
+        "opens": 26,
+        "path": "tests/fixtures/providers/futures/es_cot_positioning_slice.json"
+      },
+      {
+        "bytes": 1401,
+        "opens": 25,
+        "path": "tests/fixtures/providers/futures/es_macro_events_slice.json"
+      },
+      {
+        "bytes": 2068,
+        "opens": 25,
+        "path": "tests/fixtures/providers/futures/es_margin_history_slice.json"
+      },
+      {
+        "bytes": 45051,
+        "opens": 25,
+        "path": "tests/fixtures/providers/futures/es_settlement_bars_slice.json"
+      },
+      {
+        "bytes": 2604,
+        "opens": 16,
+        "path": "tests/fixtures/providers/options/nvda_options_execution_slice.json"
+      },
+      {
+        "bytes": 4918,
+        "opens": 16,
+        "path": "tests/fixtures/providers/options/nvda_strategy_optimizer_slice.json"
+      },
+      {
+        "bytes": 8046257,
+        "opens": 8,
+        "path": "<external-fixture>/biya_market_bars_intraday.jsonl"
+      },
+      {
+        "bytes": 363,
+        "opens": 2,
+        "path": "tests/fixtures/participant/biya_crowding_slice.json"
+      },
+      {
+        "bytes": 870,
+        "opens": 2,
+        "path": "tests/fixtures/participant/biya_price_outcomes.json"
+      },
+      {
+        "bytes": 644,
+        "opens": 1,
+        "path": "tests/fixtures/market_context/boxl_decay_slice.json"
+      },
+      {
+        "bytes": 2374,
+        "opens": 1,
+        "path": "tests/fixtures/market_context/boxl_expectations_slice.json"
+      },
+      {
+        "bytes": 3212,
+        "opens": 1,
+        "path": "tests/fixtures/market_context/boxl_finbert_labels_slice.json"
+      },
+      {
+        "bytes": 4422,
+        "opens": 1,
+        "path": "tests/fixtures/market_context/boxl_llm_extraction_slice.json"
+      },
+      {
+        "bytes": 1364,
+        "opens": 1,
+        "path": "tests/fixtures/market_context/boxl_macro_context_slice.json"
+      },
+      {
+        "bytes": 9136,
+        "opens": 1,
+        "path": "tests/fixtures/market_context/boxl_raw_documents_slice.json"
+      },
+      {
+        "bytes": 1077,
+        "opens": 1,
+        "path": "tests/fixtures/market_context/boxl_reaction_slice.json"
+      },
+      {
+        "bytes": 1552,
+        "opens": 1,
+        "path": "tests/fixtures/market_context/boxl_social_author_slice.json"
+      },
+      {
+        "bytes": 936,
+        "opens": 1,
+        "path": "tests/fixtures/market_context/boxl_structured_metrics_slice.json"
+      },
+      {
+        "bytes": 173,
+        "opens": 1,
+        "path": "tests/fixtures/participant/biya_copyability_slice.json"
+      },
+      {
+        "bytes": 376,
+        "opens": 1,
+        "path": "tests/fixtures/participant/biya_cross_asset_slice.json"
+      },
+      {
+        "bytes": 332,
+        "opens": 1,
+        "path": "tests/fixtures/participant/nvda_derivatives_participant_slice.json"
+      },
+      {
+        "bytes": 1164,
+        "opens": 1,
+        "path": "tests/fixtures/participant/nvda_forced_flow_slice.json"
+      },
+      {
+        "bytes": 1022,
+        "opens": 1,
+        "path": "tests/fixtures/squeeze/causal_transition_stream.json"
+      }
+    ],
+    "opens": 859
+  },
+  "passes": 92,
+  "per_test_durations": [
+    {
+      "seconds": 0.00019219999921915587,
+      "selector": "tests/providers/test_chain_pit_envelope.py::ChainEnvelopeTests::test_enrich_chain_contract_event_accepts_venue_id"
+    },
+    {
+      "seconds": 0.0024537999997846782,
+      "selector": "tests/providers/test_chain_pit_envelope.py::PitAlignmentTests::test_biya_chain_and_activity_counts_align_at_cutoff"
+    },
+    {
+      "seconds": 0.01907409999967058,
+      "selector": "tests/providers/test_chain_pit_envelope.py::PitAlignmentTests::test_bootstrap_configures_chain_providers"
+    },
+    {
+      "seconds": 0.0008461999996143277,
+      "selector": "tests/providers/test_chain_pit_envelope.py::PitAlignmentTests::test_futures_chain_uses_cme_venue"
+    },
+    {
+      "seconds": 0.0033184999992954545,
+      "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_configure_fixture_provider_composition"
+    },
+    {
+      "seconds": 0.0009118999996644561,
+      "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_fixture_futures_chain_es"
+    },
+    {
+      "seconds": 0.0009753000003911438,
+      "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_fixture_futures_chain_pit_cutoff"
+    },
+    {
+      "seconds": 0.0026678000003812485,
+      "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_fixture_option_chain_biya"
+    },
+    {
+      "seconds": 0.0017072999999072636,
+      "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_fixture_option_chain_nvda_second_fixture"
+    },
+    {
+      "seconds": 0.0012808000001314213,
+      "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_fixture_option_chain_pit_cutoff"
+    },
+    {
+      "seconds": 0.00014389999978448031,
+      "selector": "tests/providers/test_futures_bridge_ofi.py::FuturesBridgeOfiTests::test_degraded_path_never_uses_zero_as_valid_ofi"
+    },
+    {
+      "seconds": 0.0001277999999729218,
+      "selector": "tests/providers/test_futures_bridge_ofi.py::FuturesBridgeOfiTests::test_first_fetch_degraded_without_prev"
+    },
+    {
+      "seconds": 0.00016010000035748817,
+      "selector": "tests/providers/test_futures_bridge_ofi.py::FuturesBridgeOfiTests::test_second_fetch_computes_ofi_with_metadata"
+    },
+    {
+      "seconds": 0.00048349999997299165,
+      "selector": "tests/providers/test_large_transactions.py::LargeTransactionsAdapterTests::test_biya_symbol_unavailable"
+    },
+    {
+      "seconds": 0.0008049999996728729,
+      "selector": "tests/providers/test_large_transactions.py::LargeTransactionsAdapterTests::test_fixture_ingest_is_deterministic"
+    },
+    {
+      "seconds": 0.00046160000056261197,
+      "selector": "tests/providers/test_large_transactions.py::LargeTransactionsAdapterTests::test_pit_cutoff_excludes_future_prints"
+    },
+    {
+      "seconds": 0.0005098999999972875,
+      "selector": "tests/providers/test_large_transactions.py::LargeTransactionsAdapterTests::test_threshold_gate_surfaces_failures"
+    },
+    {
+      "seconds": 0.0073805000001812004,
+      "selector": "tests/providers/test_large_transactions.py::LargeTransactionsLedgerTests::test_large_transactions_available_for_nvda"
+    },
+    {
+      "seconds": 0.008637700000690529,
+      "selector": "tests/providers/test_large_transactions.py::LargeTransactionsLedgerTests::test_large_transactions_unavailable_for_biya"
+    },
+    {
+      "seconds": 0.0006783999997423962,
+      "selector": "tests/providers/test_large_transactions.py::LargeTransactionsUiTests::test_capabilities_show_large_transactions_available"
+    },
+    {
+      "seconds": 0.0004916999996567029,
+      "selector": "tests/providers/test_large_transactions.py::LargeTransactionsUiTests::test_workspace_large_transactions_payload"
+    },
+    {
+      "seconds": 0.00027219999992667,
+      "selector": "tests/providers/test_large_transactions.py::LargeTransactionsUiTests::test_workspace_large_transactions_unavailable_for_biya"
+    },
+    {
+      "seconds": 0.0021919000000707456,
+      "selector": "tests/providers/test_options.py::OptionsAdapterTests::test_fixture_ingest_is_deterministic"
+    },
+    {
+      "seconds": 0.0010872000002564164,
+      "selector": "tests/providers/test_options.py::OptionsAdapterTests::test_liquidity_gate_surfaces_failures"
+    },
+    {
+      "seconds": 0.0010443999999552034,
+      "selector": "tests/providers/test_options.py::OptionsAdapterTests::test_nvda_symbol_unavailable"
+    },
+    {
+      "seconds": 0.0012019000005238922,
+      "selector": "tests/providers/test_options.py::OptionsAdapterTests::test_pit_cutoff_excludes_future_activity"
+    },
+    {
+      "seconds": 0.01310990000001766,
+      "selector": "tests/providers/test_options.py::OptionsLedgerTests::test_options_available_for_biya"
+    },
+    {
+      "seconds": 0.013762800000222342,
+      "selector": "tests/providers/test_options.py::OptionsLedgerTests::test_options_unavailable_for_nvda"
+    },
+    {
+      "seconds": 0.0005556999994951184,
+      "selector": "tests/providers/test_options.py::OptionsUiTests::test_capabilities_show_options_available"
+    },
+    {
+      "seconds": 2.0921840000000884,
+      "selector": "tests/providers/test_options.py::OptionsUiTests::test_workspace_options_payload"
+    },
+    {
+      "seconds": 2.0471246999995856,
+      "selector": "tests/providers/test_options.py::OptionsUiTests::test_workspace_options_unavailable_for_nvda"
+    },
+    {
+      "seconds": 2.076161800000591,
+      "selector": "tests/providers/test_options_chain_projection.py::OptionsChainProjectionTests::test_biya_workspace_includes_chain_snapshot"
+    },
+    {
+      "seconds": 2.0815423999993072,
+      "selector": "tests/providers/test_options_chain_projection.py::OptionsChainProjectionTests::test_nvda_workspace_chain_snapshot"
+    },
+    {
+      "seconds": 2.0691901999998663,
+      "selector": "tests/providers/test_options_chain_projection.py::OptionsChainProjectionTests::test_unknown_symbol_chain_unavailable"
+    },
+    {
+      "seconds": 2.089769199999864,
+      "selector": "tests/providers/test_options_dealer_projection.py::OptionsDealerProjectionTests::test_biya_workspace_includes_dealer_snapshot"
+    },
+    {
+      "seconds": 2.228019299999687,
+      "selector": "tests/providers/test_options_dealer_projection.py::OptionsDealerProjectionTests::test_nvda_chain_only_dealer_snapshot"
+    },
+    {
+      "seconds": 2.0735782000001564,
+      "selector": "tests/providers/test_options_event_vol_projection.py::OptionsEventVolProjectionTests::test_biya_workspace_event_vol_unavailable"
+    },
+    {
+      "seconds": 0.025609999999687716,
+      "selector": "tests/providers/test_options_event_vol_projection.py::OptionsEventVolProjectionTests::test_earnings_fixture_pit_discipline"
+    },
+    {
+      "seconds": 2.085923399999956,
+      "selector": "tests/providers/test_options_event_vol_projection.py::OptionsEventVolProjectionTests::test_nvda_chain_payload_includes_event_vol_snapshot"
+    },
+    {
+      "seconds": 2.0831247999994957,
+      "selector": "tests/providers/test_options_execution_projection.py::OptionsExecutionProjectionTests::test_biya_workspace_execution_when_activities_available"
+    },
+    {
+      "seconds": 0.025059200000214332,
+      "selector": "tests/providers/test_options_execution_projection.py::OptionsExecutionProjectionTests::test_execution_fixture_pit_discipline"
+    },
+    {
+      "seconds": 2.072210499999528,
+      "selector": "tests/providers/test_options_execution_projection.py::OptionsExecutionProjectionTests::test_nvda_chain_payload_includes_execution_snapshot"
+    },
+    {
+      "seconds": 2.054243000000497,
+      "selector": "tests/providers/test_options_r_o6_projection.py::OptionsRO6ProjectionTests::test_biya_workspace_includes_r_o6_research"
+    },
+    {
+      "seconds": 2.078838899999937,
+      "selector": "tests/providers/test_options_r_o6_projection.py::OptionsRO6ProjectionTests::test_nvda_workspace_includes_r_o6_research"
+    },
+    {
+      "seconds": 2.070503099999769,
+      "selector": "tests/providers/test_options_r_o6_projection.py::OptionsRO6ProjectionTests::test_unknown_symbol_r_o6_fail_closed"
+    },
+    {
+      "seconds": 2.092291599999953,
+      "selector": "tests/providers/test_options_strategy_projection.py::OptionsStrategyProjectionTests::test_biya_workspace_strategy_when_activities_available"
+    },
+    {
+      "seconds": 2.0770114999995712,
+      "selector": "tests/providers/test_options_strategy_projection.py::OptionsStrategyProjectionTests::test_nvda_chain_payload_includes_strategy_snapshot"
+    },
+    {
+      "seconds": 0.30930390000048646,
+      "selector": "tests/providers/test_options_strategy_projection.py::OptionsStrategyProjectionTests::test_strategy_fixture_pit_discipline"
+    },
+    {
+      "seconds": 0.0018528999999034568,
+      "selector": "tests/providers/test_order_book.py::OrderBookAdapterTests::test_biya_symbol_unavailable"
+    },
+    {
+      "seconds": 0.0070333000003302,
+      "selector": "tests/providers/test_order_book.py::OrderBookAdapterTests::test_fixture_ingest_is_deterministic"
+    },
+    {
+      "seconds": 0.002440000000206055,
+      "selector": "tests/providers/test_order_book.py::OrderBookAdapterTests::test_imbalance_direction_is_derived"
+    },
+    {
+      "seconds": 0.0036141000000498025,
+      "selector": "tests/providers/test_order_book.py::OrderBookAdapterTests::test_pit_cutoff_excludes_future_snapshots"
+    },
+    {
+      "seconds": 0.013994899999488553,
+      "selector": "tests/providers/test_order_book.py::OrderBookLedgerTests::test_order_book_available_for_nvda"
+    },
+    {
+      "seconds": 0.014131699999779812,
+      "selector": "tests/providers/test_order_book.py::OrderBookLedgerTests::test_order_book_unavailable_for_biya"
+    },
+    {
+      "seconds": 0.000545599999895785,
+      "selector": "tests/providers/test_order_book.py::OrderBookUiTests::test_capabilities_show_order_book_available"
+    },
+    {
+      "seconds": 0.00044410000009520445,
+      "selector": "tests/providers/test_order_book.py::OrderBookUiTests::test_workspace_order_book_payload"
+    },
+    {
+      "seconds": 0.0002476999998179963,
+      "selector": "tests/providers/test_order_book.py::OrderBookUiTests::test_workspace_order_book_unavailable_for_biya"
+    },
+    {
+      "seconds": 0.0009970999999495689,
+      "selector": "tests/providers/test_order_flow.py::OrderFlowAdapterTests::test_biya_symbol_unavailable"
+    },
+    {
+      "seconds": 0.0016874000002644607,
+      "selector": "tests/providers/test_order_flow.py::OrderFlowAdapterTests::test_fixture_ingest_is_deterministic"
+    },
+    {
+      "seconds": 0.0009205999995174352,
+      "selector": "tests/providers/test_order_flow.py::OrderFlowAdapterTests::test_pit_cutoff_excludes_future_bars"
+    },
+    {
+      "seconds": 0.0009460999999646447,
+      "selector": "tests/providers/test_order_flow.py::OrderFlowAdapterTests::test_unknown_aggressor_stays_unknown"
+    },
+    {
+      "seconds": 0.012404999999489519,
+      "selector": "tests/providers/test_order_flow.py::OrderFlowLedgerTests::test_order_flow_available_for_nvda"
+    },
+    {
+      "seconds": 0.011968400000114343,
+      "selector": "tests/providers/test_order_flow.py::OrderFlowLedgerTests::test_order_flow_unavailable_for_biya"
+    },
+    {
+      "seconds": 0.0003814000001511886,
+      "selector": "tests/providers/test_order_flow.py::OrderFlowUiTests::test_capabilities_show_order_flow_available"
+    },
+    {
+      "seconds": 0.00038919999951758655,
+      "selector": "tests/providers/test_order_flow.py::OrderFlowUiTests::test_workspace_order_flow_payload"
+    },
+    {
+      "seconds": 0.021206599999459286,
+      "selector": "tests/providers/test_provider_catalyst.py::CatalystAdapterTests::test_fixture_ingest_is_deterministic"
+    },
+    {
+      "seconds": 0.0016259999993053498,
+      "selector": "tests/providers/test_provider_catalyst.py::CatalystAdapterTests::test_nvda_symbol_unavailable"
+    },
+    {
+      "seconds": 0.03331080000043585,
+      "selector": "tests/providers/test_provider_catalyst.py::CatalystAdapterTests::test_pit_cutoff_excludes_future_activity"
+    },
+    {
+      "seconds": 0.017905900000187103,
+      "selector": "tests/providers/test_provider_catalyst.py::CatalystLedgerTests::test_catalyst_available_for_boxl"
+    },
+    {
+      "seconds": 0.024042699999881734,
+      "selector": "tests/providers/test_provider_catalyst.py::CatalystLedgerTests::test_catalyst_unavailable_for_nvda"
+    },
+    {
+      "seconds": 0.0005776999996669474,
+      "selector": "tests/providers/test_provider_catalyst.py::CatalystUiTests::test_capabilities_show_catalyst_available"
+    },
+    {
+      "seconds": 0.058996400000069116,
+      "selector": "tests/providers/test_provider_catalyst.py::CatalystUiTests::test_workspace_catalyst_payload"
+    },
+    {
+      "seconds": 0.0003354999998919084,
+      "selector": "tests/providers/test_provider_catalyst.py::CatalystUiTests::test_workspace_catalyst_unavailable_for_nvda"
+    },
+    {
+      "seconds": 0.0013189000001148088,
+      "selector": "tests/providers/test_providers.py::EdgarAdapterTests::test_amendment_ordering_after_base_filing"
+    },
+    {
+      "seconds": 0.0020828999995501363,
+      "selector": "tests/providers/test_providers.py::EdgarAdapterTests::test_fixture_ingest_is_deterministic"
+    },
+    {
+      "seconds": 0.0017981000000872882,
+      "selector": "tests/providers/test_providers.py::EdgarAdapterTests::test_pit_cutoff_excludes_future_filings"
+    },
+    {
+      "seconds": 0.0010038000000349712,
+      "selector": "tests/providers/test_providers.py::EdgarAdapterTests::test_unknown_symbol_unavailable"
+    },
+    {
+      "seconds": 0.0009533000002193148,
+      "selector": "tests/providers/test_providers.py::ImportBoundaryTests::test_features_do_not_import_adapters"
+    },
+    {
+      "seconds": 0.005045200000495242,
+      "selector": "tests/providers/test_providers.py::ImportBoundaryTests::test_strategy_package_has_no_http_adapter_imports"
+    },
+    {
+      "seconds": 0.0004735000002256129,
+      "selector": "tests/providers/test_providers.py::ProviderContractTests::test_default_composition_uses_stubs"
+    },
+    {
+      "seconds": 0.0004968000002918416,
+      "selector": "tests/providers/test_providers.py::ProviderContractTests::test_unconfigured_stubs_fail_closed"
+    },
+    {
+      "seconds": 0.00028899999961140566,
+      "selector": "tests/providers/test_providers.py::UiDisclosureProjectionTests::test_capabilities_show_disclosure_available"
+    },
+    {
+      "seconds": 0.05159929999990709,
+      "selector": "tests/providers/test_providers.py::UiDisclosureProjectionTests::test_workspace_disclosure_payload"
+    },
+    {
+      "seconds": 0.002349299999877985,
+      "selector": "tests/providers/test_providers.py::WhaleLedgerTests::test_capability_surface_allows_entitled_disclosure"
+    },
+    {
+      "seconds": 0.0005226000002949149,
+      "selector": "tests/providers/test_providers.py::WhaleLedgerTests::test_dedup_on_append"
+    },
+    {
+      "seconds": 0.00037630000042554457,
+      "selector": "tests/providers/test_providers.py::WhaleLedgerTests::test_institutional_unavailable_without_ledger"
+    },
+    {
+      "seconds": 0.002289500000188127,
+      "selector": "tests/providers/test_providers.py::WhaleLedgerTests::test_regulatory_disclosure_available_with_ledger"
+    },
+    {
+      "seconds": 0.0013127999991411343,
+      "selector": "tests/providers/test_recorded_order_flow.py::RecordedOrderFlowProviderTests::test_factory_defaults_to_fixture_provider"
+    },
+    {
+      "seconds": 0.0019030999992537545,
+      "selector": "tests/providers/test_recorded_order_flow.py::RecordedOrderFlowProviderTests::test_factory_live_gate_selects_recorded_provider"
+    },
+    {
+      "seconds": 0.00204200000007404,
+      "selector": "tests/providers/test_recorded_order_flow.py::RecordedOrderFlowProviderTests::test_fixture_provider_uses_classify_bar_delta_provenance"
+    },
+    {
+      "seconds": 0.0019474999999147258,
+      "selector": "tests/providers/test_recorded_order_flow.py::RecordedOrderFlowProviderTests::test_recorded_provider_pit_filters_bars"
+    },
+    {
+      "seconds": 0.0008389000004171976,
+      "selector": "tests/providers/test_recorded_order_flow.py::RecordedOrderFlowProviderTests::test_recorded_provider_unavailable_when_fixture_missing"
+    }
+  ],
+  "process_return_code": 0,
+  "schema_version": "1.0",
+  "selectors": [],
+  "skips": 0,
+  "slowest_tests": [
+    {
+      "seconds": 2.228019299999687,
+      "selector": "tests/providers/test_options_dealer_projection.py::OptionsDealerProjectionTests::test_nvda_chain_only_dealer_snapshot"
+    },
+    {
+      "seconds": 2.092291599999953,
+      "selector": "tests/providers/test_options_strategy_projection.py::OptionsStrategyProjectionTests::test_biya_workspace_strategy_when_activities_available"
+    },
+    {
+      "seconds": 2.0921840000000884,
+      "selector": "tests/providers/test_options.py::OptionsUiTests::test_workspace_options_payload"
+    },
+    {
+      "seconds": 2.089769199999864,
+      "selector": "tests/providers/test_options_dealer_projection.py::OptionsDealerProjectionTests::test_biya_workspace_includes_dealer_snapshot"
+    },
+    {
+      "seconds": 2.085923399999956,
+      "selector": "tests/providers/test_options_event_vol_projection.py::OptionsEventVolProjectionTests::test_nvda_chain_payload_includes_event_vol_snapshot"
+    },
+    {
+      "seconds": 2.0831247999994957,
+      "selector": "tests/providers/test_options_execution_projection.py::OptionsExecutionProjectionTests::test_biya_workspace_execution_when_activities_available"
+    },
+    {
+      "seconds": 2.0815423999993072,
+      "selector": "tests/providers/test_options_chain_projection.py::OptionsChainProjectionTests::test_nvda_workspace_chain_snapshot"
+    },
+    {
+      "seconds": 2.078838899999937,
+      "selector": "tests/providers/test_options_r_o6_projection.py::OptionsRO6ProjectionTests::test_nvda_workspace_includes_r_o6_research"
+    },
+    {
+      "seconds": 2.0770114999995712,
+      "selector": "tests/providers/test_options_strategy_projection.py::OptionsStrategyProjectionTests::test_nvda_chain_payload_includes_strategy_snapshot"
+    },
+    {
+      "seconds": 2.076161800000591,
+      "selector": "tests/providers/test_options_chain_projection.py::OptionsChainProjectionTests::test_biya_workspace_includes_chain_snapshot"
+    }
+  ],
+  "status": "passed",
+  "suite_id": "providers-profile-final",
+  "tests_run": 92,
+  "unexpected_successes": 0,
+  "wall_seconds": 41.610586499999954,
+  "worker_error": "",
+  "worker_pid": 18036
+}

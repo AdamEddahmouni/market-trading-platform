@@ -1,0 +1,5 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Phase 2D CLI demonstration case for phase_2d_cli_demo_observations.jsonl. Fixture provenance: SYNTHETIC_EDGE_CASE.",
+  "operation": "PUBLISHED_SHORT_INTEREST_ABSOLUTE_CHANGE"
+}

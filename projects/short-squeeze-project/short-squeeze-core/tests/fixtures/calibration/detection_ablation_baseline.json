@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0.0",
+  "experiment_version": "detection_ablation_baseline.v1",
+  "experiment_type": "DETECTION_ABLATION",
+  "source_dataset_path": "../research/phase_3b_research_dataset.json",
+  "cohort_type": "SYNTHETIC_CASES",
+  "analysis_unit": "CASE_BOUNDARY",
+  "baseline_variant_id": "baseline",
+  "variants": [
+    {
+      "variant_id": "baseline",
+      "description": "Current Phase 3B momentum discovery predicate (3 rules).",
+      "detection_policy": {
+        "policy_version": "phase_3b_research_detection_policy.v1",
+        "required_rule_ids": [
+          "PRICE_RANGE",
+          "MARKET_DATA_AVAILABLE",
+          "COMPLETED_BAR_AVAILABLE"
+        ],
+        "provisional": true,
+        "rationale_code": "STRUCTURAL_MOMENTUM_DISCOVERY_PREDICATE"
+      }
+    },
+    {
+      "variant_id": "momentum_full",
+      "description": "Require all six momentum discovery rules to pass.",
+      "detection_policy": {
+        "policy_version": "calibration.detection.momentum_full.v1",
+        "required_rule_ids": [
+          "PRICE_RANGE",
+          "MARKET_DATA_AVAILABLE",
+          "COMPLETED_BAR_AVAILABLE",
+          "PERCENTAGE_CHANGE_MINIMUM",
+          "RELATIVE_VOLUME_MINIMUM",
+          "FLOAT_MAXIMUM"
+        ],
+        "provisional": true,
+        "rationale_code": "CALIBRATION_MOMENTUM_FULL_ABLATION"
+      }
+    },
+    {
+      "variant_id": "short_pressure_core",
+      "description": "Baseline momentum rules plus published SI availability.",
+      "detection_policy": {
+        "policy_version": "calibration.detection.short_pressure_core.v1",
+        "required_rule_ids": [
+          "PRICE_RANGE",
+          "MARKET_DATA_AVAILABLE",
+          "COMPLETED_BAR_AVAILABLE",
+          "PUBLISHED_SHORT_INTEREST_AVAILABLE"
+        ],
+        "provisional": true,
+        "rationale_code": "CALIBRATION_SHORT_PRESSURE_CORE_ABLATION"
+      }
+    }
+  ]
+}

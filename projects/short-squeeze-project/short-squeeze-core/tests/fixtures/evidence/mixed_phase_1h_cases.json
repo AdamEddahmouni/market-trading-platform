@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0.0",
+  "contains_credentials": false,
+  "contains_account_data": false,
+  "contains_real_symbols": false,
+  "calculates_indicators": false,
+  "calculates_relative_volume": false,
+  "strategy_interpretation": false,
+  "cases": [
+    {
+      "case_id": "bars-present-snapshot-missing",
+      "objective_only": true
+    },
+    {
+      "case_id": "snapshot-present-bars-missing",
+      "objective_only": true
+    },
+    {
+      "case_id": "partial-bar-only",
+      "objective_only": true
+    },
+    {
+      "case_id": "completed-after-as-of",
+      "objective_only": true
+    },
+    {
+      "case_id": "correction-after-as-of",
+      "objective_only": true
+    },
+    {
+      "case_id": "news-and-bars-uninterpreted",
+      "objective_only": true
+    },
+    {
+      "case_id": "active-halt-with-pre-halt-bars",
+      "objective_only": true
+    },
+    {
+      "case_id": "quote-resumption-no-post-bar",
+      "objective_only": true
+    },
+    {
+      "case_id": "trading-resumed-later-bar",
+      "objective_only": true
+    },
+    {
+      "case_id": "stale-short-interest-recent-bars",
+      "objective_only": true
+    },
+    {
+      "case_id": "sec-filing-and-bars",
+      "objective_only": true
+    },
+    {
+      "case_id": "zero-volume-bar",
+      "objective_only": true
+    },
+    {
+      "case_id": "conflicting-provider-bars",
+      "objective_only": true
+    },
+    {
+      "case_id": "different-intervals-same-symbol",
+      "objective_only": true
+    },
+    {
+      "case_id": "no-market-bar-domain",
+      "objective_only": true
+    }
+  ]
+}

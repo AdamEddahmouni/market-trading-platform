@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "policy_version": "phase_3c_interval_policy.v1",
+  "method": "WILSON_SCORE",
+  "confidence_level": "0.95",
+  "z_value": "1.95996398454005423552",
+  "decimal_precision": 50,
+  "serialization_quantum": "0.000000000001",
+  "rounding": "ROUND_HALF_EVEN",
+  "supported_proportion_type": "BINOMIAL",
+  "random_sampling_allowed": false
+}

@@ -1,0 +1,49 @@
+# Freebuff desktop metadata — never commit
+.freebuff/
+
+# Claude / IDE settings
+.claude/
+
+# Embedded git directories — never commit a nested .git/
+**/.git/
+**/.git.bak/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Runtime generated data
+data/
+
+# Local env files — never commit secrets (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# Agent-generated reconstruction documents (reference only)
+docs/reconstruction/
+
+# Personal / local-only correspondence and session handoffs (keep off remote)
+advisor-meetings.txt
+email-log.txt
+demo-transcripts.txt
+phase-3d-complete-handoff.md
+private-batch15-archive-*/
+short_squeeze_project_reconstruction/
+**/ADVISOR_SUMMARY.md
+**/2026-07-18_SESSION_HANDOFF.md
+
+# Log files
+*.log
+
+# Temp files
+*.tmp
+*.temp
+
+# Node / Python tooling artifacts
+node_modules/
+.pytest-run/
+presentation/
+deliverables/
+docs/superpowers/

@@ -1,0 +1,20 @@
+{
+  "fixture_id": "CFTC-SOURCE-REVISION",
+  "description": "Source revision — V1 then V2 with changed positions",
+  "position_date": "2026-08-11",
+  "versions": [
+    {
+      "version": 1,
+      "observed_time": "2026-08-14T19:35:00Z",
+      "lev_money_positions_long": "310000",
+      "lev_money_positions_short": "280000"
+    },
+    {
+      "version": 2,
+      "observed_time": "2026-08-15T19:35:00Z",
+      "lev_money_positions_long": "312000",
+      "lev_money_positions_short": "278000",
+      "note": "official correction"
+    }
+  ]
+}

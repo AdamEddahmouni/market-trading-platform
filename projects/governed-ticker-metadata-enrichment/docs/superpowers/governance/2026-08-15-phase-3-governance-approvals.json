@@ -1,0 +1,40 @@
+{
+  "approval_records": [
+    {
+      "approval_record_id": "E1F2A3B4C5D60718293A4B5C6D7E8F901234567890ABCDEF0123456789ABCE",
+      "approval_scope": "EXACT_HASH_PRINCIPAL_APPROVAL",
+      "approved_at": "2026-08-15T18:00:00.000000000Z",
+      "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+      "approved_capacities": ["PROJECT_OWNER"],
+      "approved_logical_id": "phase3.design_specification",
+      "approved_sha256": "06ACF4722D92E85328AC541E29A90B81F589B77EE39D2BB42DAC636CF0731156",
+      "status": "APPROVED"
+    },
+    {
+      "approval_record_id": "F2A3B4C5D6E70718293A4B5C6D7E8F901234567890ABCDEF0123456789ABCDF",
+      "approval_scope": "CONTROLLING_PHASE_3_PLAN_EXACT_HASH_APPROVAL",
+      "approved_at": "2026-08-15T18:00:00.000000000Z",
+      "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+      "approved_capacities": ["PROJECT_OWNER", "RELEASE_OWNER"],
+      "approved_logical_id": "phase3.governance_plan",
+      "approved_sha256": "2FCB60CBA456260900EC691B4D2F4B6644989B17AC286B033F837049BE77E7DF",
+      "status": "APPROVED"
+    },
+    {
+      "approval_record_id": "A3B4C5D6E7F80718293A4B5C6D7E8F901234567890ABCDEF0123456789ABCEF0",
+      "approval_scope": "PHASE_3_IMPLEMENTATION_AUTHORIZATION_EXACT_HASH_APPROVAL",
+      "approved_at": "2026-08-15T18:00:00.000000000Z",
+      "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+      "approved_capacities": ["PROJECT_OWNER", "RELEASE_OWNER"],
+      "approved_logical_id": "phase3.implementation_authorization",
+      "approved_sha256": "249BDE81273BA1A864633714062A465EB386E8A97562CF4DAF8332120438F519",
+      "status": "APPROVED"
+    }
+  ],
+  "approval_statement": "Principal approved Phase 3 design spec, operational plan, and implementation authorization for the admitted equity intraday adapter.",
+  "artifact_type": "PHASE_3_GOVERNANCE_APPROVAL_BUNDLE",
+  "logical_id": "phase3.governance_approvals",
+  "principal_id": "PROJECT-PRINCIPAL-001",
+  "schema_version": "1.0.0",
+  "status": "APPROVED"
+}

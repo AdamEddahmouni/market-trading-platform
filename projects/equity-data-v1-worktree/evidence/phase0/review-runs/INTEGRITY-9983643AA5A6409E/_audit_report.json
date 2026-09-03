@@ -1,0 +1,23 @@
+{
+  "terminal_state": "COMPLETE",
+  "qualification_state": "QUALIFYING",
+  "recommended_candidate_outcome": "PASS",
+  "finding_count": 0,
+  "open_finding_count": 0,
+  "reproduction_count": 22,
+  "reproduction_fail_count": 0,
+  "review_run_id": "5DE42893FB2248CB57172AFDF315D50506289F1E9EDA789C942D4EFD0FA4D4EF",
+  "review_output_hash": "7B9D6BF97323CC36BB3BD78338E9C637DF9227564A6EC354BABF8E67860323BE",
+  "output_dir": "C:\\Users\\adame\\Desktop\\market-trading-platform\\integrated-market-platform\\evidence\\phase0\\review-runs\\INTEGRITY-9983643AA5A6409E",
+  "primary_errors": [],
+  "bundle_errors": [],
+  "disqualification": [],
+  "fixture_validation": {
+    "fixture_count": 70,
+    "reason_code_count": 62,
+    "sha256": "84431668E9F5103362D1A6275B235D8003A0BD600CAF694A4B0A4999C70F330F",
+    "status": "PASS"
+  },
+  "candidate_root_recomputed": "78FA6A96D4193F53018ECFA7DFFAFFEBA3DA398A4E0116056C7C3BDDE8D2C482",
+  "candidate_root_match": true
+}

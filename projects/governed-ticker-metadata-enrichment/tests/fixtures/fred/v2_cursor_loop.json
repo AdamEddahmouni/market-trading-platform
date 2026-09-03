@@ -1,0 +1,16 @@
+{
+  "pages": [
+    {
+      "has_more": true,
+      "next_cursor": "loop_cursor",
+      "observations": [
+        {"series_id": "CPIAUCSL", "date": "2026-01-01", "value": "319.5", "last_updated": "2026-02-12T13:45:00Z"}
+      ]
+    },
+    {
+      "has_more": true,
+      "next_cursor": "loop_cursor",
+      "observations": []
+    }
+  ]
+}

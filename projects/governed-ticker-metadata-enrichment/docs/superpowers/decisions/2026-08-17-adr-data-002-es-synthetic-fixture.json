@@ -1,0 +1,62 @@
+{
+  "adr_id": "ADR-DATA-002",
+  "alternatives": [
+    {
+      "decision": "REJECTED_FOR_CURRENT_SCOPE",
+      "name": "FULL_ES_EVENT_LEVEL_SESSION",
+      "option_id": "DATA2-OPTION-001",
+      "tradeoffs": [
+        "ADR-DATA-001 ES bundle remains deferred; no lawful full-session bytes verified."
+      ]
+    },
+    {
+      "decision": "ACCEPTED",
+      "name": "BOUNDED_ES_SYNTHETIC_DEMO_FIXTURE",
+      "option_id": "DATA2-OPTION-002",
+      "tradeoffs": [
+        "Enables futures lane integration testing without ES session overclaim.",
+        "Fixture is explicitly synthetic and research-only."
+      ]
+    }
+  ],
+  "approval": {
+    "approval_scope": "EXACT_HASH_PRINCIPAL_APPROVAL",
+    "approved_at": "2026-08-17T22:45:00.000000000Z",
+    "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+    "approved_capacities": [
+      "PROJECT_OWNER",
+      "RELEASE_OWNER"
+    ]
+  },
+  "artifact_type": "ARCHITECTURE_DECISION_RECORD",
+  "consequences": {
+    "negative": [
+      "Cannot claim lawful ES event-level session replay until ADR-DATA-001 bundle unblocks.",
+      "Futures positioning signals are depth-derived only, not CFTC or exchange positioning feeds."
+    ],
+    "positive": [
+      "Futures lane Phase 14 can bind to verified synthetic ES depth fixture with honest provenance.",
+      "Donor bridge path can serve live snapshots without admitting them into canonical replay."
+    ]
+  },
+  "created_at": "2026-08-17T22:45:00.000000000Z",
+  "decision": {
+    "selected_option_id": "DATA2-OPTION-002",
+    "summary": "Admit ADMITTED-L2-ES-001: bounded synthetic ES CME depth fixture for futures lane integration. Full ES session acceptance remains blocked per ADR-DATA-001.",
+    "title": "Bounded ES synthetic demo fixture for futures lane"
+  },
+  "effectivity": {
+    "current_state": "ACCEPTED",
+    "decision_only": true
+  },
+  "fixture_binding": {
+    "admitted_fixture_id": "ADMITTED-L2-ES-001",
+    "content_path": "tests/fixtures/providers/futures/es_depth_slice.json",
+    "instrument_id": "ES",
+    "synthetic": true
+  },
+  "supersedes_nothing": true,
+  "related_adrs": [
+    "ADR-DATA-001"
+  ]
+}

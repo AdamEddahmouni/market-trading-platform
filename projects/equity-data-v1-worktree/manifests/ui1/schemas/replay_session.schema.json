@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ui1.replay_session",
+  "title": "ReplaySession",
+  "type": "object",
+  "required": ["session_id", "instrument_id", "cursor_index", "event_count"],
+  "properties": {
+    "session_id": { "type": "string" },
+    "instrument_id": { "type": "string" },
+    "cursor_index": { "type": "integer" },
+    "event_count": { "type": "integer" },
+    "available_time": { "type": "integer" },
+    "speed": { "type": "integer" }
+  },
+  "additionalProperties": true
+}

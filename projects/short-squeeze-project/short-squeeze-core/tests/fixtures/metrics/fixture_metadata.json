@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Provenance classification for every Phase 2A fixture family under tests/fixtures/metrics/. Phase 1H's own provider-shaped fixtures (tests/fixtures/providers/market_bars/**) are untouched by Phase 2A; these are new, additive files.",
+  "families": [
+    {
+      "name": "cli_demo_bars.jsonl",
+      "origin": "SYNTHETIC_EDGE_CASE",
+      "description": "Six daily 1_DAY bars for symbol TESTA (2026-01-10..2026-01-15), each a hand-specified record normalized through the same offline market-bar normalizer Phase 1H adapters use, then serialized as one canonical Observation per line via serialization.jsonl.serialize_jsonl.",
+      "generated_by": "scripts/generate_phase_2a_cli_fixture.py",
+      "regenerable": true,
+      "contains_credentials_or_live_urls": false
+    },
+    {
+      "name": "phase_2a_metric_cases.json",
+      "origin": "SYNTHETIC_EDGE_CASE",
+      "description": "Six Phase 2A metric request cases (one per metric_name) consumed by the build-market-metrics CLI command against cli_demo_bars.jsonl.",
+      "generated_by": "scripts/generate_phase_2a_cli_fixture.py",
+      "regenerable": true,
+      "contains_credentials_or_live_urls": false
+    },
+    {
+      "name": "expected_phase_2a_metric_metadata.json",
+      "origin": "SYNTHETIC_EDGE_CASE",
+      "description": "The sixteen required Phase 2A anchor hashes (handoff section 34), each canonical_hash()/sha256 of a MetricResult or CLI-output byte string built directly through squeeze_core.metrics from hand-specified bars, independent of cli_demo_bars.jsonl except for the cli_output_sha256 entry.",
+      "generated_by": "scripts/generate_phase_2a_anchors.py",
+      "regenerable": true,
+      "contains_credentials_or_live_urls": false,
+      "note": "This is a Phase 2A-only anchor manifest. It is intentionally separate from tests/fixtures/compatibility/phase_1_anchor_manifest.json and must never be merged into it."
+    }
+  ],
+  "case_coverage_note": "The bulk of Phase 2A's required test-case matrix (handoff sections 23-27) is expressed as executable pytest cases in tests/metrics/test_*.py, each constructing its own Observation fixtures in-line via tests/metrics/conftest.py's make_bar() helper (itself a thin wrapper over the real normalize_market_bar_record normalizer), rather than as a second, parallel set of hand-authored JSON case files (return_cases.json, gap_cases.json, range_cases.json, volume_baseline_cases.json, lifecycle_cases.json, point_in_time_cases.json named in the handoff's suggested layout). This was a deliberate scope decision, documented in docs/phase-2a-progress.md: duplicating ~100 cases into a second JSON-driven parametrization format would not add coverage, only maintenance surface and a second place for the two representations to silently drift apart. Existing Phase 1 tests already mix both styles (JSON-fixture-driven and directly-constructed), so this follows established repository convention rather than departing from it."
+}

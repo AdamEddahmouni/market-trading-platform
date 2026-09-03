@@ -1,0 +1,28 @@
+{
+  "adr_id": "ADR-VENUE-001",
+  "alternatives": [
+    {
+      "decision": "PROPOSED",
+      "name": "DERIVED_AGGREGATION_ONLY",
+      "option_id": "VENUE-OPTION-001",
+      "tradeoffs": [
+        "Derived cross-venue datasets add manifest complexity."
+      ]
+    }
+  ],
+  "artifact_type": "ARCHITECTURE_DECISION_RECORD",
+  "created_at": "2026-08-16T04:30:00.000000000Z",
+  "decision": {
+    "selected_option_id": "VENUE-OPTION-001",
+    "summary": "Cross-exchange price and liquidity aggregates are derived datasets with explicit input venue manifests. Venue-native events remain primary; aggregation never discards upstream identity.",
+    "title": "Cross-exchange aggregation rules"
+  },
+  "effectivity": {
+    "current_state": "PROPOSED",
+    "decision_only": true,
+    "non_authorization_statement": "Proposed status does not authorize multi-venue ingestion or arbitrage execution."
+  },
+  "logical_id": "expansion.adr_venue_001",
+  "schema_version": "1.0.0",
+  "status": "PROPOSED"
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Provenance declaration for Phase 2C metric fixtures (docs/phase-2c-test-plan.md Section 6). Most individually-enumerated edge cases from the handoff's required-case lists (Sections 23-27) remain executable pytest cases built inline via tests/metrics/conftest.py's short_interest_record/borrow_record helpers, rather than duplicated as static JSON/JSONL records -- this mirrors Phase 2B's own documented choice (tests/fixtures/metrics/phase_2b_fixture_metadata.json) and keeps every required case independently named and traceable in the test files themselves.",
+  "fixtures": {
+    "phase_2c_cli_demo_observations.jsonl": {
+      "provenance": "SYNTHETIC_EDGE_CASE",
+      "generated_by": "scripts/generate_phase_2c_anchors.py",
+      "purpose": "Offline build-market-metrics CLI demonstration input: one published short-interest pair, one borrow fee/availability pair, and three daily market bars for synthetic symbol TESTC."
+    },
+    "phase_2c_metric_cases.json": {
+      "provenance": "SYNTHETIC_EDGE_CASE",
+      "generated_by": "scripts/generate_phase_2c_anchors.py",
+      "purpose": "CLI --spec cases list covering one metric from each of the five Phase 2C metric families against phase_2c_cli_demo_observations.jsonl."
+    },
+    "expected_phase_2c_metric_metadata.json": {
+      "provenance": "SYNTHETIC_EDGE_CASE",
+      "generated_by": "scripts/generate_phase_2c_anchors.py",
+      "purpose": "Deterministic anchor hash manifest for the required Phase 2C result names (handoff Section 30)."
+    }
+  },
+  "no_credentials_or_private_urls": true,
+  "no_environment_specific_paths": true,
+  "synthetic_symbol": "TESTC"
+}

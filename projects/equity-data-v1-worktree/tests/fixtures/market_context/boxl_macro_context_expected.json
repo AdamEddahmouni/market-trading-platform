@@ -1,0 +1,17 @@
+{
+  "macro_context_available": true,
+  "macro_context_summary": {
+    "growth_regime": "EXPANDING",
+    "inflation_regime": "ELEVATED",
+    "monetary_policy_regime": "POLICY_EVENT_IMMINENT",
+    "risk_regime": "ELEVATED",
+    "volatility_regime": "ELEVATED",
+    "liquidity_regime": "STRESSED",
+    "event_time": "2026-07-22T18:00:00.000000000Z",
+    "available_time": "2026-07-22T18:00:00.000000000Z",
+    "publication_state": "PUBLISHED",
+    "quality_flags": [],
+    "scoring_method": "macro_context_v1"
+  },
+  "cross_lane_signal": "MACRO_REGIME_CONTEXT"
+}

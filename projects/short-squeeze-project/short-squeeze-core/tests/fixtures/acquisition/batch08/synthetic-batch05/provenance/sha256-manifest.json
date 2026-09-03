@@ -1,0 +1,130 @@
+{
+ "provenance/artifact-manifest.json": {
+  "byte_length": 10909,
+  "sha256": "a87c81c92d003fb9469c5fd4bc9837e808579fecda27fc158ee8dbde7cb516c4"
+ },
+ "raw/AVTX-detection-context.csv": {
+  "byte_length": 765,
+  "sha256": "69dc8f85ed3b2ac07896781a307282aa9182e9fb6770c91c05ab493b0d598660"
+ },
+ "raw/AVTX-frozen-forward-24h.csv": {
+  "byte_length": 687,
+  "sha256": "1054d22807b76dbff57113e913dc01096a42bb448b61632e08a820075429de83"
+ },
+ "raw/BHVN-detection-context.csv": {
+  "byte_length": 765,
+  "sha256": "e51945a4ade11a409527f0f4f98d47e414bbd358eafb182daf8258cde1487aa4"
+ },
+ "raw/BHVN-frozen-forward-24h.csv": {
+  "byte_length": 687,
+  "sha256": "d48912d1be53db50d6966871884272c2b59f2015b6a1252687c7b04150a93151"
+ },
+ "raw/GPRE-detection-context.csv": {
+  "byte_length": 765,
+  "sha256": "4c4f6e84aabbfa8bb4ece45a9b05dd9b782fe36102763979a8ed47a7de1488f1"
+ },
+ "raw/GPRE-frozen-forward-24h.csv": {
+  "byte_length": 687,
+  "sha256": "72616b86b74cb46abba6cbd42b08c8488b09815092367d9962fb7816e9c14553"
+ },
+ "raw/KLRS-detection-context.csv": {
+  "byte_length": 777,
+  "sha256": "7f4ad64af711fc8b300bed6bfafde147cd1a33042f0141f929842e8a091c0154"
+ },
+ "raw/KLRS-frozen-forward-24h.csv": {
+  "byte_length": 699,
+  "sha256": "15d2bcddf3b7ebc6ad8688fcaa57a84ed32679d4b84ef02ec144ef656a9652a7"
+ },
+ "raw/LBGJ-detection-context.csv": {
+  "byte_length": 765,
+  "sha256": "d8d9108164ca9dc2aecd59b3e0aa3d4235a5b6e8bc32873f42fff997b0beea40"
+ },
+ "raw/LBGJ-frozen-forward-24h.csv": {
+  "byte_length": 687,
+  "sha256": "84a10bcf35aa41d13f2754d78a30025e55fedd63a6f5799b3265ab476db35c15"
+ },
+ "raw/LMNX-detection-context.csv": {
+  "byte_length": 785,
+  "sha256": "44c2633c23f3cd47d7afcb87a63041916c8c357557a9bbcb93fba6bb2596a46c"
+ },
+ "raw/LMNX-frozen-forward-24h.csv": {
+  "byte_length": 707,
+  "sha256": "7d5a962e5bba95035a5e614d28a62324345341d868ff5dcb33f45638fcf2829d"
+ },
+ "raw/MGNX-detection-context.csv": {
+  "byte_length": 795,
+  "sha256": "963d513b880c1e2cc6b1c3fe4883eb70128a7999b21fa00cbb02bae519154e33"
+ },
+ "raw/MGNX-frozen-forward-24h.csv": {
+  "byte_length": 717,
+  "sha256": "c65470571f883235e7a4038557c58feddaa1dbcabcedab0517ab289428382c60"
+ },
+ "raw/OBE-detection-context.csv": {
+  "byte_length": 779,
+  "sha256": "cf6b8e8301ec6c2723e9f736f1f9c49e54f32ed26563205b40536844d5fb7a0f"
+ },
+ "raw/OBE-frozen-forward-24h.csv": {
+  "byte_length": 701,
+  "sha256": "8217fbf13993e2e1132fb847056ba5db8dd63fae67af5efdca49370aff978f1e"
+ },
+ "raw/PESI-detection-context.csv": {
+  "byte_length": 785,
+  "sha256": "162514e11f76f1f657e3391a604e02a6ffa5f58f8cb8fb0ae9306eeaeac83859"
+ },
+ "raw/PESI-frozen-forward-24h.csv": {
+  "byte_length": 707,
+  "sha256": "45882e6d361dec340573e8bcb313632b05f17f3493bba13b9fb4c45753032d38"
+ },
+ "raw/SG-detection-context.csv": {
+  "byte_length": 765,
+  "sha256": "3a2e67e0805c4cce5998ca8f8b9b162ec57e04d4034cb4f97cb84ba51381d9ba"
+ },
+ "raw/SG-frozen-forward-24h.csv": {
+  "byte_length": 687,
+  "sha256": "1ce4e72971943b9572f1c417f798a4002deea08ff0a4d0df73feafea50b74cbc"
+ },
+ "raw/SLS-detection-context.csv": {
+  "byte_length": 779,
+  "sha256": "046518a5011b1de7afe7abb91b8f70beee02a4a452ee88caeac2f4b95ffbfebe"
+ },
+ "raw/SLS-frozen-forward-24h.csv": {
+  "byte_length": 701,
+  "sha256": "ce884b9c737c93e548f0e9bdf6ba7cb27f4cbdf2b0f047ddf8e323b20ee2bc29"
+ },
+ "raw/SSPC-detection-context.csv": {
+  "byte_length": 795,
+  "sha256": "327613b5060190add3beab3658c9189689ff4698e0e1d8c04eda93a22514a591"
+ },
+ "raw/SSPC-frozen-forward-24h.csv": {
+  "byte_length": 717,
+  "sha256": "eaf424180e77c85385f2238f9a3417b272522524b4f368788d00c77e8554fe88"
+ },
+ "raw/TRVI-detection-context.csv": {
+  "byte_length": 770,
+  "sha256": "0ee7666ce6ab379dfb0bbee096cdb546b429f4f0be95c1942bc066c7acab7670"
+ },
+ "raw/TRVI-frozen-forward-24h.csv": {
+  "byte_length": 692,
+  "sha256": "1e88e2a70504588c2200fa84ac81b655fda28e6bf095ac6191cd9ac4b145679e"
+ },
+ "raw/XNCR-detection-context.csv": {
+  "byte_length": 765,
+  "sha256": "b4c04a572a854ca12f35bdbf6cefeac1825d19a43fd64ac49a003c0d63e17276"
+ },
+ "raw/XNCR-frozen-forward-24h.csv": {
+  "byte_length": 687,
+  "sha256": "5af2e968a856cc9557888abe9f4d07d01b278b192703a11b8d8ebd35c22504b3"
+ },
+ "raw/ZNTL-detection-context.csv": {
+  "byte_length": 795,
+  "sha256": "63b71e8374cfde6690f247caa2abce58f89abf641c6eeec15f02439d118cd808"
+ },
+ "raw/ZNTL-frozen-forward-24h.csv": {
+  "byte_length": 717,
+  "sha256": "ee6ddf4f6b2ed9878838b0382ef8e62a7dce640fbddf33c57552d05a76093fc2"
+ },
+ "requests/request-manifest.json": {
+  "byte_length": 17412,
+  "sha256": "2d9a05fadf531661edd1092609ea8c548bda627ffbb31b40f2caaa7e56d619a3"
+ }
+}

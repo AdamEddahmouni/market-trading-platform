@@ -1,0 +1,58 @@
+{
+  "tradeDate": "2026-08-19",
+  "lastUpdated": "2026-08-19T17:30:00-05:00",
+  "putCallRatios": [
+    {"name": "TOTAL", "value": "0.95", "call": 4523100, "put": 4296945},
+    {"name": "INDEX", "value": "1.12"},
+    {"name": "EXCHANGE TRADED PRODUCTS", "value": "0.88"},
+    {"name": "EQUITY", "value": "0.82"},
+    {"name": "VIX", "value": "1.05"},
+    {"name": "SPX + SPXW", "value": "1.20"},
+    {"name": "ZERO PUT PRODUCT", "value": "0.00", "call": 5000, "put": 0},
+    {"name": "UNDEFINED DENOMINATOR", "value": "", "call": 0, "put": 1500}
+  ],
+  "volumeAndOpenInterest": [
+    {
+      "product": "TOTAL",
+      "name": "TOTAL VOLUME",
+      "call": 4523100,
+      "put": 4296945,
+      "total": 8820045
+    },
+    {
+      "product": "TOTAL",
+      "name": "TOTAL OPEN INTEREST",
+      "call": 102345678,
+      "put": 98765432,
+      "total": 201111110
+    },
+    {
+      "product": "EQUITY",
+      "name": "EQUITY VOLUME",
+      "call": 2100000,
+      "put": 1722000,
+      "total": 3822000
+    },
+    {
+      "product": "EQUITY",
+      "name": "EQUITY OPEN INTEREST",
+      "call": 45000000,
+      "put": 36900000,
+      "total": 81900000
+    },
+    {
+      "product": "ZERO PUT PRODUCT",
+      "name": "ZERO PUT PRODUCT VOLUME",
+      "call": 5000,
+      "put": 0,
+      "total": 5000
+    },
+    {
+      "product": "UNDEFINED DENOMINATOR",
+      "name": "UNDEFINED DENOMINATOR VOLUME",
+      "call": 0,
+      "put": 1500,
+      "total": 1500
+    }
+  ]
+}

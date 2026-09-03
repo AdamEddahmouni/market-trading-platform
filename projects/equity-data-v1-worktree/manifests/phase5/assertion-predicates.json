@@ -1,0 +1,30 @@
+{
+  "predicates": [
+    {
+      "assertion_id": "CAP-001",
+      "assertion_version": "1.0.0",
+      "predicate": "Feature surface is limited to BAR_OHLCV_1M bar-derived rows; institutional families remain unavailable without entitled sources"
+    },
+    {
+      "assertion_id": "PIT-FEAT-001",
+      "assertion_version": "1.0.0",
+      "predicate": "Every feature input has available_time less than or equal to the prediction cutoff; future inputs are rejected"
+    },
+    {
+      "assertion_id": "WHALE-001",
+      "assertion_version": "1.0.0",
+      "predicate": "All eight institutional evidence families return unavailable with WHALE_NO_ENTITLED_SOURCE on the admitted fixture"
+    },
+    {
+      "assertion_id": "DET-001",
+      "assertion_version": "1.0.0",
+      "predicate": "Two clean, network-denied runs with identical canonical inputs produce identical feature replay root SHA-256"
+    },
+    {
+      "assertion_id": "SAFE-003",
+      "assertion_version": "1.0.0",
+      "predicate": "Network-denied replay passes; route reachability from any milestone entry point to live order submission is empty"
+    }
+  ],
+  "registry_version": "1.0.0"
+}

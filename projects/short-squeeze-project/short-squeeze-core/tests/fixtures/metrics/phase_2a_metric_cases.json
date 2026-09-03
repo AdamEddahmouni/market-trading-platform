@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Phase 2A CLI demonstration cases for tests/fixtures/metrics/cli_demo_bars.jsonl. Fixture provenance: SYNTHETIC_EDGE_CASE.",
+  "cases": [
+    {
+      "metric_name": "ABSOLUTE_RETURN",
+      "source_interval": "1_DAY",
+      "start_bar_start": "2026-01-14T05:00:00Z",
+      "start_bar_end": "2026-01-15T05:00:00Z",
+      "end_bar_start": "2026-01-15T05:00:00Z",
+      "end_bar_end": "2026-01-16T05:00:00Z",
+      "price_field": "CLOSE"
+    },
+    {
+      "metric_name": "PERCENTAGE_RETURN",
+      "source_interval": "1_DAY",
+      "start_bar_start": "2026-01-14T05:00:00Z",
+      "start_bar_end": "2026-01-15T05:00:00Z",
+      "end_bar_start": "2026-01-15T05:00:00Z",
+      "end_bar_end": "2026-01-16T05:00:00Z",
+      "price_field": "CLOSE"
+    },
+    {
+      "metric_name": "ABSOLUTE_SESSION_GAP",
+      "source_interval": "1_DAY",
+      "prior_bar_start": "2026-01-14T05:00:00Z",
+      "prior_bar_end": "2026-01-15T05:00:00Z",
+      "current_bar_start": "2026-01-15T05:00:00Z",
+      "current_bar_end": "2026-01-16T05:00:00Z"
+    },
+    {
+      "metric_name": "ABSOLUTE_BAR_RANGE",
+      "source_interval": "1_DAY",
+      "target_bar_start": "2026-01-15T05:00:00Z",
+      "target_bar_end": "2026-01-16T05:00:00Z"
+    },
+    {
+      "metric_name": "PERCENTAGE_BAR_RANGE",
+      "source_interval": "1_DAY",
+      "target_bar_start": "2026-01-15T05:00:00Z",
+      "target_bar_end": "2026-01-16T05:00:00Z"
+    },
+    {
+      "metric_name": "MEAN_VOLUME_BASELINE",
+      "source_interval": "1_DAY",
+      "target_bar_start": "2026-01-15T05:00:00Z",
+      "target_bar_end": "2026-01-16T05:00:00Z",
+      "window": {
+        "requested_count": 5,
+        "exclude_current_bar": true,
+        "minimum_samples": 3
+      }
+    }
+  ]
+}

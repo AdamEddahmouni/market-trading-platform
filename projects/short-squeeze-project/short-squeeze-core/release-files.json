@@ -1,0 +1,38 @@
+{
+  "files": [
+    ".dockerignore",
+    ".env.example",
+    "DEPENDENCIES.md",
+    "Dockerfile",
+    "HANDOFF_README.md",
+    "INTEGRATION_CHECKLIST.md",
+    "LICENSE_STATUS.md",
+    "README.md",
+    "THIRD_PARTY_NOTICES.md",
+    "docs/API.md",
+    "docs/ARCHITECTURE.md",
+    "docs/CHANGELOG.md",
+    "docs/CONFIGURATION.md",
+    "docs/DEPLOYMENT.md",
+    "docs/INTEGRATION.md",
+    "docs/LIMITATIONS.md",
+    "docs/METHODOLOGIES.md",
+    "docs/PROVIDERS.md",
+    "docs/SECURITY.md",
+    "docs/TESTING.md",
+    "docs/openapi.json",
+    "docs/release/privacy-and-handoff-audit.md",
+    "morning_check.ps1",
+    "pyproject.toml",
+    "railway.toml",
+    "release-audit-allowlist.json",
+    "run_screener.ps1",
+    "tests/release/__init__.py",
+    "tests/release/test_release_smoke.py"
+  ],
+  "trees": [
+    "apps/research_screener",
+    "src/squeeze_core",
+    "tools"
+  ]
+}

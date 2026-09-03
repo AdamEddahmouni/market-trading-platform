@@ -1,0 +1,324 @@
+{
+  "configuration": {
+    "fast_included": true,
+    "operation_iterations": 1000,
+    "repeat": 5
+  },
+  "generated_at": "2026-08-20T22:37:27.898187+00:00",
+  "interpretation": "Informational timings only; no absolute performance pass/fail threshold is applied.",
+  "logical_cpu_count": 8,
+  "platform": "Windows-10-10.0.26200-SP0",
+  "production_operations": [
+    {
+      "availability": "measured",
+      "fixture_refs": [
+        "tests/fixtures/platform/p0/p0_bitemporal_slice.json"
+      ],
+      "iterations_per_sample": 1000,
+      "maximum_seconds": 0.0022579000005862326,
+      "mean_seconds": 0.0021087200000692976,
+      "median_seconds": 0.00208680000014283,
+      "median_seconds_per_operation": 2.08680000014283e-06,
+      "minimum_seconds": 0.0020085999994989834,
+      "name": "p0_as_of_lookup",
+      "repeat": 5,
+      "sample_seconds": [
+        0.0022579000005862326,
+        0.0020758000000569155,
+        0.00208680000014283,
+        0.0020085999994989834,
+        0.0021145000000615255
+      ]
+    },
+    {
+      "availability": "measured",
+      "fixture_refs": [
+        "tests/fixtures/platform/p0/p0_bitemporal_slice.json"
+      ],
+      "iterations_per_sample": 1000,
+      "maximum_seconds": 0.0009660000005169422,
+      "mean_seconds": 0.0009328400001322734,
+      "median_seconds": 0.0009326999997938401,
+      "median_seconds_per_operation": 9.326999997938401e-07,
+      "minimum_seconds": 0.0008907000001272536,
+      "name": "bitemporal_revision_lookup",
+      "repeat": 5,
+      "sample_seconds": [
+        0.0009608000000298489,
+        0.0009660000005169422,
+        0.0008907000001272536,
+        0.0009140000001934823,
+        0.0009326999997938401
+      ]
+    },
+    {
+      "availability": "measured",
+      "fixture_refs": [
+        "tests/fixtures/fred/cross_frequency_pit.json"
+      ],
+      "iterations_per_sample": 1000,
+      "maximum_seconds": 7.139999979699496e-05,
+      "mean_seconds": 6.893999998283106e-05,
+      "median_seconds": 6.949999988137279e-05,
+      "median_seconds_per_operation": 6.949999988137279e-08,
+      "minimum_seconds": 6.650000068475492e-05,
+      "name": "fred_registry_lookup",
+      "repeat": 5,
+      "sample_seconds": [
+        7.139999979699496e-05,
+        6.7299999500392e-05,
+        6.650000068475492e-05,
+        6.949999988137279e-05,
+        7.000000005064066e-05
+      ]
+    },
+    {
+      "availability": "measured",
+      "fixture_refs": [
+        "tests/fixtures/eia/petroleum_weekly_rows.json"
+      ],
+      "iterations_per_sample": 1000,
+      "maximum_seconds": 7.129999994504033e-05,
+      "mean_seconds": 6.777999969926895e-05,
+      "median_seconds": 6.69999999445281e-05,
+      "median_seconds_per_operation": 6.69999999445281e-08,
+      "minimum_seconds": 6.609999945794698e-05,
+      "name": "eia_registry_lookup",
+      "repeat": 5,
+      "sample_seconds": [
+        6.779999966965988e-05,
+        6.609999945794698e-05,
+        6.669999947916949e-05,
+        6.69999999445281e-05,
+        7.129999994504033e-05
+      ]
+    },
+    {
+      "availability": "measured",
+      "fixture_refs": [
+        "tests/fixtures/fred/cross_frequency_pit.json"
+      ],
+      "iterations_per_sample": 200,
+      "maximum_seconds": 0.013417899999694782,
+      "mean_seconds": 0.01300762000009854,
+      "median_seconds": 0.01286199999958626,
+      "median_seconds_per_operation": 6.43099999979313e-05,
+      "minimum_seconds": 0.012682000000495464,
+      "name": "macro_state_as_of",
+      "repeat": 5,
+      "sample_seconds": [
+        0.01286199999958626,
+        0.013221100000009756,
+        0.012855100000706443,
+        0.013417899999694782,
+        0.012682000000495464
+      ]
+    },
+    {
+      "availability": "measured",
+      "fixture_refs": [
+        "tests/fixtures/fred/cross_frequency_pit.json",
+        "tests/fixtures/eia/petroleum_weekly_rows.json"
+      ],
+      "iterations_per_sample": 50,
+      "maximum_seconds": 0.004293999999390508,
+      "mean_seconds": 0.004235260000132257,
+      "median_seconds": 0.0042661000006773975,
+      "median_seconds_per_operation": 8.532200001354795e-05,
+      "minimum_seconds": 0.004086199999619566,
+      "name": "energy_market_context",
+      "repeat": 5,
+      "sample_seconds": [
+        0.0042661000006773975,
+        0.00425210000048537,
+        0.004086199999619566,
+        0.004293999999390508,
+        0.004277900000488444
+      ]
+    },
+    {
+      "availability": "measured",
+      "fixture_refs": [
+        "tests/fixtures/short_intelligence/consolidated_short_interest_slice.json",
+        "tests/fixtures/short_intelligence/symbol_map.json"
+      ],
+      "iterations_per_sample": 500,
+      "maximum_seconds": 0.006320399999822257,
+      "mean_seconds": 0.005580000000009022,
+      "median_seconds": 0.005463000000418106,
+      "median_seconds_per_operation": 1.0926000000836211e-05,
+      "minimum_seconds": 0.0052574000001186505,
+      "name": "short_pressure_state",
+      "repeat": 5,
+      "sample_seconds": [
+        0.005463000000418106,
+        0.0055888999995659105,
+        0.0052574000001186505,
+        0.005270300000120187,
+        0.006320399999822257
+      ]
+    },
+    {
+      "availability": "measured",
+      "fixture_refs": [
+        "tests/fixtures/cftc/product_hierarchy_slice.json"
+      ],
+      "iterations_per_sample": 1000,
+      "maximum_seconds": 0.0005077000005258014,
+      "mean_seconds": 0.0004843999999138759,
+      "median_seconds": 0.0004749999998239218,
+      "median_seconds_per_operation": 4.749999998239218e-07,
+      "minimum_seconds": 0.00047029999950609636,
+      "name": "cftc_product_mapping",
+      "repeat": 5,
+      "sample_seconds": [
+        0.0005077000005258014,
+        0.0004749999998239218,
+        0.00047029999950609636,
+        0.0004957999999533058,
+        0.0004731999997602543
+      ]
+    },
+    {
+      "availability": "measured",
+      "fixture_refs": [
+        "tests/fixtures/providers/distribution/nvda_bars_slice.json"
+      ],
+      "iterations_per_sample": 10,
+      "maximum_seconds": 0.009674400000221794,
+      "mean_seconds": 0.00942056000003504,
+      "median_seconds": 0.00941549999970448,
+      "median_seconds_per_operation": 0.000941549999970448,
+      "minimum_seconds": 0.009075699999812059,
+      "name": "representative_simulation_operation",
+      "repeat": 5,
+      "sample_seconds": [
+        0.009075699999812059,
+        0.00953769999978249,
+        0.00939950000065437,
+        0.00941549999970448,
+        0.009674400000221794
+      ]
+    }
+  ],
+  "python_version": "3.11.15",
+  "report_type": "informational_benchmark",
+  "repository_root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\integrated-market-platform",
+  "runner_overhead": [
+    {
+      "availability": "measured",
+      "command_label": "python_startup",
+      "maximum_seconds": 0.5825391999997009,
+      "mean_seconds": 0.5695381999999881,
+      "median_seconds": 0.5734125999997559,
+      "minimum_seconds": 0.5584344000008059,
+      "name": "python_startup",
+      "repeat": 5,
+      "return_codes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "sample_seconds": [
+        0.5825391999997009,
+        0.5593011999999362,
+        0.5740035999997417,
+        0.5584344000008059,
+        0.5734125999997559
+      ],
+      "stderr_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "stdout_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "availability": "measured",
+      "command_label": "tiny_unittest_worker",
+      "maximum_seconds": 0.8038004000000001,
+      "mean_seconds": 0.7816130999997768,
+      "median_seconds": 0.7825106999998752,
+      "minimum_seconds": 0.7637458999997762,
+      "name": "tiny_unittest_worker",
+      "repeat": 5,
+      "return_codes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "sample_seconds": [
+        0.7637458999997762,
+        0.7831796000000395,
+        0.8038004000000001,
+        0.7748288999991928,
+        0.7825106999998752
+      ],
+      "stderr_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "stdout_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "availability": "measured",
+      "command_label": "fast_validation",
+      "maximum_seconds": 2.1946084000001065,
+      "mean_seconds": 2.132556420000219,
+      "median_seconds": 2.126469700000598,
+      "minimum_seconds": 2.0854327999995803,
+      "name": "fast_validation",
+      "repeat": 5,
+      "return_codes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "sample_seconds": [
+        2.165341400000216,
+        2.1946084000001065,
+        2.126469700000598,
+        2.0909298000005947,
+        2.0854327999995803
+      ],
+      "stderr_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "stdout_bytes": [
+        66,
+        66,
+        66,
+        66,
+        66
+      ]
+    }
+  ],
+  "schema_version": "1.0"
+}

@@ -1,0 +1,14 @@
+{
+  "period_of_report": "2026-01-15",
+  "original_accepted": "2026-01-20T14:30:00Z",
+  "original_received": "2026-01-20T15:00:00Z",
+  "amendment_accepted": "2026-01-27T14:30:00Z",
+  "amendment_received": "2026-01-28T15:00:00Z",
+  "as_of": {
+    "before_acceptance": "2026-01-20T14:00:00Z",
+    "after_acceptance_before_receipt": "2026-01-20T14:45:00Z",
+    "after_original_receipt": "2026-01-23T15:00:00Z",
+    "before_amendment_receipt": "2026-01-27T15:00:00Z",
+    "after_amendment_receipt": "2026-01-30T15:00:00Z"
+  }
+}

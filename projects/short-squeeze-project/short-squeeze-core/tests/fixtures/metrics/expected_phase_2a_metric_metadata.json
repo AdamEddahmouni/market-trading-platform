@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Phase 2A anchor hashes (handoff section 34). Each *_sha256 value is canonical_hash() of the named MetricResult, except mixed_phase_2a_metric_output_sha256 (canonical_hash of the sorted-by-name result list), serialized_final_metric_collection_sha256 (sha256 of the concatenated per-result canonical JSON bytes), and cli_output_sha256 (sha256 of build-market-metrics stdout for tests/fixtures/metrics/cli_demo_bars.jsonl + phase_2a_metric_cases.json at as_of=2026-01-20T22:00:00Z).",
+  "anchor_result_order": [
+    "absolute_range",
+    "after_cancellation_metric_result",
+    "after_correction_metric_result",
+    "before_cancellation_metric_result",
+    "before_correction_metric_result",
+    "five_sample_volume_baseline",
+    "negative_percentage_return",
+    "percentage_range",
+    "positive_absolute_gap",
+    "positive_absolute_return",
+    "positive_percentage_gap",
+    "positive_percentage_return",
+    "three_sample_volume_baseline"
+  ],
+  "anchors": {
+    "absolute_range": "fe1aed32f02fc864c8e05f579948b59196ea4c37059c3422d30cf37a25b7810f",
+    "after_cancellation_metric_result": "2d9c1fb3ce74ff6031f9bf8247c4e565f16cbf1b32d1929d167d7e37579ad46f",
+    "after_correction_metric_result": "4b57c05a711c505f72e67c637bfcc74120e2273b69e13841f3b032fb4c92325d",
+    "before_cancellation_metric_result": "e6b2cd3cf5b5c061125b4ed5225c56dbdcb08bd5376e612d9748954db6545197",
+    "before_correction_metric_result": "1c7c994b12a47c0e84c22b49f16371d068d8ced2a9088bb74d7f3943e8bb1ed6",
+    "cli_output_sha256": "3ed370997a4d67b6f3a6f3254fc5641ec644aace25ca4990c405ccd178b6fed8",
+    "five_sample_volume_baseline": "e5a009ccca61cb333c0441b8256ca9b1680b83fcaf1552c04f4044cfbe70e04f",
+    "mixed_phase_2a_metric_output_sha256": "5212b158be6355ce945135d231d8c6a011158ec754efe429d788285fe34b86f4",
+    "negative_percentage_return": "13f4ee645d0a92280243d336a83671b6888d38e69801c3a01263991a8dcb5cf8",
+    "percentage_range": "e204adb81ab6f5c168a30a06ed76ec18a15d752e4ca681f51a72405a9b9b94ac",
+    "positive_absolute_gap": "1d66b5a247fd5265fbdc68c031217f5b5f0c8c932d5e88501eb34464ae00887f",
+    "positive_absolute_return": "d7c6e4add5bbf42008896aede5f639b1a55325342f739e01e7fd1e91e90f675d",
+    "positive_percentage_gap": "b6a071cfcce7b7251b34931257f8b318c6c830600b0dc8e7f14758dc64892b42",
+    "positive_percentage_return": "556c2406a6e1c8dd18ce2aeeac0f14d67916a3d969f869de4e44f97abd58646d",
+    "serialized_final_metric_collection_sha256": "5212b158be6355ce945135d231d8c6a011158ec754efe429d788285fe34b86f4",
+    "three_sample_volume_baseline": "b38946b1a6072a947903ec302994e40fd6c7e07277f074179eb254f223ece6a5"
+  }
+}

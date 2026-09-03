@@ -1,0 +1,16 @@
+{
+  "partial_published": "2026-01-31T09:30:30-05:00",
+  "partial_received": "2026-01-31T14:30:31Z",
+  "completed_published": "2026-01-31T09:31:01-05:00",
+  "completed_received": "2026-01-31T14:31:02Z",
+  "correction_published": "2026-01-31T09:35:00-05:00",
+  "correction_received": "2026-01-31T14:35:01Z",
+  "as_of": {
+    "before_partial_publication": "2026-01-31T14:30:29Z",
+    "after_partial_receipt": "2026-01-31T14:30:31Z",
+    "before_completed_receipt": "2026-01-31T14:31:01.500000Z",
+    "after_completed_receipt": "2026-01-31T14:31:02Z",
+    "before_correction_receipt": "2026-01-31T14:35:00.500000Z",
+    "after_correction_receipt": "2026-01-31T14:35:01Z"
+  }
+}

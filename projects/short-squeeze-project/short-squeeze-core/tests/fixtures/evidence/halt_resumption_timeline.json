@@ -1,0 +1,20 @@
+{
+  "halt_effective": "2026-01-15T15:00:00Z",
+  "announcement_published": "2026-01-15T15:01:00Z",
+  "announcement_received": "2026-01-15T15:01:00Z",
+  "quote_resumption_scheduled": "2026-01-15T15:25:00Z",
+  "quote_schedule_published": "2026-01-15T15:20:00Z",
+  "quote_schedule_received": "2026-01-15T15:20:00Z",
+  "quotes_resumed": "2026-01-15T15:30:00Z",
+  "trade_resumption_scheduled": "2026-01-15T15:40:00Z",
+  "trade_schedule_published": "2026-01-15T15:35:00Z",
+  "trading_resumed": "2026-01-15T15:40:00Z",
+  "as_of": {
+    "before_announcement": "2026-01-15T15:00:30Z",
+    "after_announcement_receipt": "2026-01-15T15:10:00Z",
+    "after_quote_schedule": "2026-01-15T15:21:00Z",
+    "after_quotes_resumed": "2026-01-15T15:31:00Z",
+    "after_trade_schedule": "2026-01-15T15:36:00Z",
+    "after_trading_resumed": "2026-01-15T15:41:00Z"
+  }
+}

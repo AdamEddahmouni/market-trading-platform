@@ -1,0 +1,4 @@
+Symbol|Settlement Date|Current Short Position|Previous Short Position|short_float_percent
+GME|2026-01-15|45000000|44000000|22.5%
+AMC|2026-01-15|120000000|118000000|18.0%
+TESTA|2026-01-15|2500000|2250000|12.5%

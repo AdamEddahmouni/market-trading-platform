@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Phase 2C CLI demonstration cases for tests/fixtures/metrics/phase_2c_cli_demo_observations.jsonl. Fixture provenance: SYNTHETIC_EDGE_CASE.",
+  "cases": [
+    {
+      "metric_name": "PUBLISHED_SHORT_INTEREST_ABSOLUTE_CHANGE",
+      "symbol": "TESTC",
+      "provider": "FINRA-PROVIDER",
+      "starting_reporting_period": "2026-01-15",
+      "ending_reporting_period": "2026-01-31"
+    },
+    {
+      "metric_name": "PUBLISHED_SHORT_INTEREST_PERCENTAGE_CHANGE",
+      "symbol": "TESTC",
+      "provider": "FINRA-PROVIDER",
+      "starting_reporting_period": "2026-01-15",
+      "ending_reporting_period": "2026-01-31"
+    },
+    {
+      "metric_name": "DAYS_TO_COVER",
+      "symbol": "TESTC",
+      "short_interest_provider": "FINRA-PROVIDER",
+      "short_interest_reporting_period": "2026-01-31",
+      "volume_provider": "SIM-VOLUME-PROVIDER",
+      "volume_interval": "1_DAY",
+      "volume_window": {
+        "requested_count": 3,
+        "minimum_samples": 3
+      }
+    },
+    {
+      "metric_name": "BORROW_FEE_ABSOLUTE_CHANGE",
+      "symbol": "TESTC",
+      "provider": "IBKR-PROVIDER",
+      "starting_effective_timestamp": "2026-01-10T00:00:00Z",
+      "ending_effective_timestamp": "2026-01-20T00:00:00Z"
+    },
+    {
+      "metric_name": "BORROW_AVAILABILITY_ABSOLUTE_CHANGE",
+      "symbol": "TESTC",
+      "provider": "IBKR-PROVIDER",
+      "starting_effective_timestamp": "2026-01-10T00:00:00Z",
+      "ending_effective_timestamp": "2026-01-20T00:00:00Z"
+    }
+  ]
+}

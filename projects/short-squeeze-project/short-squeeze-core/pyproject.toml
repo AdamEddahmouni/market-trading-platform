@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "short-squeeze-core"
+version = "0.16.0"
+description = "Read-only short-squeeze research screener and deterministic evidence core"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Adam Eddahmouni" }]
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "pydantic==2.13.4",
+    "requests==2.34.2",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest==8.4.1",
+]
+sentiment = [
+    "torch>=2.2.0",
+    "transformers>=4.40.0",
+]
+provider-auth = [
+    "curl-cffi==0.13.0",
+]
+
+[project.scripts]
+squeeze-core = "squeeze_core.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+squeeze_core = [
+    "evaluation/policies/*.json",
+    "research/policies/*.json",
+    "analysis/policies/*.json",
+    "acquisition/policy_documents/*.json",
+    "calibration/policies/*.json",
+]
+
+[tool.pytest.ini_options]
+addopts = "-q -p no:cacheprovider"
+testpaths = ["tests"]
+pythonpath = ["."]

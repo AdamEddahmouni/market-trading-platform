@@ -1,0 +1,46 @@
+{
+  "prediction_cutoff": "2026-06-15T23:59:59Z",
+  "instrument_id": "BIYA",
+  "fixture_path": "tests/fixtures/providers/edgar/biya_participant_skill_history.json",
+  "price_fixture_path": "tests/fixtures/participant/biya_price_outcomes.json",
+  "participants": {
+    "Jane Officer": {
+      "skill_group_key": "JANE OFFICER",
+      "buy_skill": {
+        "sample_count": 6,
+        "raw_mean": 0.0557,
+        "shrunk_estimate": 0.0304,
+        "quality_flags": []
+      },
+      "sell_skill": {
+        "sample_count": 0,
+        "quality_flags": ["SKILL_INSUFFICIENT_SAMPLE"]
+      }
+    },
+    "John Director": {
+      "skill_group_key": "JOHN DIRECTOR",
+      "sell_skill": {
+        "sample_count": 1,
+        "quality_flags": ["SKILL_INSUFFICIENT_SAMPLE"]
+      }
+    },
+    "Weak Buyer": {
+      "skill_group_key": "WEAK BUYER",
+      "buy_skill": {
+        "sample_count": 3,
+        "raw_mean": -0.1038,
+        "shrunk_estimate": -0.0389,
+        "quality_flags": []
+      }
+    }
+  },
+  "summary": {
+    "participant_count": 3,
+    "skill_available": true,
+    "elevated_participant_count": 0,
+    "below_baseline_participant_count": 1,
+    "cross_lane_signals": ["PARTICIPANT_SKILL_BELOW_BASELINE"]
+  },
+  "producer_version": "participant_skill_v1",
+  "walk_forward_fold_count_min": 2
+}

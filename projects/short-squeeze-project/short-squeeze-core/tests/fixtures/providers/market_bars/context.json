@@ -1,0 +1,1 @@
+{"account_scope":null,"adapter_version":"1.0.0","collection_method":"LOADED_FIXTURE","entitlement_status":"NOT_APPLICABLE","expected_delay_ms":null,"ingested_at":"2026-01-15T14:40:00.000000Z","normalization_version":"market-bars-v1","provider":"market-bars-offline","request_id":null,"session_id":null,"source_endpoint_name":"sanitized-market-bar-fixture","source_timezone":null}

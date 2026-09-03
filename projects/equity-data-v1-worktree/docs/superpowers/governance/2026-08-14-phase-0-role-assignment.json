@@ -1,0 +1,207 @@
+{
+  "acknowledgements": [
+    {
+      "acknowledgement_id": "ACK-ACCOUNTABILITY-001",
+      "statement": "PROJECT-PRINCIPAL-001 remains the sole human accountable for every assigned capacity and for every decision made while acting in those capacities."
+    },
+    {
+      "acknowledgement_id": "ACK-ROLE-MEANING-001",
+      "statement": "Role labels describe functional responsibilities and review perspectives; they do not imply employees, partners, additional maintainers, or multiple human participants."
+    },
+    {
+      "acknowledgement_id": "ACK-OVERLAP-001",
+      "statement": "All disclosed human capacities are held by the same principal. This overlap is expected and is not a governance violation."
+    },
+    {
+      "acknowledgement_id": "ACK-INDEPENDENCE-001",
+      "statement": "Review performed by PROJECT-PRINCIPAL-001 in another assigned capacity is self-review and does not satisfy the independent-review requirement."
+    },
+    {
+      "acknowledgement_id": "ACK-AI-LIMIT-001",
+      "statement": "Qualifying fresh-context AI review supplies independent adversarial evidence but does not replace human accountability or authorize any action."
+    },
+    {
+      "acknowledgement_id": "ACK-PUBLIC-IDENTIFIER-001",
+      "statement": "PROJECT-PRINCIPAL-001 is a stable public accountability identifier, not legal-identity evidence. The published evidence bundle does not require or claim a legal name."
+    },
+    {
+      "acknowledgement_id": "ACK-GATE-STATE-001",
+      "statement": "This assignment record alone cannot make GOV-002 pass. GOV-002 remains BLOCKED until AI-REVIEW-PROCESS-001 is formally published and approved and the preapproval reviewer-eligibility check reports zero violations."
+    }
+  ],
+  "ai_independent_review": {
+    "candidate_root_review_run_state": "NOT_YET_CREATED",
+    "coverage_artifact_state": "NOT_YET_CREATED",
+    "designated_procedure_id": "AI-REVIEW-PROCESS-001",
+    "independent_reviewer_is_additional_human": false,
+    "postroot_binding_rule": "After candidate-root construction, the final gate must resolve the independent-review role to at least two qualifying fresh-context AI review runs produced under the approved procedure and bound to the exact candidate evidence root.",
+    "preapproval_binding_rule": "This record designates AI-REVIEW-PROCESS-001 as the future procedural binding. Before candidate-root construction, the independent-review role resolves to that procedure only after the formal procedure artifact is published and approved for its exact hash.",
+    "preapproval_role_state": "NOT_SATISFIED_UNTIL_PROCEDURE_ARTIFACT_EXACT_HASH_APPROVAL",
+    "procedure_artifact_logical_id": "phase0.ai_review_procedure",
+    "procedure_artifact_state": "NOT_YET_PUBLISHED_OR_APPROVED",
+    "review_classes_required": [
+      "ADVERSARIAL_REQUIREMENTS_AND_CONFORMANCE_AUDIT",
+      "INTEGRITY_AND_REPRODUCTION_AUDIT"
+    ]
+  },
+  "artifact_type": "SOLE_PRINCIPAL_ROLE_ASSIGNMENT",
+  "assignment_scope": {
+    "applies_to": "Every human owner, approver, and human review capacity in the normative Phase 0 ownership and approval matrix, including every prototype-maintainer subject listed in this record.",
+    "human_principal_count": 1,
+    "normative_matrix_source": {
+      "document_sha256": "EE22C688167F5016D7ED1953BB1DAE516BC6AB343655A7D96535C6605D37E904",
+      "section": "12. Ownership and approval"
+    },
+    "phase": "PHASE_0_ONLY",
+    "project_governance_model": "PERSONAL_PROJECT_GOVERNED_BY_ONE_HUMAN_PRINCIPAL"
+  },
+  "assignments": [
+    {
+      "capacity_id": "ARCHITECTURE_LEAD",
+      "capacity_label": "Architecture lead",
+      "principal_id": "PROJECT-PRINCIPAL-001",
+      "subject_scope": "Phase 0 canonical governance, boundaries, registry design, and import policy"
+    },
+    {
+      "capacity_id": "EXECUTION_OWNER",
+      "capacity_label": "Execution owner",
+      "principal_id": "PROJECT-PRINCIPAL-001",
+      "subject_scope": "Phase 0 prohibited live-order target review and simulator-separation review"
+    },
+    {
+      "capacity_id": "PROJECT_OWNER",
+      "capacity_label": "Project owner",
+      "principal_id": "PROJECT-PRINCIPAL-001",
+      "subject_scope": "Phase 0 integrated-platform ownership model and scope decisions"
+    },
+    {
+      "capacity_id": "PROTOTYPE_MAINTAINER_FUTURESX",
+      "capacity_label": "FuturesX prototype maintainer",
+      "principal_id": "PROJECT-PRINCIPAL-001",
+      "subject_scope": "Preservation review for the FuturesX prototype"
+    },
+    {
+      "capacity_id": "PROTOTYPE_MAINTAINER_INTERNSHIP_PROJECT",
+      "capacity_label": "Internship project prototype maintainer",
+      "principal_id": "PROJECT-PRINCIPAL-001",
+      "subject_scope": "Preservation review for the Internship project prototype"
+    },
+    {
+      "capacity_id": "PROTOTYPE_MAINTAINER_L1_VOLUME_BUBBLE",
+      "capacity_label": "L1 Volume Bubble prototype maintainer",
+      "principal_id": "PROJECT-PRINCIPAL-001",
+      "subject_scope": "Preservation review for the L1 Volume Bubble prototype"
+    },
+    {
+      "capacity_id": "PROTOTYPE_MAINTAINER_SHORT_SQUEEZE_CORE",
+      "capacity_label": "Short Squeeze Core prototype maintainer",
+      "principal_id": "PROJECT-PRINCIPAL-001",
+      "subject_scope": "Preservation review for the Short Squeeze Core prototype"
+    },
+    {
+      "capacity_id": "PROTOTYPE_MAINTAINER_TRADING_CVD_BUBBLE",
+      "capacity_label": "Trading CVD Bubble prototype maintainer",
+      "principal_id": "PROJECT-PRINCIPAL-001",
+      "subject_scope": "Preservation review for the Trading CVD Bubble prototype"
+    },
+    {
+      "capacity_id": "RELEASE_OWNER",
+      "capacity_label": "Release owner",
+      "principal_id": "PROJECT-PRINCIPAL-001",
+      "subject_scope": "Phase 0 repository and remote policy, preservation manifests, evidence publication, and aggregate gate"
+    },
+    {
+      "capacity_id": "REPLAY_OWNER",
+      "capacity_label": "Replay owner",
+      "principal_id": "PROJECT-PRINCIPAL-001",
+      "subject_scope": "Phase 0 foundation entry-point inventory and denied-network replay protocol"
+    },
+    {
+      "capacity_id": "SECURITY_OWNER",
+      "capacity_label": "Security owner",
+      "principal_id": "PROJECT-PRINCIPAL-001",
+      "subject_scope": "Phase 0 offline and no-live invariants, prohibited-target catalogue, static reachability analysis, credential-location audit, and network-denial review"
+    }
+  ],
+  "authority_bindings": [
+    {
+      "authority_class": "CANONICAL_SPECIFICATION",
+      "logical_path": "docs/superpowers/specs/2026-08-13-integrated-market-platform-foundation-design.md",
+      "sha256": "B4EAE3240F6F968A6B393263D849013259A00187E209C8632E38DE890996D04D",
+      "status": "Conditionally approved architecture; foundation specification requires revision before implementation."
+    },
+    {
+      "authority_class": "CONTROLLING_PHASE_0_PLAN_WITH_EXACT_HASH_WRITTEN_APPROVAL",
+      "logical_path": "docs/superpowers/plans/2026-08-13-phase-0-governance-and-no-live-safety.md",
+      "sha256": "EE22C688167F5016D7ED1953BB1DAE516BC6AB343655A7D96535C6605D37E904",
+      "status": "Draft operational plan; Phase 0 remains BLOCKED pending owner decisions and executable evidence.",
+      "written_plan_review_gate": "SATISFIED_FOR_THIS_EXACT_SHA256",
+      "written_plan_review_note": "The principal approved the unchanged written plan in conversation. No formal phase0.approval_records artifact is claimed to exist."
+    }
+  ],
+  "documented_on": "2026-08-14",
+  "effectivity": {
+    "activation_condition": "The project principal explicitly approves this complete file by its exact SHA-256 after review.",
+    "approval_event_state": "NOT_YET_OCCURRED_OR_RECORDED",
+    "approval_must_bind": [
+      "logical_id",
+      "sha256"
+    ],
+    "current_effectivity": "PENDING_EXACT_HASH_PRINCIPAL_APPROVAL",
+    "determination_rule": "Effectivity is determined from external attributable exact-hash principal-approval evidence. This file alone cannot prove that its activation condition occurred.",
+    "effective_from": "THE_TIMESTAMP_IN_THE_EXTERNAL_EXACT_HASH_APPROVAL_EVIDENCE",
+    "effective_until": "SUPERSEDED_OR_REVOKED_BY_A_LATER_EXACT_HASH_PRINCIPAL_DECISION",
+    "self_hash_rule": "This file does not embed its own SHA-256 because doing so would create a circular identity. The external approval evidence must record the computed hash."
+  },
+  "logical_id": "phase0.role_assignment",
+  "non_authorizations": [
+    "CANONICAL_SPECIFICATION_IMPLEMENTATION_READINESS",
+    "PHASE_0_IMPLEMENTATION",
+    "IMPLEMENTATION_PLANNING",
+    "REPOSITORY_INITIALIZATION_OR_MUTATION",
+    "REMOTE_CREATION_OR_MODIFICATION",
+    "PATH_MOVEMENT_OR_PROTOTYPE_MODIFICATION",
+    "DEPENDENCY_INSTALLATION_OR_LOCK_CREATION",
+    "EXECUTABLE_VERIFIER_OR_EVIDENCE_IMPLEMENTATION",
+    "PHASE_0A_DATA_WORK",
+    "GIT_LFS_OBJECT_RETRIEVAL",
+    "PROVIDER_OR_BROKER_ACCESS",
+    "CREDENTIAL_VALUE_ACCESS",
+    "STRATEGY_SELECTION",
+    "PAPER_OPERATION",
+    "LIVE_DATA_OR_LIVE_TRADING"
+  ],
+  "overlap_disclosure": {
+    "all_human_capacity_pairs_overlap": true,
+    "capacity_equivalence_group": [
+      "ARCHITECTURE_LEAD",
+      "EXECUTION_OWNER",
+      "PROJECT_OWNER",
+      "PROTOTYPE_MAINTAINER_FUTURESX",
+      "PROTOTYPE_MAINTAINER_INTERNSHIP_PROJECT",
+      "PROTOTYPE_MAINTAINER_L1_VOLUME_BUBBLE",
+      "PROTOTYPE_MAINTAINER_SHORT_SQUEEZE_CORE",
+      "PROTOTYPE_MAINTAINER_TRADING_CVD_BUBBLE",
+      "RELEASE_OWNER",
+      "REPLAY_OWNER",
+      "SECURITY_OWNER"
+    ],
+    "disclosure_is_complete_for_scope": true,
+    "independent_review_excluded_from_human_overlap_group": true,
+    "overlap_meaning": "Every listed human capacity resolves to PROJECT-PRINCIPAL-001. No listed capacity represents a different human."
+  },
+  "principal": {
+    "human_participant_count": 1,
+    "identity_evidence_scope": "PUBLIC_ACCOUNTABILITY_IDENTIFIER_ONLY",
+    "legal_name_included": false,
+    "principal_kind": "HUMAN",
+    "public_identifier": "PROJECT-PRINCIPAL-001"
+  },
+  "record_status": "READY_FOR_EXACT_HASH_PRINCIPAL_REVIEW",
+  "schema_version": "1.0.0",
+  "supersession": {
+    "revision_rule": "After effectivity, any content change creates a new immutable revision and requires new exact-hash principal approval; prior approved bytes remain preserved.",
+    "superseded_by": null,
+    "supersedes": []
+  }
+}

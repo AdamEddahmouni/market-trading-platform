@@ -1,0 +1,46 @@
+# ──────────────────────────────────────────────────────────────────────
+#  LOCAL_FULL override  —  docker-compose.local.yml
+# ──────────────────────────────────────────────────────────────────────
+# Overrides the main compose file so the screener runs in LOCAL_FULL
+# mode and consumes live IBKR market data from the companion Gateway.
+#
+# Usage:
+#     docker compose -f docker-compose.yml -f docker-compose.local.yml up
+#
+# Requirements:
+#   - IBKR_USER_ID and IBKR_PASSWORD set in .env
+#   - The ib-gateway health check must pass before the screener starts
+#
+# Why an override file?
+#   LOCAL_FULL normally binds to 127.0.0.1 for security. Docker port
+#   mapping cannot reach loopback inside a container, so this override
+#   sets HOST=0.0.0.0 via environment variable — the ScreenerServer
+#   security gate recognizes the explicit HOST override and permits it.
+# ──────────────────────────────────────────────────────────────────────
+
+services:
+
+  screener:
+    environment:
+      # Switch from CLOUD_PROVIDER_MODE to LOCAL_FULL
+      SQUEEZE_APP_MODE: "LOCAL_FULL"
+
+      # Bind on all interfaces so Docker port mapping (8787→8080) works.
+      # The ScreenerServer security check permits 0.0.0.0 for LOCAL_FULL
+      # only when HOST is explicitly set, so this is an intentional opt-in.
+      HOST: "0.0.0.0"
+
+      # Point IBKR at the companion container.
+      # The gnzsnz/ib-gateway image exposes the paper API on internal
+      # port 4004, mapped to host port 4002.
+      IBKR_HOST: "ib-gateway"
+      IBKR_PORT: "4004"
+
+      # Override the default client ID to avoid conflicts with other
+      # clients that might connect to the same Gateway.
+      IBKR_CLIENT_ID: "999"
+
+    # Wait for the Gateway to be healthy before starting the screener.
+    depends_on:
+      ib-gateway:
+        condition: service_healthy

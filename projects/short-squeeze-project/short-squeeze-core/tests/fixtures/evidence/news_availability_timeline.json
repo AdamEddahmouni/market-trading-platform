@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "original_published": "2026-01-31T14:00:00Z",
+  "original_available": "2026-01-31T14:01:00Z",
+  "original_received": "2026-01-31T14:02:00Z",
+  "update_available": "2026-01-31T14:20:30Z",
+  "update_received": "2026-01-31T14:21:00Z",
+  "withdrawal_available": "2026-01-31T15:00:00Z",
+  "withdrawal_received": "2026-01-31T15:01:00Z",
+  "as_of": {
+    "before_availability": "2026-01-31T14:00:30Z",
+    "after_availability_before_receipt": "2026-01-31T14:01:30Z",
+    "after_original_receipt": "2026-01-31T14:02:00Z",
+    "before_update_receipt": "2026-01-31T14:20:45Z",
+    "after_update_receipt": "2026-01-31T14:21:00Z",
+    "after_withdrawal_receipt": "2026-01-31T15:01:00Z"
+  }
+}

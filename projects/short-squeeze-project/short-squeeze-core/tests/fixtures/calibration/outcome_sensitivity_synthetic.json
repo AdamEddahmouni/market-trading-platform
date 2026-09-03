@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0.0",
+  "experiment_version": "outcome_sensitivity_synthetic.v1",
+  "experiment_type": "OUTCOME_SENSITIVITY",
+  "source_dataset_path": "../research/phase_3b_research_dataset.json",
+  "cohort_type": "SYNTHETIC_CASES",
+  "analysis_unit": "CASE_BOUNDARY",
+  "baseline_variant_id": "baseline",
+  "variants": [
+    {
+      "variant_id": "baseline",
+      "description": "Current Phase 3B outcome label policy (±25% over 24 hours).",
+      "outcome_policy": {
+        "policy_version": "phase_3b_outcome_label_policy.v1",
+        "reference_price_policy": "first_eligible_trade_bar_close_at_or_after_boundary.v1",
+        "horizon": "24_HOURS",
+        "upward_threshold_percent": "25",
+        "downward_threshold_percent": "-25",
+        "provisional": true,
+        "rationale_code": "FIXED_UNOPTIMIZED_24_HOUR_RESEARCH_OUTCOME"
+      }
+    },
+    {
+      "variant_id": "symmetric_30",
+      "description": "Stricter symmetric ±30% thresholds; synthetic cases at exactly 25% flip to no substantial move.",
+      "outcome_policy": {
+        "policy_version": "calibration.outcome.symmetric_30.v1",
+        "reference_price_policy": "first_eligible_trade_bar_close_at_or_after_boundary.v1",
+        "horizon": "24_HOURS",
+        "upward_threshold_percent": "30",
+        "downward_threshold_percent": "-30",
+        "provisional": true,
+        "rationale_code": "CALIBRATION_OUTCOME_SYMMETRIC_30"
+      }
+    },
+    {
+      "variant_id": "strict_35",
+      "description": "Stricter symmetric ±35% thresholds for boundary stress testing.",
+      "outcome_policy": {
+        "policy_version": "calibration.outcome.strict_35.v1",
+        "reference_price_policy": "first_eligible_trade_bar_close_at_or_after_boundary.v1",
+        "horizon": "24_HOURS",
+        "upward_threshold_percent": "35",
+        "downward_threshold_percent": "-35",
+        "provisional": true,
+        "rationale_code": "CALIBRATION_OUTCOME_STRICT_35"
+      }
+    }
+  ]
+}

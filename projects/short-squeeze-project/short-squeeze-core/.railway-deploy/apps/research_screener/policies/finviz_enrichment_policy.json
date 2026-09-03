@@ -1,0 +1,49 @@
+{
+  "policy_version": "1.0.0",
+  "description": "Frozen-to-Finviz field enrichment mappings. Controls which Finviz Elite fields enrich the frozen research display snapshot. Edit to add, remove, or remap fields without touching Python code.",
+  "provider": "Finviz Elite",
+  "mappings": [
+    {
+      "finviz_attr": "float_shares",
+      "frozen_key": "float_shares",
+      "unit": "SHARES",
+      "readiness": "PROVIDER_SNAPSHOT_FLOAT_FINVIZ",
+      "comment": "Shares available to trade (public float)"
+    },
+    {
+      "finviz_attr": "short_float_pct",
+      "frozen_key": "short_float",
+      "unit": "PERCENT",
+      "readiness": "PROVIDER_SNAPSHOT_SHORT_FLOAT_FINVIZ",
+      "comment": "Percentage of float sold short"
+    },
+    {
+      "finviz_attr": "short_ratio",
+      "frozen_key": "short_ratio",
+      "unit": "RATIO",
+      "readiness": "PROVIDER_SNAPSHOT_SHORT_RATIO_FINVIZ",
+      "comment": "Days to cover (short interest / avg volume)"
+    },
+    {
+      "finviz_attr": "rel_volume",
+      "frozen_key": "relative_volume",
+      "unit": "RATIO",
+      "readiness": "PROVIDER_SNAPSHOT_REL_VOLUME_FINVIZ",
+      "comment": "Current volume relative to average volume"
+    },
+    {
+      "finviz_attr": "price",
+      "frozen_key": "reference_price",
+      "unit": "PRICE",
+      "readiness": "PROVIDER_SNAPSHOT_PRICE_FINVIZ",
+      "comment": "Live Finviz price. Frozen reference_price is BLOCKED — this provides a display fill."
+    },
+    {
+      "finviz_attr": "market_cap",
+      "frozen_key": "market_cap",
+      "unit": "USD",
+      "readiness": "PROVIDER_SNAPSHOT_MARKET_CAP_FINVIZ",
+      "comment": "Market capitalization. Not always present in Finviz export."
+    }
+  ]
+}

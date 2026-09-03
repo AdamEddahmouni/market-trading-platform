@@ -1,0 +1,14 @@
+{
+  "account_scope": null,
+  "adapter_version": "finviz-offline-v1",
+  "collection_method": "LOADED_FIXTURE",
+  "entitlement_status": "UNKNOWN",
+  "expected_delay_ms": null,
+  "ingested_at": "2026-01-15T15:05:00Z",
+  "normalization_version": "finviz-normalization-v1",
+  "provider": "FINVIZ_REPRESENTATIVE",
+  "request_id": "finviz-fixture-request-v1",
+  "session_id": null,
+  "source_endpoint_name": "screener-export-shape",
+  "source_timezone": "America/New_York"
+}

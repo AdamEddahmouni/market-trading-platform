@@ -1,0 +1,107 @@
+{
+  "admission_id": "ADMITTED-MC-BOXL-001",
+  "fixture_id": "FIXTURE-MC-BOXL-SYNDICATION",
+  "symbol": "BOXL",
+  "documents": [
+    {
+      "document_id": "mc-doc-syn-1",
+      "canonical_event_type": "fda_clearance",
+      "title": "BOXL subsidiary receives FDA clearance for device trial",
+      "body": "Primary wire report.",
+      "associated_symbols": ["BOXL"],
+      "event_time": "2026-07-18T16:00:00.000000000Z",
+      "available_time": "2026-07-18T16:02:00.000000000Z",
+      "source": {
+        "source_id": "mc-src-syn-1",
+        "source_type": "NEWSWIRE",
+        "publisher": "Primary Wire",
+        "author": null,
+        "domain": "wire.example",
+        "primary_or_secondary": "primary",
+        "official": false,
+        "first_party": false,
+        "source_tier": "wire",
+        "source_origin_id": "origin-syn-primary",
+        "syndication_parent_id": null,
+        "provider": "fixture_synthetic",
+        "event_time": "2026-07-18T16:00:00.000000000Z",
+        "available_time": "2026-07-18T16:02:00.000000000Z"
+      }
+    },
+    {
+      "document_id": "mc-doc-syn-2",
+      "canonical_event_type": "fda_clearance",
+      "title": "BOXL subsidiary receives FDA clearance for device trial",
+      "body": "Syndicated republish A.",
+      "associated_symbols": ["BOXL"],
+      "event_time": "2026-07-18T16:00:00.000000000Z",
+      "available_time": "2026-07-18T16:05:00.000000000Z",
+      "source": {
+        "source_id": "mc-src-syn-2",
+        "source_type": "FINANCIAL_MEDIA",
+        "publisher": "Media A",
+        "author": "Staff",
+        "domain": "media-a.example",
+        "primary_or_secondary": "secondary",
+        "official": false,
+        "first_party": false,
+        "source_tier": "media",
+        "source_origin_id": "origin-syn-primary",
+        "syndication_parent_id": "mc-src-syn-1",
+        "provider": "fixture_synthetic",
+        "event_time": "2026-07-18T16:00:00.000000000Z",
+        "available_time": "2026-07-18T16:05:00.000000000Z"
+      }
+    },
+    {
+      "document_id": "mc-doc-syn-3",
+      "canonical_event_type": "fda_clearance",
+      "title": "BOXL subsidiary receives FDA clearance for device trial",
+      "body": "Independent secondary source.",
+      "associated_symbols": ["BOXL"],
+      "event_time": "2026-07-18T16:00:00.000000000Z",
+      "available_time": "2026-07-18T16:08:00.000000000Z",
+      "source": {
+        "source_id": "mc-src-syn-3",
+        "source_type": "INDUSTRY_SOURCE",
+        "publisher": "Industry Journal",
+        "author": "Reporter",
+        "domain": "industry.example",
+        "primary_or_secondary": "secondary",
+        "official": false,
+        "first_party": false,
+        "source_tier": "industry",
+        "source_origin_id": "origin-syn-industry",
+        "syndication_parent_id": null,
+        "provider": "fixture_synthetic",
+        "event_time": "2026-07-18T16:00:00.000000000Z",
+        "available_time": "2026-07-18T16:08:00.000000000Z"
+      }
+    },
+    {
+      "document_id": "mc-doc-syn-4",
+      "canonical_event_type": "fda_clearance",
+      "title": "BOXL subsidiary receives FDA clearance for device trial",
+      "body": "Third independent outlet.",
+      "associated_symbols": ["BOXL"],
+      "event_time": "2026-07-18T16:00:00.000000000Z",
+      "available_time": "2026-07-18T16:12:00.000000000Z",
+      "source": {
+        "source_id": "mc-src-syn-4",
+        "source_type": "FINANCIAL_MEDIA",
+        "publisher": "Media B",
+        "author": "Desk",
+        "domain": "media-b.example",
+        "primary_or_secondary": "secondary",
+        "official": false,
+        "first_party": false,
+        "source_tier": "media",
+        "source_origin_id": "origin-syn-media-b",
+        "syndication_parent_id": null,
+        "provider": "fixture_synthetic",
+        "event_time": "2026-07-18T16:00:00.000000000Z",
+        "available_time": "2026-07-18T16:12:00.000000000Z"
+      }
+    }
+  ]
+}

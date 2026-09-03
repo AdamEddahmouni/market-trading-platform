@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Phase 2V anchor hashes. Each validation result is hashed with its dedicated *_hash() helper in squeeze_core.validation.serialization; mixed_phase_2v_output is canonical_hash() of the sorted-by-name result list; serialized_phase_2v_collection is sha256 of the concatenated per-result canonical JSON bytes; phase_2v_cli_output is sha256 of build-candidate-validation stdout for biya_validation_case.json; phase_2v_demo_data_output is sha256 of the deterministic public export. This is a Phase 2V-only manifest, separate from the Phase 1/2A/2B/2C/2D manifests; none of those files is written by this script.",
+  "anchor_result_order": [
+    "biya_complete_validation_case",
+    "biya_days_to_cover_comparison",
+    "biya_earliest_as_of_replay",
+    "biya_field_comparison",
+    "biya_latest_as_of_replay",
+    "biya_methodology_conclusion",
+    "biya_news_timing_comparison",
+    "biya_original_candidate_snapshot",
+    "biya_outcome_observation",
+    "biya_rule_validation_collection",
+    "detection_time_bounded_case",
+    "detection_time_exact_case",
+    "detection_time_unknown_case",
+    "public_biya_case_export"
+  ],
+  "anchors": {
+    "biya_artifact_inventory": "a4757ed06476b665338704a5fec9250c56ff1c6d15bcf0a3fe5871db64a5aa65",
+    "biya_complete_validation_case": "9060d43e5b39eb8275329aec7e4fb6a0dabd8ebd382c88c7fc43a3922a29aa6d",
+    "biya_days_to_cover_comparison": "77383869d32dfffd9a8c57aacd538bd651f1e4e3145e0a8cbac22db20c546a76",
+    "biya_earliest_as_of_replay": "76d34920834a39c5e8f4bbe752abf6ad289c58bada44b218b007f4f809f76123",
+    "biya_field_comparison": "ed66d401a320a2d7a729d9ff154496396ff6519655e7caa94815a1f555c0c1ee",
+    "biya_latest_as_of_replay": "3f7d76a778e0113b97ae34a9985f5b0999b549ef0ada752023766b8815676337",
+    "biya_methodology_conclusion": "35e47a777d22783740dba647eff902945c7dd0d045f70133d57097c5c8940a69",
+    "biya_news_timing_comparison": "147ecb93c92bfe1231bc75d341c5554cc0081735f3a0f84fc4bca84b13cdac51",
+    "biya_original_candidate_snapshot": "f5436d1e4796bb7440b426d9cdda7e830f655aad389136e97fe4c19901ff8763",
+    "biya_outcome_observation": "a67784a5d1d1b89a4af07f286681c8630903640dacb6e750424d326fd145bb44",
+    "biya_rule_validation_collection": "72c078b5e1f0510a99104ea226fa8851de0a133c58902e40e73914ab9de1783d",
+    "comparison_case_manifest": "38998fd0259fc0e6c8994c78a67aba5448e6d26263a8942816ddb35f92639c93",
+    "detection_time_bounded_case": "ee6918ed8e4e51192c4e8d2ce99d4e98b4797e86040e527d3f70ead4e9ce96af",
+    "detection_time_exact_case": "cbb9407a9342066ba621476990522a2c3bed66a9ed0f1ed3b08002a51c06fc0c",
+    "detection_time_unknown_case": "1b3edfdfd173a6095967c7befd3759c06a3d21d0f96189e0badf1b47bfdb6155",
+    "mixed_phase_2v_output": "bd882ce9c95cadcd9866fad54292c210e8fea4ef25abba8bdf9bc3b68ba2790b",
+    "phase_2v_cli_output": "8ea4dd189362e716620b23eee215ba537cdc66093dd44f1b42a97a80ede1528a",
+    "phase_2v_demo_data_output": "0cb77b0ead9fc47ac9db1ee32b66a3e80c52493dbd9653553b4411106ef1d624",
+    "public_biya_case_export": "82b274db0c01316eb10eb0eee85a8563488d7af31cfd70b30cbd4825ae5076cd",
+    "serialized_phase_2v_collection": "bd882ce9c95cadcd9866fad54292c210e8fea4ef25abba8bdf9bc3b68ba2790b"
+  }
+}

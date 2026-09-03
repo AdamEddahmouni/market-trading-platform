@@ -1,0 +1,78 @@
+# ──────────────────────────────────────────────────────────────────────
+#  Pre-commit CI
+# ──────────────────────────────────────────────────────────────────────
+#  Runs `make precommit` on every push to a pull request, catching
+#  Python import errors and Makefile syntax issues before they reach
+#  `main`.  Also runs a focused pytest subset for app correctness.
+#
+#  Skips the check when only docs/ or non-source files changed.
+# ──────────────────────────────────────────────────────────────────────
+
+name: Pre-commit Checks
+
+on:
+  pull_request:
+    paths:
+      # Only run when source files that affect imports change
+      - "short-squeeze-core/apps/**"
+      - "short-squeeze-core/src/**"
+      - "short-squeeze-core/scripts/**"
+      - "short-squeeze-core/tests/**"
+      - "short-squeeze-core/pyproject.toml"
+      - "short-squeeze-core/Makefile"
+
+jobs:
+  precommit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: short-squeeze-core/pyproject.toml
+
+      - name: Install dependencies
+        working-directory: short-squeeze-core
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test]"
+
+      - name: Run pre-commit checks
+        working-directory: short-squeeze-core
+        run: make precommit
+
+  focused-pytest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: short-squeeze-core/pyproject.toml
+
+      - name: Install dependencies
+        working-directory: short-squeeze-core
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test]"
+
+      - name: Run focused app pytest
+        working-directory: short-squeeze-core
+        run: >
+          python -m pytest
+          tests/app/test_audit_remediation.py
+          tests/app/test_live_provider_isolation.py
+          tests/app/test_batch14_methodology_engine.py
+          tests/app/test_provider_capabilities.py
+          tests/app/test_batch14_api_and_deployment.py
+          -q --tb=short

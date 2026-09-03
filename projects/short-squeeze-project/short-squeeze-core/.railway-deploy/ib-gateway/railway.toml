@@ -1,0 +1,15 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+[service]
+name = "ib-gateway"
+
+[environment]
+TRADING_MODE = "paper"
+TWS_ACCEPT_INCOMING = "accept"
+READ_ONLY_API = "yes"

@@ -1,0 +1,97 @@
+{
+  "cases": [
+    {
+      "metadata": {
+        "fixture_id": "finviz-complete-v1",
+        "fixture_type": "COMPLETE_RECORD",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED_NO_SECRETS",
+        "source_shape_basis": "Archived hand-built CSV aliases plus Phase 0 documented descriptive fields",
+        "contains_credentials": false,
+        "contains_account_data": false,
+        "contains_real_symbols": false,
+        "provider_timestamp_status": "EXPLICIT_OFFSET_TIMESTAMP",
+        "capture_timestamp_status": "EXPLICIT_OFFSET_TIMESTAMP",
+        "expected_normalization_result": "ONE_MARKET_SNAPSHOT"
+      },
+      "record": {
+        "source_record_id": "finviz-complete-001",
+        "provider_schema": "FINVIZ_SCREENER_V1",
+        "record_type": "CANDIDATE_SNAPSHOT",
+        "fixture_origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "Ticker": "TESTA",
+        "Price": "5.25",
+        "Prev Close": "4.75",
+        "Change": "10.5%",
+        "change_percent_unit": "FORMATTED_PERCENT_STRING",
+        "Volume": "125000",
+        "Avg Volume": "25000",
+        "Relative Volume": "5.0",
+        "Shares Float": "8000000",
+        "Shares Outstanding": "12000000",
+        "Short Float": "12.5%",
+        "short_float_percent_unit": "FORMATTED_PERCENT_STRING",
+        "Short Ratio": "2.75",
+        "Market Cap": "63000000",
+        "Sector": "Synthetic Sector",
+        "Industry": "Synthetic Industry",
+        "Country": "Synthetic Country",
+        "Exchange": "XTEST",
+        "Earnings": "2026-02-02 BMO",
+        "provider_timestamp": "2026-01-15T10:00:00-05:00",
+        "capture_timestamp": "2026-01-15T10:01:00-05:00",
+        "delay_status": "UNKNOWN",
+        "screener_name": "synthetic-candidate-screen",
+        "applied_filters": ["price-under-20", "float-under-20m"]
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "finviz-zero-v1", "fixture_type": "EXPLICIT_ZERO_VALUES", "origin": "SANITIZED_REPRESENTATIVE_SAMPLE", "sanitization_status": "SANITIZED_NO_SECRETS", "source_shape_basis": "Representative shape with explicit numeric zeros", "contains_credentials": false, "contains_account_data": false, "contains_real_symbols": false, "provider_timestamp_status": "EXPLICIT", "capture_timestamp_status": "EXPLICIT", "expected_normalization_result": "ZERO_VALUES_PRESERVED"
+      },
+      "record": {
+        "source_record_id": "finviz-zero-001", "provider_schema": "FINVIZ_SCREENER_V1", "record_type": "CANDIDATE_SNAPSHOT", "fixture_origin": "SANITIZED_REPRESENTATIVE_SAMPLE", "Ticker": "TESTA", "Price": "5", "Volume": "0", "Shares Float": null, "Short Float": "0%", "short_float_percent_unit": "FORMATTED_PERCENT_STRING", "provider_timestamp": "2026-01-15T10:00:00-05:00", "capture_timestamp": "2026-01-15T10:01:00-05:00"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "finviz-missing-v1", "fixture_type": "MISSING_VALUES", "origin": "SANITIZED_REPRESENTATIVE_SAMPLE", "sanitization_status": "SANITIZED_NO_SECRETS", "source_shape_basis": "Representative partial row", "contains_credentials": false, "contains_account_data": false, "contains_real_symbols": false, "provider_timestamp_status": "EXPLICIT", "capture_timestamp_status": "EXPLICIT", "expected_normalization_result": "NULLS_PRESERVED"
+      },
+      "record": {
+        "source_record_id": "finviz-missing-001", "provider_schema": "FINVIZ_SCREENER_V1", "record_type": "CANDIDATE_SNAPSHOT", "fixture_origin": "SANITIZED_REPRESENTATIVE_SAMPLE", "Ticker": "TESTB", "Price": "7", "Volume": null, "Shares Float": null, "Short Float": null, "provider_timestamp": "2026-01-15T10:00:00-05:00", "capture_timestamp": "2026-01-15T10:01:00-05:00"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "finviz-capture-only-v1", "fixture_type": "CAPTURE_TIME_ONLY", "origin": "SANITIZED_REPRESENTATIVE_SAMPLE", "sanitization_status": "SANITIZED_NO_SECRETS", "source_shape_basis": "Representative snapshot without provider publication time", "contains_credentials": false, "contains_account_data": false, "contains_real_symbols": false, "provider_timestamp_status": "ABSENT", "capture_timestamp_status": "EXPLICIT", "expected_normalization_result": "UNCERTAIN_CAPTURE_PLACEHOLDER"
+      },
+      "record": {
+        "source_record_id": "finviz-capture-001", "provider_schema": "FINVIZ_SCREENER_V1", "record_type": "CANDIDATE_SNAPSHOT", "fixture_origin": "SANITIZED_REPRESENTATIVE_SAMPLE", "Ticker": "TESTA", "Price": "5", "provider_timestamp": null, "capture_timestamp": "2026-01-15T10:01:00-05:00"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "finviz-no-times-v1", "fixture_type": "MISSING_ALL_TIMESTAMPS", "origin": "SANITIZED_REPRESENTATIVE_SAMPLE", "sanitization_status": "SANITIZED_NO_SECRETS", "source_shape_basis": "Representative snapshot with explicit timestamp absence", "contains_credentials": false, "contains_account_data": false, "contains_real_symbols": false, "provider_timestamp_status": "ABSENT", "capture_timestamp_status": "ABSENT", "expected_normalization_result": "UNCERTAIN_INGESTION_PLACEHOLDER"
+      },
+      "record": {
+        "source_record_id": "finviz-no-times-001", "provider_schema": "FINVIZ_SCREENER_V1", "record_type": "CANDIDATE_SNAPSHOT", "fixture_origin": "SANITIZED_REPRESENTATIVE_SAMPLE", "Ticker": "TESTA", "Price": "5", "provider_timestamp": null, "capture_timestamp": null
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "finviz-delayed-v1", "fixture_type": "KNOWN_DELAYED", "origin": "SANITIZED_REPRESENTATIVE_SAMPLE", "sanitization_status": "SANITIZED_NO_SECRETS", "source_shape_basis": "Representative shape with explicit delay status", "contains_credentials": false, "contains_account_data": false, "contains_real_symbols": false, "provider_timestamp_status": "EXPLICIT", "capture_timestamp_status": "EXPLICIT", "expected_normalization_result": "DELAYED_MARKET_SNAPSHOT"
+      },
+      "record": {
+        "source_record_id": "finviz-delayed-001", "provider_schema": "FINVIZ_SCREENER_V1", "record_type": "CANDIDATE_SNAPSHOT", "fixture_origin": "SANITIZED_REPRESENTATIVE_SAMPLE", "Ticker": "TESTA", "Price": "5", "provider_timestamp": "2026-01-15T09:45:00-05:00", "capture_timestamp": "2026-01-15T10:01:00-05:00", "delay_status": "KNOWN_DELAYED"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "finviz-abbreviated-v1", "fixture_type": "ABBREVIATED_QUANTITIES", "origin": "SANITIZED_REPRESENTATIVE_SAMPLE", "sanitization_status": "SANITIZED_NO_SECRETS", "source_shape_basis": "Representative formatted quantity strings", "contains_credentials": false, "contains_account_data": false, "contains_real_symbols": false, "provider_timestamp_status": "EXPLICIT", "capture_timestamp_status": "EXPLICIT", "expected_normalization_result": "ESTIMATED_QUANTITY_PRECISION"
+      },
+      "record": {
+        "source_record_id": "finviz-abbreviated-001", "provider_schema": "FINVIZ_SCREENER_V1", "record_type": "CANDIDATE_SNAPSHOT", "fixture_origin": "SANITIZED_REPRESENTATIVE_SAMPLE", "Ticker": "TESTA", "Price": "5", "Volume": "125K", "Avg Volume": "25K", "Shares Float": "8M", "Market Cap": "63M", "provider_timestamp": "2026-01-15T10:00:00-05:00", "capture_timestamp": "2026-01-15T10:01:00-05:00"
+      }
+    }
+  ]
+}

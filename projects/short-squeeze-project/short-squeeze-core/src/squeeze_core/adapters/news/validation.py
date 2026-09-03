@@ -1,0 +1,23 @@
+from collections.abc import Mapping
+from typing import Any
+
+from pydantic import ValidationError
+
+from squeeze_core.adapters.diagnostics import DiagnosticCode
+
+
+def structural_diagnostic_code(
+    raw: Mapping[str, Any], error: ValidationError
+) -> DiagnosticCode:
+    locations = {str(item["loc"][0]) for item in error.errors() if item.get("loc")}
+    if "provider_schema" in locations:
+        return DiagnosticCode.NEWS_UNSUPPORTED_SCHEMA
+    if "record_type" in locations:
+        return DiagnosticCode.NEWS_UNSUPPORTED_RECORD_TYPE
+    if "fixture_origin" in locations:
+        return DiagnosticCode.NEWS_INVALID_FIXTURE_ORIGIN
+    if "source_shape" in locations:
+        return DiagnosticCode.NEWS_UNSUPPORTED_SOURCE_SHAPE
+    if "headline" in locations or "Title" in locations or "title" in locations:
+        return DiagnosticCode.NEWS_INVALID_HEADLINE
+    return DiagnosticCode.NEWS_UNSUPPORTED_RECORD_TYPE

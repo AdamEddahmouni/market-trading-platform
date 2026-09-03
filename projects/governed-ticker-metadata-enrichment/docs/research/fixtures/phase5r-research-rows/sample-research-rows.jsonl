@@ -1,0 +1,2 @@
+{"available_time":2000000000000000000,"capability":"BAR_OHLCV_1M","feature_id":"bar_close","instrument_id":"BIYA","prediction_cutoff":2000000000000000000,"value":"10.5"}
+{"available_time":200000000006000000000,"capability":"BAR_OHLCV_1M","feature_id":"bar_close","instrument_id":"BIYA","prediction_cutoff":200000000006000000000,"value":"10.6"}

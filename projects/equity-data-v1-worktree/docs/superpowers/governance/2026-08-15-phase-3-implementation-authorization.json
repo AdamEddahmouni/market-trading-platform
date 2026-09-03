@@ -1,0 +1,84 @@
+{
+  "artifact_type": "PHASE_3_IMPLEMENTATION_AUTHORIZATION",
+  "authority_bindings": [
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "foundation.canonical_specification.revision_3",
+      "logical_path": "docs/superpowers/specs/2026-08-14-integrated-market-platform-foundation-design-revision-3.md",
+      "sha256": "7C6AE5FC9037CA37D44CD1A2FAACD0CB821192920C46CF001541DCD2121FEB35"
+    },
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase2.pass_publication",
+      "logical_path": "docs/superpowers/governance/2026-08-15-phase-2-pass-publication.json",
+      "sha256": "21225C330A669389817982F513F29DD0FC2F48370965F3072F453A9DFDAFC226"
+    },
+    {
+      "effectivity_state": "PENDING_EXACT_HASH_APPROVAL",
+      "logical_id": "phase3.design_specification",
+      "logical_path": "docs/superpowers/specs/2026-08-15-phase-3-verified-historical-adapter-design.md",
+      "sha256": "06ACF4722D92E85328AC541E29A90B81F589B77EE39D2BB42DAC636CF0731156"
+    },
+    {
+      "effectivity_state": "PENDING_EXACT_HASH_APPROVAL",
+      "logical_id": "phase3.governance_plan",
+      "logical_path": "docs/superpowers/plans/2026-08-15-phase-3-verified-historical-adapter.md",
+      "sha256": "2FCB60CBA456260900EC691B4D2F4B6644989B17AC286B033F837049BE77E7DF"
+    },
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase0a.capability_manifest",
+      "logical_path": "evidence/phase0a/C41AC9855C8307BFB54D836632061C521D0DE06DDA65D8467F53DB534F8D539C/capability_manifest.json",
+      "sha256": "F7FF56756E44340B2FB35BCDFB87F6EBFA6F121D1559EA413BDE199E3C3559A3"
+    }
+  ],
+  "authorization_id": "PHASE-3-IMPLEMENTATION-AUTHORIZATION-001",
+  "authorized_executor": {
+    "capacity": "ARCHITECTURE_LEAD",
+    "principal_id": "PROJECT-PRINCIPAL-001"
+  },
+  "created_at": "2026-08-15T18:00:00Z",
+  "effectivity": {
+    "activation_conditions": [
+      "ATTRIBUTABLE_EXACT_HASH_APPROVAL_BY_PROJECT_PRINCIPAL_ACTING_AS_PROJECT_OWNER_AND_RELEASE_OWNER",
+      "PHASE_2_PASS_PUBLICATION_EFFECTIVE",
+      "EFFECTIVE_PHASE_3_DESIGN_SPECIFICATION_AT_BOUND_HASH",
+      "EFFECTIVE_PHASE_3_GOVERNANCE_PLAN_AT_BOUND_HASH",
+      "ADMITTED_SOURCE_ADMITTED_SHORTSQ_BIYA_BARS_001_REMAINS_LAWFUL"
+    ],
+    "current_state": "PENDING_EXACT_HASH_APPROVAL_AND_PREREQUISITES",
+    "statement": "Authorizes one offline adapter for the admitted equity intraday fixture only."
+  },
+  "logical_id": "phase3.implementation_authorization",
+  "owner_capacity": "PROJECT_OWNER",
+  "permitted_operations": [
+    "IMPLEMENT_OFFLINE_EQUITY_INTRADAY_JSONL_ADAPTER",
+    "NORMALIZE_ADMITTED_FIXTURE_TO_CANONICAL_BAR_OHLCV_1M",
+    "BUILD_PHASE_3_EVIDENCE_AND_ASSERTION_RESULTS",
+    "EXTEND_CLOSED_ADAPTER_REGISTRY_WITH_OFFLINE_READER_ONLY"
+  ],
+  "prohibited_operations": [
+    "ANY_PROVIDER_OR_BROKER_CONNECTION",
+    "ANY_COPY_OF_DONOR_BYTES_INTO_GOVERNED_PATHS",
+    "ANY_CAPABILITY_BEYOND_PHASE_0A_MANIFEST",
+    "ANY_PHASE_4_OR_LATER_IMPLEMENTATION"
+  ],
+  "required_approver_capacities": ["PROJECT_OWNER", "RELEASE_OWNER"],
+  "schema_version": "1.0.0",
+  "source_scope": {
+    "allowed_repository_relative_paths": [
+      "docs/superpowers/**",
+      "evidence/phase3/**",
+      "manifests/phase3/**",
+      "src/market_platform_foundation/adapters/**",
+      "src/market_platform_foundation/normalization/**",
+      "src/market_platform_foundation/phase3_assertions.py",
+      "src/market_platform_foundation/registry.py",
+      "tests/phase3/**",
+      "tools/phase3/**"
+    ],
+    "external_read_only_exception": "Read admitted object from collection only; no bytes copied into governed paths.",
+    "root_id": "ROOT-2E7C91F4"
+  },
+  "status": "PENDING_EXACT_HASH_APPROVAL_AND_PREREQUISITES"
+}

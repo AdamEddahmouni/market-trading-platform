@@ -1,0 +1,30 @@
+{
+  "predicates": [
+    {
+      "assertion_id": "UI-CAP-001",
+      "assertion_version": "1.0.0",
+      "predicate": "Depth, live, and paper capabilities return UNSUPPORTED; entitled whale disclosure, order_flow, options, large_transactions, order_book, futures_positioning, public_catalyst, and fund_etf_cross_asset capabilities return AVAILABLE; other whale families remain UNSUPPORTED"
+    },
+    {
+      "assertion_id": "UI-CTX-001",
+      "assertion_version": "1.0.0",
+      "predicate": "Context payload exposes REPLAY mode, as_of_time, timezone, and quality summary"
+    },
+    {
+      "assertion_id": "UI-DET-001",
+      "assertion_version": "1.0.0",
+      "predicate": "Identical replay cursors produce identical canonical JSON for context and attention payloads"
+    },
+    {
+      "assertion_id": "UI-EXP-001",
+      "assertion_version": "1.0.0",
+      "predicate": "Every attention item explanation_ref resolves through explain and inspect endpoints"
+    },
+    {
+      "assertion_id": "SAFE-003",
+      "assertion_version": "1.0.0",
+      "predicate": "Network-denied UI API replay passes; route reachability to live order submission is empty"
+    }
+  ],
+  "registry_version": "1.0.0"
+}

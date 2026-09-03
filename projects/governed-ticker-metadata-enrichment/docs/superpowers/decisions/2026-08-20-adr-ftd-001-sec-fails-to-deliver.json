@@ -1,0 +1,63 @@
+{
+  "adr_id": "ADR-FTD-001",
+  "artifact_type": "ARCHITECTURE_DECISION_RECORD",
+  "status": "ACCEPTED",
+  "source_type": "REGULATORY_PUBLIC",
+  "created_at": "2026-08-20T12:00:00.000000000Z",
+  "decision": {
+    "title": "SEC public fails-to-deliver market-activity source",
+    "summary": "Authorize the official SEC Fails-to-Deliver half-month archives as a read-only observational settlement-failure evidence family. FTD quantity is modeled as an aggregate net balance outstanding as of settlement date, not daily flow. PIT availability uses first-observed time for live captures and marks historical publication time uncertain. Capture is not admission. No naked-short inference.",
+    "selected_option_id": "FTD-OPTION-001"
+  },
+  "alternatives": [
+    {
+      "option_id": "FTD-OPTION-001",
+      "name": "SEC_FTD_SEPARATE_EVIDENCE_FAMILY",
+      "decision": "ACCEPTED",
+      "tradeoffs": [
+        "Publication lag limits live confirmation utility.",
+        "Requires careful balance-not-flow semantics in all derived features."
+      ]
+    },
+    {
+      "option_id": "FTD-OPTION-002",
+      "name": "INFER_FTD_FROM_THRESHOLD",
+      "decision": "REJECTED",
+      "tradeoffs": [
+        "Would conflate threshold membership with published FTD balances."
+      ]
+    }
+  ],
+  "effectivity": {
+    "current_state": "ACCEPTED",
+    "decision_only": false,
+    "non_authorization_statement": "This ADR does not authorize automatic admission, naked-short labeling, squeeze score changes, predictive model training, or commercial CUSIP redistribution."
+  },
+  "lifecycle": {
+    "states": [
+      "OBSERVED",
+      "CAPTURED",
+      "VALIDATED",
+      "QUALITY_CHARACTERIZED",
+      "ADMITTED"
+    ],
+    "admission_requires_separate_adr": true
+  },
+  "related_adrs": [
+    "ADR-SHORT-001",
+    "ADR-EDGAR-001",
+    "ADR-LIVE-001",
+    "ADR-PIT-001"
+  ],
+  "consequences": {
+    "positive": [
+      "Published aggregate FTD balances become queryable with PIT-safe availability clocks.",
+      "FTD remains separate from short interest, short-sale flow, and threshold status.",
+      "Official SEC source requires no credentials."
+    ],
+    "negative": [
+      "Twice-monthly publication lag reduces contemporaneous signal value.",
+      "Historical publication timestamps are uncertain without live observation metadata."
+    ]
+  }
+}
