@@ -48,6 +48,7 @@ from market_platform_foundation.providers.composition import (  # noqa: E402
     configure_provider_composition,
     with_broker_paper_execution,
 )
+from market_platform_foundation.risk.policy import build_risk_policy  # noqa: E402
 from market_platform_foundation.ui_api.broker_projections import (  # noqa: E402
     build_broker_account_payload,
     build_broker_health_payload,
@@ -70,7 +71,7 @@ SYMBOL_MAP = {"BIYA": "BIYA"}
 
 
 def _ledger() -> PaperExecutionLedger:
-    return PaperExecutionLedger.open_session(
+    ledger = PaperExecutionLedger.open_session(
         replay_session_id="p44-observability-session",
         instrument_id="BIYA",
         symbol="BIYA",
@@ -79,7 +80,19 @@ def _ledger() -> PaperExecutionLedger:
         data_mode="BROKER_DELAYED",
         data_provider="TRADIER",
         execution_provider="TRADIER",
+        policy=build_risk_policy(
+            max_order_notional_minor=100_000_00,
+            max_position_notional_minor=1_000_000_00,
+        ),
     )
+    ledger.apply_live_mark(
+        instrument_id="BIYA",
+        mark_minor=11600,
+        mark_provider="TRADIER_FIXTURE",
+        mark_as_of_ns=1787000000000000000,
+        mark_quality="PASS",
+    )
+    return ledger
 
 
 def _gated_provider() -> object:

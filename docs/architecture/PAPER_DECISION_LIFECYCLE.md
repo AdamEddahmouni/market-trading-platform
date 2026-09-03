@@ -117,6 +117,34 @@ or unauthorized inputs stop before downstream Paper mutation.
 - Ledger append-only events
 - `project_orders()` → Portfolio history, execution trace
 
+## Cash-account and valuation semantics
+
+Current Paper execution uses policy `phase7.cash-multisymbol/2.0.0`:
+
+- USD, whole-share, long-only cash accounting. A fill cannot create negative
+  cash or a short position; sell proceeds become available when the fill is
+  recorded.
+- Positions and realized P&L are derived independently by `instrument_id`
+  from the immutable fill stream. Portfolio rows are sorted by instrument.
+- Open-order reservations are replay-derived. BUY orders reserve remaining
+  quantity at the risk price plus applicable fees; SELL orders reserve
+  unfilled shares. Partial fills reduce holds and terminal states release
+  them.
+- Monetary controls default to $10,000 per order and $100,000 per symbol,
+  alongside the existing share and open-order limits. Risk resizes to the
+  largest whole-share quantity that satisfies every applicable constraint.
+- Internal MARKET risk uses the next matching replay bar high. Broker-paper
+  LIMIT risk uses the submitted limit, while broker-paper MARKET risk uses a
+  fresh mark plus the 5% policy buffer. Missing, stale, future, disconnected,
+  or instrument-mismatched pricing fails closed.
+- If any held instrument lacks a usable mark, exact cash, cost basis, and
+  reservations remain available, but aggregate market value, equity, gross
+  exposure, and unrealized P&L are reported as unavailable with valuation
+  reasons.
+- An open session whose persisted risk-policy identity differs from the
+  current policy is closed with `POLICY_INCOMPATIBLE` and replaced by a new
+  session. Its historical events remain readable.
+
 ## Key identifiers
 
 | Field | Role |

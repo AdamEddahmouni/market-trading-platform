@@ -27,6 +27,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from market_platform_foundation.paper.contracts import build_instrument_ref  # noqa: E402
 from market_platform_foundation.paper.broker_paper import submit_broker_paper_order  # noqa: E402
 from market_platform_foundation.paper.ledger import EVENT_TYPES, PaperExecutionLedger  # noqa: E402
+from market_platform_foundation.risk.policy import build_risk_policy  # noqa: E402
 from market_platform_foundation.platform.reconciliation import (  # noqa: E402
     MATCHED,
     MISMATCH,
@@ -63,7 +64,7 @@ SYMBOL_MAP = {"BIYA": "BIYA"}
 
 
 def _broker_ledger() -> PaperExecutionLedger:
-    return PaperExecutionLedger.open_session(
+    ledger = PaperExecutionLedger.open_session(
         replay_session_id="p4-4b-session",
         instrument_id="BIYA",
         symbol="BIYA",
@@ -72,7 +73,19 @@ def _broker_ledger() -> PaperExecutionLedger:
         data_mode="BROKER_DELAYED",
         data_provider="TRADIER",
         execution_provider="TRADIER",
+        policy=build_risk_policy(
+            max_order_notional_minor=100_000_00,
+            max_position_notional_minor=1_000_000_00,
+        ),
     )
+    ledger.apply_live_mark(
+        instrument_id="BIYA",
+        mark_minor=11600,
+        mark_provider="TRADIER_FIXTURE",
+        mark_as_of_ns=1787000000000000000,
+        mark_quality="PASS",
+    )
+    return ledger
 
 
 def _provider() -> object:

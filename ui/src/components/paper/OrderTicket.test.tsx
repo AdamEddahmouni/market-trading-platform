@@ -53,6 +53,28 @@ describe("OrderTicket workspace revalidation", () => {
     expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
   });
 
+  it("explains resized quantity, notional, cash, and pricing basis", async () => {
+    mocks.previewPaperOrder.mockResolvedValueOnce(
+      previewResponse({
+        risk_status: "PASS",
+        decision: "RESIZE",
+        approved_quantity: 5,
+        approved_notional_minor: 50000,
+        requested_notional_minor: 120000,
+        projected_available_cash_minor: 25000,
+        reserved_order_cash_minor: 50000,
+        risk_price: { minor: 10000, source: "INTERNAL_NEXT_BAR_HIGH", as_of_ns: 10, quality: "PASS" },
+        reason_codes: ["RISK_INSUFFICIENT_POSITION"],
+      }),
+    );
+    renderTicket(validDraft);
+
+    expect(await screen.findByText("Approved quantity: 5 sh")).toBeInTheDocument();
+    expect(screen.getByText(/Approved notional: \$500\.00/)).toBeInTheDocument();
+    expect(screen.getByText(/Available cash after order: \$250\.00/)).toBeInTheDocument();
+    expect(screen.getByText(/Pricing basis: INTERNAL NEXT BAR HIGH/)).toBeInTheDocument();
+  });
+
   it("retains the imported draft when automatic preview fails", async () => {
     mocks.previewPaperOrder.mockRejectedValueOnce(new Error("offline"));
     renderTicket(validDraft);

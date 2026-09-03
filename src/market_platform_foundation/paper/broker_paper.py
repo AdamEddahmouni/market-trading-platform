@@ -22,6 +22,8 @@ from ..providers.broker_execution import (
     normalize_broker_fill,
 )
 from ..risk.decision import evaluate_risk
+from ..market_data.live_config import execution_freshness_threshold_ms
+from ..portfolio.ledger import apply_fill
 from .contracts import ORDER_LIFECYCLE_TERMINAL_STATES, build_user_order_intent, validate_order_transition
 from .ledger import PaperExecutionLedger
 
@@ -59,6 +61,7 @@ def submit_broker_paper_order(
     limit_price_minor: int | None = None,
     correlation_id: str | None = None,
     decision_source_snapshot: dict[str, Any] | None = None,
+    mark_snapshot: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Broker paper execution (Platformization P4) — dedicated entry point.
 
@@ -70,82 +73,111 @@ def submit_broker_paper_order(
     if ledger.execution_authority not in PAPER_EXECUTION_AUTHORITIES:
         raise ValueError("PAPER_EXECUTION_NOT_AUTHORIZED")
 
-    existing_order_id = ledger.lookup_idempotent_order(idempotency_key)
-    if existing_order_id:
-        for order in ledger.project_orders():
-            if order.get("order_id") == existing_order_id:
-                return {
-                    "duplicate": True,
-                    "idempotency_key": idempotency_key,
-                    "order": order,
-                    "order_id": existing_order_id,
-                }
-        return {
-            "duplicate": True,
-            "idempotency_key": idempotency_key,
-            "order_id": existing_order_id,
-        }
+    with ledger.admission_lock:
+        existing_order_id = ledger.lookup_idempotent_order(idempotency_key)
+        if existing_order_id:
+            for order in ledger.project_orders():
+                if order.get("order_id") == existing_order_id:
+                    return {
+                        "duplicate": True,
+                        "idempotency_key": idempotency_key,
+                        "order": order,
+                        "order_id": existing_order_id,
+                    }
+            return {
+                "duplicate": True,
+                "idempotency_key": idempotency_key,
+                "order_id": existing_order_id,
+            }
 
-    intent = build_user_order_intent(
-        instrument=instrument,
-        side=side,
-        quantity=quantity,
-        observation_time=observation_time,
-        order_type=order_type,
-        limit_price_minor=limit_price_minor,
-        client_order_id=client_order_id,
-        idempotency_key=idempotency_key,
-        correlation_id=correlation_id or client_order_id,
-        decision_source_snapshot=decision_source_snapshot,
-    )
-    ledger.append_intent(intent)
+        intent = build_user_order_intent(
+            instrument=instrument,
+            side=side,
+            quantity=quantity,
+            observation_time=observation_time,
+            order_type=order_type,
+            limit_price_minor=limit_price_minor,
+            client_order_id=client_order_id,
+            idempotency_key=idempotency_key,
+            correlation_id=correlation_id or client_order_id,
+            decision_source_snapshot=decision_source_snapshot,
+        )
+        instrument_id = str(intent["instrument_id"]).upper()
+        risk_price, price_source, price_as_of, price_quality, price_error = _broker_risk_price(
+            ledger=ledger,
+            intent=intent,
+            mark_snapshot=mark_snapshot,
+            observation_time=observation_time,
+        )
+        projection = ledger._project_ledger()
+        position = dict(projection.get("positions_by_instrument") or {}).get(instrument_id, {})
+        reservations = ledger.project_reservations()
+        instrument_reservations = dict(reservations.get("by_instrument") or {}).get(instrument_id, {})
+        decision = evaluate_risk(
+            intent=intent,
+            policy=ledger.policy,
+            kill_switch=ledger.kill_switch,
+            current_position_shares=int(position.get("position_shares", 0)),
+            current_cash_minor=int(projection["cash_minor"]),
+            reserved_cash_minor=int(reservations.get("reserved_cash_minor", 0)),
+            reserved_sell_shares=int(instrument_reservations.get("reserved_sell_shares", 0)),
+            risk_price_minor=risk_price,
+            risk_price_source=price_source,
+            risk_price_as_of_ns=price_as_of,
+            risk_price_quality=price_quality,
+            risk_price_error=price_error,
+            open_order_count=ledger.open_order_count,
+        )
+        order_id = build_canonical_order_id(intent=intent, decision=decision)
 
-    projection = ledger._project_ledger()
-    decision = evaluate_risk(
-        intent=intent,
-        policy=ledger.policy,
-        kill_switch=ledger.kill_switch,
-        current_position_shares=int(projection["position_shares"]),
-        open_order_count=ledger.open_order_count,
-    )
-    ledger.append_risk_decision(decision)
-    order_id = build_canonical_order_id(intent=intent, decision=decision)
-    instrument_id = str(intent["instrument_id"])
+        if decision["decision"] not in {"APPROVE", "RESIZE"}:
+            rejected = build_broker_order(
+                intent=intent,
+                decision=decision,
+                state="REJECTED",
+                order_id=order_id,
+                reason_codes=["BROKER_RISK_NOT_APPROVED"],
+            )
+            with ledger.atomic_append():
+                ledger.append_intent(intent)
+                ledger.append_risk_decision(decision)
+                ledger.append_order(rejected, intent=intent)
+                ledger.record_idempotent_order(
+                    idempotency_key=idempotency_key,
+                    order_id=order_id,
+                )
+            return {
+                "decision": decision["decision"],
+                "duplicate": False,
+                "execution_attempt_id": order_id,
+                "idempotency_key": idempotency_key,
+                "intent_id": intent["intent_id"],
+                "order": rejected,
+                "order_id": order_id,
+                "rejected": True,
+                "reason_codes": decision.get("reason_codes", []),
+                "risk_decision_id": decision.get("intent_id"),
+            }
 
-    if decision["decision"] not in {"APPROVE", "RESIZE"}:
-        rejected = build_broker_order(
+        # Submission record and its reservation are persisted together before
+        # any broker network call.
+        submitted = build_broker_order(
             intent=intent,
             decision=decision,
-            state="REJECTED",
+            state="SUBMITTED",
             order_id=order_id,
-            reason_codes=["BROKER_RISK_NOT_APPROVED"],
         )
-        ledger.append_order(rejected, intent=intent)
-        ledger.record_idempotent_order(idempotency_key=idempotency_key, order_id=order_id)
-        return {
-            "decision": decision["decision"],
-            "duplicate": False,
-            "execution_attempt_id": order_id,
-            "idempotency_key": idempotency_key,
-            "intent_id": intent["intent_id"],
-            "order": rejected,
-            "order_id": order_id,
-            "rejected": True,
-            "reason_codes": decision.get("reason_codes", []),
-            "risk_decision_id": decision.get("intent_id"),
-        }
+        with ledger.atomic_append():
+            ledger.append_intent(intent)
+            ledger.append_risk_decision(decision)
+            ledger.append_order(submitted, intent=intent)
+            ledger.record_idempotent_order(
+                idempotency_key=idempotency_key,
+                order_id=order_id,
+            )
+        provider_intent = {**intent, "desired_quantity": int(decision["approved_quantity"])}
 
-    # Submission record BEFORE any broker network call.
-    submitted = build_broker_order(
-        intent=intent,
-        decision=decision,
-        state="SUBMITTED",
-        order_id=order_id,
-    )
-    ledger.append_order(submitted, intent=intent)
-    ledger.record_idempotent_order(idempotency_key=idempotency_key, order_id=order_id)
-
-    result = provider.place_order(intent)
+    result = provider.place_order(provider_intent)
     status = str(getattr(result, "status", "error"))
     reason_code = getattr(result, "reason_code", None)
 
@@ -236,6 +268,21 @@ def submit_broker_paper_order(
             "reason_codes": ["BROKER_NO_ORDER_ID"],
         }
 
+    normalized_fills: list[dict[str, Any]] = []
+    for fill_event in status_event.fills:
+        normalized_fills.append(
+            normalize_broker_fill(
+                fill_event,
+                order_id=order_id,
+                instrument_id=instrument_id,
+                direction=str(intent["direction"]),
+            )
+        )
+    ledger.validate_fill_batch(
+        order=ledger.lookup_order(order_id) or submitted,
+        fills=normalized_fills,
+    )
+
     prior = "SUBMITTED"
     for state in _broker_lifecycle_path(target):
         ledger.append_order_state(
@@ -247,13 +294,7 @@ def submit_broker_paper_order(
         prior = state
 
     fills: list[dict[str, Any]] = []
-    for fill_event in status_event.fills:
-        fill = normalize_broker_fill(
-            fill_event,
-            order_id=order_id,
-            instrument_id=instrument_id,
-            direction=str(intent["direction"]),
-        )
+    for fill in normalized_fills:
         ledger.append_fill(fill, order=ledger.lookup_order(order_id))
         fills.append(fill)
 
@@ -274,6 +315,39 @@ def submit_broker_paper_order(
         "order_id": order_id,
         "risk_decision_id": decision.get("intent_id"),
     }
+
+
+def _broker_risk_price(
+    *,
+    ledger: PaperExecutionLedger,
+    intent: dict[str, Any],
+    mark_snapshot: dict[str, Any] | None,
+    observation_time: int,
+) -> tuple[int | None, str | None, int | None, str, str | None]:
+    if str(intent.get("order_type", "MARKET")) == "LIMIT":
+        price = int(intent.get("limit_price_minor") or 0)
+        return price or None, "BROKER_LIMIT_PRICE", observation_time, "PASS", None
+
+    mark = mark_snapshot or ledger._mark_for_instrument(str(intent["instrument_id"]))
+    if not isinstance(mark, dict):
+        return None, None, None, "UNAVAILABLE", "RISK_PRICE_UNAVAILABLE"
+    if str(mark.get("instrument_id", intent["instrument_id"])).upper() != str(intent["instrument_id"]).upper():
+        return None, None, None, "UNAVAILABLE", "RISK_PRICE_INSTRUMENT_MISMATCH"
+    quality = str(mark.get("mark_quality", "UNAVAILABLE")).upper()
+    if quality not in {"PASS", "HEALTHY"}:
+        return None, None, None, quality, "RISK_PRICE_UNAVAILABLE"
+    as_of = int(mark.get("mark_as_of_ns", 0))
+    age_ns = int(observation_time) - as_of
+    if age_ns < 0:
+        return None, None, as_of, quality, "RISK_PRICE_FUTURE"
+    if age_ns > execution_freshness_threshold_ms() * 1_000_000:
+        return None, None, as_of, quality, "RISK_PRICE_STALE"
+    raw_price = int(mark.get("mark_minor", 0))
+    if raw_price <= 0:
+        return None, None, as_of, quality, "RISK_PRICE_UNAVAILABLE"
+    buffer_bps = int(ledger.policy["broker_market_reserve_buffer_bps"])
+    buffered = (raw_price * (10_000 + buffer_bps) + 9_999) // 10_000
+    return buffered, "BROKER_MARK_PLUS_BUFFER", as_of, quality, None
 
 
 def _first_broker_status_payload(result: Any) -> dict[str, Any] | None:
@@ -318,10 +392,10 @@ def _pending_lifecycle_states(current_state: str, target_path: list[str]) -> lis
     """
     ceiling = len(_LIFECYCLE_RANK)
     rank = _LIFECYCLE_RANK.get(current_state, ceiling)
-    forward = [s for s in target_path if _LIFECYCLE_RANK.get(s, ceiling) >= rank]
-    if forward and forward[0] == current_state:
-        forward = forward[1:]
-    return forward
+    # WORKING and ACTIVATED are equivalent admission-stage ranks.  A poll
+    # mapped through the other state must not attempt an invalid lateral
+    # transition (for example WORKING -> ACTIVATED).
+    return [s for s in target_path if _LIFECYCLE_RANK.get(s, ceiling) > rank]
 
 
 def apply_broker_status_event(
@@ -435,6 +509,8 @@ def apply_broker_status_event(
                 direction=str(order.get("direction", "")),
             )
         )
+
+    ledger.validate_fill_batch(order=order, fills=new_fills)
 
     prior = state
     for next_state in pending_states:

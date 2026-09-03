@@ -13,6 +13,19 @@ function portfolioPayload() {
       cash_display: "1000.00",
       cash_minor: 100000,
       buying_power_minor: 100000,
+      buying_power_display: "1000.00",
+      equity_minor: 100000,
+      equity_display: "1000.00",
+      gross_exposure_minor: 0,
+      gross_exposure_display: "0.00",
+      market_value_minor: 0,
+      market_value_display: "0.00",
+      reserved_cash_minor: 0,
+      reserved_cash_display: "0.00",
+      unrealized_pnl_minor: 0,
+      unrealized_pnl_display: "0.00",
+      valuation_quality: "COMPLETE",
+      valuation_reasons: [],
       initial_cash_minor: 100000,
       realized_pnl_display: "0.00",
       realized_pnl_minor: 0,
@@ -30,7 +43,9 @@ function portfolioPayload() {
       kill_switch_active: false,
       open_order_count: 0,
       reconciliation_status: "INTERNAL_AUTHORITATIVE",
-      limits: { max_open_orders: 3, max_order_shares: 100, max_position_shares: 500 },
+      limits: { max_open_orders: 3, max_order_shares: 100, max_position_shares: 500, max_order_notional_minor: 1000000, max_position_notional_minor: 10000000 },
+      reserved_cash_minor: 0,
+      reserved_sell_shares: 0,
     },
     data_health: { state: "PASS", detail: "fixture" },
     as_of_context: {
@@ -141,5 +156,23 @@ describe("PaperPortfolioPage", () => {
     portfolio.account.execution_authority = "PAPER_ONLY";
     renderPage(true);
     expect(screen.getByText(/No simulated orders yet/i)).toBeInTheDocument();
+  });
+
+  it("shows cash reservations, equity quality, and monetary limits", () => {
+    portfolio.account.reserved_cash_minor = 25000;
+    portfolio.account.reserved_cash_display = "250.00";
+    portfolio.account.buying_power_display = "750.00";
+    portfolio.account.valuation_quality = "INCOMPLETE";
+    portfolio.account.valuation_reasons = ["MARK_UNAVAILABLE:NVDA"];
+
+    renderPage(false);
+
+    expect(screen.getByText("Reserved cash")).toBeInTheDocument();
+    expect(screen.getByText("250.00")).toBeInTheDocument();
+    expect(screen.getByText("Valuation quality")).toBeInTheDocument();
+    expect(screen.getByText("INCOMPLETE")).toBeInTheDocument();
+    expect(screen.getByText(/MARK_UNAVAILABLE:NVDA/)).toBeInTheDocument();
+    expect(screen.getByText("Max order notional")).toBeInTheDocument();
+    expect(screen.getByText("$10,000.00")).toBeInTheDocument();
   });
 });

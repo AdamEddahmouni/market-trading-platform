@@ -64,7 +64,12 @@ class BarConservativeSimulator:
 
         if risk_decision["decision"] not in {"APPROVE", "RESIZE"}:
             order["state"] = "REJECTED"
-            order["reason_codes"] = ["SIM_RISK_NOT_APPROVED"]
+            order["reason_codes"] = sorted(
+                {
+                    "SIM_RISK_NOT_APPROVED",
+                    *(str(reason) for reason in risk_decision.get("reason_codes", [])),
+                }
+            )
             return order, None
 
         approved_qty = int(risk_decision["approved_quantity"])

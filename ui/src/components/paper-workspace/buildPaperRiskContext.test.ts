@@ -48,11 +48,27 @@ function portfolio(overrides: Partial<PaperPortfolioResponse> = {}): PaperPortfo
 
 describe("buildPaperRiskContext", () => {
   it("maps ready portfolio with symbol position and open orders", () => {
-    const model = buildPaperRiskContext(portfolio(), "BIYA", true, "ready");
+    const model = buildPaperRiskContext(
+      portfolio({
+        account: {
+          ...portfolio().account,
+          reserved_cash_minor: 2500,
+          reserved_cash_display: "$25.00",
+          equity_minor: 12500,
+          equity_display: "$125.00",
+          valuation_quality: "COMPLETE",
+        },
+      }),
+      "BIYA",
+      true,
+      "ready",
+    );
     expect(model.phase).toBe("ready");
     expect(model.symbolPosition).toBe("5 sh");
     expect(model.openOrdersForSymbol).toBe(1);
     expect(model.items.some((item) => item.id === "buying-power")).toBe(true);
+    expect(model.items.find((item) => item.id === "reserved-cash")?.value).toBe("$25.00");
+    expect(model.items.find((item) => item.id === "equity")?.value).toBe("$125.00");
   });
 
   it("warns when authority is unavailable", () => {

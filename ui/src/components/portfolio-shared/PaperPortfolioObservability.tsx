@@ -6,6 +6,12 @@ type Props = {
   hideOrdersSection?: boolean;
 };
 
+function formatMinor(value: number | null | undefined) {
+  return value === null || value === undefined
+    ? "—"
+    : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value / 100);
+}
+
 export function PaperPortfolioObservability({ data, onTraceOrder, hideOrdersSection = false }: Props) {
   const { account, positions, orders, fills, risk, data_health, pnl, exposure } = data;
 
@@ -20,7 +26,19 @@ export function PaperPortfolioObservability({ data, onTraceOrder, hideOrdersSect
           </div>
           <div>
             <dt>Buying power</dt>
-            <dd>{account.cash_display}</dd>
+            <dd>{account.buying_power_display ?? formatMinor(account.buying_power_minor)}</dd>
+          </div>
+          <div>
+            <dt>Reserved cash</dt>
+            <dd>{account.reserved_cash_display ?? formatMinor(account.reserved_cash_minor)}</dd>
+          </div>
+          <div>
+            <dt>Equity</dt>
+            <dd>{account.equity_display ?? "—"}</dd>
+          </div>
+          <div>
+            <dt>Valuation quality</dt>
+            <dd>{account.valuation_quality ?? "UNKNOWN"}</dd>
           </div>
           <div>
             <dt>Realized P&amp;L</dt>
@@ -31,6 +49,7 @@ export function PaperPortfolioObservability({ data, onTraceOrder, hideOrdersSect
             <dd>{account.execution_provider}</dd>
           </div>
         </dl>
+        {account.valuation_reasons?.length ? <p className="muted">{account.valuation_reasons.join(" · ")}</p> : null}
       </section>
 
       <section className="panel pnl-panel">
@@ -62,6 +81,10 @@ export function PaperPortfolioObservability({ data, onTraceOrder, hideOrdersSect
             <dt>Net</dt>
             <dd>{exposure?.net_shares ?? 0} sh</dd>
           </div>
+          <div>
+            <dt>Gross notional</dt>
+            <dd>{exposure?.gross_notional_display ?? formatMinor(exposure?.gross_notional_minor)}</dd>
+          </div>
         </dl>
       </section>
 
@@ -92,6 +115,14 @@ export function PaperPortfolioObservability({ data, onTraceOrder, hideOrdersSect
             <dt>Max position</dt>
             <dd>{risk.limits.max_position_shares} sh</dd>
           </div>
+          <div>
+            <dt>Max order notional</dt>
+            <dd>{formatMinor(risk.limits.max_order_notional_minor)}</dd>
+          </div>
+          <div>
+            <dt>Max position notional</dt>
+            <dd>{formatMinor(risk.limits.max_position_notional_minor)}</dd>
+          </div>
         </dl>
       </section>
 
@@ -110,6 +141,8 @@ export function PaperPortfolioObservability({ data, onTraceOrder, hideOrdersSect
                 <th>Mark quality</th>
                 <th>Mark as of</th>
                 <th>Unrealized</th>
+                <th>Reserved</th>
+                <th>Available</th>
                 <th>Mark provider</th>
               </tr>
             </thead>
@@ -123,6 +156,8 @@ export function PaperPortfolioObservability({ data, onTraceOrder, hideOrdersSect
                   <td>{row.mark_quality ?? "—"}</td>
                   <td>{row.mark_as_of_ns ?? "—"}</td>
                   <td>{row.unrealized_pnl_display ?? "—"}</td>
+                  <td>{row.reserved_sell_shares ?? 0} sh</td>
+                  <td>{row.available_to_sell ?? row.quantity} sh</td>
                   <td>{row.mark_provider ?? row.mark_source ?? "—"}</td>
                 </tr>
               ))}

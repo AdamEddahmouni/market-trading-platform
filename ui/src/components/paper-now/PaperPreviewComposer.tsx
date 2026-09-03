@@ -30,6 +30,12 @@ function optionalRows(preview: PaperOrderPreviewResponse["preview"]) {
   return rows.filter((row) => row[1] !== undefined);
 }
 
+function formatMinor(value: number | null | undefined) {
+  return value === null || value === undefined
+    ? "—"
+    : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value / 100);
+}
+
 export function PaperPreviewComposer({ instrumentId, side, quantityText, maxOrderShares, disabledReason, pending, error, preview, canContinue, onSideChange, onQuantityChange, onPreview, onContinue }: Props) {
   const resultHeadingRef = useRef<HTMLHeadingElement | null>(null);
   useEffect(() => { if (preview) resultHeadingRef.current?.focus(); }, [preview]);
@@ -50,7 +56,10 @@ export function PaperPreviewComposer({ instrumentId, side, quantityText, maxOrde
           <p>Risk <strong>{preview.risk_status}</strong> · {preview.decision}</p>
           {preview.reason_codes?.length ? <p>Reasons: {preview.reason_codes.join(", ")}</p> : null}
           {optionalRows(preview).length ? <dl>{optionalRows(preview).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value} sh</dd></div>)}</dl> : null}
-          {preview.risk_limits ? <p>Limits: order {preview.risk_limits.max_order_shares} · position {preview.risk_limits.max_position_shares} · open orders {preview.risk_limits.max_open_orders}</p> : null}
+          {preview.approved_quantity !== undefined ? <p>Approved quantity {preview.approved_quantity} sh · notional {formatMinor(preview.approved_notional_minor)}</p> : null}
+          {preview.projected_available_cash_minor !== undefined ? <p>Available cash after order {formatMinor(preview.projected_available_cash_minor)}</p> : null}
+          {preview.risk_price?.source ? <p>Pricing basis {preview.risk_price.source.replace(/_/g, " ")} · {formatMinor(preview.risk_price.minor)} · {preview.risk_price.quality ?? "UNKNOWN"}</p> : null}
+          {preview.risk_limits ? <p>Limits: order {preview.risk_limits.max_order_shares} / {formatMinor(preview.risk_limits.max_order_notional_minor)} · position {preview.risk_limits.max_position_shares} / {formatMinor(preview.risk_limits.max_position_notional_minor)} · open orders {preview.risk_limits.max_open_orders}</p> : null}
           {preview.risk_utilization ? <ul>{Object.entries(preview.risk_utilization).map(([key, value]) => <li key={key}><code>{key}</code> {typeof value === "object" ? JSON.stringify(value) : String(value)}</li>)}</ul> : null}
           <p>Quality {preview.quality_state ?? "UNKNOWN"} · Fill preview {preview.fill_preview_available === undefined ? "UNKNOWN" : preview.fill_preview_available ? "AVAILABLE" : "UNAVAILABLE"}</p>
           {preview.execution_model ? <p>Model {preview.execution_model}{preview.execution_model_version ? ` · ${preview.execution_model_version}` : ""}</p> : null}

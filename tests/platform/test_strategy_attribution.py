@@ -560,7 +560,7 @@ class StrategyAttributionTests(unittest.TestCase):
             {ref.id for ref in third.fill_refs},
             {"fill-entry", "fill-partial-exit", "fill-final-exit"},
         )
-        self.assertEqual(third.trading_outcome.realized_pnl_minor, 451)
+        self.assertEqual(third.trading_outcome.realized_pnl_minor, 454)
         self.assertEqual(
             ledger.project_account()["realized_pnl_minor"],
             third.trading_outcome.realized_pnl_minor,

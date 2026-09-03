@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from threading import RLock
 from typing import Any, Callable, Iterator
 
 from ..canonical import canonical_bytes, sha256_bytes
@@ -30,7 +31,9 @@ EVENT_TYPES: tuple[str, ...] = (
 )
 
 
-OPEN_ORDER_STATES: frozenset[str] = frozenset({"ACTIVATED", "WORKING", "PARTIALLY_FILLED"})
+OPEN_ORDER_STATES: frozenset[str] = frozenset(
+    {"SUBMITTED", "ACTIVATED", "WORKING", "PARTIALLY_FILLED", "CANCEL_PENDING"}
+)
 
 
 def order_state_open_count_delta(prior_state: str | None, next_state: str) -> int:
@@ -69,12 +72,14 @@ class PaperExecutionLedger:
     _live_mark_provider: str | None = field(default=None, repr=False)
     _live_mark_as_of_ns: int | None = field(default=None, repr=False)
     _live_mark_quality: str | None = field(default=None, repr=False)
+    _marks_by_instrument: dict[str, dict[str, Any]] = field(default_factory=dict, repr=False)
     persist_sink: Callable[["PaperExecutionLedger", list[dict[str, Any]]], None] | None = field(
         default=None,
         repr=False,
     )
     _pending_persist: list[dict[str, Any]] = field(default_factory=list, repr=False)
     _batch_depth: int = field(default=0, repr=False)
+    admission_lock: RLock = field(default_factory=RLock, repr=False)
 
     @classmethod
     def open_session(
@@ -90,7 +95,10 @@ class PaperExecutionLedger:
         data_provider: str = "INTERNAL",
         execution_provider: str = "INTERNAL",
     ) -> PaperExecutionLedger:
-        active_policy = policy or DEFAULT_RISK_POLICY
+        # Custom policies from older callers may omit fields introduced by
+        # the cash-account policy.  Fill those fields from the current
+        # defaults while preserving the caller's policy identity and limits.
+        active_policy = {**DEFAULT_RISK_POLICY, **(policy or {})}
         account_body = {
             "currency": active_policy["currency"],
             "initial_cash_minor": active_policy["initial_cash_minor"],
@@ -176,11 +184,24 @@ class PaperExecutionLedger:
     def atomic_append(self) -> Iterator[None]:
         """One SQLite transaction for a logical multi-event operation (FillRecorded + PositionChanged)."""
 
+        outermost = self._batch_depth == 0
+        prior_events = list(self.events) if outermost else None
+        prior_pending = list(self._pending_persist) if outermost else None
+        prior_idempotency = dict(self.idempotency_index) if outermost else None
+        prior_open_order_count = self.open_order_count
         self._batch_depth += 1
         try:
             yield
             if self._batch_depth == 1:
                 self._flush_persist()
+        except Exception:
+            if outermost:
+                self.events[:] = prior_events or []
+                self._pending_persist[:] = prior_pending or []
+                self.idempotency_index.clear()
+                self.idempotency_index.update(prior_idempotency or {})
+                self.open_order_count = prior_open_order_count
+            raise
         finally:
             self._batch_depth = max(0, self._batch_depth - 1)
 
@@ -194,7 +215,7 @@ class PaperExecutionLedger:
 
     def record_idempotent_order(self, *, idempotency_key: str, order_id: str) -> None:
         self.idempotency_index[idempotency_key] = order_id
-        if self.persist_sink is not None:
+        if self.persist_sink is not None and self._batch_depth == 0:
             self.persist_sink(self, [])
 
     def lookup_idempotent_order(self, idempotency_key: str) -> str | None:
@@ -203,10 +224,43 @@ class PaperExecutionLedger:
     def project_account(self) -> dict[str, Any]:
         projection = self._project_ledger()
         cash_minor = int(projection["cash_minor"])
+        reservations = self.project_reservations()
         scale = int(self.policy["price_scale"])
+        positions = self.project_positions()
+        valuation_reasons: list[str] = []
+        for position in positions:
+            symbol = str(position["instrument_id"])
+            quality = str(position.get("mark_quality") or "UNAVAILABLE").upper()
+            if position.get("mark_minor") is None:
+                valuation_reasons.append(f"MARK_UNAVAILABLE:{symbol}")
+            elif quality not in {"PASS", "HEALTHY"}:
+                valuation_reasons.append(f"MARK_UNUSABLE:{symbol}:{quality}")
+        valuation_complete = not valuation_reasons
+        market_value_minor = (
+            sum(int(row["quantity"]) * int(row["mark_minor"]) for row in positions)
+            if valuation_complete
+            else None
+        )
+        unrealized_pnl_minor = (
+            sum(int(row["unrealized_pnl_minor"]) for row in positions)
+            if valuation_complete
+            else None
+        )
+        equity_minor = cash_minor + market_value_minor if market_value_minor is not None else None
         return {
             "authority_boundary": "PAPER_EXECUTION_OBSERVABILITY",
-            "buying_power_minor": cash_minor,
+            "available_buying_power_minor": max(
+                0,
+                cash_minor - int(reservations["reserved_cash_minor"]),
+            ),
+            "available_buying_power_display": decimal_minor_to_display(
+                max(0, cash_minor - int(reservations["reserved_cash_minor"])),
+                scale=scale,
+            ),
+            "buying_power_minor": max(0, cash_minor - int(reservations["reserved_cash_minor"])),
+            "buying_power_display": decimal_minor_to_display(
+                max(0, cash_minor - int(reservations["reserved_cash_minor"])), scale=scale
+            ),
             "cash_minor": cash_minor,
             "cash_display": decimal_minor_to_display(cash_minor, scale=scale),
             "currency": self.policy["currency"],
@@ -216,25 +270,122 @@ class PaperExecutionLedger:
             "execution_mode": self.execution_mode,
             "execution_provider": self.execution_provider,
             "initial_cash_minor": int(self.policy["initial_cash_minor"]),
+            "equity_minor": equity_minor,
+            "equity_display": decimal_minor_to_display(equity_minor, scale=scale) if equity_minor is not None else None,
+            "gross_exposure_minor": market_value_minor,
+            "gross_exposure_display": decimal_minor_to_display(market_value_minor, scale=scale) if market_value_minor is not None else None,
+            "market_value_minor": market_value_minor,
+            "market_value_display": decimal_minor_to_display(market_value_minor, scale=scale) if market_value_minor is not None else None,
             "paper_account_id": self.paper_account_id,
             "realized_pnl_minor": int(projection["realized_pnl_minor"]),
             "realized_pnl_display": decimal_minor_to_display(
                 int(projection["realized_pnl_minor"]),
                 scale=scale,
             ),
+            "reserved_cash_minor": int(reservations["reserved_cash_minor"]),
+            "reserved_cash_display": decimal_minor_to_display(
+                int(reservations["reserved_cash_minor"]), scale=scale
+            ),
+            "reserved_sell_shares": int(reservations["reserved_sell_shares"]),
+            "unrealized_pnl_minor": unrealized_pnl_minor,
+            "unrealized_pnl_display": decimal_minor_to_display(unrealized_pnl_minor, scale=scale) if unrealized_pnl_minor is not None else None,
+            "valuation_quality": "COMPLETE" if valuation_complete else "INCOMPLETE",
+            "valuation_reasons": valuation_reasons,
             "session_id": self.session_id,
             "total_commission_minor": int(projection["total_commission_minor"]),
             "total_fees_minor": int(projection["total_fees_minor"]),
         }
 
+    def project_reservations(self) -> dict[str, Any]:
+        """Derive cash/share holds from immutable open-order history."""
+
+        decisions: dict[str, dict[str, Any]] = {}
+        for event in self.events:
+            if event.get("event_type") != "RiskDecisionRecorded":
+                continue
+            payload = event.get("payload")
+            decision = payload.get("decision") if isinstance(payload, dict) else None
+            if isinstance(decision, dict) and decision.get("intent_id"):
+                decisions[str(decision["intent_id"])] = decision
+
+        filled_by_order: dict[str, int] = {}
+        for fill in self.project_fills():
+            order_id = str(fill.get("order_id", ""))
+            filled_by_order[order_id] = filled_by_order.get(order_id, 0) + int(fill.get("fill_quantity", 0))
+
+        by_instrument: dict[str, dict[str, int]] = {}
+        orders: list[dict[str, Any]] = []
+        for order in self.project_orders():
+            if str(order.get("state", "")) not in OPEN_ORDER_STATES:
+                continue
+            order_id = str(order.get("order_id", ""))
+            intent_id = str(order.get("intent_id", ""))
+            decision = decisions.get(intent_id, {})
+            approved = int(decision.get("approved_quantity", order.get("quantity", 0)) or 0)
+            remaining = max(0, approved - filled_by_order.get(order_id, 0))
+            if remaining <= 0:
+                continue
+            instrument_id = str(order.get("instrument_id", "")).upper()
+            row = by_instrument.setdefault(
+                instrument_id,
+                {"reserved_cash_minor": 0, "reserved_sell_shares": 0},
+            )
+            side = str(order.get("side", "")).upper()
+            reserved_cash = 0
+            reserved_shares = 0
+            if side == "BUY":
+                price = int(decision.get("risk_price_minor", 0) or 0)
+                commission = remaining * int(self.policy.get("commission_minor_per_share", 0))
+                uncharged_fee = (
+                    0
+                    if filled_by_order.get(order_id, 0) > 0
+                    else int(
+                        decision.get(
+                            "estimated_fee_minor",
+                            self.policy.get("fee_minor_per_order", 0),
+                        )
+                        or 0
+                    )
+                )
+                reserved_cash = remaining * price + commission + uncharged_fee
+                row["reserved_cash_minor"] += reserved_cash
+            elif side == "SELL":
+                reserved_shares = remaining
+                row["reserved_sell_shares"] += reserved_shares
+            orders.append(
+                {
+                    "instrument_id": instrument_id,
+                    "order_id": order_id,
+                    "remaining_quantity": remaining,
+                    "reserved_cash_minor": reserved_cash,
+                    "reserved_sell_shares": reserved_shares,
+                }
+            )
+        return {
+            "by_instrument": by_instrument,
+            "orders": orders,
+            "reserved_cash_minor": sum(row["reserved_cash_minor"] for row in by_instrument.values()),
+            "reserved_sell_shares": sum(row["reserved_sell_shares"] for row in by_instrument.values()),
+        }
+
     def apply_live_mark(
         self,
         *,
+        instrument_id: str | None = None,
         mark_minor: int,
         mark_provider: str,
         mark_as_of_ns: int,
         mark_quality: str,
     ) -> None:
+        focus = (instrument_id or self._primary_instrument_id()).upper()
+        self._marks_by_instrument[focus] = {
+            "mark_as_of_ns": int(mark_as_of_ns),
+            "mark_minor": int(mark_minor),
+            "mark_provider": mark_provider,
+            "mark_quality": mark_quality,
+        }
+        # Legacy mirrors remain for old snapshot readers and single-symbol
+        # diagnostics until every external consumer uses the map.
         self._live_mark_minor = mark_minor
         self._live_mark_provider = mark_provider
         self._live_mark_as_of_ns = mark_as_of_ns
@@ -243,47 +394,66 @@ class PaperExecutionLedger:
     def project_positions(self) -> list[dict[str, Any]]:
         projection = self._project_ledger()
         positions: list[dict[str, Any]] = []
-        position_shares = int(projection["position_shares"])
-        if position_shares == 0:
-            return positions
-        instrument_id = self._primary_instrument_id()
-        symbol = self._primary_symbol()
         scale = int(self.policy["price_scale"])
-        mark = self._latest_mark_minor()
-        avg_fill = abs(int(projection["position_cost_basis_minor"])) // abs(position_shares)
-        notional_minor = abs(position_shares) * mark if mark is not None else 0
-        unrealized_minor = 0
-        if mark is not None and avg_fill is not None and position_shares != 0:
-            unrealized_minor = (mark - avg_fill) * position_shares
-        if self.data_mode == "LIVE_OBSERVATIONAL":
-            mark_source = self._live_mark_provider or "LIVE_MARK_UNAVAILABLE"
-            mark_quality = self._live_mark_quality or "UNAVAILABLE"
-        else:
-            mark_source = self._live_mark_provider or ("INTERNAL_FIXTURE" if mark is not None else None)
-            mark_quality = self._live_mark_quality or ("PASS" if mark is not None else None)
-        positions.append(
-            {
+        projected = dict(projection.get("positions_by_instrument") or {})
+        reservations = self.project_reservations()
+        reserved_by_instrument = dict(reservations.get("by_instrument") or {})
+        for instrument_id in sorted(projected):
+            instrument = projected[instrument_id]
+            position_shares = int(instrument["position_shares"])
+            if position_shares == 0:
+                continue
+            symbol = self._symbol_for_instrument(instrument_id)
+            mark_record = self._mark_for_instrument(instrument_id)
+            mark = int(mark_record["mark_minor"]) if mark_record is not None else self._latest_mark_minor(instrument_id)
+            avg_fill = abs(int(instrument["position_cost_basis_minor"])) // abs(position_shares)
+            notional_minor = abs(position_shares) * mark if mark is not None else None
+            unrealized_minor = (mark - avg_fill) * position_shares if mark is not None else None
+            reserved_sell = int(
+                dict(reserved_by_instrument.get(instrument_id) or {}).get("reserved_sell_shares", 0)
+            )
+            if self.data_mode == "LIVE_OBSERVATIONAL":
+                mark_source = str(mark_record.get("mark_provider")) if mark_record else "LIVE_MARK_UNAVAILABLE"
+                mark_quality = str(mark_record.get("mark_quality")) if mark_record else "UNAVAILABLE"
+            else:
+                mark_source = str(mark_record.get("mark_provider")) if mark_record else ("INTERNAL_FIXTURE" if mark is not None else None)
+                mark_quality = str(mark_record.get("mark_quality")) if mark_record else ("PASS" if mark is not None else None)
+            positions.append({
                 "average_fill_display": decimal_minor_to_display(avg_fill, scale=scale) if avg_fill is not None else None,
                 "average_fill_minor": avg_fill,
+                "cost_basis_minor": int(instrument["position_cost_basis_minor"]),
+                "cost_basis_display": decimal_minor_to_display(
+                    int(instrument["position_cost_basis_minor"]), scale=scale
+                ),
                 "instrument": build_instrument_ref(
                     instrument_id=instrument_id,
                     symbol=symbol,
                 ),
                 "instrument_id": instrument_id,
-                "mark_as_of_ns": self._live_mark_as_of_ns,
+                "mark_as_of_ns": mark_record.get("mark_as_of_ns") if mark_record else None,
                 "mark_minor": mark,
                 "mark_display": decimal_minor_to_display(mark, scale=scale) if mark is not None else None,
                 "mark_provider": mark_source,
                 "mark_quality": mark_quality,
                 "mark_source": mark_source,
                 "notional_minor": notional_minor,
+                "notional_display": decimal_minor_to_display(notional_minor, scale=scale) if mark is not None else None,
                 "quantity": position_shares,
+                "realized_pnl_minor": int(instrument.get("realized_pnl_minor", 0)),
+                "realized_pnl_display": decimal_minor_to_display(
+                    int(instrument.get("realized_pnl_minor", 0)), scale=scale
+                ),
+                "reserved_sell_shares": reserved_sell,
+                "available_to_sell": max(0, position_shares - reserved_sell),
                 "side": "LONG" if position_shares > 0 else "SHORT",
                 "symbol": symbol,
                 "unrealized_pnl_minor": unrealized_minor,
-                "unrealized_pnl_display": decimal_minor_to_display(unrealized_minor, scale=scale),
-            }
-        )
+                "unrealized_pnl_display": (
+                    decimal_minor_to_display(unrealized_minor, scale=scale)
+                    if unrealized_minor is not None
+                    else None
+                ),
+            })
         return positions
 
     def project_orders(self) -> list[dict[str, Any]]:
@@ -412,6 +582,7 @@ class PaperExecutionLedger:
             if event["event_type"] == "RiskDecisionRecorded" and isinstance(event.get("payload"), dict)
         ]
         last = decisions[-1] if decisions else None
+        reservations = self.project_reservations()
         reconciliation_status, last_reconciliation = self._reconciliation_state()
         return {
             "authority_boundary": "PAPER_RISK_OBSERVABILITY",
@@ -422,10 +593,17 @@ class PaperExecutionLedger:
             "last_reconciliation": last_reconciliation,
             "limits": {
                 "max_open_orders": int(self.policy["max_open_orders"]),
+                "broker_market_reserve_buffer_bps": int(
+                    self.policy["broker_market_reserve_buffer_bps"]
+                ),
+                "max_order_notional_minor": int(self.policy["max_order_notional_minor"]),
                 "max_order_shares": int(self.policy["max_order_shares"]),
+                "max_position_notional_minor": int(self.policy["max_position_notional_minor"]),
                 "max_position_shares": int(self.policy["max_position_shares"]),
             },
             "open_order_count": self.open_order_count,
+            "reserved_cash_minor": int(reservations["reserved_cash_minor"]),
+            "reserved_sell_shares": int(reservations["reserved_sell_shares"]),
             "policy_version": self.policy["policy_version"],
             "reconciliation_status": reconciliation_status,
         }
@@ -559,14 +737,17 @@ class PaperExecutionLedger:
         order["state"] = "CANCELLED"
         return order
 
-    def close_session(self) -> dict[str, Any]:
+    def close_session(self, *, reason_code: str | None = None) -> dict[str, Any]:
+        payload = {
+            "execution_authority": self.execution_authority,
+            "execution_mode": self.execution_mode,
+            "session_id": self.session_id,
+        }
+        if reason_code:
+            payload["reason_code"] = reason_code
         return self._append(
             "PaperSessionClosed",
-            {
-                "execution_authority": self.execution_authority,
-                "execution_mode": self.execution_mode,
-                "session_id": self.session_id,
-            },
+            payload,
         )
 
     def project_execution_trace(
@@ -790,6 +971,7 @@ class PaperExecutionLedger:
                 },
             )
     def append_fill(self, fill: dict[str, Any], *, order: dict[str, Any]) -> dict[str, Any]:
+        self.validate_fill_batch(order=order, fills=[fill])
         with self.atomic_append():
             # open_order_count is maintained exclusively by order-state
             # transitions (entering an open state / entering a terminal
@@ -813,6 +995,63 @@ class PaperExecutionLedger:
                     "realized_pnl_minor": int(projection["realized_pnl_minor"]),
                 },
             )
+
+    def validate_fill_batch(
+        self,
+        *,
+        order: dict[str, Any],
+        fills: list[dict[str, Any]],
+    ) -> None:
+        """Validate broker fills before lifecycle or portfolio mutation.
+
+        Provider status payloads are cumulative and may contain malformed or
+        over-reported executions.  Replay the candidate batch against the
+        current fill-derived state first so a bad response cannot leave a
+        terminal order transition, partial position mutation, or released
+        reservation behind.
+        """
+
+        if not fills:
+            return
+        order_id = str(order.get("order_id", ""))
+        approved = self._approved_quantity_for_order(order_id)
+        prior_quantity = sum(
+            int(fill.get("fill_quantity", 0))
+            for fill in self.project_fills()
+            if str(fill.get("order_id", "")) == order_id
+        )
+        candidate_quantity = sum(int(fill.get("fill_quantity", 0)) for fill in fills)
+        if approved is not None and prior_quantity + candidate_quantity > approved:
+            raise ValueError("BROKER_FILL_QUANTITY_EXCEEDS_APPROVED")
+
+        state = self._project_ledger()
+        expected_instrument = str(order.get("instrument_id", "")).upper()
+        expected_direction = str(order.get("direction", ""))
+        for fill in fills:
+            if str(fill.get("order_id", order_id)) != order_id:
+                raise ValueError("BROKER_FILL_ORDER_MISMATCH")
+            if expected_instrument and str(fill.get("instrument_id", "")).upper() != expected_instrument:
+                raise ValueError("BROKER_FILL_INSTRUMENT_MISMATCH")
+            if expected_direction and str(fill.get("direction", "")) != expected_direction:
+                raise ValueError("BROKER_FILL_DIRECTION_MISMATCH")
+            state = apply_fill(state, fill=fill, policy=self.policy)
+
+    def _approved_quantity_for_order(self, order_id: str) -> int | None:
+        intent_id: str | None = None
+        for order in self.project_orders():
+            if str(order.get("order_id", "")) == order_id:
+                intent_id = str(order.get("intent_id", ""))
+                break
+        if not intent_id:
+            return None
+        for event in reversed(self.events):
+            if event.get("event_type") != "RiskDecisionRecorded":
+                continue
+            payload = event.get("payload")
+            decision = payload.get("decision") if isinstance(payload, dict) else None
+            if isinstance(decision, dict) and str(decision.get("intent_id", "")) == intent_id:
+                return int(decision.get("approved_quantity", 0))
+        return None
 
     def _project_ledger(self) -> dict[str, Any]:
         state = build_ledger_state(initial_cash_minor=int(self.policy["initial_cash_minor"]))
@@ -846,15 +1085,30 @@ class PaperExecutionLedger:
                 return str(payload["symbol"])
         return "UNKNOWN"
 
-    def _latest_mark_minor(self) -> int | None:
-        if self._live_mark_minor is not None:
-            return self._live_mark_minor
+    def _latest_mark_minor(self, instrument_id: str | None = None) -> int | None:
+        mark = self._mark_for_instrument(instrument_id or self._primary_instrument_id())
+        if mark is not None:
+            return int(mark["mark_minor"])
         if self.data_mode == "LIVE_OBSERVATIONAL":
             return None
-        fills = self.project_fills()
+        focus = instrument_id or self._primary_instrument_id()
+        fills = [
+            fill for fill in self.project_fills()
+            if str(fill.get("instrument_id", "")).upper() == focus.upper()
+        ]
         if not fills:
             return None
         return int(fills[-1]["fill_price_minor"])
+
+    def _mark_for_instrument(self, instrument_id: str) -> dict[str, Any] | None:
+        mark = self._marks_by_instrument.get(instrument_id.upper())
+        return dict(mark) if isinstance(mark, dict) else None
+
+    def _symbol_for_instrument(self, instrument_id: str) -> str:
+        for order in reversed(self.project_orders()):
+            if str(order.get("instrument_id", "")).upper() == instrument_id.upper() and order.get("symbol"):
+                return str(order["symbol"])
+        return self._primary_symbol() if instrument_id == self._primary_instrument_id() else instrument_id
 
     def _average_fill_minor(self) -> int | None:
         projection = self._project_ledger()
