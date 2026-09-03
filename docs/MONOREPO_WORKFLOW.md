@@ -60,3 +60,28 @@ The guard verifies that:
 
 CI repeats the snapshot checks without requiring the root-level child
 repositories to be present in a hosted checkout.
+
+## Historical paper trail
+
+The complete committed-history audit is under
+[`docs/history/INDEX.md`](history/INDEX.md). It is intentionally layered:
+
+- `INDEX.md` gives the coverage summary and navigation.
+- `repositories/*.md` gives an understandable chronological timeline for each
+  repository.
+- `WORK_LEDGER.jsonl` preserves every captured commit body, parent, identity,
+  ref, timestamp, and changed path.
+- `REFS.json` records every local ref and its exact tip at generation time.
+
+Regenerate it locally after fetching any new child refs:
+
+```powershell
+python tools/generate_history_ledger.py generate
+python tools/generate_history_ledger.py validate
+```
+
+The three integrated-platform workspace entries share one underlying Git
+history because two are worktrees. They remain separate in the audit so each
+workspace path and ref set is traceable. The ledger records committed work
+only; uncommitted files remain in the source repositories and are not given
+invented dates or rationale.
