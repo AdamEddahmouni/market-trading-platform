@@ -1,0 +1,279 @@
+{
+  "acknowledgements": [
+    {
+      "acknowledgement_id": "ACK-DOCUMENTARY-SCOPE-001",
+      "statement": "This artifact evaluates documentary preapproval reviewer eligibility only. It does not perform either required independent AI review class."
+    },
+    {
+      "acknowledgement_id": "ACK-GATE-EFFECT-001",
+      "statement": "An effective ELIGIBLE zero-violation result is necessary but not sufficient for GOV-002 PASS and does not itself publish a GOV-002 assertion result."
+    },
+    {
+      "acknowledgement_id": "ACK-NO-CURRENT-POSTROOT-EVIDENCE-001",
+      "statement": "No candidate evidence root, qualifying AI review run, AI review coverage result, acceptance index, or final acceptance result is claimed to exist."
+    },
+    {
+      "acknowledgement_id": "ACK-NON-AUTHORIZATION-001",
+      "statement": "Neither eligibility nor a later GOV-002 PASS authorizes implementation, Phase 0 execution, Phase 0A work, provider access, paper operation, or live trading."
+    },
+    {
+      "acknowledgement_id": "ACK-NONQUALIFYING-PREPARATION-001",
+      "statement": "Preparing, validating, or approving this artifact is governance documentation work and is not a qualifying independent AI review run."
+    }
+  ],
+  "artifact_type": "PREAPPROVAL_REVIEWER_ELIGIBILITY_RESULT",
+  "authority_bindings": [
+    {
+      "approval_basis": "CANONICAL_AUTHORITY_STATUS_IN_BOUND_BYTES",
+      "effectivity_state": "CANONICAL_AUTHORITY_IMPLEMENTATION_READINESS_BLOCKED",
+      "logical_id": "foundation.canonical_specification",
+      "logical_path": "docs/superpowers/specs/2026-08-13-integrated-market-platform-foundation-design.md",
+      "sha256": "B4EAE3240F6F968A6B393263D849013259A00187E209C8632E38DE890996D04D"
+    },
+    {
+      "approval_basis": "EXTERNAL_ATTRIBUTABLE_CONVERSATIONAL_EXACT_HASH_PRINCIPAL_APPROVAL",
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase0.ai_review_procedure",
+      "logical_path": "docs/superpowers/governance/2026-08-14-ai-review-process-001.json",
+      "sha256": "EAAA84B1D0D6FF4B6A90F36CC35F5D88E9D1EB63173A6BDE18D9C911E63C69A8"
+    },
+    {
+      "approval_basis": "EXTERNAL_ATTRIBUTABLE_CONVERSATIONAL_EXACT_HASH_WRITTEN_PLAN_APPROVAL",
+      "effectivity_state": "EFFECTIVE_AS_CONTROLLING_PHASE_0_PLAN_WITH_PHASE_0_BLOCKED",
+      "logical_id": "phase0.governance_plan",
+      "logical_path": "docs/superpowers/plans/2026-08-13-phase-0-governance-and-no-live-safety.md",
+      "sha256": "EE22C688167F5016D7ED1953BB1DAE516BC6AB343655A7D96535C6605D37E904"
+    },
+    {
+      "approval_basis": "EXTERNAL_ATTRIBUTABLE_CONVERSATIONAL_EXACT_HASH_PRINCIPAL_APPROVAL",
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase0.role_assignment",
+      "logical_path": "docs/superpowers/governance/2026-08-14-phase-0-role-assignment.json",
+      "sha256": "37C24D60FF9ACB8411BA0D5FA5A2C5DBC8811DFD30E4180DD377A2C3BADA2163"
+    }
+  ],
+  "check_results": [
+    {
+      "check_id": "PREELIG-ROLE-RESOLUTION-001",
+      "evidence_refs": [
+        "phase0.governance_plan#section-12-ownership-and-approval",
+        "phase0.role_assignment#/assignment_scope",
+        "phase0.role_assignment#/assignments",
+        "phase0.role_assignment#/overlap_disclosure",
+        "phase0.role_assignment#/principal"
+      ],
+      "expected_condition": "The effective role assignment resolves every required human Phase 0 owner and approver capacity to PROJECT-PRINCIPAL-001, discloses all overlaps, and does not imply additional human participants.",
+      "observed_condition": "The exact role-assignment bytes contain 11 distinct required capacity assignments, every assignment resolves to PROJECT-PRINCIPAL-001, the human principal count is one, and the 11-capacity overlap group is declared complete.",
+      "reason_codes": [],
+      "status": "PASS"
+    },
+    {
+      "check_id": "PREELIG-PROCEDURE-DESIGNATION-001",
+      "evidence_refs": [
+        "phase0.role_assignment#/acknowledgements",
+        "phase0.role_assignment#/ai_independent_review"
+      ],
+      "expected_condition": "The role assignment designates AI-REVIEW-PROCESS-001 and explicitly prevents principal self-review from being represented as independent review.",
+      "observed_condition": "The exact role-assignment bytes designate AI-REVIEW-PROCESS-001, require two named review classes, and state that PROJECT-PRINCIPAL-001 self-review does not satisfy independent review.",
+      "reason_codes": [],
+      "status": "PASS"
+    },
+    {
+      "check_id": "PREELIG-PROCEDURE-APPROVAL-001",
+      "evidence_refs": [
+        "phase0.ai_review_procedure#/effectivity",
+        "phase0.ai_review_procedure#/logical_id",
+        "phase0.ai_review_procedure#/procedure_id",
+        "phase0.role_assignment#/ai_independent_review/designated_procedure_id"
+      ],
+      "expected_condition": "The designated procedure ID resolves to AI-REVIEW-PROCESS-001, its exact SHA-256 equals the approved hash, and external attributable exact-hash principal approval exists.",
+      "observed_condition": "The designated procedure ID and logical ID resolve to AI-REVIEW-PROCESS-001 and phase0.ai_review_procedure, the exact SHA-256 is EAAA84B1D0D6FF4B6A90F36CC35F5D88E9D1EB63173A6BDE18D9C911E63C69A8, and PROJECT-PRINCIPAL-001 approved those exact bytes in the external conversation.",
+      "reason_codes": [],
+      "status": "PASS"
+    },
+    {
+      "check_id": "PREELIG-REVIEW-CONTROLS-001",
+      "evidence_refs": [
+        "phase0.ai_review_procedure#/coverage_requirements",
+        "phase0.ai_review_procedure#/input_contract",
+        "phase0.ai_review_procedure#/isolation_and_eligibility",
+        "phase0.ai_review_procedure#/non_circular_evidence_model/candidate_root_rule",
+        "phase0.ai_review_procedure#/review_classes"
+      ],
+      "expected_condition": "The approved procedure requires two distinct fresh contexts, read-only governed inputs, non-authoring eligibility, sanitized evidence, complete coverage union, and exact candidate-root binding.",
+      "observed_condition": "The exact procedure bytes define two review classes, separately initialized fresh contexts, read-only governed inputs, non-authoring rules, sanitized input and output boundaries, complete coverage-union rules, and exact candidate-root binding.",
+      "reason_codes": [],
+      "status": "PASS"
+    },
+    {
+      "check_id": "PREELIG-NONCIRCULARITY-001",
+      "evidence_refs": [
+        "phase0.ai_review_procedure#/acknowledgements",
+        "phase0.ai_review_procedure#/coverage_requirements/qualification_result_rule",
+        "phase0.ai_review_procedure#/non_circular_evidence_model"
+      ],
+      "expected_condition": "The approved procedure preserves the separation between preapproval GOV-002 evidence and postroot review-run and coverage evidence.",
+      "observed_condition": "The exact procedure bytes restrict GOV-002 to preapproval evidence, exclude AI review runs and coverage from candidate-root inputs, and create those records only after candidate-root construction for the final gate.",
+      "reason_codes": [],
+      "status": "PASS"
+    },
+    {
+      "check_id": "PREELIG-NO-FALSE-EVIDENCE-001",
+      "evidence_refs": [
+        "phase0.ai_review_procedure#/acknowledgements",
+        "phase0.ai_review_procedure#/coverage_qualification_contract/actual_result_state",
+        "phase0.ai_review_procedure#/preapproval_eligibility_check/actual_result_state",
+        "phase0.role_assignment#/ai_independent_review",
+        "phase0.role_assignment#/authority_bindings"
+      ],
+      "expected_condition": "The bound artifacts do not falsely claim that an actual AI review run, review coverage result, formal approval record, candidate root, acceptance index, or final result currently exists.",
+      "observed_condition": "The exact bound bytes declare current AI review runs, review coverage, and the prior eligibility result as not yet created; they disclaim formal phase0.approval_records and make no current candidate-root, acceptance-index, or final-result claim.",
+      "reason_codes": [],
+      "status": "PASS"
+    }
+  ],
+  "documented_on": "2026-08-14",
+  "effectivity": {
+    "activation_condition": "PROJECT-PRINCIPAL-001 explicitly approves this complete file by logical ID and exact SHA-256 after review.",
+    "approval_event_state": "NOT_YET_OCCURRED_OR_RECORDED",
+    "approval_must_bind": [
+      "logical_id",
+      "sha256"
+    ],
+    "current_effectivity": "PENDING_EXACT_HASH_PRINCIPAL_APPROVAL",
+    "determination_rule": "Effectivity is established by external attributable exact-hash principal-approval evidence. This file alone cannot prove activation.",
+    "effective_from": "THE_TIMESTAMP_IN_THE_EXTERNAL_EXACT_HASH_APPROVAL_EVIDENCE",
+    "effective_until": "SUPERSEDED_OR_REVOKED_BY_A_LATER_EXACT_HASH_PRINCIPAL_DECISION",
+    "self_hash_rule": "This file does not embed its own SHA-256 because that would create a circular identity. External approval evidence must record the computed hash."
+  },
+  "eligibility_determination": {
+    "blocked_check_count": 0,
+    "failed_check_count": 0,
+    "passed_check_count": 6,
+    "required_check_count": 6,
+    "status": "ELIGIBLE",
+    "violation_count": 0,
+    "violations": []
+  },
+  "governance_effect": {
+    "candidate_root_effect": "ELIGIBLE_FOR_FUTURE_PREAPPROVAL_MEMBERSHIP_ONLY_AFTER_THIS_RESULT_BECOMES_EFFECTIVE; NO_CANDIDATE_ROOT_IS_CREATED_OR_AUTHORIZED",
+    "gov002_current_status": "BLOCKED_PENDING_EFFECTIVE_EXACT_HASH_APPROVAL_OF_THIS_RESULT",
+    "gov002_reassessment_rule": "After this unchanged valid ELIGIBLE zero-violation result becomes effective, GOV-002 may be reevaluated against all required evidence in a later governed assertion-evaluation run.",
+    "implementation_authority": "NONE",
+    "postroot_evidence_rule": "Qualifying AI review runs and AI review coverage remain postroot final-gate evidence and are not inputs to this result or GOV-002.",
+    "result_scope": "NECESSARY_PREAPPROVAL_GOV_002_EVIDENCE_INPUT_ONLY"
+  },
+  "logical_id": "phase0.preapproval_reviewer_eligibility",
+  "non_authorizations": [
+    "ACCEPTANCE_INDEX_CREATION",
+    "AI_REVIEW_RUN_EXECUTION",
+    "CANDIDATE_ROOT_CONSTRUCTION",
+    "DEFERRED_JSON_SCHEMA_FIXTURE_OR_TEST_VECTOR_SUITE",
+    "FORMAL_APPROVAL_RECORD_CREATION",
+    "GIT_OR_REPOSITORY_MUTATION",
+    "GOV_002_PASS_CLAIM",
+    "IMPLEMENTATION_PLANNING",
+    "PHASE_0A_DATA_WORK",
+    "PHASE_0_EXECUTION",
+    "PHASE_0_IMPLEMENTATION",
+    "PHASE_0_PASS_CLAIM",
+    "PROVIDER_BROKER_OR_LIVE_MARKET_ACCESS"
+  ],
+  "record_status": "READY_FOR_EXACT_HASH_PRINCIPAL_REVIEW",
+  "schema_version": "1.0.0",
+  "supersession": {
+    "revision_rule": "After effectivity, any content change creates a new immutable revision and requires new exact-hash principal approval. Earlier approved bytes remain historical and cannot transfer approval to changed bytes.",
+    "superseded_by": null,
+    "supersedes": []
+  },
+  "validation_contract": {
+    "additional_property_rule": "Every contracted object rejects members not declared by the approved written specification for schema version 1.0.0.",
+    "aggregate_rule": "INELIGIBLE applies when one or more checks FAIL; otherwise BLOCKED applies when one or more checks are BLOCKED; otherwise ELIGIBLE applies exactly when all six checks PASS and violation_count is zero.",
+    "allowed_blocked_reason_codes": [
+      "REQUIRED_EVIDENCE_UNAVAILABLE"
+    ],
+    "allowed_fail_reason_codes_by_check": {
+      "PREELIG-NO-FALSE-EVIDENCE-001": [
+        "FALSE_ACCEPTANCE_INDEX_CLAIM",
+        "FALSE_AI_REVIEW_COVERAGE_CLAIM",
+        "FALSE_AI_REVIEW_RUN_CLAIM",
+        "FALSE_CANDIDATE_ROOT_CLAIM",
+        "FALSE_FINAL_RESULT_CLAIM",
+        "FALSE_FORMAL_APPROVAL_RECORD_CLAIM"
+      ],
+      "PREELIG-NONCIRCULARITY-001": [
+        "POSTROOT_EVIDENCE_USED_FOR_PREAPPROVAL",
+        "PREPOSTROOT_BOUNDARY_UNDEFINED",
+        "REVIEW_EVIDENCE_LIFECYCLE_CIRCULAR"
+      ],
+      "PREELIG-PROCEDURE-APPROVAL-001": [
+        "PROCEDURE_APPROVAL_ABSENT",
+        "PROCEDURE_HASH_MISMATCH",
+        "PROCEDURE_ID_MISMATCH"
+      ],
+      "PREELIG-PROCEDURE-DESIGNATION-001": [
+        "INDEPENDENT_REVIEW_DESIGNATION_MISSING",
+        "PROCEDURE_ID_DESIGNATION_MISMATCH",
+        "SELF_REVIEW_MISREPRESENTED_AS_INDEPENDENT"
+      ],
+      "PREELIG-REVIEW-CONTROLS-001": [
+        "CANDIDATE_ROOT_BINDING_CONTROL_MISSING",
+        "COVERAGE_UNION_CONTROL_MISSING",
+        "FRESH_CONTEXT_CONTROL_MISSING",
+        "NON_AUTHORING_CONTROL_MISSING",
+        "READ_ONLY_CONTROL_MISSING",
+        "SANITIZATION_CONTROL_MISSING"
+      ],
+      "PREELIG-ROLE-RESOLUTION-001": [
+        "PRINCIPAL_ID_MISMATCH",
+        "REQUIRED_HUMAN_CAPACITY_UNRESOLVED",
+        "ROLE_OVERLAP_DISCLOSURE_INCOMPLETE"
+      ]
+    },
+    "array_ordering_rule": "check_results preserves the exact required procedure-derived order; set-valued arrays are deduplicated and sorted lexicographically; acknowledgements are sorted by acknowledgement_id; authority_bindings are sorted by logical_id; violations are sorted by check_id, reason_code, then rule_ref.",
+    "authority_hash_rule": "Every authority binding must resolve to the exact declared bytes before any check or aggregate may be relied upon.",
+    "check_id_order_required": [
+      "PREELIG-ROLE-RESOLUTION-001",
+      "PREELIG-PROCEDURE-DESIGNATION-001",
+      "PREELIG-PROCEDURE-APPROVAL-001",
+      "PREELIG-REVIEW-CONTROLS-001",
+      "PREELIG-NONCIRCULARITY-001",
+      "PREELIG-NO-FALSE-EVIDENCE-001"
+    ],
+    "check_status_values": [
+      "BLOCKED",
+      "FAIL",
+      "PASS"
+    ],
+    "count_consistency_rule": "blocked_check_count, failed_check_count, and passed_check_count equal the corresponding check result counts, sum to required_check_count, and required_check_count equals six; violation_count equals violations length.",
+    "duplicate_key_rule": "Reject any JSON object containing a duplicate member name.",
+    "eligibility_status_values": [
+      "BLOCKED",
+      "ELIGIBLE",
+      "INELIGIBLE"
+    ],
+    "encoding": "UTF-8_WITHOUT_BOM",
+    "evidence_resolution_rule": "Every evidence_ref resolves within an exact authority binding; this result is not evidence for its own checks and postroot or future artifacts are prohibited inputs.",
+    "line_endings": "LF_ONLY",
+    "object_key_order_rule": "Every object member name is sorted in ascending Unicode code-point order.",
+    "profile_id": "PHASE0-GOVERNANCE-DOCUMENT-JSON-1.0.0",
+    "reason_code_rule": "PASS has no reason codes; FAIL uses only the exact check-scoped failure registry; BLOCKED uses only REQUIRED_EVIDENCE_UNAVAILABLE; every violation corresponds to a FAIL check and uses one of that check's allowed failure codes.",
+    "required_top_level_fields": [
+      "acknowledgements",
+      "artifact_type",
+      "authority_bindings",
+      "check_results",
+      "documented_on",
+      "effectivity",
+      "eligibility_determination",
+      "governance_effect",
+      "logical_id",
+      "non_authorizations",
+      "record_status",
+      "schema_version",
+      "supersession",
+      "validation_contract"
+    ],
+    "trailing_newline": "EXACTLY_ONE_LF"
+  }
+}

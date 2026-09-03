@@ -1,0 +1,36 @@
+{
+  "admission_id": "ADMITTED-MC-BOXL-001",
+  "fixture_id": "FIXTURE-MC-BOXL-AMBIGUOUS",
+  "symbol": "BOXL",
+  "documents": [
+    {
+      "document_id": "mc-doc-ambiguous-1",
+      "canonical_event_type": "earnings_beat",
+      "title": "Conflicting issuer attribution for BOXL headline",
+      "body": "Document claims BOXL symbol but mismatched issuer metadata.",
+      "associated_symbols": ["BOXL", "BOX"],
+      "issuer_claims": [
+        {"symbol": "BOXL", "issuer_name": "BOXL International Inc", "exchange": "NASDAQ", "security_type": "COMMON"},
+        {"symbol": "BOX", "issuer_name": "Box Inc", "exchange": "NYSE", "security_type": "COMMON"}
+      ],
+      "event_time": "2026-07-15T14:30:00.000000000Z",
+      "available_time": "2026-07-15T14:31:00.000000000Z",
+      "source": {
+        "source_id": "mc-src-ambiguous-1",
+        "source_type": "FINANCIAL_MEDIA",
+        "publisher": "Ambiguous Publisher",
+        "author": null,
+        "domain": "ambiguous.example",
+        "primary_or_secondary": "primary",
+        "official": false,
+        "first_party": false,
+        "source_tier": "media",
+        "source_origin_id": "origin-ambiguous",
+        "syndication_parent_id": null,
+        "provider": "fixture_synthetic",
+        "event_time": "2026-07-15T14:30:00.000000000Z",
+        "available_time": "2026-07-15T14:31:00.000000000Z"
+      }
+    }
+  ]
+}

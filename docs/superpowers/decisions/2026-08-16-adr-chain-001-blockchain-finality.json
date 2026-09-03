@@ -1,0 +1,28 @@
+{
+  "adr_id": "ADR-CHAIN-001",
+  "alternatives": [
+    {
+      "decision": "PROPOSED",
+      "name": "EXPLICIT_FINALITY_WITH_HISTORY",
+      "option_id": "CHAIN-OPTION-001",
+      "tradeoffs": [
+        "Reorgs and state changes require history preservation rather than silent rewrite."
+      ]
+    }
+  ],
+  "artifact_type": "ARCHITECTURE_DECISION_RECORD",
+  "created_at": "2026-08-16T04:30:00.000000000Z",
+  "decision": {
+    "selected_option_id": "CHAIN-OPTION-001",
+    "summary": "Blockchain events use explicit finality states (SEEN, PENDING, CONFIRMED, FINALIZED, REORGED, FAILED) with chain-specific parameters. State transitions preserve history.",
+    "title": "Blockchain time, finality, and reorg semantics"
+  },
+  "effectivity": {
+    "current_state": "PROPOSED",
+    "decision_only": true,
+    "non_authorization_statement": "Proposed status does not authorize on-chain ingestion, node connections, or wallet labeling."
+  },
+  "logical_id": "expansion.adr_chain_001",
+  "schema_version": "1.0.0",
+  "status": "PROPOSED"
+}

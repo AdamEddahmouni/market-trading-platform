@@ -1,0 +1,20 @@
+{
+  "activated_at": "2026-08-15T16:00:00.000000000Z",
+  "activation_id": "D4E5F60718293A4B5C6D7E8F901234567890ABCDEF0123456789ABCDEF0123",
+  "artifact_type": "PHASE_2_IMPLEMENTATION_ACTIVATION",
+  "authorization_logical_id": "phase2.implementation_authorization",
+  "authorization_sha256": "2EBFB8AF68920266B03A6D31203FD5FC9FA700087C2FAF6D28F4B3C19010E9C3",
+  "effect": "Records that principal-approved Phase 2 implementation authorization is active for contract and replay evidence generation within authorized scope.",
+  "governance_approvals_logical_id": "phase2.governance_approvals",
+  "logical_id": "phase2.implementation_activation",
+  "phase1_status_at_activation": "PASS",
+  "principal_id": "PROJECT-PRINCIPAL-001",
+  "sanitization": {
+    "absolute_paths_included": false,
+    "account_identifiers_included": false,
+    "credential_values_included": false,
+    "remote_urls_included": false
+  },
+  "schema_version": "1.0.0",
+  "status": "EFFECTIVE"
+}

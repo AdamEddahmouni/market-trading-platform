@@ -1,0 +1,79 @@
+{
+  "fixture_id": "ADMITTED-L2-NVDA-001",
+  "level_count": 10,
+  "symbol": "NVDA",
+  "transitions": [
+    {
+      "index": 1,
+      "event_time": "2026-07-21T20:30:01.000000000Z",
+      "mid_delta": 0.02,
+      "relative_mid_delta": 0.00011727,
+      "opposing_replenishment": false,
+      "impact_regime": "NEUTRAL",
+      "impact_method": "impact_aggression_price_v1",
+      "impact_version": "1",
+      "book_state_valid": true,
+      "quality_flags": [],
+      "aggression_signed_volume": -100.0,
+      "price_efficiency": -0.0002
+    },
+    {
+      "index": 2,
+      "event_time": "2026-07-21T20:30:02.000000000Z",
+      "mid_delta": 0.01,
+      "relative_mid_delta": 5.863e-05,
+      "opposing_replenishment": false,
+      "impact_regime": "NEUTRAL",
+      "impact_method": "impact_aggression_price_v1",
+      "impact_version": "1",
+      "book_state_valid": true,
+      "quality_flags": [],
+      "aggression_signed_volume": 100.0,
+      "price_efficiency": 0.0001
+    },
+    {
+      "index": 3,
+      "event_time": "2026-07-21T20:30:03.000000000Z",
+      "mid_delta": 0.01,
+      "relative_mid_delta": 5.862e-05,
+      "opposing_replenishment": false,
+      "impact_regime": "NEUTRAL",
+      "impact_method": "impact_aggression_price_v1",
+      "impact_version": "1",
+      "book_state_valid": true,
+      "quality_flags": [],
+      "aggression_signed_volume": -200.0,
+      "price_efficiency": -5e-05
+    },
+    {
+      "index": 4,
+      "event_time": "2026-07-21T20:30:04.000000000Z",
+      "mid_delta": 0.01,
+      "relative_mid_delta": 5.862e-05,
+      "opposing_replenishment": true,
+      "impact_regime": "BUY_ABSORPTION",
+      "impact_method": "impact_aggression_price_v1",
+      "impact_version": "1",
+      "book_state_valid": true,
+      "quality_flags": [],
+      "aggression_signed_volume": 150.0,
+      "price_efficiency": 6.667e-05,
+      "absorption_score": 0.696875
+    },
+    {
+      "index": 5,
+      "event_time": "2026-07-21T20:30:06.000000000Z",
+      "mid_delta": 0.02,
+      "relative_mid_delta": 0.00011723,
+      "opposing_replenishment": true,
+      "impact_regime": "NEUTRAL",
+      "impact_method": "impact_aggression_price_v1",
+      "impact_version": "1",
+      "book_state_valid": true,
+      "quality_flags": [],
+      "aggression_signed_volume": -50.0,
+      "price_efficiency": -0.0004,
+      "absorption_score": 0.140625
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "fixture": "C:\\Users\\adame\\Desktop\\market-trading-platform\\integrated-market-platform\\tests\\fixtures\\squeeze\\mechanism_labels.json",
+  "case_count": 24,
+  "baseline_ignition_rate": 0.0,
+  "with_catalyst_ignition_rate": 1.0,
+  "with_options_ignition_rate": 0.0,
+  "with_combined_ignition_rate": 1.0,
+  "catalyst_lift": 1.0,
+  "options_lift": 0.0,
+  "combined_lift": 1.0,
+  "research_questions": [
+    "JQ-2",
+    "JQ-3",
+    "JQ-5"
+  ]
+}

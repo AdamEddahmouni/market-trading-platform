@@ -1,0 +1,35 @@
+{
+  "predicates": [
+    {
+      "assertion_id": "P13-FIX-001",
+      "assertion_version": "1.0.0",
+      "predicate": "ADMITTED-L2-NVDA-001 fixture manifest exists with visible_liquidity capability claims"
+    },
+    {
+      "assertion_id": "P13-OB-001",
+      "assertion_version": "1.0.0",
+      "predicate": "NVDA order-book fixture ingests deterministically with stable envelope identity"
+    },
+    {
+      "assertion_id": "P13-PIT-001",
+      "assertion_version": "1.0.0",
+      "predicate": "PIT queries exclude order-book snapshots whose available_time exceeds prediction_cutoff"
+    },
+    {
+      "assertion_id": "P13-WHALE-001",
+      "assertion_version": "1.0.0",
+      "predicate": "order_book is available for NVDA when ledger is entitled; BIYA remains unavailable"
+    },
+    {
+      "assertion_id": "P13-UI-001",
+      "assertion_version": "1.0.0",
+      "predicate": "UI capability surface marks whale.order_book and depth.L2 AVAILABLE and NVDA workspace order-book payload is research-only"
+    },
+    {
+      "assertion_id": "SAFE-003",
+      "assertion_version": "1.0.0",
+      "predicate": "Network-denied replay passes; route reachability to live order submission is empty"
+    }
+  ],
+  "registry_version": "1.0.0"
+}

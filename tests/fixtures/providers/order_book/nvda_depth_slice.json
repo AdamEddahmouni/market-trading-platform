@@ -1,0 +1,93 @@
+{
+  "admission_id": "ADMITTED-L2-NVDA-001",
+  "fixture_id": "FIXTURE-L2-NVDA",
+  "imbalance_threshold": 1.2,
+  "level_count": 10,
+  "symbol": "NVDA",
+  "snapshots": [
+    {
+      "asks": [
+        {"price": 170.56, "size": 300},
+        {"price": 170.57, "size": 250},
+        {"price": 170.58, "size": 200}
+      ],
+      "bids": [
+        {"price": 170.54, "size": 500},
+        {"price": 170.53, "size": 400},
+        {"price": 170.52, "size": 350}
+      ],
+      "event_time": "2026-07-21T20:30:00.000000000Z",
+      "source": "fixture_synthetic"
+    },
+    {
+      "asks": [
+        {"price": 170.58, "size": 280},
+        {"price": 170.59, "size": 220},
+        {"price": 170.6, "size": 180}
+      ],
+      "bids": [
+        {"price": 170.56, "size": 420},
+        {"price": 170.55, "size": 360},
+        {"price": 170.54, "size": 300}
+      ],
+      "event_time": "2026-07-21T20:30:01.000000000Z",
+      "source": "fixture_synthetic"
+    },
+    {
+      "asks": [
+        {"price": 170.59, "size": 260},
+        {"price": 170.6, "size": 210},
+        {"price": 170.61, "size": 170}
+      ],
+      "bids": [
+        {"price": 170.57, "size": 380},
+        {"price": 170.56, "size": 320},
+        {"price": 170.55, "size": 280}
+      ],
+      "event_time": "2026-07-21T20:30:02.000000000Z",
+      "source": "fixture_synthetic"
+    },
+    {
+      "asks": [
+        {"price": 170.6, "size": 240},
+        {"price": 170.61, "size": 200},
+        {"price": 170.62, "size": 160}
+      ],
+      "bids": [
+        {"price": 170.58, "size": 350},
+        {"price": 170.57, "size": 300},
+        {"price": 170.56, "size": 260}
+      ],
+      "event_time": "2026-07-21T20:30:03.000000000Z",
+      "source": "fixture_synthetic"
+    },
+    {
+      "asks": [
+        {"price": 170.61, "size": 500},
+        {"price": 170.62, "size": 450},
+        {"price": 170.63, "size": 400}
+      ],
+      "bids": [
+        {"price": 170.59, "size": 200},
+        {"price": 170.58, "size": 180},
+        {"price": 170.57, "size": 150}
+      ],
+      "event_time": "2026-07-21T20:30:04.000000000Z",
+      "source": "fixture_synthetic"
+    },
+    {
+      "asks": [
+        {"price": 170.63, "size": 320},
+        {"price": 170.64, "size": 280},
+        {"price": 170.65, "size": 240}
+      ],
+      "bids": [
+        {"price": 170.61, "size": 300},
+        {"price": 170.6, "size": 260},
+        {"price": 170.59, "size": 220}
+      ],
+      "event_time": "2026-07-21T20:30:06.000000000Z",
+      "source": "fixture_synthetic"
+    }
+  ]
+}

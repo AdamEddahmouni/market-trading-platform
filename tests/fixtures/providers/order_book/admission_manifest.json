@@ -1,0 +1,16 @@
+{
+  "admitted_fixture_id": "ADMITTED-L2-NVDA-001",
+  "capability_claims": [
+    "visible_liquidity",
+    "top_n_depth_imbalance",
+    "ofi_derivation",
+    "snapshot_provenance"
+  ],
+  "content_path": "tests/fixtures/providers/order_book/nvda_depth_slice.json",
+  "donor_reference": "Eric_futuresX ladder snapshot semantics (PORT_ADAPT; synthetic fixture)",
+  "instrument_id": "NVDA",
+  "logical_id": "phase13.order_book_fixture_admission",
+  "research_only": true,
+  "schema_version": "1.0.0",
+  "status": "ADMITTED"
+}

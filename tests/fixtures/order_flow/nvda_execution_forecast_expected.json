@@ -1,0 +1,73 @@
+{
+  "fixture_id": "FIXTURE-L2-NVDA",
+  "symbol": "NVDA",
+  "trajectory_resiliency": 0.755102,
+  "transitions": [
+    {
+      "index": 0,
+      "event_time": "2026-07-21T20:30:00.000000000Z",
+      "aggressive_fill_probability": 1.0,
+      "passive_fill_probability": 0.72,
+      "expected_slippage_spread_fraction": 5.863e-05,
+      "adverse_selection_risk": 0.0,
+      "execution_method": "execution_book_aware_v1",
+      "book_state_valid": true,
+      "quality_flags": []
+    },
+    {
+      "index": 1,
+      "event_time": "2026-07-21T20:30:01.000000000Z",
+      "aggressive_fill_probability": 1.0,
+      "passive_fill_probability": 0.695808,
+      "expected_slippage_spread_fraction": 6.031e-05,
+      "adverse_selection_risk": 0.232542,
+      "execution_method": "execution_book_aware_v1",
+      "book_state_valid": true,
+      "quality_flags": []
+    },
+    {
+      "index": 2,
+      "event_time": "2026-07-21T20:30:02.000000000Z",
+      "aggressive_fill_probability": 1.0,
+      "passive_fill_probability": 0.703964,
+      "expected_slippage_spread_fraction": 5.974e-05,
+      "adverse_selection_risk": 0.509414,
+      "execution_method": "execution_book_aware_v1",
+      "book_state_valid": true,
+      "quality_flags": []
+    },
+    {
+      "index": 3,
+      "event_time": "2026-07-21T20:30:03.000000000Z",
+      "aggressive_fill_probability": 1.0,
+      "passive_fill_probability": 0.706311,
+      "expected_slippage_spread_fraction": 5.958e-05,
+      "adverse_selection_risk": 0.19486,
+      "execution_method": "execution_book_aware_v1",
+      "book_state_valid": true,
+      "quality_flags": []
+    },
+    {
+      "index": 4,
+      "event_time": "2026-07-21T20:30:04.000000000Z",
+      "aggressive_fill_probability": 1.0,
+      "passive_fill_probability": 0.72,
+      "expected_slippage_spread_fraction": 5.862e-05,
+      "adverse_selection_risk": 0.22237,
+      "execution_method": "execution_book_aware_v1",
+      "book_state_valid": true,
+      "quality_flags": []
+    },
+    {
+      "index": 5,
+      "event_time": "2026-07-21T20:30:06.000000000Z",
+      "aggressive_fill_probability": 1.0,
+      "passive_fill_probability": 0.692119,
+      "expected_slippage_spread_fraction": 6.056e-05,
+      "adverse_selection_risk": 0.221966,
+      "execution_method": "execution_book_aware_v1",
+      "book_state_valid": true,
+      "quality_flags": []
+    }
+  ]
+}

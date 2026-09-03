@@ -1,0 +1,3 @@
+Ticker,Company,Sector,Industry,Country,Price,Change,Volume,Average Volume,Relative Volume,Market Cap.,Shares Out.,Shares Float,Short Float,Short Ratio,EPS ttm,P/E,Fwd P/E,RSI (14),Earnings,Perf Week,Recommendation
+AAPL,Apple Inc,Technology,Consumer Electronics,USA,185.20,2.50,52000000,45000000,1.15,2.80B,15.50B,15.20B,0.80,1.20,6.50,28.50,25.10,58.20,Aug-15-26,1.20,Buy
+XYZ,Example Corp,Healthcare,Biotech,USA,12.40,8.30,8500000,1200000,3.40,450M,80M,45M,28.50,4.20,-0.40,N/A,N/A,62.10,Aug-22-26,12.50,Hold

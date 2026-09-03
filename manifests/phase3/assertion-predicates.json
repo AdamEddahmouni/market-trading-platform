@@ -1,0 +1,25 @@
+{
+  "predicates": [
+    {
+      "assertion_id": "ADP-001",
+      "assertion_version": "1.0.0",
+      "predicate": "Every canonical event resolves to one immutable raw reference and source record identity; zero dangling or identity-conflict records"
+    },
+    {
+      "assertion_id": "ADP-002",
+      "assertion_version": "1.0.0",
+      "predicate": "Re-ingesting identical source bytes is a no-op; changed bytes under an existing identity fail and quarantine"
+    },
+    {
+      "assertion_id": "SAFE-001",
+      "assertion_version": "1.0.0",
+      "predicate": "Offline lock/install contains no broker SDK package and succeeds with network disabled using only approved local artifacts"
+    },
+    {
+      "assertion_id": "SAFE-002",
+      "assertion_version": "1.0.0",
+      "predicate": "Adapter registry contains no live market-data or execution adapter; static import graph contains no path from core/features/strategies to broker modules"
+    }
+  ],
+  "registry_version": "1.0.0"
+}
