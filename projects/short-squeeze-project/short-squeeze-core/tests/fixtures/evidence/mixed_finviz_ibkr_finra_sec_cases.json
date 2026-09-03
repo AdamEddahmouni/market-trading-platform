@@ -1,0 +1,24 @@
+{
+  "fixture_origin": "SYNTHETIC_EDGE_CASE",
+  "contains_credentials": false,
+  "contains_account_data": false,
+  "contains_real_symbols": false,
+  "contains_remote_urls": false,
+  "cases": [
+    "all-domains-present",
+    "sec-present-short-interest-missing",
+    "short-interest-present-sec-missing",
+    "sec-accepted-after-as-of",
+    "sec-received-after-as-of",
+    "amendment-accepted-after-as-of",
+    "amendment-available-before-as-of",
+    "old-reporting-period-new-filing",
+    "date-only-filing-availability",
+    "same-accession-conflict",
+    "duplicate-sec-record",
+    "missing-cik-valid-symbol",
+    "sec-plus-high-snapshot-short-float-no-interpretation",
+    "sec-plus-zero-borrow-availability-no-interpretation",
+    "sec-plus-stale-published-short-interest-no-interpretation"
+  ]
+}

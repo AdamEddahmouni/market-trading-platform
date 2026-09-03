@@ -1,0 +1,10 @@
+{"cases":[
+  {"fixture_id":"quote-complete-venue","ingested_at":"2026-01-15T14:30:00.300000Z","scope":"VENUE","bid":"10.24","bid_size":100,"ask":"10.26","ask_size":200},
+  {"fixture_id":"quote-bid-only","ingested_at":"2026-01-15T14:30:00.300000Z","scope":"VENUE","bid":"10.24","bid_size":100,"ask":null,"ask_size":null},
+  {"fixture_id":"quote-ask-only","ingested_at":"2026-01-15T14:30:00.300000Z","scope":"VENUE","bid":null,"bid_size":null,"ask":"10.26","ask_size":200},
+  {"fixture_id":"quote-nbbo","ingested_at":"2026-01-15T14:30:00.300000Z","scope":"NBBO","bid":"10.24","bid_size":100,"ask":"10.26","ask_size":200},
+  {"fixture_id":"quote-consolidated","ingested_at":"2026-01-15T14:30:00.300000Z","scope":"CONSOLIDATED","bid":"10.24","bid_size":100,"ask":"10.26","ask_size":200},
+  {"fixture_id":"quote-provider-aggregated","ingested_at":"2026-01-15T14:30:00.300000Z","scope":"PROVIDER_AGGREGATED","bid":"10.24","bid_size":100,"ask":"10.26","ask_size":200},
+  {"fixture_id":"quote-locked","ingested_at":"2026-01-15T14:30:00.300000Z","scope":"VENUE","bid":"10.25","bid_size":100,"ask":"10.25","ask_size":200},
+  {"fixture_id":"quote-crossed","ingested_at":"2026-01-15T14:30:00.300000Z","scope":"VENUE","bid":"10.26","bid_size":100,"ask":"10.25","ask_size":200}
+]}

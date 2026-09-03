@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0.0",
+  "policy_version": "earliest_detection_boundary_per_symbol.v1",
+  "selection_fields": ["symbol", "evaluation_as_of"],
+  "tie_break_fields": ["evaluation_as_of", "case_id"],
+  "outcome_blind": true,
+  "preserve_excluded_case_ids": true,
+  "preserve_boundary_count": true
+}

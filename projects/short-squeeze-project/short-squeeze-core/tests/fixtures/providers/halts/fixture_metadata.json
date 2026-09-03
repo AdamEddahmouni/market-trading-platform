@@ -1,0 +1,12 @@
+{
+  "fixture_family": "phase-1f-exchange-shaped-offline-trading-halts",
+  "recorded_sample_found": false,
+  "archive_halt_metadata_found": false,
+  "allowed_origins": ["SANITIZED_REPRESENTATIVE_SAMPLE", "SYNTHETIC_EDGE_CASE"],
+  "source_shape_basis": "Representative exchange halt-table concepts and the existing canonical TradingHaltPayload; no archived exchange halt record was found.",
+  "archive_classification": "Archive matches were unrelated news headlines or operational prose and are unusable as halt lifecycle metadata.",
+  "contains_credentials": false,
+  "contains_account_data": false,
+  "contains_real_symbols": false,
+  "contains_remote_urls": false
+}

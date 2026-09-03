@@ -1,0 +1,22 @@
+{
+  "cases": [
+    {"case_id":"mixed-phase-1d-01","description":"current candidate snapshot and borrow observations with older published short interest"},
+    {"case_id":"mixed-phase-1d-02","description":"candidate short float missing while published short interest is present"},
+    {"case_id":"mixed-phase-1d-03","description":"candidate short float present before published short interest availability"},
+    {"case_id":"mixed-phase-1d-04","description":"borrow domains missing while published short interest is present"},
+    {"case_id":"mixed-phase-1d-05","description":"short-interest correction received after the requested time"},
+    {"case_id":"mixed-phase-1d-06","description":"short-interest correction available before the requested time"},
+    {"case_id":"mixed-phase-1d-07","description":"same settlement period with compatible provider disagreement"},
+    {"case_id":"mixed-phase-1d-08","description":"different settlement periods with temporal variation"},
+    {"case_id":"mixed-phase-1d-09","description":"published short shares explicitly equal zero"},
+    {"case_id":"mixed-phase-1d-10","description":"published short-interest domain absent"},
+    {"case_id":"mixed-phase-1d-11","description":"publication calendar date known while exact time is uncertain"},
+    {"case_id":"mixed-phase-1d-12","description":"newly received record describes an older settlement period"}
+  ],
+  "semantic_boundaries": [
+    "candidate snapshot",
+    "borrow fee",
+    "borrow availability",
+    "published short interest"
+  ]
+}

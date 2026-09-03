@@ -1,0 +1,10 @@
+{
+  "ingested_at": "2026-01-15T14:30:00.300000Z",
+  "provider": "REPRESENTATIVE_FEED",
+  "adapter_version": "1.0.0",
+  "normalization_version": "phase1i-1.0.0",
+  "source_timezone": "-05:00",
+  "entitlement_status": "NOT_APPLICABLE",
+  "collection_method": "LOADED_FIXTURE",
+  "source_endpoint_name": "local-trade-quote-fixture"
+}

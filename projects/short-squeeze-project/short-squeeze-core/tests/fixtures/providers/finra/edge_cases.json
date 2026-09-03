@@ -1,0 +1,56 @@
+{
+  "cases": [
+    {
+      "metadata": {"fixture_id":"finra-missing-short-shares-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"missing value policy","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"EXACT_DATE","publication_date_status":"EXACT_TIMESTAMP","received_date_status":"EXPLICIT_CONTEXT","revision_status":"ORIGINAL","expected_normalization_result":"ACCEPT_MISSING_VALUE"},
+      "record": {"source_record_id":"edge-missing-shares","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_shares":null,"settlement_date":"2026-01-15","publication_date":"2026-01-22T19:00:00Z","revision_status":"ORIGINAL"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-missing-settlement-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"required reporting period policy","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"MISSING","publication_date_status":"EXACT_TIMESTAMP","received_date_status":"EXPLICIT_CONTEXT","revision_status":"ORIGINAL","expected_normalization_result":"REJECT"},
+      "record": {"source_record_id":"edge-missing-settlement","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_shares":"100000","settlement_date":null,"publication_date":"2026-01-22T19:00:00Z","revision_status":"ORIGINAL"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-missing-publication-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"availability ambiguity policy","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"EXACT_DATE","publication_date_status":"MISSING","received_date_status":"EXPLICIT_CONTEXT","revision_status":"ORIGINAL","expected_normalization_result":"REJECT"},
+      "record": {"source_record_id":"edge-missing-publication","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_shares":"100000","settlement_date":"2026-01-15","publication_date":null,"revision_status":"ORIGINAL"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-date-only-publication-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"explicit conservative publication window policy","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"EXACT_DATE","publication_date_status":"DATE_ONLY_UNCERTAIN","received_date_status":"EXPLICIT_CONTEXT","revision_status":"ORIGINAL","expected_normalization_result":"ACCEPT_UNCERTAIN"},
+      "record": {"source_record_id":"edge-date-only","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_shares":"100000","settlement_date":"2026-01-15","publication_date":"2026-01-22","publication_timezone":"-05:00","date_only_publication_policy":"END_OF_PUBLICATION_DATE","revision_status":"ORIGINAL"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-unknown-publication-timezone-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"timezone rejection policy","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"EXACT_DATE","publication_date_status":"NAIVE_TIMESTAMP","received_date_status":"EXPLICIT_CONTEXT","revision_status":"ORIGINAL","expected_normalization_result":"REJECT"},
+      "record": {"source_record_id":"edge-unknown-timezone","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_shares":"100000","settlement_date":"2026-01-15","publication_date":"2026-01-22T14:00:00","revision_status":"ORIGINAL"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-publication-before-receipt-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"normal availability ordering","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"EXACT_DATE","publication_date_status":"BEFORE_RECEIPT","received_date_status":"EXPLICIT_CONTEXT","revision_status":"ORIGINAL","expected_normalization_result":"ACCEPT"},
+      "record": {"source_record_id":"edge-publication-before-receipt","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_shares":"100000","settlement_date":"2026-01-15","publication_date":"2026-01-22T19:00:00Z","revision_status":"ORIGINAL"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-receipt-before-publication-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"claimed future publication ordering","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"EXACT_DATE","publication_date_status":"AFTER_RECEIPT","received_date_status":"EXPLICIT_CONTEXT","revision_status":"ORIGINAL","expected_normalization_result":"ACCEPT_DELAYED_EFFECTIVE"},
+      "record": {"source_record_id":"edge-receipt-before-publication","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_shares":"100000","settlement_date":"2026-01-15","publication_date":"2026-01-22T22:00:00Z","revision_status":"ORIGINAL"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-published-after-as-of-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"publication eligibility gate","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"BEFORE_AS_OF","publication_date_status":"AFTER_AS_OF","received_date_status":"AFTER_AS_OF","revision_status":"ORIGINAL","expected_normalization_result":"ACCEPT_EXCLUDED_AT_TARGET"},
+      "record": {"source_record_id":"edge-published-after-asof","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_shares":"100000","settlement_date":"2026-01-15","publication_date":"2026-01-29T19:00:00Z","revision_status":"ORIGINAL"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-received-after-as-of-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"receipt eligibility gate","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"BEFORE_AS_OF","publication_date_status":"BEFORE_AS_OF","received_date_status":"AFTER_AS_OF","revision_status":"ORIGINAL","expected_normalization_result":"ACCEPT_EXCLUDED_AT_TARGET"},
+      "record": {"source_record_id":"edge-received-after-asof","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_shares":"100000","settlement_date":"2026-01-15","publication_date":"2026-01-22T19:00:00Z","revision_status":"ORIGINAL"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-missing-short-float-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"missing optional percentage","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"EXACT_DATE","publication_date_status":"EXACT_TIMESTAMP","received_date_status":"EXPLICIT_CONTEXT","revision_status":"ORIGINAL","expected_normalization_result":"ACCEPT_PARTIAL"},
+      "record": {"source_record_id":"edge-missing-short-float","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_shares":"100000","settlement_date":"2026-01-15","publication_date":"2026-01-22T19:00:00Z","short_float_percent":null,"revision_status":"ORIGINAL"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-missing-days-to-cover-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"missing optional provider ratio","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"EXACT_DATE","publication_date_status":"EXACT_TIMESTAMP","received_date_status":"EXPLICIT_CONTEXT","revision_status":"ORIGINAL","expected_normalization_result":"ACCEPT_PARTIAL"},
+      "record": {"source_record_id":"edge-missing-days","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_shares":"100000","settlement_date":"2026-01-15","publication_date":"2026-01-22T19:00:00Z","days_to_cover":null,"revision_status":"ORIGINAL"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-invalid-numeric-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"invalid numeric handling","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"EXACT_DATE","publication_date_status":"EXACT_TIMESTAMP","received_date_status":"EXPLICIT_CONTEXT","revision_status":"ORIGINAL","expected_normalization_result":"ACCEPT_INVALID_FIELDS_OMITTED"},
+      "record": {"source_record_id":"edge-invalid-numeric","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"PUBLISHED_SHORT_INTEREST","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_shares":"1.5","settlement_date":"2026-01-15","publication_date":"2026-01-22T19:00:00Z","float_shares":"0","days_to_cover":"bad","revision_status":"ORIGINAL"}
+    },
+    {
+      "metadata": {"fixture_id":"finra-daily-short-volume-v1","origin":"SYNTHETIC_EDGE_CASE","sanitization_status":"fully synthetic","source_shape_basis":"unsupported daily short-sale volume distinction","contains_credentials":false,"contains_account_data":false,"contains_real_symbols":false,"settlement_date_status":"NOT_APPLICABLE","publication_date_status":"NOT_APPLICABLE","received_date_status":"EXPLICIT_CONTEXT","revision_status":"NOT_APPLICABLE","expected_normalization_result":"REJECT_UNSUPPORTED_RECORD_TYPE"},
+      "record": {"source_record_id":"edge-daily-volume","provider_schema":"FINRA_SHORT_INTEREST_V1","record_type":"DAILY_SHORT_VOLUME","fixture_origin":"SYNTHETIC_EDGE_CASE","symbol":"TESTA","short_volume":"100000","total_volume":"500000","trade_date":"2026-01-15"}
+    }
+  ]
+}

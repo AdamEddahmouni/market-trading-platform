@@ -1,0 +1,21 @@
+{
+  "policy_version": "1.0.0",
+  "description": "Frozen-to-NewsAPI field enrichment mappings. Controls which NewsAPI fields enrich the frozen research display snapshot. Edit to add, remove, or remap fields without touching Python code.",
+  "provider": "NewsAPI",
+  "mappings": [
+    {
+      "provider_attr": "headline_count",
+      "frozen_key": "catalyst",
+      "unit": "HEADLINE_COUNT",
+      "readiness": "PROVIDER_SNAPSHOT_CATALYST_NEWSAPI",
+      "comment": "Number of recent news headlines — used as a catalyst-proximity signal"
+    },
+    {
+      "provider_attr": "headline_count",
+      "frozen_key": "news_count",
+      "unit": "HEADLINE_COUNT",
+      "readiness": "PROVIDER_SNAPSHOT_NEWS_COUNT_NEWSAPI",
+      "comment": "Raw headline count for the symbol"
+    }
+  ]
+}

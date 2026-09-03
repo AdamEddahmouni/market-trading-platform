@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Short Squeeze Research Screener">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>%E2%9A%A1</text></svg>">
+<title>Short Squeeze Research Screener</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="titles">
+    <h1>Short Squeeze Research Screener</h1>
+    <p class="disclaimer">RESEARCH TOOL — NOT A TRADING RECOMMENDATION</p>
+    <p class="experimental-label">RESEARCH CLASSIFICATION</p>
+  </div>
+  <div class="readiness">
+    <span id="demo-ready" class="ready-badge" title="Depends only on local frozen artifacts.">DEMO —</span>
+    <span id="live-ready" class="ready-badge" title="Depends on the local provider.">LIVE —</span>
+  </div>
+  <div class="mode-block">
+    <span class="mode-caption">Active mode</span>
+    <span id="mode-badge" class="mode-badge">LOADING…</span>
+    <a class="advanced-link" href="/" title="Live squeeze scanner">Scanner</a>
+  </div>
+</header>
+
+<div id="banners" class="banners"></div>
+
+<section class="providers">
+  <h2>Provider health</h2>
+  <div id="provider-strip" class="provider-strip">Probing…</div>
+</section>
+
+<nav class="controls">
+  <div class="control-group">
+    <span class="control-label">Mode</span>
+    <button id="btn-frozen" class="tab active" type="button">Frozen Research</button>
+    <button id="btn-current" class="tab" type="button">Current screen</button>
+    <button id="btn-comparison" class="tab" type="button">Methodology Comparison</button>
+    <button id="btn-research-summary" class="tab" type="button">Research Summary</button>
+  </div>
+
+  <div class="control-group" id="current-controls" hidden>
+    <label class="control-label" for="discovery-profile">Discovery</label>
+    <select id="discovery-profile"></select>
+    <button id="btn-discover" class="btn" type="button">Discover now</button>
+    <label class="control-label" for="manual-symbols">Manual</label>
+    <input id="manual-symbols" type="text" placeholder="e.g. XNCR PESI" autocomplete="off">
+    <button id="btn-load-current" class="btn" type="button">Add</button>
+    <button id="btn-clear-current" class="btn" type="button">Clear</button>
+  </div>
+
+  <div class="control-group" id="refresh-controls" hidden>
+    <label class="checkbox"><input id="auto-refresh" type="checkbox"> Auto refresh</label>
+    <button id="btn-refresh-now" class="btn" type="button">Refresh now</button>
+    <span id="refresh-clock" class="muted"></span>
+  </div>
+
+  <div class="control-group">
+    <label class="control-label" for="filter-symbol">Filter</label>
+    <input id="filter-symbol" type="text" placeholder="symbol" autocomplete="off">
+    <label class="control-label" for="sort-key">Sort</label>
+    <select id="sort-key">
+      <option value="symbol">Symbol</option>
+      <option value="percentage_change">% change</option>
+      <option value="last">Last</option>
+      <option value="relative_volume">Relative volume</option>
+      <option value="days_to_cover">Days to cover</option>
+      <option value="news_count">News count</option>
+      <option value="sentiment">Sentiment</option>
+      <option value="pass_count">PASS count</option>
+      <option value="fail_count">FAIL count</option>
+      <option value="unknown_count">UNKNOWN count</option>
+      <option value="evidence_coverage">Evidence coverage</option>
+      <option value="research_detection">Research detection</option>
+      <option value="data_mode">Data mode</option>
+      <option value="freshness">Freshness</option>
+      <option value="updated">Updated</option>
+      <option value="provider_scanner_order">Provider scanner order</option>
+    </select>
+    <label class="checkbox"><input id="sort-desc" type="checkbox"> desc</label>
+    <button id="btn-more-filters" class="btn" type="button">More filters</button>
+  </div>
+
+  <div class="control-group right">
+    <button id="btn-refresh" class="btn" type="button">Reload</button>
+    <button id="btn-export" class="btn" type="button">Export snapshot</button>
+    <button id="btn-export-csv" class="btn" type="button">Export CSV</button>
+  </div>
+</nav>
+
+<div id="advanced-filters" class="advanced-filters" hidden>
+  <label>Detection
+    <select id="filter-detection">
+      <option value="">any</option>
+      <option value="DETECTED">DETECTED</option>
+      <option value="NOT_DETECTED">NOT_DETECTED</option>
+      <option value="UNEVALUABLE">UNEVALUABLE</option>
+    </select>
+  </label>
+  <label>Market mode
+    <select id="filter-market-mode">
+      <option value="">any</option>
+      <option value="REALTIME">REALTIME</option>
+      <option value="DELAYED">DELAYED</option>
+      <option value="DELAYED_FROZEN">DELAYED_FROZEN</option>
+      <option value="FROZEN">FROZEN</option>
+      <option value="UNKNOWN">UNKNOWN</option>
+    </select>
+  </label>
+  <label>Freshness
+    <select id="filter-freshness">
+      <option value="">any</option>
+      <option value="CURRENT">CURRENT</option>
+      <option value="DELAYED">DELAYED</option>
+      <option value="STALE">STALE</option>
+      <option value="FROZEN">FROZEN</option>
+      <option value="UNKNOWN_AGE">UNKNOWN_AGE</option>
+    </select>
+  </label>
+  <label>Profile
+    <select id="filter-profile"><option value="">any</option></select>
+  </label>
+  <label>Min price <input id="filter-min-price" type="number" step="0.01" placeholder="—"></label>
+  <label>Max price <input id="filter-max-price" type="number" step="0.01" placeholder="—"></label>
+  <label>Min % change <input id="filter-min-change" type="number" step="0.1" placeholder="—"></label>
+  <label>Min rel. volume <input id="filter-min-relvol" type="number" step="0.1" placeholder="—"></label>
+  <label>Min PASS <input id="filter-min-pass" type="number" step="1" placeholder="—"></label>
+  <label>Max UNKNOWN <input id="filter-max-unknown" type="number" step="1" placeholder="—"></label>
+  <label>Min coverage <input id="filter-min-coverage" type="number" step="1" placeholder="—"></label>
+  <button id="btn-clear-filters" class="btn" type="button">Clear filters</button>
+  <p class="muted filter-note">
+    A numeric filter excludes rows whose value is missing. A row with no observed price is
+    not asserted to be inside a price band — it is excluded, never treated as zero.
+  </p>
+</div>
+
+<p id="status-line" class="status-line"></p>
+
+<main>
+  <section id="screener-panel" class="panel">
+    <h2>Screener <span id="row-count" class="muted"></span></h2>
+    <div class="table-scroll">
+      <table id="screener-table">
+        <thead><tr id="screener-head"></tr></thead>
+        <tbody id="screener-body">
+          <tr><td class="muted">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="legend">
+      <span class="pill pill-pass">PASS</span>
+      <span class="pill pill-fail">FAIL</span>
+      <span class="pill pill-unknown">UNKNOWN</span>
+      <span class="pill pill-blocked">BLOCKED</span>
+      <span class="muted">— means no value exists. It never means zero.</span>
+    </p>
+  </section>
+
+  <section id="detail-panel" class="panel" hidden></section>
+
+  <section id="comparison-panel" class="panel" hidden>
+    <h2>Methodology Comparison</h2>
+    <p class="comparison-disclaimer">
+      DESCRIPTIVE RESEARCH LANDSCAPE — EXPERIMENTAL RESEARCH CLASSIFICATION.
+      This is not a recommendation, probability, prediction, target, rank, or trading signal.
+      Missing evidence stays missing and is never rendered as zero.
+      Descriptive comparison only. It does not establish predictive performance.
+    </p>
+    <div class="comparison-controls">
+      <label>Classification
+        <select id="comparison-classification">
+          <option value="">All</option>
+          <option value="PRIME">PRIME</option>
+          <option value="SUBPRIME">SUBPRIME</option>
+          <option value="WATCH">WATCH</option>
+          <option value="NOT_QUALIFIED">NOT_QUALIFIED</option>
+          <option value="UNEVALUABLE">UNEVALUABLE</option>
+          <option value="CONFLICTED">CONFLICTED</option>
+          <option value="REFERENCE_DEFINITION_INCOMPLETE">REFERENCE_DEFINITION_INCOMPLETE</option>
+        </select>
+      </label>
+      <label>Trend
+        <select id="comparison-trend">
+          <option value="">All</option>
+          <option value="ASCENDING">Ascending</option>
+          <option value="DESCENDING">Descending</option>
+          <option value="FLAT">FLAT</option>
+          <option value="INSUFFICIENT_HISTORY">Insufficient History</option>
+        </select>
+      </label>
+      <label>Sort
+        <select id="comparison-sort">
+          <option value="symbol">Symbol</option>
+          <option value="classification">Evidence-Gated classification</option>
+          <option value="pressure">Pressure</option>
+          <option value="ignition">Ignition</option>
+          <option value="coverage">Coverage</option>
+          <option value="percentage_change">% change</option>
+          <option value="relative_volume">Relative volume</option>
+          <option value="float">Float</option>
+          <option value="short_float">Short float</option>
+          <option value="freshness">Freshness</option>
+          <option value="trend">Trend</option>
+        </select>
+      </label>
+      <label class="checkbox"><input id="comparison-desc" type="checkbox"> desc</label>
+    </div>
+    <div class="landscape-wrap">
+      <svg id="research-landscape" class="research-landscape" viewBox="0 0 900 430"
+           role="img" aria-label="Pressure by Ignition descriptive research landscape"></svg>
+      <div id="methodology-tooltip" class="methodology-tooltip" hidden></div>
+    </div>
+    <p class="landscape-counts">
+      <span id="plotted-count">0 plotted</span> ·
+      <span id="unplotted-count">0 unplotted because required evidence is missing</span>
+    </p>
+    <div class="table-scroll">
+      <table id="methodology-table">
+        <thead><tr>
+          <th>Symbol</th><th>Legacy Classification</th><th>Peer Reference Status</th><th>Evidence-Gated Classification</th>
+          <th>Why Listed</th><th>Pressure</th><th>Ignition</th><th>Evidence Coverage</th><th>% Change</th>
+          <th>Relative Volume</th><th>Float</th><th>Short Float</th>
+          <th>Canonical PASS</th><th>Canonical FAIL</th><th>Canonical UNKNOWN</th>
+          <th>Research Detection</th><th>Trend</th><th>Provider</th><th>Freshness</th><th>Updated</th>
+        </tr></thead>
+        <tbody id="methodology-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="research-summary-panel" class="panel" hidden></section>
+</main>
+
+<footer class="app-footer">
+  <p>Read-only research application. No orders, no account data, no trading action, no
+     squeeze score, no probability, no ranking, no target or stop. Missing evidence is
+     displayed as missing.</p>
+</footer>
+
+<script src="/static/shared.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

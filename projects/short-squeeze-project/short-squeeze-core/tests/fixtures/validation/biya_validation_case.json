@@ -1,0 +1,216 @@
+{
+  "schema_version": "1.0.0",
+  "description": "BIYA candidate-validation case spec. Fixture provenance: SANITIZED_LOCAL_ARTIFACT. Every artifact below is real local evidence recorded in docs/phase-2v-biya-artifact-inventory.md, with absolute paths reduced to workspace-relative form and the Finviz credential present in ART-001 excluded entirely. Every original field value is UNKNOWN because no surviving artifact records one; those unknowns must not be filled from later data.",
+  "case_id": "case-biya",
+  "symbol": "BIYA",
+  "artifacts": [
+    {
+      "artifact_id": "ART-001",
+      "artifact_type": "APPLICATION_LOG",
+      "repository_or_source": "adams-short-squeeze-code-archived",
+      "relative_path": "app/ScreenerProject/logs/app.log",
+      "content_hash": "sha256:9cbd7d0c88956e6ce8350078ca9c4f6f029a3045655d5c6069a00c4821d66129",
+      "created_time_if_known": "2026-07-17T14:23:58Z",
+      "modified_time_if_known": "2026-07-17T16:54:58Z",
+      "timezone_if_known": "America/New_York",
+      "reliability_class": "DIRECT_PLATFORM_RECORD",
+      "limitations": [
+        "contains no timestamps of any kind",
+        "records no BIYA field value, score, or label",
+        "all 43 BIYA lines are IB subscription errors or Schwab DNS failures",
+        "contains a live provider credential and is therefore never published"
+      ],
+      "sensitive": true,
+      "included_in_public_demo": false
+    },
+    {
+      "artifact_id": "ART-002",
+      "artifact_type": "MEETING_TRANSCRIPT",
+      "repository_or_source": "workspace",
+      "relative_path": "advisor-meetings.txt",
+      "content_hash": "sha256:2636e2c314230b95e42c3709553f50b44221819be6ad049cbb645de5ec78b163",
+      "modified_time_if_known": "2026-07-18T17:08:30Z",
+      "embedded_event_time_if_known": "2026-07-17T16:46:15Z",
+      "timezone_if_known": "America/New_York",
+      "reliability_class": "DERIVED_FROM_PLATFORM_RECORD",
+      "limitations": [
+        "auto-transcribed and lossy on ticker symbols",
+        "records an observer's description of the screen, not the platform's own output",
+        "bounds when BIYA was discussed, not when it was surfaced"
+      ],
+      "sensitive": true,
+      "included_in_public_demo": false
+    },
+    {
+      "artifact_id": "ART-003",
+      "artifact_type": "PROJECT_DOCUMENT",
+      "repository_or_source": "adams-short-squeeze-code-archived",
+      "relative_path": "SQUEEZE_FORMULA_REDESIGN_HANDOFF.md",
+      "content_hash": "sha256:5a06f9b5ed0f85b910021d0470e390f6855b19798e4a9633b92a212def01d47e",
+      "modified_time_if_known": "2026-07-17T18:21:02Z",
+      "timezone_if_known": "America/New_York",
+      "reliability_class": "DERIVED_FROM_PLATFORM_RECORD",
+      "limitations": [
+        "written after the meeting it describes",
+        "its verification used fabricated ticker data that is not evidence about the original event",
+        "its modification time reflects when the document was authored, not when BIYA was surfaced"
+      ],
+      "sensitive": false,
+      "included_in_public_demo": true,
+      "bounds_detection_event": false
+    },
+    {
+      "artifact_id": "ART-004",
+      "artifact_type": "VERSION_CONTROL_HISTORY",
+      "repository_or_source": "adams-short-squeeze-code-archived/app/ScreenerProject",
+      "relative_path": ".git",
+      "reliability_class": "DIRECT_PLATFORM_RECORD",
+      "limitations": [
+        "commit times record when code was written, not when a candidate was surfaced"
+      ],
+      "sensitive": false,
+      "included_in_public_demo": true,
+      "bounds_detection_event": false
+    },
+    {
+      "artifact_id": "ART-006",
+      "artifact_type": "EMAIL_LOG",
+      "repository_or_source": "workspace",
+      "relative_path": "email-log.txt",
+      "content_hash": "sha256:ae8ae37233230133e08e822affa340878e09c8153f899ae5e40338c6629abb45",
+      "modified_time_if_known": "2026-07-18T15:41:40Z",
+      "timezone_if_known": "America/New_York",
+      "reliability_class": "EXTERNAL_CORROBORATION",
+      "limitations": [
+        "contains no mention of BIYA",
+        "contains no message later than 2026-07-17",
+        "does not contain the reported message that BIYA squeezed as predicted",
+        "bounds nothing about BIYA's detection because it never references the symbol"
+      ],
+      "sensitive": true,
+      "included_in_public_demo": false,
+      "bounds_detection_event": false
+    }
+  ],
+  "detection_time": {
+    "timezone_label": "America/New_York",
+    "confidence_basis": "Screener run start bounds below and the application log's last write bounds above. The advisor recording filename independently confirms BIYA was on screen inside the interval. No artifact records a platform event time, so no exact timestamp is claimed.",
+    "evidence_notes": [
+      "BIYA's first log line is at file line 4, so it was surfaced essentially at screener startup",
+      "the 8m43s meeting interval bounds discussion, not detection, and is not substituted for the surfacing window",
+      "the advisor's '4:00 a.m.' remark describes BIYA's price move, not a detection event"
+    ]
+  },
+  "snapshot_source_artifact_ids": ["ART-001"],
+  "original_fields": [
+    { "field_id": "price", "display_label": "Price", "internal_field_name": "Price", "state": "UNKNOWN", "provider": "ibkr" },
+    { "field_id": "change_percent", "display_label": "Change %", "internal_field_name": "ChangePercent", "state": "UNKNOWN", "provider": "ibkr" },
+    { "field_id": "rel_volume", "display_label": "Rel Volume", "internal_field_name": "RelVolume", "state": "UNKNOWN", "provider": "ibkr" },
+    { "field_id": "float_shares", "display_label": "Float", "internal_field_name": "Float", "state": "UNKNOWN", "provider": "yfinance" },
+    { "field_id": "short_interest_percent", "display_label": "Short Interest (%)", "internal_field_name": "ShortFloat", "state": "UNKNOWN", "provider": "yfinance" },
+    { "field_id": "shares_short", "display_label": "Shares Short", "internal_field_name": "SharesShort", "state": "UNKNOWN", "provider": "yfinance" },
+    { "field_id": "days_to_cover", "display_label": "Days to Cover", "internal_field_name": "DaysToCover", "state": "UNKNOWN", "provider": "yfinance" },
+    { "field_id": "borrow_fee_rate", "display_label": "Borrow Fee", "internal_field_name": "IbBorrowFeeRate", "state": "UNKNOWN", "provider": "ibkr" },
+    { "field_id": "news_headline", "display_label": "Headline", "internal_field_name": "Headline", "state": "UNKNOWN" },
+    { "field_id": "news_published_at", "display_label": "News Time", "internal_field_name": "timestamp", "state": "UNKNOWN" },
+    { "field_id": "squeeze_score", "display_label": "Squeeze Score", "internal_field_name": "SqueezeScore", "state": "UNKNOWN" },
+    { "field_id": "tier_label", "display_label": "Setup", "internal_field_name": "tier", "state": "UNKNOWN" }
+  ],
+  "rule_validations": [
+    {
+      "rule_id": "RULE-001-PRIME-SUBPRIME",
+      "state": "MOMENTUM_DISCOVERY_ONLY",
+      "rationale": "score_setup() awards one point each for a price band, a 10 percent change threshold, a relative-volume threshold, and a 5 percent short-float floor. None of the four is a squeeze mechanic: borrow fee, days to cover, and TTM Squeeze are computed and displayed but never scored. The rubric is a usable low-float-mover discovery filter; the Prime/Subprime vocabulary asserts a conclusion its inputs cannot support.",
+      "corrections_required": [
+        "rename the output so it describes momentum discovery rather than a squeeze setup",
+        "keep discovery separate from short-pressure confirmation instead of collapsing both into one label"
+      ],
+      "supporting_artifact_ids": ["ART-003", "ART-004"],
+      "supporting_field_ids": ["change_percent", "price", "rel_volume", "short_interest_percent", "tier_label"]
+    },
+    {
+      "rule_id": "RULE-002-SHORT-INTEREST-COLUMN",
+      "state": "MISLABELED",
+      "rationale": "The arithmetic is the textbook short-interest-as-percent-of-float formula and is correct. The column was renamed from 'Short Float %' to 'Short Interest %' 2h04m before the meeting; unqualified 'Short Interest' denotes an absolute share count, so the header misdescribes a ratio. The advisor's live remark that BIYA's short interest 'appears to be low, and I am not sure why' is consistent with reading a percent-of-float under that heading.",
+      "corrections_required": [
+        "display the percent-of-float ratio and the absolute short-interest share count as separate, unambiguously labelled fields",
+        "leave the underlying formula unchanged"
+      ],
+      "supporting_artifact_ids": ["ART-002", "ART-004"],
+      "supporting_field_ids": ["shares_short", "short_interest_percent"]
+    },
+    {
+      "rule_id": "RULE-003-DAYS-TO-COVER",
+      "state": "SUPPORTED_WITH_CORRECTION",
+      "rationale": "The denominator is a trailing mean of completed daily bars that correctly excludes the incomplete current bar, matching the rebuilt Phase 2C contract, and missing inputs return None with a reason rather than zero. The defect is presentation: the numerator derives from a twice-monthly FINRA filing yet is shown beside live price and volume with no reporting-period age, and the denominator came from a cache with a one-hour TTL at detection.",
+      "corrections_required": [
+        "surface reporting-period age and availability age alongside the value",
+        "never present a ratio built on a twice-monthly filing as real time"
+      ],
+      "supporting_artifact_ids": ["ART-004"],
+      "supporting_field_ids": ["days_to_cover", "shares_short"]
+    },
+    {
+      "rule_id": "RULE-004-NEWS-TIMESTAMP",
+      "state": "MISSING_DEFAULT_SUBSTITUTION",
+      "rationale": "A missing publication time becomes the literal string 'Unknown time' and a missing title becomes 'No title', so absence is type-indistinguishable from a real value and no downstream code can filter on recency or establish whether an item existed at detection.",
+      "corrections_required": [
+        "use a nullable, timezone-aware published_at",
+        "separate publication, update, capture, and receipt time"
+      ],
+      "supporting_artifact_ids": ["ART-004"],
+      "supporting_field_ids": ["news_headline", "news_published_at"]
+    },
+    {
+      "rule_id": "RULE-005-MARKET-DATA-FRESHNESS",
+      "state": "UNAVAILABLE_AT_DETECTION",
+      "rationale": "The application log records IB error 10089 for every symbol including BIYA: the account lacked the required market-data subscription, so the screener fell back to delayed data. Every price, change percent, and relative volume observed during the session was delayed, and the interface carried no delayed-data indicator.",
+      "corrections_required": [
+        "display an explicit data-delay indicator per field",
+        "treat real-time market data as an acquisition prerequisite rather than an assumption"
+      ],
+      "supporting_artifact_ids": ["ART-001"],
+      "supporting_field_ids": ["change_percent", "price", "rel_volume"]
+    },
+    {
+      "rule_id": "RULE-006-CROSS-PROVIDER-CORROBORATION",
+      "state": "REDUNDANT",
+      "rationale": "Corroboration reapplies the same four-point rubric to a second provider's numbers, so agreement tests data agreement rather than rule validity. During the observed run it was moot: every corroboration call failed with DNS resolution errors, and the absence was not surfaced in the interface.",
+      "corrections_required": [
+        "corroborate with an independent criterion rather than the same rubric",
+        "surface corroboration failure explicitly instead of degrading silently"
+      ],
+      "supporting_artifact_ids": ["ART-001"],
+      "supporting_field_ids": []
+    },
+    {
+      "rule_id": "RULE-007-COMPOSITE-SQUEEZE-SCORE",
+      "state": "SUPPORTED_WITH_CORRECTION",
+      "rationale": "Its missing-input handling is genuinely sound: None in, None out, excluded from the composite and never treated as zero. At detection it was displayed as an independent column and did not gate Prime/Subprime, so a ticker could show a low composite score and still be labelled Prime.",
+      "corrections_required": [
+        "report the per-component evidence separately rather than collapsing it into one number",
+        "do not reinstate a composite as a classification gate"
+      ],
+      "supporting_artifact_ids": ["ART-003", "ART-004"],
+      "supporting_field_ids": ["squeeze_score"]
+    }
+  ],
+  "replay": {
+    "operation": "DAYS_TO_COVER"
+  },
+  "outcome": {
+    "mode": "unobserved",
+    "limitations": [
+      "no BIYA market bar exists in the workspace at any interval on any date",
+      "outcome measurement requires acquiring historical bars; see the acquisition manifest",
+      "an outcome could not validate the methodology in any case, because no original BIYA value survives to compare against"
+    ]
+  },
+  "limitations": [
+    "every original BIYA field value is unknown; the only direct platform record preserves no value, score, or label",
+    "detection time is bounded to roughly 2h31m and is not exactly recorded",
+    "the original rules are reconstructed from the pre-meeting commit, not the archived working tree",
+    "no outcome window is computable from local evidence",
+    "one case cannot validate or invalidate a methodology in general"
+  ]
+}

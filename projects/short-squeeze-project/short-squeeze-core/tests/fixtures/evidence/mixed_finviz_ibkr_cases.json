@@ -1,0 +1,65 @@
+{
+  "fixture_id": "mixed-finviz-ibkr-testa-v1",
+  "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+  "finviz_fixture_id": "finviz-complete-v1",
+  "ibkr_context": {
+    "account_scope": null,
+    "adapter_version": "ibkr-offline-v1",
+    "collection_method": "LOADED_FIXTURE",
+    "entitlement_status": "UNKNOWN",
+    "expected_delay_ms": null,
+    "ingested_at": "2026-01-15T15:05:00Z",
+    "normalization_version": "ibkr-normalization-v1",
+    "provider": "INTERACTIVE_BROKERS",
+    "request_id": "mixed-fixture-request-v1",
+    "session_id": null,
+    "source_endpoint_name": "short-stock-file-shape",
+    "source_timezone": "America/New_York"
+  },
+  "ibkr_record": {
+    "source_record_id": "ibkr-mixed-001",
+    "symbol": "TESTA",
+    "fee_rate": "3.25",
+    "fee_rate_unit": "PERCENT_POINTS",
+    "available_shares": "12000",
+    "lender_count": "3",
+    "hard_to_borrow": true,
+    "provider_timestamp": "2026-01-15T10:02:00-05:00",
+    "provider_timezone": "-05:00",
+    "delay_status": "NOT_DELAYED"
+  },
+  "policy": {
+    "as_of": "2026-01-15T15:30:00Z",
+    "maximum_future_skew_ms": 0,
+    "maximum_age_ms_by_event_type": {
+      "MARKET_SNAPSHOT": 3600000,
+      "BORROW_FEE": 3600000,
+      "BORROW_AVAILABILITY": 3600000
+    },
+    "allow_stale": true,
+    "allow_delayed": true,
+    "allow_unknown_freshness": true,
+    "conflict_tolerance": {},
+    "source_priority_metadata": {}
+  },
+  "scenario_coverage": [
+    {"fixture_type":"FINVIZ_ONLY","origin":"SYNTHETIC_EDGE_CASE"},
+    {"fixture_type":"IBKR_ONLY","origin":"SYNTHETIC_EDGE_CASE"},
+    {"fixture_type":"CURRENT_FINVIZ_STALE_IBKR","origin":"SYNTHETIC_EDGE_CASE"},
+    {"fixture_type":"STALE_FINVIZ_CURRENT_IBKR","origin":"SYNTHETIC_EDGE_CASE"},
+    {"fixture_type":"UNKNOWN_FRESHNESS_BOTH","origin":"SANITIZED_REPRESENTATIVE_SAMPLE"},
+    {"fixture_type":"MISSING_FINVIZ_SHORT_FLOAT_KNOWN_IBKR_FEE","origin":"SYNTHETIC_EDGE_CASE"},
+    {"fixture_type":"HIGH_FINVIZ_SHORT_FLOAT_MISSING_BORROW","origin":"SYNTHETIC_EDGE_CASE"},
+    {"fixture_type":"ZERO_IBKR_AVAILABILITY_MISSING_FINVIZ_FLOAT","origin":"SYNTHETIC_EDGE_CASE"},
+    {"fixture_type":"CONFLICTING_DUPLICATE_FINVIZ","origin":"SYNTHETIC_EDGE_CASE"},
+    {"fixture_type":"FUTURE_FINVIZ","origin":"SYNTHETIC_EDGE_CASE"},
+    {"fixture_type":"FUTURE_IBKR","origin":"SYNTHETIC_EDGE_CASE"},
+    {"fixture_type":"SAME_VALUE_DIFFERENT_TIMES","origin":"SYNTHETIC_EDGE_CASE"},
+    {"fixture_type":"COMPATIBLE_FLOAT_CONFLICT","origin":"SYNTHETIC_EDGE_CASE"},
+    {"fixture_type":"INVALID_FINVIZ_PRICE_PARTIAL","origin":"SYNTHETIC_EDGE_CASE"},
+    {"fixture_type":"DUPLICATE_RAW_HASH","origin":"SYNTHETIC_EDGE_CASE"},
+    {"fixture_type":"MULTIPLE_EXCHANGES","origin":"SYNTHETIC_EDGE_CASE"},
+    {"fixture_type":"OTHER_SYMBOL_EXCLUDED","origin":"SYNTHETIC_EDGE_CASE"},
+    {"fixture_type":"DELAYED_POLICY","origin":"SYNTHETIC_EDGE_CASE"}
+  ]
+}

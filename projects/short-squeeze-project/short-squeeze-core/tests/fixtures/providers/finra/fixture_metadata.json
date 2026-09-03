@@ -1,0 +1,14 @@
+{
+  "fixture_family": "phase-1d-finra-shaped-published-short-interest",
+  "recorded_sample_found": false,
+  "archive_finra_feed_found": false,
+  "allowed_origins": [
+    "SANITIZED_REPRESENTATIVE_SAMPLE",
+    "SYNTHETIC_EDGE_CASE"
+  ],
+  "source_shape_basis": "Archived tests/test_yfinance_float_api.py establishes representative sharesShort, dateShortInterest, floatShares, and shortPercentOfFloat concepts; it is mocked Yahoo metadata, not a recorded FINRA row.",
+  "archive_classification": "No FINRA short-interest or short-volume feed was found. Phase 0 documents publication time as absent from inherited metadata.",
+  "contains_credentials": false,
+  "contains_account_data": false,
+  "contains_real_symbols": false
+}

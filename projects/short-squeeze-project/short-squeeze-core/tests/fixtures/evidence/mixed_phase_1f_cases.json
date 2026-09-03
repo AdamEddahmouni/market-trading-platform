@@ -1,0 +1,25 @@
+{
+  "fixture_origin": "SYNTHETIC_EDGE_CASE",
+  "contains_credentials": false,
+  "contains_account_data": false,
+  "contains_real_symbols": false,
+  "contains_remote_urls": false,
+  "directional_interpretation": false,
+  "cases": [
+    "all-domains-present",
+    "halt-present-sec-missing",
+    "sec-present-halt-missing",
+    "halt-announced-after-as-of",
+    "halt-received-after-as-of",
+    "scheduled-resumption-not-actual",
+    "quote-resumption-without-trade-resumption",
+    "trading-resumed-before-local-receipt",
+    "conflicting-halt-codes",
+    "conflicting-scheduled-resumption-times",
+    "unknown-halt-reason",
+    "indefinite-halt",
+    "multiple-halt-events",
+    "halt-plus-high-short-float-no-interpretation",
+    "halt-plus-zero-borrow-availability-and-stale-short-interest-no-interpretation"
+  ]
+}

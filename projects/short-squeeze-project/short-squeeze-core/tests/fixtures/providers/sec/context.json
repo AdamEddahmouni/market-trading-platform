@@ -1,0 +1,14 @@
+{
+  "ingested_at": "2026-01-20T15:00:00Z",
+  "source_timezone": null,
+  "provider": "sec-shaped-offline-fixture",
+  "adapter_version": "1.0.0",
+  "normalization_version": "sec-filings-v1",
+  "entitlement_status": "NOT_APPLICABLE",
+  "collection_method": "LOADED_FIXTURE",
+  "account_scope": null,
+  "request_id": "phase-1e-representative",
+  "session_id": null,
+  "expected_delay_ms": null,
+  "source_endpoint_name": "submissions-metadata"
+}

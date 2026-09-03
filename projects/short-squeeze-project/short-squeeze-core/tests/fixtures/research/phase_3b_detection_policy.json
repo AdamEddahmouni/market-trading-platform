@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "policy_version": "phase_3b_research_detection_policy.v1",
+  "required_rule_ids": ["PRICE_RANGE", "MARKET_DATA_AVAILABLE", "COMPLETED_BAR_AVAILABLE"],
+  "allowed_pass_outcomes": ["PASS"],
+  "unknown_handling": "UNEVALUABLE",
+  "conflict_handling": "UNEVALUABLE",
+  "insufficient_data_handling": "UNEVALUABLE",
+  "not_applicable_handling": "UNEVALUABLE",
+  "provisional": true,
+  "rationale_code": "STRUCTURAL_MOMENTUM_DISCOVERY_PREDICATE"
+}

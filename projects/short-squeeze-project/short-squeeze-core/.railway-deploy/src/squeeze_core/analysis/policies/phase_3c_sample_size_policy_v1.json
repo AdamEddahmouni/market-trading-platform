@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0.0",
+  "policy_version": "phase_3c_sample_size_policy.v1",
+  "thresholds": [[0, "NO_OBSERVATIONS"], [1, "ONE_OBSERVATION"], [4, "VERY_SMALL"], [19, "SMALL"], [49, "LIMITED"], [-1, "DESCRIPTIVE_ONLY"]],
+  "validation_state_declared": false,
+  "reserved_states": ["ADEQUATE_FOR_ESTIMATION_NOT_VALIDATION"]
+}

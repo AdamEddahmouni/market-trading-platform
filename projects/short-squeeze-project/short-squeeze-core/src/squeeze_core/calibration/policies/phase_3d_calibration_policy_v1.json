@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "policy_version": "phase_3d_calibration_policy.v1",
+  "allowed_experiment_types": ["DETECTION_ABLATION", "OUTCOME_SENSITIVITY"],
+  "allowed_cohort_types": ["SYNTHETIC_CASES", "HISTORICAL_COMPLETED_CASES"],
+  "forbidden_actions": [
+    "THRESHOLD_AUTO_PROMOTION",
+    "PREDICTIVE_VALIDATION_CLAIM",
+    "OUTCOME_BLIND_BOUNDARY_SELECTION_VIOLATION"
+  ],
+  "min_case_count_for_recommendation": 30,
+  "provisional": true,
+  "rationale_code": "COUNTERFACTUAL_EXPLORATION_ONLY"
+}

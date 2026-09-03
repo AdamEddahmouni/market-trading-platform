@@ -1,0 +1,124 @@
+# ──────────────────────────────────────────────────────────────────────
+#  Short Squeeze Research Screener  —  full local stack
+# ──────────────────────────────────────────────────────────────────────
+#
+# Quick start (frozen demo + IB Gateway):
+#
+#     docker compose up
+#
+#     Open http://127.0.0.1:8787/ in your browser.
+#     Press Ctrl+C to stop.
+#
+#     The screener runs on FROZEN_DEMO data with no API keys required.
+#     The IB Gateway starts alongside — configure IBKR_USER_ID and
+#     IBKR_PASSWORD in .env for live market data.
+#
+#     For full LOCAL_FULL mode (screener consumes live Gateway data):
+#       docker compose -f docker-compose.yml -f docker-compose.local.yml up
+#
+#
+# ── Getting started ──────────────────────────────────────────────────
+#
+#   1. Copy the example env file:
+#        cp .env.example .env
+#      Fill in whatever keys you have (all optional).
+#
+#   2. Start everything:
+#        docker compose up
+#
+#   3. Visit http://127.0.0.1:8787/
+#
+#
+# ── Security ─────────────────────────────────────────────────────────
+# IB Gateway ports are bound to 127.0.0.1 only — never exposed to the
+# network.  The screener API port (8787) is also localhost-only by default.
+# ──────────────────────────────────────────────────────────────────────
+
+networks:
+  short-squeeze-net:
+    driver: bridge
+
+volumes:
+  exports:
+  ib-gateway-settings:
+
+services:
+
+  # ──────── Interactive Brokers Gateway ───────────────────────────────
+  # Provides market data (quotes, historical bars, scanner) to the
+  # screener.  Requires valid IBKR account credentials in .env.
+  ib-gateway:
+    image: ghcr.io/gnzsnz/ib-gateway:stable
+    container_name: short-squeeze-ib-gateway
+    restart: unless-stopped
+
+    # Only expose to the host machine — never to the Docker network.
+    # Paper: host=4002 → container=4004 (gnzsnz internal paper API port)
+    # Live:  host=4001 → container=4003 (gnzsnz internal live API port)
+    ports:
+      - "127.0.0.1:4002:4004"
+
+    env_file:
+      - .env
+
+    environment:
+      TWS_USERID: "${IBKR_USER_ID}"
+      TWS_PASSWORD: "${IBKR_PASSWORD}"
+      TRADING_MODE: "${IBKR_TRADE_MODE:-paper}"
+      TWS_ACCEPT_INCOMING: "accept"
+      READ_ONLY_API: "yes"
+
+    # Persist Gateway settings (trusted IPs, API config) across restarts.
+    volumes:
+      - ib-gateway-settings:/opt/ib-gateway/settings
+
+    # Wait until the API port is accepting connections.
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/4004' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+    networks:
+      - short-squeeze-net
+
+  # ──────── Research Screener ─────────────────────────────────────────
+  # Builds from the Dockerfile (multi-stage) and runs in CLOUD_PROVIDER_MODE
+  # by default — frozen demo data, no IBKR dependency.  The ib-gateway
+  # container is available on the Docker network for the override file to
+  # consume in LOCAL_FULL mode.
+  screener:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: short-squeeze-screener
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:8787:8080"
+
+    env_file:
+      - .env
+
+    environment:
+      SQUEEZE_APP_MODE: "CLOUD_PROVIDER_MODE"
+      PORT: "8080"
+
+      # ── Provider API keys (all optional; FROZEN_DEMO works without) ─
+      FINVIZ_API_KEY: "${FINVIZ_API_KEY:-}"
+      NEWSAPI_KEY: "${NEWSAPI_KEY:-}"
+      FINNHUB_KEY: "${FINNHUB_KEY:-}"
+
+    volumes:
+      - exports:/app/exports/research-screener
+
+    # The ib-gateway starts alongside the screener but does not block it.
+    # In LOCAL_FULL mode (docker-compose.local.yml), this changes to
+    # condition: service_healthy.
+    depends_on:
+      ib-gateway:
+        condition: service_started
+
+    networks:
+      - short-squeeze-net

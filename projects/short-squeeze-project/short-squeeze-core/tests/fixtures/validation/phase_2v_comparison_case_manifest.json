@@ -1,0 +1,143 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Symbols observed in the platform's own screening universe alongside BIYA on 2026-07-17. None is cased: the application log records no field value, label, or score for any of them, and no market data exists locally. Fixture provenance: SANITIZED_LOCAL_ARTIFACT. Completion is never inferred from a ticker appearing in a log.",
+  "cases": [
+    {
+      "acquisition_needs": [
+        "a saved candidate row, snapshot, or screenshot showing this symbol's displayed values",
+        "historical market bars covering 2026-07-17 and the following session"
+      ],
+      "artifact_ids": [
+        "ART-001"
+      ],
+      "case_id": "case-klrs",
+      "case_status": "ARTIFACT_DISCOVERY_ONLY",
+      "detection_time_state": "BOUNDED_TIME_WINDOW",
+      "limitations": [
+        "no market data exists locally for this symbol",
+        "present in the screening universe but no field value, label, or score was recorded"
+      ],
+      "symbol": "KLRS"
+    },
+    {
+      "acquisition_needs": [
+        "a saved candidate row, snapshot, or screenshot showing this symbol's displayed values",
+        "historical market bars covering 2026-07-17 and the following session"
+      ],
+      "artifact_ids": [
+        "ART-001"
+      ],
+      "case_id": "case-lbgj",
+      "case_status": "ARTIFACT_DISCOVERY_ONLY",
+      "detection_time_state": "BOUNDED_TIME_WINDOW",
+      "limitations": [
+        "no market data exists locally for this symbol",
+        "present in the screening universe but no field value, label, or score was recorded"
+      ],
+      "symbol": "LBGJ"
+    },
+    {
+      "acquisition_needs": [
+        "a saved candidate row, snapshot, or screenshot showing this symbol's displayed values",
+        "historical market bars covering 2026-07-17 and the following session"
+      ],
+      "artifact_ids": [
+        "ART-001"
+      ],
+      "case_id": "case-sg",
+      "case_status": "ARTIFACT_DISCOVERY_ONLY",
+      "detection_time_state": "BOUNDED_TIME_WINDOW",
+      "limitations": [
+        "no market data exists locally for this symbol",
+        "present in the screening universe but no field value, label, or score was recorded"
+      ],
+      "symbol": "SG"
+    },
+    {
+      "acquisition_needs": [
+        "a saved candidate row, snapshot, or screenshot showing this symbol's displayed values",
+        "historical market bars covering 2026-07-17 and the following session"
+      ],
+      "artifact_ids": [
+        "ART-001"
+      ],
+      "case_id": "case-sls",
+      "case_status": "ARTIFACT_DISCOVERY_ONLY",
+      "detection_time_state": "BOUNDED_TIME_WINDOW",
+      "limitations": [
+        "no market data exists locally for this symbol",
+        "present in the screening universe but no field value, label, or score was recorded"
+      ],
+      "symbol": "SLS"
+    },
+    {
+      "acquisition_needs": [
+        "a saved candidate row, snapshot, or screenshot showing this symbol's displayed values",
+        "historical market bars covering 2026-07-17 and the following session"
+      ],
+      "artifact_ids": [
+        "ART-001"
+      ],
+      "case_id": "case-trvi",
+      "case_status": "ARTIFACT_DISCOVERY_ONLY",
+      "detection_time_state": "BOUNDED_TIME_WINDOW",
+      "limitations": [
+        "no market data exists locally for this symbol",
+        "present in the screening universe but no field value, label, or score was recorded"
+      ],
+      "symbol": "TRVI"
+    }
+  ],
+  "acquisition_manifest": [
+    {
+      "case_id": "case-klrs",
+      "symbol": "KLRS",
+      "acquisition_need": "a saved candidate row, snapshot, or screenshot showing this symbol's displayed values"
+    },
+    {
+      "case_id": "case-klrs",
+      "symbol": "KLRS",
+      "acquisition_need": "historical market bars covering 2026-07-17 and the following session"
+    },
+    {
+      "case_id": "case-lbgj",
+      "symbol": "LBGJ",
+      "acquisition_need": "a saved candidate row, snapshot, or screenshot showing this symbol's displayed values"
+    },
+    {
+      "case_id": "case-lbgj",
+      "symbol": "LBGJ",
+      "acquisition_need": "historical market bars covering 2026-07-17 and the following session"
+    },
+    {
+      "case_id": "case-sg",
+      "symbol": "SG",
+      "acquisition_need": "a saved candidate row, snapshot, or screenshot showing this symbol's displayed values"
+    },
+    {
+      "case_id": "case-sg",
+      "symbol": "SG",
+      "acquisition_need": "historical market bars covering 2026-07-17 and the following session"
+    },
+    {
+      "case_id": "case-sls",
+      "symbol": "SLS",
+      "acquisition_need": "a saved candidate row, snapshot, or screenshot showing this symbol's displayed values"
+    },
+    {
+      "case_id": "case-sls",
+      "symbol": "SLS",
+      "acquisition_need": "historical market bars covering 2026-07-17 and the following session"
+    },
+    {
+      "case_id": "case-trvi",
+      "symbol": "TRVI",
+      "acquisition_need": "a saved candidate row, snapshot, or screenshot showing this symbol's displayed values"
+    },
+    {
+      "case_id": "case-trvi",
+      "symbol": "TRVI",
+      "acquisition_need": "historical market bars covering 2026-07-17 and the following session"
+    }
+  ]
+}

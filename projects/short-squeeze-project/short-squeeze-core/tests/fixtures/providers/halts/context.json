@@ -1,0 +1,14 @@
+{
+  "account_scope": null,
+  "adapter_version": "1.0.0",
+  "collection_method": "LOADED_FIXTURE",
+  "entitlement_status": "NOT_APPLICABLE",
+  "expected_delay_ms": null,
+  "ingested_at": "2026-01-15T15:45:00Z",
+  "normalization_version": "trading-halts-v1",
+  "provider": "exchange-shaped-offline-fixture",
+  "request_id": null,
+  "session_id": null,
+  "source_endpoint_name": "representative-halt-table",
+  "source_timezone": "UTC"
+}

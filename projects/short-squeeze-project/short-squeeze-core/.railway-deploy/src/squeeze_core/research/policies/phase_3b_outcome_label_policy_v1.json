@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0.0",
+  "policy_version": "phase_3b_outcome_label_policy.v1",
+  "reference_price_policy": "first_eligible_trade_bar_close_at_or_after_boundary.v1",
+  "horizon": "24_HOURS",
+  "upward_threshold_percent": "25",
+  "downward_threshold_percent": "-25",
+  "provisional": true,
+  "rationale_code": "FIXED_UNOPTIMIZED_24_HOUR_RESEARCH_OUTCOME"
+}

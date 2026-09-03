@@ -1,0 +1,27 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.pytest-tmp/
+.pytest-run-*/
+.coverage
+dist/
+build/
+*.egg-info/
+# Private local market-bar intake root: never commit user-supplied licensed data
+# unless the user explicitly authorizes the exact files. Synthetic fixtures live
+# under tests/fixtures/acquisition/batch03/ instead.
+intake/local-bars/
+# Research snapshots written by the screener application. They can contain values
+# derived from user-supplied licensed data, so they stay local.
+exports/
+# Private provider credentials: never commit.
+.private/
+# Local env files — never commit secrets (keep .env.example)
+.env
+.env.*
+!.env.example
+# Ephemeral screener data logs: never commit.
+data/screener_logs/
+# Stray temp files
+*.log

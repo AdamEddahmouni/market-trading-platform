@@ -1,0 +1,28 @@
+{
+  "families": [
+    {
+      "fixture_id": "finviz-representative-family-v1",
+      "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+      "sanitization_status": "SANITIZED_NO_SECRETS",
+      "source_shape_basis": "Phase 0 field map and archived hand-built Finviz-shaped CSV test",
+      "contains_credentials": false,
+      "contains_account_data": false,
+      "contains_real_symbols": false,
+      "provider_timestamp_status": "MIXED_EXPLICIT_AND_ABSENT",
+      "capture_timestamp_status": "MIXED_EXPLICIT_AND_ABSENT",
+      "expected_normalization_result": "ACCEPTED_OR_EXPLICIT_PARTIAL"
+    },
+    {
+      "fixture_id": "finviz-synthetic-edge-family-v1",
+      "origin": "SYNTHETIC_EDGE_CASE",
+      "sanitization_status": "SANITIZED_NO_SECRETS",
+      "source_shape_basis": "Phase 1C deterministic parsing and evidence edge requirements",
+      "contains_credentials": false,
+      "contains_account_data": false,
+      "contains_real_symbols": false,
+      "provider_timestamp_status": "CONTROLLED_SYNTHETIC",
+      "capture_timestamp_status": "CONTROLLED_SYNTHETIC",
+      "expected_normalization_result": "EXPLICIT_ACCEPT_PARTIAL_DUPLICATE_CONFLICT_OR_REJECTION"
+    }
+  ]
+}

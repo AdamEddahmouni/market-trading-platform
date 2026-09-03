@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Phase 2B CLI demonstration cases for tests/fixtures/metrics/phase_2b_cli_demo_bars.jsonl. Fixture provenance: SYNTHETIC_EDGE_CASE.",
+  "cases": [
+    {
+      "symbol": "TESTB",
+      "source_interval": "1_DAY",
+      "metric_name": "RELATIVE_VOLUME",
+      "target_bar_start": "2026-01-20T05:00:00Z",
+      "target_bar_end": "2026-01-21T05:00:00Z",
+      "window": {
+        "requested_count": 5,
+        "exclude_current_bar": true,
+        "minimum_samples": 3
+      }
+    },
+    {
+      "symbol": "TESTB",
+      "source_interval": "1_DAY",
+      "metric_name": "VOLUME_PERCENT_DEVIATION",
+      "target_bar_start": "2026-01-20T05:00:00Z",
+      "target_bar_end": "2026-01-21T05:00:00Z",
+      "window": {
+        "requested_count": 5,
+        "exclude_current_bar": true,
+        "minimum_samples": 3
+      }
+    },
+    {
+      "symbol": "TESTB",
+      "source_interval": "1_DAY",
+      "metric_name": "VOLUME_Z_SCORE",
+      "target_bar_start": "2026-01-20T05:00:00Z",
+      "target_bar_end": "2026-01-21T05:00:00Z",
+      "window": {
+        "requested_count": 8,
+        "exclude_current_bar": true,
+        "minimum_samples": 2
+      }
+    },
+    {
+      "symbol": "TESTB",
+      "source_interval": "1_DAY",
+      "metric_name": "MEAN_PERCENTAGE_RETURN_BASELINE",
+      "target_bar_start": "2026-01-19T05:00:00Z",
+      "window": {
+        "requested_count": 5,
+        "exclude_current_bar": true,
+        "minimum_samples": 2
+      },
+      "price_field": "CLOSE"
+    },
+    {
+      "symbol": "TESTB",
+      "source_interval": "1_DAY",
+      "metric_name": "PERCENTAGE_RETURN_STANDARD_DEVIATION_BASELINE",
+      "target_bar_start": "2026-01-19T05:00:00Z",
+      "window": {
+        "requested_count": 5,
+        "exclude_current_bar": true,
+        "minimum_samples": 2
+      },
+      "price_field": "CLOSE"
+    },
+    {
+      "symbol": "TESTB",
+      "source_interval": "1_DAY",
+      "metric_name": "PERCENTAGE_RETURN_Z_SCORE",
+      "target_start_bar_start": "2026-01-19T05:00:00Z",
+      "target_start_bar_end": "2026-01-20T05:00:00Z",
+      "target_end_bar_start": "2026-01-20T05:00:00Z",
+      "target_end_bar_end": "2026-01-21T05:00:00Z",
+      "window": {
+        "requested_count": 5,
+        "exclude_current_bar": true,
+        "minimum_samples": 2
+      },
+      "price_field": "CLOSE"
+    }
+  ]
+}

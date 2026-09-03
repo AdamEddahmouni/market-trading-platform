@@ -1,0 +1,12 @@
+{
+  "as_of": {
+    "before_original_publication": "2026-01-31T14:30:00.150000Z",
+    "after_publication_before_receipt": "2026-01-31T14:30:00.250000Z",
+    "after_original_receipt": "2026-01-31T14:30:00.300000Z",
+    "before_correction_receipt": "2026-01-31T14:31:00.500000Z",
+    "after_correction_receipt": "2026-01-31T14:31:01Z",
+    "before_cancellation_receipt": "2026-01-31T14:32:00.500000Z",
+    "after_cancellation_receipt": "2026-01-31T14:32:01Z",
+    "final": "2026-01-31T14:36:01Z"
+  }
+}

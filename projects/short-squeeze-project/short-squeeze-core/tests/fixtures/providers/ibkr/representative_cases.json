@@ -1,0 +1,205 @@
+{
+  "cases": [
+    {
+      "metadata": {
+        "fixture_id": "ibkr-representative-complete-v1",
+        "fixture_type": "COMPLETE_RECORD",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED_NO_SECRETS",
+        "contains_real_account_data": false,
+        "contains_credentials": false,
+        "created_at": "2026-07-18T00:00:00Z",
+        "source_shape_basis": "IBKR short-stock-file column shape documented in Phase 0 and inherited parser comments; values are invented.",
+        "expected_normalization_result": "Two delayed provider-published observations: fee 0.325 percent points and 12000 available shares."
+      },
+      "record": {
+        "source_record_id": "ibkr-representative-complete-v1",
+        "symbol": "TESTA",
+        "fee_rate": "0.325",
+        "fee_rate_unit": "PERCENT_POINTS",
+        "available_shares": "12000",
+        "lender_count": "3",
+        "hard_to_borrow": true,
+        "provider_timestamp": "2026-01-02T09:45:00",
+        "provider_timezone": "-05:00",
+        "delay_status": "KNOWN_DELAYED"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "ibkr-representative-zero-fee-v1",
+        "fixture_type": "EXPLICIT_ZERO_FEE",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED_NO_SECRETS",
+        "contains_real_account_data": false,
+        "contains_credentials": false,
+        "created_at": "2026-07-18T00:00:00Z",
+        "source_shape_basis": "Representative IBKR short-stock-file shape with invented zero fee.",
+        "expected_normalization_result": "Known zero fee remains numeric zero with KNOWN_VALUE quality."
+      },
+      "record": {
+        "source_record_id": "ibkr-representative-zero-fee-v1",
+        "symbol": "TESTA",
+        "fee_rate": "0",
+        "fee_rate_unit": "PERCENT_POINTS",
+        "available_shares": "8000",
+        "lender_count": null,
+        "hard_to_borrow": false,
+        "provider_timestamp": "2026-01-02T09:46:00",
+        "provider_timezone": "-05:00",
+        "delay_status": "NOT_DELAYED"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "ibkr-representative-zero-availability-v1",
+        "fixture_type": "EXPLICIT_ZERO_AVAILABILITY",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED_NO_SECRETS",
+        "contains_real_account_data": false,
+        "contains_credentials": false,
+        "created_at": "2026-07-18T00:00:00Z",
+        "source_shape_basis": "Representative IBKR short-stock-file shape with invented zero availability.",
+        "expected_normalization_result": "Known zero available shares remains numeric zero with KNOWN_VALUE quality."
+      },
+      "record": {
+        "source_record_id": "ibkr-representative-zero-availability-v1",
+        "symbol": "TESTB",
+        "fee_rate": "4.25",
+        "fee_rate_unit": "PERCENT_POINTS",
+        "available_shares": "0",
+        "lender_count": "1",
+        "hard_to_borrow": true,
+        "provider_timestamp": "2026-01-02T09:46:30-05:00",
+        "provider_timezone": null,
+        "delay_status": "NOT_DELAYED"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "ibkr-representative-missing-fee-v1",
+        "fixture_type": "MISSING_FEE",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED_NO_SECRETS",
+        "contains_real_account_data": false,
+        "contains_credentials": false,
+        "created_at": "2026-07-18T00:00:00Z",
+        "source_shape_basis": "Representative IBKR short-stock-file shape with an omitted fee.",
+        "expected_normalization_result": "Fee remains null with MISSING quality; availability remains known."
+      },
+      "record": {
+        "source_record_id": "ibkr-representative-missing-fee-v1",
+        "symbol": "TESTA",
+        "fee_rate": null,
+        "fee_rate_unit": "PERCENT_POINTS",
+        "available_shares": "4500",
+        "lender_count": null,
+        "hard_to_borrow": null,
+        "provider_timestamp": "2026-01-02T09:46:45-05:00",
+        "provider_timezone": null,
+        "delay_status": "NOT_DELAYED"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "ibkr-representative-missing-availability-v1",
+        "fixture_type": "MISSING_AVAILABILITY",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED_NO_SECRETS",
+        "contains_real_account_data": false,
+        "contains_credentials": false,
+        "created_at": "2026-07-18T00:00:00Z",
+        "source_shape_basis": "Representative IBKR short-stock-file shape with omitted availability.",
+        "expected_normalization_result": "Availability remains null with MISSING quality; fee remains known."
+      },
+      "record": {
+        "source_record_id": "ibkr-representative-missing-availability-v1",
+        "symbol": "TESTB",
+        "fee_rate": "7.75",
+        "fee_rate_unit": "PERCENT_POINTS",
+        "available_shares": null,
+        "lender_count": null,
+        "hard_to_borrow": true,
+        "provider_timestamp": "2026-01-02T09:47:00-05:00",
+        "provider_timezone": null,
+        "delay_status": "NOT_DELAYED"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "ibkr-representative-missing-timestamp-v1",
+        "fixture_type": "MISSING_PROVIDER_TIMESTAMP",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED_NO_SECRETS",
+        "contains_real_account_data": false,
+        "contains_credentials": false,
+        "created_at": "2026-07-18T00:00:00Z",
+        "source_shape_basis": "Representative IBKR short-stock-file shape with no provider time retained.",
+        "expected_normalization_result": "Normalization continues with ingestion-time placeholder, MISSING quality, and MISSING_PROVIDER_TIMESTAMP diagnostic."
+      },
+      "record": {
+        "source_record_id": "ibkr-representative-missing-timestamp-v1",
+        "symbol": "TESTA",
+        "fee_rate": "1.5",
+        "fee_rate_unit": "PERCENT_POINTS",
+        "available_shares": "1000",
+        "lender_count": null,
+        "hard_to_borrow": null,
+        "provider_timestamp": null,
+        "provider_timezone": null,
+        "delay_status": "UNKNOWN"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "ibkr-representative-unknown-timezone-v1",
+        "fixture_type": "UNKNOWN_TIMEZONE",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED_NO_SECRETS",
+        "contains_real_account_data": false,
+        "contains_credentials": false,
+        "created_at": "2026-07-18T00:00:00Z",
+        "source_shape_basis": "Representative IBKR short-stock-file shape with a naive timestamp and no zone.",
+        "expected_normalization_result": "Rejected when normalized with source_timezone null; no timezone is fabricated."
+      },
+      "context_overrides": {"source_timezone": null},
+      "record": {
+        "source_record_id": "ibkr-representative-unknown-timezone-v1",
+        "symbol": "TESTA",
+        "fee_rate": "1.5",
+        "fee_rate_unit": "PERCENT_POINTS",
+        "available_shares": "1000",
+        "lender_count": null,
+        "hard_to_borrow": null,
+        "provider_timestamp": "2026-01-02T09:48:00",
+        "provider_timezone": null,
+        "delay_status": "UNKNOWN"
+      }
+    },
+    {
+      "metadata": {
+        "fixture_id": "ibkr-representative-delayed-v1",
+        "fixture_type": "DELAYED_RECORD",
+        "origin": "SANITIZED_REPRESENTATIVE_SAMPLE",
+        "sanitization_status": "SANITIZED_NO_SECRETS",
+        "contains_real_account_data": false,
+        "contains_credentials": false,
+        "created_at": "2026-07-18T00:00:00Z",
+        "source_shape_basis": "Representative IBKR short-stock-file shape with explicit delay status.",
+        "expected_normalization_result": "Both observations use DELAYED quality and freshness."
+      },
+      "record": {
+        "source_record_id": "ibkr-representative-delayed-v1",
+        "symbol": "TESTB",
+        "fee_rate": "12.5",
+        "fee_rate_unit": "PERCENT_POINTS",
+        "available_shares": "250",
+        "lender_count": "2",
+        "hard_to_borrow": true,
+        "provider_timestamp": "2026-01-02",
+        "provider_timezone": "-05:00",
+        "delay_status": "KNOWN_DELAYED"
+      }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{"cases":[
+  {"fixture_id":"trade-invalid-price","expected":"REJECT","updates":{"price":"bad"}},
+  {"fixture_id":"trade-negative-price","expected":"REJECT","updates":{"price":"-1"}},
+  {"fixture_id":"trade-fractional-size","expected":"REJECT","updates":{"size":1.5}},
+  {"fixture_id":"trade-missing-publication-strict","expected":"REJECT","updates":{"publication_timestamp":null}},
+  {"fixture_id":"trade-receipt-placeholder","expected":"ACCEPT","updates":{"publication_timestamp":null,"unknown_availability_policy":"RECEIPT_AS_UNCERTAIN_PLACEHOLDER"}},
+  {"fixture_id":"trade-missing-sequence","expected":"ACCEPT","updates":{"sequence_number":null}},
+  {"fixture_id":"trade-unknown-sequence-scope","expected":"ACCEPT","updates":{"sequence_scope":"UNKNOWN"}},
+  {"fixture_id":"trade-sequence-reset","expected":"ACCEPT","updates":{"sequence_number":1,"sequence_reset":true}},
+  {"fixture_id":"trade-unknown-venue","expected":"ACCEPT","updates":{"venue":null}},
+  {"fixture_id":"trade-unsupported-asset-class","expected":"REJECT","updates":{"asset_class":"ETF"}}
+]}

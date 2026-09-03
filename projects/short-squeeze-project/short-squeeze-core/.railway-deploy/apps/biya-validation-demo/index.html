@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BIYA Candidate Validation — Research Case Study</title>
+<meta name="description" content="A forensic case study reconstructing why a short-squeeze screener surfaced the ticker BIYA, and what the surviving evidence can and cannot establish.">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="page-header">
+  <div class="wrap">
+    <p class="eyebrow">Research validation &middot; not financial advice</p>
+    <h1>Why the screener surfaced <span class="ticker">BIYA</span></h1>
+    <p class="lede">
+      A forensic reconstruction of one candidate identification: what the original
+      platform actually computed, what evidence genuinely existed at that moment, and
+      what the surviving record can and cannot establish.
+    </p>
+    <p class="status-line" id="status-line" role="status">Loading case data&hellip;</p>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+
+  <section aria-labelledby="verdict-heading" class="verdict-section">
+    <h2 id="verdict-heading">Case conclusion</h2>
+    <div class="verdict" id="verdict">
+      <p class="verdict-label" id="verdict-value">&mdash;</p>
+      <p class="verdict-rationale" id="verdict-rationale"></p>
+    </div>
+    <div class="callout callout-warning">
+      <h3>What this conclusion is, and is not</h3>
+      <p>
+        This judges the <strong>recorded methodology</strong> &mdash; whether the original
+        selection can be reproduced from evidence that existed when it was made. It is
+        not a rating of the stock, a prediction, or a recommendation. A conclusion of
+        <em>insufficient evidence</em> does not mean the original platform was wrong; it
+        means the surviving record cannot show whether it was right.
+      </p>
+    </div>
+  </section>
+
+  <section aria-labelledby="overview-heading">
+    <h2 id="overview-heading">Two different systems</h2>
+    <div class="two-col">
+      <div class="card">
+        <h3>The original platform</h3>
+        <p>
+          The screener as it ran in July 2026. It is treated here as a
+          <strong>frozen historical baseline</strong>: this study describes what it did
+          and never edits, re-runs, or corrects it.
+        </p>
+      </div>
+      <div class="card">
+        <h3>The rebuilt research engine</h3>
+        <p>
+          A deterministic, offline reconstruction with strict point-in-time evidence
+          handling. It is used to replay what could have been known at the moment of
+          detection &mdash; and nothing that came later.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="timeline-heading">
+    <h2 id="timeline-heading">Detection timeline</h2>
+    <p class="section-note" id="detection-summary"></p>
+    <ol class="timeline" id="timeline"></ol>
+    <div class="callout">
+      <h3>Why a window, not a timestamp</h3>
+      <p id="detection-basis"></p>
+      <p>
+        No surviving artifact records a platform event time. The bounds come from when
+        the screener run started and when its log was last written &mdash; filesystem
+        facts, which bound an event but cannot pinpoint one. Claiming an exact time here
+        would be a fabrication that made the replay look more precise than the evidence
+        supports.
+      </p>
+    </div>
+  </section>
+
+  <section aria-labelledby="rules-heading">
+    <h2 id="rules-heading">Original rules, assessed</h2>
+    <p class="section-note">
+      Each rule the original platform actually implemented, reconstructed from the code
+      as it stood <em>before</em> the review meeting. Each classification judges the
+      rule&rsquo;s methodology &mdash; never the stock.
+    </p>
+    <div class="table-scroll">
+      <table id="rules-table">
+        <caption class="visually-hidden">Original platform rules and their methodology classifications</caption>
+        <thead>
+          <tr><th scope="col">Rule</th><th scope="col">Classification</th><th scope="col">Finding</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <dl class="legend" id="legend"></dl>
+  </section>
+
+  <section aria-labelledby="headline-heading">
+    <h2 id="headline-heading">The two findings that matter most</h2>
+    <div class="two-col">
+      <div class="card card-finding">
+        <h3>The label promised a mechanism the formula never checked</h3>
+        <p>
+          The &ldquo;Prime / Subprime&rdquo; classification awarded one point each for a
+          price band, a percentage change, a relative-volume threshold, and a short-float
+          floor. <strong>None of those four is a squeeze mechanic.</strong> Borrow fee,
+          days to cover, and the volatility-compression signal were all computed and
+          displayed &mdash; and never scored.
+        </p>
+        <p class="finding-note">
+          So a stock could be labelled a squeeze setup on momentum alone. That is a
+          usable <em>discovery</em> filter; it is not squeeze <em>confirmation</em>.
+        </p>
+      </div>
+      <div class="card card-finding">
+        <h3>A column was renamed to something it was not</h3>
+        <p>
+          Roughly two hours before the review, the &ldquo;Short Float %&rdquo; column was
+          relabelled &ldquo;Short Interest %&rdquo;. The arithmetic underneath was
+          correct, but it is a <strong>percentage of float</strong> &mdash; while
+          &ldquo;short interest&rdquo; conventionally means an absolute share count.
+        </p>
+        <p class="finding-note">
+          The fix is to show both quantities under unambiguous labels. The formula itself
+          needs no change.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="comparison-heading">
+    <h2 id="comparison-heading">Original versus rebuilt</h2>
+    <p class="section-note" id="comparison-note"></p>
+    <div class="table-scroll">
+      <table id="comparison-table">
+        <caption class="visually-hidden">Field-by-field comparison of original and rebuilt values</caption>
+        <thead>
+          <tr>
+            <th scope="col">Field</th>
+            <th scope="col">Original</th>
+            <th scope="col">Rebuilt</th>
+            <th scope="col">Available at detection</th>
+            <th scope="col">Comparison</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="evidence-heading">
+    <h2 id="evidence-heading">Evidence used</h2>
+    <p class="section-note">
+      Only non-sensitive artifacts are listed. Private correspondence, personal names,
+      credentials, and local file paths are excluded from this page by the export process
+      itself, not removed by hand.
+    </p>
+    <ul class="evidence-list" id="evidence-list"></ul>
+    <div class="callout callout-warning">
+      <h3>What the record does not contain</h3>
+      <p>
+        No saved candidate row, screenshot, database record, or cached provider response
+        for this ticker survives. The only direct platform record is an application log
+        that contains no field values and no timestamps &mdash; every reference to the
+        ticker in it is a data-fetch failure. <strong>Every original displayed value is
+        therefore unknown</strong>, and unknown values are left unknown rather than
+        reconstructed from later data.
+      </p>
+    </div>
+  </section>
+
+  <section aria-labelledby="replay-heading">
+    <h2 id="replay-heading">Point-in-time replay</h2>
+    <p class="section-note">
+      Because detection is bounded rather than exact, the replay is run at
+      <strong>both edges</strong> of the window. Running one and choosing the
+      better-looking result is exactly the error this design prevents.
+    </p>
+    <ul class="chip-list" id="replay-list"></ul>
+    <p class="section-note">
+      Both replays return no eligible evidence, because no observation of any kind exists
+      for this ticker in the archive. That empty result is the finding, not a gap in the
+      method.
+    </p>
+  </section>
+
+  <section aria-labelledby="outcome-heading" class="outcome-section">
+    <p class="section-kicker">Retrospective evidence amendment</p>
+    <h2 id="outcome-heading">One detection window. Two boundary checks.</h2>
+    <p class="section-note">
+      The same versioned reference-price rule is applied at both edges of the bounded
+      detection window. No favorable edge is selected after the fact.
+    </p>
+    <div id="outcome-block"></div>
+    <div class="callout callout-warning">
+      <h3>The methodology boundary</h3>
+      <p>
+        <strong>Later price movement can confirm the outcome but cannot reconstruct or
+        validate missing original platform inputs.</strong> This amendment changes the
+        outcome finding, not the forensic finding about the original methodology.
+      </p>
+    </div>
+  </section>
+
+  <section aria-labelledby="limits-heading">
+    <h2 id="limits-heading">Limitations</h2>
+    <ul class="limits-list" id="limits-list"></ul>
+    <div class="callout">
+      <h3>On generalising from one case</h3>
+      <p>
+        One case cannot validate or invalidate a methodology. This study reconstructs a
+        single identification in depth and builds a repeatable format for doing the same
+        with others; it does not establish a hit rate, an expected return, or a claim
+        about the approach as a whole.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="page-footer">
+  <div class="wrap">
+    <p>
+      Generated by a deterministic offline export. No tracking, no accounts, no live data
+      feeds. Regenerating from the same evidence reproduces this page byte for byte.
+    </p>
+    <p class="meta" id="footer-meta"></p>
+    <p class="disclaimer">
+      Research and methodology analysis only. Nothing here is investment advice, a
+      recommendation, or a prediction.
+    </p>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

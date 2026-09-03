@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Fixture provenance declaration for tests/fixtures/readiness/. Phase 2D deliberately keeps its larger edge-case matrix (missing/unavailable/conflicted/cancelled domains, before/after correction and cancellation, age and reporting-period alignment) in pytest factory functions under tests/readiness/conftest.py rather than duplicating it into redundant JSON fixture files -- every one of those cases already has a named test in tests/readiness/, and the deterministic-anchor subset that specifically needs regenerable, committed byte identity is captured here and in expected_phase_2d_readiness_metadata.json.",
+  "files": {
+    "phase_2d_cli_demo_observations.jsonl": {
+      "provenance": "SYNTHETIC_EDGE_CASE",
+      "generated_by": "scripts/generate_phase_2d_anchors.py",
+      "contents": "One PUBLISHED_SHORT_INTEREST observation and one MARKET_BARS observation for synthetic symbol TESTD, built through the real FINRA and market-bar adapter normalizers (not hand-constructed Observation objects)."
+    },
+    "phase_2d_readiness_cases.json": {
+      "provenance": "SYNTHETIC_EDGE_CASE",
+      "generated_by": "scripts/generate_phase_2d_anchors.py",
+      "contents": "The single build-evidence-readiness CLI demonstration case (operation=PUBLISHED_SHORT_INTEREST_ABSOLUTE_CHANGE) used to produce the phase_2d_cli_output anchor."
+    },
+    "expected_phase_2d_readiness_metadata.json": {
+      "provenance": "SYNTHETIC_EDGE_CASE",
+      "generated_by": "scripts/generate_phase_2d_anchors.py",
+      "contents": "32 deterministic anchor hashes (handoff section 28) covering domain coverage, age alignment, reporting-period alignment, conflict summaries, missingness summaries, input sufficiency, and readiness snapshots, plus the CLI-output and serialized-collection hashes."
+    }
+  },
+  "no_credentials_or_live_endpoints": true,
+  "symbol_convention": "Synthetic symbol TESTD, matching the TESTA/TESTB/TESTC convention used by Phase 1/2A/2B/2C fixtures."
+}

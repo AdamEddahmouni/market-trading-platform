@@ -1,0 +1,75 @@
+{
+  "schema_version": "1.0.0",
+  "contains_credentials": false,
+  "contains_account_data": false,
+  "contains_real_symbols": false,
+  "contains_live_urls": false,
+  "analytics": false,
+  "strategy_interpretation": false,
+  "cases": [
+    {
+      "case_id": "missing-trades",
+      "objective_only": true
+    },
+    {
+      "case_id": "missing-quotes",
+      "objective_only": true
+    },
+    {
+      "case_id": "future-publication",
+      "objective_only": true
+    },
+    {
+      "case_id": "future-receipt",
+      "objective_only": true
+    },
+    {
+      "case_id": "correction-after-as-of",
+      "objective_only": true
+    },
+    {
+      "case_id": "cancellation-after-as-of",
+      "objective_only": true
+    },
+    {
+      "case_id": "locked-quote",
+      "objective_only": true
+    },
+    {
+      "case_id": "crossed-quote",
+      "objective_only": true
+    },
+    {
+      "case_id": "one-sided-quote",
+      "objective_only": true
+    },
+    {
+      "case_id": "missing-sequence",
+      "objective_only": true
+    },
+    {
+      "case_id": "out-of-order-sequence",
+      "objective_only": true
+    },
+    {
+      "case_id": "active-halt-interaction",
+      "objective_only": true
+    },
+    {
+      "case_id": "cross-provider-same-event",
+      "objective_only": true
+    },
+    {
+      "case_id": "conflicting-quote",
+      "objective_only": true
+    },
+    {
+      "case_id": "unknown-venue",
+      "objective_only": true
+    },
+    {
+      "case_id": "unknown-scope",
+      "objective_only": true
+    }
+  ]
+}

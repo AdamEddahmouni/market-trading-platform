@@ -1,0 +1,1 @@
+{"schema_version":"1.0.0","policy_version":"phase_3d_acquisition_plan_policy.v1","eligible_plan_statuses":["ACTIVE","PREREGISTERED"],"outcome_blind":true}

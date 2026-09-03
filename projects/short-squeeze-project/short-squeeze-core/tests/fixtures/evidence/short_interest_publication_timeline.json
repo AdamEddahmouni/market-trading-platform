@@ -1,0 +1,15 @@
+{
+  "symbol": "TESTA",
+  "settlement_date": "2026-01-15",
+  "original_publication": "2026-01-22T19:00:00Z",
+  "original_received": "2026-01-22T20:00:00Z",
+  "correction_publication": "2026-01-29T19:00:00Z",
+  "correction_received": "2026-01-30T15:00:00Z",
+  "as_of": {
+    "before_publication": "2026-01-20T15:00:00Z",
+    "after_publication_before_receipt": "2026-01-22T19:30:00Z",
+    "after_original_receipt": "2026-01-25T15:30:00Z",
+    "before_correction_receipt": "2026-01-30T14:00:00Z",
+    "after_correction_receipt": "2026-02-01T15:30:00Z"
+  }
+}

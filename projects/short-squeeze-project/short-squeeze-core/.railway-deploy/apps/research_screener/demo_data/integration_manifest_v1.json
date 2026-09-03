@@ -1,0 +1,49 @@
+{
+  "application_name": "Short Squeeze Research Screener",
+  "application_version": "0.15.0",
+  "api_version": "1.0.0",
+  "schema_version": "batch14.integration.v1",
+  "supported_modes": ["LOCAL_FULL", "CLOUD_PROVIDER_MODE", "FROZEN_DEMO"],
+  "methodology_ids": [
+    "legacy_prime_setup",
+    "peer_reference_methodology",
+    "adam_evidence_gated_prime.v1"
+  ],
+  "methodology_display_labels": {
+    "legacy_prime_setup": "Legacy Prime Setup",
+    "peer_reference_methodology": "Peer Reference Methodology",
+    "adam_evidence_gated_prime.v1": "Evidence-Gated Prime v1"
+  },
+  "environment_variables": [
+    "SQUEEZE_APP_MODE",
+    "PORT",
+    "LOG_LEVEL",
+    "FINVIZ_ENABLED",
+    "FINVIZ_API_KEY",
+    "NEWSAPI_ENABLED",
+    "NEWSAPI_KEY",
+    "FINNHUB_ENABLED",
+    "FINNHUB_KEY",
+    "SEC_ENABLED",
+    "SEC_USER_AGENT",
+    "SEC_CONTACT_EMAIL",
+    "IBKR_ENABLED",
+    "IBKR_HOST",
+    "IBKR_PORT",
+    "IBKR_CLIENT_ID"
+  ],
+  "health_path": "/health",
+  "readiness_path": "/ready",
+  "predictive_validation": "NOT_COMPLETED",
+  "prohibited_capabilities": {
+    "trading": "UNSUPPORTED",
+    "orders": "UNSUPPORTED",
+    "account_access": "UNSUPPORTED"
+  },
+  "security_boundary": {
+    "credentials_in_api": false,
+    "private_files_in_cloud": false,
+    "local_ibkr_in_cloud": false,
+    "provider_values_replaceable_without_source_edits": true
+  }
+}

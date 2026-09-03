@@ -1,0 +1,14 @@
+{
+  "policy_version": "1.0.0",
+  "description": "Frozen-to-Finnhub field enrichment mappings. Controls which Finnhub fields enrich the frozen research display snapshot. Edit to add, remove, or remap fields without touching Python code.",
+  "provider": "Finnhub",
+  "mappings": [
+    {
+      "provider_attr": "price",
+      "frozen_key": "finnhub_price",
+      "unit": "PRICE",
+      "readiness": "PROVIDER_SNAPSHOT_PRICE_FINNHUB",
+      "comment": "Real-time Finnhub price quote. Complements the BLOCKED reference_price with a live display fill via a dedicated finnhub_price field. Does NOT overwrite reference_price — Finviz enrichment owns that key."
+    }
+  ]
+}

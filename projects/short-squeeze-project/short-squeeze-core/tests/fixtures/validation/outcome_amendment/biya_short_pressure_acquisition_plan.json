@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0.0",
+  "acquisition_plan_id": "phase-2v-biya-short-pressure-expansion",
+  "plan_version": "phase_2v_biya_short_pressure_acquisition.v1",
+  "plan_status": "PREREGISTERED",
+  "created_from_policy_version": "phase_3d_acquisition_plan_policy.v1",
+  "symbol": "BIYA",
+  "boundaries": [
+    "2026-07-17T14:23:58.000000Z",
+    "2026-07-17T16:54:58.000000Z"
+  ],
+  "target_domains": [
+    "PUBLISHED_SHORT_INTEREST",
+    "FLOAT",
+    "BORROW_FEE",
+    "BORROW_AVAILABILITY"
+  ],
+  "source_policy": {
+    "published_short_interest": {
+      "provider": "finra",
+      "method": "PUBLIC_HTTP_FILE",
+      "description": "FINRA twice-monthly published short-interest file via caller-supplied URL"
+    },
+    "float": {
+      "method": "DERIVED_FROM_PUBLISHED_SHORT_INTEREST",
+      "description": "float_shares derived when short_shares and Short % of Float are both present; split context retained"
+    },
+    "borrow_fee": {
+      "provider": "ibkr",
+      "method": "HISTORICAL_GATEWAY_CAPTURE",
+      "description": "IBKR gateway historical borrow-fee capture when entitled; no current-value substitution"
+    },
+    "borrow_availability": {
+      "provider": "ibkr",
+      "method": "HISTORICAL_GATEWAY_CAPTURE",
+      "description": "IBKR gateway historical shortable-shares capture when entitled; no current-value substitution"
+    }
+  },
+  "forbidden_substitutions": [
+    "CURRENT_FOR_HISTORICAL",
+    "FINRA_DAILY_SHORT_SALE_VOLUME_FOR_PUBLISHED_SHORT_INTEREST",
+    "LIVE_FINVIZ_FLOAT_OR_SHORT_INTEREST"
+  ],
+  "corporate_action_note": "1:10 reverse split effective 2026-07-13; float and SI interpreted on provider-reported post-split basis",
+  "outcome_blinding_state": "OUTCOME_BLINDED",
+  "informational_created_at": "2026-07-21T20:57:44.000000Z"
+}

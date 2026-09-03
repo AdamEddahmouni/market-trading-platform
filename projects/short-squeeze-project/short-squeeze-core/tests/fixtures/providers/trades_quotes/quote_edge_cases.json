@@ -1,0 +1,11 @@
+{"cases":[
+  {"fixture_id":"quote-missing-both-sides","expected":"REJECT","updates":{"bid_price":null,"bid_size":null,"ask_price":null,"ask_size":null}},
+  {"fixture_id":"quote-invalid-bid-price","expected":"REJECT","updates":{"bid_price":"bad"}},
+  {"fixture_id":"quote-negative-ask-size","expected":"REJECT","updates":{"ask_size":-1}},
+  {"fixture_id":"quote-zero-sizes","expected":"ACCEPT","updates":{"bid_size":0,"ask_size":0}},
+  {"fixture_id":"quote-size-without-price","expected":"ACCEPT","updates":{"bid_price":null,"bid_size":100}},
+  {"fixture_id":"quote-unknown-scope","expected":"ACCEPT","updates":{"market_scope":"UNKNOWN"}},
+  {"fixture_id":"quote-missing-sequence","expected":"ACCEPT","updates":{"sequence_number":null}},
+  {"fixture_id":"quote-missing-publication-strict","expected":"REJECT","updates":{"publication_timestamp":null}},
+  {"fixture_id":"quote-capture-placeholder","expected":"ACCEPT","updates":{"publication_timestamp":null,"unknown_availability_policy":"CAPTURE_AS_UNCERTAIN_PLACEHOLDER"}}
+]}

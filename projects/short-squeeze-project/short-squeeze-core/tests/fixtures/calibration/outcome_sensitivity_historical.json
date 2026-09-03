@@ -1,0 +1,63 @@
+{
+  "schema_version": "1.0.0",
+  "experiment_version": "outcome_sensitivity_historical.v1",
+  "experiment_type": "OUTCOME_SENSITIVITY",
+  "source_dataset_path": "../research/phase_3b_research_dataset.json",
+  "cohort_type": "HISTORICAL_COMPLETED_CASES",
+  "analysis_unit": "CASE_BOUNDARY",
+  "baseline_variant_id": "baseline",
+  "variants": [
+    {
+      "variant_id": "baseline",
+      "description": "Current Phase 3B outcome label policy (±25% over 24 hours).",
+      "outcome_policy": {
+        "policy_version": "phase_3b_outcome_label_policy.v1",
+        "reference_price_policy": "first_eligible_trade_bar_close_at_or_after_boundary.v1",
+        "horizon": "24_HOURS",
+        "upward_threshold_percent": "25",
+        "downward_threshold_percent": "-25",
+        "provisional": true,
+        "rationale_code": "FIXED_UNOPTIMIZED_24_HOUR_RESEARCH_OUTCOME"
+      }
+    },
+    {
+      "variant_id": "upward_28",
+      "description": "Raise upward threshold to 28%; BIYA earliest boundary (28.34% max) is near the flip point.",
+      "outcome_policy": {
+        "policy_version": "calibration.outcome.upward_28.v1",
+        "reference_price_policy": "first_eligible_trade_bar_close_at_or_after_boundary.v1",
+        "horizon": "24_HOURS",
+        "upward_threshold_percent": "28",
+        "downward_threshold_percent": "-25",
+        "provisional": true,
+        "rationale_code": "CALIBRATION_OUTCOME_UPWARD_28"
+      }
+    },
+    {
+      "variant_id": "upward_30",
+      "description": "Raise upward threshold to 30%; BIYA earliest boundary (28.34%) flips to no substantial move.",
+      "outcome_policy": {
+        "policy_version": "calibration.outcome.upward_30.v1",
+        "reference_price_policy": "first_eligible_trade_bar_close_at_or_after_boundary.v1",
+        "horizon": "24_HOURS",
+        "upward_threshold_percent": "30",
+        "downward_threshold_percent": "-25",
+        "provisional": true,
+        "rationale_code": "CALIBRATION_OUTCOME_UPWARD_30"
+      }
+    },
+    {
+      "variant_id": "strict_35",
+      "description": "Raise upward threshold to 35%; both BIYA boundaries flip (31.68% latest still below 35%).",
+      "outcome_policy": {
+        "policy_version": "calibration.outcome.strict_35.v1",
+        "reference_price_policy": "first_eligible_trade_bar_close_at_or_after_boundary.v1",
+        "horizon": "24_HOURS",
+        "upward_threshold_percent": "35",
+        "downward_threshold_percent": "-35",
+        "provisional": true,
+        "rationale_code": "CALIBRATION_OUTCOME_STRICT_35"
+      }
+    }
+  ]
+}

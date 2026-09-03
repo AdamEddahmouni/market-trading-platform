@@ -1,0 +1,64 @@
+{
+  "entries": [
+    {
+      "category": "ACADEMIC_OR_PERSONAL",
+      "path": "apps/research_screener/server.py",
+      "line_pattern": "/api/professor",
+      "reason": "Backward-compatible API route; the public dashboard uses /api/research-summary."
+    },
+    {
+      "category": "ACADEMIC_OR_PERSONAL",
+      "path": "apps/research_screener/snapshot.py",
+      "line_pattern": "^professor_summary = research_summary$",
+      "reason": "Backward-compatible internal symbol."
+    },
+    {
+      "category": "ACADEMIC_OR_PERSONAL",
+      "path": "apps/research_screener/frozen.py",
+      "line_pattern": "^\\s+professor_summary = research_summary$",
+      "reason": "Backward-compatible internal symbol."
+    },
+    {
+      "category": "ACADEMIC_OR_PERSONAL",
+      "path": "tools/release_audit.py",
+      "line_pattern": "professor\\|student",
+      "reason": "Generic scanner signature."
+    },
+    {
+      "category": "ACADEMIC_OR_PERSONAL",
+      "path": "tools/release_audit.py",
+      "line_pattern": "class\\\\s\\+project",
+      "reason": "Generic scanner signature."
+    },
+    {
+      "category": "ACADEMIC_OR_PERSONAL",
+      "path": "INTEGRATION_CHECKLIST.md",
+      "line_pattern": "/api/professor",
+      "reason": "Documents the backward-compatible research-summary API alias."
+    },
+    {
+      "category": "CREDENTIAL",
+      "path": "src/squeeze_core/acquisition/historical_data_submission_kit/templates.py",
+      "line_pattern": "^GUIDANCE_KEY = \"_field_guidance\"$",
+      "reason": "Non-secret JSON annotation field name."
+    },
+    {
+      "category": "CREDENTIAL",
+      "path": "src/squeeze_core/acquisition/historical_data_submission_kit/templates.py",
+      "line_pattern": "^WARNING_KEY = \"_warning\"$",
+      "reason": "Non-secret JSON annotation field name."
+    },
+    {
+      "category": "WINDOWS_USER_PATH",
+      "path": "src/squeeze_core/validation/models.py",
+      "line_pattern": "drive-rooted",
+      "reason": "Generic validation-format documentation; no user or machine value."
+    },
+    {
+      "category": "UNIX_HOME_PATH",
+      "path": "src/squeeze_core/validation/models.py",
+      "line_pattern": "POSIX-absolute",
+      "reason": "Generic validation-format documentation; no user or machine value."
+    }
+  ]
+}

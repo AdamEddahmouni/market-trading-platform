@@ -1,0 +1,94 @@
+{
+  "cases": [
+    {
+      "metadata": {
+        "fixture_id": "ibkr-edge-nonnumeric-fee-v1",
+        "fixture_type": "NON_NUMERIC_FEE",
+        "origin": "SYNTHETIC_EDGE_CASE",
+        "sanitization_status": "SANITIZED_NO_SECRETS",
+        "contains_real_account_data": false,
+        "contains_credentials": false,
+        "created_at": "2026-07-18T00:00:00Z",
+        "source_shape_basis": "Invented malformed value in representative IBKR shape.",
+        "expected_normalization_result": "Fee output omitted with INVALID_NUMERIC_VALUE; valid availability is preserved."
+      },
+      "record": {"source_record_id": "ibkr-edge-nonnumeric-fee-v1", "symbol": "TESTA", "fee_rate": "bad", "fee_rate_unit": "PERCENT_POINTS", "available_shares": "100", "lender_count": null, "hard_to_borrow": null, "provider_timestamp": "2026-01-02T09:50:00-05:00", "provider_timezone": null, "delay_status": "NOT_DELAYED"}
+    },
+    {
+      "metadata": {
+        "fixture_id": "ibkr-edge-fractional-availability-v1",
+        "fixture_type": "FRACTIONAL_AVAILABILITY",
+        "origin": "SYNTHETIC_EDGE_CASE",
+        "sanitization_status": "SANITIZED_NO_SECRETS",
+        "contains_real_account_data": false,
+        "contains_credentials": false,
+        "created_at": "2026-07-18T00:00:00Z",
+        "source_shape_basis": "Invented malformed value in representative IBKR shape.",
+        "expected_normalization_result": "Availability output omitted; fractional shares never round or become zero."
+      },
+      "record": {"source_record_id": "ibkr-edge-fractional-availability-v1", "symbol": "TESTA", "fee_rate": "2", "fee_rate_unit": "PERCENT_POINTS", "available_shares": "1.5", "lender_count": null, "hard_to_borrow": null, "provider_timestamp": "2026-01-02T09:50:01-05:00", "provider_timezone": null, "delay_status": "NOT_DELAYED"}
+    },
+    {
+      "metadata": {
+        "fixture_id": "ibkr-edge-negative-availability-v1",
+        "fixture_type": "NEGATIVE_AVAILABILITY",
+        "origin": "SYNTHETIC_EDGE_CASE",
+        "sanitization_status": "SANITIZED_NO_SECRETS",
+        "contains_real_account_data": false,
+        "contains_credentials": false,
+        "created_at": "2026-07-18T00:00:00Z",
+        "source_shape_basis": "Invented malformed value in representative IBKR shape.",
+        "expected_normalization_result": "Availability output omitted; negative shares never become zero."
+      },
+      "record": {"source_record_id": "ibkr-edge-negative-availability-v1", "symbol": "TESTA", "fee_rate": "2", "fee_rate_unit": "PERCENT_POINTS", "available_shares": "-1", "lender_count": null, "hard_to_borrow": null, "provider_timestamp": "2026-01-02T09:50:02-05:00", "provider_timezone": null, "delay_status": "NOT_DELAYED"}
+    },
+    {
+      "metadata": {
+        "fixture_id": "ibkr-edge-unsupported-unit-v1",
+        "fixture_type": "UNSUPPORTED_PERCENT_UNIT",
+        "origin": "SYNTHETIC_EDGE_CASE",
+        "sanitization_status": "SANITIZED_NO_SECRETS",
+        "contains_real_account_data": false,
+        "contains_credentials": false,
+        "created_at": "2026-07-18T00:00:00Z",
+        "source_shape_basis": "Invented unsupported unit in representative IBKR shape.",
+        "expected_normalization_result": "Fee output omitted; magnitude is not used to guess scaling."
+      },
+      "record": {"source_record_id": "ibkr-edge-unsupported-unit-v1", "symbol": "TESTA", "fee_rate": "25", "fee_rate_unit": "BASIS_POINTS", "available_shares": "100", "lender_count": null, "hard_to_borrow": null, "provider_timestamp": "2026-01-02T09:50:03-05:00", "provider_timezone": null, "delay_status": "NOT_DELAYED"}
+    },
+    {
+      "metadata": {
+        "fixture_id": "ibkr-edge-duplicate-v1",
+        "fixture_type": "DUPLICATE_SOURCE_RECORD",
+        "origin": "SYNTHETIC_EDGE_CASE",
+        "sanitization_status": "SANITIZED_NO_SECRETS",
+        "contains_real_account_data": false,
+        "contains_credentials": false,
+        "created_at": "2026-07-18T00:00:00Z",
+        "source_shape_basis": "Two identical invented provider records.",
+        "expected_normalization_result": "Batch emits the record once and diagnoses DUPLICATE_SOURCE_RECORD."
+      },
+      "records": [
+        {"source_record_id": "ibkr-edge-duplicate-v1", "symbol": "TESTA", "fee_rate": "3", "fee_rate_unit": "PERCENT_POINTS", "available_shares": "100", "lender_count": null, "hard_to_borrow": null, "provider_timestamp": "2026-01-02T09:50:04-05:00", "provider_timezone": null, "delay_status": "NOT_DELAYED"},
+        {"source_record_id": "ibkr-edge-duplicate-v1", "symbol": "TESTA", "fee_rate": "3", "fee_rate_unit": "PERCENT_POINTS", "available_shares": "100", "lender_count": null, "hard_to_borrow": null, "provider_timestamp": "2026-01-02T09:50:04-05:00", "provider_timezone": null, "delay_status": "NOT_DELAYED"}
+      ]
+    },
+    {
+      "metadata": {
+        "fixture_id": "ibkr-edge-conflict-v1",
+        "fixture_type": "CONFLICTING_RECORDS",
+        "origin": "SYNTHETIC_EDGE_CASE",
+        "sanitization_status": "SANITIZED_NO_SECRETS",
+        "contains_real_account_data": false,
+        "contains_credentials": false,
+        "created_at": "2026-07-18T00:00:00Z",
+        "source_shape_basis": "Two invented provider records with the same symbol/time and different values.",
+        "expected_normalization_result": "Both records remain and affected observations are marked CONFLICTED with one correlation ID."
+      },
+      "records": [
+        {"source_record_id": "ibkr-edge-conflict-a-v1", "symbol": "TESTA", "fee_rate": "3", "fee_rate_unit": "PERCENT_POINTS", "available_shares": "100", "lender_count": null, "hard_to_borrow": null, "provider_timestamp": "2026-01-02T09:50:05-05:00", "provider_timezone": null, "delay_status": "NOT_DELAYED"},
+        {"source_record_id": "ibkr-edge-conflict-b-v1", "symbol": "TESTA", "fee_rate": "9", "fee_rate_unit": "PERCENT_POINTS", "available_shares": "50", "lender_count": null, "hard_to_borrow": null, "provider_timestamp": "2026-01-02T09:50:05-05:00", "provider_timezone": null, "delay_status": "NOT_DELAYED"}
+      ]
+    }
+  ]
+}

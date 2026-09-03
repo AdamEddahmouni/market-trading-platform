@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Short Squeeze Research Scanner">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>%E2%9A%A1</text></svg>">
+<title>Short Squeeze Scanner</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="scanner">
+
+<header class="scanner-header">
+  <div class="scanner-title">
+    <h1>Short Squeeze Scanner</h1>
+    <p class="scanner-disclaimer">EXPERIMENTAL RESEARCH CLASSIFICATION — NOT PREDICTIVE VALIDATION</p>
+  </div>
+  <div class="scanner-actions">
+    <div class="mode-toggle-group">
+      <button id="btn-mode-frozen" class="mode-toggle active" type="button" title="Pre-computed research cases">FROZEN</button>
+      <button id="btn-mode-live" class="mode-toggle" type="button" title="Real-time IBKR discovery + live providers">LIVE</button>
+    </div>
+    <span id="scan-status-pill" class="scan-status-pill none" title="Scan readiness">—</span>
+    <button id="btn-export-snapshot" class="btn" type="button" title="Write JSON + CSV snapshot to server export folder">Export snapshot</button>
+    <button id="btn-export-csv" class="btn" type="button" title="Download current table as CSV">Export CSV</button>
+    <a id="advanced-link" class="advanced-link" href="/advanced" title="Research & Diagnostics">Advanced</a>
+  </div>
+</header>
+
+<div id="banners" class="banners"></div>
+<div id="provider-bar" class="provider-bar-compact"></div>
+
+<nav class="scanner-controls">
+  <div class="control-group">
+    <label class="control-label" for="filter-symbol">Symbol</label>
+    <input id="filter-symbol" type="text" placeholder="e.g. GME" autocomplete="off">
+  </div>
+  <label class="control-label diagnostics-toggle" for="toggle-diagnostics">
+    <input id="toggle-diagnostics" type="checkbox"> Diagnostics
+  </label>
+  <details id="more-filters" class="more-filters">
+    <summary class="more-filters-summary">More filters</summary>
+    <div class="more-filters-inner">
+      <div class="control-group">
+        <label class="control-label" for="filter-classification">Classification</label>
+        <select id="filter-classification">
+          <option value="">All</option>
+          <option value="PRIME">PRIME</option>
+          <option value="SUBPRIME">SUBPRIME</option>
+          <option value="WATCH">WATCH</option>
+          <option value="NOT_QUALIFIED">NOT_QUALIFIED</option>
+          <option value="UNEVALUABLE">UNEVALUABLE</option>
+          <option value="CONFLICTED">CONFLICTED</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="filter-min-price">Min Price</label>
+        <input id="filter-min-price" type="number" step="0.01" placeholder="—">
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="filter-max-price">Max Price</label>
+        <input id="filter-max-price" type="number" step="0.01" placeholder="—">
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="filter-min-change">Min % Change</label>
+        <input id="filter-min-change" type="number" step="0.1" placeholder="—">
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="filter-min-relvol">Min Rel Vol</label>
+        <input id="filter-min-relvol" type="number" step="0.1" placeholder="—">
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="filter-min-pressure">Min Pressure</label>
+        <input id="filter-min-pressure" type="number" step="1" min="0" max="100" placeholder="—">
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="filter-min-ignition">Min Ignition</label>
+        <input id="filter-min-ignition" type="number" step="1" min="0" max="100" placeholder="—">
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="filter-min-coverage">Min Evidence</label>
+        <input id="filter-min-coverage" type="number" step="1" min="0" max="100" placeholder="—">
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="filter-news">News</label>
+        <select id="filter-news">
+          <option value="">Any</option>
+          <option value="has">Has News</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="filter-sentiment">Sentiment</label>
+        <select id="filter-sentiment">
+          <option value="">Any</option>
+          <option value="POSITIVE">Positive</option>
+          <option value="NEUTRAL">Neutral</option>
+          <option value="NEGATIVE">Negative</option>
+          <option value="MIXED">Mixed</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="filter-max-float">Max Float</label>
+        <input id="filter-max-float" type="number" step="1" placeholder="—">
+      </div>
+    </div>
+  </details>
+  <div class="control-group right refresh-group">
+    <button id="btn-show-news-panel" class="btn" type="button">Show news panel</button>
+    <span id="refresh-clock" class="refresh-clock muted" title="Data freshness">
+      <span class="timer-dot" id="timer-dot"></span>
+      <span id="timer-text">--</span>
+    </span>
+    <label class="checkbox"><input id="auto-refresh" type="checkbox"> Auto</label>
+    <button id="btn-refresh-now" class="btn" type="button">Refresh</button>
+  </div>
+</nav>
+<div id="triage-filters" class="triage-filters"></div>
+<section id="blocker-panel" class="blocker-panel" hidden>
+  <button id="blocker-toggle" class="blocker-toggle" type="button" aria-expanded="false">
+    Blocker Drilldown
+  </button>
+  <div id="blocker-content" class="blocker-content" hidden></div>
+</section>
+
+<p id="status-line" class="status-line" hidden></p>
+
+<div id="classification-legend" class="classification-legend"></div>
+
+<main class="scanner-main">
+  <div class="table-scroll">
+    <table id="scanner-table">
+      <thead><tr id="scanner-head"></tr></thead>
+      <tbody id="scanner-body">
+        <tr><td class="muted" colspan="11" style="text-align:center;padding:24px">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <aside id="news-feed-panel" class="news-feed-panel">
+    <div class="news-feed-header">
+      <h2 id="news-feed-title" class="news-feed-title">News</h2>
+      <div id="news-panel-controls" class="news-panel-controls">
+        <button id="news-panel-menu-btn" class="news-panel-btn news-panel-menu-btn" type="button" title="Panel layout" aria-haspopup="true">⋯</button>
+        <div id="news-panel-menu" class="news-panel-menu" hidden>
+          <button class="news-panel-btn" data-news-panel="default" type="button">Default</button>
+          <button class="news-panel-btn" data-news-panel="compact" type="button">Compact</button>
+          <button class="news-panel-btn" data-news-panel="wide" type="button">Wide</button>
+        </div>
+        <button id="news-panel-hide-btn" class="news-panel-btn" data-news-panel="collapsed" type="button" title="Hide news panel">Hide</button>
+      </div>
+      <div id="news-feed-toggles" class="news-feed-toggles">
+        <button class="nf-pill active" data-nf-filter="">All</button>
+        <button class="nf-pill" data-nf-filter="PRIME">PRIME</button>
+      </div>
+      <span id="news-feed-updated" class="news-feed-updated" hidden></span>
+    </div>
+    <div id="news-feed-list" class="news-feed-list">
+      <div class="news-feed-empty">Loading headlines…</div>
+    </div>
+  </aside>
+</main>
+
+<div id="detail-overlay" class="detail-overlay" hidden>
+  <div id="detail-drawer" class="detail-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title" id="drawer-title"></div>
+      <button id="btn-close-detail" class="btn drawer-close" type="button">&times;</button>
+    </div>
+    <div id="drawer-body" class="drawer-body"></div>
+  </div>
+</div>
+
+<script src="/static/shared.js"></script>
+<script src="/static/scanner.js"></script>
+</body>
+</html>

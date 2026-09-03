@@ -1,0 +1,14 @@
+{
+  "ingested_at": "2026-01-22T20:00:00Z",
+  "source_timezone": null,
+  "provider": "FINRA_SHAPED_REPRESENTATIVE",
+  "adapter_version": "finra-offline-v1",
+  "normalization_version": "finra-short-interest-v1",
+  "entitlement_status": "UNKNOWN",
+  "collection_method": "LOADED_FIXTURE",
+  "account_scope": null,
+  "request_id": "finra-fixture-request-v1",
+  "session_id": null,
+  "expected_delay_ms": null,
+  "source_endpoint_name": "representative-short-interest-file"
+}
