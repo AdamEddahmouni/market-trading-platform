@@ -1,0 +1,208 @@
+{
+  "artifact_type": "PHASE_0_IMPLEMENTATION_AUTHORIZATION",
+  "authority_bindings": [
+    {
+      "effectivity_state": "PENDING_EXACT_HASH_APPROVAL",
+      "logical_id": "foundation.canonical_specification.revision_2",
+      "logical_path": "docs/superpowers/specs/2026-08-14-integrated-market-platform-foundation-design-revision-2.md",
+      "sha256": "56F6C424EF83BE6042E06D716F3BBE87A1E1B7FE7EBEB15B7EECD875131BC06A"
+    },
+    {
+      "effectivity_state": "PENDING_EXACT_HASH_APPROVAL",
+      "logical_id": "phase0.adr_off_001_conformance",
+      "logical_path": "docs/superpowers/decisions/2026-08-14-adr-off-001-conformance-design.json",
+      "sha256": "0A9986F52100BAF2DA2C8A44D132042C94BB0D6844933CA09A9D48EAD0B353B4"
+    },
+    {
+      "effectivity_state": "PENDING_EXACT_HASH_APPROVAL",
+      "logical_id": "phase0.adr_repo_001",
+      "logical_path": "docs/superpowers/decisions/2026-08-14-adr-repo-001-governed-repository-boundary.json",
+      "sha256": "5D0F30A0BBC558ADC32F9D924D9AF870964922C6CEFFEC3FFA7F74641FC3A612"
+    },
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase0.ai_review_procedure",
+      "logical_path": "docs/superpowers/governance/2026-08-14-ai-review-process-001.json",
+      "sha256": "EAAA84B1D0D6FF4B6A90F36CC35F5D88E9D1EB63173A6BDE18D9C911E63C69A8"
+    },
+    {
+      "effectivity_state": "PENDING_EXACT_HASH_APPROVAL",
+      "logical_id": "phase0.implementation_plan",
+      "logical_path": "docs/superpowers/plans/2026-08-14-phase-0-structural-evidence-implementation.md",
+      "sha256": "3A29E8870481AC10111AB184EB0108A7D09FFBCBEB2CB34A85D0606FAA721F7E"
+    },
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase0.preapproval_reviewer_eligibility",
+      "logical_path": "docs/superpowers/governance/2026-08-14-gov-002-preapproval-reviewer-eligibility.json",
+      "sha256": "5686F548A495E9DC215474083EBC6775C921D5B7AD8E6DB98EF132DDC27C4EE4"
+    },
+    {
+      "effectivity_state": "PENDING_EXACT_HASH_APPROVAL",
+      "logical_id": "phase0.repository_mutation_authorization",
+      "logical_path": "docs/superpowers/governance/2026-08-14-repository-mutation-authorization.json",
+      "sha256": "205F2A23401496B0AC75237ED27C9532FAE81721AE5A0EEA2129F04A1E606788"
+    },
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase0.role_assignment",
+      "logical_path": "docs/superpowers/governance/2026-08-14-phase-0-role-assignment.json",
+      "sha256": "37C24D60FF9ACB8411BA0D5FA5A2C5DBC8811DFD30E4180DD377A2C3BADA2163"
+    }
+  ],
+  "authorization_id": "PHASE-0-IMPLEMENTATION-AUTHORIZATION-001",
+  "authorized_executor": {
+    "capacity": "ARCHITECTURE_LEAD",
+    "principal_id": "PROJECT-PRINCIPAL-001"
+  },
+  "created_at": "2026-08-14T18:35:00Z",
+  "effectivity": {
+    "activation_conditions": [
+      "ATTRIBUTABLE_EXACT_HASH_APPROVAL_BY_PROJECT_PRINCIPAL_ACTING_AS_PROJECT_OWNER_RELEASE_OWNER_AND_SECURITY_OWNER",
+      "FRESH_HASH_MATCH_FOR_THIS_AUTHORIZATION_AND_EVERY_AUTHORITY_BINDING",
+      "EFFECTIVE_CANONICAL_SPECIFICATION_REVISION_2",
+      "ACCEPTED_ADR_REPO_001",
+      "REPOSITORY_MUTATION_AUTHORIZATION_EXECUTED_WITHIN_SCOPE",
+      "ROOT_2E7C91F4_EXISTS_AS_THE_GOVERNED_LOCAL_GIT_REPOSITORY_WITH_NO_REMOTE",
+      "AFTER_OPERATION_PRESERVATION_REPORT_SHOWS_NO_UNAUTHORIZED_DRIFT",
+      "CANONICAL_SPECIFICATION_AND_CONTROLLING_PLAN_ARE_REGISTERED_AT_THEIR_APPROVED_HASHES_INSIDE_ROOT_2E7C91F4",
+      "ADR_OFF_001_CONFORMANCE_IS_RECORDED_AND_EFFECTIVE",
+      "IMPLEMENTATION_PLAN_IS_ACCEPTED_AT_ITS_BOUND_HASH",
+      "AI_REVIEW_PROCEDURE_AND_ZERO_VIOLATION_PREAPPROVAL_ELIGIBILITY_RESULT_REMAIN_EFFECTIVE"
+    ],
+    "current_state": "PENDING_EXACT_HASH_APPROVAL_AND_EXECUTION_ORDER_PREREQUISITES",
+    "expires_when": "Any bound hash, selected root, preservation result, offline boundary, source/evidence scope, permitted operation, prohibited operation, reviewer rule, or controlling-plan requirement changes.",
+    "statement": "Exact-hash approval may be bundled with prerequisite candidates, but this authorization activates only after every activation condition is freshly true in Section 10 order."
+  },
+  "evidence_scope": {
+    "candidate_root_exclusions": [
+      "phase0.acceptance_index",
+      "phase0.ai_review_coverage",
+      "phase0.ai_review_runs",
+      "phase0.approval_records",
+      "phase0.candidate_evidence_root",
+      "phase0.final_acceptance_result"
+    ],
+    "generated_preapproval_logical_ids": [
+      "phase0.aggregator_specification",
+      "phase0.assertion_aggregate",
+      "phase0.assertion_registry",
+      "phase0.assertion_results",
+      "phase0.assertion_run_manifest",
+      "phase0.candidate_evidence_root",
+      "phase0.canonical_inventory",
+      "phase0.credential_audit",
+      "phase0.denied_network_install",
+      "phase0.denied_network_protocol",
+      "phase0.dependency_lock_report",
+      "phase0.distribution_manifest",
+      "phase0.entrypoint_route_report",
+      "phase0.governance_verifier",
+      "phase0.import_boundary_report",
+      "phase0.local_artifact_manifest",
+      "phase0.registry_snapshot",
+      "phase0.repository_preservation_difference"
+    ],
+    "missing_or_deferred_rule": "A required absent artifact or separately deferred suite remains BLOCKED. This authorization does not permit inventing, weakening, or falsely claiming that evidence.",
+    "one_run_rule": "All nine active mandatory assertion results are produced in one evaluation bound to one registry, subject manifest, configuration, authorization set, and preselected evidence set.",
+    "publication_root": "repository-relative evidence/phase0/<run_id>, where run_id is derived exactly from the canonical pre-evaluation run manifest"
+  },
+  "independent_review_requirement": {
+    "authoring_session_rule": "Reader QA, self-review, or review in the project-authoring context is nonqualifying and is not represented as independent review.",
+    "implementation_gate_binding": "Before candidate-root construction, the independent-review capacity resolves to the effective AI-REVIEW-PROCESS-001 procedure and its effective zero-violation preapproval eligibility result. Neither artifact authorizes implementation or supplies a postroot review run.",
+    "non_waiver": "No principal approval or AI review may waive a FAIL, convert BLOCKED to PASS, expand this authorization, or approve live/provider/broker capability.",
+    "postroot_requirement": "After candidate-root construction, two separately initialized fresh-context, read-only, non-authoring review runs—one ADVERSARIAL_REQUIREMENTS_AND_CONFORMANCE_AUDIT and one INTEGRITY_AND_REPRODUCTION_AUDIT—remain mandatory for final acceptance. Their absence keeps Phase 0 BLOCKED.",
+    "reviewer_capacity": "INDEPENDENT_REVIEWER"
+  },
+  "logical_id": "phase0.implementation_authorization",
+  "owner_capacity": "PROJECT_OWNER",
+  "permitted_operations": [
+    "COPY_THE_EXACT_APPROVED_IMPLEMENTATION_PLAN_AND_THIS_EXACT_AUTHORIZATION_INTO_THE_REGISTERED_DOCS_TREE",
+    "CREATE_AND_EDIT_ONLY_THE_REPOSITORY_RELATIVE_SOURCE_TEST_TOOL_MANIFEST_AND_EVIDENCE_PATHS_IN_SOURCE_SCOPE",
+    "RUN_CPYTHON_3_11_STANDARD_LIBRARY_TOOLS_TESTS_AND_FIXED_ENTRY_POINTS_IN_ISOLATED_DENY_FIRST_MODE",
+    "CREATE_FRESH_LOCAL_STANDARD_LIBRARY_VIRTUAL_ENVIRONMENTS_INSIDE_EXCLUDED_TEMPORARY_PATHS_UNDER_ROOT_2E7C91F4",
+    "BUILD_AND_VERIFY_DETERMINISTIC_LOCAL_DISTRIBUTION_ARTIFACTS_WITH_ZERO_THIRD_PARTY_DEPENDENCIES",
+    "RUN_VALUE_BLIND_CREDENTIAL_LOCATION_AND_REDACTED_CONTENT_SCANS_OVER_THE_GOVERNED_CURRENT_TREE_AND_LOCAL_REACHABLE_HISTORY",
+    "RUN_THE_APPROVED_VALUE_SAFE_BEFORE_AFTER_PROTOTYPE_PRESERVATION_COMPARISON_WITHOUT_READING_SENSITIVE_VALUES",
+    "CREATE_FINALIZE_HASH_AND_VERIFY_THE_EVIDENCE_SCOPE_ARTIFACTS",
+    "CREATE_ONE_ACTIVE_ASSERTION_REGISTRY_AND_EVALUATE_ALL_NINE_KEYS_IN_ONE_RUN",
+    "RUN_THE_GOVERNANCE_VERIFIER_COMPUTE_THE_ASSERTION_AGGREGATE_AND_BUILD_THE_CANDIDATE_EVIDENCE_ROOT",
+    "USE_LOCAL_GIT_STATUS_DIFF_ADD_COMMIT_LOG_SHOW_LS_FILES_REV_PARSE_AND_READ_ONLY_OBJECT_INSPECTION_ONLY_WITHIN_ROOT_2E7C91F4",
+    "CREATE_TASK_SCOPED_LOCAL_COMMITS_WITH_THE_MESSAGES_NAMED_IN_THE_ACCEPTED_IMPLEMENTATION_PLAN"
+  ],
+  "prohibited_operations": [
+    "ANY_EDIT_MOVE_COPY_IMPORT_STAGE_COMMIT_RESET_CLEAN_BRANCH_WORKTREE_HISTORY_REWRITE_OR_DELETE_OPERATION_IN_A_PROTOTYPE",
+    "ANY_PROTOTYPE_SOURCE_RUNTIME_DATA_CONFIGURATION_ENVIRONMENT_OR_GIT_HISTORY_DEPENDENCY",
+    "ANY_REMOTE_CREATE_CONFIG_QUERY_FETCH_PULL_PUSH_CLONE_SUBMODULE_OR_OTHER_NETWORK_OPERATION",
+    "ANY_PACKAGE_MANAGER_REGISTRY_DOWNLOAD_DIRECT_URL_VCS_EDITABLE_OR_MUTABLE_LOCAL_DEPENDENCY",
+    "ANY_GIT_LFS_OPERATION_POINTER_COPY_OR_OBJECT_RETRIEVAL",
+    "ANY_PROVIDER_BROKER_REMOTE_DATABASE_HTTP_HTTPS_WEBSOCKET_DNS_SOCKET_OR_EXTERNAL_SERVICE_USE",
+    "ANY_LIVE_MARKET_DATA_LIVE_EXECUTION_PAPER_BROKER_ACCOUNT_ACCESS_ORDER_ROUTE_OR_CREDENTIAL_SCHEMA",
+    "ANY_PHASE_0A_DATA_FEASIBILITY_MARKET_DATA_REPLAY_STRATEGY_SIGNAL_RISK_ORDER_FILL_POSITION_PNL_OR_EDGE_WORK",
+    "ANY_DYNAMIC_PLUGIN_ENTRY_POINT_FILESYSTEM_DISCOVERY_ARBITRARY_IMPORT_EVAL_EXEC_PICKLE_MARSHAL_CTYPES_NATIVE_EXTENSION_SUBPROCESS_OR_SHELL_ESCAPE",
+    "ANY_CREDENTIAL_VALUE_ACCOUNT_IDENTIFIER_SECRET_FRAGMENT_PROXY_VALUE_REMOTE_URL_OR_SENSITIVE_ABSOLUTE_PATH_PUBLICATION",
+    "ANY_CREATION_OF_THE_DEFERRED_NORMATIVE_JSON_SCHEMA_FIXTURE_TEST_VECTOR_SUITE",
+    "ANY_POSTROOT_AI_REVIEW_APPROVAL_RECORD_ACCEPTANCE_INDEX_FINAL_RESULT_OR_PHASE_0_PASS_PUBLICATION_DURING_STEPS_9_THROUGH_13",
+    "ANY_AUTOMATIC_ADVANCEMENT_TO_PHASE_0A_OR_LATER_PHASE"
+  ],
+  "required_approver_capacities": [
+    "PROJECT_OWNER",
+    "RELEASE_OWNER",
+    "SECURITY_OWNER"
+  ],
+  "rollback_and_recovery": {
+    "after_implementation_begins": "Do not delete the governed root or rewrite history under this authorization. Stop, retain sanitized evidence, and make a new corrective commit only when the correction remains within the exact approved plan and source scope; otherwise obtain a new exact-hash authorization.",
+    "generated_temporary_state": "The executor may remove only plan-created excluded temporary venv, staging, and duplicate-build directories after resolving them under ROOT-2E7C91F4 and verifying they contain no user content. Finalized evidence is immutable and is never overwritten.",
+    "prototype_rollback": "NONE. Prototype state is never changed or restored.",
+    "repository_boundary_rollback": "The earlier repository-mutation authorization's narrow boundary-removal rollback expires when implementation creates an approved source commit. Any later boundary removal requires separate exact-hash authorization."
+  },
+  "sanitization": {
+    "absolute_path_map_included": false,
+    "account_identifiers_included": false,
+    "credential_values_included": false,
+    "provider_payloads_included": false,
+    "remote_urls_included": false
+  },
+  "schema_version": "1.0.0",
+  "source_scope": {
+    "allowed_repository_relative_paths": [
+      ".gitignore",
+      "README.md",
+      "docs/superpowers/**",
+      "evidence/phase0/**",
+      "manifests/phase0/**",
+      "phase0-dependency-lock.json",
+      "src/market_platform_foundation/**",
+      "tests/phase0/**",
+      "tools/phase0/**"
+    ],
+    "excluded_repository_relative_paths": [
+      ".git/**",
+      ".venv*/**",
+      "**/.env*",
+      "**/*credential*",
+      "**/*secret*",
+      "**/__pycache__/**",
+      "**/.pytest*/**",
+      "**/*.log",
+      "build/**",
+      "data/**",
+      "dist/**",
+      "node_modules/**"
+    ],
+    "external_read_only_exception": "Only the approved safe preservation comparison may enumerate and hash non-sensitive, non-excluded prototype files and Git status metadata. No prototype file becomes source, test input, runtime input, distribution input, or evidence payload.",
+    "root_id": "ROOT-2E7C91F4"
+  },
+  "status": "PENDING_EXACT_HASH_APPROVAL_AND_PREREQUISITES",
+  "stop_conditions": [
+    "ANY_AUTHORITY_HASH_MISMATCH_OR_AMBIGUOUS_APPROVAL",
+    "ROOT_2E7C91F4_RESOLUTION_CHANGE_REMOTE_APPEARANCE_OR_UNEXPECTED_WORKTREE_STATE",
+    "ANY_UNAUTHORIZED_PROTOTYPE_DRIFT_OR_BLOCKED_PRESERVATION_COMPARISON",
+    "ANY_NEED_FOR_THIRD_PARTY_DEPENDENCY_PACKAGE_MANAGER_NETWORK_ACCESS_OR_EXTERNAL_TOOL_DOWNLOAD",
+    "ANY_PROHIBITED_IMPORT_DYNAMIC_LOAD_PROCESS_ROUTE_NETWORK_ATTEMPT_OR_CREDENTIAL_EXPOSURE",
+    "ANY_NONZERO_UNRESOLVED_SECRET_OR_ACCOUNT_IDENTIFIER_FINDING",
+    "ANY_REQUIRED_EVIDENCE_THAT_CANNOT_BE_CREATED_WITHIN_SOURCE_AND_EVIDENCE_SCOPE",
+    "ANY_REQUEST_OR_IMPLEMENTATION_NEED_FOR_PHASE_0A_PROVIDER_BROKER_PAPER_LIVE_OR_STRATEGY_SCOPE",
+    "ANY_MATERIAL_CONFLICT_BETWEEN_IMPLEMENTATION_AND_THE_APPROVED_SPECIFICATION_PLAN_OR_ADRS"
+  ]
+}

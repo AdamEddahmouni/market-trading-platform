@@ -1,0 +1,2559 @@
+{
+  "changed_files": [
+    ".env.example",
+    "docs/providers/IBKR_OBSERVATIONAL.md",
+    "docs/superpowers/decisions/2026-08-23-adr-live-002-ibkr-gateway-observational.json",
+    "docs/superpowers/specs/2026-08-24-equity-data-candidate-duckdb-design.md",
+    "evidence/ui1/assistant-audit/conversations.json",
+    "evidence/ui1/assistant-audit/messages.json"
+  ],
+  "cheap_check_results": [
+    {
+      "check": "documentation",
+      "detail": "",
+      "status": "passed"
+    },
+    {
+      "check": "evidence-json",
+      "detail": "",
+      "status": "passed"
+    },
+    {
+      "check": "secret-redaction",
+      "detail": "",
+      "status": "passed"
+    }
+  ],
+  "discovery_seconds": 1.8610458999755792,
+  "errors": 0,
+  "expected_failures": 0,
+  "failures": 0,
+  "full_suite_required": true,
+  "global_reasons": [
+    "UNKNOWN_EXECUTABLE_PATH"
+  ],
+  "interrupted": false,
+  "mandatory_invariants": [
+    "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_correction_invisible_before_known_from",
+    "tests/fred/test_fred.py::FredRevisionTests::test_no_lookahead_current_revision",
+    "tests/phase0/test_offline_guard.py::OfflineGuardTests::test_ipv4_ipv6_loopback_and_dns_are_denied",
+    "tests/phase0/test_credential_audit.py::CredentialAuditTests::test_match_output_contains_no_value_or_context",
+    "tests/phase0/test_registry.py::RegistryTests::test_unknown_identifier_fails_closed",
+    "tests/fred/test_fred.py::FredNormalizeTests::test_missing_dot_is_unknown_not_zero",
+    "tests/eia/test_eia.py::EiaNormalizeTests::test_withheld_value_not_zero",
+    "tests/weather/test_weather_pit.py::WeatherForecastPitTests::test_issue_time_does_not_make_forecast_visible",
+    "tests/weather/test_weather_pit.py::WeatherRealizationPitTests::test_realization_is_hidden_before_its_availability",
+    "tests/cboe_options/test_cboe_semantics.py::CboeRequiredSemanticsTests::test_put_call_direction_prohibition",
+    "tests/cboe_options/test_cboe_semantics.py::CboeRequiredSemanticsTests::test_publisher_venue_separation_for_market_share_row",
+    "tests/cftc/test_cftc_cot.py::CotSourceOutageTests::test_source_unavailable_not_zero_positions",
+    "tests/providers/test_providers.py::ProviderContractTests::test_unconfigured_stubs_fail_closed",
+    "tests/market_data/test_observational_boundary.py::MarketDataNormalizationTests::test_provider_ticker_direction_is_not_ground_truth",
+    "tests/market_data/test_observational_boundary.py::MarketDataNormalizationTests::test_admission_requires_authorization",
+    "tests/market_data/test_observational_boundary.py::MarketDataNormalizationTests::test_live_and_replay_envelopes_preserve_pit_clocks",
+    "tests/contracts/test_futures_contract.py::FuturesCurveTests::test_positioning_snapshot_round_trip",
+    "tests/market_data/test_live_admission.py::LiveAdmissionTests::test_provider_disconnect_blocks",
+    "tests/market_data/test_live_pit_adversarial.py::LivePitAdversarialTests::test_capture_replay_equivalence",
+    "tests/runtime/test_pit_joins.py::PitJoinTests::test_missing_join_fail_closed",
+    "tests/market_data/test_live_runtime.py::LiveRuntimeTests::test_quota_exhaustion"
+  ],
+  "mode": "changed",
+  "not_run_suites": [],
+  "omitted_domains": [
+    "short-intelligence",
+    "sec",
+    "ui"
+  ],
+  "passes": 275,
+  "process_launches": 7,
+  "resource_heavy_workers": 2,
+  "schema_version": "1.0",
+  "selected_suites": [
+    "phase0",
+    "contracts",
+    "providers",
+    "runtime",
+    "validation"
+  ],
+  "selection_reasons": {
+    "contracts": [
+      "broad core diagnostic for required full checkpoint"
+    ],
+    "phase0": [
+      "broad core diagnostic for required full checkpoint"
+    ],
+    "providers": [
+      "broad core diagnostic for required full checkpoint"
+    ],
+    "runtime": [
+      "broad core diagnostic for required full checkpoint"
+    ],
+    "validation": [
+      "broad core diagnostic for required full checkpoint"
+    ]
+  },
+  "skip_details": [
+    {
+      "reason": "symlink creation is unavailable",
+      "selector": "tests/phase0/test_distribution.py::DistributionTests::test_symlink_or_reparse_escape_is_rejected",
+      "suite_id": "phase0"
+    }
+  ],
+  "skips": 1,
+  "started_at": "2026-08-24T13:43:23.439104+00:00",
+  "status": "passed",
+  "suite_results": [
+    {
+      "discovery_seconds": 0.0997986999573186,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 47,
+      "per_test_durations": [
+        {
+          "seconds": 0.008438299992121756,
+          "selector": "tests/phase0/test_analysis.py::AnalysisTests::test_direct_broker_import_is_found"
+        },
+        {
+          "seconds": 0.7150318999774754,
+          "selector": "tests/phase0/test_analysis.py::AnalysisTests::test_governed_source_has_no_prohibited_route"
+        },
+        {
+          "seconds": 0.0026508999872021377,
+          "selector": "tests/phase0/test_analysis.py::AnalysisTests::test_nonconstant_dynamic_import_is_blocking"
+        },
+        {
+          "seconds": 0.00014680001186206937,
+          "selector": "tests/phase0/test_assertions.py::AssertionTests::test_mandatory_set_is_exact"
+        },
+        {
+          "seconds": 0.00015009997878223658,
+          "selector": "tests/phase0/test_assertions.py::AssertionTests::test_mixed_run_is_rejected"
+        },
+        {
+          "seconds": 0.0004075999604538083,
+          "selector": "tests/phase0/test_assertions.py::AssertionTests::test_registry_has_one_active_key_per_mandatory_id"
+        },
+        {
+          "seconds": 0.003528699977323413,
+          "selector": "tests/phase0/test_assertions.py::AssertionTests::test_run_id_is_reproducible"
+        },
+        {
+          "seconds": 0.02506590000120923,
+          "selector": "tests/phase0/test_authority.py::AuthorityTests::test_active_path_escape_fails"
+        },
+        {
+          "seconds": 0.01337890001013875,
+          "selector": "tests/phase0/test_authority.py::AuthorityTests::test_approved_revision_3_is_the_only_active_authority"
+        },
+        {
+          "seconds": 0.01154620002489537,
+          "selector": "tests/phase0/test_authority.py::AuthorityTests::test_changed_active_specification_fails"
+        },
+        {
+          "seconds": 0.015036299999337643,
+          "selector": "tests/phase0/test_authority.py::AuthorityTests::test_conflicting_phase0_binding_fails"
+        },
+        {
+          "seconds": 0.02391330001410097,
+          "selector": "tests/phase0/test_authority.py::AuthorityTests::test_missing_active_logical_id_fails_closed"
+        },
+        {
+          "seconds": 0.010184199956711382,
+          "selector": "tests/phase0/test_authority.py::AuthorityTests::test_missing_approval_blocks"
+        },
+        {
+          "seconds": 0.014196600008290261,
+          "selector": "tests/phase0/test_authority.py::AuthorityTests::test_wrong_approval_binding_fails"
+        },
+        {
+          "seconds": 0.011983899981714785,
+          "selector": "tests/phase0/test_canonical.py::CanonicalTests::test_duplicate_key_is_rejected"
+        },
+        {
+          "seconds": 0.00017120002303272486,
+          "selector": "tests/phase0/test_canonical.py::CanonicalTests::test_recursive_key_order_and_utf8_lf"
+        },
+        {
+          "seconds": 0.002706300001591444,
+          "selector": "tests/phase0/test_canonical.py::CanonicalTests::test_writer_returns_file_hash"
+        },
+        {
+          "seconds": 0.00025179999647662044,
+          "selector": "tests/phase0/test_credential_audit.py::CredentialAuditTests::test_hash_named_sanitized_evidence_is_content_eligible"
+        },
+        {
+          "seconds": 0.00018269999418407679,
+          "selector": "tests/phase0/test_credential_audit.py::CredentialAuditTests::test_inventory_reports_only_opaque_ids"
+        },
+        {
+          "seconds": 0.00012610002886503935,
+          "selector": "tests/phase0/test_credential_audit.py::CredentialAuditTests::test_match_output_contains_no_value_or_context"
+        },
+        {
+          "seconds": 0.00012099999003112316,
+          "selector": "tests/phase0/test_credential_audit.py::CredentialAuditTests::test_private_env_is_rejected_without_opening"
+        },
+        {
+          "seconds": 0.00011249998351559043,
+          "selector": "tests/phase0/test_credential_audit.py::CredentialAuditTests::test_public_examples_require_literal_placeholders"
+        },
+        {
+          "seconds": 0.7993071999517269,
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_lf_checkout_policy_is_bound_into_distribution"
+        },
+        {
+          "seconds": 0.00035930000012740493,
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_lock_has_zero_third_party_dependencies"
+        },
+        {
+          "seconds": 0.530800599954091,
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_named_audit_modules_are_distributable"
+        },
+        {
+          "seconds": 0.8000781000009738,
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_revision_3_guidance_is_bound_into_distribution"
+        },
+        {
+          "seconds": 0.002285499998833984,
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_symlink_or_reparse_escape_is_rejected"
+        },
+        {
+          "seconds": 0.9812084999866784,
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_two_builds_are_byte_identical"
+        },
+        {
+          "seconds": 0.00019539997447282076,
+          "selector": "tests/phase0/test_offline_guard.py::OfflineGuardTests::test_install_is_idempotent_and_logs_sanitized_reason"
+        },
+        {
+          "seconds": 0.00016060000052675605,
+          "selector": "tests/phase0/test_offline_guard.py::OfflineGuardTests::test_ipv4_ipv6_loopback_and_dns_are_denied"
+        },
+        {
+          "seconds": 0.0013838000013493001,
+          "selector": "tests/phase0/test_offline_guard.py::OfflineGuardTests::test_phase0_tools_import_only_guard_at_module_scope"
+        },
+        {
+          "seconds": 0.00021049997303634882,
+          "selector": "tests/phase0/test_offline_guard.py::OfflineGuardTests::test_process_spawn_is_denied"
+        },
+        {
+          "seconds": 0.0008728000102564692,
+          "selector": "tests/phase0/test_pipeline.py::EvidenceTests::test_bundle_rejects_duplicate_logical_ids"
+        },
+        {
+          "seconds": 2.648571500030812,
+          "selector": "tests/phase0/test_pipeline.py::EvidenceTests::test_collector_excludes_generated_environment_paths"
+        },
+        {
+          "seconds": 2.730094900005497,
+          "selector": "tests/phase0/test_pipeline.py::EvidenceTests::test_collector_produces_required_step_10_11_ids"
+        },
+        {
+          "seconds": 0.003278899996075779,
+          "selector": "tests/phase0/test_pipeline.py::EvidenceTests::test_content_hash_resolves"
+        },
+        {
+          "seconds": 0.00019190000602975488,
+          "selector": "tests/phase0/test_pipeline.py::EvidenceTests::test_donor_preservation_declared_pass_cannot_hide_failed_comparison"
+        },
+        {
+          "seconds": 0.002325899957213551,
+          "selector": "tests/phase0/test_pipeline.py::EvidenceTests::test_finalized_artifact_cannot_be_overwritten"
+        },
+        {
+          "seconds": 0.00022209994494915009,
+          "selector": "tests/phase0/test_registry.py::RegistryTests::test_environment_cannot_supply_module"
+        },
+        {
+          "seconds": 0.0006873999955132604,
+          "selector": "tests/phase0/test_registry.py::RegistryTests::test_only_six_literal_entries_exist"
+        },
+        {
+          "seconds": 0.00015259999781847,
+          "selector": "tests/phase0/test_registry.py::RegistryTests::test_unknown_identifier_fails_closed"
+        },
+        {
+          "seconds": 0.0001534000039100647,
+          "selector": "tests/phase0/test_verifier.py::VerifierTests::test_blocked_precedes_pass"
+        },
+        {
+          "seconds": 0.0001818999880924821,
+          "selector": "tests/phase0/test_verifier.py::VerifierTests::test_candidate_root_is_order_independent"
+        },
+        {
+          "seconds": 0.002847400028258562,
+          "selector": "tests/phase0/test_verifier.py::VerifierTests::test_changed_member_is_rejected"
+        },
+        {
+          "seconds": 0.0001781000173650682,
+          "selector": "tests/phase0/test_verifier.py::VerifierTests::test_fail_precedes_blocked"
+        },
+        {
+          "seconds": 0.00015380000695586205,
+          "selector": "tests/phase0/test_verifier.py::VerifierTests::test_missing_result_is_blocked"
+        },
+        {
+          "seconds": 0.00018229999113827944,
+          "selector": "tests/phase0/test_verifier.py::VerifierTests::test_mixed_run_is_blocked"
+        },
+        {
+          "seconds": 0.0001430999836884439,
+          "selector": "tests/phase0/test_verifier.py::VerifierTests::test_postroot_members_are_excluded"
+        }
+      ],
+      "process_wall_seconds": 9.966974399983883,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [
+        {
+          "reason": "symlink creation is unavailable",
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_symlink_or_reparse_escape_is_rejected"
+        }
+      ],
+      "skips": 1,
+      "slowest_tests": [],
+      "status": "passed",
+      "suite_id": "phase0",
+      "tests_run": 48,
+      "unexpected_successes": 0,
+      "wall_seconds": 9.366228099970613,
+      "worker_error": "",
+      "worker_pid": 44088
+    },
+    {
+      "discovery_seconds": 0.3033504000050016,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 38,
+      "per_test_durations": [
+        {
+          "seconds": 0.0006810000049881637,
+          "selector": "tests/contracts/test_corporate_action_options.py::CorporateActionOptionsTests::test_adjusted_deliverable_sets_flag"
+        },
+        {
+          "seconds": 0.00039190001552924514,
+          "selector": "tests/contracts/test_corporate_action_options.py::CorporateActionOptionsTests::test_round_trip_from_chain_dict"
+        },
+        {
+          "seconds": 0.0003449000068940222,
+          "selector": "tests/contracts/test_corporate_action_options.py::CorporateActionOptionsTests::test_unknown_deliverable_blocks_surface"
+        },
+        {
+          "seconds": 0.00019910000264644623,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesContractTests::test_basis_definition_explicit"
+        },
+        {
+          "seconds": 0.00019019999308511615,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesContractTests::test_contract_distinguishes_family_from_instance"
+        },
+        {
+          "seconds": 0.00014720001490786672,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesContractTests::test_cot_publication_delay"
+        },
+        {
+          "seconds": 0.0002069000038318336,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesCurveTests::test_curve_snapshot_serialization"
+        },
+        {
+          "seconds": 0.00018009997438639402,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesCurveTests::test_positioning_snapshot_round_trip"
+        },
+        {
+          "seconds": 0.00022029998945072293,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesCurveTests::test_trend_baseline_round_trip"
+        },
+        {
+          "seconds": 0.0001737999846227467,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesNotionalTests::test_exposure_summary_missing_spec"
+        },
+        {
+          "seconds": 0.00017249997472390532,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesNotionalTests::test_notional_exposure"
+        },
+        {
+          "seconds": 0.00020910002058371902,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesNotionalTests::test_pnl_from_ticks_not_percentage"
+        },
+        {
+          "seconds": 0.00017140002455562353,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesQualityTests::test_curve_blocking_flags"
+        },
+        {
+          "seconds": 0.0001404000213369727,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesQualityTests::test_leverage_stress_blocking"
+        },
+        {
+          "seconds": 0.00017220003064721823,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesRollTests::test_lead_contract_not_always_nearest"
+        },
+        {
+          "seconds": 0.0008719000034034252,
+          "selector": "tests/contracts/test_futures_fixture_ingestion.py::FuturesFixtureIngestionTests::test_es_chain_round_trip"
+        },
+        {
+          "seconds": 0.00021460000425577164,
+          "selector": "tests/contracts/test_futures_fixture_ingestion.py::FuturesFixtureIngestionTests::test_from_dict_missing_fields"
+        },
+        {
+          "seconds": 0.0002682999474927783,
+          "selector": "tests/contracts/test_market_context_contract.py::MarketContextContractTests::test_author_id_from_handle_is_deterministic"
+        },
+        {
+          "seconds": 0.00019049999536946416,
+          "selector": "tests/contracts/test_market_context_contract.py::MarketContextContractTests::test_baseline_sentiment_separate_from_surprise"
+        },
+        {
+          "seconds": 0.00018700002692639828,
+          "selector": "tests/contracts/test_market_context_contract.py::MarketContextContractTests::test_catalyst_evidence_exposes_components"
+        },
+        {
+          "seconds": 0.00019430002430453897,
+          "selector": "tests/contracts/test_market_context_contract.py::MarketContextContractTests::test_expectation_snapshot_requires_available_time"
+        },
+        {
+          "seconds": 0.00028500001644715667,
+          "selector": "tests/contracts/test_market_context_contract.py::MarketContextContractTests::test_information_source_point_in_time_fields"
+        },
+        {
+          "seconds": 0.00022410001838579774,
+          "selector": "tests/contracts/test_market_context_contract.py::MarketContextContractTests::test_market_reaction_evidence_serializes_information_decay"
+        },
+        {
+          "seconds": 0.0002033999771811068,
+          "selector": "tests/contracts/test_market_context_contract.py::MarketContextContractTests::test_missing_expectation_fails_closed_for_surprise"
+        },
+        {
+          "seconds": 0.00024399999529123306,
+          "selector": "tests/contracts/test_options_contract.py::OptionContractTests::test_option_contract_round_trip_dict"
+        },
+        {
+          "seconds": 0.00020220002625137568,
+          "selector": "tests/contracts/test_options_contract.py::OptionQualityTests::test_surface_blocking_flags"
+        },
+        {
+          "seconds": 0.0004605000140145421,
+          "selector": "tests/contracts/test_options_fixture_ingestion.py::OptionsFixtureIngestionTests::test_biya_fixture_round_trip"
+        },
+        {
+          "seconds": 0.00019480002811178565,
+          "selector": "tests/contracts/test_options_fixture_ingestion.py::OptionsFixtureIngestionTests::test_from_dict_missing_fields"
+        },
+        {
+          "seconds": 0.00019649998284876347,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_13d_maps_to_activist_type"
+        },
+        {
+          "seconds": 0.00020029995357617736,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_13f_fails_closed_on_copyability"
+        },
+        {
+          "seconds": 0.0002384000108577311,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_derivative_participant_evidence_round_trip"
+        },
+        {
+          "seconds": 0.0002617000136524439,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_disclosure_bridge_preserves_available_time"
+        },
+        {
+          "seconds": 0.00019240000983700156,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_form4_compensation_not_directional"
+        },
+        {
+          "seconds": 0.00018820003606379032,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_form4_open_market_purchase_semantics"
+        },
+        {
+          "seconds": 0.00021049997303634882,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_identity_from_named_filer"
+        },
+        {
+          "seconds": 0.0001886999816633761,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_mechanism_unknown_fails_closed"
+        },
+        {
+          "seconds": 0.00021899997955188155,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_participant_id_deterministic"
+        },
+        {
+          "seconds": 0.00028690003091469407,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_query_participant_actions_respects_prediction_cutoff"
+        }
+      ],
+      "process_wall_seconds": 0.5115860999794677,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [],
+      "status": "passed",
+      "suite_id": "contracts",
+      "tests_run": 38,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.009916699957102537,
+      "worker_error": "",
+      "worker_pid": 27004
+    },
+    {
+      "discovery_seconds": 0.3173981999862008,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 100,
+      "per_test_durations": [
+        {
+          "seconds": 0.0002850999590009451,
+          "selector": "tests/providers/test_broker_fill_ids.py::BrokerFillEventFromRecordTests::test_missing_event_time_fails_closed"
+        },
+        {
+          "seconds": 0.00019950000569224358,
+          "selector": "tests/providers/test_broker_fill_ids.py::BrokerFillEventFromRecordTests::test_missing_receive_time_defaults_to_event_time"
+        },
+        {
+          "seconds": 0.0001928000128827989,
+          "selector": "tests/providers/test_broker_fill_ids.py::BrokerFillEventFromRecordTests::test_none_event_time_fails_closed"
+        },
+        {
+          "seconds": 0.00023509998572990298,
+          "selector": "tests/providers/test_broker_fill_ids.py::BrokerFillEventFromRecordTests::test_stamped_record_round_trips"
+        },
+        {
+          "seconds": 0.0003515999997034669,
+          "selector": "tests/providers/test_broker_fill_ids.py::EnsureBrokerFillIdsTests::test_backfill_is_deterministic"
+        },
+        {
+          "seconds": 0.0002744999947026372,
+          "selector": "tests/providers/test_broker_fill_ids.py::EnsureBrokerFillIdsTests::test_existing_fill_ids_are_preserved"
+        },
+        {
+          "seconds": 0.0002680000034160912,
+          "selector": "tests/providers/test_broker_fill_ids.py::EnsureBrokerFillIdsTests::test_same_price_size_fills_at_different_times_get_distinct_ids"
+        },
+        {
+          "seconds": 0.0004184000426903367,
+          "selector": "tests/providers/test_broker_fill_ids.py::EnsureBrokerFillIdsTests::test_timestamps_participate_in_identity"
+        },
+        {
+          "seconds": 0.0008046999573707581,
+          "selector": "tests/providers/test_chain_pit_envelope.py::ChainEnvelopeTests::test_enrich_chain_contract_event_accepts_venue_id"
+        },
+        {
+          "seconds": 0.002158000017516315,
+          "selector": "tests/providers/test_chain_pit_envelope.py::PitAlignmentTests::test_biya_chain_and_activity_counts_align_at_cutoff"
+        },
+        {
+          "seconds": 0.012966600013896823,
+          "selector": "tests/providers/test_chain_pit_envelope.py::PitAlignmentTests::test_bootstrap_configures_chain_providers"
+        },
+        {
+          "seconds": 0.0017985000158660114,
+          "selector": "tests/providers/test_chain_pit_envelope.py::PitAlignmentTests::test_futures_chain_uses_cme_venue"
+        },
+        {
+          "seconds": 0.0024837999953888357,
+          "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_configure_fixture_provider_composition"
+        },
+        {
+          "seconds": 0.0006236000335775316,
+          "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_fixture_futures_chain_es"
+        },
+        {
+          "seconds": 0.0005617999704554677,
+          "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_fixture_futures_chain_pit_cutoff"
+        },
+        {
+          "seconds": 0.0009545999928377569,
+          "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_fixture_option_chain_biya"
+        },
+        {
+          "seconds": 0.000694399990607053,
+          "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_fixture_option_chain_nvda_second_fixture"
+        },
+        {
+          "seconds": 0.0007322000456042588,
+          "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_fixture_option_chain_pit_cutoff"
+        },
+        {
+          "seconds": 0.00024829996982589364,
+          "selector": "tests/providers/test_futures_bridge_ofi.py::FuturesBridgeOfiTests::test_degraded_path_never_uses_zero_as_valid_ofi"
+        },
+        {
+          "seconds": 0.0002193999825976789,
+          "selector": "tests/providers/test_futures_bridge_ofi.py::FuturesBridgeOfiTests::test_first_fetch_degraded_without_prev"
+        },
+        {
+          "seconds": 0.00024349999148398638,
+          "selector": "tests/providers/test_futures_bridge_ofi.py::FuturesBridgeOfiTests::test_second_fetch_computes_ofi_with_metadata"
+        },
+        {
+          "seconds": 0.00036449998151510954,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsAdapterTests::test_biya_symbol_unavailable"
+        },
+        {
+          "seconds": 0.0007651000050827861,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsAdapterTests::test_fixture_ingest_is_deterministic"
+        },
+        {
+          "seconds": 0.00044919998617842793,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsAdapterTests::test_pit_cutoff_excludes_future_prints"
+        },
+        {
+          "seconds": 0.0004331000382080674,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsAdapterTests::test_threshold_gate_surfaces_failures"
+        },
+        {
+          "seconds": 0.005319399992004037,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsLedgerTests::test_large_transactions_available_for_nvda"
+        },
+        {
+          "seconds": 0.006659400009084493,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsLedgerTests::test_large_transactions_unavailable_for_biya"
+        },
+        {
+          "seconds": 0.00048459996469318867,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsUiTests::test_capabilities_show_large_transactions_available"
+        },
+        {
+          "seconds": 0.0002315999590791762,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsUiTests::test_workspace_large_transactions_payload"
+        },
+        {
+          "seconds": 0.00019649998284876347,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsUiTests::test_workspace_large_transactions_unavailable_for_biya"
+        },
+        {
+          "seconds": 0.001109600008931011,
+          "selector": "tests/providers/test_options.py::OptionsAdapterTests::test_fixture_ingest_is_deterministic"
+        },
+        {
+          "seconds": 0.0005594000103883445,
+          "selector": "tests/providers/test_options.py::OptionsAdapterTests::test_liquidity_gate_surfaces_failures"
+        },
+        {
+          "seconds": 0.0003176000318489969,
+          "selector": "tests/providers/test_options.py::OptionsAdapterTests::test_nvda_symbol_unavailable"
+        },
+        {
+          "seconds": 0.0004746000049635768,
+          "selector": "tests/providers/test_options.py::OptionsAdapterTests::test_pit_cutoff_excludes_future_activity"
+        },
+        {
+          "seconds": 0.005120599991641939,
+          "selector": "tests/providers/test_options.py::OptionsLedgerTests::test_options_available_for_biya"
+        },
+        {
+          "seconds": 0.007353799999691546,
+          "selector": "tests/providers/test_options.py::OptionsLedgerTests::test_options_unavailable_for_nvda"
+        },
+        {
+          "seconds": 0.00037620001239702106,
+          "selector": "tests/providers/test_options.py::OptionsUiTests::test_capabilities_show_options_available"
+        },
+        {
+          "seconds": 2.06063040002482,
+          "selector": "tests/providers/test_options.py::OptionsUiTests::test_workspace_options_payload"
+        },
+        {
+          "seconds": 2.0366038999636658,
+          "selector": "tests/providers/test_options.py::OptionsUiTests::test_workspace_options_unavailable_for_nvda"
+        },
+        {
+          "seconds": 2.0323602999560535,
+          "selector": "tests/providers/test_options_chain_projection.py::OptionsChainProjectionTests::test_biya_workspace_includes_chain_snapshot"
+        },
+        {
+          "seconds": 2.0498778999899514,
+          "selector": "tests/providers/test_options_chain_projection.py::OptionsChainProjectionTests::test_nvda_workspace_chain_snapshot"
+        },
+        {
+          "seconds": 2.049159799993504,
+          "selector": "tests/providers/test_options_chain_projection.py::OptionsChainProjectionTests::test_unknown_symbol_chain_unavailable"
+        },
+        {
+          "seconds": 2.051244600035716,
+          "selector": "tests/providers/test_options_dealer_projection.py::OptionsDealerProjectionTests::test_biya_workspace_includes_dealer_snapshot"
+        },
+        {
+          "seconds": 2.033413400000427,
+          "selector": "tests/providers/test_options_dealer_projection.py::OptionsDealerProjectionTests::test_nvda_chain_only_dealer_snapshot"
+        },
+        {
+          "seconds": 2.015425799996592,
+          "selector": "tests/providers/test_options_event_vol_projection.py::OptionsEventVolProjectionTests::test_biya_workspace_event_vol_unavailable"
+        },
+        {
+          "seconds": 0.007938300026580691,
+          "selector": "tests/providers/test_options_event_vol_projection.py::OptionsEventVolProjectionTests::test_earnings_fixture_pit_discipline"
+        },
+        {
+          "seconds": 2.042378699989058,
+          "selector": "tests/providers/test_options_event_vol_projection.py::OptionsEventVolProjectionTests::test_nvda_chain_payload_includes_event_vol_snapshot"
+        },
+        {
+          "seconds": 2.0491144999978133,
+          "selector": "tests/providers/test_options_execution_projection.py::OptionsExecutionProjectionTests::test_biya_workspace_execution_when_activities_available"
+        },
+        {
+          "seconds": 0.0069197999546304345,
+          "selector": "tests/providers/test_options_execution_projection.py::OptionsExecutionProjectionTests::test_execution_fixture_pit_discipline"
+        },
+        {
+          "seconds": 2.0302178999991156,
+          "selector": "tests/providers/test_options_execution_projection.py::OptionsExecutionProjectionTests::test_nvda_chain_payload_includes_execution_snapshot"
+        },
+        {
+          "seconds": 2.047153400024399,
+          "selector": "tests/providers/test_options_r_o6_projection.py::OptionsRO6ProjectionTests::test_biya_workspace_includes_r_o6_research"
+        },
+        {
+          "seconds": 2.03260690002935,
+          "selector": "tests/providers/test_options_r_o6_projection.py::OptionsRO6ProjectionTests::test_nvda_workspace_includes_r_o6_research"
+        },
+        {
+          "seconds": 2.0326024999958463,
+          "selector": "tests/providers/test_options_r_o6_projection.py::OptionsRO6ProjectionTests::test_unknown_symbol_r_o6_fail_closed"
+        },
+        {
+          "seconds": 2.051537899998948,
+          "selector": "tests/providers/test_options_strategy_projection.py::OptionsStrategyProjectionTests::test_biya_workspace_strategy_when_activities_available"
+        },
+        {
+          "seconds": 2.0329524999833666,
+          "selector": "tests/providers/test_options_strategy_projection.py::OptionsStrategyProjectionTests::test_nvda_chain_payload_includes_strategy_snapshot"
+        },
+        {
+          "seconds": 0.006580099987331778,
+          "selector": "tests/providers/test_options_strategy_projection.py::OptionsStrategyProjectionTests::test_strategy_fixture_pit_discipline"
+        },
+        {
+          "seconds": 0.00031569995917379856,
+          "selector": "tests/providers/test_order_book.py::OrderBookAdapterTests::test_biya_symbol_unavailable"
+        },
+        {
+          "seconds": 0.0021287999697960913,
+          "selector": "tests/providers/test_order_book.py::OrderBookAdapterTests::test_fixture_ingest_is_deterministic"
+        },
+        {
+          "seconds": 0.0011552000069059432,
+          "selector": "tests/providers/test_order_book.py::OrderBookAdapterTests::test_imbalance_direction_is_derived"
+        },
+        {
+          "seconds": 0.0007617000374011695,
+          "selector": "tests/providers/test_order_book.py::OrderBookAdapterTests::test_pit_cutoff_excludes_future_snapshots"
+        },
+        {
+          "seconds": 0.006255100015550852,
+          "selector": "tests/providers/test_order_book.py::OrderBookLedgerTests::test_order_book_available_for_nvda"
+        },
+        {
+          "seconds": 0.004549300007056445,
+          "selector": "tests/providers/test_order_book.py::OrderBookLedgerTests::test_order_book_unavailable_for_biya"
+        },
+        {
+          "seconds": 0.0003244999679736793,
+          "selector": "tests/providers/test_order_book.py::OrderBookUiTests::test_capabilities_show_order_book_available"
+        },
+        {
+          "seconds": 0.00028149998979642987,
+          "selector": "tests/providers/test_order_book.py::OrderBookUiTests::test_workspace_order_book_payload"
+        },
+        {
+          "seconds": 0.0001849000109359622,
+          "selector": "tests/providers/test_order_book.py::OrderBookUiTests::test_workspace_order_book_unavailable_for_biya"
+        },
+        {
+          "seconds": 0.0005566999898292124,
+          "selector": "tests/providers/test_order_flow.py::OrderFlowAdapterTests::test_biya_symbol_unavailable"
+        },
+        {
+          "seconds": 0.0009938000002875924,
+          "selector": "tests/providers/test_order_flow.py::OrderFlowAdapterTests::test_fixture_ingest_is_deterministic"
+        },
+        {
+          "seconds": 0.0010666000307537615,
+          "selector": "tests/providers/test_order_flow.py::OrderFlowAdapterTests::test_pit_cutoff_excludes_future_bars"
+        },
+        {
+          "seconds": 0.0009620999917387962,
+          "selector": "tests/providers/test_order_flow.py::OrderFlowAdapterTests::test_unknown_aggressor_stays_unknown"
+        },
+        {
+          "seconds": 0.005008100008126348,
+          "selector": "tests/providers/test_order_flow.py::OrderFlowLedgerTests::test_order_flow_available_for_nvda"
+        },
+        {
+          "seconds": 0.004904799978248775,
+          "selector": "tests/providers/test_order_flow.py::OrderFlowLedgerTests::test_order_flow_unavailable_for_biya"
+        },
+        {
+          "seconds": 0.003964299976360053,
+          "selector": "tests/providers/test_order_flow.py::OrderFlowUiTests::test_capabilities_show_order_flow_available"
+        },
+        {
+          "seconds": 0.000845499977003783,
+          "selector": "tests/providers/test_order_flow.py::OrderFlowUiTests::test_workspace_order_flow_payload"
+        },
+        {
+          "seconds": 0.001444399997126311,
+          "selector": "tests/providers/test_provider_catalyst.py::CatalystAdapterTests::test_fixture_ingest_is_deterministic"
+        },
+        {
+          "seconds": 0.0008808000129647553,
+          "selector": "tests/providers/test_provider_catalyst.py::CatalystAdapterTests::test_nvda_symbol_unavailable"
+        },
+        {
+          "seconds": 0.0014939000247977674,
+          "selector": "tests/providers/test_provider_catalyst.py::CatalystAdapterTests::test_pit_cutoff_excludes_future_activity"
+        },
+        {
+          "seconds": 0.0055822000140324235,
+          "selector": "tests/providers/test_provider_catalyst.py::CatalystLedgerTests::test_catalyst_available_for_boxl"
+        },
+        {
+          "seconds": 0.12270910001825541,
+          "selector": "tests/providers/test_provider_catalyst.py::CatalystLedgerTests::test_catalyst_unavailable_for_nvda"
+        },
+        {
+          "seconds": 0.0003519000019878149,
+          "selector": "tests/providers/test_provider_catalyst.py::CatalystUiTests::test_capabilities_show_catalyst_available"
+        },
+        {
+          "seconds": 0.04464859998552129,
+          "selector": "tests/providers/test_provider_catalyst.py::CatalystUiTests::test_workspace_catalyst_payload"
+        },
+        {
+          "seconds": 0.00038459995994344354,
+          "selector": "tests/providers/test_provider_catalyst.py::CatalystUiTests::test_workspace_catalyst_unavailable_for_nvda"
+        },
+        {
+          "seconds": 0.0008749999688006938,
+          "selector": "tests/providers/test_providers.py::EdgarAdapterTests::test_amendment_ordering_after_base_filing"
+        },
+        {
+          "seconds": 0.0008538999827578664,
+          "selector": "tests/providers/test_providers.py::EdgarAdapterTests::test_fixture_ingest_is_deterministic"
+        },
+        {
+          "seconds": 0.0004710000357590616,
+          "selector": "tests/providers/test_providers.py::EdgarAdapterTests::test_pit_cutoff_excludes_future_filings"
+        },
+        {
+          "seconds": 0.00034899997990578413,
+          "selector": "tests/providers/test_providers.py::EdgarAdapterTests::test_unknown_symbol_unavailable"
+        },
+        {
+          "seconds": 0.0005740000051446259,
+          "selector": "tests/providers/test_providers.py::ImportBoundaryTests::test_features_do_not_import_adapters"
+        },
+        {
+          "seconds": 0.0020934000494889915,
+          "selector": "tests/providers/test_providers.py::ImportBoundaryTests::test_strategy_package_has_no_http_adapter_imports"
+        },
+        {
+          "seconds": 0.00022569997236132622,
+          "selector": "tests/providers/test_providers.py::ProviderContractTests::test_default_composition_uses_stubs"
+        },
+        {
+          "seconds": 0.0002923999563790858,
+          "selector": "tests/providers/test_providers.py::ProviderContractTests::test_unconfigured_stubs_fail_closed"
+        },
+        {
+          "seconds": 0.000956700008828193,
+          "selector": "tests/providers/test_providers.py::UiDisclosureProjectionTests::test_capabilities_show_disclosure_available"
+        },
+        {
+          "seconds": 0.02013800002168864,
+          "selector": "tests/providers/test_providers.py::UiDisclosureProjectionTests::test_workspace_disclosure_payload"
+        },
+        {
+          "seconds": 0.0008764000376686454,
+          "selector": "tests/providers/test_providers.py::WhaleLedgerTests::test_capability_surface_allows_entitled_disclosure"
+        },
+        {
+          "seconds": 0.00019880000036209822,
+          "selector": "tests/providers/test_providers.py::WhaleLedgerTests::test_dedup_on_append"
+        },
+        {
+          "seconds": 0.00015699997311457992,
+          "selector": "tests/providers/test_providers.py::WhaleLedgerTests::test_institutional_unavailable_without_ledger"
+        },
+        {
+          "seconds": 0.0007313999813050032,
+          "selector": "tests/providers/test_providers.py::WhaleLedgerTests::test_regulatory_disclosure_available_with_ledger"
+        },
+        {
+          "seconds": 0.0004113999893888831,
+          "selector": "tests/providers/test_recorded_order_flow.py::RecordedOrderFlowProviderTests::test_factory_defaults_to_fixture_provider"
+        },
+        {
+          "seconds": 0.0004694999661296606,
+          "selector": "tests/providers/test_recorded_order_flow.py::RecordedOrderFlowProviderTests::test_factory_live_gate_selects_recorded_provider"
+        },
+        {
+          "seconds": 0.0005984000163152814,
+          "selector": "tests/providers/test_recorded_order_flow.py::RecordedOrderFlowProviderTests::test_fixture_provider_uses_classify_bar_delta_provenance"
+        },
+        {
+          "seconds": 0.0006000999710522592,
+          "selector": "tests/providers/test_recorded_order_flow.py::RecordedOrderFlowProviderTests::test_recorded_provider_pit_filters_bars"
+        },
+        {
+          "seconds": 0.0004363000043667853,
+          "selector": "tests/providers/test_recorded_order_flow.py::RecordedOrderFlowProviderTests::test_recorded_provider_unavailable_when_fixture_missing"
+        }
+      ],
+      "process_wall_seconds": 41.11823949997779,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [],
+      "status": "passed",
+      "suite_id": "providers",
+      "tests_run": 100,
+      "unexpected_successes": 0,
+      "wall_seconds": 40.460766199976206,
+      "worker_error": "",
+      "worker_pid": 31508
+    },
+    {
+      "discovery_seconds": 0.2580252999905497,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 22,
+      "per_test_durations": [
+        {
+          "seconds": 0.00026220001745969057,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_as_of_returns_visible_version"
+        },
+        {
+          "seconds": 0.00019099999917671084,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_correction_invisible_before_known_from"
+        },
+        {
+          "seconds": 0.00016459997277706861,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_market_time_before_valid_from_is_none"
+        },
+        {
+          "seconds": 0.0002172000240534544,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_missing_known_from_rejected"
+        },
+        {
+          "seconds": 0.00024480000138282776,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_open_ended_known_to_visible"
+        },
+        {
+          "seconds": 0.00021810003090649843,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_overlap_append_rejected"
+        },
+        {
+          "seconds": 0.00016150000737980008,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_unknown_entity_is_none"
+        },
+        {
+          "seconds": 0.0006464000325649977,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_corporate_registry_uses_knowledge_visibility"
+        },
+        {
+          "seconds": 0.0009148999815806746,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_o7_fail_closed_when_calendar_unavailable"
+        },
+        {
+          "seconds": 0.0017026999848894775,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_o7_uses_joined_earnings_calendar"
+        },
+        {
+          "seconds": 0.00031849998049438,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_resolve_futures_spec_default_es"
+        },
+        {
+          "seconds": 0.00022689998149871826,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_dividend_restatement"
+        },
+        {
+          "seconds": 0.00023220002185553312,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_earnings_calendar_revision"
+        },
+        {
+          "seconds": 0.0001694000093266368,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_futures_spec_correction"
+        },
+        {
+          "seconds": 0.00015460001304745674,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_missing_join_fail_closed"
+        },
+        {
+          "seconds": 0.00016170000890269876,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_options_oi_restatement"
+        },
+        {
+          "seconds": 0.0006441999576054513,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_p0_s1_gate_pass"
+        },
+        {
+          "seconds": 0.0001784000196494162,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_symbol_mapping"
+        },
+        {
+          "seconds": 0.000255199964158237,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_catalyst_attention_runtime_from_summaries"
+        },
+        {
+          "seconds": 0.06285000004572794,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_corporate_registry_pit_filters"
+        },
+        {
+          "seconds": 0.0010501999640837312,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_registry_from_extraction_summaries"
+        },
+        {
+          "seconds": 0.006174500042106956,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_workspace_exposes_corporate_registry_and_catalyst_runtime"
+        }
+      ],
+      "process_wall_seconds": 0.5368104000226595,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [],
+      "status": "passed",
+      "suite_id": "runtime",
+      "tests_run": 22,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.07771380001213402,
+      "worker_error": "",
+      "worker_pid": 43964
+    },
+    {
+      "discovery_seconds": 0.23164210002869368,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 47,
+      "per_test_durations": [
+        {
+          "seconds": 0.0002334999735467136,
+          "selector": "tests/validation/test_benchmark.py::BenchmarkTests::test_operation_measurements_are_informational_not_threshold_gates"
+        },
+        {
+          "seconds": 1.1498751000035554,
+          "selector": "tests/validation/test_benchmark.py::BenchmarkTests::test_optional_fast_command_records_subprocess_measurement"
+        },
+        {
+          "seconds": 0.39914629998384044,
+          "selector": "tests/validation/test_benchmark.py::BenchmarkTests::test_report_is_written_only_through_explicit_write_call"
+        },
+        {
+          "seconds": 0.38687350001418963,
+          "selector": "tests/validation/test_benchmark.py::BenchmarkTests::test_report_measures_startup_worker_and_minimum_production_operations"
+        },
+        {
+          "seconds": 0.0002321999636478722,
+          "selector": "tests/validation/test_benchmark.py::BenchmarkTests::test_unavailable_operation_has_reason_and_no_fabricated_timing"
+        },
+        {
+          "seconds": 0.0060190000222064555,
+          "selector": "tests/validation/test_mutation_verification.py::MutationVerificationTests::test_apply_mutation_requires_one_unambiguous_match"
+        },
+        {
+          "seconds": 0.00023819995112717152,
+          "selector": "tests/validation/test_mutation_verification.py::MutationVerificationTests::test_required_failure_modes_are_declared"
+        },
+        {
+          "seconds": 0.4053694999893196,
+          "selector": "tests/validation/test_replay_store_loading.py::ReplayStoreLoadingTests::test_verified_payload_is_reused_but_mutable_state_is_not_shared"
+        },
+        {
+          "seconds": 0.00047639996046200395,
+          "selector": "tests/validation/test_run_all_tests_wrapper.py::RunAllTestsWrapperTests::test_delegates_to_validate_full_and_preserves_exit_status"
+        },
+        {
+          "seconds": 0.0009068999788723886,
+          "selector": "tests/validation/test_transition_stream_loading.py::TransitionStreamLoadingTests::test_default_fixture_bytes_are_read_once_and_results_are_independent"
+        },
+        {
+          "seconds": 0.007104700023774058,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_atomic_json_write_replaces_target_without_temp_residue"
+        },
+        {
+          "seconds": 0.009252099960576743,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_benchmark_mode_delegates_to_informational_tool"
+        },
+        {
+          "seconds": 0.3376103999908082,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_explicit_selector_batch_runs_before_selected_suites"
+        },
+        {
+          "seconds": 0.17280890000984073,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_fail_fast_stops_scheduling_new_serial_suites"
+        },
+        {
+          "seconds": 0.17321689997334033,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_full_clears_live_gates_in_child_only"
+        },
+        {
+          "seconds": 0.1839449999970384,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_live_sets_only_selected_provider_gates_in_child"
+        },
+        {
+          "seconds": 0.2624153000069782,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_structured_aggregate_is_independent_of_completion_order"
+        },
+        {
+          "seconds": 0.0011828999849967659,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_weather_live_gate_is_registered_without_credential_gate"
+        },
+        {
+          "seconds": 0.36746280000079423,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_worker_crash_and_malformed_json_are_explicit_errors"
+        },
+        {
+          "seconds": 0.4506029000040144,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_baseline_comparison_detects_added_removed_and_modified"
+        },
+        {
+          "seconds": 0.011762599984649569,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_doc_only_change_runs_only_cheap_checks"
+        },
+        {
+          "seconds": 0.009344400023110211,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_evidence_only_change_runs_json_and_redaction_checks"
+        },
+        {
+          "seconds": 0.3950874999864027,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_git_changes_include_modified_deleted_and_untracked_nonignored"
+        },
+        {
+          "seconds": 0.011362699966412038,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_modes_enforce_offline_live_and_extended_boundaries"
+        },
+        {
+          "seconds": 0.00840510003035888,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_normalization_rejects_traversal_and_absolute_paths"
+        },
+        {
+          "seconds": 0.01238780003041029,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_provider_leaf_change_selects_owner_neighbor_and_invariants"
+        },
+        {
+          "seconds": 0.010280999995302409,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_shared_change_sets_full_required_but_selects_diagnostics"
+        },
+        {
+          "seconds": 0.008781599986832589,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_test_only_change_does_not_fan_out_to_neighbors"
+        },
+        {
+          "seconds": 0.009975900000426918,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_unknown_executable_path_fails_safe"
+        },
+        {
+          "seconds": 0.005099500005599111,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_allows_explained_intentionally_absent_directory"
+        },
+        {
+          "seconds": 0.0052201999933458865,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_loads_typed_immutable_manifest"
+        },
+        {
+          "seconds": 0.007181700028013438,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_absent_entry_without_reason"
+        },
+        {
+          "seconds": 0.005134499981068075,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_duplicate_owned_directories"
+        },
+        {
+          "seconds": 0.004526900011114776,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_duplicate_suite_ids"
+        },
+        {
+          "seconds": 0.008730300003662705,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_existing_unclassified_test_directory"
+        },
+        {
+          "seconds": 0.004983799997717142,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_invalid_mandatory_selector"
+        },
+        {
+          "seconds": 0.027111600036732852,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_invalid_safety_domain_and_glob"
+        },
+        {
+          "seconds": 0.005054200009908527,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_live_suite_in_offline_full_tier"
+        },
+        {
+          "seconds": 0.004841800022404641,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_missing_configured_directory"
+        },
+        {
+          "seconds": 0.008206299971789122,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_missing_mandatory_selector_target"
+        },
+        {
+          "seconds": 0.03970709996065125,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_repository_manifest_classifies_every_test_directory"
+        },
+        {
+          "seconds": 0.1821015999885276,
+          "selector": "tests/validation/test_validation_worker.py::ValidationWorkerTests::test_cli_emits_one_json_document"
+        },
+        {
+          "seconds": 0.007649300037883222,
+          "selector": "tests/validation/test_validation_worker.py::ValidationWorkerTests::test_exact_selector_does_not_require_package_directories"
+        },
+        {
+          "seconds": 0.055620099999941885,
+          "selector": "tests/validation/test_validation_worker.py::ValidationWorkerTests::test_fixture_profile_counts_repository_fixture_opens"
+        },
+        {
+          "seconds": 0.038067399989813566,
+          "selector": "tests/validation/test_validation_worker.py::ValidationWorkerTests::test_missing_selector_is_an_explicit_worker_error"
+        },
+        {
+          "seconds": 0.0131375000346452,
+          "selector": "tests/validation/test_validation_worker.py::ValidationWorkerTests::test_selector_results_are_deterministically_ordered"
+        },
+        {
+          "seconds": 0.016806600033305585,
+          "selector": "tests/validation/test_validation_worker.py::ValidationWorkerTests::test_structured_counts_come_from_test_result"
+        }
+      ],
+      "process_wall_seconds": 5.837440799979959,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [],
+      "status": "passed",
+      "suite_id": "validation",
+      "tests_run": 47,
+      "unexpected_successes": 0,
+      "wall_seconds": 5.2323722000001,
+      "worker_error": "",
+      "worker_pid": 34944,
+      "worker_stderr": "warning: unable to access 'C:\\Users\\adame/.config/git/ignore': Permission denied\nwarning: unable to access 'C:\\Users\\adame/.config/git/ignore': Permission denied"
+    }
+  ],
+  "tests_run": 276,
+  "unexpected_successes": 0,
+  "wall_seconds": 58.59872569999425,
+  "worker_results": [
+    {
+      "discovery_seconds": 0.017444900004193187,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 1,
+      "per_test_durations": [
+        {
+          "seconds": 6.399996345862746e-05,
+          "selector": "tests/phase0/test_offline_guard.py::OfflineGuardTests::test_ipv4_ipv6_loopback_and_dns_are_denied"
+        }
+      ],
+      "process_wall_seconds": 0.20227949996478856,
+      "schema_version": "1.0",
+      "selectors": [
+        "tests/phase0/test_offline_guard.py::OfflineGuardTests::test_ipv4_ipv6_loopback_and_dns_are_denied"
+      ],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [],
+      "status": "passed",
+      "suite_id": "mandatory-isolated-security-offline-network-denial",
+      "tests_run": 1,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.00010220002150163054,
+      "worker_error": "",
+      "worker_pid": 608
+    },
+    {
+      "discovery_seconds": 0.6333863000036217,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 20,
+      "per_test_durations": [
+        {
+          "seconds": 0.0004883999936282635,
+          "selector": "tests/cboe_options/test_cboe_semantics.py::CboeRequiredSemanticsTests::test_publisher_venue_separation_for_market_share_row"
+        },
+        {
+          "seconds": 0.0010359000298194587,
+          "selector": "tests/cboe_options/test_cboe_semantics.py::CboeRequiredSemanticsTests::test_put_call_direction_prohibition"
+        },
+        {
+          "seconds": 0.00011940003605559468,
+          "selector": "tests/cftc/test_cftc_cot.py::CotSourceOutageTests::test_source_unavailable_not_zero_positions"
+        },
+        {
+          "seconds": 2.6300025638192892e-05,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesCurveTests::test_positioning_snapshot_round_trip"
+        },
+        {
+          "seconds": 1.2400036212056875e-05,
+          "selector": "tests/eia/test_eia.py::EiaNormalizeTests::test_withheld_value_not_zero"
+        },
+        {
+          "seconds": 1.2100033927708864e-05,
+          "selector": "tests/fred/test_fred.py::FredNormalizeTests::test_missing_dot_is_unknown_not_zero"
+        },
+        {
+          "seconds": 0.00029850000282749534,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_no_lookahead_current_revision"
+        },
+        {
+          "seconds": 0.00010969996219500899,
+          "selector": "tests/market_data/test_live_admission.py::LiveAdmissionTests::test_provider_disconnect_blocks"
+        },
+        {
+          "seconds": 0.0009814999648369849,
+          "selector": "tests/market_data/test_live_pit_adversarial.py::LivePitAdversarialTests::test_capture_replay_equivalence"
+        },
+        {
+          "seconds": 5.6999968364834785e-05,
+          "selector": "tests/market_data/test_live_runtime.py::LiveRuntimeTests::test_quota_exhaustion"
+        },
+        {
+          "seconds": 2.0000035874545574e-05,
+          "selector": "tests/market_data/test_observational_boundary.py::MarketDataNormalizationTests::test_admission_requires_authorization"
+        },
+        {
+          "seconds": 0.00010559998918324709,
+          "selector": "tests/market_data/test_observational_boundary.py::MarketDataNormalizationTests::test_live_and_replay_envelopes_preserve_pit_clocks"
+        },
+        {
+          "seconds": 2.6100024115294218e-05,
+          "selector": "tests/market_data/test_observational_boundary.py::MarketDataNormalizationTests::test_provider_ticker_direction_is_not_ground_truth"
+        },
+        {
+          "seconds": 2.3900007363408804e-05,
+          "selector": "tests/phase0/test_credential_audit.py::CredentialAuditTests::test_match_output_contains_no_value_or_context"
+        },
+        {
+          "seconds": 2.4699955247342587e-05,
+          "selector": "tests/phase0/test_registry.py::RegistryTests::test_unknown_identifier_fails_closed"
+        },
+        {
+          "seconds": 0.0001306000049225986,
+          "selector": "tests/providers/test_providers.py::ProviderContractTests::test_unconfigured_stubs_fail_closed"
+        },
+        {
+          "seconds": 5.6500022765249014e-05,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_correction_invisible_before_known_from"
+        },
+        {
+          "seconds": 2.970005152747035e-05,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_missing_join_fail_closed"
+        },
+        {
+          "seconds": 0.00016549997963011265,
+          "selector": "tests/weather/test_weather_pit.py::WeatherForecastPitTests::test_issue_time_does_not_make_forecast_visible"
+        },
+        {
+          "seconds": 3.91000066883862e-05,
+          "selector": "tests/weather/test_weather_pit.py::WeatherRealizationPitTests::test_realization_is_hidden_before_its_availability"
+        }
+      ],
+      "process_wall_seconds": 0.8739168000174686,
+      "schema_version": "1.0",
+      "selectors": [
+        "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_correction_invisible_before_known_from",
+        "tests/fred/test_fred.py::FredRevisionTests::test_no_lookahead_current_revision",
+        "tests/phase0/test_credential_audit.py::CredentialAuditTests::test_match_output_contains_no_value_or_context",
+        "tests/phase0/test_registry.py::RegistryTests::test_unknown_identifier_fails_closed",
+        "tests/fred/test_fred.py::FredNormalizeTests::test_missing_dot_is_unknown_not_zero",
+        "tests/eia/test_eia.py::EiaNormalizeTests::test_withheld_value_not_zero",
+        "tests/weather/test_weather_pit.py::WeatherForecastPitTests::test_issue_time_does_not_make_forecast_visible",
+        "tests/weather/test_weather_pit.py::WeatherRealizationPitTests::test_realization_is_hidden_before_its_availability",
+        "tests/cboe_options/test_cboe_semantics.py::CboeRequiredSemanticsTests::test_put_call_direction_prohibition",
+        "tests/cboe_options/test_cboe_semantics.py::CboeRequiredSemanticsTests::test_publisher_venue_separation_for_market_share_row",
+        "tests/cftc/test_cftc_cot.py::CotSourceOutageTests::test_source_unavailable_not_zero_positions",
+        "tests/providers/test_providers.py::ProviderContractTests::test_unconfigured_stubs_fail_closed",
+        "tests/market_data/test_observational_boundary.py::MarketDataNormalizationTests::test_provider_ticker_direction_is_not_ground_truth",
+        "tests/market_data/test_observational_boundary.py::MarketDataNormalizationTests::test_admission_requires_authorization",
+        "tests/market_data/test_observational_boundary.py::MarketDataNormalizationTests::test_live_and_replay_envelopes_preserve_pit_clocks",
+        "tests/contracts/test_futures_contract.py::FuturesCurveTests::test_positioning_snapshot_round_trip",
+        "tests/market_data/test_live_admission.py::LiveAdmissionTests::test_provider_disconnect_blocks",
+        "tests/market_data/test_live_pit_adversarial.py::LivePitAdversarialTests::test_capture_replay_equivalence",
+        "tests/runtime/test_pit_joins.py::PitJoinTests::test_missing_join_fail_closed",
+        "tests/market_data/test_live_runtime.py::LiveRuntimeTests::test_quota_exhaustion"
+      ],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [],
+      "status": "passed",
+      "suite_id": "mandatory-shared",
+      "tests_run": 20,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.004226799996104091,
+      "worker_error": "",
+      "worker_pid": 3352
+    },
+    {
+      "discovery_seconds": 0.0997986999573186,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 47,
+      "per_test_durations": [
+        {
+          "seconds": 0.008438299992121756,
+          "selector": "tests/phase0/test_analysis.py::AnalysisTests::test_direct_broker_import_is_found"
+        },
+        {
+          "seconds": 0.7150318999774754,
+          "selector": "tests/phase0/test_analysis.py::AnalysisTests::test_governed_source_has_no_prohibited_route"
+        },
+        {
+          "seconds": 0.0026508999872021377,
+          "selector": "tests/phase0/test_analysis.py::AnalysisTests::test_nonconstant_dynamic_import_is_blocking"
+        },
+        {
+          "seconds": 0.00014680001186206937,
+          "selector": "tests/phase0/test_assertions.py::AssertionTests::test_mandatory_set_is_exact"
+        },
+        {
+          "seconds": 0.00015009997878223658,
+          "selector": "tests/phase0/test_assertions.py::AssertionTests::test_mixed_run_is_rejected"
+        },
+        {
+          "seconds": 0.0004075999604538083,
+          "selector": "tests/phase0/test_assertions.py::AssertionTests::test_registry_has_one_active_key_per_mandatory_id"
+        },
+        {
+          "seconds": 0.003528699977323413,
+          "selector": "tests/phase0/test_assertions.py::AssertionTests::test_run_id_is_reproducible"
+        },
+        {
+          "seconds": 0.02506590000120923,
+          "selector": "tests/phase0/test_authority.py::AuthorityTests::test_active_path_escape_fails"
+        },
+        {
+          "seconds": 0.01337890001013875,
+          "selector": "tests/phase0/test_authority.py::AuthorityTests::test_approved_revision_3_is_the_only_active_authority"
+        },
+        {
+          "seconds": 0.01154620002489537,
+          "selector": "tests/phase0/test_authority.py::AuthorityTests::test_changed_active_specification_fails"
+        },
+        {
+          "seconds": 0.015036299999337643,
+          "selector": "tests/phase0/test_authority.py::AuthorityTests::test_conflicting_phase0_binding_fails"
+        },
+        {
+          "seconds": 0.02391330001410097,
+          "selector": "tests/phase0/test_authority.py::AuthorityTests::test_missing_active_logical_id_fails_closed"
+        },
+        {
+          "seconds": 0.010184199956711382,
+          "selector": "tests/phase0/test_authority.py::AuthorityTests::test_missing_approval_blocks"
+        },
+        {
+          "seconds": 0.014196600008290261,
+          "selector": "tests/phase0/test_authority.py::AuthorityTests::test_wrong_approval_binding_fails"
+        },
+        {
+          "seconds": 0.011983899981714785,
+          "selector": "tests/phase0/test_canonical.py::CanonicalTests::test_duplicate_key_is_rejected"
+        },
+        {
+          "seconds": 0.00017120002303272486,
+          "selector": "tests/phase0/test_canonical.py::CanonicalTests::test_recursive_key_order_and_utf8_lf"
+        },
+        {
+          "seconds": 0.002706300001591444,
+          "selector": "tests/phase0/test_canonical.py::CanonicalTests::test_writer_returns_file_hash"
+        },
+        {
+          "seconds": 0.00025179999647662044,
+          "selector": "tests/phase0/test_credential_audit.py::CredentialAuditTests::test_hash_named_sanitized_evidence_is_content_eligible"
+        },
+        {
+          "seconds": 0.00018269999418407679,
+          "selector": "tests/phase0/test_credential_audit.py::CredentialAuditTests::test_inventory_reports_only_opaque_ids"
+        },
+        {
+          "seconds": 0.00012610002886503935,
+          "selector": "tests/phase0/test_credential_audit.py::CredentialAuditTests::test_match_output_contains_no_value_or_context"
+        },
+        {
+          "seconds": 0.00012099999003112316,
+          "selector": "tests/phase0/test_credential_audit.py::CredentialAuditTests::test_private_env_is_rejected_without_opening"
+        },
+        {
+          "seconds": 0.00011249998351559043,
+          "selector": "tests/phase0/test_credential_audit.py::CredentialAuditTests::test_public_examples_require_literal_placeholders"
+        },
+        {
+          "seconds": 0.7993071999517269,
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_lf_checkout_policy_is_bound_into_distribution"
+        },
+        {
+          "seconds": 0.00035930000012740493,
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_lock_has_zero_third_party_dependencies"
+        },
+        {
+          "seconds": 0.530800599954091,
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_named_audit_modules_are_distributable"
+        },
+        {
+          "seconds": 0.8000781000009738,
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_revision_3_guidance_is_bound_into_distribution"
+        },
+        {
+          "seconds": 0.002285499998833984,
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_symlink_or_reparse_escape_is_rejected"
+        },
+        {
+          "seconds": 0.9812084999866784,
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_two_builds_are_byte_identical"
+        },
+        {
+          "seconds": 0.00019539997447282076,
+          "selector": "tests/phase0/test_offline_guard.py::OfflineGuardTests::test_install_is_idempotent_and_logs_sanitized_reason"
+        },
+        {
+          "seconds": 0.00016060000052675605,
+          "selector": "tests/phase0/test_offline_guard.py::OfflineGuardTests::test_ipv4_ipv6_loopback_and_dns_are_denied"
+        },
+        {
+          "seconds": 0.0013838000013493001,
+          "selector": "tests/phase0/test_offline_guard.py::OfflineGuardTests::test_phase0_tools_import_only_guard_at_module_scope"
+        },
+        {
+          "seconds": 0.00021049997303634882,
+          "selector": "tests/phase0/test_offline_guard.py::OfflineGuardTests::test_process_spawn_is_denied"
+        },
+        {
+          "seconds": 0.0008728000102564692,
+          "selector": "tests/phase0/test_pipeline.py::EvidenceTests::test_bundle_rejects_duplicate_logical_ids"
+        },
+        {
+          "seconds": 2.648571500030812,
+          "selector": "tests/phase0/test_pipeline.py::EvidenceTests::test_collector_excludes_generated_environment_paths"
+        },
+        {
+          "seconds": 2.730094900005497,
+          "selector": "tests/phase0/test_pipeline.py::EvidenceTests::test_collector_produces_required_step_10_11_ids"
+        },
+        {
+          "seconds": 0.003278899996075779,
+          "selector": "tests/phase0/test_pipeline.py::EvidenceTests::test_content_hash_resolves"
+        },
+        {
+          "seconds": 0.00019190000602975488,
+          "selector": "tests/phase0/test_pipeline.py::EvidenceTests::test_donor_preservation_declared_pass_cannot_hide_failed_comparison"
+        },
+        {
+          "seconds": 0.002325899957213551,
+          "selector": "tests/phase0/test_pipeline.py::EvidenceTests::test_finalized_artifact_cannot_be_overwritten"
+        },
+        {
+          "seconds": 0.00022209994494915009,
+          "selector": "tests/phase0/test_registry.py::RegistryTests::test_environment_cannot_supply_module"
+        },
+        {
+          "seconds": 0.0006873999955132604,
+          "selector": "tests/phase0/test_registry.py::RegistryTests::test_only_six_literal_entries_exist"
+        },
+        {
+          "seconds": 0.00015259999781847,
+          "selector": "tests/phase0/test_registry.py::RegistryTests::test_unknown_identifier_fails_closed"
+        },
+        {
+          "seconds": 0.0001534000039100647,
+          "selector": "tests/phase0/test_verifier.py::VerifierTests::test_blocked_precedes_pass"
+        },
+        {
+          "seconds": 0.0001818999880924821,
+          "selector": "tests/phase0/test_verifier.py::VerifierTests::test_candidate_root_is_order_independent"
+        },
+        {
+          "seconds": 0.002847400028258562,
+          "selector": "tests/phase0/test_verifier.py::VerifierTests::test_changed_member_is_rejected"
+        },
+        {
+          "seconds": 0.0001781000173650682,
+          "selector": "tests/phase0/test_verifier.py::VerifierTests::test_fail_precedes_blocked"
+        },
+        {
+          "seconds": 0.00015380000695586205,
+          "selector": "tests/phase0/test_verifier.py::VerifierTests::test_missing_result_is_blocked"
+        },
+        {
+          "seconds": 0.00018229999113827944,
+          "selector": "tests/phase0/test_verifier.py::VerifierTests::test_mixed_run_is_blocked"
+        },
+        {
+          "seconds": 0.0001430999836884439,
+          "selector": "tests/phase0/test_verifier.py::VerifierTests::test_postroot_members_are_excluded"
+        }
+      ],
+      "process_wall_seconds": 9.966974399983883,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [
+        {
+          "reason": "symlink creation is unavailable",
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_symlink_or_reparse_escape_is_rejected"
+        }
+      ],
+      "skips": 1,
+      "slowest_tests": [],
+      "status": "passed",
+      "suite_id": "phase0",
+      "tests_run": 48,
+      "unexpected_successes": 0,
+      "wall_seconds": 9.366228099970613,
+      "worker_error": "",
+      "worker_pid": 44088
+    },
+    {
+      "discovery_seconds": 0.3033504000050016,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 38,
+      "per_test_durations": [
+        {
+          "seconds": 0.0006810000049881637,
+          "selector": "tests/contracts/test_corporate_action_options.py::CorporateActionOptionsTests::test_adjusted_deliverable_sets_flag"
+        },
+        {
+          "seconds": 0.00039190001552924514,
+          "selector": "tests/contracts/test_corporate_action_options.py::CorporateActionOptionsTests::test_round_trip_from_chain_dict"
+        },
+        {
+          "seconds": 0.0003449000068940222,
+          "selector": "tests/contracts/test_corporate_action_options.py::CorporateActionOptionsTests::test_unknown_deliverable_blocks_surface"
+        },
+        {
+          "seconds": 0.00019910000264644623,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesContractTests::test_basis_definition_explicit"
+        },
+        {
+          "seconds": 0.00019019999308511615,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesContractTests::test_contract_distinguishes_family_from_instance"
+        },
+        {
+          "seconds": 0.00014720001490786672,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesContractTests::test_cot_publication_delay"
+        },
+        {
+          "seconds": 0.0002069000038318336,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesCurveTests::test_curve_snapshot_serialization"
+        },
+        {
+          "seconds": 0.00018009997438639402,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesCurveTests::test_positioning_snapshot_round_trip"
+        },
+        {
+          "seconds": 0.00022029998945072293,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesCurveTests::test_trend_baseline_round_trip"
+        },
+        {
+          "seconds": 0.0001737999846227467,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesNotionalTests::test_exposure_summary_missing_spec"
+        },
+        {
+          "seconds": 0.00017249997472390532,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesNotionalTests::test_notional_exposure"
+        },
+        {
+          "seconds": 0.00020910002058371902,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesNotionalTests::test_pnl_from_ticks_not_percentage"
+        },
+        {
+          "seconds": 0.00017140002455562353,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesQualityTests::test_curve_blocking_flags"
+        },
+        {
+          "seconds": 0.0001404000213369727,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesQualityTests::test_leverage_stress_blocking"
+        },
+        {
+          "seconds": 0.00017220003064721823,
+          "selector": "tests/contracts/test_futures_contract.py::FuturesRollTests::test_lead_contract_not_always_nearest"
+        },
+        {
+          "seconds": 0.0008719000034034252,
+          "selector": "tests/contracts/test_futures_fixture_ingestion.py::FuturesFixtureIngestionTests::test_es_chain_round_trip"
+        },
+        {
+          "seconds": 0.00021460000425577164,
+          "selector": "tests/contracts/test_futures_fixture_ingestion.py::FuturesFixtureIngestionTests::test_from_dict_missing_fields"
+        },
+        {
+          "seconds": 0.0002682999474927783,
+          "selector": "tests/contracts/test_market_context_contract.py::MarketContextContractTests::test_author_id_from_handle_is_deterministic"
+        },
+        {
+          "seconds": 0.00019049999536946416,
+          "selector": "tests/contracts/test_market_context_contract.py::MarketContextContractTests::test_baseline_sentiment_separate_from_surprise"
+        },
+        {
+          "seconds": 0.00018700002692639828,
+          "selector": "tests/contracts/test_market_context_contract.py::MarketContextContractTests::test_catalyst_evidence_exposes_components"
+        },
+        {
+          "seconds": 0.00019430002430453897,
+          "selector": "tests/contracts/test_market_context_contract.py::MarketContextContractTests::test_expectation_snapshot_requires_available_time"
+        },
+        {
+          "seconds": 0.00028500001644715667,
+          "selector": "tests/contracts/test_market_context_contract.py::MarketContextContractTests::test_information_source_point_in_time_fields"
+        },
+        {
+          "seconds": 0.00022410001838579774,
+          "selector": "tests/contracts/test_market_context_contract.py::MarketContextContractTests::test_market_reaction_evidence_serializes_information_decay"
+        },
+        {
+          "seconds": 0.0002033999771811068,
+          "selector": "tests/contracts/test_market_context_contract.py::MarketContextContractTests::test_missing_expectation_fails_closed_for_surprise"
+        },
+        {
+          "seconds": 0.00024399999529123306,
+          "selector": "tests/contracts/test_options_contract.py::OptionContractTests::test_option_contract_round_trip_dict"
+        },
+        {
+          "seconds": 0.00020220002625137568,
+          "selector": "tests/contracts/test_options_contract.py::OptionQualityTests::test_surface_blocking_flags"
+        },
+        {
+          "seconds": 0.0004605000140145421,
+          "selector": "tests/contracts/test_options_fixture_ingestion.py::OptionsFixtureIngestionTests::test_biya_fixture_round_trip"
+        },
+        {
+          "seconds": 0.00019480002811178565,
+          "selector": "tests/contracts/test_options_fixture_ingestion.py::OptionsFixtureIngestionTests::test_from_dict_missing_fields"
+        },
+        {
+          "seconds": 0.00019649998284876347,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_13d_maps_to_activist_type"
+        },
+        {
+          "seconds": 0.00020029995357617736,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_13f_fails_closed_on_copyability"
+        },
+        {
+          "seconds": 0.0002384000108577311,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_derivative_participant_evidence_round_trip"
+        },
+        {
+          "seconds": 0.0002617000136524439,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_disclosure_bridge_preserves_available_time"
+        },
+        {
+          "seconds": 0.00019240000983700156,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_form4_compensation_not_directional"
+        },
+        {
+          "seconds": 0.00018820003606379032,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_form4_open_market_purchase_semantics"
+        },
+        {
+          "seconds": 0.00021049997303634882,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_identity_from_named_filer"
+        },
+        {
+          "seconds": 0.0001886999816633761,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_mechanism_unknown_fails_closed"
+        },
+        {
+          "seconds": 0.00021899997955188155,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_participant_id_deterministic"
+        },
+        {
+          "seconds": 0.00028690003091469407,
+          "selector": "tests/contracts/test_participant_contract.py::ParticipantContractTests::test_query_participant_actions_respects_prediction_cutoff"
+        }
+      ],
+      "process_wall_seconds": 0.5115860999794677,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [],
+      "status": "passed",
+      "suite_id": "contracts",
+      "tests_run": 38,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.009916699957102537,
+      "worker_error": "",
+      "worker_pid": 27004
+    },
+    {
+      "discovery_seconds": 0.3173981999862008,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 100,
+      "per_test_durations": [
+        {
+          "seconds": 0.0002850999590009451,
+          "selector": "tests/providers/test_broker_fill_ids.py::BrokerFillEventFromRecordTests::test_missing_event_time_fails_closed"
+        },
+        {
+          "seconds": 0.00019950000569224358,
+          "selector": "tests/providers/test_broker_fill_ids.py::BrokerFillEventFromRecordTests::test_missing_receive_time_defaults_to_event_time"
+        },
+        {
+          "seconds": 0.0001928000128827989,
+          "selector": "tests/providers/test_broker_fill_ids.py::BrokerFillEventFromRecordTests::test_none_event_time_fails_closed"
+        },
+        {
+          "seconds": 0.00023509998572990298,
+          "selector": "tests/providers/test_broker_fill_ids.py::BrokerFillEventFromRecordTests::test_stamped_record_round_trips"
+        },
+        {
+          "seconds": 0.0003515999997034669,
+          "selector": "tests/providers/test_broker_fill_ids.py::EnsureBrokerFillIdsTests::test_backfill_is_deterministic"
+        },
+        {
+          "seconds": 0.0002744999947026372,
+          "selector": "tests/providers/test_broker_fill_ids.py::EnsureBrokerFillIdsTests::test_existing_fill_ids_are_preserved"
+        },
+        {
+          "seconds": 0.0002680000034160912,
+          "selector": "tests/providers/test_broker_fill_ids.py::EnsureBrokerFillIdsTests::test_same_price_size_fills_at_different_times_get_distinct_ids"
+        },
+        {
+          "seconds": 0.0004184000426903367,
+          "selector": "tests/providers/test_broker_fill_ids.py::EnsureBrokerFillIdsTests::test_timestamps_participate_in_identity"
+        },
+        {
+          "seconds": 0.0008046999573707581,
+          "selector": "tests/providers/test_chain_pit_envelope.py::ChainEnvelopeTests::test_enrich_chain_contract_event_accepts_venue_id"
+        },
+        {
+          "seconds": 0.002158000017516315,
+          "selector": "tests/providers/test_chain_pit_envelope.py::PitAlignmentTests::test_biya_chain_and_activity_counts_align_at_cutoff"
+        },
+        {
+          "seconds": 0.012966600013896823,
+          "selector": "tests/providers/test_chain_pit_envelope.py::PitAlignmentTests::test_bootstrap_configures_chain_providers"
+        },
+        {
+          "seconds": 0.0017985000158660114,
+          "selector": "tests/providers/test_chain_pit_envelope.py::PitAlignmentTests::test_futures_chain_uses_cme_venue"
+        },
+        {
+          "seconds": 0.0024837999953888357,
+          "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_configure_fixture_provider_composition"
+        },
+        {
+          "seconds": 0.0006236000335775316,
+          "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_fixture_futures_chain_es"
+        },
+        {
+          "seconds": 0.0005617999704554677,
+          "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_fixture_futures_chain_pit_cutoff"
+        },
+        {
+          "seconds": 0.0009545999928377569,
+          "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_fixture_option_chain_biya"
+        },
+        {
+          "seconds": 0.000694399990607053,
+          "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_fixture_option_chain_nvda_second_fixture"
+        },
+        {
+          "seconds": 0.0007322000456042588,
+          "selector": "tests/providers/test_chain_providers.py::ChainProviderTests::test_fixture_option_chain_pit_cutoff"
+        },
+        {
+          "seconds": 0.00024829996982589364,
+          "selector": "tests/providers/test_futures_bridge_ofi.py::FuturesBridgeOfiTests::test_degraded_path_never_uses_zero_as_valid_ofi"
+        },
+        {
+          "seconds": 0.0002193999825976789,
+          "selector": "tests/providers/test_futures_bridge_ofi.py::FuturesBridgeOfiTests::test_first_fetch_degraded_without_prev"
+        },
+        {
+          "seconds": 0.00024349999148398638,
+          "selector": "tests/providers/test_futures_bridge_ofi.py::FuturesBridgeOfiTests::test_second_fetch_computes_ofi_with_metadata"
+        },
+        {
+          "seconds": 0.00036449998151510954,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsAdapterTests::test_biya_symbol_unavailable"
+        },
+        {
+          "seconds": 0.0007651000050827861,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsAdapterTests::test_fixture_ingest_is_deterministic"
+        },
+        {
+          "seconds": 0.00044919998617842793,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsAdapterTests::test_pit_cutoff_excludes_future_prints"
+        },
+        {
+          "seconds": 0.0004331000382080674,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsAdapterTests::test_threshold_gate_surfaces_failures"
+        },
+        {
+          "seconds": 0.005319399992004037,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsLedgerTests::test_large_transactions_available_for_nvda"
+        },
+        {
+          "seconds": 0.006659400009084493,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsLedgerTests::test_large_transactions_unavailable_for_biya"
+        },
+        {
+          "seconds": 0.00048459996469318867,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsUiTests::test_capabilities_show_large_transactions_available"
+        },
+        {
+          "seconds": 0.0002315999590791762,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsUiTests::test_workspace_large_transactions_payload"
+        },
+        {
+          "seconds": 0.00019649998284876347,
+          "selector": "tests/providers/test_large_transactions.py::LargeTransactionsUiTests::test_workspace_large_transactions_unavailable_for_biya"
+        },
+        {
+          "seconds": 0.001109600008931011,
+          "selector": "tests/providers/test_options.py::OptionsAdapterTests::test_fixture_ingest_is_deterministic"
+        },
+        {
+          "seconds": 0.0005594000103883445,
+          "selector": "tests/providers/test_options.py::OptionsAdapterTests::test_liquidity_gate_surfaces_failures"
+        },
+        {
+          "seconds": 0.0003176000318489969,
+          "selector": "tests/providers/test_options.py::OptionsAdapterTests::test_nvda_symbol_unavailable"
+        },
+        {
+          "seconds": 0.0004746000049635768,
+          "selector": "tests/providers/test_options.py::OptionsAdapterTests::test_pit_cutoff_excludes_future_activity"
+        },
+        {
+          "seconds": 0.005120599991641939,
+          "selector": "tests/providers/test_options.py::OptionsLedgerTests::test_options_available_for_biya"
+        },
+        {
+          "seconds": 0.007353799999691546,
+          "selector": "tests/providers/test_options.py::OptionsLedgerTests::test_options_unavailable_for_nvda"
+        },
+        {
+          "seconds": 0.00037620001239702106,
+          "selector": "tests/providers/test_options.py::OptionsUiTests::test_capabilities_show_options_available"
+        },
+        {
+          "seconds": 2.06063040002482,
+          "selector": "tests/providers/test_options.py::OptionsUiTests::test_workspace_options_payload"
+        },
+        {
+          "seconds": 2.0366038999636658,
+          "selector": "tests/providers/test_options.py::OptionsUiTests::test_workspace_options_unavailable_for_nvda"
+        },
+        {
+          "seconds": 2.0323602999560535,
+          "selector": "tests/providers/test_options_chain_projection.py::OptionsChainProjectionTests::test_biya_workspace_includes_chain_snapshot"
+        },
+        {
+          "seconds": 2.0498778999899514,
+          "selector": "tests/providers/test_options_chain_projection.py::OptionsChainProjectionTests::test_nvda_workspace_chain_snapshot"
+        },
+        {
+          "seconds": 2.049159799993504,
+          "selector": "tests/providers/test_options_chain_projection.py::OptionsChainProjectionTests::test_unknown_symbol_chain_unavailable"
+        },
+        {
+          "seconds": 2.051244600035716,
+          "selector": "tests/providers/test_options_dealer_projection.py::OptionsDealerProjectionTests::test_biya_workspace_includes_dealer_snapshot"
+        },
+        {
+          "seconds": 2.033413400000427,
+          "selector": "tests/providers/test_options_dealer_projection.py::OptionsDealerProjectionTests::test_nvda_chain_only_dealer_snapshot"
+        },
+        {
+          "seconds": 2.015425799996592,
+          "selector": "tests/providers/test_options_event_vol_projection.py::OptionsEventVolProjectionTests::test_biya_workspace_event_vol_unavailable"
+        },
+        {
+          "seconds": 0.007938300026580691,
+          "selector": "tests/providers/test_options_event_vol_projection.py::OptionsEventVolProjectionTests::test_earnings_fixture_pit_discipline"
+        },
+        {
+          "seconds": 2.042378699989058,
+          "selector": "tests/providers/test_options_event_vol_projection.py::OptionsEventVolProjectionTests::test_nvda_chain_payload_includes_event_vol_snapshot"
+        },
+        {
+          "seconds": 2.0491144999978133,
+          "selector": "tests/providers/test_options_execution_projection.py::OptionsExecutionProjectionTests::test_biya_workspace_execution_when_activities_available"
+        },
+        {
+          "seconds": 0.0069197999546304345,
+          "selector": "tests/providers/test_options_execution_projection.py::OptionsExecutionProjectionTests::test_execution_fixture_pit_discipline"
+        },
+        {
+          "seconds": 2.0302178999991156,
+          "selector": "tests/providers/test_options_execution_projection.py::OptionsExecutionProjectionTests::test_nvda_chain_payload_includes_execution_snapshot"
+        },
+        {
+          "seconds": 2.047153400024399,
+          "selector": "tests/providers/test_options_r_o6_projection.py::OptionsRO6ProjectionTests::test_biya_workspace_includes_r_o6_research"
+        },
+        {
+          "seconds": 2.03260690002935,
+          "selector": "tests/providers/test_options_r_o6_projection.py::OptionsRO6ProjectionTests::test_nvda_workspace_includes_r_o6_research"
+        },
+        {
+          "seconds": 2.0326024999958463,
+          "selector": "tests/providers/test_options_r_o6_projection.py::OptionsRO6ProjectionTests::test_unknown_symbol_r_o6_fail_closed"
+        },
+        {
+          "seconds": 2.051537899998948,
+          "selector": "tests/providers/test_options_strategy_projection.py::OptionsStrategyProjectionTests::test_biya_workspace_strategy_when_activities_available"
+        },
+        {
+          "seconds": 2.0329524999833666,
+          "selector": "tests/providers/test_options_strategy_projection.py::OptionsStrategyProjectionTests::test_nvda_chain_payload_includes_strategy_snapshot"
+        },
+        {
+          "seconds": 0.006580099987331778,
+          "selector": "tests/providers/test_options_strategy_projection.py::OptionsStrategyProjectionTests::test_strategy_fixture_pit_discipline"
+        },
+        {
+          "seconds": 0.00031569995917379856,
+          "selector": "tests/providers/test_order_book.py::OrderBookAdapterTests::test_biya_symbol_unavailable"
+        },
+        {
+          "seconds": 0.0021287999697960913,
+          "selector": "tests/providers/test_order_book.py::OrderBookAdapterTests::test_fixture_ingest_is_deterministic"
+        },
+        {
+          "seconds": 0.0011552000069059432,
+          "selector": "tests/providers/test_order_book.py::OrderBookAdapterTests::test_imbalance_direction_is_derived"
+        },
+        {
+          "seconds": 0.0007617000374011695,
+          "selector": "tests/providers/test_order_book.py::OrderBookAdapterTests::test_pit_cutoff_excludes_future_snapshots"
+        },
+        {
+          "seconds": 0.006255100015550852,
+          "selector": "tests/providers/test_order_book.py::OrderBookLedgerTests::test_order_book_available_for_nvda"
+        },
+        {
+          "seconds": 0.004549300007056445,
+          "selector": "tests/providers/test_order_book.py::OrderBookLedgerTests::test_order_book_unavailable_for_biya"
+        },
+        {
+          "seconds": 0.0003244999679736793,
+          "selector": "tests/providers/test_order_book.py::OrderBookUiTests::test_capabilities_show_order_book_available"
+        },
+        {
+          "seconds": 0.00028149998979642987,
+          "selector": "tests/providers/test_order_book.py::OrderBookUiTests::test_workspace_order_book_payload"
+        },
+        {
+          "seconds": 0.0001849000109359622,
+          "selector": "tests/providers/test_order_book.py::OrderBookUiTests::test_workspace_order_book_unavailable_for_biya"
+        },
+        {
+          "seconds": 0.0005566999898292124,
+          "selector": "tests/providers/test_order_flow.py::OrderFlowAdapterTests::test_biya_symbol_unavailable"
+        },
+        {
+          "seconds": 0.0009938000002875924,
+          "selector": "tests/providers/test_order_flow.py::OrderFlowAdapterTests::test_fixture_ingest_is_deterministic"
+        },
+        {
+          "seconds": 0.0010666000307537615,
+          "selector": "tests/providers/test_order_flow.py::OrderFlowAdapterTests::test_pit_cutoff_excludes_future_bars"
+        },
+        {
+          "seconds": 0.0009620999917387962,
+          "selector": "tests/providers/test_order_flow.py::OrderFlowAdapterTests::test_unknown_aggressor_stays_unknown"
+        },
+        {
+          "seconds": 0.005008100008126348,
+          "selector": "tests/providers/test_order_flow.py::OrderFlowLedgerTests::test_order_flow_available_for_nvda"
+        },
+        {
+          "seconds": 0.004904799978248775,
+          "selector": "tests/providers/test_order_flow.py::OrderFlowLedgerTests::test_order_flow_unavailable_for_biya"
+        },
+        {
+          "seconds": 0.003964299976360053,
+          "selector": "tests/providers/test_order_flow.py::OrderFlowUiTests::test_capabilities_show_order_flow_available"
+        },
+        {
+          "seconds": 0.000845499977003783,
+          "selector": "tests/providers/test_order_flow.py::OrderFlowUiTests::test_workspace_order_flow_payload"
+        },
+        {
+          "seconds": 0.001444399997126311,
+          "selector": "tests/providers/test_provider_catalyst.py::CatalystAdapterTests::test_fixture_ingest_is_deterministic"
+        },
+        {
+          "seconds": 0.0008808000129647553,
+          "selector": "tests/providers/test_provider_catalyst.py::CatalystAdapterTests::test_nvda_symbol_unavailable"
+        },
+        {
+          "seconds": 0.0014939000247977674,
+          "selector": "tests/providers/test_provider_catalyst.py::CatalystAdapterTests::test_pit_cutoff_excludes_future_activity"
+        },
+        {
+          "seconds": 0.0055822000140324235,
+          "selector": "tests/providers/test_provider_catalyst.py::CatalystLedgerTests::test_catalyst_available_for_boxl"
+        },
+        {
+          "seconds": 0.12270910001825541,
+          "selector": "tests/providers/test_provider_catalyst.py::CatalystLedgerTests::test_catalyst_unavailable_for_nvda"
+        },
+        {
+          "seconds": 0.0003519000019878149,
+          "selector": "tests/providers/test_provider_catalyst.py::CatalystUiTests::test_capabilities_show_catalyst_available"
+        },
+        {
+          "seconds": 0.04464859998552129,
+          "selector": "tests/providers/test_provider_catalyst.py::CatalystUiTests::test_workspace_catalyst_payload"
+        },
+        {
+          "seconds": 0.00038459995994344354,
+          "selector": "tests/providers/test_provider_catalyst.py::CatalystUiTests::test_workspace_catalyst_unavailable_for_nvda"
+        },
+        {
+          "seconds": 0.0008749999688006938,
+          "selector": "tests/providers/test_providers.py::EdgarAdapterTests::test_amendment_ordering_after_base_filing"
+        },
+        {
+          "seconds": 0.0008538999827578664,
+          "selector": "tests/providers/test_providers.py::EdgarAdapterTests::test_fixture_ingest_is_deterministic"
+        },
+        {
+          "seconds": 0.0004710000357590616,
+          "selector": "tests/providers/test_providers.py::EdgarAdapterTests::test_pit_cutoff_excludes_future_filings"
+        },
+        {
+          "seconds": 0.00034899997990578413,
+          "selector": "tests/providers/test_providers.py::EdgarAdapterTests::test_unknown_symbol_unavailable"
+        },
+        {
+          "seconds": 0.0005740000051446259,
+          "selector": "tests/providers/test_providers.py::ImportBoundaryTests::test_features_do_not_import_adapters"
+        },
+        {
+          "seconds": 0.0020934000494889915,
+          "selector": "tests/providers/test_providers.py::ImportBoundaryTests::test_strategy_package_has_no_http_adapter_imports"
+        },
+        {
+          "seconds": 0.00022569997236132622,
+          "selector": "tests/providers/test_providers.py::ProviderContractTests::test_default_composition_uses_stubs"
+        },
+        {
+          "seconds": 0.0002923999563790858,
+          "selector": "tests/providers/test_providers.py::ProviderContractTests::test_unconfigured_stubs_fail_closed"
+        },
+        {
+          "seconds": 0.000956700008828193,
+          "selector": "tests/providers/test_providers.py::UiDisclosureProjectionTests::test_capabilities_show_disclosure_available"
+        },
+        {
+          "seconds": 0.02013800002168864,
+          "selector": "tests/providers/test_providers.py::UiDisclosureProjectionTests::test_workspace_disclosure_payload"
+        },
+        {
+          "seconds": 0.0008764000376686454,
+          "selector": "tests/providers/test_providers.py::WhaleLedgerTests::test_capability_surface_allows_entitled_disclosure"
+        },
+        {
+          "seconds": 0.00019880000036209822,
+          "selector": "tests/providers/test_providers.py::WhaleLedgerTests::test_dedup_on_append"
+        },
+        {
+          "seconds": 0.00015699997311457992,
+          "selector": "tests/providers/test_providers.py::WhaleLedgerTests::test_institutional_unavailable_without_ledger"
+        },
+        {
+          "seconds": 0.0007313999813050032,
+          "selector": "tests/providers/test_providers.py::WhaleLedgerTests::test_regulatory_disclosure_available_with_ledger"
+        },
+        {
+          "seconds": 0.0004113999893888831,
+          "selector": "tests/providers/test_recorded_order_flow.py::RecordedOrderFlowProviderTests::test_factory_defaults_to_fixture_provider"
+        },
+        {
+          "seconds": 0.0004694999661296606,
+          "selector": "tests/providers/test_recorded_order_flow.py::RecordedOrderFlowProviderTests::test_factory_live_gate_selects_recorded_provider"
+        },
+        {
+          "seconds": 0.0005984000163152814,
+          "selector": "tests/providers/test_recorded_order_flow.py::RecordedOrderFlowProviderTests::test_fixture_provider_uses_classify_bar_delta_provenance"
+        },
+        {
+          "seconds": 0.0006000999710522592,
+          "selector": "tests/providers/test_recorded_order_flow.py::RecordedOrderFlowProviderTests::test_recorded_provider_pit_filters_bars"
+        },
+        {
+          "seconds": 0.0004363000043667853,
+          "selector": "tests/providers/test_recorded_order_flow.py::RecordedOrderFlowProviderTests::test_recorded_provider_unavailable_when_fixture_missing"
+        }
+      ],
+      "process_wall_seconds": 41.11823949997779,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [],
+      "status": "passed",
+      "suite_id": "providers",
+      "tests_run": 100,
+      "unexpected_successes": 0,
+      "wall_seconds": 40.460766199976206,
+      "worker_error": "",
+      "worker_pid": 31508
+    },
+    {
+      "discovery_seconds": 0.2580252999905497,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 22,
+      "per_test_durations": [
+        {
+          "seconds": 0.00026220001745969057,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_as_of_returns_visible_version"
+        },
+        {
+          "seconds": 0.00019099999917671084,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_correction_invisible_before_known_from"
+        },
+        {
+          "seconds": 0.00016459997277706861,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_market_time_before_valid_from_is_none"
+        },
+        {
+          "seconds": 0.0002172000240534544,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_missing_known_from_rejected"
+        },
+        {
+          "seconds": 0.00024480000138282776,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_open_ended_known_to_visible"
+        },
+        {
+          "seconds": 0.00021810003090649843,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_overlap_append_rejected"
+        },
+        {
+          "seconds": 0.00016150000737980008,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_unknown_entity_is_none"
+        },
+        {
+          "seconds": 0.0006464000325649977,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_corporate_registry_uses_knowledge_visibility"
+        },
+        {
+          "seconds": 0.0009148999815806746,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_o7_fail_closed_when_calendar_unavailable"
+        },
+        {
+          "seconds": 0.0017026999848894775,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_o7_uses_joined_earnings_calendar"
+        },
+        {
+          "seconds": 0.00031849998049438,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_resolve_futures_spec_default_es"
+        },
+        {
+          "seconds": 0.00022689998149871826,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_dividend_restatement"
+        },
+        {
+          "seconds": 0.00023220002185553312,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_earnings_calendar_revision"
+        },
+        {
+          "seconds": 0.0001694000093266368,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_futures_spec_correction"
+        },
+        {
+          "seconds": 0.00015460001304745674,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_missing_join_fail_closed"
+        },
+        {
+          "seconds": 0.00016170000890269876,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_options_oi_restatement"
+        },
+        {
+          "seconds": 0.0006441999576054513,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_p0_s1_gate_pass"
+        },
+        {
+          "seconds": 0.0001784000196494162,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_symbol_mapping"
+        },
+        {
+          "seconds": 0.000255199964158237,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_catalyst_attention_runtime_from_summaries"
+        },
+        {
+          "seconds": 0.06285000004572794,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_corporate_registry_pit_filters"
+        },
+        {
+          "seconds": 0.0010501999640837312,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_registry_from_extraction_summaries"
+        },
+        {
+          "seconds": 0.006174500042106956,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_workspace_exposes_corporate_registry_and_catalyst_runtime"
+        }
+      ],
+      "process_wall_seconds": 0.5368104000226595,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [],
+      "status": "passed",
+      "suite_id": "runtime",
+      "tests_run": 22,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.07771380001213402,
+      "worker_error": "",
+      "worker_pid": 43964
+    },
+    {
+      "discovery_seconds": 0.23164210002869368,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 47,
+      "per_test_durations": [
+        {
+          "seconds": 0.0002334999735467136,
+          "selector": "tests/validation/test_benchmark.py::BenchmarkTests::test_operation_measurements_are_informational_not_threshold_gates"
+        },
+        {
+          "seconds": 1.1498751000035554,
+          "selector": "tests/validation/test_benchmark.py::BenchmarkTests::test_optional_fast_command_records_subprocess_measurement"
+        },
+        {
+          "seconds": 0.39914629998384044,
+          "selector": "tests/validation/test_benchmark.py::BenchmarkTests::test_report_is_written_only_through_explicit_write_call"
+        },
+        {
+          "seconds": 0.38687350001418963,
+          "selector": "tests/validation/test_benchmark.py::BenchmarkTests::test_report_measures_startup_worker_and_minimum_production_operations"
+        },
+        {
+          "seconds": 0.0002321999636478722,
+          "selector": "tests/validation/test_benchmark.py::BenchmarkTests::test_unavailable_operation_has_reason_and_no_fabricated_timing"
+        },
+        {
+          "seconds": 0.0060190000222064555,
+          "selector": "tests/validation/test_mutation_verification.py::MutationVerificationTests::test_apply_mutation_requires_one_unambiguous_match"
+        },
+        {
+          "seconds": 0.00023819995112717152,
+          "selector": "tests/validation/test_mutation_verification.py::MutationVerificationTests::test_required_failure_modes_are_declared"
+        },
+        {
+          "seconds": 0.4053694999893196,
+          "selector": "tests/validation/test_replay_store_loading.py::ReplayStoreLoadingTests::test_verified_payload_is_reused_but_mutable_state_is_not_shared"
+        },
+        {
+          "seconds": 0.00047639996046200395,
+          "selector": "tests/validation/test_run_all_tests_wrapper.py::RunAllTestsWrapperTests::test_delegates_to_validate_full_and_preserves_exit_status"
+        },
+        {
+          "seconds": 0.0009068999788723886,
+          "selector": "tests/validation/test_transition_stream_loading.py::TransitionStreamLoadingTests::test_default_fixture_bytes_are_read_once_and_results_are_independent"
+        },
+        {
+          "seconds": 0.007104700023774058,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_atomic_json_write_replaces_target_without_temp_residue"
+        },
+        {
+          "seconds": 0.009252099960576743,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_benchmark_mode_delegates_to_informational_tool"
+        },
+        {
+          "seconds": 0.3376103999908082,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_explicit_selector_batch_runs_before_selected_suites"
+        },
+        {
+          "seconds": 0.17280890000984073,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_fail_fast_stops_scheduling_new_serial_suites"
+        },
+        {
+          "seconds": 0.17321689997334033,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_full_clears_live_gates_in_child_only"
+        },
+        {
+          "seconds": 0.1839449999970384,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_live_sets_only_selected_provider_gates_in_child"
+        },
+        {
+          "seconds": 0.2624153000069782,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_structured_aggregate_is_independent_of_completion_order"
+        },
+        {
+          "seconds": 0.0011828999849967659,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_weather_live_gate_is_registered_without_credential_gate"
+        },
+        {
+          "seconds": 0.36746280000079423,
+          "selector": "tests/validation/test_validate_orchestration.py::ValidateOrchestrationTests::test_worker_crash_and_malformed_json_are_explicit_errors"
+        },
+        {
+          "seconds": 0.4506029000040144,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_baseline_comparison_detects_added_removed_and_modified"
+        },
+        {
+          "seconds": 0.011762599984649569,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_doc_only_change_runs_only_cheap_checks"
+        },
+        {
+          "seconds": 0.009344400023110211,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_evidence_only_change_runs_json_and_redaction_checks"
+        },
+        {
+          "seconds": 0.3950874999864027,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_git_changes_include_modified_deleted_and_untracked_nonignored"
+        },
+        {
+          "seconds": 0.011362699966412038,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_modes_enforce_offline_live_and_extended_boundaries"
+        },
+        {
+          "seconds": 0.00840510003035888,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_normalization_rejects_traversal_and_absolute_paths"
+        },
+        {
+          "seconds": 0.01238780003041029,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_provider_leaf_change_selects_owner_neighbor_and_invariants"
+        },
+        {
+          "seconds": 0.010280999995302409,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_shared_change_sets_full_required_but_selects_diagnostics"
+        },
+        {
+          "seconds": 0.008781599986832589,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_test_only_change_does_not_fan_out_to_neighbors"
+        },
+        {
+          "seconds": 0.009975900000426918,
+          "selector": "tests/validation/test_validate_selection.py::ValidateSelectionTests::test_unknown_executable_path_fails_safe"
+        },
+        {
+          "seconds": 0.005099500005599111,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_allows_explained_intentionally_absent_directory"
+        },
+        {
+          "seconds": 0.0052201999933458865,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_loads_typed_immutable_manifest"
+        },
+        {
+          "seconds": 0.007181700028013438,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_absent_entry_without_reason"
+        },
+        {
+          "seconds": 0.005134499981068075,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_duplicate_owned_directories"
+        },
+        {
+          "seconds": 0.004526900011114776,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_duplicate_suite_ids"
+        },
+        {
+          "seconds": 0.008730300003662705,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_existing_unclassified_test_directory"
+        },
+        {
+          "seconds": 0.004983799997717142,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_invalid_mandatory_selector"
+        },
+        {
+          "seconds": 0.027111600036732852,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_invalid_safety_domain_and_glob"
+        },
+        {
+          "seconds": 0.005054200009908527,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_live_suite_in_offline_full_tier"
+        },
+        {
+          "seconds": 0.004841800022404641,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_missing_configured_directory"
+        },
+        {
+          "seconds": 0.008206299971789122,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_rejects_missing_mandatory_selector_target"
+        },
+        {
+          "seconds": 0.03970709996065125,
+          "selector": "tests/validation/test_validation_manifest.py::ValidationManifestTests::test_repository_manifest_classifies_every_test_directory"
+        },
+        {
+          "seconds": 0.1821015999885276,
+          "selector": "tests/validation/test_validation_worker.py::ValidationWorkerTests::test_cli_emits_one_json_document"
+        },
+        {
+          "seconds": 0.007649300037883222,
+          "selector": "tests/validation/test_validation_worker.py::ValidationWorkerTests::test_exact_selector_does_not_require_package_directories"
+        },
+        {
+          "seconds": 0.055620099999941885,
+          "selector": "tests/validation/test_validation_worker.py::ValidationWorkerTests::test_fixture_profile_counts_repository_fixture_opens"
+        },
+        {
+          "seconds": 0.038067399989813566,
+          "selector": "tests/validation/test_validation_worker.py::ValidationWorkerTests::test_missing_selector_is_an_explicit_worker_error"
+        },
+        {
+          "seconds": 0.0131375000346452,
+          "selector": "tests/validation/test_validation_worker.py::ValidationWorkerTests::test_selector_results_are_deterministically_ordered"
+        },
+        {
+          "seconds": 0.016806600033305585,
+          "selector": "tests/validation/test_validation_worker.py::ValidationWorkerTests::test_structured_counts_come_from_test_result"
+        }
+      ],
+      "process_wall_seconds": 5.837440799979959,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [],
+      "status": "passed",
+      "suite_id": "validation",
+      "tests_run": 47,
+      "unexpected_successes": 0,
+      "wall_seconds": 5.2323722000001,
+      "worker_error": "",
+      "worker_pid": 34944,
+      "worker_stderr": "warning: unable to access 'C:\\Users\\adame/.config/git/ignore': Permission denied\nwarning: unable to access 'C:\\Users\\adame/.config/git/ignore': Permission denied"
+    }
+  ],
+  "workers": 2
+}

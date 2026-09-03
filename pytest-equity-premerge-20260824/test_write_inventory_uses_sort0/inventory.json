@@ -1,0 +1,16 @@
+{
+  "daily_prices": {
+    "instrument_count": 1,
+    "maximum_date": "2026-08-21",
+    "minimum_date": "2026-08-21"
+  },
+  "database_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\pytest-equity-premerge-20260824\\test_write_inventory_uses_sort0\\raw.sqlite3",
+  "modified_time_ns": 1787576820386182500,
+  "quick_check": "ok",
+  "sha256": "2ebbaf3e314cbf07d72f1c430f8c77959ba1e60d6efccb8842fa1a2afc401193",
+  "size_bytes": 16384,
+  "tables": {
+    "daily_prices": 1,
+    "tickers": 1
+  }
+}

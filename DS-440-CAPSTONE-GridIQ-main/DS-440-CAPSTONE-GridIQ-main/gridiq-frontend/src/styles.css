@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --stadium-fg: #0f172a;
+  --stadium-muted: #475569;
+  --link: #1d4ed8;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-stadium-field text-slate-900 antialiased;
+  background-attachment: fixed;
+}
+
+a {
+  color: var(--link);
+}
+
+a:hover {
+  @apply underline;
+}

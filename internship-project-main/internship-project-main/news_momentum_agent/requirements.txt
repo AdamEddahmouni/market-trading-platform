@@ -1,0 +1,17 @@
+anthropic>=0.40.0
+openai>=1.40.0
+google-genai>=1.0.0
+feedparser>=6.0.11
+requests>=2.31.0
+cloudscraper>=1.2.71
+beautifulsoup4>=4.12.0
+lxml>=5.0.0
+finvizfinance>=0.14.0
+schedule>=1.2.0
+streamlit>=1.32.0
+plotly>=5.18.0
+python-dateutil>=2.8.2
+pytz>=2024.1
+python-dotenv>=1.0.0
+alpaca-py>=0.33.0
+yfinance>=0.2.40

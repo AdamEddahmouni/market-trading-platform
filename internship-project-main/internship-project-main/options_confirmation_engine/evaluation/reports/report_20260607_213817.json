@@ -1,0 +1,14 @@
+{
+  "generated_at": "2026-06-07T21:38:17.286375+00:00",
+  "confirmation_threshold": 65.0,
+  "metrics": {
+    "baseline_count": 2,
+    "confirmed_count": 0,
+    "coverage": 0.0,
+    "baseline_win_rate": 0.0,
+    "confirmed_win_rate": 0.0,
+    "baseline_avg_return": 0.0,
+    "confirmed_avg_return": 0.0,
+    "false_positive_reduction_potential": 1.0
+  }
+}

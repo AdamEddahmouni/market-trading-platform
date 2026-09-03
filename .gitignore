@@ -1,0 +1,54 @@
+# Nested Git repositories and agent worktrees remain independently versioned.
+.worktrees/
+integrated-market-platform/
+governed-ticker-metadata-enrichment/
+equity-data-v1-worktree/
+short-squeeze-project/
+
+# Local environments, dependencies, caches, and generated output.
+**/.venv/
+**/venv/
+**/env/
+**/node_modules/
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.vite/
+**/*.tsbuildinfo
+**/.local/
+**/dist/
+**/coverage/
+**/*.pyc
+
+# Local secrets and credentials.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*credentials*
+**/*secrets*
+
+# Git-LFS pointer files whose underlying futures datasets are not present
+# locally. Keep source code and metadata; restore these datasets separately.
+Eric_futuresX-main/futuresX-main/backtest_trades_*.csv
+Eric_futuresX-main/futuresX-main/es_level2_data.csv
+Eric_futuresX-main/futuresX-main/market_depth_rth_before_june9.db
+Eric_futuresX-main/futuresX-main/spxl_data.csv
+Eric_futuresX-main/futuresX-main/spy_data.csv
+Eric_futuresX-main/futuresX-main/ticker_data/ES/*.csv
+Eric_futuresX-main/futuresX-main/ticker_data/SPY/*.csv
+Eric_futuresX-main/futuresX-main/timestamp_mid_prices_*.csv
+
+# Temporary/editor files.
+.freebuff/
+**/.DS_Store
+**/Thumbs.db
+*.swp
+*.swo

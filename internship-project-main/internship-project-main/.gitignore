@@ -1,0 +1,38 @@
+# Secrets / credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.token
+.finviz_token
+**/secrets.toml
+.streamlit/secrets.toml
+
+# Runtime / local state (may contain tokens in error URLs)
+**/state/
+**/logs/
+**/data/historical/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+env/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Local notes
+*.local.md

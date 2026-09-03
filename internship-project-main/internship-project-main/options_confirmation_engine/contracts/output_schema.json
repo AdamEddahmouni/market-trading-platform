@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OptionsEngineOutput",
+  "type": "object",
+  "required": ["meta", "items"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["updated_at", "request_id", "count"],
+      "properties": {
+        "updated_at": { "type": "string" },
+        "request_id": { "type": "string" },
+        "count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "ticker",
+          "request_id",
+          "as_of",
+          "options_score",
+          "options_bias",
+          "feature_values",
+          "data_quality",
+          "reasoning_summary"
+        ],
+        "properties": {
+          "ticker": { "type": "string" },
+          "request_id": { "type": "string" },
+          "as_of": { "type": "string" },
+          "options_score": { "type": "number", "minimum": 0, "maximum": 100 },
+          "options_bias": { "type": "string", "enum": ["bullish", "bearish", "neutral", "no_data"] },
+          "feature_values": { "type": "object" },
+          "data_quality": {
+            "type": "object",
+            "required": ["quality_score", "flags"],
+            "properties": {
+              "quality_score": { "type": "number", "minimum": 0, "maximum": 1 },
+              "flags": { "type": "array", "items": { "type": "string" } }
+            },
+            "additionalProperties": true
+          },
+          "reasoning_summary": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}

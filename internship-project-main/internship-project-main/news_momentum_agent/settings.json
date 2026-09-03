@@ -1,0 +1,276 @@
+{
+  "screener": {
+    "price_change_min": -2.0,
+    "price_change_max": 2.0,
+    "volume_multiplier": 1.5,
+    "market_cap_max_billion": 2,
+    "include_mid_large_cap": true,
+    "mid_large": {
+      "market_cap_min_billion": 2,
+      "price_change_min": -8.0,
+      "price_change_max": 8.0,
+      "volume_multiplier": 1.5,
+      "require_optionable": true,
+      "finviz_max_rows": 120
+    },
+    "small_quiet_watchlist_share": 0.4,
+    "scan_interval_seconds": 15,
+    "finviz_max_rows": 200,
+    "max_watchlist_symbols": 60,
+    "provider": "scraper",
+    "scraper": {
+      "request_timeout_seconds": 10,
+      "page_sleep_seconds": 0.1,
+      "max_pages": 10,
+      "max_workers": 1,
+      "sort": "-relativevolume"
+    }
+  },
+  "expiry_screener": {
+    "enabled": true,
+    "scan_interval_seconds": 60,
+    "max_dte": 5,
+    "min_total_oi": 5000,
+    "min_relative_volume": 1.5,
+    "whale_strike_min_oi_share": 0.15,
+    "max_rows": 40,
+    "max_watchlist_symbols": 24,
+    "seed_tickers": ["SPY", "QQQ", "IWM", "AAPL", "TSLA", "NVDA", "AMZN", "META", "MSFT", "GOOGL"],
+    "filter_codes": "ind_stocksonly,sh_opt_option,sh_price_o10,sh_avgvol_o1000,sh_relvol_o1.5"
+  },
+  "social": {
+    "stocktwits_posts_to_fetch": 30,
+    "high_alert_threshold": 3,
+    "watch_threshold": 1,
+    "social_max_workers": 8,
+    "social_request_timeout_seconds": 8,
+    "social_cache_ttl_seconds": 20,
+    "max_post_age_hours": 24,
+    "max_retries": 1,
+    "retry_backoff_ms": 250,
+    "quiet_expected_misses": true,
+    "enable_keyword_aliases": true,
+    "symbol_cooldown_cycles": 2
+  },
+  "herd_alert": {
+    "enabled": true,
+    "news_score_abs_min": 0.5,
+    "news_max_age_hours": 4,
+    "max_news_score_per_cycle": 6,
+    "volume_rvol_percentile_min": 0.9,
+    "volume_rvol_floor": 2.0,
+    "volume_abs_pct_change_min": 1.0
+  },
+  "news": {
+    "high_alert_poll_seconds": 15,
+    "watch_poll_seconds": 120,
+    "max_article_age_hours": 4,
+    "article_text_max_chars": 3000,
+    "exclude_law_firm_solicitations": true,
+    "sources": {
+      "pr_newswire": { "enabled": true },
+      "globe_newswire": { "enabled": true },
+      "business_wire": { "enabled": true },
+      "newsfile": { "enabled": true },
+      "access_newswire": { "enabled": true },
+      "sec_edgar": { "enabled": true, "forms": ["8-K"] },
+      "yahoo": { "enabled": true },
+      "benzinga": { "enabled": true },
+      "marketwatch": { "enabled": true }
+    }
+  },
+  "news_catalyst": {
+    "enabled": true,
+    "poll_seconds": 90,
+    "max_article_age_hours": 4,
+    "max_candidates_per_cycle": 12,
+    "buy_threshold": 0.55,
+    "sell_threshold": -0.55,
+    "review_threshold": 0.35,
+    "include_finviz_movers": true,
+    "max_finviz_movers": 8,
+    "finviz_price_change_min": -12.0,
+    "finviz_price_change_max": 12.0,
+    "finviz_volume_multiplier": 1.2,
+    "finviz_max_rows": 80,
+    "finviz_filter_codes": "ind_stocksonly,sh_opt_option,sh_price_o5,sh_avgvol_o200",
+    "require_watchlist_for_0dte": false,
+    "extra_tickers": []
+  },
+  "llm": {
+    "provider": "gemini",
+    "enabled": true,
+    "openai_model": "gpt-4o-mini",
+    "anthropic_model": "claude-haiku-4-5-20251001",
+    "gemini_model": "gemini-flash-lite-latest",
+    "max_tokens": 300,
+    "temperature": 0,
+    "rationale_max_tokens": 700
+  },
+  "claude": {
+    "enabled": false,
+    "model": "claude-haiku-4-5-20251001",
+    "max_tokens": 300,
+    "temperature": 0,
+    "rationale_max_tokens": 700
+  },
+  "agent": {
+    "buy_threshold": 0.5,
+    "sell_threshold": -0.5,
+    "require_social_signal": true,
+    "paper_trading": true,
+    "high_alert_ttl_seconds": 600,
+    "path_a_enabled": true,
+    "path_a_zero_alert_cycles": 3,
+    "path_a_zero_alerts_rth_only": true,
+    "path_a_zero_alerts_enabled": true
+  },
+
+  "trading": {
+    "auto_execute": true,
+    "instrument": "options",
+    "options_expiry_horizon": "range",
+    "deadline_date": "2026-07-31",
+    "options_dte_range": [0, 30],
+    "options_max_dte": 5,
+    "review_requires_approval": true,
+    "starting_cash": 100000,
+    "max_positions": 10,
+    "allow_short": true,
+    "prefer_equity_on_liquidity_reject": true,
+    "equity_fallback_min_news_score": 0.5,
+    "options_exits": {
+      "take_profit_pct": 0.40,
+      "stop_loss_pct": 0.30,
+      "eod_flatten_et": "15:45",
+      "deadline_flatten_weekday": 4
+    }
+  },
+  "news_decay": {
+    "enabled": true,
+    "half_life_minutes": 45
+  },
+  "odte_screener": {
+    "enabled": true,
+    "scan_interval_seconds": 120,
+    "min_setup_score": 45,
+    "max_universe": 80,
+    "max_watchlist_symbols": 40,
+    "max_dte_include": 7,
+    "include_finviz_scan": true,
+    "include_path_a_watchlist": true,
+    "include_high_alert": true,
+    "finviz_max_rows": 120,
+    "finviz_min_price": 5.0,
+    "finviz_min_relative_volume": 1.0,
+    "finviz_filter_codes": "ind_stocksonly,sh_opt_option,sh_price_o5,sh_avgvol_o200,sh_relvol_o1",
+    "require_options_chain": true,
+    "keep_below_threshold": false,
+    "require_watchlist_for_path_a": false,
+    "require_watchlist_for_path_b": false,
+    "w_liquidity": 22,
+    "w_gex": 12,
+    "w_max_pain": 12,
+    "w_iv_rank": 12,
+    "w_flow_trend": 14,
+    "w_catalyst": 18,
+    "w_dte_fit": 10
+  },
+  "risk": {
+    "enabled": true,
+    "risk_fraction_per_trade": 0.01,
+    "max_concurrent_0dte": 3,
+    "max_overnight_positions": 2,
+    "overnight_size_mult": 0.75,
+    "max_correlated_group": 1,
+    "daily_loss_circuit_pct": 0.03,
+    "max_contracts_per_trade": 10,
+    "max_new_0dte_entries_per_day": 5,
+    "min_minutes_between_entries_same_ticker": 240,
+    "force_review_all": false
+  },
+  "execution": {
+    "autonomous_buy_sell": true,
+    "force_review_all": false,
+    "review_only_on_conflict": true,
+    "review_ttl_minutes": 8,
+    "conflict_min_sources": 2,
+    "conflict_score_gap": 0.0,
+    "min_confidence_for_action": 40,
+    "min_confidence_for_path_b": 65,
+    "min_lean_pct_for_path_b_execute": 60,
+    "min_lean_over_wait_pct": 10,
+    "require_options_bias_to_autoresolve": true,
+    "market_hours_only": true,
+    "no_post_1545_opens": true,
+    "exit_on_signal_flip": false,
+    "min_hold_minutes_before_flip": 8,
+    "flip_min_confidence": 70,
+    "flip_reentry_cooldown_minutes": 30,
+    "flip_strong_reentry_confidence": 80,
+    "require_live_nbbo": true,
+    "identical_quote_pause_count": 3,
+    "path_b_auto_execute": true,
+    "path_a2_auto_execute": false
+  },
+  "near_miss_tracker": {
+    "enabled": true,
+    "cooldown_minutes": 60,
+    "checkpoint_offsets_min": {
+      "t60": 60,
+      "t240": 240
+    },
+    "track_reason_codes": [
+      "low_confidence",
+      "weak_lean",
+      "liquidity_reject",
+      "options_not_clear",
+      "stale_quote",
+      "identical_quote_pause",
+      "no_contract",
+      "quote_rejected"
+    ]
+  },
+  "unified_decision": {
+    "expiry_override_review": true,
+    "expiry_buy_min_options_score": 65,
+    "expiry_buy_min_urgency": 45
+  },
+  "notifications": {
+    "telegram_enabled": true,
+    "notify_on": ["BUY", "SELL", "REVIEW"],
+    "notify_review_leans": ["BUY", "SELL"],
+    "min_review_lean_pct": 55,
+    "cooldown_minutes": 60,
+    "heartbeat_minutes": 60,
+    "pending_ttl_minutes": 8,
+    "confirm_auto_trades": false
+  },
+  "runtime": {
+    "single_instance_required": true,
+    "state_write_atomic": true,
+    "stale_buffer_seconds": 90
+  },
+  "alpaca": {
+    "enabled": true,
+    "provider": "alpaca_paper",
+    "api_key_env": "ALPACA_API_KEY",
+    "secret_key_env": "ALPACA_SECRET_KEY",
+    "require_broker_ack": false,
+    "mirror_local_portfolio": true
+  },
+  "options_confirmation": {
+    "enabled": true,
+    "engine_path": "../options_confirmation_engine",
+    "chain_provider": "auto",
+    "unusual_whales_auth_token_env": "UNUSUAL_WHALES_API_TOKEN",
+    "require_confirmation_for_buy": true,
+    "require_confirmation_for_sell": true,
+    "min_options_score_bullish": 60,
+    "max_options_score_bearish": 40,
+    "offline_mode": false,
+    "no_data_policy": "block",
+    "no_data_strong_news_threshold": 0.75,
+    "min_options_quality_to_trust": 0.25
+  }
+}
