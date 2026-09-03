@@ -3,16 +3,16 @@ name: IMP Validation
 on:
   push:
     paths:
-      - "integrated-market-platform/**"
+      - "projects/integrated-market-platform/**"
       - ".github/workflows/imp-validate.yml"
   pull_request:
     paths:
-      - "integrated-market-platform/**"
+      - "projects/integrated-market-platform/**"
       - ".github/workflows/imp-validate.yml"
 
 defaults:
   run:
-    working-directory: integrated-market-platform
+    working-directory: projects/integrated-market-platform
 
 jobs:
   backend:
@@ -47,12 +47,12 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: integrated-market-platform/ui/package-lock.json
+          cache-dependency-path: projects/integrated-market-platform/ui/package-lock.json
 
       - name: Install UI dependencies
-        working-directory: integrated-market-platform/ui
+        working-directory: projects/integrated-market-platform/ui
         run: npm ci
 
       - name: Typecheck and build UI
-        working-directory: integrated-market-platform/ui
+        working-directory: projects/integrated-market-platform/ui
         run: npm run build

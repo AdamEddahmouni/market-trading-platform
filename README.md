@@ -28,3 +28,18 @@ Several futures data files are present only as Git-LFS pointer stubs in this
 checkout; their underlying objects are not available locally. Those paths are
 excluded from the workspace snapshot rather than being published as unusable
 data. The associated source code and metadata remain tracked.
+
+## Safe synchronization
+
+The source-to-snapshot mapping and exact imported commits are recorded in
+`workspace-manifest.json`. Use the guarded workflow in
+[`docs/MONOREPO_WORKFLOW.md`](docs/MONOREPO_WORKFLOW.md) and run:
+
+```powershell
+python tools/monorepo_guard.py validate --remote
+```
+
+Imports must be performed from a non-`main` parent branch. The guard refuses
+dirty parent trees, verifies child refs and visibility, rejects Gitlink
+snapshots, and confirms that child repositories are unchanged. Parent `main`
+is protected and requires the `Monorepo Guardrails / validate` check.
