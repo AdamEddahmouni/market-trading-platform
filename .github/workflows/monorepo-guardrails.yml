@@ -21,5 +21,8 @@ jobs:
       - name: Validate workspace manifest and snapshots
         run: python tools/monorepo_guard.py validate --ci
 
+      - name: Validate committed history audit
+        run: python tools/generate_history_ledger.py validate --ci
+
       - name: Run guard tests
-        run: python -m unittest tests.test_monorepo_guard -v
+        run: python -m unittest tests.test_monorepo_guard tests.test_history_ledger -v

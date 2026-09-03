@@ -43,3 +43,8 @@ Imports must be performed from a non-`main` parent branch. The guard refuses
 dirty parent trees, verifies child refs and visibility, rejects Gitlink
 snapshots, and confirms that child repositories are unchanged. Parent `main`
 is protected and requires the `Monorepo Guardrails / validate` check.
+
+The historical paper trail begins at
+[`docs/history/INDEX.md`](docs/history/INDEX.md). It records every commit
+reachable from every captured child-repository ref, with readable timelines and
+the complete JSONL ledger.
