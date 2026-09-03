@@ -1,5 +1,9 @@
 # Nested Git repositories and agent worktrees remain independently versioned.
 .worktrees/
+integrated-market-platform/
+governed-ticker-metadata-enrichment/
+equity-data-v1-worktree/
+short-squeeze-project/
 
 # Local environments, dependencies, caches, and generated output.
 **/.venv/

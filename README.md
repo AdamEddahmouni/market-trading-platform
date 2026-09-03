@@ -6,11 +6,11 @@ research, and coursework projects stored under this directory.
 ## Repository boundaries
 
 - This repository contains a monorepo snapshot of every project directory in
-  this workspace, including `integrated-market-platform/`,
-  `governed-ticker-metadata-enrichment/`, `equity-data-v1-worktree/`, and
-  `short-squeeze-project/`.
-- The original child repositories, histories, remotes, and visibility settings
-  are left unchanged. The snapshots here are the private workspace copy.
+  this workspace under `projects/`, including the integrated platform,
+  governed ticker metadata, equity data, and short-squeeze projects.
+- The original child repositories remain at the workspace root with their
+  histories, remotes, and visibility settings unchanged. The snapshots under
+  `projects/` are the private workspace copy.
 - `.worktrees/` contains disposable development worktrees and is intentionally
   excluded from this monorepo.
 
