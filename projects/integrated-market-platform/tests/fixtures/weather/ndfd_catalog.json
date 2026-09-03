@@ -1,0 +1,35 @@
+{
+  "source": "NOAA_NCEI",
+  "product": "National Digital Forecast Database",
+  "period_of_record": {
+    "by_wmo_header_start": "2004-06-06",
+    "online_history": "APPROXIMATELY_TEN_YEARS",
+    "cloud_start": "2020-04-16"
+  },
+  "access": [
+    {
+      "kind": "THREDDS_CATALOG",
+      "url": "https://www.ncei.noaa.gov/thredds/catalog/model/ndfd.html"
+    },
+    {
+      "kind": "AIRS",
+      "url": "https://www.ncei.noaa.gov/has/HAS.DsSelect"
+    },
+    {
+      "kind": "NOAA_OPEN_DATA",
+      "url": "https://registry.opendata.aws/noaa-ndfd/"
+    },
+    {
+      "kind": "NODD_S3",
+      "url": "s3://noaa-ndfd-pds/wmo/"
+    }
+  ],
+  "formats": ["GRIB2"],
+  "catalog_entries": [
+    {
+      "name": "NDFD - Historical File Access for Core NDFD",
+      "kind": "COLLECTION",
+      "size_bytes": null
+    }
+  ]
+}

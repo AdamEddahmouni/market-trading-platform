@@ -1,0 +1,7 @@
+- single-user/local operator control plane only
+- incident drills use fixtures and mock transports only
+- no mobile operator UI
+- no external pager or push notification delivery
+- replace-order controls intentionally absent (NOT CERTIFIED)
+- no emergency liquidation automation
+- role enforcement remains MODEL_ONLY_NOT_ENFORCED

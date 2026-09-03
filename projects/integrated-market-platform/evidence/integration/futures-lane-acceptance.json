@@ -1,0 +1,70 @@
+{
+  "checks": [
+    {
+      "check_id": "projection_fail_closed",
+      "message": "Explore projection is fail-closed when donor bridge is down.",
+      "passed": true
+    },
+    {
+      "check_id": "projection_workspace_fixture_fallback",
+      "message": "ES workspace projection serves admitted fixture when donor bridge is down.",
+      "passed": true
+    },
+    {
+      "check_id": "projection_explore_live",
+      "message": "Explore projection is available when FuturesX bridge is live.",
+      "passed": true
+    },
+    {
+      "check_id": "projection_explore_bridge_url",
+      "message": "Explore projection includes bridge URL metadata.",
+      "passed": true
+    },
+    {
+      "check_id": "projection_workspace_donor_overlay",
+      "message": "ES workspace projection overlays donor bridge when :8788 is live.",
+      "passed": true
+    },
+    {
+      "check_id": "imp_explore_http",
+      "message": "IMP /explore/futures responds over HTTP.",
+      "passed": true
+    },
+    {
+      "check_id": "imp_explore_available",
+      "message": "IMP explore futures bridge is available when donor is live.",
+      "passed": true
+    },
+    {
+      "check_id": "imp_workspace_futures_http",
+      "message": "IMP workspace futures endpoint serves ES detail.",
+      "passed": true
+    },
+    {
+      "check_id": "imp_workspace_donor_overlay",
+      "message": "IMP workspace futures shows donor_bridge provenance when bridge is live.",
+      "passed": true
+    },
+    {
+      "check_id": "imp_explain_futures",
+      "message": "IMP explain endpoint resolves futures refs.",
+      "passed": true
+    },
+    {
+      "check_id": "imp_attention_futures",
+      "message": "IMP attention feed includes futures items when ES workspace is available.",
+      "passed": true
+    }
+  ],
+  "lane": "futures-read-only",
+  "status": "PASS",
+  "summary": {
+    "donor_live": true,
+    "donor_url": "http://127.0.0.1:8788",
+    "http_status": "PASS",
+    "imp_live": true,
+    "imp_url": "http://127.0.0.1:8766",
+    "projection_status": "PASS",
+    "symbol": "ES"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "fixture_id": "CFTC-TFF-COMBINED-ES-2026",
+  "description": "TFF Combined E-mini S&P 500",
+  "report_family": "TFF",
+  "position_scope": "FUTURES_AND_OPTIONS_COMBINED",
+  "source_dataset": "yw9f-hn96",
+  "rows": [
+    {
+      "market_and_exchange_names": "E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE",
+      "report_date_as_yyyy_mm_dd": "2026-08-11",
+      "cftc_contract_market_code": "13874+",
+      "cftc_commodity_code": "138",
+      "open_interest_all": "2650000",
+      "dealer_positions_long_all": "125000",
+      "dealer_positions_short": "98000",
+      "asset_mgr_positions_long": "460000",
+      "asset_mgr_positions_short": "390000",
+      "lev_money_positions_long": "320000",
+      "lev_money_positions_short": "290000",
+      "other_rept_positions_long": "88000",
+      "other_rept_positions_short": "75000",
+      "nonrept_positions_long_all": "100000",
+      "nonrept_positions_short_all": "115000"
+    }
+  ]
+}

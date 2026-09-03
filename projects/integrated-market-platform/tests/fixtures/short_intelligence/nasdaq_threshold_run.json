@@ -1,0 +1,6 @@
+{
+  "day1": "Symbol|Security Name|Market Category|Reg SHO Threshold Flag|Rule 3210|Filler\nTEST|TEST CORP|S|Y|N|\n20260701110000\n",
+  "day2": "Symbol|Security Name|Market Category|Reg SHO Threshold Flag|Rule 3210|Filler\nTEST|TEST CORP|S|Y|N|\n20260702110000\n",
+  "day3": "Symbol|Security Name|Market Category|Reg SHO Threshold Flag|Rule 3210|Filler\nTEST|TEST CORP|S|Y|N|\n20260703110000\n",
+  "day4": "Symbol|Security Name|Market Category|Reg SHO Threshold Flag|Rule 3210|Filler\nOTHER|OTHER CORP|S|Y|N|\n20260704110000\n"
+}

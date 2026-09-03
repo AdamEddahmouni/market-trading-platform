@@ -1,0 +1,43 @@
+:root {
+  --surface-0: #0d0f12;
+  --surface-1: #141820;
+  --surface-2: #1a2030;
+  --surface-3: #12161e;
+  --border-subtle: #2a3142;
+  --border-focus: #5b8def;
+  --text-primary: #e8ecf4;
+  --text-secondary: #9aa3b5;
+  --text-muted: #6b7280;
+  --direction-long: #3d9970;
+  --direction-long-bg: rgba(61, 153, 112, 0.12);
+  --direction-short: #c44e52;
+  --direction-short-bg: rgba(196, 78, 82, 0.12);
+  --conflict: #b0882e;
+  --warning: #d4a017;
+  --warning-bg: rgba(212, 160, 23, 0.12);
+  --risk: #e85d4c;
+  --error: #e85d4c;
+  --unavailable: #5c6370;
+  --live: #3d9970;
+  --replay: #d4a017;
+  --replay-bg: rgba(212, 160, 23, 0.08);
+  --mock-banner: #2a1f3d;
+  --mock-banner-border: #6b4fa0;
+  --font-ui: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --inspector-width: 38%;
+  --drawer-width: 360px;
+  --context-bar-height: 40px;
+  --nav-height: 44px;
+  --transition-fast: 150ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

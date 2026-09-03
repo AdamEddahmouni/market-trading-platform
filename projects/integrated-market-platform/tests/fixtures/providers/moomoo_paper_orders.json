@@ -1,0 +1,153 @@
+{
+  "schema_version": "1.0.0",
+  "note": "Recorded Moomoo OpenAPI simulated-environment (paper) contract responses (Platformization P4 4C). CI-safe fixture replay; the real wire is the proprietary OpenD TCP/protobuf protocol with no official HTTP gateway, so no network transport is implemented — see docs/providers/MOOMOO_OBSERVATIONAL.md and the adapter docstring.",
+  "replay": [
+    {
+      "operation": "place_order",
+      "match": {"client_order_id": "cli-moomoo-limit-1", "idempotency_key": "key-moomoo-limit-1"},
+      "response": {
+        "broker_order_id": "MM-WORK-0001",
+        "symbol": "US.BIYA",
+        "instrument_id": "BIYA",
+        "status": "working",
+        "status_raw": "Submitted",
+        "event_time_ns": 1787000000000000000,
+        "receive_time_ns": 1787000000001000000,
+        "filled_quantity": 0
+      }
+    },
+    {
+      "operation": "place_order",
+      "match": {"client_order_id": "cli-moomoo-market-1", "idempotency_key": "key-moomoo-market-1"},
+      "response": {
+        "broker_order_id": "MM-FILL-0001",
+        "symbol": "US.BIYA",
+        "instrument_id": "BIYA",
+        "status": "filled",
+        "status_raw": "Filled_All",
+        "event_time_ns": 1787000000100000000,
+        "receive_time_ns": 1787000000100500000,
+        "avg_fill_price_minor": 11620,
+        "filled_quantity": 100,
+        "fills": [
+          {
+            "broker_fill_id": "MM-FL-0001",
+            "quantity": 100,
+            "price_minor": 11620,
+            "event_time_ns": 1787000000100000000,
+            "receive_time_ns": 1787000000100500000
+          }
+        ]
+      }
+    },
+    {
+      "operation": "place_order",
+      "match": {"client_order_id": "cli-moomoo-reject-1", "idempotency_key": "key-moomoo-reject-1"},
+      "response": {
+        "broker_order_id": "MM-REJ-0001",
+        "symbol": "US.BIYA",
+        "instrument_id": "BIYA",
+        "status": "rejected",
+        "status_raw": "Rejected",
+        "event_time_ns": 1787000000200000000,
+        "receive_time_ns": 1787000000200500000,
+        "filled_quantity": 0
+      }
+    },
+    {
+      "operation": "place_order",
+      "match": {"client_order_id": "cli-moomoo-ambiguous-1", "idempotency_key": "key-moomoo-ambiguous-1"},
+      "response": {
+        "status": "ambiguous",
+        "status_raw": "timeout",
+        "event_time_ns": 1787000000300000000,
+        "receive_time_ns": 1787000000300500000
+      }
+    },
+    {
+      "operation": "place_order",
+      "match": {"client_order_id": "cli-moomoo-unknown-1", "idempotency_key": "key-moomoo-unknown-1"},
+      "response": {
+        "broker_order_id": "MM-UNK-0001",
+        "symbol": "US.BIYA",
+        "instrument_id": "BIYA",
+        "status": "mystery-status",
+        "status_raw": "MysteryStatus",
+        "event_time_ns": 1787000000400000000,
+        "receive_time_ns": 1787000000400500000,
+        "filled_quantity": 0
+      }
+    },
+    {
+      "operation": "fetch_order",
+      "match": {"broker_order_id": "MM-FILL-0001"},
+      "response": {
+        "broker_order_id": "MM-FILL-0001",
+        "symbol": "US.BIYA",
+        "instrument_id": "BIYA",
+        "status": "filled",
+        "status_raw": "Filled_All",
+        "event_time_ns": 1787000000105000000,
+        "receive_time_ns": 1787000000105500000,
+        "avg_fill_price_minor": 11620,
+        "filled_quantity": 100,
+        "fills": [
+          {
+            "broker_fill_id": "MM-FL-0001",
+            "quantity": 100,
+            "price_minor": 11620,
+            "event_time_ns": 1787000000100000000,
+            "receive_time_ns": 1787000000100500000
+          }
+        ]
+      }
+    },
+    {
+      "operation": "fetch_order",
+      "match": {"broker_order_id": "MM-WORK-0001"},
+      "response": {
+        "broker_order_id": "MM-WORK-0001",
+        "symbol": "US.BIYA",
+        "instrument_id": "BIYA",
+        "status": "working",
+        "status_raw": "Submitted",
+        "event_time_ns": 1787000000002000000,
+        "receive_time_ns": 1787000000002500000,
+        "filled_quantity": 0
+      }
+    },
+    {
+      "operation": "cancel_order",
+      "match": {"client_order_id": "cli-moomoo-limit-1", "broker_order_id": "MM-WORK-0001"},
+      "response": {
+        "broker_order_id": "MM-WORK-0001",
+        "symbol": "US.BIYA",
+        "instrument_id": "BIYA",
+        "status": "cancelled",
+        "status_raw": "Cancelled",
+        "event_time_ns": 1787000000500000000,
+        "receive_time_ns": 1787000000500500000,
+        "filled_quantity": 0
+      }
+    },
+    {
+      "operation": "fetch_account",
+      "match": {},
+      "response": {
+        "cash_minor": 10000000,
+        "buying_power_minor": 10000000,
+        "trade_env": "SIMULATE",
+        "as_of_ns": 1787000000600000000
+      }
+    },
+    {
+      "operation": "fetch_positions",
+      "match": {},
+      "response": {
+        "trade_env": "SIMULATE",
+        "as_of_ns": 1787000000600000000,
+        "positions": []
+      }
+    }
+  ]
+}

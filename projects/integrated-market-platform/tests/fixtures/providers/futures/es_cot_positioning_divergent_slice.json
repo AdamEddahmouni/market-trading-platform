@@ -1,0 +1,132 @@
+{
+  "admission_id": "ADMITTED-COT-ES-DIVERGENT-001",
+  "fixture_id": "ADMITTED-COT-ES-DIVERGENT-001",
+  "instrument_family": "ES",
+  "report_type": "disaggregated_futures_only",
+  "participant_category": "managed_money",
+  "research_only": true,
+  "synthetic": true,
+  "symbol": "ES",
+  "reports": [
+    {
+      "instrument_family": "ES",
+      "report_type": "disaggregated_futures_only",
+      "participant_category": "managed_money",
+      "long_positions": 120000,
+      "short_positions": 140000,
+      "spreading": 8000,
+      "net": -20000,
+      "observation_time": "2025-03-25T00:00:00Z",
+      "publication_time": "2025-03-28T17:30:00Z",
+      "provenance_ref": "cot.fixture:ADMITTED-COT-ES-DIVERGENT-001"
+    },
+    {
+      "instrument_family": "ES",
+      "report_type": "disaggregated_futures_only",
+      "participant_category": "managed_money",
+      "long_positions": 118000,
+      "short_positions": 145000,
+      "spreading": 9000,
+      "net": -27000,
+      "observation_time": "2025-04-01T00:00:00Z",
+      "publication_time": "2025-04-04T17:30:00Z",
+      "provenance_ref": "cot.fixture:ADMITTED-COT-ES-DIVERGENT-001"
+    },
+    {
+      "instrument_family": "ES",
+      "report_type": "disaggregated_futures_only",
+      "participant_category": "managed_money",
+      "long_positions": 115000,
+      "short_positions": 150000,
+      "spreading": 10000,
+      "net": -35000,
+      "observation_time": "2025-04-08T00:00:00Z",
+      "publication_time": "2025-04-11T17:30:00Z",
+      "provenance_ref": "cot.fixture:ADMITTED-COT-ES-DIVERGENT-001"
+    },
+    {
+      "instrument_family": "ES",
+      "report_type": "disaggregated_futures_only",
+      "participant_category": "managed_money",
+      "long_positions": 112000,
+      "short_positions": 156000,
+      "spreading": 11000,
+      "net": -44000,
+      "observation_time": "2025-04-15T00:00:00Z",
+      "publication_time": "2025-04-18T17:30:00Z",
+      "provenance_ref": "cot.fixture:ADMITTED-COT-ES-DIVERGENT-001"
+    },
+    {
+      "instrument_family": "ES",
+      "report_type": "disaggregated_futures_only",
+      "participant_category": "managed_money",
+      "long_positions": 110000,
+      "short_positions": 160000,
+      "spreading": 12000,
+      "net": -50000,
+      "observation_time": "2025-04-22T00:00:00Z",
+      "publication_time": "2025-04-25T17:30:00Z",
+      "provenance_ref": "cot.fixture:ADMITTED-COT-ES-DIVERGENT-001"
+    },
+    {
+      "instrument_family": "ES",
+      "report_type": "disaggregated_futures_only",
+      "participant_category": "managed_money",
+      "long_positions": 108000,
+      "short_positions": 165000,
+      "spreading": 13000,
+      "net": -57000,
+      "observation_time": "2025-04-29T00:00:00Z",
+      "publication_time": "2025-05-02T17:30:00Z",
+      "provenance_ref": "cot.fixture:ADMITTED-COT-ES-DIVERGENT-001"
+    },
+    {
+      "instrument_family": "ES",
+      "report_type": "disaggregated_futures_only",
+      "participant_category": "managed_money",
+      "long_positions": 105000,
+      "short_positions": 170000,
+      "spreading": 14000,
+      "net": -65000,
+      "observation_time": "2025-05-06T00:00:00Z",
+      "publication_time": "2025-05-09T17:30:00Z",
+      "provenance_ref": "cot.fixture:ADMITTED-COT-ES-DIVERGENT-001"
+    },
+    {
+      "instrument_family": "ES",
+      "report_type": "disaggregated_futures_only",
+      "participant_category": "managed_money",
+      "long_positions": 102000,
+      "short_positions": 176000,
+      "spreading": 15000,
+      "net": -74000,
+      "observation_time": "2025-05-13T00:00:00Z",
+      "publication_time": "2025-05-16T17:30:00Z",
+      "provenance_ref": "cot.fixture:ADMITTED-COT-ES-DIVERGENT-001"
+    },
+    {
+      "instrument_family": "ES",
+      "report_type": "disaggregated_futures_only",
+      "participant_category": "managed_money",
+      "long_positions": 100000,
+      "short_positions": 182000,
+      "spreading": 16000,
+      "net": -82000,
+      "observation_time": "2025-05-20T00:00:00Z",
+      "publication_time": "2025-05-23T17:30:00Z",
+      "provenance_ref": "cot.fixture:ADMITTED-COT-ES-DIVERGENT-001"
+    },
+    {
+      "instrument_family": "ES",
+      "report_type": "disaggregated_futures_only",
+      "participant_category": "managed_money",
+      "long_positions": 98000,
+      "short_positions": 190000,
+      "spreading": 17000,
+      "net": -92000,
+      "observation_time": "2025-05-27T00:00:00Z",
+      "publication_time": "2025-05-30T17:30:00Z",
+      "provenance_ref": "cot.fixture:ADMITTED-COT-ES-DIVERGENT-001"
+    }
+  ]
+}

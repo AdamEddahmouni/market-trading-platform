@@ -1,0 +1,27 @@
+{
+  "generated_at": "2026-08-25T20:39:50.686222+00:00",
+  "build_frontier": "BUILD_11_MICROSTRUCTURE_SPECIALIST",
+  "branch": "cloud/build-11-microstructure-specialist",
+  "head": "46596f7b29d34f67cefaca1df05d5b2fd0f463fc",
+  "parent_build_10_head": "6acbcb8ea582251da9f6a77672a854710540d42c",
+  "file_count": 2823,
+  "previous_manifest": "artifacts/cloud-handoff/CLOUD_POST_BUILD10_MANIFEST.json",
+  "tests": {
+    "intelligence": "411 passed, 20 skipped",
+    "shadow_p6": "23 passed",
+    "build_11_specialist": "32 passed"
+  },
+  "limitations": [
+    "Mongo integration opt-in only",
+    "No physical GPU required for microstructure specialist",
+    "Only MICROSTRUCTURE specialist implemented",
+    "Runtime scheduler queue remains ephemeral",
+    "Platform UI/store fixture validation errors remain pre-existing"
+  ],
+  "specialist_profile": {
+    "profile_id": "microstructure-cpu-v1",
+    "resource_class": "CPU",
+    "component_id": "microstructure-specialist",
+    "component_version": "1"
+  }
+}

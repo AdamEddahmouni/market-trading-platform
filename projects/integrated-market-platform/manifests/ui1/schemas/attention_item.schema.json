@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ui1.attention_item",
+  "title": "AttentionItem",
+  "type": "object",
+  "required": ["attention_id", "priority_rank", "reasons", "headline", "explanation_ref"],
+  "properties": {
+    "attention_id": { "type": "string" },
+    "priority_rank": { "type": "integer" },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "label"],
+        "properties": {
+          "code": { "type": "string" },
+          "label": { "type": "string" },
+          "weight": { "type": "number" }
+        }
+      }
+    },
+    "instrument_id": { "type": "string" },
+    "headline": { "type": "string" },
+    "explanation_ref": { "type": "string" },
+    "surfaced_time": { "type": "integer", "description": "Epoch nanoseconds when attention was surfaced (optional)" }
+  },
+  "additionalProperties": true
+}

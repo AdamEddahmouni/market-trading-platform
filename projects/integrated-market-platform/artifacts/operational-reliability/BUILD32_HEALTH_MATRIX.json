@@ -1,0 +1,80 @@
+{
+  "as_of_ns": 1787724693460264100,
+  "blocking_dependencies": [],
+  "entries": [
+    {
+      "blocking_live": false,
+      "component": "broker_adapter",
+      "current_issue": null,
+      "freshness_ns": 0,
+      "last_success_at_ns": null,
+      "state": "HEALTHY"
+    },
+    {
+      "blocking_live": false,
+      "component": "broker_status_feed",
+      "current_issue": null,
+      "freshness_ns": 0,
+      "last_success_at_ns": null,
+      "state": "HEALTHY"
+    },
+    {
+      "blocking_live": false,
+      "component": "reconciliation_worker",
+      "current_issue": null,
+      "freshness_ns": 0,
+      "last_success_at_ns": null,
+      "state": "HEALTHY"
+    },
+    {
+      "blocking_live": false,
+      "component": "canonical_persistence",
+      "current_issue": null,
+      "freshness_ns": 0,
+      "last_success_at_ns": null,
+      "state": "HEALTHY"
+    },
+    {
+      "blocking_live": false,
+      "component": "live_execution_gate",
+      "current_issue": null,
+      "freshness_ns": 0,
+      "last_success_at_ns": null,
+      "state": "HEALTHY"
+    },
+    {
+      "blocking_live": false,
+      "component": "operator_api",
+      "current_issue": null,
+      "freshness_ns": 0,
+      "last_success_at_ns": null,
+      "state": "HEALTHY"
+    },
+    {
+      "blocking_live": false,
+      "component": "alert_evaluator",
+      "current_issue": null,
+      "freshness_ns": 0,
+      "last_success_at_ns": null,
+      "state": "HEALTHY"
+    },
+    {
+      "blocking_live": false,
+      "component": "alert_delivery",
+      "current_issue": null,
+      "freshness_ns": 0,
+      "last_success_at_ns": null,
+      "state": "HEALTHY"
+    },
+    {
+      "blocking_live": false,
+      "component": "kill_switch_store",
+      "current_issue": null,
+      "freshness_ns": 0,
+      "last_success_at_ns": null,
+      "state": "HEALTHY"
+    }
+  ],
+  "matrix_id": "HLTHMX-b264aaff026b0415150a3ee8ede8c038228e711b4acaaafa0a23d8404f784fad",
+  "observability_state": "HEALTHY"
+}

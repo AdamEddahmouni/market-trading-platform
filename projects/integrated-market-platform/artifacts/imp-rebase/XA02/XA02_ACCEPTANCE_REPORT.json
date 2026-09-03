@@ -1,0 +1,47 @@
+{
+  "milestone": "IMP-XA-02",
+  "status": "IMP_XA_02_COMPLETE_WITH_LIMITATIONS",
+  "canonical_base_head": "44e266ee398ebe1043f72e6e513434ad6e9cdf16",
+  "implementation_spec": {
+    "path": "docs/superpowers/specs/2026-08-29-imp-xa-02-first-admitted-cross-asset-source-vertical-implementation-spec.md",
+    "sha256": "57C0BE6B4A33A1F4458A72F2C984CC2DA0BB9B9EBF17C94F7F401A3CA7F132BB"
+  },
+  "registry_snapshot_hash": "DB9410EA83FC12B6FFD39C62F6304000172DE8C47942BD5BD4EE6F9B0B90FB03",
+  "source_classification": "FIXTURE",
+  "live_source_smoke": "NOT_EXECUTED",
+  "admitted_indicator_count": 5,
+  "fixture_observation_count": 5,
+  "validation": {
+    "changed": {
+      "tests": 566,
+      "skipped": 4,
+      "failures": 0,
+      "errors": 0
+    },
+    "full": {
+      "tests": 3164,
+      "passes": 3122,
+      "skipped": 42,
+      "failures": 0,
+      "errors": 0,
+      "duration_s": 525.724
+    }
+  },
+  "protected_boundaries": {
+    "xa01_identity_semantics_changed": false,
+    "of01_invariants_changed": false,
+    "of02_semantics_changed": false,
+    "of03_authority_changed": false,
+    "rt01_trace_changed": false,
+    "evidence01c_new_dependency": false,
+    "evidence_semantics_changed": false,
+    "prediction_semantics_changed": false,
+    "settlement_semantics_changed": false,
+    "risk_authority_changed": false,
+    "execution_authority_changed": false,
+    "broker_transport_changed": false,
+    "adapt_specific_execution_added": false,
+    "autonomous_adaptation_enabled": false
+  },
+  "final_head": "c8311de9533cb7ba45bb7a03abf605a6c46ac91b"
+}

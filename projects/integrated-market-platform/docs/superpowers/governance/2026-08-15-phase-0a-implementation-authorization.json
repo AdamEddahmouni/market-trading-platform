@@ -1,0 +1,179 @@
+{
+  "artifact_type": "PHASE_0A_IMPLEMENTATION_AUTHORIZATION",
+  "authority_bindings": [
+    {
+      "effectivity_state": "PENDING_EXACT_HASH_APPROVAL",
+      "logical_id": "foundation.canonical_specification.revision_3",
+      "logical_path": "docs/superpowers/specs/2026-08-14-integrated-market-platform-foundation-design-revision-3.md",
+      "sha256": "7C6AE5FC9037CA37D44CD1A2FAACD0CB821192920C46CF001541DCD2121FEB35"
+    },
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase0.pass_publication",
+      "logical_path": "docs/superpowers/governance/2026-08-15-phase-0-pass-publication.json",
+      "sha256": "8992B4ACA21F2BD1F7CFF743DA2D084755100800E08F5234B0AB0B081324F0A7"
+    },
+    {
+      "effectivity_state": "PENDING_EXACT_HASH_APPROVAL",
+      "logical_id": "phase0a.design_specification",
+      "logical_path": "docs/superpowers/specs/2026-08-15-phase-0a-data-feasibility-and-donor-characterization-design.md",
+      "sha256": "27292922EDE93A7E73205971E4939AC10C936075970A1769C2CF7BEA77A6D48E"
+    },
+    {
+      "effectivity_state": "PENDING_EXACT_HASH_APPROVAL",
+      "logical_id": "phase0a.governance_plan",
+      "logical_path": "docs/superpowers/plans/2026-08-15-phase-0a-data-feasibility-and-donor-characterization.md",
+      "sha256": "1478BABBCD208D0A6613174CE70F497DB782CFCDA097B0517E0B25ACFA964C2B"
+    },
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase0.ai_review_procedure",
+      "logical_path": "docs/superpowers/governance/2026-08-14-ai-review-process-001.json",
+      "sha256": "EAAA84B1D0D6FF4B6A90F36CC35F5D88E9D1EB63173A6BDE18D9C911E63C69A8"
+    },
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase0.role_assignment",
+      "logical_path": "docs/superpowers/governance/2026-08-14-phase-0-role-assignment.json",
+      "sha256": "37C24D60FF9ACB8411BA0D5FA5A2C5DBC8811DFD30E4180DD377A2C3BADA2163"
+    },
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase0a.fixture_inventory",
+      "logical_path": "docs/research/fixtures/2026-08-15-phase-0a-collection-fixture-inventory.md",
+      "sha256": "8192F1385066C4FB5E5C15B91FCBA68F63B1F8964778FBF8D1A3C2880AC8F43F"
+    }
+  ],
+  "authorization_id": "PHASE-0A-IMPLEMENTATION-AUTHORIZATION-001",
+  "authorized_executor": {
+    "capacity": "ARCHITECTURE_LEAD",
+    "principal_id": "PROJECT-PRINCIPAL-001"
+  },
+  "created_at": "2026-08-15T04:00:00Z",
+  "effectivity": {
+    "activation_conditions": [
+      "ATTRIBUTABLE_EXACT_HASH_APPROVAL_BY_PROJECT_PRINCIPAL_ACTING_AS_PROJECT_OWNER_AND_RELEASE_OWNER",
+      "FRESH_HASH_MATCH_FOR_THIS_AUTHORIZATION_AND_EVERY_AUTHORITY_BINDING",
+      "PHASE_0_PASS_PUBLICATION_EFFECTIVE_WITH_phase0_status_PASS",
+      "EFFECTIVE_PHASE_0A_DESIGN_SPECIFICATION_AT_BOUND_HASH",
+      "EFFECTIVE_PHASE_0A_GOVERNANCE_PLAN_AT_BOUND_HASH",
+      "EFFECTIVE_ADMITTED_SOURCE_DECISION_WHEN_INVENTORY_OPTIONS_REMAIN_OPEN",
+      "NO_UNAUTHORIZED_PROTOTYPE_DRIFT_SINCE_LAST_PRESERVATION_REPORT",
+      "AI_REVIEW_PROCEDURE_REMAINS_EFFECTIVE"
+    ],
+    "current_state": "PENDING_EXACT_HASH_APPROVAL_AND_PREREQUISITES",
+    "expires_when": "Any bound hash, admitted source, evidence scope, permitted operation, prohibited operation, or controlling-plan requirement changes.",
+    "statement": "Exact-hash approval may be bundled with prerequisite candidates, but this authorization activates only after every activation condition is freshly true."
+  },
+  "evidence_scope": {
+    "candidate_root_exclusions": [
+      "phase0a.acceptance_index",
+      "phase0a.ai_review_coverage",
+      "phase0a.ai_review_runs",
+      "phase0a.approval_records",
+      "phase0a.candidate_evidence_root",
+      "phase0a.final_acceptance_result",
+      "phase0a.pass_publication"
+    ],
+    "generated_preapproval_logical_ids": [
+      "phase0a.admitted_source_decision",
+      "phase0a.adr_donor_001_scope_draft",
+      "phase0a.assertion_aggregate",
+      "phase0a.assertion_registry",
+      "phase0a.assertion_results",
+      "phase0a.assertion_run_manifest",
+      "phase0a.capability_manifest",
+      "phase0a.candidate_evidence_root",
+      "phase0a.donor_characterization_index",
+      "phase0a.fixture_inventory",
+      "phase0a.license_record",
+      "phase0a.negative_capability_fixture",
+      "phase0a.object_hash_report",
+      "phase0a.oracle_characterization",
+      "phase0a.parser_report",
+      "phase0a.sampled_schema_report",
+      "phase0a.source_manifest",
+      "phase0a.source_semantics_review"
+    ],
+    "missing_or_deferred_rule": "If no lawful admitted source exists, DF-001 remains BLOCKED with explicit reason codes. This authorization does not permit claiming PASS on pointers, metadata-only objects, or unresolved license classes.",
+    "one_run_rule": "DF-001 and DF-002 are evaluated in one run bound to one registry, subject manifest, configuration, authorization set, and preselected evidence set.",
+    "publication_root": "repository-relative evidence/phase0a/<run_id>"
+  },
+  "independent_review_requirement": {
+    "authoring_session_rule": "Reader QA or self-review in the authoring context is nonqualifying.",
+    "non_waiver": "No principal approval or AI review may waive a FAIL, convert BLOCKED to PASS, or expand scope to Phase 1 implementation.",
+    "postroot_requirement": "After candidate-root construction, two separately initialized fresh-context read-only review runs under AI-REVIEW-PROCESS-001 remain the default unless the principal approves a lighter review record at exact hash.",
+    "reviewer_capacity": "INDEPENDENT_REVIEWER"
+  },
+  "logical_id": "phase0a.implementation_authorization",
+  "owner_capacity": "PROJECT_OWNER",
+  "permitted_operations": [
+    "CREATE_AND_EDIT_GOVERNED_DOCS_FOR_PHASE_0A_DESIGN_PLAN_AND_CHARACTERIZATION",
+    "EXTEND_ASSERTION_PREDICATES_JSON_WITH_DF_001_AND_DF_002_AT_APPROVED_REGISTRY_VERSION",
+    "CREATE_PHASE_0A_MANIFESTS_TOOLS_TESTS_AND_EVIDENCE_PATHS_WITHIN_SOURCE_SCOPE",
+    "RUN_OFFLINE_SHA256_VERIFICATION_ON_AUTHORIZED_NON_POINTER_OBJECTS",
+    "RUN_AUTHORIZED_OFFLINE_PARSER_ON_ADMITTED_SOURCE_ONLY",
+    "PRODUCE_SANITIZED_CAPABILITY_SCHEMA_AND_DONOR_CHARACTERIZATION_ARTIFACTS",
+    "EVALUATE_DF_001_AND_DF_002_IN_ONE_RUN_AND_BUILD_PHASE_0A_CANDIDATE_EVIDENCE_ROOT",
+    "RUN_READ_ONLY_FILE_METADATA_INSPECTION_ON_COLLECTION_DONORS_WITHOUT_EXECUTION",
+    "USE_LOCAL_GIT_READ_ONLY_OPERATIONS_WITHIN_ROOT_2E7C91F4"
+  ],
+  "prohibited_operations": [
+    "ANY_GIT_LFS_OPERATION_POINTER_COPY_OR_OBJECT_RETRIEVAL",
+    "ANY_COPY_OF_DONOR_CODE_DATA_OUTPUTS_CREDENTIALS_OR_PRIVATE_DATABASE_CONTENT_INTO_GOVERNED_PATHS",
+    "ANY_DONOR_INSTALL_ENTRY_POINT_REMOTE_FETCH_PACKAGE_MANAGER_OR_AI_PROVIDER_CALL",
+    "ANY_PROVIDER_BROKER_NETWORK_DNS_SOCKET_OR_EXTERNAL_SERVICE_USE",
+    "ANY_MUTATION_OF_PHASE_0_CANDIDATE_BUNDLE_DA8BEB60_OR_POSTREVIEW_ARTIFACT_BYTES",
+    "ANY_PHASE_1_ADR_ACCEPTANCE_CONTRACT_IMPLEMENTATION_ADAPTER_OR_REPLAY_WORK",
+    "ANY_CLAIM_OF_PHASE_0A_PASS_WITHOUT_ACCEPTANCE_INDEX_AND_PUBLICATION",
+    "ANY_NORMALIZATION_TO_CANONICAL_EVENTS_OR_STRATEGY_FEATURE_WORK",
+    "ANY_CREDENTIAL_VALUE_ACCOUNT_IDENTIFIER_OR_SENSITIVE_ABSOLUTE_PATH_PUBLICATION"
+  ],
+  "required_approver_capacities": [
+    "PROJECT_OWNER",
+    "RELEASE_OWNER"
+  ],
+  "rollback_and_recovery": {
+    "after_implementation_begins": "Retain evidence; corrective commits only within authorized source scope or obtain new exact-hash authorization.",
+    "generated_temporary_state": "Remove only authorized temporary build paths with no user content.",
+    "prototype_rollback": "NONE"
+  },
+  "sanitization": {
+    "absolute_path_map_included": false,
+    "account_identifiers_included": false,
+    "credential_values_included": false,
+    "provider_payloads_included": false,
+    "remote_urls_included": false
+  },
+  "schema_version": "1.0.0",
+  "source_scope": {
+    "allowed_repository_relative_paths": [
+      "docs/superpowers/**",
+      "docs/research/fixtures/**",
+      "docs/research/donors/**",
+      "evidence/phase0a/**",
+      "manifests/phase0/assertion-predicates.json",
+      "manifests/phase0a/**",
+      "src/market_platform_foundation/**",
+      "tests/phase0a/**",
+      "tools/phase0a/**"
+    ],
+    "excluded_repository_relative_paths": [
+      "evidence/phase0/DA8BEB60D6A83FD30629FA76F5B8F6EFD157E22236849FC2ED0C5186439D7A66/**",
+      "evidence/phase0/postreview/**",
+      "**/.env*",
+      "data/**"
+    ],
+    "external_read_only_exception": "Read-only metadata inspection of collection donors and non-pointer hash verification of objects named in admitted_source_decision only. No donor bytes enter governed source except governed fixtures explicitly authorized in admitted_source_decision with license record.",
+    "root_id": "ROOT-2E7C91F4"
+  },
+  "status": "PENDING_EXACT_HASH_APPROVAL_AND_PREREQUISITES",
+  "stop_conditions": [
+    "ANY_AUTHORITY_HASH_MISMATCH_OR_AMBIGUOUS_APPROVAL",
+    "ANY_UNAUTHORIZED_PROTOTYPE_DRIFT",
+    "ANY_REQUEST_TO_RETRIEVE_LFS_OR_RUN_DONOR_CODE",
+    "ANY_DF_001_PASS_ATTEMPT_ON_POINTER_OR_METADATA_ONLY_OBJECT",
+    "ANY_NETWORK_OR_THIRD_PARTY_DEPENDENCY_OUTSIDE_AUTHORIZATION",
+    "ANY_PHASE_1_OR_LATER_IMPLEMENTATION_NEED"
+  ]
+}

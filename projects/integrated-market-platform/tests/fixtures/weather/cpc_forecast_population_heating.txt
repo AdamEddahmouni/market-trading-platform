@@ -1,0 +1,6 @@
+Product: Daily Heating Degree Days Forecast Based on NDFD Data Issued 0000UTC 20250818
+Regions: CPC::Regions::CensusDivisions
+Weights: Population
+Region|20250818|20250819|20250820|20250821|20250822|20250823|20250824|Total
+1|4|3|1|1|5|7|8|29
+CONUS|1|1|0|0|1|2|3|8

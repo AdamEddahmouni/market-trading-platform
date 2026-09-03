@@ -1,0 +1,98 @@
+{
+  "book_count": 1,
+  "bytes_written": 108642,
+  "capabilities_requested": [
+    "BASIC_QUOTE",
+    "TRADES",
+    "ORDER_BOOK"
+  ],
+  "capture_id": "p21-15c3e73bf5",
+  "disconnects": 0,
+  "duplicate_count": 0,
+  "end_time_ns": 1788287696053482400,
+  "event_counts": 60,
+  "events_path": "p21-15c3e73bf5.jsonl",
+  "events_sha256": "51C4068952827F623328D1C56E375AB8AA1B7CAE2DD2B5BBA5396616BE37EF8C",
+  "feed_metrics": {
+    "book_lag_ms_max": 0,
+    "book_lag_ms_p50": 0,
+    "book_lag_ms_p95": 0,
+    "book_lag_samples": 1,
+    "callback_lag_ms_max": 857458,
+    "callback_lag_ms_p50": 0,
+    "callback_lag_ms_p95": 0,
+    "duplicate_callbacks": 0,
+    "events_dropped": 0,
+    "events_enqueued": 60,
+    "events_processed": 60,
+    "handler_errors": 0,
+    "max_depth_observed": 1,
+    "processing_lag_ms_p50": 0,
+    "processing_lag_ms_p95": 8,
+    "provider_generation": 1,
+    "queue_depth": 0,
+    "queue_overflows": 0,
+    "quote_lag_ms_max": 0,
+    "quote_lag_ms_p50": 0,
+    "quote_lag_ms_p95": 0,
+    "quote_lag_samples": 58,
+    "sequence_anomalies": 0,
+    "trade_api_counters": {
+      "broker_cancels": 0,
+      "broker_modifications": 0,
+      "broker_orders_submitted": 0,
+      "trade_contexts_created": 0,
+      "trade_unlock_calls": 0
+    },
+    "trade_lag_ms_max": 857458,
+    "trade_lag_ms_p50": 857458,
+    "trade_lag_ms_p95": 857458,
+    "trade_lag_samples": 1
+  },
+  "host": "127.0.0.1",
+  "imp_head": "be67b4954cde59ed19c66d9d90b3fe7a4b698bfa",
+  "instruments": [
+    "BIYA"
+  ],
+  "max_bytes": 2097152,
+  "max_records": 100,
+  "opend_version": "1010",
+  "port": 11111,
+  "provider": "moomoo",
+  "provider_generation": 1,
+  "python_version": "3.11.15",
+  "quality_summary": {
+    "DISPLAY_ADMITTED": 60
+  },
+  "quote_count": 58,
+  "reconnects": 0,
+  "rotation_files": [
+    "p21-15c3e73bf5.jsonl"
+  ],
+  "rotation_index": 0,
+  "schema_versions": [
+    "market_data.provider_envelope/1.0.0"
+  ],
+  "sdk_version": "10.10.7008",
+  "sequence_anomalies": 0,
+  "start_time_ns": 1788287665931266200,
+  "state_metrics": {
+    "classified_trades": 1,
+    "duplicates": 0,
+    "events_admitted": 60,
+    "events_dropped": 0,
+    "events_received": 60,
+    "inferred": 0,
+    "provider_directed": 1,
+    "quality_rejected": 0,
+    "unknown_aggressor": 0
+  },
+  "trade_api_counters": {
+    "broker_cancels": 0,
+    "broker_modifications": 0,
+    "broker_orders_submitted": 0,
+    "trade_contexts_created": 0,
+    "trade_unlock_calls": 0
+  },
+  "trade_count": 1
+}

@@ -1,0 +1,2119 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-08-26T03:02:49.199538+00:00",
+  "algorithm": "sha256",
+  "file_count": 420,
+  "excluded_categories": [
+    ".git/",
+    ".venv/",
+    "node_modules/",
+    "__pycache__/",
+    ".pytest_cache/",
+    ".private/",
+    ".local/",
+    ".cursor/",
+    "data/"
+  ],
+  "files": [
+    {
+      "path": "artifacts/system-acceptance/BUILD25_FILE_HASHES.json",
+      "size": 84690,
+      "sha256": "380bf7da8af2e730caeb6cddb6c7e24ed09816fa2af6eb265183f456c048e399"
+    },
+    {
+      "path": "artifacts/system-acceptance/BUILD25_KNOWN_LIMITATIONS.md",
+      "size": 4306,
+      "sha256": "d2b6e8a3861a4c584fa762f7643b8a93722a0a17c0aaba0ef13a908e8fc62767"
+    },
+    {
+      "path": "artifacts/system-acceptance/BUILD25_RC_MANIFEST.json",
+      "size": 11935,
+      "sha256": "313496a4990ae24985cbb7199d5b095c04ba62a51e81de86517f251488886694"
+    },
+    {
+      "path": "docs/engineering/SYSTEM_ACCEPTANCE_BUILD25.md",
+      "size": 5265,
+      "sha256": "4744884ca7f8b8a1ddf962f569534dc9e1535e6decc1bec675afc3a0e8366bb2"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/__init__.py",
+      "size": 4722,
+      "sha256": "2a80695b4dc62dcb4f55f0d49000d4c5bf430b28b273a2c8ca81a7f6502c13e7"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/adaptation/__init__.py",
+      "size": 2802,
+      "sha256": "4d23cbfae13da6ec66ba8cf800104bfd1cccfde9eb9a82d46449775c62bb1303"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/adaptation/engine.py",
+      "size": 24528,
+      "sha256": "d977c3e5edd0df192a9da3348656e30fe5652fabd3f8e3f29475510a8ae936cd"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/adaptation/errors.py",
+      "size": 395,
+      "sha256": "1c20e5351aa75169cd5c5b5f61ea07952052acb69272660e60e94e3c6e92ef55"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/adaptation/evidence.py",
+      "size": 12949,
+      "sha256": "aca6e6ac5b641393186cf21481debbd1de9bd23a46a013082c403b0fa0bec9bb"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/adaptation/handoff.py",
+      "size": 3333,
+      "sha256": "66777f1c216abeddb474a49ea8272358a46f5cfadffe60374f42d4d3a2aa13f2"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/adaptation/identity.py",
+      "size": 6013,
+      "sha256": "488cb2fad5a3df08667bfdd52badef75e2c9fb245b07a69dcd8057d65477fea5"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/adaptation/policy.py",
+      "size": 4201,
+      "sha256": "3309fa21f30a8ca0bb15299a32368d3b966cdf8e702c35074b0a41d0876dca86"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/adaptation/queries.py",
+      "size": 1884,
+      "sha256": "d6136e80a45850f1082396aa32eb7b615360cfeb7ae619f148001501c1f2f666"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/adaptation/serialization.py",
+      "size": 14398,
+      "sha256": "ebbc924048e188460cf50dcc27b4644b344388d163b82f5e36e752ff7f727234"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/adaptation/service.py",
+      "size": 4228,
+      "sha256": "aee136d80bcf6f8154bd5e790d951f089e7b6790ce7bc06bf7da65ebf6b55a23"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/adaptation/types.py",
+      "size": 9916,
+      "sha256": "449b49ce83149271a4c17fdefdfc8c7dca7eb2a022e05d59032fa50da6abafb4"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/baselines/__init__.py",
+      "size": 2307,
+      "sha256": "b07e9b8c2bade5711d84b1bdd5bca694cda727d37d7fd6850dad4e6c32b6cc4d"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/baselines/controls/__init__.py",
+      "size": 715,
+      "sha256": "50f1ef6533634c2b80b77785e14be422eb1863f79d9c0656c1adf5557f929467"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/baselines/controls/gradient_boosting.py",
+      "size": 5433,
+      "sha256": "41a69506817dbd8ca91d536529444dd0dc4ba73c1846d2dcd4c925243820234c"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/baselines/controls/logistic.py",
+      "size": 6102,
+      "sha256": "6daa3e6b5dfe2e77f251aede9f8cd4510f7db46c4dc87799d1703d2c129bd7dd"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/baselines/controls/momentum.py",
+      "size": 2548,
+      "sha256": "8fd3b99df1aa1ad3a61e63e43441d39d023db600778fc62b6995d14334037335"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/baselines/controls/naive.py",
+      "size": 6542,
+      "sha256": "244e50f855522042eff2a0f7cc86f17bcb9b2195254c009ee6a5f58be91d9071"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/baselines/controls/prior.py",
+      "size": 9059,
+      "sha256": "9a7fdd387883e6b466d856247b6fa75ba4bf5400718087d49cf4690fe0ef866d"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/baselines/engine.py",
+      "size": 5622,
+      "sha256": "152732efaf1a8714be07a631dafb65c101c12ed93eb895d3151c833d1e7fa918"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/baselines/errors.py",
+      "size": 625,
+      "sha256": "5e801d5fb11748275b0be184ec8f3424ce7fa7cb84c22b9f4b0e7b0819f30a0d"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/baselines/features.py",
+      "size": 9501,
+      "sha256": "bb0e0d2f85f93a680c81ab83fe82989b280d43b622579b1eb6478610130dbb1e"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/baselines/forecast.py",
+      "size": 4600,
+      "sha256": "11739a924bd275477a9a9b0b3325c59cb3aa779637f3e384cfe50bc0be957267"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/baselines/identity.py",
+      "size": 4153,
+      "sha256": "53142a40bd99b3e4be6a955b9162ab0ad846826a69e217066ff142c08192d5b1"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/baselines/suite.py",
+      "size": 1510,
+      "sha256": "94a5fa250edf37766023ec49e91177be7002835be68868cb60626cb12cf2a44b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/baselines/training.py",
+      "size": 5141,
+      "sha256": "911c5a732d7b51b3f7200ebf4667cbc198f09b86f1b9127152662d7c6d099537"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/baselines/types.py",
+      "size": 4352,
+      "sha256": "68aabfa731cd366d2868eed7234cb4248b307a2684263171e9968ba840bd96fd"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/contracts/__init__.py",
+      "size": 3973,
+      "sha256": "586034a33f8d7d35633a608e875c5bf18cac6d7911742f6347840ecc4dcebc3f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/contracts/adapters.py",
+      "size": 5902,
+      "sha256": "42433f6de326304dcbe31e1a30678d16333f74e274f32c99724b3dbb3dd03263"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/contracts/common.py",
+      "size": 15625,
+      "sha256": "67f88d3fd2edaf6194c0a4a0a3e1dfeaf25fb77b48865a58c4624dfeb314a98d"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/contracts/detection.py",
+      "size": 7068,
+      "sha256": "11e34ece2b04c2c54d18304274139499c03d76d601183b1584c43910ca05f3bd"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/contracts/event.py",
+      "size": 5090,
+      "sha256": "9e5f3b46945bb8fe7c29ed199cfc8676a413b4ba082b814814f3d26428ef58fc"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/contracts/evidence.py",
+      "size": 8156,
+      "sha256": "a38292d4a01198014aa5bfa4cc0efa9bef5314d7f21e0aa9c4628aba99a58b39"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/contracts/forecast.py",
+      "size": 5962,
+      "sha256": "5b36eb641265bdf91e3d9f029826a5a124465808169a6f33ff958fb8fa855e58"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/contracts/hypothesis.py",
+      "size": 6307,
+      "sha256": "882db779b86d12a777b5a0e37dea56f73471e38ca6564355475933f2f8b024f8"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/contracts/inference_job.py",
+      "size": 7074,
+      "sha256": "1356e48ecc633cae6c6e57863e430aadd1899bc54b8eb88be5a95895de7bc399"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/contracts/opportunity.py",
+      "size": 6663,
+      "sha256": "100cbaa89d0875dbe62df5165d2af92da264a392bd64f1d170fcfe5732b73311"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/contracts/outcome.py",
+      "size": 6207,
+      "sha256": "5a347a6edffae806b2161b20acd6a7288a986ae05fd5aa7c4ccd50f0bd92f553"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/contracts/prediction_ledger.py",
+      "size": 6527,
+      "sha256": "1bf319a908c4f56e072a80ad930dd94254af5d2444b23e626c3d3c2c3ffa4f69"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/contracts/routing_decision.py",
+      "size": 8157,
+      "sha256": "f8925fdc015d37fc1d586e2f17996b20cb2aa38d401e7170242265a8bd7feb02"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/contracts/run_manifest.py",
+      "size": 7525,
+      "sha256": "dc6b143f550f5b5f26bb4a984f8b2c500f53f400cb2e1bcbb3d0b5de19a2b617"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/contracts/signal.py",
+      "size": 5754,
+      "sha256": "7844bd950d9d84c0389be4645e59091c3b4dd26d878e9f8563fcc88639eeaac5"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/contracts/snapshot.py",
+      "size": 4653,
+      "sha256": "3b6f94e696319e018b6a74eb02331c80ba0b03ed6d46136e55d89c2b45f1c8fc"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/contracts/trade_proposal.py",
+      "size": 4817,
+      "sha256": "1285405a69abd8fd8a9da304911811e8319f1a77efc46ed4f40b8750546a91d6"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/council/__init__.py",
+      "size": 2957,
+      "sha256": "810be33ffacc1959b42090c3070de323b366d3c2157a1c1e6f290e0be2b1108d"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/council/barrier.py",
+      "size": 2476,
+      "sha256": "5106a64263cd0fec9ddb4a247072c57dfcd40ad6f715342d5f0c446aac602923"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/council/blackboard.py",
+      "size": 4640,
+      "sha256": "760762bdd725b9e01b378ee478ee02e128786764cb242444f227ac5bb892f057"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/council/comparison.py",
+      "size": 8546,
+      "sha256": "48391bd5c8fc533c0a76378f02342d3d5a70ac43957c253b361f69ad33e3a53f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/council/deliberation.py",
+      "size": 6176,
+      "sha256": "47d1601e8ecdbc54a59753bacbbdc998cb817154d2bf0ca89e4444afc2454b61"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/council/errors.py",
+      "size": 896,
+      "sha256": "a9eaed456245a2e8b6a2314608db15a04be42be7b954342ea9d67b1d4970e55c"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/council/identity.py",
+      "size": 4514,
+      "sha256": "672512fcf2095053cd58272183c5569f838c3cd426faa5520d8e46f313732395"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/council/models.py",
+      "size": 7546,
+      "sha256": "2b80be90f63aa6fbf8a111ab65582a8e95fef1d18578854ae02e05ca3afb0eb1"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/council/orchestrator.py",
+      "size": 10470,
+      "sha256": "f96cf6f615848e8e17480ceceb342187cea7b8660949aeea252effb9f5da88e2"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/council/plan.py",
+      "size": 2295,
+      "sha256": "8a26927bbcac66c459f2fb81f201d5de04904fe160371f89cef6d49a78cf072e"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/council/policy.py",
+      "size": 2072,
+      "sha256": "a98dc99a147bb98d4235dbb53c5848719525f3fc60d2a014791d73cafc21d5ba"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/council/provenance.py",
+      "size": 3237,
+      "sha256": "599779f47c616bf6d306203f30e70c9ac8456e7c68709ac8d8f40d43904a1baa"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/council/registry.py",
+      "size": 1437,
+      "sha256": "391dd5e13a920139e2fbe24480a2cb15b2951168290b292e33ae41a422b6dacc"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/council/relations.py",
+      "size": 9893,
+      "sha256": "66cb630d32bc86497db251a561a5b31e0629af9d87e6b06debca3837449dd400"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/evaluation/__init__.py",
+      "size": 853,
+      "sha256": "d67a1c10c9fc146ae2c608d1c5c4c59042798a6820fd9e06302130e985b04b8d"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/evaluation/calibration_diag.py",
+      "size": 4692,
+      "sha256": "cea8534efa840c300cb514b06ad22236e978dde748e0570046b5f7c9ef48f072"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/evaluation/cohort.py",
+      "size": 9760,
+      "sha256": "6e6466bbbe730f2df2a52b749efc8f45ce80d579d25458b6649978a4a415e43e"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/evaluation/comparison.py",
+      "size": 7259,
+      "sha256": "ba2808c76a628446f73dd0d3d32a4583010f9b4bdb9d8152c2a60d813280fbc3"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/evaluation/errors.py",
+      "size": 348,
+      "sha256": "a12f379afed7097afe2d85ae3495f98fe15b48295d30c32ac8ee95af0a4e6ee2"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/evaluation/identity.py",
+      "size": 2949,
+      "sha256": "997bf6c22573d83dc39f4f416fbcc2d4702416d4fd591dff90842a3511faa476"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/evaluation/metrics.py",
+      "size": 3437,
+      "sha256": "f66917d088cb93e3a55c5a522dacf5947c2154513893e8dc70b837c9e87441ab"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/evaluation/provenance.py",
+      "size": 3153,
+      "sha256": "ca150a68f939967442874749d1e18b3570d2b6452a1583911d10eb9c4ac70b72"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/evaluation/report.py",
+      "size": 17688,
+      "sha256": "2b859072004fcfd93431b908aac6c5c2138e7b76bf5fd7f6e7f9d0a8833cc639"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/evaluation/service.py",
+      "size": 4104,
+      "sha256": "98ba5aad38f7e1d027d3d2a51a794c02fce07e86cf739c29cad2263750416779"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/evaluation/slices.py",
+      "size": 3533,
+      "sha256": "5a44ef28bc00dc7be0bba263da923c6f242c47b22e64e75340c24bab30ac762c"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/evaluation/types.py",
+      "size": 8509,
+      "sha256": "01a77b501041b5b8ce28fb89700ea6dd4f8a4792f33e893fcb3e6ab46b9134af"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/execution/__init__.py",
+      "size": 2437,
+      "sha256": "e8b0a1bf86966bcb4588d32ada47b3499afeff022b4c45241897fcd81786aaf2"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/execution/engine.py",
+      "size": 20983,
+      "sha256": "989492555b857b8b25f36d4f1e8c145089774070025596ab3cd1de605849bb5f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/execution/errors.py",
+      "size": 576,
+      "sha256": "2fe76fd77d27f8e73961dfa2a8d48f6a5bc15127b342c72f9205f442763e4623"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/execution/exposure.py",
+      "size": 3125,
+      "sha256": "64c4c4d79591db21fdfd4e3c22cedab4fdde000979577d242f11d066c98deed6"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/execution/identity.py",
+      "size": 5684,
+      "sha256": "b8573ad89ceef82994b7a3c7592c193cbbc70dfa7d906b97304eba6c549028d2"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/execution/policy.py",
+      "size": 4077,
+      "sha256": "64c57de32245ecb949fe65bd1d38bce8f4503e41c12fc679a7fd0eb1b49feb53"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/execution/serialization.py",
+      "size": 11407,
+      "sha256": "c3aa151c755a25d474eea9ddb7ccb661081521dc90dffd51dc84f08b63871476"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/execution/sizing.py",
+      "size": 6429,
+      "sha256": "4b2110745f5a7e1d013ef657e0630e5d324f1d20150e1f132762334c796679e1"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/execution/snapshot.py",
+      "size": 5605,
+      "sha256": "6d63dad010fc2ba54df407bccd249523a071b3533e123929b0ad174216e8efa1"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/execution/types.py",
+      "size": 8846,
+      "sha256": "4a21aa26bbdc0c7cb4aff5330177730934321a634b5e726e76eb62ce93194c27"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/fusion/__init__.py",
+      "size": 3321,
+      "sha256": "d5650b46b7bffcc019685af1c568e4b17cb2ab74d362eb33f31ec527fa15217a"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/fusion/calibration.py",
+      "size": 3326,
+      "sha256": "227bb986cd98961ac1fd7b08ccf316924618d3db227a8ce966e34c5ff2b89b07"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/fusion/calibration_data.py",
+      "size": 3751,
+      "sha256": "e6d14b736e2218433b31eeb93bfe208d227b7774834d20fcdc08433de0dc6cb9"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/fusion/calibrators.py",
+      "size": 5765,
+      "sha256": "f5026cbb963466b748fcf443740d4b637cf2c3ff870ebf560e640897dfd6074b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/fusion/decision.py",
+      "size": 11931,
+      "sha256": "9519f3b12ef65228364770c00f514923ef3910d9af86fca6d1de396abb4a00f7"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/fusion/dependence.py",
+      "size": 3436,
+      "sha256": "04b6357fef9ea4c4585c0d999becbab4db4f7546c25556d16fc12d963f9df5f7"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/fusion/errors.py",
+      "size": 1325,
+      "sha256": "458a98a009fbf725ce7aae5e72169dd033d40d298b4840b410c3994af98f3003"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/fusion/fusion.py",
+      "size": 9186,
+      "sha256": "1789c74190b230cab115c72cf80ad9b7bb0d9958f0d49e4d4566b149048b0322"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/fusion/identity.py",
+      "size": 7352,
+      "sha256": "1e40b70bed87437332fea218f840d30813b9183c17c782df9b9c421ec3bd2d6a"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/fusion/manifest.py",
+      "size": 4404,
+      "sha256": "2bb85f87e63281e5d49f4f7565a7f45e215410c77b8132ad67fee2a059cbc59b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/fusion/policy.py",
+      "size": 3836,
+      "sha256": "f109d8b5874b57b5c061b135c64aee3ea936ae29b39df13c4b6ab721c2e68822"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/fusion/pooling.py",
+      "size": 2301,
+      "sha256": "7b16e586a5113cb7111861d471f867e5b3c5e17dadd9238cf11f23c32e351e9a"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/fusion/provenance.py",
+      "size": 2824,
+      "sha256": "9444738997ae9d53838f8c55c84a273f4117e8861a089f65206de1a5a080e743"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/fusion/roles.py",
+      "size": 1431,
+      "sha256": "25fafd7f75118d35a69a9fd15a2aa2a4c3f4f37e84f5adbd111db47ff0402d37"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/fusion/service.py",
+      "size": 3858,
+      "sha256": "55afff5c55ea590f3b29b1785119083ff9f05b5e51b9531a813ab926b0d9c516"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/fusion/types.py",
+      "size": 6468,
+      "sha256": "54558620883ab5e4b4324babc7e78f9b7a18fc327bfd4ae6241ec68e705f35c0"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/fusion/uncertainty.py",
+      "size": 3438,
+      "sha256": "2d0dbd1377acc24ddc802035a49720b246318ac71c955dfe1039f6b8b49e8323"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/governance/__init__.py",
+      "size": 5931,
+      "sha256": "b18e768db5001d210ff268fd19a9d0f8ec5b09395f6f8c2eee01544ef88194f3"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/governance/activation.py",
+      "size": 6203,
+      "sha256": "42db78bed064e33d1043b1ee2bfc0ddf2789420d791830d17f9a7c501b447b1e"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/governance/activation_queries.py",
+      "size": 1635,
+      "sha256": "ce0418085d119623001c371fca629beb6dfe26a9140698e744bbe746d6371f13"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/governance/drift.py",
+      "size": 9834,
+      "sha256": "68644f13b710ecb588c75f3a9aac70445d286792a5688ec18d4641ee2d608da9"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/governance/engine.py",
+      "size": 4993,
+      "sha256": "44f9b96dcad16e49fedbcf252f71ab1b4c86b15b0681adee19a53992dd6054d3"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/governance/errors.py",
+      "size": 691,
+      "sha256": "d589438a5f6c01249110b11053e45e3fe988f1ef23c4bc695a2b46ab533116b0"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/governance/failsafe.py",
+      "size": 3742,
+      "sha256": "d3528556c97bc47453e59ed146d0d72cca475927834811da45a475133696093b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/governance/gate.py",
+      "size": 2172,
+      "sha256": "2593157bf7b007a6fb208d07c0fabcb468344f767e4ea8f083cace59f17d7a17"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/governance/health.py",
+      "size": 12504,
+      "sha256": "dfc2fbd1b4774a602be5f073443b2bceaceddbf4d7280691edcdedf0922a4b57"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/governance/identity.py",
+      "size": 9117,
+      "sha256": "3ff647464f9c6d9031e66247564d2d5cfce666bd9942b0e715877afcc82129f5"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/governance/policy.py",
+      "size": 7115,
+      "sha256": "3a3347d5580686d2e061ad0d09bd356e602401a55d30de9a61268eb58dd27028"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/governance/rollback.py",
+      "size": 9436,
+      "sha256": "c8ce1b3e49366f6d09f50e0494e34473508e1930004e622c65ae8fb958ed77e3"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/governance/serialization.py",
+      "size": 22788,
+      "sha256": "e6d1f4261a40ceb51f40dcfb55a16c4f7e616ece1d350b4e1fbfef40ff055157"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/governance/types.py",
+      "size": 19822,
+      "sha256": "b8958333214d12a8d80913a2298f3eab9256f7a7eb838704593457c37c3550c1"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/hypotheses/__init__.py",
+      "size": 2325,
+      "sha256": "61219384b3a6144a63092f6751c2f5c43e4ffdf1fdbd05e383db963aa154b54d"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/hypotheses/adapters.py",
+      "size": 5676,
+      "sha256": "97eb5718a3c5f364843241f7e7e307abf21d1252ab8ac903cfb0ccd907ace427"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/hypotheses/contributions.py",
+      "size": 747,
+      "sha256": "d9278f6d4af0d05e98236bca11de723f3a2a57a9c5e2e9f2ec70f8bd878ad09d"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/hypotheses/engine.py",
+      "size": 5064,
+      "sha256": "0aac3e90c27e226b1920f0a92d29518f065015eefdf9f0f98f2f7fb6c664b817"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/hypotheses/errors.py",
+      "size": 686,
+      "sha256": "e37d18a253d083cf825af6f5460b65716625322aefb5a043d4f92c9d3f3ef52b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/hypotheses/factors.py",
+      "size": 4493,
+      "sha256": "8c9b7946273167f0da99e71c73f1904716c2415737e2e53a4e20e37634c0da29"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/hypotheses/identity.py",
+      "size": 1063,
+      "sha256": "75938368af1dea42a942c929bf39e09322e2a4f9ea5310946175941b3a648bc7"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/hypotheses/policy.py",
+      "size": 2263,
+      "sha256": "dc683b3a54e7fc9e8da59d74b51e3dc745bd1aff7f6aa4cbcb90698003e05166"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/hypotheses/registry.py",
+      "size": 782,
+      "sha256": "fb6a5d3b0e1f7911dfe51a0cfdd5ba551e6eb9d3f32def7d8c989c46b1310db6"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/hypotheses/service.py",
+      "size": 2973,
+      "sha256": "3a4fe2c370c0de4b0584111a74a867e113d9e592ae92fc15fde946b984dc7692"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/hypotheses/short_squeeze.py",
+      "size": 19506,
+      "sha256": "6486561e4dc0333072be947628064215315c79d3efdea97ae95c24dedc81472c"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/hypotheses/types.py",
+      "size": 2844,
+      "sha256": "b2eacb377c49a376c2086d8e654d86b75d8ef7d95e5598798bfd7d0eeea8af1c"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/__init__.py",
+      "size": 1057,
+      "sha256": "bb2d090bb7d7e36acbb272076a3f80ed2ab28f5652d76995bddc4f525db59d98"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/core.py",
+      "size": 3464,
+      "sha256": "e5decc9262c60af6c4306b3366dc2adb7258d4ec74c799465ee3b80ee4bc863d"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/envelope_bridge.py",
+      "size": 5367,
+      "sha256": "7d2026abd9ffb67e82037999a6c4447faadffcf1db49e38fecabc2c3e13e9fca"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/errors.py",
+      "size": 1740,
+      "sha256": "92875a8dc44e0a9a778bb6463abd60becd015cbe760da06757d84a45a217e351"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/event_builder.py",
+      "size": 1618,
+      "sha256": "db3cfb8f2c5d858fd38900261a552221957828fa06ce4873623d390a5a791069"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/identity.py",
+      "size": 1841,
+      "sha256": "9885f62d87bfea98bf22e0904a2d156eb036d1c899bf50e5520a062cd5d4744b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/models.py",
+      "size": 7021,
+      "sha256": "7564c17825378eabeedbdf3aec215a02bc5f1b1488b53f496fa5606863c74932"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/numeric.py",
+      "size": 3196,
+      "sha256": "480dce9a14aba2612cb7450e9bbf74ac7b203d9b9447554fb2fd2ac93b84240d"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/providers/__init__.py",
+      "size": 111,
+      "sha256": "4f3aaca9f244c7c3d3d16090be9c49dbd6b0f410b4589c7427820d9b323b3bc8"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/providers/finra.py",
+      "size": 5264,
+      "sha256": "ba4ea91a6521c1ff2b9df89d5caa3a40b6a5131bdd09f2f8654b17b7ed7f1ce7"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/providers/finviz.py",
+      "size": 5671,
+      "sha256": "ae3651bb5517101ef7c27751174643b275d0e381499654cd791aa62e4e1ab069"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/providers/ibkr.py",
+      "size": 1193,
+      "sha256": "1c9e247b069fd591e27d446690cc543543b2defe5837fd5032a7626380400330"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/providers/macro.py",
+      "size": 5618,
+      "sha256": "ff3f0bff0bc319fe152e33ab27350ceed665d5cb03e4e157de9351cc9136dde0"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/providers/moomoo.py",
+      "size": 7608,
+      "sha256": "9d3114172f2bc3dafae9ebbd1a97cae637930d9b263fb88cf4f53bd0ddf8467f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/providers/sec_edgar.py",
+      "size": 5279,
+      "sha256": "8310af1453f4695e44ddce10ac0e67999b24466497bb03fd21beaec677c5ffb2"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/providers/sec_ftd.py",
+      "size": 5064,
+      "sha256": "6356f2436883439bcffdfa1ec8f238d2f4e05c7cb6bd96369df3429c69b220f9"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/registry.py",
+      "size": 2125,
+      "sha256": "13f6f18bf18b10334d0c4260f937e470a1aa0fffd6850112914f25512772511b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/normalization/timestamps.py",
+      "size": 5453,
+      "sha256": "8c4afbab82ee053c4794907779a7da893ca7536c6dfa85618028ffe4b0a14614"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/opportunity/__init__.py",
+      "size": 1715,
+      "sha256": "af4bef26a2cab9e6d50f4b723b4f61cd86224286cbf221ac1d81939a24b56b71"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/opportunity/context.py",
+      "size": 1836,
+      "sha256": "3fad6adaa4945a638229ee3115a99b61318d42d269dfc8a34ffd4f26cde6409a"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/opportunity/economics.py",
+      "size": 3253,
+      "sha256": "a374b824876d242d0ba9ec76ce33762c75a009a5175588ff3c7f25d7d633246e"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/opportunity/engine.py",
+      "size": 20989,
+      "sha256": "d4c58a594d3d637302128b0fc3e3fc924b18f54b2e25a8b87c0470df8594a112"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/opportunity/errors.py",
+      "size": 409,
+      "sha256": "e45469f3c751222891a3c23f1281f2d3ae5eff78772e11562c81da2d31f55578"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/opportunity/identity.py",
+      "size": 4601,
+      "sha256": "f433f2d5aae9e78103c224f92c26d04eb4de208557ce3fb0306bedad5e279216"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/opportunity/policy.py",
+      "size": 4095,
+      "sha256": "e782099b1de9db40698901ca976990187647a9fce38dda72d64f05c64c3188be"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/opportunity/serialization.py",
+      "size": 11864,
+      "sha256": "c5da1d095d8e2949cc969fdef763e1768c03a8b4f4823e2aaff3077a25b9e0aa"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/opportunity/types.py",
+      "size": 6729,
+      "sha256": "6257b4eeabe39ba4e34c8d38d7d2887099bfba120f8a54e580ee17131b01c043"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/outcomes/__init__.py",
+      "size": 2182,
+      "sha256": "2032271cb391b2380c05b3f2f55242f485b389f4b400dc4fed42cef8788cc81b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/outcomes/adjudicator.py",
+      "size": 7407,
+      "sha256": "47f769c3a71039865a98eddaa2008d9cc1bf22f0bb8ff324f7facfd49ab2725b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/outcomes/anchor.py",
+      "size": 4244,
+      "sha256": "b1bc449f4d4b8e7904964e5bafd929deda11d6f714625fe6f310603f405d9af3"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/outcomes/errors.py",
+      "size": 999,
+      "sha256": "60b593a8d1f9a49daa85e2059a9dc9f2513fcf4a0071d30ab2b3725cb3b234bf"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/outcomes/identity.py",
+      "size": 3213,
+      "sha256": "fde5c7051d21e1d7b2ad26a0aa9eb46d36865b46b4da204580b0065e88c2c57b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/outcomes/integration.py",
+      "size": 1725,
+      "sha256": "6fb7ace7569d811c786295bb6e949f7bc7f9b7fd6da2131a77fcd59d5bde9c14"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/outcomes/ledger.py",
+      "size": 4371,
+      "sha256": "c66828461ec5c986972a923d1eea593aada8bbe2c63fb3804b5e0ca67b5a7fcd"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/outcomes/observations.py",
+      "size": 3678,
+      "sha256": "db5c808fdcd6d1553c1069c59f9e86bdce9ea267633062b09005a33f1f20d988"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/outcomes/p6_compat.py",
+      "size": 1648,
+      "sha256": "c6e28fee5289446e075869ce71cc54ead46904cb5b671ee17550250fe336cb03"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/outcomes/policy.py",
+      "size": 4329,
+      "sha256": "780e648a0d2be5b50a768534617d0211062852965329e0b4439383ac8d35307d"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/outcomes/resolver.py",
+      "size": 6068,
+      "sha256": "83f8ff3d6a7de098ac25504bffc5fde86043b9a541c4fccae68250edf2a33bcd"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/outcomes/scheduler.py",
+      "size": 1672,
+      "sha256": "bdd81535b2833a90b9b3df63e1e97bab3f49b94a674bccd88ec2bc785830de1d"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/outcomes/service.py",
+      "size": 8511,
+      "sha256": "e108c28dd275ce2ac1ab257a50a8ca9072f7a4e1ddd64d0f87bd583962e13662"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/outcomes/types.py",
+      "size": 3444,
+      "sha256": "f1217a922dc80afcfdc69b97fb2586db0fec7982694b62d841cb41dbce979d77"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/persistence/__init__.py",
+      "size": 672,
+      "sha256": "3400f22fff733fca60a4e02a147460ec7250f94ebf16e40cf1979b8f67fdad12"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/persistence/champion_queries.py",
+      "size": 1594,
+      "sha256": "4c8ec3d0b60ca46f777a877ab9004324823e4f2d9c44dab438866a2b87285c74"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/persistence/codec.py",
+      "size": 9256,
+      "sha256": "52e4f219cd359705a09fd274d74e7e1212df801806f881bc40848b3fea547280"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/persistence/errors.py",
+      "size": 1180,
+      "sha256": "9dfbac9f07cb903c36f63b9bded1878006df85ee86d7dd993a42d22d07166609"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/persistence/memory.py",
+      "size": 50587,
+      "sha256": "bd563247ddd88431e9a601d6362ceaa1774cd4189325506ff6bc26ed3e410fcb"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/persistence/mongo/__init__.py",
+      "size": 570,
+      "sha256": "86cb896f925f4e0c75d0df92eb74a01f7d6001d957d9241774dd1a68e58794f5"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/persistence/mongo/config.py",
+      "size": 3530,
+      "sha256": "99af9845c8c424f8adf5cc747f7672643473bbbdc324f571339ed4fb91954653"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/persistence/mongo/repository.py",
+      "size": 58182,
+      "sha256": "8f2beddc28829e27430691f1cc9dc3578fe97bdffaf36c086dbb733c743efe5f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/persistence/mongo/schema.py",
+      "size": 19897,
+      "sha256": "807990916023e2cd4d2ae533af6f1707673b7e1460361324886fba1b0e906b7e"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/persistence/queries.py",
+      "size": 10014,
+      "sha256": "018360613871477c1c36f587e2584f7c353a4b80fcf6ad8d8fbe903ced03bc6e"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/persistence/repository.py",
+      "size": 12795,
+      "sha256": "7cf3ee750d588b22709f4e2ba349ed3d12668e9a047c64bc03227d65397ef354"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/promotion/__init__.py",
+      "size": 4223,
+      "sha256": "d28d8ade63d4d57517a6721b3ad1966a0fde37c8095ae71a4ef35b0c115e2be7"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/promotion/complexity.py",
+      "size": 1614,
+      "sha256": "97e690a897d96dbc0472a58e3279d61825e37f9b36999ce54500ed877fd68cca"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/promotion/eligibility.py",
+      "size": 5846,
+      "sha256": "1046431fed96a3a26cb9f896a5489d99be0866aeb229b88602a1eeb4618d9223"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/promotion/engine.py",
+      "size": 32193,
+      "sha256": "fb436300bd10a8b91a627482eb6529abcfa1e97f3e42c33c75c415178a7df453"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/promotion/errors.py",
+      "size": 414,
+      "sha256": "0ad51b0c588f8bec250bdfb9c9ea09979aea8dc95d303f26336eac533c4ab303"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/promotion/identity.py",
+      "size": 8723,
+      "sha256": "5f43d56c5f145bf86361f32bd82c279812ab4818e19b6a4cfe06b807ea79752a"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/promotion/policy.py",
+      "size": 4730,
+      "sha256": "0eb347127641e5a1d7e7d6cc395ed76594be6093c1bf22092a25be54d53e7ceb"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/promotion/serialization.py",
+      "size": 26092,
+      "sha256": "25fd994df22a31f6593d32affbbf80d366750bd1770c7197c6b0c8d1eb8d7206"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/promotion/shadow.py",
+      "size": 5457,
+      "sha256": "cbfc98b5611e0050688309a6783c8d0d5a300c0c4648e4445bdbf2b93ea194b9"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/promotion/types.py",
+      "size": 12020,
+      "sha256": "f36aa78ecea7a38c7b3a1f2e1e5b222b95a471830d06af6a8b40e8ee27821af8"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/quality/__init__.py",
+      "size": 1958,
+      "sha256": "f38527ce67ff91672444600182900cbcdb797eacb7cea1128c0e0be4f6aa1625"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/quality/assessment.py",
+      "size": 25356,
+      "sha256": "73ace5a304f911c51fad13930dfc2b9b9de2cd930bebdb43df561e5e8de7beff"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/quality/conflicts.py",
+      "size": 4850,
+      "sha256": "2b700a855367742c8808ab615e3c02aac5146ece461c748de36096ff3bc4b330"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/quality/errors.py",
+      "size": 1926,
+      "sha256": "da6b73a7fd1b0629ec0fd22449cd5766ab68c3897aa9d88b1861d7642609e3fb"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/quality/models.py",
+      "size": 12583,
+      "sha256": "85ac30e02384e5d348081fe045b342e26f61d38e543d6fc82d33921e61e99ace"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/quality/policy.py",
+      "size": 3582,
+      "sha256": "9e096844fc52f404a3a5424f6d7e3cf780c4f89fb51194a2f6a267a0756aee9b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/quality/selection.py",
+      "size": 2902,
+      "sha256": "9c8dfb60e73e14dfb1de8437b911d412d317c711666059b3e0f2bd4352d86a4d"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/quality/summary.py",
+      "size": 2466,
+      "sha256": "4c0826561a2580915ab133688a9ae56f37715031a87b9972f8605551dc49af0c"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/quality/temporal_integration.py",
+      "size": 2586,
+      "sha256": "123b07234310dcdc5176bdfa518cff65109389345a5cb2baff9ac8f1c477f367"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/quality/validators.py",
+      "size": 5694,
+      "sha256": "92c021add5aefaaef131e5cf56194c2396220aa0d9322cd64110ca1f6a90ec97"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/replay/__init__.py",
+      "size": 2028,
+      "sha256": "7bf0ed5b23ece72a342250ac8fee42d23c4f646c841a50102b83bd9765f7b421"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/replay/clock.py",
+      "size": 1731,
+      "sha256": "66ea86cd984838721cdefb0cb5cd65bd9a31e3b5c6aec12ad9d9fd70765678af"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/replay/errors.py",
+      "size": 1021,
+      "sha256": "0384517a4d02e45baed4dac3f2035895a793f4568218d3ad332a761415d90fff"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/replay/faults.py",
+      "size": 12449,
+      "sha256": "b1a6a174cfae2b5edff7efd1fb9b4dadf87b4788a24473e0ac9a3730b5d45a84"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/replay/models.py",
+      "size": 2680,
+      "sha256": "c7123e068e29fa1544f4f30e6fd361482accb1eab394b68a512a54a46d7d7ec8"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/replay/observer.py",
+      "size": 4292,
+      "sha256": "08d976b6d7843aaf482ddc318fa75837d7264d50c7d5522d134ca7bc6af97178"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/replay/pipeline.py",
+      "size": 10320,
+      "sha256": "9517fd56d87c642be33e53f06e8453f24a984d5270a626c31f9191beaf0d8833"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/replay/runtime.py",
+      "size": 10317,
+      "sha256": "145c82d60a3eb7278dca3ecc3020067d6953b0307e060009aab80402aa8154ec"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/replay/scenario.py",
+      "size": 5722,
+      "sha256": "2a574b694f23be616f23252049608325edf11de8237a39d2c493fc435d4b3282"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/replay/schedule.py",
+      "size": 2635,
+      "sha256": "6da6374920ee9ce92759030122bf8dc07cb4965a49423eaa63906f4667ac4567"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/replay/visibility.py",
+      "size": 32061,
+      "sha256": "6de922914ed099265ac8502dd30de2eb622547750de06ab5a59b48d2039f8329"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/research_experiments/__init__.py",
+      "size": 2141,
+      "sha256": "b0a2e1ba93f1c1a4b3719aa4ad2419aa34f0b3631c088cab8d5cc4af436b8eb7"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/research_experiments/builders.py",
+      "size": 8211,
+      "sha256": "30b34444d788231aed41fe0332192a177f5b816ffa8e2c5acd555fc3f516a545"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/research_experiments/errors.py",
+      "size": 380,
+      "sha256": "e55d5aadb01609f730d73a2222569efa267d09be78edc6d417c47a6cb313e941"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/research_experiments/findings.py",
+      "size": 9291,
+      "sha256": "52de5f57b6815a079c61fd10d498fbe309f23a048f7a9d99ed6a083c36d41c09"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/research_experiments/identity.py",
+      "size": 8956,
+      "sha256": "878fae50f8e4c97faf63667bbcdb94c9dc6fd35156935beebf76af36720d65bc"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/research_experiments/serialization.py",
+      "size": 19890,
+      "sha256": "d850f73adfe1266892f2b0eb27a678f6bc7e3f756cae0d28baace9f846c7d2d6"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/research_experiments/service.py",
+      "size": 4779,
+      "sha256": "7602aaa3aa964107f8e78fc9572ae9cbba0475eca2e684d0e1bc58dfc307e6f4"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/research_experiments/types.py",
+      "size": 13399,
+      "sha256": "683de4a67406ee325a03297934ec36bbd8a8ea8300b19d302b8f0e38897b8ea0"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/routing/__init__.py",
+      "size": 1104,
+      "sha256": "17da91c39ff2d23304a0269516af47b9c385986d5a68d28751d154268a3aabe6"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/routing/detector_engine.py",
+      "size": 19204,
+      "sha256": "9e77746fff9d3ca57d2ccc8835370c6a79e07db9ae23c758bfa76a842a1e36e6"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/routing/errors.py",
+      "size": 277,
+      "sha256": "af8ecfd8a2ae29c4f4636c5ed54df72f17973fb169937d5a76bdc60376562e1f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/routing/identity.py",
+      "size": 2403,
+      "sha256": "d0af1ab1f712e113084382843710240034284261edbba9648bee96909758b20f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/routing/models.py",
+      "size": 3870,
+      "sha256": "9ef5d577d3f000ffa967a8f6591907d6c3493ce08938ba42234ee105155a6d18"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/routing/policy.py",
+      "size": 8540,
+      "sha256": "b0426fe291df064781cc7ab2cbbeffaed82016a3d961aba637db887b85d7af19"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/routing/router.py",
+      "size": 9242,
+      "sha256": "16426acfa06475a941d92014aeab4126b5fd747b27711a10a0540f5213cc1f55"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/__init__.py",
+      "size": 2548,
+      "sha256": "03eccea33c700369048921935f5457054296a5bd0ee436b31bc274104b76200b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/batching.py",
+      "size": 2016,
+      "sha256": "c64295b1c21e33c7c02c641d648b38c41b5caf68db6bcf012899f79e5624fe27"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/errors.py",
+      "size": 1023,
+      "sha256": "e85d1d3ba905f1be29dbaae194c308e992085454fafebde9070607c9d52a720c"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/executor.py",
+      "size": 2358,
+      "sha256": "d4ab8a7f45ecb82a720291b0f1f4541d5d71703d526e1ca1859808d4bd6ca76b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/identity.py",
+      "size": 1155,
+      "sha256": "0e8a8ea44458819804e1f0478d2cfe8895cc1c82bee7a7283510ca56311bf60e"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/models.py",
+      "size": 6440,
+      "sha256": "1048e4163eb35332a8c2200ce7a887a05903d99db7ee27a9d81afea6ba8678c2"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/observer.py",
+      "size": 1547,
+      "sha256": "1b1d75f79db0eafe0d6cbe094230c2f61c2ac8c334a4d7f55eec1e9ebe9b8996"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/policy.py",
+      "size": 2042,
+      "sha256": "852f46931d0f2cca98e0e34c7973348214cd9823eadc19ac8156a214c6f4d1a8"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/profiles.py",
+      "size": 6052,
+      "sha256": "17cabec4df5fd11ae56b43db2fdccc6436aa9040983c9458931fda6a6de8737b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/residency.py",
+      "size": 1906,
+      "sha256": "56c38b25f5236d8c38d1d5575f63c37394e4949104877416102dcf1f4681d9a8"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/resources.py",
+      "size": 3061,
+      "sha256": "4786b9a898d4b2c78e1cdbe7bdbaf13c74f8703e20e3e98cbb54638b61795289"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/scheduling/scheduler.py",
+      "size": 23091,
+      "sha256": "be22f6abf67aa40f5601fcfeabb1653e722eefe0d268126b08ca9209b569fbf5"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/signals/__init__.py",
+      "size": 975,
+      "sha256": "3cad47b75eea4b3861a84fa9fb13166c24cbf072547065ea4912983073ddd3b8"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/signals/calculators/__init__.py",
+      "size": 1342,
+      "sha256": "d7a4b4a54b74e05fca158ae236bd666a9418772ddd7f3595e1163031d4490410"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/signals/calculators/base.py",
+      "size": 3862,
+      "sha256": "1e0adb81d2b6de02462d6b5de4a290f22ce1d3cb0d026a3adac0ebafdd212606"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/signals/calculators/depth.py",
+      "size": 2283,
+      "sha256": "fd104fba33b0577590822b8e958951c25176a76f17d02e604fe8de61b7949641"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/signals/calculators/momentum.py",
+      "size": 3051,
+      "sha256": "e67b6c25cf88a8bc268bb496c8701a08f653b7b44b85e7f70d79f4e97b38ac18"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/signals/calculators/order_flow.py",
+      "size": 3531,
+      "sha256": "af43d0b1db7a1aab918eafa7e040a918bcf9e84b228111d8aa6c52fddb012df5"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/signals/calculators/spread.py",
+      "size": 3613,
+      "sha256": "ed8e2b3e6d3d97b66d3b218adcd8596a12e92654f1c3eddee2a3f8ace300b113"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/signals/calculators/volatility.py",
+      "size": 3521,
+      "sha256": "3c80f29561ae94273a1f938312fc16f7a09eadf7a73e410c1d98c04363a40436"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/signals/calculators/volume.py",
+      "size": 2623,
+      "sha256": "49d7e880c4cf891c3be305bd7d7b6916527d6951443db45d86e32b782002f14b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/signals/engine.py",
+      "size": 5178,
+      "sha256": "c5e4a558062869d00f4a31abb3b34102206f56031f292c3fbb83219bc8d0daa4"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/signals/errors.py",
+      "size": 817,
+      "sha256": "6f82d6f1e6913a3e26307ff3822713da10c705020bf968996a545fa013b2e039"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/signals/identity.py",
+      "size": 1922,
+      "sha256": "64e89e1f9ee8fc33a774f33fb14ca9917344274a738258004731a2ccf62ca488"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/signals/models.py",
+      "size": 1975,
+      "sha256": "cd1747588c7ab5dcfea6c8ff3164c59cae7e5559f0bb56f96e8602af00b1c0cf"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/signals/prepared.py",
+      "size": 2833,
+      "sha256": "2d54b4c31abcfd790f3f8f467b3ffb47a0532852e66ee87f3458c8cad93b59da"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/signals/trade_direction.py",
+      "size": 4708,
+      "sha256": "5fb2a26adc1a114c2efbe612963b415887d7582b16fa634539be499486e6a5ec"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/snapshots/__init__.py",
+      "size": 1794,
+      "sha256": "4695241558228430be48e8239d31ceb3fdbf25d3e35fdc2892ed02d087db7634"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/snapshots/builder.py",
+      "size": 23181,
+      "sha256": "20efc213e364f1c18d9b9fd5e4e6e6d688677512111a9fe005be6a5c8a3520ef"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/snapshots/canonical.py",
+      "size": 4735,
+      "sha256": "5e4e1f6c495f0a10e3e2e29ecf027c3a1692661a655efe585c753eff344308d8"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/snapshots/errors.py",
+      "size": 2730,
+      "sha256": "cad18a9254b53ea61fc4980325a15e28120ad3bfed2a76880f9689d0d286ba47"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/snapshots/policy.py",
+      "size": 1897,
+      "sha256": "4ff833a59edd3c38f31ed111362f5f76aa8d08f804ef12df6888c45f53bf4b8f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/snapshots/resolver.py",
+      "size": 7912,
+      "sha256": "fc3f146f78d822047943e9a7a133ea58d526f7414b48be0803d5f736f690443d"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/__init__.py",
+      "size": 1508,
+      "sha256": "950e7cd9e57db7082a80f0b0894914f04213070f7bdb424115c74331e8a2da7f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/context.py",
+      "size": 888,
+      "sha256": "4dc618436a06b65911f820ee049b31e4c3bf1af39c367c0b1792a0f6a1aaaaf3"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/executor.py",
+      "size": 3830,
+      "sha256": "4629e9d9ddf738e6d855c7d768a6bc536c58fa70e0444ebb02367b96f1f3eb61"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/identity.py",
+      "size": 1787,
+      "sha256": "d17de82da9af4962acbc27fe0ead24edd063bf02a849b03efe21660eacea702f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/microstructure.py",
+      "size": 14088,
+      "sha256": "1e0643ab59cebc3639232fe3a3228d8867c40590b23651b1f0c468405cf69dd7"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/models.py",
+      "size": 2030,
+      "sha256": "131977b5c1bed850d25f56c44da169abeca1e45e89f2cdc7c307f45d2c3b5849"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/policy.py",
+      "size": 1760,
+      "sha256": "90742b6f53b40ea63d6aaa4b193caaf049a812ea853c38f65d1854be7cc260cb"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/profiles.py",
+      "size": 858,
+      "sha256": "213553d133abd7ef64f2eb23e9fa948a855322629e0fccf5cad1049f7587a2ae"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/protocol.py",
+      "size": 497,
+      "sha256": "e130a75c52cb6aaa45da63b07cf1c980cc41d3dfd9b568400fc82f094009e2df"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/resolver.py",
+      "size": 5693,
+      "sha256": "523322d21916da2b0a77ea8f5e4236becf45ac63143bfdd14e7202c20b54170f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/specialists/runner.py",
+      "size": 4608,
+      "sha256": "72dfd2a878f300ff497650d8d7d4bad833d81c902e5e3a5d4134aa34bf599f5d"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/system_acceptance/__init__.py",
+      "size": 2419,
+      "sha256": "82038b8bbda89bbf400b2d31a6522ed2953f38596cede84393b1950b75bf5c7b"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/system_acceptance/golden_lifecycle.py",
+      "size": 7725,
+      "sha256": "1a39341252c0623dedd45c18354a8b62227a098b5945d7cf2fee5ca4d5bf8865"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/system_acceptance/identity.py",
+      "size": 2649,
+      "sha256": "107795b51d470f677cdc52e3f4eaaf7f91ed9dcd0c4ee780e001ba23930a353a"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/system_acceptance/invariants.py",
+      "size": 15760,
+      "sha256": "876979598e3adab29e11dda390ff6094902f471952479fe58bdbe0fafc240e51"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/system_acceptance/inventory.py",
+      "size": 18409,
+      "sha256": "2bc1ba66ded8d69e99a7733cc10f70c67c0022139688f6aa7ffe64c78bb88c86"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/system_acceptance/runner.py",
+      "size": 3709,
+      "sha256": "cf8d162ccefac5612ddc0789093c14b4d713c59bfb8d2ed428dd4e2c113be518"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/system_acceptance/scenarios.py",
+      "size": 23456,
+      "sha256": "6b9ef6d988ad6b7f1da111488c6a86b38e9c56b069cdb3b7b0d23ad5b5101d91"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/system_acceptance/serialization.py",
+      "size": 3239,
+      "sha256": "2ad775770d075614c92ca3d1f245a857ceda195040dca0f8087f639c06514fec"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/system_acceptance/spec.py",
+      "size": 3595,
+      "sha256": "b87d2c88549edacb197aad735330d8fa88aeb7d353f8fb7146bc2d5d5917b95f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/system_acceptance/types.py",
+      "size": 4570,
+      "sha256": "4c38fe60f2404dd9d22aa0cb51b6a4490f43a6c537738adc30c8a4930156d458"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/temporal/__init__.py",
+      "size": 1791,
+      "sha256": "cb64d92e8ef91547d054fc3da2c00545e757703746bb9736fbd6c548978b0327"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/temporal/models.py",
+      "size": 3845,
+      "sha256": "a6a8a4da6c3ccd4c7317859774c6de34663bb431a518f601843c47045825f20e"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/temporal/policy.py",
+      "size": 2880,
+      "sha256": "0a2d5f883a6d1d77364adeb402ddff4821b552e9bc70430984b0e4622af2ec52"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/temporal/resolver.py",
+      "size": 1558,
+      "sha256": "0c9d25a6f75d8a1b2b3b002d330b825646e47da7544e0db6cf475981d2540a57"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/temporal/selection.py",
+      "size": 1811,
+      "sha256": "fc53705bd5e1617654fc0eb73d3d58de106a0c34101b00780735ac4a5e47f315"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/temporal/snapshot.py",
+      "size": 5286,
+      "sha256": "4e4bb97eff59fc364ca513bd3753ac0e15f290eebd522f962db672edeea0047a"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/temporal/stream.py",
+      "size": 5548,
+      "sha256": "e77364328ded7c88c396c09c9a8c4da108b94156f82109e2aa0d6306e9b5e1c9"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/temporal/validation.py",
+      "size": 10673,
+      "sha256": "72491bf95b41d991da37038936da8945b974ae5a26f6acffb5f4e623ae6e6bf3"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/__init__.py",
+      "size": 1505,
+      "sha256": "9948ffc790557b4158c6e6aa2b359fdfe1db7aa1fb022dd0049cb9f1a8ca6046"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/artifacts.py",
+      "size": 2068,
+      "sha256": "d5f60515f93a69cee44b4258e354d91e999bad1d94d99fd62db1d133e94f5804"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/authorization.py",
+      "size": 5069,
+      "sha256": "4f6f0a2ba5d5fd30325e7065d14fbb74a4b520988bd67d387a0605dff853c726"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/datasets.py",
+      "size": 10695,
+      "sha256": "d4398898e77f1307cdb47b8448e7b968b4b2fd5c317e6f085d15c6f5c2941db5"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/distillation/__init__.py",
+      "size": 248,
+      "sha256": "c5dceff85a519fa1de420eaaf0d54e50774ccfbd3b652f8355f3f15b3ab05ad5"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/distillation/dataset.py",
+      "size": 6321,
+      "sha256": "49a294fc9986a3d94e2e41973d4d3bada5e0a5c117f47182a42d085b6c36b96a"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/distillation/fixture_teacher.py",
+      "size": 1302,
+      "sha256": "7a315d34aaf9a5d17b633114f1478b0896523cf4b32b744252bc20491111c07c"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/distillation/teacher.py",
+      "size": 466,
+      "sha256": "c7f072d2e68d2a58f26e5494acd55fd1c5352a3832005b1bac5675d857492799"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/errors.py",
+      "size": 481,
+      "sha256": "e37700640bd31c83f462fcf923e125afcf69d4ebea511d71479097445f87e738"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/factory.py",
+      "size": 7111,
+      "sha256": "5c0955f9358f31262fa88ed15b53679b7f955a05dfcc1cdd4406e38b9c1af0af"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/identity.py",
+      "size": 4882,
+      "sha256": "8bcacc575fb3e863b5a9f4510fa38724fea81dca75ed4f7ca15d10fc18dbcd89"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/search.py",
+      "size": 5266,
+      "sha256": "b0c283815d6ca58594c7e1e14555ca4e8543b24ac820b4223328273ef934b422"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/serialization.py",
+      "size": 12435,
+      "sha256": "f0054cb520806524f378290bdea7f605ce59c925f5688d629b787edac44766af"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/trainers/__init__.py",
+      "size": 242,
+      "sha256": "cfcb13e78e0b603a6d1b9b55513ad702ea6876418b4fc6c93775734bc44f77e4"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/trainers/base.py",
+      "size": 1083,
+      "sha256": "c397529f4b92e49c387ac602a9bddf84ec796b731fa238ec7103aead1d0ae14a"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/trainers/sklearn_gbm.py",
+      "size": 5894,
+      "sha256": "e2a143c0b7e083e90b2ba63fe812a8b4a8b47a4762aafbd518198be1e9451f72"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/trainers/sklearn_logistic.py",
+      "size": 7871,
+      "sha256": "68a4de645559b40701c4a8fe95a8c2c4ef064bc65aaea3d4482df10c6e9eb93d"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/training/types.py",
+      "size": 8251,
+      "sha256": "5adb69cab16b00343de8ee469bd00a14a8c6960b0bb5c1611b5ca48f612ce013"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/__init__.py",
+      "size": 4757,
+      "sha256": "31b82f2f7e029e30085f0932085149556ed7982dae8b7764400a0c4fc1c77d6f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/artifacts.py",
+      "size": 3208,
+      "sha256": "081f8620142ad28ba6bb672aae45078d96ab316dc6df883de3a4c8354db12b21"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/contamination.py",
+      "size": 8272,
+      "sha256": "414474564fb9c01d879a7f82fdd9394b7d5156161658320b79c4339fac7b23ec"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/embargo.py",
+      "size": 2109,
+      "sha256": "3546e4c3030b01eeff20b780bf784327c3b897bac39490e2ce706fe2ea7fed20"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/engine.py",
+      "size": 16485,
+      "sha256": "e658440d25d331e8ab285f3a1e323a1c799610c7a3e4860118f23295a031d9fc"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/errors.py",
+      "size": 444,
+      "sha256": "79ab30b07b06b7ebedea196899c6fe0313214c7b8e6b95bd3e870ca4a4349094"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/folds.py",
+      "size": 1957,
+      "sha256": "0743ff132b8a1423ef182eca6581774babdb0cf73f50f67eba29f4ca3e25ac34"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/holdout.py",
+      "size": 6294,
+      "sha256": "4dd22754f20f4fe3489b877cdf7301053a7d25395dea2e19f72dfa4c0c46318f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/identity.py",
+      "size": 6481,
+      "sha256": "2b27f4dc1bef18cc24233850b8f286bccb779add841040aafc90001399e9e0a7"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/inference.py",
+      "size": 2166,
+      "sha256": "54cb17692bf4b7092538d109e3884efef3ac0cc0b944c49d80cb5154d4202a70"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/metrics.py",
+      "size": 1881,
+      "sha256": "5b21e11410aef39662a6190b62dded4e1067596b3e71b7d8c4be6abac6ecfa21"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/planning.py",
+      "size": 4784,
+      "sha256": "ce52226ee6958e0ccd783f12851c552af36a4b9feeddac1ab5c99018f08d54c3"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/purge.py",
+      "size": 2568,
+      "sha256": "b682790490a78f1848385e047406b2b156b113aef5376ed5999327982e266f2f"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/serialization.py",
+      "size": 19704,
+      "sha256": "3e23ae99732e49c6399adfba6a1114dfa2615d7631cdb31adbbfea06003c338e"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/statistics.py",
+      "size": 3046,
+      "sha256": "13d247d474971a6fe88728259ec722d5de8631f6b9418b7589c1121df65296ef"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/temporal_knowledge/__init__.py",
+      "size": 752,
+      "sha256": "bc99acf4bfdd8ebd8d486d5f967946ba6c88321ec43b7d921caad964f85c8059"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/temporal_knowledge/firewall.py",
+      "size": 9165,
+      "sha256": "388170acd04c1f5d1cf06178da931b690d3716ddfff93eae4c2c5b08fc93c80a"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/temporal_knowledge/policy.py",
+      "size": 2011,
+      "sha256": "c12bccf1c00374ca6c28265db6c1e4a67c912e1a4e3fead50fc86e9822428413"
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/validation/types.py",
+      "size": 12902,
+      "sha256": "b5de0e4835a7a2f1993cf614de7b01b84a89b6669815479b7d2440503dd5592f"
+    },
+    {
+      "path": "tests/intelligence/adaptation_fixtures.py",
+      "size": 4197,
+      "sha256": "bb169b3e16fd2f1f7c2880c7ea8c5a533550fc604f37289552bd24e5f0387ec6"
+    },
+    {
+      "path": "tests/intelligence/council_fixtures.py",
+      "size": 4101,
+      "sha256": "67c40283ad4936b70cb4ed2ecbb356e8e1237a368a7e41f9fa44ab52d8097176"
+    },
+    {
+      "path": "tests/intelligence/execution_fixtures.py",
+      "size": 3316,
+      "sha256": "45a5b43bafb836f70b1068171dd4c6320b4bbda1e4e0a35c54b1832965bb8b85"
+    },
+    {
+      "path": "tests/intelligence/fusion_fixtures.py",
+      "size": 3878,
+      "sha256": "3bd1106e21a1e5413c6c1b3abf2af4c1c11d49ed758d45a1b4e7f212cb74b82f"
+    },
+    {
+      "path": "tests/intelligence/governance_fixtures.py",
+      "size": 3005,
+      "sha256": "b9e46f0d77bd551c0f63c15fdef1c6b3a6c0860edb2e3ff55fce69a1af820d80"
+    },
+    {
+      "path": "tests/intelligence/hypothesis_fixtures.py",
+      "size": 8988,
+      "sha256": "e66c43688c91ca96d59ca4dd6aad6f1d9ca81623973dfb57062b3f91c85208c8"
+    },
+    {
+      "path": "tests/intelligence/opportunity_fixtures.py",
+      "size": 4478,
+      "sha256": "71c983ad5639f2b7ef39ac4267bc08b3e1b340d1804dc34764c2131cb3df677e"
+    },
+    {
+      "path": "tests/intelligence/outcome_fixtures.py",
+      "size": 4629,
+      "sha256": "153eec8f7238604fc01e2a6f4418f05e269047760b2357515c08346be6c6bd69"
+    },
+    {
+      "path": "tests/intelligence/promotion_fixtures.py",
+      "size": 4884,
+      "sha256": "4fab66a508710c5cdbc2b36676601f68fed91f00b0ca2769c94ca9ef57c599d5"
+    },
+    {
+      "path": "tests/intelligence/routing_fixtures.py",
+      "size": 3348,
+      "sha256": "3244a737c4e93cd7e40b43110c35a3219c0a59113d8bc4ca9dcca526116edc11"
+    },
+    {
+      "path": "tests/intelligence/scheduling_fixtures.py",
+      "size": 2058,
+      "sha256": "6d1349b40db3a9b6f0c5d71308b068fb49e18f34604e565ea3be5907842d7eae"
+    },
+    {
+      "path": "tests/intelligence/specialists_fixtures.py",
+      "size": 7272,
+      "sha256": "cf38bbe27ed10e5a13e9e303cf9b6fa39c0e580e34b1570c520465b8fad76f1e"
+    },
+    {
+      "path": "tests/intelligence/test_adaptation_controlled.py",
+      "size": 17772,
+      "sha256": "e25f546db8a9986eb7ad68fd75fef6c59d6943adf8dd3fa073e811ae3237a68a"
+    },
+    {
+      "path": "tests/intelligence/test_baseline_controls.py",
+      "size": 4156,
+      "sha256": "a3d266a546b7e16f4fbf62f5ace6a1da8eaabc0d4eb0862f8a9d03c240ab9617"
+    },
+    {
+      "path": "tests/intelligence/test_baseline_features.py",
+      "size": 3621,
+      "sha256": "d93f5e6aa9bcd3b3ce03215527519556fc65fb759cb136ba698b3e19335b63c8"
+    },
+    {
+      "path": "tests/intelligence/test_baseline_fixtures.py",
+      "size": 2563,
+      "sha256": "caa50434903d7fafa577c4e7a3464f7bda1395a29378c3f312988f61258eb40a"
+    },
+    {
+      "path": "tests/intelligence/test_baseline_forecasts.py",
+      "size": 4875,
+      "sha256": "2c17185ca30a6c332472fe4696ca9dce7acda475db52372ba596e4098bb59a0e"
+    },
+    {
+      "path": "tests/intelligence/test_baseline_replay_integration.py",
+      "size": 9194,
+      "sha256": "a4d833dbe5e99b859555b3434a2c4b18d89075a4b74619bd2e4dfe65dd75f98e"
+    },
+    {
+      "path": "tests/intelligence/test_baseline_statistical.py",
+      "size": 7531,
+      "sha256": "a940f8cdf5a59987a29b7778508c1e8e063e4c32a29557fca2a27251851435bf"
+    },
+    {
+      "path": "tests/intelligence/test_baseline_training.py",
+      "size": 3960,
+      "sha256": "8fef559ea17b80474d4981148bb2711c8ba3a44d1a8d447edc3a147eb2a46c34"
+    },
+    {
+      "path": "tests/intelligence/test_build01_10_lifecycle.py",
+      "size": 4770,
+      "sha256": "c4cdede1af8c7cea70d1d4961970612c855b1d1fbb4d89ab2274792f5a3fa72c"
+    },
+    {
+      "path": "tests/intelligence/test_build01_11_lifecycle.py",
+      "size": 4677,
+      "sha256": "2407fffa3193db930d10becc0aa7a5c2dcdfc14af1a862b10aca9fbe110ad5f0"
+    },
+    {
+      "path": "tests/intelligence/test_build01_12_lifecycle.py",
+      "size": 5521,
+      "sha256": "24006c9b407131bab40d6b318ee6fb084a78a03c0f210e30c3ffcd2e7a490f5a"
+    },
+    {
+      "path": "tests/intelligence/test_build01_13_lifecycle.py",
+      "size": 8169,
+      "sha256": "4a04480a1608c5f8dc84c4e65d0787b84612fb2ba02d0b6aaaeea81fd878113c"
+    },
+    {
+      "path": "tests/intelligence/test_build01_14_lifecycle.py",
+      "size": 2528,
+      "sha256": "6697110b497a81c3d00b8e513abea046b9e335d51eab924a048ae62fb369cd62"
+    },
+    {
+      "path": "tests/intelligence/test_build01_15_lifecycle.py",
+      "size": 5647,
+      "sha256": "41bc62a11ecb97f4155a9628b97a79ddcb465291378cc9b9a866512ddec4d1a2"
+    },
+    {
+      "path": "tests/intelligence/test_build01_16_lifecycle.py",
+      "size": 2235,
+      "sha256": "92c1ea325ff3155c9cf53599135927a01c8f0a3d89de60d2103d134d8e49806c"
+    },
+    {
+      "path": "tests/intelligence/test_build01_20_lifecycle.py",
+      "size": 6926,
+      "sha256": "99bbf387e17ba61d0c24486eb7ca271fbc4b9c2addbd8fd7f034f8dbedaf65c4"
+    },
+    {
+      "path": "tests/intelligence/test_build01_21_lifecycle.py",
+      "size": 7269,
+      "sha256": "a15ffcce77a2274908178653d4817e62f023c00740b4e40d5d6fc74c59a9bc07"
+    },
+    {
+      "path": "tests/intelligence/test_build01_22_lifecycle.py",
+      "size": 8605,
+      "sha256": "5f67635b8cb27bc3c306c18846f721173ca2d18b6da06fc33aac5ede0613fc86"
+    },
+    {
+      "path": "tests/intelligence/test_build01_23_lifecycle.py",
+      "size": 7458,
+      "sha256": "a525e893d9ec37b2a73112993fd5edae7840e821b51f3b5c41b990d543cdebe0"
+    },
+    {
+      "path": "tests/intelligence/test_build01_24_lifecycle.py",
+      "size": 5546,
+      "sha256": "df2f7c416521d3f1391a17a70d24248ef825b4c7299c43f725a43f88be573269"
+    },
+    {
+      "path": "tests/intelligence/test_calibration_dataset.py",
+      "size": 4335,
+      "sha256": "5bd28aa193069a637d7784cb042df76a1175098d0069eb91ab27289ee1680dc8"
+    },
+    {
+      "path": "tests/intelligence/test_capability_engine.py",
+      "size": 13663,
+      "sha256": "4c06419c1eeaa38188e58030b608596e13c139d906aa3f6af1b67749de6493e1"
+    },
+    {
+      "path": "tests/intelligence/test_council_blind_barrier.py",
+      "size": 7063,
+      "sha256": "8ca70010728ccaab8e31cbc5371db9e2b2eb190c1ffedf59552e1bb1e9f0b603"
+    },
+    {
+      "path": "tests/intelligence/test_council_deliberation.py",
+      "size": 7961,
+      "sha256": "03a6c79dcc79f895d4906b7619fa86232a74d1fe16956744d623e514de797f8c"
+    },
+    {
+      "path": "tests/intelligence/test_council_models.py",
+      "size": 4599,
+      "sha256": "e1911f0649e9b243415ac660e657797256c163596f8433a6710141ac0db202de"
+    },
+    {
+      "path": "tests/intelligence/test_council_provenance.py",
+      "size": 8662,
+      "sha256": "647e00295e9d628c2a55bb5a08e4fa3b990c8136bb738df355113e946bec5b5c"
+    },
+    {
+      "path": "tests/intelligence/test_council_replay.py",
+      "size": 3227,
+      "sha256": "d71189ca4ac2dc9b0ce51b525c3e100f1118fa34eed2eabc5a55d21a23b6f419"
+    },
+    {
+      "path": "tests/intelligence/test_evaluation_diagnostics.py",
+      "size": 11584,
+      "sha256": "bb077fdc4c1e7cb0870054768b16f8b6a983f1ab93f4f43767aa12f55a4fb69f"
+    },
+    {
+      "path": "tests/intelligence/test_event_detector.py",
+      "size": 16121,
+      "sha256": "132e20e53106bc677cb6bd1943595e22651aed196f0f08bfded85bc370fc0fa3"
+    },
+    {
+      "path": "tests/intelligence/test_forecast_dependence.py",
+      "size": 5295,
+      "sha256": "80ba72eeb447274915ed706dcc643d6503714632c8bde11e7df40852007bd1dd"
+    },
+    {
+      "path": "tests/intelligence/test_fusion_manifest.py",
+      "size": 2811,
+      "sha256": "d00366b82af5a711d7ebc3561707cdce93b28e9440acb1e2495fce0efbe3eb68"
+    },
+    {
+      "path": "tests/intelligence/test_governance_governance.py",
+      "size": 19535,
+      "sha256": "9054026827b64c08978a8e15eff3e8d4c80bccb0422c1db2844d46143e451c44"
+    },
+    {
+      "path": "tests/intelligence/test_hypothesis_identity.py",
+      "size": 3645,
+      "sha256": "d8bae68deaf3f8f8f97aa3bdf7cdfc8f8abb6d0a6b10535b85266b4328af7d93"
+    },
+    {
+      "path": "tests/intelligence/test_hypothesis_persistence.py",
+      "size": 3341,
+      "sha256": "a9f5d6d5d323589d116ec1ba62e1bbf8456d2ec607deb3e3c519c628957f028e"
+    },
+    {
+      "path": "tests/intelligence/test_hypothesis_replay.py",
+      "size": 2367,
+      "sha256": "7a9de540a44e8558992b19006f94bf0b3be67f0acb438653bf9645c639148851"
+    },
+    {
+      "path": "tests/intelligence/test_inference_scheduler.py",
+      "size": 19065,
+      "sha256": "059f007af822b336ec2a1a781e6fd63fcf169a25059a21ea8705d475ec218055"
+    },
+    {
+      "path": "tests/intelligence/test_intelligence_adapters.py",
+      "size": 3609,
+      "sha256": "3c9fa338e946caf4b7159c80ffb6881d5e6a13148ba37efad1d210311e6a4a4b"
+    },
+    {
+      "path": "tests/intelligence/test_intelligence_common.py",
+      "size": 2874,
+      "sha256": "03a4dd0f01470a9880f02f427bfbe9a5e286372372faba127a4f3985da874998"
+    },
+    {
+      "path": "tests/intelligence/test_intelligence_composition.py",
+      "size": 7110,
+      "sha256": "41a8314323bc139e5bd46612ab281229b6d20051a10b462ef168808bdeefed3f"
+    },
+    {
+      "path": "tests/intelligence/test_intelligence_contracts.py",
+      "size": 13220,
+      "sha256": "84d86065376d05d823a017276584395625277637a426d94f885f781f6eb4e07b"
+    },
+    {
+      "path": "tests/intelligence/test_microstructure_executor.py",
+      "size": 7808,
+      "sha256": "b25efbeeceab575097c3b44ace5f859baecc6efdd9279348953aff8ac34088db"
+    },
+    {
+      "path": "tests/intelligence/test_microstructure_specialist.py",
+      "size": 13614,
+      "sha256": "c9e76a0712275854fe857e2140ae12dbbcc4e97e001438e032c434e673a54f61"
+    },
+    {
+      "path": "tests/intelligence/test_normalization.py",
+      "size": 13360,
+      "sha256": "135d68f10b1ea91855e03b7a96420b6eb2cf78f60ee1009df0521c1a1b107938"
+    },
+    {
+      "path": "tests/intelligence/test_opportunity_governance.py",
+      "size": 23422,
+      "sha256": "6fe6dc567d744a4ab1155197a7463b633426b98ef9d681dc4d2de0c681b5e5ff"
+    },
+    {
+      "path": "tests/intelligence/test_outcome_settlement.py",
+      "size": 17198,
+      "sha256": "a07bfc156738d875a14937c8c6d0873776e016b51ee5395ced91ebfd74374f66"
+    },
+    {
+      "path": "tests/intelligence/test_paper_execution_governance.py",
+      "size": 14160,
+      "sha256": "07694dddb9d32cf6b4aa139cde6c20d1a8c3753176edc423ecae707680e36b43"
+    },
+    {
+      "path": "tests/intelligence/test_persistence_codec.py",
+      "size": 2557,
+      "sha256": "cb6045b717af123a215e60f35789a6936041214d0f33a36d817ffbc78baa201f"
+    },
+    {
+      "path": "tests/intelligence/test_persistence_conformance.py",
+      "size": 7206,
+      "sha256": "f3245a419968dd5224149cd30905e3c5f90e33b0839000771d73f52b27e41242"
+    },
+    {
+      "path": "tests/intelligence/test_persistence_fixtures.py",
+      "size": 5113,
+      "sha256": "6a9cdad44743e20c887a82753bd7b80ff86e7fd0c309200278437a574a2b3ea7"
+    },
+    {
+      "path": "tests/intelligence/test_persistence_mongo_integration.py",
+      "size": 4519,
+      "sha256": "a8ba9ab27dde85a8482eef26d303ba1252b02e3ec0a8c819d50270c7688ae292"
+    },
+    {
+      "path": "tests/intelligence/test_persistence_mongo_schema.py",
+      "size": 4639,
+      "sha256": "c61e61416b329d5a009ce8071c13dea21e75bb60993eee446bfe93abff845ca6"
+    },
+    {
+      "path": "tests/intelligence/test_prediction_ledger.py",
+      "size": 6282,
+      "sha256": "f65b20dfa41cceb19c837c2bf83adee360599bd858a5ff943901d302d20875aa"
+    },
+    {
+      "path": "tests/intelligence/test_promotion_governance.py",
+      "size": 23262,
+      "sha256": "0b2b9ab97e72e97d93f1f84ffbd0e02bd08d5d37763254012ad2ae2272056121"
+    },
+    {
+      "path": "tests/intelligence/test_quality_composition.py",
+      "size": 6510,
+      "sha256": "9c7ee754a87fa49aa0fa21a0b37ac15a6ad50eca96649acedd44658715586616"
+    },
+    {
+      "path": "tests/intelligence/test_quality_engine.py",
+      "size": 9221,
+      "sha256": "a1d3b0cb02de29647c00e2655f78fcbf60406797f7215a1ea4ebdf326b995655"
+    },
+    {
+      "path": "tests/intelligence/test_replay_clock.py",
+      "size": 2098,
+      "sha256": "96bee86fde3c3f12c7af3ade218fca74b8edc873177275e0643b1c478c68e105"
+    },
+    {
+      "path": "tests/intelligence/test_replay_faults.py",
+      "size": 8435,
+      "sha256": "708680011a0c3a1047683f26d459636426bdf2c87a0746f17f234ceca046ee6e"
+    },
+    {
+      "path": "tests/intelligence/test_replay_integration.py",
+      "size": 11102,
+      "sha256": "1d9aa36954293c12648c0fe1010e0b4279a9f1fa7d55c9b77a2fa1be709735e8"
+    },
+    {
+      "path": "tests/intelligence/test_replay_visibility.py",
+      "size": 6099,
+      "sha256": "fed3433b55b0b45751b880c2873edbd88e00977afc2028258a3046f335cc38b0"
+    },
+    {
+      "path": "tests/intelligence/test_research_experiments.py",
+      "size": 19796,
+      "sha256": "cef11c13ca714b19291334757d63ffa1adacaed868fdbd248a70c612e5a366a1"
+    },
+    {
+      "path": "tests/intelligence/test_routing_contracts.py",
+      "size": 5899,
+      "sha256": "5fbabef395e61d093233cbbb4a3ee21c9898485dd445c6dde38b88b8ee5503e5"
+    },
+    {
+      "path": "tests/intelligence/test_routing_persistence.py",
+      "size": 3204,
+      "sha256": "126cf25dbd43c966366c46da9e9d61799fa761ba1e1356e1adda33ebc85df9e9"
+    },
+    {
+      "path": "tests/intelligence/test_routing_replay_integration.py",
+      "size": 9770,
+      "sha256": "20fa6a380ff9abc2789a4a1acde64ddc1743d7216c3d4362dc085bc580ebcc37"
+    },
+    {
+      "path": "tests/intelligence/test_scheduler_contracts.py",
+      "size": 3100,
+      "sha256": "63fdb7a02f079c48f3a280163794898269247c905d2dfe41cfce28c04fdaef65"
+    },
+    {
+      "path": "tests/intelligence/test_scheduler_persistence.py",
+      "size": 1350,
+      "sha256": "8415f9455875efeb45743ee330a2ecc29fd0ecf1e25d12f49078d5794b542b4a"
+    },
+    {
+      "path": "tests/intelligence/test_short_squeeze_hypothesis.py",
+      "size": 10075,
+      "sha256": "681d5164e1c2682bb36a10e5ccafb902f87510040a28c6ccc9c1b06e0f110d2e"
+    },
+    {
+      "path": "tests/intelligence/test_signal_calculators.py",
+      "size": 12733,
+      "sha256": "025a0bc4e3105b4a09791965b3c40ed4549f5153978bc15cfd596824cb52a617"
+    },
+    {
+      "path": "tests/intelligence/test_signal_engine.py",
+      "size": 8484,
+      "sha256": "4167ef471365b22a45cd2cdcb7dbfe5bcde68fdd1845a50e0d8ef5b4125a47bd"
+    },
+    {
+      "path": "tests/intelligence/test_signal_fixtures.py",
+      "size": 2736,
+      "sha256": "01512505000501cb718c188e004c6963d3fdbe6186a0b6ffc7a32b45740401bc"
+    },
+    {
+      "path": "tests/intelligence/test_signal_integration.py",
+      "size": 5728,
+      "sha256": "bd3bb7195e48be9a742cbae2e44b80306b5073cf5a76c45958f1424b57c87e4a"
+    },
+    {
+      "path": "tests/intelligence/test_smart_router.py",
+      "size": 9954,
+      "sha256": "c1bdb2e94f569eed7e3a35d69fe14042bb93e8a57b91ab555e25d3bd1e563e48"
+    },
+    {
+      "path": "tests/intelligence/test_snapshot_engine.py",
+      "size": 11506,
+      "sha256": "981bb46c93ddc166e17e2a6a296c27c28706b4732d373d099525f6e21a9c7a86"
+    },
+    {
+      "path": "tests/intelligence/test_snapshot_fixtures.py",
+      "size": 2920,
+      "sha256": "877374e1d5da9dff09c2fc69b1c6bc697d279b8a66f44558855bdbae24d0dc38"
+    },
+    {
+      "path": "tests/intelligence/test_snapshot_identity.py",
+      "size": 5592,
+      "sha256": "03b4070c2fc1672e73056dafada4ec3176fb05fde595b8355b1025d855ce368e"
+    },
+    {
+      "path": "tests/intelligence/test_snapshot_integration.py",
+      "size": 3171,
+      "sha256": "944dd1c71ecb4e1bf0721c55bfade6b04a5aa3ab61a6f7073b4770dc52104ea0"
+    },
+    {
+      "path": "tests/intelligence/test_snapshot_resolution.py",
+      "size": 4619,
+      "sha256": "30df75cac2fb0da064eef917ec41ed57e40aa9a175c899a15c31709e57823a69"
+    },
+    {
+      "path": "tests/intelligence/test_specialist_models.py",
+      "size": 1230,
+      "sha256": "fef3b5e48c4935d9dbf834e0f55a173c9bd65ff2fcb79bbcd7f21131e9a34bab"
+    },
+    {
+      "path": "tests/intelligence/test_specialist_replay_integration.py",
+      "size": 2439,
+      "sha256": "2b7028150d2ac82bbd5171ab9f3b0c8510effc2f95a63ed59fda2abd6b78decc"
+    },
+    {
+      "path": "tests/intelligence/test_system_acceptance.py",
+      "size": 7319,
+      "sha256": "bd65f28635330da941510c69e73032f77c112d2f9ebd63582374a830c27f9ec3"
+    },
+    {
+      "path": "tests/intelligence/test_temporal_integrity.py",
+      "size": 15280,
+      "sha256": "f1c87a938473c99ecae84ac101a5f458b34a9d0c1f90418723cc69e84fe0f41c"
+    },
+    {
+      "path": "tests/intelligence/test_training_factory.py",
+      "size": 27719,
+      "sha256": "1b3a187e68ccc3ed54739076aea189a6d82b62b19f3d5264d1399bd83ecbb3fd"
+    },
+    {
+      "path": "tests/intelligence/test_uncertainty.py",
+      "size": 5928,
+      "sha256": "46d6f1d01a1bffce6c972ce46f9785aa0daa0cdb9847fef4d2b131533f1fcfcf"
+    },
+    {
+      "path": "tests/intelligence/test_validation_temporal_firewall.py",
+      "size": 24545,
+      "sha256": "a2efb6579170bbda1c392dc19434be438a9ffd92dc1300c4170acfa89446fc57"
+    },
+    {
+      "path": "tools/system_acceptance/generate_build25_manifests.py",
+      "size": 5664,
+      "sha256": "6f76c2ad8fbb784aeca3fab13c96fb642b42005ebef135d9aba8f230e7bbeced"
+    }
+  ]
+}

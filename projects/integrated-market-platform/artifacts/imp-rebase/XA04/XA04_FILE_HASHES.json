@@ -1,0 +1,29 @@
+{
+  "milestone": "IMP-XA-04",
+  "files": [
+    {"path": "src/market_platform_foundation/xa04/__init__.py", "sha256": "8306565476AD07126FAAC0D7D8BC986438F79E169BFA9C0B955EC0D67A686CEC"},
+    {"path": "src/market_platform_foundation/xa04/__main__.py", "sha256": "F651DFE34971502398C295A4B653CE6A95678E70301A02883ED863EB2F821388"},
+    {"path": "src/market_platform_foundation/xa04/adapters.py", "sha256": "27864A50A4FAD67DFC8A1F3ED8E89295D094DEB82BABC70DBDAC915109E1A4FD"},
+    {"path": "src/market_platform_foundation/xa04/audit.py", "sha256": "B3B8A56CF5AB5C115CD078A9BF187980598328130C8F61CE02F599F9942C6518"},
+    {"path": "src/market_platform_foundation/xa04/cli.py", "sha256": "5F939DDFE194900EEC4C28B8A9CD77D23BB7FC735FB5CE10BDBA055C9B41A5A2"},
+    {"path": "src/market_platform_foundation/xa04/codec.py", "sha256": "7DC3F014D2738604AF174D8EA8EB4E7858177426F8928E9F9186A5536BE6583D"},
+    {"path": "src/market_platform_foundation/xa04/errors.py", "sha256": "50A01C8E00E40DCFA4A9443DB8D4EA43F1D5490CA7FB88DC6B959F8C0803F93C"},
+    {"path": "src/market_platform_foundation/xa04/memory.py", "sha256": "3135E2DB0AC5828D813D4AE5A7CA1B7EEEBF167B930B143EEA685AB7BB94F9FA"},
+    {"path": "src/market_platform_foundation/xa04/mongo/__init__.py", "sha256": "C1EF20FB7DFA7D59F1205FA2DF7DC17ED0ADBBAFCE06172B06AD0157DD5D6FF4"},
+    {"path": "src/market_platform_foundation/xa04/mongo/config.py", "sha256": "FC3BEA922E4277213C83F6ED7341E69974D29B3B86C11BC340F69E8968B6EA98"},
+    {"path": "src/market_platform_foundation/xa04/mongo/repository.py", "sha256": "37948BC70004BBF67B020C99FFB359ECAAE6B70A4E5A9F3E3CEC5C7F6EA9FBF2"},
+    {"path": "src/market_platform_foundation/xa04/mongo/schema.py", "sha256": "0626FB5821C888B0BCA8F4B646FB3F77697938CBC769D34A38605F1AEDD6E8AF"},
+    {"path": "src/market_platform_foundation/xa04/operations.py", "sha256": "61E1D174BF3B5DAAC7A6DBFE31687035C3CB2967016826C99C3323CDBDB79625"},
+    {"path": "src/market_platform_foundation/xa04/queries.py", "sha256": "96D303BB90A8ABEA8D30C11F2586C0D59F41487057DA49C733D50E9E8EF76D2C"},
+    {"path": "src/market_platform_foundation/xa04/repository.py", "sha256": "9A874C4011E924A96B97F467943CE0FB5EA45D48A70CED81DE6E0050C5F8F4E4"},
+    {"path": "docs/operations/xa-04/SOPS.md", "sha256": "7A618FA0057B5414D45533A5B5F894005AEB31F3E4EE9DDEA4608611151604FF"},
+    {"path": "tests/xa04/test_xa04_backward_compat.py", "sha256": "918ACC6B34E9C76BB93504A9A96FEA5217A2C0BC56638E5D1C14D36B69D61284"},
+    {"path": "tests/xa04/test_xa04_codec.py", "sha256": "07D984CD3A37969BC371A7157F039B382BF57537CB4CAF878A976241D8990B68"},
+    {"path": "tests/xa04/test_xa04_fixtures.py", "sha256": "05257234F1E31E739A655A34B6ED68D59C618D9D29DFE2FACA5E88B8FA255F0E"},
+    {"path": "tests/xa04/test_xa04_idempotency_conflict.py", "sha256": "B15966529E5F248EFE2C2622E72DAD20F70ACB53D4BAB149619DF1513F705939"},
+    {"path": "tests/xa04/test_xa04_operations.py", "sha256": "15430BEDD735065C81910FFEB6A6E1E65DC05723DCBD5418AC1028924378C770"},
+    {"path": "tests/xa04/test_xa04_persistence_conformance.py", "sha256": "B07250298CA9F99D7B6E696CEFC2F525ED634E080304BABAC54BA9BD63D1D495"},
+    {"path": "tests/xa04/test_xa04_persistence_mongo_integration.py", "sha256": "FF749D62143FEE1F5E0FE688F0B5EFA1182F0FDCB46B06D3602C58D58C2C4EEE"},
+    {"path": "tests/xa04/test_xa04_pit_temporal.py", "sha256": "9EDB08670A8DBDA1DC1AEA6EED0E5E31C7D13C888E9FF0A179351EA0E852D449"}
+  ]
+}

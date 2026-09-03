@@ -1,0 +1,9 @@
+{
+  "artifacts/supervised-live-operations/BUILD30_INCIDENT_INDEX.json": "f4ac8b40ce3d0e12269c427ccb4dd80cb282f2806ae84e921a615eb85e440c1d",
+  "artifacts/supervised-live-operations/BUILD30_KNOWN_LIMITATIONS.md": "e261f9231140c36487b423c30ae350de54af5ea1b0d4b47bf6b9c29e924eaf23",
+  "artifacts/supervised-live-operations/BUILD30_PROGRAM_POLICY.json": "623ee2266c28cac7d6ce7ae455a127476e6abae78c2e27002eb57c7a4fc7d18e",
+  "artifacts/supervised-live-operations/BUILD30_PROGRAM_REPORT.json": "5e16a0fa5f41a7341388cc075460121d628141f0af9b3be1ce9ec9fbbdd8fd8a",
+  "artifacts/supervised-live-operations/BUILD30_PROGRAM_RUN_MANIFEST.json": "be42555f23b1c247bcfcab9b7667cf6a8c728ca0b98b852603fbf1d18a35ca02",
+  "artifacts/supervised-live-operations/BUILD30_RECONCILIATION_EVIDENCE.json": "63098789d3e42b4630af2c0ffb4f90b3aa14485bae962a475f34c99c60a04662",
+  "artifacts/supervised-live-operations/BUILD30_SESSION_INDEX.json": "8dc4431f54ba9792b316eac41d4896052fea88f75a92e1d797def4cfca86b14a"
+}

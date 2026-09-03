@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0",
+  "captured_at": "2026-09-02T10:45:00-04:00",
+  "repository": "integrated-market-platform",
+  "branch": "feat/p6-shadow-run-1-forward-validation",
+  "commit": "be67b49",
+  "worktree_before_control_plane": {
+    "tracked_modifications": 44,
+    "untracked_files": 47,
+    "ahead_of_remote_commits": 1
+  },
+  "workflow": {
+    "canonical_command_router": false,
+    "validation_pyramid": true,
+    "manifest_driven_affected_selection": true,
+    "parallel_python_execution": true,
+    "repo_local_skills": false,
+    "repo_local_subagents": false,
+    "project_cursor_hooks": false,
+    "machine_readable_closure_report": false,
+    "workflow_telemetry": false,
+    "ci_python_cache": false,
+    "ci_reusable_workflow": false
+  },
+  "validation": {
+    "fast": {
+      "command": "PYTHONPATH=src .venv\\Scripts\\python.exe tools\\validate.py fast",
+      "status": "passed",
+      "tests_run": 21,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 4.366
+    },
+    "changed": {
+      "status": "baseline_dirty",
+      "tests_run": 1232,
+      "skips": 9,
+      "failures": 1,
+      "errors": 91,
+      "wall_seconds": 530.542,
+      "areas": ["finviz", "platform", "intelligence", "ui1", "validation"]
+    },
+    "full": {
+      "status": "baseline_dirty",
+      "tests_run": 2209,
+      "skips": 9,
+      "failures": 1,
+      "errors": 92,
+      "wall_seconds": 734.902,
+      "areas": ["finviz", "platform", "intelligence", "ui1", "ui2", "validation"]
+    }
+  },
+  "safety_baseline": [
+    "Demo mutations prohibited",
+    "Paper requires INTERNAL_SIMULATION and PAPER_ONLY backend authority plus env gates",
+    "Workspace is the canonical Paper submit boundary",
+    "Live is observational only and LIVE-001 remains blocked",
+    "Risk, execution, account isolation, source-time, persistence, and offline network invariants remain authoritative"
+  ]
+}

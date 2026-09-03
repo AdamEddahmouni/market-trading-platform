@@ -1,0 +1,35 @@
+{
+  "predicates": [
+    {
+      "assertion_id": "P16-FIX-001",
+      "assertion_version": "1.0.0",
+      "predicate": "ADMITTED-ETF-CROSSASSET-NVDA-001 fixture manifest exists with etf_flow_proxy and cross_asset_correlation capability claims"
+    },
+    {
+      "assertion_id": "P16-FUND-001",
+      "assertion_version": "1.0.0",
+      "predicate": "NVDA fund/ETF fixture ingests deterministically with stable envelope identity"
+    },
+    {
+      "assertion_id": "P16-PIT-001",
+      "assertion_version": "1.0.0",
+      "predicate": "PIT queries exclude fund/ETF events whose available_time exceeds prediction_cutoff"
+    },
+    {
+      "assertion_id": "P16-WHALE-001",
+      "assertion_version": "1.0.0",
+      "predicate": "fund_etf_cross_asset is available for NVDA when ledger is entitled; BOXL remains unavailable"
+    },
+    {
+      "assertion_id": "P16-UI-001",
+      "assertion_version": "1.0.0",
+      "predicate": "UI capability surface marks whale.fund_etf_cross_asset AVAILABLE and NVDA workspace fund-etf payload is research-only"
+    },
+    {
+      "assertion_id": "SAFE-003",
+      "assertion_version": "1.0.0",
+      "predicate": "Network-denied replay passes; route reachability to live order submission is empty"
+    }
+  ],
+  "registry_version": "1.0.0"
+}

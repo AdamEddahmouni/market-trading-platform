@@ -1,0 +1,22 @@
+[
+  {
+    "tradeDate": "2026-08-18",
+    "issueSymbolIdentifier": "OTCR",
+    "issueName": "Oncotelic Therapeutics Inc",
+    "marketClassCode": "OTC",
+    "marketCategoryDescription": "No Tier",
+    "regShoThresholdFlag": "Y",
+    "rule4320Flag": "N",
+    "thresholdListFlag": "R"
+  },
+  {
+    "tradeDate": "2026-08-18",
+    "issueSymbolIdentifier": "YASKY",
+    "issueName": "YASKAWA ELECTRIC UNSP/ADR",
+    "marketClassCode": "OTC",
+    "marketCategoryDescription": "Pink Limited",
+    "regShoThresholdFlag": "N",
+    "rule4320Flag": "Y",
+    "thresholdListFlag": "NR"
+  }
+]

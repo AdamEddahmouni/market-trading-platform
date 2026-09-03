@@ -1,0 +1,194 @@
+{
+  "changed_files": [],
+  "cheap_check_results": [],
+  "discovery_seconds": 0.06322709999949438,
+  "errors": 0,
+  "expected_failures": 0,
+  "failures": 0,
+  "full_suite_required": false,
+  "global_reasons": [],
+  "interrupted": false,
+  "mandatory_invariants": [],
+  "mode": "live",
+  "not_run_suites": [],
+  "omitted_domains": [],
+  "passes": 7,
+  "process_launches": 1,
+  "resource_heavy_workers": 2,
+  "schema_version": "1.0",
+  "selected_suites": [
+    "live_weather"
+  ],
+  "selection_reasons": {},
+  "skips": 0,
+  "started_at": "2026-08-21T02:59:15.039345+00:00",
+  "status": "passed",
+  "suite_results": [
+    {
+      "discovery_seconds": 0.06322709999949438,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 7,
+      "per_test_durations": [
+        {
+          "seconds": 0.48269359999903827,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_cpc_archived_vintage_is_date_addressable_and_parseable"
+        },
+        {
+          "seconds": 0.3781202000027406,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_cpc_latest_forecast_parses_issue_availability_and_seven_targets"
+        },
+        {
+          "seconds": 0.4478549999985262,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_cpc_realized_degree_days_have_separate_availability"
+        },
+        {
+          "seconds": 0.3696803999991971,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_ndfd_catalog_is_reachable_without_bulk_or_decode"
+        },
+        {
+          "seconds": 1.8412511999995331,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_nws_current_forecast_hourly_and_raw_grid_semantics"
+        },
+        {
+          "seconds": 0.9574117999982263,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_nws_station_observation_keeps_latency_clocks"
+        },
+        {
+          "seconds": 0.0002096999996865634,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_nws_user_agent_points_and_mapping_semantics"
+        }
+      ],
+      "process_wall_seconds": 5.711207700001978,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skips": 0,
+      "slowest_tests": [
+        {
+          "seconds": 1.8412511999995331,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_nws_current_forecast_hourly_and_raw_grid_semantics"
+        },
+        {
+          "seconds": 0.9574117999982263,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_nws_station_observation_keeps_latency_clocks"
+        },
+        {
+          "seconds": 0.48269359999903827,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_cpc_archived_vintage_is_date_addressable_and_parseable"
+        },
+        {
+          "seconds": 0.4478549999985262,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_cpc_realized_degree_days_have_separate_availability"
+        },
+        {
+          "seconds": 0.3781202000027406,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_cpc_latest_forecast_parses_issue_availability_and_seven_targets"
+        },
+        {
+          "seconds": 0.3696803999991971,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_ndfd_catalog_is_reachable_without_bulk_or_decode"
+        },
+        {
+          "seconds": 0.0002096999996865634,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_nws_user_agent_points_and_mapping_semantics"
+        }
+      ],
+      "status": "passed",
+      "suite_id": "live_weather",
+      "tests_run": 7,
+      "unexpected_successes": 0,
+      "wall_seconds": 4.715552799996658,
+      "worker_error": "",
+      "worker_pid": 8332
+    }
+  ],
+  "tests_run": 7,
+  "unexpected_successes": 0,
+  "wall_seconds": 5.711729000002379,
+  "worker_results": [
+    {
+      "discovery_seconds": 0.06322709999949438,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 7,
+      "per_test_durations": [
+        {
+          "seconds": 0.48269359999903827,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_cpc_archived_vintage_is_date_addressable_and_parseable"
+        },
+        {
+          "seconds": 0.3781202000027406,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_cpc_latest_forecast_parses_issue_availability_and_seven_targets"
+        },
+        {
+          "seconds": 0.4478549999985262,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_cpc_realized_degree_days_have_separate_availability"
+        },
+        {
+          "seconds": 0.3696803999991971,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_ndfd_catalog_is_reachable_without_bulk_or_decode"
+        },
+        {
+          "seconds": 1.8412511999995331,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_nws_current_forecast_hourly_and_raw_grid_semantics"
+        },
+        {
+          "seconds": 0.9574117999982263,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_nws_station_observation_keeps_latency_clocks"
+        },
+        {
+          "seconds": 0.0002096999996865634,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_nws_user_agent_points_and_mapping_semantics"
+        }
+      ],
+      "process_wall_seconds": 5.711207700001978,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skips": 0,
+      "slowest_tests": [
+        {
+          "seconds": 1.8412511999995331,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_nws_current_forecast_hourly_and_raw_grid_semantics"
+        },
+        {
+          "seconds": 0.9574117999982263,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_nws_station_observation_keeps_latency_clocks"
+        },
+        {
+          "seconds": 0.48269359999903827,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_cpc_archived_vintage_is_date_addressable_and_parseable"
+        },
+        {
+          "seconds": 0.4478549999985262,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_cpc_realized_degree_days_have_separate_availability"
+        },
+        {
+          "seconds": 0.3781202000027406,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_cpc_latest_forecast_parses_issue_availability_and_seven_targets"
+        },
+        {
+          "seconds": 0.3696803999991971,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_ndfd_catalog_is_reachable_without_bulk_or_decode"
+        },
+        {
+          "seconds": 0.0002096999996865634,
+          "selector": "tests/live_weather/test_live_weather.py::LiveWeatherTests::test_nws_user_agent_points_and_mapping_semantics"
+        }
+      ],
+      "status": "passed",
+      "suite_id": "live_weather",
+      "tests_run": 7,
+      "unexpected_successes": 0,
+      "wall_seconds": 4.715552799996658,
+      "worker_error": "",
+      "worker_pid": 8332
+    }
+  ],
+  "workers": 2
+}

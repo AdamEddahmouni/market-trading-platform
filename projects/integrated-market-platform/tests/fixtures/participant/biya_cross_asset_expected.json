@@ -1,0 +1,21 @@
+{
+  "prediction_cutoff": "2026-08-14T23:59:59Z",
+  "instrument_id": "BIYA",
+  "fixture_path": "tests/fixtures/providers/edgar/biya_institutional_crowding.json",
+  "cross_asset_fixture_path": "tests/fixtures/participant/biya_cross_asset_slice.json",
+  "summary": {
+    "cross_asset_available": true,
+    "alignment_regime": "ALIGNED_BULLISH",
+    "alignment_score": 1.0,
+    "equity_symbol": "BIYA",
+    "futures_symbol": "ES",
+    "equity_institutional_direction": "BULLISH",
+    "futures_cot_regime": "CROWDED_LONG",
+    "futures_cot_net_percentile": 1.0,
+    "cross_lane_signals": [
+      "PARTICIPANT_CROSS_ASSET_ALIGNED"
+    ],
+    "producer_version": "participant_cross_asset_v1"
+  },
+  "producer_version": "participant_cross_asset_v1"
+}

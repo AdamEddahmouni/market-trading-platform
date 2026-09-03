@@ -1,0 +1,23 @@
+{
+  "prediction_cutoff": "2026-07-16T23:59:59Z",
+  "instrument_id": "BIYA",
+  "fixture_path": "tests/fixtures/providers/edgar/biya_disclosures.json",
+  "crowding_fixture_path": "tests/fixtures/participant/biya_crowding_slice.json",
+  "summary": {
+    "crowding_available": true,
+    "alignment_regime": "DISAGREEMENT",
+    "insider_direction": null,
+    "institutional_direction": null,
+    "activist_direction": "BULLISH",
+    "independent_participant_count": 3,
+    "affiliated_participant_count": 0,
+    "crowding_score": null,
+    "disagreement_score": 0.333333,
+    "cross_lane_signals": [
+      "PARTICIPANT_DISAGREEMENT_ELEVATED"
+    ],
+    "producer_version": "participant_crowding_v1"
+  },
+  "pit_excludes_accession": "0001849639-26-000099",
+  "producer_version": "participant_crowding_v1"
+}

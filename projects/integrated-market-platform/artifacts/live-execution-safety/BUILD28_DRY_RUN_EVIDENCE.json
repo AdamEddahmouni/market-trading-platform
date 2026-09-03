@@ -1,0 +1,8 @@
+{
+  "schema_version": "1",
+  "real_submit_count": 0,
+  "real_cancel_count": 0,
+  "real_replace_count": 0,
+  "scenario_failures": [],
+  "certification_mode": "ZERO_SUBMIT"
+}

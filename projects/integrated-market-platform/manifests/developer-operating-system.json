@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "repository_id": "integrated-market-platform",
+  "language_runtimes": {
+    "python": "3.11",
+    "frontend": "node/npm"
+  },
+  "source_roots": ["src", "tools", "ui"],
+  "test_roots": ["tests", "ui/src"],
+  "domain_aliases": {
+    "paper": ["paper", "execution", "portfolio"],
+    "market-data": ["market_data", "providers", "runtime", "contracts"],
+    "intelligence": ["intelligence", "strategy", "opportunity"],
+    "frontend": ["ui", "ui1", "ui2"],
+    "developer-tooling": ["validation"]
+  },
+  "authorities": {
+    "documentation": "docs/README.md",
+    "safety": "docs/architecture/MODE_AUTHORITY.md",
+    "validation": "tools/validation_manifest.json",
+    "command_router": "tools/imp.py",
+    "closure_report": "artifacts/developer-workflow/closure-report.json"
+  },
+  "invariants": [
+    {"id": "demo-read-only", "authority": "docs/architecture/MODE_AUTHORITY.md"},
+    {"id": "paper-internal-simulation-only", "authority": "docs/architecture/MODE_AUTHORITY.md"},
+    {"id": "live-production-execution-blocked", "authority": "docs/architecture/MODE_AUTHORITY.md"},
+    {"id": "risk-authority-preserved", "authority": "docs/architecture/MODE_AUTHORITY.md"},
+    {"id": "account-isolation-preserved", "authority": "docs/architecture/MODE_AUTHORITY.md"},
+    {"id": "source-time-semantics-preserved", "authority": "docs/architecture/MODE_AUTHORITY.md"},
+    {"id": "append-only-persistence", "authority": "docs/architecture/PAPER_DECISION_LIFECYCLE.md"},
+    {"id": "offline-network-denial", "authority": "tools/validation_manifest.json"}
+  ],
+  "delegation": {
+    "parallel_allowed": ["read-only-discovery", "pure-independent-edits", "PARALLEL_SAFE-tests"],
+    "serial_required": ["authority", "execution", "persistence", "shared-state", "validation-inventory", "final-closure"]
+  }
+}

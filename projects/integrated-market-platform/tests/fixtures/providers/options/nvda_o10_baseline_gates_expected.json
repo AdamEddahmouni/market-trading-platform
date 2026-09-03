@@ -1,0 +1,8 @@
+{
+  "aggregate_status": "PASS",
+  "gate_summary": [
+    {"gate_milestone": "R-O6", "gate_status": "PASS"},
+    {"gate_milestone": "R-O5", "gate_status": "PASS"},
+    {"gate_milestone": "R-O10-SURF", "gate_status": "PASS"}
+  ]
+}

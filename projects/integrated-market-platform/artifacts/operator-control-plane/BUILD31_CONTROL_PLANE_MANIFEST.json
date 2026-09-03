@@ -1,0 +1,7 @@
+{
+  "build": "BUILD31",
+  "build30_source_ref": "664621da67005118a254244da86d7d8fb58396f4",
+  "disposition": "OPERATOR_CONTROL_PLANE_QUALIFIED",
+  "schema_version": "1",
+  "source_head": "c71e4c2738312960f84ebfa64970342cda6f0f09"
+}
