@@ -1,0 +1,37 @@
+{
+  "calendar_id": "FINRA-SHORT-INTEREST-2026",
+  "source": "https://www.finra.org/filing-reporting/regulatory-filing-systems/short-interest",
+  "evidence_class": "DOCUMENTED",
+  "api_available_clock": {
+    "local_time": "16:40",
+    "timezone": "America/New_York",
+    "source": "https://developer.finra.org/docs",
+    "note": "Consolidated Short Interest is available via the dataset by 4:40 PM ET on the publication date."
+  },
+  "cycles": [
+    {"settlement_date": "2026-01-15", "due_date": "2026-01-20", "publication_date": "2026-01-27"},
+    {"settlement_date": "2026-01-30", "due_date": "2026-02-03", "publication_date": "2026-02-10"},
+    {"settlement_date": "2026-02-13", "due_date": "2026-02-18", "publication_date": "2026-02-25"},
+    {"settlement_date": "2026-02-27", "due_date": "2026-03-03", "publication_date": "2026-03-10"},
+    {"settlement_date": "2026-03-13", "due_date": "2026-03-17", "publication_date": "2026-03-24"},
+    {"settlement_date": "2026-03-31", "due_date": "2026-04-02", "publication_date": "2026-04-10"},
+    {"settlement_date": "2026-04-15", "due_date": "2026-04-17", "publication_date": "2026-04-24"},
+    {"settlement_date": "2026-04-30", "due_date": "2026-05-04", "publication_date": "2026-05-11"},
+    {"settlement_date": "2026-05-15", "due_date": "2026-05-19", "publication_date": "2026-05-27"},
+    {"settlement_date": "2026-05-29", "due_date": "2026-06-02", "publication_date": "2026-06-09"},
+    {"settlement_date": "2026-06-15", "due_date": "2026-06-17", "publication_date": "2026-06-25"},
+    {"settlement_date": "2026-06-30", "due_date": "2026-07-02", "publication_date": "2026-07-10"},
+    {"settlement_date": "2026-07-15", "due_date": "2026-07-17", "publication_date": "2026-07-24"},
+    {"settlement_date": "2026-07-31", "due_date": "2026-08-04", "publication_date": "2026-08-11"},
+    {"settlement_date": "2026-08-14", "due_date": "2026-08-18", "publication_date": "2026-08-25"},
+    {"settlement_date": "2026-08-31", "due_date": "2026-09-02", "publication_date": "2026-09-10"},
+    {"settlement_date": "2026-09-15", "due_date": "2026-09-17", "publication_date": "2026-09-24"},
+    {"settlement_date": "2026-09-30", "due_date": "2026-10-02", "publication_date": "2026-10-09"},
+    {"settlement_date": "2026-10-15", "due_date": "2026-10-19", "publication_date": "2026-10-26"},
+    {"settlement_date": "2026-10-30", "due_date": "2026-11-03", "publication_date": "2026-11-10"},
+    {"settlement_date": "2026-11-13", "due_date": "2026-11-17", "publication_date": "2026-11-24"},
+    {"settlement_date": "2026-11-30", "due_date": "2026-12-02", "publication_date": "2026-12-09"},
+    {"settlement_date": "2026-12-15", "due_date": "2026-12-17", "publication_date": "2026-12-24"},
+    {"settlement_date": "2026-12-31", "due_date": "2027-01-05", "publication_date": "2027-01-12"}
+  ]
+}

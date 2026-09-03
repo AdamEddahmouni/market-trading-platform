@@ -1,0 +1,15 @@
+{
+  "admitted_fixture_id": "ADMITTED-CVD-NVDA-ORDERFLOW-001",
+  "capability_claims": [
+    "signed_volume",
+    "cumulative_delta",
+    "aggressor_provenance"
+  ],
+  "content_path": "tests/fixtures/providers/order_flow/nvda_order_flow_slice.json",
+  "donor_reference": "tradingCVDBubble-main/demo_data manifest (NVDA 2026-07-22)",
+  "instrument_id": "NVDA",
+  "logical_id": "phase10.order_flow_fixture_admission",
+  "research_only": true,
+  "schema_version": "1.0.0",
+  "status": "ADMITTED"
+}

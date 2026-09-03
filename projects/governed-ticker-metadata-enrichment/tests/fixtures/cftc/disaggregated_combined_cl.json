@@ -1,0 +1,26 @@
+{
+  "fixture_id": "CFTC-DISAGG-COMBINED-CL-2026",
+  "description": "Disaggregated Combined WTI Crude Oil",
+  "report_family": "DISAGGREGATED",
+  "position_scope": "FUTURES_AND_OPTIONS_COMBINED",
+  "source_dataset": "kh3c-gbw2",
+  "rows": [
+    {
+      "market_and_exchange_names": "CRUDE OIL, LIGHT SWEET - NEW YORK MERCANTILE EXCHANGE",
+      "report_date_as_yyyy_mm_dd": "2026-08-11",
+      "cftc_contract_market_code": "067651",
+      "cftc_commodity_code": "067",
+      "open_interest_all": "1950000",
+      "prod_merc_positions_long_all": "360000",
+      "prod_merc_positions_short_all": "430000",
+      "swap_positions_long_all": "190000",
+      "swap__positions_short_all": "170000",
+      "m_money_positions_long_all": "300000",
+      "m_money_positions_short_all": "260000",
+      "other_rept_positions_long": "125000",
+      "other_rept_positions_short": "115000",
+      "nonrept_positions_long_all": "85000",
+      "nonrept_positions_short_all": "95000"
+    }
+  ]
+}

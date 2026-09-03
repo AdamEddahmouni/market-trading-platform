@@ -1,0 +1,7 @@
+{
+  "fixture_id": "FIXTURE-PARTICIPANT-COPYABILITY-SLICE-BIYA-001",
+  "instrument_id": "BIYA",
+  "default_cost_bps": 50,
+  "copy_window_days": 20,
+  "action_cost_bps": {}
+}

@@ -1,0 +1,41 @@
+{
+  "acceptance_index": {
+    "index_sha256": "1B2933030CCE90C300216C9E8503B58457A483A99EF15132674C9574D5BE6708",
+    "logical_id": "phase0a.acceptance_index",
+    "repository_relative_path": "evidence/phase0a/postreview/phase0a.acceptance_index.json",
+    "root_hash": "BD6CEDDB48B46B038CF74681E8338F727513E5D715BC53060A326B5F25782017",
+    "sha256": "CF03950F10DF8C01A1903D113DD9A6C73F0E159EC46CC9B2429074D315101764"
+  },
+  "artifact_type": "PHASE_0A_BLOCKED_CHARACTERIZATION_PUBLICATION",
+  "assertion_run_id": "3E8077A53BC43448D6D74023CB187C8D5075ADEB9517123D4644A6B81C17F960",
+  "authority_manifest_at_publication": {
+    "logical_id": "foundation.canonical_authority_manifest",
+    "phase0_status": "PASS",
+    "phase0a_status": "BLOCKED_CHARACTERIZATION_ACCEPTED",
+    "repository_relative_path": "manifests/phase0/canonical-authority.json",
+    "sha256": "D5F9902B16954427D4DA4F27F9ADFBD9855099148F7E82B23B27642E0D022870"
+  },
+  "candidate_evidence_root": "5AEFCEEC613325E4192A67966785A4C483E04742A49FFFC8D8C1A9BF49E42547",
+  "effect": "Publishes accepted Phase 0A characterization evidence with BLOCKED data-feasibility assertions. Does not claim Phase 0A PASS or update canonical-authority.json bytes.",
+  "final_acceptance_result": {
+    "final_result_id": "5E5E92DD7C844825542A224E2B2B58E5311A246C0BB961516205E9D7E8DB8743",
+    "logical_id": "phase0a.final_acceptance_result",
+    "outcome": "BLOCKED",
+    "repository_relative_path": "evidence/phase0a/postreview/phase0a.final_acceptance_result.json",
+    "sha256": "E70E5EEEDFA73FE1A022051CF6B5B8564E059A47ECA5050D002A77959CF21D89"
+  },
+  "logical_id": "phase0a.blocked_characterization_publication",
+  "phase0a_status_published": "BLOCKED_CHARACTERIZATION_ACCEPTED",
+  "principal_id": "PROJECT-PRINCIPAL-001",
+  "published_at": "2026-08-15T04:22:01.000000000Z",
+  "publisher_capacities": ["PROJECT_OWNER", "RELEASE_OWNER"],
+  "repository_root_id": "ROOT-2E7C91F4",
+  "sanitization": {
+    "absolute_paths_included": false,
+    "account_identifiers_included": false,
+    "credential_values_included": false,
+    "remote_urls_included": false
+  },
+  "schema_version": "1.0.0",
+  "status": "PUBLISHED"
+}

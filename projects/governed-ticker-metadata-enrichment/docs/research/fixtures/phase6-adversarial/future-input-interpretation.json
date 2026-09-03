@@ -1,0 +1,6 @@
+{
+  "description": "Future observation time relative to prediction cutoff must abstain",
+  "future_observation_offset_ns": 60000000000,
+  "observation_time": 2000000000060000000000,
+  "prediction_cutoff": 2000000000000000000
+}

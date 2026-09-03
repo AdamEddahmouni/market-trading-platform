@@ -1,0 +1,19 @@
+{
+  "warnings": [],
+  "response": {
+    "total": "1",
+    "data": [
+      {"period": "2026-08-14", "series": "NW2_EPG0_SWO_R48_BCF", "value": "3169", "units": "BCF"}
+    ]
+  },
+  "request": {
+    "command": "/v2/natural-gas/stor/wkly/data/",
+    "params": {
+      "frequency": "weekly",
+      "data": ["value"],
+      "facets": {"series": ["NW2_EPG0_SWO_R48_BCF"]},
+      "api_key": "FAKE_EIA_SECRET"
+    }
+  },
+  "apiVersion": "2.1.13"
+}

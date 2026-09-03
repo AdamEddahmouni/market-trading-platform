@@ -1,0 +1,32 @@
+{
+  "@id": "https://api.weather.gov/gridpoints/TOP/31,80",
+  "type": "Feature",
+  "properties": {
+    "updateTime": "2026-08-20T18:10:30+00:00",
+    "validTimes": "2026-08-20T18:00:00+00:00/P7DT6H",
+    "elevation": {"unitCode": "wmoUnit:m", "value": 392.8872},
+    "forecastOffice": "https://api.weather.gov/offices/TOP",
+    "gridId": "TOP",
+    "gridX": 31,
+    "gridY": 80,
+    "temperature": {
+      "uom": "wmoUnit:degC",
+      "values": [
+        {"validTime": "2026-08-20T18:00:00+00:00/PT3H", "value": 32.2},
+        {"validTime": "2026-08-20T21:00:00+00:00/PT6H", "value": 27.8}
+      ]
+    },
+    "quantitativePrecipitation": {
+      "uom": "wmoUnit:mm",
+      "values": [
+        {"validTime": "2026-08-20T18:00:00+00:00/PT6H", "value": 1.2}
+      ]
+    },
+    "probabilityOfPrecipitation": {
+      "uom": "wmoUnit:percent",
+      "values": [
+        {"validTime": "2026-08-20T18:00:00+00:00/PT12H", "value": 25}
+      ]
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "author_intelligence_count": 3,
+  "author_intelligence_summaries": [
+    {
+      "author_id": "70a542fd-018d-5671-a9de-b1579d827d5e",
+      "handle": "boxl_hype",
+      "platform": "fixture_social",
+      "display_name": "BOXL Hype Desk",
+      "document_id": "mc-social-viral-wrong",
+      "entity_id": "BOXL",
+      "influence_score": 1.0,
+      "accuracy_score": 0.0,
+      "follower_count": 250000,
+      "repost_count": 8000,
+      "labeled_correct": 0.0,
+      "outcome_available_time": "2026-07-22T16:00:00.000000000Z",
+      "event_time": "2026-07-21T15:00:00.000000000Z",
+      "available_time": "2026-07-21T15:01:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [
+        "INFLUENCE_NOT_ACCURACY",
+        "SOCIAL_AUTHOR_EXPERIMENTAL"
+      ],
+      "scoring_method": "author_intelligence_v1"
+    },
+    {
+      "author_id": "e4772a95-39a1-51ab-b3e7-5838ccf44607",
+      "handle": "boxl_specialist",
+      "platform": "fixture_social",
+      "display_name": "BOXL Specialist",
+      "document_id": "mc-social-quiet-right",
+      "entity_id": "BOXL",
+      "influence_score": 0.0052,
+      "accuracy_score": 1.0,
+      "follower_count": 800,
+      "repost_count": 12,
+      "labeled_correct": 1.0,
+      "outcome_available_time": "2026-07-22T16:00:00.000000000Z",
+      "event_time": "2026-07-21T16:00:00.000000000Z",
+      "available_time": "2026-07-21T16:02:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [
+        "INFLUENCE_NOT_ACCURACY",
+        "SOCIAL_AUTHOR_EXPERIMENTAL"
+      ],
+      "scoring_method": "author_intelligence_v1"
+    },
+    {
+      "author_id": "1a7c4b74-fd12-5eb9-8e4e-bd13aa3990a6",
+      "handle": "boxl_pending",
+      "platform": "fixture_social",
+      "display_name": "Pending Author",
+      "document_id": "mc-social-pending-outcome",
+      "entity_id": "BOXL",
+      "influence_score": 0.34,
+      "accuracy_score": null,
+      "follower_count": 50000,
+      "repost_count": 900,
+      "labeled_correct": null,
+      "outcome_available_time": "2026-07-24T12:00:00.000000000Z",
+      "event_time": "2026-07-22T18:00:00.000000000Z",
+      "available_time": "2026-07-22T18:05:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [
+        "INFLUENCE_NOT_ACCURACY",
+        "SOCIAL_AUTHOR_EXPERIMENTAL",
+        "AUTHOR_ACCURACY_UNVALIDATED"
+      ],
+      "scoring_method": "author_intelligence_v1"
+    }
+  ]
+}

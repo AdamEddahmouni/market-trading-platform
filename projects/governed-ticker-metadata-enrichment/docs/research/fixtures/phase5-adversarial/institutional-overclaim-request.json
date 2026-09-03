@@ -1,0 +1,10 @@
+{
+  "artifact_type": "PHASE_5_INSTITUTIONAL_OVERCLAIM_REQUEST",
+  "attempted_families": [
+    "regulatory_disclosure",
+    "order_flow"
+  ],
+  "attempted_status": "supports_long",
+  "logical_id": "phase5.institutional_overclaim_request",
+  "reason": "Synthetic adversarial fixture proving overclaim attempts remain unavailable"
+}

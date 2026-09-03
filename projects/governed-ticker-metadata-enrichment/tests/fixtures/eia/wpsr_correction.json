@@ -1,0 +1,18 @@
+{
+  "period_end": "2026-08-14",
+  "versions": [
+    {
+      "version": 1,
+      "value": 100,
+      "available_time": "2026-08-13T14:35:00Z",
+      "observed_time": "2026-08-13T14:35:00Z"
+    },
+    {
+      "version": 2,
+      "value": 102,
+      "available_time": "2026-08-20T16:00:00Z",
+      "observed_time": "2026-08-20T16:00:00Z"
+    }
+  ],
+  "series": "WCESTUS1"
+}

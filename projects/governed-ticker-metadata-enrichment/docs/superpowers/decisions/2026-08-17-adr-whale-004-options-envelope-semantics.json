@@ -1,0 +1,76 @@
+{
+  "adr_id": "ADR-WHALE-004",
+  "alternatives": [
+    {
+      "decision": "ACCEPTED",
+      "name": "OPTIONS_WHALE_EVENT_WITH_DIRECTION_AMBIGUITY",
+      "option_id": "WHALE4-OPTION-001",
+      "tradeoffs": [
+        "Direction labels remain conservative; unusual calls are not automatically bullish whale trades."
+      ]
+    }
+  ],
+  "approval": {
+    "approval_scope": "EXACT_HASH_PRINCIPAL_APPROVAL",
+    "approved_at": "2026-08-17T18:00:00.000000000Z",
+    "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+    "approved_capacities": [
+      "PROJECT_OWNER",
+      "RELEASE_OWNER"
+    ]
+  },
+  "artifact_type": "ARCHITECTURE_DECISION_RECORD",
+  "authority_bindings": [
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase10.adr_whale_003",
+      "logical_path": "docs/superpowers/decisions/2026-08-17-adr-whale-003-order-flow-envelope-semantics.json",
+      "sha256": "986537BDCBEBF8B02C9BBFB2AA82D7A6D64E67A9912B7DD66F225E492D54DD75"
+    },
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase11.whale_options_design",
+      "logical_path": "docs/superpowers/specs/2026-08-17-phase-11-whale-options-design.md",
+      "sha256": "79BDEB86655493786FCE5A874266237336BEF2481BEC9D883A19BC2A5534663A"
+    }
+  ],
+  "conformance_evidence": [
+    {
+      "logical_id": "phase11.options_tests",
+      "repository_relative_path": "tests/providers/test_options.py",
+      "sha256": "9282C76A51E1B73329873077753E7DFBB37B7DEF11759172B8E8319778EA8987"
+    }
+  ],
+  "consequences": {
+    "negative": [
+      "Direction remains ambiguous unless explicitly supported; liquidity gate failures must be surfaced."
+    ],
+    "positive": [
+      "options family can surface entitled fixture activity without collapsing into a universal whale score."
+    ]
+  },
+  "created_at": "2026-08-17T18:00:00.000000000Z",
+  "decision": {
+    "selected_option_id": "WHALE4-OPTION-001",
+    "summary": "Options whale events use whale_event payloads with family options, volume/OI normalization, liquidity_gate result, confirmation_score (DERIVED), and direction_label (supports_long|supports_short|neutral|ambiguous). PIT queries exclude events whose available_time exceeds prediction_cutoff. Unusual volume is not trader intent.",
+    "title": "Options whale envelope semantics and direction ambiguity"
+  },
+  "effectivity": {
+    "current_state": "ACCEPTED",
+    "decision_only": false,
+    "non_authorization_statement": "Acceptance authorizes fixture-first options on ADMITTED-OPTIONS-BIYA-001 only. Live Tradier adapters and option_chain entitlement require separate records."
+  },
+  "logical_id": "phase11.adr_whale_004",
+  "owner_capacities": [
+    "ARCHITECTURE_LEAD",
+    "PROJECT_OWNER"
+  ],
+  "sanitization": {
+    "absolute_paths_included": false,
+    "account_identifiers_included": false,
+    "credential_values_included": false,
+    "remote_urls_included": false
+  },
+  "schema_version": "1.0.0",
+  "status": "ACCEPTED"
+}

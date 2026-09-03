@@ -1,0 +1,218 @@
+{
+  "artifact_type": "REPOSITORY_MUTATION_AUTHORIZATION",
+  "authority_bindings": [
+    {
+      "effectivity_state": "PENDING_EXACT_HASH_APPROVAL",
+      "logical_id": "foundation.canonical_specification.revision_2",
+      "logical_path": "docs/superpowers/specs/2026-08-14-integrated-market-platform-foundation-design-revision-2.md",
+      "sha256": "56F6C424EF83BE6042E06D716F3BBE87A1E1B7FE7EBEB15B7EECD875131BC06A"
+    },
+    {
+      "effectivity_state": "PENDING_EXACT_HASH_APPROVAL",
+      "logical_id": "phase0.adr_repo_001",
+      "logical_path": "docs/superpowers/decisions/2026-08-14-adr-repo-001-governed-repository-boundary.json",
+      "sha256": "5D0F30A0BBC558ADC32F9D924D9AF870964922C6CEFFEC3FFA7F74641FC3A612"
+    },
+    {
+      "effectivity_state": "EFFECTIVE_AS_CONTROLLING_PHASE_0_PLAN_WITH_PHASE_0_BLOCKED",
+      "logical_id": "phase0.governance_plan",
+      "logical_path": "docs/superpowers/plans/2026-08-13-phase-0-governance-and-no-live-safety.md",
+      "sha256": "EE22C688167F5016D7ED1953BB1DAE516BC6AB343655A7D96535C6605D37E904"
+    },
+    {
+      "effectivity_state": "FROZEN_OBSERVED_BASELINE",
+      "logical_id": "phase0.prototype_preservation",
+      "logical_path": "docs/superpowers/governance/2026-08-14-phase-0-prototype-preservation-before.json",
+      "sha256": "331AF8F6731EC6A7DA3785EE8021E38A0C055CCF59CA903EEB6EEBB2570856F0"
+    }
+  ],
+  "authorization_id": "REPOSITORY-MUTATION-AUTHORIZATION-001",
+  "authorized_executor": {
+    "capacity": "RELEASE_OWNER",
+    "principal_id": "PROJECT-PRINCIPAL-001"
+  },
+  "authorized_filesystem_operations": [
+    {
+      "operation": "Freshly recompute every relied-upon SHA-256 and the preservation comparison inputs. Stop before mutation on any mismatch, inaccessible required input, or non-excluded prototype drift.",
+      "operation_id": "RM-001"
+    },
+    {
+      "operation": "Resolve ROOT-8A4D17C2 and ROOT-2E7C91F4 from a process-confined, access-restricted absolute-path map; verify ROOT-2E7C91F4 is an absent, non-symlink, non-reparse direct child of ROOT-8A4D17C2; publish only a hash of the mapping record.",
+      "operation_id": "RM-002"
+    },
+    {
+      "operation": "Create exactly one empty directory at ROOT-2E7C91F4. Create no other collection-root entry.",
+      "operation_id": "RM-003"
+    },
+    {
+      "operation": "Initialize a local Git repository at ROOT-2E7C91F4 with initial branch main. Do not create, configure, query, or contact a remote.",
+      "operation_id": "RM-004"
+    },
+    {
+      "operation": "Create only repository-relative docs/superpowers/specs, docs/superpowers/plans, docs/superpowers/decisions, and docs/superpowers/governance directories, then copy the exact registered-document bytes listed in governance_install_set.",
+      "operation_id": "RM-005"
+    },
+    {
+      "operation": "Create a canonical JSON repository-registration manifest inside docs/superpowers/governance. It maps logical IDs to repository-relative paths, byte lengths, media types, and freshly verified SHA-256 values; records ROOT-2E7C91F4; and contains no absolute path, remote URL, credential value, or account identifier.",
+      "operation_id": "RM-006"
+    },
+    {
+      "operation": "Recompute the full after-operation preservation comparison. Write a sanitized difference report inside docs/superpowers/governance. Continue only when every governed comparison is equal, the target was the sole authorized collection-root addition, and any volatile log drift is explicitly classified as excluded.",
+      "operation_id": "RM-007"
+    },
+    {
+      "operation": "Stage only the registered documents, registration manifest, and preservation difference report inside ROOT-2E7C91F4. Create one local initial commit with message 'chore: establish governed phase 0 boundary' using the public commit identity PROJECT-PRINCIPAL-001 <project-principal-001@users.noreply.invalid> supplied only for that command.",
+      "operation_id": "RM-008"
+    },
+    {
+      "operation": "Verify the commit tree contains only authorized paths, HEAD is on main, no remote exists, copied hashes match, Git status is clean, and prototypes still compare without unauthorized drift. Publish a sanitized operation result.",
+      "operation_id": "RM-009"
+    }
+  ],
+  "before_after_requirements": {
+    "after_artifact": "A new immutable phase0.repository_preservation_difference record created under ROOT-2E7C91F4.",
+    "baseline_logical_id": "phase0.prototype_preservation",
+    "baseline_sha256": "331AF8F6731EC6A7DA3785EE8021E38A0C055CCF59CA903EEB6EEBB2570856F0",
+    "equality_requirements": [
+      "ALL_FIVE_PROTOTYPE_SAFE_INVENTORY_DIGESTS_EQUAL",
+      "ALL_SENSITIVE_METADATA_DIGESTS_EQUAL",
+      "SHORT_SQUEEZE_BRANCH_HEAD_UPSTREAM_REMOTE_NAME_AND_REMOTE_URL_HASH_EQUAL",
+      "SHORT_SQUEEZE_TRACKED_MODIFICATION_AND_UNTRACKED_PATH_SETS_EQUAL",
+      "FUTURESX_LFS_POINTER_COUNT_AND_METADATA_DIGEST_EQUAL",
+      "NO_PREEXISTING_COLLECTION_ROOT_ENTRY_REMOVED_RENAMED_OR_CHANGED_BY_THE_OPERATION",
+      "ROOT_2E7C91F4_IS_THE_ONLY_AUTHORIZED_COLLECTION_ROOT_ADDITION"
+    ],
+    "volatile_rule": "The known background log is reobserved but excluded from equality. Its drift is reported as EXCLUDED_VOLATILE_DRIFT and is not attributed to this operation."
+  },
+  "created_at": "2026-08-14T18:20:00Z",
+  "effectivity": {
+    "activation_conditions": [
+      "ATTRIBUTABLE_EXACT_HASH_APPROVAL_BY_PROJECT_PRINCIPAL_IN_PROJECT_OWNER_AND_RELEASE_OWNER_CAPACITIES",
+      "FRESH_HASH_MATCH_FOR_THIS_AUTHORIZATION_AND_ALL_AUTHORITY_BINDINGS",
+      "EFFECTIVE_CANONICAL_SPECIFICATION_REVISION_2",
+      "ACCEPTED_ADR_REPO_001",
+      "FRESH_PRESERVATION_REVERIFICATION_WITH_NO_UNAUTHORIZED_DRIFT",
+      "TARGET_ROOT_ABSENT_AND_SAFELY_RESOLVED"
+    ],
+    "current_state": "PENDING_EXACT_HASH_APPROVAL",
+    "expires_when": "Any bound hash, root resolution, target existence state, preservation comparison, requested operation, inclusion rule, exclusion rule, or remote policy differs from this artifact.",
+    "statement": "No operation in this artifact is authorized until every activation condition is true."
+  },
+  "governance_install_set": [
+    {
+      "logical_id": "foundation.canonical_specification.revision_1",
+      "repository_relative_path": "docs/superpowers/specs/2026-08-13-integrated-market-platform-foundation-design.md",
+      "sha256": "B4EAE3240F6F968A6B393263D849013259A00187E209C8632E38DE890996D04D"
+    },
+    {
+      "logical_id": "foundation.canonical_specification.revision_2",
+      "repository_relative_path": "docs/superpowers/specs/2026-08-14-integrated-market-platform-foundation-design-revision-2.md",
+      "sha256": "56F6C424EF83BE6042E06D716F3BBE87A1E1B7FE7EBEB15B7EECD875131BC06A"
+    },
+    {
+      "logical_id": "phase0.adr_off_001_conformance",
+      "repository_relative_path": "docs/superpowers/decisions/2026-08-14-adr-off-001-conformance-design.json",
+      "sha256": "0A9986F52100BAF2DA2C8A44D132042C94BB0D6844933CA09A9D48EAD0B353B4"
+    },
+    {
+      "logical_id": "phase0.adr_repo_001",
+      "repository_relative_path": "docs/superpowers/decisions/2026-08-14-adr-repo-001-governed-repository-boundary.json",
+      "sha256": "5D0F30A0BBC558ADC32F9D924D9AF870964922C6CEFFEC3FFA7F74641FC3A612"
+    },
+    {
+      "logical_id": "phase0.ai_review_procedure",
+      "repository_relative_path": "docs/superpowers/governance/2026-08-14-ai-review-process-001.json",
+      "sha256": "EAAA84B1D0D6FF4B6A90F36CC35F5D88E9D1EB63173A6BDE18D9C911E63C69A8"
+    },
+    {
+      "logical_id": "phase0.gov_002_preapproval_reviewer_eligibility",
+      "repository_relative_path": "docs/superpowers/governance/2026-08-14-gov-002-preapproval-reviewer-eligibility.json",
+      "sha256": "5686F548A495E9DC215474083EBC6775C921D5B7AD8E6DB98EF132DDC27C4EE4"
+    },
+    {
+      "logical_id": "phase0.gov_002_preapproval_reviewer_eligibility_design",
+      "repository_relative_path": "docs/superpowers/specs/2026-08-14-gov-002-preapproval-reviewer-eligibility-design.md",
+      "sha256": "3FFEB269795CB6B3747165263D7E91F31B6D4BC5F8F54673298A609FEB5CC0C7"
+    },
+    {
+      "logical_id": "phase0.governance_plan",
+      "repository_relative_path": "docs/superpowers/plans/2026-08-13-phase-0-governance-and-no-live-safety.md",
+      "sha256": "EE22C688167F5016D7ED1953BB1DAE516BC6AB343655A7D96535C6605D37E904"
+    },
+    {
+      "logical_id": "phase0.prototype_preservation",
+      "repository_relative_path": "docs/superpowers/governance/2026-08-14-phase-0-prototype-preservation-before.json",
+      "sha256": "331AF8F6731EC6A7DA3785EE8021E38A0C055CCF59CA903EEB6EEBB2570856F0"
+    },
+    {
+      "logical_id": "phase0.repository_mutation_authorization",
+      "repository_relative_path": "docs/superpowers/governance/2026-08-14-repository-mutation-authorization.json",
+      "sha256": "EXACT_HASH_NAMED_BY_THE_EFFECTIVE_EXTERNAL_APPROVAL_OF_THIS_ARTIFACT"
+    },
+    {
+      "logical_id": "phase0.role_assignment",
+      "repository_relative_path": "docs/superpowers/governance/2026-08-14-phase-0-role-assignment.json",
+      "sha256": "37C24D60FF9ACB8411BA0D5FA5A2C5DBC8811DFD30E4180DD377A2C3BADA2163"
+    }
+  ],
+  "inclusion_rules": [
+    "CREATE_ONLY_ROOT_2E7C91F4_AS_DIRECT_CHILD_OF_ROOT_8A4D17C2",
+    "COPY_ONLY_GOVERNANCE_INSTALL_SET_EXACT_BYTES",
+    "CREATE_ONLY_REGISTRATION_DIFFERENCE_AND_OPERATION_RESULT_RECORDS_DEFINED_HERE",
+    "GIT_METADATA_EXISTS_ONLY_UNDER_ROOT_2E7C91F4",
+    "INITIAL_COMMIT_CONTAINS_ONLY_AUTHORIZED_REPOSITORY_RELATIVE_PATHS"
+  ],
+  "logical_id": "phase0.repository_mutation_authorization",
+  "owner_capacity": "RELEASE_OWNER",
+  "permitted_git_operations": [
+    "INIT_WITH_INITIAL_BRANCH_MAIN_AT_ROOT_2E7C91F4",
+    "STATUS_AND_READ_ONLY_OBJECT_INSPECTION_AT_ROOT_2E7C91F4",
+    "STAGE_ONLY_AUTHORIZED_INITIAL_COMMIT_PATHS_AT_ROOT_2E7C91F4",
+    "ONE_LOCAL_INITIAL_COMMIT_WITH_EXACT_MESSAGE_AND_PUBLIC_INVALID_IDENTITY"
+  ],
+  "prohibited_operations": [
+    "ANY_PROTOTYPE_EDIT_MOVE_COPY_IMPORT_STAGE_COMMIT_RESET_CLEAN_BRANCH_WORKTREE_OR_HISTORY_OPERATION",
+    "ANY_COLLECTION_ROOT_GIT_INITIALIZATION",
+    "ANY_REMOTE_CREATE_CONFIG_QUERY_FETCH_PULL_PUSH_CLONE_OR_CONTACT",
+    "ANY_GIT_LFS_OPERATION_OR_OBJECT_RETRIEVAL",
+    "ANY_DEPENDENCY_INSTALL_DOWNLOAD_OR_PACKAGE_REGISTRY_CONTACT",
+    "ANY_SOURCE_CODE_TEST_TOOL_RUNTIME_OR_PHASE_0_STEP_9_THROUGH_13_IMPLEMENTATION",
+    "ANY_PROVIDER_BROKER_DATABASE_OR_EXTERNAL_SERVICE_CONTACT",
+    "ANY_CREDENTIAL_VALUE_ACCOUNT_IDENTIFIER_OR_SENSITIVE_ABSOLUTE_PATH_PUBLICATION",
+    "ANY_PATH_DELETION_EXCEPT_THE_EXACT_CONDITIONAL_ROLLBACK_TARGET"
+  ],
+  "remote_operations": "NONE",
+  "reviewer_capacities": [
+    "PROTOTYPE_MAINTAINER_FUTURESX",
+    "PROTOTYPE_MAINTAINER_INTERNSHIP",
+    "PROTOTYPE_MAINTAINER_L1_VOLUME_BUBBLE",
+    "PROTOTYPE_MAINTAINER_SHORT_SQUEEZE",
+    "PROTOTYPE_MAINTAINER_TRADING_CVD_BUBBLE"
+  ],
+  "rollback": {
+    "authorized_action": "Remove only ROOT-2E7C91F4 after resolving and verifying the exact absolute target, proving it was absent at baseline, proving it contains only operation-created paths, and retaining the sanitized failure report outside the target.",
+    "prototype_action": "NONE. Never edit or restore a prototype as rollback.",
+    "remote_action": "NONE",
+    "stop_instead_of_rollback_when": [
+      "ROOT_RESOLUTION_IS_AMBIGUOUS_OR_CHANGED",
+      "TARGET_PREEXISTED",
+      "TARGET_CONTAINS_USER_OR_UNAUTHORIZED_CONTENT",
+      "ANY_PROTOTYPE_DRIFT_EXISTS",
+      "THE_EXACT_TARGET_CANNOT_BE_PROVEN"
+    ]
+  },
+  "root_selection": {
+    "absolute_path_map_publication": "FORBIDDEN",
+    "collection_root_id": "ROOT-8A4D17C2",
+    "relationship": "TARGET_IS_DIRECT_CHILD_OF_COLLECTION_ROOT_AND_SIBLING_OF_PROTOTYPES",
+    "target_root_id": "ROOT-2E7C91F4"
+  },
+  "sanitization": {
+    "absolute_path_map_included": false,
+    "account_identifiers_included": false,
+    "credential_values_included": false,
+    "remote_url_included": false
+  },
+  "schema_version": "1.0.0",
+  "status": "PENDING_EXACT_HASH_APPROVAL"
+}

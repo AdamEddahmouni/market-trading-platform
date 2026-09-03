@@ -1,0 +1,12 @@
+{
+  "artifact_type": "UI2_PASS_PUBLICATION",
+  "assertion_run_id": "072548BB05BB68C091AA9402BD82709A7F82E041D9911D06330829AE33F05EC9",
+  "candidate_evidence_root": "7154093C1419CF52123BF45B882ADFC862F1747F1F46C442817483CF75F24BCB",
+  "effect": "Publishes UI-002 PASS for expanded research UI: Institutional Flow, Disclosure, Model Lab, Simulation Lab.",
+  "final_acceptance_result": "PASS",
+  "logical_id": "ui2.pass_publication",
+  "published_at": "2026-08-18T12:00:00.000000000Z",
+  "schema_version": "1.0.0",
+  "summary": "UI-002 expanded research UI acceptance assertions UI-RES-001 through UI-RES-003 and SAFE-003 pass on admitted fixture.",
+  "ui1_status_at_publication": "PASS"
+}
