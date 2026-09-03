@@ -1,0 +1,317 @@
+{
+  "artifact_type": "PROTOTYPE_PRESERVATION_MANIFEST",
+  "authority_bindings": [
+    {
+      "approval_basis": "CANONICAL_AUTHORITY_STATUS_IN_BOUND_BYTES",
+      "effectivity_state": "CANONICAL_AUTHORITY_IMPLEMENTATION_READINESS_BLOCKED",
+      "logical_id": "foundation.canonical_specification.revision_1",
+      "logical_path": "docs/superpowers/specs/2026-08-13-integrated-market-platform-foundation-design.md",
+      "sha256": "B4EAE3240F6F968A6B393263D849013259A00187E209C8632E38DE890996D04D"
+    },
+    {
+      "approval_basis": "EXTERNAL_ATTRIBUTABLE_CONVERSATIONAL_EXACT_HASH_WRITTEN_PLAN_APPROVAL",
+      "effectivity_state": "EFFECTIVE_AS_CONTROLLING_PHASE_0_PLAN_WITH_PHASE_0_BLOCKED",
+      "logical_id": "phase0.governance_plan",
+      "logical_path": "docs/superpowers/plans/2026-08-13-phase-0-governance-and-no-live-safety.md",
+      "sha256": "EE22C688167F5016D7ED1953BB1DAE516BC6AB343655A7D96535C6605D37E904"
+    },
+    {
+      "approval_basis": "EXTERNAL_ATTRIBUTABLE_CONVERSATIONAL_EXACT_HASH_PRINCIPAL_APPROVAL",
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase0.role_assignment",
+      "logical_path": "docs/superpowers/governance/2026-08-14-phase-0-role-assignment.json",
+      "sha256": "37C24D60FF9ACB8411BA0D5FA5A2C5DBC8811DFD30E4180DD377A2C3BADA2163"
+    }
+  ],
+  "baseline_id": "PRESERVATION-BEFORE-001",
+  "before_after_rules": {
+    "authorized_collection_delta": "The only permitted collection-root addition during boundary establishment is the one directory resolved from ROOT-2E7C91F4. Governance candidate authoring under docs/superpowers precedes that operation and is not a prototype delta.",
+    "comparison_scope": "Recompute every prototype safe_inventory digest, every sensitive_metadata_digest, the Short Squeeze Git identity and porcelain sets, the LFS-pointer metadata, and the collection-root entry classification immediately before and immediately after the authorized operation.",
+    "drift_result": "Any prototype digest, sensitive metadata, Git identity, tracked-status set, or untracked-status set difference is UNAUTHORIZED_DRIFT and halts the operation. A change confined to an expressly volatile or generated exclusion is reported as EXCLUDED_VOLATILE_DRIFT and cannot be described as unchanged.",
+    "missing_access_result": "An enumeration warning or inaccessible governed comparison input produces COMPARISON_BLOCKED, never equality.",
+    "report_requirement": "Publish a sanitized difference report containing root IDs, comparison categories, before and after artifact hashes, and PASS, UNAUTHORIZED_DRIFT, EXCLUDED_VOLATILE_DRIFT, or COMPARISON_BLOCKED. Do not publish absolute paths or credential values."
+  },
+  "collection_root": {
+    "candidate_target_state": "ROOT-2E7C91F4 did not exist at observation time.",
+    "git_state": "NO_GIT_DIRECTORY_AT_COLLECTION_ROOT",
+    "root_id": "ROOT-8A4D17C2",
+    "top_level_entries": [
+      {
+        "entry_class": "CROSS_PROJECT_NOTE",
+        "entry_name": "CVD_BUBBLE_NOTES.md",
+        "entry_type": "FILE"
+      },
+      {
+        "entry_class": "GOVERNANCE_AUTHORING_AREA",
+        "entry_name": "docs",
+        "entry_type": "DIRECTORY"
+      },
+      {
+        "entry_class": "PROTOTYPE",
+        "entry_name": "Eric_futuresX-main",
+        "entry_type": "DIRECTORY"
+      },
+      {
+        "entry_class": "CROSS_PROJECT_NOTE",
+        "entry_name": "FUTURESX_NOTES.md",
+        "entry_type": "FILE"
+      },
+      {
+        "entry_class": "CROSS_PROJECT_NOTE",
+        "entry_name": "INTERNSHIP_AGENT_NOTES.md",
+        "entry_type": "FILE"
+      },
+      {
+        "entry_class": "PROTOTYPE",
+        "entry_name": "internship-project-main",
+        "entry_type": "DIRECTORY"
+      },
+      {
+        "entry_class": "CROSS_PROJECT_NOTE",
+        "entry_name": "L1_VOLUME_BUBBLE_NOTES.md",
+        "entry_type": "FILE"
+      },
+      {
+        "entry_class": "PROTOTYPE",
+        "entry_name": "L1VolumeBubble-main (1)",
+        "entry_type": "DIRECTORY"
+      },
+      {
+        "entry_class": "CROSS_PROJECT_NOTE",
+        "entry_name": "PROFESSOR_BRIEF_AND_ROADMAP.md",
+        "entry_type": "FILE"
+      },
+      {
+        "entry_class": "CROSS_PROJECT_NOTE",
+        "entry_name": "PROFESSOR_MEETING_TRANSCRIPT_20260813.md",
+        "entry_type": "FILE"
+      },
+      {
+        "entry_class": "CROSS_PROJECT_NOTE",
+        "entry_name": "PROJECT_NOTES_INDEX.md",
+        "entry_type": "FILE"
+      },
+      {
+        "entry_class": "CROSS_PROJECT_NOTE",
+        "entry_name": "SHORT_SQUEEZE_NOTES.md",
+        "entry_type": "FILE"
+      },
+      {
+        "entry_class": "NESTED_GIT_PROTOTYPE",
+        "entry_name": "short-squeeze-project",
+        "entry_type": "DIRECTORY"
+      },
+      {
+        "entry_class": "PROTOTYPE_WITH_VOLATILE_LOG",
+        "entry_name": "tradingCVDBubble-main (1)",
+        "entry_type": "DIRECTORY"
+      }
+    ]
+  },
+  "created_at": "2026-08-14T18:06:08.8616146Z",
+  "created_by_capacity": "RELEASE_OWNER",
+  "effectivity": {
+    "approval_required": false,
+    "state": "FROZEN_OBSERVED_BASELINE",
+    "statement": "This artifact records observed preservation facts and comparison rules. It does not authorize any mutation and does not publish GOV-003 PASS."
+  },
+  "exclusions": {
+    "content_not_read_or_published": [
+      "CREDENTIAL_VALUES",
+      "ACCOUNT_IDENTIFIERS",
+      "PRIVATE_KEYS",
+      "SECRET_VALUES"
+    ],
+    "excluded_generated_classes": [
+      "GIT_INTERNALS",
+      "NODE_MODULES",
+      "PYTHON_VIRTUAL_ENVIRONMENTS",
+      "PYTHON_BYTECODE_CACHES",
+      "TEST_CACHES_AND_GENERATED_TEST_REPOSITORIES",
+      "BUILD_AND_DISTRIBUTION_OUTPUTS",
+      "TEMPORARY_DIRECTORIES"
+    ],
+    "excluded_volatile_classes": [
+      "LOG_FILES",
+      "CACHE_FILES",
+      "BACKGROUND_PROCESS_OUTPUT"
+    ],
+    "large_content_rule": "Files at least 10 MiB are not content-hashed by this manifest. Their opaque path ID, byte length, and last-write metadata are compared when any exist.",
+    "lfs_rule": "Git LFS pointer bytes may be identified and hashed as pointer metadata only. LFS objects are not retrieved, copied, or represented as locally available market data.",
+    "sensitive_path_rule": "Credential-like paths are represented only by SHA-256(path-id-v1 + root_id + normalized relative path), byte length, and last-write ticks. Their names and contents are not published."
+  },
+  "forbidden_operations": [
+    "EDIT_MOVE_RENAME_COPY_DELETE_OR_NORMALIZE_ANY_PROTOTYPE_PATH",
+    "STAGE_COMMIT_RESET_CLEAN_SWITCH_BRANCH_OR_CREATE_WORKTREE_IN_ANY_EXISTING_REPOSITORY",
+    "RETRIEVE_GIT_LFS_OBJECTS",
+    "COPY_LARGE_DATA_OR_LFS_TARGET_OBJECTS_INTO_THE_GOVERNED_BOUNDARY",
+    "READ_OR_PUBLISH_CREDENTIAL_VALUES_OR_ACCOUNT_IDENTIFIERS",
+    "EDIT_DELETE_OR_ATTRIBUTE_BACKGROUND_LOG_WRITES_TO_GOVERNANCE_WORK",
+    "CREATE_OR_INITIALIZE_THE_SELECTED_REPOSITORY_BEFORE_EFFECTIVE_EXACT_HASH_MUTATION_AUTHORIZATION",
+    "CONTACT_GIT_REMOTES_PACKAGE_REGISTRIES_DATA_PROVIDERS_OR_BROKERS"
+  ],
+  "logical_id": "phase0.prototype_preservation",
+  "preservation_method": {
+    "included_record_format": "normalized_relative_path|byte_length|file_sha256",
+    "included_set_digest": "SHA-256 of UTF-8 LF-joined included records sorted ordinally; no trailing LF",
+    "opaque_path_id_format": "SHA-256 of UTF-8 bytes PATH-ID-V1, LF, root_id, LF, normalized relative path",
+    "plain_prototype_inventory_basis": "Recursive file enumeration under the named logical prototype path, excluding generated, volatile, sensitive, and large classes",
+    "safe_inventory_exclusions": "The exclusion classes in this artifact are applied before hashing. Symlinks or reparse points are not followed.",
+    "short_squeeze_inventory_basis": "Git tracked files plus nonignored untracked files, excluding generated, volatile, sensitive, and large classes"
+  },
+  "prototype_records": [
+    {
+      "classification": "PLAIN_PROTOTYPE_DIRECTORY",
+      "generated_or_volatile_exclusions_present": true,
+      "git_repository": false,
+      "large_file_count": 0,
+      "large_metadata_digest": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "lfs_pointer_count": 20,
+      "lfs_pointer_metadata_digest": "E4C8EC59B4D127D7A8B8AA5E1FC538DA79AE3ABFDF8898ADA42D93DE2B43DF38",
+      "logical_path": "Eric_futuresX-main",
+      "maintainer_capacity": "PROTOTYPE_MAINTAINER_FUTURESX",
+      "notable_lfs_pointers": [
+        {
+          "declared_object_bytes": 867774289,
+          "opaque_path_id": "8D8EBD24F524301CE068758344943D8F9BD457F69E12CEC971CDE477AE29F6D0",
+          "pointer_bytes": 134
+        },
+        {
+          "declared_object_bytes": 231641168,
+          "opaque_path_id": "1C85EE14AF39CD8A3A73F50CA9505E85C105718F300E7C143C7011CEC6CC1840",
+          "pointer_bytes": 134
+        },
+        {
+          "declared_object_bytes": 180203520,
+          "opaque_path_id": "14B39BCD473E2961235C2C7718176A77A83BEBC3A8D991E03743A6ACE3A3C91E",
+          "pointer_bytes": 134
+        }
+      ],
+      "root_id": "PROTO-FUTURESX-001",
+      "safe_inventory_file_count": 75,
+      "safe_inventory_sha256": "BDA59110F797913AB5D197D60C9383E687189858D7C453A2DFE078B98B7B7182",
+      "sensitive_metadata_digest": "A677F19856AE9A303892BACEC64FB407AF4523AF7B56181AFDF45B24F7986C67",
+      "sensitive_path_count": 1
+    },
+    {
+      "classification": "PLAIN_PROTOTYPE_DIRECTORY",
+      "generated_or_volatile_exclusions_present": true,
+      "git_repository": false,
+      "large_file_count": 0,
+      "large_metadata_digest": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "lfs_pointer_count": 0,
+      "lfs_pointer_metadata_digest": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "logical_path": "internship-project-main",
+      "maintainer_capacity": "PROTOTYPE_MAINTAINER_INTERNSHIP",
+      "root_id": "PROTO-INTERNSHIP-001",
+      "safe_inventory_file_count": 186,
+      "safe_inventory_sha256": "228E0BBF60DDCDF72471C0E69B1A4AA8CF5C7A1B775D3E5A2F7C27A7CAFDB03C",
+      "sensitive_metadata_digest": "A2383D322784F83C5E58A0A7A4B3B3FFBA58A16871C45A5DF7AA210217A6DFCB",
+      "sensitive_path_count": 2
+    },
+    {
+      "classification": "PLAIN_PROTOTYPE_DIRECTORY",
+      "generated_or_volatile_exclusions_present": false,
+      "git_repository": false,
+      "large_file_count": 0,
+      "large_metadata_digest": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "lfs_pointer_count": 0,
+      "lfs_pointer_metadata_digest": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "logical_path": "L1VolumeBubble-main (1)",
+      "maintainer_capacity": "PROTOTYPE_MAINTAINER_L1_VOLUME_BUBBLE",
+      "root_id": "PROTO-L1-BUBBLE-001",
+      "safe_inventory_file_count": 2,
+      "safe_inventory_sha256": "14D20E31B296D4CF5670CA097602063474F151ED6653741B20477AD0257D4C24",
+      "sensitive_metadata_digest": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "sensitive_path_count": 0
+    },
+    {
+      "classification": "NESTED_GIT_PROTOTYPE_REPOSITORY",
+      "generated_or_volatile_exclusions_present": true,
+      "git_repository": true,
+      "git_state": {
+        "ahead": 0,
+        "behind": 0,
+        "branch": "main",
+        "generated_fixture_git_marker_count": 17,
+        "head": "c09e0dc35b65a36ce4aaf96e40394edbe3cb55b1",
+        "head_subject": "Fix release audit false positives for public CI.",
+        "origin_url_sha256": "A4AD9A7566928696EE79EB238624C24225B45D62BCECC7DBEA28DE4EF9CCA08D",
+        "remote_names": [
+          "origin"
+        ],
+        "submodule_gitlink_count": 0,
+        "tracked_modifications": [
+          "short-squeeze-core/apps/research_screener/borrow_fee_live.py",
+          "short-squeeze-core/apps/research_screener/finnhub_live.py",
+          "short-squeeze-core/apps/research_screener/ibkr_session.py",
+          "short-squeeze-core/apps/research_screener/news_live.py",
+          "short-squeeze-core/apps/research_screener/provider_session.py",
+          "short-squeeze-core/apps/research_screener/server.py",
+          "short-squeeze-core/apps/research_screener/session_state.py",
+          "short-squeeze-core/docs/COLLECTORS.md",
+          "short-squeeze-core/docs/CONFIGURATION.md",
+          "short-squeeze-core/docs/METHODOLOGIES.md",
+          "short-squeeze-core/docs/PROVIDERS.md",
+          "short-squeeze-core/tests/app/test_news_orchestrator.py",
+          "short-squeeze-core/tests/fixtures/research/expected_phase_3b_research_metadata.json"
+        ],
+        "tracking": "origin/main",
+        "untracked_paths": [
+          "short-squeeze-core/docs/superpowers/plans/2026-08-13-provider-entitlement-corrections.md",
+          "short-squeeze-core/docs/superpowers/specs/2026-08-13-provider-entitlement-corrections-design.md",
+          "short-squeeze-core/tests/app/test_borrow_fee_live.py"
+        ],
+        "warnings": [
+          "USER_LEVEL_IGNORE_FILE_PERMISSION_DENIED",
+          "SOME_TEST_CACHE_DIRECTORIES_INACCESSIBLE"
+        ]
+      },
+      "large_file_count": 0,
+      "large_metadata_digest": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "logical_path": "short-squeeze-project",
+      "maintainer_capacity": "PROTOTYPE_MAINTAINER_SHORT_SQUEEZE",
+      "root_id": "PROTO-SHORT-SQUEEZE-001",
+      "safe_inventory_file_count": 1618,
+      "safe_inventory_sha256": "7C13A3CAED09315D5FC7194A579B8F2C7BD27A3CA8AF3235BE34726820E36BCD",
+      "sensitive_metadata_digest": "9A8DB252BCA2492F6431D4225BC2D812E0B3F6CA7038F04B31B671C5E134C12D",
+      "sensitive_path_count": 7
+    },
+    {
+      "classification": "PLAIN_PROTOTYPE_DIRECTORY_WITH_VOLATILE_BACKGROUND_LOG",
+      "generated_or_volatile_exclusions_present": true,
+      "git_repository": false,
+      "large_file_count": 0,
+      "large_metadata_digest": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "lfs_pointer_count": 0,
+      "lfs_pointer_metadata_digest": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "logical_path": "tradingCVDBubble-main (1)",
+      "maintainer_capacity": "PROTOTYPE_MAINTAINER_TRADING_CVD_BUBBLE",
+      "root_id": "PROTO-CVD-BUBBLE-001",
+      "safe_inventory_file_count": 89,
+      "safe_inventory_sha256": "7DD30F48F3E9806B081D4A145DC30E088E80D399AB9C1FCC9441452D31228032",
+      "sensitive_metadata_digest": "85D424FD9519CF35C50FAE97BD373D360B58FF7A4D79A08ED2F93F74D45A6D31",
+      "sensitive_path_count": 2,
+      "volatile_observation": {
+        "byte_length_at_observation": 1745076,
+        "comparison_treatment": "EXCLUDED_VOLATILE_DRIFT_EXPECTED_AND_REPORTED",
+        "last_write_utc_at_observation": "2026-08-14T18:01:36.9548834Z",
+        "opaque_path_id": "VOLATILE-LOG-001"
+      }
+    }
+  ],
+  "rollback_expectations": {
+    "authorized_boundary_failure": "If the new boundary operation fails before a first commit, remove only the newly created ROOT-2E7C91F4 directory after verifying its resolved path and confirming no preexisting content was present. Prototype rollback is forbidden because prototypes must never be changed.",
+    "comparison_failure": "Stop immediately, retain the sanitized difference report, and request principal direction. Do not auto-restore, reset, clean, or normalize any prototype.",
+    "remote_rollback": "Not applicable because remote operations are NONE."
+  },
+  "sanitization": {
+    "absolute_paths_published": false,
+    "account_identifiers_published": false,
+    "credential_values_published": false,
+    "credential_values_read_for_manifest": false,
+    "path_map_included": false
+  },
+  "schema_version": "1.0.0",
+  "status": "FROZEN_BEFORE_BASELINE"
+}

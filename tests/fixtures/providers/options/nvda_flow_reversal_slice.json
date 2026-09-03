@@ -1,0 +1,47 @@
+{
+  "admission_id": "ADMITTED-OPTIONS-NVDA-REVERSAL-001",
+  "fixture_id": "FIXTURE-OPTIONS-NVDA-FLOW-REVERSAL",
+  "symbol": "NVDA",
+  "activities": [
+    {
+      "ask": 1.20,
+      "bid": 1.15,
+      "direction_label": "ambiguous",
+      "event_time": "2026-07-21T19:45:00.000000000Z",
+      "expiry": "2026-08-15",
+      "flow_side": "sell",
+      "open_close": "close",
+      "premium": 1.18,
+      "size": 1200,
+      "iv_rank": 0.52,
+      "open_interest": 1500,
+      "option_type": "put",
+      "skew_signal": 0.40,
+      "source": "fixture_synthetic",
+      "strike": 125.0,
+      "volume": 3600,
+      "volume_oi_ratio": 2.40,
+      "volume_ratio": 1.8
+    },
+    {
+      "ask": 1.85,
+      "bid": 1.80,
+      "direction_label": "ambiguous",
+      "event_time": "2026-07-21T19:45:01.000000000Z",
+      "expiry": "2026-08-15",
+      "flow_side": "sell",
+      "open_close": "close",
+      "premium": 1.82,
+      "size": 900,
+      "iv_rank": 0.55,
+      "open_interest": 2200,
+      "option_type": "call",
+      "skew_signal": 0.45,
+      "source": "fixture_synthetic",
+      "strike": 130.0,
+      "volume": 2100,
+      "volume_oi_ratio": 0.95,
+      "volume_ratio": 0.9
+    }
+  ]
+}

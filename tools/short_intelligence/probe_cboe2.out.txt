@@ -1,0 +1,24 @@
+﻿=== 2025-06-17 len 378384
+download 5 ['Download all Listings Forms (.zip)\\', 'Download Guide\\', 'Download CSV\\', 'Download Now\\', 'Download\\']
+Excel 1 ['CDR and ETF Volatility Threshold List (Excel)\\']
+cdn.cboe.com/resources 1 ['https://cdn.cboe.com/resources/aboutcboe/Biometric_Information_Privacy_Policy.pdf']
+reg-sho 8 ['https://www.cboe.com/markets/us/equities/market-statistics/reg-sho-threshold/2025-06-17/', 'https://www.cboe.com/markets/us/equities/market-statistics/reg-sho-threshold/2025-06-17/', '/markets/us/equities/market-statistics/reg-sho-threshold/', 'reg-sho-threshold\\', 'reg-sho-threshold\\']
+threshold 24 ['Cboe U.S. Equities Exchanges Reg SHO Threshold | Cboe', 'View Cboe&#x27;s daily list of Regulation SHO threshold securities, including historical data and updates for U.S. equities subject to SEC short sale rules.', 'https://www.cboe.com/markets/us/equities/market-statistics/reg-sho-threshold/2025-06-17/', 'Cboe U.S. Equities Exchanges Reg SHO Threshold | Cboe', 'View Cboe&#x27;s daily list of Regulation SHO threshold securities, including historical data and updates for U.S. equities subject to SEC short sale rules.']
+=== 2026-08-19 len 378384
+download 5 ['Download all Listings Forms (.zip)\\', 'Download Guide\\', 'Download CSV\\', 'Download Now\\', 'Download\\']
+Excel 1 ['CDR and ETF Volatility Threshold List (Excel)\\']
+cdn.cboe.com/resources 1 ['https://cdn.cboe.com/resources/aboutcboe/Biometric_Information_Privacy_Policy.pdf']
+reg-sho 8 ['https://www.cboe.com/markets/us/equities/market-statistics/reg-sho-threshold/2026-08-19/', 'https://www.cboe.com/markets/us/equities/market-statistics/reg-sho-threshold/2026-08-19/', '/markets/us/equities/market-statistics/reg-sho-threshold/', 'reg-sho-threshold\\', 'reg-sho-threshold\\']
+threshold 24 ['Cboe U.S. Equities Exchanges Reg SHO Threshold | Cboe', 'View Cboe&#x27;s daily list of Regulation SHO threshold securities, including historical data and updates for U.S. equities subject to SEC short sale rules.', 'https://www.cboe.com/markets/us/equities/market-statistics/reg-sho-threshold/2026-08-19/', 'Cboe U.S. Equities Exchanges Reg SHO Threshold | Cboe', 'View Cboe&#x27;s daily list of Regulation SHO threshold securities, including historical data and updates for U.S. equities subject to SEC short sale rules.']
+ERR https://www.cboe.com/api/markets/us/equities/market-statistics/reg-sho-threshold/2025-06-17 HTTP Error 404: Not Found
+ERR https://www.cboe.com/api/markets/us/equities/reg-sho-threshold/2025-06-17 HTTP Error 404: Not Found
+OK https://www.cboe.com/markets/us/equities/market-statistics/reg-sho-threshold/api/2025-06-17 378626 b'<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="/_next/static/chunks/0dgr~es57flab.css" da'
+OK https://www.cboe.com/markets/us/equities/market-statistics/reg-sho-threshold/download/2025-06-17 378656 b'<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="/_next/static/chunks/0dgr~es57flab.css" da'
+OK https://www.cboe.com/markets/us/equities/market-statistics/reg-sho-threshold/2025-06-17/download 378644 b'<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="/_next/static/chunks/0dgr~es57flab.css" da'
+OK https://www.cboe.com/markets/us/equities/market-statistics/reg-sho-threshold/2025-06-17.json 378612 b'<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="/_next/static/chunks/0dgr~es57flab.css" da'
+OK https://www.cboe.com/markets/us/equities/market-statistics/reg-sho-threshold/2025-06-17.txt 378563 b'<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="/_next/static/chunks/0dgr~es57flab.css" da'
+OK https://www.cboe.com/markets/us/equities/market-statistics/reg-sho-threshold/2025-06-17.xlsx 378612 b'<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="/_next/static/chunks/0dgr~es57flab.css" da'
+ERR https://cdn.cboe.com/resources/regulatory/reg_sho_threshold/reg_sho_threshold_20250617.xlsx HTTP Error 403: Forbidden
+ERR https://cdn.cboe.com/resources/regulatory/reg_sho_threshold/2025-06-17.xlsx HTTP Error 403: Forbidden
+ERR https://cdn.cboe.com/resources/regulatory/reg_sho_threshold/reg_sho_threshold_20250617.txt HTTP Error 403: Forbidden
+ERR https://cdn.cboe.com/resources/regulatory/reg_sho_threshold/reg_sho_threshold_20250617.csv HTTP Error 403: Forbidden

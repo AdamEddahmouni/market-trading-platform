@@ -1,0 +1,94 @@
+{
+  "information_decay_available": true,
+  "information_decay_count": 5,
+  "information_decay_summaries": [
+    {
+      "event_id": "df2e6ba5-46ab-5bb1-a867-745fe0a75c91",
+      "entity_id": "BOXL",
+      "canonical_event_type": "earnings_beat",
+      "information_decay_class": "HOURS",
+      "priced_in_probability": 0.4,
+      "remaining_information_edge": 0.088,
+      "event_time": "2026-07-15T14:30:00.000000000Z",
+      "available_time": "2026-07-15T14:45:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [
+        "PRICED_IN_DATA_PARTIAL",
+        "INFORMATION_DECAY_EXPERIMENTAL"
+      ],
+      "headline": "earnings beat",
+      "scoring_method": "information_decay_v1"
+    },
+    {
+      "event_id": "ad2c4547-e4cb-56a6-8f0c-f9a4d730d263",
+      "entity_id": "BOXL",
+      "canonical_event_type": "fda_clearance",
+      "information_decay_class": "DAYS",
+      "priced_in_probability": 0.293333,
+      "remaining_information_edge": 0.326009,
+      "event_time": "2026-07-18T16:00:00.000000000Z",
+      "available_time": "2026-07-18T16:10:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [
+        "PRICED_IN_DATA_PARTIAL",
+        "INFORMATION_DECAY_EXPERIMENTAL"
+      ],
+      "headline": "fda clearance",
+      "scoring_method": "information_decay_v1"
+    },
+    {
+      "event_id": "60e13d13-eaa2-57d1-9c9a-c23b612ef9ac",
+      "entity_id": "BOXL",
+      "canonical_event_type": "analyst_upgrade",
+      "information_decay_class": "WEEKS",
+      "priced_in_probability": 0.257778,
+      "remaining_information_edge": 0.257304,
+      "event_time": "2026-07-21T13:15:00.000000000Z",
+      "available_time": "2026-07-21T13:25:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [
+        "PRICED_IN_DATA_PARTIAL",
+        "INFORMATION_DECAY_EXPERIMENTAL"
+      ],
+      "headline": "analyst upgrade",
+      "scoring_method": "information_decay_v1"
+    },
+    {
+      "event_id": "3fd7f172-8949-53b0-83d2-5e2341e72039",
+      "entity_id": "BOXL",
+      "canonical_event_type": "offering_risk",
+      "information_decay_class": "MINUTES",
+      "priced_in_probability": 0.537778,
+      "remaining_information_edge": 0.0832,
+      "event_time": "2026-07-21T18:45:00.000000000Z",
+      "available_time": "2026-07-21T18:46:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [
+        "PRICED_IN_DATA_PARTIAL",
+        "INFORMATION_DECAY_EXPERIMENTAL"
+      ],
+      "headline": "offering risk",
+      "scoring_method": "information_decay_v1"
+    },
+    {
+      "event_id": "63b5d445-4b4e-59f8-b7f7-66a8305c4e54",
+      "entity_id": "BOXL",
+      "canonical_event_type": "macro_headwind",
+      "information_decay_class": "DAYS",
+      "priced_in_probability": 0.146667,
+      "remaining_information_edge": null,
+      "event_time": "2026-07-22T20:00:00.000000000Z",
+      "available_time": "2026-07-22T20:05:00.000000000Z",
+      "publication_state": "UNAVAILABLE",
+      "quality_flags": [
+        "MARKET_REACTION_DATA_MISSING",
+        "DECAY_CLASS_DEFAULTED",
+        "PRICED_IN_DATA_PARTIAL",
+        "REMAINING_EDGE_DATA_PARTIAL",
+        "INFORMATION_DECAY_EXPERIMENTAL"
+      ],
+      "headline": "macro headwind",
+      "scoring_method": "information_decay_v1"
+    }
+  ]
+}

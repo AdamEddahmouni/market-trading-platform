@@ -1,0 +1,6 @@
+Product: Daily Heating Degree Days
+Regions: Regions::CensusDivisions
+Weights: Utility Gas
+Region|0818|0819|0820|0821|0822|0823|0824
+1|1|1|1|2|2|2|2
+CONUS|0|0|0|0|1|1|1

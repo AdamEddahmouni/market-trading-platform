@@ -1,0 +1,2108 @@
+{
+  "capabilities": {
+    "CRYPTO_SPOT_DEPTH": {
+      "account_entitled": true,
+      "adapter_implemented": true,
+      "capability": "CRYPTO_SPOT_DEPTH",
+      "configured": false,
+      "data_currently_fresh": true,
+      "documented": true,
+      "entitled": true,
+      "evidence_class": "OBSERVED",
+      "healthy": false,
+      "last_verified": "2026-08-22T01:03:59.353738Z",
+      "notes": "",
+      "provider_supports": true,
+      "reason": null,
+      "reason_code": null,
+      "receiving": false,
+      "runtime_tested": true,
+      "subscribable": true,
+      "subscribed": false,
+      "verified_receiving": false
+    },
+    "CRYPTO_SPOT_QUOTE": {
+      "account_entitled": true,
+      "adapter_implemented": true,
+      "capability": "CRYPTO_SPOT_QUOTE",
+      "configured": false,
+      "data_currently_fresh": true,
+      "documented": true,
+      "entitled": true,
+      "evidence_class": "OBSERVED",
+      "healthy": false,
+      "last_verified": "2026-08-22T01:03:59.353738Z",
+      "notes": "Characterization only; PI14+ remains unauthorized.",
+      "provider_supports": true,
+      "reason": null,
+      "reason_code": null,
+      "receiving": false,
+      "runtime_tested": true,
+      "subscribable": true,
+      "subscribed": false,
+      "verified_receiving": false
+    },
+    "CRYPTO_SPOT_TICKS": {
+      "account_entitled": true,
+      "adapter_implemented": true,
+      "capability": "CRYPTO_SPOT_TICKS",
+      "configured": false,
+      "data_currently_fresh": true,
+      "documented": true,
+      "entitled": true,
+      "evidence_class": "OBSERVED",
+      "healthy": false,
+      "last_verified": "2026-08-22T01:03:59.353738Z",
+      "notes": "",
+      "provider_supports": true,
+      "reason": null,
+      "reason_code": null,
+      "receiving": false,
+      "runtime_tested": true,
+      "subscribable": true,
+      "subscribed": false,
+      "verified_receiving": false
+    },
+    "US_EQUITY_BARS": {
+      "account_entitled": true,
+      "adapter_implemented": true,
+      "capability": "US_EQUITY_BARS",
+      "configured": false,
+      "data_currently_fresh": true,
+      "documented": true,
+      "entitled": true,
+      "evidence_class": "OBSERVED",
+      "healthy": false,
+      "last_verified": "2026-08-22T01:03:54.738003Z",
+      "notes": "",
+      "provider_supports": true,
+      "reason": null,
+      "reason_code": null,
+      "receiving": false,
+      "runtime_tested": true,
+      "subscribable": true,
+      "subscribed": false,
+      "verified_receiving": false
+    },
+    "US_EQUITY_DEPTH": {
+      "account_entitled": true,
+      "adapter_implemented": true,
+      "capability": "US_EQUITY_DEPTH",
+      "configured": false,
+      "data_currently_fresh": true,
+      "documented": true,
+      "entitled": true,
+      "evidence_class": "OBSERVED",
+      "healthy": true,
+      "last_verified": "2026-08-22T01:03:54.610214Z",
+      "notes": "depth=10 push_count=1 detailed_orderbook=not_requested",
+      "provider_supports": true,
+      "reason": null,
+      "reason_code": null,
+      "receiving": true,
+      "runtime_tested": true,
+      "subscribable": true,
+      "subscribed": true,
+      "verified_receiving": true
+    },
+    "US_EQUITY_EXTENDED_HOURS": {
+      "account_entitled": true,
+      "adapter_implemented": true,
+      "capability": "US_EQUITY_EXTENDED_HOURS",
+      "configured": false,
+      "data_currently_fresh": true,
+      "documented": true,
+      "entitled": true,
+      "evidence_class": "OBSERVED",
+      "healthy": false,
+      "last_verified": "2026-08-22T01:03:46.461209Z",
+      "notes": "pre_present=True after_present=True",
+      "provider_supports": true,
+      "reason": null,
+      "reason_code": null,
+      "receiving": false,
+      "runtime_tested": true,
+      "subscribable": true,
+      "subscribed": false,
+      "verified_receiving": false
+    },
+    "US_EQUITY_L1": {
+      "account_entitled": true,
+      "adapter_implemented": true,
+      "capability": "US_EQUITY_L1",
+      "configured": false,
+      "data_currently_fresh": true,
+      "documented": true,
+      "entitled": true,
+      "evidence_class": "OBSERVED",
+      "healthy": true,
+      "last_verified": "2026-08-22T01:03:54.610214Z",
+      "notes": "subscribe_ret=0 cache_ret=0 push_count=1",
+      "provider_supports": true,
+      "reason": null,
+      "reason_code": null,
+      "receiving": true,
+      "runtime_tested": true,
+      "subscribable": true,
+      "subscribed": true,
+      "verified_receiving": true
+    },
+    "US_EQUITY_OVERNIGHT": {
+      "account_entitled": true,
+      "adapter_implemented": true,
+      "capability": "US_EQUITY_OVERNIGHT",
+      "configured": false,
+      "data_currently_fresh": true,
+      "documented": true,
+      "entitled": true,
+      "evidence_class": "OBSERVED",
+      "healthy": false,
+      "last_verified": "2026-08-22T01:03:46.461209Z",
+      "notes": "overnight_* snapshot fields present",
+      "provider_supports": true,
+      "reason": null,
+      "reason_code": null,
+      "receiving": false,
+      "runtime_tested": true,
+      "subscribable": true,
+      "subscribed": false,
+      "verified_receiving": false
+    },
+    "US_EQUITY_SNAPSHOT": {
+      "account_entitled": true,
+      "adapter_implemented": true,
+      "capability": "US_EQUITY_SNAPSHOT",
+      "configured": false,
+      "data_currently_fresh": true,
+      "documented": true,
+      "entitled": true,
+      "evidence_class": "OBSERVED",
+      "healthy": false,
+      "last_verified": "2026-08-22T01:03:46.461209Z",
+      "notes": "Snapshot inventory stored separately; raw rows not dumped.",
+      "provider_supports": true,
+      "reason": null,
+      "reason_code": null,
+      "receiving": false,
+      "runtime_tested": true,
+      "subscribable": true,
+      "subscribed": false,
+      "verified_receiving": false
+    },
+    "US_EQUITY_TICKS": {
+      "account_entitled": true,
+      "adapter_implemented": true,
+      "capability": "US_EQUITY_TICKS",
+      "configured": false,
+      "data_currently_fresh": true,
+      "documented": true,
+      "entitled": true,
+      "evidence_class": "OBSERVED",
+      "healthy": true,
+      "last_verified": "2026-08-22T01:03:54.610214Z",
+      "notes": "cache_rows=20 push_count=1",
+      "provider_supports": true,
+      "reason": null,
+      "reason_code": null,
+      "receiving": true,
+      "runtime_tested": true,
+      "subscribable": true,
+      "subscribed": true,
+      "verified_receiving": true
+    },
+    "US_FUTURES_QUOTE": {
+      "account_entitled": false,
+      "adapter_implemented": true,
+      "capability": "US_FUTURES_QUOTE",
+      "configured": false,
+      "data_currently_fresh": false,
+      "documented": true,
+      "entitled": false,
+      "evidence_class": "OBSERVED",
+      "healthy": false,
+      "last_verified": "2026-08-22T01:03:58.430857Z",
+      "notes": "Insufficient quote permission. Please go to the Quote Store to purchase a quote card.",
+      "provider_supports": true,
+      "reason": "ACCOUNT_NOT_ENTITLED_OR_NO_LISTING",
+      "reason_code": "ACCOUNT_NOT_ENTITLED_OR_NO_LISTING",
+      "receiving": false,
+      "runtime_tested": true,
+      "subscribable": false,
+      "subscribed": false,
+      "verified_receiving": false
+    },
+    "US_OPTIONS_QUOTE": {
+      "account_entitled": false,
+      "adapter_implemented": true,
+      "capability": "US_OPTIONS_QUOTE",
+      "configured": false,
+      "data_currently_fresh": false,
+      "documented": true,
+      "entitled": false,
+      "evidence_class": "OBSERVED",
+      "healthy": false,
+      "last_verified": "2026-08-22T01:03:54.742029Z",
+      "notes": "No permission to get quotes for US.AAPL. Please check US MarketOptions quote permissions.",
+      "provider_supports": true,
+      "reason": "ACCOUNT_NOT_ENTITLED",
+      "reason_code": "ACCOUNT_NOT_ENTITLED",
+      "receiving": false,
+      "runtime_tested": true,
+      "subscribable": false,
+      "subscribed": false,
+      "verified_receiving": false
+    }
+  },
+  "connection": "CONNECTED",
+  "connectivity": {
+    "connection": "CONNECTED",
+    "evidence_class": "OBSERVED",
+    "host": "127.0.0.1",
+    "local_timestamp": 1787360626.399783,
+    "opend_version": "1010",
+    "port": 11111,
+    "qot_logined": "True",
+    "ret": 0,
+    "server_timestamp": "1787360626",
+    "trd_logined": "True"
+  },
+  "entitlements": {
+    "CRYPTO": {
+      "account_entitled": true,
+      "basicinfo_ret": 0,
+      "evidence_class": "OBSERVED",
+      "order_book_ret": 0,
+      "provider_supports": true,
+      "sample_codes": [
+        "CC.AAVE",
+        "CC.AAVEBTC",
+        "CC.AAVEETH"
+      ],
+      "snapshot_error": null,
+      "snapshot_ret": 0,
+      "ticker_ret": 0
+    },
+    "US_FUTURES": {
+      "account_entitled": false,
+      "basicinfo_ret": 0,
+      "basicinfo_sample_codes": [
+        "US.10Y2608",
+        "US.10Y2609",
+        "US.10Y2610"
+      ],
+      "evidence_class": "OBSERVED",
+      "provider_supports": true,
+      "snapshot_error": "Insufficient quote permission. Please go to the Quote Store to purchase a quote card.",
+      "snapshot_ret": -1
+    },
+    "US_OPTIONS": {
+      "account_entitled": false,
+      "error": "No permission to get quotes for US.AAPL. Please check US MarketOptions quote permissions.",
+      "evidence_class": "OBSERVED",
+      "provider_supports": true,
+      "ret": -1
+    }
+  },
+  "evidence": [
+    {
+      "capability": "US_EQUITY_SNAPSHOT",
+      "error": null,
+      "instrument": [
+        "US.AAPL",
+        "US.NVDA",
+        "US.SPY",
+        "US.BIYA"
+      ],
+      "received_time_ns": 1787360626402864300,
+      "ret": 0,
+      "row_count": 4
+    },
+    {
+      "capability": "subscribe.QUOTE+TICKER+ORDER_BOOK",
+      "error": null,
+      "instrument": "US.AAPL",
+      "ret": 0,
+      "session": "ALL"
+    }
+  ],
+  "historical_quota": {
+    "error": null,
+    "evidence_class": "OBSERVED",
+    "notes": "Single-symbol conservative K_DAY lookback; unique-security quota not exhausted.",
+    "page_req_key_present": true,
+    "ret": 0,
+    "row_count": 5,
+    "subscription_after": {
+      "option_remain_quota": 20,
+      "option_used_quota": 0,
+      "own_option_used_quota": 0,
+      "own_security_firm": "N/A",
+      "own_used": 0,
+      "remain": 97,
+      "sub_list": {
+        "ORDER_BOOK": [
+          "US.AAPL"
+        ],
+        "QUOTE": [
+          "US.AAPL"
+        ],
+        "TICKER": [
+          "US.AAPL"
+        ]
+      },
+      "total_used": 3
+    },
+    "subscription_before": {
+      "option_remain_quota": 20,
+      "option_used_quota": 0,
+      "own_option_used_quota": 0,
+      "own_security_firm": "N/A",
+      "own_used": 0,
+      "remain": 97,
+      "sub_list": {
+        "ORDER_BOOK": [
+          "US.AAPL"
+        ],
+        "QUOTE": [
+          "US.AAPL"
+        ],
+        "TICKER": [
+          "US.AAPL"
+        ]
+      },
+      "total_used": 3
+    }
+  },
+  "host": "127.0.0.1",
+  "limitations": [
+    "Crypto characterization does not authorize PI14+ research implementation.",
+    "US LV3 OpenAPI depth is MBP-style levels; detailed per-order book is documented as HK SF only.",
+    "US futures quotes unavailable on this account (CME/CBOT/NYMEX/COMEX expected).",
+    "US options quotes fail closed: account not entitled."
+  ],
+  "markets": {
+    "market_hk": "CLOSED",
+    "market_hkfuture": "NIGHT_END",
+    "market_jp": "CLOSED",
+    "market_jpfuture": "NIGHT_END",
+    "market_my": "CLOSED",
+    "market_sg": "CLOSED",
+    "market_sgfuture": "NIGHT_END",
+    "market_sh": "ASHARE_AFTER_HOURS_END",
+    "market_sz": "ASHARE_AFTER_HOURS_END",
+    "market_us": "AFTER_HOURS_END",
+    "market_usfuture": "FUTURE_CLOSE"
+  },
+  "opend_version": "1010",
+  "port": 11111,
+  "probe_timestamp": "2026-08-22T01:03:46.394801Z",
+  "probe_version": "1.0.0",
+  "provider": "MOOMOO",
+  "quality_findings": {
+    "failure_cases": {
+      "duplicate_subscribe": {
+        "first_ret": 0,
+        "second_msg": null,
+        "second_ret": 0
+      },
+      "invalid_ticker": {
+        "error": "Unknown stock. NOTAREALZZZ",
+        "ret": -1,
+        "rows": null
+      },
+      "unsubscribe_nonexistent": {
+        "msg": "Ticker for US.MSFT has not been subscribed. Cannot unsubscribe.",
+        "ret": -1
+      }
+    },
+    "order_book": {
+      "best_ask": 309.66,
+      "best_bid": 309.65,
+      "depth_ask": 10,
+      "depth_bid": 10
+    },
+    "reconnect": {
+      "evidence_class": "OBSERVED",
+      "notes": "New quote context after original session; OpenD process was not killed.",
+      "qot_logined": "True",
+      "ret": 0
+    },
+    "ticker_directions": [
+      "BUY",
+      "NEUTRAL",
+      "SELL"
+    ]
+  },
+  "quota": {
+    "imp_calculated_usage": null,
+    "provider_quota": 100,
+    "provider_remain": 97,
+    "provider_usage": 3,
+    "reconciliation": "PROVIDER_AUTHORITATIVE"
+  },
+  "schema_inventories": {
+    "equity_order_book": {
+      "ask": {
+        "depth": 10,
+        "levels_head": [
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.66,
+            "size": 25.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.7,
+            "size": 500.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.74,
+            "size": 1.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.82,
+            "size": 65.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.87,
+            "size": 10.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.9,
+            "size": 80.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.91,
+            "size": 80.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.95,
+            "size": 13.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.96,
+            "size": 100.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.99,
+            "size": 1011.0
+          }
+        ]
+      },
+      "bid": {
+        "depth": 10,
+        "levels_head": [
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.65,
+            "size": 2.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.63,
+            "size": 10.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.6,
+            "size": 5.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.52,
+            "size": 54.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.51,
+            "size": 20.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.5,
+            "size": 172.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.47,
+            "size": 100.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.4,
+            "size": 289.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.38,
+            "size": 4.0
+          },
+          {
+            "order_count": 0,
+            "order_details_keys": [],
+            "price": 309.36,
+            "size": 5.0
+          }
+        ]
+      },
+      "code": "US.AAPL",
+      "keys": [
+        "Ask",
+        "Bid",
+        "code",
+        "name",
+        "order_book_type",
+        "svr_recv_time_ask",
+        "svr_recv_time_bid"
+      ],
+      "svr_recv_time_ask": "",
+      "svr_recv_time_bid": ""
+    },
+    "equity_quote": [
+      {
+        "field": "after_amplitude",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 0.2262
+      },
+      {
+        "field": "after_change_rate",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 0.109
+      },
+      {
+        "field": "after_change_val",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 0.34
+      },
+      {
+        "field": "after_high_price",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 309.7
+      },
+      {
+        "field": "after_low_price",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 309.0
+      },
+      {
+        "field": "after_price",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 309.69
+      },
+      {
+        "field": "after_turnover",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 1795369282.532
+      },
+      {
+        "field": "after_volume",
+        "non_null_count": 1,
+        "python_type": "int",
+        "sample": 5803953
+      },
+      {
+        "field": "amplitude",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 1.725
+      },
+      {
+        "field": "code",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "US.AAPL"
+      },
+      {
+        "field": "contract_multiplier",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "contract_nominal_value",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "contract_size",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "dark_status",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "data_date",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "2026-08-21"
+      },
+      {
+        "field": "data_time",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "16:00:00"
+      },
+      {
+        "field": "delta",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "expiry_date_distance",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "gamma",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "high_price",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 312.38
+      },
+      {
+        "field": "implied_volatility",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "index_option_type",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "last_price",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 309.35
+      },
+      {
+        "field": "last_settle_price",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "listing_date",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "1980-12-12"
+      },
+      {
+        "field": "low_price",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 307.01
+      },
+      {
+        "field": "name",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "Apple"
+      },
+      {
+        "field": "net_open_interest",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "open_interest",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "open_price",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 312.05
+      },
+      {
+        "field": "option_area_type",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "overnight_amplitude",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 0.4111
+      },
+      {
+        "field": "overnight_change_rate",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": -0.028
+      },
+      {
+        "field": "overnight_change_val",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": -0.09
+      },
+      {
+        "field": "overnight_high_price",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 312.37
+      },
+      {
+        "field": "overnight_low_price",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 311.09
+      },
+      {
+        "field": "overnight_price",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 311.21
+      },
+      {
+        "field": "overnight_turnover",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 16140521.95
+      },
+      {
+        "field": "overnight_volume",
+        "non_null_count": 1,
+        "python_type": "int",
+        "sample": 51775
+      },
+      {
+        "field": "owner_lot_multiplier",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "position",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "position_change",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "pre_amplitude",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 0.8673
+      },
+      {
+        "field": "pre_change_rate",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": -0.089
+      },
+      {
+        "field": "pre_change_val",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": -0.28
+      },
+      {
+        "field": "pre_high_price",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 312.7
+      },
+      {
+        "field": "pre_low_price",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 310.0
+      },
+      {
+        "field": "pre_price",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 311.02
+      },
+      {
+        "field": "pre_turnover",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 492239686.792
+      },
+      {
+        "field": "pre_volume",
+        "non_null_count": 1,
+        "python_type": "int",
+        "sample": 1580691
+      },
+      {
+        "field": "premium",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "prev_close_price",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 311.3
+      },
+      {
+        "field": "price_spread",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 0.01
+      },
+      {
+        "field": "rho",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "sec_status",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "NORMAL"
+      },
+      {
+        "field": "strike_price",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "suspension",
+        "non_null_count": 1,
+        "python_type": "bool",
+        "sample": false
+      },
+      {
+        "field": "theta",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "turnover",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 14517834813.0
+      },
+      {
+        "field": "turnover_rate",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 0.321
+      },
+      {
+        "field": "vega",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "volume",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 46876815.0
+      }
+    ],
+    "equity_snapshot": [
+      {
+        "field": "after_amplitude",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 0.2262
+      },
+      {
+        "field": "after_change_rate",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 0.109
+      },
+      {
+        "field": "after_change_val",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 0.34
+      },
+      {
+        "field": "after_high_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 309.7
+      },
+      {
+        "field": "after_low_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 309.0
+      },
+      {
+        "field": "after_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 309.69
+      },
+      {
+        "field": "after_turnover",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 1795369282.532
+      },
+      {
+        "field": "after_volume",
+        "non_null_count": 4,
+        "python_type": "int",
+        "sample": 5803953
+      },
+      {
+        "field": "amplitude",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 1.725
+      },
+      {
+        "field": "ask_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 309.69
+      },
+      {
+        "field": "ask_vol",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 40.0
+      },
+      {
+        "field": "avg_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 309.701811681
+      },
+      {
+        "field": "bid_ask_ratio",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 0.0
+      },
+      {
+        "field": "bid_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 309.55
+      },
+      {
+        "field": "bid_vol",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 40.0
+      },
+      {
+        "field": "circular_market_val",
+        "non_null_count": 3,
+        "python_type": "float",
+        "sample": 4511541743410.851
+      },
+      {
+        "field": "close_price_5min",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 309.96
+      },
+      {
+        "field": "code",
+        "non_null_count": 4,
+        "python_type": "str",
+        "sample": "US.AAPL"
+      },
+      {
+        "field": "dividend_lfy",
+        "non_null_count": 3,
+        "python_type": "float",
+        "sample": 1.02
+      },
+      {
+        "field": "dividend_lfy_ratio",
+        "non_null_count": 3,
+        "python_type": "float",
+        "sample": 0.329
+      },
+      {
+        "field": "dividend_ratio_ttm",
+        "non_null_count": 3,
+        "python_type": "float",
+        "sample": 0.34
+      },
+      {
+        "field": "dividend_ttm",
+        "non_null_count": 3,
+        "python_type": "float",
+        "sample": 1.05
+      },
+      {
+        "field": "earning_per_share",
+        "non_null_count": 3,
+        "python_type": "float",
+        "sample": 7.46
+      },
+      {
+        "field": "enable_margin",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "enable_short_sell",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "equity_valid",
+        "non_null_count": 4,
+        "python_type": "bool",
+        "sample": true
+      },
+      {
+        "field": "ey_ratio",
+        "non_null_count": 3,
+        "python_type": "float",
+        "sample": 1.183
+      },
+      {
+        "field": "future_last_settle_price",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "future_last_trade_time",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "future_main_contract",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "future_position",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "future_position_change",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "future_valid",
+        "non_null_count": 4,
+        "python_type": "bool",
+        "sample": false
+      },
+      {
+        "field": "high_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 312.38
+      },
+      {
+        "field": "highest52weeks_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 344.272979982
+      },
+      {
+        "field": "highest_history_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 344.272979982
+      },
+      {
+        "field": "index_equal_count",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "index_fall_count",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "index_option_type",
+        "non_null_count": 4,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "index_raise_count",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "index_valid",
+        "non_null_count": 4,
+        "python_type": "bool",
+        "sample": false
+      },
+      {
+        "field": "issued_shares",
+        "non_null_count": 3,
+        "python_type": "float",
+        "sample": 14594180000.0
+      },
+      {
+        "field": "last_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 309.35
+      },
+      {
+        "field": "listing_date",
+        "non_null_count": 4,
+        "python_type": "str",
+        "sample": "1980-12-12"
+      },
+      {
+        "field": "long_margin_initial_ratio",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "lot_size",
+        "non_null_count": 4,
+        "python_type": "int",
+        "sample": 1
+      },
+      {
+        "field": "low_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 307.01
+      },
+      {
+        "field": "lowest52weeks_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 223.86304598
+      },
+      {
+        "field": "lowest_history_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 0.053273895
+      },
+      {
+        "field": "mortgage_ratio",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "name",
+        "non_null_count": 4,
+        "python_type": "str",
+        "sample": "Apple"
+      },
+      {
+        "field": "net_asset",
+        "non_null_count": 3,
+        "python_type": "float",
+        "sample": 107515324060.0
+      },
+      {
+        "field": "net_asset_per_share",
+        "non_null_count": 3,
+        "python_type": "float",
+        "sample": 7.367
+      },
+      {
+        "field": "net_profit",
+        "non_null_count": 3,
+        "python_type": "float",
+        "sample": 108872582800.0
+      },
+      {
+        "field": "open_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 312.05
+      },
+      {
+        "field": "option_area_type",
+        "non_null_count": 4,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "option_contract_multiplier",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "option_contract_nominal_value",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "option_contract_size",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "option_delta",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "option_expiry_date_distance",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "option_gamma",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "option_implied_volatility",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "option_net_open_interest",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "option_open_interest",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "option_owner_lot_multiplier",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "option_premium",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "option_rho",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "option_strike_price",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "option_theta",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "option_type",
+        "non_null_count": 4,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "option_valid",
+        "non_null_count": 4,
+        "python_type": "bool",
+        "sample": false
+      },
+      {
+        "field": "option_vega",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "outstanding_shares",
+        "non_null_count": 3,
+        "python_type": "float",
+        "sample": 14583939691.0
+      },
+      {
+        "field": "overnight_amplitude",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 0.4111
+      },
+      {
+        "field": "overnight_change_rate",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": -0.028
+      },
+      {
+        "field": "overnight_change_val",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": -0.09
+      },
+      {
+        "field": "overnight_high_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 312.37
+      },
+      {
+        "field": "overnight_low_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 311.09
+      },
+      {
+        "field": "overnight_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 311.21
+      },
+      {
+        "field": "overnight_turnover",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 16140521.95
+      },
+      {
+        "field": "overnight_volume",
+        "non_null_count": 4,
+        "python_type": "int",
+        "sample": 51775
+      },
+      {
+        "field": "pb_ratio",
+        "non_null_count": 3,
+        "python_type": "float",
+        "sample": 41.991
+      },
+      {
+        "field": "pe_ratio",
+        "non_null_count": 3,
+        "python_type": "float",
+        "sample": 41.467
+      },
+      {
+        "field": "pe_ttm_ratio",
+        "non_null_count": 3,
+        "python_type": "float",
+        "sample": 35.475
+      },
+      {
+        "field": "plate_equal_count",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "plate_fall_count",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "plate_raise_count",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "plate_valid",
+        "non_null_count": 4,
+        "python_type": "bool",
+        "sample": false
+      },
+      {
+        "field": "pre_amplitude",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 0.8673
+      },
+      {
+        "field": "pre_change_rate",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": -0.089
+      },
+      {
+        "field": "pre_change_val",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": -0.28
+      },
+      {
+        "field": "pre_high_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 312.7
+      },
+      {
+        "field": "pre_low_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 310.0
+      },
+      {
+        "field": "pre_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 311.02
+      },
+      {
+        "field": "pre_turnover",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 492239686.792
+      },
+      {
+        "field": "pre_volume",
+        "non_null_count": 4,
+        "python_type": "int",
+        "sample": 1580691
+      },
+      {
+        "field": "prev_close_price",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 311.3
+      },
+      {
+        "field": "price_spread",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 0.01
+      },
+      {
+        "field": "sec_status",
+        "non_null_count": 4,
+        "python_type": "str",
+        "sample": "NORMAL"
+      },
+      {
+        "field": "short_available_volume",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "short_margin_initial_ratio",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "short_sell_rate",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "stock_owner",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "strike_time",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "suspension",
+        "non_null_count": 4,
+        "python_type": "bool",
+        "sample": false
+      },
+      {
+        "field": "total_market_val",
+        "non_null_count": 3,
+        "python_type": "float",
+        "sample": 4514709583000.0
+      },
+      {
+        "field": "trust_assetClass",
+        "non_null_count": 4,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "trust_aum",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 817866713533.548
+      },
+      {
+        "field": "trust_dividend_yield",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 0.98
+      },
+      {
+        "field": "trust_netAssetValue",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 769.06
+      },
+      {
+        "field": "trust_outstanding_units",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 1066732116.0
+      },
+      {
+        "field": "trust_premium",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": -0.434
+      },
+      {
+        "field": "trust_valid",
+        "non_null_count": 4,
+        "python_type": "bool",
+        "sample": false
+      },
+      {
+        "field": "turnover",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 14517834813.0
+      },
+      {
+        "field": "turnover_rate",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 0.321
+      },
+      {
+        "field": "update_time",
+        "non_null_count": 4,
+        "python_type": "str",
+        "sample": "2026-08-21 19:59:59.839"
+      },
+      {
+        "field": "volume",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 46876815.0
+      },
+      {
+        "field": "volume_ratio",
+        "non_null_count": 4,
+        "python_type": "float",
+        "sample": 1.07
+      },
+      {
+        "field": "wrt_break_even_point",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_conversion_price",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_conversion_ratio",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_delta",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_end_trade",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_implied_volatility",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_inline_price_status",
+        "non_null_count": 4,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "wrt_ipop",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_issue_vol",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_issuer_code",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_leverage",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_lower_strike_price",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_maturity_date",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_premium",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_price_recovery_ratio",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_recovery_price",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_score",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_street_ratio",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_street_vol",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_strike_price",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_type",
+        "non_null_count": 4,
+        "python_type": "str",
+        "sample": "N/A"
+      },
+      {
+        "field": "wrt_upper_strike_price",
+        "non_null_count": 0,
+        "python_type": null,
+        "sample": null
+      },
+      {
+        "field": "wrt_valid",
+        "non_null_count": 4,
+        "python_type": "bool",
+        "sample": false
+      }
+    ],
+    "equity_ticker": [
+      {
+        "field": "code",
+        "non_null_count": 20,
+        "python_type": "str",
+        "sample": "US.AAPL"
+      },
+      {
+        "field": "name",
+        "non_null_count": 20,
+        "python_type": "str",
+        "sample": "Apple"
+      },
+      {
+        "field": "price",
+        "non_null_count": 20,
+        "python_type": "float",
+        "sample": 309.5259
+      },
+      {
+        "field": "sequence",
+        "non_null_count": 20,
+        "python_type": "int",
+        "sample": 7676638422462627840
+      },
+      {
+        "field": "ticker_direction",
+        "non_null_count": 20,
+        "python_type": "str",
+        "sample": "SELL"
+      },
+      {
+        "field": "time",
+        "non_null_count": 20,
+        "python_type": "str",
+        "sample": "2026-08-21 19:57:45.324"
+      },
+      {
+        "field": "turnover",
+        "non_null_count": 20,
+        "python_type": "float",
+        "sample": 23214.442499999997
+      },
+      {
+        "field": "type",
+        "non_null_count": 20,
+        "python_type": "str",
+        "sample": "AUTO_MATCH"
+      },
+      {
+        "field": "volume",
+        "non_null_count": 20,
+        "python_type": "float",
+        "sample": 75.0
+      }
+    ],
+    "history_kline": [
+      {
+        "field": "change_rate",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": -0.49112871086311016
+      },
+      {
+        "field": "close",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 224.072273092
+      },
+      {
+        "field": "code",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "US.AAPL"
+      },
+      {
+        "field": "high",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 225.686310808
+      },
+      {
+        "field": "last_close",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 225.178187823
+      },
+      {
+        "field": "low",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 222.956793692
+      },
+      {
+        "field": "name",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "Apple"
+      },
+      {
+        "field": "open",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 225.437230914
+      },
+      {
+        "field": "pe_ratio",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 36.99
+      },
+      {
+        "field": "time_key",
+        "non_null_count": 1,
+        "python_type": "str",
+        "sample": "2025-08-21 00:00:00"
+      },
+      {
+        "field": "turnover",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 6889633743.0
+      },
+      {
+        "field": "turnover_rate",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 0.00206
+      },
+      {
+        "field": "volume",
+        "non_null_count": 1,
+        "python_type": "float",
+        "sample": 30621249.0
+      }
+    ],
+    "snapshot_session_fields": [
+      "update_time",
+      "after_volume",
+      "after_turnover",
+      "sec_status",
+      "pre_price",
+      "pre_high_price",
+      "pre_low_price",
+      "pre_volume",
+      "pre_turnover",
+      "pre_change_val",
+      "pre_change_rate",
+      "pre_amplitude",
+      "after_price",
+      "after_high_price",
+      "after_low_price",
+      "after_change_val",
+      "after_change_rate",
+      "after_amplitude",
+      "overnight_price",
+      "overnight_high_price",
+      "overnight_low_price",
+      "overnight_volume",
+      "overnight_turnover",
+      "overnight_change_val",
+      "overnight_change_rate",
+      "overnight_amplitude"
+    ],
+    "ticker_field_names": [
+      "code",
+      "name",
+      "price",
+      "sequence",
+      "ticker_direction",
+      "time",
+      "turnover",
+      "type",
+      "volume"
+    ]
+  },
+  "sdk_version": "10.10.7008",
+  "sessions": {
+    "history_extended_time": true,
+    "snapshot": [
+      {
+        "after_price": 309.69,
+        "ask_price": 309.69,
+        "bid_price": 309.55,
+        "code": "US.AAPL",
+        "last_price": 309.35,
+        "lot_size": 1,
+        "overnight_price": 311.21,
+        "pre_price": 311.02,
+        "sec_status": "NORMAL",
+        "suspension": false,
+        "update_time": "2026-08-21 19:59:59.839",
+        "volume": 46876815.0
+      },
+      {
+        "after_price": 215.38,
+        "ask_price": 215.38,
+        "bid_price": 215.35,
+        "code": "US.NVDA",
+        "last_price": 214.72,
+        "lot_size": 1,
+        "overnight_price": 218.0,
+        "pre_price": 217.79,
+        "sec_status": "NORMAL",
+        "suspension": false,
+        "update_time": "2026-08-21 19:59:59.034",
+        "volume": 98869300.0
+      },
+      {
+        "after_price": 767.0,
+        "ask_price": 767.39,
+        "bid_price": 767.0,
+        "code": "US.SPY",
+        "last_price": 765.72,
+        "lot_size": 1,
+        "overnight_price": 764.51,
+        "pre_price": 765.89,
+        "sec_status": "NORMAL",
+        "suspension": false,
+        "update_time": "2026-08-21 19:59:45.641",
+        "volume": 39188673.0
+      },
+      {
+        "after_price": 2.46,
+        "ask_price": 2.46,
+        "bid_price": 2.37,
+        "code": "US.BIYA",
+        "last_price": 2.37,
+        "lot_size": 1,
+        "overnight_price": 2.42,
+        "pre_price": 2.37,
+        "sec_status": "NORMAL",
+        "suspension": false,
+        "update_time": "2026-08-21 20:02:23.808",
+        "volume": 70682.0
+      }
+    ]
+  },
+  "subscription_quota": {
+    "after_stream": {
+      "option_remain_quota": 20,
+      "option_used_quota": 0,
+      "own_option_used_quota": 0,
+      "own_security_firm": "N/A",
+      "own_used": 3,
+      "remain": 97,
+      "sub_list": {
+        "ORDER_BOOK": [
+          "US.AAPL"
+        ],
+        "QUOTE": [
+          "US.AAPL"
+        ],
+        "TICKER": [
+          "US.AAPL"
+        ]
+      },
+      "total_used": 3
+    },
+    "evidence_class": "OBSERVED",
+    "payload": {
+      "option_remain_quota": 20,
+      "option_used_quota": 0,
+      "own_option_used_quota": 0,
+      "own_security_firm": "N/A",
+      "own_used": 0,
+      "remain": 97,
+      "sub_list": {
+        "ORDER_BOOK": [
+          "US.AAPL"
+        ],
+        "QUOTE": [
+          "US.AAPL"
+        ],
+        "TICKER": [
+          "US.AAPL"
+        ]
+      },
+      "total_used": 3
+    },
+    "ret": 0
+  },
+  "tested_at": "2026-08-22T01:03:46.394801Z",
+  "timestamps": {
+    "opend_server_minus_local_s": -0.3997828960418701,
+    "streaming": {
+      "book_push_count": 1,
+      "quote_push_count": 1,
+      "ticker_push_count": 1
+    }
+  },
+  "verified_at": "2026-08-22T01:03:46.394801Z"
+}

@@ -1,0 +1,76 @@
+{
+  "adr_id": "ADR-WHALE-007",
+  "alternatives": [
+    {
+      "decision": "ACCEPTED",
+      "name": "PUBLIC_CATALYST_WHALE_EVENT_WITH_INFERRED_CONFIDENCE",
+      "option_id": "WHALE7-OPTION-001",
+      "tradeoffs": [
+        "Catalyst signals remain INFERRED with explicit gate reasons; no paper execution or trade recommendations are encoded."
+      ]
+    }
+  ],
+  "approval": {
+    "approval_scope": "EXACT_HASH_PRINCIPAL_APPROVAL",
+    "approved_at": "2026-08-17T12:00:00.000000000Z",
+    "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+    "approved_capacities": [
+      "PROJECT_OWNER",
+      "RELEASE_OWNER"
+    ]
+  },
+  "artifact_type": "ARCHITECTURE_DECISION_RECORD",
+  "authority_bindings": [
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase14.adr_whale_006",
+      "logical_path": "docs/superpowers/decisions/2026-08-19-adr-whale-006-order-book-envelope-semantics.json",
+      "sha256": "PLACEHOLDER_SHA256"
+    },
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase15.whale_public_catalyst_design",
+      "logical_path": "docs/superpowers/specs/2026-08-18-phase-15-whale-public-catalyst-design.md",
+      "sha256": "PLACEHOLDER_SHA256"
+    }
+  ],
+  "conformance_evidence": [
+    {
+      "logical_id": "phase15.catalyst_tests",
+      "repository_relative_path": "tests/providers/test_catalyst.py",
+      "sha256": "PLACEHOLDER_SHA256"
+    }
+  ],
+  "consequences": {
+    "negative": [
+      "Catalyst confidence and lean are derived heuristics; they must not be presented as execution signals."
+    ],
+    "positive": [
+      "public_catalyst family can surface entitled fixture catalyst events with honest gate_reasons and PIT cutoff semantics."
+    ]
+  },
+  "created_at": "2026-08-17T12:00:00.000000000Z",
+  "decision": {
+    "selected_option_id": "WHALE7-OPTION-001",
+    "summary": "Public-catalyst whale events use whale_event payloads with family public_catalyst, catalyst_type, headline, source, confidence (INFERRED), lean, direction_label (supports_long|supports_short|neutral), gate_ok, gate_reasons (CONFIDENCE_BELOW_THRESHOLD, LEAN_NEUTRAL, LIQUIDITY_INSUFFICIENT), and signal_source. PIT queries exclude events whose available_time exceeds prediction_cutoff. Outputs are research-only context, not trade recommendations.",
+    "title": "Public catalyst whale envelope semantics and gate policy"
+  },
+  "effectivity": {
+    "current_state": "ACCEPTED",
+    "decision_only": false,
+    "non_authorization_statement": "Acceptance authorizes fixture-first public_catalyst on ADMITTED-CATALYST-BOXL-001 only. Live news feeds and paper execution require separate entitlement records."
+  },
+  "logical_id": "phase15.adr_whale_007",
+  "owner_capacities": [
+    "ARCHITECTURE_LEAD",
+    "PROJECT_OWNER"
+  ],
+  "sanitization": {
+    "absolute_paths_included": false,
+    "account_identifiers_included": false,
+    "credential_values_included": false,
+    "remote_urls_included": false
+  },
+  "schema_version": "1.0.0",
+  "status": "ACCEPTED"
+}

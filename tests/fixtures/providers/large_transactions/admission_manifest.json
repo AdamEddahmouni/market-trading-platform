@@ -1,0 +1,15 @@
+{
+  "admitted_fixture_id": "ADMITTED-LARGE-PRINTS-NVDA-001",
+  "capability_claims": [
+    "size_normalization",
+    "rolling_volume_reference",
+    "direction_ambiguity"
+  ],
+  "content_path": "tests/fixtures/providers/large_transactions/nvda_large_prints_slice.json",
+  "donor_reference": "SWIM_WITH_THE_WHALES large_transactions semantics (PORT_ADAPT; synthetic fixture)",
+  "instrument_id": "NVDA",
+  "logical_id": "phase12.large_transactions_fixture_admission",
+  "research_only": true,
+  "schema_version": "1.0.0",
+  "status": "ADMITTED"
+}

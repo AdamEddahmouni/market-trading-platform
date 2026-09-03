@@ -1,0 +1,38 @@
+{
+  "admission_id": "ADMITTED-MC-BOXL-METRICS-001",
+  "fixture_id": "FIXTURE-MC-BOXL-STRUCTURED-METRICS",
+  "symbol": "BOXL",
+  "metrics": [
+    {
+      "document_id": "mc-doc-earnings-1",
+      "metrics": [
+        {
+          "metric_name": "revenue",
+          "reported_value": "42.5",
+          "units": "MILLION",
+          "currency": "USD",
+          "period": "Q2-2026",
+          "source_span": {
+            "source_document_id": "mc-doc-earnings-1",
+            "excerpt": "revenue of $42.5 million"
+          }
+        }
+      ]
+    },
+    {
+      "document_id": "mc-doc-upgrade-1",
+      "metrics": [
+        {
+          "metric_name": "price_target",
+          "reported_value": "12.00",
+          "units": "USD",
+          "currency": "USD",
+          "source_span": {
+            "source_document_id": "mc-doc-upgrade-1",
+            "excerpt": "raised price target to $12.00"
+          }
+        }
+      ]
+    }
+  ]
+}

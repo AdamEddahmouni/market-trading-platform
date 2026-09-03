@@ -1,0 +1,5 @@
+{
+  "alignment_type": "WHALE_ALIGNED",
+  "attempt": "interpret_without_preregistration",
+  "description": "Strategy interpretation must fail closed without preregistration"
+}

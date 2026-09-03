@@ -1,0 +1,15 @@
+{
+  "response": {
+    "total": 1,
+    "data": [
+      {"period": "2026-08-08", "series": "WCESTUS1", "value": 100}
+    ],
+    "request": {
+      "command": "/v2/petroleum/sum/sndw/data",
+      "params": {
+        "api_key": "FAKE_EIA_SECRET",
+        "frequency": "weekly"
+      }
+    }
+  }
+}

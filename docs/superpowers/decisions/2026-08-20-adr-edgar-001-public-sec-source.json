@@ -1,0 +1,79 @@
+{
+  "adr_id": "ADR-EDGAR-001",
+  "alternatives": [
+    {
+      "decision": "REJECTED_FOR_CURRENT_SCOPE",
+      "name": "TREAT_LIVE_SEC_AS_ADMITTED",
+      "option_id": "EDGAR-OPTION-001",
+      "tradeoffs": [
+        "Would leak unverified live filings into replay research datasets."
+      ]
+    },
+    {
+      "decision": "ACCEPTED",
+      "name": "PUBLIC_READ_ONLY_REGULATORY_SOURCE",
+      "option_id": "EDGAR-OPTION-002",
+      "tradeoffs": [
+        "Live SEC bytes remain observational until a later admission ADR.",
+        "Fair Access rate limits and a declared User-Agent are mandatory."
+      ]
+    }
+  ],
+  "approval": {
+    "approval_scope": "WORK_PACKAGE_PRINCIPAL_AUTHORIZATION",
+    "approved_at": "2026-08-20T04:52:00.000000000Z",
+    "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+    "approved_capacities": [
+      "PROJECT_OWNER",
+      "RELEASE_OWNER"
+    ]
+  },
+  "artifact_type": "ARCHITECTURE_DECISION_RECORD",
+  "consequences": {
+    "negative": [
+      "Ordinary CI must remain green without network access to SEC.",
+      "Captured live filings are not automatically admitted research datasets.",
+      "companyfacts aggregates are unsafe for historical replay unless filtered by filed/accession availability."
+    ],
+    "positive": [
+      "Public SEC EDGAR can be fetched read-only with no API key.",
+      "Filing metadata, documents, and XBRL facts become PIT-correct canonical evidence.",
+      "Existing Phase 9 fixture whale ledger remains the admitted BIYA disclosure path."
+    ]
+  },
+  "created_at": "2026-08-20T04:52:00.000000000Z",
+  "decision": {
+    "selected_option_id": "EDGAR-OPTION-002",
+    "summary": "Authorize SEC EDGAR as a public, read-only REGULATORY source. Stdlib transport with declared User-Agent and a global Fair Access throttle. Capture is not admission. Paper and live execution remain forbidden.",
+    "title": "Public read-only SEC EDGAR regulatory source"
+  },
+  "effectivity": {
+    "current_state": "ACCEPTED",
+    "decision_only": false,
+    "non_authorization_statement": "This ADR does not authorize paper execution, live order submission, automatic admission of live SEC observations as research datasets, bulk crawling, generic bot User-Agents, crypto (PI14+), or prediction-market integration."
+  },
+  "fair_access": {
+    "max_requests_per_second": 5,
+    "sec_policy_ceiling_rps": 10,
+    "user_agent_env": "SEC_USER_AGENT"
+  },
+  "lifecycle": {
+    "states": [
+      "OBSERVED",
+      "CAPTURED",
+      "VALIDATED",
+      "QUALITY_CHARACTERIZED",
+      "ADMITTED"
+    ],
+    "admission_requires_separate_adr": true
+  },
+  "related_adrs": [
+    "ADR-LIVE-001",
+    "ADR-PROV-001",
+    "ADR-DATA-001",
+    "ADR-PIT-001",
+    "ADR-WHALE-001"
+  ],
+  "source_type": "REGULATORY",
+  "status": "ACCEPTED"
+}

@@ -1,0 +1,33 @@
+{
+  "instrument_id": "NVDA",
+  "prediction_cutoff": "2026-07-21T20:30:10.000000000Z",
+  "min_reversal_probability": 0.5,
+  "min_exhaustion_score": 0.5,
+  "producer_version": "participant_forced_flow_v1",
+  "lane_inputs": {
+    "metaorder": {
+      "lifecycle_state": "LIKELY_COMPLETE",
+      "event_time": "2026-07-21T20:30:06.000000000Z",
+      "available_time": "2026-07-21T20:30:06.000000000Z"
+    },
+    "microstructure": {
+      "reversal_probability": 0.72,
+      "exhaustion_score": 0.65,
+      "impact_regime": "SELL_EXHAUSTION",
+      "event_time": "2026-07-21T20:30:06.000000000Z",
+      "available_time": "2026-07-21T20:30:06.000000000Z"
+    },
+    "leverage": {
+      "long_liquidation_risk": true,
+      "short_liquidation_risk": false,
+      "stress_regime": "HIGH",
+      "event_time": "2026-07-21T20:30:05.000000000Z",
+      "available_time": "2026-07-21T20:30:05.000000000Z"
+    },
+    "catalyst_registry": {
+      "registry_available": true,
+      "active_catalyst_at_cutoff": true,
+      "available_time": "2026-07-21T20:30:00.000000000Z"
+    }
+  }
+}
