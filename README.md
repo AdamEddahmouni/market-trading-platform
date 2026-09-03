@@ -5,12 +5,14 @@ research, and coursework projects stored under this directory.
 
 ## Repository boundaries
 
-- `integrated-market-platform/` is maintained as the private
-  `integrated-market-intelligence-platform` repository.
-- `governed-ticker-metadata-enrichment/`, `equity-data-v1-worktree/`, and
-  `short-squeeze-project/` retain their own repository histories and remotes.
+- This repository contains a monorepo snapshot of every project directory in
+  this workspace, including `integrated-market-platform/`,
+  `governed-ticker-metadata-enrichment/`, `equity-data-v1-worktree/`, and
+  `short-squeeze-project/`.
+- The original child repositories, histories, remotes, and visibility settings
+  are left unchanged. The snapshots here are the private workspace copy.
 - `.worktrees/` contains disposable development worktrees and is intentionally
-  excluded from this workspace repository.
+  excluded from this monorepo.
 
 The integrated platform repository is the canonical source for the main
 trading platform. Its remote `main` was realigned to the integrated local
@@ -19,8 +21,8 @@ history is preserved on
 `backup/remote-main-before-repair-2026-09-03`.
 
 The workspace repository tracks the surrounding notes, documentation, project
-artifacts, and source trees that do not already belong to a nested repository.
-Local environments, generated output, and credentials are excluded.
+artifacts, and source trees. Local environments, generated output, and
+credentials are excluded.
 
 Several futures data files are present only as Git-LFS pointer stubs in this
 checkout; their underlying objects are not available locally. Those paths are
