@@ -12,7 +12,7 @@
       "snapshot_path": "projects/integrated-market-platform",
       "source_remote": "https://github.com/AdamEddahmouni/integrated-market-intelligence-platform.git",
       "source_ref": "feat/rt01-paper-tracing",
-      "source_commit": "db83608685cbd544963d397cb4b300ec145b9b5c",
+      "source_commit": "06963649032ab9515b37586a1592d2ad0ec52a8a",
       "expected_visibility": "private",
       "source_policy": "unchanged"
     },
