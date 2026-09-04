@@ -20,6 +20,7 @@ from . import live_projections
 from . import operator_projections
 from . import paper_projections
 from . import projections
+from . import strategy_runtime_projections
 from .account_registry import build_accounts_payload
 from ..operational_identity import OperationalIdentityError
 from .auth_projections import (
@@ -666,6 +667,34 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     )
                 except ValueError as exc:
                     self._send_error_json("PAPER_TRACE_NOT_FOUND", str(exc), status=HTTPStatus.BAD_REQUEST)
+                return
+            if path == "/paper/strategy-profitability":
+                repository = self.store.strategy_repository
+                if repository is None:
+                    self._send_error_json(
+                        "PAPER_STRATEGY_RUNTIME_UNAVAILABLE",
+                        "Strategy runtime repository is not bound to this Paper session",
+                        status=HTTPStatus.SERVICE_UNAVAILABLE,
+                    )
+                    return
+                allocation_decision_id = query.get("allocation_decision_id", [None])[0]
+                as_of_raw = query.get("as_of_ns", [None])[0]
+                limit_raw = query.get("limit", [None])[0]
+                as_of_ns = int(as_of_raw) if as_of_raw else None
+                limit = int(limit_raw) if limit_raw else 25
+                self._send_json(
+                    strategy_runtime_projections.build_strategy_profitability_payload(
+                        repository=repository,
+                        ledger=self.store.paper_ledger,
+                        account_id=self.store.paper_ledger.paper_account_id,
+                        mode="PAPER",
+                        allocation_decision_id=(
+                            str(allocation_decision_id) if allocation_decision_id else None
+                        ),
+                        as_of_ns=as_of_ns,
+                        limit=limit,
+                    )
+                )
                 return
             if path == "/paper/broker/orders":
                 self._send_json(broker_projections.build_broker_orders_payload(self.store))

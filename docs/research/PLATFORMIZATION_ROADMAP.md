@@ -2,7 +2,7 @@
 
 **Status:** Active — supersedes informal "Phase 1–5" platform sequencing  
 **Authority:** [PLATFORM-PAPER-001](../superpowers/specs/2026-08-21-platform-paper-001-design.md), [PLATFORM-STATE-001](../superpowers/specs/2026-08-21-platform-state-001-design.md)  
-**Date:** 2026-08-21
+**Date:** 2026-09-03
 
 This document tracks the transition from replay-only research UI to a provider-agnostic
 market operating platform. It uses **Platformization P0–P6** naming to avoid collision
@@ -22,7 +22,7 @@ with governed Phases 0–16.
 | **P3.3** | Finviz Elite discovery, prospective PIT capture, decision-research foundation | **COMPLETE** — [P3.3](../superpowers/specs/2026-08-21-platform-p33-finviz-discovery-research.md) · [DECISION-RESEARCH-001 milestone A](../superpowers/specs/2026-08-22-decision-research-001-design.md) (OOS gate PASS) |
 | **P4** | Tradier/Moomoo paper adapters, idempotency, reconciliation | **4A + 4B COMPLETE_WITH_LIMITATIONS** — Tradier sandbox adapter + idempotent submission and the reconciliation engine landed, both gates PASS ([PLATFORM-P4-001](../superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md)); **4C COMPLETE_WITH_LIMITATIONS** — Moomoo paper adapter landed fixture-first (`src/market_platform_foundation/providers/adapters/moomoo_paper.py`), real-wire unconfirmed (OpenD gateway TCP-only); `/paper/broker/*` observability implemented (fixture-level) |
 | **P5** | Hosted platform, security, PROVIDER-COMMERCIAL-001 | **Local auth enforcement complete** (TD-005 closed): LOOPBACK_TRUST/ENFORCED modes, principals registry, session API, route capability + account ACL (ADR-0008); security foundations offline-proven (`platform/security/**`); **hosted deployment and OIDC/SSO not started** |
-| **P6** | Shadow/forward validation | **IN PROGRESS — EVIDENCE COLLECTION**: infrastructure + Shadow Run 1 machinery offline-proven (`shadow/**`, `run_shadow_run.py`); protocol preregistered 2026-09-01 ([P6_SHADOW_RUN_1_PROTOCOL.md](../engineering/P6_SHADOW_RUN_1_PROTOCOL.md), [SOP](../engineering/sops/FORWARD_SHADOW_VALIDATION.md)); **10 ACTUAL_FORWARD observations collected** on the default-store BIYA run; stopping rule not met |
+| **P6** | Shadow/forward validation | **DEFERRED**: infrastructure + Shadow Run 1 machinery remain preserved and offline-proven (`shadow/**`, `run_shadow_run.py`); the preregistered protocol and historical BIYA observations remain available, but no forward-observation campaign is active |
 | **LIVE-001** | Production execution (separate authorization) | Blocked |
 
 ### P4 status (2026-08-22)

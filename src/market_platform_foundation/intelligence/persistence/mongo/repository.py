@@ -252,6 +252,41 @@ class MongoIntelligenceRepository:
             for document in documents
         )
 
+    def query_allocation_decisions(
+        self,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+        decision_from_ns: int | None = None,
+        decision_to_ns: int | None = None,
+        limit: int = 1000,
+    ) -> tuple:
+        from ...opportunity.allocation_persistence import allocation_decision_v1_from_dict
+
+        active_limit = validate_limit(limit)
+        query: dict[str, object] = {}
+        if account_id is not None:
+            query["account_id"] = account_id
+        if mode is not None:
+            normalized_mode = str(mode).strip().upper()
+            query["mode"] = {"LIVE": "ACTUAL_LIVE"}.get(normalized_mode, normalized_mode)
+        if decision_from_ns is not None or decision_to_ns is not None:
+            decision_range: dict[str, int] = {}
+            if decision_from_ns is not None:
+                decision_range["$gte"] = decision_from_ns
+            if decision_to_ns is not None:
+                decision_range["$lte"] = decision_to_ns
+            query["decision_time_ns"] = decision_range
+        documents = self._database["allocation_decisions"].find(query).sort(
+            [("decision_time_ns", -1), ("allocation_decision_id", 1)]
+        ).limit(active_limit)
+        return tuple(
+            allocation_decision_v1_from_dict(
+                {key: value for key, value in document.items() if key != "_id"}
+            )
+            for document in documents
+        )
+
     def put_strategy_match(self, match: StrategyMatch) -> RepositoryPutResult:
         return self._put(match)
 

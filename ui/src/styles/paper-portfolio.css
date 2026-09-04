@@ -180,6 +180,79 @@
   font: inherit;
 }
 
+.paper-strategy-profitability {
+  display: grid;
+  gap: 16px;
+  border-top: 2px solid rgba(72, 214, 196, 0.55);
+}
+
+.paper-strategy-profitability__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: start;
+}
+
+.paper-strategy-profitability__header h2 {
+  margin: 2px 0 6px;
+}
+
+.paper-strategy-profitability__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px 20px;
+  margin: 0;
+}
+
+.paper-strategy-profitability__disclaimer,
+.paper-strategy-profitability__footer {
+  margin: 0;
+  color: var(--text-muted, #9db0bd);
+  font-size: 0.86rem;
+}
+
+.paper-strategy-profitability__empty {
+  padding: 18px;
+  border: 1px dashed var(--paper-line);
+  color: var(--text-secondary);
+}
+
+.paper-strategy-profitability__empty p {
+  margin: 6px 0 0;
+}
+
+.paper-strategy-profitability__table-wrap {
+  overflow-x: auto;
+}
+
+.paper-strategy-profitability__table {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: collapse;
+}
+
+.paper-strategy-profitability__table th,
+.paper-strategy-profitability__table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--paper-line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.paper-strategy-profitability__table th {
+  color: var(--text-muted, #9db0bd);
+  font: 0.7rem var(--font-mono, monospace);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.paper-strategy-profitability__subline {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted, #9db0bd);
+  font: 0.7rem var(--font-mono, monospace);
+}
+
 @media (max-width: 960px) {
   .paper-order-col-type,
   .paper-order-col-fill,

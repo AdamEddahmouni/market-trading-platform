@@ -35,6 +35,8 @@ export const queryKeys = {
   demoPortfolio: ["demo", "portfolio"] as const,
   paperOrderHistory: ["paper", "order-history"] as const,
   paperTrace: (intentId?: string, orderId?: string) => ["paper", "trace", intentId, orderId] as const,
+  paperStrategyProfitability: (accountId?: string, sessionId?: string) =>
+    ["paper", "strategy-profitability", accountId ?? "unbound", sessionId ?? "unbound"] as const,
   liveCanarySnapshot: (laneId?: string, accountId?: string) =>
     ["live", "canary-snapshot", laneId ?? "account", accountId ?? "fp-canary-local"] as const,
   liveCanaryReconciliation: (accountId?: string) =>
@@ -236,12 +238,24 @@ export function usePaperTraceQuery(params: { intentId?: string; orderId?: string
   });
 }
 
+export function usePaperStrategyProfitabilityQuery(enabled = true) {
+  const portfolioQuery = usePaperPortfolioQuery("PAPER");
+  const accountId = portfolioQuery.data?.account.paper_account_id;
+  const sessionId = portfolioQuery.data?.session?.session_id;
+  return useQuery({
+    queryKey: queryKeys.paperStrategyProfitability(accountId, sessionId),
+    queryFn: () => api.getPaperStrategyProfitability(),
+    enabled,
+  });
+}
+
 function useInvalidatePaper() {
   const queryClient = useQueryClient();
   return () => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.paperPortfolio });
     void queryClient.invalidateQueries({ queryKey: queryKeys.demoPortfolio });
     void queryClient.invalidateQueries({ queryKey: queryKeys.paperOrderHistory });
+    void queryClient.invalidateQueries({ queryKey: ["paper", "strategy-profitability"] });
     void queryClient.invalidateQueries({ queryKey: ["context"] });
   };
 }

@@ -32,6 +32,7 @@ import {
   PaperOrderSubmitResponseSchema,
   PaperSessionResponseSchema,
   PaperTraceResponseSchema,
+  PaperStrategyProfitabilityResponseSchema,
   ProviderHealthResponseSchema,
   SymbolSearchResponseSchema,
   InstrumentCapabilitiesResponseSchema,
@@ -169,6 +170,21 @@ export const api = {
     if (params.orderId) query.set("order_id", params.orderId);
     if (params.fillId) query.set("fill_id", params.fillId);
     return fetchJson(`/paper/trace?${query.toString()}`, PaperTraceResponseSchema);
+  },
+  getPaperStrategyProfitability: (params?: {
+    allocationDecisionId?: string;
+    asOfNs?: number;
+    limit?: number;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.allocationDecisionId) query.set("allocation_decision_id", params.allocationDecisionId);
+    if (params?.asOfNs !== undefined) query.set("as_of_ns", String(params.asOfNs));
+    if (params?.limit !== undefined) query.set("limit", String(params.limit));
+    const suffix = query.toString();
+    return fetchJson(
+      `/paper/strategy-profitability${suffix ? `?${suffix}` : ""}`,
+      PaperStrategyProfitabilityResponseSchema,
+    );
   },
   searchSymbols: (query: string) =>
     fetchJson(`/symbols/search?q=${encodeURIComponent(query)}`, SymbolSearchResponseSchema),
