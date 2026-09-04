@@ -17,7 +17,7 @@ platform projects maintained here.
   excluded from this monorepo.
 
 The integrated trading platform lives entirely in this repository now; the
-former child repository is archived and its `main` history is preserved as
+former child repository ([`integrated-market-intelligence-platform`](https://github.com/AdamEddahmouni/integrated-market-intelligence-platform)) is archived (read-only) and its `main` history is preserved as
 part of this repository's history.
 
 The workspace repository tracks the surrounding notes, documentation, project
