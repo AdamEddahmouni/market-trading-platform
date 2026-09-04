@@ -7,6 +7,9 @@ from typing import Any, Mapping
 from ..execution.simulator import SIMULATOR_VERSION, BarConservativeSimulator
 from ..operating_modes import PAPER_EXECUTION_AUTHORITIES
 from ..risk.decision import evaluate_risk
+from ..rt01.context import current_context
+from ..rt01.enums import TraceStage, TraceStatus
+from ..rt01.tracer import get_tracer
 from .contracts import (
     ORDER_LIFECYCLE_TERMINAL_STATES,
     build_instrument_ref,
@@ -253,7 +256,33 @@ def preview_interactive_order(
     )
 
 
-def submit_interactive_order(
+def submit_interactive_order(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """Submit an internal Paper order and emit an optional RT-01 span."""
+    context = current_context()
+    span = None
+    if context is not None:
+        span = get_tracer().start_span(
+            TraceStage.ORDER_READY,
+            "submit_internal_paper_order",
+            parent=context,
+            input_ref=str(kwargs.get("client_order_id") or "paper-order"),
+        )
+    try:
+        result = _submit_interactive_order(*args, **kwargs)
+    except Exception as exc:
+        if span is not None:
+            span.end(
+                status=TraceStatus.ERROR,
+                error_class=type(exc).__name__,
+                error_code=type(exc).__name__,
+            )
+        raise
+    if span is not None:
+        span.end(output_ref=str(result.get("order_id") or "no-order"))
+    return result
+
+
+def _submit_interactive_order(
     *,
     ledger: PaperExecutionLedger,
     bars: list[dict[str, Any]],

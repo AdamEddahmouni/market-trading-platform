@@ -26,6 +26,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-04 — RT-01 Paper pipeline tracing
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/paper`, `observability`, `tests`, `docs` |
+| **Summary** | Added bounded Paper RT-01 trace handles and latency profiles, instrumented queue/signal/strategy/internal submission seams, and routed broker-paper submission, polling, cancellation, and reconciliation through the composed Paper provider. Broker partial-fill completion/cancel, restart/replay, idempotency, dry-run preview, and trace linkage are covered by fixture-driven tests. |
+| **Key files** | `src/market_platform_foundation/rt01/instrumentation/paper.py`; `src/market_platform_foundation/rt01/{profiles.py,baseline.py,workloads.py,tracer.py}`; `src/market_platform_foundation/{market_data/bounded_queue.py,intelligence/signals/engine.py,intelligence/execution/engine.py,paper/{execution.py,broker_paper.py},strategy/runtime.py}`; `src/market_platform_foundation/ui_api/{paper_projections.py,broker_projections.py,server.py}` |
+| **Tests** | Focused RT-01/Paper suites and broker/reconciliation regressions passed during implementation. Changed validation: 2,231 tests, 38 skipped, 0 failures/errors. UI: 428 tests passed, typecheck passed, production build and bundle budget passed at 202.26 KiB gzip. Full validation: 3,482 tests, 48 skipped, 1 pre-existing repository-closure error in the validation domain. |
+| **Related** | RT-01 Paper tracing implementation plan (local read-only plan); [Paper decision lifecycle](../architecture/PAPER_DECISION_LIFECYCLE.md); [RT-01 operations](../operations/rt-01/README.md) |
+| **Notes** | Work is isolated on the `feat/rt01-paper-tracing` child branch. The original child checkout’s unrelated dirty files remain untouched. Full validation remains blocked by the existing `provider-composition` closure scope path (`src/market_platform_foundation/tests`) rather than this change. |
+
 ## 2026-09-03 — Paper profitability observability
 
 | Field | Value |

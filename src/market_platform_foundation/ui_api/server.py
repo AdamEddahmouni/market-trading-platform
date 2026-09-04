@@ -831,6 +831,34 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_error_json(code, str(exc), status=HTTPStatus.BAD_REQUEST)
             return
 
+        if path == "/paper/broker/orders/poll":
+            try:
+                with LEDGER_ROUTE_LOCK:
+                    payload = paper_projections.poll_broker_order(self.store, body)
+                self._send_json(payload)
+            except ValueError as exc:
+                code = (
+                    "PAPER_EXECUTION_NOT_AUTHORIZED"
+                    if "NOT_AUTHORIZED" in str(exc)
+                    else "PAPER_BROKER_POLL_FAILED"
+                )
+                self._send_error_json(code, str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+
+        if path == "/paper/broker/reconciliation":
+            try:
+                with LEDGER_ROUTE_LOCK:
+                    payload = paper_projections.reconcile_broker_paper(self.store)
+                self._send_json(payload)
+            except ValueError as exc:
+                code = (
+                    "PAPER_EXECUTION_NOT_AUTHORIZED"
+                    if "NOT_AUTHORIZED" in str(exc)
+                    else "PAPER_BROKER_RECONCILIATION_FAILED"
+                )
+                self._send_error_json(code, str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+
         if path == "/paper/sessions":
             try:
                 with LEDGER_ROUTE_LOCK:
