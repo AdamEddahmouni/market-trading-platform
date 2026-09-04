@@ -30,6 +30,9 @@ jobs:
           path: short-squeeze-project
           sparse-checkout: short-squeeze-core/tests/fixtures/validation/outcome_amendment/biya_market_bars_intraday.jsonl
           sparse-checkout-cone-mode: false
+      - name: Expose admitted replay fixture at collection root
+        shell: bash
+        run: ln -s "$GITHUB_WORKSPACE/short-squeeze-project" "$GITHUB_WORKSPACE/../short-squeeze-project"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
