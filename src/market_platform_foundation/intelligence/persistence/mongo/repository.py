@@ -1066,6 +1066,35 @@ class MongoIntelligenceRepository:
             return None
         return risk_decision_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
 
+    def put_order_ready(self, order_ready) -> RepositoryPutResult:
+        from ...execution.serialization import order_ready_v1_to_dict
+
+        return self._put_sidecar_document(
+            "order_ready",
+            order_ready.order_ready_id,
+            order_ready_v1_to_dict(order_ready),
+            "order_ready",
+        )
+
+    def get_order_ready(self, order_ready_id: str):
+        from ...execution.serialization import order_ready_v1_from_dict
+
+        document = self._database["order_ready"].find_one({"_id": order_ready_id})
+        if document is None:
+            return None
+        return order_ready_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+
+    def get_order_ready_by_allocation(self, allocation_decision_id: str) -> tuple:
+        from ...execution.serialization import order_ready_v1_from_dict
+
+        documents = self._database["order_ready"].find(
+            {"allocation_decision_id": allocation_decision_id}
+        ).sort([("decision_time_ns", 1), ("order_ready_id", 1)])
+        return tuple(
+            order_ready_v1_from_dict({k: v for k, v in document.items() if k != "_id"})
+            for document in documents
+        )
+
     def put_runtime_activation_policy(self, policy) -> RepositoryPutResult:
         from ...governance.serialization import runtime_activation_policy_v1_to_dict
 

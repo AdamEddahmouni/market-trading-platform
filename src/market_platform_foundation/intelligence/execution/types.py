@@ -7,6 +7,7 @@ from enum import StrEnum
 from typing import Any
 
 from ..contracts.common import INTELLIGENCE_SCHEMA_VERSION, ContractReference, validate_id, validate_schema_version, validate_timestamp_ns
+from ...canonical import canonical_bytes, sha256_bytes
 
 EXECUTION_IMPLEMENTATION_VERSION = "deterministic-paper-execution-risk-v1"
 
@@ -52,6 +53,11 @@ class RiskReasonCode(StrEnum):
     EXECUTION_AUTHORITY_LIVE = "EXECUTION_AUTHORITY_LIVE"
     LIVE_POLICY_REJECTED = "LIVE_POLICY_REJECTED"
     RUNTIME_GOVERNANCE_DISABLED = "RUNTIME_GOVERNANCE_DISABLED"
+
+
+class OrderReadyStatus(StrEnum):
+    READY = "READY"
+    BLOCKED = "BLOCKED"
 
 
 @dataclass(frozen=True, slots=True)
@@ -205,6 +211,81 @@ class RiskDecisionV1:
 
 
 @dataclass(frozen=True, slots=True)
+class OrderReadyV1:
+    """Immutable readiness decision between risk approval and Paper submission."""
+
+    order_ready_id: str
+    schema_version: str
+    allocation_decision_id: str
+    trade_proposal_id: str
+    risk_decision_id: str
+    account_id: str
+    mode: str
+    decision_time_ns: int
+    instrument_id: str
+    symbol: str
+    approved_quantity: int
+    approved_notional_minor: int
+    status: OrderReadyStatus
+    execution_authority: str
+    execution_mode: str
+    idempotency_key: str
+    correlation_id: str
+    reason_codes: tuple[str, ...] = ()
+    lineage_refs: tuple[ContractReference, ...] = ()
+
+    def __post_init__(self) -> None:
+        validate_id(self.order_ready_id, field_name="order_ready_id")
+        validate_schema_version(self.schema_version)
+        for value, field_name in (
+            (self.allocation_decision_id, "allocation_decision_id"),
+            (self.trade_proposal_id, "trade_proposal_id"),
+            (self.risk_decision_id, "risk_decision_id"),
+            (self.account_id, "account_id"),
+            (self.instrument_id, "instrument_id"),
+        ):
+            validate_id(value, field_name=field_name)
+        validate_timestamp_ns(self.decision_time_ns, field_name="decision_time_ns")
+        if not str(self.symbol).strip():
+            raise ValueError("ORDER_READY_SYMBOL_REQUIRED")
+        if self.approved_quantity < 0 or self.approved_notional_minor < 0:
+            raise ValueError("ORDER_READY_APPROVED_SIZE_INVALID")
+        if not str(self.mode).strip() or not str(self.execution_authority).strip():
+            raise ValueError("ORDER_READY_SCOPE_REQUIRED")
+        if self.execution_mode != "INTERNAL_SIMULATION":
+            raise ValueError("ORDER_READY_EXECUTION_MODE_INVALID")
+        if not str(self.idempotency_key).strip() or not str(self.correlation_id).strip():
+            raise ValueError("ORDER_READY_IDENTITY_REQUIRED")
+        if not isinstance(self.status, OrderReadyStatus):
+            object.__setattr__(self, "status", OrderReadyStatus(str(self.status)))
+        object.__setattr__(self, "reason_codes", tuple(sorted({str(value) for value in self.reason_codes})))
+        object.__setattr__(self, "lineage_refs", tuple(self.lineage_refs))
+
+
+def order_ready_id(
+    *,
+    allocation_decision_id: str,
+    trade_proposal_id: str,
+    risk_decision_id: str,
+    decision_time_ns: int,
+    approved_quantity: int,
+    approved_notional_minor: int,
+    status: OrderReadyStatus | str,
+) -> str:
+    status_value = status.value if isinstance(status, OrderReadyStatus) else str(status)
+    body = {
+        "allocation_decision_id": allocation_decision_id,
+        "approved_notional_minor": approved_notional_minor,
+        "approved_quantity": approved_quantity,
+        "decision_time_ns": decision_time_ns,
+        "risk_decision_id": risk_decision_id,
+        "status": status_value,
+        "trade_proposal_id": trade_proposal_id,
+    }
+    return f"OR-{sha256_bytes(canonical_bytes(body))}"
+
+
+@dataclass(frozen=True, slots=True)
 class MarketQuoteV1:
     """Point-in-time quote for sizing and paper fill context."""
 
@@ -245,6 +326,7 @@ class PreparedPaperExecution:
     idempotency_key: str
     lineage_refs: tuple[Any, ...] = ()
     quantity_facts: dict[str, int] = field(default_factory=dict)
+    correlation_id: str | None = None
 
 
 __all__ = [
@@ -253,6 +335,9 @@ __all__ = [
     "ExecutionPolicyV1",
     "ExposureSnapshot",
     "MarketQuoteV1",
+    "OrderReadyStatus",
+    "OrderReadyV1",
+    "order_ready_id",
     "PaperExecutionResult",
     "PreparedPaperExecution",
     "PaperOpenOrderSnapshot",

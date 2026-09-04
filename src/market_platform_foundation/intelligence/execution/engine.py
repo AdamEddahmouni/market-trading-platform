@@ -144,6 +144,7 @@ class PreTradeRiskEngine:
         runtime_governance: RuntimeGovernanceState | None = None,
         lineage_refs: tuple[ContractReference, ...] = (),
         allocation_decision: Any | None = None,
+        correlation_id: str | None = None,
         allocation_desired_quantity: int | None = None,
         allocation_desired_notional_minor: int | None = None,
         requested_quantity: int | None = None,
@@ -262,6 +263,8 @@ class PreTradeRiskEngine:
             "symbol": symbol,
             "sizing_capped_by": list(sizing.capped_by),
         }
+        if correlation_id is not None:
+            metadata["correlation_id"] = str(correlation_id)
         if allocation_id is not None:
             metadata["allocation_decision_id"] = str(allocation_id)
         if allocation_quantity is not None:
@@ -518,6 +521,7 @@ class PreTradeRiskEngine:
             lineage_refs=proposal.lineage_refs,
             metadata={
                 "requested_preserved": True,
+                "correlation_id": proposal.metadata.get("correlation_id"),
                 "allocation_desired_quantity": proposal.metadata.get("allocation_desired_quantity"),
                 "allocation_desired_notional_minor": proposal.metadata.get(
                     "allocation_desired_notional_minor"
@@ -582,6 +586,7 @@ class PaperExecutionOrchestrator:
         runtime_governance: RuntimeGovernanceState | None = None,
         lineage_refs: tuple[ContractReference, ...] = (),
         allocation_decision: Any | None = None,
+        correlation_id: str | None = None,
         allocation_desired_quantity: int | None = None,
         allocation_desired_notional_minor: int | None = None,
         requested_quantity: int | None = None,
@@ -603,6 +608,7 @@ class PaperExecutionOrchestrator:
             runtime_governance=runtime_governance,
             lineage_refs=lineage_refs,
             allocation_decision=allocation_decision,
+            correlation_id=correlation_id,
             allocation_desired_quantity=allocation_desired_quantity,
             allocation_desired_notional_minor=allocation_desired_notional_minor,
             requested_quantity=requested_quantity,
@@ -653,6 +659,7 @@ class PaperExecutionOrchestrator:
             idempotency_key=idempotency_key,
             lineage_refs=paper_lineage,
             quantity_facts=quantity_facts,
+            correlation_id=correlation_id,
         )
 
     def submit_prepared(self, **kwargs: Any) -> PaperExecutionResult:
@@ -722,7 +729,7 @@ class PaperExecutionOrchestrator:
                 observation_time=prepared.decision_time_ns,
                 client_order_id=risk.risk_decision_id,
                 idempotency_key=prepared.idempotency_key,
-                correlation_id=prepared.proposal.opportunity_id,
+                correlation_id=prepared.correlation_id or risk.risk_decision_id,
                 lineage_refs=prepared.lineage_refs,
                 quantity_facts=prepared.quantity_facts,
                 risk_decision_id=risk.risk_decision_id,
@@ -740,7 +747,7 @@ class PaperExecutionOrchestrator:
                 observation_time=prepared.decision_time_ns,
                 client_order_id=risk.risk_decision_id,
                 idempotency_key=prepared.idempotency_key,
-                correlation_id=prepared.proposal.opportunity_id,
+                correlation_id=prepared.correlation_id or risk.risk_decision_id,
                 lineage_refs=prepared.lineage_refs,
                 quantity_facts=prepared.quantity_facts,
                 risk_decision_id=risk.risk_decision_id,
