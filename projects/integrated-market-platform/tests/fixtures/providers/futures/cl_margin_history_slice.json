@@ -1,0 +1,64 @@
+{
+  "admission_id": "ADMITTED-MARGIN-CL-001",
+  "fixture_id": "ADMITTED-MARGIN-CL-001",
+  "instrument_family": "CL",
+  "research_only": true,
+  "symbol": "CL",
+  "synthetic": true,
+  "margin_history": [
+    {
+      "contract_id": "CL202506",
+      "observation_time": "2025-01-15T00:00:00Z",
+      "available_time": "2025-01-15T00:00:00Z",
+      "initial_margin": "15000",
+      "maintenance_margin": "13500",
+      "margin_change_pct": 0.0,
+      "provenance_ref": "margin.fixture:ADMITTED-MARGIN-CL-001"
+    },
+    {
+      "contract_id": "CL202506",
+      "observation_time": "2025-02-15T00:00:00Z",
+      "available_time": "2025-02-15T00:00:00Z",
+      "initial_margin": "15500",
+      "maintenance_margin": "13950",
+      "margin_change_pct": 3.3,
+      "provenance_ref": "margin.fixture:ADMITTED-MARGIN-CL-001"
+    },
+    {
+      "contract_id": "CL202506",
+      "observation_time": "2025-03-15T00:00:00Z",
+      "available_time": "2025-03-15T00:00:00Z",
+      "initial_margin": "16000",
+      "maintenance_margin": "14400",
+      "margin_change_pct": 3.2,
+      "provenance_ref": "margin.fixture:ADMITTED-MARGIN-CL-001"
+    },
+    {
+      "contract_id": "CL202506",
+      "observation_time": "2025-04-15T00:00:00Z",
+      "available_time": "2025-04-15T00:00:00Z",
+      "initial_margin": "16500",
+      "maintenance_margin": "14850",
+      "margin_change_pct": 3.1,
+      "provenance_ref": "margin.fixture:ADMITTED-MARGIN-CL-001"
+    },
+    {
+      "contract_id": "CL202506",
+      "observation_time": "2025-05-15T00:00:00Z",
+      "available_time": "2025-05-15T00:00:00Z",
+      "initial_margin": "17200",
+      "maintenance_margin": "15480",
+      "margin_change_pct": 4.2,
+      "provenance_ref": "margin.fixture:ADMITTED-MARGIN-CL-001"
+    },
+    {
+      "contract_id": "CL202506",
+      "observation_time": "2025-05-30T00:00:00Z",
+      "available_time": "2025-05-30T00:00:00Z",
+      "initial_margin": "18000",
+      "maintenance_margin": "16200",
+      "margin_change_pct": 8.0,
+      "provenance_ref": "margin.fixture:ADMITTED-MARGIN-CL-001"
+    }
+  ]
+}

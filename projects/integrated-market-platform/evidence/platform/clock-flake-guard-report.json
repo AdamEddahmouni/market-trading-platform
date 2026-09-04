@@ -1,0 +1,32 @@
+{
+  "aggregate_status": "passed",
+  "clock_patch_target": "market_platform_foundation.clock.time.time_ns",
+  "completed_at": "2026-08-23T01:29:14.1936560Z",
+  "failures": [],
+  "invariant_failed_scenarios": [],
+  "iterations": 3,
+  "logical_id": "platform.clock_flake_guard_report",
+  "mode": "TEST_REPLAY",
+  "modules": [
+    "tests\\platform\\test_paper_p3.py"
+  ],
+  "offline": true,
+  "scenarios": {
+    "frozen": {
+      "clock_invariant": true,
+      "clock_invariant_detail": "64 samples, strictly_increasing=True, first=1787000000000000132, last=1787000000000000195",
+      "failures": [],
+      "iterations": 3,
+      "tests_run": 42
+    },
+    "jump": {
+      "clock_invariant": true,
+      "clock_invariant_detail": "64 samples, strictly_increasing=True, first=1787000060000000128, last=1787000060000000191",
+      "failures": [],
+      "iterations": 3,
+      "tests_run": 42
+    }
+  },
+  "schema_version": "1.0.0",
+  "summary": "Clock flake guard: passed \u2014 2 scenario(s), 0 test failure(s), 0 invariant failure(s)."
+}

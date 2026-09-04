@@ -1,0 +1,127 @@
+{
+  "attention_available": true,
+  "attention_count": 5,
+  "attention_summaries": [
+    {
+      "event_id": "df2e6ba5-46ab-5bb1-a867-745fe0a75c91",
+      "entity_id": "BOXL",
+      "canonical_event_type": "earnings_beat",
+      "attention_level": 0.375,
+      "attention_velocity": null,
+      "attention_acceleration": null,
+      "attention_zscore": null,
+      "attention_percentile": null,
+      "information_value": 0.65125,
+      "reflexive_impact": null,
+      "diffusion_score": 0.4,
+      "independent_source_growth": null,
+      "corroboration_improving": true,
+      "event_time": "2026-07-15T14:30:00.000000000Z",
+      "available_time": "2026-07-15T14:45:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [
+        "SOCIAL_ATTENTION_UNAVAILABLE",
+        "ATTENTION_HISTORY_INSUFFICIENT"
+      ],
+      "attention_available": true,
+      "headline": "earnings beat",
+      "scoring_method": "attention_diffusion_v1"
+    },
+    {
+      "event_id": "ad2c4547-e4cb-56a6-8f0c-f9a4d730d263",
+      "entity_id": "BOXL",
+      "canonical_event_type": "fda_clearance",
+      "attention_level": 0.375,
+      "attention_velocity": 0.0,
+      "attention_acceleration": null,
+      "attention_zscore": null,
+      "attention_percentile": null,
+      "information_value": 0.78375,
+      "reflexive_impact": 0.0,
+      "diffusion_score": 0.4,
+      "independent_source_growth": 0,
+      "corroboration_improving": false,
+      "event_time": "2026-07-18T16:00:00.000000000Z",
+      "available_time": "2026-07-18T16:10:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [
+        "SOCIAL_ATTENTION_UNAVAILABLE"
+      ],
+      "attention_available": true,
+      "headline": "fda clearance",
+      "scoring_method": "attention_diffusion_v1"
+    },
+    {
+      "event_id": "60e13d13-eaa2-57d1-9c9a-c23b612ef9ac",
+      "entity_id": "BOXL",
+      "canonical_event_type": "analyst_upgrade",
+      "attention_level": 0.375,
+      "attention_velocity": 0.0,
+      "attention_acceleration": 0.0,
+      "attention_zscore": 0.0,
+      "attention_percentile": 0.333333,
+      "information_value": 0.52375,
+      "reflexive_impact": 0.0,
+      "diffusion_score": 0.4,
+      "independent_source_growth": 0,
+      "corroboration_improving": false,
+      "event_time": "2026-07-21T13:15:00.000000000Z",
+      "available_time": "2026-07-21T13:25:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [
+        "SOCIAL_ATTENTION_UNAVAILABLE"
+      ],
+      "attention_available": true,
+      "headline": "analyst upgrade",
+      "scoring_method": "attention_diffusion_v1"
+    },
+    {
+      "event_id": "3fd7f172-8949-53b0-83d2-5e2341e72039",
+      "entity_id": "BOXL",
+      "canonical_event_type": "offering_risk",
+      "attention_level": 0.275,
+      "attention_velocity": -0.1,
+      "attention_acceleration": -0.1,
+      "attention_zscore": -1.732051,
+      "attention_percentile": 0.25,
+      "information_value": 0.91625,
+      "reflexive_impact": -0.008375,
+      "diffusion_score": 0.2,
+      "independent_source_growth": 0,
+      "corroboration_improving": false,
+      "event_time": "2026-07-21T18:45:00.000000000Z",
+      "available_time": "2026-07-21T18:46:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [
+        "SOCIAL_ATTENTION_UNAVAILABLE"
+      ],
+      "attention_available": true,
+      "headline": "offering risk",
+      "scoring_method": "attention_diffusion_v1"
+    },
+    {
+      "event_id": "63b5d445-4b4e-59f8-b7f7-66a8305c4e54",
+      "entity_id": "BOXL",
+      "canonical_event_type": "macro_headwind",
+      "attention_level": 0.275,
+      "attention_velocity": 0.0,
+      "attention_acceleration": 0.1,
+      "attention_zscore": -1.224745,
+      "attention_percentile": 0.2,
+      "information_value": 0.60875,
+      "reflexive_impact": 0.0,
+      "diffusion_score": 0.2,
+      "independent_source_growth": 0,
+      "corroboration_improving": false,
+      "event_time": "2026-07-22T20:00:00.000000000Z",
+      "available_time": "2026-07-22T20:05:00.000000000Z",
+      "publication_state": "PUBLISHED",
+      "quality_flags": [
+        "SOCIAL_ATTENTION_UNAVAILABLE"
+      ],
+      "attention_available": true,
+      "headline": "macro headwind",
+      "scoring_method": "attention_diffusion_v1"
+    }
+  ]
+}

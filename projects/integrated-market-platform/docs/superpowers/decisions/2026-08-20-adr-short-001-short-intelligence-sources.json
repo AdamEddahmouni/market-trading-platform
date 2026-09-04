@@ -1,0 +1,80 @@
+{
+  "adr_id": "ADR-SHORT-001",
+  "alternatives": [
+    {
+      "decision": "REJECTED_FOR_CURRENT_SCOPE",
+      "name": "TREAT_OFFICIAL_SHORT_DATA_AS_ADMITTED",
+      "option_id": "SHORT-OPTION-001",
+      "tradeoffs": [
+        "Would leak unverified live FINRA/Nasdaq bytes into replay research datasets."
+      ]
+    },
+    {
+      "decision": "ACCEPTED",
+      "name": "PUBLIC_READ_ONLY_SHORT_INTELLIGENCE_SOURCES",
+      "option_id": "SHORT-OPTION-002",
+      "tradeoffs": [
+        "Live FINRA and Nasdaq captures remain observational until a later admission ADR.",
+        "Individual Public FINRA credentials are not a commercial redistribution license."
+      ]
+    }
+  ],
+  "approval": {
+    "approval_scope": "WORK_PACKAGE_PRINCIPAL_AUTHORIZATION",
+    "approved_at": "2026-08-20T05:25:00.000000000Z",
+    "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+    "approved_capacities": [
+      "PROJECT_OWNER",
+      "RELEASE_OWNER"
+    ]
+  },
+  "artifact_type": "ARCHITECTURE_DECISION_RECORD",
+  "consequences": {
+    "negative": [
+      "Ordinary CI must remain green without FINRA credentials or Nasdaq network access.",
+      "Captured live short-intelligence observations are not automatically admitted.",
+      "Historical API short-sale volume is a rolling window and may not reconstruct original unrevised short-interest prints."
+    ],
+    "positive": [
+      "FINRA OAuth client-credentials can be automated in-process without storing bearer tokens.",
+      "Short interest, short-sale flow, and threshold status remain separate PIT-correct evidence families.",
+      "Nasdaq threshold retrieval requires no FINRA credential."
+    ]
+  },
+  "created_at": "2026-08-20T05:25:00.000000000Z",
+  "decision": {
+    "selected_option_id": "SHORT-OPTION-002",
+    "summary": "Authorize FINRA Query API (Individual Public, OAuth client credentials) and Nasdaq Trader public Reg SHO threshold files as read-only observational SHORT_INTELLIGENCE sources. Capture is not admission. No redistribution. No trade APIs. Annual client-secret rotation remains manual.",
+    "title": "Read-only FINRA and Nasdaq short-intelligence sources"
+  },
+  "effectivity": {
+    "current_state": "ACCEPTED",
+    "decision_only": false,
+    "non_authorization_statement": "This ADR does not authorize paper execution, live order submission, automatic admission, FINRA dataset redistribution, commercial SaaS use of an Individual Public credential, browser automation of FINRA Gateway secret reset, or training a new squeeze model."
+  },
+  "lifecycle": {
+    "states": [
+      "OBSERVED",
+      "CAPTURED",
+      "VALIDATED",
+      "QUALITY_CHARACTERIZED",
+      "ADMITTED"
+    ],
+    "admission_requires_separate_adr": true
+  },
+  "licensing": {
+    "finra_credential_type": "Individual Public",
+    "commercial_use": "NOT_INTENDED_AT_THIS_TIME",
+    "redistribution": "FORBIDDEN",
+    "annual_secret_rotation": "MANUAL_VIA_FINRA_GATEWAY"
+  },
+  "related_adrs": [
+    "ADR-LIVE-001",
+    "ADR-EDGAR-001",
+    "ADR-PROV-001",
+    "ADR-DATA-001",
+    "ADR-PIT-001"
+  ],
+  "source_type": "REGULATORY_PUBLIC",
+  "status": "ACCEPTED"
+}

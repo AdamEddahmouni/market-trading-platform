@@ -1,0 +1,33 @@
+.demo-workspace-page {
+  --demo-accent: #67d8f4;
+  --demo-line: rgba(128, 161, 188, 0.2);
+  display: grid;
+  gap: 18px;
+  max-width: 1540px;
+  margin: 0 auto;
+}
+
+.demo-workspace-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--demo-line);
+}
+
+.demo-workspace-header h1 {
+  margin: 4px 0 8px;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  letter-spacing: -0.04em;
+}
+
+.demo-workspace-header p {
+  max-width: 760px;
+  margin: 0 0 8px;
+  color: var(--text-secondary);
+}
+
+.demo-workspace-page .mode-restriction-note {
+  border-color: rgba(103, 216, 244, 0.35);
+}

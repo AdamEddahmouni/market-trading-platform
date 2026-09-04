@@ -1,0 +1,79 @@
+{
+  "donor_url": "http://127.0.0.1:8787",
+  "finished_at": "2026-08-17T22:07:35.331959Z",
+  "imp_url": "http://127.0.0.1:8766",
+  "interval_seconds": 10.0,
+  "iterations": 3,
+  "lane": "short-squeeze-cloud-soak",
+  "samples": [
+    {
+      "donor_adam_classes": {
+        "WATCH": 7
+      },
+      "donor_evaluable_count": 7,
+      "donor_mode": "CLOUD_PROVIDER_MODE",
+      "donor_row_count": 7,
+      "donor_stale_count": 0,
+      "imp_explore_available": true,
+      "imp_explore_row_count": 13,
+      "imp_scanner_available": true,
+      "imp_scanner_row_count": 7,
+      "iteration": 1,
+      "notes": [],
+      "refresh_errors": 0,
+      "refresh_triggered": true
+    },
+    {
+      "donor_adam_classes": {
+        "WATCH": 7
+      },
+      "donor_evaluable_count": 7,
+      "donor_mode": "CLOUD_PROVIDER_MODE",
+      "donor_row_count": 7,
+      "donor_stale_count": 0,
+      "imp_explore_available": true,
+      "imp_explore_row_count": 13,
+      "imp_scanner_available": true,
+      "imp_scanner_row_count": 7,
+      "iteration": 2,
+      "notes": [],
+      "refresh_errors": 0,
+      "refresh_triggered": false
+    },
+    {
+      "donor_adam_classes": {
+        "WATCH": 7
+      },
+      "donor_evaluable_count": 7,
+      "donor_mode": "CLOUD_PROVIDER_MODE",
+      "donor_row_count": 7,
+      "donor_stale_count": 0,
+      "imp_explore_available": true,
+      "imp_explore_row_count": 13,
+      "imp_scanner_available": true,
+      "imp_scanner_row_count": 7,
+      "iteration": 3,
+      "notes": [],
+      "refresh_errors": 0,
+      "refresh_triggered": false
+    }
+  ],
+  "started_at": "2026-08-17T22:07:07.233288Z",
+  "summary": {
+    "donor_mode": "CLOUD_PROVIDER_MODE",
+    "final_donor_row_count": 7,
+    "final_evaluable_count": 7,
+    "final_imp_scanner_row_count": 7,
+    "final_stale_count": 0,
+    "finviz_auth_blocker": null,
+    "finviz_provider_detail": "CONFIGURED \u00b7 AUTHENTICATED \u00b7 EXPORT ACTIVE \u00b7 2749 rows in 0.4s \u00b7 last success 2026-08-17T22:07:14.344746Z \u00b7 TTL 120s \u00b7 capabilities: Float, Short Float, Relative Volume, Short Ratio, Shares Outstanding.",
+    "limitations": [
+      "Soak validates lane stability, not predictive squeeze performance.",
+      "SEC-only cloud deployments may keep Adam classifications UNEVALUABLE without Finviz/IBKR."
+    ],
+    "stable_donor_row_count": true,
+    "stable_imp_scanner_rows": true,
+    "status": "PASS"
+  },
+  "trigger_refresh": true
+}

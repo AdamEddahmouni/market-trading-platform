@@ -1,0 +1,551 @@
+{
+  "prediction_cutoff": "2026-07-23T00:00:00.000000000Z",
+  "document_sentiments": [
+    {
+      "document_id": "mc-doc-earnings-1",
+      "keyword": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "mixed",
+        "confidence": 0.5,
+        "uncertainty_score": 0.5,
+        "model": "BaselineFinancialSentiment/keyword-v1",
+        "model_version": {
+          "model_id": "keyword-v1",
+          "model_version": "1.0.0",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "market_context_sentiment_v1"
+        },
+        "event_time": "2026-07-15T14:30:00.000000000Z",
+        "available_time": "2026-07-15T14:31:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "mc-doc-earnings-1",
+        "quality_flags": []
+      },
+      "finbert": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "positive",
+        "confidence": 0.78,
+        "uncertainty_score": 0.21999999999999997,
+        "model": "BaselineFinancialSentiment/FinBERT",
+        "model_version": {
+          "model_id": "ProsusAI/finbert",
+          "model_version": "pretrained",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "finbert_semantic_v1"
+        },
+        "event_time": "2026-07-15T14:30:00.000000000Z",
+        "available_time": "2026-07-15T14:31:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "finbert.fixture:mc-doc-earnings-1",
+        "quality_flags": []
+      }
+    },
+    {
+      "document_id": "mc-doc-earnings-2",
+      "keyword": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "mixed",
+        "confidence": 0.5,
+        "uncertainty_score": 0.5,
+        "model": "BaselineFinancialSentiment/keyword-v1",
+        "model_version": {
+          "model_id": "keyword-v1",
+          "model_version": "1.0.0",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "market_context_sentiment_v1"
+        },
+        "event_time": "2026-07-15T14:30:00.000000000Z",
+        "available_time": "2026-07-15T14:45:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "mc-doc-earnings-2",
+        "quality_flags": []
+      },
+      "finbert": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "positive",
+        "confidence": 0.78,
+        "uncertainty_score": 0.21999999999999997,
+        "model": "BaselineFinancialSentiment/FinBERT",
+        "model_version": {
+          "model_id": "ProsusAI/finbert",
+          "model_version": "pretrained",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "finbert_semantic_v1"
+        },
+        "event_time": "2026-07-15T14:30:00.000000000Z",
+        "available_time": "2026-07-15T14:45:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "finbert.fixture:mc-doc-earnings-2",
+        "quality_flags": []
+      }
+    },
+    {
+      "document_id": "mc-doc-fda-1",
+      "keyword": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "positive",
+        "confidence": 0.56,
+        "uncertainty_score": 0.44,
+        "model": "BaselineFinancialSentiment/keyword-v1",
+        "model_version": {
+          "model_id": "keyword-v1",
+          "model_version": "1.0.0",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "market_context_sentiment_v1"
+        },
+        "event_time": "2026-07-18T16:00:00.000000000Z",
+        "available_time": "2026-07-18T16:02:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "mc-doc-fda-1",
+        "quality_flags": []
+      },
+      "finbert": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "positive",
+        "confidence": 0.78,
+        "uncertainty_score": 0.21999999999999997,
+        "model": "BaselineFinancialSentiment/FinBERT",
+        "model_version": {
+          "model_id": "ProsusAI/finbert",
+          "model_version": "pretrained",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "finbert_semantic_v1"
+        },
+        "event_time": "2026-07-18T16:00:00.000000000Z",
+        "available_time": "2026-07-18T16:02:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "finbert.fixture:mc-doc-fda-1",
+        "quality_flags": []
+      }
+    },
+    {
+      "document_id": "mc-doc-fda-2",
+      "keyword": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "positive",
+        "confidence": 0.56,
+        "uncertainty_score": 0.44,
+        "model": "BaselineFinancialSentiment/keyword-v1",
+        "model_version": {
+          "model_id": "keyword-v1",
+          "model_version": "1.0.0",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "market_context_sentiment_v1"
+        },
+        "event_time": "2026-07-18T16:00:00.000000000Z",
+        "available_time": "2026-07-18T16:10:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "mc-doc-fda-2",
+        "quality_flags": []
+      },
+      "finbert": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "positive",
+        "confidence": 0.78,
+        "uncertainty_score": 0.21999999999999997,
+        "model": "BaselineFinancialSentiment/FinBERT",
+        "model_version": {
+          "model_id": "ProsusAI/finbert",
+          "model_version": "pretrained",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "finbert_semantic_v1"
+        },
+        "event_time": "2026-07-18T16:00:00.000000000Z",
+        "available_time": "2026-07-18T16:10:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "finbert.fixture:mc-doc-fda-2",
+        "quality_flags": []
+      }
+    },
+    {
+      "document_id": "mc-doc-upgrade-1",
+      "keyword": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "mixed",
+        "confidence": 0.5,
+        "uncertainty_score": 0.5,
+        "model": "BaselineFinancialSentiment/keyword-v1",
+        "model_version": {
+          "model_id": "keyword-v1",
+          "model_version": "1.0.0",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "market_context_sentiment_v1"
+        },
+        "event_time": "2026-07-21T13:15:00.000000000Z",
+        "available_time": "2026-07-21T13:16:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "mc-doc-upgrade-1",
+        "quality_flags": []
+      },
+      "finbert": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "positive",
+        "confidence": 0.78,
+        "uncertainty_score": 0.21999999999999997,
+        "model": "BaselineFinancialSentiment/FinBERT",
+        "model_version": {
+          "model_id": "ProsusAI/finbert",
+          "model_version": "pretrained",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "finbert_semantic_v1"
+        },
+        "event_time": "2026-07-21T13:15:00.000000000Z",
+        "available_time": "2026-07-21T13:16:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "finbert.fixture:mc-doc-upgrade-1",
+        "quality_flags": []
+      }
+    },
+    {
+      "document_id": "mc-doc-upgrade-2",
+      "keyword": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "positive",
+        "confidence": 0.56,
+        "uncertainty_score": 0.44,
+        "model": "BaselineFinancialSentiment/keyword-v1",
+        "model_version": {
+          "model_id": "keyword-v1",
+          "model_version": "1.0.0",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "market_context_sentiment_v1"
+        },
+        "event_time": "2026-07-21T13:15:00.000000000Z",
+        "available_time": "2026-07-21T13:25:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "mc-doc-upgrade-2",
+        "quality_flags": []
+      },
+      "finbert": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "positive",
+        "confidence": 0.78,
+        "uncertainty_score": 0.21999999999999997,
+        "model": "BaselineFinancialSentiment/FinBERT",
+        "model_version": {
+          "model_id": "ProsusAI/finbert",
+          "model_version": "pretrained",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "finbert_semantic_v1"
+        },
+        "event_time": "2026-07-21T13:15:00.000000000Z",
+        "available_time": "2026-07-21T13:25:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "finbert.fixture:mc-doc-upgrade-2",
+        "quality_flags": []
+      }
+    },
+    {
+      "document_id": "mc-doc-offering-1",
+      "keyword": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "negative",
+        "confidence": 0.61,
+        "uncertainty_score": 0.39,
+        "model": "BaselineFinancialSentiment/keyword-v1",
+        "model_version": {
+          "model_id": "keyword-v1",
+          "model_version": "1.0.0",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "market_context_sentiment_v1"
+        },
+        "event_time": "2026-07-21T18:45:00.000000000Z",
+        "available_time": "2026-07-21T18:46:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "mc-doc-offering-1",
+        "quality_flags": []
+      },
+      "finbert": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "negative",
+        "confidence": 0.82,
+        "uncertainty_score": 0.18000000000000005,
+        "model": "BaselineFinancialSentiment/FinBERT",
+        "model_version": {
+          "model_id": "ProsusAI/finbert",
+          "model_version": "pretrained",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "finbert_semantic_v1"
+        },
+        "event_time": "2026-07-21T18:45:00.000000000Z",
+        "available_time": "2026-07-21T18:46:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "finbert.fixture:mc-doc-offering-1",
+        "quality_flags": []
+      }
+    },
+    {
+      "document_id": "mc-doc-macro-1",
+      "keyword": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "negative",
+        "confidence": 0.71,
+        "uncertainty_score": 0.29,
+        "model": "BaselineFinancialSentiment/keyword-v1",
+        "model_version": {
+          "model_id": "keyword-v1",
+          "model_version": "1.0.0",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "market_context_sentiment_v1"
+        },
+        "event_time": "2026-07-22T20:00:00.000000000Z",
+        "available_time": "2026-07-22T20:05:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "mc-doc-macro-1",
+        "quality_flags": []
+      },
+      "finbert": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "negative",
+        "confidence": 0.82,
+        "uncertainty_score": 0.18000000000000005,
+        "model": "BaselineFinancialSentiment/FinBERT",
+        "model_version": {
+          "model_id": "ProsusAI/finbert",
+          "model_version": "pretrained",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "finbert_semantic_v1"
+        },
+        "event_time": "2026-07-22T20:00:00.000000000Z",
+        "available_time": "2026-07-22T20:05:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "finbert.fixture:mc-doc-macro-1",
+        "quality_flags": []
+      }
+    }
+  ],
+  "event_sentiment_summaries": [
+    {
+      "event_id": "df2e6ba5-46ab-5bb1-a867-745fe0a75c91",
+      "canonical_event_type": "earnings_beat",
+      "document_count": 2,
+      "keyword": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "mixed",
+        "confidence": 0.5,
+        "uncertainty_score": 0.5,
+        "model": "BaselineFinancialSentiment/keyword-v1",
+        "model_version": {
+          "model_id": "keyword-v1",
+          "model_version": "1.0.0",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "market_context_sentiment_v1"
+        },
+        "event_time": "2026-07-15T14:30:00.000000000Z",
+        "available_time": "2026-07-15T14:45:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "df2e6ba5-46ab-5bb1-a867-745fe0a75c91",
+        "quality_flags": []
+      },
+      "finbert": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "positive",
+        "confidence": 0.78,
+        "uncertainty_score": 0.22,
+        "model": "BaselineFinancialSentiment/FinBERT",
+        "model_version": {
+          "model_id": "ProsusAI/finbert",
+          "model_version": "pretrained",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "finbert_semantic_v1"
+        },
+        "event_time": "2026-07-15T14:30:00.000000000Z",
+        "available_time": "2026-07-15T14:45:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "df2e6ba5-46ab-5bb1-a867-745fe0a75c91",
+        "quality_flags": []
+      }
+    },
+    {
+      "event_id": "ad2c4547-e4cb-56a6-8f0c-f9a4d730d263",
+      "canonical_event_type": "fda_clearance",
+      "document_count": 2,
+      "keyword": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "positive",
+        "confidence": 0.56,
+        "uncertainty_score": 0.44,
+        "model": "BaselineFinancialSentiment/keyword-v1",
+        "model_version": {
+          "model_id": "keyword-v1",
+          "model_version": "1.0.0",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "market_context_sentiment_v1"
+        },
+        "event_time": "2026-07-18T16:00:00.000000000Z",
+        "available_time": "2026-07-18T16:10:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "ad2c4547-e4cb-56a6-8f0c-f9a4d730d263",
+        "quality_flags": []
+      },
+      "finbert": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "positive",
+        "confidence": 0.78,
+        "uncertainty_score": 0.22,
+        "model": "BaselineFinancialSentiment/FinBERT",
+        "model_version": {
+          "model_id": "ProsusAI/finbert",
+          "model_version": "pretrained",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "finbert_semantic_v1"
+        },
+        "event_time": "2026-07-18T16:00:00.000000000Z",
+        "available_time": "2026-07-18T16:10:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "ad2c4547-e4cb-56a6-8f0c-f9a4d730d263",
+        "quality_flags": []
+      }
+    },
+    {
+      "event_id": "60e13d13-eaa2-57d1-9c9a-c23b612ef9ac",
+      "canonical_event_type": "analyst_upgrade",
+      "document_count": 2,
+      "keyword": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "mixed",
+        "confidence": 0.53,
+        "uncertainty_score": 0.47,
+        "model": "BaselineFinancialSentiment/keyword-v1",
+        "model_version": {
+          "model_id": "keyword-v1",
+          "model_version": "1.0.0",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "market_context_sentiment_v1"
+        },
+        "event_time": "2026-07-21T13:15:00.000000000Z",
+        "available_time": "2026-07-21T13:25:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "60e13d13-eaa2-57d1-9c9a-c23b612ef9ac",
+        "quality_flags": []
+      },
+      "finbert": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "positive",
+        "confidence": 0.78,
+        "uncertainty_score": 0.22,
+        "model": "BaselineFinancialSentiment/FinBERT",
+        "model_version": {
+          "model_id": "ProsusAI/finbert",
+          "model_version": "pretrained",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "finbert_semantic_v1"
+        },
+        "event_time": "2026-07-21T13:15:00.000000000Z",
+        "available_time": "2026-07-21T13:25:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "60e13d13-eaa2-57d1-9c9a-c23b612ef9ac",
+        "quality_flags": []
+      }
+    },
+    {
+      "event_id": "3fd7f172-8949-53b0-83d2-5e2341e72039",
+      "canonical_event_type": "offering_risk",
+      "document_count": 1,
+      "keyword": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "negative",
+        "confidence": 0.61,
+        "uncertainty_score": 0.39,
+        "model": "BaselineFinancialSentiment/keyword-v1",
+        "model_version": {
+          "model_id": "keyword-v1",
+          "model_version": "1.0.0",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "market_context_sentiment_v1"
+        },
+        "event_time": "2026-07-21T18:45:00.000000000Z",
+        "available_time": "2026-07-21T18:46:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "3fd7f172-8949-53b0-83d2-5e2341e72039",
+        "quality_flags": []
+      },
+      "finbert": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "negative",
+        "confidence": 0.82,
+        "uncertainty_score": 0.18,
+        "model": "BaselineFinancialSentiment/FinBERT",
+        "model_version": {
+          "model_id": "ProsusAI/finbert",
+          "model_version": "pretrained",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "finbert_semantic_v1"
+        },
+        "event_time": "2026-07-21T18:45:00.000000000Z",
+        "available_time": "2026-07-21T18:46:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "3fd7f172-8949-53b0-83d2-5e2341e72039",
+        "quality_flags": []
+      }
+    },
+    {
+      "event_id": "63b5d445-4b4e-59f8-b7f7-66a8305c4e54",
+      "canonical_event_type": "macro_headwind",
+      "document_count": 1,
+      "keyword": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "negative",
+        "confidence": 0.71,
+        "uncertainty_score": 0.29,
+        "model": "BaselineFinancialSentiment/keyword-v1",
+        "model_version": {
+          "model_id": "keyword-v1",
+          "model_version": "1.0.0",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "market_context_sentiment_v1"
+        },
+        "event_time": "2026-07-22T20:00:00.000000000Z",
+        "available_time": "2026-07-22T20:05:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "63b5d445-4b4e-59f8-b7f7-66a8305c4e54",
+        "quality_flags": []
+      },
+      "finbert": {
+        "target_entity_id": "128f53f9-cc5b-510a-a0a7-8085105f22de",
+        "label": "negative",
+        "confidence": 0.82,
+        "uncertainty_score": 0.18,
+        "model": "BaselineFinancialSentiment/FinBERT",
+        "model_version": {
+          "model_id": "ProsusAI/finbert",
+          "model_version": "pretrained",
+          "prompt_version": null,
+          "schema_version": "market_context.v1",
+          "feature_version": "finbert_semantic_v1"
+        },
+        "event_time": "2026-07-22T20:00:00.000000000Z",
+        "available_time": "2026-07-22T20:05:00.000000000Z",
+        "publication_state": "PUBLISHED",
+        "provenance_ref": "63b5d445-4b4e-59f8-b7f7-66a8305c4e54",
+        "quality_flags": []
+      }
+    }
+  ],
+  "pipeline_hash": "02104794eeaf9f5e"
+}

@@ -1,0 +1,69 @@
+{
+  "relationships": [
+    {
+      "schema_version": 1,
+      "relationship_id": "XA03:REL:059CDE7113F947DF",
+      "subject_type": "CFTC_MARKET_REPORT",
+      "subject_id": "CFTC_MARKET:023651:DISAGGREGATED:FUTURES_ONLY",
+      "relationship_type": "REFERENCE_RELEVANT_TO",
+      "target_type": "XA_INSTRUMENT",
+      "target_xa_canonical_id": "XA01:32A8D08FB73811AD",
+      "domain": "COMMODITY",
+      "provenance_ref": "xa03.catalog.positioning_reference_vertical",
+      "valid_from": "",
+      "valid_to": ""
+    },
+    {
+      "schema_version": 1,
+      "relationship_id": "XA03:REL:72BA765C74832D16",
+      "subject_type": "CFTC_MARKET_REPORT",
+      "subject_id": "CFTC_MARKET:13874+:TFF:FUTURES_ONLY",
+      "relationship_type": "REFERENCE_RELEVANT_TO",
+      "target_type": "XA_INSTRUMENT",
+      "target_xa_canonical_id": "XA01:566950007ED659E4",
+      "domain": "EQUITY",
+      "provenance_ref": "xa03.catalog.positioning_reference_vertical",
+      "valid_from": "",
+      "valid_to": ""
+    },
+    {
+      "schema_version": 1,
+      "relationship_id": "XA03:REL:BAB3E4414EB594EE",
+      "subject_type": "CFTC_MARKET_REPORT",
+      "subject_id": "CFTC_MARKET:067651:DISAGGREGATED:FUTURES_ONLY",
+      "relationship_type": "REFERENCE_RELEVANT_TO",
+      "target_type": "XA_INSTRUMENT",
+      "target_xa_canonical_id": "XA01:2CB5909E0A33E732",
+      "domain": "COMMODITY",
+      "provenance_ref": "xa03.catalog.positioning_reference_vertical",
+      "valid_from": "",
+      "valid_to": ""
+    },
+    {
+      "schema_version": 1,
+      "relationship_id": "XA03:REL:E677E7DFB241A08F",
+      "subject_type": "CFTC_MARKET_REPORT",
+      "subject_id": "CFTC_MARKET:088691:LEGACY:FUTURES_ONLY",
+      "relationship_type": "REFERENCE_RELEVANT_TO",
+      "target_type": "XA_INSTRUMENT",
+      "target_xa_canonical_id": "XA01:CC9F75FA7B011EB1",
+      "domain": "COMMODITY",
+      "provenance_ref": "xa03.catalog.positioning_reference_vertical",
+      "valid_from": "",
+      "valid_to": ""
+    },
+    {
+      "schema_version": 1,
+      "relationship_id": "XA03:REL:F04A013248040095",
+      "subject_type": "CFTC_MARKET_REPORT",
+      "subject_id": "CFTC_MARKET:020601:TFF:FUTURES_ONLY",
+      "relationship_type": "REFERENCE_RELEVANT_TO",
+      "target_type": "XA_INSTRUMENT",
+      "target_xa_canonical_id": "XA01:86B44052D852C1C3",
+      "domain": "RATES",
+      "provenance_ref": "xa03.catalog.positioning_reference_vertical",
+      "valid_from": "",
+      "valid_to": ""
+    }
+  ]
+}

@@ -1,0 +1,409 @@
+{
+  "schema_version": "1",
+  "build_frontier": "BUILD_25_SYSTEM_ACCEPTANCE_FREEZE",
+  "branch": "cloud/build-25-system-acceptance-freeze",
+  "source_build_24_head": "00421583fad7825d5f97ee5541b0cb5cdb0a8584",
+  "candidate_head": "2ad87722e09a5616a9db44a39ac033c5b8b05cda",
+  "python_version": "3.11.15",
+  "acceptance_spec_id": "ACCSPEC-cabfc83200e7fbb77a62acbc9ec21da35da7669b388b25d109f353b9d1aaca52",
+  "acceptance_report_id": "ACCREP-5e7630e86cf41fe1c839cc99969fc09e11a436a9d14aaaba4fdadbff22e9c5e6",
+  "acceptance_disposition": "ACCEPTED_WITH_LIMITATIONS",
+  "contract_inventory_hash": "CTRINV-25af0a79f08c6a4d7abe374467c593d095b667073d8647755e1a232627704388",
+  "file_hash_manifest": "artifacts/system-acceptance/BUILD25_FILE_HASHES.json",
+  "known_limitations_ref": "artifacts/system-acceptance/BUILD25_KNOWN_LIMITATIONS.md",
+  "acceptance_spec": {
+    "acceptance_spec_id": "ACCSPEC-cabfc83200e7fbb77a62acbc9ec21da35da7669b388b25d109f353b9d1aaca52",
+    "schema_version": "1",
+    "source_build_head": "00421583fad7825d5f97ee5541b0cb5cdb0a8584",
+    "required_build_range": [
+      1,
+      24
+    ],
+    "required_suites": [
+      "tests/intelligence",
+      "tests/platform/test_shadow_p6",
+      "tests/intelligence/test_persistence_conformance",
+      "tests/intelligence/test_replay_integration",
+      "tests/intelligence/test_build01_24_lifecycle",
+      "tests/intelligence/test_system_acceptance"
+    ],
+    "required_lifecycle_scenarios": [
+      "A01",
+      "A02",
+      "A25"
+    ],
+    "required_adversarial_scenarios": [
+      "A01",
+      "A02",
+      "A05",
+      "A06",
+      "A07",
+      "A08",
+      "A09",
+      "A12",
+      "A13",
+      "A15",
+      "A16",
+      "A18",
+      "A19",
+      "A21",
+      "A22",
+      "A23",
+      "A24",
+      "A25",
+      "A45",
+      "A85",
+      "A86"
+    ],
+    "required_invariants": [
+      "pit_availability",
+      "label_availability",
+      "training_cutoff",
+      "holdout_isolation",
+      "deterministic_ids",
+      "immutable_persistence",
+      "no_canonical_ttl",
+      "champion_lineage",
+      "opportunity_lineage",
+      "risk_authorization",
+      "runtime_integrity",
+      "adaptation_isolation",
+      "no_live_execution",
+      "authority_graph_complete",
+      "forbidden_paths_blocked",
+      "lineage_edges_defined"
+    ],
+    "required_persistence_checks": [
+      "immutable_insert",
+      "same_id_conflict",
+      "idempotent_retry"
+    ],
+    "required_replay_checks": [
+      "observed_replay_determinism",
+      "fault_containment"
+    ],
+    "required_determinism_checks": [
+      "golden_lifecycle_twice",
+      "input_order_shuffle"
+    ],
+    "required_security_checks": [
+      "no_live_execution",
+      "no_secrets_in_fixtures",
+      "artifact_integrity"
+    ],
+    "allowed_known_limitations": [
+      "KL-001",
+      "KL-002",
+      "KL-003",
+      "KL-004",
+      "KL-005",
+      "KL-006",
+      "KL-007",
+      "KL-008",
+      "KL-009",
+      "KL-010"
+    ],
+    "blocking_failure_classes": [
+      "TEMPORAL_LEAKAGE",
+      "NON_DETERMINISTIC_IDENTITY",
+      "SILENT_PERSISTENCE_OVERWRITE",
+      "HOLDOUT_BYPASS",
+      "CONTAMINATED_PROMOTION",
+      "NON_CHAMPION_OPPORTUNITY",
+      "RISK_BYPASS",
+      "LIVE_EXECUTION_REACHABLE",
+      "MONITORING_TRAINS",
+      "ADAPTATION_PROMOTES",
+      "UNPROMOTED_ACTIVATION",
+      "ARTIFACT_HASH_MISMATCH_IGNORED",
+      "AUTHORITY_BYPASS"
+    ],
+    "implementation_version": "build25-v1",
+    "metadata": {
+      "build": "BUILD_25_SYSTEM_ACCEPTANCE"
+    }
+  },
+  "acceptance_report": {
+    "acceptance_report_id": "ACCREP-5e7630e86cf41fe1c839cc99969fc09e11a436a9d14aaaba4fdadbff22e9c5e6",
+    "schema_version": "1",
+    "acceptance_spec_ref": "ACCSPEC-cabfc83200e7fbb77a62acbc9ec21da35da7669b388b25d109f353b9d1aaca52",
+    "source_head": "00421583fad7825d5f97ee5541b0cb5cdb0a8584",
+    "candidate_head": "2ad87722e09a5616a9db44a39ac033c5b8b05cda",
+    "scenario_results": [
+      {
+        "scenario_id": "A01",
+        "status": "PASS",
+        "expected": "full lifecycle completes",
+        "observed": "trigger=RTRIG-3d45f35ab8145cc9a96a8f83f9407143c7eabeb107544c42722f0d52825d2dfe",
+        "details": {}
+      },
+      {
+        "scenario_id": "A02",
+        "status": "PASS",
+        "expected": "idempotent retry",
+        "observed": "INSERTED->ALREADY_PRESENT",
+        "details": {}
+      },
+      {
+        "scenario_id": "A05",
+        "status": "PASS",
+        "expected": "future event blocked",
+        "observed": "eligible=False",
+        "details": {}
+      },
+      {
+        "scenario_id": "A06",
+        "status": "PASS",
+        "expected": "future label blocked",
+        "observed": "FUTURE_LABEL_REJECTED",
+        "details": {}
+      },
+      {
+        "scenario_id": "A07",
+        "status": "PASS",
+        "expected": "holdout access blocked",
+        "observed": "HOLDOUT_OUTCOME_ACCESS_BEFORE_COMMITMENT",
+        "details": {}
+      },
+      {
+        "scenario_id": "A08",
+        "status": "PASS",
+        "expected": "historical LLM blocked",
+        "observed": "ValidationError",
+        "details": {}
+      },
+      {
+        "scenario_id": "A09",
+        "status": "PASS",
+        "expected": "activation fails",
+        "observed": "ActivationError raised",
+        "details": {}
+      },
+      {
+        "scenario_id": "A12",
+        "status": "PASS",
+        "expected": "non-champion suppressed",
+        "observed": "SUPPRESS",
+        "details": {}
+      },
+      {
+        "scenario_id": "A13",
+        "status": "PASS",
+        "expected": "expired blocked",
+        "observed": "OpportunityGateError",
+        "details": {}
+      },
+      {
+        "scenario_id": "A15",
+        "status": "PASS",
+        "expected": "duplicate suppressed",
+        "observed": "second approved_quantity=0",
+        "details": {}
+      },
+      {
+        "scenario_id": "A16",
+        "status": "PASS",
+        "expected": "live adapter rejected",
+        "observed": "ValueError on LIVE mode",
+        "details": {}
+      },
+      {
+        "scenario_id": "A18",
+        "status": "PASS",
+        "expected": "rollback to known good",
+        "observed": "ROLLBACK",
+        "details": {}
+      },
+      {
+        "scenario_id": "A19",
+        "status": "PASS",
+        "expected": "no safe target disable",
+        "observed": "DISABLE_ONLY",
+        "details": {}
+      },
+      {
+        "scenario_id": "A21",
+        "status": "PASS",
+        "expected": "recurrence triggers research",
+        "observed": "RTRIG-f9d6a749e2584980dc86a8873c1df9fa5cdcbbbebf555500ee1bcc8065b49db7",
+        "details": {}
+      },
+      {
+        "scenario_id": "A22",
+        "status": "PASS",
+        "expected": "storm bounded",
+        "observed": "triggers=1",
+        "details": {}
+      },
+      {
+        "scenario_id": "A23",
+        "status": "PASS",
+        "expected": "self-trigger blocked",
+        "observed": "no new triggers",
+        "details": {}
+      },
+      {
+        "scenario_id": "A24",
+        "status": "PASS",
+        "expected": "restart preserves IDs",
+        "observed": "fc-1",
+        "details": {}
+      },
+      {
+        "scenario_id": "A25",
+        "status": "PASS",
+        "expected": "identical scientific IDs",
+        "observed": "match",
+        "details": {}
+      },
+      {
+        "scenario_id": "A45",
+        "status": "PASS",
+        "expected": "conflict detected",
+        "observed": "RepositoryConflictError",
+        "details": {}
+      },
+      {
+        "scenario_id": "A85",
+        "status": "PASS",
+        "expected": "zero training calls",
+        "observed": "0",
+        "details": {}
+      },
+      {
+        "scenario_id": "A86",
+        "status": "PASS",
+        "expected": "zero promotion calls",
+        "observed": "0",
+        "details": {}
+      }
+    ],
+    "invariant_results": [
+      {
+        "invariant_id": "pit_availability",
+        "status": "PASS",
+        "evidence": "available_time_ns <= decision_time_ns enforced",
+        "details": {}
+      },
+      {
+        "invariant_id": "label_availability",
+        "status": "PASS",
+        "evidence": "future labels rejected at training cutoff",
+        "details": {}
+      },
+      {
+        "invariant_id": "training_cutoff",
+        "status": "PASS",
+        "evidence": "training authority isolated to BUILD 18 TrainingFactory",
+        "details": {}
+      },
+      {
+        "invariant_id": "holdout_isolation",
+        "status": "PASS",
+        "evidence": "holdout guard blocks pre-commitment access",
+        "details": {}
+      },
+      {
+        "invariant_id": "deterministic_ids",
+        "status": "PASS",
+        "evidence": "identical fixture inputs yield identical candidate_id",
+        "details": {}
+      },
+      {
+        "invariant_id": "immutable_persistence",
+        "status": "PASS",
+        "evidence": "same ID different content raises RepositoryConflictError",
+        "details": {}
+      },
+      {
+        "invariant_id": "no_canonical_ttl",
+        "status": "PASS",
+        "evidence": "no canonical contract has TTL=true in inventory",
+        "details": {}
+      },
+      {
+        "invariant_id": "champion_lineage",
+        "status": "PASS",
+        "evidence": "governed champion required for opportunity emission",
+        "details": {}
+      },
+      {
+        "invariant_id": "opportunity_lineage",
+        "status": "PASS",
+        "evidence": "TradeProposalV1 requires OpportunityV1 ref",
+        "details": {}
+      },
+      {
+        "invariant_id": "risk_authorization",
+        "status": "PASS",
+        "evidence": "paper orchestrator references risk assessment",
+        "details": {}
+      },
+      {
+        "invariant_id": "runtime_integrity",
+        "status": "PASS",
+        "evidence": "missing runtime identity fails closed",
+        "details": {}
+      },
+      {
+        "invariant_id": "adaptation_isolation",
+        "status": "PASS",
+        "evidence": "adaptation actions limited to research re-entry",
+        "details": {}
+      },
+      {
+        "invariant_id": "no_live_execution",
+        "status": "PASS",
+        "evidence": "LIVE mode rejected; forbidden exceptions defined",
+        "details": {}
+      },
+      {
+        "invariant_id": "authority_graph_complete",
+        "status": "PASS",
+        "evidence": "14 authorities registered",
+        "details": {}
+      },
+      {
+        "invariant_id": "forbidden_paths_blocked",
+        "status": "PASS",
+        "evidence": "11 forbidden paths catalogued; guards: ['DirectForecastTradeForbidden', 'LiveExecutionForbidden', 'probability_bps_guard']",
+        "details": {}
+      },
+      {
+        "invariant_id": "lineage_edges_defined",
+        "status": "PASS",
+        "evidence": "26 canonical lineage edges defined",
+        "details": {}
+      }
+    ],
+    "test_suite_results": {},
+    "determinism_results": {
+      "golden_lifecycle_twice": "PASS"
+    },
+    "replay_parity_results": {},
+    "persistence_results": {
+      "same_id_conflict": "PASS"
+    },
+    "security_results": {
+      "no_live_execution": "PASS"
+    },
+    "blocking_failures": [],
+    "nonblocking_limitations": [
+      "KL-001",
+      "KL-002",
+      "KL-003",
+      "KL-004",
+      "KL-005",
+      "KL-006",
+      "KL-007",
+      "KL-008",
+      "KL-009",
+      "KL-010"
+    ],
+    "overall_disposition": "ACCEPTED_WITH_LIMITATIONS",
+    "implementation_version": "build25-v1",
+    "metadata": {
+      "spec_id": "ACCSPEC-cabfc83200e7fbb77a62acbc9ec21da35da7669b388b25d109f353b9d1aaca52"
+    }
+  }
+}

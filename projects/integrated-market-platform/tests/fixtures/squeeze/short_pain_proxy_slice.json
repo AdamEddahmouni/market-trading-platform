@@ -1,0 +1,21 @@
+{
+  "scenario_id": "short_pain_nvda_proxy_v1",
+  "symbol": "NVDA",
+  "description": "Research-proxy entry price bands for ShortPainDistribution — not live inference",
+  "spot_price": 128.5,
+  "observation_time": "2026-07-21T20:30:10.000000000Z",
+  "available_time": "2026-07-21T20:30:10.000000000Z",
+  "entry_price_proxy": {
+    "proxy_status": "RESEARCH_PROXY",
+    "entry_price_bands": [
+      {"entry_price": 95.0, "weight": 0.25},
+      {"entry_price": 110.0, "weight": 0.35},
+      {"entry_price": 125.0, "weight": 0.25},
+      {"entry_price": 140.0, "weight": 0.15}
+    ]
+  },
+  "expected": {
+    "status": "RESEARCH_PROXY",
+    "min_underwater_pct": 0.5
+  }
+}

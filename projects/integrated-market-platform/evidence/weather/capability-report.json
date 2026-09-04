@@ -1,0 +1,236 @@
+{
+  "source_family": "noaa_nws_cpc",
+  "classification": "LIVE_CHARACTERIZED",
+  "credential_access": {
+    "nws_auth": "PUBLIC_USER_AGENT_REQUIRED",
+    "nws_user_agent_override": "IMP_NWS_USER_AGENT",
+    "cpc_access": "PUBLIC",
+    "ndfd_access": "PUBLIC",
+    "cdo_live_validation": "DEFERRED_TOKEN_UNAVAILABLE"
+  },
+  "nws_api": {
+    "current_forecast": {
+      "status": "OBSERVED"
+    },
+    "hourly": {
+      "status": "OBSERVED"
+    },
+    "grid": {
+      "status": "OBSERVED"
+    },
+    "observations": {
+      "status": "OBSERVED"
+    },
+    "mapping_revalidation": true,
+    "historical_forecast_truth": false
+  },
+  "cpc_degree_days": {
+    "realized": {
+      "status": "FIXTURE_TESTED",
+      "archive_start": "1981"
+    },
+    "forecast_7day": {
+      "status": "FIXTURE_TESTED",
+      "target_days": 7
+    },
+    "forecast_archive": {
+      "status": "DOCUMENTED",
+      "start": "2014-01-01",
+      "known_directory_gaps": 52
+    },
+    "climatology": {
+      "status": "FIXTURE_TESTED",
+      "normal_period": "1981-2010"
+    },
+    "weightings": {
+      "population_vintage": "2010_CENSUS",
+      "utility_gas_vintage": "2010_ACS",
+      "kept_separate": true
+    },
+    "regions": [
+      "STATE",
+      "CENSUS_DIVISION",
+      "CLIMATE_DIVISION",
+      "CONUS"
+    ]
+  },
+  "forecast_vintage": {
+    "pit": {
+      "issue_available_target_separate": true
+    },
+    "revisions": {
+      "distinct_issues_are_vintages": true,
+      "same_issue_correction_is_knowledge_version": true
+    },
+    "realizations": {
+      "separate_evidence_family": true,
+      "forecast_error_gated": true
+    }
+  },
+  "ndfd_archive": {
+    "period_of_record_start": "2004-06-06",
+    "cloud_access_start": "2020-04-16",
+    "decode_capability": "ARCHIVE_AVAILABLE_DECODE_DEFERRED",
+    "bulk_download": false
+  },
+  "medium_range": {
+    "six_to_ten_day": "CHARACTERIZED",
+    "eight_to_fourteen_day": "CHARACTERIZED",
+    "semantics": "TERCILE_PROBABILITIES_NOT_TEMPERATURE_MAGNITUDES",
+    "implementation": "CHARACTERIZED_PROSPECTIVE_DEFERRED"
+  },
+  "energy_interoperability": {
+    "natural_gas_priority": true,
+    "fred_clock_independent": true,
+    "cftc_clock_independent": true,
+    "eia_clock_independent": true,
+    "weather_clock_independent": true,
+    "composite_score": false
+  },
+  "quality": {
+    "health": {
+      "source_family": "noaa_nws_cpc",
+      "NWS_API_REACHABLE": "OBSERVED",
+      "POINT_MAPPING_HEALTH": "OBSERVED",
+      "GRID_FORECAST_HEALTH": "OBSERVED",
+      "HOURLY_FORECAST_HEALTH": "OBSERVED",
+      "GRID_DATA_HEALTH": "OBSERVED",
+      "OBSERVATION_HEALTH": "OBSERVED",
+      "CPC_REALIZED_DEGREE_DAYS": "FIXTURE_TESTED",
+      "CPC_7DAY_FORECAST": "FIXTURE_TESTED",
+      "CPC_FORECAST_ARCHIVE": "DOCUMENTED",
+      "CPC_CLIMATOLOGY": "FIXTURE_TESTED",
+      "CPC_610_OUTLOOK": "CHARACTERIZED_DEFERRED",
+      "CPC_814_OUTLOOK": "CHARACTERIZED_DEFERRED",
+      "NDFD_ARCHIVE_REACHABLE": "OBSERVED",
+      "NDFD_PERIOD_OF_RECORD": "2004-06-06",
+      "NDFD_DECODE_CAPABILITY": "DEFERRED",
+      "ENERGY_MARKET_CONTEXT": "FIXTURE_TESTED",
+      "forecast_count": 84,
+      "realization_count": 2300,
+      "reference_count": 0,
+      "quality_flags": [
+        "ARCHIVE_AVAILABLE_DECODE_DEFERRED"
+      ]
+    },
+    "taxonomy": [
+      "SOURCE_UNAVAILABLE",
+      "FORECAST_NOT_YET_AVAILABLE",
+      "FORECAST_ARCHIVE_GAP",
+      "FORECAST_VINTAGE_UNAVAILABLE",
+      "FORECAST_AVAILABILITY_UNCERTAIN",
+      "REGION_UNRESOLVED",
+      "SOURCE_REGION_MAPPING_ANOMALY",
+      "GRID_MAPPING_CHANGED",
+      "WITHHELD",
+      "MISSING_VALUE",
+      "ARCHIVE_VERSION_CHANGED",
+      "CLIMATOLOGY_INCOMPATIBLE",
+      "FORECAST_REALIZATION_UNAVAILABLE",
+      "NDFD_DECODE_UNAVAILABLE",
+      "ARCHIVE_AVAILABLE_DECODE_DEFERRED",
+      "OBSERVATION_LATENCY_UNCERTAIN"
+    ]
+  },
+  "limitations": [
+    "degree_days_are_demand_proxies",
+    "historical_archive_availability_can_be_inferred",
+    "realized_annual_files_are_mutable",
+    "1981_2010_normals_and_2010_weights_are_stale",
+    "ndfd_grib2_decode_deferred",
+    "nws_observations_can_be_delayed",
+    "no_market_consensus"
+  ],
+  "live_characterization": {
+    "tested_at": "2026-08-21T02:59:47Z",
+    "nws": {
+      "point_mapping": "OKX:33,42",
+      "forecast_periods": 14,
+      "forecast_horizon": [
+        "2026-08-20T22:00:00-04:00",
+        "2026-08-27T18:00:00-04:00"
+      ],
+      "hourly_periods": 156,
+      "hourly_horizon": [
+        "2026-08-20T22:00:00-04:00",
+        "2026-08-27T10:00:00-04:00"
+      ],
+      "grid_elements": [
+        "apparentTemperature",
+        "ceilingHeight",
+        "dewpoint",
+        "heatIndex",
+        "iceAccumulation",
+        "maxTemperature",
+        "minTemperature",
+        "mixingHeight",
+        "probabilityOfPrecipitation",
+        "quantitativePrecipitation",
+        "relativeHumidity",
+        "skyCover",
+        "snowfallAmount",
+        "temperature",
+        "transportWindDirection",
+        "transportWindSpeed",
+        "visibility",
+        "waveHeight",
+        "wetBulbGlobeTemperature",
+        "windChill",
+        "windDirection",
+        "windGust",
+        "windSpeed"
+      ],
+      "grid_horizon": [
+        "2026-08-20T19:00:00+00:00",
+        "2026-08-28T14:00:00+00:00"
+      ]
+    },
+    "cpc": {
+      "latest_forecast_issue": "2026-08-20T00:00:00Z",
+      "forecast_available_time": "2026-08-20T15:00:16Z",
+      "forecast_targets": [
+        "2026-08-20T00:00:00Z",
+        "2026-08-21T00:00:00Z",
+        "2026-08-22T00:00:00Z",
+        "2026-08-23T00:00:00Z",
+        "2026-08-24T00:00:00Z",
+        "2026-08-25T00:00:00Z",
+        "2026-08-26T00:00:00Z"
+      ],
+      "latest_realized_date": "2026-08-18T00:00:00Z",
+      "realized_available_time": "2026-08-20T08:07:16Z"
+    },
+    "ndfd": {
+      "source": "NOAA_NCEI",
+      "product": "National Digital Forecast Database",
+      "archive_available": true,
+      "period_of_record_start": "2004-06-06",
+      "online_history": "APPROXIMATELY_TEN_YEARS",
+      "cloud_access_start": "2020-04-16",
+      "access_methods": [
+        {
+          "kind": "THREDDS",
+          "url": "https://www.ncei.noaa.gov/thredds/catalog/model/ndfd.html"
+        },
+        {
+          "kind": "NODD_S3",
+          "url": "s3://noaa-ndfd-pds/wmo/"
+        }
+      ],
+      "format": "GRIB2",
+      "decode_status": "ARCHIVE_AVAILABLE_DECODE_DEFERRED",
+      "quality_flags": [
+        "NDFD_DECODE_UNAVAILABLE",
+        "ARCHIVE_AVAILABLE_DECODE_DEFERRED"
+      ],
+      "catalog_entry_count": 1,
+      "bulk_download_performed": false,
+      "decoder_dependencies_added": []
+    }
+  },
+  "security": {
+    "mandatory_secret": false,
+    "nws_user_agent_is_secret": false,
+    "report_contains_credential_values": false
+  }
+}

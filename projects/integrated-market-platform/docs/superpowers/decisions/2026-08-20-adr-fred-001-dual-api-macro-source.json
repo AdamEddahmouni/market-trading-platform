@@ -1,0 +1,30 @@
+{
+  "adr_id": "ADR-FRED-001",
+  "title": "FRED / ALFRED dual-API macroeconomic observational source",
+  "status": "ACCEPTED",
+  "date": "2026-08-20",
+  "context": "The platform requires PIT-correct U.S. macro regime context complementary to CFTC aggregate positioning. FRED exposes two API generations with non-overlapping responsibilities.",
+  "decision": {
+    "dual_api": {
+      "v1_alfred": "Granular series/release operations, ALFRED realtime/vintage PIT reconstruction, incremental sync",
+      "v2": "Release-level bulk current histories via /fred/v2/release/observations only",
+      "prohibition": "V2 current history must never substitute for historical PIT queries"
+    },
+    "observation_admission": "OBSERVED / CAPTURED / VALIDATED / QUALITY_CHARACTERIZED — not ADMITTED by default",
+    "registry": "Bounded Tier 1 canonical indicator registry; no ingest-all-FRED crawler",
+    "cftc_interoperability": "CrossAssetRegimeContext joins independent macro and positioning clocks",
+    "licensing": "Preserve copyright_id; internal research scope; flag third-party redistribution review",
+    "security": "V1 api_key query param and V2 Bearer header must be redacted from logs and evidence"
+  },
+  "consequences": [
+    "Historical backtests fail closed when ALFRED/V1 PIT path unavailable",
+    "Release calendar aids scheduling but is not available_time truth",
+    "V1/V2 reconciliation required for current-state consistency",
+    "Mixed V2 release updates must not publish incoherent snapshots"
+  ],
+  "related": [
+    "ADR-LIVE-001",
+    "ADR-COT-001",
+    "ADR-REF-001"
+  ]
+}

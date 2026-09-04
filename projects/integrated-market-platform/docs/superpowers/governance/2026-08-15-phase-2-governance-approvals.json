@@ -1,0 +1,46 @@
+{
+  "approval_records": [
+    {
+      "approval_record_id": "A1B2C3D4E5F60718293A4B5C6D7E8F901234567890ABCDEF0123456789ABCD",
+      "approval_scope": "EXACT_HASH_PRINCIPAL_APPROVAL",
+      "approved_at": "2026-08-15T16:00:00.000000000Z",
+      "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+      "approved_capacities": ["PROJECT_OWNER"],
+      "approved_logical_id": "phase2.design_specification",
+      "approved_sha256": "54CF4DF16370CD1C69B0263EAA5F68448CD1CF4A0D0F6B8DB4692E81EB302600",
+      "status": "APPROVED"
+    },
+    {
+      "approval_record_id": "B2C3D4E5F60718293A4B5C6D7E8F901234567890ABCDEF0123456789ABCDEF",
+      "approval_scope": "CONTROLLING_PHASE_2_PLAN_EXACT_HASH_APPROVAL",
+      "approved_at": "2026-08-15T16:00:00.000000000Z",
+      "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+      "approved_capacities": ["PROJECT_OWNER", "RELEASE_OWNER"],
+      "approved_logical_id": "phase2.governance_plan",
+      "approved_sha256": "B883A07A453D3F2EFB01FF71B5369E827FDE9F69F44AA2C2C77CFC7F04A06580",
+      "status": "APPROVED"
+    },
+    {
+      "approval_record_id": "C3D4E5F60718293A4B5C6D7E8F901234567890ABCDEF0123456789ABCDEF01",
+      "approval_scope": "PHASE_2_IMPLEMENTATION_AUTHORIZATION_EXACT_HASH_APPROVAL",
+      "approved_at": "2026-08-15T16:00:00.000000000Z",
+      "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+      "approved_capacities": ["PROJECT_OWNER", "RELEASE_OWNER"],
+      "approved_logical_id": "phase2.implementation_authorization",
+      "approved_sha256": "2EBFB8AF68920266B03A6D31203FD5FC9FA700087C2FAF6D28F4B3C19010E9C3",
+      "status": "APPROVED"
+    }
+  ],
+  "approval_statement": "Principal approved Phase 2 design spec, operational plan, and implementation authorization at the listed exact SHA-256 values and authorized contract and replay work within that scope.",
+  "artifact_type": "PHASE_2_GOVERNANCE_APPROVAL_BUNDLE",
+  "logical_id": "phase2.governance_approvals",
+  "principal_id": "PROJECT-PRINCIPAL-001",
+  "sanitization": {
+    "absolute_paths_included": false,
+    "account_identifiers_included": false,
+    "credential_values_included": false,
+    "remote_urls_included": false
+  },
+  "schema_version": "1.0.0",
+  "status": "APPROVED"
+}

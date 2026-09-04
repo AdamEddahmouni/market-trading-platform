@@ -1,0 +1,9 @@
+{
+  "fallback_providers": [
+    "finviz"
+  ],
+  "minimum_failure_duration_ns": 30000000000,
+  "minimum_recovery_duration_ns": 60000000000,
+  "primary_provider": "polygon",
+  "provider_redundancy_policy_id": "PRPOL-3f1e5954d81c9c64d61b1e775ee045580edd33489ef44c540fb39e7d8aca5317"
+}

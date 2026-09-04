@@ -1,0 +1,80 @@
+{
+  "adr_id": "ADR-LIVE-001",
+  "alternatives": [
+    {
+      "decision": "REJECTED_FOR_CURRENT_SCOPE",
+      "name": "CORE_RUNTIME_VENDOR_SDK",
+      "option_id": "LIVE-OPTION-001",
+      "tradeoffs": [
+        "Would place moomoo-api, pandas, and broker sockets inside the stdlib foundation, breaking Phase 0 import analysis and replay determinism."
+      ]
+    },
+    {
+      "decision": "ACCEPTED",
+      "name": "PROCESS_BOUNDARY_OBSERVATIONAL_ADAPTER",
+      "option_id": "LIVE-OPTION-002",
+      "tradeoffs": [
+        "Live bytes remain outside admitted research datasets until a later ADR.",
+        "Requires an optional SDK process and serialized canonical events."
+      ]
+    }
+  ],
+  "approval": {
+    "approval_scope": "WORK_PACKAGE_PRINCIPAL_AUTHORIZATION",
+    "approved_at": "2026-08-20T04:20:00.000000000Z",
+    "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+    "approved_capacities": [
+      "PROJECT_OWNER",
+      "RELEASE_OWNER"
+    ]
+  },
+  "artifact_type": "ARCHITECTURE_DECISION_RECORD",
+  "consequences": {
+    "negative": [
+      "Ordinary CI must remain green without OpenD.",
+      "Captured live observations are not automatically admitted research datasets.",
+      "Moomoo remains one provider; lanes must request canonical capabilities, not vendor products."
+    ],
+    "positive": [
+      "Read-only observational market data can be characterized, captured, quality-checked, and replayed.",
+      "Vendor SDK stays outside the CPython 3.11 stdlib foundation.",
+      "Live observational data, admitted research datasets, paper execution, and live execution remain distinct."
+    ]
+  },
+  "created_at": "2026-08-20T04:20:00.000000000Z",
+  "decision": {
+    "selected_option_id": "LIVE-OPTION-002",
+    "summary": "Authorize a controlled, read-only observational live-data boundary. Moomoo OpenD on 127.0.0.1 is the first characterized provider. Canonical core consumes serialized events only. Capture is not admission. Paper and live execution remain forbidden.",
+    "title": "Observational live market-data boundary (read-only)"
+  },
+  "effectivity": {
+    "current_state": "ACCEPTED",
+    "decision_only": false,
+    "non_authorization_statement": "This ADR does not authorize paper execution, live order submission, unlock_trade, fund movement, paid market-data purchases, options/futures entitlement changes, crypto research implementation (PI14+), prediction-market integration, or automatic admission of live observations as research datasets."
+  },
+  "lifecycle": {
+    "states": [
+      "OBSERVED",
+      "CAPTURED",
+      "VALIDATED",
+      "QUALITY_CHARACTERIZED",
+      "ADMITTED"
+    ],
+    "admission_requires_separate_adr": true
+  },
+  "related_adrs": [
+    "ADR-PROV-001",
+    "ADR-DATA-001",
+    "ADR-REF-001",
+    "ADR-PIT-001",
+    "ADR-WHALE-003",
+    "ADR-WHALE-006"
+  ],
+  "security": {
+    "opend_bind": "127.0.0.1",
+    "opend_port": 11111,
+    "telnet": "disabled_required",
+    "trade_apis": "forbidden"
+  },
+  "status": "ACCEPTED"
+}

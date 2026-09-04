@@ -1,0 +1,13 @@
+---
+description: Mode authority constraints for UI
+globs: ui/src/**/*
+alwaysApply: false
+---
+
+# Mode authority (UI)
+
+- Demo: read-only — no submit mutations
+- Paper: `canUsePaperActions` for controls; Workspace is submit boundary
+- Live: observational only — no order submission
+
+Frontend gating is not a security boundary. See [MODE_AUTHORITY.md](docs/architecture/MODE_AUTHORITY.md).

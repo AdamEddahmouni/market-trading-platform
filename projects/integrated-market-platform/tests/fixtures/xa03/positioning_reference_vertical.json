@@ -1,0 +1,111 @@
+{
+  "fixture_id": "XA03-POSITIONING-REFERENCE-VERTICAL",
+  "description": "Bounded XA-03 CFTC positioning reference vertical — ES, CL, GC, ZN, NG",
+  "source_classification": "FIXTURE",
+  "retrieved_time": "2026-08-14T19:35:00Z",
+  "observed_time": "2026-08-14T19:35:00Z",
+  "markets": [
+    {
+      "report_family": "TFF",
+      "position_scope": "FUTURES_ONLY",
+      "source_dataset": "gpe5-46if",
+      "rows": [
+        {
+          "market_and_exchange_names": "E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE",
+          "report_date_as_yyyy_mm_dd": "2026-08-11",
+          "cftc_contract_market_code": "13874+",
+          "cftc_commodity_code": "138",
+          "open_interest_all": "2500000",
+          "dealer_positions_long_all": "120000",
+          "dealer_positions_short": "95000",
+          "asset_mgr_positions_long": "450000",
+          "asset_mgr_positions_short": "380000",
+          "lev_money_positions_long": "310000",
+          "lev_money_positions_short": "280000",
+          "other_rept_positions_long": "85000",
+          "other_rept_positions_short": "72000",
+          "nonrept_positions_long_all": "95000",
+          "nonrept_positions_short_all": "110000"
+        },
+        {
+          "market_and_exchange_names": "10-YEAR U.S. TREASURY NOTE - CHICAGO BOARD OF TRADE",
+          "report_date_as_yyyy_mm_dd": "2026-08-11",
+          "cftc_contract_market_code": "020601",
+          "cftc_commodity_code": "020",
+          "open_interest_all": "3200000",
+          "dealer_positions_long_all": "210000",
+          "dealer_positions_short": "195000",
+          "asset_mgr_positions_long": "520000",
+          "asset_mgr_positions_short": "480000",
+          "lev_money_positions_long": "180000",
+          "lev_money_positions_short": "165000",
+          "other_rept_positions_long": "95000",
+          "other_rept_positions_short": "88000",
+          "nonrept_positions_long_all": "120000",
+          "nonrept_positions_short_all": "135000"
+        }
+      ]
+    },
+    {
+      "report_family": "DISAGGREGATED",
+      "position_scope": "FUTURES_ONLY",
+      "source_dataset": "72hh-3qpy",
+      "rows": [
+        {
+          "market_and_exchange_names": "CRUDE OIL, LIGHT SWEET - NEW YORK MERCANTILE EXCHANGE",
+          "report_date_as_yyyy_mm_dd": "2026-08-11",
+          "cftc_contract_market_code": "067651",
+          "cftc_commodity_code": "067",
+          "open_interest_all": "1800000",
+          "prod_merc_positions_long_all": "350000",
+          "prod_merc_positions_short_all": "420000",
+          "swap_positions_long_all": "180000",
+          "swap__positions_short_all": "160000",
+          "m_money_positions_long_all": "290000",
+          "m_money_positions_short_all": "250000",
+          "other_rept_positions_long": "120000",
+          "other_rept_positions_short": "110000",
+          "nonrept_positions_long_all": "80000",
+          "nonrept_positions_short_all": "90000"
+        },
+        {
+          "market_and_exchange_names": "HENRY HUB NATURAL GAS - NEW YORK MERCANTILE EXCHANGE",
+          "report_date_as_yyyy_mm_dd": "2026-08-11",
+          "cftc_contract_market_code": "023651",
+          "cftc_commodity_code": "023",
+          "open_interest_all": "950000",
+          "prod_merc_positions_long_all": "180000",
+          "prod_merc_positions_short_all": "210000",
+          "swap_positions_long_all": "95000",
+          "swap__positions_short_all": "88000",
+          "m_money_positions_long_all": "145000",
+          "m_money_positions_short_all": "130000",
+          "other_rept_positions_long": "65000",
+          "other_rept_positions_short": "58000",
+          "nonrept_positions_long_all": "42000",
+          "nonrept_positions_short_all": "48000"
+        }
+      ]
+    },
+    {
+      "report_family": "LEGACY",
+      "position_scope": "FUTURES_ONLY",
+      "source_dataset": "6dca-aqww",
+      "rows": [
+        {
+          "market_and_exchange_names": "GOLD - COMMODITY EXCHANGE INC.",
+          "report_date_as_yyyy_mm_dd": "2026-08-11",
+          "cftc_contract_market_code": "088691",
+          "cftc_commodity_code": "088",
+          "open_interest_all": "450000",
+          "comm_positions_long_all": "120000",
+          "comm_positions_short_all": "95000",
+          "noncomm_positions_long_all": "180000",
+          "noncomm_positions_short_all": "160000",
+          "nonrept_positions_long_all": "50000",
+          "nonrept_positions_short_all": "55000"
+        }
+      ]
+    }
+  ]
+}

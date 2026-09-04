@@ -1,0 +1,77 @@
+{
+  "D01": {
+    "real_broker_submits": 0,
+    "result": "PASS",
+    "scenario": "broker disconnect"
+  },
+  "D02": {
+    "real_broker_submits": 0,
+    "result": "PASS",
+    "scenario": "stale status"
+  },
+  "D03": {
+    "real_broker_submits": 0,
+    "result": "PASS",
+    "scenario": "broker-only order"
+  },
+  "D04": {
+    "real_broker_submits": 0,
+    "result": "PASS",
+    "scenario": "local-only order"
+  },
+  "D05": {
+    "real_broker_submits": 0,
+    "result": "PASS",
+    "scenario": "ambiguous submission"
+  },
+  "D06": {
+    "real_broker_submits": 0,
+    "result": "PASS",
+    "scenario": "unexpected fill"
+  },
+  "D07": {
+    "real_broker_submits": 0,
+    "result": "PASS",
+    "scenario": "position mismatch"
+  },
+  "D08": {
+    "real_broker_submits": 0,
+    "result": "PASS",
+    "scenario": "partial fill restart"
+  },
+  "D09": {
+    "real_broker_submits": 0,
+    "result": "PASS",
+    "scenario": "global kill switch"
+  },
+  "D10": {
+    "real_broker_submits": 0,
+    "result": "PASS",
+    "scenario": "session kill switch"
+  },
+  "D11": {
+    "real_broker_submits": 0,
+    "result": "PASS",
+    "scenario": "auth expiry during review"
+  },
+  "D12": {
+    "real_broker_submits": 0,
+    "result": "PASS",
+    "scenario": "stale confirmation view"
+  },
+  "D13": {
+    "real_broker_submits": 0,
+    "result": "PASS",
+    "scenario": "external broker order"
+  },
+  "D14": {
+    "real_broker_submits": 0,
+    "result": "PASS",
+    "scenario": "critical incident resume"
+  },
+  "D15": {
+    "real_broker_submits": 0,
+    "result": "PASS",
+    "scenario": "stale confirmation after restart"
+  }
+}

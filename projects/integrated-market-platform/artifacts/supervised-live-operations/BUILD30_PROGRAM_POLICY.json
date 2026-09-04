@@ -1,0 +1,10 @@
+{
+  "program_policy_id": "PROGPOL-884c3e769e9f48068e639ec0fe38c2b1f403be8aab01f94a74092fe355943f45",
+  "max_sessions": 3,
+  "max_program_order_count": 3,
+  "max_program_live_notional_minor": 7500,
+  "require_fresh_authorization_per_session": true,
+  "require_order_confirmation": true,
+  "minimum_cooldown_between_sessions_ns": 60000000000,
+  "program_effective_until_ns": 1700086400000000000
+}

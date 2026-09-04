@@ -1,0 +1,13 @@
+{
+  "commercial": {
+    "period": "2026-08-08",
+    "series": "WCESTUS1",
+    "value": 438765
+  },
+  "spr": {
+    "period": "2026-08-08",
+    "series": "WCSSTUS1",
+    "value": 365432
+  },
+  "combined_must_not_be_default": false
+}

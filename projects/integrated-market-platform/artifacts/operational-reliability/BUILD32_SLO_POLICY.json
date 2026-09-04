@@ -1,0 +1,13 @@
+{
+  "measurement_window_ns": 300000000000,
+  "objectives": [
+    "provider_connection_availability",
+    "broker_status_freshness",
+    "reconciliation_freshness",
+    "persistence_write_success",
+    "operator_api_availability",
+    "critical_alert_delivery_success"
+  ],
+  "scope": "supervised_live_canary",
+  "slo_policy_id": "SLOPOL-7fc34b8e6cd4342b379ec2e622b9c10c8ca50abb3ff48bb78e02b11955c8bfe5"
+}

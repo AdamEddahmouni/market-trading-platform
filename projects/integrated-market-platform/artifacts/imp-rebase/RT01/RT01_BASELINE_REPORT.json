@@ -1,0 +1,28 @@
+{
+  "profile_id": "receive_to_canonical_state",
+  "profile_version": "1",
+  "clock_basis": "process_monotonic_ns",
+  "sampling": "FULL",
+  "workload": "fixture_replay_short",
+  "aggregation": "root_to_terminal_elapsed_ns",
+  "iterations": 3,
+  "warmup_iterations": 1,
+  "environment": {
+    "git_head": "d6a945b40ef5013ba333b104dfbdb3c8f840808b",
+    "dirty": false,
+    "python_version": "3.11.15"
+  },
+  "statistics": {
+    "count": 9,
+    "min_ns": 84500,
+    "median_ns": 119700,
+    "mean_ns": 151088.88888888888,
+    "p90_ns": 193940,
+    "p95_ns": 309219,
+    "p99_ns": 401443,
+    "max_ns": 424500
+  },
+  "raw_sample_count": 9,
+  "measurement_class": "MEASURED_BASELINE",
+  "statistics_note": "Descriptive sample statistics only; N=9 across 3 iterations."
+}

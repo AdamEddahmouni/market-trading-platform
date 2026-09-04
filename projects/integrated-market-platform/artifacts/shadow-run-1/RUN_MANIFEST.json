@@ -1,0 +1,26 @@
+{
+  "baseline_branch": "cloud/build-35-release-governance-operational-acceptance",
+  "baseline_commit": "96032bea83925cd89d6d16c56f8950e78472962f",
+  "capture_id": "CAP-BIYA-SR1-20260902",
+  "first_session": "2026-09-02",
+  "git_commit_at_open": "96032bea83925cd89d6d16c56f8950e78472962f",
+  "manifest_hash": "D3AA0CCD4FA92F76F755049F570DC71DDEEA71CF35D1F0375EA03E0E5917FB06",
+  "opened_at_event_ns": 1756804140000000000,
+  "protocol_ref": "artifacts/shadow-run-1/P6_SHADOW_RUN_1_PROTOCOL.json",
+  "protocol_version": "SHADOW_RUN_1_BIYA_FROZEN/1.0.0",
+  "run_id": "SHRUN-D3AA0CCD4FA92F76F755049F570DC71DDEEA71CF35D1F0375EA03E0E5917FB06",
+  "schema_version": "platform/shadow-run-1-manifest/1.0.0",
+  "session_dates": [
+    "2026-09-02",
+    "2026-09-03",
+    "2026-09-04",
+    "2026-09-07",
+    "2026-09-08",
+    "2026-09-09",
+    "2026-09-10",
+    "2026-09-11"
+  ],
+  "state": "OPEN",
+  "store_root": "artifacts/shadow-run-1/store",
+  "worktree_note": "Opened with --allow-dirty on feature branch; production open requires clean tree per spec section 14"
+}

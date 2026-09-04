@@ -1,0 +1,76 @@
+{
+  "adr_id": "ADR-WHALE-006",
+  "alternatives": [
+    {
+      "decision": "ACCEPTED",
+      "name": "ORDER_BOOK_SNAPSHOT_WHALE_EVENT_WITH_IMBALANCE_OFI",
+      "option_id": "WHALE6-OPTION-001",
+      "tradeoffs": [
+        "Full snapshot replay is simpler than incremental delta replay; imbalance and OFI are derived with explicit provenance."
+      ]
+    }
+  ],
+  "approval": {
+    "approval_scope": "EXACT_HASH_PRINCIPAL_APPROVAL",
+    "approved_at": "2026-08-19T12:00:00.000000000Z",
+    "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+    "approved_capacities": [
+      "PROJECT_OWNER",
+      "RELEASE_OWNER"
+    ]
+  },
+  "artifact_type": "ARCHITECTURE_DECISION_RECORD",
+  "authority_bindings": [
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase12.adr_whale_005",
+      "logical_path": "docs/superpowers/decisions/2026-08-18-adr-whale-005-large-transactions-envelope-semantics.json",
+      "sha256": "PLACEHOLDER_SHA256"
+    },
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase13.whale_order_book_design",
+      "logical_path": "docs/superpowers/specs/2026-08-19-phase-13-whale-order-book-design.md",
+      "sha256": "PLACEHOLDER_SHA256"
+    }
+  ],
+  "conformance_evidence": [
+    {
+      "logical_id": "phase13.order_book_tests",
+      "repository_relative_path": "tests/providers/test_order_book.py",
+      "sha256": "PLACEHOLDER_SHA256"
+    }
+  ],
+  "consequences": {
+    "negative": [
+      "Direction from imbalance alone remains ambiguous without trade confirmation; no participant identity may be invented."
+    ],
+    "positive": [
+      "order_book family can surface entitled fixture depth snapshots without collapsing into a universal whale score."
+    ]
+  },
+  "created_at": "2026-08-19T12:00:00.000000000Z",
+  "decision": {
+    "selected_option_id": "WHALE6-OPTION-001",
+    "summary": "Order-book whale events use whale_event payloads with family order_book, snapshot_time, level_count, best_bid, best_ask, bid_size, ask_size, imbalance_ratio (DERIVED), ofi_value (DERIVED), direction_label (supports_long|supports_short|neutral|ambiguous), and snapshot_provenance (fixture_synthetic|entitled_live). PIT queries exclude snapshots whose available_time exceeds prediction_cutoff. Visible liquidity is not participant intent.",
+    "title": "Order book whale envelope semantics and snapshot policy"
+  },
+  "effectivity": {
+    "current_state": "ACCEPTED",
+    "decision_only": false,
+    "non_authorization_statement": "Acceptance authorizes fixture-first order_book on ADMITTED-L2-NVDA-001 only. Live L2 feeds and paper execution require separate entitlement records."
+  },
+  "logical_id": "phase13.adr_whale_006",
+  "owner_capacities": [
+    "ARCHITECTURE_LEAD",
+    "PROJECT_OWNER"
+  ],
+  "sanitization": {
+    "absolute_paths_included": false,
+    "account_identifiers_included": false,
+    "credential_values_included": false,
+    "remote_urls_included": false
+  },
+  "schema_version": "1.0.0",
+  "status": "ACCEPTED"
+}

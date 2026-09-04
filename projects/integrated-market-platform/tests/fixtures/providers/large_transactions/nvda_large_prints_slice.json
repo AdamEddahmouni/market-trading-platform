@@ -1,0 +1,69 @@
+{
+  "admission_id": "ADMITTED-LARGE-PRINTS-NVDA-001",
+  "fixture_id": "FIXTURE-LARGE-PRINTS-NVDA",
+  "min_size_ratio": 0.5,
+  "rolling_volume_reference": 800,
+  "symbol": "NVDA",
+  "prints": [
+    {
+      "aggressor_provenance": "known",
+      "event_time": "2026-07-21T20:30:00.000000000Z",
+      "price": 170.55,
+      "print_size": 520,
+      "reference_type": "rolling_volume",
+      "reference_value": 800,
+      "side": "buy",
+      "source": "fixture_synthetic"
+    },
+    {
+      "aggressor_provenance": "known",
+      "event_time": "2026-07-21T20:30:01.000000000Z",
+      "price": 170.57,
+      "print_size": 480,
+      "reference_type": "rolling_volume",
+      "reference_value": 800,
+      "side": "sell",
+      "source": "fixture_synthetic"
+    },
+    {
+      "aggressor_provenance": "inferred",
+      "event_time": "2026-07-21T20:30:02.000000000Z",
+      "price": 170.58,
+      "print_size": 250,
+      "reference_type": "rolling_volume",
+      "reference_value": 800,
+      "side": "buy",
+      "source": "fixture_synthetic"
+    },
+    {
+      "aggressor_provenance": "known",
+      "event_time": "2026-07-21T20:30:03.000000000Z",
+      "price": 170.59,
+      "print_size": 600,
+      "reference_type": "rolling_volume",
+      "reference_value": 800,
+      "side": "buy",
+      "source": "fixture_synthetic"
+    },
+    {
+      "aggressor_provenance": "unknown",
+      "event_time": "2026-07-21T20:30:04.000000000Z",
+      "price": 170.6,
+      "print_size": 420,
+      "reference_type": "rolling_volume",
+      "reference_value": 800,
+      "side": "unknown",
+      "source": "fixture_synthetic"
+    },
+    {
+      "aggressor_provenance": "known",
+      "event_time": "2026-07-21T20:30:06.000000000Z",
+      "price": 170.62,
+      "print_size": 750,
+      "reference_type": "rolling_volume",
+      "reference_value": 800,
+      "side": "sell",
+      "source": "fixture_synthetic"
+    }
+  ]
+}

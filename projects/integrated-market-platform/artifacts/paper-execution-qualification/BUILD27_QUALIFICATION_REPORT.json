@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-08-26T03:53:22.743148+00:00",
+  "source_build26_ref": "8812720989244d08a436a73cc0a27595538c7f21",
+  "source_release_candidate_ref": "8812720989244d08a436a73cc0a27595538c7f21",
+  "source_head": "8812720989244d08a436a73cc0a27595538c7f21",
+  "build26_integrity_status": "PASS",
+  "disposition": "PAPER_EXECUTION_QUALIFIED_WITH_LIMITATIONS",
+  "fixture_lifecycle_ok": true,
+  "scenario_failures": [],
+  "metadata": {
+    "source_build26_ref": "8812720989244d08a436a73cc0a27595538c7f21",
+    "source_release_candidate_ref": "8812720989244d08a436a73cc0a27595538c7f21",
+    "source_head": "8812720989244d08a436a73cc0a27595538c7f21",
+    "fixture_report_id": "PEQREP-ca9cdc50e785b8bf0b2a3968e37152b9934386778129f833196010c8f6d64c81",
+    "spec_id": "PEQSPEC-0e62e5bf585a502da7411c3aaf67ffe1d0d89d53356dd63c828f8c953117022f",
+    "fixture_disposition": "PAPER_EXECUTION_QUALIFIED_WITH_LIMITATIONS"
+  }
+}

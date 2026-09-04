@@ -1,0 +1,9 @@
+{
+  "broker_stale": true,
+  "fresh_authorization_still_required": true,
+  "manual_resume_required": true,
+  "new_submits_blocked": true,
+  "real_broker_submits": 0,
+  "reconciliation_performed": true,
+  "slo_breach": true
+}

@@ -1,0 +1,182 @@
+{
+  "admission_id": "ADMITTED-OPTIONS-NVDA-STRATEGY-001",
+  "fixture_id": "FIXTURE-OPTIONS-NVDA-STRATEGY",
+  "symbol": "NVDA",
+  "as_of_time": "2026-07-21T19:45:00.000000000Z",
+  "underlying_price": 128.0,
+  "chain_rows": [
+    {
+      "option_type": "call",
+      "expiry": "2026-08-15",
+      "strike": 130.0,
+      "bid": 1.80,
+      "ask": 1.85,
+      "open_interest": 2200,
+      "underlying_price": 128.0,
+      "multiplier": 100,
+      "event_time": "2026-07-21T19:45:00.000000000Z"
+    },
+    {
+      "option_type": "put",
+      "expiry": "2026-08-15",
+      "strike": 130.0,
+      "bid": 3.10,
+      "ask": 3.15,
+      "open_interest": 1800,
+      "underlying_price": 128.0,
+      "multiplier": 100,
+      "event_time": "2026-07-21T19:45:00.000000000Z"
+    },
+    {
+      "option_type": "call",
+      "expiry": "2026-08-15",
+      "strike": 135.0,
+      "bid": 0.95,
+      "ask": 1.00,
+      "open_interest": 1500,
+      "underlying_price": 128.0,
+      "multiplier": 100,
+      "event_time": "2026-07-21T19:45:00.000000000Z"
+    },
+    {
+      "option_type": "put",
+      "expiry": "2026-08-15",
+      "strike": 125.0,
+      "bid": 1.45,
+      "ask": 1.50,
+      "open_interest": 1400,
+      "underlying_price": 128.0,
+      "multiplier": 100,
+      "event_time": "2026-07-21T19:45:00.000000000Z"
+    }
+  ],
+  "physical_forecast": {
+    "symbol": "NVDA",
+    "as_of_time": "2026-07-21T19:45:00.000000000Z",
+    "model": "ewma",
+    "model_version": "physical_p_gaussian_v1",
+    "vol_forecast_annualized": 0.42,
+    "confidence": "MEDIUM",
+    "horizons": [
+      {
+        "horizon_days": 10,
+        "mean_return": 0.015,
+        "variance": 0.04,
+        "quantiles": {
+          "Q01": -0.08,
+          "Q05": -0.05,
+          "Q50": 0.01,
+          "Q95": 0.09,
+          "Q99": 0.14
+        },
+        "upside_tail_probability": 0.12,
+        "downside_tail_probability": 0.06,
+        "skew": 0.15
+      }
+    ]
+  },
+  "risk_neutral_forecast": {
+    "available": true,
+    "confidence": "LOW",
+    "vol_implied_annualized": 0.38,
+    "horizons": [
+      {
+        "mean_return": -0.005,
+        "variance": 0.035,
+        "upside_tail_probability": 0.07,
+        "downside_tail_probability": 0.08,
+        "skew": 0.0
+      }
+    ]
+  },
+  "scenarios": {
+    "bullish_directional": {
+      "executable_edge": {
+        "available": true,
+        "executable_available": true,
+        "executable_edge": {
+          "components": {
+            "net_directional_edge": 0.02,
+            "net_volatility_edge": 0.01,
+            "skew_edge": 0.05,
+            "tail_edge": 0.04,
+            "downside_tail_edge": -0.01
+          }
+        }
+      },
+      "friction": {
+        "available": true,
+        "executable_available": true,
+        "spread_bps": 260.0,
+        "half_spread_return_equiv": 0.0013,
+        "commission_return_equiv": 0.00005,
+        "total_friction_return_equiv": 0.00135,
+        "liquidity_quality": "MEDIUM",
+        "sample_count": 2
+      },
+      "expected_outcome": "RANKED",
+      "expected_templates": ["long_call_atm", "bull_call_spread", "long_otm_call"],
+      "min_net_expected_pnl": 0.0
+    },
+    "vol_rich": {
+      "executable_edge": {
+        "available": true,
+        "executable_available": true,
+        "executable_edge": {
+          "components": {
+            "net_directional_edge": 0.001,
+            "net_volatility_edge": 0.05,
+            "skew_edge": 0.01,
+            "tail_edge": 0.01,
+            "downside_tail_edge": 0.0
+          }
+        }
+      },
+      "friction": {
+        "available": true,
+        "executable_available": true,
+        "spread_bps": 260.0,
+        "half_spread_return_equiv": 0.0013,
+        "commission_return_equiv": 0.00005,
+        "total_friction_return_equiv": 0.00135,
+        "liquidity_quality": "MEDIUM",
+        "sample_count": 2
+      },
+      "expected_outcome": "RANKED",
+      "expected_templates": ["long_straddle"],
+      "min_net_expected_pnl": 0.0
+    },
+    "flat_no_edge": {
+      "executable_edge": {
+        "available": true,
+        "executable_available": true,
+        "executable_edge": {
+          "components": {
+            "net_directional_edge": 0.001,
+            "net_volatility_edge": 0.005,
+            "skew_edge": 0.002,
+            "tail_edge": 0.01,
+            "downside_tail_edge": 0.0
+          }
+        }
+      },
+      "friction": {
+        "available": true,
+        "executable_available": true,
+        "spread_bps": 260.0,
+        "half_spread_return_equiv": 0.0013,
+        "commission_return_equiv": 0.00005,
+        "total_friction_return_equiv": 0.00135,
+        "liquidity_quality": "MEDIUM",
+        "sample_count": 2
+      },
+      "expected_outcome": "NO_CLEAR_EDGE",
+      "expected_reason": "EDGE_BELOW_THRESHOLDS"
+    }
+  },
+  "expected": {
+    "atm_strike": 130.0,
+    "status_when_ranked": "RANKED",
+    "payoff_method": "PHYSICAL_P_QUANTILE_V1"
+  }
+}

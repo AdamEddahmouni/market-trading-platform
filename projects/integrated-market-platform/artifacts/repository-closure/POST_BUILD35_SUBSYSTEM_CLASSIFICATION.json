@@ -1,0 +1,667 @@
+{
+  "schema_version": "1.0",
+  "campaign": "POST-BUILD35-REPOSITORY-CLOSURE-001",
+  "predecessor": "BUILD35",
+  "classification_time_changes": "NONE",
+  "coverage_rules": [
+    {
+      "root": "src/market_platform_foundation",
+      "include": "CHILD_DIRECTORIES",
+      "exclude": [
+        "__pycache__"
+      ]
+    },
+    {
+      "root": "src/market_platform_foundation",
+      "include": "PYTHON_FILES",
+      "exclude": [
+        "__init__.py"
+      ]
+    },
+    {
+      "root": "tools",
+      "include": "CHILD_DIRECTORIES",
+      "exclude": [
+        "__pycache__"
+      ]
+    },
+    {
+      "root": "tools",
+      "include": "PYTHON_FILES",
+      "exclude": [
+        "__init__.py"
+      ]
+    },
+    {
+      "root": "pipelines/stock_data/src",
+      "include": "CHILD_DIRECTORIES",
+      "exclude": [
+        "__pycache__"
+      ]
+    },
+    {
+      "root": "pipelines/stock_data/src",
+      "include": "PYTHON_FILES",
+      "exclude": [
+        "__init__.py"
+      ]
+    }
+  ],
+  "required_paths": [
+    ".env.example",
+    ".github/workflows/imp-validate.yml",
+    "PLATFORM_CONTROL.cmd",
+    "README.md",
+    "START_PLATFORM.cmd",
+    "STOP_PLATFORM.cmd",
+    "artifacts",
+    "docs",
+    "evidence",
+    "manifests",
+    "phase0-dependency-lock.json",
+    "pipelines/stock_data/docs",
+    "pipelines/stock_data/pyproject.toml",
+    "pipelines/stock_data/scripts",
+    "pipelines/stock_data/tests",
+    "tests",
+    "tools/validation_manifest.json",
+    "ui"
+  ],
+  "entries": [
+    {
+      "id": "foundation-kernel",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/authority.py",
+        "src/market_platform_foundation/canonical.py",
+        "src/market_platform_foundation/clock.py",
+        "src/market_platform_foundation/errors.py",
+        "src/market_platform_foundation/evidence.py",
+        "src/market_platform_foundation/market_sessions.py",
+        "src/market_platform_foundation/numeric.py",
+        "src/market_platform_foundation/operating_modes.py",
+        "src/market_platform_foundation/operational_identity.py",
+        "src/market_platform_foundation/policy.py",
+        "src/market_platform_foundation/registry.py"
+      ],
+      "responsibility": "Canonical identity, clocks, numeric representation, operating modes, authority, and fail-closed policy primitives.",
+      "evidence": [
+        "tools/validation_manifest.json lists the kernel contracts among full invalidators and mandatory invariants.",
+        "artifacts/full-system-acceptance/BUILD35_AUTHORITY_MAP.json binds downstream decision authorities to these primitives."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "temporal-data-plane",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/contracts",
+        "src/market_platform_foundation/data_quality",
+        "src/market_platform_foundation/normalization",
+        "src/market_platform_foundation/reference_data",
+        "src/market_platform_foundation/replay",
+        "src/market_platform_foundation/runtime",
+        "src/market_platform_foundation/storage"
+      ],
+      "responsibility": "Canonical contracts, normalization, bitemporal storage, PIT joins, replay, and bounded projection storage.",
+      "evidence": [
+        "tools/validation_manifest.json makes contracts, runtime, replay, and data quality full invalidators.",
+        "The BUILD35 acceptance chain reuses replay and temporal-integrity outputs rather than defining replacements."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "provider-composition",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/market_data",
+        "src/market_platform_foundation/providers"
+      ],
+      "responsibility": "Provider capability composition, observational admission, envelopes, and fail-closed unconfigured behavior.",
+      "evidence": [
+        "docs/engineering/PROVIDER_DUPLICATION_AUDIT.md retains capability-local semantics behind the shared envelope boundary.",
+        "tests/providers and tests/market_data are active offline validation suites."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "public-data-domains",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/cboe_options",
+        "src/market_platform_foundation/cboe_regsho",
+        "src/market_platform_foundation/cftc",
+        "src/market_platform_foundation/eia",
+        "src/market_platform_foundation/finra",
+        "src/market_platform_foundation/finviz",
+        "src/market_platform_foundation/fred",
+        "src/market_platform_foundation/nasdaq_regsho",
+        "src/market_platform_foundation/nyse_regsho",
+        "src/market_platform_foundation/news",
+        "src/market_platform_foundation/sec_edgar",
+        "src/market_platform_foundation/sec_ftd",
+        "src/market_platform_foundation/weather"
+      ],
+      "responsibility": "Canonical source-specific normalization and PIT semantics for implemented public and observational providers.",
+      "evidence": [
+        "README.md lists these providers as implemented fixture-first domains.",
+        "tools/validation_manifest.json assigns each domain an offline suite and isolates opt-in live probes."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "market-intelligence-lanes",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/cross_lane",
+        "src/market_platform_foundation/futures",
+        "src/market_platform_foundation/market_context",
+        "src/market_platform_foundation/options",
+        "src/market_platform_foundation/order_flow",
+        "src/market_platform_foundation/participant",
+        "src/market_platform_foundation/short_intelligence"
+      ],
+      "responsibility": "Canonical fixture-qualified market-context, futures, options, order-flow, participant, short, and cross-lane feature families.",
+      "evidence": [
+        "README.md records completed cooperative milestones through MC16, F11, OF12, PI13, and SS P7.",
+        "The validation manifest routes each lane to active domain suites."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "research-and-model-authorities",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/intelligence",
+        "src/market_platform_foundation/research",
+        "src/market_platform_foundation/shadow",
+        "src/market_platform_foundation/strategy"
+      ],
+      "responsibility": "Research orchestration, training, validation, prediction/evaluation, promotion, adaptation, shadow qualification, and preregistered strategy interpretation.",
+      "evidence": [
+        "BUILD35 authority entries name ForecastEngine, OutcomeSettlement, EvaluationEngine, ResearchOrchestrator, TrainingFactory, ValidationEngine, PromotionEngine, and AdaptationOrchestrator.",
+        "BUILD26 through BUILD35 consume these authorities without replacement."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "execution-risk-and-state-authorities",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/execution",
+        "src/market_platform_foundation/local_state",
+        "src/market_platform_foundation/paper",
+        "src/market_platform_foundation/platform",
+        "src/market_platform_foundation/portfolio",
+        "src/market_platform_foundation/risk"
+      ],
+      "responsibility": "Canonical opportunity-to-risk-to-paper execution, durable local state, portfolio accounting, platform reconciliation engine, platform security foundations, and operator state.",
+      "evidence": [
+        "BUILD35 authority entries name OpportunityEngine, RiskEngine, PaperExecutionEngine, ReconciliationWorker, and OperatorControlPlane.",
+        "src/market_platform_foundation/platform/reconciliation and platform/security are imported by tests/platform and tools/platform/run_reconciliation_gate_validation.py.",
+        "README.md marks Platform P0 through P4-4B complete with limitations."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "operator-ui-and-assistant",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/assistant",
+        "src/market_platform_foundation/discovery",
+        "src/market_platform_foundation/features",
+        "src/market_platform_foundation/ui_api",
+        "ui"
+      ],
+      "responsibility": "Canonical local workstation, API projections, discovery, grounded assistant, and operator-facing feature state.",
+      "evidence": [
+        "README.md identifies ui/ plus ui_api as the active unified workstation.",
+        "START_PLATFORM.cmd delegates to the active platform launcher and serves this frontend/API pair."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "validation-control-plane",
+      "classification": "CANONICAL",
+      "scope": [
+        "tools/check_docs_links.py",
+        "tools/repository_closure.py",
+        "tools/imp.py",
+        "tools/validate.py",
+        "tools/validation_manifest.json",
+        "tools/validation_manifest.py",
+        "tools/validation_worker.py"
+      ],
+      "responsibility": "Canonical developer command routing plus manifest-driven offline validation selection, execution, reporting, and repository closure enforcement.",
+      "evidence": [
+        "AGENTS.md routes developer work through tools/imp.py while preserving tools/validate.py as the Python validator.",
+        "README.md and docs/engineering/DEVELOPER_OPERATING_SYSTEM.md state that manifest-driven validation replaced ad-hoc full-suite execution."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "of01-run-and-artifact-ledger",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/of01"
+      ],
+      "responsibility": "Canonical authoritative run, attempt, artifact, and provenance ledger for IMP operating-fabric identity.",
+      "evidence": [
+        "tools/validation_manifest.json registers the of01 offline suite against src/market_platform_foundation/of01.",
+        "tests/of01 and artifacts/imp-rebase/OF01 record the accepted OF-01 runtime contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "of02-attribution-adapters",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/of02"
+      ],
+      "responsibility": "Existing-system run and artifact attribution adapters that emit typed OF-01 commands without replacing subsystem domain authority.",
+      "evidence": [
+        "tools/validation_manifest.json registers the of02 offline suite against src/market_platform_foundation/of02.",
+        "docs/operations/of-02 and tests/of02 record the OF-02 adapter contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "of03-governed-registry",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/of03"
+      ],
+      "responsibility": "Machine-readable capability, SOP, and workflow registry with binding verification and policy metadata. Does not execute workflows, grant authority, or replace OF-01 history.",
+      "evidence": [
+        "tools/validation_manifest.json registers the of03 offline suite against src/market_platform_foundation/of03.",
+        "config/of03, docs/operations/of-03, and tests/of03 record the OF-03 registry contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "rt01-trace-latency",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/rt01",
+        "tools/rt01"
+      ],
+      "responsibility": "End-to-end causal tracing and measured latency baselines for executable runtime paths. Observability only; does not grant authority or replace OF-01 history.",
+      "evidence": [
+        "tools/validation_manifest.json registers the rt01 offline suite against src/market_platform_foundation/rt01.",
+        "docs/operations/rt-01, tests/rt01, and artifacts/imp-rebase/RT01 record the accepted RT-01 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "xa01-cross-asset-identity-kernel",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/xa01"
+      ],
+      "responsibility": "Cross-asset canonical instrument identity, analytical-domain participation, typed relationships, and provider alias resolution. Identity foundation only; does not implement cross-asset analytics.",
+      "evidence": [
+        "tools/validation_manifest.json registers the xa01 offline suite against src/market_platform_foundation/xa01.",
+        "docs/operations/xa-01, tests/xa01, and artifacts/imp-rebase/XA01 record the accepted XA-01 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "xa02-cross-asset-source-admission",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/xa02"
+      ],
+      "responsibility": "First admitted cross-asset source vertical: FRED rates reference admission, point-in-time observation provenance, and typed indicator-to-XA reference relationships.",
+      "evidence": [
+        "tools/validation_manifest.json registers the xa02 offline suite against src/market_platform_foundation/xa02.",
+        "docs/operations/xa-02, tests/xa02, and artifacts/imp-rebase/XA02 record the accepted XA-02 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "xa03-second-admitted-source-vertical",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/xa03"
+      ],
+      "responsibility": "Second admitted cross-asset source vertical: CFTC positioning reference admission through source-neutral envelope, point-in-time provenance, and typed market-report-to-XA reference relationships.",
+      "evidence": [
+        "tools/validation_manifest.json registers the xa03 offline suite against src/market_platform_foundation/xa03.",
+        "docs/operations/xa-03, tests/xa03, and artifacts/imp-rebase/XA03 record the accepted XA-03 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "xa04-durable-catalog-persistence",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/xa04"
+      ],
+      "responsibility": "Durable backend-independent persistence for cross-asset instrument, admitted observation, admission envelope, and reference relationship catalog truth without changing XA-01/02/03 semantics.",
+      "evidence": [
+        "tools/validation_manifest.json registers the xa04 offline suite against src/market_platform_foundation/xa04.",
+        "docs/operations/xa-04, tests/xa04, and artifacts/imp-rebase/XA04 record the accepted XA-04 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "xa05-strategic-state-regime-kernel",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/xa05"
+      ],
+      "responsibility": "Deterministic, provenance-aware cross-asset strategic state construction above XA-01 through XA-04 without trading or adaptation authority.",
+      "evidence": [
+        "tools/validation_manifest.json registers the xa05 offline suite against src/market_platform_foundation/xa05.",
+        "docs/operations/xa-05, tests/xa05, and artifacts/imp-rebase/XA05 record the accepted XA-05 contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "legacy-full-suite-wrapper",
+      "classification": "WRAPPED",
+      "scope": [
+        "tools/run_all_tests.py"
+      ],
+      "responsibility": "Backward-compatible full-suite command that delegates to the canonical validation control plane.",
+      "evidence": [
+        "tests/validation/test_run_all_tests_wrapper.py proves delegation to validate.py full and exit-status preservation."
+      ],
+      "canonical_target": "validation-control-plane",
+      "disposition": "KEEP_WRAPPER"
+    },
+    {
+      "id": "windows-launch-wrappers",
+      "classification": "WRAPPED",
+      "scope": [
+        "PLATFORM_CONTROL.cmd",
+        "START_PLATFORM.cmd",
+        "STOP_PLATFORM.cmd",
+        "tools/ui1"
+      ],
+      "responsibility": "Compatibility and operator entry points that delegate to the canonical local launcher and UI API.",
+      "evidence": [
+        "The command files delegate to tools/platform/local_launcher.py.",
+        "README.md retains tools/ui1/run_ui_api.py as the supported API start command."
+      ],
+      "canonical_target": "operator-ui-and-assistant",
+      "disposition": "KEEP_WRAPPER"
+    },
+    {
+      "id": "historical-foundation-acceptance",
+      "classification": "RETAINED_SUPPORTING",
+      "scope": [
+        "src/market_platform_foundation/__main__.py",
+        "src/market_platform_foundation/adr_verifier.py",
+        "src/market_platform_foundation/analysis.py",
+        "src/market_platform_foundation/assertions.py",
+        "src/market_platform_foundation/phase0a_assertions.py",
+        "src/market_platform_foundation/phase2_assertions.py",
+        "src/market_platform_foundation/phase3_assertions.py",
+        "src/market_platform_foundation/phase4_assertions.py",
+        "src/market_platform_foundation/phase5_assertions.py",
+        "src/market_platform_foundation/phase5r_assertions.py",
+        "src/market_platform_foundation/phase6_assertions.py",
+        "src/market_platform_foundation/phase7_assertions.py",
+        "src/market_platform_foundation/phase8_assertions.py",
+        "src/market_platform_foundation/phase9_assertions.py",
+        "src/market_platform_foundation/phase10_assertions.py",
+        "src/market_platform_foundation/phase11_assertions.py",
+        "src/market_platform_foundation/phase12_assertions.py",
+        "src/market_platform_foundation/phase13_assertions.py",
+        "src/market_platform_foundation/phase14_assertions.py",
+        "src/market_platform_foundation/phase15_assertions.py",
+        "src/market_platform_foundation/phase16_assertions.py",
+        "tools/phase0",
+        "tools/phase0a",
+        "tools/phase1",
+        "tools/phase2",
+        "tools/phase3",
+        "tools/phase4",
+        "tools/phase5",
+        "tools/phase5r",
+        "tools/phase6",
+        "tools/phase7",
+        "tools/phase8",
+        "tools/phase9",
+        "tools/phase10",
+        "tools/phase11",
+        "tools/phase12",
+        "tools/phase13",
+        "tools/phase14",
+        "tools/phase15",
+        "tools/phase16",
+        "tools/postroot"
+      ],
+      "responsibility": "Reproducible Phase 0 through Phase 16 governance, acceptance generation, and immutable historical verification.",
+      "evidence": [
+        "README.md records PASS status for Phase 0 through Phase 16.",
+        "The full validation manifest retains Phase 0 through Phase 8 suites and explicitly maps absent Phase 9 through Phase 11 test directories to canonical domain suites."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "historical-assistant-acceptance",
+      "classification": "RETAINED_SUPPORTING",
+      "scope": [
+        "src/market_platform_foundation/mra001_assertions.py",
+        "src/market_platform_foundation/mra002_assertions.py",
+        "tools/mra001",
+        "tools/mra002"
+      ],
+      "responsibility": "MRA-001/MRA-002 acceptance and publication evidence for the active assistant subsystem.",
+      "evidence": [
+        "README.md retains explicit MRA acceptance, publication, and verification commands.",
+        "tests/mra001 and tests/mra002 remain active offline validation suites."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "fixture-and-donor-support",
+      "classification": "RETAINED_SUPPORTING",
+      "scope": [
+        "src/market_platform_foundation/adapters",
+        "src/market_platform_foundation/donor_bridge",
+        "src/market_platform_foundation/donor_patterns",
+        "src/market_platform_foundation/offline",
+        "src/market_platform_foundation/risk_simulation"
+      ],
+      "responsibility": "Pinned donor translation, admitted-fixture replay, offline adapters, and historical risk-simulation evidence.",
+      "evidence": [
+        "Phase 3 through Phase 8 acceptance pipelines import these packages.",
+        "Their outputs support canonical authorities but do not independently authorize production decisions."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "distribution-and-reporting-support",
+      "classification": "RETAINED_SUPPORTING",
+      "scope": [
+        "src/market_platform_foundation/attribution",
+        "src/market_platform_foundation/distribution.py",
+        "src/market_platform_foundation/reporting"
+      ],
+      "responsibility": "Attribution and report projection over canonical decisions; no independent decision authority.",
+      "evidence": [
+        "tests/distribution validates these projections as downstream consumers.",
+        "BUILD35 authority map assigns decisions to upstream engines, not report formatting."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "safety-and-governance-support",
+      "classification": "RETAINED_SUPPORTING",
+      "scope": [
+        "src/market_platform_foundation/credential_audit.py",
+        "src/market_platform_foundation/git_ref.py",
+        "src/market_platform_foundation/offline_guard.py",
+        "src/market_platform_foundation/verifier.py",
+        "phase0-dependency-lock.json"
+      ],
+      "responsibility": "Credential redaction, offline denial, git binding, dependency locking, and acceptance verification.",
+      "evidence": [
+        "tools/validation_manifest.json lists offline denial and credential redaction as mandatory invariants.",
+        "BUILD35 release evidence depends on immutable source and validation bindings."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "provider-and-lane-tooling",
+      "classification": "RETAINED_SUPPORTING",
+      "scope": [
+        "tools/cboe_options",
+        "tools/cftc",
+        "tools/discovery",
+        "tools/eia",
+        "tools/finviz",
+        "tools/fred",
+        "tools/futures",
+        "tools/ibkr",
+        "tools/integration",
+        "tools/market_context",
+        "tools/moomoo",
+        "tools/news",
+        "tools/options",
+        "tools/order_flow",
+        "tools/providers",
+        "tools/sec_edgar",
+        "tools/sec_ftd",
+        "tools/short_intelligence",
+        "tools/weather"
+      ],
+      "responsibility": "Fixture builders, opt-in probes, lane acceptance, and provider-specific operator tooling around canonical source semantics.",
+      "evidence": [
+        "Validation source globs route these tools to their canonical domain suites.",
+        "Live probes remain opt-in and do not establish admitted research data."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "qualification-and-operations-tooling",
+      "classification": "RETAINED_SUPPORTING",
+      "scope": [
+        "tools/cloud",
+        "tools/forward_qualification",
+        "tools/live_canary",
+        "tools/live_execution_safety",
+        "tools/paper_execution_qualification",
+        "tools/platform",
+        "tools/provider_readiness.py",
+        "tools/research",
+        "tools/state",
+        "tools/system_acceptance"
+      ],
+      "responsibility": "Qualification, deployment preparation, state administration, safety exercises, and acceptance publication around BUILD25 through BUILD35 authorities.",
+      "evidence": [
+        "artifacts/system-acceptance through artifacts/full-system-acceptance bind outputs from these tools.",
+        "The tools exercise canonical authorities but do not create parallel authority."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "validation-benchmark-and-mutation-support",
+      "classification": "RETAINED_SUPPORTING",
+      "scope": [
+        "tools/benchmark.py",
+        "tools/mutation_verification.py"
+      ],
+      "responsibility": "Informational performance measurement and controlled proof that mandatory validation invariants detect regressions.",
+      "evidence": [
+        "tests/validation/test_benchmark.py keeps benchmark results non-gating.",
+        "tests/validation/test_mutation_verification.py binds the required failure modes."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "repository-evidence-and-documentation",
+      "classification": "RETAINED_SUPPORTING",
+      "scope": [
+        ".env.example",
+        ".github/workflows/imp-validate.yml",
+        "README.md",
+        "artifacts",
+        "docs",
+        "evidence",
+        "manifests",
+        "tests"
+      ],
+      "responsibility": "Human guidance, CI, test suites, schemas, immutable evidence, release artifacts, and example configuration.",
+      "evidence": [
+        "BUILD35 release governance requires preserved acceptance artifacts and limitations.",
+        "AGENTS.md and README.md define the repository validation and operating contract."
+      ],
+      "disposition": "KEEP"
+    },
+    {
+      "id": "ui2-acceptance-generation",
+      "classification": "SUPERSEDED",
+      "scope": [
+        "src/market_platform_foundation/ui1_assertions.py",
+        "src/market_platform_foundation/ui2_assertions.py",
+        "tools/ui2"
+      ],
+      "responsibility": "Historical UI-001/UI-002 acceptance generation, superseded as an active UI generation by the unified workstation.",
+      "evidence": [
+        "README.md identifies Platform P3.2 and the current ui/ frontend as the unified live decision workstation.",
+        "The assertion modules remain useful for immutable historical UI acceptance verification."
+      ],
+      "canonical_target": "operator-ui-and-assistant",
+      "disposition": "PRESERVE_HISTORY"
+    },
+    {
+      "id": "phase4-bar-book-state",
+      "classification": "SUPERSEDED",
+      "scope": [
+        "src/market_platform_foundation/state"
+      ],
+      "responsibility": "Historical Phase 4 in-memory bar-book state, replaced for platform operation by durable local state and canonical runtime stores.",
+      "evidence": [
+        "Runtime imports are confined to historical Phase 4 validation while platform operation uses local_state and runtime storage.",
+        "README.md records the durable SQLite state transition at Platform P3."
+      ],
+      "canonical_target": "execution-risk-and-state-authorities",
+      "disposition": "PRESERVE_HISTORY"
+    },
+    {
+      "id": "nested-stock-data-dashboard",
+      "classification": "DUPLICATE",
+      "scope": ["pipelines/stock_data/src/operator_console"],
+      "responsibility": "Pipeline-local Rich CLI console (renamed from src/ui). Not a competing web workstation — consolidation complete.",
+      "evidence": [
+        "Renamed pipelines/stock_data/src/ui → operator_console (2026-09-01) to eliminate false duplicate-UI classification.",
+        "pipelines/stock_data/src/operator_console/README.md documents CLI-only scope vs canonical ui/ workstation.",
+        "pipelines/stock_data/tests/test_monorepo_boundary.py prohibits coupling collector into platform core."
+      ],
+      "canonical_target": "operator-ui-and-assistant",
+      "disposition": "CONSOLIDATE"
+    },
+    {
+      "id": "nested-stock-data-collector",
+      "classification": "UNINTEGRATED",
+      "scope": [
+        "pipelines/stock_data/docs",
+        "pipelines/stock_data/pyproject.toml",
+        "pipelines/stock_data/scripts",
+        "pipelines/stock_data/src/acquisition.py",
+        "pipelines/stock_data/src/cli_args.py",
+        "pipelines/stock_data/src/config.py",
+        "pipelines/stock_data/src/database.py",
+        "pipelines/stock_data/src/exporters",
+        "pipelines/stock_data/src/inventory.py",
+        "pipelines/stock_data/src/pipeline.py",
+        "pipelines/stock_data/src/refresh.py",
+        "pipelines/stock_data/src/run_config.py",
+        "pipelines/stock_data/src/scrapers",
+        "pipelines/stock_data/src/ticker_metadata",
+        "pipelines/stock_data/src/utils",
+        "pipelines/stock_data/tests"
+      ],
+      "responsibility": "Viable mutable equity-data acquisition and ticker-metadata staging project that is physically nested but not composed into admitted platform data authority.",
+      "evidence": [
+        "pipelines/stock_data/README.md calls the output mutable collection staging and explicitly not research-admitted data.",
+        "pipelines/stock_data/tests/test_monorepo_boundary.py proves the platform core does not import collector dependencies."
+      ],
+      "disposition": "DEFER"
+    }
+  ]
+}

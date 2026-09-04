@@ -1,0 +1,33 @@
+{
+  "fixture_id": "FIXTURE-LOB-ES",
+  "symbol": "ES",
+  "aggregate_status": "PASS",
+  "gate_summary": [
+    {
+      "gate_milestone": "OF12-S1",
+      "gate_status": "PASS"
+    },
+    {
+      "gate_milestone": "OF-Q9",
+      "gate_status": "PASS"
+    }
+  ],
+  "latest_transition_index": 7,
+  "latest_lob_forecast": {
+    "lob_model_version": "lob_engineered_baseline_v1",
+    "lob_model_version_number": "1",
+    "baseline_tier": "M8",
+    "lob_mid_up_probability": 0.620112,
+    "lob_expected_mid_delta": 0.1633419,
+    "lob_direction_bias": "UP",
+    "signal_half_life_ms": 100,
+    "lob_composite_score": 0.181491,
+    "lob_model_confidence": 0.770347,
+    "book_state_valid": true,
+    "lob_quality_flags": [
+      "MBO_UNAVAILABLE"
+    ],
+    "research_only": true,
+    "experimental": true
+  }
+}

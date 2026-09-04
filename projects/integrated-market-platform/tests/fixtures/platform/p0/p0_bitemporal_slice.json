@@ -1,0 +1,136 @@
+{
+  "admission_id": "ADMITTED-P0-REF-001",
+  "admitted_fixture_id": "p0_bitemporal_slice",
+  "records": [
+    {
+      "kind": "FUTURES_SPEC",
+      "entity_key": "ES",
+      "record_id": "es-spec",
+      "record_version": 1,
+      "valid_from": "2020-01-01T00:00:00.000000000Z",
+      "valid_to": "",
+      "known_from": "2020-01-01T00:00:00.000000000Z",
+      "known_to": "2024-06-15T00:00:00.000000000Z",
+      "payload": {
+        "multiplier": "50",
+        "tick_size": "0.25",
+        "tick_value": "12.50",
+        "point_value": "50",
+        "spec_version": "es_cme_v1",
+        "spec_effective_date": "2020-01-01"
+      }
+    },
+    {
+      "kind": "FUTURES_SPEC",
+      "entity_key": "ES",
+      "record_id": "es-spec",
+      "record_version": 2,
+      "valid_from": "2020-01-01T00:00:00.000000000Z",
+      "valid_to": "",
+      "known_from": "2024-06-15T00:00:00.000000000Z",
+      "known_to": "",
+      "payload": {
+        "multiplier": "50",
+        "tick_size": "0.25",
+        "tick_value": "12.50",
+        "point_value": "50",
+        "spec_version": "es_cme_v1_corrected",
+        "spec_effective_date": "2020-01-01"
+      }
+    },
+    {
+      "kind": "EARNINGS_CALENDAR",
+      "entity_key": "NVDA",
+      "record_id": "nvda-earnings-2026q2",
+      "record_version": 1,
+      "valid_from": "2024-01-01T00:00:00.000000000Z",
+      "valid_to": "",
+      "known_from": "2024-01-15T00:00:00.000000000Z",
+      "known_to": "2024-06-15T00:00:00.000000000Z",
+      "payload": {
+        "earnings_event_time": "2026-08-26T20:00:00.000000000Z",
+        "event_type": "earnings"
+      }
+    },
+    {
+      "kind": "EARNINGS_CALENDAR",
+      "entity_key": "NVDA",
+      "record_id": "nvda-earnings-2026q2",
+      "record_version": 2,
+      "valid_from": "2024-01-01T00:00:00.000000000Z",
+      "valid_to": "",
+      "known_from": "2024-06-15T00:00:00.000000000Z",
+      "known_to": "",
+      "payload": {
+        "earnings_event_time": "2026-08-27T20:00:00.000000000Z",
+        "event_type": "earnings"
+      }
+    },
+    {
+      "kind": "OPTIONS_OI",
+      "entity_key": "NVDA",
+      "record_id": "nvda-oi",
+      "record_version": 1,
+      "valid_from": "2024-01-01T00:00:00.000000000Z",
+      "valid_to": "",
+      "known_from": "2024-06-01T00:00:00.000000000Z",
+      "known_to": "2024-06-15T00:00:00.000000000Z",
+      "payload": {
+        "open_interest": 1000
+      }
+    },
+    {
+      "kind": "OPTIONS_OI",
+      "entity_key": "NVDA",
+      "record_id": "nvda-oi",
+      "record_version": 2,
+      "valid_from": "2024-01-01T00:00:00.000000000Z",
+      "valid_to": "",
+      "known_from": "2024-06-15T00:00:00.000000000Z",
+      "known_to": "",
+      "payload": {
+        "open_interest": 1250
+      }
+    },
+    {
+      "kind": "DIVIDEND_ASSUMPTION",
+      "entity_key": "NVDA",
+      "record_id": "nvda-div",
+      "record_version": 1,
+      "valid_from": "2024-01-01T00:00:00.000000000Z",
+      "valid_to": "",
+      "known_from": "2024-01-01T00:00:00.000000000Z",
+      "known_to": "2024-06-15T00:00:00.000000000Z",
+      "payload": {
+        "dividend_yield": "0.0100"
+      }
+    },
+    {
+      "kind": "DIVIDEND_ASSUMPTION",
+      "entity_key": "NVDA",
+      "record_id": "nvda-div",
+      "record_version": 2,
+      "valid_from": "2024-01-01T00:00:00.000000000Z",
+      "valid_to": "",
+      "known_from": "2024-06-15T00:00:00.000000000Z",
+      "known_to": "",
+      "payload": {
+        "dividend_yield": "0.0120"
+      }
+    },
+    {
+      "kind": "SYMBOL_MAPPING",
+      "entity_key": "ES",
+      "record_id": "es-cme",
+      "record_version": 1,
+      "valid_from": "2020-01-01T00:00:00.000000000Z",
+      "valid_to": "",
+      "known_from": "2020-01-01T00:00:00.000000000Z",
+      "known_to": "",
+      "payload": {
+        "venue_id": "CME",
+        "provider_symbol": "ES"
+      }
+    }
+  ]
+}

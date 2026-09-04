@@ -1,0 +1,1105 @@
+{
+  "schema_version": "1.0",
+  "timestamp": "2026-08-20T21:47:17.5187291Z",
+  "platform": {
+    "os": "Microsoft Windows NT 10.0.26200.0",
+    "python": "Python 3.11.15",
+    "logical_cpu_count": 8
+  },
+  "current_runner": {
+    "path": "tools/run_all_tests.py",
+    "architecture": "serial_per_directory_subprocess",
+    "canonical_counts": "console_text_scraping",
+    "configured_test_directories": [
+      "postroot",
+      "phase0",
+      "phase0a",
+      "phase1",
+      "phase2",
+      "phase3",
+      "phase4",
+      "phase5",
+      "phase5r",
+      "phase6",
+      "phase7",
+      "phase8",
+      "phase9",
+      "phase10",
+      "phase11",
+      "storage",
+      "assistant",
+      "donor_bridge",
+      "donor_patterns",
+      "execution",
+      "order_flow",
+      "contracts",
+      "cross_lane",
+      "distribution",
+      "futures",
+      "gridiq",
+      "integration",
+      "options",
+      "providers",
+      "runtime",
+      "squeeze_models",
+      "ui1",
+      "ui2",
+      "mra001",
+      "mra002",
+      "market_context",
+      "participant",
+      "market_data",
+      "sec_edgar",
+      "short_intelligence",
+      "sec_ftd",
+      "cftc",
+      "fred",
+      "eia",
+      "live_fred",
+      "live_sec",
+      "live_sec_ftd",
+      "live_finra",
+      "live_cftc",
+      "live_eia",
+      "live_nasdaq",
+      "live_nyse",
+      "live_cboe"
+    ],
+    "configured_directory_count": 53,
+    "discovered_test_directories": [
+      "postroot",
+      "phase0",
+      "phase0a",
+      "phase1",
+      "phase2",
+      "phase3",
+      "phase4",
+      "phase5",
+      "phase5r",
+      "phase6",
+      "phase7",
+      "phase8",
+      "storage",
+      "assistant",
+      "donor_bridge",
+      "donor_patterns",
+      "execution",
+      "order_flow",
+      "contracts",
+      "cross_lane",
+      "distribution",
+      "futures",
+      "gridiq",
+      "integration",
+      "options",
+      "providers",
+      "runtime",
+      "squeeze_models",
+      "ui1",
+      "ui2",
+      "mra001",
+      "mra002",
+      "market_context",
+      "participant",
+      "market_data",
+      "sec_edgar",
+      "short_intelligence",
+      "sec_ftd",
+      "cftc",
+      "fred",
+      "eia",
+      "live_fred",
+      "live_sec",
+      "live_sec_ftd",
+      "live_finra",
+      "live_cftc",
+      "live_eia",
+      "live_nasdaq",
+      "live_nyse",
+      "live_cboe"
+    ],
+    "discovered_directory_count": 50,
+    "actual_test_directories": [
+      "assistant",
+      "cftc",
+      "contracts",
+      "cross_lane",
+      "distribution",
+      "donor_bridge",
+      "donor_patterns",
+      "eia",
+      "execution",
+      "fred",
+      "futures",
+      "gridiq",
+      "integration",
+      "live_cboe",
+      "live_cftc",
+      "live_eia",
+      "live_finra",
+      "live_fred",
+      "live_moomoo",
+      "live_nasdaq",
+      "live_nyse",
+      "live_sec",
+      "live_sec_ftd",
+      "market_context",
+      "market_data",
+      "mra001",
+      "mra002",
+      "options",
+      "order_flow",
+      "participant",
+      "phase0",
+      "phase0a",
+      "phase1",
+      "phase2",
+      "phase3",
+      "phase4",
+      "phase5",
+      "phase5r",
+      "phase6",
+      "phase7",
+      "phase8",
+      "postroot",
+      "providers",
+      "runtime",
+      "sec_edgar",
+      "sec_ftd",
+      "short_intelligence",
+      "squeeze_models",
+      "storage",
+      "ui1",
+      "ui2"
+    ],
+    "actual_directory_count": 51,
+    "missing_configured_directories": [
+      "phase9",
+      "phase10",
+      "phase11"
+    ],
+    "existing_omitted_directories": [
+      "live_moomoo"
+    ]
+  },
+  "test_totals": {
+    "tests_run": 1081,
+    "passes": 1049,
+    "skips": 32,
+    "failures": 0,
+    "errors": 0,
+    "exit_code": 0
+  },
+  "wall_seconds": 511.9203797,
+  "process_launches": 51,
+  "per_directory_runtime": [
+    {
+      "suite_id": "postroot",
+      "tests_run": 40,
+      "passes": 40,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 8.581
+    },
+    {
+      "suite_id": "phase0",
+      "tests_run": 48,
+      "passes": 47,
+      "skips": 1,
+      "failures": 0,
+      "wall_seconds": 18.943
+    },
+    {
+      "suite_id": "phase0a",
+      "tests_run": 9,
+      "passes": 9,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.027
+    },
+    {
+      "suite_id": "phase1",
+      "tests_run": 6,
+      "passes": 6,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.058
+    },
+    {
+      "suite_id": "phase2",
+      "tests_run": 6,
+      "passes": 6,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.001
+    },
+    {
+      "suite_id": "phase3",
+      "tests_run": 8,
+      "passes": 8,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.348
+    },
+    {
+      "suite_id": "phase4",
+      "tests_run": 7,
+      "passes": 7,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.001
+    },
+    {
+      "suite_id": "phase5",
+      "tests_run": 3,
+      "passes": 3,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.0
+    },
+    {
+      "suite_id": "phase5r",
+      "tests_run": 14,
+      "passes": 14,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.094
+    },
+    {
+      "suite_id": "phase6",
+      "tests_run": 4,
+      "passes": 4,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.001
+    },
+    {
+      "suite_id": "phase7",
+      "tests_run": 3,
+      "passes": 3,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.009
+    },
+    {
+      "suite_id": "phase8",
+      "tests_run": 5,
+      "passes": 5,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 33.084
+    },
+    {
+      "suite_id": "storage",
+      "tests_run": 9,
+      "passes": 9,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.029
+    },
+    {
+      "suite_id": "assistant",
+      "tests_run": 16,
+      "passes": 16,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 30.401
+    },
+    {
+      "suite_id": "donor_bridge",
+      "tests_run": 87,
+      "passes": 83,
+      "skips": 4,
+      "failures": 0,
+      "wall_seconds": 96.55
+    },
+    {
+      "suite_id": "donor_patterns",
+      "tests_run": 14,
+      "passes": 14,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.001
+    },
+    {
+      "suite_id": "execution",
+      "tests_run": 2,
+      "passes": 2,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.0
+    },
+    {
+      "suite_id": "order_flow",
+      "tests_run": 61,
+      "passes": 61,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.014
+    },
+    {
+      "suite_id": "contracts",
+      "tests_run": 38,
+      "passes": 38,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.004
+    },
+    {
+      "suite_id": "cross_lane",
+      "tests_run": 19,
+      "passes": 19,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.004
+    },
+    {
+      "suite_id": "distribution",
+      "tests_run": 9,
+      "passes": 9,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.024
+    },
+    {
+      "suite_id": "futures",
+      "tests_run": 58,
+      "passes": 58,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 6.222
+    },
+    {
+      "suite_id": "gridiq",
+      "tests_run": 11,
+      "passes": 11,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 14.313
+    },
+    {
+      "suite_id": "integration",
+      "tests_run": 23,
+      "passes": 21,
+      "skips": 2,
+      "failures": 0,
+      "wall_seconds": 50.905
+    },
+    {
+      "suite_id": "options",
+      "tests_run": 82,
+      "passes": 82,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.028
+    },
+    {
+      "suite_id": "providers",
+      "tests_run": 92,
+      "passes": 92,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 71.426
+    },
+    {
+      "suite_id": "runtime",
+      "tests_run": 22,
+      "passes": 22,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.065
+    },
+    {
+      "suite_id": "squeeze_models",
+      "tests_run": 11,
+      "passes": 11,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.002
+    },
+    {
+      "suite_id": "ui1",
+      "tests_run": 13,
+      "passes": 13,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 93.161
+    },
+    {
+      "suite_id": "ui2",
+      "tests_run": 5,
+      "passes": 5,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 13.416
+    },
+    {
+      "suite_id": "mra001",
+      "tests_run": 3,
+      "passes": 3,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 7.405
+    },
+    {
+      "suite_id": "mra002",
+      "tests_run": 3,
+      "passes": 3,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 15.898
+    },
+    {
+      "suite_id": "market_context",
+      "tests_run": 95,
+      "passes": 95,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.145
+    },
+    {
+      "suite_id": "participant",
+      "tests_run": 76,
+      "passes": 76,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.07
+    },
+    {
+      "suite_id": "market_data",
+      "tests_run": 7,
+      "passes": 7,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.001
+    },
+    {
+      "suite_id": "sec_edgar",
+      "tests_run": 21,
+      "passes": 21,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 1.211
+    },
+    {
+      "suite_id": "short_intelligence",
+      "tests_run": 37,
+      "passes": 37,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 1.297
+    },
+    {
+      "suite_id": "sec_ftd",
+      "tests_run": 16,
+      "passes": 16,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.01
+    },
+    {
+      "suite_id": "cftc",
+      "tests_run": 20,
+      "passes": 20,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.004
+    },
+    {
+      "suite_id": "fred",
+      "tests_run": 30,
+      "passes": 30,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.006
+    },
+    {
+      "suite_id": "eia",
+      "tests_run": 23,
+      "passes": 23,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 0.005
+    },
+    {
+      "suite_id": "live_fred",
+      "tests_run": 5,
+      "passes": 0,
+      "skips": 5,
+      "failures": 0,
+      "wall_seconds": 0.0
+    },
+    {
+      "suite_id": "live_sec",
+      "tests_run": 1,
+      "passes": 0,
+      "skips": 1,
+      "failures": 0,
+      "wall_seconds": 0.0
+    },
+    {
+      "suite_id": "live_sec_ftd",
+      "tests_run": 1,
+      "passes": 0,
+      "skips": 1,
+      "failures": 0,
+      "wall_seconds": 0.0
+    },
+    {
+      "suite_id": "live_finra",
+      "tests_run": 2,
+      "passes": 0,
+      "skips": 2,
+      "failures": 0,
+      "wall_seconds": 0.0
+    },
+    {
+      "suite_id": "live_cftc",
+      "tests_run": 2,
+      "passes": 0,
+      "skips": 2,
+      "failures": 0,
+      "wall_seconds": 0.0
+    },
+    {
+      "suite_id": "live_eia",
+      "tests_run": 11,
+      "passes": 0,
+      "skips": 11,
+      "failures": 0,
+      "wall_seconds": 0.0
+    },
+    {
+      "suite_id": "live_nasdaq",
+      "tests_run": 1,
+      "passes": 0,
+      "skips": 1,
+      "failures": 0,
+      "wall_seconds": 0.0
+    },
+    {
+      "suite_id": "live_nyse",
+      "tests_run": 1,
+      "passes": 0,
+      "skips": 1,
+      "failures": 0,
+      "wall_seconds": 0.0
+    },
+    {
+      "suite_id": "live_cboe",
+      "tests_run": 1,
+      "passes": 0,
+      "skips": 1,
+      "failures": 0,
+      "wall_seconds": 0.0
+    }
+  ],
+  "slowest_directories": [
+    {
+      "suite_id": "donor_bridge",
+      "tests_run": 87,
+      "passes": 83,
+      "skips": 4,
+      "failures": 0,
+      "wall_seconds": 96.55
+    },
+    {
+      "suite_id": "ui1",
+      "tests_run": 13,
+      "passes": 13,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 93.161
+    },
+    {
+      "suite_id": "providers",
+      "tests_run": 92,
+      "passes": 92,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 71.426
+    },
+    {
+      "suite_id": "integration",
+      "tests_run": 23,
+      "passes": 21,
+      "skips": 2,
+      "failures": 0,
+      "wall_seconds": 50.905
+    },
+    {
+      "suite_id": "phase8",
+      "tests_run": 5,
+      "passes": 5,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 33.084
+    },
+    {
+      "suite_id": "assistant",
+      "tests_run": 16,
+      "passes": 16,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 30.401
+    },
+    {
+      "suite_id": "phase0",
+      "tests_run": 48,
+      "passes": 47,
+      "skips": 1,
+      "failures": 0,
+      "wall_seconds": 18.943
+    },
+    {
+      "suite_id": "mra002",
+      "tests_run": 3,
+      "passes": 3,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 15.898
+    },
+    {
+      "suite_id": "gridiq",
+      "tests_run": 11,
+      "passes": 11,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 14.313
+    },
+    {
+      "suite_id": "ui2",
+      "tests_run": 5,
+      "passes": 5,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 13.416
+    },
+    {
+      "suite_id": "postroot",
+      "tests_run": 40,
+      "passes": 40,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 8.581
+    },
+    {
+      "suite_id": "mra001",
+      "tests_run": 3,
+      "passes": 3,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 7.405
+    },
+    {
+      "suite_id": "futures",
+      "tests_run": 58,
+      "passes": 58,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 6.222
+    },
+    {
+      "suite_id": "short_intelligence",
+      "tests_run": 37,
+      "passes": 37,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 1.297
+    },
+    {
+      "suite_id": "sec_edgar",
+      "tests_run": 21,
+      "passes": 21,
+      "skips": 0,
+      "failures": 0,
+      "wall_seconds": 1.211
+    }
+  ],
+  "slowest_cases": {
+    "available": false,
+    "reason": "legacy unittest runner did not capture per-test durations"
+  },
+  "runner_overhead": {
+    "serial_test_seconds": 463.764,
+    "orchestration_seconds": 48.1563797,
+    "single_python_startup_median_seconds": 0.6744831,
+    "single_python_startup_samples": [
+      0.5767682,
+      0.565045,
+      0.5577714,
+      0.8988588,
+      0.6250504,
+      1.0208759,
+      0.9400221,
+      0.6023398,
+      0.8972327,
+      0.6129499,
+      0.8909837,
+      0.6298064,
+      1.1417515,
+      0.8350423,
+      0.5724946,
+      0.5792808,
+      0.6744831,
+      0.7020907,
+      0.9201645,
+      0.5750013,
+      1.1920506
+    ],
+    "tiny_unittest_worker_median_seconds": 0.7314767,
+    "tiny_unittest_worker_samples": [
+      0.7049433,
+      0.7588364,
+      0.8885879,
+      0.6035644,
+      0.8844826,
+      0.5714132,
+      0.9105779,
+      0.6913136,
+      0.7314767,
+      0.821904,
+      0.6684207
+    ],
+    "directory_discovery_seconds": 4.275731499998983,
+    "directory_discovery_measurements": [
+      {
+        "suite": "postroot",
+        "tests": 40,
+        "seconds": 0.013889800000015384
+      },
+      {
+        "suite": "phase0",
+        "tests": 48,
+        "seconds": 0.05236820000004627
+      },
+      {
+        "suite": "phase0a",
+        "tests": 9,
+        "seconds": 0.005408199999919816
+      },
+      {
+        "suite": "phase1",
+        "tests": 6,
+        "seconds": 0.0016206999998757965
+      },
+      {
+        "suite": "phase2",
+        "tests": 6,
+        "seconds": 0.00921169999992344
+      },
+      {
+        "suite": "phase3",
+        "tests": 8,
+        "seconds": 0.03537340000002587
+      },
+      {
+        "suite": "phase4",
+        "tests": 7,
+        "seconds": 0.02126959999986866
+      },
+      {
+        "suite": "phase5",
+        "tests": 3,
+        "seconds": 0.019262199999957375
+      },
+      {
+        "suite": "phase5r",
+        "tests": 14,
+        "seconds": 0.029608000000052925
+      },
+      {
+        "suite": "phase6",
+        "tests": 4,
+        "seconds": 0.019323699999858945
+      },
+      {
+        "suite": "phase7",
+        "tests": 3,
+        "seconds": 0.049504699999943114
+      },
+      {
+        "suite": "phase8",
+        "tests": 5,
+        "seconds": 0.04318569999986721
+      },
+      {
+        "suite": "storage",
+        "tests": 9,
+        "seconds": 0.019211399999903733
+      },
+      {
+        "suite": "assistant",
+        "tests": 16,
+        "seconds": 0.13468009999996866
+      },
+      {
+        "suite": "donor_bridge",
+        "tests": 87,
+        "seconds": 0.2955382999998619
+      },
+      {
+        "suite": "donor_patterns",
+        "tests": 14,
+        "seconds": 0.06127599999990707
+      },
+      {
+        "suite": "execution",
+        "tests": 2,
+        "seconds": 0.006401099999948201
+      },
+      {
+        "suite": "order_flow",
+        "tests": 61,
+        "seconds": 0.12620579999997972
+      },
+      {
+        "suite": "contracts",
+        "tests": 38,
+        "seconds": 0.19293969999989713
+      },
+      {
+        "suite": "cross_lane",
+        "tests": 19,
+        "seconds": 0.06566659999998592
+      },
+      {
+        "suite": "distribution",
+        "tests": 9,
+        "seconds": 0.10708999999997104
+      },
+      {
+        "suite": "futures",
+        "tests": 58,
+        "seconds": 0.5233881999999994
+      },
+      {
+        "suite": "gridiq",
+        "tests": 11,
+        "seconds": 0.13366869999981645
+      },
+      {
+        "suite": "integration",
+        "tests": 23,
+        "seconds": 0.10843980000004194
+      },
+      {
+        "suite": "options",
+        "tests": 82,
+        "seconds": 0.1132135999998809
+      },
+      {
+        "suite": "providers",
+        "tests": 92,
+        "seconds": 0.21713039999985995
+      },
+      {
+        "suite": "runtime",
+        "tests": 22,
+        "seconds": 0.15152360000001863
+      },
+      {
+        "suite": "squeeze_models",
+        "tests": 11,
+        "seconds": 0.056333600000016304
+      },
+      {
+        "suite": "ui1",
+        "tests": 13,
+        "seconds": 0.08987400000000889
+      },
+      {
+        "suite": "ui2",
+        "tests": 5,
+        "seconds": 0.09783119999997325
+      },
+      {
+        "suite": "mra001",
+        "tests": 3,
+        "seconds": 0.08828519999997297
+      },
+      {
+        "suite": "mra002",
+        "tests": 3,
+        "seconds": 0.15285240000002887
+      },
+      {
+        "suite": "market_context",
+        "tests": 95,
+        "seconds": 0.1946020000000317
+      },
+      {
+        "suite": "participant",
+        "tests": 76,
+        "seconds": 0.20007699999996476
+      },
+      {
+        "suite": "market_data",
+        "tests": 7,
+        "seconds": 0.06266540000001442
+      },
+      {
+        "suite": "sec_edgar",
+        "tests": 21,
+        "seconds": 0.0963553999999931
+      },
+      {
+        "suite": "short_intelligence",
+        "tests": 37,
+        "seconds": 0.10657190000006267
+      },
+      {
+        "suite": "sec_ftd",
+        "tests": 16,
+        "seconds": 0.10299050000003263
+      },
+      {
+        "suite": "cftc",
+        "tests": 20,
+        "seconds": 0.0934704999999667
+      },
+      {
+        "suite": "fred",
+        "tests": 30,
+        "seconds": 0.09903870000016468
+      },
+      {
+        "suite": "eia",
+        "tests": 23,
+        "seconds": 0.1151705000002039
+      },
+      {
+        "suite": "live_fred",
+        "tests": 5,
+        "seconds": 0.05416509999986374
+      },
+      {
+        "suite": "live_sec",
+        "tests": 1,
+        "seconds": 0.0010315000001810404
+      },
+      {
+        "suite": "live_sec_ftd",
+        "tests": 1,
+        "seconds": 0.00126389999991261
+      },
+      {
+        "suite": "live_finra",
+        "tests": 2,
+        "seconds": 0.0017658000001574692
+      },
+      {
+        "suite": "live_cftc",
+        "tests": 2,
+        "seconds": 0.03431290000003173
+      },
+      {
+        "suite": "live_eia",
+        "tests": 11,
+        "seconds": 0.06740190000004986
+      },
+      {
+        "suite": "live_nasdaq",
+        "tests": 1,
+        "seconds": 0.001082300000007308
+      },
+      {
+        "suite": "live_nyse",
+        "tests": 1,
+        "seconds": 0.0010926999998446263
+      },
+      {
+        "suite": "live_cboe",
+        "tests": 1,
+        "seconds": 0.001097900000104346
+      }
+    ],
+    "estimated_interpreter_startup_seconds": 33.724155,
+    "residual_parent_console_seconds": 10.156493200001016,
+    "stdout_bytes": 1528,
+    "stderr_bytes": 142691
+  },
+  "fixture_activity": {
+    "measurement": "static inventory and construction-site audit; legacy runner has no worker-local open metrics",
+    "repository_fixture_files": 171,
+    "repository_fixture_bytes": 338220,
+    "pinned_donor_jsonl_bytes": 8046257,
+    "replay_store_direct_test_constructions_at_least": 10
+  },
+  "import_measurements": [
+    {
+      "module": "tools.run_all_tests",
+      "median_wall_seconds": 0.5652489,
+      "samples": [
+        0.5778108,
+        0.5583167,
+        0.5652489
+      ]
+    },
+    {
+      "module": "market_platform_foundation.ui_api.store",
+      "median_wall_seconds": 0.6373985,
+      "samples": [
+        0.6525731,
+        0.6373985,
+        0.6364792
+      ]
+    },
+    {
+      "module": "market_platform_foundation.fred.registry",
+      "median_wall_seconds": 0.6136543,
+      "samples": [
+        0.6234405,
+        0.608308,
+        0.6136543
+      ]
+    },
+    {
+      "module": "market_platform_foundation.eia.registry",
+      "median_wall_seconds": 0.6170514,
+      "samples": [
+        0.6954207,
+        0.6131891,
+        0.6170514
+      ]
+    },
+    {
+      "module": "market_platform_foundation.runtime.bitemporal_store",
+      "median_wall_seconds": 0.5693961,
+      "samples": [
+        0.5668684,
+        0.5786612,
+        0.5693961
+      ]
+    }
+  ],
+  "parallelization_candidates": [
+    "storage",
+    "donor_patterns",
+    "execution",
+    "order_flow",
+    "contracts",
+    "cross_lane",
+    "distribution",
+    "futures",
+    "integration",
+    "options",
+    "providers",
+    "runtime",
+    "squeeze_models",
+    "market_context",
+    "participant",
+    "market_data",
+    "sec_edgar",
+    "short_intelligence",
+    "sec_ftd",
+    "cftc",
+    "fred",
+    "eia"
+  ],
+  "profiling_notes": [
+    "Full run used the pre-change tools/run_all_tests.py unchanged.",
+    "Live directories were discovered and skipped by environment gates rather than excluded by selection.",
+    "Per-test timing and exact fixture-open counts were unavailable from the legacy runner; no values were fabricated."
+  ]
+}

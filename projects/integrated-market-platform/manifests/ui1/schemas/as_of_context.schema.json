@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ui1.as_of_context",
+  "title": "AsOfContext",
+  "type": "object",
+  "required": ["mode", "as_of_time", "timezone"],
+  "properties": {
+    "mode": { "enum": ["LIVE", "REPLAY", "SIMULATION", "PAPER"] },
+    "as_of_time": { "type": "string" },
+    "replay_session_id": { "type": "string" },
+    "timezone": { "type": "string" }
+  },
+  "additionalProperties": false
+}

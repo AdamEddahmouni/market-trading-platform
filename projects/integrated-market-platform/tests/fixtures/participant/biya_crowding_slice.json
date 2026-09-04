@@ -1,0 +1,12 @@
+{
+  "lookback_days": 180,
+  "min_independent_participants": 2,
+  "min_institutional_participants_for_crowding": 2,
+  "crowding_score_threshold": 0.66,
+  "disagreement_score_threshold": 0.34,
+  "affiliation_groups": {
+    "Beta Capital LP": "Beta Capital Group",
+    "Delta Advisors LP": "Beta Capital Group"
+  },
+  "producer_version": "participant_crowding_v1"
+}

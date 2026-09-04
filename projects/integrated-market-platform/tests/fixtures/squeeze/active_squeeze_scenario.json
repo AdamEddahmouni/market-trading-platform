@@ -1,0 +1,22 @@
+{
+  "scenario_id": "active_squeeze_nvda_fixture_v1",
+  "symbol": "NVDA",
+  "description": "Fixture-first active squeeze harness: NVDA order flow + O6 negative-gamma dealer proxy",
+  "donor_row": {
+    "pressure": 72.0,
+    "ignition": 75.0,
+    "adam_classification": "WATCH",
+    "freshness": "CURRENT"
+  },
+  "expected_causal": {
+    "state": "ACTIVE_SQUEEZE",
+    "min_reflexivity_strength": 70,
+    "min_remaining_fuel": 30
+  },
+  "cross_lane_hints": {
+    "order_flow_aggressive_buy": true,
+    "options_gamma_amplification": true,
+    "options_hedging_pressure": 2.0
+  },
+  "prediction_cutoff": "2026-07-21T20:30:10.000000000Z"
+}

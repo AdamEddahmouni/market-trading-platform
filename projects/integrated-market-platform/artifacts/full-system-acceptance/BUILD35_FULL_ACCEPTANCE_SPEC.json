@@ -1,0 +1,8 @@
+{
+  "acceptance_spec_id": "FSASPEC-fce42e10535b9889d070d86f2315b14f3f65ec9eab1235d60acfcad44e3e1c4f",
+  "domain_count": 29,
+  "required_build_range": [
+    1,
+    35
+  ]
+}

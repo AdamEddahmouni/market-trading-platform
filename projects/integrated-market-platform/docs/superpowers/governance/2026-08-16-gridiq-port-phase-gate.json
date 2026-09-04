@@ -1,0 +1,56 @@
+{
+  "artifact_type": "GRIDIQ_PORT_PHASE_GATE_RECORD",
+  "created_at": "2026-08-16T04:30:00.000000000Z",
+  "donor_logical_id": "PROTO-GRIDIQ-001",
+  "donor_evidence_path": "DS-440-CAPSTONE-GridIQ-main/DS-440-CAPSTONE-GridIQ-main",
+  "gate_sequence": [
+    {
+      "canonical_destination": "research.dataset_reader",
+      "donor_evidence": "gridiq-backend/app/nflverse_parquet.py",
+      "gate_phase": "Phase 5R",
+      "gate_status": "PASS",
+      "matrix_classification": "PORT_ADAPT",
+      "order": 1,
+      "rationale": "Phase 5R research/model infrastructure is published PASS; bounded tabular projection with hash/schema identity is the first GridIQ-inspired capability."
+    },
+    {
+      "canonical_destination": "ui.api_client_and_hooks",
+      "donor_evidence": "gridiq-frontend/src/lib/api/endpoints.ts",
+      "gate_phase": "UI-001",
+      "gate_status": "PASS",
+      "matrix_classification": "PORT_ADAPT",
+      "order": 2,
+      "rationale": "Research UI v1 is operational; Zod-validated endpoints and React Query hooks extend the existing partial alignment without adopting Axios or browser token storage."
+    },
+    {
+      "canonical_destination": "assistant.audit_store",
+      "donor_evidence": "gridiq-backend/app/models/conversation.py",
+      "gate_phase": "ADR-LLM-001",
+      "gate_status": "ACCEPTED",
+      "matrix_classification": "PORT_ADAPT",
+      "order": 3,
+      "rationale": "Provider-neutral inference ADR is accepted; conversation persistence and token provenance may be reimplemented only behind the inference boundary with no Gemini coupling."
+    },
+    {
+      "canonical_destination": "ui.research_visualization",
+      "donor_evidence": "gridiq-frontend/src/pages/DashboardCharts.tsx",
+      "gate_phase": "UI-001",
+      "gate_status": "PASS",
+      "matrix_classification": "PORT_ADAPT",
+      "order": 4,
+      "rationale": "Recharts bar/line panels for attention, squeeze, walk-forward, and risk summaries with provenance labels and accessibility fallbacks; Lightweight Charts remains canonical for OHLCV."
+    },
+    {
+      "canonical_destination": "storage.bounded_memory_cache",
+      "donor_evidence": "gridiq-backend/app/nflverse_pbp_store.py",
+      "gate_phase": "Phase 5R",
+      "gate_status": "PASS",
+      "matrix_classification": "CONCEPT_ONLY",
+      "order": 5,
+      "rationale": "Bounded in-memory projection cache with byte and entry eviction, corrupt-entry rejection, and replay feature caching; precision policy records float32 round-trip semantics."
+    }
+  ],
+  "logical_id": "gridiq.port_phase_gate",
+  "schema_version": "1.0.0",
+  "summary": "GridIQ PORT_ADAPT work is sequenced: Phase 5R dataset reader first, UI-001 client/hooks second, ADR-LLM-001 assistant audit third, UI-001 Recharts research panels fourth, Phase 5R bounded memory cache fifth. Gemini invocation, browser token storage, and bundled gridiq.db remain DO_NOT_USE."
+}

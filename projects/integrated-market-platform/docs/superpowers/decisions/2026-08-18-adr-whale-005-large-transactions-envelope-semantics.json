@@ -1,0 +1,76 @@
+{
+  "adr_id": "ADR-WHALE-005",
+  "alternatives": [
+    {
+      "decision": "ACCEPTED",
+      "name": "LARGE_TRANSACTION_WHALE_EVENT_WITH_SIZE_NORMALIZATION",
+      "option_id": "WHALE5-OPTION-001",
+      "tradeoffs": [
+        "Size ratios are normalized to rolling volume or ADV references; no universal dollar whale threshold."
+      ]
+    }
+  ],
+  "approval": {
+    "approval_scope": "EXACT_HASH_PRINCIPAL_APPROVAL",
+    "approved_at": "2026-08-18T12:00:00.000000000Z",
+    "approved_by_principal_id": "PROJECT-PRINCIPAL-001",
+    "approved_capacities": [
+      "PROJECT_OWNER",
+      "RELEASE_OWNER"
+    ]
+  },
+  "artifact_type": "ARCHITECTURE_DECISION_RECORD",
+  "authority_bindings": [
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase11.adr_whale_004",
+      "logical_path": "docs/superpowers/decisions/2026-08-17-adr-whale-004-options-envelope-semantics.json",
+      "sha256": "PLACEHOLDER_SHA256"
+    },
+    {
+      "effectivity_state": "EFFECTIVE",
+      "logical_id": "phase12.whale_large_transactions_design",
+      "logical_path": "docs/superpowers/specs/2026-08-18-phase-12-whale-large-transactions-design.md",
+      "sha256": "PLACEHOLDER_SHA256"
+    }
+  ],
+  "conformance_evidence": [
+    {
+      "logical_id": "phase12.large_transactions_tests",
+      "repository_relative_path": "tests/providers/test_large_transactions.py",
+      "sha256": "PLACEHOLDER_SHA256"
+    }
+  ],
+  "consequences": {
+    "negative": [
+      "Direction remains ambiguous unless side and threshold gate are both explicit; below-threshold prints must be surfaced honestly."
+    ],
+    "positive": [
+      "large_transactions family can surface entitled fixture prints without collapsing into a universal whale score."
+    ]
+  },
+  "created_at": "2026-08-18T12:00:00.000000000Z",
+  "decision": {
+    "selected_option_id": "WHALE5-OPTION-001",
+    "summary": "Large-transaction whale events use whale_event payloads with family large_transactions, print_size, price, side (buy|sell|unknown), reference_type (rolling_volume|adv), reference_value, size_ratio (DERIVED), threshold_gate result, direction_label (supports_long|supports_short|neutral|ambiguous), and aggressor_provenance (known|unknown|inferred). PIT queries exclude events whose available_time exceeds prediction_cutoff. Large prints are not trader intent.",
+    "title": "Large transaction whale envelope semantics and size normalization"
+  },
+  "effectivity": {
+    "current_state": "ACCEPTED",
+    "decision_only": false,
+    "non_authorization_statement": "Acceptance authorizes fixture-first large_transactions on ADMITTED-LARGE-PRINTS-NVDA-001 only. Live tape adapters and order_book families require separate entitlement records."
+  },
+  "logical_id": "phase12.adr_whale_005",
+  "owner_capacities": [
+    "ARCHITECTURE_LEAD",
+    "PROJECT_OWNER"
+  ],
+  "sanitization": {
+    "absolute_paths_included": false,
+    "account_identifiers_included": false,
+    "credential_values_included": false,
+    "remote_urls_included": false
+  },
+  "schema_version": "1.0.0",
+  "status": "ACCEPTED"
+}
