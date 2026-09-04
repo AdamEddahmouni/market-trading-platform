@@ -6,8 +6,10 @@ from typing import Any, Mapping
 
 from ..execution.simulator import SIMULATOR_VERSION, BarConservativeSimulator
 from ..operating_modes import PAPER_EXECUTION_AUTHORITIES
-from ..numeric import decimal_to_minor_units
 from ..risk.decision import evaluate_risk
+from ..rt01.context import current_context
+from ..rt01.enums import TraceStage, TraceStatus
+from ..rt01.tracer import get_tracer
 from .contracts import (
     ORDER_LIFECYCLE_TERMINAL_STATES,
     build_instrument_ref,
@@ -52,34 +54,11 @@ def execute_order_intent(
     fills are never recorded and therefore must not consume bar capacity.
     """
     projection = ledger._project_ledger()
-    instrument_id = str(intent.get("instrument_id", "")).upper()
-    matching_bars = _bars_matching_instrument(bars, instrument_id)
-    if (
-        ledger.data_mode == "FIXTURE_REPLAY"
-        and any(str(bar.get("instrument_id", "")).strip() for bar in bars)
-        and not matching_bars
-    ):
-        raise ValueError("PAPER_INSTRUMENT_DATA_UNAVAILABLE")
-    position = dict(projection.get("positions_by_instrument") or {}).get(instrument_id, {})
-    reservations = ledger.project_reservations()
-    instrument_reservations = dict(reservations.get("by_instrument") or {}).get(instrument_id, {})
-    risk_price_minor, risk_price_as_of_ns = _internal_risk_price(
-        intent=intent,
-        bars=matching_bars,
-        price_scale=int(ledger.policy["price_scale"]),
-    )
     decision = evaluate_risk(
         intent=intent,
         policy=ledger.policy,
         kill_switch=ledger.kill_switch,
-        current_position_shares=int(position.get("position_shares", 0)),
-        current_cash_minor=int(projection["cash_minor"]),
-        reserved_cash_minor=int(reservations.get("reserved_cash_minor", 0)),
-        reserved_sell_shares=int(instrument_reservations.get("reserved_sell_shares", 0)),
-        risk_price_minor=risk_price_minor,
-        risk_price_source="INTERNAL_NEXT_BAR_HIGH" if risk_price_minor is not None else None,
-        risk_price_as_of_ns=risk_price_as_of_ns,
-        risk_price_quality="PASS" if risk_price_minor is not None else "UNAVAILABLE",
+        current_position_shares=int(projection["position_shares"]),
         open_order_count=ledger.open_order_count,
     )
     if intent.get("lineage_refs"):
@@ -91,7 +70,7 @@ def execute_order_intent(
     order, fill = (simulator or _ledger_simulator(ledger)).simulate(
         intent=intent,
         risk_decision=decision,
-        bars=matching_bars,
+        bars=bars,
         squeeze_context=squeeze_context,
     )
     for key in (
@@ -130,56 +109,6 @@ def execute_order_intent(
     return decision, order, fill
 
 
-def _internal_risk_price(
-    *,
-    intent: dict[str, Any],
-    bars: list[dict[str, Any]],
-    price_scale: int,
-) -> tuple[int | None, int | None]:
-    created_time = int(intent.get("created_time", 0))
-    instrument_id = str(intent.get("instrument_id", "")).upper()
-    for bar in bars:
-        if int(bar.get("available_time", 0)) <= created_time:
-            continue
-        bar_instrument = str(bar.get("instrument_id", "")).upper()
-        if bar_instrument and bar_instrument != instrument_id:
-            continue
-        payload = bar.get("bar_payload")
-        if not isinstance(payload, dict):
-            return None, None
-        try:
-            return (
-                decimal_to_minor_units(str(payload.get("high", "")), scale=price_scale),
-                int(bar["available_time"]),
-            )
-        except (KeyError, TypeError, ValueError):
-            return None, None
-    return None, None
-
-
-def _bars_matching_instrument(
-    bars: list[dict[str, Any]],
-    instrument_id: str,
-) -> list[dict[str, Any]]:
-    """Select bars without reviving the legacy unlabelled-bar contract.
-
-    Older replay fixtures predate ``instrument_id`` on bar records.  They are
-    safe to use only when the entire input is unlabelled; once a fixture has
-    instrument labels, silently mixing another symbol's bars would corrupt
-    pricing and execution.
-    """
-
-    normalized = str(instrument_id).upper()
-    labelled = [bar for bar in bars if str(bar.get("instrument_id", "")).strip()]
-    if not labelled:
-        return list(bars)
-    return [
-        bar
-        for bar in labelled
-        if str(bar.get("instrument_id", "")).upper() == normalized
-    ]
-
-
 def _build_preview_envelope(
     *,
     ledger: PaperExecutionLedger,
@@ -193,12 +122,7 @@ def _build_preview_envelope(
 ) -> dict[str, Any]:
     projection = ledger._project_ledger()
     scale = int(ledger.policy["price_scale"])
-    instrument_id = str(intent.get("instrument_id", "")).upper()
-    current_position = int(
-        dict(projection.get("positions_by_instrument") or {})
-        .get(instrument_id, {})
-        .get("position_shares", 0)
-    )
+    current_position = int(projection["position_shares"])
     projected_position = current_position
     if fill is not None:
         signed = int(fill["fill_quantity"]) if fill["direction"] == "long" else -int(fill["fill_quantity"])
@@ -238,8 +162,6 @@ def _build_preview_envelope(
         "estimated_gross_exposure_shares": projected_gross,
         "estimated_net_exposure_shares": projected_net,
         "estimated_notional_minor": estimated_notional_minor,
-        "approved_notional_minor": int(decision.get("approved_notional_minor", 0)),
-        "approved_quantity": int(decision.get("approved_quantity", 0)),
         "execution_authority": ledger.execution_authority,
         "execution_mode": ledger.execution_mode,
         "execution_model": "BarConservativeSimulator",
@@ -258,22 +180,11 @@ def _build_preview_envelope(
         "quality_state": quality_state,
         "reason_codes": decision.get("reason_codes", []),
         "risk_limits": {
-            "broker_market_reserve_buffer_bps": int(
-                ledger.policy["broker_market_reserve_buffer_bps"]
-            ),
             "max_open_orders": int(ledger.policy["max_open_orders"]),
-            "max_order_notional_minor": int(ledger.policy["max_order_notional_minor"]),
             "max_order_shares": max_order,
-            "max_position_notional_minor": int(ledger.policy["max_position_notional_minor"]),
             "max_position_shares": max_position,
         },
         "risk_status": risk_verdict,
-        "risk_price": {
-            "as_of_ns": decision.get("risk_price_as_of_ns"),
-            "minor": decision.get("risk_price_minor"),
-            "quality": decision.get("risk_price_quality"),
-            "source": decision.get("risk_price_source"),
-        },
         "risk_utilization": {
             "open_order_count": ledger.open_order_count,
             "open_order_headroom": max(0, int(ledger.policy["max_open_orders"]) - ledger.open_order_count),
@@ -285,11 +196,6 @@ def _build_preview_envelope(
         "current_net_exposure_shares": current_net,
         "current_position_shares": current_position,
         "quantity": int(intent.get("desired_quantity", 0)),
-        "requested_notional_minor": int(decision.get("requested_notional_minor", 0)),
-        "projected_available_cash_minor": decision.get("projected_available_cash_minor"),
-        "reserved_cash_minor": int(decision.get("reserved_cash_minor", 0)),
-        "reserved_order_cash_minor": int(decision.get("reserved_order_cash_minor", 0)),
-        "reserved_sell_shares": int(decision.get("reserved_sell_shares", 0)),
         "simulation_model": SIMULATOR_VERSION,
     }
 
@@ -350,7 +256,33 @@ def preview_interactive_order(
     )
 
 
-def submit_interactive_order(
+def submit_interactive_order(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """Submit an internal Paper order and emit an optional RT-01 span."""
+    context = current_context()
+    span = None
+    if context is not None:
+        span = get_tracer().start_span(
+            TraceStage.ORDER_READY,
+            "submit_internal_paper_order",
+            parent=context,
+            input_ref=str(kwargs.get("client_order_id") or "paper-order"),
+        )
+    try:
+        result = _submit_interactive_order(*args, **kwargs)
+    except Exception as exc:
+        if span is not None:
+            span.end(
+                status=TraceStatus.ERROR,
+                error_class=type(exc).__name__,
+                error_code=type(exc).__name__,
+            )
+        raise
+    if span is not None:
+        span.end(output_ref=str(result.get("order_id") or "no-order"))
+    return result
+
+
+def _submit_interactive_order(
     *,
     ledger: PaperExecutionLedger,
     bars: list[dict[str, Any]],
@@ -370,73 +302,67 @@ def submit_interactive_order(
     risk_decision_id: str | None = None,
     squeeze_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    with ledger.admission_lock:
-        existing_order_id = ledger.lookup_idempotent_order(idempotency_key)
-        if existing_order_id:
-            for order in ledger.project_orders():
-                if order.get("order_id") == existing_order_id:
-                    return {
-                        "duplicate": True,
-                        "idempotency_key": idempotency_key,
-                        "order": order,
-                        "order_id": existing_order_id,
-                    }
-            return {
-                "duplicate": True,
-                "idempotency_key": idempotency_key,
-                "order_id": existing_order_id,
-            }
-
-        if ledger.execution_authority not in PAPER_EXECUTION_AUTHORITIES:
-            raise ValueError("PAPER_EXECUTION_NOT_AUTHORIZED")
-        if ledger.execution_mode != "INTERNAL_SIMULATION":
-            raise ValueError("PAPER_EXECUTION_MODE_INVALID")
-
-        intent = build_user_order_intent(
-            instrument=build_instrument_ref(instrument_id=instrument_id, symbol=symbol),
-            side=side,
-            quantity=quantity,
-            observation_time=observation_time,
-            order_type=order_type,
-            limit_price_minor=limit_price_minor,
-            client_order_id=client_order_id,
-            idempotency_key=idempotency_key,
-            correlation_id=correlation_id or client_order_id,
-            decision_source_snapshot=decision_source_snapshot,
-            lineage_refs=lineage_refs,
-            quantity_facts=quantity_facts,
-            risk_decision_id=risk_decision_id,
-        )
-        with ledger.atomic_append():
-            ledger.append_intent(intent)
-            decision, order, fill = execute_order_intent(
-                intent=intent,
-                ledger=ledger,
-                bars=bars,
-                squeeze_context=squeeze_context,
-            )
-            ledger.append_risk_decision(decision)
-            ledger.append_order(order, intent=intent)
-            if fill is not None:
-                ledger.append_fill(fill, order=order)
-            ledger.record_idempotent_order(
-                idempotency_key=idempotency_key,
-                order_id=str(order["order_id"]),
-            )
+    existing_order_id = ledger.lookup_idempotent_order(idempotency_key)
+    if existing_order_id:
+        for order in ledger.project_orders():
+            if order.get("order_id") == existing_order_id:
+                return {
+                    "duplicate": True,
+                    "idempotency_key": idempotency_key,
+                    "order": order,
+                    "order_id": existing_order_id,
+                }
         return {
-            "correlation_id": intent.get("correlation_id"),
-            "decision": decision["decision"],
-            "duplicate": False,
-            "execution_attempt_id": order.get("order_id"),
-            "fill": fill,
-            "fill_id": fill.get("fill_id") if fill else None,
+            "duplicate": True,
             "idempotency_key": idempotency_key,
-            "intent_id": intent["intent_id"],
-            "order": order,
-            "order_id": order.get("order_id"),
-            "risk_decision_id": decision.get("risk_decision_id")
-            or intent.get("risk_decision_id"),
+            "order_id": existing_order_id,
         }
+
+    if ledger.execution_authority not in PAPER_EXECUTION_AUTHORITIES:
+        raise ValueError("PAPER_EXECUTION_NOT_AUTHORIZED")
+    if ledger.execution_mode != "INTERNAL_SIMULATION":
+        raise ValueError("PAPER_EXECUTION_MODE_INVALID")
+
+    intent = build_user_order_intent(
+        instrument=build_instrument_ref(instrument_id=instrument_id, symbol=symbol),
+        side=side,
+        quantity=quantity,
+        observation_time=observation_time,
+        order_type=order_type,
+        limit_price_minor=limit_price_minor,
+        client_order_id=client_order_id,
+        idempotency_key=idempotency_key,
+        correlation_id=correlation_id or client_order_id,
+        decision_source_snapshot=decision_source_snapshot,
+        lineage_refs=lineage_refs,
+        quantity_facts=quantity_facts,
+        risk_decision_id=risk_decision_id,
+    )
+    ledger.append_intent(intent)
+    decision, order, fill = execute_order_intent(
+        intent=intent,
+        ledger=ledger,
+        bars=bars,
+        squeeze_context=squeeze_context,
+    )
+    ledger.append_risk_decision(decision)
+    ledger.append_order(order, intent=intent)
+    if fill is not None:
+        ledger.append_fill(fill, order=order)
+    ledger.record_idempotent_order(idempotency_key=idempotency_key, order_id=str(order["order_id"]))
+    return {
+        "correlation_id": intent.get("correlation_id"),
+        "decision": decision["decision"],
+        "duplicate": False,
+        "execution_attempt_id": order.get("order_id"),
+        "fill": fill,
+        "fill_id": fill.get("fill_id") if fill else None,
+        "idempotency_key": idempotency_key,
+        "intent_id": intent["intent_id"],
+        "order": order,
+        "order_id": order.get("order_id"),
+        "risk_decision_id": decision.get("risk_decision_id") or intent.get("risk_decision_id"),
+    }
 
 
 def cancel_interactive_order(
@@ -501,21 +427,11 @@ def execute_normalized_intent_for_parity(
     from ..risk.kill_switch import KillSwitchState
 
     normalized = normalize_execution_intent(intent)
-    instrument_id = str(normalized.get("instrument_id", "")).upper()
-    matching_bars = _bars_matching_instrument(bars, instrument_id)
     decision = evaluate_risk(
         intent=normalized,
         policy=policy,
         kill_switch=KillSwitchState(),
         current_position_shares=current_position_shares,
-        current_cash_minor=int(policy.get("initial_cash_minor", 0)),
-        risk_price_minor=_internal_risk_price(
-            intent=normalized,
-            bars=matching_bars,
-            price_scale=int(policy["price_scale"]),
-        )[0],
-        risk_price_source="INTERNAL_NEXT_BAR_HIGH",
-        risk_price_quality="PASS",
         open_order_count=open_order_count,
     )
     # Fresh instance by default keeps historical dry-run semantics (zero
@@ -525,7 +441,8 @@ def execute_normalized_intent_for_parity(
     order, fill = simulator.simulate(
         intent=normalized,
         risk_decision=decision,
-        bars=matching_bars,
+        bars=bars,
         squeeze_context=squeeze_context,
     )
     return decision, order, fill
+

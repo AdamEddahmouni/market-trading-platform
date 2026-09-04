@@ -99,6 +99,7 @@ class Tracer:
         parent: TraceContext | None = None,
         input_ref: str | None = None,
         stable_sample_key: str | None = None,
+        correlation_id: str | None = None,
         run_id: str | None = None,
         attempt_id: str | None = None,
         provider_event_time_ns: int | None = None,
@@ -106,10 +107,11 @@ class Tracer:
         queue_enqueue_mono_ns: int | None = None,
         queue_dequeue_mono_ns: int | None = None,
         bind: bool = True,
+        force_root: bool = False,
     ) -> SpanHandle | None:
         if self.mode == SamplingMode.OFF:
             return None
-        base = parent or current_context()
+        base = parent if parent is not None else (None if force_root else current_context())
         if base is None:
             sampled = sampling_decision(
                 mode=self.mode,
@@ -117,6 +119,7 @@ class Tracer:
                 rate=self.sample_rate,
             )
             ctx = new_root_context(
+                correlation_id=correlation_id,
                 sampled=sampled,
                 sampling_mode=self.mode,
                 run_id=run_id,
@@ -148,6 +151,7 @@ class Tracer:
         self,
         operation: str = "root",
         *,
+        correlation_id: str | None = None,
         stable_sample_key: str | None = None,
         run_id: str | None = None,
         attempt_id: str | None = None,
@@ -156,9 +160,11 @@ class Tracer:
             TraceStage.TRACE_ROOT,
             operation,
             parent=None,
+            correlation_id=correlation_id,
             stable_sample_key=stable_sample_key,
             run_id=run_id,
             attempt_id=attempt_id,
+            force_root=True,
         )
 
 

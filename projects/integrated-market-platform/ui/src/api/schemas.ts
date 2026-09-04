@@ -1629,22 +1629,6 @@ export const PaperPortfolioResponseSchema = z.object({
     cash_display: z.string(),
     cash_minor: z.number(),
     buying_power_minor: z.number(),
-    available_buying_power_minor: z.number().optional(),
-    available_buying_power_display: z.string().optional(),
-    buying_power_display: z.string().optional(),
-    reserved_cash_minor: z.number().optional(),
-    reserved_cash_display: z.string().optional(),
-    reserved_sell_shares: z.number().optional(),
-    market_value_minor: z.number().nullable().optional(),
-    market_value_display: z.string().nullable().optional(),
-    equity_minor: z.number().nullable().optional(),
-    equity_display: z.string().nullable().optional(),
-    gross_exposure_minor: z.number().nullable().optional(),
-    gross_exposure_display: z.string().nullable().optional(),
-    unrealized_pnl_minor: z.number().nullable().optional(),
-    unrealized_pnl_display: z.string().nullable().optional(),
-    valuation_quality: z.string().optional(),
-    valuation_reasons: z.array(z.string()).optional(),
     initial_cash_minor: z.number(),
     realized_pnl_display: z.string(),
     realized_pnl_minor: z.number(),
@@ -1666,17 +1650,7 @@ export const PaperPortfolioResponseSchema = z.object({
       mark_quality: z.string().nullable().optional(),
       mark_as_of_ns: z.number().nullable().optional(),
       average_fill_display: z.string().nullable().optional(),
-      average_fill_minor: z.number().nullable().optional(),
-      cost_basis_minor: z.number().optional(),
-      cost_basis_display: z.string().optional(),
-      notional_minor: z.number().nullable().optional(),
-      notional_display: z.string().nullable().optional(),
-      realized_pnl_minor: z.number().optional(),
-      realized_pnl_display: z.string().optional(),
-      unrealized_pnl_display: z.string().nullable().optional(),
-      unrealized_pnl_minor: z.number().nullable().optional(),
-      reserved_sell_shares: z.number().optional(),
-      available_to_sell: z.number().optional(),
+      unrealized_pnl_display: z.string().optional(),
     }),
   ),
   orders: z.array(z.record(z.unknown())),
@@ -1687,14 +1661,9 @@ export const PaperPortfolioResponseSchema = z.object({
     reconciliation_status: z.string(),
     limits: z.object({
       max_open_orders: z.number(),
-      broker_market_reserve_buffer_bps: z.number().optional(),
-      max_order_notional_minor: z.number().optional(),
       max_order_shares: z.number(),
-      max_position_notional_minor: z.number().optional(),
       max_position_shares: z.number(),
     }),
-    reserved_cash_minor: z.number().optional(),
-    reserved_sell_shares: z.number().optional(),
     last_decision: z.record(z.unknown()).nullable().optional(),
   }),
   data_health: z.object({
@@ -1718,20 +1687,13 @@ export const PaperPortfolioResponseSchema = z.object({
     .object({
       gross_shares: z.number(),
       net_shares: z.number(),
-      gross_notional_minor: z.number().nullable().optional(),
-      gross_notional_display: z.string().nullable().optional(),
-      valuation_quality: z.string().optional(),
     })
     .optional(),
   pnl: z
     .object({
       realized_display: z.string().optional(),
       unrealized_display: z.string().nullable().optional(),
-      unrealized_minor: z.number().nullable().optional(),
-      total_display: z.string().nullable().optional(),
-      total_minor: z.number().nullable().optional(),
-      valuation_quality: z.string().optional(),
-      valuation_reasons: z.array(z.string()).optional(),
+      total_display: z.string().optional(),
     })
     .optional(),
 });
@@ -1762,21 +1724,6 @@ export const PaperOrderPreviewResponseSchema = z.object({
     order_type: z.string().optional(),
     projected_position_shares: z.number().optional(),
     estimated_notional_minor: z.number().optional(),
-    requested_notional_minor: z.number().optional(),
-    approved_notional_minor: z.number().optional(),
-    approved_quantity: z.number().optional(),
-    projected_available_cash_minor: z.number().nullable().optional(),
-    reserved_cash_minor: z.number().optional(),
-    reserved_order_cash_minor: z.number().optional(),
-    reserved_sell_shares: z.number().optional(),
-    risk_price: z
-      .object({
-        minor: z.number().nullable().optional(),
-        source: z.string().nullable().optional(),
-        as_of_ns: z.number().nullable().optional(),
-        quality: z.string().nullable().optional(),
-      })
-      .optional(),
     current_position_shares: z.number().optional(),
     current_gross_exposure_shares: z.number().optional(),
     current_net_exposure_shares: z.number().optional(),
@@ -1794,10 +1741,7 @@ export const PaperOrderPreviewResponseSchema = z.object({
     risk_limits: z
       .object({
         max_order_shares: z.number(),
-        broker_market_reserve_buffer_bps: z.number().optional(),
-        max_order_notional_minor: z.number().optional(),
         max_position_shares: z.number(),
-        max_position_notional_minor: z.number().optional(),
         max_open_orders: z.number(),
       })
       .optional(),
@@ -1854,10 +1798,19 @@ export const PaperSessionResponseSchema = z.object({
 export const PaperTraceResponseSchema = z.object({
   as_of_context: AsOfContextSchema,
   trace: z.object({
+    trace_kind: z.string().optional(),
+    correlation_id: z.string().nullable().optional(),
     correlation: z.object({
       intent_id: z.string().nullable().optional(),
       order_id: z.string().nullable().optional(),
       fill_id: z.string().nullable().optional(),
+      allocation_decision_id: z.string().nullable().optional(),
+      strategy_match_id: z.string().nullable().optional(),
+      forecast_id: z.string().nullable().optional(),
+      opportunity_id: z.string().nullable().optional(),
+      trade_proposal_id: z.string().nullable().optional(),
+      risk_decision_id: z.string().nullable().optional(),
+      order_ready_id: z.string().nullable().optional(),
     }),
     steps: z.array(
       z.object({
@@ -1867,7 +1820,24 @@ export const PaperTraceResponseSchema = z.object({
         metadata: z.record(z.unknown()).optional(),
         event_id: z.string().optional(),
       }),
-    ),
+    ).optional(),
+    stages: z.array(
+      z.object({
+        stage: z.string(),
+        status: z.string(),
+        ids: z.record(z.string()).optional(),
+        metadata: z.record(z.unknown()).optional(),
+      }),
+    ).optional(),
+    quantities: z.record(z.number()).optional(),
+    completeness: z.object({
+      state: z.string(),
+      missing_stages: z.array(z.string()),
+    }).optional(),
+    settlement: z.object({
+      portfolio: z.string().optional(),
+      prediction: z.string().optional(),
+    }).optional(),
     session_id: z.string().optional(),
     execution_mode: z.string().optional(),
     execution_authority: z.string().optional(),
@@ -1950,3 +1920,81 @@ export const WorkspaceEvidenceResponseSchema = z.object({
 
 export type WorkspaceEvidenceLane = z.infer<typeof WorkspaceEvidenceLaneSchema>;
 export type WorkspaceEvidenceResponse = z.infer<typeof WorkspaceEvidenceResponseSchema>;
+
+const PaperStrategyProfitabilityAllocationSchema = z
+  .object({
+    allocation_decision_id: z.string(),
+    account_id: z.string(),
+    mode: z.string(),
+  })
+  .passthrough();
+
+const PaperStrategyProfitabilityAttributionSchema = z
+  .object({
+    attribution_id: z.string(),
+    materialization_semantics: z.literal("CUMULATIVE"),
+    allocation_quantity: z.number(),
+    fill_refs: z.array(z.record(z.unknown())),
+    trading_outcome: z.object({
+      realized_pnl_minor: z.number(),
+      ending_position_quantity: z.number(),
+      ending_cost_basis_minor: z.number(),
+      total_commission_minor: z.number(),
+      total_fees_minor: z.number(),
+    }),
+  })
+  .passthrough();
+
+export const PaperStrategyProfitabilityItemSchema = z.object({
+  allocation: PaperStrategyProfitabilityAllocationSchema,
+  strategy_match: z.record(z.unknown()).nullable(),
+  forecast: z.record(z.unknown()).nullable(),
+  economic_assessment: z.record(z.unknown()).nullable(),
+  opportunity: z.record(z.unknown()).nullable(),
+  portfolio_snapshot: z.record(z.unknown()).nullable(),
+  proposal: z.record(z.unknown()).nullable(),
+  risk_decision: z.record(z.unknown()).nullable(),
+  orders: z.array(z.record(z.unknown())),
+  fills: z.array(z.record(z.unknown())),
+  attribution: PaperStrategyProfitabilityAttributionSchema.nullable(),
+  prediction_ledger_entry: z.record(z.unknown()).nullable(),
+  prediction_outcome: z.record(z.unknown()).nullable(),
+  settlement: z.object({
+    state: z.enum(["SETTLED", "PENDING", "UNAVAILABLE"]),
+    inspection_only: z.literal(true),
+  }),
+});
+
+export const PaperStrategyProfitabilityResponseSchema = z.object({
+  schema_version: z.string(),
+  authority_boundary: z.literal("PAPER_OBSERVABILITY_READ_ONLY"),
+  account_id: z.string(),
+  mode: z.literal("PAPER"),
+  as_of_context: z.object({
+    as_of_ns: z.number(),
+    point_in_time: z.boolean(),
+  }),
+  attribution_semantics: z.object({
+    pnl_source: z.string(),
+    materialization: z.literal("CUMULATIVE"),
+    aggregation: z.literal("LATEST_COMPLETE_SNAPSHOT_ONLY"),
+    portfolio_ledger_is_authoritative: z.literal(true),
+  }),
+  data_health: z.object({
+    state: z.string(),
+    detail: z.string(),
+  }),
+  disclaimer: z.string(),
+  account_ledger_pnl: z.object({
+    currency: z.string(),
+    realized_pnl_minor: z.number(),
+    unrealized_pnl_minor: z.number(),
+  }),
+  items: z.array(PaperStrategyProfitabilityItemSchema),
+  total_count: z.number(),
+});
+
+export type PaperStrategyProfitabilityItem = z.infer<typeof PaperStrategyProfitabilityItemSchema>;
+export type PaperStrategyProfitabilityResponse = z.infer<
+  typeof PaperStrategyProfitabilityResponseSchema
+>;

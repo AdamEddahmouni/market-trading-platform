@@ -9,6 +9,8 @@ from ..canonical import canonical_bytes, sha256_bytes
 from ..replay.feature_lifecycle import run_feature_replay, run_feature_root_hash
 from ..replay.quality_lifecycle import run_quality_replay, run_quality_root_hash
 from .enums import TraceStage, TraceStatus
+from .clock import monotonic_process_ns
+from .instrumentation.paper import start_paper_trace, trace_refs
 from .span import TraceSpan
 from .tracer import get_tracer
 
@@ -103,6 +105,81 @@ def run_quality_replay_workload() -> list[TraceSpan]:
     return list(tracer.collector.spans)
 
 
+def run_paper_trace_workload() -> list[TraceSpan]:
+    """Run deterministic internal and broker Paper trace paths without I/O."""
+    tracer = get_tracer()
+    trace = start_paper_trace(
+        "paper_internal_fixture",
+        correlation_id="paper-workload-internal",
+        tracer=tracer,
+    )
+    parent = trace.context
+    queue_start = monotonic_process_ns()
+    queue = tracer.start_span(
+        TraceStage.QUEUE,
+        "paper_fixture_queue",
+        parent=parent,
+        queue_enqueue_mono_ns=queue_start,
+        queue_dequeue_mono_ns=monotonic_process_ns(),
+        bind=False,
+    )
+    if queue is not None:
+        queue.context.attributes.update(trace_refs(order_id="internal-order-1"))
+        queue.end(output_ref="dequeued")
+        parent = queue.context
+    for stage, operation, output in (
+        (TraceStage.SIGNAL, "paper_fixture_signal", "signal-1"),
+        (TraceStage.OPPORTUNITY, "paper_fixture_opportunity", "opportunity-1"),
+        (TraceStage.RISK, "paper_fixture_risk", "risk-1"),
+        (TraceStage.ORDER_READY, "paper_fixture_internal_submit", "internal-order-1"),
+    ):
+        span = tracer.start_span(stage, operation, parent=parent, bind=False)
+        if span is not None:
+            span.context.attributes.update(
+                trace_refs(
+                    signal_id="signal-1",
+                    opportunity_id="opportunity-1",
+                    risk_decision_id="risk-1",
+                    order_id=output,
+                )
+            )
+            span.end(output_ref=output)
+            parent = span.context
+    trace.finish(output_ref="internal-order-1")
+
+    broker_trace = start_paper_trace(
+        "paper_broker_fixture",
+        correlation_id="paper-workload-broker",
+        tracer=tracer,
+    )
+    parent = broker_trace.context
+    for stage, operation, output in (
+        (TraceStage.QUEUE, "paper_fixture_queue", "dequeued"),
+        (TraceStage.SIGNAL, "paper_fixture_signal", "signal-2"),
+        (TraceStage.OPPORTUNITY, "paper_fixture_opportunity", "opportunity-2"),
+        (TraceStage.RISK, "paper_fixture_risk", "risk-2"),
+        (TraceStage.ORDER_READY, "paper_fixture_order_ready", "order-2"),
+        (TraceStage.BROKER, "paper_fixture_partial_fill", "broker-order-2"),
+        (TraceStage.RECONCILIATION, "paper_fixture_reconciliation", "report-2"),
+    ):
+        span = tracer.start_span(stage, operation, parent=parent, bind=False)
+        if span is not None:
+            span.context.attributes.update(
+                trace_refs(
+                    signal_id="signal-2",
+                    opportunity_id="opportunity-2",
+                    risk_decision_id="risk-2",
+                    order_id="order-2",
+                    broker_order_id="broker-order-2",
+                    report_id="report-2",
+                )
+            )
+            span.end(output_ref=output)
+            parent = span.context
+    broker_trace.finish(output_ref="report-2")
+    return list(tracer.collector.spans)
+
+
 def quality_replay_domain_hash() -> dict[str, Any]:
     events = _sample_bar_events()
     state = run_quality_replay(events, clocks=[2000], decision_times=[2000])
@@ -117,6 +194,7 @@ __all__ = [
     "fixture_ingest_domain_hash",
     "fixture_path",
     "quality_replay_domain_hash",
+    "run_paper_trace_workload",
     "run_fixture_ingest_workload",
     "run_quality_replay_workload",
 ]

@@ -7,11 +7,20 @@ import { LoadingState } from "../shared/LoadingState";
 type ExecutionTracePanelProps = {
   intentId?: string;
   orderId?: string;
+  allocationDecisionId?: string;
   onClose: () => void;
 };
 
-function traceDecisionCorrelation(trace: { steps: Array<{ metadata?: Record<string, unknown> }> }): string | null {
-  for (const step of trace.steps) {
+type TraceMetadata = {
+  steps?: Array<{ metadata?: Record<string, unknown> }>;
+  correlation_id?: string | null;
+};
+
+function traceDecisionCorrelation(trace: TraceMetadata): string | null {
+  if (typeof trace.correlation_id === "string" && trace.correlation_id.trim()) {
+    return trace.correlation_id.trim();
+  }
+  for (const step of trace.steps ?? []) {
     const metadata = step.metadata;
     if (!metadata) continue;
     const intent = metadata.intent;
@@ -25,8 +34,8 @@ function traceDecisionCorrelation(trace: { steps: Array<{ metadata?: Record<stri
   return null;
 }
 
-function traceClientOrderId(trace: { steps: Array<{ metadata?: Record<string, unknown> }> }): string | null {
-  for (const step of trace.steps) {
+function traceClientOrderId(trace: TraceMetadata): string | null {
+  for (const step of trace.steps ?? []) {
     const metadata = step.metadata;
     if (!metadata) continue;
     const intent = metadata.intent;
@@ -48,9 +57,9 @@ function traceProvenanceLabel(correlationId: string | null, clientOrderId: strin
 }
 
 function traceDecisionSourceSnapshot(
-  trace: { steps: Array<{ metadata?: Record<string, unknown> }> },
+  trace: TraceMetadata,
 ): unknown {
-  for (const step of trace.steps) {
+  for (const step of trace.steps ?? []) {
     const metadata = step.metadata;
     if (!metadata) continue;
     const nestedIntent = metadata.intent;
@@ -64,7 +73,7 @@ function traceDecisionSourceSnapshot(
 }
 
 function tracePersistedSourceContext(
-  trace: { steps: Array<{ metadata?: Record<string, unknown> }> },
+  trace: TraceMetadata,
   correlationId: string | null,
   clientOrderId: string | null,
 ) {
@@ -77,8 +86,16 @@ function tracePersistedSourceContext(
   ).persistedSourceContext;
 }
 
-export function ExecutionTracePanel({ intentId, orderId, onClose }: ExecutionTracePanelProps) {
-  const traceQuery = usePaperTraceQuery({ intentId, orderId }, Boolean(intentId || orderId));
+export function ExecutionTracePanel({
+  intentId,
+  orderId,
+  allocationDecisionId,
+  onClose,
+}: ExecutionTracePanelProps) {
+  const traceQuery = usePaperTraceQuery(
+    { intentId, orderId, allocationDecisionId },
+    Boolean(intentId || orderId || allocationDecisionId),
+  );
 
   return (
     <aside className="execution-trace-panel">
@@ -127,6 +144,22 @@ export function ExecutionTracePanel({ intentId, orderId, onClose }: ExecutionTra
                 </>
               );
             })()}
+            {"settlement" in traceQuery.data.trace ? (
+              <>
+                <div>
+                  <dt>Portfolio settlement</dt>
+                  <dd>{String(traceQuery.data.trace.settlement?.portfolio ?? "—")}</dd>
+                </div>
+                <div>
+                  <dt>Prediction settlement</dt>
+                  <dd>{String(traceQuery.data.trace.settlement?.prediction ?? "—")}</dd>
+                </div>
+                <div>
+                  <dt>Trace completeness</dt>
+                  <dd>{String(traceQuery.data.trace.completeness?.state ?? "—")}</dd>
+                </div>
+              </>
+            ) : null}
             <div>
               <dt>Market data provider</dt>
               <dd>{String(traceQuery.data.trace.market_data_provider ?? "—")}</dd>
@@ -152,16 +185,30 @@ export function ExecutionTracePanel({ intentId, orderId, onClose }: ExecutionTra
               <dd>{String(traceQuery.data.trace.broker_order_id ?? "NONE")}</dd>
             </div>
           </dl>
-          {traceQuery.data.trace.steps.map((step, index) => (
-            <details key={`${step.stage}-${step.sequence}`} className="trace-step" open={index === 0}>
-              <summary>
-                {step.stage}: {step.summary}
-              </summary>
-              {step.metadata ? (
-                <JsonDetailPanel title="Step metadata" value={step.metadata} />
-              ) : null}
-            </details>
-          ))}
+          {traceQuery.data.trace.stages ? (
+            traceQuery.data.trace.stages.map((stage, index) => (
+              <details key={`${stage.stage}-${index}`} className="trace-step" open={index === 0}>
+                <summary>
+                  {stage.stage}: {stage.status}
+                  {stage.ids ? ` (${Object.values(stage.ids).join(", ")})` : ""}
+                </summary>
+                {stage.metadata ? (
+                  <JsonDetailPanel title="Stage metadata" value={stage.metadata} />
+                ) : null}
+              </details>
+            ))
+          ) : (
+            (traceQuery.data.trace.steps ?? []).map((step, index) => (
+              <details key={`${step.stage}-${step.sequence}`} className="trace-step" open={index === 0}>
+                <summary>
+                  {step.stage}: {step.summary}
+                </summary>
+                {step.metadata ? (
+                  <JsonDetailPanel title="Step metadata" value={step.metadata} />
+                ) : null}
+              </details>
+            ))
+          )}
         </div>
       ) : null}
     </aside>

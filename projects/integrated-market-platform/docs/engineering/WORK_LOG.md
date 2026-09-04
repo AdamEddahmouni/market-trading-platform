@@ -26,17 +26,52 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-03 — Paper cash-account accounting and risk foundation
+## 2026-09-04 — RT-01 Paper pipeline tracing
 
 | Field | Value |
 |-------|-------|
 | **Status** | `complete` |
-| **Area** | `backend/paper`, `risk`, `ui/paper`, `architecture` |
-| **Summary** | Upgraded Paper projections to replay-derived multi-instrument positions with long-only cash accounting, per-order cash/share reservations, monetary risk caps, instrument-aware pricing, incomplete valuation semantics, and policy-compatible restart behavior. Internal and broker-paper admission now share the monetary risk contract; broker fills are validated before lifecycle or portfolio mutation. |
-| **Key files** | `src/market_platform_foundation/portfolio/ledger.py`; `src/market_platform_foundation/paper/ledger.py`; `src/market_platform_foundation/paper/execution.py`; `src/market_platform_foundation/paper/broker_paper.py`; `src/market_platform_foundation/risk/decision.py`; `src/market_platform_foundation/local_state/startup.py`; `src/market_platform_foundation/ui_api/paper_projections.py`; `ui/src/api/schemas.ts`; `docs/architecture/PAPER_DECISION_LIFECYCLE.md` |
-| **Tests** | Focused paper/risk regressions: 86 passed; full platform suite: 460 passed, 2 skipped; intelligence suite: 1,123 passed, 25 skipped; full UI suite: 81 files and 425 tests passed with the repository's single-threaded runner and 10-second test/hook timeout; UI typecheck and production build passed; `git diff --check` and compileall passed. Canonical domain validation passed all affected product suites but remains non-green on the pre-existing repository-closure validation error (`src/market_platform_foundation/tests` missing). |
-| **Related** | [Paper accounting and risk plan](../superpowers/plans/2026-09-03-paper-accounting-risk-foundation.md); [Paper decision lifecycle](../architecture/PAPER_DECISION_LIFECYCLE.md) |
-| **Notes** | LIMIT controls, public broker routing, and richer fill realism remain separate follow-up milestones. |
+| **Area** | `backend/paper`, `observability`, `tests`, `docs` |
+| **Summary** | Added bounded Paper RT-01 trace handles and latency profiles, instrumented queue/signal/strategy/internal submission seams, and routed broker-paper submission, polling, cancellation, and reconciliation through the composed Paper provider. Broker partial-fill completion/cancel, restart/replay, idempotency, dry-run preview, and trace linkage are covered by fixture-driven tests. |
+| **Key files** | `src/market_platform_foundation/rt01/instrumentation/paper.py`; `src/market_platform_foundation/rt01/{profiles.py,baseline.py,workloads.py,tracer.py}`; `src/market_platform_foundation/{market_data/bounded_queue.py,intelligence/signals/engine.py,intelligence/execution/engine.py,paper/{execution.py,broker_paper.py},strategy/runtime.py}`; `src/market_platform_foundation/ui_api/{paper_projections.py,broker_projections.py,server.py}` |
+| **Tests** | Focused RT-01/Paper suites and broker/reconciliation regressions passed during implementation. Changed validation: 2,231 tests, 38 skipped, 0 failures/errors. UI: 428 tests passed, typecheck passed, production build and bundle budget passed at 202.26 KiB gzip. Full validation: 3,482 tests, 48 skipped, 1 pre-existing repository-closure error in the validation domain. |
+| **Related** | RT-01 Paper tracing implementation plan (local read-only plan); [Paper decision lifecycle](../architecture/PAPER_DECISION_LIFECYCLE.md); [RT-01 operations](../operations/rt-01/README.md) |
+| **Notes** | Work is isolated on the `feat/rt01-paper-tracing` child branch. The original child checkout’s unrelated dirty files remain untouched. The pre-existing `provider-composition` closure scope error (`src/market_platform_foundation/tests`, a nonexistent scope path) was subsequently fixed by removing the stale scope from `POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json`; full validation is no longer blocked by that error. |
+
+## 2026-09-04 — Unified internal Paper trading chain
+
+| Field | Value |
+|-------|-------|
+| **Area** | `backend/ui`, `paper`, `observability`, `tests` |
+| **Summary** | Completed the canonical internal strategy Paper business chain by persisting an immutable order-ready decision, carrying one strategy decision correlation through Paper submission, and exposing a read-only trace that joins opportunity, allocation, risk, order-ready, fill-driven portfolio settlement, prediction settlement state, and cumulative attribution. Manual Paper trace anchors and execution authority boundaries remain backward-compatible. |
+| **Key files** | `src/market_platform_foundation/intelligence/execution/{types,serialization}.py`; `src/market_platform_foundation/intelligence/persistence/{repository,memory}.py`; `src/market_platform_foundation/intelligence/persistence/mongo/{repository,schema}.py`; `src/market_platform_foundation/strategy/runtime.py`; `src/market_platform_foundation/ui_api/{paper_projections,strategy_runtime_projections,server}.py`; `ui/src/api/{schemas,endpoints,hooks}.ts`; `ui/src/components/paper/ExecutionTracePanel.tsx`; `tests/intelligence/test_equity_paper_runtime.py`; `tests/platform/test_strategy_runtime_observability.py` |
+| **Tests** | Focused and expanded Paper/runtime suites: 113 passed; intelligence domain: 1,150 passed, 25 skipped; full UI suite: 429 passed; UI typecheck/build and Python compilation: pass. Corrected `artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` by removing its stale nonexistent scope path. Manifest domain-core validation: 2,727 tests, 48 skipped, 0 failures/errors; full validation: 3,467 tests, 48 skipped, 0 failures/errors. |
+| **Related** | [Paper decision lifecycle](../architecture/PAPER_DECISION_LIFECYCLE.md); [Program status](../platform/PROGRAM_STATUS.md) |
+| **Notes** | Broker-paper/live transport, OF-01 parent identity, RT-01 technical span persistence, and autonomous settlement remain deferred. The clean implementation worktree contains only this change set; the original checkout’s unrelated changes were preserved. |
+
+## 2026-09-03 — Paper profitability observability
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/ui`, `observability`, `tests` |
+| **Summary** | Exposed the existing strategy-to-Paper lineage through a read-only, Paper-account-scoped projection and GET API, then mounted a shared profitability observability surface in Paper Research and Paper Portfolio. Strategy attribution remains a non-authoritative cumulative P&L sidecar; settlement inspection does not mutate records and Workspace remains the only submission boundary. |
+| **Key files** | `src/market_platform_foundation/ui_api/strategy_runtime_projections.py`; `src/market_platform_foundation/ui_api/server.py`; `src/market_platform_foundation/intelligence/persistence/{repository,memory}.py`; `src/market_platform_foundation/intelligence/persistence/mongo/repository.py`; `ui/src/api/{schemas,endpoints,hooks}.ts`; `ui/src/components/paper-strategy-profitability/`; `ui/src/components/paper-{research,portfolio}/`; `tests/platform/test_strategy_runtime_observability.py` |
+| **Tests** | Focused backend observability: 8 passed. UI observability/API contracts: 11 passed. Full UI suite with the repository's lazy-route timeout allowance: 428 passed; typecheck and production build passed with 202.26 KiB initial gzip and bundle budget pass. Manifest-driven changed validation: 2,127 tests, 34 skipped, 0 failures/errors. |
+| **Related** | `paper_profitability_observability_1ad70e43.plan.md` (local plan, not committed); [Paper decision lifecycle](../architecture/PAPER_DECISION_LIFECYCLE.md) |
+| **Notes** | P6 Shadow Run and live provider campaigns were not run. The strategy repository is explicitly injectable on `ReplayStore`; an unbound repository fails closed in the API/UI. |
+
+## 2026-09-03 — Program documentation reconciliation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `governance` |
+| **Summary** | Reconciled the canonical program roadmap and architecture with accepted XA-04 and XA-05 milestones, removed stale “next” language, and recorded P6 Shadow Run 1 as deferred rather than active. Immutable P6 protocol and run artifacts were preserved; no runtime, ledger, or campaign state was changed. |
+| **Key files** | `docs/platform/MASTER_ROADMAP.md`; `docs/platform/MASTER_ARCHITECTURE.md`; `docs/platform/PROGRAM_STATUS.md`; `docs/PROJECT_STATUS.md`; `docs/research/PLATFORMIZATION_ROADMAP.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `tools/check_docs_links.py`: 161 governance markdown files checked, pass. `git diff --check`: pass. |
+| **Related** | [XA-04 acceptance](../../artifacts/imp-rebase/XA04/XA04_ACCEPTANCE_REPORT.json); [XA-05 acceptance](../../artifacts/imp-rebase/XA05/XA05_ACCEPTANCE_REPORT.json); [P6 protocol](P6_SHADOW_RUN_1_PROTOCOL.md) |
+| **Notes** | Historical P6 entries below remain unchanged. P6 is deferred until explicitly reactivated. |
 
 ## 2026-09-02 — Windows Operator Center and lifecycle UX
 
@@ -71,7 +106,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Summary** | Completed the final Task 7 handoff for the deterministic equity-like Paper loop. Documented the backend-only persisted lineage path, separate allocation/proposal/risk/order/fill quantities, cumulative actual-fill attribution, independent forecast settlement, structured runtime diagnostics, and reconstruction from authoritative records without introducing UI or duplicate authority. |
 | **Key files** | `docs/architecture/PAPER_DECISION_LIFECYCLE.md`; `docs/engineering/OBSERVABILITY.md`; `docs/engineering/WORK_LOG.md`; `task_plan.md`; `findings.md`; `progress.md` |
 | **Tests** | Focused pass: phase-6 strategy definitions `7/7`; strategy scanning/match `9/9`; baseline forecasts `5/5`; opportunity/bridge, clustering, comparison/allocation, and allocation persistence `31/31`; Paper execution governance `18/18`; runtime integration `11/11` (including the `equity-paper-runtime-suite` validation worker); strategy attribution `12/12`; portfolio accounting `7/7`; outcome settlement `15/15`; strategy learning `8/8`. `PYTHONPATH=src .venv\Scripts\python.exe -m compileall -q src tests`: pass. `git diff --check`: pass, with a non-failing pre-existing CRLF normalization warning. `tools/check_docs_links.py`: 134 governance markdown files checked, pass. `ui`: `npm test -- --reporter=dot --maxWorkers=1` pass; `npm run build` pass, 1085 modules transformed, initial bundle `201.18 KiB gzip`. `tools/validate.py changed`: blocked by dirty baseline (`1232 tests, 9 skipped, 1 failure, 91 errors in 530.542s`). `tools/validate.py full`: blocked by dirty baseline (`2209 tests, 9 skipped, 1 failure, 92 errors in 734.902s`). |
-| **Related** | [Equity Paper profitability loop plan](C:/Users/adame/.cursor/plans/equity-paper-loop_5c6b4402.plan.md); [Paper decision lifecycle](../architecture/PAPER_DECISION_LIFECYCLE.md); [Observability](OBSERVABILITY.md) |
+| **Related** | `equity-paper-loop_5c6b4402.plan.md` (local plan, not committed); [Paper decision lifecycle](../architecture/PAPER_DECISION_LIFECYCLE.md); [Observability](OBSERVABILITY.md) |
 | **Notes** | Final status is `FOCUSED CLOSED / GLOBAL VALIDATION BLOCKED`. Aggregate failures span `finviz`, `platform`, `intelligence`, `ui1`, `ui2`, and `validation` and are retained as the pre-existing dirty-tree/global validation classification. No commit, push, deploy, reset, clean, plan-file edit, secret, UI authority, allocation authority, attribution authority, or unfinished diagnostic was introduced. |
 
 ## 2026-09-02 — Bounded governed strategy learning boundary

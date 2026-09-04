@@ -19,10 +19,13 @@ from ..intelligence.contracts.strategy_match import (
 from ..intelligence.execution import (
     ExecutionPolicyV1,
     MarketQuoteV1,
+    OrderReadyStatus,
+    OrderReadyV1,
     PaperExecutionOrchestrator,
     PaperExecutionResult,
     PaperPortfolioSnapshotV1,
     RiskDecisionKind,
+    order_ready_id as derive_order_ready_id,
 )
 from ..intelligence.opportunity import (
     CapitalAllocationConstraintsV1,
@@ -62,6 +65,9 @@ from .learning import (
     evaluate_learning_join,
 )
 from .scanning import ScanRequest, ScanResult, UniversalStrategyScanner
+from ..rt01.enums import TraceStatus, TraceStage
+from ..rt01.context import current_context
+from ..rt01.instrumentation.paper import start_paper_trace
 
 
 class StrategyRuntimeError(ValueError):
@@ -237,6 +243,61 @@ class StrategyPaperRuntime:
         quote: MarketQuoteV1 | None = None,
         bars: list[dict[str, Any]] | None = None,
     ) -> StrategyRuntimeResult:
+        if current_context() is not None:
+            return self._run_entry(
+                request,
+                strategy_id=strategy_id,
+                portfolio=portfolio,
+                quote=quote,
+                bars=bars,
+            )
+        trace = start_paper_trace(
+            "paper_strategy_entry",
+            correlation_id=f"strategy-paper:{request.decision_time_ns}",
+            run_id=None,
+            stable_sample_key=f"strategy-paper:{request.decision_time_ns}",
+        )
+        opportunity_span = trace.child(
+            TraceStage.OPPORTUNITY,
+            "strategy_opportunity_pipeline",
+            decision_time_ns=request.decision_time_ns,
+        )
+        try:
+            result = self._run_entry(
+                request,
+                strategy_id=strategy_id,
+                portfolio=portfolio,
+                quote=quote,
+                bars=bars,
+            )
+        except Exception as exc:
+            if opportunity_span is not None:
+                opportunity_span.end(
+                    status=TraceStatus.ERROR,
+                    error_class=type(exc).__name__,
+                    error_code=type(exc).__name__,
+                )
+            trace.finish(
+                status=TraceStatus.ERROR,
+                error_code=type(exc).__name__,
+                terminated=True,
+            )
+            raise
+        else:
+            if opportunity_span is not None:
+                opportunity_span.end(output_ref=result.status)
+            trace.finish(output_ref=result.status)
+            return result
+
+    def _run_entry(
+        self,
+        request: ScanRequest,
+        *,
+        strategy_id: str | None = None,
+        portfolio: PaperPortfolioSnapshotV1 | None = None,
+        quote: MarketQuoteV1 | None = None,
+        bars: list[dict[str, Any]] | None = None,
+    ) -> StrategyRuntimeResult:
         """Run one bounded scan-to-fill entry through existing authorities."""
         scan = self.scanner.run(request)
         diagnostics: list[RuntimeStageDiagnostic] = [
@@ -259,6 +320,7 @@ class StrategyPaperRuntime:
                 diagnostics=tuple(diagnostics),
             )
 
+        correlation_id = match.correlation_id or scan.run_id
         forecast = self._resolve_forecast(match, request)
         if forecast is None:
             diagnostics.append(
@@ -493,9 +555,16 @@ class StrategyPaperRuntime:
             execution_authority=self.execution_authority,
             lineage_refs=lineage,
             allocation_decision=allocation_decision,
+            correlation_id=correlation_id,
         )
         self.repository.put_trade_proposal(execution.proposal)
         self.repository.put_risk_decision(execution.risk_decision)
+        order_ready = self._build_order_ready(
+            allocation_decision=allocation_decision,
+            prepared=execution,
+            correlation_id=correlation_id,
+        )
+        self.repository.put_order_ready(order_ready)
         if execution.risk_decision.decision in {
             RiskDecisionKind.REJECT,
             RiskDecisionKind.FAIL_CLOSED,
@@ -509,6 +578,8 @@ class StrategyPaperRuntime:
                 allocation_decision=allocation_decision,
                 proposal=execution.proposal,
                 risk_decision=execution.risk_decision,
+                order_ready=order_ready,
+                correlation_id=correlation_id,
                 diagnostics=diagnostics
                 + [
                     RuntimeStageDiagnostic(
@@ -557,6 +628,8 @@ class StrategyPaperRuntime:
             allocation_decision=allocation_decision,
             proposal=execution.proposal,
             risk_decision=execution.risk_decision,
+            order_ready=order_ready,
+            correlation_id=correlation_id,
             attribution=attribution,
             fill_ids=fill_ids,
             paper_result=result,
@@ -633,8 +706,7 @@ class StrategyPaperRuntime:
         current_position = sum(
             int(position.get("quantity", 0))
             for position in self.ledger.project_positions()
-            if str(position.get("instrument_id", "")).upper()
-            == self._instrument_id(opportunity).upper()
+            if str(position.get("instrument_id")) == self._instrument_id(opportunity)
             and int(position.get("quantity", 0)) > 0
         )
         close_quantity = min(close_quantity, current_position)
@@ -1211,6 +1283,50 @@ class StrategyPaperRuntime:
             mode=allocation.mode,
         )
 
+    @staticmethod
+    def _build_order_ready(
+        *,
+        allocation_decision: CapitalAllocationDecisionV1,
+        prepared: Any,
+        correlation_id: str,
+    ) -> OrderReadyV1:
+        risk = prepared.risk_decision
+        status = (
+            OrderReadyStatus.READY
+            if risk.decision in {RiskDecisionKind.APPROVE, RiskDecisionKind.REDUCE}
+            and risk.approved_quantity > 0
+            else OrderReadyStatus.BLOCKED
+        )
+        return OrderReadyV1(
+            order_ready_id=derive_order_ready_id(
+                allocation_decision_id=allocation_decision.allocation_decision_id,
+                trade_proposal_id=prepared.proposal.proposal_id,
+                risk_decision_id=risk.risk_decision_id,
+                decision_time_ns=prepared.decision_time_ns,
+                approved_quantity=risk.approved_quantity,
+                approved_notional_minor=risk.approved_notional_minor,
+                status=status,
+            ),
+            schema_version="1",
+            allocation_decision_id=allocation_decision.allocation_decision_id,
+            trade_proposal_id=prepared.proposal.proposal_id,
+            risk_decision_id=risk.risk_decision_id,
+            account_id=allocation_decision.account_id,
+            mode=allocation_decision.mode,
+            decision_time_ns=prepared.decision_time_ns,
+            instrument_id=prepared.instrument_id,
+            symbol=prepared.symbol,
+            approved_quantity=risk.approved_quantity,
+            approved_notional_minor=risk.approved_notional_minor,
+            status=status,
+            execution_authority=prepared.execution_authority,
+            execution_mode="INTERNAL_SIMULATION",
+            idempotency_key=prepared.idempotency_key,
+            correlation_id=correlation_id,
+            reason_codes=tuple(code.value for code in risk.reason_codes),
+            lineage_refs=prepared.lineage_refs,
+        )
+
     def _attribution_for_fill_ids(
         self,
         allocation: CapitalAllocationDecisionV1,
@@ -1283,6 +1399,10 @@ class StrategyPaperRuntime:
         allocation = kwargs.get("allocation_decision")
         proposal = kwargs.get("proposal")
         risk = kwargs.get("risk_decision")
+        order_ready = kwargs.get("order_ready")
+        correlation_id = kwargs.get("correlation_id") or (
+            match.correlation_id if match is not None else None
+        )
         prediction_ledger_entry = (
             kwargs.get("prediction_ledger_entry")
             or self._entry.get("prediction_ledger_entry")
@@ -1310,8 +1430,10 @@ class StrategyPaperRuntime:
             "allocation_decision_id": allocation.allocation_decision_id if allocation else None,
             "trade_proposal_id": proposal.proposal_id if proposal else None,
             "risk_decision_id": risk.risk_decision_id if risk else None,
+            "order_ready_id": order_ready.order_ready_id if order_ready else None,
             "order_id": self._order_id(paper_result),
             "attribution_id": attribution.attribution_id if attribution else None,
+            "correlation_id": correlation_id,
         }
         stage_ids = {key: value for key, value in ids.items() if value is not None}
         quantities = {}

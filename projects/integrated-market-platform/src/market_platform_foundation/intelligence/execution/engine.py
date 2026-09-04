@@ -41,6 +41,9 @@ from .types import (
 )
 
 from ..governance.types import RuntimeGovernanceState
+from ...rt01.context import current_context
+from ...rt01.enums import TraceStage, TraceStatus
+from ...rt01.tracer import get_tracer
 
 
 _GATE_REASON_MAP = {
@@ -141,6 +144,7 @@ class PreTradeRiskEngine:
         runtime_governance: RuntimeGovernanceState | None = None,
         lineage_refs: tuple[ContractReference, ...] = (),
         allocation_decision: Any | None = None,
+        correlation_id: str | None = None,
         allocation_desired_quantity: int | None = None,
         allocation_desired_notional_minor: int | None = None,
         requested_quantity: int | None = None,
@@ -259,6 +263,8 @@ class PreTradeRiskEngine:
             "symbol": symbol,
             "sizing_capped_by": list(sizing.capped_by),
         }
+        if correlation_id is not None:
+            metadata["correlation_id"] = str(correlation_id)
         if allocation_id is not None:
             metadata["allocation_decision_id"] = str(allocation_id)
         if allocation_quantity is not None:
@@ -515,6 +521,7 @@ class PreTradeRiskEngine:
             lineage_refs=proposal.lineage_refs,
             metadata={
                 "requested_preserved": True,
+                "correlation_id": proposal.metadata.get("correlation_id"),
                 "allocation_desired_quantity": proposal.metadata.get("allocation_desired_quantity"),
                 "allocation_desired_notional_minor": proposal.metadata.get(
                     "allocation_desired_notional_minor"
@@ -538,7 +545,32 @@ class PaperExecutionOrchestrator:
         if execution_authority == "AUTHORIZED" and ledger.execution_mode == "LIVE":
             raise LiveExecutionForbidden("EXECUTION_MODE_LIVE")
 
-    def prepare_paper(
+    def prepare_paper(self, **kwargs: Any) -> PreparedPaperExecution:
+        context = current_context()
+        span = None
+        if context is not None:
+            opportunity = kwargs.get("opportunity")
+            span = get_tracer().start_span(
+                TraceStage.RISK,
+                "prepare_paper_risk",
+                parent=context,
+                input_ref=f"opportunity:{getattr(opportunity, 'opportunity_id', 'unknown')}",
+            )
+        try:
+            prepared = self._prepare_paper(**kwargs)
+        except Exception as exc:
+            if span is not None:
+                span.end(
+                    status=TraceStatus.ERROR,
+                    error_class=type(exc).__name__,
+                    error_code=type(exc).__name__,
+                )
+            raise
+        if span is not None:
+            span.end(output_ref=f"risk:{prepared.risk_decision.risk_decision_id}")
+        return prepared
+
+    def _prepare_paper(
         self,
         *,
         opportunity: OpportunityV1,
@@ -554,6 +586,7 @@ class PaperExecutionOrchestrator:
         runtime_governance: RuntimeGovernanceState | None = None,
         lineage_refs: tuple[ContractReference, ...] = (),
         allocation_decision: Any | None = None,
+        correlation_id: str | None = None,
         allocation_desired_quantity: int | None = None,
         allocation_desired_notional_minor: int | None = None,
         requested_quantity: int | None = None,
@@ -575,6 +608,7 @@ class PaperExecutionOrchestrator:
             runtime_governance=runtime_governance,
             lineage_refs=lineage_refs,
             allocation_decision=allocation_decision,
+            correlation_id=correlation_id,
             allocation_desired_quantity=allocation_desired_quantity,
             allocation_desired_notional_minor=allocation_desired_notional_minor,
             requested_quantity=requested_quantity,
@@ -625,9 +659,37 @@ class PaperExecutionOrchestrator:
             idempotency_key=idempotency_key,
             lineage_refs=paper_lineage,
             quantity_facts=quantity_facts,
+            correlation_id=correlation_id,
         )
 
-    def submit_prepared(
+    def submit_prepared(self, **kwargs: Any) -> PaperExecutionResult:
+        context = current_context()
+        span = None
+        if context is not None:
+            prepared = kwargs.get("prepared")
+            span = get_tracer().start_span(
+                TraceStage.ORDER_READY,
+                "submit_prepared_paper_order",
+                parent=context,
+                input_ref=f"risk:{getattr(getattr(prepared, 'risk_decision', None), 'risk_decision_id', 'unknown')}",
+            )
+        try:
+            result = self._submit_prepared(**kwargs)
+        except Exception as exc:
+            if span is not None:
+                span.end(
+                    status=TraceStatus.ERROR,
+                    error_class=type(exc).__name__,
+                    error_code=type(exc).__name__,
+                )
+            raise
+        if span is not None:
+            span.end(
+                output_ref=f"order:{(result.paper_submit or {}).get('order_id', 'no-order')}"
+            )
+        return result
+
+    def _submit_prepared(
         self,
         *,
         prepared: PreparedPaperExecution,
@@ -650,23 +712,46 @@ class PaperExecutionOrchestrator:
                 prepared=prepared,
             )
 
-        from ...paper.execution import submit_interactive_order
+        if ledger.execution_mode == "BROKER_PAPER":
+            from ...paper.broker_paper import submit_broker_paper_order
+            from ...paper.contracts import build_instrument_ref
+            from ...providers.composition import get_provider_composition
 
-        submit = submit_interactive_order(
-            ledger=ledger,
-            bars=bars,
-            symbol=prepared.symbol,
-            instrument_id=prepared.instrument_id,
-            side=prepared.proposal.side,
-            quantity=risk.approved_quantity,
-            observation_time=prepared.decision_time_ns,
-            client_order_id=risk.risk_decision_id,
-            idempotency_key=prepared.idempotency_key,
-            correlation_id=prepared.proposal.opportunity_id,
-            lineage_refs=prepared.lineage_refs,
-            quantity_facts=prepared.quantity_facts,
-            risk_decision_id=risk.risk_decision_id,
-        )
+            submit = submit_broker_paper_order(
+                ledger=ledger,
+                provider=get_provider_composition().paper_execution,
+                instrument=build_instrument_ref(
+                    instrument_id=prepared.instrument_id,
+                    symbol=prepared.symbol,
+                ),
+                side=prepared.proposal.side,
+                quantity=risk.approved_quantity,
+                observation_time=prepared.decision_time_ns,
+                client_order_id=risk.risk_decision_id,
+                idempotency_key=prepared.idempotency_key,
+                correlation_id=prepared.correlation_id or risk.risk_decision_id,
+                lineage_refs=prepared.lineage_refs,
+                quantity_facts=prepared.quantity_facts,
+                risk_decision_id=risk.risk_decision_id,
+            )
+        else:
+            from ...paper.execution import submit_interactive_order
+
+            submit = submit_interactive_order(
+                ledger=ledger,
+                bars=bars,
+                symbol=prepared.symbol,
+                instrument_id=prepared.instrument_id,
+                side=prepared.proposal.side,
+                quantity=risk.approved_quantity,
+                observation_time=prepared.decision_time_ns,
+                client_order_id=risk.risk_decision_id,
+                idempotency_key=prepared.idempotency_key,
+                correlation_id=prepared.correlation_id or risk.risk_decision_id,
+                lineage_refs=prepared.lineage_refs,
+                quantity_facts=prepared.quantity_facts,
+                risk_decision_id=risk.risk_decision_id,
+            )
         return PaperExecutionResult(
             proposal=prepared.proposal,
             risk_decision=risk,

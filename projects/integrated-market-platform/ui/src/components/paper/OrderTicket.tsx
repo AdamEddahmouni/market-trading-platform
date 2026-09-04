@@ -35,12 +35,6 @@ type OrderTicketProps = {
   showLaneBanner?: boolean;
 };
 
-function formatMinor(value: number | null | undefined) {
-  return value === null || value === undefined
-    ? "UNAVAILABLE"
-    : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value / 100);
-}
-
 export function OrderTicket({
   symbol,
   executionAuthority,
@@ -331,13 +325,6 @@ export function OrderTicket({
             <p>Reasons: {preview.reason_codes.join(", ")}</p>
           ) : null}
           <p>Projected position: {preview.projected_position_shares ?? "UNAVAILABLE"} sh</p>
-          {preview.approved_quantity !== undefined ? <p>Approved quantity: {preview.approved_quantity} sh</p> : null}
-          {preview.approved_notional_minor !== undefined ? <p>Approved notional: {formatMinor(preview.approved_notional_minor)}</p> : null}
-          {preview.projected_available_cash_minor !== undefined ? <p>Available cash after order: {formatMinor(preview.projected_available_cash_minor)}</p> : null}
-          {preview.reserved_order_cash_minor !== undefined ? <p>Order cash reservation: {formatMinor(preview.reserved_order_cash_minor)}</p> : null}
-          {preview.risk_price?.source ? (
-            <p>Pricing basis: {preview.risk_price.source.replace(/_/g, " ")} · {formatMinor(preview.risk_price.minor)} · {preview.risk_price.quality ?? "UNKNOWN"}</p>
-          ) : null}
           <p>Quality: {preview.quality_state ?? "UNKNOWN"}</p>
           {preview.fill_preview_available === false ? (
             <p className="muted">

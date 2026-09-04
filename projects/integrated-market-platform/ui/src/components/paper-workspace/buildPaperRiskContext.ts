@@ -82,7 +82,7 @@ export function buildPaperRiskContext(
       unavailable: !paperActionsAvailable,
     },
     ...paperRiskMetrics(portfolio)
-      .filter((metric) => ["buying-power", "reserved-cash", "equity", "gross-exposure", "gross-notional", "open-orders", "largest-position"].includes(metric.id))
+      .filter((metric) => ["buying-power", "gross-exposure", "open-orders", "largest-position"].includes(metric.id))
       .map((metric) => ({
         id: metric.id,
         label: metric.label,
@@ -107,9 +107,6 @@ export function buildPaperRiskContext(
   }
   if (portfolio.risk.kill_switch_active) {
     warnings.push("Kill switch is active.");
-  }
-  if (portfolio.account.valuation_quality === "INCOMPLETE") {
-    warnings.push(`Valuation incomplete${portfolio.account.valuation_reasons?.length ? ` — ${portfolio.account.valuation_reasons.join(", ")}` : "."}`);
   }
   const reconciliation = (portfolio.reconciliation_status ?? portfolio.risk.reconciliation_status).toUpperCase();
   if (!["PASS", "HEALTHY", "CLEAN", "RECONCILED", "INTERNAL_AUTHORITATIVE"].includes(reconciliation)) {

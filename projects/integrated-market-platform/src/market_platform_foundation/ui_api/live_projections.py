@@ -311,7 +311,6 @@ def apply_live_marks_to_ledger(store: ReplayStore) -> None:
     if mark is None:
         return
     store.paper_ledger.apply_live_mark(
-        instrument_id=focus,
         mark_minor=int(mark["mark_minor"]),
         mark_provider=str(mark["mark_provider"]),
         mark_as_of_ns=int(mark["mark_as_of_ns"]),

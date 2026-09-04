@@ -41,6 +41,7 @@ from .queries import (
     filter_prediction_ledger_entries_by_forecast,
     query_events_as_of,
     query_signals_as_of,
+    validate_limit,
 )
 from .repository import RepositoryPutResult
 
@@ -84,6 +85,7 @@ class InMemoryIntelligenceRepository:
         self._stores["paper_portfolio_snapshots"] = {}
         self._stores["trade_proposals"] = {}
         self._stores["risk_decisions"] = {}
+        self._stores["order_ready"] = {}
         self._stores["runtime_activation_policies"] = {}
         self._stores["runtime_activations"] = {}
         self._stores["drift_policies"] = {}
@@ -228,6 +230,42 @@ class InMemoryIntelligenceRepository:
                 continue
             rows.append(decision)
         return tuple(sorted(rows, key=lambda row: (row.rank, row.allocation_decision_id)))
+
+    def query_allocation_decisions(
+        self,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+        decision_from_ns: int | None = None,
+        decision_to_ns: int | None = None,
+        limit: int = 1000,
+    ) -> tuple:
+        from ..opportunity.allocation_persistence import allocation_decision_v1_from_dict
+
+        active_limit = validate_limit(limit)
+        normalized_mode = str(mode).strip().upper() if mode is not None else None
+        normalized_mode = (
+            {"LIVE": "ACTUAL_LIVE"}.get(normalized_mode, normalized_mode)
+            if normalized_mode is not None
+            else None
+        )
+        with self._lock:
+            bodies = list(self._stores["allocation_decisions"].values())
+        rows = []
+        for body in bodies:
+            payload = {key: value for key, value in body.items() if key != "_id"}
+            decision = allocation_decision_v1_from_dict(payload)
+            if account_id is not None and decision.account_id != account_id:
+                continue
+            if normalized_mode is not None and decision.mode != normalized_mode:
+                continue
+            if decision_from_ns is not None and decision.decision_time_ns < decision_from_ns:
+                continue
+            if decision_to_ns is not None and decision.decision_time_ns > decision_to_ns:
+                continue
+            rows.append(decision)
+        rows.sort(key=lambda row: (-row.decision_time_ns, row.allocation_decision_id))
+        return tuple(rows[:active_limit])
 
     def put_strategy_match(self, match: StrategyMatch) -> RepositoryPutResult:
         return self._put(match)
@@ -949,6 +987,41 @@ class InMemoryIntelligenceRepository:
         from ..execution.serialization import risk_decision_v1_from_dict
 
         return self._get_sidecar("risk_decisions", risk_decision_id, risk_decision_v1_from_dict)
+
+    def put_order_ready(self, order_ready) -> RepositoryPutResult:
+        from ..execution.serialization import order_ready_v1_to_dict
+
+        return self._put_sidecar(
+            collection="order_ready",
+            record_id=order_ready.order_ready_id,
+            document=order_ready_v1_to_dict(order_ready),
+            kind="order_ready",
+        )
+
+    def get_order_ready(self, order_ready_id: str):
+        from ..execution.serialization import order_ready_v1_from_dict
+
+        return self._get_sidecar("order_ready", order_ready_id, order_ready_v1_from_dict)
+
+    def get_order_ready_by_allocation(self, allocation_decision_id: str) -> tuple:
+        from ..execution.serialization import order_ready_v1_from_dict
+
+        with self._lock:
+            bodies = list(self._stores["order_ready"].values())
+        records = [
+            order_ready_v1_from_dict({key: value for key, value in body.items() if key != "_id"})
+            for body in bodies
+        ]
+        return tuple(
+            sorted(
+                (
+                    record
+                    for record in records
+                    if record.allocation_decision_id == allocation_decision_id
+                ),
+                key=lambda record: (record.decision_time_ns, record.order_ready_id),
+            )
+        )
 
     def put_runtime_activation_policy(self, policy) -> RepositoryPutResult:
         from ..governance.serialization import runtime_activation_policy_v1_to_dict

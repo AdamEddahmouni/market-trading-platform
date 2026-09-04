@@ -87,6 +87,10 @@ from market_platform_foundation.strategy.scanning import (
     UniversalStrategyScanner,
 )
 from market_platform_foundation.strategy.strategy_spec import StrategyDefinition
+from market_platform_foundation.rt01.collector import InMemoryTraceCollector
+from market_platform_foundation.rt01.context import bind_context
+from market_platform_foundation.rt01.enums import SamplingMode, TraceStage
+from market_platform_foundation.rt01.tracer import configure_tracer, Tracer
 
 
 T = 1_700_000_000_000_000_000
@@ -418,6 +422,79 @@ def _exit_opportunity(
 
 
 class EquityPaperRuntimeTests(unittest.TestCase):
+    def setUp(self) -> None:
+        bind_context(None)
+
+    def test_strategy_entry_emits_causal_paper_stages(self) -> None:
+        collector = InMemoryTraceCollector()
+        configure_tracer(Tracer(mode=SamplingMode.FULL, collector=collector))
+        runtime, _repository, request, _forecast = _runtime_fixture(
+            session_id="runtime-paper-rt01-trace",
+        )
+
+        result = runtime.run_entry(request)
+
+        self.assertEqual(result.status, "FILLED")
+        stages = {span.stage for span in collector.spans}
+        self.assertIn(TraceStage.TRACE_ROOT, stages)
+        self.assertIn(TraceStage.OPPORTUNITY, stages)
+        self.assertIn(TraceStage.RISK, stages)
+        self.assertIn(TraceStage.ORDER_READY, stages)
+        self.assertEqual(
+            {span.correlation_id for span in collector.spans},
+            {f"strategy-paper:{request.decision_time_ns}"},
+        )
+
+    def test_entry_exposes_one_decision_correlation_and_durable_order_ready_record(self) -> None:
+        runtime, repository, request, _forecast_record = _runtime_fixture(
+            session_id="runtime-paper-task6-lineage",
+        )
+
+        result = runtime.run_entry(request)
+
+        self.assertEqual(result.status, "FILLED")
+        self.assertEqual(result.ids["correlation_id"], runtime._entry["match"].correlation_id)
+        self.assertEqual(
+            runtime._entry["proposal"].metadata["correlation_id"],
+            result.ids["correlation_id"],
+        )
+        self.assertEqual(
+            runtime._entry["risk_decision"].metadata["correlation_id"],
+            result.ids["correlation_id"],
+        )
+        order_ready = repository.get_order_ready(result.ids["order_ready_id"])
+        self.assertIsNotNone(order_ready)
+        self.assertEqual(order_ready.allocation_decision_id, result.ids["allocation_decision_id"])
+        self.assertEqual(order_ready.trade_proposal_id, result.ids["trade_proposal_id"])
+        self.assertEqual(order_ready.risk_decision_id, result.ids["risk_decision_id"])
+        self.assertEqual(order_ready.status.value, "READY")
+        order = runtime.ledger.project_orders()[0]
+        self.assertEqual(order["correlation_id"], result.ids["correlation_id"])
+
+    def test_blocked_risk_persists_blocked_order_ready_without_paper_mutation(self) -> None:
+        runtime, repository, request, _forecast_record = _runtime_fixture(
+            execution_policy=build_execution_policy(
+                trade_fraction_nav=0.02,
+                max_trade_notional_minor=50_000,
+                max_symbol_concentration_fraction=1.0,
+                minimum_trade_notional_minor=100,
+                daily_loss_limit_fraction=0.05,
+            ),
+            equity_minor=900_000,
+            start_of_day_equity_minor=1_000_000,
+            session_id="runtime-paper-task6-blocked-order-ready",
+        )
+
+        result = runtime.run_entry(request)
+
+        self.assertEqual(result.status, "RISK_REJECTED")
+        order_ready = repository.get_order_ready(result.ids["order_ready_id"])
+        self.assertIsNotNone(order_ready)
+        self.assertEqual(order_ready.status.value, "BLOCKED")
+        self.assertEqual(order_ready.risk_decision_id, result.ids["risk_decision_id"])
+        self.assertEqual(runtime.ledger.project_orders(), [])
+        self.assertEqual(runtime.ledger.project_fills(), [])
+
     def test_a_profitable_round_trip_preserves_reduction_quantities(self) -> None:
         execution_policy = build_execution_policy(
             trade_fraction_nav=0.10,

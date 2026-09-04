@@ -196,6 +196,32 @@ class ReplayVisibleRepository:
             mode=mode,
         )
 
+    def query_allocation_decisions(
+        self,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+        decision_from_ns: int | None = None,
+        decision_to_ns: int | None = None,
+        limit: int = 1000,
+    ) -> tuple:
+        output_rows = self._output.query_allocation_decisions(
+            account_id=account_id,
+            mode=mode,
+            decision_from_ns=decision_from_ns,
+            decision_to_ns=decision_to_ns,
+            limit=limit,
+        )
+        if output_rows:
+            return output_rows
+        return self._source.query_allocation_decisions(
+            account_id=account_id,
+            mode=mode,
+            decision_from_ns=decision_from_ns,
+            decision_to_ns=decision_to_ns,
+            limit=limit,
+        )
+
     def put_strategy_match(self, match) -> RepositoryPutResult:
         return self._output.put_strategy_match(match)
 
@@ -694,6 +720,21 @@ class ReplayVisibleRepository:
         if row is not None:
             return row
         return self._source.get_risk_decision(risk_decision_id)
+
+    def put_order_ready(self, order_ready) -> RepositoryPutResult:
+        return self._output.put_order_ready(order_ready)
+
+    def get_order_ready(self, order_ready_id: str):
+        row = self._output.get_order_ready(order_ready_id)
+        if row is not None:
+            return row
+        return self._source.get_order_ready(order_ready_id)
+
+    def get_order_ready_by_allocation(self, allocation_decision_id: str) -> tuple:
+        output_rows = self._output.get_order_ready_by_allocation(allocation_decision_id)
+        if output_rows:
+            return output_rows
+        return self._source.get_order_ready_by_allocation(allocation_decision_id)
 
     def put_runtime_activation_policy(self, policy) -> RepositoryPutResult:
         return self._output.put_runtime_activation_policy(policy)

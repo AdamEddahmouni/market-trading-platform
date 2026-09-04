@@ -14,6 +14,9 @@ sys.path.insert(0, str(ROOT / "src"))
 DONOR_ROOT = ROOT.parent / "short-squeeze-project" / "short-squeeze-core"
 sys.path.insert(0, str(DONOR_ROOT / "src"))
 
+if not (DONOR_ROOT / "src" / "squeeze_core" / "intelligence").is_dir():
+    raise unittest.SkipTest("companion squeeze_core intelligence package is unavailable")
+
 from market_platform_foundation.donor_bridge.horizon_model_bridge import (  # noqa: E402
     build_horizon_model_snapshot,
 )

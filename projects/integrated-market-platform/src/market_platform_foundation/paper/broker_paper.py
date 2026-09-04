@@ -22,9 +22,15 @@ from ..providers.broker_execution import (
     normalize_broker_fill,
 )
 from ..risk.decision import evaluate_risk
-from ..market_data.live_config import execution_freshness_threshold_ms
-from ..portfolio.ledger import apply_fill
-from .contracts import ORDER_LIFECYCLE_TERMINAL_STATES, build_user_order_intent, validate_order_transition
+from ..rt01.context import current_context
+from ..rt01.enums import TraceStage, TraceStatus
+from ..rt01.instrumentation.paper import trace_refs
+from ..rt01.tracer import get_tracer
+from .contracts import (
+    ORDER_LIFECYCLE_TERMINAL_STATES,
+    build_user_order_intent,
+    validate_order_transition,
+)
 from .ledger import PaperExecutionLedger
 
 
@@ -47,7 +53,41 @@ def _broker_lifecycle_path(target: str) -> list[str]:
     raise ValueError(f"BROKER_TARGET_STATE_UNREACHABLE: {target}")
 
 
-def submit_broker_paper_order(
+def submit_broker_paper_order(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    context = current_context()
+    span = None
+    if context is not None:
+        span = get_tracer().start_span(
+            TraceStage.BROKER,
+            "submit_broker_paper_order",
+            parent=context,
+            input_ref=str(kwargs.get("client_order_id") or "broker-order"),
+        )
+    try:
+        result = _submit_broker_paper_order(*args, **kwargs)
+    except Exception as exc:
+        if span is not None:
+            span.end(
+                status=TraceStatus.ERROR,
+                error_class=type(exc).__name__,
+                error_code=type(exc).__name__,
+            )
+        raise
+    if span is not None:
+        order = result.get("order") if isinstance(result.get("order"), dict) else {}
+        span.context.attributes.update(
+            trace_refs(
+                intent_id=result.get("intent_id"),
+                order_id=result.get("order_id"),
+                broker_order_id=order.get("broker_order_id"),
+                risk_decision_id=result.get("risk_decision_id"),
+            )
+        )
+        span.end(output_ref=str(result.get("order_id") or "no-order"))
+    return result
+
+
+def _submit_broker_paper_order(
     *,
     ledger: PaperExecutionLedger,
     provider: Any,
@@ -61,7 +101,9 @@ def submit_broker_paper_order(
     limit_price_minor: int | None = None,
     correlation_id: str | None = None,
     decision_source_snapshot: dict[str, Any] | None = None,
-    mark_snapshot: dict[str, Any] | None = None,
+    lineage_refs: tuple[Any, ...] | list[Any] = (),
+    quantity_facts: dict[str, Any] | None = None,
+    risk_decision_id: str | None = None,
 ) -> dict[str, Any]:
     """Broker paper execution (Platformization P4) — dedicated entry point.
 
@@ -73,111 +115,87 @@ def submit_broker_paper_order(
     if ledger.execution_authority not in PAPER_EXECUTION_AUTHORITIES:
         raise ValueError("PAPER_EXECUTION_NOT_AUTHORIZED")
 
-    with ledger.admission_lock:
-        existing_order_id = ledger.lookup_idempotent_order(idempotency_key)
-        if existing_order_id:
-            for order in ledger.project_orders():
-                if order.get("order_id") == existing_order_id:
-                    return {
-                        "duplicate": True,
-                        "idempotency_key": idempotency_key,
-                        "order": order,
-                        "order_id": existing_order_id,
-                    }
-            return {
-                "duplicate": True,
-                "idempotency_key": idempotency_key,
-                "order_id": existing_order_id,
-            }
+    existing_order_id = ledger.lookup_idempotent_order(idempotency_key)
+    if existing_order_id:
+        for order in ledger.project_orders():
+            if order.get("order_id") == existing_order_id:
+                return {
+                    "duplicate": True,
+                    "idempotency_key": idempotency_key,
+                    "order": order,
+                    "order_id": existing_order_id,
+                }
+        return {
+            "duplicate": True,
+            "idempotency_key": idempotency_key,
+            "order_id": existing_order_id,
+        }
 
-        intent = build_user_order_intent(
-            instrument=instrument,
-            side=side,
-            quantity=quantity,
-            observation_time=observation_time,
-            order_type=order_type,
-            limit_price_minor=limit_price_minor,
-            client_order_id=client_order_id,
-            idempotency_key=idempotency_key,
-            correlation_id=correlation_id or client_order_id,
-            decision_source_snapshot=decision_source_snapshot,
-        )
-        instrument_id = str(intent["instrument_id"]).upper()
-        risk_price, price_source, price_as_of, price_quality, price_error = _broker_risk_price(
-            ledger=ledger,
-            intent=intent,
-            mark_snapshot=mark_snapshot,
-            observation_time=observation_time,
-        )
-        projection = ledger._project_ledger()
-        position = dict(projection.get("positions_by_instrument") or {}).get(instrument_id, {})
-        reservations = ledger.project_reservations()
-        instrument_reservations = dict(reservations.get("by_instrument") or {}).get(instrument_id, {})
-        decision = evaluate_risk(
-            intent=intent,
-            policy=ledger.policy,
-            kill_switch=ledger.kill_switch,
-            current_position_shares=int(position.get("position_shares", 0)),
-            current_cash_minor=int(projection["cash_minor"]),
-            reserved_cash_minor=int(reservations.get("reserved_cash_minor", 0)),
-            reserved_sell_shares=int(instrument_reservations.get("reserved_sell_shares", 0)),
-            risk_price_minor=risk_price,
-            risk_price_source=price_source,
-            risk_price_as_of_ns=price_as_of,
-            risk_price_quality=price_quality,
-            risk_price_error=price_error,
-            open_order_count=ledger.open_order_count,
-        )
-        order_id = build_canonical_order_id(intent=intent, decision=decision)
+    intent = build_user_order_intent(
+        instrument=instrument,
+        side=side,
+        quantity=quantity,
+        observation_time=observation_time,
+        order_type=order_type,
+        limit_price_minor=limit_price_minor,
+        client_order_id=client_order_id,
+        idempotency_key=idempotency_key,
+        correlation_id=correlation_id or client_order_id,
+        decision_source_snapshot=decision_source_snapshot,
+        lineage_refs=lineage_refs,
+        quantity_facts=quantity_facts,
+        risk_decision_id=risk_decision_id,
+    )
+    ledger.append_intent(intent)
 
-        if decision["decision"] not in {"APPROVE", "RESIZE"}:
-            rejected = build_broker_order(
-                intent=intent,
-                decision=decision,
-                state="REJECTED",
-                order_id=order_id,
-                reason_codes=["BROKER_RISK_NOT_APPROVED"],
-            )
-            with ledger.atomic_append():
-                ledger.append_intent(intent)
-                ledger.append_risk_decision(decision)
-                ledger.append_order(rejected, intent=intent)
-                ledger.record_idempotent_order(
-                    idempotency_key=idempotency_key,
-                    order_id=order_id,
-                )
-            return {
-                "decision": decision["decision"],
-                "duplicate": False,
-                "execution_attempt_id": order_id,
-                "idempotency_key": idempotency_key,
-                "intent_id": intent["intent_id"],
-                "order": rejected,
-                "order_id": order_id,
-                "rejected": True,
-                "reason_codes": decision.get("reason_codes", []),
-                "risk_decision_id": decision.get("intent_id"),
-            }
+    projection = ledger._project_ledger()
+    decision = evaluate_risk(
+        intent=intent,
+        policy=ledger.policy,
+        kill_switch=ledger.kill_switch,
+        current_position_shares=int(projection["position_shares"]),
+        open_order_count=ledger.open_order_count,
+    )
+    if risk_decision_id:
+        decision["risk_decision_id"] = risk_decision_id
+    ledger.append_risk_decision(decision)
+    order_id = build_canonical_order_id(intent=intent, decision=decision)
+    instrument_id = str(intent["instrument_id"])
 
-        # Submission record and its reservation are persisted together before
-        # any broker network call.
-        submitted = build_broker_order(
+    if decision["decision"] not in {"APPROVE", "RESIZE"}:
+        rejected = build_broker_order(
             intent=intent,
             decision=decision,
-            state="SUBMITTED",
+            state="REJECTED",
             order_id=order_id,
+            reason_codes=["BROKER_RISK_NOT_APPROVED"],
         )
-        with ledger.atomic_append():
-            ledger.append_intent(intent)
-            ledger.append_risk_decision(decision)
-            ledger.append_order(submitted, intent=intent)
-            ledger.record_idempotent_order(
-                idempotency_key=idempotency_key,
-                order_id=order_id,
-            )
-        provider_intent = {**intent, "desired_quantity": int(decision["approved_quantity"])}
+        ledger.append_order(rejected, intent=intent)
+        ledger.record_idempotent_order(idempotency_key=idempotency_key, order_id=order_id)
+        return {
+            "decision": decision["decision"],
+            "duplicate": False,
+            "execution_attempt_id": order_id,
+            "idempotency_key": idempotency_key,
+            "intent_id": intent["intent_id"],
+            "order": rejected,
+            "order_id": order_id,
+            "rejected": True,
+            "reason_codes": decision.get("reason_codes", []),
+            "risk_decision_id": decision.get("risk_decision_id") or decision.get("intent_id"),
+        }
 
-    result = provider.place_order(provider_intent)
+    # Submission record BEFORE any broker network call.
+    submitted = build_broker_order(
+        intent=intent,
+        decision=decision,
+        state="SUBMITTED",
+        order_id=order_id,
+    )
+    ledger.append_order(submitted, intent=intent)
+    ledger.record_idempotent_order(idempotency_key=idempotency_key, order_id=order_id)
+
+    result = provider.place_order(intent)
     status = str(getattr(result, "status", "error"))
     reason_code = getattr(result, "reason_code", None)
 
@@ -197,7 +215,7 @@ def submit_broker_paper_order(
             "order": ledger.lookup_order(order_id),
             "order_id": order_id,
             "reason_code": reason_code or "BROKER_AMBIGUOUS_OUTCOME",
-            "risk_decision_id": decision.get("intent_id"),
+            "risk_decision_id": decision.get("risk_decision_id") or decision.get("intent_id"),
         }
 
     if status != "ok":
@@ -218,7 +236,7 @@ def submit_broker_paper_order(
             "order_id": order_id,
             "rejected": True,
             "reason_codes": [reason],
-            "risk_decision_id": decision.get("intent_id"),
+            "risk_decision_id": decision.get("risk_decision_id") or decision.get("intent_id"),
         }
 
     broker_event = _first_broker_status_payload(result)
@@ -268,21 +286,6 @@ def submit_broker_paper_order(
             "reason_codes": ["BROKER_NO_ORDER_ID"],
         }
 
-    normalized_fills: list[dict[str, Any]] = []
-    for fill_event in status_event.fills:
-        normalized_fills.append(
-            normalize_broker_fill(
-                fill_event,
-                order_id=order_id,
-                instrument_id=instrument_id,
-                direction=str(intent["direction"]),
-            )
-        )
-    ledger.validate_fill_batch(
-        order=ledger.lookup_order(order_id) or submitted,
-        fills=normalized_fills,
-    )
-
     prior = "SUBMITTED"
     for state in _broker_lifecycle_path(target):
         ledger.append_order_state(
@@ -294,7 +297,13 @@ def submit_broker_paper_order(
         prior = state
 
     fills: list[dict[str, Any]] = []
-    for fill in normalized_fills:
+    for fill_event in status_event.fills:
+        fill = normalize_broker_fill(
+            fill_event,
+            order_id=order_id,
+            instrument_id=instrument_id,
+            direction=str(intent["direction"]),
+        )
         ledger.append_fill(fill, order=ledger.lookup_order(order_id))
         fills.append(fill)
 
@@ -313,41 +322,84 @@ def submit_broker_paper_order(
         "intent_id": intent["intent_id"],
         "order": order,
         "order_id": order_id,
-        "risk_decision_id": decision.get("intent_id"),
+        "risk_decision_id": decision.get("risk_decision_id") or decision.get("intent_id"),
     }
 
 
-def _broker_risk_price(
+def preview_broker_paper_order(
     *,
     ledger: PaperExecutionLedger,
-    intent: dict[str, Any],
-    mark_snapshot: dict[str, Any] | None,
+    instrument: dict[str, Any],
+    side: str,
+    quantity: int,
     observation_time: int,
-) -> tuple[int | None, str | None, int | None, str, str | None]:
-    if str(intent.get("order_type", "MARKET")) == "LIMIT":
-        price = int(intent.get("limit_price_minor") or 0)
-        return price or None, "BROKER_LIMIT_PRICE", observation_time, "PASS", None
-
-    mark = mark_snapshot or ledger._mark_for_instrument(str(intent["instrument_id"]))
-    if not isinstance(mark, dict):
-        return None, None, None, "UNAVAILABLE", "RISK_PRICE_UNAVAILABLE"
-    if str(mark.get("instrument_id", intent["instrument_id"])).upper() != str(intent["instrument_id"]).upper():
-        return None, None, None, "UNAVAILABLE", "RISK_PRICE_INSTRUMENT_MISMATCH"
-    quality = str(mark.get("mark_quality", "UNAVAILABLE")).upper()
-    if quality not in {"PASS", "HEALTHY"}:
-        return None, None, None, quality, "RISK_PRICE_UNAVAILABLE"
-    as_of = int(mark.get("mark_as_of_ns", 0))
-    age_ns = int(observation_time) - as_of
-    if age_ns < 0:
-        return None, None, as_of, quality, "RISK_PRICE_FUTURE"
-    if age_ns > execution_freshness_threshold_ms() * 1_000_000:
-        return None, None, as_of, quality, "RISK_PRICE_STALE"
-    raw_price = int(mark.get("mark_minor", 0))
-    if raw_price <= 0:
-        return None, None, as_of, quality, "RISK_PRICE_UNAVAILABLE"
-    buffer_bps = int(ledger.policy["broker_market_reserve_buffer_bps"])
-    buffered = (raw_price * (10_000 + buffer_bps) + 9_999) // 10_000
-    return buffered, "BROKER_MARK_PLUS_BUFFER", as_of, quality, None
+    client_order_id: str,
+    idempotency_key: str,
+    order_type: str = "MARKET",
+    limit_price_minor: int | None = None,
+    correlation_id: str | None = None,
+    decision_source_snapshot: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build a broker-paper preview without provider calls or ledger writes."""
+    if ledger.execution_mode != "BROKER_PAPER":
+        raise ValueError("PAPER_EXECUTION_BROKER_MODE_INVALID")
+    if ledger.execution_authority not in PAPER_EXECUTION_AUTHORITIES:
+        raise ValueError("PAPER_EXECUTION_NOT_AUTHORIZED")
+    intent = build_user_order_intent(
+        instrument=instrument,
+        side=side,
+        quantity=quantity,
+        observation_time=observation_time,
+        order_type=order_type,
+        limit_price_minor=limit_price_minor,
+        client_order_id=client_order_id,
+        idempotency_key=idempotency_key,
+        correlation_id=correlation_id or client_order_id,
+        decision_source_snapshot=decision_source_snapshot,
+    )
+    projection = ledger._project_ledger()
+    decision = evaluate_risk(
+        intent=intent,
+        policy=ledger.policy,
+        kill_switch=ledger.kill_switch,
+        current_position_shares=int(projection["position_shares"]),
+        open_order_count=ledger.open_order_count,
+    )
+    order_id = build_canonical_order_id(intent=intent, decision=decision)
+    order = build_broker_order(
+        intent=intent,
+        decision=decision,
+        state="CREATED",
+        order_id=order_id,
+        reason_codes=list(decision.get("reason_codes", [])),
+    )
+    return {
+        "client_command_id": client_order_id,
+        "client_order_id": client_order_id,
+        "correlation_id": intent.get("correlation_id"),
+        "data_mode": ledger.data_mode,
+        "data_provider": ledger.data_provider,
+        "decision": decision["decision"],
+        "execution_authority": ledger.execution_authority,
+        "execution_mode": ledger.execution_mode,
+        "execution_model": "BrokerPaper",
+        "execution_provider": ledger.execution_provider,
+        "fill_preview": None,
+        "fill_preview_available": False,
+        "idempotency_key": idempotency_key,
+        "instrument": intent.get("instrument"),
+        "intent": intent,
+        "limit_price_minor": intent.get("limit_price_minor"),
+        "order_preview": order,
+        "order_type": intent.get("order_type", "MARKET"),
+        "quality_state": "BROKER_STATUS_PENDING",
+        "reason_codes": decision.get("reason_codes", []),
+        "risk_status": (
+            "PASS" if decision["decision"] in {"APPROVE", "RESIZE"} else "BLOCKED"
+        ),
+        "side": intent.get("side"),
+        "quantity": int(intent.get("desired_quantity", 0)),
+    }
 
 
 def _first_broker_status_payload(result: Any) -> dict[str, Any] | None:
@@ -392,13 +444,55 @@ def _pending_lifecycle_states(current_state: str, target_path: list[str]) -> lis
     """
     ceiling = len(_LIFECYCLE_RANK)
     rank = _LIFECYCLE_RANK.get(current_state, ceiling)
-    # WORKING and ACTIVATED are equivalent admission-stage ranks.  A poll
-    # mapped through the other state must not attempt an invalid lateral
-    # transition (for example WORKING -> ACTIVATED).
-    return [s for s in target_path if _LIFECYCLE_RANK.get(s, ceiling) > rank]
+    forward = [s for s in target_path if _LIFECYCLE_RANK.get(s, ceiling) >= rank]
+    if forward and forward[0] == current_state:
+        forward = forward[1:]
+    return forward
 
 
 def apply_broker_status_event(
+    *,
+    ledger: PaperExecutionLedger,
+    provider: Any,
+    order_id: str,
+) -> dict[str, Any]:
+    context = current_context()
+    span = None
+    if context is not None:
+        span = get_tracer().start_span(
+            TraceStage.BROKER,
+            "poll_broker_order",
+            parent=context,
+            input_ref=f"order:{order_id}",
+        )
+    try:
+        result = _apply_broker_status_event(
+            ledger=ledger,
+            provider=provider,
+            order_id=order_id,
+        )
+    except Exception as exc:
+        if span is not None:
+            span.end(
+                status=TraceStatus.ERROR,
+                error_class=type(exc).__name__,
+                error_code=type(exc).__name__,
+            )
+        raise
+    if span is not None:
+        order = result.get("order") if isinstance(result.get("order"), dict) else {}
+        span.context.attributes.update(
+            trace_refs(
+                order_id=result.get("order_id"),
+                broker_order_id=order.get("broker_order_id"),
+                fill_id=(result.get("fills") or [{}])[-1].get("fill_id"),
+            )
+        )
+        span.end(output_ref=f"order:{order_id}")
+    return result
+
+
+def _apply_broker_status_event(
     *,
     ledger: PaperExecutionLedger,
     provider: Any,
@@ -510,8 +604,6 @@ def apply_broker_status_event(
             )
         )
 
-    ledger.validate_fill_batch(order=order, fills=new_fills)
-
     prior = state
     for next_state in pending_states:
         ledger.append_order_state(
@@ -538,7 +630,34 @@ def apply_broker_status_event(
     }
 
 
-def cancel_broker_paper_order(
+def cancel_broker_paper_order(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    context = current_context()
+    order_id = str(kwargs.get("order_id") or "broker-order")
+    span = None
+    if context is not None:
+        span = get_tracer().start_span(
+            TraceStage.BROKER,
+            "cancel_broker_paper_order",
+            parent=context,
+            input_ref=f"order:{order_id}",
+        )
+    try:
+        result = _cancel_broker_paper_order(*args, **kwargs)
+    except Exception as exc:
+        if span is not None:
+            span.end(
+                status=TraceStatus.ERROR,
+                error_class=type(exc).__name__,
+                error_code=type(exc).__name__,
+            )
+        raise
+    if span is not None:
+        span.context.attributes.update(trace_refs(order_id=order_id))
+        span.end(output_ref=f"order:{order_id}")
+    return result
+
+
+def _cancel_broker_paper_order(
     *,
     ledger: PaperExecutionLedger,
     provider: Any,
@@ -562,7 +681,7 @@ def cancel_broker_paper_order(
             "order_id": order_id,
             "state": state,
         }
-    if state in {"FILLED", "PARTIALLY_FILLED"}:
+    if state == "FILLED":
         raise ValueError("PAPER_ORDER_CANCEL_NOT_SUPPORTED: order already filled")
     if state in {"REJECTED", "EXPIRED"}:
         return {
@@ -577,7 +696,7 @@ def cancel_broker_paper_order(
     # cancel here would raise ORDER_TRANSITION_INVALID inside ledger.cancel_order
     # only *after* the provider.cancel_order call had already hit the broker.
     # Fail closed before any provider call, consistently with the INTERNAL path.
-    if state not in {"ACTIVATED", "WORKING", "SUBMITTED"}:
+    if state not in {"ACTIVATED", "WORKING", "PARTIALLY_FILLED", "SUBMITTED"}:
         raise ValueError(f"PAPER_ORDER_CANCEL_INVALID_STATE: {state}")
 
     if not hasattr(provider, "cancel_order"):
@@ -617,5 +736,6 @@ def cancel_broker_paper_order(
 __all__ = [
     "apply_broker_status_event",
     "cancel_broker_paper_order",
+    "preview_broker_paper_order",
     "submit_broker_paper_order",
 ]
