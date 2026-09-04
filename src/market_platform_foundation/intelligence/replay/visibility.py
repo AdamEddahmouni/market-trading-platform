@@ -721,6 +721,21 @@ class ReplayVisibleRepository:
             return row
         return self._source.get_risk_decision(risk_decision_id)
 
+    def put_order_ready(self, order_ready) -> RepositoryPutResult:
+        return self._output.put_order_ready(order_ready)
+
+    def get_order_ready(self, order_ready_id: str):
+        row = self._output.get_order_ready(order_ready_id)
+        if row is not None:
+            return row
+        return self._source.get_order_ready(order_ready_id)
+
+    def get_order_ready_by_allocation(self, allocation_decision_id: str) -> tuple:
+        output_rows = self._output.get_order_ready_by_allocation(allocation_decision_id)
+        if output_rows:
+            return output_rows
+        return self._source.get_order_ready_by_allocation(allocation_decision_id)
+
     def put_runtime_activation_policy(self, policy) -> RepositoryPutResult:
         return self._output.put_runtime_activation_policy(policy)
 

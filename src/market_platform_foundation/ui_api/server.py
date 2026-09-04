@@ -656,6 +656,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 intent_id = query.get("intent_id", [None])[0]
                 order_id = query.get("order_id", [None])[0]
                 fill_id = query.get("fill_id", [None])[0]
+                allocation_decision_id = query.get("allocation_decision_id", [None])[0]
                 try:
                     self._send_json(
                         paper_projections.build_paper_trace_payload(
@@ -663,6 +664,9 @@ class UiApiHandler(BaseHTTPRequestHandler):
                             intent_id=str(intent_id) if intent_id else None,
                             order_id=str(order_id) if order_id else None,
                             fill_id=str(fill_id) if fill_id else None,
+                            allocation_decision_id=(
+                                str(allocation_decision_id) if allocation_decision_id else None
+                            ),
                         )
                     )
                 except ValueError as exc:

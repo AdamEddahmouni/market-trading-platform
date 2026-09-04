@@ -35,9 +35,6 @@ jobs:
       - name: Expose admitted replay fixture at collection root
         shell: bash
         run: ln -s "$GITHUB_WORKSPACE/short-squeeze-project" "$GITHUB_WORKSPACE/../short-squeeze-project"
-      - name: Materialize repository closure scope
-        shell: bash
-        run: mkdir -p src/market_platform_foundation/tests
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"

@@ -164,11 +164,19 @@ export const api = {
   closePaperSession: () => postJson("/paper/sessions/close", {}, PaperSessionResponseSchema),
   cancelPaperOrder: (orderId: string) =>
     postJson("/paper/orders/cancel", { order_id: orderId }, PaperOrderSubmitResponseSchema),
-  getPaperTrace: (params: { intentId?: string; orderId?: string; fillId?: string }) => {
+  getPaperTrace: (params: {
+    intentId?: string;
+    orderId?: string;
+    fillId?: string;
+    allocationDecisionId?: string;
+  }) => {
     const query = new URLSearchParams();
     if (params.intentId) query.set("intent_id", params.intentId);
     if (params.orderId) query.set("order_id", params.orderId);
     if (params.fillId) query.set("fill_id", params.fillId);
+    if (params.allocationDecisionId) {
+      query.set("allocation_decision_id", params.allocationDecisionId);
+    }
     return fetchJson(`/paper/trace?${query.toString()}`, PaperTraceResponseSchema);
   },
   getPaperStrategyProfitability: (params?: {
