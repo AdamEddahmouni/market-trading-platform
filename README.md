@@ -5,20 +5,20 @@ research, and coursework projects stored under this directory.
 
 ## Repository boundaries
 
-- This repository contains a monorepo snapshot of every project directory in
-  this workspace under `projects/`, including the integrated platform,
-  governed ticker metadata, equity data, and short-squeeze projects.
-- The original child repositories remain at the workspace root with their
-  histories, remotes, and visibility settings unchanged. The snapshots under
-  `projects/` are the private workspace copy.
+- This repository contains the full integrated trading platform with its
+  complete commit history merged under `projects/integrated-market-platform`
+  (consolidated from the former `integrated-market-intelligence-platform`
+  repository on 2026-09-04), plus monorepo snapshots of the governed ticker
+  metadata, equity data, and short-squeeze projects under `projects/`.
+- The remaining child repositories are unchanged at the workspace root with
+  their histories, remotes, and visibility settings intact. The snapshots
+  under `projects/` are the workspace copy.
 - `.worktrees/` contains disposable development worktrees and is intentionally
   excluded from this monorepo.
 
-The integrated platform repository is the canonical source for the main
-trading platform. Its remote `main` was realigned to the integrated local
-history on 2026-09-03 after a remote-history mismatch; the previous remote
-history is preserved on
-`backup/remote-main-before-repair-2026-09-03`.
+The integrated trading platform lives entirely in this repository now; the
+former child repository is archived and its `main` history is preserved as
+part of this repository's history.
 
 The workspace repository tracks the surrounding notes, documentation, project
 artifacts, and source trees. Local environments, generated output, and

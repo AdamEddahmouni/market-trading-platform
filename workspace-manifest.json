@@ -7,16 +7,6 @@
   },
   "projects": [
     {
-      "id": "integrated-platform",
-      "source_path": "integrated-market-platform",
-      "snapshot_path": "projects/integrated-market-platform",
-      "source_remote": "https://github.com/AdamEddahmouni/integrated-market-intelligence-platform.git",
-      "source_ref": "feat/rt01-paper-tracing",
-      "source_commit": "7cb5bdbf5ab49818805bde6baf6cc7e795ff38f1",
-      "expected_visibility": "private",
-      "source_policy": "unchanged"
-    },
-    {
       "id": "governed-ticker-metadata",
       "source_path": "governed-ticker-metadata-enrichment",
       "snapshot_path": "projects/governed-ticker-metadata-enrichment",

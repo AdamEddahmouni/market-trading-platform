@@ -1,63 +1,78 @@
 name: IMP Validation
 
 on:
-  push:
-    paths:
-      - "projects/integrated-market-platform/**"
-      - ".github/workflows/imp-validate.yml"
   pull_request:
     paths:
       - "projects/integrated-market-platform/**"
       - ".github/workflows/imp-validate.yml"
+      - ".github/workflows/imp-python.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "projects/integrated-market-platform/**"
+      - ".github/workflows/imp-validate.yml"
+      - ".github/workflows/imp-python.yml"
+  workflow_dispatch:
 
-defaults:
-  run:
-    working-directory: projects/integrated-market-platform
+concurrency:
+  group: imp-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  backend:
+  validate-workflows:
     runs-on: ubuntu-latest
-    env:
-      PYTHONPATH: ${{ github.workspace }}/projects/integrated-market-platform/src
     steps:
       - uses: actions/checkout@v4
+      - name: Download actionlint
+        id: get_actionlint
+        run: bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash 1.7.12)
+        shell: bash
+      - name: Lint workflow files
+        run: ${{ steps.get_actionlint.outputs.executable }} -color
+        shell: bash
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+  validate-python:
+    uses: ./.github/workflows/imp-python.yml
+    with:
+      mode: fast
+      workers: "2"
+
+  validate-python-changed:
+    uses: ./.github/workflows/imp-python.yml
+    with:
+      mode: changed
+      workers: "2"
+
+  validate-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Check documentation links
+        working-directory: projects/integrated-market-platform
+        run: python tools/check_docs_links.py
 
-      - name: Install runtime dependencies
-        run: python -m pip install numpy pymongo scikit-learn tzdata
-
-      - name: Platform P0 tests
-        run: python -m unittest tests/platform/test_paper_p0.py -v
-
-      - name: UI-001 API tests
-        run: python -m unittest tests/ui1/test_ui_api.py -v
-
-      - name: Phase 0 no-live registry
-        run: python -m unittest tests/phase0/test_registry.py tests/phase0/test_analysis.py -v
-
-      - name: Manifest validation (changed)
-        run: python tools/validate.py changed
-
-  frontend:
+  validate-ui:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
           cache-dependency-path: projects/integrated-market-platform/ui/package-lock.json
-
       - name: Install UI dependencies
         working-directory: projects/integrated-market-platform/ui
         run: npm ci
-
-      - name: Typecheck and build UI
+      - name: Typecheck, test, and build UI
         working-directory: projects/integrated-market-platform/ui
-        run: npm run build
+        run: |
+          npm run typecheck
+          npm test -- --run
+          npm run build

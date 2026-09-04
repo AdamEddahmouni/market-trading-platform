@@ -343,10 +343,9 @@ def _render_index(
     lines.extend(
         [
             "",
-            "The `integrated-platform`, `governed-ticker-metadata`, and",
-            "`equity-data-v1` entries share one underlying Git history because",
-            "the latter two are worktrees; each workspace ref set is retained",
-            "separately for traceability.",
+            "The `governed-ticker-metadata` and `equity-data-v1` entries share",
+            "one underlying Git history because the latter is a worktree; each",
+            "workspace ref set is retained separately for traceability."
             "",
             "## Repository timelines",
             "",

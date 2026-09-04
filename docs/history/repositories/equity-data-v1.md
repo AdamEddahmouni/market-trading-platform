@@ -2331,7 +2331,7 @@ execution mode/authority into spawned backend processes.
 - `368e64b8a589` — ci(validation): stop materializing removed closure scope — refs: `refs/heads/feat/unify-paper-trading-chain`, `refs/remotes/origin/feat/unify-paper-trading-chain`
   - Author: AdamEddahmouni (2026-09-04T11:56:45-04:00)
   - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
-- `9902927aa62c` — Merge pull request #12 from AdamEddahmouni/feat/unify-paper-trading-chain — refs: `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
+- `9902927aa62c` — Merge pull request #12 from AdamEddahmouni/feat/unify-paper-trading-chain
   - Author: AdamEddahmouni (2026-09-04T12:04:32-04:00)
   - Rationale (commit-subject-and-body): feat(paper): unify internal trading lifecycle trace
 - `53d34b1c8690` — feat(rt01): trace canonical Paper pipeline
@@ -2356,3 +2356,15 @@ wiring: keep the orchestrator's traced submit path and broker-paper dispatch,
 and unify correlation propagation on both execution modes as
 prepared.correlation_id with a risk_decision_id fallback. Keeps both 09-04
 WORK_LOG entries and the merged runtime test additions.
+- `aa272f6e5bfa` — Merge pull request #13 from AdamEddahmouni/feat/rt01-paper-tracing
+  - Author: AdamEddahmouni (2026-09-04T16:21:00-04:00)
+  - Rationale (commit-subject-and-body): feat(rt01): trace the Paper order pipeline end to end
+- `c9ea9743d908` — fix(tests): accept OPEN_D_NOT_INSTALLED from live environment check — refs: `refs/heads/fix/live-opend-not-installed`, `refs/remotes/origin/fix/live-opend-not-installed`
+  - Author: AdamEddahmouni (2026-09-04T16:23:52-04:00)
+  - Rationale (commit-subject-and-body): The unreachable-opend regression test only accepted PORT_UNREACHABLE and
+OPEN_D_NOT_RUNNING, but the checker reports OPEN_D_NOT_INSTALLED (also not
+live-ready) when the daemon executable is absent, e.g. on CI runners without
+a Windows OpenD install. Include it so the safety regression passes anywhere.
+- `3db07a558c73` — Merge pull request #14 from AdamEddahmouni/fix/live-opend-not-installed — refs: `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
+  - Author: AdamEddahmouni (2026-09-04T16:30:14-04:00)
+  - Rationale (commit-subject-and-body): fix(tests): accept OPEN_D_NOT_INSTALLED from live environment check

@@ -80,8 +80,11 @@ python tools/generate_history_ledger.py generate
 python tools/generate_history_ledger.py validate
 ```
 
-The three integrated-platform workspace entries share one underlying Git
-history because two are worktrees. They remain separate in the audit so each
-workspace path and ref set is traceable. The ledger records committed work
-only; uncommitted files remain in the source repositories and are not given
+The `governed-ticker-metadata` and `equity-data-v1` workspace entries share
+one underlying Git history because the latter is a worktree. They remain
+separate in the audit so each workspace path and ref set is traceable. The
+integrated platform itself was merged into this repository's history (its full
+commit history lives under `projects/integrated-market-platform`), so it is no
+longer a separate source entry. The ledger records committed work only;
+uncommitted files remain in the source repositories and are not given
 invented dates or rationale.

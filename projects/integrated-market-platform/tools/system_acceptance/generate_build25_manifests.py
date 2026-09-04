@@ -44,13 +44,7 @@ SCIENTIFIC_GLOBS = (
 
 
 def repo_root() -> Path:
-    result = subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return Path(result.stdout.strip())
+    return ROOT
 
 
 def _bootstrap_import_paths(root: Path) -> None:

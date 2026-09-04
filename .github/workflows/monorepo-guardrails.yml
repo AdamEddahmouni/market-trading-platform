@@ -17,7 +17,7 @@ jobs:
         run: bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash 1.7.12)
         shell: bash
       - name: Lint root workflow files
-        run: ${{ steps.get_actionlint.outputs.executable }} -color .github/workflows/imp-validate.yml .github/workflows/monorepo-guardrails.yml
+        run: ${{ steps.get_actionlint.outputs.executable }} -color .github/workflows/imp-validate.yml .github/workflows/imp-python.yml .github/workflows/monorepo-guardrails.yml
         shell: bash
 
   validate:
