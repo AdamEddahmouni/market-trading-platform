@@ -65,6 +65,20 @@ StrategyDefinition
   -> cumulative strategy attribution from actual fills
 ```
 
+The canonical internal strategy Paper path now persists an immutable
+`OrderReadyV1` record between `RiskDecisionV1` and Paper submission. Its
+decision-thread `correlation_id` is carried from the strategy match through
+allocation, proposal, risk, order, and fill records. A read-only unified
+business trace reconstructs these records by `allocation_decision_id` through
+`GET /paper/trace?allocation_decision_id=...`; the existing intent/order/fill
+anchors remain supported for manual Paper orders.
+
+The trace reports portfolio settlement and prediction settlement separately.
+Portfolio settlement is the fill-driven `PositionChanged` event that powers
+Paper accounting. Prediction settlement remains governed by the prediction
+ledger and explicit `settle_due_and_evaluate()` calls. Neither trace
+projection nor prediction settlement grants execution authority.
+
 `CapitalAllocationDecisionV1` is an immutable IntelligenceRepository sidecar.
 It freezes the account, mode, point-in-time decision, ordered allocator
 candidate set, comparison/allocation constraints, rank, reason codes, and

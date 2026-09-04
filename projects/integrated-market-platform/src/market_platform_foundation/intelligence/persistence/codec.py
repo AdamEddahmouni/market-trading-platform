@@ -300,7 +300,7 @@ RECORD_CODECS: tuple[RecordCodec, ...] = (
     ),
 )
 
-MONGO_SCHEMA_PLAN_VERSION = 5
+MONGO_SCHEMA_PLAN_VERSION = 6
 
 CODEC_BY_TYPE = {_KIND_TO_TYPE[codec.kind]: codec for codec in RECORD_CODECS if codec.kind in _KIND_TO_TYPE}
 

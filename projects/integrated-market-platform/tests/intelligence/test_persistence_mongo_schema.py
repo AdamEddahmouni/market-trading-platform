@@ -20,12 +20,14 @@ from market_platform_foundation.intelligence.persistence.mongo.schema import (  
     COLLECTION_SPECS,
     MONGO_SCHEMA_PLAN_VERSION,
     MongoSchemaManager,
+    ORDER_READY_INDEXES,
+    ORDER_READY_VALIDATOR,
 )
 
 
 class SchemaPlanTests(unittest.TestCase):
     def test_schema_plan_version(self) -> None:
-        self.assertEqual(MONGO_SCHEMA_PLAN_VERSION, 5)
+        self.assertEqual(MONGO_SCHEMA_PLAN_VERSION, 6)
 
     def test_routing_collections_have_no_ttl_deletion_indexes(self) -> None:
         specs = {spec.codec.collection_name: spec for spec in COLLECTION_SPECS}
@@ -132,8 +134,9 @@ class SchemaBootstrapTests(unittest.TestCase):
         manager = MongoSchemaManager(database)
         manager.ensure_schema()
         manager.ensure_schema()
-        self.assertEqual(len(database.created), len(COLLECTION_SPECS) + 1)
+        self.assertEqual(len(database.created), len(COLLECTION_SPECS) + 2)
         self.assertIn("allocation_decisions", database.collections)
+        self.assertIn("order_ready", database.collections)
         allocation_options = dict(database.created)["allocation_decisions"]
         self.assertEqual(
             allocation_options["validator"],
@@ -142,6 +145,15 @@ class SchemaBootstrapTests(unittest.TestCase):
         self.assertEqual(
             set(database.collections["allocation_decisions"]["indexes"]),
             {index.name for index in ALLOCATION_DECISION_INDEXES},
+        )
+        order_ready_options = dict(database.created)["order_ready"]
+        self.assertEqual(
+            order_ready_options["validator"],
+            {"$jsonSchema": ORDER_READY_VALIDATOR},
+        )
+        self.assertEqual(
+            set(database.collections["order_ready"]["indexes"]),
+            {index.name for index in ORDER_READY_INDEXES},
         )
 
 

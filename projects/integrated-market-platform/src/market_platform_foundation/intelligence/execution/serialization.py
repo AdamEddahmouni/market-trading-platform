@@ -11,6 +11,8 @@ from .types import (
     ExecutionMode,
     ExecutionPolicyV1,
     ExposureSnapshot,
+    OrderReadyStatus,
+    OrderReadyV1,
     PaperOpenOrderSnapshot,
     PaperPortfolioSnapshotV1,
     PaperPositionSnapshot,
@@ -231,11 +233,63 @@ def risk_decision_v1_from_dict(payload: dict[str, Any]) -> RiskDecisionV1:
     )
 
 
+def order_ready_v1_to_dict(record: OrderReadyV1) -> dict[str, Any]:
+    return {
+        "order_ready_id": record.order_ready_id,
+        "schema_version": record.schema_version,
+        "allocation_decision_id": record.allocation_decision_id,
+        "trade_proposal_id": record.trade_proposal_id,
+        "risk_decision_id": record.risk_decision_id,
+        "account_id": record.account_id,
+        "mode": record.mode,
+        "decision_time_ns": record.decision_time_ns,
+        "instrument_id": record.instrument_id,
+        "symbol": record.symbol,
+        "approved_quantity": record.approved_quantity,
+        "approved_notional_minor": record.approved_notional_minor,
+        "status": record.status.value,
+        "execution_authority": record.execution_authority,
+        "execution_mode": record.execution_mode,
+        "idempotency_key": record.idempotency_key,
+        "correlation_id": record.correlation_id,
+        "reason_codes": list(record.reason_codes),
+        "lineage_refs": [contract_reference_to_dict(ref) for ref in record.lineage_refs],
+    }
+
+
+def order_ready_v1_from_dict(payload: dict[str, Any]) -> OrderReadyV1:
+    return OrderReadyV1(
+        order_ready_id=str(payload["order_ready_id"]),
+        schema_version=str(payload.get("schema_version", INTELLIGENCE_SCHEMA_VERSION)),
+        allocation_decision_id=str(payload["allocation_decision_id"]),
+        trade_proposal_id=str(payload["trade_proposal_id"]),
+        risk_decision_id=str(payload["risk_decision_id"]),
+        account_id=str(payload["account_id"]),
+        mode=str(payload["mode"]),
+        decision_time_ns=int(payload["decision_time_ns"]),
+        instrument_id=str(payload["instrument_id"]),
+        symbol=str(payload["symbol"]),
+        approved_quantity=int(payload["approved_quantity"]),
+        approved_notional_minor=int(payload["approved_notional_minor"]),
+        status=OrderReadyStatus(str(payload["status"])),
+        execution_authority=str(payload["execution_authority"]),
+        execution_mode=str(payload["execution_mode"]),
+        idempotency_key=str(payload["idempotency_key"]),
+        correlation_id=str(payload["correlation_id"]),
+        reason_codes=tuple(str(value) for value in payload.get("reason_codes", ())),
+        lineage_refs=tuple(
+            contract_reference_from_dict(item) for item in (payload.get("lineage_refs") or [])
+        ),
+    )
+
+
 __all__ = [
     "execution_policy_v1_from_dict",
     "execution_policy_v1_to_dict",
     "paper_portfolio_snapshot_v1_from_dict",
     "paper_portfolio_snapshot_v1_to_dict",
+    "order_ready_v1_from_dict",
+    "order_ready_v1_to_dict",
     "risk_decision_v1_from_dict",
     "risk_decision_v1_to_dict",
     "trade_proposal_v1_from_dict",

@@ -1798,10 +1798,19 @@ export const PaperSessionResponseSchema = z.object({
 export const PaperTraceResponseSchema = z.object({
   as_of_context: AsOfContextSchema,
   trace: z.object({
+    trace_kind: z.string().optional(),
+    correlation_id: z.string().nullable().optional(),
     correlation: z.object({
       intent_id: z.string().nullable().optional(),
       order_id: z.string().nullable().optional(),
       fill_id: z.string().nullable().optional(),
+      allocation_decision_id: z.string().nullable().optional(),
+      strategy_match_id: z.string().nullable().optional(),
+      forecast_id: z.string().nullable().optional(),
+      opportunity_id: z.string().nullable().optional(),
+      trade_proposal_id: z.string().nullable().optional(),
+      risk_decision_id: z.string().nullable().optional(),
+      order_ready_id: z.string().nullable().optional(),
     }),
     steps: z.array(
       z.object({
@@ -1811,7 +1820,24 @@ export const PaperTraceResponseSchema = z.object({
         metadata: z.record(z.unknown()).optional(),
         event_id: z.string().optional(),
       }),
-    ),
+    ).optional(),
+    stages: z.array(
+      z.object({
+        stage: z.string(),
+        status: z.string(),
+        ids: z.record(z.string()).optional(),
+        metadata: z.record(z.unknown()).optional(),
+      }),
+    ).optional(),
+    quantities: z.record(z.number()).optional(),
+    completeness: z.object({
+      state: z.string(),
+      missing_stages: z.array(z.string()),
+    }).optional(),
+    settlement: z.object({
+      portfolio: z.string().optional(),
+      prediction: z.string().optional(),
+    }).optional(),
     session_id: z.string().optional(),
     execution_mode: z.string().optional(),
     execution_authority: z.string().optional(),

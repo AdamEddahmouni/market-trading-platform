@@ -200,7 +200,24 @@ def build_paper_trace_payload(
     intent_id: str | None = None,
     order_id: str | None = None,
     fill_id: str | None = None,
+    allocation_decision_id: str | None = None,
 ) -> dict[str, Any]:
+    if allocation_decision_id is not None:
+        repository = getattr(store, "strategy_repository", None)
+        if repository is None:
+            raise ValueError("STRATEGY_REPOSITORY_UNAVAILABLE")
+        from .strategy_runtime_projections import build_strategy_decision_trace_payload
+
+        return _paper_envelope(
+            store,
+            build_strategy_decision_trace_payload(
+                repository=repository,
+                ledger=store.paper_ledger,
+                account_id=store.paper_ledger.paper_account_id,
+                mode="PAPER",
+                allocation_decision_id=allocation_decision_id,
+            ),
+        )
     trace = store.paper_ledger.project_execution_trace(
         intent_id=intent_id,
         order_id=order_id,
