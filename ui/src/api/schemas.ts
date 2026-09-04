@@ -1894,3 +1894,81 @@ export const WorkspaceEvidenceResponseSchema = z.object({
 
 export type WorkspaceEvidenceLane = z.infer<typeof WorkspaceEvidenceLaneSchema>;
 export type WorkspaceEvidenceResponse = z.infer<typeof WorkspaceEvidenceResponseSchema>;
+
+const PaperStrategyProfitabilityAllocationSchema = z
+  .object({
+    allocation_decision_id: z.string(),
+    account_id: z.string(),
+    mode: z.string(),
+  })
+  .passthrough();
+
+const PaperStrategyProfitabilityAttributionSchema = z
+  .object({
+    attribution_id: z.string(),
+    materialization_semantics: z.literal("CUMULATIVE"),
+    allocation_quantity: z.number(),
+    fill_refs: z.array(z.record(z.unknown())),
+    trading_outcome: z.object({
+      realized_pnl_minor: z.number(),
+      ending_position_quantity: z.number(),
+      ending_cost_basis_minor: z.number(),
+      total_commission_minor: z.number(),
+      total_fees_minor: z.number(),
+    }),
+  })
+  .passthrough();
+
+export const PaperStrategyProfitabilityItemSchema = z.object({
+  allocation: PaperStrategyProfitabilityAllocationSchema,
+  strategy_match: z.record(z.unknown()).nullable(),
+  forecast: z.record(z.unknown()).nullable(),
+  economic_assessment: z.record(z.unknown()).nullable(),
+  opportunity: z.record(z.unknown()).nullable(),
+  portfolio_snapshot: z.record(z.unknown()).nullable(),
+  proposal: z.record(z.unknown()).nullable(),
+  risk_decision: z.record(z.unknown()).nullable(),
+  orders: z.array(z.record(z.unknown())),
+  fills: z.array(z.record(z.unknown())),
+  attribution: PaperStrategyProfitabilityAttributionSchema.nullable(),
+  prediction_ledger_entry: z.record(z.unknown()).nullable(),
+  prediction_outcome: z.record(z.unknown()).nullable(),
+  settlement: z.object({
+    state: z.enum(["SETTLED", "PENDING", "UNAVAILABLE"]),
+    inspection_only: z.literal(true),
+  }),
+});
+
+export const PaperStrategyProfitabilityResponseSchema = z.object({
+  schema_version: z.string(),
+  authority_boundary: z.literal("PAPER_OBSERVABILITY_READ_ONLY"),
+  account_id: z.string(),
+  mode: z.literal("PAPER"),
+  as_of_context: z.object({
+    as_of_ns: z.number(),
+    point_in_time: z.boolean(),
+  }),
+  attribution_semantics: z.object({
+    pnl_source: z.string(),
+    materialization: z.literal("CUMULATIVE"),
+    aggregation: z.literal("LATEST_COMPLETE_SNAPSHOT_ONLY"),
+    portfolio_ledger_is_authoritative: z.literal(true),
+  }),
+  data_health: z.object({
+    state: z.string(),
+    detail: z.string(),
+  }),
+  disclaimer: z.string(),
+  account_ledger_pnl: z.object({
+    currency: z.string(),
+    realized_pnl_minor: z.number(),
+    unrealized_pnl_minor: z.number(),
+  }),
+  items: z.array(PaperStrategyProfitabilityItemSchema),
+  total_count: z.number(),
+});
+
+export type PaperStrategyProfitabilityItem = z.infer<typeof PaperStrategyProfitabilityItemSchema>;
+export type PaperStrategyProfitabilityResponse = z.infer<
+  typeof PaperStrategyProfitabilityResponseSchema
+>;

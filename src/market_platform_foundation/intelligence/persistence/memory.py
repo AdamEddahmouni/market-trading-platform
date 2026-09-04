@@ -41,6 +41,7 @@ from .queries import (
     filter_prediction_ledger_entries_by_forecast,
     query_events_as_of,
     query_signals_as_of,
+    validate_limit,
 )
 from .repository import RepositoryPutResult
 
@@ -228,6 +229,42 @@ class InMemoryIntelligenceRepository:
                 continue
             rows.append(decision)
         return tuple(sorted(rows, key=lambda row: (row.rank, row.allocation_decision_id)))
+
+    def query_allocation_decisions(
+        self,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+        decision_from_ns: int | None = None,
+        decision_to_ns: int | None = None,
+        limit: int = 1000,
+    ) -> tuple:
+        from ..opportunity.allocation_persistence import allocation_decision_v1_from_dict
+
+        active_limit = validate_limit(limit)
+        normalized_mode = str(mode).strip().upper() if mode is not None else None
+        normalized_mode = (
+            {"LIVE": "ACTUAL_LIVE"}.get(normalized_mode, normalized_mode)
+            if normalized_mode is not None
+            else None
+        )
+        with self._lock:
+            bodies = list(self._stores["allocation_decisions"].values())
+        rows = []
+        for body in bodies:
+            payload = {key: value for key, value in body.items() if key != "_id"}
+            decision = allocation_decision_v1_from_dict(payload)
+            if account_id is not None and decision.account_id != account_id:
+                continue
+            if normalized_mode is not None and decision.mode != normalized_mode:
+                continue
+            if decision_from_ns is not None and decision.decision_time_ns < decision_from_ns:
+                continue
+            if decision_to_ns is not None and decision.decision_time_ns > decision_to_ns:
+                continue
+            rows.append(decision)
+        rows.sort(key=lambda row: (-row.decision_time_ns, row.allocation_decision_id))
+        return tuple(rows[:active_limit])
 
     def put_strategy_match(self, match: StrategyMatch) -> RepositoryPutResult:
         return self._put(match)

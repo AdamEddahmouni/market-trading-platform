@@ -54,6 +54,7 @@ vi.mock("../../api/hooks", () => ({
     isError: false,
     data: portfolio,
   }),
+  usePaperStrategyProfitabilityQuery: () => ({ isLoading: false, isError: true, data: undefined }),
   usePaperOrderHistoryInfiniteQuery: () => createPaperOrderHistoryInfiniteQueryMock(portfolio.orders),
   usePreviewPaperOrderMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSubmitPaperOrderMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -98,6 +99,7 @@ describe("PaperPortfolioPage", () => {
 
     expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/Paper authority unavailable/i);
+    expect(screen.getByRole("heading", { name: "Profitability lineage" })).toBeInTheDocument();
   });
 
   it("shows Paper actions only when both authority checks pass", () => {

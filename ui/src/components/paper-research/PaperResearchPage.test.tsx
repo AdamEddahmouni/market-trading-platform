@@ -23,6 +23,7 @@ vi.mock("../../api/hooks", () => ({
   useResearchAnalyticsQuery: () => ({ isLoading: false, data: undefined }),
   useResearchModelsQuery: () => ({ isLoading: false, data: undefined }),
   useResearchSimulationQuery: () => ({ isLoading: false, data: simulationFixture }),
+  usePaperStrategyProfitabilityQuery: () => ({ isLoading: false, isError: true, data: undefined }),
 }));
 
 vi.mock("../research/SimulationLabPanel", () => ({
@@ -49,5 +50,6 @@ describe("PaperResearchPage", () => {
     expect(screen.getByText(/Research to simulation/i)).toBeInTheDocument();
     expect(screen.getByTestId("simulation-panel")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Simulation" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("heading", { name: "Profitability lineage" })).toBeInTheDocument();
   });
 });

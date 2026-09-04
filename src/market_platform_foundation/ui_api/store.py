@@ -107,6 +107,7 @@ class ReplayStore:
     data_provider: str = "INTERNAL"
     execution_provider: str = "INTERNAL"
     assistant_audit_root: Path | None = None
+    strategy_repository: Any | None = None
     cursor_index: int = 0
     page_size: int = 10
     _events: list[dict[str, Any]] = field(default_factory=list, init=False, repr=False)

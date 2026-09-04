@@ -196,6 +196,32 @@ class ReplayVisibleRepository:
             mode=mode,
         )
 
+    def query_allocation_decisions(
+        self,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+        decision_from_ns: int | None = None,
+        decision_to_ns: int | None = None,
+        limit: int = 1000,
+    ) -> tuple:
+        output_rows = self._output.query_allocation_decisions(
+            account_id=account_id,
+            mode=mode,
+            decision_from_ns=decision_from_ns,
+            decision_to_ns=decision_to_ns,
+            limit=limit,
+        )
+        if output_rows:
+            return output_rows
+        return self._source.query_allocation_decisions(
+            account_id=account_id,
+            mode=mode,
+            decision_from_ns=decision_from_ns,
+            decision_to_ns=decision_to_ns,
+            limit=limit,
+        )
+
     def put_strategy_match(self, match) -> RepositoryPutResult:
         return self._output.put_strategy_match(match)
 
