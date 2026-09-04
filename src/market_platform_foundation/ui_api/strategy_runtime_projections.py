@@ -11,6 +11,7 @@ from ..intelligence.contracts.outcome import outcome_v1_to_dict
 from ..intelligence.contracts.prediction_ledger import prediction_ledger_entry_v1_to_dict
 from ..intelligence.contracts.strategy_match import strategy_match_to_dict
 from ..intelligence.execution.serialization import (
+    order_ready_v1_to_dict,
     paper_portfolio_snapshot_v1_to_dict,
     risk_decision_v1_to_dict,
     trade_proposal_v1_to_dict,
@@ -21,6 +22,281 @@ from ..portfolio.attribution import attribution_v1_to_dict
 
 
 SCHEMA_VERSION = "ui/paper-strategy-profitability/1.0.0"
+TRACE_SCHEMA_VERSION = "ui/paper-strategy-trace/1.0.0"
+
+
+def build_strategy_decision_trace_payload(
+    *,
+    repository: Any,
+    ledger: Any,
+    account_id: str,
+    mode: str = "PAPER",
+    allocation_decision_id: str,
+    as_of_ns: int | None = None,
+) -> dict[str, Any]:
+    """Build the immutable strategy-to-Paper business lifecycle projection."""
+    normalized_mode = _normalize_mode(mode)
+    allocation = repository.get_allocation_decision(allocation_decision_id)
+    if allocation is None:
+        raise ValueError("ALLOCATION_DECISION_NOT_FOUND")
+    if allocation.account_id != account_id or allocation.mode != normalized_mode:
+        raise ValueError("STRATEGY_TRACE_SCOPE_MISMATCH")
+    if as_of_ns is not None and allocation.decision_time_ns > as_of_ns:
+        raise ValueError("ALLOCATION_AFTER_POINT_IN_TIME")
+
+    active_as_of = as_of_ns if as_of_ns is not None else _latest_observation_ns((allocation,), ledger)
+    match = (
+        repository.get_strategy_match(allocation.strategy_match_ref.id)
+        if allocation.strategy_match_ref is not None
+        else None
+    )
+    forecast = _first_forecast(repository, allocation)
+    opportunity = repository.get_opportunity(allocation.opportunity_ref.id)
+    economics = repository.get_economic_assessment(allocation.economic_assessment_ref.id)
+    order_ready_rows = tuple(
+        item
+        for item in repository.get_order_ready_by_allocation(allocation.allocation_decision_id)
+        if item.decision_time_ns <= active_as_of
+    )
+    order_ready = max(
+        order_ready_rows,
+        key=lambda item: (item.decision_time_ns, item.order_ready_id),
+        default=None,
+    )
+    orders = tuple(
+        order
+        for order in ledger.project_orders()
+        if _contains_reference(order, "allocation_decision", allocation.allocation_decision_id)
+        or _contains_reference(order, "allocation", allocation.allocation_decision_id)
+    )
+    order_ids = {str(order.get("order_id")) for order in orders}
+    fills = tuple(
+        fill
+        for fill in ledger.project_fills()
+        if str(fill.get("order_id")) in order_ids
+        and int(fill.get("fill_time", fill.get("fill_time_ns", 0))) <= active_as_of
+    )
+    proposal, risk = _resolve_order_records(repository, orders)
+    if order_ready is not None:
+        if proposal is None:
+            proposal = repository.get_trade_proposal(order_ready.trade_proposal_id)
+        if risk is None:
+            risk = repository.get_risk_decision(order_ready.risk_decision_id)
+
+    position_events = tuple(
+        event
+        for event in getattr(ledger, "events", ())
+        if event.get("event_type") == "PositionChanged"
+        and isinstance(event.get("payload"), Mapping)
+        and str(event["payload"].get("fill_id")) in {str(fill.get("fill_id")) for fill in fills}
+        and int(event.get("available_time", event.get("event_time", 0))) <= active_as_of
+    )
+    attribution = _latest_complete_attribution(
+        repository,
+        allocation.allocation_decision_id,
+        account_id=account_id,
+        mode=normalized_mode,
+        as_of_ns=active_as_of,
+    )
+    prediction_state, prediction_entry, prediction_outcome = _prediction_settlement_state(
+        repository=repository,
+        forecast=forecast,
+        as_of_ns=active_as_of,
+        explicit_as_of=as_of_ns is not None,
+    )
+    correlation_id = (
+        match.correlation_id
+        if match is not None and match.correlation_id
+        else _find_value(orders, {"correlation_id"})
+    )
+    stages = [
+        _trace_stage(
+            "OPPORTUNITY",
+            "AVAILABLE" if opportunity is not None else "INCOMPLETE",
+            opportunity.opportunity_id if opportunity is not None else None,
+            {
+                "opportunity": opportunity_v1_to_dict(opportunity),
+                "forecast": forecast_v1_to_dict(forecast) if forecast is not None else None,
+                "strategy_match": (
+                    strategy_match_to_dict(match) if match is not None else None
+                ),
+                "economic_assessment": (
+                    economic_assessment_v1_to_dict(economics) if economics is not None else None
+                ),
+            }
+            if opportunity is not None
+            else {},
+            id_field="opportunity_id",
+        ),
+        _trace_stage(
+            "ALLOCATION",
+            allocation.status.value,
+            allocation.allocation_decision_id,
+            {"allocation": allocation_decision_v1_to_dict(allocation)},
+            id_field="allocation_decision_id",
+        ),
+        _trace_stage(
+            "RISK_DECISION",
+            risk.decision.value if risk is not None else "INCOMPLETE",
+            risk.risk_decision_id if risk is not None else None,
+            {"risk_decision": risk_decision_v1_to_dict(risk)} if risk is not None else {},
+            id_field="risk_decision_id",
+        ),
+        _trace_stage(
+            "ORDER_READY",
+            order_ready.status.value if order_ready is not None else "INCOMPLETE",
+            order_ready.order_ready_id if order_ready is not None else None,
+            {"order_ready": order_ready_v1_to_dict(order_ready)}
+            if order_ready is not None
+            else {},
+            id_field="order_ready_id",
+        ),
+        _trace_stage(
+            "PAPER_FILL",
+            "FILLED" if fills else "NOT_FILLED",
+            str(fills[0].get("fill_id")) if fills else None,
+            {"orders": list(orders), "fills": list(fills)},
+            id_field="fill_id",
+        ),
+        _trace_stage(
+            "PORTFOLIO_SETTLEMENT",
+            "SETTLED" if position_events else "NOT_SETTLED",
+            str(position_events[-1]["event_id"]) if position_events else None,
+            {"events": list(position_events)},
+            id_field="event_id",
+        ),
+        _trace_stage(
+            "PREDICTION_SETTLEMENT",
+            prediction_state,
+            prediction_outcome.outcome_id if prediction_outcome is not None else (
+                prediction_entry.ledger_entry_id if prediction_entry is not None else None
+            ),
+            {
+                "prediction_ledger_entry": (
+                    prediction_ledger_entry_v1_to_dict(prediction_entry)
+                    if prediction_entry is not None
+                    else None
+                ),
+                "prediction_outcome": (
+                    outcome_v1_to_dict(prediction_outcome)
+                    if prediction_outcome is not None
+                    else None
+                ),
+            },
+            id_field="prediction_outcome_id"
+            if prediction_outcome is not None
+            else "prediction_ledger_entry_id",
+        ),
+        _trace_stage(
+            "ATTRIBUTION",
+            "MATERIALIZED" if attribution is not None else "PENDING",
+            attribution.attribution_id if attribution is not None else None,
+            {"attribution": _attribution_payload(attribution)},
+            id_field="attribution_id",
+        ),
+    ]
+    quantities: dict[str, int] = {}
+    if proposal is not None:
+        quantities["proposal_requested_quantity"] = proposal.requested_quantity
+        quantities["proposal_requested_notional_minor"] = proposal.requested_notional_minor
+    if risk is not None:
+        quantities["risk_approved_quantity"] = risk.approved_quantity
+        quantities["risk_approved_notional_minor"] = risk.approved_notional_minor
+    if order_ready is not None:
+        quantities["submitted_quantity"] = order_ready.approved_quantity
+    if fills:
+        quantities["filled_quantity"] = sum(int(fill.get("fill_quantity", 0)) for fill in fills)
+    if proposal is not None and proposal.metadata.get("allocation_desired_quantity") is not None:
+        quantities["allocation_desired_quantity"] = int(
+            proposal.metadata["allocation_desired_quantity"]
+        )
+    if proposal is not None and proposal.metadata.get("allocation_desired_notional_minor") is not None:
+        quantities["allocation_desired_notional_minor"] = int(
+            proposal.metadata["allocation_desired_notional_minor"]
+        )
+
+    missing = [stage["stage"] for stage in stages if stage["status"] == "INCOMPLETE"]
+    return {
+        "schema_version": TRACE_SCHEMA_VERSION,
+        "authority_boundary": "PAPER_OBSERVABILITY_READ_ONLY",
+        "account_id": account_id,
+        "mode": normalized_mode,
+        "as_of_context": {
+            "as_of_ns": active_as_of,
+            "point_in_time": as_of_ns is not None,
+        },
+        "trace": {
+            "trace_kind": "STRATEGY_DECISION",
+            "correlation_id": correlation_id,
+            "correlation": {
+                "allocation_decision_id": allocation.allocation_decision_id,
+                "strategy_match_id": match.match_id if match is not None else None,
+                "forecast_id": forecast.forecast_id if forecast is not None else None,
+                "opportunity_id": opportunity.opportunity_id if opportunity is not None else None,
+                "trade_proposal_id": proposal.proposal_id if proposal is not None else None,
+                "risk_decision_id": risk.risk_decision_id if risk is not None else None,
+                "order_ready_id": order_ready.order_ready_id if order_ready is not None else None,
+                "order_id": str(orders[0].get("order_id")) if orders else None,
+                "fill_id": str(fills[0].get("fill_id")) if fills else None,
+            },
+            "quantities": quantities,
+            "completeness": {
+                "state": "INCOMPLETE" if missing else "COMPLETE",
+                "missing_stages": missing,
+            },
+            "stages": stages,
+            "settlement": {
+                "portfolio": "SETTLED" if position_events else "NOT_SETTLED",
+                "prediction": prediction_state,
+            },
+        },
+    }
+
+
+def _trace_stage(
+    stage: str,
+    status: str,
+    identifier: str | None,
+    metadata: dict[str, Any],
+    *,
+    id_field: str = "id",
+) -> dict[str, Any]:
+    return {
+        "stage": stage,
+        "status": status,
+        "ids": {id_field: identifier} if identifier is not None else {},
+        "metadata": metadata,
+    }
+
+
+def _prediction_settlement_state(
+    *,
+    repository: Any,
+    forecast: Any | None,
+    as_of_ns: int,
+    explicit_as_of: bool,
+) -> tuple[str, Any | None, Any | None]:
+    if forecast is None:
+        return "UNAVAILABLE", None, None
+    entries = repository.get_prediction_ledger_entries_by_forecast(forecast.forecast_id)
+    if not entries:
+        return "UNAVAILABLE", None, None
+    entry = sorted(entries, key=lambda item: item.ledger_entry_id)[0]
+    outcomes = repository.get_outcomes_by_forecast(entry.forecast_id)
+    outcome = next(
+        (
+            item
+            for item in outcomes
+            if item.metadata.get("ledger_entry_id") == entry.ledger_entry_id
+            and item.adjudicated_at_ns <= as_of_ns
+        ),
+        None,
+    )
+    if outcome is not None:
+        return "SETTLED", entry, outcome
+    if explicit_as_of and as_of_ns < entry.availability_cutoff_ns:
+        return "NOT_DUE", entry, None
+    return "PENDING", entry, None
 
 
 def build_strategy_profitability_payload(

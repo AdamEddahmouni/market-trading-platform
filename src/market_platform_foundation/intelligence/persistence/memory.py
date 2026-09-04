@@ -85,6 +85,7 @@ class InMemoryIntelligenceRepository:
         self._stores["paper_portfolio_snapshots"] = {}
         self._stores["trade_proposals"] = {}
         self._stores["risk_decisions"] = {}
+        self._stores["order_ready"] = {}
         self._stores["runtime_activation_policies"] = {}
         self._stores["runtime_activations"] = {}
         self._stores["drift_policies"] = {}
@@ -986,6 +987,41 @@ class InMemoryIntelligenceRepository:
         from ..execution.serialization import risk_decision_v1_from_dict
 
         return self._get_sidecar("risk_decisions", risk_decision_id, risk_decision_v1_from_dict)
+
+    def put_order_ready(self, order_ready) -> RepositoryPutResult:
+        from ..execution.serialization import order_ready_v1_to_dict
+
+        return self._put_sidecar(
+            collection="order_ready",
+            record_id=order_ready.order_ready_id,
+            document=order_ready_v1_to_dict(order_ready),
+            kind="order_ready",
+        )
+
+    def get_order_ready(self, order_ready_id: str):
+        from ..execution.serialization import order_ready_v1_from_dict
+
+        return self._get_sidecar("order_ready", order_ready_id, order_ready_v1_from_dict)
+
+    def get_order_ready_by_allocation(self, allocation_decision_id: str) -> tuple:
+        from ..execution.serialization import order_ready_v1_from_dict
+
+        with self._lock:
+            bodies = list(self._stores["order_ready"].values())
+        records = [
+            order_ready_v1_from_dict({key: value for key, value in body.items() if key != "_id"})
+            for body in bodies
+        ]
+        return tuple(
+            sorted(
+                (
+                    record
+                    for record in records
+                    if record.allocation_decision_id == allocation_decision_id
+                ),
+                key=lambda record: (record.decision_time_ns, record.order_ready_id),
+            )
+        )
 
     def put_runtime_activation_policy(self, policy) -> RepositoryPutResult:
         from ..governance.serialization import runtime_activation_policy_v1_to_dict

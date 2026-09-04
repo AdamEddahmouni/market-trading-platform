@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
+from tests.intelligence.test_equity_paper_runtime import QUALITY
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
@@ -14,8 +15,10 @@ from market_platform_foundation.platform.security.route_policy import (  # noqa:
     policy_for_route,
 )
 from market_platform_foundation.ui_api.strategy_runtime_projections import (  # noqa: E402
+    build_strategy_decision_trace_payload,
     build_strategy_profitability_payload,
 )
+from market_platform_foundation.intelligence.contracts import EventV1, SourceReference  # noqa: E402
 
 from tests.intelligence.test_equity_paper_runtime import (  # noqa: E402
     _runtime_fixture,
@@ -24,6 +27,103 @@ from tests.intelligence.test_equity_paper_runtime import (  # noqa: E402
 
 
 class StrategyRuntimeObservabilityTests(unittest.TestCase):
+    def test_unified_trace_reconstructs_the_complete_paper_business_chain(self) -> None:
+        runtime, repository, _, _ = _runtime_fixture(target_kind="direction_up_down")
+        result = runtime.run_entry(_strategy_request())
+
+        payload = build_strategy_decision_trace_payload(
+            repository=repository,
+            ledger=runtime.ledger,
+            account_id="acct-paper",
+            mode="PAPER",
+            allocation_decision_id=result.ids["allocation_decision_id"],
+        )
+
+        trace = payload["trace"]
+        self.assertEqual(trace["correlation_id"], result.ids["correlation_id"])
+        self.assertEqual(
+            [stage["stage"] for stage in trace["stages"]],
+            [
+                "OPPORTUNITY",
+                "ALLOCATION",
+                "RISK_DECISION",
+                "ORDER_READY",
+                "PAPER_FILL",
+                "PORTFOLIO_SETTLEMENT",
+                "PREDICTION_SETTLEMENT",
+                "ATTRIBUTION",
+            ],
+        )
+        stages = {stage["stage"]: stage for stage in trace["stages"]}
+        self.assertEqual(stages["ORDER_READY"]["status"], "READY")
+        self.assertEqual(stages["PAPER_FILL"]["ids"]["fill_id"], result.fill_ids[0])
+        self.assertEqual(stages["PORTFOLIO_SETTLEMENT"]["status"], "SETTLED")
+        self.assertEqual(stages["PREDICTION_SETTLEMENT"]["status"], "PENDING")
+        self.assertEqual(stages["ATTRIBUTION"]["ids"]["attribution_id"], result.ids["attribution_id"])
+        self.assertEqual(trace["quantities"]["filled_quantity"], 1)
+
+    def test_unified_trace_fails_closed_for_another_account(self) -> None:
+        runtime, repository, _, _ = _runtime_fixture()
+        result = runtime.run_entry(_strategy_request())
+
+        with self.assertRaisesRegex(ValueError, "STRATEGY_TRACE_SCOPE_MISMATCH"):
+            build_strategy_decision_trace_payload(
+                repository=repository,
+                ledger=runtime.ledger,
+                account_id="another-paper-account",
+                mode="PAPER",
+                allocation_decision_id=result.ids["allocation_decision_id"],
+            )
+
+    def test_unified_trace_reflects_explicit_prediction_settlement(self) -> None:
+        runtime, repository, _, forecast = _runtime_fixture(target_kind="direction_up_down")
+        result = runtime.run_entry(_strategy_request())
+        repository.put_event(
+            EventV1(
+                event_id="strategy-trace-settlement-event",
+                schema_version="1",
+                event_type="TRADE",
+                event_time_ns=forecast.resolve_time_ns,
+                available_time_ns=forecast.resolve_time_ns,
+                payload={"price": 110.0, "quantity": 10},
+                quality=QUALITY,
+                source=SourceReference(
+                    provider_id="fixture",
+                    source_type="TRADE",
+                    source_record_id="strategy-trace-settlement-event",
+                ),
+                instrument_id="AAPL",
+            )
+        )
+        ledger_entry = repository.get_prediction_ledger_entries_by_forecast(
+            result.ids["forecast_id"],
+        )[0]
+
+        before = build_strategy_decision_trace_payload(
+            repository=repository,
+            ledger=runtime.ledger,
+            account_id="acct-paper",
+            mode="PAPER",
+            allocation_decision_id=result.ids["allocation_decision_id"],
+        )
+        runtime.settle_due_and_evaluate(now_ns=ledger_entry.availability_cutoff_ns)
+        after = build_strategy_decision_trace_payload(
+            repository=repository,
+            ledger=runtime.ledger,
+            account_id="acct-paper",
+            mode="PAPER",
+            allocation_decision_id=result.ids["allocation_decision_id"],
+        )
+
+        before_stages = {stage["stage"]: stage for stage in before["trace"]["stages"]}
+        after_stages = {stage["stage"]: stage for stage in after["trace"]["stages"]}
+        self.assertEqual(before_stages["PREDICTION_SETTLEMENT"]["status"], "PENDING")
+        self.assertEqual(after_stages["PREDICTION_SETTLEMENT"]["status"], "SETTLED")
+        self.assertEqual(
+            after["trace"]["settlement"]["portfolio"],
+            before["trace"]["settlement"]["portfolio"],
+        )
+
     def test_profitability_route_is_audit_read_scoped_to_paper_ledger(self) -> None:
         policy = policy_for_route("GET", "/paper/strategy-profitability")
 

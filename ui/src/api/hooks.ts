@@ -34,7 +34,12 @@ export const queryKeys = {
   paperPortfolio: ["paper", "portfolio"] as const,
   demoPortfolio: ["demo", "portfolio"] as const,
   paperOrderHistory: ["paper", "order-history"] as const,
-  paperTrace: (intentId?: string, orderId?: string) => ["paper", "trace", intentId, orderId] as const,
+  paperTrace: (
+    intentId?: string,
+    orderId?: string,
+    fillId?: string,
+    allocationDecisionId?: string,
+  ) => ["paper", "trace", intentId, orderId, fillId, allocationDecisionId] as const,
   paperStrategyProfitability: (accountId?: string, sessionId?: string) =>
     ["paper", "strategy-profitability", accountId ?? "unbound", sessionId ?? "unbound"] as const,
   liveCanarySnapshot: (laneId?: string, accountId?: string) =>
@@ -230,11 +235,26 @@ export function usePaperOrderHistoryInfiniteQuery(enabled = true) {
   });
 }
 
-export function usePaperTraceQuery(params: { intentId?: string; orderId?: string; fillId?: string }, enabled = true) {
+export function usePaperTraceQuery(
+  params: {
+    intentId?: string;
+    orderId?: string;
+    fillId?: string;
+    allocationDecisionId?: string;
+  },
+  enabled = true,
+) {
   return useQuery({
-    queryKey: queryKeys.paperTrace(params.intentId, params.orderId),
+    queryKey: queryKeys.paperTrace(
+      params.intentId,
+      params.orderId,
+      params.fillId,
+      params.allocationDecisionId,
+    ),
     queryFn: () => api.getPaperTrace(params),
-    enabled: enabled && Boolean(params.intentId || params.orderId || params.fillId),
+    enabled: enabled && Boolean(
+      params.intentId || params.orderId || params.fillId || params.allocationDecisionId,
+    ),
   });
 }
 

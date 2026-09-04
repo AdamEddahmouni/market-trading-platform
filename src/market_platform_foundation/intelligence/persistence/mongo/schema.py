@@ -556,6 +556,54 @@ def _inference_job_validator() -> dict[str, Any]:
     }
 
 
+def _order_ready_validator() -> dict[str, Any]:
+    return {
+        "bsonType": "object",
+        "required": [
+            "order_ready_id",
+            "schema_version",
+            "allocation_decision_id",
+            "trade_proposal_id",
+            "risk_decision_id",
+            "account_id",
+            "mode",
+            "decision_time_ns",
+            "instrument_id",
+            "symbol",
+            "approved_quantity",
+            "approved_notional_minor",
+            "status",
+            "execution_authority",
+            "execution_mode",
+            "idempotency_key",
+            "correlation_id",
+            "reason_codes",
+            "lineage_refs",
+        ],
+        "properties": {
+            "order_ready_id": _STRING,
+            "schema_version": _STRING,
+            "allocation_decision_id": _STRING,
+            "trade_proposal_id": _STRING,
+            "risk_decision_id": _STRING,
+            "account_id": _STRING,
+            "mode": _STRING,
+            "decision_time_ns": _INT_OR_LONG,
+            "instrument_id": _STRING,
+            "symbol": _STRING,
+            "approved_quantity": _INT_OR_LONG,
+            "approved_notional_minor": _INT_OR_LONG,
+            "status": _STRING,
+            "execution_authority": _STRING,
+            "execution_mode": _STRING,
+            "idempotency_key": _STRING,
+            "correlation_id": _STRING,
+            "reason_codes": {"bsonType": "array"},
+            "lineage_refs": {"bsonType": "array"},
+        },
+    }
+
+
 _VALIDATOR_BUILDERS = {
     "events": _event_validator,
     "detections": _detection_validator,
@@ -598,6 +646,17 @@ ALLOCATION_DECISION_INDEXES = (
     MongoIndexSpec(
         name="idx_allocation_decisions_account_mode",
         keys=[("account_id", 1), ("mode", 1), ("decision_time_ns", 1)],
+    ),
+)
+ORDER_READY_VALIDATOR = _order_ready_validator()
+ORDER_READY_INDEXES = (
+    MongoIndexSpec(
+        name="idx_order_ready_allocation",
+        keys=[("allocation_decision_id", 1)],
+    ),
+    MongoIndexSpec(
+        name="idx_order_ready_risk",
+        keys=[("risk_decision_id", 1)],
     ),
 )
 
@@ -753,6 +812,8 @@ class MongoSchemaManager:
             ALLOCATION_DECISION_VALIDATOR,
         )
         self._ensure_named_indexes("allocation_decisions", ALLOCATION_DECISION_INDEXES)
+        self._ensure_named_collection("order_ready", ORDER_READY_VALIDATOR)
+        self._ensure_named_indexes("order_ready", ORDER_READY_INDEXES)
 
     def _ensure_collection(self, spec: MongoCollectionSpec) -> None:
         self._ensure_named_collection(spec.codec.collection_name, spec.validator)
@@ -823,5 +884,7 @@ __all__ = [
     "MongoCollectionSpec",
     "MongoIndexSpec",
     "MongoSchemaManager",
+    "ORDER_READY_INDEXES",
+    "ORDER_READY_VALIDATOR",
     "build_collection_specs",
 ]
