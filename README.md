@@ -1,7 +1,7 @@
 # Market Trading Platform Workspace
 
-This private repository is the workspace index for the related trading,
-research, and coursework projects stored under this directory.
+This repository is the public workspace for the trading, research, and
+platform projects maintained here.
 
 ## Repository boundaries
 

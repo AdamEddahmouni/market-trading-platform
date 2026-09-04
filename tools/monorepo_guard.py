@@ -40,8 +40,8 @@ def validate_manifest_data(manifest: dict[str, Any]) -> list[str]:
     else:
         if not parent.get("repository"):
             errors.append("parent.repository is required")
-        if parent.get("visibility") != "private":
-            errors.append("parent.visibility must be private")
+        if parent.get("visibility") not in {"private", "public"}:
+            errors.append("parent.visibility must be private or public")
 
     projects = manifest.get("projects")
     if not isinstance(projects, list) or not projects:

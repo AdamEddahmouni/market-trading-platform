@@ -2,7 +2,7 @@
   "version": 1,
   "parent": {
     "repository": "AdamEddahmouni/market-trading-platform",
-    "visibility": "private",
+    "visibility": "public",
     "snapshot_root": "projects"
   },
   "projects": [
