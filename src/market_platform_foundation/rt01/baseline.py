@@ -147,8 +147,11 @@ def run_baseline(
         "sampling": sampling.value,
         "workload": profile.workload,
         "aggregation": profile.aggregation,
+        "root_stage": profile.root_stage.value,
+        "terminal_stages": [stage.value for stage in profile.terminal_stages],
         "iterations": iterations,
         "warmup_iterations": warmup_iterations,
+        "sample_count": len(all_samples),
         "environment": {
             "git_head": env.git_head,
             "dirty": env.dirty,

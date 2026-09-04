@@ -87,6 +87,10 @@ from market_platform_foundation.strategy.scanning import (
     UniversalStrategyScanner,
 )
 from market_platform_foundation.strategy.strategy_spec import StrategyDefinition
+from market_platform_foundation.rt01.collector import InMemoryTraceCollector
+from market_platform_foundation.rt01.context import bind_context
+from market_platform_foundation.rt01.enums import SamplingMode, TraceStage
+from market_platform_foundation.rt01.tracer import configure_tracer, Tracer
 
 
 T = 1_700_000_000_000_000_000
@@ -418,6 +422,29 @@ def _exit_opportunity(
 
 
 class EquityPaperRuntimeTests(unittest.TestCase):
+    def setUp(self) -> None:
+        bind_context(None)
+
+    def test_strategy_entry_emits_causal_paper_stages(self) -> None:
+        collector = InMemoryTraceCollector()
+        configure_tracer(Tracer(mode=SamplingMode.FULL, collector=collector))
+        runtime, _repository, request, _forecast = _runtime_fixture(
+            session_id="runtime-paper-rt01-trace",
+        )
+
+        result = runtime.run_entry(request)
+
+        self.assertEqual(result.status, "FILLED")
+        stages = {span.stage for span in collector.spans}
+        self.assertIn(TraceStage.TRACE_ROOT, stages)
+        self.assertIn(TraceStage.OPPORTUNITY, stages)
+        self.assertIn(TraceStage.RISK, stages)
+        self.assertIn(TraceStage.ORDER_READY, stages)
+        self.assertEqual(
+            {span.correlation_id for span in collector.spans},
+            {f"strategy-paper:{request.decision_time_ns}"},
+        )
+
     def test_entry_exposes_one_decision_correlation_and_durable_order_ready_record(self) -> None:
         runtime, repository, request, _forecast_record = _runtime_fixture(
             session_id="runtime-paper-task6-lineage",

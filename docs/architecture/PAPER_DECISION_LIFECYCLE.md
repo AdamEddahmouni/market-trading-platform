@@ -22,6 +22,31 @@ flowchart LR
   J --> K[Portfolio / Trace]
 ```
 
+The canonical Paper runtime also supports the governed broker-paper branch:
+
+```text
+Preview (dry-run)
+  -> prepared Paper intent/risk decision
+  -> append intent/order admission
+  -> composed paper_execution provider
+  -> cumulative status poll / cancellation
+  -> recorded reconciliation report
+  -> read-only broker and ledger projections
+```
+
+`BROKER_PAPER` remains Paper-only authority. A broker provider is bound into
+the session when it opens; an absent or disabled provider rejects the session
+or operation before network/provider mutation. Polling applies cumulative
+fills by `broker_fill_id`, so restart and replay do not duplicate earlier
+executions. A partially filled order may complete as `FILLED` or be cancelled
+as `CANCELLED`; options and prediction-outcome settlement are unchanged.
+
+RT-01 traces are diagnostic spans over these existing seams. Their latency
+clock is process monotonic time, while provider event/receive/available times
+remain distinct. Each trace is linked by `trace_id` and `correlation_id` and
+references bounded persisted IDs only; the append-only Paper ledger and
+business execution trace remain authoritative.
+
 ## Backend-only strategy Paper lineage
 
 The deterministic strategy Paper loop is a backend orchestration path. It
@@ -138,6 +163,9 @@ or unauthorized inputs stop before downstream Paper mutation.
 | `correlation_id` | End-to-end decision linkage |
 | `client_order_id` | Per-order client identifier; manual orders may equal correlation |
 | `intent_id` / `order_id` | Backend persistence IDs |
+| `trace_id` / `span_id` | Diagnostic causal linkage; never business authority |
+| `signal_id` / `opportunity_id` / `risk_decision_id` | Persisted decision references |
+| `broker_order_id` / `broker_fill_id` / `report_id` | Broker and reconciliation references |
 | `decision_source_snapshot` | Immutable handoff context at submit time |
 
 See [DATA_CONTRACTS.md](DATA_CONTRACTS.md) for timestamp and ID rules.

@@ -65,6 +65,9 @@ from .learning import (
     evaluate_learning_join,
 )
 from .scanning import ScanRequest, ScanResult, UniversalStrategyScanner
+from ..rt01.enums import TraceStatus, TraceStage
+from ..rt01.context import current_context
+from ..rt01.instrumentation.paper import start_paper_trace
 
 
 class StrategyRuntimeError(ValueError):
@@ -232,6 +235,61 @@ class StrategyPaperRuntime:
         self._entry: dict[str, Any] = {}
 
     def run_entry(
+        self,
+        request: ScanRequest,
+        *,
+        strategy_id: str | None = None,
+        portfolio: PaperPortfolioSnapshotV1 | None = None,
+        quote: MarketQuoteV1 | None = None,
+        bars: list[dict[str, Any]] | None = None,
+    ) -> StrategyRuntimeResult:
+        if current_context() is not None:
+            return self._run_entry(
+                request,
+                strategy_id=strategy_id,
+                portfolio=portfolio,
+                quote=quote,
+                bars=bars,
+            )
+        trace = start_paper_trace(
+            "paper_strategy_entry",
+            correlation_id=f"strategy-paper:{request.decision_time_ns}",
+            run_id=None,
+            stable_sample_key=f"strategy-paper:{request.decision_time_ns}",
+        )
+        opportunity_span = trace.child(
+            TraceStage.OPPORTUNITY,
+            "strategy_opportunity_pipeline",
+            decision_time_ns=request.decision_time_ns,
+        )
+        try:
+            result = self._run_entry(
+                request,
+                strategy_id=strategy_id,
+                portfolio=portfolio,
+                quote=quote,
+                bars=bars,
+            )
+        except Exception as exc:
+            if opportunity_span is not None:
+                opportunity_span.end(
+                    status=TraceStatus.ERROR,
+                    error_class=type(exc).__name__,
+                    error_code=type(exc).__name__,
+                )
+            trace.finish(
+                status=TraceStatus.ERROR,
+                error_code=type(exc).__name__,
+                terminated=True,
+            )
+            raise
+        else:
+            if opportunity_span is not None:
+                opportunity_span.end(output_ref=result.status)
+            trace.finish(output_ref=result.status)
+            return result
+
+    def _run_entry(
         self,
         request: ScanRequest,
         *,

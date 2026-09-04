@@ -6,9 +6,17 @@ import time
 from typing import Any
 
 from ..operational_identity import attach_operational_identity
-from ..paper.broker_paper import cancel_broker_paper_order
+from ..paper.broker_paper import (
+    apply_broker_status_event,
+    cancel_broker_paper_order,
+    preview_broker_paper_order,
+    submit_broker_paper_order,
+)
+from ..paper.contracts import build_instrument_ref
 from ..paper.execution import cancel_interactive_order, preview_interactive_order, submit_interactive_order
 from ..paper.ledger import PaperExecutionLedger
+from ..rt01.enums import TraceStage, TraceStatus
+from ..rt01.instrumentation.paper import trace_refs
 from .account_registry import resolve_paper_portfolio_identity
 from .lane_provenance import attach_lane_provenance
 from .projections import build_as_of_context
@@ -22,7 +30,7 @@ def _paper_envelope(store: ReplayStore, payload: dict[str, Any]) -> dict[str, An
 
     live = live_observational_enabled() or store.data_mode == "LIVE_OBSERVATIONAL" or store.paper_ledger.data_mode == "LIVE_OBSERVATIONAL"
     data_provider = "MOOMOO" if live else store.paper_ledger.data_provider
-    execution_provider = "INTERNAL"
+    execution_provider = store.paper_ledger.execution_provider
     paper_reachable = paper_execution_env_enabled() and (
         store.paper_ledger.execution_authority in PAPER_EXECUTION_AUTHORITIES or live_internal_simulation_enabled()
     )
@@ -336,6 +344,36 @@ def maybe_release_execution_gate(store: ReplayStore) -> None:
 
 
 def preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
+    from ..rt01.context import current_context
+    from ..rt01.instrumentation.paper import start_paper_trace, trace_refs
+
+    if current_context() is not None:
+        return _preview_paper_order(store, body)
+    trace = start_paper_trace(
+        "paper_order_preview",
+        correlation_id=str(
+            body.get("correlation_id")
+            or body.get("client_order_id")
+            or "paper-order-preview"
+        ),
+    )
+    failed = False
+    try:
+        return _preview_paper_order(store, body)
+    except Exception as exc:
+        trace.finish(
+            status=TraceStatus.ERROR,
+            error_code=type(exc).__name__,
+            terminated=True,
+        )
+        failed = True
+        raise
+    finally:
+        if not failed:
+            trace.finish()
+
+
+def _preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
     from . import live_projections
 
     live_projections.apply_live_marks_to_ledger(store)
@@ -343,6 +381,21 @@ def preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
     _assert_live_execution_allowed(store, submit=False)
     parsed = _parse_order_body(body, store)
     focus = _require_order_instrument(store, parsed["explicit_instrument"])
+    if store.paper_ledger.execution_mode == "BROKER_PAPER":
+        preview = preview_broker_paper_order(
+            ledger=store.paper_ledger,
+            instrument=build_instrument_ref(instrument_id=focus, symbol=focus),
+            side=parsed["side"],
+            quantity=parsed["quantity"],
+            observation_time=_paper_observation_time(store, instrument_id=focus),
+            client_order_id=parsed["client_order_id"],
+            idempotency_key=parsed["idempotency_key"],
+            order_type=parsed["order_type"],
+            limit_price_minor=parsed["limit_price_minor"],
+            correlation_id=parsed["correlation_id"],
+            decision_source_snapshot=parsed["decision_source_snapshot"],
+        )
+        return _paper_envelope(store, {"preview": preview})
     preview = preview_interactive_order(
         ledger=store.paper_ledger,
         bars=_bars_for_paper_execution(store, instrument_id=focus),
@@ -362,6 +415,36 @@ def preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
 
 
 def submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
+    from ..rt01.context import current_context
+    from ..rt01.instrumentation.paper import start_paper_trace
+
+    if current_context() is not None:
+        return _submit_paper_order(store, body)
+    trace = start_paper_trace(
+        "paper_order_request",
+        correlation_id=str(
+            body.get("correlation_id")
+            or body.get("client_order_id")
+            or "paper-order-request"
+        ),
+    )
+    failed = False
+    try:
+        return _submit_paper_order(store, body)
+    except Exception as exc:
+        trace.finish(
+            status=TraceStatus.ERROR,
+            error_code=type(exc).__name__,
+            terminated=True,
+        )
+        failed = True
+        raise
+    finally:
+        if not failed:
+            trace.finish()
+
+
+def _submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
     from . import live_projections
 
     live_projections.apply_live_marks_to_ledger(store)
@@ -385,6 +468,24 @@ def submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, An
     _assert_live_execution_allowed(store, submit=True)
     focus = _require_order_instrument(store, parsed["explicit_instrument"])
     intent_time = _paper_observation_time(store, instrument_id=focus)
+    if store.paper_ledger.execution_mode == "BROKER_PAPER":
+        from ..providers.composition import get_provider_composition
+
+        result = submit_broker_paper_order(
+            ledger=store.paper_ledger,
+            provider=get_provider_composition().paper_execution,
+            instrument=build_instrument_ref(instrument_id=focus, symbol=focus),
+            side=parsed["side"],
+            quantity=parsed["quantity"],
+            observation_time=intent_time,
+            client_order_id=parsed["client_order_id"],
+            idempotency_key=parsed["idempotency_key"],
+            order_type=parsed["order_type"],
+            limit_price_minor=parsed["limit_price_minor"],
+            correlation_id=parsed["correlation_id"],
+            decision_source_snapshot=parsed["decision_source_snapshot"],
+        )
+        return _paper_envelope(store, {"submission": result})
     bars = _bars_for_paper_execution(store, instrument_id=focus)
     if parsed["order_type"] == "MARKET":
         bars = _wait_for_post_intent_bars(
@@ -412,6 +513,32 @@ def submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, An
 
 
 def cancel_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
+    from ..rt01.context import current_context
+    from ..rt01.instrumentation.paper import start_paper_trace
+
+    if current_context() is not None:
+        return _cancel_paper_order(store, body)
+    trace = start_paper_trace(
+        "paper_order_cancel",
+        correlation_id=str(body.get("correlation_id") or body.get("order_id") or "paper-cancel"),
+    )
+    failed = False
+    try:
+        return _cancel_paper_order(store, body)
+    except Exception as exc:
+        trace.finish(
+            status=TraceStatus.ERROR,
+            error_code=type(exc).__name__,
+            terminated=True,
+        )
+        failed = True
+        raise
+    finally:
+        if not failed:
+            trace.finish()
+
+
+def _cancel_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
     order_id = str(body.get("order_id", "")).strip()
     if not order_id:
         raise ValueError("PAPER_ORDER_ID_REQUIRED")
@@ -430,6 +557,216 @@ def cancel_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, An
     else:
         result = cancel_interactive_order(ledger=ledger, order_id=order_id)
     return _paper_envelope(store, {"cancellation": result})
+
+
+def poll_broker_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
+    from ..rt01.context import current_context
+    from ..rt01.instrumentation.paper import start_paper_trace
+
+    if current_context() is not None:
+        return _poll_broker_order(store, body)
+    trace = start_paper_trace(
+        "broker_order_poll",
+        correlation_id=str(body.get("correlation_id") or body.get("order_id") or "broker-poll"),
+    )
+    failed = False
+    try:
+        return _poll_broker_order(store, body)
+    except Exception as exc:
+        trace.finish(
+            status=TraceStatus.ERROR,
+            error_code=type(exc).__name__,
+            terminated=True,
+        )
+        failed = True
+        raise
+    finally:
+        if not failed:
+            trace.finish()
+
+
+def _poll_broker_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
+    """Apply one cumulative broker status poll through the Paper runtime."""
+    from ..operating_modes import PAPER_EXECUTION_AUTHORITIES
+
+    if store.paper_ledger.execution_mode != "BROKER_PAPER":
+        raise ValueError("PAPER_EXECUTION_MODE_INVALID")
+    if store.paper_ledger.execution_authority not in PAPER_EXECUTION_AUTHORITIES:
+        raise ValueError("PAPER_EXECUTION_NOT_AUTHORIZED")
+    order_id = str(body.get("order_id", "")).strip()
+    if not order_id:
+        raise ValueError("PAPER_ORDER_ID_REQUIRED")
+    from ..providers.composition import get_provider_composition
+
+    provider = get_provider_composition().paper_execution
+    if not callable(getattr(provider, "fetch_order", None)):
+        raise ValueError("PROVIDER_NOT_CONFIGURED")
+    result = apply_broker_status_event(
+        ledger=store.paper_ledger,
+        provider=provider,
+        order_id=order_id,
+    )
+    return _paper_envelope(store, {"poll": result})
+
+
+def reconcile_broker_paper(store: ReplayStore) -> dict[str, Any]:
+    from ..rt01.context import current_context
+    from ..rt01.instrumentation.paper import start_paper_trace
+    from ..rt01.tracer import get_tracer
+
+    if current_context() is None:
+        trace = start_paper_trace(
+            "broker_reconciliation",
+            correlation_id=f"broker-reconciliation:{store.paper_ledger.session_id}",
+        )
+        reconciliation_span = trace.child(
+            TraceStage.RECONCILIATION,
+            "reconcile_broker_paper",
+            session_id=store.paper_ledger.session_id,
+        )
+        failed = False
+        try:
+            result = _reconcile_broker_paper(store)
+            if reconciliation_span is not None:
+                reconciliation_span.context.attributes.update(
+                    trace_refs(report_id=result["reconciliation"].get("report_id"))
+                )
+                reconciliation_span.end(
+                    output_ref=f"report:{result['reconciliation']['report_id']}"
+                )
+            return result
+        except Exception as exc:
+            if reconciliation_span is not None:
+                reconciliation_span.end(
+                    status=TraceStatus.ERROR,
+                    error_class=type(exc).__name__,
+                    error_code=type(exc).__name__,
+                )
+            trace.finish(
+                status=TraceStatus.ERROR,
+                error_code=type(exc).__name__,
+                terminated=True,
+            )
+            failed = True
+            raise
+        finally:
+            if not failed:
+                trace.finish()
+    context = current_context()
+    span = get_tracer().start_span(
+        TraceStage.RECONCILIATION,
+        "reconcile_broker_paper",
+        parent=context,
+        input_ref=f"session:{store.paper_ledger.session_id}",
+    )
+    try:
+        result = _reconcile_broker_paper(store)
+    except Exception as exc:
+        if span is not None:
+            span.end(
+                status=TraceStatus.ERROR,
+                error_class=type(exc).__name__,
+                error_code=type(exc).__name__,
+            )
+        raise
+    if span is not None:
+        span.context.attributes.update(
+            trace_refs(report_id=result["reconciliation"].get("report_id"))
+        )
+        span.end(output_ref=f"report:{result['reconciliation']['report_id']}")
+    return result
+
+
+def _reconcile_broker_paper(store: ReplayStore) -> dict[str, Any]:
+    """Fetch broker snapshots, build, and record one reconciliation report."""
+    from ..platform.reconciliation.engine import (
+        BrokerOrderSnapshot,
+        build_reconciliation_report,
+        record_reconciliation,
+    )
+    from ..operating_modes import PAPER_EXECUTION_AUTHORITIES
+    from ..providers.broker_execution import (
+        BrokerAccountSnapshot,
+        BrokerOrderStatusEvent,
+        BrokerPositionSnapshot,
+    )
+    from ..providers.composition import get_provider_composition
+
+    provider = get_provider_composition().paper_execution
+    if store.paper_ledger.execution_mode != "BROKER_PAPER":
+        raise ValueError("PAPER_EXECUTION_MODE_INVALID")
+    if store.paper_ledger.execution_authority not in PAPER_EXECUTION_AUTHORITIES:
+        raise ValueError("PAPER_EXECUTION_NOT_AUTHORIZED")
+    for method_name in ("fetch_order", "fetch_account", "fetch_positions"):
+        if not callable(getattr(provider, method_name, None)):
+            raise ValueError("PROVIDER_NOT_CONFIGURED")
+    order_snapshots = []
+    for order in store.paper_ledger.project_orders():
+        broker_order_id = str(order.get("broker_order_id") or "")
+        if not broker_order_id:
+            continue
+        result = provider.fetch_order(broker_order_id)
+        if str(getattr(result, "status", "")) != "ok":
+            raise ValueError("BROKER_RECONCILIATION_UNAVAILABLE")
+        event = next(
+            (
+                item
+                for item in (getattr(result, "events", ()) or ())
+                if isinstance(item, dict) and isinstance(item.get("payload"), dict)
+            ),
+            None,
+        )
+        if event is None:
+            raise ValueError("BROKER_RECONCILIATION_STATUS_MISSING")
+        status_event = BrokerOrderStatusEvent.from_record(event["payload"])
+        order_snapshots.append(
+            BrokerOrderSnapshot.from_status_event(
+                status_event,
+                raw_source_reference=str(event.get("raw_reference") or ""),
+            )
+        )
+
+    account_result = provider.fetch_account()
+    if str(getattr(account_result, "status", "")) != "ok":
+        raise ValueError("BROKER_RECONCILIATION_ACCOUNT_UNAVAILABLE")
+    account_event = next(iter(getattr(account_result, "events", ()) or ()), None)
+    account_snapshot = (
+        BrokerAccountSnapshot.from_record(account_event)
+        if isinstance(account_event, dict)
+        else None
+    )
+
+    positions_result = provider.fetch_positions()
+    if str(getattr(positions_result, "status", "")) != "ok":
+        raise ValueError("BROKER_RECONCILIATION_POSITIONS_UNAVAILABLE")
+    positions_event = next(iter(getattr(positions_result, "events", ()) or ()), None)
+    position_snapshots = (
+        tuple(
+            BrokerPositionSnapshot.from_record(row)
+            for row in positions_event.get("positions", [])
+            if isinstance(row, dict)
+        )
+        if isinstance(positions_event, dict)
+        else ()
+    )
+    timestamps = [
+        snapshot.receive_time_ns
+        for snapshot in order_snapshots
+        if snapshot.receive_time_ns
+    ]
+    if account_snapshot is not None and account_snapshot.as_of_ns:
+        timestamps.append(account_snapshot.as_of_ns)
+    timestamps.extend(snapshot.as_of_ns for snapshot in position_snapshots if snapshot.as_of_ns)
+    as_of_ns = max(timestamps, default=store.prediction_cutoff())
+    report = build_reconciliation_report(
+        store.paper_ledger,
+        order_snapshots=order_snapshots,
+        position_snapshots=position_snapshots,
+        account_snapshot=account_snapshot,
+        as_of_ns=as_of_ns,
+    )
+    record_reconciliation(store.paper_ledger, report)
+    return _paper_envelope(store, {"reconciliation": report})
 
 
 def open_paper_session(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
@@ -462,6 +799,18 @@ def open_paper_session(store: ReplayStore, body: dict[str, Any]) -> dict[str, An
 
     focus, _source = resolve_active_operator_instrument(store, explicit=preferred)
     session_instrument = focus or ("UNKNOWN" if store.data_mode == "LIVE_OBSERVATIONAL" else store.instrument_id)
+    from ..providers.composition import get_provider_composition
+
+    provider = get_provider_composition().paper_execution
+    execution_provider = (
+        str(getattr(provider, "provider_id", ""))
+        if requested_mode == "BROKER_PAPER"
+        else "INTERNAL"
+    )
+    if requested_mode == "BROKER_PAPER" and (
+        not execution_provider or execution_provider == "stub.execution.disabled"
+    ):
+        raise ValueError("PROVIDER_NOT_CONFIGURED")
     store.paper_ledger = PaperExecutionLedger.open_session(
         replay_session_id=store.session_id,
         instrument_id=session_instrument,
@@ -470,7 +819,7 @@ def open_paper_session(store: ReplayStore, body: dict[str, Any]) -> dict[str, An
         execution_authority=authority,
         data_mode=store.data_mode,
         data_provider="MOOMOO" if store.data_mode == "LIVE_OBSERVATIONAL" else store.data_provider,
-        execution_provider="INTERNAL",
+        execution_provider=execution_provider,
     )
     store.paper_ledger.persist_sink = persist_ledger_batch
     persist_ledger(store.paper_ledger)
