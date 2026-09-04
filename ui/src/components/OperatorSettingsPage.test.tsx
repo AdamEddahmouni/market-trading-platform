@@ -66,7 +66,7 @@ describe("OperatorSettingsPage", () => {
     expect(screen.queryByRole("note")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add to watchlist" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reindex captures" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Replay" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Replay" })).toBeInTheDocument();
   });
 
   it("posts watchlist updates only in Paper mode", async () => {
