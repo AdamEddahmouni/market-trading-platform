@@ -297,8 +297,6 @@ def _prediction_settlement_state(
     if explicit_as_of and as_of_ns < entry.availability_cutoff_ns:
         return "NOT_DUE", entry, None
     return "PENDING", entry, None
-
-
 def build_strategy_profitability_payload(
     *,
     repository: Any,
