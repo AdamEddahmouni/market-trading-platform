@@ -1,5 +1,0 @@
-{
-  "forward_migration": "PASS",
-  "migration_plan_id": "MIG-44cb48ba7d23d432616eaa6eba9094c6d12b610003e89b69a2c288b4b384f963",
-  "rollback_compatible": true
-}

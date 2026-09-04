@@ -1,6 +1,0 @@
-{
-  "exact_ref_lineage": true,
-  "idempotency_keys": true,
-  "stale_view_protection": "STALE_OPERATOR_VIEW",
-  "timeline_deterministic": true
-}

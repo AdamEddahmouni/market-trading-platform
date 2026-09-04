@@ -1,1 +1,0 @@
-{"description":"Kill switch active; all intents must be rejected by independent risk.","expected_risk_decision":"REJECT","expected_reason_code":"RISK_KILL_SWITCH_ACTIVE","kill_switch_active":true}

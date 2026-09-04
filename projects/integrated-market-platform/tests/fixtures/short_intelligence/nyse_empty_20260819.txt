@@ -1,2 +1,0 @@
-Symbol|Security Name|Market Category|Reg SHO Threshold Flag|Filler|Filler
-20260819210500

@@ -1,7 +1,0 @@
-{
-  "artifact_type": "PHASE_8_ADVERSARIAL_FIXTURE",
-  "expected_outcome": "FAIL",
-  "logical_id": "phase8.adversarial.hash_mismatch",
-  "reason_code": "AE001_HASH_MISMATCH",
-  "tampered_member": "phase8.end_to_end_report"
-}

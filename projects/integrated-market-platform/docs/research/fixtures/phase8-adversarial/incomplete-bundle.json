@@ -1,7 +1,0 @@
-{
-  "artifact_type": "PHASE_8_ADVERSARIAL_FIXTURE",
-  "expected_outcome": "FAIL",
-  "logical_id": "phase8.adversarial.incomplete_bundle",
-  "missing_member": "phase8.limitations_report",
-  "reason_code": "AE001_INCOMPLETE_BUNDLE"
-}

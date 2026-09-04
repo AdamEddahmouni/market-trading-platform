@@ -1,8 +1,0 @@
-{
-  "name": "integrated-market-platform",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".."
-  },
-  "install": "bash .cursor/install-cloud-deps.sh"
-}

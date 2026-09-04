@@ -1,9 +1,0 @@
-{
-  "equity_symbol": "BIYA",
-  "futures_symbol": "ES",
-  "prediction_cutoff": "2026-08-14T23:59:59Z",
-  "futures_decision_time": "2025-05-31T23:59:59Z",
-  "cot_fixture_path": "tests/fixtures/providers/futures/es_cot_positioning_slice.json",
-  "crowding_fixture_path": "tests/fixtures/participant/biya_crowding_slice.json",
-  "producer_version": "participant_cross_asset_v1"
-}

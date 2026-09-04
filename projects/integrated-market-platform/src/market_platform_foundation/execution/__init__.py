@@ -1,2 +1,0 @@
-"""Non-routing execution descriptors."""
-

@@ -1,9 +1,0 @@
-{
-  "program_report_id": "PROGREP-67a76aeed99811b24ca40ee63b6f33dbe53bbd00f0218d177027e03d9561be62",
-  "disposition": "SUPERVISED_CANARY_PROGRAM_COMPLETE",
-  "sessions_executed": 2,
-  "total_orders": 2,
-  "total_fills": 3,
-  "aggregate_notional_minor": 5000,
-  "final_kill_switch_state": "ACTIVE_BLOCK"
-}

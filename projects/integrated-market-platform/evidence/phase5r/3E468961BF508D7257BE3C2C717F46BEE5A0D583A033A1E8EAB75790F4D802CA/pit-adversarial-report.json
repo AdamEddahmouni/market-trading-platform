@@ -1,1 +1,0 @@
-{"adversarial_cutoff_at_label":true,"artifact_type":"PHASE_5R_PIT_ADVERSARIAL_REPORT","label_leakage_detected":true,"logical_id":"phase5r.pit_adversarial_report","reason_codes":["PIT_LABEL_NOT_AFTER_CUTOFF"],"status":"PASS"}

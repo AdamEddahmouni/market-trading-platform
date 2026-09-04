@@ -1,4 +1,0 @@
-Symbol|Security Name|Market Category|Reg SHO Threshold Flag|Filler|Filler
-BMNZ|Defiance Daily Target 2X Short BMNR ETF|NYSE Arca|Y||
-DAMD|Defiance Daily Target 2X Short AMD ETF|NYSE Arca|Y||
-20260819220201

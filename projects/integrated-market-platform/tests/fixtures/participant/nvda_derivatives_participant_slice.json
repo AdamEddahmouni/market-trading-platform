@@ -1,9 +1,0 @@
-{
-  "instrument_id": "NVDA",
-  "prediction_cutoff": "2026-07-21T20:30:10.000000000Z",
-  "options_fixture_path": "tests/fixtures/providers/options/nvda_signed_flow_slice.json",
-  "min_confirmed_trade_count": 2,
-  "min_buy_initiated_volume": 500,
-  "min_uncertain_trade_count": 1,
-  "producer_version": "participant_derivatives_v1"
-}

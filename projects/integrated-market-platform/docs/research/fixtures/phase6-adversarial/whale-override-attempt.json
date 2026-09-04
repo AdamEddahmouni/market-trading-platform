@@ -1,5 +1,0 @@
-{
-  "alignment_type": "WHALE_ALIGNED",
-  "attempt": "force_signal_despite_unavailable_institutional",
-  "description": "Whale-aligned strategy must abstain when institutional evidence is unavailable"
-}

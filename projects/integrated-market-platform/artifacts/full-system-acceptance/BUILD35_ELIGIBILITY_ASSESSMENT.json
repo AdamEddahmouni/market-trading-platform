@@ -1,9 +1,0 @@
-{
-  "blocking_reasons": [],
-  "disposition": "ELIGIBLE",
-  "eligibility_assessment_id": "RELIG-c986c98919f9d6970c0b158d66de92f13576f7357d55d8340ec0b5f72ae4f010",
-  "limitations": [
-    "BUILD26: insufficient forward evidence \u2014 nonblocking",
-    "BUILD29: canary not executed \u2014 nonblocking for supervised operation with limitations"
-  ]
-}
