@@ -16,10 +16,10 @@ repository available at generation time.
 
 | Repository | Commits | Refs | First commit | Latest commit |
 |---|---:|---:|---|---|
-| `equity-data-v1` | 575 | 109 | 2026-08-01 | 2026-09-03 |
-| `governed-ticker-metadata` | 575 | 109 | 2026-08-01 | 2026-09-03 |
-| `integrated-platform` | 575 | 109 | 2026-08-01 | 2026-09-03 |
-| `parent` | 19 | 7 | 2026-09-03 | 2026-09-03 |
+| `equity-data-v1` | 594 | 116 | 2026-08-01 | 2026-09-04 |
+| `governed-ticker-metadata` | 594 | 116 | 2026-08-01 | 2026-09-04 |
+| `integrated-platform` | 594 | 116 | 2026-08-01 | 2026-09-04 |
+| `parent` | 33 | 10 | 2026-09-03 | 2026-09-04 |
 | `short-squeeze` | 66 | 5 | 2026-07-26 | 2026-08-16 |
 
 The `integrated-platform`, `governed-ticker-metadata`, and

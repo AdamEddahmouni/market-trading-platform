@@ -2271,7 +2271,7 @@ classification, and acceptance artifacts after full validation pass.
 - `bb03c830f939` — merge: integrate adaptive intelligence history
   - Author: AdamEddahmouni (2026-09-02T19:00:57-04:00)
   - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
-- `45a7b127dd6c` — merge: integrate research workstation and vertical history — refs: `refs/heads/integration/all-work-2026-09-02`, `refs/heads/main`, `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
+- `45a7b127dd6c` — merge: integrate research workstation and vertical history — refs: `refs/heads/integration/all-work-2026-09-02`, `refs/heads/main`
   - Author: AdamEddahmouni (2026-09-02T19:10:58-04:00)
   - Rationale (commit-subject-and-body): Preserve the chronological OF/XA, validation, and research-workstation commits while retaining the current platform and operator revisions.
 - `5f18591beff9` — feat(extended-hours): add session-aware market support — refs: `refs/heads/feat/extended-hours-support`, `refs/remotes/origin/feat/extended-hours-support`
@@ -2292,3 +2292,67 @@ execution mode/authority into spawned backend processes.
 - `6308fcfce9e7` — feat(paper): add cash-account risk foundation — refs: `refs/heads/codex/paper-accounting-risk-foundation`, `refs/remotes/origin/codex/paper-accounting-risk-foundation`
   - Author: AdamEddahmouni (2026-09-03T16:23:12-04:00)
   - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
+- `09ce465a5898` — feat(paper): add profitability observability
+  - Author: AdamEddahmouni (2026-09-03T21:44:45-04:00)
+  - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
+- `ab6438bff263` — docs: remove local plan links
+  - Author: AdamEddahmouni (2026-09-03T22:01:34-04:00)
+  - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
+- `cdd2131ade5a` — ci: install Python validation dependencies
+  - Author: AdamEddahmouni (2026-09-03T22:18:19-04:00)
+  - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
+- `bc007c08b7c2` — ci: provide admitted replay fixture
+  - Author: AdamEddahmouni (2026-09-03T23:57:43-04:00)
+  - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
+
+## 2026-09-04
+
+- `898c17ed06d1` — ci: expose replay fixture at expected path
+  - Author: AdamEddahmouni (2026-09-04T00:03:15-04:00)
+  - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
+- `845ed71388ca` — ci: materialize closure validation scope
+  - Author: AdamEddahmouni (2026-09-04T00:29:57-04:00)
+  - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
+- `58110709a904` — test(ui): await replay control
+  - Author: AdamEddahmouni (2026-09-04T01:04:35-04:00)
+  - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
+- `34abd14250cd` — test(bridges): skip absent donor intelligence package — refs: `refs/heads/feat/paper-profitability-observability`, `refs/remotes/origin/feat/paper-profitability-observability`
+  - Author: AdamEddahmouni (2026-09-04T01:11:56-04:00)
+  - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
+- `a5506c182131` — feat(paper): add profitability observability (#11)
+  - Author: AdamEddahmouni (2026-09-04T01:35:26-04:00)
+  - Rationale (commit-subject-and-body): * feat(paper): add profitability observability
+- `b4e34e0e4216` — feat(paper): unify internal trading lifecycle trace
+  - Author: AdamEddahmouni (2026-09-04T11:22:35-04:00)
+  - Rationale (commit-subject-and-body): Persist order-ready decisions, propagate decision correlation, and expose the complete strategy Paper business trace through the existing API and UI. Repair the stale repository-closure scope so the full validation ladder passes.
+- `7fe873a1dcc8` — Merge origin/main into feat/unify-paper-trading-chain
+  - Author: AdamEddahmouni (2026-09-04T11:42:26-04:00)
+  - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
+- `368e64b8a589` — ci(validation): stop materializing removed closure scope — refs: `refs/heads/feat/unify-paper-trading-chain`, `refs/remotes/origin/feat/unify-paper-trading-chain`
+  - Author: AdamEddahmouni (2026-09-04T11:56:45-04:00)
+  - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
+- `9902927aa62c` — Merge pull request #12 from AdamEddahmouni/feat/unify-paper-trading-chain — refs: `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
+  - Author: AdamEddahmouni (2026-09-04T12:04:32-04:00)
+  - Rationale (commit-subject-and-body): feat(paper): unify internal trading lifecycle trace
+- `53d34b1c8690` — feat(rt01): trace canonical Paper pipeline
+  - Author: AdamEddahmouni (2026-09-04T15:17:04-04:00)
+  - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
+- `dbadffae615c` — fix(validation): remove stale provider test scope
+  - Author: AdamEddahmouni (2026-09-04T15:28:49-04:00)
+  - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
+- `db83608685cb` — fix(validation): drop stale closure scope materialization
+  - Author: AdamEddahmouni (2026-09-04T15:38:32-04:00)
+  - Rationale (commit-subject-and-body): The provider-composition closure entry referencing src/market_platform_foundation/tests was removed; the CI step that created that phantom directory no longer has a purpose. Update the work-log note so it no longer claims full validation is blocked by that error.
+- `32920584deac` — Merge 7fe873a1dcc85821079d0fc0847689e7b928eacc into a5506c182131341ad71a1edd49ec6b4942daf618 — refs: `refs/remotes/origin/pr12-merge`
+  - Author: AdamEddahmouni (2026-09-04T15:43:00+00:00)
+  - Rationale (commit-subject-only): Rationale stated in commit subject only.
+- `06963649032a` — ci: lint workflow files with actionlint
+  - Author: AdamEddahmouni (2026-09-04T15:49:21-04:00)
+  - Rationale (commit-subject-and-body): Add a validate-workflows job to imp-validate.yml that downloads actionlint v1.7.12 and lints the repository's GitHub Actions workflow files on every push and pull request.
+- `7cb5bdbf5ab4` — Merge origin/main into feat/rt01-paper-tracing — refs: `refs/heads/feat/rt01-paper-tracing`, `refs/remotes/origin/feat/rt01-paper-tracing`
+  - Author: AdamEddahmouni (2026-09-04T16:06:05-04:00)
+  - Rationale (commit-subject-and-body): Reconcile PR #12's unified internal Paper chain with the RT-01 broker-paper
+wiring: keep the orchestrator's traced submit path and broker-paper dispatch,
+and unify correlation propagation on both execution modes as
+prepared.correlation_id with a risk_decision_id fallback. Keeps both 09-04
+WORK_LOG entries and the merged runtime test additions.
