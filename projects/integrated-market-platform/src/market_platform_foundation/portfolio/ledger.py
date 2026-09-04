@@ -9,10 +9,6 @@ def build_ledger_state(*, initial_cash_minor: int) -> dict[str, Any]:
     return {
         "cash_minor": initial_cash_minor,
         "entries": [],
-        "positions_by_instrument": {},
-        # Aggregate compatibility fields. New consumers must use the
-        # instrument-keyed projection above; these keep legacy single-symbol
-        # readers operational while they migrate.
         "position_shares": 0,
         # Signed notional cost basis for the net position. Long positions are
         # positive; short positions are negative. Keeping total basis (rather
@@ -34,66 +30,25 @@ def apply_fill(
     qty = int(fill["fill_quantity"])
     price_minor = int(fill["fill_price_minor"])
     direction = str(fill["direction"])
-    if qty <= 0:
-        raise ValueError("PAPER_FILL_QUANTITY_INVALID")
-    if price_minor < 0:
-        raise ValueError("PAPER_FILL_PRICE_INVALID")
-    if direction not in {"long", "short"}:
-        raise ValueError("PAPER_FILL_DIRECTION_INVALID")
     signed_qty = qty if direction == "long" else -qty
-    # Historical fills predate instrument-keyed accounting. Keep them
-    # replayable under a deterministic compatibility bucket while all newly
-    # generated Paper fills carry their real instrument_id.
-    instrument_id = str(fill.get("instrument_id", "")).strip().upper() or "__LEGACY__"
 
     commission = (
         int(fill["commission_minor"])
         if "commission_minor" in fill
         else qty * int(policy["commission_minor_per_share"])
     )
-    order_id = str(fill.get("order_id", ""))
-    order_fee_already_charged = bool(
-        order_id
-        and any(str(entry.get("order_id", "")) == order_id for entry in state["entries"])
-    )
     fees = (
         int(fill["fees_minor"])
         if "fees_minor" in fill
-        else (0 if order_fee_already_charged else int(policy["fee_minor_per_order"]))
+        else int(policy["fee_minor_per_order"])
     )
     cash_delta = -(signed_qty * price_minor) - commission - fees
 
-    positions = {
-        str(key): dict(value)
-        for key, value in dict(state.get("positions_by_instrument") or {}).items()
-    }
-    # Legacy attribution callers seed only the aggregate compatibility fields.
-    # Materialize that seed into the compatibility bucket before applying the
-    # next fill so weighted basis and reversal accounting remain intact.
-    if not positions and (
-        int(state.get("position_shares", 0)) != 0
-        or int(state.get("position_cost_basis_minor", 0)) != 0
-    ):
-        positions["__LEGACY__"] = {
-            "position_cost_basis_minor": int(state.get("position_cost_basis_minor", 0)),
-            "position_shares": int(state.get("position_shares", 0)),
-            "realized_pnl_minor": 0,
-        }
-    prior_position = positions.get(
-        instrument_id,
-        {
-            "position_cost_basis_minor": 0,
-            "position_shares": 0,
-            "realized_pnl_minor": 0,
-        },
-    )
-    position_before = int(prior_position["position_shares"])
+    position_before = int(state["position_shares"])
     position_cost_basis_before = int(
-        prior_position.get("position_cost_basis_minor", position_before * price_minor)
+        state.get("position_cost_basis_minor", position_before * price_minor)
     )
     position_after = position_before + signed_qty
-    if bool(policy.get("long_only", False)) and position_after < 0:
-        raise ValueError("PAPER_SHORT_SELL_NOT_ALLOWED")
     realized_delta = _realized_delta(
         position_before=position_before,
         signed_qty=signed_qty,
@@ -112,30 +67,15 @@ def apply_fill(
     entry = {
         "cash_delta_minor": cash_delta,
         "fill_id": fill["fill_id"],
-        "instrument_id": instrument_id,
-        "order_id": order_id,
         "position_after": position_after,
         "position_before": position_before,
         "realized_pnl_delta_minor": realized_delta,
     }
-    cash_after = int(state["cash_minor"]) + cash_delta
-    if bool(policy.get("cash_account", False)) and cash_after < 0:
-        raise ValueError("PAPER_CASH_NEGATIVE")
-
-    positions[instrument_id] = {
-        "position_cost_basis_minor": position_cost_basis_after,
-        "position_shares": position_after,
-        "realized_pnl_minor": int(prior_position.get("realized_pnl_minor", 0)) + realized_delta,
-    }
-    aggregate_shares = sum(int(row["position_shares"]) for row in positions.values())
-    aggregate_basis = sum(int(row["position_cost_basis_minor"]) for row in positions.values())
-
     return {
-        "cash_minor": cash_after,
+        "cash_minor": int(state["cash_minor"]) + cash_delta,
         "entries": list(state["entries"]) + [entry],
-        "positions_by_instrument": positions,
-        "position_shares": aggregate_shares,
-        "position_cost_basis_minor": aggregate_basis,
+        "position_shares": position_after,
+        "position_cost_basis_minor": position_cost_basis_after,
         "realized_pnl_minor": int(state["realized_pnl_minor"]) + realized_delta,
         "total_commission_minor": int(state["total_commission_minor"]) + commission,
         "total_fees_minor": int(state["total_fees_minor"]) + fees,

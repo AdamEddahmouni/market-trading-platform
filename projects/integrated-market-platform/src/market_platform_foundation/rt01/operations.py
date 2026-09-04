@@ -19,6 +19,7 @@ from .workloads import (
     quality_replay_domain_hash,
     run_fixture_ingest_workload,
     run_quality_replay_workload,
+    run_paper_trace_workload,
 )
 
 CAPABILITY_IDS = frozenset(
@@ -105,7 +106,20 @@ def execute(capability_id: str, arguments: Mapping[str, Any] | None = None) -> O
         profile_id = str(args.get("profile_id", "receive_to_canonical_state"))
         sampling = _sampling_mode(args.get("sampling"))
         configure_tracer(Tracer(mode=sampling))
-        workload = run_fixture_ingest_workload
+        workload = (
+            run_paper_trace_workload
+            if profile_id
+            in {
+                "queue_wait",
+                "queue_to_signal",
+                "signal_to_decision",
+                "decision_to_submission",
+                "submission_to_broker",
+                "broker_to_reconciliation",
+                "paper_end_to_end",
+            }
+            else run_fixture_ingest_workload
+        )
         report = run_baseline(
             profile_id=profile_id,
             workload_fn=lambda: workload(),

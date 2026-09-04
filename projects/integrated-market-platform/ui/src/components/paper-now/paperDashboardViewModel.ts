@@ -52,23 +52,10 @@ export function paperRiskMetrics(portfolio: PaperPortfolioResponse): PaperRiskMe
   const positionUse = utilization(largest, portfolio.risk.limits.max_position_shares);
   const orderUse = utilization(portfolio.risk.open_order_count, portfolio.risk.limits.max_open_orders);
   const buyingPower = formatMinorCurrency(portfolio.account.buying_power_minor, portfolio.account.currency);
-  const reservedCash = portfolio.account.reserved_cash_display
-    ?? formatMinorCurrency(portfolio.account.reserved_cash_minor ?? 0, portfolio.account.currency);
-  const equity = portfolio.account.equity_display
-    ?? (portfolio.account.equity_minor === null || portfolio.account.equity_minor === undefined
-      ? null
-      : formatMinorCurrency(portfolio.account.equity_minor, portfolio.account.currency));
-  const grossNotional = portfolio.exposure?.gross_notional_display
-    ?? (portfolio.exposure?.gross_notional_minor === null || portfolio.exposure?.gross_notional_minor === undefined
-      ? null
-      : formatMinorCurrency(portfolio.exposure.gross_notional_minor, portfolio.account.currency));
   return [
     { id: "total-pnl", label: "Total P&L", value: portfolio.pnl?.total_display ?? portfolio.account.realized_pnl_display, available: true },
     { id: "buying-power", label: "Buying power", value: buyingPower ?? "Unavailable", available: buyingPower !== null },
-    { id: "reserved-cash", label: "Reserved cash", value: reservedCash ?? "Unavailable", available: reservedCash !== null },
-    { id: "equity", label: "Equity", value: equity ?? "Unavailable", detail: portfolio.account.valuation_quality, available: equity !== null },
     { id: "gross-exposure", label: "Gross exposure", value: `${portfolio.exposure?.gross_shares ?? 0} sh`, available: true },
-    { id: "gross-notional", label: "Gross notional", value: grossNotional ?? "Unavailable", detail: portfolio.account.valuation_quality, available: grossNotional !== null },
     { id: "largest-position", label: "Largest position", value: positionUse.available ? `${positionUse.raw} / ${positionUse.limit} sh` : "Unavailable", detail: positionUse.available ? "Position share limit" : "Position limit unavailable", available: positionUse.available, percent: positionUse.available ? positionUse.percent : undefined },
     { id: "open-orders", label: "Open orders", value: orderUse.available ? `${orderUse.raw} / ${orderUse.limit}` : "Unavailable", detail: orderUse.available ? "Open-order limit" : "Open-order limit unavailable", available: orderUse.available, percent: orderUse.available ? orderUse.percent : undefined },
   ];

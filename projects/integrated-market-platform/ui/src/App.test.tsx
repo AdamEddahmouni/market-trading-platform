@@ -224,6 +224,7 @@ vi.mock("./api/hooks", () => ({
     isError: !portfolioMocks.data,
     data: portfolioMocks.data,
   }),
+  usePaperStrategyProfitabilityQuery: () => ({ isLoading: false, isError: true, data: undefined }),
   usePaperOrderHistoryInfiniteQuery: () => ({
     data: {
       pages: [

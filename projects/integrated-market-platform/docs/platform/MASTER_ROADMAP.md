@@ -7,8 +7,8 @@
 | Primary Truth Class | `APPROVED_FUTURE_DESIGN` |
 | Canonical Subject | Post-core milestone ownership and dependency graph |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.2` |
-| Last Verified | `2026-08-29` |
+| Version | `1.3` |
+| Last Verified | `2026-09-03` |
 | Supersedes | [Revision 3 roadmap projection](../roadmap/REVISION_3_ROADMAP.md) as whole-program master only |
 | Superseded By | None |
 
@@ -42,11 +42,14 @@ an independent semantic track.
 | `IMP-RT-03` | Event-Bus or Native Hot-Path Decision | Decide only if measured need remains after RT-02 |
 | `IMP-XA-01` | Cross-Asset Kernel | Define shared extension/source contracts and one bounded sovereign/rates reference vertical |
 | `IMP-XA-02` | First Admitted Cross-Asset Source Vertical | Admit a bounded vertical under XA-01 and ledger requirements |
+| `IMP-XA-03` | Second Admitted Cross-Asset Source Vertical | `COMPLETE_WITH_LIMITATIONS` — admitted CFTC positioning vertical with source-neutral provenance and typed cross-asset relationships |
+| `IMP-XA-04` | Durable Cross-Asset Source & Identity Catalog Persistence | `COMPLETE_WITH_LIMITATIONS` — durable admitted-source catalog persistence with in-memory acceptance and no paid infrastructure requirement |
+| `IMP-XA-05` | Cross-Asset Strategic State & Regime Kernel | `COMPLETE` — ephemeral, reconstructable strategic state and regime inspection over accepted cross-asset inputs |
 | `IMP-OF-03` | Workflow and Control Registry | `IMP_OF_03_COMPLETE_WITH_LIMITATIONS` — machine-readable capability/SOP/workflow registry; not an execution engine or second ledger |
 | `IMP-AI-01` | Attributable Read-Only AI Research | Add reproducible attribution and evaluation while preserving no-execution authority |
 | `IMP-AI-02` | Governed AI Workflows and Tools | Expand only after the workflow/control registry |
 | `IMP-NARRATIVE-01` | Narrative and Motive Method | Define uncertain thesis/motive treatment and admitted boundaries |
-| `EVIDENCE-01C` | Bounded Real-Provider Shakedown and Operational Acceptance | Produce the next EVIDENCE operational-acceptance record independently |
+| `EVIDENCE-01C` | Bounded Real-Provider Shakedown and Operational Acceptance | `DEFERRED` — preserve the protocol and existing evidence artifacts; no real-provider shakedown is currently active |
 
 ## Hard dependencies
 
@@ -61,6 +64,9 @@ an independent semantic track.
 | `IMP-RT-01` | `IMP-RT-02` | Measure before optimizing |
 | `IMP-RT-02` | `IMP-RT-03` | Event-bus or native-path decisions require measured need |
 | `IMP-XA-01` | `IMP-XA-02` | A bounded admitted source requires the shared extension/source template |
+| `IMP-XA-02` | `IMP-XA-03` | The second admitted vertical extends the accepted cross-asset admission and provenance contracts |
+| `IMP-XA-03` | `IMP-XA-04` | Durable catalog persistence requires the admitted source and relationship records |
+| `IMP-XA-04` | `IMP-XA-05` | Strategic state construction requires the accepted durable catalog contract |
 | `IMP-OF-03` | `IMP-AI-02` | Governed AI workflow/tool expansion requires the workflow/control registry |
 
 ## Per-operation dependency
@@ -129,6 +135,19 @@ compatibility, relationship-extension requirements, a source-admission
 template, and one bounded sovereign/rates reference vertical. Do not create a
 universal financial ontology or treat macro series as tradable bond data.
 
+### IMP-XA-04
+
+`COMPLETE_WITH_LIMITATIONS`. Durable persistence for admitted cross-asset source
+and identity catalog records is accepted with in-memory coverage and a
+mongo-compatible implementation. Paid cloud infrastructure is not required;
+local Mongo integration remains a documented limitation.
+
+### IMP-XA-05
+
+`COMPLETE`. The cross-asset strategic state and regime kernel constructs
+ephemeral, reconstructable analytical state from accepted inputs. It grants no
+trading, risk, execution, or autonomous adaptation authority.
+
 ### IMP-AI-01
 
 Read-only means no authority to mutate canonical runtime or program state,
@@ -144,6 +163,10 @@ separately governed human decision.
 Narrative/Motive milestone. It may run in temporal parallel. Optional future
 indexing may reference its frozen records without changing campaign semantics,
 qualification rules, or the historical record.
+
+The previously prepared P6 Shadow Run 1 is deferred, not active. Its immutable
+protocol, run records, and historical captures remain preserved; deferral does
+not convert fixture or historical evidence into current forward evidence.
 
 ```text
 EVIDENCE-01 -> EVIDENCE-01A -> EVIDENCE-01B -> EVIDENCE-01C

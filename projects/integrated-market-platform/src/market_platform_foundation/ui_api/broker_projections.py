@@ -21,6 +21,7 @@ are invented here. All outputs are deterministic: no wall clock, no random ids
 from __future__ import annotations
 
 import os
+from functools import wraps
 from typing import Any
 
 from ..operational_identity import attach_operational_identity, derive_paper_identity
@@ -31,6 +32,10 @@ from ..providers.adapters.tradier_paper import (
 )
 from ..providers.composition import get_provider_composition
 from ..providers.contracts import EXECUTION_DISABLED
+from ..rt01.context import current_context
+from ..rt01.enums import TraceStage, TraceStatus
+from ..rt01.instrumentation.paper import trace_refs
+from ..rt01.tracer import get_tracer
 from .store import ReplayStore
 
 AUTHORITY_BOUNDARY = "BROKER_PAPER_OBSERVABILITY"
@@ -95,9 +100,47 @@ def _fetch_via(provider: Any, method_name: str, **kwargs: Any) -> tuple[Any | No
     return result, None
 
 
+def _trace_projection(stage: TraceStage):
+    def decorator(function):
+        @wraps(function)
+        def traced(store: ReplayStore, *args: Any, **kwargs: Any):
+            context = current_context()
+            span = None
+            if context is not None:
+                span = get_tracer().start_span(
+                    stage,
+                    function.__name__,
+                    parent=context,
+                    input_ref=f"session:{store.paper_ledger.session_id}",
+                )
+            try:
+                result = function(store, *args, **kwargs)
+            except Exception as exc:
+                if span is not None:
+                    span.end(
+                        status=TraceStatus.ERROR,
+                        error_class=type(exc).__name__,
+                        error_code=type(exc).__name__,
+                    )
+                raise
+            if span is not None:
+                span.context.attributes.update(
+                    trace_refs(provider_id=result.get("provider_id"))
+                    if isinstance(result, dict)
+                    else {}
+                )
+                span.end(output_ref=stage.value)
+            return result
+
+        return traced
+
+    return decorator
+
+
 # -- GET /paper/broker/orders --------------------------------------------------
 
 
+@_trace_projection(TraceStage.BROKER)
 def build_broker_orders_payload(store: ReplayStore) -> dict[str, Any]:
     """Broker-side order observations alongside the IMP ledger order view."""
     provider = _broker_provider()
@@ -170,6 +213,7 @@ def build_broker_orders_payload(store: ReplayStore) -> dict[str, Any]:
 # -- GET /paper/broker/account -------------------------------------------------
 
 
+@_trace_projection(TraceStage.BROKER)
 def build_broker_account_payload(store: ReplayStore) -> dict[str, Any]:
     """Broker-side cash observation alongside the IMP ledger account view."""
     provider = _broker_provider()
@@ -211,6 +255,7 @@ _POSITION_KEYS = (
 )
 
 
+@_trace_projection(TraceStage.BROKER)
 def build_broker_positions_payload(store: ReplayStore) -> dict[str, Any]:
     """Broker-side position snapshot alongside the IMP ledger position view."""
     provider = _broker_provider()
@@ -246,6 +291,7 @@ def build_broker_positions_payload(store: ReplayStore) -> dict[str, Any]:
 # -- GET /paper/broker/reconciliation ------------------------------------------
 
 
+@_trace_projection(TraceStage.RECONCILIATION)
 def build_broker_reconciliation_payload(store: ReplayStore) -> dict[str, Any]:
     """Read-only reconciliation status derived from recorded ledger events.
 

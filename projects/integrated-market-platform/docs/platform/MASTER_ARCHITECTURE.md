@@ -7,8 +7,8 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Whole-program composition and architectural relationships |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.2` |
-| Last Verified | `2026-08-29` |
+| Version | `1.3` |
+| Last Verified | `2026-09-03` |
 | Supersedes | No accepted post-EVIDENCE whole-program architecture |
 | Superseded By | None |
 
@@ -76,6 +76,10 @@ used, that reality must flow through reconciliation before it becomes canonical
 state. A provider connection, signal, forecast, release approval, or UI mode is
 never a substitute for that flow.
 
+The P6 Shadow Run 1 forward-observation campaign is deferred, not active.
+Its protocol and historical records remain preserved as evidence artifacts and
+do not change the current runtime architecture or grant execution authority.
+
 ## Two different fabrics
 
 The **Real-Time Opportunity Fabric** is the data-to-decision-support path. It
@@ -135,13 +139,17 @@ New program families must extend rather than fork these foundations:
 ## Family attachment points
 
 - **Cross-Asset — `PARTIAL`.** IMP-XA-01 implemented the cross-asset canonical
-  identity and analytical-domain participation kernel (`src/market_platform_foundation/xa01`).
-  IMP-XA-02 admitted the first bounded FRED rates reference vertical with
-  point-in-time observation provenance and typed indicator-to-XA reference
-  relationships (`src/market_platform_foundation/xa02`). Existing temporal,
-  provenance, quality, macro, energy, futures, options, and participant foundations
-  remain reusable. Cross-asset analytics and additional admitted reference
-  verticals remain future work beyond the first rates slice.
+  identity and analytical-domain participation kernel
+  (`src/market_platform_foundation/xa01`). IMP-XA-02 admitted the first bounded
+  FRED rates reference vertical with point-in-time observation provenance and
+  typed indicator-to-XA reference relationships (`src/market_platform_foundation/xa02`).
+  IMP-XA-03 admitted the second bounded CFTC positioning vertical with
+  source-neutral admission and typed market-report-to-XA relationships.
+  IMP-XA-04 made the admitted-source and identity catalog durable with
+  documented local-integration limitations. IMP-XA-05 added ephemeral,
+  reconstructable strategic state and regime inspection. Cross-asset analytics,
+  relationship intelligence engines, and additional admitted reference
+  verticals remain future work.
 - **Narrative/Motive — `PARTIAL`.** Existing events, participants, hypotheses,
   bounded narrative features, and contradiction flags are reusable. The
   uncertain motive/thesis method and admitted runtime remain future work under

@@ -10,6 +10,7 @@ import { canUsePaperActions } from "../mode-session/modeAuthority";
 import { LoadingState } from "../shared/LoadingState";
 import { PageHeader } from "../shared/PageHeader";
 import { PaperPortfolioObservability } from "../portfolio-shared/PaperPortfolioObservability";
+import { PaperStrategyProfitabilityObservability } from "../paper-strategy-profitability/PaperStrategyProfitabilityObservability";
 import { PaperOrderHistory } from "./PaperOrderHistory";
 
 type StoredSession = {
@@ -137,6 +138,8 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
               setTraceOrderId(orderId);
             }}
           />
+
+          <PaperStrategyProfitabilityObservability />
 
           <PaperOrderHistory
             data={data}

@@ -23,9 +23,14 @@ from market_platform_foundation.paper.execution import (
 from market_platform_foundation.paper.ledger import PaperExecutionLedger
 from market_platform_foundation.risk.kill_switch import KillSwitchState
 from market_platform_foundation.risk.policy import DEFAULT_RISK_POLICY
+from market_platform_foundation.rt01.collector import InMemoryTraceCollector
+from market_platform_foundation.rt01.context import bind_context
+from market_platform_foundation.rt01.enums import SamplingMode, TraceStage
+from market_platform_foundation.rt01.tracer import Tracer, configure_tracer
 from market_platform_foundation.ui_api.paper_projections import (
     build_paper_order_history_page,
     open_paper_session,
+    preview_paper_order,
     submit_paper_order,
 )
 from market_platform_foundation.ui_api.store import ReplayStore
@@ -172,6 +177,7 @@ class PaperP1SimulationTests(unittest.TestCase):
         cls.store.load()
 
     def setUp(self) -> None:
+        bind_context(None)
         self._prior = os.environ.get("IMP_PAPER_EXECUTION")
         os.environ["IMP_PAPER_EXECUTION"] = "1"
         open_paper_session(self.store, {"execution_mode": "INTERNAL_SIMULATION"})
@@ -213,6 +219,50 @@ class PaperP1SimulationTests(unittest.TestCase):
         self.assertEqual(result["submission"]["decision"], "REJECT")
         self.assertIsNone(result["submission"].get("fill"))
         self.assertEqual(len(self.store.paper_ledger.project_fills()), 0)
+
+    def test_ui_submission_creates_root_paper_trace(self) -> None:
+        collector = InMemoryTraceCollector()
+        configure_tracer(Tracer(mode=SamplingMode.FULL, collector=collector))
+        result = submit_paper_order(
+            self.store,
+            {
+                "side": "BUY",
+                "quantity": 1,
+                "client_order_id": "trace-ui-1",
+                "idempotency_key": "trace-ui-key-1",
+                "correlation_id": "trace-ui-correlation",
+            },
+        )
+        self.assertFalse(result["submission"]["duplicate"])
+        self.assertEqual(
+            len([span for span in collector.spans if span.stage == TraceStage.TRACE_ROOT]),
+            1,
+        )
+        self.assertEqual(
+            {span.correlation_id for span in collector.spans},
+            {"trace-ui-correlation"},
+        )
+
+    def test_ui_preview_creates_root_paper_trace_without_ledger_mutation(self) -> None:
+        collector = InMemoryTraceCollector()
+        configure_tracer(Tracer(mode=SamplingMode.FULL, collector=collector))
+        before = len(self.store.paper_ledger.events)
+        result = preview_paper_order(
+            self.store,
+            {
+                "side": "BUY",
+                "quantity": 1,
+                "client_order_id": "trace-preview-1",
+                "idempotency_key": "trace-preview-key-1",
+                "correlation_id": "trace-preview-correlation",
+            },
+        )
+        self.assertIn("preview", result)
+        self.assertEqual(len(self.store.paper_ledger.events), before)
+        self.assertEqual(
+            len([span for span in collector.spans if span.stage == TraceStage.TRACE_ROOT]),
+            1,
+        )
 
     def test_idempotent_retry_single_fill(self) -> None:
         body = {

@@ -11,8 +11,8 @@
       "source_path": "integrated-market-platform",
       "snapshot_path": "projects/integrated-market-platform",
       "source_remote": "https://github.com/AdamEddahmouni/integrated-market-intelligence-platform.git",
-      "source_ref": "codex/paper-accounting-risk-foundation",
-      "source_commit": "6308fcfce9e71ffaeaf22f24743a03c81691e0c6",
+      "source_ref": "feat/rt01-paper-tracing",
+      "source_commit": "53d34b1c8690275ac4b88c61b8b3e7d6cf5b1b12",
       "expected_visibility": "private",
       "source_policy": "unchanged"
     },
