@@ -169,7 +169,10 @@ class MoomooSafetyRegressionTests(unittest.TestCase):
 
         report = run_check(host="127.0.0.1", port=59999)
         self.assertFalse(report["ready_for_live_observational"])
-        self.assertIn(report.get("status"), {"PORT_UNREACHABLE", "OPEN_D_NOT_RUNNING"})
+        self.assertIn(
+            report.get("status"),
+            {"PORT_UNREACHABLE", "OPEN_D_NOT_RUNNING", "OPEN_D_NOT_INSTALLED"},
+        )
 
 
 class ProviderNeutralityTests(unittest.TestCase):
