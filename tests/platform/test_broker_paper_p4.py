@@ -26,7 +26,6 @@ from market_platform_foundation.paper.broker_paper import (  # noqa: E402
 )
 from market_platform_foundation.paper.execution import submit_interactive_order  # noqa: E402
 from market_platform_foundation.paper.ledger import PaperExecutionLedger  # noqa: E402
-from market_platform_foundation.risk.policy import build_risk_policy  # noqa: E402
 from market_platform_foundation.providers.adapters.tradier_paper import (  # noqa: E402
     TRADIER_SANDBOX_ENDPOINT,
     TradierReplayStore,
@@ -56,7 +55,7 @@ SYMBOL_MAP = {"BIYA": "BIYA"}
 
 
 def _broker_ledger() -> PaperExecutionLedger:
-    ledger = PaperExecutionLedger.open_session(
+    return PaperExecutionLedger.open_session(
         replay_session_id="p4-4a-session",
         instrument_id="BIYA",
         symbol="BIYA",
@@ -65,19 +64,7 @@ def _broker_ledger() -> PaperExecutionLedger:
         data_mode="BROKER_DELAYED",
         data_provider="TRADIER",
         execution_provider="TRADIER",
-        policy=build_risk_policy(
-            max_order_notional_minor=100_000_00,
-            max_position_notional_minor=1_000_000_00,
-        ),
     )
-    ledger.apply_live_mark(
-        instrument_id="BIYA",
-        mark_minor=11600,
-        mark_provider="TRADIER_FIXTURE",
-        mark_as_of_ns=1787000000000000000,
-        mark_quality="PASS",
-    )
-    return ledger
 
 
 def _provider(

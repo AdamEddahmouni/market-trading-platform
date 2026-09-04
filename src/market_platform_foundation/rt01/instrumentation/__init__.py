@@ -2,4 +2,6 @@
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from .paper import PaperTrace, start_paper_trace, trace_refs
+
+__all__ = ["PaperTrace", "start_paper_trace", "trace_refs"]

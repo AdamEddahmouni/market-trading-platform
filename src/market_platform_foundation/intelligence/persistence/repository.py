@@ -91,6 +91,16 @@ class IntelligenceRepository(Protocol):
         mode: str | None = None,
     ) -> tuple: ...
 
+    def query_allocation_decisions(
+        self,
+        *,
+        account_id: str | None = None,
+        mode: str | None = None,
+        decision_from_ns: int | None = None,
+        decision_to_ns: int | None = None,
+        limit: int = 1000,
+    ) -> tuple: ...
+
     def put_strategy_match(self, match: StrategyMatch) -> RepositoryPutResult: ...
 
     def get_strategy_match(self, match_id: str) -> StrategyMatch | None: ...

@@ -113,6 +113,7 @@ def run_risk_simulation_evaluation(
     attributions: list[dict[str, Any]] = []
 
     ledger = build_ledger_state(initial_cash_minor=int(active_policy["initial_cash_minor"]))
+    position = 0
     open_orders = 0
     squeeze_timeline: list[dict[str, Any]] = []
 
@@ -134,29 +135,11 @@ def run_risk_simulation_evaluation(
             continue
         intents.append(intent)
 
-        from ..paper.execution import _internal_risk_price
-
-        matching_bars = [
-            bar
-            for bar in bars
-            if str(bar.get("instrument_id", "")).upper() == instrument_id.upper()
-        ]
-        instrument_position = dict(ledger.get("positions_by_instrument") or {}).get(instrument_id, {})
-        risk_price, risk_price_as_of = _internal_risk_price(
-            intent=intent,
-            bars=matching_bars,
-            price_scale=int(active_policy["price_scale"]),
-        )
         decision = evaluate_risk(
             intent=intent,
             policy=active_policy,
             kill_switch=switch,
-            current_position_shares=int(instrument_position.get("position_shares", 0)),
-            current_cash_minor=int(ledger["cash_minor"]),
-            risk_price_minor=risk_price,
-            risk_price_source="INTERNAL_NEXT_BAR_HIGH",
-            risk_price_as_of_ns=risk_price_as_of,
-            risk_price_quality="PASS" if risk_price is not None else "UNAVAILABLE",
+            current_position_shares=position,
             open_order_count=open_orders,
         )
         risk_decisions.append(decision)
@@ -179,7 +162,7 @@ def run_risk_simulation_evaluation(
         order, fill = simulator.simulate(
             intent=intent,
             risk_decision=decision,
-            bars=matching_bars,
+            bars=bars,
             squeeze_context=squeeze_context,
         )
         orders.append(order)
@@ -194,6 +177,9 @@ def run_risk_simulation_evaluation(
             ledger = apply_fill(ledger, fill=fill, policy=active_policy)
             if len(ledger["entries"]) > prior_entries:
                 ledger_entry = ledger["entries"][-1]
+            direction = str(fill["direction"])
+            signed = int(fill["fill_quantity"]) if direction == "long" else -int(fill["fill_quantity"])
+            position += signed
             open_orders = max(open_orders - 1, 0)
 
         attributions.append(
@@ -243,10 +229,6 @@ def risk_simulation_root_hash(result: dict[str, object]) -> str:
             canonical_bytes(
                 {
                     "cash_minor": result["ledger"]["cash_minor"],
-                    "positions_by_instrument": result["ledger"].get(
-                        "positions_by_instrument",
-                        {},
-                    ),
                     "position_shares": result["ledger"]["position_shares"],
                     "realized_pnl_minor": result["ledger"]["realized_pnl_minor"],
                 }

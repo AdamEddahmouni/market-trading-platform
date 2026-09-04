@@ -7,13 +7,21 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Any, Callable, Generic, TypeVar
 
+from ..rt01.clock import monotonic_process_ns
+from ..rt01.context import TraceContext, bind_context, current_context, reset_context
+from ..rt01.enums import TraceStage
+from ..rt01.tracer import get_tracer
+
 T = TypeVar("T")
 
 
 @dataclass
 class BoundedIngestQueue(Generic[T]):
     max_size: int = 10_000
-    _queue: deque[T] = field(default_factory=deque, init=False)
+    _queue: deque[tuple[T, int, TraceContext | None]] = field(
+        default_factory=deque,
+        init=False,
+    )
     _lock: threading.Lock = field(default_factory=threading.Lock, init=False)
     _not_empty: threading.Condition = field(init=False)
     events_enqueued: int = 0
@@ -31,7 +39,7 @@ class BoundedIngestQueue(Generic[T]):
                 self.events_dropped += 1
                 self.queue_overflows += 1
                 return False
-            self._queue.append(item)
+            self._queue.append((item, monotonic_process_ns(), current_context()))
             self.events_enqueued += 1
             depth = len(self._queue)
             if depth > self.max_depth_observed:
@@ -40,14 +48,34 @@ class BoundedIngestQueue(Generic[T]):
             return True
 
     def dequeue_batch(self, limit: int = 64, *, timeout: float = 0.25) -> list[T]:
+        return [item for item, _context in self.dequeue_batch_with_context(limit=limit, timeout=timeout)]
+
+    def dequeue_batch_with_context(
+        self,
+        limit: int = 64,
+        *,
+        timeout: float = 0.25,
+    ) -> list[tuple[T, TraceContext | None]]:
         with self._not_empty:
             if not self._queue:
                 self._not_empty.wait(timeout=timeout)
             if not self._queue:
                 return []
-            batch: list[T] = []
+            batch: list[tuple[T, TraceContext | None]] = []
             while self._queue and len(batch) < limit:
-                batch.append(self._queue.popleft())
+                item, enqueue_mono_ns, context = self._queue.popleft()
+                batch.append((item, context))
+                if context is not None:
+                    span = get_tracer().start_span(
+                        TraceStage.QUEUE,
+                        "ingest_queue_wait",
+                        parent=context,
+                        queue_enqueue_mono_ns=enqueue_mono_ns,
+                        queue_dequeue_mono_ns=monotonic_process_ns(),
+                        bind=False,
+                    )
+                    if span is not None:
+                        span.end(output_ref="dequeued")
             self.events_processed += len(batch)
             return batch
 
@@ -75,9 +103,13 @@ def drain_queue_worker(
     batch_size: int = 64,
 ) -> None:
     while not stop_event.is_set():
-        batch = queue.dequeue_batch(limit=batch_size, timeout=0.25)
-        for item in batch:
+        batch = queue.dequeue_batch_with_context(limit=batch_size, timeout=0.25)
+        for item, context in batch:
+            token = bind_context(context) if context is not None else None
             try:
                 handler(item)
             except Exception:
                 continue
+            finally:
+                if token is not None:
+                    reset_context(token)

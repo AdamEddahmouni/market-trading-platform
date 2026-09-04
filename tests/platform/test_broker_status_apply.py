@@ -42,6 +42,10 @@ from market_platform_foundation.paper.execution import (  # noqa: E402
     submit_interactive_order,
 )
 from market_platform_foundation.paper.ledger import PaperExecutionLedger  # noqa: E402
+from market_platform_foundation.local_state.startup import (  # noqa: E402
+    ledger_from_session,
+    session_record_from_ledger,
+)
 from market_platform_foundation.providers.adapters.tradier_paper import (  # noqa: E402
     TRADIER_SANDBOX_ENDPOINT,
     TradierReplayStore,
@@ -101,7 +105,7 @@ FILLED_CUMULATIVE_PAYLOAD = {
 
 
 def _broker_ledger() -> PaperExecutionLedger:
-    ledger = PaperExecutionLedger.open_session(
+    return PaperExecutionLedger.open_session(
         replay_session_id="wl-e1b-session",
         instrument_id="BIYA",
         symbol="BIYA",
@@ -111,14 +115,6 @@ def _broker_ledger() -> PaperExecutionLedger:
         data_provider="TRADIER",
         execution_provider="TRADIER",
     )
-    ledger.apply_live_mark(
-        instrument_id="BIYA",
-        mark_minor=11600,
-        mark_provider="TRADIER_FIXTURE",
-        mark_as_of_ns=1787000000000000000,
-        mark_quality="PASS",
-    )
-    return ledger
 
 
 def _interactive_ledger() -> PaperExecutionLedger:
@@ -201,6 +197,57 @@ def _fill_payload(**overrides: object) -> dict:
 
 class BrokerStatusOrchestratorTests(unittest.TestCase):
     """E1b: polled statuses advance the lifecycle; fills dedupe exactly once."""
+
+    def test_partial_fill_can_be_cancelled_without_losing_fills(self) -> None:
+        ledger, order_id = _submit_partial_from_fixture()
+
+        class _CancelProvider:
+            def cancel_order(self, **_: object):  # noqa: ANN201
+                return SimpleNamespace(status="ok", reason_code=None)
+
+        result = cancel_broker_paper_order(
+            ledger=ledger,
+            provider=_CancelProvider(),
+            order_id=order_id,
+        )
+
+        self.assertEqual(result["state"], "CANCELLED")
+        self.assertEqual(ledger.lookup_order(order_id)["state"], "CANCELLED")
+        self.assertGreater(sum(int(row["fill_quantity"]) for row in ledger.project_fills()), 0)
+
+    def test_partial_fill_restart_replay_and_idempotency_preserve_progress(self) -> None:
+        ledger, order_id = _submit_partial_from_fixture()
+        session = session_record_from_ledger(ledger)
+        os.environ["IMP_BROKER_PAPER_EXECUTION"] = "1"
+        try:
+            restored = ledger_from_session(
+                session,
+                list(ledger.events),
+                dict(ledger.idempotency_index),
+            )
+        finally:
+            os.environ.pop("IMP_BROKER_PAPER_EXECUTION", None)
+
+        result = apply_broker_status_event(
+            ledger=restored,
+            provider=_ScriptedFetchProvider([dict(FILLED_CUMULATIVE_PAYLOAD)]),
+            order_id=order_id,
+        )
+        duplicate = submit_broker_paper_order(
+            ledger=restored,
+            provider=_ScriptedFetchProvider([]),
+            instrument=dict(INSTRUMENT),
+            side="BUY",
+            quantity=100,
+            observation_time=1787000000000000000,
+            client_order_id="cli-broker-partial-1",
+            idempotency_key="key-broker-partial-1",
+        )
+
+        self.assertEqual(result["state"], "FILLED")
+        self.assertEqual(len(restored.project_fills()), 3)
+        self.assertTrue(duplicate["duplicate"])
+        self.assertEqual(restored.lookup_order(order_id)["state"], "FILLED")
 
     def test_partial_fill_sequence_reaches_filled_each_fill_once(self) -> None:
         ledger, order_id = _submit_partial_from_fixture()

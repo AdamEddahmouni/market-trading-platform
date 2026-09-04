@@ -1,4 +1,5 @@
 import { ResearchObservability } from "../research-shared/ResearchObservability";
+import { PaperStrategyProfitabilityObservability } from "../paper-strategy-profitability/PaperStrategyProfitabilityObservability";
 
 export function PaperResearchPage() {
   return (
@@ -15,6 +16,7 @@ export function PaperResearchPage() {
       </header>
 
       <ResearchObservability defaultTab="simulation" />
+      <PaperStrategyProfitabilityObservability />
     </section>
   );
 }

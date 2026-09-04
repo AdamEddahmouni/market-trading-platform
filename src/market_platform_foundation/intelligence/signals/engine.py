@@ -16,6 +16,9 @@ from .models import (
 from .prepared import PreparedSnapshotState
 from .calculators import ALL_SIGNAL_TYPES, build_default_registry
 from .calculators.base import CalculatorContext, SignalCalculator
+from ...rt01.context import current_context
+from ...rt01.enums import TraceStage, TraceStatus
+from ...rt01.tracer import get_tracer
 
 
 class FastSignalEngine:
@@ -54,6 +57,43 @@ class FastSignalEngine:
 
 
 def compute_fast_signals(
+  resolved: SnapshotResolvedState,
+  request: SignalComputationRequest,
+  *,
+  calculators: dict[str, SignalCalculator] | None = None,
+  repository: IntelligenceRepository | None = None,
+) -> SignalComputationResult:
+  """Compute signals and emit an optional causal RT-01 span."""
+  context = current_context()
+  span = None
+  if context is not None:
+    span = get_tracer().start_span(
+      TraceStage.SIGNAL,
+      "compute_fast_signals",
+      parent=context,
+      input_ref=f"snapshot:{getattr(resolved.snapshot, 'snapshot_id', 'unknown')}",
+    )
+  try:
+    result = _compute_fast_signals(
+      resolved,
+      request,
+      calculators=calculators,
+      repository=repository,
+    )
+  except Exception as exc:
+    if span is not None:
+      span.end(
+        status=TraceStatus.ERROR,
+        error_class=type(exc).__name__,
+        error_code=type(exc).__name__,
+      )
+    raise
+  if span is not None:
+    span.end(output_ref=f"signals:{len(result.signals)}")
+  return result
+
+
+def _compute_fast_signals(
   resolved: SnapshotResolvedState,
   request: SignalComputationRequest,
   *,

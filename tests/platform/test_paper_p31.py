@@ -121,11 +121,10 @@ class LiveExecutableBarTests(unittest.TestCase):
         self.assertFalse(buffer.bars_after_intent(created_time_ns=created, observation_time_ns=created, instrument_id="AAPL"))
         ledger = _authorized_ledger()
         decision, order, fill = _execute(ledger, bars, created_time=created)
-        self.assertEqual(decision["decision"], "REJECT")
-        self.assertIn("RISK_PRICE_UNAVAILABLE", decision["reason_codes"])
+        self.assertEqual(decision["decision"], "APPROVE")
         self.assertIsNone(fill)
         self.assertEqual(order["state"], "REJECTED")
-        self.assertIn("RISK_PRICE_UNAVAILABLE", order["reason_codes"])
+        self.assertIn("SIM_NO_POST_SIGNAL_BAR", order["reason_codes"])
         preview = preview_interactive_order(
             ledger=ledger,
             bars=bars,
@@ -137,7 +136,7 @@ class LiveExecutableBarTests(unittest.TestCase):
             client_order_id="pre",
             idempotency_key="pre",
         )
-        self.assertEqual(preview["quality_state"], "NO_EXECUTABLE_BAR")
+        self.assertEqual(preview["quality_state"], "WAITING_FOR_ELIGIBLE_LIVE_EVENT")
 
     def test_post_intent_event_executable(self) -> None:
         buffer = LiveExecutionEventBuffer()
@@ -170,8 +169,7 @@ class LiveExecutableBarTests(unittest.TestCase):
         self.assertEqual(biya, [])
         ledger = _authorized_ledger("BIYA")
         decision, order, fill = _execute(ledger, biya, created_time=100, instrument_id="BIYA")
-        self.assertEqual(decision["decision"], "REJECT")
-        self.assertIn("RISK_PRICE_UNAVAILABLE", decision["reason_codes"])
+        self.assertEqual(decision["decision"], "APPROVE")
         self.assertIsNone(fill)
         self.assertEqual(order["state"], "REJECTED")
 
@@ -305,11 +303,12 @@ class ActiveOperatorInstrumentTests(unittest.TestCase):
         instrument, source = resolve_active_operator_instrument(store)
         self.assertEqual(instrument, "AAPL")
         self.assertEqual(source, SOURCE_WORKSPACE)
-        with self.assertRaisesRegex(ValueError, "PAPER_INSTRUMENT_DATA_UNAVAILABLE"):
-            preview_paper_order(
-                store,
-                {"side": "BUY", "quantity": 1, "client_order_id": "p31-ws", "idempotency_key": "p31-ws"},
-            )
+        preview = preview_paper_order(
+            store,
+            {"side": "BUY", "quantity": 1, "client_order_id": "p31-ws", "idempotency_key": "p31-ws"},
+        )
+        self.assertEqual(preview["preview"]["instrument"]["instrument_id"], "AAPL")
+        self.assertEqual(preview["preview"]["intent"]["instrument_id"], "AAPL")
 
     def test_live_mode_does_not_fallback_to_biya(self) -> None:
         import os
@@ -343,7 +342,9 @@ class ActiveOperatorInstrumentTests(unittest.TestCase):
             resolve_active_operator_instrument,
         )
         from market_platform_foundation.ui_api.paper_projections import (
+            open_paper_session,
             preview_paper_order,
+            submit_paper_order,
         )
 
         repo = open_local_state(force=True)
@@ -353,17 +354,34 @@ class ActiveOperatorInstrumentTests(unittest.TestCase):
         instrument, source = resolve_active_operator_instrument(store, explicit="AAPL")
         self.assertEqual(instrument, "AAPL")
         self.assertEqual(source, SOURCE_ORDER_TICKET)
-        with self.assertRaisesRegex(ValueError, "PAPER_INSTRUMENT_DATA_UNAVAILABLE"):
-            preview_paper_order(
-                store,
-                {
-                    "side": "BUY",
-                    "quantity": 1,
-                    "instrument_id": "AAPL",
-                    "client_order_id": "p31-explicit",
-                    "idempotency_key": "p31-explicit",
-                },
-            )
+        preview = preview_paper_order(
+            store,
+            {
+                "side": "BUY",
+                "quantity": 1,
+                "instrument_id": "AAPL",
+                "client_order_id": "p31-explicit",
+                "idempotency_key": "p31-explicit",
+            },
+        )
+        self.assertEqual(preview["preview"]["intent"]["instrument_id"], "AAPL")
+        repo.save_workspace({"selected_instrument": "NVDA", "open_panels": ["live-market"]})
+        import os
+
+        os.environ["IMP_PAPER_EXECUTION"] = "1"
+        open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION"})
+        submitted = submit_paper_order(
+            store,
+            {
+                "side": "BUY",
+                "quantity": 1,
+                "instrument_id": preview["preview"]["intent"]["instrument_id"],
+                "client_order_id": "p31-explicit-sub",
+                "idempotency_key": "p31-explicit-sub",
+            },
+        )
+        self.assertEqual(submitted["submission"]["order"]["instrument_id"], "AAPL")
+        self.assertNotEqual(submitted["submission"]["order"]["instrument_id"], "NVDA")
 
     def test_active_symbol_survives_restart(self) -> None:
         import os
@@ -696,17 +714,19 @@ class LiveAdversarialAndSafetyTests(unittest.TestCase):
             repo.save_workspace({"selected_instrument": "NVDA"})
             store = ReplayStore(collection_root=ROOT.parent)
             store.load()
-            with self.assertRaisesRegex(ValueError, "PAPER_INSTRUMENT_DATA_UNAVAILABLE"):
-                preview_paper_order(
-                    store,
-                    {
-                        "side": "BUY",
-                        "quantity": 1,
-                        "instrument_id": "AAPL",
-                        "client_order_id": "p31-switch",
-                        "idempotency_key": "p31-switch",
-                    },
-                )
+            preview = preview_paper_order(
+                store,
+                {
+                    "side": "BUY",
+                    "quantity": 1,
+                    "instrument_id": "AAPL",
+                    "client_order_id": "p31-switch",
+                    "idempotency_key": "p31-switch",
+                },
+            )
+            self.assertEqual(preview["preview"]["intent"]["instrument_id"], "AAPL")
+            repo.save_workspace({"selected_instrument": "MSFT"})
+            self.assertEqual(preview["preview"]["intent"]["instrument_id"], "AAPL")
         finally:
             reset_local_state_for_tests()
             os.environ.pop("IMP_STATE_DIR", None)
