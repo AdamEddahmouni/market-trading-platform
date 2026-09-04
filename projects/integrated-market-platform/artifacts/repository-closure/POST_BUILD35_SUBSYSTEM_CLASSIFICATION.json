@@ -115,8 +115,7 @@
       "classification": "CANONICAL",
       "scope": [
         "src/market_platform_foundation/market_data",
-        "src/market_platform_foundation/providers",
-        "src/market_platform_foundation/tests"
+        "src/market_platform_foundation/providers"
       ],
       "responsibility": "Provider capability composition, observational admission, envelopes, and fail-closed unconfigured behavior.",
       "evidence": [
