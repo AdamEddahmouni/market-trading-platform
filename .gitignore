@@ -46,6 +46,22 @@ Eric_futuresX-main/futuresX-main/ticker_data/ES/*.csv
 Eric_futuresX-main/futuresX-main/ticker_data/SPY/*.csv
 Eric_futuresX-main/futuresX-main/timestamp_mid_prices_*.csv
 
+# Third-party and personal workspace content kept local-only (not published).
+internship-project-main/
+tradingCVDBubble-main (1)/
+DS-440-CAPSTONE-GridIQ-main/
+Eric_futuresX-main/
+DS-340W-Fantasy-Football-Prediction-main/
+L1VolumeBubble-main (1)/
+operator-artifacts/
+pytest-equity-premerge-20260824/
+pytest-equity-postmerge-20260824c/
+PROFESSOR_MEETING_TRANSCRIPT_*.md
+PROFESSOR_BRIEF_AND_ROADMAP.md
+CURSOR_SESSION_HANDOFF_*.md
+*_NOTES.md
+platform-*-20260824.json
+
 # Temporary/editor files.
 .freebuff/
 **/.DS_Store

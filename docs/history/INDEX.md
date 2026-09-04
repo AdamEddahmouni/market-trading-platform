@@ -16,21 +16,17 @@ repository available at generation time.
 
 | Repository | Commits | Refs | First commit | Latest commit |
 |---|---:|---:|---|---|
-| `equity-data-v1` | 594 | 116 | 2026-08-01 | 2026-09-04 |
-| `governed-ticker-metadata` | 594 | 116 | 2026-08-01 | 2026-09-04 |
-| `integrated-platform` | 594 | 116 | 2026-08-01 | 2026-09-04 |
-| `parent` | 33 | 10 | 2026-09-03 | 2026-09-04 |
+| `equity-data-v1` | 597 | 118 | 2026-08-01 | 2026-09-04 |
+| `governed-ticker-metadata` | 597 | 118 | 2026-08-01 | 2026-09-04 |
+| `parent` | 393 | 11 | 2026-08-14 | 2026-09-04 |
 | `short-squeeze` | 66 | 5 | 2026-07-26 | 2026-08-16 |
 
-The `integrated-platform`, `governed-ticker-metadata`, and
-`equity-data-v1` entries share one underlying Git history because
-the latter two are worktrees; each workspace ref set is retained
-separately for traceability.
-
+The `governed-ticker-metadata` and `equity-data-v1` entries share
+one underlying Git history because the latter is a worktree; each
+workspace ref set is retained separately for traceability.
 ## Repository timelines
 
 - [`equity-data-v1`](repositories/equity-data-v1.md)
 - [`governed-ticker-metadata`](repositories/governed-ticker-metadata.md)
-- [`integrated-platform`](repositories/integrated-platform.md)
 - [`parent`](repositories/parent.md)
 - [`short-squeeze`](repositories/short-squeeze.md)
