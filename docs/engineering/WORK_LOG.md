@@ -38,6 +38,17 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | RT-01 Paper tracing implementation plan (local read-only plan); [Paper decision lifecycle](../architecture/PAPER_DECISION_LIFECYCLE.md); [RT-01 operations](../operations/rt-01/README.md) |
 | **Notes** | Work is isolated on the `feat/rt01-paper-tracing` child branch. The original child checkout’s unrelated dirty files remain untouched. The pre-existing `provider-composition` closure scope error (`src/market_platform_foundation/tests`, a nonexistent scope path) was subsequently fixed by removing the stale scope from `POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json`; full validation is no longer blocked by that error. |
 
+## 2026-09-04 — Unified internal Paper trading chain
+
+| Field | Value |
+|-------|-------|
+| **Area** | `backend/ui`, `paper`, `observability`, `tests` |
+| **Summary** | Completed the canonical internal strategy Paper business chain by persisting an immutable order-ready decision, carrying one strategy decision correlation through Paper submission, and exposing a read-only trace that joins opportunity, allocation, risk, order-ready, fill-driven portfolio settlement, prediction settlement state, and cumulative attribution. Manual Paper trace anchors and execution authority boundaries remain backward-compatible. |
+| **Key files** | `src/market_platform_foundation/intelligence/execution/{types,serialization}.py`; `src/market_platform_foundation/intelligence/persistence/{repository,memory}.py`; `src/market_platform_foundation/intelligence/persistence/mongo/{repository,schema}.py`; `src/market_platform_foundation/strategy/runtime.py`; `src/market_platform_foundation/ui_api/{paper_projections,strategy_runtime_projections,server}.py`; `ui/src/api/{schemas,endpoints,hooks}.ts`; `ui/src/components/paper/ExecutionTracePanel.tsx`; `tests/intelligence/test_equity_paper_runtime.py`; `tests/platform/test_strategy_runtime_observability.py` |
+| **Tests** | Focused and expanded Paper/runtime suites: 113 passed; intelligence domain: 1,150 passed, 25 skipped; full UI suite: 429 passed; UI typecheck/build and Python compilation: pass. Corrected `artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` by removing its stale nonexistent scope path. Manifest domain-core validation: 2,727 tests, 48 skipped, 0 failures/errors; full validation: 3,467 tests, 48 skipped, 0 failures/errors. |
+| **Related** | [Paper decision lifecycle](../architecture/PAPER_DECISION_LIFECYCLE.md); [Program status](../platform/PROGRAM_STATUS.md) |
+| **Notes** | Broker-paper/live transport, OF-01 parent identity, RT-01 technical span persistence, and autonomous settlement remain deferred. The clean implementation worktree contains only this change set; the original checkout’s unrelated changes were preserved. |
+
 ## 2026-09-03 — Paper profitability observability
 
 | Field | Value |

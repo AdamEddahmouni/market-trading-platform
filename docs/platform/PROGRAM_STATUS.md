@@ -7,8 +7,8 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Mutable current program state and material limitations |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.4` |
-| Last Verified | `2026-09-03` |
+| Version | `1.5` |
+| Last Verified | `2026-09-04` |
 | Supersedes | Root README as whole-program status authority |
 | Superseded By | None |
 
@@ -31,6 +31,7 @@ links to evidence; it does not redefine architecture or executable behavior.
 | IMP-OF-02 | `IMP_OF_02_COMPLETE_WITH_LIMITATIONS` — existing-system attribution adapters | `CURRENT_CANONICAL_TRUTH` | [OF-02 acceptance](../../artifacts/imp-rebase/OF02/README.md) |
 | IMP-OF-03 | `IMP_OF_03_COMPLETE_WITH_LIMITATIONS` — governed capability/SOP/workflow registry | `CURRENT_CANONICAL_TRUTH` | [OF-03 acceptance](../../artifacts/imp-rebase/OF03/README.md) |
 | IMP-RT-01 | `IMP_RT_01_COMPLETE_WITH_LIMITATIONS` — causal trace and latency baseline for executable ingest paths | `CURRENT_CANONICAL_TRUTH` | [RT-01 acceptance](../../artifacts/imp-rebase/RT01/RT01_ACCEPTANCE_REPORT.json) |
+| Unified internal Paper business trace | `COMPLETE_WITH_LIMITATIONS` — canonical strategy Paper lifecycle is reconstructable from opportunity through allocation, risk, order-ready, fill-driven portfolio settlement, prediction settlement state, and attribution | `CURRENT_CANONICAL_TRUTH` | [Paper decision lifecycle](../architecture/PAPER_DECISION_LIFECYCLE.md); strategy runtime and observability tests |
 | IMP-XA-01 | `IMP_XA_01_COMPLETE_WITH_LIMITATIONS` — cross-asset canonical identity and analytical-domain participation kernel | `CURRENT_CANONICAL_TRUTH` | [XA-01 acceptance](../../artifacts/imp-rebase/XA01/XA01_ACCEPTANCE_REPORT.json) |
 | IMP-XA-02 | `IMP_XA_02_COMPLETE_WITH_LIMITATIONS` — first admitted FRED rates reference vertical with PIT provenance and typed cross-asset reference relationships | `CURRENT_CANONICAL_TRUTH` | [XA-02 acceptance](../../artifacts/imp-rebase/XA02/XA02_ACCEPTANCE_REPORT.json) |
 | IMP-XA-03 | `IMP_XA_03_COMPLETE_WITH_LIMITATIONS` — second admitted CFTC positioning vertical with source-neutral admission envelope and typed market-report-to-XA reference relationships | `CURRENT_CANONICAL_TRUTH` | [XA-03 acceptance](../../artifacts/imp-rebase/XA03/XA03_ACCEPTANCE_REPORT.json) |
@@ -50,8 +51,8 @@ or release authority.
 
 | Family | Assessment | Existing reusable foundations | Missing universal or consolidated capability | Next owning milestone |
 |---|---|---|---|---|
-| Operating Fabric | `PARTIAL` | OF-01 ledger runtime, OF-02 attribution adapters, OF-03 capability/SOP/workflow registry, IMP-RT-01 trace/latency baseline for executable ingest paths, plus existing run manifests, schedulers, pipelines, operations, and runbooks | Remaining OF-01 operator wiring; unified opportunity-risk live chain tracing | `IMP-RT-01` follow-on |
-| Real-Time Opportunity Fabric | `PARTIAL` | Callback ingestion, bounded queues, observational state, RT-01 spans on ingest path, features, routing, opportunity economics, and local metrics | Measured integration on unified order pipeline; real-provider observational campaign | `IMP-RT-01` follow-on |
+| Operating Fabric | `PARTIAL` | OF-01 ledger runtime, OF-02 attribution adapters, OF-03 capability/SOP/workflow registry, IMP-RT-01 trace/latency baseline for executable ingest paths, plus existing run manifests, schedulers, pipelines, operations, and runbooks | Remaining OF-01 operator wiring; RT-01 technical tracing across the unified Paper pipeline | `IMP-RT-01` follow-on |
+| Real-Time Opportunity Fabric | `PARTIAL` | Callback ingestion, bounded queues, observational state, RT-01 spans on ingest path, features, routing, opportunity economics, local metrics, and the internal Paper business trace | RT-01 technical integration on the order pipeline; broker/reconciliation tracing; real-provider observational campaign | `IMP-RT-01` follow-on |
 | Cross-Asset | `PARTIAL` | XA-01 canonical identity kernel, XA-02 first admitted FRED rates reference vertical, XA-03 second admitted CFTC positioning vertical with source-neutral admission envelope, XA-04 durable admitted-source persistence, XA-05 strategic state/regime kernel, temporal/provenance/quality contracts, and bounded macro, futures, energy, options, and participant foundations | Cross-asset analytics, relationship intelligence engines, and additional admitted reference verticals | Future cross-asset analytics |
 | Narrative/Motive | `PARTIAL` | Event, participant, hypothesis, contradiction, market-context, and bounded narrative features | Canonical uncertain motive/thesis method, source-treatment standard, and admitted runtime | `IMP-NARRATIVE-01` |
 | AI/Agents | `PARTIAL` | Read-only assistant, bounded evidence packs, citation references, and versioned fixture outputs | Universal run attribution, prompt/tool provenance, evaluation, workflow and approval lifecycle | `IMP-AI-01` |
@@ -82,10 +83,13 @@ mandatory. Automatic broker failover remains disabled.
 - OF-01 remains accepted with limitations (declared operator stubs, draft ops pack).
   OF-02 native attribution remains default-disabled. OF-03 registers capabilities,
   SOPs, and workflows but is not an execution engine and does not grant authority.
-- IMP-RT-01 provides accepted ingest-path tracing and fixture baseline measurements
-  with limitations: no unified opportunity→risk→order_ready chain, no broker or
-  reconciliation tracing, queue and signal profiles defined but not acceptance-measured,
-  and no real-provider observational trace campaign.
+- IMP-RT-01 provides accepted ingest-path tracing and fixture baseline
+  measurements with limitations: RT-01 technical spans are not integrated with
+  the unified Paper business trace, there is no broker or reconciliation
+  tracing, queue and signal profiles are defined but not acceptance-measured,
+  and no real-provider observational trace campaign exists. The internal
+  business trace is accepted separately through the Paper lifecycle projection
+  and remains read-only.
 - End-to-end provider-to-user-or-broker trace remains incomplete beyond the RT-01
   ingest-path baseline.
 - Cross-asset, Narrative/Motive, Real-Time Opportunity, Operating Fabric, and
