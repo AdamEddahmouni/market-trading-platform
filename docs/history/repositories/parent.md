@@ -1513,7 +1513,7 @@ refresh repository timelines in REFS.json and WORK_LEDGER.jsonl.
   - Author: AdamEddahmouni (2026-09-04T22:46:22-04:00)
   - Rationale (commit-subject-and-body): Mark the equity-data-v1-worktree git ownership fix closed: safe.directory
 entry added and monorepo_guard.py validate passing (2/17 items closed).
-- `492e093900f7` — docs(history): regenerate audit ledger through 090cef1 — refs: `refs/heads/main`
+- `492e093900f7` — docs(history): regenerate audit ledger through 090cef1
   - Author: AdamEddahmouni (2026-09-04T22:47:59-04:00)
   - Rationale (commit-subject-and-body): Capture the P1-7 task-plan closure commit (090cef1) and refresh repository
 timelines in REFS.json and WORK_LEDGER.jsonl.
@@ -1553,16 +1553,93 @@ timelines.
   - Rationale (commit-subject-and-body): Refresh projects/short-squeeze-project from the short-squeeze child repo at
 ae1e9e4 (release-audit allowlist for code-terminology "assignment" matches)
 and bump the manifest source_commit.
-- `df5b1c338fa7` — docs(history): regenerate audit ledger through 84dc9cd — refs: `refs/remotes/origin/chore/import-short-squeeze-8a5e43e`
+- `df5b1c338fa7` — docs(history): regenerate audit ledger through 84dc9cd
   - Author: AdamEddahmouni (2026-09-05T03:04:17-04:00)
   - Rationale (commit-subject-and-body): Capture the child release-audit allowlist commit (ae1e9e4) and the parent
 snapshot sync to ae1e9e4 (84dc9cd) in REFS.json, WORK_LEDGER.jsonl, and both
 repository timelines.
-- `b54edd832823` — Merge pull request #8 from AdamEddahmouni/chore/import-short-squeeze-8a5e43e — refs: `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
+- `b54edd832823` — Merge pull request #8 from AdamEddahmouni/chore/import-short-squeeze-8a5e43e
   - Author: AdamEddahmouni (2026-09-05T03:06:24-04:00)
   - Rationale (commit-subject-and-body): merge: sync short-squeeze snapshot to ae1e9e4
-- `115e63f2c3c7` — merge: sync short-squeeze snapshot to main 78b7467 — refs: `refs/heads/chore/import-short-squeeze-8a5e43e`
+- `115e63f2c3c7` — merge: sync short-squeeze snapshot to main 78b7467
   - Author: AdamEddahmouni (2026-09-05T03:20:21-04:00)
   - Rationale (commit-subject-and-body): Refresh projects/short-squeeze-project from the short-squeeze child repo at
 main 78b7467 (frozen-cohort test alignment + research-summary demo fallback)
 and bump the manifest source_ref/source_commit to main.
+- `bd607766e65b` — docs(history): regenerate audit ledger through 115e63f — refs: `refs/heads/chore/import-short-squeeze-8a5e43e`, `refs/remotes/origin/chore/import-short-squeeze-8a5e43e`
+  - Author: AdamEddahmouni (2026-09-05T03:21:50-04:00)
+  - Rationale (commit-subject-and-body): Capture the child frozen-cohort fix (8c255d2, merged via 78b7467) and the
+parent snapshot sync to child main (115e63f) in REFS.json, WORK_LEDGER.jsonl,
+and both repository timelines.
+- `2abfda140589` — Merge pull request #9 from AdamEddahmouni/chore/import-short-squeeze-8a5e43e
+  - Author: AdamEddahmouni (2026-09-05T03:23:18-04:00)
+  - Rationale (commit-subject-and-body): merge: sync short-squeeze snapshot to main 78b7467
+- `81ae19f57a5b` — merge: sync integrated-market-platform snapshot to 072e62e
+  - Author: AdamEddahmouni (2026-09-05T03:31:31-04:00)
+  - Rationale (commit-subject-and-body): The platform child repo (integrated-market-intelligence-platform) is now
+archived read-only, so this sync imports its final state (072e62e, which
+includes the P0-3 lane-identity unification and the assistant-audit evidence
+fix) into the parent tree as the canonical development copy. From here all
+platform hardening proceeds directly on projects/integrated-market-platform
+in this repo.
+- `0c8d3fc7bc01` — docs: close P0-1, P2-3, P2-5 from the hardening plan
+  - Author: AdamEddahmouni (2026-09-05T03:33:29-04:00)
+  - Rationale (commit-subject-and-body): - P0-1: FORWARD_VALIDATION_READINESS_CHECKLIST.md maps the exact
+  connectivity/env/credential/fixture/rollback/acceptance prerequisites for
+  P6 Shadow Run 1, EVIDENCE-01C, live canary, Tradier sandbox wire, and
+  Moomoo OpenD, with current blockers from PROGRAM_STATUS/TECH_DEBT.
+- P2-3: superseded headers with forward links on the THREE/FOUR/FIVE lane
+  reconciliations; README annotates the stale reconciliation link; parent
+  MONOREPO_WORKFLOW no longer calls the public repo private and documents the
+  plain-file snapshot sync path used for short-squeeze and the platform.
+- P2-5: conflict-detection checklist now carries the per-lane doctrine
+  bullets (no composite score / no fabricated synthesis / no universal news
+  score; cross-lane provenance; ADR-0006 decision-research synthesis).
+- `6390dc35b4db` — feat(platform): close P0-2, P1-1, P0-4 strategy/lane hardening items
+  - Author: AdamEddahmouni (2026-09-05T06:27:18-04:00)
+  - Rationale (commit-subject-and-body): - P0-2: promotion dry-run harness (intelligence/promotion/dry_run.py +
+  tests) replays recorded shadow outcomes through the promotion engine and
+  emits an immutable PROMOTED/NOT_PROMOTED/INVALID record referencing the
+  exact champion assignment, preregistration, and evidence manifest —
+  proving the ladder without granting execution authority.
+- P1-1: strategy/eligibility.py adds the single checkable predicate
+  (preregistered + promotion state + forward-evidence class); StrategyPaperRuntime
+  enforces it on the order-ready path when execution-eligibility config is
+  supplied — unknown/unpromoted strategies are persisted as BLOCKED with a
+  strategy_eligibility lineage ref (auditable per-order intent) and never
+  reach paper submission.
+- P0-4: attribution_materializer.py fails close...
+- `0c72a84c0e29` — docs(platform): fix WORK_LOG P0-4 related-link path for doc checker
+  - Author: AdamEddahmouni (2026-09-05T06:30:22-04:00)
+  - Rationale (commit-subject-and-body): PAPER_DECISION_LIFECYCLE.md lives under docs/architecture/, so the P0-4
+WORK_LOG entry referenced it from the wrong directory. Corrected to
+../architecture/PAPER_DECISION_LIFECYCLE.md; check_docs_links.py now passes.
+- `9b197f7ddc9f` — fix(platform): anchor provenance root to the platform tree when embedded — refs: `refs/heads/hardening/strat-lane-ready`, `refs/remotes/origin/hardening/strat-lane-ready`
+  - Author: AdamEddahmouni (2026-09-05T06:51:57-04:00)
+  - Rationale (commit-subject-and-body): When the platform tree lives inside the parent monorepo
+(projects/integrated-market-platform), git-root resolution climbed to the
+monorepo root, so release/qualification provenance could not find
+phase0-dependency-lock.json or artifacts/system-acceptance/* and ~30
+change-control / release-governance / forward-qualification tests errored
+(this PR is the first to run imp.py validate changed, which surfaced it).
+- `1813aa2fb9aa` — Merge pull request #10 from AdamEddahmouni/hardening/strat-lane-ready — refs: `refs/heads/main`, `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
+  - Author: AdamEddahmouni (2026-09-05T06:55:20-04:00)
+  - Rationale (commit-subject-and-body): feat: close P0-2/P1-1/P0-4 strategy & lane hardening items
+- `37b569d5a74d` — docs: fix broken doc links in workspace docs and project snapshots
+  - Author: AdamEddahmouni (2026-09-05T10:37:17-04:00)
+  - Rationale (commit-subject-and-body): Retarget snapshot and index links to their real locations at monorepo
+depth (parent-root docs, sibling short-squeeze snapshot, in-repo spec
+and architecture paths) and demote references to workspace-local files
+not present in the repository, per the repo-wide doc-link check.
+- `b5851fc2c675` — Squashed 'projects/governed-ticker-metadata-enrichment/' changes from 8afb11d..1398da3
+  - Author: AdamEddahmouni (2026-09-05T10:37:24-04:00)
+  - Rationale (commit-subject-and-body): 1398da3 docs(data): fix broken doc links in integration and platformization docs
+- `be377af5c154` — Merge commit 'b5851fc2c675289cb76704acdd5820d1c7e6d23d' into chore/sync-governed-equity-snapshots
+  - Author: AdamEddahmouni (2026-09-05T10:37:24-04:00)
+  - Rationale (commit-subject-only): Rationale stated in commit subject only.
+- `ad95af5f1e5f` — Squashed 'projects/equity-data-v1-worktree/' changes from 825dd8b..ad54fb8
+  - Author: AdamEddahmouni (2026-09-05T10:37:38-04:00)
+  - Rationale (commit-subject-and-body): ad54fb8 docs(data): fix broken doc links in integration and platformization docs
+- `29c6a2fd6b66` — Merge commit 'ad95af5f1e5fef940fa84016330c095e07879c76' into chore/sync-governed-equity-snapshots — refs: `refs/heads/chore/sync-governed-equity-snapshots`
+  - Author: AdamEddahmouni (2026-09-05T10:37:38-04:00)
+  - Rationale (commit-subject-only): Rationale stated in commit subject only.

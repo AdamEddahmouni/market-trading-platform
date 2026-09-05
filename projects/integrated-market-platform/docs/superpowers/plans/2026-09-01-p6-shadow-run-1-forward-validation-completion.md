@@ -16,7 +16,7 @@ ACTUAL_FORWARD observations collected on the default-store run (Moomoo/OpenD liv
 
 ## Protocol
 
-- **Protocol:** [P6_SHADOW_RUN_1_PROTOCOL.md](../engineering/P6_SHADOW_RUN_1_PROTOCOL.md)
+- **Protocol:** [P6_SHADOW_RUN_1_PROTOCOL.md](../../engineering/P6_SHADOW_RUN_1_PROTOCOL.md)
 - **Preregistered:** 2026-09-01T15:33:00Z (`artifacts/shadow-run-1/P6_SHADOW_RUN_1_PROTOCOL.json`)
 - **Instrument:** BIYA
 - **First session:** 2026-09-01
@@ -85,5 +85,5 @@ Feature branch `feat/p6-shadow-run-1-forward-validation` from baseline `96032be`
 
 ## Related
 
-- [FORWARD_SHADOW_VALIDATION SOP](../engineering/sops/FORWARD_SHADOW_VALIDATION.md)
-- [2026-08-23-platform-p6-shadow-run-1-design.md](../superpowers/specs/2026-08-23-platform-p6-shadow-run-1-design.md)
+- [FORWARD_SHADOW_VALIDATION SOP](../../engineering/sops/FORWARD_SHADOW_VALIDATION.md)
+- [2026-08-23-platform-p6-shadow-run-1-design.md](../../superpowers/specs/2026-08-23-platform-p6-shadow-run-1-design.md)

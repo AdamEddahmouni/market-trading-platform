@@ -1622,7 +1622,7 @@ conditions. Paper-only; no live order path; LIVE-001 remains blocked.
 - `6c3aa559df85` — docs(data): add V1 continuation handoff
   - Author: AdamEddahmouni (2026-08-24T08:22:36-04:00)
   - Rationale (commit-subject-only): Rationale stated in commit subject only.
-- `825dd8ba2afd` — docs(data): clarify handoff implementation baseline — refs: `refs/heads/feat/equity-data-v1`, `refs/remotes/origin/feat/equity-data-v1`
+- `825dd8ba2afd` — docs(data): clarify handoff implementation baseline — refs: `refs/remotes/origin/feat/equity-data-v1`
   - Author: AdamEddahmouni (2026-08-24T08:23:27-04:00)
   - Rationale (commit-subject-only): Rationale stated in commit subject only.
 - `02184cde4546` — docs(data): specify deterministic Phase 2 candidate build
@@ -1646,7 +1646,7 @@ conditions. Paper-only; no live order path; LIVE-001 remains blocked.
 - `269146409f5a` — feat: add postroot contract fixtures — refs: `refs/heads/postroot-acceptance-suite`, `refs/remotes/origin/postroot-acceptance-suite`
   - Author: AdamEddahmouni (2026-08-24T14:46:46-04:00)
   - Rationale (commit-subject-only): Rationale stated in commit subject only.
-- `8afb11d814da` — fix(data): harden governed metadata collection — refs: `refs/heads/feat/governed-ticker-metadata-enrichment`, `refs/remotes/origin/feat/governed-ticker-metadata-enrichment`
+- `8afb11d814da` — fix(data): harden governed metadata collection — refs: `refs/remotes/origin/feat/governed-ticker-metadata-enrichment`
   - Author: AdamEddahmouni (2026-08-24T16:50:51-04:00)
   - Rationale (commit-subject-only): Rationale stated in commit subject only.
 - `a65288f6f4bf` — merge: integrate governed ticker metadata enrichment
@@ -2380,7 +2380,7 @@ Also removed the stray empty src/market_platform_foundation/tests
 directories that the frozen repository-closure classification does not
 cover, restoring the closure audit. Full validation is green: 3487 tests,
 43 skipped, 0 failures, 0 errors.
-- `072e62e8112c` — refactor(lanes): unify lane-module identity into one canonical registry — refs: `refs/heads/main`
+- `072e62e8112c` — refactor(lanes): unify lane-module identity into one canonical registry — refs: `refs/heads/land/p0-3-lane-identity`, `refs/heads/main`
   - Author: AdamEddahmouni (2026-09-04T22:35:05-04:00)
   - Rationale (commit-subject-and-body): WORKSPACE_LANE_REGISTRY (workspace-module-shared/laneRegistry.ts) is now the
 single source of lane identity, deriving WORKSPACE_LANE_MODULE_IDS and
@@ -2393,3 +2393,18 @@ never enumerates modules, so no backend list can drift. New laneRegistry.test.ts
 equality/closure tests fail if derived lists or the evidence map disagree.
 Verified: ui typecheck clean; vitest 436 passed / 85 files; backend py_compile
 clean with zero references to the removed const...
+
+## 2026-09-05
+
+- `1398da3b5fc2` — docs(data): fix broken doc links in integration and platformization docs — refs: `refs/heads/feat/governed-ticker-metadata-enrichment`
+  - Author: AdamEddahmouni (2026-09-05T10:34:41-04:00)
+  - Rationale (commit-subject-and-body): Retarget relative links to their real locations (sibling short-squeeze
+snapshot, workspace-level docs, in-repo superpowers/research/architecture
+paths, ui/) and demote references to workspace-local files that are not
+in the repository, matching the parent monorepo doc-link check.
+- `ad54fb8d5955` — docs(data): fix broken doc links in integration and platformization docs — refs: `refs/heads/feat/equity-data-v1`
+  - Author: AdamEddahmouni (2026-09-05T10:34:48-04:00)
+  - Rationale (commit-subject-and-body): Retarget relative links to their real locations (sibling short-squeeze
+snapshot, workspace-level docs, in-repo superpowers/research/architecture
+paths, ui/) and demote references to workspace-local files that are not
+in the repository, matching the parent monorepo doc-link check.

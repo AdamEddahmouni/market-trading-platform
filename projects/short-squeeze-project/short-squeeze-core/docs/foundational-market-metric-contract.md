@@ -16,7 +16,7 @@ Phase 2C (short-interest and borrow-pressure metrics) reuses `MEAN_VOLUME_BASELI
 and arithmetic for `DAYS_TO_COVER`'s denominator only, via its own standalone
 `PressureMetricResult`/`DaysToCoverComponents` models — see
 [`days-to-cover-semantics.md`](days-to-cover-semantics.md) and
-[`phase-2c-design.md`](phase-2c-design.md) §8.3. `MetricResult` itself is unchanged by Phase 2C
+the archived `phase-2c-design.md` §8.3. `MetricResult` itself is unchanged by Phase 2C
 in every field and byte.
 
 ## Raw evidence versus derived metrics

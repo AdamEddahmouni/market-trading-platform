@@ -2,7 +2,7 @@
 
 **Status:** Implemented  
 **Date:** 2026-08-21  
-**Builds on:** [PLATFORM-PAPER-001 P0 design](../superpowers/specs/2026-08-21-platform-paper-001-design.md)
+**Builds on:** [PLATFORM-PAPER-001 P0 design](2026-08-21-platform-paper-001-design.md)
 
 ## Discovered current state (pre-P1)
 

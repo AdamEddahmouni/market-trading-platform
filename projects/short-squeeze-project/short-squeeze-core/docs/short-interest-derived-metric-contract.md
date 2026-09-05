@@ -2,7 +2,7 @@
 
 `metrics.short_interest_changes` — `PUBLISHED_SHORT_INTEREST_ABSOLUTE_CHANGE`,
 `PUBLISHED_SHORT_INTEREST_PERCENTAGE_CHANGE`, `PUBLISHED_SHORT_INTEREST_REVISION_DELTA`. See
-[`phase-2c-design.md`](phase-2c-design.md) for the full design and
+the archived `phase-2c-design.md` for the full design and
 [ADR 0035](adr/0035-published-short-interest-age-remains-explicit.md) for age-metadata rationale.
 
 ## Result model

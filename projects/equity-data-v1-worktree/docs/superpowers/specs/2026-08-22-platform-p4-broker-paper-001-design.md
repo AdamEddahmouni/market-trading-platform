@@ -34,7 +34,7 @@ the exact same fail-closed discipline as every prior milestone:
 - there is **no live order method** callable without a separate explicit
   enablement, and `LIVE` execution remains unauthorized (`LIVE-001`).
 
-This is Platformization **P4** per the [platformization roadmap](../research/PLATFORMIZATION_ROADMAP.md)
+This is Platformization **P4** per the [platformization roadmap](../../research/PLATFORMIZATION_ROADMAP.md)
 and is explicitly deferred out of DECISION-RESEARCH-001's completion definition
 ("no P4 implementation has begun"). It is split into sub-milestones so the
 first execution-contract adapter (4A) can land and gate before reconciliation
@@ -147,7 +147,7 @@ advance the IMP lifecycle.
 
 ### 5.2 Sandbox semantics (verified limits — do not over-claim)
 
-Per the [broker priority notes](../research/PLATFORMIZATION_ROADMAP.md) and the
+Per the [broker priority notes](../../research/PLATFORMIZATION_ROADMAP.md) and the
 professor-supplied brief:
 
 - Free account yields an API token and **paper sandbox**; sandbox market data

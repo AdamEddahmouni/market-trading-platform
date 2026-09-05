@@ -97,9 +97,9 @@ Adopt a binding UX architecture comprising:
 
 | Logical ID | Document |
 |---|---|
-| `foundation.canonical_specification.revision_3` | [Revision 3](../../superpowers/specs/2026-08-14-integrated-market-platform-foundation-design-revision-3.md) |
-| `phase1.adr_whale_001` | [ADR-WHALE-001](../../superpowers/decisions/2026-08-15-adr-whale-001-institutional-evidence-vocabulary.json) |
-| `architecture.swim_with_the_whales` | [SWIM_WITH_THE_WHALES.md](../../architecture/SWIM_WITH_THE_WHALES.md) |
+| `foundation.canonical_specification.revision_3` | [Revision 3](../../../superpowers/specs/2026-08-14-integrated-market-platform-foundation-design-revision-3.md) |
+| `phase1.adr_whale_001` | [ADR-WHALE-001](../../../superpowers/decisions/2026-08-15-adr-whale-001-institutional-evidence-vocabulary.json) |
+| `architecture.swim_with_the_whales` | [SWIM_WITH_THE_WHALES.md](../../../architecture/SWIM_WITH_THE_WHALES.md) |
 
 ## Non-authorization statement
 

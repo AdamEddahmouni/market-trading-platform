@@ -109,7 +109,7 @@ from the donor (`squeeze_causal_baseline.v1`) with explicit states
 (BASELINE → VULNERABLE → … → ACTIVE_SQUEEZE → EXHAUSTION). This replaces using
 `research_detection.status` as the primary squeeze lifecycle label. Horizon
 probabilities remain `RESEARCH_ONLY` until calibrated models exist. See
-[SHORT_SQUEEZE_CAUSAL_RESEARCH_SPEC.md](../../short-squeeze-project/short-squeeze-core/docs/research/SHORT_SQUEEZE_CAUSAL_RESEARCH_SPEC.md).
+[SHORT_SQUEEZE_CAUSAL_RESEARCH_SPEC.md](../../../short-squeeze-project/short-squeeze-core/docs/research/SHORT_SQUEEZE_CAUSAL_RESEARCH_SPEC.md).
 
 **Institutional options cross-ref** (replay-aware): when the IMP replay store is loaded and
 `ADMITTED-OPTIONS-BIYA-001` is entitled, workspace squeeze payloads replace the frozen-donor
@@ -210,5 +210,5 @@ python tools/integration_acceptance.py --mode frozen
 ## Related docs
 
 - [DONOR_PATTERN_EXTRACTIONS.md](../research/donors/DONOR_PATTERN_EXTRACTIONS.md)
-- [DONOR_FIXTURE_MAP.md](../../../docs/DONOR_FIXTURE_MAP.md)
-- [SHORT_SQUEEZE_NOTES.md](../../../SHORT_SQUEEZE_NOTES.md)
+- [DONOR_FIXTURE_MAP.md](../../../../docs/DONOR_FIXTURE_MAP.md)
+- `SHORT_SQUEEZE_NOTES.md` (workspace-local analysis; not in this repository)
