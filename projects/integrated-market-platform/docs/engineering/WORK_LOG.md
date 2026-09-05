@@ -35,7 +35,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Summary** | `portfolio/attribution_materializer.py` now enforces attribution parity with the authoritative fill-driven ledger: before persisting, a recomputation is compared against every already-persisted attribution for the same allocation. Any fill it already covers that changed accounting, or any coverage regression, records an immutable `ATTRIBUTION_PARITY_VIOLATION` event (`EventV1`, deterministic `ATTR-PARITY-*` id) and raises `AttributionMaterializationError` — the divergence is never silently absorbed. Identical recomputations (dedup path) and legitimate CUMULATIVE coverage growth (later fills appended) remain silent. |
 | **Key files** | Modified: `src/market_platform_foundation/portfolio/attribution_materializer.py`; created/extended tests: `tests/platform/test_strategy_attribution.py` (parity fake repo + `AttributionParityInvariantTests`) |
 | **Tests** | `tests/platform`: 14 passed, 3 subtests; combined platform/intelligence run 518 passed, 2 skipped |
-| **Related** | [Hardening task plan](../../../docs/reviews/2026-09-04-hardening-task-plan.md) P0-4; [PAPER_DECISION_LIFECYCLE.md](PAPER_DECISION_LIFECYCLE.md) |
+| **Related** | [Hardening task plan](../../../docs/reviews/2026-09-04-hardening-task-plan.md) P0-4; [PAPER_DECISION_LIFECYCLE.md](../architecture/PAPER_DECISION_LIFECYCLE.md) |
 
 ## 2026-09-05 — P1-1: explicit strategy eligibility gate before OrderReadyV1 execution intent
 
