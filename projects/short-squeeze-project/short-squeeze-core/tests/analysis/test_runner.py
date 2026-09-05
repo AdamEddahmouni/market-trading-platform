@@ -34,22 +34,46 @@ def test_historical_case_boundary_analysis_preserves_dependence():
     result = run_research_analysis(request, dataset=dataset)
     assert result.source_dataset_id == dataset.deterministic_id
     assert result.source_registry_id is None
-    assert result.case_count == 7
-    assert result.unique_symbol_count == 6
-    assert result.boundary_count == 7
+    assert result.case_count == 31
+    assert result.unique_symbol_count == 29
+    assert result.boundary_count == 31
     assert result.cohort_membership.included_case_ids == (
+        "ADVB_ARTIFACT_DISCOVERY",
+        "APVO_ARTIFACT_DISCOVERY",
+        "ATAI_ARTIFACT_DISCOVERY",
+        "AVTX_ARTIFACT_DISCOVERY",
+        "BHVN_ARTIFACT_DISCOVERY",
+        "BIYA_ARTIFACT_DISCOVERY",
         "BIYA_EARLIEST_BOUNDARY",
         "BIYA_LATEST_BOUNDARY",
+        "CADL_ARTIFACT_DISCOVERY",
+        "CELZ_ARTIFACT_DISCOVERY",
+        "CGEM_ARTIFACT_DISCOVERY",
+        "GDC_ARTIFACT_DISCOVERY",
+        "GOAI_ARTIFACT_DISCOVERY",
+        "GPRE_ARTIFACT_DISCOVERY",
+        "IOVA_ARTIFACT_DISCOVERY",
         "KLRS_ARTIFACT_DISCOVERY",
         "LBGJ_ARTIFACT_DISCOVERY",
+        "LMNX_ARTIFACT_DISCOVERY",
+        "MGNX_ARTIFACT_DISCOVERY",
+        "NXXT_ARTIFACT_DISCOVERY",
+        "OBE_ARTIFACT_DISCOVERY",
+        "PESI_ARTIFACT_DISCOVERY",
+        "PMAX_ARTIFACT_DISCOVERY",
         "SG_ARTIFACT_DISCOVERY",
         "SLS_ARTIFACT_DISCOVERY",
+        "SSPC_ARTIFACT_DISCOVERY",
+        "STAK_ARTIFACT_DISCOVERY",
         "TRVI_ARTIFACT_DISCOVERY",
+        "VMAR_ARTIFACT_DISCOVERY",
+        "XNCR_ARTIFACT_DISCOVERY",
+        "ZNTL_ARTIFACT_DISCOVERY",
     )
     assert result.symbol_dependence_summary.dependence_detected
     assert result.confusion_matrix.true_positive_count == 2
-    assert result.confusion_matrix.unevaluable_count == 5
-    assert result.sample_size_assessments[0].state is SampleSizeState.SMALL
+    assert result.confusion_matrix.unevaluable_count == 29
+    assert result.sample_size_assessments[0].state is SampleSizeState.LIMITED
     assert "HISTORICAL_CASE_BOUNDARIES_NOT_INDEPENDENT" in _limitation_codes(result)
 
 
@@ -62,16 +86,39 @@ def test_historical_unique_symbol_analysis_selects_earliest_without_outcome():
         included_statistics=("CONFUSION_MATRIX", "RULE_OUTCOME_PREVALENCE", "MISSINGNESS"),
     )
     result = run_research_analysis(request, dataset=dataset)
-    assert result.case_count == 6
-    assert result.unique_symbol_count == 6
-    assert result.boundary_count == 7
+    assert result.case_count == 29
+    assert result.unique_symbol_count == 29
+    assert result.boundary_count == 31
     assert result.cohort_membership.included_case_ids == (
+        "ADVB_ARTIFACT_DISCOVERY",
+        "APVO_ARTIFACT_DISCOVERY",
+        "ATAI_ARTIFACT_DISCOVERY",
+        "AVTX_ARTIFACT_DISCOVERY",
+        "BHVN_ARTIFACT_DISCOVERY",
         "BIYA_EARLIEST_BOUNDARY",
+        "CADL_ARTIFACT_DISCOVERY",
+        "CELZ_ARTIFACT_DISCOVERY",
+        "CGEM_ARTIFACT_DISCOVERY",
+        "GDC_ARTIFACT_DISCOVERY",
+        "GOAI_ARTIFACT_DISCOVERY",
+        "GPRE_ARTIFACT_DISCOVERY",
+        "IOVA_ARTIFACT_DISCOVERY",
         "KLRS_ARTIFACT_DISCOVERY",
         "LBGJ_ARTIFACT_DISCOVERY",
+        "LMNX_ARTIFACT_DISCOVERY",
+        "MGNX_ARTIFACT_DISCOVERY",
+        "NXXT_ARTIFACT_DISCOVERY",
+        "OBE_ARTIFACT_DISCOVERY",
+        "PESI_ARTIFACT_DISCOVERY",
+        "PMAX_ARTIFACT_DISCOVERY",
         "SG_ARTIFACT_DISCOVERY",
         "SLS_ARTIFACT_DISCOVERY",
+        "SSPC_ARTIFACT_DISCOVERY",
+        "STAK_ARTIFACT_DISCOVERY",
         "TRVI_ARTIFACT_DISCOVERY",
+        "VMAR_ARTIFACT_DISCOVERY",
+        "XNCR_ARTIFACT_DISCOVERY",
+        "ZNTL_ARTIFACT_DISCOVERY",
     )
     duplicate = next(
         item for item in result.cohort_membership.exclusions
@@ -79,7 +126,7 @@ def test_historical_unique_symbol_analysis_selects_earliest_without_outcome():
     )
     assert duplicate.reason_code == "ANALYSIS_COHORT_EXCLUDED_DUPLICATE_SYMBOL_BOUNDARY"
     assert result.boundary_selection.outcome_blind
-    assert result.sample_size_assessments[0].state is SampleSizeState.SMALL
+    assert result.sample_size_assessments[0].state is SampleSizeState.LIMITED
     assert result.confusion_matrix.true_positive_count == 1
     assert "HISTORICAL_SAMPLE_INSUFFICIENT_FOR_PREDICTIVE_VALIDATION" in _limitation_codes(result)
 
@@ -115,10 +162,10 @@ def test_registry_standard_cohorts_preserve_registry_id_and_quality():
     partial_result = run_research_analysis(partial_request, registry=registry)
     assert all_result.source_registry_id == registry.deterministic_id
     assert all_result.source_dataset_id is None
-    assert all_result.case_count == 19
-    assert all_result.data_quality_summary.registered_case_count == 19
+    assert all_result.case_count == 43
+    assert all_result.data_quality_summary.registered_case_count == 43
     assert partial_result.case_count == 1
-    assert partial_result.data_quality_summary.registered_case_count == 19
+    assert partial_result.data_quality_summary.registered_case_count == 43
     assert "REGISTRY_DATA_QUALITY_NOT_PERFORMANCE_ESTIMATE" in _limitation_codes(all_result)
 
 

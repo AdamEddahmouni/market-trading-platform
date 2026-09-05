@@ -32,7 +32,7 @@
       "snapshot_path": "projects/short-squeeze-project",
       "source_remote": "https://github.com/AdamEddahmouni/short-squeeze-screener-internship.git",
       "source_ref": "phase/3e-historical-acquisition",
-      "source_commit": "8a5e43e8b0ffbec1d549fdc2960c30f841d07591",
+      "source_commit": "41f52bb07aa03244a072263b4d516e3568748ee2",
       "expected_visibility": "public",
       "source_policy": "unchanged"
     }

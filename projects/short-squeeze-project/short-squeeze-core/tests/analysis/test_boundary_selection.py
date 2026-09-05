@@ -22,11 +22,12 @@ def test_all_case_boundaries_preserves_both_dependent_biya_rows():
     )
     assert result.analysis_unit is AnalysisUnit.CASE_BOUNDARY
     assert result.selected_case_ids == (
+        "BIYA_ARTIFACT_DISCOVERY",
         "BIYA_EARLIEST_BOUNDARY",
         "BIYA_LATEST_BOUNDARY",
     )
     assert result.excluded_case_ids == ()
-    assert result.boundary_count_by_symbol == (("BIYA", 2),)
+    assert result.boundary_count_by_symbol == (("BIYA", 3),)
 
 
 def test_earliest_boundary_selects_one_biya_row_and_preserves_exclusion():
@@ -36,8 +37,8 @@ def test_earliest_boundary_selects_one_biya_row_and_preserves_exclusion():
     )
     assert result.analysis_unit is AnalysisUnit.UNIQUE_SYMBOL_POLICY_SELECTED_BOUNDARY
     assert result.selected_case_ids == ("BIYA_EARLIEST_BOUNDARY",)
-    assert result.excluded_case_ids == ("BIYA_LATEST_BOUNDARY",)
-    assert result.boundary_count_by_symbol == (("BIYA", 2),)
+    assert result.excluded_case_ids == ("BIYA_ARTIFACT_DISCOVERY", "BIYA_LATEST_BOUNDARY")
+    assert result.boundary_count_by_symbol == (("BIYA", 3),)
     assert result.outcome_blind
     assert {item.code.value for item in result.diagnostics} == {
         "ANALYSIS_BOUNDARY_SELECTION_APPLIED",

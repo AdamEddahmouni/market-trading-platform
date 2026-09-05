@@ -85,7 +85,7 @@ def test_historical_and_synthetic_denominators_remain_separate():
     synthetic_price = _by_rule(
         build_rule_outcome_prevalence(synthetic, RULE_ORDER, _context())
     )["PRICE_RANGE"]
-    assert historical_price.total_case_count == 2
+    assert historical_price.total_case_count == 3
     assert synthetic_price.total_case_count == 11
     assert historical_price.pass_count == 2
     assert not _by_metric(historical_price)["pass_rate_among_all_cases"].interval.independence_assumption_satisfied
@@ -105,9 +105,12 @@ def test_outcome_conditioned_groups_skip_empty_labels_and_preserve_sample_size()
     groups = build_outcome_conditioned_rule_prevalence(
         rows, RULE_ORDER, _context(independent=False)
     )
-    assert len(groups) == 1
+    assert len(groups) == 2
     assert groups[0].outcome_label == "SUBSTANTIAL_UPWARD_MOVE"
     assert groups[0].group_case_count == 2
     assert groups[0].sample_size_assessment.sample_size == 2
     assert "dependent" in groups[0].dependence_warning.lower()
+    assert groups[1].outcome_label == "SUBSTANTIAL_DOWNWARD_MOVE"
+    assert groups[1].group_case_count == 1
+    assert groups[1].sample_size_assessment.sample_size == 1
 

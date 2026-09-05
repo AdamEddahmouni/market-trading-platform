@@ -38,7 +38,7 @@ def test_all_five_standard_cohorts_are_explicit_and_deterministic():
         AnalysisUnit.UNIQUE_SYMBOL_POLICY_SELECTED_BOUNDARY,
         AnalysisUnit.CASE_BOUNDARY,
     )
-    assert tuple(item.case_count for item in results) == (6, 7, 11, 19, 1)
+    assert tuple(item.case_count for item in results) == (29, 31, 11, 43, 1)
     assert len({item.deterministic_id for item in results}) == 5
     assert serialize_analysis_collection(results) == serialize_analysis_collection(results)
     assert all(serialize_analysis_model(item) == serialize_analysis_model(item) for item in results)

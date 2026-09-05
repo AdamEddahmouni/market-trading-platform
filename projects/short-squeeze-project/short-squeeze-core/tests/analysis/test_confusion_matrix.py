@@ -35,7 +35,7 @@ def test_historical_biya_confusion_counts_are_dependent_descriptions():
         summary.true_negative_count,
         summary.false_negative_count,
         summary.unevaluable_count,
-    ) == (2, 0, 0, 0, 0)
+    ) == (2, 0, 0, 0, 1)
     rates = _by_metric(summary)
     assert rates["sensitivity_descriptive_research_classification_rate"].exact_fraction == "2/2"
     assert rates["positive_predictive_value_descriptive_research_classification_rate"].exact_fraction == "2/2"

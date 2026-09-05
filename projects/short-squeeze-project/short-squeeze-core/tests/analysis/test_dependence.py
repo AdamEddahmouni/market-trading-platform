@@ -22,14 +22,18 @@ def test_one_case_per_symbol_satisfies_independence_at_case_boundary_level():
 
 def test_two_biya_boundaries_are_not_independent_observations():
     result = summarize_symbol_dependence(_biya_rows(), AnalysisUnit.CASE_BOUNDARY)
-    assert result.case_count == 2
+    assert result.case_count == 3
     assert result.unique_symbol_count == 1
     assert result.symbols_with_multiple_boundaries == ("BIYA",)
-    assert result.repeated_boundary_count == 1
-    assert result.maximum_boundaries_per_symbol == 2
+    assert result.repeated_boundary_count == 2
+    assert result.maximum_boundaries_per_symbol == 3
     assert result.boundary_ids_by_symbol == ((
         "BIYA",
-        ("BIYA_EARLIEST_BOUNDARY", "BIYA_LATEST_BOUNDARY"),
+        (
+            "BIYA_ARTIFACT_DISCOVERY",
+            "BIYA_EARLIEST_BOUNDARY",
+            "BIYA_LATEST_BOUNDARY",
+        ),
     ),)
     assert result.dependence_detected
     assert not result.independence_assumption_satisfied

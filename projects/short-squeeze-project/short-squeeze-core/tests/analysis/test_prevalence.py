@@ -25,7 +25,7 @@ def test_historical_detection_outcome_and_classification_prevalence():
     detection = build_detection_prevalence(rows, CONTEXT)
     outcome = build_outcome_prevalence(rows, CONTEXT)
     classification = build_classification_prevalence(rows, CONTEXT)
-    assert dict(detection.counts) == {"DETECTED": 2, "NOT_DETECTED": 0, "UNEVALUABLE": 0}
+    assert dict(detection.counts) == {"DETECTED": 2, "NOT_DETECTED": 0, "UNEVALUABLE": 1}
     assert dict(outcome.counts)["SUBSTANTIAL_UPWARD_MOVE"] == 2
     assert dict(classification.counts)["TRUE_POSITIVE"] == 2
     assert detection.proportions[0].metric_name == "detected_prevalence_among_all_cases"

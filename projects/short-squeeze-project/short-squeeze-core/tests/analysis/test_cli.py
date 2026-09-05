@@ -40,7 +40,7 @@ def test_analysis_cli_is_repeated_byte_identical(tmp_path, capsys):
     assert first_stdout == second_stdout
     document = json.loads(first_path.read_bytes())
     assert document["analysis_unit"] == "UNIQUE_SYMBOL_POLICY_SELECTED_BOUNDARY"
-    assert document["case_count"] == 6
+    assert document["case_count"] == 29
     assert document["source_dataset_id"]
     assert document["source_registry_id"]
 

@@ -69,5 +69,6 @@ def test_only_intended_python_modules_present():
         "errors.py", "guard.py", "models.py", "paths.py", "policy.py",
         "preflight_bundle.py", "resolution.py", "semantics_overlay.py",
         "serialization.py", "session.py", "statuses.py",
+        "batch3f05_external.py",
     }
     assert names == expected

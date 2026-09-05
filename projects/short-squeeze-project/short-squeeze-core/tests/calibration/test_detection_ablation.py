@@ -110,7 +110,7 @@ class CalibrationExperimentTests(unittest.TestCase):
         baseline = next(
             item for item in report.variant_results if item.variant_id == "baseline"
         )
-        self.assertEqual(baseline.case_count, 30)
+        self.assertEqual(baseline.case_count, 31)
 
     def test_historical_momentum_full_blocks_on_relative_volume_fail(self) -> None:
         report = run_calibration_from_path(PREDICATE_HISTORICAL)

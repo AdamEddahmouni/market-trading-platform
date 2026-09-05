@@ -36,20 +36,26 @@ import sys
 import tempfile
 from pathlib import Path
 
-# ── Ensure we are in the repository root ──────────────────────────────
+# ── Repository root (file-based; never rely on CWD) ────────────────────
 _repo = Path(__file__).resolve().parent
-os.chdir(_repo)
-if str(_repo) not in sys.path:
-    sys.path.insert(0, str(_repo))
-
-# ── Set cloud mode ───────────────────────────────────────────────────
-os.environ.setdefault("SQUEEZE_APP_MODE", "CLOUD_PROVIDER_MODE")
 
 from apps.research_screener.credentials import (  # noqa: E402
     default_private_path,
     load_private_env,
 )
 from apps.research_screener.__main__ import main as _launch  # noqa: E402
+
+
+def _prepare_cloud_environment() -> None:
+    """Entry-point side effects: repo-root cwd and cloud mode.
+
+    Kept out of module scope so importing :mod:`start_cloud` (e.g. from tests)
+    never mutates the process environment or working directory.
+    """
+    os.chdir(_repo)
+    if str(_repo) not in sys.path:
+        sys.path.insert(0, str(_repo))
+    os.environ.setdefault("SQUEEZE_APP_MODE", "CLOUD_PROVIDER_MODE")
 
 
 def _boolean_env(name: str, default: str) -> None:
@@ -88,6 +94,7 @@ def _build_cli_args(argv: list[str]) -> tuple[list[str], bool]:
 
 
 if __name__ == "__main__":
+    _prepare_cloud_environment()
     remaining_argv, load_local = _build_cli_args(sys.argv[1:])
     private_path: Path | None = None
     suppress_path: str | None = None

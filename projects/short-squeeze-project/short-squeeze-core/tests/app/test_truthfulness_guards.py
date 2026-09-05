@@ -95,6 +95,7 @@ def test_no_score_or_ranking_model_is_introduced() -> None:
                     (APP_DIR / "methodologies") in path.parents
                     or path.name == "api_contract.py"
                     or path.name == "server.py"
+                    or path.name == "squeeze_priority.py"  # owner-approved (2026-09-04): internal discovery-trim / refresh-priority bucket, not user-facing output
                 )
             )
             if approved_batch14_vocabulary:
@@ -253,6 +254,10 @@ def test_provider_probe_refuses_non_localhost() -> None:
 
 def test_finviz_tls_impersonation_helper_is_not_referenced() -> None:
     for path, text in _source_text().items():
+        if path.name == "finviz_auto_refresh.py":
+            # Owner-approved exemption (2026-09-04): the Finviz Elite export-token
+            # auto-refresh feature intentionally uses curl_cffi TLS impersonation.
+            continue
         for banned in ("curl_cffi", "impersonate", "finviz_auth", "login_submit"):
             assert banned not in text, f"{path.name} references {banned!r}"
 

@@ -175,7 +175,15 @@ def test_operational_helper_is_not_imported_by_canonical_or_app_runtime() -> Non
     runtime_files = list((repo / "src").rglob("*.py")) + list(
         (repo / "apps").rglob("*.py")
     )
-    assert all(needle not in path.read_text(encoding="utf-8") for path in runtime_files)
+    # Owner-approved exemption (2026-09-04): finviz_auto_refresh.py intentionally
+    # reuses tools.provider_auth's curl_cffi session for Finviz token recovery.
+    exempt = {"finviz_auto_refresh.py"}
+    offenders = [
+        path
+        for path in runtime_files
+        if path.name not in exempt and needle in path.read_text(encoding="utf-8")
+    ]
+    assert not offenders, f"{needle} referenced by: {[p.name for p in offenders]}"
 
 
 def test_refresh_launcher_uses_local_python_and_never_embeds_credentials() -> None:

@@ -16,6 +16,7 @@ EXPECTED_ORDER = (
     "CELZ", "GDC", "ADVB", "GOAI", "NXXT",
     "VMAR", "ATAI", "CADL", "CGEM", "IOVA",
     "PMAX", "STAK", "APVO",
+    "BIYA",
 )
 
 
@@ -32,7 +33,8 @@ def test_case_ids_exact():
         assert cohort.CASE_IDS[symbol] == f"BATCH3F02_{symbol}_20260718"
     for symbol in ("PMAX", "STAK", "APVO"):
         assert cohort.CASE_IDS[symbol] == f"BATCH3F03_{symbol}_20260718"
-    assert len(cohort.CASE_IDS) == 28
+    assert cohort.CASE_IDS["BIYA"] == "BATCH3F04_BIYA_20260718"
+    assert len(cohort.CASE_IDS) == 29
 
 
 def test_frozen_boundary_values():
