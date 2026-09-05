@@ -37,4 +37,4 @@ subset per UX-004; offline replay is a later milestone.
 | Logical ID | Document |
 |---|---|
 | `product.adr_ux_001` | [ADR-UX-001](ADR-UX-001-navigation-context-explainability.md) |
-| `ui1.design_specification` | [UI-001 design spec](../../superpowers/specs/2026-08-18-ui-001-research-ui-v1-design.md) |
+| `ui1.design_specification` | [UI-001 design spec](../../../superpowers/specs/2026-08-18-ui-001-research-ui-v1-design.md) |
