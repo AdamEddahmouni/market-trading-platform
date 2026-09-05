@@ -1498,10 +1498,18 @@ Parent coverage: 401 commits across 9 refs.
 - `f276681916ef` — Merge pull request #7 from AdamEddahmouni/docs/regenerate-history-ledger-20260905 — refs: `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
   - Author: AdamEddahmouni (2026-09-04T21:48:13-04:00)
   - Rationale (commit-subject-and-body): docs(history): regenerate audit ledger through 4f001e5
-- `138c935de0e4` — docs: add 2026-09-04 workspace hardening review and tracked task plan — refs: `refs/heads/main`
+- `138c935de0e4` — docs: add 2026-09-04 workspace hardening review and tracked task plan
   - Author: AdamEddahmouni (2026-09-04T22:35:10-04:00)
   - Rationale (commit-subject-and-body): Whole-workspace review (platform, data children, short-squeeze, parent
 tooling, donor posture) with a checkable P0/P1/P2 hardening backlog of 17
 items. P0-3 (single source of truth for lane/module identity) is closed with
 the platform refactor in 072e62e; the remaining 16 items stay open behind the
 closed live-execution gates.
+- `c342609856fc` — docs(history): regenerate audit ledger through 138c935
+  - Author: AdamEddahmouni (2026-09-04T22:36:52-04:00)
+  - Rationale (commit-subject-and-body): Capture the hardening review and tracked task plan commit (138c935) and
+refresh repository timelines in REFS.json and WORK_LEDGER.jsonl.
+- `090cef141b0c` — docs: close P1-7 in hardening task plan — refs: `refs/heads/main`
+  - Author: AdamEddahmouni (2026-09-04T22:46:22-04:00)
+  - Rationale (commit-subject-and-body): Mark the equity-data-v1-worktree git ownership fix closed: safe.directory
+entry added and monorepo_guard.py validate passing (2/17 items closed).
