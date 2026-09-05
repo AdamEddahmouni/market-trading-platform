@@ -65,6 +65,7 @@ from market_platform_foundation.intelligence.execution import (
 )
 from market_platform_foundation.paper.ledger import PaperExecutionLedger
 from market_platform_foundation.providers.identity import InstrumentIdentity
+from market_platform_foundation.strategy.preregistration import build_preregistration
 from market_platform_foundation.strategy.runtime import (
     StrategyPaperRuntime,
     StrategyRuntimeError,
@@ -236,6 +237,8 @@ def _runtime_fixture(
     bars: list[dict[str, object]] | None = None,
     evaluator_disposition: StrategyMatchDisposition = StrategyMatchDisposition.MATCHED,
     session_id: str = "runtime-paper-task6",
+    champion: ChampionAssignmentV1 | None = None,
+    execution_eligibility: dict | None = None,
 ) -> tuple[StrategyPaperRuntime, InMemoryIntelligenceRepository, ScanRequest, ForecastV1]:
     repository = InMemoryIntelligenceRepository()
     repository.put_event(
@@ -267,7 +270,7 @@ def _runtime_fixture(
             ),
         )
     )
-    champion = _champion(target_kind=target_kind)
+    champion = champion if champion is not None else _champion(target_kind=target_kind)
     active_forecast = forecast or _forecast(champion)
     repository.put_forecast(active_forecast)
     policy: OpportunityPolicyV1 = build_opportunity_policy(
@@ -390,6 +393,7 @@ def _runtime_fixture(
             allowed_evidence_tiers=(EvidenceTier.OBSERVED_REPLAY,),
             allowed_evidence_modes=("PAPER",),
         ),
+        strategy_eligibility=execution_eligibility,
     )
     return runtime, repository, request, active_forecast
 
@@ -1192,6 +1196,131 @@ def _task5_learning_runtime(
         "prediction_ledger_entry": prediction_ledger_entry,
     }
     return runtime, repository, forecast, prediction_ledger_entry
+
+
+class StrategyExecutionEligibilityGateTests(unittest.TestCase):
+    """P1-1: unknown/unpromoted strategies cannot reach OrderReadyV1 execution intent."""
+
+    @staticmethod
+    def _momentum_definition() -> StrategyDefinition:
+        # Byte-identical to the definition used by ``_strategy_request`` so the
+        # preregistration identity matches the strategy identity on the order path.
+        return StrategyDefinition(
+            alignment_type="FORECAST_MOMENTUM",
+            hypothesis="deterministic paper momentum",
+            evidence_requirements=(),
+            instrument_id="AAPL",
+            asset_class="EQUITY",
+            family="TREND",
+            style="MOMENTUM",
+            timeframe="5M",
+        )
+
+    @staticmethod
+    def _preregistration() -> dict:
+        return build_preregistration(
+            StrategyExecutionEligibilityGateTests._momentum_definition(),
+            registered_at="2026-08-16T00:00:00.000000000Z",
+        )
+
+    def test_unknown_strategy_cannot_reach_execution_intent(self) -> None:
+        # No preregistration supplied: the strategy on the order path is unknown
+        # to the gate, so intent must be denied before any paper mutation.
+        runtime, repository, request, _forecast = _runtime_fixture(
+            execution_eligibility={
+                "forward_evidence_class": EvidenceTier.OBSERVED_REPLAY.value,
+            },
+            session_id="runtime-paper-task6-no-prereg",
+        )
+
+        result = runtime.run_entry(request)
+
+        self.assertEqual(result.status, "STRATEGY_BLOCKED")
+        order_ready = repository.get_order_ready(result.ids["order_ready_id"])
+        self.assertIsNotNone(order_ready)
+        self.assertEqual(order_ready.status.value, "BLOCKED")
+        self.assertIn(
+            "STRATEGY_EXECUTION_ELIGIBILITY_BLOCKED",
+            order_ready.reason_codes,
+        )
+        self.assertTrue(
+            any(ref.kind == "strategy_eligibility" for ref in order_ready.lineage_refs)
+        )
+        self.assertEqual(runtime.ledger.project_orders(), [])
+        self.assertEqual(runtime.ledger.project_fills(), [])
+        eligibility = next(d for d in result.diagnostics if d.stage == "eligibility")
+        self.assertIn("STRATEGY_NOT_PREREGISTERED", eligibility.reason_codes)
+
+    def test_unpromoted_bootstrap_champion_cannot_reach_execution_intent(self) -> None:
+        # Preregistered, but the champion is a BOOTSTRAP assignment with no
+        # promotion decision: promotion governance has not placed it, so it
+        # cannot claim execution intent.
+        runtime, repository, request, _forecast = _runtime_fixture(
+            execution_eligibility={
+                "preregistration": self._preregistration(),
+                "forward_evidence_class": EvidenceTier.OBSERVED_REPLAY.value,
+            },
+            session_id="runtime-paper-task6-bootstrap",
+        )
+
+        result = runtime.run_entry(request)
+
+        self.assertEqual(result.status, "STRATEGY_BLOCKED")
+        eligibility = next(d for d in result.diagnostics if d.stage == "eligibility")
+        self.assertIn("CHAMPION_NOT_PROMOTED", eligibility.reason_codes)
+        self.assertEqual(runtime.ledger.project_orders(), [])
+
+    def test_promoted_champion_without_forward_evidence_is_inconclusive_blocked(self) -> None:
+        champion = replace(
+            _champion(),
+            assignment_id="champion-promoted-1",
+            assignment_reason=ChampionAssignmentReason.PROMOTION,
+            promotion_decision_id="promotion-decision-paper-1",
+        )
+        runtime, repository, request, _forecast = _runtime_fixture(
+            champion=champion,
+            execution_eligibility={
+                "preregistration": self._preregistration(),
+            },
+            session_id="runtime-paper-task6-no-forward-evidence",
+        )
+
+        result = runtime.run_entry(request)
+
+        self.assertEqual(result.status, "STRATEGY_BLOCKED")
+        eligibility = next(d for d in result.diagnostics if d.stage == "eligibility")
+        self.assertIn(
+            "FORWARD_EVIDENCE_CLASS_NOT_ESTABLISHED",
+            eligibility.reason_codes,
+        )
+        self.assertEqual(runtime.ledger.project_orders(), [])
+
+    def test_promoted_preregistered_champion_with_forward_evidence_is_ready(self) -> None:
+        champion = replace(
+            _champion(),
+            assignment_id="champion-promoted-1",
+            assignment_reason=ChampionAssignmentReason.PROMOTION,
+            promotion_decision_id="promotion-decision-paper-1",
+        )
+        runtime, repository, request, _forecast = _runtime_fixture(
+            champion=champion,
+            execution_eligibility={
+                "preregistration": self._preregistration(),
+                "forward_evidence_class": EvidenceTier.OBSERVED_REPLAY.value,
+            },
+            session_id="runtime-paper-task6-promoted",
+        )
+
+        result = runtime.run_entry(request)
+
+        self.assertEqual(result.status, "FILLED")
+        order_ready = repository.get_order_ready(result.ids["order_ready_id"])
+        self.assertIsNotNone(order_ready)
+        self.assertEqual(order_ready.status.value, "READY")
+        # Every gated order intent stays auditable to its eligibility record.
+        self.assertTrue(
+            any(ref.kind == "strategy_eligibility" for ref in order_ready.lineage_refs)
+        )
 
 
 if __name__ == "__main__":

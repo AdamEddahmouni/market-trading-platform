@@ -5,7 +5,7 @@
 | Created | 2026-09-04 |
 | Source | [Hardening review](2026-09-04-hardening-review.md) |
 | Purpose | Tracked, checkable backlog produced by the workspace hardening review. Items are grouped P0 → P2. Each item names evidence, the fix, and an acceptance check. |
-| Status | In progress — 3/17 closed (P0-3, P1-7, P1-8, 2026-09-04) |
+| Status | In progress — 9/17 closed (P0-1, P0-2, P0-3, P0-4, P1-1, P1-7, P1-8, P2-3, P2-5; 2026-09-04/05) |
 
 **How to use:** tick `[ ]` → `[x]` as items close. Substantive work should also follow the owning repo's conventions (platform work log entry in `integrated-market-platform/docs/engineering/WORK_LOG.md`; short-squeeze work in its own repo; snapshot refreshes through the guarded monorepo import).
 
@@ -21,6 +21,7 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 - **Evidence:** `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/P6_SHADOW_RUN_1_PROTOCOL.md`; `docs/engineering/EVIDENCE_01C*`; BUILD25/29 limitation artifacts; TD-004 (`docs/engineering/TECH_DEBT.md`).
 - **Fix:** one checklist document (owner: platform docs) listing the exact prerequisites to reopen each of P6 Shadow Run 1, EVIDENCE-01C, live canary, Tradier sandbox wire, and Moomoo OpenD shakedown — connectivity, env vars, credentials, fixture-state, rollback, and acceptance artifacts.
 - **Acceptance:** a reviewer can determine in one page exactly which env/credential/connectivity prerequisites block each campaign today, and what each campaign must produce to count.
+- **Closed 2026-09-05** — `docs/engineering/FORWARD_VALIDATION_READINESS_CHECKLIST.md` added (platform tree): per-campaign rows for P6 Shadow Run 1, EVIDENCE-01C, live canary, Tradier sandbox wire, and Moomoo OpenD shakedown with connectivity / env vars / credentials / fixture-state / rollback / acceptance-artifact columns, current blockers pulled from PROGRAM_STATUS + TECH_DEBT. Reviewer can read the blocker column to see exactly what blocks each campaign today. Platform work-log entry added.
 
 ### P0-2 — Promotion dry-run harness (champion/challenger machinery proof)
 
@@ -28,6 +29,7 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 - **Evidence:** `docs/engineering/CHAMPION_CHALLENGER_PROMOTION_V1.md`; decision-research gate report (no `SUPPORTED` strategy).
 - **Fix:** a fixture-driven dry-run that replays recorded paper outcomes through the promotion policy (`strategy/evaluation.py`, promotion engine) and emits an immutable decision record (`PROMOTED` / `NOT_PROMOTED`), proving the ladder without claiming an edge.
 - **Acceptance:** test exists in `tests/`; output record references exact preregistration + evidence; docs state the dry run grants no execution authority.
+- **Closed 2026-09-05** — `intelligence/promotion/dry_run.py` fixture-driven dry run: replays recorded shadow observations through the promotion engine and emits an immutable decision record (`PROMOTED` / `NOT_PROMOTED` / `INVALID`) referencing the exact champion assignment + preregistration + shadow manifest, with a `dry_run=True` marker so the record grants no execution authority (P1-1 now enforces that separation at the order path). Tests: `tests/intelligence/test_promotion_dry_run.py`, 6 passed. Platform work-log entry added.
 
 ### P0-3 — Single source of truth for lane/module identity
 
@@ -43,6 +45,7 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 - **Evidence:** `src/market_platform_foundation/portfolio/attribution.py`, `attribution_materializer.py`; `PAPER_DECISION_LIFECYCLE.md`.
 - **Fix:** materializer fails closed on any mismatch with authoritative fill-driven accounting; mismatch is recorded as an immutable event (mirroring P4-REC semantics), never silently absorbed.
 - **Acceptance:** unit test forces a mismatch and asserts fail-closed + event recorded; no legitimate state can produce a silent divergence.
+- **Closed 2026-09-05** — `attribution_materializer.py` enforces parity before persisting: recomputation is compared against every already-persisted attribution for the same allocation; any already-covered fill whose authoritative accounting changed, or any coverage regression, records an immutable `ATTRIBUTION_PARITY_VIOLATION` `EventV1` (deterministic `ATTR-PARITY-*` id) and raises `AttributionMaterializationError` — never silently absorbed. Identical recomputations (dedup) and legitimate CUMULATIVE coverage growth stay silent. Tests: `tests/platform/test_strategy_attribution.py` (`AttributionParityInvariantTests`), 14 passed / 3 subtests. Platform work-log entry added.
 
 ---
 
@@ -54,6 +57,7 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 - **Evidence:** `src/market_platform_foundation/strategy/runtime.py` (order-ready construction path); learning boundary tests (`tests/intelligence/test_strategy_learning.py`).
 - **Fix:** small explicit eligibility predicate (preregistered + promotion state + forward-evidence class) enforced on the order-ready path and by test.
 - **Acceptance:** per-order intent is auditable to the strategy's eligibility record; unknown/unpromoted strategies cannot reach execution intent.
+- **Closed 2026-09-05** — `strategy/eligibility.py` adds the single predicate (preregistered identity + promotion state + forward-evidence class) returning an immutable, deterministically-addressed `StrategyEligibilityRecordV1`. `StrategyPaperRuntime` enforces it on the order-ready construction path when an execution-eligibility configuration is supplied: ineligible/unknown strategies produce a persisted BLOCKED OrderReadyV1 stamped `STRATEGY_EXECUTION_ELIGIBILITY_BLOCKED` plus a `strategy_eligibility` lineage ref to the record (per-order intent auditable), a `STRATEGY_BLOCKED` result, and zero paper mutation; fully eligible (preregistered + ACTIVE PROMOTION champion + forward evidence tier) runs READY/FILLED. Research runtimes without the configuration keep current behavior; execution-intent wiring must supply it (fail closed by construction). Tests: `StrategyExecutionEligibilityGateTests` in `tests/intelligence/test_equity_paper_runtime.py`, 4 passed; runtime/learning regression 26 passed. Platform work-log entry added.
 
 ### P1-2 — Canonical opportunity path enforcement (retire path multiplicity)
 
@@ -132,6 +136,7 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 - **Evidence:** `docs/research/{THREE,FOUR,FIVE}_LANE_ROADMAP_RECONCILIATION.md`; root `README.md`; `docs/MONOREPO_WORKFLOW.md`; `docs/platform/PROGRAM_STATUS.md`.
 - **Fix:** add superseded headers with forward links; route status readers to canonical docs; correct public/private wording.
 - **Acceptance:** `tools/check_docs_links.py` passes; each superseded doc links to its current replacement.
+- **Closed 2026-09-05** — superseded headers with forward links added to the THREE/FOUR/FIVE-lane reconciliations; root `README.md` annotates the stale reconciliation link; `docs/MONOREPO_WORKFLOW.md` no longer calls the public repo private and documents the plain-file snapshot sync path actually used. `tools/check_docs_links.py`: OK (162 governance files).
 
 ### P2-4 — Donor isolation verification
 
@@ -146,6 +151,7 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 - **Evidence:** SHARED P2/P3/P4 specs; ADR-0006; decision-research synthesis rules.
 - **Fix:** add a checklist item in the conflict-detection section of `PLATFORM_COOPERATIVE_MASTER_ROADMAP.md`.
 - **Acceptance:** the conflict checklist includes the doctrine bullets.
+- **Closed 2026-09-05** — conflict-detection section of `PLATFORM_COOPERATIVE_MASTER_ROADMAP.md` now carries the per-lane doctrine bullets (no composite score / no fabricated synthesis / no universal news score; cross-lane evidence provenance; ADR-0006 decision-research synthesis).
 
 ---
 

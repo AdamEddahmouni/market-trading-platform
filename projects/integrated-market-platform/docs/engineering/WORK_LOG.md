@@ -26,6 +26,50 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-05 — P0-4: attribution parity enforced as a fail-closed invariant
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend` |
+| **Summary** | `portfolio/attribution_materializer.py` now enforces attribution parity with the authoritative fill-driven ledger: before persisting, a recomputation is compared against every already-persisted attribution for the same allocation. Any fill it already covers that changed accounting, or any coverage regression, records an immutable `ATTRIBUTION_PARITY_VIOLATION` event (`EventV1`, deterministic `ATTR-PARITY-*` id) and raises `AttributionMaterializationError` — the divergence is never silently absorbed. Identical recomputations (dedup path) and legitimate CUMULATIVE coverage growth (later fills appended) remain silent. |
+| **Key files** | Modified: `src/market_platform_foundation/portfolio/attribution_materializer.py`; created/extended tests: `tests/platform/test_strategy_attribution.py` (parity fake repo + `AttributionParityInvariantTests`) |
+| **Tests** | `tests/platform`: 14 passed, 3 subtests; combined platform/intelligence run 518 passed, 2 skipped |
+| **Related** | [Hardening task plan](../../../docs/reviews/2026-09-04-hardening-task-plan.md) P0-4; [PAPER_DECISION_LIFECYCLE.md](PAPER_DECISION_LIFECYCLE.md) |
+
+## 2026-09-05 — P1-1: explicit strategy eligibility gate before OrderReadyV1 execution intent
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend` |
+| **Summary** | Added the single checkable predicate — preregistered (identity match on the order path) + promotion state (ACTIVE champion reached through the promotion engine, carrying a promotion decision) + forward-evidence class (evidence tier that reflects post-registration observation) — in `strategy/eligibility.py`. `StrategyPaperRuntime` enforces it on the order-ready path when an execution-eligibility configuration is supplied: unknown/unpromoted strategies cannot reach execution intent — the persisted OrderReadyV1 is stamped BLOCKED with `STRATEGY_EXECUTION_ELIGIBILITY_BLOCKED` plus a `strategy_eligibility` lineage ref to the deterministic record, no paper mutation occurs, and a `STRATEGY_BLOCKED` result is returned. Research/paper runtimes without the configuration keep today's behavior; campaign wiring that claims execution intent must supply it (fail closed by construction). |
+| **Key files** | Created: `src/market_platform_foundation/strategy/eligibility.py`; modified: `src/market_platform_foundation/strategy/runtime.py`, `tests/intelligence/test_equity_paper_runtime.py` (`StrategyExecutionEligibilityGateTests`) |
+| **Tests** | `StrategyExecutionEligibilityGateTests`: 4 passed; runtime + learning regression 26 passed |
+| **Related** | [Hardening task plan](../../../docs/reviews/2026-09-04-hardening-task-plan.md) P1-1 |
+
+## 2026-09-05 — P0-2: promotion dry-run harness (champion/challenger machinery proof)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend` |
+| **Summary** | Fixture-driven promotion dry run (`intelligence/promotion/dry_run.py`) that replays recorded shadow observations through the promotion engine and emits an immutable `PROMOTED` / `NOT_PROMOTED` / `INVALID` decision record referencing the exact preregistration + evidence manifest — proving the ladder end-to-end without claiming an edge or granting execution authority (P1-1's eligibility gate is what separates a dry run from a real promotion). |
+| **Key files** | Created: `src/market_platform_foundation/intelligence/promotion/dry_run.py`, `tests/intelligence/test_promotion_dry_run.py` |
+| **Tests** | `test_promotion_dry_run.py`: 6 passed |
+| **Related** | [Hardening task plan](../../../docs/reviews/2026-09-04-hardening-task-plan.md) P0-2; [CHAMPION_CHALLENGER_PROMOTION_V1.md](CHAMPION_CHALLENGER_PROMOTION_V1.md) |
+
+## 2026-09-05 — P0-1 / P2-3 / P2-5: readiness checklist and lane-docs hygiene
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Added the one-page forward-validation readiness checklist (`docs/engineering/FORWARD_VALIDATION_READINESS_CHECKLIST.md`) listing per-campaign blockers and required acceptance artifacts to reopen P6 Shadow Run 1, EVIDENCE-01C, the live canary, Tradier sandbox, and Moomoo OpenD; superseded headers on the three lane-reconciliation roadmaps plus README pointer fix; per-lane doctrine checklist (no composite score / no fabricated synthesis / cross-lane provenance) added to the cooperative master roadmap conflict section. |
+| **Key files** | Created: `docs/engineering/FORWARD_VALIDATION_READINESS_CHECKLIST.md`; modified: `docs/research/THREE_LANE_ROADMAP_RECONCILIATION.md`, `docs/research/FOUR_LANE_ROADMAP_RECONCILIATION.md`, `docs/research/FIVE_LANE_ROADMAP_RECONCILIATION.md`, `docs/research/PLATFORM_COOPERATIVE_MASTER_ROADMAP.md`, `README.md` |
+| **Tests** | Platform doc-link check passed |
+| **Related** | [Hardening task plan](../../../docs/reviews/2026-09-04-hardening-task-plan.md) P0-1, P2-3, P2-5 |
+
 ## 2026-09-04 — P0-3: canonical lane-module identity (single registry, no drift)
 
 | Field | Value |
