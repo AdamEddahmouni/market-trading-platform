@@ -342,10 +342,16 @@ with the warm-cycle contract, regenerate phase 3a/3b fixture metadata
 (canonical generator output), and apply owner-approved exemptions for the
 Finviz auto-refresh feature (curl_cffi/tools.provider_auth guards) and the
 pre-existing squeeze_priority SUBPRIME vocabulary.
-- `41f52bb07aa0` — test: align analysis/app expectations with expanded Phase 3F cohort — refs: `refs/heads/phase/3e-historical-acquisition`
+- `41f52bb07aa0` — test: align analysis/app expectations with expanded Phase 3F cohort
   - Author: AdamEddahmouni (2026-09-05T01:14:25-04:00)
   - Rationale (commit-subject-and-body): Update tests to the computed 29-symbol/43-case values (runner counts,
 cohort memberships, BIYA's third row, sample-size LIMIted band, env-var
 surfaces), regenerate the six stale phase-3d fixtures from the generator,
 and move start_cloud's env/cwd side effects into the entry block so
 importing it no longer leaks CLOUD_PROVIDER_MODE across the test session.
+- `ae1e9e45ac67` — chore: allowlist reviewed code-terminology assignment matches in release audit — refs: `refs/heads/phase/3e-historical-acquisition`, `refs/remotes/origin/phase/3e-historical-acquisition`
+  - Author: AdamEddahmouni (2026-09-05T03:01:22-04:00)
+  - Rationale (commit-subject-and-body): The scanner's ACADEMIC_OR_PERSONAL signature matches "assignment" in
+provider_session.py's mypy ignore code and evaluator.py's causal
+state-machine docstring/notes. Review and allowlist these code-terminology
+lines so the Public Release Audit gate passes on the Phase 3E/3F PR.

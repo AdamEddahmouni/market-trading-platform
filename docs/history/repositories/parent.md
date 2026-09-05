@@ -1537,8 +1537,19 @@ WORK_LEDGER.jsonl, including the short-squeeze repository timeline.
 
 ## 2026-09-05
 
-- `1ce490d14352` — merge: sync short-squeeze snapshot to 41f52bb — refs: `refs/heads/chore/import-short-squeeze-8a5e43e`
+- `1ce490d14352` — merge: sync short-squeeze snapshot to 41f52bb
   - Author: AdamEddahmouni (2026-09-05T01:16:32-04:00)
   - Rationale (commit-subject-and-body): Refresh projects/short-squeeze-project from the short-squeeze child repo at
 41f52bb (analysis/app test alignment for the expanded Phase 3F cohort plus
 the start_cloud import side-effect fix) and bump the manifest source_commit.
+- `207aed2962a3` — docs(history): regenerate audit ledger through 1ce490d
+  - Author: AdamEddahmouni (2026-09-05T02:53:54-04:00)
+  - Rationale (commit-subject-and-body): Capture the short-squeeze verification commits (d935434, 41f52bb), the
+parent snapshot sync to 41f52bb (1ce490d), and the P1-8 verification
+continuation note in REFS.json, WORK_LEDGER.jsonl, and both repository
+timelines.
+- `84dc9cd017f6` — merge: sync short-squeeze snapshot to ae1e9e4 — refs: `refs/heads/chore/import-short-squeeze-8a5e43e`
+  - Author: AdamEddahmouni (2026-09-05T03:02:45-04:00)
+  - Rationale (commit-subject-and-body): Refresh projects/short-squeeze-project from the short-squeeze child repo at
+ae1e9e4 (release-audit allowlist for code-terminology "assignment" matches)
+and bump the manifest source_commit.
