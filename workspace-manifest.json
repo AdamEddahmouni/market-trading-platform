@@ -22,7 +22,7 @@
       "snapshot_path": "projects/equity-data-v1-worktree",
       "source_remote": "https://github.com/AdamEddahmouni/integrated-market-intelligence-platform.git",
       "source_ref": "feat/equity-data-v1",
-      "source_commit": "825dd8ba2afd31cc3fc9666adada95618cc74138",
+      "source_commit": "ad54fb8d5955b55456a23f4a6925a55465f47614",
       "expected_visibility": "private",
       "source_policy": "unchanged"
     },
