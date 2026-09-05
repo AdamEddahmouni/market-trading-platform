@@ -37,6 +37,18 @@
       "reason": "Documents the backward-compatible research-summary API alias."
     },
     {
+      "category": "ACADEMIC_OR_PERSONAL",
+      "path": "apps/research_screener/provider_session.py",
+      "line_pattern": "type: ignore\\[assignment,misc\\]",
+      "reason": "Mypy error code for an optional live-session assignment; code terminology, not academic/personal content."
+    },
+    {
+      "category": "ACADEMIC_OR_PERSONAL",
+      "path": "src/squeeze_core/intelligence/evaluator.py",
+      "line_pattern": "(?i)state assignment",
+      "reason": "Causal state-machine assignment terminology in the module docstring and notes; not academic/personal content."
+    },
+    {
       "category": "CREDENTIAL",
       "path": "src/squeeze_core/acquisition/historical_data_submission_kit/templates.py",
       "line_pattern": "^GUIDANCE_KEY = \"_field_guidance\"$",
