@@ -20,7 +20,23 @@ def repo_root(start: Path | None = None) -> Path:
     git_dir = _git_dir(start)
     if git_dir is None:
         raise FileNotFoundError("GIT_REPOSITORY_NOT_FOUND")
-    return git_dir.parent
+    git_root = git_dir.parent
+    if start is None:
+        # When the platform tree is embedded inside a larger monorepo (e.g.
+        # the market-trading-platform snapshot under
+        # projects/integrated-market-platform), the nearest .git directory is
+        # an ancestor of the platform tree. Repository-relative artifacts live
+        # at the platform tree root (phase0-dependency-lock.json / artifacts/),
+        # so prefer the deepest module anchor that still carries that marker
+        # without ever climbing above the git root. In the platform's own
+        # repository the anchor IS the git root, so behavior is unchanged.
+        anchor = Path(__file__).resolve().parent
+        for candidate in [anchor, *anchor.parents]:
+            if candidate == git_root:
+                break
+            if (candidate / "phase0-dependency-lock.json").is_file():
+                return candidate
+    return git_root
 
 
 def read_git_head(*, start: Path | None = None) -> str | None:

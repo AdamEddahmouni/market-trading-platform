@@ -26,6 +26,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-05 — Monorepo embedding: provenance root resolution (release/qualification gates)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend` |
+| **Summary** | When the platform tree is embedded in the parent monorepo (`projects/integrated-market-platform`), git-root resolution climbed to the monorepo root, so release/qualification provenance could not find `phase0-dependency-lock.json` or `artifacts/system-acceptance/*` and ~30 change-control / release-governance / forward-qualification tests errored. `git_ref.repo_root()` and `deployment/source_provenance.get_repository_root()` now prefer the platform-tree root (marker-bounded by `phase0-dependency-lock.json`, never above the git root) when resolved from inside the platform package; in the platform's own repository the anchor is exactly the git root, so behavior is unchanged. First platform-source PR to run `imp.py validate changed` surfaced this. |
+| **Key files** | Modified: `src/market_platform_foundation/git_ref.py`, `src/market_platform_foundation/intelligence/live_canary/deployment/source_provenance.py` |
+| **Tests** | `imp.py validate changed`: 1691 tests, 27 skipped, 0 failures, 0 errors; change-control/release-governance/forward-qualification/paper-execution-qualification files: 130 passed |
+| **Related** | [Hardening task plan](../../../docs/reviews/2026-09-04-hardening-task-plan.md) |
+
 ## 2026-09-05 — P0-4: attribution parity enforced as a fail-closed invariant
 
 | Field | Value |
