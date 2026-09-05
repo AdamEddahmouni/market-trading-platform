@@ -1509,7 +1509,23 @@ closed live-execution gates.
   - Author: AdamEddahmouni (2026-09-04T22:36:52-04:00)
   - Rationale (commit-subject-and-body): Capture the hardening review and tracked task plan commit (138c935) and
 refresh repository timelines in REFS.json and WORK_LEDGER.jsonl.
-- `090cef141b0c` — docs: close P1-7 in hardening task plan — refs: `refs/heads/main`
+- `090cef141b0c` — docs: close P1-7 in hardening task plan
   - Author: AdamEddahmouni (2026-09-04T22:46:22-04:00)
   - Rationale (commit-subject-and-body): Mark the equity-data-v1-worktree git ownership fix closed: safe.directory
 entry added and monorepo_guard.py validate passing (2/17 items closed).
+- `492e093900f7` — docs(history): regenerate audit ledger through 090cef1 — refs: `refs/heads/main`
+  - Author: AdamEddahmouni (2026-09-04T22:47:59-04:00)
+  - Rationale (commit-subject-and-body): Capture the P1-7 task-plan closure commit (090cef1) and refresh repository
+timelines in REFS.json and WORK_LEDGER.jsonl.
+- `8c9fd5647d38` — merge: sync short-squeeze snapshot to 8a5e43e
+  - Author: AdamEddahmouni (2026-09-04T22:54:32-04:00)
+  - Rationale (commit-subject-and-body): Refresh projects/short-squeeze-project from the short-squeeze child repo at
+8a5e43e (Phase 3F external cohort expansion and calibration findings) and
+bump the manifest source_commit. Mirrors the guarded snapshot sync pattern
+used for integrated-market-platform; subtree pull is not applicable here
+because the short-squeeze prefix was included as plain files (b73150f).
+- `37e656c5e271` — docs: close P1-8 in hardening task plan — refs: `refs/heads/chore/import-short-squeeze-8a5e43e`
+  - Author: AdamEddahmouni (2026-09-04T22:54:58-04:00)
+  - Rationale (commit-subject-and-body): Mark the short-squeeze working-tree cleanup and snapshot refresh closed:
+child commit 8a5e43e, parent snapshot sync 8c9fd56, manifest source_commit
+bumped, monorepo_guard.py validate passing (3/17 items closed).

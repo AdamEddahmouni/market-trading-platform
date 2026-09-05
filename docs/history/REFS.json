@@ -235,20 +235,21 @@
       "refs/remotes/origin/pr12-merge": "32920584deac7141abc36603a8bdacbcc80d455a"
     },
     "parent": {
+      "refs/heads/chore/import-short-squeeze-8a5e43e": "37e656c5e271b7e2f67fac39c34b9a232c36765f",
       "refs/heads/chore/monorepo-guardrails": "f5cd46a4d5cc9652a58298e4fd8ea5cf2351d1fd",
       "refs/heads/chore/monorepo-history-audit": "970b5afe6fc6ca53c5550898a5cf494169aeb5c3",
       "refs/heads/codex/market-trading-platform-monorepo": "b73150ffcc9ea3d134956f8a20ddb037237ba70c",
       "refs/heads/docs/readme-archived-child": "9d5824b3b7c008489d0d707d7c41beaf27e79adb",
       "refs/heads/feat/consolidate-child-repo": "cfdebaad014eea7370e8af45b2217d060accd8a5",
       "refs/heads/feat/rt01-paper-tracing-parent": "f995c2bf59f02beb49adcfe384d6c98f25496d1f",
-      "refs/heads/main": "090cef141b0cfbcdc668cf5185895e7048c50f81",
+      "refs/heads/main": "492e093900f703869fb934c05c9f269a1ef7e35c",
       "refs/remotes/origin/HEAD": "f276681916efe560156c6f03f05f77741798a168",
       "refs/remotes/origin/docs/regenerate-history-ledger-20260905": "2f73608d67dfeba12bb7f9d326100cf9c2fbd9df",
       "refs/remotes/origin/main": "f276681916efe560156c6f03f05f77741798a168"
     },
     "short-squeeze": {
       "refs/heads/main": "7cc0a71aca06ba6be4dd43f122a56ede007e61ec",
-      "refs/heads/phase/3e-historical-acquisition": "0b408349ab62817be3d76f69e34c6ba42cecae1f",
+      "refs/heads/phase/3e-historical-acquisition": "8a5e43e8b0ffbec1d549fdc2960c30f841d07591",
       "refs/heads/phase/3e-stage2-outcome-acquisition": "9a426813e714b08fd4d3d75ff41e248bda5a0311",
       "refs/heads/phase/3e-systematic-historical-acquisition": "8ade7af49c77334208f027326254533f33320c8d",
       "refs/remotes/origin/main": "ee4de9f09128b6316c9d122da3af0fe4707fc0f0"

@@ -314,6 +314,20 @@ match the screener-focused repository layout.
 - `9a3fe4a9e7ca` — feat: integrate Phase 3E Stage 2 forward outcomes into cohort fixtures
   - Author: AdamEddahmouni (2026-08-16T04:31:17-04:00)
   - Rationale (commit-subject-and-body): Prefer stage2 forward-outcome bars in IBKR cohort generation, refresh research and analysis anchors from updated outcome observations, document cohort expansion progress toward n=30, and mark the Stage 2 acquisition plan executed.
-- `0b408349ab62` — feat: complete Phase 3E Stage 2 pipeline and expand IBKR cohort fixtures — refs: `refs/heads/phase/3e-historical-acquisition`
+- `0b408349ab62` — feat: complete Phase 3E Stage 2 pipeline and expand IBKR cohort fixtures
   - Author: AdamEddahmouni (2026-08-16T23:03:16-04:00)
   - Rationale (commit-subject-and-body): Wire run_stage2_pipeline orchestration (outcomes, post-outcome leakage audit, Phase 3B/3C outputs), expand fixture regen to all 15 IBKR symbols, add phase3e tests, and relax demo_readiness to accept any non-zero canonical case count.
+
+## 2026-09-04
+
+- `8a5e43e8b0ff` — feat: complete Phase 3F external cohort expansion and calibration findings — refs: `refs/heads/phase/3e-historical-acquisition`
+  - Author: AdamEddahmouni (2026-09-04T22:51:54-04:00)
+  - Rationale (commit-subject-and-body): Phase 3F cohort expansion batches 01-05 (external discovery preregistration,
+identity audit, BIYA bar intake, AACP forward-outcome retry) with intake
+manifests and normalized discovery rows; ADAM weight-floor and classification
+threshold calibration policies, live profiles, reviews, and ADR findings
+0067-0070; batch 07 operation readiness tooling and report; causal
+intelligence modules (evaluator, hysteresis, fuel, cross-lane, explanation)
+with contracts and tests; stage 2 pipeline and phase 3a freeze regenerations
+for the expanded cohort including evaluation anchors, research dataset, and
+phase 3c analysis fixtures.
