@@ -36,7 +36,7 @@
 | `correlation_id` | Decision thread across draft → trace |
 | `client_order_id` | Client-generated order identity |
 | `intent_id` / `order_id` | Server-assigned persistence |
-| Lane module IDs | Canonical set in `LANE_MODULE_IDS` / `isKnownLaneModuleId` |
+| Lane module IDs | Canonical set in `WORKSPACE_LANE_REGISTRY` / `WORKSPACE_LANE_MODULE_IDS` ([laneRegistry.ts](../../ui/src/components/workspace-module-shared/laneRegistry.ts)); UI paper provenance derives from it; backend validates structurally, never enumerates |
 | Attention IDs | Backend-assigned attention item identity |
 
 Do not overload `correlation_id` with display labels or reuse for unrelated caches.

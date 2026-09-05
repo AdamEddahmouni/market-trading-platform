@@ -37,9 +37,16 @@ def _run_git(*args: str, cwd: Path | None = None) -> str:
 
 
 def get_repository_root() -> Path:
-    """Return the platform source root (module-derived, nesting-safe)."""
-
-    return ROOT
+    git_root = Path(_run_git("rev-parse", "--show-toplevel"))
+    # When the platform tree is embedded in a larger monorepo (e.g. the
+    # market-trading-platform snapshot under projects/integrated-market-platform),
+    # the git top-level is an ancestor of the platform tree and does not hold
+    # the platform's phase0-dependency-lock.json. Source provenance is scoped
+    # to the platform tree itself (module ROOT); in the platform's own
+    # repository ROOT is exactly the git top-level, so behavior is unchanged.
+    if ROOT.resolve() != git_root.resolve() and (ROOT / "phase0-dependency-lock.json").exists():
+        return ROOT
+    return git_root
 
 
 def get_commit_sha(root: Path | None = None) -> str:

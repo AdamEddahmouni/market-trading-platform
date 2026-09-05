@@ -92,6 +92,7 @@ class _MaterializerRepository:
         self.attributions: dict[str, StrategyAttributionV1] = {}
         self.proposal = None
         self.risk = None
+        self.events: list[object] = []
 
     def get_allocation_decision(self, allocation_decision_id: str) -> object | None:
         if allocation_decision_id == self.allocation.allocation_decision_id:
@@ -126,6 +127,24 @@ class _MaterializerRepository:
 
     def get_strategy_attribution(self, attribution_id: str) -> StrategyAttributionV1 | None:
         return self.attributions.get(attribution_id)
+
+    def get_strategy_attributions_by_allocation(
+        self,
+        allocation_decision_id: str,
+        *,
+        account_id: str,
+        mode: str,
+    ) -> tuple[StrategyAttributionV1, ...]:
+        return tuple(
+            record
+            for record in self.attributions.values()
+            if record.allocation_ref.id == allocation_decision_id
+            and record.account_id == account_id
+            and record.mode == mode
+        )
+
+    def put_event(self, event: object) -> None:
+        self.events.append(event)
 
 
 def _materializer_fixtures() -> tuple[_MaterializerRepository, SimpleNamespace]:
@@ -680,6 +699,97 @@ class StrategyAttributionTests(unittest.TestCase):
                 mode="PAPER",
                 as_of_ns=200,
             )
+
+
+class AttributionParityInvariantTests(unittest.TestCase):
+    """P0-4: attribution parity with the authoritative ledger is fail-closed.
+
+    A recomputation that disagrees with an already-persisted attribution for
+    the same allocation must raise and record an immutable parity event, never
+    silently absorb the divergence; identical recomputations and legitimate
+    CUMULATIVE coverage growth must stay silent.
+    """
+
+    def _open_materializer_ledger(self, session_id: str) -> PaperExecutionLedger:
+        return PaperExecutionLedger.open_session(
+            replay_session_id=session_id,
+            instrument_id="NVDA",
+            symbol="NVDA",
+            execution_mode="INTERNAL_SIMULATION",
+            execution_authority="AUTHORIZED",
+        )
+
+    def _append_entry_order_and_fill(
+        self,
+        ledger: PaperExecutionLedger,
+        lineage: SimpleNamespace,
+        *,
+        fill_price_minor: int,
+    ) -> None:
+        order_id = _append_materialized_order(
+            ledger,
+            proposal=lineage.proposal,
+            risk=lineage.risk,
+        )
+        ledger.append_fill(
+            {
+                "fill_id": "fill-entry",
+                "order_id": order_id,
+                "instrument_id": "NVDA",
+                "direction": "long",
+                "fill_quantity": 10,
+                "fill_price_minor": fill_price_minor,
+                "fill_time": 110,
+            },
+            order={"order_id": order_id},
+        )
+
+    def _materialize(self, repository: _MaterializerRepository, ledger: PaperExecutionLedger):
+        return materialize_strategy_attribution(
+            repository=repository,
+            ledger=ledger,
+            allocation_decision_id="allocation-decision-1",
+            proposal_id="proposal-1",
+            risk_decision_id="risk-1",
+            account_id="account-1",
+            mode="PAPER",
+            as_of_ns=200,
+        )
+
+    def test_identical_recomputation_is_silent_and_returns_the_persisted_record(self) -> None:
+        repository, lineage = _materializer_fixtures()
+        ledger = self._open_materializer_ledger("materializer-parity-identical")
+        self._append_entry_order_and_fill(ledger, lineage, fill_price_minor=100)
+
+        first = self._materialize(repository, ledger)
+        assert first is not None
+        duplicate = self._materialize(repository, ledger)
+
+        self.assertIs(duplicate, first)
+        self.assertEqual(repository.events, [])
+
+    def test_authoritative_ledger_mismatch_fails_closed_and_records_event(self) -> None:
+        repository, lineage = _materializer_fixtures()
+        # Authoritative session records the entry fill at 100.
+        ledger_a = self._open_materializer_ledger("materializer-parity-a")
+        self._append_entry_order_and_fill(ledger_a, lineage, fill_price_minor=100)
+        first = self._materialize(repository, ledger_a)
+        assert first is not None
+
+        # The authoritative accounting is then re-sessioned with a corrected
+        # price for the SAME fill the persisted attribution already covers.
+        ledger_b = self._open_materializer_ledger("materializer-parity-b")
+        self._append_entry_order_and_fill(ledger_b, lineage, fill_price_minor=101)
+
+        with self.assertRaises(AttributionMaterializationError) as ctx:
+            self._materialize(repository, ledger_b)
+
+        self.assertIn("ATTRIBUTION_PARITY_VIOLATION", str(ctx.exception))
+        self.assertEqual(len(repository.events), 1)
+        event = repository.events[0]
+        self.assertEqual(event.event_type, "ATTRIBUTION_PARITY_VIOLATION")
+        self.assertEqual(event.payload["persisted_attribution_id"], first.attribution_id)
+        self.assertIn("ACCOUNTING_MISMATCH:fill-entry", event.payload["violations"])
 
 
 if __name__ == "__main__":

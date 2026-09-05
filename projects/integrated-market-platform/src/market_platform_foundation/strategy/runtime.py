@@ -54,6 +54,15 @@ from ..portfolio.attribution_materializer import (
     materialize_strategy_attribution,
 )
 from ..paper.ledger import PaperExecutionLedger
+from .eligibility import (
+    ELIGIBILITY_REF_KIND,
+    GATE_REASON_CODE,
+    PREREGISTRATION_STATUS_ABSENT,
+    PREREGISTRATION_STATUS_FAIL,
+    PREREGISTRATION_STATUS_PASS,
+    StrategyEligibilityRecordV1,
+    assess_strategy_execution_eligibility,
+)
 from .learning import (
     LearningEligibility,
     LearningJoinV1,
@@ -209,6 +218,7 @@ class StrategyPaperRuntime:
         prediction_ledger_service: PredictionLedgerService | None = None,
         outcome_settlement_service: OutcomeSettlementService | None = None,
         learning_policy: Any | None = None,
+        strategy_eligibility: Mapping[str, Any] | None = None,
     ) -> None:
         self.repository = repository
         self.scanner = scanner
@@ -232,6 +242,9 @@ class StrategyPaperRuntime:
         self.prediction_ledger_service = prediction_ledger_service or PredictionLedgerService(repository)
         self.outcome_settlement_service = outcome_settlement_service or OutcomeSettlementService(repository)
         self.learning_policy = learning_policy
+        self.strategy_eligibility_config = (
+            dict(strategy_eligibility) if strategy_eligibility is not None else None
+        )
         self._entry: dict[str, Any] = {}
 
     def run_entry(
@@ -559,10 +572,12 @@ class StrategyPaperRuntime:
         )
         self.repository.put_trade_proposal(execution.proposal)
         self.repository.put_risk_decision(execution.risk_decision)
+        eligibility_record = self._assess_strategy_eligibility(match)
         order_ready = self._build_order_ready(
             allocation_decision=allocation_decision,
             prepared=execution,
             correlation_id=correlation_id,
+            eligibility_record=eligibility_record,
         )
         self.repository.put_order_ready(order_ready)
         if execution.risk_decision.decision in {
@@ -589,6 +604,30 @@ class StrategyPaperRuntime:
                             code.value for code in execution.risk_decision.reason_codes
                         ),
                         ids={"risk_decision_id": execution.risk_decision.risk_decision_id},
+                    )
+                ],
+            )
+        if eligibility_record is not None and not eligibility_record.eligible:
+            return self._result(
+                "STRATEGY_BLOCKED",
+                scan=scan,
+                match=match,
+                forecast=forecast,
+                opportunity=opportunity,
+                allocation_decision=allocation_decision,
+                proposal=execution.proposal,
+                risk_decision=execution.risk_decision,
+                order_ready=order_ready,
+                correlation_id=correlation_id,
+                diagnostics=diagnostics
+                + [
+                    RuntimeStageDiagnostic(
+                        "eligibility",
+                        "STRATEGY_BLOCKED",
+                        reason_codes=eligibility_record.reasons,
+                        ids={
+                            "strategy_eligibility_record_id": eligibility_record.record_id,
+                        },
                     )
                 ],
             )
@@ -1283,20 +1322,91 @@ class StrategyPaperRuntime:
             mode=allocation.mode,
         )
 
+    def _assess_strategy_eligibility(self, match: Any) -> StrategyEligibilityRecordV1 | None:
+        """Evaluate the execution-intent gate when one is configured.
+
+        When no ``strategy_eligibility`` configuration is supplied the runtime
+        is in research/paper mode and issues no eligibility adjudication;
+        callers claiming execution intent MUST supply the configuration so the
+        gate runs (and unknown/unpromoted strategies fail closed).
+        """
+        config = self.strategy_eligibility_config
+        if config is None:
+            return None
+        preregistration = config.get("preregistration")
+        if preregistration:
+            identity = str(preregistration.get("strategy_identity_hash") or "")
+            preregistration_status = (
+                PREREGISTRATION_STATUS_PASS
+                if identity == match.strategy_identity_hash
+                else PREREGISTRATION_STATUS_FAIL
+            )
+        else:
+            preregistration_status = PREREGISTRATION_STATUS_ABSENT
+        champion = self.champion_at_forecast
+        return assess_strategy_execution_eligibility(
+            strategy_id=match.strategy_id,
+            preregistration_status=preregistration_status,
+            champion_assignment_id=(
+                str(champion.assignment_id) if champion is not None else None
+            ),
+            champion_assignment_reason=(
+                str(champion.assignment_reason.value)
+                if champion is not None
+                and getattr(champion, "assignment_reason", None) is not None
+                else None
+            ),
+            champion_status=(
+                str(champion.status.value)
+                if champion is not None and getattr(champion, "status", None) is not None
+                else None
+            ),
+            promotion_decision_id=(
+                str(champion.promotion_decision_id)
+                if champion is not None
+                and getattr(champion, "promotion_decision_id", None) is not None
+                else None
+            ),
+            forward_evidence_class=config.get("forward_evidence_class"),
+        )
+
     @staticmethod
     def _build_order_ready(
         *,
         allocation_decision: CapitalAllocationDecisionV1,
         prepared: Any,
         correlation_id: str,
+        eligibility_record: StrategyEligibilityRecordV1 | None = None,
     ) -> OrderReadyV1:
         risk = prepared.risk_decision
+        risk_approved = risk.decision in {RiskDecisionKind.APPROVE, RiskDecisionKind.REDUCE}
+        # The gate only denies a readiness decision risk itself would have
+        # approved; a risk-rejected order stays blocked on its risk grounds.
+        eligibility_blocked = (
+            eligibility_record is not None
+            and not eligibility_record.eligible
+            and risk_approved
+        )
         status = (
             OrderReadyStatus.READY
-            if risk.decision in {RiskDecisionKind.APPROVE, RiskDecisionKind.REDUCE}
+            if risk_approved
             and risk.approved_quantity > 0
+            and not eligibility_blocked
             else OrderReadyStatus.BLOCKED
         )
+        reason_codes = [code.value for code in risk.reason_codes]
+        lineage_refs = list(prepared.lineage_refs)
+        if eligibility_record is not None:
+            # Every gated order intent is auditable to the eligibility record
+            # that adjudicated it, whether or not the gate denied it.
+            lineage_refs.append(
+                ContractReference(
+                    kind=ELIGIBILITY_REF_KIND,
+                    id=eligibility_record.record_id,
+                )
+            )
+            if eligibility_blocked:
+                reason_codes.append(GATE_REASON_CODE)
         return OrderReadyV1(
             order_ready_id=derive_order_ready_id(
                 allocation_decision_id=allocation_decision.allocation_decision_id,
@@ -1323,8 +1433,8 @@ class StrategyPaperRuntime:
             execution_mode="INTERNAL_SIMULATION",
             idempotency_key=prepared.idempotency_key,
             correlation_id=correlation_id,
-            reason_codes=tuple(code.value for code in risk.reason_codes),
-            lineage_refs=prepared.lineage_refs,
+            reason_codes=tuple(reason_codes),
+            lineage_refs=tuple(lineage_refs),
         )
 
     def _attribution_for_fill_ids(

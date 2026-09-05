@@ -1,6 +1,11 @@
 import type { AttentionItem } from "../../api/client";
 import type { PaperOrderRequest } from "../../api/schemas";
 import type { WorkspaceModuleId } from "../WorkspaceModuleNav";
+import {
+  WORKSPACE_LANE_LABELS,
+  WORKSPACE_LANE_MODULE_IDS,
+  type WorkspaceLaneModuleId,
+} from "../workspace-module-shared/laneRegistry";
 import { extractLaneProvenance, extractLaneProvenanceFallback } from "../workspace-module-shared/laneProvenance";
 import { buildPaperDecisionSourceSnapshot } from "../paper/paperDecisionSourceSnapshot";
 import { formatPaperSourceTimeLabel } from "../paper/paperSourceTimestamp";
@@ -405,40 +410,16 @@ export function isAttentionPaperOrderDraft(draft: PaperOrderDraft | undefined): 
   return parsePaperDraftProvenance(draft).type === "ATTENTION";
 }
 
-export const LANE_MODULE_IDS = [
-  "squeeze",
-  "order-flow",
-  "order-book",
-  "catalyst",
-  "options",
-  "futures",
-  "large-transactions",
-  "disclosure",
-  "institutional-flow",
-  "fund-etf",
-] as const;
+export const LANE_MODULE_IDS: readonly WorkspaceLaneModuleId[] = WORKSPACE_LANE_MODULE_IDS;
 
-export type LaneModuleId = (typeof LANE_MODULE_IDS)[number];
-
-const LANE_MODULE_LABELS: Record<LaneModuleId, string> = {
-  squeeze: "Short Squeeze",
-  "order-flow": "Order Flow",
-  "order-book": "Order Book",
-  catalyst: "Catalyst",
-  options: "Options",
-  futures: "Futures",
-  "large-transactions": "Large Transactions",
-  disclosure: "Disclosure",
-  "institutional-flow": "Institutional Flow",
-  "fund-etf": "Fund / ETF",
-};
+export type LaneModuleId = WorkspaceLaneModuleId;
 
 export function isKnownLaneModuleId(moduleId: string): moduleId is LaneModuleId {
   return (LANE_MODULE_IDS as readonly string[]).includes(moduleId);
 }
 
 export function laneModuleLabel(moduleId: string): string {
-  return isKnownLaneModuleId(moduleId) ? LANE_MODULE_LABELS[moduleId] : moduleId;
+  return isKnownLaneModuleId(moduleId) ? WORKSPACE_LANE_LABELS[moduleId] : moduleId;
 }
 
 export function parseLaneProvenance(

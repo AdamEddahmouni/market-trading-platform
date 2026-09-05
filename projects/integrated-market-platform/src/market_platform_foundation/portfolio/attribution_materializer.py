@@ -1,20 +1,173 @@
-"""Materialize immutable strategy attribution from persisted Paper fills."""
+"""Materialize immutable strategy attribution from persisted Paper fills.
+
+P0-4: attribution parity with the authoritative fill-driven ledger is an
+enforced invariant. A re-materialization that would disagree with any already-
+persisted attribution for the same allocation (changed accounting for a fill
+it already covers, or a coverage regression) fails closed and records an
+immutable parity-violation event before raising — it is never silently
+absorbed. Growing an existing attribution with later fills (CUMULATIVE
+semantics) is legitimate and is not a parity break.
+"""
 
 from __future__ import annotations
 
 from collections.abc import Mapping
 from typing import Any
 
+from ..canonical import canonical_bytes, sha256_bytes
+from ..intelligence.contracts import (
+    EventV1,
+    QualityState,
+    QualitySummary,
+    SourceReference,
+)
 from ..intelligence.contracts.common import ContractReference
 from .attribution import AttributionFillV1, StrategyAttributionV1
 
 
 MATERIALIZATION_SEMANTICS = "CUMULATIVE"
 COVERAGE_ALGORITHM_VERSION = "fill-set-coverage-v1"
+PARITY_EVENT_TYPE = "ATTRIBUTION_PARITY_VIOLATION"
+PARITY_EVENT_PREFIX = "ATTR-PARITY"
 
 
 class AttributionMaterializationError(ValueError):
     """A strategy attribution join crossed an authority or scope boundary."""
+
+
+def _authoritative_fill_payload(fill: AttributionFillV1) -> tuple[str, int, int, int, int, int]:
+    """The fill accounting the authoritative ledger must agree on."""
+    return (
+        str(fill.fill_id),
+        int(fill.fill_time_ns),
+        str(fill.direction).upper(),
+        int(fill.quantity),
+        int(fill.price_minor),
+        int(fill.commission_minor),
+        int(fill.fees_minor),
+    )
+
+
+def _parity_violations(
+    *,
+    computed: StrategyAttributionV1,
+    prior: StrategyAttributionV1,
+    as_of_ns: int | None,
+) -> tuple[str, ...]:
+    """Return authoritative-accounting disagreements with one persisted record.
+
+    CUMULATIVE semantics mean a newer record may cover strictly more fills
+    than an earlier one; that growth is legitimate. Any fill the prior record
+    already covered must either be absent (a coverage regression against the
+    authoritative ledger) or byte-identical in its fill-driven accounting.
+    Prior fills outside the current ``as_of_ns`` window are out of scope.
+    """
+    violations: list[str] = []
+    prior_by_id = {fill.fill_id: fill for fill in prior.fills}
+    computed_by_id = {fill.fill_id: fill for fill in computed.fills}
+    for fill_id in sorted(prior_by_id):
+        prior_fill = prior_by_id[fill_id]
+        if as_of_ns is not None and prior_fill.fill_time_ns > as_of_ns:
+            continue
+        computed_fill = computed_by_id.get(fill_id)
+        if computed_fill is None:
+            violations.append(f"COVERAGE_REGRESSION:{fill_id}")
+        elif _authoritative_fill_payload(prior_fill) != _authoritative_fill_payload(
+            computed_fill
+        ):
+            violations.append(f"ACCOUNTING_MISMATCH:{fill_id}")
+    return tuple(sorted(violations))
+
+
+def _record_parity_violation_event(
+    *,
+    repository: Any,
+    record: StrategyAttributionV1,
+    prior: StrategyAttributionV1,
+    violations: tuple[str, ...],
+    account_id: str,
+    mode: str,
+) -> None:
+    """Persist the immutable parity-violation event before raising."""
+    payload = {
+        "event_type": PARITY_EVENT_TYPE,
+        "allocation_decision_id": record.allocation_ref.id,
+        "persisted_attribution_id": prior.attribution_id,
+        "recomputed_attribution_id": record.attribution_id,
+        "account_id": account_id,
+        "mode": mode,
+        "instrument_id": record.instrument_id,
+        "violations": list(violations),
+        "persisted_fill_count": len(prior.fills),
+        "recomputed_fill_count": len(record.fills),
+    }
+    digest = sha256_bytes(canonical_bytes(payload))
+    event = EventV1(
+        event_id=f"{PARITY_EVENT_PREFIX}-{digest}",
+        schema_version="1",
+        event_type=PARITY_EVENT_TYPE,
+        event_time_ns=int(record.created_at_ns),
+        available_time_ns=int(record.created_at_ns),
+        payload=payload,
+        quality=QualitySummary(state=QualityState.GOOD),
+        source=SourceReference(
+            provider_id="attribution_materializer",
+            source_type="ATTRIBUTION",
+            source_record_id=str(prior.attribution_id),
+        ),
+        instrument_id=record.instrument_id,
+        lineage_refs=(
+            ContractReference(kind="allocation_decision", id=record.allocation_ref.id),
+            ContractReference(kind="strategy_attribution", id=prior.attribution_id),
+        ),
+    )
+    repository.put_event(event)
+
+
+def _enforce_attribution_parity(
+    *,
+    repository: Any,
+    record: StrategyAttributionV1,
+    resolved_allocation_id: str,
+    account_id: str,
+    mode: str,
+    as_of_ns: int | None,
+) -> None:
+    """Fail closed when recomputation disagrees with any persisted attribution.
+
+    Only repositories exposing per-allocation attribution lookup participate;
+    identical recomputations (same attribution id) are the dedup path and are
+    never flagged.
+    """
+    lookup = getattr(repository, "get_strategy_attributions_by_allocation", None)
+    if lookup is None:
+        return
+    prior_records = lookup(
+        resolved_allocation_id,
+        account_id=account_id,
+        mode=mode,
+    )
+    for prior in prior_records:
+        if str(getattr(prior, "attribution_id", "")) == record.attribution_id:
+            continue
+        violations = _parity_violations(
+            computed=record,
+            prior=prior,
+            as_of_ns=as_of_ns,
+        )
+        if not violations:
+            continue
+        _record_parity_violation_event(
+            repository=repository,
+            record=record,
+            prior=prior,
+            violations=violations,
+            account_id=account_id,
+            mode=mode,
+        )
+        raise AttributionMaterializationError(
+            f"ATTRIBUTION_PARITY_VIOLATION:{';'.join(violations)}"
+        )
 
 
 def materialize_strategy_attribution(
@@ -223,6 +376,14 @@ def materialize_strategy_attribution(
         initial_position_quantity=int(initial_position_quantity),
         initial_cost_basis_minor=int(initial_cost_basis_minor),
         created_at_ns=max(int(active_allocation.decision_time_ns), max(fill_times)),
+    )
+    _enforce_attribution_parity(
+        repository=repository,
+        record=record,
+        resolved_allocation_id=resolved_allocation_id,
+        account_id=expected_account,
+        mode=expected_mode,
+        as_of_ns=as_of_ns,
     )
     result = repository.put_strategy_attribution(record)
     if getattr(result, "value", result) == "ALREADY_PRESENT":

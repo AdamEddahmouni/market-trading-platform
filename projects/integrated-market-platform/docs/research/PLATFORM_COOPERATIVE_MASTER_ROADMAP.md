@@ -826,6 +826,13 @@ Before any milestone implementation, verify:
 - [ ] Provider coupling introduced?
 - [ ] Ownership boundary violated?
 - [ ] Duplicate primitive created?
+- [ ] Does this invent a composite or opaque score? (Doctrine: no composite score, no
+      fabricated synthesis, no universal news score — every card answers WHAT / WHY /
+      WHAT NEXT / HOW CERTAIN / WHAT MISSING from per-lane evidence.)
+- [ ] Is cross-lane evidence provenance preserved? (Evidence keeps its owning lane's IDs
+      and labels; no lane re-derives another lane's evidence under its own identity.)
+- [ ] Do decision-research synthesis rules hold (ADR-0006)? (No synthesized evidence is
+      presented as observed; signal ≠ decision ≠ execution.)
 
 If yes → update this roadmap + reconciliation doc + migrate consumers together.
 

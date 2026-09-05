@@ -1,6 +1,10 @@
 # Four-Lane Roadmap Reconciliation (Deliverable 2)
 
-**Status:** Short Squeeze + Options + Futures + Order Flow + shared platform  
+> **SUPERSEDED for cooperative sequencing.** Cross-lane dependency sequencing now lives in
+> [`PLATFORM_COOPERATIVE_MASTER_ROADMAP.md`](PLATFORM_COOPERATIVE_MASTER_ROADMAP.md). This
+> reconciliation is retained for its per-lane detail and dependency rationale.
+
+**Status:** Superseded for cooperative sequencing (retained as per-lane reference)  
 **Date:** 2026-08-18  
 **Supersedes:** `THREE_LANE_ROADMAP_RECONCILIATION.md` for Order Flow integration only
 
