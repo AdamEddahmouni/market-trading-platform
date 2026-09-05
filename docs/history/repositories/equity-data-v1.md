@@ -2368,7 +2368,7 @@ a Windows OpenD install. Include it so the safety regression passes anywhere.
 - `3db07a558c73` — Merge pull request #14 from AdamEddahmouni/fix/live-opend-not-installed — refs: `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
   - Author: AdamEddahmouni (2026-09-04T16:30:14-04:00)
   - Rationale (commit-subject-and-body): fix(tests): accept OPEN_D_NOT_INSTALLED from live environment check
-- `0681b9dc60d4` — fix(evidence): stop test runs from dirtying assistant-audit store — refs: `refs/heads/main`
+- `0681b9dc60d4` — fix(evidence): stop test runs from dirtying assistant-audit store
   - Author: AdamEddahmouni (2026-09-04T21:28:41-04:00)
   - Rationale (commit-subject-and-body): ReplayStore.load() defaulted the assistant audit root to the tracked
 evidence/ui1/assistant-audit path, so any test constructing a ReplayStore
@@ -2380,3 +2380,16 @@ Also removed the stray empty src/market_platform_foundation/tests
 directories that the frozen repository-closure classification does not
 cover, restoring the closure audit. Full validation is green: 3487 tests,
 43 skipped, 0 failures, 0 errors.
+- `072e62e8112c` — refactor(lanes): unify lane-module identity into one canonical registry — refs: `refs/heads/main`
+  - Author: AdamEddahmouni (2026-09-04T22:35:05-04:00)
+  - Rationale (commit-subject-and-body): WORKSPACE_LANE_REGISTRY (workspace-module-shared/laneRegistry.ts) is now the
+single source of lane identity, deriving WORKSPACE_LANE_MODULE_IDS and
+WORKSPACE_LANE_LABELS. paperOrderDraft exports (LANE_MODULE_IDS,
+LaneModuleId, isKnownLaneModuleId, laneModuleLabel) and paperDecisionSemantics
+(evidence map typing, MODULES_WITHOUT_EVIDENCE_LANE complement) read from it
+instead of hand-written literals. The dead backend KNOWN_LANE_MODULES
+frozenset is removed: backend lane provenance is validated structurally and
+never enumerates modules, so no backend list can drift. New laneRegistry.test.ts
+equality/closure tests fail if derived lists or the evidence map disagree.
+Verified: ui typecheck clean; vitest 436 passed / 85 files; backend py_compile
+clean with zero references to the removed const...

@@ -1487,6 +1487,21 @@ fix(evidence): stop test runs from dirtying assistant-audit store)
 into the projects/integrated-market-platform snapshot via subtree merge.
 Adds the full-validation receipt and updates WORK_LOG.md. Removed content
 per the public publish policy stays removed.
-- `4f001e51dd3e` — Merge pull request #6 from AdamEddahmouni/chore/sync-imp-snapshot-0681b9d — refs: `refs/heads/main`, `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
+- `4f001e51dd3e` — Merge pull request #6 from AdamEddahmouni/chore/sync-imp-snapshot-0681b9d
   - Author: AdamEddahmouni (2026-09-04T21:41:38-04:00)
   - Rationale (commit-subject-and-body): merge: sync integrated-market-platform snapshot to 0681b9d
+- `2f73608d67df` — docs(history): regenerate audit ledger through 4f001e5 — refs: `refs/remotes/origin/docs/regenerate-history-ledger-20260905`
+  - Author: AdamEddahmouni (2026-09-04T21:46:42-04:00)
+  - Rationale (commit-subject-and-body): Capture the integrated-platform snapshot sync (0681b9d, 1d52896,
+4f001e5) and pruned parent refs in REFS.json and WORK_LEDGER.jsonl.
+Parent coverage: 401 commits across 9 refs.
+- `f276681916ef` — Merge pull request #7 from AdamEddahmouni/docs/regenerate-history-ledger-20260905 — refs: `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
+  - Author: AdamEddahmouni (2026-09-04T21:48:13-04:00)
+  - Rationale (commit-subject-and-body): docs(history): regenerate audit ledger through 4f001e5
+- `138c935de0e4` — docs: add 2026-09-04 workspace hardening review and tracked task plan — refs: `refs/heads/main`
+  - Author: AdamEddahmouni (2026-09-04T22:35:10-04:00)
+  - Rationale (commit-subject-and-body): Whole-workspace review (platform, data children, short-squeeze, parent
+tooling, donor posture) with a checkable P0/P1/P2 hardening backlog of 17
+items. P0-3 (single source of truth for lane/module identity) is closed with
+the platform refactor in 072e62e; the remaining 16 items stay open behind the
+closed live-execution gates.
