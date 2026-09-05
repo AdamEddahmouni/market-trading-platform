@@ -5,7 +5,7 @@
 | Created | 2026-09-04 |
 | Source | [Hardening review](2026-09-04-hardening-review.md) |
 | Purpose | Tracked, checkable backlog produced by the workspace hardening review. Items are grouped P0 → P2. Each item names evidence, the fix, and an acceptance check. |
-| Status | In progress — 2/17 closed (P0-3, P1-7, 2026-09-04) |
+| Status | In progress — 3/17 closed (P0-3, P1-7, P1-8, 2026-09-04) |
 
 **How to use:** tick `[ ]` → `[x]` as items close. Substantive work should also follow the owning repo's conventions (platform work log entry in `integrated-market-platform/docs/engineering/WORK_LOG.md`; short-squeeze work in its own repo; snapshot refreshes through the guarded monorepo import).
 
@@ -104,6 +104,7 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 - **Evidence:** `git -C short-squeeze-project status --short` (213 files); `workspace-manifest.json` source_commit `0b408349…`.
 - **Fix:** complete the short-squeeze work in its own repo (commit + PR per its own workflow), then refresh the parent snapshot through the guarded import (`docs/MONOREPO_WORKFLOW.md`).
 - **Acceptance:** short-squeeze repo is clean or has a tracked branch/PR; parent snapshot commit updated via import; `monorepo_guard.py validate` passes.
+- **Closed 2026-09-04** — child repo: reviewed all 213 changed files (70 modified + 143 untracked, all under `short-squeeze-core/`, one coherent Phase 3F acquisition/calibration phase; secret scan clean; all changed `.py` pass `py_compile`) and committed as `8a5e43e` on `phase/3e-historical-acquisition` (224 files, working tree clean). Parent: refreshed `projects/short-squeeze-project` to `8a5e43e` and bumped `workspace-manifest.json` `source_commit` in `8c9fd56` on branch `chore/import-short-squeeze-8a5e43e`; `python tools/monorepo_guard.py validate` → `monorepo validation passed`. Note: `monorepo_guard.py import` (git subtree pull) cannot be used for this project because the short-squeeze snapshot was included as plain files (`b73150f`) with no subtree metadata — the sync mirrors the established pattern for the platform snapshot (`1d52896 merge: sync integrated-market-platform snapshot to …`). Pending: push `phase/3e-historical-acquisition` and open its PR per the child repo's workflow; push `chore/import-short-squeeze-8a5e43e` and open the parent PR.
 
 ---
 
