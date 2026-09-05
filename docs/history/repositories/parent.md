@@ -1290,7 +1290,7 @@ git-subtree-split: 825dd8ba2afd31cc3fc9666adada95618cc74138
 - `d5f4091b884f` — fix: harden monorepo guard CI
   - Author: AdamEddahmouni (2026-09-03T17:36:15-04:00)
   - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
-- `f5cd46a4d5cc` — fix: set snapshot Python import path in CI — refs: `refs/heads/chore/monorepo-guardrails`, `refs/remotes/origin/chore/monorepo-guardrails`
+- `f5cd46a4d5cc` — fix: set snapshot Python import path in CI — refs: `refs/heads/chore/monorepo-guardrails`
   - Author: AdamEddahmouni (2026-09-03T17:39:20-04:00)
   - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
 - `a1c82da8b74f` — chore: add monorepo synchronization guardrails (#1)
@@ -1299,7 +1299,7 @@ git-subtree-split: 825dd8ba2afd31cc3fc9666adada95618cc74138
 - `9756a91ff66e` — docs: add complete workspace history audit
   - Author: AdamEddahmouni (2026-09-03T19:19:12-04:00)
   - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
-- `970b5afe6fc6` — fix: stabilize history audit ref snapshots — refs: `refs/heads/chore/monorepo-history-audit`, `refs/remotes/origin/chore/monorepo-history-audit`
+- `970b5afe6fc6` — fix: stabilize history audit ref snapshots — refs: `refs/heads/chore/monorepo-history-audit`
   - Author: AdamEddahmouni (2026-09-03T19:25:42-04:00)
   - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
 - `09ce465a5898` — feat(paper): add profitability observability
@@ -1416,7 +1416,7 @@ a5506c1 feat(paper): add profitability observability (#11)
 - `f3ba770e1d40` — Merge commit '196fdb3c40231238b0348cffd87531355e1c1f3f' into feat/rt01-paper-tracing-parent
   - Author: AdamEddahmouni (2026-09-04T16:08:44-04:00)
   - Rationale (commit-subject-only): Rationale stated in commit subject only.
-- `f995c2bf59f0` — docs(history): regenerate audit ledger through integrated-platform 7cb5bdb — refs: `refs/heads/feat/rt01-paper-tracing-parent`, `refs/remotes/origin/feat/rt01-paper-tracing-parent`
+- `f995c2bf59f0` — docs(history): regenerate audit ledger through integrated-platform 7cb5bdb — refs: `refs/heads/feat/rt01-paper-tracing-parent`
   - Author: AdamEddahmouni (2026-09-04T16:12:01-04:00)
   - Rationale (commit-subject-and-body): Extend the workspace history audit with the child merge commit and the
 parent's new snapshot/import commits so manifest source commits resolve
@@ -1424,7 +1424,7 @@ against the ledger during CI validation.
 - `aa272f6e5bfa` — Merge pull request #13 from AdamEddahmouni/feat/rt01-paper-tracing
   - Author: AdamEddahmouni (2026-09-04T16:21:00-04:00)
   - Rationale (commit-subject-and-body): feat(rt01): trace the Paper order pipeline end to end
-- `67ded33a3274` — Merge pull request #3 from AdamEddahmouni/feat/rt01-paper-tracing-parent — refs: `refs/heads/main`, `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
+- `67ded33a3274` — Merge pull request #3 from AdamEddahmouni/feat/rt01-paper-tracing-parent
   - Author: AdamEddahmouni (2026-09-04T16:21:14-04:00)
   - Rationale (commit-subject-and-body): ci: add actionlint workflow linting (RT-01 paper tracing + validation fixes)
 - `c9ea9743d908` — fix(tests): accept OPEN_D_NOT_INSTALLED from live environment check
@@ -1439,8 +1439,54 @@ a Windows OpenD install. Include it so the safety regression passes anywhere.
 - `f411350af9af` — chore(monorepo): remove squashed integrated-platform snapshot before subtree merge
   - Author: AdamEddahmouni (2026-09-04T18:24:09-04:00)
   - Rationale (commit-subject-only): Rationale stated in commit subject only.
-- `8ae327ed1664` — merge: import integrated-market-intelligence-platform full history — refs: `refs/heads/feat/consolidate-child-repo`
+- `8ae327ed1664` — merge: import integrated-market-intelligence-platform full history
   - Author: AdamEddahmouni (2026-09-04T18:24:42-04:00)
   - Rationale (commit-subject-and-body): git-subtree-dir: projects/integrated-market-platform
 git-subtree-mainline: f411350af9af7de9ea09433901e7f3ec3fbf9a0f
 git-subtree-split: 3db07a558c739d54d1de64480ecc2db087397172
+- `a3dc87f6d675` — consolidate: retire child repo import and merge full history into parent
+  - Author: AdamEddahmouni (2026-09-04T19:05:01-04:00)
+  - Rationale (commit-subject-and-body): Fold the former integrated-market-intelligence-platform repository fully
+into this monorepo: projects/integrated-market-platform now carries the
+child's complete commit history (subtree merge at its original SHAs) instead
+of a squashed snapshot. The child's import entry is removed from
+workspace-manifest.json, the history ledger is regenerated, and docs are
+updated to describe the consolidated layout.
+- `cfdebaad014e` — publish: remove third-party, personal, and artifact content before public — refs: `refs/heads/feat/consolidate-child-repo`
+  - Author: AdamEddahmouni (2026-09-04T19:16:13-04:00)
+  - Rationale (commit-subject-and-body): Untrack the third-party class projects, personal notes and transcripts,
+and generated test artifacts so the public repository contains only the
+platform, guard tooling, and workspace documentation. Files remain on the
+local disk via --cached removal and .gitignore exclusions.
+- `f25c834912d6` — Merge pull request #4 from AdamEddahmouni/feat/consolidate-child-repo
+  - Author: AdamEddahmouni (2026-09-04T19:37:48-04:00)
+  - Rationale (commit-subject-and-body): Consolidate: merge child repo fully into the parent monorepo
+- `9d5824b3b7c0` — docs: link archived child repo in README — refs: `refs/heads/docs/readme-archived-child`
+  - Author: AdamEddahmouni (2026-09-04T19:41:22-04:00)
+  - Rationale (commit-subject-and-body): Name the archived integrated-market-intelligence-platform repository and
+link it so the consolidation point is discoverable from the public workspace.
+- `b76417637702` — Merge pull request #5 from AdamEddahmouni/docs/readme-archived-child
+  - Author: AdamEddahmouni (2026-09-04T19:42:11-04:00)
+  - Rationale (commit-subject-and-body): docs: link archived child repo in README
+- `0681b9dc60d4` — fix(evidence): stop test runs from dirtying assistant-audit store
+  - Author: AdamEddahmouni (2026-09-04T21:28:41-04:00)
+  - Rationale (commit-subject-and-body): ReplayStore.load() defaulted the assistant audit root to the tracked
+evidence/ui1/assistant-audit path, so any test constructing a ReplayStore
+appended fresh time-stamped conversations/messages on every run and dirtied
+every worktree. The default is now an ephemeral temp root; the UI API server
+and the mra001 evidence pipeline opt into TRACKED_ASSISTANT_AUDIT_ROOT
+explicitly, and build_evidence accepts an isolated audit root for tests.
+Also removed the stray empty src/market_platform_foundation/tests
+directories that the frozen repository-closure classification does not
+cover, restoring the closure audit. Full validation is green: 3487 tests,
+43 skipped, 0 failures, 0 errors.
+- `1d52896b121c` — merge: sync integrated-market-platform snapshot to 0681b9d
+  - Author: AdamEddahmouni (2026-09-04T21:37:15-04:00)
+  - Rationale (commit-subject-and-body): Bring the child repository's evidence-churn fix (0681b9d
+fix(evidence): stop test runs from dirtying assistant-audit store)
+into the projects/integrated-market-platform snapshot via subtree merge.
+Adds the full-validation receipt and updates WORK_LOG.md. Removed content
+per the public publish policy stays removed.
+- `4f001e51dd3e` — Merge pull request #6 from AdamEddahmouni/chore/sync-imp-snapshot-0681b9d — refs: `refs/heads/main`, `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
+  - Author: AdamEddahmouni (2026-09-04T21:41:38-04:00)
+  - Rationale (commit-subject-and-body): merge: sync integrated-market-platform snapshot to 0681b9d
