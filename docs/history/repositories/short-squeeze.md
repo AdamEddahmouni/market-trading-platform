@@ -290,7 +290,7 @@ match the screener-focused repository layout.
 
 ## 2026-08-15
 
-- `ee4de9f09128` — Correct provider entitlement claims and restore BIYA acquisition CLI. — refs: `refs/remotes/origin/main`
+- `ee4de9f09128` — Correct provider entitlement claims and restore BIYA acquisition CLI.
   - Author: AdamEddahmouni (2026-08-15T22:07:42-04:00)
   - Rationale (commit-subject-and-body): Remove unsupported Finnhub premium and IBKR tick-258 borrow-fee assertions, document provider capabilities accurately, and restore the outcome acquisition script removed during archive stripping.
 
@@ -299,7 +299,7 @@ match the screener-focused repository layout.
 - `3fc639c78605` — feat: add Phase 3D counterfactual calibration layer
   - Author: AdamEddahmouni (2026-08-16T04:10:55-04:00)
   - Rationale (commit-subject-and-body): Introduce calibration experiments for detection ablation and outcome sensitivity, with governance policy, ADR-0067 findings, suite tooling, and generated reports on the expanded historical cohort.
-- `7cc0a71aca06` — feat: expand IBKR historical cohort and BIYA short-pressure fixtures — refs: `refs/heads/main`
+- `7cc0a71aca06` — feat: expand IBKR historical cohort and BIYA short-pressure fixtures
   - Author: AdamEddahmouni (2026-08-16T04:16:26-04:00)
   - Rationale (commit-subject-and-body): Add Phase 3A evaluation fixtures for TRVI, LBGJ, KLRS, SG, and SLS, extend IBKR export tooling, regenerate research/analysis anchors, and update BIYA regression tests for acquired FINRA short-interest evidence.
 - `a6b9877d9b3c` — feat: revive Phase 3E historical acquisition on rebased branch
@@ -355,3 +355,13 @@ importing it no longer leaks CLOUD_PROVIDER_MODE across the test session.
 provider_session.py's mypy ignore code and evaluator.py's causal
 state-machine docstring/notes. Review and allowlist these code-terminology
 lines so the Public Release Audit gate passes on the Phase 3E/3F PR.
+- `d520768f7f6f` — Merge pull request #1 from AdamEddahmouni/phase/3e-historical-acquisition
+  - Author: AdamEddahmouni (2026-09-05T03:05:59-04:00)
+  - Rationale (commit-subject-and-body): feat: complete Phase 3E/3F historical acquisition — Stage 2 outcomes, 29-symbol cohort expansion, calibration findings
+- `8c255d2f21b6` — test: align frozen-cohort tests with expanded cohort and add demo fallback — refs: `refs/heads/fix/frozen-followups`, `refs/remotes/origin/fix/frozen-followups`
+  - Author: AdamEddahmouni (2026-09-05T03:18:09-04:00)
+  - Rationale (commit-subject-and-body): Retiring the stale local freeze surfaced five non-environmental failures
+that were miscategorized as private-data gaps:
+- `78b7467b7d5f` — Merge pull request #2 from AdamEddahmouni/fix/frozen-followups — refs: `refs/heads/main`, `refs/remotes/origin/main`
+  - Author: AdamEddahmouni (2026-09-05T03:19:37-04:00)
+  - Rationale (commit-subject-and-body): test: align frozen-cohort tests with expanded cohort and add demo research-summary fallback

@@ -336,7 +336,16 @@ def research_summary() -> dict[str, Any]:
     from . import session_state
 
     source = get_frozen_source()
-    historical = source.research_summary()
+    if source.available:
+        historical = source.research_summary()
+        mode_label = FROZEN_MODE_LABEL
+    else:
+        # Mirror every other frozen surface: without the private canonical tree,
+        # present the sanitized aggregate shipped in the deployment image.
+        from .frozen_demo import frozen_demo_research_summary
+
+        historical = frozen_demo_research_summary()
+        mode_label = historical["mode_label"]
     historical["panel"] = "FROZEN RESEARCH RESULTS"
 
     session = session_state.get_session()
@@ -344,7 +353,7 @@ def research_summary() -> dict[str, Any]:
     current["panel"] = "CURRENT OPERATIONAL SCREEN"
 
     return {
-        "header": header(Mode.FROZEN_RESEARCH, mode_label=FROZEN_MODE_LABEL),
+        "header": header(Mode.FROZEN_RESEARCH, mode_label=mode_label),
         "historical_research": historical,
         "current_operational_screen": current,
         "separation_note": (
