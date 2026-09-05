@@ -110,7 +110,7 @@ class CalibrationExperimentTests(unittest.TestCase):
         baseline = next(
             item for item in report.variant_results if item.variant_id == "baseline"
         )
-        self.assertEqual(baseline.case_count, 7)
+        self.assertEqual(baseline.case_count, 31)
 
     def test_historical_momentum_full_blocks_on_relative_volume_fail(self) -> None:
         report = run_calibration_from_path(PREDICATE_HISTORICAL)
@@ -123,8 +123,22 @@ class CalibrationExperimentTests(unittest.TestCase):
             {
                 "BIYA_EARLIEST_BOUNDARY",
                 "BIYA_LATEST_BOUNDARY",
+                "APVO_ARTIFACT_DISCOVERY",
+                "ATAI_ARTIFACT_DISCOVERY",
+                "AVTX_ARTIFACT_DISCOVERY",
+                "BHVN_ARTIFACT_DISCOVERY",
+                "CADL_ARTIFACT_DISCOVERY",
+                "CELZ_ARTIFACT_DISCOVERY",
+                "CGEM_ARTIFACT_DISCOVERY",
+                "GDC_ARTIFACT_DISCOVERY",
+                "GPRE_ARTIFACT_DISCOVERY",
+                "IOVA_ARTIFACT_DISCOVERY",
                 "KLRS_ARTIFACT_DISCOVERY",
+                "LMNX_ARTIFACT_DISCOVERY",
+                "MGNX_ARTIFACT_DISCOVERY",
+                "OBE_ARTIFACT_DISCOVERY",
                 "SG_ARTIFACT_DISCOVERY",
+                "ZNTL_ARTIFACT_DISCOVERY",
             },
         )
         for flip in momentum_full.flips_from_baseline:

@@ -22,6 +22,7 @@ param(
     [int]$Port = 8787,
     [switch]$NoBrowser,
     [switch]$Profile,
+    [switch]$CloudProviders,
     [int]$MaxRestarts = 100,
     [int]$BackoffSeconds = 2,
     [int]$MaxBackoffSeconds = 30,
@@ -40,12 +41,29 @@ if (-not (Test-Path $python)) {
 }
 
 $startScript = Join-Path $root 'start_local.py'
+if ($CloudProviders) {
+    $startScript = Join-Path $root 'start_cloud.py'
+}
 if (-not (Test-Path $startScript)) {
-    Write-Host "start_local.py not found - run from the repository root." -ForegroundColor Red
+    Write-Host "start script not found - run from the repository root." -ForegroundColor Red
     exit 1
 }
 
 $baseArgs = @($startScript, '--port', $Port)
+if ($CloudProviders) {
+    $baseArgs += '--load-local-providers'
+    $env:FINVIZ_AUTO_REFRESH = 'true'
+    $env:SQUEEZE_APP_MODE = 'CLOUD_PROVIDER_MODE'
+    $env:IBKR_ENABLED = 'true'
+    $env:IBKR_HOST = '127.0.0.1'
+    $env:IBKR_PORT = '4001'
+    $env:IBKR_CLIENT_ID = '124'
+    $refreshScript = Join-Path $root 'refresh_finviz_token.ps1'
+    if (Test-Path $refreshScript) {
+        Write-Host "Preflight: automatic Finviz token refresh..." -ForegroundColor Cyan
+        & $refreshScript
+    }
+}
 if ($Profile) { $baseArgs += '--profile' }
 if ($RemainingArgs) { $baseArgs += $RemainingArgs }
 

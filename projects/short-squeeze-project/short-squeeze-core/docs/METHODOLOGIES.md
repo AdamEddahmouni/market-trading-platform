@@ -49,10 +49,13 @@ admissible evidence and preserves unknown or conflicted results.
 | UNEVALUABLE | Insufficient evidence (< 65% supported weight in either dimension, or a critical domain missing) |
 | CONFLICTED | Material provider conflicts in evidence inputs |
 
-### Scoring behavior (0.16.0)
+### Scoring behavior (0.16.0+)
 
-- The evidence-gated floor is aligned to Finviz-supported weight (**65%**), so
-  `LOW_COVERAGE` alone does not force `UNEVALUABLE` when both dimensions score.
+- The evidence-gated floor is calibrated at **65%** supported weight per dimension
+  ([ADR 0069](../adr/0069-adam-evidence-gated-prime-calibration-findings.md)).
+- Classification gates are calibrated at baseline thresholds
+  ([ADR 0070](../adr/0070-adam-classification-threshold-calibration-findings.md)).
+- `weights_validated` and `thresholds_optimal` are `true` when default floor and gates are used.
 - Finviz mapping conflicts are **withheld** from scoring rather than silently merged.
 - Estimated DTC (from Short Float / Avg Volume) and Finviz day-change remain
   **display-only** when IBKR canonical return is missing.

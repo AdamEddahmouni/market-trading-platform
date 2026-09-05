@@ -14,10 +14,32 @@ FROZEN_SYMBOLS: tuple[str, ...] = (
     "XNCR", "PESI", "SLS", "ZNTL", "GPRE", "SSPC", "LBGJ",
     "TRVI", "LMNX", "MGNX", "BHVN", "OBE", "AVTX",
     "KLRS", "SG",
+    "CELZ", "GDC", "ADVB", "GOAI", "NXXT",
+    "VMAR", "ATAI", "CADL", "CGEM", "IOVA",
+    "PMAX", "STAK", "APVO",
+    "BIYA",
 )
 
 # Case IDs are source organization only; no association is created from them.
-CASE_IDS: dict[str, str] = {symbol: f"BATCH01_{symbol}_20260718" for symbol in FROZEN_SYMBOLS}
+CASE_IDS: dict[str, str] = {
+    symbol: f"BATCH01_{symbol}_20260718"
+    for symbol in FROZEN_SYMBOLS[:15]
+} | {
+    "CELZ": "BATCH3F01_CELZ_20260718",
+    "GDC": "BATCH3F01_GDC_20260718",
+    "ADVB": "BATCH3F01_ADVB_20260718",
+    "GOAI": "BATCH3F01_GOAI_20260718",
+    "NXXT": "BATCH3F01_NXXT_20260718",
+    "VMAR": "BATCH3F02_VMAR_20260718",
+    "ATAI": "BATCH3F02_ATAI_20260718",
+    "CADL": "BATCH3F02_CADL_20260718",
+    "CGEM": "BATCH3F02_CGEM_20260718",
+    "IOVA": "BATCH3F02_IOVA_20260718",
+    "PMAX": "BATCH3F03_PMAX_20260718",
+    "STAK": "BATCH3F03_STAK_20260718",
+    "APVO": "BATCH3F03_APVO_20260718",
+    "BIYA": "BATCH3F04_BIYA_20260718",
+}
 
 # Frozen boundary (fractional seconds preserved) and the 24h forward window end.
 FROZEN_BOUNDARY = datetime(2026, 7, 18, 13, 37, 55, 17661, tzinfo=UTC)

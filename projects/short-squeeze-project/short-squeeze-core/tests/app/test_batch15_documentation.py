@@ -68,6 +68,12 @@ def test_environment_template_uses_only_safe_placeholders_and_actual_names() -> 
         "FRESHNESS_CURRENT_SECONDS",
         "FRESHNESS_DELAYED_SECONDS",
         "MAX_CHART_POINTS",
+        "CLOUD_BOOTSTRAP_SYMBOLS",
+        "FINVIZ_AUTO_REFRESH",
+        "FINVIZ_AUTO_REFRESH_COOLDOWN_S",
+        "FINVIZ_PASSWORD",
+        "FINVIZ_USERNAME",
+        "SQUEEZE_CLOUD_LOAD_LOCAL_PROVIDERS",
     }
     assigned_names = {
         line.split("=", 1)[0]

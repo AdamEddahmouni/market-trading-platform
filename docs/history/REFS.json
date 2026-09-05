@@ -57,7 +57,7 @@
       "refs/heads/fix/imp-validation-01-baseline-suite": "b3e58b064dfa98ecc636e5ae45cea150d3c8bf4d",
       "refs/heads/fix/live-opend-not-installed": "c9ea9743d908c87e129e2583ae0a6070f996278c",
       "refs/heads/integration/all-work-2026-09-02": "45a7b127dd6c9ba8c0cc525a0468ee13ba8301b8",
-      "refs/heads/main": "0681b9dc60d4a765507fa6ba6043c7a169e61747",
+      "refs/heads/main": "072e62e8112c8b1f3f2d439a40d64d039463bdff",
       "refs/heads/postroot-acceptance-suite": "269146409f5a23b89fe64f6adae9f0987b4704f0",
       "refs/remotes/origin/HEAD": "3db07a558c739d54d1de64480ecc2db087397172",
       "refs/remotes/origin/backup/local-main-2026-08-28": "b89027a20274fc71a1dba8eb859c11f575510f97",
@@ -174,7 +174,7 @@
       "refs/heads/fix/imp-validation-01-baseline-suite": "b3e58b064dfa98ecc636e5ae45cea150d3c8bf4d",
       "refs/heads/fix/live-opend-not-installed": "c9ea9743d908c87e129e2583ae0a6070f996278c",
       "refs/heads/integration/all-work-2026-09-02": "45a7b127dd6c9ba8c0cc525a0468ee13ba8301b8",
-      "refs/heads/main": "0681b9dc60d4a765507fa6ba6043c7a169e61747",
+      "refs/heads/main": "072e62e8112c8b1f3f2d439a40d64d039463bdff",
       "refs/heads/postroot-acceptance-suite": "269146409f5a23b89fe64f6adae9f0987b4704f0",
       "refs/remotes/origin/HEAD": "3db07a558c739d54d1de64480ecc2db087397172",
       "refs/remotes/origin/backup/local-main-2026-08-28": "b89027a20274fc71a1dba8eb859c11f575510f97",
@@ -235,22 +235,25 @@
       "refs/remotes/origin/pr12-merge": "32920584deac7141abc36603a8bdacbcc80d455a"
     },
     "parent": {
+      "refs/heads/chore/import-short-squeeze-8a5e43e": "84dc9cd017f63fdcc040ea12d2f8fad49ac379a0",
       "refs/heads/chore/monorepo-guardrails": "f5cd46a4d5cc9652a58298e4fd8ea5cf2351d1fd",
       "refs/heads/chore/monorepo-history-audit": "970b5afe6fc6ca53c5550898a5cf494169aeb5c3",
       "refs/heads/codex/market-trading-platform-monorepo": "b73150ffcc9ea3d134956f8a20ddb037237ba70c",
       "refs/heads/docs/readme-archived-child": "9d5824b3b7c008489d0d707d7c41beaf27e79adb",
       "refs/heads/feat/consolidate-child-repo": "cfdebaad014eea7370e8af45b2217d060accd8a5",
       "refs/heads/feat/rt01-paper-tracing-parent": "f995c2bf59f02beb49adcfe384d6c98f25496d1f",
-      "refs/heads/main": "4f001e51dd3ed2b579f2fdb3f63dd5dce6a46aa9",
-      "refs/remotes/origin/HEAD": "4f001e51dd3ed2b579f2fdb3f63dd5dce6a46aa9",
-      "refs/remotes/origin/main": "4f001e51dd3ed2b579f2fdb3f63dd5dce6a46aa9"
+      "refs/heads/main": "492e093900f703869fb934c05c9f269a1ef7e35c",
+      "refs/remotes/origin/HEAD": "f276681916efe560156c6f03f05f77741798a168",
+      "refs/remotes/origin/docs/regenerate-history-ledger-20260905": "2f73608d67dfeba12bb7f9d326100cf9c2fbd9df",
+      "refs/remotes/origin/main": "f276681916efe560156c6f03f05f77741798a168"
     },
     "short-squeeze": {
       "refs/heads/main": "7cc0a71aca06ba6be4dd43f122a56ede007e61ec",
-      "refs/heads/phase/3e-historical-acquisition": "0b408349ab62817be3d76f69e34c6ba42cecae1f",
+      "refs/heads/phase/3e-historical-acquisition": "ae1e9e45ac67dfc0131e6c1d17cb12a801eb8012",
       "refs/heads/phase/3e-stage2-outcome-acquisition": "9a426813e714b08fd4d3d75ff41e248bda5a0311",
       "refs/heads/phase/3e-systematic-historical-acquisition": "8ade7af49c77334208f027326254533f33320c8d",
-      "refs/remotes/origin/main": "ee4de9f09128b6316c9d122da3af0fe4707fc0f0"
+      "refs/remotes/origin/main": "ee4de9f09128b6316c9d122da3af0fe4707fc0f0",
+      "refs/remotes/origin/phase/3e-historical-acquisition": "ae1e9e45ac67dfc0131e6c1d17cb12a801eb8012"
     }
   },
   "schema_version": 1

@@ -1487,6 +1487,69 @@ fix(evidence): stop test runs from dirtying assistant-audit store)
 into the projects/integrated-market-platform snapshot via subtree merge.
 Adds the full-validation receipt and updates WORK_LOG.md. Removed content
 per the public publish policy stays removed.
-- `4f001e51dd3e` — Merge pull request #6 from AdamEddahmouni/chore/sync-imp-snapshot-0681b9d — refs: `refs/heads/main`, `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
+- `4f001e51dd3e` — Merge pull request #6 from AdamEddahmouni/chore/sync-imp-snapshot-0681b9d
   - Author: AdamEddahmouni (2026-09-04T21:41:38-04:00)
   - Rationale (commit-subject-and-body): merge: sync integrated-market-platform snapshot to 0681b9d
+- `2f73608d67df` — docs(history): regenerate audit ledger through 4f001e5 — refs: `refs/remotes/origin/docs/regenerate-history-ledger-20260905`
+  - Author: AdamEddahmouni (2026-09-04T21:46:42-04:00)
+  - Rationale (commit-subject-and-body): Capture the integrated-platform snapshot sync (0681b9d, 1d52896,
+4f001e5) and pruned parent refs in REFS.json and WORK_LEDGER.jsonl.
+Parent coverage: 401 commits across 9 refs.
+- `f276681916ef` — Merge pull request #7 from AdamEddahmouni/docs/regenerate-history-ledger-20260905 — refs: `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
+  - Author: AdamEddahmouni (2026-09-04T21:48:13-04:00)
+  - Rationale (commit-subject-and-body): docs(history): regenerate audit ledger through 4f001e5
+- `138c935de0e4` — docs: add 2026-09-04 workspace hardening review and tracked task plan
+  - Author: AdamEddahmouni (2026-09-04T22:35:10-04:00)
+  - Rationale (commit-subject-and-body): Whole-workspace review (platform, data children, short-squeeze, parent
+tooling, donor posture) with a checkable P0/P1/P2 hardening backlog of 17
+items. P0-3 (single source of truth for lane/module identity) is closed with
+the platform refactor in 072e62e; the remaining 16 items stay open behind the
+closed live-execution gates.
+- `c342609856fc` — docs(history): regenerate audit ledger through 138c935
+  - Author: AdamEddahmouni (2026-09-04T22:36:52-04:00)
+  - Rationale (commit-subject-and-body): Capture the hardening review and tracked task plan commit (138c935) and
+refresh repository timelines in REFS.json and WORK_LEDGER.jsonl.
+- `090cef141b0c` — docs: close P1-7 in hardening task plan
+  - Author: AdamEddahmouni (2026-09-04T22:46:22-04:00)
+  - Rationale (commit-subject-and-body): Mark the equity-data-v1-worktree git ownership fix closed: safe.directory
+entry added and monorepo_guard.py validate passing (2/17 items closed).
+- `492e093900f7` — docs(history): regenerate audit ledger through 090cef1 — refs: `refs/heads/main`
+  - Author: AdamEddahmouni (2026-09-04T22:47:59-04:00)
+  - Rationale (commit-subject-and-body): Capture the P1-7 task-plan closure commit (090cef1) and refresh repository
+timelines in REFS.json and WORK_LEDGER.jsonl.
+- `8c9fd5647d38` — merge: sync short-squeeze snapshot to 8a5e43e
+  - Author: AdamEddahmouni (2026-09-04T22:54:32-04:00)
+  - Rationale (commit-subject-and-body): Refresh projects/short-squeeze-project from the short-squeeze child repo at
+8a5e43e (Phase 3F external cohort expansion and calibration findings) and
+bump the manifest source_commit. Mirrors the guarded snapshot sync pattern
+used for integrated-market-platform; subtree pull is not applicable here
+because the short-squeeze prefix was included as plain files (b73150f).
+- `37e656c5e271` — docs: close P1-8 in hardening task plan
+  - Author: AdamEddahmouni (2026-09-04T22:54:58-04:00)
+  - Rationale (commit-subject-and-body): Mark the short-squeeze working-tree cleanup and snapshot refresh closed:
+child commit 8a5e43e, parent snapshot sync 8c9fd56, manifest source_commit
+bumped, monorepo_guard.py validate passing (3/17 items closed).
+- `0db86746b5fb` — docs(history): regenerate audit ledger through 37e656c
+  - Author: AdamEddahmouni (2026-09-04T22:56:26-04:00)
+  - Rationale (commit-subject-and-body): Capture the short-squeeze Phase 3F commit (8a5e43e), the parent snapshot
+sync (8c9fd56), and the P1-8 task-plan closure (37e656c) in REFS.json and
+WORK_LEDGER.jsonl, including the short-squeeze repository timeline.
+
+## 2026-09-05
+
+- `1ce490d14352` — merge: sync short-squeeze snapshot to 41f52bb
+  - Author: AdamEddahmouni (2026-09-05T01:16:32-04:00)
+  - Rationale (commit-subject-and-body): Refresh projects/short-squeeze-project from the short-squeeze child repo at
+41f52bb (analysis/app test alignment for the expanded Phase 3F cohort plus
+the start_cloud import side-effect fix) and bump the manifest source_commit.
+- `207aed2962a3` — docs(history): regenerate audit ledger through 1ce490d
+  - Author: AdamEddahmouni (2026-09-05T02:53:54-04:00)
+  - Rationale (commit-subject-and-body): Capture the short-squeeze verification commits (d935434, 41f52bb), the
+parent snapshot sync to 41f52bb (1ce490d), and the P1-8 verification
+continuation note in REFS.json, WORK_LEDGER.jsonl, and both repository
+timelines.
+- `84dc9cd017f6` — merge: sync short-squeeze snapshot to ae1e9e4 — refs: `refs/heads/chore/import-short-squeeze-8a5e43e`
+  - Author: AdamEddahmouni (2026-09-05T03:02:45-04:00)
+  - Rationale (commit-subject-and-body): Refresh projects/short-squeeze-project from the short-squeeze child repo at
+ae1e9e4 (release-audit allowlist for code-terminology "assignment" matches)
+and bump the manifest source_commit.

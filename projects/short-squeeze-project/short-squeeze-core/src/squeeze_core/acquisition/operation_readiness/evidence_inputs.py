@@ -34,6 +34,20 @@ FROZEN_COHORT: tuple[tuple[str, str], ...] = (
     ("AVTX", "BATCH01_AVTX_20260718"),
     ("KLRS", "BATCH01_KLRS_20260718"),
     ("SG", "BATCH01_SG_20260718"),
+    ("CELZ", "BATCH3F01_CELZ_20260718"),
+    ("GDC", "BATCH3F01_GDC_20260718"),
+    ("ADVB", "BATCH3F01_ADVB_20260718"),
+    ("GOAI", "BATCH3F01_GOAI_20260718"),
+    ("NXXT", "BATCH3F01_NXXT_20260718"),
+    ("VMAR", "BATCH3F02_VMAR_20260718"),
+    ("ATAI", "BATCH3F02_ATAI_20260718"),
+    ("CADL", "BATCH3F02_CADL_20260718"),
+    ("CGEM", "BATCH3F02_CGEM_20260718"),
+    ("IOVA", "BATCH3F02_IOVA_20260718"),
+    ("PMAX", "BATCH3F03_PMAX_20260718"),
+    ("STAK", "BATCH3F03_STAK_20260718"),
+    ("APVO", "BATCH3F03_APVO_20260718"),
+    ("BIYA", "BATCH3F04_BIYA_20260718"),
 )
 
 FROZEN_BOUNDARY = datetime(2026, 7, 18, 13, 37, 55, 17661, tzinfo=UTC)
@@ -100,7 +114,11 @@ def _parse_utc(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
 
 
-def load_detection_context_evidence(batch05_root: Path) -> dict[str, DetectionContextEvidence]:
+def load_detection_context_evidence(
+    batch05_root: Path,
+    *,
+    boundary_by_symbol: dict[str, datetime] | None = None,
+) -> dict[str, DetectionContextEvidence]:
     """Load per-symbol detection-context coverage + artifact identity from frozen manifests."""
     requests = _load_json(batch05_root / "requests" / "request-manifest.json")
     artifacts = _load_json(batch05_root / "provenance" / "artifact-manifest.json")
@@ -119,13 +137,18 @@ def load_detection_context_evidence(batch05_root: Path) -> dict[str, DetectionCo
     result: dict[str, DetectionContextEvidence] = {}
     for symbol, req in coverage_by_symbol.items():
         art = artifact_by_symbol[symbol]
+        boundary = (
+            boundary_by_symbol.get(symbol, FROZEN_BOUNDARY)
+            if boundary_by_symbol is not None
+            else FROZEN_BOUNDARY
+        )
         observed_end = _parse_utc(req["last_timestamp_utc"])
         max_completion = observed_end + timedelta(seconds=BAR_INTERVAL_SECONDS)
-        gap = (FROZEN_BOUNDARY - max_completion) // timedelta(seconds=1)
+        gap = (boundary - max_completion) // timedelta(seconds=1)
         coverage = ArtifactCoverage(
-            requested_window_start=FROZEN_BOUNDARY
+            requested_window_start=boundary
             - timedelta(seconds=REQUESTED_DURATION_SECONDS),
-            requested_window_end=FROZEN_BOUNDARY,
+            requested_window_end=boundary,
             observed_coverage_start=_parse_utc(req["first_timestamp_utc"]),
             observed_coverage_end=observed_end,
             bar_count=int(req["bar_count"]),

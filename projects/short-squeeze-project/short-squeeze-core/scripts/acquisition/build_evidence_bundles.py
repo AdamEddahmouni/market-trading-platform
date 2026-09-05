@@ -1,4 +1,4 @@
-"""Construct PointInTimeEvidenceBundles for all 13 IBKR pilot symbols.
+"""Construct PointInTimeEvidenceBundles for all IBKR frozen-cohort symbols.
 
 Combines:
   - Normalized detection-context bars (via phase3a_freeze.evidence_adapter)
@@ -66,6 +66,13 @@ PRIMARY_EXCHANGE: dict[str, str] = {
     "XNCR": "NASDAQ", "PESI": "NASDAQ", "SLS": "NASDAQ", "ZNTL": "NASDAQ",
     "GPRE": "NASDAQ", "SSPC": "BATS", "LBGJ": "NASDAQ", "TRVI": "NASDAQ",
     "LMNX": "NASDAQ", "MGNX": "NASDAQ", "BHVN": "NYSE", "OBE": "AMEX", "AVTX": "NASDAQ",
+    "KLRS": "NASDAQ", "SG": "NYSE",
+    "CELZ": "NASDAQ", "GDC": "NASDAQ", "ADVB": "NASDAQ",
+    "GOAI": "NASDAQ", "NXXT": "NASDAQ",
+    "VMAR": "NASDAQ", "ATAI": "NASDAQ", "CADL": "NASDAQ",
+    "CGEM": "NASDAQ", "IOVA": "NASDAQ",
+    "PMAX": "NASDAQ", "STAK": "NASDAQ", "APVO": "NASDAQ",
+    "BIYA": "NASDAQ",
 }
 SYMBOLS = sorted(PRIMARY_EXCHANGE.keys())
 
@@ -75,9 +82,17 @@ RETRIEVAL_TS = datetime(2026, 7, 18, 13, 38, 0, tzinfo=UTC)
 
 # Paths
 RAW_DIR = REPO_ROOT / "intake" / "local-bars" / "ibkr-batch-05" / "raw"
-DISCOVERY_PATH = (
+DISCOVERY_PATHS = (
     REPO_ROOT / "intake" / "batches" / "phase-3d-historical-source-collection-01"
-    / "normalized" / "batch01_discovery_rows.json"
+    / "normalized" / "batch01_discovery_rows.json",
+    REPO_ROOT / "intake" / "batches" / "phase-3f-cohort-expansion-01"
+    / "normalized" / "batch3f_discovery_rows.json",
+    REPO_ROOT / "intake" / "batches" / "phase-3f-cohort-expansion-02"
+    / "normalized" / "batch3f02_discovery_rows.json",
+    REPO_ROOT / "intake" / "batches" / "phase-3f-cohort-expansion-03"
+    / "normalized" / "batch3f03_discovery_rows.json",
+    REPO_ROOT / "intake" / "batches" / "phase-3f-cohort-expansion-04"
+    / "normalized" / "batch3f04_discovery_rows.json",
 )
 BUILD_DIR = REPO_ROOT / "build" / "acquisition" / "evidence-bundles"
 
@@ -104,11 +119,14 @@ def _serialisable(obj) -> object:
 
 
 def load_discovery_data() -> dict[str, dict]:
-    """Load scanner-snapshot metadata for each symbol."""
-    data = json.loads(DISCOVERY_PATH.read_bytes())
+    """Load scanner-snapshot metadata for each symbol from all discovery batches."""
     by_symbol: dict[str, dict] = {}
-    for row in data["rows"]:
-        by_symbol[row["ticker"]] = row["detection_time_evidence"]
+    for path in DISCOVERY_PATHS:
+        if not path.is_file():
+            continue
+        data = json.loads(path.read_bytes())
+        for row in data["rows"]:
+            by_symbol[row["ticker"]] = row["detection_time_evidence"]
     return by_symbol
 
 

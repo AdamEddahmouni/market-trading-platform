@@ -1,0 +1,35 @@
+{
+  "artifact_type": "FORWARD_OUTCOME_RETRY_RECORD",
+  "case_id": "BATCH3F05_AACP_20260817",
+  "cohort_boundary": "2026-08-17T22:09:23.412932Z",
+  "forward_window_policy": "phase_3e_stage2_adjusted_monday_window.v1",
+  "adjusted_forward_start": "2026-08-20T22:09:23.412932Z",
+  "adjusted_forward_end": "2026-08-21T22:09:23.412932Z",
+  "disposition": "OUTCOME_UNEVALUABLE",
+  "disposition_reason": "IBKR TRADES historical request returned SUCCESS_EMPTY for both FROZEN_FORWARD_24H (initial collection) and ADJUSTED_FORWARD_OUTCOME_24H (retry).",
+  "ibkr_contract": {
+    "symbol": "AACP",
+    "con_id": 886847440,
+    "primary_exchange": "NASDAQ"
+  },
+  "initial_collection": {
+    "request_name": "FROZEN_FORWARD_24H",
+    "historical_status": "SUCCESS_EMPTY",
+    "bar_count": 0,
+    "source": "batch3f05-external-collection-summary.json"
+  },
+  "retry_collection": {
+    "attempted_at": "2026-08-18T01:10:00.000000000Z",
+    "request_name": "ADJUSTED_FORWARD_OUTCOME_24H",
+    "historical_status": "SUCCESS_EMPTY",
+    "bar_count": 0,
+    "connection_status": "CONNECTION_SUCCESS"
+  },
+  "limitations": [
+    "Detection-context bars for AACP are stale relative to the Aug-17 boundary (last observed trade activity ends 2026-08-14).",
+    "No forward-outcome bars exist to label under phase_3b_outcome_label_policy.v1.",
+    "Exclusion is descriptive only — no synthetic outcome bars were fabricated."
+  ],
+  "schema_version": "1.0.0",
+  "symbol": "AACP"
+}

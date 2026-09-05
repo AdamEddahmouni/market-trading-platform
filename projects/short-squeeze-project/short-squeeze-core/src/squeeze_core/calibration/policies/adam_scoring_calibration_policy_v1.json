@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0.0",
+  "policy_version": "adam_scoring_calibration_policy.v1",
+  "track": "LIVE_SCREENER",
+  "methodology_id": "adam_evidence_gated_prime.v1",
+  "allowed_sweeps": ["MIN_DIMENSION_WEIGHT", "CLASSIFICATION_THRESHOLDS"],
+  "forbidden_actions": [
+    "THRESHOLD_AUTO_PROMOTION",
+    "PREDICTIVE_VALIDATION_CLAIM",
+    "HISTORICAL_RESEARCH_POLICY_CONFLATION"
+  ],
+  "baseline_min_dimension_weight": 65,
+  "provisional": true,
+  "rationale_code": "LIVE_METHODOLOGY_EXPLORATION_ONLY"
+}

@@ -151,7 +151,9 @@ def frozen_demo_detail(symbol: str) -> dict[str, Any] | None:
     snapshot_row = next(
         row for row in frozen_demo_snapshot()["rows"] if row["symbol"] == symbol.upper()
     )
-    return {
+    from .causal_intelligence import build_causal_intelligence
+
+    detail: dict[str, Any] = {
         "identity": {
             "symbol": symbol.upper(),
             "boundary_time": demo["boundary_time"],
@@ -175,4 +177,18 @@ def frozen_demo_detail(symbol: str) -> dict[str, Any] | None:
             "private_canonical_tree": False,
             "phase3e_started": False,
         },
+        "freshness": "FROZEN",
     }
+    detail["causal_intelligence"] = build_causal_intelligence(
+        {
+            **snapshot_row,
+            "rules": item["rules"],
+            "freshness": "FROZEN",
+        }
+    )
+    if isinstance(detail["research_detection"], dict):
+        detail["research_detection"] = {
+            **detail["research_detection"],
+            "ignition_state": detail["causal_intelligence"]["state"],
+        }
+    return detail

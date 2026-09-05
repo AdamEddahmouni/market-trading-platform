@@ -1,0 +1,40 @@
+{
+  "document": "phase_3f_batch_04_biya_alignment_discovery_rows",
+  "raw_source": {
+    "archived_relative_path": "tests/fixtures/validation/outcome_amendment/biya_news.jsonl",
+    "artifact_name": "biya_news.jsonl",
+    "capture_timestamp": "2026-07-18T13:37:55.017661+00:00",
+    "classification": "SANITIZED_LOCAL_ARTIFACT",
+    "notes": "BIYA is the only remaining US equity ticker in archived news co-occurrence discovery not yet on the IBKR frozen-boundary acquisition track. Phase 2V evaluation boundaries remain separate; this batch aligns IBKR-shaped bar intake at the Batch 01 frozen cohort boundary.",
+    "source_class": "ARCHIVED_NEWS_CO_OCCURRENCE"
+  },
+  "rows": [
+    {
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "observed_at": "2026-07-18T13:37:55.017661+00:00",
+      "original_order": 1,
+      "ticker": "BIYA",
+      "discovery_provenance": {
+        "headline": "Top Premarket Gainers",
+        "news_observation_id": "17cd9ddb-62bd-590d-a9cd-78736560706d",
+        "published_at": "2026-07-20T11:06:19+00:00",
+        "publisher": "MT Newswires"
+      }
+    }
+  ],
+  "schema_version": "1.0.0",
+  "transformation": {
+    "dropped_prediction_fields": [],
+    "retained_detection_fields": [],
+    "selection": "PREREGISTERED_NEWS_CO_OCCURRENCE_REMAINING"
+  }
+}

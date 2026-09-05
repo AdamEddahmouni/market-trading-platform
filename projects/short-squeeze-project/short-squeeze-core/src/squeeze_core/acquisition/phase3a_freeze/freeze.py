@@ -26,11 +26,10 @@ from squeeze_core.metrics.models import MetricResult
 
 from ..ibkr_semantics.evidence import OFFICIAL_TRADES_EVIDENCE
 from ..ibkr_semantics.resolver import resolve_ibkr_semantics
+from ..cohort_registry import CohortCase, resolve_cohort_cases
 from ..operation_readiness.evidence_inputs import (
     DETECTION_CONTEXT_REQUEST,
     FORWARD_REQUEST,
-    FROZEN_BOUNDARY,
-    FROZEN_COHORT,
     boundary_id_for,
     forward_artifact_identity,
     load_detection_context_evidence,
@@ -112,14 +111,20 @@ def load_phase3a_policy(path: Path | None = None) -> CandidateEvaluationPolicy:
     return policy
 
 
-def batch07_readiness(batch05_root: Path) -> dict[str, CaseOperationReadiness]:
+def batch07_readiness(
+    batch05_root: Path,
+    *,
+    cohort_track: str = "frozen",
+) -> dict[str, CaseOperationReadiness]:
     """Rebuild the authoritative Batch 07 readiness report and index it by case id.
 
     Batch 07 is the authoritative admissibility input, so its own code path produces the
     record ids Batch 08 cites. Nothing is recomputed independently and no verdict is
     altered; ``build_report`` is pure, offline, and reads provenance metadata only.
     """
-    report = build_report(batch05_root)
+    from ..operation_readiness.report import build_report
+
+    report = build_report(batch05_root, cohort_track=cohort_track)
     if report.global_preflight_verdict != GLOBAL_PREFLIGHT_VERDICT:
         raise ValueError("the Batch 04 global preflight verdict is not PREFLIGHT_REJECTED")
     if not report.global_preflight_unchanged:
@@ -141,29 +146,31 @@ def _retrieval_completed_at(batch05_root: Path, symbol: str) -> datetime:
     )
     for row in rows:
         if row["symbol"] == symbol and row["request_name"] == DETECTION_CONTEXT_REQUEST:
-            return datetime.fromisoformat(
-                str(row["retrieval_completed_at"]).replace("Z", "+00:00")
-            ).astimezone(UTC)
+            raw = row.get("retrieval_completed_at") or row.get("last_timestamp_utc")
+            if raw is None:
+                raise KeyError(f"no retrieval timestamp for {symbol}")
+            return datetime.fromisoformat(str(raw).replace("Z", "+00:00")).astimezone(UTC)
     raise KeyError(f"no detection-context request manifest row for {symbol}")
 
 
 def _temporal_selection(
     bars: DetectionContextBars,
     *,
+    boundary: datetime,
     supply_policy: ObservationSupplyPolicy,
     supplied_count: int,
 ) -> TemporalSelection:
     labels = bars.labels
-    last = labels.included[-1] if labels.included else FROZEN_BOUNDARY
-    envelope = build_envelope(last, BAR_INTERVAL_SECONDS, FROZEN_BOUNDARY)
+    last = labels.included[-1] if labels.included else boundary
+    envelope = build_envelope(last, BAR_INTERVAL_SECONDS, boundary)
     return TemporalSelection(
         timestamp_uncertainty_policy="bidirectional_1min_envelope.v1",
         timestamp_interpretation=bars.interpretation,
         observation_supply_policy=supply_policy,
         bar_interval=BAR_INTERVAL.value,
         bar_interval_seconds=BAR_INTERVAL_SECONDS,
-        boundary=FROZEN_BOUNDARY,
-        first_included_label=labels.included[0] if labels.included else FROZEN_BOUNDARY,
+        boundary=boundary,
+        first_included_label=labels.included[0] if labels.included else boundary,
         last_included_label=last,
         last_included_latest_possible_completion=envelope.latest_possible_completion,
         included_bar_count=len(labels.included),
@@ -198,6 +205,7 @@ def freeze_case(
     *,
     symbol: str,
     case_id: str,
+    boundary: datetime,
     batch05_root: Path,
     policy: CandidateEvaluationPolicy,
     batch07_case: CaseOperationReadiness,
@@ -228,7 +236,7 @@ def freeze_case(
         case_id=case_id,
         symbol=symbol,
         boundary_id=boundary_id,
-        boundary_time=FROZEN_BOUNDARY,
+        boundary_time=boundary,
         detection_context_artifact_name=f"{symbol}-detection-context.csv",
         detection_context_artifact_sha256=coverage.csv_sha256,
         detection_context_artifact_byte_length=coverage.csv_byte_length,
@@ -253,7 +261,7 @@ def freeze_case(
     bars = load_detection_context_bars(
         batch05_root / "raw" / association.detection_context_artifact_name,
         symbol=symbol,
-        boundary=FROZEN_BOUNDARY,
+        boundary=boundary,
         retrieval_completed_at=_retrieval_completed_at(batch05_root, symbol),
         receipt_policy=receipt_policy,
         interpretation=interpretation,
@@ -266,7 +274,7 @@ def freeze_case(
     # linear), independently of how many observations the request itself carries.
     try:
         metric: MetricResult | None = build_percentage_return(
-            bars, as_of=FROZEN_BOUNDARY, interpretation=interpretation
+            bars, as_of=boundary, interpretation=interpretation
         )
     except InsufficientAdmissibleBarsError:
         # Preserve the request; the rule resolves through canonical missingness.
@@ -274,16 +282,19 @@ def freeze_case(
 
     supplied = select_supplied_observations(bars, metric, supply_policy)
     temporal = _temporal_selection(
-        bars, supply_policy=supply_policy, supplied_count=len(supplied)
+        bars,
+        boundary=boundary,
+        supply_policy=supply_policy,
+        supplied_count=len(supplied),
     )
 
-    bundle = build_bundle(symbol, supplied, FROZEN_BOUNDARY)
+    bundle = build_bundle(symbol, supplied, boundary)
     readiness = build_readiness_records(bundle, policy, metric)
 
     # (6)-(7) request serialized, frozen, hashed.
     request = build_request(
         symbol=symbol,
-        as_of=FROZEN_BOUNDARY,
+        as_of=boundary,
         policy=policy,
         observations=supplied,
         metric=metric,
@@ -322,14 +333,14 @@ def freeze_case(
     # (11) leakage audit.
     audit_request = build_audit_request(
         case_id=case_id,
-        boundary=FROZEN_BOUNDARY,
+        boundary=boundary,
         discovery_manifest_id=DISCOVERY_MANIFEST_ID,
     )
     if not ordering_holds(audit_request):
         raise ValueError(f"freeze ordering violated for {case_id}")
     audit = audit_case(
         case_id=case_id,
-        boundary=FROZEN_BOUNDARY,
+        boundary=boundary,
         discovery_manifest_id=DISCOVERY_MANIFEST_ID,
     )
 
@@ -348,7 +359,7 @@ def freeze_case(
         case_id=case_id,
         symbol=symbol,
         boundary_id=boundary_id,
-        boundary_time=FROZEN_BOUNDARY,
+        boundary_time=boundary,
         batch07_readiness_record_id=association.batch07_readiness_record_id,
         detection_context_artifact_name=association.detection_context_artifact_name,
         detection_context_artifact_sha256=association.detection_context_artifact_sha256,
@@ -393,6 +404,8 @@ def freeze_case(
 def freeze_cohort(
     batch05_root: Path,
     *,
+    cohort_track: str = "frozen",
+    cohort_cases: tuple[CohortCase, ...] | None = None,
     receipt_policy: ReceiptModelingPolicy = (
         ReceiptModelingPolicy.PROVIDER_AVAILABILITY_AS_RECEIPT
     ),
@@ -400,23 +413,25 @@ def freeze_cohort(
     supply_policy: ObservationSupplyPolicy = FROZEN_SUPPLY_POLICY,
     policy_path: Path | None = None,
 ) -> tuple[CaseFreezeOutputs, ...]:
-    """Freeze all 13 cases in exact frozen source order."""
+    """Freeze all cases in the selected cohort track."""
     policy = load_phase3a_policy(policy_path)
-    batch07 = batch07_readiness(batch05_root)
+    cases = cohort_cases or resolve_cohort_cases(cohort_track)
+    batch07 = batch07_readiness(batch05_root, cohort_track=cohort_track)
     log = EvidenceAccessLog()
     return tuple(
         freeze_case(
-            symbol=symbol,
-            case_id=case_id,
+            symbol=case.symbol,
+            case_id=case.case_id,
+            boundary=case.boundary,
             batch05_root=batch05_root,
             policy=policy,
-            batch07_case=batch07[case_id],
+            batch07_case=batch07[case.case_id],
             receipt_policy=receipt_policy,
             interpretation=interpretation,
             supply_policy=supply_policy,
             access_log=log,
         )
-        for symbol, case_id in FROZEN_COHORT
+        for case in cases
     )
 
 

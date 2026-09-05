@@ -1,0 +1,84 @@
+{
+  "schema_version": "1.0.0",
+  "experiment_version": "adam_weight_floor_live_profiles.v1",
+  "methodology_id": "adam_evidence_gated_prime.v1",
+  "baseline_min_dimension_weight": 65,
+  "floor_variants": [50, 55, 60, 65, 70],
+  "profiles": [
+    {
+      "profile_id": "finviz_pressure_ignition_core",
+      "description": "Finviz Elite SI + DTC + float with change + relvol (typical cloud minimum).",
+      "provider_profile": "FINVIZ_ELITE_CORE",
+      "inputs": [
+        {"key": "published_short_interest_pct", "value": 30},
+        {"key": "days_to_cover", "value": 7},
+        {"key": "float_shares", "value": 10000000},
+        {"key": "current_percentage_change", "value": 20},
+        {"key": "relative_volume", "value": 10}
+      ]
+    },
+    {
+      "profile_id": "pressure_si_dtc_only",
+      "description": "Pressure SI + DTC without float (55% supported weight).",
+      "provider_profile": "FINVIZ_PARTIAL",
+      "inputs": [
+        {"key": "published_short_interest_pct", "value": 30},
+        {"key": "days_to_cover", "value": 7},
+        {"key": "current_percentage_change", "value": 20},
+        {"key": "relative_volume", "value": 10}
+      ]
+    },
+    {
+      "profile_id": "full_provider_prime",
+      "description": "All nine admissible fields at strong values (full cloud + IBKR profile).",
+      "provider_profile": "FINVIZ_PLUS_IBKR",
+      "inputs": [
+        {"key": "published_short_interest_pct", "value": 30},
+        {"key": "days_to_cover", "value": 7},
+        {"key": "cost_to_borrow", "value": 50},
+        {"key": "borrow_availability_pct_float", "value": 0.1},
+        {"key": "float_shares", "value": 10000000},
+        {"key": "current_percentage_change", "value": 20},
+        {"key": "relative_volume", "value": 10},
+        {"key": "completed_bar_acceleration", "value": 5},
+        {"key": "catalyst_age_hours", "value": 12}
+      ]
+    },
+    {
+      "profile_id": "ignition_change_only",
+      "description": "Ignition change without relvol (critical ignition domain incomplete).",
+      "provider_profile": "IBKR_QUOTE_ONLY",
+      "inputs": [
+        {"key": "published_short_interest_pct", "value": 30},
+        {"key": "days_to_cover", "value": 7},
+        {"key": "float_shares", "value": 10000000},
+        {"key": "current_percentage_change", "value": 20}
+      ]
+    },
+    {
+      "profile_id": "watch_not_qualified",
+      "description": "Evaluable but below PRIME/SUBPRIME thresholds.",
+      "provider_profile": "FINVIZ_ELITE_CORE",
+      "inputs": [
+        {"key": "published_short_interest_pct", "value": 10},
+        {"key": "days_to_cover", "value": 2},
+        {"key": "float_shares", "value": 40000000},
+        {"key": "current_percentage_change", "value": 5},
+        {"key": "relative_volume", "value": 3}
+      ]
+    },
+    {
+      "profile_id": "borrow_conflict",
+      "description": "Material provider conflict on borrow fee.",
+      "provider_profile": "CONFLICTED",
+      "inputs": [
+        {"key": "published_short_interest_pct", "value": 30},
+        {"key": "days_to_cover", "value": 7},
+        {"key": "cost_to_borrow", "value": 50, "conflict": true},
+        {"key": "float_shares", "value": 10000000},
+        {"key": "current_percentage_change", "value": 20},
+        {"key": "relative_volume", "value": 10}
+      ]
+    }
+  ]
+}

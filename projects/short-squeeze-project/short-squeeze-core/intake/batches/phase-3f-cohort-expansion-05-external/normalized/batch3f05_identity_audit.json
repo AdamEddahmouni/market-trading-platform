@@ -1,0 +1,282 @@
+{
+  "document": "phase_3f_batch_05_external_identity_audit",
+  "schema_version": "1.0.0",
+  "status": "PASS",
+  "discovery_artifact": "intake/batches/phase-3f-cohort-expansion-05-external/normalized/batch3f05_external_discovery_rows.json",
+  "symbols": [
+    "AACB",
+    "AACG",
+    "AACI",
+    "AACP",
+    "AADX"
+  ],
+  "case_ids": {
+    "AACB": "BATCH3F05_AACB_20260817",
+    "AACG": "BATCH3F05_AACG_20260817",
+    "AACI": "BATCH3F05_AACI_20260817",
+    "AACP": "BATCH3F05_AACP_20260817",
+    "AADX": "BATCH3F05_AADX_20260817"
+  },
+  "contract_resolutions": [
+    {
+      "symbol": "AACB",
+      "case_id": "BATCH3F05_AACB_20260817",
+      "contract_status": "CONTRACT_RESOLVED",
+      "contract_reason": "unique conId 773701110",
+      "resolved_con_id": 773701110,
+      "resolved_primary_exchange": "NASDAQ",
+      "identity_state": "PARTIALLY_RESOLVED",
+      "blocked_conflicting_identity": false
+    },
+    {
+      "symbol": "AACG",
+      "case_id": "BATCH3F05_AACG_20260817",
+      "contract_status": "CONTRACT_RESOLVED",
+      "contract_reason": "unique conId 48811132",
+      "resolved_con_id": 48811132,
+      "resolved_primary_exchange": "NASDAQ",
+      "identity_state": "PARTIALLY_RESOLVED",
+      "blocked_conflicting_identity": false
+    },
+    {
+      "symbol": "AACI",
+      "case_id": "BATCH3F05_AACI_20260817",
+      "contract_status": "CONTRACT_RESOLVED",
+      "contract_reason": "unique conId 868499965",
+      "resolved_con_id": 868499965,
+      "resolved_primary_exchange": "NASDAQ",
+      "identity_state": "PARTIALLY_RESOLVED",
+      "blocked_conflicting_identity": false
+    },
+    {
+      "symbol": "AACP",
+      "case_id": "BATCH3F05_AACP_20260817",
+      "contract_status": "CONTRACT_RESOLVED",
+      "contract_reason": "unique conId 886847440",
+      "resolved_con_id": 886847440,
+      "resolved_primary_exchange": "NASDAQ",
+      "identity_state": "PARTIALLY_RESOLVED",
+      "blocked_conflicting_identity": false
+    },
+    {
+      "symbol": "AADX",
+      "case_id": "BATCH3F05_AADX_20260817",
+      "contract_status": "CONTRACT_RESOLVED",
+      "contract_reason": "unique conId 888130738",
+      "resolved_con_id": 888130738,
+      "resolved_primary_exchange": "NYSE",
+      "identity_state": "PARTIALLY_RESOLVED",
+      "blocked_conflicting_identity": false
+    }
+  ],
+  "identity_review": {
+    "schema_version": "1.0.0",
+    "resolutions": [
+      {
+        "state": "PARTIALLY_RESOLVED",
+        "canonical_symbol": "AACB",
+        "issuer_name": null,
+        "exchange": null,
+        "security_type": null,
+        "provider_identifiers": [
+          "ibkr:conId:773701110"
+        ],
+        "claims": [
+          {
+            "source_artifact_id": "batch3f05_external_discovery_rows",
+            "symbol": "AACB",
+            "issuer_name": null,
+            "exchange": null,
+            "security_type": null,
+            "provider_identifier": null,
+            "effective_from": null,
+            "effective_to": null,
+            "corporate_actions": [],
+            "symbol_reuse_risk": false,
+            "deterministic_id": "0ffd5258-da9b-57cf-9110-353b6cd9dc45"
+          },
+          {
+            "source_artifact_id": "ibkr-contract-resolution",
+            "symbol": "AACB",
+            "issuer_name": "ARTIUS II ACQUISITION INC-A",
+            "exchange": "NASDAQ",
+            "security_type": "COMMON_STOCK",
+            "provider_identifier": "ibkr:conId:773701110",
+            "effective_from": null,
+            "effective_to": null,
+            "corporate_actions": [],
+            "symbol_reuse_risk": false,
+            "deterministic_id": "7fb2ecda-dfaf-57ce-b45d-ffafa1053a80"
+          }
+        ],
+        "conflict_fields": [],
+        "risk_codes": [],
+        "deterministic_id": "3513b367-0464-5731-8394-23be92895302"
+      },
+      {
+        "state": "PARTIALLY_RESOLVED",
+        "canonical_symbol": "AACG",
+        "issuer_name": null,
+        "exchange": null,
+        "security_type": null,
+        "provider_identifiers": [
+          "ibkr:conId:48811132"
+        ],
+        "claims": [
+          {
+            "source_artifact_id": "batch3f05_external_discovery_rows",
+            "symbol": "AACG",
+            "issuer_name": null,
+            "exchange": null,
+            "security_type": null,
+            "provider_identifier": null,
+            "effective_from": null,
+            "effective_to": null,
+            "corporate_actions": [],
+            "symbol_reuse_risk": false,
+            "deterministic_id": "e98b396c-f536-535a-a6e9-c4560f8728b7"
+          },
+          {
+            "source_artifact_id": "ibkr-contract-resolution",
+            "symbol": "AACG",
+            "issuer_name": "ATA CREATIVITY GLOBAL - ADR",
+            "exchange": "NASDAQ",
+            "security_type": "COMMON_STOCK",
+            "provider_identifier": "ibkr:conId:48811132",
+            "effective_from": null,
+            "effective_to": null,
+            "corporate_actions": [],
+            "symbol_reuse_risk": false,
+            "deterministic_id": "c75addb0-5561-55b9-bbdf-2b38267fbd92"
+          }
+        ],
+        "conflict_fields": [],
+        "risk_codes": [],
+        "deterministic_id": "74a83658-e6bf-507e-ac04-bf9446bb967f"
+      },
+      {
+        "state": "PARTIALLY_RESOLVED",
+        "canonical_symbol": "AACI",
+        "issuer_name": null,
+        "exchange": null,
+        "security_type": null,
+        "provider_identifiers": [
+          "ibkr:conId:868499965"
+        ],
+        "claims": [
+          {
+            "source_artifact_id": "batch3f05_external_discovery_rows",
+            "symbol": "AACI",
+            "issuer_name": null,
+            "exchange": null,
+            "security_type": null,
+            "provider_identifier": null,
+            "effective_from": null,
+            "effective_to": null,
+            "corporate_actions": [],
+            "symbol_reuse_risk": false,
+            "deterministic_id": "e5ab5cfb-bd15-5f62-b25d-2da4826629e3"
+          },
+          {
+            "source_artifact_id": "ibkr-contract-resolution",
+            "symbol": "AACI",
+            "issuer_name": "ARMADA ACQ CORP III-A",
+            "exchange": "NASDAQ",
+            "security_type": "COMMON_STOCK",
+            "provider_identifier": "ibkr:conId:868499965",
+            "effective_from": null,
+            "effective_to": null,
+            "corporate_actions": [],
+            "symbol_reuse_risk": false,
+            "deterministic_id": "25009a59-c370-56c2-b811-8fd57e330974"
+          }
+        ],
+        "conflict_fields": [],
+        "risk_codes": [],
+        "deterministic_id": "96c6fd65-a1fe-5356-9747-6786c27a2cc9"
+      },
+      {
+        "state": "PARTIALLY_RESOLVED",
+        "canonical_symbol": "AACP",
+        "issuer_name": null,
+        "exchange": null,
+        "security_type": null,
+        "provider_identifiers": [
+          "ibkr:conId:886847440"
+        ],
+        "claims": [
+          {
+            "source_artifact_id": "batch3f05_external_discovery_rows",
+            "symbol": "AACP",
+            "issuer_name": null,
+            "exchange": null,
+            "security_type": null,
+            "provider_identifier": null,
+            "effective_from": null,
+            "effective_to": null,
+            "corporate_actions": [],
+            "symbol_reuse_risk": false,
+            "deterministic_id": "6ef4ab85-205c-5720-af2b-034e78abad96"
+          },
+          {
+            "source_artifact_id": "ibkr-contract-resolution",
+            "symbol": "AACP",
+            "issuer_name": "APOGEE ACQUISITION CORP -A",
+            "exchange": "NASDAQ",
+            "security_type": "COMMON_STOCK",
+            "provider_identifier": "ibkr:conId:886847440",
+            "effective_from": null,
+            "effective_to": null,
+            "corporate_actions": [],
+            "symbol_reuse_risk": false,
+            "deterministic_id": "b3412b5f-4d80-5a85-979f-b07e885e5e7e"
+          }
+        ],
+        "conflict_fields": [],
+        "risk_codes": [],
+        "deterministic_id": "736fb8a5-51c7-5745-823d-e678214b6490"
+      },
+      {
+        "state": "PARTIALLY_RESOLVED",
+        "canonical_symbol": "AADX",
+        "issuer_name": null,
+        "exchange": null,
+        "security_type": null,
+        "provider_identifiers": [
+          "ibkr:conId:888130738"
+        ],
+        "claims": [
+          {
+            "source_artifact_id": "batch3f05_external_discovery_rows",
+            "symbol": "AADX",
+            "issuer_name": null,
+            "exchange": null,
+            "security_type": null,
+            "provider_identifier": null,
+            "effective_from": null,
+            "effective_to": null,
+            "corporate_actions": [],
+            "symbol_reuse_risk": false,
+            "deterministic_id": "d5fb329e-9e39-5cd8-a10e-482dd77967f1"
+          },
+          {
+            "source_artifact_id": "ibkr-contract-resolution",
+            "symbol": "AADX",
+            "issuer_name": "APPLIED AEROSPACE & DEFENSE",
+            "exchange": "NYSE",
+            "security_type": "COMMON_STOCK",
+            "provider_identifier": "ibkr:conId:888130738",
+            "effective_from": null,
+            "effective_to": null,
+            "corporate_actions": [],
+            "symbol_reuse_risk": false,
+            "deterministic_id": "ab8c3bfc-77ff-5ed4-90f2-8dd5260d8dc2"
+          }
+        ],
+        "conflict_fields": [],
+        "risk_codes": [],
+        "deterministic_id": "e28386d4-4c20-518b-9903-e212b3af0ad9"
+      }
+    ]
+  }
+}

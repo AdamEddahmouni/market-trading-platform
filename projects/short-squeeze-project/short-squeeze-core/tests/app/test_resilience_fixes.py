@@ -16,20 +16,25 @@ from apps.research_screener.ibkr_session import QuoteTicks, build_session_class
 # ------------------------------------------------------------------ bootstrap
 
 
-def test_bootstrap_order_is_discovery_then_refresh_then_auto_refresh():
-    """refresh_all must finish before start_auto_refresh (no overlap with _loop)."""
+def test_bootstrap_order_is_discovery_then_refresh_then_auto_refresh(monkeypatch):
+    """Warm refresh must finish before start_auto_refresh (no overlap with _loop)."""
+    monkeypatch.setenv("BOOTSTRAP_WARM_CYCLES", "1")
+    monkeypatch.setattr(
+        "apps.research_screener.collector_session.start_collectors_for_session",
+        lambda *args, **kwargs: None,
+    )
     order: list[str] = []
     session = MagicMock()
     session.states = {"AAA": object(), "BBB": object()}
-    session.symbols_per_cycle = 3
     session.refresh_discovery.side_effect = lambda: (
         order.append("discovery"),
         {"discovered": 2, "ibkr": 2, "finviz": 0},
     )[-1]
     session.note_discovery_scan.side_effect = lambda: order.append("note_scan")
-    session.refresh_all.side_effect = lambda **kwargs: order.append(
-        f"refresh_all:{kwargs.get('limit')}"
-    )
+    session.refresh_all.side_effect = lambda **kwargs: (
+        order.append(f"refresh_all:{kwargs.get('limit')}"),
+        {"refreshed": 2},
+    )[-1]
     session.start_auto_refresh.side_effect = lambda: order.append("start_auto_refresh")
 
     screener_main._bootstrap_live_data(session)
@@ -37,13 +42,17 @@ def test_bootstrap_order_is_discovery_then_refresh_then_auto_refresh():
     assert order == [
         "discovery",
         "note_scan",
-        "refresh_all:3",
+        "refresh_all:None",
         "start_auto_refresh",
     ]
-    session.refresh_all.assert_called_once_with(limit=3)
+    session.refresh_all.assert_called_once_with()
 
 
-def test_bootstrap_still_starts_auto_refresh_when_discovery_fails():
+def test_bootstrap_still_starts_auto_refresh_when_discovery_fails(monkeypatch):
+    monkeypatch.setattr(
+        "apps.research_screener.collector_session.start_collectors_for_session",
+        lambda *args, **kwargs: None,
+    )
     order: list[str] = []
     session = MagicMock()
     session.states = {}

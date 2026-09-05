@@ -229,6 +229,18 @@ class FinvizClient:
     def api_key(self) -> str | None:
         return self._api_key
 
+    def set_api_key(self, api_key: str | None) -> None:
+        """Replace export token and clear cached screener/symbol rows."""
+        with self._lock:
+            self._api_key = api_key
+            self._cache = None
+            self._cache_by_symbol = {}
+            self._cache_at = None
+            self._cache_error = None
+            self._cache_stale = False
+            self._symbol_fetched_at = {}
+            self._mapping_conflicts = ()
+
     @property
     def cached_at(self) -> str | None:
         return self._cache_at

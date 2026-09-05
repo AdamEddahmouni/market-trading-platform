@@ -43,11 +43,36 @@ Outputs JSON + Markdown side-by-side.
 ## Cohorts
 
 - `SYNTHETIC_CASES` — 11 software-validation edge cases
-- `HISTORICAL_COMPLETED_CASES` — sanitized public historical (**n=15** IBKR symbols with Stage 2 forward-outcome bars, **17** case boundaries including BIYA×2). All artifact-discovery symbols now have evaluable outcome labels from Phase 3E Stage 2; calibration remains `COUNTERFACTUAL_EXPLORATION_ONLY` until `min_case_count_for_recommendation: 30` is met.
+- `HISTORICAL_COMPLETED_CASES` — sanitized public historical (**n=28** IBKR symbols with Stage 2 forward-outcome bars, **30** case boundaries including BIYA×2). All artifact-discovery symbols now have evaluable outcome labels from Phase 3E/3F Stage 2; `min_case_count_for_recommendation: 30` is met.
 
 Detection-policy findings from the expanded cohort are governed in
 [ADR 0067](../adr/0067-phase-3b-detection-predicate-calibration-findings.md).
-Adam scoring calibration remains deferred until detection and evidence layers stabilize.
+Outcome-policy findings are governed in
+[ADR 0068](../adr/0068-phase-3b-outcome-label-calibration-findings.md).
+
+Adam scoring calibration (live screener track) is documented in
+[ADAM_SCORING_CALIBRATION_REVIEW.md](ADAM_SCORING_CALIBRATION_REVIEW.md) and
+[ADR 0069](../adr/0069-adam-evidence-gated-prime-calibration-findings.md).
+
+Classification threshold calibration is documented in
+[ADAM_CLASSIFICATION_THRESHOLD_CALIBRATION_REVIEW.md](ADAM_CLASSIFICATION_THRESHOLD_CALIBRATION_REVIEW.md) and
+[ADR 0070](../adr/0070-adam-classification-threshold-calibration-findings.md).
+
+```powershell
+python tools/run_adam_calibration.py
+python tools/run_adam_calibration.py --mode classification-thresholds
+# or: python tools/run_adam_threshold_calibration.py
+```
+
+## Policy recommendation review
+
+The n=30 threshold was met on 2026-08-17 after Phase 3F cohort expansion. The formal
+review confirms baseline detection and outcome policies remain unchanged:
+
+- [PHASE_3D_POLICY_RECOMMENDATION_REVIEW.md](PHASE_3D_POLICY_RECOMMENDATION_REVIEW.md) — full review record
+- Detection: retain `phase_3b_research_detection_policy.v1` (reject all tested variants)
+- Outcome: retain `phase_3b_outcome_label_policy.v1` at ±25%/24h (reject threshold raises)
+- Policies remain `provisional: true` per ADR-0065 — review records confirmation, not auto-promotion
 
 ## Governance
 

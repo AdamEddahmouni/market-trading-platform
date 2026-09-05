@@ -65,12 +65,12 @@ def _parse_forward_csv(batch05_root: Path, symbol: str) -> tuple[list[dict[str, 
     return rows, source
 
 
-def _load_detection_bars(batch05_root: Path, symbol: str) -> tuple:
+def _load_detection_bars(batch05_root: Path, symbol: str, boundary: datetime) -> tuple:
     path = batch05_root / "raw" / f"{symbol}-detection-context.csv"
     loaded = load_detection_context_bars(
         path,
         symbol=symbol,
-        boundary=FROZEN_BOUNDARY,
+        boundary=boundary,
         retrieval_completed_at=RETRIEVAL_COMPLETED_AT,
         receipt_policy=ReceiptModelingPolicy.PROVIDER_AVAILABILITY_AS_RECEIPT,
         interpretation=TimestampInterpretation.LABEL_IS_INTERVAL_START,
@@ -78,8 +78,8 @@ def _load_detection_bars(batch05_root: Path, symbol: str) -> tuple:
     return loaded.observations
 
 
-def _reference_price(batch05_root: Path, symbol: str) -> Decimal:
-    observations = _load_detection_bars(batch05_root, symbol)
+def _reference_price(batch05_root: Path, symbol: str, boundary: datetime) -> Decimal:
+    observations = _load_detection_bars(batch05_root, symbol, boundary)
     if not observations:
         raise ValueError(f"no detection-context bars for {symbol}")
     last = max(
@@ -132,9 +132,11 @@ def build_outcome(
     batch05_root: Path,
     live_intake: bool,
     research_case_id: str | None = None,
+    boundary: datetime | None = None,
 ) -> OutcomeBuildResult:
     """Compute outcome observation and separate manifest for one symbol."""
-    reference = _reference_price(batch05_root, symbol)
+    resolved_boundary = boundary or FROZEN_BOUNDARY
+    reference = _reference_price(batch05_root, symbol, resolved_boundary)
     maximum, adverse, forward_bars, forward_source = _outcome_moves(
         batch05_root, symbol, reference
     )
@@ -152,7 +154,7 @@ def build_outcome(
     observation = RetrospectiveOutcomeObservation(
         case_id=resolved_case_id,
         symbol=symbol,
-        detection_boundary=FROZEN_BOUNDARY,
+        detection_boundary=resolved_boundary,
         reference_price_policy="first_eligible_trade_bar_close_at_or_after_boundary.v1",
         reference_price=reference,
         horizon="24_HOURS",

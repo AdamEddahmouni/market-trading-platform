@@ -410,6 +410,7 @@ class ProviderBundle:
         self._finnhub_fetched = False
         self._finnhub_price_count = 0
         self._finnhub_error: str | None = None
+        self._private_config_path: Path | None = None
 
     @classmethod
     def offline(cls) -> "ProviderBundle":
@@ -418,7 +419,9 @@ class ProviderBundle:
     @classmethod
     def from_private_config(cls, path: Path) -> "ProviderBundle":
         credentials = load_provider_credentials(path)
-        return cls.from_credentials(credentials)
+        bundle = cls.from_credentials(credentials)
+        bundle._private_config_path = path.resolve()
+        return bundle
 
     @classmethod
     def from_credentials(cls, credentials: ProviderCredentials) -> "ProviderBundle":
@@ -562,6 +565,16 @@ class ProviderBundle:
             if finviz.configured:
                 t0 = _now_dt()
                 fv_resp = finviz.fetch_screener(force=True)
+                if (
+                    not fv_resp.get("success")
+                    and self._private_config_path is not None
+                ):
+                    from .finviz_auto_refresh import maybe_recover_finviz
+
+                    if maybe_recover_finviz(
+                        self, fv_resp.get("error"), self._private_config_path,
+                    ):
+                        fv_resp = finviz.fetch_screener(force=True)
                 t1 = _now_dt()
                 self._finviz_fetched = fv_resp["success"]
                 self._finviz_error = fv_resp.get("error")
@@ -590,14 +603,12 @@ class ProviderBundle:
                     )
                 except Exception:
                     pass
-                if fv_resp["success"]:
-                    ensure = finviz.ensure_symbols(symbols)
-                    matched_rows = {
-                        symbol: finviz.get_row(symbol) for symbol in symbols
-                    }
-                else:
-                    ensure = {"fetched": 0, "missing_before": 0}
-                    matched_rows = {}
+                # Per-symbol exports run even when the bulk screener fails or omits
+                # manual bootstrap symbols (e.g. GME outside the mover filter).
+                ensure = self.ensure_finviz_for_symbols(symbols)
+                matched_rows = {
+                    symbol: finviz.get_row(symbol) for symbol in symbols
+                }
                 matched = {
                     symbol: row for symbol, row in matched_rows.items()
                     if row is not None
@@ -626,10 +637,13 @@ class ProviderBundle:
                         "mapping_conflict_symbols", []
                     ),
                 }
+                symbol_export_ok = ensure.get("fetched", 0) > 0
                 result["providers"]["finviz"] = {
                     "configured": True,
-                    "success": fv_resp["success"],
+                    "success": bool(fv_resp["success"] or symbol_export_ok),
+                    "screener_success": fv_resp["success"],
                     "rows": fv_resp.get("rows", 0),
+                    "symbol_exports_fetched": ensure.get("fetched", 0),
                     "duration_s": round(self._finviz_duration_s, 2),
                     "error": fv_resp.get("error"),
                     "retrieved_at": _now(),
@@ -752,8 +766,18 @@ class ProviderBundle:
 
         return result
 
-    def finviz_row(self, symbol: str) -> FinvizRow | None:
-        return self.finviz.get_row(symbol)
+    def ensure_finviz_for_symbols(self, symbols: list[str]) -> dict[str, Any]:
+        """Fetch per-symbol Finviz Elite exports for symbols missing from the screener."""
+        finviz = self.finviz
+        if not finviz.configured or not symbols:
+            return {"requested": len(symbols), "missing_before": 0, "fetched": 0, "errors": []}
+        return finviz.ensure_symbols(symbols)
+
+    def finviz_row(self, symbol: str, *, ensure: bool = False) -> FinvizRow | None:
+        finviz = self.finviz
+        if ensure and finviz.configured and finviz.get_row(symbol) is None:
+            finviz.ensure_symbols([symbol])
+        return finviz.get_row(symbol)
 
     def news_for(self, symbol: str) -> list[dict[str, Any]]:
         cached = self._news_cache.get(symbol)
@@ -885,7 +909,6 @@ def configure_runtime(path: Path) -> ProviderBundle:
     with _RUNTIME_LOCK:
         _RUNTIME = runtime
     return runtime
-
 
 def configure_environment() -> ProviderBundle:
     """Configure cloud-safe providers from named environment variables only."""

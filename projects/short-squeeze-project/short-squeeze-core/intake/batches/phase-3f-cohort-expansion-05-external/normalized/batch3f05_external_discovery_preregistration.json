@@ -1,0 +1,34 @@
+{
+  "document": "phase_3f_batch_05_external_discovery_preregistration",
+  "schema_version": "1.0.0",
+  "status": "PREREGISTERED_AWAITING_EXPORT_CAPTURE",
+  "discovery_lane": "FRESH_FINVIZ_ELITE_EXPORT",
+  "raw_source": {
+    "provider": "Finviz Elite",
+    "endpoint": "https://elite.finviz.com/export/screener",
+    "filter": "sh_float_u50,sh_price_u50",
+    "classification": "EXTERNAL_PROVIDER_EXPORT",
+    "capture_timestamp": null,
+    "raw_csv_sha256": null,
+    "notes": "Populate capture_timestamp and raw_csv_sha256 when the export is saved. Rows array is filled at capture time."
+  },
+  "selection_policy": {
+    "max_symbols": 5,
+    "min_symbols": 3,
+    "order": "EXPORT_ROW_ORDER",
+    "exclude_blocked_identity": true,
+    "require_ibkr_contract_resolvable": true
+  },
+  "excluded_symbols": [
+    "ADVB", "APVO", "ATAI", "AVTX", "BHVN", "BIYA", "CADL", "CELZ", "CGEM",
+    "GDC", "GOAI", "GPRE", "IOVA", "KLRS", "LBGJ", "LMNX", "MGNX", "NXXT",
+    "OBE", "PESI", "PMAX", "SG", "SLS", "SSPC", "STAK", "TRVI", "VMAR",
+    "XNCR", "ZNTL"
+  ],
+  "rows": [],
+  "transformation": {
+    "dropped_prediction_fields": [],
+    "retained_detection_fields": [],
+    "selection": "PREREGISTERED_FRESH_FINVIZ_EXPORT_EXCLUDING_FROZEN_COHORT"
+  }
+}

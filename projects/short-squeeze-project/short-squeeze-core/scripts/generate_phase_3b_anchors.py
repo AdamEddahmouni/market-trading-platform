@@ -295,9 +295,8 @@ def _entry(
 def _pilot_cohort_entries(peer_limitations: tuple[str, ...]) -> tuple:
     """Build registry entries for IBKR pilot symbols with generated evaluation fixtures."""
     entries = []
-    pilot = tuple(FROZEN_COHORT[:13]) + (("KLRS", "BATCH01_KLRS_20260718"), ("SG", "BATCH01_SG_20260718"))
     surfaced = {"LBGJ", "KLRS", "GPRE"}
-    for symbol, batch_case_id in pilot:
+    for symbol, batch_case_id in FROZEN_COHORT:
         eval_name = f"{symbol.lower()}_boundary_evaluation.json"
         eval_path = EVALUATION / eval_name
         if not eval_path.is_file():

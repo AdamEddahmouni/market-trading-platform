@@ -1,0 +1,683 @@
+{
+  "baseline_thresholds": {
+    "high_coverage_min": 85.0,
+    "low_coverage_min": 50.0,
+    "moderate_coverage_min": 70.0,
+    "prime_ignition_min": 70.0,
+    "prime_pressure_min": 70.0,
+    "subprime_primary_min": 70.0,
+    "subprime_secondary_min": 50.0,
+    "watch_min": 50.0
+  },
+  "baseline_variant_id": "baseline",
+  "experiment_version": "adam_classification_threshold_live_profiles.v1",
+  "limitations": [
+    {
+      "code": "LIVE_METHODOLOGY_EXPLORATION_ONLY",
+      "statement": "Adam calibration explores live methodology behavior on representative evidence profiles; it is not predictive validation."
+    },
+    {
+      "code": "NO_THRESHOLD_AUTO_PROMOTION",
+      "statement": "No floor variant in this report is authorized for automatic promotion without human review."
+    },
+    {
+      "code": "SYNTHETIC_PROFILE_WARNING",
+      "statement": "Profiles are synthetic admissible-evidence fixtures, not a labeled historical outcome cohort."
+    },
+    {
+      "code": "HISTORICAL_POLICY_SEPARATION",
+      "statement": "Adam tuning does not change Phase 3B detection or outcome policies."
+    }
+  ],
+  "methodology_id": "adam_evidence_gated_prime.v1",
+  "recommendation": {
+    "action": "RETAIN_BASELINE",
+    "baseline_variant_id": "baseline",
+    "provisional": true,
+    "rationale": [
+      "Baseline keeps `full_provider_prime` at PRIME.",
+      "Baseline keeps `finviz_pressure_ignition_core` at SUBPRIME.",
+      "Baseline keeps `watch_not_qualified` at NOT_QUALIFIED.",
+      "Baseline keeps `subprime_pressure_led` at SUBPRIME.",
+      "Baseline keeps `watch_mid` at WATCH.",
+      "Reject `lower_high_coverage_65` \u2014 promotes Finviz core to PRIME without full provider coverage.",
+      "PRIME requires HIGH coverage (85%+ weight); Finviz-only rows stay SUBPRIME until borrow/acceleration/catalyst legs arrive."
+    ],
+    "rejected_variants": [
+      "lower_high_coverage_65"
+    ]
+  },
+  "threshold_variants": [
+    "baseline",
+    "lower_prime_65",
+    "raise_prime_75",
+    "lower_high_coverage_70",
+    "lower_high_coverage_65",
+    "lower_watch_45"
+  ],
+  "variant_results": [
+    {
+      "classification_counts": {
+        "NOT_QUALIFIED": 1,
+        "PRIME": 2,
+        "SUBPRIME": 3,
+        "WATCH": 1
+      },
+      "evaluable_count": 7,
+      "flips_from_baseline": [],
+      "profile_results": [
+        {
+          "classification": "PRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 100,
+          "pressure": 100.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "full_provider_prime",
+          "provider_profile": "FINVIZ_PLUS_IBKR"
+        },
+        {
+          "classification": "SUBPRIME",
+          "coverage_category": "LOW_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 65,
+          "pressure": 100.0,
+          "pressure_supported_weight": 65,
+          "profile_id": "finviz_pressure_ignition_core",
+          "provider_profile": "FINVIZ_ELITE_CORE"
+        },
+        {
+          "classification": "SUBPRIME",
+          "coverage_category": "MODERATE_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 100,
+          "pressure": 100.0,
+          "pressure_supported_weight": 65,
+          "profile_id": "moderate_coverage_strong",
+          "provider_profile": "FINVIZ_PLUS_PARTIAL_IBKR"
+        },
+        {
+          "classification": "SUBPRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 54.2,
+          "ignition_supported_weight": 100,
+          "pressure": 75.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "subprime_pressure_led",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "WATCH",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 58.5,
+          "ignition_supported_weight": 100,
+          "pressure": 60.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "watch_mid",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "PRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 78.8,
+          "ignition_supported_weight": 100,
+          "pressure": 72.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "prime_boundary_72",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "NOT_QUALIFIED",
+          "coverage_category": "LOW_COVERAGE",
+          "evaluable": true,
+          "ignition": 23.7,
+          "ignition_supported_weight": 65,
+          "pressure": 19.5,
+          "pressure_supported_weight": 65,
+          "profile_id": "watch_not_qualified",
+          "provider_profile": "FINVIZ_ELITE_CORE"
+        }
+      ],
+      "thresholds": {
+        "high_coverage_min": 85.0,
+        "low_coverage_min": 50.0,
+        "moderate_coverage_min": 70.0,
+        "prime_ignition_min": 70.0,
+        "prime_pressure_min": 70.0,
+        "subprime_primary_min": 70.0,
+        "subprime_secondary_min": 50.0,
+        "watch_min": 50.0
+      },
+      "variant_id": "baseline"
+    },
+    {
+      "classification_counts": {
+        "NOT_QUALIFIED": 1,
+        "PRIME": 2,
+        "SUBPRIME": 3,
+        "WATCH": 1
+      },
+      "evaluable_count": 7,
+      "flips_from_baseline": [],
+      "profile_results": [
+        {
+          "classification": "PRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 100,
+          "pressure": 100.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "full_provider_prime",
+          "provider_profile": "FINVIZ_PLUS_IBKR"
+        },
+        {
+          "classification": "SUBPRIME",
+          "coverage_category": "LOW_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 65,
+          "pressure": 100.0,
+          "pressure_supported_weight": 65,
+          "profile_id": "finviz_pressure_ignition_core",
+          "provider_profile": "FINVIZ_ELITE_CORE"
+        },
+        {
+          "classification": "SUBPRIME",
+          "coverage_category": "MODERATE_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 100,
+          "pressure": 100.0,
+          "pressure_supported_weight": 65,
+          "profile_id": "moderate_coverage_strong",
+          "provider_profile": "FINVIZ_PLUS_PARTIAL_IBKR"
+        },
+        {
+          "classification": "SUBPRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 54.2,
+          "ignition_supported_weight": 100,
+          "pressure": 75.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "subprime_pressure_led",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "WATCH",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 58.5,
+          "ignition_supported_weight": 100,
+          "pressure": 60.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "watch_mid",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "PRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 78.8,
+          "ignition_supported_weight": 100,
+          "pressure": 72.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "prime_boundary_72",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "NOT_QUALIFIED",
+          "coverage_category": "LOW_COVERAGE",
+          "evaluable": true,
+          "ignition": 23.7,
+          "ignition_supported_weight": 65,
+          "pressure": 19.5,
+          "pressure_supported_weight": 65,
+          "profile_id": "watch_not_qualified",
+          "provider_profile": "FINVIZ_ELITE_CORE"
+        }
+      ],
+      "thresholds": {
+        "high_coverage_min": 85.0,
+        "low_coverage_min": 50.0,
+        "moderate_coverage_min": 70.0,
+        "prime_ignition_min": 65.0,
+        "prime_pressure_min": 65.0,
+        "subprime_primary_min": 70.0,
+        "subprime_secondary_min": 50.0,
+        "watch_min": 50.0
+      },
+      "variant_id": "lower_prime_65"
+    },
+    {
+      "classification_counts": {
+        "NOT_QUALIFIED": 1,
+        "PRIME": 1,
+        "SUBPRIME": 4,
+        "WATCH": 1
+      },
+      "evaluable_count": 7,
+      "flips_from_baseline": [
+        {
+          "baseline_classification": "PRIME",
+          "profile_id": "prime_boundary_72",
+          "variant_classification": "SUBPRIME"
+        }
+      ],
+      "profile_results": [
+        {
+          "classification": "PRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 100,
+          "pressure": 100.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "full_provider_prime",
+          "provider_profile": "FINVIZ_PLUS_IBKR"
+        },
+        {
+          "classification": "SUBPRIME",
+          "coverage_category": "LOW_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 65,
+          "pressure": 100.0,
+          "pressure_supported_weight": 65,
+          "profile_id": "finviz_pressure_ignition_core",
+          "provider_profile": "FINVIZ_ELITE_CORE"
+        },
+        {
+          "classification": "SUBPRIME",
+          "coverage_category": "MODERATE_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 100,
+          "pressure": 100.0,
+          "pressure_supported_weight": 65,
+          "profile_id": "moderate_coverage_strong",
+          "provider_profile": "FINVIZ_PLUS_PARTIAL_IBKR"
+        },
+        {
+          "classification": "SUBPRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 54.2,
+          "ignition_supported_weight": 100,
+          "pressure": 75.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "subprime_pressure_led",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "WATCH",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 58.5,
+          "ignition_supported_weight": 100,
+          "pressure": 60.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "watch_mid",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "SUBPRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 78.8,
+          "ignition_supported_weight": 100,
+          "pressure": 72.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "prime_boundary_72",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "NOT_QUALIFIED",
+          "coverage_category": "LOW_COVERAGE",
+          "evaluable": true,
+          "ignition": 23.7,
+          "ignition_supported_weight": 65,
+          "pressure": 19.5,
+          "pressure_supported_weight": 65,
+          "profile_id": "watch_not_qualified",
+          "provider_profile": "FINVIZ_ELITE_CORE"
+        }
+      ],
+      "thresholds": {
+        "high_coverage_min": 85.0,
+        "low_coverage_min": 50.0,
+        "moderate_coverage_min": 70.0,
+        "prime_ignition_min": 75.0,
+        "prime_pressure_min": 75.0,
+        "subprime_primary_min": 70.0,
+        "subprime_secondary_min": 50.0,
+        "watch_min": 50.0
+      },
+      "variant_id": "raise_prime_75"
+    },
+    {
+      "classification_counts": {
+        "NOT_QUALIFIED": 1,
+        "PRIME": 3,
+        "SUBPRIME": 2,
+        "WATCH": 1
+      },
+      "evaluable_count": 7,
+      "flips_from_baseline": [
+        {
+          "baseline_classification": "SUBPRIME",
+          "profile_id": "moderate_coverage_strong",
+          "variant_classification": "PRIME"
+        }
+      ],
+      "profile_results": [
+        {
+          "classification": "PRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 100,
+          "pressure": 100.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "full_provider_prime",
+          "provider_profile": "FINVIZ_PLUS_IBKR"
+        },
+        {
+          "classification": "SUBPRIME",
+          "coverage_category": "LOW_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 65,
+          "pressure": 100.0,
+          "pressure_supported_weight": 65,
+          "profile_id": "finviz_pressure_ignition_core",
+          "provider_profile": "FINVIZ_ELITE_CORE"
+        },
+        {
+          "classification": "PRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 100,
+          "pressure": 100.0,
+          "pressure_supported_weight": 65,
+          "profile_id": "moderate_coverage_strong",
+          "provider_profile": "FINVIZ_PLUS_PARTIAL_IBKR"
+        },
+        {
+          "classification": "SUBPRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 54.2,
+          "ignition_supported_weight": 100,
+          "pressure": 75.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "subprime_pressure_led",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "WATCH",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 58.5,
+          "ignition_supported_weight": 100,
+          "pressure": 60.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "watch_mid",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "PRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 78.8,
+          "ignition_supported_weight": 100,
+          "pressure": 72.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "prime_boundary_72",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "NOT_QUALIFIED",
+          "coverage_category": "LOW_COVERAGE",
+          "evaluable": true,
+          "ignition": 23.7,
+          "ignition_supported_weight": 65,
+          "pressure": 19.5,
+          "pressure_supported_weight": 65,
+          "profile_id": "watch_not_qualified",
+          "provider_profile": "FINVIZ_ELITE_CORE"
+        }
+      ],
+      "thresholds": {
+        "high_coverage_min": 70.0,
+        "low_coverage_min": 50.0,
+        "moderate_coverage_min": 70.0,
+        "prime_ignition_min": 70.0,
+        "prime_pressure_min": 70.0,
+        "subprime_primary_min": 70.0,
+        "subprime_secondary_min": 50.0,
+        "watch_min": 50.0
+      },
+      "variant_id": "lower_high_coverage_70"
+    },
+    {
+      "classification_counts": {
+        "NOT_QUALIFIED": 1,
+        "PRIME": 4,
+        "SUBPRIME": 1,
+        "WATCH": 1
+      },
+      "evaluable_count": 7,
+      "flips_from_baseline": [
+        {
+          "baseline_classification": "SUBPRIME",
+          "profile_id": "finviz_pressure_ignition_core",
+          "variant_classification": "PRIME"
+        },
+        {
+          "baseline_classification": "SUBPRIME",
+          "profile_id": "moderate_coverage_strong",
+          "variant_classification": "PRIME"
+        }
+      ],
+      "profile_results": [
+        {
+          "classification": "PRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 100,
+          "pressure": 100.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "full_provider_prime",
+          "provider_profile": "FINVIZ_PLUS_IBKR"
+        },
+        {
+          "classification": "PRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 65,
+          "pressure": 100.0,
+          "pressure_supported_weight": 65,
+          "profile_id": "finviz_pressure_ignition_core",
+          "provider_profile": "FINVIZ_ELITE_CORE"
+        },
+        {
+          "classification": "PRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 100,
+          "pressure": 100.0,
+          "pressure_supported_weight": 65,
+          "profile_id": "moderate_coverage_strong",
+          "provider_profile": "FINVIZ_PLUS_PARTIAL_IBKR"
+        },
+        {
+          "classification": "SUBPRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 54.2,
+          "ignition_supported_weight": 100,
+          "pressure": 75.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "subprime_pressure_led",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "WATCH",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 58.5,
+          "ignition_supported_weight": 100,
+          "pressure": 60.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "watch_mid",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "PRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 78.8,
+          "ignition_supported_weight": 100,
+          "pressure": 72.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "prime_boundary_72",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "NOT_QUALIFIED",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 23.7,
+          "ignition_supported_weight": 65,
+          "pressure": 19.5,
+          "pressure_supported_weight": 65,
+          "profile_id": "watch_not_qualified",
+          "provider_profile": "FINVIZ_ELITE_CORE"
+        }
+      ],
+      "thresholds": {
+        "high_coverage_min": 65.0,
+        "low_coverage_min": 50.0,
+        "moderate_coverage_min": 70.0,
+        "prime_ignition_min": 70.0,
+        "prime_pressure_min": 70.0,
+        "subprime_primary_min": 70.0,
+        "subprime_secondary_min": 50.0,
+        "watch_min": 50.0
+      },
+      "variant_id": "lower_high_coverage_65"
+    },
+    {
+      "classification_counts": {
+        "NOT_QUALIFIED": 1,
+        "PRIME": 2,
+        "SUBPRIME": 3,
+        "WATCH": 1
+      },
+      "evaluable_count": 7,
+      "flips_from_baseline": [],
+      "profile_results": [
+        {
+          "classification": "PRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 100,
+          "pressure": 100.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "full_provider_prime",
+          "provider_profile": "FINVIZ_PLUS_IBKR"
+        },
+        {
+          "classification": "SUBPRIME",
+          "coverage_category": "LOW_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 65,
+          "pressure": 100.0,
+          "pressure_supported_weight": 65,
+          "profile_id": "finviz_pressure_ignition_core",
+          "provider_profile": "FINVIZ_ELITE_CORE"
+        },
+        {
+          "classification": "SUBPRIME",
+          "coverage_category": "MODERATE_COVERAGE",
+          "evaluable": true,
+          "ignition": 100.0,
+          "ignition_supported_weight": 100,
+          "pressure": 100.0,
+          "pressure_supported_weight": 65,
+          "profile_id": "moderate_coverage_strong",
+          "provider_profile": "FINVIZ_PLUS_PARTIAL_IBKR"
+        },
+        {
+          "classification": "SUBPRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 54.2,
+          "ignition_supported_weight": 100,
+          "pressure": 75.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "subprime_pressure_led",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "WATCH",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 58.5,
+          "ignition_supported_weight": 100,
+          "pressure": 60.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "watch_mid",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "PRIME",
+          "coverage_category": "HIGH_COVERAGE",
+          "evaluable": true,
+          "ignition": 78.8,
+          "ignition_supported_weight": 100,
+          "pressure": 72.0,
+          "pressure_supported_weight": 100,
+          "profile_id": "prime_boundary_72",
+          "provider_profile": "SYNTHETIC_SCORE_TARGET"
+        },
+        {
+          "classification": "NOT_QUALIFIED",
+          "coverage_category": "LOW_COVERAGE",
+          "evaluable": true,
+          "ignition": 23.7,
+          "ignition_supported_weight": 65,
+          "pressure": 19.5,
+          "pressure_supported_weight": 65,
+          "profile_id": "watch_not_qualified",
+          "provider_profile": "FINVIZ_ELITE_CORE"
+        }
+      ],
+      "thresholds": {
+        "high_coverage_min": 85.0,
+        "low_coverage_min": 50.0,
+        "moderate_coverage_min": 70.0,
+        "prime_ignition_min": 70.0,
+        "prime_pressure_min": 70.0,
+        "subprime_primary_min": 70.0,
+        "subprime_secondary_min": 50.0,
+        "watch_min": 45.0
+      },
+      "variant_id": "lower_watch_45"
+    }
+  ]
+}

@@ -227,6 +227,27 @@ class RuleTransition:
 
 
 @dataclass(slots=True)
+class CausalStateTransition:
+    """Causal squeeze lifecycle transition (distinct from Phase 3A rule transitions)."""
+
+    from_state: str
+    to_state: str
+    changed_at: str
+    trigger: str
+    hysteresis_applied: bool = False
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "from_state": self.from_state,
+            "to_state": self.to_state,
+            "changed_at": self.changed_at,
+            "trigger": self.trigger,
+            "hysteresis_applied": self.hysteresis_applied,
+            "kind": "causal_state",
+        }
+
+
+@dataclass(slots=True)
 class CandidateState:
     """Everything the application knows about one current candidate, right now."""
 
@@ -239,7 +260,11 @@ class CandidateState:
     last_error: str | None = None
     history: list[HistoryPoint] = field(default_factory=list)
     transitions: list[RuleTransition] = field(default_factory=list)
+    causal_transitions: list[CausalStateTransition] = field(default_factory=list)
     last_outcomes: dict[str, str] = field(default_factory=dict)
+    last_causal_state: str | None = None
+    causal_state_since: str | None = None
+    cross_lane_snapshot: dict[str, Any] | None = None
     _sec_data: dict[str, Any] | None = None
     discovery_score: float = 0.0
     last_pressure: float = 0.0
@@ -374,7 +399,7 @@ def short_pressure_fields(
             "SHARES_OUTSTANDING_NOT_AVAILABLE",
         )
 
-    fv_row = external_providers.finviz_row(state.symbol)
+    fv_row = external_providers.finviz_row(state.symbol, ensure=True)
     finviz_at = getattr(external_providers.finviz, "cached_at", None) or _iso(_now())
     finviz_freshness = _freshness_from_timestamp(
         getattr(external_providers.finviz, "cached_at", None)
@@ -594,6 +619,60 @@ def short_pressure_fields(
             research_admissibility="RESEARCH_ADMISSIBLE",
         )
     return fields
+
+
+_PRIOR_LENDING_BY_SYMBOL: dict[str, dict[str, Any]] = {}
+
+
+def _build_securities_lending_snapshot(
+    symbol: str,
+    fields: dict[str, FieldValue],
+) -> dict[str, Any] | None:
+    """Emit governed securities lending snapshot from IBKR borrow fields."""
+    borrow_fee = fields.get("borrow_fee")
+    borrow_avail = fields.get("borrow_availability")
+    fee_value = borrow_fee.value if borrow_fee and borrow_fee.status == "KNOWN" else None
+    shares_value = (
+        int(borrow_avail.value)
+        if borrow_avail and borrow_avail.status == "KNOWN" and borrow_avail.value is not None
+        else None
+    )
+    if fee_value is None and shares_value is None:
+        return None
+
+    received = ""
+    if borrow_fee and borrow_fee.received_time:
+        received = borrow_fee.received_time
+    elif borrow_avail and borrow_avail.received_time:
+        received = borrow_avail.received_time
+    else:
+        received = _iso(_now())
+
+    symbol_upper = symbol.strip().upper()
+    prior = _PRIOR_LENDING_BY_SYMBOL.get(symbol_upper)
+    velocity: float | None = None
+    if prior is not None:
+        prior_fee = prior.get("fee_rate")
+        if fee_value is not None and prior_fee is not None:
+            velocity = float(fee_value) - float(prior_fee)
+
+    snapshot = {
+        "symbol": symbol_upper,
+        "utilization_rate": None,
+        "shares_on_loan": None,
+        "shares_available": shares_value,
+        "fee_rate": float(fee_value) if fee_value is not None else None,
+        "observation_time": received,
+        "available_time": received,
+        "publication_state": "PUBLISHED",
+        "provider": "IBKR",
+        "provenance_ref": f"ibkr:borrow:{symbol_upper}",
+        "quality_flags": [],
+    }
+    if velocity is not None:
+        snapshot["borrow_utilization_velocity"] = velocity
+    _PRIOR_LENDING_BY_SYMBOL[symbol_upper] = snapshot
+    return snapshot
 
 
 def _parse_shares_outstanding(raw: str) -> int | None:
@@ -1321,6 +1400,57 @@ class ScreenerSession:
         )
         del state.history[:-MAX_HISTORY_PER_SYMBOL]
 
+    def _record_causal_transition(
+        self,
+        state: CandidateState,
+        causal: dict[str, Any],
+        at: str | None,
+    ) -> None:
+        new_state = str(causal.get("state", ""))
+        if not new_state:
+            return
+        transition = causal.get("transition") if isinstance(causal.get("transition"), dict) else {}
+        hysteresis = bool(transition.get("hysteresis_applied"))
+        if state.last_causal_state is None:
+            state.causal_transitions.append(
+                CausalStateTransition(
+                    from_state="INITIAL",
+                    to_state=new_state,
+                    changed_at=at or _iso(_now()),
+                    trigger=str(transition.get("trigger") or "initial_causal_assignment"),
+                    hysteresis_applied=hysteresis,
+                )
+            )
+            state.last_causal_state = new_state
+            state.causal_state_since = at or _iso(_now())
+            return
+        if state.last_causal_state == new_state:
+            return
+        state.causal_transitions.append(
+            CausalStateTransition(
+                from_state=state.last_causal_state,
+                to_state=new_state,
+                changed_at=at or _iso(_now()),
+                trigger=str(transition.get("trigger") or "causal_evidence_shift"),
+                hysteresis_applied=hysteresis,
+            )
+        )
+        del state.causal_transitions[:-MAX_HISTORY_PER_SYMBOL]
+        state.last_causal_state = new_state
+        state.causal_state_since = at or _iso(_now())
+
+    def set_cross_lane_snapshot(self, symbol: str, snapshot: dict[str, Any] | None) -> bool:
+        """Attach normalized cross-lane evidence for causal evaluation."""
+        key = symbol.strip().upper()
+        if not key:
+            return False
+        with self._lock:
+            state = self.states.get(key)
+            if state is None:
+                return False
+            state.cross_lane_snapshot = snapshot
+            return True
+
     def compute_symbols_per_cycle(self) -> int:
         """Adaptive IBKR historical batch size under the rolling pacing window."""
         with self._lock:
@@ -1526,6 +1656,7 @@ class ScreenerSession:
             finnhub_price=self.external_providers.finnhub_price_for(state.symbol),
         )
         field_dict = {name: value.as_dict() for name, value in fields.items()}
+        lending_snapshot = _build_securities_lending_snapshot(state.symbol, fields)
 
         evaluation = state.evaluation
         total = len(self.policy.enabled_rule_ids)
@@ -1565,6 +1696,7 @@ class ScreenerSession:
             "market_data_mode": market_data_mode,
             "mode_label": CURRENT_MODE_LABEL,
             "fields": field_dict,
+            "securities_lending_snapshot": lending_snapshot,
             "phase3a": {
                 "counts": counts,
                 "total_rules": total,
@@ -1616,6 +1748,21 @@ class ScreenerSession:
             field="last",
         )
         projected["discovery_score"] = state.discovery_score
+        from .causal_intelligence import finalize_causal_intelligence_for_row
+
+        causal, _changed = finalize_causal_intelligence_for_row(
+            projected,
+            previous_state=state.last_causal_state,
+            state_since=state.causal_state_since,
+            cross_lane=state.cross_lane_snapshot,
+        )
+        projected["causal_intelligence"] = causal
+        if isinstance(projected.get("research_detection"), dict):
+            projected["research_detection"] = {
+                **projected["research_detection"],
+                "ignition_state": causal.get("state"),
+            }
+        self._record_causal_transition(state, causal, state.snapshot_at or observation_at)
         return projected
 
     def rows(self) -> list[dict[str, Any]]:
@@ -1721,6 +1868,17 @@ class ScreenerSession:
             "evidence_notes": self._evidence_notes(evaluation),
             "missing_evidence": self._missing_evidence(row),
             "transitions": [item.as_dict() for item in reversed(state.transitions[-25:])],
+            "causal_state_transitions": [
+                item.as_dict() for item in reversed(state.causal_transitions[-25:])
+            ],
+            "transition_cursor": len(state.causal_transitions),
+            "latest_transition_at": (
+                state.causal_transitions[-1].changed_at
+                if state.causal_transitions
+                else state.causal_state_since
+            ),
+            "causal_intelligence": row.get("causal_intelligence"),
+            "cross_lane_snapshot": state.cross_lane_snapshot,
             "history": [asdict(point) for point in state.history[-MAX_HISTORY_PER_SYMBOL:]],
             "provenance": {
                 "phase3a_request_id": str(getattr(evaluation.request, "deterministic_id", ""))

@@ -51,7 +51,7 @@ def test_historical_report_preserves_membership_sample_size_and_undefined_rates(
     assert "BIYA_EARLIEST_BOUNDARY" in text
     assert "BIYA_LATEST_BOUNDARY" in text
     assert "ANALYSIS_COHORT_EXCLUDED_DUPLICATE_SYMBOL_BOUNDARY" in text
-    assert "SMALL" in text
+    assert "LIMITED" in text
     assert "Undefined (0/0; ZERO_DENOMINATOR)" in text
     assert "earliest_detection_boundary_per_symbol.v1" in text
 

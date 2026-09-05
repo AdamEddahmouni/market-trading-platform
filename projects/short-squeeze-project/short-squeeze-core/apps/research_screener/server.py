@@ -205,6 +205,16 @@ class ScreenerHandler(BaseHTTPRequestHandler):
         body = json.dumps(payload, default=str).encode("utf-8")
         self._send(status, body, "application/json; charset=utf-8")
 
+    def _read_json_body(self) -> dict[str, Any]:
+        length = int(self.headers.get("Content-Length") or "0")
+        if length <= 0:
+            return {}
+        raw = self.rfile.read(length)
+        parsed = json.loads(raw.decode("utf-8"))
+        if not isinstance(parsed, dict):
+            raise ValueError("JSON body must be an object")
+        return parsed
+
     def _error(self, status: int, message: str) -> None:
         self._json({"error": message, "status": status}, status)
 
@@ -555,19 +565,40 @@ class ScreenerHandler(BaseHTTPRequestHandler):
             self._json({"status": "ok", "deployment_mode": _mode})
         elif route == "/api/deployment":
             """Full deployment configuration for programmatic inspection."""
+            from . import session_state
+            from .config import resolve_application_config
+            from .live_providers import get_runtime
+
             _mode = str(self.server.deployment_mode)  # type: ignore[attr-defined]
             _cloud = _mode == "CLOUD_PROVIDER_MODE"
             _local = _mode == "LOCAL_FULL"
+            app_config = resolve_application_config(cli={"SQUEEZE_APP_MODE": _mode})
+            runtime = get_runtime()
+            ibkr_enabled = app_config.providers.ibkr.enabled
+            ibkr_probed = ibkr_enabled and bool(
+                session_state.get_session().provider.connected
+            )
+            external_providers_loaded = any(
+                provider.configured
+                for provider in (
+                    runtime.finviz,
+                    runtime.newsapi,
+                    runtime.finnhub,
+                )
+            )
             _frozen_source = "PRIVATE_CANONICAL" if _local else "FROZEN_DEMO"
             self._json(envelope(
                 {
                     "deployment_mode": _mode,
                     "bind_host": "0.0.0.0" if _cloud else "127.0.0.1",
                     "port": self.server.server_address[1],  # type: ignore[attr-defined]
-                    "ibkr_enabled": _local,
-                    "ibkr_probed": _local,
+                    "ibkr_enabled": ibkr_enabled,
+                    "ibkr_probed": ibkr_probed,
                     "frozen_source": _frozen_source,
-                    "private_configuration_loaded": _local,
+                    "private_configuration_loaded": (
+                        app_config.private_file_loaded or external_providers_loaded
+                    ),
+                    "external_providers_loaded": external_providers_loaded,
                     "browser_enabled": _local,
                     "capabilities_url": "/api/capabilities",
                     "health_url": "/healthz",
@@ -1364,6 +1395,21 @@ class ScreenerHandler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/api/logs/rotate":
                 self._json(data_logger_module.rotate_logs())
+                return
+            if parsed.path == "/api/v1/causal/evaluate":
+                from .causal_api import evaluate_causal_request
+
+                body = self._read_json_body()
+                payload = evaluate_causal_request(body)
+                self._json(envelope(payload, mode="CURRENT"))
+                return
+            if parsed.path.startswith("/api/v1/cross_lane/"):
+                from .causal_api import attach_cross_lane
+
+                symbol = parsed.path.rsplit("/", 1)[-1]
+                body = self._read_json_body()
+                payload = attach_cross_lane(symbol, body)
+                self._json(envelope(payload, mode="CURRENT"))
                 return
             self._error(404, f"no route {parsed.path}")
         except FrozenResearchUnavailable as exc:
