@@ -26,6 +26,19 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-04 — P0-3: canonical lane-module identity (single registry, no drift)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/workspace`, `backend`, `docs` |
+| **Summary** | Unified lane/module identity onto one canonical source: `WORKSPACE_LANE_REGISTRY` in `ui/src/components/workspace-module-shared/laneRegistry.ts`, which now also derives `WORKSPACE_LANE_MODULE_IDS` and `WORKSPACE_LANE_LABELS`. `paperOrderDraft.ts` exports (`LANE_MODULE_IDS`, `LaneModuleId`, `isKnownLaneModuleId`, `laneModuleLabel`) and `paperDecisionSemantics.ts` (`EVIDENCE_LANE_TO_MODULE_ID` typing, `MODULES_WITHOUT_EVIDENCE_LANE` complement) now read from the registry instead of hand-written literals. Removed the dead backend `KNOWN_LANE_MODULES` frozenset in `paper/decision_source.py` (defined, never imported): backend workspace-lane provenance is validated structurally, so it deliberately never enumerates lane modules. Added `laneRegistry.test.ts` equality/closure tests that fail if the derived lists or the evidence map drift from the registry. |
+| **Key files** | Modified: `ui/src/components/workspace-module-shared/laneRegistry.ts`, `ui/src/components/paper-now/paperOrderDraft.ts`, `ui/src/components/paper-workspace/paperDecisionSemantics.ts`, `src/market_platform_foundation/paper/decision_source.py`, `docs/architecture/DATA_CONTRACTS.md`, `docs/engineering/sops/ADD_WORKSPACE_LANE.md`, `docs/engineering/FRONTEND_GUIDE.md`; created: `ui/src/components/workspace-module-shared/laneRegistry.test.ts` |
+| **Tests** | `ui`: `npm run typecheck` clean; `npm test` — 85 files / 436 tests passed (incl. new `laneRegistry.test.ts`, 7 tests). Backend: `py_compile` of `decision_source.py` OK; grep confirms zero references to removed `KNOWN_LANE_MODULES` in `src`/`tests` (only stale `.pyc`). Full manifest validation (`tools/imp.py validate`) runs in CI on push — local Python 3.10 cannot collect the suite (repo requires 3.11 `StrEnum`/tz db) and the project `.venv` is not test-equipped. |
+| **Related** | [Hardening task plan](../../../docs/reviews/2026-09-04-hardening-task-plan.md) P0-3; [ADD_WORKSPACE_LANE.md](sops/ADD_WORKSPACE_LANE.md) |
+| **Notes** | Adding a lane now edits exactly one identity source (`laneRegistry.ts`) plus its per-lane feature surfaces (route component, content builder, backend projection only when a new API is needed). Zero behavior change: derived lists are identical to the prior literals; order of `MODULES_WITHOUT_EVIDENCE_LANE` follows registry nav order (no consumer depends on the old ordering). |
+
+
 ## 2026-09-04 — Full validation green receipt and closure-audit cleanup
 
 | Field | Value |

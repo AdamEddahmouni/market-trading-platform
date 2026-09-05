@@ -23,7 +23,13 @@ EXCLUDE_PREFIXES = (
 
 
 def repo_root() -> Path:
-    return Path(__file__).resolve().parents[2]
+    result = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return Path(result.stdout.strip())
 
 
 def list_tracked_files(root: Path) -> list[str]:

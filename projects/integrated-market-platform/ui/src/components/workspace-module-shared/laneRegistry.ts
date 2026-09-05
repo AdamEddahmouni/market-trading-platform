@@ -41,6 +41,22 @@ export function laneById(id: WorkspaceModuleId): LaneRegistryEntry | undefined {
   return WORKSPACE_LANE_REGISTRY.find((lane) => lane.id === id) as LaneRegistryEntry | undefined;
 }
 
+/**
+ * Canonical ordered lane-module ids (excludes the workspace overview page).
+ *
+ * Single source of truth for workspace lane identity: backend Paper provenance
+ * (`paper/decision_source.py`) deliberately does NOT enumerate lane modules, and
+ * UI paper/evidence surfaces derive their lists and labels from this registry.
+ */
+export const WORKSPACE_LANE_MODULE_IDS: readonly WorkspaceLaneModuleId[] = WORKSPACE_LANE_REGISTRY.filter(
+  (entry) => entry.id !== "overview",
+).map((entry) => entry.id) as WorkspaceLaneModuleId[];
+
+/** Canonical display labels for lane modules, derived from the registry. */
+export const WORKSPACE_LANE_LABELS: Readonly<Record<WorkspaceLaneModuleId, string>> = Object.fromEntries(
+  WORKSPACE_LANE_REGISTRY.filter((entry) => entry.id !== "overview").map((entry) => [entry.id, entry.label]),
+) as Readonly<Record<WorkspaceLaneModuleId, string>>;
+
 export function workspaceLanePath(instrumentId: string, laneId: WorkspaceModuleId, squeezeQuery = ""): string {
   const lane = laneById(laneId);
   if (!lane) return `/workspace/${instrumentId}`;

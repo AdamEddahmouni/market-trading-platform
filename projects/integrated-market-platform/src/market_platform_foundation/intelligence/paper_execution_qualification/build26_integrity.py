@@ -6,7 +6,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from market_platform_foundation.git_ref import read_git_head, read_remote_ref, repo_root
+from market_platform_foundation.git_ref import repo_root, read_remote_ref
 
 from .spec import BUILD26_BRANCH
 
@@ -20,12 +20,7 @@ class Build26IntegrityResult:
 
 
 def verify_build26_integrity(expected_head: str | None = None) -> Build26IntegrityResult:
-    head = (
-        expected_head
-        or read_remote_ref("origin", BUILD26_BRANCH)
-        or read_git_head(start=repo_root())
-        or ""
-    )
+    head = expected_head or read_remote_ref("origin", BUILD26_BRANCH) or ""
     root = repo_root()
     manifest_path = root / "artifacts" / "forward-qualification" / "BUILD26_RUN_MANIFEST.json"
     manifest_present = manifest_path.is_file()

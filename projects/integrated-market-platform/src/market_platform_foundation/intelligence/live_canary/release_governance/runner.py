@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import subprocess
 from dataclasses import dataclass
-from pathlib import Path
 
 from market_platform_foundation.intelligence.live_canary.deployment import (
     build_rollback_plan,
@@ -64,7 +63,10 @@ class FullLifecycleFixtureResultV1:
 
 
 def _git_head() -> str:
-    root = Path(__file__).resolve().parents[5]
+    root = subprocess.check_output(
+        ["git", "rev-parse", "--show-toplevel"],
+        text=True,
+    ).strip()
     return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
 
 

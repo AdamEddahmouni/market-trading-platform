@@ -17,16 +17,6 @@ def _git_dir(start: Path | None = None) -> Path | None:
 
 
 def repo_root(start: Path | None = None) -> Path:
-    """Return the platform source root.
-
-    With no *start*, the root is derived from this module's own location so
-    the platform resolves its root identically when checked out standalone or
-    nested inside a larger repository. With an explicit *start*, fall back to
-    the enclosing Git repository root.
-    """
-
-    if start is None:
-        return Path(__file__).resolve().parents[2]
     git_dir = _git_dir(start)
     if git_dir is None:
         raise FileNotFoundError("GIT_REPOSITORY_NOT_FOUND")

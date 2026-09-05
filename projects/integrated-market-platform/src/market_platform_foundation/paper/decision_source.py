@@ -16,20 +16,14 @@ MAX_REASON_LABEL_LENGTH = 200
 MAX_SOURCE_ID_LENGTH = 128
 MAX_SOURCE_MODULE_LENGTH = 64
 
-KNOWN_LANE_MODULES: frozenset[str] = frozenset(
-    {
-        "squeeze",
-        "order-flow",
-        "order-book",
-        "catalyst",
-        "options",
-        "futures",
-        "large-transactions",
-        "disclosure",
-        "institutional-flow",
-        "fund-etf",
-    }
-)
+# Lane-module identity is a workspace/UI contract owned by
+# `ui/src/components/workspace-module-shared/laneRegistry.ts`
+# (`WORKSPACE_LANE_REGISTRY` / `WORKSPACE_LANE_MODULE_IDS`). The backend
+# deliberately does NOT enumerate lane modules here: workspace_lane provenance
+# is validated structurally (source_id == module == correlation) so an unknown
+# or future lane degrades safely rather than being rejected by a stale list.
+# Adding a lane edits exactly one canonical source (the UI registry) plus its
+# per-lane feature surfaces; see docs/engineering/sops/ADD_WORKSPACE_LANE.md.
 
 
 def _clean_text(value: Any, *, max_length: int) -> str | None:

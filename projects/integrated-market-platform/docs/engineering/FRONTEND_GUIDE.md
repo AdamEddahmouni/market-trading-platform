@@ -94,6 +94,9 @@ Full SOP: [ADD_MODE_AWARE_SURFACE.md](sops/ADD_MODE_AWARE_SURFACE.md).
 
 ## Checklist: new workspace lane
 
+0. Add the lane to `WORKSPACE_LANE_REGISTRY` in
+   `workspace-module-shared/laneRegistry.ts` — the single canonical module-id
+   source. Derived lists (`LANE_MODULE_IDS`, evidence maps) follow it.
 1. Create `Mode*WorkspaceRoute` (lazy in App)
 2. Add `*WorkspaceObservability` + `WorkspaceModuleModeShell`
 3. Add `buildLaneModeContent` entries for Demo/Paper/Live copy

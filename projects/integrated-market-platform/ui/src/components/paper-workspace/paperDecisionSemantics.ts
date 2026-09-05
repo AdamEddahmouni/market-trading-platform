@@ -1,10 +1,10 @@
 import type { WorkspaceEvidenceLane } from "../../api/schemas";
 import type { PaperDecisionHint } from "../workspace-module-shared/laneModeContentTypes";
-import type { LaneModuleId } from "../paper-now/paperOrderDraft";
 import type { WorkspaceModuleId } from "../WorkspaceModuleNav";
+import { WORKSPACE_LANE_MODULE_IDS, type WorkspaceLaneModuleId } from "../workspace-module-shared/laneRegistry";
 import { laneModuleTitle } from "../workspace-module-shared/buildLaneModeContent";
 
-export const EVIDENCE_LANE_TO_MODULE_ID: Record<string, WorkspaceModuleId> = {
+export const EVIDENCE_LANE_TO_MODULE_ID: Record<string, WorkspaceLaneModuleId> = {
   SHORT_SQUEEZE: "squeeze",
   ORDER_FLOW: "order-flow",
   MARKET_CONTEXT: "order-book",
@@ -15,7 +15,10 @@ export const EVIDENCE_LANE_TO_MODULE_ID: Record<string, WorkspaceModuleId> = {
   WHALE_INSIDER: "institutional-flow",
 };
 
-export const MODULES_WITHOUT_EVIDENCE_LANE: LaneModuleId[] = ["large-transactions", "fund-etf"];
+/** Lane modules that have no workspace evidence lane, derived from the canonical registry. */
+export const MODULES_WITHOUT_EVIDENCE_LANE: WorkspaceLaneModuleId[] = WORKSPACE_LANE_MODULE_IDS.filter(
+  (moduleId) => !(Object.values(EVIDENCE_LANE_TO_MODULE_ID) as readonly WorkspaceLaneModuleId[]).includes(moduleId),
+);
 
 export function evidenceLaneToModuleId(lane: string): WorkspaceModuleId | null {
   return EVIDENCE_LANE_TO_MODULE_ID[lane] ?? null;

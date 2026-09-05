@@ -37,9 +37,7 @@ def _run_git(*args: str, cwd: Path | None = None) -> str:
 
 
 def get_repository_root() -> Path:
-    """Return the platform source root (module-derived, nesting-safe)."""
-
-    return ROOT
+    return Path(_run_git("rev-parse", "--show-toplevel"))
 
 
 def get_commit_sha(root: Path | None = None) -> str:
