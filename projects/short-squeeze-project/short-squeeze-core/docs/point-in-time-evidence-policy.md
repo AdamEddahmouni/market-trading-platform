@@ -23,7 +23,7 @@ as_of`, `received_timestamp <= as_of`, `effective_timestamp <= as_of`) already d
 for `PUBLISHED_SHORT_INTEREST`, applied uniformly to borrow observations (whose
 `source_timestamp == effective_timestamp` by construction). `DAYS_TO_COVER`'s volume half still
 composes Phase 2A's own `selection.resolve_trailing_window` directly — no third policy exists for
-market bars either. See [`docs/phase-2c-design.md`](phase-2c-design.md) §3/§12.
+market bars either. See the archived `docs/phase-2c-design.md` §3/§12.
 
 ## Phase 2B normalized-metric selection
 

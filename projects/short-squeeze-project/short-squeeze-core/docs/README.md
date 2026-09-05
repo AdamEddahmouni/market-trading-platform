@@ -50,7 +50,7 @@ brokerage accounts, recommend trades, or claim predictive validation.
 
 | Document | Topic |
 |---|---|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Surfaces, runtime, evidence pipeline, release boundary |
+| [architecture.md](architecture.md) | Surfaces, runtime, evidence pipeline, release boundary |
 | [Reproducibility](reproducibility.md) | Frozen/offline vs live credentials; research vs live app |
 | [LIMITATIONS.md](LIMITATIONS.md) | Explicit non-goals and incomplete validation |
 

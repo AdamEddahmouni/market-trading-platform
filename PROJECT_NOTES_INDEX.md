@@ -8,13 +8,18 @@ descriptive, not investment advice or a claim of predictive performance.
 
 | Project | Primary purpose | Main notes |
 |---|---|---|
-| `Eric_futuresX-main/futuresX-main` | IBKR/Topstep futures Level-2 UI, data capture, backtests, and paper-trading experiments | [FUTURESX_NOTES.md](FUTURESX_NOTES.md) |
-| `internship-project-main/internship-project-main` | Paper news-momentum and options-confirmation agent | [INTERNSHIP_AGENT_NOTES.md](INTERNSHIP_AGENT_NOTES.md) |
-| `L1VolumeBubble-main (1)/L1VolumeBubble-main` | TradingView Pine volume-bubble indicator | [L1_VOLUME_BUBBLE_NOTES.md](L1_VOLUME_BUBBLE_NOTES.md) |
-| `short-squeeze-project/short-squeeze-core` | Read-only, evidence/provenance-driven short-squeeze research screener | [SHORT_SQUEEZE_NOTES.md](SHORT_SQUEEZE_NOTES.md) |
-| `tradingCVDBubble-main (1)/tradingCVDBubble-main` | IBKR/FinViz/MongoDB cumulative-volume-delta and Level-2 dashboard | [CVD_BUBBLE_NOTES.md](CVD_BUBBLE_NOTES.md) |
-| `DS-340W-Fantasy-Football-Prediction-main/DS-340W-Fantasy-Football-Prediction-main` | R-based fantasy-football ARIMA/ARIMAX/neural-network research donor | [DS340W_NOTES.md](DS340W_NOTES.md) |
-| `DS-440-CAPSTONE-GridIQ-main/DS-440-CAPSTONE-GridIQ-main` | FastAPI/React football analytics and chat reference donor | [GRID_IQ_NOTES.md](GRID_IQ_NOTES.md) |
+| `Eric_futuresX-main/futuresX-main` | IBKR/Topstep futures Level-2 UI, data capture, backtests, and paper-trading experiments | `FUTURESX_NOTES.md` |
+| `internship-project-main/internship-project-main` | Paper news-momentum and options-confirmation agent | `INTERNSHIP_AGENT_NOTES.md` |
+| `L1VolumeBubble-main (1)/L1VolumeBubble-main` | TradingView Pine volume-bubble indicator | `L1_VOLUME_BUBBLE_NOTES.md` |
+| `short-squeeze-project/short-squeeze-core` | Read-only, evidence/provenance-driven short-squeeze research screener | `SHORT_SQUEEZE_NOTES.md` |
+| `tradingCVDBubble-main (1)/tradingCVDBubble-main` | IBKR/FinViz/MongoDB cumulative-volume-delta and Level-2 dashboard | `CVD_BUBBLE_NOTES.md` |
+| `DS-340W-Fantasy-Football-Prediction-main/DS-340W-Fantasy-Football-Prediction-main` | R-based fantasy-football ARIMA/ARIMAX/neural-network research donor | [DS340W_NOTES.md](projects/integrated-market-platform/docs/research/donors/DS340W_NOTES.md) |
+| `DS-440-CAPSTONE-GridIQ-main/DS-440-CAPSTONE-GridIQ-main` | FastAPI/React football analytics and chat reference donor | [GRID_IQ_NOTES.md](projects/integrated-market-platform/docs/research/donors/GRID_IQ_NOTES.md) |
+
+Per-donor `*_NOTES.md` analyses that are not linked above are personal/local
+files deliberately kept out of this repository. Consolidated donor analysis
+(reuse matrix and pattern extractions) lives in the governed repo's
+[donor research folder](projects/integrated-market-platform/docs/research/donors/README.md).
 
 The governed canonical repository is `integrated-market-platform/`; it is not a
 donor and remains the only integration target.
@@ -27,8 +32,10 @@ Donor demo launcher: `tools/run_donor_demos.ps1`
 
 The current project direction, supplied screenshot, complete meeting transcript,
 low/no-cost broker/data alternatives, and whale/copy-trading research lane are
-documented in [PROFESSOR_BRIEF_AND_ROADMAP.md](PROFESSOR_BRIEF_AND_ROADMAP.md)
-and [PROFESSOR_MEETING_TRANSCRIPT_20260813.md](PROFESSOR_MEETING_TRANSCRIPT_20260813.md).
+documented in `PROFESSOR_BRIEF_AND_ROADMAP.md` and
+`PROFESSOR_MEETING_TRANSCRIPT_20260813.md` — personal briefings kept out of
+this repository. The committed working plan derived from them is
+[docs/reviews/2026-09-04-hardening-task-plan.md](docs/reviews/2026-09-04-hardening-task-plan.md).
 
 ## Cross-project map
 

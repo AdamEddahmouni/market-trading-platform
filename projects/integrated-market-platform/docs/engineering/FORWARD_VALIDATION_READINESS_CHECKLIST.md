@@ -5,7 +5,7 @@
 campaign listed here is currently active, and **this document grants no execution
 authority**; each row is a gate that must be re-opened deliberately under the owning
 protocol.
-**Source:** [Hardening plan P0-1](../../../docs/reviews/2026-09-04-hardening-task-plan.md)
+**Source:** [Hardening plan P0-1](../../../../docs/reviews/2026-09-04-hardening-task-plan.md)
 
 ## How to use
 
