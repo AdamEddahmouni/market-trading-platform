@@ -16,9 +16,9 @@ repository available at generation time.
 
 | Repository | Commits | Refs | First commit | Latest commit |
 |---|---:|---:|---|---|
-| `equity-data-v1` | 597 | 118 | 2026-08-01 | 2026-09-04 |
-| `governed-ticker-metadata` | 597 | 118 | 2026-08-01 | 2026-09-04 |
-| `parent` | 393 | 11 | 2026-08-14 | 2026-09-04 |
+| `equity-data-v1` | 598 | 115 | 2026-08-01 | 2026-09-04 |
+| `governed-ticker-metadata` | 598 | 115 | 2026-08-01 | 2026-09-04 |
+| `parent` | 401 | 9 | 2026-08-14 | 2026-09-04 |
 | `short-squeeze` | 66 | 5 | 2026-07-26 | 2026-08-16 |
 
 The `governed-ticker-metadata` and `equity-data-v1` entries share

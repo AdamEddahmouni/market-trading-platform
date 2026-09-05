@@ -2271,7 +2271,7 @@ classification, and acceptance artifacts after full validation pass.
 - `bb03c830f939` — merge: integrate adaptive intelligence history
   - Author: AdamEddahmouni (2026-09-02T19:00:57-04:00)
   - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
-- `45a7b127dd6c` — merge: integrate research workstation and vertical history — refs: `refs/heads/integration/all-work-2026-09-02`, `refs/heads/main`
+- `45a7b127dd6c` — merge: integrate research workstation and vertical history — refs: `refs/heads/integration/all-work-2026-09-02`
   - Author: AdamEddahmouni (2026-09-02T19:10:58-04:00)
   - Rationale (commit-subject-and-body): Preserve the chronological OF/XA, validation, and research-workstation commits while retaining the current platform and operator revisions.
 - `5f18591beff9` — feat(extended-hours): add session-aware market support — refs: `refs/heads/feat/extended-hours-support`, `refs/remotes/origin/feat/extended-hours-support`
@@ -2316,7 +2316,7 @@ execution mode/authority into spawned backend processes.
 - `58110709a904` — test(ui): await replay control
   - Author: AdamEddahmouni (2026-09-04T01:04:35-04:00)
   - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
-- `34abd14250cd` — test(bridges): skip absent donor intelligence package — refs: `refs/heads/feat/paper-profitability-observability`, `refs/remotes/origin/feat/paper-profitability-observability`
+- `34abd14250cd` — test(bridges): skip absent donor intelligence package — refs: `refs/remotes/origin/feat/paper-profitability-observability`
   - Author: AdamEddahmouni (2026-09-04T01:11:56-04:00)
   - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
 - `a5506c182131` — feat(paper): add profitability observability (#11)
@@ -2328,7 +2328,7 @@ execution mode/authority into spawned backend processes.
 - `7fe873a1dcc8` — Merge origin/main into feat/unify-paper-trading-chain
   - Author: AdamEddahmouni (2026-09-04T11:42:26-04:00)
   - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
-- `368e64b8a589` — ci(validation): stop materializing removed closure scope — refs: `refs/heads/feat/unify-paper-trading-chain`, `refs/remotes/origin/feat/unify-paper-trading-chain`
+- `368e64b8a589` — ci(validation): stop materializing removed closure scope — refs: `refs/remotes/origin/feat/unify-paper-trading-chain`
   - Author: AdamEddahmouni (2026-09-04T11:56:45-04:00)
   - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>
 - `9902927aa62c` — Merge pull request #12 from AdamEddahmouni/feat/unify-paper-trading-chain
@@ -2349,7 +2349,7 @@ execution mode/authority into spawned backend processes.
 - `06963649032a` — ci: lint workflow files with actionlint
   - Author: AdamEddahmouni (2026-09-04T15:49:21-04:00)
   - Rationale (commit-subject-and-body): Add a validate-workflows job to imp-validate.yml that downloads actionlint v1.7.12 and lints the repository's GitHub Actions workflow files on every push and pull request.
-- `7cb5bdbf5ab4` — Merge origin/main into feat/rt01-paper-tracing — refs: `refs/heads/feat/rt01-paper-tracing`, `refs/remotes/origin/feat/rt01-paper-tracing`
+- `7cb5bdbf5ab4` — Merge origin/main into feat/rt01-paper-tracing — refs: `refs/remotes/origin/feat/rt01-paper-tracing`
   - Author: AdamEddahmouni (2026-09-04T16:06:05-04:00)
   - Rationale (commit-subject-and-body): Reconcile PR #12's unified internal Paper chain with the RT-01 broker-paper
 wiring: keep the orchestrator's traced submit path and broker-paper dispatch,
@@ -2368,3 +2368,15 @@ a Windows OpenD install. Include it so the safety regression passes anywhere.
 - `3db07a558c73` — Merge pull request #14 from AdamEddahmouni/fix/live-opend-not-installed — refs: `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
   - Author: AdamEddahmouni (2026-09-04T16:30:14-04:00)
   - Rationale (commit-subject-and-body): fix(tests): accept OPEN_D_NOT_INSTALLED from live environment check
+- `0681b9dc60d4` — fix(evidence): stop test runs from dirtying assistant-audit store — refs: `refs/heads/main`
+  - Author: AdamEddahmouni (2026-09-04T21:28:41-04:00)
+  - Rationale (commit-subject-and-body): ReplayStore.load() defaulted the assistant audit root to the tracked
+evidence/ui1/assistant-audit path, so any test constructing a ReplayStore
+appended fresh time-stamped conversations/messages on every run and dirtied
+every worktree. The default is now an ephemeral temp root; the UI API server
+and the mra001 evidence pipeline opt into TRACKED_ASSISTANT_AUDIT_ROOT
+explicitly, and build_evidence accepts an isolated audit root for tests.
+Also removed the stray empty src/market_platform_foundation/tests
+directories that the frozen repository-closure classification does not
+cover, restoring the closure audit. Full validation is green: 3487 tests,
+43 skipped, 0 failures, 0 errors.
