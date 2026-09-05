@@ -5,7 +5,7 @@
 | Created | 2026-09-04 |
 | Source | [Hardening review](2026-09-04-hardening-review.md) |
 | Purpose | Tracked, checkable backlog produced by the workspace hardening review. Items are grouped P0 → P2. Each item names evidence, the fix, and an acceptance check. |
-| Status | In progress — 1/17 closed (P0-3, 2026-09-04) |
+| Status | In progress — 2/17 closed (P0-3, P1-7, 2026-09-04) |
 
 **How to use:** tick `[ ]` → `[x]` as items close. Substantive work should also follow the owning repo's conventions (platform work log entry in `integrated-market-platform/docs/engineering/WORK_LOG.md`; short-squeeze work in its own repo; snapshot refreshes through the guarded monorepo import).
 
@@ -96,6 +96,7 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 - **Evidence:** `git -C equity-data-v1-worktree status` ownership error; same issue was fixed for `integrated-market-platform` on 2026-09-04 via `git config --global --add safe.directory`.
 - **Fix:** add the safe.directory entry for `equity-data-v1-worktree`; run `python tools/monorepo_guard.py validate` to confirm both worktrees readable.
 - **Acceptance:** `git -C equity-data-v1-worktree status` and `monorepo_guard.py validate` succeed locally.
+- **Closed 2026-09-04** — added `C:/Users/adame/Desktop/market-trading-platform/equity-data-v1-worktree` to `git config --global safe.directory` (same fix already applied to `integrated-market-platform`). Verified: `git -C equity-data-v1-worktree status` exit 0 and `python tools/monorepo_guard.py validate` → `monorepo validation passed`. No commits made; the two dirty assistant-audit files in that worktree predate this change and were left untouched (child repo, immutable boundary).
 
 ### P1-8 — Commit + snapshot-refresh the short-squeeze working tree
 
