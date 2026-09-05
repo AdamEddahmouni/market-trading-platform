@@ -11,6 +11,11 @@ from squeeze_core.acquisition.phase3a_freeze.cli import FREEZE_SUBDIR, generate 
 from squeeze_core.acquisition.phase3a_freeze.serialization import serialize
 from squeeze_core.serialization import canonical_json_bytes
 
+from ..cohort_registry import (
+    boundary_map,
+    cohort_cases_as_symbol_case_pairs,
+    resolve_cohort_cases,
+)
 from .constants import (
     DEFAULT_BATCH05_ROOT,
     DEFAULT_FREEZE_SUBDIR,
@@ -37,7 +42,8 @@ class Stage2PipelineConfig:
     offline: bool = False
     skip_freeze: bool = False
     force: bool = False
-    symbols: tuple[tuple[str, str], ...] = PILOT_COHORT
+    cohort_track: str = "frozen"
+    symbols: tuple[tuple[str, str], ...] | None = None
 
 
 @dataclass
@@ -97,6 +103,12 @@ def _mirror_phase3a_freeze(
     return {"mirrored_count": mirrored, "freeze_root": str(freeze_root)}
 
 
+def _resolve_symbols(config: Stage2PipelineConfig) -> tuple[tuple[str, str], ...]:
+    if config.symbols is not None:
+        return config.symbols
+    return cohort_cases_as_symbol_case_pairs(resolve_cohort_cases(config.cohort_track))
+
+
 def _generate_outcomes(
     *,
     symbols: tuple[tuple[str, str], ...],
@@ -104,6 +116,7 @@ def _generate_outcomes(
     stage2_root: Path,
     live_intake: bool,
     force: bool,
+    boundary_by_symbol: dict[str, datetime],
 ) -> dict[str, object]:
     built: list[str] = []
     skipped: list[str] = []
@@ -120,6 +133,7 @@ def _generate_outcomes(
                 batch05_root=batch05_root,
                 live_intake=live_intake,
                 research_case_id=case_id,
+                boundary=boundary_by_symbol.get(symbol),
             )
             write_outcome_artifacts(result, stage2_root / "outcomes")
             built.append(symbol)
@@ -137,6 +151,7 @@ def _run_leakage_audit(
     symbols: tuple[tuple[str, str], ...],
     stage2_root: Path,
     force: bool,
+    boundary_by_symbol: dict[str, datetime],
 ) -> tuple[dict[str, object], tuple[tuple[str, str], ...]]:
     leakage_dir = stage2_root / "leakage-audit"
     summary_path = leakage_dir / "leakage-audit.json"
@@ -160,7 +175,11 @@ def _run_leakage_audit(
         if not manifest_path.is_file():
             continue
         manifest_id = outcome_manifest_id_for(case_id)
-        audit = audit_post_outcome_case(case_id=case_id, outcome_manifest_id=manifest_id)
+        audit = audit_post_outcome_case(
+            case_id=case_id,
+            outcome_manifest_id=manifest_id,
+            boundary=boundary_by_symbol.get(symbol),
+        )
         audits.append(audit)
         audit_path = leakage_dir / f"{case_id}.json"
         audit_path.write_bytes(serialize(audit))
@@ -185,32 +204,49 @@ def run_stage2_pipeline(config: Stage2PipelineConfig) -> Stage2PipelineResult:
     freeze_root = _resolve_freeze_root(config, batch05_root).resolve()
     live_intake = batch05_root == (repo_root / DEFAULT_BATCH05_ROOT).resolve()
 
+    cohort_cases = resolve_cohort_cases(config.cohort_track)
+    symbols = _resolve_symbols(config)
+    boundary_by_symbol = boundary_map(cohort_cases)
+
     result = Stage2PipelineResult()
     steps: dict[str, object] = {}
 
     if not config.skip_freeze:
-        if not freeze_root.is_dir() or config.force:
-            generate_phase3a_freeze(batch05_root, freeze_root)
-        steps["phase3a_freeze"] = {"freeze_root": str(freeze_root)}
+        missing_freeze = any(
+            not (freeze_root / "requests" / f"{case_id}.json").is_file()
+            for _, case_id in symbols
+        )
+        if not freeze_root.is_dir() or config.force or missing_freeze:
+            generate_phase3a_freeze(
+                batch05_root,
+                freeze_root,
+                cohort_track=config.cohort_track,
+            )
+        steps["phase3a_freeze"] = {
+            "freeze_root": str(freeze_root),
+            "cohort_track": config.cohort_track,
+        }
 
     steps["mirror_phase3a_freeze"] = _mirror_phase3a_freeze(
-        symbols=config.symbols,
+        symbols=symbols,
         freeze_root=freeze_root,
         stage2_root=stage2_root,
         force=config.force,
     )
     steps["outcomes"] = _generate_outcomes(
-        symbols=config.symbols,
+        symbols=symbols,
         batch05_root=batch05_root,
         stage2_root=stage2_root,
         live_intake=live_intake,
         force=config.force,
+        boundary_by_symbol=boundary_by_symbol,
     )
 
     leakage_step, passed_cases = _run_leakage_audit(
-        symbols=config.symbols,
+        symbols=symbols,
         stage2_root=stage2_root,
         force=config.force,
+        boundary_by_symbol=boundary_by_symbol,
     )
     steps["leakage_audit"] = leakage_step
     result.passed_leakage = passed_cases
@@ -247,7 +283,8 @@ def run_stage2_pipeline(config: Stage2PipelineConfig) -> Stage2PipelineResult:
         "stage2_root": str(stage2_root),
         "live_intake": live_intake,
         "offline": config.offline,
-        "symbol_count": len(config.symbols),
+        "cohort_track": config.cohort_track,
+        "symbol_count": len(symbols),
         "leakage_passed_count": len(passed_cases),
         "steps": steps,
     }

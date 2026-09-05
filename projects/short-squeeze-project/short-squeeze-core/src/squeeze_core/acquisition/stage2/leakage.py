@@ -64,12 +64,14 @@ def audit_post_outcome_case(
     *,
     case_id: str,
     outcome_manifest_id: str,
+    boundary: datetime | None = None,
 ) -> LeakageAuditResult:
     """Run the existing leakage audit for one Stage 2 case with outcomes."""
     return audit_outcome_leakage(
         build_post_outcome_audit_request(
             case_id=case_id,
             outcome_manifest_id=outcome_manifest_id,
+            boundary=boundary or FROZEN_BOUNDARY,
         )
     )
 

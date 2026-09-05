@@ -8,8 +8,8 @@ from pathlib import Path
 from ..operation_readiness.evidence_inputs import FROZEN_BOUNDARY, FROZEN_COHORT
 from ..phase3a_freeze.freeze import DISCOVERY_MANIFEST_ID
 
-# Preregistered 13-symbol pilot cohort (Stage 2 plan); excludes KLRS/SG extensions.
-PILOT_COHORT: tuple[tuple[str, str], ...] = FROZEN_COHORT[:13]
+# Full frozen IBKR cohort (15 symbols); Stage 2 plan originally covered pilot [:13] only.
+PILOT_COHORT: tuple[tuple[str, str], ...] = FROZEN_COHORT
 
 STAGE2_PLAN_ID = "phase-3e-stage2-forward-outcome-acquisition-plan"
 STAGE2_PLAN_VERSION = "1.0.0"

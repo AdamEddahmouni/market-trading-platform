@@ -115,6 +115,8 @@ def test_adam_full_evidence_is_prime_and_matches_preregistered_weights():
     assert result.evidence_coverage["total_fields_required"] == 9
     assert result.metadata["pressure_supported_weight"] == 100
     assert result.metadata["ignition_supported_weight"] == 100
+    assert result.metadata["weights_validated"] is True
+    assert result.metadata["thresholds_optimal"] is True
 
 
 def test_adam_field_coverage_percent_is_field_based_not_weight_average():

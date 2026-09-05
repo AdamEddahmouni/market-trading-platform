@@ -13,6 +13,9 @@ EXPECTED_ORDER = (
     "XNCR", "PESI", "SLS", "ZNTL", "GPRE", "SSPC", "LBGJ",
     "TRVI", "LMNX", "MGNX", "BHVN", "OBE", "AVTX",
     "KLRS", "SG",
+    "CELZ", "GDC", "ADVB", "GOAI", "NXXT",
+    "VMAR", "ATAI", "CADL", "CGEM", "IOVA",
+    "PMAX", "STAK", "APVO",
 )
 
 
@@ -21,9 +24,15 @@ def test_frozen_source_order_exact():
 
 
 def test_case_ids_exact():
-    for symbol in EXPECTED_ORDER:
+    for symbol in EXPECTED_ORDER[:15]:
         assert cohort.CASE_IDS[symbol] == f"BATCH01_{symbol}_20260718"
-    assert len(cohort.CASE_IDS) == 15
+    for symbol in ("CELZ", "GDC", "ADVB", "GOAI", "NXXT"):
+        assert cohort.CASE_IDS[symbol] == f"BATCH3F01_{symbol}_20260718"
+    for symbol in ("VMAR", "ATAI", "CADL", "CGEM", "IOVA"):
+        assert cohort.CASE_IDS[symbol] == f"BATCH3F02_{symbol}_20260718"
+    for symbol in ("PMAX", "STAK", "APVO"):
+        assert cohort.CASE_IDS[symbol] == f"BATCH3F03_{symbol}_20260718"
+    assert len(cohort.CASE_IDS) == 28
 
 
 def test_frozen_boundary_values():

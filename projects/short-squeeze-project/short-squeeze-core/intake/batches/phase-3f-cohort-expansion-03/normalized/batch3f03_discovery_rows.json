@@ -1,0 +1,84 @@
+{
+  "document": "phase_3f_batch_03_log_universe_discovery_rows",
+  "raw_source": {
+    "archived_relative_paths": [
+      "archived-project-code/adams-short-squeeze-code-archived/app/ScreenerProject/data/prime_log.csv",
+      "archived-project-code/adams-short-squeeze-code-archived/app/ScreenerProject/data/squeeze_score_history.csv",
+      "archived-project-code/adams-short-squeeze-code-archived/app/ScreenerProject/data/corroboration_history.csv"
+    ],
+    "artifact_names": [
+      "prime_log.csv",
+      "squeeze_score_history.csv",
+      "corroboration_history.csv"
+    ],
+    "capture_timestamp": "2026-07-18T13:37:55.017661+00:00",
+    "classification": "SANITIZED_LOCAL_ARTIFACT",
+    "notes": "PMAX and STAK from archived prime-log rows; APVO from archived screening-universe history. No scanner field values survive; boundary is the Batch 01 frozen cohort timestamp for comparability.",
+    "source_class": "ARCHIVED_PLATFORM_LOG_AND_SCREENING_UNIVERSE"
+  },
+  "rows": [
+    {
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "observed_at": "2026-07-18T13:37:55.017661+00:00",
+      "original_order": 1,
+      "ticker": "PMAX",
+      "discovery_provenance": {
+        "log_observation_timestamp": "2026-07-17T09:01:13.126777+00:00",
+        "source_artifact": "prime_log.csv"
+      }
+    },
+    {
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "observed_at": "2026-07-18T13:37:55.017661+00:00",
+      "original_order": 2,
+      "ticker": "STAK",
+      "discovery_provenance": {
+        "log_observation_timestamp": "2026-07-17T12:24:39.146817+00:00",
+        "source_artifact": "prime_log.csv"
+      }
+    },
+    {
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "observed_at": "2026-07-18T13:37:55.017661+00:00",
+      "original_order": 3,
+      "ticker": "APVO",
+      "discovery_provenance": {
+        "log_observation_timestamp": "2026-07-17T19:19:21.226732+00:00",
+        "source_artifact": "squeeze_score_history.csv"
+      }
+    }
+  ],
+  "schema_version": "1.0.0",
+  "transformation": {
+    "dropped_prediction_fields": [],
+    "retained_detection_fields": [],
+    "selection": "PREREGISTERED_LOG_UNIVERSE_PLATFORM_LOG_AND_SCREENING"
+  }
+}

@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
+from squeeze_core.acquisition.cohort_registry import resolve_cohort_cases  # noqa: E402
 from squeeze_core.acquisition.operation_readiness.evidence_inputs import (  # noqa: E402
     FROZEN_BOUNDARY,
     FROZEN_COHORT,
@@ -47,13 +48,9 @@ SYNTHETIC_FREEZE_ROOT = ROOT / "intake" / "local-bars" / "phase3a-batch08-synthe
 EVAL_OUT = ROOT / "tests" / "fixtures" / "evaluation"
 RESEARCH_OUT = ROOT / "tests" / "fixtures" / "research"
 
-# Phase 3E preregistered 13-symbol pilot cohort plus KLRS/SG IBKR extensions.
 COHORT = tuple(
-    (symbol, f"{symbol}_ARTIFACT_DISCOVERY", case_id)
-    for symbol, case_id in FROZEN_COHORT[:13]
-) + (
-    ("KLRS", "KLRS_ARTIFACT_DISCOVERY", "BATCH01_KLRS_20260718"),
-    ("SG", "SG_ARTIFACT_DISCOVERY", "BATCH01_SG_20260718"),
+    (case.symbol, f"{case.symbol}_ARTIFACT_DISCOVERY", case.case_id, case.boundary)
+    for case in resolve_cohort_cases("all")
 )
 
 RETRIEVAL_COMPLETED_AT = datetime(2026, 7, 23, 20, 0, 1, tzinfo=UTC)
@@ -100,12 +97,12 @@ def _outcome_moves(
     return maximum, adverse, len(rows), source
 
 
-def _load_detection_bars(batch05_root: Path, symbol: str) -> tuple:
+def _load_detection_bars(batch05_root: Path, symbol: str, boundary: datetime) -> tuple:
     path = batch05_root / "raw" / f"{symbol}-detection-context.csv"
     loaded = load_detection_context_bars(
         path,
         symbol=symbol,
-        boundary=FROZEN_BOUNDARY,
+        boundary=boundary,
         retrieval_completed_at=RETRIEVAL_COMPLETED_AT,
         receipt_policy=ReceiptModelingPolicy.PROVIDER_AVAILABILITY_AS_RECEIPT,
         interpretation=TimestampInterpretation.LABEL_IS_INTERVAL_START,
@@ -113,8 +110,8 @@ def _load_detection_bars(batch05_root: Path, symbol: str) -> tuple:
     return loaded.observations
 
 
-def _reference_price(batch05_root: Path, symbol: str) -> Decimal:
-    observations = _load_detection_bars(batch05_root, symbol)
+def _reference_price(batch05_root: Path, symbol: str, boundary: datetime) -> Decimal:
+    observations = _load_detection_bars(batch05_root, symbol, boundary)
     if not observations:
         raise ValueError(f"no detection-context bars for {symbol}")
     last = max(
@@ -204,21 +201,28 @@ def write_outputs() -> dict[str, object]:
         "freeze_root": str(freeze_root),
         "live_intake": live,
     }
-    for symbol, case_id, batch_case_id in COHORT:
+    for symbol, case_id, batch_case_id, case_boundary in COHORT:
         evaluation_path = freeze_root / "results" / f"{batch_case_id}.json"
         if not evaluation_path.is_file():
-            raise SystemExit(f"missing freeze result: {evaluation_path}")
+            print(f"skip {symbol}: missing freeze result {evaluation_path}", file=sys.stderr)
+            continue
         evaluation_bytes = evaluation_path.read_bytes()
         eval_name = f"{symbol.lower()}_boundary_evaluation.json"
         (EVAL_OUT / eval_name).write_bytes(evaluation_bytes)
 
-        observations = _load_detection_bars(batch05_root, symbol)
+        observations = _load_detection_bars(batch05_root, symbol, case_boundary)
         _write_evidence(symbol, observations)
 
-        reference = _reference_price(batch05_root, symbol)
-        maximum, adverse, forward_bars, forward_source = _outcome_moves(
-            batch05_root, symbol, reference
-        )
+        reference = _reference_price(batch05_root, symbol, case_boundary)
+        try:
+            maximum, adverse, forward_bars, forward_source = _outcome_moves(
+                batch05_root, symbol, reference
+            )
+        except ValueError as exc:
+            print(f"skip {symbol} outcome: {exc}", file=sys.stderr)
+            meta[symbol] = {"skipped_outcome": str(exc)}
+            anchors[eval_name] = json.loads(evaluation_bytes.decode())["deterministic_id"]
+            continue
         limitations = _outcome_limitations(
             live=live,
             forward_bar_count=forward_bars,
@@ -228,7 +232,7 @@ def write_outputs() -> dict[str, object]:
             case_id=case_id,
             batch_case_id=batch_case_id,
             symbol=symbol,
-            boundary=FROZEN_BOUNDARY,
+            boundary=case_boundary,
             reference=reference,
             maximum=maximum,
             adverse=adverse,

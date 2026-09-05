@@ -19,6 +19,14 @@ from .providers import provider_health
 from .server import DEFAULT_PORT, HOST, build_server, default_export_dir, find_free_port
 
 
+def _cloud_bootstrap_symbols() -> list[str]:
+    """Optional manual seed list when provider discovery returns no candidates."""
+    raw = os.environ.get("CLOUD_BOOTSTRAP_SYMBOLS", "").strip()
+    if not raw:
+        return []
+    return [part.strip().upper() for part in raw.split(",") if part.strip()]
+
+
 def _bootstrap_live_data(session, *, sec_user_agent: str | None = None) -> None:
     """Bootstrap live data flow immediately on boot, then start auto-refresh.
 
@@ -48,6 +56,31 @@ def _bootstrap_live_data(session, *, sec_user_agent: str | None = None) -> None:
             f"  Bootstrap: discovery failed ({type(exc).__name__}: {exc}) "
             "- auto-refresh will retry"
         )
+
+    bootstrap_symbols = _cloud_bootstrap_symbols()
+    if bootstrap_symbols and len(session.states) == 0:
+        try:
+            added = session.add_manual_symbols(bootstrap_symbols)
+            if added:
+                print(
+                    f"  Bootstrap: seeded {len(added)} manual symbol(s) from "
+                    "CLOUD_BOOTSTRAP_SYMBOLS"
+                )
+            if bootstrap_symbols and hasattr(session, "external_providers"):
+                providers = session.external_providers
+                if providers.finviz.configured:
+                    summary = providers.ensure_finviz_for_symbols(bootstrap_symbols)
+                    fetched = int(summary.get("fetched", 0))
+                    missing = int(summary.get("missing_before", 0))
+                    print(
+                        f"  Bootstrap: Finviz per-symbol export "
+                        f"({fetched}/{missing} bootstrap symbol(s))"
+                    )
+        except Exception as exc:  # noqa: BLE001
+            print(
+                f"  Bootstrap: manual symbol seed failed "
+                f"({type(exc).__name__}: {exc})"
+            )
 
     if discovery_ok and hasattr(session, "note_discovery_scan"):
         session.note_discovery_scan()
@@ -194,6 +227,12 @@ def main(argv: list[str] | None = None) -> int:
         use_frozen_demo=application_config.deployment.mode is not DeploymentMode.LOCAL_FULL,
     )
     runtime = configure_application(application_config)
+    if private_file and private_file.is_file():
+        runtime._private_config_path = private_file.resolve()
+        if runtime.finviz.configured:
+            from .finviz_auto_refresh import ensure_finviz_operational
+
+            ensure_finviz_operational(runtime, providers_path=private_file)
     from .sentiment_live import get_sentiment_analyzer
 
     sa = get_sentiment_analyzer()

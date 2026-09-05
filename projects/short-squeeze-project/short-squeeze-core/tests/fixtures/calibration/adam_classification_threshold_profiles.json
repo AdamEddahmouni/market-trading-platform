@@ -1,0 +1,108 @@
+{
+  "schema_version": "1.0.0",
+  "experiment_version": "adam_classification_threshold_live_profiles.v1",
+  "methodology_id": "adam_evidence_gated_prime.v1",
+  "baseline_min_dimension_weight": 65,
+  "baseline_variant_id": "baseline",
+  "threshold_variants": [
+    {
+      "variant_id": "baseline"
+    },
+    {
+      "variant_id": "lower_prime_65",
+      "prime_pressure_min": 65,
+      "prime_ignition_min": 65
+    },
+    {
+      "variant_id": "raise_prime_75",
+      "prime_pressure_min": 75,
+      "prime_ignition_min": 75
+    },
+    {
+      "variant_id": "lower_high_coverage_70",
+      "high_coverage_min": 70
+    },
+    {
+      "variant_id": "lower_high_coverage_65",
+      "high_coverage_min": 65
+    },
+    {
+      "variant_id": "lower_watch_45",
+      "watch_min": 45
+    }
+  ],
+  "profiles": [
+    {
+      "profile_id": "full_provider_prime",
+      "description": "All nine admissible fields at strong values (full cloud + IBKR profile).",
+      "provider_profile": "FINVIZ_PLUS_IBKR",
+      "inputs": [
+        {"key": "published_short_interest_pct", "value": 30},
+        {"key": "days_to_cover", "value": 7},
+        {"key": "cost_to_borrow", "value": 50},
+        {"key": "borrow_availability_pct_float", "value": 0.1},
+        {"key": "float_shares", "value": 10000000},
+        {"key": "current_percentage_change", "value": 20},
+        {"key": "relative_volume", "value": 10},
+        {"key": "completed_bar_acceleration", "value": 5},
+        {"key": "catalyst_age_hours", "value": 12}
+      ]
+    },
+    {
+      "profile_id": "finviz_pressure_ignition_core",
+      "description": "Finviz Elite SI + DTC + float with change + relvol (typical cloud minimum).",
+      "provider_profile": "FINVIZ_ELITE_CORE",
+      "inputs": [
+        {"key": "published_short_interest_pct", "value": 30},
+        {"key": "days_to_cover", "value": 7},
+        {"key": "float_shares", "value": 10000000},
+        {"key": "current_percentage_change", "value": 20},
+        {"key": "relative_volume", "value": 10}
+      ]
+    },
+    {
+      "profile_id": "moderate_coverage_strong",
+      "description": "Seven-field scanner profile with max scores but MODERATE coverage (82.5% weight).",
+      "provider_profile": "FINVIZ_PLUS_PARTIAL_IBKR",
+      "inputs": [
+        {"key": "published_short_interest_pct", "value": 30},
+        {"key": "days_to_cover", "value": 7},
+        {"key": "float_shares", "value": 10000000},
+        {"key": "current_percentage_change", "value": 20},
+        {"key": "relative_volume", "value": 10},
+        {"key": "completed_bar_acceleration", "value": 5},
+        {"key": "catalyst_age_hours", "value": 12}
+      ]
+    },
+    {
+      "profile_id": "subprime_pressure_led",
+      "description": "Pressure-led SUBPRIME boundary (75/55 dimension scores, full nine fields).",
+      "provider_profile": "SYNTHETIC_SCORE_TARGET",
+      "score_targets": {"pressure_pct": 75, "ignition_pct": 55}
+    },
+    {
+      "profile_id": "watch_mid",
+      "description": "Both dimensions at WATCH tier (60/60 scores, full nine fields).",
+      "provider_profile": "SYNTHETIC_SCORE_TARGET",
+      "score_targets": {"pressure_pct": 60, "ignition_pct": 60}
+    },
+    {
+      "profile_id": "prime_boundary_72",
+      "description": "Pressure 72 / ignition 75 — PRIME at baseline, SUBPRIME if prime gate raised to 75.",
+      "provider_profile": "SYNTHETIC_SCORE_TARGET",
+      "score_targets": {"pressure_pct": 72, "ignition_pct": 75}
+    },
+    {
+      "profile_id": "watch_not_qualified",
+      "description": "Evaluable but below PRIME/SUBPRIME/WATCH thresholds.",
+      "provider_profile": "FINVIZ_ELITE_CORE",
+      "inputs": [
+        {"key": "published_short_interest_pct", "value": 10},
+        {"key": "days_to_cover", "value": 2},
+        {"key": "float_shares", "value": 40000000},
+        {"key": "current_percentage_change", "value": 5},
+        {"key": "relative_volume", "value": 3}
+      ]
+    }
+  ]
+}

@@ -635,6 +635,9 @@ def _enrich_frozen_rows_with_finviz(rows: list[dict[str, Any]]) -> None:
 
         # Fetch screener (force=False uses cache if fresh)
         finviz.fetch_screener(force=False)
+        symbols = [row["symbol"] for row in rows]
+        if symbols:
+            finviz.ensure_symbols(symbols)
 
         now_iso = _now()
         matched = 0
@@ -698,8 +701,9 @@ def _enrich_detail_market_data(detail: dict[str, Any]) -> None:
 
         symbol = (detail.get("identity") or {}).get("symbol", "")
 
-        # Fetch first to populate cache, then look up
+        # Fetch screener then per-symbol export when the ticker is outside the filter.
         finviz.fetch_screener(force=False)
+        finviz.ensure_symbols([symbol])
         fv_row = finviz.get_row(symbol)
         if fv_row is None:
             return

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 
 from .enums import Classification, CoverageCategory
 from .evidence import EvidenceInput
@@ -10,6 +11,21 @@ from .normalization import inverse_linear, linear
 ADAM_POLICY_ID = "adam_evidence_gated_prime.v1"
 ADAM_LABEL = "ADAM EVIDENCE-GATED PRIME v1"
 MIN_DIMENSION_WEIGHT = 65
+
+
+@dataclass(frozen=True, slots=True)
+class AdamClassificationThresholds:
+    prime_pressure_min: float = 70.0
+    prime_ignition_min: float = 70.0
+    subprime_primary_min: float = 70.0
+    subprime_secondary_min: float = 50.0
+    watch_min: float = 50.0
+    high_coverage_min: float = 85.0
+    moderate_coverage_min: float = 70.0
+    low_coverage_min: float = 50.0
+
+
+DEFAULT_CLASSIFICATION_THRESHOLDS = AdamClassificationThresholds()
 
 PRESSURE: dict[str, tuple[int, Callable[[float], float]]] = {
     "published_short_interest_pct": (30, lambda x: linear(x, 5, 30)),
@@ -46,6 +62,7 @@ def _dimension(
     inputs: dict[str, EvidenceInput],
     *,
     critical: bool,
+    min_dimension_weight: int = MIN_DIMENSION_WEIGHT,
 ) -> tuple[float | None, int, list[dict], list[str], list[str]]:
     contribution = 0.0
     supported_weight = 0
@@ -71,12 +88,18 @@ def _dimension(
             "eligible": True, "evidence": item.as_dict(),
         })
     score = None
-    if supported_weight >= MIN_DIMENSION_WEIGHT and critical:
+    if supported_weight >= min_dimension_weight and critical:
         score = round(contribution / supported_weight, 1)
     return score, supported_weight, components, missing, display_only
 
 
-def evaluate_adam(inputs: dict[str, EvidenceInput], *, as_of: str | None = None) -> MethodologyResult:
+def evaluate_adam(
+    inputs: dict[str, EvidenceInput],
+    *,
+    as_of: str | None = None,
+    min_dimension_weight: int = MIN_DIMENSION_WEIGHT,
+    classification_thresholds: AdamClassificationThresholds = DEFAULT_CLASSIFICATION_THRESHOLDS,
+) -> MethodologyResult:
     conflicts = tuple(
         f"material conflict in {key}" for key, item in inputs.items() if item.conflict
     )
@@ -100,21 +123,36 @@ def evaluate_adam(inputs: dict[str, EvidenceInput], *, as_of: str | None = None)
         and _eligible(inputs["relative_volume"], "relative_volume")
     )
     pressure, pw, pc, pm, pd = _dimension(
-        PRESSURE, inputs, critical=pressure_critical
+        PRESSURE,
+        inputs,
+        critical=pressure_critical,
+        min_dimension_weight=min_dimension_weight,
     )
     ignition, iw, ic, im, idisplay = _dimension(
-        IGNITION, inputs, critical=ignition_critical
+        IGNITION,
+        inputs,
+        critical=ignition_critical,
+        min_dimension_weight=min_dimension_weight,
     )
     weight_coverage_pct = round((pw + iw) / 2.0, 4)
+    thresholds = classification_thresholds
     if conflicts:
         coverage = CoverageCategory.CONFLICTED
     elif not (pressure_critical and ignition_critical):
         coverage = CoverageCategory.INSUFFICIENT
-    elif weight_coverage_pct >= 85 and pressure is not None and ignition is not None:
+    elif (
+        weight_coverage_pct >= thresholds.high_coverage_min
+        and pressure is not None
+        and ignition is not None
+    ):
         coverage = CoverageCategory.HIGH
-    elif weight_coverage_pct >= 70 and pressure is not None and ignition is not None:
+    elif (
+        weight_coverage_pct >= thresholds.moderate_coverage_min
+        and pressure is not None
+        and ignition is not None
+    ):
         coverage = CoverageCategory.MODERATE
-    elif weight_coverage_pct >= 50:
+    elif weight_coverage_pct >= thresholds.low_coverage_min:
         coverage = CoverageCategory.LOW
     else:
         coverage = CoverageCategory.INSUFFICIENT
@@ -126,11 +164,20 @@ def evaluate_adam(inputs: dict[str, EvidenceInput], *, as_of: str | None = None)
         classification = Classification.CONFLICTED
     elif coverage is CoverageCategory.INSUFFICIENT or pressure is None or ignition is None:
         classification = Classification.UNEVALUABLE
-    elif pressure >= 70 and ignition >= 70 and coverage is CoverageCategory.HIGH:
+    elif (
+        pressure >= thresholds.prime_pressure_min
+        and ignition >= thresholds.prime_ignition_min
+        and coverage is CoverageCategory.HIGH
+    ):
         classification = Classification.PRIME
-    elif ((pressure >= 70 and ignition >= 50) or (ignition >= 70 and pressure >= 50)):
+    elif (
+        (pressure >= thresholds.subprime_primary_min
+         and ignition >= thresholds.subprime_secondary_min)
+        or (ignition >= thresholds.subprime_primary_min
+            and pressure >= thresholds.subprime_secondary_min)
+    ):
         classification = Classification.SUBPRIME
-    elif pressure >= 50 or ignition >= 50:
+    elif pressure >= thresholds.watch_min or ignition >= thresholds.watch_min:
         classification = Classification.WATCH
     else:
         classification = Classification.NOT_QUALIFIED
@@ -177,13 +224,17 @@ def evaluate_adam(inputs: dict[str, EvidenceInput], *, as_of: str | None = None)
                 *([] if ignition_critical else ["Ignition critical domains are incomplete"]),
                 *(
                     []
-                    if pw >= MIN_DIMENSION_WEIGHT
-                    else [f"Pressure supported weight {pw}% is below {MIN_DIMENSION_WEIGHT}%"]
+                    if pw >= min_dimension_weight
+                    else [
+                        f"Pressure supported weight {pw}% is below {min_dimension_weight}%"
+                    ]
                 ),
                 *(
                     []
-                    if iw >= MIN_DIMENSION_WEIGHT
-                    else [f"Ignition supported weight {iw}% is below {MIN_DIMENSION_WEIGHT}%"]
+                    if iw >= min_dimension_weight
+                    else [
+                        f"Ignition supported weight {iw}% is below {min_dimension_weight}%"
+                    ]
                 ),
             ]
         ),
@@ -195,7 +246,18 @@ def evaluate_adam(inputs: dict[str, EvidenceInput], *, as_of: str | None = None)
             "pressure_components": pc,
             "ignition_components": ic,
             "display_only_inputs": sorted(set(pd + idisplay)),
-            "weights_validated": False,
-            "thresholds_optimal": False,
+            "weights_validated": min_dimension_weight == MIN_DIMENSION_WEIGHT,
+            "thresholds_optimal": classification_thresholds == DEFAULT_CLASSIFICATION_THRESHOLDS,
+            "min_dimension_weight": min_dimension_weight,
+            "classification_thresholds": {
+                "prime_pressure_min": thresholds.prime_pressure_min,
+                "prime_ignition_min": thresholds.prime_ignition_min,
+                "subprime_primary_min": thresholds.subprime_primary_min,
+                "subprime_secondary_min": thresholds.subprime_secondary_min,
+                "watch_min": thresholds.watch_min,
+                "high_coverage_min": thresholds.high_coverage_min,
+                "moderate_coverage_min": thresholds.moderate_coverage_min,
+                "low_coverage_min": thresholds.low_coverage_min,
+            },
         },
     )

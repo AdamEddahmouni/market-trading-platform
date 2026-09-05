@@ -10,7 +10,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from ..operation_readiness.evidence_inputs import FROZEN_BOUNDARY
+from ..cohort_registry import resolve_cohort_cases
 from .freeze import freeze_cohort
 from .models import ReceiptModelingPolicy, TimestampInterpretation
 from .report import build_freeze_report, render_markdown, sensitivity_summary
@@ -25,11 +25,14 @@ def _write(path: Path, payload: bytes) -> None:
     path.write_bytes(payload)
 
 
-def generate(batch05_root: Path, out_root: Path) -> int:
-    """Freeze all 13 cases and write every private and sanitized artifact."""
-    primary = freeze_cohort(batch05_root)
+def generate(batch05_root: Path, out_root: Path, cohort_track: str = "frozen") -> int:
+    """Freeze cohort cases and write every private and sanitized artifact."""
+    cohort_cases = resolve_cohort_cases(cohort_track)
+    primary = freeze_cohort(batch05_root, cohort_track=cohort_track)
     alternative = freeze_cohort(
-        batch05_root, receipt_policy=ReceiptModelingPolicy.LOCAL_RETRIEVAL_RECEIPT
+        batch05_root,
+        cohort_track=cohort_track,
+        receipt_policy=ReceiptModelingPolicy.LOCAL_RETRIEVAL_RECEIPT,
     )
 
     for outputs in primary:
@@ -52,10 +55,15 @@ def generate(batch05_root: Path, out_root: Path) -> int:
         tuple(item.record for item in alternative),
         ReceiptModelingPolicy.LOCAL_RETRIEVAL_RECEIPT,
     )
+    report_boundary = (
+        cohort_cases[0].boundary
+        if len({case.boundary for case in cohort_cases}) == 1
+        else cohort_cases[0].boundary
+    )
     report = build_freeze_report(
         cases,
         receipt_policy=ReceiptModelingPolicy.PROVIDER_AVAILABILITY_AS_RECEIPT,
-        boundary_time=FROZEN_BOUNDARY,
+        boundary_time=report_boundary,
         sensitivity=sensitivity,
     )
     _write(out_root / "batch-summary.json", serialize(report))
@@ -109,9 +117,9 @@ def generate(batch05_root: Path, out_root: Path) -> int:
     return 0
 
 
-def verify(batch05_root: Path, out_root: Path) -> int:
+def verify(batch05_root: Path, out_root: Path, cohort_track: str = "frozen") -> int:
     """Regenerate in memory and compare bytes against what is on disk."""
-    primary = freeze_cohort(batch05_root)
+    primary = freeze_cohort(batch05_root, cohort_track=cohort_track)
     mismatches = 0
     checked = 0
     for outputs in primary:
@@ -136,13 +144,19 @@ def verify(batch05_root: Path, out_root: Path) -> int:
     return 0 if mismatches == 0 else 1
 
 
-def render(batch05_root: Path, out_root: Path) -> int:
+def render(batch05_root: Path, out_root: Path, cohort_track: str = "frozen") -> int:
     """Re-render the sanitized Markdown report from a fresh in-memory freeze."""
-    primary = freeze_cohort(batch05_root)
+    cohort_cases = resolve_cohort_cases(cohort_track)
+    primary = freeze_cohort(batch05_root, cohort_track=cohort_track)
+    report_boundary = (
+        cohort_cases[0].boundary
+        if len({case.boundary for case in cohort_cases}) == 1
+        else cohort_cases[0].boundary
+    )
     report = build_freeze_report(
         tuple(item.record for item in primary),
         receipt_policy=ReceiptModelingPolicy.PROVIDER_AVAILABILITY_AS_RECEIPT,
-        boundary_time=FROZEN_BOUNDARY,
+        boundary_time=report_boundary,
     )
     path = out_root / "freeze-report.md"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -158,6 +172,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--private-root", default=str(DEFAULT_PRIVATE_ROOT))
     parser.add_argument("--out-root", default=None)
+    parser.add_argument(
+        "--cohort",
+        choices=("frozen", "batch3f05", "all"),
+        default="frozen",
+        help="Cohort track to freeze (default: jul-18 frozen cohort)",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("generate-phase3a-freeze", help="freeze 13 requests and 13 results")
     sub.add_parser("verify-phase3a-freeze", help="byte-compare on-disk artifacts")
@@ -172,11 +192,12 @@ def main(argv: list[str] | None = None) -> int:
     if not batch05_root.exists():
         print(f"private root not present: {batch05_root}", file=sys.stderr)
         return 2
+    cohort_track = args.cohort
     if args.command == "generate-phase3a-freeze":
-        return generate(batch05_root, out_root)
+        return generate(batch05_root, out_root, cohort_track=cohort_track)
     if args.command == "verify-phase3a-freeze":
-        return verify(batch05_root, out_root)
-    return render(batch05_root, out_root)
+        return verify(batch05_root, out_root, cohort_track=cohort_track)
+    return render(batch05_root, out_root, cohort_track=cohort_track)
 
 
 __all__ = ["DEFAULT_PRIVATE_ROOT", "FREEZE_SUBDIR", "build_parser", "generate", "main", "render", "verify"]

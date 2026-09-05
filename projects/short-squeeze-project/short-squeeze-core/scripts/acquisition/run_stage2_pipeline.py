@@ -17,7 +17,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from squeeze_core.acquisition.stage2.constants import PILOT_COHORT, STAGE2_BUILD_ROOT  # noqa: E402
+from squeeze_core.acquisition.stage2.constants import STAGE2_BUILD_ROOT  # noqa: E402
 from squeeze_core.acquisition.stage2.pipeline import (  # noqa: E402
     Stage2PipelineConfig,
     run_stage2_pipeline,
@@ -59,6 +59,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Rebuild all Stage 2 outputs even when present.",
     )
+    parser.add_argument(
+        "--cohort",
+        choices=("frozen", "batch3f05", "all"),
+        default="frozen",
+        help="Cohort track for Stage 2 (default: jul-18 frozen cohort).",
+    )
     return parser.parse_args(argv)
 
 
@@ -72,7 +78,7 @@ def main(argv: list[str] | None = None) -> int:
         offline=args.offline,
         skip_freeze=args.skip_freeze,
         force=args.force,
-        symbols=PILOT_COHORT,
+        cohort_track=args.cohort,
     )
     result = run_stage2_pipeline(config)
     print(json.dumps(

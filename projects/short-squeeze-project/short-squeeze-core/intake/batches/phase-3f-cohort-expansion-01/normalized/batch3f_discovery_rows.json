@@ -1,0 +1,124 @@
+{
+  "document": "phase_3f_batch_01_log_universe_discovery_rows",
+  "raw_source": {
+    "archived_relative_path": "tests/fixtures/validation/outcome_amendment/biya_news.jsonl",
+    "artifact_name": "biya_news.jsonl",
+    "capture_timestamp": "2026-07-18T13:37:55.017661+00:00",
+    "classification": "SANITIZED_LOCAL_ARTIFACT",
+    "notes": "Symbols co-mentioned with BIYA in archived news items. No scanner field values survive; boundary is the Batch 01 frozen cohort timestamp for comparability.",
+    "source_class": "ARCHIVED_NEWS_CO_OCCURRENCE"
+  },
+  "rows": [
+    {
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "observed_at": "2026-07-18T13:37:55.017661+00:00",
+      "original_order": 1,
+      "ticker": "CELZ",
+      "discovery_provenance": {
+        "headline": "These Three Stocks Fell More Than 10% Today To Hit 52-Week Lows -- What's Driving The Investor Skepticism?",
+        "news_observation_id": "939610dc-9313-5f6a-8c4a-d855d31616e0",
+        "published_at": "2026-06-26T17:54:12+00:00",
+        "publisher": "Stocktwits"
+      }
+    },
+    {
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "observed_at": "2026-07-18T13:37:55.017661+00:00",
+      "original_order": 2,
+      "ticker": "GDC",
+      "discovery_provenance": {
+        "headline": "These Three Stocks Fell More Than 10% Today To Hit 52-Week Lows -- What's Driving The Investor Skepticism?",
+        "news_observation_id": "939610dc-9313-5f6a-8c4a-d855d31616e0",
+        "published_at": "2026-06-26T17:54:12+00:00",
+        "publisher": "Stocktwits"
+      }
+    },
+    {
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "observed_at": "2026-07-18T13:37:55.017661+00:00",
+      "original_order": 3,
+      "ticker": "ADVB",
+      "discovery_provenance": {
+        "headline": "Top Premarket Gainers",
+        "news_observation_id": "17cd9ddb-62bd-590d-a9cd-78736560706d",
+        "published_at": "2026-07-20T11:06:19+00:00",
+        "publisher": "MT Newswires"
+      }
+    },
+    {
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "observed_at": "2026-07-18T13:37:55.017661+00:00",
+      "original_order": 4,
+      "ticker": "GOAI",
+      "discovery_provenance": {
+        "headline": "Top Premarket Gainers",
+        "news_observation_id": "17cd9ddb-62bd-590d-a9cd-78736560706d",
+        "published_at": "2026-07-20T11:06:19+00:00",
+        "publisher": "MT Newswires"
+      }
+    },
+    {
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "observed_at": "2026-07-18T13:37:55.017661+00:00",
+      "original_order": 5,
+      "ticker": "NXXT",
+      "discovery_provenance": {
+        "headline": "Top Premarket Gainers",
+        "news_observation_id": "17cd9ddb-62bd-590d-a9cd-78736560706d",
+        "published_at": "2026-07-20T11:06:19+00:00",
+        "publisher": "MT Newswires"
+      }
+    }
+  ],
+  "schema_version": "1.0.0",
+  "transformation": {
+    "dropped_prediction_fields": [],
+    "retained_detection_fields": [],
+    "selection": "PREREGISTERED_LOG_UNIVERSE_NEWS_CO_OCCURRENCE"
+  }
+}

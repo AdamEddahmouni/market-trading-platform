@@ -1,0 +1,172 @@
+{
+  "document": "phase_3f_batch_05_external_discovery_rows",
+  "schema_version": "1.0.0",
+  "status": "PIPELINE_COMPLETE",
+  "discovery_lane": "FRESH_FINVIZ_ELITE_EXPORT",
+  "raw_source": {
+    "provider": "Finviz Elite",
+    "endpoint": "https://elite.finviz.com/export/screener",
+    "filter": "sh_float_u50,sh_price_u50",
+    "classification": "EXTERNAL_PROVIDER_EXPORT",
+    "capture_timestamp": "2026-08-17T22:09:23.412932Z",
+    "raw_csv_sha256": "997588364192f6d5a6814a07bc01d8357405fea2b2307fc14aaf8fe17060703a",
+    "csv_archive": null
+  },
+  "selection_policy": {
+    "max_symbols": 5,
+    "min_symbols": 3,
+    "order": "EXPORT_ROW_ORDER",
+    "exclude_blocked_identity": true,
+    "require_ibkr_contract_resolvable": true
+  },
+  "excluded_symbols": [
+    "ADVB",
+    "APVO",
+    "ATAI",
+    "AVTX",
+    "BHVN",
+    "BIYA",
+    "CADL",
+    "CELZ",
+    "CGEM",
+    "GDC",
+    "GOAI",
+    "GPRE",
+    "IOVA",
+    "KLRS",
+    "LBGJ",
+    "LMNX",
+    "MGNX",
+    "NXXT",
+    "OBE",
+    "PESI",
+    "PMAX",
+    "SG",
+    "SLS",
+    "SSPC",
+    "STAK",
+    "TRVI",
+    "VMAR",
+    "XNCR",
+    "ZNTL"
+  ],
+  "rows": [
+    {
+      "ticker": "AACB",
+      "observed_at": "2026-08-17T22:09:23.412932Z",
+      "original_order": 1,
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "discovery_provenance": {
+        "source": "FRESH_FINVIZ_ELITE_EXPORT",
+        "filter": "sh_float_u50,sh_price_u50",
+        "short_float_pct": 0.0,
+        "float_shares": 22.01,
+        "rel_volume": 0.99
+      }
+    },
+    {
+      "ticker": "AACG",
+      "observed_at": "2026-08-17T22:09:23.412932Z",
+      "original_order": 2,
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "discovery_provenance": {
+        "source": "FRESH_FINVIZ_ELITE_EXPORT",
+        "filter": "sh_float_u50,sh_price_u50",
+        "short_float_pct": 0.11,
+        "float_shares": 8.84,
+        "rel_volume": 0.7
+      }
+    },
+    {
+      "ticker": "AACI",
+      "observed_at": "2026-08-17T22:09:23.412932Z",
+      "original_order": 3,
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "discovery_provenance": {
+        "source": "FRESH_FINVIZ_ELITE_EXPORT",
+        "filter": "sh_float_u50,sh_price_u50",
+        "short_float_pct": 0.0,
+        "float_shares": 25.52,
+        "rel_volume": 0.0
+      }
+    },
+    {
+      "ticker": "AACP",
+      "observed_at": "2026-08-17T22:09:23.412932Z",
+      "original_order": 4,
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "discovery_provenance": {
+        "source": "FRESH_FINVIZ_ELITE_EXPORT",
+        "filter": "sh_float_u50,sh_price_u50",
+        "short_float_pct": 0.01,
+        "float_shares": 17.72,
+        "rel_volume": 0.0
+      }
+    },
+    {
+      "ticker": "AADX",
+      "observed_at": "2026-08-17T22:09:23.412932Z",
+      "original_order": 5,
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "discovery_provenance": {
+        "source": "FRESH_FINVIZ_ELITE_EXPORT",
+        "filter": "sh_float_u50,sh_price_u50",
+        "short_float_pct": 3.86,
+        "float_shares": 44.31,
+        "rel_volume": 0.58
+      }
+    }
+  ],
+  "transformation": {
+    "dropped_prediction_fields": [],
+    "retained_detection_fields": [],
+    "selection": "PREREGISTERED_FRESH_FINVIZ_EXPORT_EXCLUDING_FROZEN_COHORT"
+  },
+  "identity_audit_artifact": "intake/batches/phase-3f-cohort-expansion-05-external/normalized/batch3f05_identity_audit.json",
+  "bar_collection_summary": "intake/local-bars/ibkr-batch-05/batch3f05-external-collection-summary.json"
+}

@@ -1,602 +1,1162 @@
 [
- {
-  "symbol": "XNCR",
-  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260718 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "XNCR",
-  "request_name": "FROZEN_FORWARD_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260719 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "PESI",
-  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260718 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "PESI",
-  "request_name": "FROZEN_FORWARD_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260719 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "SLS",
-  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260718 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "SLS",
-  "request_name": "FROZEN_FORWARD_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260719 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "ZNTL",
-  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260718 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "ZNTL",
-  "request_name": "FROZEN_FORWARD_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260719 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "GPRE",
-  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260718 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "GPRE",
-  "request_name": "FROZEN_FORWARD_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260719 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "SSPC",
-  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260718 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "SSPC",
-  "request_name": "FROZEN_FORWARD_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260719 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "LBGJ",
-  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260718 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "LBGJ",
-  "request_name": "FROZEN_FORWARD_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260719 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "TRVI",
-  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260718 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "TRVI",
-  "request_name": "FROZEN_FORWARD_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260719 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "LMNX",
-  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260718 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "LMNX",
-  "request_name": "FROZEN_FORWARD_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260719 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "MGNX",
-  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260718 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "MGNX",
-  "request_name": "FROZEN_FORWARD_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260719 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "BHVN",
-  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260718 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "BHVN",
-  "request_name": "FROZEN_FORWARD_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260719 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "OBE",
-  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260718 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "OBE",
-  "request_name": "FROZEN_FORWARD_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260719 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "AVTX",
-  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260718 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "AVTX",
-  "request_name": "FROZEN_FORWARD_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260719 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "KLRS",
-  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260718 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "KLRS",
-  "request_name": "FROZEN_FORWARD_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260719 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "SG",
-  "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260718 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- },
- {
-  "symbol": "SG",
-  "request_name": "FROZEN_FORWARD_24H",
-  "bar_size_setting": "1 min",
-  "duration_str": "86400 S",
-  "end_datetime": "20260719 13:37:55 UTC",
-  "format_date": 2,
-  "use_rth": 0,
-  "what_to_show": "TRADES",
-  "first_timestamp_utc": "2026-07-17T23:54:00Z",
-  "last_timestamp_utc": "2026-07-17T23:59:00Z",
-  "bar_count": 6,
-  "error_codes": [],
-  "notes": [
-   "SYNTHETIC_FIXTURE"
-  ],
-  "status": "HISTORICAL_REQUEST_SUCCESS",
-  "retrieval_started_at": "2026-07-23T20:00:00Z",
-  "retrieval_completed_at": "2026-07-23T20:00:01Z"
- }
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "XNCR",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "XNCR",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "PESI",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "PESI",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "SLS",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "SLS",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "ZNTL",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "ZNTL",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "GPRE",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "GPRE",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "SSPC",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "SSPC",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "LBGJ",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "LBGJ",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "TRVI",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "TRVI",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "LMNX",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "LMNX",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "MGNX",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "MGNX",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "BHVN",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "BHVN",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "OBE",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "OBE",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "AVTX",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "AVTX",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "KLRS",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "KLRS",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "SG",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "SG",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "CELZ",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "CELZ",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "GDC",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "GDC",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "ADVB",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "ADVB",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "GOAI",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "GOAI",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "NXXT",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "NXXT",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "VMAR",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "VMAR",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "ATAI",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "ATAI",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "CADL",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "CADL",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "CGEM",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "CGEM",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "IOVA",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "IOVA",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "PMAX",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "PMAX",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "STAK",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "STAK",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "APVO",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "APVO",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260718 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "DETECTION_CONTEXT_PRECEDING_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "BIYA",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  },
+  {
+    "bar_count": 6,
+    "bar_size_setting": "1 min",
+    "duration_str": "86400 S",
+    "end_datetime": "20260719 13:37:55 UTC",
+    "error_codes": [],
+    "first_timestamp_utc": "2026-07-17T23:54:00Z",
+    "format_date": 2,
+    "last_timestamp_utc": "2026-07-17T23:59:00Z",
+    "notes": [
+      "SYNTHETIC_FIXTURE"
+    ],
+    "request_name": "FROZEN_FORWARD_24H",
+    "retrieval_completed_at": "2026-07-23T20:00:01Z",
+    "retrieval_started_at": "2026-07-23T20:00:00Z",
+    "status": "HISTORICAL_REQUEST_SUCCESS",
+    "symbol": "BIYA",
+    "use_rth": 0,
+    "what_to_show": "TRADES"
+  }
 ]

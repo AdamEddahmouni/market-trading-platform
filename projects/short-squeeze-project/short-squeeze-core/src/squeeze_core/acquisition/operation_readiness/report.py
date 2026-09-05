@@ -17,9 +17,8 @@ from .dependencies import (
     PHASE2_OPERATION_DEPENDENCIES,
     PHASE3A_RULE_DEPENDENCIES,
 )
+from ..cohort_registry import cohort_boundary_descriptor, resolve_cohort_cases
 from .evidence_inputs import (
-    FROZEN_BOUNDARY,
-    FROZEN_COHORT,
     boundary_id_for,
     load_detection_context_evidence,
 )
@@ -114,19 +113,29 @@ def _blocking_reasons(*groups: tuple[OperationAdmissibility, ...]) -> tuple[Reas
     return tuple(sorted(reasons, key=lambda item: item.value))
 
 
-def build_report(batch05_root: Path) -> OperationReadinessReport:
+def build_report(
+    batch05_root: Path,
+    *,
+    cohort_track: str = "frozen",
+) -> OperationReadinessReport:
     resolved = resolve_ibkr_semantics(OFFICIAL_TRADES_EVIDENCE)
     semantic_resolution_id = _semantic_resolution_id(resolved)
-    evidence = load_detection_context_evidence(batch05_root)
+    cohort_cases = resolve_cohort_cases(cohort_track)
+    boundary_by_symbol = {case.symbol: case.boundary for case in cohort_cases}
+    evidence = load_detection_context_evidence(
+        batch05_root,
+        boundary_by_symbol=boundary_by_symbol,
+    )
 
     cases: list[CaseOperationReadiness] = []
     shared_ctx: AdmissibilityContext | None = None
 
-    for symbol, case_id in FROZEN_COHORT:
+    for case in cohort_cases:
+        symbol, case_id, case_boundary = case.symbol, case.case_id, case.boundary
         ev = evidence[symbol]
         boundary_id = boundary_id_for(case_id, symbol)
         env = build_envelope(
-            ev.coverage.observed_coverage_end, BAR_INTERVAL_SECONDS, FROZEN_BOUNDARY
+            ev.coverage.observed_coverage_end, BAR_INTERVAL_SECONDS, case_boundary
         )
         ctx = context_from_resolved(
             resolved,
@@ -195,9 +204,7 @@ def build_report(batch05_root: Path) -> OperationReadinessReport:
     summaries = _build_summaries(tuple(cases), rule_matrix)
 
     return OperationReadinessReport(
-        # Per-case boundary ids differ (they bind the case attempt id); this is the
-        # shared boundary instant descriptor for the cohort.
-        frozen_boundary_id="SHARED_BOUNDARY_INSTANT_2026-07-18T13:37:55.017661Z",
+        frozen_boundary_id=cohort_boundary_descriptor(cohort_cases),
         operation_dependency_matrix=PHASE2_OPERATION_DEPENDENCIES,
         phase3a_rule_dependency_matrix=rule_matrix,
         cases=tuple(cases),

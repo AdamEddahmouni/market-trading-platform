@@ -106,7 +106,7 @@ def project_candidate(row: dict[str, Any]) -> dict[str, Any]:
         why.append(f"Evidence-Gated {classification.title()}")
     elif classification == "UNEVALUABLE":
         why.append("incomplete evidence")
-    return {
+    projected = {
         **row,
         "why_listed": why,
         "methodologies": methods,
@@ -117,6 +117,7 @@ def project_candidate(row: dict[str, Any]) -> dict[str, Any]:
         "ignition": adam["ignition"],
         "methodology_coverage": adam["evidence_coverage"],
     }
+    return projected
 
 
 def project_candidates(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:

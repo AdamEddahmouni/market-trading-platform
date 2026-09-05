@@ -2,8 +2,8 @@
 
 ## Scope
 
-- Analysis result ID: `8195b1bd-7981-5974-bec6-39c1a87e5f05`.
-- Source dataset ID: `710dd1a4-8f39-5375-a46b-bcbe71ab2a91`.
+- Analysis result ID: `e0e4348a-7c84-5395-9864-fe324150ce8f`.
+- Source dataset ID: `bf2b27fd-18dc-5c8f-a27b-d56039230f85`.
 - Source registry ID: `None`.
 - This analysis is deterministic and descriptive only.
 
@@ -21,25 +21,39 @@
 
 ## Included Cases
 
+- `ADVB_ARTIFACT_DISCOVERY`
+- `APVO_ARTIFACT_DISCOVERY`
+- `ATAI_ARTIFACT_DISCOVERY`
 - `AVTX_ARTIFACT_DISCOVERY`
 - `BHVN_ARTIFACT_DISCOVERY`
 - `BIYA_EARLIEST_BOUNDARY`
+- `CADL_ARTIFACT_DISCOVERY`
+- `CELZ_ARTIFACT_DISCOVERY`
+- `CGEM_ARTIFACT_DISCOVERY`
+- `GDC_ARTIFACT_DISCOVERY`
+- `GOAI_ARTIFACT_DISCOVERY`
 - `GPRE_ARTIFACT_DISCOVERY`
+- `IOVA_ARTIFACT_DISCOVERY`
 - `KLRS_ARTIFACT_DISCOVERY`
 - `LBGJ_ARTIFACT_DISCOVERY`
 - `LMNX_ARTIFACT_DISCOVERY`
 - `MGNX_ARTIFACT_DISCOVERY`
+- `NXXT_ARTIFACT_DISCOVERY`
 - `OBE_ARTIFACT_DISCOVERY`
 - `PESI_ARTIFACT_DISCOVERY`
+- `PMAX_ARTIFACT_DISCOVERY`
 - `SG_ARTIFACT_DISCOVERY`
 - `SLS_ARTIFACT_DISCOVERY`
 - `SSPC_ARTIFACT_DISCOVERY`
+- `STAK_ARTIFACT_DISCOVERY`
 - `TRVI_ARTIFACT_DISCOVERY`
+- `VMAR_ARTIFACT_DISCOVERY`
 - `XNCR_ARTIFACT_DISCOVERY`
 - `ZNTL_ARTIFACT_DISCOVERY`
 
 ## Excluded Cases
 
+- `BIYA_ARTIFACT_DISCOVERY` — `ANALYSIS_COHORT_EXCLUDED_DUPLICATE_SYMBOL_BOUNDARY`
 - `BIYA_LATEST_BOUNDARY` — `ANALYSIS_COHORT_EXCLUDED_DUPLICATE_SYMBOL_BOUNDARY`
 - `SYN_FALSE_NEGATIVE` — `ANALYSIS_COHORT_EXCLUDED_SYNTHETIC_CASE`
 - `SYN_FALSE_POSITIVE` — `ANALYSIS_COHORT_EXCLUDED_SYNTHETIC_CASE`
@@ -57,11 +71,11 @@
 
 - Policy: `earliest_detection_boundary_per_symbol.v1`.
 - Selection is outcome-blind.
-- Boundary count before policy selection: 17.
+- Boundary count before policy selection: 31.
 
 ## Sample Size
 
-- `SMALL`: n=16, unique symbols=16, unit=`UNIQUE_SYMBOL_POLICY_SELECTED_BOUNDARY`.
+- `LIMITED`: n=29, unique symbols=29, unit=`UNIQUE_SYMBOL_POLICY_SELECTED_BOUNDARY`.
 
 ## Dependence
 
@@ -72,197 +86,197 @@
 
 ## Counts
 
-- Cases: 16.
-- Unique symbols: 16.
-- Boundaries: 17.
-- Confusion matrix: TP=1, FP=0, TN=0, FN=0, unevaluable=15.
+- Cases: 29.
+- Unique symbols: 29.
+- Boundaries: 31.
+- Confusion matrix: TP=1, FP=0, TN=0, FN=0, unevaluable=28.
 
 ## Defined Rates
 
 - confusion_matrix/sensitivity_descriptive_research_classification_rate: 1/1 (100%).
 - confusion_matrix/positive_predictive_value_descriptive_research_classification_rate: 1/1 (100%).
 - confusion_matrix/false_negative_descriptive_research_classification_rate: 0/1 (0%).
-- detection_prevalence/detected_prevalence_among_all_cases: 1/16 (6.2500%).
-- detection_prevalence/not_detected_prevalence_among_all_cases: 0/16 (0%).
-- detection_prevalence/unevaluable_prevalence_among_all_cases: 15/16 (93.7500%).
+- detection_prevalence/detected_prevalence_among_all_cases: 1/29 (3.448275862068965517241379310%).
+- detection_prevalence/not_detected_prevalence_among_all_cases: 0/29 (0%).
+- detection_prevalence/unevaluable_prevalence_among_all_cases: 28/29 (96.55172413793103448275862069%).
 - detection_prevalence/detection_rate_among_evaluable_cases: 1/1 (100%).
-- outcome_prevalence/substantial_upward_move_prevalence_among_all_cases: 1/16 (6.2500%).
-- outcome_prevalence/no_substantial_upward_move_prevalence_among_all_cases: 14/16 (87.500%).
-- outcome_prevalence/substantial_downward_move_prevalence_among_all_cases: 1/16 (6.2500%).
-- outcome_prevalence/mixed_or_volatile_prevalence_among_all_cases: 0/16 (0%).
-- outcome_prevalence/outcome_unknown_prevalence_among_all_cases: 0/16 (0%).
-- outcome_prevalence/outcome_insufficient_data_prevalence_among_all_cases: 0/16 (0%).
-- outcome_prevalence/substantial_upward_move_prevalence_among_complete_outcomes: 1/16 (6.2500%).
-- classification_prevalence/true_positive_prevalence_among_all_cases: 1/16 (6.2500%).
-- classification_prevalence/false_positive_prevalence_among_all_cases: 0/16 (0%).
-- classification_prevalence/true_negative_prevalence_among_all_cases: 0/16 (0%).
-- classification_prevalence/false_negative_prevalence_among_all_cases: 0/16 (0%).
-- classification_prevalence/unevaluable_prevalence_among_all_cases: 15/16 (93.7500%).
-- classification_prevalence/not_applicable_prevalence_among_all_cases: 0/16 (0%).
-- classification_prevalence/research_classification_evaluability_rate_among_all_cases: 1/16 (6.2500%).
-- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/pass_rate_among_all_cases: 0/16 (0%).
-- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/unknown_rate_among_all_cases: 16/16 (100%).
-- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:BORROW_AVAILABILITY_MAXIMUM/pass_rate_among_all_cases: 0/16 (0%).
-- rule:BORROW_AVAILABILITY_MAXIMUM/unknown_rate_among_all_cases: 16/16 (100%).
-- rule:BORROW_AVAILABILITY_MAXIMUM/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:BORROW_AVAILABILITY_MAXIMUM/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:BORROW_AVAILABILITY_MAXIMUM/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:BORROW_FEE_CHANGE_MINIMUM/pass_rate_among_all_cases: 0/16 (0%).
-- rule:BORROW_FEE_CHANGE_MINIMUM/unknown_rate_among_all_cases: 16/16 (100%).
-- rule:BORROW_FEE_CHANGE_MINIMUM/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:BORROW_FEE_CHANGE_MINIMUM/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:BORROW_FEE_CHANGE_MINIMUM/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:BORROW_FEE_MINIMUM/pass_rate_among_all_cases: 0/16 (0%).
-- rule:BORROW_FEE_MINIMUM/unknown_rate_among_all_cases: 16/16 (100%).
-- rule:BORROW_FEE_MINIMUM/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:BORROW_FEE_MINIMUM/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:BORROW_FEE_MINIMUM/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:COMPLETED_BAR_AVAILABLE/pass_rate_among_all_cases: 16/16 (100%).
-- rule:COMPLETED_BAR_AVAILABLE/pass_rate_among_evaluable_cases: 16/16 (100%).
-- rule:COMPLETED_BAR_AVAILABLE/fail_rate_among_evaluable_cases: 0/16 (0%).
-- rule:COMPLETED_BAR_AVAILABLE/unknown_rate_among_all_cases: 0/16 (0%).
-- rule:COMPLETED_BAR_AVAILABLE/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:COMPLETED_BAR_AVAILABLE/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:COMPLETED_BAR_AVAILABLE/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/pass_rate_among_all_cases: 1/16 (6.2500%).
+- outcome_prevalence/substantial_upward_move_prevalence_among_all_cases: 2/29 (6.896551724137931034482758621%).
+- outcome_prevalence/no_substantial_upward_move_prevalence_among_all_cases: 23/29 (79.31034482758620689655172414%).
+- outcome_prevalence/substantial_downward_move_prevalence_among_all_cases: 4/29 (13.79310344827586206896551724%).
+- outcome_prevalence/mixed_or_volatile_prevalence_among_all_cases: 0/29 (0%).
+- outcome_prevalence/outcome_unknown_prevalence_among_all_cases: 0/29 (0%).
+- outcome_prevalence/outcome_insufficient_data_prevalence_among_all_cases: 0/29 (0%).
+- outcome_prevalence/substantial_upward_move_prevalence_among_complete_outcomes: 2/29 (6.896551724137931034482758621%).
+- classification_prevalence/true_positive_prevalence_among_all_cases: 1/29 (3.448275862068965517241379310%).
+- classification_prevalence/false_positive_prevalence_among_all_cases: 0/29 (0%).
+- classification_prevalence/true_negative_prevalence_among_all_cases: 0/29 (0%).
+- classification_prevalence/false_negative_prevalence_among_all_cases: 0/29 (0%).
+- classification_prevalence/unevaluable_prevalence_among_all_cases: 28/29 (96.55172413793103448275862069%).
+- classification_prevalence/not_applicable_prevalence_among_all_cases: 0/29 (0%).
+- classification_prevalence/research_classification_evaluability_rate_among_all_cases: 1/29 (3.448275862068965517241379310%).
+- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/pass_rate_among_all_cases: 0/29 (0%).
+- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/unknown_rate_among_all_cases: 29/29 (100%).
+- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:BORROW_AVAILABILITY_MAXIMUM/pass_rate_among_all_cases: 0/29 (0%).
+- rule:BORROW_AVAILABILITY_MAXIMUM/unknown_rate_among_all_cases: 29/29 (100%).
+- rule:BORROW_AVAILABILITY_MAXIMUM/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:BORROW_AVAILABILITY_MAXIMUM/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:BORROW_AVAILABILITY_MAXIMUM/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:BORROW_FEE_CHANGE_MINIMUM/pass_rate_among_all_cases: 0/29 (0%).
+- rule:BORROW_FEE_CHANGE_MINIMUM/unknown_rate_among_all_cases: 29/29 (100%).
+- rule:BORROW_FEE_CHANGE_MINIMUM/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:BORROW_FEE_CHANGE_MINIMUM/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:BORROW_FEE_CHANGE_MINIMUM/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:BORROW_FEE_MINIMUM/pass_rate_among_all_cases: 0/29 (0%).
+- rule:BORROW_FEE_MINIMUM/unknown_rate_among_all_cases: 29/29 (100%).
+- rule:BORROW_FEE_MINIMUM/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:BORROW_FEE_MINIMUM/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:BORROW_FEE_MINIMUM/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:COMPLETED_BAR_AVAILABLE/pass_rate_among_all_cases: 29/29 (100%).
+- rule:COMPLETED_BAR_AVAILABLE/pass_rate_among_evaluable_cases: 29/29 (100%).
+- rule:COMPLETED_BAR_AVAILABLE/fail_rate_among_evaluable_cases: 0/29 (0%).
+- rule:COMPLETED_BAR_AVAILABLE/unknown_rate_among_all_cases: 0/29 (0%).
+- rule:COMPLETED_BAR_AVAILABLE/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:COMPLETED_BAR_AVAILABLE/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:COMPLETED_BAR_AVAILABLE/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/pass_rate_among_all_cases: 1/29 (3.448275862068965517241379310%).
 - rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/pass_rate_among_evaluable_cases: 1/1 (100%).
 - rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/fail_rate_among_evaluable_cases: 0/1 (0%).
-- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/unknown_rate_among_all_cases: 15/16 (93.7500%).
-- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:DAYS_TO_COVER_MINIMUM/pass_rate_among_all_cases: 0/16 (0%).
-- rule:DAYS_TO_COVER_MINIMUM/unknown_rate_among_all_cases: 16/16 (100%).
-- rule:DAYS_TO_COVER_MINIMUM/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:DAYS_TO_COVER_MINIMUM/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:DAYS_TO_COVER_MINIMUM/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:FLOAT_MAXIMUM/pass_rate_among_all_cases: 1/16 (6.2500%).
+- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/unknown_rate_among_all_cases: 28/29 (96.55172413793103448275862069%).
+- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:DAYS_TO_COVER_MINIMUM/pass_rate_among_all_cases: 0/29 (0%).
+- rule:DAYS_TO_COVER_MINIMUM/unknown_rate_among_all_cases: 29/29 (100%).
+- rule:DAYS_TO_COVER_MINIMUM/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:DAYS_TO_COVER_MINIMUM/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:DAYS_TO_COVER_MINIMUM/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:FLOAT_MAXIMUM/pass_rate_among_all_cases: 1/29 (3.448275862068965517241379310%).
 - rule:FLOAT_MAXIMUM/pass_rate_among_evaluable_cases: 1/1 (100%).
 - rule:FLOAT_MAXIMUM/fail_rate_among_evaluable_cases: 0/1 (0%).
-- rule:FLOAT_MAXIMUM/unknown_rate_among_all_cases: 15/16 (93.7500%).
-- rule:FLOAT_MAXIMUM/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:FLOAT_MAXIMUM/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:FLOAT_MAXIMUM/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:MARKET_DATA_AVAILABLE/pass_rate_among_all_cases: 16/16 (100%).
-- rule:MARKET_DATA_AVAILABLE/pass_rate_among_evaluable_cases: 16/16 (100%).
-- rule:MARKET_DATA_AVAILABLE/fail_rate_among_evaluable_cases: 0/16 (0%).
-- rule:MARKET_DATA_AVAILABLE/unknown_rate_among_all_cases: 0/16 (0%).
-- rule:MARKET_DATA_AVAILABLE/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:MARKET_DATA_AVAILABLE/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:MARKET_DATA_AVAILABLE/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:NEWS_AVAILABLE/pass_rate_among_all_cases: 1/16 (6.2500%).
+- rule:FLOAT_MAXIMUM/unknown_rate_among_all_cases: 28/29 (96.55172413793103448275862069%).
+- rule:FLOAT_MAXIMUM/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:FLOAT_MAXIMUM/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:FLOAT_MAXIMUM/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:MARKET_DATA_AVAILABLE/pass_rate_among_all_cases: 29/29 (100%).
+- rule:MARKET_DATA_AVAILABLE/pass_rate_among_evaluable_cases: 29/29 (100%).
+- rule:MARKET_DATA_AVAILABLE/fail_rate_among_evaluable_cases: 0/29 (0%).
+- rule:MARKET_DATA_AVAILABLE/unknown_rate_among_all_cases: 0/29 (0%).
+- rule:MARKET_DATA_AVAILABLE/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:MARKET_DATA_AVAILABLE/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:MARKET_DATA_AVAILABLE/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:NEWS_AVAILABLE/pass_rate_among_all_cases: 1/29 (3.448275862068965517241379310%).
 - rule:NEWS_AVAILABLE/pass_rate_among_evaluable_cases: 1/1 (100%).
 - rule:NEWS_AVAILABLE/fail_rate_among_evaluable_cases: 0/1 (0%).
-- rule:NEWS_AVAILABLE/unknown_rate_among_all_cases: 15/16 (93.7500%).
-- rule:NEWS_AVAILABLE/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:NEWS_AVAILABLE/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:NEWS_AVAILABLE/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:NEWS_AVAILABLE_BEFORE_AS_OF/pass_rate_among_all_cases: 1/16 (6.2500%).
+- rule:NEWS_AVAILABLE/unknown_rate_among_all_cases: 28/29 (96.55172413793103448275862069%).
+- rule:NEWS_AVAILABLE/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:NEWS_AVAILABLE/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:NEWS_AVAILABLE/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:NEWS_AVAILABLE_BEFORE_AS_OF/pass_rate_among_all_cases: 1/29 (3.448275862068965517241379310%).
 - rule:NEWS_AVAILABLE_BEFORE_AS_OF/pass_rate_among_evaluable_cases: 1/1 (100%).
 - rule:NEWS_AVAILABLE_BEFORE_AS_OF/fail_rate_among_evaluable_cases: 0/1 (0%).
-- rule:NEWS_AVAILABLE_BEFORE_AS_OF/unknown_rate_among_all_cases: 15/16 (93.7500%).
-- rule:NEWS_AVAILABLE_BEFORE_AS_OF/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:NEWS_AVAILABLE_BEFORE_AS_OF/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:NEWS_AVAILABLE_BEFORE_AS_OF/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:NEWS_TIMESTAMP_KNOWN/pass_rate_among_all_cases: 1/16 (6.2500%).
+- rule:NEWS_AVAILABLE_BEFORE_AS_OF/unknown_rate_among_all_cases: 28/29 (96.55172413793103448275862069%).
+- rule:NEWS_AVAILABLE_BEFORE_AS_OF/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:NEWS_AVAILABLE_BEFORE_AS_OF/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:NEWS_AVAILABLE_BEFORE_AS_OF/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:NEWS_TIMESTAMP_KNOWN/pass_rate_among_all_cases: 1/29 (3.448275862068965517241379310%).
 - rule:NEWS_TIMESTAMP_KNOWN/pass_rate_among_evaluable_cases: 1/1 (100%).
 - rule:NEWS_TIMESTAMP_KNOWN/fail_rate_among_evaluable_cases: 0/1 (0%).
-- rule:NEWS_TIMESTAMP_KNOWN/unknown_rate_among_all_cases: 15/16 (93.7500%).
-- rule:NEWS_TIMESTAMP_KNOWN/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:NEWS_TIMESTAMP_KNOWN/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:NEWS_TIMESTAMP_KNOWN/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:NO_DEFAULT_SUBSTITUTION/pass_rate_among_all_cases: 16/16 (100%).
-- rule:NO_DEFAULT_SUBSTITUTION/pass_rate_among_evaluable_cases: 16/16 (100%).
-- rule:NO_DEFAULT_SUBSTITUTION/fail_rate_among_evaluable_cases: 0/16 (0%).
-- rule:NO_DEFAULT_SUBSTITUTION/unknown_rate_among_all_cases: 0/16 (0%).
-- rule:NO_DEFAULT_SUBSTITUTION/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:NO_DEFAULT_SUBSTITUTION/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:NO_DEFAULT_SUBSTITUTION/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:NO_MATERIAL_CONFLICTS/pass_rate_among_all_cases: 16/16 (100%).
-- rule:NO_MATERIAL_CONFLICTS/pass_rate_among_evaluable_cases: 16/16 (100%).
-- rule:NO_MATERIAL_CONFLICTS/fail_rate_among_evaluable_cases: 0/16 (0%).
-- rule:NO_MATERIAL_CONFLICTS/unknown_rate_among_all_cases: 0/16 (0%).
-- rule:NO_MATERIAL_CONFLICTS/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:NO_MATERIAL_CONFLICTS/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:NO_MATERIAL_CONFLICTS/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:PERCENTAGE_CHANGE_MINIMUM/pass_rate_among_all_cases: 7/16 (43.7500%).
-- rule:PERCENTAGE_CHANGE_MINIMUM/pass_rate_among_evaluable_cases: 7/16 (43.7500%).
-- rule:PERCENTAGE_CHANGE_MINIMUM/fail_rate_among_evaluable_cases: 9/16 (56.2500%).
-- rule:PERCENTAGE_CHANGE_MINIMUM/unknown_rate_among_all_cases: 0/16 (0%).
-- rule:PERCENTAGE_CHANGE_MINIMUM/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:PERCENTAGE_CHANGE_MINIMUM/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:PERCENTAGE_CHANGE_MINIMUM/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:POINT_IN_TIME_ELIGIBLE/pass_rate_among_all_cases: 16/16 (100%).
-- rule:POINT_IN_TIME_ELIGIBLE/pass_rate_among_evaluable_cases: 16/16 (100%).
-- rule:POINT_IN_TIME_ELIGIBLE/fail_rate_among_evaluable_cases: 0/16 (0%).
-- rule:POINT_IN_TIME_ELIGIBLE/unknown_rate_among_all_cases: 0/16 (0%).
-- rule:POINT_IN_TIME_ELIGIBLE/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:POINT_IN_TIME_ELIGIBLE/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:POINT_IN_TIME_ELIGIBLE/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:PRICE_RANGE/pass_rate_among_all_cases: 1/16 (6.2500%).
+- rule:NEWS_TIMESTAMP_KNOWN/unknown_rate_among_all_cases: 28/29 (96.55172413793103448275862069%).
+- rule:NEWS_TIMESTAMP_KNOWN/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:NEWS_TIMESTAMP_KNOWN/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:NEWS_TIMESTAMP_KNOWN/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:NO_DEFAULT_SUBSTITUTION/pass_rate_among_all_cases: 29/29 (100%).
+- rule:NO_DEFAULT_SUBSTITUTION/pass_rate_among_evaluable_cases: 29/29 (100%).
+- rule:NO_DEFAULT_SUBSTITUTION/fail_rate_among_evaluable_cases: 0/29 (0%).
+- rule:NO_DEFAULT_SUBSTITUTION/unknown_rate_among_all_cases: 0/29 (0%).
+- rule:NO_DEFAULT_SUBSTITUTION/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:NO_DEFAULT_SUBSTITUTION/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:NO_DEFAULT_SUBSTITUTION/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:NO_MATERIAL_CONFLICTS/pass_rate_among_all_cases: 29/29 (100%).
+- rule:NO_MATERIAL_CONFLICTS/pass_rate_among_evaluable_cases: 29/29 (100%).
+- rule:NO_MATERIAL_CONFLICTS/fail_rate_among_evaluable_cases: 0/29 (0%).
+- rule:NO_MATERIAL_CONFLICTS/unknown_rate_among_all_cases: 0/29 (0%).
+- rule:NO_MATERIAL_CONFLICTS/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:NO_MATERIAL_CONFLICTS/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:NO_MATERIAL_CONFLICTS/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:PERCENTAGE_CHANGE_MINIMUM/pass_rate_among_all_cases: 10/29 (34.48275862068965517241379310%).
+- rule:PERCENTAGE_CHANGE_MINIMUM/pass_rate_among_evaluable_cases: 10/29 (34.48275862068965517241379310%).
+- rule:PERCENTAGE_CHANGE_MINIMUM/fail_rate_among_evaluable_cases: 19/29 (65.51724137931034482758620690%).
+- rule:PERCENTAGE_CHANGE_MINIMUM/unknown_rate_among_all_cases: 0/29 (0%).
+- rule:PERCENTAGE_CHANGE_MINIMUM/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:PERCENTAGE_CHANGE_MINIMUM/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:PERCENTAGE_CHANGE_MINIMUM/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:POINT_IN_TIME_ELIGIBLE/pass_rate_among_all_cases: 29/29 (100%).
+- rule:POINT_IN_TIME_ELIGIBLE/pass_rate_among_evaluable_cases: 29/29 (100%).
+- rule:POINT_IN_TIME_ELIGIBLE/fail_rate_among_evaluable_cases: 0/29 (0%).
+- rule:POINT_IN_TIME_ELIGIBLE/unknown_rate_among_all_cases: 0/29 (0%).
+- rule:POINT_IN_TIME_ELIGIBLE/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:POINT_IN_TIME_ELIGIBLE/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:POINT_IN_TIME_ELIGIBLE/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:PRICE_RANGE/pass_rate_among_all_cases: 1/29 (3.448275862068965517241379310%).
 - rule:PRICE_RANGE/pass_rate_among_evaluable_cases: 1/1 (100%).
 - rule:PRICE_RANGE/fail_rate_among_evaluable_cases: 0/1 (0%).
-- rule:PRICE_RANGE/unknown_rate_among_all_cases: 15/16 (93.7500%).
-- rule:PRICE_RANGE/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:PRICE_RANGE/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:PRICE_RANGE/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:PROVIDER_SCOPE_EXPLICIT/pass_rate_among_all_cases: 1/16 (6.2500%).
+- rule:PRICE_RANGE/unknown_rate_among_all_cases: 28/29 (96.55172413793103448275862069%).
+- rule:PRICE_RANGE/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:PRICE_RANGE/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:PRICE_RANGE/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:PROVIDER_SCOPE_EXPLICIT/pass_rate_among_all_cases: 1/29 (3.448275862068965517241379310%).
 - rule:PROVIDER_SCOPE_EXPLICIT/pass_rate_among_evaluable_cases: 1/1 (100%).
 - rule:PROVIDER_SCOPE_EXPLICIT/fail_rate_among_evaluable_cases: 0/1 (0%).
-- rule:PROVIDER_SCOPE_EXPLICIT/unknown_rate_among_all_cases: 15/16 (93.7500%).
-- rule:PROVIDER_SCOPE_EXPLICIT/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:PROVIDER_SCOPE_EXPLICIT/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:PROVIDER_SCOPE_EXPLICIT/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/pass_rate_among_all_cases: 1/16 (6.2500%).
+- rule:PROVIDER_SCOPE_EXPLICIT/unknown_rate_among_all_cases: 28/29 (96.55172413793103448275862069%).
+- rule:PROVIDER_SCOPE_EXPLICIT/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:PROVIDER_SCOPE_EXPLICIT/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:PROVIDER_SCOPE_EXPLICIT/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/pass_rate_among_all_cases: 1/29 (3.448275862068965517241379310%).
 - rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/pass_rate_among_evaluable_cases: 1/1 (100%).
 - rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/fail_rate_among_evaluable_cases: 0/1 (0%).
-- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/unknown_rate_among_all_cases: 15/16 (93.7500%).
-- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:RELATIVE_VOLUME_MINIMUM/pass_rate_among_all_cases: 0/16 (0%).
+- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/unknown_rate_among_all_cases: 28/29 (96.55172413793103448275862069%).
+- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:RELATIVE_VOLUME_MINIMUM/pass_rate_among_all_cases: 0/29 (0%).
 - rule:RELATIVE_VOLUME_MINIMUM/pass_rate_among_evaluable_cases: 0/1 (0%).
 - rule:RELATIVE_VOLUME_MINIMUM/fail_rate_among_evaluable_cases: 1/1 (100%).
-- rule:RELATIVE_VOLUME_MINIMUM/unknown_rate_among_all_cases: 15/16 (93.7500%).
-- rule:RELATIVE_VOLUME_MINIMUM/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:RELATIVE_VOLUME_MINIMUM/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:RELATIVE_VOLUME_MINIMUM/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:REQUIRED_DOMAINS_PRESENT/pass_rate_among_all_cases: 0/16 (0%).
-- rule:REQUIRED_DOMAINS_PRESENT/pass_rate_among_evaluable_cases: 0/15 (0%).
-- rule:REQUIRED_DOMAINS_PRESENT/fail_rate_among_evaluable_cases: 15/15 (100%).
-- rule:REQUIRED_DOMAINS_PRESENT/unknown_rate_among_all_cases: 1/16 (6.2500%).
-- rule:REQUIRED_DOMAINS_PRESENT/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:REQUIRED_DOMAINS_PRESENT/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:REQUIRED_DOMAINS_PRESENT/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:REQUIRED_HISTORY_SUFFICIENT/pass_rate_among_all_cases: 16/16 (100%).
-- rule:REQUIRED_HISTORY_SUFFICIENT/pass_rate_among_evaluable_cases: 16/16 (100%).
-- rule:REQUIRED_HISTORY_SUFFICIENT/fail_rate_among_evaluable_cases: 0/16 (0%).
-- rule:REQUIRED_HISTORY_SUFFICIENT/unknown_rate_among_all_cases: 0/16 (0%).
-- rule:REQUIRED_HISTORY_SUFFICIENT/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:REQUIRED_HISTORY_SUFFICIENT/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:REQUIRED_HISTORY_SUFFICIENT/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:REQUIRED_UNITS_COMPATIBLE/pass_rate_among_all_cases: 16/16 (100%).
-- rule:REQUIRED_UNITS_COMPATIBLE/pass_rate_among_evaluable_cases: 16/16 (100%).
-- rule:REQUIRED_UNITS_COMPATIBLE/fail_rate_among_evaluable_cases: 0/16 (0%).
-- rule:REQUIRED_UNITS_COMPATIBLE/unknown_rate_among_all_cases: 0/16 (0%).
-- rule:REQUIRED_UNITS_COMPATIBLE/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:REQUIRED_UNITS_COMPATIBLE/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:REQUIRED_UNITS_COMPATIBLE/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:SEC_FILING_AVAILABLE/pass_rate_among_all_cases: 0/16 (0%).
-- rule:SEC_FILING_AVAILABLE/unknown_rate_among_all_cases: 16/16 (100%).
-- rule:SEC_FILING_AVAILABLE/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:SEC_FILING_AVAILABLE/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:SEC_FILING_AVAILABLE/not_applicable_rate_among_all_cases: 0/16 (0%).
-- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/pass_rate_among_all_cases: 1/16 (6.2500%).
+- rule:RELATIVE_VOLUME_MINIMUM/unknown_rate_among_all_cases: 28/29 (96.55172413793103448275862069%).
+- rule:RELATIVE_VOLUME_MINIMUM/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:RELATIVE_VOLUME_MINIMUM/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:RELATIVE_VOLUME_MINIMUM/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:REQUIRED_DOMAINS_PRESENT/pass_rate_among_all_cases: 0/29 (0%).
+- rule:REQUIRED_DOMAINS_PRESENT/pass_rate_among_evaluable_cases: 0/28 (0%).
+- rule:REQUIRED_DOMAINS_PRESENT/fail_rate_among_evaluable_cases: 28/28 (100%).
+- rule:REQUIRED_DOMAINS_PRESENT/unknown_rate_among_all_cases: 1/29 (3.448275862068965517241379310%).
+- rule:REQUIRED_DOMAINS_PRESENT/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:REQUIRED_DOMAINS_PRESENT/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:REQUIRED_DOMAINS_PRESENT/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:REQUIRED_HISTORY_SUFFICIENT/pass_rate_among_all_cases: 29/29 (100%).
+- rule:REQUIRED_HISTORY_SUFFICIENT/pass_rate_among_evaluable_cases: 29/29 (100%).
+- rule:REQUIRED_HISTORY_SUFFICIENT/fail_rate_among_evaluable_cases: 0/29 (0%).
+- rule:REQUIRED_HISTORY_SUFFICIENT/unknown_rate_among_all_cases: 0/29 (0%).
+- rule:REQUIRED_HISTORY_SUFFICIENT/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:REQUIRED_HISTORY_SUFFICIENT/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:REQUIRED_HISTORY_SUFFICIENT/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:REQUIRED_UNITS_COMPATIBLE/pass_rate_among_all_cases: 29/29 (100%).
+- rule:REQUIRED_UNITS_COMPATIBLE/pass_rate_among_evaluable_cases: 29/29 (100%).
+- rule:REQUIRED_UNITS_COMPATIBLE/fail_rate_among_evaluable_cases: 0/29 (0%).
+- rule:REQUIRED_UNITS_COMPATIBLE/unknown_rate_among_all_cases: 0/29 (0%).
+- rule:REQUIRED_UNITS_COMPATIBLE/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:REQUIRED_UNITS_COMPATIBLE/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:REQUIRED_UNITS_COMPATIBLE/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:SEC_FILING_AVAILABLE/pass_rate_among_all_cases: 0/29 (0%).
+- rule:SEC_FILING_AVAILABLE/unknown_rate_among_all_cases: 29/29 (100%).
+- rule:SEC_FILING_AVAILABLE/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:SEC_FILING_AVAILABLE/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:SEC_FILING_AVAILABLE/not_applicable_rate_among_all_cases: 0/29 (0%).
+- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/pass_rate_among_all_cases: 1/29 (3.448275862068965517241379310%).
 - rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/pass_rate_among_evaluable_cases: 1/1 (100%).
 - rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/fail_rate_among_evaluable_cases: 0/1 (0%).
-- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/unknown_rate_among_all_cases: 15/16 (93.7500%).
-- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/conflicted_rate_among_all_cases: 0/16 (0%).
-- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/insufficient_data_rate_among_all_cases: 0/16 (0%).
-- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/not_applicable_rate_among_all_cases: 0/16 (0%).
+- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/unknown_rate_among_all_cases: 28/29 (96.55172413793103448275862069%).
+- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/conflicted_rate_among_all_cases: 0/29 (0%).
+- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/insufficient_data_rate_among_all_cases: 0/29 (0%).
+- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/not_applicable_rate_among_all_cases: 0/29 (0%).
 
 ## Undefined Rates
 
@@ -287,212 +301,212 @@
 - confusion_matrix/sensitivity_descriptive_research_classification_rate: [0.206549314377, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - confusion_matrix/positive_predictive_value_descriptive_research_classification_rate: [0.206549314377, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - confusion_matrix/false_negative_descriptive_research_classification_rate: [0E-12, 0.793450685623] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- detection_prevalence/detected_prevalence_among_all_cases: [0.011119344765, 0.283287375703] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- detection_prevalence/not_detected_prevalence_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- detection_prevalence/unevaluable_prevalence_among_all_cases: [0.716712624297, 0.988880655235] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- detection_prevalence/detected_prevalence_among_all_cases: [0.006113214293, 0.171755218793] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- detection_prevalence/not_detected_prevalence_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- detection_prevalence/unevaluable_prevalence_among_all_cases: [0.828244781207, 0.993886785707] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - detection_prevalence/detection_rate_among_evaluable_cases: [0.206549314377, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- outcome_prevalence/substantial_upward_move_prevalence_among_all_cases: [0.011119344765, 0.283287375703] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- outcome_prevalence/no_substantial_upward_move_prevalence_among_all_cases: [0.639771727342, 0.965022512257] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- outcome_prevalence/substantial_downward_move_prevalence_among_all_cases: [0.011119344765, 0.283287375703] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- outcome_prevalence/mixed_or_volatile_prevalence_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- outcome_prevalence/outcome_unknown_prevalence_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- outcome_prevalence/outcome_insufficient_data_prevalence_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- outcome_prevalence/substantial_upward_move_prevalence_among_complete_outcomes: [0.011119344765, 0.283287375703] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- classification_prevalence/true_positive_prevalence_among_all_cases: [0.011119344765, 0.283287375703] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- classification_prevalence/false_positive_prevalence_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- classification_prevalence/true_negative_prevalence_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- classification_prevalence/false_negative_prevalence_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- classification_prevalence/unevaluable_prevalence_among_all_cases: [0.716712624297, 0.988880655235] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- classification_prevalence/not_applicable_prevalence_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- classification_prevalence/research_classification_evaluability_rate_among_all_cases: [0.011119344765, 0.283287375703] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/pass_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/unknown_rate_among_all_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_AVAILABILITY_MAXIMUM/pass_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_AVAILABILITY_MAXIMUM/unknown_rate_among_all_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_AVAILABILITY_MAXIMUM/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_AVAILABILITY_MAXIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_AVAILABILITY_MAXIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_FEE_CHANGE_MINIMUM/pass_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_FEE_CHANGE_MINIMUM/unknown_rate_among_all_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_FEE_CHANGE_MINIMUM/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_FEE_CHANGE_MINIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_FEE_CHANGE_MINIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_FEE_MINIMUM/pass_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_FEE_MINIMUM/unknown_rate_among_all_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_FEE_MINIMUM/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_FEE_MINIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:BORROW_FEE_MINIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:COMPLETED_BAR_AVAILABLE/pass_rate_among_all_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:COMPLETED_BAR_AVAILABLE/pass_rate_among_evaluable_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:COMPLETED_BAR_AVAILABLE/fail_rate_among_evaluable_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:COMPLETED_BAR_AVAILABLE/unknown_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:COMPLETED_BAR_AVAILABLE/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:COMPLETED_BAR_AVAILABLE/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:COMPLETED_BAR_AVAILABLE/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/pass_rate_among_all_cases: [0.011119344765, 0.283287375703] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- outcome_prevalence/substantial_upward_move_prevalence_among_all_cases: [0.019121266169, 0.219645801503] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- outcome_prevalence/no_substantial_upward_move_prevalence_among_all_cases: [0.616099095961, 0.901539298022] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- outcome_prevalence/substantial_downward_move_prevalence_among_all_cases: [0.054974399641, 0.305589937204] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- outcome_prevalence/mixed_or_volatile_prevalence_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- outcome_prevalence/outcome_unknown_prevalence_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- outcome_prevalence/outcome_insufficient_data_prevalence_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- outcome_prevalence/substantial_upward_move_prevalence_among_complete_outcomes: [0.019121266169, 0.219645801503] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- classification_prevalence/true_positive_prevalence_among_all_cases: [0.006113214293, 0.171755218793] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- classification_prevalence/false_positive_prevalence_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- classification_prevalence/true_negative_prevalence_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- classification_prevalence/false_negative_prevalence_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- classification_prevalence/unevaluable_prevalence_among_all_cases: [0.828244781207, 0.993886785707] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- classification_prevalence/not_applicable_prevalence_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- classification_prevalence/research_classification_evaluability_rate_among_all_cases: [0.006113214293, 0.171755218793] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/pass_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/unknown_rate_among_all_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_AVAILABILITY_CHANGE_MAXIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_AVAILABILITY_MAXIMUM/pass_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_AVAILABILITY_MAXIMUM/unknown_rate_among_all_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_AVAILABILITY_MAXIMUM/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_AVAILABILITY_MAXIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_AVAILABILITY_MAXIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_FEE_CHANGE_MINIMUM/pass_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_FEE_CHANGE_MINIMUM/unknown_rate_among_all_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_FEE_CHANGE_MINIMUM/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_FEE_CHANGE_MINIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_FEE_CHANGE_MINIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_FEE_MINIMUM/pass_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_FEE_MINIMUM/unknown_rate_among_all_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_FEE_MINIMUM/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_FEE_MINIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:BORROW_FEE_MINIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:COMPLETED_BAR_AVAILABLE/pass_rate_among_all_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:COMPLETED_BAR_AVAILABLE/pass_rate_among_evaluable_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:COMPLETED_BAR_AVAILABLE/fail_rate_among_evaluable_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:COMPLETED_BAR_AVAILABLE/unknown_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:COMPLETED_BAR_AVAILABLE/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:COMPLETED_BAR_AVAILABLE/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:COMPLETED_BAR_AVAILABLE/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/pass_rate_among_all_cases: [0.006113214293, 0.171755218793] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/pass_rate_among_evaluable_cases: [0.206549314377, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/fail_rate_among_evaluable_cases: [0E-12, 0.793450685623] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/unknown_rate_among_all_cases: [0.716712624297, 0.988880655235] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:DAYS_TO_COVER_MINIMUM/pass_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:DAYS_TO_COVER_MINIMUM/unknown_rate_among_all_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:DAYS_TO_COVER_MINIMUM/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:DAYS_TO_COVER_MINIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:DAYS_TO_COVER_MINIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:FLOAT_MAXIMUM/pass_rate_among_all_cases: [0.011119344765, 0.283287375703] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/unknown_rate_among_all_cases: [0.828244781207, 0.993886785707] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:CORPORATE_ACTION_CONTEXT_AVAILABLE/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:DAYS_TO_COVER_MINIMUM/pass_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:DAYS_TO_COVER_MINIMUM/unknown_rate_among_all_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:DAYS_TO_COVER_MINIMUM/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:DAYS_TO_COVER_MINIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:DAYS_TO_COVER_MINIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:FLOAT_MAXIMUM/pass_rate_among_all_cases: [0.006113214293, 0.171755218793] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:FLOAT_MAXIMUM/pass_rate_among_evaluable_cases: [0.206549314377, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:FLOAT_MAXIMUM/fail_rate_among_evaluable_cases: [0E-12, 0.793450685623] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:FLOAT_MAXIMUM/unknown_rate_among_all_cases: [0.716712624297, 0.988880655235] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:FLOAT_MAXIMUM/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:FLOAT_MAXIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:FLOAT_MAXIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:MARKET_DATA_AVAILABLE/pass_rate_among_all_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:MARKET_DATA_AVAILABLE/pass_rate_among_evaluable_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:MARKET_DATA_AVAILABLE/fail_rate_among_evaluable_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:MARKET_DATA_AVAILABLE/unknown_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:MARKET_DATA_AVAILABLE/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:MARKET_DATA_AVAILABLE/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:MARKET_DATA_AVAILABLE/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NEWS_AVAILABLE/pass_rate_among_all_cases: [0.011119344765, 0.283287375703] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:FLOAT_MAXIMUM/unknown_rate_among_all_cases: [0.828244781207, 0.993886785707] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:FLOAT_MAXIMUM/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:FLOAT_MAXIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:FLOAT_MAXIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:MARKET_DATA_AVAILABLE/pass_rate_among_all_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:MARKET_DATA_AVAILABLE/pass_rate_among_evaluable_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:MARKET_DATA_AVAILABLE/fail_rate_among_evaluable_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:MARKET_DATA_AVAILABLE/unknown_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:MARKET_DATA_AVAILABLE/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:MARKET_DATA_AVAILABLE/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:MARKET_DATA_AVAILABLE/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NEWS_AVAILABLE/pass_rate_among_all_cases: [0.006113214293, 0.171755218793] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:NEWS_AVAILABLE/pass_rate_among_evaluable_cases: [0.206549314377, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:NEWS_AVAILABLE/fail_rate_among_evaluable_cases: [0E-12, 0.793450685623] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NEWS_AVAILABLE/unknown_rate_among_all_cases: [0.716712624297, 0.988880655235] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NEWS_AVAILABLE/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NEWS_AVAILABLE/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NEWS_AVAILABLE/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NEWS_AVAILABLE_BEFORE_AS_OF/pass_rate_among_all_cases: [0.011119344765, 0.283287375703] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NEWS_AVAILABLE/unknown_rate_among_all_cases: [0.828244781207, 0.993886785707] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NEWS_AVAILABLE/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NEWS_AVAILABLE/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NEWS_AVAILABLE/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NEWS_AVAILABLE_BEFORE_AS_OF/pass_rate_among_all_cases: [0.006113214293, 0.171755218793] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:NEWS_AVAILABLE_BEFORE_AS_OF/pass_rate_among_evaluable_cases: [0.206549314377, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:NEWS_AVAILABLE_BEFORE_AS_OF/fail_rate_among_evaluable_cases: [0E-12, 0.793450685623] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NEWS_AVAILABLE_BEFORE_AS_OF/unknown_rate_among_all_cases: [0.716712624297, 0.988880655235] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NEWS_AVAILABLE_BEFORE_AS_OF/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NEWS_AVAILABLE_BEFORE_AS_OF/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NEWS_AVAILABLE_BEFORE_AS_OF/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NEWS_TIMESTAMP_KNOWN/pass_rate_among_all_cases: [0.011119344765, 0.283287375703] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NEWS_AVAILABLE_BEFORE_AS_OF/unknown_rate_among_all_cases: [0.828244781207, 0.993886785707] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NEWS_AVAILABLE_BEFORE_AS_OF/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NEWS_AVAILABLE_BEFORE_AS_OF/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NEWS_AVAILABLE_BEFORE_AS_OF/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NEWS_TIMESTAMP_KNOWN/pass_rate_among_all_cases: [0.006113214293, 0.171755218793] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:NEWS_TIMESTAMP_KNOWN/pass_rate_among_evaluable_cases: [0.206549314377, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:NEWS_TIMESTAMP_KNOWN/fail_rate_among_evaluable_cases: [0E-12, 0.793450685623] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NEWS_TIMESTAMP_KNOWN/unknown_rate_among_all_cases: [0.716712624297, 0.988880655235] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NEWS_TIMESTAMP_KNOWN/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NEWS_TIMESTAMP_KNOWN/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NEWS_TIMESTAMP_KNOWN/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NO_DEFAULT_SUBSTITUTION/pass_rate_among_all_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NO_DEFAULT_SUBSTITUTION/pass_rate_among_evaluable_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NO_DEFAULT_SUBSTITUTION/fail_rate_among_evaluable_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NO_DEFAULT_SUBSTITUTION/unknown_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NO_DEFAULT_SUBSTITUTION/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NO_DEFAULT_SUBSTITUTION/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NO_DEFAULT_SUBSTITUTION/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NO_MATERIAL_CONFLICTS/pass_rate_among_all_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NO_MATERIAL_CONFLICTS/pass_rate_among_evaluable_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NO_MATERIAL_CONFLICTS/fail_rate_among_evaluable_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NO_MATERIAL_CONFLICTS/unknown_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NO_MATERIAL_CONFLICTS/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NO_MATERIAL_CONFLICTS/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:NO_MATERIAL_CONFLICTS/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PERCENTAGE_CHANGE_MINIMUM/pass_rate_among_all_cases: [0.230986524055, 0.668214436012] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PERCENTAGE_CHANGE_MINIMUM/pass_rate_among_evaluable_cases: [0.230986524055, 0.668214436012] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PERCENTAGE_CHANGE_MINIMUM/fail_rate_among_evaluable_cases: [0.331785563988, 0.769013475945] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PERCENTAGE_CHANGE_MINIMUM/unknown_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PERCENTAGE_CHANGE_MINIMUM/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PERCENTAGE_CHANGE_MINIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PERCENTAGE_CHANGE_MINIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:POINT_IN_TIME_ELIGIBLE/pass_rate_among_all_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:POINT_IN_TIME_ELIGIBLE/pass_rate_among_evaluable_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:POINT_IN_TIME_ELIGIBLE/fail_rate_among_evaluable_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:POINT_IN_TIME_ELIGIBLE/unknown_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:POINT_IN_TIME_ELIGIBLE/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:POINT_IN_TIME_ELIGIBLE/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:POINT_IN_TIME_ELIGIBLE/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PRICE_RANGE/pass_rate_among_all_cases: [0.011119344765, 0.283287375703] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NEWS_TIMESTAMP_KNOWN/unknown_rate_among_all_cases: [0.828244781207, 0.993886785707] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NEWS_TIMESTAMP_KNOWN/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NEWS_TIMESTAMP_KNOWN/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NEWS_TIMESTAMP_KNOWN/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NO_DEFAULT_SUBSTITUTION/pass_rate_among_all_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NO_DEFAULT_SUBSTITUTION/pass_rate_among_evaluable_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NO_DEFAULT_SUBSTITUTION/fail_rate_among_evaluable_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NO_DEFAULT_SUBSTITUTION/unknown_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NO_DEFAULT_SUBSTITUTION/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NO_DEFAULT_SUBSTITUTION/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NO_DEFAULT_SUBSTITUTION/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NO_MATERIAL_CONFLICTS/pass_rate_among_all_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NO_MATERIAL_CONFLICTS/pass_rate_among_evaluable_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NO_MATERIAL_CONFLICTS/fail_rate_among_evaluable_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NO_MATERIAL_CONFLICTS/unknown_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NO_MATERIAL_CONFLICTS/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NO_MATERIAL_CONFLICTS/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:NO_MATERIAL_CONFLICTS/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PERCENTAGE_CHANGE_MINIMUM/pass_rate_among_all_cases: [0.199407185267, 0.526548959095] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PERCENTAGE_CHANGE_MINIMUM/pass_rate_among_evaluable_cases: [0.199407185267, 0.526548959095] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PERCENTAGE_CHANGE_MINIMUM/fail_rate_among_evaluable_cases: [0.473451040905, 0.800592814733] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PERCENTAGE_CHANGE_MINIMUM/unknown_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PERCENTAGE_CHANGE_MINIMUM/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PERCENTAGE_CHANGE_MINIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PERCENTAGE_CHANGE_MINIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:POINT_IN_TIME_ELIGIBLE/pass_rate_among_all_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:POINT_IN_TIME_ELIGIBLE/pass_rate_among_evaluable_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:POINT_IN_TIME_ELIGIBLE/fail_rate_among_evaluable_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:POINT_IN_TIME_ELIGIBLE/unknown_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:POINT_IN_TIME_ELIGIBLE/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:POINT_IN_TIME_ELIGIBLE/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:POINT_IN_TIME_ELIGIBLE/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PRICE_RANGE/pass_rate_among_all_cases: [0.006113214293, 0.171755218793] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:PRICE_RANGE/pass_rate_among_evaluable_cases: [0.206549314377, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:PRICE_RANGE/fail_rate_among_evaluable_cases: [0E-12, 0.793450685623] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PRICE_RANGE/unknown_rate_among_all_cases: [0.716712624297, 0.988880655235] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PRICE_RANGE/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PRICE_RANGE/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PRICE_RANGE/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PROVIDER_SCOPE_EXPLICIT/pass_rate_among_all_cases: [0.011119344765, 0.283287375703] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PRICE_RANGE/unknown_rate_among_all_cases: [0.828244781207, 0.993886785707] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PRICE_RANGE/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PRICE_RANGE/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PRICE_RANGE/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PROVIDER_SCOPE_EXPLICIT/pass_rate_among_all_cases: [0.006113214293, 0.171755218793] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:PROVIDER_SCOPE_EXPLICIT/pass_rate_among_evaluable_cases: [0.206549314377, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:PROVIDER_SCOPE_EXPLICIT/fail_rate_among_evaluable_cases: [0E-12, 0.793450685623] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PROVIDER_SCOPE_EXPLICIT/unknown_rate_among_all_cases: [0.716712624297, 0.988880655235] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PROVIDER_SCOPE_EXPLICIT/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PROVIDER_SCOPE_EXPLICIT/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PROVIDER_SCOPE_EXPLICIT/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/pass_rate_among_all_cases: [0.011119344765, 0.283287375703] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PROVIDER_SCOPE_EXPLICIT/unknown_rate_among_all_cases: [0.828244781207, 0.993886785707] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PROVIDER_SCOPE_EXPLICIT/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PROVIDER_SCOPE_EXPLICIT/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PROVIDER_SCOPE_EXPLICIT/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/pass_rate_among_all_cases: [0.006113214293, 0.171755218793] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/pass_rate_among_evaluable_cases: [0.206549314377, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/fail_rate_among_evaluable_cases: [0E-12, 0.793450685623] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/unknown_rate_among_all_cases: [0.716712624297, 0.988880655235] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:RELATIVE_VOLUME_MINIMUM/pass_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/unknown_rate_among_all_cases: [0.828244781207, 0.993886785707] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:PUBLISHED_SHORT_INTEREST_AVAILABLE/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:RELATIVE_VOLUME_MINIMUM/pass_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:RELATIVE_VOLUME_MINIMUM/pass_rate_among_evaluable_cases: [0E-12, 0.793450685623] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:RELATIVE_VOLUME_MINIMUM/fail_rate_among_evaluable_cases: [0.206549314377, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:RELATIVE_VOLUME_MINIMUM/unknown_rate_among_all_cases: [0.716712624297, 0.988880655235] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:RELATIVE_VOLUME_MINIMUM/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:RELATIVE_VOLUME_MINIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:RELATIVE_VOLUME_MINIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_DOMAINS_PRESENT/pass_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_DOMAINS_PRESENT/pass_rate_among_evaluable_cases: [0E-12, 0.203883301036] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_DOMAINS_PRESENT/fail_rate_among_evaluable_cases: [0.796116698964, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_DOMAINS_PRESENT/unknown_rate_among_all_cases: [0.011119344765, 0.283287375703] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_DOMAINS_PRESENT/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_DOMAINS_PRESENT/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_DOMAINS_PRESENT/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_HISTORY_SUFFICIENT/pass_rate_among_all_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_HISTORY_SUFFICIENT/pass_rate_among_evaluable_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_HISTORY_SUFFICIENT/fail_rate_among_evaluable_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_HISTORY_SUFFICIENT/unknown_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_HISTORY_SUFFICIENT/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_HISTORY_SUFFICIENT/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_HISTORY_SUFFICIENT/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_UNITS_COMPATIBLE/pass_rate_among_all_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_UNITS_COMPATIBLE/pass_rate_among_evaluable_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_UNITS_COMPATIBLE/fail_rate_among_evaluable_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_UNITS_COMPATIBLE/unknown_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_UNITS_COMPATIBLE/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_UNITS_COMPATIBLE/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:REQUIRED_UNITS_COMPATIBLE/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:SEC_FILING_AVAILABLE/pass_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:SEC_FILING_AVAILABLE/unknown_rate_among_all_cases: [0.806392319466, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:SEC_FILING_AVAILABLE/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:SEC_FILING_AVAILABLE/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:SEC_FILING_AVAILABLE/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/pass_rate_among_all_cases: [0.011119344765, 0.283287375703] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:RELATIVE_VOLUME_MINIMUM/unknown_rate_among_all_cases: [0.828244781207, 0.993886785707] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:RELATIVE_VOLUME_MINIMUM/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:RELATIVE_VOLUME_MINIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:RELATIVE_VOLUME_MINIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_DOMAINS_PRESENT/pass_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_DOMAINS_PRESENT/pass_rate_among_evaluable_cases: [0E-12, 0.120643304766] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_DOMAINS_PRESENT/fail_rate_among_evaluable_cases: [0.879356695234, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_DOMAINS_PRESENT/unknown_rate_among_all_cases: [0.006113214293, 0.171755218793] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_DOMAINS_PRESENT/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_DOMAINS_PRESENT/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_DOMAINS_PRESENT/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_HISTORY_SUFFICIENT/pass_rate_among_all_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_HISTORY_SUFFICIENT/pass_rate_among_evaluable_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_HISTORY_SUFFICIENT/fail_rate_among_evaluable_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_HISTORY_SUFFICIENT/unknown_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_HISTORY_SUFFICIENT/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_HISTORY_SUFFICIENT/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_HISTORY_SUFFICIENT/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_UNITS_COMPATIBLE/pass_rate_among_all_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_UNITS_COMPATIBLE/pass_rate_among_evaluable_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_UNITS_COMPATIBLE/fail_rate_among_evaluable_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_UNITS_COMPATIBLE/unknown_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_UNITS_COMPATIBLE/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_UNITS_COMPATIBLE/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:REQUIRED_UNITS_COMPATIBLE/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:SEC_FILING_AVAILABLE/pass_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:SEC_FILING_AVAILABLE/unknown_rate_among_all_cases: [0.883030201500, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:SEC_FILING_AVAILABLE/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:SEC_FILING_AVAILABLE/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:SEC_FILING_AVAILABLE/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/pass_rate_among_all_cases: [0.006113214293, 0.171755218793] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/pass_rate_among_evaluable_cases: [0.206549314377, 1.000000000000] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 - rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/fail_rate_among_evaluable_cases: [0E-12, 0.793450685623] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/unknown_rate_among_all_cases: [0.716712624297, 0.988880655235] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/conflicted_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
-- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.193607680534] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/unknown_rate_among_all_cases: [0.828244781207, 0.993886785707] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/conflicted_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/insufficient_data_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
+- rule:SHORT_INTEREST_PERCENTAGE_CHANGE_MINIMUM/not_applicable_rate_among_all_cases: [0E-12, 0.116969798500] using `WILSON_SCORE` at 0.95; independence satisfied=`true`.
 
 ## Missingness Findings
 
-- `PUBLISHED_SHORT_INTEREST`: 0/16; cases=none.
-- `PUBLISHED_SHORT_INTEREST_CHANGE`: 15/16; cases=`AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
-- `DAYS_TO_COVER`: 16/16; cases=`AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `BIYA_EARLIEST_BOUNDARY`, `GPRE_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
-- `BORROW_FEE`: 16/16; cases=`AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `BIYA_EARLIEST_BOUNDARY`, `GPRE_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
-- `BORROW_FEE_CHANGE`: 16/16; cases=`AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `BIYA_EARLIEST_BOUNDARY`, `GPRE_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
-- `BORROW_AVAILABILITY`: 16/16; cases=`AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `BIYA_EARLIEST_BOUNDARY`, `GPRE_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
-- `BORROW_AVAILABILITY_CHANGE`: 16/16; cases=`AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `BIYA_EARLIEST_BOUNDARY`, `GPRE_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
-- `FLOAT`: 0/16; cases=none.
-- `PERCENTAGE_CHANGE_HISTORY`: 0/16; cases=none.
-- `RELATIVE_VOLUME_HISTORY`: 15/16; cases=`AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
-- `NEWS`: 15/16; cases=`AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
-- `NEWS_TIMESTAMP`: 15/16; cases=`AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
-- `SEC_FILINGS`: 16/16; cases=`AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `BIYA_EARLIEST_BOUNDARY`, `GPRE_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
-- `CORPORATE_ACTION_CONTEXT`: 15/16; cases=`AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
-- `PROVIDER_SCOPE`: 15/16; cases=`AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
-- `CONFLICTED_EVIDENCE`: 0/16; cases=none.
-- `INSUFFICIENT_HISTORY`: 0/16; cases=none.
-- `PARTIAL_OUTCOME_WINDOW`: 0/16; cases=none.
-- `UNKNOWN_PLATFORM_STATUS`: 12/16; cases=`AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
-- `IDENTITY_CONFLICT`: 0/16; cases=none.
-- `INCOMPLETE_CANDIDATE_CASE`: 0/16; cases=none.
-- `MULTIPLE_BOUNDARIES_PER_SYMBOL`: 0/16; cases=none.
+- `PUBLISHED_SHORT_INTEREST`: 0/29; cases=none.
+- `PUBLISHED_SHORT_INTEREST_CHANGE`: 28/29; cases=`ADVB_ARTIFACT_DISCOVERY`, `APVO_ARTIFACT_DISCOVERY`, `ATAI_ARTIFACT_DISCOVERY`, `AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `CADL_ARTIFACT_DISCOVERY`, `CELZ_ARTIFACT_DISCOVERY`, `CGEM_ARTIFACT_DISCOVERY`, `GDC_ARTIFACT_DISCOVERY`, `GOAI_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `IOVA_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `NXXT_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `PMAX_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `STAK_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `VMAR_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
+- `DAYS_TO_COVER`: 29/29; cases=`ADVB_ARTIFACT_DISCOVERY`, `APVO_ARTIFACT_DISCOVERY`, `ATAI_ARTIFACT_DISCOVERY`, `AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `BIYA_EARLIEST_BOUNDARY`, `CADL_ARTIFACT_DISCOVERY`, `CELZ_ARTIFACT_DISCOVERY`, `CGEM_ARTIFACT_DISCOVERY`, `GDC_ARTIFACT_DISCOVERY`, `GOAI_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `IOVA_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `NXXT_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `PMAX_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `STAK_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `VMAR_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
+- `BORROW_FEE`: 29/29; cases=`ADVB_ARTIFACT_DISCOVERY`, `APVO_ARTIFACT_DISCOVERY`, `ATAI_ARTIFACT_DISCOVERY`, `AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `BIYA_EARLIEST_BOUNDARY`, `CADL_ARTIFACT_DISCOVERY`, `CELZ_ARTIFACT_DISCOVERY`, `CGEM_ARTIFACT_DISCOVERY`, `GDC_ARTIFACT_DISCOVERY`, `GOAI_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `IOVA_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `NXXT_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `PMAX_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `STAK_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `VMAR_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
+- `BORROW_FEE_CHANGE`: 29/29; cases=`ADVB_ARTIFACT_DISCOVERY`, `APVO_ARTIFACT_DISCOVERY`, `ATAI_ARTIFACT_DISCOVERY`, `AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `BIYA_EARLIEST_BOUNDARY`, `CADL_ARTIFACT_DISCOVERY`, `CELZ_ARTIFACT_DISCOVERY`, `CGEM_ARTIFACT_DISCOVERY`, `GDC_ARTIFACT_DISCOVERY`, `GOAI_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `IOVA_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `NXXT_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `PMAX_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `STAK_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `VMAR_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
+- `BORROW_AVAILABILITY`: 29/29; cases=`ADVB_ARTIFACT_DISCOVERY`, `APVO_ARTIFACT_DISCOVERY`, `ATAI_ARTIFACT_DISCOVERY`, `AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `BIYA_EARLIEST_BOUNDARY`, `CADL_ARTIFACT_DISCOVERY`, `CELZ_ARTIFACT_DISCOVERY`, `CGEM_ARTIFACT_DISCOVERY`, `GDC_ARTIFACT_DISCOVERY`, `GOAI_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `IOVA_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `NXXT_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `PMAX_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `STAK_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `VMAR_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
+- `BORROW_AVAILABILITY_CHANGE`: 29/29; cases=`ADVB_ARTIFACT_DISCOVERY`, `APVO_ARTIFACT_DISCOVERY`, `ATAI_ARTIFACT_DISCOVERY`, `AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `BIYA_EARLIEST_BOUNDARY`, `CADL_ARTIFACT_DISCOVERY`, `CELZ_ARTIFACT_DISCOVERY`, `CGEM_ARTIFACT_DISCOVERY`, `GDC_ARTIFACT_DISCOVERY`, `GOAI_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `IOVA_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `NXXT_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `PMAX_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `STAK_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `VMAR_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
+- `FLOAT`: 0/29; cases=none.
+- `PERCENTAGE_CHANGE_HISTORY`: 0/29; cases=none.
+- `RELATIVE_VOLUME_HISTORY`: 28/29; cases=`ADVB_ARTIFACT_DISCOVERY`, `APVO_ARTIFACT_DISCOVERY`, `ATAI_ARTIFACT_DISCOVERY`, `AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `CADL_ARTIFACT_DISCOVERY`, `CELZ_ARTIFACT_DISCOVERY`, `CGEM_ARTIFACT_DISCOVERY`, `GDC_ARTIFACT_DISCOVERY`, `GOAI_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `IOVA_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `NXXT_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `PMAX_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `STAK_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `VMAR_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
+- `NEWS`: 28/29; cases=`ADVB_ARTIFACT_DISCOVERY`, `APVO_ARTIFACT_DISCOVERY`, `ATAI_ARTIFACT_DISCOVERY`, `AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `CADL_ARTIFACT_DISCOVERY`, `CELZ_ARTIFACT_DISCOVERY`, `CGEM_ARTIFACT_DISCOVERY`, `GDC_ARTIFACT_DISCOVERY`, `GOAI_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `IOVA_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `NXXT_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `PMAX_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `STAK_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `VMAR_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
+- `NEWS_TIMESTAMP`: 28/29; cases=`ADVB_ARTIFACT_DISCOVERY`, `APVO_ARTIFACT_DISCOVERY`, `ATAI_ARTIFACT_DISCOVERY`, `AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `CADL_ARTIFACT_DISCOVERY`, `CELZ_ARTIFACT_DISCOVERY`, `CGEM_ARTIFACT_DISCOVERY`, `GDC_ARTIFACT_DISCOVERY`, `GOAI_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `IOVA_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `NXXT_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `PMAX_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `STAK_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `VMAR_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
+- `SEC_FILINGS`: 29/29; cases=`ADVB_ARTIFACT_DISCOVERY`, `APVO_ARTIFACT_DISCOVERY`, `ATAI_ARTIFACT_DISCOVERY`, `AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `BIYA_EARLIEST_BOUNDARY`, `CADL_ARTIFACT_DISCOVERY`, `CELZ_ARTIFACT_DISCOVERY`, `CGEM_ARTIFACT_DISCOVERY`, `GDC_ARTIFACT_DISCOVERY`, `GOAI_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `IOVA_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `NXXT_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `PMAX_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `STAK_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `VMAR_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
+- `CORPORATE_ACTION_CONTEXT`: 28/29; cases=`ADVB_ARTIFACT_DISCOVERY`, `APVO_ARTIFACT_DISCOVERY`, `ATAI_ARTIFACT_DISCOVERY`, `AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `CADL_ARTIFACT_DISCOVERY`, `CELZ_ARTIFACT_DISCOVERY`, `CGEM_ARTIFACT_DISCOVERY`, `GDC_ARTIFACT_DISCOVERY`, `GOAI_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `IOVA_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `NXXT_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `PMAX_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `STAK_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `VMAR_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
+- `PROVIDER_SCOPE`: 28/29; cases=`ADVB_ARTIFACT_DISCOVERY`, `APVO_ARTIFACT_DISCOVERY`, `ATAI_ARTIFACT_DISCOVERY`, `AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `CADL_ARTIFACT_DISCOVERY`, `CELZ_ARTIFACT_DISCOVERY`, `CGEM_ARTIFACT_DISCOVERY`, `GDC_ARTIFACT_DISCOVERY`, `GOAI_ARTIFACT_DISCOVERY`, `GPRE_ARTIFACT_DISCOVERY`, `IOVA_ARTIFACT_DISCOVERY`, `KLRS_ARTIFACT_DISCOVERY`, `LBGJ_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `NXXT_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `PMAX_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `STAK_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `VMAR_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
+- `CONFLICTED_EVIDENCE`: 0/29; cases=none.
+- `INSUFFICIENT_HISTORY`: 0/29; cases=none.
+- `PARTIAL_OUTCOME_WINDOW`: 0/29; cases=none.
+- `UNKNOWN_PLATFORM_STATUS`: 25/29; cases=`ADVB_ARTIFACT_DISCOVERY`, `APVO_ARTIFACT_DISCOVERY`, `ATAI_ARTIFACT_DISCOVERY`, `AVTX_ARTIFACT_DISCOVERY`, `BHVN_ARTIFACT_DISCOVERY`, `CADL_ARTIFACT_DISCOVERY`, `CELZ_ARTIFACT_DISCOVERY`, `CGEM_ARTIFACT_DISCOVERY`, `GDC_ARTIFACT_DISCOVERY`, `GOAI_ARTIFACT_DISCOVERY`, `IOVA_ARTIFACT_DISCOVERY`, `LMNX_ARTIFACT_DISCOVERY`, `MGNX_ARTIFACT_DISCOVERY`, `NXXT_ARTIFACT_DISCOVERY`, `OBE_ARTIFACT_DISCOVERY`, `PESI_ARTIFACT_DISCOVERY`, `PMAX_ARTIFACT_DISCOVERY`, `SG_ARTIFACT_DISCOVERY`, `SLS_ARTIFACT_DISCOVERY`, `SSPC_ARTIFACT_DISCOVERY`, `STAK_ARTIFACT_DISCOVERY`, `TRVI_ARTIFACT_DISCOVERY`, `VMAR_ARTIFACT_DISCOVERY`, `XNCR_ARTIFACT_DISCOVERY`, `ZNTL_ARTIFACT_DISCOVERY`.
+- `IDENTITY_CONFLICT`: 0/29; cases=none.
+- `INCOMPLETE_CANDIDATE_CASE`: 0/29; cases=none.
+- `MULTIPLE_BOUNDARIES_PER_SYMBOL`: 0/29; cases=none.
 
 ## Limitations
 

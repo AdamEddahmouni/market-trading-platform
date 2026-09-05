@@ -69,6 +69,10 @@ SYNTHETIC_ROOT = FIXTURE_DIR / "synthetic-batch05"
 EXPECTED_COHORT_ORDER = (
     "XNCR", "PESI", "SLS", "ZNTL", "GPRE", "SSPC", "LBGJ", "TRVI", "LMNX", "MGNX",
     "BHVN", "OBE", "AVTX", "KLRS", "SG",
+    "CELZ", "GDC", "ADVB", "GOAI", "NXXT",
+    "VMAR", "ATAI", "CADL", "CGEM", "IOVA",
+    "PMAX", "STAK", "APVO",
+    "BIYA",
 )
 EXPECTED_BOUNDARY = datetime(2026, 7, 18, 13, 37, 55, 17661, tzinfo=UTC)
 
@@ -130,7 +134,7 @@ def test_cohort_source_order_is_exact_and_unreordered(frozen):
     assert tuple(symbol for symbol, _ in FROZEN_COHORT) == EXPECTED_COHORT_ORDER
     assert tuple(item.record.symbol for item in frozen) == EXPECTED_COHORT_ORDER
     assert tuple(item.record.case_id for item in frozen) == tuple(
-        f"BATCH01_{symbol}_20260718" for symbol in EXPECTED_COHORT_ORDER
+        case_id for _, case_id in FROZEN_COHORT
     )
 
 
@@ -149,7 +153,7 @@ def test_boundary_ids_match_the_recomputed_batch01_freeze(frozen):
 
 
 def test_exactly_fifteen_requests_and_results_are_frozen(frozen):
-    assert len(frozen) == 15
+    assert len(frozen) == len(FROZEN_COHORT)
     assert all(item.record.phase3a_request_id for item in frozen)
     assert all(item.record.phase3a_result_id for item in frozen)
     assert all(
@@ -176,7 +180,7 @@ def test_global_preflight_remains_rejected_and_unchanged(frozen):
 
 def test_batch07_readiness_is_consumed_unchanged():
     cases = batch07_readiness(SYNTHETIC_ROOT)
-    assert len(cases) == 15
+    assert len(cases) == len(FROZEN_COHORT)
     for case in cases.values():
         assert case.phase3a_request_readiness.value == "PHASE3A_REQUEST_READY"
         assert case.temporal_alignment_readiness.status.value == "ADMISSIBLE"
@@ -627,6 +631,7 @@ def test_supply_policy_widening_changes_counts_but_no_outcome(policy):
     narrow = freeze_case(
         symbol="XNCR",
         case_id=case_id,
+        boundary=FROZEN_BOUNDARY,
         batch05_root=SYNTHETIC_ROOT,
         policy=policy,
         batch07_case=cases[case_id],
@@ -634,6 +639,7 @@ def test_supply_policy_widening_changes_counts_but_no_outcome(policy):
     wide = freeze_case(
         symbol="XNCR",
         case_id=case_id,
+        boundary=FROZEN_BOUNDARY,
         batch05_root=SYNTHETIC_ROOT,
         policy=policy,
         batch07_case=cases[case_id],
@@ -661,7 +667,7 @@ def test_local_retrieval_receipt_sensitivity_is_disclosed(frozen):
         tuple(item.record for item in alternative),
         ReceiptModelingPolicy.LOCAL_RETRIEVAL_RECEIPT,
     )
-    assert summary.case_count == 15
+    assert summary.case_count == len(FROZEN_COHORT)
     # Under a literal local-receipt reading every bar is point-in-time ineligible, so the
     # bar-dependent rules diverge. Disclosed rather than hidden.
     assert "MARKET_DATA_AVAILABLE" in summary.rules_diverging_from_primary
@@ -684,7 +690,7 @@ def test_freeze_ordering_places_request_before_result_before_any_outcome():
 
 
 def test_all_fifteen_leakage_audits_pass(frozen):
-    assert len(frozen) == 15
+    assert len(frozen) == len(FROZEN_COHORT)
     for item in frozen:
         assert item.record.leakage_audit_status == "LEAKAGE_AUDIT_PASSED"
         assert item.record.leakage_audit_diagnostic_codes == ("LEAKAGE_AUDIT_PASSED",)
@@ -707,6 +713,7 @@ def test_request_and_result_identities_are_deterministic(policy):
     first = freeze_case(
         symbol="SLS",
         case_id=case_id,
+        boundary=FROZEN_BOUNDARY,
         batch05_root=SYNTHETIC_ROOT,
         policy=policy,
         batch07_case=cases[case_id],
@@ -714,6 +721,7 @@ def test_request_and_result_identities_are_deterministic(policy):
     second = freeze_case(
         symbol="SLS",
         case_id=case_id,
+        boundary=FROZEN_BOUNDARY,
         batch05_root=SYNTHETIC_ROOT,
         policy=policy,
         batch07_case=cases[case_id],
@@ -809,7 +817,7 @@ def test_publication_readiness_preview_publishes_nothing(frozen):
         receipt_policy=ReceiptModelingPolicy.PROVIDER_AVAILABILITY_AS_RECEIPT,
         boundary_time=FROZEN_BOUNDARY,
     )
-    assert len(report.publication_readiness_preview) == 15
+    assert len(report.publication_readiness_preview) == len(FROZEN_COHORT)
     for preview in report.publication_readiness_preview:
         assert preview.phase3b_publication_performed is False
         assert preview.outcome_complete is False

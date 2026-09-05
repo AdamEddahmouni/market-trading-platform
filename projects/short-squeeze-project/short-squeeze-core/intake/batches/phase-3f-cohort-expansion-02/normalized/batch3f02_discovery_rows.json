@@ -1,0 +1,122 @@
+{
+  "document": "phase_3f_batch_02_log_universe_discovery_rows",
+  "raw_source": {
+    "archived_relative_paths": [
+      "tests/fixtures/validation/outcome_amendment/biya_news.jsonl",
+      "archived-project-code/adams-short-squeeze-code-archived/app/ScreenerProject/data/prime_log.csv"
+    ],
+    "artifact_names": [
+      "biya_news.jsonl",
+      "prime_log.csv"
+    ],
+    "capture_timestamp": "2026-07-18T13:37:55.017661+00:00",
+    "classification": "SANITIZED_LOCAL_ARTIFACT",
+    "notes": "VMAR from archived news co-occurrence; ATAI, CADL, CGEM, IOVA from archived prime-log rows. No scanner field values survive; boundary is the Batch 01 frozen cohort timestamp for comparability.",
+    "source_class": "ARCHIVED_PLATFORM_LOG_AND_NEWS_CO_OCCURRENCE"
+  },
+  "rows": [
+    {
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "observed_at": "2026-07-18T13:37:55.017661+00:00",
+      "original_order": 1,
+      "ticker": "VMAR",
+      "discovery_provenance": {
+        "headline": "Top Premarket Gainers",
+        "news_observation_id": "17cd9ddb-62bd-590d-a9cd-78736560706d",
+        "published_at": "2026-07-20T11:06:19+00:00",
+        "publisher": "MT Newswires"
+      }
+    },
+    {
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "observed_at": "2026-07-18T13:37:55.017661+00:00",
+      "original_order": 2,
+      "ticker": "ATAI",
+      "discovery_provenance": {
+        "log_observation_timestamp": "2026-07-17T04:45:25.882696+00:00",
+        "source_artifact": "prime_log.csv"
+      }
+    },
+    {
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "observed_at": "2026-07-18T13:37:55.017661+00:00",
+      "original_order": 3,
+      "ticker": "CADL",
+      "discovery_provenance": {
+        "log_observation_timestamp": "2026-07-17T18:41:29.990993+00:00",
+        "source_artifact": "prime_log.csv"
+      }
+    },
+    {
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "observed_at": "2026-07-18T13:37:55.017661+00:00",
+      "original_order": 4,
+      "ticker": "CGEM",
+      "discovery_provenance": {
+        "log_observation_timestamp": "2026-07-17T19:46:05.329437+00:00",
+        "source_artifact": "prime_log.csv"
+      }
+    },
+    {
+      "detection_time_evidence": {},
+      "missing_detection_domains": [
+        "PRICE",
+        "RELATIVE_VOLUME",
+        "SHORT_FLOAT_PERCENT",
+        "DAYS_TO_COVER",
+        "FLOAT_SHARES",
+        "IB_BORROW_FEE_RATE",
+        "IB_SHORTABLE_SHARES"
+      ],
+      "observed_at": "2026-07-18T13:37:55.017661+00:00",
+      "original_order": 5,
+      "ticker": "IOVA",
+      "discovery_provenance": {
+        "log_observation_timestamp": "2026-07-17T19:05:31.305157+00:00",
+        "source_artifact": "prime_log.csv"
+      }
+    }
+  ],
+  "schema_version": "1.0.0",
+  "transformation": {
+    "dropped_prediction_fields": [],
+    "retained_detection_fields": [],
+    "selection": "PREREGISTERED_LOG_UNIVERSE_PLATFORM_LOG_AND_NEWS"
+  }
+}

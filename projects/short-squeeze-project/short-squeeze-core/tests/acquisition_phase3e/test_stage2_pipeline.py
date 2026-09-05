@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from squeeze_core.acquisition.operation_readiness.evidence_inputs import FROZEN_COHORT
 from squeeze_core.acquisition.stage2.pipeline import Stage2PipelineConfig, run_stage2_pipeline
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -24,7 +25,7 @@ def test_stage2_pipeline_offline_smoke(tmp_path):
     result = run_stage2_pipeline(config)
     assert result.summary_path is not None
     assert result.summary_path.is_file()
-    assert len(result.passed_leakage) == 13
+    assert len(result.passed_leakage) == len(FROZEN_COHORT)
     assert (stage2_root / "phase3b" / "research_batch.json").is_file()
     assert (stage2_root / "phase3c" / "analysis_collection.json").is_file()
     assert (stage2_root / "leakage-audit" / "leakage-audit.json").is_file()
