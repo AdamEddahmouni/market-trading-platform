@@ -26,6 +26,54 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-04 — Full validation green receipt and closure-audit cleanup
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `validation`, `repository` |
+| **Summary** | Removed the stray empty untracked directories `src/market_platform_foundation/tests/providers` (created 2026-09-01, empty, unreferenced) that the frozen `POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` does not classify; the canonical repository-closure audit fails closed on any unclassified path. The prior feature branch had classified the path in an unmerged edit; upstream `main` does not, and the frozen artifact must not be rewritten. With the dirs removed, the closure audit passes and the full validation ladder is green. |
+| **Key files** | Deleted (empty dirs only): `src/market_platform_foundation/tests/`, `src/market_platform_foundation/tests/providers/`; receipt: `artifacts/developer-workflow/full-validation-receipt-20260904.json`; `docs/engineering/WORK_LOG.md` (this entry) |
+| **Tests** | `tools/validate.py full`: `PASSED — 3487 tests, 43 skipped, 0 failures, 0 errors in 437.328s` across 59 suites (receipt JSON saved). Repository-closure audit (`load_closure_audit` on `POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json`) passes. Assistant-audit evidence files stayed clean through the entire full run, confirming the churn fix holds under the full ladder. |
+| **Related** | [Repository closure audit](../engineering/POST_BUILD35_REPOSITORY_CLOSURE_AUDIT.md); prior entries this date (validation unblock, evidence churn fix) |
+| **Notes** | No commit, push, deploy, or authority change. The removal is cleanup of untracked empty directories only; tracked content is unchanged. |
+
+## 2026-09-04 — Stop tests from dirtying assistant-audit evidence
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/ui_api`, `tests`, `evidence` |
+| **Summary** | Fixed the recurring dirt on `evidence/ui1/assistant-audit/{conversations,messages}.json`. Root cause: `ReplayStore.load()` defaulted `assistant_audit_root` to the tracked evidence path, so any test constructing a `ReplayStore` (e.g. `test_ui_api.py` "UI test session", the mra001 pipeline invoked by `test_mra001_api.py`) appended fresh time-stamped conversations/messages on every run. `ReplayStore` now defaults to an ephemeral temp root; the intentionally persistent writers (UI API server via `tools/ui1/run_ui_api.py`, and the mra001 evidence pipeline CLI) pass the new `TRACKED_ASSISTANT_AUDIT_ROOT` explicitly, and `build_evidence(output_dir, *, assistant_audit_root=...)` lets tests isolate. Evidence files were restored to their committed form. |
+| **Key files** | `src/market_platform_foundation/ui_api/store.py`; `tools/ui1/run_ui_api.py`; `tools/mra001/run_mra001_pipeline.py`; `tests/mra001/test_mra001_api.py`; `docs/engineering/WORK_LOG.md` (this entry) |
+| **Tests** | Focused suites via worker: ui1 13, ui2 5, mra001 3, mra002 3, assistant 17, gridiq 11, platform 457, intelligence 1151 — all passed, evidence files clean after every run. Explicit-root persistence verified (write to tracked root works when opted in, then restored). `tools/validate.py changed`: `305 tests, 6 skipped, 0 failures, 0 errors`; evidence clean after the run. `compileall` passed. |
+| **Related** | [VALIDATION01 acceptance](../../artifacts/imp-rebase/VALIDATION01/VALIDATION01_ACCEPTANCE_REPORT.md) (prior "restore exactly" workaround); prior handoffs that preserved these files unstaged |
+| **Notes** | No commit, push, deploy, or authority change. The server and mra001 CLI keep persisting to the tracked evidence path by explicit opt-in; ad-hoc/tests now use temp roots and never touch tracked evidence. |
+
+## 2026-09-04 — Branch merged into main (paper profitability observability)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `governance`, `repository` |
+| **Summary** | Finished `feat/paper-profitability-observability`: confirmed the branch was already merged upstream via the governed PR workflow (child-repo `origin/main` contains `a5506c1 feat(paper): add profitability observability (#11)` plus PRs #12–#14) and that the parent workspace snapshot under `projects/integrated-market-platform` already includes the full branch content. The stale local `main` ref (45a7b12) was fast-forwarded to the merged upstream state (`origin/main` = 3db07a5); the feature branch is now fully merged into `main`. No source files were changed and no new PR was needed. |
+| **Key files** | `docs/engineering/WORK_LOG.md` (this entry); ref-only update: `git branch -f main origin/main` in the nested repository |
+| **Tests** | `tools/monorepo_guard.py validate`: passed. Full validation baseline remains green (3462 tests, 0 failures/errors from the prior entry). |
+| **Related** | [Monorepo workflow](../../../docs/MONOREPO_WORKFLOW.md); PRs #11–#14 in the archived child repository |
+| **Notes** | The child remote is archived (read-only), so the local `main` update is a tracking-sync, not a push. The parent repo requires no further change; its public snapshot intentionally excludes large artifacts per the publish policy. Local branches `feat/paper-profitability-observability`, `feat/rt01-paper-tracing`, and `feat/unify-paper-trading-chain` were subsequently deleted after confirming they are fully merged into `main`; their disposable worktrees were removed (unique regenerated evidence files preserved under `.local/_worktree-evidence-backup/`). |
+
+## 2026-09-04 — Global validation baseline unblocked
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `validation`, `developer-tooling` |
+| **Summary** | Cleared the standing dirty-tree/global validation blocker. Root cause was git's dubious-ownership safety check on the nested repository (owned by `CodexSandboxOffline` while validation runs as `adame`): `git rev-parse --show-toplevel` exited 128 inside `intelligence/live_canary` provenance code, erroring 28 deployment-change-control and release-governance tests. Applied git's documented remediation (`git config --global --add safe.directory` for this repository). No source, test, manifest, or authority files were changed. |
+| **Key files** | `docs/engineering/WORK_LOG.md` (this entry); environment-only fix (`git config --global --add safe.directory C:/Users/adame/Desktop/market-trading-platform/integrated-market-platform`) |
+| **Tests** | All 47 offline full-tier suites probed individually then orchestrated: `tools/validate.py full` passed with `3462 tests, 43 skipped, 0 failures, 0 errors in 591.442s`; `tools/validate.py changed` passed with `21 tests, 0 skipped, 0 failures, 0 errors`. Previously `intelligence` alone reported 28 errors from the git ownership failure. |
+| **Related** | [Developer Operating System](DEVELOPER_OPERATING_SYSTEM.md); prior `GLOBAL VALIDATION BLOCKED` handoffs in this log |
+| **Notes** | No commit, push, merge, deploy, or product behavior change. The safe.directory entry is machine-local and reversible (`git config --global --unset-all safe.directory`). |
+
 ## 2026-09-04 — RT-01 Paper pipeline tracing
 
 | Field | Value |

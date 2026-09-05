@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import tempfile
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -26,6 +27,11 @@ from ..risk_simulation.evaluation import run_risk_simulation_evaluation
 from ..storage.bounded_memory_cache import BoundedMemoryCache
 from ..strategy.evaluation import run_strategy_evaluation
 from ..paper.ledger import PaperExecutionLedger
+
+
+TRACKED_ASSISTANT_AUDIT_ROOT = (
+    Path(__file__).resolve().parents[3] / "evidence" / "ui1" / "assistant-audit"
+)
 
 
 def _bars_from_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -151,7 +157,11 @@ class ReplayStore:
         configure_institutional_ledger(ledger)
         audit_root = self.assistant_audit_root
         if audit_root is None:
-            audit_root = Path(__file__).resolve().parents[3] / "evidence" / "ui1" / "assistant-audit"
+            # Tests and ad-hoc ReplayStore constructions must not write into
+            # the tracked evidence tree. Callers that intentionally persist
+            # assistant-audit evidence pass an explicit root (e.g. the server
+            # and evidence-generating tools use TRACKED_ASSISTANT_AUDIT_ROOT).
+            audit_root = Path(tempfile.mkdtemp(prefix="imp-assistant-audit-"))
         self._assistant_service = AssistantResearchService(
             AssistantAuditStore(audit_root),
             inference=resolve_assistant_inference(),

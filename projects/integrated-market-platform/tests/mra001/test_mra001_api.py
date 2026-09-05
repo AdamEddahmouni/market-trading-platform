@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -25,7 +26,8 @@ class Mra001ApiTests(unittest.TestCase):
             for child in output_dir.iterdir():
                 if child.is_file():
                     child.unlink()
-        report = build_evidence(output_dir)
+        with tempfile.TemporaryDirectory() as audit_tmp:
+            report = build_evidence(output_dir, assistant_audit_root=Path(audit_tmp))
         self.assertEqual(report["aggregate_status"], "PASS")
 
     def test_publication_verifier(self) -> None:
