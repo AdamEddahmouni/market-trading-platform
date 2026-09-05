@@ -20,11 +20,14 @@ from market_platform_foundation.mra001_assertions import aggregate_status, build
 from market_platform_foundation.offline_guard import install_guard
 from market_platform_foundation.ui_api.assistant_projections import build_assistant_status, submit_assistant_prompt
 from market_platform_foundation.ui_api.projections import build_explain_payload, build_inspect_payload
-from market_platform_foundation.ui_api.store import ReplayStore
+from market_platform_foundation.ui_api.store import TRACKED_ASSISTANT_AUDIT_ROOT, ReplayStore
 
 
-def _load_store() -> ReplayStore:
-    store = ReplayStore(collection_root=COLLECTION_ROOT)
+def _load_store(audit_root: Path | None = None) -> ReplayStore:
+    store = ReplayStore(
+        collection_root=COLLECTION_ROOT,
+        assistant_audit_root=audit_root if audit_root is not None else TRACKED_ASSISTANT_AUDIT_ROOT,
+    )
     store.load()
     return store
 
@@ -133,9 +136,13 @@ def _determinism_report(store: ReplayStore) -> dict[str, object]:
     }
 
 
-def build_evidence(output_dir: Path) -> dict[str, object]:
+def build_evidence(
+    output_dir: Path,
+    *,
+    assistant_audit_root: Path | None = None,
+) -> dict[str, object]:
     output_dir.mkdir(parents=True, exist_ok=True)
-    store = _load_store()
+    store = _load_store(assistant_audit_root)
 
     grounded = _grounded_answer_report(store)
     abstention = _abstention_report(store)

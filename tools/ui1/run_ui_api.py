@@ -30,7 +30,10 @@ from market_platform_foundation.ui_api.projections import (
     build_inspect_payload,
 )
 from market_platform_foundation.ui_api.server import UiApiHandler, canonical_response_bytes
-from market_platform_foundation.ui_api.store import ReplayStore
+from market_platform_foundation.ui_api.store import (
+    TRACKED_ASSISTANT_AUDIT_ROOT,
+    ReplayStore,
+)
 from tools.finviz.login_transport import configure_login_transport
 
 
@@ -51,7 +54,10 @@ def _load_local_env() -> None:
 
 
 def _load_store() -> ReplayStore:
-    store = ReplayStore(collection_root=COLLECTION_ROOT)
+    store = ReplayStore(
+        collection_root=COLLECTION_ROOT,
+        assistant_audit_root=TRACKED_ASSISTANT_AUDIT_ROOT,
+    )
     store.load()
     if os.environ.get("IMP_LIVE_OBSERVATIONAL") == "1":
         from market_platform_foundation.market_data.live_runtime import get_live_runtime
