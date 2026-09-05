@@ -1495,7 +1495,7 @@ per the public publish policy stays removed.
   - Rationale (commit-subject-and-body): Capture the integrated-platform snapshot sync (0681b9d, 1d52896,
 4f001e5) and pruned parent refs in REFS.json and WORK_LEDGER.jsonl.
 Parent coverage: 401 commits across 9 refs.
-- `f276681916ef` — Merge pull request #7 from AdamEddahmouni/docs/regenerate-history-ledger-20260905 — refs: `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
+- `f276681916ef` — Merge pull request #7 from AdamEddahmouni/docs/regenerate-history-ledger-20260905
   - Author: AdamEddahmouni (2026-09-04T21:48:13-04:00)
   - Rationale (commit-subject-and-body): docs(history): regenerate audit ledger through 4f001e5
 - `138c935de0e4` — docs: add 2026-09-04 workspace hardening review and tracked task plan
@@ -1548,8 +1548,21 @@ the start_cloud import side-effect fix) and bump the manifest source_commit.
 parent snapshot sync to 41f52bb (1ce490d), and the P1-8 verification
 continuation note in REFS.json, WORK_LEDGER.jsonl, and both repository
 timelines.
-- `84dc9cd017f6` — merge: sync short-squeeze snapshot to ae1e9e4 — refs: `refs/heads/chore/import-short-squeeze-8a5e43e`
+- `84dc9cd017f6` — merge: sync short-squeeze snapshot to ae1e9e4
   - Author: AdamEddahmouni (2026-09-05T03:02:45-04:00)
   - Rationale (commit-subject-and-body): Refresh projects/short-squeeze-project from the short-squeeze child repo at
 ae1e9e4 (release-audit allowlist for code-terminology "assignment" matches)
 and bump the manifest source_commit.
+- `df5b1c338fa7` — docs(history): regenerate audit ledger through 84dc9cd — refs: `refs/remotes/origin/chore/import-short-squeeze-8a5e43e`
+  - Author: AdamEddahmouni (2026-09-05T03:04:17-04:00)
+  - Rationale (commit-subject-and-body): Capture the child release-audit allowlist commit (ae1e9e4) and the parent
+snapshot sync to ae1e9e4 (84dc9cd) in REFS.json, WORK_LEDGER.jsonl, and both
+repository timelines.
+- `b54edd832823` — Merge pull request #8 from AdamEddahmouni/chore/import-short-squeeze-8a5e43e — refs: `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
+  - Author: AdamEddahmouni (2026-09-05T03:06:24-04:00)
+  - Rationale (commit-subject-and-body): merge: sync short-squeeze snapshot to ae1e9e4
+- `115e63f2c3c7` — merge: sync short-squeeze snapshot to main 78b7467 — refs: `refs/heads/chore/import-short-squeeze-8a5e43e`
+  - Author: AdamEddahmouni (2026-09-05T03:20:21-04:00)
+  - Rationale (commit-subject-and-body): Refresh projects/short-squeeze-project from the short-squeeze child repo at
+main 78b7467 (frozen-cohort test alignment + research-summary demo fallback)
+and bump the manifest source_ref/source_commit to main.
