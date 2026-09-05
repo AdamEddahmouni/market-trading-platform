@@ -1,6 +1,10 @@
 # Three-Lane Roadmap Reconciliation (Deliverable 2)
 
-**Status:** Authoritative prerequisite for Futures lane redesign  
+> **SUPERSEDED for cooperative sequencing.** Cross-lane dependency sequencing now lives in
+> [`PLATFORM_COOPERATIVE_MASTER_ROADMAP.md`](PLATFORM_COOPERATIVE_MASTER_ROADMAP.md). This
+> reconciliation is retained for its per-lane detail and dependency rationale.
+
+**Status:** Superseded for cooperative sequencing (retained as per-lane reference)  
 **Date:** 2026-08-18  
 **Authority:** Extends `OPTIONS_SHORT_SQUEEZE_ROADMAP_RECONCILIATION.md` and `SHORT_SQUEEZE_IMPLEMENTATION_ROADMAP.md`; does not replace them
 

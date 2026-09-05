@@ -1,6 +1,6 @@
 # Parent Monorepo Workflow
 
-The private repository
+The public repository
 [`AdamEddahmouni/market-trading-platform`](https://github.com/AdamEddahmouni/market-trading-platform)
 is a workspace monorepo. It contains snapshots under `projects/`; it does not
 replace the source repositories that remain beside it.
@@ -15,7 +15,7 @@ parent workflow must not:
 - change a child repository's remotes or branches; or
 - add a child repository as a Git submodule/gitlink.
 
-The public short-squeeze source repository stays public. Its private parent
+The public short-squeeze source repository stays public. Its parent-monorepo
 snapshot is an additional copy, not a privacy change.
 
 ## Importing a snapshot
@@ -36,6 +36,13 @@ The importer uses `git subtree` to update only
 refuses to run on `main`. Open a pull request and merge it after the
 `Monorepo Guardrails` check passes.
 
+Snapshots that were added as plain files (no subtree metadata — the
+short-squeeze prefix and the consolidated integrated platform under
+`projects/`) cannot be refreshed with the subtree importer. They are synced by
+replacing the snapshot with the child's tracked file tree at the recorded
+source commit, then updating `source_commit` in the manifest and validating
+with `python tools/monorepo_guard.py validate`.
+
 Project IDs and the source branches currently tracked are in
 `workspace-manifest.json`. The source commit must be updated by the importer,
 not edited manually.
@@ -51,7 +58,7 @@ python -m unittest tests.test_monorepo_guard -v
 
 The guard verifies that:
 
-- the parent remote and private-parent contract are correct;
+- the parent remote and parent-monorepo contract are correct;
 - every manifest project has a non-empty ordinary-file snapshot;
 - no snapshot contains a `160000` Gitlink;
 - the original child paths are ignored by the parent;
@@ -85,6 +92,6 @@ one underlying Git history because the latter is a worktree. They remain
 separate in the audit so each workspace path and ref set is traceable. The
 integrated platform itself was merged into this repository's history (its full
 commit history lives under `projects/integrated-market-platform`), so it is no
-longer a separate source entry. The ledger records committed work only;
+longer a separate source entry; its archived source repository is read-only. The ledger records committed work only;
 uncommitted files remain in the source repositories and are not given
 invented dates or rationale.

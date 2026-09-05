@@ -155,7 +155,7 @@ says `PROPOSED_PENDING_EXACT_HASH_APPROVAL` — see
 - [Donor reuse and verification matrix](docs/research/donors/DONOR_REUSE_MATRIX.md)
 - [Revision 3 roadmap projection](docs/roadmap/REVISION_3_ROADMAP.md)
 - [Market Context target architecture](docs/research/MARKET_CONTEXT_TARGET_ARCHITECTURE.md)
-- [Five-lane roadmap reconciliation](docs/research/FIVE_LANE_ROADMAP_RECONCILIATION.md)
+- [Five-lane roadmap reconciliation](docs/research/FIVE_LANE_ROADMAP_RECONCILIATION.md) (superseded for cooperative sequencing — see the [Cooperative Master Roadmap](docs/research/PLATFORM_COOPERATIVE_MASTER_ROADMAP.md))
 - [Swim With the Whales doctrine](docs/architecture/SWIM_WITH_THE_WHALES.md)
 - [Model research and historical datasets](docs/architecture/MODEL_RESEARCH_AND_DATASETS.md)
 
