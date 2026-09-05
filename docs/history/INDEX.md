@@ -18,8 +18,8 @@ repository available at generation time.
 |---|---:|---:|---|---|
 | `equity-data-v1` | 599 | 115 | 2026-08-01 | 2026-09-04 |
 | `governed-ticker-metadata` | 599 | 115 | 2026-08-01 | 2026-09-04 |
-| `parent` | 409 | 11 | 2026-08-14 | 2026-09-04 |
-| `short-squeeze` | 67 | 5 | 2026-07-26 | 2026-09-04 |
+| `parent` | 411 | 11 | 2026-08-14 | 2026-09-05 |
+| `short-squeeze` | 69 | 5 | 2026-07-26 | 2026-09-05 |
 
 The `governed-ticker-metadata` and `equity-data-v1` entries share
 one underlying Git history because the latter is a worktree; each

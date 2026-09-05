@@ -235,7 +235,7 @@
       "refs/remotes/origin/pr12-merge": "32920584deac7141abc36603a8bdacbcc80d455a"
     },
     "parent": {
-      "refs/heads/chore/import-short-squeeze-8a5e43e": "37e656c5e271b7e2f67fac39c34b9a232c36765f",
+      "refs/heads/chore/import-short-squeeze-8a5e43e": "1ce490d1435243e9bd95a87f489cf648fe7b6981",
       "refs/heads/chore/monorepo-guardrails": "f5cd46a4d5cc9652a58298e4fd8ea5cf2351d1fd",
       "refs/heads/chore/monorepo-history-audit": "970b5afe6fc6ca53c5550898a5cf494169aeb5c3",
       "refs/heads/codex/market-trading-platform-monorepo": "b73150ffcc9ea3d134956f8a20ddb037237ba70c",
@@ -249,7 +249,7 @@
     },
     "short-squeeze": {
       "refs/heads/main": "7cc0a71aca06ba6be4dd43f122a56ede007e61ec",
-      "refs/heads/phase/3e-historical-acquisition": "8a5e43e8b0ffbec1d549fdc2960c30f841d07591",
+      "refs/heads/phase/3e-historical-acquisition": "41f52bb07aa03244a072263b4d516e3568748ee2",
       "refs/heads/phase/3e-stage2-outcome-acquisition": "9a426813e714b08fd4d3d75ff41e248bda5a0311",
       "refs/heads/phase/3e-systematic-historical-acquisition": "8ade7af49c77334208f027326254533f33320c8d",
       "refs/remotes/origin/main": "ee4de9f09128b6316c9d122da3af0fe4707fc0f0"
