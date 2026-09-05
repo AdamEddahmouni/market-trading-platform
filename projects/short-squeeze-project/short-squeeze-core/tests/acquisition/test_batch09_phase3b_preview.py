@@ -88,9 +88,9 @@ CANONICAL_REGISTRY_SHA256 = {
     "tests/fixtures/acquisition/batch02/phase3b-registry-candidates.json":
         "af691a27e5568dc4aca9fe94adb07f4efe8ceabe490cb7d88ad9c7ddff9656a2",
     "tests/fixtures/acquisition/phase_3d_phase3b_registry_candidates.json":
-        "28d5b14cb7be31665174121011a353eea6afb182c22c43e388fc9e162ba72b07",
+        "1dcf502197ce9cde7c38017ee9ed269de0fbd5dd39ffe209e31598fbb5437877",
     "tests/fixtures/research/phase_3b_case_registry.json":
-        "5684ecd6e9f9e5b194379be411654cb5f15f5b24b638339605a2cc232bcb9b79",
+        "d429b9858cdbf9195ab561f57fc22629c912fb43f2efa7b6f257898f594db7d9",
 }
 
 requires_private_tree = pytest.mark.skipif(

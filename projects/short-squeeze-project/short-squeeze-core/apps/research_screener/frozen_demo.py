@@ -87,6 +87,66 @@ def load_frozen_demo() -> dict[str, Any]:
     }
 
 
+def frozen_demo_research_summary() -> dict[str, Any]:
+    """Historical research panel derived from the sanitized aggregate.
+
+    Mirrors the shape of ``FrozenResearchSource.research_summary`` using only the
+    recorded, sanitized outcome aggregates in ``frozen_research_v1.json``. Used when
+    the private canonical tree is absent so the research-summary panel degrades like
+    every other frozen surface instead of raising.
+    """
+    demo = load_frozen_demo()
+    rows = demo["rows"]
+    case_count = len(rows)
+    rule_ids_per_row = len(rows[0]["rules"]) if rows else 0
+    by_category: dict[str, dict[str, int]] = {}
+    pct_change: dict[str, list[str]] = {}
+    detection_counts: dict[str, int] = {}
+    evaluable: set[str] = set()
+    for row in rows:
+        status = row["research_detection"]
+        detection_counts[status] = detection_counts.get(status, 0) + 1
+        for rule in row["rules"]:
+            evaluable.add(rule["rule_id"])
+            bucket = by_category.setdefault(
+                rule["category"], {"PASS": 0, "FAIL": 0, "UNKNOWN": 0}
+            )
+            outcome = rule["outcome"]
+            bucket[outcome] = bucket.get(outcome, 0) + 1
+            if rule["rule_id"] == "PERCENTAGE_CHANGE_MINIMUM":
+                pct_change.setdefault(outcome, []).append(row["symbol"])
+            if outcome in {"UNKNOWN", "CONFLICTED", "INSUFFICIENT_DATA"}:
+                evaluable.discard(rule["rule_id"])
+    return {
+        "boundary_time": demo["boundary_time"],
+        "mode_label": demo["label"],
+        "source_kind": "SANITIZED_AGGREGATE",
+        "case_count": case_count,
+        "evaluation_count": case_count,
+        "rule_case_pairs": case_count * rule_ids_per_row,
+        "outcome_totals": demo["totals"],
+        "by_category": by_category,
+        "evaluable_rules_across_all_cases": sorted(evaluable),
+        "percentage_change_split": {
+            key: sorted(value) for key, value in pct_change.items() if value
+        },
+        "research_detection_counts": detection_counts,
+        "outcome_counts": {"INCOMPLETE": case_count},
+        "global_preflight_verdict": "PREFLIGHT_REJECTED",
+        "leakage_audits_passed": True,
+        "phase3b_published": False,
+        "phase3e_started": demo["phase3e_started"],
+        "notes": [
+            "SANITIZED AGGREGATE: recorded outcomes are preserved; private evidence "
+            "identifiers, raw bars and the Batch 09 registry-revision preview are not "
+            "included in the deployment image.",
+            "UNKNOWN means insufficient admissible evidence, not failure.",
+            "No forward outcome window has been acquired, so no case can be scored as "
+            "a successful or failed prediction.",
+        ],
+    }
+
+
 def frozen_demo_snapshot() -> dict[str, Any]:
     demo = load_frozen_demo()
     rows = []
