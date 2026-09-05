@@ -34,7 +34,7 @@ This milestone delivers that in three parts:
    surface in the operator UI; a human may place a manual paper order that records
    the candidate as provenance.
 
-This is Platformization milestone **A** per the [P3.2 roadmap note](../research/PLATFORMIZATION_ROADMAP.md)
+This is Platformization milestone **A** per the [P3.2 roadmap note](../../research/PLATFORMIZATION_ROADMAP.md)
 ("governed combination research, manual orders only") and precedes P4 broker
 adapters so that execution-contract work begins only after research evidence
 exists.

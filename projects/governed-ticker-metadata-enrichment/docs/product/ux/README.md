@@ -7,7 +7,7 @@
 ## Purpose
 
 This directory contains UX Foundation V0 planning plus UI-001 implementation
-bindings. Production frontend lives in [`ui/`](../../ui/) under separate npm subject.
+bindings. Production frontend lives in [`ui/`](../../../ui/) under separate npm subject.
 
 ## Governance placement
 

@@ -12,7 +12,7 @@
       "snapshot_path": "projects/governed-ticker-metadata-enrichment",
       "source_remote": "https://github.com/AdamEddahmouni/integrated-market-intelligence-platform.git",
       "source_ref": "feat/governed-ticker-metadata-enrichment",
-      "source_commit": "8afb11d814dabf31b22e643881fa1744ea61e85e",
+      "source_commit": "1398da3b5fc24ee9cd7608dd5ed8c2ff456779ed",
       "expected_visibility": "private",
       "source_policy": "unchanged"
     },
