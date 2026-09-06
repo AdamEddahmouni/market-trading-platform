@@ -21,6 +21,7 @@ from .surface import infer_underlying_price
 from .surface_qa import evaluate_surface_qa
 
 BL_MODEL_VERSION = "risk_neutral_breeden_litzenberger_v1"
+Q_METHOD = "breeden_litzenberger"
 MIN_UNIQUE_STRIKES = 5
 DENSITY_MASS_MIN = 0.85
 DENSITY_MASS_MAX = 1.15
@@ -55,7 +56,7 @@ def _resolve_rate(points: list[dict[str, Any]], rate: float | None) -> float | N
 
 
 def _unavailable(reason: str, qa: dict[str, Any]) -> dict[str, Any]:
-    return {"available": False, "reason": reason, "qa": qa}
+    return {"available": False, "reason": reason, "qa": qa, "q_method": Q_METHOD}
 
 
 def _replay_hash(payload: dict[str, Any]) -> str:
@@ -307,6 +308,7 @@ def infer_risk_neutral_breeden_litzenberger(
     payload["available"] = True
     payload["qa"] = qa
     payload["rate"] = resolved_rate
+    payload["q_method"] = Q_METHOD
     payload["replay_hash"] = _replay_hash(payload)
     return payload
 
@@ -317,6 +319,7 @@ __all__ = [
     "BL_INCONSISTENT_RECONSTRUCTED_CALL",
     "BL_INSUFFICIENT_STRIKES",
     "BL_MODEL_VERSION",
+    "Q_METHOD",
     "BL_NEGATIVE_DENSITY",
     "BL_POINT_INCOMPLETE",
     "DENSITY_MASS_MAX",

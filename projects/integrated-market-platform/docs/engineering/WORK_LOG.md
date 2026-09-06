@@ -26,6 +26,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-06 — Q-H3-usage: stamp q_method on O3 and BL
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `docs` |
+| **Summary** | Stamp `q_method` on log-normal O3 (`log_normal_moment_approx`) and discrete BL (`breeden_litzenberger`) payloads so P−Q consumers can see which Q they compared. Default `infer_risk_neutral_distribution` is unchanged. `donor_bridge/projections` and `providers/projections` still call log-normal O3 (no auto-BL). No trade authority. |
+| **Key files** | Modified: `src/market_platform_foundation/options/risk_neutral.py`, `src/market_platform_foundation/options/breeden_litzenberger.py`, `tests/options/test_options_o3.py`, `tests/options/test_options_o3_bl.py`, `tests/formulas/test_heuristic_pin_drift.py`, `docs/research/formula_ledger.json`, `docs/research/FORMULA_LEDGER.md`; workspace: `docs/reviews/2026-09-04-hardening-task-plan.md` |
+| **Tests** | Python 3.13. `pytest tests/options/test_options_o3.py tests/options/test_options_o3_bl.py tests/formulas/test_heuristic_pin_drift.py tests/formulas/test_formula_goldens.py tests/options/test_options_o4.py`: 41 passed. `imp.py validate domain options`: 583 passed, 11 skipped, 0 failures, 0 errors. |
+| **Related** | [Hardening task plan](../../../../docs/reviews/2026-09-04-hardening-task-plan.md) Q-H3-usage; Q-H3 PR |
+| **Notes** | G1–G6 stay closed. Not a default Q switch. |
+
 ## 2026-09-06 — Q-H1-futures-rate: unused carry r and DTE fallback
 
 | Field | Value |

@@ -858,7 +858,7 @@
       "pinned_constants": {
         "tail_threshold": 0.05
       },
-      "notes": "Honest log-normal moment approximation from average IVs. Default O3 path. Not Breeden–Litzenberger. Prefer stamped point rate, else explicit positive kwarg; no silent 0.05. Discrete BL is a separate row: options.risk_neutral_q_bl.",
+      "notes": "Honest log-normal moment approximation from average IVs. Default O3 path. Not Breeden–Litzenberger. Prefer stamped point rate, else explicit positive kwarg; no silent 0.05. Successful and fail-closed payloads stamp q_method=log_normal_moment_approx. Discrete BL is a separate row: options.risk_neutral_q_bl.",
       "title": "Risk-neutral Q (log-normal moment approximation)"
     },
     {
@@ -878,7 +878,7 @@
         "density_mass_max": 1.15,
         "tail_threshold": 0.05
       },
-      "notes": "Discrete finite-difference Breeden–Litzenberger on the IV-reconstructed call curve (puts via parity, dividend yield 0). Estimator, not an exact continuum density. Default O3 remains options.risk_neutral_q. Callers (donor_bridge/projections, providers/projections) stay on infer_risk_neutral_distribution. No trade authority.",
+      "notes": "Discrete finite-difference Breeden–Litzenberger on the IV-reconstructed call curve (puts via parity, dividend yield 0). Estimator, not an exact continuum density. Default O3 remains options.risk_neutral_q. Payloads stamp q_method=breeden_litzenberger. Callers (donor_bridge/projections, providers/projections) stay on infer_risk_neutral_distribution. No trade authority.",
       "title": "Risk-neutral Q (discrete Breeden–Litzenberger)"
     },
     {

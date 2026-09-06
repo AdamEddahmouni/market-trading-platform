@@ -150,6 +150,8 @@ class HeuristicPinDriftTests(unittest.TestCase):
         self.assertEqual(options_bl.BL_MODEL_VERSION, bl["version"])
         self.assertEqual(bl["capability_class"], "research_baseline")
         self.assertFalse(hasattr(options_bl, "DEFAULT_RATE"))
+        self.assertEqual(options_bl.Q_METHOD, "breeden_litzenberger")
+        self.assertEqual(options_q.Q_METHOD, "log_normal_moment_approx")
 
     def test_futures_calendar_carry_notes_document_unused_rate(self) -> None:
         notes = self.formulas["futures.calendar_implied_carry"].get("notes", "")

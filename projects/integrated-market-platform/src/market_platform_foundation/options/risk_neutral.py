@@ -22,6 +22,7 @@ from .surface_qa import evaluate_surface_qa
 # Honest name: this is a log-normal moment approximation from average IVs,
 # not a Breeden–Litzenberger density recovered from a strike continuum.
 MODEL_VERSION = "risk_neutral_log_normal_moment_approx_v1"
+Q_METHOD = "log_normal_moment_approx"
 RATE_ASSUMPTION_MISSING = "RATE_ASSUMPTION_MISSING"
 _TAIL_THRESHOLD = 0.05
 
@@ -85,6 +86,11 @@ def _horizon_from_surface(
     )
 
 
+def _stamp_q_method(payload: dict[str, Any]) -> dict[str, Any]:
+    payload["q_method"] = Q_METHOD
+    return payload
+
+
 def infer_risk_neutral_distribution(
     surface: dict[str, Any],
     *,
@@ -96,18 +102,18 @@ def infer_risk_neutral_distribution(
     """Infer risk-neutral Q from O2 surface — fail-closed when QA blocks."""
     qa = evaluate_surface_qa(surface)
     if qa.get("blocked"):
-        return {
+        return _stamp_q_method({
             "available": False,
             "reason": "SURFACE_QA_BLOCKED",
             "qa": qa,
-        }
+        })
     points = surface.get("points", [])
     if not isinstance(points, list) or not points:
-        return {
+        return _stamp_q_method({
             "available": False,
             "reason": "SURFACE_EMPTY",
             "qa": qa,
-        }
+        })
     inferred_spot: float | None = None
     first = points[0]
     if isinstance(first, dict):
@@ -119,19 +125,19 @@ def infer_risk_neutral_distribution(
     if inferred_spot is None and isinstance(spot, (int, float)) and float(spot) > 0:
         inferred_spot = float(spot)
     if inferred_spot is None or inferred_spot <= 0:
-        return {
+        return _stamp_q_method({
             "available": False,
             "reason": "UNDERLYING_PRICE_UNKNOWN",
             "qa": qa,
-        }
+        })
     typed_points = [point for point in points if isinstance(point, dict)]
     resolved_rate = _resolve_rate(typed_points, rate)
     if resolved_rate is None:
-        return {
+        return _stamp_q_method({
             "available": False,
             "reason": RATE_ASSUMPTION_MISSING,
             "qa": qa,
-        }
+        })
     # Group by expiration for multi-horizon Q
     by_expiry: dict[str, list[dict[str, Any]]] = {}
     for point in points:
@@ -146,11 +152,11 @@ def infer_risk_neutral_distribution(
         if horizon is not None:
             horizons.append(horizon)
     if not horizons:
-        return {
+        return _stamp_q_method({
             "available": False,
             "reason": "Q_HORIZON_EXTRACTION_FAILED",
             "qa": qa,
-        }
+        })
     horizons.sort(key=lambda h: h.horizon_days)
     sigmas = [
         float(point.get("sigma", 0.0) or 0.0)
@@ -176,6 +182,7 @@ def infer_risk_neutral_distribution(
     payload = risk_neutral_distribution_to_dict(forecast)
     payload["available"] = True
     payload["qa"] = qa
+    _stamp_q_method(payload)
     payload["replay_hash"] = _replay_hash(payload)
     return payload
 
@@ -189,6 +196,7 @@ def _replay_hash(payload: dict[str, Any]) -> str:
 __all__ = [
     "BL_MODEL_VERSION",
     "MODEL_VERSION",
+    "Q_METHOD",
     "RATE_ASSUMPTION_MISSING",
     "infer_risk_neutral_breeden_litzenberger",
     "infer_risk_neutral_distribution",

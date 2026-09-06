@@ -15,10 +15,12 @@ from market_platform_foundation.options.breeden_litzenberger import (  # noqa: E
     BL_MODEL_VERSION,
     BL_NEGATIVE_DENSITY,
     BL_INSUFFICIENT_STRIKES,
+    Q_METHOD as BL_Q_METHOD,
     infer_risk_neutral_breeden_litzenberger,
 )
 from market_platform_foundation.options.risk_neutral import (  # noqa: E402
     MODEL_VERSION,
+    Q_METHOD as LN_Q_METHOD,
     RATE_ASSUMPTION_MISSING,
     _horizon_from_surface,
     infer_risk_neutral_distribution,
@@ -82,6 +84,8 @@ class OptionsO3BreedenLitzenbergerTests(unittest.TestCase):
         self.assertIn("breeden_litzenberger_finite_difference", bl.get("methodology_tags", []))
         self.assertIn("iv_reconstructed_call_curve", bl.get("methodology_tags", []))
         self.assertEqual(bl.get("rate"), rate)
+        self.assertEqual(bl.get("q_method"), BL_Q_METHOD)
+        self.assertEqual(BL_Q_METHOD, "breeden_litzenberger")
         self.assertIn("replay_hash", bl)
 
         ln = _horizon_from_surface(surface["points"], spot=spot, rate=rate)
@@ -105,6 +109,8 @@ class OptionsO3BreedenLitzenbergerTests(unittest.TestCase):
         self.assertNotEqual(bl_h["skew"], 0.0)
         default_q = infer_risk_neutral_distribution(surface)
         self.assertEqual(default_q.get("model_version"), MODEL_VERSION)
+        self.assertEqual(default_q.get("q_method"), LN_Q_METHOD)
+        self.assertEqual(LN_Q_METHOD, "log_normal_moment_approx")
         self.assertNotIn("breeden", str(MODEL_VERSION).lower())
 
     def test_two_unique_strikes_fail_closed(self) -> None:
@@ -141,6 +147,15 @@ class OptionsO3BreedenLitzenbergerTests(unittest.TestCase):
         source = Path(options_bl.__file__).read_text(encoding="utf-8")
         self.assertNotIn("rate: float = 0.05", source)
         self.assertNotIn("infer_risk_neutral_distribution(", source)
+
+    def test_projections_still_use_log_normal_o3(self) -> None:
+        src_root = ROOT / "src" / "market_platform_foundation"
+        donor = (src_root / "donor_bridge" / "projections.py").read_text(encoding="utf-8")
+        providers = (src_root / "providers" / "projections.py").read_text(encoding="utf-8")
+        self.assertIn("infer_risk_neutral_distribution", donor)
+        self.assertIn("infer_risk_neutral_distribution", providers)
+        self.assertNotIn("infer_risk_neutral_breeden_litzenberger", donor)
+        self.assertNotIn("infer_risk_neutral_breeden_litzenberger", providers)
 
 
 if __name__ == "__main__":

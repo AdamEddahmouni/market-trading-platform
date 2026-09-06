@@ -26,6 +26,7 @@ class OptionsO3Tests(unittest.TestCase):
         result = infer_risk_neutral_distribution(surface)
         self.assertFalse(result.get("available"))
         self.assertEqual(result.get("reason"), "SURFACE_QA_BLOCKED")
+        self.assertEqual(result.get("q_method"), "log_normal_moment_approx")
 
     def test_clean_fixture_surface_produces_q(self) -> None:
         activities = [
@@ -60,6 +61,8 @@ class OptionsO3Tests(unittest.TestCase):
         self.assertEqual(result.get("model_version"), "risk_neutral_log_normal_moment_approx_v1")
         self.assertIn("log_normal_moment_approximation", result.get("methodology_tags", []))
         self.assertIn("replay_hash", result)
+        self.assertEqual(result.get("q_method"), options_q.Q_METHOD)
+        self.assertEqual(options_q.Q_METHOD, "log_normal_moment_approx")
         horizons = result.get("horizons", [])
         self.assertTrue(horizons)
         self.assertIn("upside_tail_probability", horizons[0])
