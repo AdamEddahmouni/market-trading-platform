@@ -166,6 +166,7 @@ def expected_pnl_under_physical_p(
         }
 
     expected_pnl = sum(scenarios) / len(scenarios)
+    # expected_pnl is gross of friction; net_expected_pnl subtracts friction once.
     sorted_scenarios = sorted(scenarios)
     median_idx = len(sorted_scenarios) // 2
     pnl_median = sorted_scenarios[median_idx]

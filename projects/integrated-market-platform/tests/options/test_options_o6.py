@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 import sys
 import unittest
@@ -15,11 +16,14 @@ from market_platform_foundation.donor_bridge.cross_lane_adapter import (  # noqa
     build_cross_lane_snapshot_from_options,
 )
 from market_platform_foundation.options.dealer import (  # noqa: E402
+    BSM_VOL_OR_RATE_ASSUMPTION_MISSING,
     DEALER_METHOD,
+    DEALER_VERSION,
     aggregate_dealer_exposure,
     build_dealer_snapshot,
     estimate_contract_dealer_greeks,
 )
+from market_platform_foundation.options import dealer as options_dealer  # noqa: E402
 
 BIYA_FIXTURE = ROOT / "tests" / "fixtures" / "providers" / "options" / "biya_options_slice.json"
 
@@ -51,11 +55,37 @@ class OptionsO6Tests(unittest.TestCase):
                 "ask": 0.38,
                 "open_interest": 100,
                 "underlying_price": 4.25,
+                "rate": 0.04,
             }
         )
         self.assertTrue(result["available"])
         self.assertLess(result["estimated_dealer_gamma"], 0)
         self.assertEqual(result["method"], DEALER_METHOD)
+
+    def test_quote_and_spot_without_rate_fails_closed(self) -> None:
+        self.assertFalse(hasattr(options_dealer, "DEFAULT_RATE"))
+        self.assertEqual(DEALER_VERSION, "options_dealer_proxy_v2")
+        self.assertIsNone(
+            inspect.signature(estimate_contract_dealer_greeks).parameters["rate"].default
+        )
+        row = {
+            "option_type": "call",
+            "strike": 4.0,
+            "expiry": "2026-08-15",
+            "event_time": "2026-07-21T20:30:00.000000000Z",
+            "bid": 0.35,
+            "ask": 0.38,
+            "open_interest": 100,
+            "underlying_price": 4.25,
+        }
+        result = estimate_contract_dealer_greeks(row)
+        self.assertFalse(result["available"])
+        self.assertEqual(result["reason"], BSM_VOL_OR_RATE_ASSUMPTION_MISSING)
+        snapshot = aggregate_dealer_exposure([row])
+        self.assertFalse(snapshot["available"])
+        self.assertEqual(snapshot["reason"], BSM_VOL_OR_RATE_ASSUMPTION_MISSING)
+        enabled = estimate_contract_dealer_greeks(row, rate=0.04)
+        self.assertTrue(enabled["available"])
 
     def test_biya_fixture_aggregation(self) -> None:
         payload = json.loads(BIYA_FIXTURE.read_text(encoding="utf-8"))
@@ -69,6 +99,7 @@ class OptionsO6Tests(unittest.TestCase):
         self.assertIn(snapshot["gamma_regime"], {"negative_gamma", "positive_gamma", "neutral"})
         self.assertGreater(snapshot["oi_backed_contract_count"], 0)
         self.assertIn("hedging_pressure_estimate", snapshot)
+        self.assertEqual(snapshot["dealer_version"], "options_dealer_proxy_v2")
 
     def test_aggregate_fail_closed_empty(self) -> None:
         snapshot = aggregate_dealer_exposure([])

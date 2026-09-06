@@ -29,6 +29,7 @@ class OptionsO10SurfaceBaselineTests(unittest.TestCase):
                 "option_type": "call",
                 "strike": 130.0,
                 "underlying_price": 128.0,
+                "rate": 0.04,
             },
             {
                 "bid": 3.10,
@@ -38,6 +39,7 @@ class OptionsO10SurfaceBaselineTests(unittest.TestCase):
                 "option_type": "put",
                 "strike": 130.0,
                 "underlying_price": 128.0,
+                "rate": 0.04,
             },
         ]
         return build_volatility_surface(activities)

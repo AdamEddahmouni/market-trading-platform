@@ -6,13 +6,13 @@ from datetime import date
 from typing import Any
 
 from ..contracts.options_quality import OptionQualityFlag
+from .flow import BSM_VOL_OR_RATE_ASSUMPTION_MISSING, _resolve_rate
 from .greeks import bsm_greeks
 from .iv import dual_track_iv
 from .surface import infer_underlying_price
 
-DEALER_VERSION = "options_dealer_proxy_v1"
+DEALER_VERSION = "options_dealer_proxy_v2"
 DEALER_METHOD = "OI_GAMMA_PROXY_V1"
-DEFAULT_RATE = 0.05
 GAMMA_REGIME_THRESHOLD = 1e-6
 HEDGING_PRESSURE_SPOT_SCALE = 0.01
 GAMMA_AMPLIFICATION_THRESHOLD = 0.5
@@ -101,7 +101,7 @@ def estimate_contract_dealer_greeks(
     contract_row: dict[str, Any],
     *,
     spot: float | None = None,
-    rate: float = DEFAULT_RATE,
+    rate: float | None = None,
 ) -> dict[str, Any]:
     """Per-contract dealer greek proxy — fail-closed on missing OI or invalid IV."""
     normalized = _normalize_row(contract_row)
@@ -129,7 +129,13 @@ def estimate_contract_dealer_greeks(
         if normalized["underlying_price"] is not None and normalized["underlying_price"] > 0:
             effective_spot = normalized["underlying_price"]
         else:
-            effective_spot = infer_underlying_price(normalized, strike, call_put)
+            effective_spot = infer_underlying_price(normalized)
+    if effective_spot is None or effective_spot <= 0:
+        return {"available": False, "reason": "UNDERLYING_PRICE_ASSUMPTION_MISSING"}
+
+    resolved_rate = _resolve_rate([contract_row], rate)
+    if resolved_rate is None:
+        return {"available": False, "reason": BSM_VOL_OR_RATE_ASSUMPTION_MISSING}
 
     provider_iv_raw = normalized.get("provider_iv")
     provider_iv = float(provider_iv_raw) if isinstance(provider_iv_raw, (int, float)) else None
@@ -138,7 +144,7 @@ def estimate_contract_dealer_greeks(
         spot=effective_spot,
         strike=strike,
         time_years=time_years,
-        rate=rate,
+        rate=resolved_rate,
         call_put=call_put,
         provider_iv=provider_iv,
     )
@@ -149,7 +155,7 @@ def estimate_contract_dealer_greeks(
     if not isinstance(volatility, (int, float)) or volatility <= 0:
         return {"available": False, "reason": "IV_INVALID"}
 
-    greeks = bsm_greeks(effective_spot, strike, time_years, rate, float(volatility), call_put)
+    greeks = bsm_greeks(effective_spot, strike, time_years, resolved_rate, float(volatility), call_put)
     delta = greeks.get("delta")
     gamma = greeks.get("gamma")
     vega = greeks.get("vega")
@@ -216,18 +222,21 @@ def aggregate_dealer_exposure(
     *,
     spot: float | None = None,
     as_of_time: str = "",
-    rate: float = DEFAULT_RATE,
+    rate: float | None = None,
 ) -> dict[str, Any]:
     """Aggregate dealer exposure across contracts — fail-closed when no OI-backed rows."""
     per_contract: list[dict[str, Any]] = []
     quality_flags: set[str] = set()
     spot_used: float | None = None
+    rate_missing = False
 
     for row in contracts:
         if not isinstance(row, dict):
             continue
         estimate = estimate_contract_dealer_greeks(row, spot=spot, rate=rate)
         if not estimate.get("available"):
+            if estimate.get("reason") == BSM_VOL_OR_RATE_ASSUMPTION_MISSING:
+                rate_missing = True
             continue
         per_contract.append(estimate)
         row_spot = estimate.get("spot_used")
@@ -237,7 +246,9 @@ def aggregate_dealer_exposure(
     if not per_contract:
         return {
             "available": False,
-            "reason": "NO_OI_BACKED_CONTRACTS",
+            "reason": (
+                BSM_VOL_OR_RATE_ASSUMPTION_MISSING if rate_missing else "NO_OI_BACKED_CONTRACTS"
+            ),
             "quality_flags": [OptionQualityFlag.DEALER_POSITION_UNKNOWN.value],
             "method": DEALER_METHOD,
             "assumptions": list(DEALER_ASSUMPTIONS),
@@ -279,6 +290,7 @@ def build_dealer_snapshot(
     *,
     as_of_time: str = "",
     spot: float | None = None,
+    rate: float | None = None,
 ) -> dict[str, Any]:
     """Build workspace dealer snapshot from activities or canonical chain contracts."""
     if not source_rows:
@@ -291,10 +303,11 @@ def build_dealer_snapshot(
             "confidence": "LOW",
             "dealer_version": DEALER_VERSION,
         }
-    return aggregate_dealer_exposure(source_rows, spot=spot, as_of_time=as_of_time)
+    return aggregate_dealer_exposure(source_rows, spot=spot, as_of_time=as_of_time, rate=rate)
 
 
 __all__ = [
+    "BSM_VOL_OR_RATE_ASSUMPTION_MISSING",
     "DEALER_ASSUMPTIONS",
     "DEALER_METHOD",
     "DEALER_VERSION",

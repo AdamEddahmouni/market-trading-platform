@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import sys
 import unittest
 from pathlib import Path
@@ -17,6 +18,9 @@ from market_platform_foundation.options.delta_hedged import (  # noqa: E402
 from market_platform_foundation.options.r_o6 import (  # noqa: E402
     compose_r_o6_research_snapshot,
     evaluate_r_o6_correlation,
+)
+from market_platform_foundation.options.risk_neutral import (  # noqa: E402
+    RATE_ASSUMPTION_MISSING,
 )
 
 
@@ -86,11 +90,13 @@ class OptionsO10Tests(unittest.TestCase):
             q,
             spot_path=[100.0, 101.0, 100.0, 102.0],
             strike=100.0,
+            rate=0.04,
             maturity_days=30,
         )
         self.assertTrue(result.get("available"))
         self.assertEqual(result.get("target_id"), "T-DH")
         self.assertEqual(result.get("gate_milestone"), "R-O6")
+        self.assertEqual(result.get("rate"), 0.04)
         self.assertAlmostEqual(result.get("vrp_context"), 0.05, places=4)
 
     def test_compose_r_o6_research_snapshot_unifies_edge_and_delta_hedged(self) -> None:
@@ -126,13 +132,73 @@ class OptionsO10Tests(unittest.TestCase):
             q,
             spot_path=[100.0, 101.0, 100.0, 102.0],
             strike=100.0,
+            rate=0.04,
             maturity_days=30,
         )
         self.assertTrue(result.get("available"))
         self.assertEqual(result.get("gate_milestone"), "R-O6")
         self.assertIn("p_vs_q_edge", result)
         self.assertIn("delta_hedged", result)
+        self.assertEqual(result["delta_hedged"].get("rate"), 0.04)
         self.assertTrue(result.get("not_trade_signal"))
+
+    def test_research_snapshot_fail_closed_without_rate(self) -> None:
+        physical = {"vol_forecast_annualized": 0.28}
+        q = {
+            "available": True,
+            "vol_implied_annualized": 0.33,
+        }
+        result = delta_hedged_research_snapshot(
+            physical,
+            q,
+            spot_path=[100.0, 101.0],
+            strike=100.0,
+        )
+        self.assertFalse(result.get("available"))
+        self.assertEqual(result.get("reason"), RATE_ASSUMPTION_MISSING)
+
+    def test_compose_r_o6_fail_closed_without_rate(self) -> None:
+        physical = {
+            "vol_forecast_annualized": 0.28,
+            "horizons": [
+                {
+                    "mean_return": 0.01,
+                    "variance": 0.02,
+                    "upside_tail_probability": 0.05,
+                    "downside_tail_probability": 0.05,
+                    "skew": 0.0,
+                }
+            ],
+        }
+        q = {
+            "available": True,
+            "vol_implied_annualized": 0.33,
+            "horizons": [
+                {
+                    "mean_return": 0.005,
+                    "variance": 0.025,
+                    "upside_tail_probability": 0.04,
+                    "downside_tail_probability": 0.06,
+                    "skew": 0.0,
+                }
+            ],
+        }
+        result = compose_r_o6_research_snapshot(
+            physical,
+            q,
+            spot_path=[100.0, 101.0],
+            strike=100.0,
+        )
+        self.assertFalse(result.get("available"))
+        self.assertEqual(result.get("reason"), RATE_ASSUMPTION_MISSING)
+
+    def test_snapshot_signatures_have_no_default_rate(self) -> None:
+        snapshot_rate = inspect.signature(delta_hedged_research_snapshot).parameters["rate"]
+        compose_rate = inspect.signature(compose_r_o6_research_snapshot).parameters["rate"]
+        path_rate = inspect.signature(simulate_delta_hedged_path).parameters["rate"]
+        self.assertIs(snapshot_rate.default, None)
+        self.assertIs(compose_rate.default, None)
+        self.assertIs(path_rate.default, inspect.Parameter.empty)
 
     def test_compose_r_o6_fail_closed_when_q_missing(self) -> None:
         result = compose_r_o6_research_snapshot(

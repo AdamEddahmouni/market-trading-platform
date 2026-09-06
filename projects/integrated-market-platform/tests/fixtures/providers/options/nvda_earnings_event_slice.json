@@ -14,7 +14,8 @@
       "expiry": "2026-08-22",
       "option_type": "call",
       "strike": 128.0,
-      "underlying_price": 128.0
+      "underlying_price": 128.0,
+      "rate": 0.04
     },
     {
       "ask": 7.90,
@@ -23,7 +24,8 @@
       "expiry": "2026-08-22",
       "option_type": "put",
       "strike": 128.0,
-      "underlying_price": 128.0
+      "underlying_price": 128.0,
+      "rate": 0.04
     }
   ],
   "post_event_chain": [
@@ -34,7 +36,8 @@
       "expiry": "2026-08-22",
       "option_type": "call",
       "strike": 128.0,
-      "underlying_price": 130.0
+      "underlying_price": 130.0,
+      "rate": 0.04
     },
     {
       "ask": 3.80,
@@ -43,7 +46,8 @@
       "expiry": "2026-08-22",
       "option_type": "put",
       "strike": 128.0,
-      "underlying_price": 130.0
+      "underlying_price": 130.0,
+      "rate": 0.04
     }
   ],
   "empirical_crush_history": [

@@ -15,8 +15,6 @@ from .payoff import (
     expected_pnl_under_physical_p,
     leg_to_dict,
 )
-from .surface import infer_underlying_price
-
 STRATEGY_VERSION = "options_strategy_v1"
 STRATEGY_METHOD = "P_VS_Q_TEMPLATE_RANK_V1"
 
@@ -92,10 +90,6 @@ def _spot_from_rows(chain_rows: Sequence[dict[str, Any]]) -> float:
         normalized = _normalize_row(row)
         if normalized and normalized.get("underlying_price"):
             return float(normalized["underlying_price"])
-    for row in chain_rows:
-        normalized = _normalize_row(row)
-        if normalized:
-            return infer_underlying_price(row, normalized["strike"], normalized["option_type"])
     return 0.0
 
 

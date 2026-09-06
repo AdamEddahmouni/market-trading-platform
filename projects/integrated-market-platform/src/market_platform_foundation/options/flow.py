@@ -5,12 +5,15 @@ from __future__ import annotations
 from typing import Any
 
 from ..contracts.options_quality import OptionQualityFlag
+from .edge import infer_underlying_price_from_activities
 from .greeks import bsm_greeks
 
-FLOW_VERSION = "options_signed_flow_v1"
-DEFAULT_SPOT = 100.0
-DEFAULT_RATE = 0.05
-DEFAULT_VOL = 0.35
+FLOW_VERSION = "options_signed_flow_v3"
+UNDERLYING_PRICE_ASSUMPTION_MISSING = "UNDERLYING_PRICE_ASSUMPTION_MISSING"
+BSM_VOL_OR_RATE_ASSUMPTION_MISSING = "BSM_VOL_OR_RATE_ASSUMPTION_MISSING"
+
+_VOL_FIELD_NAMES = ("provider_iv", "implied_vol")
+_RATE_FIELD_NAMES = ("rate",)
 
 
 def classify_signed_flow(activity: dict[str, Any]) -> dict[str, Any]:
@@ -51,10 +54,58 @@ def abnormal_flow_vs_baseline(
     }
 
 
+def _positive_float(value: Any) -> float | None:
+    if isinstance(value, (int, float)) and float(value) > 0:
+        return float(value)
+    return None
+
+
+def _resolve_spot(activities: list[dict[str, Any]], spot: float | None) -> float | None:
+    explicit = _positive_float(spot)
+    if explicit is not None:
+        return explicit
+    inferred = infer_underlying_price_from_activities(activities)
+    if inferred is not None and inferred > 0:
+        return inferred
+    return None
+
+
+def _first_positive_field(activities: list[dict[str, Any]], field_names: tuple[str, ...]) -> float | None:
+    for row in activities:
+        if not isinstance(row, dict):
+            continue
+        nested = row.get("canonical_contract")
+        sources = [row]
+        if isinstance(nested, dict):
+            sources.append(nested)
+        for source in sources:
+            for name in field_names:
+                resolved = _positive_float(source.get(name))
+                if resolved is not None:
+                    return resolved
+    return None
+
+
+def _resolve_rate(activities: list[dict[str, Any]], rate: float | None) -> float | None:
+    explicit = _positive_float(rate)
+    if explicit is not None:
+        return explicit
+    return _first_positive_field(activities, _RATE_FIELD_NAMES)
+
+
+def _resolve_vol(activities: list[dict[str, Any]], vol: float | None) -> float | None:
+    explicit = _positive_float(vol)
+    if explicit is not None:
+        return explicit
+    return _first_positive_field(activities, _VOL_FIELD_NAMES)
+
+
 def aggregate_signed_flow(
     activities: list[dict[str, Any]],
     *,
-    spot: float = DEFAULT_SPOT,
+    spot: float | None = None,
+    rate: float | None = None,
+    vol: float | None = None,
 ) -> dict[str, Any]:
     """Aggregate signed delta/gamma/vega flow equivalents — decomposed, no universal score."""
     buy_volume = 0
@@ -65,6 +116,12 @@ def aggregate_signed_flow(
     confirmed_count = 0
     uncertain_count = 0
     quality_flags: set[str] = set()
+    resolved_spot = _resolve_spot(activities, spot)
+    resolved_rate = _resolve_rate(activities, rate)
+    resolved_vol = _resolve_vol(activities, vol)
+    greeks_flow_available = (
+        resolved_spot is not None and resolved_rate is not None and resolved_vol is not None
+    )
 
     for row in activities:
         if not isinstance(row, dict):
@@ -82,16 +139,18 @@ def aggregate_signed_flow(
         else:
             sell_volume += size
             sign = -1.0
-        strike = float(row.get("strike", spot))
+        if not greeks_flow_available or resolved_spot is None or resolved_rate is None or resolved_vol is None:
+            continue
+        strike = float(row.get("strike", resolved_spot))
         option_type = str(row.get("option_type", "call")).lower()
         dte = int(row.get("dte", row.get("days_to_expiration", 30)) or 30)
         time_years = max(dte / 365.0, 1 / 365.0)
         greeks = bsm_greeks(
-            spot,
+            resolved_spot,
             strike,
             time_years,
-            DEFAULT_RATE,
-            DEFAULT_VOL,
+            resolved_rate,
+            resolved_vol,
             "call" if option_type == "call" else "put",
         )
         delta = greeks.get("delta")
@@ -105,16 +164,27 @@ def aggregate_signed_flow(
         if isinstance(vega, (int, float)):
             net_vega_flow += sign * size * float(vega) * multiplier
 
-    return {
+    payload: dict[str, Any] = {
         "buy_initiated_volume": buy_volume,
         "sell_initiated_volume": sell_volume,
-        "net_delta_flow": round(net_delta_flow, 4),
-        "net_gamma_flow": round(net_gamma_flow, 6),
-        "net_vega_flow": round(net_vega_flow, 4),
         "confirmed_trade_count": confirmed_count,
         "uncertain_trade_count": uncertain_count,
         "quality_flags": sorted(quality_flags),
+        "greeks_flow_available": greeks_flow_available,
     }
+    if greeks_flow_available:
+        payload["net_delta_flow"] = round(net_delta_flow, 4)
+        payload["net_gamma_flow"] = round(net_gamma_flow, 6)
+        payload["net_vega_flow"] = round(net_vega_flow, 4)
+    else:
+        payload["net_delta_flow"] = None
+        payload["net_gamma_flow"] = None
+        payload["net_vega_flow"] = None
+        if resolved_spot is None:
+            payload["reason"] = UNDERLYING_PRICE_ASSUMPTION_MISSING
+        else:
+            payload["reason"] = BSM_VOL_OR_RATE_ASSUMPTION_MISSING
+    return payload
 
 
 def _baseline_volume_by_type(activities: list[dict[str, Any]]) -> dict[str, float]:
@@ -136,6 +206,9 @@ def build_flow_snapshot(
     activities: list[dict[str, Any]],
     *,
     as_of_time: str = "",
+    spot: float | None = None,
+    rate: float | None = None,
+    vol: float | None = None,
 ) -> dict[str, Any]:
     """Build signed-flow snapshot for workspace — fail-closed when no confirmed direction."""
     if not activities:
@@ -144,7 +217,7 @@ def build_flow_snapshot(
             "reason": "NO_ACTIVITIES",
             "flow_version": FLOW_VERSION,
         }
-    aggregate = aggregate_signed_flow(activities)
+    aggregate = aggregate_signed_flow(activities, spot=spot, rate=rate, vol=vol)
     baselines = _baseline_volume_by_type(activities)
     abnormal_rows: list[dict[str, Any]] = []
     for row in activities:
@@ -162,20 +235,26 @@ def build_flow_snapshot(
             dominant_direction = "buy_initiated"
         elif aggregate["sell_initiated_volume"] > aggregate["buy_initiated_volume"]:
             dominant_direction = "sell_initiated"
-    return {
+    snapshot: dict[str, Any] = {
         "available": True,
         "flow_version": FLOW_VERSION,
         "signed_flow_available": signed_available and dominant_direction is not None,
+        "greeks_flow_available": bool(aggregate.get("greeks_flow_available")),
         "dominant_direction": dominant_direction,
         "as_of_time": as_of_time,
         "aggregate": aggregate,
         "abnormal_flow": abnormal_rows,
         "not_trade_signal": True,
     }
+    if aggregate.get("reason"):
+        snapshot["reason"] = aggregate["reason"]
+    return snapshot
 
 
 __all__ = [
+    "BSM_VOL_OR_RATE_ASSUMPTION_MISSING",
     "FLOW_VERSION",
+    "UNDERLYING_PRICE_ASSUMPTION_MISSING",
     "abnormal_flow_vs_baseline",
     "aggregate_signed_flow",
     "build_flow_snapshot",

@@ -14,8 +14,9 @@ EDGE_VERSION = "p_vs_q_edge_v2"
 DEFAULT_EXECUTION_POLICY: dict[str, Any] = {
     "commission_per_contract": 0.65,
     "wide_spread_threshold_bps": 500.0,
-    "underlying_price_assumption": 100.0,
 }
+
+DIRECTIONAL_EDGE_BASELINE = "vs_zero_drift_baseline"
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,6 +82,7 @@ def compare_physical_vs_risk_neutral(
         vol_edge = float(q_vol) - float(p_vol)
     components = {
         "directional_edge": round(p_mean - q_mean, 6),
+        "directional_edge_baseline": DIRECTIONAL_EDGE_BASELINE,
         "volatility_edge": round(vol_edge, 6) if vol_edge is not None else None,
         "skew_edge": round(p_skew - q_skew, 6),
         "tail_edge": round(p_up - q_up, 6),
@@ -103,9 +105,13 @@ def _interpretation_hints(components: dict[str, Any]) -> list[str]:
     directional = components.get("directional_edge")
     if isinstance(directional, (int, float)) and abs(directional) > 0.01:
         if directional > 0:
-            hints.append("Physical P forecasts greater mean return than risk-neutral Q")
+            hints.append(
+                "Physical P (zero-drift baseline) mean exceeds risk-neutral Q mean — vs_zero_drift_baseline, not calibrated drift"
+            )
         else:
-            hints.append("Risk-neutral Q prices greater mean return than physical P")
+            hints.append(
+                "Risk-neutral Q mean exceeds physical P zero-drift baseline — vs_zero_drift_baseline, not calibrated drift"
+            )
     vol_edge = components.get("volatility_edge")
     if isinstance(vol_edge, (int, float)) and abs(vol_edge) > 0.02:
         hints.append("Implied vol differs from physical vol forecast (VRP context, not trade signal)")
@@ -141,6 +147,23 @@ def _activity_bid_ask(activity: dict[str, Any]) -> tuple[float, float] | None:
     return bid, ask
 
 
+def infer_underlying_price_from_activities(activities: list[dict[str, Any]]) -> float | None:
+    """First positive underlying_price on an activity or nested canonical_contract.
+
+    Does not fall back to strike or a silent default.
+    """
+    for row in activities:
+        if not isinstance(row, dict):
+            continue
+        for source in (row, row.get("canonical_contract") if isinstance(row.get("canonical_contract"), dict) else None):
+            if not isinstance(source, dict):
+                continue
+            raw = source.get("underlying_price")
+            if isinstance(raw, (int, float)) and float(raw) > 0:
+                return float(raw)
+    return None
+
+
 def estimate_execution_friction(
     activities: list[dict[str, Any]],
     policy: dict[str, Any] | None = None,
@@ -171,11 +194,24 @@ def estimate_execution_friction(
             "executable_available": False,
         }
 
+    assumed = effective_policy.get("underlying_price_assumption")
+    if assumed is None:
+        assumed = infer_underlying_price_from_activities(activities)
+    try:
+        underlying = float(assumed) if assumed is not None else 0.0
+    except (TypeError, ValueError):
+        underlying = 0.0
+    if underlying <= 0:
+        return {
+            "available": False,
+            "reason": "UNDERLYING_PRICE_ASSUMPTION_MISSING",
+            "executable_available": False,
+        }
+
     avg_spread_bps = sum(spread_samples) / len(spread_samples)
     half_spread_return_equiv = avg_spread_bps / 10000.0
-    underlying = float(effective_policy["underlying_price_assumption"])
     commission = float(effective_policy["commission_per_contract"])
-    commission_return_equiv = commission / underlying if underlying > 0 else 0.0
+    commission_return_equiv = commission / underlying
     total_friction = half_spread_return_equiv + commission_return_equiv
     liquidity_quality = "LOW"
     if avg_spread_bps <= 200:
@@ -273,9 +309,11 @@ def apply_executable_edge(
 
 __all__ = [
     "DEFAULT_EXECUTION_POLICY",
+    "DIRECTIONAL_EDGE_BASELINE",
     "EDGE_VERSION",
     "ExecutionFrictionInput",
     "apply_executable_edge",
     "compare_physical_vs_risk_neutral",
     "estimate_execution_friction",
+    "infer_underlying_price_from_activities",
 ]
