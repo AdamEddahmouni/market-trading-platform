@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0",
+  "non_authoritative": true,
+  "grants_execution_authority": false,
+  "grants_promotion_authority": false,
+  "grants_trading_authority": false,
+  "of03_shape_only": true,
+  "description": "Lightweight product-idea index. OF-03 registry shape only; not an OF-03 capability binding and not an execution engine."
+}

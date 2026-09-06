@@ -7,8 +7,8 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Validation, benchmarking, comparability, backtest, replay, simulation, provider smoke, model training and evaluation, experiment, research, and AI evaluation |
 | Establishing Milestone | `IMP-REBASE-02` |
-| Version | `1.0` |
-| Last Verified | `2026-08-27` |
+| Version | `1.1` |
+| Last Verified | `2026-09-05` |
 | Supersedes | Fragmented test, benchmark, and evaluation conventions across subsystems |
 | Superseded By | None |
 
@@ -58,7 +58,7 @@ Repository validation is governed by executable authority:
 - [`tools/validation_manifest.json`](../../tools/validation_manifest.json)
 - [`tools/validation_manifest.py`](../../tools/validation_manifest.py)
 - [`tools/validate.py`](../../tools/validate.py)
-- [`.github/workflows/imp-validate.yml`](../../.github/workflows/imp-validate.yml)
+- Parent CI [`imp-validate.yml`](../../../../.github/workflows/imp-validate.yml) and [`imp-python.yml`](../../../../.github/workflows/imp-python.yml) (`working-directory: projects/integrated-market-platform`). Nested copies under [`projects/integrated-market-platform/.github/workflows/`](../../.github/workflows/imp-validate.yml) are STALE child-repo layout, not the monorepo gate.
 
 This standard standardizes attribution around that behavior. It does not
 supersede it.

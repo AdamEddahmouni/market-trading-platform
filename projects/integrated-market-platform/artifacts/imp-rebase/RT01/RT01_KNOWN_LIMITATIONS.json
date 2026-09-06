@@ -1,8 +1,8 @@
 {
   "limitations": [
-    "No unified live opportunity-risk-order_ready chain instrumented",
-    "Broker and reconciliation not on observational ingest hot path",
-    "Real-provider observational trace not exercised in acceptance",
+    "Fixture paper seams can share one bound trace_id through opportunity, risk, order_ready, broker submit/poll/cancel, and reconciliation; this is not a live or real-provider campaign",
+    "Broker and reconciliation spans are fixture/paper helpers, not the observational ingest hot path",
+    "Real-provider observational trace not exercised in acceptance (G5 closed)",
     "Intelligence replay signal path not in default baseline workload",
     "Queue instrumentation implemented but queue baseline workload not exercised",
     "receive_to_signal profile defined but acceptance-measured as NOT_EXERCISED",

@@ -1,3 +1,7 @@
+# STALE — child-repo layout copy. NOT the monorepo CI gate.
+# Canonical: .github/workflows/imp-validate.yml and .github/workflows/imp-python.yml
+# at the market-trading-platform repository root
+# (working-directory: projects/integrated-market-platform).
 name: imp-validate
 
 on:
