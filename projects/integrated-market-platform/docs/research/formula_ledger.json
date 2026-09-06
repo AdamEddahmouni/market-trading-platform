@@ -23,7 +23,7 @@
     "adam_ignition_current_percentage_change": "screener percentage_change evidence, not the Decimal return metric",
     "policy": "Do not compare ADAM ignition to squeeze return z-scores or physical P as if they shared a return definition."
   },
-  "formula_count": 88,
+  "formula_count": 89,
   "formulas": [
     {
       "id": "squeeze.absolute_return",
@@ -858,8 +858,28 @@
       "pinned_constants": {
         "tail_threshold": 0.05
       },
-      "notes": "Honest log-normal moment approximation from average IVs. Not Breeden–Litzenberger. Prefer stamped point rate, else explicit positive kwarg; no silent 0.05.",
+      "notes": "Honest log-normal moment approximation from average IVs. Default O3 path. Not Breeden–Litzenberger. Prefer stamped point rate, else explicit positive kwarg; no silent 0.05. Discrete BL is a separate row: options.risk_neutral_q_bl.",
       "title": "Risk-neutral Q (log-normal moment approximation)"
+    },
+    {
+      "id": "options.risk_neutral_q_bl",
+      "version": "risk_neutral_breeden_litzenberger_v1",
+      "family": "options",
+      "units": "horizon mean/var/skew/tails of simple return (K/S-1); vol_implied_annualized = sqrt(var/T)",
+      "window_policy": "Points grouped by expiration; unique K ascending; T=DTE/365; interior finite-difference density only",
+      "variance_convention": "n/a",
+      "fail_closed": "SURFACE_QA_BLOCKED / SURFACE_EMPTY / UNDERLYING_PRICE_UNKNOWN / RATE_ASSUMPTION_MISSING / BL_DUPLICATE_STRIKE / BL_INSUFFICIENT_STRIKES / BL_POINT_INCOMPLETE / BL_INCONSISTENT_RECONSTRUCTED_CALL / BL_NEGATIVE_DENSITY / BL_DENSITY_MASS_INVALID. No average-IV log-normal fallback.",
+      "test_file": "projects/integrated-market-platform/tests/options/test_options_o3_bl.py",
+      "capability_class": "research_baseline",
+      "implementation": "projects/integrated-market-platform/src/market_platform_foundation/options/breeden_litzenberger.py",
+      "pinned_constants": {
+        "min_unique_strikes": 5,
+        "density_mass_min": 0.85,
+        "density_mass_max": 1.15,
+        "tail_threshold": 0.05
+      },
+      "notes": "Discrete finite-difference Breeden–Litzenberger on the IV-reconstructed call curve (puts via parity, dividend yield 0). Estimator, not an exact continuum density. Default O3 remains options.risk_neutral_q. Callers (donor_bridge/projections, providers/projections) stay on infer_risk_neutral_distribution. No trade authority.",
+      "title": "Risk-neutral Q (discrete Breeden–Litzenberger)"
     },
     {
       "id": "options.p_minus_q_edge",

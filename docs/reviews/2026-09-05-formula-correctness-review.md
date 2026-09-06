@@ -13,15 +13,15 @@ This review answers: **does the implemented math match a versioned spec?** It do
 
 ## Verdict
 
-Safety gates are unchanged. The formula campaign pinned 88 ledger rows, renamed risk-neutral Q to an honest log-normal moment approximation, fail-closed options friction without an underlying price, labeled variance estimators, required usable OFI, subtracted fusion friction once, and tagged naive strategy interpretations as `baseline_only`. Path invariants from Phase 3 (canonical opportunity mint, `MARKET_CONTEXT` → `catalyst`, eligibility omit-fail-closed, unadmitted/donor isolation) hold in tests.
+Safety gates are unchanged. The formula campaign pinned 89 ledger rows, renamed default risk-neutral Q to an honest log-normal moment approximation, added a separate fail-closed discrete Breeden–Litzenberger path that is **not** the O3 default, fail-closed options friction without an underlying price, labeled variance estimators, required usable OFI, subtracted fusion friction once, and tagged naive strategy interpretations as `baseline_only`. Path invariants from Phase 3 (canonical opportunity mint, `MARKET_CONTEXT` → `catalyst`, eligibility omit-fail-closed, unadmitted/donor isolation) hold in tests.
 
-Correctness here is **spec match**, not edge. Q-H2 (2026-09-05): O5 signed-flow no longer uses a silent `DEFAULT_SPOT=100.0`. Q-H1-O5 / O2 (same day): O5 greeks also fail closed without positive vol and rate; O2 no longer uses silent `strike × 1.02/0.98`. Q-H1-rate (same day): dealer BSM, O2 surface IV, and O3 Q no longer silently pin `rate=0.05`; missing rate fail-closes (`BSM_VOL_OR_RATE_ASSUMPTION_MISSING` / skip point / `RATE_ASSUMPTION_MISSING`). Q-H1-O10-rate (same day): O10 / R-O6 research snapshots no longer silently pin `rate=0.05`; missing rate fail-closes with `RATE_ASSUMPTION_MISSING` (`delta_hedged_research_v2` / `r_o6_research_v2`). Fusion / GARCH / HAR / ADAM / logistic stay unfitted (Q-H1 open).
+Correctness here is **spec match**, not edge. Q-H3 (2026-09-06): discrete Breeden–Litzenberger is implemented as `risk_neutral_breeden_litzenberger_v1`; default Q is still `risk_neutral_log_normal_moment_approx_v1`. No trade authority. Q-H2 (2026-09-05): O5 signed-flow no longer uses a silent `DEFAULT_SPOT=100.0`. Q-H1-O5 / O2 (same day): O5 greeks also fail closed without positive vol and rate; O2 no longer uses silent `strike × 1.02/0.98`. Q-H1-rate (same day): dealer BSM, O2 surface IV, and O3 Q no longer silently pin `rate=0.05`; missing rate fail-closes (`BSM_VOL_OR_RATE_ASSUMPTION_MISSING` / skip point / `RATE_ASSUMPTION_MISSING`). Q-H1-O10-rate (same day): O10 / R-O6 research snapshots no longer silently pin `rate=0.05`; missing rate fail-closes with `RATE_ASSUMPTION_MISSING` (`delta_hedged_research_v2` / `r_o6_research_v2`). Fusion / GARCH / HAR / ADAM / logistic stay unfitted (Q-H1 open).
 
 ---
 
 ## What is spec-pinned (`exact_metric`)
 
-47 of 88 ledger rows are `exact_metric` (O10/R-O6 added as `research_baseline`). Notable families:
+47 of 89 ledger rows are `exact_metric` (O10/R-O6 and discrete BL added as `research_baseline`). Notable families:
 
 - Squeeze Decimal returns, gaps, ranges, baselines, z-scores, SI/borrow/DTC, bar acceleration (open→close float, fail-closed to `None`)
 - CS-OFI / BVC / CVD / L1 microprice where the arithmetic is fully specified
@@ -37,10 +37,11 @@ Goldens: `tests/formulas/test_formula_goldens.py`, squeeze `tests/metrics/test_b
 
 ## What remains `research_baseline`
 
-23 rows, including O10 delta-hedged path and R-O6 compose (fail-closed without rate):
+24 rows, including O10 delta-hedged path, R-O6 compose (fail-closed without rate), and discrete BL:
 
 - Physical P Gaussian with **mean identically 0**; P−Q `directional_edge` is `vs_zero_drift_baseline`
-- Q = `risk_neutral_log_normal_moment_approx_v1` (average IVs → log-normal moments). **Not** Breeden–Litzenberger
+- Default Q = `risk_neutral_log_normal_moment_approx_v1` (average IVs → log-normal moments)
+- Additive discrete Breeden–Litzenberger Q = `risk_neutral_breeden_litzenberger_v1` (IV-reconstructed call curve, fail-closed; **not** the O3 default; no log-normal fallback). Still no trade authority
 - FORECAST_MOMENTUM / whale aligned / whale contrarian: interpretations of naive last-value, `baseline_only`
 - Squeeze logistic hazard: tagged baseline, unfitted weights
 

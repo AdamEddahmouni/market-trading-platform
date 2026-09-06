@@ -66,7 +66,12 @@ from .strategy import (
 )
 from .surface import build_surface_point, build_volatility_surface
 from .surface_qa import evaluate_surface_qa
-from .risk_neutral import MODEL_VERSION as RISK_NEUTRAL_MODEL_VERSION, infer_risk_neutral_distribution
+from .risk_neutral import (
+    BL_MODEL_VERSION as RISK_NEUTRAL_BL_MODEL_VERSION,
+    MODEL_VERSION as RISK_NEUTRAL_MODEL_VERSION,
+    infer_risk_neutral_breeden_litzenberger,
+    infer_risk_neutral_distribution,
+)
 from .delta_hedged import (
     DELTA_HEDGED_VERSION,
     DEFAULT_REBALANCE_COST_BPS,
@@ -97,6 +102,7 @@ __all__ = [
     "IV_SOLVER_VERSION",
     "PAYOFF_METHOD",
     "PAYOFF_VERSION",
+    "RISK_NEUTRAL_BL_MODEL_VERSION",
     "RISK_NEUTRAL_MODEL_VERSION",
     "EXECUTION_METHOD",
     "EXECUTION_VERSION",
@@ -139,6 +145,7 @@ __all__ = [
     "evaluate_surface_qa",
     "filter_candidates_by_liquidity",
     "implied_volatility",
+    "infer_risk_neutral_breeden_litzenberger",
     "infer_risk_neutral_distribution",
     "leg_to_dict",
     "load_earnings_event_fixture",

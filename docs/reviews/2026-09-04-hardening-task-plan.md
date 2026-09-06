@@ -5,7 +5,7 @@
 | Created | 2026-09-04 |
 | Source | [Hardening review](2026-09-04-hardening-review.md) |
 | Purpose | Tracked, checkable backlog produced by the workspace hardening review. Items are grouped P0 → P2. Each item names evidence, the fix, and an acceptance check. |
-| Status | In progress — 17/17 P-items closed (P0-1–P0-4, P1-1–P1-8, P2-1–P2-5; 2026-09-04/05). Q-H1 stays open (unfitted fusion/GARCH/HAR/ADAM/logistic only). Q-H1-rate and Q-H1-O10-rate closed. Q-series does not reopen G1–G6. |
+| Status | In progress — 17/17 P-items closed (P0-1–P0-4, P1-1–P1-8, P2-1–P2-5; 2026-09-04/05). Q-H3 closed (additive discrete BL, default O3 unchanged). Q-H1 stays open (unfitted fusion/GARCH/HAR/ADAM/logistic only). Q-H1-rate and Q-H1-O10-rate closed. Q-series does not reopen G1–G6. |
 
 **How to use:** tick `[ ]` → `[x]` as items close. Substantive work should also follow the owning repo's conventions (platform work log entry in `integrated-market-platform/docs/engineering/WORK_LOG.md`; short-squeeze work in its own repo; snapshot refreshes through the guarded monorepo import).
 
@@ -189,11 +189,11 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 
 ## Q-series — Quantitative correctness (2026-09-05)
 
-Companion: [formula correctness review](2026-09-05-formula-correctness-review.md). Ledger: platform `docs/research/FORMULA_LEDGER.md` + `formula_ledger.json` (88 rows). This series pins **spec-correct math and fail-closed numerics**. It does **not** claim predictive edge, promote a champion, or open G1–G6 / LIVE-001 / P6 Shadow Run 1 / broker wires.
+Companion: [formula correctness review](2026-09-05-formula-correctness-review.md). Ledger: platform `docs/research/FORMULA_LEDGER.md` + `formula_ledger.json` (89 rows). This series pins **spec-correct math and fail-closed numerics**. It does **not** claim predictive edge, promote a champion, or open G1–G6 / LIVE-001 / P6 Shadow Run 1 / broker wires.
 
 | Item | Status | What closed it |
 |---|---|---|
-| Q0 Formula ledger (units, windows, variance convention, capability class) | Closed | 88-row ledger (O10/R-O6 rows added 2026-09-05); Phase 4 aligned Q naming and friction fail-closed wording (MD family table no longer says Breeden–Litzenberger or a friction 100 default) |
+| Q0 Formula ledger (units, windows, variance convention, capability class) | Closed | 89-row ledger (discrete BL row added 2026-09-06; O10/R-O6 rows added 2026-09-05); Phase 4 aligned Q naming and friction fail-closed wording (default Q remains the log-normal approx; BL is a separate versioned path) |
 | Q1 Risk-neutral Q name matches math | Closed | `MODEL_VERSION = risk_neutral_log_normal_moment_approx_v1`; not Breeden–Litzenberger |
 | Q2 Labeled variance estimators | Closed | `variance_estimator` on outputs; `tests/formulas/test_variance_estimator_mixing.py` |
 | Q3 Invalid OFI is not a tradable 0 | Closed | Consumers use `usable_ofi_value` / `book_state_valid` |
@@ -208,13 +208,13 @@ Companion: [formula correctness review](2026-09-05-formula-correctness-review.md
 | O2 surface strike×1.02/0.98 leftover | Closed | `infer_underlying_price` is fail-closed; points skipped without positive underlying; O3/dealer/strategy/event_vol no longer reconstruct spot via strike multiples. Surface version later `sigma_kt_v3` under Q-H1-rate. |
 | Q-H1-rate Dealer / O2 / O3 silent `rate=0.05` | Closed | Fail-closed: missing rate → dealer `BSM_VOL_OR_RATE_ASSUMPTION_MISSING`, O3 `RATE_ASSUMPTION_MISSING`, O2 skip point. `DEALER_VERSION=options_dealer_proxy_v2`; `SURFACE_VERSION=sigma_kt_v3`; tape `rate` 0.04 on chain fixtures including O10 inline chain; chain builder stamps tape `rate` onto contract dicts (same pattern as `underlying_price`). No fusion/GARCH/HAR/ADAM/logistic calibration. |
 | Q-H1-O10-rate O10 / R-O6 silent `rate=0.05` | Closed | `delta_hedged_research_snapshot` / `compose_r_o6_research_snapshot` take `rate: float \| None = None`; missing positive rate after path/strike/IV checks → `RATE_ASSUMPTION_MISSING`. Successful O10 snapshots stamp resolved `rate`. `DELTA_HEDGED_VERSION=delta_hedged_research_v2`; `R_O6_VERSION=r_o6_research_v2`. `simulate_delta_hedged_path` still requires `rate` with no default. No fusion/GARCH/HAR/ADAM/logistic calibration. |
+| Q-H3 Discrete Breeden–Litzenberger Q | Closed | Additive fail-closed path `infer_risk_neutral_breeden_litzenberger` / `risk_neutral_breeden_litzenberger_v1` on the IV-reconstructed call curve (uneven-grid C'', no average-IV log-normal fallback). Default O3 remains `risk_neutral_log_normal_moment_approx_v1`. Ledger row `options.risk_neutral_q_bl` (`research_baseline`). `donor_bridge/projections` and `providers/projections` stay on `infer_risk_neutral_distribution`. No trade authority. |
 
 **Still open (not edge, not trade authority):**
 
 | Item | Why it stays open |
 |---|---|
 | Q-H1 Unfitted heuristic constants | Fusion 0.85/1.05, GARCH ω/α/β, HAR 0.3/0.4/0.3, ADAM weights, squeeze logistic (0.8, 0.5, 0.3) remain pinned named constants, not calibrated. Drift-guard goldens assert code matches the ledger only. Dealer/O2/O3 silent `0.05` leftover is **closed** (Q-H1-rate); O10/R-O6 silent `0.05` leftover is **closed** (Q-H1-O10-rate). Q-H1 itself stays open for those unfitted scalars only. |
-| Q-H3 No Breeden–Litzenberger Q | Intentionally not implemented; Q is a log-normal moment approximation |
 | Q-H4 No `SUPPORTED` / forward edge | Phase-6 scores remain naive last-close; G1–G6 stay closed |
 
 P1-3, P1-6, P2-1, and P2-2 closed 2026-09-05 (see item sections). G1–G6 stay closed. This work grants no trade authority.

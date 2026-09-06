@@ -12,6 +12,10 @@ from ..contracts.risk_neutral_distribution import (
     RiskNeutralHorizonForecast,
     risk_neutral_distribution_to_dict,
 )
+from .breeden_litzenberger import (
+    BL_MODEL_VERSION,
+    infer_risk_neutral_breeden_litzenberger,
+)
 from .surface import infer_underlying_price
 from .surface_qa import evaluate_surface_qa
 
@@ -183,7 +187,9 @@ def _replay_hash(payload: dict[str, Any]) -> str:
 
 
 __all__ = [
+    "BL_MODEL_VERSION",
     "MODEL_VERSION",
     "RATE_ASSUMPTION_MISSING",
+    "infer_risk_neutral_breeden_litzenberger",
     "infer_risk_neutral_distribution",
 ]
