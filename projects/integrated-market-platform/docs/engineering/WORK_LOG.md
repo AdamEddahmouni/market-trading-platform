@@ -26,6 +26,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-06 — Pin-drift ADAM import uses canonical squeeze tree
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend` |
+| **Summary** | `test_heuristic_pin_drift` imported ADAM from a repo-root `short-squeeze-project` path. CI sparse-checks that location without `apps/`, so `validate changed` collected an ImportError after PR #12. Point the test at `projects/short-squeeze-project` like donor-bridge tests. |
+| **Key files** | Modified: `tests/formulas/test_heuristic_pin_drift.py` |
+| **Tests** | Python 3.13. `pytest tests/formulas/test_heuristic_pin_drift.py`: 7 passed. |
+| **Related** | [PR #12](https://github.com/AdamEddahmouni/market-trading-platform/pull/12) |
+| **Notes** | Fast IMP Validation passed on #12; only `validate-python-changed` failed. G1–G6 stay closed. |
+
 ## 2026-09-05 — Q-H1-O10-rate: O10 / R-O6 fail-closed rate
 
 | Field | Value |
