@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import inspect
+import math
 import sys
 import unittest
 from decimal import Decimal
@@ -15,7 +17,12 @@ from market_platform_foundation.donor_bridge.cross_lane_adapter import (  # noqa
     build_cross_lane_snapshot_from_futures,
 )
 from market_platform_foundation.futures.basis import basis_payload, build_basis_observation  # noqa: E402
-from market_platform_foundation.futures.carry import carry_from_curve, carry_payload  # noqa: E402
+from market_platform_foundation.futures.carry import (  # noqa: E402
+    carry_from_curve,
+    carry_payload,
+    cost_of_carry_from_spot,
+)
+from market_platform_foundation.futures import carry as carry_mod  # noqa: E402
 from market_platform_foundation.futures.curve import curve_regime, curve_snapshot_payload  # noqa: E402
 from market_platform_foundation.providers.adapters.fixture_futures_chain import (  # noqa: E402
     FixtureFuturesChainProvider,
@@ -117,6 +124,52 @@ class FuturesF3BasisCarryTests(unittest.TestCase):
         self.assertTrue(snapshot.get("futures_carry_available"))
         signals = [row.get("signal") for row in evidence]
         self.assertIn("FUTURES_CARRY_POSITIVE", signals)
+
+    def test_spot_carry_matches_ln_ratio_without_stamping_rate(self) -> None:
+        snapshot = FuturesCurveSnapshot(
+            instrument_family="ES",
+            observation_time="2025-06-02T14:41:00.000000000Z",
+            available_time="2025-06-02T14:41:00.000000000Z",
+            contract_ids=("ES202506",),
+            expirations=("2025-06-20",),
+            prices=(Decimal("6001.75"),),
+        )
+        observation = cost_of_carry_from_spot(snapshot, Decimal("5995.0"))
+        assert observation is not None
+        days = 18
+        expected = math.log(6001.75 / 5995.0) / days * 365.0
+        self.assertEqual(observation.formula_tag, "COST_OF_CARRY_FROM_SPOT")
+        self.assertEqual(observation.days_between, days)
+        self.assertAlmostEqual(observation.annualized_carry, expected)
+        joined = " ".join(observation.assumptions)
+        self.assertNotIn("risk_free_rate", joined)
+        self.assertNotIn("0.05", joined)
+        payload = carry_from_curve(snapshot, spot_reference=Decimal("5995.0"))
+        assert payload is not None
+        self.assertEqual(payload.formula_tag, "COST_OF_CARRY_FROM_SPOT")
+
+    def test_spot_carry_missing_observation_date_fail_closed(self) -> None:
+        snapshot = FuturesCurveSnapshot(
+            instrument_family="ES",
+            observation_time="",
+            available_time="2025-06-02T14:41:00.000000000Z",
+            contract_ids=("ES202506",),
+            expirations=("2025-06-20",),
+            prices=(Decimal("6001.75"),),
+        )
+        self.assertIsNone(cost_of_carry_from_spot(snapshot, Decimal("5995.0")))
+        unavailable = carry_payload(snapshot, spot_reference=Decimal("5995.0"))
+        self.assertFalse(unavailable.get("available"))
+        self.assertEqual(unavailable.get("reason"), "CARRY_OBSERVATION_UNAVAILABLE")
+
+    def test_spot_carry_source_has_no_silent_rate_or_calendar_fallback(self) -> None:
+        source = Path(carry_mod.__file__).read_text(encoding="utf-8")
+        self.assertNotIn("risk_free_rate: float = 0.05", source)
+        self.assertNotIn('"2025-01-01"', source)
+        self.assertNotIn("'2025-01-01'", source)
+        for name in ("cost_of_carry_from_spot", "carry_from_curve", "carry_payload"):
+            params = inspect.signature(getattr(carry_mod, name)).parameters
+            self.assertNotIn("risk_free_rate", params)
 
 
 if __name__ == "__main__":

@@ -26,6 +26,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-06 — Q-H1-futures-rate: unused carry r and DTE fallback
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `docs` |
+| **Summary** | Spot carry is `ln(F/S)/days×365` and does not use `r`. Dropped silent `risk_free_rate=0.05` and stopped stamping unused r in assumptions. Missing observation date fail-closes (no `"2025-01-01"` DTE fallback). Does not reopen Q-H1 calibration; `CARRY_SCALE=0.05` stays an unfitted tanh pin. Canonical trees only. |
+| **Key files** | Modified: `src/market_platform_foundation/futures/carry.py`, `tests/futures/test_f3_basis_carry.py`, `tests/formulas/test_heuristic_pin_drift.py`, `docs/research/formula_ledger.json`, `docs/research/FORMULA_LEDGER.md`; workspace: `docs/reviews/2026-09-04-hardening-task-plan.md` |
+| **Tests** | Python 3.13. `pytest tests/futures/test_f3_basis_carry.py tests/futures/test_baselines_engine.py tests/formulas/test_heuristic_pin_drift.py`: 26 passed. `imp.py validate domain futures`: 526 passed, 11 skipped, 0 failures, 0 errors. |
+| **Related** | [Hardening task plan](../../../../docs/reviews/2026-09-04-hardening-task-plan.md) Q-H1-futures-rate; Q-H3 PR |
+| **Notes** | G1–G6 stay closed. No fusion/GARCH/HAR/ADAM/logistic calibration. |
+
 ## 2026-09-06 — Q-H3: discrete Breeden–Litzenberger Q (additive)
 
 | Field | Value |

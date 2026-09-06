@@ -102,10 +102,12 @@ def calendar_implied_carry(
 def cost_of_carry_from_spot(
     snapshot: FuturesCurveSnapshot,
     spot_reference: Decimal | float,
-    *,
-    risk_free_rate: float = 0.05,
 ) -> CarryObservation | None:
-    """Alternative: ln(F_front / spot) / days_to_expiry * 365."""
+    """Alternative: ln(F_front / spot) / days_to_expiry * 365.
+
+    The arithmetic does not use a risk-free rate. Do not stamp an unused ``r``.
+    Missing or unparseable observation date fail-closes (no calendar fallback).
+    """
     if quality_blocks_curve_analytics(snapshot.quality_flags):
         return None
     if not snapshot.prices or not snapshot.expirations:
@@ -114,9 +116,8 @@ def cost_of_carry_from_spot(
     spot = float(spot_reference)
     if front_price <= 0 or spot <= 0:
         return None
-    days = _days_between(snapshot.observation_time[:10], snapshot.expirations[0])
-    if days is None:
-        days = _days_between("2025-01-01", snapshot.expirations[0])
+    observation_date = (snapshot.observation_time or "")[:10]
+    days = _days_between(observation_date, snapshot.expirations[0])
     if days is None or days <= 0:
         return None
     annualized = math.log(front_price / spot) / days * 365.0
@@ -128,7 +129,7 @@ def cost_of_carry_from_spot(
         back_contract_id="",
         days_between=days,
         assumptions=(
-            f"Cost-of-carry implied from spot; risk_free_rate={risk_free_rate}",
+            "Cost-of-carry implied from spot as ln(F/S)/days×365; unused r not stamped",
             "Fair-value context only — not directional forecast",
         ),
         quality_flags=tuple(snapshot.quality_flags),
@@ -139,18 +140,13 @@ def carry_from_curve(
     snapshot: FuturesCurveSnapshot,
     *,
     spot_reference: Decimal | float | None = None,
-    risk_free_rate: float = 0.05,
 ) -> CarryObservation | None:
     """Prefer calendar-spread implied carry; spot path when reference supplied."""
     calendar = calendar_implied_carry(snapshot)
     if calendar is not None:
         return calendar
     if spot_reference is not None:
-        return cost_of_carry_from_spot(
-            snapshot,
-            spot_reference,
-            risk_free_rate=risk_free_rate,
-        )
+        return cost_of_carry_from_spot(snapshot, spot_reference)
     return None
 
 
@@ -158,13 +154,11 @@ def carry_payload(
     snapshot: FuturesCurveSnapshot,
     *,
     spot_reference: Decimal | float | None = None,
-    risk_free_rate: float = 0.05,
 ) -> dict[str, Any]:
     """Workspace payload for carry observation."""
     observation = carry_from_curve(
         snapshot,
         spot_reference=spot_reference,
-        risk_free_rate=risk_free_rate,
     )
     if observation is None:
         return {"available": False, "reason": "CARRY_OBSERVATION_UNAVAILABLE"}

@@ -5,7 +5,7 @@
 | Created | 2026-09-04 |
 | Source | [Hardening review](2026-09-04-hardening-review.md) |
 | Purpose | Tracked, checkable backlog produced by the workspace hardening review. Items are grouped P0 → P2. Each item names evidence, the fix, and an acceptance check. |
-| Status | In progress — 17/17 P-items closed (P0-1–P0-4, P1-1–P1-8, P2-1–P2-5; 2026-09-04/05). Q-H3 closed (additive discrete BL, default O3 unchanged). Q-H1 stays open (unfitted fusion/GARCH/HAR/ADAM/logistic only). Q-H1-rate and Q-H1-O10-rate closed. Q-series does not reopen G1–G6. |
+| Status | In progress — 17/17 P-items closed (P0-1–P0-4, P1-1–P1-8, P2-1–P2-5; 2026-09-04/05). Q-H3 closed (additive discrete BL, default O3 unchanged). Q-H1-futures-rate leftover closed (unused carry `r` / `2025-01-01` DTE). Q-H1 stays open (unfitted fusion/GARCH/HAR/ADAM/logistic only). Q-H1-rate and Q-H1-O10-rate closed. Q-series does not reopen G1–G6. |
 
 **How to use:** tick `[ ]` → `[x]` as items close. Substantive work should also follow the owning repo's conventions (platform work log entry in `integrated-market-platform/docs/engineering/WORK_LOG.md`; short-squeeze work in its own repo; snapshot refreshes through the guarded monorepo import).
 
@@ -209,12 +209,13 @@ Companion: [formula correctness review](2026-09-05-formula-correctness-review.md
 | Q-H1-rate Dealer / O2 / O3 silent `rate=0.05` | Closed | Fail-closed: missing rate → dealer `BSM_VOL_OR_RATE_ASSUMPTION_MISSING`, O3 `RATE_ASSUMPTION_MISSING`, O2 skip point. `DEALER_VERSION=options_dealer_proxy_v2`; `SURFACE_VERSION=sigma_kt_v3`; tape `rate` 0.04 on chain fixtures including O10 inline chain; chain builder stamps tape `rate` onto contract dicts (same pattern as `underlying_price`). No fusion/GARCH/HAR/ADAM/logistic calibration. |
 | Q-H1-O10-rate O10 / R-O6 silent `rate=0.05` | Closed | `delta_hedged_research_snapshot` / `compose_r_o6_research_snapshot` take `rate: float \| None = None`; missing positive rate after path/strike/IV checks → `RATE_ASSUMPTION_MISSING`. Successful O10 snapshots stamp resolved `rate`. `DELTA_HEDGED_VERSION=delta_hedged_research_v2`; `R_O6_VERSION=r_o6_research_v2`. `simulate_delta_hedged_path` still requires `rate` with no default. No fusion/GARCH/HAR/ADAM/logistic calibration. |
 | Q-H3 Discrete Breeden–Litzenberger Q | Closed | Additive fail-closed path `infer_risk_neutral_breeden_litzenberger` / `risk_neutral_breeden_litzenberger_v1` on the IV-reconstructed call curve (uneven-grid C'', no average-IV log-normal fallback). Default O3 remains `risk_neutral_log_normal_moment_approx_v1`. Ledger row `options.risk_neutral_q_bl` (`research_baseline`). `donor_bridge/projections` and `providers/projections` stay on `infer_risk_neutral_distribution`. No trade authority. |
+| Q-H1-futures-rate unused carry `risk_free_rate=0.05` / `"2025-01-01"` DTE | Closed | Spot carry is `ln(F/S)/days×365` and does not use `r`; drop the unused default and do not stamp a fake rate in assumptions. Missing observation date fail-closes (no `"2025-01-01"` fallback). Does **not** reopen Q-H1 calibration; `CARRY_SCALE=0.05` on `futures.feature_vector` stays an unfitted tanh pin. |
 
 **Still open (not edge, not trade authority):**
 
 | Item | Why it stays open |
 |---|---|
-| Q-H1 Unfitted heuristic constants | Fusion 0.85/1.05, GARCH ω/α/β, HAR 0.3/0.4/0.3, ADAM weights, squeeze logistic (0.8, 0.5, 0.3) remain pinned named constants, not calibrated. Drift-guard goldens assert code matches the ledger only. Dealer/O2/O3 silent `0.05` leftover is **closed** (Q-H1-rate); O10/R-O6 silent `0.05` leftover is **closed** (Q-H1-O10-rate). Q-H1 itself stays open for those unfitted scalars only. |
+| Q-H1 Unfitted heuristic constants | Fusion 0.85/1.05, GARCH ω/α/β, HAR 0.3/0.4/0.3, ADAM weights, squeeze logistic (0.8, 0.5, 0.3) remain pinned named constants, not calibrated. Drift-guard goldens assert code matches the ledger only. Dealer/O2/O3 silent `0.05` leftover is **closed** (Q-H1-rate); O10/R-O6 silent `0.05` leftover is **closed** (Q-H1-O10-rate); unused futures carry `risk_free_rate=0.05` / `"2025-01-01"` DTE leftover is **closed** (Q-H1-futures-rate). Q-H1 itself stays open for those unfitted scalars only. |
 | Q-H4 No `SUPPORTED` / forward edge | Phase-6 scores remain naive last-close; G1–G6 stay closed |
 
 P1-3, P1-6, P2-1, and P2-2 closed 2026-09-05 (see item sections). G1–G6 stay closed. This work grants no trade authority.

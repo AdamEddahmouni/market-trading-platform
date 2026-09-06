@@ -1152,6 +1152,7 @@
       "test_file": "projects/integrated-market-platform/tests/futures/test_f3_basis_carry.py",
       "capability_class": "exact_metric",
       "implementation": "projects/integrated-market-platform/src/market_platform_foundation/futures/carry.py",
+      "notes": "Calendar path is ((F_back/F_front)−1)/days×365. Alternate spot path cost_of_carry_from_spot is ln(F/S)/days×365 and does not use r; unused r is not stamped (no silent risk_free_rate=0.05). Missing observation date fail-closes (no 2025-01-01 DTE fallback). futures.feature_vector CARRY_SCALE=0.05 is a tanh scale, not a risk-free rate.",
       "title": "((F_back/F_front)−1)/days × 365"
     },
     {

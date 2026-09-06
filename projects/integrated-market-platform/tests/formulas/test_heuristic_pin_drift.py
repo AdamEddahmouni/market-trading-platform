@@ -151,6 +151,12 @@ class HeuristicPinDriftTests(unittest.TestCase):
         self.assertEqual(bl["capability_class"], "research_baseline")
         self.assertFalse(hasattr(options_bl, "DEFAULT_RATE"))
 
+    def test_futures_calendar_carry_notes_document_unused_rate(self) -> None:
+        notes = self.formulas["futures.calendar_implied_carry"].get("notes", "")
+        self.assertIn("no silent risk_free_rate=0.05", notes)
+        self.assertIn("2025-01-01", notes)
+        self.assertIn("CARRY_SCALE=0.05", notes)
+
 
 if __name__ == "__main__":
     unittest.main()

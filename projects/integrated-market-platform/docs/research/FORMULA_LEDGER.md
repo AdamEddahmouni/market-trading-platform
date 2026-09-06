@@ -61,6 +61,7 @@ Named in JSON `pinned_constants` on the parent formula. Notable:
 - Options O2 surface: no silent `strike × 1.02/0.98`; skip the point without positive underlying or positive rate; stamp both when present (`sigma_kt_v3`). O2/O3/dealer have no silent `rate=0.05` (fail closed: skip / `BSM_VOL_OR_RATE_ASSUMPTION_MISSING` / `RATE_ASSUMPTION_MISSING`)
 - Options O10 / R-O6: no silent `rate=0.05`; missing positive rate (kwarg else P/Q dict) → `RATE_ASSUMPTION_MISSING` (`delta_hedged_research_v2` / `r_o6_research_v2`)
 - Options discrete BL: `min_unique_strikes=5`, density mass band `[0.85, 1.15]`, tail threshold `0.05` (`risk_neutral_breeden_litzenberger_v1`)
+- Futures spot carry: `ln(F/S)/days×365` does not stamp unused `r` (no silent `risk_free_rate=0.05`); missing observation date fail-closes (no `"2025-01-01"` DTE fallback). `CARRY_SCALE=0.05` remains an unfitted tanh pin on `futures.feature_vector`.
 
 ## Phase 1 naming / fail-closed (applied)
 
