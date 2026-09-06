@@ -9,7 +9,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
-SQUEEZE_CORE = ROOT.parents[1] / "short-squeeze-project" / "short-squeeze-core"
+# Canonical monorepo tree (projects/short-squeeze-project), not a root nested checkout.
+# CI sparse-checks a sibling short-squeeze-project without apps/.
+SQUEEZE_CORE = ROOT.parent / "short-squeeze-project" / "short-squeeze-core"
 sys.path.insert(0, str(SQUEEZE_CORE))
 
 from apps.research_screener.methodologies.adam_v1 import IGNITION, PRESSURE  # noqa: E402
