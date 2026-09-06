@@ -1,4 +1,9 @@
-"""Strict adapter from SHARED P4 decompositions to the universal sidecar."""
+"""Strict adapter from SHARED P4 decompositions to the universal sidecar.
+
+Deprecated as an opportunity constructor. P4 adaptation yields an economic
+sidecar only; canonical opportunities are minted by
+``bridge_strategy_match_to_opportunity``.
+"""
 
 from __future__ import annotations
 

@@ -62,6 +62,11 @@ from .eligibility import (
     PREREGISTRATION_STATUS_PASS,
     StrategyEligibilityRecordV1,
     assess_strategy_execution_eligibility,
+    omitted_execution_eligibility_record,
+)
+from ..intelligence.dataset_admission import (
+    UnadmittedCaptureError,
+    assert_admitted_for_order_ready,
 )
 from .learning import (
     LearningEligibility,
@@ -219,7 +224,13 @@ class StrategyPaperRuntime:
         outcome_settlement_service: OutcomeSettlementService | None = None,
         learning_policy: Any | None = None,
         strategy_eligibility: Mapping[str, Any] | None = None,
+        execution_intent: bool = False,
+        research_only: bool = False,
     ) -> None:
+        if research_only and execution_intent:
+            raise StrategyRuntimeError("RESEARCH_ONLY_CANNOT_CLAIM_EXECUTION_INTENT")
+        if research_only and strategy_eligibility is not None:
+            raise StrategyRuntimeError("RESEARCH_ONLY_MUST_OMIT_STRATEGY_ELIGIBILITY")
         self.repository = repository
         self.scanner = scanner
         self.forecast_resolver = forecast_resolver
@@ -245,6 +256,8 @@ class StrategyPaperRuntime:
         self.strategy_eligibility_config = (
             dict(strategy_eligibility) if strategy_eligibility is not None else None
         )
+        self.execution_intent = bool(execution_intent)
+        self.research_only = bool(research_only)
         self._entry: dict[str, Any] = {}
 
     def run_entry(
@@ -547,6 +560,24 @@ class StrategyPaperRuntime:
                     )
                 ],
             )
+        if self.research_only:
+            return self._result(
+                "RESEARCH_ONLY",
+                scan=scan,
+                match=match,
+                forecast=forecast,
+                opportunity=opportunity,
+                allocation_decision=allocation_decision,
+                diagnostics=diagnostics
+                + [
+                    RuntimeStageDiagnostic(
+                        "eligibility",
+                        "RESEARCH_ONLY",
+                        reason_codes=("RESEARCH_ONLY_NO_ORDER_READY",),
+                        ids={"strategy_match_id": match.match_id},
+                    )
+                ],
+            )
         lineage = self._entry_lineage(
             allocation_decision=allocation_decision,
             match=match,
@@ -572,6 +603,32 @@ class StrategyPaperRuntime:
         )
         self.repository.put_trade_proposal(execution.proposal)
         self.repository.put_risk_decision(execution.risk_decision)
+        capture_metadata = {}
+        if isinstance(getattr(forecast, "metadata", None), Mapping):
+            capture_metadata.update(forecast.metadata)
+        if isinstance(getattr(match, "context", None), Mapping):
+            capture_metadata.update(match.context)
+        try:
+            assert_admitted_for_order_ready(capture_metadata)
+        except UnadmittedCaptureError as exc:
+            return self._result(
+                "UNADMITTED_CAPTURE_REJECTED",
+                scan=scan,
+                match=match,
+                forecast=forecast,
+                opportunity=opportunity,
+                allocation_decision=allocation_decision,
+                proposal=execution.proposal,
+                risk_decision=execution.risk_decision,
+                diagnostics=diagnostics
+                + [
+                    RuntimeStageDiagnostic(
+                        "admission",
+                        "UNADMITTED_CAPTURE_REJECTED",
+                        reason_codes=(exc.code,),
+                    )
+                ],
+            )
         eligibility_record = self._assess_strategy_eligibility(match)
         order_ready = self._build_order_ready(
             allocation_decision=allocation_decision,
@@ -1323,15 +1380,16 @@ class StrategyPaperRuntime:
         )
 
     def _assess_strategy_eligibility(self, match: Any) -> StrategyEligibilityRecordV1 | None:
-        """Evaluate the execution-intent gate when one is configured.
+        """Evaluate the execution-intent gate.
 
-        When no ``strategy_eligibility`` configuration is supplied the runtime
-        is in research/paper mode and issues no eligibility adjudication;
-        callers claiming execution intent MUST supply the configuration so the
-        gate runs (and unknown/unpromoted strategies fail closed).
+        Execution-intent runtimes that omit ``strategy_eligibility`` fail closed
+        as ineligible. Research-only scanners never reach this method.
+        Paper simulation without execution intent still skips the gate.
         """
         config = self.strategy_eligibility_config
         if config is None:
+            if self.execution_intent:
+                return omitted_execution_eligibility_record(str(match.strategy_id))
             return None
         preregistration = config.get("preregistration")
         if preregistration:

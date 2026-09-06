@@ -18,10 +18,13 @@ The single canonical source is `WORKSPACE_LANE_REGISTRY` in
 `ui/src/components/workspace-module-shared/laneRegistry.ts` (ids, labels,
 routes). Derived consumers (`LANE_MODULE_IDS`, `isKnownLaneModuleId`,
 `laneModuleLabel`, evidence maps in `paperDecisionSemantics.ts`) read from it.
+Discovery buckets and evidence `LaneId` values are a *different* vocabulary;
+edit `src/market_platform_foundation/lanes/vocabulary.py` and keep the UI
+evidence map in lockstep (`MARKET_CONTEXT` → `catalyst`, never `order-book`).
 Adding a lane edits that one registry plus its per-lane feature surfaces
 (route components, content builders, backend projection when a new API is
 needed) — never a second module-id list. A lane-registry equality test
-(`laneRegistry.test.ts`) fails if the derived lists drift.
+(`laneRegistry.test.ts`) fails if the derived lists or evidence map drift.
 
 ## 5. Navigation
 

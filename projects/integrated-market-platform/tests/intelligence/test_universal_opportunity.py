@@ -240,6 +240,41 @@ class UniversalOpportunityBridgeTests(unittest.TestCase):
                 opportunity_decision_time_ns=T - 1,
             )
 
+    def test_engine_and_bridge_cannot_mint_duplicate_authoritative_records(self) -> None:
+        from market_platform_foundation.intelligence.opportunity import OpportunityEngine
+        from market_platform_foundation.intelligence.persistence.errors import RepositoryConflictError
+
+        repository = InMemoryIntelligenceRepository()
+        engine_result = OpportunityEngine().assess(
+            forecast=self.forecast,
+            policy=self.policy,
+            context=self.context,
+            champion_at_forecast=self.champion,
+            champion_at_opportunity=self.champion,
+            opportunity_decision_time_ns=T + 1_000_000_000,
+        )
+        self.assertIsNotNone(engine_result.opportunity)
+        repository.put_opportunity_assessment(engine_result.assessment)
+        repository.put_opportunity(engine_result.opportunity)
+        with self.assertRaises(RepositoryConflictError) as ctx:
+            bridge_strategy_match_to_opportunity(
+                match=self.match,
+                forecast=self.forecast,
+                champion_at_forecast=self.champion,
+                champion_at_opportunity=self.champion,
+                policy=self.policy,
+                context=self.context,
+                economic_assessment=self.sidecar,
+                opportunity_decision_time_ns=T + 1_000_000_000,
+                repository=repository,
+            )
+        self.assertIn("IMMUTABLE_CONFLICT", str(ctx.exception))
+        stored = repository.get_opportunity(engine_result.opportunity.opportunity_id)
+        self.assertIsNotNone(stored)
+        self.assertFalse(
+            any(ref.kind == "strategy_match" for ref in stored.lineage_refs)
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -7,7 +7,7 @@ import { laneModuleTitle } from "../workspace-module-shared/buildLaneModeContent
 export const EVIDENCE_LANE_TO_MODULE_ID: Record<string, WorkspaceLaneModuleId> = {
   SHORT_SQUEEZE: "squeeze",
   ORDER_FLOW: "order-flow",
-  MARKET_CONTEXT: "order-book",
+  MARKET_CONTEXT: "catalyst",
   CATALYST: "catalyst",
   OPTIONS: "options",
   FUTURES: "futures",

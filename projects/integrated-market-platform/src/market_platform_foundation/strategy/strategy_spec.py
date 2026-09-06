@@ -11,6 +11,9 @@ from ..canonical import canonical_bytes, sha256_bytes
 ALIGNMENT_TYPES = ("FORECAST_MOMENTUM", "WHALE_ALIGNED", "WHALE_CONTRARIAN")
 SPEC_VERSION = "1.0.0"
 TAXONOMY_VERSION = "strategy_taxonomy/1.0.0"
+# Alignments interpret NaiveLastValueModel scores. Not tradable edges.
+CAPABILITY_CLASS_BASELINE_ONLY = "baseline_only"
+IDENTITY_EXCLUDED_KEYS = frozenset({"strategy_identity_hash", "capability_class"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,6 +22,9 @@ class StrategyDefinition:
 
     Taxonomy fields are optional so definitions produced by the original
     dictionary API retain their existing identity hash and serialized shape.
+
+    FORECAST_MOMENTUM / WHALE_* alignments are ``baseline_only`` interpretations
+    of the naive last-value forecast, not claimed trading edges.
     """
 
     alignment_type: str
@@ -102,7 +108,11 @@ class StrategyDefinition:
             value = getattr(self, field_name)
             if value is not None:
                 body[field_name] = value
-        return {**body, "strategy_identity_hash": strategy_identity_hash(body)}
+        return {
+            **body,
+            "capability_class": CAPABILITY_CLASS_BASELINE_ONLY,
+            "strategy_identity_hash": strategy_identity_hash(body),
+        }
 
     def to_dict(self) -> dict[str, Any]:
         return self.to_legacy_spec()
@@ -179,5 +189,9 @@ def strategy_identity_hash(
 ) -> str:
     if isinstance(spec_body, StrategyDefinition):
         spec_body = spec_body.to_legacy_spec()
-    without_hash = {k: v for k, v in spec_body.items() if k != "strategy_identity_hash"}
+    without_hash = {
+        k: v
+        for k, v in spec_body.items()
+        if k not in IDENTITY_EXCLUDED_KEYS
+    }
     return sha256_bytes(canonical_bytes(without_hash))

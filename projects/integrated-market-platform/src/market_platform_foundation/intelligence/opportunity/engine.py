@@ -1,4 +1,11 @@
-"""Governed opportunity engine (BUILD 21)."""
+"""Governed opportunity engine (BUILD 21).
+
+Numeric assessment only. The canonical *authoritative* construction path is
+``StrategyMatch`` → ``bridge_strategy_match_to_opportunity`` →
+``OpportunityEngine.assess``. Direct ``assess()`` is a fixture / unit-test
+surface and must not mint a second authoritative opportunity or decision
+record for the same identity (immutable conflict on persist).
+"""
 
 from __future__ import annotations
 
@@ -65,7 +72,11 @@ def forecast_matches_champion(forecast: ForecastV1, assignment: ChampionAssignme
 
 
 class OpportunityEngine:
-    """Deterministic champion-governed opportunity assessment."""
+    """Deterministic champion-governed opportunity assessment.
+
+    Deprecated as a standalone record builder. Callers that persist
+    opportunities must go through ``bridge_strategy_match_to_opportunity``.
+    """
 
     def assess(
         self,

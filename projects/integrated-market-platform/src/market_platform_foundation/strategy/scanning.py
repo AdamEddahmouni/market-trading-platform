@@ -276,7 +276,12 @@ class _StageAResult:
 
 
 class UniversalStrategyScanner:
-    """Runs one bounded scan pass; it owns no daemon or workflow state."""
+    """Runs one bounded scan pass; it owns no daemon or workflow state.
+
+    Research-only: ``scan()`` emits ``StrategyMatch`` records and never
+    constructs ``OrderReadyV1``. Execution intent belongs on
+    ``StrategyPaperRuntime`` with an explicit eligibility configuration.
+    """
 
     SCAN_POLICY_IDENTITY = "universal-scan/1"
 
