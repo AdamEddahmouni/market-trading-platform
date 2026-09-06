@@ -14,7 +14,11 @@ from .ewma import ewma_volatility_forecast
 from .events import count_recent_jumps, event_window_active
 from .garch import garch11_forecast
 from .har_rv import har_rv_forecast
-from .realized_vol import close_to_close_returns, realized_volatility_close_to_close
+from .realized_vol import (
+    VARIANCE_ESTIMATOR_SAMPLE,
+    close_to_close_returns,
+    realized_volatility_close_to_close,
+)
 
 MODEL_VERSION = "physical_p_gaussian_v1"
 DEFAULT_HORIZONS = (1, 5, 10)
@@ -43,7 +47,7 @@ def _horizon_forecast(
     vol_annualized: float,
     horizon_days: int,
 ) -> HorizonForecast:
-    """Gaussian baseline: scale vol by sqrt(horizon/252), zero mean."""
+    """Gaussian baseline: scale vol by sqrt(horizon/252), zero mean (not calibrated drift)."""
     daily_var = (vol_annualized / math.sqrt(252)) ** 2
     horizon_var = daily_var * horizon_days
     horizon_vol = math.sqrt(horizon_var)
@@ -113,13 +117,16 @@ def physical_distribution_forecast(
         horizons=horizon_rows,
         methodology_tags=(
             "gaussian_baseline",
+            "vs_zero_drift_baseline",
             f"vol_model:{model}",
             "estimator:close_to_close_only",
+            f"variance_estimator:{VARIANCE_ESTIMATOR_SAMPLE}",
         ),
         jump_count=jumps,
         event_window_active=event_active,
         confidence=confidence,
         provenance_ref=provenance_ref,
+        variance_estimator=VARIANCE_ESTIMATOR_SAMPLE,
     )
 
 

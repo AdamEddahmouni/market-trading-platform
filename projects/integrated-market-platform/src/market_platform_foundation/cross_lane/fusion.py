@@ -28,6 +28,32 @@ from .opportunity import (
     probability_input_to_dict,
 )
 
+# Q-H1 pinned liquidity scalars — unfitted, ledger fusion.liquidity_factor.
+LIQUIDITY_BOOK_IMBALANCE_SUPPORTS = 1.05
+LIQUIDITY_BOOK_IMBALANCE_OPPOSES = 0.85
+LIQUIDITY_BOOK_FRAGILITY_ELEVATED = 0.8
+LIQUIDITY_DEPTH_WITHDRAWAL_GT_0 = 0.9
+LIQUIDITY_DEPTH_REPLENISHMENT_GT_0 = 1.02
+LIQUIDITY_RESILIENCY_BOOST_CAP = 1.05
+LIQUIDITY_RESILIENCY_BOOST_SCALE = 0.05
+LIQUIDITY_RESILIENCY_SCORE_THRESHOLD = 0.5
+LIQUIDITY_FILL_PROBABILITY_LT_0_55 = 0.88
+LIQUIDITY_FILL_PROBABILITY_THRESHOLD = 0.55
+LIQUIDITY_EXPECTED_SLIPPAGE_SPREAD_FRACTION_GE_0_0035 = 0.9
+LIQUIDITY_SLIPPAGE_THRESHOLD = 0.0035
+LIQUIDITY_ADVERSE_SELECTION_RISK_GE_0_45 = 0.88
+LIQUIDITY_ADVERSE_SELECTION_THRESHOLD = 0.45
+LIQUIDITY_CVD_CONFIDENCE_FLOOR = 0.5
+LIQUIDITY_CVD_CONFIDENCE_SPAN = 0.5
+
+# Q-H1 pinned futures-regime scalars — unfitted, ledger fusion.futures_regime_factor.
+FUTURES_LEVERAGE_STRESS_ELEVATED = 0.85
+FUTURES_MACRO_EVENT_RISK = 0.9
+FUTURES_RV_SPREAD_ABS_Z_GT_2 = 0.92
+FUTURES_RV_SPREAD_Z_THRESHOLD = 2.0
+FUTURES_TREND_UP = 1.03
+FUTURES_TREND_DOWN = 0.97
+
 NVDA_OPPORTUNITY_FIXTURE = (
     Path(__file__).resolve().parents[3]
     / "tests"
@@ -49,25 +75,36 @@ def _liquidity_factor(liquidity: Any) -> float:
         return 0.0
     factor = 1.0
     if liquidity.cvd_confidence is not None:
-        factor *= 0.5 + 0.5 * min(max(liquidity.cvd_confidence, 0.0), 1.0)
+        factor *= LIQUIDITY_CVD_CONFIDENCE_FLOOR + LIQUIDITY_CVD_CONFIDENCE_SPAN * min(
+            max(liquidity.cvd_confidence, 0.0), 1.0
+        )
     if liquidity.book_imbalance_supports_trade:
-        factor *= 1.05
+        factor *= LIQUIDITY_BOOK_IMBALANCE_SUPPORTS
     if liquidity.book_imbalance_opposes_trade:
-        factor *= 0.85
+        factor *= LIQUIDITY_BOOK_IMBALANCE_OPPOSES
     if liquidity.book_fragility_elevated:
-        factor *= 0.8
+        factor *= LIQUIDITY_BOOK_FRAGILITY_ELEVATED
     if liquidity.depth_withdrawal is not None and liquidity.depth_withdrawal > 0:
-        factor *= 0.9
+        factor *= LIQUIDITY_DEPTH_WITHDRAWAL_GT_0
     if liquidity.depth_replenishment is not None and liquidity.depth_replenishment > 0:
-        factor *= 1.02
-    if liquidity.resiliency_score is not None and liquidity.resiliency_score >= 0.5:
-        factor *= min(1.0 + 0.05 * liquidity.resiliency_score, 1.05)
-    if liquidity.fill_probability is not None and liquidity.fill_probability < 0.55:
-        factor *= 0.88
-    if liquidity.expected_slippage_spread_fraction is not None and liquidity.expected_slippage_spread_fraction >= 0.0035:
-        factor *= 0.9
-    if liquidity.adverse_selection_risk is not None and liquidity.adverse_selection_risk >= 0.45:
-        factor *= 0.88
+        factor *= LIQUIDITY_DEPTH_REPLENISHMENT_GT_0
+    if liquidity.resiliency_score is not None and liquidity.resiliency_score >= LIQUIDITY_RESILIENCY_SCORE_THRESHOLD:
+        factor *= min(
+            1.0 + LIQUIDITY_RESILIENCY_BOOST_SCALE * liquidity.resiliency_score,
+            LIQUIDITY_RESILIENCY_BOOST_CAP,
+        )
+    if liquidity.fill_probability is not None and liquidity.fill_probability < LIQUIDITY_FILL_PROBABILITY_THRESHOLD:
+        factor *= LIQUIDITY_FILL_PROBABILITY_LT_0_55
+    if (
+        liquidity.expected_slippage_spread_fraction is not None
+        and liquidity.expected_slippage_spread_fraction >= LIQUIDITY_SLIPPAGE_THRESHOLD
+    ):
+        factor *= LIQUIDITY_EXPECTED_SLIPPAGE_SPREAD_FRACTION_GE_0_0035
+    if (
+        liquidity.adverse_selection_risk is not None
+        and liquidity.adverse_selection_risk >= LIQUIDITY_ADVERSE_SELECTION_THRESHOLD
+    ):
+        factor *= LIQUIDITY_ADVERSE_SELECTION_RISK_GE_0_45
     return round(min(max(factor, 0.0), 1.0), 6)
 
 
@@ -76,15 +113,15 @@ def _futures_regime_factor(futures: FuturesInput | None) -> float:
         return 1.0
     factor = 1.0
     if futures.leverage_stress_regime and str(futures.leverage_stress_regime).upper() == "ELEVATED":
-        factor *= 0.85
+        factor *= FUTURES_LEVERAGE_STRESS_ELEVATED
     if futures.macro_event_risk:
-        factor *= 0.9
-    if futures.rv_spread_zscore is not None and abs(futures.rv_spread_zscore) > 2.0:
-        factor *= 0.92
+        factor *= FUTURES_MACRO_EVENT_RISK
+    if futures.rv_spread_zscore is not None and abs(futures.rv_spread_zscore) > FUTURES_RV_SPREAD_Z_THRESHOLD:
+        factor *= FUTURES_RV_SPREAD_ABS_Z_GT_2
     if futures.trend_regime == "TREND_UP":
-        factor *= 1.03
+        factor *= FUTURES_TREND_UP
     elif futures.trend_regime == "TREND_DOWN":
-        factor *= 0.97
+        factor *= FUTURES_TREND_DOWN
     return round(min(max(factor, 0.0), 1.0), 6)
 
 
@@ -105,7 +142,11 @@ def fuse_opportunity_v1(
     liquidity: Any,
     futures: FuturesInput | None = None,
 ) -> dict[str, Any]:
-    """Fuse lane inputs: (expected_pnl - friction_cost) × occurrence_weight × liquidity_factor."""
+    """Fuse lane inputs: (gross expected_pnl - friction_cost) × occurrence_weight × liquidity_factor.
+
+    Payoff EV must be gross of friction. If expected_pnl already equals net_expected_pnl
+    while friction is positive, friction is not subtracted again.
+    """
     quality_flags: list[str] = list(payoff.quality_flags) + list(liquidity.quality_flags)
     quality_flags.extend(probability.quality_flags)
     quality_flags.extend(costs.quality_flags)
@@ -121,7 +162,17 @@ def fuse_opportunity_v1(
         }
 
     friction = costs.friction_cost if costs.available and costs.friction_cost is not None else 0.0
-    gross_ev = payoff.expected_pnl - friction
+    expected_gross = payoff.expected_pnl
+    already_net = (
+        payoff.net_expected_pnl is not None
+        and friction > 0
+        and abs(float(expected_gross) - float(payoff.net_expected_pnl)) < 1e-9
+    )
+    if already_net:
+        gross_ev = float(expected_gross)
+        quality_flags.append("PAYOFF_EV_ALREADY_NET_OF_FRICTION")
+    else:
+        gross_ev = float(expected_gross) - friction
     squeeze_aligned = is_squeeze_aligned_template(
         payoff.template,
         probability.squeeze_state,

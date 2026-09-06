@@ -3,6 +3,9 @@
 from .events import EventJumpPrimitive, build_event_jump_primitive, detect_return_jump
 from .forecast import physical_distribution_forecast
 from .realized_vol import (
+    VARIANCE_ESTIMATOR_PARKINSON,
+    VARIANCE_ESTIMATOR_POPULATION,
+    VARIANCE_ESTIMATOR_SAMPLE,
     close_to_close_returns,
     realized_volatility_close_to_close,
     realized_volatility_parkinson,
@@ -14,6 +17,9 @@ from .har_rv import har_rv_forecast
 __all__ = [
     "EventJumpPrimitive",
     "build_event_jump_primitive",
+    "VARIANCE_ESTIMATOR_PARKINSON",
+    "VARIANCE_ESTIMATOR_POPULATION",
+    "VARIANCE_ESTIMATOR_SAMPLE",
     "close_to_close_returns",
     "detect_return_jump",
     "ewma_volatility_forecast",

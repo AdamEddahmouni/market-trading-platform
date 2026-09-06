@@ -37,6 +37,7 @@ class PhysicalDistributionForecast:
     event_window_active: bool = False
     confidence: str = "LOW"
     provenance_ref: str = ""
+    variance_estimator: str = "sample_n_minus_1"
 
 
 def horizon_forecast_to_dict(horizon: HorizonForecast) -> dict[str, Any]:
@@ -65,6 +66,8 @@ def physical_distribution_to_dict(forecast: PhysicalDistributionForecast) -> dic
         "event_window_active": forecast.event_window_active,
         "confidence": forecast.confidence,
         "provenance_ref": forecast.provenance_ref,
+        "variance_estimator": forecast.variance_estimator,
+        "mean_return_convention": "zero_drift_baseline",
     }
 
 

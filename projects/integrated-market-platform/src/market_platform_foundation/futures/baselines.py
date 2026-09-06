@@ -188,6 +188,7 @@ def compute_carry_zscore(current_carry: float, history_carries: list[float]) -> 
     if len(history_carries) < 2:
         return None
     mean = sum(history_carries) / len(history_carries)
+    # Population σ (/n). Distinct from platform sample close-to-close RV.
     variance = sum((value - mean) ** 2 for value in history_carries) / len(history_carries)
     if variance <= 0:
         return 0.0

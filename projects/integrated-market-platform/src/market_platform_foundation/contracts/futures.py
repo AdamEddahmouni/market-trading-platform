@@ -335,6 +335,7 @@ def trend_baseline_to_dict(snapshot: FuturesTrendBaselineSnapshot) -> dict[str, 
         "trend_6m": round(snapshot.trend_6m, 6) if snapshot.trend_6m is not None else None,
         "trend_12m": round(snapshot.trend_12m, 6) if snapshot.trend_12m is not None else None,
         "vol_estimate": round(snapshot.vol_estimate, 8) if snapshot.vol_estimate is not None else None,
+        "vol_estimate_variance_estimator": "ewma_lambda_0.94",
         "lookback_bars_used": {key: value for key, value in snapshot.lookback_bars_used},
         "observation_time": snapshot.observation_time,
         "quality_flags": list(snapshot.quality_flags),
@@ -370,6 +371,7 @@ def carry_baseline_to_dict(baseline: FuturesCarryBaseline) -> dict[str, Any]:
         "carry_change": round(baseline.carry_change, 8) if baseline.carry_change is not None else None,
         "carry_zscore": round(baseline.carry_zscore, 6) if baseline.carry_zscore is not None else None,
         "formula_tag": baseline.formula_tag,
+        "variance_estimator": "population_n",
         "quality_flags": list(baseline.quality_flags),
     }
 

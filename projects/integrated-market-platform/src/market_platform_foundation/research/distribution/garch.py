@@ -7,13 +7,17 @@ from typing import Sequence
 
 from .realized_vol import close_to_close_returns
 
+DEFAULT_OMEGA = 1e-6
+DEFAULT_ALPHA = 0.05
+DEFAULT_BETA = 0.90
+
 
 def garch11_forecast(
     closes: Sequence[float],
     *,
-    omega: float = 1e-6,
-    alpha: float = 0.05,
-    beta: float = 0.90,
+    omega: float = DEFAULT_OMEGA,
+    alpha: float = DEFAULT_ALPHA,
+    beta: float = DEFAULT_BETA,
 ) -> float | None:
     returns = close_to_close_returns(closes)
     if len(returns) < 5:
@@ -26,4 +30,4 @@ def garch11_forecast(
     return round(math.sqrt(variance) * math.sqrt(252), 6)
 
 
-__all__ = ["garch11_forecast"]
+__all__ = ["DEFAULT_ALPHA", "DEFAULT_BETA", "DEFAULT_OMEGA", "garch11_forecast"]
