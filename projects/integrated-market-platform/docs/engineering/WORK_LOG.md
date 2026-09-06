@@ -26,6 +26,78 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-05 — Q-H1-O10-rate: O10 / R-O6 fail-closed rate
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `docs` |
+| **Summary** | Closed Q-H1-O10-rate: `delta_hedged_research_snapshot` and `compose_r_o6_research_snapshot` no longer default `rate=0.05`. Missing positive rate (explicit kwarg, else P/Q dict) fail-closes with `RATE_ASSUMPTION_MISSING`. Successful O10 snapshots stamp resolved `rate`. Versions `delta_hedged_research_v2` / `r_o6_research_v2`. Ledger 86→88 with `options.delta_hedged` and `options.r_o6`. Q-H1 stays open for unfitted fusion/GARCH/HAR/ADAM/logistic only. G1–G6 stay closed; no trade authority. |
+| **Key files** | Modified: `src/market_platform_foundation/options/delta_hedged.py`, `r_o6.py`, `tests/options/test_options_o10.py`, `tests/formulas/test_heuristic_pin_drift.py`, `docs/research/FORMULA_LEDGER.md`, `docs/research/formula_ledger.json`; workspace: `docs/reviews/2026-09-04-hardening-task-plan.md`, `docs/reviews/2026-09-05-formula-correctness-review.md` |
+| **Tests** | Python 3.13. Scoped pytest: 52 passed. `imp.py validate domain options`: 575 passed, 11 skipped, 0 failures. `imp.py validate full`: 3569 passed, 48 skipped, 0 failures, 0 errors (after classifying `src/market_platform_foundation/lanes` in the repository-closure audit). |
+| **Related** | [Hardening task plan](../../../../docs/reviews/2026-09-04-hardening-task-plan.md) Q-H1 / Q-H1-O10-rate; [formula correctness review](../../../../docs/reviews/2026-09-05-formula-correctness-review.md) |
+| **Notes** | Q-H1 remains open (unfitted scalars). O10/R-O6 no longer pin 0.05. Do not treat delta-hedged path or R-O6 correlation as a trade signal. |
+
+## 2026-09-05 — Q-H1-rate close + P1-3 / P1-6 / P2-1 / P2-2 docs-verify
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `docs` |
+| **Summary** | Closed Q-H1-rate (dealer/O2/O3 no silent `rate=0.05`) leftover: O10 inline chain and cross-lane dealer inline rows stamp tape `rate` 0.04; option-chain builder and activity envelopes copy tape `rate` onto contract dicts so workspace dealer snapshots still build. Closed P1-3, P1-6, P2-1, P2-2 in the hardening plan. Q-H1 stays open for unfitted fusion/GARCH/HAR/ADAM/logistic only. G1–G6 stay closed; no trade authority. |
+| **Key files** | Modified: `tests/options/test_options_o10_surface_baseline.py`, `src/market_platform_foundation/providers/adapters/option_contract_builder.py`, `fixture_options.py`, `tests/donor_bridge/test_cross_lane_adapter.py`; workspace: `docs/reviews/2026-09-04-hardening-task-plan.md`, `docs/reviews/2026-09-05-formula-correctness-review.md` |
+| **Tests** | Python 3.13. Scoped pytest (O2/O3/O5/O6/O10 + goldens + pin-drift + acquisition guard + broker wiring + paper trace): 77 passed. `imp.py validate domain options`: 561 passed, 11 skipped, 0 failures. Full `validate full` not run. |
+| **Related** | [Hardening task plan](../../../../docs/reviews/2026-09-04-hardening-task-plan.md) Q-H1 / Q-H1-rate / P1-3 / P1-6 / P2-1 / P2-2; [formula correctness review](../../../../docs/reviews/2026-09-05-formula-correctness-review.md) |
+| **Notes** | Q-H1 remains open (unfitted scalars). Q-H1-rate is closed. Dealer/O2/O3 0.05 leftover is not a Q-H1 pin. Do not treat dealer gamma or surface IV as a trade signal. |
+
+## 2026-09-05 — Q-H1 pin + O5 vol/rate fail-closed + O2 strict underlying
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `docs` |
+| **Summary** | Named unfitted Q-H1 fusion/GARCH/HAR/logistic constants and added a ledger drift golden (ADAM weights assert-only; no calibration). O5 greeks fail closed without positive vol and rate (`options_signed_flow_v3`). O2 no longer uses strike×1.02/0.98; surface points are skipped and stamped with `underlying_price` (`sigma_kt_v2`); O3/dealer/strategy/event_vol share that fail-closed infer. G1–G6 stay closed; Q-H1 remains open for calibration; no trade authority. |
+| **Key files** | Modified: `src/market_platform_foundation/options/{flow,surface,risk_neutral,dealer,strategy,event_vol,edge}.py`, `cross_lane/fusion.py`, `research/distribution/{garch,har_rv}.py`, `research/squeeze_models/logistic_hazard.py`, options O2/O3/O5 tests + goldens, signed-flow fixture, `docs/research/FORMULA_LEDGER.md`, `docs/research/formula_ledger.json`; created: `tests/formulas/test_heuristic_pin_drift.py`; workspace: `docs/reviews/2026-09-04-hardening-task-plan.md`, `docs/reviews/2026-09-05-formula-correctness-review.md` |
+| **Tests** | Python 3.13. `pytest tests/options/test_options_o{2,3,5,6}.py tests/formulas/test_formula_goldens.py tests/formulas/test_heuristic_pin_drift.py`: 48 passed. Extra O7/O8: 21 passed (69 combined). `imp.py validate domain options`: 565 passed, 11 skipped. Full `validate full` not run. |
+| **Related** | [Hardening task plan](../../../../docs/reviews/2026-09-04-hardening-task-plan.md) Q-H1 / Q-H1-O5 / O2; [formula correctness review](../../../../docs/reviews/2026-09-05-formula-correctness-review.md) |
+| **Notes** | Dealer `DEFAULT_RATE=0.05` and O3/O2 IV `rate=0.05` remain Q-H1 pins. Do not treat signed flow or surface IV as a trade signal. |
+
+## 2026-09-05 — Q-H2: O5 signed-flow fail-closed without underlying spot
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `docs` |
+| **Summary** | Options O5 greeks-equivalent signed flow no longer defaults spot to 100.0. Spot is explicit or inferred from `underlying_price` (same strict helper as Q7 friction). Missing spot leaves volume/direction intact and sets greeks to `None` with `UNDERLYING_PRICE_ASSUMPTION_MISSING`. `DEFAULT_VOL`/`DEFAULT_RATE` remain unfitted. G1–G6 stay closed; no trade authority. |
+| **Key files** | Modified: `src/market_platform_foundation/options/flow.py`, `src/market_platform_foundation/options/edge.py`, `tests/options/test_options_o5.py`, `tests/formulas/test_formula_goldens.py`, `tests/fixtures/providers/options/nvda_signed_flow_slice.json`, `docs/research/FORMULA_LEDGER.md`, `docs/research/formula_ledger.json`; workspace: `docs/reviews/2026-09-04-hardening-task-plan.md`, `docs/reviews/2026-09-05-formula-correctness-review.md` |
+| **Tests** | Python 3.13. `pytest tests/options/test_options_o5.py tests/formulas/test_formula_goldens.py`: 21 passed. `imp.py validate domain options`: 550 passed, 11 skipped. Full `validate full` not run. |
+| **Related** | [Hardening task plan](../../../../docs/reviews/2026-09-04-hardening-task-plan.md) Q-H2; [formula correctness review](../../../../docs/reviews/2026-09-05-formula-correctness-review.md) |
+| **Notes** | Surface O2 `strike * 1.02/0.98` fallback was not changed. Do not treat signed flow as a trade signal. |
+
+## 2026-09-05 — Phase 4: formula correctness verification and reporting
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `docs` |
+| **Summary** | Verified Phase 1–3 formula and path work; aligned the 86-row formula ledger so Q is `risk_neutral_log_normal_moment_approx_v1` and options friction has no silent 100.0 underlying. Registered `tests/formulas` in the validation manifest (was unclassified and blocked `validate.py`). Wrote Q-series notes and a correctness review. G1–G6 remain closed; no LIVE-001, shadow, canary, or broker wires; no `SUPPORTED` claim. |
+| **Key files** | Modified: `docs/research/FORMULA_LEDGER.md`, `docs/research/formula_ledger.json`, `tools/validation_manifest.json`, `tests/validation/test_validation_manifest.py`; workspace: `docs/reviews/2026-09-04-hardening-task-plan.md`, `docs/reviews/2026-09-05-formula-correctness-review.md` |
+| **Tests** | Python 3.13. Targeted pytest 63 passed; broader campaign slice 1881 passed / 27 skipped; `imp.py validate domain options` 545 passed / 11 skipped; `domain order-flow` 525 passed / 11 skipped; squeeze metric/ADAM 49 passed; UI `laneRegistry.test.ts` 9 passed. Monorepo `validate changed` only 21 mandatory tests (path-prefix under-select). Full `validate full` not run. |
+| **Related** | [Hardening task plan](../../../../docs/reviews/2026-09-04-hardening-task-plan.md) Q-series, P1-2, P1-4, P1-5, P2-4; [formula correctness review](../../../../docs/reviews/2026-09-05-formula-correctness-review.md) |
+| **Notes** | O5 signed-flow still pins `DEFAULT_SPOT=100.0` when spot is omitted; that is not the friction path. Heuristic GARCH/HAR/fusion/ADAM/logistic weights remain unfitted. |
+
+## 2026-09-05 — P1-2 / P1-4 / P1-5 / P2-4: lane and engine path invariants
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `ui`, `docs` |
+| **Summary** | Canonical opportunity mint is StrategyMatch → `bridge.py` → OpportunityEngine; older constructions are deprecated and two paths conflict on persist. One tested discovery/workspace/`LaneId` map; `MARKET_CONTEXT` routes to workspace `catalyst` (not `order-book`). Execution-intent runtimes that omit `strategy_eligibility` fail closed; research-only scanners do not construct OrderReadyV1. Unadmitted captures and donor execution entry points cannot reach training, promotion, or OrderReady. LIVE/paper campaign gates remain closed. |
+| **Key files** | Created: `src/market_platform_foundation/lanes/vocabulary.py`, `src/market_platform_foundation/intelligence/dataset_admission.py`, `tests/platform/test_lane_vocabulary.py`, `tests/platform/test_unadmitted_and_donor_isolation.py`; modified: opportunity engine/bridge/P4/economic sidecar, `strategy/runtime.py`, `strategy/eligibility.py`, `strategy/scanning.py`, training factory, promotion engine, `PAPER_DECISION_LIFECYCLE.md`, `paperDecisionSemantics.ts`, `laneRegistry.test.ts` |
+| **Tests** | Targeted pytest: 41 passed (`test_universal_opportunity.py`, `test_equity_paper_runtime.py`, `test_lane_vocabulary.py`, `test_unadmitted_and_donor_isolation.py`). UI vitest: `laneRegistry.test.ts` 9 passed. Full `validate.py` not run. |
+| **Related** | [Hardening task plan](../../../../docs/reviews/2026-09-04-hardening-task-plan.md) P1-2, P1-4, P1-5, P2-4 |
+| **Notes** | Did not open LIVE-001, P6 Shadow Run 1, or paper campaign gates. Full `validate.py` not run (targeted only). |
+
 ## 2026-09-05 — Monorepo embedding: provenance root resolution (release/qualification gates)
 
 | Field | Value |
