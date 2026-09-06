@@ -18,6 +18,7 @@ from apps.research_screener.methodologies.adam_v1 import IGNITION, PRESSURE  # n
 from market_platform_foundation.cross_lane import fusion as fusion_mod  # noqa: E402
 from market_platform_foundation.research.distribution import garch as garch_mod  # noqa: E402
 from market_platform_foundation.research.distribution import har_rv as har_mod  # noqa: E402
+from market_platform_foundation.options import breeden_litzenberger as options_bl  # noqa: E402
 from market_platform_foundation.options import dealer as options_dealer  # noqa: E402
 from market_platform_foundation.options import delta_hedged as options_dh  # noqa: E402
 from market_platform_foundation.options import r_o6 as options_ro6  # noqa: E402
@@ -135,6 +136,28 @@ class HeuristicPinDriftTests(unittest.TestCase):
         self.assertFalse(hasattr(options_ro6, "DEFAULT_RATE"))
         self.assertEqual(options_dh.DELTA_HEDGED_VERSION, "delta_hedged_research_v2")
         self.assertEqual(options_ro6.R_O6_VERSION, "r_o6_research_v2")
+
+    def test_bl_q_pins_match_ledger(self) -> None:
+        bl = self.formulas["options.risk_neutral_q_bl"]
+        q = self.formulas["options.risk_neutral_q"]
+        self.assertEqual(bl["version"], "risk_neutral_breeden_litzenberger_v1")
+        self.assertEqual(q["version"], "risk_neutral_log_normal_moment_approx_v1")
+        pins = bl["pinned_constants"]
+        self.assertEqual(options_bl.MIN_UNIQUE_STRIKES, pins["min_unique_strikes"])
+        self.assertEqual(options_bl.DENSITY_MASS_MIN, pins["density_mass_min"])
+        self.assertEqual(options_bl.DENSITY_MASS_MAX, pins["density_mass_max"])
+        self.assertEqual(options_bl.TAIL_THRESHOLD, pins["tail_threshold"])
+        self.assertEqual(options_bl.BL_MODEL_VERSION, bl["version"])
+        self.assertEqual(bl["capability_class"], "research_baseline")
+        self.assertFalse(hasattr(options_bl, "DEFAULT_RATE"))
+        self.assertEqual(options_bl.Q_METHOD, "breeden_litzenberger")
+        self.assertEqual(options_q.Q_METHOD, "log_normal_moment_approx")
+
+    def test_futures_calendar_carry_notes_document_unused_rate(self) -> None:
+        notes = self.formulas["futures.calendar_implied_carry"].get("notes", "")
+        self.assertIn("no silent risk_free_rate=0.05", notes)
+        self.assertIn("2025-01-01", notes)
+        self.assertIn("CARRY_SCALE=0.05", notes)
 
 
 if __name__ == "__main__":

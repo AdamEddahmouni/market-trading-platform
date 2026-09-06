@@ -26,6 +26,42 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-06 — Q-H3-usage: stamp q_method on O3 and BL
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `docs` |
+| **Summary** | Stamp `q_method` on log-normal O3 (`log_normal_moment_approx`) and discrete BL (`breeden_litzenberger`) payloads so P−Q consumers can see which Q they compared. Default `infer_risk_neutral_distribution` is unchanged. `donor_bridge/projections` and `providers/projections` still call log-normal O3 (no auto-BL). No trade authority. |
+| **Key files** | Modified: `src/market_platform_foundation/options/risk_neutral.py`, `src/market_platform_foundation/options/breeden_litzenberger.py`, `tests/options/test_options_o3.py`, `tests/options/test_options_o3_bl.py`, `tests/formulas/test_heuristic_pin_drift.py`, `docs/research/formula_ledger.json`, `docs/research/FORMULA_LEDGER.md`; workspace: `docs/reviews/2026-09-04-hardening-task-plan.md` |
+| **Tests** | Python 3.13. `pytest tests/options/test_options_o3.py tests/options/test_options_o3_bl.py tests/formulas/test_heuristic_pin_drift.py tests/formulas/test_formula_goldens.py tests/options/test_options_o4.py`: 41 passed. `imp.py validate domain options`: 583 passed, 11 skipped, 0 failures, 0 errors. |
+| **Related** | [Hardening task plan](../../../../docs/reviews/2026-09-04-hardening-task-plan.md) Q-H3-usage; Q-H3 PR |
+| **Notes** | G1–G6 stay closed. Not a default Q switch. |
+
+## 2026-09-06 — Q-H1-futures-rate: unused carry r and DTE fallback
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `docs` |
+| **Summary** | Spot carry is `ln(F/S)/days×365` and does not use `r`. Dropped silent `risk_free_rate=0.05` and stopped stamping unused r in assumptions. Missing observation date fail-closes (no `"2025-01-01"` DTE fallback). Does not reopen Q-H1 calibration; `CARRY_SCALE=0.05` stays an unfitted tanh pin. Canonical trees only. |
+| **Key files** | Modified: `src/market_platform_foundation/futures/carry.py`, `tests/futures/test_f3_basis_carry.py`, `tests/formulas/test_heuristic_pin_drift.py`, `docs/research/formula_ledger.json`, `docs/research/FORMULA_LEDGER.md`; workspace: `docs/reviews/2026-09-04-hardening-task-plan.md` |
+| **Tests** | Python 3.13. `pytest tests/futures/test_f3_basis_carry.py tests/futures/test_baselines_engine.py tests/formulas/test_heuristic_pin_drift.py`: 26 passed. `imp.py validate domain futures`: 526 passed, 11 skipped, 0 failures, 0 errors. |
+| **Related** | [Hardening task plan](../../../../docs/reviews/2026-09-04-hardening-task-plan.md) Q-H1-futures-rate; Q-H3 PR |
+| **Notes** | G1–G6 stay closed. No fusion/GARCH/HAR/ADAM/logistic calibration. |
+
+## 2026-09-06 — Q-H3: discrete Breeden–Litzenberger Q (additive)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `docs` |
+| **Summary** | Closed Q-H3 with an additive fail-closed discrete Breeden–Litzenberger path (`infer_risk_neutral_breeden_litzenberger`, `risk_neutral_breeden_litzenberger_v1`) on the IV-reconstructed call curve. Default O3 stays `risk_neutral_log_normal_moment_approx_v1`; no average-IV log-normal fallback; no silent `rate=0.05`. Ledger 88→89 (`options.risk_neutral_q_bl`, `research_baseline`). `donor_bridge/projections` and `providers/projections` still call `infer_risk_neutral_distribution`. G1–G6 stay closed; no trade authority. |
+| **Key files** | Created: `src/market_platform_foundation/options/breeden_litzenberger.py`, `tests/options/test_options_o3_bl.py`. Modified: `src/market_platform_foundation/options/risk_neutral.py`, `options/__init__.py`, `tests/formulas/test_heuristic_pin_drift.py`, `docs/research/formula_ledger.json`, `docs/research/FORMULA_LEDGER.md`; workspace: `docs/reviews/2026-09-04-hardening-task-plan.md`, `docs/reviews/2026-09-05-formula-correctness-review.md` |
+| **Tests** | Python 3.13. Scoped pytest (`test_options_o3.py`, `test_options_o3_bl.py`, `test_heuristic_pin_drift.py`, `test_formula_goldens.py`): 35 passed. `imp.py validate domain options`: 581 passed, 11 skipped, 0 failures. `imp.py validate full`: 3575 passed, 48 skipped, 0 failures, 0 errors. |
+| **Related** | [Hardening task plan](../../../../docs/reviews/2026-09-04-hardening-task-plan.md) Q-H3; [formula correctness review](../../../../docs/reviews/2026-09-05-formula-correctness-review.md) |
+| **Notes** | Q-H1 remains open (unfitted scalars). Q-H4 / `SUPPORTED` stay closed. 2-strike O3 fixtures fail BL (`BL_INSUFFICIENT_STRIKES`). Do not treat discrete BL as a trade signal. |
+
 ## 2026-09-06 — Pin-drift ADAM import uses canonical squeeze tree
 
 | Field | Value |
