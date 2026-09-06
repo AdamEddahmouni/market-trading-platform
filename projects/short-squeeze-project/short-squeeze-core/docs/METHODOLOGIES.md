@@ -35,7 +35,9 @@ admissible evidence and preserves unknown or conflicted results.
 |---|---|---|---|
 | Current % Change | 35 | linear(0, 20) | IBKR canonical `PERCENTAGE_RETURN` |
 | Relative Volume | 30 | linear(1, 10) | Finviz Elite Relative Volume |
-| Bar Acceleration | 20 | linear(0, 5) | Computed from IBKR bar returns |
+| Bar Acceleration | 20 | linear(0, 5) | Computed from IBKR **open→close** bar percent (not close-to-close DECIMAL returns) |
+
+**Return-definition split:** ADAM ignition `completed_bar_acceleration` is open-to-close percentage points on each bar (`squeeze_core.metrics.bar_acceleration`). Canonical squeeze return metrics and z-scores use close-to-close completed bars (`close_to_close_completed.v1`). Do not compare ignition acceleration to return metrics as if they shared a definition.
 | Catalyst Age | 15 | step(24h, 72h) | News headlines / SEC filing `filed_at` |
 
 ### Classification thresholds

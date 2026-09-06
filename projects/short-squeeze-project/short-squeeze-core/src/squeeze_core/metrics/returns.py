@@ -12,6 +12,8 @@ from .selection import MetricSelectionRequest, resolve_bar_at_boundary
 
 METRIC_VERSION = "1.0.0"
 CALCULATION_POLICY_VERSION = "close_to_close_completed.v1"
+# Close-to-close completed-bar returns. ADAM ignition bar_acceleration uses open→close
+# percent on each bar and is a different quantity — do not compare them as one series.
 
 _INFO = "INFO"
 _WARNING = "WARNING"

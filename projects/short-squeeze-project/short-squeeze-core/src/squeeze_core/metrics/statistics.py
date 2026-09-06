@@ -5,6 +5,7 @@ from decimal import Decimal, localcontext
 # Decimal context. Higher than Phase 2A's prec=28 (used for single divisions) because variance
 # squares each deviation before summing -- see docs/phase-2b-design.md Section 8 and
 # docs/adr/0033-decimal-population-standard-deviation.md for the full rationale.
+# variance_estimator: population (/n). Platform close-to-close RV uses sample n-1. Do not mix.
 DECIMAL_STATISTICS_PRECISION = 50
 
 
