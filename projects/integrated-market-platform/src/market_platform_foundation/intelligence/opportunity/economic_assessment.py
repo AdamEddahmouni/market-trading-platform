@@ -1,4 +1,8 @@
-"""Typed universal economic-assessment sidecar for OpportunityV1."""
+"""Typed universal economic-assessment sidecar for OpportunityV1.
+
+Deprecated as an opportunity constructor. The sidecar is lineage attached by
+the canonical bridge; it does not mint ``OpportunityV1``.
+"""
 
 from __future__ import annotations
 

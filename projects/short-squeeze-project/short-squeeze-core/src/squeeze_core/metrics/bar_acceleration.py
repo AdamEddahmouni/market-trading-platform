@@ -1,7 +1,11 @@
-"""Bar acceleration metric: rate-of-change of bar-level returns.
+"""Bar acceleration metric: rate-of-change of bar-level open-to-close returns.
 
-Measures whether the most recent completed bar's percentage change is accelerating
-or decelerating relative to the preceding bars.
+Measures whether the most recent completed bar's open→close percentage change is
+accelerating or decelerating relative to the preceding bars.
+
+This is not the squeeze-core close-to-close DECIMAL return metric
+(``close_to_close_completed.v1``). ADAM ignition consumes this open→close
+series; return z-scores consume close-to-close. Ledger/spec treat them as split.
 """
 
 from __future__ import annotations

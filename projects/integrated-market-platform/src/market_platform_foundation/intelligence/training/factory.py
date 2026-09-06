@@ -13,6 +13,7 @@ from .authorization import (
     is_frontier_historical_teacher_blocked,
     validate_experiment_for_training,
 )
+from ..dataset_admission import UnadmittedCaptureError, assert_admitted_for_training
 from .datasets import materialize_development_dataset
 from .errors import TrainingFactoryError
 from .search import expand_candidate_specs
@@ -51,6 +52,11 @@ class TrainingFactory:
         base_hyperparameters: dict[str, Any] | None = None,
         persist: bool = True,
     ) -> TrainingFactoryResult:
+        try:
+            assert_admitted_for_training(manifest.metadata)
+        except UnadmittedCaptureError as exc:
+            raise TrainingFactoryError(exc.code, details={"surface": exc.surface, **exc.details}) from exc
+
         if is_frontier_historical_teacher_blocked(manifest):
             raise TrainingFactoryError(
                 "VALIDATION_BLOCKED_PENDING_BUILD19",

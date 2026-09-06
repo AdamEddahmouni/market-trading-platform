@@ -6,9 +6,33 @@ from typing import Any, Literal
 
 from .greeks import CallPut, bsm_greeks
 from .iv import bsm_price
+from .risk_neutral import RATE_ASSUMPTION_MISSING
 
-DELTA_HEDGED_VERSION = "delta_hedged_research_v1"
+DELTA_HEDGED_VERSION = "delta_hedged_research_v2"
 DEFAULT_REBALANCE_COST_BPS = 1.0
+
+
+def _positive_float(value: Any) -> float | None:
+    if isinstance(value, (int, float)) and float(value) > 0:
+        return float(value)
+    return None
+
+
+def _resolve_rate_from_pq(
+    physical_p: dict[str, Any] | None,
+    risk_neutral_q: dict[str, Any] | None,
+    rate: float | None,
+) -> float | None:
+    explicit = _positive_float(rate)
+    if explicit is not None:
+        return explicit
+    for source in (physical_p, risk_neutral_q):
+        if not isinstance(source, dict):
+            continue
+        stamped = _positive_float(source.get("rate"))
+        if stamped is not None:
+            return stamped
+    return None
 
 
 def compute_delta_hedged_period_return(
@@ -162,7 +186,7 @@ def delta_hedged_research_snapshot(
   *,
   spot_path: list[float] | None = None,
   strike: float | None = None,
-  rate: float = 0.05,
+  rate: float | None = None,
   call_put: CallPut = "call",
   maturity_days: int = 30,
 ) -> dict[str, Any]:
@@ -189,10 +213,18 @@ def delta_hedged_research_snapshot(
             "delta_hedged_version": DELTA_HEDGED_VERSION,
         }
 
+    resolved_rate = _resolve_rate_from_pq(physical_p, risk_neutral_q, rate)
+    if resolved_rate is None:
+        return {
+            "available": False,
+            "reason": RATE_ASSUMPTION_MISSING,
+            "delta_hedged_version": DELTA_HEDGED_VERSION,
+        }
+
     path_result = simulate_delta_hedged_path(
         spot_path,
         strike=strike,
-        rate=rate,
+        rate=resolved_rate,
         volatility=float(implied_vol),
         call_put=call_put,
         maturity_days_start=maturity_days,
@@ -206,6 +238,7 @@ def delta_hedged_research_snapshot(
 
     return {
         **path_result,
+        "rate": resolved_rate,
         "vol_implied_annualized": round(float(implied_vol), 6),
         "vol_forecast_annualized": (
             round(float(forecast_rv), 6) if isinstance(forecast_rv, (int, float)) else None
@@ -223,6 +256,7 @@ def delta_hedged_research_snapshot(
 __all__ = [
     "DEFAULT_REBALANCE_COST_BPS",
     "DELTA_HEDGED_VERSION",
+    "RATE_ASSUMPTION_MISSING",
     "compute_delta_hedged_period_return",
     "delta_hedged_research_snapshot",
     "simulate_delta_hedged_path",

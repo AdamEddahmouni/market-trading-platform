@@ -6,6 +6,7 @@ from dataclasses import replace
 from typing import Any
 
 from ..contracts.common import INTELLIGENCE_SCHEMA_VERSION
+from ..dataset_admission import UnadmittedCaptureError, assert_admitted_for_promotion
 from ..research_experiments.types import ComplexityBudget, EvidenceTier, ExperimentManifestV1
 from ..training.types import CandidateArtifactV1
 from ..validation.statistics import evaluate_statistical_criteria, moving_block_bootstrap_ci
@@ -78,6 +79,10 @@ class PromotionEngine:
         registered_at_ns: int,
         candidate_artifact_bytes: bytes | None = None,
     ) -> ChallengerRegistrationV1:
+        try:
+            assert_admitted_for_promotion(candidate.metadata)
+        except UnadmittedCaptureError as exc:
+            raise PromotionError(exc.code, details={"surface": exc.surface, **exc.details}) from exc
         assessment = eligibility or self.assess_eligibility(
             policy=policy,
             candidate=candidate,
@@ -144,6 +149,12 @@ class PromotionEngine:
         champion_complexity: ComplexityBudget = ComplexityBudget.SAME_COMPLEXITY,
         statistical_plan: StatisticalPlan | None = None,
     ) -> PromotionDecisionV1:
+        try:
+            assert_admitted_for_promotion(
+                (experiment.metadata if experiment is not None else None) or candidate.metadata
+            )
+        except UnadmittedCaptureError as exc:
+            raise PromotionError(exc.code, details={"surface": exc.surface, **exc.details}) from exc
         reason_codes: list[PromotionReasonCode] = []
         decision = PromotionDecisionKind.PROMOTE
 

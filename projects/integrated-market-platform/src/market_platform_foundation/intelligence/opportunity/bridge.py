@@ -1,4 +1,10 @@
-"""Canonical StrategyMatch → governed OpportunityEngine bridge."""
+"""Canonical StrategyMatch → governed OpportunityEngine bridge.
+
+This is the only construction path that may persist authoritative
+``OpportunityAssessmentV1`` / ``OpportunityV1`` records for strategy Paper.
+``OpportunityEngine.assess`` remains the numeric engine; economic sidecars and
+the P4 adapter are inputs, not alternate opportunity builders.
+"""
 
 from __future__ import annotations
 
@@ -146,7 +152,7 @@ def bridge_strategy_match_to_opportunity(
     repository: IntelligenceRepository | None = None,
     engine: OpportunityEngine | None = None,
 ) -> OpportunityBridgeResult:
-    """Validate lineage/scope, call OpportunityEngine once, and persist outputs."""
+    """Canonical StrategyMatch → OpportunityEngine mint; persist once."""
     _validate_inputs(
         match=match,
         forecast=forecast,

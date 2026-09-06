@@ -9,6 +9,7 @@ from .realized_vol import close_to_close_returns
 
 
 def ewma_variance(returns: Sequence[float], *, lambda_: float = 0.94) -> float | None:
+    """RiskMetrics EWMA of squared returns (not sample or population σ of returns)."""
     if not returns:
         return None
     variance = returns[0] ** 2

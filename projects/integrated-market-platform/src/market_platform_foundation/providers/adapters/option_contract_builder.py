@@ -153,6 +153,9 @@ def activities_to_chain_dicts(
         underlying_price = activity.get("underlying_price")
         if isinstance(underlying_price, (int, float)) and underlying_price > 0:
             contract_dict["underlying_price"] = underlying_price
+        rate = activity.get("rate")
+        if isinstance(rate, (int, float)) and rate > 0:
+            contract_dict["rate"] = float(rate)
         contracts.append(contract_dict)
     return contracts
 

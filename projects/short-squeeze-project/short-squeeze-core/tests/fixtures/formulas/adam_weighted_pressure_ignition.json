@@ -1,0 +1,28 @@
+{
+  "formula_id": "adam_evidence_gated_prime.v1_weighted_dimensions",
+  "inputs": {
+    "published_short_interest_pct": 17.5,
+    "days_to_cover": 4.0,
+    "cost_to_borrow": 26.0,
+    "borrow_availability_pct_float": 5.05,
+    "float_shares": 30000000,
+    "current_percentage_change": 10.0,
+    "relative_volume": 5.5,
+    "completed_bar_acceleration": 2.5,
+    "catalyst_age_hours": 48.0
+  },
+  "independent_normalized": {
+    "published_short_interest_pct": 50.0,
+    "days_to_cover": 50.0,
+    "cost_to_borrow": 50.0,
+    "borrow_availability_pct_float": 50.0,
+    "float_shares": 50.0,
+    "current_percentage_change": 50.0,
+    "relative_volume": 50.0,
+    "completed_bar_acceleration": 50.0,
+    "catalyst_age_hours": 50.0
+  },
+  "expected_pressure": 50.0,
+  "expected_ignition": 50.0,
+  "expected_classification": "WATCH"
+}

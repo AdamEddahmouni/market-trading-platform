@@ -155,13 +155,14 @@
       "scope": [
         "src/market_platform_foundation/cross_lane",
         "src/market_platform_foundation/futures",
+        "src/market_platform_foundation/lanes",
         "src/market_platform_foundation/market_context",
         "src/market_platform_foundation/options",
         "src/market_platform_foundation/order_flow",
         "src/market_platform_foundation/participant",
         "src/market_platform_foundation/short_intelligence"
       ],
-      "responsibility": "Canonical fixture-qualified market-context, futures, options, order-flow, participant, short, and cross-lane feature families.",
+      "responsibility": "Canonical fixture-qualified market-context, futures, options, order-flow, participant, short, cross-lane, and lane-vocabulary mapping families.",
       "evidence": [
         "README.md records completed cooperative milestones through MC16, F11, OF12, PI13, and SS P7.",
         "The validation manifest routes each lane to active domain suites."

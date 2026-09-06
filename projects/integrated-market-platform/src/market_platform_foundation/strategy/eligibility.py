@@ -62,6 +62,7 @@ REASON_CHAMPION_NOT_PROMOTED = "CHAMPION_NOT_PROMOTED"
 REASON_PROMOTION_DECISION_REF_MISSING = "PROMOTION_DECISION_REF_MISSING"
 REASON_FORWARD_EVIDENCE_CLASS_NOT_ESTABLISHED = "FORWARD_EVIDENCE_CLASS_NOT_ESTABLISHED"
 REASON_FORWARD_EVIDENCE_CLASS_INELIGIBLE = "FORWARD_EVIDENCE_CLASS_INELIGIBLE"
+REASON_ELIGIBILITY_CONFIG_OMITTED = "STRATEGY_ELIGIBILITY_CONFIG_OMITTED"
 
 # Code stamped on a BLOCKED OrderReadyV1 when the gate (not risk) is the
 # blocker, so downstream audit can distinguish governance denial from risk
@@ -150,6 +151,15 @@ def _derive_record_id(payload: Mapping[str, Any]) -> str:
     return f"{EXECUTION_ELIGIBILITY_RECORD_PREFIX}-{digest}"
 
 
+def omitted_execution_eligibility_record(strategy_id: str) -> StrategyEligibilityRecordV1:
+    """Fail-closed record when execution-intent runtime omits the gate config."""
+    return assess_strategy_execution_eligibility(
+        strategy_id=strategy_id,
+        preregistration_status=PREREGISTRATION_STATUS_ABSENT,
+        additional_reasons=(REASON_ELIGIBILITY_CONFIG_OMITTED,),
+    )
+
+
 def assess_strategy_execution_eligibility(
     *,
     strategy_id: str,
@@ -159,6 +169,7 @@ def assess_strategy_execution_eligibility(
     champion_status: str | None = None,
     promotion_decision_id: str | None = None,
     forward_evidence_class: str | None = None,
+    additional_reasons: tuple[str, ...] = (),
 ) -> StrategyEligibilityRecordV1:
     """Evaluate the single execution-intent predicate from recorded facts.
 
@@ -170,7 +181,7 @@ def assess_strategy_execution_eligibility(
     be granted execution intent, but the gap is reversible). INELIGIBLE
     outranks INCONCLUSIVE.
     """
-    reasons: list[str] = []
+    reasons: list[str] = list(additional_reasons)
     inconclusive: list[str] = []
 
     if preregistration_status == PREREGISTRATION_STATUS_ABSENT:

@@ -8,6 +8,8 @@ from typing import Any, Sequence
 
 
 MODEL_VERSION = "ss_logistic_hazard_v1"
+DEFAULT_WEIGHTS = (0.8, 0.5, 0.3)
+DEFAULT_HORIZON_DAYS = 5
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,10 +45,9 @@ def predict_squeeze_probability(
     features: Sequence[float],
     *,
     weights: Sequence[float] | None = None,
-    horizon_days: int = 5,
+    horizon_days: int = DEFAULT_HORIZON_DAYS,
 ) -> dict[str, Any]:
-    default_weights = (0.8, 0.5, 0.3)
-    w = weights or default_weights
+    w = weights or DEFAULT_WEIGHTS
     padded = list(features) + [0.0] * max(0, len(w) - len(features))
     occurrence = logistic_probability(padded[:len(w)], w)
     magnitude_boost = padded[0] if padded else 0.0
@@ -64,6 +65,8 @@ def predict_squeeze_probability(
 
 
 __all__ = [
+    "DEFAULT_HORIZON_DAYS",
+    "DEFAULT_WEIGHTS",
     "MechanismLabelRow",
     "MODEL_VERSION",
     "hazard_horizon_probability",

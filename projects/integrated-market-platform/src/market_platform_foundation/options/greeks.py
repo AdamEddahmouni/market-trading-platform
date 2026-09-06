@@ -33,6 +33,8 @@ def bsm_greeks(
     )
     d2 = d1 - volatility * sqrt_t
     gamma = _norm_pdf(d1) / (spot * volatility * sqrt_t)
+    # Vega is per 1 vol point (divide by 100). Theta is calendar-day (/365).
+    # Physical P vol is annualized on 252 trading days — do not treat theta/365 as 252-day.
     vega = spot * _norm_pdf(d1) * sqrt_t / 100.0
     if call_put == "call":
         delta = _norm_cdf(d1)

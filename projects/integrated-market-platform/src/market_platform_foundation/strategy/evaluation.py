@@ -31,6 +31,14 @@ def default_whale_aligned_spec() -> dict[str, Any]:
     )
 
 
+def default_whale_contrarian_spec() -> dict[str, Any]:
+    return build_strategy_spec(
+        alignment_type="WHALE_CONTRARIAN",
+        hypothesis="Contrarian interpretation of naive last-value score when entitled institutional evidence exists (baseline_only)",
+        evidence_requirements=["bar_derived_features", "naive_forecast", "institutional_flow"],
+    )
+
+
 def run_strategy_evaluation(
     events: list[dict[str, Any]],
     *,

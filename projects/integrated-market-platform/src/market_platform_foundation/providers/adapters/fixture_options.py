@@ -162,6 +162,13 @@ class FixtureOptionsProvider:
                 provider_id=self.provider_id,
             )
             whale_event["canonical_contract"] = option_contract_to_dict(canonical)
+            tape_rate = activity.get("rate")
+            if isinstance(tape_rate, (int, float)) and tape_rate > 0:
+                whale_event["rate"] = float(tape_rate)
+                whale_event["canonical_contract"]["rate"] = float(tape_rate)
+            tape_spot = activity.get("underlying_price")
+            if isinstance(tape_spot, (int, float)) and tape_spot > 0:
+                whale_event["canonical_contract"]["underlying_price"] = tape_spot
             normalized_id = normalized_event_id(
                 provider_id=self.provider_id,
                 venue_id="US_EQUITY",

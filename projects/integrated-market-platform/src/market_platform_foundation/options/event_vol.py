@@ -12,7 +12,7 @@ from ..contracts.options_quality import OptionQualityFlag
 from ..contracts.reference import ReferenceKind, ReferenceQualityFlag
 from ..runtime.bitemporal_store import BitemporalReferenceStore
 from ..runtime.pit_joins import join_as_of
-from .surface import build_surface_point, infer_underlying_price
+from .surface import build_surface_point
 
 EVENT_VOL_VERSION = "options_event_vol_v1"
 EVENT_VOL_METHOD = "EARNINGS_STRADDLE_EMPIRICAL_V1"
@@ -117,8 +117,7 @@ def _select_atm_straddle(
 
     spot = spot_hint
     if spot is None or spot <= 0:
-        sample = calls[0]
-        spot = infer_underlying_price(sample, float(sample.get("strike", 0)), "call")
+        return None, None, 0.0
 
     def _strike_distance(row: dict[str, Any]) -> float:
         return abs(float(row.get("strike", 0)) - spot)

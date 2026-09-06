@@ -171,6 +171,7 @@ class CrossLaneAdapterTests(unittest.TestCase):
                     "volume_ratio": 2.0,
                     "direction_label": "ambiguous",
                     "confirmation_score": 80,
+                    "rate": 0.04,
                 },
                 {
                     "option_type": "call",
@@ -181,6 +182,7 @@ class CrossLaneAdapterTests(unittest.TestCase):
                     "ask": 0.22,
                     "open_interest": 300,
                     "underlying_price": 4.25,
+                    "rate": 0.04,
                     "volume_oi_ratio": 2.5,
                     "volume_ratio": 1.8,
                     "direction_label": "ambiguous",

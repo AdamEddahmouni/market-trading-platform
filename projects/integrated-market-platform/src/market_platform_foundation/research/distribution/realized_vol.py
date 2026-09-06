@@ -5,6 +5,12 @@ from __future__ import annotations
 import math
 from typing import Sequence
 
+# Close-to-close RV uses Bessel's correction. Squeeze ADR σ is population (/n).
+# Do not mix unlabeled estimators in fusion or strategy interpretation.
+VARIANCE_ESTIMATOR_SAMPLE = "sample_n_minus_1"
+VARIANCE_ESTIMATOR_POPULATION = "population_n"
+VARIANCE_ESTIMATOR_PARKINSON = "parkinson_high_low_mean"
+
 
 def close_to_close_returns(closes: Sequence[float]) -> list[float]:
     if len(closes) < 2:
@@ -18,7 +24,7 @@ def close_to_close_returns(closes: Sequence[float]) -> list[float]:
 
 
 def realized_volatility_close_to_close(closes: Sequence[float]) -> float | None:
-    """Annualized close-to-close realized volatility from log returns."""
+    """Annualized close-to-close RV; sample variance (n-1). Not squeeze ADR population σ."""
     returns = close_to_close_returns(closes)
     if len(returns) < 2:
         return None
@@ -45,6 +51,9 @@ def realized_volatility_parkinson(highs: Sequence[float], lows: Sequence[float])
 
 
 __all__ = [
+    "VARIANCE_ESTIMATOR_PARKINSON",
+    "VARIANCE_ESTIMATOR_POPULATION",
+    "VARIANCE_ESTIMATOR_SAMPLE",
     "close_to_close_returns",
     "realized_volatility_close_to_close",
     "realized_volatility_parkinson",

@@ -73,6 +73,43 @@ business trace reconstructs these records by `allocation_decision_id` through
 `GET /paper/trace?allocation_decision_id=...`; the existing intent/order/fill
 anchors remain supported for manual Paper orders.
 
+### Canonical opportunity construction (P1-2)
+
+Authoritative `OpportunityV1` / `OpportunityAssessmentV1` records are minted
+only by:
+
+```text
+StrategyMatch (MATCHED)
+  -> intelligence/opportunity/bridge.py (bridge_strategy_match_to_opportunity)
+  -> OpportunityEngine.assess
+  -> persist assessment + opportunity (once)
+```
+
+`OpportunityEngine.assess` remains the numeric engine and is valid in
+fixture/unit tests. Direct engine construction, the P4 adapter, and the
+universal economic sidecar are **not** alternate opportunity builders. Two
+constructions of the same identity with different lineage conflict on persist
+(`IMMUTABLE_CONFLICT`); they must not produce duplicate authoritative records.
+
+Research-only scanners (`UniversalStrategyScanner`) emit matches only and do
+not construct `OrderReadyV1`. Execution-intent `StrategyPaperRuntime` must
+supply `strategy_eligibility`; omitting it fails closed as ineligible.
+
+### Lane vocabularies (P1-4)
+
+Three naming systems stay distinct. Crosswalk: `lanes/vocabulary.py` (tested)
+and UI `EVIDENCE_LANE_TO_MODULE_ID`.
+
+| Vocabulary | Examples | Meaning |
+|---|---|---|
+| Discovery | `MOMENTUM`, `SQUEEZE`, `CATALYST`, `SWING` | Screener attention buckets |
+| Workspace kebab | `squeeze`, `order-flow`, `catalyst`, `order-book` | UI module routes |
+| Evidence `LaneId` | `short_squeeze`, `market_context`, `order_flow` | Research-family publishers |
+
+`MARKET_CONTEXT` / `LaneId.market_context` is information / catalyst /
+narrative intelligence. It maps to workspace **`catalyst`**, not `order-book`
+(L2 book UI) and not `order-flow` (microstructure).
+
 The trace reports portfolio settlement and prediction settlement separately.
 Portfolio settlement is the fill-driven `PositionChanged` event that powers
 Paper accounting. Prediction settlement remains governed by the prediction

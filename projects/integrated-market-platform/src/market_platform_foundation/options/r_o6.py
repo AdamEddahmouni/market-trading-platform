@@ -7,7 +7,7 @@ from typing import Any, Literal
 from .delta_hedged import delta_hedged_research_snapshot
 from .edge import compare_physical_vs_risk_neutral
 
-R_O6_VERSION = "r_o6_research_v1"
+R_O6_VERSION = "r_o6_research_v2"
 MIN_PANEL_SIZE = 3
 SPEARMAN_PASS_THRESHOLD = 0.0
 
@@ -24,7 +24,7 @@ def compose_r_o6_research_snapshot(
     *,
     spot_path: list[float] | None = None,
     strike: float | None = None,
-    rate: float = 0.05,
+    rate: float | None = None,
     call_put: Literal["call", "put"] = "call",
     maturity_days: int = 30,
 ) -> dict[str, Any]:

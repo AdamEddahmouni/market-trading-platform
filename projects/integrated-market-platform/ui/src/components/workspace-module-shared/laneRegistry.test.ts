@@ -64,4 +64,17 @@ describe("canonical lane-module registry", () => {
       expect(workspaceLanePath("BIYA", moduleId)).toBe(`/workspace/BIYA/${moduleId}`);
     }
   });
+
+  it("maps MARKET_CONTEXT evidence to catalyst, not order-book", () => {
+    expect(EVIDENCE_LANE_TO_MODULE_ID.MARKET_CONTEXT).toBe("catalyst");
+    expect(EVIDENCE_LANE_TO_MODULE_ID.MARKET_CONTEXT).not.toBe("order-book");
+    expect(EVIDENCE_LANE_TO_MODULE_ID.CATALYST).toBe("catalyst");
+    expect(EVIDENCE_LANE_TO_MODULE_ID.ORDER_FLOW).toBe("order-flow");
+    expect(EVIDENCE_LANE_TO_MODULE_ID.SHORT_SQUEEZE).toBe("squeeze");
+  });
+
+  it("leaves order-book as a workspace module without an evidence lane", () => {
+    expect(MODULES_WITHOUT_EVIDENCE_LANE).toContain("order-book");
+    expect(Object.values(EVIDENCE_LANE_TO_MODULE_ID)).not.toContain("order-book");
+  });
 });

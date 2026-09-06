@@ -5,22 +5,22 @@ from __future__ import annotations
 from typing import Any
 
 from ..contracts.options_quality import OptionQualityFlag
+from .edge import infer_underlying_price_from_activities
+from .flow import _resolve_rate
 from .iv import dual_track_iv
 
+SURFACE_VERSION = "sigma_kt_v3"
 
-def infer_underlying_price(activity: dict[str, Any], strike: float, call_put: str) -> float:
-    raw = activity.get("underlying_price")
-    if isinstance(raw, (int, float)) and raw > 0:
-        return float(raw)
-    if call_put == "call":
-        return strike * 1.02
-    return strike * 0.98
+
+def infer_underlying_price(activity: dict[str, Any]) -> float | None:
+    """First positive underlying_price on the row or nested canonical_contract."""
+    return infer_underlying_price_from_activities([activity])
 
 
 def build_surface_point(
     activity: dict[str, Any],
     *,
-    rate: float = 0.05,
+    rate: float | None = None,
 ) -> dict[str, Any] | None:
     bid = float(activity.get("bid", 0.0))
     ask = float(activity.get("ask", 0.0))
@@ -39,7 +39,12 @@ def build_surface_point(
     expiry_date = date.fromisoformat(expiry[:10])
     dte = max((expiry_date - event_date).days, 1)
     time_years = dte / 365.0
-    spot = infer_underlying_price(activity, strike, option_type)
+    spot = infer_underlying_price(activity)
+    if spot is None:
+        return None
+    resolved_rate = _resolve_rate([activity], rate)
+    if resolved_rate is None:
+        return None
     call_put = "call" if option_type == "call" else "put"
     provider_iv_raw = activity.get("provider_iv")
     provider_iv = float(provider_iv_raw) if isinstance(provider_iv_raw, (int, float)) else None
@@ -48,7 +53,7 @@ def build_surface_point(
         spot=spot,
         strike=strike,
         time_years=time_years,
-        rate=rate,
+        rate=resolved_rate,
         call_put=call_put,
         provider_iv=provider_iv,
     )
@@ -60,6 +65,8 @@ def build_surface_point(
         "expiration": expiry,
         "dte": dte,
         "call_put": call_put,
+        "underlying_price": spot,
+        "rate": resolved_rate,
         "sigma": iv_track["internal_iv"],
         "internal_iv": iv_track["internal_iv"],
         "provider_iv": iv_track["provider_iv"],
@@ -71,7 +78,7 @@ def build_surface_point(
 def build_volatility_surface(
     activities: list[dict[str, Any]],
     *,
-    rate: float = 0.05,
+    rate: float | None = None,
 ) -> dict[str, Any]:
     points: list[dict[str, Any]] = []
     for activity in activities:
@@ -83,8 +90,13 @@ def build_volatility_surface(
     return {
         "point_count": len(points),
         "points": points,
-        "surface_version": "sigma_kt_v1",
+        "surface_version": SURFACE_VERSION,
     }
 
 
-__all__ = ["build_surface_point", "build_volatility_surface", "infer_underlying_price"]
+__all__ = [
+    "SURFACE_VERSION",
+    "build_surface_point",
+    "build_volatility_surface",
+    "infer_underlying_price",
+]

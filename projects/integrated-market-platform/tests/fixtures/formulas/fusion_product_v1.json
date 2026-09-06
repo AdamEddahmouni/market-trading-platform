@@ -1,0 +1,31 @@
+{
+  "formula_id": "cross_lane_fusion_v1",
+  "product": "fused_net_ev = (expected_pnl_gross - friction) * occurrence_weight * liquidity_factor * futures_regime_factor",
+  "ranked": {
+    "expected_pnl": 100.0,
+    "friction_cost": 10.0,
+    "net_expected_pnl": 90.0,
+    "occurrence_weight": 1.0,
+    "cvd_confidence": 1.0,
+    "gates_passed": true,
+    "squeeze_aligned": false,
+    "fused_net_ev": 90.0,
+    "outcome": "RANKED"
+  },
+  "futures_scaled": {
+    "expected_pnl": 100.0,
+    "friction_cost": 10.0,
+    "leverage_stress_regime": "ELEVATED",
+    "trend_regime": "TREND_DOWN",
+    "liquidity_factor_base": 1.0,
+    "futures_regime_factor": 0.8245,
+    "fused_net_ev": 74.205,
+    "outcome": "RANKED"
+  },
+  "non_positive": {
+    "expected_pnl": 5.0,
+    "friction_cost": 10.0,
+    "outcome": "NO_ACTIONABLE_EDGE",
+    "reason": "FUSED_NET_EV_NOT_POSITIVE"
+  }
+}

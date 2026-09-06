@@ -100,6 +100,7 @@ class RealizedVolCalculator:
           "return_type": "log",
           "annualized": "false",
           "sample_count": str(len(prices)),
+          "variance_estimator": "sample_n_minus_1",
         },
       )
     )

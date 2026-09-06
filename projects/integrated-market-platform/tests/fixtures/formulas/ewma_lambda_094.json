@@ -1,0 +1,9 @@
+{
+  "formula_id": "ewma_variance_riskmetrics_v1",
+  "lambda": 0.94,
+  "returns": [0.01, -0.02, 0.015, 0.005],
+  "variance_path": [0.0001, 0.000118, 0.00012442, 0.0001184548],
+  "annualization": 252,
+  "annualized_vol": 0.17277329,
+  "notes": "var_0 = r_0^2; var_t = λ var_{t-1} + (1-λ) r_t^2"
+}

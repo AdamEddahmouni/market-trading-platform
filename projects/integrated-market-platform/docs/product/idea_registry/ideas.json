@@ -1,0 +1,126 @@
+{
+  "schema_version": "1.0",
+  "non_authoritative": true,
+  "source": "docs/product/PRODUCT_BACKLOG.md",
+  "ideas": [
+    {
+      "id": "P6-SHADOW-RUN-1",
+      "backlog_id": "P6 Shadow Run 1",
+      "status": "deferred",
+      "summary": "Complete forward observation window when Moomoo/OpenD observational path is available.",
+      "experiment_card_hash": null,
+      "experiment_card_path": null,
+      "outcome_refs": [
+        "docs/engineering/P6_SHADOW_RUN_1_PROTOCOL.md",
+        "artifacts/shadow-run-1/P6_SHADOW_RUN_1_PROTOCOL.json",
+        "docs/platform/PROGRAM_STATUS.md"
+      ],
+      "learning_refs": [
+        "docs/engineering/WORK_LOG.md"
+      ]
+    },
+    {
+      "id": "TD-004",
+      "backlog_id": "TD-004",
+      "status": "near_term_candidate",
+      "summary": "Moomoo OpenD real-wire when connectivity is available.",
+      "experiment_card_hash": null,
+      "experiment_card_path": null,
+      "outcome_refs": [
+        "docs/engineering/TECH_DEBT.md"
+      ],
+      "learning_refs": [
+        "docs/engineering/WORK_LOG.md"
+      ]
+    },
+    {
+      "id": "P6-FORWARD-VALIDATION-EVIDENCE",
+      "backlog_id": "P6 forward-validation evidence collection",
+      "status": "in_progress",
+      "summary": "Preregistered protocol; resumable run machinery verified offline. Does not open a live campaign gate.",
+      "experiment_card_hash": null,
+      "experiment_card_path": null,
+      "outcome_refs": [
+        "docs/engineering/P6_SHADOW_RUN_1_PROTOCOL.md"
+      ],
+      "learning_refs": [
+        "docs/engineering/WORK_LOG.md"
+      ]
+    },
+    {
+      "id": "LIVE-001",
+      "backlog_id": "LIVE-001",
+      "status": "deferred_requires_authorization",
+      "summary": "Production execution. Index entry only; G1–G6 remain closed.",
+      "experiment_card_hash": null,
+      "experiment_card_path": null,
+      "outcome_refs": [
+        "docs/platform/PROGRAM_STATUS.md",
+        "docs/platform/AUTHORITY_MODEL.md"
+      ],
+      "learning_refs": []
+    },
+    {
+      "id": "HOSTED-DEPLOYMENT-OIDC-SSO",
+      "backlog_id": "Hosted deployment / OIDC/SSO",
+      "status": "deferred_requires_authorization",
+      "summary": "Hosted deployment. Local P5 auth enforcement is complete (TD-005 closed).",
+      "experiment_card_hash": null,
+      "experiment_card_path": null,
+      "outcome_refs": [
+        "docs/engineering/TECH_DEBT.md"
+      ],
+      "learning_refs": []
+    },
+    {
+      "id": "CRYPTO-PREDICTION-MARKET-TRACKS",
+      "backlog_id": "Crypto / prediction-market expansion tracks",
+      "status": "deferred_requires_authorization",
+      "summary": "Expansion tracks; not admitted execution.",
+      "experiment_card_hash": null,
+      "experiment_card_path": null,
+      "outcome_refs": [],
+      "learning_refs": []
+    },
+    {
+      "id": "ES-SESSION-ACCEPTANCE",
+      "backlog_id": "ES-session acceptance",
+      "status": "deferred_requires_authorization",
+      "summary": "ES-session acceptance (ADR-DATA-001).",
+      "experiment_card_hash": null,
+      "experiment_card_path": null,
+      "outcome_refs": [],
+      "learning_refs": []
+    },
+    {
+      "id": "AI-TRADING-AUTOMATION",
+      "backlog_id": "AI-trading automation",
+      "status": "out_of_scope",
+      "summary": "Out of scope for the current program.",
+      "experiment_card_hash": null,
+      "experiment_card_path": null,
+      "outcome_refs": [],
+      "learning_refs": []
+    },
+    {
+      "id": "ON-CHAIN-LIVE-INGESTION",
+      "backlog_id": "On-chain live ingestion",
+      "status": "out_of_scope",
+      "summary": "Out of scope for the current program.",
+      "experiment_card_hash": null,
+      "experiment_card_path": null,
+      "outcome_refs": [],
+      "learning_refs": []
+    },
+    {
+      "id": "UNIVERSAL-NEWS-SCORE",
+      "backlog_id": "Universal news score / single composite signal",
+      "status": "out_of_scope",
+      "summary": "Out of scope for the current program.",
+      "experiment_card_hash": null,
+      "experiment_card_path": null,
+      "outcome_refs": [],
+      "learning_refs": []
+    }
+  ]
+}

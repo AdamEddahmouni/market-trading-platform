@@ -5,7 +5,7 @@
 | Created | 2026-09-04 |
 | Source | [Hardening review](2026-09-04-hardening-review.md) |
 | Purpose | Tracked, checkable backlog produced by the workspace hardening review. Items are grouped P0 → P2. Each item names evidence, the fix, and an acceptance check. |
-| Status | In progress — 9/17 closed (P0-1, P0-2, P0-3, P0-4, P1-1, P1-7, P1-8, P2-3, P2-5; 2026-09-04/05) |
+| Status | In progress — 17/17 P-items closed (P0-1–P0-4, P1-1–P1-8, P2-1–P2-5; 2026-09-04/05). Q-H1 stays open (unfitted fusion/GARCH/HAR/ADAM/logistic only). Q-H1-rate and Q-H1-O10-rate closed. Q-series does not reopen G1–G6. |
 
 **How to use:** tick `[ ]` → `[x]` as items close. Substantive work should also follow the owning repo's conventions (platform work log entry in `integrated-market-platform/docs/engineering/WORK_LOG.md`; short-squeeze work in its own repo; snapshot refreshes through the guarded monorepo import).
 
@@ -65,6 +65,7 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 - **Evidence:** `src/market_platform_foundation/intelligence/opportunity/` (`engine.py`, `bridge.py`, `p4_adapter.py`, `economic_assessment.py`); 2026-09-01→04 `WORK_LOG.md` entries.
 - **Fix:** designate one canonical construction path in `PAPER_DECISION_LIFECYCLE.md` + code docstrings; deprecate the older construction; add negative tests for cross-path identity collisions (same decision via two paths must conflict, not duplicate).
 - **Acceptance:** docs and code name one canonical builder; a test proves two paths cannot produce duplicate authoritative records.
+- **Closed 2026-09-05** — canonical mint is `StrategyMatch` → `intelligence/opportunity/bridge.py` → `OpportunityEngine.assess` → persist once (`PAPER_DECISION_LIFECYCLE.md`). Direct engine construction, the P4 adapter, and the universal economic sidecar are not alternate builders; two constructions of the same identity with different lineage conflict on persist (`IMMUTABLE_CONFLICT`). Execution-intent `StrategyPaperRuntime` that omits `strategy_eligibility` fails closed (`omitted_execution_eligibility_record`); research-only scanners emit matches only and do not construct `OrderReadyV1`. Tests: `tests/intelligence/test_universal_opportunity.py`, `tests/intelligence/test_equity_paper_runtime.py`. Did not open LIVE-001 or paper campaign gates.
 
 ### P1-3 — RT-01 spans for broker-paper submission/poll/reconcile seams
 
@@ -72,6 +73,7 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 - **Evidence:** `WORK_LOG.md` 2026-09-04 RT-01 paper tracing entry; `docs/platform/PROGRAM_STATUS.md` RT-01 limitation line.
 - **Fix:** extend `rt01/instrumentation/` to broker-paper submission, polling, cancellation, and reconciliation seams (fixture-driven), consistent with existing trace semantics; no new tracing before measured need beyond these seams.
 - **Acceptance:** trace IDs flow across the broker-paper seams in tests; `PROGRAM_STATUS.md` limitation updated when closed.
+- **Closed 2026-09-05** — fixture test `test_fixture_pipeline_shares_one_trace_id` in `tests/platform/test_broker_runtime_wiring.py`: one bound root context through opportunity → risk → order_ready → submit → poll → cancel/reconcile with a single `trace_id` (`InMemoryTraceCollector` / `configure_tracer` / `bind_context`). `PROGRAM_STATUS.md`, `artifacts/imp-rebase/RT01/RT01_KNOWN_LIMITATIONS.json`, and `CANONICAL_TRUTH_MAP.md` RT-01 rows match measured fixture seams. No live brokers; G5 observational campaign stays closed.
 
 ### P1-4 — Discovery-lane → workspace-module → research-family mapping
 
@@ -79,6 +81,7 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 - **Evidence:** `docs/research/PLATFORM_COOPERATIVE_MASTER_ROADMAP.md`; `artifacts/live-screener/continuation-state.md`; `src/market_platform_foundation/discovery/mixed.py`; `ui/.../paperDecisionSemantics.ts`.
 - **Fix:** glossary entry + one tested mapping table; keep the concepts distinct (a discovery lane is not a workspace module is not a research family).
 - **Acceptance:** a single documented + tested mapping covers all three vocabularies; no hand-written per-component map remains unverified.
+- **Closed 2026-09-05** — one mapping table in `lanes/vocabulary.py` (tested by `tests/platform/test_lane_vocabulary.py`): discovery (`MOMENTUM`/`SQUEEZE`/`CATALYST`/`SWING`) ≠ workspace kebab (`squeeze`, `order-flow`, `catalyst`) ≠ evidence `LaneId` (`short_squeeze`, `market_context`). UI `EVIDENCE_LANE_TO_MODULE_ID` in `paperDecisionSemantics.ts` maps `MARKET_CONTEXT` → workspace **`catalyst`**, not `order-book`. UI registry tests: `laneRegistry.test.ts` (9 passed).
 
 ### P1-5 — Provider admission guard tests
 
@@ -86,6 +89,7 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 - **Evidence:** root README ADR table; `PROVIDER_READINESS.md`; ADR-LIVE-001 / ADR-SHORT-001 fixtures.
 - **Fix:** guard/negative tests asserting unadmitted live captures cannot feed model training or promotion paths.
 - **Acceptance:** a test proves an unadmitted capture is rejected by training/promotion entry points.
+- **Closed 2026-09-05** — `intelligence/dataset_admission.py` rejects unadmitted live-opt-in captures at training, promotion, and OrderReady entry points. Tests: `tests/platform/test_unadmitted_and_donor_isolation.py` (`UnadmittedCaptureGuardTests`). No `SUPPORTED` strategy and no live-capture admission.
 
 ### P1-6 — CI canonicalization (parent snapshot workflows authoritative)
 
@@ -93,6 +97,7 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 - **Evidence:** `integrated-market-platform/.github/workflows/imp-validate.yml` vs `.github/workflows/imp-validate.yml` (parent); parent `imp-python.yml` working-directory `projects/integrated-market-platform`.
 - **Fix:** declare parent workflows canonical in docs; mark nested workflow copies stale or remove them in the nested repo (child repo is archived read-only — document-only decision may suffice).
 - **Acceptance:** a reader can tell which CI gate is authoritative; no duplicated workflow is presented as current without a stale marker.
+- **Closed 2026-09-05** — parent `.github/workflows/imp-validate.yml` and `imp-python.yml` (`working-directory: projects/integrated-market-platform`) are the canonical monorepo gate. Nested copies under `projects/integrated-market-platform/.github/workflows/` carry a `STALE` header stating they are not the gate. `CANONICAL_TRUTH_MAP.md` / `TEST_AND_EVALUATION_STANDARD.md` point at the parent paths. Nested files were not deleted.
 
 ### P1-7 — Fix git dubious-ownership failure in `equity-data-v1-worktree`
 
@@ -122,6 +127,7 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 - **Evidence:** `docs/product/PRODUCT_BACKLOG.md`; decision-research card registry (`evidence/research/experiment-cards/`); `docs/engineering/CONTROLLED_ADAPTATION_V1.md`.
 - **Fix:** lightweight machine-readable idea/experiment registry reusing OF-03 capability/SOP/workflow patterns; explicitly non-authoritative.
 - **Acceptance:** an idea can be traced to its preregistered experiment card and outcome; registry is documented as non-authoritative.
+- **Closed 2026-09-05** — `docs/product/idea_registry/` index: `manifest.json` (`non_authoritative: true`), `ideas.json` linking `PRODUCT_BACKLOG` ids → optional experiment-card hashes / outcome refs, README stating the index never grants trading, promotion, or execution. OF-03 *shape* only; no capability binding. G1–G6 stay closed.
 
 ### P2-2 — Data-acquisition boundary guard
 
@@ -129,6 +135,7 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 - **Evidence:** `pipelines/stock_data/README.md`; `docs/data/EQUITY_DATA_ACQUISITION.md`.
 - **Fix:** namespace/import convention + CI check so non-admitted stores cannot be imported by admitted research code.
 - **Acceptance:** a CI test proves admitted research modules cannot import the acquisition subsystem.
+- **Closed 2026-09-05** — `tests/platform/test_acquisition_import_guard.py` AST-walks admitted trees (`src/market_platform_foundation/research/` and other admitted consumers) and fails on `import` / `from` `pipelines.stock_data` / `stock_data`. Complementary to `pipelines/stock_data/tests/test_monorepo_boundary.py`. Orthogonal to P1-5 dataset admission. No calibration of fusion/GARCH/HAR/ADAM/logistic.
 
 ### P2-3 — Supersede layered docs (roadmaps, README vs PROGRAM_STATUS, public/private wording)
 
@@ -144,6 +151,7 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 - **Evidence:** `.gitignore`; publish commit `cfdebaa`; `PROJECT_NOTES_INDEX.md` cautions.
 - **Fix:** verify no platform adapter imports donor execution entry points; optionally tag any donor-derived logic with provenance.
 - **Acceptance:** a search/CI check confirms donor execution modules are unreachable from platform code.
+- **Closed 2026-09-05** — `tests/platform/test_unadmitted_and_donor_isolation.py` fails if platform source imports donor execution fragments (`eric_futuresx`, `futuresx-main`, internship / bubble modules) or if donor-bridge modules reference `OrderReadyV1` / `PaperExecutionOrchestrator` / `submit_prepared` / `TradeProposalV1`. Donor logic stays research-bridged; it does not enter the execution path.
 
 ### P2-5 — Per-lane doctrine verification (no code change)
 
@@ -176,3 +184,37 @@ These items make the machinery behind the (correctly) closed live gates trustwor
 | P2-3 | H3/L3 |
 | P2-4 | H4 |
 | P2-5 | L4/D3 |
+
+---
+
+## Q-series — Quantitative correctness (2026-09-05)
+
+Companion: [formula correctness review](2026-09-05-formula-correctness-review.md). Ledger: platform `docs/research/FORMULA_LEDGER.md` + `formula_ledger.json` (88 rows). This series pins **spec-correct math and fail-closed numerics**. It does **not** claim predictive edge, promote a champion, or open G1–G6 / LIVE-001 / P6 Shadow Run 1 / broker wires.
+
+| Item | Status | What closed it |
+|---|---|---|
+| Q0 Formula ledger (units, windows, variance convention, capability class) | Closed | 88-row ledger (O10/R-O6 rows added 2026-09-05); Phase 4 aligned Q naming and friction fail-closed wording (MD family table no longer says Breeden–Litzenberger or a friction 100 default) |
+| Q1 Risk-neutral Q name matches math | Closed | `MODEL_VERSION = risk_neutral_log_normal_moment_approx_v1`; not Breeden–Litzenberger |
+| Q2 Labeled variance estimators | Closed | `variance_estimator` on outputs; `tests/formulas/test_variance_estimator_mixing.py` |
+| Q3 Invalid OFI is not a tradable 0 | Closed | Consumers use `usable_ofi_value` / `book_state_valid` |
+| Q4 Fusion friction once | Closed | `fuse_opportunity_v1` subtracts friction from gross `expected_pnl` unless already `net_expected_pnl`; fusion goldens |
+| Q5 ADAM vs squeeze return definition | Closed (documented split, not unified) | Ledger + ADAM spec: ignition uses float open→close bar acceleration; squeeze `%` return is Decimal close-to-close |
+| Q6 Physical P mean ≡ 0 | Closed | P−Q `directional_edge` stamped `vs_zero_drift_baseline` |
+| Q7 Options friction underlying | Closed | No silent `underlying_price_assumption: 100.0`; fail closed without a positive underlying |
+| Q8 Strategy identity honesty | Closed | FORECAST_MOMENTUM / whale alignments tagged `baseline_only` / `research_baseline` (naive last-value) |
+| Q9 Golden numeric fixtures | Closed | `tests/formulas/test_formula_goldens.py` + squeeze/ADAM goldens; suite registered as `formulas` in `tools/validation_manifest.json` |
+| Q-H2 Options O5 `DEFAULT_SPOT=100.0` | Closed | Greeks-equivalent aggregation fail-closed without positive explicit/inferred spot (`UNDERLYING_PRICE_ASSUMPTION_MISSING`, `net_*_flow=None`); volume/direction still classifies |
+| Q-H1-O5 Options O5 silent `DEFAULT_VOL`/`DEFAULT_RATE` | Closed | Greeks require positive explicit/inferred vol and rate (`BSM_VOL_OR_RATE_ASSUMPTION_MISSING`); `FLOW_VERSION=options_signed_flow_v3`. Dealer/O2/O3 silent `0.05` leftover closed separately as Q-H1-rate (this row stays closed). |
+| O2 surface strike×1.02/0.98 leftover | Closed | `infer_underlying_price` is fail-closed; points skipped without positive underlying; O3/dealer/strategy/event_vol no longer reconstruct spot via strike multiples. Surface version later `sigma_kt_v3` under Q-H1-rate. |
+| Q-H1-rate Dealer / O2 / O3 silent `rate=0.05` | Closed | Fail-closed: missing rate → dealer `BSM_VOL_OR_RATE_ASSUMPTION_MISSING`, O3 `RATE_ASSUMPTION_MISSING`, O2 skip point. `DEALER_VERSION=options_dealer_proxy_v2`; `SURFACE_VERSION=sigma_kt_v3`; tape `rate` 0.04 on chain fixtures including O10 inline chain; chain builder stamps tape `rate` onto contract dicts (same pattern as `underlying_price`). No fusion/GARCH/HAR/ADAM/logistic calibration. |
+| Q-H1-O10-rate O10 / R-O6 silent `rate=0.05` | Closed | `delta_hedged_research_snapshot` / `compose_r_o6_research_snapshot` take `rate: float \| None = None`; missing positive rate after path/strike/IV checks → `RATE_ASSUMPTION_MISSING`. Successful O10 snapshots stamp resolved `rate`. `DELTA_HEDGED_VERSION=delta_hedged_research_v2`; `R_O6_VERSION=r_o6_research_v2`. `simulate_delta_hedged_path` still requires `rate` with no default. No fusion/GARCH/HAR/ADAM/logistic calibration. |
+
+**Still open (not edge, not trade authority):**
+
+| Item | Why it stays open |
+|---|---|
+| Q-H1 Unfitted heuristic constants | Fusion 0.85/1.05, GARCH ω/α/β, HAR 0.3/0.4/0.3, ADAM weights, squeeze logistic (0.8, 0.5, 0.3) remain pinned named constants, not calibrated. Drift-guard goldens assert code matches the ledger only. Dealer/O2/O3 silent `0.05` leftover is **closed** (Q-H1-rate); O10/R-O6 silent `0.05` leftover is **closed** (Q-H1-O10-rate). Q-H1 itself stays open for those unfitted scalars only. |
+| Q-H3 No Breeden–Litzenberger Q | Intentionally not implemented; Q is a log-normal moment approximation |
+| Q-H4 No `SUPPORTED` / forward edge | Phase-6 scores remain naive last-close; G1–G6 stay closed |
+
+P1-3, P1-6, P2-1, and P2-2 closed 2026-09-05 (see item sections). G1–G6 stay closed. This work grants no trade authority.

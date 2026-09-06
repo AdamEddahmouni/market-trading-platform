@@ -1,0 +1,31 @@
+{
+  "formula_id": "ofi_cont_kukanov_stoikov_e_t",
+  "snapshots": [
+    {
+      "bids": [{"price": 10.0, "size": 100.0}],
+      "asks": [{"price": 10.05, "size": 80.0}]
+    },
+    {
+      "bids": [{"price": 10.0, "size": 150.0}],
+      "asks": [{"price": 10.05, "size": 80.0}]
+    },
+    {
+      "bids": [{"price": 10.01, "size": 120.0}],
+      "asks": [{"price": 10.05, "size": 80.0}]
+    }
+  ],
+  "transitions": [
+    {
+      "from": 0,
+      "to": 1,
+      "hand_e_t": 50.0,
+      "notes": "same bid price, size 100→150; ask unchanged → e = 50"
+    },
+    {
+      "from": 1,
+      "to": 2,
+      "hand_e_t": 120.0,
+      "notes": "bid upticks 10.00→10.01 size 120; ask unchanged → e = I_up * 120"
+    }
+  ]
+}

@@ -106,7 +106,11 @@ def extract_probability_input(
 
 
 def extract_payoff_input(strategy_snapshot: dict[str, Any] | None) -> PayoffInput:
-    """Extract payoff from Options O8 strategy snapshot best candidate."""
+    """Extract payoff from Options O8 strategy snapshot best candidate.
+
+    ``expected_pnl`` is gross of execution friction. Fusion subtracts
+    ``friction_cost`` once; do not pass ``net_expected_pnl`` as ``expected_pnl``.
+    """
     quality_flags: list[str] = []
     if not strategy_snapshot or not strategy_snapshot.get("available"):
         quality_flags.append(OpportunityQualityFlag.STRATEGY_INPUTS_INCOMPLETE.value)
@@ -243,6 +247,14 @@ def extract_liquidity_input(
 
     book_supports = bool(cross_lane.get("order_flow_aggressive_buy"))
     book_opposes = bool(cross_lane.get("order_flow_aggressive_sell"))
+    if (
+        isinstance(order_flow_payload, dict)
+        and order_flow_payload.get("available")
+        and order_flow_payload.get("latest_book_state_valid") is False
+    ):
+        # Invalid books still serialize ofi_value=0.0. That is not a real imbalance.
+        book_supports = False
+        book_opposes = False
 
     depth_withdrawal: float | None = None
     depth_replenishment: float | None = None

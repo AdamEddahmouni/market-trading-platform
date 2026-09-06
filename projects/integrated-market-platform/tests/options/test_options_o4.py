@@ -58,6 +58,7 @@ class OptionsO4Tests(unittest.TestCase):
         self.assertNotIn("universal_score", result)
         components = result.get("components", {})
         self.assertIn("directional_edge", components)
+        self.assertEqual(components["directional_edge_baseline"], "vs_zero_drift_baseline")
         self.assertIn("volatility_edge", components)
         self.assertIn("replay_hash", result)
 
@@ -74,8 +75,8 @@ class OptionsO4Tests(unittest.TestCase):
 
     def test_nvda_fixture_friction_reduces_edge(self) -> None:
         activities = [
-            {"bid": 1.80, "ask": 1.85},
-            {"bid": 2.05, "ask": 2.10},
+            {"bid": 1.80, "ask": 1.85, "underlying_price": 128.0},
+            {"bid": 2.05, "ask": 2.10, "underlying_price": 128.0},
         ]
         friction = estimate_execution_friction(activities)
         self.assertTrue(friction.get("executable_available"))

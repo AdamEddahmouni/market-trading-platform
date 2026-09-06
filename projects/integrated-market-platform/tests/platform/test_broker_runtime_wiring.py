@@ -21,6 +21,7 @@ from market_platform_foundation.rt01.enums import SamplingMode, TraceStage
 from market_platform_foundation.rt01.instrumentation.paper import start_paper_trace
 from market_platform_foundation.rt01.tracer import Tracer, configure_tracer
 from market_platform_foundation.ui_api.paper_projections import (
+    cancel_paper_order,
     open_paper_session,
     poll_broker_order,
     preview_paper_order,
@@ -251,6 +252,72 @@ class BrokerRuntimeWiringTests(unittest.TestCase):
         )
         self.assertTrue(
             any(span.operation == "build_broker_reconciliation_payload" for span in reconciliation_spans)
+        )
+
+    def test_fixture_pipeline_shares_one_trace_id(self) -> None:
+        """One bound root spans opportunity → risk → order_ready → broker → reconcile."""
+        from tests.intelligence.test_equity_paper_runtime import _runtime_fixture
+
+        collector = InMemoryTraceCollector()
+        tracer = Tracer(mode=SamplingMode.FULL, collector=collector)
+        configure_tracer(tracer)
+        self._open_broker_session()
+        trace = start_paper_trace(
+            "rt01_fixture_pipeline",
+            correlation_id="rt01-fixture-shared",
+            tracer=tracer,
+        )
+        token = bind_context(trace.context)
+        try:
+            opportunity = trace.child(
+                TraceStage.OPPORTUNITY,
+                "strategy_opportunity_pipeline",
+                decision_time_ns="fixture",
+            )
+            runtime, _repository, request, _forecast = _runtime_fixture(
+                session_id="rt01-shared-trace-entry",
+            )
+            result = runtime.run_entry(request)
+            if opportunity is not None:
+                opportunity.end(output_ref=result.status)
+            submitted = submit_paper_order(
+                self.store,
+                {
+                    "side": "BUY",
+                    "quantity": 1,
+                    "order_type": "LIMIT",
+                    "limit_price_minor": 11600,
+                    "client_order_id": "cli-broker-limit-1",
+                    "idempotency_key": "key-broker-limit-1",
+                },
+            )["submission"]
+            order_id = str(submitted["order_id"])
+            poll_broker_order(self.store, {"order_id": order_id})
+            cancel_paper_order(self.store, {"order_id": order_id})
+            reconcile_broker_paper(self.store)
+        finally:
+            reset_context(token)
+            trace.finish()
+
+        self.assertEqual(result.status, "FILLED")
+        root_id = trace.root.context.trace_id
+        required = (
+            TraceStage.OPPORTUNITY,
+            TraceStage.RISK,
+            TraceStage.ORDER_READY,
+            TraceStage.BROKER,
+            TraceStage.RECONCILIATION,
+        )
+        by_stage = {stage: [span for span in collector.spans if span.stage == stage] for stage in required}
+        for stage, spans in by_stage.items():
+            self.assertTrue(spans, msg=f"missing {stage.value} span")
+            self.assertEqual({span.trace_id for span in spans}, {root_id})
+        self.assertTrue(any(span.operation == "poll_broker_order" for span in by_stage[TraceStage.BROKER]))
+        self.assertTrue(
+            any(span.operation == "cancel_broker_paper_order" for span in by_stage[TraceStage.BROKER])
+        )
+        self.assertTrue(
+            any(span.operation == "reconcile_broker_paper" for span in by_stage[TraceStage.RECONCILIATION])
         )
 
 

@@ -239,6 +239,8 @@ def _runtime_fixture(
     session_id: str = "runtime-paper-task6",
     champion: ChampionAssignmentV1 | None = None,
     execution_eligibility: dict | None = None,
+    execution_intent: bool = False,
+    research_only: bool = False,
 ) -> tuple[StrategyPaperRuntime, InMemoryIntelligenceRepository, ScanRequest, ForecastV1]:
     repository = InMemoryIntelligenceRepository()
     repository.put_event(
@@ -394,6 +396,8 @@ def _runtime_fixture(
             allowed_evidence_modes=("PAPER",),
         ),
         strategy_eligibility=execution_eligibility,
+        execution_intent=execution_intent or execution_eligibility is not None,
+        research_only=research_only,
     )
     return runtime, repository, request, active_forecast
 
@@ -1321,6 +1325,59 @@ class StrategyExecutionEligibilityGateTests(unittest.TestCase):
         self.assertTrue(
             any(ref.kind == "strategy_eligibility" for ref in order_ready.lineage_refs)
         )
+
+
+    def test_execution_intent_without_eligibility_config_fails_closed(self) -> None:
+        runtime, repository, request, _forecast = _runtime_fixture(
+            execution_intent=True,
+            session_id="runtime-paper-task6-omit-eligibility",
+        )
+
+        result = runtime.run_entry(request)
+
+        self.assertEqual(result.status, "STRATEGY_BLOCKED")
+        order_ready = repository.get_order_ready(result.ids["order_ready_id"])
+        self.assertIsNotNone(order_ready)
+        self.assertEqual(order_ready.status.value, "BLOCKED")
+        self.assertIn("STRATEGY_EXECUTION_ELIGIBILITY_BLOCKED", order_ready.reason_codes)
+        eligibility = next(d for d in result.diagnostics if d.stage == "eligibility")
+        self.assertIn("STRATEGY_ELIGIBILITY_CONFIG_OMITTED", eligibility.reason_codes)
+        self.assertEqual(runtime.ledger.project_orders(), [])
+
+    def test_research_only_runtime_does_not_construct_order_ready(self) -> None:
+        runtime, repository, request, _forecast = _runtime_fixture(
+            research_only=True,
+            session_id="runtime-paper-task6-research-only",
+        )
+
+        result = runtime.run_entry(request)
+
+        self.assertEqual(result.status, "RESEARCH_ONLY")
+        self.assertNotIn("order_ready_id", result.ids)
+        allocation_id = result.ids["allocation_decision_id"]
+        self.assertEqual(repository.get_order_ready_by_allocation(allocation_id), ())
+        self.assertEqual(runtime.ledger.project_orders(), [])
+
+    def test_unadmitted_capture_cannot_reach_order_ready(self) -> None:
+        champion = _champion()
+        forecast = _forecast(champion)
+        forecast = replace(
+            forecast,
+            metadata={**forecast.metadata, "admitted_research_dataset": False},
+        )
+        runtime, repository, request, _forecast_record = _runtime_fixture(
+            champion=champion,
+            forecast=forecast,
+            session_id="runtime-paper-task6-unadmitted",
+        )
+
+        result = runtime.run_entry(request)
+
+        self.assertEqual(result.status, "UNADMITTED_CAPTURE_REJECTED")
+        self.assertNotIn("order_ready_id", result.ids)
+        self.assertEqual(runtime.ledger.project_orders(), [])
+        admission = next(d for d in result.diagnostics if d.stage == "admission")
+        self.assertIn("UNADMITTED_CAPTURE_REJECTED", admission.reason_codes)
 
 
 if __name__ == "__main__":

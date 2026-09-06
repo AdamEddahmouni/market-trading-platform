@@ -15,8 +15,27 @@ from ..contracts.risk_neutral_distribution import (
 from .surface import infer_underlying_price
 from .surface_qa import evaluate_surface_qa
 
-MODEL_VERSION = "risk_neutral_breeden_litzenberger_v1"
+# Honest name: this is a log-normal moment approximation from average IVs,
+# not a Breeden–Litzenberger density recovered from a strike continuum.
+MODEL_VERSION = "risk_neutral_log_normal_moment_approx_v1"
+RATE_ASSUMPTION_MISSING = "RATE_ASSUMPTION_MISSING"
 _TAIL_THRESHOLD = 0.05
+
+
+def _positive_float(value: Any) -> float | None:
+    if isinstance(value, (int, float)) and float(value) > 0:
+        return float(value)
+    return None
+
+
+def _resolve_rate(points: list[dict[str, Any]], rate: float | None) -> float | None:
+    for point in points:
+        if not isinstance(point, dict):
+            continue
+        stamped = _positive_float(point.get("rate"))
+        if stamped is not None:
+            return stamped
+    return _positive_float(rate)
 
 
 def _normal_tail_probability(z: float, tail: str) -> float:
@@ -68,7 +87,7 @@ def infer_risk_neutral_distribution(
     symbol: str = "",
     as_of_time: str = "",
     spot: float | None = None,
-    rate: float = 0.05,
+    rate: float | None = None,
 ) -> dict[str, Any]:
     """Infer risk-neutral Q from O2 surface — fail-closed when QA blocks."""
     qa = evaluate_surface_qa(surface)
@@ -85,21 +104,28 @@ def infer_risk_neutral_distribution(
             "reason": "SURFACE_EMPTY",
             "qa": qa,
         }
-    inferred_spot = spot
-    if inferred_spot is None:
-        first = points[0]
-        if isinstance(first, dict):
-            strike = float(first.get("strike", 0.0) or 0.0)
-            call_put = str(first.get("call_put", "call"))
-            inferred_spot = infer_underlying_price(
-                {"underlying_price": first.get("underlying_price")},
-                strike,
-                call_put,
-            )
+    inferred_spot: float | None = None
+    first = points[0]
+    if isinstance(first, dict):
+        stamped = first.get("underlying_price")
+        if isinstance(stamped, (int, float)) and float(stamped) > 0:
+            inferred_spot = float(stamped)
+        else:
+            inferred_spot = infer_underlying_price(first)
+    if inferred_spot is None and isinstance(spot, (int, float)) and float(spot) > 0:
+        inferred_spot = float(spot)
     if inferred_spot is None or inferred_spot <= 0:
         return {
             "available": False,
             "reason": "UNDERLYING_PRICE_UNKNOWN",
+            "qa": qa,
+        }
+    typed_points = [point for point in points if isinstance(point, dict)]
+    resolved_rate = _resolve_rate(typed_points, rate)
+    if resolved_rate is None:
+        return {
+            "available": False,
+            "reason": RATE_ASSUMPTION_MISSING,
             "qa": qa,
         }
     # Group by expiration for multi-horizon Q
@@ -112,7 +138,7 @@ def infer_risk_neutral_distribution(
             by_expiry.setdefault(expiry, []).append(point)
     horizons: list[RiskNeutralHorizonForecast] = []
     for expiry_points in by_expiry.values():
-        horizon = _horizon_from_surface(expiry_points, spot=inferred_spot, rate=rate)
+        horizon = _horizon_from_surface(expiry_points, spot=inferred_spot, rate=resolved_rate)
         if horizon is not None:
             horizons.append(horizon)
     if not horizons:
@@ -136,8 +162,8 @@ def infer_risk_neutral_distribution(
         vol_implied_annualized=vol_annualized,
         horizons=tuple(horizons),
         methodology_tags=(
-            "breeden_litzenberger_discrete_v1",
             "log_normal_moment_approximation",
+            "average_iv_not_strike_density",
         ),
         quality_flags=tuple(qa.get("flags", [])),
         confidence="MEDIUM" if len(horizons) >= 2 else "LOW",
@@ -158,5 +184,6 @@ def _replay_hash(payload: dict[str, Any]) -> str:
 
 __all__ = [
     "MODEL_VERSION",
+    "RATE_ASSUMPTION_MISSING",
     "infer_risk_neutral_distribution",
 ]

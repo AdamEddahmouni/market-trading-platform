@@ -18,7 +18,7 @@ from ...order_flow.liquidity import (
     compute_trajectory_resiliency,
     snapshot_total_depth,
 )
-from ...order_flow.ofi import OFI_METHOD_MULTILEVEL_CS, compute_ofi
+from ...order_flow.ofi import OFI_METHOD_MULTILEVEL_CS, compute_ofi, usable_ofi_value
 from ...donor_patterns.futures_lane import depth_imbalance_signal, is_rth
 from ...donor_patterns.order_book_lane import book_pressure_side
 from ...donor_patterns.order_book_lane import best_bid_ask
@@ -226,7 +226,7 @@ class FixtureFuturesProvider:
             spread_delta: float | None = None
             impact_kwargs: dict[str, Any] = {}
             if prev_snapshot is None:
-                ofi_value = 0.0
+                ofi_value = None
                 total_depth = snapshot_total_depth(snapshot, level_count=level_count)
             else:
                 ofi_result = compute_ofi(
@@ -235,7 +235,7 @@ class FixtureFuturesProvider:
                     method=OFI_METHOD_MULTILEVEL_CS,
                     level_count=level_count,
                 )
-                ofi_value = ofi_result.value
+                ofi_value = usable_ofi_value(ofi_result)
                 ofi_method = ofi_result.ofi_method
                 ofi_version = ofi_result.ofi_version
                 book_state_valid = ofi_result.book_state_valid
