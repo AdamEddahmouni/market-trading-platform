@@ -23,6 +23,13 @@ class OFIResult:
     level_count: int | None = None
 
 
+def usable_ofi_value(result: OFIResult | None) -> float | None:
+    """Return OFI only when the book was valid. Invalid books encode 0.0 as unavailable."""
+    if result is None or not result.book_state_valid:
+        return None
+    return result.value
+
+
 def _is_valid_level_row(row: object) -> bool:
     if not isinstance(row, dict):
         return False
@@ -235,4 +242,5 @@ __all__ = [
     "snapshot_book_state_valid",
     "snapshot_pair_book_state_valid",
     "snapshot_pair_sequence_valid",
+    "usable_ofi_value",
 ]

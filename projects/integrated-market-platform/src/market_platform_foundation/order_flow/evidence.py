@@ -38,7 +38,7 @@ from .liquidity import (
     snapshot_total_depth,
     withdrawal_ratio,
 )
-from .ofi import OFI_METHOD_MULTILEVEL_CS, compute_ofi
+from .ofi import OFI_METHOD_MULTILEVEL_CS, compute_ofi, usable_ofi_value
 from .forecast import (
     CONTINUATION_THRESHOLD,
     FORECAST_METHOD,
@@ -136,7 +136,7 @@ def build_order_flow_evidence(
             method=OFI_METHOD_MULTILEVEL_CS,
             level_count=ofi_level_count,
         )
-        resolved_ofi_value = ofi_result.value
+        resolved_ofi_value = usable_ofi_value(ofi_result)
         resolved_ofi_method = ofi_result.ofi_method
         resolved_ofi_version = ofi_result.ofi_version
         if not ofi_result.book_state_valid:
@@ -404,7 +404,7 @@ def build_microstructure_forecast_evidence(
     counter: list[str] = []
     resolved_flags = list(quality_flags) + list(result.quality_flags)
 
-    if ofi_value is not None:
+    if ofi_value is not None and book_state_valid is not False:
         supporting.append(f"OFI {ofi_value:+.0f}")
     supporting.append(f"composite bias {result.composite_bias:+.3f}")
     supporting.append(

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..order_flow.ofi import OFI_METHOD_MULTILEVEL_CS, compute_ofi
+from ..order_flow.ofi import OFI_METHOD_MULTILEVEL_CS, compute_ofi, usable_ofi_value
 
 _PREV_SNAPSHOTS: dict[str, dict[str, Any]] = {}
 DEFAULT_LEVEL_COUNT = 10
@@ -61,7 +61,7 @@ def resolve_bridge_ofi(
     if not result.book_state_valid:
         flags.append("BOOK_STATE_INVALID")
     return {
-        "ofi_value": result.value,
+        "ofi_value": usable_ofi_value(result),
         "ofi_method": result.ofi_method,
         "ofi_version": result.ofi_version,
         "book_state_valid": result.book_state_valid,

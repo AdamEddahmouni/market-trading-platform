@@ -111,6 +111,7 @@ from .ofi import (
     snapshot_book_state_valid,
     snapshot_pair_book_state_valid,
     snapshot_pair_sequence_valid,
+    usable_ofi_value,
 )
 from .lob_baseline import (
     LOB_BASELINE_METHOD,
@@ -215,6 +216,7 @@ __all__ = [
     "snapshot_book_state_valid",
     "snapshot_pair_book_state_valid",
     "snapshot_pair_sequence_valid",
+    "usable_ofi_value",
     "snapshot_total_depth",
     "classify_trade",
     "compute_cvd_series",

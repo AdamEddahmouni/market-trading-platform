@@ -84,6 +84,7 @@ def bvc_buy_sell_volume(
             sell_volumes.append(volume / 2.0)
             continue
         mean = sum(window) / len(window)
+        # Population σ (/n) — not the sample n-1 used by platform close-to-close RV.
         variance = sum((x - mean) ** 2 for x in window) / len(window)
         sigma = math.sqrt(variance) if variance > 0 else 0.0
         if sigma == 0.0:
