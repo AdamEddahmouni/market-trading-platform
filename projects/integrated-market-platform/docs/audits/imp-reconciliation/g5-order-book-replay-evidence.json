@@ -1,0 +1,38 @@
+[
+  {
+    "depth_levels_per_side": 10,
+    "event_count": 60,
+    "repeats": 5,
+    "events_per_second": 92982.9,
+    "seconds_per_run": 0.000645,
+    "final_book_state_valid": true,
+    "final_level_counts": [
+      10,
+      19
+    ]
+  },
+  {
+    "depth_levels_per_side": 50,
+    "event_count": 300,
+    "repeats": 5,
+    "events_per_second": 44869.2,
+    "seconds_per_run": 0.006686,
+    "final_book_state_valid": true,
+    "final_level_counts": [
+      50,
+      99
+    ]
+  },
+  {
+    "depth_levels_per_side": 100,
+    "event_count": 600,
+    "repeats": 5,
+    "events_per_second": 23064.9,
+    "seconds_per_run": 0.026014,
+    "final_book_state_valid": true,
+    "final_level_counts": [
+      100,
+      199
+    ]
+  }
+]

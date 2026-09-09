@@ -59,8 +59,8 @@ completion claims. A `PARTIAL` state with a product surface marked
 `RESEARCH_ONLY` means the domain is fixture/replay-verified but has no live
 runtime wire and a research-only user surface. The canonical completion plan is
 not this table: it lives in the reconciliation program's
-[master backlog](../../audits/imp-reconciliation/12-master-backlog.md) and
-[recovery roadmap](../../audits/imp-reconciliation/13-recovery-roadmap.md),
+[master backlog](../audits/imp-reconciliation/12-master-backlog.md) and
+[recovery roadmap](../audits/imp-reconciliation/13-recovery-roadmap.md),
 which this table references rather than duplicates.
 
 | Domain | State | Current basis |
