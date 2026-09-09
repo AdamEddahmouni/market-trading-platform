@@ -1622,7 +1622,7 @@ conditions. Paper-only; no live order path; LIVE-001 remains blocked.
 - `6c3aa559df85` — docs(data): add V1 continuation handoff
   - Author: AdamEddahmouni (2026-08-24T08:22:36-04:00)
   - Rationale (commit-subject-only): Rationale stated in commit subject only.
-- `825dd8ba2afd` — docs(data): clarify handoff implementation baseline — refs: `refs/remotes/origin/feat/equity-data-v1`
+- `825dd8ba2afd` — docs(data): clarify handoff implementation baseline
   - Author: AdamEddahmouni (2026-08-24T08:23:27-04:00)
   - Rationale (commit-subject-only): Rationale stated in commit subject only.
 - `02184cde4546` — docs(data): specify deterministic Phase 2 candidate build
@@ -1646,7 +1646,7 @@ conditions. Paper-only; no live order path; LIVE-001 remains blocked.
 - `269146409f5a` — feat: add postroot contract fixtures — refs: `refs/heads/postroot-acceptance-suite`, `refs/remotes/origin/postroot-acceptance-suite`
   - Author: AdamEddahmouni (2026-08-24T14:46:46-04:00)
   - Rationale (commit-subject-only): Rationale stated in commit subject only.
-- `8afb11d814da` — fix(data): harden governed metadata collection — refs: `refs/remotes/origin/feat/governed-ticker-metadata-enrichment`
+- `8afb11d814da` — fix(data): harden governed metadata collection
   - Author: AdamEddahmouni (2026-08-24T16:50:51-04:00)
   - Rationale (commit-subject-only): Rationale stated in commit subject only.
 - `a65288f6f4bf` — merge: integrate governed ticker metadata enrichment
@@ -2343,9 +2343,6 @@ execution mode/authority into spawned backend processes.
 - `db83608685cb` — fix(validation): drop stale closure scope materialization
   - Author: AdamEddahmouni (2026-09-04T15:38:32-04:00)
   - Rationale (commit-subject-and-body): The provider-composition closure entry referencing src/market_platform_foundation/tests was removed; the CI step that created that phantom directory no longer has a purpose. Update the work-log note so it no longer claims full validation is blocked by that error.
-- `32920584deac` — Merge 7fe873a1dcc85821079d0fc0847689e7b928eacc into a5506c182131341ad71a1edd49ec6b4942daf618 — refs: `refs/remotes/origin/pr12-merge`
-  - Author: AdamEddahmouni (2026-09-04T15:43:00+00:00)
-  - Rationale (commit-subject-only): Rationale stated in commit subject only.
 - `06963649032a` — ci: lint workflow files with actionlint
   - Author: AdamEddahmouni (2026-09-04T15:49:21-04:00)
   - Rationale (commit-subject-and-body): Add a validate-workflows job to imp-validate.yml that downloads actionlint v1.7.12 and lints the repository's GitHub Actions workflow files on every push and pull request.
@@ -2396,13 +2393,13 @@ clean with zero references to the removed const...
 
 ## 2026-09-05
 
-- `1398da3b5fc2` — docs(data): fix broken doc links in integration and platformization docs — refs: `refs/heads/feat/governed-ticker-metadata-enrichment`
+- `1398da3b5fc2` — docs(data): fix broken doc links in integration and platformization docs — refs: `refs/heads/feat/governed-ticker-metadata-enrichment`, `refs/remotes/origin/feat/governed-ticker-metadata-enrichment`
   - Author: AdamEddahmouni (2026-09-05T10:34:41-04:00)
   - Rationale (commit-subject-and-body): Retarget relative links to their real locations (sibling short-squeeze
 snapshot, workspace-level docs, in-repo superpowers/research/architecture
 paths, ui/) and demote references to workspace-local files that are not
 in the repository, matching the parent monorepo doc-link check.
-- `ad54fb8d5955` — docs(data): fix broken doc links in integration and platformization docs — refs: `refs/heads/feat/equity-data-v1`
+- `ad54fb8d5955` — docs(data): fix broken doc links in integration and platformization docs — refs: `refs/heads/feat/equity-data-v1`, `refs/remotes/origin/feat/equity-data-v1`
   - Author: AdamEddahmouni (2026-09-05T10:34:48-04:00)
   - Rationale (commit-subject-and-body): Retarget relative links to their real locations (sibling short-squeeze
 snapshot, workspace-level docs, in-repo superpowers/research/architecture
