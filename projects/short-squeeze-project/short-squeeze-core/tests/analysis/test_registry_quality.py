@@ -8,10 +8,10 @@ def _by_case(summary):
 
 def test_registry_quality_counts_complete_synthetic_partial_and_blocked_cases():
     summary = build_registry_data_quality(load_registry())
-    assert summary.registered_case_count == 43
-    assert summary.complete_case_count == 42
+    assert summary.registered_case_count == 48
+    assert summary.complete_case_count == 46
     assert summary.synthetic_case_count == 11
-    assert summary.partial_case_count == 0
+    assert summary.partial_case_count == 1
     assert summary.blocked_case_count == 1
     assert summary.conflicting_identity_count == 1
     assert summary.unknown_platform_status_count > 0

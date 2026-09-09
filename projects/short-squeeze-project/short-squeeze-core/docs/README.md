@@ -53,6 +53,8 @@ brokerage accounts, recommend trades, or claim predictive validation.
 | [architecture.md](architecture.md) | Surfaces, runtime, evidence pipeline, release boundary |
 | [Reproducibility](reproducibility.md) | Frozen/offline vs live credentials; research vs live app |
 | [LIMITATIONS.md](LIMITATIONS.md) | Explicit non-goals and incomplete validation |
+| [Causal research spec & implementation roadmap](research/SHORT_SQUEEZE_CAUSAL_RESEARCH_SPEC.md) | Causal model, state machine, and sequenced implementation plan ([roadmap](research/SHORT_SQUEEZE_IMPLEMENTATION_ROADMAP.md)) |
+| [Provider capability gap analysis](research/SHORT_SQUEEZE_CAPABILITY_GAP_ANALYSIS.md) | What each data provider can supply, what the causal model still lacks, and who closes each gap |
 
 ## Ports and modes (quick facts)
 

@@ -75,4 +75,5 @@ jobs:
           tests/app/test_batch14_methodology_engine.py
           tests/app/test_provider_capabilities.py
           tests/app/test_batch14_api_and_deployment.py
+          tests/tools/test_doc_link_checker.py
           -q --tb=short

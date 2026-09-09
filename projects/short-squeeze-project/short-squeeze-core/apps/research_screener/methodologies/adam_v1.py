@@ -35,8 +35,6 @@ PRESSURE: dict[str, tuple[int, Callable[[float], float]]] = {
     "float_shares": (10, lambda x: inverse_linear(x, 10_000_000, 50_000_000)),
 }
 IGNITION: dict[str, tuple[int, Callable[[float], float]]] = {
-    # completed_bar_acceleration is open→close % points (squeeze_core.metrics.bar_acceleration),
-    # not close-to-close DECIMAL returns used by return z-scores.
     "current_percentage_change": (35, lambda x: linear(x, 0, 20)),
     "relative_volume": (30, lambda x: linear(x, 1, 10)),
     "completed_bar_acceleration": (20, lambda x: linear(x, 0, 5)),

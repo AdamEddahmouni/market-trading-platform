@@ -4,7 +4,53 @@ Tracks progress toward `min_case_count_for_recommendation: 30` in
 `phase_3d_calibration_policy_v1.json`. The threshold was met on 2026-08-17; policy
 recommendation review is complete.
 
-## Current labeled cohort (2026-08-17)
+## Reconciled accounting — single source of truth (2026-09-05)
+
+Resolves the registry-accounting discrepancy recorded as open item O-5 in
+[phase-4-calibration-preregistration.md](../phase-4-calibration-preregistration.md).
+**The committed fixture files are authoritative**; the per-batch tables below are
+historical snapshots written at their dates and are superseded by this section where
+they differ. All counts are measured from the committed files under
+`tests/fixtures/research/`.
+
+| Quantity | Count | Measured from |
+|---|---:|---|
+| Registry entries (`phase_3b_case_registry.v1`) | **48** | `phase_3b_case_registry.json` (46 `COMPLETE` + 1 `EVALUATION_ONLY` + 1 `BLOCKED_CONFLICTING_IDENTITY`) |
+| — historical case boundaries (excl. SYN, excl. KLOS) | **36** | registry entries without `SYN_`/`KLOS` case ids |
+| — unique historical symbols | **34** (BIYA ×3 boundaries; incl. AACB/AACG/AACI/AACP/AADX) | same |
+| — ADR-0053 synthetic evaluations (`SYN_*`) | **11** | same (excluded from historical performance analysis) |
+| — evaluation-only boundary (AACP, permanent `OUTCOME_UNEVALUABLE`) | **1** | same ([AACP_OUTCOME_EXCLUSION_RECORD.md](AACP_OUTCOME_EXCLUSION_RECORD.md)) |
+| — blocked identity attempt (KLOS) | **1** | same (excluded) |
+| Outcome-observation files | **35** | `*_outcome_observation.json` (33 `COMPLETE` + 2 `PARTIAL`) |
+| — unique symbols in outcome set | **33** (29 historical + AACB/AACG/AACI/AADX) | same |
+| — all outcome horizons | 24_HOURS | `phase_3b_outcome_label_policy.v1` + each observation file |
+| Research-dataset rows | **46** | `phase_3b_research_dataset.json` (registry minus KLOS minus AACP) |
+| Historical-cases entries | **37** | `phase_3b_historical_cases.json` (36 boundaries + KLOS) |
+| Pipeline-registered boundaries incl. batch 05 | **36** | 31 pre-batch-05 + 5 batch-05 (AACB, AACG, AACI, AACP, AADX) |
+| Evaluable Stage-2 outcome labels | **35** | outcome-observation files (AACP has no outcome file) |
+| Permanent outcome exclusions | **1** (AACP) | [AACP_OUTCOME_EXCLUSION_RECORD.md](AACP_OUTCOME_EXCLUSION_RECORD.md) |
+
+**Registry regeneration (2026-09-05).** Batch-05 cases are now registered in the
+committed `phase_3b_case_registry.json` fixture itself: `scripts/generate_phase_3b_anchors.py`
+was extended with `_batch05_entries()` (real committed boundary evaluations; AACP
+registered `EVALUATION_ONLY` with no outcome file), and the Phase 3B/3C fixtures plus
+the analysis-test constants were regenerated in the same change. The earlier "43"
+figures in this document are historical snapshots superseded by the table above.
+
+**Why the earlier figures differ.** The n=30-era and batch-05-close tables below were
+written while the registry tracked BIYA ×2 boundaries, before the Batch-04
+BIYA-artifact outcome was regenerated into the committed fixture set, and before
+batch-05 was added to the registry fixture:
+
+- "30 case boundaries / 28 unique symbols" (2026-08-17) → **31 / 29** after Batch 04
+  registered `BIYA_ARTIFACT_DISCOVERY` (BIYA ×3).
+- "Registered case boundaries 35 / evaluable labels 34" (batch-05 close) → **36 / 35**
+  measured from the committed files; the "34" counted 30 prior + 4 batch-05 and missed
+  the Batch-04 BIYA-artifact outcome file.
+- Registry entries 43 → **48** once batch-05 (5 boundaries) was registered in the
+  fixture.
+
+## Current labeled cohort (2026-08-17 — historical snapshot, superseded above)
 
 | Metric | Count |
 |--------|------:|

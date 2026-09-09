@@ -14,7 +14,11 @@
       "source_ref": "feat/governed-ticker-metadata-enrichment",
       "source_commit": "1398da3b5fc24ee9cd7608dd5ed8c2ff456779ed",
       "expected_visibility": "private",
-      "source_policy": "unchanged"
+      "source_policy": "unchanged",
+      "snapshot_overlay": [
+        ".github/workflows/README.md",
+        ".github/workflows/imp-validate.yml"
+      ]
     },
     {
       "id": "equity-data-v1",
@@ -24,17 +28,30 @@
       "source_ref": "feat/equity-data-v1",
       "source_commit": "ad54fb8d5955b55456a23f4a6925a55465f47614",
       "expected_visibility": "private",
-      "source_policy": "unchanged"
+      "source_policy": "unchanged",
+      "snapshot_overlay": [
+        ".github/workflows/README.md",
+        ".github/workflows/imp-validate.yml"
+      ]
     },
     {
       "id": "short-squeeze",
       "source_path": "short-squeeze-project",
       "snapshot_path": "projects/short-squeeze-project",
       "source_remote": "https://github.com/AdamEddahmouni/short-squeeze-screener-internship.git",
-      "source_ref": "main",
-      "source_commit": "78b7467b7d5f553b858a80c9024562283bae1d2a",
+      "source_ref": "fix/frozen-followups",
+      "source_commit": "9de7b2fc6d79513b5ea4d62151bdb76df2f6cfbe",
       "expected_visibility": "public",
-      "source_policy": "unchanged"
+      "source_policy": "unchanged",
+      "snapshot_overlay": [
+        "short-squeeze-core/docs/METHODOLOGIES.md",
+        "short-squeeze-core/src/squeeze_core/metrics/bar_acceleration.py",
+        "short-squeeze-core/src/squeeze_core/metrics/returns.py",
+        "short-squeeze-core/src/squeeze_core/metrics/statistics.py",
+        "short-squeeze-core/tests/calibration/test_adam_formula_golden.py",
+        "short-squeeze-core/tests/fixtures/formulas/adam_weighted_pressure_ignition.json",
+        "short-squeeze-core/tests/metrics/test_bar_acceleration.py"
+      ]
     }
   ]
 }

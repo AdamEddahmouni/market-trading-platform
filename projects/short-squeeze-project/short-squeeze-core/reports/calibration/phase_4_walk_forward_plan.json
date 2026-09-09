@@ -1,0 +1,226 @@
+{
+  "schema_version": "1.0.0",
+  "harness_version": "phase_4_walkforward_harness.v1",
+  "preregistration_version": "phase_4_calibration_preregistration.v0.6-draft",
+  "purge_calendar_days": 30,
+  "embargo_calendar_days": 15,
+  "folds": [
+    {
+      "fold_index": 0,
+      "train_boundary_indices": [],
+      "evaluation_boundary_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30
+      ],
+      "train_window_start": "2026-06-02T14:23:58Z",
+      "train_window_end": "2026-06-02T14:23:58Z",
+      "purge_window_start": "2026-06-17T14:23:58Z",
+      "purge_window_end": "2026-07-17T14:23:58Z",
+      "embargo_window_start": "2026-06-02T14:23:58Z",
+      "embargo_window_end": "2026-06-17T14:23:58Z",
+      "train_symbols": [],
+      "evaluation_symbols": [
+        "ADVB",
+        "APVO",
+        "ATAI",
+        "AVTX",
+        "BHVN",
+        "BIYA",
+        "CADL",
+        "CELZ",
+        "CGEM",
+        "GDC",
+        "GOAI",
+        "GPRE",
+        "IOVA",
+        "KLRS",
+        "LBGJ",
+        "LMNX",
+        "MGNX",
+        "NXXT",
+        "OBE",
+        "PESI",
+        "PMAX",
+        "SG",
+        "SLS",
+        "SSPC",
+        "STAK",
+        "TRVI",
+        "VMAR",
+        "XNCR",
+        "ZNTL"
+      ],
+      "regimes_in_fold": [
+        "POST_NORMALIZATION"
+      ]
+    },
+    {
+      "fold_index": 1,
+      "train_boundary_indices": [],
+      "evaluation_boundary_indices": [
+        31,
+        32,
+        33,
+        34
+      ],
+      "train_window_start": "2026-07-03T22:09:23.412932Z",
+      "train_window_end": "2026-07-03T22:09:23.412932Z",
+      "purge_window_start": "2026-07-18T22:09:23.412932Z",
+      "purge_window_end": "2026-08-17T22:09:23.412932Z",
+      "embargo_window_start": "2026-07-03T22:09:23.412932Z",
+      "embargo_window_end": "2026-07-18T22:09:23.412932Z",
+      "train_symbols": [],
+      "evaluation_symbols": [
+        "AACB",
+        "AACG",
+        "AACI",
+        "AADX"
+      ],
+      "regimes_in_fold": [
+        "POST_NORMALIZATION"
+      ]
+    }
+  ],
+  "symbol_groups": [
+    [
+      "BIYA_EARLIEST_BOUNDARY",
+      "BIYA_LATEST_BOUNDARY",
+      "BIYA_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "ADVB_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "APVO_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "ATAI_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "AVTX_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "BHVN_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "CADL_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "CELZ_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "CGEM_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "GDC_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "GOAI_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "GPRE_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "IOVA_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "KLRS_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "LBGJ_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "LMNX_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "MGNX_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "NXXT_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "OBE_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "PESI_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "PMAX_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "SG_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "SLS_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "SSPC_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "STAK_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "TRVI_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "VMAR_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "XNCR_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "ZNTL_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "AACB_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "AACG_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "AACI_ARTIFACT_DISCOVERY"
+    ],
+    [
+      "AADX_ARTIFACT_DISCOVERY"
+    ]
+  ],
+  "regime_counts": {
+    "POST_NORMALIZATION": 35
+  },
+  "empty_regimes": [
+    "PRE_2020",
+    "MEME_REGIME",
+    "HIGH_RATE"
+  ],
+  "degenerate": false,
+  "degeneracy_reason": null
+}

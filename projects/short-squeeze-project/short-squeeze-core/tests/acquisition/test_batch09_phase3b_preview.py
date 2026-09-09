@@ -90,7 +90,7 @@ CANONICAL_REGISTRY_SHA256 = {
     "tests/fixtures/acquisition/phase_3d_phase3b_registry_candidates.json":
         "1dcf502197ce9cde7c38017ee9ed269de0fbd5dd39ffe209e31598fbb5437877",
     "tests/fixtures/research/phase_3b_case_registry.json":
-        "d429b9858cdbf9195ab561f57fc22629c912fb43f2efa7b6f257898f594db7d9",
+        "008a34ca45cdc0494343aad51e8b7975a4ef6d74cffb1aea4fbe79f46e302e14",
 }
 
 requires_private_tree = pytest.mark.skipif(

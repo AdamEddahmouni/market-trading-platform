@@ -34,10 +34,14 @@ def test_historical_case_boundary_analysis_preserves_dependence():
     result = run_research_analysis(request, dataset=dataset)
     assert result.source_dataset_id == dataset.deterministic_id
     assert result.source_registry_id is None
-    assert result.case_count == 31
-    assert result.unique_symbol_count == 29
-    assert result.boundary_count == 31
+    assert result.case_count == 35
+    assert result.unique_symbol_count == 33
+    assert result.boundary_count == 35
     assert result.cohort_membership.included_case_ids == (
+        "AACB_ARTIFACT_DISCOVERY",
+        "AACG_ARTIFACT_DISCOVERY",
+        "AACI_ARTIFACT_DISCOVERY",
+        "AADX_ARTIFACT_DISCOVERY",
         "ADVB_ARTIFACT_DISCOVERY",
         "APVO_ARTIFACT_DISCOVERY",
         "ATAI_ARTIFACT_DISCOVERY",
@@ -72,7 +76,7 @@ def test_historical_case_boundary_analysis_preserves_dependence():
     )
     assert result.symbol_dependence_summary.dependence_detected
     assert result.confusion_matrix.true_positive_count == 2
-    assert result.confusion_matrix.unevaluable_count == 29
+    assert result.confusion_matrix.unevaluable_count == 33
     assert result.sample_size_assessments[0].state is SampleSizeState.LIMITED
     assert "HISTORICAL_CASE_BOUNDARIES_NOT_INDEPENDENT" in _limitation_codes(result)
 
@@ -86,10 +90,14 @@ def test_historical_unique_symbol_analysis_selects_earliest_without_outcome():
         included_statistics=("CONFUSION_MATRIX", "RULE_OUTCOME_PREVALENCE", "MISSINGNESS"),
     )
     result = run_research_analysis(request, dataset=dataset)
-    assert result.case_count == 29
-    assert result.unique_symbol_count == 29
-    assert result.boundary_count == 31
+    assert result.case_count == 33
+    assert result.unique_symbol_count == 33
+    assert result.boundary_count == 35
     assert result.cohort_membership.included_case_ids == (
+        "AACB_ARTIFACT_DISCOVERY",
+        "AACG_ARTIFACT_DISCOVERY",
+        "AACI_ARTIFACT_DISCOVERY",
+        "AADX_ARTIFACT_DISCOVERY",
         "ADVB_ARTIFACT_DISCOVERY",
         "APVO_ARTIFACT_DISCOVERY",
         "ATAI_ARTIFACT_DISCOVERY",
@@ -162,10 +170,10 @@ def test_registry_standard_cohorts_preserve_registry_id_and_quality():
     partial_result = run_research_analysis(partial_request, registry=registry)
     assert all_result.source_registry_id == registry.deterministic_id
     assert all_result.source_dataset_id is None
-    assert all_result.case_count == 43
-    assert all_result.data_quality_summary.registered_case_count == 43
-    assert partial_result.case_count == 1
-    assert partial_result.data_quality_summary.registered_case_count == 43
+    assert all_result.case_count == 48
+    assert all_result.data_quality_summary.registered_case_count == 48
+    assert partial_result.case_count == 2
+    assert partial_result.data_quality_summary.registered_case_count == 48
     assert "REGISTRY_DATA_QUALITY_NOT_PERFORMANCE_ESTIMATE" in _limitation_codes(all_result)
 
 

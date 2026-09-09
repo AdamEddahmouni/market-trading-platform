@@ -336,6 +336,64 @@ def _pilot_cohort_entries(peer_limitations: tuple[str, ...]) -> tuple:
     return tuple(entries)
 
 
+_BATCH05_SYMBOLS = ("AACB", "AACG", "AACI", "AACP", "AADX")
+_BATCH05_BOUNDARY_SUFFIX = "20260817"
+_BATCH05_ARTIFACT = "finviz-elite-export-2026-08-17"
+
+
+def _batch05_entries() -> tuple:
+    """Registry entries for the Phase 3F Batch 05 external Finviz discovery lane.
+
+    All five symbols have committed boundary evaluation fixtures; four have committed
+    outcome observations. AACP is registered EVALUATION_ONLY because its forward-outcome
+    requests returned SUCCESS_EMPTY on the initial and adjusted-Monday retry (permanent
+    OUTCOME_UNEVALUABLE, see docs/calibration/AACP_OUTCOME_EXCLUSION_RECORD.md).
+    """
+    common_limitations = (
+        "original methodology remains unverified",
+        "historical borrow evidence remains unavailable",
+        "outcome movement does not establish short-squeeze causation",
+        "published short interest evidence is unavailable",
+        "absolute price-level semantics remain blocked by Batch 07 readiness",
+        f"external discovery lane: {_BATCH05_ARTIFACT} (sh_float_u50,sh_price_u50)",
+    )
+    entries = []
+    for symbol in _BATCH05_SYMBOLS:
+        eval_name = f"{symbol.lower()}_boundary_evaluation.json"
+        eval_path = EVALUATION / eval_name
+        if not eval_path.is_file():
+            raise FileNotFoundError(f"missing batch05 evaluation fixture: {eval_path}")
+        evaluation = _load_evaluation(eval_name)
+        outcome_path = f"{symbol.lower()}_outcome_observation.json"
+        status = CandidateCaseStatus.COMPLETE
+        limitations = common_limitations
+        if symbol == "AACP":
+            if (OUT / outcome_path).is_file():
+                raise AssertionError(f"unexpected AACP outcome observation: {outcome_path}")
+            outcome_path = None
+            status = CandidateCaseStatus.EVALUATION_ONLY
+            limitations = common_limitations + (
+                "OUTCOME_UNEVALUABLE permanent: IBKR forward-outcome requests returned "
+                "SUCCESS_EMPTY on initial and adjusted-Monday retry "
+                "(AACP_OUTCOME_EXCLUSION_RECORD)",
+            )
+        entries.append(_entry(
+            f"{symbol}_ARTIFACT_DISCOVERY",
+            symbol,
+            CandidateCaseType.ORIGINAL_PLATFORM_NOT_SURFACED,
+            status,
+            OriginalPlatformStatus.NOT_SURFACED,
+            FixtureClassification.MIXED_PROVENANCE,
+            as_of=evaluation.as_of,
+            evaluation_path=f"../evaluation/{eval_name}",
+            outcome_path=outcome_path,
+            detection_id=f"BATCH3F05_{symbol}_{_BATCH05_BOUNDARY_SUFFIX}",
+            artifacts=(_BATCH05_ARTIFACT,),
+            limitations=limitations,
+        ))
+    return tuple(entries)
+
+
 def _historical_entries():
     earliest = _load_evaluation("biya_earliest_boundary_evaluation.json")
     latest = _load_evaluation("biya_latest_boundary_evaluation.json")
@@ -376,7 +434,7 @@ def _historical_entries():
                 "published short interest publication timestamps are date-only uncertain",
             ),
         ),
-    ) + _pilot_cohort_entries(peer_limitations)
+    ) + _pilot_cohort_entries(peer_limitations) + _batch05_entries()
     discovered = (
         ("KLOS_IDENTITY_CONFLICT", "KLOS", CandidateCaseType.ORIGINAL_PLATFORM_SURFACED,
          CandidateCaseStatus.BLOCKED_CONFLICTING_IDENTITY, OriginalPlatformStatus.SURFACED,

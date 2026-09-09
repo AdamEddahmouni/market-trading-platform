@@ -42,16 +42,16 @@ def test_biya_case_boundary_analysis_reports_both_dependent_results():
     }
 
     result = _run(AnalysisUnit.CASE_BOUNDARY)
-    assert result.case_count == 31
+    assert result.case_count == 35
     assert result.symbol_dependence_summary.dependence_detected
     assert not result.symbol_dependence_summary.independence_assumption_satisfied
     assert result.confusion_matrix.true_positive_count == 2
-    assert result.confusion_matrix.unevaluable_count == 29
+    assert result.confusion_matrix.unevaluable_count == 33
     missing_by_domain = {
         item.domain_id: item for item in result.domain_missingness_summary
     }
     assert missing_by_domain["PUBLISHED_SHORT_INTEREST"].missing_count == 0
-    assert missing_by_domain["BORROW_FEE"].missing_count == 31
+    assert missing_by_domain["BORROW_FEE"].missing_count == 35
     report = render_markdown_report(result).decode("utf-8")
     assert "dependent observations of the same symbol" in report
     assert "not independent performance samples" in report
@@ -63,8 +63,12 @@ _PEER_HISTORICAL_SYMBOLS = ("BIYA", "KLRS", "LBGJ", "SG", "SLS", "TRVI")
 
 def test_biya_unique_symbol_analysis_is_outcome_blind_sample_of_one():
     result = _run(AnalysisUnit.UNIQUE_SYMBOL_POLICY_SELECTED_BOUNDARY)
-    assert result.case_count == 29
+    assert result.case_count == 33
     assert result.boundary_selection.selected_case_ids == (
+        "AACB_ARTIFACT_DISCOVERY",
+        "AACG_ARTIFACT_DISCOVERY",
+        "AACI_ARTIFACT_DISCOVERY",
+        "AADX_ARTIFACT_DISCOVERY",
         "ADVB_ARTIFACT_DISCOVERY",
         "APVO_ARTIFACT_DISCOVERY",
         "ATAI_ARTIFACT_DISCOVERY",
