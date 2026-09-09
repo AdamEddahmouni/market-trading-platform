@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useNavigationType, useParams } from "react-router-dom";
 import { ADMITTED_REPLAY_INSTRUMENT_ID } from "../api/client";
+import { decodeInstrumentRouteParam } from "../api/instrumentIdentity";
 import { useInstrumentQuery, useWorkspaceSqueezeQuery } from "../api/hooks";
 import { ModeWorkspacePage } from "./ModeWorkspacePage";
 import type { Mode } from "./mode-session/types";
@@ -29,7 +30,7 @@ export function WorkspaceRoute({
   maxIndex,
 }: Props) {
   const { symbol } = useParams<{ symbol: string }>();
-  const instrumentId = symbol?.toUpperCase() ?? ADMITTED_REPLAY_INSTRUMENT_ID;
+  const instrumentId = symbol ? decodeInstrumentRouteParam(symbol) : ADMITTED_REPLAY_INSTRUMENT_ID;
   const location = useLocation();
   const navigate = useNavigate();
   const navigationType = useNavigationType();

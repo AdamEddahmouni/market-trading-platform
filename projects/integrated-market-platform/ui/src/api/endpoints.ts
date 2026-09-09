@@ -36,7 +36,10 @@ import {
   ProviderHealthResponseSchema,
   SymbolSearchResponseSchema,
   InstrumentCapabilitiesResponseSchema,
+  InstrumentSelectorSearchResponseSchema,
   MarketStateResponseSchema,
+  OptionsProductResponseSchema,
+  FuturesProductResponseSchema,
   OperatorLifecycleStatusSchema,
   OperatorReadinessSchema,
   OperatorConfigSchema,
@@ -196,6 +199,27 @@ export const api = {
   },
   searchSymbols: (query: string) =>
     fetchJson(`/symbols/search?q=${encodeURIComponent(query)}`, SymbolSearchResponseSchema),
+  searchInstruments: (query: string, limit = 25) =>
+    fetchJson(
+      `/instruments/search?q=${encodeURIComponent(query)}&limit=${limit}`,
+      InstrumentSelectorSearchResponseSchema,
+    ),
+  getOptionsProduct: (instrumentId: string, mode: "DEMO" | "PAPER" | "LIVE", accountId?: string) => {
+    const query = new URLSearchParams({ mode });
+    if (accountId) query.set("account_id", accountId);
+    return fetchJson(
+      `/workspace/${encodeURIComponent(instrumentId)}/options-product?${query.toString()}`,
+      OptionsProductResponseSchema,
+    );
+  },
+  getFuturesProduct: (instrumentId: string, mode: "DEMO" | "PAPER" | "LIVE", accountId?: string) => {
+    const query = new URLSearchParams({ mode });
+    if (accountId) query.set("account_id", accountId);
+    return fetchJson(
+      `/workspace/${encodeURIComponent(instrumentId)}/futures-product?${query.toString()}`,
+      FuturesProductResponseSchema,
+    );
+  },
   getInstrumentCapabilities: (instrumentId: string) =>
     fetchJson(`/instruments/${encodeURIComponent(instrumentId)}/capabilities`, InstrumentCapabilitiesResponseSchema),
   getProviderHealth: () => fetchJson("/provider/health", ProviderHealthResponseSchema),

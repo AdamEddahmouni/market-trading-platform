@@ -1,0 +1,16 @@
+{
+  "classification": "LIVE_RUNTIME_PERFORMANCE_MEASURED",
+  "disclaimer": "development-machine observational measurement only; not provider-network throughput; not production SLA.",
+  "iterations": 5000,
+  "measurements": {
+    "callback_bridge_events_per_sec": 923.0778717175617,
+    "callback_bridge_seconds": 5.416661099996418,
+    "capture_replay_events_per_sec": 19708.969469009488,
+    "capture_replay_seconds": 0.25369160005357116,
+    "startup_composition_repeats": 200.0,
+    "startup_composition_seconds_each": 2.433049987303093e-05,
+    "startup_composition_seconds_total": 0.004866099974606186,
+    "subscribe_cancel_cycles_per_sec": 47554.011860735154,
+    "subscribe_cancel_seconds": 0.10514359996886924
+  }
+}

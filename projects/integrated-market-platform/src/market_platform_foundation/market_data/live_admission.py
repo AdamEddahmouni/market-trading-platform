@@ -8,7 +8,14 @@ from typing import Any
 from ..clock import monotonic_wall_ns
 from ..data_quality.observations import QualityObservation, consumer_eligibility
 from ..order_flow.quality import OrderFlowQualityFlag
-from .live_config import clock_drift_threshold_ms, execution_freshness_threshold_ms, quote_stale_threshold_ms
+from .depth_admission import DepthAdmissionContext, evaluate_depth_admissibility
+from .live_config import (
+    clock_drift_threshold_ms,
+    depth_freshness_policy,
+    execution_freshness_threshold_ms,
+    quote_stale_threshold_ms,
+)
+from ..providers.runtime_capability import EntitlementState, ProviderHealth
 from .normalization import live_envelope_from_capture
 from .quality import assess_book, assess_quote, assess_ticker
 
@@ -202,6 +209,7 @@ class LiveAdmissionEngine:
 
         stale_ms = (now_ns - received_ns) // 1_000_000
         capability = str(record.get("capability") or "")
+        provider_id = str(record.get("provider") or scope.get("source_instance_id") or "")
         if "L1" in capability or "SNAPSHOT" in capability:
             stale_threshold = quote_stale_threshold_ms()
             if stale_ms > stale_threshold:
@@ -230,6 +238,78 @@ class LiveAdmissionEngine:
                         rule_id="QUAL-LIVE-TIME-004",
                         rule_version="1.0.0",
                         observed=f"{stale_ms}ms",
+                    ).finalize()
+                )
+        elif "DEPTH" in capability or "ORDER_BOOK" in capability or capability.endswith("_L2"):
+            book_view = record.get("book_view")
+            entitlement_raw = str(record.get("entitlement") or "UNKNOWN")
+            try:
+                entitlement = EntitlementState(entitlement_raw)
+            except ValueError:
+                entitlement = EntitlementState.UNKNOWN
+            health_raw = str(record.get("provider_health") or "UNKNOWN")
+            try:
+                provider_health = ProviderHealth(health_raw)
+            except ValueError:
+                provider_health = ProviderHealth.UNKNOWN
+            policy = depth_freshness_policy(provider_id)
+            context = DepthAdmissionContext(
+                entitlement=entitlement,
+                provider_health=provider_health,
+                provider_connected=self.provider_connected,
+                generation=int(record.get("generation") or 0),
+            )
+            if book_view is None:
+                depth_threshold_ms = policy.stale_after_ns // 1_000_000
+                if stale_ms > depth_threshold_ms:
+                    observations.append(
+                        QualityObservation(
+                            dimension="timeliness",
+                            state="STALE",
+                            severity="ERROR",
+                            scope=scope,
+                            available_time=received_ns,
+                            detected_at=now_ns,
+                            rule_id="QUAL-LIVE-DEPTH-001",
+                            rule_version="1.0.0",
+                            observed=f"{stale_ms}ms",
+                        ).finalize()
+                    )
+            else:
+                admissibility = evaluate_depth_admissibility(
+                    book_view,
+                    as_of_time_ns=now_ns,
+                    policy=policy,
+                    context=context,
+                )
+                if not admissibility.admissible:
+                    state = admissibility.status.value
+                    observations.append(
+                        QualityObservation(
+                            dimension="timeliness" if state == "STALE" else "availability",
+                            state=state,
+                            severity="ERROR",
+                            scope=scope,
+                            available_time=received_ns,
+                            detected_at=now_ns,
+                            rule_id="QUAL-LIVE-DEPTH-001",
+                            rule_version="1.0.0",
+                            observed=admissibility.reason_code,
+                        ).finalize()
+                    )
+            validity_flag = record.get("book_state_valid")
+            if validity_flag is False:
+                observations.append(
+                    QualityObservation(
+                        dimension="validity",
+                        state="INVALID_QUOTE",
+                        severity="ERROR",
+                        scope=scope,
+                        available_time=received_ns,
+                        detected_at=now_ns,
+                        rule_id="QUAL-LIVE-DEPTH-002",
+                        rule_version="1.0.0",
+                        observed="book_state_valid=false",
                     ).finalize()
                 )
 

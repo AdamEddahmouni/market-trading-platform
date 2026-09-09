@@ -55,7 +55,7 @@ def _pass_result(**overrides):
         "started_at": "2026-08-28T00:00:00+00:00",
         "status": "passed",
         "selected_suites": ["validation"],
-        "full_suite_required": False,
+        "core_checkpoint_required": False,
         "tests_run": 10,
         "passes": 10,
         "skips": 0,
@@ -146,9 +146,9 @@ class ValidationAdapterTests(unittest.TestCase):
         self.assertEqual(second.predecessor_attempt_id, first.attempt_id)
         self.assertEqual(self.ledger.get_record("DISPOSITION", result.disposition_id).domain_code, "PASS_WITH_RETRY")
 
-    def test_full_suite_required_and_skips(self) -> None:
+    def test_core_checkpoint_required_and_skips(self) -> None:
         result = attribute_validation(
-            _pass_result(full_suite_required=True, skips=3, passes=7),
+            _pass_result(core_checkpoint_required=True, skips=3, passes=7),
             writer=self.ledger,
             enabled=True,
         )

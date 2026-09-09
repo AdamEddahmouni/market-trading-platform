@@ -127,6 +127,7 @@ class ReplayStore:
     paper_ledger: PaperExecutionLedger = field(init=False, repr=False)
     execution_deferred: bool = field(default=False, init=False)
     restore_details: dict[str, Any] = field(default_factory=dict, init=False)
+    preview_store: Any = field(default=None, init=False, repr=False)
 
     @property
     def assistant_service(self) -> AssistantResearchService:
@@ -166,6 +167,9 @@ class ReplayStore:
             AssistantAuditStore(audit_root),
             inference=resolve_assistant_inference(),
         )
+        from ..paper.preview import PreviewStore
+
+        self.preview_store = PreviewStore()
         self.paper_ledger = PaperExecutionLedger.open_session(
             replay_session_id=self._session_id,
             instrument_id=self._instrument_id,

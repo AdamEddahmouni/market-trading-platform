@@ -1,4 +1,11 @@
 {
+  "supersession": {
+    "status": "SUPERSEDED",
+    "authorization_basis": "AUTHORIZATION BASIS SUPERSEDED",
+    "superseded_at": "2026-09-07",
+    "preserved_for": "HISTORICAL_PROVENANCE",
+    "reason": "Predates the professor's donor-identity correction (2026-08-28): Lucas Heller's GridIQ materials were not an intended donor. The native IMP implementations described here were independently reimplemented from legitimate platform requirements and remain valid; this ADR's donor-authorization framing is superseded and must not be used as authorization for future implementation."
+  },
   "adr_id": "ADR-GRIDIQ-001",
   "alternatives": [
     {

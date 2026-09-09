@@ -1,5 +1,14 @@
 # GridIQ donor notes
 
+> **STATUS: SUPERSEDED — HISTORICAL · AUTHORIZATION BASIS SUPERSEDED**
+>
+> This record predates the professor's donor-identity correction (2026-08-28):
+> Lucas Heller's GridIQ materials were **not** an intended donor source for
+> this platform. Any native IMP implementation independently reimplemented
+> from a legitimate platform requirement remains valid. This record is
+> preserved for provenance only and must not be used as authorization for
+> future implementation.
+
 These notes describe an external, immutable donor snapshot. Revision 3 is the
 authority if this summary conflicts with it. Nothing here authorizes donor
 execution, network access, data copying, AI-provider use, or a phase transition.

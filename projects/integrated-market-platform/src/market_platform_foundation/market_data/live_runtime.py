@@ -16,16 +16,19 @@ from .internal_simulation_gate import evaluate_internal_simulation_gates
 from .live_admission import LiveAdmissionEngine
 from .live_config import (
     fixture_feed_path,
+    ibkr_observational_enabled,
     live_internal_simulation_enabled,
     live_observational_enabled,
     moomoo_host,
     moomoo_live_enabled,
     moomoo_port,
+    observational_provider_preference,
     probe_report_path,
     probe_staleness_seconds,
     shadow_recording_enabled,
     subscription_quota,
 )
+from .runtime_composition import ObservationalRuntimeComposition
 from .connectivity import opend_reachable
 from .observational_state import ObservationalStateStore
 from .provider_lifecycle import ProviderConnectionState, ProviderLifecycle
@@ -63,6 +66,9 @@ class LiveObservationalRuntime:
     recorder: ObservationalRecorder | None = None
     scope_symbols: list[str] = field(default_factory=list)
     capability_probe: dict[str, CapabilityState] = field(default_factory=dict)
+    composition: ObservationalRuntimeComposition | None = None
+    ibkr_transport: Any | None = field(default=None, repr=False)
+    ibkr_adapter_config: Any | None = field(default=None, repr=False)
     feed: Any | None = field(default=None, repr=False)
     feed_metrics: dict[str, Any] = field(default_factory=dict)
     shadow_recorder: Any | None = field(default=None, repr=False)
@@ -70,14 +76,34 @@ class LiveObservationalRuntime:
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
     _fresh_event_count: int = 0
 
-    def configure(self) -> None:
+    def configure(
+        self,
+        *,
+        ibkr_transport: Any | None = None,
+        ibkr_adapter_config: Any | None = None,
+    ) -> None:
+        if ibkr_transport is not None:
+            self.ibkr_transport = ibkr_transport
+        if ibkr_adapter_config is not None:
+            self.ibkr_adapter_config = ibkr_adapter_config
         self.lifecycle.quota_available = self.subscriptions.max_quota
+        self.composition = ObservationalRuntimeComposition(store=self.state)
         if not live_observational_enabled():
             self.lifecycle.connection_state = ProviderConnectionState.DISABLED
             return
         self.lifecycle.connection_state = ProviderConnectionState.CONNECTING
         self._load_verified_capabilities()
-        if moomoo_live_enabled():
+        preference = observational_provider_preference()
+        use_moomoo = moomoo_live_enabled() and preference in {"auto", "moomoo"}
+        use_ibkr = ibkr_observational_enabled() and preference in {"auto", "ibkr"}
+        if use_ibkr and (not use_moomoo or preference == "ibkr"):
+            if self._start_ibkr_observational_feed():
+                if shadow_recording_enabled():
+                    from ..shadow.recording import attach_default_recorder
+
+                    self.shadow_recorder = attach_default_recorder(self)
+                return
+        if use_moomoo:
             if not opend_reachable(host=moomoo_host(), port=moomoo_port()):
                 self.lifecycle.connection_state = ProviderConnectionState.DISCONNECTED
                 self.lifecycle.last_error = (
@@ -98,11 +124,84 @@ class LiveObservationalRuntime:
                 self._replay_fixture(fixture)
             else:
                 self.lifecycle.connection_state = ProviderConnectionState.DISABLED
-                self.lifecycle.last_error = "IMP_MOOMOO_LIVE or IMP_LIVE_FIXTURE_FEED required"
+                self.lifecycle.last_error = (
+                    "IMP_MOOMOO_LIVE, IMP_IBKR_LIVE+TWS, or IMP_LIVE_FIXTURE_FEED required"
+                )
         if shadow_recording_enabled():
             from ..shadow.recording import attach_default_recorder
 
             self.shadow_recorder = attach_default_recorder(self)
+
+    def _start_ibkr_observational_feed(self) -> bool:
+        """Attach an already-injected IBKR transport into the G7 composition graph."""
+        from .ibkr_runtime_bridge import (
+            attach_ibkr_observational_runtime,
+            injected_ibkr_observational_provider,
+        )
+        from ..providers.ibkr_observational.adapter import IbkrObservationalConfig
+
+        transport = self.ibkr_transport
+        adapter_config = self.ibkr_adapter_config
+        if transport is None:
+            provider = injected_ibkr_observational_provider()
+            if provider is None:
+                self.lifecycle.connection_state = ProviderConnectionState.DISCONNECTED
+                self.lifecycle.last_error = (
+                    "IBKR observational transport not injected by outer bootstrap"
+                )
+                self.admission.on_disconnect()
+                return False
+            try:
+                transport, adapter_config = provider.construct()
+            except Exception as exc:
+                self.lifecycle.connection_state = ProviderConnectionState.DISCONNECTED
+                self.lifecycle.last_error = f"IBKR observational runtime unavailable: {exc}"
+                self.admission.on_disconnect()
+                return False
+        if adapter_config is None:
+            adapter_config = IbkrObservationalConfig(live_enabled=True)
+        try:
+            attach_ibkr_observational_runtime(
+                self.composition,
+                transport,
+                config=adapter_config,
+                connect=True,
+            )
+            self._attach_ibkr_query_service()
+        except Exception as exc:
+            self.lifecycle.connection_state = ProviderConnectionState.DISCONNECTED
+            self.lifecycle.last_error = f"IBKR observational connect failed: {exc}"
+            self.admission.on_disconnect()
+            return False
+        self.lifecycle.mark_connected(provider_generation_id=1)
+        self.lifecycle.entitlement_state = "IBKR_OBSERVATIONAL"
+        self.admission.on_connect()
+        if self.composition is not None:
+            self.composition.sync_ibkr_runtime_state()
+        return True
+
+    def _attach_ibkr_query_service(self) -> None:
+        """Attach read-only IBKR query provider when outer bootstrap registered one."""
+        from .ibkr_query_bridge import (
+            attach_ibkr_query_service,
+            injected_ibkr_readonly_query_provider,
+        )
+        from ..xa01.registry import get_registry
+
+        if self.composition is None:
+            return
+        factory = injected_ibkr_readonly_query_provider()
+        if factory is None:
+            return
+        try:
+            provider = factory.construct()
+        except Exception:
+            return
+        attach_ibkr_query_service(
+            self.composition,
+            provider,
+            lookup=get_registry(),
+        )
 
     def _load_verified_capabilities(self) -> None:
         receiving = self._fresh_event_count > 0
@@ -537,6 +636,8 @@ class LiveObservationalRuntime:
 
     def stop(self) -> None:
         self._stop_event.set()
+        if self.composition is not None:
+            self.composition.shutdown()
         if self.feed is not None:
             self.feed.stop()
 

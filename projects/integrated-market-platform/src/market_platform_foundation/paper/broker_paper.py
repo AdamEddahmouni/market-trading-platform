@@ -22,6 +22,8 @@ from ..providers.broker_execution import (
     normalize_broker_fill,
 )
 from ..risk.decision import evaluate_risk
+from ..risk.financial import canonical_order_multiplier
+from ..risk.pretrade import PreTradeRiskContext, evaluate_pretrade
 from ..rt01.context import current_context
 from ..rt01.enums import TraceStage, TraceStatus
 from ..rt01.instrumentation.paper import trace_refs
@@ -51,6 +53,67 @@ def _broker_lifecycle_path(target: str) -> list[str]:
     if target == "EXPIRED":
         return ["WORKING", "EXPIRED"]
     raise ValueError(f"BROKER_TARGET_STATE_UNREACHABLE: {target}")
+
+
+def _enforce_broker_buy_side_cash_availability(
+    *,
+    ledger: PaperExecutionLedger,
+    intent: dict[str, Any],
+) -> None:
+    """Broker-paper buy-side cash gate (G3 §20/§26, BL-0202).
+
+    Mirror of the INTERNAL_SIMULATION gate: supported cash-funded buys must
+    satisfy ``required_cash <= available_cash`` against the canonical G2 cash
+    projection minus working obligations. The broker path has no bar tape, so
+    MARKET orders use the current live mark as the conservative price
+    reference; when no mark exists the order fails closed with
+    REQUIRED_PRICE_MISSING rather than silently pricing at zero (G3 §24).
+    """
+    if str(intent.get("side", "")).upper() != "BUY":
+        return
+    order_type = str(intent.get("order_type", "MARKET"))
+    limit = intent.get("limit_price_minor")
+    price_minor = int(limit) if order_type == "LIMIT" and limit is not None else ledger._latest_mark_minor()  # noqa: SLF001 — same-package projection helper
+    instrument = intent.get("instrument") or {}
+    account = ledger.project_account()
+    projection = ledger._project_ledger()
+    context = PreTradeRiskContext(
+        operational_identity=str(intent.get("client_order_id", "")),
+        account_id=str(ledger.paper_account_id),
+        mode=str(ledger.execution_mode),
+        instrument_id=str(intent.get("instrument_id", "")),
+        asset_class=str(instrument.get("asset_class", "EQUITY")),
+        instrument_kind=str(instrument.get("instrument_kind", "TRADABLE_SECURITY")),
+        symbol=str(instrument.get("symbol", intent.get("instrument_id", ""))),
+        contract_multiplier=canonical_order_multiplier(instrument),
+        side=str(intent.get("side", "BUY")),
+        quantity=int(intent.get("desired_quantity", 0)),
+        order_type=order_type,
+        limit_price_minor=int(limit) if limit is not None else None,
+        reference_price_minor=price_minor,
+        currency=str(
+            intent.get("currency")
+            or instrument.get("currency")
+            or ledger.policy.get("currency", "USD")
+        ),
+        account_currency=str(ledger.policy.get("currency", "USD")),
+        portfolio_cash_minor=int(account.get("cash_minor", 0)),
+        # G4 Phase 6: broker-paper funds one currency; supply it as the
+        # per-currency bucket so cross-currency orders fail closed with
+        # INSUFFICIENT_SETTLEMENT_CURRENCY (never 1:1).
+        currency_cash_minor={
+            str(ledger.policy.get("currency", "USD")).upper(): int(account.get("cash_minor", 0))
+        },
+        position_quantity=int(projection.get("position_shares", 0)),
+        risk_policy_revision=str(ledger.policy.get("risk_policy_identity_hash", "")),
+    )
+    decision = evaluate_pretrade(context)
+    if not decision.accepted:
+        raise ValueError(
+            f"{decision.reason_codes[0] if decision.reason_codes else 'RISK_REJECTED'}: "
+            f"{{'required_cash_minor': {decision.required_cash_minor}, "
+            f"'available_cash_minor': {decision.available_cash_minor}}}"
+        )
 
 
 def submit_broker_paper_order(*args: Any, **kwargs: Any) -> dict[str, Any]:
@@ -115,85 +178,91 @@ def _submit_broker_paper_order(
     if ledger.execution_authority not in PAPER_EXECUTION_AUTHORITIES:
         raise ValueError("PAPER_EXECUTION_NOT_AUTHORIZED")
 
-    existing_order_id = ledger.lookup_idempotent_order(idempotency_key)
-    if existing_order_id:
-        for order in ledger.project_orders():
-            if order.get("order_id") == existing_order_id:
-                return {
-                    "duplicate": True,
-                    "idempotency_key": idempotency_key,
-                    "order": order,
-                    "order_id": existing_order_id,
-                }
-        return {
-            "duplicate": True,
-            "idempotency_key": idempotency_key,
-            "order_id": existing_order_id,
-        }
+    with ledger.submit_critical_section():
+        existing_order_id = ledger.lookup_idempotent_order(idempotency_key)
+        if existing_order_id:
+            for order in ledger.project_orders():
+                if order.get("order_id") == existing_order_id:
+                    return {
+                        "duplicate": True,
+                        "idempotency_key": idempotency_key,
+                        "order": order,
+                        "order_id": existing_order_id,
+                    }
+            return {
+                "duplicate": True,
+                "idempotency_key": idempotency_key,
+                "order_id": existing_order_id,
+            }
 
-    intent = build_user_order_intent(
-        instrument=instrument,
-        side=side,
-        quantity=quantity,
-        observation_time=observation_time,
-        order_type=order_type,
-        limit_price_minor=limit_price_minor,
-        client_order_id=client_order_id,
-        idempotency_key=idempotency_key,
-        correlation_id=correlation_id or client_order_id,
-        decision_source_snapshot=decision_source_snapshot,
-        lineage_refs=lineage_refs,
-        quantity_facts=quantity_facts,
-        risk_decision_id=risk_decision_id,
-    )
-    ledger.append_intent(intent)
+        intent = build_user_order_intent(
+            instrument=instrument,
+            side=side,
+            quantity=quantity,
+            observation_time=observation_time,
+            order_type=order_type,
+            limit_price_minor=limit_price_minor,
+            client_order_id=client_order_id,
+            idempotency_key=idempotency_key,
+            correlation_id=correlation_id or client_order_id,
+            decision_source_snapshot=decision_source_snapshot,
+            lineage_refs=lineage_refs,
+            quantity_facts=quantity_facts,
+            risk_decision_id=risk_decision_id,
+        )
+        # Final server-side cash gate at the broker boundary (G3 §20/§26,
+        # BL-0202). Price evidence comes from the explicit limit price (LIMIT)
+        # or the current live mark; when neither is available the order fails
+        # closed with REQUIRED_PRICE_MISSING instead of being priced at zero.
+        _enforce_broker_buy_side_cash_availability(ledger=ledger, intent=intent)
+        ledger.append_intent(intent)
 
-    projection = ledger._project_ledger()
-    decision = evaluate_risk(
-        intent=intent,
-        policy=ledger.policy,
-        kill_switch=ledger.kill_switch,
-        current_position_shares=int(projection["position_shares"]),
-        open_order_count=ledger.open_order_count,
-    )
-    if risk_decision_id:
-        decision["risk_decision_id"] = risk_decision_id
-    ledger.append_risk_decision(decision)
-    order_id = build_canonical_order_id(intent=intent, decision=decision)
-    instrument_id = str(intent["instrument_id"])
+        projection = ledger._project_ledger()
+        decision = evaluate_risk(
+            intent=intent,
+            policy=ledger.policy,
+            kill_switch=ledger.kill_switch,
+            current_position_shares=int(projection["position_shares"]),
+            open_order_count=ledger.open_order_count,
+        )
+        if risk_decision_id:
+            decision["risk_decision_id"] = risk_decision_id
+        ledger.append_risk_decision(decision)
+        order_id = build_canonical_order_id(intent=intent, decision=decision)
+        instrument_id = str(intent["instrument_id"])
 
-    if decision["decision"] not in {"APPROVE", "RESIZE"}:
-        rejected = build_broker_order(
+        if decision["decision"] not in {"APPROVE", "RESIZE"}:
+            rejected = build_broker_order(
+                intent=intent,
+                decision=decision,
+                state="REJECTED",
+                order_id=order_id,
+                reason_codes=["BROKER_RISK_NOT_APPROVED"],
+            )
+            ledger.append_order(rejected, intent=intent)
+            ledger.record_idempotent_order(idempotency_key=idempotency_key, order_id=order_id)
+            return {
+                "decision": decision["decision"],
+                "duplicate": False,
+                "execution_attempt_id": order_id,
+                "idempotency_key": idempotency_key,
+                "intent_id": intent["intent_id"],
+                "order": rejected,
+                "order_id": order_id,
+                "rejected": True,
+                "reason_codes": decision.get("reason_codes", []),
+                "risk_decision_id": decision.get("risk_decision_id") or decision.get("intent_id"),
+            }
+
+        # Submission record BEFORE any broker network call.
+        submitted = build_broker_order(
             intent=intent,
             decision=decision,
-            state="REJECTED",
+            state="SUBMITTED",
             order_id=order_id,
-            reason_codes=["BROKER_RISK_NOT_APPROVED"],
         )
-        ledger.append_order(rejected, intent=intent)
+        ledger.append_order(submitted, intent=intent)
         ledger.record_idempotent_order(idempotency_key=idempotency_key, order_id=order_id)
-        return {
-            "decision": decision["decision"],
-            "duplicate": False,
-            "execution_attempt_id": order_id,
-            "idempotency_key": idempotency_key,
-            "intent_id": intent["intent_id"],
-            "order": rejected,
-            "order_id": order_id,
-            "rejected": True,
-            "reason_codes": decision.get("reason_codes", []),
-            "risk_decision_id": decision.get("risk_decision_id") or decision.get("intent_id"),
-        }
-
-    # Submission record BEFORE any broker network call.
-    submitted = build_broker_order(
-        intent=intent,
-        decision=decision,
-        state="SUBMITTED",
-        order_id=order_id,
-    )
-    ledger.append_order(submitted, intent=intent)
-    ledger.record_idempotent_order(idempotency_key=idempotency_key, order_id=order_id)
 
     result = provider.place_order(intent)
     status = str(getattr(result, "status", "error"))
@@ -402,6 +471,61 @@ def preview_broker_paper_order(
     }
 
 
+def _capture_cancel_time_late_fills(
+    *,
+    ledger: PaperExecutionLedger,
+    order_id: str,
+    result: Any,
+) -> list[dict[str, Any]]:
+    """Apply provider-valid fills carried by a broker cancel acknowledgment (BL-0206).
+
+    A broker that accepted a cancel may still report fills that executed
+    before the cancel was processed. Those fills are financially
+    authoritative: each is applied exactly once (deduped on ``broker_fill_id``
+    against already-recorded fills) and the anomaly is recorded as a
+    reconciliation event with provenance — never silently dropped (G3 §44–45).
+    """
+    payload = _first_broker_status_payload(result)
+    if payload is None:
+        return []
+    order = ledger.lookup_order(order_id)
+    if order is None:
+        return []
+    try:
+        status_event = ensure_broker_fill_ids(BrokerOrderStatusEvent.from_record(payload))
+    except (KeyError, ValueError, TypeError):
+        return []
+    known_fill_ids = {
+        str(existing["broker_fill_id"])
+        for existing in ledger.project_fills()
+        if existing.get("broker_fill_id")
+    }
+    new_fills: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for fill_event in status_event.fills:
+        broker_fill_id = str(fill_event.broker_fill_id)
+        if not broker_fill_id or broker_fill_id in known_fill_ids or broker_fill_id in seen:
+            continue
+        seen.add(broker_fill_id)
+        new_fills.append(
+            normalize_broker_fill(
+                fill_event,
+                order_id=order_id,
+                instrument_id=str(order.get("instrument_id", "")),
+                direction=str(order.get("direction", "")),
+            )
+        )
+    if not new_fills:
+        return []
+    for fill in new_fills:
+        ledger.append_fill(fill, order=ledger.lookup_order(order_id))
+    ledger.append_late_fill_reconciliation(
+        order_id=order_id,
+        fill_ids=[str(fill.get("fill_id", "")) for fill in new_fills],
+    )
+    return new_fills
+
+
 def _first_broker_status_payload(result: Any) -> dict[str, Any] | None:
     for event in getattr(result, "events", ()) or ():
         if isinstance(event, dict) and event.get("broker_event_type") == "ORDER_STATUS":
@@ -522,6 +646,10 @@ def _apply_broker_status_event(
         raise ValueError("PAPER_ORDER_NOT_FOUND")
     state = str(order.get("state", ""))
     if state in ORDER_LIFECYCLE_TERMINAL_STATES:
+        # Terminal orders are never re-polled (efficiency + broker authority).
+        # Late fills after a local terminal state are instead captured at the
+        # cancel boundary, where the broker's cancel acknowledgment may carry
+        # cumulative fill evidence (BL-0206 / G3 §44).
         return {
             "advanced": False,
             "order": order,
@@ -725,12 +853,21 @@ def _cancel_broker_paper_order(
         raise ValueError(f"BROKER_CANCEL_REJECTED: {getattr(result, 'reason_code', 'UNKNOWN')}")
 
     cancelled = ledger.cancel_order(order_id=order_id, prior_state=state)
-    return {
+    late_fills = _capture_cancel_time_late_fills(
+        ledger=ledger,
+        order_id=order_id,
+        result=result,
+    )
+    envelope: dict[str, Any] = {
         "duplicate": False,
         "order": cancelled,
         "order_id": order_id,
         "state": "CANCELLED",
     }
+    if late_fills:
+        envelope["late_fills"] = late_fills
+        envelope["late_fills_reconciled"] = True
+    return envelope
 
 
 __all__ = [

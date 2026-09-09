@@ -1,3 +1,5 @@
+import { workspacePathForInstrument } from "../../api/instrumentIdentity";
+
 export const WORKSPACE_LANE_REGISTRY = [
   { id: "overview", label: "Overview", shortTitle: "Overview", routeSuffix: "", navOrder: 0 },
   {
@@ -59,7 +61,7 @@ export const WORKSPACE_LANE_LABELS: Readonly<Record<WorkspaceLaneModuleId, strin
 
 export function workspaceLanePath(instrumentId: string, laneId: WorkspaceModuleId, squeezeQuery = ""): string {
   const lane = laneById(laneId);
-  if (!lane) return `/workspace/${instrumentId}`;
+  if (!lane || laneId === "overview") return workspacePathForInstrument(instrumentId);
   const suffix = laneId === "squeeze" ? `${lane.routeSuffix}${squeezeQuery}` : lane.routeSuffix;
-  return `/workspace/${instrumentId}${suffix}`;
+  return `${workspacePathForInstrument(instrumentId)}${suffix}`;
 }

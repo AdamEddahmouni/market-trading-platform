@@ -2,32 +2,34 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tansta
 import { api } from "./endpoints";
 import { fetchLiveCanaryReconciliation, fetchLiveCanarySnapshot } from "./liveCanary";
 import type { PaperOrderRequest } from "./schemas";
+import type { Mode } from "../components/mode-session/types";
 
 export const queryKeys = {
   context: ["context"] as const,
   attention: ["attention"] as const,
-  instrument: (id: string) => ["instrument", id] as const,
+  instrument: (instrumentId: string) => ["instrument", instrumentId] as const,
   exploreSqueeze: ["explore", "squeeze"] as const,
   exploreSqueezeScanner: ["explore", "squeeze", "scanner"] as const,
   exploreFutures: ["explore", "futures"] as const,
   exploreCatalyst: ["explore", "catalyst"] as const,
-  workspaceSqueeze: (symbol: string, dataMode: "frozen" | "current" = "frozen") =>
-    ["workspace", symbol, "squeeze", dataMode] as const,
-  workspaceOrderFlow: (symbol: string) => ["workspace", symbol, "order-flow"] as const,
-  workspaceOptions: (symbol: string) => ["workspace", symbol, "options"] as const,
-  workspaceLargeTransactions: (symbol: string) => ["workspace", symbol, "large-transactions"] as const,
-  workspaceOrderBook: (symbol: string) => ["workspace", symbol, "order-book"] as const,
-  workspaceFutures: (symbol: string) => ["workspace", symbol, "futures"] as const,
-  workspaceCatalyst: (symbol: string) => ["workspace", symbol, "catalyst"] as const,
-  workspaceFundEtf: (symbol: string) => ["workspace", symbol, "fund-etf"] as const,
+  workspaceSqueeze: (instrumentId: string, dataMode: "frozen" | "current" = "frozen") =>
+    ["workspace", instrumentId, "squeeze", dataMode] as const,
+  workspaceOrderFlow: (instrumentId: string) => ["workspace", instrumentId, "order-flow"] as const,
+  workspaceOptions: (instrumentId: string) => ["workspace", instrumentId, "options"] as const,
+  workspaceLargeTransactions: (instrumentId: string) => ["workspace", instrumentId, "large-transactions"] as const,
+  workspaceOrderBook: (instrumentId: string) => ["workspace", instrumentId, "order-book"] as const,
+  workspaceFutures: (instrumentId: string) => ["workspace", instrumentId, "futures"] as const,
+  workspaceCatalyst: (instrumentId: string) => ["workspace", instrumentId, "catalyst"] as const,
+  workspaceFundEtf: (instrumentId: string) => ["workspace", instrumentId, "fund-etf"] as const,
+  workspaceDisclosure: (instrumentId: string) => ["workspace", instrumentId, "disclosure"] as const,
+  workspaceInstitutionalFlow: (instrumentId: string) =>
+    ["workspace", instrumentId, "institutional-flow"] as const,
+  workspaceEvidence: (instrumentId: string, dataMode: "frozen" | "current" = "frozen") =>
+    ["workspace", instrumentId, "evidence", dataMode] as const,
   replaySession: ["replay", "session"] as const,
   researchAnalytics: ["research", "analytics"] as const,
   researchModels: ["research", "models"] as const,
   researchSimulation: ["research", "simulation"] as const,
-  workspaceDisclosure: (symbol: string) => ["workspace", symbol, "disclosure"] as const,
-  workspaceInstitutionalFlow: (symbol: string) => ["workspace", symbol, "institutional-flow"] as const,
-  workspaceEvidence: (symbol: string, dataMode: "frozen" | "current" = "frozen") =>
-    ["workspace", symbol, "evidence", dataMode] as const,
   assistantStatus: ["assistant", "status"] as const,
   assistantConversations: ["assistant", "conversations"] as const,
   assistantMessages: (conversationId: string) => ["assistant", conversationId, "messages"] as const,
@@ -48,8 +50,13 @@ export const queryKeys = {
     ["live", "canary-reconciliation", accountId ?? "fp-canary-local"] as const,
   providerHealth: ["provider", "health"] as const,
   symbolSearch: (query: string) => ["symbols", "search", query] as const,
-  instrumentCapabilities: (id: string) => ["instruments", id, "capabilities"] as const,
-  marketState: (id: string) => ["market-state", id] as const,
+  instrumentSearch: (query: string, limit = 25) => ["is", query, String(limit)] as const,
+  optionsProduct: (instrumentId: string, mode: Mode, accountId?: string, provider = "fixture") =>
+    ["op", instrumentId, mode, accountId ?? "u", provider] as const,
+  futuresProduct: (instrumentId: string, mode: Mode, accountId?: string, provider = "fixture") =>
+    ["fp", instrumentId, mode, accountId ?? "u", provider] as const,
+  instrumentCapabilities: (instrumentId: string) => ["instruments", instrumentId, "capabilities"] as const,
+  marketState: (instrumentId: string) => ["market-state", instrumentId] as const,
 };
 
 export function useContextQuery() {
@@ -87,85 +94,85 @@ export function useExploreCatalystQuery() {
   return useQuery({ queryKey: queryKeys.exploreCatalyst, queryFn: api.getExploreCatalyst });
 }
 
-export function useWorkspaceSqueezeQuery(symbol: string, dataMode: "frozen" | "current" = "frozen") {
+export function useWorkspaceSqueezeQuery(instrumentId: string, dataMode: "frozen" | "current" = "frozen") {
   return useQuery({
-    queryKey: queryKeys.workspaceSqueeze(symbol, dataMode),
-    queryFn: () => api.getWorkspaceSqueeze(symbol, dataMode),
-    enabled: symbol.length > 0,
+    queryKey: queryKeys.workspaceSqueeze(instrumentId, dataMode),
+    queryFn: () => api.getWorkspaceSqueeze(instrumentId, dataMode),
+    enabled: instrumentId.length > 0,
   });
 }
 
-export function useWorkspaceOrderFlowQuery(symbol: string) {
+export function useWorkspaceOrderFlowQuery(instrumentId: string) {
   const contextQuery = useContextQuery();
   const isLive = contextQuery.data?.as_of_context.data_mode === "LIVE_OBSERVATIONAL";
   return useQuery({
-    queryKey: queryKeys.workspaceOrderFlow(symbol),
-    queryFn: () => api.getWorkspaceOrderFlow(symbol),
-    enabled: symbol.length > 0,
+    queryKey: queryKeys.workspaceOrderFlow(instrumentId),
+    queryFn: () => api.getWorkspaceOrderFlow(instrumentId),
+    enabled: instrumentId.length > 0,
     refetchInterval: isLive ? 2000 : false,
   });
 }
 
-export function useWorkspaceEvidenceQuery(symbol: string) {
+export function useWorkspaceEvidenceQuery(instrumentId: string) {
   const contextQuery = useContextQuery();
   const isLive = contextQuery.data?.as_of_context.data_mode === "LIVE_OBSERVATIONAL";
   const dataMode = isLive ? "current" : "frozen";
   return useQuery({
-    queryKey: queryKeys.workspaceEvidence(symbol, dataMode),
-    queryFn: () => api.getWorkspaceEvidence(symbol, dataMode),
-    enabled: symbol.length > 0,
+    queryKey: queryKeys.workspaceEvidence(instrumentId, dataMode),
+    queryFn: () => api.getWorkspaceEvidence(instrumentId, dataMode),
+    enabled: instrumentId.length > 0,
     refetchInterval: isLive ? 5000 : false,
   });
 }
 
-export function useWorkspaceOptionsQuery(symbol: string) {
+export function useWorkspaceOptionsQuery(instrumentId: string) {
   return useQuery({
-    queryKey: queryKeys.workspaceOptions(symbol),
-    queryFn: () => api.getWorkspaceOptions(symbol),
-    enabled: symbol.length > 0,
+    queryKey: queryKeys.workspaceOptions(instrumentId),
+    queryFn: () => api.getWorkspaceOptions(instrumentId),
+    enabled: instrumentId.length > 0,
   });
 }
 
-export function useWorkspaceLargeTransactionsQuery(symbol: string) {
+export function useWorkspaceLargeTransactionsQuery(instrumentId: string) {
   return useQuery({
-    queryKey: queryKeys.workspaceLargeTransactions(symbol),
-    queryFn: () => api.getWorkspaceLargeTransactions(symbol),
-    enabled: symbol.length > 0,
+    queryKey: queryKeys.workspaceLargeTransactions(instrumentId),
+    queryFn: () => api.getWorkspaceLargeTransactions(instrumentId),
+    enabled: instrumentId.length > 0,
   });
 }
 
-export function useWorkspaceOrderBookQuery(symbol: string) {
+export function useWorkspaceOrderBookQuery(instrumentId: string) {
   const contextQuery = useContextQuery();
   const isLive = contextQuery.data?.as_of_context.data_mode === "LIVE_OBSERVATIONAL";
   return useQuery({
-    queryKey: queryKeys.workspaceOrderBook(symbol),
-    queryFn: () => api.getWorkspaceOrderBook(symbol),
-    enabled: symbol.length > 0,
+    queryKey: queryKeys.workspaceOrderBook(instrumentId),
+    queryFn: () => api.getWorkspaceOrderBook(instrumentId),
+    enabled: instrumentId.length > 0,
     refetchInterval: isLive ? 2000 : false,
   });
 }
 
-export function useWorkspaceFuturesQuery(symbol: string) {
+export function useWorkspaceFuturesQuery(instrumentId: string) {
   return useQuery({
-    queryKey: queryKeys.workspaceFutures(symbol),
-    queryFn: () => api.getWorkspaceFutures(symbol),
-    enabled: symbol.length > 0,
+    queryKey: queryKeys.workspaceFutures(instrumentId),
+    queryFn: () => api.getWorkspaceFutures(instrumentId),
+    enabled: instrumentId.length > 0,
   });
 }
 
-export function useWorkspaceCatalystQuery(symbol: string) {
+export function useWorkspaceCatalystQuery(instrumentId: string) {
   return useQuery({
-    queryKey: queryKeys.workspaceCatalyst(symbol),
-    queryFn: () => api.getWorkspaceCatalyst(symbol),
-    enabled: symbol.length > 0,
+    queryKey: queryKeys.workspaceCatalyst(instrumentId),
+    queryFn: () => api.getWorkspaceCatalyst(instrumentId),
+    enabled: instrumentId.length > 0,
   });
 }
 
-export function useWorkspaceFundEtfQuery(symbol: string) {
+export function useWorkspaceFundEtfQuery(instrumentId: string) {
   return useQuery({
-    queryKey: queryKeys.workspaceFundEtf(symbol),
-    queryFn: () => api.getWorkspaceFundEtf(symbol),
-    enabled: symbol.length > 0,
+    queryKey: queryKeys.workspaceFundEtf(instrumentId),
+    queryFn: () => api.getWorkspaceFundEtf(instrumentId),
+    enabled: instrumentId.length > 0,
   });
 }
 
@@ -185,19 +192,19 @@ export function useResearchSimulationQuery() {
   return useQuery({ queryKey: queryKeys.researchSimulation, queryFn: api.getResearchSimulation });
 }
 
-export function useWorkspaceDisclosureQuery(symbol: string) {
+export function useWorkspaceDisclosureQuery(instrumentId: string) {
   return useQuery({
-    queryKey: queryKeys.workspaceDisclosure(symbol),
-    queryFn: () => api.getWorkspaceDisclosure(symbol),
-    enabled: symbol.length > 0,
+    queryKey: queryKeys.workspaceDisclosure(instrumentId),
+    queryFn: () => api.getWorkspaceDisclosure(instrumentId),
+    enabled: instrumentId.length > 0,
   });
 }
 
-export function useWorkspaceInstitutionalFlowQuery(symbol: string) {
+export function useWorkspaceInstitutionalFlowQuery(instrumentId: string) {
   return useQuery({
-    queryKey: queryKeys.workspaceInstitutionalFlow(symbol),
-    queryFn: () => api.getWorkspaceInstitutionalFlow(symbol),
-    enabled: symbol.length > 0,
+    queryKey: queryKeys.workspaceInstitutionalFlow(instrumentId),
+    queryFn: () => api.getWorkspaceInstitutionalFlow(instrumentId),
+    enabled: instrumentId.length > 0,
   });
 }
 
@@ -271,12 +278,21 @@ export function usePaperStrategyProfitabilityQuery(enabled = true) {
 
 function useInvalidatePaper() {
   const queryClient = useQueryClient();
-  return () => {
+  return (scope?: { instrumentId?: string; mode?: Mode; accountId?: string }) => {
     void queryClient.invalidateQueries({ queryKey: queryKeys.paperPortfolio });
     void queryClient.invalidateQueries({ queryKey: queryKeys.demoPortfolio });
     void queryClient.invalidateQueries({ queryKey: queryKeys.paperOrderHistory });
     void queryClient.invalidateQueries({ queryKey: ["paper", "strategy-profitability"] });
+    void queryClient.invalidateQueries({ queryKey: ["paper", "trace"] });
     void queryClient.invalidateQueries({ queryKey: ["context"] });
+    if (scope?.instrumentId && scope.mode) {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.optionsProduct(scope.instrumentId, scope.mode, scope.accountId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.futuresProduct(scope.instrumentId, scope.mode, scope.accountId),
+      });
+    }
   };
 }
 
@@ -340,6 +356,40 @@ export function useSymbolSearchQuery(query: string, enabled = true) {
     queryKey: queryKeys.symbolSearch(query),
     queryFn: () => api.searchSymbols(query),
     enabled: enabled && query.length > 0,
+  });
+}
+
+export function useInstrumentSelectorQuery(query: string, enabled = true, limit = 25) {
+  return useQuery({
+    queryKey: queryKeys.instrumentSearch(query, limit),
+    queryFn: () => api.searchInstruments(query, limit),
+    enabled: enabled && query.length > 0,
+  });
+}
+
+export function useOptionsProductQuery(
+  instrumentId: string,
+  mode: Mode,
+  accountId?: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: queryKeys.optionsProduct(instrumentId, mode, accountId),
+    queryFn: () => api.getOptionsProduct(instrumentId, mode, accountId),
+    enabled: enabled && instrumentId.length > 0,
+  });
+}
+
+export function useFuturesProductQuery(
+  instrumentId: string,
+  mode: Mode,
+  accountId?: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: queryKeys.futuresProduct(instrumentId, mode, accountId),
+    queryFn: () => api.getFuturesProduct(instrumentId, mode, accountId),
+    enabled: enabled && instrumentId.length > 0,
   });
 }
 

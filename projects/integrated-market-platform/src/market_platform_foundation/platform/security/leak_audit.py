@@ -29,6 +29,9 @@ BENIGN_SECRET_SHAPED_KEYS: frozenset[str] = frozenset(
     for name in (
         "idempotency_key",
         "execution_authority",
+        "authority_boundary",
+        "analytics_authority",
+        "research_context_execution_authority",
     )
 )
 

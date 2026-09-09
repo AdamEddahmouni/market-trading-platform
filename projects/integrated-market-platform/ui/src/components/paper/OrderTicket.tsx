@@ -159,10 +159,17 @@ export function OrderTicket({
 
   async function handleSubmit() {
     if (!preview || preview.risk_status !== "PASS" || !confirmedRequest || !confirmedRequestIsCurrent) return;
+    if (!preview.preview_id) {
+      setError("PREVIEW_REQUIRED: submit requires a current server preview");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
-      const response = await submitMutation.mutateAsync(confirmedRequest);
+      const response = await submitMutation.mutateAsync({
+        ...confirmedRequest,
+        preview_id: preview.preview_id,
+      });
       onSubmitted?.(response.submission.intent_id);
       setPreview(null);
       setConfirmedRequest(null);

@@ -1,6 +1,13 @@
+import { lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import type { Mode } from "../mode-session/types";
 import { EmptyState } from "./EmptyState";
+
+const CanonicalInstrumentSelector = lazy(() =>
+  import("../instrument-selector/CanonicalInstrumentSelector").then((module) => ({
+    default: module.CanonicalInstrumentSelector,
+  })),
+);
 
 type Props = {
   mode: Mode;
@@ -34,6 +41,9 @@ export function InstrumentSelectionEmpty({ mode, laneLabel }: Props) {
   const copy = copyForMode(mode, laneLabel);
   return (
     <section className="page instrument-selection-empty">
+      <Suspense fallback={null}>
+        <CanonicalInstrumentSelector label="Search instruments" />
+      </Suspense>
       <EmptyState
         title={copy.title}
         description={copy.description}

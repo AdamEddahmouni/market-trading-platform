@@ -23,7 +23,7 @@
     "adam_ignition_current_percentage_change": "screener percentage_change evidence, not the Decimal return metric",
     "policy": "Do not compare ADAM ignition to squeeze return z-scores or physical P as if they shared a return definition."
   },
-  "formula_count": 89,
+  "formula_count": 97,
   "formulas": [
     {
       "id": "squeeze.absolute_return",
@@ -514,6 +514,23 @@
         "default_level_count": 10
       },
       "title": "Rank-sum CS OFI across depth"
+    },
+    {
+      "id": "of.multilevel_ofi_price_aligned",
+      "version": "ofi_multilevel_price_aligned_v1/1",
+      "family": "order_flow",
+      "units": "size",
+      "window_policy": "Consecutive snapshots; levels keyed by exact price, not rank; default level_count=10 (best N prices per side)",
+      "variance_convention": "n/a",
+      "fail_closed": "Invalid book → value=0.0 + book_state_valid=False",
+      "test_file": "projects/integrated-market-platform/tests/order_flow/test_order_book_ofi_integration.py",
+      "capability_class": "exact_metric",
+      "implementation": "projects/integrated-market-platform/src/market_platform_foundation/order_flow/ofi.py",
+      "pinned_constants": {
+        "default_level_count": 10
+      },
+      "notes": "G5 / ARCH-006 correction: legacy of.multilevel_ofi pairs rank N with rank N across snapshots, which mis-pairs after INSERT/DELETE rank shifts. Price-aligned method keys levels by exact price (bid-positive / ask-negative signed size deltas, insertion/removal when a level appears/disappears), so it is exactly the OFI derivable from the canonical incremental event log. Legacy rank-sum method retained unchanged for snapshot compatibility.",
+      "title": "Price-aligned CS OFI across depth (G5 ARCH-006)"
     },
     {
       "id": "of.cvd_cumulative",
@@ -1039,12 +1056,12 @@
     },
     {
       "id": "fusion.fuse_opportunity_v1",
-      "version": "shared_opportunity_v1+CROSS_LANE_FUSION_V1",
+      "version": "shared_opportunity_v2+CROSS_LANE_FUSION_V2",
       "family": "fusion_p4",
       "units": "dollars (same as payoff EV)",
       "window_policy": "Point-in-time snapshot fusion; no additional lookback",
       "variance_convention": "n/a",
-      "fail_closed": "Payoff unavailable → UNAVAILABLE; liquidity_factor 0 → LIQUIDITY_BLOCKED; non-positive EV → NO_ACTIONABLE_EDGE",
+      "fail_closed": "Payoff unavailable → UNAVAILABLE; squeeze-aligned template without occurrence model output → UNAVAILABLE (OCCURRENCE_UNAVAILABLE); liquidity_factor 0 → LIQUIDITY_BLOCKED; non-positive EV → NO_ACTIONABLE_EDGE",
       "test_file": "projects/integrated-market-platform/tests/cross_lane/test_opportunity_fusion.py",
       "capability_class": "heuristic_unconstrained",
       "implementation": "projects/integrated-market-platform/src/market_platform_foundation/cross_lane/fusion.py",
@@ -1053,7 +1070,7 @@
     },
     {
       "id": "fusion.liquidity_factor",
-      "version": "CROSS_LANE_FUSION_V1.liquidity",
+      "version": "CROSS_LANE_FUSION_V2.liquidity",
       "family": "fusion_p4",
       "units": "factor in [0,1]",
       "window_policy": "n/a",
@@ -1079,7 +1096,7 @@
     },
     {
       "id": "fusion.futures_regime_factor",
-      "version": "CROSS_LANE_FUSION_V1.futures",
+      "version": "CROSS_LANE_FUSION_V2.futures",
       "family": "fusion_p4",
       "units": "factor in [0,1]",
       "window_policy": "n/a",
@@ -1100,12 +1117,12 @@
     },
     {
       "id": "fusion.occurrence_weight",
-      "version": "CROSS_LANE_FUSION_V1.occurrence",
+      "version": "CROSS_LANE_FUSION_V2.occurrence",
       "family": "fusion_p4",
-      "units": "[0,1]",
+      "units": "[0,1] or null",
       "window_policy": "n/a",
       "variance_convention": "n/a",
-      "fail_closed": "Non-squeeze template → 1.0; missing probs → 1.0 (no fail-closed)",
+      "fail_closed": "Squeeze-aligned template with missing hazard AND occurrence probs → UNAVAILABLE (OCCURRENCE_UNAVAILABLE), never silent 1.0; non-squeeze template → null weight (fusion factor 1.0) + OCCURRENCE_UNAVAILABLE quality flag",
       "test_file": "projects/integrated-market-platform/tests/cross_lane/test_opportunity_fusion.py",
       "capability_class": "research_baseline",
       "implementation": "projects/integrated-market-platform/src/market_platform_foundation/cross_lane/fusion.py",
@@ -1393,6 +1410,97 @@
       "capability_class": "research_baseline",
       "implementation": "projects/integrated-market-platform/src/market_platform_foundation/research/squeeze_models/magnitude.py",
       "title": "Magnitude from physical P vol/tails"
+    },
+    {
+      "id": "imp.accounting.notional",
+      "version": "1.0.0+g4_multi_asset_accounting_kernel",
+      "family": "imp_accounting",
+      "units": "CURRENCY",
+      "window_policy": "n/a",
+      "variance_convention": "n/a",
+      "fail_closed": "Binary float rejected at kernel boundary (UNSUPPORTED_BINARY_FLOAT); price<0 or multiplier<=0 rejected",
+      "test_file": "projects/integrated-market-platform/tests/portfolio/test_instrument_economics.py",
+      "capability_class": "exact_metric",
+      "implementation": "projects/integrated-market-platform/src/market_platform_foundation/portfolio/accounting.py",
+      "title": "Generic notional = quantity x price x contract multiplier (callers select kind-specific meaning explicitly)"
+    },
+    {
+      "id": "imp.accounting.equity_notional",
+      "version": "1.0.0+g4_multi_asset_accounting_kernel",
+      "family": "imp_accounting",
+      "units": "CURRENCY",
+      "window_policy": "n/a",
+      "variance_convention": "n/a",
+      "fail_closed": "Same kernel rejects; multiplier is 1 by equity definition",
+      "test_file": "projects/integrated-market-platform/tests/portfolio/test_instrument_economics.py",
+      "capability_class": "exact_metric",
+      "implementation": "projects/integrated-market-platform/src/market_platform_foundation/portfolio/accounting.py",
+      "title": "Equity notional = price x shares (multiplier=1)"
+    },
+    {
+      "id": "imp.accounting.option_premium",
+      "version": "1.0.0+g4_multi_asset_accounting_kernel",
+      "family": "imp_accounting",
+      "units": "CURRENCY",
+      "window_policy": "n/a",
+      "variance_convention": "n/a",
+      "fail_closed": "Missing/zero derivative multiplier fails closed upstream (MISSING/INVALID_CONTRACT_MULTIPLIER)",
+      "test_file": "projects/integrated-market-platform/tests/trading_correctness/test_multi_asset_accounting.py",
+      "capability_class": "exact_metric",
+      "implementation": "projects/integrated-market-platform/src/market_platform_foundation/portfolio/accounting.py",
+      "title": "Option premium/exposure = price x contracts x multiplier (applied exactly once)"
+    },
+    {
+      "id": "imp.accounting.future_exposure",
+      "version": "1.0.0+g4_multi_asset_accounting_kernel",
+      "family": "imp_accounting",
+      "units": "CURRENCY",
+      "window_policy": "n/a",
+      "variance_convention": "n/a",
+      "fail_closed": "Futures never valued as owned cash; gate fails closed UNSUPPORTED_RISK_MODEL (no invented margin)",
+      "test_file": "projects/integrated-market-platform/tests/trading_correctness/test_multi_asset_accounting.py",
+      "capability_class": "exact_metric",
+      "implementation": "projects/integrated-market-platform/src/market_platform_foundation/portfolio/accounting.py",
+      "title": "Future gross economic exposure = contracts x multiplier x price (NOT settled cash)"
+    },
+    {
+      "id": "imp.accounting.future_variation_pnl",
+      "version": "1.0.0+g4_multi_asset_accounting_kernel",
+      "family": "imp_accounting",
+      "units": "CURRENCY",
+      "window_policy": "n/a",
+      "variance_convention": "n/a",
+      "fail_closed": "Missing reference/mark handled upstream as MISSING_MARK (never zero-fabricated)",
+      "test_file": "projects/integrated-market-platform/tests/trading_correctness/test_multi_asset_accounting.py",
+      "capability_class": "exact_metric",
+      "implementation": "projects/integrated-market-platform/src/market_platform_foundation/portfolio/accounting.py",
+      "title": "Future variation P&L = signed quantity x multiplier x (mark - reference)"
+    },
+    {
+      "id": "imp.accounting.working_reservation",
+      "version": "1.0.0+g4_multi_asset_accounting_kernel",
+      "family": "imp_accounting",
+      "units": "CURRENCY",
+      "window_policy": "Working remainder only — never the original desired quantity",
+      "variance_convention": "n/a",
+      "fail_closed": "Negative working remainder rejected",
+      "test_file": "projects/integrated-market-platform/tests/trading_correctness/test_multi_asset_accounting.py",
+      "capability_class": "exact_metric",
+      "implementation": "projects/integrated-market-platform/src/market_platform_foundation/portfolio/accounting.py",
+      "title": "Working-order reservation = working_remaining x effective price x multiplier (per settlement currency)"
+    },
+    {
+      "id": "imp.accounting.option_realized_on_close",
+      "version": "1.0.0+g4_multi_asset_accounting_kernel",
+      "family": "imp_accounting",
+      "units": "CURRENCY",
+      "window_policy": "n/a",
+      "variance_convention": "n/a",
+      "fail_closed": "Futures close returns None (variation P&L is the futures-native realized path)",
+      "test_file": "projects/integrated-market-platform/tests/trading_correctness/test_multi_asset_accounting.py",
+      "capability_class": "exact_metric",
+      "implementation": "projects/integrated-market-platform/src/market_platform_foundation/portfolio/accounting.py",
+      "title": "Realized P&L on close = signed quantity x (exit - entry) x multiplier (long/short sign correct)"
     }
   ]
 }

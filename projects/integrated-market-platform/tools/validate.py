@@ -21,6 +21,7 @@ from typing import Any, Iterable
 
 try:  # Supports both ``python -m tools.validate`` and ``python tools/validate.py``.
     from tools.validation_manifest import (
+        SHARED_MODULE_PATHS,
         ManifestValidationError,
         ValidationManifest,
         ValidationSuite,
@@ -28,6 +29,7 @@ try:  # Supports both ``python -m tools.validate`` and ``python tools/validate.p
     )
 except ModuleNotFoundError:  # pragma: no cover - exercised by CLI integration tests.
     from validation_manifest import (  # type: ignore[no-redef]
+        SHARED_MODULE_PATHS,
         ManifestValidationError,
         ValidationManifest,
         ValidationSuite,
@@ -39,6 +41,16 @@ EXECUTABLE_SUFFIXES = frozenset(
     {".py", ".pyi", ".js", ".jsx", ".ts", ".tsx", ".json", ".toml", ".yaml", ".yml"}
 )
 EXECUTABLE_ROOTS = frozenset({"src", "tools", "ui", "manifests"})
+EMBEDDING_MANIFEST_NAME = "workspace-manifest.json"
+# Path-decision classification outcomes (G0: every changed path must resolve to
+# exactly one of these; no changed path may disappear silently).
+CLASS_OWNING_SUITE_SELECTION = "OWNING_SUITE_SELECTION"
+CLASS_DEPENDENT_SUITE_SELECTION = "DEPENDENT_SUITE_SELECTION"
+CLASS_CORE_CHECKPOINT_ESCALATION = "CORE_CHECKPOINT_ESCALATION"
+CLASS_DOCUMENTATION_ONLY_CHECK = "DOCUMENTATION_ONLY_CHECK"
+CLASS_EVIDENCE_ONLY_CHECK = "EVIDENCE_ONLY_CHECK"
+CLASS_EXPLICIT_SAFE_IGNORE = "EXPLICIT_SAFE_IGNORE"
+CLASS_FAIL_SAFE = "FAIL_SAFE"
 SECRET_FILE_NAMES = frozenset({"id_rsa", "id_dsa", "id_ecdsa", "id_ed25519"})
 SECRET_SUFFIXES = frozenset({".pem", ".key", ".p12", ".pfx", ".jks", ".keystore"})
 CORE_DIAGNOSTIC_IDS = ("validation", "phase0", "contracts", "runtime", "providers")
@@ -81,6 +93,21 @@ class ValidationSelectionError(ValueError):
 
 
 @dataclass(frozen=True, slots=True)
+class PathDecision:
+    """Audit-grade record of how one changed path was classified."""
+
+    original: str
+    normalized: str
+    classification: str
+    owning_suites: tuple[str, ...] = ()
+    dependent_suites: tuple[str, ...] = ()
+    matched_source: bool = False
+    escalated: bool = False
+    escalation_reason: str = ""
+    detail: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class ValidationSelection:
     mode: str
     changed_files: tuple[str, ...] = ()
@@ -89,8 +116,9 @@ class ValidationSelection:
     mandatory_selectors: tuple[str, ...] = ()
     omitted_domains: tuple[str, ...] = ()
     cheap_checks: tuple[str, ...] = ()
-    full_suite_required: bool = False
+    core_checkpoint_required: bool = False
     global_reasons: tuple[str, ...] = ()
+    path_decisions: tuple[PathDecision, ...] = ()
 
     def __post_init__(self) -> None:
         if self.selection_reasons is None:
@@ -109,6 +137,80 @@ def normalize_repository_path(value: str) -> str:
     return path.as_posix()
 
 
+def _embedding_context(repository_root: Path) -> tuple[Path, tuple[str, ...]]:
+    """Return (git_workspace_root, embedding_prefixes) for this repository tree.
+
+    When this repository is a tracked snapshot inside a workspace monorepo
+    (``projects/integrated-market-platform/``), the parent repository owns the
+    Git history. Changed paths must be discovered from the *parent* root so
+    Git reports every path consistently repo-root-relative (tracked files with
+    the snapshot prefix, parent-level files without it); running Git from the
+    snapshot root mixes repo-root-relative and cwd-relative output. When
+    running standalone, the workspace root is this tree and there is no
+    prefix.
+    """
+
+    root = Path(repository_root).resolve()
+    for candidate in (root, *root.parents):
+        manifest_path = candidate / EMBEDDING_MANIFEST_NAME
+        if not manifest_path.is_file():
+            continue
+        try:
+            payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            continue
+        if isinstance(payload, dict):
+            for project in payload.get("projects", []):
+                snapshot = project.get("snapshot_path")
+                if not isinstance(snapshot, str):
+                    continue
+                try:
+                    matches = (candidate / snapshot).resolve() == root
+                except OSError:
+                    matches = False
+                if matches:
+                    prefix = snapshot.replace("\\", "/").rstrip("/") + "/"
+                    return candidate, (prefix,)
+        # Fallback: this tree may be merged into the parent history directly
+        # (not a manifest project). A tree directly under the manifest's
+        # snapshot_root (``projects/<name>/``) is an embedded snapshot.
+        try:
+            relative = root.relative_to(candidate)
+        except ValueError:
+            continue
+        snapshot_root = payload.get("parent", {}).get("snapshot_root", "projects")
+        parts = relative.parts
+        if len(parts) == 2 and parts[0] == snapshot_root:
+            return candidate, (f"{parts[0]}/{parts[1]}/",)
+    return root, ()
+
+
+def _embedding_prefixes(repository_root: Path) -> tuple[str, ...]:
+    """Return only the embedding prefix tuple (see ``_embedding_context``)."""
+
+    return _embedding_context(repository_root)[1]
+
+
+def canonicalize_changed_path(
+    value: str, *, embedding_prefixes: Iterable[str] = ()
+) -> str:
+    """Normalize one changed path to child-relative form.
+
+    ``projects/integrated-market-platform/src/...`` becomes
+    ``src/...`` when the repository is embedded in the parent monorepo;
+    paths that already begin with ``src/`` etc. are returned unchanged.
+    """
+
+    normalized = normalize_repository_path(value)
+    for raw_prefix in embedding_prefixes:
+        prefix = raw_prefix.replace("\\", "/")
+        if not prefix.endswith("/"):
+            prefix += "/"
+        if normalized.startswith(prefix) and len(normalized) > len(prefix):
+            return normalized[len(prefix):]
+    return normalized
+
+
 def _matches(path: str, patterns: Iterable[str]) -> bool:
     return any(fnmatch.fnmatchcase(path, pattern) for pattern in patterns)
 
@@ -119,6 +221,15 @@ def _ordered_suite_ids(manifest: ValidationManifest, selected: set[str]) -> tupl
 
 def _mandatory_selectors(manifest: ValidationManifest) -> tuple[str, ...]:
     return tuple(invariant.selector for invariant in manifest.mandatory_invariants)
+
+
+def _e2e_exclusive_suite_ids(manifest: ValidationManifest) -> frozenset[str]:
+    """Suites that run only under explicit ``validate e2e`` — never changed/full."""
+    return frozenset(
+        suite.id
+        for suite in manifest.suites
+        if suite.classification == "offline" and set(suite.tiers) == {"e2e"}
+    )
 
 
 def _offline_core_diagnostics(manifest: ValidationManifest) -> tuple[str, ...]:
@@ -152,26 +263,191 @@ def _is_executable_or_config(path: str) -> bool:
     return path in {"phase0-dependency-lock.json", ".env.example"}
 
 
-def select_changed(
-    manifest: ValidationManifest, changed_paths: Iterable[str]
-) -> ValidationSelection:
-    paths = tuple(sorted({normalize_repository_path(path) for path in changed_paths}))
-    if paths and all(_is_documentation(path) for path in paths):
-        return ValidationSelection(
-            mode="changed", changed_files=paths, cheap_checks=("documentation",)
+def _is_fixture_or_config(path: str) -> bool:
+    return (
+        path.startswith("fixtures/")
+        or path.startswith("tests/fixtures/")
+        or path.startswith("config/")
+    )
+
+
+def _decide_path(
+    original: str,
+    normalized: str,
+    *,
+    manifest: ValidationManifest,
+    outside_tree: bool,
+) -> PathDecision:
+    """Classify one canonicalized changed path into exactly one outcome."""
+
+    if _is_documentation(normalized):
+        return PathDecision(
+            original, normalized, CLASS_DOCUMENTATION_ONLY_CHECK,
+            detail=("documentation-only path; cheap documentation check scheduled",),
         )
-    if paths and all(_is_evidence(path) for path in paths):
+    if _is_evidence(normalized):
+        return PathDecision(
+            original, normalized, CLASS_EVIDENCE_ONLY_CHECK,
+            detail=("evidence-only path; JSON + secret-redaction checks scheduled",),
+        )
+    if outside_tree:
+        return PathDecision(
+            original,
+            normalized,
+            CLASS_EXPLICIT_SAFE_IGNORE,
+            detail=("path is outside this repository's canonical validation tree "
+                    "(no embedding prefix); cannot be owned by any suite",),
+        )
+
+    escalated = False
+    escalation_reason = ""
+    owning: list[str] = []
+    matched_test = False
+    matched_source = False
+    detail: list[str] = []
+
+    if _matches(normalized, manifest.core_checkpoint_invalidators):
+        escalated = True
+        escalation_reason = "CORE_CHECKPOINT_INVALIDATOR"
+        detail.append("matches a core checkpoint invalidator glob")
+
+    for suite in manifest.suites:
+        if suite.classification not in {"offline", "extended"}:
+            continue
+        if _matches(normalized, suite.test_globs):
+            if suite.id not in owning:
+                owning.append(suite.id)
+                matched_test = True
+        if _matches(normalized, suite.source_globs):
+            if suite.id not in owning:
+                owning.append(suite.id)
+                matched_source = True
+    if owning:
+        return PathDecision(
+            original,
+            normalized,
+            CLASS_OWNING_SUITE_SELECTION,
+            owning_suites=tuple(owning),
+            matched_source=matched_source,
+            escalated=escalated,
+            escalation_reason=escalation_reason,
+            detail=tuple(detail) or ("direct suite ownership matched by glob",),
+        )
+
+    for dependency in manifest.shared_module_dependents:
+        if _matches(normalized, (dependency.path,)):
+            return PathDecision(
+                original,
+                normalized,
+                CLASS_DEPENDENT_SUITE_SELECTION,
+                dependent_suites=dependency.dependent_suites,
+                detail=(f"shared module {dependency.path}: {dependency.reason}",),
+            )
+    if normalized in SHARED_MODULE_PATHS:
+        return PathDecision(
+            original,
+            normalized,
+            CLASS_CORE_CHECKPOINT_ESCALATION,
+            escalated=True,
+            escalation_reason="SHARED_MODULE_UNBOUNDED",
+            detail=(f"{normalized} is a canonical shared module without a bounded "
+                    "dependent-suite mapping; core checkpoint required",),
+        )
+
+    def escalate(reason: str, note: str) -> PathDecision:
+        if not escalation_reason:
+            escalation_reason_override = reason
+        else:
+            escalation_reason_override = escalation_reason
+        return PathDecision(
+            original,
+            normalized,
+            CLASS_CORE_CHECKPOINT_ESCALATION,
+            escalated=True,
+            escalation_reason=escalation_reason_override,
+            detail=tuple(detail) + (note,),
+        )
+
+    if _is_fixture_or_config(normalized):
+        return escalate(
+            "UNOWNED_FIXTURE_OR_CONFIG",
+            f"{normalized} is a fixture/config path with no explicit owner; "
+            "core checkpoint required instead of silent under-selection",
+        )
+    if _is_executable_or_config(normalized):
+        return escalate(
+            "UNKNOWN_EXECUTABLE_PATH",
+            f"{normalized} is an executable/config path with no manifest owner; "
+            "core checkpoint required",
+        )
+    if normalized.startswith("tests/"):
+        return escalate(
+            "UNCLASSIFIED_TEST_PATH",
+            f"{normalized} is a test path with no owning suite; core checkpoint required",
+        )
+    if escalation_reason:
+        return PathDecision(
+            original,
+            normalized,
+            CLASS_CORE_CHECKPOINT_ESCALATION,
+            escalated=True,
+            escalation_reason=escalation_reason,
+            detail=tuple(detail),
+        )
+    return PathDecision(
+        original,
+        normalized,
+        CLASS_FAIL_SAFE,
+        escalated=True,
+        escalation_reason="UNCLASSIFIED_PATH",
+        detail=(f"{normalized} matched no ownership rule; failing safe with a core checkpoint",),
+    )
+
+
+def select_changed(
+    manifest: ValidationManifest,
+    changed_paths: Iterable[str],
+    *,
+    embedding_prefixes: Iterable[str] = (),
+) -> ValidationSelection:
+    """Select suites for changed paths with canonical normalization and fail-safe."""
+
+    prefixes = tuple(embedding_prefixes)
+    decisions_by_normalized: dict[str, PathDecision] = {}
+    for raw in sorted({normalize_repository_path(path) for path in changed_paths}):
+        normalized = canonicalize_changed_path(raw, embedding_prefixes=prefixes)
+        outside_tree = normalized == raw and bool(prefixes)
+        decision = _decide_path(
+            raw, normalized, manifest=manifest, outside_tree=outside_tree
+        )
+        decisions_by_normalized.setdefault(normalized, decision)
+    decisions = tuple(decisions_by_normalized.values())
+    paths = tuple(decision.normalized for decision in decisions)
+
+    if paths and all(
+        decision.classification == CLASS_DOCUMENTATION_ONLY_CHECK for decision in decisions
+    ):
+        return ValidationSelection(
+            mode="changed",
+            changed_files=paths,
+            cheap_checks=("documentation",),
+            path_decisions=decisions,
+        )
+    if paths and all(
+        decision.classification == CLASS_EVIDENCE_ONLY_CHECK for decision in decisions
+    ):
         return ValidationSelection(
             mode="changed",
             changed_files=paths,
             cheap_checks=("evidence-json", "secret-redaction"),
+            path_decisions=decisions,
         )
 
     selected: set[str] = set()
     reasons: dict[str, list[str]] = {}
     direct_source_suites: set[str] = set()
     global_reasons: list[str] = []
-    full_required = False
+    core_required = False
 
     def add(suite_id: str, reason: str) -> None:
         selected.add(suite_id)
@@ -179,29 +455,19 @@ def select_changed(
         if reason not in bucket:
             bucket.append(reason)
 
-    for path in paths:
-        if _matches(path, manifest.full_invalidators):
-            full_required = True
-            if "FULL_INVALIDATOR" not in global_reasons:
-                global_reasons.append("FULL_INVALIDATOR")
-        matched = False
-        test_only = path.startswith("tests/")
-        for suite in manifest.suites:
-            if suite.classification not in {"offline", "extended"}:
-                continue
-            if _matches(path, suite.test_globs):
-                add(suite.id, f"{path}: direct test ownership")
-                matched = True
-            if _matches(path, suite.source_globs):
-                add(suite.id, f"{path}: direct source ownership")
-                direct_source_suites.add(suite.id)
-                matched = True
-        if not matched and _is_executable_or_config(path):
-            full_required = True
-            if "UNKNOWN_EXECUTABLE_PATH" not in global_reasons:
-                global_reasons.append("UNKNOWN_EXECUTABLE_PATH")
-        if test_only:
-            continue
+    for decision in decisions:
+        if decision.escalated:
+            core_required = True
+            if decision.escalation_reason and decision.escalation_reason not in global_reasons:
+                global_reasons.append(decision.escalation_reason)
+        for suite_id in decision.owning_suites:
+            if decision.matched_source:
+                add(suite_id, f"{decision.normalized}: direct source ownership")
+                direct_source_suites.add(suite_id)
+            else:
+                add(suite_id, f"{decision.normalized}: direct test ownership")
+        for suite_id in decision.dependent_suites:
+            add(suite_id, f"{decision.normalized}: shared-module dependent of {decision.normalized}")
 
     for suite_id in tuple(direct_source_suites):
         suite = manifest.suite_by_id(suite_id)
@@ -210,14 +476,18 @@ def select_changed(
             if neighbor.classification == "offline":
                 add(neighbor_id, f"neighbor of {suite_id}")
 
-    if full_required:
+    if core_required:
         for suite_id in _offline_core_diagnostics(manifest):
-            add(suite_id, "broad core diagnostic for required full checkpoint")
+            add(suite_id, "broad core diagnostic for required core checkpoint")
 
     check_values: list[str] = []
-    if any(_is_documentation(path) for path in paths):
+    if any(
+        decision.classification == CLASS_DOCUMENTATION_ONLY_CHECK for decision in decisions
+    ):
         check_values.append("documentation")
-    if any(_is_evidence(path) for path in paths):
+    if any(
+        decision.classification == CLASS_EVIDENCE_ONLY_CHECK for decision in decisions
+    ):
         check_values.extend(("evidence-json", "secret-redaction"))
     domains_selected = {
         domain
@@ -226,6 +496,9 @@ def select_changed(
         for domain in suite.domains
     }
     omitted = tuple(domain for domain in manifest.domains if domain not in domains_selected)
+    for suite_id in _e2e_exclusive_suite_ids(manifest):
+        selected.discard(suite_id)
+        reasons.pop(suite_id, None)
     return ValidationSelection(
         mode="changed",
         changed_files=paths,
@@ -234,8 +507,9 @@ def select_changed(
         mandatory_selectors=_mandatory_selectors(manifest) if paths else (),
         omitted_domains=omitted,
         cheap_checks=tuple(dict.fromkeys(check_values)),
-        full_suite_required=full_required,
+        core_checkpoint_required=core_required,
         global_reasons=tuple(global_reasons),
+        path_decisions=decisions,
     )
 
 
@@ -257,6 +531,17 @@ def select_full(manifest: ValidationManifest) -> ValidationSelection:
         if suite.classification == "offline" and "full" in suite.tiers
     )
     return ValidationSelection(mode="full", selected_suite_ids=selected)
+
+
+def select_e2e(manifest: ValidationManifest) -> ValidationSelection:
+    selected = tuple(
+        suite.id
+        for suite in manifest.suites
+        if suite.classification == "offline" and "e2e" in suite.tiers
+    )
+    if not selected:
+        raise ValidationSelectionError("no offline suites tagged with e2e tier")
+    return ValidationSelection(mode="e2e", selected_suite_ids=selected)
 
 
 def select_live(manifest: ValidationManifest, provider: str, *, deep: bool = False) -> ValidationSelection:
@@ -295,23 +580,40 @@ def _git_names(repository_root: Path, arguments: list[str]) -> tuple[str, ...]:
 
 
 def changed_paths_from_git(repository_root: Path) -> tuple[str, ...]:
-    """Return tracked modifications/deletions plus nonignored untracked files."""
+    """Return tracked modifications/deletions plus nonignored untracked files.
+
+    Paths are returned in normalized repository-relative form as Git reports
+    them from the workspace Git root. When the repository is embedded in a
+    parent monorepo, child paths arrive prefixed with the snapshot root
+    (``projects/integrated-market-platform/...``) and parent-level paths (for
+    example ``Claude Code News/...``) arrive without it; canonical prefix
+    stripping and outside-tree classification happen inside ``select_changed``.
+    """
 
     root = Path(repository_root).resolve()
-    unstaged = _git_names(root, ["diff", "--name-only", "-z"])
-    staged = _git_names(root, ["diff", "--cached", "--name-only", "-z"])
-    untracked = _git_names(root, ["ls-files", "--others", "--exclude-standard", "-z"])
+    git_root, _prefixes = _embedding_context(root)
+    unstaged = _git_names(git_root, ["diff", "--name-only", "-z"])
+    staged = _git_names(git_root, ["diff", "--cached", "--name-only", "-z"])
+    untracked = _git_names(git_root, ["ls-files", "--others", "--exclude-standard", "-z"])
     return tuple(sorted(set(unstaged) | set(staged) | set(untracked)))
 
 
-def changed_paths_from_file(path: Path) -> tuple[str, ...]:
+def changed_paths_from_file(path: Path, repository_root: Path | None = None) -> tuple[str, ...]:
     """Read an explicit newline-delimited changed-path list safely."""
 
     try:
         values = Path(path).read_text(encoding="utf-8").splitlines()
     except (OSError, UnicodeError) as exc:
         raise ValidationSelectionError(f"Git path list cannot be read: {exc}") from exc
-    return tuple(sorted({normalize_repository_path(value.strip()) for value in values if value.strip()}))
+    root = Path(repository_root) if repository_root is not None else Path.cwd()
+    prefixes = _embedding_prefixes(root)
+    return tuple(
+        sorted(
+            canonicalize_changed_path(value.strip(), embedding_prefixes=prefixes)
+            for value in values
+            if value.strip()
+        )
+    )
 
 
 def _is_secret_path(path: str) -> bool:
@@ -375,8 +677,13 @@ def changed_paths_from_baseline(repository_root: Path, baseline_path: Path) -> t
         row["path"]: (row["sha256"], row["classification"])
         for row in _current_inventory(root, exclude=excluded)
     }
+    prefixes = _embedding_prefixes(root)
     return tuple(
-        sorted(path for path in set(before) | set(after) if before.get(path) != after.get(path))
+        sorted(
+            canonicalize_changed_path(path, embedding_prefixes=prefixes)
+            for path in set(before) | set(after)
+            if before.get(path) != after.get(path)
+        )
     )
 
 
@@ -793,7 +1100,20 @@ def execute_selection(
         },
         "omitted_domains": list(selection.omitted_domains),
         "mandatory_invariants": list(selection.mandatory_selectors),
-        "full_suite_required": selection.full_suite_required,
+        "core_checkpoint_required": selection.core_checkpoint_required,
+        "path_decisions": [
+            {
+                "original": decision.original,
+                "normalized": decision.normalized,
+                "classification": decision.classification,
+                "owning_suites": list(decision.owning_suites),
+                "dependent_suites": list(decision.dependent_suites),
+                "escalated": decision.escalated,
+                "escalation_reason": decision.escalation_reason,
+                "detail": list(decision.detail),
+            }
+            for decision in selection.path_decisions
+        ],
         "global_reasons": list(selection.global_reasons),
         "workers": workers,
         "resource_heavy_workers": min(2, workers),
@@ -854,7 +1174,7 @@ def write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "mode", choices=("fast", "changed", "domain", "full", "live", "extended", "benchmark")
+        "mode", choices=("fast", "changed", "domain", "full", "e2e", "live", "extended", "benchmark")
     )
     parser.add_argument("target", nargs="?")
     parser.add_argument("--baseline", type=Path)
@@ -880,20 +1200,22 @@ def _selection_for_arguments(
             mode="fast", mandatory_selectors=_mandatory_selectors(manifest)
         )
     if arguments.mode == "changed":
-        paths = (
-            changed_paths_from_baseline(repository_root, arguments.baseline)
-            if arguments.baseline is not None
-            else changed_paths_from_file(arguments.paths_file)
-            if arguments.paths_file is not None
-            else changed_paths_from_git(repository_root)
-        )
-        return select_changed(manifest, paths)
+        if arguments.baseline is not None:
+            paths = changed_paths_from_baseline(repository_root, arguments.baseline)
+            return select_changed(manifest, paths)
+        if arguments.paths_file is not None:
+            paths = changed_paths_from_file(arguments.paths_file, repository_root)
+            return select_changed(manifest, paths)
+        paths = changed_paths_from_git(repository_root)
+        return select_changed(manifest, paths, embedding_prefixes=_embedding_prefixes(repository_root))
     if arguments.mode == "domain":
         if not arguments.target:
             raise ValidationSelectionError("domain mode requires a domain name")
         return select_domain(manifest, arguments.target)
     if arguments.mode == "full":
         return select_full(manifest)
+    if arguments.mode == "e2e":
+        return select_e2e(manifest)
     if arguments.mode == "live":
         if not arguments.target:
             raise ValidationSelectionError("live mode requires a provider name")
@@ -904,15 +1226,36 @@ def _selection_for_arguments(
 
 
 def _print_explanation(selection: ValidationSelection) -> None:
-    for path in selection.changed_files:
-        print(path)
+    """Print audit-grade selection explanation: why each path ran what it ran."""
+
+    for decision in selection.path_decisions:
+        print(f"changed path: {decision.original}")
+        print(f"  normalized: {decision.normalized}")
+        print(f"  classification: {decision.classification}")
+        if decision.owning_suites:
+            print(f"  owning suites: {', '.join(decision.owning_suites)}")
+        if decision.dependent_suites:
+            print(f"  dependent suites: {', '.join(decision.dependent_suites)}")
+        if decision.escalated:
+            print(f"  escalated: yes ({decision.escalation_reason})")
+        else:
+            print("  escalated: no")
+        for note in decision.detail:
+            print(f"  note: {note}")
     for suite_id in selection.selected_suite_ids:
         print(f"  -> {suite_id}")
         for reason in (selection.selection_reasons or {}).get(suite_id, ()):
             print(f"     {reason}")
     if selection.global_reasons:
-        print("reasons: " + ", ".join(selection.global_reasons))
-    print(f"full_suite_required={str(selection.full_suite_required).lower()}")
+        print("escalation reasons: " + ", ".join(selection.global_reasons))
+    print(f"core_checkpoint_required={str(selection.core_checkpoint_required).lower()}")
+    if selection.core_checkpoint_required:
+        print("  core checkpoint = mandatory invariants + core diagnostic suites; "
+              "this is not the full suite. Run `validate full` at closure checkpoints.")
+    if selection.mandatory_selectors:
+        print("mandatory_invariants=" + ",".join(selection.mandatory_selectors))
+    if selection.cheap_checks:
+        print("cheap_checks=" + ",".join(selection.cheap_checks))
     if selection.omitted_domains:
         print("omitted_domains=" + ",".join(selection.omitted_domains))
 
@@ -977,8 +1320,9 @@ def main(argv: list[str] | None = None) -> int:
         f"{result['skips']} skipped, {result['failures']} failures, "
         f"{result['errors']} errors in {result['wall_seconds']:.3f}s"
     )
-    if result["full_suite_required"]:
-        print("full_suite_required=true")
+    if result["core_checkpoint_required"]:
+        print("core_checkpoint_required=true (core checkpoint = mandatory invariants + "
+              "core diagnostics; full suite still requires `validate full` at closure)")
     if arguments.verbose or result["status"] != "passed":
         for worker_result in result["worker_results"]:
             if worker_result.get("status") != "passed" or arguments.verbose:
@@ -996,8 +1340,10 @@ if __name__ == "__main__":
 
 
 __all__ = [
+    "PathDecision",
     "ValidationSelection",
     "ValidationSelectionError",
+    "canonicalize_changed_path",
     "execute_selection",
     "run_worker_process",
     "changed_paths_from_baseline",
@@ -1007,6 +1353,7 @@ __all__ = [
     "normalize_repository_path",
     "select_changed",
     "select_domain",
+    "select_e2e",
     "select_extended",
     "select_full",
     "select_live",

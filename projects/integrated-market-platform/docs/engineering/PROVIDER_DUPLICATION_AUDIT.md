@@ -1,5 +1,14 @@
 # Provider Duplication Audit
 
+> **STATUS: SUPERSEDED — HISTORICAL · AUTHORIZATION BASIS SUPERSEDED**
+>
+> Donor-related rows in this audit predate the professor's donor-identity
+> correction (2026-08-28): Lucas Heller's DS-340W and GridIQ materials were
+> **not** intended donor sources for this platform. Any native IMP
+> implementation independently reimplemented from a legitimate platform
+> requirement remains valid. This record is preserved for provenance only and
+> must not be used as authorization for future implementation.
+
 This audit records the simplification decision for provider and replay paths. The governing rule is that apparent structural duplication is not sufficient evidence for extraction when availability clocks, source authority, outage semantics, or fail-closed behavior differ.
 
 | Area | Repeated shape observed | Semantic differences / risk | Decision |

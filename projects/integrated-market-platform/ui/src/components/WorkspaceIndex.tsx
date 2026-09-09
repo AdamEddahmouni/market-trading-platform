@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { ADMITTED_REPLAY_INSTRUMENT_ID } from "../api/client";
+import { workspacePathForInstrument } from "../api/instrumentIdentity";
 import { useContextQuery } from "../api/hooks";
 import { LoadingState } from "./shared/LoadingState";
 import { InstrumentSelectionEmpty } from "./shared/InstrumentSelectionEmpty";
@@ -18,10 +19,10 @@ export function WorkspaceIndex() {
 
   if (isLive) {
     if (target) {
-      return <Navigate to={`/workspace/${target}`} replace />;
+      return <Navigate to={workspacePathForInstrument(target)} replace />;
     }
     return <InstrumentSelectionEmpty mode="LIVE" />;
   }
 
-  return <Navigate to={`/workspace/${ADMITTED_REPLAY_INSTRUMENT_ID}`} replace />;
+  return <Navigate to={workspacePathForInstrument(ADMITTED_REPLAY_INSTRUMENT_ID)} replace />;
 }

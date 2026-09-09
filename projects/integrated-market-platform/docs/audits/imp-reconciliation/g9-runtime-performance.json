@@ -1,0 +1,13 @@
+{
+  "measurement_class": "G9_RUNTIME_PERFORMANCE_MEASURED",
+  "environment": "development_machine_offline_replay",
+  "note": "Adapter overhead only; excludes IBKR network latency",
+  "paths": {
+    "trade_normalization_classify_trade_print_2000_iter_ms": "<5000 smoke budget",
+    "adapter_on_tick_by_tick_all_last_500_iter_ms": "<5000 smoke budget",
+    "capture_replay_cvd_deterministic": "verified in test_g9_ibkr_trade_tape",
+    "classification_with_l1_context": "verified in test_g9_ibkr_trade_tape + test_g9_ibkr_cvd",
+    "end_to_end_tape_to_cvd": "verified in test_g9_ibkr_cvd.test_ibkr_adapter_inferred_path_end_to_end"
+  },
+  "recorded_at": "2026-09-08"
+}

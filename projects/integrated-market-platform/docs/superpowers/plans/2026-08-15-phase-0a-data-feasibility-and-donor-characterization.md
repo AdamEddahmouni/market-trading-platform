@@ -1,5 +1,14 @@
 # Phase 0A — data feasibility and donor characterization (planning draft)
 
+> **STATUS: SUPERSEDED — HISTORICAL · AUTHORIZATION BASIS SUPERSEDED**
+>
+> This plan predates the professor's donor-identity correction (2026-08-28):
+> Lucas Heller's DS-340W and GridIQ materials were **not** intended donor
+> sources for this platform. Any native IMP implementation independently
+> reimplemented from a legitimate platform requirement remains valid. This
+> plan is preserved for provenance only and must not be used as
+> authorization for future implementation.
+
 **Status:** Complete — Phase 0A `PASS` published; `DF-001`/`DF-002` `PASS` on admitted non-ES equity intraday source  
 **Plan date:** 2026-08-15  
 **Baseline verified:** 2026-08-15 (Phase 0 publication bindings)  

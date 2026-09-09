@@ -37,6 +37,13 @@ ROOT = Path(__file__).resolve().parents[2]
 COLLECTION_ROOT = ROOT.parent
 
 
+def _preview_and_submit(store: ReplayStore, body: dict) -> dict:
+    """G3 preview-first submit: issue a server preview, then submit bound to it."""
+    preview = preview_paper_order(store, body)
+    preview_id = str(preview["preview"]["preview_id"])
+    return submit_paper_order(store, {**body, "preview_id": preview_id})
+
+
 class BrokerRuntimeWiringTests(unittest.TestCase):
     def setUp(self) -> None:
         self._env = {
@@ -70,6 +77,16 @@ class BrokerRuntimeWiringTests(unittest.TestCase):
     def _open_broker_session(self) -> None:
         os.environ["IMP_PAPER_EXECUTION"] = "1"
         open_paper_session(self.store, {"execution_mode": "BROKER_PAPER"})
+        # G3 BL-0202: broker MARKET buys require a current price reference
+        # (live mark). The real UI path applies marks from the live runtime;
+        # this fixture environment has no runtime, so supply the mark the
+        # runtime would provide (fixture fills execute near $116.20).
+        self.store.paper_ledger.apply_live_mark(
+            mark_minor=11620,
+            mark_provider="TRADIER",
+            mark_as_of_ns=1787000000000000000,
+            mark_quality="TEST",
+        )
 
     def test_broker_session_binds_composed_provider(self) -> None:
         self._open_broker_session()
@@ -99,7 +116,7 @@ class BrokerRuntimeWiringTests(unittest.TestCase):
     def test_broker_submission_dispatches_to_composed_provider(self) -> None:
         self._open_broker_session()
 
-        result = submit_paper_order(
+        result = _preview_and_submit(
             self.store,
             {
                 "side": "BUY",
@@ -116,7 +133,7 @@ class BrokerRuntimeWiringTests(unittest.TestCase):
 
     def test_broker_poll_advances_partial_order_through_runtime(self) -> None:
         self._open_broker_session()
-        submitted = submit_paper_order(
+        submitted = _preview_and_submit(
             self.store,
             {
                 "side": "BUY",
@@ -175,7 +192,7 @@ class BrokerRuntimeWiringTests(unittest.TestCase):
 
     def test_broker_reconciliation_records_report(self) -> None:
         self._open_broker_session()
-        submit_paper_order(
+        _preview_and_submit(
             self.store,
             {
                 "side": "BUY",
@@ -206,7 +223,7 @@ class BrokerRuntimeWiringTests(unittest.TestCase):
         )
         token = bind_context(trace.context)
         try:
-            submit_paper_order(
+            _preview_and_submit(
                 self.store,
                 {
                     "side": "BUY",
@@ -280,7 +297,7 @@ class BrokerRuntimeWiringTests(unittest.TestCase):
             result = runtime.run_entry(request)
             if opportunity is not None:
                 opportunity.end(output_ref=result.status)
-            submitted = submit_paper_order(
+            submitted = _preview_and_submit(
                 self.store,
                 {
                     "side": "BUY",

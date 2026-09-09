@@ -700,7 +700,20 @@ class PaperExecutionOrchestrator:
             ledger=ledger,
             execution_authority=prepared.execution_authority,
         )
+        from .identity import derive_paper_order_idempotency_key
+
         risk = prepared.risk_decision
+        # Server-authoritative binding integrity (G3 §2, BL-0201): the
+        # idempotency identity must be content-derived from the prepared risk
+        # decision. A mutated/swapped PreparedPaperExecution whose idempotency
+        # key does not match its own risk_decision_id is rejected before any
+        # ledger or provider mutation, so a stale or tampered prepared record
+        # can never silently become a different order.
+        expected_key = derive_paper_order_idempotency_key(risk.risk_decision_id)
+        if prepared.idempotency_key != expected_key:
+            raise ValueError(
+                "PREPARED_EXECUTION_IDEMPOTENCY_MISMATCH: prepared idempotency key does not derive from its risk decision"
+            )
         if (
             risk.decision not in {RiskDecisionKind.APPROVE, RiskDecisionKind.REDUCE}
             or risk.approved_quantity <= 0
@@ -737,6 +750,17 @@ class PaperExecutionOrchestrator:
         else:
             from ...paper.execution import submit_interactive_order
 
+            # G3 BL-0201/§16: the prepared risk decision carries genuine
+            # server-authoritative price evidence (approved notional over
+            # approved quantity). Pass it as the explicit reference price so
+            # the final submit-time financial recheck prices the order without
+            # requiring bar tape, while still revalidating availability
+            # against the live ledger cash.
+            approved_reference_price_minor = (
+                int(risk.approved_notional_minor // risk.approved_quantity)
+                if risk.approved_quantity > 0
+                else None
+            )
             submit = submit_interactive_order(
                 ledger=ledger,
                 bars=bars,
@@ -751,6 +775,7 @@ class PaperExecutionOrchestrator:
                 lineage_refs=prepared.lineage_refs,
                 quantity_facts=prepared.quantity_facts,
                 risk_decision_id=risk.risk_decision_id,
+                reference_price_minor=approved_reference_price_minor,
             )
         return PaperExecutionResult(
             proposal=prepared.proposal,

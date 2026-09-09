@@ -1,5 +1,14 @@
 # External donor/reference index
 
+> **STATUS: SUPERSEDED — HISTORICAL · AUTHORIZATION BASIS SUPERSEDED**
+>
+> This index predates the professor's donor-identity correction (2026-08-28):
+> Lucas Heller's DS-340W and GridIQ materials were **not** intended donor
+> sources for this platform. Any native IMP implementation independently
+> reimplemented from a legitimate platform requirement remains valid. This
+> index is preserved for provenance only and must not be used as
+> authorization for future implementation.
+
 Revision 3 is authoritative if this index conflicts with it. The workspace root
 is a collection; the seven entries below are external donor/reference projects,
 not canonical repositories, clean-clone dependencies, package dependencies, or

@@ -1,5 +1,14 @@
 # Competitive & Interaction Research
 
+> **STATUS: SUPERSEDED — HISTORICAL · AUTHORIZATION BASIS SUPERSEDED**
+>
+> Donor-related references in this research predate the professor's
+> donor-identity correction (2026-08-28): Lucas Heller's DS-340W and GridIQ
+> materials were **not** intended donor sources for this platform. Any native
+> IMP implementation independently reimplemented from a legitimate platform
+> requirement remains valid. This record is preserved for provenance only and
+> must not be used as authorization for future implementation.
+
 **Status:** `PROPOSED`  
 **Method:** Official documentation, product pages, and publicly available interface descriptions. No product cloning. Facts distinguished from design inference.
 

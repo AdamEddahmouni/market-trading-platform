@@ -5,6 +5,7 @@ import {
   useSubscribeMutation,
   useSymbolSearchQuery,
 } from "../../api/hooks";
+import { workspacePathForInstrument } from "../../api/instrumentIdentity";
 import type { ProviderHealthResponse } from "./liveDashboardViewModel";
 
 type Props = {
@@ -87,7 +88,7 @@ export function LiveSymbolLookup({ health, state }: Props) {
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ instrument_id: selected, source: "LIVE_NOW" }),
                       });
-                      navigate(`/workspace/${selected}`);
+                      navigate(workspacePathForInstrument(selected));
                     },
                   },
                 )
@@ -95,7 +96,7 @@ export function LiveSymbolLookup({ health, state }: Props) {
             >
               Subscribe and open workspace
             </button>
-            <Link to={selected ? `/workspace/${selected}` : "/workspace"}>Open workspace</Link>
+            <Link to={selected ? workspacePathForInstrument(selected) : "/workspace"}>Open workspace</Link>
           </div>
         </>
       )}

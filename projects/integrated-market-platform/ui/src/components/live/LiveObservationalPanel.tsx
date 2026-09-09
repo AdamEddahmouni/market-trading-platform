@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useInstrumentCapabilitiesQuery, useProviderHealthQuery, useSubscribeMutation, useSymbolSearchQuery } from "../../api/hooks";
+import { workspacePathForInstrument } from "../../api/instrumentIdentity";
 
 export function LiveObservationalPanel() {
   const [query, setQuery] = useState("");
@@ -99,7 +100,7 @@ export function LiveObservationalPanel() {
                       name: "Active",
                     }),
                   });
-                  navigate(`/workspace/${selected}`);
+                  navigate(workspacePathForInstrument(selected));
                 },
               },
             )
@@ -107,7 +108,7 @@ export function LiveObservationalPanel() {
         >
           Subscribe &amp; open workspace
         </button>
-        <Link to={selected ? `/workspace/${selected}` : "/workspace"}>Open workspace</Link>
+        <Link to={selected ? workspacePathForInstrument(selected) : "/workspace"}>Open workspace</Link>
       </div>
     </section>
   );

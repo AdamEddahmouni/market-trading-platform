@@ -65,7 +65,7 @@ CANONICAL_INTENT = {
 
 
 def _moomoo_ledger() -> PaperExecutionLedger:
-    return PaperExecutionLedger.open_session(
+    ledger = PaperExecutionLedger.open_session(
         replay_session_id="p4-4c-session",
         instrument_id="BIYA",
         symbol="BIYA",
@@ -75,6 +75,15 @@ def _moomoo_ledger() -> PaperExecutionLedger:
         data_provider="MOOMOO",
         execution_provider="MOOMOO",
     )
+    # G3 BL-0202: broker MARKET buys require a current price reference (live
+    # mark), mirroring the UI path which applies marks before submit.
+    ledger.apply_live_mark(
+        mark_minor=11620,
+        mark_provider="MOOMOO",
+        mark_as_of_ns=1787000000000000000,
+        mark_quality="TEST",
+    )
+    return ledger
 
 
 def _provider(

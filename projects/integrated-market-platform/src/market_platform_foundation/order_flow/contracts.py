@@ -121,6 +121,8 @@ class CVDState:
     cvd_confidence: float = 0.0
     aggressive_buy_volume: float = 0.0
     aggressive_sell_volume: float = 0.0
+    session_anchor: str | None = None
+    session_reset: bool = False
 
 
 @dataclass(frozen=True, slots=True)

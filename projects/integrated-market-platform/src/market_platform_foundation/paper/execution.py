@@ -5,18 +5,142 @@ from __future__ import annotations
 from typing import Any, Mapping
 
 from ..execution.simulator import SIMULATOR_VERSION, BarConservativeSimulator
+from ..numeric import decimal_to_minor_units
 from ..operating_modes import PAPER_EXECUTION_AUTHORITIES
 from ..risk.decision import evaluate_risk
+from ..risk.financial import canonical_order_multiplier
+from ..risk.pretrade import PreTradeRiskContext, evaluate_pretrade
 from ..rt01.context import current_context
 from ..rt01.enums import TraceStage, TraceStatus
 from ..rt01.tracer import get_tracer
 from .contracts import (
     ORDER_LIFECYCLE_TERMINAL_STATES,
     build_instrument_ref,
+    build_semantic_intent_digest,
     build_user_order_intent,
     normalize_execution_intent,
 )
 from .ledger import PaperExecutionLedger
+
+
+def _market_price_reference_minor(ledger: PaperExecutionLedger, bars: list[dict[str, Any]]) -> int | None:
+    """Conservative submit-time price reference for MARKET orders (G3 §24).
+
+    Uses the last available bar's close (high for buys when close is absent)
+    so a MARKET buy is never priced at zero or silently assumed affordable.
+    """
+    if not bars:
+        return None
+    payload = bars[-1].get("bar_payload")
+    if not isinstance(payload, dict):
+        return None
+    for key in ("close", "high"):
+        raw = payload.get(key)
+        if raw is None:
+            continue
+        try:
+            return decimal_to_minor_units(str(raw), scale=int(ledger.policy["price_scale"]))
+        except ValueError:
+            continue
+    return None
+
+
+def _enforce_pretrade_admission(
+    *,
+    ledger: PaperExecutionLedger,
+    intent: dict[str, Any],
+    bars: list[dict[str, Any]],
+    reference_price_minor: int | None = None,
+) -> None:
+    """Final server-side pre-trade gate at submission (G3/G13).
+
+    Dispatches through ``evaluate_pretrade`` for equities, options, and
+    futures. Cash-funded buys, margin-gated futures opens, and sell-to-close
+    semantics are enforced here; uncovered shorts fail closed.
+    """
+    side = str(intent.get("side", "")).upper()
+    order_type = str(intent.get("order_type", "MARKET"))
+    limit = intent.get("limit_price_minor")
+    price_minor = (
+        int(limit)
+        if order_type == "LIMIT" and limit is not None
+        else reference_price_minor
+        if reference_price_minor is not None
+        else _market_price_reference_minor(ledger, bars)
+    )
+    instrument = intent.get("instrument") or {}
+    account = ledger.project_account()
+    projection = ledger._project_ledger()
+    kind = str(instrument.get("instrument_kind", "TRADABLE_SECURITY")).upper()
+    position_qty = int(projection.get("position_shares", 0))
+    if kind in {"OPTION_CONTRACT", "FUTURE_CONTRACT"}:
+        canonical_pos = ledger.canonical_portfolio.get_position(str(intent.get("instrument_id", "")))
+        if canonical_pos is not None:
+            position_qty = int(canonical_pos.quantity)
+    margin_facts = intent.get("margin_facts")
+    margin_revision = ""
+    if margin_facts is not None:
+        from ..risk.margin_facts import MarginRequirementFacts
+
+        facts = (
+            margin_facts
+            if isinstance(margin_facts, MarginRequirementFacts)
+            else MarginRequirementFacts.from_dict(margin_facts)
+        )
+        margin_revision = facts.revision_digest()
+    context = PreTradeRiskContext(
+        operational_identity=str(intent.get("client_order_id", "")),
+        account_id=str(ledger.paper_account_id),
+        mode=str(ledger.execution_mode),
+        instrument_id=str(intent.get("instrument_id", "")),
+        asset_class=str(instrument.get("asset_class", "EQUITY")),
+        instrument_kind=str(instrument.get("instrument_kind", "TRADABLE_SECURITY")),
+        symbol=str(instrument.get("symbol", intent.get("instrument_id", ""))),
+        contract_multiplier=canonical_order_multiplier(instrument),
+        side=side,
+        quantity=int(intent.get("desired_quantity", 0)),
+        order_type=order_type,
+        limit_price_minor=int(limit) if limit is not None else None,
+        reference_price_minor=price_minor,
+        currency=str(
+            intent.get("currency")
+            or instrument.get("currency")
+            or ledger.policy.get("currency", "USD")
+        ),
+        account_currency=str(ledger.policy.get("currency", "USD")),
+        portfolio_cash_minor=int(account.get("cash_minor", 0)),
+        # G4 Phase 6: the Paper ledger funds one currency; its bucket is
+        # supplied as per-currency cash so a non-USD order fails closed with
+        # INSUFFICIENT_SETTLEMENT_CURRENCY (bucket missing) instead of any
+        # silent conversion.
+        currency_cash_minor={
+            str(ledger.policy.get("currency", "USD")).upper(): int(account.get("cash_minor", 0))
+        },
+        position_quantity=position_qty,
+        risk_policy_revision=str(ledger.policy.get("risk_policy_identity_hash", "")),
+        margin_facts=(
+            margin_facts
+            if margin_facts is None
+            or isinstance(margin_facts, MarginRequirementFacts)
+            else MarginRequirementFacts.from_dict(margin_facts)
+        )
+        if margin_facts is not None
+        else None,
+        margin_facts_revision=margin_revision,
+        price_scale=int(ledger.policy.get("price_scale", 100)),
+        source_time_ns=int(intent.get("created_time", 0)),
+    )
+    if side == "BUY" or kind in {"OPTION_CONTRACT", "FUTURE_CONTRACT"}:
+        if side == "BUY" and kind in {"OPTION_CONTRACT", "TRADABLE_SECURITY", "ETF_FUND", "CRYPTO_PAIR"}:
+            if price_minor is None:
+                raise ValueError("REQUIRED_PRICE_MISSING: no price reference for pre-trade check")
+        decision = evaluate_pretrade(context)
+        if not decision.accepted:
+            raise ValueError(
+                f"{decision.reason_codes[0] if decision.reason_codes else 'RISK_REJECTED'}: "
+                f"{{'required_cash_minor': {decision.required_cash_minor}, "
+                f"'available_cash_minor': {decision.available_cash_minor}}}"
+            )
 
 TERMINAL_ORDER_STATES = ORDER_LIFECYCLE_TERMINAL_STATES
 
@@ -219,9 +343,11 @@ def preview_interactive_order(
     quantity_facts: Mapping[str, Any] | None = None,
     risk_decision_id: str | None = None,
     squeeze_context: dict[str, Any] | None = None,
+    instrument: Mapping[str, Any] | None = None,
+    margin_facts: Any = None,
 ) -> dict[str, Any]:
     intent = build_user_order_intent(
-        instrument=build_instrument_ref(instrument_id=instrument_id, symbol=symbol),
+        instrument=instrument if instrument is not None else build_instrument_ref(instrument_id=instrument_id, symbol=symbol),
         side=side,
         quantity=quantity,
         observation_time=observation_time,
@@ -235,6 +361,13 @@ def preview_interactive_order(
         quantity_facts=quantity_facts,
         risk_decision_id=risk_decision_id,
     )
+    if margin_facts is not None:
+        from ..risk.margin_facts import MarginRequirementFacts
+
+        if isinstance(margin_facts, MarginRequirementFacts):
+            intent["margin_facts"] = margin_facts.to_dict()
+        else:
+            intent["margin_facts"] = margin_facts
     # Dry-run: a preview fill is never recorded, so it must not consume the
     # session's per-bar participation capacity (E9) — use a throwaway simulator.
     decision, order, fill = execute_order_intent(
@@ -301,30 +434,12 @@ def _submit_interactive_order(
     quantity_facts: Mapping[str, Any] | None = None,
     risk_decision_id: str | None = None,
     squeeze_context: dict[str, Any] | None = None,
+    instrument: Mapping[str, Any] | None = None,
+    reference_price_minor: int | None = None,
+    margin_facts: Any = None,
 ) -> dict[str, Any]:
-    existing_order_id = ledger.lookup_idempotent_order(idempotency_key)
-    if existing_order_id:
-        for order in ledger.project_orders():
-            if order.get("order_id") == existing_order_id:
-                return {
-                    "duplicate": True,
-                    "idempotency_key": idempotency_key,
-                    "order": order,
-                    "order_id": existing_order_id,
-                }
-        return {
-            "duplicate": True,
-            "idempotency_key": idempotency_key,
-            "order_id": existing_order_id,
-        }
-
-    if ledger.execution_authority not in PAPER_EXECUTION_AUTHORITIES:
-        raise ValueError("PAPER_EXECUTION_NOT_AUTHORIZED")
-    if ledger.execution_mode != "INTERNAL_SIMULATION":
-        raise ValueError("PAPER_EXECUTION_MODE_INVALID")
-
     intent = build_user_order_intent(
-        instrument=build_instrument_ref(instrument_id=instrument_id, symbol=symbol),
+        instrument=instrument if instrument is not None else build_instrument_ref(instrument_id=instrument_id, symbol=symbol),
         side=side,
         quantity=quantity,
         observation_time=observation_time,
@@ -338,31 +453,74 @@ def _submit_interactive_order(
         quantity_facts=quantity_facts,
         risk_decision_id=risk_decision_id,
     )
-    ledger.append_intent(intent)
-    decision, order, fill = execute_order_intent(
-        intent=intent,
-        ledger=ledger,
-        bars=bars,
-        squeeze_context=squeeze_context,
-    )
-    ledger.append_risk_decision(decision)
-    ledger.append_order(order, intent=intent)
-    if fill is not None:
-        ledger.append_fill(fill, order=order)
-    ledger.record_idempotent_order(idempotency_key=idempotency_key, order_id=str(order["order_id"]))
-    return {
-        "correlation_id": intent.get("correlation_id"),
-        "decision": decision["decision"],
-        "duplicate": False,
-        "execution_attempt_id": order.get("order_id"),
-        "fill": fill,
-        "fill_id": fill.get("fill_id") if fill else None,
-        "idempotency_key": idempotency_key,
-        "intent_id": intent["intent_id"],
-        "order": order,
-        "order_id": order.get("order_id"),
-        "risk_decision_id": decision.get("risk_decision_id") or intent.get("risk_decision_id"),
-    }
+    if margin_facts is not None:
+        from ..risk.margin_facts import MarginRequirementFacts
+
+        if isinstance(margin_facts, MarginRequirementFacts):
+            intent["margin_facts"] = margin_facts.to_dict()
+        else:
+            intent["margin_facts"] = margin_facts
+    with ledger.submit_critical_section():
+        existing_order_id = ledger.lookup_idempotent_order(idempotency_key)
+        if existing_order_id:
+            existing = ledger.lookup_order(existing_order_id)
+            existing_digest = (existing or {}).get("intent_digest")
+            if existing_digest is None:
+                recorded = ledger.lookup_intent_for_order(existing_order_id)
+                existing_digest = build_semantic_intent_digest(recorded) if recorded else None
+            if existing_digest is not None and existing_digest != build_semantic_intent_digest(intent):
+                raise ValueError(
+                    "IDEMPOTENCY_CONFLICT: same idempotency key submitted with a different order intent"
+                )
+            if existing is not None:
+                return {
+                    "duplicate": True,
+                    "idempotency_key": idempotency_key,
+                    "order": existing,
+                    "order_id": existing_order_id,
+                }
+            return {
+                "duplicate": True,
+                "idempotency_key": idempotency_key,
+                "order_id": existing_order_id,
+            }
+
+        if ledger.execution_authority not in PAPER_EXECUTION_AUTHORITIES:
+            raise ValueError("PAPER_EXECUTION_NOT_AUTHORIZED")
+        if ledger.execution_mode != "INTERNAL_SIMULATION":
+            raise ValueError("PAPER_EXECUTION_MODE_INVALID")
+
+        _enforce_pretrade_admission(
+            ledger=ledger,
+            intent=intent,
+            bars=bars,
+            reference_price_minor=reference_price_minor,
+        )
+        ledger.append_intent(intent)
+        decision, order, fill = execute_order_intent(
+            intent=intent,
+            ledger=ledger,
+            bars=bars,
+            squeeze_context=squeeze_context,
+        )
+        ledger.append_risk_decision(decision)
+        ledger.append_order(order, intent=intent)
+        if fill is not None:
+            ledger.append_fill(fill, order=order)
+        ledger.record_idempotent_order(idempotency_key=idempotency_key, order_id=str(order["order_id"]))
+        return {
+            "correlation_id": intent.get("correlation_id"),
+            "decision": decision["decision"],
+            "duplicate": False,
+            "execution_attempt_id": order.get("order_id"),
+            "fill": fill,
+            "fill_id": fill.get("fill_id") if fill else None,
+            "idempotency_key": idempotency_key,
+            "intent_id": intent["intent_id"],
+            "order": order,
+            "order_id": order.get("order_id"),
+            "risk_decision_id": decision.get("risk_decision_id") or intent.get("risk_decision_id"),
+        }
 
 
 def cancel_interactive_order(
@@ -386,8 +544,23 @@ def cancel_interactive_order(
             "order_id": order_id,
             "state": state,
         }
-    if state in {"FILLED", "PARTIALLY_FILLED"}:
+    if state == "FILLED":
         raise ValueError("PAPER_ORDER_CANCEL_NOT_SUPPORTED: order already filled")
+    if state in {"PARTIALLY_FILLED", "REPLACED"}:
+        # G3 §40: cancel applies to the working remainder only. Prior fills are
+        # immutable ledger events and stay intact; only the open remainder
+        # transitions to CANCEL_PENDING -> CANCELLED. A replaced order is
+        # still working (its remainder is the replaced total minus fills), so
+        # it is cancellable the same way (G3 §41/§42).
+        cancelled = ledger.cancel_order(order_id=order_id, prior_state=state)
+        return {
+            "duplicate": False,
+            "filled_quantity": int(order.get("cumulative_filled_quantity", 0)),
+            "order": cancelled,
+            "order_id": order_id,
+            "state": "CANCELLED",
+            "working_remaining": 0,
+        }
     if state in {"REJECTED", "EXPIRED"}:
         return {
             "duplicate": False,
@@ -411,6 +584,141 @@ def cancel_interactive_order(
             "state": "CANCELLED",
         }
     raise ValueError(f"PAPER_ORDER_CANCEL_INVALID_STATE: {state}")
+
+
+def replace_interactive_order(
+    *,
+    ledger: PaperExecutionLedger,
+    order_id: str,
+    replaced_quantity: int,
+    order_type: str = "MARKET",
+    limit_price_minor: int | None = None,
+) -> dict[str, Any]:
+    """Replace the working remainder of an open Paper order (G3 §41–43, BL-0205).
+
+    Only a working remainder is replaceable: prior fills are immutable ledger
+    events and stay intact; the replacement total must not fall below the
+    cumulative filled quantity (G3 §41). Instrument identity, side, account,
+    and mode cannot change — replacement modifies remaining quantity and/or
+    price only (G3 §43). Reservation is recomputed atomically against the
+    canonical available cash minus other working obligations, with this
+    order's old obligation replaced by the new remainder's requirement
+    (G3 §42). Idempotent replace retries return the recorded replacement.
+    """
+    if ledger.execution_authority not in PAPER_EXECUTION_AUTHORITIES:
+        raise ValueError("PAPER_EXECUTION_NOT_AUTHORIZED")
+    if not isinstance(replaced_quantity, int) or isinstance(replaced_quantity, bool) or replaced_quantity <= 0:
+        raise ValueError("ORDER_QUANTITY_INVALID")
+    if limit_price_minor is not None and (not isinstance(limit_price_minor, int) or limit_price_minor < 0):
+        raise ValueError("ORDER_LIMIT_PRICE_INVALID")
+    if order_type not in {"MARKET", "LIMIT"}:
+        raise ValueError("ORDER_TYPE_INVALID")
+
+    order = ledger.lookup_order(order_id)
+    if order is None:
+        raise ValueError("PAPER_ORDER_NOT_FOUND")
+    state = str(order.get("state", ""))
+    if state not in {"WORKING", "ACTIVATED", "PARTIALLY_FILLED", "REPLACED"}:
+        raise ValueError(f"PAPER_ORDER_REPLACE_INVALID_STATE: {state}")
+
+    cumulative_filled = int(order.get("cumulative_filled_quantity", 0))
+    if replaced_quantity < cumulative_filled:
+        raise ValueError(
+            f"PAPER_ORDER_REPLACE_BELOW_FILLED: replaced {replaced_quantity} < filled {cumulative_filled}"
+        )
+
+    if str(order.get("side", "")).upper() == "BUY":
+        price_minor = int(limit_price_minor) if order_type == "LIMIT" and limit_price_minor is not None else _replace_price_reference_minor(ledger, order)
+        reason, facts = _replace_financial_check(
+            ledger=ledger,
+            order=order,
+            replaced_quantity=replaced_quantity,
+            price_minor=price_minor,
+        )
+        if reason:
+            raise ValueError(f"{reason}: {facts}")
+
+    return ledger.replace_order(
+        order_id=order_id,
+        prior_state=state,
+        replaced_quantity=replaced_quantity,
+        order_type=order_type,
+        limit_price_minor=limit_price_minor,
+        client_order_id=order.get("client_order_id"),
+    )
+
+
+def _replace_price_reference_minor(ledger: PaperExecutionLedger, order: Mapping[str, Any]) -> int | None:
+    """Submit-time price reference for a MARKET replacement (G3 §42).
+
+    Uses the order's last fill price (or the live mark) when no limit price
+    is given — never silently zero. Callers that lack any price evidence
+    fail closed through the financial gate instead of pricing the remainder
+    at zero.
+    """
+    for key in ("average_fill_minor", "fill_price_minor", "mark_minor"):
+        value = order.get(key)
+        if value is not None:
+            return int(value)
+    return None
+
+
+def _replace_financial_check(
+    *,
+    ledger: PaperExecutionLedger,
+    order: Mapping[str, Any],
+    replaced_quantity: int,
+    price_minor: int | None,
+) -> tuple[str | None, dict[str, Any]]:
+    """Atomic reservation recheck for a replacement (G3 §42).
+
+    ``available`` is canonical cash minus other working obligations; the
+    replaced order's own old obligation is excluded and replaced by the new
+    remainder's requirement, so raising the price of the working remainder is
+    rechecked against real headroom rather than the order's own reservation.
+    """
+    from ..risk.financial import available_cash_minor, working_order_obligations_minor
+
+    account = ledger.project_account()
+    cash = int(account.get("cash_minor", 0))
+    order_id = str(order.get("order_id", ""))
+    # G4: one canonical obligation formula — the replace recheck excludes the
+    # replaced order's own old reservation via the shared helper instead of a
+    # duplicated local loop (which could drift from the gate's semantics).
+    other_obligations = working_order_obligations_minor(ledger, exclude_order_id=order_id)
+    working_remaining = max(0, replaced_quantity - int(order.get("cumulative_filled_quantity", 0)))
+    from ..risk.financial import canonical_order_multiplier
+
+    kind = str(order.get("instrument_kind", "TRADABLE_SECURITY")).upper()
+    if kind == "FUTURE_CONTRACT":
+        intent = ledger.lookup_intent_for_order(order_id)
+        margin_raw = (intent or {}).get("margin_facts")
+        if margin_raw is None:
+            return "MARGIN_MISSING", {"order_id": order_id, "working_remaining": working_remaining}
+        from ..risk.margin_facts import MarginRequirementFacts, required_margin_minor
+
+        facts = (
+            margin_raw
+            if isinstance(margin_raw, MarginRequirementFacts)
+            else MarginRequirementFacts.from_dict(margin_raw)
+        )
+        required = required_margin_minor(
+            facts=facts,
+            contracts=working_remaining,
+            scale=int(ledger.policy.get("price_scale", 100)),
+        )
+    else:
+        if price_minor is None:
+            return "REQUIRED_PRICE_MISSING", {"order_id": order_id}
+        required = working_remaining * int(price_minor) * canonical_order_multiplier(order)
+    available = max(0, cash - other_obligations)
+    if required > available:
+        return "INSUFFICIENT_CASH", {
+            "available_cash_minor": available,
+            "required_cash_minor": required,
+            "working_remaining": working_remaining,
+        }
+    return None, {"available_cash_minor": available, "required_cash_minor": required, "working_remaining": working_remaining}
 
 
 def execute_normalized_intent_for_parity(

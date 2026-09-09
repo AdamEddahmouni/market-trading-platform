@@ -153,6 +153,90 @@ export const SymbolSearchResponseSchema = z.object({
   ),
 });
 
+export const CanonicalSelectorResultSchema = z.object({
+  instrument_id: z.string(),
+  asset_class: z.string(),
+  instrument_kind: z.string(),
+  display_label: z.string(),
+  tradability: z.string(),
+  execution_eligible: z.boolean(),
+  selection_action: z.string(),
+  provider_availability: z.string(),
+  metadata: z.record(z.string().nullable().optional()),
+});
+
+export const InstrumentSelectorSearchResponseSchema = z.object({
+  query: z.string(),
+  results: z.array(CanonicalSelectorResultSchema),
+  schema_version: z.string().optional(),
+});
+
+export const G14ProductRuntimeSchema = z.object({
+  status: z.string(),
+  reason: z.string().nullable().optional(),
+  execution_available: z.boolean().optional(),
+  canonical_instrument_id: z.string().optional(),
+  instrument_id: z.string().optional(),
+  instrument_kind: z.string().optional(),
+  asset_class: z.string().optional(),
+  provider: z.string().optional(),
+  domain_payload: z.record(z.unknown()).optional(),
+});
+
+export const OptionsProductResponseSchema = z.object({
+  schema_version: z.string(),
+  domain: z.string(),
+  instrument_id: z.string(),
+  mode: z.string(),
+  account_id: z.string(),
+  as_of_context: AsOfContextSchema,
+  status: z.string(),
+  reason: z.string().nullable().optional(),
+  execution_available: z.boolean(),
+  runtime: G14ProductRuntimeSchema,
+  identity: z.record(z.unknown()).optional(),
+  analytics: z
+    .object({
+      iv: z.number().nullable().optional(),
+      open_interest: z.number().nullable().optional(),
+      volume: z.number().nullable().optional(),
+      greeks: z.record(z.number().nullable()).optional(),
+    })
+    .optional(),
+  chain_status: z.string().optional(),
+  position: z.record(z.unknown()).nullable().optional(),
+  orders: z.array(z.record(z.unknown())),
+  short_open_risk: z.string().nullable().optional(),
+});
+
+export const FuturesProductResponseSchema = z.object({
+  schema_version: z.string(),
+  domain: z.string(),
+  instrument_id: z.string(),
+  mode: z.string(),
+  account_id: z.string(),
+  as_of_context: AsOfContextSchema,
+  status: z.string(),
+  reason: z.string().nullable().optional(),
+  execution_available: z.boolean(),
+  runtime: G14ProductRuntimeSchema,
+  identity: z.record(z.unknown()).optional(),
+  exposure: z
+    .object({
+      notional: z.string().nullable().optional(),
+      margin: z.record(z.unknown()),
+      cash_debit_semantics: z.string().nullable().optional(),
+    })
+    .optional(),
+  position: z.record(z.unknown()).nullable().optional(),
+  orders: z.array(z.record(z.unknown())),
+  margin_binding_states: z.record(z.string()).optional(),
+});
+
+export type InstrumentSelectorSearchResponse = z.infer<typeof InstrumentSelectorSearchResponseSchema>;
+export type OptionsProductResponse = z.infer<typeof OptionsProductResponseSchema>;
+export type FuturesProductResponse = z.infer<typeof FuturesProductResponseSchema>;
+
 export const InstrumentCapabilitiesResponseSchema = z.object({
   instrument_id: z.string(),
   capabilities: z.array(
@@ -1716,6 +1800,7 @@ export const PaperOrderPreviewResponseSchema = z.object({
   as_of_context: AsOfContextSchema,
   capability_states: z.array(CapabilityStateSchema).optional(),
   preview: z.object({
+    preview_id: z.string().optional(),
     risk_status: z.string(),
     decision: z.string(),
     reason_codes: z.array(z.string()).optional(),
@@ -1861,6 +1946,7 @@ export type PaperOrderRequest = {
   quantity: number;
   order_type?: "MARKET" | "LIMIT";
   limit_price_minor?: number;
+  preview_id?: string;
   client_order_id?: string;
   idempotency_key?: string;
   correlation_id?: string;

@@ -248,6 +248,20 @@ def _leg_intrinsic(spot: float, position: dict[str, Any]) -> float:
     return max(0.0, strike - spot)
 
 
+def _position_presentation(position: dict[str, Any]) -> dict[str, Any]:
+    """Copy a ledger position for the JSON snapshot boundary (G4).
+
+    The ledger holds Decimal economics (multiplier / entry_premium); snapshot
+    events are JSON presentation, so those fields convert to float here and
+    nowhere inside the ledger arithmetic.
+    """
+    body = dict(position)
+    for key in ("multiplier", "entry_premium", "strike"):
+        if key in body:
+            body[key] = float(body[key])
+    return body
+
+
 def evaluate_early_exercise(
     position: dict[str, Any],
     spot: float,
@@ -310,7 +324,7 @@ def process_assignment_event(
         "cash_delta": round(cash_delta, 6),
         "stock_delta": stock_delta,
         "realized_pnl_delta": round(realized, 6),
-        "closed_position": dict(short_position),
+        "closed_position": _position_presentation(short_position),
         "detail": f"Assigned short {call_put} at strike {strike}",
     }
 
@@ -342,7 +356,7 @@ def settle_at_expiry(
                     "cash_delta": 0.0,
                     "stock_delta": 0,
                     "realized_pnl_delta": round(realized, 6),
-                    "closed_position": dict(position),
+                    "closed_position": _position_presentation(position),
                     "detail": "OTM expiration — worthless",
                 }
             )
@@ -360,7 +374,7 @@ def settle_at_expiry(
                 "cash_delta": round(cash_delta, 6),
                 "stock_delta": 0,
                 "realized_pnl_delta": round(realized, 6),
-                "closed_position": dict(position),
+                "closed_position": _position_presentation(position),
                 "detail": f"ITM expiration intrinsic={intrinsic}",
             }
         )
@@ -396,7 +410,7 @@ def run_options_lifecycle(
                     "cash_delta": round(settlement_cash, 6),
                     "stock_delta": 0,
                     "realized_pnl_delta": round(realized, 6),
-                    "closed_position": dict(position),
+                    "closed_position": _position_presentation(position),
                     "detail": "American early exercise triggered",
                 }
                 ledger = apply_settlement(ledger, event=event)
@@ -623,7 +637,10 @@ def build_execution_snapshot(
         "realized_pnl": lifecycle.get("realized_pnl"),
         "unrealized_pnl": unrealized,
         "ledger_summary": {
-            "cash": final_ledger["cash"],
+            # G4: the options ledger is Decimal-exact; this snapshot is the
+            # JSON presentation boundary, so cash converts to float here and
+            # nowhere inside the ledger arithmetic.
+            "cash": float(final_ledger["cash"]),
             "open_positions": len(final_ledger["option_positions"]),
             "stock_shares": final_ledger["stock_shares"],
             "entry_count": len(entry_fills),

@@ -1,5 +1,13 @@
 # Phase 0A collection fixture inventory (read-only)
 
+> **STATUS: SUPERSEDED — HISTORICAL · AUTHORIZATION BASIS SUPERSEDED**
+>
+> Donor references in this inventory predate the professor's donor-identity
+> correction (2026-08-28): Lucas Heller's DS-340W and GridIQ materials were
+> **not** intended donor sources for this platform. This inventory is
+> preserved for provenance only and must not be used as authorization for
+> future implementation.
+
 **Inventory date:** 2026-08-15  
 **Scope:** Collection root `ROOT-8A4D17C2`; offline enumeration only  
 **Method:** File metadata, LFS-pointer detection (files &lt; 200 bytes), SHA-256 on

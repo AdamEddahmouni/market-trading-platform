@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { workspacePathForInstrument } from "../../api/instrumentIdentity";
 import type { Mode } from "../mode-session/types";
 import {
   WorkspaceModuleNav,
@@ -71,7 +72,7 @@ function PaperModuleHeader({
         {headerExtra}
       </div>
       <div className="workspace-module-paper-links">
-        <Link to={`/workspace/${instrumentId}`}>Open workspace overview</Link>
+        <Link to={workspacePathForInstrument(instrumentId)}>Open workspace overview</Link>
         <Link to="/portfolio">Open paper portfolio</Link>
       </div>
     </header>

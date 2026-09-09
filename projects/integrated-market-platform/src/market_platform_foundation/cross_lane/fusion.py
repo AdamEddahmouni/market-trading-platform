@@ -45,6 +45,8 @@ LIQUIDITY_ADVERSE_SELECTION_RISK_GE_0_45 = 0.88
 LIQUIDITY_ADVERSE_SELECTION_THRESHOLD = 0.45
 LIQUIDITY_CVD_CONFIDENCE_FLOOR = 0.5
 LIQUIDITY_CVD_CONFIDENCE_SPAN = 0.5
+PAYOFF_ALREADY_NET_TOLERANCE = 1e-9
+OCCURRENCE_UNAVAILABLE = "OCCURRENCE_UNAVAILABLE"
 
 # Q-H1 pinned futures-regime scalars — unfitted, ledger fusion.futures_regime_factor.
 FUTURES_LEVERAGE_STRESS_ELEVATED = 0.85
@@ -125,14 +127,18 @@ def _futures_regime_factor(futures: FuturesInput | None) -> float:
     return round(min(max(factor, 0.0), 1.0), 6)
 
 
-def _occurrence_weight(probability: Any, template: str | None, squeeze_aligned: bool) -> float:
+def _occurrence_weight(
+    probability: Any, template: str | None, squeeze_aligned: bool
+) -> tuple[float | None, str | None]:
+    """Return (weight, fail_reason). Missing/non-squeeze must not look like full occurrence."""
+    del template
     if not squeeze_aligned:
-        return 1.0
+        return None, OCCURRENCE_UNAVAILABLE
     if probability.squeeze_hazard_probability is not None:
-        return min(max(probability.squeeze_hazard_probability, 0.0), 1.0)
+        return min(max(float(probability.squeeze_hazard_probability), 0.0), 1.0), None
     if probability.squeeze_occurrence_probability is not None:
-        return min(max(probability.squeeze_occurrence_probability, 0.0), 1.0)
-    return 1.0
+        return min(max(float(probability.squeeze_occurrence_probability), 0.0), 1.0), None
+    return None, OCCURRENCE_UNAVAILABLE
 
 
 def fuse_opportunity_v1(
@@ -166,7 +172,7 @@ def fuse_opportunity_v1(
     already_net = (
         payoff.net_expected_pnl is not None
         and friction > 0
-        and abs(float(expected_gross) - float(payoff.net_expected_pnl)) < 1e-9
+        and abs(float(expected_gross) - float(payoff.net_expected_pnl)) < PAYOFF_ALREADY_NET_TOLERANCE
     )
     if already_net:
         gross_ev = float(expected_gross)
@@ -177,11 +183,26 @@ def fuse_opportunity_v1(
         payoff.template,
         probability.squeeze_state,
     )
-    occurrence_weight = _occurrence_weight(probability, payoff.template, squeeze_aligned)
+    occurrence_weight, occurrence_reason = _occurrence_weight(
+        probability, payoff.template, squeeze_aligned
+    )
+    if squeeze_aligned and occurrence_reason == OCCURRENCE_UNAVAILABLE:
+        quality_flags.append(OpportunityQualityFlag.OCCURRENCE_UNAVAILABLE.value)
+        return {
+            "available": False,
+            "status": "UNAVAILABLE",
+            "outcome": "UNAVAILABLE",
+            "reason": OCCURRENCE_UNAVAILABLE,
+            "quality_flags": list(dict.fromkeys(quality_flags)),
+            "fusion": None,
+        }
+    if occurrence_weight is None:
+        quality_flags.append(OpportunityQualityFlag.OCCURRENCE_UNAVAILABLE.value)
     liquidity_factor = _liquidity_factor(liquidity)
     futures_regime_factor = _futures_regime_factor(futures)
     combined_liquidity_factor = round(liquidity_factor * futures_regime_factor, 6)
-    fused_net_ev = round(gross_ev * occurrence_weight * combined_liquidity_factor, 6)
+    occurrence_factor = 1.0 if occurrence_weight is None else occurrence_weight
+    fused_net_ev = round(gross_ev * occurrence_factor * combined_liquidity_factor, 6)
 
     from .opportunity import FusedOpportunity
 

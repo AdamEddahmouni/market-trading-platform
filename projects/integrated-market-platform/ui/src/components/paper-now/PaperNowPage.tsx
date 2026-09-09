@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { AttentionItem, PaperPortfolioResponse } from "../../api/client";
 import { ApiRequestError } from "../../api/fetchJson";
 import { usePreviewPaperOrderMutation } from "../../api/hooks";
+import { workspacePathForInstrument } from "../../api/instrumentIdentity";
 import type { PaperOrderPreviewResponse } from "../../api/schemas";
 import { PaperCandidateQueue } from "./PaperCandidateQueue";
 import { PaperExceptionsPanel } from "./PaperExceptionsPanel";
@@ -81,14 +82,14 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
   function openAttentionWorkspace(item: AttentionItem) {
     const draft = createAttentionPaperOrderDraft(item);
     if (draft) {
-      navigate(`/workspace/${draft.instrumentId}`, { state: draft });
+      navigate(workspacePathForInstrument(draft.instrumentId), { state: draft });
       return;
     }
-    if (item.instrument_id) navigate(`/workspace/${item.instrument_id}`);
+    if (item.instrument_id) navigate(workspacePathForInstrument(item.instrument_id));
   }
 
   function continueToWorkspace(draft: PaperOrderDraft) {
-    navigate(`/workspace/${draft.instrumentId}`, { state: draft });
+    navigate(workspacePathForInstrument(draft.instrumentId), { state: draft });
   }
 
   const disabledReason = portfolioState === "loading" ? "Portfolio limits are loading." : portfolioState === "error" || !portfolio ? "Portfolio limits are unavailable." : !selected ? "Select an instrument-backed candidate." : !authorized ? "Paper authority is unavailable. Manage the simulation session in Portfolio." : !draft ? `Choose Buy or Sell and enter 1–${portfolio.risk.limits.max_order_shares} shares.` : undefined;

@@ -65,7 +65,7 @@ $env:PYTHONPATH='src'
 | Paper safety | both | yes | yes | yes | yes | **yes** |
 | Release candidate | all | all | yes | yes | yes | **yes** |
 
-**Note:** `changed` passing with `full_suite_required=true` is not a substitute for `full` at checkpoints.
+**Note:** `changed` passing with `core_checkpoint_required=true` is not a substitute for `full` at checkpoints. The core checkpoint is mandatory invariants + core diagnostic suites; it is not the full suite.
 
 ## CI (GitHub)
 

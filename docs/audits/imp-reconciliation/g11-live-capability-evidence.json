@@ -1,0 +1,129 @@
+{
+  "capability_matrix": [
+    {
+      "canonical_normalization": true,
+      "capability": "IBKR_CONTRACT_RESOLUTION",
+      "connection": true,
+      "data_received": true,
+      "entitlement": "UNKNOWN",
+      "freshness": "UNKNOWN",
+      "request_accepted": true,
+      "result": "LIVE_PROVIDER_VERIFIED"
+    },
+    {
+      "canonical_normalization": true,
+      "capability": "IBKR_HISTORICAL_BARS",
+      "connection": true,
+      "data_received": true,
+      "entitlement": "ENTITLED",
+      "freshness": "UNKNOWN",
+      "request_accepted": true,
+      "result": "LIVE_PROVIDER_VERIFIED"
+    },
+    {
+      "canonical_normalization": true,
+      "capability": "IBKR_ACCOUNT_READ",
+      "connection": true,
+      "data_received": true,
+      "entitlement": "READ_ONLY_OBSERVATIONAL",
+      "freshness": "UNKNOWN",
+      "request_accepted": true,
+      "result": "LIVE_PROVIDER_VERIFIED"
+    },
+    {
+      "canonical_normalization": true,
+      "capability": "IBKR_L1",
+      "connection": true,
+      "data_received": true,
+      "entitlement": "ENTITLED_DELAYED",
+      "freshness": "DELAYED",
+      "request_accepted": true,
+      "result": "LIVE_PROVIDER_VERIFIED",
+      "summary": {
+        "admission": "DISPLAY_ADMITTED",
+        "ask_price": null,
+        "ask_size": null,
+        "available_time_ns": 1788964129339324900,
+        "bid_price": null,
+        "bid_size": null,
+        "event_time_ns": 1788964129339324900,
+        "instrument_id": "AAPL",
+        "last_price": 316.05,
+        "last_size": 59.0,
+        "provider": "IBKR",
+        "quality": "PASS",
+        "received_ns": 1788964129339324900,
+        "volume": null
+      }
+    },
+    {
+      "canonical_normalization": false,
+      "capability": "IBKR_L2",
+      "connection": true,
+      "data_received": false,
+      "entitlement": "NOT_ENTITLED",
+      "freshness": "UNKNOWN",
+      "request_accepted": true,
+      "result": "LIVE_CONNECTED_NOT_ENTITLED",
+      "summary": {
+        "ask_levels": 0,
+        "best_ask": null,
+        "best_bid": null,
+        "bid_levels": 0
+      }
+    },
+    {
+      "canonical_normalization": false,
+      "capability": "IBKR_TRADES",
+      "connection": true,
+      "data_received": false,
+      "entitlement": "NOT_ENTITLED",
+      "freshness": "UNKNOWN",
+      "request_accepted": true,
+      "result": "LIVE_CONNECTED_NOT_ENTITLED",
+      "summary": {
+        "cvd_path": "Lee-Ready/UNKNOWN unless provider aggressor",
+        "trade_count": 0
+      }
+    }
+  ],
+  "entitlement": {
+    "IBKR_L1": "ENTITLED_DELAYED",
+    "IBKR_L2": "NOT_ENTITLED",
+    "IBKR_TRADES": "NOT_ENTITLED"
+  },
+  "freshness": {
+    "IBKR_L1": "DELAYED",
+    "IBKR_L2": "UNKNOWN",
+    "IBKR_TRADES": "UNKNOWN"
+  },
+  "observed_at": "2026-09-09T14:28:37.840326Z",
+  "registry_manifest": {
+    "logical_id": "providers.operational_registry",
+    "providers": [
+      {
+        "capabilities": [
+          "IBKR_ACCOUNT_READ",
+          "IBKR_CONTRACT_RESOLUTION",
+          "IBKR_HISTORICAL_BARS",
+          "IBKR_L1",
+          "IBKR_L2",
+          "IBKR_TRADES"
+        ],
+        "health_state": "UNKNOWN",
+        "priority": 90,
+        "provider_id": "ibkr.observational"
+      }
+    ],
+    "runtime_capability_schema": "g7/v1",
+    "runtime_states": {
+      "ibkr.observational": {
+        "entitlement": "UNKNOWN",
+        "health": "HEALTHY",
+        "live_verified": true,
+        "timeliness": "UNKNOWN"
+      }
+    },
+    "schema_version": "1.0"
+  }
+}

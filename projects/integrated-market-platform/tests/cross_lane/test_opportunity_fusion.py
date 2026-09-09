@@ -234,5 +234,134 @@ class OpportunityFusionTests(unittest.TestCase):
         self.assertEqual(first["replay_hash"], second["replay_hash"])
 
 
+class OccurrenceSemanticsTests(unittest.TestCase):
+    """Direct semantic assertions for occurrence-weight handling (not hash-only)."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.strategy_fixture = json.loads(STRATEGY_FIXTURE.read_text(encoding="utf-8"))
+        cls.opportunity_fixture = json.loads(OPPORTUNITY_FIXTURE.read_text(encoding="utf-8"))
+
+    def _build(self, cross_lane_snapshot: dict, scenario_key: str = "bullish_directional") -> dict:
+        scenario = self.strategy_fixture["scenarios"][scenario_key]
+        strategy = build_strategy_snapshot(
+            self.strategy_fixture["symbol"],
+            self.strategy_fixture["as_of_time"],
+            executable_edge=scenario["executable_edge"],
+            physical_forecast=self.strategy_fixture["physical_forecast"],
+            chain_rows=self.strategy_fixture["chain_rows"],
+            friction=scenario["friction"],
+        )
+        return build_opportunity_snapshot(
+            "NVDA",
+            self.strategy_fixture["as_of_time"],
+            strategy_snapshot=strategy,
+            physical_forecast=self.strategy_fixture["physical_forecast"],
+            cross_lane_snapshot=cross_lane_snapshot,
+            execution_friction=scenario["friction"],
+        )
+
+    def test_bullish_active_squeeze_with_available_evidence(self) -> None:
+        """Squeeze-aligned + present hazard evidence fuses with hazard as weight."""
+        snapshot = self._build(self.opportunity_fixture["cross_lane_snapshot"])
+        self.assertTrue(snapshot["available"])
+        self.assertEqual(snapshot["outcome"], "RANKED")
+        fusion = snapshot["fusion"]
+        self.assertTrue(fusion["squeeze_aligned"])
+        self.assertEqual(fusion["occurrence_weight"], 0.999983)
+        self.assertEqual(
+            snapshot["probability"]["squeeze_hazard_probability"], 0.999983
+        )
+        self.assertNotIn(
+            OpportunityQualityFlag.OCCURRENCE_UNAVAILABLE.value,
+            snapshot["quality_flags"],
+        )
+        expected_ev = round(
+            fusion["gross_ev_before_weights"] * fusion["occurrence_weight"] * fusion["liquidity_factor"], 6
+        )
+        self.assertEqual(fusion["fused_net_ev"], expected_ev)
+
+    def test_missing_occurrence_evidence_fails_closed(self) -> None:
+        """Squeeze-aligned template with NO probability lane output must not fuse as full occurrence."""
+        from market_platform_foundation.cross_lane.fusion import fuse_opportunity_v1
+        from market_platform_foundation.cross_lane.opportunity import (
+            CostInput,
+            LiquidityInput,
+            PayoffInput,
+            ProbabilityInput,
+        )
+
+        probability = ProbabilityInput(
+            available=True,
+            squeeze_occurrence_probability=None,
+            squeeze_hazard_probability=None,
+            squeeze_state="ACTIVE_SQUEEZE",
+        )
+        payoff = PayoffInput(available=True, expected_pnl=100.0, template="long_call_atm")
+        costs = CostInput(available=True, friction_cost=0.0)
+        liquidity = LiquidityInput(available=True, gates_passed=True)
+        fused = fuse_opportunity_v1(probability, payoff, costs, liquidity)
+        self.assertFalse(fused["available"])
+        self.assertEqual(fused["outcome"], "UNAVAILABLE")
+        self.assertEqual(fused["reason"], "OCCURRENCE_UNAVAILABLE")
+        self.assertIn(
+            OpportunityQualityFlag.OCCURRENCE_UNAVAILABLE.value,
+            fused["quality_flags"],
+        )
+        self.assertIsNone(fused["fusion"])
+
+    def test_inactive_squeeze_is_not_occurrence_conditioned(self) -> None:
+        """Neutral squeeze state: no occurrence weighting, no silent 1.0-as-evidence."""
+        cross_lane = dict(self.opportunity_fixture["cross_lane_snapshot"])
+        cross_lane["squeeze_state"] = "NEUTRAL"
+        snapshot = self._build(cross_lane)
+        self.assertTrue(snapshot["available"])
+        self.assertEqual(snapshot["outcome"], "RANKED")
+        fusion = snapshot["fusion"]
+        self.assertFalse(fusion["squeeze_aligned"])
+        self.assertIsNone(fusion["occurrence_weight"])
+        self.assertEqual(fusion["fused_net_ev"], fusion["gross_ev_before_weights"])
+        self.assertIn(
+            OpportunityQualityFlag.OCCURRENCE_UNAVAILABLE.value,
+            snapshot["quality_flags"],
+        )
+
+    def test_deterministic_identical_input_replay(self) -> None:
+        """Identical inputs produce byte-identical snapshots (canonical serialization)."""
+        first = self._build(self.opportunity_fixture["cross_lane_snapshot"])
+        second = self._build(self.opportunity_fixture["cross_lane_snapshot"])
+        self.assertEqual(json.dumps(first, sort_keys=True), json.dumps(second, sort_keys=True))
+        self.assertEqual(first["replay_hash"], second["replay_hash"])
+
+    def test_input_order_independence(self) -> None:
+        """Key insertion order in lane snapshot dicts must not change the fused result."""
+        forward = self.opportunity_fixture["cross_lane_snapshot"]
+        reversed_snapshot = dict(reversed(list(forward.items())))
+        self.assertEqual(
+            self._build(forward)["replay_hash"],
+            self._build(reversed_snapshot)["replay_hash"],
+        )
+
+    def test_provenance_preserved_on_fused_snapshot(self) -> None:
+        """Evidence/provenance classes survive the fusion -> evidence adapter path."""
+        from market_platform_foundation.cross_lane.evidence import (
+            EvidenceProvenanceClass,
+            EvidenceSignal,
+        )
+        from market_platform_foundation.donor_bridge.opportunity_adapter import (
+            opportunity_evidence_from_snapshot,
+        )
+
+        snapshot = self._build(self.opportunity_fixture["cross_lane_snapshot"])
+        evidence = opportunity_evidence_from_snapshot(snapshot)
+        self.assertEqual(len(evidence), 1)
+        self.assertEqual(evidence[0]["signal"], EvidenceSignal.CROSS_LANE_OPPORTUNITY_FUSED.value)
+        self.assertEqual(
+            evidence[0]["provenance_class"],
+            EvidenceProvenanceClass.CROSS_LANE_MODEL_OUTPUT.value,
+        )
+        self.assertTrue(str(evidence[0]["source_ref"]))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -33,13 +33,29 @@ One economic object → one canonical identity. Multiple analytical domains allo
 
 ## Taxonomy
 
-### AssetClass (structural)
+### AssetClass (structural) — ONE canonical vocabulary
 
-`EQUITY`, `ETF_FUND`, `FUTURE`, `OPTION`, `SOVEREIGN_DEBT`, `COMMODITY`, `FX_PAIR`, `CURRENCY`, `INDEX_BENCHMARK`
+`EQUITY`, `ETF_FUND`, `FUTURE`, `OPTION`, `SOVEREIGN_DEBT`, `BOND`, `COMMODITY`, `CRYPTO`, `FX_PAIR`, `CURRENCY`, `INDEX_BENCHMARK`
+
+This is the single canonical asset-class vocabulary (G1 / CON-01 / RC-004).
+`paper.contracts.ASSET_CLASSES` is a **deprecated** backward-compatibility view
+over this vocabulary and must not be used by new code.
 
 ### InstrumentKind (granularity)
 
-`TRADABLE_SECURITY`, `COMMODITY_ECONOMIC`, `FUTURE_FAMILY`, `FUTURE_CONTRACT`, `OPTION_CONTRACT`, `SOVEREIGN_SECURITY`, `CURRENCY_UNIT`, `FX_PAIR`, `INDEX_BENCHMARK`
+`TRADABLE_SECURITY`, `COMMODITY_ECONOMIC`, `COMMODITY_SPOT`, `FUTURE_FAMILY`, `FUTURE_CONTRACT`, `CONTINUOUS_SERIES`, `OPTION_CONTRACT`, `SOVEREIGN_SECURITY`, `BOND`, `CRYPTO_PAIR`, `CURRENCY_UNIT`, `FX_PAIR`, `INDEX_BENCHMARK`
+
+- Specific-contract/security kinds are executable forms: `TRADABLE_SECURITY`, `FUTURE_CONTRACT`, `OPTION_CONTRACT`, `CRYPTO_PAIR`.
+- Family/reference/aggregate kinds are never executable: `FUTURE_FAMILY`, `CONTINUOUS_SERIES`, `COMMODITY_ECONOMIC`, `COMMODITY_SPOT`, `SOVEREIGN_SECURITY`, `BOND`, `CURRENCY_UNIT`, `FX_PAIR`, `INDEX_BENCHMARK`.
+
+### Tradability (executable-vs-reference semantics, G1)
+
+`TRADABLE` · `REFERENCE_ONLY` · `SYNTHETIC` · `CONTINUOUS_SERIES`
+
+Every canonical identity carries explicit tradability. Only `TRADABLE` may
+become an order target; `REFERENCE_ONLY`/`SYNTHETIC`/`CONTINUOUS_SERIES`
+fail closed at every execution boundary (`xa01.tradability.assert_executable`,
+`paper.contracts._assert_instrument_executable`).
 
 ### AnalyticalDomain (participation, not identity)
 
@@ -51,17 +67,21 @@ One economic object → one canonical identity. Multiple analytical domains allo
 
 ## Identity granularity rules
 
-| Object | Identity material | Distinct from |
-|---|---|---|
-| Equity AAPL | venue + symbol | provider symbol |
-| ES family | family root `ES` | contract instances |
-| ES contract | `contract_id` e.g. `ES202506` | family root |
-| Option | `option_id` encoding | underlying |
-| Sovereign | CUSIP or issuer+maturity+coupon | yield observations |
-| Gold commodity | `commodity_code=GOLD` | GC futures |
-| GC future | `contract_id` | gold economic object |
-| EUR currency | ISO `EUR` | EUR/USD pair |
-| EUR/USD pair | base `EUR` + quote `USD` | USD/EUR (reversed) |
+| Object | Identity material | Distinct from | Tradability |
+|---|---|---|---|
+| Equity AAPL | venue + symbol | provider symbol | TRADABLE |
+| ES family | family root `ES` | contract instances | REFERENCE_ONLY |
+| ES contract | `contract_id` e.g. `ES202506` | family root | TRADABLE |
+| ES continuous | family root + methodology | family and every contract | CONTINUOUS_SERIES (never executable) |
+| Option | `option_id` encoding | underlying | TRADABLE |
+| Sovereign | CUSIP or issuer+maturity+coupon | yield observations | REFERENCE_ONLY |
+| Corporate bond | security_id (CUSIP/ISIN) or issuer+maturity+coupon | sovereign securities and equity tickers | REFERENCE_ONLY |
+| Gold commodity | `commodity_code=GOLD` | GC futures | REFERENCE_ONLY |
+| Gold spot reference | commodity_code + quote currency (+venue) | gold economic object and GC futures | REFERENCE_ONLY |
+| GC future | `contract_id` | gold economic object | TRADABLE |
+| BTC/USD pair | base `BTC` + quote `USD` (+venue/network) | BTC/USDT, USD/BTC, bare BTC | TRADABLE |
+| EUR currency | ISO `EUR` | EUR/USD pair | REFERENCE_ONLY |
+| EUR/USD pair | base `EUR` + quote `USD` | USD/EUR (reversed) | REFERENCE_ONLY |
 
 ## Deterministic identity
 
@@ -74,6 +94,25 @@ Scoped by `(provider_id, identifier_type, alias_value)`. Resolution: `RESOLVED`,
 ## Compatibility
 
 Legacy `instrument_id` strings (equity tickers, F1/O1 contract IDs) resolve through compatibility adapters without big-bang migration.
+
+## Continuous-future non-execution invariant (G1, mandatory)
+
+A continuous futures series (`InstrumentKind.CONTINUOUS_SERIES`), a futures
+family/root (`FUTURE_FAMILY`), or any other synthetic/reference identity can
+never become an executable order target — regardless of naming conventions
+such as `ES1!` and regardless of which provider alias resolves to it.
+
+The guard lives at two fail-closed boundaries:
+
+1. **Canonical resolution** — `xa01.tradability.assert_executable(record)` raises
+   `Xa01Error(NON_EXECUTABLE_INSTRUMENT)`; `xa01.resolver.resolve_executable_alias`
+   applies it after alias resolution.
+2. **Order-intent creation** — `paper.contracts.build_user_order_intent` rejects
+   any instrument reference carrying a non-executable `instrument_kind` or a
+   non-`TRADABLE` `tradability` (`INSTRUMENT_NOT_EXECUTABLE`).
+
+Specific futures contracts stay tradable; existing futures analytics (including
+continuous series data builders in `futures/continuous.py`) are unchanged.
 
 ## Persistence
 

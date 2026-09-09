@@ -25,12 +25,14 @@ class Xa01DerivativeTests(unittest.TestCase):
         registry = InstrumentRegistry()
         first = register_future_contract(
             contract_id="ES202506",
+            contract_multiplier="50",
             family_root="ES",
             expiration="2025-06-20",
             registry=registry,
         )
         second = register_future_contract(
             contract_id="ES202509",
+            contract_multiplier="50",
             family_root="ES",
             expiration="2025-09-19",
             registry=registry,
@@ -71,7 +73,12 @@ class Xa01DerivativeTests(unittest.TestCase):
         self.assertEqual(rel.relationship_type, RelationshipType.UNDERLYING)
 
     def test_futures_and_options_compatibility_adapters(self) -> None:
+        from market_platform_foundation.contracts.futures import FuturesContractSpec
+
         registry = InstrumentRegistry()
+        # G4: a futures contract needs explicit canonical economics (spec
+        # multiplier). A spec-less contract fails closed in
+        # register_future_contract — never a silent multiplier=1 fallback.
         future = FuturesContract(
             instrument_family="ES",
             contract_id="ES202506",
@@ -79,8 +86,16 @@ class Xa01DerivativeTests(unittest.TestCase):
             asset_class="futures",
             family=FuturesFamily.EQUITY_INDEX,
             expiration="2025-06-20",
+            spec=FuturesContractSpec(
+                multiplier=Decimal("50"),
+                tick_size=Decimal("0.25"),
+                tick_value=Decimal("12.50"),
+                point_value=Decimal("50"),
+            ),
         )
         future_id = from_futures_contract(future, registry=registry)
+        record = registry.get(future_id)
+        self.assertEqual(record.descriptor.denomination.contract_multiplier, "50")
         option = OptionContract(
             underlying_id="NVDA",
             option_id="NVDA20250620C00120000",
@@ -92,3 +107,18 @@ class Xa01DerivativeTests(unittest.TestCase):
         option_id = from_option_contract(option, registry=registry)
         self.assertTrue(future_id.startswith("XA01:"))
         self.assertTrue(option_id.startswith("XA01:"))
+
+    def test_spec_less_future_contract_fails_closed(self) -> None:
+        from market_platform_foundation.xa01.errors import Xa01Error
+
+        registry = InstrumentRegistry()
+        future = FuturesContract(
+            instrument_family="ES",
+            contract_id="ES202506",
+            underlying_id="ES",
+            asset_class="futures",
+            family=FuturesFamily.EQUITY_INDEX,
+            expiration="2025-06-20",
+        )
+        with self.assertRaises(Xa01Error):
+            from_futures_contract(future, registry=registry)

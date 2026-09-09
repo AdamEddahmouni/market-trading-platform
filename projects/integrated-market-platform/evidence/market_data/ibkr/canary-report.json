@@ -1,0 +1,221 @@
+{
+  "blockers": [],
+  "capabilities": [
+    {
+      "capability": "IBKR_CONTRACT_RESOLUTION",
+      "latency_ms": 0.0,
+      "result": "LIVE_PROVIDER_VERIFIED",
+      "status": "OBSERVED",
+      "summary": {
+        "count": 17,
+        "type": "array"
+      }
+    },
+    {
+      "capability": "IBKR_HISTORICAL_BARS",
+      "latency_ms": 120.61,
+      "result": "LIVE_PROVIDER_VERIFIED",
+      "status": "OBSERVED",
+      "summary": {
+        "data_count": 2,
+        "type": "object"
+      }
+    },
+    {
+      "capability": "IBKR_ACCOUNT_READ",
+      "latency_ms": 72.48,
+      "result": "LIVE_PROVIDER_VERIFIED",
+      "status": "OBSERVED",
+      "summary": {
+        "account_count": 1,
+        "redacted": true,
+        "type": "object"
+      }
+    },
+    {
+      "capability": "IBKR_L1",
+      "result": "LIVE_PROVIDER_VERIFIED",
+      "status": "OBSERVED"
+    },
+    {
+      "capability": "IBKR_L2",
+      "result": "LIVE_CONNECTED_NOT_ENTITLED",
+      "status": "NO_DATA"
+    },
+    {
+      "capability": "IBKR_TRADES",
+      "result": "LIVE_CONNECTED_NOT_ENTITLED",
+      "status": "NO_DATA"
+    }
+  ],
+  "capability_matrix": [
+    {
+      "canonical_normalization": true,
+      "capability": "IBKR_CONTRACT_RESOLUTION",
+      "connection": true,
+      "data_received": true,
+      "entitlement": "UNKNOWN",
+      "freshness": "UNKNOWN",
+      "request_accepted": true,
+      "result": "LIVE_PROVIDER_VERIFIED"
+    },
+    {
+      "canonical_normalization": true,
+      "capability": "IBKR_HISTORICAL_BARS",
+      "connection": true,
+      "data_received": true,
+      "entitlement": "ENTITLED",
+      "freshness": "UNKNOWN",
+      "request_accepted": true,
+      "result": "LIVE_PROVIDER_VERIFIED"
+    },
+    {
+      "canonical_normalization": true,
+      "capability": "IBKR_ACCOUNT_READ",
+      "connection": true,
+      "data_received": true,
+      "entitlement": "READ_ONLY_OBSERVATIONAL",
+      "freshness": "UNKNOWN",
+      "request_accepted": true,
+      "result": "LIVE_PROVIDER_VERIFIED"
+    },
+    {
+      "canonical_normalization": true,
+      "capability": "IBKR_L1",
+      "connection": true,
+      "data_received": true,
+      "entitlement": "UNKNOWN",
+      "freshness": "REALTIME",
+      "request_accepted": true,
+      "result": "LIVE_PROVIDER_VERIFIED",
+      "summary": {
+        "admission": "DISPLAY_ADMITTED",
+        "ask_price": null,
+        "ask_size": null,
+        "available_time_ns": 1788964129339324900,
+        "bid_price": null,
+        "bid_size": null,
+        "event_time_ns": 1788964129339324900,
+        "instrument_id": "AAPL",
+        "last_price": 316.05,
+        "last_size": 59.0,
+        "provider": "IBKR",
+        "quality": "PASS",
+        "received_ns": 1788964129339324900,
+        "volume": null
+      }
+    },
+    {
+      "canonical_normalization": false,
+      "capability": "IBKR_L2",
+      "connection": true,
+      "data_received": false,
+      "entitlement": "NOT_ENTITLED",
+      "freshness": "UNKNOWN",
+      "request_accepted": true,
+      "result": "LIVE_CONNECTED_NOT_ENTITLED",
+      "summary": {
+        "ask_levels": 0,
+        "best_ask": null,
+        "best_bid": null,
+        "bid_levels": 0
+      }
+    },
+    {
+      "canonical_normalization": false,
+      "capability": "IBKR_TRADES",
+      "connection": true,
+      "data_received": false,
+      "entitlement": "NOT_ENTITLED",
+      "freshness": "UNKNOWN",
+      "request_accepted": true,
+      "result": "LIVE_CONNECTED_NOT_ENTITLED",
+      "summary": {
+        "cvd_path": "Lee-Ready/UNKNOWN unless provider aggressor",
+        "trade_count": 0
+      }
+    }
+  ],
+  "connection": {
+    "client_id": 37,
+    "connection_result": "CONNECTED",
+    "host": "127.0.0.1",
+    "observed_at": "2026-09-09T14:28:38.358967Z",
+    "port": 4001,
+    "readonly": true,
+    "server_version": 176
+  },
+  "contract_resolution": {
+    "canonical_instrument_id": "AAPL",
+    "currency": "USD",
+    "exchange": "SMART",
+    "provider_conid": 265598,
+    "sec_type": "STK",
+    "symbol": "AAPL"
+  },
+  "duration_seconds": 12,
+  "entitlement": {
+    "IBKR_L1": "UNKNOWN",
+    "IBKR_L2": "NOT_ENTITLED",
+    "IBKR_TRADES": "NOT_ENTITLED"
+  },
+  "freshness": {
+    "IBKR_L1": "REALTIME",
+    "IBKR_L2": "UNKNOWN",
+    "IBKR_TRADES": "UNKNOWN"
+  },
+  "gate_state": "ENABLED",
+  "instrument": "AAPL",
+  "live_verified": true,
+  "max_requests": 12,
+  "observed_at": "2026-09-09T14:28:37.840326Z",
+  "performance_ms": {
+    "IBKR_ACCOUNT_READ": 72.48,
+    "IBKR_CONTRACT_RESOLUTION": 0.0,
+    "IBKR_HISTORICAL_BARS": 120.61,
+    "streaming_connect_ms": 110.17
+  },
+  "registry_manifest": {
+    "logical_id": "providers.operational_registry",
+    "providers": [
+      {
+        "capabilities": [
+          "IBKR_ACCOUNT_READ",
+          "IBKR_CONTRACT_RESOLUTION",
+          "IBKR_HISTORICAL_BARS",
+          "IBKR_L1",
+          "IBKR_L2",
+          "IBKR_TRADES"
+        ],
+        "health_state": "UNKNOWN",
+        "priority": 90,
+        "provider_id": "ibkr.observational"
+      }
+    ],
+    "runtime_capability_schema": "g7/v1",
+    "runtime_states": {
+      "ibkr.observational": {
+        "entitlement": "UNKNOWN",
+        "health": "HEALTHY",
+        "live_verified": true,
+        "timeliness": "UNKNOWN"
+      }
+    },
+    "schema_version": "1.0"
+  },
+  "request_count": 3,
+  "status": "COMPLETE",
+  "transport_probe": {
+    "client_portal": {
+      "host": "127.0.0.1",
+      "port": 5000,
+      "reachable": false
+    },
+    "configured_transport": "tws",
+    "tws": {
+      "host": "127.0.0.1",
+      "port": 4001,
+      "reachable": true
+    }
+  }
+}

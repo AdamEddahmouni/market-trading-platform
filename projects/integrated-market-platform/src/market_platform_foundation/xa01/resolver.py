@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from .contracts import AliasResolution
 from .enums import AliasResolutionStatus, ExternalIdentifierType
+from .errors import Xa01Error, Xa01ErrorCode
 from .registry import InstrumentRegistry, get_registry
+from .tradability import assert_executable
 
 
 def resolve_alias(
@@ -46,3 +48,35 @@ def resolve_alias(
         instrument_kind=record.descriptor.identity.instrument_kind,
         asset_class=record.descriptor.identity.asset_class,
     )
+
+
+def resolve_executable_alias(
+    *,
+    provider_id: str,
+    alias_value: str,
+    identifier_type: ExternalIdentifierType = ExternalIdentifierType.PROVIDER_SYMBOL,
+    registry: InstrumentRegistry | None = None,
+) -> str:
+    """Resolve a provider alias to a canonical ID and prove it is executable.
+
+    Fail-closed execution-boundary resolver: an alias that resolves to a
+    continuous series, family/root, or any other non-executable identity
+    raises ``Xa01Error(NON_EXECUTABLE_INSTRUMENT)`` instead of returning a
+    tradable-looking ID.
+    """
+    store = registry or get_registry()
+    resolution = resolve_alias(
+        provider_id=provider_id,
+        alias_value=alias_value,
+        identifier_type=identifier_type,
+        registry=store,
+    )
+    if resolution.status != AliasResolutionStatus.RESOLVED:
+        raise Xa01Error(
+            Xa01ErrorCode.UNKNOWN_INSTRUMENT,
+            "alias does not resolve to a canonical instrument",
+            {"provider_id": provider_id, "alias_value": alias_value},
+        )
+    record = store.get(resolution.canonical_id)
+    assert_executable(record)
+    return resolution.canonical_id

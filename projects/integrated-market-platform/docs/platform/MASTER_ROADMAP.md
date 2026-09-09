@@ -7,8 +7,8 @@
 | Primary Truth Class | `APPROVED_FUTURE_DESIGN` |
 | Canonical Subject | Post-core milestone ownership and dependency graph |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.3` |
-| Last Verified | `2026-09-03` |
+| Version | `1.4` |
+| Last Verified | `2026-09-07` |
 | Supersedes | [Revision 3 roadmap projection](../roadmap/REVISION_3_ROADMAP.md) as whole-program master only |
 | Superseded By | None |
 
@@ -50,6 +50,37 @@ an independent semantic track.
 | `IMP-AI-02` | Governed AI Workflows and Tools | Expand only after the workflow/control registry |
 | `IMP-NARRATIVE-01` | Narrative and Motive Method | Define uncertain thesis/motive treatment and admitted boundaries |
 | `EVIDENCE-01C` | Bounded Real-Provider Shakedown and Operational Acceptance | `DEFERRED` — preserve the protocol and existing evidence artifacts; no real-provider shakedown is currently active |
+
+## Domain capability state (current truth)
+
+Current capability truth per domain. `VERIFIED`, `PARTIAL`, `FIXTURE_ONLY`,
+`RESEARCH_ONLY`, `MISSING`, `BLOCKED`, and `PLANNED` are truthful states, not
+completion claims. A `PARTIAL` state with a product surface marked
+`RESEARCH_ONLY` means the domain is fixture/replay-verified but has no live
+runtime wire and a research-only user surface. The canonical completion plan is
+not this table: it lives in the reconciliation program's
+[master backlog](../audits/imp-reconciliation/12-master-backlog.md) and
+[recovery roadmap](../audits/imp-reconciliation/13-recovery-roadmap.md),
+which this table references rather than duplicates.
+
+| Domain | State | Current basis |
+|---|---|---|
+| Equities | `PARTIAL` | Equity portfolio/Paper verified; live market-data wire gated/unverified |
+| Short Squeeze | `PARTIAL` | Models + fixtures verified for replay; live FINRA/NASDAQ/NYSE/CBOE gated; product surface `RESEARCH_ONLY` |
+| CVD / Level 2 | `PARTIAL` | CVD formulas + fixtures verified for replay; IBKR L1/L2 runtime integration `MISSING` (reconciliation BL-0301/BL-0302) |
+| Options | `PARTIAL` | Contracts/formulas/fixtures verified (incl. Q-series, Breeden-Litzenberger); live CBOE gated; product surface `RESEARCH_ONLY` |
+| Futures | `PARTIAL` | Contracts/roll/formulas verified; live gated; product surface `RESEARCH_ONLY` |
+| Bonds / Fixed Income | `MISSING` | No domain implementation |
+| Crypto | `MISSING` | Planned under the cross-asset identity foundation (reconciliation G1) |
+| Gold | `MISSING` | No domain implementation |
+| Silver | `MISSING` | No domain implementation |
+| Broader Commodities | `PARTIAL` | Energy (EIA/weather/CFTC) + macro groundwork verified; domain product surface `MISSING` |
+| Whale / Large Participant | `PARTIAL` | Read-only envelopes/lanes; no live ingestion; product surface `RESEARCH_ONLY` |
+| Industry | `MISSING` | No domain implementation |
+| Government / Public Sector | `PARTIAL` | Backend-only foundations (FRED/CFTC/SEC/EIA); no user workflow |
+| Market Context | `PARTIAL` | Backend lane + market-context foundations; frontend surface currently unreachable |
+| Research | `PARTIAL` | Read-only research/analytics surface; no live authority |
+| Analytics | `PARTIAL` | Attribution, distribution, and reporting foundations |
 
 ## Hard dependencies
 

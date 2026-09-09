@@ -105,7 +105,7 @@ FILLED_CUMULATIVE_PAYLOAD = {
 
 
 def _broker_ledger() -> PaperExecutionLedger:
-    return PaperExecutionLedger.open_session(
+    ledger = PaperExecutionLedger.open_session(
         replay_session_id="wl-e1b-session",
         instrument_id="BIYA",
         symbol="BIYA",
@@ -115,6 +115,16 @@ def _broker_ledger() -> PaperExecutionLedger:
         data_provider="TRADIER",
         execution_provider="TRADIER",
     )
+    # G3 BL-0202: the broker boundary requires a current price reference for
+    # MARKET buy orders (live mark), mirroring the UI path which applies live
+    # marks before submit. Fixture fills execute at ~116.20.
+    ledger.apply_live_mark(
+        mark_minor=11620,
+        mark_provider="TRADIER",
+        mark_as_of_ns=1787000000000000000,
+        mark_quality="TEST",
+    )
+    return ledger
 
 
 def _interactive_ledger() -> PaperExecutionLedger:

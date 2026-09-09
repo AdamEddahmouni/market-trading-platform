@@ -6,8 +6,8 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, Literal
 
-OPPORTUNITY_VERSION = "shared_opportunity_v1"
-FUSION_METHOD = "CROSS_LANE_FUSION_V1"
+OPPORTUNITY_VERSION = "shared_opportunity_v2"
+FUSION_METHOD = "CROSS_LANE_FUSION_V2"
 
 OpportunityOutcome = Literal["RANKED", "NO_ACTIONABLE_EDGE", "UNAVAILABLE"]
 OpportunityStatus = Literal["RANKED", "NO_ACTIONABLE_EDGE", "UNAVAILABLE"]
@@ -17,6 +17,7 @@ class OpportunityQualityFlag(StrEnum):
     STRATEGY_INPUTS_INCOMPLETE = "OPPORTUNITY_STRATEGY_INPUTS_INCOMPLETE"
     PAYOFF_UNAVAILABLE = "OPPORTUNITY_PAYOFF_UNAVAILABLE"
     LIQUIDITY_BLOCKED = "OPPORTUNITY_LIQUIDITY_BLOCKED"
+    OCCURRENCE_UNAVAILABLE = "OCCURRENCE_UNAVAILABLE"
     PHYSICAL_P_UNAVAILABLE = "OPPORTUNITY_PHYSICAL_P_UNAVAILABLE"
     FUSION_INPUTS_INCOMPLETE = "OPPORTUNITY_FUSION_INPUTS_INCOMPLETE"
 
@@ -132,7 +133,7 @@ class FusedOpportunity:
     """Decomposed fusion output — no opaque universal score."""
 
     fused_net_ev: float
-    occurrence_weight: float
+    occurrence_weight: float | None
     liquidity_factor: float
     gross_ev_before_weights: float
     template: str | None
@@ -226,7 +227,9 @@ def liquidity_input_to_dict(item: LiquidityInput) -> dict[str, Any]:
 def fused_opportunity_to_dict(item: FusedOpportunity) -> dict[str, Any]:
     return {
         "fused_net_ev": round(item.fused_net_ev, 6),
-        "occurrence_weight": round(item.occurrence_weight, 6),
+        "occurrence_weight": None
+        if item.occurrence_weight is None
+        else round(item.occurrence_weight, 6),
         "liquidity_factor": round(item.liquidity_factor, 6),
         "gross_ev_before_weights": round(item.gross_ev_before_weights, 6),
         "template": item.template,

@@ -64,7 +64,7 @@ class ValidateOrchestrationTests(unittest.TestCase):
                 {
                     "schema_version": "1.0",
                     "domains": ["core"],
-                    "full_invalidators": [],
+                    "core_checkpoint_invalidators": [],
                     "mandatory_invariants": [],
                     "suites": suites,
                 }
@@ -231,7 +231,7 @@ class ValidateOrchestrationTests(unittest.TestCase):
         payload = {
             "schema_version": "1.0",
             "domains": ["core"],
-            "full_invalidators": [],
+            "core_checkpoint_invalidators": [],
             "mandatory_invariants": [
                 {
                     "id": "fast",

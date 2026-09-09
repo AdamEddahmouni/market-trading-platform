@@ -1,0 +1,31 @@
+{
+  "capability_results": {
+    "IBKR_ACCOUNT_READ": "LIVE_PROVIDER_VERIFIED",
+    "IBKR_CONTRACT_RESOLUTION": "LIVE_PROVIDER_VERIFIED",
+    "IBKR_HISTORICAL_BARS": "LIVE_PROVIDER_VERIFIED",
+    "IBKR_L1": "LIVE_PROVIDER_VERIFIED",
+    "IBKR_L2": "LIVE_CONNECTED_NOT_ENTITLED",
+    "IBKR_TRADES": "LIVE_CONNECTED_NOT_ENTITLED"
+  },
+  "connection": {
+    "client_id": 37,
+    "connection_result": "CONNECTED",
+    "host": "127.0.0.1",
+    "observed_at": "2026-09-09T14:28:38.358967Z",
+    "port": 4001,
+    "readonly": true,
+    "server_version": 176
+  },
+  "environment_classification": null,
+  "gate_state": "ENABLED",
+  "instrument": "AAPL",
+  "live_verified": true,
+  "observed_at": "2026-09-09T14:28:37.840326Z",
+  "performance_ms": {
+    "IBKR_ACCOUNT_READ": 72.48,
+    "IBKR_CONTRACT_RESOLUTION": 0.0,
+    "IBKR_HISTORICAL_BARS": 120.61,
+    "streaming_connect_ms": 110.17
+  },
+  "status": "COMPLETE"
+}

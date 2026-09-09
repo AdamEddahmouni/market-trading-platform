@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { workspacePathForInstrument } from "../../api/instrumentIdentity";
 import { JsonDetailPanel } from "../shared/JsonDetailPanel";
 
 type Screen = {
@@ -209,7 +210,7 @@ export function DiscoverObservability({
         return;
       }
     }
-    navigate(`/workspace/${instrumentId}`);
+    navigate(workspacePathForInstrument(instrumentId));
   };
 
   useEffect(() => {
@@ -468,7 +469,7 @@ export function DiscoverObservability({
                       Open Workspace
                     </button>
                   ) : (
-                    <Link to={`/workspace/${candidate.instrument_id}`}>Open Workspace</Link>
+                    <Link to={workspacePathForInstrument(candidate.instrument_id)}>Open Workspace</Link>
                   )}
                   <details>
                     <summary>Evidence</summary>
@@ -543,7 +544,7 @@ export function DiscoverObservability({
             {singleCandidates.map((candidate) => (
               <article key={candidate.instrument_id} className="discover-card">
                 <div className="discover-card-header">
-                  <Link to={`/workspace/${candidate.instrument_id}`}>{candidate.instrument_id}</Link>
+                  <Link to={workspacePathForInstrument(candidate.instrument_id)}>{candidate.instrument_id}</Link>
                   {candidate.transition ? (
                     <span className="discover-transition">{candidate.transition}</span>
                   ) : null}
@@ -570,7 +571,7 @@ export function DiscoverObservability({
                       Open Workspace
                     </button>
                   ) : (
-                    <Link to={`/workspace/${candidate.instrument_id}`}>Open Workspace</Link>
+                    <Link to={workspacePathForInstrument(candidate.instrument_id)}>Open Workspace</Link>
                   )}
                 </div>
               </article>

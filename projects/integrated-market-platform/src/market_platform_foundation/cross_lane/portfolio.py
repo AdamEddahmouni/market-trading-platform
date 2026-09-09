@@ -94,9 +94,10 @@ def _coerce_fusion(fusion: Any) -> FusedOpportunity:
         return fusion
     if isinstance(fusion, dict):
         inner = fusion.get("fusion") if isinstance(fusion.get("fusion"), dict) else fusion
+        raw_occurrence = inner["occurrence_weight"]
         return FusedOpportunity(
             fused_net_ev=float(inner["fused_net_ev"]),
-            occurrence_weight=float(inner["occurrence_weight"]),
+            occurrence_weight=None if raw_occurrence is None else float(raw_occurrence),
             liquidity_factor=float(inner["liquidity_factor"]),
             gross_ev_before_weights=float(inner["gross_ev_before_weights"]),
             template=inner.get("template"),

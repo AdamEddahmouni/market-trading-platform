@@ -370,6 +370,19 @@ class ActiveOperatorInstrumentTests(unittest.TestCase):
 
         os.environ["IMP_PAPER_EXECUTION"] = "1"
         open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION"})
+        # G3 preview binding: the preview must be issued against the account
+        # that will submit (a pre-session preview binds a different account
+        # and is rejected at submit). Re-preview after the session is open.
+        preview = preview_paper_order(
+            store,
+            {
+                "side": "BUY",
+                "quantity": 1,
+                "instrument_id": "AAPL",
+                "client_order_id": "p31-explicit",
+                "idempotency_key": "p31-explicit",
+            },
+        )
         submitted = submit_paper_order(
             store,
             {
@@ -378,6 +391,7 @@ class ActiveOperatorInstrumentTests(unittest.TestCase):
                 "instrument_id": preview["preview"]["intent"]["instrument_id"],
                 "client_order_id": "p31-explicit-sub",
                 "idempotency_key": "p31-explicit-sub",
+                "preview_id": preview["preview"]["preview_id"],
             },
         )
         self.assertEqual(submitted["submission"]["order"]["instrument_id"], "AAPL")

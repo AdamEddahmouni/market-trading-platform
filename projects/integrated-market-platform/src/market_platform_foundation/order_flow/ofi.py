@@ -10,8 +10,10 @@ from ..donor_patterns.cvd_formulas import ofi_events
 
 OFI_METHOD_BBO_DELTA = "ofi_bbo_delta_v1"
 OFI_METHOD_MULTILEVEL_CS = "ofi_multilevel_cs_v1"
+OFI_METHOD_MULTILEVEL_PRICE_ALIGNED = "ofi_multilevel_price_aligned_v1"
 OFI_VERSION_BBO = "1"
 OFI_VERSION_MULTILEVEL = "1"
+OFI_VERSION_MULTILEVEL_PRICE_ALIGNED = "1"
 
 
 @dataclass(frozen=True, slots=True)
@@ -209,6 +211,81 @@ def compute_multilevel_ofi(
     )
 
 
+def compute_multilevel_ofi_price_aligned(
+    prev_snapshot: dict[str, Any],
+    curr_snapshot: dict[str, Any],
+    *,
+    level_count: int = 10,
+) -> OFIResult:
+    """Price-keyed multi-level OFI (G5 / ARCH-006 correction).
+
+    The legacy rank-based method pairs rank N of the previous snapshot with
+    rank N of the current snapshot. When an INSERT/DELETE shifts positions
+    between snapshots, that pairing compares *different price levels* and
+    fabricates spurious depth events. This method instead keys every level by
+    its price: a level present in both snapshots contributes its exact size
+    delta, a level only in the previous contributes its removal, and a level
+    only in the current contributes its insertion. Insert/delete rank shifts
+    therefore can never mis-pair levels.
+
+    With an equal price on both sides the CS contribution degenerates to the
+    signed size delta, so the method is exactly the OFI derivable from the
+    canonical incremental event log (INSERT/UPDATE/DELETE size deltas summed
+    over price-keyed levels, bid-positive and ask-negative). It is
+    deterministic and versioned; the legacy rank-based method is retained
+    unchanged for backward compatibility.
+    """
+    if not snapshot_pair_book_state_valid(prev_snapshot, curr_snapshot):
+        return OFIResult(
+            value=0.0,
+            ofi_method=OFI_METHOD_MULTILEVEL_PRICE_ALIGNED,
+            ofi_version=OFI_VERSION_MULTILEVEL_PRICE_ALIGNED,
+            book_state_valid=False,
+            level_count=level_count,
+        )
+    bid_contribution = _price_aligned_side_delta(
+        _sorted_bids(prev_snapshot["bids"]),
+        _sorted_bids(curr_snapshot["bids"]),
+        level_count=level_count,
+        sign=1.0,
+    )
+    ask_contribution = _price_aligned_side_delta(
+        _sorted_asks(prev_snapshot["asks"]),
+        _sorted_asks(curr_snapshot["asks"]),
+        level_count=level_count,
+        sign=-1.0,
+    )
+    value = round(bid_contribution + ask_contribution, 4)
+    return OFIResult(
+        value=value,
+        ofi_method=OFI_METHOD_MULTILEVEL_PRICE_ALIGNED,
+        ofi_version=OFI_VERSION_MULTILEVEL_PRICE_ALIGNED,
+        book_state_valid=True,
+        level_count=level_count,
+    )
+
+
+def _price_aligned_side_delta(
+    prev_levels: list[dict[str, Any]],
+    curr_levels: list[dict[str, Any]],
+    *,
+    level_count: int,
+    sign: float,
+) -> float:
+    """Sum of signed size deltas per price across two sorted level lists."""
+    prev_by_price = {float(row["price"]): float(row["size"]) for row in prev_levels}
+    curr_by_price = {float(row["price"]): float(row["size"]) for row in curr_levels}
+    best_prices = sorted(prev_by_price.keys() | curr_by_price.keys())
+    if sign > 0:
+        best_prices.reverse()  # bids: best (highest) first
+    best_prices = best_prices[:level_count]
+    total = 0.0
+    for price in best_prices:
+        delta = curr_by_price.get(price, 0.0) - prev_by_price.get(price, 0.0)
+        total += sign * delta
+    return total
+
+
 def compute_ofi(
     prev_snapshot: dict[str, Any],
     curr_snapshot: dict[str, Any],
@@ -221,6 +298,10 @@ def compute_ofi(
         return compute_bbo_ofi(prev_snapshot, curr_snapshot)
     if method == OFI_METHOD_MULTILEVEL_CS:
         return compute_multilevel_ofi(prev_snapshot, curr_snapshot, level_count=level_count)
+    if method == OFI_METHOD_MULTILEVEL_PRICE_ALIGNED:
+        return compute_multilevel_ofi_price_aligned(
+            prev_snapshot, curr_snapshot, level_count=level_count
+        )
     return OFIResult(
         value=0.0,
         ofi_method=method,
@@ -233,11 +314,14 @@ def compute_ofi(
 __all__ = [
     "OFI_METHOD_BBO_DELTA",
     "OFI_METHOD_MULTILEVEL_CS",
+    "OFI_METHOD_MULTILEVEL_PRICE_ALIGNED",
     "OFI_VERSION_BBO",
     "OFI_VERSION_MULTILEVEL",
+    "OFI_VERSION_MULTILEVEL_PRICE_ALIGNED",
     "OFIResult",
     "compute_bbo_ofi",
     "compute_multilevel_ofi",
+    "compute_multilevel_ofi_price_aligned",
     "compute_ofi",
     "snapshot_book_state_valid",
     "snapshot_pair_book_state_valid",

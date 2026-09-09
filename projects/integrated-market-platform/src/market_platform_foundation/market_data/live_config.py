@@ -14,6 +14,19 @@ def moomoo_live_enabled() -> bool:
     return os.environ.get("IMP_MOOMOO_LIVE") == "1"
 
 
+def ibkr_observational_enabled() -> bool:
+    """True when IBKR TWS observational streaming is explicitly enabled."""
+    return (
+        os.environ.get("IMP_IBKR_LIVE", "").strip() == "1"
+        and os.environ.get("IMP_IBKR_TRANSPORT", "client_portal").strip().lower() == "tws"
+    )
+
+
+def observational_provider_preference() -> str:
+    """auto | moomoo | ibkr — capability selection hint for live runtime."""
+    return os.environ.get("IMP_OBSERVATIONAL_PROVIDER", "auto").strip().lower()
+
+
 def shadow_recording_enabled() -> bool:
     """Run-1 prospective shadow recording opt-in gate (IMP_SHADOW_RECORDING)."""
     return os.environ.get("IMP_SHADOW_RECORDING", "").strip().lower() in {"1", "true", "yes"}
@@ -55,6 +68,40 @@ def subscription_quota() -> int:
 
 def quote_stale_threshold_ms() -> int:
     return int(os.environ.get("IMP_LIVE_QUOTE_STALE_MS", "5000"))
+
+
+def depth_stale_threshold_ms() -> int:
+    """Canonical L2 depth TTL default (provider configs may override)."""
+
+    return int(os.environ.get("IMP_LIVE_DEPTH_STALE_MS", "5000"))
+
+
+def depth_freshness_policy(provider_id: str = "") -> "FreshnessPolicy":
+    """Return a canonical ``FreshnessPolicy`` for depth TTL admission."""
+
+    from ..order_flow.order_book.freshness import FreshnessPolicy
+
+    normalized = provider_id.strip().lower()
+    if normalized in {"ibkr", "ibkr.observational"}:
+        ms = int(
+            os.environ.get(
+                "IMP_IBKR_L2_MAX_AGE_MS",
+                os.environ.get("IMP_LIVE_DEPTH_STALE_MS", "5000"),
+            )
+        )
+        name = "ibkr_l2"
+    elif normalized in {"moomoo", "moomoo.live"}:
+        ms = int(
+            os.environ.get(
+                "IMP_MOOMOO_L2_MAX_AGE_MS",
+                os.environ.get("IMP_LIVE_DEPTH_STALE_MS", "5000"),
+            )
+        )
+        name = "moomoo_l2"
+    else:
+        ms = depth_stale_threshold_ms()
+        name = "default_l2"
+    return FreshnessPolicy(stale_after_ns=ms * 1_000_000, name=name)
 
 
 def clock_drift_threshold_ms() -> int:

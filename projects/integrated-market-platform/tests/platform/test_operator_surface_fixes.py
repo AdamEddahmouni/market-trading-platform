@@ -182,7 +182,9 @@ class CancelDispatchTests(IsolatedStateTest):
 
         def cancel_order(self, *, client_order_id=None, broker_order_id=None):
             self.calls.append({"broker_order_id": broker_order_id, "client_order_id": client_order_id})
-            return mock.Mock(reason_code="", status="ok")
+            # G3 BL-0206: cancel-time late-fill capture iterates the status
+            # event stream; a provider without events is a normal empty stream.
+            return mock.Mock(reason_code="", status="ok", events=())
 
     def _store_with_broker_ledger(self) -> ReplayStore:
         store = ReplayStore(collection_root=COLLECTION_ROOT)
@@ -346,22 +348,51 @@ class LedgerRouteLockSmokeTests(IsolatedStateTest):
             workers = 8
 
             def post(index: int) -> int:
-                body = json.dumps(
-                    {
-                        "side": "BUY",
-                        "quantity": 1,
-                        "client_order_id": f"e5-{index}",
-                        "idempotency_key": f"e5-{index}",
-                    }
-                ).encode("utf-8")
-                request = urllib.request.Request(
-                    f"http://127.0.0.1:{port}/paper/orders",
-                    data=body,
-                    headers={"Content-Type": "application/json"},
-                    method="POST",
-                )
-                with urllib.request.urlopen(request, timeout=30) as response:
-                    return response.status
+                # G3 BL-0201: the UI submit boundary requires a current server
+                # preview. Mirror the real UI contract: preview, then submit
+                # with the issued preview_id.
+                base = {
+                    "side": "BUY",
+                    "quantity": 1,
+                    "client_order_id": f"e5-{index}",
+                    "idempotency_key": f"e5-{index}",
+                }
+                # A preview binds the portfolio revision current at issue
+                # time. Under genuine parallelism, a peer's successful submit
+                # advances that revision before this worker submits, and the
+                # server correctly rejects the stale preview
+                # (PREVIEW_PORTFOLIO_STALE). Like a real client, refresh the
+                # preview against the current portfolio and retry. The retry
+                # loop never bypasses preview authority and never serializes
+                # the workers: they still race to submit, and the ledger route
+                # lock guarantees unique deterministic event sequences.
+                while True:
+                    preview_request = urllib.request.Request(
+                        f"http://127.0.0.1:{port}/paper/orders/preview",
+                        data=json.dumps(base).encode("utf-8"),
+                        headers={"Content-Type": "application/json"},
+                        method="POST",
+                    )
+                    with urllib.request.urlopen(preview_request, timeout=30) as response:
+                        preview = json.loads(response.read().decode("utf-8"))
+                    body = json.dumps({**base, "preview_id": preview["preview"]["preview_id"]}).encode("utf-8")
+                    request = urllib.request.Request(
+                        f"http://127.0.0.1:{port}/paper/orders",
+                        data=body,
+                        headers={"Content-Type": "application/json"},
+                        method="POST",
+                    )
+                    try:
+                        with urllib.request.urlopen(request, timeout=30) as response:
+                            return response.status
+                    except urllib.error.HTTPError as exc:
+                        if exc.code == 400:
+                            error_body = exc.read().decode("utf-8")
+                            if "PREVIEW_PORTFOLIO_STALE" in error_body:
+                                # Portfolio advanced under us; refresh and retry.
+                                continue
+                            raise
+                        raise
 
             results: list[int] = []
             errors: list[Exception] = []

@@ -61,9 +61,11 @@ def _load_store() -> ReplayStore:
     store.load()
     if os.environ.get("IMP_LIVE_OBSERVATIONAL") == "1":
         from market_platform_foundation.market_data.live_runtime import get_live_runtime
+        from tools.ibkr.runtime_bootstrap import install_ibkr_observational_provider
 
         store.data_mode = "LIVE_OBSERVATIONAL"
         store.data_provider = "MOOMOO"
+        install_ibkr_observational_provider()
         get_live_runtime(create=True)
     return store
 

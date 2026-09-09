@@ -24,12 +24,20 @@ from market_platform_foundation.ui_api.paper_projections import (
     build_paper_account_payload,
     build_paper_portfolio_payload,
     open_paper_session,
+    preview_paper_order,
     submit_paper_order,
 )
 from market_platform_foundation.ui_api.projections import build_as_of_context, build_context_payload
 from market_platform_foundation.ui_api.store import ReplayStore
 
 COLLECTION_ROOT = ROOT.parent
+
+
+def _preview_and_submit(store: ReplayStore, body: dict) -> dict:
+    """G3 preview-first submit: issue a server preview, then submit bound to it."""
+    preview = preview_paper_order(store, body)
+    preview_id = str(preview["preview"]["preview_id"])
+    return submit_paper_order(store, {**body, "preview_id": preview_id})
 
 
 class PlatformPaperP0Tests(unittest.TestCase):
@@ -152,8 +160,8 @@ class PlatformPaperSimulationTests(unittest.TestCase):
             "client_order_id": "biya-slice-1",
             "idempotency_key": "biya-slice-key-1",
         }
-        first = submit_paper_order(self.store, body)
-        second = submit_paper_order(self.store, body)
+        first = _preview_and_submit(self.store, body)
+        second = _preview_and_submit(self.store, body)
         self.assertFalse(first["submission"]["duplicate"])
         self.assertTrue(second["submission"]["duplicate"])
         fills = self.store.paper_ledger.project_fills()
@@ -163,6 +171,22 @@ class PlatformPaperSimulationTests(unittest.TestCase):
         self.assertEqual(positions[0]["quantity"], 1)
 
         # Replay determinism: fresh ledger at same cutoff produces identical fill id.
+        # The replay must reconstruct the SAME canonical intent as the UI path,
+        # including the G3-admitted instrument metadata (BL-0203) — otherwise
+        # the intent digest (and therefore the order/fill id) diverges.
+        from market_platform_foundation.paper.contracts import build_instrument_ref
+        from market_platform_foundation.paper.eligibility import admit_order_instrument
+
+        # Mirror _admit_focus_instrument: symbol stays the ledger key while the
+        # canonical kind/tradability/multiplier resolved through G1 are merged
+        # into the runtime ref that flows into the order intent.
+        admitted = build_instrument_ref(
+            instrument_id=self.store.symbol,
+            symbol=self.store.symbol,
+        )
+        for key in ("instrument_kind", "tradability", "contract_multiplier", "currency"):
+            if admit_order_instrument(self.store.symbol).get(key) is not None:
+                admitted[key] = admit_order_instrument(self.store.symbol)[key]
         ledger_b = PaperExecutionLedger.open_session(
             replay_session_id=self.store.session_id,
             instrument_id=self.store.instrument_id,
@@ -180,6 +204,7 @@ class PlatformPaperSimulationTests(unittest.TestCase):
             observation_time=cutoff,
             client_order_id="biya-slice-1",
             idempotency_key="biya-slice-key-1",
+            instrument=admitted,
         )
         self.assertEqual(fills[0]["fill_id"], result_b["fill"]["fill_id"])
 

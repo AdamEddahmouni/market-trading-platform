@@ -13,6 +13,7 @@ from .enums import (
     InstrumentKind,
     PriceUnitKind,
     RelationshipType,
+    Tradability,
     XaAssetClass,
 )
 
@@ -42,18 +43,29 @@ class InstrumentDescriptor:
     venue_id: str = ""
     exchange: str = ""
     denomination: DenominationMetadata = field(default_factory=DenominationMetadata)
+    # Executable-vs-reference semantics. Defaults to REFERENCE_ONLY so any
+    # identity that is not explicitly marked tradable fails closed at an
+    # execution boundary (see xa01.tradability.assert_executable).
+    tradability: Tradability = Tradability.REFERENCE_ONLY
     sovereign_issuer: str = ""
+    issuer: str = ""
     security_type: str = ""
+    credit_tier: str = ""
+    par_value: str = ""
     issue_date: str = ""
     maturity_date: str = ""
     coupon: str = ""
     commodity_code: str = ""
+    commodity_sector: str = ""
     contract_month: str = ""
     expiration: str = ""
     strike: str = ""
     call_put: str = ""
     base_currency: str = ""
     quote_currency: str = ""
+    base_asset: str = ""
+    quote_asset: str = ""
+    network: str = ""
     schema_version: int = SCHEMA_VERSION
 
 
@@ -122,18 +134,26 @@ def record_to_dict(record: InstrumentRecord) -> dict[str, Any]:
             "tick_size": desc.denomination.tick_size,
             "quantity_unit": desc.denomination.quantity_unit,
         },
+        "tradability": desc.tradability.value,
         "sovereign_issuer": desc.sovereign_issuer,
+        "issuer": desc.issuer,
         "security_type": desc.security_type,
+        "credit_tier": desc.credit_tier,
+        "par_value": desc.par_value,
         "issue_date": desc.issue_date,
         "maturity_date": desc.maturity_date,
         "coupon": desc.coupon,
         "commodity_code": desc.commodity_code,
+        "commodity_sector": desc.commodity_sector,
         "contract_month": desc.contract_month,
         "expiration": desc.expiration,
         "strike": desc.strike,
         "call_put": desc.call_put,
         "base_currency": desc.base_currency,
         "quote_currency": desc.quote_currency,
+        "base_asset": desc.base_asset,
+        "quote_asset": desc.quote_asset,
+        "network": desc.network,
         "analytical_domains": [
             {
                 "domain": item.domain.value,

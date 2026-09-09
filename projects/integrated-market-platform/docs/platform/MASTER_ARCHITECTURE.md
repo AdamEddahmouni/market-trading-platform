@@ -7,8 +7,8 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Whole-program composition and architectural relationships |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.3` |
-| Last Verified | `2026-09-03` |
+| Version | `1.5` |
+| Last Verified | `2026-09-08` |
 | Supersedes | No accepted post-EVIDENCE whole-program architecture |
 | Superseded By | None |
 
@@ -88,7 +88,16 @@ detection, routing, opportunity economics, and the ingest-path timing baseline.
 It is `PARTIAL` because accepted tracing covers executable ingest paths only;
 no accepted trace spans the unified opportunity→risk→order_ready chain or
 broker/reconciliation stages. Follow-on work extends RT-01 rather than replacing
-its ingest-path baseline.
+its ingest-path baseline. G8 attaches IBKR observational L1/L2 through an outer
+`tools/ibkr` bootstrap that injects `IbkrObservationalTransport` into canonical
+`live_runtime` / `ObservationalRuntimeComposition`; src does not import tools
+implementation. G11 adds a separate read-only query injection path
+(`IbkrReadOnlyQueryProvider` → `IbkrObservationalQueryService`) for
+contract/secdef, historical bars, and read-only account observation; outer
+`tools/ibkr/query_provider.py` implements the protocol; registration occurs
+only in `runtime_bootstrap.py` (src never imports tools). Provider account
+facts are observational only and cannot mutate canonical portfolio state. Live
+IBKR remains `LIVE_PROVIDER_UNVERIFIED`.
 
 The **Operating Fabric** is the operation-to-evidence control plane. OF-01
 provides the append-only run/artifact ledger, OF-02 attributes existing
@@ -127,7 +136,7 @@ New program families must extend rather than fork these foundations:
 |---|---|
 | Event and temporal semantics | [`EventV1`](../../src/market_platform_foundation/intelligence/contracts/event.py), temporal contracts, and point-in-time validation |
 | Provenance and normalization | [`ProviderProvenance`](../../src/market_platform_foundation/intelligence/normalization/models.py) and provider envelopes |
-| Quality and capability | Shared quality models plus domain extensions and provider capability contracts |
+| Quality and capability | Shared quality models plus domain extensions and provider capability contracts; **`ProviderRegistry`** holds implemented-capability metadata; **`RuntimeCapabilityRegistry`** (G7) is the runtime-state/readiness facade over that authority; **`VerifiedCapabilityRegistry`** holds bounded Moomoo probe evidence only — not a competing runtime-capability authority |
 | Prediction | [`PredictionLedgerEntryV1`](../../src/market_platform_foundation/intelligence/contracts/prediction_ledger.py) |
 | Settlement | [`OutcomeSettlementService`](../../src/market_platform_foundation/intelligence/outcomes/service.py) |
 | Risk and execution state | Risk, execution, live-safety, authorization, and confirmation implementations indexed by the truth map |
@@ -138,18 +147,35 @@ New program families must extend rather than fork these foundations:
 
 ## Family attachment points
 
-- **Cross-Asset — `PARTIAL`.** IMP-XA-01 implemented the cross-asset canonical
+- **Cross-Asset — `PARTIAL`.** IMP-XA-01 implements the cross-asset canonical
   identity and analytical-domain participation kernel
-  (`src/market_platform_foundation/xa01`). IMP-XA-02 admitted the first bounded
+  (`src/market_platform_foundation/xa01`), extended (G1) with one canonical
+  asset-class vocabulary (`CRYPTO`, `BOND` added; paper `ASSET_CLASSES`
+  deprecated as a compatibility view), first-class crypto pair identity
+  (base/quote/venue/network), typed bond/fixed-income identity (issuer,
+  CUSIP/ISIN, maturity, coupon, par, credit tier), explicit commodity
+  Gold/Silver spot/reference/proxy identities, explicit tradable-vs-reference
+  semantics, and a fail-closed continuous-futures non-execution guard at both
+  canonical resolution and Paper order-intent creation. IMP-XA-02 admitted the first bounded
   FRED rates reference vertical with point-in-time observation provenance and
   typed indicator-to-XA reference relationships (`src/market_platform_foundation/xa02`).
   IMP-XA-03 admitted the second bounded CFTC positioning vertical with
   source-neutral admission and typed market-report-to-XA relationships.
   IMP-XA-04 made the admitted-source and identity catalog durable with
-  documented local-integration limitations. IMP-XA-05 added ephemeral,
-  reconstructable strategic state and regime inspection. Cross-asset analytics,
-  relationship intelligence engines, and additional admitted reference
-  verticals remain future work.
+  documented local-integration limitations.  IMP-XA-05 added ephemeral,
+  reconstructable strategic state and regime inspection. G2 added the canonical
+  multi-asset portfolio foundation (account/mode-scoped, instrument-keyed,
+  per-currency cash, asset-aware valuation, explicit FX boundary — see the
+  [G2 portfolio spec](../superpowers/specs/2026-09-07-imp-g2-canonical-multi-asset-portfolio-foundation.md),
+  the single canonical architecture home for the portfolio contract). G12 added
+  the canonical multi-asset runtime domain projection (`cross_lane/multi_asset_runtime.py`):
+  one shared path from XA-01 identity through G7 observational lanes to G2/G4
+  valuation and G3 fail-closed risk probes, with explicit `RuntimeDomainStatus`
+  semantics (AVAILABLE/EMPTY/UNAVAILABLE/NOT_ENTITLED/DELAYED/STALE/INVALID/
+  UNSUPPORTED_INSTRUMENT). IBKR L2/TRADES account-entitlement limits are
+  isolated from software completeness; L1 live-path verification is separate
+  from realtime entitlement. Cross-asset analytics, relationship intelligence
+  engines, and additional admitted reference verticals remain future work.
 - **Narrative/Motive — `PARTIAL`.** Existing events, participants, hypotheses,
   bounded narrative features, and contradiction flags are reusable. The
   uncertain motive/thesis method and admitted runtime remain future work under

@@ -1,5 +1,14 @@
 # Revision 3 Donor Integration and Evidence Transition Implementation Plan
 
+> **STATUS: SUPERSEDED — HISTORICAL · AUTHORIZATION BASIS SUPERSEDED**
+>
+> This plan predates the professor's donor-identity correction (2026-08-28):
+> Lucas Heller's DS-340W and GridIQ materials were **not** intended donor
+> sources for this platform. Any native IMP implementation independently
+> reimplemented from a legitimate platform requirement remains valid. This
+> plan is preserved for provenance only and must not be used as
+> authorization for future implementation.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make the approved Revision 3 architecture operational as canonical documentation, register both new donors without copying or modifying them, and publish a fresh immutable Phase 0 candidate evidence root bound to the new repository subject.

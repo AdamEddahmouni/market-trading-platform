@@ -1,0 +1,72 @@
+{
+  "report_type": "g15_dead_route_census",
+  "routes": [
+    {
+      "callers": {
+        "backend": 3,
+        "docs": 2,
+        "frontend": 0,
+        "tests": 1
+      },
+      "classification": "TEST_ONLY",
+      "disposition": "ARCHIVE_FIRST \u2014 no production frontend callers",
+      "route": "/paper/account"
+    },
+    {
+      "callers": {
+        "backend": 3,
+        "docs": 1,
+        "frontend": 0,
+        "tests": 1
+      },
+      "classification": "TEST_ONLY",
+      "disposition": "ARCHIVE_FIRST \u2014 no production frontend callers",
+      "route": "/paper/positions"
+    },
+    {
+      "callers": {
+        "backend": 2,
+        "docs": 1,
+        "frontend": 0,
+        "tests": 0
+      },
+      "classification": "COMPATIBILITY",
+      "disposition": "ARCHIVE_FIRST \u2014 legacy read surface",
+      "route": "/paper/fills"
+    },
+    {
+      "callers": {
+        "backend": 3,
+        "docs": 1,
+        "frontend": 0,
+        "tests": 0
+      },
+      "classification": "COMPATIBILITY",
+      "disposition": "ARCHIVE_FIRST \u2014 legacy read surface",
+      "route": "/paper/risk"
+    },
+    {
+      "callers": {
+        "backend": 8,
+        "docs": 8,
+        "frontend": 6,
+        "tests": 6
+      },
+      "classification": "ACTIVE",
+      "disposition": "KEEP \u2014 POST submit boundary",
+      "route": "/paper/orders"
+    },
+    {
+      "callers": {
+        "backend": 5,
+        "docs": 5,
+        "frontend": 3,
+        "tests": 2
+      },
+      "classification": "ACTIVE",
+      "disposition": "KEEP \u2014 caller still present",
+      "route": "/capabilities"
+    }
+  ],
+  "schema_version": "1.0"
+}
