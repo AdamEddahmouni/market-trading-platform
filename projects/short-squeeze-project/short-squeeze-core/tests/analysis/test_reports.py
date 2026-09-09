@@ -120,5 +120,8 @@ def test_analysis_result_itself_is_policy_complete():
     assert result.interval_policy_version == "phase_3c_interval_policy.v1"
     assert str(result.confidence_level) == "0.95"
     assert result.sample_size_policy_version == "phase_3c_sample_size_policy.v1"
-    assert result.provenance_classifications == ("SANITIZED_PUBLIC_HISTORICAL_DATA",)
+    assert result.provenance_classifications == (
+        "MIXED_PROVENANCE",
+        "SANITIZED_PUBLIC_HISTORICAL_DATA",
+    )
 

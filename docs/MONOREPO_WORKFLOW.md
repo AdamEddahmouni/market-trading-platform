@@ -43,6 +43,20 @@ replacing the snapshot with the child's tracked file tree at the recorded
 source commit, then updating `source_commit` in the manifest and validating
 with `python tools/monorepo_guard.py validate`.
 
+### Snapshot parity and parent-local overlays
+
+`monorepo_guard validate` enforces a content parity check for every manifest
+project: the snapshot must equal the child's tracked tree at the recorded
+`source_commit` (path-for-path, blob-for-blob). Parent-local hardening pins
+that intentionally extend or override the child tree (for example the ADAM
+formula goldens under `projects/short-squeeze-project`) must be declared in
+that project's `snapshot_overlay` array in `workspace-manifest.json`; overlay
+entries may add, override, or remove snapshot content relative to the child
+tree, and each declared path must exist in either the snapshot or the child
+tree. Any drift, missing file, unexpected extra file, or undeclared overlay
+fails validation. Prefer upstreaming overlay content into the child
+repository over growing the overlay.
+
 Project IDs and the source branches currently tracked are in
 `workspace-manifest.json`. The source commit must be updated by the importer,
 not edited manually.
@@ -62,7 +76,9 @@ The guard verifies that:
 - every manifest project has a non-empty ordinary-file snapshot;
 - no snapshot contains a `160000` Gitlink;
 - the original child paths are ignored by the parent;
-- local child refs, remotes, and source commits match the manifest; and
+- local child refs, remotes, and source commits match the manifest;
+- the snapshot content matches the child's tracked tree at the recorded
+  source commit, apart from declared `snapshot_overlay` paths; and
 - optional `--remote` checks preserve each child's declared visibility.
 
 CI repeats the snapshot checks without requiring the root-level child

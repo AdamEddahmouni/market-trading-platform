@@ -20,6 +20,10 @@ def test_historical_completed_cohort_excludes_every_synthetic_row():
     )
     membership = build_dataset_cohort(request, dataset)
     assert membership.included_case_ids == (
+        "AACB_ARTIFACT_DISCOVERY",
+        "AACG_ARTIFACT_DISCOVERY",
+        "AACI_ARTIFACT_DISCOVERY",
+        "AADX_ARTIFACT_DISCOVERY",
         "ADVB_ARTIFACT_DISCOVERY",
         "APVO_ARTIFACT_DISCOVERY",
         "ATAI_ARTIFACT_DISCOVERY",
@@ -53,7 +57,7 @@ def test_historical_completed_cohort_excludes_every_synthetic_row():
         "ZNTL_ARTIFACT_DISCOVERY",
     )
     assert membership.included_symbols == (
-        "ADVB", "APVO", "ATAI", "AVTX", "BHVN", "BIYA", "CADL", "CELZ",
+        "AACB", "AACG", "AACI", "AADX", "ADVB", "APVO", "ATAI", "AVTX", "BHVN", "BIYA", "CADL", "CELZ",
         "CGEM", "GDC", "GOAI", "GPRE", "IOVA", "KLRS", "LBGJ", "LMNX",
         "MGNX", "NXXT", "OBE", "PESI", "PMAX", "SG", "SLS", "SSPC",
         "STAK", "TRVI", "VMAR", "XNCR", "ZNTL",
@@ -79,6 +83,10 @@ def test_synthetic_cohort_is_separate_and_never_historical():
     assert len(membership.included_case_ids) == 11
     assert all(case_id.startswith("SYN_") for case_id in membership.included_case_ids)
     assert {item.case_id for item in membership.exclusions} == {
+        "AACB_ARTIFACT_DISCOVERY",
+        "AACG_ARTIFACT_DISCOVERY",
+        "AACI_ARTIFACT_DISCOVERY",
+        "AADX_ARTIFACT_DISCOVERY",
         "ADVB_ARTIFACT_DISCOVERY",
         "APVO_ARTIFACT_DISCOVERY",
         "ATAI_ARTIFACT_DISCOVERY",
@@ -127,11 +135,12 @@ def test_all_registered_and_partial_blocked_cohorts_preserve_real_incomplete_cas
     )
     all_membership = build_registry_cohort(all_request, registry)
     partial_membership = build_registry_cohort(partial_request, registry)
-    assert len(all_membership.included_case_ids) == 43
+    assert len(all_membership.included_case_ids) == 48
     assert partial_membership.included_case_ids == (
+        "AACP_ARTIFACT_DISCOVERY",
         "KLOS_IDENTITY_CONFLICT",
     )
-    assert len(partial_membership.exclusions) == 42
+    assert len(partial_membership.exclusions) == 46
 
 
 def test_registry_cohort_requires_explicit_matching_registry_source():

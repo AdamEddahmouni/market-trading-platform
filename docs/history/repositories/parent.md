@@ -1490,7 +1490,7 @@ per the public publish policy stays removed.
 - `4f001e51dd3e` — Merge pull request #6 from AdamEddahmouni/chore/sync-imp-snapshot-0681b9d
   - Author: AdamEddahmouni (2026-09-04T21:41:38-04:00)
   - Rationale (commit-subject-and-body): merge: sync integrated-market-platform snapshot to 0681b9d
-- `2f73608d67df` — docs(history): regenerate audit ledger through 4f001e5 — refs: `refs/remotes/origin/docs/regenerate-history-ledger-20260905`
+- `2f73608d67df` — docs(history): regenerate audit ledger through 4f001e5
   - Author: AdamEddahmouni (2026-09-04T21:46:42-04:00)
   - Rationale (commit-subject-and-body): Capture the integrated-platform snapshot sync (0681b9d, 1d52896,
 4f001e5) and pruned parent refs in REFS.json and WORK_LEDGER.jsonl.
@@ -1566,7 +1566,7 @@ repository timelines.
   - Rationale (commit-subject-and-body): Refresh projects/short-squeeze-project from the short-squeeze child repo at
 main 78b7467 (frozen-cohort test alignment + research-summary demo fallback)
 and bump the manifest source_ref/source_commit to main.
-- `bd607766e65b` — docs(history): regenerate audit ledger through 115e63f — refs: `refs/heads/chore/import-short-squeeze-8a5e43e`, `refs/remotes/origin/chore/import-short-squeeze-8a5e43e`
+- `bd607766e65b` — docs(history): regenerate audit ledger through 115e63f — refs: `refs/heads/chore/import-short-squeeze-8a5e43e`
   - Author: AdamEddahmouni (2026-09-05T03:21:50-04:00)
   - Rationale (commit-subject-and-body): Capture the child frozen-cohort fix (8c255d2, merged via 78b7467) and the
 parent snapshot sync to child main (115e63f) in REFS.json, WORK_LEDGER.jsonl,
@@ -1614,7 +1614,7 @@ in this repo.
   - Rationale (commit-subject-and-body): PAPER_DECISION_LIFECYCLE.md lives under docs/architecture/, so the P0-4
 WORK_LOG entry referenced it from the wrong directory. Corrected to
 ../architecture/PAPER_DECISION_LIFECYCLE.md; check_docs_links.py now passes.
-- `9b197f7ddc9f` — fix(platform): anchor provenance root to the platform tree when embedded — refs: `refs/heads/hardening/strat-lane-ready`, `refs/remotes/origin/hardening/strat-lane-ready`
+- `9b197f7ddc9f` — fix(platform): anchor provenance root to the platform tree when embedded — refs: `refs/heads/hardening/strat-lane-ready`
   - Author: AdamEddahmouni (2026-09-05T06:51:57-04:00)
   - Rationale (commit-subject-and-body): When the platform tree lives inside the parent monorepo
 (projects/integrated-market-platform), git-root resolution climbed to the
@@ -1622,7 +1622,7 @@ monorepo root, so release/qualification provenance could not find
 phase0-dependency-lock.json or artifacts/system-acceptance/* and ~30
 change-control / release-governance / forward-qualification tests errored
 (this PR is the first to run imp.py validate changed, which surfaced it).
-- `1813aa2fb9aa` — Merge pull request #10 from AdamEddahmouni/hardening/strat-lane-ready — refs: `refs/heads/main`, `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
+- `1813aa2fb9aa` — Merge pull request #10 from AdamEddahmouni/hardening/strat-lane-ready
   - Author: AdamEddahmouni (2026-09-05T06:55:20-04:00)
   - Rationale (commit-subject-and-body): feat: close P0-2/P1-1/P0-4 strategy & lane hardening items
 - `37b569d5a74d` — docs: fix broken doc links in workspace docs and project snapshots
@@ -1640,6 +1640,87 @@ not present in the repository, per the repo-wide doc-link check.
 - `ad95af5f1e5f` — Squashed 'projects/equity-data-v1-worktree/' changes from 825dd8b..ad54fb8
   - Author: AdamEddahmouni (2026-09-05T10:37:38-04:00)
   - Rationale (commit-subject-and-body): ad54fb8 docs(data): fix broken doc links in integration and platformization docs
-- `29c6a2fd6b66` — Merge commit 'ad95af5f1e5fef940fa84016330c095e07879c76' into chore/sync-governed-equity-snapshots — refs: `refs/heads/chore/sync-governed-equity-snapshots`
+- `29c6a2fd6b66` — Merge commit 'ad95af5f1e5fef940fa84016330c095e07879c76' into chore/sync-governed-equity-snapshots
   - Author: AdamEddahmouni (2026-09-05T10:37:38-04:00)
   - Rationale (commit-subject-only): Rationale stated in commit subject only.
+- `acee24907d21` — chore(history): regenerate ledger after governed/equity snapshot sync
+  - Author: AdamEddahmouni (2026-09-05T10:39:46-04:00)
+  - Rationale (commit-subject-and-body): Record the imported child commits (governed 1398da3, equity ad54fb8) so
+the committed history audit matches workspace-manifest.json.
+- `67b59354c8e9` — Merge pull request #11 from AdamEddahmouni/chore/sync-governed-equity-snapshots
+  - Author: AdamEddahmouni (2026-09-05T10:41:48-04:00)
+  - Rationale (commit-subject-and-body): docs: fix broken links and sync governed/equity snapshots
+
+## 2026-09-06
+
+- `257d8e38c2b1` — chore(gitignore): ignore only root nested checkouts
+  - Author: AdamEddahmouni (2026-09-06T08:34:31-04:00)
+  - Rationale (commit-subject-and-body): Unanchored integrated-market-platform/ and short-squeeze-project/ hid files under projects/. Anchor those patterns at the repo root so the canonical trees can be tracked.
+- `8a3375177013` — fix(squeeze): pin return and bar-acceleration definitions with ADAM goldens
+  - Author: AdamEddahmouni (2026-09-06T08:34:46-04:00)
+  - Rationale (commit-subject-and-body): Keep Decimal close-to-close returns distinct from float open-to-close bar acceleration, and lock ADAM pressure/ignition weights as unfitted constants rather than a shared return metric.
+- `122e9c235c2e` — fix(order-flow): stop treating invalid-book OFI zeros as usable evidence
+  - Author: AdamEddahmouni (2026-09-06T08:35:12-04:00)
+  - Rationale (commit-subject-and-body): Consumers must use usable_ofi_value / book_state_valid so a primitive 0.0 on a broken book cannot pass as confirmed flow.
+- `3cab7bcb446c` — fix(vol): name unfitted GARCH, HAR, fusion, and logistic pins
+  - Author: AdamEddahmouni (2026-09-06T08:35:28-04:00)
+  - Rationale (commit-subject-and-body): Pin heuristic scalars as versioned module constants, subtract fusion friction once, and stamp physical P as a zero-drift baseline. Do not calibrate these weights.
+- `a6d63eff0c0e` — fix(options): fail-close silent BSM spot, vol, and rate assumptions
+  - Author: AdamEddahmouni (2026-09-06T08:35:41-04:00)
+  - Rationale (commit-subject-and-body): Require a positive tape or kwarg rate and underlying instead of inventing 0.05, 100.0, or strike multiples. Skip O2 points and O10/R-O6 snapshots when rate is missing; dealer and O5 greeks use the same resolve order.
+- `bccc297dfdf5` — fix(strategy): fail-closed eligibility, lane vocabulary, and opportunity identity
+  - Author: AdamEddahmouni (2026-09-06T08:35:56-04:00)
+  - Rationale (commit-subject-and-body): Omit-eligibility stays ineligible on execution-intent runtimes, research scanners do not mint OrderReady, and lane vocabulary plus dataset admission keep unadmitted donor paths isolated. Classify lanes so repository-closure still matches the tree.
+- `8b21b2755b6b` — feat(formulas): add versioned formula ledger and golden tests
+  - Author: AdamEddahmouni (2026-09-06T08:36:09-04:00)
+  - Rationale (commit-subject-and-body): Pin units, windows, fail-closed behavior, and capability class for 88 formulas, and register the formulas suite so goldens and pin-drift guards run in validation.
+- `ea9c53c3f5db` — test(platform): close RT-01 fixture traces, acquisition guard, and idea index
+  - Author: AdamEddahmouni (2026-09-06T08:36:24-04:00)
+  - Rationale (commit-subject-and-body): Add a non-authoritative idea registry, AST-block pipelines.stock_data imports, and a fixture shared-trace broker span. Mark nested IMP workflows STALE so parent imp-validate remains the CI gate.
+- `7d8c60f1ae7c` — docs: record formula-hardening Q-series closes without trade authority — refs: `refs/heads/hardening/o10-rate-and-gitignore`
+  - Author: AdamEddahmouni (2026-09-06T08:36:41-04:00)
+  - Rationale (commit-subject-and-body): Document fail-closed options rate/spot honesty, remaining Q-H1 unfitted pins, and that G1-G6 stay closed. WORK_LOG entries supersede earlier same-day notes that still mentioned dealer DEFAULT_RATE.
+- `37d7a04c3e59` — Merge pull request #12 from AdamEddahmouni/hardening/o10-rate-and-gitignore
+  - Author: AdamEddahmouni (2026-09-06T08:57:46-04:00)
+  - Rationale (commit-subject-and-body): fix: pre-trade formula hardening without opening trade gates
+- `c44ce27c867c` — fix(formulas): import ADAM pins from the canonical squeeze tree — refs: `refs/heads/fix/pin-drift-canonical-squeeze-path`
+  - Author: AdamEddahmouni (2026-09-06T09:01:55-04:00)
+  - Rationale (commit-subject-and-body): Pin-drift used a repo-root short-squeeze-project path. CI sparse-checks that location without apps/, so validate changed failed after #12 with ModuleNotFoundError. Use projects/short-squeeze-project like donor-bridge tests.
+- `7eea7b4cd743` — Merge pull request #13 from AdamEddahmouni/fix/pin-drift-canonical-squeeze-path
+  - Author: AdamEddahmouni (2026-09-06T09:16:44-04:00)
+  - Rationale (commit-subject-and-body): fix(formulas): import ADAM pins from the canonical squeeze tree
+- `befcd362a430` — feat(options): add fail-closed discrete Breeden-Litzenberger Q
+  - Author: AdamEddahmouni (2026-09-06T09:56:37-04:00)
+  - Rationale (commit-subject-and-body): Additive BL path on the IV-reconstructed call curve. Default O3 remains the log-normal moment approx. No trade authority; G1-G6 stay closed.
+- `070efb575fc3` — fix(futures): drop unused carry rate stamp and DTE fallback
+  - Author: AdamEddahmouni (2026-09-06T10:02:51-04:00)
+  - Rationale (commit-subject-and-body): Spot carry is ln(F/S)/days*365; do not stamp a fake r. Missing observation date fail-closes instead of using 2025-01-01.
+- `797818e9c966` — feat(options): stamp q_method on log-normal and BL Q payloads — refs: `refs/heads/hardening/qh3-breeden-litzenberger`
+  - Author: AdamEddahmouni (2026-09-06T10:07:12-04:00)
+  - Rationale (commit-subject-and-body): Consumers can tell log_normal_moment_approx from breeden_litzenberger. Default O3 and projections stay log-normal.
+- `d691050a6e68` — Merge pull request #14 from AdamEddahmouni/hardening/qh3-breeden-litzenberger — refs: `refs/heads/codex/imp-forensic-reconciliation`, `refs/heads/hardening/sprint-1-3-honesty`, `refs/heads/main`
+  - Author: AdamEddahmouni (2026-09-06T10:47:11-04:00)
+  - Rationale (commit-subject-and-body): feat(options): additive fail-closed discrete Breeden-Litzenberger Q
+
+## 2026-09-09
+
+- `f7b56c128415` — feat: synchronize canonical IMP through G15
+  - Author: AdamEddahmouni (2026-09-09T19:13:26-04:00)
+  - Rationale (commit-subject-and-body): Reconcile local G0-G15 integrated-market-platform snapshot with parent
+monorepo publication target: multi-asset identity/runtime, IBKR
+observational provider evidence, Paper derivatives, product selector
+convergence, browser product-acceptance E2E, validation tooling, and
+imp-reconciliation audit documentation.
+- `b03f3abdd777` — fix(docs): place imp-reconciliation audits under IMP docs tree — refs: `refs/heads/sync/imp-g0-g15-canonical`
+  - Author: AdamEddahmouni (2026-09-09T19:19:02-04:00)
+  - Rationale (commit-subject-and-body): Repair WORK_LOG and program doc links so validate-docs passes in CI.
+- `caa6fd5965c2` — Synchronize canonical IMP through G15 — refs: `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
+  - Author: AdamEddahmouni (2026-09-09T19:24:06-04:00)
+  - Rationale (commit-subject-and-body): Synchronize canonical IMP through G15
+- `32b9a152fdda` — chore: sync short-squeeze Phase 4 sprint and strengthen monorepo guard
+  - Author: AdamEddahmouni (2026-09-09T19:40:26-04:00)
+  - Rationale (commit-subject-and-body): Publish the fix/frozen-followups snapshot at 9de7b2f, add snapshot parity
+validation with declared overlay support, and ignore local runtime/donor trees.
+- `5086d29229f9` — chore: ignore misplaced local audit artifacts under projects/docs — refs: `refs/heads/chore/sync-short-squeeze-governance`, `refs/remotes/origin/chore/sync-short-squeeze-governance`
+  - Author: AdamEddahmouni (2026-09-09T19:42:00-04:00)
+  - Rationale (commit-subject-and-body): Co-authored-by: Cursor <cursoragent@cursor.com>

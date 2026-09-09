@@ -1,0 +1,118 @@
+{
+  "schema_version": "1.0.0",
+  "fit_report_version": "phase_4_fit_report_skeleton.v1",
+  "preregistration_version": "phase_4_calibration_preregistration.v0.6-draft",
+  "walk_forward_diagnostics_version": "phase_4_walkforward_harness.v1",
+  "dataset_counts": {
+    "positive_y1": 3,
+    "negative_y1": 27,
+    "downward_mirror": 5,
+    "unevaluable": 0,
+    "total_evaluable": 30,
+    "unique_symbols": 33
+  },
+  "feasibility_gates": [
+    {
+      "gate_id": "F-1",
+      "description": "evaluable positives (Y_1 = 1 at horizon 1)",
+      "threshold": ">= 10",
+      "status": "EVALUATED",
+      "passed": false,
+      "observed": "3 positives < 10 required",
+      "inputs": {
+        "source": "tests/fixtures/research/phase_3b_research_dataset.json",
+        "mapping": "outcome_label SUBSTANTIAL_UPWARD_MOVE -> Y_1 = 1 (prereg §3)"
+      }
+    },
+    {
+      "gate_id": "F-2",
+      "description": "evaluable negatives (Y_1 = 0 at horizon 1)",
+      "threshold": ">= 10",
+      "status": "EVALUATED",
+      "passed": true,
+      "observed": "27 negatives >= 10 required",
+      "inputs": {
+        "source": "tests/fixtures/research/phase_3b_research_dataset.json",
+        "mapping": "outcome_label NO_SUBSTANTIAL_UPWARD_MOVE -> Y_1 = 0 (prereg §3)"
+      }
+    },
+    {
+      "gate_id": "F-3",
+      "description": "non-empty chronological evaluation folds (prereg §7)",
+      "threshold": ">= 2",
+      "status": "EVALUATED",
+      "passed": true,
+      "observed": "2 non-empty evaluation folds >= 2 required",
+      "inputs": {
+        "source": "reports/calibration/phase_4_walk_forward_plan.json"
+      }
+    },
+    {
+      "gate_id": "F-4",
+      "description": "owned forward-path data for any horizon k > 1 to be calibrated (O-1)",
+      "threshold": "owned multi-day forward paths for each calibrated horizon k > 1",
+      "status": "EVALUATED",
+      "passed": null,
+      "observed": "no owned multi-day forward-path data (O-1 open): horizons 3/5/10/20 stay RESEARCH_ONLY; only horizon 1 is directly supportable",
+      "inputs": {
+        "source": "tests/fixtures/research/*_outcome_observation.json (horizon=24_HOURS)",
+        "rule": "no backfill into unsupported horizons (prereg §2.3)"
+      }
+    }
+  ],
+  "horizon_coverage": [
+    {
+      "horizon_days": 1,
+      "owned_forward_path_data": true,
+      "slot_status": "RESEARCH_ONLY"
+    },
+    {
+      "horizon_days": 3,
+      "owned_forward_path_data": false,
+      "slot_status": "RESEARCH_ONLY"
+    },
+    {
+      "horizon_days": 5,
+      "owned_forward_path_data": false,
+      "slot_status": "RESEARCH_ONLY"
+    },
+    {
+      "horizon_days": 10,
+      "owned_forward_path_data": false,
+      "slot_status": "RESEARCH_ONLY"
+    },
+    {
+      "horizon_days": 20,
+      "owned_forward_path_data": false,
+      "slot_status": "RESEARCH_ONLY"
+    }
+  ],
+  "all_feasibility_gates_passed": false,
+  "verdict": "NOT_CALIBRATED",
+  "failing_gates": [
+    "F-1"
+  ],
+  "unevaluated_gates": [
+    "F-4"
+  ],
+  "research_only_retained": true,
+  "fit_attempted": false,
+  "fit_blocked_by": [
+    "O-2: regime cutpoints + purge/embargo addendum — reviewer confirmation pending",
+    "O-3: feature table addendum — reviewer confirmation pending",
+    "O-4: reference cost set addendum — owner confirmation pending",
+    "O-6: preregistration owner review (status -> approved or amended) pending",
+    "feasibility: F-1"
+  ],
+  "notes": [
+    "Feasibility gate(s) failed: F-1. The Phase 4 result is reported as NOT_CALIBRATED with the failing gate(s) named (preregistration §8.2); the evaluator's RESEARCH_ONLY slots are retained and nothing is force-flipped to CALIBRATED."
+  ],
+  "limitations": [
+    "HISTORICAL_CASE_BOUNDARIES_NOT_INDEPENDENT",
+    "DETECTION_EVALUABILITY_LIMITED",
+    "SINGLE_HORIZON_SUPPORTABLE_WHILE_O1_OPEN",
+    "COUNTERFACTUAL_EXPLORATION_ONLY",
+    "SMALL_SAMPLE_WARNING",
+    "REPORT_SKELETON_NO_FIT_NO_PROBABILITY"
+  ]
+}

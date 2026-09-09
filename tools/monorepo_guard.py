@@ -88,6 +88,13 @@ def validate_manifest_data(manifest: dict[str, Any]) -> list[str]:
             errors.append(f"{prefix}.source_policy must be unchanged")
         if not isinstance(project.get("source_remote"), str) or not project["source_remote"]:
             errors.append(f"{prefix}.source_remote is required")
+        overlay = project.get("snapshot_overlay")
+        if overlay is not None:
+            if not isinstance(overlay, list) or not all(
+                isinstance(item, str) and _relative_path(item) == item and item
+                for item in overlay
+            ):
+                errors.append(f"{prefix}.snapshot_overlay must be an array of relative paths")
 
     return errors
 
@@ -175,6 +182,81 @@ def _snapshot_entries(root: Path, snapshot_path: str) -> list[tuple[str, str]]:
     return entries
 
 
+def _snapshot_blob_map(root: Path, snapshot_path: str) -> dict[str, str]:
+    """Map snapshot-relative path -> blob SHA from the index (current state).
+
+    The index reflects the actual snapshot content whether or not a sync has
+    been committed yet; HEAD-based checks would falsely flag a staged sync.
+    """
+
+    prefix = snapshot_path.rstrip("/") + "/"
+    output = _git(root, "ls-files", "--cached", "-s", "-z", "--", snapshot_path)
+    result: dict[str, str] = {}
+    for entry in output.split("\0"):
+        if not entry:
+            continue
+        fields = entry.split("\t", maxsplit=1)
+        if len(fields) != 2:
+            continue
+        meta = fields[0].split()
+        if len(meta) != 3 or meta[0] == "160000":
+            continue
+        full_path = fields[1]
+        if full_path.startswith(prefix):
+            result[full_path[len(prefix):]] = meta[1]
+    return result
+
+
+def _path_blobs(output: str) -> list[tuple[str, str]]:
+    rows: list[tuple[str, str]] = []
+    for line in output.splitlines():
+        fields = line.split(maxsplit=3)
+        if len(fields) == 4 and fields[1] == "blob":
+            rows.append((fields[3], fields[2]))
+    return rows
+
+
+def _source_blob_map(source: Path, commit: str) -> dict[str, str]:
+    """Map child-relative path -> blob SHA for the tracked tree at a commit."""
+
+    return dict(_path_blobs(_source_git(source, "ls-tree", "-r", commit)))
+
+
+def validate_snapshot_parity(root: Path, project: dict[str, Any], source: Path) -> None:
+    """Require the snapshot to equal the child tracked tree at source_commit.
+
+    ``snapshot_overlay`` paths in the manifest are the only permitted
+    divergence: they may add, override, or remove snapshot content relative to
+    the child tree, and each declared path must exist in either the snapshot
+    or the child tree. Everything else must match exactly.
+    """
+
+    snapshot = _snapshot_blob_map(root, project["snapshot_path"])
+    child = _source_blob_map(source, project["source_commit"])
+    overlay = set(project.get("snapshot_overlay") or [])
+    problems: list[str] = []
+    for path, blob in sorted(child.items()):
+        if path in overlay:
+            continue
+        if path not in snapshot:
+            problems.append(f"missing from snapshot: {path}")
+        elif snapshot[path] != blob:
+            problems.append(
+                f"snapshot drift at {path}: snapshot content differs from child "
+                f"tree at {project['source_commit'][:12]}"
+            )
+    for path in sorted(snapshot):
+        if path not in child and path not in overlay:
+            problems.append(f"unexpected snapshot file not in child tree: {path}")
+    for path in sorted(overlay):
+        if path not in snapshot and path not in child:
+            problems.append(
+                f"declared snapshot overlay path exists in neither snapshot nor child tree: {path}"
+            )
+    if problems:
+        raise GuardError("snapshot parity failed:\n- " + "\n- ".join(problems[:25]))
+
+
 def _source_state(source: Path) -> tuple[str, str, str]:
     return (
         _source_git(source, "rev-parse", "--abbrev-ref", "HEAD"),
@@ -228,6 +310,7 @@ def validate_repository(root: Path, *, ci: bool = False, remote: bool = False) -
             )
         if not _git_succeeds(root, "check-ignore", "--", project["source_path"]):
             raise GuardError(f"original source must be ignored by parent: {project['source_path']}")
+        validate_snapshot_parity(root, project, source)
         if remote:
             _validate_remote_visibility(project)
     if remote:

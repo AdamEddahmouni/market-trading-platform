@@ -102,9 +102,9 @@
       "refs/remotes/origin/docs/imp-rebase-02-design": "bc04d5ec344162dcc91ddbe8a41be918f6ed7e69",
       "refs/remotes/origin/docs/imp-rebase-02-spec-review": "d899e211475f4b9372539944f997e13acbe3b73a",
       "refs/remotes/origin/docs/imp-rebase-02-standards": "b570faf01d57dd19171571bb91a94dfc8402820a",
-      "refs/remotes/origin/feat/equity-data-v1": "825dd8ba2afd31cc3fc9666adada95618cc74138",
+      "refs/remotes/origin/feat/equity-data-v1": "ad54fb8d5955b55456a23f4a6925a55465f47614",
       "refs/remotes/origin/feat/extended-hours-support": "5f18591beff950b8c418ee3e9bf427d8c10823ed",
-      "refs/remotes/origin/feat/governed-ticker-metadata-enrichment": "8afb11d814dabf31b22e643881fa1744ea61e85e",
+      "refs/remotes/origin/feat/governed-ticker-metadata-enrichment": "1398da3b5fc24ee9cd7608dd5ed8c2ff456779ed",
       "refs/remotes/origin/feat/mc16-multi-document-synthesis": "08e99c05e76f1b2d7470393b98751f152931a082",
       "refs/remotes/origin/feat/mc16-multi-document-synthesis-pr": "c2c0a719255117fe6f28b03cdf18734a2178ab9e",
       "refs/remotes/origin/feat/mixed-live-screener": "d675e94c8e3fc55c8dff6753380f31676e70e477",
@@ -115,8 +115,7 @@
       "refs/remotes/origin/feat/unify-paper-trading-chain": "368e64b8a589363ffcc256d41b0b32bf5aba142b",
       "refs/remotes/origin/fix/live-opend-not-installed": "c9ea9743d908c87e129e2583ae0a6070f996278c",
       "refs/remotes/origin/main": "3db07a558c739d54d1de64480ecc2db087397172",
-      "refs/remotes/origin/postroot-acceptance-suite": "269146409f5a23b89fe64f6adae9f0987b4704f0",
-      "refs/remotes/origin/pr12-merge": "32920584deac7141abc36603a8bdacbcc80d455a"
+      "refs/remotes/origin/postroot-acceptance-suite": "269146409f5a23b89fe64f6adae9f0987b4704f0"
     },
     "governed-ticker-metadata": {
       "refs/heads/backup/main-before-unified-integration-2026-09-02": "18582e8b767095c7e926429caa6d96f9b1f4353d",
@@ -220,9 +219,9 @@
       "refs/remotes/origin/docs/imp-rebase-02-design": "bc04d5ec344162dcc91ddbe8a41be918f6ed7e69",
       "refs/remotes/origin/docs/imp-rebase-02-spec-review": "d899e211475f4b9372539944f997e13acbe3b73a",
       "refs/remotes/origin/docs/imp-rebase-02-standards": "b570faf01d57dd19171571bb91a94dfc8402820a",
-      "refs/remotes/origin/feat/equity-data-v1": "825dd8ba2afd31cc3fc9666adada95618cc74138",
+      "refs/remotes/origin/feat/equity-data-v1": "ad54fb8d5955b55456a23f4a6925a55465f47614",
       "refs/remotes/origin/feat/extended-hours-support": "5f18591beff950b8c418ee3e9bf427d8c10823ed",
-      "refs/remotes/origin/feat/governed-ticker-metadata-enrichment": "8afb11d814dabf31b22e643881fa1744ea61e85e",
+      "refs/remotes/origin/feat/governed-ticker-metadata-enrichment": "1398da3b5fc24ee9cd7608dd5ed8c2ff456779ed",
       "refs/remotes/origin/feat/mc16-multi-document-synthesis": "08e99c05e76f1b2d7470393b98751f152931a082",
       "refs/remotes/origin/feat/mc16-multi-document-synthesis-pr": "c2c0a719255117fe6f28b03cdf18734a2178ab9e",
       "refs/remotes/origin/feat/mixed-live-screener": "d675e94c8e3fc55c8dff6753380f31676e70e477",
@@ -233,35 +232,41 @@
       "refs/remotes/origin/feat/unify-paper-trading-chain": "368e64b8a589363ffcc256d41b0b32bf5aba142b",
       "refs/remotes/origin/fix/live-opend-not-installed": "c9ea9743d908c87e129e2583ae0a6070f996278c",
       "refs/remotes/origin/main": "3db07a558c739d54d1de64480ecc2db087397172",
-      "refs/remotes/origin/postroot-acceptance-suite": "269146409f5a23b89fe64f6adae9f0987b4704f0",
-      "refs/remotes/origin/pr12-merge": "32920584deac7141abc36603a8bdacbcc80d455a"
+      "refs/remotes/origin/postroot-acceptance-suite": "269146409f5a23b89fe64f6adae9f0987b4704f0"
     },
     "parent": {
+      "refs/codex/turn-diffs/checkpoints/98486373e775c26b1c5fd644d110e37731f928079056bb52fa2280cfcb340c97/654f52dc5d4022f686ca8104e75d8b89b26e20c28da24c9d2f0d60a450088003/1788724225517/4c17bfe1-5dd7-4415-8163-fdd720dd3844": "refs/codex/turn-diffs/checkpoints/98486373e775c26b1c5fd644d110e37731f928079056bb52fa2280cfcb340c97/654f52dc5d4022f686ca8104e75d8b89b26e20c28da24c9d2f0d60a450088003/1788724225517/4c17bfe1-5dd7-4415-8163-fdd720dd3844^{commit}",
       "refs/heads/chore/import-short-squeeze-8a5e43e": "bd607766e65bb4c49bdfa96b4c1e3bb4392a1c1e",
       "refs/heads/chore/monorepo-guardrails": "f5cd46a4d5cc9652a58298e4fd8ea5cf2351d1fd",
       "refs/heads/chore/monorepo-history-audit": "970b5afe6fc6ca53c5550898a5cf494169aeb5c3",
-      "refs/heads/chore/sync-governed-equity-snapshots": "29c6a2fd6b66b675352467d5965f08b0fa3eab02",
+      "refs/heads/chore/sync-short-squeeze-governance": "5086d29229f93dcfe288b88c0d7f0ad7eca7b4c4",
+      "refs/heads/codex/imp-forensic-reconciliation": "d691050a6e68163fb77809b764f549331098b97e",
       "refs/heads/codex/market-trading-platform-monorepo": "b73150ffcc9ea3d134956f8a20ddb037237ba70c",
       "refs/heads/docs/readme-archived-child": "9d5824b3b7c008489d0d707d7c41beaf27e79adb",
       "refs/heads/feat/consolidate-child-repo": "cfdebaad014eea7370e8af45b2217d060accd8a5",
       "refs/heads/feat/rt01-paper-tracing-parent": "f995c2bf59f02beb49adcfe384d6c98f25496d1f",
+      "refs/heads/fix/pin-drift-canonical-squeeze-path": "c44ce27c867c4a7fde09df99e075f4350a5ed26d",
+      "refs/heads/hardening/o10-rate-and-gitignore": "7d8c60f1ae7cc5888dd37e03835f45eab8ab08a6",
+      "refs/heads/hardening/qh3-breeden-litzenberger": "797818e9c9662e866417e2c99c9ad0e2a034ddcc",
+      "refs/heads/hardening/sprint-1-3-honesty": "d691050a6e68163fb77809b764f549331098b97e",
       "refs/heads/hardening/strat-lane-ready": "9b197f7ddc9f437bf1dc81833a7fc88db12500ac",
-      "refs/heads/main": "1813aa2fb9aab731b4084db1f742f3baaa1a98f0",
-      "refs/remotes/origin/HEAD": "1813aa2fb9aab731b4084db1f742f3baaa1a98f0",
-      "refs/remotes/origin/chore/import-short-squeeze-8a5e43e": "bd607766e65bb4c49bdfa96b4c1e3bb4392a1c1e",
-      "refs/remotes/origin/docs/regenerate-history-ledger-20260905": "2f73608d67dfeba12bb7f9d326100cf9c2fbd9df",
-      "refs/remotes/origin/hardening/strat-lane-ready": "9b197f7ddc9f437bf1dc81833a7fc88db12500ac",
-      "refs/remotes/origin/main": "1813aa2fb9aab731b4084db1f742f3baaa1a98f0"
+      "refs/heads/main": "d691050a6e68163fb77809b764f549331098b97e",
+      "refs/heads/sync/imp-g0-g15-canonical": "b03f3abdd7775f1ea62c9bde5a037afefda5df9c",
+      "refs/remotes/origin/HEAD": "caa6fd5965c23337a862274b127d83e0d2cb6626",
+      "refs/remotes/origin/chore/sync-short-squeeze-governance": "5086d29229f93dcfe288b88c0d7f0ad7eca7b4c4",
+      "refs/remotes/origin/main": "caa6fd5965c23337a862274b127d83e0d2cb6626"
     },
     "short-squeeze": {
-      "refs/heads/fix/frozen-followups": "8c255d2f21b65c28cdf5569c861d0b09f55465ba",
+      "refs/heads/fix/frozen-followups": "9de7b2fc6d79513b5ea4d62151bdb76df2f6cfbe",
       "refs/heads/main": "78b7467b7d5f553b858a80c9024562283bae1d2a",
       "refs/heads/phase/3e-historical-acquisition": "ae1e9e45ac67dfc0131e6c1d17cb12a801eb8012",
       "refs/heads/phase/3e-stage2-outcome-acquisition": "9a426813e714b08fd4d3d75ff41e248bda5a0311",
       "refs/heads/phase/3e-systematic-historical-acquisition": "8ade7af49c77334208f027326254533f33320c8d",
-      "refs/remotes/origin/fix/frozen-followups": "8c255d2f21b65c28cdf5569c861d0b09f55465ba",
+      "refs/remotes/origin/HEAD": "78b7467b7d5f553b858a80c9024562283bae1d2a",
+      "refs/remotes/origin/fix/frozen-followups": "9de7b2fc6d79513b5ea4d62151bdb76df2f6cfbe",
       "refs/remotes/origin/main": "78b7467b7d5f553b858a80c9024562283bae1d2a",
-      "refs/remotes/origin/phase/3e-historical-acquisition": "ae1e9e45ac67dfc0131e6c1d17cb12a801eb8012"
+      "refs/remotes/origin/phase/3e-historical-acquisition": "ae1e9e45ac67dfc0131e6c1d17cb12a801eb8012",
+      "refs/remotes/origin/phase/3e-systematic-historical-acquisition": "2097f8d9c95043327331c7e4d493e9a607f9676a"
     }
   },
   "schema_version": 1

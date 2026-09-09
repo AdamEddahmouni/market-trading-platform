@@ -15,6 +15,16 @@ The full commit body and changed paths are preserved in the JSONL ledger.
 - Real-time auto-refresh with configurable intervals
 - Export, detail drawer, filter/sort with full fallback chain support
 - Archived project code and reconstruction documentation
+- `8de1c78a5558` — feat: complete research screener with live data, multi-provider enrichment, and Finviz discovery
+  - Author: AdamEddahmouni (2026-07-26T15:10:00-04:00)
+  - Rationale (commit-subject-and-body): - Scanner UI with FROZEN/LIVE mode toggle, classification legend, countdown timer
+- Multi-source fallback chains: price (IBKR → Finviz → Finnhub), change % (IBKR → Finviz → computed), rel volume (IBKR/Finviz → Finviz provider)
+- Finviz Elite screener as parallel discovery source alongside IBKR scanner
+- Live news feed from Finnhub News + SEC EDGAR with ticker classification filtering
+- Provider status bar showing IBKR, Finviz Elite, Finnhub, SEC EDGAR connectivity
+- Real-time auto-refresh with configurable intervals
+- Export, detail drawer, filter/sort with full fallback chain support
+- Archived project code and reconstruction documentation
 - `262e3f136c0d` — fix: bugs + strip verbose disclaimers + harden Railway deployment
   - Author: AdamEddahmouni (2026-07-26T15:35:09-04:00)
   - Rationale (commit-subject-and-body): - Fix _finviz_fields() overwriting float_shares metadata from short_pressure_fields()
@@ -25,6 +35,22 @@ The full commit body and changed paths are preserved in the JSONL ledger.
   app.js, __init__.py)
 - Harden railway.toml with explicit service config and health check timeout
 - Cloud mode verified: health/ready endpoints, frozen demo data all serving
+- `fb60e78d34c5` — fix: bugs + strip verbose disclaimers + harden Railway deployment
+  - Author: AdamEddahmouni (2026-07-26T15:35:09-04:00)
+  - Rationale (commit-subject-and-body): - Fix _finviz_fields() overwriting float_shares metadata from short_pressure_fields()
+- Fix provider_health() using global sentiment analyzer instead of runtime's
+- Fix test assertions for new FINVIZ_SCREENER discovery profile (5 profiles)
+- Strip verbose disclaimer/yapping text from 11 files (discovery, snapshot,
+  session_state, frozen, frozen_demo, api_contract, scanner.html, index.html,
+  app.js, __init__.py)
+- Harden railway.toml with explicit service config and health check timeout
+- Cloud mode verified: health/ready endpoints, frozen demo data all serving
+- `4570a81ca292` — feat: add root-level Railway deployment configuration
+  - Author: AdamEddahmouni (2026-07-26T15:38:32-04:00)
+  - Rationale (commit-subject-and-body): - Root railway.toml points to short-squeeze-core/Dockerfile
+- Root .railwayignore excludes non-deployment files
+- Cloud mode verified: health/ready endpoints, frozen demo serving
+- Railway auto-detects config, no dashboard setup needed beyond connecting repo
 - `5516c5392ad7` — feat: add root-level Railway deployment configuration
   - Author: AdamEddahmouni (2026-07-26T15:38:32-04:00)
   - Rationale (commit-subject-and-body): - Root railway.toml points to short-squeeze-core/Dockerfile
@@ -38,7 +64,20 @@ rendering, so the page shows data instantly (frozen demo) while live
 discovery runs in the background. Live data swaps in automatically when
 ready. Clean live-mode banner. Cloud deployments now go straight to the
 live scanner view with no frozen-first flicker.
+- `d864df537dbc` — fix: Railway root now renders live scanner — parallel frozen+live init
+  - Author: AdamEddahmouni (2026-07-26T15:42:57-04:00)
+  - Rationale (commit-subject-and-body): Reversed loadScanner() to try live discovery in parallel with frozen
+rendering, so the page shows data instantly (frozen demo) while live
+discovery runs in the background. Live data swaps in automatically when
+ready. Clean live-mode banner. Cloud deployments now go straight to the
+live scanner view with no frozen-first flicker.
 - `68550e9a4394` — docs: add Railway deploy button badge to README
+  - Author: AdamEddahmouni (2026-07-26T15:44:03-04:00)
+  - Rationale (commit-subject-and-body): Prominent one-click deploy button below the description so the
+professor can launch directly to Railway from the repo. Also
+expanded the Containers section with Railway-specific env vars
+and deployment notes.
+- `903755130843` — docs: add Railway deploy button badge to README
   - Author: AdamEddahmouni (2026-07-26T15:44:03-04:00)
   - Rationale (commit-subject-and-body): Prominent one-click deploy button below the description so the
 professor can launch directly to Railway from the repo. Also
@@ -54,11 +93,31 @@ to Railway on pushes to main:
 - Polls Railway GraphQL API every 30s tracking BUILDING/DEPLOYING/SUCCESS/FAILED
 - Surfaces build logs on failure and deployment URL on success
 - 10-minute timeout with ::error:: annotation
+- `dec04fc6402b` — feat: add Railway deploy CI workflow with source sync and deployment status polling
+  - Author: AdamEddahmouni (2026-07-26T17:26:45-04:00)
+  - Rationale (commit-subject-and-body): GitHub Actions workflow that auto-deploys short-squeeze-core/.railway-deploy/
+to Railway on pushes to main:
+- Triggers on changes to apps/, src/, scripts/, pyproject.toml, or .railway-deploy/
+- Rsyncs latest source into .railway-deploy/ before deploying
+- Runs `railway up --detach --environment production` for fast upload
+- Polls Railway GraphQL API every 30s tracking BUILDING/DEPLOYING/SUCCESS/FAILED
+- Surfaces build logs on failure and deployment URL on success
+- 10-minute timeout with ::error:: annotation
 - `43028c310df8` — chore: absorb short-squeeze-core nested repo into parent, remove duplicate .git/
   - Author: AdamEddahmouni (2026-07-26T17:35:56-04:00)
   - Rationale (commit-subject-and-body): The short-squeeze-core/ directory had its own .git/ making it an independent
 nested repository. This made it impossible to track changes from a single
 source and prevented CI workflows (e.g. Railway deploy) from seeing all files.
+- `8324204587d8` — chore: absorb short-squeeze-core nested repo into parent, remove duplicate .git/
+  - Author: AdamEddahmouni (2026-07-26T17:35:56-04:00)
+  - Rationale (commit-subject-and-body): The short-squeeze-core/ directory had its own .git/ making it an independent
+nested repository. This made it impossible to track changes from a single
+source and prevented CI workflows (e.g. Railway deploy) from seeing all files.
+- `64d8e875b9db` — feat: set GitHub commit status with Railway deploy URL on success
+  - Author: AdamEddahmouni (2026-07-26T17:37:59-04:00)
+  - Rationale (commit-subject-and-body): Adds a `permissions: statuses: write` block and a `gh api` call inside
+the SUCCESS polling case that annotates the commit with a direct link
+to the live Railway deployment, visible in the GitHub PR / commit list.
 - `78b38b7e8ba1` — feat: set GitHub commit status with Railway deploy URL on success
   - Author: AdamEddahmouni (2026-07-26T17:37:59-04:00)
   - Rationale (commit-subject-and-body): Adds a `permissions: statuses: write` block and a `gh api` call inside
@@ -70,6 +129,20 @@ to the live Railway deployment, visible in the GitHub PR / commit list.
 - deploy: depends on deploy-sync, installs Railway CLI if needed, runs
   `railway up --detach --environment production` mirroring the CI workflow
 - Both added to .PHONY and make help output
+- `dfd40c2a3f7e` — feat: add make deploy and make deploy-sync targets
+  - Author: AdamEddahmouni (2026-07-26T17:39:35-04:00)
+  - Rationale (commit-subject-and-body): - deploy-sync: rsyncs source directories into .railway-deploy/ (dry-run)
+- deploy: depends on deploy-sync, installs Railway CLI if needed, runs
+  `railway up --detach --environment production` mirroring the CI workflow
+- Both added to .PHONY and make help output
+- `93b1a90cb019` — docs: add Railway deploy workflow documentation
+  - Author: AdamEddahmouni (2026-07-26T17:41:11-04:00)
+  - Rationale (commit-subject-and-body): Covers the full CI/CD pipeline end-to-end:
+- How the GitHub Actions workflow works (sync, deploy, poll, commit status)
+- Prerequisites: creating a Railway deploy token and adding RAILWAY_TOKEN secret
+- Trigger paths and how to test a deploy locally via make deploy
+- Environment variables required at runtime
+- Troubleshooting common failures
 - `f31a5dfcb1b4` — docs: add Railway deploy workflow documentation
   - Author: AdamEddahmouni (2026-07-26T17:41:11-04:00)
   - Rationale (commit-subject-and-body): Covers the full CI/CD pipeline end-to-end:
@@ -83,6 +156,16 @@ to the live Railway deployment, visible in the GitHub PR / commit list.
   - Rationale (commit-subject-and-body): After a successful deploy, curls the /health endpoint with a retry loop
 (3 attempts × 10s timeout, 5s between retries) and fails the workflow
 if it doesn't return 200. Prevents deploying a broken container.
+- `f94bc482fba7` — feat: add post-deploy health check to Railway CI workflow
+  - Author: AdamEddahmouni (2026-07-26T17:46:05-04:00)
+  - Rationale (commit-subject-and-body): After a successful deploy, curls the /health endpoint with a retry loop
+(3 attempts × 10s timeout, 5s between retries) and fails the workflow
+if it doesn't return 200. Prevents deploying a broken container.
+- `535ce8d1530f` — chore: add **/.git/ to .gitignore to prevent future nested repos
+  - Author: AdamEddahmouni (2026-07-26T18:01:56-04:00)
+  - Rationale (commit-subject-and-body): The short-squeeze-core/ directory had its own .git/ making it an
+independent nested repository. The **/.git/ pattern prevents this
+from happening again by matching .git/ at any directory depth.
 - `a934dededd22` — chore: add **/.git/ to .gitignore to prevent future nested repos
   - Author: AdamEddahmouni (2026-07-26T18:01:56-04:00)
   - Rationale (commit-subject-and-body): The short-squeeze-core/ directory had its own .git/ making it an
@@ -92,15 +175,35 @@ from happening again by matching .git/ at any directory depth.
   - Author: AdamEddahmouni (2026-07-26T18:07:08-04:00)
   - Rationale (commit-subject-and-body): Adds `data/` (Chroma DB cache, brain index) and `*.log` (server startup logs)
 to the parent .gitignore so they no longer appear as untracked files in git status.
+- `7cd5d8c305da` — chore: gitignore *.log and data/ to keep generated runtime files out of version control
+  - Author: AdamEddahmouni (2026-07-26T18:07:08-04:00)
+  - Rationale (commit-subject-and-body): Adds `data/` (Chroma DB cache, brain index) and `*.log` (server startup logs)
+to the parent .gitignore so they no longer appear as untracked files in git status.
+- `01eecdfc63a1` — chore: gitignore docs/reconstruction/ — agent-generated reference docs
+  - Author: AdamEddahmouni (2026-07-26T18:08:26-04:00)
+  - Rationale (commit-subject-and-body): These reconstruction documents are useful for reference but should not
+be committed to the main repo history.
 - `ce2b60d32f67` — chore: gitignore docs/reconstruction/ — agent-generated reference docs
   - Author: AdamEddahmouni (2026-07-26T18:08:26-04:00)
   - Rationale (commit-subject-and-body): These reconstruction documents are useful for reference but should not
 be committed to the main repo history.
+- `d19d9ab664b9` — feat: add make tidy target for git garbage collection and cleanup
+  - Author: AdamEddahmouni (2026-07-26T18:09:38-04:00)
+  - Rationale (commit-subject-and-body): Runs `git gc --aggressive --prune=now` followed by `git remote prune origin`
+to compact the repository and remove stale remote-tracking branches.
 - `f02dcf828a9a` — feat: add make tidy target for git garbage collection and cleanup
   - Author: AdamEddahmouni (2026-07-26T18:09:38-04:00)
   - Rationale (commit-subject-and-body): Runs `git gc --aggressive --prune=now` followed by `git remote prune origin`
 to compact the repository and remove stale remote-tracking branches.
 - `8eaed57a5564` — feat: add make precommit and make install-hooks targets
+  - Author: AdamEddahmouni (2026-07-26T18:12:16-04:00)
+  - Rationale (commit-subject-and-body): - precommit: runs Python import checks on all key modules (config,
+  credentials, ibkr_gateway, __main__) and validates Makefile syntax
+  via `make help`, exits 1 on any failure
+- install-hooks: writes a .git/hooks/pre-commit script that cds to
+  the correct subdirectory and runs `make precommit` on every commit
+- Hook supports SKIP_CHECKS=1 env var and --no-verify to bypass
+- `e82ac4ee259a` — feat: add make precommit and make install-hooks targets
   - Author: AdamEddahmouni (2026-07-26T18:12:16-04:00)
   - Rationale (commit-subject-and-body): - precommit: runs Python import checks on all key modules (config,
   credentials, ibkr_gateway, __main__) and validates Makefile syntax
@@ -115,12 +218,30 @@ to compact the repository and remove stale remote-tracking branches.
   ibkr_gateway, __main__) — skips the `make help` syntax validation
 - precommit: now depends on precommit-quick, then runs `make help` check
 - Follows the same dependency pattern as deploy: deploy-sync
+- `8fc08dea1230` — feat: add make precommit-quick target for fast import-only checks
+  - Author: AdamEddahmouni (2026-07-26T18:15:23-04:00)
+  - Rationale (commit-subject-and-body): Refactors the precommit flow:
+- precommit-quick: runs Python import checks only (config, credentials,
+  ibkr_gateway, __main__) — skips the `make help` syntax validation
+- precommit: now depends on precommit-quick, then runs `make help` check
+- Follows the same dependency pattern as deploy: deploy-sync
+- `6c1c7f9d8257` — feat: add make test-quick target for fast import checks and smoke tests
+  - Author: AdamEddahmouni (2026-07-26T18:16:54-04:00)
+  - Rationale (commit-subject-and-body): Depends on precommit-quick (import checks), then runs pytest on the
+two fastest test files (test_serialization.py, test_contract_validation.py)
+for a rapid sanity check before pushing.
 - `a1eadd5c11bb` — feat: add make test-quick target for fast import checks and smoke tests
   - Author: AdamEddahmouni (2026-07-26T18:16:54-04:00)
   - Rationale (commit-subject-and-body): Depends on precommit-quick (import checks), then runs pytest on the
 two fastest test files (test_serialization.py, test_contract_validation.py)
 for a rapid sanity check before pushing.
 - `5486d03f3a1a` — feat: add pre-commit CI workflow for pull requests
+  - Author: AdamEddahmouni (2026-07-26T18:17:56-04:00)
+  - Rationale (commit-subject-and-body): Runs `make precommit` (Python import checks + Makefile validation) on
+every PR push touching apps/, src/, scripts/, pyproject.toml, or
+Makefile. Catches import errors and syntax issues before they merge
+to main.
+- `8ea057111e37` — feat: add pre-commit CI workflow for pull requests
   - Author: AdamEddahmouni (2026-07-26T18:17:56-04:00)
   - Rationale (commit-subject-and-body): Runs `make precommit` (Python import checks + Makefile validation) on
 every PR push touching apps/, src/, scripts/, pyproject.toml, or
@@ -133,6 +254,19 @@ before any outcome data access. Stage 1 constructs outcome-blind point-in-time
 evidence layers for the 13 registry-only Phase 3D pilot symbols using the
 authenticated IBKR connection and existing public provider adapters. Stage 2
 (outcome acquisition) requires a separate batch-level plan before execution.
+- `ae0eea24d560` — docs: preregister Phase 3E systematic historical evidence construction
+  - Author: AdamEddahmouni (2026-07-26T20:50:22-04:00)
+  - Rationale (commit-subject-and-body): Preregisters Phase 3E on branch phase/3e-systematic-historical-acquisition
+before any outcome data access. Stage 1 constructs outcome-blind point-in-time
+evidence layers for the 13 registry-only Phase 3D pilot symbols using the
+authenticated IBKR connection and existing public provider adapters. Stage 2
+(outcome acquisition) requires a separate batch-level plan before execution.
+- `56262cd67808` — docs: add Phase 3E evidence-readiness audit for 13 registry-only symbols
+  - Author: AdamEddahmouni (2026-07-26T20:55:21-04:00)
+  - Rationale (commit-subject-and-body): Audits all 13 Phase 3D pilot symbols (XNCR, PESI, SLS, ZNTL, GPRE, SSPC,
+LBGJ, TRVI, LMNX, MGNX, BHVN, OBE, AVTX) for Phase 3A evidence-domain
+availability. Identifies NORMALIZED_POINT_IN_TIME_EVIDENCE as the single
+critical blocker, with IBKR bar-semantics resolution as the dependency.
 - `c735a96a7f86` — docs: add Phase 3E evidence-readiness audit for 13 registry-only symbols
   - Author: AdamEddahmouni (2026-07-26T20:55:21-04:00)
   - Rationale (commit-subject-and-body): Audits all 13 Phase 3D pilot symbols (XNCR, PESI, SLS, ZNTL, GPRE, SSPC,
@@ -145,7 +279,21 @@ critical blocker, with IBKR bar-semantics resolution as the dependency.
 and timestamp_semantics (official IBKR documentation is silent on these fields).
 The existing intake contract treated any UNKNOWN as a fatal rejection, blocking
 the 13 Phase 3D detection-context CSVs from normalization.
+- `4ecde24875e8` — feat: accept honest UNKNOWN IBKR bar semantics with documented provenance (ADR 0066)
+  - Author: AdamEddahmouni (2026-07-26T21:06:56-04:00)
+  - Rationale (commit-subject-and-body): IBKR TRADES historical bars have honestly UNKNOWN volume_adjustment_semantics
+and timestamp_semantics (official IBKR documentation is silent on these fields).
+The existing intake contract treated any UNKNOWN as a fatal rejection, blocking
+the 13 Phase 3D detection-context CSVs from normalization.
 - `1fa2e4de04b0` — feat: normalize 13 IBKR detection-context CSVs through intake pipeline (ADR 0066)
+  - Author: AdamEddahmouni (2026-07-26T21:14:27-04:00)
+  - Rationale (commit-subject-and-body): All 13 Phase 3D pilot symbols' detection-context bar CSVs now pass the intake
+pipeline and reach READY_FOR_FUTURE_ASSOCIATION. The ColumnMappingProfile maps
+the IBKR CSV columns (timestamp_utc, open, high, low, close, volume, wap,
+requested_symbol). IntakeManifests declare price=SPLIT_ADJUSTED,
+volume=UNKNOWN, timestamp=UNKNOWN per ADR 0066, with provider_name="Interactive
+Brokers" triggering the IBKR-specific UNKNOWN acceptance.
+- `ef07236a9b2d` — feat: normalize 13 IBKR detection-context CSVs through intake pipeline (ADR 0066)
   - Author: AdamEddahmouni (2026-07-26T21:14:27-04:00)
   - Rationale (commit-subject-and-body): All 13 Phase 3D pilot symbols' detection-context bar CSVs now pass the intake
 pipeline and reach READY_FOR_FUTURE_ASSOCIATION. The ColumnMappingProfile maps
@@ -160,6 +308,22 @@ bars (via phase3a_freeze.evidence_adapter) with scanner-snapshot metadata
 (batch01_discovery_rows.json). Performs O(n²) conflict detection (~30-60s per
 symbol). Each bundle is saved incrementally to
 build/acquisition/evidence-bundles/{symbol}/ with resume support.
+- `3e902d0a7efe` — feat: add evidence-bundle construction script for 13 IBKR pilot symbols (Phase 3E Stage 1)
+  - Author: AdamEddahmouni (2026-07-26T21:41:40-04:00)
+  - Rationale (commit-subject-and-body): Constructs PointInTimeEvidenceBundles combining normalized detection-context
+bars (via phase3a_freeze.evidence_adapter) with scanner-snapshot metadata
+(batch01_discovery_rows.json). Performs O(n²) conflict detection (~30-60s per
+symbol). Each bundle is saved incrementally to
+build/acquisition/evidence-bundles/{symbol}/ with resume support.
+- `2097f8d9c950` — feat: add multiprocessing, profiling, and preflight-regeneration scripts — refs: `refs/remotes/origin/phase/3e-systematic-historical-acquisition`
+  - Author: AdamEddahmouni (2026-07-26T23:41:34-04:00)
+  - Rationale (commit-subject-and-body): - build_evidence_bundles.py: add parallel execution via ProcessPoolExecutor
+  (--workers/--sequential flags), per-phase timing instrumentation, stdout
+  capture to build-log.txt, and utf-8 encoding on all file writes
+- profile_avtx.py: cProfile-based profiling script to measure actual O(n²)
+  build_conflicts time per symbol
+- regenerate_preflight_reports.py: diagnostic script to re-run preflight
+  pipeline with current ADR 0066 IBKR exemption
 - `8ade7af49c77` — feat: add multiprocessing, profiling, and preflight-regeneration scripts — refs: `refs/heads/phase/3e-systematic-historical-acquisition`
   - Author: AdamEddahmouni (2026-07-26T23:41:34-04:00)
   - Rationale (commit-subject-and-body): - build_evidence_bundles.py: add parallel execution via ProcessPoolExecutor
@@ -358,10 +522,159 @@ lines so the Public Release Audit gate passes on the Phase 3E/3F PR.
 - `d520768f7f6f` — Merge pull request #1 from AdamEddahmouni/phase/3e-historical-acquisition
   - Author: AdamEddahmouni (2026-09-05T03:05:59-04:00)
   - Rationale (commit-subject-and-body): feat: complete Phase 3E/3F historical acquisition — Stage 2 outcomes, 29-symbol cohort expansion, calibration findings
-- `8c255d2f21b6` — test: align frozen-cohort tests with expanded cohort and add demo fallback — refs: `refs/heads/fix/frozen-followups`, `refs/remotes/origin/fix/frozen-followups`
+- `8c255d2f21b6` — test: align frozen-cohort tests with expanded cohort and add demo fallback
   - Author: AdamEddahmouni (2026-09-05T03:18:09-04:00)
   - Rationale (commit-subject-and-body): Retiring the stale local freeze surfaced five non-environmental failures
 that were miscategorized as private-data gaps:
-- `78b7467b7d5f` — Merge pull request #2 from AdamEddahmouni/fix/frozen-followups — refs: `refs/heads/main`, `refs/remotes/origin/main`
+- `78b7467b7d5f` — Merge pull request #2 from AdamEddahmouni/fix/frozen-followups — refs: `refs/heads/main`, `refs/remotes/origin/HEAD`, `refs/remotes/origin/main`
   - Author: AdamEddahmouni (2026-09-05T03:19:37-04:00)
   - Rationale (commit-subject-and-body): test: align frozen-cohort tests with expanded cohort and add demo research-summary fallback
+- `5d29b28fee11` — docs: fix broken doc links and add missing short-squeeze research docs
+  - Author: AdamEddahmouni (2026-09-05T10:47:59-04:00)
+  - Rationale (commit-subject-and-body): Repair case/ADT-path broken links in the docs tree, demote links to the
+archived phase-2c-design doc, and add the causal-research roadmap and
+provider capability gap analysis that the research spec links to.
+- `7e63c78c7638` — ci: add doc-link checker with heading-slug anchor validation
+  - Author: AdamEddahmouni (2026-09-05T10:48:03-04:00)
+  - Rationale (commit-subject-and-body): Gate every docs markdown link against target existence and GitHub-style
+heading slugs, fix the pre-existing broken links, and run the checker
+tests in precommit CI.
+- `a3f18ce8a2ba` — docs: add next full sprint plan for phases 4-7 close-out
+  - Author: AdamEddahmouni (2026-09-05T11:24:52-04:00)
+  - Rationale (commit-subject-and-body): Plan the causal short-squeeze lane completion: close-out of pending
+child-branch and snapshot sync, the batch07 fixture gap root-caused to
+cohort-expansion drift, walk-forward horizon calibration (Phase 4),
+exhaustion subsystem (Phase 5), live transition evidence (Phase 6), and
+capability/data expansion (Phase 7), with the 34-evaluable-label dataset
+decision recorded up front.
+- `2225181648bc` — test: regenerate batch07 fixtures for full 29-symbol frozen cohort
+  - Author: AdamEddahmouni (2026-09-05T11:24:56-04:00)
+  - Rationale (commit-subject-and-body): The Phase 3E/3F cohort expansion (commit 0b40834) grew FROZEN_COHORT to
+29 symbols, but the batch07 synthetic-batch05 request/artifact manifests
+and the committed operation-readiness golden report still described the
+original 13-symbol Batch 01 freeze, leaving 11 tests blocked. Mirror the
+KLRS/SG and BATCH3F0x rows from the batch08 29-symbol mirror into the
+batch07 manifests, regenerate the golden report, and assert case count
+against FROZEN_COHORT instead of the hardcoded 15.
+- `38beb46c44e6` — docs: close sprint items 0.3-0.4, refresh roadmap track D
+  - Author: AdamEddahmouni (2026-09-05T11:37:30-04:00)
+  - Rationale (commit-subject-and-body): Batch 07 operation-readiness is green against the 29-symbol synthetic
+mirror and the full-suite baseline now shows only the two environmental
+buckets (CI-baseline compatibility history, live IB Gateway), so track D
+drops the data-owner regeneration dependency for Batch 07/batch08/09.
+- `9edf5fc92cec` — docs: draft Phase 4 calibration preregistration (sprint 1.1)
+  - Author: AdamEddahmouni (2026-09-05T11:44:22-04:00)
+  - Rationale (commit-subject-and-body): Fix the dataset, outcome definition, model sequence, regime slices,
+purge/embargo rule, metric set, GameStop non-dominance rule, and
+success/failure thresholds before any Phase 4 fitting, modeled on the
+Phase 3F preregistration pattern. Counts are measured from committed
+fixtures; the 24h-only outcome horizon and the detection-evaluability
+limitation are recorded, and open items O-1..O-6 must be locked before
+fits start. The draft awaits owner review (not self-closed).
+- `2934a9a7cec1` — docs: reconcile registry accounting into one source of truth (O-5)
+  - Author: AdamEddahmouni (2026-09-05T11:55:53-04:00)
+  - Rationale (commit-subject-and-body): Measure the cohort counts from the committed fixtures and record the
+authoritative table in COHORT_EXPANSION_PROGRESS: the 43-entry registry
+is 31 historical case boundaries (29 symbols, BIYA x3) + 11 SYN
+evaluations + 1 KLOS blocked identity, with 35 outcome-observation files
+and 36 pipeline-registered boundaries incl. batch 05 (35 evaluable, AACP
+excluded). The earlier "34 evaluable" figure counted 30 prior + 4
+batch-05 before the Batch-04 BIYA-artifact outcome was regenerated into
+the fixture set; per-batch tables are marked as historical snapshots.
+Propagate the corrected numbers through the preregistration (O-5 closed,
+SYN count 9->11), roadmap, sprint plan, and gap analysis.
+- `c9611684cac1` — test: register batch-05 cases in the phase 3B registry fixture
+  - Author: AdamEddahmouni (2026-09-05T12:16:24-04:00)
+  - Rationale (commit-subject-and-body): Extend generate_phase_3b_anchors.py with _batch05_entries() so the
+committed phase_3b_case_registry includes the five Batch 05 external
+Finviz symbols (AACB/AACG/AACI/AACP/AADX) with their real committed
+boundary evaluations. AACP is registered EVALUATION_ONLY with no outcome
+file (permanent OUTCOME_UNEVALUABLE per AACP_OUTCOME_EXCLUSION_RECORD);
+the other four carry their committed outcome observations. Regenerate the
+Phase 3B/3C fixtures (registry 43->48 entries, 36 historical boundaries /
+34 unique symbols, dataset 46 rows) and align the analysis-test constants
+and the batch09 canonical registry SHA in the same change. Phase 3D
+fixture documents are unaffected (pilot migration covers a fixed subset).
+- `2e594ac8a1c7` — docs: re-measure reconciled accounting at the 48-entry registry (O-5)
+  - Author: AdamEddahmouni (2026-09-05T12:16:29-04:00)
+  - Rationale (commit-subject-and-body): The registry fixture now includes batch-05 (see fixture commit), so the
+single-source-of-truth table in COHORT_EXPANSION_PROGRESS and the
+preregistration dataset section move to the regenerated counts: 48
+registry entries = 36 historical case boundaries incl. batch 05 (34
+unique symbols, BIYA x3) + 11 SYN + 1 AACP evaluation-only + 1 KLOS
+blocked; 46 research-dataset rows; 35 outcome-observation files; 35
+evaluable Stage-2 labels; 1 permanent exclusion (AACP). Propagate the
+numbers through the roadmap, sprint plan, and gap analysis.
+- `bd5160a7950f` — docs: close spec/ADR audit gaps in the Phase 4 preregistration
+  - Author: AdamEddahmouni (2026-09-05T12:48:02-04:00)
+  - Rationale (commit-subject-and-body): Outcome-blind amendments after auditing against spec sections 9-13 and
+ADRs 0054/0067/0068: enumerate the horizon tuple (1,3,5,10,20) with the
+1-day horizon served by the owned 24h labels; pin the hazard event and
+right-censoring rule and the tree-variant margins (Brier skill >= +0.05,
+PR-AUC >= +0.05); add precision/recall and base-rate/imbalance reporting
+to the metric set; require ADR-0054 independence framing for boundary
+level intervals; state the retained detection predicate and rejected
+gate variants (ADR-0067) with the current 33/35 unevaluable measurement;
+forbid the occurrence_probability backfill into unsupported horizon
+slots; and add the ADR-0068 outcome-variant rejection and Adam deferral
+to the non-goals. Also removes a duplicated threshold row introduced by
+the O-5 table...
+- `ded889aae4ac` — docs: draft O-2 regime cutpoints and purge/embargo addendum
+  - Author: AdamEddahmouni (2026-09-05T12:59:30-04:00)
+  - Rationale (commit-subject-and-body): Outcome-blind addendum fixing the walk-forward design before any fit:
+exhaustive four-slice partition (pre-2020 / meme-regime / high-rate /
+post-normalization) cutpointed from the cited public calendar (SEC
+meme-stock staff report for the Jan-2021 episode, FOMC first-hike
+2022-03-16 and first-cut 2024-09-18), half-open UTC intervals with the
+cutpoint belonging to the later slice; purge 30 / embargo 15 calendar
+days sized against the longest pre-registered 20-trading-day horizon,
+with a re-derivation rule if O-1 extends horizons. No dataset timestamps
+or outcomes were inspected to choose the values. Link it from the
+preregistration sections 6/7 and O-2 (v0.3-draft, pending reviewer
+confirmation) and note it in the sprint plan.
+- `ee6cc8007db7` — docs: draft O-3 feature table addendum for the Phase 4 preregistration
+  - Author: AdamEddahmouni (2026-09-05T13:20:44-04:00)
+  - Rationale (commit-subject-and-body): Fixes the exact point-in-time feature list from the evaluator's evidence
+inputs before any fit: 25 rule outcomes, 14 evidence metrics, 28 snapshot
+fields, and 6 derived dimension scores, with fixed encodings and
+missingness indicators. Outcome-blind, drafted from committed contracts
+and boundary-evaluation fixtures only; pending reviewer confirmation.
+- `af196da1c644` — docs: draft O-4 reference cost set addendum for the Phase 4 preregistration
+  - Author: AdamEddahmouni (2026-09-05T13:27:58-04:00)
+  - Rationale (commit-subject-and-body): Fixes the owner-specified, not-tuned cost set for EV reporting before any
+fit: commission 0.50% + slippage 0.50% per side (round-trip 2.00%) for the
+long, 1x cash, <=24h reference position, with financing 0.00% and fixed EV
+expression plus reporting constraints. Outcome-blind, reporting-only.
+- `5881e81e5424` — docs: fix cross-addendum audit findings in Phase 4 preregistration docs
+  - Author: AdamEddahmouni (2026-09-05T13:44:30-04:00)
+  - Rationale (commit-subject-and-body): Corrects four consistency issues found by re-verifying every measured
+count against committed fixtures: §2.1 gains the research-dataset rows
+(46 / 44) matching the COHORT single source of truth; §2.3 cites the
+correct CASE_BOUNDARY confusion-matrix fixture (2 TP / 33 unevaluable /
+35) with the unique-symbol-level figure alongside; the O-2 re-derivation
+rule now reproduces the fixed purge/embargo values (w = horizon + 2);
+and the O-3 §6 claim is corrected to note EVIDENCE_VALIDITY meta-rules
+also carry PASS/FAIL. Outcome-blind, no fixture changes.
+- `4ab306ff3c54` — feat(calibration): add Phase 4 walk-forward scaffold with grouped folds and O-2 windows
+  - Author: AdamEddahmouni (2026-09-05T15:10:20-04:00)
+  - Rationale (commit-subject-and-body): Sprint item 1.2 (structure only, outcome-blind, no fitting): chronological
+symbol-grouped fold planning per ADR-0054, purge 30 / embargo 15 calendar
+days per the O-2 addendum, the four pre-registered regime slices, and the
+prereg §7 degeneracy gate — implemented in
+src/squeeze_core/calibration/walkforward.py with a CLI runner
+(tools/run_walk_forward_plan.py) emitting the plan + diagnostics under
+reports/calibration/, 20 unit/fixture tests, exports wired through the
+calibration package, and a harness doc. The committed 35-boundary cohort
+measures 2 non-empty evaluation folds (the §7 minimum) with 0 admissible
+training boundaries and 3 empty regimes; the finding is recorded honestly
+for item 1.3 — the outcome-blind windows are not relaxed to manufacture a
+fit, and the preregistration's fi...
+- `9de7b2fc6d79` — feat(calibration): add Phase 4 item 1.3 NOT_CALIBRATED fit-report skeleton — refs: `refs/heads/fix/frozen-followups`, `refs/remotes/origin/fix/frozen-followups`
+  - Author: AdamEddahmouni (2026-09-05T17:18:50-04:00)
+  - Rationale (commit-subject-and-body): Implements the reporting half of sprint 1.3 ahead of any fit so the fit
+attempt is ready the moment O-2/O-3/O-4/O-6 are confirmed: the preregistered
+F-1..F-4 feasibility ladder (prereg §8.1) runs over committed inputs
+(dataset labels via the prereg §3 Y_1 mapping; 1.2 walk-forward diagnostics
+as the F-3 input), and the honest NOT_CALIBRATED report is committed with
+the failing gate named — F-1 (3 positives < 10; F-2 27, F-3 2-fold pass,
+F-4 owner data-feasibility recorded passed=None under O-1).

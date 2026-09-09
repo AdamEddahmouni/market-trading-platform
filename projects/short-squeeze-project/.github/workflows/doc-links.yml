@@ -1,0 +1,42 @@
+# ──────────────────────────────────────────────────────────────────────
+#  Doc Link Check
+# ──────────────────────────────────────────────────────────────────────
+#  Fails whenever a link inside short-squeeze-core/docs/*.md points at a
+#  file that does not exist (or exists under a different case — CI is
+#  case-sensitive, Windows is not) or carries a #fragment that matches no
+#  heading slug in the target file (GitHub anchor rules).
+#
+#  Runs on every pull request and push to main because a broken link can
+#  be introduced by deleting/renaming any referenced file, not only by
+#  editing docs. The checker is stdlib-only, so no install step is
+#  required.
+# ──────────────────────────────────────────────────────────────────────
+
+name: Doc Link Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  doc-links:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run doc link check
+        working-directory: short-squeeze-core
+        run: python tools/check_doc_links.py docs
+
+      - name: Run doc link checker tests
+        working-directory: short-squeeze-core
+        run: python -m pytest tests/tools/test_doc_link_checker.py -q --tb=short --no-header

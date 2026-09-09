@@ -296,8 +296,8 @@ def test_market_bar_availability_rules_admissible(report):
 
 # --- Association / determinism ---------------------------------------------------------
 
-def test_fifteen_cases_in_source_order(report):
-    assert len(report.cases) == 15
+def test_cases_cover_frozen_cohort_in_source_order(report):
+    assert len(report.cases) == len(FROZEN_COHORT)
     assert [c.symbol for c in report.cases] == [sym for sym, _ in FROZEN_COHORT]
     assert [c.case_id for c in report.cases] == [cid for _, cid in FROZEN_COHORT]
 
