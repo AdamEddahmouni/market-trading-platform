@@ -1,4 +1,11 @@
 {
+  "supersession": {
+    "status": "SUPERSEDED",
+    "authorization_basis": "AUTHORIZATION BASIS SUPERSEDED",
+    "superseded_at": "2026-09-07",
+    "preserved_for": "HISTORICAL_PROVENANCE",
+    "reason": "Predates the professor's donor-identity correction (2026-08-28): Lucas Heller's GridIQ materials were not an intended donor. Native IMP implementations independently reimplemented from legitimate platform requirements remain valid; this gate record must not be used as authorization for future implementation."
+  },
   "artifact_type": "GRIDIQ_PORT_PHASE_GATE_RECORD",
   "created_at": "2026-08-16T04:30:00.000000000Z",
   "donor_logical_id": "PROTO-GRIDIQ-001",

@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0",
+  "report_type": "g15_validation_performance",
+  "classification": "G15_VALIDATION_PERFORMANCE_MEASURED",
+  "generated_at": "2026-09-09T21:30:00Z",
+  "baseline": {
+    "fast": {
+      "tests": 21,
+      "skipped": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 4.145
+    },
+    "full_pre_g15_reference": {
+      "tests": 4391,
+      "skipped": 48,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 588,
+      "source": "preflight evidence (approximate)"
+    },
+    "full_g15_closure": {
+      "tests": 4392,
+      "skipped": 48,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 539.013
+    },
+    "changed_g15_closure": {
+      "tests": 3857,
+      "skipped": 48,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 453.625
+    },
+    "e2e": {
+      "tests": 6,
+      "skipped": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 68.839
+    },
+    "frontend_vitest": {
+      "tests": 454,
+      "wall_seconds": null
+    }
+  },
+  "dominant_suite_timings_note": "FULL wall time dominated by platform, ui1, donor_bridge serial suites (~79-106s each pre-split evidence); unchanged in G15.",
+  "optimization_attempted": [
+    "E2e-only product_acceptance suite excluded from FAST, FULL, and CHANGED tiers",
+    "Playwright/npm stdout captured to .local/e2e/playwright.log so validation worker JSON stays parseable",
+    "CHANGED excludes e2e-exclusive suites even when their tests are dirty"
+  ],
+  "coverage_comparison": {
+    "starting_full_tests": 4391,
+    "closing_full_tests": 4392,
+    "delta": "+1 (G14 route-ref resolution unit test in cross_lane)",
+    "e2e_tests_separate": 6,
+    "coverage_reduced": false
+  }
+}

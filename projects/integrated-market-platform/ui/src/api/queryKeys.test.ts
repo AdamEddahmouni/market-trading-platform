@@ -9,12 +9,6 @@ describe("queryKeys account isolation", () => {
       "squeeze",
       "fp-canary-local",
     ]);
-    expect(queryKeys.liveCanarySnapshot("portfolio", "fp-canary-alt")).toEqual([
-      "live",
-      "canary-snapshot",
-      "portfolio",
-      "fp-canary-alt",
-    ]);
   });
 
   it("keeps distinct account keys for the same lane", () => {
@@ -23,28 +17,20 @@ describe("queryKeys account isolation", () => {
     expect(local).not.toEqual(alt);
   });
 
-  it("keeps distinct lane keys from legacy unscoped canary key", () => {
-    const legacy = ["canary-snapshot"];
-    expect(queryKeys.liveCanarySnapshot("account")).not.toEqual(legacy);
-  });
-
   it("isolates demo and paper portfolio keys", () => {
     expect(queryKeys.demoPortfolio).toEqual(["demo", "portfolio"]);
     expect(queryKeys.paperPortfolio).toEqual(["paper", "portfolio"]);
     expect(queryKeys.demoPortfolio).not.toEqual(queryKeys.paperPortfolio);
   });
 
-  it("scopes live reconciliation by account", () => {
-    expect(queryKeys.liveCanaryReconciliation("fp-canary-local")).toEqual([
-      "live",
-      "canary-reconciliation",
-      "fp-canary-local",
-    ]);
-  });
-
   it("preserves workspace symbol isolation", () => {
     expect(queryKeys.workspaceSqueeze("BIYA", "frozen")).not.toEqual(
       queryKeys.workspaceSqueeze("AAPL", "frozen"),
     );
+  });
+
+  it("aligns G14 product keys with canonical compact helpers", () => {
+    expect(queryKeys.optionsProduct("AAPL", "PAPER")).toEqual(["op", "AAPL", "PAPER", "u", "fixture"]);
+    expect(queryKeys.futuresProduct("ES202512", "PAPER")).toEqual(["fp", "ES202512", "PAPER", "u", "fixture"]);
   });
 });

@@ -66,7 +66,21 @@ class UiApiHandler(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args: object) -> None:
         return
 
-    def _send_json(self, payload: dict[str, Any], *, status: HTTPStatus = HTTPStatus.OK) -> None:
+    _DEPRECATED_GET_ROUTES: dict[str, str] = {
+        "/paper/account": "/paper/portfolio",
+        "/paper/positions": "/paper/portfolio",
+        "/paper/fills": "/paper/portfolio",
+        "/paper/risk": "/paper/portfolio",
+        "/capabilities": "/context",
+    }
+
+    def _send_json(
+        self,
+        payload: dict[str, Any],
+        *,
+        status: HTTPStatus = HTTPStatus.OK,
+        deprecated_successor: str | None = None,
+    ) -> None:
         try:
             assert_no_secrets_in_payload(payload)
         except Exception as exc:
@@ -82,6 +96,10 @@ class UiApiHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Access-Control-Allow-Origin", "*")
+        if deprecated_successor:
+            self.send_header("Deprecation", "true")
+            self.send_header("Link", f'<{deprecated_successor}>; rel="successor-version"')
+            self.send_header("X-IMP-Deprecated-Route", "true")
         self.end_headers()
         self.wfile.write(body)
 
@@ -207,6 +225,14 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 query_text = (query.get("q") or [""])[0]
                 self._send_json(live_projections.build_symbol_search_payload(str(query_text)))
                 return
+            if path == "/instruments/search":
+                query_text = str((query.get("q") or [""])[0])
+                limit_raw = (query.get("limit") or [None])[0]
+                limit = int(limit_raw) if limit_raw else 25
+                from .instrument_selector import build_selector_search_payload
+
+                self._send_json(build_selector_search_payload(query_text, limit=limit))
+                return
             if path.startswith("/instruments/") and path.endswith("/capabilities"):
                 instrument_id = path.removeprefix("/instruments/").removesuffix("/capabilities")
                 try:
@@ -233,7 +259,8 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     {
                         "as_of_context": projections.build_as_of_context(self.store),
                         "capability_states": projections.build_capabilities(self.store),
-                    }
+                    },
+                    deprecated_successor="/context",
                 )
                 return
             if path == "/attention":
@@ -449,6 +476,56 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     )
                 )
                 return
+            if path.startswith("/workspace/") and path.endswith("/options-product"):
+                instrument_ref = path.removeprefix("/workspace/").removesuffix("/options-product").strip("/")
+                if not instrument_ref:
+                    self._send_error_json(
+                        "UI_REQUEST_INVALID",
+                        "workspace options-product instrument is required",
+                        status=HTTPStatus.BAD_REQUEST,
+                    )
+                    return
+                mode = str((query.get("mode") or ["PAPER"])[0]).upper()
+                account_id = str((query.get("account_id") or [""])[0]).strip() or None
+                from .g14_product_projections import build_options_product_payload
+
+                try:
+                    self._send_json(
+                        build_options_product_payload(
+                            self.store,
+                            instrument_ref,
+                            mode=mode,
+                            account_id=account_id,
+                        )
+                    )
+                except ValueError as exc:
+                    self._send_error_json("UI_INSTRUMENT_NOT_FOUND", str(exc), status=HTTPStatus.NOT_FOUND)
+                return
+            if path.startswith("/workspace/") and path.endswith("/futures-product"):
+                instrument_ref = path.removeprefix("/workspace/").removesuffix("/futures-product").strip("/")
+                if not instrument_ref:
+                    self._send_error_json(
+                        "UI_REQUEST_INVALID",
+                        "workspace futures-product instrument is required",
+                        status=HTTPStatus.BAD_REQUEST,
+                    )
+                    return
+                mode = str((query.get("mode") or ["PAPER"])[0]).upper()
+                account_id = str((query.get("account_id") or [""])[0]).strip() or None
+                from .g14_product_projections import build_futures_product_payload
+
+                try:
+                    self._send_json(
+                        build_futures_product_payload(
+                            self.store,
+                            instrument_ref,
+                            mode=mode,
+                            account_id=account_id,
+                        )
+                    )
+                except ValueError as exc:
+                    self._send_error_json("UI_INSTRUMENT_NOT_FOUND", str(exc), status=HTTPStatus.NOT_FOUND)
+                return
             if path.startswith("/workspace/") and path.endswith("/options"):
                 symbol = path.removeprefix("/workspace/").removesuffix("/options").strip("/")
                 if not symbol:
@@ -614,13 +691,22 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(canary_projections.build_canary_deployment_payload())
                 return
             if path == "/paper/account":
-                self._send_json(paper_projections.build_paper_account_payload(self.store))
+                self._send_json(
+                    paper_projections.build_paper_account_payload(self.store),
+                    deprecated_successor="/paper/portfolio",
+                )
                 return
             if path == "/paper/positions":
-                self._send_json(paper_projections.build_paper_positions_payload(self.store))
+                self._send_json(
+                    paper_projections.build_paper_positions_payload(self.store),
+                    deprecated_successor="/paper/portfolio",
+                )
                 return
-            if path == "/paper/orders":
-                self._send_json(paper_projections.build_paper_orders_payload(self.store))
+            if path == "/paper/orders" and self.command == "GET":
+                self._send_json(
+                    paper_projections.build_paper_orders_payload(self.store),
+                    deprecated_successor="/paper/portfolio",
+                )
                 return
             if path == "/paper/order-history":
                 query = parse_qs(parsed.query)
@@ -636,10 +722,16 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 )
                 return
             if path == "/paper/fills":
-                self._send_json(paper_projections.build_paper_fills_payload(self.store))
+                self._send_json(
+                    paper_projections.build_paper_fills_payload(self.store),
+                    deprecated_successor="/paper/portfolio",
+                )
                 return
             if path == "/paper/risk":
-                self._send_json(paper_projections.build_paper_risk_payload(self.store))
+                self._send_json(
+                    paper_projections.build_paper_risk_payload(self.store),
+                    deprecated_successor="/paper/portfolio",
+                )
                 return
             if path == "/paper/portfolio":
                 query = parse_qs(parsed.query)
@@ -940,6 +1032,24 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     code = "PAPER_ORDER_CANCEL_NOT_SUPPORTED"
                 elif "NOT_FOUND" in str(exc):
                     code = "PAPER_ORDER_NOT_FOUND"
+                self._send_error_json(code, str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+
+        if path == "/paper/orders/replace":
+            try:
+                with LEDGER_ROUTE_LOCK:
+                    payload = paper_projections.replace_paper_order(self.store, body)
+                self._send_json(payload)
+            except ValueError as exc:
+                code = "PAPER_ORDER_REPLACE_FAILED"
+                if "NOT_AUTHORIZED" in str(exc):
+                    code = "PAPER_EXECUTION_NOT_AUTHORIZED"
+                elif "NOT_SUPPORTED" in str(exc):
+                    code = "PAPER_ORDER_REPLACE_NOT_SUPPORTED"
+                elif "NOT_FOUND" in str(exc):
+                    code = "PAPER_ORDER_NOT_FOUND"
+                elif "BELOW_FILLED" in str(exc):
+                    code = "PAPER_ORDER_REPLACE_BELOW_FILLED"
                 self._send_error_json(code, str(exc), status=HTTPStatus.BAD_REQUEST)
             return
 

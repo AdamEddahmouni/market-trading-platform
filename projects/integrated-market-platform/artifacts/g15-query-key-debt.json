@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "report_type": "g15_query_key_debt",
+  "bl_0701_status": "DEFERRED",
+  "reason": "Production bundle at 202.92 KiB gzip against 203.00 KiB budget; broad lane query-key migration deferred per G14 exception.",
+  "legacy_lane_keys": [
+    {
+      "key": "workspace squeeze lane",
+      "factory": "queryKeys.workspaceSqueeze(symbol)",
+      "missing_dimensions": ["mode", "account_id", "provider"],
+      "callers": ["ui/src/api/hooks.ts", "workspace lane observability components"]
+    },
+    {
+      "key": "workspace options lane",
+      "factory": "queryKeys.workspaceOptions(symbol)",
+      "missing_dimensions": ["mode", "account_id"],
+      "callers": ["ui/src/api/hooks.ts", "OptionsWorkspaceObservability"]
+    },
+    {
+      "key": "workspace futures lane",
+      "factory": "queryKeys.workspaceFutures(symbol)",
+      "missing_dimensions": ["mode", "account_id"],
+      "callers": ["ui/src/api/hooks.ts", "FuturesWorkspaceObservability"]
+    }
+  ],
+  "g15_fixes": [
+    "OrderTicket submit now forwards preview_id (zero bundle impact)"
+  ],
+  "migration_risk": "HIGH — touches shared hooks.ts and every lane observability module; likely bundle growth from expanded key factories.",
+  "e2e_evidence": "Mode isolation browser tests prove stale-state safety while BL-0701 remains open."
+}

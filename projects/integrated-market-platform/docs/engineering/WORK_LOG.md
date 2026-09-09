@@ -1,5 +1,15 @@
 # IMP Work Log
 
+> **Donor-era entries: SUPERSEDED — HISTORICAL · AUTHORIZATION BASIS SUPERSEDED**
+>
+> Entries from the donor era (2026-08-14 through the correction) predate the
+> professor's donor-identity correction (2026-08-28): Lucas Heller's DS-340W
+> and GridIQ materials were **not** intended donor sources for this platform.
+> Any native IMP implementation independently reimplemented from a legitimate
+> platform requirement remains valid. Donor-era entries are preserved for
+> provenance only and must not be used as authorization for future
+> implementation.
+
 Chronological record of implementation work on the Integrated Market Platform. Agents and contributors **must append an entry here automatically** after completing substantive changes — no user prompt required (see [AGENTS.md](../../AGENTS.md) and `.cursor/rules/work-logging.mdc`, `alwaysApply: true`).
 
 ## How to add an entry
@@ -25,6 +35,261 @@ For large features, also add or update a completion note under `docs/superpowers
 ---
 
 ## Entries
+
+## 2026-09-09 — G15 product acceptance (browser E2E, validation perf, archive-first deprecation)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `e2e`, `validation`, `ui_api`, `docs` |
+| **Summary** | Playwright product-acceptance harness (equity/derivative Paper, isolation, routing, live safety); `validate e2e` gate; route-ref resolver for product APIs; dead-route census + deprecation headers; FULL **4392/48/0/0**. |
+| **Key files** | `tools/e2e/harness.py`, `e2e/tests/*.spec.ts`, `tools/validate.py`, `ui_api/instrument_selector.py`, `artifacts/g15-validation-performance.json`, `docs/audits/imp-reconciliation/14m-g15-current-state-matrix.md` |
+
+## 2026-09-09 — G14 Wave 7 product convergence (selector, query keys, Options/Futures surfaces)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/api`, `ui/options`, `ui/futures`, `ui_api`, `cross_lane`, `docs/audits` |
+| **Summary** | Delivered canonical multi-asset instrument selector (`/instruments/search`), deterministic route codec, G14 Options/Futures product API surfaces backed by G12 runtime + G13 CanonicalPortfolio truth, frontend query-key factory with isolation tests, and product UI layers on Options/Futures workspace routes. Legacy whale research lanes preserved; Live execution remains blocked. |
+| **Key files** | `ui_api/instrument_selector.py`, `ui_api/g14_product_projections.py`, `ui_api/instrument_route_codec.py`, `ui/src/api/queryKeyFactory.ts`, `ui/src/components/instrument-selector/CanonicalInstrumentSelector.tsx`, `ui/src/components/options/OptionsProductSurface.tsx`, `ui/src/components/futures/FuturesProductSurface.tsx`, `tests/cross_lane/test_g14_product_convergence.py`, `docs/audits/imp-reconciliation/14l-g14-current-state-matrix.md` |
+| **Tests** | Backend G14: 11/11; frontend G14 focused: 16/16; FAST 21/0/0/0; CHANGED 3856/48/0/0; FULL **4391**/48/0/0 (+11); UI typecheck pass; build pass (202.87 KiB gzip) |
+| **Related** | G13 baseline; `14l-g14-current-state-matrix.md`; RC-010/RC-011 partial closure |
+| **Notes** | Legacy `queryKeys.workspace*` symbol keys retained for equity lanes; G14 product keys use factory. Selector mounted on Options/Futures modules (lazy). Full audit doc sweep deferred to follow-up commit. |
+
+## 2026-09-09 — G14 closure validation pass (query-key wiring, preview panel, audit sweep)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete_with_explicit_exception` |
+| **Area** | `ui/api`, `ui/options`, `ui/futures`, `ui/shared`, `docs/audits` |
+| **Summary** | Second pass: wired compact G14 query keys in hooks + invalidation; integrated `DerivativePaperPreviewPanel` on product surfaces; restored global lazy selector on `InstrumentSelectionEmpty`; route encoding fixes; audit doc sweep (00/12/15/16/18). |
+| **Key files** | `ui/src/api/hooks.ts`, `ui/src/api/canonicalQueryKey.ts`, `ui/src/components/paper-derivative/DerivativePaperPreviewPanel.tsx`, `ui/src/components/shared/InstrumentSelectionEmpty.tsx`, `docs/audits/imp-reconciliation/{00-program-state,12-master-backlog,15-validation-evidence,16-root-cause-register,18-completion-scorecard}.md` |
+| **Tests** | Backend G14 **11/11**; CHANGED **3856/48/0/0**; FULL **4391/48/0/0**; UI typecheck pass; build **202.91 KiB gzip** |
+| **Related** | `14l-g14-current-state-matrix.md`; RC-011 partial (product keys only) |
+| **Notes** | Workspace lane query keys remain legacy for bundle/equity parity. Live execution blocked. |
+
+## 2026-09-09 — G14 final closure (FULL green, route codec sweep)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete_with_explicit_exception` |
+| **Area** | `ui/discover`, `ui/live`, `ui/paper-now`, `ui/workspace-module-shared`, `docs/platform` |
+| **Summary** | FULL **4391/48/0/0** confirmed; extended `workspacePathForInstrument` to primary shell navigation (Discover, Live, Paper Now, lane shells); classified G14 **COMPLETE_WITH_EXPLICIT_EXCEPTION** (legacy lane query keys + whale research lanes retained). |
+| **Key files** | `DiscoverObservability.tsx`, `LiveSymbolLookup.tsx`, `LiveObservationalPanel.tsx`, `PaperNowPage.tsx`, `WorkspaceModuleModeShell.tsx`, `LaneModeContextPanel.tsx`, `buildLaneModeContent.ts`, `PROGRAM_STATUS.md`, `00-program-state.md` |
+| **Tests** | Backend G14 **11/11**; frontend G14 **24/24**; UI typecheck pass; build **202.92 KiB gzip** |
+| **Related** | [14l-g14-current-state-matrix](../../audits/imp-reconciliation/14l-g14-current-state-matrix.md) |
+| **Notes** | RC-011 lane-key migration deferred (BL-0701). Live execution blocked. |
+
+## 2026-09-09 — G13 closure validation (FULL green, Wave 7 readiness)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper`, `trading_correctness`, `docs/audits` |
+| **Summary** | Closure pass: verified 25 G13 acceptance invariants against implementation; reran FAST/CHANGED/FULL and affected domain suites; reconciled test delta +25 (4355→4380); updated audit closure docs; classified margin authority (`MARGIN_INFRASTRUCTURE_COMPLETE` YES, `BROKER_MARGIN_MODEL_AVAILABLE` NO/LIMITED); decided **WAVE_7_READY**. |
+| **Key files** | `docs/audits/imp-reconciliation/{00-program-state,14k-g13-current-state-matrix,15-validation-evidence}.md`, `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | G13 **25/0/0/0**; equity parity **7/0/0/0**; preview binding **10/0/0/0**; portfolio **136/0/0/0**; trading_correctness **147/0/0/0**; futures **65/0/0/0**; xa01 **72/0/0/0**; platform **474/2/0/0**; options domain **783/11/0/0**; FAST **21/0/0/0**; CHANGED **3845/48/0/0**; FULL **4380/48/0/0** |
+| **Related** | [14k-g13-current-state-matrix](../../audits/imp-reconciliation/14k-g13-current-state-matrix.md), [15-validation-evidence](../../audits/imp-reconciliation/15-validation-evidence.md) G13 section |
+| **Notes** | G14 not started. Performance artifact: `artifacts/g13-runtime-performance.json`. ES margin via `FixtureFuturesMarginProvider` — not live broker margin. |
+
+## 2026-09-09 — G13 closure increment (futures lifecycle, margin preview binding)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper`, `trading_correctness`, `docs/audits` |
+| **Summary** | Closed remaining G13 gaps: futures partial/replace/cancel lifecycle proven; `margin_facts_revision` bound into preview verify (`PREVIEW_MARGIN_STALE`); futures replace recheck uses margin facts not full notional; settlement-currency fail-closed tests for options/futures. |
+| **Key files** | `paper/preview.py`, `paper/execution.py`, `tests/trading_correctness/test_g13_paper_derivatives.py`, `docs/audits/imp-reconciliation/14k-g13-current-state-matrix.md` |
+| **Tests** | G13 focused **23/0/0/0**; CHANGED **3843/48/0/0**; FULL **4378/48/0/0** |
+| **Related** | [14k-g13-current-state-matrix](../../audits/imp-reconciliation/14k-g13-current-state-matrix.md) |
+| **Notes** | UI `paper_projections` margin_facts wiring and performance evidence still deferred. Wave 7 NOT_READY. |
+
+## 2026-09-09 — G13 canonical multi-asset Paper execution (options/futures)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper`, `portfolio`, `risk`, `trading_correctness`, `docs/audits` |
+| **Summary** | Wired option and futures Paper fills through one canonical path (`portfolio/paper_fill.py` → `CanonicalPortfolio`) with explicit `MarginRequirementFacts` admission for futures (fail-closed without facts; no invented brokerage formulas). Option premium uses contracts×price×multiplier; futures debit margin not full notional. Legacy equity Paper ledger parity preserved; `options_ledger` remains non-authoritative. |
+| **Key files** | `risk/margin_facts.py`, `portfolio/paper_fill.py`, `paper/ledger.py`, `paper/execution.py`, `risk/pretrade.py`, `tests/trading_correctness/test_g13_paper_derivatives.py`, `docs/audits/imp-reconciliation/14k-g13-current-state-matrix.md` |
+| **Tests** | FAST 21/0/0/0; G13 focused 16/0/0/0; FINAL FULL **4371/48/0/0** (+16 from 4355); ibkr canary safety fixed (probe_loopback mock) |
+| **Related** | [14k-g13-current-state-matrix](../../audits/imp-reconciliation/14k-g13-current-state-matrix.md) |
+| **Notes** | MARGIN_INFRASTRUCTURE_COMPLETE; BROKER_MARGIN_MODEL_UNAVAILABLE. Option partial/replace/cancel proven; futures replace/cancel deferred. Crypto secondary. Wave 7 NOT_READY. |
+
+## 2026-09-09 — G12 post-IBKR multi-asset runtime completion
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `cross_lane`, `providers`, `docs/audits` |
+| **Summary** | Closed G12 by isolating IBKR L2/TRADES entitlement limits from software backlog, correcting L1 delayed-vs-realtime capability wording, and adding one canonical multi-asset runtime projection path (`multi_asset_runtime.py`) over XA-01 identity, G7 observational lanes, G2/G4 valuation, and G3 fail-closed risk probes. Futures and options are first-priority runtime domains; crypto/bond/commodity semantics preserved. |
+| **Key files** | `src/market_platform_foundation/cross_lane/runtime_status.py`, `cross_lane/multi_asset_runtime.py`, `tests/cross_lane/test_g12_multi_asset_runtime.py`, `tools/ibkr/canary.py`, `docs/audits/imp-reconciliation/14j-g12-current-state-matrix.md`, `g11-live-capability-evidence.json` |
+| **Tests** | FAST 21/0/0/0; focused G12 25/0/0/0; CHANGED 3820/48/0/0; FULL **4355/48/0/0** (+25 from 4330) |
+| **Related** | [14j-g12-current-state-matrix](../../audits/imp-reconciliation/14j-g12-current-state-matrix.md), G11.1 live evidence |
+| **Notes** | Frontend not touched; futures margin, crypto observational lane, bond execution, and Wave 7 instrument selector remain deferred. L2/TRADES are external entitlement limits only. |
+
+## 2026-09-09 — G11.1 IBKR live Gateway verification and false-blocker correction
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tools/ibkr`, `providers/live_evidence`, audits |
+| **Summary** | Ran bounded read-only live canary against open loopback Gateway (`127.0.0.1:4001`); corrected conflation of `IMP_IBKR_LIVE` unset with `ENVIRONMENT_UNAVAILABLE`; added per-capability live evidence application to `RuntimeCapabilityRegistry`; verified contract/historical/account/L1 live; L2/TRADES `LIVE_CONNECTED_NOT_ENTITLED` (IBKR 10092/10189). Execution boundary unchanged. |
+| **Key files** | `tools/ibkr/canary.py`, `src/.../providers/live_evidence.py`, `src/.../providers/runtime_capability.py`, `tests/providers/test_g111_live_evidence.py`, `tests/ibkr/test_g11_canary_safety.py`, `tests/ibkr/test_safety.py`, `docs/audits/imp-reconciliation/14i-g11-live-verification-matrix.md`, `g11-live-*-evidence.json` |
+| **Tests** | G11.1 focused 7/0/0; starting FULL **4326/48/0/0**; final FULL **4330/48/0/0** (+4); CHANGED **3791/48/0/0** |
+| **Related** | [14i-g11-live-verification-matrix.md](../../audits/imp-reconciliation/14i-g11-live-verification-matrix.md) |
+| **Notes** | Root cause: `SAFETY_GATE_STATE_MISCLASSIFIED_AS_PROVIDER_ENVIRONMENT_STATE`. Requires `ib_insync` in venv for live canary. L2 depth + tick-by-tick need IBKR market-data subscriptions. |
+
+## 2026-09-09 — G11 IBKR read-only query surface convergence + verification harness
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers/ibkr_observational`, `market_data`, `tools/ibkr`, `tests`, `docs/audits` |
+| **Summary** | G11 converged IBKR read-only query surfaces through injected outer provider boundary: `IbkrReadOnlyQueryProvider` protocol + `IbkrObservationalQueryService` (contract/secdef, historical bars, read-only account observation) with XA-01 admission, capability gating, capture/replay, and composition attach via `ibkr_query_bridge.py`. Outer `tools/ibkr/query_provider.py` adapts REST/TWS clients; registration via `runtime_bootstrap.py` only (G8 boundary fix removing foundation import from query_provider). Bounded live canary harness (`tools/ibkr/canary.py`) fail-closed. G10 depth TTL + G9 CVD preserved. LIVE_PROVIDER_UNVERIFIED retained. |
+| **Key files** | `src/.../providers/ibkr_observational/query_provider.py`; `market_data/ibkr_query_bridge.py`, `runtime_composition.py`, `live_runtime.py`; `tools/ibkr/{query_provider,canary,runtime_bootstrap}.py`; `tests/**/test_g11_*.py`; `docs/audits/imp-reconciliation/14h-g11-current-state-matrix.md` |
+| **Tests** | Starting FAST 21/0/0/0; starting FULL 4326/48/2/0 (boundary violation); focused G11 46/0/0/0; final FAST 21/0/0/0; CHANGED 3791/48/0/0; FULL 4326/48/0/0 |
+| **Related** | G10 baseline; BL-0301 IMPLEMENTATION_COMPLETE/LIVE_VERIFICATION_PENDING; BL-0305 IMPLEMENTATION_COMPLETE/BLOCKED_BY_LIVE_EVIDENCE; `14h-g11-current-state-matrix.md` |
+| **Notes** | No formula ledger bump. No execution enablement. Provider account facts remain READ_ONLY_OBSERVATIONAL. Live canary not executed in this environment. |
+
+## 2026-09-08 — G10 IBKR provider convergence + depth TTL admission
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers/ibkr_observational`, `market_data`, `tests`, `docs/audits` |
+| **Summary** | G10 converged canonical depth runtime admissibility (BL-0303) via `depth_admission.py`, wired DEPTH TTL into live admission and observational lanes (stale depth cannot yield authoritative OFI/book features), added read-only historical bar and account observation normalization contracts, registered IBKR_HISTORICAL_BARS/ACCOUNT_READ capabilities, hardened adapter/composition shutdown (idempotent, no reconnect after shutdown), and added 30 focused G10 tests. Live provider remains `LIVE_PROVIDER_UNVERIFIED`. |
+| **Key files** | `src/.../market_data/depth_admission.py`; `live_admission.py`, `live_config.py`, `observational_lanes.py`, `observational_state.py`, `runtime_composition.py`; `providers/ibkr_observational/{historical_bars,account_observation,capability,adapter,diagnostics}.py`; `providers/runtime_capability.py`; `tests/**/test_g10_*.py`; `docs/audits/imp-reconciliation/14g-g10-current-state-matrix.md` |
+| **Tests** | Starting FULL 4250/48/0/0; G10 focused 30/0/0/0; FAST 21/0/0/0 post-change |
+| **Related** | G9 baseline; BL-0301/0303/0304/0305; `14g-g10-current-state-matrix.md` |
+| **Notes** | BL-0301 still PARTIAL (REST historical/account fetch not live-wired). BL-0305 blocked by live evidence. No formula ledger bump (plumbing only). |
+
+## 2026-09-08 — G9: IBKR tick-by-tick trade tape → CVD + entitlement readiness
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers/ibkr_observational`, `tools/ibkr`, `market_data`, `order_flow` |
+| **Summary** | Added canonical IBKR tick-by-tick observational path (`IBKR_TRADES` / `subscribe_trades` → `TradePrintFacts` → Lee-Ready classification with L1 context → `apply_classified_trade` → G3 CVD). Extended outer transport with `req_tick_by_tick_data` / `tickByTickAllLast` bridge. Capture/replay TRADE kind, entitlement TRADES readiness, offline gate preserved. LIVE_PROVIDER_UNVERIFIED retained — no live canary run. BL-0304 closed for offline/replay path; BL-0305 partial/blocked by live evidence. |
+| **Key files** | `providers/ibkr_observational/trades.py`, `adapter.py`, `contracts.py`, `capability.py`, `capture.py`, `tools/ibkr/observational_transport.py`, `market_data/observational_state.py`, G9 test modules, `docs/audits/imp-reconciliation/14f-g9-current-state-matrix.md` |
+| **Tests** | Baseline FULL **4221/48/0/0**; focused G9 **29/0/0/0**; CHANGED **3715/48/0/0**; FULL **4250/48/0/0** (+29) |
+| **Related** | [14f-g9-current-state-matrix](../../audits/imp-reconciliation/14f-g9-current-state-matrix.md) |
+| **Notes** | No native IB aggressor side claimed. Dedup limited to replay composite key. BL-0301/0303 remain PARTIAL. |
+
+## 2026-09-08 — G8 closure correction: remove src→tools/ibkr inversion
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (working tree; uncommitted) |
+| **Area** | `tools/ibkr/runtime_bootstrap.py`, `market_data/{live_runtime,ibkr_runtime_bridge}.py`, G8 structural/performance tests, canonical G8 docs |
+| **Summary** | Moved concrete `IbkrObservationalTransport` construction to outer `tools/ibkr/runtime_bootstrap.py`. Canonical `live_runtime` now accepts an injected transport or `IbkrObservationalTransportProvider`; it no longer imports `tools.ibkr`. Added AST boundary scan and four runtime-overhead measurements. Moomoo path unchanged. BL-0301/0304 PARTIAL; BL-0305 PARTIAL/BLOCKED_BY_LIVE_EVIDENCE; LIVE_PROVIDER_UNVERIFIED retained. G9 not started. |
+| **Key files** | `tools/ibkr/runtime_bootstrap.py`, `src/.../market_data/live_runtime.py`, `ibkr_runtime_bridge.py`, `tools/ui1/run_ui_api.py`, `tests/market_data/test_g8_src_tools_boundary.py`, `tests/market_data/test_g8_runtime_performance.py`, `tests/ibkr/test_runtime_bootstrap.py`, `docs/audits/imp-reconciliation/14e-g8-current-state-matrix.md` |
+| **Tests** | Focused G8 **74** OK; ibkr 63; providers 257; market_data 104; order_flow 148; xa01 72; trading_correctness 122; G5 82; G6 91; G7 39; FAST 21/0/0/0; CHANGED **3686/48/0/0**; FULL 4209/48/0 reused (+12 in CHANGED vs prior G8 3674) |
+| **Related** | Prior G8 entry below; [14e-g8-current-state-matrix.md](../../audits/imp-reconciliation/14e-g8-current-state-matrix.md) |
+| **Notes** | Dynamic import of `tools.ibkr` from src is still inversion; correction uses protocol injection only. |
+
+## 2026-09-08 — G7 closure evidence reconciliation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | audit docs / test-count accounting |
+| **Summary** | Reconciled G7 closure test-count evidence: authoritative FULL/CHANGED delta is **+39** (4107→4146 FULL; 3572→3611 CHANGED). Prior informal per-file listing summed **41** because `test_g7_runtime_composition.py` was recorded as **11**; authoritative count is **9**. No G6→G7 test removals or weakening. Documented capability authority hierarchy: `ProviderRegistry` (metadata) → `RuntimeCapabilityRegistry` (runtime facade) + `VerifiedCapabilityRegistry` (Moomoo probe evidence only). |
+| **Key files** | `docs/audits/imp-reconciliation/{15-validation-evidence.md,14d-g7-current-state-matrix.md,00-program-state.md}`, `docs/platform/{PROGRAM_STATUS.md,MASTER_ARCHITECTURE.md}` |
+| **Tests** | G7 inventory verified via unittest discover on four `test_g7_*.py` modules: **39/0** (14+14+9+2). No FULL rerun required — existing **4146/48/0** evidence unchanged. |
+| **Related** | G7 entry below; [14d-g7-current-state-matrix.md](../../audits/imp-reconciliation/14d-g7-current-state-matrix.md) test inventory + capability hierarchy sections |
+| **Notes** | Documentation-only reconciliation; no runtime or test semantics changed. G8 may proceed. |
+
+## 2026-09-08 — G8 IBKR runtime convergence / live provider wiring
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (working tree; uncommitted) |
+| **Area** | `tools/ibkr/observational_transport.py`, `market_data/{live_runtime,ibkr_runtime_bridge,runtime_composition}.py`, `providers/ibkr_observational/contract_resolution.py`, G8 tests, `docs/audits/imp-reconciliation/14e-g8-current-state-matrix.md` |
+| **Summary** | Converged G6 IBKR adapter + G7 runtime composition with outer TWS transport and `live_runtime.configure()` startup path. Added stdlib-only `IbkrObservationalTransport` callback bridge (operation 0 / side 0 preserved), src-side contract resolution + runtime bridge (no src→tools inversion), capability-state sync from adapter diagnostics, Moomoo path preserved. CVD remains explicit UNAVAILABLE from L1-only (no fabricated trades). LIVE_PROVIDER_UNVERIFIED retained (no live canary in closure environment). |
+| **Key files** | See summary paths + `tests/ibkr/test_observational_transport.py`, `tests/providers/test_g8_*.py`, `tests/market_data/test_g8_*.py` |
+| **Tests** | G8 focused **63** OK; CHANGED **3674/48/0** (+63 vs G7 3611); FAST 21/0/0 |
+| **Related** | `docs/audits/imp-reconciliation/14e-g8-current-state-matrix.md` |
+| **Notes** | BL-0301/0304/0305 PARTIAL — observational runtime wired offline; broader adapter scope, tick-by-tick CVD, and live entitlement canary remain open per backlog wording. |
+
+## 2026-09-08 — G7 Runtime wiring / provider capability convergence
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (working tree; uncommitted alongside pre-existing dirty state) |
+| **Area** | `providers/runtime_capability.py`, `providers/runtime_selection.py`, `market_data/{lane_requirements,observational_lanes,runtime_composition}.py`, `cross_lane/runtime_inputs.py`, G7 tests, docs/evidence |
+| **Summary** | Converged provider capability truth and observational runtime wiring: multi-axis `RuntimeCapabilityRegistry` facade over `ProviderRegistry` + runtime state (implemented vs entitlement vs timeliness vs health; execution forbidden); deterministic fail-closed `ObservationalProviderSelector`; lane requirement graph; `ObservationalLaneRuntime` wiring canonical `ObservationalStateStore` → L1/CVD/price-aligned OFI/book-features/options/futures analytics with provenance; `ObservationalRuntimeComposition` transport-injection boundary (no src→tools/ibkr); cross-lane `runtime_inputs` bridge; 39 focused G7 tests; LIVE_PROVIDER_UNVERIFIED retained. |
+| **Key files** | See summary paths + `tests/providers/test_g7_runtime_capability.py`, `tests/market_data/test_g7_{observational_lanes,runtime_composition}.py`, `tests/cross_lane/test_g7_runtime_inputs.py`, `docs/audits/imp-reconciliation/14d-g7-current-state-matrix.md` |
+| **Tests** | G7 focused **39** OK (14+14+9+2 per-file); providers 232 OK; market_data 74 OK; trading_correctness 122 OK; FAST 21/0/0; CHANGED **3611/48/0**; FULL **4146/48/0** — zero failures |
+| **Related** | `docs/audits/imp-reconciliation/{14d-g7-current-state-matrix.md, 15-validation-evidence.md G7 section, 00-program-state.md}`; G6 entry below |
+| **Notes** | BL-0301 (broader IBKR adapter with account/secdef/bars) NOT closed — G7 is runtime convergence only. Performance: RUNTIME_PERFORMANCE_MEASURED (capability resolution smoke). Live provider LIVE_PROVIDER_UNVERIFIED. |
+
+## 2026-09-08 — G6 IBKR observational L1/L2 provider adapter (BL-0213)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (working tree; uncommitted alongside pre-existing dirty state) |
+| **Area** | `providers/ibkr_observational/*` (new canonical runtime), `market_data/observational_state.py`, `tests/providers/test_ibkr_observational_*.py` (new), docs/evidence |
+| **Summary** | Delivered the canonical provider-neutral IBKR observational adapter: IBKR callback facts → XA-01 identity → L1 quote accumulation and/or L2 `DepthUpdate` → `ObservationalStateStore` → G5 `IncrementalOrderBook`. Verified operation/side mapping (0=INSERT/1=UPDATE/2=DELETE; 0=ASK/1=BID); rank/position→price-keyed translation with price-changing UPDATE and rank-resolved DELETE; no fabricated depth sequence; subscription generation/reconnect/cancel/pacing; entitlement/delayed L1 truthfulness; evidence-backed error normalization; memory-only capture by default with deterministic replay through the adapter path; diagnostics/readiness; no execution capability; offline fail-closed; runtime `src` independent of `tools/ibkr` implementation. |
+| **Key files** | `src/market_platform_foundation/providers/ibkr_observational/{adapter,capability,capture,constants,contracts,diagnostics,errors,identity,l1,lifecycle,mapping,pacing,rank,__init__}.py` (new), `src/market_platform_foundation/market_data/observational_state.py`, `tests/providers/test_ibkr_observational_{l1,l2,lifecycle,safety,capture_replay,performance}.py` (new), `tests/providers/ibkr_observational_support.py` (new) |
+| **Tests** | ibkr_observational 91 OK, providers 216 OK, market_data 49 OK, order_book 87 OK, trading_correctness 122 OK; FAST 21/0/0; CHANGED **3572/48/0**; FULL **4107/48/0** — zero failures |
+| **Related** | `docs/audits/imp-reconciliation/{12-master-backlog.md BL-0213, 14c-g6-current-state-matrix.md, 15-validation-evidence.md G6 section, 00-program-state.md}`; G5 entry below |
+| **Notes** | Adapter throughput measured on dev machine (L1 ~33.9k/s, L2 normalize ~29.4k/s, L2→book ~18.6k/s) — ADAPTER_PERFORMANCE_MEASURED, not production IBKR. Live provider LIVE_PROVIDER_UNVERIFIED. G7 (runtime wiring / capability convergence) is next per mandate — not started. |
+
+## 2026-09-08 — G5 canonical incremental L2 order-book engine (BL-0212)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (working tree; uncommitted alongside pre-existing dirty state) |
+| **Area** | `order_flow/order_book/*` (new canonical domain), `order_flow/{ofi,cvd,contracts,__init__}.py`, `market_data/observational_state.py`, `ui_api/live_projections.py`, `tests/order_flow/test_order_book_*.py` (new), `tests/market_data/test_canonical_book_integration.py` (new), docs |
+| **Summary** | Built the one canonical provider-neutral incremental market-by-price book engine resolving AB-003/ARCH-003 (snapshot-only L2), ARCH-006 (rank-pair OFI mis-pairing) and ARCH-009 (hardcoded `book_state_valid: True`). New `order_flow/order_book/` package: `contracts.py` — provider-neutral `DepthUpdate` vocabulary (INSERT/UPDATE/DELETE/RESET × BID/ASK; instrument_id, price/size Decimal-exact via `Decimal(str(v))` boundary normalization, advisory position rank metadata, source/source_time_ns/received_time_ns, optional sequence, subscription identity, provider event id, schema version, provenance) + explicit `ApplyResult` contract (APPLIED/NOOP/DUPLICATE/REJECTED/INVALIDATED/RESET_APPLIED with reason, sequence_state, validity, generation, update_count); `engine.py` — `IncrementalOrderBook` with price-keyed side-ordered levels, explicit insert/update/delete/reset semantics (conflicting duplicate insert invalidates; update-of-missing fails closed; delete can never remove an unrelated rank; RESET is not DELETE — clears levels, advances generation, clears sequence continuity, marks RESET_PENDING), 5-state sequence machine (NO_SEQUENCE/BASE/CONTIGUOUS/DUPLICATE/GAP/REGRESSION — gap/regression fail closed INVALID with recovery required), subscription-generation gate rejecting late old-generation events, derived `book_state_valid`, deterministic `state_hash()`, no wall clock; `freshness.py` — pure `evaluate_book_freshness(book, as_of_time_ns, policy)` → FRESH/STALE/INVALID/UNAVAILABLE (thresholds in policy; INVALID beats STALE; stale never silently collapsed); `projection.py` — deterministic legacy snapshot dict projection with additive `book_status`/`book_status_reason`/`sequence_status`/`generation`/timestamps + `replace_from_snapshot`/`ingest_snapshot_dict` explicit compatibility ingestion (RESET-then-load, never blind UPDATE); `replay.py` — `replay(events)`/`replay_state_hash`/`measure_replay_throughput`, duplicates never double-apply, RESET/gap boundaries replay identically. Order-flow: `ofi.py` adds versioned price-aligned multi-level OFI (`compute_multilevel_ofi_price_aligned`) keyed by exact price — INSERT/DELETE rank shifts can no longer fabricate rank-paired events; legacy rank-sum v1 retained unchanged; formula_ledger entry `of.multilevel_ofi_price_aligned` (96→97). Store/API: `observational_state.py` keeps per-instrument canonical engines, full-book pushes enter via `replace_from_snapshot`, and stored book payloads + `ui_api/live_projections.py` expose derived `book_state_valid` + status/sequence/generation fields (ARCH-009 hardcoded True removed). CVD session authority untouched (BL-0208 anchor/reset metadata preserved with tests). |
+| **Key files** | `src/market_platform_foundation/order_flow/order_book/{contracts,engine,freshness,projection,replay,__init__}.py` (new), `src/market_platform_foundation/order_flow/{ofi,cvd,contracts,__init__}.py`, `src/market_platform_foundation/market_data/observational_state.py`, `src/market_platform_foundation/ui_api/live_projections.py`, `tests/order_flow/test_order_book_{basic,operations,sequence,reset_generation,freshness,snapshot,replay,ofi_integration}.py` (new), `tests/market_data/test_canonical_book_integration.py` (new) |
+| **Tests** | order_book 82 OK, canonical-book store integration 5 OK, order_flow 66 OK, trading_correctness 122 OK, CVD session 8 OK; FAST 21/0/0; CHANGED **3481/48/0**; FULL **4016/48/0** — zero failures |
+| **Related** | `docs/audits/imp-reconciliation/{12-master-backlog.md BL-0212, 14b-g5-current-state-matrix.md, 15-validation-evidence.md G5 section, g5-order-book-replay-evidence.json}`; G4 entry below |
+| **Notes** | Replay throughput measured on representative synthetic depth (10/50/100 levels): ~93k/45k/23k events/sec — PERFORMANCE_MEASURED, no production-throughput claim. IBKR `reqMktDepth` mapping is documented for G6 only; no runtime IBKR work here. G6 (IBKR observational L1/L2 provider adapter) is the next increment per current mandate — not started. |
+
+---
+
+## 2026-09-08 — G4 multi-asset accounting kernel (BL-0211)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (working tree; uncommitted alongside pre-existing dirty state) |
+| **Area** | `portfolio/*` (accounting kernel), `options/execution.py`, `risk/{financial,pretrade}.py`, `paper/*` gates, `tests/trading_correctness/*`, docs |
+| **Summary** | Built the canonical multi-asset accounting foundation on the G3.1 baseline. New `portfolio/instrument_economics.py` is a fail-closed economics contract derived from XA-01 identity (quantity unit kind-driven; derivative multipliers explicit and positive; missing multiplier/currency/unknown kind fail closed; multiplier=1 only for equity/ETF). New `portfolio/accounting.py` centralizes exact-Decimal money/notional/P&L/reservation formulas and rejects binary float at the kernel boundary. The canonical portfolio mutation boundary now rejects derivative positions without CONTRACTS unit + positive multiplier. The independent float options ledger (`portfolio/options_ledger.py`) was rewritten Decimal-exact and marked NON-AUTHORITATIVE compatibility over the O9 simulation lane, with a canonical position adapter that aggregates same-identity partial fills (contract quantity truth, exact premium cost basis); `options/execution.py` converts to float only at the JSON presentation boundary (O9 goldens unchanged). Futures exactness (1/multi-contract, long/short sign, no drift, replay) is proven through the kernel + canonical valuation; family/continuous identities remain non-executable. Per-currency working obligations (`working_order_obligations_by_currency`, `currency_available_cash_minor`) and a per-currency financial gate + pretrade context (`currency_cash_minor`) make cash currency-aware; a missing currency bucket fails closed INSUFFICIENT_SETTLEMENT_CURRENCY — never 1:1. Also repaired the G3.1 precondition: three callers of the already-landed fail-closed `register_future_contract` supplied explicit multipliers, plus a spec-less-future fail-closed test. |
+| **Key files** | `src/market_platform_foundation/portfolio/{accounting,instrument_economics,canonical,options_ledger}.py`, `src/market_platform_foundation/options/execution.py`, `src/market_platform_foundation/risk/{financial,pretrade}.py`, `src/market_platform_foundation/paper/{execution,broker_paper}.py`, `tests/portfolio/test_instrument_economics.py` (new), `tests/trading_correctness/test_multi_asset_accounting.py` (new), `tests/xa01/test_xa01_derivatives.py` (+2), 3 precondition-test fixes |
+| **Tests** | portfolio 136 OK, trading_correctness 122 OK, options 147 OK, platform 474 OK (2 skipped), ui1 13 OK, ui2 5 OK, xa01 72 OK; FAST 21/0/0; CHANGED **3347/48/0**; FULL **3929/48/0** — zero failures |
+| **Related** | `docs/audits/imp-reconciliation/{12-master-backlog.md BL-0211, 14a-g4-current-state-matrix.md, 15-validation-evidence.md G4 section}`; G2 portfolio spec; G3.1 entry below |
+| **Notes** | Options execution lane stays a non-authoritative simulation projection over the same fills (removal condition documented in the module). Futures gate still fails closed UNSUPPORTED_RISK_MODEL — no margin model invented. Auto-FX settlement and futures margin methodology remain explicit product decisions for later increments. |
+
+---
+
+## 2026-09-08 — G3.1 cross_lane golden-blocker reconciliation (BL-0210)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (working tree; uncommitted alongside pre-existing dirty state) |
+| **Area** | `cross_lane/fusion.py`, `tests/cross_lane/*`, docs |
+| **Summary** | Closed the last known FULL failure — the pre-existing dirty-tree `cross_lane` golden. Hardened `_occurrence_weight` in `fuse_opportunity_v1` so a squeeze-aligned template with no hazard and no occurrence model output fails closed to UNAVAILABLE (`OCCURRENCE_UNAVAILABLE`) instead of silently weighting 1.0; non-squeeze-aligned paths carry an explicit `OCCURRENCE_UNAVAILABLE` quality flag with factor 1.0; named `PAYOFF_ALREADY_NET_TOLERANCE`; bumped formula_ledger + SHARED_P4_EV_OPPORTUNITY_SPEC to fusion v2; regenerated the golden fixture with hash forensics (`.local/g31-hash-forensics.py`) proving the V1→V2 snapshot delta is the intended semantic change. |
+| **Key files** | `src/market_platform_foundation/cross_lane/{fusion,opportunity,portfolio}.py`, `tests/cross_lane/test_{opportunity_fusion,portfolio_p5}.py`, `tests/fixtures/providers/opportunity/nvda_opportunity_fusion_expected.json`, `docs/research/{formula_ledger.json,SHARED_P4_EV_OPPORTUNITY_SPEC.md}` |
+| **Tests** | tests/cross_lane +9 (6 opportunity-fusion, 3 portfolio-p5); FAST 21 passed; CHANGED 3233/48/0; FULL **3870/48/0** — zero failures, no excluded baseline remains |
+| **Related** | `docs/audits/imp-reconciliation/15-validation-evidence.md` (G3.1 section); backlog BL-0210; G3 entry (2026-09-07) |
+| **Notes** | No production gate weakened; research-lane honesty only. G4 (multi-asset accounting kernel) is the next structural increment per current mandate. |
+
+---
+
+## 2026-09-07 — G3 trading-correctness increment (BL-0201..BL-0209)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `risk`, `tests`, `docs` |
+| **Summary** | Finished the G3 trading-correctness increment on the working tree: BL-0201 server preview binding + strategy prepared-decision authority (server-side PreviewStore with fail-closed verify; prepared idempotency-key binding; prepared risk-reference-price handoff into the final financial recheck), BL-0202 internal + broker-paper cash gates (fail-closed REQUIRED_PRICE_MISSING, conservative bar/live-mark reference, trusted strategy reference price that cannot bypass insufficient cash, currency from canonical metadata, partial-fill/replace reservation recompute), BL-0203 canonical identity admission with closed arbitrary-equity fallback (BIYA/AAPL fixtures canonical), BL-0204 working-remainder projection corrections, BL-0205 replace lifecycle with persisted replace_revision + idempotent retries, BL-0206 cancel-time late-fill reconciliation, BL-0207 per-ledger RLock atomic idempotency+creation boundary (release before broker network call) with thread-barrier proofs, BL-0208 deterministic CVD session semantics, BL-0209 typed `evaluate_pretrade` wired into both executable BUY gates. Completed the last pending change (threading the approved risk-decision reference price through `_submit_prepared`) and added 4 dedicated regression tests (no-bars prepared submit succeeds via risk reference price; no bars + no reference fails closed; reference price cannot bypass insufficient cash; prepared quantity/reference price server-authoritative). |
+| **Key files** | Modified: `src/market_platform_foundation/paper/{execution,broker_paper,ledger,contracts,preview}.py`, `src/market_platform_foundation/risk/{pretrade,financial}.py`, `src/market_platform_foundation/intelligence/execution/engine.py`, `src/market_platform_foundation/order_flow/cvd.py`, `src/market_platform_foundation/ui_api/{server,store,paper_projections}.py`, `src/market_platform_foundation/xa01/*`, `tests/trading_correctness/` (10 suites), platform broker fixtures (live marks, CancelDispatch `events=()`, E5 preview-first submit), `tools/validation_manifest.{json,py}`, `tests/validation/test_validation_manifest.py` (offline count 62); workspace evidence: `docs/audits/imp-reconciliation/{12-master-backlog,15-validation-evidence}.md`, `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | `tests/trading_correctness` 91 passed (87 baseline + 4 new); governed intelligence flow green with `bars=[]`; platform broker P4/P44/P4C/reconciliation/status-apply 93 passed; operator surface fixes 16 passed; validation suite 82 passed; FAST **21 passed**; CHANGED **3224 tests, 1 failure** (known pre-existing cross_lane golden baseline only); FULL **3861 tests, 1 failure** (same baseline). |
+| **Related** | [15-validation-evidence G3 section](../../../audits/imp-reconciliation/15-validation-evidence.md); [master backlog BL-0201..BL-0209](../../../audits/imp-reconciliation/12-master-backlog.md); G2 entry below |
+| **Notes** | Production gates never weakened: broker test fixtures now supply live marks (UI-path parity), CancelDispatch fake returns an empty `events` stream, and the E5 parallel test uses preview-first submit with PREVIEW_PORTFOLIO_STALE refresh-retry (never bypasses preview authority, still genuinely concurrent). Cross_lane golden failure is unrelated pre-existing dirty work (occurrence-weight hardening), not caused by G3. |
 
 ## 2026-09-06 — Q-H3-usage: stamp q_method on O3 and BL
 
@@ -909,6 +1174,45 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | See [Mode-aware workstation plan](../superpowers/plans/2026-08-30-mode-aware-workstation.md) |
 | **Tests** | `modeAuthority.test.ts`, `ModeEnvironmentBar.test.tsx`, `ModeSession.test.tsx`, `App.test.tsx` |
 | **Related** | [Mode-aware workstation design](../superpowers/specs/2026-08-30-mode-aware-workstation-design.md) |
+
+---
+
+## 2026-09-07 — G0 post-reconciliation baseline (Wave 0: truth + validation control plane)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (working tree; uncommitted alongside pre-existing dirty state) |
+| **Area** | governance supersession + `validate changed` correctness + repo truth + dev-system corrections |
+| **Summary** | Executed G0 per `docs/audits/imp-reconciliation/19-goal-increment-plan.md` §2. Donor-governance records superseded in place (Heller correction; ADR-DONOR-001 handled via the hash-bound supersession notice); `validate changed` now normalizes the `projects/integrated-market-platform/` prefix, owns fixture/config/test-fixture paths by consumer evidence, renames `full_suite_required` → `core_checkpoint_required` with audit-grade `--explain`; short-squeeze snapshot reconciled to child `9de7b2f` with manifest + overlay; roadmap/program status refreshed to the authorized mandate; AGENTS.md states the canonical edit target; `imp.py env` exits non-zero on hard prereq failure; `donor_patterns/` + `tests/gridiq` annotated; empty pytest dir removed; child CI copies replaced with parent-CI pointers. |
+| **Key files** | `tools/validate.py`, `tools/validation_manifest.{py,json}`, `tools/imp.py`, `AGENTS.md`, `docs/platform/{MASTER_ROADMAP,PROGRAM_STATUS}.md`, `workspace-manifest.json`, donor-governance docs, `docs/superpowers/governance/2026-09-07-donor-authority-supersession-notice.md` |
+| **Tests** | `tests/validation/test_validate_selection.py` (+12 selection-semantics tests), `test_imp_cli.py` (+4 env exit tests), manifest/orchestration updates; full evidence in `docs/audits/imp-reconciliation/15-validation-evidence.md` (G0 section) |
+| **Related** | Reconciliation master backlog (`docs/audits/imp-reconciliation/12-master-backlog.md`) BL-0001..0008, BL-0011; recovery roadmap (`13-recovery-roadmap.md`) Wave 0; root-cause register (`16-root-cause-register.md`) RC-012/013/014/020 — parent audit workspace, outside the IMP snapshot |
+
+---
+
+## 2026-09-07 — G1 canonical multi-asset identity foundation (Wave 1: identity slice)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (working tree; uncommitted alongside pre-existing dirty state) |
+| **Area** | `xa01/*`, `paper/contracts.py`, `xa04/codec.py`, identity tests + docs |
+| **Summary** | Executed G1 per `docs/audits/imp-reconciliation/19-goal-increment-plan.md` §5. One canonical asset-class vocabulary: `XaAssetClass` gains `CRYPTO` and `BOND`; `InstrumentKind` gains `CRYPTO_PAIR`, `BOND`, `CONTINUOUS_SERIES`, `COMMODITY_SPOT`; `paper.contracts.ASSET_CLASSES` is deprecated as a backward-compat view. Added explicit `Tradability` semantics (TRADABLE / REFERENCE_ONLY / SYNTHETIC / CONTINUOUS_SERIES) on every canonical identity with a fail-closed guard (`xa01.tradability.assert_executable`, `xa01.resolver.resolve_executable_alias`, and `paper.contracts.build_user_order_intent` rejecting non-executable instrument refs). Added builders: `register_crypto_pair` (base/quote/venue/network), `register_bond` (issuer/CUSIP-ISIN/maturity/coupon/par/credit tier), `register_commodity_spot`, `register_commodity_proxy`, `register_continuous_futures_series`, plus `commodity_sector` on economic commodities. Serialization extended additively (XA-04 codec decodes legacy documents with safe defaults). No portfolio, risk, provider-live, or product-surface migration. |
+| **Key files** | `src/market_platform_foundation/xa01/{enums,contracts,identity,compatibility,registry,resolver,errors,tradability}.py`, `src/market_platform_foundation/paper/contracts.py`, `src/market_platform_foundation/xa04/codec.py`, `tests/xa01/test_xa01_{crypto_identity,bond_identity,commodity_identity,tradability_guard,cross_asset_collisions,g1_serialization}.py`, XA-01 spec + MASTER_ARCHITECTURE/PROGRAM_STATUS updates |
+| **Tests** | tests/xa01 71 passed (12 existing + 59 new); futures 65, options 147, contracts 38, xa02 21, xa03 31, xa04 30, xa05 15, platform paper/operational-identity 114 — all green; see `docs/audits/imp-reconciliation/15-validation-evidence.md` (G1 section) |
+| **Related** | Master backlog BL-0101..0104 (updated in `12-master-backlog.md`); RC-004 materially advanced (16); recovery roadmap (`13`) Wave 1 identity slice; next dependent increment BL-0105 (G2 canonical multi-asset portfolio) remains NOT started |
+
+---
+
+## 2026-09-07 — G2 canonical multi-asset portfolio foundation (Wave 1: portfolio core, BL-0105)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (working tree; uncommitted alongside pre-existing dirty state) |
+| **Area** | `portfolio/canonical.py`, `portfolio/{admission,valuation,fx,provider_normalization,paper_adapter}.py`, `tests/portfolio/*`, docs |
+| **Summary** | Executed G2 per `docs/audits/imp-reconciliation/19-goal-increment-plan.md` (BL-0105). Established ONE canonical multi-asset portfolio model (`portfolio.canonical`) scoped by operational account + mode (`PortfolioKey`) and keyed by canonical XA-01 `instrument_id`, with explicit quantity units (SHARES/CONTRACTS/BASE_UNITS/FACE_VALUE), per-currency `CashBalance` (Decimal), a `ValuationMark` contract (currency + provenance + fresh/stale/missing), asset-aware valuation dispatch (equity qty×mark; options contracts×premium×multiplier; futures notional + mark-to-market P&L, never equity-style cash value; crypto base-units × pair price; bonds face × explicit price basis), an explicit FX conversion boundary (no 1:1 fallback; COMPLETE/PARTIAL/MISSING_FX/STALE aggregation), deterministic serialization, and a controlled mutation boundary (`apply_position_input` / `apply_snapshot` / `apply_cash` / `apply_adjustment`). Admission fails closed on reference identities via XA-01 tradability (continuous futures, family/root, economic commodities, spot references, benchmarks, currencies, FX pairs, reference-only bonds rejected). Provider snapshots normalize through XA-01 alias resolution with `UNRESOLVED_INSTRUMENT` fail-closed. Paper equity behavior preserved bit-identical via a dual-run read-side adapter (`paper_snapshot_to_canonical`) with parity tests; the legacy equity ledger remains the Paper execution parity baseline (BL-0106/0107 options/numeric merge remain separate follow-on items). |
+| **Key files** | `src/market_platform_foundation/portfolio/{canonical,admission,valuation,fx,provider_normalization,paper_adapter}.py`, `src/market_platform_foundation/portfolio/__init__.py`, `tests/portfolio/test_{canonical_admission,cash_and_fx,valuation,isolation,provider_normalization,persistence,paper_parity}.py`, `tools/validation_manifest.json` (new `portfolio` suite), G2 portfolio spec (`docs/superpowers/specs/2026-09-07-imp-g2-canonical-multi-asset-portfolio-foundation.md`), `MASTER_ARCHITECTURE.md`, `PROGRAM_STATUS.md` |
+| **Tests** | tests/portfolio 109 passed (admission 18, cash/FX 21, valuation 34, isolation 15, provider normalization 12, persistence 9, paper parity 7... exact per-suite counts in the FULL run); FAST 21 passed; phase7/platform regression green; see `docs/audits/imp-reconciliation/15-validation-evidence.md` (G2 section) |
+| **Related** | Master backlog BL-0105 (`12-master-backlog.md`, updated); RC-001 materially advanced (16); recovery roadmap (`13`) Wave 1 portfolio core; BL-0106 (options ledger merge) and BL-0107 (futures Decimal) remain NOT started after G2 |
 
 ---
 

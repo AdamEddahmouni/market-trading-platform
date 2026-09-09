@@ -271,7 +271,22 @@ class TradierPaperExecutionProvider:
             status_event = ensure_broker_fill_ids(BrokerOrderStatusEvent.from_record(record))
         except (KeyError, ValueError, TypeError):
             return self._unavailable("BROKER_RESPONSE_INVALID")
-        return ProviderResult(status="ok", events=(), provider_id=self.provider_id, capability=self.capability)
+        # Surface the cancel acknowledgment's cumulative status (including any
+        # fills that executed before the cancel was processed) so the paper
+        # layer can capture late fills instead of dropping them (BL-0206).
+        events = (
+            self._status_envelope(
+                status_event,
+                mapping=SymbolMapping(
+                    provider_symbol=str(record.get("symbol", broker_order_id or "")),
+                    instrument_id=str(record.get("instrument_id", "")),
+                    venue_id="US_EQUITY",
+                ),
+                raw_source_reference=f"tradier:cancel_order:{broker_order_id}",
+                ingest_run_id=new_ingest_run_id(),
+            ),
+        )
+        return ProviderResult(status="ok", events=events, provider_id=self.provider_id, capability=self.capability)
 
     def fetch_account(self) -> ProviderResult:
         gated = self._gate_check()

@@ -31,13 +31,16 @@ cross_lane/fusion.py        — fuse_opportunity_v1, build_opportunity_snapshot
 donor_bridge/opportunity_adapter.py — evidence publish + bundle builder
 ```
 
-## Fusion formula (v1)
+## Fusion formula (v2 — fail-closed occurrence)
 
 ```text
 gross_ev = expected_pnl - friction_cost
-occurrence_weight = squeeze_hazard_probability when squeeze-aligned template else 1.0
+occurrence_weight = squeeze_hazard_probability when squeeze-aligned template
+                    else null (fusion factor 1.0 + OCCURRENCE_UNAVAILABLE flag)
+FAIL-CLOSED: squeeze-aligned template with no hazard AND no occurrence model
+             output → UNAVAILABLE (OCCURRENCE_UNAVAILABLE), never silent 1.0
 liquidity_factor = 0.0 if liquidity gates failed else f(cvd_confidence, book_imbalance)
-fused_net_ev = gross_ev × occurrence_weight × liquidity_factor
+fused_net_ev = gross_ev × occurrence_factor × liquidity_factor × futures_regime_factor
 ```
 
 **Squeeze-aligned templates:** `long_call_atm`, `bull_call_spread`, `long_otm_call` when squeeze state is elevated (`VULNERABLE`, `IGNITION_WATCH`, `ACTIVE_SQUEEZE`, `LIVE_CONFIRMATION`).
@@ -55,7 +58,7 @@ fused_net_ev = gross_ev × occurrence_weight × liquidity_factor
 |---|---|
 | `RANKED` | `fused_net_ev > 0` |
 | `NO_ACTIONABLE_EDGE` | Valid research outcome (liquidity blocked or EV ≤ 0) |
-| `UNAVAILABLE` | Fail-closed — missing strategy/payoff inputs |
+| `UNAVAILABLE` | Fail-closed — missing strategy/payoff inputs, or squeeze-aligned template with no occurrence model output |
 
 ## Evidence signals
 

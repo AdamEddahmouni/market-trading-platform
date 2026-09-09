@@ -348,12 +348,12 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
                   onScrub={(index) => {
                     void scrub(index);
                   }}
-                  onOpenTimeline={() => navigate(`/workspace/${ADMITTED_REPLAY_INSTRUMENT_ID}`)}
+                  onOpenTimeline={() => navigate(`/workspace/${encodeURIComponent(ADMITTED_REPLAY_INSTRUMENT_ID)}`)}
                   onWhy={openExplain}
                   onExplain={openExplain}
                   onInspect={openInspect}
                   onOpenWorkspace={(item) => {
-                    if (item.instrument_id) navigate(`/workspace/${item.instrument_id}`);
+                    if (item.instrument_id) navigate(`/workspace/${encodeURIComponent(item.instrument_id)}`);
                   }}
                 />
               }

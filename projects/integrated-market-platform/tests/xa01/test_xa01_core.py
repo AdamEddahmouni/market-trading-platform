@@ -56,6 +56,7 @@ class Xa01CoreTests(unittest.TestCase):
         gold_id = register_commodity_economic(commodity_code="GOLD", registry=registry)
         gc_id = register_future_contract(
             contract_id="GC202506",
+            contract_multiplier="100",
             family_root="GC",
             underlying_commodity_code="GOLD",
             expiration="2025-06-26",

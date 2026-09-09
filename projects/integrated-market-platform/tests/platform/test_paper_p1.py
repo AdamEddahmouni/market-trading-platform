@@ -38,6 +38,13 @@ from market_platform_foundation.ui_api.store import ReplayStore
 COLLECTION_ROOT = ROOT.parent
 
 
+def _preview_and_submit(store: ReplayStore, body: dict) -> dict:
+    """G3 preview-first submit: issue a server preview, then submit bound to it."""
+    preview = preview_paper_order(store, body)
+    preview_id = str(preview["preview"]["preview_id"])
+    return submit_paper_order(store, {**body, "preview_id": preview_id})
+
+
 class InteractiveExecutionParityTests(unittest.TestCase):
     store: ReplayStore
 
@@ -215,7 +222,7 @@ class PaperP1SimulationTests(unittest.TestCase):
             "client_order_id": "risk-block-1",
             "idempotency_key": "risk-block-key-1",
         }
-        result = submit_paper_order(self.store, body)
+        result = _preview_and_submit(self.store, body)
         self.assertEqual(result["submission"]["decision"], "REJECT")
         self.assertIsNone(result["submission"].get("fill"))
         self.assertEqual(len(self.store.paper_ledger.project_fills()), 0)
@@ -223,7 +230,7 @@ class PaperP1SimulationTests(unittest.TestCase):
     def test_ui_submission_creates_root_paper_trace(self) -> None:
         collector = InMemoryTraceCollector()
         configure_tracer(Tracer(mode=SamplingMode.FULL, collector=collector))
-        result = submit_paper_order(
+        result = _preview_and_submit(
             self.store,
             {
                 "side": "BUY",
@@ -234,9 +241,12 @@ class PaperP1SimulationTests(unittest.TestCase):
             },
         )
         self.assertFalse(result["submission"]["duplicate"])
-        self.assertEqual(
-            len([span for span in collector.spans if span.stage == TraceStage.TRACE_ROOT]),
-            1,
+        # Preview-first flow: a preview root and a submit root share the
+        # correlation id; the submit root is the authoritative paper_order_request.
+        roots = [span for span in collector.spans if span.stage == TraceStage.TRACE_ROOT]
+        self.assertEqual(len(roots), 2)
+        self.assertTrue(
+            any(getattr(span, "operation", "") == "paper_order_request" for span in roots)
         )
         self.assertEqual(
             {span.correlation_id for span in collector.spans},
@@ -271,14 +281,14 @@ class PaperP1SimulationTests(unittest.TestCase):
             "client_order_id": "idempotent-1",
             "idempotency_key": "idempotent-key-1",
         }
-        first = submit_paper_order(self.store, body)
-        second = submit_paper_order(self.store, body)
+        first = _preview_and_submit(self.store, body)
+        second = _preview_and_submit(self.store, body)
         self.assertFalse(first["submission"]["duplicate"])
         self.assertTrue(second["submission"]["duplicate"])
         self.assertEqual(len(self.store.paper_ledger.project_fills()), 1)
 
     def test_different_idempotency_key_creates_second_order(self) -> None:
-        first = submit_paper_order(
+        first = _preview_and_submit(
             self.store,
             {
                 "side": "BUY",
@@ -287,7 +297,7 @@ class PaperP1SimulationTests(unittest.TestCase):
                 "idempotency_key": "key-a",
             },
         )
-        second = submit_paper_order(
+        second = _preview_and_submit(
             self.store,
             {
                 "side": "BUY",
@@ -301,7 +311,7 @@ class PaperP1SimulationTests(unittest.TestCase):
         self.assertGreaterEqual(len(self.store.paper_ledger.project_orders()), 2)
 
     def test_execution_trace_resolves_vertical_slice(self) -> None:
-        result = submit_paper_order(
+        result = _preview_and_submit(
             self.store,
             {
                 "side": "BUY",
@@ -319,7 +329,7 @@ class PaperP1SimulationTests(unittest.TestCase):
         self.assertIn("PORTFOLIO_IMPACT", stages)
 
     def test_project_orders_preserves_decision_correlation(self) -> None:
-        lane = submit_paper_order(
+        lane = _preview_and_submit(
             self.store,
             {
                 "side": "BUY",
@@ -329,7 +339,7 @@ class PaperP1SimulationTests(unittest.TestCase):
                 "correlation_id": "lane:squeeze",
             },
         )
-        attention = submit_paper_order(
+        attention = _preview_and_submit(
             self.store,
             {
                 "side": "BUY",
@@ -339,7 +349,7 @@ class PaperP1SimulationTests(unittest.TestCase):
                 "correlation_id": "attention-biya",
             },
         )
-        manual = submit_paper_order(
+        manual = _preview_and_submit(
             self.store,
             {
                 "side": "BUY",
@@ -374,7 +384,7 @@ class PaperP1SimulationTests(unittest.TestCase):
             "source_module": "squeeze",
             "source_time": source_time + 100_000_000_000,
         }
-        attention = submit_paper_order(
+        attention = _preview_and_submit(
             self.store,
             {
                 "side": "BUY",
@@ -385,7 +395,7 @@ class PaperP1SimulationTests(unittest.TestCase):
                 "decision_source_snapshot": attention_snapshot,
             },
         )
-        lane = submit_paper_order(
+        lane = _preview_and_submit(
             self.store,
             {
                 "side": "BUY",
@@ -396,7 +406,7 @@ class PaperP1SimulationTests(unittest.TestCase):
                 "decision_source_snapshot": lane_snapshot,
             },
         )
-        manual = submit_paper_order(
+        manual = _preview_and_submit(
             self.store,
             {
                 "side": "BUY",
@@ -433,7 +443,7 @@ class PaperP1SimulationTests(unittest.TestCase):
         self.assertIn("MISMATCH", str(ctx.exception))
 
     def test_cancel_filled_order_not_supported(self) -> None:
-        result = submit_paper_order(
+        result = _preview_and_submit(
             self.store,
             {
                 "side": "BUY",
@@ -472,7 +482,7 @@ class PaperP1SimulationTests(unittest.TestCase):
 
     def test_paper_order_history_page_paginates_terminal_orders(self) -> None:
         for index in range(3):
-            submit_paper_order(
+            _preview_and_submit(
                 self.store,
                 {
                     "side": "BUY",

@@ -15,6 +15,7 @@ try:
         build_closure_report,
         build_parser,
         classify_changed_area,
+        _environment_status,
         _npm_executable,
         _run,
         summarize_telemetry,
@@ -120,6 +121,83 @@ class ImpCliTests(unittest.TestCase):
         self.assertEqual(summary["redundant_command_events"], 1)
         self.assertEqual(summary["validation_wall_seconds"], 5.0)
         self.assertEqual(summary["ci_wall_seconds"], 3.0)
+
+    def test_env_healthy_prerequisites_exit_zero(self) -> None:
+        report = {
+            "prerequisites": {
+                "python_version_supported": True,
+                "git_available": True,
+                "repository_root_valid": True,
+                "manifest_readable": True,
+                "node_available": True,
+                "npm_available": True,
+            }
+        }
+        self.assertEqual(_environment_status(report), ("healthy", []))
+
+    def test_env_missing_optional_node_is_degraded_but_never_fails(self) -> None:
+        report = {
+            "prerequisites": {
+                "python_version_supported": True,
+                "git_available": True,
+                "repository_root_valid": True,
+                "manifest_readable": True,
+                "node_available": False,
+                "npm_available": False,
+            }
+        }
+        self.assertEqual(_environment_status(report), ("degraded", []))
+
+    def test_env_hard_prerequisite_failure_is_non_zero(self) -> None:
+        report = {
+            "prerequisites": {
+                "python_version_supported": False,
+                "git_available": True,
+                "repository_root_valid": True,
+                "manifest_readable": True,
+                "node_available": False,
+                "npm_available": False,
+            }
+        }
+        status, failures = _environment_status(report)
+        self.assertEqual(status, "unhealthy")
+        self.assertEqual(failures, ["unsupported python version"])
+        for key, label in (
+            ("git_available", "missing git executable"),
+            ("repository_root_valid", "invalid repository root"),
+            ("manifest_readable", "unreadable validation manifest"),
+        ):
+            bad = dict(report["prerequisites"])
+            bad[key] = False
+            bad["python_version_supported"] = True
+            _, failures = _environment_status({"prerequisites": bad})
+            self.assertIn(label, failures)
+
+    def test_env_command_exit_code_tracks_hard_failures(self) -> None:
+        healthy = {"prerequisites": {
+            "python_version_supported": True,
+            "git_available": True,
+            "repository_root_valid": True,
+            "manifest_readable": True,
+            "node_available": False,
+        }}
+        unhealthy = {"prerequisites": {
+            "python_version_supported": False,
+            "git_available": True,
+            "repository_root_valid": True,
+            "manifest_readable": True,
+            "node_available": True,
+        }}
+        from tools import imp as imp_module
+
+        with patch("tools.imp._diagnostics", return_value=healthy):
+            with patch.object(imp_module, "_write_json"):
+                exit_code = imp_module.main(["env"])
+            self.assertEqual(exit_code, 0)
+        with patch("tools.imp._diagnostics", return_value=unhealthy):
+            with patch.object(imp_module, "_write_json"):
+                exit_code = imp_module.main(["env"])
+            self.assertEqual(exit_code, 1)
 
     def test_validation_runner_can_stream_child_output(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

@@ -119,7 +119,10 @@ def request_from_validation_result(
         else None,
         extra={
             "selection_mode": result.get("mode"),
-            "full_suite_required": bool(result.get("full_suite_required") or selection.get("full_suite_required")),
+            "core_checkpoint_required": bool(
+                result.get("core_checkpoint_required")
+                or selection.get("core_checkpoint_required")
+            ),
             "selected_suites": list(result.get("selected_suites") or selection.get("selected_suite_ids") or ()),
             "tests_run": result.get("tests_run"),
             "passes": result.get("passes"),

@@ -547,6 +547,7 @@
         "tools/live_execution_safety",
         "tools/paper_execution_qualification",
         "tools/platform",
+        "tools/e2e",
         "tools/provider_readiness.py",
         "tools/research",
         "tools/state",

@@ -9,6 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 TOOLS = ROOT / "tools" / "ibkr"
+# G11.1 bounded live verification harness (read-only; no execution surface).
+G111_LIVE_CANARY = frozenset({"canary.py"})
 
 
 class IbkrStructuralSafetyTests(unittest.TestCase):
@@ -23,10 +25,17 @@ class IbkrStructuralSafetyTests(unittest.TestCase):
                     roots = {node.module.split(".", 1)[0]}
                 else:
                     continue
-                if path.name == "tws_client.py":
+                if path.name in {"tws_client.py", "observational_transport.py"}:
+                    roots.discard("ib_insync")
+                if path.name == "runtime_bootstrap.py":
+                    roots.discard("market_platform_foundation")
+                if path.name in G111_LIVE_CANARY:
+                    roots.discard("socket")
                     roots.discard("ib_insync")
                 self.assertTrue(roots.isdisjoint(prohibited), f"{path}: {roots & prohibited}")
                 for root in roots:
+                    if path.name in G111_LIVE_CANARY and root == "market_platform_foundation":
+                        continue
                     self.assertTrue(
                         root in sys.stdlib_module_names or root == "tools",
                         f"non-stdlib import {root!r} in {path}",
@@ -55,8 +64,25 @@ class IbkrStructuralSafetyTests(unittest.TestCase):
 
     def test_tooling_does_not_import_foundation_runtime(self) -> None:
         for path in sorted(TOOLS.rglob("*.py")):
+            if path.name in {"runtime_bootstrap.py"} | G111_LIVE_CANARY:
+                continue
             source = path.read_text(encoding="utf-8")
             self.assertNotIn("market_platform_foundation", source, str(path))
+
+    def test_runtime_bootstrap_may_import_canonical_src_contracts(self) -> None:
+        source = (TOOLS / "runtime_bootstrap.py").read_text(encoding="utf-8")
+        self.assertIn("market_platform_foundation", source)
+        tree = ast.parse(source)
+        imported = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                imported.add(node.module)
+            elif isinstance(node, ast.Import):
+                imported.update(alias.name for alias in node.names)
+        self.assertTrue(
+            any(name.startswith("market_platform_foundation") for name in imported),
+            imported,
+        )
 
     def test_documented_probe_script_help_is_offline_and_executable(self) -> None:
         completed = subprocess.run(

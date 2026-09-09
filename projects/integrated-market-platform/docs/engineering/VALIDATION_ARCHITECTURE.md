@@ -56,7 +56,7 @@ Special cases are intentionally cheaper:
 - Mixed documentation/evidence and code changes keep the affected test selection and add the applicable cheap checks.
 - No changed paths means no suites and no mandatory selectors.
 
-An executable or configuration path under `src/`, `tools/`, `ui/`, or `manifests/` with a recognized code/config suffix that has no manifest owner fails safe. CHANGED adds the broad core diagnostics, records `UNKNOWN_EXECUTABLE_PATH`, and sets `full_suite_required=true`.
+An executable or configuration path under `src/`, `tools/`, `ui/`, or `manifests/` with a recognized code/config suffix that has no manifest owner fails safe. CHANGED adds the broad core diagnostics, records `UNKNOWN_EXECUTABLE_PATH`, and sets `core_checkpoint_required=true`. The same fail-safe rule covers fixture/config paths without an explicit owner (`UNOWNED_FIXTURE_OR_CONFIG`) and canonical shared modules without a bounded dependent mapping (`SHARED_MODULE_UNBOUNDED`); no changed path may disappear silently.
 
 ### DOMAIN
 
@@ -88,7 +88,7 @@ The manifest owns Python `unittest` directories under `tests/`. The separately c
 
 ## The canonical manifest
 
-`tools/validation_manifest.json` is the only canonical suite inventory. Do not reproduce suite lists in runners or documentation. Each entry owns one test-directory path and declares its classification, tiers, domains, scheduling safety, resource weight, direct source/test globs, neighbors, and live metadata where applicable. The top level also declares domains, full invalidators, and ordered mandatory invariants.
+`tools/validation_manifest.json` is the only canonical suite inventory. Do not reproduce suite lists in runners or documentation. Each entry owns one test-directory path and declares its classification, tiers, domains, scheduling safety, resource weight, direct source/test globs, neighbors, and live metadata where applicable. The top level also declares domains, core-checkpoint invalidators, ordered mandatory invariants, and bounded shared-module dependents.
 
 `tools/validation_manifest.py` is a standard-library-only, side-effect-free loader. It returns frozen typed records and, before test discovery, rejects unsafe or ambiguous configuration including:
 
@@ -110,7 +110,7 @@ The allowed safety classes are `PARALLEL_SAFE`, `SERIAL_REQUIRED`, `LIVE_EXCLUSI
 
 `neighbors` express integration boundaries. They are one-hop, declared relationships rather than a recursively inferred dependency graph. A neighbor is selected only when a changed path directly matches the source glob of the originating suite. Changing a test file does not trigger neighbors, and live neighbors are never pulled into CHANGED.
 
-`full_invalidators` identify validation infrastructure and shared correctness boundaries whose changes require the authoritative offline checkpoint. The current categories include:
+`core_checkpoint_invalidators` (the former misleadingly named `full_invalidators`) identify validation infrastructure and shared correctness boundaries whose changes require the core checkpoint. The current categories include:
 
 - the manifest, loader, worker, CLI, compatibility runner, and benchmark path;
 - canonical and shared contract/provider-envelope code;
@@ -125,17 +125,17 @@ implementation and adds safe environment diagnostics, format/lint gates,
 focused selectors, review orchestration, and closure evidence. It is not a
 second inventory or authority.
 
-### `full_suite_required` is a gate, not an expansion
+### `core_checkpoint_required` is a gate, not an expansion
 
 CHANGED is not equivalent to FULL when its output contains:
 
 ```text
-full_suite_required=true
+core_checkpoint_required=true
 ```
 
-This flag is set by a full invalidator or an unknown executable/configuration path. The changed run still executes mandatory invariants, directly affected suites, declared neighbors, and broad core diagnostics. It deliberately does **not** silently expand to every offline suite.
+This flag is set by a core-checkpoint invalidator, an unknown executable/configuration path, an unowned fixture/config path, or an unbounded shared module. The changed run still executes mandatory invariants, directly affected suites, declared neighbors, and broad core diagnostics. It deliberately does **not** silently expand to every offline suite. The flag is named for what actually runs — the core checkpoint — and never claims a full-suite run.
 
-A passing CHANGED result with `full_suite_required=true` is preliminary diagnostic evidence only. The implementation cannot be considered finally validated until `python tools/validate.py full` also passes at the major/final checkpoint. CI and agents must preserve and enforce that distinction.
+A passing CHANGED result with `core_checkpoint_required=true` is preliminary diagnostic evidence only. The implementation cannot be considered finally validated until `python tools/validate.py full` also passes at the major/final checkpoint. CI and agents must preserve and enforce that distinction.
 
 ## Worker and scheduling model
 
@@ -184,7 +184,7 @@ The gate cleanup prevents accidental live-test authorization; the network guard 
 
 ## Result interpretation
 
-The concise terminal summary reports overall status, mode, tests, skips, failures, errors, and wall time. Nonpassing workers are printed automatically; `--verbose` prints every worker. JSON output additionally includes changed files, selected suites and reasons, omitted domains, mandatory selectors, `full_suite_required`, global reasons, worker/heavy-worker counts, process launches, structured totals, per-worker results, cheap-check results, suites not run because of fail-fast/interruption, and interruption state.
+The concise terminal summary reports overall status, mode, tests, skips, failures, errors, and wall time. Nonpassing workers are printed automatically; `--verbose` prints every worker. JSON output additionally includes changed files, selected suites and reasons, omitted domains, mandatory selectors, `core_checkpoint_required`, per-path decisions (original, normalized, classification, owning/dependent suites, escalation reason), global reasons, worker/heavy-worker counts, process launches, structured totals, per-worker results, cheap-check results, suites not run because of fail-fast/interruption, and interruption state.
 
 Timing data is observational. Compare like-for-like mode, worker count, machine load, and fixture-profile settings. Do not convert wall-clock targets into functional assertions or weaken isolation/PIT/security checks to obtain a faster number. Use validation JSON timing fields for runner evidence and benchmark output for non-gating performance analysis.
 
@@ -213,4 +213,4 @@ LIVE PROVIDER MODIFIED
   -> python tools/validate.py live <provider>   # once
 ```
 
-After every CHANGED run, inspect the exit status and `full_suite_required`. If the flag is true, record that FULL remains required and run FULL once at the final major checkpoint even when CHANGED passed. Do not run FULL after every intermediate edit. If a change crosses several domains, run each applicable domain checkpoint or advance to the final FULL checkpoint. Run LIVE only for a provider whose live boundary changed, after offline validation; LIVE never substitutes for FULL.
+After every CHANGED run, inspect the exit status and `core_checkpoint_required`. If the flag is true, record that FULL remains required and run FULL once at the final major checkpoint even when CHANGED passed. Do not run FULL after every intermediate edit. If a change crosses several domains, run each applicable domain checkpoint or advance to the final FULL checkpoint. Run LIVE only for a provider whose live boundary changed, after offline validation; LIVE never substitutes for FULL.

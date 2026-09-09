@@ -40,7 +40,7 @@ requires exact selectors of the form
    neighbors, and mandatory invariants; safe Python suites run in parallel.
 4. **DOMAIN:** all offline full-tier suites for one domain at a milestone.
 5. **CHANGED:** the canonical affected result plus cheap checks; a
-   `full_suite_required` result is preliminary, never closure evidence.
+   `core_checkpoint_required` result is preliminary, never closure evidence.
 6. **FULL:** all offline full-tier suites once at final closure.
 
 `SERIAL_REQUIRED`, `GLOBAL_STATE_MUTATION`, and `LIVE_EXCLUSIVE` work stays

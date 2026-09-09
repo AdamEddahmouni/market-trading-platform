@@ -18,9 +18,9 @@
     "expected_pnl": 326.3,
     "net_expected_pnl": 309.6536,
     "friction_cost": 16.6464,
-    "method": "CROSS_LANE_FUSION_V1",
-    "model_version": "shared_opportunity_v1",
-    "replay_hash": "6abf9f2a7659a74ed00a51191d7e3cea2aa18877bbe0a2a74b4ced37402dfb2a"
+    "method": "CROSS_LANE_FUSION_V2",
+    "model_version": "shared_opportunity_v2",
+    "replay_hash": "3d766b89a0a9766d2ff18dab3ad2d258bff8e72909d585e61b359239635e7fbe"
   },
   "cross_lane_snapshot": {
     "squeeze_available": true,

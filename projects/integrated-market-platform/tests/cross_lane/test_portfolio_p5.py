@@ -62,6 +62,67 @@ def _position(
     )
 
 
+class FusionCoercionTests(unittest.TestCase):
+    """Dict fusion payloads (SHARED P4 v2) coerce without failing on null occurrence."""
+
+    def test_dict_payload_with_null_occurrence_weight_coerces(self) -> None:
+        """V2 serializes occurrence_weight=None for non-squeeze-aligned lanes; must not crash."""
+        position = PortfolioPosition(
+            position_id="of-1",
+            symbol="GME",
+            lane="order_flow",
+            fusion={
+                "fused_net_ev": 250.0,
+                "occurrence_weight": None,
+                "liquidity_factor": 1.0,
+                "gross_ev_before_weights": 250.0,
+                "template": "long_straddle",
+                "squeeze_aligned": False,
+            },
+        )
+        self.assertIsNone(position.fusion.occurrence_weight)
+        self.assertEqual(position.fusion.fused_net_ev, 250.0)
+
+    def test_dict_payload_with_numeric_occurrence_weight_coerces(self) -> None:
+        position = PortfolioPosition(
+            position_id="ss-1",
+            symbol="GME",
+            lane="short_squeeze",
+            fusion={
+                "fused_net_ev": 400.0,
+                "occurrence_weight": 0.999983,
+                "liquidity_factor": 1.0,
+                "gross_ev_before_weights": 400.0,
+                "template": "bull_call_spread",
+                "squeeze_aligned": True,
+            },
+        )
+        self.assertAlmostEqual(position.fusion.occurrence_weight, 0.999983)
+
+    def test_null_occurrence_weight_survives_view_serialization(self) -> None:
+        view = build_portfolio_view(
+            [
+                PortfolioPosition(
+                    position_id="of-1",
+                    symbol="GME",
+                    lane="order_flow",
+                    fusion={
+                        "fused_net_ev": 250.0,
+                        "occurrence_weight": None,
+                        "liquidity_factor": 1.0,
+                        "gross_ev_before_weights": 250.0,
+                        "template": "long_straddle",
+                        "squeeze_aligned": False,
+                    },
+                )
+            ],
+            as_of_time=AS_OF,
+        ).to_dict()
+        row = view["ranked_positions"][0]
+        self.assertIsNone(row["occurrence_weight"])
+        self.assertEqual(row["fused_net_ev"], 250.0)
+
+
 class StanceDerivationTests(unittest.TestCase):
     def test_directional_templates(self) -> None:
         self.assertEqual(stance_from_template("long_call_atm"), PortfolioStance.BULLISH)

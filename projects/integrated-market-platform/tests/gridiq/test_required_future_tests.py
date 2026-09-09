@@ -1,4 +1,12 @@
-"""GRID_IQ_NOTES required future tests — conformance harness."""
+"""Conformance harness for requirements historically motivated by the GridIQ review.
+
+This suite verifies native IMP conformance to requirements that were
+historically motivated by the GridIQ review (``GRID_IQ_NOTES.md`` required
+future tests). It does **not** assert that GridIQ remains an authorized donor:
+the professor's donor-identity correction (2026-08-28) established that Lucas
+Heller's GridIQ materials were not intended donors. The requirements under
+test are IMP-native and remain legitimate independently of any donor record.
+"""
 
 from __future__ import annotations
 

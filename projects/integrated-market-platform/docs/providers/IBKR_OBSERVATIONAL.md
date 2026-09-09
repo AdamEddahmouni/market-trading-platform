@@ -10,22 +10,34 @@ Observed runtime evidence outranks documentation.
 ## Architecture
 
 ```text
-lane request (US_EQUITY_L1 / HISTORY / OPTIONS_CHAIN / SCANNER / PORTFOLIO_STATE)
+lane request (US_EQUITY_L1 / L2 / HISTORY / OPTIONS_CHAIN / SCANNER)
         ↓
-provider router / composition (ADR-PROV-001)
+outer bootstrap (tools/ibkr/runtime_bootstrap.py)
+        ↓ constructs IbkrObservationalTransport (streaming)
+        ↓ constructs IbkrOuterReadOnlyQueryProvider (read-only queries)
+src live_runtime / ObservationalRuntimeComposition
+        ↓ IbkrTransport protocol (injected streaming)
+        ↓ IbkrReadOnlyQueryProvider protocol (injected queries)
+IbkrObservationalAdapter + IbkrObservationalQueryService
         ↓
-optional Client Portal Gateway process (127.0.0.1:5000)
-   or optional IB Gateway desktop + TWS socket (127.0.0.1:4001/4002, stage 2)
-        ↓
-tools/ibkr/* stdlib processes (rate-limited REST client, SRP/TOTP login, watchdog)
-        ↓ serialized JSONL captures (CAPTURED_NOT_ADMITTED)
-src/market_platform_foundation/market_data/   (CPython 3.11 stdlib, unchanged)
+ObservationalStateStore / IncrementalOrderBook / diagnostic query surface
+        ↓ depth_admission (G10 / BL-0303)
+ObservationalLaneRuntime (OFI/book features fail closed on stale depth)
 ```
 
-No IBKR SDK is a dependency of `market_platform_foundation`. The Client Portal
-Web API is plain HTTPS REST, so Stage 1 tooling is pure CPython 3.11 stdlib
-(`urllib.request` + `ssl`, `hashlib`, `hmac`). The TWS socket collector uses
-`ib_insync` in an out-of-repo venv and is never on the runtime path.
+Read-only query operations (G11) — contract resolution, historical bars, account
+observation — use a separate injected protocol. Canonical normalization lives in
+`providers/ibkr_observational/query_provider.py`; outer REST/TWS fetch lives in
+`tools/ibkr/query_provider.py`. Provider qualification is subordinate to XA-01
+admission. Account facts are `READ_ONLY_OBSERVATIONAL` and never mutate G2
+portfolio state.
+
+No IBKR SDK is a dependency of `market_platform_foundation`. Canonical src
+never imports `tools/ibkr`. The Client Portal Web API is plain HTTPS REST, so
+Stage 1 tooling is pure CPython 3.11 stdlib (`urllib.request` + `ssl`,
+`hashlib`, `hmac`). The TWS socket collector uses `ib_insync` from the outer
+transport only. `tools/ui1/run_ui_api.py` installs the IBKR observational
+provider before `get_live_runtime()`.
 
 ## Free data surface (no paid subscriptions)
 
@@ -125,6 +137,16 @@ $env:IMP_IBKR_LIVE = "1"
 
 Ordinary CI does **not** run `tests/live_ibkr`.
 
+Bounded read-only live canary (G11; optional, fail-closed):
+
+```powershell
+$env:IMP_IBKR_LIVE = "1"
+.venv\Scripts\python.exe tools/ibkr/canary.py --symbol AAPL --duration 15 --output evidence/market_data/ibkr/canary-report.json
+```
+
+Account-read canary is optional and redacts account identity in exported
+evidence. No execution. No symbol sweep.
+
 ## Data admission
 
 ```text
@@ -140,14 +162,21 @@ compatibility only (`CAPTURED_REPLAY_NOT_ADMITTED`).
   `ingested_time`; live envelopes populate `live_received_time` and forbid
   `historical_ingested_time` (TC-002).
 - Aggressor classification is not derivable from delayed L1; no provider-native
-  aggressor claim is made.
+  aggressor claim is made for standard `tickByTickAllLast` callbacks.
+- G9 tick-by-tick trade tape (`IBKR_TRADES`): `reqTickByTickData` with
+  `"AllLast"` → `TradePrintFacts` → Lee-Ready inference using contemporaneous
+  canonical L1 (same provider, freshness gate). UNKNOWN when quote context is
+  missing/stale/cross-provider. No stable provider event id — replay dedup uses
+  a local composite key only.
 - Quality: reuse existing quality flag vocabulary; delayed timestamps are
   annotated, never presented as real time.
 
 ## Known limitations
 
 - Delayed L1 is 15–20 minutes behind; unsuitable for intrabar microstructure claims.
-- No free depth-of-book anywhere on this surface.
+- No free depth-of-book anywhere on this surface (L2 requires entitlements).
+- Tick-by-tick trade tape requires TWS/Gateway entitlements; live verification
+  remains `LIVE_PROVIDER_UNVERIFIED` until a bounded canary is collected.
 - Headless SRP/TOTP login is unofficial and version-sensitive.
 - ES futures acceptance remains blocked per `ADR-DATA-001`; captures are not
   admitted datasets regardless of instrument.

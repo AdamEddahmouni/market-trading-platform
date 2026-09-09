@@ -1,5 +1,14 @@
 # Revision 3 donor reuse matrix
 
+> **STATUS: SUPERSEDED — HISTORICAL · AUTHORIZATION BASIS SUPERSEDED**
+>
+> This record predates the professor's donor-identity correction (2026-08-28):
+> Lucas Heller's DS-340W and GridIQ materials were **not** intended donor
+> sources for this platform. Any native IMP implementation independently
+> reimplemented from a legitimate platform requirement remains valid. This
+> record is preserved for provenance only and must not be used as
+> authorization for future implementation.
+
 This matrix is subordinate to the approved Revision 3 specification. Donors
 remain external snapshots. `PORT_ADAPT` requires independent reimplementation;
 it is not permission to copy. No row authorizes a phase, network access, model,

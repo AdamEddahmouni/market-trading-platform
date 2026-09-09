@@ -74,8 +74,13 @@ describe("mode authority", () => {
       execution_mode: "INTERNAL_SIMULATION",
       execution_authority: "PAPER_ONLY",
     } as const;
+    const fixturePaper = {
+      execution_mode: "INTERNAL_SIMULATION",
+      execution_authority: "AUTHORIZED",
+    } as const;
 
     expect(canUsePaperActions("PAPER", true, paper)).toBe(true);
+    expect(canUsePaperActions("PAPER", true, fixturePaper)).toBe(true);
     expect(canUsePaperActions("PAPER", false, paper)).toBe(false);
     expect(canUsePaperActions("DEMO", true, paper)).toBe(false);
     expect(

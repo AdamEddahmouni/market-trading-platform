@@ -1,5 +1,7 @@
+import { lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import { useWorkspaceOptionsQuery } from "../../api/hooks";
+import { useOptionsProductQuery, useWorkspaceOptionsQuery } from "../../api/hooks";
+import { workspacePathForInstrument } from "../../api/instrumentIdentity";
 import {
   ADMITTED_OPTIONS_RESEARCH_INSTRUMENT_ID,
   ADMITTED_REPLAY_INSTRUMENT_ID,
@@ -8,7 +10,14 @@ import type { Mode } from "../mode-session/types";
 import { deriveLaneQueryState } from "../workspace-module-shared/laneQueryState";
 import { ModeAwareWorkspaceLane } from "../workspace-module-shared/ModeAwareWorkspaceLane";
 import { useWorkspaceInstrumentId } from "../workspace-module-shared/useWorkspaceInstrumentId";
+import { OptionsProductSurface } from "./OptionsProductSurface";
 import { OptionsWorkspacePanel } from "./OptionsWorkspacePanel";
+
+const CanonicalInstrumentSelector = lazy(() =>
+  import("../instrument-selector/CanonicalInstrumentSelector").then((module) => ({
+    default: module.CanonicalInstrumentSelector,
+  })),
+);
 
 type Props = {
   mode: Mode;
@@ -19,24 +28,37 @@ type Props = {
 export function OptionsWorkspaceObservability({ mode, onExplain, onInspect }: Props) {
   const instrumentId = useWorkspaceInstrumentId(ADMITTED_REPLAY_INSTRUMENT_ID);
   const optionsQuery = useWorkspaceOptionsQuery(instrumentId);
+  const productQuery = useOptionsProductQuery(instrumentId, mode);
   const queryState = deriveLaneQueryState(optionsQuery, "options");
 
   return (
-    <ModeAwareWorkspaceLane
-      mode={mode}
-      moduleId="options"
-      instrumentId={instrumentId}
-      queryState={queryState}
-      data={optionsQuery.data}
-    >
-      <OptionsWorkspacePanel
+    <>
+      <Suspense fallback={null}>
+        <CanonicalInstrumentSelector label="Canonical instrument selector" />
+      </Suspense>
+      <ModeAwareWorkspaceLane
+        mode={mode}
+        moduleId="options"
         instrumentId={instrumentId}
-        options={optionsQuery.data ?? null}
-        loading={optionsQuery.isLoading}
-        onExplain={onExplain}
-        onInspect={onInspect}
-      />
-    </ModeAwareWorkspaceLane>
+        queryState={queryState}
+        data={optionsQuery.data}
+      >
+        <OptionsProductSurface
+          mode={mode}
+          instrumentId={instrumentId}
+          product={productQuery.data ?? null}
+          loading={productQuery.isLoading}
+          paperActionsPermitted={mode === "PAPER"}
+        />
+        <OptionsWorkspacePanel
+          instrumentId={instrumentId}
+          options={optionsQuery.data ?? null}
+          loading={optionsQuery.isLoading}
+          onExplain={onExplain}
+          onInspect={onInspect}
+        />
+      </ModeAwareWorkspaceLane>
+    </>
   );
 }
 
@@ -51,7 +73,7 @@ export function OptionsModuleHeaderExtra({ instrumentId }: { instrumentId: strin
   if (instrumentId !== ADMITTED_REPLAY_INSTRUMENT_ID) return null;
   return (
     <p className="workspace-hint">
-      <Link to={`/workspace/${ADMITTED_OPTIONS_RESEARCH_INSTRUMENT_ID}/options`}>
+      <Link to={workspacePathForInstrument(ADMITTED_OPTIONS_RESEARCH_INSTRUMENT_ID, "options")}>
         Open {ADMITTED_OPTIONS_RESEARCH_INSTRUMENT_ID} cooperative research path
       </Link>
     </p>

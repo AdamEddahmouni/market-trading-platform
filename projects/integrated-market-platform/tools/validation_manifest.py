@@ -30,6 +30,20 @@ SELECTOR_PATTERN = re.compile(
     r"^(tests/[A-Za-z0-9_.\-/]+\.py)::([A-Za-z_][A-Za-z0-9_]*)::"
     r"([A-Za-z_][A-Za-z0-9_]*)$"
 )
+# Canonical shared/common modules. Each entry either has an explicit
+# ``shared_module_dependents`` mapping in the manifest (bounded dependent
+# selection) or intentionally escalates to the core checkpoint.
+SHARED_MODULE_PATHS = frozenset(
+    {
+        "src/market_platform_foundation/numeric.py",
+        "src/market_platform_foundation/clock.py",
+        "src/market_platform_foundation/errors.py",
+        "src/market_platform_foundation/assertions.py",
+        "src/market_platform_foundation/authority.py",
+        "src/market_platform_foundation/evidence.py",
+        "src/market_platform_foundation/market_sessions.py",
+    }
+)
 
 
 class ManifestValidationError(ValueError):
@@ -67,12 +81,20 @@ class ValidationSuite:
 
 
 @dataclass(frozen=True, slots=True)
+class SharedModuleDependency:
+    path: str
+    dependent_suites: tuple[str, ...]
+    reason: str
+
+
+@dataclass(frozen=True, slots=True)
 class ValidationManifest:
     schema_version: str
     domains: tuple[str, ...]
-    full_invalidators: tuple[str, ...]
+    core_checkpoint_invalidators: tuple[str, ...]
     mandatory_invariants: tuple[MandatoryInvariant, ...]
     suites: tuple[ValidationSuite, ...]
+    shared_module_dependents: tuple[SharedModuleDependency, ...] = ()
 
     def suite_by_id(self, suite_id: str) -> ValidationSuite:
         for suite in self.suites:
@@ -229,6 +251,51 @@ def _parse_suites(raw: Any, domains: frozenset[str], errors: list[str]) -> tuple
     return tuple(suites)
 
 
+def _parse_shared_module_dependents(
+    payload: Any,
+    suites: tuple[ValidationSuite, ...],
+    errors: list[str],
+) -> tuple[SharedModuleDependency, ...]:
+    rows = _sequence(
+        payload.get("shared_module_dependents", []),
+        field="shared_module_dependents",
+        errors=errors,
+    )
+    known_ids = {suite.id for suite in suites}
+    known_shared = set(SHARED_MODULE_PATHS)
+    dependents: list[SharedModuleDependency] = []
+    seen: set[str] = set()
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            errors.append(f"shared_module_dependents[{index}] must be an object")
+            continue
+        path = row.get("path")
+        if not isinstance(path, str) or not _valid_relative_glob(path):
+            errors.append(f"shared_module_dependents[{index}].path must be a valid relative glob")
+            path = str(path or "")
+        if path and path in seen:
+            errors.append(f"duplicate shared module dependent path: {path}")
+        seen.add(path)
+        if path and path not in known_shared:
+            errors.append(f"shared module dependent path is not a canonical shared module: {path}")
+        suite_values = _text_sequence(
+            row.get("dependent_suites", []),
+            field=f"shared_module_dependents[{index}].dependent_suites",
+            errors=errors,
+        )
+        for suite_id in suite_values:
+            if suite_id not in known_ids:
+                errors.append(f"unknown dependent suite for {path}: {suite_id}")
+        reason = row.get("reason")
+        if not isinstance(reason, str) or not reason.strip():
+            errors.append(f"shared_module_dependents[{index}].reason is required")
+            reason = ""
+        if not suite_values:
+            errors.append(f"shared module {path} must declare dependent suites (or be omitted to escalate)")
+        dependents.append(SharedModuleDependency(str(path), tuple(suite_values), str(reason)))
+    return tuple(dependents)
+
+
 def _validate_inventory(
     suites: tuple[ValidationSuite, ...], repository_root: Path, errors: list[str]
 ) -> None:
@@ -312,14 +379,17 @@ def load_manifest(path: Path, *, repository_root: Path | None = None) -> Validat
     if len(set(domain_values)) != len(domain_values):
         errors.append("duplicate domain")
     domains = frozenset(domain_values)
-    full_invalidators = _text_sequence(
-        payload.get("full_invalidators", []), field="full_invalidators", errors=errors
+    core_checkpoint_invalidators = _text_sequence(
+        payload.get("core_checkpoint_invalidators", payload.get("full_invalidators", [])),
+        field="core_checkpoint_invalidators",
+        errors=errors,
     )
-    for pattern in full_invalidators:
+    for pattern in core_checkpoint_invalidators:
         if not _valid_relative_glob(pattern):
-            errors.append(f"invalid full invalidator glob: {pattern}")
+            errors.append(f"invalid core checkpoint invalidator glob: {pattern}")
     invariants = _parse_invariants(payload.get("mandatory_invariants", []), errors)
     suites = _parse_suites(payload.get("suites", []), domains, errors)
+    shared_dependents = _parse_shared_module_dependents(payload, suites, errors)
     _validate_invariant_targets(invariants, root.resolve(), errors)
     _validate_inventory(suites, root.resolve(), errors)
     if errors:
@@ -327,17 +397,20 @@ def load_manifest(path: Path, *, repository_root: Path | None = None) -> Validat
     return ValidationManifest(
         schema_version=schema_version,
         domains=domain_values,
-        full_invalidators=full_invalidators,
+        core_checkpoint_invalidators=core_checkpoint_invalidators,
         mandatory_invariants=invariants,
         suites=suites,
+        shared_module_dependents=shared_dependents,
     )
 
 
 __all__ = [
     "CLASSIFICATIONS",
     "SAFETY_CLASSES",
+    "SHARED_MODULE_PATHS",
     "ManifestValidationError",
     "MandatoryInvariant",
+    "SharedModuleDependency",
     "ValidationManifest",
     "ValidationSuite",
     "load_manifest",

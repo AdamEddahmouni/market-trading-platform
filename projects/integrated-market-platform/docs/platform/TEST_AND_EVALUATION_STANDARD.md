@@ -86,16 +86,18 @@ At applicable consequence levels, validation runs SHOULD support:
 | outcome | Domain result under protocol |
 | disposition | Governed decision |
 
-### `full_suite_required`
+### `core_checkpoint_required`
 
-`full_suite_required` is current executable validation behavior determined by
-[`tools/validate.py`](../../tools/validate.py) selection logic and manifest
-invalidators. This standard references it. It does not create an independent
-standards-level selector.
+`core_checkpoint_required` is current executable validation behavior determined
+by [`tools/validate.py`](../../tools/validate.py) selection logic and manifest
+core-checkpoint invalidators. This standard references it. It does not create
+an independent standards-level selector.
 
-When `full_suite_required=false`, changed-path validation is sufficient for
-the applicable policy. When `full_suite_required=true`, full suite execution is
-required.
+When `core_checkpoint_required=false`, changed-path validation is sufficient
+for the applicable policy. When `core_checkpoint_required=true`, the changed
+run executes the core checkpoint: the mandatory invariant batch plus the core
+diagnostic suites. It does **not** claim to be the full suite; `validate full`
+remains required at major/final checkpoints.
 
 ### `PASS_WITH_RETRY`
 

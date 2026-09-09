@@ -262,7 +262,9 @@ def build_live_order_book_payload(instrument_id: str) -> dict[str, Any] | None:
         "best_ask": None if best_ask is None else best_ask.get("price"),
         "best_bid": None if best_bid is None else best_bid.get("price"),
         "bid_size": None if best_bid is None else best_bid.get("size"),
-        "book_state_valid": True,
+        # Derived truth (ARCH-009): the canonical engine flags validity; fall
+        # back to structural presence only when flags are absent.
+        "book_state_valid": bool(book.get("book_state_valid", bool(bids and asks))),
         "epistemic_class": "OBSERVATIONAL",
         "event_time": str(book.get("event_time_ns")),
         "level_count": max(len(bids), len(asks)),

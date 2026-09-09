@@ -1,0 +1,102 @@
+{
+  "adr_id": "ADR-LIVE-002",
+  "capabilities": {
+    "contract_search": {
+      "evidence_class": "OBSERVED",
+      "shape": {
+        "item_count": 17,
+        "item_keys": [
+          "conid",
+          "primaryExchange",
+          "secType",
+          "symbol"
+        ],
+        "payload_type": "array"
+      },
+      "status": "AVAILABLE"
+    },
+    "delayed_snapshot": {
+      "evidence_class": "OBSERVED",
+      "shape": {
+        "item_count": 1,
+        "item_keys": [
+          "31",
+          "87",
+          "conid"
+        ],
+        "payload_type": "array"
+      },
+      "status": "AVAILABLE"
+    },
+    "historical_bars": {
+      "evidence_class": "OBSERVED",
+      "shape": {
+        "keys": [
+          "data",
+          "symbol"
+        ],
+        "payload_type": "object"
+      },
+      "status": "AVAILABLE"
+    },
+    "option_definitions": {
+      "evidence_class": "OBSERVED",
+      "shape": {
+        "item_count": 39,
+        "item_keys": [
+          "exchange",
+          "expirations",
+          "strikes",
+          "tradingClass"
+        ],
+        "payload_type": "array"
+      },
+      "status": "AVAILABLE"
+    },
+    "portfolio_accounts": {
+      "evidence_class": "OBSERVED",
+      "shape": {
+        "item_count": 1,
+        "item_keys": [
+          "available",
+          "item_count"
+        ],
+        "payload_type": "array"
+      },
+      "status": "AVAILABLE"
+    },
+    "scanner_parameters": {
+      "evidence_class": "OBSERVED",
+      "shape": {
+        "keys": [
+          "available"
+        ],
+        "payload_type": "object"
+      },
+      "status": "AVAILABLE"
+    },
+    "session": {
+      "authenticated": true,
+      "connected": true,
+      "evidence_class": "OBSERVED",
+      "shape": {
+        "keys": [
+          "authenticated",
+          "connected"
+        ],
+        "payload_type": "object"
+      },
+      "status": "AVAILABLE"
+    }
+  },
+  "classification": "OBSERVED_CAPABILITY_REPORT_NOT_ADMITTED",
+  "observed_at": "2026-09-09T14:20:31.096364Z",
+  "provider": "IBKR_TWS_GATEWAY",
+  "resolved_contract": {
+    "conid": 265598,
+    "symbol": "AAPL"
+  },
+  "schema_version": "1.0",
+  "symbol": "AAPL",
+  "transport": "tws"
+}

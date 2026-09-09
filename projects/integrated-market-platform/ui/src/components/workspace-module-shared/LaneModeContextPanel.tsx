@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { workspacePathForInstrument } from "../../api/instrumentIdentity";
 import type { Mode } from "../mode-session/types";
 import type { WorkspaceLaneModuleId } from "./laneRegistry";
 import { createLanePaperOrderDraft, LANE_DRAFT_PLACEHOLDER_NOTE } from "../paper-now/paperOrderDraft";
@@ -108,7 +109,7 @@ export function LaneModeContextPanel({ mode, moduleId, instrumentId, queryState,
       {mode === "PAPER" && queryState.phase !== "error" ? (
         <div className="lane-mode-paper-draft">
           <Link
-            to={`/workspace/${instrumentId}`}
+            to={workspacePathForInstrument(instrumentId)}
             state={createLanePaperOrderDraft(instrumentId, moduleId, {
               lanePayload: queryState.provenance ? { lane_provenance: queryState.provenance } : undefined,
             })}

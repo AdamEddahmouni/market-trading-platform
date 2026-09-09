@@ -17,7 +17,7 @@ const validDraft: PaperOrderDraft = { version: 1, instrumentId: "BIYA", side: "S
 function previewResponse(preview: Partial<PaperOrderPreviewResponse["preview"]>): PaperOrderPreviewResponse {
   return {
     as_of_context: { mode: "PAPER", data_mode: "FIXTURE_REPLAY", execution_mode: "INTERNAL_SIMULATION", execution_authority: "PAPER_ONLY", as_of_time: "2026-08-31T12:00:00Z", timezone: "America/New_York" },
-    preview: { risk_status: "PASS", decision: "ALLOW", ...preview },
+    preview: { preview_id: "preview-test-1", risk_status: "PASS", decision: "ALLOW", ...preview },
   };
 }
 
@@ -123,6 +123,18 @@ describe("OrderTicket workspace revalidation", () => {
         quantity: 13,
         decision_source_snapshot: expect.objectContaining({ source_time: sourceTime }),
       }),
+    );
+  });
+
+  it("includes preview_id when submitting after a PASS preview", async () => {
+    mocks.previewPaperOrder.mockResolvedValueOnce(previewResponse({ risk_status: "PASS", decision: "ALLOW" }));
+    mocks.submitPaperOrder.mockResolvedValueOnce({ submission: { intent_id: "intent-1" } });
+    renderTicket(validDraft);
+    expect(await screen.findByRole("button", { name: "Submit" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+    await waitFor(() => expect(mocks.submitPaperOrder).toHaveBeenCalledTimes(1));
+    expect(mocks.submitPaperOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ preview_id: "preview-test-1", side: "SELL", quantity: 12 }),
     );
   });
 

@@ -41,14 +41,48 @@ def _is_inferred_source(source: AggressorSource) -> bool:
     }
 
 
+def cvd_session_anchor(bar_time: str) -> str:
+    """Deterministic session bucket for a bar time (BL-0208).
+
+    Same bar time always maps to the same anchor regardless of process
+    restarts or replay order; a trading-day boundary (ISO date prefix) is
+    used when the time carries one. A new anchor means the cumulative delta
+    series restarts — CVD is per-session, not unbounded-cumulative.
+    """
+    value = str(bar_time or "").strip()
+    if len(value) >= 10 and value[4] == "-" and value[7] == "-":
+        return value[:10]
+    return value
+
+
 def compute_cvd_state(
     bars: Sequence[dict[str, object]],
     *,
     rolling_window: int | None = None,
+    previous_anchor: str | None = None,
 ) -> CVDState | None:
-    """Aggregate bar-level signed flow into CVD with provenance-weighted confidence."""
+    """Aggregate bar-level signed flow into CVD with provenance-weighted confidence.
+
+    ``previous_anchor`` (from an earlier call) enables explicit session-reset
+    semantics: when the new bars open a different session bucket the returned
+    ``session_reset`` is True and ``session_anchor`` carries the new bucket,
+    so restart/rollover never silently continues an old session's cumulative
+    delta (BL-0208).
+    """
     if not bars:
         return None
+
+    first_time = next(
+        (
+            str(bar.get("bar_time", bar.get("date", "")))
+            for bar in bars
+            if isinstance(bar, dict)
+            and str(bar.get("bar_time", bar.get("date", ""))).strip()
+        ),
+        None,
+    )
+    anchor = cvd_session_anchor(first_time) if first_time is not None else None
+    session_reset = previous_anchor is not None and anchor is not None and previous_anchor != anchor
 
     classified: list[ClassifiedTrade] = []
     for bar in bars:
@@ -105,6 +139,8 @@ def compute_cvd_state(
         cvd_confidence=round(cvd_confidence, 4),
         aggressive_buy_volume=buy_vol,
         aggressive_sell_volume=sell_vol,
+        session_anchor=anchor,
+        session_reset=session_reset,
     )
 
 
@@ -140,6 +176,7 @@ __all__ = [
     "compute_cvd_series",
     "compute_cvd_state",
     "cvd_acceleration",
+    "cvd_session_anchor",
     "cvd_slope",
     "map_whale_provenance_to_source",
     "provenance_fractions_from_bars",

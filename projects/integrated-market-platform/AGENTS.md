@@ -51,6 +51,24 @@ Use the cheapest relevant stage: FAST → focused/affected → domain/changed �
 FULL closure. `tools/validation_manifest.json` remains the sole test inventory;
 `tools/validate.py` remains the Python validation authority.
 
+## Canonical edit target
+
+IMP exists in two trees, and they are not interchangeable edit targets:
+
+- `projects/integrated-market-platform/` — the **canonical edit target**: the
+  tracked snapshot inside the parent monorepo
+  (`AdamEddahmouni/market-trading-platform`). Parent-root CI and the local
+  monorepo workflow run against this tree, and IMP changes are committed here.
+- `integrated-market-platform/` — the standalone child repository (own `.git`;
+  archived upstream). It is a mirror/upstream lineage source: consult it for
+  history or standalone runs, but do not independently edit both trees in one
+  increment.
+
+Edit `projects/integrated-market-platform/` unless a task explicitly requires
+the child repository. `tools/validate.py changed` automatically normalizes the
+`projects/integrated-market-platform/` prefix when run inside the monorepo, so
+changed-path validation selects the same suites from either tree.
+
 ## Working rules
 
 - Inspect existing patterns, schemas, ownership metadata, and authoritative

@@ -10,6 +10,7 @@ import type {
   WorkspaceOrderFlowResponse,
   WorkspaceSqueezeResponse,
 } from "../../api/schemas";
+import { workspacePathForInstrument } from "../../api/instrumentIdentity";
 import type { Mode } from "../mode-session/types";
 import type { WorkspaceLaneModuleId, WorkspaceModuleId } from "./laneRegistry";
 import type {
@@ -156,7 +157,7 @@ function buildSqueezeContent(args: BuildLaneModeContentArgs): LaneModeContent {
           "Ignition evidence does not imply tradability in Demo.",
         ],
       ),
-      relatedLinks: [{ label: "Workspace overview replay", to: `/workspace/${args.instrumentId}` }],
+      relatedLinks: [{ label: "Workspace overview replay", to: workspacePathForInstrument(args.instrumentId) }],
     };
   }
 

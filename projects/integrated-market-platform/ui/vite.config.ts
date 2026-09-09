@@ -1,6 +1,10 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+const apiPort = process.env.IMP_E2E_API_PORT ?? "8766";
+const apiTarget = `http://127.0.0.1:${apiPort}`;
+const uiPort = Number(process.env.IMP_E2E_UI_PORT ?? "5173");
+
 export default defineConfig({
   plugins: [react()],
   build: {
@@ -20,21 +24,22 @@ export default defineConfig({
     css: true,
   },
   server: {
-    port: 5173,
+    port: uiPort,
     proxy: {
-      "/context": "http://127.0.0.1:8766",
-      "/capabilities": "http://127.0.0.1:8766",
-      "/attention": "http://127.0.0.1:8766",
-      "/discover": "http://127.0.0.1:8766",
-      "/instruments": "http://127.0.0.1:8766",
-      "/explain": "http://127.0.0.1:8766",
-      "/inspect": "http://127.0.0.1:8766",
-      "/replay": "http://127.0.0.1:8766",
-      "/explore/futures": "http://127.0.0.1:8766",
-      "/explore/squeeze": "http://127.0.0.1:8766",
-      "/explore/catalyst": "http://127.0.0.1:8766",
+      "/context": apiTarget,
+      "/auth": apiTarget,
+      "/capabilities": apiTarget,
+      "/attention": apiTarget,
+      "/discover": apiTarget,
+      "/instruments": apiTarget,
+      "/explain": apiTarget,
+      "/inspect": apiTarget,
+      "/replay": apiTarget,
+      "/explore/futures": apiTarget,
+      "/explore/squeeze": apiTarget,
+      "/explore/catalyst": apiTarget,
       "/workspace": {
-        target: "http://127.0.0.1:8766",
+        target: apiTarget,
         bypass(req) {
           const accept = req.headers.accept ?? "";
           if (req.method === "GET" && accept.includes("text/html")) {
@@ -42,17 +47,17 @@ export default defineConfig({
           }
         },
       },
-      "/assistant": "http://127.0.0.1:8766",
-      "/research": "http://127.0.0.1:8766",
-      "/paper": "http://127.0.0.1:8766",
-      "/provider": "http://127.0.0.1:8766",
-      "/symbols": "http://127.0.0.1:8766",
-      "/market-state": "http://127.0.0.1:8766",
-      "/subscriptions": "http://127.0.0.1:8766",
-      "/operator": "http://127.0.0.1:8766",
+      "/assistant": apiTarget,
+      "/research": apiTarget,
+      "/paper": apiTarget,
+      "/provider": apiTarget,
+      "/symbols": apiTarget,
+      "/market-state": apiTarget,
+      "/subscriptions": apiTarget,
+      "/operator": apiTarget,
       "/control": "http://127.0.0.1:8767",
-      "/state": "http://127.0.0.1:8766",
-      "/captures": "http://127.0.0.1:8766",
+      "/state": apiTarget,
+      "/captures": apiTarget,
     },
   },
 });

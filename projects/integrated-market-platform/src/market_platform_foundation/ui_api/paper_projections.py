@@ -12,9 +12,21 @@ from ..paper.broker_paper import (
     preview_broker_paper_order,
     submit_broker_paper_order,
 )
-from ..paper.contracts import build_instrument_ref
-from ..paper.execution import cancel_interactive_order, preview_interactive_order, submit_interactive_order
+from ..paper.contracts import build_instrument_ref, build_semantic_intent_digest
+from ..paper.eligibility import InstrumentAdmissionError, admit_order_instrument
+from ..paper.execution import (
+    cancel_interactive_order,
+    preview_interactive_order,
+    replace_interactive_order,
+    submit_interactive_order,
+)
 from ..paper.ledger import PaperExecutionLedger
+from ..paper.margin_resolution import resolve_futures_margin_facts
+from ..paper.preview import (
+    PreviewError,
+    portfolio_state_revision,
+    verify_preview_submit,
+)
 from ..rt01.enums import TraceStage, TraceStatus
 from ..rt01.instrumentation.paper import trace_refs
 from .account_registry import resolve_paper_portfolio_identity
@@ -148,21 +160,58 @@ def build_paper_portfolio_payload(store: ReplayStore, *, view_mode: str | None =
     gross_exposure = sum(abs(int(row.get("quantity", 0))) for row in positions)
     net_exposure = sum(int(row.get("quantity", 0)) for row in positions)
     observation_time = _paper_observation_time(store)
+    if identity.is_demo_view():
+        positions = []
+        orders = []
+        fills = []
+        gross_exposure = 0
+        net_exposure = 0
+        demo_execution_mode = "NONE"
+        demo_execution_authority = "BLOCKED"
+        demo_risk = dict(risk)
+        demo_risk["open_order_count"] = 0
+        demo_data_health = {
+            "data_mode": ledger.data_mode,
+            "data_provider": "MOOMOO" if ledger.data_mode == "LIVE_OBSERVATIONAL" else ledger.data_provider,
+            "detail": _portfolio_mark_detail(store),
+            "execution_authority": demo_execution_authority,
+            "execution_mode": demo_execution_mode,
+            "execution_provider": "INTERNAL",
+            "state": _portfolio_mark_quality(store),
+        }
+        demo_session = {
+            "execution_authority": demo_execution_authority,
+            "execution_mode": demo_execution_mode,
+            "paper_account_id": ledger.paper_account_id,
+            "session_id": ledger.session_id,
+            "starting_cash_minor": int(ledger.policy.get("initial_cash_minor", 0)),
+        }
+    else:
+        demo_risk = risk
+        demo_data_health = {
+            "data_mode": ledger.data_mode,
+            "data_provider": "MOOMOO" if ledger.data_mode == "LIVE_OBSERVATIONAL" else ledger.data_provider,
+            "detail": _portfolio_mark_detail(store),
+            "execution_authority": ledger.execution_authority,
+            "execution_mode": ledger.execution_mode,
+            "execution_provider": "INTERNAL",
+            "state": _portfolio_mark_quality(store),
+        }
+        demo_session = {
+            "execution_authority": ledger.execution_authority,
+            "execution_mode": ledger.execution_mode,
+            "paper_account_id": ledger.paper_account_id,
+            "session_id": ledger.session_id,
+            "starting_cash_minor": int(ledger.policy.get("initial_cash_minor", 0)),
+        }
+
     envelope = _paper_envelope(
         store,
         {
             "account": account,
             "authority_boundary": "PAPER_OBSERVABILITY",
             "observation_time": observation_time,
-            "data_health": {
-                "data_mode": ledger.data_mode,
-                "data_provider": "MOOMOO" if ledger.data_mode == "LIVE_OBSERVATIONAL" else ledger.data_provider,
-                "detail": _portfolio_mark_detail(store),
-                "execution_authority": ledger.execution_authority,
-                "execution_mode": ledger.execution_mode,
-                "execution_provider": "INTERNAL",
-                "state": _portfolio_mark_quality(store),
-            },
+            "data_health": demo_data_health,
             "exposure": {
                 "gross_shares": gross_exposure,
                 "net_shares": net_exposure,
@@ -179,14 +228,8 @@ def build_paper_portfolio_payload(store: ReplayStore, *, view_mode: str | None =
             },
             "positions": positions,
             "reconciliation_status": risk.get("reconciliation_status"),
-            "risk": risk,
-            "session": {
-                "execution_authority": ledger.execution_authority,
-                "execution_mode": ledger.execution_mode,
-                "paper_account_id": ledger.paper_account_id,
-                "session_id": ledger.session_id,
-                "starting_cash_minor": int(ledger.policy.get("initial_cash_minor", 0)),
-            },
+            "risk": demo_risk,
+            "session": demo_session,
             **_active_instrument_fields(store),
         },
     )
@@ -373,6 +416,151 @@ def preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
             trace.finish()
 
 
+def _margin_facts_revision(margin_facts: Any) -> str:
+    if margin_facts is None:
+        return ""
+    from ..risk.margin_facts import MarginRequirementFacts
+
+    facts = (
+        margin_facts
+        if isinstance(margin_facts, MarginRequirementFacts)
+        else MarginRequirementFacts.from_dict(margin_facts)
+    )
+    return facts.revision_digest()
+
+
+def _resolve_order_margin_facts(
+    *,
+    focus: str,
+    instrument: dict[str, Any],
+    body: dict[str, Any],
+    observation_time_ns: int,
+) -> Any:
+    return resolve_futures_margin_facts(
+        instrument,
+        instrument_id=focus,
+        observation_time_ns=observation_time_ns,
+        explicit=body.get("margin_facts"),
+    )
+
+
+def _preview_binding_context(
+    store: ReplayStore,
+    *,
+    focus: str,
+    parsed: dict[str, Any],
+    margin_facts_revision: str = "",
+) -> dict[str, Any]:
+    """Build the server-authoritative preview claims for one order request.
+
+    Binds the exact intent digest, operational account + mode, the current
+    portfolio state revision, and the risk-policy revision (G3 §14–16). The
+    same helper is used at preview issuance and at submit verification so
+    the two always agree on what is bound.
+    """
+    ledger = store.paper_ledger
+    intent_digest = build_semantic_intent_digest(
+        {
+            "action": "OPEN",
+            "instrument_id": focus,
+            "side": parsed["side"],
+            "desired_quantity": parsed["quantity"],
+            "order_type": parsed["order_type"],
+            "limit_price_minor": parsed["limit_price_minor"],
+            "currency": ledger.policy.get("currency", "USD"),
+            "quantity_unit": "SHARES",
+        }
+    )
+    return {
+        "account_id": ledger.paper_account_id,
+        "intent_digest": intent_digest,
+        "instrument_id": focus,
+        "limit_price_minor": parsed["limit_price_minor"],
+        "mode": "PAPER",
+        "observation_time": _paper_observation_time(store, instrument_id=focus),
+        "order_type": parsed["order_type"],
+        "portfolio_revision": portfolio_state_revision(ledger),
+        "quantity": parsed["quantity"],
+        "risk_policy_revision": str(ledger.policy.get("risk_policy_identity_hash", "")),
+        "margin_facts_revision": margin_facts_revision,
+        "side": parsed["side"],
+    }
+
+
+def _require_valid_preview(
+    store: ReplayStore,
+    body: dict[str, Any],
+    *,
+    focus: str,
+    parsed: dict[str, Any],
+    instrument: dict[str, Any],
+) -> None:
+    """Verify a client submit is bound to a current server preview (G3 §20).
+
+    Fail-closed: a missing/expired/stale/mismatched preview raises ValueError
+    with a machine-readable reason code. The final server risk check still
+    runs after this; the preview is never an authorization bypass.
+    """
+    preview_id = str(body.get("preview_id", "")).strip()
+    if not preview_id:
+        raise ValueError("PREVIEW_REQUIRED: submit requires a current server preview")
+    ledger = store.paper_ledger
+    observation_time = _paper_observation_time(store, instrument_id=focus)
+    margin_facts = _resolve_order_margin_facts(
+        focus=focus,
+        instrument=instrument,
+        body=body,
+        observation_time_ns=observation_time,
+    )
+    claims = _preview_binding_context(
+        store,
+        focus=focus,
+        parsed=parsed,
+        margin_facts_revision=_margin_facts_revision(margin_facts),
+    )
+    try:
+        verify_preview_submit(
+            store.preview_store,
+            preview_id=preview_id,
+            account_id=ledger.paper_account_id,
+            mode="PAPER",
+            intent_digest=claims["intent_digest"],
+            instrument_id=focus,
+            side=claims["side"],
+            quantity=claims["quantity"],
+            order_type=claims["order_type"],
+            limit_price_minor=claims["limit_price_minor"],
+            portfolio_revision=claims["portfolio_revision"],
+            risk_policy_revision=claims["risk_policy_revision"],
+            margin_facts_revision=claims["margin_facts_revision"],
+        )
+    except PreviewError as exc:
+        raise ValueError(str(exc)) from exc
+
+
+def _admit_focus_instrument(store: ReplayStore, focus: str) -> dict[str, Any]:
+    """Admit the order target at the real preview/submit boundary (BL-0203).
+
+    Returns the admitted instrument ref: the operator symbol stays the ledger
+    key (positions/history are symbol-keyed today), while the canonical
+    kind/tradability/contract multiplier resolved through XA-01 are carried
+    into the order intent so the fail-closed executable guard has real
+    teeth at intent build time (G3 Invariant D/E).
+    """
+    try:
+        admitted = admit_order_instrument(focus)
+    except InstrumentAdmissionError as exc:
+        raise ValueError(str(exc)) from exc
+    ref = build_instrument_ref(
+        instrument_id=focus,
+        symbol=focus,
+    )
+    for key in ("instrument_kind", "tradability", "contract_multiplier", "currency"):
+        if admitted.get(key) is not None:
+            ref[key] = admitted[key]
+    return ref
+
+
 def _preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
     from . import live_projections
 
@@ -381,13 +569,21 @@ def _preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, 
     _assert_live_execution_allowed(store, submit=False)
     parsed = _parse_order_body(body, store)
     focus = _require_order_instrument(store, parsed["explicit_instrument"])
+    instrument = _admit_focus_instrument(store, focus)
+    observation_time = _paper_observation_time(store, instrument_id=focus)
+    margin_facts = _resolve_order_margin_facts(
+        focus=focus,
+        instrument=instrument,
+        body=body,
+        observation_time_ns=observation_time,
+    )
     if store.paper_ledger.execution_mode == "BROKER_PAPER":
         preview = preview_broker_paper_order(
             ledger=store.paper_ledger,
-            instrument=build_instrument_ref(instrument_id=focus, symbol=focus),
+            instrument=instrument,
             side=parsed["side"],
             quantity=parsed["quantity"],
-            observation_time=_paper_observation_time(store, instrument_id=focus),
+            observation_time=observation_time,
             client_order_id=parsed["client_order_id"],
             idempotency_key=parsed["idempotency_key"],
             order_type=parsed["order_type"],
@@ -395,23 +591,59 @@ def _preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, 
             correlation_id=parsed["correlation_id"],
             decision_source_snapshot=parsed["decision_source_snapshot"],
         )
-        return _paper_envelope(store, {"preview": preview})
-    preview = preview_interactive_order(
-        ledger=store.paper_ledger,
-        bars=_bars_for_paper_execution(store, instrument_id=focus),
-        symbol=focus,
-        instrument_id=focus,
-        side=parsed["side"],
-        quantity=parsed["quantity"],
-        observation_time=_paper_observation_time(store, instrument_id=focus),
-        client_order_id=parsed["client_order_id"],
-        idempotency_key=parsed["idempotency_key"],
-        order_type=parsed["order_type"],
-        limit_price_minor=parsed["limit_price_minor"],
-        correlation_id=parsed["correlation_id"],
-        decision_source_snapshot=parsed["decision_source_snapshot"],
+        envelope = _paper_envelope(store, {"preview": preview})
+    else:
+        preview = preview_interactive_order(
+            ledger=store.paper_ledger,
+            bars=_bars_for_paper_execution(store, instrument_id=focus),
+            symbol=focus,
+            instrument_id=focus,
+            side=parsed["side"],
+            quantity=parsed["quantity"],
+            observation_time=observation_time,
+            client_order_id=parsed["client_order_id"],
+            idempotency_key=parsed["idempotency_key"],
+            order_type=parsed["order_type"],
+            limit_price_minor=parsed["limit_price_minor"],
+            correlation_id=parsed["correlation_id"],
+            decision_source_snapshot=parsed["decision_source_snapshot"],
+            instrument=instrument,
+            margin_facts=margin_facts,
+        )
+        envelope = _paper_envelope(store, {"preview": preview})
+    claims = _preview_binding_context(
+        store,
+        focus=focus,
+        parsed=parsed,
+        margin_facts_revision=_margin_facts_revision(margin_facts),
     )
-    return _paper_envelope(store, {"preview": preview})
+    record = store.preview_store.issue(
+        account_id=claims["account_id"],
+        mode=claims["mode"],
+        instrument_id=claims["instrument_id"],
+        intent_digest=claims["intent_digest"],
+        side=claims["side"],
+        quantity=claims["quantity"],
+        order_type=claims["order_type"],
+        risk_policy_revision=claims["risk_policy_revision"],
+        portfolio_revision=claims["portfolio_revision"],
+        observation_time=claims["observation_time"],
+        limit_price_minor=claims["limit_price_minor"],
+        margin_facts_revision=claims["margin_facts_revision"],
+    )
+    envelope["preview"]["preview_id"] = record.preview_id
+    envelope["preview"]["preview_binding"] = {
+        "account_id": record.account_id,
+        "expires_at_ns": record.expires_at_ns,
+        "intent_digest": record.intent_digest,
+        "issued_at_ns": record.issued_at_ns,
+        "mode": record.mode,
+        "portfolio_revision": record.portfolio_revision,
+        "preview_id": record.preview_id,
+        "risk_policy_revision": record.risk_policy_revision,
+        "margin_facts_revision": record.margin_facts_revision,
+    }
+    return envelope
 
 
 def submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
@@ -450,31 +682,48 @@ def _submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
     live_projections.apply_live_marks_to_ledger(store)
     maybe_release_execution_gate(store)
     parsed = _parse_order_body(body, store)
-    existing_order_id = store.paper_ledger.lookup_idempotent_order(parsed["idempotency_key"])
-    if existing_order_id:
-        for order in store.paper_ledger.project_orders():
-            if order.get("order_id") == existing_order_id:
-                return _paper_envelope(
-                    store,
-                    {
-                        "submission": {
-                            "duplicate": True,
-                            "idempotency_key": parsed["idempotency_key"],
-                            "order": order,
-                            "order_id": existing_order_id,
-                        }
-                    },
-                )
     _assert_live_execution_allowed(store, submit=True)
     focus = _require_order_instrument(store, parsed["explicit_instrument"])
+    instrument = _admit_focus_instrument(store, focus)
+    existing_order_id = store.paper_ledger.lookup_idempotent_order(parsed["idempotency_key"])
+    if existing_order_id:
+        existing = store.paper_ledger.lookup_order(existing_order_id)
+        existing_digest = (existing or {}).get("intent_digest")
+        if existing_digest is None:
+            recorded = store.paper_ledger.lookup_intent_for_order(existing_order_id)
+            existing_digest = build_semantic_intent_digest(recorded) if recorded else None
+        submit_digest = _preview_binding_context(store, focus=focus, parsed=parsed)["intent_digest"]
+        if existing_digest is not None and existing_digest != submit_digest:
+            raise ValueError(
+                "IDEMPOTENCY_CONFLICT: same idempotency key submitted with a different order intent"
+            )
+        if existing is not None:
+            return _paper_envelope(
+                store,
+                {
+                    "submission": {
+                        "duplicate": True,
+                        "idempotency_key": parsed["idempotency_key"],
+                        "order": existing,
+                        "order_id": existing_order_id,
+                    }
+                },
+            )
     intent_time = _paper_observation_time(store, instrument_id=focus)
+    margin_facts = _resolve_order_margin_facts(
+        focus=focus,
+        instrument=instrument,
+        body=body,
+        observation_time_ns=intent_time,
+    )
+    _require_valid_preview(store, body, focus=focus, parsed=parsed, instrument=instrument)
     if store.paper_ledger.execution_mode == "BROKER_PAPER":
         from ..providers.composition import get_provider_composition
 
         result = submit_broker_paper_order(
             ledger=store.paper_ledger,
             provider=get_provider_composition().paper_execution,
-            instrument=build_instrument_ref(instrument_id=focus, symbol=focus),
+            instrument=instrument,
             side=parsed["side"],
             quantity=parsed["quantity"],
             observation_time=intent_time,
@@ -508,6 +757,8 @@ def _submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
         limit_price_minor=parsed["limit_price_minor"],
         correlation_id=parsed["correlation_id"],
         decision_source_snapshot=parsed["decision_source_snapshot"],
+        instrument=instrument,
+        margin_facts=margin_facts,
     )
     return _paper_envelope(store, {"submission": result})
 
@@ -557,6 +808,56 @@ def _cancel_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
     else:
         result = cancel_interactive_order(ledger=ledger, order_id=order_id)
     return _paper_envelope(store, {"cancellation": result})
+
+
+def replace_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
+    """Server-authoritative replace of a working Paper order (G3 §41–43, BL-0205).
+
+    The internal simulation path owns replace today; broker paper orders fail
+    closed (REPLACE_NOT_CERTIFIED) because provider-level replace/modify is
+    not yet certified for any adapter — never fake a replace locally against
+    a live broker order (live_execution_safety/certification.py).
+    """
+    from ..rt01.context import current_context
+    from ..rt01.instrumentation.paper import start_paper_trace
+
+    if current_context() is not None:
+        return _replace_paper_order(store, body)
+    trace = start_paper_trace(
+        "paper_order_replace",
+        correlation_id=str(body.get("correlation_id") or body.get("order_id") or "paper-replace"),
+    )
+    failed = False
+    try:
+        return _replace_paper_order(store, body)
+    except Exception as exc:
+        trace.finish(
+            status=TraceStatus.ERROR,
+            error_code=type(exc).__name__,
+            terminated=True,
+        )
+        failed = True
+        raise
+    finally:
+        if not failed:
+            trace.finish()
+
+
+def _replace_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
+    order_id = str(body.get("order_id", "")).strip()
+    if not order_id:
+        raise ValueError("PAPER_ORDER_ID_REQUIRED")
+    ledger = store.paper_ledger
+    if ledger.execution_mode == "BROKER_PAPER":
+        raise ValueError("PAPER_ORDER_REPLACE_UNSUPPORTED: provider replace not certified")
+    result = replace_interactive_order(
+        ledger=ledger,
+        order_id=order_id,
+        replaced_quantity=int(body["replaced_quantity"]),
+        order_type=str(body.get("order_type", "MARKET")),
+        limit_price_minor=body.get("limit_price_minor"),
+    )
+    return _paper_envelope(store, {"replacement": result})
 
 
 def poll_broker_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:

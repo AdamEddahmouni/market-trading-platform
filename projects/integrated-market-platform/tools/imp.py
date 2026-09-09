@@ -311,7 +311,7 @@ def _read_validation_summary(path: Path, fallback: dict[str, Any]) -> dict[str, 
         "failures": payload.get("failures", 0),
         "errors": payload.get("errors", 0),
         "wall_seconds": payload.get("wall_seconds", fallback["wall_seconds"]),
-        "full_suite_required": payload.get("full_suite_required", False),
+        "core_checkpoint_required": payload.get("core_checkpoint_required", False),
         "selected_suites": payload.get("selected_suites", []),
     }
 
@@ -346,6 +346,58 @@ def _validation_command(root: Path, mode: str, args: argparse.Namespace) -> int:
     return int(result["exit_code"])
 
 
+HARD_PYTHON_VERSION = (3, 11)
+
+
+def _supported_python() -> bool:
+    try:
+        major, minor = (int(part) for part in platform.python_version_tuple()[:2])
+    except (TypeError, ValueError, IndexError):
+        return False
+    return (major, minor) >= HARD_PYTHON_VERSION
+
+
+def _manifest_readable(root: Path) -> bool:
+    try:
+        try:
+            from tools.validation_manifest import load_manifest
+        except ModuleNotFoundError:  # pragma: no cover - direct script execution.
+            from validation_manifest import load_manifest  # type: ignore[no-redef]
+
+        load_manifest(root / "tools" / "validation_manifest.json", repository_root=root)
+    except Exception:
+        return False
+    return True
+
+
+def _environment_status(report: dict[str, Any]) -> tuple[str, list[str]]:
+    """Derive env health from prerequisite checks.
+
+    Hard prerequisites (unsupported Python, missing git, invalid repository
+    root, unreadable validation manifest) fail the command. Optional
+    capabilities (node/npm) degrade the report but never fail it.
+    """
+
+    checks = report.get("prerequisites", {})
+    hard: list[str] = []
+    if not checks.get("python_version_supported", True):
+        hard.append("unsupported python version")
+    if not checks.get("git_available", False):
+        hard.append("missing git executable")
+    if not checks.get("repository_root_valid", False):
+        hard.append("invalid repository root")
+    if not checks.get("manifest_readable", False):
+        hard.append("unreadable validation manifest")
+    if hard:
+        return ("unhealthy", hard)
+    optional: list[str] = []
+    if not checks.get("node_available", True):
+        optional.append("node")
+    if not checks.get("npm_available", True):
+        optional.append("npm")
+    return ("degraded" if optional else "healthy", [])
+
+
 def _diagnostics(root: Path) -> dict[str, Any]:
     status = subprocess.run(
         ["git", "status", "--short", "--branch"],
@@ -355,6 +407,7 @@ def _diagnostics(root: Path) -> dict[str, Any]:
         check=False,
     )
     lines = status.stdout.splitlines()
+    manifest_path = root / "tools" / "validation_manifest.json"
     return {
         "schema_version": "1.0",
         "report_type": "imp_environment",
@@ -365,7 +418,15 @@ def _diagnostics(root: Path) -> dict[str, Any]:
         "python": {"executable": sys.executable, "version": platform.python_version()},
         "node": {"available": shutil.which("node") is not None},
         "npm": {"available": shutil.which("npm") is not None},
-        "validation_manifest": (root / "tools" / "validation_manifest.json").is_file(),
+        "validation_manifest": manifest_path.is_file(),
+        "prerequisites": {
+            "python_version_supported": _supported_python(),
+            "git_available": shutil.which("git") is not None,
+            "repository_root_valid": manifest_path.is_file() and (root / "src").is_dir(),
+            "manifest_readable": _manifest_readable(root),
+            "node_available": shutil.which("node") is not None,
+            "npm_available": shutil.which("npm") is not None,
+        },
         "live_gate_values_present": sorted(
             name
             for name in os.environ
@@ -404,7 +465,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     validation = groups.add_parser("validate", help="run canonical validation modes")
     validation_actions = validation.add_subparsers(dest="action", required=True)
-    for action in ("fast", "changed", "full"):
+    for action in ("fast", "changed", "full", "e2e"):
         command = validation_actions.add_parser(action)
         command.add_argument("--workers", type=int, default=2)
         if action == "changed":
@@ -439,9 +500,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     root = REPOSITORY_ROOT
     if args.group == "env":
         report = _diagnostics(root)
+        status, hard_failures = _environment_status(report)
+        report["status"] = status
+        report["hard_failures"] = hard_failures
         if args.json_path:
             _write_json(args.json_path, report)
         print(json.dumps(report, indent=2, sort_keys=True))
+        if hard_failures:
+            print(
+                "hard prerequisite failures: " + ", ".join(hard_failures),
+                file=sys.stderr,
+            )
+            return 1
         return 0
 
     if args.group == "format":

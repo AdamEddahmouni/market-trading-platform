@@ -72,7 +72,7 @@ The first routed measurements provide two separate signals:
   constant-time overhead while removing manual command assembly.
 - The final routed CHANGED run selected `2,176` tests, skipped `34`, and
   completed in `425.317s`. It reported `3` baseline failures and `1` baseline
-  error, with `full_suite_required=true`; the errors/failures are the
+  error, with `core_checkpoint_required=true`; the errors/failures are the
   pre-existing intelligence and validation findings (including the closure
   inventory gap and manifest-count expectation). The new router tests and all
   mandatory FAST invariants passed.

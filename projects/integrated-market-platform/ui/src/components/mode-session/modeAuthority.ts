@@ -18,7 +18,8 @@ export function hasPaperAuthority(
 ): boolean {
   return (
     context?.execution_mode === "INTERNAL_SIMULATION" &&
-    context.execution_authority === "PAPER_ONLY"
+    (context.execution_authority === "PAPER_ONLY" ||
+      context.execution_authority === "AUTHORIZED")
   );
 }
 

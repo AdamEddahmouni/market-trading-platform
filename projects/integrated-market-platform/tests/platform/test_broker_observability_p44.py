@@ -70,7 +70,7 @@ SYMBOL_MAP = {"BIYA": "BIYA"}
 
 
 def _ledger() -> PaperExecutionLedger:
-    return PaperExecutionLedger.open_session(
+    ledger = PaperExecutionLedger.open_session(
         replay_session_id="p44-observability-session",
         instrument_id="BIYA",
         symbol="BIYA",
@@ -80,6 +80,17 @@ def _ledger() -> PaperExecutionLedger:
         data_provider="TRADIER",
         execution_provider="TRADIER",
     )
+    # G3 BL-0202: broker-paper BUY submits fail closed without a current
+    # price reference. The real UI path applies live marks before submit;
+    # direct broker tests must supply the same mark evidence (fixture fill
+    # prices cluster at 11620 minor).
+    ledger.apply_live_mark(
+        mark_minor=11620,
+        mark_provider="TRADIER",
+        mark_as_of_ns=AS_OF_NS,
+        mark_quality="DELAYED",
+    )
+    return ledger
 
 
 def _gated_provider() -> object:

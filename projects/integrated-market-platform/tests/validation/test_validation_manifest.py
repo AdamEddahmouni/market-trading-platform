@@ -38,7 +38,7 @@ class ValidationManifestTests(unittest.TestCase):
         return {
             "schema_version": "1.0",
             "domains": ["core"],
-            "full_invalidators": ["tools/validation_*.py"],
+            "core_checkpoint_invalidators": ["tools/validation_*.py"],
             "mandatory_invariants": [
                 {
                     "id": "alpha-ok",
@@ -172,7 +172,9 @@ class ValidationManifestTests(unittest.TestCase):
         absent = [
             suite for suite in manifest.suites if suite.classification == "intentionally_absent"
         ]
-        self.assertEqual(len(offline), 60)
+        # 63 offline suites: 60 prior + portfolio (G2, 2026-09-07) +
+        # trading_correctness (G3, 2026-09-07) + product_acceptance (G15 E2E, 2026-09-09).
+        self.assertEqual(len(offline), 63)
         self.assertEqual(len(live), 12)
         self.assertEqual(len(absent), 3)
         self.assertNotIn("live", {tier for suite in offline for tier in suite.tiers})

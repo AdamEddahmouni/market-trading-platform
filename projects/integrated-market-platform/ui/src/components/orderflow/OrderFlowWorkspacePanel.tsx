@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { workspacePathForInstrument } from "../../api/instrumentIdentity";
 import type { WorkspaceOrderFlowResponse } from "../../api/schemas";
 
 type Props = {
@@ -109,7 +110,7 @@ export function OrderFlowWorkspacePanel({
         <h3>Depth / DOM</h3>
         <p>
           Order-book depth is available on the dedicated{" "}
-          <Link to={`/workspace/${instrumentId}/order-book`}>Order Book workspace</Link>.
+          <Link to={workspacePathForInstrument(instrumentId, "order-book")}>Order Book workspace</Link>.
         </p>
       </aside>
     </section>
