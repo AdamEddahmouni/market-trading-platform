@@ -65,6 +65,9 @@ projects/integrated-market-platform/ibkr-observational-callbacks.jsonl
 projects/integrated-market-platform/intelligence-worker.json
 projects/integrated-market-platform/platform-worker.json
 
+# Misplaced local audit artifacts (canonical copies live under IMP snapshot).
+projects/docs/
+
 # Authorized future donor/reference context (local-only source tree).
 Claude Code News/
 
