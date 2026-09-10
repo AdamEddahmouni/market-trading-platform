@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import concurrent.futures
 import fnmatch
+import functools
 import hashlib
 import json
 import os
@@ -155,7 +156,12 @@ def _embedding_context(repository_root: Path) -> tuple[Path, tuple[str, ...]]:
     prefix.
     """
 
-    root = Path(repository_root).resolve()
+    return _embedding_context_cached(str(Path(repository_root).resolve()))
+
+
+@functools.lru_cache(maxsize=8)
+def _embedding_context_cached(resolved_root: str) -> tuple[Path, tuple[str, ...]]:
+    root = Path(resolved_root)
     for candidate in (root, *root.parents):
         manifest_path = candidate / EMBEDDING_MANIFEST_NAME
         if not manifest_path.is_file():

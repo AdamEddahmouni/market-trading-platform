@@ -15,7 +15,8 @@ evidence are consistent:
 
 | Command | Purpose | Default cost |
 |---|---|---|
-| `python tools/imp.py env` | Safe runtime, Git, tool, and gate-presence diagnostics | tiny |
+| `python tools/imp.py env` | Safe runtime, Git, worktree, interpreter, timezone, and gate-presence diagnostics | tiny |
+| `python tools/imp.py env bootstrap --link-venv` | Explicitly link a shared canonical `.venv` into a linked worktree | tiny |
 | `python tools/imp.py format` | Changed-file whitespace check (`git diff --check`) | tiny |
 | `python tools/imp.py lint` | Python compile check and UI typecheck when UI is affected | cheap |
 | `python tools/imp.py validate fast` | Run mandatory catastrophic invariants | fast |
@@ -146,6 +147,12 @@ layout the worktree root contains a `.git` **file** (`gitdir: …`) rather than 
 `src/market_platform_foundation/git_ref.py` resolves both forms, returns the
 worktree top level as `repo_root()`, and reads shared branch metadata through
 Git's `commondir` indirection. Ordinary single-checkout clones are unchanged.
+
+**Environment bootstrap:** linked worktrees do not automatically inherit a local
+`.venv`. Run `python tools/imp.py env` to inspect interpreter resolution and
+`python tools/imp.py env bootstrap --link-venv` to create a portable junction or
+symlink to the canonical shared environment. Validation commands launched through
+`tools/imp.py` automatically use the resolved interpreter.
 
 ## Safety and ownership
 

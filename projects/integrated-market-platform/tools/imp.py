@@ -242,6 +242,7 @@ def build_closure_report(
             "enabled": True,
             "summary": summarize_telemetry(repository_root),
         },
+        "environment": _load_environment_module().build_environment_report(repository_root),
     }
 
 
@@ -318,7 +319,7 @@ def _read_validation_summary(path: Path, fallback: dict[str, Any]) -> dict[str, 
 
 def _validation_command(root: Path, mode: str, args: argparse.Namespace) -> int:
     command = [
-        sys.executable,
+        _validation_python(root),
         str(root / "tools" / "validate.py"),
         mode,
     ]
@@ -349,6 +350,7 @@ def _validation_command(root: Path, mode: str, args: argparse.Namespace) -> int:
 
 
 HARD_PYTHON_VERSION = (3, 11)
+_MANIFEST_READABLE: bool | None = None
 
 
 def _supported_python() -> bool:
@@ -360,6 +362,9 @@ def _supported_python() -> bool:
 
 
 def _manifest_readable(root: Path) -> bool:
+    global _MANIFEST_READABLE
+    if _MANIFEST_READABLE is not None:
+        return _MANIFEST_READABLE
     try:
         try:
             from tools.validation_manifest import load_manifest
@@ -368,8 +373,26 @@ def _manifest_readable(root: Path) -> bool:
 
         load_manifest(root / "tools" / "validation_manifest.json", repository_root=root)
     except Exception:
+        _MANIFEST_READABLE = False
         return False
+    _MANIFEST_READABLE = True
     return True
+
+
+def _load_environment_module():
+    try:
+        from tools import environment as environment_module
+    except ModuleNotFoundError:  # pragma: no cover - direct script execution.
+        import environment as environment_module  # type: ignore[no-redef]
+    return environment_module
+
+
+def _validation_python(root: Path) -> str:
+    environment_module = _load_environment_module()
+    try:
+        return str(environment_module.effective_python_executable(root))
+    except RuntimeError:
+        return sys.executable
 
 
 def _environment_status(report: dict[str, Any]) -> tuple[str, list[str]]:
@@ -382,14 +405,17 @@ def _environment_status(report: dict[str, Any]) -> tuple[str, list[str]]:
 
     checks = report.get("prerequisites", {})
     hard: list[str] = []
-    if not checks.get("python_version_supported", True):
-        hard.append("unsupported python version")
+    resolved_supported = checks.get("resolved_python_supported", checks.get("python_version_supported", True))
+    if not resolved_supported:
+        hard.append("unsupported resolved python interpreter")
     if not checks.get("git_available", False):
         hard.append("missing git executable")
     if not checks.get("repository_root_valid", False):
         hard.append("invalid repository root")
     if not checks.get("manifest_readable", False):
         hard.append("unreadable validation manifest")
+    if not checks.get("timezone_ready", True):
+        hard.append("missing timezone data")
     if hard:
         return ("unhealthy", hard)
     optional: list[str] = []
@@ -410,25 +436,40 @@ def _diagnostics(root: Path) -> dict[str, Any]:
     )
     lines = status.stdout.splitlines()
     manifest_path = root / "tools" / "validation_manifest.json"
+    environment_module = _load_environment_module()
+    environment_report = environment_module.build_environment_report(root)
+    tz_ready = bool(environment_report["timezone"]["ready"])
+    resolved = environment_report["python"]
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "report_type": "imp_environment",
         "generated_at": _utc_now(),
         "repository_root": str(root.resolve()),
         "branch": lines[0] if lines else "unknown",
         "changed_file_count": len(_git_changed_files(root)),
-        "python": {"executable": sys.executable, "version": platform.python_version()},
+        "python": {
+            "executable": sys.executable,
+            "version": platform.python_version(),
+            "resolved_executable": resolved["resolved_executable"],
+            "resolved_version": resolved["resolved_version"],
+            "resolution_source": resolved["resolution_source"],
+        },
+        "worktree": environment_report.get("worktree"),
+        "environment": environment_report.get("environment"),
         "node": {"available": shutil.which("node") is not None},
         "npm": {"available": shutil.which("npm") is not None},
         "validation_manifest": manifest_path.is_file(),
         "prerequisites": {
             "python_version_supported": _supported_python(),
+            "resolved_python_supported": bool(resolved["supported"]),
             "git_available": shutil.which("git") is not None,
             "repository_root_valid": manifest_path.is_file() and (root / "src").is_dir(),
             "manifest_readable": _manifest_readable(root),
+            "timezone_ready": tz_ready,
             "node_available": shutil.which("node") is not None,
             "npm_available": shutil.which("npm") is not None,
         },
+        "next_commands": environment_report.get("next_commands", []),
         "live_gate_values_present": sorted(
             name
             for name in os.environ
@@ -444,6 +485,21 @@ def build_parser() -> argparse.ArgumentParser:
 
     env = groups.add_parser("env", help="show safe environment diagnostics")
     env.add_argument("--json", dest="json_path", type=Path)
+    env_actions = env.add_subparsers(dest="env_action")
+    bootstrap = env_actions.add_parser(
+        "bootstrap",
+        help="explicitly link a shared canonical virtual environment into this worktree",
+    )
+    bootstrap.add_argument(
+        "--link-venv",
+        action="store_true",
+        help="create a local .venv junction/symlink to the discovered canonical environment",
+    )
+    bootstrap.add_argument(
+        "--force",
+        action="store_true",
+        help="replace an existing mismatched .venv link",
+    )
 
     formatting = groups.add_parser("format", help="check changed-file whitespace")
     formatting.add_argument("--json", dest="json_path", type=Path)
@@ -503,6 +559,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     root = REPOSITORY_ROOT
     if args.group == "env":
+        if getattr(args, "env_action", None) == "bootstrap":
+            if not args.link_venv:
+                print("bootstrap requires --link-venv", file=sys.stderr)
+                return 2
+            environment_module = _load_environment_module()
+            try:
+                payload = environment_module.link_local_venv(root, force=args.force)
+            except RuntimeError as exc:
+                print(f"bootstrap failed: {exc}", file=sys.stderr)
+                return 1
+            if args.json_path:
+                _write_json(args.json_path, payload)
+            print(json.dumps(payload, indent=2, sort_keys=True))
+            return 0
         report = _diagnostics(root)
         status, hard_failures = _environment_status(report)
         report["status"] = status
@@ -555,7 +625,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.group == "test" and args.action == "focused":
         command = [
-            sys.executable,
+            _validation_python(root),
             str(root / "tools" / "validation_worker.py"),
             "--repository-root",
             str(root),

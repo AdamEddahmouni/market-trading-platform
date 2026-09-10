@@ -152,16 +152,18 @@ class ImpCliTests(unittest.TestCase):
         report = {
             "prerequisites": {
                 "python_version_supported": False,
+                "resolved_python_supported": False,
                 "git_available": True,
                 "repository_root_valid": True,
                 "manifest_readable": True,
+                "timezone_ready": True,
                 "node_available": False,
                 "npm_available": False,
             }
         }
         status, failures = _environment_status(report)
         self.assertEqual(status, "unhealthy")
-        self.assertEqual(failures, ["unsupported python version"])
+        self.assertEqual(failures, ["unsupported resolved python interpreter"])
         for key, label in (
             ("git_available", "missing git executable"),
             ("repository_root_valid", "invalid repository root"),
@@ -183,9 +185,11 @@ class ImpCliTests(unittest.TestCase):
         }}
         unhealthy = {"prerequisites": {
             "python_version_supported": False,
+            "resolved_python_supported": False,
             "git_available": True,
             "repository_root_valid": True,
             "manifest_readable": True,
+            "timezone_ready": True,
             "node_available": True,
         }}
         from tools import imp as imp_module

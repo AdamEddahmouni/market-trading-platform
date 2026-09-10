@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p6_after_baseline",
+  "generated_at": "2026-09-10T20:00:00Z",
+  "worktree": {
+    "path": "C:/Users/adame/Desktop/market-trading-platform-perf-p6",
+    "branch": "perf/p6-ci-agent-workflow",
+    "local_venv_present": true,
+    "bootstrap_steps_after": 1,
+    "bootstrap_command": "python tools/imp.py env bootstrap --link-venv",
+    "bootstrap_wall_seconds_measured": 11.1,
+    "manual_decisions_after": 0
+  },
+  "imp_env": {
+    "command": "python tools/imp.py env",
+    "schema_version": "1.1",
+    "status_after": "healthy",
+    "resolved_interpreter_after": true,
+    "worktree_metadata_after": true,
+    "timezone_via_resolved_python_after": true,
+    "bootstrap_subcommand_after": true
+  },
+  "validation": {
+    "fast_tests": 21,
+    "fast_failures": 0,
+    "fast_errors": 0,
+    "fast_wall_seconds": 3.822,
+    "changed_tests": 563,
+    "changed_skips": 1,
+    "changed_failures": 0,
+    "changed_errors": 0,
+    "changed_wall_seconds": 99.076,
+    "changed_discovery_seconds": 12.501688,
+    "full_total": 4492,
+    "full_passed": 4444,
+    "full_skips": 48,
+    "full_failures": 0,
+    "full_errors": 0,
+    "full_wall_seconds": 745.92,
+    "full_discovery_seconds": 125.700898,
+    "selector_plan_wall_seconds_approx": 13.0
+  },
+  "agent_context": {
+    "always_apply_cursor_rules": 5,
+    "duplicate_worktree_guidance_locations_after": 1,
+    "estimated_startup_reads_after": 8
+  },
+  "ci": {
+    "pip_cache_before_install_after": true,
+    "setup_python_pip_cache_after": true,
+    "restore_keys_after": true
+  }
+}
