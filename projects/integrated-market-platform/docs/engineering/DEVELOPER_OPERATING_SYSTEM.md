@@ -99,6 +99,44 @@ validation evidence, baseline failure classification, documentation changes,
 risk status, and telemetry location. Existing dirty-tree failures must be
 carried as baseline evidence rather than silently reclassified.
 
+## Notion development lifecycle
+
+Notion is the human/project/internship planning and evidence layer. It does not
+replace code, Git, local working-tree truth, tests, CI, or validation artifacts.
+
+**Authority precedence:** local working tree = implementation truth; accepted
+Git history = source-control truth; tests/validation artifacts = software
+acceptance evidence; Notion = planning, task state, roadmap, human context.
+
+**Substantial task startup** (when Notion tools are authenticated): read the
+smallest relevant Notion context set (task, current week, roadmap slice) before
+implementation; compare Notion status to verified repository state; flag
+mismatches; proceed from repository truth.
+
+**Material task closure:** gather exact validation evidence, then sync verified
+status to the relevant Notion task/pages. Never invent Notion access or updates.
+If Notion is unavailable, report `NOTION_SYNC_BLOCKED` with intended updates.
+
+**Milestone chain:** implementation → validation → canonical repository
+documentation → Notion status/evidence. Git commit/PR/merge remains a separate
+explicit step.
+
+## Test removal governance
+
+A test may not be removed or consolidated solely because it is slow or numerous.
+Before removal require: (1) exact invariant identified, (2) surviving test(s)
+identified, (3) layer difference considered, (4) failure-path coverage
+considered, (5) selector/affected implications considered, (6) focused validation
+green, (7) appropriate broader validation green, (8) before/after performance
+evidence when removal is performance-motivated.
+
+## Performance program
+
+Forensic baselines and optimization ledgers live under
+[performance-engineering-p0](../audits/performance-engineering-p0/README.md).
+Optimize measured hotspots only; preserve assurance invariants. Performance work
+is secondary/enabling and must not displace primary product increments.
+
 ## Safety and ownership
 
 The control plane does not authorize or execute trades. It preserves

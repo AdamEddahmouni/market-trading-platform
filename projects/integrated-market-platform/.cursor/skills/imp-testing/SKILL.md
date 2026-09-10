@@ -13,5 +13,5 @@ description: Select and run the cheapest safe IMP validation, including focused 
 - UI changes also require `cd ui && npm test`, `npm run typecheck`, and
   `npm run build`.
 - Docs changes require `tools/check_docs_links.py`.
-- Treat `full_suite_required=true` as a required later FULL gate.
+- Treat `core_checkpoint_required=true` as a required later FULL gate.
 - Preserve exact counts, skips, failures, errors, and baseline classification.

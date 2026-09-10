@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "report_type": "parallel_safety_map",
+  "generated_at": "2026-09-10T03:50:00Z",
+  "source": "tools/validation_manifest.json suite parallel_safety fields",
+  "summary": {
+    "PARALLEL_SAFE": 45,
+    "GLOBAL_STATE_MUTATION": 11,
+    "RESOURCE_HEAVY": 5,
+    "SERIAL_REQUIRED": 5,
+    "LIVE_EXCLUSIVE": 12
+  },
+  "serial_required_suites": [
+    {
+      "id": "repository_closure",
+      "reason": "Shared closure/evidence paths"
+    },
+    {
+      "id": "donor_bridge",
+      "reason": "Cross-lane donor integration serial boundary"
+    },
+    {
+      "id": "order_book_replay",
+      "reason": "Order-flow replay global sequencing"
+    },
+    {
+      "id": "options_chain",
+      "reason": "Options chain fixture isolation"
+    },
+    {
+      "id": "product_acceptance",
+      "reason": "E2E/browser port and session isolation"
+    }
+  ],
+  "global_state_mutation_notable": [
+    "platform",
+    "ui1",
+    "phase0",
+    "contracts",
+    "runtime"
+  ],
+  "resource_heavy_notable": [
+    "short_intelligence",
+    "macro",
+    "futures",
+    "energy",
+    "sec"
+  ],
+  "default_changed_workers": 2,
+  "p2_prerequisite": "Do not enable broad pytest-xdist or global multiprocessing before per-suite isolation review",
+  "unknown": []
+}
