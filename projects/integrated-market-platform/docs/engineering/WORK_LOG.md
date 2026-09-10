@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-10 — Source-control preservation and P3 lane isolation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `source-control`, `developer-operating-system` |
+| **Summary** | Preserved validated professor-directed IMP work and P0 audit/control-plane changes in two logical local commits on `work/professor-paper-forward-testing`, fixed checkpoint `checkpoint/post-g15-professor-p0-2026-09-09` at `cd145fc`, and created isolated performance lane `perf/p3-validation-selector` in sibling worktree `market-trading-platform-perf-p3`. Remote `main` unchanged; no push/merge/PR. |
+| **Key files** | Local branches: `work/professor-paper-forward-testing`, `checkpoint/post-g15-professor-p0-2026-09-09`, `perf/p3-validation-selector`; worktree `../market-trading-platform-perf-p3`; commits `48d64f8`, `cd145fc` |
+| **Tests** | Pre-commit: FAST 21 passed; news 26 passed; intelligence inference 24 passed; strategy evaluation 19 passed. FULL 4456/48/0 reused (exact functional equivalence — no post-validation code edits). |
+| **Related** | [DEVELOPER_OPERATING_SYSTEM.md](DEVELOPER_OPERATING_SYSTEM.md), [P0 forensic audit](../audits/performance-engineering-p0/P0_FORENSIC_AUDIT_2026-09-09.md) |
+| **Notes** | NOTION_SYNC_BLOCKED. P3 not started. Primary next product increment remains governed Paper forward-testing bridge. |
+
 ## 2026-09-09 — Performance Engineering P0 forensic audit
 
 | Field | Value |

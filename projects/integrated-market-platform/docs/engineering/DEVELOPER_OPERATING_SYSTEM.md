@@ -137,6 +137,22 @@ Forensic baselines and optimization ledgers live under
 Optimize measured hotspots only; preserve assurance invariants. Performance work
 is secondary/enabling and must not displace primary product increments.
 
+## Local lane topology (2026-09-10)
+
+When professor-directed product work and performance engineering must not mix
+in one dirty tree:
+
+| Lane | Branch | Worktree | Purpose |
+|------|--------|----------|---------|
+| Primary professor | `work/professor-paper-forward-testing` | Repository root | Product increments (Paper forward-testing bridge next) |
+| Checkpoint ref | `checkpoint/post-g15-professor-p0-2026-09-09` | (ref only) | Recovery anchor at `cd145fc` |
+| Performance P3+ | `perf/p3-validation-selector` | Sibling `market-trading-platform-perf-p3` | Selector/evidence optimization only |
+
+Create performance refactors in the dedicated worktree; integrate back through
+explicit merge/cherry-pick after validation. Do not begin P3 in the professor
+root workspace. Remote `main` remains the accepted baseline until an explicit
+publish step.
+
 ## Safety and ownership
 
 The control plane does not authorize or execute trades. It preserves
