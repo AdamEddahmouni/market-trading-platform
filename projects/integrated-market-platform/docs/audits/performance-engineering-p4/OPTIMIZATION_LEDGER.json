@@ -1,0 +1,56 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p4_optimization_ledger",
+  "generated_at": "2026-09-10T19:20:00Z",
+  "entries": [
+    {
+      "id": "P4-001",
+      "target": "ReplayStore decoded snapshot cache",
+      "classification": "OPTIMIZED",
+      "before_cost": "warm load dominated by repeated JSON parse of canonical replay payload",
+      "change": "_cached_decoded_replay_snapshot with per-load deepcopy",
+      "after_cost": "0.493s warm load microbenchmark",
+      "isolation": "tests/validation/test_fixture_setup_cache_isolation.py"
+    },
+    {
+      "id": "P4-002",
+      "target": "build_combined_fixture_ledger",
+      "classification": "OPTIMIZED",
+      "before_cost": "repeated multi-provider fixture ingest per call",
+      "change": "_cached_combined_fixture_ledger_template + clone",
+      "after_cost": "0.0029s warm build microbenchmark",
+      "isolation": "tests/validation/test_fixture_setup_cache_isolation.py"
+    },
+    {
+      "id": "P4-003",
+      "target": "broker_runtime_wiring ReplayStore setup",
+      "classification": "OPTIMIZED",
+      "before_cost": "7x full load per test class",
+      "change": "setUpClass warm store + hydrate_replay_bars_from + refresh_mutable_runtime",
+      "after_cost": "platform suite -7.8s wall (5.3%)",
+      "isolation": "tests/platform/test_broker_runtime_wiring.py + hydration isolation test"
+    },
+    {
+      "id": "P4-004",
+      "target": "ui1 / donor_bridge suite wall",
+      "classification": "NOT ACTUALLY A HOTSPOT",
+      "before_cost": "~93-95s suite wall",
+      "change": "none beyond shared caches",
+      "after_cost": "within measurement noise",
+      "notes": "per-test time dominated by projection/fusion bodies, not fixture setup"
+    },
+    {
+      "id": "P4-005",
+      "target": "platform discovery imports",
+      "classification": "DEFER TO P6",
+      "before_cost": "~8.9s discovery_seconds per platform worker",
+      "notes": "import graph / worker startup, not fixture parsing"
+    },
+    {
+      "id": "P4-006",
+      "target": "shared mutable ReplayStore across ui1 classes",
+      "classification": "UNSAFE TO SHARE",
+      "notes": "assistant conversation and cursor mutation require per-class isolation"
+    }
+  ]
+}

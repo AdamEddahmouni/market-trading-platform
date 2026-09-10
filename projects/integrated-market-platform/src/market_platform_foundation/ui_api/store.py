@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import tempfile
 from dataclasses import dataclass, field
@@ -100,6 +101,21 @@ def _cached_replay_payload(collection_root: str, source_digest: str) -> bytes:
     return _build_replay_payload(collection_root, source_digest)
 
 
+@lru_cache(maxsize=4)
+def _cached_decoded_replay_snapshot(collection_root: str, source_digest: str) -> dict[str, Any]:
+    """Cache parsed replay JSON keyed by verified source content.
+
+    ``ReplayStore.load`` deep-copies this snapshot so per-store mutable state
+    remains isolated while repeated loads avoid redundant JSON parsing.
+    """
+
+    encoded = _cached_replay_payload(collection_root, source_digest)
+    decoded = json.loads(encoded.decode("utf-8"), object_pairs_hook=_pairs_no_duplicates)
+    if not isinstance(decoded, dict) or not isinstance(decoded.get("events"), list):
+        raise ValueError("UI_STORE_CACHE_PAYLOAD_INVALID")
+    return decoded
+
+
 @dataclass
 class ReplayStore:
     """In-memory replay store projecting canonical pipeline outputs."""
@@ -137,10 +153,7 @@ class ReplayStore:
         self._feature_cache = BoundedMemoryCache(max_bytes=256 * 1024, max_entries=32)
         collection_root = str(Path(self.collection_root).resolve())
         source_digest = _replay_source_digest(collection_root)
-        encoded = _cached_replay_payload(collection_root, source_digest)
-        decoded = json.loads(encoded.decode("utf-8"), object_pairs_hook=_pairs_no_duplicates)
-        if not isinstance(decoded, dict) or not isinstance(decoded.get("events"), list):
-            raise ValueError("UI_STORE_CACHE_PAYLOAD_INVALID")
+        decoded = copy.deepcopy(_cached_decoded_replay_snapshot(collection_root, source_digest))
         self._events = [event for event in decoded["events"] if isinstance(event, dict)]
         self._bars = _bars_from_events(self._events)
         if not self._bars:
@@ -154,6 +167,23 @@ class ReplayStore:
         self._strategy = strategy
         self.cursor_index = len(self._bars) - 1
         self._session_id = str(decoded.get("session_id", ""))
+        self.refresh_mutable_runtime()
+
+    def hydrate_replay_bars_from(self, source: ReplayStore) -> None:
+        """Copy immutable replay bars/events from a warmed store without reloading fixtures."""
+
+        self._feature_cache = BoundedMemoryCache(max_bytes=256 * 1024, max_entries=32)
+        self._events = copy.deepcopy(source._events)
+        self._bars = copy.deepcopy(source._bars)
+        self._evaluation = copy.deepcopy(source._evaluation)
+        self._strategy = copy.deepcopy(source._strategy)
+        self._instrument_id = source._instrument_id
+        self._session_id = source._session_id
+        self.cursor_index = source.cursor_index
+
+    def refresh_mutable_runtime(self) -> None:
+        """Reinitialize session-bound mutable containers for isolated test/runtime use."""
+
         ledger = bootstrap_default_providers()
         configure_institutional_ledger(ledger)
         audit_root = self.assistant_audit_root

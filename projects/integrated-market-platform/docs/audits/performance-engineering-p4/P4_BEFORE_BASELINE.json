@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p4_before_baseline",
+  "generated_at": "2026-09-10T18:30:00Z",
+  "checkpoint_sha": "1af5802dec1589f01366f5005eee43dfe59edacf",
+  "environment": {
+    "python_executable": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe",
+    "python_version": "3.11.15",
+    "venv_strategy": "junction_to_canonical_root_venv",
+    "timezone_check": "America/New_York resolves",
+    "os": "Windows-10-10.0.26200-SP0"
+  },
+  "targets": [
+    {
+      "id": "fast",
+      "command": "python tools/imp.py validate fast",
+      "tests": 21,
+      "wall_seconds": 7.502,
+      "runs": 1,
+      "notes": "imp.py reported test wall; 8.39s process wall"
+    },
+    {
+      "id": "platform",
+      "command": "validation_worker --suite-path tests/platform --profile-fixtures",
+      "tests": 486,
+      "discovery_seconds": 8.882,
+      "wall_seconds": 147.626,
+      "runs": 1
+    },
+    {
+      "id": "ui1",
+      "command": "validation_worker --suite-path tests/ui1 --profile-fixtures",
+      "tests": 13,
+      "wall_seconds": 92.694,
+      "runs": 1
+    },
+    {
+      "id": "donor_bridge",
+      "command": "validation_worker --suite-path tests/donor_bridge --profile-fixtures",
+      "tests": 87,
+      "wall_seconds": 95.203,
+      "runs": 1
+    }
+  ],
+  "microbenchmarks": {
+    "replay_store_first_load_seconds": 17.442,
+    "replay_store_warm_load_seconds_pre_p4_decode_cache": null,
+    "notes": "Warm load measured post-change for comparison only; pre-change warm load not separately captured"
+  },
+  "p3_full_reference": {
+    "total": 4483,
+    "passed": 4435,
+    "skipped": 48,
+    "failures": 0,
+    "errors": 0,
+    "wall_seconds": 486.092
+  }
+}

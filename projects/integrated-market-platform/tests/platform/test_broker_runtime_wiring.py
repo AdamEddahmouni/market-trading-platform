@@ -45,6 +45,13 @@ def _preview_and_submit(store: ReplayStore, body: dict) -> dict:
 
 
 class BrokerRuntimeWiringTests(unittest.TestCase):
+    _warm_store: ReplayStore
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._warm_store = ReplayStore(collection_root=COLLECTION_ROOT)
+        cls._warm_store.load()
+
     def setUp(self) -> None:
         self._env = {
             "IMP_PAPER_EXECUTION": "1",
@@ -57,7 +64,8 @@ class BrokerRuntimeWiringTests(unittest.TestCase):
         self._prior = {key: os.environ.get(key) for key in self._env}
         os.environ.update(self._env)
         self.store = ReplayStore(collection_root=COLLECTION_ROOT)
-        self.store.load()
+        self.store.hydrate_replay_bars_from(self.__class__._warm_store)
+        self.store.refresh_mutable_runtime()
         composition = with_broker_paper_execution(
             ProviderComposition(),
             env=dict(self._env),
