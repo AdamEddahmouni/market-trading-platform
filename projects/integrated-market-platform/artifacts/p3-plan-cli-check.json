@@ -1,0 +1,89 @@
+{
+  "changed_paths": [
+    "src/market_platform_foundation/news/pipeline.py"
+  ],
+  "cheap_checks": [],
+  "classifications": {
+    "src/market_platform_foundation/news/pipeline.py": {
+      "classification": "OWNING_SUITE_SELECTION",
+      "dependent_suites": [
+        "intelligence"
+      ],
+      "detail": [
+        "Intelligence layer consumes news contracts, replay semantics, and catalyst policies"
+      ],
+      "escalated": false,
+      "escalation_reason": "",
+      "evidence_category": "",
+      "governance_pattern_id": "",
+      "owning_suites": [
+        "news"
+      ],
+      "partition_id": "news_foundation"
+    }
+  },
+  "core_checkpoint_reasons": [],
+  "core_checkpoint_required": false,
+  "dependency_suites": [
+    "intelligence"
+  ],
+  "direct_owner_suites": [
+    "news"
+  ],
+  "evidence_only_paths": [],
+  "executes_tests": false,
+  "mandatory_invariant_selectors": [
+    "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_correction_invisible_before_known_from",
+    "tests/fred/test_fred.py::FredRevisionTests::test_no_lookahead_current_revision",
+    "tests/phase0/test_offline_guard.py::OfflineGuardTests::test_ipv4_ipv6_loopback_and_dns_are_denied",
+    "tests/phase0/test_credential_audit.py::CredentialAuditTests::test_match_output_contains_no_value_or_context",
+    "tests/phase0/test_registry.py::RegistryTests::test_unknown_identifier_fails_closed",
+    "tests/fred/test_fred.py::FredNormalizeTests::test_missing_dot_is_unknown_not_zero",
+    "tests/eia/test_eia.py::EiaNormalizeTests::test_withheld_value_not_zero",
+    "tests/weather/test_weather_pit.py::WeatherForecastPitTests::test_issue_time_does_not_make_forecast_visible",
+    "tests/weather/test_weather_pit.py::WeatherRealizationPitTests::test_realization_is_hidden_before_its_availability",
+    "tests/cboe_options/test_cboe_semantics.py::CboeRequiredSemanticsTests::test_put_call_direction_prohibition",
+    "tests/cboe_options/test_cboe_semantics.py::CboeRequiredSemanticsTests::test_publisher_venue_separation_for_market_share_row",
+    "tests/cftc/test_cftc_cot.py::CotSourceOutageTests::test_source_unavailable_not_zero_positions",
+    "tests/providers/test_providers.py::ProviderContractTests::test_unconfigured_stubs_fail_closed",
+    "tests/market_data/test_observational_boundary.py::MarketDataNormalizationTests::test_provider_ticker_direction_is_not_ground_truth",
+    "tests/market_data/test_observational_boundary.py::MarketDataNormalizationTests::test_admission_requires_authorization",
+    "tests/market_data/test_observational_boundary.py::MarketDataNormalizationTests::test_live_and_replay_envelopes_preserve_pit_clocks",
+    "tests/contracts/test_futures_contract.py::FuturesCurveTests::test_positioning_snapshot_round_trip",
+    "tests/market_data/test_live_admission.py::LiveAdmissionTests::test_provider_disconnect_blocks",
+    "tests/market_data/test_live_pit_adversarial.py::LivePitAdversarialTests::test_capture_replay_equivalence",
+    "tests/runtime/test_pit_joins.py::PitJoinTests::test_missing_join_fail_closed",
+    "tests/market_data/test_live_runtime.py::LiveRuntimeTests::test_quota_exhaustion"
+  ],
+  "mandatory_suites": [],
+  "manifest_hash": "b0822308a16beda9c494ed09be0d95628ccfa849b09a1d54174f684a7dfc396e",
+  "manifest_path": "C:\\Users\\adame\\Desktop\\market-trading-platform-perf-p3\\projects\\integrated-market-platform\\tools\\validation_manifest.json",
+  "mode": "changed",
+  "omitted_domains": [
+    "short-intelligence",
+    "macro",
+    "energy",
+    "futures",
+    "options",
+    "order-flow",
+    "participant",
+    "sec",
+    "ui"
+  ],
+  "report_type": "validation_selection_plan",
+  "schema_version": "1.0",
+  "selected_suites": [
+    "news",
+    "intelligence"
+  ],
+  "selection_reasons": {
+    "intelligence": [
+      "DEPENDENT_OF:news_foundation"
+    ],
+    "news": [
+      "src/market_platform_foundation/news/pipeline.py: DIRECT_OWNER"
+    ]
+  },
+  "selector_version": "p3-bl-0801-1",
+  "unknown_paths": []
+}

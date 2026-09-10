@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p3_before_baseline",
+  "captured_at": "2026-09-10T15:50:00Z",
+  "selector_version": "pre-p3",
+  "historical_p0_changed_reference": {
+    "passed": 2304,
+    "skipped": 28,
+    "failed": 0,
+    "wall_seconds": 288.8,
+    "note": "Large professor-directed checkpoint changeset; preserved from P0 audit"
+  },
+  "localized_scenarios": [
+    {
+      "path": "src/market_platform_foundation/news/pipeline.py",
+      "suites": ["finviz", "news", "platform"],
+      "suite_count": 3,
+      "core_checkpoint": false
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/inference/service.py",
+      "suites": ["platform", "contracts", "intelligence"],
+      "suite_count": 3,
+      "core_checkpoint": false
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/news_strategy_evaluation/laboratory.py",
+      "suites": ["platform", "contracts", "intelligence"],
+      "suite_count": 3,
+      "core_checkpoint": false
+    },
+    {
+      "path": "docs/engineering/VALIDATION_ARCHITECTURE.md",
+      "suites": [],
+      "suite_count": 0,
+      "core_checkpoint": false,
+      "cheap_checks": ["documentation"]
+    },
+    {
+      "path": "artifacts/g14-runtime-performance.json",
+      "suites": ["phase0", "contracts", "providers", "runtime", "validation"],
+      "suite_count": 5,
+      "core_checkpoint": true,
+      "global_reasons": ["UNCLASSIFIED_PATH"]
+    },
+    {
+      "path": "tools/validate.py",
+      "suites": ["phase0", "contracts", "providers", "runtime", "validation"],
+      "suite_count": 5,
+      "core_checkpoint": true,
+      "global_reasons": ["CORE_CHECKPOINT_INVALIDATOR"]
+    },
+    {
+      "path": ".cursor/rules/developer-workflow.mdc",
+      "suites": ["phase0", "contracts", "providers", "runtime", "validation"],
+      "suite_count": 5,
+      "core_checkpoint": true,
+      "global_reasons": ["UNCLASSIFIED_PATH"]
+    },
+    {
+      "path": "ui/src/App.tsx",
+      "suites": ["phase0", "contracts", "providers", "runtime", "validation"],
+      "suite_count": 5,
+      "core_checkpoint": true,
+      "global_reasons": ["UNKNOWN_EXECUTABLE_PATH"]
+    }
+  ]
+}

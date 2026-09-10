@@ -50,7 +50,9 @@ CLASS_CORE_CHECKPOINT_ESCALATION = "CORE_CHECKPOINT_ESCALATION"
 CLASS_DOCUMENTATION_ONLY_CHECK = "DOCUMENTATION_ONLY_CHECK"
 CLASS_EVIDENCE_ONLY_CHECK = "EVIDENCE_ONLY_CHECK"
 CLASS_EXPLICIT_SAFE_IGNORE = "EXPLICIT_SAFE_IGNORE"
+CLASS_GOVERNANCE_ONLY_CHECK = "GOVERNANCE_ONLY_CHECK"
 CLASS_FAIL_SAFE = "FAIL_SAFE"
+SELECTOR_VERSION = "p3-bl-0801-1"
 SECRET_FILE_NAMES = frozenset({"id_rsa", "id_dsa", "id_ecdsa", "id_ed25519"})
 SECRET_SUFFIXES = frozenset({".pem", ".key", ".p12", ".pfx", ".jks", ".keystore"})
 CORE_DIAGNOSTIC_IDS = ("validation", "phase0", "contracts", "runtime", "providers")
@@ -105,6 +107,9 @@ class PathDecision:
     escalated: bool = False
     escalation_reason: str = ""
     detail: tuple[str, ...] = ()
+    partition_id: str = ""
+    evidence_category: str = ""
+    governance_pattern_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -285,6 +290,28 @@ def _decide_path(
             original, normalized, CLASS_DOCUMENTATION_ONLY_CHECK,
             detail=("documentation-only path; cheap documentation check scheduled",),
         )
+    governance = manifest.match_governance_only(normalized)
+    if governance is not None:
+        return PathDecision(
+            original,
+            normalized,
+            CLASS_GOVERNANCE_ONLY_CHECK,
+            governance_pattern_id=governance.id,
+            detail=(governance.reason,),
+        )
+    evidence_entry = manifest.match_evidence_only(normalized)
+    if evidence_entry is not None:
+        return PathDecision(
+            original,
+            normalized,
+            CLASS_EVIDENCE_ONLY_CHECK,
+            evidence_category=evidence_entry.category,
+            detail=(
+                f"evidence-only ({evidence_entry.category}); "
+                "JSON + secret-redaction checks scheduled",
+                evidence_entry.reason,
+            ),
+        )
     if _is_evidence(normalized):
         return PathDecision(
             original, normalized, CLASS_EVIDENCE_ONLY_CHECK,
@@ -305,6 +332,25 @@ def _decide_path(
     matched_test = False
     matched_source = False
     detail: list[str] = []
+
+    partition = manifest.match_subsystem_partition(normalized)
+    if partition is not None:
+        if _matches(normalized, manifest.core_checkpoint_invalidators):
+            escalated = True
+            escalation_reason = "CORE_CHECKPOINT_INVALIDATOR"
+            detail.append("matches a core checkpoint invalidator glob")
+        return PathDecision(
+            original,
+            normalized,
+            CLASS_OWNING_SUITE_SELECTION,
+            owning_suites=(partition.owner_suite,),
+            dependent_suites=partition.dependent_suites,
+            matched_source=True,
+            escalated=escalated,
+            escalation_reason=escalation_reason,
+            partition_id=partition.id,
+            detail=tuple(detail) or (partition.reason,),
+        )
 
     if _matches(normalized, manifest.core_checkpoint_invalidators):
         escalated = True
@@ -434,6 +480,20 @@ def select_changed(
             path_decisions=decisions,
         )
     if paths and all(
+        decision.classification == CLASS_GOVERNANCE_ONLY_CHECK for decision in decisions
+    ):
+        return ValidationSelection(
+            mode="changed",
+            changed_files=paths,
+            selected_suite_ids=_ordered_suite_ids(manifest, {"validation"}),
+            selection_reasons={
+                "validation": ("governance-only change; validation control-plane suite",)
+            },
+            mandatory_selectors=_mandatory_selectors(manifest),
+            cheap_checks=("documentation", "governance"),
+            path_decisions=decisions,
+        )
+    if paths and all(
         decision.classification == CLASS_EVIDENCE_ONLY_CHECK for decision in decisions
     ):
         return ValidationSelection(
@@ -446,6 +506,7 @@ def select_changed(
     selected: set[str] = set()
     reasons: dict[str, list[str]] = {}
     direct_source_suites: set[str] = set()
+    partitioned_source_suites: set[str] = set()
     global_reasons: list[str] = []
     core_required = False
 
@@ -462,15 +523,31 @@ def select_changed(
                 global_reasons.append(decision.escalation_reason)
         for suite_id in decision.owning_suites:
             if decision.matched_source:
-                add(suite_id, f"{decision.normalized}: direct source ownership")
+                add(suite_id, f"{decision.normalized}: DIRECT_OWNER")
                 direct_source_suites.add(suite_id)
+                if decision.partition_id:
+                    partitioned_source_suites.add(suite_id)
             else:
                 add(suite_id, f"{decision.normalized}: direct test ownership")
         for suite_id in decision.dependent_suites:
-            add(suite_id, f"{decision.normalized}: shared-module dependent of {decision.normalized}")
+            if decision.partition_id:
+                add(suite_id, f"DEPENDENT_OF:{decision.partition_id}")
+            else:
+                add(
+                    suite_id,
+                    f"{decision.normalized}: shared-module dependent of {decision.normalized}",
+                )
 
     for suite_id in tuple(direct_source_suites):
+        if suite_id in partitioned_source_suites:
+            continue
         suite = manifest.suite_by_id(suite_id)
+        if suite.dependents:
+            for dependent_id in suite.dependents:
+                dependent = manifest.suite_by_id(dependent_id)
+                if dependent.classification == "offline":
+                    add(dependent_id, f"DEPENDENT_OF:{suite_id}")
+            continue
         for neighbor_id in suite.neighbors:
             neighbor = manifest.suite_by_id(neighbor_id)
             if neighbor.classification == "offline":
@@ -489,6 +566,10 @@ def select_changed(
         decision.classification == CLASS_EVIDENCE_ONLY_CHECK for decision in decisions
     ):
         check_values.extend(("evidence-json", "secret-redaction"))
+    if any(
+        decision.classification == CLASS_GOVERNANCE_ONLY_CHECK for decision in decisions
+    ):
+        check_values.append("governance")
     domains_selected = {
         domain
         for suite in manifest.suites
@@ -963,18 +1044,32 @@ def _run_cheap_checks(repository_root: Path, selection: ValidationSelection) -> 
                         if path.exists() and path.is_file():
                             path.read_text(encoding="utf-8")
             elif check == "evidence-json":
+                evidence_paths = {
+                    decision.normalized
+                    for decision in selection.path_decisions
+                    if decision.classification == CLASS_EVIDENCE_ONLY_CHECK
+                }
                 for relative in selection.changed_files:
                     path = repository_root / relative
-                    if _is_evidence(relative) and path.suffix.lower() == ".json" and path.exists():
+                    if (
+                        relative in evidence_paths
+                        and path.suffix.lower() == ".json"
+                        and path.exists()
+                    ):
                         json.loads(path.read_text(encoding="utf-8"))
             elif check == "secret-redaction":
                 leak = re.compile(
                     r"(?i)(api[_-]?key|token|password|authorization)"
                     r"\s*[:=]\s*[\"']?(?!<redacted>|none|null)[A-Za-z0-9_\-]{12,}"
                 )
+                evidence_paths = {
+                    decision.normalized
+                    for decision in selection.path_decisions
+                    if decision.classification == CLASS_EVIDENCE_ONLY_CHECK
+                }
                 for relative in selection.changed_files:
                     path = repository_root / relative
-                    if _is_evidence(relative) and path.exists() and path.is_file():
+                    if relative in evidence_paths and path.exists() and path.is_file():
                         if leak.search(path.read_text(encoding="utf-8", errors="replace")):
                             raise ValueError(f"possible unredacted secret in {relative}")
         except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
@@ -1111,6 +1206,9 @@ def execute_selection(
                 "escalated": decision.escalated,
                 "escalation_reason": decision.escalation_reason,
                 "detail": list(decision.detail),
+                "partition_id": decision.partition_id,
+                "evidence_category": decision.evidence_category,
+                "governance_pattern_id": decision.governance_pattern_id,
             }
             for decision in selection.path_decisions
         ],
@@ -1171,6 +1269,134 @@ def write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
             temporary.unlink()
 
 
+def manifest_fingerprint(manifest: ValidationManifest) -> str:
+    """Return a stable hash of manifest policy relevant to selection."""
+
+    payload = {
+        "schema_version": manifest.schema_version,
+        "core_checkpoint_invalidators": manifest.core_checkpoint_invalidators,
+        "evidence_only_patterns": [
+            {
+                "id": entry.id,
+                "category": entry.category,
+                "patterns": entry.patterns,
+            }
+            for entry in manifest.evidence_only_patterns
+        ],
+        "governance_only_patterns": [
+            {"id": entry.id, "patterns": entry.patterns}
+            for entry in manifest.governance_only_patterns
+        ],
+        "subsystem_partitions": [
+            {
+                "id": entry.id,
+                "owner_suite": entry.owner_suite,
+                "source_globs": entry.source_globs,
+                "dependent_suites": entry.dependent_suites,
+            }
+            for entry in manifest.subsystem_partitions
+        ],
+        "suite_ids": tuple(suite.id for suite in manifest.suites),
+        "shared_module_dependents": [
+            {
+                "path": entry.path,
+                "dependent_suites": entry.dependent_suites,
+                "reason": entry.reason,
+            }
+            for entry in manifest.shared_module_dependents
+        ],
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def build_selection_plan(
+    selection: ValidationSelection,
+    manifest: ValidationManifest,
+    *,
+    manifest_path: Path | None = None,
+) -> dict[str, Any]:
+    """Return a machine-readable selection plan without executing tests."""
+
+    direct_owner_suites = sorted(
+        {
+            suite_id
+            for decision in selection.path_decisions
+            for suite_id in decision.owning_suites
+            if decision.matched_source
+        }
+    )
+    dependency_suites = sorted(
+        {
+            suite_id
+            for suite_id in selection.selected_suite_ids
+            if suite_id not in direct_owner_suites
+            and suite_id not in _offline_core_diagnostics(manifest)
+        }
+    )
+    mandatory_suites = sorted(
+        {
+            suite.id
+            for suite in manifest.suites
+            if suite.id in set(selection.selected_suite_ids)
+            and any(
+                invariant.selector.startswith(f"{suite.path}/")
+                for invariant in manifest.mandatory_invariants
+            )
+        }
+    )
+    evidence_only_paths = [
+        decision.normalized
+        for decision in selection.path_decisions
+        if decision.classification == CLASS_EVIDENCE_ONLY_CHECK
+    ]
+    unknown_paths = [
+        decision.normalized
+        for decision in selection.path_decisions
+        if decision.classification in {CLASS_FAIL_SAFE, CLASS_CORE_CHECKPOINT_ESCALATION}
+        and decision.escalation_reason in {"UNCLASSIFIED_PATH", "UNKNOWN_EXECUTABLE_PATH"}
+    ]
+    classifications = {
+        decision.normalized: {
+            "classification": decision.classification,
+            "partition_id": decision.partition_id,
+            "evidence_category": decision.evidence_category,
+            "governance_pattern_id": decision.governance_pattern_id,
+            "owning_suites": list(decision.owning_suites),
+            "dependent_suites": list(decision.dependent_suites),
+            "escalated": decision.escalated,
+            "escalation_reason": decision.escalation_reason,
+            "detail": list(decision.detail),
+        }
+        for decision in selection.path_decisions
+    }
+    return {
+        "schema_version": "1.0",
+        "report_type": "validation_selection_plan",
+        "mode": selection.mode,
+        "selector_version": SELECTOR_VERSION,
+        "manifest_hash": manifest_fingerprint(manifest),
+        "manifest_path": str(manifest_path) if manifest_path is not None else "",
+        "changed_paths": list(selection.changed_files),
+        "classifications": classifications,
+        "direct_owner_suites": direct_owner_suites,
+        "dependency_suites": dependency_suites,
+        "mandatory_invariant_selectors": list(selection.mandatory_selectors),
+        "mandatory_suites": mandatory_suites,
+        "evidence_only_paths": evidence_only_paths,
+        "unknown_paths": unknown_paths,
+        "core_checkpoint_required": selection.core_checkpoint_required,
+        "core_checkpoint_reasons": list(selection.global_reasons),
+        "selected_suites": list(selection.selected_suite_ids),
+        "selection_reasons": {
+            key: list(value) for key, value in (selection.selection_reasons or {}).items()
+        },
+        "cheap_checks": list(selection.cheap_checks),
+        "omitted_domains": list(selection.omitted_domains),
+        "executes_tests": False,
+    }
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -1182,6 +1408,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--json", dest="json_path", type=Path)
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--explain", action="store_true")
+    parser.add_argument(
+        "--plan",
+        action="store_true",
+        help="compute and print the selection plan without executing tests",
+    )
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--fail-fast", action="store_true")
     parser.add_argument("--workers", type=int, default=DEFAULT_WORKERS)
@@ -1298,6 +1529,27 @@ def main(argv: list[str] | None = None) -> int:
     try:
         manifest = load_manifest(manifest_path, repository_root=repository_root)
         selection = _selection_for_arguments(arguments, manifest, repository_root)
+        if arguments.plan:
+            plan = build_selection_plan(
+                selection, manifest, manifest_path=manifest_path.resolve()
+            )
+            if arguments.json_path is not None:
+                write_json_atomic(arguments.json_path, plan)
+            if arguments.explain:
+                _print_explanation(selection)
+            elif arguments.verbose:
+                print(json.dumps(plan, sort_keys=True, indent=2))
+            else:
+                print(
+                    f"PLAN {plan['mode']}: {len(plan['selected_suites'])} suites, "
+                    f"core_checkpoint_required={str(plan['core_checkpoint_required']).lower()}, "
+                    f"mandatory_invariants={len(plan['mandatory_invariant_selectors'])}"
+                )
+                if plan["core_checkpoint_reasons"]:
+                    print("core_checkpoint_reasons=" + ",".join(plan["core_checkpoint_reasons"]))
+                for suite_id in plan["selected_suites"]:
+                    print(f"  -> {suite_id}")
+            return 0
         if arguments.explain:
             _print_explanation(selection)
         result = execute_selection(
@@ -1341,10 +1593,13 @@ if __name__ == "__main__":
 
 __all__ = [
     "PathDecision",
+    "SELECTOR_VERSION",
     "ValidationSelection",
     "ValidationSelectionError",
+    "build_selection_plan",
     "canonicalize_changed_path",
     "execute_selection",
+    "manifest_fingerprint",
     "run_worker_process",
     "changed_paths_from_baseline",
     "changed_paths_from_file",

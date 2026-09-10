@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "domains": [
     "core",
     "short-intelligence",
@@ -2153,6 +2153,109 @@
         "phase0"
       ],
       "reason": "imported by cross_lane/order_flow/participant lanes and phase0 pipeline tests"
+    }
+  ],
+  "evidence_only_patterns": [
+    {
+      "id": "generated_runtime_performance",
+      "category": "GENERATED_PERFORMANCE_EVIDENCE",
+      "patterns": [
+        "artifacts/g*-runtime-performance.json",
+        "artifacts/g*-validation-performance.json",
+        "artifacts/p*-performance-baseline.json",
+        "artifacts/p0-performance-baseline.json"
+      ],
+      "reason": "Measured validation timing output; not consumed by application runtime or test fixtures"
+    }
+  ],
+  "governance_only_patterns": [
+    {
+      "id": "cursor_rules_and_skills",
+      "patterns": [
+        ".cursor/rules/**",
+        ".cursor/agents/**",
+        ".cursor/skills/**",
+        ".cursor/hooks/**",
+        ".cursor/hooks.json"
+      ],
+      "reason": "Agent/rule prose and workflow instructions; governance validation only"
+    },
+    {
+      "id": "agents_root",
+      "patterns": [
+        "AGENTS.md"
+      ],
+      "reason": "Repository agent routing prose; governance validation only"
+    }
+  ],
+  "subsystem_partitions": [
+    {
+      "id": "news_foundation",
+      "owner_suite": "news",
+      "source_globs": [
+        "src/market_platform_foundation/news/**",
+        "tools/news/**",
+        "tests/fixtures/news/**",
+        "tests/news/**"
+      ],
+      "dependent_suites": [
+        "intelligence"
+      ],
+      "reason": "Intelligence layer consumes news contracts, replay semantics, and catalyst policies"
+    },
+    {
+      "id": "intelligence_inference",
+      "owner_suite": "intelligence",
+      "source_globs": [
+        "src/market_platform_foundation/intelligence/inference/**",
+        "tests/intelligence/test_news_inference.py",
+        "tests/fixtures/news/**"
+      ],
+      "dependent_suites": [],
+      "reason": "Inference boundary; strategy-evaluation integration tests remain in intelligence suite"
+    },
+    {
+      "id": "news_strategy_evaluation",
+      "owner_suite": "intelligence",
+      "source_globs": [
+        "src/market_platform_foundation/intelligence/news_strategy_evaluation/**",
+        "tests/intelligence/test_news_strategy_evaluation.py",
+        "tests/fixtures/news_strategy_evaluation/**",
+        "tools/research/evaluate_news_intelligence.py"
+      ],
+      "dependent_suites": [],
+      "reason": "Strategy-evaluation laboratory; no automatic upstream news/provider breadth"
+    },
+    {
+      "id": "validation_control_plane",
+      "owner_suite": "validation",
+      "source_globs": [
+        "tools/validation_*.py",
+        "tools/validate.py",
+        "tools/imp.py",
+        "tools/check_docs_links.py",
+        "tools/run_all_tests.py",
+        "tools/benchmark.py",
+        "tools/selector_safety_trial.py",
+        "tools/repository_closure.py",
+        "artifacts/repository-closure/**",
+        "docs/engineering/POST_BUILD35_REPOSITORY_CLOSURE_AUDIT.md"
+      ],
+      "dependent_suites": [],
+      "reason": "Validation control-plane changes require the validation suite and core checkpoint"
+    },
+    {
+      "id": "frontend_ui",
+      "owner_suite": "ui1",
+      "source_globs": [
+        "ui/src/**",
+        "ui/package.json",
+        "ui/vite.config.ts",
+        "ui/tsconfig.json",
+        "ui/tsconfig.*.json"
+      ],
+      "dependent_suites": [],
+      "reason": "Frontend source maps to ui offline checks without unrelated Python domain fan-out"
     }
   ]
 }

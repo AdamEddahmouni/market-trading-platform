@@ -7,6 +7,7 @@ does not discover tests, import providers, inspect Git, or access the network.
 from __future__ import annotations
 
 import ast
+import fnmatch
 import json
 import re
 from dataclasses import dataclass
@@ -78,11 +79,36 @@ class ValidationSuite:
     deep_live: bool = False
     absence_reason: str | None = None
     superseded_by: tuple[str, ...] = ()
+    dependents: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
 class SharedModuleDependency:
     path: str
+    dependent_suites: tuple[str, ...]
+    reason: str
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceOnlyPattern:
+    id: str
+    category: str
+    patterns: tuple[str, ...]
+    reason: str
+
+
+@dataclass(frozen=True, slots=True)
+class GovernanceOnlyPattern:
+    id: str
+    patterns: tuple[str, ...]
+    reason: str
+
+
+@dataclass(frozen=True, slots=True)
+class SubsystemPartition:
+    id: str
+    owner_suite: str
+    source_globs: tuple[str, ...]
     dependent_suites: tuple[str, ...]
     reason: str
 
@@ -95,12 +121,37 @@ class ValidationManifest:
     mandatory_invariants: tuple[MandatoryInvariant, ...]
     suites: tuple[ValidationSuite, ...]
     shared_module_dependents: tuple[SharedModuleDependency, ...] = ()
+    evidence_only_patterns: tuple[EvidenceOnlyPattern, ...] = ()
+    governance_only_patterns: tuple[GovernanceOnlyPattern, ...] = ()
+    subsystem_partitions: tuple[SubsystemPartition, ...] = ()
 
     def suite_by_id(self, suite_id: str) -> ValidationSuite:
         for suite in self.suites:
             if suite.id == suite_id:
                 return suite
         raise KeyError(suite_id)
+
+    def match_evidence_only(self, path: str) -> EvidenceOnlyPattern | None:
+        for entry in self.evidence_only_patterns:
+            if any(_glob_match(path, pattern) for pattern in entry.patterns):
+                return entry
+        return None
+
+    def match_governance_only(self, path: str) -> GovernanceOnlyPattern | None:
+        for entry in self.governance_only_patterns:
+            if any(_glob_match(path, pattern) for pattern in entry.patterns):
+                return entry
+        return None
+
+    def match_subsystem_partition(self, path: str) -> SubsystemPartition | None:
+        for partition in self.subsystem_partitions:
+            if any(_glob_match(path, pattern) for pattern in partition.source_globs):
+                return partition
+        return None
+
+
+def _glob_match(path: str, pattern: str) -> bool:
+    return fnmatch.fnmatchcase(path, pattern)
 
 
 def _sequence(value: Any, *, field: str, errors: list[str]) -> tuple[Any, ...]:
@@ -213,6 +264,9 @@ def _parse_suites(raw: Any, domains: frozenset[str], errors: list[str]) -> tuple
         neighbors = _text_sequence(
             row.get("neighbors", []), field=f"{suite_id}.neighbors", errors=errors
         )
+        dependents = _text_sequence(
+            row.get("dependents", []), field=f"{suite_id}.dependents", errors=errors
+        )
         absence_reason = row.get("absence_reason")
         if classification in {"intentionally_absent", "intentionally_excluded"}:
             if not isinstance(absence_reason, str) or not absence_reason.strip():
@@ -237,6 +291,7 @@ def _parse_suites(raw: Any, domains: frozenset[str], errors: list[str]) -> tuple
                 source_globs=source_globs,
                 test_globs=test_globs,
                 neighbors=neighbors,
+                dependents=dependents,
                 live_provider=live_provider if isinstance(live_provider, str) else None,
                 deep_live=bool(row.get("deep_live", False)),
                 absence_reason=absence_reason if isinstance(absence_reason, str) else None,
@@ -248,7 +303,136 @@ def _parse_suites(raw: Any, domains: frozenset[str], errors: list[str]) -> tuple
         for neighbor in suite.neighbors:
             if neighbor not in known_ids:
                 errors.append(f"unknown neighbor for {suite.id}: {neighbor}")
+        for dependent in suite.dependents:
+            if dependent not in known_ids:
+                errors.append(f"unknown dependent for {suite.id}: {dependent}")
     return tuple(suites)
+
+
+def _parse_evidence_only_patterns(raw: Any, errors: list[str]) -> tuple[EvidenceOnlyPattern, ...]:
+    rows = _sequence(raw, field="evidence_only_patterns", errors=errors)
+    patterns: list[EvidenceOnlyPattern] = []
+    seen: set[str] = set()
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            errors.append(f"evidence_only_patterns[{index}] must be an object")
+            continue
+        pattern_id = row.get("id")
+        category = row.get("category")
+        glob_values = _text_sequence(
+            row.get("patterns", []),
+            field=f"evidence_only_patterns[{index}].patterns",
+            errors=errors,
+        )
+        reason = row.get("reason")
+        if not isinstance(pattern_id, str) or not pattern_id:
+            errors.append(f"evidence_only_patterns[{index}].id must be a non-empty string")
+            pattern_id = ""
+        if pattern_id in seen:
+            errors.append(f"duplicate evidence_only_patterns id: {pattern_id}")
+        seen.add(pattern_id)
+        if not isinstance(category, str) or not category:
+            errors.append(f"evidence_only_patterns[{index}].category is required")
+            category = ""
+        for pattern in glob_values:
+            if not _valid_relative_glob(pattern):
+                errors.append(f"invalid evidence_only pattern for {pattern_id}: {pattern}")
+        if not isinstance(reason, str) or not reason.strip():
+            errors.append(f"evidence_only_patterns[{index}].reason is required")
+            reason = ""
+        patterns.append(
+            EvidenceOnlyPattern(str(pattern_id), str(category), glob_values, str(reason))
+        )
+    return tuple(patterns)
+
+
+def _parse_governance_only_patterns(raw: Any, errors: list[str]) -> tuple[GovernanceOnlyPattern, ...]:
+    rows = _sequence(raw, field="governance_only_patterns", errors=errors)
+    patterns: list[GovernanceOnlyPattern] = []
+    seen: set[str] = set()
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            errors.append(f"governance_only_patterns[{index}] must be an object")
+            continue
+        pattern_id = row.get("id")
+        glob_values = _text_sequence(
+            row.get("patterns", []),
+            field=f"governance_only_patterns[{index}].patterns",
+            errors=errors,
+        )
+        reason = row.get("reason")
+        if not isinstance(pattern_id, str) or not pattern_id:
+            errors.append(f"governance_only_patterns[{index}].id must be a non-empty string")
+            pattern_id = ""
+        if pattern_id in seen:
+            errors.append(f"duplicate governance_only_patterns id: {pattern_id}")
+        seen.add(pattern_id)
+        for pattern in glob_values:
+            if not _valid_relative_glob(pattern):
+                errors.append(f"invalid governance_only pattern for {pattern_id}: {pattern}")
+        if not isinstance(reason, str) or not reason.strip():
+            errors.append(f"governance_only_patterns[{index}].reason is required")
+            reason = ""
+        patterns.append(GovernanceOnlyPattern(str(pattern_id), glob_values, str(reason)))
+    return tuple(patterns)
+
+
+def _parse_subsystem_partitions(
+    raw: Any,
+    suites: tuple[ValidationSuite, ...],
+    errors: list[str],
+) -> tuple[SubsystemPartition, ...]:
+    rows = _sequence(raw, field="subsystem_partitions", errors=errors)
+    known_ids = {suite.id for suite in suites}
+    partitions: list[SubsystemPartition] = []
+    seen: set[str] = set()
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            errors.append(f"subsystem_partitions[{index}] must be an object")
+            continue
+        partition_id = row.get("id")
+        owner_suite = row.get("owner_suite")
+        glob_values = _text_sequence(
+            row.get("source_globs", []),
+            field=f"subsystem_partitions[{index}].source_globs",
+            errors=errors,
+        )
+        dependent_suites = _text_sequence(
+            row.get("dependent_suites", []),
+            field=f"subsystem_partitions[{index}].dependent_suites",
+            errors=errors,
+        )
+        reason = row.get("reason")
+        if not isinstance(partition_id, str) or not partition_id:
+            errors.append(f"subsystem_partitions[{index}].id must be a non-empty string")
+            partition_id = ""
+        if partition_id in seen:
+            errors.append(f"duplicate subsystem_partitions id: {partition_id}")
+        seen.add(partition_id)
+        if not isinstance(owner_suite, str) or owner_suite not in known_ids:
+            errors.append(f"subsystem_partitions[{index}].owner_suite is invalid: {owner_suite!r}")
+            owner_suite = str(owner_suite or "")
+        for pattern in glob_values:
+            if not _valid_relative_glob(pattern):
+                errors.append(f"invalid subsystem partition glob for {partition_id}: {pattern}")
+        for suite_id in dependent_suites:
+            if suite_id not in known_ids:
+                errors.append(f"unknown dependent suite for partition {partition_id}: {suite_id}")
+        if not isinstance(reason, str) or not reason.strip():
+            errors.append(f"subsystem_partitions[{index}].reason is required")
+            reason = ""
+        if not glob_values:
+            errors.append(f"subsystem_partitions[{index}] must declare source_globs")
+        partitions.append(
+            SubsystemPartition(
+                str(partition_id),
+                str(owner_suite),
+                glob_values,
+                dependent_suites,
+                str(reason),
+            )
+        )
+    return tuple(partitions)
 
 
 def _parse_shared_module_dependents(
@@ -390,6 +574,15 @@ def load_manifest(path: Path, *, repository_root: Path | None = None) -> Validat
     invariants = _parse_invariants(payload.get("mandatory_invariants", []), errors)
     suites = _parse_suites(payload.get("suites", []), domains, errors)
     shared_dependents = _parse_shared_module_dependents(payload, suites, errors)
+    evidence_only = _parse_evidence_only_patterns(
+        payload.get("evidence_only_patterns", []), errors
+    )
+    governance_only = _parse_governance_only_patterns(
+        payload.get("governance_only_patterns", []), errors
+    )
+    subsystem_partitions = _parse_subsystem_partitions(
+        payload.get("subsystem_partitions", []), suites, errors
+    )
     _validate_invariant_targets(invariants, root.resolve(), errors)
     _validate_inventory(suites, root.resolve(), errors)
     if errors:
@@ -401,6 +594,9 @@ def load_manifest(path: Path, *, repository_root: Path | None = None) -> Validat
         mandatory_invariants=invariants,
         suites=suites,
         shared_module_dependents=shared_dependents,
+        evidence_only_patterns=evidence_only,
+        governance_only_patterns=governance_only,
+        subsystem_partitions=subsystem_partitions,
     )
 
 
@@ -408,9 +604,12 @@ __all__ = [
     "CLASSIFICATIONS",
     "SAFETY_CLASSES",
     "SHARED_MODULE_PATHS",
+    "EvidenceOnlyPattern",
+    "GovernanceOnlyPattern",
     "ManifestValidationError",
     "MandatoryInvariant",
     "SharedModuleDependency",
+    "SubsystemPartition",
     "ValidationManifest",
     "ValidationSuite",
     "load_manifest",

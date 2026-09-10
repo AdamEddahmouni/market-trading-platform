@@ -35,13 +35,14 @@ requires exact selectors of the form
 ## Validation pyramid
 
 1. **FAST:** catastrophic mandatory invariants only.
-2. **FOCUSED:** exact regression selectors while iterating.
-3. **AFFECTED:** changed tests, direct source owners, declared offline
-   neighbors, and mandatory invariants; safe Python suites run in parallel.
-4. **DOMAIN:** all offline full-tier suites for one domain at a milestone.
-5. **CHANGED:** the canonical affected result plus cheap checks; a
+2. **PLAN:** `python tools/imp.py validate changed --plan` when changed scope is unclear; executes zero tests.
+3. **FOCUSED:** exact regression selectors while iterating.
+4. **AFFECTED:** changed tests, direct owners, BL-0801 directional dependents,
+   and mandatory invariants; safe Python suites run in parallel.
+5. **DOMAIN:** all offline full-tier suites for one domain at a milestone.
+6. **CHANGED:** the canonical affected result plus cheap checks; a
    `core_checkpoint_required` result is preliminary, never closure evidence.
-6. **FULL:** all offline full-tier suites once at final closure.
+7. **FULL:** all offline full-tier suites once at final closure.
 
 `SERIAL_REQUIRED`, `GLOBAL_STATE_MUTATION`, and `LIVE_EXCLUSIVE` work stays
 serial. `PARALLEL_SAFE` work may use the configured worker count.
@@ -136,6 +137,15 @@ Forensic baselines and optimization ledgers live under
 [performance-engineering-p0](../audits/performance-engineering-p0/README.md).
 Optimize measured hotspots only; preserve assurance invariants. Performance work
 is secondary/enabling and must not displace primary product increments.
+
+### Linked Git worktrees
+
+Performance and parallel development may use linked Git worktrees. In that
+layout the worktree root contains a `.git` **file** (`gitdir: …`) rather than a
+`.git` **directory**. Canonical repository discovery in
+`src/market_platform_foundation/git_ref.py` resolves both forms, returns the
+worktree top level as `repo_root()`, and reads shared branch metadata through
+Git's `commondir` indirection. Ordinary single-checkout clones are unchanged.
 
 ## Safety and ownership
 

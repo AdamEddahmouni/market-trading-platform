@@ -1,0 +1,76 @@
+﻿{
+  "schema_version": "1.0",
+  "report_type": "p3_after_baseline",
+  "captured_at": "2026-09-10T16:45:00Z",
+  "selector_version": "p3-bl-0801-1",
+  "localized_scenarios": [
+    {
+      "path": "src/market_platform_foundation/news/pipeline.py",
+      "suites": ["news", "intelligence"],
+      "suite_count": 2,
+      "core_checkpoint": false,
+      "delta_vs_before": {
+        "suites_avoided": ["finviz", "platform"],
+        "suite_count_delta": -1
+      }
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/inference/service.py",
+      "suites": ["intelligence"],
+      "suite_count": 1,
+      "core_checkpoint": false,
+      "delta_vs_before": {
+        "suites_avoided": ["platform", "contracts"],
+        "suite_count_delta": -2
+      }
+    },
+    {
+      "path": "src/market_platform_foundation/intelligence/news_strategy_evaluation/laboratory.py",
+      "suites": ["intelligence"],
+      "suite_count": 1,
+      "core_checkpoint": false,
+      "delta_vs_before": {
+        "suites_avoided": ["platform", "contracts"],
+        "suite_count_delta": -2
+      }
+    },
+    {
+      "path": "artifacts/g14-runtime-performance.json",
+      "suites": [],
+      "suite_count": 0,
+      "core_checkpoint": false,
+      "cheap_checks": ["evidence-json", "secret-redaction"],
+      "delta_vs_before": {
+        "suites_avoided": ["phase0", "contracts", "providers", "runtime", "validation"],
+        "suite_count_delta": -5,
+        "checkpoint_escalation_removed": true
+      }
+    },
+    {
+      "path": ".cursor/rules/developer-workflow.mdc",
+      "suites": ["validation"],
+      "suite_count": 1,
+      "core_checkpoint": false,
+      "delta_vs_before": {
+        "suites_avoided": ["phase0", "contracts", "providers", "runtime"],
+        "suite_count_delta": -4,
+        "checkpoint_escalation_removed": true
+      }
+    },
+    {
+      "path": "ui/src/App.tsx",
+      "suites": ["ui1"],
+      "suite_count": 1,
+      "core_checkpoint": false,
+      "delta_vs_before": {
+        "suites_avoided": ["phase0", "contracts", "providers", "runtime", "validation"],
+        "suite_count_delta": -4,
+        "checkpoint_escalation_removed": true
+      }
+    }
+  ],
+  "plan_mode_latency_seconds": {
+    "news_scenario": 0.0002,
+    "note": "Sub-second plan computation for localized scenarios"
+  }
+}

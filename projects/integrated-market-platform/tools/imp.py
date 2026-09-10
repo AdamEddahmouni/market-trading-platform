@@ -334,6 +334,8 @@ def _validation_command(root: Path, mode: str, args: argparse.Namespace) -> int:
         command.extend(["--json", str(args.json_path)])
     if getattr(args, "explain", False):
         command.append("--explain")
+    if getattr(args, "plan", False):
+        command.append("--plan")
     if getattr(args, "fail_fast", False):
         command.append("--fail-fast")
     result = _run(
@@ -458,6 +460,7 @@ def build_parser() -> argparse.ArgumentParser:
     affected.add_argument("--paths-file", type=Path)
     affected.add_argument("--json", dest="json_path", type=Path)
     affected.add_argument("--explain", action="store_true")
+    affected.add_argument("--plan", action="store_true")
     affected.add_argument("--fail-fast", action="store_true")
     focused = test_actions.add_parser("focused", help="run explicit unittest selectors")
     focused.add_argument("selectors", nargs="+")
@@ -473,6 +476,7 @@ def build_parser() -> argparse.ArgumentParser:
             command.add_argument("--paths-file", type=Path)
         command.add_argument("--json", dest="json_path", type=Path)
         command.add_argument("--explain", action="store_true")
+        command.add_argument("--plan", action="store_true")
         command.add_argument("--fail-fast", action="store_true")
     domain = validation_actions.add_parser("domain")
     domain.add_argument("target")
