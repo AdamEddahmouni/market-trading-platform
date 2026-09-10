@@ -567,7 +567,8 @@
       "classification": "RETAINED_SUPPORTING",
       "scope": [
         "tools/benchmark.py",
-        "tools/mutation_verification.py"
+        "tools/mutation_verification.py",
+        "tools/p5_profile_harness.py"
       ],
       "responsibility": "Informational performance measurement and controlled proof that mandatory validation invariants detect regressions.",
       "evidence": [

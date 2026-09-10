@@ -151,6 +151,7 @@ class ReplayStore:
 
     def load(self) -> None:
         self._feature_cache = BoundedMemoryCache(max_bytes=256 * 1024, max_entries=32)
+        self._projection_cache = {}
         collection_root = str(Path(self.collection_root).resolve())
         source_digest = _replay_source_digest(collection_root)
         decoded = copy.deepcopy(_cached_decoded_replay_snapshot(collection_root, source_digest))
@@ -173,6 +174,7 @@ class ReplayStore:
         """Copy immutable replay bars/events from a warmed store without reloading fixtures."""
 
         self._feature_cache = BoundedMemoryCache(max_bytes=256 * 1024, max_entries=32)
+        self._projection_cache = {}
         self._events = copy.deepcopy(source._events)
         self._bars = copy.deepcopy(source._bars)
         self._evaluation = copy.deepcopy(source._evaluation)
@@ -184,6 +186,7 @@ class ReplayStore:
     def refresh_mutable_runtime(self) -> None:
         """Reinitialize session-bound mutable containers for isolated test/runtime use."""
 
+        self._projection_cache = {}
         ledger = bootstrap_default_providers()
         configure_institutional_ledger(ledger)
         audit_root = self.assistant_audit_root

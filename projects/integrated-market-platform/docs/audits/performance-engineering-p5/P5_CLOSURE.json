@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p5_closure",
+  "status": "COMPLETE",
+  "generated_at": "2026-09-10T21:15:00Z",
+  "worktree": "C:/Users/adame/Desktop/market-trading-platform-perf-p5",
+  "branch": "perf/p5-runtime-profile",
+  "head_sha": "efc9219ea4d1a79511278a4a8c0ea0d0d5e8e2fd",
+  "committed": false,
+  "optimizations_implemented": 3,
+  "full_validation": {
+    "total": 4497,
+    "skipped": 48,
+    "failures": 0,
+    "errors": 0,
+    "wall_seconds": 410.23
+  },
+  "changed_validation": {
+    "tests": 724,
+    "skipped": 12,
+    "failures": 0,
+    "errors": 0,
+    "wall_seconds": 168.387
+  },
+  "fast_validation": {
+    "tests": 21,
+    "wall_seconds": 6.336,
+    "failures": 0,
+    "errors": 0
+  },
+  "p3_regression": "19 tests OK",
+  "p4_regression": "fixture isolation tests OK",
+  "p6_env": "healthy (resolved Python 3.11.15)",
+  "frontend_validation": "NOT_APPLICABLE",
+  "notion_sync": "NOTION_SYNC_BLOCKED",
+  "product_semantics": "UNCHANGED"
+}

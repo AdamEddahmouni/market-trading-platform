@@ -20,6 +20,7 @@
     "tools/imp.py",
     "tools/run_all_tests.py",
     "tools/benchmark.py",
+    "tools/p5_profile_harness.py",
     "src/market_platform_foundation/canonical.py",
     "src/market_platform_foundation/contracts/**",
     "src/market_platform_foundation/providers/envelope.py",
@@ -1467,6 +1468,7 @@
         "tools/check_docs_links.py",
         "tools/run_all_tests.py",
         "tools/benchmark.py",
+        "tools/p5_profile_harness.py",
         "tools/repository_closure.py",
         "artifacts/repository-closure/**",
         "docs/engineering/POST_BUILD35_REPOSITORY_CLOSURE_AUDIT.md"
@@ -2236,6 +2238,7 @@
         "tools/check_docs_links.py",
         "tools/run_all_tests.py",
         "tools/benchmark.py",
+        "tools/p5_profile_harness.py",
         "tools/selector_safety_trial.py",
         "tools/repository_closure.py",
         "artifacts/repository-closure/**",
