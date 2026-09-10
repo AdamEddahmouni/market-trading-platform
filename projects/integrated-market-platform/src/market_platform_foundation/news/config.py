@@ -65,11 +65,61 @@ def finnhub_live_enabled() -> bool:
     return _gate_enabled("IMP_FINNHUB_LIVE")
 
 
+def _int_env(name: str, default: int) -> int:
+    raw = _runtime_values().get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
+
+def default_pipeline_config() -> "PipelineConfig":
+    from .contracts import PipelineConfig
+    from .catalysts import DEFAULT_CATALYST_REGISTRY
+    from .sources import DEFAULT_SOURCE_CATALOG
+
+    enabled_sources = frozenset(
+        entry.source_id for entry in DEFAULT_SOURCE_CATALOG if entry.enabled
+    )
+    enabled_catalysts = frozenset(
+        entry.catalyst_id for entry in DEFAULT_CATALYST_REGISTRY if entry.enabled
+    )
+    return PipelineConfig(
+        recency_max_age_seconds=_int_env("IMP_NEWS_RECENCY_MAX_AGE_SECONDS", 72 * 3600),
+        recency_reject_future_seconds=_int_env("IMP_NEWS_RECENCY_FUTURE_TOLERANCE_SECONDS", 300),
+        enabled_source_ids=enabled_sources,
+        enabled_catalyst_ids=enabled_catalysts,
+    )
+
+
+def verify_news_config() -> dict[str, object]:
+    """Configuration verification for the deterministic news pipeline."""
+    config = default_pipeline_config()
+    issues: list[str] = []
+    if config.recency_max_age_seconds <= 0:
+        issues.append("RECENCY_MAX_AGE_INVALID")
+    if config.recency_reject_future_seconds < 0:
+        issues.append("RECENCY_FUTURE_TOLERANCE_INVALID")
+    if not config.enabled_source_ids:
+        issues.append("NO_ENABLED_SOURCES")
+    if not config.enabled_catalyst_ids:
+        issues.append("NO_ENABLED_CATALYSTS")
+    return {
+        "ok": not issues,
+        "issues": issues,
+        "config": config.to_dict(),
+    }
+
+
 __all__ = [
     "FINNHUB_URL",
     "NEWSAPI_URL",
+    "default_pipeline_config",
     "finnhub_api_key",
     "finnhub_live_enabled",
     "newsapi_api_key",
     "newsapi_live_enabled",
+    "verify_news_config",
 ]

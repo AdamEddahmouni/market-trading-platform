@@ -54,6 +54,9 @@ When documents disagree, resolve in this order (highest first):
 | Mode authority (Demo/Paper/Live) | [MODE_AUTHORITY.md](architecture/MODE_AUTHORITY.md) |
 | Paper decision lifecycle | [PAPER_DECISION_LIFECYCLE.md](architecture/PAPER_DECISION_LIFECYCLE.md) |
 | Data contracts & timestamps | [DATA_CONTRACTS.md](architecture/DATA_CONTRACTS.md) |
+| News/event foundation (deterministic) | [NEWS_EVENT_FOUNDATION.md](architecture/NEWS_EVENT_FOUNDATION.md) |
+| News AI intelligence (analysis only) | [NEWS_AI_INTELLIGENCE.md](architecture/NEWS_AI_INTELLIGENCE.md) |
+| News strategy evaluation laboratory | [NEWS_STRATEGY_EVALUATION.md](architecture/NEWS_STRATEGY_EVALUATION.md) |
 | Threat model (lite) | [THREAT_MODEL.md](architecture/THREAT_MODEL.md) |
 | Architecture decisions | [adr/README.md](architecture/adr/README.md) |
 | Multi-source data foundation | [MULTI_SOURCE_DATA_FOUNDATION.md](providers/MULTI_SOURCE_DATA_FOUNDATION.md) |
@@ -73,6 +76,7 @@ When documents disagree, resolve in this order (highest first):
 | Validation commands | [VALIDATION.md](engineering/VALIDATION.md) |
 | Validation system internals | [VALIDATION_ARCHITECTURE.md](engineering/VALIDATION_ARCHITECTURE.md) |
 | Current workflow audit | [DEVELOPER_OPERATING_SYSTEM_AUDIT.md](engineering/DEVELOPER_OPERATING_SYSTEM_AUDIT.md) |
+| Performance P0 forensic baseline | [performance-engineering-p0/](audits/performance-engineering-p0/README.md) |
 | Definition of done | [DEFINITION_OF_DONE.md](engineering/DEFINITION_OF_DONE.md) |
 | Coding standards | [CODING_STANDARDS.md](engineering/CODING_STANDARDS.md) |
 | Dependencies | [DEPENDENCIES.md](engineering/DEPENDENCIES.md) |
@@ -131,6 +135,15 @@ When documents disagree, resolve in this order (highest first):
 | Mode-specific surfaces (completion) | [completion record](superpowers/plans/2026-08-31-mode-specific-surfaces-completion.md) |
 | UX wireframes | [product/ux/](product/ux/) |
 | Product backlog | [PRODUCT_BACKLOG.md](product/PRODUCT_BACKLOG.md) |
+
+---
+
+## Audits
+
+| Topic | Document |
+|-------|----------|
+| Post-G15 professor-directed CCN forensic audit | [post-g15-professor-directed/](audits/post-g15-professor-directed/README.md) |
+| IMP reconciliation program (G0–G15) | [imp-reconciliation/](audits/imp-reconciliation/README.md) |
 
 ---
 

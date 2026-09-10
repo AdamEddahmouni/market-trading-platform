@@ -36,6 +36,66 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-09 — Performance Engineering P0 forensic audit
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `developer-operating-system`, `performance` |
+| **Summary** | P0 measurement-first audit of IMP developer OS, validation tiers, selector behavior, and assurance map. Delivered baseline JSON, optimization ledger, invariant/parallel maps, Notion lifecycle spec, and forensic report. Fixed stale `core_checkpoint_required` terminology and authoritative-docs link. No broad optimization; professor-directed dirty tree preserved. |
+| **Key files** | `docs/audits/performance-engineering-p0/*`, `docs/engineering/DEVELOPER_OPERATING_SYSTEM.md`, `.cursor/rules/developer-workflow.mdc`, `.cursor/rules/authoritative-docs.mdc`, `.cursor/skills/imp-testing/SKILL.md`, `.cursor/agents/testing.md`, `artifacts/p0-performance-baseline.json` |
+| **Tests** | `validate fast`: 21 passed, 3.447s; `benchmark.py --include-fast`: pass; focused news 0.39s; intelligence news 1.23s; vitest 71.9s |
+| **Related** | [P0 forensic audit](../audits/performance-engineering-p0/P0_FORENSIC_AUDIT_2026-09-09.md), [NOTION_DEVELOPMENT_LIFECYCLE.md](../audits/performance-engineering-p0/NOTION_DEVELOPMENT_LIFECYCLE.md) |
+| **Notes** | NOTION_CONTEXT_BLOCKED / NOTION_SYNC_BLOCKED. Next performance increment: P3 selector + artifacts evidence classification (BL-0801). Primary lane remains Paper forward-testing bridge. |
+
+## 2026-09-09 — News strategy evaluation laboratory (professor-directed increment 3)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `docs`, `tests` |
+| **Summary** | Implemented event-time-safe news intelligence strategy evaluation and Paper-shadow laboratory: feature snapshots, baseline vs AI-enhanced policies, realized outcome measurement, calibration metrics, deterministic replay, and non-executable shadow records. Initial lane ES futures with multi-asset fixture proof. No execution authority. |
+| **Key files** | `src/market_platform_foundation/intelligence/news_strategy_evaluation/*`, `tests/intelligence/test_news_strategy_evaluation.py`, `tests/fixtures/news_strategy_evaluation/evaluation_replay_pack.json`, `tools/research/evaluate_news_intelligence.py`, `docs/architecture/NEWS_STRATEGY_EVALUATION.md`, `docs/architecture/adr/0012-news-strategy-evaluation-laboratory.md` |
+| **Tests** | `unittest tests.intelligence.test_news_strategy_evaluation` 19 passed; news+intelligence foundation 45 passed |
+| **Related** | [NEWS_STRATEGY_EVALUATION.md](../architecture/NEWS_STRATEGY_EVALUATION.md), [ADR-0012](../architecture/adr/0012-news-strategy-evaluation-laboratory.md) |
+| **Notes** | Empirical path SOFTWARE_FIXTURE_ONLY; MES deferred; Claude live validation still blocked; Paper forward bridge deferred |
+
+## 2026-09-09 — Canonical news AI intelligence boundary (post-G15 increment 2)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/intelligence/inference`, `docs` |
+| **Summary** | Implemented analysis-only AI intelligence layer over curated deterministic news: `IntelligenceInputPacket`, governed `PromptRegistry`, provider-neutral `InferenceProvider` (`FixtureInferenceProvider`, `AnthropicInferenceProvider`), structured `IntelligenceResult`, replay-safe `InferenceRecord`, `NewsIntelligenceAnalyzer`, and `IntelligenceReplayHarness`. Zero broker/Paper/Live execution authority. |
+| **Key files** | `src/market_platform_foundation/intelligence/inference/*`; `tests/intelligence/test_news_inference.py`; `docs/architecture/NEWS_AI_INTELLIGENCE.md`, `adr/0011-news-ai-intelligence-boundary.md` |
+| **Tests** | `tests/intelligence/test_news_inference.py` — 24 passed; `tests/news` — 26 passed |
+| **Related** | ADR-0011, [NEWS_AI_INTELLIGENCE.md](../architecture/NEWS_AI_INTELLIGENCE.md), ADR-0010 |
+| **Notes** | INT-012 → PARTIALLY_INTEGRATED. `CLAUDE_LIVE_VALIDATION_NOT_RUN_EXTERNAL_CREDENTIAL_BLOCKER`. Durable inference persistence deferred. Next: Paper strategy evaluation over recorded intelligence. |
+
+## 2026-09-09 — Canonical news/event deterministic foundation (post-CCN audit)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/news`, `docs` |
+| **Summary** | Extended `market_platform_foundation/news/` with canonical `NewsArticleEvent` contract, separate publication/retrieval timestamps, source-trust catalog, catalyst registry, composable filter chain (recency → source → catalyst), deduplication, event-time-safe replay harness, fixture provider, and read-only `NewsIntelligenceService`. No AI or broker execution. Converges with existing aggregator rather than duplicating architecture. |
+| **Key files** | `src/market_platform_foundation/news/contracts.py`, `timestamps.py`, `sources.py`, `catalysts.py`, `dedupe.py`, `normalize.py`, `filters/*`, `pipeline.py`, `replay.py`, `observability.py`, `fixture_provider.py`, `service.py`; `tests/news/test_news_foundation.py`, `test_news_event_time.py`; `tests/fixtures/news/canonical_replay_pack.json`; `docs/architecture/NEWS_EVENT_FOUNDATION.md`, `adr/0010-news-catalyst-deterministic-foundation.md` |
+| **Tests** | `python -m unittest discover -s tests/news -q` — 26 passed |
+| **Related** | [CCN_FORENSIC_AUDIT_2026-09-09.md](../audits/post-g15-professor-directed/CCN_FORENSIC_AUDIT_2026-09-09.md), ADR-0010 |
+| **Notes** | INT-012 remains NOT_YET_INTEGRATED. Live wire providers (PR Newswire, Benzinga, etc.) deferred. Next increment: AI intelligence boundary over curated output. |
+
+## 2026-09-09 — Post-G15 professor-directed CCN forensic audit
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `research`, `donors` |
+| **Summary** | Completed forensic audit of authorized Future donor `Claude Code News/` (SRC-006): full artifact inventory, architecture reconstruction, event-time and AI analysis, performance evidence classification, security review, IMP comparison, reuse matrix, and proposed canonical integration architecture. Donor tree left unchanged (gitignored). No IMP runtime code copied. |
+| **Key files** | `docs/audits/post-g15-professor-directed/README.md`, `docs/audits/post-g15-professor-directed/CCN_FORENSIC_AUDIT_2026-09-09.md`, `docs/audits/post-g15-professor-directed/CCN_ARTIFACT_INVENTORY.json` |
+| **Tests** | `git rev-parse HEAD` (baseline match); `node --check` on 4 donor entrypoints (pass). IMP suite not run — documentation-only increment. |
+| **Related** | [CCN forensic audit](../audits/post-g15-professor-directed/CCN_FORENSIC_AUDIT_2026-09-09.md); SRC-006 in [01-source-registry](../audits/imp-reconciliation/01-source-registry.md) |
+| **Notes** | Runtime logs absent locally; README P&L claims PARTIALLY VERIFIED only. Next increment: canonical deterministic news/event ingestion foundation (Paper-only). |
+
 ## 2026-09-09 — G15 product acceptance (browser E2E, validation perf, archive-first deprecation)
 
 | Field | Value |
