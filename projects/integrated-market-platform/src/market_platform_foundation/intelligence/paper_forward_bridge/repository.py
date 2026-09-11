@@ -7,6 +7,7 @@ from typing import Any, Protocol, runtime_checkable
 
 from ...local_state.connection import LocalStateConnection
 from ...local_state.paths import persistence_enabled
+from .campaign_binding import CampaignBinding
 from .types import (
     EvaluationState,
     ExecutionOutcomeMetrics,
@@ -51,6 +52,26 @@ class ForwardTestRepository(Protocol):
     def claim_evaluation(self, forward_test_id: str) -> bool: ...
 
     def release_evaluation_claim(self, forward_test_id: str) -> None: ...
+
+    def claim_active_binding(self, binding: CampaignBinding) -> None: ...
+
+    def get_active_binding(self, *, account_id: str) -> CampaignBinding | None: ...
+
+    def release_binding(
+        self,
+        *,
+        account_id: str,
+        campaign_id: str | None = None,
+        released_at_ns: int | None = None,
+    ) -> CampaignBinding | None: ...
+
+    def record_first_lock_at_ns(
+        self,
+        *,
+        account_id: str,
+        campaign_id: str,
+        first_lock_at_ns: int,
+    ) -> None: ...
 
 
 def create_forward_test_repository(

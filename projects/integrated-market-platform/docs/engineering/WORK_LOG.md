@@ -36,6 +36,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-11 — FTEP-V1 activation manifest runtime gaps (Agent B)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `ui_api`, `docs`, `forward-test` |
+| **Summary** | Completed Agent B minimal plan: `freeze_activation_manifest.py` CLI, protocol SHA-256 verification in manifest validation/preflight, decision provenance campaign binding, durable `forward_test_campaign_bindings` with first-lock timestamp, GET preflight API, and non-campaign empirical path guards. FTEP-V1-001 remains `PENDING_OWNER_DECISIONS`; no empirical evidence. |
+| **Key files** | `tools/forward_test/freeze_activation_manifest.py`, `paper_forward_bridge/{protocol_ref,campaign_binding}.py`, `service.py`, `activation.py`, `preflight.py`, `sqlite_repository.py`, `ui_api/{forward_test_projections,server}.py`, forward-test tests, `PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | `python tools/imp.py validate fast`; `python tools/imp.py test affected`; `python tools/check_docs_links.py` |
+| **Related** | Agent B spec; [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md) |
+| **Notes** | Owner must sign OD-1 … OD-11 before freeze CLI succeeds on FTEP-V1-001. $0 incremental cost. Paper-only. |
+
+## 2026-09-11 — FTEP-V1 P0 activation follow-ups (campaign binding + preflight API)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `ui_api`, `docs`, `forward-test` |
+| **Summary** | Added durable campaign binding (one ACTIVE campaign per account), protocol reference hash verification, GET preflight API, and fail-closed non-campaign session guards. No manifest freeze or empirical campaign start. |
+| **Key files** | `paper_forward_bridge/{campaign_binding,protocol_ref}.py`, `service.py`, `preflight.py`, `activation.py`, `sqlite_repository.py`, `store.py`, `ui_api/{forward_test_projections,server}.py`, tests `test_forward_test_{activation,persistence,preflight_api,protocol_ref}.py`, `PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | `python tools/imp.py validate fast`; `python tools/imp.py test affected`; `python tools/check_docs_links.py` |
+| **Related** | Agent A/C P0 gaps; [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md) |
+| **Notes** | Owner must still sign OD-1 … OD-11 before manifest freeze. $0 incremental cost. Paper-only. |
+
 ## 2026-09-11 — FTEP-V1 owner decision packet (OD-1 … OD-11)
 
 | Field | Value |

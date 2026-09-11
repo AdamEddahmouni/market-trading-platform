@@ -110,6 +110,44 @@ class IsolatedForwardTestPersistenceTest(unittest.TestCase):
         self.assertIn("forward_test_decisions", tables)
         self.assertIn("forward_test_observations", tables)
         self.assertIn("forward_test_claims", tables)
+        self.assertIn("forward_test_campaign_bindings", tables)
+
+    def test_campaign_binding_survives_restart(self) -> None:
+        service = self._service()
+        session = create_activated_session(
+            service,
+            self.campaigns_root,
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0,
+        )
+        binding = service._store.get_active_binding(account_id="paper-a")
+        self.assertIsNotNone(binding)
+        assert binding is not None
+        self.assertEqual(binding.forward_test_session_id, session.session_id)
+        _, restarted = self._restart()
+        recovered = restarted._store.get_active_binding(account_id="paper-a")
+        self.assertIsNotNone(recovered)
+        assert recovered is not None
+        self.assertEqual(recovered.campaign_id, binding.campaign_id)
+        self.assertEqual(recovered.forward_test_session_id, session.session_id)
+
+    def test_first_lock_timestamp_persisted_after_restart(self) -> None:
+        service = self._service()
+        _session, locked = self._seed_locked_decision(service)
+        binding = service._store.get_active_binding(account_id="paper-a")
+        self.assertIsNotNone(binding)
+        assert binding is not None
+        self.assertEqual(binding.first_lock_at_ns, T0)
+        _, restarted = self._restart()
+        recovered_binding = restarted._store.get_active_binding(account_id="paper-a")
+        self.assertIsNotNone(recovered_binding)
+        assert recovered_binding is not None
+        self.assertEqual(recovered_binding.first_lock_at_ns, T0)
+        recovered_decision = restarted.get_decision(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+        )
+        self.assertEqual(recovered_decision.state, ForwardTestState.LOCKED)
 
     def test_create_session_restart_recover(self) -> None:
         service = self._service()

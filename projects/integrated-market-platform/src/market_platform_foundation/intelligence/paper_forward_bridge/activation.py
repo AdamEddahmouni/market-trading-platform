@@ -12,6 +12,7 @@ from typing import Any
 from market_platform_foundation.canonical import canonical_bytes, load_json_strict, sha256_bytes
 
 from ...local_state.paths import REPO_ROOT
+from .protocol_ref import ProtocolRefError, assert_protocol_ref_valid, write_test_protocol_ref
 
 MANIFEST_SCHEMA_VERSION = "intelligence/paper_forward_bridge/activation_manifest/1.0.0"
 MANIFEST_FILENAME = "ACTIVATION_MANIFEST.json"
@@ -216,13 +217,17 @@ def normalize_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
     return normalized
 
 
-def validate_manifest_schema(manifest: dict[str, Any]) -> None:
+def validate_manifest_schema(
+    manifest: dict[str, Any],
+    *,
+    campaigns_root_override: Path | None = None,
+) -> None:
     normalized = normalize_manifest(manifest)
     status_raw = normalized.get("activation_status") or normalized.get("status")
     if status_raw is None:
         raise ActivationManifestError("ACTIVATION_MANIFEST_MISSING:activation_status")
     try:
-        ActivationManifestStatus(str(status_raw))
+        status = ActivationManifestStatus(str(status_raw))
     except ValueError as exc:
         raise ActivationManifestError("ACTIVATION_MANIFEST_STATUS_INVALID") from exc
     if not normalized.get("protocol_id"):
@@ -243,6 +248,17 @@ def validate_manifest_schema(manifest: dict[str, Any]) -> None:
     )
     if stored is not None and stored != compute_manifest_fingerprint(normalized):
         raise ActivationManifestError("ACTIVATION_MANIFEST_FINGERPRINT_MISMATCH")
+    if status in {
+        ActivationManifestStatus.FROZEN,
+        ActivationManifestStatus.ACTIVE,
+    }:
+        try:
+            assert_protocol_ref_valid(
+                str(slug),
+                campaigns_root_override=campaigns_root_override,
+            )
+        except ProtocolRefError as exc:
+            raise ActivationManifestError(str(exc)) from exc
 
 
 def _validate_binding(binding: dict[str, Any]) -> None:
@@ -273,7 +289,7 @@ def load_activation_manifest(
     if not isinstance(loaded, dict):
         raise ActivationManifestError("ACTIVATION_MANIFEST_INVALID")
     normalized = normalize_manifest(loaded)
-    validate_manifest_schema(normalized)
+    validate_manifest_schema(normalized, campaigns_root_override=campaigns_root_override)
     return ActivationManifest(raw=normalized, path=path)
 
 
@@ -324,6 +340,16 @@ def freeze_manifest(manifest: ActivationManifest, *, frozen_at: str) -> dict[str
     assert_manifest_immutable_for_freeze(manifest)
     if manifest.owner_decisions_pending:
         raise ActivationManifestError("ACTIVATION_MANIFEST_OWNER_DECISIONS_PENDING")
+    try:
+        campaigns_root = (
+            manifest.path.parent.parent if manifest.path.name == MANIFEST_FILENAME else None
+        )
+        assert_protocol_ref_valid(
+            manifest.campaign_slug,
+            campaigns_root_override=campaigns_root,
+        )
+    except ProtocolRefError as exc:
+        raise ActivationManifestError(str(exc)) from exc
     updated = transition_manifest_status(manifest, ActivationManifestStatus.FROZEN)
     updated["schema_version"] = updated.get("schema_version") or MANIFEST_SCHEMA_VERSION
     updated["frozen_at"] = frozen_at
@@ -331,13 +357,26 @@ def freeze_manifest(manifest: ActivationManifest, *, frozen_at: str) -> dict[str
     updated["manifest_fingerprint"] = fingerprint
     updated["fingerprint"] = fingerprint
     updated["campaign_id"] = derive_campaign_id(updated)
-    validate_manifest_schema(updated)
+    validate_manifest_schema(
+        updated,
+        campaigns_root_override=(
+            manifest.path.parent.parent if manifest.path.name == MANIFEST_FILENAME else None
+        ),
+    )
     return updated
 
 
-def write_activation_manifest(path: Path, manifest: dict[str, Any]) -> None:
+def write_activation_manifest(
+    path: Path,
+    manifest: dict[str, Any],
+    *,
+    campaigns_root_override: Path | None = None,
+) -> None:
     normalized = normalize_manifest(manifest)
-    validate_manifest_schema(normalized)
+    root_override = campaigns_root_override
+    if root_override is None and path.name == MANIFEST_FILENAME:
+        root_override = path.parent.parent
+    validate_manifest_schema(normalized, campaigns_root_override=root_override)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(normalized, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -411,5 +450,6 @@ def seed_test_frozen_manifest(
     manifest["fingerprint"] = fingerprint
     manifest["campaign_id"] = derive_campaign_id(manifest)
     path = manifest_path(campaign_slug, campaigns_root_override=campaigns_root)
-    write_activation_manifest(path, manifest)
+    write_test_protocol_ref(campaigns_root, campaign_slug=campaign_slug)
+    write_activation_manifest(path, manifest, campaigns_root_override=campaigns_root)
     return load_activation_manifest(campaign_slug, campaigns_root_override=campaigns_root)
