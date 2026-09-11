@@ -21,11 +21,22 @@ Governed Paper forward-testing bridge implemented on reconciled P2+P7 professor 
 
 See [PAPER_FORWARD_TESTING_BRIDGE.md](../../architecture/PAPER_FORWARD_TESTING_BRIDGE.md).
 
+## PD-09 persistence increment
+
+Durable forward-test persistence (local SQLite via `local_state` schema v2):
+
+- `ForwardTestRepository` protocol + in-memory/SQLite factory
+- restart recovery for sessions, locked decisions, observations, evaluations
+- durable paper-submission and evaluation idempotency claims
+- account isolation preserved across restart
+
+Validation: `tests/intelligence/test_forward_test_persistence.py` (9 tests).
+
 ## Notion sync payload
 
 - landed SHA: record at commit time
-- lane: `work/professor-paper-forward-testing`
-- scope: forward-test domain, API, UI panel, tests, architecture doc
-- limitations: in-memory store, no remote merge
+- lane: `work/forward-test-persistence`
+- scope: forward-test domain, durable persistence, API wiring, tests, architecture doc
+- limitations: local SQLite only, no EVIDENCE-01B auto-bridge
 
 Machine-readable: [CLOSURE.json](./CLOSURE.json)

@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-10 — PD-09 forward-test durable persistence
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `local_state`, `docs` |
+| **Summary** | Added account-scoped durable forward-test persistence via local SQLite (`local_state` schema v2): `ForwardTestRepository` protocol with in-memory and SQLite implementations, restart recovery for sessions/decisions/observations/evaluations, locked-decision immutability, append-only observations, and durable paper-submission/evaluation claims. Wired through `forward_test_projections` when `IMP_PERSIST_STATE=1`. |
+| **Key files** | `paper_forward_bridge/repository.py`, `paper_forward_bridge/sqlite_repository.py`, `local_state/schema.py`, `local_state/migrations.py`, `local_state/startup.py`, `ui_api/forward_test_projections.py`, `tests/intelligence/test_forward_test_persistence.py`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | Persistence 9/9 passed; affected 1812 passed, 28 skipped (intelligence suite included) |
+| **Related** | [PAPER_FORWARD_TESTING_BRIDGE.md](../architecture/PAPER_FORWARD_TESTING_BRIDGE.md), [paper-forward-testing-bridge audit](../audits/paper-forward-testing-bridge/README.md) |
+| **Notes** | Local SQLite only (no MongoDB). Route-policy UI mutation wiring deferred. Branch rebased onto `origin/main` @ `0ac5c03`. |
+
 ## 2026-09-10 — Governed Paper forward-testing bridge
 
 | Field | Value |
