@@ -45,9 +45,11 @@ class ActivatedForwardTestCase(unittest.TestCase):
         self._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.campaigns_root = enable_test_campaigns_root(Path(self._tmp.name))
         seed_baseline_campaign(self.campaigns_root)
+        os.environ["IMP_FORWARD_TEST_EVAL_FORCE"] = "1"
 
     def tearDown(self) -> None:
         os.environ.pop("IMP_FORWARD_TEST_CAMPAIGNS_DIR", None)
+        os.environ.pop("IMP_FORWARD_TEST_EVAL_FORCE", None)
         self._tmp.cleanup()
 
 

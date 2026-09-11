@@ -10,6 +10,29 @@
   "evidence_class_target": "ACTUAL_FORWARD",
   "classification": "PLANNED / PRE-REGISTERED / NOT YET EMPIRICAL EVIDENCE",
   "audit_basis": "Agent A re-run c4f6ca28; first-run 81265595",
+  "authority_resolutions": {
+    "OD-1": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "A",
+      "strategy_binding": "news-strategy ES lane",
+      "baseline_policy_id": "news_deterministic_baseline@1.0.0",
+      "ai_policy_id": "news_ai_enhanced@1.0.0",
+      "intelligence_provider": "RECORDED_ARTIFACTS_ONLY",
+      "authority_source": "docs/architecture/NEWS_STRATEGY_EVALUATION.md L35-39",
+      "owner_sign_off_still_required": true,
+      "note": "Binding fields remain null until OD-11 freeze; authority pre-resolves Option A only."
+    },
+    "OD-3_calendar_interpretation": {
+      "classification": "ENGINEERING_DEFAULT_WITH_OWNER_ACK",
+      "resolution": "US_EQUITY_RTH for ES news-catalyst decisions",
+      "conflict": "C3 ES Globex vs RTH",
+      "authority_source": "docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md OD-3"
+    }
+  },
+  "paper_account_resolution": {
+    "status": "RESOLVE_AT_FREEZE_FROM_LEDGER",
+    "note": "Populate paper_account_id from single configured Paper ledger at freeze; remains owner attestation under OD-11."
+  },
   "owner_decisions_required": [
     "OD-1",
     "FTEP-D002",

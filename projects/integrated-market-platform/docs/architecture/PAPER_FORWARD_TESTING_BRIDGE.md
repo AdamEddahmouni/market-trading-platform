@@ -158,6 +158,7 @@ under `artifacts/forward-test-campaigns/<campaign_slug>/ACTIVATION_MANIFEST.json
 | `protocol_ref.py` | Verify `PROTOCOL_REF.json` doc hash against preregistered protocol |
 | `campaign_binding.py` | One ACTIVE campaign per account; durable binding at session create |
 | `preflight.py` | Deterministic preflight (`READY` / `NOT_READY`) before session create |
+| `session_policy.py` | Launch-policy gates: calendar/RTH, phase transition, overlap, cohort, evidence class, eval force |
 | `service.py` | Gates `create_session`; binds manifest fields; validates decisions |
 
 Preflight enforces: Paper-only, `FORWARD_TEST`, manifest `FROZEN`/`ACTIVE`, fingerprint
@@ -173,6 +174,15 @@ Session fields added: `campaign_id`, `protocol_id`, `activation_version`,
 
 Decision fields added: `evidence_class` (default `UNCLASSIFIED`; no auto-promotion to
 empirical classes), `cohort_arm`.
+
+Launch-policy enforcement (`session_policy.py`): when `calendar_scope` is set on the
+manifest, decision/lock times must fall inside US equity RTH (09:30–16:00 ET); phased
+`SIGNAL_ONLY` → `EXECUTION` requires `phase_transition_min_locks` integrity-clean locks;
+`overlap_policy=FORBID_CONCURRENT` blocks overlapping open decisions per symbol;
+empirical `evidence_class` values are rejected at create/lock; campaign-bound
+`evaluate(..., force=True)` is forbidden unless `IMP_FORWARD_TEST_EVAL_FORCE=1` (test
+override only). Sample floors in the manifest gate statistical disposition only, not
+individual locks.
 
 See [FTEP-V1_OWNER_DECISION_PACKET.md](../engineering/FTEP-V1_OWNER_DECISION_PACKET.md).
 

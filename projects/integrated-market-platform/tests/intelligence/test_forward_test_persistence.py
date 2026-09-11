@@ -47,6 +47,7 @@ class IsolatedForwardTestPersistenceTest(unittest.TestCase):
         self._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         os.environ["IMP_STATE_DIR"] = self._tmp.name
         os.environ["IMP_PERSIST_STATE"] = "1"
+        os.environ["IMP_FORWARD_TEST_EVAL_FORCE"] = "1"
         self.campaigns_root = enable_test_campaigns_root(Path(self._tmp.name))
         seed_baseline_campaign(self.campaigns_root)
         reset_local_state_for_tests()
@@ -56,6 +57,7 @@ class IsolatedForwardTestPersistenceTest(unittest.TestCase):
         os.environ.pop("IMP_STATE_DIR", None)
         os.environ.pop("IMP_PERSIST_STATE", None)
         os.environ.pop("IMP_FORWARD_TEST_CAMPAIGNS_DIR", None)
+        os.environ.pop("IMP_FORWARD_TEST_EVAL_FORCE", None)
         self._tmp.cleanup()
 
     def _repo(self):
