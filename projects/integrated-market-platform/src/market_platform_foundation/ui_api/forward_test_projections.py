@@ -11,6 +11,7 @@ from ..intelligence.paper_forward_bridge import (
     ForwardTestService,
     ForwardTestServiceError,
     create_forward_test_repository,
+    run_forward_test_preflight,
 )
 from ..local_state.startup import open_local_state
 from ..operating_modes import paper_execution_env_enabled
@@ -44,6 +45,49 @@ def _require_account(body: dict[str, Any], store: ReplayStore) -> tuple[str, str
     if mode != "PAPER":
         raise ValueError("FORWARD_TEST_PAPER_MODE_REQUIRED")
     return account_id, mode
+
+
+def build_forward_test_preflight_payload(
+    store: ReplayStore,
+    *,
+    account_id: str,
+    campaign_slug: str | None = None,
+    campaign_id: str | None = None,
+    cohort_arm: str | None = None,
+    manifest_fingerprint: str | None = None,
+) -> dict[str, Any]:
+    identity = resolve_paper_portfolio_identity(store)
+    if str(identity.account_id) != account_id:
+        raise ValueError("FORWARD_TEST_ACCOUNT_MISMATCH")
+    mode = str(identity.mode).upper()
+    if mode != "PAPER":
+        raise ValueError("FORWARD_TEST_PAPER_MODE_REQUIRED")
+    slug = (campaign_slug or campaign_id or "").strip()
+    if not slug:
+        raise ValueError("FORWARD_TEST_CAMPAIGN_ID_REQUIRED")
+    result = run_forward_test_preflight(
+        campaign_slug=slug,
+        mode=mode,
+        manifest_fingerprint=manifest_fingerprint,
+        cohort_arm=cohort_arm,
+    )
+    return _paper_envelope(
+        store,
+        {
+            "preflight": {
+                "schema_version": "intelligence/paper_forward_bridge/api/1.0.0",
+                "disposition": result.disposition.value,
+                "blockers": list(result.blockers),
+                "warnings": list(result.warnings),
+                "campaign_id": result.campaign_id,
+                "protocol_id": result.protocol_id,
+                "activation_version": result.activation_version,
+                "manifest_fingerprint": result.manifest_fingerprint,
+                "manifest_status": result.manifest_status,
+                "metadata": dict(result.metadata),
+            }
+        },
+    )
 
 
 def build_forward_test_sessions_payload(store: ReplayStore, *, account_id: str) -> dict[str, Any]:
@@ -120,6 +164,7 @@ def create_forward_test_session(store: ReplayStore, body: dict[str, Any]) -> dic
             cohort_arm=cohort_arm,
             manifest_fingerprint=body.get("manifest_fingerprint"),
             config=body.get("config") if isinstance(body.get("config"), dict) else None,
+            api_path=True,
         )
     except ForwardTestServiceError as exc:
         raise ValueError(str(exc)) from exc

@@ -3,9 +3,17 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 
 from ...clock import monotonic_wall_ns
 from ...local_state.connection import LocalStateConnection
+from .campaign_binding import (
+    CampaignBinding,
+    CampaignBindingError,
+    get_active_binding as sqlite_get_active_binding,
+    record_first_lock_at_ns as sqlite_record_first_lock_at_ns,
+    release_binding as sqlite_release_binding,
+)
 from .repository import (
     assert_locked_decision_immutable,
     assert_observations_append_only,
@@ -221,6 +229,68 @@ class SqliteForwardTestRepository:
             WHERE forward_test_id=? AND claim_type=?
             """,
             (forward_test_id, CLAIM_EVALUATION),
+        )
+
+    def claim_active_binding(self, binding: CampaignBinding) -> None:
+        active = sqlite_get_active_binding(self._connection, account_id=binding.account_id)
+        if active is not None and active.campaign_id != binding.campaign_id:
+            raise CampaignBindingError("FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE")
+        try:
+            self._connection.execute(
+                """
+                INSERT INTO forward_test_campaign_bindings(
+                    campaign_id, account_id, manifest_fingerprint, manifest_path,
+                    protocol_id, protocol_sha256, campaign_state, activated_at_ns,
+                    first_lock_at_ns, forward_test_session_id, created_at_ns, updated_at_ns
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    binding.campaign_id,
+                    binding.account_id,
+                    binding.manifest_fingerprint,
+                    binding.manifest_path,
+                    binding.protocol_id,
+                    binding.protocol_sha256,
+                    binding.campaign_state.value,
+                    binding.activated_at_ns,
+                    binding.first_lock_at_ns,
+                    binding.forward_test_session_id,
+                    binding.created_at_ns,
+                    binding.updated_at_ns,
+                ),
+            )
+        except sqlite3.IntegrityError as exc:
+            raise CampaignBindingError("FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE") from exc
+
+    def get_active_binding(self, *, account_id: str) -> CampaignBinding | None:
+        return sqlite_get_active_binding(self._connection, account_id=account_id)
+
+    def release_binding(
+        self,
+        *,
+        account_id: str,
+        campaign_id: str | None = None,
+        released_at_ns: int | None = None,
+    ) -> CampaignBinding | None:
+        return sqlite_release_binding(
+            self._connection,
+            account_id=account_id,
+            campaign_id=campaign_id,
+            released_at_ns=released_at_ns,
+        )
+
+    def record_first_lock_at_ns(
+        self,
+        *,
+        account_id: str,
+        campaign_id: str,
+        first_lock_at_ns: int,
+    ) -> None:
+        sqlite_record_first_lock_at_ns(
+            self._connection,
+            account_id=account_id,
+            campaign_id=campaign_id,
+            first_lock_at_ns=first_lock_at_ns,
         )
 
     def _load_observations(self, forward_test_id: str) -> tuple[ForwardTestObservation, ...]:

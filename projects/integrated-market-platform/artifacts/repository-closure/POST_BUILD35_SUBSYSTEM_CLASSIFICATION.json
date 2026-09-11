@@ -545,6 +545,7 @@
       "scope": [
         "tools/cloud",
         "tools/forward_qualification",
+        "tools/forward_test",
         "tools/live_canary",
         "tools/live_execution_safety",
         "tools/paper_execution_qualification",

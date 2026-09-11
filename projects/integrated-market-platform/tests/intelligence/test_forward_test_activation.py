@@ -22,6 +22,10 @@ from market_platform_foundation.intelligence.paper_forward_bridge.activation imp
     normalize_manifest,
     write_activation_manifest,
 )
+from market_platform_foundation.intelligence.paper_forward_bridge.protocol_ref import (  # noqa: E402
+    ProtocolRefError,
+    write_test_protocol_ref,
+)
 from market_platform_foundation.intelligence.paper_forward_bridge.preflight import (  # noqa: E402
     PreflightDisposition,
     assert_forward_test_preflight_ready,
@@ -32,6 +36,9 @@ from market_platform_foundation.intelligence.paper_forward_bridge import (  # no
     ForwardTestService,
     ForwardTestServiceError,
     ForwardTestStore,
+)
+from market_platform_foundation.intelligence.paper_forward_bridge.protocol_ref import (  # noqa: E402
+    write_test_protocol_ref,
 )
 from market_platform_foundation.intelligence.paper_forward_bridge.types import (  # noqa: E402
     ForwardTestCohortArm,
@@ -77,8 +84,10 @@ def _base_manifest_dict(
 
 def _install_manifest(tmp_dir: str, manifest: dict) -> str:
     slug = str(manifest["campaign_slug"])
-    path = Path(tmp_dir) / slug / "ACTIVATION_MANIFEST.json"
-    write_activation_manifest(path, manifest)
+    root = Path(tmp_dir)
+    write_test_protocol_ref(root, campaign_slug=slug)
+    path = root / slug / "ACTIVATION_MANIFEST.json"
+    write_activation_manifest(path, manifest, campaigns_root_override=root)
     return slug
 
 
@@ -97,12 +106,15 @@ def _frozen_manifest(
     )
     manifest["owner_decisions_required"] = []
     manifest["unresolved_fields"] = []
-    manifest = freeze_manifest(
-        ActivationManifest(raw=normalize_manifest(manifest), path=Path("pending.json")),
-        frozen_at="2026-09-10T00:00:00Z",
-    )
     slug = _install_manifest(tmp_dir, manifest)
-    return slug, manifest
+    loaded = load_activation_manifest(slug, campaigns_root_override=Path(tmp_dir))
+    frozen = freeze_manifest(loaded, frozen_at="2026-09-10T00:00:00Z")
+    write_activation_manifest(
+        Path(tmp_dir) / slug / "ACTIVATION_MANIFEST.json",
+        frozen,
+        campaigns_root_override=Path(tmp_dir),
+    )
+    return slug, frozen
 
 
 class ForwardTestActivationManifestTests(unittest.TestCase):
@@ -234,6 +246,80 @@ class ForwardTestActivationRuntimeTests(unittest.TestCase):
             locked_at_ns=T0,
         )
         self.assertTrue(locked.state.value == "LOCKED")
+
+    def test_decision_provenance_includes_manifest_fingerprint(self) -> None:
+        slug, manifest = _frozen_manifest(self._tmp.name)
+        session = self.service.create_session(
+            account_id="paper-a",
+            mode="PAPER",
+            strategy_id="s1",
+            strategy_version="1.0.0",
+            universe=("ACME",),
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0,
+            campaign_id=slug,
+            cohort_arm="BASELINE",
+        )
+        decision = self.service.create_decision(
+            account_id="paper-a",
+            mode="PAPER",
+            session_id=session.session_id,
+            symbol="ACME",
+            direction="BUY",
+            decision_time_ns=T0,
+            source_time_ns=T0 - 1,
+            strategy_id="s1",
+            strategy_version="1.0.0",
+            test_mode=ForwardTestMode.SIGNAL_ONLY,
+        )
+        self.assertEqual(
+            decision.provenance_snapshot["manifest_fingerprint"],
+            manifest["manifest_fingerprint"],
+        )
+        self.assertEqual(decision.provenance_snapshot["campaign_slug"], slug)
+        self.assertEqual(
+            decision.provenance_snapshot["campaign_id"],
+            manifest["campaign_id"],
+        )
+
+    def test_concurrent_campaign_blocked_on_second_session(self) -> None:
+        slug, _manifest = _frozen_manifest(self._tmp.name, campaign_slug="campaign-a")
+        _frozen_manifest(self._tmp.name, campaign_slug="campaign-b")
+        self.service.create_session(
+            account_id="paper-a",
+            mode="PAPER",
+            strategy_id="s1",
+            strategy_version="1.0.0",
+            universe=("ACME",),
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0,
+            campaign_id="campaign-a",
+            cohort_arm="BASELINE",
+        )
+        with self.assertRaises(ForwardTestServiceError) as ctx:
+            self.service.create_session(
+                account_id="paper-a",
+                mode="PAPER",
+                strategy_id="s1",
+                strategy_version="1.0.0",
+                universe=("ACME",),
+                evaluation_horizon_ns=HOUR,
+                created_at_ns=T0 + 1,
+                campaign_id="campaign-b",
+                cohort_arm="BASELINE",
+            )
+        self.assertIn("FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE", str(ctx.exception))
+
+    def test_protocol_ref_hash_mismatch_blocks_preflight(self) -> None:
+        slug = _install_manifest(self._tmp.name, _base_manifest_dict())
+        ref_path = Path(self._tmp.name) / slug / "PROTOCOL_REF.json"
+        ref = json.loads(ref_path.read_text(encoding="utf-8"))
+        ref["protocol_doc_sha256"] = "0" * 64
+        ref["sha256"] = "0" * 64
+        ref_path.write_text(json.dumps(ref, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        result = run_forward_test_preflight(campaign_slug=slug, mode="PAPER")
+        self.assertEqual(result.disposition, PreflightDisposition.NOT_READY)
+        self.assertIn("PROTOCOL_REF_DOC_SHA256_MISMATCH", result.blockers)
 
 
 if __name__ == "__main__":

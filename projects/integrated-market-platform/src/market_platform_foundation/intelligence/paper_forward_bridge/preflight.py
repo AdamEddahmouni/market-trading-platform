@@ -17,6 +17,7 @@ from .activation import (
     compute_manifest_fingerprint,
     load_activation_manifest,
 )
+from .protocol_ref import ProtocolRefError, verify_protocol_ref
 
 
 class PreflightDisposition(StrEnum):
@@ -66,6 +67,11 @@ def run_forward_test_preflight(
 
     if run_kind != "FORWARD_TEST":
         blockers.append("FORWARD_TEST_BACKTEST_BOUNDARY_VIOLATION")
+
+    try:
+        verify_protocol_ref(slug, campaigns_root_override=campaigns_root_override)
+    except ProtocolRefError as exc:
+        blockers.append(str(exc))
 
     try:
         manifest = load_activation_manifest(slug, campaigns_root_override=campaigns_root_override)

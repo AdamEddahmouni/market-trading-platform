@@ -139,6 +139,10 @@ Primary suite: `tests/intelligence/test_paper_forward_bridge.py`
 
 Activation suite: `tests/intelligence/test_forward_test_activation.py`
 
+Protocol ref suite: `tests/intelligence/test_forward_test_protocol_ref.py`
+
+Preflight API suite: `tests/intelligence/test_forward_test_preflight_api.py`
+
 Persistence suite: `tests/intelligence/test_forward_test_persistence.py`
 
 UI model tests: `ui/src/components/paper-workspace/buildForwardTestPanelModel.test.ts`
@@ -151,11 +155,18 @@ under `artifacts/forward-test-campaigns/<campaign_slug>/ACTIVATION_MANIFEST.json
 | Module | Role |
 | --- | --- |
 | `activation.py` | Load/validate manifest, SHA-256 fingerprint, freeze state machine |
+| `protocol_ref.py` | Verify `PROTOCOL_REF.json` doc hash against preregistered protocol |
+| `campaign_binding.py` | One ACTIVE campaign per account; durable binding at session create |
 | `preflight.py` | Deterministic preflight (`READY` / `NOT_READY`) before session create |
 | `service.py` | Gates `create_session`; binds manifest fields; validates decisions |
 
 Preflight enforces: Paper-only, `FORWARD_TEST`, manifest `FROZEN`/`ACTIVE`, fingerprint
-match, persistence when required, cohort-arm policy binding.
+match, protocol reference hash, persistence when required, cohort-arm policy binding.
+Campaign binding enforces one ACTIVE campaign per account (`forward_test_campaign_bindings`).
+API preflight: `GET /paper/forward-tests/preflight?campaign_slug=...&account_id=...`.
+Freeze tooling: `python tools/forward_test/freeze_activation_manifest.py <campaign_slug> --frozen-at ...`.
+Non-campaign session create is rejected unless `IMP_FORWARD_TEST_CAMPAIGN_REQUIRED=0`.
+Empirical paths (`lock`, `submit`, `observe`, `evaluate`) require a campaign-bound session.
 
 Session fields added: `campaign_id`, `protocol_id`, `activation_version`,
 `manifest_fingerprint`, `cohort_arm`, `config_frozen`.
