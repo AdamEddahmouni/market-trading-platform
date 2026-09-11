@@ -13,7 +13,7 @@ from .evaluation import evaluate_forward_test, refresh_evaluability
 from .identity import forward_test_decision_id, forward_test_observation_id, forward_test_session_id
 from .lifecycle import ForwardTestLifecycleError, assert_transition
 from .paper_handoff import build_paper_preview_body, forward_test_correlation_id
-from .store import ForwardTestStore
+from .repository import ForwardTestRepository
 from .temporal import (
     assert_decision_payload_immutable,
     assert_input_observable_at_decision,
@@ -48,7 +48,7 @@ def _require_account_match(*, expected: str, actual: str) -> None:
 
 
 class ForwardTestService:
-    def __init__(self, store: ForwardTestStore) -> None:
+    def __init__(self, store: ForwardTestRepository) -> None:
         self._store = store
 
     def create_session(
