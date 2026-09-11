@@ -36,6 +36,42 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-10 — PD-09 verifier persistence follow-up
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `docs` |
+| **Summary** | Addressed independent PD-09 verifier follow-up: extracted shared `assert_observations_append_only` helper for SQLite and in-memory stores, added restart persistence tests for observation tamper rejection and durable evaluation-claim blocking, and updated closure validation counts. |
+| **Key files** | `paper_forward_bridge/repository.py`, `paper_forward_bridge/store.py`, `paper_forward_bridge/sqlite_repository.py`, `tests/intelligence/test_forward_test_persistence.py`, `docs/audits/paper-forward-testing-bridge/CLOSURE.json` |
+| **Tests** | `python tools/imp.py test focused` — 11/11 persistence tests passed |
+| **Related** | [paper-forward-testing-bridge CLOSURE](../audits/paper-forward-testing-bridge/CLOSURE.json), verifier `5cebba20` |
+| **Notes** | Artifact JSON under `artifacts/` intentionally excluded from commit. |
+
+## 2026-09-11 — FTEP-V1 forward-test experimental protocol freeze
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `forward-test` |
+| **Summary** | Froze the first Paper forward-test experimental protocol (`FTEP-V1/0.1.0-PREREG`) before any empirical evidence run. Document is explicitly PLANNED / PRE-REGISTERED / NOT YET EMPIRICAL EVIDENCE; defines hypothesis, baseline/AI arms, universe/session/cadence rules, Paper execution semantics, metrics, leakage controls, disposition criteria (KEEP/REJECT/REPEAT/MODIFY/BLOCKED), and evidence-class gates. Unresolved choices marked OPEN DECISION — no results invented. |
+| **Key files** | `docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md` (created), `docs/engineering/WORK_LOG.md` |
+| **Tests** | `tools/check_docs_links.py`: 172 governance markdown files checked, pass |
+| **Related** | [FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md](FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md), [PAPER_FORWARD_TESTING_BRIDGE.md](../architecture/PAPER_FORWARD_TESTING_BRIDGE.md), coordinator goal §14-A (Next A) |
+| **Notes** | Next: resolve OPEN DECISIONs in activation manifest; campaign artifacts path planned under `artifacts/forward-test-campaigns/`. EVIDENCE-01B auto-bridge still unwired. |
+
+## 2026-09-10 — PD-09 forward-test durable persistence
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `local_state`, `docs` |
+| **Summary** | Added account-scoped durable forward-test persistence via local SQLite (`local_state` schema v2): `ForwardTestRepository` protocol with in-memory and SQLite implementations, restart recovery for sessions/decisions/observations/evaluations, locked-decision immutability, append-only observations, and durable paper-submission/evaluation claims. Wired through `forward_test_projections` when `IMP_PERSIST_STATE=1`. |
+| **Key files** | `paper_forward_bridge/repository.py`, `paper_forward_bridge/sqlite_repository.py`, `local_state/schema.py`, `local_state/migrations.py`, `local_state/startup.py`, `ui_api/forward_test_projections.py`, `tests/intelligence/test_forward_test_persistence.py`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | Persistence 9/9 passed; affected 1812 passed, 28 skipped (intelligence suite included) |
+| **Related** | [PAPER_FORWARD_TESTING_BRIDGE.md](../architecture/PAPER_FORWARD_TESTING_BRIDGE.md), [paper-forward-testing-bridge audit](../audits/paper-forward-testing-bridge/README.md) |
+| **Notes** | Local SQLite only (no MongoDB). Route-policy UI mutation wiring deferred. Branch rebased onto `origin/main` @ `0ac5c03`. |
+
 ## 2026-09-10 — Governed Paper forward-testing bridge
 
 | Field | Value |

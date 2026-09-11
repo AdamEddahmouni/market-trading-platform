@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 PAPER_EVENT_SCHEMA_VERSION = 1
 LAYOUT_SCHEMA_VERSION = 1
 RECENT_INSTRUMENT_LIMIT = 24
@@ -130,6 +130,87 @@ CREATE_STATEMENTS: tuple[str, ...] = (
         kind TEXT NOT NULL,
         created_at INTEGER NOT NULL,
         summary_json TEXT NOT NULL
+    )
+    """,
+)
+
+FORWARD_TEST_CREATE_STATEMENTS: tuple[str, ...] = (
+    """
+    CREATE TABLE IF NOT EXISTS forward_test_sessions (
+        session_id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL,
+        mode TEXT NOT NULL,
+        strategy_id TEXT NOT NULL,
+        strategy_version TEXT NOT NULL,
+        universe_json TEXT NOT NULL,
+        evaluation_horizon_ns INTEGER NOT NULL,
+        created_at_ns INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        config_json TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_forward_test_sessions_account
+    ON forward_test_sessions(account_id)
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS forward_test_decisions (
+        forward_test_id TEXT PRIMARY KEY,
+        session_id TEXT,
+        account_id TEXT NOT NULL,
+        mode TEXT NOT NULL,
+        run_kind TEXT NOT NULL,
+        test_mode TEXT NOT NULL,
+        symbol TEXT NOT NULL,
+        decision_time_ns INTEGER NOT NULL,
+        source_time_ns INTEGER NOT NULL,
+        state TEXT NOT NULL,
+        direction TEXT NOT NULL,
+        quantity INTEGER,
+        confidence REAL,
+        strategy_id TEXT NOT NULL,
+        strategy_version TEXT NOT NULL,
+        research_artifact_ref TEXT,
+        evaluation_horizon_ns INTEGER NOT NULL,
+        decision_payload_json TEXT NOT NULL,
+        provenance_snapshot_json TEXT NOT NULL,
+        paper_order_id TEXT,
+        paper_intent_id TEXT,
+        locked_at_ns INTEGER,
+        submitted_at_ns INTEGER,
+        signal_outcome_json TEXT,
+        execution_outcome_json TEXT,
+        evaluation_state TEXT NOT NULL,
+        failure_reason TEXT
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_forward_test_decisions_account
+    ON forward_test_decisions(account_id)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_forward_test_decisions_session
+    ON forward_test_decisions(session_id)
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS forward_test_observations (
+        observation_id TEXT PRIMARY KEY,
+        forward_test_id TEXT NOT NULL,
+        observed_at_ns INTEGER NOT NULL,
+        source_time_ns INTEGER NOT NULL,
+        payload_json TEXT NOT NULL
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_forward_test_observations_decision
+    ON forward_test_observations(forward_test_id)
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS forward_test_claims (
+        forward_test_id TEXT NOT NULL,
+        claim_type TEXT NOT NULL,
+        claimed_at_ns INTEGER NOT NULL,
+        PRIMARY KEY (forward_test_id, claim_type)
     )
     """,
 )

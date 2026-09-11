@@ -1,9 +1,10 @@
-"""Account-scoped forward-test persistence."""
+"""Account-scoped in-memory forward-test persistence."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from .repository import assert_locked_decision_immutable, assert_observations_append_only
 from .types import ForwardTestDecision, ForwardTestSession
 
 
@@ -32,6 +33,10 @@ class ForwardTestStore:
         return [self._sessions[item] for item in ids if item in self._sessions]
 
     def put_decision(self, decision: ForwardTestDecision) -> None:
+        existing = self._decisions.get(decision.forward_test_id)
+        if existing is not None:
+            assert_locked_decision_immutable(existing, decision)
+            assert_observations_append_only(existing, decision)
         self._decisions[decision.forward_test_id] = decision
         bucket = self._by_account_decisions.setdefault(decision.account_id, [])
         if decision.forward_test_id not in bucket:

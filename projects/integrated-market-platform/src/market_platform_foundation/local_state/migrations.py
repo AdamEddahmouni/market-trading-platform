@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import datetime, timezone
 
-from .schema import CREATE_STATEMENTS, SCHEMA_VERSION
+from .schema import CREATE_STATEMENTS, FORWARD_TEST_CREATE_STATEMENTS, SCHEMA_VERSION
 
 
 class SchemaVersionError(ValueError):
@@ -14,6 +14,7 @@ class SchemaVersionError(ValueError):
 
 MIGRATIONS: dict[int, tuple[str, ...]] = {
     1: CREATE_STATEMENTS,
+    2: FORWARD_TEST_CREATE_STATEMENTS,
 }
 
 

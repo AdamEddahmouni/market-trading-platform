@@ -7,20 +7,25 @@ from typing import Any
 
 from ..intelligence.paper_forward_bridge import (
     ForwardTestMode,
+    ForwardTestRepository,
     ForwardTestService,
     ForwardTestServiceError,
-    ForwardTestStore,
+    create_forward_test_repository,
 )
+from ..local_state.startup import open_local_state
 from ..operating_modes import paper_execution_env_enabled
 from .account_registry import resolve_paper_portfolio_identity
 from .paper_projections import _paper_envelope, preview_paper_order, submit_paper_order
 from .store import ReplayStore
 
 
-def _forward_store(store: ReplayStore) -> ForwardTestStore:
+def _forward_store(store: ReplayStore) -> ForwardTestRepository:
     bucket = getattr(store, "forward_test_store", None)
     if bucket is None:
-        bucket = ForwardTestStore()
+        repo = open_local_state()
+        bucket = create_forward_test_repository(
+            connection=repo.connection if repo is not None else None,
+        )
         store.forward_test_store = bucket
     return bucket
 

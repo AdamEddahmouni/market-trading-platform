@@ -58,6 +58,7 @@ When documents disagree, resolve in this order (highest first):
 | News AI intelligence (analysis only) | [NEWS_AI_INTELLIGENCE.md](architecture/NEWS_AI_INTELLIGENCE.md) |
 | News strategy evaluation laboratory | [NEWS_STRATEGY_EVALUATION.md](architecture/NEWS_STRATEGY_EVALUATION.md) |
 | Paper forward-testing bridge | [PAPER_FORWARD_TESTING_BRIDGE.md](architecture/PAPER_FORWARD_TESTING_BRIDGE.md) |
+| Forward-test experimental protocol (preregistered) | [FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md](engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md) |
 | Threat model (lite) | [THREAT_MODEL.md](architecture/THREAT_MODEL.md) |
 | Architecture decisions | [adr/README.md](architecture/adr/README.md) |
 | Multi-source data foundation | [MULTI_SOURCE_DATA_FOUNDATION.md](providers/MULTI_SOURCE_DATA_FOUNDATION.md) |

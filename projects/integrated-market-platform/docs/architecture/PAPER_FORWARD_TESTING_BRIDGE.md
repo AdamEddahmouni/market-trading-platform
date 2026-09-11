@@ -137,14 +137,28 @@ Failures are explicit: insufficient data, horizon not reached, Paper rejection, 
 
 Primary suite: `tests/intelligence/test_paper_forward_bridge.py`
 
+Persistence suite: `tests/intelligence/test_forward_test_persistence.py`
+
 UI model tests: `ui/src/components/paper-workspace/buildForwardTestPanelModel.test.ts`
+
+## Persistence (PD-09)
+
+When `IMP_PERSIST_STATE=1` or `IMP_STATE_DIR` is set, forward-test sessions,
+decisions, append-only observations, and idempotency claims are stored in the
+local SQLite state database (`local_state`, schema v2) alongside the Paper
+ledger. Restart recovery reopens the same account-scoped records; locked
+decision fields remain immutable; duplicate Paper submission and evaluation
+claims survive restart.
+
+Factory: `create_forward_test_repository()` in
+`paper_forward_bridge/repository.py` (in-memory when persistence is off).
 
 ## Known limitations
 
-- In-memory store only (UI session scope); no durable cross-restart campaign DB yet
+- Durable storage is local SQLite only (no MongoDB / remote campaign DB)
 - Outcome metrics use observation payloads, not live provider polling
 - EVIDENCE-01B campaign auto-bridge not wired
-- Notion sync not performed from this increment
+- Route-policy fixes for forward-test UI mutations remain follow-up work
 
 ## Professor-facing summary
 
@@ -157,4 +171,4 @@ UI model tests: `ui/src/components/paper-workspace/buildForwardTestPanelModel.te
 7. **Metrics?** Separate signal and execution outcome blocks.
 8. **Vs backtests?** Explicit `FORWARD_TEST` run kind; backtest boundary regression tested.
 9. **Auditability?** Provenance snapshot + immutable decision payload + observation trail.
-10. **Future work?** Durable campaigns, EVIDENCE-01C integration, richer execution PnL linkage.
+10. **Future work?** EVIDENCE-01C integration, richer execution PnL linkage, remote campaign sync.

@@ -208,10 +208,39 @@ def compatible_resume(*, stored: dict[str, Any], current: dict[str, Any]) -> boo
     )
 
 
+def forward_test_restore_summary() -> dict[str, Any]:
+    """Summarize durable forward-test state available after restart."""
+    summary: dict[str, Any] = {
+        "restore": "NONE",
+        "session_count": 0,
+        "decision_count": 0,
+    }
+    repo = open_local_state()
+    if repo is None:
+        summary["restore"] = "PERSISTENCE_DISABLED"
+        return summary
+    session_row = repo.connection.execute(
+        "SELECT COUNT(*) AS count FROM forward_test_sessions"
+    ).fetchone()
+    decision_row = repo.connection.execute(
+        "SELECT COUNT(*) AS count FROM forward_test_decisions"
+    ).fetchone()
+    session_count = int(session_row["count"]) if session_row is not None else 0
+    decision_count = int(decision_row["count"]) if decision_row is not None else 0
+    summary["session_count"] = session_count
+    summary["decision_count"] = decision_count
+    if session_count == 0 and decision_count == 0:
+        summary["restore"] = "FRESH"
+    else:
+        summary["restore"] = "AVAILABLE"
+    return summary
+
+
 def startup_report(*, live_healthy: bool = False) -> dict[str, Any]:
     report: dict[str, Any] = {
         "crash_recovery": "NONE",
         "execution_deferred": True,
+        "forward_tests": forward_test_restore_summary(),
         "opend": diagnose_opend(),
         "persistence_enabled": persistence_enabled(),
         "previous_session": None,
