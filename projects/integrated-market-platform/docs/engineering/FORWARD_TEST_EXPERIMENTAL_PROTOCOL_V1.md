@@ -647,7 +647,9 @@ artifacts/forward-test-campaigns/<campaign_id>/
   DISPOSITION.json              # KEEP|REJECT|REPEAT|MODIFY|BLOCKED + rationale
 ```
 
-**Not yet created.** Directory creation is part of campaign activation (Next B).
+Skeleton manifest created at `artifacts/forward-test-campaigns/FTEP-V1-001/`.
+Runtime activation gates implemented in `paper_forward_bridge/activation.py` and
+`preflight.py`. Owner decisions: [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md).
 
 ---
 
