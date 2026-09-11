@@ -38,6 +38,7 @@ When documents disagree, resolve in this order (highest first):
 | Pre-implementation planning closure | [PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md](platform/PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md) |
 | FTEP / Paper-validation doctrine | [IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md](architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md) |
 | FTEP activation gates | [FTEP_ACTIVATION_GATES.md](engineering/FTEP_ACTIVATION_GATES.md) |
+| Provider universe / audit / integration strategy | [PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md](providers/PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md) |
 | Developer setup | [LOCAL_DEVELOPMENT.md](engineering/LOCAL_DEVELOPMENT.md) |
 | System architecture | [ARCHITECTURE.md](architecture/ARCHITECTURE.md) |
 | Developer operating system | [DEVELOPER_OPERATING_SYSTEM.md](engineering/DEVELOPER_OPERATING_SYSTEM.md) |
@@ -136,6 +137,7 @@ When documents disagree, resolve in this order (highest first):
 |-------|----------|
 | Runbook | [operations/RUNBOOK.md](operations/RUNBOOK.md) |
 | Provider docs | [providers/](providers/) |
+| Provider universe / audit / integration strategy | [PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md](providers/PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md) |
 | Provider integration foundation | [MULTI_SOURCE_DATA_FOUNDATION.md](providers/MULTI_SOURCE_DATA_FOUNDATION.md) |
 | NewsAPI / Finnhub | [NEWS_SOURCES.md](providers/NEWS_SOURCES.md) |
 | Cursor Cloud | [CURSOR_CLOUD_ENVIRONMENT.md](engineering/CURSOR_CLOUD_ENVIRONMENT.md) |
