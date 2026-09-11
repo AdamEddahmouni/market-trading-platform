@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-11 — FTEP-V1 forward-test experimental protocol freeze
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `forward-test` |
+| **Summary** | Froze the first Paper forward-test experimental protocol (`FTEP-V1/0.1.0-PREREG`) before any empirical evidence run. Document is explicitly PLANNED / PRE-REGISTERED / NOT YET EMPIRICAL EVIDENCE; defines hypothesis, baseline/AI arms, universe/session/cadence rules, Paper execution semantics, metrics, leakage controls, disposition criteria (KEEP/REJECT/REPEAT/MODIFY/BLOCKED), and evidence-class gates. Unresolved choices marked OPEN DECISION — no results invented. |
+| **Key files** | `docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md` (created), `docs/engineering/WORK_LOG.md` |
+| **Tests** | `tools/check_docs_links.py`: 172 governance markdown files checked, pass |
+| **Related** | [FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md](FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md), [PAPER_FORWARD_TESTING_BRIDGE.md](../architecture/PAPER_FORWARD_TESTING_BRIDGE.md), coordinator goal §14-A (Next A) |
+| **Notes** | Next: resolve OPEN DECISIONs in activation manifest; campaign artifacts path planned under `artifacts/forward-test-campaigns/`. EVIDENCE-01B auto-bridge still unwired. |
+
 ## 2026-09-10 — PD-09 forward-test durable persistence
 
 | Field | Value |
