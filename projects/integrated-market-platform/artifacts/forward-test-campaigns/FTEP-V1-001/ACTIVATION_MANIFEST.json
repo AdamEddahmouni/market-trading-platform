@@ -1,0 +1,210 @@
+{
+  "manifest_schema_version": 1,
+  "campaign_slug": "FTEP-V1-001",
+  "campaign_id": null,
+  "protocol_id": "FTEP-V1/0.1.0-PREREG",
+  "activation_status": "PENDING_OWNER_DECISIONS",
+  "evidence_class_target": "ACTUAL_FORWARD",
+  "classification": "PLANNED / PRE-REGISTERED / NOT YET EMPIRICAL EVIDENCE",
+  "audit_basis": "Agent A re-run c4f6ca28",
+  "owner_decisions_required": [
+    "FTEP-OD-01",
+    "FTEP-ACT-01",
+    "FTEP-ACT-03"
+  ],
+  "unresolved_fields": [
+    "FTEP-OD-01",
+    "FTEP-ACT-01",
+    "FTEP-ACT-03"
+  ],
+  "owner_conditional_decisions": {
+    "if_od_01_equals_B": [
+      "FTEP-SUB-01",
+      "FTEP-OD-02"
+    ],
+    "if_od_01_equals_C": [
+      "FTEP-OD-01_branch_defer_or_interim"
+    ],
+    "if_od_01_not_equals_A": [
+      "FTEP-OD-02",
+      "FTEP-SUB-03"
+    ]
+  },
+  "strategy_binding": null,
+  "primary_metric": null,
+  "owner_signed_at": null,
+  "manifest_fingerprint": null,
+  "resolved_fields": {
+    "FTEP-OD-00": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "PROTOCOL_REF.json and campaign artifact tree per FTEP-V1 §24",
+      "citation": "artifacts/shadow-run-1/P6_SHADOW_RUN_1_PROTOCOL.json; FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §24 L637-646"
+    },
+    "FTEP-OD-03": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "RECORDED_ARTIFACTS_ONLY",
+      "citation": "NEWS_STRATEGY_EVALUATION.md L152; FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §3 Option A L127"
+    },
+    "FTEP-OD-05": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "ES canonical instrument when OD-01=A",
+      "citation": "NEWS_STRATEGY_EVALUATION.md L38; FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §5 L157"
+    },
+    "FTEP-OD-06": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "US_EQUITY_RTH",
+      "value": "09:30-16:00 ET",
+      "citation": "FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §6 Option A L180; P6_SHADOW_RUN_1_PROTOCOL.md L21"
+    },
+    "FTEP-OD-07": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "BOTH session and trading-day floors",
+      "citation": "evidence01a/types.py L13-14; EVIDENCE_01 L38-40; FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §6 Option C L190"
+    },
+    "FTEP-OD-08": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "NONE",
+      "citation": "FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §7 Option A L211; §19 L507-508"
+    },
+    "FTEP-OD-09": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "EVENT_DRIVEN",
+      "citation": "NEWS_STRATEGY_EVALUATION.md L74-81; FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §8 Option A L234"
+    },
+    "FTEP-OD-10": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "FORBID_CONCURRENT",
+      "citation": "FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §8 Option A L242"
+    },
+    "FTEP-OD-11": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "PHASED_SIGNAL_ONLY_THEN_EXECUTION",
+      "citation": "FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §9 Option C L263; §21 REPEAT L563"
+    },
+    "FTEP-OD-13": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "PHASE_1_MIN_1_CONTRACT_PHASE_2_FIXED_QUANTITY",
+      "citation": "FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §11 L308-310"
+    },
+    "FTEP-OD-15": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "ADOPT_SECTION_14_PROPOSED_FLOORS_VERBATIM",
+      "citation": "FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §14 L367-374"
+    },
+    "FTEP-OD-16": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "PAIRED_BOOTSTRAP_CI",
+      "citation": "FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §15 Option A L404; CHAMPION_CHALLENGER_PROMOTION_V1.md L52"
+    },
+    "FTEP-OD-20": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "artifacts/forward-test-campaigns/FTEP-V1-001/",
+      "citation": "FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §24 L637-646"
+    },
+    "FTEP-ACT-02": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": 5,
+      "description": "integrity-clean locks before EXECUTION segment",
+      "citation": "EVIDENCE_01A L39-42; FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §9 Option C L263"
+    },
+    "FTEP-ACT-07": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "EXCLUDE_NAIVE_REFERENCE_ARM",
+      "citation": "FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §3 L117-121"
+    },
+    "FTEP-OD-12": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "5m_15m_30m_60m when OD-01=A",
+      "citation": "news_strategy_evaluation/config.py L14-18 DEFAULT_HORIZONS; FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §10 Option A L279"
+    },
+    "FTEP-OD-14": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "PAPER_INTERNAL_ONLY",
+      "citation": "FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §12 L318-321 Option A L327"
+    },
+    "FTEP-OD-17": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "NO_OPPORTUNITY_ENGINE_LINKAGE",
+      "citation": "FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §15.3 L432-433"
+    },
+    "FTEP-OD-18": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "SINGLE_PRIMARY_ONLY",
+      "citation": "FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §17 L478-480 Option A L474"
+    },
+    "FTEP-OD-19": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "SHA256_DERIVE_CAMPAIGN_ID_FROM_FROZEN_MANIFEST",
+      "citation": "FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md L49; evidence01a/identity.py derive_campaign_id"
+    },
+    "FTEP-ACT-05": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "IMP_PERSIST_STATE_REQUIRED",
+      "citation": "FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §23 L624; PAPER_FORWARD_TESTING_BRIDGE.md L146-151"
+    }
+  },
+  "recommended_not_binding": {
+    "note": "Values apply only after owner signs minimal packet (OD-01=A, ACT-01=percentage_return, ACT-03=reopen)",
+    "strategy_binding": "A",
+    "baseline_policy_id": "news_deterministic_baseline@1.0.0",
+    "ai_policy_id": "news_ai_enhanced@1.0.0",
+    "universe": ["ES"],
+    "lane_id": "FUTURES_EQUITY_INDEX",
+    "intelligence_provider": "RECORDED_ARTIFACTS_ONLY",
+    "calendar_scope": "US_EQUITY_RTH",
+    "test_mode_phase_1": "SIGNAL_ONLY",
+    "test_mode_phase_2": "EXECUTION",
+    "phase_transition_min_locks": 5,
+    "primary_metric": "percentage_return",
+    "readiness_checklist_reopen": true
+  },
+  "policies": {
+    "baseline_policy_id": null,
+    "ai_policy_id": null,
+    "naive_reference_included": false
+  },
+  "universe": null,
+  "lane_id": null,
+  "intelligence_provider": "RECORDED_ARTIFACTS_ONLY",
+  "calendar_scope": "US_EQUITY_RTH",
+  "cadence": "EVENT_DRIVEN",
+  "overlap_policy": "FORBID_CONCURRENT",
+  "regime_filter": "NONE",
+  "test_mode_phase_1": "SIGNAL_ONLY",
+  "test_mode_phase_2": "EXECUTION",
+  "phase_transition_min_locks": 5,
+  "horizons_ns": [
+    300000000000,
+    900000000000,
+    1800000000000,
+    3600000000000
+  ],
+  "sizing_phase_1": 1,
+  "slippage_model": "PAPER_INTERNAL_ONLY",
+  "statistical_test": "PAIRED_BOOTSTRAP_CI",
+  "multiple_testing": "SINGLE_PRIMARY_ONLY",
+  "sample_floors": {
+    "locked_decisions": 30,
+    "evaluated_decisions": 15,
+    "distinct_trading_days": 5,
+    "qualifying_sessions": 5,
+    "execution_mode_decisions": 10,
+    "per_arm_minimum": 10
+  },
+  "duration_floors": {
+    "min_qualifying_sessions": 5,
+    "min_session_duration_ns": 300000000000,
+    "min_distinct_trading_days": 5
+  },
+  "deferred_until_evidence": {
+    "FTEP-ACT-04": "provider_connectivity_if_observational_ingress_required",
+    "FTEP-ACT-06": "evidence_01b_auto_bridge",
+    "FTEP-ACT-08": "route_policy_ui_mutation_wiring"
+  },
+  "safety_constraints": {
+    "mode": "INTERNAL_SIMULATION",
+    "live_execution": false,
+    "cost_usd": 0,
+    "empirical_evidence_claimed": false
+  }
+}

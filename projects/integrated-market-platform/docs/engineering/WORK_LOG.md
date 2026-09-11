@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-11 — FTEP-V1 owner decision packet and activation manifest skeleton
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `forward-test` |
+| **Summary** | Created FTEP-V1 owner decision packet and `FTEP-V1-001` activation manifest skeleton per Agent A re-run audit (`c4f6ca28`). Manifest is `PENDING_OWNER_DECISIONS` with 3 minimal-path owner choices (OD-01, ACT-01, ACT-03) and 17 pre-resolved safe/deterministic fields; no FROZEN status or empirical claims. |
+| **Key files** | `docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md` (created), `artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json` (created), `artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json` (created), `docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md` (header), `docs/engineering/WORK_LOG.md` |
+| **Tests** | None (docs/artifacts only) |
+| **Related** | [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md), Agent A audit `c4f6ca28`, [FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md](FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md) |
+| **Notes** | Next: owner signs minimal packet → manifest `FROZEN` → operator preflight → first lock. Not pushed. |
+
 ## 2026-09-10 — PD-09 verifier persistence follow-up
 
 | Field | Value |

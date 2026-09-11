@@ -1,0 +1,10 @@
+{
+  "protocol_id": "FTEP-V1/0.1.0-PREREG",
+  "version": "0.1.0-PREREG",
+  "protocol_doc_path": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md",
+  "owner_decision_packet_path": "docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md",
+  "activation_manifest_path": "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+  "campaign_slug": "FTEP-V1-001",
+  "classification": "PLANNED / PRE-REGISTERED / PENDING_OWNER_DECISIONS / NOT YET EMPIRICAL EVIDENCE",
+  "sha256": null
+}
