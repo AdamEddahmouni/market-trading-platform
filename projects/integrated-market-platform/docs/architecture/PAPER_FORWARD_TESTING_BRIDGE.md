@@ -1,0 +1,160 @@
+# Paper Forward-Testing Bridge
+
+**Status:** Accepted — professor-directed post-G15 product increment
+
+## Purpose
+
+Connect governed research/strategy decisions to **prospective Paper evaluation** without look-ahead leakage, Live execution, or bypass of the existing Paper order lifecycle.
+
+This is **not** backtesting, **not** Live trading, and **not** autonomous execution.
+
+```text
+research/strategy decision
+  → time-locked forward-test decision (DRAFT → LOCKED)
+  → governed Paper lifecycle (EXECUTION mode only, optional)
+  → subsequent market observations (append-only)
+  → forward-test outcome (signal vs execution separated)
+  → evidence / metrics / review
+```
+
+Package: `src/market_platform_foundation/intelligence/paper_forward_bridge/`
+
+## Relationship to BUILD 26 / BUILD 27
+
+| Layer | Role |
+| --- | --- |
+| BUILD 26 forward qualification | Forecast shadow evidence program |
+| BUILD 27 paper execution qualification | Paper execution evidence program |
+| **Paper forward-testing bridge** | Product path from strategy evaluation → governed Paper forward test |
+
+The bridge reuses Paper execution governance and decision-source snapshots; it does not replace qualification runners.
+
+## Domain model
+
+### ForwardTestSession
+
+Groups forward tests under one strategy/universe/horizon configuration.
+
+### ForwardTestDecision
+
+Canonical prospective record with explicit `run_kind=FORWARD_TEST` (never `BACKTEST`).
+
+Key fields:
+
+- `decision_time_ns`, `source_time_ns`
+- immutable `decision_payload` after lock
+- append-only `observations`
+- separate `signal_outcome` and `execution_outcome`
+- optional `paper_order_id` / `paper_intent_id` linkage
+
+## Lifecycle
+
+```text
+DRAFT → LOCKED → [PAPER_SUBMITTED → PAPER_ACTIVE →] OBSERVING → EVALUABLE → EVALUATED
+```
+
+Exceptional: `REJECTED`, `CANCELLED`, `EXPIRED`, `INVALID`, `INSUFFICIENT_DATA`
+
+`SIGNAL_ONLY` tests skip Paper submission and move `LOCKED → OBSERVING` directly.
+
+## Time integrity
+
+| Time | Meaning |
+| --- | --- |
+| `decision_time_ns` | When IMP recorded the forward decision |
+| `source_time_ns` | Latest legitimate input source time at decision |
+| observation `source_time_ns` | Provider/source time of appended evidence |
+| evaluation time | After `decision_time_ns + evaluation_horizon_ns` |
+
+Safeguards (`temporal.py`):
+
+1. future `source_time` rejected at decision creation
+2. decision payload immutable after lock
+3. observations cannot precede decision time
+4. evaluation blocked before horizon
+5. `run_kind` must be `FORWARD_TEST`
+
+## Paper execution integration
+
+Execution-capable tests (`test_mode=EXECUTION`) build a governed preview/submit body via `paper_handoff.py`:
+
+- passes through `preview_paper_order` / `submit_paper_order`
+- uses `decision_source_snapshot` type `forward_test_decision`
+- correlation id `forward_test:{forward_test_id}`
+- duplicate Paper submission blocked at store level
+
+Paper remains Paper. Live adapters are unreachable from this path.
+
+## Account isolation
+
+All records are scoped by `account_id`. API and service layers reject cross-account access.
+
+Frontend query key: `paperForwardTests(accountId)`.
+
+## API surface
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/paper/forward-tests` | List decisions |
+| GET | `/paper/forward-tests/{id}` | Detail |
+| GET | `/paper/forward-tests/sessions` | List sessions |
+| GET | `/paper/forward-tests/{session_id}/summary` | Session aggregate |
+| POST | `/paper/forward-tests/sessions` | Create session |
+| POST | `/paper/forward-tests/decisions` | Create decision |
+| POST | `/paper/forward-tests/lock` | Lock decision |
+| POST | `/paper/forward-tests/submit` | Submit to Paper or enter observing |
+| POST | `/paper/forward-tests/observe` | Append observation |
+| POST | `/paper/forward-tests/evaluate` | Evaluate eligible decision |
+
+## UI surface
+
+Paper Workspace exposes `PaperForwardTestPanel` with explicit **PAPER** / **Forward Test** labeling and pending/evaluated/rejected states.
+
+## Outcome metrics
+
+### Signal quality
+
+- entry/exit reference prices from observations
+- absolute and percentage return
+- directional correctness (when direction is non-neutral)
+
+### Execution quality (EXECUTION mode only)
+
+- Paper order/intent linkage
+- fill count / PnL placeholders (when available from Paper lifecycle)
+
+Metrics are never conflated in a single score.
+
+## Forward test vs backtest
+
+`run_kind=FORWARD_TEST` is required. Historical replay/backtest results must not use this bridge.
+
+## Failure semantics
+
+Failures are explicit: insufficient data, horizon not reached, Paper rejection, account mismatch, duplicate submission, temporal violations.
+
+## Testing
+
+Primary suite: `tests/intelligence/test_paper_forward_bridge.py`
+
+UI model tests: `ui/src/components/paper-workspace/buildForwardTestPanelModel.test.ts`
+
+## Known limitations
+
+- In-memory store only (UI session scope); no durable cross-restart campaign DB yet
+- Outcome metrics use observation payloads, not live provider polling
+- EVIDENCE-01B campaign auto-bridge not wired
+- Notion sync not performed from this increment
+
+## Professor-facing summary
+
+1. **What is forward tested?** Locked strategy/research decisions under a declared horizon.
+2. **Why prospective?** Decisions are frozen before later observations and evaluation.
+3. **Look-ahead prevention?** Source-time guards + immutable payload + append-only observations.
+4. **Frozen at decision time?** `decision_payload`, provenance snapshot, direction, strategy version.
+5. **What happens later?** Observations accumulate; evaluation runs after horizon.
+6. **Paper execution?** Optional governed preview/submit through existing Paper API.
+7. **Metrics?** Separate signal and execution outcome blocks.
+8. **Vs backtests?** Explicit `FORWARD_TEST` run kind; backtest boundary regression tested.
+9. **Auditability?** Provenance snapshot + immutable decision payload + observation trail.
+10. **Future work?** Durable campaigns, EVIDENCE-01C integration, richer execution PnL linkage.

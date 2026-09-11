@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p5_after_baseline",
+  "generated_at": "2026-09-10T21:05:00Z",
+  "checkpoint_sha": "efc9219ea4d1a79511278a4a8c0ea0d0d5e8e2fd",
+  "environment": {
+    "python_executable": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe",
+    "python_version": "3.11.15",
+    "worktree": "C:/Users/adame/Desktop/market-trading-platform-perf-p5",
+    "branch": "perf/p5-runtime-profile",
+    "logical_cpu_count": 8,
+    "timezone": "America/New_York",
+    "measurement_state": "warm_venv_post_optimization"
+  },
+  "targets": [
+    {
+      "id": "fast",
+      "runs": 1,
+      "wall_seconds": [6.336],
+      "median_seconds": 6.336,
+      "tests": 21,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "id": "platform",
+      "runs": 1,
+      "discovery_seconds": 3.777,
+      "wall_seconds": 64.601,
+      "tests": 486,
+      "delta_wall_seconds": -87.152,
+      "delta_percent": -57.4
+    },
+    {
+      "id": "ui1",
+      "runs": 1,
+      "discovery_seconds": 3.8,
+      "wall_seconds": 15.68,
+      "tests": 13,
+      "delta_wall_seconds": -71.847,
+      "delta_percent": -82.1
+    },
+    {
+      "id": "donor_bridge",
+      "runs": 1,
+      "discovery_seconds": 4.0,
+      "wall_seconds": 38.24,
+      "tests": 90,
+      "delta_wall_seconds": -60.508,
+      "delta_percent": -61.3
+    },
+    {
+      "id": "workspace_evidence_micro",
+      "runs": 3,
+      "median_seconds": 0.057,
+      "cold_first_seconds": 1.492,
+      "delta_median_percent": -99.1
+    },
+    {
+      "id": "changed",
+      "runs": 1,
+      "tests": 724,
+      "skipped": 12,
+      "wall_seconds": 168.387,
+      "failures": 0,
+      "errors": 0
+    }
+  ]
+}

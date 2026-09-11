@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p6_context_rule_audit",
+  "generated_at": "2026-09-10T19:50:00Z",
+  "authority_map_updates": [
+    {
+      "topic": "linked worktree environment bootstrap",
+      "old_locations": [
+        "P0 forensic audit prose",
+        "manual junction notes in prior perf chats"
+      ],
+      "canonical_location": "docs/engineering/DEVELOPER_OPERATING_SYSTEM.md#linked-git-worktrees",
+      "scoped_reminder": ".cursor/rules/developer-workflow.mdc",
+      "reason": "Deterministic command replaces repeated manual discovery instructions"
+    }
+  ],
+  "consolidations": [
+    {
+      "old_location": "implicit manual .venv junction guidance scattered in agent history",
+      "new_location": "python tools/imp.py env bootstrap --link-venv",
+      "removed": "duplicate prose about Windows username paths",
+      "safety_preserved": "no execution authorization; diagnostics remain read-only except explicit bootstrap"
+    }
+  ],
+  "new_agents_created": 0,
+  "new_skills_created": 0
+}

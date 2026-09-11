@@ -7,9 +7,11 @@ alwaysApply: true
 
 - Start at root `AGENTS.md`; use `docs/engineering/DEVELOPER_OPERATING_SYSTEM.md`
   for commands, validation tiers, delegation, and closure.
+- In a linked worktree, run `python tools/imp.py env` before validation; use
+  `python tools/imp.py env bootstrap --link-venv` when no local `.venv` exists.
 - Prefer `python tools/imp.py` over assembling equivalent commands manually.
 - Use FAST/focused/affected during iteration; reserve FULL for a major checkpoint
-  or closure. A `full_suite_required` flag is a gate, not permission to skip FULL.
+  or closure. A `core_checkpoint_required` flag is a gate, not permission to skip FULL.
 - Preserve the sole suite inventory in `tools/validation_manifest.json`.
 - Record exact evidence and baseline failures; never convert a dirty baseline
   into a new failure claim.

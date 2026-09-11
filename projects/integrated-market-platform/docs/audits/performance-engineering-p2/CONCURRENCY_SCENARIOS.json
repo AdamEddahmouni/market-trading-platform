@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p2_concurrency_scenarios",
+  "generated_at": "2026-09-10T23:36:00Z",
+  "scheduler_version": "p2-bl-0901-1",
+  "default_workers": 2,
+  "resource_heavy_max_concurrency": 2,
+  "scenarios": [
+    {
+      "id": "domain_macro",
+      "description": "Broad offline macro-domain suite set (6 suites, 304 tests)",
+      "results": [
+        {"workers": 1, "wall_seconds": 7.181, "tests": 304, "status": "passed", "speedup": 1.0, "efficiency": 1.0},
+        {"workers": 2, "wall_seconds": 3.273, "tests": 304, "status": "passed", "speedup": 2.19, "efficiency": 1.1},
+        {"workers": 3, "wall_seconds": 2.240, "tests": 304, "status": "passed", "speedup": 3.20, "efficiency": 1.07},
+        {"workers": 4, "wall_seconds": 2.011, "tests": 304, "status": "passed", "speedup": 3.57, "efficiency": 0.89}
+      ],
+      "recommended_workers": 2,
+      "notes": "Diminishing returns beyond 2 workers; 2 chosen for conservative default."
+    },
+    {
+      "id": "changed_product_paths",
+      "description": "Representative changed validation (paper/intelligence paths, 17 suites, 2812 tests)",
+      "results": [
+        {"workers": 1, "wall_seconds": 266.113, "tests": 2812, "status": "passed", "speedup": 1.0, "efficiency": 1.0},
+        {"workers": 2, "wall_seconds": 173.199, "tests": 2812, "status": "passed", "speedup": 1.53, "efficiency": 0.77}
+      ],
+      "recommended_workers": 2,
+      "notes": "Material 35% wall-time reduction at 2 workers with identical test inventory."
+    },
+    {
+      "id": "changed_governance_paths",
+      "description": "Changed validation including validate.py (core checkpoint, 3004 tests)",
+      "results": [
+        {"workers": 1, "wall_seconds": 387.815, "tests": 3004, "status": "failed", "errors": 1, "note": "pre-closure-audit-fix serial run"},
+        {"workers": 2, "wall_seconds": 263.342, "tests": 3004, "status": "failed", "errors": 1, "note": "pre-closure-audit-fix parallel run"},
+        {"workers": 3, "wall_seconds": 246.562, "tests": 3004, "status": "passed", "speedup": 1.57, "efficiency": 0.52}
+      ],
+      "notes": "Early runs failed on unclassified parallel_safety_audit.py; fixed before product-path benchmarks."
+    },
+    {
+      "id": "full",
+      "description": "FULL offline validation closure",
+      "results": [
+        {"workers": 1, "wall_seconds": 376.609, "tests": 4510, "status": "passed", "speedup": 1.0, "efficiency": 1.0},
+        {"workers": 2, "wall_seconds": 196.747, "tests": 4510, "status": "passed", "speedup": 1.91, "efficiency": 0.96}
+      ]
+    }
+  ]
+}

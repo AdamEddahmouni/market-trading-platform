@@ -1,0 +1,133 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p0_performance_baseline",
+  "generated_at": "2026-09-10T03:48:00Z",
+  "environment": {
+    "os": "Windows-10-10.0.26200-SP0",
+    "logical_cpu_count": 8,
+    "python_canonical": "3.11.15 (.venv)",
+    "python_shell_default": "3.10.11 (unsupported by imp.py env — use .venv)",
+    "node": "available",
+    "npm": "available",
+    "repository_root": "projects/integrated-market-platform",
+    "git_branch": "main",
+    "git_head": "bf0715fdfca91b278e5c30edb6ff6707c448084d",
+    "accepted_remote_sha": "bf0715fdfca91b278e5c30edb6ff6707c448084d",
+    "dirty_tree": true,
+    "changed_path_count": 72,
+    "measurement_state": "warm_venv",
+    "caveats": [
+      "Shell default Python 3.10 fails imp.py env hard prerequisite; measurements use .venv 3.11",
+      "Changed/FULL timings vary with dirty-tree composition and core_checkpoint escalation",
+      "Single-run wall times; repeat for variance before establishing budgets"
+    ]
+  },
+  "validation_tiers": {
+    "fast": {
+      "command": "python tools/imp.py validate fast",
+      "tests": 21,
+      "skipped": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 3.447,
+      "notes": "Measured 2026-09-10; benchmark.py median 2.783s over 5 repeats"
+    },
+    "focused_news": {
+      "command": "python -m unittest discover -s tests/news",
+      "wall_seconds": 0.39,
+      "approx_tests": 26,
+      "notes": "Professor-directed news foundation scope"
+    },
+    "focused_intelligence_news": {
+      "command": "python -m unittest discover -s tests/intelligence -p test_news*.py",
+      "wall_seconds": 1.23,
+      "approx_tests": 43,
+      "notes": "Inference + strategy evaluation tests combined pattern"
+    },
+    "changed_current_dirty_tree": {
+      "command": "python tools/imp.py validate changed",
+      "selected_suites": [
+        "phase0",
+        "finviz",
+        "news",
+        "platform",
+        "contracts",
+        "intelligence",
+        "providers",
+        "runtime",
+        "validation"
+      ],
+      "core_checkpoint_required": true,
+      "fail_safe_paths": [
+        "artifacts/g13-runtime-performance.json",
+        "artifacts/g14-runtime-performance.json",
+        "artifacts/g8-runtime-performance.json"
+      ],
+      "tests": 2304,
+      "skipped": 28,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 288.803,
+      "escalation_reasons": [
+        "UNCLASSIFIED_PATH",
+        "UNOWNED_FIXTURE_OR_CONFIG",
+        "UNKNOWN_EXECUTABLE_PATH"
+      ],
+      "cheap_checks": ["documentation"],
+      "omitted_domains": ["short-intelligence", "sec"],
+      "g15_closure_reference_tests": 3857,
+      "g15_closure_reference_wall_seconds": 453.625,
+      "notes": "Measured 2026-09-10 on professor-directed dirty tree; escalation from unclassified artifacts + news/intelligence/platform ownership"
+    },
+    "full": {
+      "command": "python tools/imp.py validate full",
+      "g15_closure_tests": 4392,
+      "g15_closure_skipped": 48,
+      "g15_closure_wall_seconds": 539.013,
+      "full_pre_g15_reference_wall_seconds": 588,
+      "notes": "Not re-run as P0 acceptance gate; G15 closure artifact authoritative for FULL benchmark"
+    },
+    "e2e": {
+      "command": "python tools/imp.py validate e2e",
+      "g15_tests": 6,
+      "g15_wall_seconds": 68.839
+    },
+    "frontend_vitest": {
+      "command": "cd ui && npm test -- --run",
+      "wall_seconds": 71.9,
+      "g15_test_count_reference": 454
+    },
+    "frontend_typecheck": {
+      "command": "cd ui && npm run typecheck",
+      "wall_seconds": null,
+      "notes": "Not measured in P0; included in CI and closure"
+    },
+    "frontend_build": {
+      "command": "cd ui && npm run build",
+      "wall_seconds": null,
+      "notes": "Not measured in P0; 200 KiB gzip budget enforced"
+    },
+    "docs_governance": {
+      "command": "python tools/check_docs_links.py",
+      "wall_seconds": null,
+      "notes": "Cheap; run for docs/rule changes"
+    }
+  },
+  "runner_overhead": {
+    "python_startup_median_seconds": 0.038,
+    "tiny_unittest_worker_median_seconds": 0.482,
+    "source": "tools/benchmark.py 2026-09-10"
+  },
+  "production_runtime_microbenchmarks": {
+    "source": "artifacts/p0-performance-baseline.json via tools/benchmark.py",
+    "hotspots_note": "Representative fixture-backed operations sub-millisecond to low-ms; no production algorithm rewrite indicated at P0"
+  },
+  "latest_full_validation_reference": {
+    "tests_passed": 4456,
+    "skipped": 48,
+    "failures": 0,
+    "errors": 0,
+    "source": "User-provided professor-directed closure reference",
+    "g15_integrity": "intact"
+  }
+}

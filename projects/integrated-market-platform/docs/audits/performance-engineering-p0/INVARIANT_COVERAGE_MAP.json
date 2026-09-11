@@ -1,0 +1,118 @@
+{
+  "schema_version": "1.0",
+  "report_type": "invariant_coverage_map",
+  "generated_at": "2026-09-10T03:52:00Z",
+  "purpose": "Prevent performance optimization from weakening assurance; map families to test groups not individual assertions",
+  "families": [
+    {
+      "invariant": "canonical_instrument_identity",
+      "test_groups": ["tests/cross_lane/", "tests/platform/test_*canonical*", "mandatory_invariants: pit-*"]
+    },
+    {
+      "invariant": "account_isolation",
+      "test_groups": ["tests/platform/", "tests/paper/", "tests/ui1/"]
+    },
+    {
+      "invariant": "demo_paper_live_separation",
+      "test_groups": ["tests/platform/test_mode*", "tests/ui1/", "mandatory_invariants", "tests/product_acceptance/"]
+    },
+    {
+      "invariant": "mode_authority",
+      "test_groups": ["tests/platform/", "tests/validation/", "tests/ui1/", "e2e/product_acceptance"]
+    },
+    {
+      "invariant": "broker_execution_authority",
+      "test_groups": ["tests/execution/", "tests/platform/", "tests/providers/"]
+    },
+    {
+      "invariant": "live_disabled_boundary",
+      "test_groups": ["tests/validation/test_live*", "tests/platform/", "mandatory_invariants: offline-network-denial"]
+    },
+    {
+      "invariant": "provider_truth",
+      "test_groups": ["tests/providers/", "tests/phase0/", "tests/sec/", "tests/fred/", "tests/eia/"]
+    },
+    {
+      "invariant": "entitlement_truth",
+      "test_groups": ["tests/platform/", "tests/ui1/"]
+    },
+    {
+      "invariant": "source_time_event_time",
+      "test_groups": ["tests/runtime/", "tests/fred/", "tests/news/test_news_event_time.py", "mandatory_invariants: pit-*"]
+    },
+    {
+      "invariant": "portfolio_accounting",
+      "test_groups": ["tests/platform/", "tests/paper/", "tests/risk_simulation/"]
+    },
+    {
+      "invariant": "risk_authority",
+      "test_groups": ["tests/risk_simulation/", "tests/platform/", "tests/paper/"]
+    },
+    {
+      "invariant": "preview_binding",
+      "test_groups": ["tests/paper/", "tests/ui1/", "tests/platform/"]
+    },
+    {
+      "invariant": "paper_lifecycle",
+      "test_groups": ["tests/paper/", "tests/platform/", "src/market_platform_foundation/paper/ → tests/paper/"]
+    },
+    {
+      "invariant": "order_fill_state",
+      "test_groups": ["tests/execution/", "tests/order_flow/", "tests/platform/"]
+    },
+    {
+      "invariant": "idempotency",
+      "test_groups": ["tests/platform/", "tests/paper/"]
+    },
+    {
+      "invariant": "margin_facts",
+      "test_groups": ["tests/futures/", "tests/platform/"]
+    },
+    {
+      "invariant": "query_key_isolation",
+      "test_groups": ["ui/src/**/*.test.tsx", "tests/ui1/", "tests/cross_lane/test_g15_query_key*"]
+    },
+    {
+      "invariant": "l1_l2_tick_cvd",
+      "test_groups": ["tests/order_flow/", "tests/market_data/"]
+    },
+    {
+      "invariant": "news_publication_vs_retrieval",
+      "test_groups": ["tests/news/test_news_foundation.py", "tests/news/test_news_event_time.py"]
+    },
+    {
+      "invariant": "news_observability_dedupe_filtering",
+      "test_groups": ["tests/news/", "src/market_platform_foundation/news/"]
+    },
+    {
+      "invariant": "ai_zero_execution_authority",
+      "test_groups": ["tests/intelligence/test_news_inference.py", "tests/intelligence/"]
+    },
+    {
+      "invariant": "prompt_model_provenance",
+      "test_groups": ["tests/intelligence/test_news_inference.py", "tests/intelligence/"]
+    },
+    {
+      "invariant": "intelligence_event_time_safety",
+      "test_groups": ["tests/intelligence/", "tests/platform/test_shadow*"]
+    },
+    {
+      "invariant": "no_look_ahead_strategy_evaluation",
+      "test_groups": ["tests/intelligence/test_news_strategy_evaluation.py"]
+    },
+    {
+      "invariant": "replay_determinism",
+      "test_groups": ["tests/replay/", "tests/runtime/", "tests/news/ (replay packs)"]
+    },
+    {
+      "invariant": "shadow_non_executability",
+      "test_groups": ["tests/platform/test_shadow*", "tests/intelligence/"]
+    },
+    {
+      "invariant": "browser_product_acceptance",
+      "test_groups": ["e2e/", "tests/product_acceptance/test_browser_acceptance.py"]
+    }
+  ],
+  "mandatory_invariant_selectors": 21,
+  "notes": "FAST tier runs all mandatory_invariants; changed adds them when any suite selected"
+}

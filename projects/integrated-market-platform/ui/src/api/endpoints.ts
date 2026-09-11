@@ -144,6 +144,10 @@ export const api = {
   },
   getPaperPortfolio: (viewMode: "DEMO" | "PAPER" = "PAPER") =>
     fetchJson(`/paper/portfolio?view_mode=${viewMode}`, PaperPortfolioResponseSchema),
+  getPaperForwardTests: (accountId?: string) => {
+    const query = accountId ? `?account_id=${encodeURIComponent(accountId)}` : "";
+    return fetchRawJson(`/paper/forward-tests${query}`);
+  },
   getPaperOrderHistory: (params?: { cursor?: string; limit?: number }) => {
     const query = new URLSearchParams();
     if (params?.cursor) query.set("cursor", params.cursor);

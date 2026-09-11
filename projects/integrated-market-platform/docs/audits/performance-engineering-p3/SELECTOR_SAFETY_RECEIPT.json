@@ -1,0 +1,64 @@
+{
+  "baseline_sha": "cd145fc",
+  "changed_paths": [
+    "src/market_platform_foundation/news/pipeline.py"
+  ],
+  "changed_result": {
+    "errors": 4,
+    "failed": 0,
+    "passed": 1226,
+    "skipped": 25,
+    "status": "failed",
+    "tests_run": 1255,
+    "wall_seconds": 65.64607689999684
+  },
+  "core_checkpoint_reasons": [],
+  "core_checkpoint_required": false,
+  "full_result": {
+    "errors": 4,
+    "failed": 0,
+    "passed": 4419,
+    "skipped": 48,
+    "status": "failed",
+    "tests_run": 4471,
+    "wall_seconds": 539.5985188999912
+  },
+  "generated_at": "2026-09-10T16:09:44.765620+00:00",
+  "head_sha": "cd145fce5add6bd1d03bf7cde79b5dff0e097898",
+  "limitations": [
+    "Trial compares executed changed selection against one FULL run on the same tree.",
+    "Unrelated flaky FULL failures are not automatically excluded.",
+    "Sample size of one trial does not prove mathematical selector recall."
+  ],
+  "manifest_hash": "b0822308a16beda9c494ed09be0d95628ccfa849b09a1d54174f684a7dfc396e",
+  "observed_selector_miss_details": [],
+  "observed_selector_misses": 0,
+  "path_classifications": {
+    "src/market_platform_foundation/news/pipeline.py": {
+      "classification": "OWNING_SUITE_SELECTION",
+      "dependent_suites": [
+        "intelligence"
+      ],
+      "detail": [
+        "Intelligence layer consumes news contracts, replay semantics, and catalyst policies"
+      ],
+      "escalated": false,
+      "escalation_reason": "",
+      "evidence_category": "",
+      "governance_pattern_id": "",
+      "owning_suites": [
+        "news"
+      ],
+      "partition_id": "news_foundation"
+    }
+  },
+  "report_type": "selector_safety_trial",
+  "schema_version": "1.0",
+  "selected_suites": [
+    "news",
+    "intelligence"
+  ],
+  "selected_test_count": 1255,
+  "selector_version": "p3-bl-0801-1",
+  "trial_id": "2a0c88cf-dc7f-4c80-8351-669a0ed5d298"
+}

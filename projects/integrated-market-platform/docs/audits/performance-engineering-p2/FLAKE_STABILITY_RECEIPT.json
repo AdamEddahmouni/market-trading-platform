@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p2_flake_stability_receipt",
+  "generated_at": "2026-09-10T23:36:00Z",
+  "scenario": "domain_macro_workers_2",
+  "workers": 2,
+  "runs": [
+    {"run": 1, "wall_seconds": 2.671, "tests": 304, "failures": 0, "errors": 0, "status": "passed"},
+    {"run": 2, "wall_seconds": 2.816, "tests": 304, "failures": 0, "errors": 0, "status": "passed"},
+    {"run": 3, "wall_seconds": 2.381, "tests": 304, "failures": 0, "errors": 0, "status": "passed"}
+  ],
+  "changed_product_parallel": {
+    "workers": 2,
+    "runs": 1,
+    "wall_seconds": 173.199,
+    "tests": 2812,
+    "failures": 0,
+    "errors": 0,
+    "status": "passed"
+  },
+  "parallel_only_failures": [],
+  "serial_only_failures": [],
+  "order_permutation_runs": "not_executed_full_matrix",
+  "conclusion": "Three consecutive parallel domain-macro runs green; representative changed parallel run green with identical inventory."
+}

@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p5_before_baseline",
+  "generated_at": "2026-09-10T20:35:00Z",
+  "checkpoint_sha": "efc9219ea4d1a79511278a4a8c0ea0d0d5e8e2fd",
+  "environment": {
+    "python_executable": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe",
+    "python_version": "3.11.15",
+    "worktree": "C:/Users/adame/Desktop/market-trading-platform-perf-p5",
+    "branch": "perf/p5-runtime-profile",
+    "logical_cpu_count": 8,
+    "timezone": "America/New_York",
+    "measurement_state": "warm_venv_cold_first_suite_runs"
+  },
+  "targets": [
+    {
+      "id": "fast",
+      "runs": 3,
+      "wall_seconds": [4.82, 4.13, 4.567],
+      "median_seconds": 4.567,
+      "tests": 21
+    },
+    {
+      "id": "platform",
+      "runs": 1,
+      "discovery_seconds": 8.517,
+      "wall_seconds": 151.753,
+      "tests": 486
+    },
+    {
+      "id": "ui1",
+      "runs": 1,
+      "discovery_seconds": 3.91,
+      "wall_seconds": 87.527,
+      "tests": 13
+    },
+    {
+      "id": "donor_bridge",
+      "runs": 1,
+      "discovery_seconds": 6.063,
+      "wall_seconds": 98.748,
+      "tests": 87
+    },
+    {
+      "id": "workspace_evidence_micro",
+      "runs": 3,
+      "median_seconds": 6.168,
+      "symbol": "BOXL"
+    }
+  ]
+}

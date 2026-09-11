@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p4_after_baseline",
+  "generated_at": "2026-09-10T19:15:00Z",
+  "checkpoint_sha": "1af5802dec1589f01366f5005eee43dfe59edacf",
+  "environment": {
+    "python_executable": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe",
+    "python_version": "3.11.15",
+    "venv_strategy": "junction_to_canonical_root_venv"
+  },
+  "targets": [
+    {
+      "id": "fast",
+      "tests": 21,
+      "wall_seconds": 4.287,
+      "runs": 1,
+      "absolute_savings_seconds": 3.215,
+      "percent_savings": 42.8
+    },
+    {
+      "id": "platform",
+      "tests": 486,
+      "wall_seconds": 139.852,
+      "runs": 1,
+      "absolute_savings_seconds": 7.774,
+      "percent_savings": 5.3
+    },
+    {
+      "id": "ui1",
+      "tests": 13,
+      "wall_seconds": 94.345,
+      "runs": 1,
+      "absolute_savings_seconds": -1.651,
+      "percent_savings": -1.8,
+      "verdict": "within_noise"
+    },
+    {
+      "id": "donor_bridge",
+      "tests": 87,
+      "wall_seconds": 98.188,
+      "runs": 1,
+      "absolute_savings_seconds": -2.985,
+      "percent_savings": -3.1,
+      "verdict": "within_noise"
+    }
+  ],
+  "microbenchmarks": {
+    "replay_store_first_load_seconds": 17.442,
+    "replay_store_warm_load_seconds": 0.493,
+    "combined_fixture_ledger_warm_build_seconds": 0.0029,
+    "bootstrap_default_providers_warm_seconds": 0.0083
+  },
+  "full_closure": {
+    "command": "python tools/imp.py validate full",
+    "total": 4487,
+    "passed": 4439,
+    "skipped": 48,
+    "failures": 0,
+    "errors": 0,
+    "wall_seconds": 674.856
+  },
+  "changed_validation": {
+    "command": "python tools/imp.py validate changed",
+    "total": 1327,
+    "skipped": 14,
+    "failures": 0,
+    "errors": 0,
+    "wall_seconds": 468.718
+  }
+}

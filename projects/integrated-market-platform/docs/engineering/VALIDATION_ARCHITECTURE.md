@@ -18,7 +18,7 @@ python tools/validate.py extended
 python tools/validate.py benchmark
 ```
 
-All modes accept `--json <path>`, `--explain`, `--verbose`, `--fail-fast`, and `--workers <n>`. The measured default worker count is 2 and must be at least 1. `--explain` prints the selection before executing it; it is not a dry-run option. `--json` atomically replaces the destination through a sibling temporary file.
+All modes accept `--json <path>`, `--explain`, `--plan`, `--verbose`, `--fail-fast`, and `--workers <n>`. The measured default worker count is 2 and must be at least 1. `--explain` prints the selection before executing it. `--plan` computes the selection plan and exits without executing tests; use it before expensive CHANGED runs when scope is unclear. `--json` atomically replaces the destination through a sibling temporary file.
 
 `benchmark` delegates to the benchmark tooling for measurement and reporting. Benchmark results are informational and non-gating: timing variance must not turn a functional validation result into a failure. Use benchmark output to compare runner overhead or representative operations under like-for-like conditions, not as a replacement for FAST, CHANGED, DOMAIN, or FULL correctness evidence.
 
@@ -41,8 +41,8 @@ Selection is deterministic:
 1. Normalize and sort repository-relative paths; reject absolute paths and traversal.
 2. Match full invalidators.
 3. Match suite `test_globs` and `source_globs`.
-4. For direct source ownership only, add declared offline neighbors.
-5. If a full checkpoint is required, add broad core diagnostic suites.
+4. For direct source ownership, add BL-0801 directional dependents when a subsystem partition matches; otherwise add declared offline neighbors.
+5. If a core checkpoint is required, add broad core diagnostic suites.
 6. Add mandatory invariant selectors for a nonempty ordinary selection.
 7. Report domains that no selected suite covers.
 8. Run cheap documentation or evidence checks when those file types are present.

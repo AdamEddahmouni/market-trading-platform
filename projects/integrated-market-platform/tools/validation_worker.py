@@ -318,6 +318,7 @@ def run_worker(
                 "expected_failures": len(structured.expectedFailures),
                 "unexpected_successes": len(structured.unexpectedSuccesses),
                 "per_test_durations": duration_rows,
+                "slowest_tests": slowest,
                 "skip_details": _skip_rows(structured.skipped, root),
                 "failure_details": _failure_rows(structured.failures, root),
                 "error_details": _failure_rows(structured.errors, root),

@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p5_full_cost_attribution",
+  "generated_at": "2026-09-10T21:15:00Z",
+  "p5_full": {
+    "total": 4497,
+    "passed": 4449,
+    "skipped": 48,
+    "failures": 0,
+    "errors": 0,
+    "wall_seconds": 410.23,
+    "command": "python tools/imp.py validate full"
+  },
+  "targeted_suite_attribution": [
+    {"suite": "platform", "discovery_seconds": 3.78, "body_seconds": 60.82, "total_seconds": 64.6, "share_of_targeted": 0.28},
+    {"suite": "ui1", "discovery_seconds": 3.8, "body_seconds": 11.88, "total_seconds": 15.68, "share_of_targeted": 0.07},
+    {"suite": "donor_bridge", "discovery_seconds": 4.0, "body_seconds": 34.24, "total_seconds": 38.24, "share_of_targeted": 0.17}
+  ],
+  "historical_full_variance": {
+    "p3_seconds": 486.092,
+    "p4_seconds": 674.86,
+    "p6_seconds": 745.92,
+    "p5_seconds": 410.23,
+    "classification": "PARTIALLY_EXPLAINED",
+    "explanation": "P5 donor-probe optimization removes ~87s platform + ~72s ui1 + ~60s donor_bridge body time versus P5-before on same machine. Historical P3→P6 growth remains partially unresolved (fixture growth, cold cache, environment variance) but current FULL is dominated by measurable suite bodies not import-only overhead."
+  }
+}

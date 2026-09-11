@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p2_serial_before_baseline",
+  "generated_at": "2026-09-10T23:36:00Z",
+  "checkpoint_sha": "6e44948cf9cd3b28b7a21c1f07a26c91370ad84a",
+  "environment": {
+    "python_executable": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe",
+    "python_version": "3.11.15",
+    "worktree": "C:/Users/adame/Desktop/market-trading-platform-perf-p2",
+    "branch": "perf/p2-safe-parallelization",
+    "logical_cpu_count": 8,
+    "measurement_state": "warm_venv_post_p5_checkpoint"
+  },
+  "methodology": "Serial execution (--workers 1) on current P5 checkpoint before enabling parallel scheduling policy changes.",
+  "p5_historical_reference": {
+    "full_wall_seconds": 410.23,
+    "full_tests": 4497,
+    "changed_wall_seconds": 168.387,
+    "changed_tests": 724
+  },
+  "targets": [
+    {
+      "id": "fast",
+      "workers": 1,
+      "tests": 21,
+      "skipped": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 3.511
+    },
+    {
+      "id": "domain_macro",
+      "workers": 1,
+      "tests": 304,
+      "skipped": 0,
+      "failures": 0,
+      "errors": 0,
+      "discovery_seconds": 0.879,
+      "wall_seconds": 7.181
+    },
+    {
+      "id": "changed_product_paths",
+      "workers": 1,
+      "tests": 2812,
+      "skipped": 38,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 266.113,
+      "paths_file": "changed-paths-product.txt"
+    },
+    {
+      "id": "full",
+      "workers": 1,
+      "tests": 4510,
+      "skipped": 48,
+      "failures": 0,
+      "errors": 0,
+      "discovery_seconds": 55.04,
+      "wall_seconds": 376.609
+    }
+  ]
+}

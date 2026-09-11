@@ -152,7 +152,7 @@ class ValidateSelectionTests(unittest.TestCase):
         self.assertEqual(selection.mandatory_selectors, ("tests/alpha/test_alpha.py::Tests::test_ok",))
         self.assertFalse(selection.core_checkpoint_required)
         self.assertTrue(
-            any("direct source ownership" in reason for reason in selection.selection_reasons["alpha"])
+            any("DIRECT_OWNER" in reason for reason in selection.selection_reasons["alpha"])
         )
         self.assertIn("neighbor of alpha", selection.selection_reasons["beta"])
         decision = selection.path_decisions[0]

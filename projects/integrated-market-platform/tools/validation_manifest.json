@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "domains": [
     "core",
     "short-intelligence",
@@ -20,6 +20,8 @@
     "tools/imp.py",
     "tools/run_all_tests.py",
     "tools/benchmark.py",
+    "tools/p5_profile_harness.py",
+    "tools/parallel_safety_audit.py",
     "src/market_platform_foundation/canonical.py",
     "src/market_platform_foundation/contracts/**",
     "src/market_platform_foundation/providers/envelope.py",
@@ -191,7 +193,7 @@
       "domains": [
         "core"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 2,
       "source_globs": [
         "tools/phase0/**"
@@ -199,7 +201,9 @@
       "test_globs": [
         "tests/phase0/test_*.py"
       ],
-      "neighbors": []
+      "neighbors": [],
+      "concurrency_reason": "process-local globals; tempfile-isolated I/O; no shared artifact paths",
+      "resource_class": "NORMAL"
     },
     {
       "id": "phase0a",
@@ -211,7 +215,7 @@
       "domains": [
         "core"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 2,
       "source_globs": [
         "tools/phase0a/**"
@@ -219,7 +223,9 @@
       "test_globs": [
         "tests/phase0a/test_*.py"
       ],
-      "neighbors": []
+      "neighbors": [],
+      "concurrency_reason": "process-local globals; isolated subprocess fixtures; no shared artifact paths",
+      "resource_class": "NORMAL"
     },
     {
       "id": "phase1",
@@ -231,7 +237,7 @@
       "domains": [
         "core"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 2,
       "source_globs": [
         "tools/phase1/**"
@@ -239,7 +245,9 @@
       "test_globs": [
         "tests/phase1/test_*.py"
       ],
-      "neighbors": []
+      "neighbors": [],
+      "concurrency_reason": "process-local globals; phase1-specific evidence paths are read-only in tests",
+      "resource_class": "NORMAL"
     },
     {
       "id": "phase2",
@@ -474,7 +482,7 @@
         "core",
         "ui"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 2,
       "source_globs": [
         "src/market_platform_foundation/paper/**",
@@ -500,7 +508,9 @@
         "execution",
         "phase7",
         "finviz"
-      ]
+      ],
+      "concurrency_reason": "process-local globals; tests use temp dirs or read-only fixtures",
+      "resource_class": "NORMAL"
     },
     {
       "id": "phase8",
@@ -512,7 +522,7 @@
       "domains": [
         "core"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 3,
       "source_globs": [
         "tools/phase8/**"
@@ -522,7 +532,9 @@
       ],
       "neighbors": [
         "integration"
-      ]
+      ],
+      "concurrency_reason": "suite-specific evidence/phase8/.pytest-run scratch path",
+      "resource_class": "NORMAL"
     },
     {
       "id": "storage",
@@ -820,7 +832,7 @@
         "core",
         "ui"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 2,
       "source_globs": [
         "src/market_platform_foundation/features/**",
@@ -831,7 +843,9 @@
       ],
       "neighbors": [
         "ui1"
-      ]
+      ],
+      "concurrency_reason": "process-local globals; local fixture files only",
+      "resource_class": "NORMAL"
     },
     {
       "id": "integration",
@@ -1023,7 +1037,7 @@
       "domains": [
         "ui"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 3,
       "source_globs": [
         "src/market_platform_foundation/ui_api/**",
@@ -1038,7 +1052,9 @@
         "integration",
         "providers",
         "donor_bridge"
-      ]
+      ],
+      "concurrency_reason": "suite-specific evidence/ui1/.pytest-run scratch path",
+      "resource_class": "NORMAL"
     },
     {
       "id": "ui2",
@@ -1050,7 +1066,7 @@
       "domains": [
         "ui"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 3,
       "source_globs": [
         "src/market_platform_foundation/ui_api/**",
@@ -1062,7 +1078,9 @@
       "neighbors": [
         "ui1",
         "integration"
-      ]
+      ],
+      "concurrency_reason": "suite-specific evidence/ui2/.pytest-run scratch path",
+      "resource_class": "NORMAL"
     },
     {
       "id": "mra001",
@@ -1074,7 +1092,7 @@
       "domains": [
         "ui"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 2,
       "source_globs": [
         "tools/mra001/**"
@@ -1085,7 +1103,9 @@
       "neighbors": [
         "assistant",
         "ui1"
-      ]
+      ],
+      "concurrency_reason": "suite-specific evidence/mra001/.pytest-run scratch path",
+      "resource_class": "NORMAL"
     },
     {
       "id": "mra002",
@@ -1097,7 +1117,7 @@
       "domains": [
         "ui"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 2,
       "source_globs": [
         "tools/mra002/**"
@@ -1108,7 +1128,9 @@
       "neighbors": [
         "assistant",
         "ui1"
-      ]
+      ],
+      "concurrency_reason": "suite-specific evidence/mra002/.pytest-run and build-run paths",
+      "resource_class": "NORMAL"
     },
     {
       "id": "market_context",
@@ -1467,6 +1489,8 @@
         "tools/check_docs_links.py",
         "tools/run_all_tests.py",
         "tools/benchmark.py",
+        "tools/p5_profile_harness.py",
+        "tools/parallel_safety_audit.py",
         "tools/repository_closure.py",
         "artifacts/repository-closure/**",
         "docs/engineering/POST_BUILD35_REPOSITORY_CLOSURE_AUDIT.md"
@@ -2105,7 +2129,7 @@
         "order-flow",
         "ui"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 2,
       "source_globs": [
         "src/market_platform_foundation/paper/**",
@@ -2133,7 +2157,9 @@
         "intelligence",
         "providers",
         "execution"
-      ]
+      ],
+      "concurrency_reason": "suite-specific artifacts/g13-runtime-performance.json writer",
+      "resource_class": "NORMAL"
     }
   ],
   "shared_module_dependents": [
@@ -2154,5 +2180,131 @@
       ],
       "reason": "imported by cross_lane/order_flow/participant lanes and phase0 pipeline tests"
     }
-  ]
+  ],
+  "evidence_only_patterns": [
+    {
+      "id": "generated_runtime_performance",
+      "category": "GENERATED_PERFORMANCE_EVIDENCE",
+      "patterns": [
+        "artifacts/g*-runtime-performance.json",
+        "artifacts/g*-validation-performance.json",
+        "artifacts/p*-performance-baseline.json",
+        "artifacts/p0-performance-baseline.json"
+      ],
+      "reason": "Measured validation timing output; not consumed by application runtime or test fixtures"
+    }
+  ],
+  "governance_only_patterns": [
+    {
+      "id": "cursor_rules_and_skills",
+      "patterns": [
+        ".cursor/rules/**",
+        ".cursor/agents/**",
+        ".cursor/skills/**",
+        ".cursor/hooks/**",
+        ".cursor/hooks.json"
+      ],
+      "reason": "Agent/rule prose and workflow instructions; governance validation only"
+    },
+    {
+      "id": "agents_root",
+      "patterns": [
+        "AGENTS.md"
+      ],
+      "reason": "Repository agent routing prose; governance validation only"
+    }
+  ],
+  "subsystem_partitions": [
+    {
+      "id": "news_foundation",
+      "owner_suite": "news",
+      "source_globs": [
+        "src/market_platform_foundation/news/**",
+        "tools/news/**",
+        "tests/fixtures/news/**",
+        "tests/news/**"
+      ],
+      "dependent_suites": [
+        "intelligence"
+      ],
+      "reason": "Intelligence layer consumes news contracts, replay semantics, and catalyst policies"
+    },
+    {
+      "id": "intelligence_inference",
+      "owner_suite": "intelligence",
+      "source_globs": [
+        "src/market_platform_foundation/intelligence/inference/**",
+        "tests/intelligence/test_news_inference.py",
+        "tests/fixtures/news/**"
+      ],
+      "dependent_suites": [],
+      "reason": "Inference boundary; strategy-evaluation integration tests remain in intelligence suite"
+    },
+    {
+      "id": "news_strategy_evaluation",
+      "owner_suite": "intelligence",
+      "source_globs": [
+        "src/market_platform_foundation/intelligence/news_strategy_evaluation/**",
+        "tests/intelligence/test_news_strategy_evaluation.py",
+        "tests/fixtures/news_strategy_evaluation/**",
+        "tools/research/evaluate_news_intelligence.py"
+      ],
+      "dependent_suites": [],
+      "reason": "Strategy-evaluation laboratory; no automatic upstream news/provider breadth"
+    },
+    {
+      "id": "paper_forward_bridge",
+      "owner_suite": "intelligence",
+      "source_globs": [
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/**",
+        "src/market_platform_foundation/ui_api/forward_test_projections.py",
+        "tests/intelligence/test_paper_forward_bridge.py",
+        "ui/src/components/paper-workspace/PaperForwardTestPanel.tsx",
+        "ui/src/components/paper-workspace/buildForwardTestPanelModel.ts",
+        "ui/src/components/paper-workspace/buildForwardTestPanelModel.test.ts",
+        "docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md"
+      ],
+      "dependent_suites": [],
+      "reason": "Governed Paper forward-testing product bridge"
+    },
+    {
+      "id": "validation_control_plane",
+      "owner_suite": "validation",
+      "source_globs": [
+        "tools/validation_*.py",
+        "tools/validate.py",
+        "tools/imp.py",
+        "tools/check_docs_links.py",
+        "tools/run_all_tests.py",
+        "tools/benchmark.py",
+        "tools/p5_profile_harness.py",
+        "tools/selector_safety_trial.py",
+        "tools/repository_closure.py",
+        "artifacts/repository-closure/**",
+        "docs/engineering/POST_BUILD35_REPOSITORY_CLOSURE_AUDIT.md"
+      ],
+      "dependent_suites": [],
+      "reason": "Validation control-plane changes require the validation suite and core checkpoint"
+    },
+    {
+      "id": "frontend_ui",
+      "owner_suite": "ui1",
+      "source_globs": [
+        "ui/src/**",
+        "ui/package.json",
+        "ui/vite.config.ts",
+        "ui/tsconfig.json",
+        "ui/tsconfig.*.json"
+      ],
+      "dependent_suites": [],
+      "reason": "Frontend source maps to ui offline checks without unrelated Python domain fan-out"
+    }
+  ],
+  "concurrency_defaults": {
+    "default_workers": 2,
+    "max_workers": 4,
+    "resource_heavy_max_concurrency": 2,
+    "fast_mode_workers": 1,
+    "scheduler_version": "p2-bl-0901-1"
+  }
 }

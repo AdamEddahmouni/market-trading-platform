@@ -228,12 +228,14 @@
         "tools/check_docs_links.py",
         "tools/repository_closure.py",
         "tools/imp.py",
+        "tools/environment.py",
         "tools/validate.py",
+        "tools/selector_safety_trial.py",
         "tools/validation_manifest.json",
         "tools/validation_manifest.py",
         "tools/validation_worker.py"
       ],
-      "responsibility": "Canonical developer command routing plus manifest-driven offline validation selection, execution, reporting, and repository closure enforcement.",
+      "responsibility": "Canonical developer command routing plus manifest-driven offline validation selection, execution, reporting, selector-safety trials, and repository closure enforcement.",
       "evidence": [
         "AGENTS.md routes developer work through tools/imp.py while preserving tools/validate.py as the Python validator.",
         "README.md and docs/engineering/DEVELOPER_OPERATING_SYSTEM.md state that manifest-driven validation replaced ad-hoc full-suite execution."
@@ -565,12 +567,18 @@
       "classification": "RETAINED_SUPPORTING",
       "scope": [
         "tools/benchmark.py",
-        "tools/mutation_verification.py"
+        "tools/mutation_verification.py",
+        "tools/p5_profile_harness.py",
+        "tools/parallel_safety_audit.py",
+        "tools/perf_baseline_measure.py",
+        "tools/performance_budget.py",
+        "tools/performance_telemetry.py"
       ],
-      "responsibility": "Informational performance measurement and controlled proof that mandatory validation invariants detect regressions.",
+      "responsibility": "Informational performance measurement, P7 performance-budget telemetry, parallel-safety audit support, and controlled proof that mandatory validation invariants detect regressions.",
       "evidence": [
         "tests/validation/test_benchmark.py keeps benchmark results non-gating.",
-        "tests/validation/test_mutation_verification.py binds the required failure modes."
+        "tests/validation/test_mutation_verification.py binds the required failure modes.",
+        "tests/validation/test_performance_budget.py keeps budget classification observe-only and non-gating."
       ],
       "disposition": "KEEP"
     },

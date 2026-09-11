@@ -1,0 +1,76 @@
+{
+  "audit_id": "CCN-FORENSIC-2026-09-09",
+  "donor_id": "SRC-006",
+  "local_path": "Claude Code News/",
+  "workspace_status": "AUTHORIZED_FUTURE_DONOR_REFERENCE_LOCAL_ONLY_GITIGNORED",
+  "git_tracked": false,
+  "git_metadata_present": false,
+  "file_count_excluding_node_modules": 58,
+  "node_modules_present_locally": true,
+  "logs_directory_present": false,
+  "env_example_present": false,
+  "contributor_provenance": {
+    "transfer_identity": "Lucas Bichara (ljb6293@psu.edu)",
+    "transfer_confidence": "CONFIRMED",
+    "file_level_authorship": "UNKNOWN",
+    "notes": "Email thread establishes transfer contributor; package has no author field, no .git, no commit history"
+  },
+  "artifacts": [
+    {"path": "README.md", "type": "documentation", "purpose": "Canonical config, measured P&L tables, honest limits, architecture overview", "category": "documentation", "safe_to_execute": false, "requires_secrets": false, "broker_capable": false, "relevance": "HIGH", "confidence": "CONFIRMED"},
+    {"path": "CLAUDE.md", "type": "documentation", "purpose": "Agent orientation for working on donor code", "category": "documentation", "safe_to_execute": false, "requires_secrets": false, "broker_capable": false, "relevance": "HIGH", "confidence": "CONFIRMED"},
+    {"path": "SETUP.md", "type": "documentation", "purpose": "macOS install, TradingView CDP, Tradovate, Anthropic, launchd", "category": "documentation", "safe_to_execute": false, "requires_secrets": false, "broker_capable": false, "relevance": "HIGH", "confidence": "CONFIRMED"},
+    {"path": "package.json", "type": "config", "purpose": "Node ESM package; scripts start/live/preflight/brief-now", "category": "config", "safe_to_execute": false, "requires_secrets": false, "broker_capable": false, "relevance": "HIGH", "confidence": "CONFIRMED"},
+    {"path": "package-lock.json", "type": "lockfile", "purpose": "Pinned deps: chrome-remote-interface, @modelcontextprotocol/sdk", "category": "config", "safe_to_execute": false, "requires_secrets": false, "broker_capable": false, "relevance": "MEDIUM", "confidence": "CONFIRMED"},
+    {"path": "install.sh", "type": "shell_script", "purpose": "Idempotent macOS install: npm deps, .env template, launchd plists", "category": "code", "safe_to_execute": false, "requires_secrets": false, "broker_capable": false, "relevance": "MEDIUM", "confidence": "CONFIRMED", "notes": "Mutates local install paths; macOS only"},
+    {"path": "launchd/com.trader.brief.plist", "type": "config", "purpose": "KeepAlive daemon for main.mjs", "category": "config", "safe_to_execute": false, "requires_secrets": false, "broker_capable": true, "relevance": "MEDIUM", "confidence": "CONFIRMED"},
+    {"path": "launchd/com.trader.brief.fire.plist", "type": "config", "purpose": "9:25 ET SIGUSR1 brief trigger", "category": "config", "safe_to_execute": false, "requires_secrets": false, "broker_capable": true, "relevance": "MEDIUM", "confidence": "CONFIRMED"},
+    {"path": "launchd/com.trader.brief.preflight.plist", "type": "config", "purpose": "9:15 ET preflight self-test", "category": "config", "safe_to_execute": false, "requires_secrets": false, "broker_capable": false, "relevance": "MEDIUM", "confidence": "CONFIRMED"},
+    {"path": "news/live/main.mjs", "type": "javascript", "purpose": "Daemon entry: CDP connect, headline monitors, 9:25 brief timer, trade callback", "category": "code", "safe_to_execute": false, "requires_secrets": true, "broker_capable": true, "relevance": "HIGH", "confidence": "CONFIRMED"},
+    {"path": "news/live/morning_brief.mjs", "type": "javascript", "purpose": "8h headline window, tiering, Claude API call, fire guard, overnight reaction gate", "category": "code", "safe_to_execute": false, "requires_secrets": true, "broker_capable": false, "relevance": "HIGH", "confidence": "CONFIRMED"},
+    {"path": "news/live/focus.mjs", "type": "javascript", "purpose": "Keyword filter (KEEP/DROP), wire bypass, focused Claude prompt", "category": "code", "safe_to_execute": true, "requires_secrets": false, "broker_capable": false, "relevance": "HIGH", "confidence": "CONFIRMED"},
+    {"path": "news/live/monitor.mjs", "type": "javascript", "purpose": "RSS/Telegram/Reddit/Twitter polling and NewsItem normalization", "category": "code", "safe_to_execute": false, "requires_secrets": true, "broker_capable": false, "relevance": "HIGH", "confidence": "CONFIRMED", "notes": "TWITTER_BEARER_TOKEN optional"},
+    {"path": "news/live/sources.mjs", "type": "javascript", "purpose": "Feed catalog: Fed, Bloomberg, CNBC, MarketWatch, Yahoo, WSJ, OilPrice, Twitter, Telegram, Reddit", "category": "config", "safe_to_execute": true, "requires_secrets": false, "broker_capable": false, "relevance": "HIGH", "confidence": "CONFIRMED"},
+    {"path": "news/live/tv_news.mjs", "type": "javascript", "purpose": "TradingView news-mediator poll via CDP (Reuters/DJ/dpa-AFX)", "category": "code", "safe_to_execute": false, "requires_secrets": false, "broker_capable": false, "relevance": "HIGH", "confidence": "CONFIRMED"},
+    {"path": "news/live/executor.mjs", "type": "javascript", "purpose": "Bracket orders, trailing ladder, reaction check, shadow algo replay", "category": "code", "safe_to_execute": false, "requires_secrets": false, "broker_capable": true, "relevance": "HIGH", "confidence": "CONFIRMED", "notes": "BROKER_LIVE=1 + Tradovate CDP"},
+    {"path": "news/live/preflight.mjs", "type": "javascript", "purpose": "Pre-market dry-run order path, API credit check, feed freshness", "category": "code", "safe_to_execute": false, "requires_secrets": true, "broker_capable": false, "relevance": "HIGH", "confidence": "CONFIRMED"},
+    {"path": "news/live/shadow_log.mjs", "type": "javascript", "purpose": "Decision + market snapshot JSONL for calibration", "category": "code", "safe_to_execute": true, "requires_secrets": false, "broker_capable": false, "relevance": "HIGH", "confidence": "CONFIRMED"},
+    {"path": "news/live/shadow_report.mjs", "type": "javascript", "purpose": "Calibration report from shadow logs", "category": "code", "safe_to_execute": true, "requires_secrets": false, "broker_capable": false, "relevance": "MEDIUM", "confidence": "CONFIRMED"},
+    {"path": "news/live/market_context.mjs", "type": "javascript", "purpose": "SPX/oil/gold/VIX/DXY context poller for prompt enrichment", "category": "code", "safe_to_execute": false, "requires_secrets": false, "broker_capable": false, "relevance": "MEDIUM", "confidence": "CONFIRMED"},
+    {"path": "news/live/verify_config.mjs", "type": "javascript", "purpose": "Boot-time canonical config assertion", "category": "code", "safe_to_execute": true, "requires_secrets": false, "broker_capable": false, "relevance": "HIGH", "confidence": "CONFIRMED"},
+    {"path": "news/live/paths.mjs", "type": "javascript", "purpose": "Portable install root and log dir resolution", "category": "code", "safe_to_execute": true, "requires_secrets": false, "broker_capable": false, "relevance": "MEDIUM", "confidence": "CONFIRMED"},
+    {"path": "news/live/env.mjs", "type": "javascript", "purpose": "Load .env before other imports", "category": "code", "safe_to_execute": true, "requires_secrets": false, "broker_capable": false, "relevance": "MEDIUM", "confidence": "CONFIRMED"},
+    {"path": "news/live/notify.js", "type": "javascript", "purpose": "iMessage via macOS Shortcut TradeTexts", "category": "code", "safe_to_execute": false, "requires_secrets": false, "broker_capable": false, "relevance": "LOW", "relevance_imp": "REFERENCE_ONLY", "confidence": "CONFIRMED"},
+    {"path": "news/reconstruct.mjs", "type": "javascript", "purpose": "Rebuild historical brief inputs from scan logs for prompt A/B", "category": "code", "safe_to_execute": true, "requires_secrets": false, "broker_capable": false, "relevance": "HIGH", "confidence": "CONFIRMED", "notes": "Requires logs/ scan files; absent in this workspace"},
+    {"path": "src/live/broker_ui.js", "type": "javascript", "purpose": "Tradovate order ticket DOM driver via CDP; DRY_RUN default true", "category": "code", "safe_to_execute": false, "requires_secrets": false, "broker_capable": true, "relevance": "HIGH", "confidence": "CONFIRMED", "classification": "live_capable"},
+    {"path": "src/connection.js", "type": "javascript", "purpose": "TradingView Chrome DevTools Protocol client", "category": "code", "safe_to_execute": false, "requires_secrets": false, "broker_capable": false, "relevance": "HIGH", "confidence": "CONFIRMED"},
+    {"path": "src/server.js", "type": "javascript", "purpose": "MCP server exposing 68 chart/tools (optional; separate from daemon)", "category": "code", "safe_to_execute": false, "requires_secrets": false, "broker_capable": false, "relevance": "MEDIUM", "confidence": "CONFIRMED"},
+    {"path": "src/core/data.js", "type": "javascript", "purpose": "OHLCV from TradingView chart via CDP", "category": "code", "safe_to_execute": false, "requires_secrets": false, "broker_capable": false, "relevance": "HIGH", "confidence": "CONFIRMED"},
+    {"path": "src/core/chart.js", "type": "javascript", "purpose": "Symbol switching on TV chart", "category": "code", "safe_to_execute": false, "requires_secrets": false, "broker_capable": false, "relevance": "MEDIUM", "confidence": "CONFIRMED"},
+    {"path": "src/core/*.js", "type": "javascript", "purpose": "MCP tool implementations (chart, replay, pine, indicators, etc.)", "category": "code", "safe_to_execute": false, "requires_secrets": false, "broker_capable": false, "relevance": "LOW", "confidence": "CONFIRMED", "notes": "14 files under src/core/ and src/tools/"}
+  ],
+  "absent_expected_artifacts": [
+    {"artifact": "logs/", "notes": "Scan logs, trade JSONL, shadow logs referenced by reconstruct.mjs — not present in workspace"},
+    {"artifact": ".env.example", "notes": "Referenced in README/SETUP but not present in captured tree"},
+    {"artifact": ".git/", "notes": "No version control metadata"},
+    {"artifact": "tests/", "notes": "No automated test suite"}
+  ],
+  "data_providers_observed": [
+    "RSS (Fed, Bloomberg, CNBC, MarketWatch, Yahoo, WSJ, OilPrice, Truth Social)",
+    "Telegram public scrape (Disclose.tv, Intel Slava)",
+    "Reddit JSON API",
+    "Twitter API v2 (optional bearer token)",
+    "TradingView news-mediator (Reuters, Dow Jones, dpa-AFX via session cookies)",
+    "TradingView chart OHLCV (CDP)",
+    "Anthropic Messages API (claude-sonnet-4-6 brief, claude-haiku-4-5 preflight)"
+  ],
+  "professor_named_sources_not_integrated": [
+    "PR Newswire", "Accesswire", "Globe Newswire", "Dow Jones Newswire (partial via TV/DJ feeds)",
+    "Reuters (RSS dead; partial via TV)", "Benzinga", "SEC", "FDA"
+  ],
+  "broker_execution": {
+    "primary": "Tradovate via TradingView Desktop DOM automation",
+    "ibkr": false,
+    "default_mode": "dry_run",
+    "live_gate": "BROKER_LIVE=1"
+  }
+}

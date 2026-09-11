@@ -26,6 +26,9 @@ Use [0000-template.md](0000-template.md). Number sequentially: `0001-short-title
 | [0006](0006-lane-provenance-envelope.md) | Lane provenance envelope | Accepted |
 | [0007](0007-operational-account-identity.md) | Operational account identity and snapshot isolation | Accepted |
 | [0008](0008-operator-authentication-authorization.md) | Operator authentication and account-scoped authorization | Accepted |
+| [0010](0010-news-catalyst-deterministic-foundation.md) | News catalyst deterministic foundation | Accepted |
+| [0011](0011-news-ai-intelligence-boundary.md) | News AI intelligence boundary (analysis only) | Accepted |
+| [0012](0012-news-strategy-evaluation-laboratory.md) | News strategy evaluation laboratory | Accepted |
 
 ## Related existing decisions
 

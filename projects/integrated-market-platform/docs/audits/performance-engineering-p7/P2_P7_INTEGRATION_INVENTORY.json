@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p2_p7_integration_inventory",
+  "frozen_at": "2026-09-11T00:45:00Z",
+  "worktree": "C:/Users/adame/Desktop/market-trading-platform-perf-p7",
+  "branch": "perf/p7-continuous-performance-budgets",
+  "starting_head_sha": "efc9219ea4d1a79511278a4a8c0ea0d0d5e8e2fd",
+  "integration_base_sha": "6e44948cf9cd3b28b7a21c1f07a26c91370ad84a",
+  "parent_lineage": "efc9219 -> 6e44948 (P5 donor/capability cache optimization merged into P7 worktree)",
+  "p2_origin": {
+    "paths": [
+      "tools/validate.py",
+      "tools/validation_manifest.json",
+      "tools/validation_manifest.py",
+      "tools/parallel_safety_audit.py",
+      "tests/validation/test_validate_scheduler.py",
+      "docs/audits/performance-engineering-p2/"
+    ],
+    "commit_intent": "perf: add safe parallel validation scheduling"
+  },
+  "p7_origin": {
+    "paths": [
+      "manifests/performance_budget.json",
+      "tools/performance_budget.py",
+      "tools/performance_telemetry.py",
+      "tools/perf_baseline_measure.py",
+      "tests/validation/test_performance_budget.py",
+      "docs/audits/performance-engineering-p7/",
+      ".github/workflows/imp-python.yml",
+      "tools/imp.py"
+    ],
+    "commit_intent": "perf: add validation performance budgets and telemetry",
+    "note": "validate.py contains shared orchestration hooks; scheduler landed in P2 commit, telemetry enrichment in P7 commit when separable."
+  },
+  "benchmark_generated": {
+    "paths": [
+      ".local/developer-workflow/reconcile-*.json",
+      ".local/developer-workflow/p7-*.json",
+      ".local/developer-workflow/performance-telemetry.jsonl",
+      ".local/developer-workflow/telemetry.jsonl"
+    ],
+    "classification": "ephemeral",
+    "commit": false
+  },
+  "closure_artifacts": {
+    "paths": [
+      "artifacts/p3-plan-cli-check.json",
+      "artifacts/p3-plan-scenario.txt",
+      "artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json",
+      "artifacts/g8-runtime-performance.json",
+      "artifacts/g13-runtime-performance.json",
+      "artifacts/g14-runtime-performance.json"
+    ],
+    "classification": "canonical_evidence"
+  },
+  "unrelated": []
+}

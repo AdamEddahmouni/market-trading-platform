@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 import json
+import time
 from typing import Any, Literal
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 DEFAULT_BASE_URL = "http://127.0.0.1:8787"
 DEFAULT_TIMEOUT = 180.0
+# Availability probes should fail fast when the donor is offline; data fetches keep DEFAULT_TIMEOUT.
+AVAILABILITY_PROBE_TIMEOUT = 0.5
+_AVAILABILITY_PROBE_CACHE_TTL_SECONDS = 2.0
+_availability_probe_cache: dict[str, tuple[bool, float]] = {}
 
 SqueezeDataMode = Literal["frozen", "current"]
 
@@ -60,8 +65,12 @@ def _unwrap_envelope(payload: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
-def fetch_health(*, base_url: str = DEFAULT_BASE_URL) -> dict[str, Any]:
-    return fetch_json("/health", base_url=base_url)
+def fetch_health(
+    *,
+    base_url: str = DEFAULT_BASE_URL,
+    timeout: float = DEFAULT_TIMEOUT,
+) -> dict[str, Any]:
+    return fetch_json("/health", base_url=base_url, timeout=timeout)
 
 
 def fetch_donor_deployment_mode(*, base_url: str = DEFAULT_BASE_URL) -> str | None:
@@ -124,12 +133,28 @@ def fetch_current_candidate_detail(
     return _unwrap_envelope(envelope)
 
 
+def clear_availability_probe_cache() -> None:
+    """Reset cached donor availability probes (test-only hook)."""
+
+    _availability_probe_cache.clear()
+
+
 def is_available(*, base_url: str = DEFAULT_BASE_URL) -> bool:
+    normalized = base_url.rstrip("/")
+    now = time.monotonic()
+    cached = _availability_probe_cache.get(normalized)
+    if cached is not None and now < cached[1]:
+        return cached[0]
     try:
-        envelope = fetch_health(base_url=base_url)
-        return envelope.get("status") == "OK"
+        envelope = fetch_health(base_url=normalized, timeout=AVAILABILITY_PROBE_TIMEOUT)
+        available = envelope.get("status") == "OK"
     except ConnectionError:
-        return False
+        available = False
+    _availability_probe_cache[normalized] = (
+        available,
+        now + _AVAILABILITY_PROBE_CACHE_TTL_SECONDS,
+    )
+    return available
 
 
 def post_cross_lane_snapshot(

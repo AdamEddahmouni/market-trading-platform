@@ -75,6 +75,18 @@ def build_quality_summary(store: ReplayStore) -> dict[str, object]:
 
 
 def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
+    cache_key = (
+        "capabilities",
+        store.instrument_id,
+        store.cursor_index,
+        store.prediction_cutoff(),
+    )
+    projection_cache = getattr(store, "_projection_cache", None)
+    if isinstance(projection_cache, dict):
+        cached = projection_cache.get(cache_key)
+        if cached is not None:
+            return [{**row} for row in cached]
+
     rows: list[dict[str, object]] = []
     disclosure_ready = disclosure_available(
         instrument_id=store.instrument_id,
@@ -290,7 +302,12 @@ def build_capabilities(store: ReplayStore) -> list[dict[str, object]]:
                 "state": "UNSUPPORTED",
             }
         )
-    return sorted(rows, key=lambda row: str(row["capability_id"]))
+    sorted_rows = sorted(rows, key=lambda row: str(row["capability_id"]))
+    if not isinstance(projection_cache, dict):
+        projection_cache = {}
+        store._projection_cache = projection_cache
+    projection_cache[cache_key] = sorted_rows
+    return [{**row} for row in sorted_rows]
 
 
 def build_context_payload(store: ReplayStore) -> dict[str, object]:

@@ -1,6 +1,8 @@
-import { usePaperPortfolioQuery } from "../../api/hooks";
+import { usePaperForwardTestsQuery, usePaperPortfolioQuery } from "../../api/hooks";
 import { canUsePaperActions } from "../mode-session/modeAuthority";
 import type { PaperOrderDraft } from "../paper-now/paperOrderDraft";
+import type { ForwardTestRecord } from "./buildForwardTestPanelModel";
+import { PaperForwardTestPanel } from "./PaperForwardTestPanel";
 import {
   WorkspaceObservability,
   type WorkspaceObservabilityProps,
@@ -35,6 +37,10 @@ export function PaperWorkspacePage({
 }: Props) {
   const portfolioQuery = usePaperPortfolioQuery();
   const portfolio = portfolioQuery.data;
+  const accountId = portfolio?.account?.paper_account_id;
+  const forwardTestsQuery = usePaperForwardTestsQuery(accountId, Boolean(accountId));
+  const forwardTestRecords = (forwardTestsQuery.data as { forward_tests?: { decisions?: ForwardTestRecord[] } } | undefined)
+    ?.forward_tests?.decisions;
   const { dataLabel, healthState, evidence, evidenceQuery } = useWorkspaceContext(instrumentId);
 
   const paperActionsAvailable = canUsePaperActions(
@@ -87,6 +93,15 @@ export function PaperWorkspacePage({
         evidencePhase={evidenceState.phase}
         evidencePhaseMessage={evidenceState.message}
         dataLabel={dataLabel}
+      />
+
+      <PaperForwardTestPanel
+        records={forwardTestRecords}
+        isLoading={forwardTestsQuery.isLoading}
+        isError={forwardTestsQuery.isError}
+        errorMessage={
+          forwardTestsQuery.error instanceof Error ? forwardTestsQuery.error.message : undefined
+        }
       />
 
       <WorkspaceObservability instrumentId={instrumentId} {...observabilityProps} />

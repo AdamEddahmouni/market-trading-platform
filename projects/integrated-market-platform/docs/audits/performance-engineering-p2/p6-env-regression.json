@@ -1,0 +1,51 @@
+{
+  "branch": "## perf/p2-safe-parallelization",
+  "changed_file_count": 20,
+  "environment": {
+    "environment_root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\.venv",
+    "local_venv_present": true,
+    "shared_candidates": []
+  },
+  "generated_at": "2026-09-10T21:50:31.371093+00:00",
+  "hard_failures": [],
+  "live_gate_values_present": [],
+  "next_commands": [
+    "python tools/imp.py validate fast",
+    "cd ui && npm ci"
+  ],
+  "node": {
+    "available": true
+  },
+  "npm": {
+    "available": true
+  },
+  "prerequisites": {
+    "git_available": true,
+    "manifest_readable": true,
+    "node_available": true,
+    "npm_available": true,
+    "python_version_supported": true,
+    "repository_root_valid": true,
+    "resolved_python_supported": true,
+    "timezone_ready": true
+  },
+  "python": {
+    "executable": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe",
+    "resolution_source": "local_venv",
+    "resolved_executable": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe",
+    "resolved_version": "3.11.15",
+    "version": "3.11.15"
+  },
+  "report_type": "imp_environment",
+  "repository_root": "C:\\Users\\adame\\Desktop\\market-trading-platform-perf-p2\\projects\\integrated-market-platform",
+  "safety_note": "Diagnostics never authorize execution and do not print gate values.",
+  "schema_version": "1.1",
+  "status": "healthy",
+  "validation_manifest": true,
+  "worktree": {
+    "branch": "perf/p2-safe-parallelization",
+    "git_metadata_dir": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.git\\worktrees\\market-trading-platform-perf-p2",
+    "is_linked_worktree": true,
+    "root": "C:\\Users\\adame\\Desktop\\market-trading-platform-perf-p2"
+  }
+}

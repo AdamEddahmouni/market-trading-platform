@@ -18,6 +18,7 @@ from . import broker_projections
 from . import canary_projections
 from . import live_projections
 from . import operator_projections
+from . import forward_test_projections
 from . import paper_projections
 from . import projections
 from . import strategy_runtime_projections
@@ -807,6 +808,52 @@ class UiApiHandler(BaseHTTPRequestHandler):
             if path == "/paper/broker/health":
                 self._send_json(broker_projections.build_broker_health_payload(self.store))
                 return
+            if path == "/paper/forward-tests/sessions":
+                account_id = query.get("account_id", [None])[0] or self.store.paper_ledger.paper_account_id
+                self._send_json(
+                    forward_test_projections.build_forward_test_sessions_payload(
+                        self.store,
+                        account_id=str(account_id),
+                    )
+                )
+                return
+            if path == "/paper/forward-tests":
+                account_id = query.get("account_id", [None])[0] or self.store.paper_ledger.paper_account_id
+                session_id = query.get("session_id", [None])[0]
+                self._send_json(
+                    forward_test_projections.build_forward_test_decisions_payload(
+                        self.store,
+                        account_id=str(account_id),
+                        session_id=str(session_id) if session_id else None,
+                    )
+                )
+                return
+            if path.startswith("/paper/forward-tests/"):
+                remainder = path.removeprefix("/paper/forward-tests/").strip("/")
+                if remainder.endswith("/summary"):
+                    session_id = remainder.removesuffix("/summary")
+                    account_id = query.get("account_id", [None])[0] or self.store.paper_ledger.paper_account_id
+                    self._send_json(
+                        forward_test_projections.build_forward_test_session_summary_payload(
+                            self.store,
+                            account_id=str(account_id),
+                            session_id=session_id,
+                        )
+                    )
+                    return
+                forward_test_id = remainder
+                account_id = query.get("account_id", [None])[0] or self.store.paper_ledger.paper_account_id
+                try:
+                    self._send_json(
+                        forward_test_projections.build_forward_test_detail_payload(
+                            self.store,
+                            account_id=str(account_id),
+                            forward_test_id=forward_test_id,
+                        )
+                    )
+                except ValueError as exc:
+                    self._send_error_json("FORWARD_TEST_NOT_FOUND", str(exc), status=HTTPStatus.NOT_FOUND)
+                return
             if path == "/assistant/conversations":
                 principal = query.get("principal_id", [None])[0]
                 self._send_json(build_assistant_conversations(self.store, principal))
@@ -971,6 +1018,50 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(payload)
             except ValueError as exc:
                 self._send_error_json("PAPER_SESSION_CLOSE_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+
+        if path == "/paper/forward-tests/sessions":
+            try:
+                self._send_json(forward_test_projections.create_forward_test_session(self.store, body))
+            except ValueError as exc:
+                self._send_error_json("FORWARD_TEST_SESSION_CREATE_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/paper/forward-tests/decisions":
+            try:
+                self._send_json(forward_test_projections.create_forward_test_decision(self.store, body))
+            except ValueError as exc:
+                self._send_error_json("FORWARD_TEST_DECISION_CREATE_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/paper/forward-tests/lock":
+            try:
+                self._send_json(forward_test_projections.lock_forward_test_decision(self.store, body))
+            except ValueError as exc:
+                self._send_error_json("FORWARD_TEST_LOCK_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/paper/forward-tests/submit":
+            try:
+                with LEDGER_ROUTE_LOCK:
+                    payload = forward_test_projections.submit_forward_test_to_paper(self.store, body)
+                self._send_json(payload)
+            except ValueError as exc:
+                code = (
+                    "PAPER_EXECUTION_NOT_AUTHORIZED"
+                    if "NOT_AUTHORIZED" in str(exc)
+                    else "FORWARD_TEST_SUBMIT_FAILED"
+                )
+                self._send_error_json(code, str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/paper/forward-tests/observe":
+            try:
+                self._send_json(forward_test_projections.attach_forward_test_observation(self.store, body))
+            except ValueError as exc:
+                self._send_error_json("FORWARD_TEST_OBSERVE_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/paper/forward-tests/evaluate":
+            try:
+                self._send_json(forward_test_projections.evaluate_forward_test_decision(self.store, body))
+            except ValueError as exc:
+                self._send_error_json("FORWARD_TEST_EVALUATE_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
 
         if path == "/operator/watchlist":

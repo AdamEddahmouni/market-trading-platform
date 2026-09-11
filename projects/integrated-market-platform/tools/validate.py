@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import concurrent.futures
 import fnmatch
+import functools
 import hashlib
 import json
 import os
@@ -50,11 +51,17 @@ CLASS_CORE_CHECKPOINT_ESCALATION = "CORE_CHECKPOINT_ESCALATION"
 CLASS_DOCUMENTATION_ONLY_CHECK = "DOCUMENTATION_ONLY_CHECK"
 CLASS_EVIDENCE_ONLY_CHECK = "EVIDENCE_ONLY_CHECK"
 CLASS_EXPLICIT_SAFE_IGNORE = "EXPLICIT_SAFE_IGNORE"
+CLASS_GOVERNANCE_ONLY_CHECK = "GOVERNANCE_ONLY_CHECK"
 CLASS_FAIL_SAFE = "FAIL_SAFE"
+SELECTOR_VERSION = "p3-bl-0801-1"
+SCHEDULER_VERSION = "p2-bl-0901-1"
 SECRET_FILE_NAMES = frozenset({"id_rsa", "id_dsa", "id_ecdsa", "id_ed25519"})
 SECRET_SUFFIXES = frozenset({".pem", ".key", ".p12", ".pfx", ".jks", ".keystore"})
 CORE_DIAGNOSTIC_IDS = ("validation", "phase0", "contracts", "runtime", "providers")
 DEFAULT_WORKERS = 2
+MAX_WORKERS_CLAMP = 8
+WORKERS_ENV_VAR = "IMP_VALIDATION_WORKERS"
+RESOURCE_HEAVY_MAX_CONCURRENCY = 2
 LIVE_GATES: dict[str, tuple[str, ...]] = {
     # Execution domain: IMP_LIVE_EXECUTION is the master live-execution enable
     # (operating_modes.resolve_execution_authority). It must be stripped from every
@@ -105,6 +112,9 @@ class PathDecision:
     escalated: bool = False
     escalation_reason: str = ""
     detail: tuple[str, ...] = ()
+    partition_id: str = ""
+    evidence_category: str = ""
+    governance_pattern_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -150,7 +160,12 @@ def _embedding_context(repository_root: Path) -> tuple[Path, tuple[str, ...]]:
     prefix.
     """
 
-    root = Path(repository_root).resolve()
+    return _embedding_context_cached(str(Path(repository_root).resolve()))
+
+
+@functools.lru_cache(maxsize=8)
+def _embedding_context_cached(resolved_root: str) -> tuple[Path, tuple[str, ...]]:
+    root = Path(resolved_root)
     for candidate in (root, *root.parents):
         manifest_path = candidate / EMBEDDING_MANIFEST_NAME
         if not manifest_path.is_file():
@@ -285,6 +300,28 @@ def _decide_path(
             original, normalized, CLASS_DOCUMENTATION_ONLY_CHECK,
             detail=("documentation-only path; cheap documentation check scheduled",),
         )
+    governance = manifest.match_governance_only(normalized)
+    if governance is not None:
+        return PathDecision(
+            original,
+            normalized,
+            CLASS_GOVERNANCE_ONLY_CHECK,
+            governance_pattern_id=governance.id,
+            detail=(governance.reason,),
+        )
+    evidence_entry = manifest.match_evidence_only(normalized)
+    if evidence_entry is not None:
+        return PathDecision(
+            original,
+            normalized,
+            CLASS_EVIDENCE_ONLY_CHECK,
+            evidence_category=evidence_entry.category,
+            detail=(
+                f"evidence-only ({evidence_entry.category}); "
+                "JSON + secret-redaction checks scheduled",
+                evidence_entry.reason,
+            ),
+        )
     if _is_evidence(normalized):
         return PathDecision(
             original, normalized, CLASS_EVIDENCE_ONLY_CHECK,
@@ -305,6 +342,25 @@ def _decide_path(
     matched_test = False
     matched_source = False
     detail: list[str] = []
+
+    partition = manifest.match_subsystem_partition(normalized)
+    if partition is not None:
+        if _matches(normalized, manifest.core_checkpoint_invalidators):
+            escalated = True
+            escalation_reason = "CORE_CHECKPOINT_INVALIDATOR"
+            detail.append("matches a core checkpoint invalidator glob")
+        return PathDecision(
+            original,
+            normalized,
+            CLASS_OWNING_SUITE_SELECTION,
+            owning_suites=(partition.owner_suite,),
+            dependent_suites=partition.dependent_suites,
+            matched_source=True,
+            escalated=escalated,
+            escalation_reason=escalation_reason,
+            partition_id=partition.id,
+            detail=tuple(detail) or (partition.reason,),
+        )
 
     if _matches(normalized, manifest.core_checkpoint_invalidators):
         escalated = True
@@ -434,6 +490,20 @@ def select_changed(
             path_decisions=decisions,
         )
     if paths and all(
+        decision.classification == CLASS_GOVERNANCE_ONLY_CHECK for decision in decisions
+    ):
+        return ValidationSelection(
+            mode="changed",
+            changed_files=paths,
+            selected_suite_ids=_ordered_suite_ids(manifest, {"validation"}),
+            selection_reasons={
+                "validation": ("governance-only change; validation control-plane suite",)
+            },
+            mandatory_selectors=_mandatory_selectors(manifest),
+            cheap_checks=("documentation", "governance"),
+            path_decisions=decisions,
+        )
+    if paths and all(
         decision.classification == CLASS_EVIDENCE_ONLY_CHECK for decision in decisions
     ):
         return ValidationSelection(
@@ -446,6 +516,7 @@ def select_changed(
     selected: set[str] = set()
     reasons: dict[str, list[str]] = {}
     direct_source_suites: set[str] = set()
+    partitioned_source_suites: set[str] = set()
     global_reasons: list[str] = []
     core_required = False
 
@@ -462,15 +533,31 @@ def select_changed(
                 global_reasons.append(decision.escalation_reason)
         for suite_id in decision.owning_suites:
             if decision.matched_source:
-                add(suite_id, f"{decision.normalized}: direct source ownership")
+                add(suite_id, f"{decision.normalized}: DIRECT_OWNER")
                 direct_source_suites.add(suite_id)
+                if decision.partition_id:
+                    partitioned_source_suites.add(suite_id)
             else:
                 add(suite_id, f"{decision.normalized}: direct test ownership")
         for suite_id in decision.dependent_suites:
-            add(suite_id, f"{decision.normalized}: shared-module dependent of {decision.normalized}")
+            if decision.partition_id:
+                add(suite_id, f"DEPENDENT_OF:{decision.partition_id}")
+            else:
+                add(
+                    suite_id,
+                    f"{decision.normalized}: shared-module dependent of {decision.normalized}",
+                )
 
     for suite_id in tuple(direct_source_suites):
+        if suite_id in partitioned_source_suites:
+            continue
         suite = manifest.suite_by_id(suite_id)
+        if suite.dependents:
+            for dependent_id in suite.dependents:
+                dependent = manifest.suite_by_id(dependent_id)
+                if dependent.classification == "offline":
+                    add(dependent_id, f"DEPENDENT_OF:{suite_id}")
+            continue
         for neighbor_id in suite.neighbors:
             neighbor = manifest.suite_by_id(neighbor_id)
             if neighbor.classification == "offline":
@@ -489,6 +576,10 @@ def select_changed(
         decision.classification == CLASS_EVIDENCE_ONLY_CHECK for decision in decisions
     ):
         check_values.extend(("evidence-json", "secret-redaction"))
+    if any(
+        decision.classification == CLASS_GOVERNANCE_ONLY_CHECK for decision in decisions
+    ):
+        check_values.append("governance")
     domains_selected = {
         domain
         for suite in manifest.suites
@@ -695,6 +786,195 @@ class WorkerJob:
     selectors: tuple[str, ...]
     safety: str
     resource_weight: int
+    resource_class: str = "NORMAL"
+    concurrency_reason: str = ""
+    exclusive_group: str | None = None
+    max_concurrency: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionWave:
+    wave_id: int
+    policy: str
+    concurrency: int
+    suite_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionSchedule:
+    requested_workers: int
+    effective_workers: int
+    scheduler_version: str
+    manifest_hash: str
+    suite_policies: dict[str, dict[str, Any]]
+    waves: tuple[ExecutionWave, ...]
+
+
+def resolve_workers(
+    requested: int,
+    *,
+    env: dict[str, str] | None = None,
+    parallel_eligible_count: int = 0,
+) -> int:
+    """Clamp worker count to safe machine and selection bounds."""
+
+    environment = env if env is not None else os.environ
+    if requested < 1:
+        raw = environment.get(WORKERS_ENV_VAR, str(DEFAULT_WORKERS))
+        try:
+            requested = int(raw)
+        except ValueError:
+            requested = DEFAULT_WORKERS
+    cpu_cap = min(MAX_WORKERS_CLAMP, os.cpu_count() or 4)
+    if parallel_eligible_count > 0:
+        cpu_cap = min(cpu_cap, parallel_eligible_count)
+    return max(1, min(requested, cpu_cap))
+
+
+def scheduling_policy(suite: ValidationSuite) -> str:
+    """Map manifest metadata to a deterministic scheduling policy."""
+
+    safety = suite.parallel_safety
+    if safety == "LIVE_EXCLUSIVE":
+        return "LIVE_EXCLUSIVE"
+    if safety == "SERIAL_REQUIRED":
+        return "SERIAL_REQUIRED"
+    if safety == "RESOURCE_HEAVY":
+        return "RESOURCE_HEAVY"
+    if safety == "PARALLEL_SAFE":
+        return "PARALLEL_SAFE"
+    if safety == "GLOBAL_STATE_MUTATION":
+        return "SERIAL_REQUIRED"
+    return "UNKNOWN_FAIL_SAFE"
+
+
+def _job_from_suite(suite: ValidationSuite) -> WorkerJob:
+    return WorkerJob(
+        id=suite.id,
+        suite_id=suite.id,
+        suite_path=suite.path,
+        selectors=(),
+        safety=scheduling_policy(suite),
+        resource_weight=suite.resource_weight,
+        resource_class=suite.resource_class,
+        concurrency_reason=suite.concurrency_reason,
+        exclusive_group=suite.exclusive_group,
+        max_concurrency=suite.max_concurrency,
+    )
+
+
+def _suite_policy_record(suite: ValidationSuite) -> dict[str, Any]:
+    return {
+        "parallel_safety": suite.parallel_safety,
+        "scheduling_policy": scheduling_policy(suite),
+        "resource_class": suite.resource_class,
+        "resource_weight": suite.resource_weight,
+        "exclusive_group": suite.exclusive_group,
+        "max_concurrency": suite.max_concurrency,
+        "concurrency_reason": suite.concurrency_reason,
+    }
+
+
+def build_execution_schedule(
+    manifest: ValidationManifest,
+    selection: ValidationSelection,
+    *,
+    workers: int,
+) -> ExecutionSchedule:
+    """Build a deterministic suite execution schedule without running tests."""
+
+    selected = set(selection.selected_suite_ids)
+    suite_jobs = [
+        _job_from_suite(suite) for suite in manifest.suites if suite.id in selected
+    ]
+    parallel_eligible = sum(1 for job in suite_jobs if job.safety == "PARALLEL_SAFE")
+    effective_workers = resolve_workers(workers, parallel_eligible_count=parallel_eligible)
+    serial_jobs = sorted(
+        [job for job in suite_jobs if job.safety in {"SERIAL_REQUIRED", "UNKNOWN_FAIL_SAFE"}],
+        key=lambda job: job.id,
+    )
+    parallel_jobs = sorted(
+        [job for job in suite_jobs if job.safety == "PARALLEL_SAFE"],
+        key=lambda job: (-job.resource_weight, job.id),
+    )
+    heavy_jobs = sorted(
+        [job for job in suite_jobs if job.safety == "RESOURCE_HEAVY"],
+        key=lambda job: (-job.resource_weight, job.id),
+    )
+    live_jobs = sorted(
+        [job for job in suite_jobs if job.safety == "LIVE_EXCLUSIVE"],
+        key=lambda job: job.id,
+    )
+    waves: list[ExecutionWave] = []
+    if serial_jobs:
+        waves.append(
+            ExecutionWave(
+                wave_id=len(waves),
+                policy="SERIAL_REQUIRED",
+                concurrency=1,
+                suite_ids=tuple(job.id for job in serial_jobs),
+            )
+        )
+    if parallel_jobs:
+        waves.append(
+            ExecutionWave(
+                wave_id=len(waves),
+                policy="PARALLEL_SAFE",
+                concurrency=effective_workers,
+                suite_ids=tuple(job.id for job in parallel_jobs),
+            )
+        )
+    if heavy_jobs:
+        heavy_concurrency = min(RESOURCE_HEAVY_MAX_CONCURRENCY, effective_workers)
+        waves.append(
+            ExecutionWave(
+                wave_id=len(waves),
+                policy="RESOURCE_HEAVY",
+                concurrency=heavy_concurrency,
+                suite_ids=tuple(job.id for job in heavy_jobs),
+            )
+        )
+    if live_jobs:
+        waves.append(
+            ExecutionWave(
+                wave_id=len(waves),
+                policy="LIVE_EXCLUSIVE",
+                concurrency=1,
+                suite_ids=tuple(job.id for job in live_jobs),
+            )
+        )
+    suite_policies = {
+        suite.id: _suite_policy_record(suite)
+        for suite in manifest.suites
+        if suite.id in selected
+    }
+    return ExecutionSchedule(
+        requested_workers=workers,
+        effective_workers=effective_workers,
+        scheduler_version=SCHEDULER_VERSION,
+        manifest_hash=manifest_fingerprint(manifest),
+        suite_policies=suite_policies,
+        waves=tuple(waves),
+    )
+
+
+def schedule_to_dict(schedule: ExecutionSchedule) -> dict[str, Any]:
+    return {
+        "scheduler_version": schedule.scheduler_version,
+        "manifest_hash": schedule.manifest_hash,
+        "requested_workers": schedule.requested_workers,
+        "effective_workers": schedule.effective_workers,
+        "suite_policies": schedule.suite_policies,
+        "waves": [
+            {
+                "wave_id": wave.wave_id,
+                "policy": wave.policy,
+                "concurrency": wave.concurrency,
+                "suite_ids": list(wave.suite_ids),
+            }
+            for wave in schedule.waves
+        ],
+    }
 
 
 class WorkerProcessRegistry:
@@ -894,18 +1174,7 @@ def _mandatory_jobs(
 
 def _suite_jobs(manifest: ValidationManifest, selection: ValidationSelection) -> list[WorkerJob]:
     selected = set(selection.selected_suite_ids)
-    return [
-        WorkerJob(
-            id=suite.id,
-            suite_id=suite.id,
-            suite_path=suite.path,
-            selectors=(),
-            safety=suite.parallel_safety,
-            resource_weight=suite.resource_weight,
-        )
-        for suite in manifest.suites
-        if suite.id in selected
-    ]
+    return [_job_from_suite(suite) for suite in manifest.suites if suite.id in selected]
 
 
 def _run_parallel_jobs(
@@ -963,18 +1232,32 @@ def _run_cheap_checks(repository_root: Path, selection: ValidationSelection) -> 
                         if path.exists() and path.is_file():
                             path.read_text(encoding="utf-8")
             elif check == "evidence-json":
+                evidence_paths = {
+                    decision.normalized
+                    for decision in selection.path_decisions
+                    if decision.classification == CLASS_EVIDENCE_ONLY_CHECK
+                }
                 for relative in selection.changed_files:
                     path = repository_root / relative
-                    if _is_evidence(relative) and path.suffix.lower() == ".json" and path.exists():
+                    if (
+                        relative in evidence_paths
+                        and path.suffix.lower() == ".json"
+                        and path.exists()
+                    ):
                         json.loads(path.read_text(encoding="utf-8"))
             elif check == "secret-redaction":
                 leak = re.compile(
                     r"(?i)(api[_-]?key|token|password|authorization)"
                     r"\s*[:=]\s*[\"']?(?!<redacted>|none|null)[A-Za-z0-9_\-]{12,}"
                 )
+                evidence_paths = {
+                    decision.normalized
+                    for decision in selection.path_decisions
+                    if decision.classification == CLASS_EVIDENCE_ONLY_CHECK
+                }
                 for relative in selection.changed_files:
                     path = repository_root / relative
-                    if _is_evidence(relative) and path.exists() and path.is_file():
+                    if relative in evidence_paths and path.exists() and path.is_file():
                         if leak.search(path.read_text(encoding="utf-8", errors="replace")):
                             raise ValueError(f"possible unredacted secret in {relative}")
         except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
@@ -1004,6 +1287,8 @@ def execute_selection(
     registry = WorkerProcessRegistry()
     mandatory_jobs = _mandatory_jobs(manifest, selection.mandatory_selectors)
     suite_jobs = _suite_jobs(manifest, selection)
+    schedule = build_execution_schedule(manifest, selection, workers=workers)
+    jobs_by_id = {job.id: job for job in suite_jobs}
     all_order = {job.id: index for index, job in enumerate(mandatory_jobs + suite_jobs)}
     executed: list[tuple[WorkerJob, dict[str, Any]]] = []
 
@@ -1029,40 +1314,36 @@ def execute_selection(
             if fail_fast and payload.get("status") != "passed":
                 stopped = True
                 break
-        groups = (
-            [
-                job
-                for job in suite_jobs
-                if job.safety in {"SERIAL_REQUIRED", "GLOBAL_STATE_MUTATION", "LIVE_EXCLUSIVE"}
-            ],
-            [job for job in suite_jobs if job.safety == "PARALLEL_SAFE"],
-            [job for job in suite_jobs if job.safety == "RESOURCE_HEAVY"],
-        )
         if not stopped:
-            for job in groups[0]:
-                print(f"VALIDATING {job.id}...", flush=True)
-                payload = run_job(job)
-                executed.append((job, payload))
-                print(f"COMPLETED {job.id}: {payload.get('status', 'unknown')}", flush=True)
-                if fail_fast and payload.get("status") != "passed":
-                    stopped = True
-                    break
-        if not stopped:
-            parallel_results = _run_parallel_jobs(
-                groups[1], concurrency=workers, run_job=run_job, fail_fast=fail_fast
-            )
-            executed.extend(parallel_results)
-            stopped = fail_fast and any(
-                payload.get("status") != "passed" for _, payload in parallel_results
-            )
-        if not stopped:
-            heavy_results = _run_parallel_jobs(
-                groups[2], concurrency=min(2, workers), run_job=run_job, fail_fast=fail_fast
-            )
-            executed.extend(heavy_results)
-            stopped = fail_fast and any(
-                payload.get("status") != "passed" for _, payload in heavy_results
-            )
+            for wave in schedule.waves:
+                wave_jobs = [jobs_by_id[suite_id] for suite_id in wave.suite_ids]
+                if wave.concurrency <= 1:
+                    for job in wave_jobs:
+                        print(f"VALIDATING {job.id}...", flush=True)
+                        payload = run_job(job)
+                        executed.append((job, payload))
+                        print(
+                            f"COMPLETED {job.id}: {payload.get('status', 'unknown')}",
+                            flush=True,
+                        )
+                        if fail_fast and payload.get("status") != "passed":
+                            stopped = True
+                            break
+                    if stopped:
+                        break
+                else:
+                    wave_results = _run_parallel_jobs(
+                        wave_jobs,
+                        concurrency=wave.concurrency,
+                        run_job=run_job,
+                        fail_fast=fail_fast,
+                    )
+                    executed.extend(wave_results)
+                    if fail_fast and any(
+                        payload.get("status") != "passed" for _, payload in wave_results
+                    ):
+                        stopped = True
+                        break
     except KeyboardInterrupt:
         interrupted = True
         registry.terminate_all()
@@ -1111,12 +1392,20 @@ def execute_selection(
                 "escalated": decision.escalated,
                 "escalation_reason": decision.escalation_reason,
                 "detail": list(decision.detail),
+                "partition_id": decision.partition_id,
+                "evidence_category": decision.evidence_category,
+                "governance_pattern_id": decision.governance_pattern_id,
             }
             for decision in selection.path_decisions
         ],
         "global_reasons": list(selection.global_reasons),
-        "workers": workers,
-        "resource_heavy_workers": min(2, workers),
+        "workers": schedule.requested_workers,
+        "effective_workers": schedule.effective_workers,
+        "scheduler_version": schedule.scheduler_version,
+        "selector_version": SELECTOR_VERSION,
+        "manifest_hash": schedule.manifest_hash,
+        "execution_schedule": schedule_to_dict(schedule),
+        "resource_heavy_workers": min(RESOURCE_HEAVY_MAX_CONCURRENCY, schedule.effective_workers),
         "process_launches": len(worker_results),
         "tests_run": sum(int(row.get("tests_run", 0)) for row in worker_results),
         "passes": sum(int(row.get("passes", 0)) for row in worker_results),
@@ -1171,6 +1460,142 @@ def write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
             temporary.unlink()
 
 
+def manifest_fingerprint(manifest: ValidationManifest) -> str:
+    """Return a stable hash of manifest policy relevant to selection."""
+
+    payload = {
+        "schema_version": manifest.schema_version,
+        "core_checkpoint_invalidators": manifest.core_checkpoint_invalidators,
+        "evidence_only_patterns": [
+            {
+                "id": entry.id,
+                "category": entry.category,
+                "patterns": entry.patterns,
+            }
+            for entry in manifest.evidence_only_patterns
+        ],
+        "governance_only_patterns": [
+            {"id": entry.id, "patterns": entry.patterns}
+            for entry in manifest.governance_only_patterns
+        ],
+        "subsystem_partitions": [
+            {
+                "id": entry.id,
+                "owner_suite": entry.owner_suite,
+                "source_globs": entry.source_globs,
+                "dependent_suites": entry.dependent_suites,
+            }
+            for entry in manifest.subsystem_partitions
+        ],
+        "suite_ids": tuple(suite.id for suite in manifest.suites),
+        "shared_module_dependents": [
+            {
+                "path": entry.path,
+                "dependent_suites": entry.dependent_suites,
+                "reason": entry.reason,
+            }
+            for entry in manifest.shared_module_dependents
+        ],
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def build_selection_plan(
+    selection: ValidationSelection,
+    manifest: ValidationManifest,
+    *,
+    manifest_path: Path | None = None,
+    workers: int = DEFAULT_WORKERS,
+) -> dict[str, Any]:
+    """Return a machine-readable selection plan without executing tests."""
+
+    direct_owner_suites = sorted(
+        {
+            suite_id
+            for decision in selection.path_decisions
+            for suite_id in decision.owning_suites
+            if decision.matched_source
+        }
+    )
+    dependency_suites = sorted(
+        {
+            suite_id
+            for suite_id in selection.selected_suite_ids
+            if suite_id not in direct_owner_suites
+            and suite_id not in _offline_core_diagnostics(manifest)
+        }
+    )
+    mandatory_suites = sorted(
+        {
+            suite.id
+            for suite in manifest.suites
+            if suite.id in set(selection.selected_suite_ids)
+            and any(
+                invariant.selector.startswith(f"{suite.path}/")
+                for invariant in manifest.mandatory_invariants
+            )
+        }
+    )
+    evidence_only_paths = [
+        decision.normalized
+        for decision in selection.path_decisions
+        if decision.classification == CLASS_EVIDENCE_ONLY_CHECK
+    ]
+    unknown_paths = [
+        decision.normalized
+        for decision in selection.path_decisions
+        if decision.classification in {CLASS_FAIL_SAFE, CLASS_CORE_CHECKPOINT_ESCALATION}
+        and decision.escalation_reason in {"UNCLASSIFIED_PATH", "UNKNOWN_EXECUTABLE_PATH"}
+    ]
+    classifications = {
+        decision.normalized: {
+            "classification": decision.classification,
+            "partition_id": decision.partition_id,
+            "evidence_category": decision.evidence_category,
+            "governance_pattern_id": decision.governance_pattern_id,
+            "owning_suites": list(decision.owning_suites),
+            "dependent_suites": list(decision.dependent_suites),
+            "escalated": decision.escalated,
+            "escalation_reason": decision.escalation_reason,
+            "detail": list(decision.detail),
+        }
+        for decision in selection.path_decisions
+    }
+    return {
+        "schema_version": "1.0",
+        "report_type": "validation_selection_plan",
+        "mode": selection.mode,
+        "selector_version": SELECTOR_VERSION,
+        "manifest_hash": manifest_fingerprint(manifest),
+        "manifest_path": str(manifest_path) if manifest_path is not None else "",
+        "changed_paths": list(selection.changed_files),
+        "classifications": classifications,
+        "direct_owner_suites": direct_owner_suites,
+        "dependency_suites": dependency_suites,
+        "mandatory_invariant_selectors": list(selection.mandatory_selectors),
+        "mandatory_suites": mandatory_suites,
+        "evidence_only_paths": evidence_only_paths,
+        "unknown_paths": unknown_paths,
+        "core_checkpoint_required": selection.core_checkpoint_required,
+        "core_checkpoint_reasons": list(selection.global_reasons),
+        "selected_suites": list(selection.selected_suite_ids),
+        "selection_reasons": {
+            key: list(value) for key, value in (selection.selection_reasons or {}).items()
+        },
+        "cheap_checks": list(selection.cheap_checks),
+        "omitted_domains": list(selection.omitted_domains),
+        "executes_tests": False,
+        "execution_schedule": schedule_to_dict(
+            build_execution_schedule(
+                manifest,
+                selection,
+                workers=resolve_workers(workers),
+            )
+        ),
+    }
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -1182,6 +1607,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--json", dest="json_path", type=Path)
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--explain", action="store_true")
+    parser.add_argument(
+        "--plan",
+        action="store_true",
+        help="compute and print the selection plan without executing tests",
+    )
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--fail-fast", action="store_true")
     parser.add_argument("--workers", type=int, default=DEFAULT_WORKERS)
@@ -1274,6 +1704,28 @@ def _maybe_attribute_validation(result: dict[str, Any]) -> None:
     attribute_validation(result, writer=None, enabled=True)
 
 
+def _enrich_performance_telemetry(
+    result: dict[str, Any],
+    *,
+    repository_root: Path,
+) -> dict[str, Any]:
+    """Attach P7 performance telemetry and budget classification (observe-only)."""
+
+    try:
+        from tools.performance_telemetry import (
+            append_ephemeral_telemetry,
+            enrich_validation_receipt,
+        )
+    except ModuleNotFoundError:  # pragma: no cover - direct script execution path.
+        from performance_telemetry import (  # type: ignore[no-redef]
+            append_ephemeral_telemetry,
+            enrich_validation_receipt,
+        )
+    enriched = enrich_validation_receipt(result, repository_root=repository_root)
+    append_ephemeral_telemetry(enriched, repository_root=repository_root)
+    return enriched
+
+
 def main(argv: list[str] | None = None) -> int:
     arguments = build_parser().parse_args(argv)
     repository_root = Path(__file__).resolve().parents[1]
@@ -1298,13 +1750,38 @@ def main(argv: list[str] | None = None) -> int:
     try:
         manifest = load_manifest(manifest_path, repository_root=repository_root)
         selection = _selection_for_arguments(arguments, manifest, repository_root)
+        plan_workers = 1 if arguments.mode == "fast" else resolve_workers(arguments.workers)
+        if arguments.plan:
+            plan = build_selection_plan(
+                selection,
+                manifest,
+                manifest_path=manifest_path.resolve(),
+                workers=plan_workers,
+            )
+            if arguments.json_path is not None:
+                write_json_atomic(arguments.json_path, plan)
+            if arguments.explain:
+                _print_explanation(selection)
+            elif arguments.verbose:
+                print(json.dumps(plan, sort_keys=True, indent=2))
+            else:
+                print(
+                    f"PLAN {plan['mode']}: {len(plan['selected_suites'])} suites, "
+                    f"core_checkpoint_required={str(plan['core_checkpoint_required']).lower()}, "
+                    f"mandatory_invariants={len(plan['mandatory_invariant_selectors'])}"
+                )
+                if plan["core_checkpoint_reasons"]:
+                    print("core_checkpoint_reasons=" + ",".join(plan["core_checkpoint_reasons"]))
+                for suite_id in plan["selected_suites"]:
+                    print(f"  -> {suite_id}")
+            return 0
         if arguments.explain:
             _print_explanation(selection)
         result = execute_selection(
             repository_root=repository_root,
             manifest=manifest,
             selection=selection,
-            workers=arguments.workers,
+            workers=plan_workers,
             fail_fast=arguments.fail_fast,
             live_provider=arguments.target if arguments.mode == "live" else None,
             profile_fixtures=arguments.profile_fixtures,
@@ -1312,14 +1789,25 @@ def main(argv: list[str] | None = None) -> int:
     except (ManifestValidationError, ValidationSelectionError) as exc:
         print(f"validation error: {exc}", file=sys.stderr)
         return 2
+    if arguments.mode == "domain" and arguments.target:
+        result["domain_target"] = arguments.target
+    result = _enrich_performance_telemetry(result, repository_root=repository_root)
     if arguments.json_path is not None:
         write_json_atomic(arguments.json_path, result)
     _maybe_attribute_validation(result)
+    perf = result.get("performance_telemetry", {})
+    budget = perf.get("budget", {})
+    perf_suffix = ""
+    if budget.get("classification"):
+        perf_suffix = f" perf={budget['classification']}"
     print(
         f"{result['status'].upper()} {result['mode']}: {result['tests_run']} tests, "
         f"{result['skips']} skipped, {result['failures']} failures, "
-        f"{result['errors']} errors in {result['wall_seconds']:.3f}s"
+        f"{result['errors']} errors in {result['wall_seconds']:.3f}s{perf_suffix}"
     )
+    regression_explain = perf.get("regression_explain")
+    if regression_explain:
+        print(f"PERF: {regression_explain}")
     if result["core_checkpoint_required"]:
         print("core_checkpoint_required=true (core checkpoint = mandatory invariants + "
               "core diagnostics; full suite still requires `validate full` at closure)")
@@ -1341,10 +1829,20 @@ if __name__ == "__main__":
 
 __all__ = [
     "PathDecision",
+    "SELECTOR_VERSION",
+    "SCHEDULER_VERSION",
     "ValidationSelection",
     "ValidationSelectionError",
+    "ExecutionSchedule",
+    "ExecutionWave",
+    "build_execution_schedule",
+    "build_selection_plan",
+    "resolve_workers",
+    "schedule_to_dict",
+    "scheduling_policy",
     "canonicalize_changed_path",
     "execute_selection",
+    "manifest_fingerprint",
     "run_worker_process",
     "changed_paths_from_baseline",
     "changed_paths_from_file",

@@ -5,6 +5,10 @@ aggregated with the existing Finviz news export, deduplicated by canonical URL
 or normalized headline/date, and retain all contributing providers in
 `source_provenance`.
 
+For the canonical deterministic news/event foundation (publication vs retrieval
+time, source trust, catalyst filtering, replay), see
+[NEWS_EVENT_FOUNDATION.md](../architecture/NEWS_EVENT_FOUNDATION.md).
+
 ## Configuration
 
 Store keys in the ignored private provider file with the secure prompt:
