@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-11 — FTEP-V1 activation runtime gates
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `docs`, `forward-test` |
+| **Summary** | Implemented activation manifest load/validate/fingerprint, deterministic preflight, session manifest binding, cohort/strategy/universe validation on decisions, `evidence_class` without auto-promotion, observation `source_time_ns` guard, and schema v3–v4 persistence columns. Commit `58864aa` on `work/ftep-v1-activation`. |
+| **Key files** | `paper_forward_bridge/activation.py`, `preflight.py`, `service.py`, `types.py`, `temporal.py`, `repository.py`, `tests/intelligence/test_forward_test_activation.py`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | `python tools/imp.py test affected` — 1832 passed, 26 skipped; forward-test 30/30 |
+| **Related** | [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md), [FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md](FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md) |
+| **Notes** | Manifest `PENDING_OWNER_DECISIONS` until owner signs OD-01/ACT-01/ACT-03. $0 incremental cost. Not pushed. |
+
 ## 2026-09-11 — FTEP-V1 owner decision packet and activation manifest skeleton
 
 | Field | Value |
@@ -46,7 +58,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | `docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md` (created), `artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json` (created), `artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json` (created), `docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md` (header), `docs/engineering/WORK_LOG.md` |
 | **Tests** | None (docs/artifacts only) |
 | **Related** | [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md), Agent A audit `c4f6ca28`, [FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md](FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md) |
-| **Notes** | Next: owner signs minimal packet → manifest `FROZEN` → operator preflight → first lock. Not pushed. |
+| **Notes** | Superseded by activation runtime gates entry above for implementation status. |
 
 ## 2026-09-10 — PD-09 verifier persistence follow-up
 

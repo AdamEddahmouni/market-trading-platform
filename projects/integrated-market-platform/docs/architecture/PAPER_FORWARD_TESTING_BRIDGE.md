@@ -137,9 +137,33 @@ Failures are explicit: insufficient data, horizon not reached, Paper rejection, 
 
 Primary suite: `tests/intelligence/test_paper_forward_bridge.py`
 
+Activation suite: `tests/intelligence/test_forward_test_activation.py`
+
 Persistence suite: `tests/intelligence/test_forward_test_persistence.py`
 
 UI model tests: `ui/src/components/paper-workspace/buildForwardTestPanelModel.test.ts`
+
+## FTEP-V1 activation (campaign governance)
+
+Empirical Paper forward-test sessions require a **frozen activation manifest**
+under `artifacts/forward-test-campaigns/<campaign_slug>/ACTIVATION_MANIFEST.json`.
+
+| Module | Role |
+| --- | --- |
+| `activation.py` | Load/validate manifest, SHA-256 fingerprint, freeze state machine |
+| `preflight.py` | Deterministic preflight (`READY` / `NOT_READY`) before session create |
+| `service.py` | Gates `create_session`; binds manifest fields; validates decisions |
+
+Preflight enforces: Paper-only, `FORWARD_TEST`, manifest `FROZEN`/`ACTIVE`, fingerprint
+match, persistence when required, cohort-arm policy binding.
+
+Session fields added: `campaign_id`, `protocol_id`, `activation_version`,
+`manifest_fingerprint`, `cohort_arm`, `config_frozen`.
+
+Decision fields added: `evidence_class` (default `UNCLASSIFIED`; no auto-promotion to
+empirical classes), `cohort_arm`.
+
+See [FTEP-V1_OWNER_DECISION_PACKET.md](../engineering/FTEP-V1_OWNER_DECISION_PACKET.md).
 
 ## Persistence (PD-09)
 
