@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import copy
 import json
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -564,7 +566,28 @@ def build_ledger_from_edgar_fixture(
     return ledger
 
 
-def build_combined_fixture_ledger(*, as_of_time_ns: int | None = None) -> WhaleLedger:
+def _combined_fixture_ledger_cache_key(as_of_time_ns: int | None) -> int:
+    return as_of_time_ns if as_of_time_ns is not None else -1
+
+
+@lru_cache(maxsize=16)
+def _cached_combined_fixture_ledger_template(as_of_key: int) -> tuple[tuple[dict[str, Any], ...], str]:
+    """Immutable combined-ledger template keyed by point-in-time cutoff."""
+
+    as_of_time_ns = None if as_of_key < 0 else as_of_key
+    ledger = _build_combined_fixture_ledger(as_of_time_ns=as_of_time_ns)
+    frozen_events = tuple(copy.deepcopy(event) for event in ledger.events)
+    return frozen_events, ledger.ledger_id
+
+
+def _clone_whale_ledger(events: tuple[dict[str, Any], ...], ledger_id: str) -> WhaleLedger:
+    ledger = WhaleLedger()
+    ledger.events = [copy.deepcopy(event) for event in events]
+    ledger.ledger_id = ledger_id
+    return ledger
+
+
+def _build_combined_fixture_ledger(*, as_of_time_ns: int | None = None) -> WhaleLedger:
     from .adapters.fixture_catalyst import (
         DEFAULT_CATALYST_FIXTURE,
         FixtureCatalystProvider,
@@ -631,6 +654,15 @@ def build_combined_fixture_ledger(*, as_of_time_ns: int | None = None) -> WhaleL
     if fund_result.status == "available":
         ledger.ingest_provider_result(fund_result.events)
     return ledger
+
+
+def build_combined_fixture_ledger(*, as_of_time_ns: int | None = None) -> WhaleLedger:
+    """Return an isolated ledger clone built from a cached immutable template."""
+
+    events, ledger_id = _cached_combined_fixture_ledger_template(
+        _combined_fixture_ledger_cache_key(as_of_time_ns)
+    )
+    return _clone_whale_ledger(events, ledger_id)
 
 
 def load_default_biya_fixture_ledger(*, as_of_time_ns: int | None = None) -> WhaleLedger:

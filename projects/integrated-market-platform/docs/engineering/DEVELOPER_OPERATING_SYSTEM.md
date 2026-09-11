@@ -15,7 +15,8 @@ evidence are consistent:
 
 | Command | Purpose | Default cost |
 |---|---|---|
-| `python tools/imp.py env` | Safe runtime, Git, tool, and gate-presence diagnostics | tiny |
+| `python tools/imp.py env` | Safe runtime, Git, worktree, interpreter, timezone, and gate-presence diagnostics | tiny |
+| `python tools/imp.py env bootstrap --link-venv` | Explicitly link a shared canonical `.venv` into a linked worktree | tiny |
 | `python tools/imp.py format` | Changed-file whitespace check (`git diff --check`) | tiny |
 | `python tools/imp.py lint` | Python compile check and UI typecheck when UI is affected | cheap |
 | `python tools/imp.py validate fast` | Run mandatory catastrophic invariants | fast |
@@ -35,13 +36,14 @@ requires exact selectors of the form
 ## Validation pyramid
 
 1. **FAST:** catastrophic mandatory invariants only.
-2. **FOCUSED:** exact regression selectors while iterating.
-3. **AFFECTED:** changed tests, direct source owners, declared offline
-   neighbors, and mandatory invariants; safe Python suites run in parallel.
-4. **DOMAIN:** all offline full-tier suites for one domain at a milestone.
-5. **CHANGED:** the canonical affected result plus cheap checks; a
+2. **PLAN:** `python tools/imp.py validate changed --plan` when changed scope is unclear; executes zero tests.
+3. **FOCUSED:** exact regression selectors while iterating.
+4. **AFFECTED:** changed tests, direct owners, BL-0801 directional dependents,
+   and mandatory invariants; safe Python suites run in parallel.
+5. **DOMAIN:** all offline full-tier suites for one domain at a milestone.
+6. **CHANGED:** the canonical affected result plus cheap checks; a
    `core_checkpoint_required` result is preliminary, never closure evidence.
-6. **FULL:** all offline full-tier suites once at final closure.
+7. **FULL:** all offline full-tier suites once at final closure.
 
 `SERIAL_REQUIRED`, `GLOBAL_STATE_MUTATION`, and `LIVE_EXCLUSIVE` work stays
 serial. `PARALLEL_SAFE` work may use the configured worker count.
@@ -146,12 +148,27 @@ in one dirty tree:
 |------|--------|----------|---------|
 | Primary professor | `work/professor-paper-forward-testing` | Repository root | Product increments (Paper forward-testing bridge next) |
 | Checkpoint ref | `checkpoint/post-g15-professor-p0-2026-09-09` | (ref only) | Recovery anchor at `cd145fc` |
-| Performance P3+ | `perf/p3-validation-selector` | Sibling `market-trading-platform-perf-p3` | Selector/evidence optimization only |
+| Performance P3–P7 | `perf/p3-validation-selector` … `perf/p7-continuous-performance-budgets` | Sibling worktrees | Selector/evidence/scheduler/budget optimization only |
 
 Create performance refactors in the dedicated worktree; integrate back through
 explicit merge/cherry-pick after validation. Do not begin P3 in the professor
 root workspace. Remote `main` remains the accepted baseline until an explicit
 publish step.
+
+### Linked Git worktrees
+
+Performance and parallel development may use linked Git worktrees. In that
+layout the worktree root contains a `.git` **file** (`gitdir: …`) rather than a
+`.git` **directory**. Canonical repository discovery in
+`src/market_platform_foundation/git_ref.py` resolves both forms, returns the
+worktree top level as `repo_root()`, and reads shared branch metadata through
+Git's `commondir` indirection. Ordinary single-checkout clones are unchanged.
+
+**Environment bootstrap:** linked worktrees do not automatically inherit a local
+`.venv`. Run `python tools/imp.py env` to inspect interpreter resolution and
+`python tools/imp.py env bootstrap --link-venv` to create a portable junction or
+symlink to the canonical shared environment. Validation commands launched through
+`tools/imp.py` automatically use the resolved interpreter.
 
 ## Safety and ownership
 

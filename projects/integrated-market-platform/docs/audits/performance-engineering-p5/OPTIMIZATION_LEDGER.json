@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p5_optimization_ledger",
+  "entries": [
+    {
+      "id": "P5-001",
+      "path": "donor_bridge/squeeze_client.py::is_available",
+      "caller": "build_workspace_squeeze_payload, _lightweight_squeeze_causal, attention items",
+      "input_size": "localhost health probe",
+      "before_cost_seconds": 2.03,
+      "percent_of_workspace_evidence": 33,
+      "root_cause": "180s default timeout on offline TCP connect; repeated probes per payload",
+      "proposed_optimization": "0.5s probe timeout + 2s TTL cache keyed by base_url",
+      "risk": "LOW",
+      "after_cost_seconds": 0.51,
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "P5-002",
+      "path": "donor_bridge/futures_client.py::is_available",
+      "caller": "build_workspace_futures_payload",
+      "before_cost_seconds": 2.03,
+      "root_cause": "Repeated 5s-capable health probe on offline bridge",
+      "proposed_optimization": "0.5s probe timeout + 2s TTL cache",
+      "risk": "LOW",
+      "after_cost_seconds": 0.51,
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "P5-003",
+      "path": "ui_api/projections.py::build_capabilities",
+      "caller": "build_attention_page, build_explain_payload, server",
+      "before_cost_seconds": "8 ledger probes per call",
+      "root_cause": "Repeated entitlement probes within single evidence build",
+      "proposed_optimization": "ReplayStore projection cache keyed by cursor/cutoff",
+      "risk": "LOW",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "P5-004",
+      "path": "workspace_evidence.py::_load_short_intelligence_store",
+      "before_cost_seconds": 0.00045,
+      "status": "LOW_VALUE",
+      "notes": "JSON reload not material after first call"
+    },
+    {
+      "id": "P5-005",
+      "path": "validation_worker discovery",
+      "before_cost_seconds": 8.5,
+      "status": "DEFER_P2",
+      "notes": "Test package import/discovery overhead; not production body"
+    }
+  ]
+}

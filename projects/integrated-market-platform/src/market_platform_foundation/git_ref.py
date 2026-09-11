@@ -4,23 +4,76 @@ from __future__ import annotations
 
 from pathlib import Path
 
+_GITDIR_PREFIX = "gitdir:"
 
-def _git_dir(start: Path | None = None) -> Path | None:
-    current = (start or Path(__file__).resolve()).resolve()
+
+def _parse_gitdir_pointer(git_file: Path) -> Path | None:
+    """Resolve the git metadata directory from a linked-worktree `.git` file."""
+    try:
+        raw = git_file.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    if not raw.startswith(_GITDIR_PREFIX):
+        return None
+    target = raw[len(_GITDIR_PREFIX) :].strip()
+    if not target:
+        return None
+    git_dir = Path(target)
+    if not git_dir.is_absolute():
+        git_dir = (git_file.parent / git_dir).resolve()
+    else:
+        git_dir = git_dir.resolve()
+    if not git_dir.is_dir():
+        return None
+    return git_dir
+
+
+def _locate_git(start: Path) -> tuple[Path, Path] | None:
+    """Return ``(worktree_root, git_metadata_dir)`` walking upward from ``start``."""
+    current = start.resolve()
     if current.is_file():
         current = current.parent
     for parent in [current, *current.parents]:
-        candidate = parent / ".git"
-        if candidate.is_dir():
-            return candidate
+        marker = parent / ".git"
+        if marker.is_dir():
+            return parent, marker
+        if marker.is_file():
+            git_dir = _parse_gitdir_pointer(marker)
+            if git_dir is not None:
+                return parent, git_dir
+            return None
     return None
 
 
+def _git_dir(start: Path | None = None) -> Path | None:
+    located = _locate_git((start or Path(__file__).resolve()))
+    if located is None:
+        return None
+    return located[1]
+
+
+def _git_common_dir(git_dir: Path) -> Path:
+    """Return the shared metadata directory for linked worktrees."""
+    commondir_file = git_dir / "commondir"
+    if not commondir_file.is_file():
+        return git_dir
+    try:
+        relative = commondir_file.read_text(encoding="utf-8").strip()
+    except OSError:
+        return git_dir
+    if not relative:
+        return git_dir
+    return (git_dir / relative).resolve()
+
+
 def repo_root(start: Path | None = None) -> Path:
-    git_dir = _git_dir(start)
-    if git_dir is None:
+    start_path = (start or Path(__file__).resolve()).resolve()
+    if start_path.is_file():
+        start_path = start_path.parent
+    located = _locate_git(start_path)
+    if located is None:
         raise FileNotFoundError("GIT_REPOSITORY_NOT_FOUND")
-    git_root = git_dir.parent
+    worktree_root, _ = located
     if start is None:
         # When the platform tree is embedded inside a larger monorepo (e.g.
         # the market-trading-platform snapshot under
@@ -32,11 +85,11 @@ def repo_root(start: Path | None = None) -> Path:
         # repository the anchor IS the git root, so behavior is unchanged.
         anchor = Path(__file__).resolve().parent
         for candidate in [anchor, *anchor.parents]:
-            if candidate == git_root:
+            if candidate == worktree_root:
                 break
             if (candidate / "phase0-dependency-lock.json").is_file():
                 return candidate
-    return git_root
+    return worktree_root
 
 
 def read_git_head(*, start: Path | None = None) -> str | None:
@@ -57,18 +110,19 @@ def read_git_head(*, start: Path | None = None) -> str | None:
     return head
 
 
-def read_git_ref(ref: str, *, git_dir: Path | None = None) -> str | None:
-    resolved_git_dir = git_dir or _git_dir()
-    if resolved_git_dir is None:
-        return None
-    ref_path = resolved_git_dir / ref
+def _read_loose_ref(ref: str, git_dir: Path) -> str | None:
+    ref_path = git_dir / ref
     try:
         if ref_path.is_file():
             value = ref_path.read_text(encoding="utf-8").strip()
             return value or None
     except OSError:
         return None
-    packed = resolved_git_dir / "packed-refs"
+    return None
+
+
+def _read_packed_ref(ref: str, git_dir: Path) -> str | None:
+    packed = git_dir / "packed-refs"
     try:
         if packed.is_file():
             for line in packed.read_text(encoding="utf-8").splitlines():
@@ -79,6 +133,25 @@ def read_git_ref(ref: str, *, git_dir: Path | None = None) -> str | None:
                     return parts[0]
     except OSError:
         return None
+    return None
+
+
+def read_git_ref(ref: str, *, git_dir: Path | None = None) -> str | None:
+    resolved_git_dir = git_dir or _git_dir()
+    if resolved_git_dir is None:
+        return None
+    search_dirs: list[Path] = []
+    for candidate in (resolved_git_dir, _git_common_dir(resolved_git_dir)):
+        if candidate not in search_dirs:
+            search_dirs.append(candidate)
+    for search_dir in search_dirs:
+        value = _read_loose_ref(ref, search_dir)
+        if value is not None:
+            return value
+    for search_dir in search_dirs:
+        value = _read_packed_ref(ref, search_dir)
+        if value is not None:
+            return value
     return None
 
 

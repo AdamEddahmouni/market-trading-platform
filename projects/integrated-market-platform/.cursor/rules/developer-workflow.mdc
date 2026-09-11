@@ -7,6 +7,8 @@ alwaysApply: true
 
 - Start at root `AGENTS.md`; use `docs/engineering/DEVELOPER_OPERATING_SYSTEM.md`
   for commands, validation tiers, delegation, and closure.
+- In a linked worktree, run `python tools/imp.py env` before validation; use
+  `python tools/imp.py env bootstrap --link-venv` when no local `.venv` exists.
 - Prefer `python tools/imp.py` over assembling equivalent commands manually.
 - Use FAST/focused/affected during iteration; reserve FULL for a major checkpoint
   or closure. A `core_checkpoint_required` flag is a gate, not permission to skip FULL.

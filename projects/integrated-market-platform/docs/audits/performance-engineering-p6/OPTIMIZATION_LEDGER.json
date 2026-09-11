@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p6_optimization_ledger",
+  "generated_at": "2026-09-10T19:55:00Z",
+  "entries": [
+    {
+      "id": "P6-001",
+      "target": "worktree environment bootstrap",
+      "classification": "IMPLEMENTED",
+      "current_cost": "6 manual steps; system Python 3.10 mis-selection",
+      "proposed_change": "tools/environment.py + imp env bootstrap --link-venv + resolved interpreter for validation",
+      "measured_benefit": "1 command bootstrap; imp env healthy on linked worktree",
+      "correctness_risk": "low",
+      "maintenance_risk": "low"
+    },
+    {
+      "id": "P6-002",
+      "target": "validate.py embedding context recomputation",
+      "classification": "IMPLEMENTED",
+      "current_cost": "repeated workspace manifest scan per git query",
+      "proposed_change": "process-local lru cache on resolved repository root",
+      "measured_benefit": "MEASURED LOCAL on repeated changed-path queries within one process",
+      "correctness_risk": "low",
+      "maintenance_risk": "low"
+    },
+    {
+      "id": "P6-003",
+      "target": "CI pip dependency bootstrap",
+      "classification": "IMPLEMENTED",
+      "current_cost": "pip install before cache restore",
+      "proposed_change": "setup-python pip cache + cache step before install + restore-keys",
+      "measured_benefit": "PROJECTED REMOTE BENEFIT",
+      "correctness_risk": "low",
+      "maintenance_risk": "low"
+    },
+    {
+      "id": "P6-004",
+      "target": "platform worker discovery imports",
+      "classification": "DEFER_P5",
+      "current_cost": "~8.9s discovery_seconds reference",
+      "notes": "worker-isolated import graph; not safely reducible without product/import contract changes"
+    },
+    {
+      "id": "P6-005",
+      "target": "P2 suite parallelization",
+      "classification": "DEFER_P2",
+      "notes": "explicitly out of P6 scope"
+    }
+  ]
+}

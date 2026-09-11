@@ -19,6 +19,7 @@ class ReplayStoreLoadingTests(unittest.TestCase):
     def test_verified_payload_is_reused_but_mutable_state_is_not_shared(self) -> None:
         self.assertTrue(hasattr(store_module, "_cached_replay_payload"))
         store_module._cached_replay_payload.cache_clear()
+        store_module._cached_decoded_replay_snapshot.cache_clear()
         payload = canonical_bytes(
             {
                 "evaluation": {"risk_decisions": []},

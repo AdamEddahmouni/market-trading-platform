@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p5_hotspot_profile",
+  "generated_at": "2026-09-10T20:50:00Z",
+  "platform_discovery_decomposition": {
+    "python_startup_seconds": 0.054,
+    "validation_worker_import_seconds": 0.135,
+    "tests_platform_package_seconds": 0.069,
+    "workspace_evidence_import_seconds": 3.104,
+    "validation_worker_discovery_platform_seconds": 8.517,
+    "notes": "unittest discover subprocess includes test execution; worker discovery is authoritative ~8.5s pre-optimization"
+  },
+  "workspace_evidence_before": {
+    "median_seconds": 6.168,
+    "top_cost_centers": [
+      {"function": "socket.connect via urllib", "cumulative_seconds": 18.289, "share": 0.97, "classification": "DONOR_HTTP_PROBE"},
+      {"function": "donor_bridge.squeeze_client.is_available", "calls": 6, "classification": "EAGER_REPEATED_PROBE"},
+      {"function": "providers.projections.build_workspace_options_payload", "classification": "PROJECTION_WITH_SQUEEZE_CAUSAL_PROBE"},
+      {"function": "donor_bridge.futures_client.is_available", "classification": "EAGER_REPEATED_PROBE"}
+    ]
+  },
+  "ui1_build_evidence_before": {
+    "wall_seconds": 54.97,
+    "top_cost_centers": [
+      {"function": "ReplayStore.load / replay payload build", "seconds": 29.79},
+      {"function": "urllib socket connect (donor probes)", "seconds": 24.34},
+      {"function": "build_attention_page x3", "seconds": 18.69}
+    ]
+  },
+  "short_intelligence_load": {
+    "median_seconds": 0.00045,
+    "verdict": "NOT_PRODUCTION_HOTSPOT"
+  },
+  "projection_fusion": {
+    "verdict": "NOT_DOMINANT_IN_MEASURED_PATHS",
+    "notes": "cross_lane fusion unit tests sub-ms; donor_bridge ~4s/tests pre-opt were HTTP-bound not fuse_opportunity_v1 CPU"
+  }
+}

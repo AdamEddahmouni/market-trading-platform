@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-10 — Performance Engineering P7 continuous budgets & telemetry
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `developer-tooling`, `validation` |
+| **Summary** | Established P7 observe-only performance budgets with canonical manifest, deterministic classification, validation receipt telemetry, `imp env` performance summary, CI telemetry summary, and P2 scheduler integration. Re-measured FAST/domain/FULL local baselines with repeated-run evidence for affordable paths. |
+| **Key files** | `manifests/performance_budget.json`, `tools/performance_budget.py`, `tools/performance_telemetry.py`, `tools/perf_baseline_measure.py`, `tools/validate.py`, `tools/imp.py`, `.github/workflows/imp-python.yml`, `tests/validation/test_performance_budget.py`, `docs/audits/performance-engineering-p7/` |
+| **Tests** | P7 contract 30 passed; P2 scheduler 13 passed; repository closure passed; FAST 21 passed; FULL 4522 passed (48 skipped) |
+| **Related** | `docs/audits/performance-engineering-p7/P7_CLOSURE.json`, P2 `docs/audits/performance-engineering-p2/` |
+| **Notes** | Gating remains OBSERVE_ONLY; CI baselines REMOTE_UNMEASURED; changed-validation baseline inherited from P2 at LOW confidence |
+
 ## 2026-09-10 — Source-control preservation and P3 lane isolation
 
 | Field | Value |

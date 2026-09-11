@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p6_workflow_audit",
+  "generated_at": "2026-09-10T19:50:00Z",
+  "execution_map": {
+    "task_start": [
+      "read AGENTS.md",
+      "read DEVELOPER_OPERATING_SYSTEM.md",
+      "manual git/worktree inspection",
+      "manual .venv discovery"
+    ],
+    "environment": [
+      "system python often 3.10",
+      "linked worktree lacks .venv",
+      "manual junction to canonical root venv"
+    ],
+    "developer_command": "tools/imp.py",
+    "validation": "tools/validate.py + validation_worker.py",
+    "ci": ".github/workflows/imp-validate.yml -> imp-python.yml",
+    "closure": "tools/imp.py closure -> closure-report.json",
+    "notion": "blocked in session (NOTION_CONTEXT_BLOCKED)"
+  },
+  "friction_register": [
+    {
+      "id": "P6-WF-001",
+      "area": "worktree bootstrap",
+      "frequency": "every new linked worktree",
+      "cost": "6 manual steps / wrong interpreter risk",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "P6-WF-002",
+      "area": "embedding context recomputation",
+      "frequency": "every changed-path git query in validate.py",
+      "cost": "repeated manifest/workspace discovery",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "P6-WF-003",
+      "area": "CI pip install order",
+      "frequency": "every imp-python job",
+      "cost": "cold pip download before cache restore",
+      "status": "IMPLEMENTED"
+    },
+    {
+      "id": "P6-WF-004",
+      "area": "platform worker discovery imports",
+      "frequency": "every platform suite worker",
+      "cost": "~8.9s reference per worker",
+      "status": "DEFER_P5"
+    }
+  ]
+}

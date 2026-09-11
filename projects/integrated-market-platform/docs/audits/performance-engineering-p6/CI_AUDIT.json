@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p6_ci_audit",
+  "generated_at": "2026-09-10T19:50:00Z",
+  "jobs": [
+    {
+      "workflow": "imp-validate.yml",
+      "job": "validate-workflows",
+      "repeated_setup": ["checkout", "actionlint download"],
+      "cache_before": "none",
+      "cache_after": "none",
+      "change": "NO_CHANGE"
+    },
+    {
+      "workflow": "imp-validate.yml",
+      "job": "validate-python",
+      "repeated_setup": ["checkout", "sparse donor checkout", "setup-python", "pip install numpy/pymongo/sklearn"],
+      "cache_before": "actions/cache after pip install",
+      "cache_after": "setup-python pip cache + actions/cache before pip install",
+      "change": "pip cache ordering + restore-keys",
+      "expected_benefit": "PROJECTED REMOTE BENEFIT on warm cache hits"
+    },
+    {
+      "workflow": "imp-validate.yml",
+      "job": "validate-python-changed",
+      "repeated_setup": "same as validate-python",
+      "cache_before": "same",
+      "cache_after": "same",
+      "change": "inherits imp-python.yml fix"
+    },
+    {
+      "workflow": "imp-validate.yml",
+      "job": "validate-ui",
+      "repeated_setup": ["checkout", "setup-node", "npm ci"],
+      "cache_before": "npm cache via setup-node",
+      "cache_after": "unchanged",
+      "change": "NO_CHANGE"
+    }
+  ]
+}

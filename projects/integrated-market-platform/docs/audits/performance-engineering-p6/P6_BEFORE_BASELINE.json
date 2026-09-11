@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p6_before_baseline",
+  "generated_at": "2026-09-10T19:45:00Z",
+  "worktree": {
+    "path": "C:/Users/adame/Desktop/market-trading-platform-perf-p6",
+    "branch": "perf/p6-ci-agent-workflow",
+    "local_venv_present": false,
+    "bootstrap_steps_before": 6,
+    "bootstrap_manual_decisions_before": 4,
+    "notes": [
+      "Locate canonical monorepo .venv manually",
+      "Create junction/symlink by hand",
+      "Discover correct Python 3.11 interpreter",
+      "Avoid system Python 3.10 ZoneInfo failures"
+    ]
+  },
+  "imp_env": {
+    "command": "python tools/imp.py env",
+    "doctor_existed": true,
+    "worktree_aware_before": false,
+    "resolved_interpreter_before": false,
+    "timezone_via_resolved_python_before": false,
+    "bootstrap_subcommand_before": false,
+    "status_before_fix": "unhealthy (unsupported python version on system interpreter)"
+  },
+  "validation": {
+    "fast_wall_seconds_reference": 4.283,
+    "platform_discovery_seconds_reference": 8.9,
+    "changed_discovery_seconds_first_run": 12.849529
+  },
+  "agent_context": {
+    "always_apply_cursor_rules": 5,
+    "duplicate_worktree_guidance_locations": 3,
+    "estimated_startup_reads_before": 12
+  },
+  "ci": {
+    "python_jobs_with_duplicate_setup": 2,
+    "pip_cache_before_install_before": false,
+    "setup_python_pip_cache_before": false
+  }
+}
