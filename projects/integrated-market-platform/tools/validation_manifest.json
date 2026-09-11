@@ -21,6 +21,7 @@
     "tools/run_all_tests.py",
     "tools/benchmark.py",
     "tools/p5_profile_harness.py",
+    "tools/parallel_safety_audit.py",
     "src/market_platform_foundation/canonical.py",
     "src/market_platform_foundation/contracts/**",
     "src/market_platform_foundation/providers/envelope.py",
@@ -192,7 +193,7 @@
       "domains": [
         "core"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 2,
       "source_globs": [
         "tools/phase0/**"
@@ -200,7 +201,9 @@
       "test_globs": [
         "tests/phase0/test_*.py"
       ],
-      "neighbors": []
+      "neighbors": [],
+      "concurrency_reason": "process-local globals; tempfile-isolated I/O; no shared artifact paths",
+      "resource_class": "NORMAL"
     },
     {
       "id": "phase0a",
@@ -212,7 +215,7 @@
       "domains": [
         "core"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 2,
       "source_globs": [
         "tools/phase0a/**"
@@ -220,7 +223,9 @@
       "test_globs": [
         "tests/phase0a/test_*.py"
       ],
-      "neighbors": []
+      "neighbors": [],
+      "concurrency_reason": "process-local globals; isolated subprocess fixtures; no shared artifact paths",
+      "resource_class": "NORMAL"
     },
     {
       "id": "phase1",
@@ -232,7 +237,7 @@
       "domains": [
         "core"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 2,
       "source_globs": [
         "tools/phase1/**"
@@ -240,7 +245,9 @@
       "test_globs": [
         "tests/phase1/test_*.py"
       ],
-      "neighbors": []
+      "neighbors": [],
+      "concurrency_reason": "process-local globals; phase1-specific evidence paths are read-only in tests",
+      "resource_class": "NORMAL"
     },
     {
       "id": "phase2",
@@ -475,7 +482,7 @@
         "core",
         "ui"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 2,
       "source_globs": [
         "src/market_platform_foundation/paper/**",
@@ -501,7 +508,9 @@
         "execution",
         "phase7",
         "finviz"
-      ]
+      ],
+      "concurrency_reason": "process-local globals; tests use temp dirs or read-only fixtures",
+      "resource_class": "NORMAL"
     },
     {
       "id": "phase8",
@@ -513,7 +522,7 @@
       "domains": [
         "core"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 3,
       "source_globs": [
         "tools/phase8/**"
@@ -523,7 +532,9 @@
       ],
       "neighbors": [
         "integration"
-      ]
+      ],
+      "concurrency_reason": "suite-specific evidence/phase8/.pytest-run scratch path",
+      "resource_class": "NORMAL"
     },
     {
       "id": "storage",
@@ -821,7 +832,7 @@
         "core",
         "ui"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 2,
       "source_globs": [
         "src/market_platform_foundation/features/**",
@@ -832,7 +843,9 @@
       ],
       "neighbors": [
         "ui1"
-      ]
+      ],
+      "concurrency_reason": "process-local globals; local fixture files only",
+      "resource_class": "NORMAL"
     },
     {
       "id": "integration",
@@ -1024,7 +1037,7 @@
       "domains": [
         "ui"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 3,
       "source_globs": [
         "src/market_platform_foundation/ui_api/**",
@@ -1039,7 +1052,9 @@
         "integration",
         "providers",
         "donor_bridge"
-      ]
+      ],
+      "concurrency_reason": "suite-specific evidence/ui1/.pytest-run scratch path",
+      "resource_class": "NORMAL"
     },
     {
       "id": "ui2",
@@ -1051,7 +1066,7 @@
       "domains": [
         "ui"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 3,
       "source_globs": [
         "src/market_platform_foundation/ui_api/**",
@@ -1063,7 +1078,9 @@
       "neighbors": [
         "ui1",
         "integration"
-      ]
+      ],
+      "concurrency_reason": "suite-specific evidence/ui2/.pytest-run scratch path",
+      "resource_class": "NORMAL"
     },
     {
       "id": "mra001",
@@ -1075,7 +1092,7 @@
       "domains": [
         "ui"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 2,
       "source_globs": [
         "tools/mra001/**"
@@ -1086,7 +1103,9 @@
       "neighbors": [
         "assistant",
         "ui1"
-      ]
+      ],
+      "concurrency_reason": "suite-specific evidence/mra001/.pytest-run scratch path",
+      "resource_class": "NORMAL"
     },
     {
       "id": "mra002",
@@ -1098,7 +1117,7 @@
       "domains": [
         "ui"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 2,
       "source_globs": [
         "tools/mra002/**"
@@ -1109,7 +1128,9 @@
       "neighbors": [
         "assistant",
         "ui1"
-      ]
+      ],
+      "concurrency_reason": "suite-specific evidence/mra002/.pytest-run and build-run paths",
+      "resource_class": "NORMAL"
     },
     {
       "id": "market_context",
@@ -1469,6 +1490,7 @@
         "tools/run_all_tests.py",
         "tools/benchmark.py",
         "tools/p5_profile_harness.py",
+        "tools/parallel_safety_audit.py",
         "tools/repository_closure.py",
         "artifacts/repository-closure/**",
         "docs/engineering/POST_BUILD35_REPOSITORY_CLOSURE_AUDIT.md"
@@ -2107,7 +2129,7 @@
         "order-flow",
         "ui"
       ],
-      "parallel_safety": "GLOBAL_STATE_MUTATION",
+      "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 2,
       "source_globs": [
         "src/market_platform_foundation/paper/**",
@@ -2135,7 +2157,9 @@
         "intelligence",
         "providers",
         "execution"
-      ]
+      ],
+      "concurrency_reason": "suite-specific artifacts/g13-runtime-performance.json writer",
+      "resource_class": "NORMAL"
     }
   ],
   "shared_module_dependents": [
@@ -2260,5 +2284,12 @@
       "dependent_suites": [],
       "reason": "Frontend source maps to ui offline checks without unrelated Python domain fan-out"
     }
-  ]
+  ],
+  "concurrency_defaults": {
+    "default_workers": 2,
+    "max_workers": 4,
+    "resource_heavy_max_concurrency": 2,
+    "fast_mode_workers": 1,
+    "scheduler_version": "p2-bl-0901-1"
+  }
 }

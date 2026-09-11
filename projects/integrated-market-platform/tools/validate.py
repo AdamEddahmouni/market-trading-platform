@@ -54,10 +54,14 @@ CLASS_EXPLICIT_SAFE_IGNORE = "EXPLICIT_SAFE_IGNORE"
 CLASS_GOVERNANCE_ONLY_CHECK = "GOVERNANCE_ONLY_CHECK"
 CLASS_FAIL_SAFE = "FAIL_SAFE"
 SELECTOR_VERSION = "p3-bl-0801-1"
+SCHEDULER_VERSION = "p2-bl-0901-1"
 SECRET_FILE_NAMES = frozenset({"id_rsa", "id_dsa", "id_ecdsa", "id_ed25519"})
 SECRET_SUFFIXES = frozenset({".pem", ".key", ".p12", ".pfx", ".jks", ".keystore"})
 CORE_DIAGNOSTIC_IDS = ("validation", "phase0", "contracts", "runtime", "providers")
 DEFAULT_WORKERS = 2
+MAX_WORKERS_CLAMP = 8
+WORKERS_ENV_VAR = "IMP_VALIDATION_WORKERS"
+RESOURCE_HEAVY_MAX_CONCURRENCY = 2
 LIVE_GATES: dict[str, tuple[str, ...]] = {
     # Execution domain: IMP_LIVE_EXECUTION is the master live-execution enable
     # (operating_modes.resolve_execution_authority). It must be stripped from every
@@ -782,6 +786,195 @@ class WorkerJob:
     selectors: tuple[str, ...]
     safety: str
     resource_weight: int
+    resource_class: str = "NORMAL"
+    concurrency_reason: str = ""
+    exclusive_group: str | None = None
+    max_concurrency: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionWave:
+    wave_id: int
+    policy: str
+    concurrency: int
+    suite_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionSchedule:
+    requested_workers: int
+    effective_workers: int
+    scheduler_version: str
+    manifest_hash: str
+    suite_policies: dict[str, dict[str, Any]]
+    waves: tuple[ExecutionWave, ...]
+
+
+def resolve_workers(
+    requested: int,
+    *,
+    env: dict[str, str] | None = None,
+    parallel_eligible_count: int = 0,
+) -> int:
+    """Clamp worker count to safe machine and selection bounds."""
+
+    environment = env if env is not None else os.environ
+    if requested < 1:
+        raw = environment.get(WORKERS_ENV_VAR, str(DEFAULT_WORKERS))
+        try:
+            requested = int(raw)
+        except ValueError:
+            requested = DEFAULT_WORKERS
+    cpu_cap = min(MAX_WORKERS_CLAMP, os.cpu_count() or 4)
+    if parallel_eligible_count > 0:
+        cpu_cap = min(cpu_cap, parallel_eligible_count)
+    return max(1, min(requested, cpu_cap))
+
+
+def scheduling_policy(suite: ValidationSuite) -> str:
+    """Map manifest metadata to a deterministic scheduling policy."""
+
+    safety = suite.parallel_safety
+    if safety == "LIVE_EXCLUSIVE":
+        return "LIVE_EXCLUSIVE"
+    if safety == "SERIAL_REQUIRED":
+        return "SERIAL_REQUIRED"
+    if safety == "RESOURCE_HEAVY":
+        return "RESOURCE_HEAVY"
+    if safety == "PARALLEL_SAFE":
+        return "PARALLEL_SAFE"
+    if safety == "GLOBAL_STATE_MUTATION":
+        return "SERIAL_REQUIRED"
+    return "UNKNOWN_FAIL_SAFE"
+
+
+def _job_from_suite(suite: ValidationSuite) -> WorkerJob:
+    return WorkerJob(
+        id=suite.id,
+        suite_id=suite.id,
+        suite_path=suite.path,
+        selectors=(),
+        safety=scheduling_policy(suite),
+        resource_weight=suite.resource_weight,
+        resource_class=suite.resource_class,
+        concurrency_reason=suite.concurrency_reason,
+        exclusive_group=suite.exclusive_group,
+        max_concurrency=suite.max_concurrency,
+    )
+
+
+def _suite_policy_record(suite: ValidationSuite) -> dict[str, Any]:
+    return {
+        "parallel_safety": suite.parallel_safety,
+        "scheduling_policy": scheduling_policy(suite),
+        "resource_class": suite.resource_class,
+        "resource_weight": suite.resource_weight,
+        "exclusive_group": suite.exclusive_group,
+        "max_concurrency": suite.max_concurrency,
+        "concurrency_reason": suite.concurrency_reason,
+    }
+
+
+def build_execution_schedule(
+    manifest: ValidationManifest,
+    selection: ValidationSelection,
+    *,
+    workers: int,
+) -> ExecutionSchedule:
+    """Build a deterministic suite execution schedule without running tests."""
+
+    selected = set(selection.selected_suite_ids)
+    suite_jobs = [
+        _job_from_suite(suite) for suite in manifest.suites if suite.id in selected
+    ]
+    parallel_eligible = sum(1 for job in suite_jobs if job.safety == "PARALLEL_SAFE")
+    effective_workers = resolve_workers(workers, parallel_eligible_count=parallel_eligible)
+    serial_jobs = sorted(
+        [job for job in suite_jobs if job.safety in {"SERIAL_REQUIRED", "UNKNOWN_FAIL_SAFE"}],
+        key=lambda job: job.id,
+    )
+    parallel_jobs = sorted(
+        [job for job in suite_jobs if job.safety == "PARALLEL_SAFE"],
+        key=lambda job: (-job.resource_weight, job.id),
+    )
+    heavy_jobs = sorted(
+        [job for job in suite_jobs if job.safety == "RESOURCE_HEAVY"],
+        key=lambda job: (-job.resource_weight, job.id),
+    )
+    live_jobs = sorted(
+        [job for job in suite_jobs if job.safety == "LIVE_EXCLUSIVE"],
+        key=lambda job: job.id,
+    )
+    waves: list[ExecutionWave] = []
+    if serial_jobs:
+        waves.append(
+            ExecutionWave(
+                wave_id=len(waves),
+                policy="SERIAL_REQUIRED",
+                concurrency=1,
+                suite_ids=tuple(job.id for job in serial_jobs),
+            )
+        )
+    if parallel_jobs:
+        waves.append(
+            ExecutionWave(
+                wave_id=len(waves),
+                policy="PARALLEL_SAFE",
+                concurrency=effective_workers,
+                suite_ids=tuple(job.id for job in parallel_jobs),
+            )
+        )
+    if heavy_jobs:
+        heavy_concurrency = min(RESOURCE_HEAVY_MAX_CONCURRENCY, effective_workers)
+        waves.append(
+            ExecutionWave(
+                wave_id=len(waves),
+                policy="RESOURCE_HEAVY",
+                concurrency=heavy_concurrency,
+                suite_ids=tuple(job.id for job in heavy_jobs),
+            )
+        )
+    if live_jobs:
+        waves.append(
+            ExecutionWave(
+                wave_id=len(waves),
+                policy="LIVE_EXCLUSIVE",
+                concurrency=1,
+                suite_ids=tuple(job.id for job in live_jobs),
+            )
+        )
+    suite_policies = {
+        suite.id: _suite_policy_record(suite)
+        for suite in manifest.suites
+        if suite.id in selected
+    }
+    return ExecutionSchedule(
+        requested_workers=workers,
+        effective_workers=effective_workers,
+        scheduler_version=SCHEDULER_VERSION,
+        manifest_hash=manifest_fingerprint(manifest),
+        suite_policies=suite_policies,
+        waves=tuple(waves),
+    )
+
+
+def schedule_to_dict(schedule: ExecutionSchedule) -> dict[str, Any]:
+    return {
+        "scheduler_version": schedule.scheduler_version,
+        "manifest_hash": schedule.manifest_hash,
+        "requested_workers": schedule.requested_workers,
+        "effective_workers": schedule.effective_workers,
+        "suite_policies": schedule.suite_policies,
+        "waves": [
+            {
+                "wave_id": wave.wave_id,
+                "policy": wave.policy,
+                "concurrency": wave.concurrency,
+                "suite_ids": list(wave.suite_ids),
+            }
+            for wave in schedule.waves
+        ],
+    }
 
 
 class WorkerProcessRegistry:
@@ -981,18 +1174,7 @@ def _mandatory_jobs(
 
 def _suite_jobs(manifest: ValidationManifest, selection: ValidationSelection) -> list[WorkerJob]:
     selected = set(selection.selected_suite_ids)
-    return [
-        WorkerJob(
-            id=suite.id,
-            suite_id=suite.id,
-            suite_path=suite.path,
-            selectors=(),
-            safety=suite.parallel_safety,
-            resource_weight=suite.resource_weight,
-        )
-        for suite in manifest.suites
-        if suite.id in selected
-    ]
+    return [_job_from_suite(suite) for suite in manifest.suites if suite.id in selected]
 
 
 def _run_parallel_jobs(
@@ -1105,6 +1287,8 @@ def execute_selection(
     registry = WorkerProcessRegistry()
     mandatory_jobs = _mandatory_jobs(manifest, selection.mandatory_selectors)
     suite_jobs = _suite_jobs(manifest, selection)
+    schedule = build_execution_schedule(manifest, selection, workers=workers)
+    jobs_by_id = {job.id: job for job in suite_jobs}
     all_order = {job.id: index for index, job in enumerate(mandatory_jobs + suite_jobs)}
     executed: list[tuple[WorkerJob, dict[str, Any]]] = []
 
@@ -1130,40 +1314,36 @@ def execute_selection(
             if fail_fast and payload.get("status") != "passed":
                 stopped = True
                 break
-        groups = (
-            [
-                job
-                for job in suite_jobs
-                if job.safety in {"SERIAL_REQUIRED", "GLOBAL_STATE_MUTATION", "LIVE_EXCLUSIVE"}
-            ],
-            [job for job in suite_jobs if job.safety == "PARALLEL_SAFE"],
-            [job for job in suite_jobs if job.safety == "RESOURCE_HEAVY"],
-        )
         if not stopped:
-            for job in groups[0]:
-                print(f"VALIDATING {job.id}...", flush=True)
-                payload = run_job(job)
-                executed.append((job, payload))
-                print(f"COMPLETED {job.id}: {payload.get('status', 'unknown')}", flush=True)
-                if fail_fast and payload.get("status") != "passed":
-                    stopped = True
-                    break
-        if not stopped:
-            parallel_results = _run_parallel_jobs(
-                groups[1], concurrency=workers, run_job=run_job, fail_fast=fail_fast
-            )
-            executed.extend(parallel_results)
-            stopped = fail_fast and any(
-                payload.get("status") != "passed" for _, payload in parallel_results
-            )
-        if not stopped:
-            heavy_results = _run_parallel_jobs(
-                groups[2], concurrency=min(2, workers), run_job=run_job, fail_fast=fail_fast
-            )
-            executed.extend(heavy_results)
-            stopped = fail_fast and any(
-                payload.get("status") != "passed" for _, payload in heavy_results
-            )
+            for wave in schedule.waves:
+                wave_jobs = [jobs_by_id[suite_id] for suite_id in wave.suite_ids]
+                if wave.concurrency <= 1:
+                    for job in wave_jobs:
+                        print(f"VALIDATING {job.id}...", flush=True)
+                        payload = run_job(job)
+                        executed.append((job, payload))
+                        print(
+                            f"COMPLETED {job.id}: {payload.get('status', 'unknown')}",
+                            flush=True,
+                        )
+                        if fail_fast and payload.get("status") != "passed":
+                            stopped = True
+                            break
+                    if stopped:
+                        break
+                else:
+                    wave_results = _run_parallel_jobs(
+                        wave_jobs,
+                        concurrency=wave.concurrency,
+                        run_job=run_job,
+                        fail_fast=fail_fast,
+                    )
+                    executed.extend(wave_results)
+                    if fail_fast and any(
+                        payload.get("status") != "passed" for _, payload in wave_results
+                    ):
+                        stopped = True
+                        break
     except KeyboardInterrupt:
         interrupted = True
         registry.terminate_all()
@@ -1219,8 +1399,13 @@ def execute_selection(
             for decision in selection.path_decisions
         ],
         "global_reasons": list(selection.global_reasons),
-        "workers": workers,
-        "resource_heavy_workers": min(2, workers),
+        "workers": schedule.requested_workers,
+        "effective_workers": schedule.effective_workers,
+        "scheduler_version": schedule.scheduler_version,
+        "selector_version": SELECTOR_VERSION,
+        "manifest_hash": schedule.manifest_hash,
+        "execution_schedule": schedule_to_dict(schedule),
+        "resource_heavy_workers": min(RESOURCE_HEAVY_MAX_CONCURRENCY, schedule.effective_workers),
         "process_launches": len(worker_results),
         "tests_run": sum(int(row.get("tests_run", 0)) for row in worker_results),
         "passes": sum(int(row.get("passes", 0)) for row in worker_results),
@@ -1321,6 +1506,7 @@ def build_selection_plan(
     manifest: ValidationManifest,
     *,
     manifest_path: Path | None = None,
+    workers: int = DEFAULT_WORKERS,
 ) -> dict[str, Any]:
     """Return a machine-readable selection plan without executing tests."""
 
@@ -1400,6 +1586,13 @@ def build_selection_plan(
         "cheap_checks": list(selection.cheap_checks),
         "omitted_domains": list(selection.omitted_domains),
         "executes_tests": False,
+        "execution_schedule": schedule_to_dict(
+            build_execution_schedule(
+                manifest,
+                selection,
+                workers=resolve_workers(workers),
+            )
+        ),
     }
 
 
@@ -1511,6 +1704,28 @@ def _maybe_attribute_validation(result: dict[str, Any]) -> None:
     attribute_validation(result, writer=None, enabled=True)
 
 
+def _enrich_performance_telemetry(
+    result: dict[str, Any],
+    *,
+    repository_root: Path,
+) -> dict[str, Any]:
+    """Attach P7 performance telemetry and budget classification (observe-only)."""
+
+    try:
+        from tools.performance_telemetry import (
+            append_ephemeral_telemetry,
+            enrich_validation_receipt,
+        )
+    except ModuleNotFoundError:  # pragma: no cover - direct script execution path.
+        from performance_telemetry import (  # type: ignore[no-redef]
+            append_ephemeral_telemetry,
+            enrich_validation_receipt,
+        )
+    enriched = enrich_validation_receipt(result, repository_root=repository_root)
+    append_ephemeral_telemetry(enriched, repository_root=repository_root)
+    return enriched
+
+
 def main(argv: list[str] | None = None) -> int:
     arguments = build_parser().parse_args(argv)
     repository_root = Path(__file__).resolve().parents[1]
@@ -1535,9 +1750,13 @@ def main(argv: list[str] | None = None) -> int:
     try:
         manifest = load_manifest(manifest_path, repository_root=repository_root)
         selection = _selection_for_arguments(arguments, manifest, repository_root)
+        plan_workers = 1 if arguments.mode == "fast" else resolve_workers(arguments.workers)
         if arguments.plan:
             plan = build_selection_plan(
-                selection, manifest, manifest_path=manifest_path.resolve()
+                selection,
+                manifest,
+                manifest_path=manifest_path.resolve(),
+                workers=plan_workers,
             )
             if arguments.json_path is not None:
                 write_json_atomic(arguments.json_path, plan)
@@ -1562,7 +1781,7 @@ def main(argv: list[str] | None = None) -> int:
             repository_root=repository_root,
             manifest=manifest,
             selection=selection,
-            workers=arguments.workers,
+            workers=plan_workers,
             fail_fast=arguments.fail_fast,
             live_provider=arguments.target if arguments.mode == "live" else None,
             profile_fixtures=arguments.profile_fixtures,
@@ -1570,14 +1789,25 @@ def main(argv: list[str] | None = None) -> int:
     except (ManifestValidationError, ValidationSelectionError) as exc:
         print(f"validation error: {exc}", file=sys.stderr)
         return 2
+    if arguments.mode == "domain" and arguments.target:
+        result["domain_target"] = arguments.target
+    result = _enrich_performance_telemetry(result, repository_root=repository_root)
     if arguments.json_path is not None:
         write_json_atomic(arguments.json_path, result)
     _maybe_attribute_validation(result)
+    perf = result.get("performance_telemetry", {})
+    budget = perf.get("budget", {})
+    perf_suffix = ""
+    if budget.get("classification"):
+        perf_suffix = f" perf={budget['classification']}"
     print(
         f"{result['status'].upper()} {result['mode']}: {result['tests_run']} tests, "
         f"{result['skips']} skipped, {result['failures']} failures, "
-        f"{result['errors']} errors in {result['wall_seconds']:.3f}s"
+        f"{result['errors']} errors in {result['wall_seconds']:.3f}s{perf_suffix}"
     )
+    regression_explain = perf.get("regression_explain")
+    if regression_explain:
+        print(f"PERF: {regression_explain}")
     if result["core_checkpoint_required"]:
         print("core_checkpoint_required=true (core checkpoint = mandatory invariants + "
               "core diagnostics; full suite still requires `validate full` at closure)")
@@ -1600,9 +1830,16 @@ if __name__ == "__main__":
 __all__ = [
     "PathDecision",
     "SELECTOR_VERSION",
+    "SCHEDULER_VERSION",
     "ValidationSelection",
     "ValidationSelectionError",
+    "ExecutionSchedule",
+    "ExecutionWave",
+    "build_execution_schedule",
     "build_selection_plan",
+    "resolve_workers",
+    "schedule_to_dict",
+    "scheduling_policy",
     "canonicalize_changed_path",
     "execute_selection",
     "manifest_fingerprint",

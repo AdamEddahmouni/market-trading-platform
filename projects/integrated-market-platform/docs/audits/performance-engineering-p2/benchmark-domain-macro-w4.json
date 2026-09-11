@@ -1,0 +1,3474 @@
+{
+  "changed_files": [],
+  "cheap_check_results": [],
+  "core_checkpoint_required": false,
+  "discovery_seconds": 3.598674299999402,
+  "effective_workers": 4,
+  "errors": 0,
+  "execution_schedule": {
+    "effective_workers": 4,
+    "manifest_hash": "f7869cc2960f526b737d3c32be20ffe881b9789866245181448c903b0e00c3f4",
+    "requested_workers": 4,
+    "scheduler_version": "p2-bl-0901-1",
+    "suite_policies": {
+      "cftc": {
+        "concurrency_reason": "",
+        "exclusive_group": null,
+        "max_concurrency": null,
+        "parallel_safety": "PARALLEL_SAFE",
+        "resource_class": "LIGHT",
+        "resource_weight": 1,
+        "scheduling_policy": "PARALLEL_SAFE"
+      },
+      "eia": {
+        "concurrency_reason": "",
+        "exclusive_group": null,
+        "max_concurrency": null,
+        "parallel_safety": "PARALLEL_SAFE",
+        "resource_class": "LIGHT",
+        "resource_weight": 1,
+        "scheduling_policy": "PARALLEL_SAFE"
+      },
+      "fred": {
+        "concurrency_reason": "",
+        "exclusive_group": null,
+        "max_concurrency": null,
+        "parallel_safety": "PARALLEL_SAFE",
+        "resource_class": "LIGHT",
+        "resource_weight": 1,
+        "scheduling_policy": "PARALLEL_SAFE"
+      },
+      "futures": {
+        "concurrency_reason": "",
+        "exclusive_group": null,
+        "max_concurrency": null,
+        "parallel_safety": "PARALLEL_SAFE",
+        "resource_class": "NORMAL",
+        "resource_weight": 2,
+        "scheduling_policy": "PARALLEL_SAFE"
+      },
+      "market_context": {
+        "concurrency_reason": "",
+        "exclusive_group": null,
+        "max_concurrency": null,
+        "parallel_safety": "PARALLEL_SAFE",
+        "resource_class": "LIGHT",
+        "resource_weight": 1,
+        "scheduling_policy": "PARALLEL_SAFE"
+      },
+      "runtime": {
+        "concurrency_reason": "",
+        "exclusive_group": null,
+        "max_concurrency": null,
+        "parallel_safety": "PARALLEL_SAFE",
+        "resource_class": "LIGHT",
+        "resource_weight": 1,
+        "scheduling_policy": "PARALLEL_SAFE"
+      },
+      "xa02": {
+        "concurrency_reason": "",
+        "exclusive_group": null,
+        "max_concurrency": null,
+        "parallel_safety": "PARALLEL_SAFE",
+        "resource_class": "LIGHT",
+        "resource_weight": 1,
+        "scheduling_policy": "PARALLEL_SAFE"
+      }
+    },
+    "waves": [
+      {
+        "concurrency": 4,
+        "policy": "PARALLEL_SAFE",
+        "suite_ids": [
+          "futures",
+          "cftc",
+          "eia",
+          "fred",
+          "market_context",
+          "runtime",
+          "xa02"
+        ],
+        "wave_id": 0
+      }
+    ]
+  },
+  "expected_failures": 0,
+  "failures": 0,
+  "global_reasons": [],
+  "interrupted": false,
+  "mandatory_invariants": [],
+  "manifest_hash": "f7869cc2960f526b737d3c32be20ffe881b9789866245181448c903b0e00c3f4",
+  "mode": "domain",
+  "not_run_suites": [],
+  "omitted_domains": [],
+  "passes": 304,
+  "path_decisions": [],
+  "process_launches": 7,
+  "resource_heavy_workers": 2,
+  "scheduler_version": "p2-bl-0901-1",
+  "schema_version": "1.0",
+  "selected_suites": [
+    "futures",
+    "runtime",
+    "market_context",
+    "cftc",
+    "fred",
+    "eia",
+    "xa02"
+  ],
+  "selection_reasons": {},
+  "skip_details": [],
+  "skips": 0,
+  "started_at": "2026-09-10T21:32:47.989530+00:00",
+  "status": "passed",
+  "suite_results": [
+    {
+      "discovery_seconds": 0.9407062999998743,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 65,
+      "per_test_durations": [
+        {
+          "seconds": 0.0017255999991903082,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_bars_fixture_lookahead_not_in_adapter_at_cutoff"
+        },
+        {
+          "seconds": 0.00021360000027925707,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_compute_carry_percentile"
+        },
+        {
+          "seconds": 0.00019470000006549526,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_compute_vol_scaled_trend"
+        },
+        {
+          "seconds": 0.00022619999981543515,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_cross_lane_emits_trend_up_from_baselines"
+        },
+        {
+          "seconds": 0.0020910000002913876,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_es_baselines_golden_fixture_regression"
+        },
+        {
+          "seconds": 0.00019099999917671084,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_filter_pit_bars_excludes_future_bar"
+        },
+        {
+          "seconds": 0.00018980000095325522,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_filter_pit_bars_insufficient_history_flag"
+        },
+        {
+          "seconds": 0.0001702999998087762,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_trend_regime_thresholds"
+        },
+        {
+          "seconds": 0.03787289999854693,
+          "selector": "tests/futures/test_f11_advanced.py::F11EnergyHarnessTests::test_cl_walk_forward_gate_pass"
+        },
+        {
+          "seconds": 0.000318899999911082,
+          "selector": "tests/futures/test_f11_advanced.py::F11FeatureTests::test_energy_family_supported"
+        },
+        {
+          "seconds": 0.00023709999913990032,
+          "selector": "tests/futures/test_f11_advanced.py::F11FeatureTests::test_stale_cot_omits_crowding"
+        },
+        {
+          "seconds": 0.0002688000004127389,
+          "selector": "tests/futures/test_f11_advanced.py::F11FeatureTests::test_unimplemented_family_fail_closed"
+        },
+        {
+          "seconds": 0.0002299999996466795,
+          "selector": "tests/futures/test_f11_advanced.py::F11GateUnitTests::test_fq8_fail_when_probability_unchanged"
+        },
+        {
+          "seconds": 0.00017350000052829273,
+          "selector": "tests/futures/test_f11_advanced.py::F11GateUnitTests::test_fq8_pass_when_crowding_changes_probability"
+        },
+        {
+          "seconds": 0.000693600000886363,
+          "selector": "tests/futures/test_f11_advanced.py::F11GateUnitTests::test_insufficient_sample_when_empty"
+        },
+        {
+          "seconds": 0.032979499999783,
+          "selector": "tests/futures/test_f11_advanced.py::F11GoldenFixtureTests::test_cl_f11_baseline_expected_matches_computed"
+        },
+        {
+          "seconds": 0.03935579999961192,
+          "selector": "tests/futures/test_f11_advanced.py::F11GoldenFixtureTests::test_es_f11_baseline_expected_matches_computed"
+        },
+        {
+          "seconds": 0.00026590000015858095,
+          "selector": "tests/futures/test_f11_advanced.py::F11HarnessTests::test_engineered_method_on_inputs"
+        },
+        {
+          "seconds": 0.03820079999968584,
+          "selector": "tests/futures/test_f11_advanced.py::F11HarnessTests::test_walk_forward_gate_pass"
+        },
+        {
+          "seconds": 0.5745370000004186,
+          "selector": "tests/futures/test_f11_advanced.py::F11WorkspaceTests::test_workspace_exposes_latest_futures_forecast"
+        },
+        {
+          "seconds": 0.0011838999998872168,
+          "selector": "tests/futures/test_f2_roll.py::FuturesF2RollTests::test_fixture_chain_has_roll_metadata"
+        },
+        {
+          "seconds": 0.00023240000155055895,
+          "selector": "tests/futures/test_f2_roll.py::FuturesF2RollTests::test_lead_contract_selection_prefers_oi"
+        },
+        {
+          "seconds": 0.0003701999994518701,
+          "selector": "tests/futures/test_f2_roll.py::FuturesF2RollTests::test_roll_gap_continuous_pipeline"
+        },
+        {
+          "seconds": 0.0003608999995776685,
+          "selector": "tests/futures/test_f2_roll.py::FuturesF2RollTests::test_simulate_futures_roll"
+        },
+        {
+          "seconds": 0.00024119999943650328,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_basis_fail_closed_without_spot"
+        },
+        {
+          "seconds": 0.0002330999996047467,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_carry_matches_curve_regime_sign"
+        },
+        {
+          "seconds": 0.00040220000119006727,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_cross_lane_carry_evidence"
+        },
+        {
+          "seconds": 0.0007941000003484078,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_es_contango_positive_carry"
+        },
+        {
+          "seconds": 0.0006887999988975935,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_es_fixture_basis_from_spot"
+        },
+        {
+          "seconds": 0.00022309999985736795,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_spot_carry_matches_ln_ratio_without_stamping_rate"
+        },
+        {
+          "seconds": 0.00019330000031914096,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_spot_carry_missing_observation_date_fail_closed"
+        },
+        {
+          "seconds": 0.0003930000002583256,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_spot_carry_source_has_no_silent_rate_or_calendar_fallback"
+        },
+        {
+          "seconds": 0.016966399998636916,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_workspace_futures_payload_carry_available"
+        },
+        {
+          "seconds": 0.0006787000002077548,
+          "selector": "tests/futures/test_f3_curve.py::FuturesF3CurveTests::test_es_fixture_curve_contango"
+        },
+        {
+          "seconds": 0.0002336999987164745,
+          "selector": "tests/futures/test_family_models.py::FamilyModelTests::test_energy_family_resolves_for_cl"
+        },
+        {
+          "seconds": 0.004734399999506422,
+          "selector": "tests/futures/test_family_models.py::FamilyModelTests::test_es_family_context_golden_fixture_regression"
+        },
+        {
+          "seconds": 0.00018790000103763305,
+          "selector": "tests/futures/test_family_models.py::FamilyModelTests::test_resolve_equity_index_for_es"
+        },
+        {
+          "seconds": 0.00017630000002100132,
+          "selector": "tests/futures/test_family_models.py::FamilyModelTests::test_unimplemented_family_fail_closed"
+        },
+        {
+          "seconds": 0.0001979000007850118,
+          "selector": "tests/futures/test_futures_spec_registry.py::FuturesSpecRegistryTests::test_date_boundary_before_effective_from"
+        },
+        {
+          "seconds": 0.00018710000040300656,
+          "selector": "tests/futures/test_futures_spec_registry.py::FuturesSpecRegistryTests::test_es_spec_resolves"
+        },
+        {
+          "seconds": 0.00017099999968195334,
+          "selector": "tests/futures/test_futures_spec_registry.py::FuturesSpecRegistryTests::test_unknown_family_returns_none"
+        },
+        {
+          "seconds": 0.00017070000103558414,
+          "selector": "tests/futures/test_leverage_stress_engine.py::LeverageStressEngineTests::test_compute_margin_percentile"
+        },
+        {
+          "seconds": 0.0001661000005697133,
+          "selector": "tests/futures/test_leverage_stress_engine.py::LeverageStressEngineTests::test_compute_stress_score_with_crowding"
+        },
+        {
+          "seconds": 0.00020349999977042899,
+          "selector": "tests/futures/test_leverage_stress_engine.py::LeverageStressEngineTests::test_cross_lane_emits_long_liquidation_risk"
+        },
+        {
+          "seconds": 0.0005318999992596218,
+          "selector": "tests/futures/test_leverage_stress_engine.py::LeverageStressEngineTests::test_es_leverage_stress_golden_fixture_regression"
+        },
+        {
+          "seconds": 0.00019749999955820385,
+          "selector": "tests/futures/test_leverage_stress_engine.py::LeverageStressEngineTests::test_quality_blocks_leverage_stress"
+        },
+        {
+          "seconds": 0.0002666000000317581,
+          "selector": "tests/futures/test_leverage_stress_engine.py::LeverageStressEngineTests::test_stress_regime_thresholds"
+        },
+        {
+          "seconds": 0.0001864000005298294,
+          "selector": "tests/futures/test_macro_events_engine.py::MacroEventsEngineTests::test_compute_surprise_zscore"
+        },
+        {
+          "seconds": 0.00019299999985378236,
+          "selector": "tests/futures/test_macro_events_engine.py::MacroEventsEngineTests::test_cross_lane_emits_macro_event_risk"
+        },
+        {
+          "seconds": 0.0008020000004762551,
+          "selector": "tests/futures/test_macro_events_engine.py::MacroEventsEngineTests::test_es_macro_events_golden_fixture_regression"
+        },
+        {
+          "seconds": 0.0002837000010913471,
+          "selector": "tests/futures/test_macro_events_engine.py::MacroEventsEngineTests::test_event_window_active_within_horizon"
+        },
+        {
+          "seconds": 0.0002435000005789334,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_compute_net_percentile_and_zscore"
+        },
+        {
+          "seconds": 0.00021979999837640207,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_compute_oi_velocity_rising_with_price"
+        },
+        {
+          "seconds": 0.0004154999987804331,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_cot_fixture_lookahead_not_in_adapter_at_cutoff"
+        },
+        {
+          "seconds": 0.00021980000019539148,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_cross_lane_emits_crowded_long_from_cot"
+        },
+        {
+          "seconds": 0.00018110000019078143,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_crowding_regime_thresholds"
+        },
+        {
+          "seconds": 0.0015196000003925292,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_es_positioning_golden_fixture_regression"
+        },
+        {
+          "seconds": 0.00020700000095530413,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_filter_pit_reports_excludes_future_publication"
+        },
+        {
+          "seconds": 0.0001762000010785414,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_filter_pit_reports_pending_flag"
+        },
+        {
+          "seconds": 0.00021920000108366366,
+          "selector": "tests/futures/test_relative_value.py::FuturesSimulatorF10Tests::test_calendar_spread_pnl"
+        },
+        {
+          "seconds": 0.0002007000002777204,
+          "selector": "tests/futures/test_relative_value.py::FuturesSimulatorF10Tests::test_roll_with_variation_margin"
+        },
+        {
+          "seconds": 0.0003130999994027661,
+          "selector": "tests/futures/test_relative_value.py::FuturesSimulatorF10Tests::test_variation_margin_change"
+        },
+        {
+          "seconds": 0.0004270999997970648,
+          "selector": "tests/futures/test_relative_value.py::RelativeValueTests::test_calendar_spread_math"
+        },
+        {
+          "seconds": 0.0008871999998518731,
+          "selector": "tests/futures/test_relative_value.py::RelativeValueTests::test_es_relative_value_golden"
+        },
+        {
+          "seconds": 0.0009315000006608898,
+          "selector": "tests/futures/test_relative_value.py::RelativeValueTests::test_futures_workspace_includes_relative_value"
+        }
+      ],
+      "process_wall_seconds": 2.0017679000011412,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [
+        {
+          "seconds": 0.5745370000004186,
+          "selector": "tests/futures/test_f11_advanced.py::F11WorkspaceTests::test_workspace_exposes_latest_futures_forecast"
+        },
+        {
+          "seconds": 0.03935579999961192,
+          "selector": "tests/futures/test_f11_advanced.py::F11GoldenFixtureTests::test_es_f11_baseline_expected_matches_computed"
+        },
+        {
+          "seconds": 0.03820079999968584,
+          "selector": "tests/futures/test_f11_advanced.py::F11HarnessTests::test_walk_forward_gate_pass"
+        },
+        {
+          "seconds": 0.03787289999854693,
+          "selector": "tests/futures/test_f11_advanced.py::F11EnergyHarnessTests::test_cl_walk_forward_gate_pass"
+        },
+        {
+          "seconds": 0.032979499999783,
+          "selector": "tests/futures/test_f11_advanced.py::F11GoldenFixtureTests::test_cl_f11_baseline_expected_matches_computed"
+        },
+        {
+          "seconds": 0.016966399998636916,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_workspace_futures_payload_carry_available"
+        },
+        {
+          "seconds": 0.004734399999506422,
+          "selector": "tests/futures/test_family_models.py::FamilyModelTests::test_es_family_context_golden_fixture_regression"
+        },
+        {
+          "seconds": 0.0020910000002913876,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_es_baselines_golden_fixture_regression"
+        },
+        {
+          "seconds": 0.0017255999991903082,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_bars_fixture_lookahead_not_in_adapter_at_cutoff"
+        },
+        {
+          "seconds": 0.0015196000003925292,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_es_positioning_golden_fixture_regression"
+        }
+      ],
+      "status": "passed",
+      "suite_id": "futures",
+      "tests_run": 65,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.769333899999765,
+      "worker_error": "",
+      "worker_pid": 6412
+    },
+    {
+      "discovery_seconds": 0.7175470000001951,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 22,
+      "per_test_durations": [
+        {
+          "seconds": 0.0002638000005390495,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_as_of_returns_visible_version"
+        },
+        {
+          "seconds": 0.00020360000053187832,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_correction_invisible_before_known_from"
+        },
+        {
+          "seconds": 0.0001750999999785563,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_market_time_before_valid_from_is_none"
+        },
+        {
+          "seconds": 0.0002057999990938697,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_missing_known_from_rejected"
+        },
+        {
+          "seconds": 0.00019189999875379726,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_open_ended_known_to_visible"
+        },
+        {
+          "seconds": 0.000509299999976065,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_overlap_append_rejected"
+        },
+        {
+          "seconds": 0.00022560000070370734,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_unknown_entity_is_none"
+        },
+        {
+          "seconds": 0.00032110000029206276,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_corporate_registry_uses_knowledge_visibility"
+        },
+        {
+          "seconds": 0.00024479999956383836,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_o7_fail_closed_when_calendar_unavailable"
+        },
+        {
+          "seconds": 0.000577799999518902,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_o7_uses_joined_earnings_calendar"
+        },
+        {
+          "seconds": 0.00024119999943650328,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_resolve_futures_spec_default_es"
+        },
+        {
+          "seconds": 0.0002989999993587844,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_dividend_restatement"
+        },
+        {
+          "seconds": 0.00022089999947638717,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_earnings_calendar_revision"
+        },
+        {
+          "seconds": 0.00018290000116394367,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_futures_spec_correction"
+        },
+        {
+          "seconds": 0.000173700000232202,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_missing_join_fail_closed"
+        },
+        {
+          "seconds": 0.00022089999947638717,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_options_oi_restatement"
+        },
+        {
+          "seconds": 0.000597399999605841,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_p0_s1_gate_pass"
+        },
+        {
+          "seconds": 0.00018450000061420724,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_symbol_mapping"
+        },
+        {
+          "seconds": 0.00019410000095376745,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_catalyst_attention_runtime_from_summaries"
+        },
+        {
+          "seconds": 0.10195519999979297,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_corporate_registry_pit_filters"
+        },
+        {
+          "seconds": 0.0003237000000808621,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_registry_from_extraction_summaries"
+        },
+        {
+          "seconds": 0.015091000001120847,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_workspace_exposes_corporate_registry_and_catalyst_runtime"
+        }
+      ],
+      "process_wall_seconds": 1.0668596999985311,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [
+        {
+          "seconds": 0.10195519999979297,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_corporate_registry_pit_filters"
+        },
+        {
+          "seconds": 0.015091000001120847,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_workspace_exposes_corporate_registry_and_catalyst_runtime"
+        },
+        {
+          "seconds": 0.000597399999605841,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_p0_s1_gate_pass"
+        },
+        {
+          "seconds": 0.000577799999518902,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_o7_uses_joined_earnings_calendar"
+        },
+        {
+          "seconds": 0.000509299999976065,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_overlap_append_rejected"
+        },
+        {
+          "seconds": 0.0003237000000808621,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_registry_from_extraction_summaries"
+        },
+        {
+          "seconds": 0.00032110000029206276,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_corporate_registry_uses_knowledge_visibility"
+        },
+        {
+          "seconds": 0.0002989999993587844,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_dividend_restatement"
+        },
+        {
+          "seconds": 0.0002638000005390495,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_as_of_returns_visible_version"
+        },
+        {
+          "seconds": 0.00024479999956383836,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_o7_fail_closed_when_calendar_unavailable"
+        }
+      ],
+      "status": "passed",
+      "suite_id": "runtime",
+      "tests_run": 22,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.1231818000014755,
+      "worker_error": "",
+      "worker_pid": 17916
+    },
+    {
+      "discovery_seconds": 0.86160960000052,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 123,
+      "per_test_durations": [
+        {
+          "seconds": 0.011948499999562046,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_catalyst_payload_uses_mc9_pipeline_for_boxl"
+        },
+        {
+          "seconds": 0.0034914999996544793,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_cluster_attention_level_bounded"
+        },
+        {
+          "seconds": 0.002135900000212132,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_cross_lane_attention_signals"
+        },
+        {
+          "seconds": 0.002482899999449728,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_first_cluster_velocity_fail_closed"
+        },
+        {
+          "seconds": 0.010248000000501634,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_golden_workspace_attention_block"
+        },
+        {
+          "seconds": 0.00477370000044175,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_information_value_bounded"
+        },
+        {
+          "seconds": 0.002269299999170471,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_information_value_separate_from_attention_level"
+        },
+        {
+          "seconds": 0.001639199999772245,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_pit_excludes_future_clusters"
+        },
+        {
+          "seconds": 0.002170499999920139,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_social_attention_unavailable_on_fixture"
+        },
+        {
+          "seconds": 0.0001919999995152466,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_accuracy_requires_ex_post_outcome"
+        },
+        {
+          "seconds": 0.0002328000009583775,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_contract_round_trip_author_evidence"
+        },
+        {
+          "seconds": 0.00151940000068862,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_cross_lane_influence_and_accuracy_signals"
+        },
+        {
+          "seconds": 0.010721800001192605,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_golden_workspace_author_block"
+        },
+        {
+          "seconds": 0.0004745999995066086,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_influence_not_equal_to_accuracy"
+        },
+        {
+          "seconds": 0.00017299999854003545,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_missing_social_metrics_fail_closed"
+        },
+        {
+          "seconds": 0.000386199999411474,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_pending_outcome_fail_closed"
+        },
+        {
+          "seconds": 0.0003352999992785044,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_pit_excludes_future_social_posts"
+        },
+        {
+          "seconds": 0.00020850000146310776,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_unsupported_symbol_has_no_author_intelligence"
+        },
+        {
+          "seconds": 0.0004050999996252358,
+          "selector": "tests/market_context/test_entity_resolution.py::TestMC2EntityResolution::test_ambiguous_fixture_marks_cluster_uncertain_inputs"
+        },
+        {
+          "seconds": 0.00021130000095581636,
+          "selector": "tests/market_context/test_entity_resolution.py::TestMC2EntityResolution::test_conflicting_claims_mark_ambiguous"
+        },
+        {
+          "seconds": 0.0001838000007410301,
+          "selector": "tests/market_context/test_entity_resolution.py::TestMC2EntityResolution::test_entity_id_from_symbol_is_deterministic"
+        },
+        {
+          "seconds": 0.0006359999988490017,
+          "selector": "tests/market_context/test_entity_resolution.py::TestMC2EntityResolution::test_fixture_documents_resolve_entity_ids"
+        },
+        {
+          "seconds": 0.00019079999947280157,
+          "selector": "tests/market_context/test_entity_resolution.py::TestMC2EntityResolution::test_missing_symbol_fails_closed"
+        },
+        {
+          "seconds": 0.0005786000001535285,
+          "selector": "tests/market_context/test_entity_resolution.py::TestMC2EntityResolution::test_pit_fields_preserved_on_resolution"
+        },
+        {
+          "seconds": 0.00042639999992388766,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_ambiguous_entity_marks_cluster_uncertain"
+        },
+        {
+          "seconds": 0.0025560000012774253,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_boxl_fixture_clusters_to_five_events"
+        },
+        {
+          "seconds": 0.0025158000007650116,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_cluster_available_time_is_max_document_available_time"
+        },
+        {
+          "seconds": 0.0009540999999444466,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_duplicate_headlines_flag_event_duplicate"
+        },
+        {
+          "seconds": 0.000926900000195019,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_golden_expected_clusters"
+        },
+        {
+          "seconds": 0.0006751000000804197,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_pit_cutoff_excludes_future_documents"
+        },
+        {
+          "seconds": 0.0006980999987717951,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_revision_v2_hidden_before_available_time"
+        },
+        {
+          "seconds": 0.0008711999998922693,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_revision_v2_lineage_visible_after_available_time"
+        },
+        {
+          "seconds": 0.0005385000004025642,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_syndication_independent_source_count"
+        },
+        {
+          "seconds": 0.006500399998913053,
+          "selector": "tests/market_context/test_expectations.py::TestMC6SurprisePipeline::test_golden_workspace_surprise_block"
+        },
+        {
+          "seconds": 0.0006845000007160706,
+          "selector": "tests/market_context/test_expectations.py::TestMC6SurprisePipeline::test_missing_consensus_fail_closed"
+        },
+        {
+          "seconds": 0.0009229000006598653,
+          "selector": "tests/market_context/test_expectations.py::TestMC6SurprisePipeline::test_pit_excludes_future_consensus"
+        },
+        {
+          "seconds": 0.001589899999089539,
+          "selector": "tests/market_context/test_expectations.py::TestMC6SurprisePipeline::test_revenue_surprise_positive"
+        },
+        {
+          "seconds": 0.0016529000004084082,
+          "selector": "tests/market_context/test_extraction.py::TestMC5AmbiguousEntity::test_ambiguous_entity_flags_extraction"
+        },
+        {
+          "seconds": 0.0007373999997071223,
+          "selector": "tests/market_context/test_extraction.py::TestMC5FixturePipeline::test_boxl_pipeline_matches_golden"
+        },
+        {
+          "seconds": 0.0005400000009103678,
+          "selector": "tests/market_context/test_extraction.py::TestMC5FixturePipeline::test_enriched_events_carry_metrics"
+        },
+        {
+          "seconds": 0.00018840000120690092,
+          "selector": "tests/market_context/test_extraction.py::TestMC5FixturePipeline::test_llm_fixture_loads_eight_documents"
+        },
+        {
+          "seconds": 0.00038780000068072695,
+          "selector": "tests/market_context/test_extraction.py::TestMC5FixturePipeline::test_pit_cutoff_before_fda_excludes_fda_cluster"
+        },
+        {
+          "seconds": 0.0005618999985017581,
+          "selector": "tests/market_context/test_extraction.py::TestMC5FixturePipeline::test_pit_cutoff_excludes_future_documents"
+        },
+        {
+          "seconds": 0.00020740000036312267,
+          "selector": "tests/market_context/test_extraction.py::TestMC5OntologyMapping::test_earnings_beat_maps_to_earnings"
+        },
+        {
+          "seconds": 0.00017829999887908343,
+          "selector": "tests/market_context/test_extraction.py::TestMC5OntologyMapping::test_macro_headwind_has_uncertainty_channel"
+        },
+        {
+          "seconds": 0.00017590000061318278,
+          "selector": "tests/market_context/test_extraction.py::TestMC5OntologyMapping::test_offering_risk_channels"
+        },
+        {
+          "seconds": 0.00021190000006754417,
+          "selector": "tests/market_context/test_extraction.py::TestMC5RuleMetrics::test_price_target_regex"
+        },
+        {
+          "seconds": 0.0003293000008852687,
+          "selector": "tests/market_context/test_extraction.py::TestMC5WorkspacePayload::test_non_boxl_symbol_fail_closed"
+        },
+        {
+          "seconds": 0.005959200001598219,
+          "selector": "tests/market_context/test_extraction.py::TestMC5WorkspacePayload::test_workspace_includes_extraction_block"
+        },
+        {
+          "seconds": 0.0005101000006106915,
+          "selector": "tests/market_context/test_impact_components.py::TestMC7ImpactPipeline::test_ambiguous_cluster_flags_novelty_uncertain"
+        },
+        {
+          "seconds": 0.0031077999992703553,
+          "selector": "tests/market_context/test_impact_components.py::TestMC7ImpactPipeline::test_cross_lane_metadata_exposes_components"
+        },
+        {
+          "seconds": 0.010266900000715395,
+          "selector": "tests/market_context/test_impact_components.py::TestMC7ImpactPipeline::test_golden_workspace_impact_block"
+        },
+        {
+          "seconds": 0.00022159999934956431,
+          "selector": "tests/market_context/test_impact_components.py::TestMC7ImpactPipeline::test_non_boxl_symbol_fail_closed"
+        },
+        {
+          "seconds": 0.0015173000010690885,
+          "selector": "tests/market_context/test_impact_components.py::TestMC7ImpactPipeline::test_official_fda_source_elevated_credibility"
+        },
+        {
+          "seconds": 0.0011486000003060326,
+          "selector": "tests/market_context/test_impact_components.py::TestMC7ImpactPipeline::test_pit_excludes_future_clusters"
+        },
+        {
+          "seconds": 0.005562699998336029,
+          "selector": "tests/market_context/test_impact_components.py::TestMC7ImpactPipeline::test_syndication_slice_higher_novelty_than_duplicate_pair"
+        },
+        {
+          "seconds": 0.0002855000002455199,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_contract_round_trip_information_decay_class"
+        },
+        {
+          "seconds": 0.00029600000016216654,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_event_type_decay_class_mapping"
+        },
+        {
+          "seconds": 0.0076807999994343845,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_golden_workspace_decay_block"
+        },
+        {
+          "seconds": 0.01771069999995234,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_golden_workspace_reaction_enriched"
+        },
+        {
+          "seconds": 0.0025456999992456986,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_mc12_leaves_mc13_fields_none_before_enrichment"
+        },
+        {
+          "seconds": 0.005302599998685764,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_offering_risk_high_priced_in"
+        },
+        {
+          "seconds": 0.00018950000048789661,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_partial_input_fail_closed"
+        },
+        {
+          "seconds": 0.0022482999993371777,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_pit_cutoff_excludes_future_events"
+        },
+        {
+          "seconds": 0.0005815000004076865,
+          "selector": "tests/market_context/test_macro.py::TestMC11MacroContext::test_cross_lane_publishes_macro_regime_context"
+        },
+        {
+          "seconds": 0.0005163999994692858,
+          "selector": "tests/market_context/test_macro.py::TestMC11MacroContext::test_macro_pipeline_matches_golden_fixture"
+        },
+        {
+          "seconds": 0.0003218000001652399,
+          "selector": "tests/market_context/test_macro.py::TestMC11MacroContext::test_pit_excludes_future_macro_releases"
+        },
+        {
+          "seconds": 0.005468499999551568,
+          "selector": "tests/market_context/test_macro.py::TestMC11MacroContext::test_workspace_projection_includes_macro_context"
+        },
+        {
+          "seconds": 0.008636200000182725,
+          "selector": "tests/market_context/test_mc_catalyst.py::TestMC8CatalystPipeline::test_catalyst_payload_uses_mc8_pipeline_for_boxl"
+        },
+        {
+          "seconds": 0.0019778000005317153,
+          "selector": "tests/market_context/test_mc_catalyst.py::TestMC8CatalystPipeline::test_cross_lane_catalyst_and_thesis_signals"
+        },
+        {
+          "seconds": 0.0001816000003600493,
+          "selector": "tests/market_context/test_mc_catalyst.py::TestMC8CatalystPipeline::test_fail_closed_when_components_missing"
+        },
+        {
+          "seconds": 0.005549400000745663,
+          "selector": "tests/market_context/test_mc_catalyst.py::TestMC8CatalystPipeline::test_golden_workspace_catalyst_block"
+        },
+        {
+          "seconds": 0.001856200000474928,
+          "selector": "tests/market_context/test_mc_catalyst.py::TestMC8CatalystPipeline::test_pit_excludes_future_clusters"
+        },
+        {
+          "seconds": 0.006005699999150238,
+          "selector": "tests/market_context/test_narrative.py::TestMC10NarrativePipeline::test_cross_lane_narrative_shift"
+        },
+        {
+          "seconds": 0.0032171000002563233,
+          "selector": "tests/market_context/test_narrative.py::TestMC10NarrativePipeline::test_first_theme_snapshot_velocity_fail_closed"
+        },
+        {
+          "seconds": 0.006403699999282253,
+          "selector": "tests/market_context/test_narrative.py::TestMC10NarrativePipeline::test_golden_workspace_narrative_block"
+        },
+        {
+          "seconds": 0.005554599998504273,
+          "selector": "tests/market_context/test_narrative.py::TestMC10NarrativePipeline::test_pit_excludes_future_narratives"
+        },
+        {
+          "seconds": 0.003599400000894093,
+          "selector": "tests/market_context/test_narrative.py::TestMC10NarrativePipeline::test_prevalence_bounded"
+        },
+        {
+          "seconds": 0.0031212000012601493,
+          "selector": "tests/market_context/test_narrative.py::TestMC10NarrativePipeline::test_thesis_graph_supporting_and_opposing_ids"
+        },
+        {
+          "seconds": 0.000625900000159163,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_ambiguous_link_fail_closed"
+        },
+        {
+          "seconds": 0.000636199998552911,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_cross_lane_propagation_signals"
+        },
+        {
+          "seconds": 0.0005822000002808636,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_direct_links_only_to_target_symbol"
+        },
+        {
+          "seconds": 0.011580899999898975,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_golden_workspace_propagation_block"
+        },
+        {
+          "seconds": 0.0002347999998164596,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_missing_link_weight_fail_closed"
+        },
+        {
+          "seconds": 0.0005453000012494158,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_pit_excludes_future_donor_signals"
+        },
+        {
+          "seconds": 0.00621550000141724,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_separate_propagated_fields_no_fused_score"
+        },
+        {
+          "seconds": 0.0008107999983621994,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_stale_link_excluded"
+        },
+        {
+          "seconds": 0.00025180000011459924,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_unsupported_symbol_has_no_propagation"
+        },
+        {
+          "seconds": 0.0027169000004505506,
+          "selector": "tests/market_context/test_propagation.py::TestMC15GateValidation::test_matches_golden_gate_summary"
+        },
+        {
+          "seconds": 0.003164099998684833,
+          "selector": "tests/market_context/test_propagation.py::TestMC15GateValidation::test_unified_gate_validation_passes_on_admitted_fixtures"
+        },
+        {
+          "seconds": 0.002511900000172318,
+          "selector": "tests/market_context/test_reaction.py::TestMC12ReactionPipeline::test_cross_lane_reaction_signals"
+        },
+        {
+          "seconds": 0.006248899999263813,
+          "selector": "tests/market_context/test_reaction.py::TestMC12ReactionPipeline::test_golden_workspace_reaction_block"
+        },
+        {
+          "seconds": 0.001922999999806052,
+          "selector": "tests/market_context/test_reaction.py::TestMC12ReactionPipeline::test_missing_fixture_fail_closed"
+        },
+        {
+          "seconds": 0.004348799999206676,
+          "selector": "tests/market_context/test_reaction.py::TestMC12ReactionPipeline::test_offering_risk_contradicted"
+        },
+        {
+          "seconds": 0.003528100000039558,
+          "selector": "tests/market_context/test_reaction.py::TestMC12ReactionPipeline::test_priced_in_deferred_before_mc13_enrichment"
+        },
+        {
+          "seconds": 0.005889600000955397,
+          "selector": "tests/market_context/test_reaction.py::TestMC12ReactionPipeline::test_workspace_contradictions_exposed"
+        },
+        {
+          "seconds": 0.0006737000003340654,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4FixturePipeline::test_boxl_pipeline_matches_golden"
+        },
+        {
+          "seconds": 0.00017560000014782418,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4FixturePipeline::test_finbert_fixture_labels_load"
+        },
+        {
+          "seconds": 0.0003919000009773299,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4FixturePipeline::test_pit_cutoff_excludes_future_documents"
+        },
+        {
+          "seconds": 0.0005834000003233086,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4FixturePipeline::test_sentiment_does_not_emit_trade_evidence"
+        },
+        {
+          "seconds": 0.00019390000124985818,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4KeywordBaseline::test_keyword_negative_offering_headline"
+        },
+        {
+          "seconds": 0.00019889999930455815,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4KeywordBaseline::test_keyword_positive_earnings_headline"
+        },
+        {
+          "seconds": 0.00016520000099262688,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4KeywordBaseline::test_missing_body_fail_closed"
+        },
+        {
+          "seconds": 0.00017350000052829273,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4KeywordBaseline::test_tie_produces_mixed_not_neutral"
+        },
+        {
+          "seconds": 0.008776200000284007,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4WorkspaceProjection::test_boxl_workspace_payload_available"
+        },
+        {
+          "seconds": 0.0002920000006270129,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4WorkspaceProjection::test_unsupported_symbol_fail_closed"
+        },
+        {
+          "seconds": 0.0036036999990756158,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16GateValidation::test_matches_golden_gate_summary"
+        },
+        {
+          "seconds": 0.0035872000007657334,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16GateValidation::test_unified_gate_validation_passes_on_admitted_fixtures"
+        },
+        {
+          "seconds": 0.003272800000559073,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_adversarial_contradiction_cluster"
+        },
+        {
+          "seconds": 0.0030157999990478856,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_cross_lane_synthesis_signals"
+        },
+        {
+          "seconds": 0.008129800000460818,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_golden_workspace_synthesis_block"
+        },
+        {
+          "seconds": 0.009018199998536147,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_pit_excludes_future_revision_document"
+        },
+        {
+          "seconds": 0.002164499999707914,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_revision_supersession_at_late_cutoff"
+        },
+        {
+          "seconds": 0.007454900000084308,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_separate_synthesis_fields_no_fused_score"
+        },
+        {
+          "seconds": 0.002942500001154258,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_single_member_cluster_produces_no_row"
+        },
+        {
+          "seconds": 0.0009246000008715782,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_unsupported_symbol_has_no_synthesis"
+        },
+        {
+          "seconds": 0.0006133999995654449,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_contradiction_fail_closed"
+        },
+        {
+          "seconds": 0.011701099998390418,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_enrichment_gate_validation_passes"
+        },
+        {
+          "seconds": 0.010382500000559958,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_golden_catalyst_and_impact_fixtures"
+        },
+        {
+          "seconds": 0.008084900000540074,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_golden_workspace_enrichment_blocks"
+        },
+        {
+          "seconds": 0.007411000000502099,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_no_universal_news_score"
+        },
+        {
+          "seconds": 0.004397100001369836,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_pit_excludes_future_synthesis"
+        },
+        {
+          "seconds": 0.010340499999074382,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_score_invariance"
+        }
+      ],
+      "process_wall_seconds": 1.4361106999986077,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [
+        {
+          "seconds": 0.01771069999995234,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_golden_workspace_reaction_enriched"
+        },
+        {
+          "seconds": 0.011948499999562046,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_catalyst_payload_uses_mc9_pipeline_for_boxl"
+        },
+        {
+          "seconds": 0.011701099998390418,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_enrichment_gate_validation_passes"
+        },
+        {
+          "seconds": 0.011580899999898975,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_golden_workspace_propagation_block"
+        },
+        {
+          "seconds": 0.010721800001192605,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_golden_workspace_author_block"
+        },
+        {
+          "seconds": 0.010382500000559958,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_golden_catalyst_and_impact_fixtures"
+        },
+        {
+          "seconds": 0.010340499999074382,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_score_invariance"
+        },
+        {
+          "seconds": 0.010266900000715395,
+          "selector": "tests/market_context/test_impact_components.py::TestMC7ImpactPipeline::test_golden_workspace_impact_block"
+        },
+        {
+          "seconds": 0.010248000000501634,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_golden_workspace_attention_block"
+        },
+        {
+          "seconds": 0.009018199998536147,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_pit_excludes_future_revision_document"
+        }
+      ],
+      "status": "passed",
+      "suite_id": "market_context",
+      "tests_run": 123,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.3645304000001488,
+      "worker_error": "",
+      "worker_pid": 9168
+    },
+    {
+      "discovery_seconds": 0.23424350000095728,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 20,
+      "per_test_durations": [
+        {
+          "seconds": 0.0022016000002622604,
+          "selector": "tests/cftc/test_cftc_cot.py::CotCategorySeparationTests::test_categories_remain_distinct"
+        },
+        {
+          "seconds": 0.00023239999973156955,
+          "selector": "tests/cftc/test_cftc_cot.py::CotDatasetTests::test_official_dataset_ids"
+        },
+        {
+          "seconds": 0.00020659999972849619,
+          "selector": "tests/cftc/test_cftc_cot.py::CotDatasetTests::test_require_scope_raises_on_ambiguity"
+        },
+        {
+          "seconds": 0.001355899999907706,
+          "selector": "tests/cftc/test_cftc_cot.py::CotDerivedTests::test_net_and_pct_oi_from_compatible_oi"
+        },
+        {
+          "seconds": 0.0007667000008950708,
+          "selector": "tests/cftc/test_cftc_cot.py::CotDerivedTests::test_weekly_change_is_not_trade_flow"
+        },
+        {
+          "seconds": 0.0014672000015707454,
+          "selector": "tests/cftc/test_cftc_cot.py::CotNormalizeTests::test_contract_family_not_specific_expiration"
+        },
+        {
+          "seconds": 0.0012452000009943731,
+          "selector": "tests/cftc/test_cftc_cot.py::CotNormalizeTests::test_tff_futures_only_normalization"
+        },
+        {
+          "seconds": 0.0006508999995276099,
+          "selector": "tests/cftc/test_cftc_cot.py::CotNormalizeTests::test_unresolved_mapping_flagged"
+        },
+        {
+          "seconds": 0.000436700000136625,
+          "selector": "tests/cftc/test_cftc_cot.py::CotParserTests::test_disaggregated_managed_money_distinct_from_tff_leveraged"
+        },
+        {
+          "seconds": 0.00034919999961857684,
+          "selector": "tests/cftc/test_cftc_cot.py::CotParserTests::test_tff_categories_preserved"
+        },
+        {
+          "seconds": 0.00025379999897268135,
+          "selector": "tests/cftc/test_cftc_cot.py::CotPitTests::test_holiday_delayed_release_not_friday"
+        },
+        {
+          "seconds": 0.00022119999994174577,
+          "selector": "tests/cftc/test_cftc_cot.py::CotPitTests::test_tuesday_friday_release_lag"
+        },
+        {
+          "seconds": 0.00032500000088475645,
+          "selector": "tests/cftc/test_cftc_cot.py::CotProductMappingTests::test_hierarchy_fixture_extends_mapper"
+        },
+        {
+          "seconds": 0.0007318999996641651,
+          "selector": "tests/cftc/test_cftc_cot.py::CotRevisionTests::test_source_revision_preserves_versions"
+        },
+        {
+          "seconds": 0.0005764999987150077,
+          "selector": "tests/cftc/test_cftc_cot.py::CotScopeTests::test_double_count_protection_requires_scope_filter"
+        },
+        {
+          "seconds": 0.00174929999957385,
+          "selector": "tests/cftc/test_cftc_cot.py::CotScopeTests::test_unfiltered_all_rows_not_both_in_canonical_aggregate"
+        },
+        {
+          "seconds": 0.0005853999991813907,
+          "selector": "tests/cftc/test_cftc_cot.py::CotSourceOutageTests::test_quality_blocks_empty_as_not_zero"
+        },
+        {
+          "seconds": 0.00042360000043117907,
+          "selector": "tests/cftc/test_cftc_cot.py::CotSourceOutageTests::test_source_unavailable_not_zero_positions"
+        },
+        {
+          "seconds": 0.0006420999998226762,
+          "selector": "tests/cftc/test_cftc_cot.py::CotStoreTests::test_bitemporal_reference_kind"
+        },
+        {
+          "seconds": 0.0005428999993455363,
+          "selector": "tests/cftc/test_cftc_cot.py::CotStoreTests::test_pit_query_excludes_unreleased"
+        }
+      ],
+      "process_wall_seconds": 0.4896654000003764,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [
+        {
+          "seconds": 0.0022016000002622604,
+          "selector": "tests/cftc/test_cftc_cot.py::CotCategorySeparationTests::test_categories_remain_distinct"
+        },
+        {
+          "seconds": 0.00174929999957385,
+          "selector": "tests/cftc/test_cftc_cot.py::CotScopeTests::test_unfiltered_all_rows_not_both_in_canonical_aggregate"
+        },
+        {
+          "seconds": 0.0014672000015707454,
+          "selector": "tests/cftc/test_cftc_cot.py::CotNormalizeTests::test_contract_family_not_specific_expiration"
+        },
+        {
+          "seconds": 0.001355899999907706,
+          "selector": "tests/cftc/test_cftc_cot.py::CotDerivedTests::test_net_and_pct_oi_from_compatible_oi"
+        },
+        {
+          "seconds": 0.0012452000009943731,
+          "selector": "tests/cftc/test_cftc_cot.py::CotNormalizeTests::test_tff_futures_only_normalization"
+        },
+        {
+          "seconds": 0.0007667000008950708,
+          "selector": "tests/cftc/test_cftc_cot.py::CotDerivedTests::test_weekly_change_is_not_trade_flow"
+        },
+        {
+          "seconds": 0.0007318999996641651,
+          "selector": "tests/cftc/test_cftc_cot.py::CotRevisionTests::test_source_revision_preserves_versions"
+        },
+        {
+          "seconds": 0.0006508999995276099,
+          "selector": "tests/cftc/test_cftc_cot.py::CotNormalizeTests::test_unresolved_mapping_flagged"
+        },
+        {
+          "seconds": 0.0006420999998226762,
+          "selector": "tests/cftc/test_cftc_cot.py::CotStoreTests::test_bitemporal_reference_kind"
+        },
+        {
+          "seconds": 0.0005853999991813907,
+          "selector": "tests/cftc/test_cftc_cot.py::CotSourceOutageTests::test_quality_blocks_empty_as_not_zero"
+        }
+      ],
+      "status": "passed",
+      "suite_id": "cftc",
+      "tests_run": 20,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.015519599999606726,
+      "worker_error": "",
+      "worker_pid": 26608
+    },
+    {
+      "discovery_seconds": 0.2685801999996329,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 30,
+      "per_test_durations": [
+        {
+          "seconds": 0.00145179999890388,
+          "selector": "tests/fred/test_fred.py::FredCftcInteropTests::test_independent_source_clocks"
+        },
+        {
+          "seconds": 0.000638999999864609,
+          "selector": "tests/fred/test_fred.py::FredCrossFrequencyPitTests::test_cross_frequency_join"
+        },
+        {
+          "seconds": 0.0002702000001590932,
+          "selector": "tests/fred/test_fred.py::FredDerivedTests::test_derive_2s10s_pit_compatible"
+        },
+        {
+          "seconds": 0.00036240000008547213,
+          "selector": "tests/fred/test_fred.py::FredDerivedTests::test_derive_3m10y"
+        },
+        {
+          "seconds": 0.0002675000014278339,
+          "selector": "tests/fred/test_fred.py::FredNormalizeTests::test_missing_dot_is_unknown_not_zero"
+        },
+        {
+          "seconds": 0.00029379999978118576,
+          "selector": "tests/fred/test_fred.py::FredNormalizeTests::test_v1_available_time_from_realtime_start_not_end"
+        },
+        {
+          "seconds": 0.00025739999910001643,
+          "selector": "tests/fred/test_fred.py::FredNormalizeTests::test_v1_live_first_observed_overrides_date_only_start"
+        },
+        {
+          "seconds": 0.00036840000029769726,
+          "selector": "tests/fred/test_fred.py::FredNormalizeTests::test_v1_missing_value_fixture"
+        },
+        {
+          "seconds": 0.00035459999890008476,
+          "selector": "tests/fred/test_fred.py::FredReconciliationTests::test_reconciliation_mismatch"
+        },
+        {
+          "seconds": 0.0003293999998277286,
+          "selector": "tests/fred/test_fred.py::FredReconciliationTests::test_reconciliation_pass"
+        },
+        {
+          "seconds": 0.00018679999993764795,
+          "selector": "tests/fred/test_fred.py::FredRedactionTests::test_sanitize_v1_request_semantics"
+        },
+        {
+          "seconds": 0.00023440000040864106,
+          "selector": "tests/fred/test_fred.py::FredRedactionTests::test_transport_error_redacted"
+        },
+        {
+          "seconds": 0.00019080000129179098,
+          "selector": "tests/fred/test_fred.py::FredRedactionTests::test_v1_api_key_redacted_from_url"
+        },
+        {
+          "seconds": 0.00016219999997701962,
+          "selector": "tests/fred/test_fred.py::FredRedactionTests::test_v2_bearer_redacted"
+        },
+        {
+          "seconds": 0.00016010000035748817,
+          "selector": "tests/fred/test_fred.py::FredRegistryTests::test_no_composite_macro_score_in_contracts"
+        },
+        {
+          "seconds": 0.0001615999990463024,
+          "selector": "tests/fred/test_fred.py::FredRegistryTests::test_tier1_bounded_registry"
+        },
+        {
+          "seconds": 0.0003249000001233071,
+          "selector": "tests/fred/test_fred.py::FredReleaseAvailabilityTests::test_scheduled_release_before_fred_availability"
+        },
+        {
+          "seconds": 0.00042810000013560057,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_date_only_intraday_on_start_date_is_conservative"
+        },
+        {
+          "seconds": 0.0004270000008546049,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_knowledge_interval_sequence"
+        },
+        {
+          "seconds": 0.0004917000005661976,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_no_lookahead_current_revision"
+        },
+        {
+          "seconds": 0.00040609999996377155,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_realtime_end_not_used_as_available_time_regression"
+        },
+        {
+          "seconds": 0.00020170000061625615,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_revision_sequence_as_of"
+        },
+        {
+          "seconds": 0.00023119999968912452,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_v2_last_updated_not_historical_availability"
+        },
+        {
+          "seconds": 0.00019670000074256677,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_v2_pit_fallback_forbidden"
+        },
+        {
+          "seconds": 0.00022979999994277023,
+          "selector": "tests/fred/test_fred.py::FredStoreTests::test_bitemporal_reference_kind"
+        },
+        {
+          "seconds": 0.00020930000027874485,
+          "selector": "tests/fred/test_fred.py::FredV2NestedPayloadTests::test_flatten_production_series_blocks"
+        },
+        {
+          "seconds": 0.00034840000080293976,
+          "selector": "tests/fred/test_fred.py::FredV2PaginationTests::test_cursor_missing"
+        },
+        {
+          "seconds": 0.000970499999311869,
+          "selector": "tests/fred/test_fred.py::FredV2PaginationTests::test_fetch_detects_cursor_loop"
+        },
+        {
+          "seconds": 0.0004394000006868737,
+          "selector": "tests/fred/test_fred.py::FredV2PaginationTests::test_mixed_release_update"
+        },
+        {
+          "seconds": 0.0003006000006280374,
+          "selector": "tests/fred/test_fred.py::FredV2PaginationTests::test_multipage_complete"
+        }
+      ],
+      "process_wall_seconds": 0.5649060999985522,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [
+        {
+          "seconds": 0.00145179999890388,
+          "selector": "tests/fred/test_fred.py::FredCftcInteropTests::test_independent_source_clocks"
+        },
+        {
+          "seconds": 0.000970499999311869,
+          "selector": "tests/fred/test_fred.py::FredV2PaginationTests::test_fetch_detects_cursor_loop"
+        },
+        {
+          "seconds": 0.000638999999864609,
+          "selector": "tests/fred/test_fred.py::FredCrossFrequencyPitTests::test_cross_frequency_join"
+        },
+        {
+          "seconds": 0.0004917000005661976,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_no_lookahead_current_revision"
+        },
+        {
+          "seconds": 0.0004394000006868737,
+          "selector": "tests/fred/test_fred.py::FredV2PaginationTests::test_mixed_release_update"
+        },
+        {
+          "seconds": 0.00042810000013560057,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_date_only_intraday_on_start_date_is_conservative"
+        },
+        {
+          "seconds": 0.0004270000008546049,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_knowledge_interval_sequence"
+        },
+        {
+          "seconds": 0.00040609999996377155,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_realtime_end_not_used_as_available_time_regression"
+        },
+        {
+          "seconds": 0.00036840000029769726,
+          "selector": "tests/fred/test_fred.py::FredNormalizeTests::test_v1_missing_value_fixture"
+        },
+        {
+          "seconds": 0.00036240000008547213,
+          "selector": "tests/fred/test_fred.py::FredDerivedTests::test_derive_3m10y"
+        }
+      ],
+      "status": "passed",
+      "suite_id": "fred",
+      "tests_run": 30,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.011385800000425661,
+      "worker_error": "",
+      "worker_pid": 21568
+    },
+    {
+      "discovery_seconds": 0.3257577999993373,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 23,
+      "per_test_durations": [
+        {
+          "seconds": 0.0009874999996100087,
+          "selector": "tests/eia/test_eia.py::EiaCapabilityTests::test_offline_capability_report"
+        },
+        {
+          "seconds": 0.0009093999997276114,
+          "selector": "tests/eia/test_eia.py::EiaCaptureTests::test_capture_hash_excludes_api_key"
+        },
+        {
+          "seconds": 0.005388499999753549,
+          "selector": "tests/eia/test_eia.py::EiaCrossAssetTests::test_cftc_eia_independent_clocks"
+        },
+        {
+          "seconds": 0.0006288999993557809,
+          "selector": "tests/eia/test_eia.py::EiaNaturalGasTests::test_storage_change_is_balance_change"
+        },
+        {
+          "seconds": 0.00028790000033040997,
+          "selector": "tests/eia/test_eia.py::EiaNaturalGasTests::test_working_gas_is_stock"
+        },
+        {
+          "seconds": 0.0005923999997321516,
+          "selector": "tests/eia/test_eia.py::EiaNormalizeTests::test_commercial_spr_not_mixed"
+        },
+        {
+          "seconds": 0.0005677000008290634,
+          "selector": "tests/eia/test_eia.py::EiaNormalizeTests::test_petroleum_rows_normalize"
+        },
+        {
+          "seconds": 0.00019909999900846742,
+          "selector": "tests/eia/test_eia.py::EiaNormalizeTests::test_region_distinct"
+        },
+        {
+          "seconds": 0.0001830000001064036,
+          "selector": "tests/eia/test_eia.py::EiaNormalizeTests::test_stock_flow_semantics"
+        },
+        {
+          "seconds": 0.00021799999922222923,
+          "selector": "tests/eia/test_eia.py::EiaNormalizeTests::test_withheld_value_not_zero"
+        },
+        {
+          "seconds": 0.0003285000002506422,
+          "selector": "tests/eia/test_eia.py::EiaOutageTests::test_not_yet_released_flag"
+        },
+        {
+          "seconds": 0.000305800000205636,
+          "selector": "tests/eia/test_eia.py::EiaOutageTests::test_source_unavailable_not_zero"
+        },
+        {
+          "seconds": 0.0007370000002993038,
+          "selector": "tests/eia/test_eia.py::EiaPaginationTests::test_pagination_no_duplicates_or_gaps"
+        },
+        {
+          "seconds": 0.00019220000103814527,
+          "selector": "tests/eia/test_eia.py::EiaPitTests::test_wngsr_holiday_wednesday_noon"
+        },
+        {
+          "seconds": 0.0003268999989813892,
+          "selector": "tests/eia/test_eia.py::EiaPitTests::test_wngsr_pre_release_not_visible"
+        },
+        {
+          "seconds": 0.0002547999993112171,
+          "selector": "tests/eia/test_eia.py::EiaPitTests::test_wpsr_holiday_not_naive_wednesday"
+        },
+        {
+          "seconds": 0.00025629999981902074,
+          "selector": "tests/eia/test_eia.py::EiaPitTests::test_wpsr_pre_release_not_visible"
+        },
+        {
+          "seconds": 0.0007334999991144286,
+          "selector": "tests/eia/test_eia.py::EiaRedactionTests::test_response_echo_api_key_sanitized"
+        },
+        {
+          "seconds": 0.00027090000003227033,
+          "selector": "tests/eia/test_eia.py::EiaRedactionTests::test_url_api_key_redacted"
+        },
+        {
+          "seconds": 0.0001757000009092735,
+          "selector": "tests/eia/test_eia.py::EiaRegistryTests::test_bounded_registry"
+        },
+        {
+          "seconds": 0.00016789999972388614,
+          "selector": "tests/eia/test_eia.py::EiaRegistryTests::test_commercial_and_spr_separate"
+        },
+        {
+          "seconds": 0.0012287000008655014,
+          "selector": "tests/eia/test_eia.py::EiaRevisionTests::test_correction_preserves_versions"
+        },
+        {
+          "seconds": 0.00034980000054929405,
+          "selector": "tests/eia/test_eia.py::EiaTransportPolicyTests::test_max_json_rows_respected"
+        }
+      ],
+      "process_wall_seconds": 0.646773899999971,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [
+        {
+          "seconds": 0.005388499999753549,
+          "selector": "tests/eia/test_eia.py::EiaCrossAssetTests::test_cftc_eia_independent_clocks"
+        },
+        {
+          "seconds": 0.0012287000008655014,
+          "selector": "tests/eia/test_eia.py::EiaRevisionTests::test_correction_preserves_versions"
+        },
+        {
+          "seconds": 0.0009874999996100087,
+          "selector": "tests/eia/test_eia.py::EiaCapabilityTests::test_offline_capability_report"
+        },
+        {
+          "seconds": 0.0009093999997276114,
+          "selector": "tests/eia/test_eia.py::EiaCaptureTests::test_capture_hash_excludes_api_key"
+        },
+        {
+          "seconds": 0.0007370000002993038,
+          "selector": "tests/eia/test_eia.py::EiaPaginationTests::test_pagination_no_duplicates_or_gaps"
+        },
+        {
+          "seconds": 0.0007334999991144286,
+          "selector": "tests/eia/test_eia.py::EiaRedactionTests::test_response_echo_api_key_sanitized"
+        },
+        {
+          "seconds": 0.0006288999993557809,
+          "selector": "tests/eia/test_eia.py::EiaNaturalGasTests::test_storage_change_is_balance_change"
+        },
+        {
+          "seconds": 0.0005923999997321516,
+          "selector": "tests/eia/test_eia.py::EiaNormalizeTests::test_commercial_spr_not_mixed"
+        },
+        {
+          "seconds": 0.0005677000008290634,
+          "selector": "tests/eia/test_eia.py::EiaNormalizeTests::test_petroleum_rows_normalize"
+        },
+        {
+          "seconds": 0.00034980000054929405,
+          "selector": "tests/eia/test_eia.py::EiaTransportPolicyTests::test_max_json_rows_respected"
+        }
+      ],
+      "status": "passed",
+      "suite_id": "eia",
+      "tests_run": 23,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.015740599999844562,
+      "worker_error": "",
+      "worker_pid": 26296
+    },
+    {
+      "discovery_seconds": 0.25022989999888523,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 21,
+      "per_test_durations": [
+        {
+          "seconds": 0.0008870000001479639,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_conflict_on_same_identity_changed_value"
+        },
+        {
+          "seconds": 0.0016121000007842667,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_fixture_vertical_round_trip"
+        },
+        {
+          "seconds": 0.0007304999999178108,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_idempotent_admission"
+        },
+        {
+          "seconds": 0.00033149999944726005,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_missing_value_not_zero"
+        },
+        {
+          "seconds": 0.0002913999996962957,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_not_admitted_series_rejected"
+        },
+        {
+          "seconds": 0.0002579000010882737,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_observation_id_distinct_from_indicator_id"
+        },
+        {
+          "seconds": 0.00022079999871493783,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_series_id_not_canonical_indicator_id"
+        },
+        {
+          "seconds": 0.00025660000028437935,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_zero_value_preserved"
+        },
+        {
+          "seconds": 0.0441344000009849,
+          "selector": "tests/xa02/test_xa02_operations.py::Xa02OperationsTests::test_fred_tests_still_importable"
+        },
+        {
+          "seconds": 0.001214300000356161,
+          "selector": "tests/xa02/test_xa02_operations.py::Xa02OperationsTests::test_show_indicator_and_list_relationships"
+        },
+        {
+          "seconds": 0.0012122999996790895,
+          "selector": "tests/xa02/test_xa02_operations.py::Xa02OperationsTests::test_status_and_validate"
+        },
+        {
+          "seconds": 0.000607599999057129,
+          "selector": "tests/xa02/test_xa02_relationships.py::Xa02RelationshipTests::test_duplicate_relationship_idempotent"
+        },
+        {
+          "seconds": 0.0010710000005929032,
+          "selector": "tests/xa02/test_xa02_relationships.py::Xa02RelationshipTests::test_indicator_to_xa_target_resolves"
+        },
+        {
+          "seconds": 0.0005445999995572492,
+          "selector": "tests/xa02/test_xa02_relationships.py::Xa02RelationshipTests::test_relationship_conflict_on_changed_target"
+        },
+        {
+          "seconds": 0.00045030000001133885,
+          "selector": "tests/xa02/test_xa02_relationships.py::Xa02RelationshipTests::test_relationship_direction_preserved"
+        },
+        {
+          "seconds": 0.0004279000004316913,
+          "selector": "tests/xa02/test_xa02_relationships.py::Xa02RelationshipTests::test_reverse_lookup_by_target"
+        },
+        {
+          "seconds": 0.0004422000001795823,
+          "selector": "tests/xa02/test_xa02_relationships.py::Xa02RelationshipTests::test_unknown_target_fails_closed"
+        },
+        {
+          "seconds": 0.0009196999999403488,
+          "selector": "tests/xa02/test_xa02_temporal.py::Xa02TemporalTests::test_late_revision_excluded_from_earlier_cutoff"
+        },
+        {
+          "seconds": 0.0002268999996886123,
+          "selector": "tests/xa02/test_xa02_temporal.py::Xa02TemporalTests::test_latest_only_classification_for_v2_snapshot"
+        },
+        {
+          "seconds": 0.0015265000001818407,
+          "selector": "tests/xa02/test_xa02_temporal.py::Xa02TemporalTests::test_observation_period_not_equal_available_time"
+        },
+        {
+          "seconds": 0.000915099999474478,
+          "selector": "tests/xa02/test_xa02_temporal.py::Xa02TemporalTests::test_revision_vintages_are_distinct_observations"
+        }
+      ],
+      "process_wall_seconds": 0.5137275999986741,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [
+        {
+          "seconds": 0.0441344000009849,
+          "selector": "tests/xa02/test_xa02_operations.py::Xa02OperationsTests::test_fred_tests_still_importable"
+        },
+        {
+          "seconds": 0.0016121000007842667,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_fixture_vertical_round_trip"
+        },
+        {
+          "seconds": 0.0015265000001818407,
+          "selector": "tests/xa02/test_xa02_temporal.py::Xa02TemporalTests::test_observation_period_not_equal_available_time"
+        },
+        {
+          "seconds": 0.001214300000356161,
+          "selector": "tests/xa02/test_xa02_operations.py::Xa02OperationsTests::test_show_indicator_and_list_relationships"
+        },
+        {
+          "seconds": 0.0012122999996790895,
+          "selector": "tests/xa02/test_xa02_operations.py::Xa02OperationsTests::test_status_and_validate"
+        },
+        {
+          "seconds": 0.0010710000005929032,
+          "selector": "tests/xa02/test_xa02_relationships.py::Xa02RelationshipTests::test_indicator_to_xa_target_resolves"
+        },
+        {
+          "seconds": 0.0009196999999403488,
+          "selector": "tests/xa02/test_xa02_temporal.py::Xa02TemporalTests::test_late_revision_excluded_from_earlier_cutoff"
+        },
+        {
+          "seconds": 0.000915099999474478,
+          "selector": "tests/xa02/test_xa02_temporal.py::Xa02TemporalTests::test_revision_vintages_are_distinct_observations"
+        },
+        {
+          "seconds": 0.0008870000001479639,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_conflict_on_same_identity_changed_value"
+        },
+        {
+          "seconds": 0.0007304999999178108,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_idempotent_admission"
+        }
+      ],
+      "status": "passed",
+      "suite_id": "xa02",
+      "tests_run": 21,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.058646800000133226,
+      "worker_error": "",
+      "worker_pid": 19668
+    }
+  ],
+  "tests_run": 304,
+  "unexpected_successes": 0,
+  "wall_seconds": 2.011219500000152,
+  "worker_results": [
+    {
+      "discovery_seconds": 0.9407062999998743,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 65,
+      "per_test_durations": [
+        {
+          "seconds": 0.0017255999991903082,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_bars_fixture_lookahead_not_in_adapter_at_cutoff"
+        },
+        {
+          "seconds": 0.00021360000027925707,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_compute_carry_percentile"
+        },
+        {
+          "seconds": 0.00019470000006549526,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_compute_vol_scaled_trend"
+        },
+        {
+          "seconds": 0.00022619999981543515,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_cross_lane_emits_trend_up_from_baselines"
+        },
+        {
+          "seconds": 0.0020910000002913876,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_es_baselines_golden_fixture_regression"
+        },
+        {
+          "seconds": 0.00019099999917671084,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_filter_pit_bars_excludes_future_bar"
+        },
+        {
+          "seconds": 0.00018980000095325522,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_filter_pit_bars_insufficient_history_flag"
+        },
+        {
+          "seconds": 0.0001702999998087762,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_trend_regime_thresholds"
+        },
+        {
+          "seconds": 0.03787289999854693,
+          "selector": "tests/futures/test_f11_advanced.py::F11EnergyHarnessTests::test_cl_walk_forward_gate_pass"
+        },
+        {
+          "seconds": 0.000318899999911082,
+          "selector": "tests/futures/test_f11_advanced.py::F11FeatureTests::test_energy_family_supported"
+        },
+        {
+          "seconds": 0.00023709999913990032,
+          "selector": "tests/futures/test_f11_advanced.py::F11FeatureTests::test_stale_cot_omits_crowding"
+        },
+        {
+          "seconds": 0.0002688000004127389,
+          "selector": "tests/futures/test_f11_advanced.py::F11FeatureTests::test_unimplemented_family_fail_closed"
+        },
+        {
+          "seconds": 0.0002299999996466795,
+          "selector": "tests/futures/test_f11_advanced.py::F11GateUnitTests::test_fq8_fail_when_probability_unchanged"
+        },
+        {
+          "seconds": 0.00017350000052829273,
+          "selector": "tests/futures/test_f11_advanced.py::F11GateUnitTests::test_fq8_pass_when_crowding_changes_probability"
+        },
+        {
+          "seconds": 0.000693600000886363,
+          "selector": "tests/futures/test_f11_advanced.py::F11GateUnitTests::test_insufficient_sample_when_empty"
+        },
+        {
+          "seconds": 0.032979499999783,
+          "selector": "tests/futures/test_f11_advanced.py::F11GoldenFixtureTests::test_cl_f11_baseline_expected_matches_computed"
+        },
+        {
+          "seconds": 0.03935579999961192,
+          "selector": "tests/futures/test_f11_advanced.py::F11GoldenFixtureTests::test_es_f11_baseline_expected_matches_computed"
+        },
+        {
+          "seconds": 0.00026590000015858095,
+          "selector": "tests/futures/test_f11_advanced.py::F11HarnessTests::test_engineered_method_on_inputs"
+        },
+        {
+          "seconds": 0.03820079999968584,
+          "selector": "tests/futures/test_f11_advanced.py::F11HarnessTests::test_walk_forward_gate_pass"
+        },
+        {
+          "seconds": 0.5745370000004186,
+          "selector": "tests/futures/test_f11_advanced.py::F11WorkspaceTests::test_workspace_exposes_latest_futures_forecast"
+        },
+        {
+          "seconds": 0.0011838999998872168,
+          "selector": "tests/futures/test_f2_roll.py::FuturesF2RollTests::test_fixture_chain_has_roll_metadata"
+        },
+        {
+          "seconds": 0.00023240000155055895,
+          "selector": "tests/futures/test_f2_roll.py::FuturesF2RollTests::test_lead_contract_selection_prefers_oi"
+        },
+        {
+          "seconds": 0.0003701999994518701,
+          "selector": "tests/futures/test_f2_roll.py::FuturesF2RollTests::test_roll_gap_continuous_pipeline"
+        },
+        {
+          "seconds": 0.0003608999995776685,
+          "selector": "tests/futures/test_f2_roll.py::FuturesF2RollTests::test_simulate_futures_roll"
+        },
+        {
+          "seconds": 0.00024119999943650328,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_basis_fail_closed_without_spot"
+        },
+        {
+          "seconds": 0.0002330999996047467,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_carry_matches_curve_regime_sign"
+        },
+        {
+          "seconds": 0.00040220000119006727,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_cross_lane_carry_evidence"
+        },
+        {
+          "seconds": 0.0007941000003484078,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_es_contango_positive_carry"
+        },
+        {
+          "seconds": 0.0006887999988975935,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_es_fixture_basis_from_spot"
+        },
+        {
+          "seconds": 0.00022309999985736795,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_spot_carry_matches_ln_ratio_without_stamping_rate"
+        },
+        {
+          "seconds": 0.00019330000031914096,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_spot_carry_missing_observation_date_fail_closed"
+        },
+        {
+          "seconds": 0.0003930000002583256,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_spot_carry_source_has_no_silent_rate_or_calendar_fallback"
+        },
+        {
+          "seconds": 0.016966399998636916,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_workspace_futures_payload_carry_available"
+        },
+        {
+          "seconds": 0.0006787000002077548,
+          "selector": "tests/futures/test_f3_curve.py::FuturesF3CurveTests::test_es_fixture_curve_contango"
+        },
+        {
+          "seconds": 0.0002336999987164745,
+          "selector": "tests/futures/test_family_models.py::FamilyModelTests::test_energy_family_resolves_for_cl"
+        },
+        {
+          "seconds": 0.004734399999506422,
+          "selector": "tests/futures/test_family_models.py::FamilyModelTests::test_es_family_context_golden_fixture_regression"
+        },
+        {
+          "seconds": 0.00018790000103763305,
+          "selector": "tests/futures/test_family_models.py::FamilyModelTests::test_resolve_equity_index_for_es"
+        },
+        {
+          "seconds": 0.00017630000002100132,
+          "selector": "tests/futures/test_family_models.py::FamilyModelTests::test_unimplemented_family_fail_closed"
+        },
+        {
+          "seconds": 0.0001979000007850118,
+          "selector": "tests/futures/test_futures_spec_registry.py::FuturesSpecRegistryTests::test_date_boundary_before_effective_from"
+        },
+        {
+          "seconds": 0.00018710000040300656,
+          "selector": "tests/futures/test_futures_spec_registry.py::FuturesSpecRegistryTests::test_es_spec_resolves"
+        },
+        {
+          "seconds": 0.00017099999968195334,
+          "selector": "tests/futures/test_futures_spec_registry.py::FuturesSpecRegistryTests::test_unknown_family_returns_none"
+        },
+        {
+          "seconds": 0.00017070000103558414,
+          "selector": "tests/futures/test_leverage_stress_engine.py::LeverageStressEngineTests::test_compute_margin_percentile"
+        },
+        {
+          "seconds": 0.0001661000005697133,
+          "selector": "tests/futures/test_leverage_stress_engine.py::LeverageStressEngineTests::test_compute_stress_score_with_crowding"
+        },
+        {
+          "seconds": 0.00020349999977042899,
+          "selector": "tests/futures/test_leverage_stress_engine.py::LeverageStressEngineTests::test_cross_lane_emits_long_liquidation_risk"
+        },
+        {
+          "seconds": 0.0005318999992596218,
+          "selector": "tests/futures/test_leverage_stress_engine.py::LeverageStressEngineTests::test_es_leverage_stress_golden_fixture_regression"
+        },
+        {
+          "seconds": 0.00019749999955820385,
+          "selector": "tests/futures/test_leverage_stress_engine.py::LeverageStressEngineTests::test_quality_blocks_leverage_stress"
+        },
+        {
+          "seconds": 0.0002666000000317581,
+          "selector": "tests/futures/test_leverage_stress_engine.py::LeverageStressEngineTests::test_stress_regime_thresholds"
+        },
+        {
+          "seconds": 0.0001864000005298294,
+          "selector": "tests/futures/test_macro_events_engine.py::MacroEventsEngineTests::test_compute_surprise_zscore"
+        },
+        {
+          "seconds": 0.00019299999985378236,
+          "selector": "tests/futures/test_macro_events_engine.py::MacroEventsEngineTests::test_cross_lane_emits_macro_event_risk"
+        },
+        {
+          "seconds": 0.0008020000004762551,
+          "selector": "tests/futures/test_macro_events_engine.py::MacroEventsEngineTests::test_es_macro_events_golden_fixture_regression"
+        },
+        {
+          "seconds": 0.0002837000010913471,
+          "selector": "tests/futures/test_macro_events_engine.py::MacroEventsEngineTests::test_event_window_active_within_horizon"
+        },
+        {
+          "seconds": 0.0002435000005789334,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_compute_net_percentile_and_zscore"
+        },
+        {
+          "seconds": 0.00021979999837640207,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_compute_oi_velocity_rising_with_price"
+        },
+        {
+          "seconds": 0.0004154999987804331,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_cot_fixture_lookahead_not_in_adapter_at_cutoff"
+        },
+        {
+          "seconds": 0.00021980000019539148,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_cross_lane_emits_crowded_long_from_cot"
+        },
+        {
+          "seconds": 0.00018110000019078143,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_crowding_regime_thresholds"
+        },
+        {
+          "seconds": 0.0015196000003925292,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_es_positioning_golden_fixture_regression"
+        },
+        {
+          "seconds": 0.00020700000095530413,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_filter_pit_reports_excludes_future_publication"
+        },
+        {
+          "seconds": 0.0001762000010785414,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_filter_pit_reports_pending_flag"
+        },
+        {
+          "seconds": 0.00021920000108366366,
+          "selector": "tests/futures/test_relative_value.py::FuturesSimulatorF10Tests::test_calendar_spread_pnl"
+        },
+        {
+          "seconds": 0.0002007000002777204,
+          "selector": "tests/futures/test_relative_value.py::FuturesSimulatorF10Tests::test_roll_with_variation_margin"
+        },
+        {
+          "seconds": 0.0003130999994027661,
+          "selector": "tests/futures/test_relative_value.py::FuturesSimulatorF10Tests::test_variation_margin_change"
+        },
+        {
+          "seconds": 0.0004270999997970648,
+          "selector": "tests/futures/test_relative_value.py::RelativeValueTests::test_calendar_spread_math"
+        },
+        {
+          "seconds": 0.0008871999998518731,
+          "selector": "tests/futures/test_relative_value.py::RelativeValueTests::test_es_relative_value_golden"
+        },
+        {
+          "seconds": 0.0009315000006608898,
+          "selector": "tests/futures/test_relative_value.py::RelativeValueTests::test_futures_workspace_includes_relative_value"
+        }
+      ],
+      "process_wall_seconds": 2.0017679000011412,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [
+        {
+          "seconds": 0.5745370000004186,
+          "selector": "tests/futures/test_f11_advanced.py::F11WorkspaceTests::test_workspace_exposes_latest_futures_forecast"
+        },
+        {
+          "seconds": 0.03935579999961192,
+          "selector": "tests/futures/test_f11_advanced.py::F11GoldenFixtureTests::test_es_f11_baseline_expected_matches_computed"
+        },
+        {
+          "seconds": 0.03820079999968584,
+          "selector": "tests/futures/test_f11_advanced.py::F11HarnessTests::test_walk_forward_gate_pass"
+        },
+        {
+          "seconds": 0.03787289999854693,
+          "selector": "tests/futures/test_f11_advanced.py::F11EnergyHarnessTests::test_cl_walk_forward_gate_pass"
+        },
+        {
+          "seconds": 0.032979499999783,
+          "selector": "tests/futures/test_f11_advanced.py::F11GoldenFixtureTests::test_cl_f11_baseline_expected_matches_computed"
+        },
+        {
+          "seconds": 0.016966399998636916,
+          "selector": "tests/futures/test_f3_basis_carry.py::FuturesF3BasisCarryTests::test_workspace_futures_payload_carry_available"
+        },
+        {
+          "seconds": 0.004734399999506422,
+          "selector": "tests/futures/test_family_models.py::FamilyModelTests::test_es_family_context_golden_fixture_regression"
+        },
+        {
+          "seconds": 0.0020910000002913876,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_es_baselines_golden_fixture_regression"
+        },
+        {
+          "seconds": 0.0017255999991903082,
+          "selector": "tests/futures/test_baselines_engine.py::BaselinesEngineTests::test_bars_fixture_lookahead_not_in_adapter_at_cutoff"
+        },
+        {
+          "seconds": 0.0015196000003925292,
+          "selector": "tests/futures/test_positioning_engine.py::PositioningEngineTests::test_es_positioning_golden_fixture_regression"
+        }
+      ],
+      "status": "passed",
+      "suite_id": "futures",
+      "tests_run": 65,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.769333899999765,
+      "worker_error": "",
+      "worker_pid": 6412
+    },
+    {
+      "discovery_seconds": 0.7175470000001951,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 22,
+      "per_test_durations": [
+        {
+          "seconds": 0.0002638000005390495,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_as_of_returns_visible_version"
+        },
+        {
+          "seconds": 0.00020360000053187832,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_correction_invisible_before_known_from"
+        },
+        {
+          "seconds": 0.0001750999999785563,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_market_time_before_valid_from_is_none"
+        },
+        {
+          "seconds": 0.0002057999990938697,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_missing_known_from_rejected"
+        },
+        {
+          "seconds": 0.00019189999875379726,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_open_ended_known_to_visible"
+        },
+        {
+          "seconds": 0.000509299999976065,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_overlap_append_rejected"
+        },
+        {
+          "seconds": 0.00022560000070370734,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_unknown_entity_is_none"
+        },
+        {
+          "seconds": 0.00032110000029206276,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_corporate_registry_uses_knowledge_visibility"
+        },
+        {
+          "seconds": 0.00024479999956383836,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_o7_fail_closed_when_calendar_unavailable"
+        },
+        {
+          "seconds": 0.000577799999518902,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_o7_uses_joined_earnings_calendar"
+        },
+        {
+          "seconds": 0.00024119999943650328,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_resolve_futures_spec_default_es"
+        },
+        {
+          "seconds": 0.0002989999993587844,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_dividend_restatement"
+        },
+        {
+          "seconds": 0.00022089999947638717,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_earnings_calendar_revision"
+        },
+        {
+          "seconds": 0.00018290000116394367,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_futures_spec_correction"
+        },
+        {
+          "seconds": 0.000173700000232202,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_missing_join_fail_closed"
+        },
+        {
+          "seconds": 0.00022089999947638717,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_options_oi_restatement"
+        },
+        {
+          "seconds": 0.000597399999605841,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_p0_s1_gate_pass"
+        },
+        {
+          "seconds": 0.00018450000061420724,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_symbol_mapping"
+        },
+        {
+          "seconds": 0.00019410000095376745,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_catalyst_attention_runtime_from_summaries"
+        },
+        {
+          "seconds": 0.10195519999979297,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_corporate_registry_pit_filters"
+        },
+        {
+          "seconds": 0.0003237000000808621,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_registry_from_extraction_summaries"
+        },
+        {
+          "seconds": 0.015091000001120847,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_workspace_exposes_corporate_registry_and_catalyst_runtime"
+        }
+      ],
+      "process_wall_seconds": 1.0668596999985311,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [
+        {
+          "seconds": 0.10195519999979297,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_corporate_registry_pit_filters"
+        },
+        {
+          "seconds": 0.015091000001120847,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_workspace_exposes_corporate_registry_and_catalyst_runtime"
+        },
+        {
+          "seconds": 0.000597399999605841,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_p0_s1_gate_pass"
+        },
+        {
+          "seconds": 0.000577799999518902,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_o7_uses_joined_earnings_calendar"
+        },
+        {
+          "seconds": 0.000509299999976065,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_overlap_append_rejected"
+        },
+        {
+          "seconds": 0.0003237000000808621,
+          "selector": "tests/runtime/test_platform_p1_runtime.py::TestPlatformP1Runtime::test_registry_from_extraction_summaries"
+        },
+        {
+          "seconds": 0.00032110000029206276,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_corporate_registry_uses_knowledge_visibility"
+        },
+        {
+          "seconds": 0.0002989999993587844,
+          "selector": "tests/runtime/test_pit_joins.py::PitJoinTests::test_dividend_restatement"
+        },
+        {
+          "seconds": 0.0002638000005390495,
+          "selector": "tests/runtime/test_bitemporal_store.py::BitemporalStoreTests::test_as_of_returns_visible_version"
+        },
+        {
+          "seconds": 0.00024479999956383836,
+          "selector": "tests/runtime/test_p0_consumers.py::P0ConsumerTests::test_o7_fail_closed_when_calendar_unavailable"
+        }
+      ],
+      "status": "passed",
+      "suite_id": "runtime",
+      "tests_run": 22,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.1231818000014755,
+      "worker_error": "",
+      "worker_pid": 17916
+    },
+    {
+      "discovery_seconds": 0.86160960000052,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 123,
+      "per_test_durations": [
+        {
+          "seconds": 0.011948499999562046,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_catalyst_payload_uses_mc9_pipeline_for_boxl"
+        },
+        {
+          "seconds": 0.0034914999996544793,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_cluster_attention_level_bounded"
+        },
+        {
+          "seconds": 0.002135900000212132,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_cross_lane_attention_signals"
+        },
+        {
+          "seconds": 0.002482899999449728,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_first_cluster_velocity_fail_closed"
+        },
+        {
+          "seconds": 0.010248000000501634,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_golden_workspace_attention_block"
+        },
+        {
+          "seconds": 0.00477370000044175,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_information_value_bounded"
+        },
+        {
+          "seconds": 0.002269299999170471,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_information_value_separate_from_attention_level"
+        },
+        {
+          "seconds": 0.001639199999772245,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_pit_excludes_future_clusters"
+        },
+        {
+          "seconds": 0.002170499999920139,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_social_attention_unavailable_on_fixture"
+        },
+        {
+          "seconds": 0.0001919999995152466,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_accuracy_requires_ex_post_outcome"
+        },
+        {
+          "seconds": 0.0002328000009583775,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_contract_round_trip_author_evidence"
+        },
+        {
+          "seconds": 0.00151940000068862,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_cross_lane_influence_and_accuracy_signals"
+        },
+        {
+          "seconds": 0.010721800001192605,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_golden_workspace_author_block"
+        },
+        {
+          "seconds": 0.0004745999995066086,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_influence_not_equal_to_accuracy"
+        },
+        {
+          "seconds": 0.00017299999854003545,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_missing_social_metrics_fail_closed"
+        },
+        {
+          "seconds": 0.000386199999411474,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_pending_outcome_fail_closed"
+        },
+        {
+          "seconds": 0.0003352999992785044,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_pit_excludes_future_social_posts"
+        },
+        {
+          "seconds": 0.00020850000146310776,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_unsupported_symbol_has_no_author_intelligence"
+        },
+        {
+          "seconds": 0.0004050999996252358,
+          "selector": "tests/market_context/test_entity_resolution.py::TestMC2EntityResolution::test_ambiguous_fixture_marks_cluster_uncertain_inputs"
+        },
+        {
+          "seconds": 0.00021130000095581636,
+          "selector": "tests/market_context/test_entity_resolution.py::TestMC2EntityResolution::test_conflicting_claims_mark_ambiguous"
+        },
+        {
+          "seconds": 0.0001838000007410301,
+          "selector": "tests/market_context/test_entity_resolution.py::TestMC2EntityResolution::test_entity_id_from_symbol_is_deterministic"
+        },
+        {
+          "seconds": 0.0006359999988490017,
+          "selector": "tests/market_context/test_entity_resolution.py::TestMC2EntityResolution::test_fixture_documents_resolve_entity_ids"
+        },
+        {
+          "seconds": 0.00019079999947280157,
+          "selector": "tests/market_context/test_entity_resolution.py::TestMC2EntityResolution::test_missing_symbol_fails_closed"
+        },
+        {
+          "seconds": 0.0005786000001535285,
+          "selector": "tests/market_context/test_entity_resolution.py::TestMC2EntityResolution::test_pit_fields_preserved_on_resolution"
+        },
+        {
+          "seconds": 0.00042639999992388766,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_ambiguous_entity_marks_cluster_uncertain"
+        },
+        {
+          "seconds": 0.0025560000012774253,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_boxl_fixture_clusters_to_five_events"
+        },
+        {
+          "seconds": 0.0025158000007650116,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_cluster_available_time_is_max_document_available_time"
+        },
+        {
+          "seconds": 0.0009540999999444466,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_duplicate_headlines_flag_event_duplicate"
+        },
+        {
+          "seconds": 0.000926900000195019,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_golden_expected_clusters"
+        },
+        {
+          "seconds": 0.0006751000000804197,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_pit_cutoff_excludes_future_documents"
+        },
+        {
+          "seconds": 0.0006980999987717951,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_revision_v2_hidden_before_available_time"
+        },
+        {
+          "seconds": 0.0008711999998922693,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_revision_v2_lineage_visible_after_available_time"
+        },
+        {
+          "seconds": 0.0005385000004025642,
+          "selector": "tests/market_context/test_event_clustering.py::TestMC3EventClustering::test_syndication_independent_source_count"
+        },
+        {
+          "seconds": 0.006500399998913053,
+          "selector": "tests/market_context/test_expectations.py::TestMC6SurprisePipeline::test_golden_workspace_surprise_block"
+        },
+        {
+          "seconds": 0.0006845000007160706,
+          "selector": "tests/market_context/test_expectations.py::TestMC6SurprisePipeline::test_missing_consensus_fail_closed"
+        },
+        {
+          "seconds": 0.0009229000006598653,
+          "selector": "tests/market_context/test_expectations.py::TestMC6SurprisePipeline::test_pit_excludes_future_consensus"
+        },
+        {
+          "seconds": 0.001589899999089539,
+          "selector": "tests/market_context/test_expectations.py::TestMC6SurprisePipeline::test_revenue_surprise_positive"
+        },
+        {
+          "seconds": 0.0016529000004084082,
+          "selector": "tests/market_context/test_extraction.py::TestMC5AmbiguousEntity::test_ambiguous_entity_flags_extraction"
+        },
+        {
+          "seconds": 0.0007373999997071223,
+          "selector": "tests/market_context/test_extraction.py::TestMC5FixturePipeline::test_boxl_pipeline_matches_golden"
+        },
+        {
+          "seconds": 0.0005400000009103678,
+          "selector": "tests/market_context/test_extraction.py::TestMC5FixturePipeline::test_enriched_events_carry_metrics"
+        },
+        {
+          "seconds": 0.00018840000120690092,
+          "selector": "tests/market_context/test_extraction.py::TestMC5FixturePipeline::test_llm_fixture_loads_eight_documents"
+        },
+        {
+          "seconds": 0.00038780000068072695,
+          "selector": "tests/market_context/test_extraction.py::TestMC5FixturePipeline::test_pit_cutoff_before_fda_excludes_fda_cluster"
+        },
+        {
+          "seconds": 0.0005618999985017581,
+          "selector": "tests/market_context/test_extraction.py::TestMC5FixturePipeline::test_pit_cutoff_excludes_future_documents"
+        },
+        {
+          "seconds": 0.00020740000036312267,
+          "selector": "tests/market_context/test_extraction.py::TestMC5OntologyMapping::test_earnings_beat_maps_to_earnings"
+        },
+        {
+          "seconds": 0.00017829999887908343,
+          "selector": "tests/market_context/test_extraction.py::TestMC5OntologyMapping::test_macro_headwind_has_uncertainty_channel"
+        },
+        {
+          "seconds": 0.00017590000061318278,
+          "selector": "tests/market_context/test_extraction.py::TestMC5OntologyMapping::test_offering_risk_channels"
+        },
+        {
+          "seconds": 0.00021190000006754417,
+          "selector": "tests/market_context/test_extraction.py::TestMC5RuleMetrics::test_price_target_regex"
+        },
+        {
+          "seconds": 0.0003293000008852687,
+          "selector": "tests/market_context/test_extraction.py::TestMC5WorkspacePayload::test_non_boxl_symbol_fail_closed"
+        },
+        {
+          "seconds": 0.005959200001598219,
+          "selector": "tests/market_context/test_extraction.py::TestMC5WorkspacePayload::test_workspace_includes_extraction_block"
+        },
+        {
+          "seconds": 0.0005101000006106915,
+          "selector": "tests/market_context/test_impact_components.py::TestMC7ImpactPipeline::test_ambiguous_cluster_flags_novelty_uncertain"
+        },
+        {
+          "seconds": 0.0031077999992703553,
+          "selector": "tests/market_context/test_impact_components.py::TestMC7ImpactPipeline::test_cross_lane_metadata_exposes_components"
+        },
+        {
+          "seconds": 0.010266900000715395,
+          "selector": "tests/market_context/test_impact_components.py::TestMC7ImpactPipeline::test_golden_workspace_impact_block"
+        },
+        {
+          "seconds": 0.00022159999934956431,
+          "selector": "tests/market_context/test_impact_components.py::TestMC7ImpactPipeline::test_non_boxl_symbol_fail_closed"
+        },
+        {
+          "seconds": 0.0015173000010690885,
+          "selector": "tests/market_context/test_impact_components.py::TestMC7ImpactPipeline::test_official_fda_source_elevated_credibility"
+        },
+        {
+          "seconds": 0.0011486000003060326,
+          "selector": "tests/market_context/test_impact_components.py::TestMC7ImpactPipeline::test_pit_excludes_future_clusters"
+        },
+        {
+          "seconds": 0.005562699998336029,
+          "selector": "tests/market_context/test_impact_components.py::TestMC7ImpactPipeline::test_syndication_slice_higher_novelty_than_duplicate_pair"
+        },
+        {
+          "seconds": 0.0002855000002455199,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_contract_round_trip_information_decay_class"
+        },
+        {
+          "seconds": 0.00029600000016216654,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_event_type_decay_class_mapping"
+        },
+        {
+          "seconds": 0.0076807999994343845,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_golden_workspace_decay_block"
+        },
+        {
+          "seconds": 0.01771069999995234,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_golden_workspace_reaction_enriched"
+        },
+        {
+          "seconds": 0.0025456999992456986,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_mc12_leaves_mc13_fields_none_before_enrichment"
+        },
+        {
+          "seconds": 0.005302599998685764,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_offering_risk_high_priced_in"
+        },
+        {
+          "seconds": 0.00018950000048789661,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_partial_input_fail_closed"
+        },
+        {
+          "seconds": 0.0022482999993371777,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_pit_cutoff_excludes_future_events"
+        },
+        {
+          "seconds": 0.0005815000004076865,
+          "selector": "tests/market_context/test_macro.py::TestMC11MacroContext::test_cross_lane_publishes_macro_regime_context"
+        },
+        {
+          "seconds": 0.0005163999994692858,
+          "selector": "tests/market_context/test_macro.py::TestMC11MacroContext::test_macro_pipeline_matches_golden_fixture"
+        },
+        {
+          "seconds": 0.0003218000001652399,
+          "selector": "tests/market_context/test_macro.py::TestMC11MacroContext::test_pit_excludes_future_macro_releases"
+        },
+        {
+          "seconds": 0.005468499999551568,
+          "selector": "tests/market_context/test_macro.py::TestMC11MacroContext::test_workspace_projection_includes_macro_context"
+        },
+        {
+          "seconds": 0.008636200000182725,
+          "selector": "tests/market_context/test_mc_catalyst.py::TestMC8CatalystPipeline::test_catalyst_payload_uses_mc8_pipeline_for_boxl"
+        },
+        {
+          "seconds": 0.0019778000005317153,
+          "selector": "tests/market_context/test_mc_catalyst.py::TestMC8CatalystPipeline::test_cross_lane_catalyst_and_thesis_signals"
+        },
+        {
+          "seconds": 0.0001816000003600493,
+          "selector": "tests/market_context/test_mc_catalyst.py::TestMC8CatalystPipeline::test_fail_closed_when_components_missing"
+        },
+        {
+          "seconds": 0.005549400000745663,
+          "selector": "tests/market_context/test_mc_catalyst.py::TestMC8CatalystPipeline::test_golden_workspace_catalyst_block"
+        },
+        {
+          "seconds": 0.001856200000474928,
+          "selector": "tests/market_context/test_mc_catalyst.py::TestMC8CatalystPipeline::test_pit_excludes_future_clusters"
+        },
+        {
+          "seconds": 0.006005699999150238,
+          "selector": "tests/market_context/test_narrative.py::TestMC10NarrativePipeline::test_cross_lane_narrative_shift"
+        },
+        {
+          "seconds": 0.0032171000002563233,
+          "selector": "tests/market_context/test_narrative.py::TestMC10NarrativePipeline::test_first_theme_snapshot_velocity_fail_closed"
+        },
+        {
+          "seconds": 0.006403699999282253,
+          "selector": "tests/market_context/test_narrative.py::TestMC10NarrativePipeline::test_golden_workspace_narrative_block"
+        },
+        {
+          "seconds": 0.005554599998504273,
+          "selector": "tests/market_context/test_narrative.py::TestMC10NarrativePipeline::test_pit_excludes_future_narratives"
+        },
+        {
+          "seconds": 0.003599400000894093,
+          "selector": "tests/market_context/test_narrative.py::TestMC10NarrativePipeline::test_prevalence_bounded"
+        },
+        {
+          "seconds": 0.0031212000012601493,
+          "selector": "tests/market_context/test_narrative.py::TestMC10NarrativePipeline::test_thesis_graph_supporting_and_opposing_ids"
+        },
+        {
+          "seconds": 0.000625900000159163,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_ambiguous_link_fail_closed"
+        },
+        {
+          "seconds": 0.000636199998552911,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_cross_lane_propagation_signals"
+        },
+        {
+          "seconds": 0.0005822000002808636,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_direct_links_only_to_target_symbol"
+        },
+        {
+          "seconds": 0.011580899999898975,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_golden_workspace_propagation_block"
+        },
+        {
+          "seconds": 0.0002347999998164596,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_missing_link_weight_fail_closed"
+        },
+        {
+          "seconds": 0.0005453000012494158,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_pit_excludes_future_donor_signals"
+        },
+        {
+          "seconds": 0.00621550000141724,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_separate_propagated_fields_no_fused_score"
+        },
+        {
+          "seconds": 0.0008107999983621994,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_stale_link_excluded"
+        },
+        {
+          "seconds": 0.00025180000011459924,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_unsupported_symbol_has_no_propagation"
+        },
+        {
+          "seconds": 0.0027169000004505506,
+          "selector": "tests/market_context/test_propagation.py::TestMC15GateValidation::test_matches_golden_gate_summary"
+        },
+        {
+          "seconds": 0.003164099998684833,
+          "selector": "tests/market_context/test_propagation.py::TestMC15GateValidation::test_unified_gate_validation_passes_on_admitted_fixtures"
+        },
+        {
+          "seconds": 0.002511900000172318,
+          "selector": "tests/market_context/test_reaction.py::TestMC12ReactionPipeline::test_cross_lane_reaction_signals"
+        },
+        {
+          "seconds": 0.006248899999263813,
+          "selector": "tests/market_context/test_reaction.py::TestMC12ReactionPipeline::test_golden_workspace_reaction_block"
+        },
+        {
+          "seconds": 0.001922999999806052,
+          "selector": "tests/market_context/test_reaction.py::TestMC12ReactionPipeline::test_missing_fixture_fail_closed"
+        },
+        {
+          "seconds": 0.004348799999206676,
+          "selector": "tests/market_context/test_reaction.py::TestMC12ReactionPipeline::test_offering_risk_contradicted"
+        },
+        {
+          "seconds": 0.003528100000039558,
+          "selector": "tests/market_context/test_reaction.py::TestMC12ReactionPipeline::test_priced_in_deferred_before_mc13_enrichment"
+        },
+        {
+          "seconds": 0.005889600000955397,
+          "selector": "tests/market_context/test_reaction.py::TestMC12ReactionPipeline::test_workspace_contradictions_exposed"
+        },
+        {
+          "seconds": 0.0006737000003340654,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4FixturePipeline::test_boxl_pipeline_matches_golden"
+        },
+        {
+          "seconds": 0.00017560000014782418,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4FixturePipeline::test_finbert_fixture_labels_load"
+        },
+        {
+          "seconds": 0.0003919000009773299,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4FixturePipeline::test_pit_cutoff_excludes_future_documents"
+        },
+        {
+          "seconds": 0.0005834000003233086,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4FixturePipeline::test_sentiment_does_not_emit_trade_evidence"
+        },
+        {
+          "seconds": 0.00019390000124985818,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4KeywordBaseline::test_keyword_negative_offering_headline"
+        },
+        {
+          "seconds": 0.00019889999930455815,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4KeywordBaseline::test_keyword_positive_earnings_headline"
+        },
+        {
+          "seconds": 0.00016520000099262688,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4KeywordBaseline::test_missing_body_fail_closed"
+        },
+        {
+          "seconds": 0.00017350000052829273,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4KeywordBaseline::test_tie_produces_mixed_not_neutral"
+        },
+        {
+          "seconds": 0.008776200000284007,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4WorkspaceProjection::test_boxl_workspace_payload_available"
+        },
+        {
+          "seconds": 0.0002920000006270129,
+          "selector": "tests/market_context/test_sentiment.py::TestMC4WorkspaceProjection::test_unsupported_symbol_fail_closed"
+        },
+        {
+          "seconds": 0.0036036999990756158,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16GateValidation::test_matches_golden_gate_summary"
+        },
+        {
+          "seconds": 0.0035872000007657334,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16GateValidation::test_unified_gate_validation_passes_on_admitted_fixtures"
+        },
+        {
+          "seconds": 0.003272800000559073,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_adversarial_contradiction_cluster"
+        },
+        {
+          "seconds": 0.0030157999990478856,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_cross_lane_synthesis_signals"
+        },
+        {
+          "seconds": 0.008129800000460818,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_golden_workspace_synthesis_block"
+        },
+        {
+          "seconds": 0.009018199998536147,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_pit_excludes_future_revision_document"
+        },
+        {
+          "seconds": 0.002164499999707914,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_revision_supersession_at_late_cutoff"
+        },
+        {
+          "seconds": 0.007454900000084308,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_separate_synthesis_fields_no_fused_score"
+        },
+        {
+          "seconds": 0.002942500001154258,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_single_member_cluster_produces_no_row"
+        },
+        {
+          "seconds": 0.0009246000008715782,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_unsupported_symbol_has_no_synthesis"
+        },
+        {
+          "seconds": 0.0006133999995654449,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_contradiction_fail_closed"
+        },
+        {
+          "seconds": 0.011701099998390418,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_enrichment_gate_validation_passes"
+        },
+        {
+          "seconds": 0.010382500000559958,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_golden_catalyst_and_impact_fixtures"
+        },
+        {
+          "seconds": 0.008084900000540074,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_golden_workspace_enrichment_blocks"
+        },
+        {
+          "seconds": 0.007411000000502099,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_no_universal_news_score"
+        },
+        {
+          "seconds": 0.004397100001369836,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_pit_excludes_future_synthesis"
+        },
+        {
+          "seconds": 0.010340499999074382,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_score_invariance"
+        }
+      ],
+      "process_wall_seconds": 1.4361106999986077,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [
+        {
+          "seconds": 0.01771069999995234,
+          "selector": "tests/market_context/test_information_decay.py::TestMC13InformationDecay::test_golden_workspace_reaction_enriched"
+        },
+        {
+          "seconds": 0.011948499999562046,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_catalyst_payload_uses_mc9_pipeline_for_boxl"
+        },
+        {
+          "seconds": 0.011701099998390418,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_enrichment_gate_validation_passes"
+        },
+        {
+          "seconds": 0.011580899999898975,
+          "selector": "tests/market_context/test_propagation.py::TestMC15CrossEntityPropagation::test_golden_workspace_propagation_block"
+        },
+        {
+          "seconds": 0.010721800001192605,
+          "selector": "tests/market_context/test_author_intelligence.py::TestMC14AuthorIntelligence::test_golden_workspace_author_block"
+        },
+        {
+          "seconds": 0.010382500000559958,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_golden_catalyst_and_impact_fixtures"
+        },
+        {
+          "seconds": 0.010340499999074382,
+          "selector": "tests/market_context/test_synthesis_enrichment.py::TestSynthesisEnrichment::test_score_invariance"
+        },
+        {
+          "seconds": 0.010266900000715395,
+          "selector": "tests/market_context/test_impact_components.py::TestMC7ImpactPipeline::test_golden_workspace_impact_block"
+        },
+        {
+          "seconds": 0.010248000000501634,
+          "selector": "tests/market_context/test_attention.py::TestMC9AttentionPipeline::test_golden_workspace_attention_block"
+        },
+        {
+          "seconds": 0.009018199998536147,
+          "selector": "tests/market_context/test_synthesis.py::TestMC16MultiDocumentSynthesis::test_pit_excludes_future_revision_document"
+        }
+      ],
+      "status": "passed",
+      "suite_id": "market_context",
+      "tests_run": 123,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.3645304000001488,
+      "worker_error": "",
+      "worker_pid": 9168
+    },
+    {
+      "discovery_seconds": 0.23424350000095728,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 20,
+      "per_test_durations": [
+        {
+          "seconds": 0.0022016000002622604,
+          "selector": "tests/cftc/test_cftc_cot.py::CotCategorySeparationTests::test_categories_remain_distinct"
+        },
+        {
+          "seconds": 0.00023239999973156955,
+          "selector": "tests/cftc/test_cftc_cot.py::CotDatasetTests::test_official_dataset_ids"
+        },
+        {
+          "seconds": 0.00020659999972849619,
+          "selector": "tests/cftc/test_cftc_cot.py::CotDatasetTests::test_require_scope_raises_on_ambiguity"
+        },
+        {
+          "seconds": 0.001355899999907706,
+          "selector": "tests/cftc/test_cftc_cot.py::CotDerivedTests::test_net_and_pct_oi_from_compatible_oi"
+        },
+        {
+          "seconds": 0.0007667000008950708,
+          "selector": "tests/cftc/test_cftc_cot.py::CotDerivedTests::test_weekly_change_is_not_trade_flow"
+        },
+        {
+          "seconds": 0.0014672000015707454,
+          "selector": "tests/cftc/test_cftc_cot.py::CotNormalizeTests::test_contract_family_not_specific_expiration"
+        },
+        {
+          "seconds": 0.0012452000009943731,
+          "selector": "tests/cftc/test_cftc_cot.py::CotNormalizeTests::test_tff_futures_only_normalization"
+        },
+        {
+          "seconds": 0.0006508999995276099,
+          "selector": "tests/cftc/test_cftc_cot.py::CotNormalizeTests::test_unresolved_mapping_flagged"
+        },
+        {
+          "seconds": 0.000436700000136625,
+          "selector": "tests/cftc/test_cftc_cot.py::CotParserTests::test_disaggregated_managed_money_distinct_from_tff_leveraged"
+        },
+        {
+          "seconds": 0.00034919999961857684,
+          "selector": "tests/cftc/test_cftc_cot.py::CotParserTests::test_tff_categories_preserved"
+        },
+        {
+          "seconds": 0.00025379999897268135,
+          "selector": "tests/cftc/test_cftc_cot.py::CotPitTests::test_holiday_delayed_release_not_friday"
+        },
+        {
+          "seconds": 0.00022119999994174577,
+          "selector": "tests/cftc/test_cftc_cot.py::CotPitTests::test_tuesday_friday_release_lag"
+        },
+        {
+          "seconds": 0.00032500000088475645,
+          "selector": "tests/cftc/test_cftc_cot.py::CotProductMappingTests::test_hierarchy_fixture_extends_mapper"
+        },
+        {
+          "seconds": 0.0007318999996641651,
+          "selector": "tests/cftc/test_cftc_cot.py::CotRevisionTests::test_source_revision_preserves_versions"
+        },
+        {
+          "seconds": 0.0005764999987150077,
+          "selector": "tests/cftc/test_cftc_cot.py::CotScopeTests::test_double_count_protection_requires_scope_filter"
+        },
+        {
+          "seconds": 0.00174929999957385,
+          "selector": "tests/cftc/test_cftc_cot.py::CotScopeTests::test_unfiltered_all_rows_not_both_in_canonical_aggregate"
+        },
+        {
+          "seconds": 0.0005853999991813907,
+          "selector": "tests/cftc/test_cftc_cot.py::CotSourceOutageTests::test_quality_blocks_empty_as_not_zero"
+        },
+        {
+          "seconds": 0.00042360000043117907,
+          "selector": "tests/cftc/test_cftc_cot.py::CotSourceOutageTests::test_source_unavailable_not_zero_positions"
+        },
+        {
+          "seconds": 0.0006420999998226762,
+          "selector": "tests/cftc/test_cftc_cot.py::CotStoreTests::test_bitemporal_reference_kind"
+        },
+        {
+          "seconds": 0.0005428999993455363,
+          "selector": "tests/cftc/test_cftc_cot.py::CotStoreTests::test_pit_query_excludes_unreleased"
+        }
+      ],
+      "process_wall_seconds": 0.4896654000003764,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [
+        {
+          "seconds": 0.0022016000002622604,
+          "selector": "tests/cftc/test_cftc_cot.py::CotCategorySeparationTests::test_categories_remain_distinct"
+        },
+        {
+          "seconds": 0.00174929999957385,
+          "selector": "tests/cftc/test_cftc_cot.py::CotScopeTests::test_unfiltered_all_rows_not_both_in_canonical_aggregate"
+        },
+        {
+          "seconds": 0.0014672000015707454,
+          "selector": "tests/cftc/test_cftc_cot.py::CotNormalizeTests::test_contract_family_not_specific_expiration"
+        },
+        {
+          "seconds": 0.001355899999907706,
+          "selector": "tests/cftc/test_cftc_cot.py::CotDerivedTests::test_net_and_pct_oi_from_compatible_oi"
+        },
+        {
+          "seconds": 0.0012452000009943731,
+          "selector": "tests/cftc/test_cftc_cot.py::CotNormalizeTests::test_tff_futures_only_normalization"
+        },
+        {
+          "seconds": 0.0007667000008950708,
+          "selector": "tests/cftc/test_cftc_cot.py::CotDerivedTests::test_weekly_change_is_not_trade_flow"
+        },
+        {
+          "seconds": 0.0007318999996641651,
+          "selector": "tests/cftc/test_cftc_cot.py::CotRevisionTests::test_source_revision_preserves_versions"
+        },
+        {
+          "seconds": 0.0006508999995276099,
+          "selector": "tests/cftc/test_cftc_cot.py::CotNormalizeTests::test_unresolved_mapping_flagged"
+        },
+        {
+          "seconds": 0.0006420999998226762,
+          "selector": "tests/cftc/test_cftc_cot.py::CotStoreTests::test_bitemporal_reference_kind"
+        },
+        {
+          "seconds": 0.0005853999991813907,
+          "selector": "tests/cftc/test_cftc_cot.py::CotSourceOutageTests::test_quality_blocks_empty_as_not_zero"
+        }
+      ],
+      "status": "passed",
+      "suite_id": "cftc",
+      "tests_run": 20,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.015519599999606726,
+      "worker_error": "",
+      "worker_pid": 26608
+    },
+    {
+      "discovery_seconds": 0.2685801999996329,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 30,
+      "per_test_durations": [
+        {
+          "seconds": 0.00145179999890388,
+          "selector": "tests/fred/test_fred.py::FredCftcInteropTests::test_independent_source_clocks"
+        },
+        {
+          "seconds": 0.000638999999864609,
+          "selector": "tests/fred/test_fred.py::FredCrossFrequencyPitTests::test_cross_frequency_join"
+        },
+        {
+          "seconds": 0.0002702000001590932,
+          "selector": "tests/fred/test_fred.py::FredDerivedTests::test_derive_2s10s_pit_compatible"
+        },
+        {
+          "seconds": 0.00036240000008547213,
+          "selector": "tests/fred/test_fred.py::FredDerivedTests::test_derive_3m10y"
+        },
+        {
+          "seconds": 0.0002675000014278339,
+          "selector": "tests/fred/test_fred.py::FredNormalizeTests::test_missing_dot_is_unknown_not_zero"
+        },
+        {
+          "seconds": 0.00029379999978118576,
+          "selector": "tests/fred/test_fred.py::FredNormalizeTests::test_v1_available_time_from_realtime_start_not_end"
+        },
+        {
+          "seconds": 0.00025739999910001643,
+          "selector": "tests/fred/test_fred.py::FredNormalizeTests::test_v1_live_first_observed_overrides_date_only_start"
+        },
+        {
+          "seconds": 0.00036840000029769726,
+          "selector": "tests/fred/test_fred.py::FredNormalizeTests::test_v1_missing_value_fixture"
+        },
+        {
+          "seconds": 0.00035459999890008476,
+          "selector": "tests/fred/test_fred.py::FredReconciliationTests::test_reconciliation_mismatch"
+        },
+        {
+          "seconds": 0.0003293999998277286,
+          "selector": "tests/fred/test_fred.py::FredReconciliationTests::test_reconciliation_pass"
+        },
+        {
+          "seconds": 0.00018679999993764795,
+          "selector": "tests/fred/test_fred.py::FredRedactionTests::test_sanitize_v1_request_semantics"
+        },
+        {
+          "seconds": 0.00023440000040864106,
+          "selector": "tests/fred/test_fred.py::FredRedactionTests::test_transport_error_redacted"
+        },
+        {
+          "seconds": 0.00019080000129179098,
+          "selector": "tests/fred/test_fred.py::FredRedactionTests::test_v1_api_key_redacted_from_url"
+        },
+        {
+          "seconds": 0.00016219999997701962,
+          "selector": "tests/fred/test_fred.py::FredRedactionTests::test_v2_bearer_redacted"
+        },
+        {
+          "seconds": 0.00016010000035748817,
+          "selector": "tests/fred/test_fred.py::FredRegistryTests::test_no_composite_macro_score_in_contracts"
+        },
+        {
+          "seconds": 0.0001615999990463024,
+          "selector": "tests/fred/test_fred.py::FredRegistryTests::test_tier1_bounded_registry"
+        },
+        {
+          "seconds": 0.0003249000001233071,
+          "selector": "tests/fred/test_fred.py::FredReleaseAvailabilityTests::test_scheduled_release_before_fred_availability"
+        },
+        {
+          "seconds": 0.00042810000013560057,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_date_only_intraday_on_start_date_is_conservative"
+        },
+        {
+          "seconds": 0.0004270000008546049,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_knowledge_interval_sequence"
+        },
+        {
+          "seconds": 0.0004917000005661976,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_no_lookahead_current_revision"
+        },
+        {
+          "seconds": 0.00040609999996377155,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_realtime_end_not_used_as_available_time_regression"
+        },
+        {
+          "seconds": 0.00020170000061625615,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_revision_sequence_as_of"
+        },
+        {
+          "seconds": 0.00023119999968912452,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_v2_last_updated_not_historical_availability"
+        },
+        {
+          "seconds": 0.00019670000074256677,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_v2_pit_fallback_forbidden"
+        },
+        {
+          "seconds": 0.00022979999994277023,
+          "selector": "tests/fred/test_fred.py::FredStoreTests::test_bitemporal_reference_kind"
+        },
+        {
+          "seconds": 0.00020930000027874485,
+          "selector": "tests/fred/test_fred.py::FredV2NestedPayloadTests::test_flatten_production_series_blocks"
+        },
+        {
+          "seconds": 0.00034840000080293976,
+          "selector": "tests/fred/test_fred.py::FredV2PaginationTests::test_cursor_missing"
+        },
+        {
+          "seconds": 0.000970499999311869,
+          "selector": "tests/fred/test_fred.py::FredV2PaginationTests::test_fetch_detects_cursor_loop"
+        },
+        {
+          "seconds": 0.0004394000006868737,
+          "selector": "tests/fred/test_fred.py::FredV2PaginationTests::test_mixed_release_update"
+        },
+        {
+          "seconds": 0.0003006000006280374,
+          "selector": "tests/fred/test_fred.py::FredV2PaginationTests::test_multipage_complete"
+        }
+      ],
+      "process_wall_seconds": 0.5649060999985522,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [
+        {
+          "seconds": 0.00145179999890388,
+          "selector": "tests/fred/test_fred.py::FredCftcInteropTests::test_independent_source_clocks"
+        },
+        {
+          "seconds": 0.000970499999311869,
+          "selector": "tests/fred/test_fred.py::FredV2PaginationTests::test_fetch_detects_cursor_loop"
+        },
+        {
+          "seconds": 0.000638999999864609,
+          "selector": "tests/fred/test_fred.py::FredCrossFrequencyPitTests::test_cross_frequency_join"
+        },
+        {
+          "seconds": 0.0004917000005661976,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_no_lookahead_current_revision"
+        },
+        {
+          "seconds": 0.0004394000006868737,
+          "selector": "tests/fred/test_fred.py::FredV2PaginationTests::test_mixed_release_update"
+        },
+        {
+          "seconds": 0.00042810000013560057,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_date_only_intraday_on_start_date_is_conservative"
+        },
+        {
+          "seconds": 0.0004270000008546049,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_knowledge_interval_sequence"
+        },
+        {
+          "seconds": 0.00040609999996377155,
+          "selector": "tests/fred/test_fred.py::FredRevisionTests::test_realtime_end_not_used_as_available_time_regression"
+        },
+        {
+          "seconds": 0.00036840000029769726,
+          "selector": "tests/fred/test_fred.py::FredNormalizeTests::test_v1_missing_value_fixture"
+        },
+        {
+          "seconds": 0.00036240000008547213,
+          "selector": "tests/fred/test_fred.py::FredDerivedTests::test_derive_3m10y"
+        }
+      ],
+      "status": "passed",
+      "suite_id": "fred",
+      "tests_run": 30,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.011385800000425661,
+      "worker_error": "",
+      "worker_pid": 21568
+    },
+    {
+      "discovery_seconds": 0.3257577999993373,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 23,
+      "per_test_durations": [
+        {
+          "seconds": 0.0009874999996100087,
+          "selector": "tests/eia/test_eia.py::EiaCapabilityTests::test_offline_capability_report"
+        },
+        {
+          "seconds": 0.0009093999997276114,
+          "selector": "tests/eia/test_eia.py::EiaCaptureTests::test_capture_hash_excludes_api_key"
+        },
+        {
+          "seconds": 0.005388499999753549,
+          "selector": "tests/eia/test_eia.py::EiaCrossAssetTests::test_cftc_eia_independent_clocks"
+        },
+        {
+          "seconds": 0.0006288999993557809,
+          "selector": "tests/eia/test_eia.py::EiaNaturalGasTests::test_storage_change_is_balance_change"
+        },
+        {
+          "seconds": 0.00028790000033040997,
+          "selector": "tests/eia/test_eia.py::EiaNaturalGasTests::test_working_gas_is_stock"
+        },
+        {
+          "seconds": 0.0005923999997321516,
+          "selector": "tests/eia/test_eia.py::EiaNormalizeTests::test_commercial_spr_not_mixed"
+        },
+        {
+          "seconds": 0.0005677000008290634,
+          "selector": "tests/eia/test_eia.py::EiaNormalizeTests::test_petroleum_rows_normalize"
+        },
+        {
+          "seconds": 0.00019909999900846742,
+          "selector": "tests/eia/test_eia.py::EiaNormalizeTests::test_region_distinct"
+        },
+        {
+          "seconds": 0.0001830000001064036,
+          "selector": "tests/eia/test_eia.py::EiaNormalizeTests::test_stock_flow_semantics"
+        },
+        {
+          "seconds": 0.00021799999922222923,
+          "selector": "tests/eia/test_eia.py::EiaNormalizeTests::test_withheld_value_not_zero"
+        },
+        {
+          "seconds": 0.0003285000002506422,
+          "selector": "tests/eia/test_eia.py::EiaOutageTests::test_not_yet_released_flag"
+        },
+        {
+          "seconds": 0.000305800000205636,
+          "selector": "tests/eia/test_eia.py::EiaOutageTests::test_source_unavailable_not_zero"
+        },
+        {
+          "seconds": 0.0007370000002993038,
+          "selector": "tests/eia/test_eia.py::EiaPaginationTests::test_pagination_no_duplicates_or_gaps"
+        },
+        {
+          "seconds": 0.00019220000103814527,
+          "selector": "tests/eia/test_eia.py::EiaPitTests::test_wngsr_holiday_wednesday_noon"
+        },
+        {
+          "seconds": 0.0003268999989813892,
+          "selector": "tests/eia/test_eia.py::EiaPitTests::test_wngsr_pre_release_not_visible"
+        },
+        {
+          "seconds": 0.0002547999993112171,
+          "selector": "tests/eia/test_eia.py::EiaPitTests::test_wpsr_holiday_not_naive_wednesday"
+        },
+        {
+          "seconds": 0.00025629999981902074,
+          "selector": "tests/eia/test_eia.py::EiaPitTests::test_wpsr_pre_release_not_visible"
+        },
+        {
+          "seconds": 0.0007334999991144286,
+          "selector": "tests/eia/test_eia.py::EiaRedactionTests::test_response_echo_api_key_sanitized"
+        },
+        {
+          "seconds": 0.00027090000003227033,
+          "selector": "tests/eia/test_eia.py::EiaRedactionTests::test_url_api_key_redacted"
+        },
+        {
+          "seconds": 0.0001757000009092735,
+          "selector": "tests/eia/test_eia.py::EiaRegistryTests::test_bounded_registry"
+        },
+        {
+          "seconds": 0.00016789999972388614,
+          "selector": "tests/eia/test_eia.py::EiaRegistryTests::test_commercial_and_spr_separate"
+        },
+        {
+          "seconds": 0.0012287000008655014,
+          "selector": "tests/eia/test_eia.py::EiaRevisionTests::test_correction_preserves_versions"
+        },
+        {
+          "seconds": 0.00034980000054929405,
+          "selector": "tests/eia/test_eia.py::EiaTransportPolicyTests::test_max_json_rows_respected"
+        }
+      ],
+      "process_wall_seconds": 0.646773899999971,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [
+        {
+          "seconds": 0.005388499999753549,
+          "selector": "tests/eia/test_eia.py::EiaCrossAssetTests::test_cftc_eia_independent_clocks"
+        },
+        {
+          "seconds": 0.0012287000008655014,
+          "selector": "tests/eia/test_eia.py::EiaRevisionTests::test_correction_preserves_versions"
+        },
+        {
+          "seconds": 0.0009874999996100087,
+          "selector": "tests/eia/test_eia.py::EiaCapabilityTests::test_offline_capability_report"
+        },
+        {
+          "seconds": 0.0009093999997276114,
+          "selector": "tests/eia/test_eia.py::EiaCaptureTests::test_capture_hash_excludes_api_key"
+        },
+        {
+          "seconds": 0.0007370000002993038,
+          "selector": "tests/eia/test_eia.py::EiaPaginationTests::test_pagination_no_duplicates_or_gaps"
+        },
+        {
+          "seconds": 0.0007334999991144286,
+          "selector": "tests/eia/test_eia.py::EiaRedactionTests::test_response_echo_api_key_sanitized"
+        },
+        {
+          "seconds": 0.0006288999993557809,
+          "selector": "tests/eia/test_eia.py::EiaNaturalGasTests::test_storage_change_is_balance_change"
+        },
+        {
+          "seconds": 0.0005923999997321516,
+          "selector": "tests/eia/test_eia.py::EiaNormalizeTests::test_commercial_spr_not_mixed"
+        },
+        {
+          "seconds": 0.0005677000008290634,
+          "selector": "tests/eia/test_eia.py::EiaNormalizeTests::test_petroleum_rows_normalize"
+        },
+        {
+          "seconds": 0.00034980000054929405,
+          "selector": "tests/eia/test_eia.py::EiaTransportPolicyTests::test_max_json_rows_respected"
+        }
+      ],
+      "status": "passed",
+      "suite_id": "eia",
+      "tests_run": 23,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.015740599999844562,
+      "worker_error": "",
+      "worker_pid": 26296
+    },
+    {
+      "discovery_seconds": 0.25022989999888523,
+      "error_details": [],
+      "errors": 0,
+      "expected_failures": 0,
+      "failure_details": [],
+      "failures": 0,
+      "passes": 21,
+      "per_test_durations": [
+        {
+          "seconds": 0.0008870000001479639,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_conflict_on_same_identity_changed_value"
+        },
+        {
+          "seconds": 0.0016121000007842667,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_fixture_vertical_round_trip"
+        },
+        {
+          "seconds": 0.0007304999999178108,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_idempotent_admission"
+        },
+        {
+          "seconds": 0.00033149999944726005,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_missing_value_not_zero"
+        },
+        {
+          "seconds": 0.0002913999996962957,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_not_admitted_series_rejected"
+        },
+        {
+          "seconds": 0.0002579000010882737,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_observation_id_distinct_from_indicator_id"
+        },
+        {
+          "seconds": 0.00022079999871493783,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_series_id_not_canonical_indicator_id"
+        },
+        {
+          "seconds": 0.00025660000028437935,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_zero_value_preserved"
+        },
+        {
+          "seconds": 0.0441344000009849,
+          "selector": "tests/xa02/test_xa02_operations.py::Xa02OperationsTests::test_fred_tests_still_importable"
+        },
+        {
+          "seconds": 0.001214300000356161,
+          "selector": "tests/xa02/test_xa02_operations.py::Xa02OperationsTests::test_show_indicator_and_list_relationships"
+        },
+        {
+          "seconds": 0.0012122999996790895,
+          "selector": "tests/xa02/test_xa02_operations.py::Xa02OperationsTests::test_status_and_validate"
+        },
+        {
+          "seconds": 0.000607599999057129,
+          "selector": "tests/xa02/test_xa02_relationships.py::Xa02RelationshipTests::test_duplicate_relationship_idempotent"
+        },
+        {
+          "seconds": 0.0010710000005929032,
+          "selector": "tests/xa02/test_xa02_relationships.py::Xa02RelationshipTests::test_indicator_to_xa_target_resolves"
+        },
+        {
+          "seconds": 0.0005445999995572492,
+          "selector": "tests/xa02/test_xa02_relationships.py::Xa02RelationshipTests::test_relationship_conflict_on_changed_target"
+        },
+        {
+          "seconds": 0.00045030000001133885,
+          "selector": "tests/xa02/test_xa02_relationships.py::Xa02RelationshipTests::test_relationship_direction_preserved"
+        },
+        {
+          "seconds": 0.0004279000004316913,
+          "selector": "tests/xa02/test_xa02_relationships.py::Xa02RelationshipTests::test_reverse_lookup_by_target"
+        },
+        {
+          "seconds": 0.0004422000001795823,
+          "selector": "tests/xa02/test_xa02_relationships.py::Xa02RelationshipTests::test_unknown_target_fails_closed"
+        },
+        {
+          "seconds": 0.0009196999999403488,
+          "selector": "tests/xa02/test_xa02_temporal.py::Xa02TemporalTests::test_late_revision_excluded_from_earlier_cutoff"
+        },
+        {
+          "seconds": 0.0002268999996886123,
+          "selector": "tests/xa02/test_xa02_temporal.py::Xa02TemporalTests::test_latest_only_classification_for_v2_snapshot"
+        },
+        {
+          "seconds": 0.0015265000001818407,
+          "selector": "tests/xa02/test_xa02_temporal.py::Xa02TemporalTests::test_observation_period_not_equal_available_time"
+        },
+        {
+          "seconds": 0.000915099999474478,
+          "selector": "tests/xa02/test_xa02_temporal.py::Xa02TemporalTests::test_revision_vintages_are_distinct_observations"
+        }
+      ],
+      "process_wall_seconds": 0.5137275999986741,
+      "schema_version": "1.0",
+      "selectors": [],
+      "skip_details": [],
+      "skips": 0,
+      "slowest_tests": [
+        {
+          "seconds": 0.0441344000009849,
+          "selector": "tests/xa02/test_xa02_operations.py::Xa02OperationsTests::test_fred_tests_still_importable"
+        },
+        {
+          "seconds": 0.0016121000007842667,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_fixture_vertical_round_trip"
+        },
+        {
+          "seconds": 0.0015265000001818407,
+          "selector": "tests/xa02/test_xa02_temporal.py::Xa02TemporalTests::test_observation_period_not_equal_available_time"
+        },
+        {
+          "seconds": 0.001214300000356161,
+          "selector": "tests/xa02/test_xa02_operations.py::Xa02OperationsTests::test_show_indicator_and_list_relationships"
+        },
+        {
+          "seconds": 0.0012122999996790895,
+          "selector": "tests/xa02/test_xa02_operations.py::Xa02OperationsTests::test_status_and_validate"
+        },
+        {
+          "seconds": 0.0010710000005929032,
+          "selector": "tests/xa02/test_xa02_relationships.py::Xa02RelationshipTests::test_indicator_to_xa_target_resolves"
+        },
+        {
+          "seconds": 0.0009196999999403488,
+          "selector": "tests/xa02/test_xa02_temporal.py::Xa02TemporalTests::test_late_revision_excluded_from_earlier_cutoff"
+        },
+        {
+          "seconds": 0.000915099999474478,
+          "selector": "tests/xa02/test_xa02_temporal.py::Xa02TemporalTests::test_revision_vintages_are_distinct_observations"
+        },
+        {
+          "seconds": 0.0008870000001479639,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_conflict_on_same_identity_changed_value"
+        },
+        {
+          "seconds": 0.0007304999999178108,
+          "selector": "tests/xa02/test_xa02_admission.py::Xa02AdmissionTests::test_idempotent_admission"
+        }
+      ],
+      "status": "passed",
+      "suite_id": "xa02",
+      "tests_run": 21,
+      "unexpected_successes": 0,
+      "wall_seconds": 0.058646800000133226,
+      "worker_error": "",
+      "worker_pid": 19668
+    }
+  ],
+  "workers": 4
+}

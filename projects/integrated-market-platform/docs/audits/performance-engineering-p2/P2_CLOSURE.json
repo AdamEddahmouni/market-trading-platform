@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p2_closure",
+  "status": "COMPLETE",
+  "generated_at": "2026-09-10T23:40:00Z",
+  "worktree": "C:/Users/adame/Desktop/market-trading-platform-perf-p2",
+  "branch": "perf/p2-safe-parallelization",
+  "head_sha": "6e44948cf9cd3b28b7a21c1f07a26c91370ad84a",
+  "committed": false,
+  "scheduler_version": "p2-bl-0901-1",
+  "default_concurrency_policy": "DEFAULT_WORKERS_2",
+  "suites_reclassified_parallel_safe": 11,
+  "full_validation": {
+    "serial": {
+      "tests": 4510,
+      "skipped": 48,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 376.609
+    },
+    "parallel_workers_2": {
+      "tests": 4510,
+      "skipped": 48,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 196.747,
+      "speedup": 1.91
+    }
+  },
+  "changed_validation": {
+    "serial_seconds": 266.113,
+    "parallel_workers_2_seconds": 173.199,
+    "tests": 2812,
+    "speedup": 1.53
+  },
+  "fast_validation": {
+    "tests": 21,
+    "wall_seconds": 3.511,
+    "serial": true
+  },
+  "p3_regression": "49 selector tests OK",
+  "p4_regression": "fixture/cache isolation tests OK",
+  "p5_regression": "availability probe cache tests OK; TTL unchanged",
+  "p6_env": "healthy (resolved Python 3.11.15)",
+  "scheduler_contract_tests": "13 tests OK",
+  "notion_sync": "NOTION_SYNC_BLOCKED",
+  "product_semantics": "UNCHANGED"
+}

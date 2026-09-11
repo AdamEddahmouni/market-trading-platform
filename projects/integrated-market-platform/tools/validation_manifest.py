@@ -24,6 +24,7 @@ SAFETY_CLASSES = frozenset(
         "GLOBAL_STATE_MUTATION",
     }
 )
+RESOURCE_CLASSES = frozenset({"LIGHT", "NORMAL", "HEAVY", "SERIAL", "LIVE_EXCLUSIVE"})
 CLASSIFICATIONS = frozenset(
     {"offline", "live", "extended", "intentionally_absent", "intentionally_excluded"}
 )
@@ -72,6 +73,10 @@ class ValidationSuite:
     domains: tuple[str, ...]
     parallel_safety: str
     resource_weight: int
+    resource_class: str
+    concurrency_reason: str
+    exclusive_group: str | None
+    max_concurrency: int | None
     source_globs: tuple[str, ...]
     test_globs: tuple[str, ...]
     neighbors: tuple[str, ...]
@@ -249,6 +254,37 @@ def _parse_suites(raw: Any, domains: frozenset[str], errors: list[str]) -> tuple
         if not isinstance(weight, int) or isinstance(weight, bool) or weight < 1:
             errors.append(f"invalid resource_weight for {suite_id}: {weight!r}")
             weight = 1
+        resource_class = row.get("resource_class")
+        if resource_class is None:
+            if safety == "SERIAL_REQUIRED":
+                resource_class = "SERIAL"
+            elif safety == "LIVE_EXCLUSIVE":
+                resource_class = "LIVE_EXCLUSIVE"
+            elif safety == "RESOURCE_HEAVY":
+                resource_class = "HEAVY"
+            elif weight >= 3:
+                resource_class = "HEAVY"
+            elif weight == 1:
+                resource_class = "LIGHT"
+            else:
+                resource_class = "NORMAL"
+        elif resource_class not in RESOURCE_CLASSES:
+            errors.append(f"invalid resource_class for {suite_id}: {resource_class!r}")
+            resource_class = "NORMAL"
+        concurrency_reason = row.get("concurrency_reason", "")
+        if not isinstance(concurrency_reason, str):
+            errors.append(f"invalid concurrency_reason for {suite_id}")
+            concurrency_reason = ""
+        exclusive_group = row.get("exclusive_group")
+        if exclusive_group is not None and not isinstance(exclusive_group, str):
+            errors.append(f"invalid exclusive_group for {suite_id}")
+            exclusive_group = None
+        max_concurrency = row.get("max_concurrency")
+        if max_concurrency is not None and (
+            not isinstance(max_concurrency, int) or isinstance(max_concurrency, bool) or max_concurrency < 1
+        ):
+            errors.append(f"invalid max_concurrency for {suite_id}: {max_concurrency!r}")
+            max_concurrency = None
         source_globs = _text_sequence(
             row.get("source_globs", []), field=f"{suite_id}.source_globs", errors=errors
         )
@@ -288,6 +324,10 @@ def _parse_suites(raw: Any, domains: frozenset[str], errors: list[str]) -> tuple
                 domains=suite_domains,
                 parallel_safety=safety,
                 resource_weight=weight,
+                resource_class=str(resource_class),
+                concurrency_reason=concurrency_reason,
+                exclusive_group=exclusive_group if isinstance(exclusive_group, str) else None,
+                max_concurrency=max_concurrency if isinstance(max_concurrency, int) else None,
                 source_globs=source_globs,
                 test_globs=test_globs,
                 neighbors=neighbors,

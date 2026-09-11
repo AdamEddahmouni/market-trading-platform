@@ -1,0 +1,4 @@
+﻿src/market_platform_foundation/paper/execution_bridge.py
+src/market_platform_foundation/ui_api/paper_projections.py
+src/market_platform_foundation/intelligence/replay/runtime.py
+tools/validate.py
