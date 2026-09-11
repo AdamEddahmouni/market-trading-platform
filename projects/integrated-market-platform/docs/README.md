@@ -71,6 +71,7 @@ When documents disagree, resolve in this order (highest first):
 | Futures FTEP profile V1 | [FUTURES_PROFILE_V1.md](engineering/ftep/assets/FUTURES_PROFILE_V1.md) |
 | News/Catalyst FTEP profile V1 | [NEWS_CATALYST_PROFILE_V1.md](engineering/ftep/strategies/NEWS_CATALYST_PROFILE_V1.md) |
 | FTEP campaign manifest template | [CAMPAIGN_MANIFEST_TEMPLATE_V1.md](engineering/ftep/CAMPAIGN_MANIFEST_TEMPLATE_V1.md) |
+| FTEP-V1 owner decision packet (OD-1 … OD-11) | [FTEP-V1_OWNER_DECISION_PACKET.md](engineering/FTEP-V1_OWNER_DECISION_PACKET.md) |
 | Threat model (lite) | [THREAT_MODEL.md](architecture/THREAT_MODEL.md) |
 | Architecture decisions | [adr/README.md](architecture/adr/README.md) |
 | Multi-source data foundation | [MULTI_SOURCE_DATA_FOUNDATION.md](providers/MULTI_SOURCE_DATA_FOUNDATION.md) |
