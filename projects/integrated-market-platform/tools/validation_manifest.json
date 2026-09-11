@@ -2253,6 +2253,21 @@
       "reason": "Strategy-evaluation laboratory; no automatic upstream news/provider breadth"
     },
     {
+      "id": "paper_forward_bridge",
+      "owner_suite": "intelligence",
+      "source_globs": [
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/**",
+        "src/market_platform_foundation/ui_api/forward_test_projections.py",
+        "tests/intelligence/test_paper_forward_bridge.py",
+        "ui/src/components/paper-workspace/PaperForwardTestPanel.tsx",
+        "ui/src/components/paper-workspace/buildForwardTestPanelModel.ts",
+        "ui/src/components/paper-workspace/buildForwardTestPanelModel.test.ts",
+        "docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md"
+      ],
+      "dependent_suites": [],
+      "reason": "Governed Paper forward-testing product bridge"
+    },
+    {
       "id": "validation_control_plane",
       "owner_suite": "validation",
       "source_globs": [

@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "increment": "paper-forward-testing-bridge",
+  "status": "COMPLETE",
+  "canonical_parent_sha": "253e7eea31c3bb8fa9665e356c9b2d1a112e9446",
+  "implementation_commit": "pending",
+  "professor_branch": "work/professor-paper-forward-testing",
+  "p2_present": true,
+  "p7_present": true,
+  "requirements": {
+    "forward_test_entity": "src/market_platform_foundation/intelligence/paper_forward_bridge/types.py",
+    "lifecycle": "src/market_platform_foundation/intelligence/paper_forward_bridge/lifecycle.py",
+    "anti_lookahead": "src/market_platform_foundation/intelligence/paper_forward_bridge/temporal.py",
+    "paper_integration": "src/market_platform_foundation/intelligence/paper_forward_bridge/paper_handoff.py",
+    "api": "src/market_platform_foundation/ui_api/forward_test_projections.py",
+    "ui": "ui/src/components/paper-workspace/PaperForwardTestPanel.tsx",
+    "tests": "tests/intelligence/test_paper_forward_bridge.py",
+    "architecture": "docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md"
+  },
+  "validation": {
+    "focused_forward_test_tests": "11 passed",
+    "ui_model_tests": "buildForwardTestPanelModel.test.ts",
+    "fast": "pending",
+    "changed": "pending",
+    "full": "pending",
+    "closure": "pending"
+  },
+  "notion_status": "SYNC_PAYLOAD_READY",
+  "known_limitations": [
+    "In-memory session store only",
+    "No EVIDENCE-01B auto-bridge",
+    "Remote main not merged/pushed in this increment"
+  ]
+}

@@ -34,6 +34,7 @@ export const queryKeys = {
   assistantConversations: ["assistant", "conversations"] as const,
   assistantMessages: (conversationId: string) => ["assistant", conversationId, "messages"] as const,
   paperPortfolio: ["paper", "portfolio"] as const,
+  paperForwardTests: (accountId?: string) => ["paper", "forward-tests", accountId ?? "unbound"] as const,
   demoPortfolio: ["demo", "portfolio"] as const,
   paperOrderHistory: ["paper", "order-history"] as const,
   paperTrace: (
@@ -229,6 +230,14 @@ export function usePaperPortfolioQuery(viewMode: "DEMO" | "PAPER" = "PAPER") {
   return useQuery({
     queryKey,
     queryFn: () => api.getPaperPortfolio(viewMode),
+  });
+}
+
+export function usePaperForwardTestsQuery(accountId?: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.paperForwardTests(accountId),
+    queryFn: () => api.getPaperForwardTests(accountId),
+    enabled: enabled && Boolean(accountId),
   });
 }
 

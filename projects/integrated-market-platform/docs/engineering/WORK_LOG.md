@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-10 — Governed Paper forward-testing bridge
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `paper`, `ui`, `docs` |
+| **Summary** | Implemented professor-directed Paper forward-testing bridge on reconciled P2+P7 base: forward-test sessions/decisions with lifecycle and anti-look-ahead guards, governed Paper handoff via `forward_test_decision` snapshots, account-scoped API, Paper Workspace UI panel, tests, architecture doc, and evidence package. |
+| **Key files** | `src/market_platform_foundation/intelligence/paper_forward_bridge/**`, `ui_api/forward_test_projections.py`, `paper/decision_source.py`, `ui/.../PaperForwardTestPanel.tsx`, `tests/intelligence/test_paper_forward_bridge.py`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | Forward-test 11 passed; UI model 2 passed; FAST 21/0/0; changed 2915/32/0; FULL 4539/49/0; closure docs/typecheck/build green after TS fixes |
+| **Related** | [PAPER_FORWARD_TESTING_BRIDGE.md](../architecture/PAPER_FORWARD_TESTING_BRIDGE.md), [evidence package](../audits/paper-forward-testing-bridge/README.md) |
+| **Notes** | Remote `main` not pushed/merged. Notion SYNC_PAYLOAD_READY. In-memory store scope; EVIDENCE-01B auto-bridge deferred. |
+
 ## 2026-09-10 — Performance Engineering P7 continuous budgets & telemetry
 
 | Field | Value |

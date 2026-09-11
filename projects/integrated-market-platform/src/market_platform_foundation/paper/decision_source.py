@@ -7,6 +7,7 @@ from typing import Any
 SOURCE_TYPES: tuple[str, ...] = (
     "paper_command_attention",
     "workspace_lane",
+    "forward_test_decision",
 )
 
 MAX_HEADLINE_LENGTH = 240
@@ -132,6 +133,11 @@ def validate_snapshot_against_correlation(
             if correlation != f"attention:{normalized_attention}":
                 raise ValueError("DECISION_SOURCE_SNAPSHOT_CORRELATION_MISMATCH")
         elif correlation != normalized_attention:
+            raise ValueError("DECISION_SOURCE_SNAPSHOT_CORRELATION_MISMATCH")
+        return snapshot
+    if source_type == "forward_test_decision":
+        expected = f"forward_test:{source_id}"
+        if correlation != expected:
             raise ValueError("DECISION_SOURCE_SNAPSHOT_CORRELATION_MISMATCH")
         return snapshot
     raise ValueError("DECISION_SOURCE_SNAPSHOT_TYPE_INVALID")
