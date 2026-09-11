@@ -3,27 +3,39 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from pathlib import Path
 from typing import Any
 
 from market_platform_foundation.intelligence.news_strategy_evaluation.contracts import (
     StrategyEvaluationDecision,
 )
 
+from .activation import (
+    ActivationManifestError,
+    assert_manifest_session_eligible,
+    cohort_arm_policy,
+    load_activation_manifest,
+    manifest_universe_symbols,
+)
 from .evaluation import evaluate_forward_test, refresh_evaluability
 from .identity import forward_test_decision_id, forward_test_observation_id, forward_test_session_id
 from .lifecycle import ForwardTestLifecycleError, assert_transition
 from .paper_handoff import build_paper_preview_body, forward_test_correlation_id
+from .preflight import assert_forward_test_preflight_ready, run_forward_test_preflight
 from .repository import ForwardTestRepository
 from .temporal import (
     assert_decision_payload_immutable,
     assert_input_observable_at_decision,
     assert_observation_after_decision,
+    assert_observation_source_after_decision,
     assert_run_kind_forward,
     assert_source_time_at_or_before_decision,
 )
 from .types import (
     EvaluationState,
+    ForwardTestCohortArm,
     ForwardTestDecision,
+    ForwardTestEvidenceClass,
     ForwardTestMode,
     ForwardTestObservation,
     ForwardTestRunKind,
@@ -47,9 +59,72 @@ def _require_account_match(*, expected: str, actual: str) -> None:
         raise ForwardTestServiceError("FORWARD_TEST_ACCOUNT_MISMATCH")
 
 
+def _parse_cohort_arm(raw: str) -> ForwardTestCohortArm:
+    normalized = raw.strip().upper().replace("-", "_")
+    try:
+        return ForwardTestCohortArm(normalized)
+    except ValueError as exc:
+        raise ForwardTestServiceError("FORWARD_TEST_COHORT_ARM_INVALID") from exc
+
+
+def _parse_evidence_class(raw: str | None) -> ForwardTestEvidenceClass:
+    if not raw:
+        return ForwardTestEvidenceClass.UNCLASSIFIED
+    try:
+        return ForwardTestEvidenceClass(str(raw).upper())
+    except ValueError as exc:
+        raise ForwardTestServiceError("FORWARD_TEST_EVIDENCE_CLASS_INVALID") from exc
+
+
+def _forbidden_evidence_promotion(evidence_class: ForwardTestEvidenceClass) -> None:
+    if evidence_class in {
+        ForwardTestEvidenceClass.PAPER_OBSERVED,
+        ForwardTestEvidenceClass.ACTUAL_FORWARD,
+    }:
+        raise ForwardTestServiceError("FORWARD_TEST_EVIDENCE_CLASS_AUTO_PROMOTION_FORBIDDEN")
+
+
+def _activation_error(exc: ActivationManifestError) -> ForwardTestServiceError:
+    return ForwardTestServiceError(str(exc))
+
+
 class ForwardTestService:
     def __init__(self, store: ForwardTestRepository) -> None:
         self._store = store
+
+    def _assert_activation_eligible(
+        self,
+        *,
+        campaign_slug: str,
+        account_id: str,
+        mode: str,
+        cohort_arm: str | None = None,
+        manifest_fingerprint: str | None = None,
+        campaigns_root_override: Path | None = None,
+    ) -> None:
+        preflight = run_forward_test_preflight(
+            campaign_slug=campaign_slug,
+            mode=mode,
+            run_kind=ForwardTestRunKind.FORWARD_TEST.value,
+            manifest_fingerprint=manifest_fingerprint,
+            cohort_arm=cohort_arm,
+            campaigns_root_override=campaigns_root_override,
+        )
+        try:
+            assert_forward_test_preflight_ready(preflight)
+        except ActivationManifestError as exc:
+            raise _activation_error(exc) from exc
+        manifest = load_activation_manifest(
+            campaign_slug,
+            campaigns_root_override=campaigns_root_override,
+        )
+        try:
+            assert_manifest_session_eligible(manifest)
+        except ActivationManifestError as exc:
+            raise _activation_error(exc) from exc
+        paper_account = manifest.paper_account_id
+        if paper_account and str(paper_account) != account_id:
+            raise ForwardTestServiceError("FORWARD_TEST_ACCOUNT_MANIFEST_MISMATCH")
 
     def create_session(
         self,
@@ -61,27 +136,84 @@ class ForwardTestService:
         universe: tuple[str, ...],
         evaluation_horizon_ns: int,
         created_at_ns: int,
+        campaign_id: str | None = None,
+        cohort_arm: str | None = None,
+        manifest_fingerprint: str | None = None,
+        campaigns_root_override: Path | None = None,
         config: dict[str, Any] | None = None,
     ) -> ForwardTestSession:
         _require_paper_mode(mode)
-        if evaluation_horizon_ns <= 0:
+        normalized_universe = tuple(str(item).upper() for item in universe)
+        if not normalized_universe:
+            raise ForwardTestServiceError("FORWARD_TEST_UNIVERSE_REQUIRED")
+
+        campaign_binding: dict[str, Any] = {}
+        if campaign_id:
+            if not cohort_arm:
+                raise ForwardTestServiceError("FORWARD_TEST_COHORT_ARM_REQUIRED")
+            cohort = _parse_cohort_arm(cohort_arm)
+            self._assert_activation_eligible(
+                campaign_slug=campaign_id,
+                account_id=account_id,
+                mode=mode,
+                cohort_arm=cohort.value,
+                manifest_fingerprint=manifest_fingerprint,
+                campaigns_root_override=campaigns_root_override,
+            )
+            preflight = run_forward_test_preflight(
+                campaign_slug=campaign_id,
+                mode=mode,
+                run_kind=ForwardTestRunKind.FORWARD_TEST.value,
+                manifest_fingerprint=manifest_fingerprint,
+                cohort_arm=cohort.value,
+                campaigns_root_override=campaigns_root_override,
+            )
+            manifest = load_activation_manifest(
+                campaign_id,
+                campaigns_root_override=campaigns_root_override,
+            )
+            expected_policy_id, expected_policy_version = cohort_arm_policy(manifest, cohort.value)
+            if strategy_id != expected_policy_id or strategy_version != expected_policy_version:
+                raise ForwardTestServiceError("FORWARD_TEST_STRATEGY_BINDING_MISMATCH")
+            manifest_symbols = manifest_universe_symbols(manifest)
+            if set(normalized_universe) - set(manifest_symbols):
+                raise ForwardTestServiceError("FORWARD_TEST_UNIVERSE_MANIFEST_MISMATCH")
+            manifest_horizon = int(manifest.binding.get("evaluation_horizon_ns") or 0)
+            if evaluation_horizon_ns <= 0:
+                evaluation_horizon_ns = manifest_horizon
+            if evaluation_horizon_ns != manifest_horizon:
+                raise ForwardTestServiceError("FORWARD_TEST_HORIZON_MANIFEST_MISMATCH")
+            campaign_binding = {
+                "campaign_id": campaign_id,
+                "protocol_id": preflight.protocol_id,
+                "activation_version": preflight.activation_version,
+                "manifest_fingerprint": preflight.manifest_fingerprint,
+                "cohort_arm": cohort,
+            }
+        elif evaluation_horizon_ns <= 0:
             raise ForwardTestServiceError("FORWARD_TEST_HORIZON_INVALID")
+
         session = ForwardTestSession(
             session_id=forward_test_session_id(
                 account_id=account_id,
                 strategy_id=strategy_id,
                 strategy_version=strategy_version,
                 created_at_ns=created_at_ns,
-                universe=universe,
+                universe=normalized_universe,
             ),
             account_id=account_id,
             mode=mode.upper(),
             strategy_id=strategy_id,
             strategy_version=strategy_version,
-            universe=universe,
+            universe=normalized_universe,
             evaluation_horizon_ns=evaluation_horizon_ns,
             created_at_ns=created_at_ns,
             status=ForwardTestSessionStatus.ACTIVE,
+            campaign_id=campaign_binding.get("campaign_id"),
+            protocol_id=campaign_binding.get("protocol_id"),
+            activation_version=campaign_binding.get("activation_version"),
+            manifest_fingerprint=campaign_binding.get("manifest_fingerprint"),
+            cohort_arm=campaign_binding.get("cohort_arm"),
             config=dict(config or {}),
         )
         self._store.put_session(session)
@@ -99,6 +231,7 @@ class ForwardTestService:
         test_mode: ForwardTestMode,
         quantity: int | None = None,
         evaluation_horizon_ns: int | None = None,
+        evidence_class: str | None = None,
     ) -> ForwardTestDecision:
         _require_paper_mode(mode)
         if strategy_decision.execution_authority:
@@ -107,11 +240,16 @@ class ForwardTestService:
             source_time_ns=source_time_ns,
             decision_time_ns=decision_time_ns,
         )
-        if session_id is not None:
-            session = self._store.get_session(session_id)
-            if session is None:
-                raise ForwardTestServiceError("FORWARD_TEST_SESSION_NOT_FOUND")
-            _require_account_match(expected=session.account_id, actual=account_id)
+        evidence = _parse_evidence_class(evidence_class)
+        _forbidden_evidence_promotion(evidence)
+        session = self._require_bound_session(
+            session_id=session_id,
+            account_id=account_id,
+            strategy_id=strategy_decision.policy_id,
+            strategy_version=strategy_decision.policy_version,
+            symbol=strategy_decision.instrument_id,
+        )
+        if session is not None:
             horizon = evaluation_horizon_ns or session.evaluation_horizon_ns
         else:
             horizon = evaluation_horizon_ns or 0
@@ -164,6 +302,8 @@ class ForwardTestService:
             evaluation_horizon_ns=horizon,
             decision_payload=payload,
             provenance_snapshot=provenance,
+            evidence_class=evidence,
+            cohort_arm=session.cohort_arm if session is not None else None,
         )
         self._store.put_decision(decision)
         return decision
@@ -185,17 +325,26 @@ class ForwardTestService:
         evaluation_horizon_ns: int | None = None,
         decision_payload: dict[str, Any] | None = None,
         research_artifact_ref: str | None = None,
+        run_kind: ForwardTestRunKind = ForwardTestRunKind.FORWARD_TEST,
+        evidence_class: str | None = None,
     ) -> ForwardTestDecision:
         _require_paper_mode(mode)
+        if run_kind != ForwardTestRunKind.FORWARD_TEST:
+            raise ForwardTestServiceError("FORWARD_TEST_BACKTEST_BOUNDARY_VIOLATION")
         assert_source_time_at_or_before_decision(
             source_time_ns=source_time_ns,
             decision_time_ns=decision_time_ns,
         )
-        if session_id is not None:
-            session = self._store.get_session(session_id)
-            if session is None:
-                raise ForwardTestServiceError("FORWARD_TEST_SESSION_NOT_FOUND")
-            _require_account_match(expected=session.account_id, actual=account_id)
+        evidence = _parse_evidence_class(evidence_class)
+        _forbidden_evidence_promotion(evidence)
+        session = self._require_bound_session(
+            session_id=session_id,
+            account_id=account_id,
+            strategy_id=strategy_id,
+            strategy_version=strategy_version,
+            symbol=symbol,
+        )
+        if session is not None:
             horizon = evaluation_horizon_ns or session.evaluation_horizon_ns
         else:
             horizon = evaluation_horizon_ns or 0
@@ -222,9 +371,9 @@ class ForwardTestService:
             session_id=session_id,
             account_id=account_id,
             mode=mode.upper(),
-            run_kind=ForwardTestRunKind.FORWARD_TEST,
+            run_kind=run_kind,
             test_mode=test_mode,
-            symbol=symbol,
+            symbol=symbol.upper(),
             decision_time_ns=decision_time_ns,
             source_time_ns=source_time_ns,
             state=ForwardTestState.DRAFT,
@@ -237,6 +386,8 @@ class ForwardTestService:
             evaluation_horizon_ns=horizon,
             decision_payload=payload,
             provenance_snapshot=provenance,
+            evidence_class=evidence,
+            cohort_arm=session.cohort_arm if session is not None else None,
         )
         self._store.put_decision(decision)
         return decision
@@ -248,10 +399,30 @@ class ForwardTestService:
         account_id: str,
         locked_at_ns: int,
         decision_payload: dict[str, Any] | None = None,
+        campaign_slug: str | None = None,
     ) -> ForwardTestDecision:
         decision = self._require_decision(forward_test_id, account_id)
         _require_account_match(expected=decision.account_id, actual=account_id)
         assert_run_kind_forward(run_kind=decision.run_kind.value)
+        if decision.session_id is not None:
+            session = self._store.get_session(decision.session_id)
+            if session is None:
+                raise ForwardTestServiceError("FORWARD_TEST_SESSION_NOT_FOUND")
+            _require_account_match(expected=session.account_id, actual=account_id)
+            if session.campaign_id:
+                self._assert_activation_eligible(
+                    campaign_slug=session.campaign_id,
+                    account_id=account_id,
+                    mode=decision.mode,
+                    cohort_arm=session.cohort_arm.value if session.cohort_arm else None,
+                    manifest_fingerprint=session.manifest_fingerprint,
+                )
+        elif campaign_slug:
+            self._assert_activation_eligible(
+                campaign_slug=campaign_slug,
+                account_id=account_id,
+                mode=decision.mode,
+            )
         if decision_payload is not None:
             assert_decision_payload_immutable(
                 original=decision.decision_payload,
@@ -268,6 +439,11 @@ class ForwardTestService:
             evaluation_state=EvaluationState.PENDING,
         )
         self._store.put_decision(locked)
+        if decision.session_id is not None:
+            session = self._store.get_session(decision.session_id)
+            if session is not None and not session.config_frozen:
+                frozen_session = replace(session, config_frozen=True)
+                self._store.put_session(frozen_session)
         return locked
 
     def submit_to_paper(
@@ -354,6 +530,10 @@ class ForwardTestService:
         decision = self._require_decision(forward_test_id, account_id)
         assert_observation_after_decision(
             observation_time_ns=observed_at_ns,
+            decision_time_ns=decision.decision_time_ns,
+        )
+        assert_observation_source_after_decision(
+            source_time_ns=source_time_ns,
             decision_time_ns=decision.decision_time_ns,
         )
         assert_input_observable_at_decision(
@@ -447,3 +627,34 @@ class ForwardTestService:
             raise ForwardTestServiceError("FORWARD_TEST_NOT_FOUND")
         _require_account_match(expected=decision.account_id, actual=account_id)
         return decision
+
+    def _require_bound_session(
+        self,
+        *,
+        session_id: str | None,
+        account_id: str,
+        strategy_id: str,
+        strategy_version: str,
+        symbol: str,
+    ) -> ForwardTestSession | None:
+        if session_id is None:
+            return None
+        session = self._store.get_session(session_id)
+        if session is None:
+            raise ForwardTestServiceError("FORWARD_TEST_SESSION_NOT_FOUND")
+        _require_account_match(expected=session.account_id, actual=account_id)
+        if session.campaign_id:
+            self._assert_activation_eligible(
+                campaign_slug=session.campaign_id,
+                account_id=account_id,
+                mode=session.mode,
+                cohort_arm=session.cohort_arm.value if session.cohort_arm else None,
+                manifest_fingerprint=session.manifest_fingerprint,
+            )
+        if session.strategy_id != strategy_id or session.strategy_version != strategy_version:
+            raise ForwardTestServiceError("FORWARD_TEST_STRATEGY_BINDING_MISMATCH")
+        normalized_symbol = str(symbol).upper()
+        universe = {str(item).upper() for item in session.universe}
+        if normalized_symbol not in universe:
+            raise ForwardTestServiceError("FORWARD_TEST_SYMBOL_UNIVERSE_MISMATCH")
+        return session

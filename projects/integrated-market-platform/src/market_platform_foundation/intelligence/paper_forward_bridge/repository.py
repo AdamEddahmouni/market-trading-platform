@@ -10,7 +10,9 @@ from ...local_state.paths import persistence_enabled
 from .types import (
     EvaluationState,
     ExecutionOutcomeMetrics,
+    ForwardTestCohortArm,
     ForwardTestDecision,
+    ForwardTestEvidenceClass,
     ForwardTestMode,
     ForwardTestObservation,
     ForwardTestRunKind,
@@ -87,12 +89,21 @@ def session_to_row(session: ForwardTestSession) -> dict[str, Any]:
         "created_at_ns": session.created_at_ns,
         "status": session.status.value,
         "config_json": _json_dumps(session.config),
+        "campaign_id": session.campaign_id,
+        "protocol_id": session.protocol_id,
+        "activation_version": session.activation_version,
+        "manifest_fingerprint": session.manifest_fingerprint,
+        "cohort_arm": session.cohort_arm.value if session.cohort_arm else None,
+        "config_frozen": 1 if session.config_frozen else 0,
     }
 
 
 def session_from_row(row: dict[str, Any]) -> ForwardTestSession:
     universe = _json_loads(row.get("universe_json"), [])
     config = _json_loads(row.get("config_json"), {})
+    cohort_raw = row.get("cohort_arm")
+    cohort_arm = ForwardTestCohortArm(str(cohort_raw)) if cohort_raw else None
+    config_frozen = bool(int(row.get("config_frozen") or 0))
     return ForwardTestSession(
         session_id=str(row["session_id"]),
         account_id=str(row["account_id"]),
@@ -103,6 +114,12 @@ def session_from_row(row: dict[str, Any]) -> ForwardTestSession:
         evaluation_horizon_ns=int(row["evaluation_horizon_ns"]),
         created_at_ns=int(row["created_at_ns"]),
         status=ForwardTestSessionStatus(str(row["status"])),
+        campaign_id=row.get("campaign_id"),
+        protocol_id=row.get("protocol_id"),
+        activation_version=row.get("activation_version"),
+        manifest_fingerprint=row.get("manifest_fingerprint"),
+        cohort_arm=cohort_arm,
+        config_frozen=config_frozen,
         config=dict(config) if isinstance(config, dict) else {},
     )
 
@@ -163,6 +180,9 @@ def decision_from_row(
     confidence = row.get("confidence")
     locked_at = row.get("locked_at_ns")
     submitted_at = row.get("submitted_at_ns")
+    cohort_raw = row.get("cohort_arm")
+    cohort_arm = ForwardTestCohortArm(str(cohort_raw)) if cohort_raw else None
+    evidence_raw = row.get("evidence_class") or ForwardTestEvidenceClass.UNCLASSIFIED.value
     return ForwardTestDecision(
         forward_test_id=str(row["forward_test_id"]),
         session_id=row.get("session_id"),
@@ -192,6 +212,8 @@ def decision_from_row(
         execution_outcome=_execution_outcome_from_json(row.get("execution_outcome_json")),
         evaluation_state=EvaluationState(str(row["evaluation_state"])),
         failure_reason=row.get("failure_reason"),
+        evidence_class=ForwardTestEvidenceClass(str(evidence_raw)),
+        cohort_arm=cohort_arm,
     )
 
 
@@ -228,7 +250,19 @@ def decision_to_row(decision: ForwardTestDecision) -> dict[str, Any]:
         else None,
         "evaluation_state": decision.evaluation_state.value,
         "failure_reason": decision.failure_reason,
+        "evidence_class": decision.evidence_class.value,
+        "cohort_arm": decision.cohort_arm.value if decision.cohort_arm else None,
     }
+
+
+def assert_session_config_immutable(
+    existing: ForwardTestSession,
+    proposed: ForwardTestSession,
+) -> None:
+    if not existing.config_frozen:
+        return
+    if existing.config != proposed.config:
+        raise ForwardTestRepositoryError("FORWARD_TEST_SESSION_CONFIG_FROZEN")
 
 
 def assert_observations_append_only(
@@ -268,6 +302,8 @@ def assert_locked_decision_immutable(
         ("decision_payload", existing.decision_payload, proposed.decision_payload),
         ("provenance_snapshot", existing.provenance_snapshot, proposed.provenance_snapshot),
         ("locked_at_ns", existing.locked_at_ns, proposed.locked_at_ns),
+        ("evidence_class", existing.evidence_class, proposed.evidence_class),
+        ("cohort_arm", existing.cohort_arm, proposed.cohort_arm),
     )
     for field_name, before, after in immutable_checks:
         if before != after:

@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .repository import assert_locked_decision_immutable, assert_observations_append_only
+from .repository import (
+    assert_locked_decision_immutable,
+    assert_observations_append_only,
+    assert_session_config_immutable,
+)
 from .types import ForwardTestDecision, ForwardTestSession
 
 
@@ -20,6 +24,9 @@ class ForwardTestStore:
     _evaluation_keys: set[str] = field(default_factory=set)
 
     def put_session(self, session: ForwardTestSession) -> None:
+        existing = self._sessions.get(session.session_id)
+        if existing is not None:
+            assert_session_config_immutable(existing, session)
         self._sessions[session.session_id] = session
         bucket = self._by_account_sessions.setdefault(session.account_id, [])
         if session.session_id not in bucket:

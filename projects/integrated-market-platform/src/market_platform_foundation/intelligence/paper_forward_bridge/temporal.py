@@ -24,6 +24,15 @@ def assert_observation_after_decision(*, observation_time_ns: int, decision_time
         raise ForwardTestTemporalError("FORWARD_TEST_OBSERVATION_BEFORE_DECISION")
 
 
+def assert_observation_source_after_decision(
+    *,
+    source_time_ns: int,
+    decision_time_ns: int,
+) -> None:
+    if source_time_ns < decision_time_ns:
+        raise ForwardTestTemporalError("FORWARD_TEST_TEMPORAL_VIOLATION")
+
+
 def assert_evaluation_horizon_reached(*, now_ns: int, decision_time_ns: int, horizon_ns: int) -> None:
     if now_ns < decision_time_ns + horizon_ns:
         raise ForwardTestTemporalError("FORWARD_TEST_HORIZON_NOT_REACHED")
