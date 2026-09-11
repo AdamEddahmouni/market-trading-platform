@@ -15,6 +15,21 @@
 > Paper forward-test campaign will be conducted. No results, edge claims, or
 > qualification closure are implied by its existence.
 
+## Activation status
+
+| Field | Value |
+| --- | --- |
+| **Status** | `PRE-REGISTERED` / **`PENDING_OWNER_DECISIONS`** — not `FROZEN`, not `ACTIVE` |
+| **Campaign slug** | `FTEP-V1-001` |
+| **Owner decision packet** | [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md) (11 grouped decisions OD-1 … OD-11) |
+| **Activation manifest** | [`artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json`](../../artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json) |
+| **Protocol reference** | [`artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json`](../../artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json) |
+| **Empirical evidence** | **None** — no governed locks under a frozen manifest |
+| **Next gate** | Owner signs OD-1 … OD-11 in decision packet → manifest transitions to `FROZEN` → preflight `READY` |
+
+OPEN DECISION sections below remain **unresolved in protocol text** until owner
+choices are copied into the activation manifest and signed.
+
 ## Purpose
 
 Freeze the experimental design for IMP's **first legitimate empirical Paper
