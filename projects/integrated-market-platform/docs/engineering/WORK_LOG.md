@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-11 — FTEP-V1 owner decision packet (OD-1 … OD-11)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `forward-test` |
+| **Summary** | Expanded owner decision packet per user spec §16: 28 Agent A inventory rows consolidated into 11 grouped decisions (OD-1 … OD-11) with recommended defaults, precedent table for sample floors, and C3 ES/RTH conflict note. Updated activation manifest skeleton (`PENDING_OWNER_DECISIONS`), protocol ref with doc SHA-256, and FTEP activation status section. No FROZEN status or empirical claims. |
+| **Key files** | `docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md`, `artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json`, `artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json`, `docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | None (docs/artifacts only) |
+| **Related** | Agent A audits `c4f6ca28`, `81265595`; [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md) |
+| **Notes** | Owner must sign OD-1 … OD-11 before manifest freeze. $0 incremental cost; Paper-only. |
+
 ## 2026-09-11 — FTEP-V1 activation runtime gates
 
 | Field | Value |
