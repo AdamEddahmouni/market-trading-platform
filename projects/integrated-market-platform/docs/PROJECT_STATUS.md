@@ -1,97 +1,98 @@
 # IMP Project Status
 
-**Status:** Authoritative current snapshot. Update when major milestones complete.  
-**Last updated:** 2026-09-03 (program documentation reconciliation)
+**Status:** Authoritative concise current snapshot.  
+**Last updated:** 2026-09-11 (pre-implementation planning closure)  
+**Canonical remote baseline reviewed:** `main@a4858103baa3531051791a632ed36a9339fd6414` (PR #18 merged)
 
-## What IMP is today
+For the deep whole-program state matrix, see [Program Status](platform/PROGRAM_STATUS.md). For the current FTEP/Paper doctrine, see [IMP Scope, FTEP, and Paper-Validation Doctrine](architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md).
 
-A governed CPython 3.11 (stdlib-only foundation) + React/Vite market operating workstation with:
+## What IMP is
 
-- **Demo** — fixture replay exploration (read-only)
-- **Paper** — internal simulated execution under explicit env gates
-- **Live** — broker-observed read-only data, canary/reconciliation surfaces
+IMP is a **multi-strategy, multi-asset opportunity-discovery and governed decision/Paper-execution platform**. The professor-directed news/catalyst program controls near-term sequencing but does not redefine the product. FTEP is the reusable Forward-Test Experimental Protocol; ES/news is only the candidate first bounded campaign.
 
-Phases 0–16, UI-001/002, MRA-001/002, Platform P0–P4-4C, and mode-specific UI surfaces are **implemented** on admitted fixtures with documented limitations.
+Operating modes remain:
 
-**Live production execution (`LIVE-001`) is blocked** — requires separate authorization.
+- **Demo** — fixture/replay exploration.
+- **Paper** — simulated execution under explicit authority gates.
+- **Live** — observational/read-only capabilities where verified; production broker execution remains separately unauthorized.
 
----
+## Current canonical checkpoint
 
-## Completed major systems
+| Area | Current state |
+|---|---|
+| G0–G15 engineering foundation | Accepted with documented limitations |
+| Governed Paper forward-testing bridge | `COMPLETE` / canonical |
+| PD-09 durable forward-test persistence | `COMPLETE` / merged in PR #18; restart-safe SQLite path exists when persistent state is enabled |
+| FTEP-V1 preregistration | `PLANNED / PRE-REGISTERED / NOT YET EMPIRICAL EVIDENCE` |
+| FTEP campaign activation | **NOT YET FROZEN/ACTIVE** — unresolved activation gates remain |
+| Strategy research program | Broad planning complete across major lanes; empirical validation remains lane-specific and incomplete |
+| Internal Paper simulator realism | **NOT PRESUMED MARKET GROUND TRUTH** — calibration required for execution-bearing claims |
+| Live production execution | **NOT AUTHORIZED** |
 
-| System | Status | Reference |
-|--------|--------|-----------|
-| Governed foundation (Phases 0–8) | PASS | [README](../README.md) phase table |
-| Research UI (UI-001/002) | PASS | [ui/README](../ui/README.md) |
-| Platformization P0–P4-4C | COMPLETE_WITH_LIMITATIONS | [platformization roadmap](research/PLATFORMIZATION_ROADMAP.md) |
-| Mode launcher & session | Complete | [mode launcher completion](superpowers/plans/2026-08-26-mode-launcher-implementation.md) |
-| Mode-specific surfaces (Now/Portfolio/Workspace/Explore/Research/Discover) | Complete | [completion](superpowers/plans/2026-08-31-mode-specific-surfaces-completion.md) |
-| Workspace lane mode content (10 lanes) | Complete | [completion](superpowers/plans/2026-08-31-mode-specific-lane-content-completion.md) |
-| Paper workspace decision cockpit | Complete | [completion](superpowers/plans/2026-08-31-paper-workspace-decision-cockpit-completion.md) |
-| Paper Command → Workspace handoff | Complete | [completion](superpowers/plans/2026-08-31-paper-command-workspace-handoff-completion.md) |
-| Paper Portfolio decision history | Complete | [completion](superpowers/plans/2026-08-31-paper-portfolio-decision-history-completion.md) |
-| Paper decision-source snapshot | Complete | [completion](superpowers/plans/2026-08-31-paper-decision-source-snapshot-completion.md) |
-| Paper decision source_time | Complete | [completion](superpowers/plans/2026-09-01-paper-decision-source-time-completion.md) |
-| UI completion & productization | Complete | [completion](superpowers/plans/2026-09-01-ui-completion-productization-completion.md) |
-| Project operating system / governance docs | Complete | [completion](superpowers/plans/2026-09-01-project-operating-system-completion.md) |
-| Operational hardening (lane provenance, CI, consolidation) | Complete | [completion](superpowers/plans/2026-09-01-operational-hardening-completion.md) |
-| Manifest-driven validation | Active | [VALIDATION_ARCHITECTURE](engineering/VALIDATION_ARCHITECTURE.md) |
-| Intelligence BUILD 01–35 | PASS (fixture scope) | [BUILD specs](engineering/) |
+## Paper evidence doctrine
 
----
+Prospective Paper evidence separates three layers:
 
-## Current work
+1. **Market Evidence** — lawful real prospective market/news/reference observations where possible.
+2. **IMP Execution Simulation** — IMP's hypothetical orders/fills/positions/P&L.
+3. **External Simulation Comparator** — suitable independent Paper/sandbox/replay environment used as a challenger, never as ground truth.
 
-**P6 Shadow Run 1** — forward-validation evidence collection **DEFERRED** (historical protocol and observations are preserved; no campaign is active — see [P6 protocol](engineering/P6_SHADOW_RUN_1_PROTOCOL.md)).
+See [Paper Simulator Calibration & Validation Contract](architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md) and [Market Data Capability Contract](architecture/MARKET_DATA_CAPABILITY_CONTRACT.md).
 
----
+## FTEP architecture
 
-## Recently completed
+The reusable protocol is now explicitly layered:
 
-- TD-005 operator auth and account-scoped authorization (2026-09-01)
-- TD-003 multi-account snapshot architecture (2026-09-01)
+`FTEP Core -> Asset-Class Profile -> Strategy Profile -> Campaign Manifest`
 
----
+Current pre-implementation documents:
 
-## Next likely work (not committed)
+- [FTEP Core V1](engineering/ftep/FTEP_CORE_V1.md)
+- [Futures Asset-Class Profile V1](engineering/ftep/assets/FUTURES_PROFILE_V1.md)
+- [News / Catalyst Strategy Profile V1](engineering/ftep/strategies/NEWS_CATALYST_PROFILE_V1.md)
+- [Campaign Manifest Template V1](engineering/ftep/CAMPAIGN_MANIFEST_TEMPLATE_V1.md)
+- [FTEP Activation & Pre-Implementation Gates](engineering/FTEP_ACTIVATION_GATES.md)
+- Existing preregistration: [Forward-Test Experimental Protocol V1](engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md)
 
-- TD-004 Moomoo OpenD real-wire when connectivity available
-- Hosted deployment (P5 hosted/OIDC — local auth enforcement complete)
+The existing `FTEP-V1/0.1.0-PREREG` document is a preregistration/design freeze with `OPEN DECISION` items. It is **not** the final campaign-activation freeze.
 
----
+## Strategy and Opportunity Engine governance
 
-## Deferred / blocked
+A strategy does not have one authoritative maturity flag. Canonical readiness is a vector covering research, data/rights, implementation, OOS, shadow, Paper, execution calibration, Opportunity Engine integration, portfolio/risk integration and separately governed Live eligibility. See [Strategy Readiness Model](research/STRATEGY_READINESS_MODEL.md).
 
-| Item | Reason |
-|------|--------|
-| ES-session acceptance | ADR-DATA-001 — lawful ES bytes not procured |
-| LIVE-001 production execution | Blocked pending separate authorization |
-| Crypto / prediction-market expansion | Planning only — not authorized |
-| P4-4C Moomoo paper real-wire | Fixture-proven; OpenD TCP protocol |
-| Auth / multi-user enforcement | TD-005 closed — `LOOPBACK_TRUST` default; `ENFORCED` via `IMP_AUTH_ENFORCEMENT_MODE` + principals registry (ADR-0008); hosted OIDC/SSO deferred |
-| P6 forward validation | Deferred by program decision; historical protocol and observations are preserved, but no campaign is active — [P6 protocol](engineering/P6_SHADOW_RUN_1_PROTOCOL.md) |
+All future strategy families should converge on the common [IMP Opportunity Contract](architecture/OPPORTUNITY_CONTRACT.md) while preserving strategy-specific mechanisms, uncertainty, horizons and execution requirements. One Opportunity Engine does not require one universal scalar score.
 
----
+## Current pre-implementation blockers before the first qualifying ES/news campaign
 
-## Intentionally out of scope (current repo)
+The first empirical campaign must not be activated until the required gates in [FTEP Activation & Pre-Implementation Gates](engineering/FTEP_ACTIVATION_GATES.md) are resolved. Material open items include:
 
-- On-chain ingestion, live social APIs, AI-trading
-- Non-stdlib Python in foundation (locked per `phase0-dependency-lock.json`)
-- Retroactive Finviz screen reconstruction
+- fresh private/local provider configuration audit, including whether Alpaca or any other previously configured environment is actually present now;
+- lawful prospective ES market-data selection plus capability/entitlement/use-right verification;
+- final Futures and News/Catalyst profile bindings for the campaign;
+- exact dated ES contract and session window;
+- external futures-capable comparator audit if execution realism is in scope;
+- simulator calibration plan and **pre-registered numeric divergence tolerances**;
+- exact Paper account/mode, signal-only vs execution mode, sizing/order/cost rules;
+- horizons, cohort sufficiency, analysis and multiple-testing rules;
+- immutable activation manifest with repository SHA and artifact paths.
 
----
+These are deliberate activation prerequisites, not evidence that the planning architecture is incomplete.
 
-## Validation snapshot (2026-09-01)
+## Next work sequence
 
-Recorded at TD-003 multi-account snapshot increment; re-run before release:
+1. Reconcile Notion and repository authorities to `main@a4858103` and this doctrine.
+2. Audit private/local provider state without exposing secrets.
+3. Verify campaign-suitable ES market evidence and rights.
+4. Audit a futures-capable external simulation comparator for the exact campaign needs.
+5. Establish/calibrate simulator behavior and freeze justified numeric tolerances.
+6. Resolve every activation decision into an immutable campaign manifest.
+7. Only then mark the first campaign `FROZEN_FOR_ACTIVATION` and begin qualifying prospective evidence.
+8. Reuse the same FTEP Core and evidence doctrine across other strategy/asset families.
 
-| Gate | Last recorded |
-|------|---------------|
-| Vitest | 421 passed |
-| UI typecheck | Pass (`tsconfig.typecheck.json`) |
-| `validate.py changed` | 874 passed, 0 failures, 0 errors |
-| `validate.py full` | 2984 passed, 0 failures, 0 errors |
-| `test_repository_closure` | OK |
-| Initial bundle | 200.00 KiB gzip (budget 201 KiB) |
+## Boundaries
 
-Do not treat counts as permanent — verify with [VALIDATION.md](engineering/VALIDATION.md).
+- No campaign is active merely because a preregistration document exists.
+- No software test, replay or Paper fill proves market edge by itself.
+- No external Paper/sandbox environment is market ground truth.
+- No paid service, trial or entitlement is activated without explicit owner authorization.
+- No FTEP/Paper outcome grants Live execution authority.

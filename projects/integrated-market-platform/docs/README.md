@@ -35,6 +35,9 @@ When documents disagree, resolve in this order (highest first):
 |-------|----------|
 | What IMP is | [README.md](../README.md) |
 | Current status & roadmap | [PROJECT_STATUS.md](PROJECT_STATUS.md) |
+| Pre-implementation planning closure | [PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md](platform/PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md) |
+| FTEP / Paper-validation doctrine | [IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md](architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md) |
+| FTEP activation gates | [FTEP_ACTIVATION_GATES.md](engineering/FTEP_ACTIVATION_GATES.md) |
 | Developer setup | [LOCAL_DEVELOPMENT.md](engineering/LOCAL_DEVELOPMENT.md) |
 | System architecture | [ARCHITECTURE.md](architecture/ARCHITECTURE.md) |
 | Developer operating system | [DEVELOPER_OPERATING_SYSTEM.md](engineering/DEVELOPER_OPERATING_SYSTEM.md) |
@@ -51,6 +54,11 @@ When documents disagree, resolve in this order (highest first):
 | Topic | Document |
 |-------|----------|
 | System overview | [ARCHITECTURE.md](architecture/ARCHITECTURE.md) |
+| IMP scope / FTEP / Paper-validation doctrine | [IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md](architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md) |
+| Market-data capability contract | [MARKET_DATA_CAPABILITY_CONTRACT.md](architecture/MARKET_DATA_CAPABILITY_CONTRACT.md) |
+| Paper simulator calibration contract | [PAPER_SIMULATOR_CALIBRATION_CONTRACT.md](architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md) |
+| Common Opportunity Contract | [OPPORTUNITY_CONTRACT.md](architecture/OPPORTUNITY_CONTRACT.md) |
+| Strategy readiness model | [STRATEGY_READINESS_MODEL.md](research/STRATEGY_READINESS_MODEL.md) |
 | Mode authority (Demo/Paper/Live) | [MODE_AUTHORITY.md](architecture/MODE_AUTHORITY.md) |
 | Paper decision lifecycle | [PAPER_DECISION_LIFECYCLE.md](architecture/PAPER_DECISION_LIFECYCLE.md) |
 | Data contracts & timestamps | [DATA_CONTRACTS.md](architecture/DATA_CONTRACTS.md) |
@@ -59,6 +67,10 @@ When documents disagree, resolve in this order (highest first):
 | News strategy evaluation laboratory | [NEWS_STRATEGY_EVALUATION.md](architecture/NEWS_STRATEGY_EVALUATION.md) |
 | Paper forward-testing bridge | [PAPER_FORWARD_TESTING_BRIDGE.md](architecture/PAPER_FORWARD_TESTING_BRIDGE.md) |
 | Forward-test experimental protocol (preregistered) | [FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md](engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md) |
+| FTEP Core V1 | [FTEP_CORE_V1.md](engineering/ftep/FTEP_CORE_V1.md) |
+| Futures FTEP profile V1 | [FUTURES_PROFILE_V1.md](engineering/ftep/assets/FUTURES_PROFILE_V1.md) |
+| News/Catalyst FTEP profile V1 | [NEWS_CATALYST_PROFILE_V1.md](engineering/ftep/strategies/NEWS_CATALYST_PROFILE_V1.md) |
+| FTEP campaign manifest template | [CAMPAIGN_MANIFEST_TEMPLATE_V1.md](engineering/ftep/CAMPAIGN_MANIFEST_TEMPLATE_V1.md) |
 | FTEP-V1 owner decision packet (OD-1 … OD-11) | [FTEP-V1_OWNER_DECISION_PACKET.md](engineering/FTEP-V1_OWNER_DECISION_PACKET.md) |
 | Threat model (lite) | [THREAT_MODEL.md](architecture/THREAT_MODEL.md) |
 | Architecture decisions | [adr/README.md](architecture/adr/README.md) |
@@ -145,6 +157,7 @@ When documents disagree, resolve in this order (highest first):
 
 | Topic | Document |
 |-------|----------|
+| Pre-implementation planning closure (2026-09-11) | [PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md](platform/PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md) |
 | Post-G15 professor-directed CCN forensic audit | [post-g15-professor-directed/](audits/post-g15-professor-directed/README.md) |
 | IMP reconciliation program (G0–G15) | [imp-reconciliation/](audits/imp-reconciliation/README.md) |
 
