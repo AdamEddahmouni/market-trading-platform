@@ -1,5 +1,5 @@
 {
-  "option_pretrade_ms": 0.9366000012960285,
-  "future_pretrade_ms": 1.0749000066425651,
-  "fill_to_portfolio_ms": 2.297099999850616
+  "option_pretrade_ms": 0.6630999996559694,
+  "future_pretrade_ms": 0.754099997720914,
+  "fill_to_portfolio_ms": 1.1360999997123145
 }

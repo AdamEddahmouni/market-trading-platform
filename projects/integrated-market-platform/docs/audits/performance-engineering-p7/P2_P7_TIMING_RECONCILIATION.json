@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p2_p7_timing_reconciliation",
+  "generated_at": "2026-09-11T00:45:00Z",
+  "status": "RECONCILED",
+  "root_cause": "P7 worktree parent efc9219 predated P5 optimization commit 6e44948 (donor availability / capability projection cache). P7 initial measurements were not comparable to P2 measurements taken at 6e44948.",
+  "scheduler_verdict": "P2 scheduler active in P7 worktree: effective_workers=2, parallel waves overlap, futures bottleneck explains wall time.",
+  "integration_base_sha": "6e44948cf9cd3b28b7a21c1f07a26c91370ad84a",
+  "workloads": [
+    {
+      "workload_id": "fast",
+      "p2_seconds": 3.511,
+      "p7_initial_seconds": 1.995,
+      "reconciled_seconds": 1.821,
+      "p7_initial_compatibility": "MEASURED_COMPATIBLE",
+      "explanation": "FAST improved vs P2 historical; same 21 tests, serial workers=1."
+    },
+    {
+      "workload_id": "domain_macro",
+      "p2_seconds": 3.273,
+      "p7_initial_seconds": 6.901,
+      "reconciled_seconds": 2.552,
+      "p7_initial_compatibility": "MEASURED_DIFFERENT_REPOSITORY_CONTENT",
+      "explanation": "6.9s matched serial reference (~7.18s) because futures suite ran ~7.0s process wall without P5 cache optimization. After merging 6e44948, w2 median 2.552s with futures ~1.2-1.5s; parallel scheduler confirmed."
+    },
+    {
+      "workload_id": "full",
+      "p2_seconds": 196.747,
+      "p7_initial_seconds": 346.542,
+      "reconciled_seconds": 202.853,
+      "p7_initial_compatibility": "MEASURED_DIFFERENT_REPOSITORY_CONTENT",
+      "explanation": "346.5s reflected pre-6e44948 code (platform, donor_bridge, ui1 suites materially slower). Post-merge FULL at 202.853s aligns with P2 within ~3%."
+    },
+    {
+      "workload_id": "changed_product_paths",
+      "p2_seconds": 173.199,
+      "p7_initial_seconds": null,
+      "reconciled_seconds": 173.199,
+      "p7_initial_compatibility": "INHERITED",
+      "explanation": "Not re-run during P7 closure; P2 inherited baseline retained with workload identity requirements."
+    }
+  ],
+  "evidence": {
+    "p2_domain_macro_w2": "docs/audits/performance-engineering-p2/benchmark-domain-macro-w2.json",
+    "p7_pre_merge_domain_macro_w2": ".local/developer-workflow/reconcile-domain-macro-w2.json",
+    "reconciled_domain_macro_w2": ".local/developer-workflow/reconcile-post-merge-w2.json",
+    "p7_pre_merge_full": ".local/developer-workflow/p7-full.json",
+    "reconciled_full_w2": ".local/developer-workflow/reconcile-full-w2.json"
+  }
+}

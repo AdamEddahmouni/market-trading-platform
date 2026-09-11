@@ -1,0 +1,177 @@
+{
+  "schema_version": "1.0",
+  "telemetry_schema_version": "1.0",
+  "budget_version": "p7-bl-0910-2",
+  "parent_scheduler_version": "p2-bl-0901-1",
+  "parent_selector_version": "p3-bl-0801-1",
+  "baseline_date": "2026-09-11",
+  "maturity_status": "PROVISIONAL",
+  "gating_policy": "OBSERVE_ONLY",
+  "comparison_policy": "RATIO_AGAINST_COMPATIBLE_BASELINE",
+  "minimum_sample_requirements": {
+    "fast": 3,
+    "domain_macro": 3,
+    "changed": 1,
+    "full": 1
+  },
+  "environment_compatibility": {
+    "require_matching_os_family": true,
+    "require_matching_python_minor": true,
+    "require_matching_workers": true,
+    "require_matching_validation_mode": true,
+    "require_matching_scheduler_version": true,
+    "require_matching_selector_version_for_changed": true,
+    "allow_local_vs_ci_comparison": false,
+    "cpu_count_tolerance_ratio": 0.5
+  },
+  "threshold_policy": {
+    "formula": "baseline_median * (1 + tolerance) where tolerance derives from max(observed_cv, configured_floor)",
+    "warning_ratio": 1.15,
+    "regression_ratio": 1.30,
+    "severe_regression_ratio": 1.50,
+    "minimum_cv_floor": 0.05,
+    "changed_workload_test_count_tolerance": 0.02
+  },
+  "provenance": {
+    "evidence_directory": "docs/audits/performance-engineering-p7",
+    "p2_baseline_source": "docs/audits/performance-engineering-p2/P2_AFTER_BASELINE.json",
+    "reconciliation_source": "docs/audits/performance-engineering-p7/P2_P7_TIMING_RECONCILIATION.json",
+    "measurement_claim": "MEASURED",
+    "repository_sha": "6e44948cf9cd3b28b7a21c1f07a26c91370ad84a",
+    "baseline_promotion_policy": {
+      "requires_explicit_provenance": true,
+      "preserves_inherited_comparison": true,
+      "blocks_silent_reset": true,
+      "note": "Primary baselines require compatible workload identity; inherited P2 baselines remain visible for regression-masking detection."
+    },
+    "environment": {
+      "python_version": "3.11.15",
+      "logical_cpu_count": 8,
+      "os_family": "windows"
+    }
+  },
+  "workloads": {
+    "fast": {
+      "workload_id": "fast",
+      "validation_mode": "fast",
+      "execution_profile": "serial",
+      "reference_workers": 1,
+      "baseline_wall_seconds": 1.821,
+      "baseline_median_seconds": 1.821,
+      "baseline_sample_count": 3,
+      "baseline_variance": {
+        "min_seconds": 1.788,
+        "max_seconds": 1.848,
+        "mean_seconds": 1.819,
+        "median_seconds": 1.821,
+        "stdev_seconds": 0.031,
+        "coefficient_of_variation": 0.017
+      },
+      "p2_inherited_seconds": 3.511,
+      "inherited_baseline_status": "MEASURED_COMPATIBLE",
+      "baseline_compatibility": "MEASURED_COMPATIBLE",
+      "measurement_claim": "MEASURED",
+      "reference_test_count": 21,
+      "environment_class": "local_windows_warm_venv",
+      "confidence": "MEDIUM",
+      "workload_identity_required": false
+    },
+    "domain_macro": {
+      "workload_id": "domain_macro",
+      "validation_mode": "domain",
+      "domain_target": "macro",
+      "execution_profile": "parallel",
+      "reference_workers": 2,
+      "baseline_wall_seconds": 2.552,
+      "baseline_median_seconds": 2.552,
+      "baseline_sample_count": 3,
+      "baseline_variance": {
+        "min_seconds": 2.352,
+        "max_seconds": 2.594,
+        "mean_seconds": 2.499,
+        "median_seconds": 2.552,
+        "stdev_seconds": 0.122,
+        "coefficient_of_variation": 0.049
+      },
+      "p2_inherited_seconds": 3.273,
+      "inherited_baseline_status": "MEASURED_COMPATIBLE",
+      "baseline_compatibility": "MEASURED_COMPATIBLE",
+      "measurement_claim": "MEASURED",
+      "reference_test_count": 304,
+      "serial_reference_seconds": 8.87,
+      "environment_class": "local_windows_warm_venv",
+      "confidence": "MEDIUM",
+      "workload_identity_required": false,
+      "superseded_measurements": [
+        {
+          "baseline_median_seconds": 6.901,
+          "baseline_compatibility": "MEASURED_DIFFERENT_REPOSITORY_CONTENT",
+          "repository_sha": "efc9219ea4d1a79511278a4a8c0ea0d0d5e8e2fd",
+          "note": "Pre-P5-merge parent; futures suite lacked donor availability cache optimization."
+        }
+      ]
+    },
+    "changed_product_paths": {
+      "workload_id": "changed_product_paths",
+      "validation_mode": "changed",
+      "execution_profile": "parallel",
+      "reference_workers": 2,
+      "baseline_wall_seconds": 173.199,
+      "baseline_median_seconds": 173.199,
+      "baseline_sample_count": 1,
+      "baseline_compatibility": "INHERITED",
+      "measurement_claim": "INHERITED",
+      "reference_test_count": 2812,
+      "reference_skipped": 38,
+      "workload_identity": {
+        "selected_suite_count": null,
+        "manifest_hash": null,
+        "note": "Representative product-path changed validation; comparisons require matching test count within tolerance"
+      },
+      "serial_reference_seconds": 266.113,
+      "environment_class": "local_windows_warm_venv",
+      "confidence": "LOW",
+      "workload_identity_required": true
+    },
+    "full": {
+      "workload_id": "full",
+      "validation_mode": "full",
+      "execution_profile": "parallel",
+      "reference_workers": 2,
+      "baseline_wall_seconds": 198.882,
+      "baseline_median_seconds": 198.882,
+      "baseline_sample_count": 1,
+      "baseline_variance": {
+        "min_seconds": 198.882,
+        "max_seconds": 198.882,
+        "mean_seconds": 198.882,
+        "median_seconds": 198.882,
+        "stdev_seconds": 0.0,
+        "coefficient_of_variation": 0.0
+      },
+      "reference_test_count": 4528,
+      "p2_inherited_seconds": 196.747,
+      "inherited_baseline_status": "MEASURED_COMPATIBLE",
+      "baseline_compatibility": "MEASURED_COMPATIBLE",
+      "measurement_claim": "MEASURED",
+      "reference_skipped": 48,
+      "serial_reference_seconds": 376.609,
+      "environment_class": "local_windows_warm_venv",
+      "confidence": "MEDIUM",
+      "workload_identity_required": false,
+      "superseded_measurements": [
+        {
+          "baseline_median_seconds": 346.542,
+          "baseline_compatibility": "MEASURED_DIFFERENT_REPOSITORY_CONTENT",
+          "repository_sha": "efc9219ea4d1a79511278a4a8c0ea0d0d5e8e2fd",
+          "note": "Measured before merging 6e44948 P5 donor/capability projection cache optimization."
+        }
+      ]
+    }
+  },
+  "remote_status": {
+    "ci_baseline_status": "REMOTE_UNMEASURED",
+    "ci_telemetry_enabled": true,
+    "ci_gating_enabled": false
+  }
+}

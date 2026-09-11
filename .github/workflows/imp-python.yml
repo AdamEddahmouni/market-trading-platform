@@ -84,6 +84,39 @@ jobs:
               --workers "${{ inputs.workers }}" \
               --json .local/developer-workflow/validation.json
           fi
+      - name: Summarize performance telemetry
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path(".local/developer-workflow")
+          receipt_path = root / "validation.json"
+          summary = {
+              "schema_version": "1.0",
+              "report_type": "ci_performance_telemetry_summary",
+              "remote_status": "REMOTE_UNMEASURED",
+              "gating_policy": "OBSERVE_ONLY",
+          }
+          if receipt_path.is_file():
+              receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+              perf = receipt.get("performance_telemetry", {})
+              summary.update(
+                  {
+                      "validation_mode": receipt.get("mode"),
+                      "wall_seconds": perf.get("wall_seconds", receipt.get("wall_seconds")),
+                      "classification": perf.get("budget", {}).get("classification"),
+                      "workload_id": perf.get("budget", {}).get("workload_id"),
+                      "environment": perf.get("environment", {}),
+                  }
+              )
+          (root / "ci-performance-summary.json").write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(summary, indent=2, sort_keys=True))
+          PY
       - name: Upload validation evidence
         if: always()
         uses: actions/upload-artifact@v4

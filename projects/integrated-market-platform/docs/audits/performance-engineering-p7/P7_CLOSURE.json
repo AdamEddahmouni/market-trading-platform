@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p7_closure",
+  "status": "COMPLETE",
+  "generated_at": "2026-09-11T00:45:00Z",
+  "worktree": "C:/Users/adame/Desktop/market-trading-platform-perf-p7",
+  "branch": "perf/p7-continuous-performance-budgets",
+  "parent_sha": "6e44948cf9cd3b28b7a21c1f07a26c91370ad84a",
+  "budget_version": "p7-bl-0910-2",
+  "gating_policy": "OBSERVE_ONLY",
+  "p2_scheduler_integrated": true,
+  "scheduler_version": "p2-bl-0901-1",
+  "default_workers": 2,
+  "timing_reconciliation": "docs/audits/performance-engineering-p7/P2_P7_TIMING_RECONCILIATION.json",
+  "validation": {
+    "p7_contract_tests": "31 tests",
+    "p2_scheduler_tests": "13 tests",
+    "repository_closure": "required at landing",
+    "fast": {
+      "tests": 21,
+      "wall_seconds": 1.821,
+      "classification": "NORMAL"
+    },
+    "domain_macro": {
+      "tests": 304,
+      "wall_seconds": 2.552,
+      "workers": 2,
+      "classification": "NORMAL"
+    },
+    "full": {
+      "tests": 4527,
+      "skipped": 48,
+      "wall_seconds": 202.853,
+      "classification": "NORMAL"
+    }
+  },
+  "remote_ci_status": "PENDING_LANDING",
+  "product_semantics": "UNCHANGED",
+  "professor_branch": "UNTOUCHED"
+}

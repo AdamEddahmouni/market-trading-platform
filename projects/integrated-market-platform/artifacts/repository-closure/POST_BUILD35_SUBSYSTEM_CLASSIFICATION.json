@@ -568,12 +568,17 @@
       "scope": [
         "tools/benchmark.py",
         "tools/mutation_verification.py",
-        "tools/p5_profile_harness.py"
+        "tools/p5_profile_harness.py",
+        "tools/parallel_safety_audit.py",
+        "tools/perf_baseline_measure.py",
+        "tools/performance_budget.py",
+        "tools/performance_telemetry.py"
       ],
-      "responsibility": "Informational performance measurement and controlled proof that mandatory validation invariants detect regressions.",
+      "responsibility": "Informational performance measurement, P7 performance-budget telemetry, parallel-safety audit support, and controlled proof that mandatory validation invariants detect regressions.",
       "evidence": [
         "tests/validation/test_benchmark.py keeps benchmark results non-gating.",
-        "tests/validation/test_mutation_verification.py binds the required failure modes."
+        "tests/validation/test_mutation_verification.py binds the required failure modes.",
+        "tests/validation/test_performance_budget.py keeps budget classification observe-only and non-gating."
       ],
       "disposition": "KEEP"
     },

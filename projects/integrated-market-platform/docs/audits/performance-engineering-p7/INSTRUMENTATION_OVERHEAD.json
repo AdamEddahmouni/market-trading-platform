@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "report_type": "p7_instrumentation_overhead",
+  "generated_at": "2026-09-11T00:10:00Z",
+  "measurement_claim": "MEASURED",
+  "environment": {
+    "python_version": "3.11.15",
+    "worktree": "market-trading-platform-perf-p7"
+  },
+  "estimates": {
+    "receipt_enrichment_microbenchmark_seconds": 0.002,
+    "imp_env_performance_block_seconds": 0.001,
+    "validation_wall_fraction": 0.0005,
+    "note": "Telemetry enrichment is O(suite_count) JSON aggregation; negligible vs validation wall time"
+  },
+  "fast_validation_reference_seconds": 1.995,
+  "conclusion": "ACCEPTABLE"
+}

@@ -475,8 +475,17 @@ def _diagnostics(root: Path) -> dict[str, Any]:
             for name in os.environ
             if name.startswith("IMP_") and ("LIVE" in name or "EXECUTION" in name)
         ),
+        "performance": _performance_env_summary(root),
         "safety_note": "Diagnostics never authorize execution and do not print gate values.",
     }
+
+
+def _performance_env_summary(root: Path) -> dict[str, Any]:
+    try:
+        from tools.performance_telemetry import performance_status_for_env
+    except ModuleNotFoundError:  # pragma: no cover - direct script execution.
+        from performance_telemetry import performance_status_for_env  # type: ignore[no-redef]
+    return performance_status_for_env(root)
 
 
 def build_parser() -> argparse.ArgumentParser:
