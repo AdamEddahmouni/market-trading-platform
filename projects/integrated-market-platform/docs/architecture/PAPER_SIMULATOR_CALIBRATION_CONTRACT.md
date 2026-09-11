@@ -1,0 +1,107 @@
+# Paper Simulator Calibration & Validation Contract
+
+**Classification:** `CURRENT_CANONICAL_ARCHITECTURE`  
+**Purpose:** prevent internal Paper execution from being treated as market ground truth without measured calibration.
+
+## Evidence model
+
+Calibration compares three distinct layers where available:
+
+1. **Market Evidence** — prospective observations from admitted real market sources.
+2. **IMP Simulation** — IMP hypothetical order/fill/position/P&L behavior.
+3. **External Comparator** — a suitable broker/vendor Paper, sandbox, replay or simulator.
+
+The external comparator is never ground truth. It is an independent challenge model with its own limitations.
+
+## Calibration unit
+
+Each calibration record must bind at least:
+
+- asset class and venue;
+- instrument or instrument family;
+- market-data capability contract(s);
+- IMP simulator version/source SHA;
+- comparator/environment version and account mode, if used;
+- order type/policy;
+- session/calendar rules;
+- sizing assumptions;
+- cost/fee/margin rules;
+- sample window/cohort;
+- metric definitions and thresholds.
+
+Do not generalize calibration from one materially different asset/order/data regime to another without evidence.
+
+## Required comparison metrics
+
+Use every metric material to the campaign claim:
+
+| Dimension | Example measurement |
+|---|---|
+| acceptance/rejection | disagreement rate and reason mapping |
+| trigger/submit/ack timing | absolute/percentile timing error |
+| fill/no-fill | disagreement rate |
+| fill price | absolute ticks/bps/currency error |
+| slippage | distribution difference vs reference/comparator |
+| partial fills | completion ratio and fill-path divergence |
+| spread behavior | crossing/passive-fill consistency |
+| stop/limit/market semantics | trigger/fill outcome disagreement |
+| cancel/replace | state-transition and late-fill disagreement |
+| session handling | overnight/auction/closed-session divergence |
+| fees/commissions | per-order and aggregate difference |
+| margin/collateral | acceptance and requirement difference |
+| positions | quantity/cost-basis reconciliation |
+| realized/unrealized P&L | monetary/tick tolerance |
+| stale/missing data | fail-closed behavior consistency |
+| latency assumptions | sensitivity and observed gap |
+| capacity/liquidity | claimed-vs-observable limitations |
+
+## Numeric acceptance gates
+
+Before an execution-bearing campaign starts, the frozen activation manifest must provide justified numeric thresholds for every material metric. At minimum:
+
+- maximum fill/no-fill disagreement rate;
+- maximum fill-price/slippage error;
+- maximum timing error when timing affects the hypothesis;
+- position/P&L reconciliation tolerance;
+- maximum unexplained material-divergence rate.
+
+There are intentionally no universal default numbers in this document. Thresholds depend on asset, order policy, market-data granularity and intended claim. If a defensible threshold cannot yet be specified, the field is `UNSET/BLOCKING` and the affected execution claim cannot be activated.
+
+## Divergence taxonomy
+
+Every material mismatch is retained as one of:
+
+- `WITHIN_TOLERANCE`
+- `EXPLAINED_DIVERGENCE`
+- `UNEXPLAINED_DIVERGENCE`
+- `NOT_OBSERVABLE`
+
+Do not silently overwrite IMP results with comparator results or choose the more favorable fill.
+
+## Calibration outcome
+
+A calibration closes as:
+
+- `PASS_FOR_DECLARED_SCOPE`
+- `PASS_WITH_LIMITATIONS`
+- `RECALIBRATE`
+- `BLOCKED_BY_DATA`
+- `BLOCKED_BY_COMPARATOR`
+- `FAIL`
+
+A pass applies only to the bound scope. It does not establish Live execution quality, market impact realism, queue realism, or capacity outside what was actually observed and tested.
+
+## Shakedown vs qualifying evidence
+
+Calibration/shakedown observations must be tagged and excluded from a campaign's qualifying primary cohort unless they were explicitly preregistered as qualifying before observation. Learning from shakedown may inform a new frozen campaign version; it may not be back-applied to improve the current campaign's apparent result.
+
+## Asset-profile expectations
+
+- **Futures:** contract month, tick/multiplier, exchange session, roll/expiry, margin and contract-month liquidity must be explicit.
+- **Options:** contract/series identity, spread/depth, expiration, assignment/exercise and multi-leg assumptions must be explicit.
+- **Equities:** halts/corporate actions and short-sale/borrow assumptions must be explicit when relevant.
+- **Crypto:** venue-specific book, fee/funding and 24/7 session assumptions must be explicit.
+
+## Promotion rule
+
+Strategy Paper results may support implementability claims only when the execution-model calibration state required by that strategy's readiness vector is satisfied. Signal-quality evidence may be analyzed separately when execution realism is deliberately out of scope and labeled `SIGNAL_ONLY`.
