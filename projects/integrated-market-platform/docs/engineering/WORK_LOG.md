@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-10 — PD-09 verifier persistence follow-up
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `docs` |
+| **Summary** | Addressed independent PD-09 verifier follow-up: extracted shared `assert_observations_append_only` helper for SQLite and in-memory stores, added restart persistence tests for observation tamper rejection and durable evaluation-claim blocking, and updated closure validation counts. |
+| **Key files** | `paper_forward_bridge/repository.py`, `paper_forward_bridge/store.py`, `paper_forward_bridge/sqlite_repository.py`, `tests/intelligence/test_forward_test_persistence.py`, `docs/audits/paper-forward-testing-bridge/CLOSURE.json` |
+| **Tests** | `python tools/imp.py test focused` — 11/11 persistence tests passed |
+| **Related** | [paper-forward-testing-bridge CLOSURE](../audits/paper-forward-testing-bridge/CLOSURE.json), verifier `5cebba20` |
+| **Notes** | Artifact JSON under `artifacts/` intentionally excluded from commit. |
+
 ## 2026-09-11 — FTEP-V1 forward-test experimental protocol freeze
 
 | Field | Value |

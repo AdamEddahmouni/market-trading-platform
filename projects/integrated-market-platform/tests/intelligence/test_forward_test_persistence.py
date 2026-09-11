@@ -20,6 +20,9 @@ from market_platform_foundation.intelligence.paper_forward_bridge import (  # no
     ForwardTestState,
     create_forward_test_repository,
 )
+from market_platform_foundation.intelligence.paper_forward_bridge.types import (  # noqa: E402
+    ForwardTestObservation,
+)
 from market_platform_foundation.local_state.schema import SCHEMA_VERSION  # noqa: E402
 from market_platform_foundation.local_state.startup import (  # noqa: E402
     forward_test_restore_summary,
@@ -156,6 +159,69 @@ class IsolatedForwardTestPersistenceTest(unittest.TestCase):
         self.assertEqual(len(recovered.observations), 1)
         self.assertEqual(recovered.observations[0].payload["close_price"], 105.0)
 
+    def test_observations_append_only_blocked_after_restart(self) -> None:
+        service = self._service()
+        _session, locked = self._seed_locked_decision(service)
+        service.submit_to_paper(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+            submitted_at_ns=T0 + 1,
+        )
+        service.attach_observation(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+            observed_at_ns=T0 + HOUR,
+            source_time_ns=T0 + HOUR,
+            payload={"reference_price": 100.0, "close_price": 105.0},
+        )
+        service.attach_observation(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+            observed_at_ns=T0 + HOUR + 1,
+            source_time_ns=T0 + HOUR + 1,
+            payload={"reference_price": 105.0, "close_price": 110.0},
+        )
+        _, restarted = self._restart()
+        recovered = restarted.get_decision(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+        )
+        self.assertEqual(len(recovered.observations), 2)
+
+        scenarios = (
+            ("delete", replace(recovered, observations=recovered.observations[:-1])),
+            (
+                "reorder",
+                replace(
+                    recovered,
+                    observations=(
+                        recovered.observations[1],
+                        recovered.observations[0],
+                    ),
+                ),
+            ),
+            (
+                "replace",
+                replace(
+                    recovered,
+                    observations=(
+                        ForwardTestObservation(
+                            observation_id="tampered-observation-id",
+                            observed_at_ns=recovered.observations[0].observed_at_ns,
+                            source_time_ns=recovered.observations[0].source_time_ns,
+                            payload=dict(recovered.observations[0].payload),
+                        ),
+                        *recovered.observations[1:],
+                    ),
+                ),
+            ),
+        )
+        for label, tampered in scenarios:
+            with self.subTest(scenario=label):
+                with self.assertRaises(ForwardTestRepositoryError) as ctx:
+                    restarted._store.put_decision(tampered)
+                self.assertEqual(str(ctx.exception), "FORWARD_TEST_OBSERVATIONS_APPEND_ONLY")
+
     def test_evaluate_restart_preserved(self) -> None:
         service = self._service()
         _session, locked = self._seed_locked_decision(service)
@@ -190,6 +256,54 @@ class IsolatedForwardTestPersistenceTest(unittest.TestCase):
         )
         self.assertEqual(recovered.state, ForwardTestState.EVALUATED)
         self.assertIsNotNone(recovered.signal_outcome)
+
+    def test_evaluation_claim_durable_after_restart(self) -> None:
+        service = self._service()
+        _session, locked = self._seed_locked_decision(service)
+        service.submit_to_paper(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+            submitted_at_ns=T0 + 1,
+        )
+        service.attach_observation(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+            observed_at_ns=T0 + HOUR,
+            source_time_ns=T0 + HOUR,
+            payload={"reference_price": 100.0, "close_price": 105.0},
+        )
+        current = service.get_decision(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+        )
+        service._store.put_decision(replace(current, state=ForwardTestState.EVALUABLE))
+        evaluated = service.evaluate(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+            now_ns=T0 + HOUR + 1,
+            force=False,
+        )
+        self.assertEqual(evaluated.state, ForwardTestState.EVALUATED)
+        _, restarted = self._restart()
+        recovered = restarted.get_decision(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+        )
+        self.assertEqual(recovered.state, ForwardTestState.EVALUATED)
+        tampered = replace(
+            recovered,
+            state=ForwardTestState.EVALUABLE,
+            signal_outcome=None,
+        )
+        restarted._store.put_decision(tampered)
+        blocked = restarted.evaluate(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+            now_ns=T0 + HOUR + 2,
+            force=False,
+        )
+        self.assertEqual(blocked.state, ForwardTestState.EVALUABLE)
+        self.assertIsNone(blocked.signal_outcome)
 
     def test_cross_account_isolation(self) -> None:
         service = self._service()

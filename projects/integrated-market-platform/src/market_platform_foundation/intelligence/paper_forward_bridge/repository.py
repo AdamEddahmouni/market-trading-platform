@@ -231,6 +231,18 @@ def decision_to_row(decision: ForwardTestDecision) -> dict[str, Any]:
     }
 
 
+def assert_observations_append_only(
+    existing: ForwardTestDecision,
+    proposed: ForwardTestDecision,
+) -> None:
+    if len(proposed.observations) < len(existing.observations):
+        raise ForwardTestRepositoryError("FORWARD_TEST_OBSERVATIONS_APPEND_ONLY")
+    existing_ids = [item.observation_id for item in existing.observations]
+    proposed_ids = [item.observation_id for item in proposed.observations]
+    if proposed_ids[: len(existing_ids)] != existing_ids:
+        raise ForwardTestRepositoryError("FORWARD_TEST_OBSERVATIONS_APPEND_ONLY")
+
+
 def assert_locked_decision_immutable(
     existing: ForwardTestDecision,
     proposed: ForwardTestDecision,

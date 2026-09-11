@@ -8,6 +8,7 @@ from ...clock import monotonic_wall_ns
 from ...local_state.connection import LocalStateConnection
 from .repository import (
     assert_locked_decision_immutable,
+    assert_observations_append_only,
     decision_from_row,
     decision_to_row,
     observation_from_row,
@@ -72,7 +73,7 @@ class SqliteForwardTestRepository:
         existing = self.get_decision(decision.forward_test_id)
         if existing is not None:
             assert_locked_decision_immutable(existing, decision)
-            self._assert_observations_append_only(existing, decision)
+            assert_observations_append_only(existing, decision)
         row = decision_to_row(decision)
         self._connection.execute(
             """
@@ -237,19 +238,3 @@ class SqliteForwardTestRepository:
                     json.dumps(observation.payload, sort_keys=True, separators=(",", ":")),
                 ),
             )
-
-    def _assert_observations_append_only(
-        self,
-        existing: ForwardTestDecision,
-        proposed: ForwardTestDecision,
-    ) -> None:
-        if len(proposed.observations) < len(existing.observations):
-            from .repository import ForwardTestRepositoryError
-
-            raise ForwardTestRepositoryError("FORWARD_TEST_OBSERVATIONS_APPEND_ONLY")
-        existing_ids = [item.observation_id for item in existing.observations]
-        proposed_ids = [item.observation_id for item in proposed.observations]
-        if proposed_ids[: len(existing_ids)] != existing_ids:
-            from .repository import ForwardTestRepositoryError
-
-            raise ForwardTestRepositoryError("FORWARD_TEST_OBSERVATIONS_APPEND_ONLY")
