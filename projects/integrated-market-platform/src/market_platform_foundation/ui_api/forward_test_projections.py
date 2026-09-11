@@ -101,16 +101,28 @@ def create_forward_test_session(store: ReplayStore, body: dict[str, Any]) -> dic
     universe = tuple(str(item).upper() for item in body.get("universe") or [])
     if not universe:
         raise ValueError("FORWARD_TEST_UNIVERSE_REQUIRED")
-    session = service.create_session(
-        account_id=account_id,
-        mode=mode,
-        strategy_id=str(body.get("strategy_id", "")).strip(),
-        strategy_version=str(body.get("strategy_version", "")).strip() or "1.0.0",
-        universe=universe,
-        evaluation_horizon_ns=int(body.get("evaluation_horizon_ns", 0)),
-        created_at_ns=int(body.get("created_at_ns") or time.time_ns()),
-        config=body.get("config") if isinstance(body.get("config"), dict) else None,
-    )
+    campaign_id = str(body.get("campaign_id", "")).strip()
+    cohort_arm = str(body.get("cohort_arm", "")).strip()
+    if not campaign_id:
+        raise ValueError("FORWARD_TEST_CAMPAIGN_ID_REQUIRED")
+    if not cohort_arm:
+        raise ValueError("FORWARD_TEST_COHORT_ARM_REQUIRED")
+    try:
+        session = service.create_session(
+            account_id=account_id,
+            mode=mode,
+            strategy_id=str(body.get("strategy_id", "")).strip(),
+            strategy_version=str(body.get("strategy_version", "")).strip() or "1.0.0",
+            universe=universe,
+            evaluation_horizon_ns=int(body.get("evaluation_horizon_ns", 0)),
+            created_at_ns=int(body.get("created_at_ns") or time.time_ns()),
+            campaign_id=campaign_id,
+            cohort_arm=cohort_arm,
+            manifest_fingerprint=body.get("manifest_fingerprint"),
+            config=body.get("config") if isinstance(body.get("config"), dict) else None,
+        )
+    except ForwardTestServiceError as exc:
+        raise ValueError(str(exc)) from exc
     return _paper_envelope(store, {"session": session.to_dict()})
 
 
@@ -119,26 +131,33 @@ def create_forward_test_decision(store: ReplayStore, body: dict[str, Any]) -> di
     service = _forward_service(store)
     test_mode_raw = str(body.get("test_mode", "SIGNAL_ONLY")).upper()
     test_mode = ForwardTestMode(test_mode_raw)
-    decision = service.create_decision(
-        account_id=account_id,
-        mode=mode,
-        session_id=body.get("session_id"),
-        symbol=str(body.get("symbol", "")).upper(),
-        direction=str(body.get("direction", "")).upper(),
-        decision_time_ns=int(body.get("decision_time_ns") or time.time_ns()),
-        source_time_ns=int(body.get("source_time_ns") or body.get("decision_time_ns") or time.time_ns()),
-        strategy_id=str(body.get("strategy_id", "")).strip(),
-        strategy_version=str(body.get("strategy_version", "")).strip() or "1.0.0",
-        test_mode=test_mode,
-        quantity=int(body["quantity"]) if body.get("quantity") is not None else None,
-        evaluation_horizon_ns=int(body["evaluation_horizon_ns"])
-        if body.get("evaluation_horizon_ns") is not None
-        else None,
-        decision_payload=body.get("decision_payload")
-        if isinstance(body.get("decision_payload"), dict)
-        else None,
-        research_artifact_ref=body.get("research_artifact_ref"),
-    )
+    run_kind_raw = str(body.get("run_kind", "FORWARD_TEST")).upper()
+    if run_kind_raw != "FORWARD_TEST":
+        raise ValueError("FORWARD_TEST_BACKTEST_BOUNDARY_VIOLATION")
+    try:
+        decision = service.create_decision(
+            account_id=account_id,
+            mode=mode,
+            session_id=body.get("session_id"),
+            symbol=str(body.get("symbol", "")).upper(),
+            direction=str(body.get("direction", "")).upper(),
+            decision_time_ns=int(body.get("decision_time_ns") or time.time_ns()),
+            source_time_ns=int(body.get("source_time_ns") or body.get("decision_time_ns") or time.time_ns()),
+            strategy_id=str(body.get("strategy_id", "")).strip(),
+            strategy_version=str(body.get("strategy_version", "")).strip() or "1.0.0",
+            test_mode=test_mode,
+            quantity=int(body["quantity"]) if body.get("quantity") is not None else None,
+            evaluation_horizon_ns=int(body["evaluation_horizon_ns"])
+            if body.get("evaluation_horizon_ns") is not None
+            else None,
+            decision_payload=body.get("decision_payload")
+            if isinstance(body.get("decision_payload"), dict)
+            else None,
+            research_artifact_ref=body.get("research_artifact_ref"),
+            evidence_class=body.get("evidence_class"),
+        )
+    except ForwardTestServiceError as exc:
+        raise ValueError(str(exc)) from exc
     return _paper_envelope(store, {"forward_test": decision.to_dict()})
 
 

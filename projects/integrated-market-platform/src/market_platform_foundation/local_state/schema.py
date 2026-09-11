@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 4
 PAPER_EVENT_SCHEMA_VERSION = 1
 LAYOUT_SCHEMA_VERSION = 1
 RECENT_INSTRUMENT_LIMIT = 24
@@ -212,5 +212,44 @@ FORWARD_TEST_CREATE_STATEMENTS: tuple[str, ...] = (
         claimed_at_ns INTEGER NOT NULL,
         PRIMARY KEY (forward_test_id, claim_type)
     )
+    """,
+)
+
+FORWARD_TEST_ACTIVATION_MIGRATION: tuple[str, ...] = (
+    "ALTER TABLE forward_test_sessions ADD COLUMN campaign_id TEXT",
+    "ALTER TABLE forward_test_sessions ADD COLUMN protocol_id TEXT",
+    "ALTER TABLE forward_test_sessions ADD COLUMN activation_version TEXT",
+    "ALTER TABLE forward_test_sessions ADD COLUMN manifest_fingerprint TEXT",
+    "ALTER TABLE forward_test_sessions ADD COLUMN cohort_arm TEXT",
+    "ALTER TABLE forward_test_sessions ADD COLUMN config_frozen INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE forward_test_decisions ADD COLUMN evidence_class TEXT NOT NULL DEFAULT 'UNCLASSIFIED'",
+    "ALTER TABLE forward_test_decisions ADD COLUMN cohort_arm TEXT",
+)
+
+FORWARD_TEST_CAMPAIGN_BINDINGS: tuple[str, ...] = (
+    """
+    CREATE TABLE IF NOT EXISTS forward_test_campaign_bindings (
+        campaign_id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL,
+        manifest_fingerprint TEXT NOT NULL,
+        manifest_path TEXT NOT NULL,
+        protocol_id TEXT NOT NULL,
+        protocol_sha256 TEXT NOT NULL,
+        campaign_state TEXT NOT NULL,
+        activated_at_ns INTEGER,
+        first_lock_at_ns INTEGER,
+        forward_test_session_id TEXT,
+        created_at_ns INTEGER NOT NULL,
+        updated_at_ns INTEGER NOT NULL
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_ft_campaign_account
+    ON forward_test_campaign_bindings(account_id)
+    """,
+    """
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_ft_campaign_active_account
+    ON forward_test_campaign_bindings(account_id)
+    WHERE campaign_state = 'ACTIVE'
     """,
 )

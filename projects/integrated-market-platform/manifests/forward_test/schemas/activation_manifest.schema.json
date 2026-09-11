@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forward_test.activation_manifest",
+  "title": "ForwardTestActivationManifest",
+  "type": "object",
+  "required": [
+    "protocol_id",
+    "activation_status"
+  ],
+  "properties": {
+    "manifest_schema_version": {
+      "type": ["integer", "string"]
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "campaign_slug": {
+      "type": "string"
+    },
+    "campaign_id": {
+      "type": ["string", "null"]
+    },
+    "protocol_id": {
+      "type": "string"
+    },
+    "protocol_sha256": {
+      "type": "string"
+    },
+    "activation_status": {
+      "type": "string",
+      "enum": [
+        "DRAFT",
+        "PENDING_OWNER_DECISIONS",
+        "FROZEN",
+        "ACTIVE",
+        "RETIRED"
+      ]
+    },
+    "status": {
+      "type": "string"
+    },
+    "manifest_fingerprint": {
+      "type": ["string", "null"]
+    },
+    "manifest_sha256": {
+      "type": ["string", "null"]
+    },
+    "owner_decisions_required": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "owner_decisions_pending": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "binding": {
+      "type": "object",
+      "properties": {
+        "run_kind": { "const": "FORWARD_TEST" },
+        "mode": { "const": "PAPER" },
+        "test_mode": { "type": "string" },
+        "evaluation_horizon_ns": { "type": "integer", "minimum": 1 },
+        "universe": {
+          "type": "object",
+          "required": ["symbols"],
+          "properties": {
+            "symbols": {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1
+            }
+          }
+        },
+        "cohort_arms": { "type": "object" }
+      }
+    },
+    "safety_constraints": {
+      "type": "object",
+      "properties": {
+        "mode": { "type": "string" },
+        "live_execution": { "type": "boolean" },
+        "cost_usd": { "type": "number" },
+        "empirical_evidence_claimed": { "type": "boolean" }
+      }
+    },
+    "sample_floors": { "type": "object" },
+    "resolved_fields": { "type": "object" }
+  },
+  "additionalProperties": true
+}

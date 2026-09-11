@@ -9,6 +9,7 @@ from ...local_state.connection import LocalStateConnection
 from .repository import (
     assert_locked_decision_immutable,
     assert_observations_append_only,
+    assert_session_config_immutable,
     decision_from_row,
     decision_to_row,
     observation_from_row,
@@ -26,16 +27,22 @@ class SqliteForwardTestRepository:
         self._connection = connection
 
     def put_session(self, session: ForwardTestSession) -> None:
+        existing = self.get_session(session.session_id)
+        if existing is not None:
+            assert_session_config_immutable(existing, session)
         row = session_to_row(session)
         self._connection.execute(
             """
             INSERT INTO forward_test_sessions(
                 session_id, account_id, mode, strategy_id, strategy_version,
-                universe_json, evaluation_horizon_ns, created_at_ns, status, config_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                universe_json, evaluation_horizon_ns, created_at_ns, status, config_json,
+                campaign_id, protocol_id, activation_version, manifest_fingerprint,
+                cohort_arm, config_frozen
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(session_id) DO UPDATE SET
                 status=excluded.status,
-                config_json=excluded.config_json
+                config_json=excluded.config_json,
+                config_frozen=excluded.config_frozen
             """,
             (
                 row["session_id"],
@@ -48,6 +55,12 @@ class SqliteForwardTestRepository:
                 row["created_at_ns"],
                 row["status"],
                 row["config_json"],
+                row["campaign_id"],
+                row["protocol_id"],
+                row["activation_version"],
+                row["manifest_fingerprint"],
+                row["cohort_arm"],
+                row["config_frozen"],
             ),
         )
 
@@ -83,8 +96,9 @@ class SqliteForwardTestRepository:
                 confidence, strategy_id, strategy_version, research_artifact_ref,
                 evaluation_horizon_ns, decision_payload_json, provenance_snapshot_json,
                 paper_order_id, paper_intent_id, locked_at_ns, submitted_at_ns,
-                signal_outcome_json, execution_outcome_json, evaluation_state, failure_reason
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                signal_outcome_json, execution_outcome_json, evaluation_state, failure_reason,
+                evidence_class, cohort_arm
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(forward_test_id) DO UPDATE SET
                 state=excluded.state,
                 paper_order_id=excluded.paper_order_id,
@@ -124,6 +138,8 @@ class SqliteForwardTestRepository:
                 row["execution_outcome_json"],
                 row["evaluation_state"],
                 row["failure_reason"],
+                row["evidence_class"],
+                row["cohort_arm"],
             ),
         )
         if existing is None:
