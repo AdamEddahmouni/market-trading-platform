@@ -59,6 +59,7 @@ When documents disagree, resolve in this order (highest first):
 | News strategy evaluation laboratory | [NEWS_STRATEGY_EVALUATION.md](architecture/NEWS_STRATEGY_EVALUATION.md) |
 | Paper forward-testing bridge | [PAPER_FORWARD_TESTING_BRIDGE.md](architecture/PAPER_FORWARD_TESTING_BRIDGE.md) |
 | Forward-test experimental protocol (preregistered) | [FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md](engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md) |
+| FTEP-V1 owner decision packet (OD-1 … OD-11) | [FTEP-V1_OWNER_DECISION_PACKET.md](engineering/FTEP-V1_OWNER_DECISION_PACKET.md) |
 | Threat model (lite) | [THREAT_MODEL.md](architecture/THREAT_MODEL.md) |
 | Architecture decisions | [adr/README.md](architecture/adr/README.md) |
 | Multi-source data foundation | [MULTI_SOURCE_DATA_FOUNDATION.md](providers/MULTI_SOURCE_DATA_FOUNDATION.md) |
