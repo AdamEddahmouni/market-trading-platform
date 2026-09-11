@@ -56,6 +56,11 @@ vi.mock("../../api/hooks", () => ({
   }),
   useWorkspaceEvidenceQuery: () => ({ data: evidence, isLoading: false, isError: false }),
   usePaperPortfolioQuery: () => ({ data: portfolio, isLoading: false, isError: false }),
+  usePaperForwardTestsQuery: () => ({
+    data: { forward_tests: { decisions: [] } },
+    isLoading: false,
+    isError: false,
+  }),
   usePreviewPaperOrderMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useSubmitPaperOrderMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useOpenPaperSessionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),

@@ -224,6 +224,11 @@ vi.mock("./api/hooks", () => ({
     isError: !portfolioMocks.data,
     data: portfolioMocks.data,
   }),
+  usePaperForwardTestsQuery: () => ({
+    isLoading: false,
+    isError: false,
+    data: { forward_tests: { decisions: [] } },
+  }),
   usePaperStrategyProfitabilityQuery: () => ({ isLoading: false, isError: true, data: undefined }),
   usePaperOrderHistoryInfiniteQuery: () => ({
     data: {
