@@ -188,12 +188,14 @@ class ForwardTestActivationRuntimeTests(unittest.TestCase):
         self._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         os.environ["IMP_FORWARD_TEST_CAMPAIGNS_DIR"] = self._tmp.name
         os.environ["IMP_PERSIST_STATE"] = "1"
+        os.environ["IMP_FORWARD_TEST_EVAL_FORCE"] = "1"
         self.store = ForwardTestStore()
         self.service = ForwardTestService(self.store)
 
     def tearDown(self) -> None:
         os.environ.pop("IMP_FORWARD_TEST_CAMPAIGNS_DIR", None)
         os.environ.pop("IMP_PERSIST_STATE", None)
+        os.environ.pop("IMP_FORWARD_TEST_EVAL_FORCE", None)
         self._tmp.cleanup()
 
     def test_create_session_requires_frozen_manifest(self) -> None:

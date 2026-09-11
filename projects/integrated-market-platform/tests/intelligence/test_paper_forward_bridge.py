@@ -342,6 +342,7 @@ class ForwardTestDecisionSourceTests(ActivatedForwardTestCase):
 class ForwardTestApiTests(unittest.TestCase):
     def setUp(self) -> None:
         os.environ["IMP_PAPER_EXECUTION"] = "1"
+        os.environ["IMP_FORWARD_TEST_EVAL_FORCE"] = "1"
         self._activation_tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.campaigns_root = enable_test_campaigns_root(Path(self._activation_tmp.name))
         fixture_root = ROOT.parent
@@ -355,6 +356,7 @@ class ForwardTestApiTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         os.environ.pop("IMP_FORWARD_TEST_CAMPAIGNS_DIR", None)
+        os.environ.pop("IMP_FORWARD_TEST_EVAL_FORCE", None)
         self._activation_tmp.cleanup()
 
     def test_api_end_to_end_signal_only(self) -> None:

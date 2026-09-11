@@ -26,6 +26,17 @@ from .lifecycle import ForwardTestLifecycleError, assert_transition
 from .paper_handoff import build_paper_preview_body, forward_test_correlation_id
 from .preflight import assert_forward_test_preflight_ready, run_forward_test_preflight
 from .repository import ForwardTestRepository
+from .session_policy import (
+    SessionPolicyError,
+    assert_cohort_arm_consistency,
+    assert_decision_within_calendar,
+    assert_evidence_class_fail_closed,
+    assert_evaluation_force_allowed,
+    assert_execution_phase_gate,
+    assert_no_concurrent_overlap,
+    calendar_scope_from_manifest,
+    evaluation_force_audit_metadata,
+)
 from .temporal import (
     assert_decision_payload_immutable,
     assert_input_observable_at_decision,
@@ -93,6 +104,16 @@ def _activation_error(exc: ActivationManifestError) -> ForwardTestServiceError:
 
 def _binding_error(exc: CampaignBindingError) -> ForwardTestServiceError:
     return ForwardTestServiceError(str(exc))
+
+
+def _policy_error(exc: SessionPolicyError) -> ForwardTestServiceError:
+    return ForwardTestServiceError(str(exc))
+
+
+def _load_session_manifest(session: ForwardTestSession) -> ActivationManifest | None:
+    if not session.campaign_id:
+        return None
+    return load_activation_manifest(session.campaign_id)
 
 
 def _require_empirical_campaign(session: ForwardTestSession | None) -> None:
@@ -358,6 +379,7 @@ class ForwardTestService:
         )
         evidence = _parse_evidence_class(evidence_class)
         _forbidden_evidence_promotion(evidence)
+        assert_evidence_class_fail_closed(evidence, boundary="CREATE")
         session = self._require_bound_session(
             session_id=session_id,
             account_id=account_id,
@@ -366,6 +388,40 @@ class ForwardTestService:
             symbol=strategy_decision.instrument_id,
         )
         _require_empirical_campaign(session)
+        if session is not None:
+            manifest = _load_session_manifest(session)
+            if manifest is not None:
+                try:
+                    scope = calendar_scope_from_manifest(manifest)
+                    if scope is not None:
+                        assert_decision_within_calendar(
+                            decision_time_ns=decision_time_ns,
+                            calendar_scope=scope,
+                        )
+                    assert_no_concurrent_overlap(
+                        manifest=manifest,
+                        session_id=session.session_id,
+                        symbol=strategy_decision.instrument_id,
+                        decisions=self._store.list_decisions(
+                            account_id=account_id,
+                            session_id=session.session_id,
+                        ),
+                    )
+                    assert_execution_phase_gate(
+                        test_mode=test_mode,
+                        manifest=manifest,
+                        session=session,
+                        decisions=self._store.list_decisions(
+                            account_id=account_id,
+                            session_id=session.session_id,
+                        ),
+                    )
+                    assert_cohort_arm_consistency(
+                        session=session,
+                        decision_cohort_arm=session.cohort_arm.value if session.cohort_arm else None,
+                    )
+                except SessionPolicyError as exc:
+                    raise _policy_error(exc) from exc
         if session is not None:
             horizon = evaluation_horizon_ns or session.evaluation_horizon_ns
         else:
@@ -456,6 +512,7 @@ class ForwardTestService:
         )
         evidence = _parse_evidence_class(evidence_class)
         _forbidden_evidence_promotion(evidence)
+        assert_evidence_class_fail_closed(evidence, boundary="CREATE")
         session = self._require_bound_session(
             session_id=session_id,
             account_id=account_id,
@@ -470,6 +527,40 @@ class ForwardTestService:
             horizon = evaluation_horizon_ns or 0
         if horizon <= 0:
             raise ForwardTestServiceError("FORWARD_TEST_HORIZON_INVALID")
+        if session is not None:
+            manifest = _load_session_manifest(session)
+            if manifest is not None:
+                try:
+                    scope = calendar_scope_from_manifest(manifest)
+                    if scope is not None:
+                        assert_decision_within_calendar(
+                            decision_time_ns=decision_time_ns,
+                            calendar_scope=scope,
+                        )
+                    assert_no_concurrent_overlap(
+                        manifest=manifest,
+                        session_id=session.session_id,
+                        symbol=symbol,
+                        decisions=self._store.list_decisions(
+                            account_id=account_id,
+                            session_id=session.session_id,
+                        ),
+                    )
+                    assert_execution_phase_gate(
+                        test_mode=test_mode,
+                        manifest=manifest,
+                        session=session,
+                        decisions=self._store.list_decisions(
+                            account_id=account_id,
+                            session_id=session.session_id,
+                        ),
+                    )
+                    assert_cohort_arm_consistency(
+                        session=session,
+                        decision_cohort_arm=session.cohort_arm.value if session.cohort_arm else None,
+                    )
+                except SessionPolicyError as exc:
+                    raise _policy_error(exc) from exc
         payload = dict(decision_payload or {})
         provenance = {
             "schema_version": "intelligence/paper_forward_bridge/provenance/1.0.0",
@@ -555,6 +646,35 @@ class ForwardTestService:
                 original=decision.decision_payload,
                 proposed=decision_payload,
             )
+        if bound_session is not None:
+            manifest = _load_session_manifest(bound_session)
+            if manifest is not None:
+                try:
+                    scope = calendar_scope_from_manifest(manifest)
+                    if scope is not None:
+                        assert_decision_within_calendar(
+                            decision_time_ns=locked_at_ns,
+                            calendar_scope=scope,
+                        )
+                    assert_evidence_class_fail_closed(decision.evidence_class, boundary="LOCK")
+                    assert_no_concurrent_overlap(
+                        manifest=manifest,
+                        session_id=bound_session.session_id,
+                        symbol=decision.symbol,
+                        decisions=self._store.list_decisions(
+                            account_id=account_id,
+                            session_id=bound_session.session_id,
+                        ),
+                        exclude_forward_test_id=decision.forward_test_id,
+                    )
+                    assert_cohort_arm_consistency(
+                        session=bound_session,
+                        decision_cohort_arm=(
+                            decision.cohort_arm.value if decision.cohort_arm else None
+                        ),
+                    )
+                except SessionPolicyError as exc:
+                    raise _policy_error(exc) from exc
         try:
             assert_transition(decision.state, ForwardTestState.LOCKED)
         except ForwardTestLifecycleError as exc:
@@ -584,9 +704,25 @@ class ForwardTestService:
         reject_reason: str | None = None,
     ) -> ForwardTestDecision:
         decision = self._require_decision(forward_test_id, account_id)
+        session: ForwardTestSession | None = None
         if decision.session_id is not None:
             session = self._store.get_session(decision.session_id)
             _require_empirical_campaign(session)
+        if session is not None:
+            manifest = _load_session_manifest(session)
+            if manifest is not None and decision.test_mode == ForwardTestMode.EXECUTION:
+                try:
+                    assert_execution_phase_gate(
+                        test_mode=decision.test_mode,
+                        manifest=manifest,
+                        session=session,
+                        decisions=self._store.list_decisions(
+                            account_id=account_id,
+                            session_id=session.session_id,
+                        ),
+                    )
+                except SessionPolicyError as exc:
+                    raise _policy_error(exc) from exc
         if decision.state != ForwardTestState.LOCKED:
             raise ForwardTestServiceError("FORWARD_TEST_NOT_LOCKED")
         if not self._store.claim_paper_submission(forward_test_id):
@@ -700,9 +836,14 @@ class ForwardTestService:
         force: bool = False,
     ) -> ForwardTestDecision:
         decision = self._require_decision(forward_test_id, account_id)
+        session: ForwardTestSession | None = None
         if decision.session_id is not None:
             session = self._store.get_session(decision.session_id)
             _require_empirical_campaign(session)
+        try:
+            assert_evaluation_force_allowed(force=force, session=session)
+        except SessionPolicyError as exc:
+            raise _policy_error(exc) from exc
         decision = refresh_evaluability(decision=decision, now_ns=now_ns)
         if decision.state not in {ForwardTestState.EVALUABLE, ForwardTestState.OBSERVING} and not force:
             raise ForwardTestServiceError("FORWARD_TEST_NOT_EVALUABLE")
