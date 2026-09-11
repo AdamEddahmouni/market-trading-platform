@@ -3,7 +3,7 @@
   "increment": "paper-forward-testing-bridge",
   "status": "COMPLETE",
   "canonical_parent_sha": "0ac5c036e612640d731a6264d707a11ccae5deb9",
-  "implementation_commit": "acb93a9",
+  "implementation_commit": "0dd1721",
   "professor_branch": "work/forward-test-persistence",
   "p2_present": true,
   "p7_present": true,
