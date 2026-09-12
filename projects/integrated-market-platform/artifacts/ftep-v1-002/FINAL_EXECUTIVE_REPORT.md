@@ -196,3 +196,18 @@ Merge canonical FTEP infrastructure PR stack **#22–#28** into integration base
 | **Safety** | Paper orders=0, Live orders=0, paid activations=0, manifest mutations=0 |
 
 **NEXT ACTION:** On next **US_EQUITY_RTH** open window, set `IMP_PERSIST_STATE=1`, confirm `campaign-readiness FTEP-V1-002` → `READY`, then start first governed SIGNAL_ONLY session per launch prep (no execution segment).
+
+# Section 38 orchestrator handoff (2026-09-12 wave 9)
+
+| Field | Value |
+| --- | --- |
+| **Classification** | `SIGNAL_ONLY_AUTHORIZED_MARKET_CLOSED` |
+| **Campaign** | `FTEP-V1-002` |
+| **Branch / SHA** | `work/ftep-v1-002-us-equity-news` @ post–wave-9 commit (session-start invoke steps) |
+| **PR #28 CI** | IMP Validation **success** @ workflow_dispatch run `34712928857` on `split/ftep-v1-freeze-readiness` @ `ea2b730e` (empty commits skip path-filtered PR workflows; branch tip validated green) |
+| **PR stack (#22–#29)** | All reported checks **pass** on latest poll; #28 merge state **CONFLICTING** (stack rebase still required before merge) |
+| **Empirical lane** | `IMP_PERSIST_STATE=1`: integrity-check **PASS**; session-start dry-run blocked by `US_EQUITY_RTH_CLOSED` only |
+| **Sessions / locks** | governed sessions **0**, empirical locks **0** (weekend; no SIGNAL_ONLY session started) |
+| **Parallel deliverable** | `ftep session-start --dry-run` emits `forward_test_invoke_steps` (dual `ForwardTestService.create_session` plan) when all gates pass |
+| **FTEP-V1-001** | Unchanged |
+| **Goal complete?** | **No** — await RTH open for first governed SIGNAL_ONLY session; merge stack #22–#28 still open |

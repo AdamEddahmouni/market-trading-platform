@@ -9,9 +9,14 @@ import sys
 import unittest
 from pathlib import Path
 
-from market_platform_foundation.local_state.paths import REPO_ROOT
-
 ROOT = Path(__file__).resolve().parents[2]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from tools.ftep_session_start import _build_forward_test_invoke_steps  # noqa: E402
 
 
 class FtepSessionStartDryRunTests(unittest.TestCase):
@@ -38,6 +43,16 @@ class FtepSessionStartDryRunTests(unittest.TestCase):
         self.assertEqual(payload["artifact_kind"], "ftep_session_start_gate")
         self.assertFalse(payload["would_create_session"])
         self.assertIn("US_EQUITY_RTH_CLOSED", payload["blockers"])
+        self.assertNotIn("forward_test_invoke_steps", payload)
+
+    def test_forward_test_invoke_steps_for_v1_002_manifest(self) -> None:
+        steps = _build_forward_test_invoke_steps(ROOT, "FTEP-V1-002")
+        create_calls = [
+            item for item in steps if item.get("action") == "ForwardTestService.create_session"
+        ]
+        self.assertEqual(len(create_calls), 2)
+        arms = {str(item["kwargs"]["cohort_arm"]) for item in create_calls}
+        self.assertEqual(arms, {"BASELINE", "AI_ENHANCED"})
 
 
 if __name__ == "__main__":

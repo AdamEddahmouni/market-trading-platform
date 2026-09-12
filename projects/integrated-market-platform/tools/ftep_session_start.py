@@ -9,6 +9,82 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+_COHORT_ARM_INVOKE_KEYS: tuple[tuple[str, str], ...] = (
+    ("baseline", "BASELINE"),
+    ("ai_enhanced", "AI_ENHANCED"),
+)
+
+
+def _build_forward_test_invoke_steps(
+    repository_root: Path,
+    campaign_slug: str,
+) -> list[dict[str, object]]:
+    """Secret-free operator plan for governed SIGNAL_ONLY session creation."""
+
+    from market_platform_foundation.intelligence.paper_forward_bridge.activation import (
+        load_activation_manifest,
+        manifest_universe_symbols,
+    )
+
+    manifest = load_activation_manifest(campaign_slug)
+    binding = manifest.binding
+    account_scope = manifest.raw.get("account_scope") or {}
+    scope_account = (
+        str(account_scope.get("account_id") or "") if isinstance(account_scope, dict) else ""
+    )
+    paper_account_id = str(binding.get("paper_account_id") or scope_account)
+    horizon_ns = int(binding.get("evaluation_horizon_ns") or 0)
+    universe = manifest_universe_symbols(manifest)
+    campaign_id = str(manifest.campaign_id or "")
+    fingerprint = manifest.manifest_fingerprint
+
+    steps: list[dict[str, object]] = [
+        {
+            "step": 1,
+            "action": "configure_persistence",
+            "detail": "Set IMP_PERSIST_STATE=1 or IMP_STATE_DIR before any durable forward-test write.",
+        },
+        {
+            "step": 2,
+            "action": "construct_service",
+            "detail": (
+                "Instantiate ForwardTestService with the governed local replay store "
+                "(same path as operator Paper console / forward-test API)."
+            ),
+        },
+    ]
+    order = 3
+    for manifest_key, cohort_arm in _COHORT_ARM_INVOKE_KEYS:
+        arms = binding.get("cohort_arms") or {}
+        arm = arms.get(manifest_key)
+        if not isinstance(arm, dict):
+            continue
+        policy_id = str(arm.get("policy_id") or "")
+        policy_version = str(arm.get("policy_version") or "1.0.0")
+        steps.append(
+            {
+                "step": order,
+                "action": "ForwardTestService.create_session",
+                "test_mode": "SIGNAL_ONLY",
+                "note": "No Paper order preview/submit; empirical lock only after governed decision path.",
+                "kwargs": {
+                    "account_id": paper_account_id,
+                    "mode": "PAPER",
+                    "strategy_id": policy_id,
+                    "strategy_version": policy_version,
+                    "universe": universe,
+                    "evaluation_horizon_ns": horizon_ns,
+                    "campaign_id": campaign_id,
+                    "campaign_slug": campaign_slug,
+                    "cohort_arm": cohort_arm,
+                    "manifest_fingerprint": fingerprint,
+                    "api_path": True,
+                },
+            }
+        )
+        order += 1
+    return steps
+
 
 def collect_session_start_gates(
     repository_root: Path,
@@ -42,12 +118,13 @@ def collect_session_start_gates(
     if integrity["disposition"] != "PASS":
         blockers.append("INTEGRITY_CHECK_FAILED")
 
-    return {
+    would_create = not blockers
+    payload: dict[str, object] = {
         "schema_version": "1.0.0",
         "artifact_kind": "ftep_session_start_gate",
         "campaign_slug": campaign_slug,
         "dry_run": True,
-        "would_create_session": not blockers,
+        "would_create_session": would_create,
         "test_mode": "SIGNAL_ONLY",
         "blockers": blockers,
         "operator_hints": integrity.get("operator_hints") or [],
@@ -59,6 +136,12 @@ def collect_session_start_gates(
         },
         "secrets_included": False,
     }
+    if would_create:
+        payload["forward_test_invoke_steps"] = _build_forward_test_invoke_steps(
+            repository_root,
+            campaign_slug,
+        )
+    return payload
 
 
 def main(argv: list[str] | None = None) -> int:
