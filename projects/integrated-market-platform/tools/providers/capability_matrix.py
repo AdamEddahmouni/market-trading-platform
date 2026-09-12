@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -11,6 +12,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def _ensure_src_on_path() -> None:
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
     src = ROOT / "src"
     if str(src) not in sys.path:
         sys.path.insert(0, str(src))
@@ -55,6 +58,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(payload, encoding="utf-8", newline="\n")
+        from market_platform_foundation.providers.capability_contract import (
+            snapshot_from_dict,
+            validate_snapshot,
+        )
+
+        validate_snapshot(snapshot)
+        snapshot_from_dict(json.loads(payload))
     else:
         print(payload, end="")
     return 0

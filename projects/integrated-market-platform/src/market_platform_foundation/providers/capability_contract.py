@@ -227,7 +227,9 @@ def redact_mapping(value: Mapping[str, Any]) -> dict[str, Any]:
             result: dict[str, Any] = {}
             for key, val in item.items():
                 key_str = str(key)
-                if _SECRET_KEY_PATTERN.search(key_str):
+                if key_str == "secrets_included":
+                    result[key_str] = val
+                elif _SECRET_KEY_PATTERN.search(key_str):
                     result[key_str] = "[REDACTED]"
                 else:
                     result[key_str] = _walk(val, parent_key=key_str)

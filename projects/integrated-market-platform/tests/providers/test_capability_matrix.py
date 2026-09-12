@@ -80,6 +80,10 @@ class CapabilityContractTests(unittest.TestCase):
         self.assertNotIn("sk-abcdefghijklmnopqrstuvwxyz", json.dumps(redacted))
         self.assertEqual(redacted["api_key"], "[REDACTED]")
 
+    def test_secrets_included_flag_not_redacted(self) -> None:
+        redacted = redact_mapping({"secrets_included": False, "api_key": "secret"})
+        self.assertIs(redacted["secrets_included"], False)
+
 
 class CapabilitySnapshotTests(unittest.TestCase):
     def test_build_snapshot_is_deterministic_for_provider_order(self) -> None:

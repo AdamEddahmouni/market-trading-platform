@@ -12,6 +12,9 @@ $env:PYTHONPATH = "src"
 python tools/provider_readiness.py
 python tools/provider_readiness.py --probe-local
 python tools/provider_readiness.py --json
+python tools/provider_readiness.py audit --json
+python tools/provider_readiness.py gaps --profile FTEP-V1-001 --json
+python tools/provider_readiness.py campaign-readiness FTEP-V1-001 --json
 python tools/providers/capability_matrix.py
 python tools/providers/capability_matrix.py --output artifacts/wave-a-findings/capability-matrix-snapshot.json
 ```
@@ -20,7 +23,16 @@ The capability-matrix command emits a deterministic, secret-free snapshot aligne
 [`MARKET_DATA_CAPABILITY_CONTRACT.md`](../architecture/MARKET_DATA_CAPABILITY_CONTRACT.md)
 and Wave A inventory JSON under `artifacts/wave-a-findings/`. It merges value-blind
 gate rows from `provider_readiness.py` by default; use `--skip-readiness` for
-artifact-only output.
+artifact-only output. Writing `--output` re-validates the payload with the capability
+contract loader (same rules as `manifests/providers/schemas/capability_matrix_snapshot.schema.json`).
+
+`provider_readiness.py` subcommands are read-only by default:
+
+- `audit` — capability-matrix snapshot merged with gate rows (capability contract IDs, stale evidence as-of).
+- `gaps` — deterministic Wave A / capability requirement disposition for a campaign profile (start with `FTEP-V1-001`).
+- `campaign-readiness` — fail-closed composition of forward-test preflight plus gap engine output for an activation manifest slug.
+
+Legacy flags `--audit`, `--gaps`, and `--campaign-readiness` remain aliases for JSON output.
 
 `--probe-local` checks only loopback ports. It does not call external APIs,
 place orders, or attempt logins.

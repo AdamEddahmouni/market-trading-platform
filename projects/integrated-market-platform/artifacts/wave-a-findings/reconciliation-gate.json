@@ -1,0 +1,493 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "wave_a_reconciliation_gate",
+  "artifact_id": "wave-a-reconciliation-gate",
+  "observed_at": "2026-09-11T23:30:00Z",
+  "purpose": "Parent synthesis for post-Wave-A implementation increment: requirement classification, minimum coherent build set, ES/news verdict, and worktree boundaries. Synthesis only — no code changes implied by this artifact.",
+  "git": {
+    "branch": "work/ftep-v1-activation",
+    "head_sha": "61a0593e56d37b0366e761b1ff3c8b88519250aa"
+  },
+  "inputs": {
+    "wave_a_lane_artifacts": [
+      {
+        "path": "artifacts/wave-a-findings/reconciliation-index.json",
+        "role": "lane index"
+      },
+      {
+        "path": "artifacts/wave-a-findings/repo-architecture-audit.json",
+        "role": "merge and governance doc reconciliation"
+      },
+      {
+        "path": "artifacts/wave-a-findings/ftep-campaign-audit.json",
+        "role": "FTEP-V1-001 campaign governance and code gaps CG-01–CG-04"
+      },
+      {
+        "path": "artifacts/wave-a-findings/news-data-inventory.json",
+        "role": "ES/news ingress inventory and WAVE-A-001–011 gaps"
+      },
+      {
+        "path": "artifacts/wave-a-findings/ux-hooks-audit.json",
+        "role": "provider/capability UI read models and hook gaps"
+      },
+      {
+        "path": "artifacts/wave-a-findings/finviz-moomoo-audit.json",
+        "role": "Finviz Elite and Moomoo OpenD local access reconciliation"
+      },
+      {
+        "path": "artifacts/wave-a-findings/pit-infrastructure-audit.json",
+        "role": "PIT/RDATA contracts, Wave 1 lanes, safe vs defer increments"
+      },
+      {
+        "path": "artifacts/wave-a-findings/provider-inventory.json",
+        "role": "provider catalog and capability inventory reconciliation"
+      },
+      {
+        "path": "artifacts/wave-a-findings/ibkr-tradier-alpaca-audit.json",
+        "role": "IBKR observational, Tradier paper, and Alpaca broker integration reconciliation"
+      }
+    ],
+    "wave_a_lane_artifacts_absent_at_synthesis": [],
+    "merged_governance_docs_skimmed": [
+      {
+        "path": "docs/engineering/FTEP_ACTIVATION_GATES.md",
+        "structure": "G-A0–G-A22 gate table; activation manifest minimum fields; first-campaign sequencing; change control"
+      },
+      {
+        "path": "docs/architecture/MARKET_DATA_CAPABILITY_CONTRACT.md",
+        "structure": "required capability record fields; sufficiency and rights rules; promotion lifecycle; campaign binding"
+      },
+      {
+        "path": "docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md",
+        "structure": "three-layer evidence model; calibration unit; metric dimensions; numeric gates UNSET/BLOCKING; divergence taxonomy and outcomes"
+      }
+    ],
+    "validation_receipt": {
+      "command": "python tools/imp.py validate fast",
+      "status": "passed",
+      "source": "artifacts/wave-a-findings/reconciliation-index.json"
+    }
+  },
+  "requirement_classification": {
+    "ALREADY_COMPLETE": [
+      {
+        "id": "REC-MAIN-MERGE",
+        "summary": "origin/main governance contracts merged; reconcile-with-main COMPLETE",
+        "evidence": ["artifacts/wave-a-findings/repo-architecture-audit.json"]
+      },
+      {
+        "id": "REC-FAST-VALIDATE",
+        "summary": "Post-merge validate fast 21/21 passed",
+        "evidence": ["artifacts/wave-a-findings/reconciliation-index.json"]
+      },
+      {
+        "id": "REC-FTEP-BRIDGE-ENGINEERING",
+        "summary": "paper_forward_bridge activation, protocol_ref SHA binding, preflight, freeze CLI, session_policy, campaign_binding, non-campaign guard, safety constraints",
+        "evidence": [
+          "artifacts/wave-a-findings/ftep-campaign-audit.json satisfied_gates_summary.engineering_implemented",
+          "artifacts/ftep-activation-test.json",
+          "artifacts/ftep-persistence-test.json"
+        ]
+      },
+      {
+        "id": "REC-PD09-PERSISTENCE",
+        "summary": "Durable forward-test persistence (G-A0 PASS per FTEP_ACTIVATION_GATES; preflight still emits PERSISTENCE_DISABLED when env off)",
+        "evidence": ["docs/engineering/FTEP_ACTIVATION_GATES.md", "artifacts/wave-a-findings/ftep-campaign-audit.json CFG-04"]
+      },
+      {
+        "id": "REC-CANONICAL-NEWS-FIXTURES",
+        "summary": "NewsArticleEvent foundation, replay harness, and fixture-backed tests",
+        "evidence": ["artifacts/wave-a-findings/news-data-inventory.json sources_inventory_summary.canonical_deterministic_path"]
+      },
+      {
+        "id": "REC-DECISION-RESEARCH-OFFLINE",
+        "summary": "DECISION-RESEARCH-001 SS family preregistered cards and offline gate tool",
+        "evidence": ["artifacts/wave-a-findings/pit-infrastructure-audit.json wave1_preregistered_lanes.lane_a_decision_research_ss_family"]
+      },
+      {
+        "id": "REC-PROVIDER-READINESS-CLI",
+        "summary": "tools/provider_readiness.py and GET /operator/readiness projection exist",
+        "evidence": ["artifacts/wave-a-findings/ux-hooks-audit.json parallel_type_systems_summary operator_env_readiness"]
+      },
+      {
+        "id": "REC-FINVIZ-MOOMOO-REPO",
+        "summary": "Finviz and Moomoo integrations cataloged in repo with probe tooling and stale committed evidence",
+        "evidence": ["artifacts/wave-a-findings/finviz-moomoo-audit.json providers.*.classifications REPO_INTEGRATION CATALOGED"]
+      }
+    ],
+    "IMPLEMENT_NOW": [
+      {
+        "id": "IMP-CAPABILITY-SCHEMA-MATRIX",
+        "summary": "Machine-readable Market Data Capability Contract records and provider capability matrix aligned to MARKET_DATA_CAPABILITY_CONTRACT promotion states",
+        "maps_to_gates": ["G-A6", "G-A7"],
+        "evidence": [
+          "docs/architecture/MARKET_DATA_CAPABILITY_CONTRACT.md",
+          "docs/platform/PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md",
+          "artifacts/wave-a-findings/ux-hooks-audit.json minimum_hook_set_provider_governance_ui.deferred_until_canonical_matrix_dto"
+        ]
+      },
+      {
+        "id": "IMP-DIAGNOSTICS",
+        "summary": "Extend operator/provider diagnostics to surface capability-contract IDs, entitlement reachability, and stale-evidence as-of without secret leakage",
+        "evidence": [
+          "artifacts/wave-a-findings/ux-hooks-audit.json",
+          "artifacts/wave-a-findings/finviz-moomoo-audit.json",
+          "tools/provider_readiness.py"
+        ]
+      },
+      {
+        "id": "IMP-GAP-ENGINE",
+        "summary": "Deterministic gap engine aggregating Wave A gap IDs (WAVE-A-*, PIT-A-*, CG-*, CFG-*) into campaign-scoped disposition",
+        "evidence": [
+          "artifacts/wave-a-findings/news-data-inventory.json gaps",
+          "artifacts/wave-a-findings/pit-infrastructure-audit.json gaps",
+          "artifacts/wave-a-findings/ftep-campaign-audit.json code_gaps"
+        ]
+      },
+      {
+        "id": "IMP-CAMPAIGN-READINESS-EVALUATOR",
+        "summary": "Campaign readiness evaluator composing run_forward_test_preflight, FTEP_ACTIVATION_GATES, and gap-engine output for FTEP-V1-001",
+        "evidence": [
+          "artifacts/wave-a-findings/ftep-campaign-audit.json satisfied_gates_summary.not_satisfied_for_empirical_campaign",
+          "docs/engineering/FTEP_ACTIVATION_GATES.md"
+        ]
+      },
+      {
+        "id": "IMP-CALIBRATION-COMPARATOR-CONTRACTS",
+        "summary": "Machine-readable calibration unit schema and comparator binding hooks per PAPER_SIMULATOR_CALIBRATION_CONTRACT (thresholds remain UNSET until owner/campaign freeze)",
+        "maps_to_gates": ["G-A8", "G-A9"],
+        "evidence": ["docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md"]
+      },
+      {
+        "id": "IMP-CG-01",
+        "summary": "Campaign slug vs FTCAMP-hash manifest reload in paper_forward_bridge service paths",
+        "evidence": ["artifacts/wave-a-findings/ftep-campaign-audit.json code_gaps CG-01", "artifacts/wave-a-findings/pit-infrastructure-audit.json safe_this_increment SAFE-CG-01"]
+      },
+      {
+        "id": "IMP-CG-02",
+        "summary": "Wire assess_sample_floor_disposition on ForwardTestService lock/evaluate paths",
+        "evidence": ["artifacts/wave-a-findings/ftep-campaign-audit.json code_gaps CG-02", "artifacts/wave-a-findings/pit-infrastructure-audit.json safe_this_increment SAFE-CG-02"]
+      },
+      {
+        "id": "IMP-NEWS-AGGREGATOR-BRIDGE",
+        "summary": "Adapter from NewsAggregator dict items (received_time) to normalize_raw_item / NewsArticleEvent (retrieved_time) with provenance",
+        "evidence": [
+          "artifacts/wave-a-findings/news-data-inventory.json news_article_event_live_bridge_blockers",
+          "artifacts/wave-a-findings/pit-infrastructure-audit.json safe_this_increment SAFE-IMPLEMENT_NOW_AGGREGATOR_TO_CANONICAL_BRIDGE"
+        ]
+      },
+      {
+        "id": "IMP-RECORDED-EVAL-FORWARD-BRIDGE",
+        "summary": "Wire recorded news_strategy_evaluation artifacts into paper_forward_bridge under RECORDED_ARTIFACTS_ONLY",
+        "evidence": [
+          "artifacts/wave-a-findings/news-data-inventory.json reconciliation_flags IMPLEMENT_NOW_RECORDED_EVAL_TO_FORWARD_BRIDGE",
+          "artifacts/wave-a-findings/pit-infrastructure-audit.json safe_this_increment SAFE-IMPLEMENT_NOW_RECORDED_EVAL_TO_FORWARD_BRIDGE"
+        ]
+      }
+    ],
+    "SAFE_PARALLEL_IMPLEMENTATION": [
+      {
+        "id": "PAR-CG-01-CG-02",
+        "summary": "Forward-test bridge slug/hash and sample_floor fixes — no provider live probes",
+        "worktree_boundary": "WT-BRIDGE",
+        "blocks_other_lanes": false,
+        "evidence": ["artifacts/wave-a-findings/pit-infrastructure-audit.json safe_this_increment"]
+      },
+      {
+        "id": "PAR-NEWS-BRIDGE-RECORDED-EVAL",
+        "summary": "News aggregator canonical adapter and recorded-eval handoff — fixture-first",
+        "worktree_boundary": "WT-NEWS",
+        "blocks_other_lanes": false,
+        "evidence": ["artifacts/wave-a-findings/pit-infrastructure-audit.json safe_this_increment"]
+      },
+      {
+        "id": "PAR-GOVERNANCE-PLATFORM",
+        "summary": "Capability schema/matrix, diagnostics, gap engine, readiness evaluator, calibration contract schemas",
+        "worktree_boundary": "WT-GOVERNANCE",
+        "blocks_other_lanes": false,
+        "evidence": ["docs/platform/PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md"]
+      },
+      {
+        "id": "PAR-FTEP-ACT-08-UI",
+        "summary": "Forward-test UI route-policy mutation wiring (frontend-focused)",
+        "worktree_boundary": "WT-UI",
+        "blocks_other_lanes": false,
+        "evidence": ["artifacts/wave-a-findings/pit-infrastructure-audit.json safe_this_increment SAFE-FTEP-ACT-08-UI", "artifacts/wave-a-findings/ftep-campaign-audit.json code_gaps CG-03"]
+      },
+      {
+        "id": "PAR-DECISION-RESEARCH-GATE-REPORT",
+        "summary": "Regenerate offline decision-research gate report after card/fixture changes",
+        "worktree_boundary": "WT-RESEARCH",
+        "blocks_other_lanes": false,
+        "evidence": ["artifacts/wave-a-findings/pit-infrastructure-audit.json safe_this_increment SAFE-GATE-REPORT"]
+      }
+    ],
+    "NEEDS_LOCAL_PRIVATE_PROBE": [
+      {
+        "id": "PROBE-MOOMOO",
+        "summary": "Refresh OpenD connectivity, SDK on IMP Python 3.11 venv, and capability-report.json including US_FUTURES_QUOTE entitlement",
+        "evidence": ["artifacts/wave-a-findings/finviz-moomoo-audit.json blockers NEEDS_LOCAL_PRIVATE_PROBE"]
+      },
+      {
+        "id": "PROBE-FINVIZ",
+        "summary": "Operator-local Finviz Elite credentials and optional IMP_FINVIZ_LIVE; live probe not run in Wave A",
+        "evidence": ["artifacts/wave-a-findings/finviz-moomoo-audit.json blockers NEEDS_HUMAN", "providers.finviz.live_session"]
+      },
+      {
+        "id": "PROBE-G-A5-BROKER-CANDIDATES",
+        "summary": "FTEP G-A5 private/local provider configuration audit for Alpaca and relevant broker/data candidates — lane artifact PRESENT at artifacts/wave-a-findings/ibkr-tradier-alpaca-audit.json; NEEDS_LOCAL_PRIVATE_PROBE for live refresh only",
+        "evidence": ["docs/engineering/FTEP_ACTIVATION_GATES.md first-campaign sequencing step 1", "artifacts/wave-a-findings/reconciliation-index.json wave_a_artifacts ibkr-tradier-alpaca"]
+      }
+    ],
+    "NEEDS_EXTERNAL_PROVIDER": [
+      {
+        "id": "EXT-PREMIUM-WIRES",
+        "summary": "Reuters, Dow Jones, Benzinga, PR Newswire, etc. configured in catalog only — not operational",
+        "evidence": ["artifacts/wave-a-findings/news-data-inventory.json WAVE-A-007"]
+      },
+      {
+        "id": "EXT-NEWSAPI-FINNHUB-PIT",
+        "summary": "NewsAPI/Finnhub bounded live windows — not historical point-in-time archives for backtest claims",
+        "evidence": ["artifacts/wave-a-findings/news-data-inventory.json WAVE-A-008"]
+      },
+      {
+        "id": "EXT-MOOMOO-FUTURES-ENTITLEMENT",
+        "summary": "Lawful ES futures quote entitlement via Moomoo cannot be assumed; stale probe showed US_FUTURES_QUOTE not entitled",
+        "evidence": ["artifacts/wave-a-findings/finviz-moomoo-audit.json campaign_implications.ftep_v1_001_es_news"]
+      }
+    ],
+    "NEEDS_HUMAN_DECISION": [
+      {
+        "id": "OWNER-OD-1-11",
+        "summary": "FTEP-V1-001 activation manifest owner decisions OD-1 through OD-11 and freeze sign-off",
+        "evidence": ["artifacts/wave-a-findings/ftep-campaign-audit.json owner_decisions", "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json activation_status PENDING_OWNER_DECISIONS"]
+      },
+      {
+        "id": "OWNER-OD-3-CALENDAR",
+        "summary": "US_EQUITY_RTH vs Globex ETH for ES catalyst windows",
+        "evidence": ["artifacts/wave-a-findings/news-data-inventory.json WAVE-A-004"]
+      },
+      {
+        "id": "OWNER-ES-EQUITY-NEWS-LINKAGE",
+        "summary": "Policy for mapping equity-ticker headline providers to ES index catalyst claims",
+        "evidence": ["artifacts/wave-a-findings/news-data-inventory.json WAVE-A-003"]
+      },
+      {
+        "id": "OWNER-CALIBRATION-THRESHOLDS",
+        "summary": "Numeric acceptance/divergence thresholds for execution-bearing claims remain UNSET/BLOCKING per calibration contract",
+        "evidence": ["docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md numeric acceptance gates"]
+      },
+      {
+        "id": "OWNER-FORWARD-CHECKLIST-C5",
+        "summary": "FORWARD_VALIDATION_READINESS_CHECKLIST FTEP row deferred pending owner-verified prerequisite states",
+        "evidence": ["artifacts/wave-a-findings/ftep-campaign-audit.json owner_decisions OD-11 checklist_blocker C5"]
+      }
+    ],
+    "DEFERRED": [
+      {
+        "id": "DEFER-MANIFEST-FREEZE",
+        "summary": "Treat manifest FROZEN_FOR_ACTIVATION only after OD-11 — not an implementation substitute",
+        "evidence": ["artifacts/wave-a-findings/pit-infrastructure-audit.json defer_this_increment DEFER-MANIFEST-FREEZE"]
+      },
+      {
+        "id": "DEFER-FTEP-ACT-04-OBS-INGRESS",
+        "summary": "Observational live/captured news ingress for forward test deferred in manifest (FTEP-D038, FTEP-ACT-04)",
+        "evidence": ["artifacts/wave-a-findings/news-data-inventory.json WAVE-A-009", "artifacts/wave-a-findings/pit-infrastructure-audit.json defer_this_increment DEFER-IMPLEMENT_NOW_OBSERVATIONAL_NEWS_INGRESS"]
+      },
+      {
+        "id": "DEFER-FTEP-ACT-06",
+        "summary": "EVIDENCE-01B auto-bridge to forward bridge",
+        "evidence": ["artifacts/wave-a-findings/ftep-campaign-audit.json deferred_until_evidence FTEP-ACT-06", "artifacts/wave-a-findings/pit-infrastructure-audit.json PIT-A-004"]
+      },
+      {
+        "id": "DEFER-DURABLE-NEWS-INFERENCE",
+        "summary": "Durable news and inference repository",
+        "evidence": ["artifacts/wave-a-findings/news-data-inventory.json WAVE-A-006"]
+      },
+      {
+        "id": "DEFER-UNIFIED-UI-MATRIX",
+        "summary": "Unified provider capability matrix HTTP projection and cross-surface enum normalization before cementing third UI model",
+        "evidence": ["artifacts/wave-a-findings/ux-hooks-audit.json minimum_hook_set_provider_governance_ui.deferred_until_canonical_matrix_dto"]
+      },
+      {
+        "id": "DEFER-ACTUAL-FORWARD",
+        "summary": "Qualifying ACTUAL_FORWARD empirical collection",
+        "evidence": ["artifacts/wave-a-findings/pit-infrastructure-audit.json defer_this_increment DEFER-ACTUAL_FORWARD"]
+      },
+      {
+        "id": "DEFER-MATLAB-BRIDGE",
+        "summary": "MATLAB/Python bridge not designed in IMP",
+        "evidence": ["artifacts/wave-a-findings/pit-infrastructure-audit.json defer_this_increment DEFER-MATLAB-BRIDGE"]
+      },
+      {
+        "id": "DEFER-NEWS-EVENT-ROUTING",
+        "summary": "NEWS_EVENT semantic routing detector inactive",
+        "evidence": ["artifacts/wave-a-findings/news-data-inventory.json WAVE-A-011"]
+      }
+    ]
+  },
+  "minimum_coherent_implementation_set": {
+    "increment_goal": "Satisfy prerequisite infrastructure for FTEP activation gates without starting qualifying empirical evidence or mutating frozen campaign semantics",
+    "packages": [
+      {
+        "order": 1,
+        "package_id": "PKG-CAPABILITY-FOUNDATION",
+        "items": ["IMP-CAPABILITY-SCHEMA-MATRIX"],
+        "depends_on": [],
+        "worktree_boundary": "WT-GOVERNANCE",
+        "implementation_status": "COMPLETE",
+        "commit_sha": "60cce0e",
+        "primary_paths": [
+          "manifests/",
+          "src/market_platform_foundation/providers/",
+          "docs/architecture/MARKET_DATA_CAPABILITY_CONTRACT.md"
+        ]
+      },
+      {
+        "order": 2,
+        "package_id": "PKG-DIAGNOSTICS-READINESS",
+        "items": ["IMP-DIAGNOSTICS", "IMP-GAP-ENGINE", "IMP-CAMPAIGN-READINESS-EVALUATOR"],
+        "depends_on": ["PKG-CAPABILITY-FOUNDATION"],
+        "worktree_boundary": "WT-GOVERNANCE",
+        "primary_paths": [
+          "tools/provider_readiness.py",
+          "src/market_platform_foundation/ui_api/operator_projections.py",
+          "src/market_platform_foundation/intelligence/paper_forward_bridge/preflight.py"
+        ]
+      },
+      {
+        "order": 3,
+        "package_id": "PKG-CALIBRATION-SCHEMA",
+        "items": ["IMP-CALIBRATION-COMPARATOR-CONTRACTS"],
+        "depends_on": ["PKG-CAPABILITY-FOUNDATION"],
+        "worktree_boundary": "WT-GOVERNANCE",
+        "primary_paths": [
+          "docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md",
+          "manifests/"
+        ]
+      },
+      {
+        "order": 4,
+        "package_id": "PKG-BRIDGE-CG",
+        "items": ["IMP-CG-01", "IMP-CG-02"],
+        "depends_on": [],
+        "worktree_boundary": "WT-BRIDGE",
+        "primary_paths": [
+          "src/market_platform_foundation/intelligence/paper_forward_bridge/service.py",
+          "src/market_platform_foundation/intelligence/paper_forward_bridge/session_policy.py",
+          "src/market_platform_foundation/intelligence/paper_forward_bridge/activation.py"
+        ]
+      },
+      {
+        "order": 5,
+        "package_id": "PKG-NEWS-PIPELINE",
+        "items": ["IMP-NEWS-AGGREGATOR-BRIDGE", "IMP-RECORDED-EVAL-FORWARD-BRIDGE"],
+        "depends_on": [],
+        "worktree_boundary": "WT-NEWS",
+        "primary_paths": [
+          "src/market_platform_foundation/news/aggregator.py",
+          "src/market_platform_foundation/news/normalize.py",
+          "src/market_platform_foundation/intelligence/news_strategy_evaluation/",
+          "src/market_platform_foundation/intelligence/paper_forward_bridge/"
+        ]
+      }
+    ],
+    "worktree_boundaries": {
+      "WT-GOVERNANCE": {
+        "scope": "Capability records, diagnostics, gap engine, readiness evaluator, calibration/comparator schemas",
+        "avoid_touching": ["paper_forward_bridge/service.py hot paths unless coordinating CG package"]
+      },
+      "WT-BRIDGE": {
+        "scope": "CG-01/CG-02 forward-test bridge correctness",
+        "avoid_touching": ["news/aggregator.py", "provider matrix manifests"]
+      },
+      "WT-NEWS": {
+        "scope": "Aggregator-to-canonical bridge and recorded-eval handoff",
+        "avoid_touching": ["ACTIVATION_MANIFEST.json", "freeze CLI semantics"]
+      },
+      "WT-UI": {
+        "scope": "Optional parallel ACT-08 and operator-readiness hooks",
+        "avoid_touching": ["backend gap-engine until PKG-DIAGNOSTICS-READINESS merges"]
+      },
+      "WT-RESEARCH": {
+        "scope": "Offline decision-research gate report regeneration only",
+        "avoid_touching": ["FTEP campaign artifacts"]
+      }
+    },
+    "explicit_out_of_increment": [
+      "Manifest freeze and OD-1–OD-11 owner sign-off",
+      "Live observational news ingress (FTEP-ACT-04) before bridge and RECORDED_ARTIFACTS_ONLY path proven",
+      "Qualifying ACTUAL_FORWARD sessions",
+      "Live provider probes overwriting committed evidence without operator intent"
+    ]
+  },
+  "es_news_stack_verdict": {
+    "method": "Verified facts from Wave A lane artifacts only; no live probe claims in this synthesis",
+    "overall_for_qualifying_ftep_v1_001_campaign": "BLOCKED",
+    "components": [
+      {
+        "layer": "ftep_manifest_and_preflight",
+        "verdict": "BLOCKED",
+        "fact": "activation_status PENDING_OWNER_DECISIONS; preflight NOT_READY for skeleton manifest"
+      },
+      {
+        "layer": "canonical_news_foundation_offline",
+        "verdict": "CURRENTLY_SUFFICIENT",
+        "fact": "NewsArticleEvent pipeline and fixture replay exist for deterministic software validation"
+      },
+      {
+        "layer": "recorded_artifacts_only_intelligence",
+        "verdict": "CURRENTLY_SUFFICIENT",
+        "fact": "FTEP-D006 pre-resolves RECORDED_ARTIFACTS_ONLY; does not require live model rerun"
+      },
+      {
+        "layer": "aggregator_to_canonical_bridge",
+        "verdict": "MISSING",
+        "fact": "No in-repo adapter connects NewsAggregator dict output to NewsArticleEvent ingress"
+      },
+      {
+        "layer": "recorded_eval_to_forward_bridge",
+        "verdict": "MISSING",
+        "fact": "FTEP-ACT-06 and WAVE-A-010 document incomplete recorded eval wiring"
+      },
+      {
+        "layer": "observational_live_news_ingress",
+        "verdict": "MISSING",
+        "fact": "End-to-end live or captured ingress into canonical pipeline not present; ACT-04 deferred in manifest"
+      },
+      {
+        "layer": "equity_ticker_news_for_es_lane",
+        "verdict": "MISSING",
+        "fact": "Finviz/NewsAPI/Finnhub ingest equity-scoped news; no CME ES headline feed in news/; linkage policy not fully specified"
+      },
+      {
+        "layer": "moomoo_es_futures_market_context",
+        "verdict": "BLOCKED",
+        "fact": "Stale Moomoo evidence US_FUTURES_QUOTE not entitled; OpenD not running at audit; refresh requires NEEDS_LOCAL_PRIVATE_PROBE"
+      },
+      {
+        "layer": "finviz_live_news_operational",
+        "verdict": "MISSING",
+        "fact": "Finviz live_session UNCONFIGURED; no live Finviz probe in Wave A"
+      },
+      {
+        "layer": "market_data_capability_contract_campaign_binding",
+        "verdict": "MISSING",
+        "fact": "G-A6/G-A7 BLOCKING per FTEP_ACTIVATION_GATES; machine-readable capability-contract campaign binding not evidenced in Wave A artifacts"
+      },
+      {
+        "layer": "simulator_calibration_numeric_gates",
+        "verdict": "BLOCKED",
+        "fact": "Execution-bearing thresholds UNSET/BLOCKING per PAPER_SIMULATOR_CALIBRATION_CONTRACT until campaign freeze"
+      }
+    ]
+  },
+  "parent_gate_disposition": {
+    "wave_a_read_only_complete_for_present_lanes": true,
+    "wave_a_lane_gaps": [],
+    "implementation_wave_authorized": true,
+    "qualifying_campaign_activation_authorized": false,
+    "rationale": "PREIMPLEMENTATION_PLANNING_CLOSURE and Wave A audits authorize prerequisite implementation against contracts; manifest remains PENDING_OWNER_DECISIONS and ES/news stack BLOCKED for qualifying evidence until owner, probe, and capability-binding gates resolve."
+  },
+  "secrets_in_artifact": false
+}
