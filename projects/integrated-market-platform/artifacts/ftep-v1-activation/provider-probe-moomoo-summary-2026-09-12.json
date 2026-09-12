@@ -25,7 +25,9 @@
   },
   "campaign_suitability": {
     "ES_PROSPECTIVE_MARKET_EVIDENCE": "NOT_ENTITLED",
-    "disposition": "NEEDS_EXTERNAL_ENTITLEMENT_AUTHORIZATION"
+    "US_EQUITY_PROSPECTIVE_MARKET_EVIDENCE": "SAMPLE_VERIFIED",
+    "disposition": "NEEDS_EXTERNAL_ENTITLEMENT_AUTHORIZATION",
+    "ftep_v1_002_notes": "US_EQUITY_L1 entitled and receiving; supports $0-incremental FTEP-V1-002 binding."
   },
   "evidence_artifacts": [
     "artifacts/ftep-v1-activation/provider-probe-moomoo-2026-09-12.json",

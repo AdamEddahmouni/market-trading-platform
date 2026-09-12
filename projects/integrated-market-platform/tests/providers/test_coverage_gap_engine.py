@@ -22,6 +22,7 @@ from market_platform_foundation.providers.capability_contract import (
 )
 from market_platform_foundation.providers.capability_requirements import (
     FTEP_V1_001_ES_NEWS_PROFILE,
+    FTEP_V1_002_US_EQUITY_NEWS_PROFILE,
     get_campaign_requirement_profile,
 )
 from market_platform_foundation.providers.coverage_gap_engine import (
@@ -39,6 +40,13 @@ class CoverageGapEngineTests(unittest.TestCase):
         req_ids = {row.requirement_id for row in profile.capability_requirements}
         self.assertIn("futures.es_quote.moomoo", req_ids)
         self.assertIn("news.finviz_export", req_ids)
+
+    def test_ftep_v1_002_profile_is_us_equity_news(self) -> None:
+        profile = get_campaign_requirement_profile("FTEP-V1-002")
+        self.assertEqual(profile.profile_id, FTEP_V1_002_US_EQUITY_NEWS_PROFILE.profile_id)
+        req_ids = {row.requirement_id for row in profile.capability_requirements}
+        self.assertIn("equity.us_l1.moomoo", req_ids)
+        self.assertNotIn("futures.es_quote.moomoo", req_ids)
 
     def test_us_futures_quote_unknown_is_blocking(self) -> None:
         root = Path(__file__).resolve().parents[2]

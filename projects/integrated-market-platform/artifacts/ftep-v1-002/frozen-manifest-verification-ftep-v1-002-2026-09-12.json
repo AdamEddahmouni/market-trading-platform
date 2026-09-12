@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "observed_at": "2026-09-12T16:45:00Z",
+  "verification": {
+    "blockers": [],
+    "campaign_slug": "FTEP-V1-002",
+    "coverage_gap_blockers": [],
+    "fingerprint": "F7083180990BC59578CA045E1E1318A356421BBC9B81EE514C14130CB0B356B1",
+    "fingerprint_verified": true,
+    "manifest_status": "FROZEN",
+    "metadata": {
+      "expected_fingerprint": "F7083180990BC59578CA045E1E1318A356421BBC9B81EE514C14130CB0B356B1",
+      "coverage_gap_disposition": "SATISFIED"
+    },
+    "preflight_disposition": "READY",
+    "prospective_disposition": "VERIFIED_FROZEN_READY_FOR_PREFLIGHT"
+  },
+  "campaign_readiness": {
+    "disposition": "READY",
+    "blockers": []
+  }
+}

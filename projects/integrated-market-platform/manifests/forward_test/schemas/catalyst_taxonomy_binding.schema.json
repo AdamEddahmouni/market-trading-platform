@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forward_test.catalyst_taxonomy_binding",
+  "title": "ForwardTestCatalystTaxonomyBinding",
+  "type": "object",
+  "required": ["catalyst_taxonomy_version", "enabled_catalyst_ids"],
+  "properties": {
+    "catalyst_taxonomy_version": {
+      "const": "CATALYST_TAXONOMY_CONTRACT_V1"
+    },
+    "registry_version": {
+      "type": "string",
+      "const": "news/catalysts/1.0.0"
+    },
+    "enabled_catalyst_ids": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "asset_class_filter": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["EQUITY"]
+    }
+  },
+  "additionalProperties": false
+}

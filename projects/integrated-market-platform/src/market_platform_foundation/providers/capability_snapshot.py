@@ -258,6 +258,94 @@ def _access_from_probe_capability(row: Mapping[str, Any]) -> CapabilityAccessSta
     return CapabilityAccessState.CATALOGED
 
 
+def _load_frozen_activation_manifest(root: Path, campaign_slug: str) -> dict[str, Any] | None:
+    path = root / f"artifacts/forward-test-campaigns/{campaign_slug}/ACTIVATION_MANIFEST.json"
+    if not path.is_file():
+        return None
+    try:
+        payload = _load_json(path)
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    status = str(payload.get("activation_status") or payload.get("status") or "").upper()
+    if status != "FROZEN":
+        return None
+    return payload
+
+
+def _apply_frozen_campaign_binding_overlay(
+    providers: list[ProviderCapabilityRecord],
+    *,
+    repository_root: Path,
+    sources: list[dict[str, str]],
+) -> list[ProviderCapabilityRecord]:
+    """Promote authority provider to CAMPAIGN_BOUND when a frozen manifest binds market data."""
+
+    manifest = _load_frozen_activation_manifest(repository_root, "FTEP-V1-002")
+    if manifest is None:
+        return providers
+    bindings = manifest.get("market_data_bindings")
+    if not isinstance(bindings, dict):
+        return providers
+    authority = bindings.get("authority")
+    if not isinstance(authority, dict):
+        return providers
+    provider_id = str(authority.get("provider_id") or "MOOMOO").upper()
+    capability_id = str(authority.get("capability_id") or "US_EQUITY_L1")
+    manifest_path = (
+        "artifacts/forward-test-campaigns/FTEP-V1-002/ACTIVATION_MANIFEST.json"
+    )
+    fingerprint = str(
+        manifest.get("manifest_fingerprint") or manifest.get("fingerprint") or ""
+    ).upper()
+    evidence = tuple(
+        item
+        for item in (
+            manifest_path,
+            f"campaign_id={manifest.get('campaign_id')}",
+            f"fingerprint={fingerprint}" if fingerprint else "",
+        )
+        if item
+    )
+    sources.append({"path": manifest_path, "role": "ftep_v1_002_frozen_campaign_binding"})
+
+    updated: list[ProviderCapabilityRecord] = []
+    for record in providers:
+        if record.provider_id != provider_id:
+            updated.append(record)
+            continue
+        cap_rows: list[ProviderCapabilityEntry] = []
+        for entry in record.capabilities:
+            if entry.capability_id == capability_id:
+                cap_rows.append(
+                    ProviderCapabilityEntry(
+                        entry.capability_id,
+                        entry.support_level,
+                        access_state=CapabilityAccessState.CAMPAIGN_BOUND,
+                        notes="Campaign-bound at FTEP-V1-002 manifest freeze (OD-11).",
+                    )
+                )
+            else:
+                cap_rows.append(entry)
+        updated.append(
+            ProviderCapabilityRecord(
+                provider_id=record.provider_id,
+                display_name=record.display_name,
+                access_state=CapabilityAccessState.CAMPAIGN_BOUND,
+                campaign_role=CampaignRole.AUTHORITY,
+                support_level=record.support_level,
+                capability_contract_id=record.capability_contract_id,
+                observed_at=str(manifest.get("frozen_at") or record.observed_at or ""),
+                dimensions=record.dimensions,
+                capabilities=tuple(cap_rows),
+                verification_evidence=evidence,
+                notes="Frozen activation manifest campaign binding overlay.",
+            )
+        )
+    return updated
+
+
 def _apply_ftep_moomoo_probe_overlay(
     providers: list[ProviderCapabilityRecord],
     *,

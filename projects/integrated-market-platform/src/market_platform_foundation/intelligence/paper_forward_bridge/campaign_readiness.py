@@ -13,6 +13,7 @@ from ...providers.coverage_gap_engine import (
     GapDisposition,
     resolve_coverage_gaps_for_campaign,
 )
+from ...providers.moomoo_prospective_market_evidence import assess_moomoo_prospective_market_evidence
 from .preflight import ForwardTestPreflightResult, PreflightDisposition, run_forward_test_preflight
 
 
@@ -87,6 +88,10 @@ def evaluate_campaign_readiness(
         if not unique_blockers
         else CampaignReadinessDisposition.NOT_READY
     )
+    market_evidence = assess_moomoo_prospective_market_evidence(
+        campaign_slug,
+        repository_root=repository_root,
+    )
     return CampaignReadinessResult(
         disposition=disposition,
         blockers=unique_blockers,
@@ -97,6 +102,7 @@ def evaluate_campaign_readiness(
         metadata={
             "profile_id": gap_report.profile_id,
             "coverage_gap_disposition": gap_report.disposition.value,
+            "prospective_market_evidence": market_evidence.to_dict(),
         },
     )
 

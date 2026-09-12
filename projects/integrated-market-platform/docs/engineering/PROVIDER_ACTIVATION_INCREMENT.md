@@ -43,7 +43,13 @@ The engine aggregates campaign-scoped requirements (including activation gates *
 
 Implementation: `src/market_platform_foundation/intelligence/paper_forward_bridge/campaign_readiness.py`.
 
-Composes `run_forward_test_preflight`, [FTEP_ACTIVATION_GATES.md](./FTEP_ACTIVATION_GATES.md), and gap-engine output for **FTEP-V1-001**. A `NOT_READY` preflight result is expected while `activation_status` remains `PENDING_OWNER_DECISIONS`.
+Composes `run_forward_test_preflight`, [FTEP_ACTIVATION_GATES.md](./FTEP_ACTIVATION_GATES.md), and gap-engine output for campaign profiles (**FTEP-V1-001** frozen ES-news; **FTEP-V1-002** proposed US-equity-news). A `NOT_READY` preflight result is expected while `activation_status` remains `PENDING_OWNER_DECISIONS` (V1-002) or while external entitlement gaps block V1-001 prospective collection.
+
+```powershell
+python tools/imp.py providers campaign-readiness FTEP-V1-002 --json
+```
+
+V1-002 readiness metadata includes `prospective_market_evidence` from dated Moomoo probe receipts (`moomoo_prospective_market_evidence.py`).
 
 ## Calibration and comparator semantics
 

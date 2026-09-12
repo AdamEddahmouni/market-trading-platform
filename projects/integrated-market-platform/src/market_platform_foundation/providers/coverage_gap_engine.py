@@ -17,7 +17,7 @@ from .capability_contract import (
     snapshot_from_dict,
 )
 from .capability_requirements import CampaignRequirementProfile, get_campaign_requirement_profile
-from .capability_snapshot import build_capability_matrix_snapshot
+from .capability_snapshot import build_capability_matrix_snapshot, _apply_frozen_campaign_binding_overlay
 
 DEFAULT_WAVE_A_DIR = Path("artifacts/wave-a-findings")
 
@@ -186,7 +186,9 @@ def _reconcile_wave_a_catalog_with_manifest(
     if status == "FROZEN":
         merged["WAVE-A-001"] = {
             "classification": "OWNER_RESOLVED",
-            "summary": "FTEP-V1-001 activation manifest frozen under OD-11 pathway A.",
+            "summary": (
+                f"{profile.campaign_slug} activation manifest frozen under OD-11 pathway A."
+            ),
             "source": "activation_manifest",
             "evidence_refs": (manifest_path,),
         }
@@ -440,6 +442,19 @@ def resolve_coverage_gaps_for_campaign(
         readiness_report=readiness_report,
         observed_at="2026-09-11T23:00:00Z",
     )
+    if snapshot is None and profile.campaign_slug == "FTEP-V1-002":
+        sources = [dict(item) for item in matrix.sources]
+        providers = _apply_frozen_campaign_binding_overlay(
+            list(matrix.providers),
+            repository_root=repository_root,
+            sources=sources,
+        )
+        matrix = type(matrix)(
+            observed_at=matrix.observed_at,
+            sources=tuple(sources),
+            providers=tuple(providers),
+            secrets_included=matrix.secrets_included,
+        )
     return resolve_coverage_gaps(profile=profile, snapshot=matrix, wave_a_catalog=catalog)
 
 

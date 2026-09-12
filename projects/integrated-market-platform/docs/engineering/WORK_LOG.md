@@ -36,6 +36,78 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — FTEP-V1-002 owner freeze and readiness
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep-v1-002`, `forward-test`, `providers` |
+| **Summary** | Applied owner OD-2/OD-6/OD-PAPER/OD-11 on **FTEP-V1-002**: universe AAPL/MSFT/NVDA/AMZN/META, SPY benchmark-only, canonical Paper bind, immutable freeze, campaign-bound MOOMOO overlay (G-A6), preflight/readiness **READY**. **FTEP-V1-001** fingerprint unchanged. Stop line: zero sessions/locks/execution. |
+| **Key files** | `artifacts/forward-test-campaigns/FTEP-V1-002/ACTIVATION_MANIFEST.json`, `frozen_manifest_verifier.py`, `capability_snapshot.py`, `coverage_gap_engine.py`, `artifacts/ftep-v1-002/frozen-manifest-verification-*.json`, `FINAL_EXECUTIVE_REPORT.md` |
+| **Tests** | 16 unittest OK; `imp.py validate fast` 21/0; `imp.py validate changed` 2159/0 |
+| **Related** | Section 32 executive result `READY_FOR_FIRST_SIGNAL_ONLY_AUTHORIZATION` |
+| **Notes** | Finviz live probe still `LOCAL_PROBE_REQUIRED`; stale export remains authoritative. PR stack #22–#28 not merged. |
+
+## 2026-09-12 — FTEP-V1-002 final executive report
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep-v1-002`, `artifacts` |
+| **Summary** | Added `FINAL_EXECUTIVE_REPORT.md` at engineering stop line: executive `READY_WITH_OWNER_DECISIONS`, safety block, owner OD index, artifact paths; goal verification re-run (16 unittest, fast, changed, campaign-readiness). |
+| **Key files** | `artifacts/ftep-v1-002/FINAL_EXECUTIVE_REPORT.md` |
+| **Tests** | 16 unittest OK; `imp.py validate fast` 21/0; `imp.py validate changed` 2159/0 |
+| **Related** | `artifacts/ftep-v1-002/owner-decision-packet-2026-09-12.md` |
+| **Notes** | Owner freeze/SIGNAL_ONLY remain out-of-band. |
+
+## 2026-09-12 — FTEP-V1-002 pre-freeze closure audit
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep-v1-002`, `readiness`, `artifacts` |
+| **Summary** | Closed pre-freeze gaps on proposed V1-002 manifest: added `resolved_fields` (incl. FTEP-D006), `authority_resolutions` for OD-1/OD-3, deferred Wave A ingress; trimmed owner packet to four decisions; documented Finviz `LOCAL_PROBE_REQUIRED` without degrading stale capability evidence. |
+| **Key files** | `artifacts/forward-test-campaigns/FTEP-V1-002/ACTIVATION_MANIFEST.json`, `artifacts/ftep-v1-002/owner-decision-packet-2026-09-12.md`, `finviz-local-probe-status-2026-09-12.json`, `notion-sync-payload-2026-09-12.md`, `tests/intelligence/test_ftep_v1_002_campaign.py` |
+| **Tests** | `unittest` FTEP-V1-002 + finviz + coverage (16 OK); `imp.py validate fast` 21/0; `imp.py validate changed` 2159/0; `campaign-readiness FTEP-V1-002` — WAVE-A-002 deferred (not blocker) |
+| **Related** | `artifacts/ftep-v1-002/reconciliation-matrix-2026-09-12.json`, `FTEP_CAMPAIGN_CATALOG.md` |
+| **Notes** | Executive: `READY_WITH_OWNER_DECISIONS`. No Notion MCP in repo; sync payload only. Finviz probe attempted — credentials absent; `evidence/market_data/finviz/capability-report.json` restored from git. |
+
+## 2026-09-12 — FTEP-V1-002 validation manifest follow-up
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `validation`, `ftep-v1-002` |
+| **Summary** | After orchestrator completion, wired `paper_forward_bridge` changed-validation leaf to include V1-002 campaign tests, frozen-manifest verifier, and governance artifacts so `imp.py validate changed` exercises the pivot. |
+| **Key files** | `tools/validation_manifest.json` |
+| **Tests** | `python tools/imp.py validate fast` — 21/0; `python tools/imp.py validate changed` — 2159 passed, 0 failures |
+| **Related** | [FTEP-V1-002 zero-cost pivot](7d610fd0-12ec-4653-916b-a80610368839) |
+| **Notes** | Work remains uncommitted on `work/ftep-v1-002-us-equity-news`; owner freeze decisions still open. |
+
+## 2026-09-12 — FTEP-V1-002 US equity news-catalyst pivot
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep-v1-002`, `providers`, `forward-test` |
+| **Summary** | Pivoted engineering focus to **FTEP-V1-002** ($0 Moomoo US equity L1 + Finviz Elite news) while preserving **FTEP-V1-001** frozen manifest/fingerprint. Added campaign profile, proposed manifest, catalyst taxonomy contract, frozen-manifest verifier (`FROZEN_BLOCKED_EXTERNAL_DATA_ENTITLEMENT` for V1-001), Moomoo prospective market-evidence bridge, and reconciliation artifacts. No freeze, SIGNAL_ONLY sessions, or empirical collection authorized. |
+| **Key files** | `artifacts/forward-test-campaigns/FTEP-V1-002/`, `artifacts/ftep-v1-002/`, `src/.../frozen_manifest_verifier.py`, `src/.../moomoo_prospective_market_evidence.py`, `capability_requirements.py`, `docs/engineering/FTEP_CAMPAIGN_CATALOG.md`, `docs/engineering/ftep/assets/US_EQUITY_PROFILE_V1.md` |
+| **Tests** | `python -m unittest tests.intelligence.test_ftep_v1_002_campaign tests.news.test_finviz_news_normalize tests.providers.test_coverage_gap_engine -q` |
+| **Related** | [FTEP_CAMPAIGN_CATALOG.md](./FTEP_CAMPAIGN_CATALOG.md), branch `work/ftep-v1-002-us-equity-news` @ `099388f` base |
+| **Notes** | PR stack #22–#28 still open on `main`; merge stack unchanged. |
+
+## 2026-09-12 — FTEP-V1 split slices 4–7 and merge stack
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep-v1-activation`, `docs`, `providers` |
+| **Summary** | Finished split slices 4–7 as stacked PRs **#25–#28** (Wave B closure → ES/news stack → goal audit → freeze/readiness). Published merge order in `artifacts/ftep-v1-split/MERGE_STACK.md`. Closed superseded draft **#19**. Frozen manifest fingerprint unchanged on slice #28; pathway B not authorized. |
+| **Key files** | `artifacts/ftep-v1-split/MERGE_STACK.md`; branches `split/ftep-v1-wave-b-closure`, `split/ftep-v1-es-news-stack`, `split/ftep-v1-goal-audit`, `split/ftep-v1-freeze-readiness` |
+| **Tests** | Per-slice `imp.py validate fast` pass (slices 4–7 worktrees); slice 4 `test_provider_snapshot_compare` OK; slice 6 observational ingress + PIT export OK; monolith `test_coverage_gap_engine` 6 OK; slice 5 profile-ref tests require merged #22 (documented stack dep) |
+| **Related** | PRs #22–#28; closed #19 |
+| **Notes** | Merge **#22** before **#28**; rebase each stacked PR onto `main` after its predecessor merges. |
+
 ## 2026-09-12 — FTEP pathway-B goal closure verification
 
 | Field | Value |

@@ -16,8 +16,12 @@ _CLASSIFICATION_RE = re.compile(r"\*\*Classification:\*\*\s*`([^`]+)`")
 _PROFILE_DOC_PATHS: dict[str, str] = {
     "FTEP_CORE_V1": "docs/engineering/ftep/FTEP_CORE_V1.md",
     "FUTURES_PROFILE_V1": "docs/engineering/ftep/assets/FUTURES_PROFILE_V1.md",
+    "US_EQUITY_PROFILE_V1": "docs/engineering/ftep/assets/US_EQUITY_PROFILE_V1.md",
     "NEWS_CATALYST_PROFILE_V1": (
         "docs/engineering/ftep/strategies/NEWS_CATALYST_PROFILE_V1.md"
+    ),
+    "CATALYST_TAXONOMY_CONTRACT_V1": (
+        "docs/engineering/ftep/strategies/CATALYST_TAXONOMY_CONTRACT_V1.md"
     ),
 }
 
@@ -25,6 +29,13 @@ _FTEP_V1_001_STACK: tuple[str, ...] = (
     "FTEP_CORE_V1",
     "FUTURES_PROFILE_V1",
     "NEWS_CATALYST_PROFILE_V1",
+)
+
+_FTEP_V1_002_STACK: tuple[str, ...] = (
+    "FTEP_CORE_V1",
+    "US_EQUITY_PROFILE_V1",
+    "NEWS_CATALYST_PROFILE_V1",
+    "CATALYST_TAXONOMY_CONTRACT_V1",
 )
 
 
@@ -91,6 +102,17 @@ def load_ftep_v1_001_profile_stack(
     )
 
 
+def load_ftep_v1_002_profile_stack(
+    *,
+    repo_root: Path | None = None,
+) -> tuple[FtepProfileRef, ...]:
+    """Core → US equity asset profile → news/catalyst strategy + taxonomy contract."""
+    return tuple(
+        load_ftep_profile_ref(profile_id, repo_root=repo_root)
+        for profile_id in _FTEP_V1_002_STACK
+    )
+
+
 def profile_stack_to_manifest_bindings(
     stack: tuple[FtepProfileRef, ...],
 ) -> dict[str, Any]:
@@ -104,7 +126,16 @@ def profile_stack_to_manifest_bindings(
             (
                 row.profile_version_id
                 for row in stack
-                if row.profile_version_id == "FUTURES_PROFILE_V1"
+                if row.profile_version_id
+                in {"FUTURES_PROFILE_V1", "US_EQUITY_PROFILE_V1"}
+            ),
+            None,
+        ),
+        "catalyst_taxonomy_version": next(
+            (
+                row.profile_version_id
+                for row in stack
+                if row.profile_version_id == "CATALYST_TAXONOMY_CONTRACT_V1"
             ),
             None,
         ),

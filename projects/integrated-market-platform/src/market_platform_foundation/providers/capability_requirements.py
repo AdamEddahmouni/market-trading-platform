@@ -12,6 +12,7 @@ class RequirementTemplateId(StrEnum):
     """Named templates composed into campaign profiles."""
 
     FUTURES_MARKET_CONTEXT = "futures_market_context"
+    EQUITY_MARKET_CONTEXT = "equity_market_context"
     NEWS_CATALYST_CONTEXT = "news_catalyst_context"
     CAPABILITY_CONTRACT_CAMPAIGN_BINDING = "capability_contract_campaign_binding"
 
@@ -52,6 +53,20 @@ def _futures_market_context_requirements() -> tuple[CapabilityRequirement, ...]:
     )
 
 
+def _equity_market_context_requirements() -> tuple[CapabilityRequirement, ...]:
+    return (
+        CapabilityRequirement(
+            requirement_id="equity.us_l1.moomoo",
+            capability_id="US_EQUITY_L1",
+            provider_id="MOOMOO",
+            minimum_access_state=CapabilityAccessState.SAMPLE_VERIFIED,
+            campaign_role=CampaignRole.AUTHORITY,
+            activation_gate_id="G-A7",
+            notes="US equity L1 for news-catalyst prospective binding; 2026-09-12 probe entitled.",
+        ),
+    )
+
+
 def _news_catalyst_context_requirements() -> tuple[CapabilityRequirement, ...]:
     return (
         CapabilityRequirement(
@@ -82,6 +97,7 @@ def _campaign_binding_requirements() -> tuple[CapabilityRequirement, ...]:
 
 _TEMPLATE_BUILDERS: dict[RequirementTemplateId, tuple[CapabilityRequirement, ...]] = {
     RequirementTemplateId.FUTURES_MARKET_CONTEXT: _futures_market_context_requirements(),
+    RequirementTemplateId.EQUITY_MARKET_CONTEXT: _equity_market_context_requirements(),
     RequirementTemplateId.NEWS_CATALYST_CONTEXT: _news_catalyst_context_requirements(),
     RequirementTemplateId.CAPABILITY_CONTRACT_CAMPAIGN_BINDING: _campaign_binding_requirements(),
 }
@@ -100,6 +116,31 @@ def expand_template_requirements(
             rows.append(row)
     return tuple(rows)
 
+
+FTEP_V1_002_US_EQUITY_NEWS_PROFILE = CampaignRequirementProfile(
+    profile_id="FTEP-V1-002",
+    campaign_slug="FTEP-V1-002",
+    templates=(
+        RequirementTemplateId.EQUITY_MARKET_CONTEXT,
+        RequirementTemplateId.NEWS_CATALYST_CONTEXT,
+        RequirementTemplateId.CAPABILITY_CONTRACT_CAMPAIGN_BINDING,
+    ),
+    capability_requirements=expand_template_requirements(
+        (
+            RequirementTemplateId.EQUITY_MARKET_CONTEXT,
+            RequirementTemplateId.NEWS_CATALYST_CONTEXT,
+            RequirementTemplateId.CAPABILITY_CONTRACT_CAMPAIGN_BINDING,
+        )
+    ),
+    wave_a_gap_ids=(
+        "WAVE-A-002",
+        "WAVE-A-003",
+        "WAVE-A-004",
+        "WAVE-A-009",
+    ),
+    code_gap_ids=("CG-01", "CG-02"),
+    activation_gate_ids=("G-A6", "G-A7"),
+)
 
 FTEP_V1_001_ES_NEWS_PROFILE = CampaignRequirementProfile(
     profile_id="FTEP-V1-001",
@@ -131,6 +172,8 @@ FTEP_V1_001_ES_NEWS_PROFILE = CampaignRequirementProfile(
 _PROFILES: dict[str, CampaignRequirementProfile] = {
     FTEP_V1_001_ES_NEWS_PROFILE.profile_id: FTEP_V1_001_ES_NEWS_PROFILE,
     FTEP_V1_001_ES_NEWS_PROFILE.campaign_slug: FTEP_V1_001_ES_NEWS_PROFILE,
+    FTEP_V1_002_US_EQUITY_NEWS_PROFILE.profile_id: FTEP_V1_002_US_EQUITY_NEWS_PROFILE,
+    FTEP_V1_002_US_EQUITY_NEWS_PROFILE.campaign_slug: FTEP_V1_002_US_EQUITY_NEWS_PROFILE,
 }
 
 
