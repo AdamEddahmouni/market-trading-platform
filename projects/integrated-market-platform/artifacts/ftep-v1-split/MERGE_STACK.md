@@ -56,7 +56,7 @@ After each merge to `main`, rebase the next open PR onto `main` (or merge via Gi
 | **#28 conflict parent** | `split/ftep-v1-goal-audit` @ `9b86e634` (**#27** head), not `main` |
 | **Merge-base before rebase** | `b1a8bd339` (stale vs #27) |
 | **Resolution** | Rebased `split/ftep-v1-freeze-readiness` onto #27; `test_forward_test_activation.py` add/add resolved (skeleton via tmp manifest + frozen production fingerprint assert) |
-| **#28 tip (post-rebase)** | `9f6f86d4` (force-push required) |
+| **#28 tip (post-rebase)** | `3d1304e4` |
 | **FTEP-V1-001 fingerprint** | Unchanged `69C36BA23813C009C27EE83924834D46F5804D0A0FA037E37ADB133F8BFEA99C` |
 | **Local validate** | `unittest tests.intelligence.test_forward_test_activation` 12 OK |
-| **Merge-ready** | Poll `gh pr view 28` after push (`mergeStateStatus` expected **CLEAN**) |
+| **Merge-ready** | **Yes** — `gh pr view 28`: `mergeable=MERGEABLE`, `mergeStateStatus=CLEAN`, IMP Validation pass @ run [34713551641](https://github.com/AdamEddahmouni/market-trading-platform/actions/runs/34713551641) |
