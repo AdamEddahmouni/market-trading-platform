@@ -2,9 +2,9 @@
   "schema_version": "1.0.0",
   "artifact_kind": "ftep_machine_readiness_receipt",
   "campaign_slug": "FTEP-V1-002",
-  "observed_at": "2026-09-12T19:35:00Z",
+  "observed_at": "2026-09-12T20:30:00Z",
   "repository_branch": "work/ftep-v1-002-us-equity-news",
-  "repository_source_sha": "a754f5e5028fd72fbc109993c08f860b7fe77073",
+  "repository_source_sha": "4f6f05ee13b617f5ec9905ebad9a247f84f29110",
   "manifest": {
     "status": "FROZEN",
     "fingerprint": "F7083180990BC59578CA045E1E1318A356421BBC9B81EE514C14130CB0B356B1",

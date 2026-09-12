@@ -15,7 +15,7 @@ Owner explicitly authorized Phase 1 **SIGNAL_ONLY** only (receipt: `signal-only-
 | Starting SHA | `099388f7f23e31e3d01107ceeba9c8822903848c` |
 | Final SHA | `a754f5e` _(full: run `git rev-parse HEAD` on branch)_ |
 | Base | `work/ftep-v1-002-us-equity-news` @ `099388f` (same as `work/ftep-v1-activation`) |
-| PR #22–#28 | Open; CI largely green on #22–#27; #28 shows `validate-docs` / `validate-python-changed` failures on latest runs — **not merged** (owner merge auth only) |
+| PR #22–#29 | #22 green; #23 green; #24–#28 show intermittent `validate-docs` / `validate-python-changed` on stack bases; **#29** (`work/ftep-v1-002-us-equity-news`) had `validate-docs` fail on broken WORK_LOG link — fixed @ `ddded1b` — **not merged** (owner merge auth only) |
 | V1-002 PR | Created/updated from `work/ftep-v1-002-us-equity-news` after commit push |
 | Merges performed | **0** |
 | Worktree | Primary repo `C:/Users/adame/Desktop/market-trading-platform`; branch `work/ftep-v1-002-us-equity-news` |
@@ -177,7 +177,7 @@ Merge canonical FTEP infrastructure PR stack **#22–#28** into integration base
 | **Campaign** | `FTEP-V1-002` / US-equity-news-catalyst |
 | **Campaign ID** | `FTCAMP-f7083180990bc59578ca045e1e1318a356421bbc9b81ee514c14130cb0b356b1` |
 | **Fingerprint** | `F7083180990BC59578CA045E1E1318A356421BBC9B81EE514C14130CB0B356B1` |
-| **Git** | `work/ftep-v1-002-us-equity-news` @ `a754f5e` |
+| **Git** | `work/ftep-v1-002-us-equity-news` @ `4f6f05e` (pushed) |
 | **Authorization** | `artifacts/ftep-v1-002/signal-only-authorization-receipt-2026-09-12.json` |
 | **Machine readiness** | `artifacts/ftep-v1-002/machine-readiness-receipt-2026-09-12.json` |
 | **Launch prep** | `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md` |
