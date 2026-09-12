@@ -45,7 +45,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Summary** | Committed research-only provider candidate catalog and Wave A cross-links in provider/news docs; corrected decision-research gate `registry_root` to monorepo path. Ran `python tools/imp.py closure --skip-ui` (4606 passed, 49 skipped). Updated `wave-b-closure-report.json` with `requirement_audit` for manifest-freeze tooling, snapshot compare harness, and FTEP profile docs; refreshed reconciliation gate HEAD. |
 | **Key files** | `docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md`, `docs/providers/*.md`, `docs/architecture/NEWS_STRATEGY_EVALUATION.md`, `evidence/research/decision-research-gate-report.json`, `artifacts/wave-b-closure-report.json`, `artifacts/wave-a-findings/reconciliation-gate.json`, `artifacts/developer-workflow/closure-report.json` |
 | **Tests** | `python tools/imp.py closure --skip-ui` — FULL passed (4606 tests, 49 skipped, 0 failures) |
-| **Related** | `artifacts/wave-b-closure-report.json`, commits `1ab2073` (docs/catalog), closure evidence commit pending |
+| **Related** | `artifacts/wave-b-closure-report.json`, commits `1ab2073` (docs/catalog), `a456110` (FULL closure + requirement audit) |
 | **Notes** | No push, no Live, no manifest freeze. Left local `g8`/`g13`/`g14` runtime perf drift and untracked `ftep-*-test.json` out of commits. Wave B disposition remains PARTIALLY_COMPLETE. |
 
 ## 2026-09-12 — Wave B closure docs and reconciliation artifacts
