@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — FTEP-V1-001 OD-11 pathway A freeze
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, `artifacts/ftep-v1-activation`, `artifacts/forward-test-campaigns/FTEP-V1-001` |
+| **Summary** | Owner pathway **A**: bound internal-simulation Paper account, recorded OD-1–OD-11 in governed manifest state, froze `ACTIVATION_MANIFEST.json` (fingerprint + `FTCAMP-*` id), ran activation preflight READY with `IMP_PERSIST_STATE=1`, refreshed secret-free Moomoo probe (OpenD reachable; SDK missing). Stopped before first empirical lock or SIGNAL_ONLY session. |
+| **Key files** | `artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json`, `artifacts/ftep-v1-activation/activation-freeze-receipt-2026-09-12.json`, `artifacts/ftep-v1-activation/activation-preflight-receipt-2026-09-12.json`, `docs/engineering/FORWARD_VALIDATION_READINESS_CHECKLIST.md` |
+| **Tests** | `python tools/imp.py validate changed`; forward-test activation + coverage readiness tests |
+| **Related** | [FTEP-V1_OWNER_DECISION_PACKET.md](./FTEP-V1_OWNER_DECISION_PACKET.md), [PAPER_FORWARD_TESTING_BRIDGE.md](../architecture/PAPER_FORWARD_TESTING_BRIDGE.md) |
+| **Notes** | `campaign-readiness` remains NOT_READY on coverage gaps; calibration numerics still deferred. |
+
 ## 2026-09-12 — FTEP-V1 activation lead closure (pre-freeze)
 
 | Field | Value |

@@ -173,14 +173,21 @@ class ForwardTestActivationPreflightTests(unittest.TestCase):
         )
         assert_forward_test_preflight_ready(result)
 
-    def test_agent_a_skeleton_loads_without_binding_block(self) -> None:
+    def test_ftep_v1_production_manifest_is_frozen(self) -> None:
         os.environ.pop("IMP_FORWARD_TEST_CAMPAIGNS_DIR", None)
-        skeleton_path = ROOT / "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json"
-        loaded = json.loads(skeleton_path.read_text(encoding="utf-8"))
-        manifest = load_activation_manifest("FTEP-V1-001")
-        self.assertEqual(manifest.protocol_id, loaded["protocol_id"])
-        self.assertIsNone(manifest.campaign_id)
-        self.assertEqual(manifest.binding["run_kind"], "FORWARD_TEST")
+        os.environ["IMP_PERSIST_STATE"] = "1"
+        try:
+            manifest_path = ROOT / "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json"
+            loaded = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest = load_activation_manifest("FTEP-V1-001")
+            self.assertEqual(manifest.protocol_id, loaded["protocol_id"])
+            self.assertEqual(manifest.status.value, "FROZEN")
+            self.assertIsNotNone(manifest.campaign_id)
+            self.assertTrue(str(manifest.campaign_id).startswith("FTCAMP-"))
+            self.assertEqual(manifest.binding["run_kind"], "FORWARD_TEST")
+            self.assertIsNotNone(manifest.paper_account_id)
+        finally:
+            os.environ.pop("IMP_PERSIST_STATE", None)
 
 
 class ForwardTestActivationRuntimeTests(unittest.TestCase):
