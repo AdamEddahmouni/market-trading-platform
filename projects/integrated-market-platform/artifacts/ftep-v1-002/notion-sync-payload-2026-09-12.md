@@ -2,7 +2,7 @@
 
 ## Summary
 
-**FTEP-V1-002** (`US-equity-news-catalyst`) is **FROZEN** on $0 incremental stack (Moomoo US equity L1 + Finviz Elite news). Owner authorized **Phase 1 SIGNAL_ONLY** (`signal-only-authorization-receipt-2026-09-12.json`); first session deferred — **US_EQUITY_RTH closed** (2026-09-12 weekend). Branch `work/ftep-v1-002-us-equity-news` @ **`4f6f05e`** (pushed); PR **#29**. With `IMP_PERSIST_STATE=1`, `campaign-readiness FTEP-V1-002` → **READY**. **FTEP-V1-001** unchanged / blocked on ES entitlement.
+**FTEP-V1-002** (`US-equity-news-catalyst`) is **FROZEN** on $0 incremental stack (Moomoo US equity L1 + Finviz Elite news). Owner authorized **Phase 1 SIGNAL_ONLY** (`signal-only-authorization-receipt-2026-09-12.json`); first empirical session **not started** — **US_EQUITY_RTH closed** (2026-09-12 weekend; `campaign-status` → `us_equity_rth_open=false`). Branch `work/ftep-v1-002-us-equity-news` @ **`22d3741`** (synced); PR **#29** CI green. With `IMP_PERSIST_STATE=1`, `integrity-check FTEP-V1-002` → **PASS**; `campaign-readiness` → **READY**; dual-arm `session-start` wiring landed @ `22d3741` (await RTH). Stack **#24** conflict cleared @ `ee94af67`. **FTEP-V1-001** fingerprint unchanged / blocked on ES entitlement.
 
 ## Owner decisions (closed for V1-002 freeze)
 

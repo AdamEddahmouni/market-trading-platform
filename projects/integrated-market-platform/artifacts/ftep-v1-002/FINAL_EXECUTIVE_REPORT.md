@@ -13,10 +13,10 @@ Owner explicitly authorized Phase 1 **SIGNAL_ONLY** only (receipt: `signal-only-
 | Item | Value |
 | --- | --- |
 | Starting SHA | `099388f7f23e31e3d01107ceeba9c8822903848c` |
-| Final SHA | `a754f5e` _(full: run `git rev-parse HEAD` on branch)_ |
+| Final SHA | `22d3741` (`work/ftep-v1-002-us-equity-news`, synced with origin) |
 | Base | `work/ftep-v1-002-us-equity-news` @ `099388f` (same as `work/ftep-v1-activation`) |
-| PR #22–#29 | #22 green; #23 green; #24–#28 show intermittent `validate-docs` / `validate-python-changed` on stack bases; **#29** (`work/ftep-v1-002-us-equity-news`) had `validate-docs` fail on broken WORK_LOG link — fixed @ `ddded1b` — **not merged** (owner merge auth only) |
-| V1-002 PR | Created/updated from `work/ftep-v1-002-us-equity-news` after commit push |
+| PR #22–#29 | **Wave 13:** #22–#23, #25–#29 MERGEABLE/CLEAN; **#24** rebased onto #23 @ `6a15372` → `ee94af67` (was CONFLICTING @ `e7dcdad`) — **not merged** (owner merge auth only) |
+| V1-002 PR | **#29** @ `22d3741` — CI green; dual cohort-arm session persistence |
 | Merges performed | **0** |
 | Worktree | Primary repo `C:/Users/adame/Desktop/market-trading-platform`; branch `work/ftep-v1-002-us-equity-news` |
 | Tree state | Intentional FTEP-V1-002 delta staged; local perf artifact drift (`g8-runtime-performance.json`, `p3-plan-cli-check.json`) excluded from commits |

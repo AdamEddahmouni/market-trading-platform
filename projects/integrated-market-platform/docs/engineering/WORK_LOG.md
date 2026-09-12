@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — FTEP-V1-002 wave 13 stack #24 + RTH gate
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `docs`, merge stack |
+| **Summary** | Rebased `split/wave-b-calibration` onto PR #23 (`6a15372`), vendored missing activation-core bridge/schema pieces for `validate-python-changed`, pushed `eb52824`. Verified FTEP-V1-002 @ `22d3741`: PR #29 CI green, `integrity-check` PASS, RTH closed — no governed `session-start` (document-only). |
+| **Key files** | `artifacts/ftep-v1-split/MERGE_STACK.md`, `artifacts/ftep-v1-002/FINAL_EXECUTIVE_REPORT.md`, `artifacts/ftep-v1-002/notion-sync-payload-2026-09-12.md` |
+| **Tests** | Local `validate changed` on #24 path list — 2977 passed; `ftep integrity-check FTEP-V1-002` → PASS |
+| **Related** | PR #24, PR #29; wave 12 dual-arm binding |
+| **Notes** | `session_ids`: none; `empirical_lock_count`: 0; no merge to `main` |
+
 ## 2026-09-12 — FTEP-V1-002 wave 12 dual-arm campaign binding
 
 | Field | Value |

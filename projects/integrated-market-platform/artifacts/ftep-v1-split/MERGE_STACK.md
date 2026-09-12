@@ -2,6 +2,8 @@
 
 Supersedes monolithic draft PR **#19** (`work/ftep-v1-activation`). Pathway **B**, empirical locks, SIGNAL_ONLY sessions, and Live remain **out of scope** for this stack.
 
+**Stack status (2026-09-12 wave 13):** PR **#24** rebased onto **#23** head `6a15372` → `split/wave-b-calibration` @ `eb52824` (was CONFLICTING @ `e7dcdad`; mergeable after activation-core vendoring + `validate-python-changed` fix). PRs **#22–#23, #25–#29** MERGEABLE/CLEAN on last poll; **#29** = FTEP-V1-002 @ `22d3741`.
+
 ## Merge order (strict)
 
 | Step | PR | Branch | Base branch |
