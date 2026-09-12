@@ -262,3 +262,22 @@ Merge canonical FTEP infrastructure PR stack **#22–#28** into integration base
 | **Safety** | Paper orders=0, Live orders=0, manifest mutations=0 |
 | **FTEP-V1-001 fingerprint** | `69C36BA23813C009C27EE83924834D46F5804D0A0FA037E37ADB133F8BFEA99C` (unchanged) |
 | **Goal complete?** | **No** — first RTH governed `session-start` + `governed-session-start-evidence.jsonl` still required |
+
+# Section 42 orchestrator handoff (2026-09-12 wave 18)
+
+| Field | Value |
+| --- | --- |
+| **Classification** | `SIGNAL_ONLY_AUTHORIZED_MARKET_CLOSED` |
+| **Campaign** | `FTEP-V1-002` |
+| **Branch / SHA** | `work/ftep-v1-002-us-equity-news` @ post–wave-18 commit |
+| **PR #29 CI** | IMP Validation + Monorepo Guardrails **success** (9/9 checks @ `e35ab053`) |
+| **US_EQUITY_RTH** | `us_equity_rth_open=false` (2026-09-12 weekend) |
+| **IMP_PERSIST_STATE=1** | `integrity-check` **PASS**; `campaign-readiness` **READY**; governed sessions **0**, locks **0** |
+| **Provider health** | `provider-health-receipt-2026-09-12.json` — `providers audit/campaign-readiness --probe-local`; Moomoo live loopback not connected in shell; SDK probe skipped (no orders) |
+| **Operator bootstrap** | `scripts/ftep-rth-session-bootstrap.ps1` (-ClosedMarketSmokeOnly for weekend fixture path) |
+| **Campaign progress (§30 gap)** | `campaign-status` + `campaign-progress.template.json` **sufficient**; no extra markdown generator |
+| **Governed session-start** | **Not run** (RTH closed) |
+| **session_ids** | *(none)* |
+| **Safety** | Paper orders=0, Live orders=0, manifest mutations=0 |
+| **FTEP-V1-001 fingerprint** | `69C36BA23813C009C27EE83924834D46F5804D0A0FA037E37ADB133F8BFEA99C` (unchanged) |
+| **Goal complete?** | **No** — first RTH governed `session-start` + `governed-session-start-evidence.jsonl` still required |

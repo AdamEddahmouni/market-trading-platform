@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — FTEP-V1-002 wave 18 RTH bootstrap + provider health
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `scripts`, `artifacts/ftep-v1-002`, `docs` |
+| **Summary** | Wave 18 closed-market work: recorded read-only provider health receipt (IMP providers probes + integrity PASS), added `scripts/ftep-rth-session-bootstrap.ps1` consolidating launch prep gates/dry-run/owner-confirmed session-start/watch-catalysts. PR #29 CI green @ `e35ab053`. Campaign progress §30 gap scan: `campaign-status` export + template sufficient. |
+| **Key files** | `scripts/ftep-rth-session-bootstrap.ps1`, `artifacts/ftep-v1-002/provider-health-receipt-2026-09-12.json`, `SIGNAL_ONLY_LAUNCH_PREP.md`, `FINAL_EXECUTIVE_REPORT.md` |
+| **Tests** | `imp.py ftep campaign-status/integrity-check/providers campaign-readiness+audit --probe-local` (manual); PR #29 checks 9/9 pass |
+| **Related** | FTEP-V1-002 goal wave 18; PR **#29** |
+| **Notes** | Goal not complete until first RTH governed session + evidence jsonl; no stack merges |
+
 ## 2026-09-12 — FTEP-V1-002 wave 17 watch-catalysts + merge stack
 
 | Field | Value |

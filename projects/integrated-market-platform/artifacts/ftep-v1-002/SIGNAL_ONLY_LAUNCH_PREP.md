@@ -14,6 +14,20 @@
 | Calendar | `US_EQUITY_RTH` open (Mon–Fri 09:30–16:00 America/New_York) |
 | Execution / Live | **NOT** authorized |
 
+## Executable bootstrap (wave 18)
+
+From `projects/integrated-market-platform`, prefer the consolidated operator script (no fabricated data):
+
+```powershell
+Set-Location "C:\Users\adame\Desktop\market-trading-platform\projects\integrated-market-platform"
+# Weekend / RTH closed — fixture catalyst smoke only:
+.\scripts\ftep-rth-session-bootstrap.ps1 -ClosedMarketSmokeOnly
+# US_EQUITY_RTH open — gates, dry-run, owner-confirmed live session-start, watch-catalysts:
+.\scripts\ftep-rth-session-bootstrap.ps1
+```
+
+Closed-market provider receipts: `artifacts/ftep-v1-002/provider-health-receipt-2026-09-12.json`.
+
 ## Operator commands (first RTH session)
 
 From `projects/integrated-market-platform`:

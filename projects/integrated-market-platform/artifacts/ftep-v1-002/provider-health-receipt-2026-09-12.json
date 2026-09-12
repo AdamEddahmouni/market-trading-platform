@@ -1,0 +1,80 @@
+{
+  "artifact_kind": "ftep_provider_health_receipt",
+  "schema_version": "1.0.0",
+  "campaign_slug": "FTEP-V1-002",
+  "observed_at": "2026-09-12T21:47:01Z",
+  "repository_branch": "work/ftep-v1-002-us-equity-news",
+  "repository_source_sha": "e35ab053e5cab90e473a874428a317dd98b23927",
+  "classification": "SIGNAL_ONLY_AUTHORIZED_MARKET_CLOSED",
+  "us_equity_rth_open": false,
+  "calendar_note": "Saturday 2026-09-12 — no governed session-start; read-only probes only",
+  "target_symbols": {
+    "campaign_universe": ["AAPL", "MSFT", "NVDA", "AMZN", "META"],
+    "benchmark_context_only": ["SPY"]
+  },
+  "probes": [
+    {
+      "command": "python tools/imp.py ftep campaign-status FTEP-V1-002 --json",
+      "observed_at": "2026-09-12T21:46:50Z",
+      "disposition": "OK",
+      "highlights": {
+        "campaign_readiness_disposition": "READY",
+        "governed_session_count": 0,
+        "empirical_lock_count": 0,
+        "manifest_status": "FROZEN"
+      }
+    },
+    {
+      "command": "python tools/imp.py providers campaign-readiness FTEP-V1-002 --json --probe-local",
+      "observed_at": "2026-09-12T21:47:00Z",
+      "disposition": "READY",
+      "moomoo_capability": "US_EQUITY_L1",
+      "moomoo_prospective_evidence": "SAMPLE_VERIFIED",
+      "coverage_gap_disposition": "SATISFIED"
+    },
+    {
+      "command": "python tools/imp.py providers audit --json --probe-local",
+      "observed_at": "2026-09-12T21:47:01Z",
+      "disposition": "OK",
+      "providers": {
+        "MOOMOO": {
+          "access_state": "SAMPLE_VERIFIED",
+          "live_connectivity_at_probe": "NOT_CONNECTED",
+          "loopback_note": "127.0.0.1:11111 unreachable in audit shell; historical entitled L1 overlay retained",
+          "verification_evidence": [
+            "artifacts/ftep-v1-activation/provider-probe-moomoo-capability-2026-09-12.json"
+          ]
+        },
+        "FINVIZ_ELITE": {
+          "access_state": "SAMPLE_VERIFIED",
+          "live_connectivity_at_probe": "NOT_CONNECTED",
+          "notes": "CONTEXT_ONLY; stale export satisfies matrix for SIGNAL_ONLY"
+        }
+      }
+    },
+    {
+      "command": "python tools/moomoo/probe.py",
+      "observed_at": "2026-09-12T21:47:15Z",
+      "disposition": "SKIPPED",
+      "reason_code": "MOOMOO_SDK_UNAVAILABLE",
+      "detail": "ModuleNotFoundError: moomoo — use operator venv with futu/moomoo when OpenD is running; no trade APIs invoked"
+    },
+    {
+      "command": "python tools/imp.py ftep integrity-check FTEP-V1-002 --json",
+      "observed_at": "2026-09-12T21:48:30Z",
+      "disposition": "PASS",
+      "imp_persist_state": "1"
+    }
+  ],
+  "orders": {
+    "paper": 0,
+    "live": 0
+  },
+  "secrets_included": false,
+  "campaign_progress_artifact_gap_scan": {
+    "section_30_goal": "campaign progress export for orchestration",
+    "sufficient": true,
+    "mechanism": "`ftep campaign-status` writes gitignored campaign-progress.json; committed campaign-progress.template.json documents shape",
+    "markdown_generator_required": false
+  }
+}
