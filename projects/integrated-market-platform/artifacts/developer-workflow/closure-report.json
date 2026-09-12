@@ -35,16 +35,19 @@
     "other"
   ],
   "changed_files": [
-    "artifacts/ftep-v1-activation/activation-freeze-receipt-2026-09-12.json",
-    "artifacts/ftep-v1-activation/activation-preflight-receipt-2026-09-12.json",
-    "projects/integrated-market-platform/artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
-    "projects/integrated-market-platform/artifacts/ftep-v1-activation/paper-account-choice-table.json",
-    "projects/integrated-market-platform/artifacts/ftep-v1-activation/proposed-manifest-field-sources.json",
+    "artifacts/ftep-v1-activation/provider-probe-moomoo-capability-2026-09-12.json",
+    "artifacts/ftep-v1-activation/provider-probe-moomoo-capability-2026-09-12.summary.txt",
+    "artifacts/ftep-v1-activation/provider-probe-moomoo-summary-2026-09-12.json",
+    "projects/integrated-market-platform/artifacts/developer-workflow/closure-report.json",
     "projects/integrated-market-platform/artifacts/ftep-v1-activation/provider-probe-moomoo-2026-09-12.json",
-    "projects/integrated-market-platform/artifacts/wave-a-findings/ftep-campaign-audit.json",
-    "projects/integrated-market-platform/docs/engineering/FORWARD_VALIDATION_READINESS_CHECKLIST.md",
+    "projects/integrated-market-platform/artifacts/g13-runtime-performance.json",
+    "projects/integrated-market-platform/artifacts/g14-runtime-performance.json",
+    "projects/integrated-market-platform/artifacts/g8-runtime-performance.json",
+    "projects/integrated-market-platform/artifacts/wave-a-findings/news-data-inventory.json",
     "projects/integrated-market-platform/docs/engineering/WORK_LOG.md",
-    "projects/integrated-market-platform/tests/intelligence/test_forward_test_activation.py",
+    "projects/integrated-market-platform/src/market_platform_foundation/providers/capability_snapshot.py",
+    "projects/integrated-market-platform/src/market_platform_foundation/providers/coverage_gap_engine.py",
+    "projects/integrated-market-platform/src/market_platform_foundation/ui_api/projections.py",
     "projects/integrated-market-platform/tests/providers/test_coverage_gap_engine.py"
   ],
   "documentation_changes": [],
@@ -82,13 +85,13 @@
       "root": "C:\\Users\\adame\\Desktop\\market-trading-platform"
     }
   },
-  "generated_at": "2026-09-12T05:55:47.952294+00:00",
+  "generated_at": "2026-09-12T06:32:25.945047+00:00",
   "report_type": "imp_closure",
   "repository_root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform",
   "risk": {
     "live_execution_authorized": false,
     "paper_authority_changed": false,
-    "status": "blocked_by_validation"
+    "status": "review_required"
   },
   "schema_version": "1.0",
   "telemetry": {
@@ -99,23 +102,23 @@
       "ci_wall_seconds": 0,
       "command_counts": {
         "closure docs": 1,
-        "closure format": 5,
+        "closure format": 7,
         "closure ui build": 1,
         "closure ui test": 1,
         "closure ui typecheck": 1,
         "format": 1,
         "lint python": 1,
-        "providers campaign-readiness": 7,
-        "test focused": 74,
-        "validate changed": 76,
-        "validate domain": 26,
+        "providers campaign-readiness": 10,
+        "test focused": 76,
+        "validate changed": 78,
+        "validate domain": 27,
         "validate e2e": 6,
-        "validate fast": 68,
-        "validate full": 45
+        "validate fast": 69,
+        "validate full": 47
       },
-      "events": 313,
-      "redundant_command_events": 299,
-      "validation_wall_seconds": 54138.337495
+      "events": 326,
+      "redundant_command_events": 312,
+      "validation_wall_seconds": 54797.634992
     }
   },
   "validation": {
@@ -128,12 +131,12 @@
       "command": "closure format",
       "exit_code": 0,
       "status": "passed",
-      "wall_seconds": 0.075693
+      "wall_seconds": 0.0774
     },
     "full": {
       "core_checkpoint_required": false,
       "errors": 0,
-      "failures": 2,
+      "failures": 0,
       "mode": "full",
       "selected_suites": [
         "postroot",
@@ -200,9 +203,9 @@
         "trading_correctness"
       ],
       "skips": 49,
-      "status": "failed",
+      "status": "passed",
       "tests_run": 4618,
-      "wall_seconds": 244.2324903999979
+      "wall_seconds": 187.42357259997516
     }
   }
 }

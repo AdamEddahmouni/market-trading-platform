@@ -236,6 +236,94 @@ def _broker_record(
     )
 
 
+def _latest_ftep_moomoo_probe_path(root: Path) -> Path | None:
+    probe_dir = root / "artifacts/ftep-v1-activation"
+    if not probe_dir.is_dir():
+        return None
+    candidates = sorted(
+        probe_dir.glob("provider-probe-moomoo-capability-*.json"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    return candidates[0] if candidates else None
+
+
+def _access_from_probe_capability(row: Mapping[str, Any]) -> CapabilityAccessState:
+    if row.get("verified_receiving"):
+        return CapabilityAccessState.SAMPLE_VERIFIED
+    if row.get("account_entitled") or row.get("entitled"):
+        return CapabilityAccessState.ENTITLED
+    if row.get("runtime_tested"):
+        return CapabilityAccessState.CONFIGURED
+    return CapabilityAccessState.CATALOGED
+
+
+def _apply_ftep_moomoo_probe_overlay(
+    providers: list[ProviderCapabilityRecord],
+    *,
+    repository_root: Path,
+    sources: list[dict[str, str]],
+) -> list[ProviderCapabilityRecord]:
+    probe_path = _latest_ftep_moomoo_probe_path(repository_root)
+    if probe_path is None:
+        return providers
+    payload = _load_json(probe_path)
+    capabilities = payload.get("capabilities")
+    if not isinstance(capabilities, dict):
+        return providers
+
+    rel = str(probe_path.relative_to(repository_root)).replace("\\", "/")
+    sources.append({"path": rel, "role": "ftep_moomoo_probe_overlay"})
+
+    updated: list[ProviderCapabilityRecord] = []
+    for record in providers:
+        if record.provider_id != "MOOMOO":
+            updated.append(record)
+            continue
+        cap_rows: list[ProviderCapabilityEntry] = []
+        for entry in record.capabilities:
+            probe_row = capabilities.get(entry.capability_id)
+            if not isinstance(probe_row, dict):
+                cap_rows.append(entry)
+                continue
+            support = (
+                CapabilitySupportLevel.KNOWN_UNSUPPORTED
+                if probe_row.get("provider_supports") is False
+                else CapabilitySupportLevel.KNOWN_SUPPORTED
+            )
+            if probe_row.get("entitled") is False and probe_row.get("runtime_tested"):
+                support = CapabilitySupportLevel.KNOWN_SUPPORTED
+            cap_rows.append(
+                ProviderCapabilityEntry(
+                    entry.capability_id,
+                    support,
+                    access_state=_access_from_probe_capability(probe_row),
+                    notes=str(probe_row.get("reason_code") or probe_row.get("notes") or "")[:200],
+                )
+            )
+        provider_access = max(
+            (row.access_state or CapabilityAccessState.CATALOGED for row in cap_rows),
+            key=lambda state: list(CapabilityAccessState).index(state),
+            default=CapabilityAccessState.CATALOGED,
+        )
+        updated.append(
+            ProviderCapabilityRecord(
+                provider_id=record.provider_id,
+                display_name=record.display_name,
+                access_state=provider_access,
+                campaign_role=record.campaign_role,
+                support_level=record.support_level,
+                capability_contract_id=record.capability_contract_id,
+                observed_at=str(payload.get("probe_timestamp") or payload.get("tested_at") or ""),
+                dimensions=record.dimensions,
+                capabilities=tuple(cap_rows),
+                verification_evidence=(rel,),
+                notes="Overlay from dated FTEP operator probe receipt.",
+            )
+        )
+    return updated
+
+
 def build_capability_matrix_snapshot(
     *,
     repository_root: Path,
@@ -295,6 +383,12 @@ def build_capability_matrix_snapshot(
                     "role": "provider_catalog",
                 }
             )
+
+    providers = _apply_ftep_moomoo_probe_overlay(
+        providers,
+        repository_root=root,
+        sources=sources,
+    )
 
     providers.sort(key=lambda row: row.provider_id)
     snapshot = CapabilityMatrixSnapshot(

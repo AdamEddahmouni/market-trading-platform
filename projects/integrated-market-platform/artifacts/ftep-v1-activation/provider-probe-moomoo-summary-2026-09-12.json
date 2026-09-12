@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "provider_probe_summary",
+  "provider_id": "MOOMOO",
+  "observed_at": "2026-09-12T06:10:12Z",
+  "secrets_included": false,
+  "connectivity": {
+    "opend_running": true,
+    "loopback_11111": "REACHABLE",
+    "quote_context": "PASS",
+    "sdk_version": "10.10.7008"
+  },
+  "entitlement": {
+    "US_FUTURES_QUOTE": {
+      "connected": true,
+      "entitled": false,
+      "reason_code": "ACCOUNT_NOT_ENTITLED_OR_NO_LISTING",
+      "notes": "Insufficient quote permission; Quote Store purchase required for CME ES."
+    },
+    "US_EQUITY_L1": {
+      "connected": true,
+      "entitled": true,
+      "verified_receiving": true
+    }
+  },
+  "campaign_suitability": {
+    "ES_PROSPECTIVE_MARKET_EVIDENCE": "NOT_ENTITLED",
+    "disposition": "NEEDS_EXTERNAL_ENTITLEMENT_AUTHORIZATION"
+  },
+  "evidence_artifacts": [
+    "artifacts/ftep-v1-activation/provider-probe-moomoo-2026-09-12.json",
+    "artifacts/ftep-v1-activation/provider-probe-moomoo-capability-2026-09-12.json"
+  ]
+}
