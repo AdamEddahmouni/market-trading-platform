@@ -554,6 +554,7 @@
         "tools/provider_readiness.py",
         "tools/ftep_campaign_status.py",
         "tools/ftep_integrity_check.py",
+        "tools/ftep_record_prospective_lock.py",
         "tools/ftep_session_start.py",
         "tools/ftep_watch_catalysts.py",
         "tools/opportunity_summaries.py",
