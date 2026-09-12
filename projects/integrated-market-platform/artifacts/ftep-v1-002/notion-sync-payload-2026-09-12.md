@@ -2,7 +2,7 @@
 
 ## Summary
 
-**FTEP-V1-002** (`US-equity-news-catalyst`) is **FROZEN** on $0 incremental stack (Moomoo US equity L1 + Finviz Elite news). Owner authorized **Phase 1 SIGNAL_ONLY** (`signal-only-authorization-receipt-2026-09-12.json`); first empirical session **not started** — **US_EQUITY_RTH closed** (2026-09-12 weekend; `campaign-status` → `us_equity_rth_open=false`). Branch `work/ftep-v1-002-us-equity-news` @ **`22d3741`** (synced); PR **#29** CI green. With `IMP_PERSIST_STATE=1`, `integrity-check FTEP-V1-002` → **PASS**; `campaign-readiness` → **READY**; dual-arm `session-start` wiring landed @ `22d3741` (await RTH). Stack **#24** conflict cleared @ `ee94af67`. **FTEP-V1-001** fingerprint unchanged / blocked on ES entitlement.
+**FTEP-V1-002** (`US-equity-news-catalyst`) is **FROZEN** on $0 incremental stack (Moomoo US equity L1 + Finviz Elite news). Owner authorized **Phase 1 SIGNAL_ONLY** (`signal-only-authorization-receipt-2026-09-12.json`); first empirical session **not started** — **US_EQUITY_RTH closed** (2026-09-12 weekend; `campaign-status` → `us_equity_rth_open=false`). Branch `work/ftep-v1-002-us-equity-news` @ **`2089a634`**; PR **#29** CI green (wave 14). With `IMP_PERSIST_STATE=1`, `integrity-check` → **PASS**; `campaign-readiness` → **READY**; governed dual-arm `session-start` awaits RTH. Stack **#24** @ `64c03de3`; **#25** merge CONFLICTING until rebase onto calibration head (deferred). Launch prep adds operator catalyst collector steps (no `ForwardTestService` auto-listener). **FTEP-V1-001** fingerprint unchanged.
 
 ## Owner decisions (closed for V1-002 freeze)
 

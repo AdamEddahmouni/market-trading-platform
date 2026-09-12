@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — FTEP-V1-002 wave 14 verify + empirical prep
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `docs`, merge stack |
+| **Summary** | Wave 14 verification @ `2089a634`: PR #29 CI green; `IMP_PERSIST_STATE=1` integrity-check PASS, campaign-readiness READY, RTH closed — no governed session-start. Documented operator catalyst attention collector in launch prep; gitignored volatile `campaign-progress.json` with committed template. MERGE_STACK wave 14 notes (#25 CONFLICTING vs #24 `64c03de3`, no rebase). |
+| **Key files** | `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md`, `campaign-progress.template.json`, `.gitignore`, `artifacts/ftep-v1-split/MERGE_STACK.md`, `artifacts/ftep-v1-002/FINAL_EXECUTIVE_REPORT.md` |
+| **Tests** | `imp.py ftep integrity-check/campaign-status/session-start --dry-run` (manual); PR #29 checks green |
+| **Related** | PR **#29**, FTEP-V1-002 goal wave 14 |
+| **Notes** | Goal not complete until first RTH governed session + evidence jsonl |
+
 ## 2026-09-12 — FTEP-V1-002 wave 13 stack #24 + RTH gate
 
 | Field | Value |

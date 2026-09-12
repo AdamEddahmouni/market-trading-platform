@@ -1,7 +1,7 @@
 {
   "artifact_kind": "ftep_campaign_status",
   "authorization_receipt_paths": [
-    "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\artifacts\\ftep-v1-002\\signal-only-authorization-receipt-2026-09-12.json"
+    "artifacts/ftep-v1-002/signal-only-authorization-receipt-2026-09-12.json"
   ],
   "calendar_scope": "US_EQUITY_RTH",
   "campaign_readiness_blockers": [],
@@ -13,8 +13,8 @@
   "manifest_error": null,
   "manifest_fingerprint": "F7083180990BC59578CA045E1E1318A356421BBC9B81EE514C14130CB0B356B1",
   "manifest_status": "FROZEN",
-  "notes": "Lock and session counts are zero until first governed SIGNAL_ONLY session appends durable forward-test state (no prospective fabrication).",
-  "observed_at_ns": 1789241091696265700,
+  "notes": "Committed shape reference only. Operator export: `python tools/imp.py ftep campaign-status FTEP-V1-002 --json` writes campaign-progress.json (gitignored).",
+  "observed_at_ns": 0,
   "schema_version": "1.0.0",
   "secrets_included": false,
   "signal_only_authorization_receipt_count": 1,

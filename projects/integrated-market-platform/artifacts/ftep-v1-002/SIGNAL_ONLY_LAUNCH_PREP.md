@@ -76,6 +76,33 @@ If any step fails, stop — do not partially create sessions or mutate manifests
 
 Session creation uses governed Paper forward-test API / `ForwardTestService.create_session` with full campaign identity (`campaign_id`, `manifest_fingerprint`, cohort arms). **SIGNAL_ONLY** — no Paper order preview/submit.
 
+Governed session creation (RTH open only; appends `governed-session-start-evidence.jsonl`):
+
+```powershell
+$env:IMP_PERSIST_STATE = "1"
+python tools/imp.py ftep session-start FTEP-V1-002 --json
+```
+
+Expect two `sessions_created` entries (`BASELINE`, `AI_ENHANCED`), zero `session_errors`, and a non-empty `evidence_paths` list. Re-run `campaign-status` afterward — `governed_session_count` must match durable SQLite (still **zero orders**).
+
+## Empirical catalyst attention pipeline (operator)
+
+`ForwardTestService` does **not** spawn a post-session or background catalyst listener. Intelligence for FTEP-V1-002 remains `RECORDED_ARTIFACTS_ONLY` at the session-policy layer; observational live news ingress (`IMP_OBSERVATIONAL_NEWS_INGRESS=1`) is scaffolding only and is **not** auto-wired into forward-test `observe` paths ([PAPER_FORWARD_TESTING_BRIDGE.md](../../docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md)).
+
+During an **active governed SIGNAL_ONLY session** (after both cohort `create_session` calls succeed, US_EQUITY_RTH open):
+
+1. Keep persistence on (`IMP_PERSIST_STATE=1`).
+2. Refresh headline context (owner credentials; no secrets in logs): `python tools/finviz/probe.py` — append probe receipt paths to the wave operator log.
+3. Run the **event-driven attention collector dry path** on fixture or exported rows (does not create locks or orders):
+   ```powershell
+   python tools/imp.py ftep opportunity-summaries --json
+   # or campaign fixture:
+   python tools/imp.py ftep opportunity-summaries --input artifacts/forward-test-campaigns/FTEP-V1-002/opportunity-attention-fixture.json --json
+   ```
+4. Correlate ranked summaries with open `session_id`s from `governed-session-start-evidence.jsonl` in the operator log. Do **not** call `create_decision` / lock APIs unless a separate owner authorization increment explicitly enables empirical locks (`empirical_lock_authorized` remains false in the frozen manifest).
+
+When **US_EQUITY_RTH is closed** (weekends, holidays, outside 09:30–16:00 America/New_York), run **fixture smoke only** — steps 2–3 with `--input` fixture or `--sample`; skip live Finviz probe and skip `session-start` without `--dry-run`.
+
 ## Safety
 
 - Paper orders: **0**

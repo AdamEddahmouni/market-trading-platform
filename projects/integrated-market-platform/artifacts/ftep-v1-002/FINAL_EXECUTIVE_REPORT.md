@@ -211,3 +211,19 @@ Merge canonical FTEP infrastructure PR stack **#22–#28** into integration base
 | **Parallel deliverable** | `ftep session-start --dry-run` emits `forward_test_invoke_steps` (dual `ForwardTestService.create_session` plan) when all gates pass |
 | **FTEP-V1-001** | Unchanged |
 | **Goal complete?** | **No** — await RTH open for first governed SIGNAL_ONLY session; merge stack #22–#28 still open |
+
+# Section 39 orchestrator handoff (2026-09-12 wave 14)
+
+| Field | Value |
+| --- | --- |
+| **Classification** | `SIGNAL_ONLY_AUTHORIZED_MARKET_CLOSED` |
+| **Campaign** | `FTEP-V1-002` |
+| **Branch / SHA** | `work/ftep-v1-002-us-equity-news` @ `2089a634` |
+| **PR #29 CI** | IMP Validation + Monorepo Guardrails **success** (9/9 checks on tip poll) |
+| **PR stack (#22–#29)** | #22–#24, #26–#29 MERGEABLE CI green; **#25 CONFLICTING** (stale base vs #24 `64c03de3`) — no rebase this wave (CI not broken) |
+| **IMP_PERSIST_STATE=1** | `integrity-check` **PASS**; `campaign-readiness` **READY**; `campaign-status` → `us_equity_rth_open=false` |
+| **Governed session-start** | **Not run** (RTH closed); dry-run blocked by `US_EQUITY_RTH_CLOSED` only |
+| **Sessions / locks** | governed sessions **0**, empirical locks **0** |
+| **Empirical pipeline** | `SIGNAL_ONLY_LAUNCH_PREP.md` documents operator catalyst attention collector (no auto listener on `ForwardTestService`) |
+| **Tree hygiene** | `campaign-progress.json` gitignored; `campaign-progress.template.json` committed |
+| **Goal complete?** | **No** — first RTH `session-start` with `governed-session-start-evidence.jsonl` still required |
