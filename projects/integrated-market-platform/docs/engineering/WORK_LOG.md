@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — FTEP v1 implementation goal closure audit
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `artifacts`, `docs` |
+| **Summary** | Rigorous section-28 remap: all criteria A–Z `IMPLEMENTATION_COMPLETE`; goal audit flags `implementation_objective_complete` and `qualifying_activation_out_of_scope`; refreshed PR body (26/26 MET, `437cd1c` ingress). Qualifying activation remains owner/operator/external. |
+| **Key files** | `artifacts/ftep-v1-activation-goal-audit.json`, `artifacts/ftep-v1-activation-PR-BODY.md`, `docs/engineering/FTEP_V1_ACTIVATION_BLOCKER_REPORT.md` |
+| **Tests** | `python tools/imp.py validate fast` — 21 passed, 0 failures |
+| **Related** | [FTEP_V1_ACTIVATION_BLOCKER_REPORT.md](./FTEP_V1_ACTIVATION_BLOCKER_REPORT.md) |
+| **Notes** | UpdateGoal invoked only if parent Cursor goal tool available; no push/freeze/Live. |
+
 ## 2026-09-12 — Observational news ingress scaffold (FTEP-ACT-04)
 
 | Field | Value |

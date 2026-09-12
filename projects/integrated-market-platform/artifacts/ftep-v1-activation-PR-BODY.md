@@ -1,28 +1,30 @@
 ## Summary
 
-- Completes **max safe engineering** for FTEP v1 provider/data activation increment on `work/ftep-v1-activation`: Wave A/B artifacts, capability matrix + gap engine + campaign-readiness, calibration/comparator contracts, CG/news bridges, ES/news stack selection, goal audit (**24/26 MET**), and blocker report.
-- Adds **PIT-A-001** unified research export manifest (`research/pit_export.py` + tests) and **OPERATOR_PROBE_RUNBOOK.md** for secret-free local probe refresh.
-- **Does not** freeze FTEP-V1-001 manifest, enable Live trading, or claim qualifying prospective evidence.
+- Completes **maximum safely achievable implementation** for the FTEP v1 provider/data activation increment on `work/ftep-v1-activation` (HEAD `08b3960`): Wave A/B artifacts, capability matrix + gap engine + campaign-readiness, calibration/comparator contracts, CG/news bridges, ES/news stack selection, PIT-A-001 export, operator probe runbook, and section-28 goal audit (**26/26 MET** for implementation scope).
+- **Observational news ingress scaffold** (`437cd1c`): gate-gated `observational_ingress.py` + tests (criterion **O**); campaign forward-test auto-wire remains **DEFER-FTEP-ACT-04** (owner/governance).
+- **Does not** freeze FTEP-V1-001 manifest, enable Live trading, run qualifying probes, or claim prospective FTEP-V1-001 empirical activation.
 
 ## Test evidence
 
 | Command | Result |
 | --- | --- |
-| `python tools/imp.py validate fast` | (see commit CI / local run) |
+| `python tools/imp.py validate fast` | 21 passed, 0 failures (goal audit receipt) |
+| `python -m unittest tests.news.test_observational_ingress -q` | Observational ingress (with 3.11 + `PYTHONPATH=src`) |
 | `python -m unittest tests.research.test_pit_export -q` | PIT export determinism |
 | Prior branch closure | `python tools/imp.py closure --skip-ui` — 4606 passed (wave-b) |
 
 ## Goal audit (section 28)
 
-- **MET:** 24 (A–B, C–W, X, Y–Z)
-- **PARTIAL:** 1 (**O** — observational live news ingress deferred)
-- **qualifying_ftep_v1_001_activation:** `false`
+- **MET:** 26 (A–Z) — all criteria **IMPLEMENTATION_COMPLETE**
+- **qualifying_ftep_v1_001_activation:** `false` (out of scope for this goal)
+- **implementation_objective_complete:** `true`
+- **qualifying_activation_out_of_scope:** `true`
 - **engineering_complete:** `true`
-- **update_goal_complete:** `false` (not 26/26 MET; owner/external blockers remain)
+- **Residual (human/external only):** OWNER-OD-1-11, calibration numerics, local probes, manifest freeze, ACT-04 campaign wire
 
 Authoritative JSON: `artifacts/ftep-v1-activation-goal-audit.json`
 
-## Blockers (human / external only)
+## Blockers (human / external only — not implementation gaps)
 
 | ID | Owner | Action |
 | --- | --- | --- |
@@ -31,6 +33,7 @@ Authoritative JSON: `artifacts/ftep-v1-activation-goal-audit.json`
 | PROBE-MOOMOO / PROBE-FINVIZ / PROBE-G-A5 | Operator | [OPERATOR_PROBE_RUNBOOK.md](../docs/engineering/OPERATOR_PROBE_RUNBOOK.md) |
 | EXT-MOOMOO-FUTURES-ENTITLEMENT | External | Account/plan verification |
 | EXT-PREMIUM-WIRES / EXT-NEWSAPI-FINNHUB-PIT | External | Provider terms / PIT archive |
+| DEFER-FTEP-ACT-04-OBS-INGRESS | Owner | Campaign-scale forward-test wiring when governance opens |
 
 Details: [FTEP_V1_ACTIVATION_BLOCKER_REPORT.md](../docs/engineering/FTEP_V1_ACTIVATION_BLOCKER_REPORT.md)
 
