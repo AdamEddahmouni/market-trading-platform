@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "paper.calibration_thresholds",
+  "title": "PaperSimulatorCalibrationThresholds",
+  "type": "object",
+  "required": ["schema_version", "thresholds"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^paper/calibration_thresholds/1\\.0\\.0$"
+    },
+    "campaign_slug": { "type": "string", "minLength": 1 },
+    "preregistered_at": { "type": "string", "minLength": 1 },
+    "thresholds": {
+      "type": "object",
+      "required": [
+        "fill_no_fill_disagreement_rate_max",
+        "fill_price_slippage_error_max",
+        "timing_error_max_ns",
+        "position_pnl_reconciliation_tolerance",
+        "unexplained_divergence_rate_max"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "fill_no_fill_disagreement_rate_max": { "$ref": "#/$defs/threshold_field" },
+        "fill_price_slippage_error_max": { "$ref": "#/$defs/threshold_field" },
+        "timing_error_max_ns": { "$ref": "#/$defs/threshold_field" },
+        "position_pnl_reconciliation_tolerance": { "$ref": "#/$defs/threshold_field" },
+        "unexplained_divergence_rate_max": { "$ref": "#/$defs/threshold_field" }
+      }
+    }
+  },
+  "$defs": {
+    "threshold_field": {
+      "type": "object",
+      "required": ["status"],
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["SET", "UNSET/BLOCKING"]
+        },
+        "value": {
+          "type": ["number", "null"]
+        },
+        "unit": { "type": "string" },
+        "justification_ref": { "type": "string" }
+      }
+    }
+  }
+}

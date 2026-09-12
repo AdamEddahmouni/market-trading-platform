@@ -486,6 +486,7 @@
       "resource_weight": 2,
       "source_globs": [
         "src/market_platform_foundation/paper/**",
+        "manifests/paper/**",
         "src/market_platform_foundation/local_state/**",
         "src/market_platform_foundation/operating_modes.py",
         "src/market_platform_foundation/ui_api/paper_projections.py",
@@ -2265,6 +2266,8 @@
         "tests/intelligence/test_forward_test_persistence.py",
         "tests/intelligence/test_forward_test_activation.py",
         "tests/intelligence/test_forward_test_session_policy.py",
+        "tests/intelligence/test_forward_test_campaign_slug.py",
+        "tests/intelligence/test_recorded_eval_bridge.py",
         "tests/intelligence/forward_test_activation_support.py",
         "src/market_platform_foundation/intelligence/paper_forward_bridge/session_policy.py",
         "artifacts/forward-test-campaigns/**",

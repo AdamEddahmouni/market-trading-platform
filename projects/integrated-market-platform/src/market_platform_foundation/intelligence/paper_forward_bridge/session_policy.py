@@ -77,6 +77,17 @@ class SampleFloorDisposition:
     statistical_disposition_ready: bool
     blockers: tuple[str, ...]
 
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "activation_ready": self.activation_ready,
+            "statistical_disposition_ready": self.statistical_disposition_ready,
+            "blockers": list(self.blockers),
+        }
+
+
+def sample_floor_disposition_to_dict(disposition: SampleFloorDisposition) -> dict[str, Any]:
+    return disposition.to_dict()
+
 
 def calendar_scope_from_manifest(manifest: ActivationManifest) -> str | None:
     raw = manifest.raw.get("calendar_scope")

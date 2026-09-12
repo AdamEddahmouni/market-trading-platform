@@ -34,7 +34,7 @@
   "executes_tests": false,
   "execution_schedule": {
     "effective_workers": 2,
-    "manifest_hash": "1bbfd3eb3d30f3ab39cc43b0f0e76eee30268d0f3616c927ae1eb68fdae39805",
+    "manifest_hash": "6d250d927bc4674aed0385892ed5d8444c660b90cbb522a3b370b46fa0da8ae1",
     "requested_workers": 2,
     "scheduler_version": "p2-bl-0901-1",
     "suite_policies": {
@@ -93,8 +93,8 @@
     "tests/market_data/test_live_runtime.py::LiveRuntimeTests::test_quota_exhaustion"
   ],
   "mandatory_suites": [],
-  "manifest_hash": "1bbfd3eb3d30f3ab39cc43b0f0e76eee30268d0f3616c927ae1eb68fdae39805",
-  "manifest_path": "C:\\Users\\adame\\Desktop\\market-trading-platform-perf-p7\\projects\\integrated-market-platform\\tools\\validation_manifest.json",
+  "manifest_hash": "6d250d927bc4674aed0385892ed5d8444c660b90cbb522a3b370b46fa0da8ae1",
+  "manifest_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\tools\\validation_manifest.json",
   "mode": "changed",
   "omitted_domains": [
     "short-intelligence",

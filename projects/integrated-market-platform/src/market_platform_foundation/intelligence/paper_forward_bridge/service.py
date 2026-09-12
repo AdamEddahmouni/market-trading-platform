@@ -16,8 +16,10 @@ from .activation import (
     ActivationManifestError,
     assert_manifest_session_eligible,
     cohort_arm_policy,
+    is_derived_campaign_id,
     load_activation_manifest,
     manifest_universe_symbols,
+    resolve_campaign_manifest_slug,
 )
 from .campaign_binding import CampaignBindingError, build_binding_from_activation
 from .evaluation import evaluate_forward_test, refresh_evaluability
@@ -27,7 +29,9 @@ from .paper_handoff import build_paper_preview_body, forward_test_correlation_id
 from .preflight import assert_forward_test_preflight_ready, run_forward_test_preflight
 from .repository import ForwardTestRepository
 from .session_policy import (
+    SampleFloorDisposition,
     SessionPolicyError,
+    assess_sample_floor_disposition,
     assert_cohort_arm_consistency,
     assert_decision_within_calendar,
     assert_evidence_class_fail_closed,
@@ -36,6 +40,7 @@ from .session_policy import (
     assert_no_concurrent_overlap,
     calendar_scope_from_manifest,
     evaluation_force_audit_metadata,
+    sample_floor_disposition_to_dict,
 )
 from .temporal import (
     assert_decision_payload_immutable,
@@ -110,10 +115,18 @@ def _policy_error(exc: SessionPolicyError) -> ForwardTestServiceError:
     return ForwardTestServiceError(str(exc))
 
 
+def _session_manifest_slug(session: ForwardTestSession) -> str | None:
+    return resolve_campaign_manifest_slug(
+        campaign_id=session.campaign_id,
+        config=session.config,
+    )
+
+
 def _load_session_manifest(session: ForwardTestSession) -> ActivationManifest | None:
-    if not session.campaign_id:
+    slug = _session_manifest_slug(session)
+    if not slug:
         return None
-    return load_activation_manifest(session.campaign_id)
+    return load_activation_manifest(slug)
 
 
 def _require_empirical_campaign(session: ForwardTestSession | None) -> None:
@@ -124,15 +137,30 @@ def _require_empirical_campaign(session: ForwardTestSession | None) -> None:
 def _campaign_provenance(session: ForwardTestSession) -> dict[str, Any]:
     if not session.manifest_fingerprint:
         return {}
+    slug = _session_manifest_slug(session)
+    campaign_id = session.campaign_id
+    if campaign_id and is_derived_campaign_id(campaign_id):
+        derived_id = campaign_id
+    elif session.manifest_fingerprint:
+        derived_id = f"FTCAMP-{session.manifest_fingerprint.lower()}"
+    else:
+        derived_id = None
     provenance: dict[str, Any] = {
-        "campaign_slug": session.campaign_id,
+        "campaign_slug": slug or session.campaign_id,
         "protocol_id": session.protocol_id,
         "manifest_fingerprint": session.manifest_fingerprint,
-        "campaign_id": f"FTCAMP-{session.manifest_fingerprint.lower()}",
+        "campaign_id": derived_id,
     }
     if session.cohort_arm is not None:
         provenance["cohort_arm"] = session.cohort_arm.value
     return provenance
+
+
+def _require_session_campaign_slug(session: ForwardTestSession) -> str:
+    slug = _session_manifest_slug(session)
+    if not slug:
+        raise ForwardTestServiceError("FORWARD_TEST_CAMPAIGN_SLUG_REQUIRED")
+    return slug
 
 
 def _campaign_required(*, api_path: bool = False) -> bool:
@@ -315,6 +343,10 @@ class ForwardTestService:
         elif evaluation_horizon_ns <= 0:
             raise ForwardTestServiceError("FORWARD_TEST_HORIZON_INVALID")
 
+        session_config = dict(config or {})
+        if campaign_binding:
+            session_config["campaign_slug"] = campaign_binding["campaign_slug"]
+
         session = ForwardTestSession(
             session_id=forward_test_session_id(
                 account_id=account_id,
@@ -336,7 +368,7 @@ class ForwardTestService:
             activation_version=campaign_binding.get("activation_version"),
             manifest_fingerprint=campaign_binding.get("manifest_fingerprint"),
             cohort_arm=campaign_binding.get("cohort_arm"),
-            config=dict(config or {}),
+            config=session_config,
         )
         if campaign_binding:
             manifest = campaign_binding["manifest"]
@@ -355,6 +387,31 @@ class ForwardTestService:
                 raise _binding_error(exc) from exc
         self._store.put_session(session)
         return session
+
+    def _refresh_sample_floor_disposition(
+        self,
+        *,
+        session: ForwardTestSession,
+        account_id: str,
+    ) -> SampleFloorDisposition | None:
+        manifest = _load_session_manifest(session)
+        if manifest is None:
+            return None
+        disposition = assess_sample_floor_disposition(
+            manifest=manifest,
+            decisions=self._store.list_decisions(
+                account_id=account_id,
+                session_id=session.session_id,
+            ),
+            session_ids=(session.session_id,),
+        )
+        updated_config = dict(session.config)
+        updated_config["sample_floor_disposition"] = sample_floor_disposition_to_dict(
+            disposition
+        )
+        if updated_config != session.config:
+            self._store.put_session(replace(session, config=updated_config))
+        return disposition
 
     def create_decision_from_strategy_evaluation(
         self,
@@ -627,7 +684,7 @@ class ForwardTestService:
             _require_empirical_campaign(session)
             if session.campaign_id:
                 self._assert_activation_eligible(
-                    campaign_slug=session.campaign_id,
+                    campaign_slug=_require_session_campaign_slug(session),
                     account_id=account_id,
                     mode=decision.mode,
                     cohort_arm=session.cohort_arm.value if session.cohort_arm else None,
@@ -688,9 +745,13 @@ class ForwardTestService:
         self._store.put_decision(locked)
         if bound_session is not None and bound_session.campaign_id:
             self._record_first_lock(session=bound_session, locked_at_ns=locked_at_ns)
-            if not bound_session.config_frozen:
-                frozen_session = replace(bound_session, config_frozen=True)
-                self._store.put_session(frozen_session)
+            self._refresh_sample_floor_disposition(
+                session=bound_session,
+                account_id=account_id,
+            )
+            refreshed = self._store.get_session(bound_session.session_id) or bound_session
+            if not refreshed.config_frozen:
+                self._store.put_session(replace(refreshed, config_frozen=True))
         return locked
 
     def submit_to_paper(
@@ -857,6 +918,12 @@ class ForwardTestService:
             self._store.release_evaluation_claim(forward_test_id)
             raise
         self._store.put_decision(evaluated)
+        if session is not None and session.campaign_id:
+            refreshed = self._store.get_session(session.session_id) or session
+            self._refresh_sample_floor_disposition(
+                session=refreshed,
+                account_id=account_id,
+            )
         return evaluated
 
     def get_decision(self, *, forward_test_id: str, account_id: str) -> ForwardTestDecision:
@@ -883,8 +950,10 @@ class ForwardTestService:
             ForwardTestState.PAPER_ACTIVE,
             ForwardTestState.OBSERVING,
         }
+        disposition = session.config.get("sample_floor_disposition")
         return {
             "session": session.to_dict(),
+            "sample_floor_disposition": disposition,
             "decision_count": len(decisions),
             "open_decisions": sum(1 for item in decisions if item.state in open_states),
             "evaluable_decisions": sum(
@@ -922,7 +991,7 @@ class ForwardTestService:
         _require_account_match(expected=session.account_id, actual=account_id)
         if session.campaign_id:
             self._assert_activation_eligible(
-                campaign_slug=session.campaign_id,
+                campaign_slug=_require_session_campaign_slug(session),
                 account_id=account_id,
                 mode=session.mode,
                 cohort_arm=session.cohort_arm.value if session.cohort_arm else None,

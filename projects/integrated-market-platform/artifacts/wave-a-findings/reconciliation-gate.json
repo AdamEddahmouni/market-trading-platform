@@ -6,7 +6,7 @@
   "purpose": "Parent synthesis for post-Wave-A implementation increment: requirement classification, minimum coherent build set, ES/news verdict, and worktree boundaries. Synthesis only — no code changes implied by this artifact.",
   "git": {
     "branch": "work/ftep-v1-activation",
-    "head_sha": "61a0593e56d37b0366e761b1ff3c8b88519250aa"
+    "head_sha": "373e47e"
   },
   "inputs": {
     "wave_a_lane_artifacts": [
@@ -349,8 +349,12 @@
         "items": ["IMP-DIAGNOSTICS", "IMP-GAP-ENGINE", "IMP-CAMPAIGN-READINESS-EVALUATOR"],
         "depends_on": ["PKG-CAPABILITY-FOUNDATION"],
         "worktree_boundary": "WT-GOVERNANCE",
+        "implementation_status": "COMPLETE",
+        "commit_sha": "373e47e",
         "primary_paths": [
           "tools/provider_readiness.py",
+          "src/market_platform_foundation/providers/coverage_gap_engine.py",
+          "src/market_platform_foundation/intelligence/paper_forward_bridge/campaign_readiness.py",
           "src/market_platform_foundation/ui_api/operator_projections.py",
           "src/market_platform_foundation/intelligence/paper_forward_bridge/preflight.py"
         ]
@@ -361,9 +365,11 @@
         "items": ["IMP-CALIBRATION-COMPARATOR-CONTRACTS"],
         "depends_on": ["PKG-CAPABILITY-FOUNDATION"],
         "worktree_boundary": "WT-GOVERNANCE",
+        "implementation_status": "COMPLETE",
         "primary_paths": [
           "docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md",
-          "manifests/"
+          "manifests/paper/schemas/calibration_thresholds.schema.json",
+          "src/market_platform_foundation/paper/calibration/"
         ]
       },
       {
@@ -372,10 +378,12 @@
         "items": ["IMP-CG-01", "IMP-CG-02"],
         "depends_on": [],
         "worktree_boundary": "WT-BRIDGE",
+        "implementation_status": "COMPLETE",
         "primary_paths": [
           "src/market_platform_foundation/intelligence/paper_forward_bridge/service.py",
           "src/market_platform_foundation/intelligence/paper_forward_bridge/session_policy.py",
-          "src/market_platform_foundation/intelligence/paper_forward_bridge/activation.py"
+          "src/market_platform_foundation/intelligence/paper_forward_bridge/activation.py",
+          "tests/intelligence/test_forward_test_campaign_slug.py"
         ]
       },
       {
@@ -384,11 +392,13 @@
         "items": ["IMP-NEWS-AGGREGATOR-BRIDGE", "IMP-RECORDED-EVAL-FORWARD-BRIDGE"],
         "depends_on": [],
         "worktree_boundary": "WT-NEWS",
+        "implementation_status": "COMPLETE",
         "primary_paths": [
-          "src/market_platform_foundation/news/aggregator.py",
+          "src/market_platform_foundation/news/aggregator_bridge.py",
           "src/market_platform_foundation/news/normalize.py",
-          "src/market_platform_foundation/intelligence/news_strategy_evaluation/",
-          "src/market_platform_foundation/intelligence/paper_forward_bridge/"
+          "src/market_platform_foundation/intelligence/paper_forward_bridge/recorded_eval_bridge.py",
+          "tests/news/test_aggregator_bridge.py",
+          "tests/intelligence/test_recorded_eval_bridge.py"
         ]
       }
     ],
@@ -442,13 +452,13 @@
       },
       {
         "layer": "aggregator_to_canonical_bridge",
-        "verdict": "MISSING",
-        "fact": "No in-repo adapter connects NewsAggregator dict output to NewsArticleEvent ingress"
+        "verdict": "CURRENTLY_SUFFICIENT",
+        "fact": "aggregator_bridge maps received_time to normalize_raw_item retrieved_time with provenance preservation (fixture-first)"
       },
       {
         "layer": "recorded_eval_to_forward_bridge",
-        "verdict": "MISSING",
-        "fact": "FTEP-ACT-06 and WAVE-A-010 document incomplete recorded eval wiring"
+        "verdict": "CURRENTLY_SUFFICIENT",
+        "fact": "recorded_eval_bridge provides RECORDED_ARTIFACTS_ONLY handoff params for create_decision_from_strategy_evaluation (FTEP-ACT-06 auto-bridge still deferred)"
       },
       {
         "layer": "observational_live_news_ingress",

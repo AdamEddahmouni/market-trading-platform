@@ -146,6 +146,28 @@ def derive_campaign_id(manifest: dict[str, Any]) -> str:
     return f"FTCAMP-{fingerprint.lower()}"
 
 
+def is_derived_campaign_id(value: str) -> bool:
+    return value.strip().upper().startswith("FTCAMP-")
+
+
+def resolve_campaign_manifest_slug(
+    *,
+    campaign_id: str | None,
+    campaign_slug: str | None = None,
+    config: dict[str, Any] | None = None,
+) -> str | None:
+    """Resolve filesystem campaign slug for manifest reload (CG-01)."""
+    if campaign_slug and str(campaign_slug).strip():
+        return str(campaign_slug).strip()
+    if config:
+        stored = config.get("campaign_slug")
+        if isinstance(stored, str) and stored.strip():
+            return stored.strip()
+    if campaign_id and not is_derived_campaign_id(campaign_id):
+        return str(campaign_id).strip()
+    return None
+
+
 def _split_policy_ref(ref: str) -> tuple[str, str]:
     if "@" in ref:
         policy_id, policy_version = ref.split("@", 1)

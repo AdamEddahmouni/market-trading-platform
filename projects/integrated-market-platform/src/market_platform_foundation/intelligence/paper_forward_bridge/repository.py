@@ -276,13 +276,21 @@ def decision_to_row(decision: ForwardTestDecision) -> dict[str, Any]:
     }
 
 
+def _session_config_without_disposition(config: dict) -> dict:
+    filtered = dict(config)
+    filtered.pop("sample_floor_disposition", None)
+    return filtered
+
+
 def assert_session_config_immutable(
     existing: ForwardTestSession,
     proposed: ForwardTestSession,
 ) -> None:
     if not existing.config_frozen:
         return
-    if existing.config != proposed.config:
+    if _session_config_without_disposition(existing.config) != _session_config_without_disposition(
+        proposed.config
+    ):
         raise ForwardTestRepositoryError("FORWARD_TEST_SESSION_CONFIG_FROZEN")
 
 
