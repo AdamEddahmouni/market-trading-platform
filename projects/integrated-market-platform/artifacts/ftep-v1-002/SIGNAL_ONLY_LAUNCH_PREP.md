@@ -21,9 +21,16 @@ From `projects/integrated-market-platform`:
 ```powershell
 $env:IMP_PERSIST_STATE = "1"
 python tools/imp.py providers campaign-readiness FTEP-V1-002 --json
+python tools/imp.py ftep integrity-check FTEP-V1-002 --json
 ```
 
-Expect `disposition`: `READY` and empty `blockers`.
+Expect `disposition`: `READY` and empty `blockers`. Integrity-check must report `disposition`: `PASS` (includes unchanged `FTEP-V1-001` fingerprint).
+
+Optional opportunity dry-run (fixture rows, not live data):
+
+```powershell
+python tools/imp.py ftep opportunity-summaries --sample --json
+```
 
 Optional Finviz refresh (no secrets in logs):
 

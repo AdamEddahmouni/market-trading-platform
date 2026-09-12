@@ -653,6 +653,17 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Optional JSON file with attention-candidate rows",
     )
+    integrity_check = ftep_actions.add_parser(
+        "integrity-check",
+        help="deterministic manifest and readiness integrity assertions",
+    )
+    integrity_check.add_argument(
+        "campaign_slug",
+        nargs="?",
+        default="FTEP-V1-002",
+        help="Forward-test campaign slug (default: FTEP-V1-002)",
+    )
+    integrity_check.add_argument("--json", action="store_true", help="Machine-readable JSON")
     return parser
 
 
@@ -701,6 +712,10 @@ def _ftep_command(root: Path, args: argparse.Namespace) -> int:
             command.append("--sample")
         if getattr(args, "input", None):
             command.extend(["--input", str(args.input)])
+        if getattr(args, "json", False):
+            command.append("--json")
+    elif args.action == "integrity-check":
+        command = [python, str(root / "tools" / "ftep_integrity_check.py"), args.campaign_slug]
         if getattr(args, "json", False):
             command.append("--json")
     else:
