@@ -177,7 +177,7 @@ Merge canonical FTEP infrastructure PR stack **#22–#28** into integration base
 | **Campaign** | `FTEP-V1-002` / US-equity-news-catalyst |
 | **Campaign ID** | `FTCAMP-f7083180990bc59578ca045e1e1318a356421bbc9b81ee514c14130cb0b356b1` |
 | **Fingerprint** | `F7083180990BC59578CA045E1E1318A356421BBC9B81EE514C14130CB0B356B1` |
-| **Git** | `work/ftep-v1-002-us-equity-news` @ `4f6f05e` (pushed) |
+| **Git** | `work/ftep-v1-002-us-equity-news` @ `4719c04` (pushed) |
 | **Authorization** | `artifacts/ftep-v1-002/signal-only-authorization-receipt-2026-09-12.json` |
 | **Machine readiness** | `artifacts/ftep-v1-002/machine-readiness-receipt-2026-09-12.json` |
 | **Launch prep** | `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md` |
