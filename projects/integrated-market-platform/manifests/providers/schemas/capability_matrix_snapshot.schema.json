@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "providers.capability_matrix_snapshot",
+  "title": "ProviderCapabilityMatrixSnapshot",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "logical_id",
+    "observed_at",
+    "secrets_included",
+    "sources",
+    "providers"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^1\\.0\\.0$"
+    },
+    "logical_id": {
+      "const": "providers.capability_matrix_snapshot"
+    },
+    "observed_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "secrets_included": {
+      "const": false
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "role"],
+        "properties": {
+          "path": { "type": "string" },
+          "role": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "providers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/provider_record" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "access_state": {
+      "type": "string",
+      "enum": [
+        "CATALOGED",
+        "CONFIGURED",
+        "ENTITLED",
+        "REACHABLE",
+        "SAMPLE_VERIFIED",
+        "ROLE_VALIDATED",
+        "CAMPAIGN_BOUND",
+        "PROMOTED",
+        "BLOCKED"
+      ]
+    },
+    "campaign_role": {
+      "type": "string",
+      "enum": [
+        "AUTHORITY",
+        "CHALLENGER",
+        "CONTEXT_ONLY",
+        "COMPARATOR_ONLY",
+        "PROHIBITED",
+        "UNASSIGNED"
+      ]
+    },
+    "support_level": {
+      "type": "string",
+      "enum": ["KNOWN_SUPPORTED", "KNOWN_UNSUPPORTED", "UNKNOWN"]
+    },
+    "dimension_state": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN",
+        "NOT_APPLICABLE",
+        "UNSUPPORTED",
+        "NOT_CONNECTED",
+        "STALE",
+        "VERIFIED",
+        "CATALOGED",
+        "BLOCKED"
+      ]
+    },
+    "capability_dimension": {
+      "type": "object",
+      "required": ["dimension", "state"],
+      "properties": {
+        "dimension": { "type": "string", "minLength": 1 },
+        "state": { "$ref": "#/$defs/dimension_state" },
+        "observed_at": { "type": ["string", "null"] },
+        "evidence_refs": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "provider_record": {
+      "type": "object",
+      "required": [
+        "provider_id",
+        "access_state",
+        "campaign_role",
+        "support_level",
+        "capabilities"
+      ],
+      "properties": {
+        "provider_id": { "type": "string", "minLength": 1 },
+        "display_name": { "type": "string" },
+        "access_state": { "$ref": "#/$defs/access_state" },
+        "campaign_role": { "$ref": "#/$defs/campaign_role" },
+        "support_level": { "$ref": "#/$defs/support_level" },
+        "capability_contract_id": { "type": ["string", "null"] },
+        "observed_at": { "type": ["string", "null"] },
+        "verification_evidence": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "dimensions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/capability_dimension" }
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["capability_id", "support_level"],
+            "properties": {
+              "capability_id": { "type": "string" },
+              "support_level": { "$ref": "#/$defs/support_level" },
+              "access_state": { "$ref": "#/$defs/access_state" },
+              "notes": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "notes": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

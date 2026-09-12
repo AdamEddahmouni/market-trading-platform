@@ -36,6 +36,54 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-11 — Wave B capability matrix foundation (PKG-CAPABILITY-FOUNDATION)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `manifests`, `tools`, `artifacts` |
+| **Summary** | Added versioned capability-contract types (access states CATALOGED→BLOCKED, campaign roles, dimension semantics, PROMOTED evidence gate) and a deterministic snapshot builder over Wave A inventory/audit JSON plus value-blind readiness rows. Reconciliation index already marks provider-inventory and ibkr-tradier-alpaca lanes PRESENT at canonical paths. |
+| **Key files** | `manifests/providers/schemas/capability_matrix_snapshot.schema.json` (created), `src/market_platform_foundation/providers/capability_contract.py` (created), `src/market_platform_foundation/providers/capability_snapshot.py` (created), `tools/providers/capability_matrix.py` (created), `tests/providers/test_capability_matrix.py` (created), `docs/engineering/PROVIDER_READINESS.md` (modified) |
+| **Tests** | `python tools/imp.py test focused tests.providers.test_capability_matrix`; `python tools/imp.py validate changed` |
+| **Related** | `artifacts/wave-a-findings/reconciliation-gate.json` PKG-CAPABILITY-FOUNDATION, `docs/architecture/MARKET_DATA_CAPABILITY_CONTRACT.md` |
+| **Notes** | No live activation, no registry duplication, HTTP/UI matrix projection still deferred (DEFER-UNIFIED-UI-MATRIX). |
+
+## 2026-09-11 — Wave A reconciliation index and parent gate synthesis
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `artifacts` |
+| **Summary** | Completed Wave A reconciliation index for all present lane artifacts (including pit-infrastructure) plus absent provider-inventory and ibkr-tradier-alpaca lanes; added parent `reconciliation-gate.json` classifying requirements, minimum implementation packages with worktree boundaries, and ES/news stack verdict from verified Wave A facts only. No code or manifest changes. |
+| **Key files** | `artifacts/wave-a-findings/reconciliation-index.json` (modified), `artifacts/wave-a-findings/reconciliation-gate.json` (created) |
+| **Tests** | Not run (synthesis-only) |
+| **Related** | `artifacts/wave-a-findings/*.json`, `docs/engineering/FTEP_ACTIVATION_GATES.md`, `docs/architecture/MARKET_DATA_CAPABILITY_CONTRACT.md`, `docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md` |
+| **Notes** | Qualifying FTEP campaign remains unauthorized; two Wave A lane JSON files still absent on disk. |
+
+## 2026-09-11 — Wave A FTEP campaign audit artifact
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `artifacts`, `docs` |
+| **Summary** | Persisted secret-free Wave A `ftep-campaign-audit.json` for FTEP-V1-001 (activation status, satisfied/unsatisfied gates, code/config gaps, OD-1…OD-11 as pending owner decisions, vocabulary, paths, test index). Minimal NEWS_STRATEGY_EVALUATION Paper-boundary correction: bridge exists; campaign not frozen; fixture vs forward paths. No manifest/owner-packet/checklist/empirical changes. |
+| **Key files** | `artifacts/wave-a-findings/ftep-campaign-audit.json` (created), `docs/architecture/NEWS_STRATEGY_EVALUATION.md` (Paper execution boundary) |
+| **Tests** | None (read-only audit follow-up) |
+| **Related** | `artifacts/wave-a-findings/news-data-inventory.json`, `docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md` |
+| **Notes** | Checklist FTEP row deferred (C5); recorded in audit JSON. |
+
+## 2026-09-11 — Wave A UX hooks audit artifact
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `artifacts`, `ui/api` (inventory only) |
+| **Summary** | Persisted secret-free Wave A reconciliation JSON for parallel provider/capability type systems, existing React Query hooks vs HTTP endpoints, DISCOVER/NOW/Fusion surface wiring, eleven condensed gaps, and minimum future provider-governance hook set. No UI code changes. |
+| **Key files** | `artifacts/wave-a-findings/ux-hooks-audit.json` (created), `docs/engineering/PROVIDER_READINESS.md` (one-line pointer) |
+| **Tests** | None (read-only follow-up) |
+| **Related** | Wave A goal reconciliation bundle |
+| **Notes** | Backend/CLI vocabulary normalization should precede new UI matrix hooks. |
+
 ## 2026-09-11 — FTEP-V1 activation manifest runtime gaps (Agent B)
 
 | Field | Value |
