@@ -66,6 +66,20 @@ python tools/news/probe.py --symbol AAPL
 
 Requires `NEWSAPI_API_KEY` / `FINNHUB_API_KEY` in ignored config. Does not satisfy historical PIT news archive claims (see `EXT-NEWSAPI-FINNHUB-PIT` in [FTEP_V1_ACTIVATION_BLOCKER_REPORT.md](./FTEP_V1_ACTIVATION_BLOCKER_REPORT.md)).
 
+Optional canonical-path check (still **not** wired to forward-test bridge):
+
+```python
+from market_platform_foundation.news.observational_ingress import (
+    fetch_observational_news_events,
+    observational_ingress_diagnostics,
+)
+```
+
+Set `IMP_OBSERVATIONAL_NEWS_INGRESS=1` with at least one of `IMP_NEWSAPI_LIVE` /
+`IMP_FINNHUB_LIVE` before calling `fetch_observational_news_events(symbol)`.
+Campaign-scale ingress remains governance-deferred (`FTEP-ACT-04`); see known
+limitations in [PAPER_FORWARD_TESTING_BRIDGE.md](../architecture/PAPER_FORWARD_TESTING_BRIDGE.md).
+
 ## 6. Regenerate capability-matrix snapshot
 
 After any probe refresh:

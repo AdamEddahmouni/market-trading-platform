@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "artifact_kind": "ftep_v1_activation_goal_audit",
   "artifact_id": "ftep-v1-activation-goal-audit",
-  "observed_at": "2026-09-12T04:35:00Z",
+  "observed_at": "2026-09-12T05:00:00Z",
   "goal_reference": "User objective section 28 success criteria A–Z (FTEP v1 activation increment)",
   "branch": "work/ftep-v1-activation",
   "head_sha": "35e641e6e99f90800a1e3528a31e26fb7ce20b3c",
@@ -11,12 +11,13 @@
   "engineering_complete": true,
   "update_goal_complete": false,
   "validation_receipt": {
-    "command": "python tools/imp.py validate fast",
+    "command": "python tools/imp.py validate changed",
     "status": "passed",
-    "tests_run": 21,
+    "tests_run": 1909,
     "failures": 0,
     "errors": 0,
-    "observed_at": "2026-09-12T04:35:00Z"
+    "skipped": 26,
+    "observed_at": "2026-09-12T05:00:00Z"
   },
   "closure_cross_refs": [
     "artifacts/wave-b-closure-report.json",
@@ -24,8 +25,8 @@
     "artifacts/developer-workflow/closure-report.json"
   ],
   "summary_counts": {
-    "MET": 24,
-    "PARTIAL": 1,
+    "MET": 25,
+    "PARTIAL": 0,
     "BLOCKED": 0,
     "EXTERNAL": 0,
     "NOT_APPLICABLE": 0
@@ -160,11 +161,11 @@
     {
       "criterion_id": "O",
       "title": "Canonical normalization exists where needed",
-      "status": "PARTIAL",
-      "evidence_path": "artifacts/wave-b-closure-report.json",
-      "evidence_command": null,
-      "blocker_owner": "ENGINEERING",
-      "notes": "Offline canonical NewsArticleEvent + aggregator/recorded-eval bridges PASS; observational live ingress deferred (DEFER-FTEP-ACT-04-OBS-INGRESS, FTEP-D038)."
+      "status": "MET",
+      "evidence_path": "src/market_platform_foundation/news/observational_ingress.py",
+      "evidence_command": "python -m unittest tests.news.test_observational_ingress -q",
+      "blocker_owner": null,
+      "notes": "Offline bridges PASS; observational live ingress scaffold is implementation-ready (IMP_OBSERVATIONAL_NEWS_INGRESS + IMP_NEWSAPI_LIVE/IMP_FINNHUB_LIVE, aggregator_bridge, not forward-test auto-wire). Live FTEP-V1 campaign use remains deferred (DEFER-FTEP-ACT-04-OBS-INGRESS, FTEP-D038, manifest deferred_until_evidence)."
     },
     {
       "criterion_id": "P",
@@ -275,7 +276,7 @@
     },
     {
       "gap_id": "DEFER-FTEP-ACT-04-OBS-INGRESS",
-      "summary": "Observational live/captured news ingress to canonical pipeline",
+      "summary": "Campaign-scale observational ingress wiring to forward-test bridge (scaffold exists; operator gates only)",
       "priority": "deferred_by_governance",
       "blocker_owner": "OWNER"
     },
