@@ -5,7 +5,7 @@
   "observed_at": "2026-09-12T04:35:00Z",
   "goal_reference": "User objective section 28 success criteria A–Z (FTEP v1 activation increment)",
   "branch": "work/ftep-v1-activation",
-  "head_sha": "9efbe60ccc2fa150b6ddf46407b4e849fbf93299",
+  "head_sha": "PLACEHOLDER"
   "overall_disposition": "PARTIALLY_COMPLETE",
   "qualifying_ftep_v1_001_activation": false,
   "engineering_complete": true,
