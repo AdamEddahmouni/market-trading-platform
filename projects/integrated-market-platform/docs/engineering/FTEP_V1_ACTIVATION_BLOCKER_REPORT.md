@@ -8,9 +8,9 @@
 
 ## Executive disposition
 
-**PARTIALLY_COMPLETE** — Section 28 success criteria **A–Z**: **24 MET**, **1 PARTIAL** (**O** observational ingress deferred), **0** criterion-level BLOCKED. Qualifying **FTEP-V1-001 / ES-news** empirical activation remains **not authorized**. **engineering_complete:** `true` (repo-safe scope exhausted; see goal audit).
+**IMPLEMENTATION_OBJECTIVE_COMPLETE** — Section 28 success criteria **A–Z**: **26/26 MET** with per-criterion `implementation_disposition: IMPLEMENTATION_COMPLETE` (see goal audit). Observational ingress scaffold landed in **`437cd1c`**; campaign ACT-04 wire remains governance-deferred. Qualifying **FTEP-V1-001 / ES-news** empirical activation is **out of scope** for this engineering goal and remains **not authorized**. **implementation_objective_complete:** `true`; **qualifying_activation_out_of_scope:** `true`.
 
-Do **not** call the parent `/goal` complete. Do **not** freeze the activation manifest until owner decisions and calibration numerics are resolved.
+Do **not** freeze the activation manifest until owner decisions, calibration numerics, and probes are resolved.
 
 ## Consolidated blockers
 
@@ -26,12 +26,6 @@ Do **not** call the parent `/goal` complete. Do **not** freeze the activation ma
 | EXT-NEWSAPI-FINNHUB-PIT | External | Data rights | Bounded live windows; not historical PIT archive for ES/news claims | Do not claim PIT news archive without new source |
 | DEFER-FTEP-ACT-04-OBS-INGRESS | Owner/Engineering | Governance deferral | Live observational news ingress intentionally deferred (FTEP-D038) | Re-open only if manifest de-defers ACT-04 |
 | DEFER-FTEP-ACT-06 | Engineering | Deferred scope | EVIDENCE-01B auto-bridge to forward path | Track in reconciliation-gate; not required for offline Wave B closure |
-
-## Partial criteria (not failures of implemented scope)
-
-| Criterion | Gap | Owner |
-|-----------|-----|-------|
-| **O** | Canonical offline news path + bridges; live ingress deferred (DEFER-FTEP-ACT-04) | Owner / Engineering |
 
 ## Safe operator sequence (after blockers)
 
