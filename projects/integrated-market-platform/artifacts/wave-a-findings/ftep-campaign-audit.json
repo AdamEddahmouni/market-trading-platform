@@ -1,0 +1,428 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "wave_a_ftep_campaign_audit",
+  "audit_id": "wave-a-ftep-campaign-audit",
+  "observed_at": "2026-09-11T22:45:00Z",
+  "audit_scope": "Wave A FTEP-V1-001 campaign governance and paper_forward_bridge readiness (read-only; no manifest mutation; no empirical enablement).",
+  "campaign_slug": "FTEP-V1-001",
+  "protocol_id": "FTEP-V1/0.1.0-PREREG",
+  "activation_status": "PENDING_OWNER_DECISIONS",
+  "campaign_id": null,
+  "manifest_fingerprint": null,
+  "owner_signed_at": null,
+  "classification": "PLANNED / PRE-REGISTERED / NOT YET EMPIRICAL EVIDENCE",
+  "empirical_evidence_claimed": false,
+  "audit_basis": "Agent A re-run c4f6ca28; first-run 81265595; Wave A campaign lane reconciliation",
+  "related_wave_a_artifacts": [
+    {
+      "path": "artifacts/wave-a-findings/news-data-inventory.json",
+      "role": "companion_news_and_ingress_inventory"
+    },
+    {
+      "path": "artifacts/wave-a-findings/pit-infrastructure-audit.json",
+      "role": "companion_pit_rdata_and_wave1_lanes"
+    }
+  ],
+  "reconciliation_flags": {
+    "pit_infrastructure_audit": "artifacts/wave-a-findings/pit-infrastructure-audit.json",
+    "code_gaps_to_safe_this_increment": [
+      {
+        "code_gap": "CG-01",
+        "pit_safe_id": "SAFE-CG-01",
+        "pit_gap": "PIT-A-007",
+        "blocks_provider_activation": false
+      },
+      {
+        "code_gap": "CG-02",
+        "pit_safe_id": "SAFE-CG-02",
+        "pit_gap": "PIT-A-007",
+        "blocks_provider_activation": false
+      }
+    ],
+    "news_implement_now_links": [
+      {
+        "news_inventory_id": "IMPLEMENT_NOW_AGGREGATOR_TO_CANONICAL_BRIDGE",
+        "pit_safe_id": "SAFE-IMPLEMENT_NOW_AGGREGATOR_TO_CANONICAL_BRIDGE",
+        "wave_a_gaps": ["WAVE-A-002"]
+      },
+      {
+        "news_inventory_id": "IMPLEMENT_NOW_OBSERVATIONAL_NEWS_INGRESS",
+        "pit_defer_id": "DEFER-IMPLEMENT_NOW_OBSERVATIONAL_NEWS_INGRESS",
+        "wave_a_gaps": ["WAVE-A-002", "WAVE-A-009"],
+        "manifest_deferred": ["FTEP-D038", "FTEP-ACT-04"]
+      },
+      {
+        "news_inventory_id": "IMPLEMENT_NOW_RECORDED_EVAL_TO_FORWARD_BRIDGE",
+        "pit_safe_id": "SAFE-IMPLEMENT_NOW_RECORDED_EVAL_TO_FORWARD_BRIDGE",
+        "wave_a_gaps": ["WAVE-A-010"],
+        "manifest_deferred": ["FTEP-ACT-06"],
+        "requires_cg_fixes": ["CG-01"]
+      }
+    ]
+  },
+  "validation_receipts": [
+    {
+      "path": "artifacts/ftep-activation-test.json",
+      "role": "focused_forward_test_activation_suite",
+      "status": "passed"
+    },
+    {
+      "path": "artifacts/ftep-persistence-test.json",
+      "role": "focused_forward_test_persistence_suite",
+      "status": "passed"
+    }
+  ],
+  "satisfied_gates_summary": {
+    "engineering_implemented": [
+      {
+        "gate": "activation_manifest_loader_and_fingerprint",
+        "evidence": [
+          "src/market_platform_foundation/intelligence/paper_forward_bridge/activation.py",
+          "tests/intelligence/test_forward_test_activation.py"
+        ]
+      },
+      {
+        "gate": "protocol_ref_sha256_verification",
+        "evidence": [
+          "src/market_platform_foundation/intelligence/paper_forward_bridge/protocol_ref.py",
+          "artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json",
+          "tests/intelligence/test_forward_test_protocol_ref.py"
+        ]
+      },
+      {
+        "gate": "deterministic_preflight_ready_not_ready",
+        "evidence": [
+          "src/market_platform_foundation/intelligence/paper_forward_bridge/preflight.py",
+          "tests/intelligence/test_forward_test_activation.py",
+          "tests/intelligence/test_forward_test_preflight_api.py"
+        ]
+      },
+      {
+        "gate": "freeze_cli_and_state_machine",
+        "evidence": [
+          "tools/forward_test/freeze_activation_manifest.py",
+          "tests/intelligence/test_forward_test_activation.py"
+        ]
+      },
+      {
+        "gate": "session_launch_policy_calendar_phase_overlap_evidence_class",
+        "evidence": [
+          "src/market_platform_foundation/intelligence/paper_forward_bridge/session_policy.py",
+          "tests/intelligence/test_forward_test_session_policy.py"
+        ]
+      },
+      {
+        "gate": "campaign_binding_one_active_per_account",
+        "evidence": [
+          "src/market_platform_foundation/intelligence/paper_forward_bridge/campaign_binding.py",
+          "tests/intelligence/test_forward_test_persistence.py"
+        ]
+      },
+      {
+        "gate": "non_campaign_empirical_path_guard",
+        "evidence": [
+          "src/market_platform_foundation/intelligence/paper_forward_bridge/service.py",
+          "tests/intelligence/test_forward_test_activation.py"
+        ]
+      },
+      {
+        "gate": "safety_constraints_paper_only_zero_cost",
+        "evidence": [
+          "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+          "src/market_platform_foundation/intelligence/paper_forward_bridge/preflight.py"
+        ]
+      },
+      {
+        "gate": "manifest_pre_resolved_safe_and_deterministic_fields",
+        "note": "17 entries in resolved_fields; OD-1 authority pre-resolution recorded under authority_resolutions with owner_sign_off_still_required true",
+        "evidence": [
+          "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json"
+        ]
+      }
+    ],
+    "not_satisfied_for_empirical_campaign": [
+      {
+        "gate": "manifest_frozen_or_active",
+        "blocker": "ACTIVATION_MANIFEST_PENDING_OWNER_DECISIONS",
+        "evidence": [
+          "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json"
+        ]
+      },
+      {
+        "gate": "owner_decisions_od_1_through_od_11_signed",
+        "blocker": "ACTIVATION_MANIFEST_OWNER_DECISIONS_PENDING",
+        "evidence": [
+          "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+          "docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md"
+        ]
+      },
+      {
+        "gate": "preflight_ready_for_ftep_v1_001_skeleton",
+        "blocker": "FORWARD_TEST_PREFLIGHT_FAILED:ACTIVATION_MANIFEST_PENDING_OWNER_DECISIONS,ACTIVATION_MANIFEST_OWNER_DECISIONS_PENDING",
+        "evidence": [
+          "src/market_platform_foundation/intelligence/paper_forward_bridge/preflight.py"
+        ]
+      },
+      {
+        "gate": "binding_fields_populated_at_freeze",
+        "blocker": "strategy_binding, baseline_policy_id, ai_policy_id, universe, lane_id, primary_metric, cohort_matching_key remain null in skeleton manifest",
+        "evidence": [
+          "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json"
+        ]
+      },
+      {
+        "gate": "paper_account_id_declared",
+        "blocker": "paper_account_resolution.status RESOLVE_AT_FREEZE_FROM_LEDGER; paper_account_id null",
+        "evidence": [
+          "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json"
+        ]
+      },
+      {
+        "gate": "forward_validation_checklist_ftep_row",
+        "blocker": "C5",
+        "note": "FORWARD_VALIDATION_READINESS_CHECKLIST.md has no FTEP-V1-001 row; placeholder skipped this pass because row format expects owner-verified prerequisite states",
+        "evidence": [
+          "docs/engineering/FORWARD_VALIDATION_READINESS_CHECKLIST.md",
+          "docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md"
+        ]
+      }
+    ]
+  },
+  "owner_decisions": {
+    "OD-1": {
+      "title": "Strategy binding (FTEP-D002)",
+      "status": "PENDING_OWNER_SIGN_OFF",
+      "recommended_not_binding": "A",
+      "authority_pre_resolution": {
+        "classification": "DETERMINISTIC_FROM_AUTHORITY",
+        "resolution": "A",
+        "owner_sign_off_still_required": true
+      },
+      "manifest_binding_null": ["strategy_binding", "policies.baseline_policy_id", "policies.ai_policy_id"]
+    },
+    "OD-2": {
+      "title": "Universe and instruments (FTEP-D008, FTEP-D011)",
+      "status": "PENDING_OWNER_SIGN_OFF",
+      "recommended_not_binding": {
+        "lane_id": "FUTURES_EQUITY_INDEX",
+        "universe": ["ES"]
+      },
+      "conditional_on": "OD-1=A",
+      "manifest_binding_null": ["universe", "lane_id"]
+    },
+    "OD-3": {
+      "title": "Calendar scope (FTEP-D013)",
+      "status": "PENDING_OWNER_SIGN_OFF",
+      "recommended_not_binding": "US_EQUITY_RTH",
+      "conflict_acknowledged": "C3",
+      "engineering_default_in_manifest": "US_EQUITY_RTH",
+      "alternatives_documented": ["Globex ETH", "operator-bounded windows"]
+    },
+    "OD-4": {
+      "title": "Campaign duration floor (FTEP-D014)",
+      "status": "PENDING_OWNER_SIGN_OFF",
+      "recommended_not_binding": "BOTH_A_AND_B",
+      "manifest_fields": "duration_floors populated with proposed integers"
+    },
+    "OD-5": {
+      "title": "Candidate generation cadence (FTEP-D017)",
+      "status": "PENDING_OWNER_SIGN_OFF",
+      "recommended_not_binding": "EVENT_DRIVEN",
+      "manifest_field": "cadence"
+    },
+    "OD-6": {
+      "title": "First campaign test mode (FTEP-D019)",
+      "status": "PENDING_OWNER_SIGN_OFF",
+      "recommended_not_binding": "PHASED_SIGNAL_ONLY_THEN_EXECUTION",
+      "manifest_fields": {
+        "test_mode_phase_1": "SIGNAL_ONLY",
+        "test_mode_phase_2": "EXECUTION",
+        "phase_transition_min_locks": 5
+      }
+    },
+    "OD-7": {
+      "title": "Sample minimum floors (FTEP-D025)",
+      "status": "PENDING_OWNER_SIGN_OFF",
+      "recommended_not_binding": "SECTION_14_PROPOSED_INTEGERS",
+      "manifest_fields": "sample_floors populated with proposed integers"
+    },
+    "OD-8": {
+      "title": "Primary metric for H2 (FTEP-D026)",
+      "status": "PENDING_OWNER_SIGN_OFF",
+      "recommended_not_binding": "percentage_return",
+      "manifest_binding_null": ["primary_metric"]
+    },
+    "OD-9": {
+      "title": "Cohort matching key (FTEP-D030)",
+      "status": "PENDING_OWNER_SIGN_OFF",
+      "recommended_not_binding": "symbol_decision_bucket_horizon",
+      "manifest_binding_null": ["cohort_matching_key"]
+    },
+    "OD-10": {
+      "title": "Campaign identity (FTEP-D031)",
+      "status": "PENDING_OWNER_SIGN_OFF",
+      "recommended_not_binding": "SHA256_DERIVE_AT_FREEZE",
+      "implementation": "derive_campaign_id -> FTCAMP-{sha256(manifest_fingerprint).lower()}",
+      "manifest_campaign_id": null
+    },
+    "OD-11": {
+      "title": "Activation sign-off (FTEP-D035, FTEP-D037, FTEP-D039)",
+      "status": "PENDING_OWNER_SIGN_OFF",
+      "recommended_not_binding": "SIGN_AND_REOPEN_CHECKLIST",
+      "sub_items": {
+        "FTEP-D035": "Accept activation manifest artifact tree as canonical binding",
+        "FTEP-D037": "Reopen or add FTEP-V1 row in forward-validation checklist",
+        "FTEP-D039": "Operator runbook acknowledgment and WORK_LOG at freeze"
+      },
+      "checklist_blocker": "C5"
+    }
+  },
+  "deferred_until_evidence": {
+    "FTEP-D032": "L2_L1_stale_threshold_when_freshness_evaluated",
+    "FTEP-D038": "provider_connectivity_if_observational_ingress_required",
+    "FTEP-ACT-04": "provider_connectivity_if_observational_ingress_required",
+    "FTEP-ACT-06": "evidence_01b_auto_bridge",
+    "FTEP-ACT-08": "route_policy_ui_mutation_wiring"
+  },
+  "code_gaps": [
+    {
+      "id": "CG-01",
+      "title": "campaign_slug vs FTCAMP-hash manifest reload",
+      "summary": "ForwardTestSession stores campaign_id only. After freeze, manifest campaign_id becomes FTCAMP-{fingerprint}; artifact path remains artifacts/forward-test-campaigns/FTEP-V1-001/. _load_session_manifest(session) calls load_activation_manifest(session.campaign_id), which fails when campaign_id is the derived hash unless callers still pass the slug as campaign_id (tests use slug). _campaign_provenance sets campaign_slug from session.campaign_id, conflating slug and derived id.",
+      "evidence": [
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/service.py",
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/types.py",
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/activation.py",
+        "docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md"
+      ]
+    },
+    {
+      "id": "CG-02",
+      "title": "sample_floor enforcement not wired in ForwardTestService",
+      "summary": "assess_sample_floor_disposition exists in session_policy.py and gates statistical disposition (activation_ready vs statistical_disposition_ready) but service.py does not invoke it on lock/evaluate paths; sample floors in manifest gate disposition only per PAPER_FORWARD_TESTING_BRIDGE.md.",
+      "evidence": [
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/session_policy.py",
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/service.py",
+        "tests/intelligence/test_forward_test_session_policy.py",
+        "docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md"
+      ]
+    },
+    {
+      "id": "CG-03",
+      "title": "ACT-04 / ACT-06 / ACT-08 deferred",
+      "summary": "Manifest deferred_until_evidence lists provider connectivity (ACT-04), EVIDENCE-01B auto-bridge (ACT-06), and forward-test UI route-policy wiring (ACT-08). PAPER_FORWARD_TESTING_BRIDGE known limitations align.",
+      "evidence": [
+        "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+        "docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md"
+      ]
+    },
+    {
+      "id": "CG-04",
+      "title": "documentation drift (news strategy vs bridge)",
+      "summary": "NEWS_STRATEGY_EVALUATION.md Paper execution boundary still stated bridge not implemented while paper_forward_bridge package is accepted and tested. Minimal doc correction applied in this pass; authoritative forward-test governance remains FTEP manifest and PAPER_FORWARD_TESTING_BRIDGE.md.",
+      "evidence": [
+        "docs/architecture/NEWS_STRATEGY_EVALUATION.md",
+        "docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md"
+      ],
+      "doc_correction_applied": true
+    }
+  ],
+  "config_gaps": [
+    {
+      "id": "CFG-01",
+      "field": "strategy_binding / policies / universe / lane_id / primary_metric / cohort_matching_key",
+      "state": "null in skeleton manifest until OD-11 freeze binds recommended_not_binding"
+    },
+    {
+      "id": "CFG-02",
+      "field": "paper_account_id",
+      "state": "null; paper_account_resolution RESOLVE_AT_FREEZE_FROM_LEDGER"
+    },
+    {
+      "id": "CFG-03",
+      "field": "manifest_fingerprint / owner_signed_at",
+      "state": "null until freeze CLI succeeds after owner sign-off"
+    },
+    {
+      "id": "CFG-04",
+      "env": "IMP_PERSIST_STATE or IMP_STATE_DIR",
+      "state": "required when binding.persistence_required true (FTEP-D034 / FTEP-ACT-05 resolution IMP_PERSIST_STATE_REQUIRED); preflight emits PERSISTENCE_DISABLED when off"
+    },
+    {
+      "id": "CFG-05",
+      "env": "IMP_FORWARD_TEST_CAMPAIGN_REQUIRED",
+      "state": "defaults true; non-campaign empirical paths rejected unless explicitly disabled"
+    },
+    {
+      "id": "CFG-06",
+      "env": "IMP_FORWARD_TEST_CAMPAIGNS_DIR",
+      "state": "optional override for campaign artifact root; default artifacts/forward-test-campaigns"
+    }
+  ],
+  "vocabulary_mapping": {
+    "campaign_slug": "Human-stable directory key under artifacts/forward-test-campaigns/ (FTEP-V1-001)",
+    "campaign_id": "Derived FTCAMP-{sha256(manifest_body).lower()} assigned at freeze (OD-10); null while PENDING_OWNER_DECISIONS",
+    "activation_status": "Manifest state machine field (PENDING_OWNER_DECISIONS | FROZEN | ACTIVE | ...)",
+    "preflight_disposition": "READY | NOT_READY from run_forward_test_preflight",
+    "evidence_class": "Forward-test decision classification; empirical classes fail-closed at create/lock unless governed",
+    "run_kind": "FORWARD_TEST required; BACKTEST boundary violation if mismatched",
+    "test_mode": "SIGNAL_ONLY vs EXECUTION; phased transition per OD-6 and FTEP-ACT-02 lock count",
+    "intelligence_provider": "RECORDED_ARTIFACTS_ONLY (FTEP-D006); no live Claude rerun in campaign scope",
+    "recommended_not_binding": "Owner packet defaults in manifest; not binding until OD-11 sign-off",
+    "sample_floors": "Statistical disposition thresholds (OD-7); not per-lock gates in service today",
+    "calendar_scope": "US_EQUITY_RTH engineering default; OD-3 owner choice",
+    "cohort_arm": "BASELINE vs AI_ENHANCED policy arm binding at session create"
+  },
+  "key_paths": {
+    "campaign_artifacts": [
+      "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+      "artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json"
+    ],
+    "governance_docs": [
+      "docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md",
+      "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md",
+      "docs/engineering/FORWARD_VALIDATION_READINESS_CHECKLIST.md",
+      "docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md",
+      "docs/architecture/NEWS_STRATEGY_EVALUATION.md"
+    ],
+    "bridge_implementation": [
+      "src/market_platform_foundation/intelligence/paper_forward_bridge/activation.py",
+      "src/market_platform_foundation/intelligence/paper_forward_bridge/protocol_ref.py",
+      "src/market_platform_foundation/intelligence/paper_forward_bridge/campaign_binding.py",
+      "src/market_platform_foundation/intelligence/paper_forward_bridge/preflight.py",
+      "src/market_platform_foundation/intelligence/paper_forward_bridge/session_policy.py",
+      "src/market_platform_foundation/intelligence/paper_forward_bridge/service.py",
+      "src/market_platform_foundation/intelligence/paper_forward_bridge/paper_handoff.py",
+      "tools/forward_test/freeze_activation_manifest.py",
+      "src/market_platform_foundation/ui_api/forward_test_projections.py"
+    ],
+    "schemas": [
+      "manifests/forward_test/schemas/activation_manifest.schema.json"
+    ]
+  },
+  "test_index": {
+    "suite_id": "paper_forward_bridge",
+    "manifest": "tools/validation_manifest.json",
+    "python_tests": [
+      "tests/intelligence/test_paper_forward_bridge.py",
+      "tests/intelligence/test_forward_test_activation.py",
+      "tests/intelligence/test_forward_test_session_policy.py",
+      "tests/intelligence/test_forward_test_persistence.py",
+      "tests/intelligence/test_forward_test_protocol_ref.py",
+      "tests/intelligence/test_forward_test_preflight_api.py"
+    ],
+    "ui_tests": [
+      "ui/src/components/paper-workspace/buildForwardTestPanelModel.test.ts"
+    ],
+    "focused_receipts": [
+      "artifacts/ftep-activation-test.json",
+      "artifacts/ftep-persistence-test.json"
+    ]
+  },
+  "explicit_non_actions_this_pass": [
+    "ACTIVATION_MANIFEST.json unchanged",
+    "FTEP-V1_OWNER_DECISION_PACKET.md unchanged",
+    "no empirical campaign enablement",
+    "FORWARD_VALIDATION_READINESS_CHECKLIST.md FTEP row deferred (C5)"
+  ]
+}

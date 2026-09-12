@@ -2,11 +2,11 @@
   "schema_version": "1.0.0",
   "artifact_kind": "wave_a_reconciliation_gate",
   "artifact_id": "wave-a-reconciliation-gate",
-  "observed_at": "2026-09-11T23:30:00Z",
+  "observed_at": "2026-09-12T02:00:00Z",
   "purpose": "Parent synthesis for post-Wave-A implementation increment: requirement classification, minimum coherent build set, ES/news verdict, and worktree boundaries. Synthesis only — no code changes implied by this artifact.",
   "git": {
     "branch": "work/ftep-v1-activation",
-    "head_sha": "373e47e"
+    "head_sha": "613a6b4"
   },
   "inputs": {
     "wave_a_lane_artifacts": [
@@ -182,6 +182,15 @@
         "evidence": [
           "artifacts/wave-a-findings/news-data-inventory.json reconciliation_flags IMPLEMENT_NOW_RECORDED_EVAL_TO_FORWARD_BRIDGE",
           "artifacts/wave-a-findings/pit-infrastructure-audit.json safe_this_increment SAFE-IMPLEMENT_NOW_RECORDED_EVAL_TO_FORWARD_BRIDGE"
+        ]
+      },
+      {
+        "id": "IMP-PROVIDER-SNAPSHOT-COMPARE",
+        "summary": "Offline frozen snapshot compare harness (latency, value disagreement, missingness) for multi-provider audits",
+        "evidence": [
+          "src/market_platform_foundation/providers/snapshot_compare.py",
+          "tools/providers/snapshot_compare.py",
+          "tests/providers/test_provider_snapshot_compare.py"
         ]
       }
     ],
@@ -366,6 +375,7 @@
         "depends_on": ["PKG-CAPABILITY-FOUNDATION"],
         "worktree_boundary": "WT-GOVERNANCE",
         "implementation_status": "COMPLETE",
+        "commit_sha": "613a6b4",
         "primary_paths": [
           "docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md",
           "manifests/paper/schemas/calibration_thresholds.schema.json",
@@ -399,6 +409,20 @@
           "src/market_platform_foundation/intelligence/paper_forward_bridge/recorded_eval_bridge.py",
           "tests/news/test_aggregator_bridge.py",
           "tests/intelligence/test_recorded_eval_bridge.py"
+        ]
+      },
+      {
+        "order": 6,
+        "package_id": "PKG-PROVIDER-SNAPSHOT-COMPARE",
+        "items": ["IMP-PROVIDER-SNAPSHOT-COMPARE"],
+        "depends_on": ["PKG-CAPABILITY-FOUNDATION"],
+        "worktree_boundary": "WT-GOVERNANCE",
+        "implementation_status": "COMPLETE",
+        "primary_paths": [
+          "src/market_platform_foundation/providers/snapshot_compare.py",
+          "tools/providers/snapshot_compare.py",
+          "tests/providers/test_provider_snapshot_compare.py",
+          "tests/fixtures/providers/frozen_compare_sample.json"
         ]
       }
     ],
@@ -482,8 +506,8 @@
       },
       {
         "layer": "market_data_capability_contract_campaign_binding",
-        "verdict": "MISSING",
-        "fact": "G-A6/G-A7 BLOCKING per FTEP_ACTIVATION_GATES; machine-readable capability-contract campaign binding not evidenced in Wave A artifacts"
+        "verdict": "BLOCKED",
+        "fact": "Machine-readable capability matrix and gap engine exist (Wave B packages 1–2); G-A6/G-A7 remain BLOCKING until owner manifest bindings and entitlement probes resolve"
       },
       {
         "layer": "simulator_calibration_numeric_gates",
@@ -496,8 +520,32 @@
     "wave_a_read_only_complete_for_present_lanes": true,
     "wave_a_lane_gaps": [],
     "implementation_wave_authorized": true,
+    "implementation_wave_disposition": "PARTIALLY_COMPLETE",
+    "package_3_baseline_commit": "613a6b4",
     "qualifying_campaign_activation_authorized": false,
-    "rationale": "PREIMPLEMENTATION_PLANNING_CLOSURE and Wave A audits authorize prerequisite implementation against contracts; manifest remains PENDING_OWNER_DECISIONS and ES/news stack BLOCKED for qualifying evidence until owner, probe, and capability-binding gates resolve."
+    "external_blockers": [
+      "OWNER-OD-1-11",
+      "OWNER-CALIBRATION-THRESHOLDS",
+      "PROBE-MOOMOO",
+      "PROBE-FINVIZ",
+      "PROBE-G-A5-BROKER-CANDIDATES",
+      "EXT-PREMIUM-WIRES",
+      "EXT-NEWSAPI-FINNHUB-PIT",
+      "EXT-MOOMOO-FUTURES-ENTITLEMENT"
+    ],
+    "deferred_acceptable": [
+      "DEFER-UNIFIED-UI-MATRIX",
+      "DEFER-MANIFEST-FREEZE",
+      "DEFER-FTEP-ACT-04-OBS-INGRESS",
+      "DEFER-FTEP-ACT-06",
+      "DEFER-ACTUAL-FORWARD"
+    ],
+    "rationale": "Wave B prerequisite packages 1–6 and package-3 commit 613a6b4 are implemented in-repo; qualifying FTEP activation remains blocked by owner decisions, local/private probes, external news/entitlement dependencies, and unset calibration numerics."
+  },
+  "wave_b_closure_artifacts": {
+    "executive_report": "artifacts/wave-b-closure-report.json",
+    "engineering_guide": "docs/engineering/PROVIDER_ACTIVATION_INCREMENT.md",
+    "notion_sync_payload": "artifacts/wave-b-notion-sync-payload.md"
   },
   "secrets_in_artifact": false
 }
