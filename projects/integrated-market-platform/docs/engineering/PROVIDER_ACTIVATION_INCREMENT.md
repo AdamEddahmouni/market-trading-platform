@@ -20,12 +20,14 @@ Wave A inventory JSON under `artifacts/wave-a-findings/` remains the static reco
 ## Audit and readiness commands
 
 ```powershell
-$env:PYTHONPATH = "src"
-python tools/provider_readiness.py
-python tools/provider_readiness.py audit --json
-python tools/provider_readiness.py gaps --profile FTEP-V1-001 --json
-python tools/provider_readiness.py campaign-readiness FTEP-V1-001 --json
+python tools/imp.py providers capability-matrix
+python tools/imp.py providers audit --json
+python tools/imp.py providers gaps --profile FTEP-V1-001 --json
+python tools/imp.py providers campaign-readiness FTEP-V1-001 --json
 ```
+
+Equivalent direct entry points remain under `tools/provider_readiness.py` and
+`tools/providers/capability_matrix.py`.
 
 - **audit** — capability contract IDs, entitlement reachability labels, stale evidence timestamps (no secret values).
 - **gaps** — deterministic disposition of Wave A gap IDs (`WAVE-A-*`, `PIT-A-*`, `CG-*`, `CFG-*`) for a campaign profile.
@@ -103,4 +105,5 @@ Unified provider capability matrix HTTP projection and cross-surface enum normal
 
 - Parent synthesis: `artifacts/wave-a-findings/reconciliation-gate.json`
 - Wave B executive summary: `artifacts/wave-b-closure-report.json`
+- ES/news smallest stack (goal §11 A–D): `artifacts/ftep-v1-001/es-news-provider-stack-selection.json`
 - Notion sync payload: `artifacts/wave-b-notion-sync-payload.md`

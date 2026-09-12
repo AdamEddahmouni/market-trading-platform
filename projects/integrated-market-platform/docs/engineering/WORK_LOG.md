@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — FTEP gap fill: ES stack artifact, profile refs, imp providers
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `artifacts`, `intelligence`, `developer-tooling`, `docs` |
+| **Summary** | Closed remaining safe Wave B / goal gaps without manifest freeze or Live: machine-readable ES/news provider stack selection (goal §11 A–D verdicts from Wave A facts), FTEP profile doc SHA reference module, `imp.py providers` router for capability-matrix and readiness diagnostics, PROGRAM_STATUS activation/blocker update, and committed FTEP validation receipts. |
+| **Key files** | `artifacts/ftep-v1-001/es-news-provider-stack-selection.json`, `src/.../paper_forward_bridge/ftep_profile_refs.py`, `tools/imp.py`, `tests/intelligence/test_ftep_profile_refs.py`, `tests/validation/test_imp_cli.py`, `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/PROVIDER_ACTIVATION_INCREMENT.md`, `artifacts/ftep-activation-test.json`, `artifacts/ftep-persistence-test.json` |
+| **Tests** | `python tools/imp.py test focused tests.intelligence.test_ftep_profile_refs tests.validation.test_imp_cli`; `python tools/imp.py validate changed` |
+| **Related** | [wave-b-closure-report.json](../../artifacts/wave-b-closure-report.json), [reconciliation-gate.json](../../artifacts/wave-a-findings/reconciliation-gate.json) |
+| **Notes** | Goal disposition remains PARTIALLY_COMPLETE. Qualifying campaign still blocked on OWNER-OD-1–11, probes, calibration numerics. No push. |
+
 ## 2026-09-12 — Wave B post-closure catalog, FULL validate, requirement audit
 
 | Field | Value |

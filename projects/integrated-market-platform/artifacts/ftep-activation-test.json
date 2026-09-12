@@ -1,0 +1,30 @@
+{
+  "argv": [
+    "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe",
+    "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\tools\\validation_worker.py",
+    "--repository-root",
+    "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform",
+    "--suite-id",
+    "focused",
+    "--selector",
+    "tests/intelligence/test_forward_test_activation.py::ForwardTestActivationManifestTests::test_manifest_fingerprint_is_uppercase_sha256",
+    "--selector",
+    "tests/intelligence/test_forward_test_activation.py::ForwardTestActivationManifestTests::test_derive_campaign_id_from_fingerprint",
+    "--selector",
+    "tests/intelligence/test_forward_test_activation.py::ForwardTestActivationManifestTests::test_pending_manifest_campaign_id_may_be_null",
+    "--selector",
+    "tests/intelligence/test_forward_test_activation.py::ForwardTestActivationPreflightTests::test_pending_manifest_blocks_preflight",
+    "--selector",
+    "tests/intelligence/test_forward_test_activation.py::ForwardTestActivationPreflightTests::test_frozen_manifest_allows_preflight",
+    "--selector",
+    "tests/intelligence/test_forward_test_activation.py::ForwardTestActivationPreflightTests::test_agent_a_skeleton_loads_without_binding_block",
+    "--selector",
+    "tests/intelligence/test_forward_test_activation.py::ForwardTestActivationRuntimeTests::test_create_session_requires_frozen_manifest",
+    "--selector",
+    "tests/intelligence/test_forward_test_activation.py::ForwardTestActivationRuntimeTests::test_frozen_manifest_allows_session_and_lock"
+  ],
+  "command": "test focused",
+  "exit_code": 0,
+  "status": "passed",
+  "wall_seconds": 0.783101
+}
