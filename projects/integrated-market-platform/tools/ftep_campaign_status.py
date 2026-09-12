@@ -35,6 +35,16 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     payload = collect_ftep_campaign_status(ROOT, args.campaign_slug)
+    artifact_slug = args.campaign_slug.lower().replace("_", "-")
+    progress_dir = ROOT / "artifacts" / artifact_slug
+    progress_dir.mkdir(parents=True, exist_ok=True)
+    progress_path = progress_dir / "campaign-progress.json"
+    progress_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    payload = dict(payload)
+    payload["campaign_progress_path"] = str(progress_path)
     if args.json:
         print(json.dumps(payload, indent=2, sort_keys=True))
     else:

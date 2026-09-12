@@ -132,13 +132,19 @@ def collect_ftep_integrity_checks(
     )
 
     status = collect_ftep_campaign_status(repository_root, campaign_slug)
+    empirical_source = str(status.get("empirical_counts_source") or "")
+    counts_backed_by_durable = empirical_source == "durable"
+    zero_empirical = (
+        status["empirical_lock_count"] == 0 and status["governed_session_count"] == 0
+    )
     checks.append(
         _check(
             "no_fabricated_empirical_locks",
-            status["empirical_lock_count"] == 0 and status["governed_session_count"] == 0,
+            counts_backed_by_durable or zero_empirical,
             (
                 f"locks={status['empirical_lock_count']} "
-                f"sessions={status['governed_session_count']}"
+                f"sessions={status['governed_session_count']} "
+                f"source={empirical_source or 'unknown'}"
             ),
         )
     )

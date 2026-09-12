@@ -25,6 +25,7 @@ class FtepCampaignStatusTests(unittest.TestCase):
         self.assertTrue(payload["signal_only_authorized"])
         self.assertFalse(payload["signal_only_session_started"])
         self.assertEqual(payload["empirical_lock_count"], 0)
+        self.assertEqual(payload["empirical_counts_source"], "durable")
         self.assertFalse(payload["secrets_included"])
         self.assertEqual(
             payload["manifest_fingerprint"],

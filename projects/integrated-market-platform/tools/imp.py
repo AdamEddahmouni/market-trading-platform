@@ -666,7 +666,7 @@ def build_parser() -> argparse.ArgumentParser:
     integrity_check.add_argument("--json", action="store_true", help="Machine-readable JSON")
     session_start = ftep_actions.add_parser(
         "session-start",
-        help="validate SIGNAL_ONLY session gates without creating locks (dry-run only)",
+        help="governed SIGNAL_ONLY session start (--dry-run gates only)",
     )
     session_start.add_argument(
         "campaign_slug",
@@ -677,7 +677,7 @@ def build_parser() -> argparse.ArgumentParser:
     session_start.add_argument(
         "--dry-run",
         action="store_true",
-        help="Required: evaluate gates only; no session or lock writes",
+        help="Evaluate gates only; no session or lock writes",
     )
     session_start.add_argument("--json", action="store_true", help="Machine-readable JSON")
     return parser

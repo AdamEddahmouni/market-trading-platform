@@ -1,11 +1,14 @@
-"""Governed FTEP session start gates (dry-run only; no locks or durable writes)."""
+"""Governed FTEP session start gates and SIGNAL_ONLY session creation."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
+import time
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -13,6 +16,14 @@ _COHORT_ARM_INVOKE_KEYS: tuple[tuple[str, str], ...] = (
     ("baseline", "BASELINE"),
     ("ai_enhanced", "AI_ENHANCED"),
 )
+
+
+def _artifact_dir_for_slug(campaign_slug: str) -> str:
+    return campaign_slug.lower().replace("_", "-")
+
+
+def _persistence_configured() -> bool:
+    return os.environ.get("IMP_PERSIST_STATE") == "1" or bool(os.environ.get("IMP_STATE_DIR"))
 
 
 def _build_forward_test_invoke_steps(
@@ -89,6 +100,8 @@ def _build_forward_test_invoke_steps(
 def collect_session_start_gates(
     repository_root: Path,
     campaign_slug: str,
+    *,
+    require_persistence: bool = False,
 ) -> dict[str, object]:
     src = repository_root / "src"
     if str(src) not in sys.path:
@@ -102,6 +115,9 @@ def collect_session_start_gates(
     )
 
     blockers: list[str] = []
+    if require_persistence and not _persistence_configured():
+        blockers.append("PERSISTENCE_NOT_CONFIGURED")
+
     status = collect_ftep_campaign_status(repository_root, campaign_slug)
     if not status.get("signal_only_authorized"):
         blockers.append("SIGNAL_ONLY_NOT_AUTHORIZED")
@@ -123,7 +139,7 @@ def collect_session_start_gates(
         "schema_version": "1.0.0",
         "artifact_kind": "ftep_session_start_gate",
         "campaign_slug": campaign_slug,
-        "dry_run": True,
+        "dry_run": not require_persistence,
         "would_create_session": would_create,
         "test_mode": "SIGNAL_ONLY",
         "blockers": blockers,
@@ -144,6 +160,113 @@ def collect_session_start_gates(
     return payload
 
 
+def append_session_start_evidence(
+    repository_root: Path,
+    campaign_slug: str,
+    record: dict[str, Any],
+) -> Path:
+    artifact_dir = repository_root / "artifacts" / _artifact_dir_for_slug(campaign_slug)
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    path = artifact_dir / "governed-session-start-evidence.jsonl"
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, sort_keys=True) + "\n")
+    return path
+
+
+def _construct_forward_test_service():
+    from market_platform_foundation.intelligence.paper_forward_bridge import (
+        ForwardTestService,
+        ForwardTestServiceError,
+        create_forward_test_repository,
+    )
+    from market_platform_foundation.local_state.startup import open_local_state
+
+    local = open_local_state()
+    if local is None:
+        raise ForwardTestServiceError("PERSISTENCE_DISABLED")
+    return ForwardTestService(
+        create_forward_test_repository(connection=local.connection),
+    )
+
+
+def execute_governed_session_start(
+    repository_root: Path,
+    campaign_slug: str,
+) -> tuple[dict[str, object], int]:
+    """Create governed SIGNAL_ONLY sessions when all gates pass (no Paper orders)."""
+
+    gate = collect_session_start_gates(
+        repository_root,
+        campaign_slug,
+        require_persistence=True,
+    )
+    gate["dry_run"] = False
+    gate["artifact_kind"] = "ftep_session_start_result"
+
+    if not gate.get("would_create_session"):
+        gate["sessions_created"] = []
+        gate["session_errors"] = []
+        return gate, 1
+
+    from market_platform_foundation.intelligence.paper_forward_bridge import ForwardTestServiceError
+
+    service = _construct_forward_test_service()
+    created_at_ns = time.time_ns()
+    sessions_created: list[dict[str, object]] = []
+    session_errors: list[dict[str, object]] = []
+    steps = gate.pop("forward_test_invoke_steps", [])
+
+    for step in steps:
+        if step.get("action") != "ForwardTestService.create_session":
+            continue
+        kwargs = dict(step.get("kwargs") or {})
+        kwargs["created_at_ns"] = created_at_ns
+        cohort_arm = kwargs.get("cohort_arm")
+        try:
+            session = service.create_session(**kwargs)
+        except ForwardTestServiceError as exc:
+            session_errors.append(
+                {
+                    "cohort_arm": cohort_arm,
+                    "error": str(exc),
+                }
+            )
+            continue
+        sessions_created.append(
+            {
+                "session_id": session.session_id,
+                "cohort_arm": str(cohort_arm or ""),
+                "campaign_id": session.campaign_id,
+                "manifest_fingerprint": session.manifest_fingerprint,
+            }
+        )
+
+    gate["sessions_created"] = sessions_created
+    gate["session_errors"] = session_errors
+    gate["would_create_session"] = bool(sessions_created)
+
+    evidence_record = {
+        "schema_version": "1.0.0",
+        "artifact_kind": "ftep_governed_session_start_evidence",
+        "campaign_slug": campaign_slug,
+        "recorded_at_ns": time.time_ns(),
+        "test_mode": "SIGNAL_ONLY",
+        "sessions_created": sessions_created,
+        "session_errors": session_errors,
+        "manifest_fingerprint": gate.get("campaign_status", {}).get("manifest_fingerprint"),
+        "secrets_included": False,
+    }
+    evidence_path = append_session_start_evidence(repository_root, campaign_slug, evidence_record)
+    gate["evidence_paths"] = [str(evidence_path)]
+
+    if not sessions_created:
+        gate.setdefault("blockers", [])
+        if "SESSION_CREATE_FAILED" not in gate["blockers"]:
+            gate["blockers"].append("SESSION_CREATE_FAILED")
+        return gate, 1
+    return gate, 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -155,23 +278,32 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Validate gates without creating sessions or locks (required)",
+        help="Validate gates without creating sessions or locks",
     )
     parser.add_argument("--json", action="store_true", help="Machine-readable JSON")
     args = parser.parse_args(argv)
 
-    if not args.dry_run:
-        print("Only --dry-run is supported; governed session creation uses ForwardTestService.", file=sys.stderr)
-        return 2
+    if args.dry_run:
+        payload = collect_session_start_gates(ROOT, args.campaign_slug)
+        payload["dry_run"] = True
+        exit_code = 0 if payload["would_create_session"] else 1
+    else:
+        payload, exit_code = execute_governed_session_start(ROOT, args.campaign_slug)
 
-    payload = collect_session_start_gates(ROOT, args.campaign_slug)
     if args.json:
         print(json.dumps(payload, indent=2, sort_keys=True))
-    else:
+    elif args.dry_run:
         print(
             f"would_create_session={payload['would_create_session']} blockers={payload['blockers']}"
         )
-    return 0 if payload["would_create_session"] else 1
+    else:
+        sessions = payload.get("sessions_created") or []
+        print(
+            f"sessions_created={len(sessions)} "
+            f"errors={len(payload.get('session_errors') or [])} "
+            f"evidence={payload.get('evidence_paths')}"
+        )
+    return exit_code
 
 
 if __name__ == "__main__":

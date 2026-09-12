@@ -36,6 +36,19 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — FTEP-V1-002 wave 11 governed session-start
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep-v1-002`, `forward-test`, `tools` |
+| **Summary** | Added non–dry-run `ftep session-start` path: gates on persistence, integrity, RTH, and readiness, then calls `ForwardTestService.create_session` (SIGNAL_ONLY, no orders) and appends `governed-session-start-evidence.jsonl`. Campaign status now reads governed session/lock counts from durable SQLite; `campaign-status` exports `artifacts/ftep-v1-002/campaign-progress.json`. |
+| **Key files** | `tools/ftep_session_start.py`, `tools/ftep_campaign_status.py`, `tools/imp.py`, `paper_forward_bridge/campaign_status.py`, `paper_forward_bridge/ftep_integrity.py`, `tests/intelligence/test_ftep_session_start.py`, `artifacts/ftep-v1-002/campaign-progress.json` |
+| **Tests** | `python tools/imp.py validate changed` — 1901 passed, 26 skipped |
+| **Related** | `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md` |
+| **Notes** | US equity RTH closed on pass date; no production session started. Second cohort arm may record `FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE` until binding supports multiple sessions per campaign. |
+
+
 ## 2026-09-12 — FTEP split PR #28 rebase onto #27
 
 | Field | Value |
