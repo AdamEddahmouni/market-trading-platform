@@ -169,6 +169,15 @@ Opportunity Engine / PIT export track remains on open PR #27 — not merged; no 
 
 Merge canonical FTEP infrastructure PR stack **#22–#28** into integration base before production-line activation UI wiring (not required to authorize first governed SIGNAL_ONLY session once owner explicitly requests it).
 
+### PR stack CI diagnosis (#24–#28, 2026-09-12)
+
+| PR | Branch | Failing checks | Blocker class |
+| --- | --- | --- | --- |
+| #24 | `split/wave-b-calibration` | `validate-docs`, `validate-python-changed` | Stale stack base + doc link drift vs `main`; full `validate-python` passes |
+| #25–#28 | closure → freeze stack | Same pattern | Rebase onto merged #22–#24 required; #26–#28 need activation-core modules on base per `MERGE_STACK.md` |
+
+**#29 (V1-002):** `validate-python-changed` failed on `acbfe7e` because `tools/ftep_campaign_status.py` was missing from `POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` (repository closure audit). Fixed on branch; not a product regression.
+
 # Section 37 orchestrator handoff (2026-09-12 activation pass)
 
 | Field | Value |
@@ -177,7 +186,7 @@ Merge canonical FTEP infrastructure PR stack **#22–#28** into integration base
 | **Campaign** | `FTEP-V1-002` / US-equity-news-catalyst |
 | **Campaign ID** | `FTCAMP-f7083180990bc59578ca045e1e1318a356421bbc9b81ee514c14130cb0b356b1` |
 | **Fingerprint** | `F7083180990BC59578CA045E1E1318A356421BBC9B81EE514C14130CB0B356B1` |
-| **Git** | `work/ftep-v1-002-us-equity-news` @ `4719c04` (pushed) |
+| **Git** | `work/ftep-v1-002-us-equity-news` @ HEAD after closure fix (pushed) |
 | **Authorization** | `artifacts/ftep-v1-002/signal-only-authorization-receipt-2026-09-12.json` |
 | **Machine readiness** | `artifacts/ftep-v1-002/machine-readiness-receipt-2026-09-12.json` |
 | **Launch prep** | `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md` |

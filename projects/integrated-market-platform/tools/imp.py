@@ -633,6 +633,26 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=argparse.SUPPRESS,
     )
+    opportunity_summaries = ftep_actions.add_parser(
+        "opportunity-summaries",
+        help="read-only ranked opportunity summaries from sample/fixture rows",
+    )
+    opportunity_summaries.add_argument(
+        "--campaign-slug",
+        default="FTEP-V1-002",
+        help="Campaign slug stamped on summaries (default: FTEP-V1-002)",
+    )
+    opportunity_summaries.add_argument("--json", action="store_true")
+    opportunity_summaries.add_argument(
+        "--sample",
+        action="store_true",
+        help="Use built-in fixture attention rows",
+    )
+    opportunity_summaries.add_argument(
+        "--input",
+        type=Path,
+        help="Optional JSON file with attention-candidate rows",
+    )
     return parser
 
 
@@ -659,6 +679,36 @@ def _providers_command(root: Path, args: argparse.Namespace) -> int:
     result = _run(
         root,
         label=f"providers {args.action}",
+        command=command,
+        env=env,
+        stream_output=True,
+    )
+    return int(result["exit_code"])
+
+
+def _ftep_command(root: Path, args: argparse.Namespace) -> int:
+    python = _validation_python(root)
+    env = _python_environment(root)
+    if args.action == "campaign-status":
+        command = [python, str(root / "tools" / "ftep_campaign_status.py"), args.campaign_slug]
+        if getattr(args, "json", False):
+            command.append("--json")
+    elif args.action == "opportunity-summaries":
+        command = [python, str(root / "tools" / "opportunity_summaries.py")]
+        if args.campaign_slug:
+            command.extend(["--campaign-slug", args.campaign_slug])
+        if getattr(args, "sample", False):
+            command.append("--sample")
+        if getattr(args, "input", None):
+            command.extend(["--input", str(args.input)])
+        if getattr(args, "json", False):
+            command.append("--json")
+    else:
+        print(f"unknown ftep action: {args.action}", file=sys.stderr)
+        return 2
+    result = _run(
+        root,
+        label=f"ftep {args.action}",
         command=command,
         env=env,
         stream_output=True,
@@ -788,19 +838,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _providers_command(root, args)
 
     if args.group == "ftep":
-        python = _validation_python(root)
-        env = _python_environment(root)
-        command = [python, str(root / "tools" / "ftep_campaign_status.py"), args.campaign_slug]
-        if getattr(args, "json", False):
-            command.append("--json")
-        result = _run(
-            root,
-            label=f"ftep {args.action}",
-            command=command,
-            env=env,
-            stream_output=True,
-        )
-        return int(result["exit_code"])
+        return _ftep_command(root, args)
 
     if args.group == "closure":
         changed_files = _git_changed_files(root)

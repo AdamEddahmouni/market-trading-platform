@@ -31,6 +31,19 @@ Optional Finviz refresh (no secrets in logs):
 python tools/finviz/probe.py
 ```
 
+### Copy-paste: RTH open preflight (no session lock)
+
+Run only when `us_equity_rth_open` is true in campaign-status output (Mon–Fri 09:30–16:00 America/New_York):
+
+```powershell
+Set-Location "C:\Users\adame\Desktop\market-trading-platform\projects\integrated-market-platform"
+$env:IMP_PERSIST_STATE = "1"
+python tools/imp.py ftep campaign-status FTEP-V1-002 --json
+python tools/imp.py providers campaign-readiness FTEP-V1-002 --json
+```
+
+Abort if `us_equity_rth_open` is false, `campaign_readiness_disposition` is not `READY`, or `signal_only_authorized` is false. Do not start a governed session from this script alone — owner must invoke `ForwardTestService.create_session` (SIGNAL_ONLY) per runbook after gates pass.
+
 Session creation uses governed Paper forward-test API / `ForwardTestService.create_session` with full campaign identity (`campaign_id`, `manifest_fingerprint`, cohort arms). **SIGNAL_ONLY** — no Paper order preview/submit.
 
 ## Safety

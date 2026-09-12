@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 from market_platform_foundation.intelligence.opportunity.read_model import (
     InMemoryOpportunitySummaryStore,
@@ -93,6 +94,27 @@ class OpportunityReadModelTests(unittest.TestCase):
         self.assertEqual(summary.instrument_id, "AAPL")
         self.assertEqual(summary.catalyst_ids, ("contract",))
         self.assertEqual(summary.campaign_slug, "FTEP-V1-002")
+
+    def test_opportunity_summaries_cli_sample_json(self) -> None:
+        import subprocess
+        import sys
+
+        root = Path(__file__).resolve().parents[2]
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(root / "tools" / "opportunity_summaries.py"),
+                "--sample",
+                "--json",
+            ],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("opportunity_summary_list", result.stdout)
+        self.assertIn("NVDA", result.stdout)
 
     def test_ftep_attention_adapter(self) -> None:
         summary = ftep_attention_candidate_to_summary(

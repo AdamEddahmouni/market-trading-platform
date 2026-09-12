@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import unittest
 from pathlib import Path
 
@@ -12,6 +13,9 @@ from market_platform_foundation.local_state.paths import REPO_ROOT
 
 
 class FtepCampaignStatusTests(unittest.TestCase):
+    def setUp(self) -> None:
+        os.environ["IMP_PERSIST_STATE"] = "1"
+
     def test_ftep_v1_002_status_snapshot(self) -> None:
         payload = collect_ftep_campaign_status(REPO_ROOT, "FTEP-V1-002")
         self.assertEqual(payload["campaign_slug"], "FTEP-V1-002")
@@ -32,12 +36,15 @@ class FtepCampaignStatusTests(unittest.TestCase):
         import sys
 
         root = Path(__file__).resolve().parents[2]
+        env = os.environ.copy()
+        env["IMP_PERSIST_STATE"] = "1"
         result = subprocess.run(
             [sys.executable, str(root / "tools" / "ftep_campaign_status.py"), "FTEP-V1-002", "--json"],
             cwd=root,
             capture_output=True,
             text=True,
             check=False,
+            env=env,
         )
         self.assertEqual(result.returncode, 0)
         self.assertIn("ftep_campaign_status", result.stdout)
