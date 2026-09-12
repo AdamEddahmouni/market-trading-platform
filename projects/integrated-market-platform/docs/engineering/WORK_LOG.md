@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — FTEP split PR #28 rebase onto #27
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep-v1-split`, `forward-test` |
+| **Summary** | Rebased `split/ftep-v1-freeze-readiness` onto **#27** head (`9b86e634`); resolved `test_forward_test_activation.py` add/add while preserving frozen **FTEP-V1-001** fingerprint and production freeze assertions. Updated `MERGE_STACK.md` wave 10 reconciliation. |
+| **Key files** | `artifacts/ftep-v1-split/MERGE_STACK.md`, `tests/intelligence/test_forward_test_activation.py` |
+| **Tests** | `unittest tests.intelligence.test_forward_test_activation` 12 OK (worktree `.venv`) |
+| **Related** | PR **#28**; `MERGE_STACK.md` |
+| **Notes** | Force-push required; owner merge only per stack policy. |
+
 ## 2026-09-12 — FTEP pathway-B goal closure verification
 
 | Field | Value |
