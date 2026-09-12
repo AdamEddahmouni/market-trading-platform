@@ -18,7 +18,7 @@ After each merge to `main`, rebase the next open PR onto `main` (or merge via Gi
 
 **Parallelism:** #22 and #23 may merge in either order if conflict-free. Everything from #24 onward assumes Wave B provider + calibration land before closure evidence.
 
-**CI note:** Slices **#26–#28** import activation-bridge modules from **#22**. GitHub checks on those PRs stay meaningful after **#22** is on `main` (or merge `split/ftep-v1-activation-core` into the stack tip before the final merge).
+**CI note:** Slices **#23–#28** that call `campaign_readiness` / `paper_forward_bridge.preflight` must vendor `activation.py`, `preflight.py`, `protocol_ref.py`, and `campaign_binding.py` from **#22** until activation-core is on `main` (otherwise `validate-python-changed` fails phase0 import analysis + providers collection). Slices **#26–#28** import additional activation-bridge modules from **#22**; rebase or merge `split/ftep-v1-activation-core` before final stack merge if checks drift.
 
 ## Slice map
 
