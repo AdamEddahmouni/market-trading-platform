@@ -2,7 +2,7 @@
 
 Supersedes monolithic draft PR **#19** (`work/ftep-v1-activation`). Pathway **B**, empirical locks, SIGNAL_ONLY sessions, and Live remain **out of scope** for this stack.
 
-**Stack status (2026-09-12 wave 14):** PR **#24** calibration head @ `64c03de3` (post wave 13). PRs **#22–#24, #26–#29** MERGEABLE with CI green on last poll; **#25** base still @ `ee94af67` → GitHub merge state **CONFLICTING** until rebased onto `#24` (defer rebase/push unless merge attempt or CI breaks per operator policy). **#29** = FTEP-V1-002 @ `2089a634`. **#26–#27** may show stale `CANCELLED` check rows from prior pushes — tip workflows green.
+**Stack status (2026-09-12 wave 15):** PR **#24** calibration head @ `64c03de3`. **#25** rebased onto `#24` → `c47f1662` (was **CONFLICTING** vs stale base `ee94af67`; now **MERGEABLE**). Cascade rebases: **#26** → `1f5be74e`, **#27** → `f61a669a` onto new stack tips; **#28** → `9c8ccef7` rebased onto `#27`. **#29** FTEP-V1-002 @ `7c562f74` **MERGEABLE** CI green. **#22–#27, #29** **MERGEABLE** on last poll; poll **#25–#28** CI after cascade.
 
 ## Merge order (strict)
 

@@ -36,6 +36,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — FTEP merge stack wave 15 reconciliation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, merge stack |
+| **Summary** | MERGE_STACK wave 15: #25 rebased onto #24 (`c47f1662`), cascade #26–#28 (#28 @ `9c8ccef7`), #29 @ `7c562f74` MERGEABLE CI green. |
+| **Key files** | `artifacts/ftep-v1-split/MERGE_STACK.md` |
+| **Tests** | n/a (docs only) |
+| **Related** | PRs **#25–#29**, `MERGE_STACK.md` |
+
 ## 2026-09-12 — FTEP-V1-002 wave 14 verify + empirical prep
 
 | Field | Value |
