@@ -259,9 +259,9 @@
     {
       "id": "WAVE-A-004",
       "severity": "high",
-      "classification": "OWNER",
+      "classification": "OWNER_RESOLVED",
       "title": "RTH vs Globex calendar for ES catalyst windows (OD-3)",
-      "summary": "Engineering default US_EQUITY_RTH; Globex requires explicit owner option B resolution.",
+      "summary": "Owner selected US_EQUITY_RTH 09:30-16:00 America/New_York for governed FTEP locks; platform read-only off-hours preserved per OD-3 clarification.",
       "evidence": [
         "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
         "docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md",

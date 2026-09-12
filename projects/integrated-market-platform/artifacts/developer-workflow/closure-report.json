@@ -35,9 +35,19 @@
     "other"
   ],
   "changed_files": [
-    "artifacts/ftep-activation-test.json",
-    "artifacts/ftep-persistence-test.json",
-    "projects/integrated-market-platform/artifacts/g8-runtime-performance.json"
+    "artifacts/ftep-v1-activation/calibration-shakedown-receipt-2026-09-12.json",
+    "artifacts/ftep-v1-activation/paper-account-choice-table.json",
+    "artifacts/ftep-v1-activation/proposed-manifest-field-sources.json",
+    "artifacts/ftep-v1-activation/provider-probe-moomoo-2026-09-12.json",
+    "projects/integrated-market-platform/artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+    "projects/integrated-market-platform/artifacts/g13-runtime-performance.json",
+    "projects/integrated-market-platform/artifacts/g14-runtime-performance.json",
+    "projects/integrated-market-platform/artifacts/g8-runtime-performance.json",
+    "projects/integrated-market-platform/artifacts/wave-a-findings/ftep-campaign-audit.json",
+    "projects/integrated-market-platform/artifacts/wave-a-findings/news-data-inventory.json",
+    "projects/integrated-market-platform/docs/engineering/WORK_LOG.md",
+    "projects/integrated-market-platform/src/market_platform_foundation/providers/coverage_gap_engine.py",
+    "projects/integrated-market-platform/tests/providers/test_coverage_gap_engine.py"
   ],
   "documentation_changes": [],
   "environment": {
@@ -74,7 +84,7 @@
       "root": "C:\\Users\\adame\\Desktop\\market-trading-platform"
     }
   },
-  "generated_at": "2026-09-12T02:49:02.588233+00:00",
+  "generated_at": "2026-09-12T05:23:15.466187+00:00",
   "report_type": "imp_closure",
   "repository_root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform",
   "risk": {
@@ -91,20 +101,23 @@
       "ci_wall_seconds": 0,
       "command_counts": {
         "closure docs": 1,
-        "closure format": 3,
+        "closure format": 4,
         "closure ui build": 1,
         "closure ui test": 1,
         "closure ui typecheck": 1,
-        "test focused": 67,
-        "validate changed": 70,
+        "format": 1,
+        "lint python": 1,
+        "providers campaign-readiness": 3,
+        "test focused": 74,
+        "validate changed": 75,
         "validate domain": 26,
         "validate e2e": 6,
-        "validate fast": 64,
-        "validate full": 43
+        "validate fast": 68,
+        "validate full": 44
       },
-      "events": 283,
-      "redundant_command_events": 272,
-      "validation_wall_seconds": 52734.654781
+      "events": 306,
+      "redundant_command_events": 292,
+      "validation_wall_seconds": 53792.984602
     }
   },
   "validation": {
@@ -117,7 +130,7 @@
       "command": "closure format",
       "exit_code": 0,
       "status": "passed",
-      "wall_seconds": 0.064068
+      "wall_seconds": 0.070378
     },
     "full": {
       "core_checkpoint_required": false,
@@ -190,8 +203,8 @@
       ],
       "skips": 49,
       "status": "passed",
-      "tests_run": 4606,
-      "wall_seconds": 213.62899610000022
+      "tests_run": 4618,
+      "wall_seconds": 272.98208200000226
     }
   }
 }

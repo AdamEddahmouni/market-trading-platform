@@ -287,24 +287,28 @@
   "code_gaps": [
     {
       "id": "CG-01",
+      "status": "CLOSED",
+      "closed_at": "2026-09-12T05:00:00Z",
+      "resolution": "IMPLEMENTED",
       "title": "campaign_slug vs FTCAMP-hash manifest reload",
-      "summary": "ForwardTestSession stores campaign_id only. After freeze, manifest campaign_id becomes FTCAMP-{fingerprint}; artifact path remains artifacts/forward-test-campaigns/FTEP-V1-001/. _load_session_manifest(session) calls load_activation_manifest(session.campaign_id), which fails when campaign_id is the derived hash unless callers still pass the slug as campaign_id (tests use slug). _campaign_provenance sets campaign_slug from session.campaign_id, conflating slug and derived id.",
+      "summary": "resolve_manifest_campaign_slug + session.config campaign_slug; manifest reload uses slug while campaign_id may be FTCAMP-{fingerprint}.",
       "evidence": [
-        "src/market_platform_foundation/intelligence/paper_forward_bridge/service.py",
-        "src/market_platform_foundation/intelligence/paper_forward_bridge/types.py",
         "src/market_platform_foundation/intelligence/paper_forward_bridge/activation.py",
-        "docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md"
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/service.py",
+        "tests/intelligence/test_forward_test_activation.py"
       ]
     },
     {
       "id": "CG-02",
-      "title": "sample_floor enforcement not wired in ForwardTestService",
-      "summary": "assess_sample_floor_disposition exists in session_policy.py and gates statistical disposition (activation_ready vs statistical_disposition_ready) but service.py does not invoke it on lock/evaluate paths; sample floors in manifest gate disposition only per PAPER_FORWARD_TESTING_BRIDGE.md.",
+      "status": "CLOSED",
+      "closed_at": "2026-09-12T05:00:00Z",
+      "resolution": "IMPLEMENTED",
+      "title": "sample_floor disposition wired in ForwardTestService",
+      "summary": "_refresh_sample_floor_disposition invoked on lock/evaluate; floors gate statistical disposition only, not individual locks.",
       "evidence": [
         "src/market_platform_foundation/intelligence/paper_forward_bridge/session_policy.py",
         "src/market_platform_foundation/intelligence/paper_forward_bridge/service.py",
-        "tests/intelligence/test_forward_test_session_policy.py",
-        "docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md"
+        "tests/intelligence/test_forward_test_session_policy.py"
       ]
     },
     {

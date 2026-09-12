@@ -72,12 +72,27 @@ class CoverageGapReport:
 _CLASSIFICATION_TO_DISPOSITION: dict[str, GapDisposition] = {
     "BLOCKER": GapDisposition.BLOCKING,
     "OWNER": GapDisposition.BLOCKING,
+    "OWNER_RESOLVED": GapDisposition.SATISFIED,
     "DESIGN": GapDisposition.BLOCKING,
     "INTEGRATION": GapDisposition.BLOCKING,
     "BY_DESIGN": GapDisposition.INFORMATIONAL,
     "OPS": GapDisposition.INFORMATIONAL,
     "SCOPE": GapDisposition.INFORMATIONAL,
+    "CLOSED": GapDisposition.SATISFIED,
 }
+
+
+def _code_gap_disposition(meta: Mapping[str, Any]) -> GapDisposition:
+    classification = str(meta.get("classification", "")).strip().upper()
+    if classification in {"CLOSED", "SATISFIED"}:
+        return GapDisposition.SATISFIED
+    status = str(meta.get("status", "")).strip().upper()
+    if status in {"CLOSED", "SATISFIED", "RESOLVED"}:
+        return GapDisposition.SATISFIED
+    resolution = str(meta.get("resolution", "")).strip().upper()
+    if resolution in {"CLOSED", "SATISFIED", "IMPLEMENTED"}:
+        return GapDisposition.SATISFIED
+    return GapDisposition.BLOCKING
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -109,11 +124,15 @@ def load_wave_a_gap_catalog(repository_root: Path) -> dict[str, dict[str, Any]]:
         for row in payload.get("code_gaps", ()):
             gap_id = str(row.get("id", ""))
             if gap_id:
+                status = str(row.get("status", "")).strip().upper()
+                classification = "CLOSED" if status in {"CLOSED", "SATISFIED", "RESOLVED"} else "INTEGRATION"
                 catalog[gap_id] = {
-                    "classification": "INTEGRATION",
+                    "classification": classification,
                     "summary": str(row.get("title", row.get("summary", ""))),
                     "source": "ftep-campaign-audit.code_gaps",
                     "evidence_refs": tuple(str(item) for item in row.get("evidence", ())),
+                    "status": status,
+                    "resolution": str(row.get("resolution", "")).strip().upper(),
                 }
 
     return catalog
@@ -254,13 +273,19 @@ def resolve_coverage_gaps(
 
     for gap_id in profile.code_gap_ids:
         meta = catalog.get(gap_id, {})
+        disposition = _code_gap_disposition(meta)
+        reason = (
+            "FTEP_CODE_GAP_CLOSED"
+            if disposition == GapDisposition.SATISFIED
+            else "FTEP_CODE_GAP_OPEN"
+        )
         gaps.append(
             CoverageGap(
                 gap_id=gap_id,
-                disposition=GapDisposition.BLOCKING,
+                disposition=disposition,
                 source=str(meta.get("source", "ftep_code_gap")),
                 summary=str(meta.get("summary", gap_id)),
-                reason_code="FTEP_CODE_GAP_OPEN",
+                reason_code=reason,
                 evidence_refs=tuple(meta.get("evidence_refs", ())),
             )
         )

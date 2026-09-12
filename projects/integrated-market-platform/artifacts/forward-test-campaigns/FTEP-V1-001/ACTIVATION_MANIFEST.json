@@ -2,6 +2,8 @@
   "schema_version": "intelligence/paper_forward_bridge/activation_manifest/1.0.0",
   "manifest_schema_version": 1,
   "created_at": "2026-09-11T03:30:00Z",
+  "proposed_configuration_reconciled_at": "2026-09-12T05:10:00Z",
+  "proposed_configuration_note": "OD-1 through OD-10 owner-selected values recorded for freeze readiness; not governed/frozen until OD-11 sign-off.",
   "campaign_slug": "FTEP-V1-001",
   "campaign_id": null,
   "protocol_id": "FTEP-V1/0.1.0-PREREG",
@@ -33,45 +35,68 @@
     "status": "RESOLVE_AT_FREEZE_FROM_LEDGER",
     "note": "Populate paper_account_id from single configured Paper ledger at freeze; remains owner attestation under OD-11."
   },
+  "owner_decisions_recorded": {
+    "OD-1": {
+      "source": "OWNER_SELECTED",
+      "resolution": "news-strategy ES lane (Option A)",
+      "strategy_binding": "A",
+      "lane_id": "FUTURES_EQUITY_INDEX",
+      "universe": ["ES"],
+      "baseline_policy_id": "news_deterministic_baseline@1.0.0",
+      "ai_policy_id": "news_ai_enhanced@1.0.0",
+      "intelligence_provider": "RECORDED_ARTIFACTS_ONLY"
+    },
+    "OD-2": {
+      "source": "AUTHORITY_RESOLVED",
+      "resolution": "ES / FUTURES_EQUITY_INDEX from OD-1"
+    },
+    "OD-3": {
+      "source": "OWNER_SELECTED",
+      "resolution": "US_EQUITY_RTH",
+      "calendar_window_et": "09:30-16:00",
+      "off_hours_platform": "READ_ONLY_NON_GOVERNED_LOCKS"
+    },
+    "OD-4": {
+      "source": "OWNER_SELECTED",
+      "resolution": "dual duration floor (5 sessions × 5 min × 5 trading days)"
+    },
+    "OD-5": {
+      "source": "OWNER_SELECTED",
+      "resolution": "EVENT_DRIVEN"
+    },
+    "OD-6": {
+      "source": "OWNER_SELECTED",
+      "resolution": "PHASED_SIGNAL_ONLY_THEN_EXECUTION",
+      "phase_transition_min_locks": 5
+    },
+    "OD-7": {
+      "source": "OWNER_SELECTED",
+      "resolution": "protocol §14 proposed integers (30/15/5/5/10/10)"
+    },
+    "OD-8": {
+      "source": "OWNER_SELECTED",
+      "resolution": "percentage_return",
+      "statistical_test": "PAIRED_BOOTSTRAP_CI"
+    },
+    "OD-9": {
+      "source": "OWNER_SELECTED",
+      "resolution": "(symbol, decision_bucket, evaluation_horizon_ns)"
+    },
+    "OD-10": {
+      "source": "ENGINEERING_DERIVED",
+      "resolution": "FTCAMP-{sha256(manifest_fingerprint).lower()} at freeze"
+    }
+  },
   "owner_decisions_required": [
-    "OD-1",
-    "FTEP-D002",
-    "OD-2",
-    "FTEP-D008",
-    "FTEP-D011",
-    "OD-3",
-    "FTEP-D013",
-    "OD-4",
-    "FTEP-D014",
-    "OD-5",
-    "FTEP-D017",
-    "OD-6",
-    "FTEP-D019",
-    "OD-7",
-    "FTEP-D025",
-    "OD-8",
-    "FTEP-D026",
-    "OD-9",
-    "FTEP-D030",
-    "OD-10",
-    "FTEP-D031",
     "OD-11",
     "FTEP-D035",
     "FTEP-D037",
-    "FTEP-D039"
+    "FTEP-D039",
+    "paper_account_binding"
   ],
   "unresolved_fields": [
-    "OD-1",
-    "OD-2",
-    "OD-3",
-    "OD-4",
-    "OD-5",
-    "OD-6",
-    "OD-7",
-    "OD-8",
-    "OD-9",
-    "OD-10",
-    "OD-11"
+    "OD-11",
+    "paper_account_binding"
   ],
   "owner_conditional_decisions": {
     "if_od_1_equals_B": [
@@ -94,9 +119,9 @@
       "FTEP-D007"
     ]
   },
-  "strategy_binding": null,
-  "primary_metric": null,
-  "cohort_matching_key": null,
+  "strategy_binding": "A",
+  "primary_metric": "percentage_return",
+  "cohort_matching_key": "(symbol, decision_bucket, evaluation_horizon_ns)",
   "owner_signed_at": null,
   "manifest_fingerprint": null,
   "resolved_fields": {
@@ -234,12 +259,12 @@
     "OD-11": "SIGN_AND_REOPEN_CHECKLIST"
   },
   "policies": {
-    "baseline_policy_id": null,
-    "ai_policy_id": null,
+    "baseline_policy_id": "news_deterministic_baseline@1.0.0",
+    "ai_policy_id": "news_ai_enhanced@1.0.0",
     "naive_reference_included": false
   },
-  "universe": null,
-  "lane_id": null,
+  "universe": ["ES"],
+  "lane_id": "FUTURES_EQUITY_INDEX",
   "intelligence_provider": "RECORDED_ARTIFACTS_ONLY",
   "calendar_scope": "US_EQUITY_RTH",
   "cadence": "EVENT_DRIVEN",

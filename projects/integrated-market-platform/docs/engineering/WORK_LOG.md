@@ -36,6 +36,19 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — FTEP-V1 activation lead closure (pre-freeze)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, `providers`, `artifacts/ftep-v1-activation` |
+| **Summary** | Closed CG-01/CG-02 in coverage gap engine and Wave A audit; reconciled OD-1–9 into proposed manifest fields without freeze; marked WAVE-A-004 owner-resolved; added secret-free probe/shakedown/paper-choice artifacts; Moomoo probe shows OpenD down (NEEDS_LOCAL_PRIVATE_PROBE). Stopped before OD-11 freeze and Paper bind. |
+| **Key files** | `src/market_platform_foundation/providers/coverage_gap_engine.py`, `artifacts/wave-a-findings/ftep-campaign-audit.json`, `artifacts/wave-a-findings/news-data-inventory.json`, `artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json`, `artifacts/ftep-v1-activation/*`, `tests/providers/test_coverage_gap_engine.py` |
+| **Tests** | `python tools/imp.py validate fast` (21 pass); `validate changed` (2116 pass); `unittest tests.providers.test_coverage_gap_engine` (6 pass); calibration discover (4 pass) |
+| **Related** | [FTEP_V1_ACTIVATION_BLOCKER_REPORT.md](./FTEP_V1_ACTIVATION_BLOCKER_REPORT.md), [OPERATOR_PROBE_RUNBOOK.md](./OPERATOR_PROBE_RUNBOOK.md) |
+| **Notes** | Campaign-readiness remains NOT_READY (manifest pending OD-11, probes, entitlements). Local uncommitted delta on branch `work/ftep-v1-activation`. |
+
+
 ## 2026-09-12 — FTEP v1 implementation goal closure audit
 
 | Field | Value |
