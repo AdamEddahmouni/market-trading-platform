@@ -2,6 +2,13 @@
 
 from .baseline_naive import NaiveLastValueModel, MODEL_FAMILY, MODEL_INTERFACE_VERSION
 from .dataset_manifest import build_dataset_manifest, dataset_fingerprint, materialize_dataset_rows
+from .pit_export import (
+    build_research_export_from_events,
+    build_research_export_from_rows,
+    build_research_export_manifest,
+    research_export_fingerprint,
+    write_research_export_manifest,
+)
 from .dataset_pipeline import (
     build_manifest_from_projection,
     build_research_dataset_from_events,
@@ -38,6 +45,9 @@ __all__ = [
     "READER_VERSION",
     "RESEARCH_ROW_SPEC",
     "build_dataset_manifest",
+    "build_research_export_from_events",
+    "build_research_export_from_rows",
+    "build_research_export_manifest",
     "build_manifest_from_projection",
     "build_research_dataset_from_events",
     "build_forecast",
@@ -55,9 +65,11 @@ __all__ = [
     "read_json_array_projection",
     "read_jsonl_projection",
     "read_jsonl_projection_bytes",
+    "research_export_fingerprint",
     "run_walk_forward_evaluation",
     "serialize_rows_jsonl",
     "serialize_artifact",
     "verify_fold_pit",
     "verify_label_availability",
+    "write_research_export_manifest",
 ]

@@ -101,6 +101,17 @@ Snapshot logical ID: `providers.frozen_observation_compare`. No live HTTP.
 
 Unified provider capability matrix HTTP projection and cross-surface enum normalization remain **deferred** (`DEFER-UNIFIED-UI-MATRIX`). Operator readiness CLI and projections are the supported path until a canonical matrix DTO exists.
 
+## PIT research export (PIT-A-001)
+
+Unified offline export binding (ADR-PIT-001 + ADR-RDATA-001):
+
+| Module | Role |
+| --- | --- |
+| `research/pit_export.py` | Immutable export manifest: `source_sha256`, `prediction_cutoff_ns`, dataset fingerprints, experiment binding |
+| `tests/research/test_pit_export.py` | Determinism and fail-closed validation |
+
+Operator probe steps (no Live activation): [OPERATOR_PROBE_RUNBOOK.md](./OPERATOR_PROBE_RUNBOOK.md).
+
 ## Related artifacts
 
 - Parent synthesis: `artifacts/wave-a-findings/reconciliation-gate.json`

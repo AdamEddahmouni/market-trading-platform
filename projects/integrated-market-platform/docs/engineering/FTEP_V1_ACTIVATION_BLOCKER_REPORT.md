@@ -8,7 +8,7 @@
 
 ## Executive disposition
 
-**PARTIALLY_COMPLETE** — Section 28 success criteria **A–Z**: **22 MET**, **4 PARTIAL** (C, O, X, and engineering-normalization scope under O), **0** criterion-level BLOCKED. Qualifying **FTEP-V1-001 / ES-news** empirical activation remains **not authorized**.
+**PARTIALLY_COMPLETE** — Section 28 success criteria **A–Z**: **24 MET**, **1 PARTIAL** (**O** observational ingress deferred), **0** criterion-level BLOCKED. Qualifying **FTEP-V1-001 / ES-news** empirical activation remains **not authorized**. **engineering_complete:** `true` (repo-safe scope exhausted; see goal audit).
 
 Do **not** call the parent `/goal` complete. Do **not** freeze the activation manifest until owner decisions and calibration numerics are resolved.
 
@@ -31,14 +31,12 @@ Do **not** call the parent `/goal` complete. Do **not** freeze the activation ma
 
 | Criterion | Gap | Owner |
 |-----------|-----|-------|
-| **C** | Static audits complete; fresh local probes not re-run this pass | Operator |
-| **O** | Canonical offline news path + bridges; live ingress deferred | Owner / Engineering |
-| **X** | PIT semantics distributed; unified export API (PIT-A-001) not built | Engineering (low priority vs activation) |
+| **O** | Canonical offline news path + bridges; live ingress deferred (DEFER-FTEP-ACT-04) | Owner / Engineering |
 
 ## Safe operator sequence (after blockers)
 
 1. Resolve **OWNER-OD-1-11** and **OWNER-CALIBRATION-THRESHOLDS**.
-2. Run **PROBE-*** commands; regenerate `artifacts/wave-a-findings/capability-matrix-snapshot.json`.
+2. Run **PROBE-*** commands per [OPERATOR_PROBE_RUNBOOK.md](./OPERATOR_PROBE_RUNBOOK.md); regenerate `artifacts/wave-a-findings/capability-matrix-snapshot.json`.
 3. `python tools/imp.py providers campaign-readiness FTEP-V1-001 --json` — must fail closed until gaps clear.
 4. `python tools/forward_test/freeze_activation_manifest.py` — only when manifest complete.
 5. Shakedown segment per gates G-A20; qualifying cohort only after freeze.
@@ -68,7 +66,7 @@ Do **not** state or imply:
 
 | Gap | Automatable? | Notes |
 |-----|----------------|-------|
-| PIT-A-001 unified export API | Yes, large | Does not unblock activation alone |
+| PIT-A-001 unified export API | **Closed** (`research/pit_export.py`) | Durable store (PIT-A-005) still open |
 | DEFER-UNIFIED-UI-MATRIX | Yes, deferred | Acceptable deferral per wave-b |
 | DEFER-FTEP-ACT-04 observational ingress | Yes, when governance opens | Currently owner-gated deferral |
 | Local probes / entitlements / owner packet | **No** | Operator + owner + external providers |
