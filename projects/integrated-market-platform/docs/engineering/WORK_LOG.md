@@ -81,7 +81,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Summary** | After orchestrator completion, wired `paper_forward_bridge` changed-validation leaf to include V1-002 campaign tests, frozen-manifest verifier, and governance artifacts so `imp.py validate changed` exercises the pivot. |
 | **Key files** | `tools/validation_manifest.json` |
 | **Tests** | `python tools/imp.py validate fast` — 21/0; `python tools/imp.py validate changed` — 2159 passed, 0 failures |
-| **Related** | [FTEP-V1-002 zero-cost pivot](7d610fd0-12ec-4653-916b-a80610368839) |
+| **Related** | [FTEP-V1-002 executive report](../../artifacts/ftep-v1-002/FINAL_EXECUTIVE_REPORT.md) |
 | **Notes** | Work remains uncommitted on `work/ftep-v1-002-us-equity-news`; owner freeze decisions still open. |
 
 ## 2026-09-12 — FTEP-V1-002 US equity news-catalyst pivot
