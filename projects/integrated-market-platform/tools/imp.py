@@ -614,6 +614,25 @@ def build_parser() -> argparse.ArgumentParser:
     )
     campaign_readiness.add_argument("--json", action="store_true")
     campaign_readiness.add_argument("--probe-local", action="store_true")
+
+    ftep = groups.add_parser("ftep", help="read-only FTEP campaign observability")
+    ftep_actions = ftep.add_subparsers(dest="action", required=True)
+    campaign_status = ftep_actions.add_parser(
+        "campaign-status",
+        help="compose campaign progress from receipts and readiness gates",
+    )
+    campaign_status.add_argument(
+        "campaign_slug",
+        nargs="?",
+        default="FTEP-V1-002",
+        help="Forward-test campaign slug (default: FTEP-V1-002)",
+    )
+    campaign_status.add_argument("--json", action="store_true", help="Machine-readable JSON")
+    campaign_status.add_argument(
+        "--probe-local",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
     return parser
 
 
@@ -767,6 +786,21 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.group == "providers":
         return _providers_command(root, args)
+
+    if args.group == "ftep":
+        python = _validation_python(root)
+        env = _python_environment(root)
+        command = [python, str(root / "tools" / "ftep_campaign_status.py"), args.campaign_slug]
+        if getattr(args, "json", False):
+            command.append("--json")
+        result = _run(
+            root,
+            label=f"ftep {args.action}",
+            command=command,
+            env=env,
+            stream_output=True,
+        )
+        return int(result["exit_code"])
 
     if args.group == "closure":
         changed_files = _git_changed_files(root)
