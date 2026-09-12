@@ -36,6 +36,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — FTEP v1 activation goal audit (section 28 A–Z)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `artifacts`, `docs` |
+| **Summary** | Final engineering completion audit for `/goal` section 28 criteria A–Z: machine-readable `ftep-v1-activation-goal-audit.json` (22 MET, 4 PARTIAL), consolidated `FTEP_V1_ACTIVATION_BLOCKER_REPORT.md`, wave-b-closure cross-link; qualifying FTEP-V1-001 activation remains blocked. |
+| **Key files** | `artifacts/ftep-v1-activation-goal-audit.json` (created), `docs/engineering/FTEP_V1_ACTIVATION_BLOCKER_REPORT.md` (created), `artifacts/wave-b-closure-report.json` (updated) |
+| **Tests** | `python tools/imp.py validate fast` — 21 passed, 0 failures |
+| **Related** | `artifacts/wave-b-closure-report.json`, `artifacts/wave-a-findings/reconciliation-gate.json` |
+| **Notes** | No UpdateGoal complete; no push/freeze/Live. |
+
+## 2026-09-12 — Wave B closure report sync (fac808f)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `artifacts` |
+| **Summary** | Linked Wave B executive closure report to fac808f gap-fill deliverables: `ftep_gap_fill_commit` and authoritative path to ES/news stack selection artifact; corrected activation manifest evidence path casing. |
+| **Key files** | `artifacts/wave-b-closure-report.json` |
+| **Tests** | Not run (JSON metadata only) |
+| **Related** | Commit `2e9c7ac`; prior `fac808f` FTEP gap-fill entry below |
+| **Notes** | No push. |
+
 ## 2026-09-12 — FTEP gap fill: ES stack artifact, profile refs, imp providers
 
 | Field | Value |

@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "artifact_kind": "wave_b_closure_executive_report",
   "artifact_id": "wave-b-closure-report",
-  "observed_at": "2026-09-12T02:49:00Z",
+  "observed_at": "2026-09-12T04:00:00Z",
   "disposition": "PARTIALLY_COMPLETE",
   "package_3_baseline_commit": "613a6b4",
   "closure_commit": "af9b2e0",
@@ -156,7 +156,17 @@
     "reconciliation_gate": "artifacts/wave-a-findings/reconciliation-gate.json",
     "engineering_guide": "docs/engineering/PROVIDER_ACTIVATION_INCREMENT.md",
     "es_news_provider_stack_selection": "artifacts/ftep-v1-001/es-news-provider-stack-selection.json",
+    "ftep_v1_activation_goal_audit": "artifacts/ftep-v1-activation-goal-audit.json",
+    "ftep_v1_activation_blocker_report": "docs/engineering/FTEP_V1_ACTIVATION_BLOCKER_REPORT.md",
     "notion_sync": "artifacts/wave-b-notion-sync-payload.md"
+  },
+  "goal_audit_section_28": {
+    "observed_at": "2026-09-12T04:00:00Z",
+    "head_sha": "2e9c7acecb1825fe430b7afc801c7cc3befe77fd",
+    "disposition": "PARTIALLY_COMPLETE",
+    "criteria_met": 22,
+    "criteria_partial": 4,
+    "artifact": "artifacts/ftep-v1-activation-goal-audit.json"
   },
   "secrets_in_artifact": false
 }
