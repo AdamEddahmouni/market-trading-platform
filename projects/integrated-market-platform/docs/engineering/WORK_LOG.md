@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-11 — Wave B gap engine and campaign readiness (PKG-DIAGNOSTICS-READINESS)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `paper_forward_bridge`, `tools`, `artifacts` |
+| **Summary** | Added deterministic coverage-gap resolver and FTEP-V1-001 ES/news requirement profile over the capability snapshot, plus fail-closed campaign readiness composing forward-test preflight and gap output. Extended `provider_readiness.py` with read-only `audit`, `gaps`, and `campaign-readiness` subcommands; emitted validated `capability-matrix-snapshot.json` and marked PKG-CAPABILITY-FOUNDATION complete in reconciliation-gate. |
+| **Key files** | `src/market_platform_foundation/providers/capability_requirements.py`, `coverage_gap_engine.py`, `intelligence/paper_forward_bridge/campaign_readiness.py`, `tools/provider_readiness.py`, `tests/providers/test_coverage_gap_engine.py`, `artifacts/wave-a-findings/capability-matrix-snapshot.json`, `artifacts/wave-a-findings/reconciliation-gate.json`, `docs/engineering/PROVIDER_READINESS.md` |
+| **Tests** | `python -m unittest tests.providers.test_coverage_gap_engine tests.providers.test_capability_matrix -q` (12 passed); `.venv` `python tools/validate.py changed` (2668 passed, 40 skipped) |
+| **Related** | `artifacts/wave-a-findings/reconciliation-gate.json` PKG-DIAGNOSTICS-READINESS, PKG-CAPABILITY-FOUNDATION `60cce0e` |
+| **Notes** | No live probes, no manifest freeze, no new provider integrations. Fixed `secrets_included` hygiene in snapshot redaction. |
+
 ## 2026-09-11 — Wave B capability matrix foundation (PKG-CAPABILITY-FOUNDATION)
 
 | Field | Value |
