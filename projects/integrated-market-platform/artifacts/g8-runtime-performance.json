@@ -3,14 +3,14 @@
   "disclaimer": "development-machine observational measurement only; not provider-network throughput; not production SLA.",
   "iterations": 5000,
   "measurements": {
-    "callback_bridge_events_per_sec": 15928.416422419303,
-    "callback_bridge_seconds": 0.3139043999981368,
-    "capture_replay_events_per_sec": 23023.777114996727,
-    "capture_replay_seconds": 0.21716680000099586,
+    "callback_bridge_events_per_sec": 6991.536325862436,
+    "callback_bridge_seconds": 0.715150399992126,
+    "capture_replay_events_per_sec": 10753.629403872572,
+    "capture_replay_seconds": 0.4649592999921879,
     "startup_composition_repeats": 200.0,
-    "startup_composition_seconds_each": 2.0423500009201233e-05,
-    "startup_composition_seconds_total": 0.004084700001840247,
-    "subscribe_cancel_cycles_per_sec": 86782.6545781408,
-    "subscribe_cancel_seconds": 0.05761519999941811
+    "startup_composition_seconds_each": 4.5343500023591335e-05,
+    "startup_composition_seconds_total": 0.009068700004718266,
+    "subscribe_cancel_cycles_per_sec": 50284.155759046545,
+    "subscribe_cancel_seconds": 0.09943490001023747
   }
 }

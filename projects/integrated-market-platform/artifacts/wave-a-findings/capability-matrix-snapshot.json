@@ -1,6 +1,6 @@
 {
   "logical_id": "providers.capability_matrix_snapshot",
-  "observed_at": "2026-09-12T00:43:55Z",
+  "observed_at": "2026-09-12T01:51:16Z",
   "providers": [
     {
       "access_state": "BLOCKED",
@@ -218,7 +218,7 @@
       ],
       "capability_contract_id": "ibkr_observational/broker@1.0.0",
       "display_name": "Ibkr Observational",
-      "notes": "SOFTWARE_COMPLETE_SECONDARY_OBSERVATIONAL_LIVE_PARTIAL",
+      "notes": "SOFTWARE_COMPLETE_SECONDARY_OBSERVATIONAL_LIVE_PARTIAL; readiness gate=DISABLED transport=NOT_CHECKED",
       "provider_id": "ibkr_observational",
       "support_level": "KNOWN_SUPPORTED"
     },
@@ -235,7 +235,7 @@
       ],
       "capability_contract_id": "tradier_paper/broker@1.0.0",
       "display_name": "Tradier Paper",
-      "notes": "FIXTURE_ADAPTER_LANDED_LIVE_HTTP_NOT_IMPLEMENTED",
+      "notes": "FIXTURE_ADAPTER_LANDED_LIVE_HTTP_NOT_IMPLEMENTED; readiness gate=DISABLED transport=FIXTURE_ONLY",
       "provider_id": "tradier_paper",
       "support_level": "KNOWN_SUPPORTED"
     }

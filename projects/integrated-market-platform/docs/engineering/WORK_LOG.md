@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-11 — Wave B calibration, comparator, and bridge fixes (PKG 3–5)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper`, `paper_forward_bridge`, `news`, `artifacts` |
+| **Summary** | Added preregisterable paper simulator calibration thresholds (UNSET/BLOCKING), fixture-backed IMP vs comparator metrics, external comparator contract with explicit not-market-truth semantics, and Wave A futures suitability advisory hook. Fixed CG-01 manifest reload via stored campaign slug vs FTCAMP hash, wired sample-floor disposition on lock/evaluate (CG-02), and introduced NewsAggregator→NewsArticleEvent plus recorded-eval forward handoff helpers. Updated reconciliation-gate for PKG-DIAGNOSTICS-READINESS `373e47e` and marked packages 3–5 complete. |
+| **Key files** | `src/market_platform_foundation/paper/calibration/**`, `src/market_platform_foundation/news/aggregator_bridge.py`, `src/market_platform_foundation/intelligence/paper_forward_bridge/{service,activation,repository,session_policy,recorded_eval_bridge}.py`, `manifests/paper/schemas/calibration_thresholds.schema.json`, `tests/{platform/test_simulator_calibration,news/test_aggregator_bridge,intelligence/test_forward_test_campaign_slug,intelligence/test_recorded_eval_bridge}.py`, `artifacts/wave-a-findings/reconciliation-gate.json`, `tools/validation_manifest.json` |
+| **Tests** | `python -B -m unittest` on new tests (12 passed); `python tools/validate.py changed` (2977 passed, 29 skipped) |
+| **Related** | `docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md`, `artifacts/wave-a-findings/reconciliation-gate.json` |
+| **Notes** | No manifest freeze, no live probes, FTEP-ACT-06 auto-bridge still deferred. |
+
 ## 2026-09-11 — Wave B gap engine and campaign readiness (PKG-DIAGNOSTICS-READINESS)
 
 | Field | Value |
