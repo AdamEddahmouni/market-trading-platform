@@ -114,11 +114,20 @@ def collect_ftep_integrity_checks(
     )
 
     readiness = evaluate_campaign_readiness(campaign_slug, repository_root=repository_root)
+    readiness_ready = readiness.disposition == CampaignReadinessDisposition.READY
+    readiness_detail = (
+        f"disposition={readiness.disposition.value}; blockers={readiness.blockers}"
+    )
+    if not readiness_ready and readiness.blockers == ("PERSISTENCE_DISABLED",):
+        readiness_detail += (
+            "; operator_hint=Set IMP_PERSIST_STATE=1 or IMP_STATE_DIR, then re-run "
+            "integrity-check (campaign gates pass once durable state is enabled)"
+        )
     checks.append(
         _check(
             "campaign_readiness_ready",
-            readiness.disposition == CampaignReadinessDisposition.READY,
-            f"disposition={readiness.disposition.value}; blockers={readiness.blockers}",
+            readiness_ready,
+            readiness_detail,
         )
     )
 
@@ -153,6 +162,13 @@ def collect_ftep_integrity_checks(
     failed = [item for item in checks if not item["passed"] and item["severity"] == "ERROR"]
     disposition = "PASS" if not failed else "FAIL"
 
+    operator_hints: list[str] = []
+    if not persist_on and "PERSISTENCE_DISABLED" in readiness.blockers:
+        operator_hints.append(
+            "Durable forward-test state is off: set IMP_PERSIST_STATE=1 or IMP_STATE_DIR "
+            "before integrity-check, campaign-readiness, or governed SIGNAL_ONLY session start."
+        )
+
     return {
         "schema_version": "1.0.0",
         "artifact_kind": "ftep_integrity_report",
@@ -160,6 +176,7 @@ def collect_ftep_integrity_checks(
         "disposition": disposition,
         "checks": checks,
         "failed_check_ids": [item["check_id"] for item in failed],
+        "operator_hints": operator_hints,
         "secrets_included": False,
     }
 

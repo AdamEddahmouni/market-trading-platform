@@ -26,10 +26,18 @@ python tools/imp.py ftep integrity-check FTEP-V1-002 --json
 
 Expect `disposition`: `READY` and empty `blockers`. Integrity-check must report `disposition`: `PASS` (includes unchanged `FTEP-V1-001` fingerprint).
 
-Optional opportunity dry-run (fixture rows, not live data):
+Without `IMP_PERSIST_STATE=1`, integrity-check fails closed with `PERSISTENCE_DISABLED` and prints `operator_hints` explaining that durable state must be enabled (checks are unchanged; only the shell env is missing).
+
+Optional opportunity dry-run (FTEP-V1-002 fixture rows, not live data):
 
 ```powershell
-python tools/imp.py ftep opportunity-summaries --sample --json
+python tools/imp.py ftep opportunity-summaries --json
+```
+
+Optional session gate dry-run (no locks; still requires RTH open to pass):
+
+```powershell
+python tools/imp.py ftep session-start FTEP-V1-002 --dry-run --json
 ```
 
 Optional Finviz refresh (no secrets in logs):

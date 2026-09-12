@@ -664,6 +664,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="Forward-test campaign slug (default: FTEP-V1-002)",
     )
     integrity_check.add_argument("--json", action="store_true", help="Machine-readable JSON")
+    session_start = ftep_actions.add_parser(
+        "session-start",
+        help="validate SIGNAL_ONLY session gates without creating locks (dry-run only)",
+    )
+    session_start.add_argument(
+        "campaign_slug",
+        nargs="?",
+        default="FTEP-V1-002",
+        help="Forward-test campaign slug (default: FTEP-V1-002)",
+    )
+    session_start.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Required: evaluate gates only; no session or lock writes",
+    )
+    session_start.add_argument("--json", action="store_true", help="Machine-readable JSON")
     return parser
 
 
@@ -716,6 +732,12 @@ def _ftep_command(root: Path, args: argparse.Namespace) -> int:
             command.append("--json")
     elif args.action == "integrity-check":
         command = [python, str(root / "tools" / "ftep_integrity_check.py"), args.campaign_slug]
+        if getattr(args, "json", False):
+            command.append("--json")
+    elif args.action == "session-start":
+        command = [python, str(root / "tools" / "ftep_session_start.py"), args.campaign_slug]
+        if getattr(args, "dry_run", False):
+            command.append("--dry-run")
         if getattr(args, "json", False):
             command.append("--json")
     else:

@@ -95,6 +95,28 @@ class OpportunityReadModelTests(unittest.TestCase):
         self.assertEqual(summary.catalyst_ids, ("contract",))
         self.assertEqual(summary.campaign_slug, "FTEP-V1-002")
 
+    def test_opportunity_summaries_cli_uses_ftep_fixture_by_default(self) -> None:
+        import subprocess
+        import sys
+
+        root = Path(__file__).resolve().parents[2]
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(root / "tools" / "opportunity_summaries.py"),
+                "--campaign-slug",
+                "FTEP-V1-002",
+                "--json",
+            ],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("att-ftep002-nvda-guidance", result.stdout)
+        self.assertIn("opportunity-attention-fixture.json", result.stdout)
+
     def test_opportunity_summaries_cli_sample_json(self) -> None:
         import subprocess
         import sys

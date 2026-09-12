@@ -34,6 +34,8 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(payload, indent=2, sort_keys=True))
     else:
         print(f"disposition={payload['disposition']} failed={payload['failed_check_ids']}")
+        for hint in payload.get("operator_hints") or ():
+            print(f"hint: {hint}", file=sys.stderr)
     return 0 if payload["disposition"] == "PASS" else 1
 
 

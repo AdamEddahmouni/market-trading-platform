@@ -15,6 +15,21 @@ class FtepIntegrityTests(unittest.TestCase):
     def setUp(self) -> None:
         os.environ["IMP_PERSIST_STATE"] = "1"
 
+    def test_v1_002_integrity_surfaces_persistence_hint_without_env(self) -> None:
+        prior_persist = os.environ.pop("IMP_PERSIST_STATE", None)
+        prior_state_dir = os.environ.pop("IMP_STATE_DIR", None)
+        try:
+            payload = collect_ftep_integrity_checks(REPO_ROOT, "FTEP-V1-002")
+        finally:
+            if prior_persist is not None:
+                os.environ["IMP_PERSIST_STATE"] = prior_persist
+            if prior_state_dir is not None:
+                os.environ["IMP_STATE_DIR"] = prior_state_dir
+        self.assertEqual(payload["disposition"], "FAIL")
+        self.assertIn("campaign_readiness_ready", payload["failed_check_ids"])
+        self.assertTrue(payload.get("operator_hints"))
+        self.assertIn("IMP_PERSIST_STATE", payload["operator_hints"][0])
+
     def test_v1_002_integrity_passes(self) -> None:
         payload = collect_ftep_integrity_checks(REPO_ROOT, "FTEP-V1-002")
         self.assertEqual(payload["disposition"], "PASS")
