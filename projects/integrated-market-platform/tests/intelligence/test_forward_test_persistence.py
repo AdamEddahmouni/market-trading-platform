@@ -11,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "tests" / "intelligence"))
 
 from market_platform_foundation.intelligence.paper_forward_bridge import (  # noqa: E402
     ForwardTestMode,
@@ -29,6 +30,13 @@ from market_platform_foundation.local_state.startup import (  # noqa: E402
     open_local_state,
     reset_local_state_for_tests,
 )
+from forward_test_activation_support import (  # noqa: E402
+    BASELINE_POLICY,
+    POLICY_VERSION,
+    create_activated_session,
+    enable_test_campaigns_root,
+    seed_baseline_campaign,
+)
 
 T0 = 1_700_000_000_000_000_000
 HOUR = 3_600_000_000_000
@@ -39,12 +47,17 @@ class IsolatedForwardTestPersistenceTest(unittest.TestCase):
         self._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         os.environ["IMP_STATE_DIR"] = self._tmp.name
         os.environ["IMP_PERSIST_STATE"] = "1"
+        os.environ["IMP_FORWARD_TEST_EVAL_FORCE"] = "1"
+        self.campaigns_root = enable_test_campaigns_root(Path(self._tmp.name))
+        seed_baseline_campaign(self.campaigns_root)
         reset_local_state_for_tests()
 
     def tearDown(self) -> None:
         reset_local_state_for_tests()
         os.environ.pop("IMP_STATE_DIR", None)
         os.environ.pop("IMP_PERSIST_STATE", None)
+        os.environ.pop("IMP_FORWARD_TEST_CAMPAIGNS_DIR", None)
+        os.environ.pop("IMP_FORWARD_TEST_EVAL_FORCE", None)
         self._tmp.cleanup()
 
     def _repo(self):
@@ -60,12 +73,9 @@ class IsolatedForwardTestPersistenceTest(unittest.TestCase):
         return self._repo(), self._service()
 
     def _seed_locked_decision(self, service: ForwardTestService):
-        session = service.create_session(
-            account_id="paper-a",
-            mode="PAPER",
-            strategy_id="s1",
-            strategy_version="1.0.0",
-            universe=("ACME",),
+        session = create_activated_session(
+            service,
+            self.campaigns_root,
             evaluation_horizon_ns=HOUR,
             created_at_ns=T0,
         )
@@ -77,8 +87,8 @@ class IsolatedForwardTestPersistenceTest(unittest.TestCase):
             direction="BUY",
             decision_time_ns=T0,
             source_time_ns=T0 - 1,
-            strategy_id="s1",
-            strategy_version="1.0.0",
+            strategy_id=BASELINE_POLICY,
+            strategy_version=POLICY_VERSION,
             test_mode=ForwardTestMode.SIGNAL_ONLY,
         )
         locked = service.lock_decision(
@@ -102,15 +112,50 @@ class IsolatedForwardTestPersistenceTest(unittest.TestCase):
         self.assertIn("forward_test_decisions", tables)
         self.assertIn("forward_test_observations", tables)
         self.assertIn("forward_test_claims", tables)
+        self.assertIn("forward_test_campaign_bindings", tables)
+
+    def test_campaign_binding_survives_restart(self) -> None:
+        service = self._service()
+        session = create_activated_session(
+            service,
+            self.campaigns_root,
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0,
+        )
+        binding = service._store.get_active_binding(account_id="paper-a")
+        self.assertIsNotNone(binding)
+        assert binding is not None
+        self.assertEqual(binding.forward_test_session_id, session.session_id)
+        _, restarted = self._restart()
+        recovered = restarted._store.get_active_binding(account_id="paper-a")
+        self.assertIsNotNone(recovered)
+        assert recovered is not None
+        self.assertEqual(recovered.campaign_id, binding.campaign_id)
+        self.assertEqual(recovered.forward_test_session_id, session.session_id)
+
+    def test_first_lock_timestamp_persisted_after_restart(self) -> None:
+        service = self._service()
+        _session, locked = self._seed_locked_decision(service)
+        binding = service._store.get_active_binding(account_id="paper-a")
+        self.assertIsNotNone(binding)
+        assert binding is not None
+        self.assertEqual(binding.first_lock_at_ns, T0)
+        _, restarted = self._restart()
+        recovered_binding = restarted._store.get_active_binding(account_id="paper-a")
+        self.assertIsNotNone(recovered_binding)
+        assert recovered_binding is not None
+        self.assertEqual(recovered_binding.first_lock_at_ns, T0)
+        recovered_decision = restarted.get_decision(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+        )
+        self.assertEqual(recovered_decision.state, ForwardTestState.LOCKED)
 
     def test_create_session_restart_recover(self) -> None:
         service = self._service()
-        session = service.create_session(
-            account_id="paper-a",
-            mode="PAPER",
-            strategy_id="s1",
-            strategy_version="1.0.0",
-            universe=("ACME",),
+        session = create_activated_session(
+            service,
+            self.campaigns_root,
             evaluation_horizon_ns=HOUR,
             created_at_ns=T0,
         )
@@ -348,12 +393,9 @@ class IsolatedForwardTestPersistenceTest(unittest.TestCase):
         reset_local_state_for_tests()
         repo = create_forward_test_repository(connection=None)
         service = ForwardTestService(repo)
-        session = service.create_session(
-            account_id="paper-a",
-            mode="PAPER",
-            strategy_id="s1",
-            strategy_version="1.0.0",
-            universe=("ACME",),
+        session = create_activated_session(
+            service,
+            self.campaigns_root,
             evaluation_horizon_ns=HOUR,
             created_at_ns=T0,
         )

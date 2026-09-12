@@ -1,0 +1,337 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "wave_a_provider_access_audit",
+  "audit_id": "wave-a-finviz-moomoo-audit",
+  "observed_at": {
+    "start": "2026-09-11T22:43:23.730Z",
+    "end": "2026-09-11T22:49:41.664Z",
+    "timezone": "UTC"
+  },
+  "audit_scope": "Wave A read-only Finviz Elite + Moomoo OpenD access reconciliation (no live Finviz network probe; no OpenD start; no tools/moomoo/probe.py run; no committed evidence overwrite).",
+  "empirical_live_probe_claimed": false,
+  "audit_basis": "Wave A lane read-only audit agent 7e4e76c0-a156-4f54-ab8f-fa9a4000b645; persisted for parent reconciliation only.",
+  "related_wave_a_artifacts": [
+    {
+      "path": "artifacts/wave-a-findings/news-data-inventory.json",
+      "role": "companion_ftep_es_news_ingress_inventory"
+    },
+    {
+      "path": "artifacts/wave-a-findings/ftep-campaign-audit.json",
+      "role": "companion_ftep_v1_001_campaign_governance"
+    },
+    {
+      "path": "artifacts/wave-a-findings/ux-hooks-audit.json",
+      "role": "companion_provider_health_ui_hooks"
+    }
+  ],
+  "providers": {
+    "finviz": {
+      "provider_id": "FINVIZ_ELITE",
+      "platform_role": {
+        "primary": "DISCOVERY",
+        "also": ["CONTEXT", "NEWS", "OPTIONS_CONTEXT"],
+        "execution": "NONE",
+        "evidence": [
+          "src/market_platform_foundation/finviz/provider_role.py (EXECUTION_ROLE=NONE, finviz_can_execute false)",
+          "docs/providers/FINVIZ_ELITE.md"
+        ]
+      },
+      "live_session": {
+        "state": "UNCONFIGURED",
+        "imp_finviz_live": "unset",
+        "provider_env_file": "absent",
+        "credential_present": false,
+        "auth_state": "UNCONFIGURED",
+        "credential_source": "NONE",
+        "observed_at": "2026-09-11T22:44:56Z",
+        "evidence": [
+          "Non-network credential_manager health check in audit session (no secret values read or printed)"
+        ]
+      },
+      "classifications": [
+        {
+          "dimension": "REPO_INTEGRATION",
+          "state": "CATALOGED",
+          "evidence": [
+            "src/market_platform_foundation/finviz/",
+            "tools/finviz/probe.py",
+            "tests/finviz/",
+            "tools/validation_manifest.json suite finviz"
+          ]
+        },
+        {
+          "dimension": "LIVE_CONNECTIVITY",
+          "state": "NOT_CONNECTED",
+          "evidence": [
+            "live_session.state UNCONFIGURED",
+            "IMP_FINVIZ_LIVE unset",
+            "tools/finviz/probe.py not run this session"
+          ]
+        },
+        {
+          "dimension": "ACCOUNT_ENTITLEMENT",
+          "state": "UNKNOWN_THIS_SESSION",
+          "evidence": [
+            "No credentials loaded in audit shell"
+          ]
+        },
+        {
+          "dimension": "HISTORICAL_PROBE_EVIDENCE",
+          "state": "STALE_ACCESS_VERIFIED",
+          "as_of": "2026-08-22T04:10:30.999741Z",
+          "evidence": [
+            "evidence/market_data/finviz/capability-report.json probed_at field",
+            "Screener, News, Options chain verified in stale report",
+            "Options probe note OPTIONS_EXECUTION_DATA NOT_AUTHORIZED"
+          ]
+        }
+      ],
+      "stale_evidence": {
+        "path": "evidence/market_data/finviz/capability-report.json",
+        "probed_at": "2026-08-22T04:10:30.999741Z",
+        "finviz_live_enabled_at_probe": false,
+        "verified_capabilities_summary": [
+          "Screener export",
+          "News export",
+          "Options chain export (execution data not authorized per probe notes)"
+        ],
+        "unverified_or_ui_only_in_probe": [
+          "Groups",
+          "Portfolio",
+          "Correlations",
+          "Alerts"
+        ]
+      },
+      "account_unknowns": [
+        "Current Finviz Elite subscription active or lapsed",
+        "API export token validity",
+        "Whether login-recovery (MFA/CAPTCHA paths) would succeed",
+        "Whether stale 2026-08-22 entitlements still match the operator account"
+      ],
+      "public_facts_verified": [
+        "Elite tier documents export/API for screener, portfolio, groups, options, and news (Finviz public Elite/FAQ pages cited in audit transcript)",
+        "Repo uses elite.finviz.com export endpoints with governed 5s request floor (docs/providers/FINVIZ_ELITE.md, finviz/config.py)"
+      ]
+    },
+    "moomoo": {
+      "provider_id": "MOOMOO",
+      "platform_role": {
+        "primary": "OBSERVATIONAL_MARKET_DATA",
+        "execution_note": "Paper wire adapter is separate (providers/adapters/moomoo_paper.py); not observational live runtime",
+        "evidence": [
+          "docs/providers/MOOMOO_OBSERVATIONAL.md",
+          "src/market_platform_foundation/market_data/live_runtime.py",
+          "tools/moomoo/probe.py (quote-only, localhost guard)"
+        ]
+      },
+      "live_session": {
+        "opend_executable_present": true,
+        "opend_executable_pattern": "%APPDATA%\\moomoo_OpenD\\moomoo_OpenD.exe",
+        "opend_process_running": false,
+        "loopback_endpoint": "127.0.0.1:11111",
+        "port_reachable": false,
+        "port_probe_error": "WinError 10061 connection refused",
+        "imp_moomoo_live": "unset",
+        "imp_live_observational": "unset",
+        "check_live_environment_status": "OPEN_D_NOT_RUNNING",
+        "sdk_on_audit_python_paths": {
+          "importable": false,
+          "paths_checked": [
+            "projects/integrated-market-platform/.venv/Scripts/python.exe (CPython 3.11)",
+            "uv-managed CPython 3.11.15 (externally managed interpreter per AGENTS.md)"
+          ],
+          "modules_checked": ["futu", "moomoo"]
+        },
+        "probe_py_run_this_session": false,
+        "observed_at": "2026-09-11T22:44:56.562009Z",
+        "evidence": [
+          "Filesystem check OpenD exe present",
+          "Process check OpenD not running",
+          "Non-destructive TCP connect to 127.0.0.1:11111 refused",
+          "tools/moomoo/check_live_environment.py emitted OPEN_D_NOT_RUNNING / SDK MISSING"
+        ]
+      },
+      "classifications": [
+        {
+          "dimension": "REPO_INTEGRATION",
+          "state": "CATALOGED",
+          "evidence": [
+            "tools/moomoo/",
+            "src/market_platform_foundation/market_data/live_*",
+            "tests/live_moomoo/",
+            "tests/market_data/test_live_p21.py"
+          ]
+        },
+        {
+          "dimension": "LOCAL_INSTALL",
+          "state": "ACCESS_AVAILABLE",
+          "evidence": [
+            "OpenD executable present on operator machine (path pattern above)"
+          ]
+        },
+        {
+          "dimension": "LIVE_CONNECTIVITY",
+          "state": "NOT_CONNECTED",
+          "evidence": [
+            "OpenD process not running",
+            "127.0.0.1:11111 connection refused at audit time"
+          ]
+        },
+        {
+          "dimension": "RUNTIME_GATE",
+          "state": "DISABLED",
+          "evidence": [
+            "IMP_MOOMOO_LIVE unset",
+            "tools/validate.py maps moomoo live gate to IMP_MOOMOO_LIVE"
+          ]
+        },
+        {
+          "dimension": "SDK_TOOLCHAIN",
+          "state": "NOT_AVAILABLE_ON_AUDIT_PATHS",
+          "evidence": [
+            "moomoo/futu not importable on audit Python 3.11 paths",
+            "check_live_environment.py SDK MISSING"
+          ]
+        },
+        {
+          "dimension": "HISTORICAL_ENTITLEMENT_US_EQUITY_L1",
+          "state": "ENTITLED_STALE",
+          "as_of": "2026-09-01T17:59:51.985188Z",
+          "evidence": [
+            "evidence/market_data/moomoo/capability-report.json capabilities.US_EQUITY_L1 entitled=true"
+          ]
+        },
+        {
+          "dimension": "HISTORICAL_ENTITLEMENT_US_FUTURES_QUOTE",
+          "state": "NOT_ENTITLED_STALE",
+          "as_of": "2026-09-01T17:59:54.942830Z",
+          "evidence": [
+            "evidence/market_data/moomoo/capability-report.json capabilities.US_FUTURES_QUOTE entitled=false",
+            "reason_code ACCOUNT_NOT_ENTITLED_OR_NO_LISTING",
+            "evidence/market_data/moomoo/capability-report.summary.txt"
+          ]
+        }
+      ],
+      "stale_evidence": {
+        "capability_report": {
+          "path": "evidence/market_data/moomoo/capability-report.json",
+          "probe_timestamp": "2026-09-01T17:59:43.765313Z"
+        },
+        "capability_summary": {
+          "path": "evidence/market_data/moomoo/capability-report.summary.txt"
+        },
+        "live_environment_snapshot": {
+          "path": "evidence/market_data/moomoo/live-environment.json",
+          "verified_at": "2026-08-21T21:52:11.025904Z",
+          "note": "Prior READY when OpenD was running; imp_moomoo_live false in snapshot"
+        },
+        "shadow_run_source_audit": {
+          "path": "artifacts/shadow-run-1/SOURCE_AVAILABILITY_AUDIT.json",
+          "audit_timestamp_utc": "2026-09-01T16:27:00Z",
+          "note": "Historical P6 disposition; not substituted for current connectivity"
+        }
+      },
+      "account_unknowns": [
+        "Current quote entitlements after 2026-09-01",
+        "Whether US_FUTURES_QUOTE could be entitled after Quote Store purchase",
+        "Live qot_logined / trd_logined flags today",
+        "Whether IMP_MOOMOO_LIVE=1 would pass live_moomoo opt-in gates after refresh"
+      ]
+    }
+  },
+  "blockers": [
+    {
+      "blocker_id": "NEEDS_LOCAL_PRIVATE_PROBE",
+      "applies_to": ["moomoo"],
+      "summary": "Refresh OpenD connectivity and entitlements requires operator-local OpenD process, matching moomoo SDK 10.10.x on IMP Python 3.11 venv, then check_live_environment.py and optional probe.py with non-default --output.",
+      "evidence": [
+        "Audit session OPEN_D_NOT_RUNNING and SDK missing",
+        "tools/moomoo/check_live_environment.py",
+        "tools/moomoo/probe.py default writes evidence/market_data/moomoo/capability-report.json"
+      ]
+    },
+    {
+      "blocker_id": "NEEDS_HUMAN",
+      "applies_to": ["finviz"],
+      "summary": "Finviz Elite credentials and optional IMP_FINVIZ_LIVE opt-in must be supplied by operator (env or .private/ store); no live Finviz probe was run in Wave A audit.",
+      "evidence": [
+        "credential_present false, auth_state UNCONFIGURED",
+        "tools/finviz/auth.py and docs/providers/FINVIZ_ELITE.md configuration table"
+      ]
+    }
+  ],
+  "campaign_implications": {
+    "ftep_v1_001_es_news": {
+      "campaign_slug": "FTEP-V1-001",
+      "lane": "FUTURES_EQUITY_INDEX / ES",
+      "finding": "FUTURES_QUOTE_GAP_ON_STALE_MOOMOO_EVIDENCE",
+      "detail": "Last committed Moomoo probe (2026-09-01) reports US_FUTURES_QUOTE not entitled (ACCOUNT_NOT_ENTITLED_OR_NO_LISTING). ES-news campaign market-context via Moomoo futures quotes cannot be treated as entitled or fresh until NEEDS_LOCAL_PRIVATE_PROBE refresh; equity L1 entitlement in the same stale report does not cover ES futures quotes.",
+      "does_not_claim": [
+        "Current account still lacks futures quote entitlement",
+        "Finviz can supply lawful ES futures market data (Finviz role is discovery/context only)"
+      ],
+      "related_manifest_keys": [
+        "FTEP-D038 provider_connectivity_if_observational_ingress_required",
+        "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json deferred connectivity entries"
+      ],
+      "evidence": [
+        "evidence/market_data/moomoo/capability-report.json capabilities.US_FUTURES_QUOTE",
+        "artifacts/wave-a-findings/news-data-inventory.json finviz operational_primary role"
+      ]
+    }
+  },
+  "evidence_pointers": [
+    {
+      "path": "evidence/market_data/finviz/capability-report.json",
+      "kind": "finviz_capability_probe",
+      "as_of": "2026-08-22T04:10:30.999741Z"
+    },
+    {
+      "path": "evidence/market_data/moomoo/capability-report.json",
+      "kind": "moomoo_capability_probe",
+      "as_of": "2026-09-01T17:59:43.765313Z"
+    },
+    {
+      "path": "evidence/market_data/moomoo/capability-report.summary.txt",
+      "kind": "moomoo_capability_probe_summary",
+      "as_of": "2026-09-01"
+    },
+    {
+      "path": "evidence/market_data/moomoo/live-environment.json",
+      "kind": "moomoo_environment_snapshot",
+      "as_of": "2026-08-21T21:52:11.025904Z"
+    },
+    {
+      "path": "artifacts/shadow-run-1/SOURCE_AVAILABILITY_AUDIT.json",
+      "kind": "historical_p6_source_disposition",
+      "as_of": "2026-09-01T16:27:00Z"
+    }
+  ],
+  "key_paths": {
+    "finviz": [
+      "src/market_platform_foundation/finviz/",
+      "tools/finviz/probe.py",
+      "tools/finviz/auth.py",
+      "src/market_platform_foundation/ui_api/discovery_projections.py",
+      "docs/providers/FINVIZ_ELITE.md",
+      "docs/research/finviz-elite-capability-matrix.md"
+    ],
+    "moomoo": [
+      "tools/moomoo/probe.py",
+      "tools/moomoo/check_live_environment.py",
+      "src/market_platform_foundation/market_data/live_config.py",
+      "src/market_platform_foundation/market_data/capability_registry.py",
+      "docs/providers/MOOMOO_OBSERVATIONAL.md",
+      "tests/live_moomoo/test_live_opt_in.py"
+    ],
+    "operator_readiness": [
+      "tools/provider_readiness.py",
+      "docs/engineering/PROVIDER_READINESS.md"
+    ]
+  },
+  "tooling_notes": [
+    "Default shell python 3.10 breaks StrEnum imports; audit used CPython 3.11.15 per AGENTS.md.",
+    "Project .venv exists on 3.11 but lacked importable moomoo package during audit.",
+    "Audit intentionally did not invoke probe.py --start-opend or overwrite committed evidence JSON."
+  ]
+}

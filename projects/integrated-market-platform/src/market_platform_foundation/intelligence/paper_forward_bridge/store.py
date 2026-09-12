@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .repository import assert_locked_decision_immutable, assert_observations_append_only
+from ...clock import monotonic_wall_ns
+from .campaign_binding import CampaignBinding, CampaignBindingError, CampaignBindingState
+from .repository import (
+    assert_locked_decision_immutable,
+    assert_observations_append_only,
+    assert_session_config_immutable,
+)
 from .types import ForwardTestDecision, ForwardTestSession
 
 
@@ -18,8 +24,13 @@ class ForwardTestStore:
     _by_account_decisions: dict[str, list[str]] = field(default_factory=dict)
     _paper_submission_keys: set[str] = field(default_factory=set)
     _evaluation_keys: set[str] = field(default_factory=set)
+    _campaign_bindings: dict[str, CampaignBinding] = field(default_factory=dict)
+    _active_campaign_by_account: dict[str, str] = field(default_factory=dict)
 
     def put_session(self, session: ForwardTestSession) -> None:
+        existing = self._sessions.get(session.session_id)
+        if existing is not None:
+            assert_session_config_immutable(existing, session)
         self._sessions[session.session_id] = session
         bucket = self._by_account_sessions.setdefault(session.account_id, [])
         if session.session_id not in bucket:
@@ -71,3 +82,79 @@ class ForwardTestStore:
 
     def release_evaluation_claim(self, forward_test_id: str) -> None:
         self._evaluation_keys.discard(forward_test_id)
+
+    def claim_active_binding(self, binding: CampaignBinding) -> None:
+        active = self.get_active_binding(account_id=binding.account_id)
+        if active is not None and active.campaign_id != binding.campaign_id:
+            raise CampaignBindingError("FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE")
+        self._campaign_bindings[binding.campaign_id] = binding
+        self._active_campaign_by_account[binding.account_id] = binding.campaign_id
+
+    def get_active_binding(self, *, account_id: str) -> CampaignBinding | None:
+        campaign_id = self._active_campaign_by_account.get(account_id)
+        if campaign_id is None:
+            return None
+        binding = self._campaign_bindings.get(campaign_id)
+        if binding is None or binding.campaign_state != CampaignBindingState.ACTIVE:
+            return None
+        return binding
+
+    def release_binding(
+        self,
+        *,
+        account_id: str,
+        campaign_id: str | None = None,
+        released_at_ns: int | None = None,
+    ) -> CampaignBinding | None:
+        active = self.get_active_binding(account_id=account_id)
+        if active is None:
+            return None
+        if campaign_id and active.campaign_id != campaign_id:
+            return None
+        now_ns = released_at_ns or monotonic_wall_ns()
+        released = CampaignBinding(
+            campaign_id=active.campaign_id,
+            account_id=active.account_id,
+            manifest_fingerprint=active.manifest_fingerprint,
+            manifest_path=active.manifest_path,
+            protocol_id=active.protocol_id,
+            protocol_sha256=active.protocol_sha256,
+            campaign_state=CampaignBindingState.RELEASED,
+            activated_at_ns=active.activated_at_ns,
+            first_lock_at_ns=active.first_lock_at_ns,
+            forward_test_session_id=active.forward_test_session_id,
+            created_at_ns=active.created_at_ns,
+            updated_at_ns=now_ns,
+        )
+        self._campaign_bindings[active.campaign_id] = released
+        self._active_campaign_by_account.pop(account_id, None)
+        return released
+
+    def record_first_lock_at_ns(
+        self,
+        *,
+        account_id: str,
+        campaign_id: str,
+        first_lock_at_ns: int,
+    ) -> None:
+        active = self.get_active_binding(account_id=account_id)
+        if active is None or active.campaign_id != campaign_id:
+            return
+        if active.first_lock_at_ns is not None:
+            return
+        now_ns = monotonic_wall_ns()
+        updated = CampaignBinding(
+            campaign_id=active.campaign_id,
+            account_id=active.account_id,
+            manifest_fingerprint=active.manifest_fingerprint,
+            manifest_path=active.manifest_path,
+            protocol_id=active.protocol_id,
+            protocol_sha256=active.protocol_sha256,
+            campaign_state=active.campaign_state,
+            activated_at_ns=active.activated_at_ns,
+            first_lock_at_ns=first_lock_at_ns,
+            forward_test_session_id=active.forward_test_session_id,
+            created_at_ns=active.created_at_ns,
+            updated_at_ns=now_ns,
+        )
+        self._campaign_bindings[active.campaign_id] = updated

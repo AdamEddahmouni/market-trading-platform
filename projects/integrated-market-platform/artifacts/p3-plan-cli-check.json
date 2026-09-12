@@ -94,7 +94,7 @@
   ],
   "mandatory_suites": [],
   "manifest_hash": "6d250d927bc4674aed0385892ed5d8444c660b90cbb522a3b370b46fa0da8ae1",
-  "manifest_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\tools\\validation_manifest.json",
+  "manifest_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\split-wave-b-calibration\\projects\\integrated-market-platform\\tools\\validation_manifest.json",
   "mode": "changed",
   "omitted_domains": [
     "short-intelligence",
