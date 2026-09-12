@@ -6,7 +6,7 @@
   "purpose": "Parent synthesis for post-Wave-A implementation increment: requirement classification, minimum coherent build set, ES/news verdict, and worktree boundaries. Synthesis only — no code changes implied by this artifact.",
   "git": {
     "branch": "work/ftep-v1-activation",
-    "head_sha": "613a6b4"
+    "head_sha": "af9b2e0"
   },
   "inputs": {
     "wave_a_lane_artifacts": [
