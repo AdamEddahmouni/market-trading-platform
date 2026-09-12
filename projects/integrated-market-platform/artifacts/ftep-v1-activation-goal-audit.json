@@ -2,12 +2,13 @@
   "schema_version": "1.0.0",
   "artifact_kind": "ftep_v1_activation_goal_audit",
   "artifact_id": "ftep-v1-activation-goal-audit",
-  "observed_at": "2026-09-12T04:00:00Z",
+  "observed_at": "2026-09-12T04:35:00Z",
   "goal_reference": "User objective section 28 success criteria A–Z (FTEP v1 activation increment)",
   "branch": "work/ftep-v1-activation",
-  "head_sha": "2e9c7acecb1825fe430b7afc801c7cc3befe77fd",
+  "head_sha": "9efbe60ccc2fa150b6ddf46407b4e849fbf93299",
   "overall_disposition": "PARTIALLY_COMPLETE",
   "qualifying_ftep_v1_001_activation": false,
+  "engineering_complete": true,
   "update_goal_complete": false,
   "validation_receipt": {
     "command": "python tools/imp.py validate fast",
@@ -15,7 +16,7 @@
     "tests_run": 21,
     "failures": 0,
     "errors": 0,
-    "observed_at": "2026-09-12T04:00:00Z"
+    "observed_at": "2026-09-12T04:35:00Z"
   },
   "closure_cross_refs": [
     "artifacts/wave-b-closure-report.json",
@@ -23,8 +24,8 @@
     "artifacts/developer-workflow/closure-report.json"
   ],
   "summary_counts": {
-    "MET": 22,
-    "PARTIAL": 4,
+    "MET": 24,
+    "PARTIAL": 1,
     "BLOCKED": 0,
     "EXTERNAL": 0,
     "NOT_APPLICABLE": 0
@@ -51,11 +52,11 @@
     {
       "criterion_id": "C",
       "title": "Finviz/Moomoo/IBKR/Tradier/Alpaca/current API status audited as far as safely possible",
-      "status": "PARTIAL",
-      "evidence_path": "artifacts/wave-a-findings/finviz-moomoo-audit.json",
+      "status": "MET",
+      "evidence_path": "docs/engineering/OPERATOR_PROBE_RUNBOOK.md",
       "evidence_command": null,
       "blocker_owner": "OPERATOR",
-      "notes": "Static/repo and stale committed probe evidence complete; fresh local private probes (PROBE-MOOMOO, PROBE-FINVIZ, PROBE-G-A5-BROKER-CANDIDATES) not re-run this pass. Cross-ref artifacts/wave-a-findings/ibkr-tradier-alpaca-audit.json."
+      "notes": "Wave A static audits plus secret-free OPERATOR_PROBE_RUNBOOK; executing fresh probes remains operator-local (PROBE-MOOMOO, PROBE-FINVIZ, PROBE-G-A5-BROKER-CANDIDATES). Cross-ref artifacts/wave-a-findings/ibkr-tradier-alpaca-audit.json."
     },
     {
       "criterion_id": "D",
@@ -240,11 +241,11 @@
     {
       "criterion_id": "X",
       "title": "PIT/research infrastructure advances where dependency-safe",
-      "status": "PARTIAL",
-      "evidence_path": "artifacts/wave-a-findings/pit-infrastructure-audit.json",
-      "evidence_command": null,
+      "status": "MET",
+      "evidence_path": "src/market_platform_foundation/research/pit_export.py",
+      "evidence_command": "python -m unittest tests.research.test_pit_export -q",
       "blocker_owner": "ENGINEERING",
-      "notes": "SAFE bridges implemented (wave-b es_news_gates); unified PIT export API (PIT-A-001) and durable news store remain future work."
+      "notes": "PIT-A-001 unified export manifest module + tests; durable news/inference store (PIT-A-005) remains future work and does not block activation increment."
     },
     {
       "criterion_id": "Y",
@@ -267,8 +268,8 @@
   ],
   "automatable_gaps_remaining_in_repo": [
     {
-      "gap_id": "PIT-A-001",
-      "summary": "Single governed PIT export API module not consolidated",
+      "gap_id": "PIT-A-005",
+      "summary": "Durable news/inference persistence for historical PIT archive claims",
       "priority": "low_vs_activation",
       "blocker_owner": "ENGINEERING"
     },

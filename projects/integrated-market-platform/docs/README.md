@@ -38,6 +38,7 @@ When documents disagree, resolve in this order (highest first):
 | Pre-implementation planning closure | [PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md](platform/PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md) |
 | FTEP / Paper-validation doctrine | [IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md](architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md) |
 | FTEP activation gates | [FTEP_ACTIVATION_GATES.md](engineering/FTEP_ACTIVATION_GATES.md) |
+| FTEP-V1 activation blockers (current) | [FTEP_V1_ACTIVATION_BLOCKER_REPORT.md](engineering/FTEP_V1_ACTIVATION_BLOCKER_REPORT.md) |
 | Developer setup | [LOCAL_DEVELOPMENT.md](engineering/LOCAL_DEVELOPMENT.md) |
 | System architecture | [ARCHITECTURE.md](architecture/ARCHITECTURE.md) |
 | Developer operating system | [DEVELOPER_OPERATING_SYSTEM.md](engineering/DEVELOPER_OPERATING_SYSTEM.md) |
@@ -98,6 +99,7 @@ When documents disagree, resolve in this order (highest first):
 | Stack inventory | [STACK.md](engineering/STACK.md) |
 | Configuration / env vars | [CONFIGURATION.md](engineering/CONFIGURATION.md) |
 | Provider readiness | [PROVIDER_READINESS.md](engineering/PROVIDER_READINESS.md) |
+| Operator probe runbook (FTEP-V1) | [OPERATOR_PROBE_RUNBOOK.md](engineering/OPERATOR_PROBE_RUNBOOK.md) |
 | Performance & bundle budget | [PERFORMANCE.md](engineering/PERFORMANCE.md) |
 | Accessibility | [ACCESSIBILITY.md](engineering/ACCESSIBILITY.md) |
 | Observability & logging | [OBSERVABILITY.md](engineering/OBSERVABILITY.md) |

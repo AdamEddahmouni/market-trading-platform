@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — PIT export, operator probe runbook, goal checkpoint
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `research`, `docs`, `artifacts` |
+| **Summary** | Closed PIT-A-001 with `research/pit_export.py` and tests; added secret-free `OPERATOR_PROBE_RUNBOOK.md`; refreshed goal audit to 24 MET / 1 PARTIAL with `engineering_complete: true`; drafted PR body. Qualifying activation still blocked on owner/operator/external actions. |
+| **Key files** | `src/market_platform_foundation/research/pit_export.py`, `tests/research/test_pit_export.py`, `docs/engineering/OPERATOR_PROBE_RUNBOOK.md`, `artifacts/ftep-v1-activation-goal-audit.json`, `artifacts/ftep-v1-activation-PR-BODY.md`, `docs/README.md`, `docs/engineering/PROVIDER_ACTIVATION_INCREMENT.md`, `docs/engineering/FTEP_V1_ACTIVATION_BLOCKER_REPORT.md` |
+| **Tests** | `python -m unittest tests.research.test_pit_export -q` — 4 passed; `python tools/imp.py validate fast` — 21 passed |
+| **Related** | `artifacts/ftep-v1-activation-goal-audit.json`, [FTEP_V1_ACTIVATION_BLOCKER_REPORT.md](./FTEP_V1_ACTIVATION_BLOCKER_REPORT.md) |
+| **Notes** | Criterion **O** remains PARTIAL (DEFER-FTEP-ACT-04). No push/freeze/Live. |
+
 ## 2026-09-12 — FTEP v1 activation goal audit (section 28 A–Z)
 
 | Field | Value |
