@@ -35,20 +35,15 @@
     "other"
   ],
   "changed_files": [
-    "artifacts/ftep-v1-activation/provider-probe-moomoo-capability-2026-09-12.json",
-    "artifacts/ftep-v1-activation/provider-probe-moomoo-capability-2026-09-12.summary.txt",
-    "artifacts/ftep-v1-activation/provider-probe-moomoo-summary-2026-09-12.json",
-    "projects/integrated-market-platform/artifacts/developer-workflow/closure-report.json",
-    "projects/integrated-market-platform/artifacts/ftep-v1-activation/provider-probe-moomoo-2026-09-12.json",
-    "projects/integrated-market-platform/artifacts/g13-runtime-performance.json",
-    "projects/integrated-market-platform/artifacts/g14-runtime-performance.json",
-    "projects/integrated-market-platform/artifacts/g8-runtime-performance.json",
-    "projects/integrated-market-platform/artifacts/wave-a-findings/news-data-inventory.json",
+    "projects/integrated-market-platform/artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md",
+    "projects/integrated-market-platform/artifacts/ftep-v1-002/campaign-progress.json",
+    "projects/integrated-market-platform/artifacts/p3-plan-cli-check.json",
     "projects/integrated-market-platform/docs/engineering/WORK_LOG.md",
-    "projects/integrated-market-platform/src/market_platform_foundation/providers/capability_snapshot.py",
-    "projects/integrated-market-platform/src/market_platform_foundation/providers/coverage_gap_engine.py",
-    "projects/integrated-market-platform/src/market_platform_foundation/ui_api/projections.py",
-    "projects/integrated-market-platform/tests/providers/test_coverage_gap_engine.py"
+    "projects/integrated-market-platform/src/market_platform_foundation/intelligence/paper_forward_bridge/campaign_binding.py",
+    "projects/integrated-market-platform/src/market_platform_foundation/intelligence/paper_forward_bridge/sqlite_repository.py",
+    "projects/integrated-market-platform/src/market_platform_foundation/intelligence/paper_forward_bridge/store.py",
+    "projects/integrated-market-platform/tests/intelligence/test_forward_test_persistence.py",
+    "projects/integrated-market-platform/tests/intelligence/test_ftep_session_start.py"
   ],
   "documentation_changes": [],
   "environment": {
@@ -79,13 +74,13 @@
       "npm_available": true
     },
     "worktree": {
-      "branch": "work/ftep-v1-activation",
+      "branch": "work/ftep-v1-002-us-equity-news",
       "git_metadata_dir": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.git",
       "is_linked_worktree": false,
       "root": "C:\\Users\\adame\\Desktop\\market-trading-platform"
     }
   },
-  "generated_at": "2026-09-12T06:32:25.945047+00:00",
+  "generated_at": "2026-09-12T19:32:28.552461+00:00",
   "report_type": "imp_closure",
   "repository_root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform",
   "risk": {
@@ -102,23 +97,26 @@
       "ci_wall_seconds": 0,
       "command_counts": {
         "closure docs": 1,
-        "closure format": 7,
+        "closure format": 8,
         "closure ui build": 1,
         "closure ui test": 1,
         "closure ui typecheck": 1,
         "format": 1,
+        "ftep campaign-status": 9,
+        "ftep integrity-check": 6,
+        "ftep session-start": 4,
         "lint python": 1,
-        "providers campaign-readiness": 10,
-        "test focused": 76,
-        "validate changed": 78,
+        "providers campaign-readiness": 24,
+        "test focused": 88,
+        "validate changed": 96,
         "validate domain": 27,
         "validate e2e": 6,
-        "validate fast": 69,
-        "validate full": 47
+        "validate fast": 82,
+        "validate full": 48
       },
-      "events": 326,
-      "redundant_command_events": 312,
-      "validation_wall_seconds": 54797.634992
+      "events": 404,
+      "redundant_command_events": 387,
+      "validation_wall_seconds": 56305.968828
     }
   },
   "validation": {
@@ -131,7 +129,7 @@
       "command": "closure format",
       "exit_code": 0,
       "status": "passed",
-      "wall_seconds": 0.0774
+      "wall_seconds": 0.066045
     },
     "full": {
       "core_checkpoint_required": false,
@@ -204,8 +202,8 @@
       ],
       "skips": 49,
       "status": "passed",
-      "tests_run": 4618,
-      "wall_seconds": 187.42357259997516
+      "tests_run": 4647,
+      "wall_seconds": 198.2019796000095
     }
   }
 }

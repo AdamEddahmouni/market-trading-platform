@@ -120,12 +120,19 @@ def claim_active_binding(
     if not campaign_id:
         raise CampaignBindingError("FORWARD_TEST_CAMPAIGN_ID_REQUIRED")
     assert_no_concurrent_campaign(connection, account_id=account_id, campaign_id=campaign_id)
+    existing = get_active_binding(connection, account_id=account_id)
     now_ns = activated_at_ns or time.time_ns()
     manifest_fp = compute_manifest_fingerprint(manifest.raw)
     manifest_file = manifest_path(
         manifest.campaign_slug,
         campaigns_root_override=campaigns_root_override,
     )
+    if existing is not None and existing.campaign_id == campaign_id:
+        if existing.manifest_fingerprint != manifest_fp:
+            raise CampaignBindingError("ACTIVATION_MANIFEST_FINGERPRINT_MISMATCH")
+        if existing.protocol_sha256 != protocol_ref.protocol_doc_sha256:
+            raise CampaignBindingError("PROTOCOL_REF_DOC_SHA256_MISMATCH")
+        return existing
     binding = CampaignBinding(
         campaign_id=campaign_id,
         account_id=account_id,

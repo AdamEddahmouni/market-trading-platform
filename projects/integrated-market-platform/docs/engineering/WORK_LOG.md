@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — FTEP-V1-002 wave 12 dual-arm campaign binding
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep-v1-002`, `forward-test`, `paper_forward_bridge` |
+| **Summary** | Fixed durable campaign binding so a frozen A/B campaign can open **two** SIGNAL_ONLY sessions (baseline + AI-enhanced) under one ACTIVE binding row; SQLite no longer fails the second arm with `FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE`. Documented dual-arm operator flow in `SIGNAL_ONLY_LAUNCH_PREP.md`. No manifest mutation; V1-001 untouched. |
+| **Key files** | `paper_forward_bridge/sqlite_repository.py`, `paper_forward_bridge/campaign_binding.py`, `paper_forward_bridge/store.py`, `tests/intelligence/test_forward_test_persistence.py`, `tests/intelligence/test_ftep_session_start.py`, `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md` |
+| **Tests** | `python tools/imp.py validate changed` — 1902 passed, 26 skipped; dual-arm persistence + session-start unit tests |
+| **Related** | Wave 11 `ftep session-start`; `PAPER_FORWARD_TESTING_BRIDGE.md` (one ACTIVE campaign per account) |
+| **Notes** | Saturday RTH closed — no empirical session or locks; goal completion awaits first open-RTH governed session with evidence. |
+
 ## 2026-09-12 — FTEP-V1-002 wave 11 governed session-start
 
 | Field | Value |

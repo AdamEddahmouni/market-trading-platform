@@ -32,6 +32,7 @@ from market_platform_foundation.local_state.startup import (  # noqa: E402
 )
 from forward_test_activation_support import (  # noqa: E402
     BASELINE_POLICY,
+    CAMPAIGN_SLUG,
     POLICY_VERSION,
     create_activated_session,
     enable_test_campaigns_root,
@@ -132,6 +133,35 @@ class IsolatedForwardTestPersistenceTest(unittest.TestCase):
         assert recovered is not None
         self.assertEqual(recovered.campaign_id, binding.campaign_id)
         self.assertEqual(recovered.forward_test_session_id, session.session_id)
+
+    def test_dual_cohort_arm_sessions_share_campaign_binding(self) -> None:
+        service = self._service()
+        baseline = create_activated_session(
+            service,
+            self.campaigns_root,
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0,
+        )
+        ai_session = service.create_session(
+            account_id="paper-a",
+            mode="PAPER",
+            strategy_id="news_ai_enhanced",
+            strategy_version=POLICY_VERSION,
+            universe=("ACME",),
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0 + 1,
+            campaign_id=CAMPAIGN_SLUG,
+            cohort_arm="AI_ENHANCED",
+            campaigns_root_override=self.campaigns_root,
+        )
+        self.assertNotEqual(baseline.session_id, ai_session.session_id)
+        binding = service._store.get_active_binding(account_id="paper-a")
+        self.assertIsNotNone(binding)
+        assert binding is not None
+        self.assertEqual(binding.forward_test_session_id, baseline.session_id)
+        sessions = service._store.list_sessions(account_id="paper-a")
+        arms = {session.cohort_arm.value for session in sessions if session.cohort_arm}
+        self.assertEqual(arms, {"BASELINE", "AI_ENHANCED"})
 
     def test_first_lock_timestamp_persisted_after_restart(self) -> None:
         service = self._service()

@@ -85,8 +85,14 @@ class ForwardTestStore:
 
     def claim_active_binding(self, binding: CampaignBinding) -> None:
         active = self.get_active_binding(account_id=binding.account_id)
-        if active is not None and active.campaign_id != binding.campaign_id:
-            raise CampaignBindingError("FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE")
+        if active is not None:
+            if active.campaign_id != binding.campaign_id:
+                raise CampaignBindingError("FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE")
+            if active.manifest_fingerprint != binding.manifest_fingerprint:
+                raise CampaignBindingError("ACTIVATION_MANIFEST_FINGERPRINT_MISMATCH")
+            if active.protocol_sha256 != binding.protocol_sha256:
+                raise CampaignBindingError("PROTOCOL_REF_DOC_SHA256_MISMATCH")
+            return
         self._campaign_bindings[binding.campaign_id] = binding
         self._active_campaign_by_account[binding.account_id] = binding.campaign_id
 

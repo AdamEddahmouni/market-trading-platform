@@ -102,7 +102,10 @@ class FtepSessionStartDryRunTests(unittest.TestCase):
                     evidence_path.write_bytes(evidence_path.read_bytes()[:prior_size])
         self.assertEqual(exit_code, 0)
         sessions = payload.get("sessions_created") or []
-        self.assertGreaterEqual(len(sessions), 1)
+        self.assertEqual(len(sessions), 2)
+        arms = {item["cohort_arm"] for item in sessions}
+        self.assertEqual(arms, {"BASELINE", "AI_ENHANCED"})
+        self.assertEqual(payload.get("session_errors") or [], [])
         self.assertTrue(payload.get("evidence_paths"))
 
 

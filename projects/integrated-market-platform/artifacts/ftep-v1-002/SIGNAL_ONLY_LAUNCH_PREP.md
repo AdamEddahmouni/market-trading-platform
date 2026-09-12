@@ -72,6 +72,8 @@ Run once per US equity session day after **09:30 America/New_York** and before f
 
 If any step fails, stop — do not partially create sessions or mutate manifests.
 
+**Dual cohort arms (baseline + AI-enhanced):** One governed `session-start` (or operator runbook) creates **two** `ForwardTestService.create_session` calls for the same frozen campaign — one per preregistered arm (`BASELINE`, then `AI_ENHANCED`). They share a single ACTIVE campaign binding row (first session id retained); a second binding INSERT is not required per arm.
+
 Session creation uses governed Paper forward-test API / `ForwardTestService.create_session` with full campaign identity (`campaign_id`, `manifest_fingerprint`, cohort arms). **SIGNAL_ONLY** — no Paper order preview/submit.
 
 ## Safety

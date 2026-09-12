@@ -233,8 +233,15 @@ class SqliteForwardTestRepository:
 
     def claim_active_binding(self, binding: CampaignBinding) -> None:
         active = sqlite_get_active_binding(self._connection, account_id=binding.account_id)
-        if active is not None and active.campaign_id != binding.campaign_id:
-            raise CampaignBindingError("FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE")
+        if active is not None:
+            if active.campaign_id != binding.campaign_id:
+                raise CampaignBindingError("FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE")
+            if active.manifest_fingerprint != binding.manifest_fingerprint:
+                raise CampaignBindingError("ACTIVATION_MANIFEST_FINGERPRINT_MISMATCH")
+            if active.protocol_sha256 != binding.protocol_sha256:
+                raise CampaignBindingError("PROTOCOL_REF_DOC_SHA256_MISMATCH")
+            # One ACTIVE row per campaign; additional cohort-arm sessions reuse it.
+            return
         try:
             self._connection.execute(
                 """
