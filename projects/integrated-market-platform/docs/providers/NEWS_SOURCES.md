@@ -9,6 +9,9 @@ For the canonical deterministic news/event foundation (publication vs retrieval
 time, source trust, catalyst filtering, replay), see
 [NEWS_EVENT_FOUNDATION.md](../architecture/NEWS_EVENT_FOUNDATION.md).
 
+Wave A reconciliation inventory (FTEP-V1-001, read-only):
+[`artifacts/wave-a-findings/news-data-inventory.json`](../../artifacts/wave-a-findings/news-data-inventory.json).
+
 ## Configuration
 
 Store keys in the ignored private provider file with the secure prompt:

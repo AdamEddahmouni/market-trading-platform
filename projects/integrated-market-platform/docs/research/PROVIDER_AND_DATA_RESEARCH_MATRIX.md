@@ -4,6 +4,11 @@
 
 **Authority:** No vendor selection, procurement, or network access authorized.
 
+**Wave A external universe (research-only):**
+[PROVIDER_CANDIDATE_CATALOG_2026-09-11.md](./PROVIDER_CANDIDATE_CATALOG_2026-09-11.md) —
+broad vendor inventory and documentation pointers; distinct from this in-repo
+capability/planning matrix.
+
 ## Selection principle
 
 ```text
