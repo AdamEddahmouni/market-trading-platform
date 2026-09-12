@@ -561,7 +561,90 @@ def build_parser() -> argparse.ArgumentParser:
     closure.add_argument("--output", type=Path, default=DEFAULT_CLOSURE_REPORT)
     closure.add_argument("--workers", type=int, default=2)
     closure.add_argument("--skip-ui", action="store_true")
+
+    providers = groups.add_parser(
+        "providers",
+        help="provider capability matrix and readiness diagnostics (read-only)",
+    )
+    provider_actions = providers.add_subparsers(dest="action", required=True)
+    capability_matrix = provider_actions.add_parser(
+        "capability-matrix",
+        help="emit deterministic capability-matrix snapshot",
+    )
+    capability_matrix.add_argument(
+        "--output",
+        type=Path,
+        help="Write snapshot JSON (default: stdout)",
+    )
+    capability_matrix.add_argument(
+        "--skip-readiness",
+        action="store_true",
+        help="Do not merge provider_readiness gate rows",
+    )
+    audit = provider_actions.add_parser(
+        "audit",
+        help="capability-matrix audit merged with value-blind readiness",
+    )
+    audit.add_argument("--json", action="store_true", help="Machine-readable JSON")
+    audit.add_argument(
+        "--probe-local",
+        action="store_true",
+        help="Probe loopback Moomoo/IBKR ports when building rows",
+    )
+    gaps = provider_actions.add_parser(
+        "gaps",
+        help="coverage-gap report for a campaign requirement profile",
+    )
+    gaps.add_argument(
+        "--profile",
+        default="FTEP-V1-001",
+        help="Campaign requirement profile id (default: FTEP-V1-001)",
+    )
+    gaps.add_argument("--json", action="store_true", help="Machine-readable JSON")
+    gaps.add_argument("--probe-local", action="store_true")
+    campaign_readiness = provider_actions.add_parser(
+        "campaign-readiness",
+        help="fail-closed preflight + gap-engine readiness for a campaign slug",
+    )
+    campaign_readiness.add_argument(
+        "campaign_slug",
+        nargs="?",
+        default="FTEP-V1-001",
+        help="Forward-test campaign slug (default: FTEP-V1-001)",
+    )
+    campaign_readiness.add_argument("--json", action="store_true")
+    campaign_readiness.add_argument("--probe-local", action="store_true")
     return parser
+
+
+def _providers_command(root: Path, args: argparse.Namespace) -> int:
+    python = _validation_python(root)
+    env = _python_environment(root)
+    if args.action == "capability-matrix":
+        command = [python, str(root / "tools" / "providers" / "capability_matrix.py")]
+        if args.output:
+            command.extend(["--output", str(args.output)])
+        if args.skip_readiness:
+            command.append("--skip-readiness")
+        command.extend(["--repository-root", str(root)])
+    else:
+        command = [python, str(root / "tools" / "provider_readiness.py"), args.action]
+        if args.action == "gaps":
+            command.extend(["--profile", args.profile])
+        elif args.action == "campaign-readiness":
+            command.append(args.campaign_slug)
+        if getattr(args, "json", False):
+            command.append("--json")
+        if getattr(args, "probe_local", False):
+            command.append("--probe-local")
+    result = _run(
+        root,
+        label=f"providers {args.action}",
+        command=command,
+        env=env,
+        stream_output=True,
+    )
+    return int(result["exit_code"])
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -681,6 +764,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.json_path:
             _write_json(args.json_path, report)
         return 0 if format_result["exit_code"] == 0 and changed_exit == 0 else 1
+
+    if args.group == "providers":
+        return _providers_command(root, args)
 
     if args.group == "closure":
         changed_files = _git_changed_files(root)

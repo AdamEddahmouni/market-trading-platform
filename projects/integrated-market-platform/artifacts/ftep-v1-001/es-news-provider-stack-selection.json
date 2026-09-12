@@ -1,0 +1,211 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "ftep_es_news_provider_stack_selection",
+  "artifact_id": "ftep-v1-001-es-news-provider-stack-selection",
+  "campaign_slug": "FTEP-V1-001",
+  "observed_at": "2026-09-12T03:15:00Z",
+  "method": "Smallest sufficient stack from verified Wave A lane artifacts only; no live probe claims; reconciles with reconciliation-gate es_news_stack_verdict.",
+  "intelligence_provider_mode": "RECORDED_ARTIFACTS_ONLY",
+  "overall_disposition": "BLOCKED",
+  "qualifying_prospective_campaign_authorized": false,
+  "evidence_sources": [
+    "artifacts/wave-a-findings/reconciliation-gate.json",
+    "artifacts/wave-a-findings/news-data-inventory.json",
+    "artifacts/wave-a-findings/finviz-moomoo-audit.json",
+    "artifacts/wave-a-findings/ibkr-tradier-alpaca-audit.json",
+    "artifacts/wave-a-findings/ftep-campaign-audit.json",
+    "artifacts/wave-b-closure-report.json"
+  ],
+  "requirements": [
+    {
+      "requirement_id": "A",
+      "title": "Lawful prospective ES market evidence",
+      "verdict": "SUFFICIENT_IF_VERIFIED",
+      "smallest_stack": [
+        {
+          "provider_id": "moomoo",
+          "capability_id": "US_FUTURES_QUOTE",
+          "campaign_role": "PRIMARY_MARKET_EVIDENCE",
+          "access_state_observed": "CATALOGED_WITH_STALE_EVIDENCE",
+          "notes": "Stale committed probe showed US_FUTURES_QUOTE not entitled; OpenD refresh required (PROBE-MOOMOO, EXT-MOOMOO-FUTURES-ENTITLEMENT)."
+        },
+        {
+          "provider_id": "ibkr_observational",
+          "capability_id": "DELAYED_L1",
+          "campaign_role": "SECONDARY_CHALLENGER",
+          "access_state_observed": "CATALOGED",
+          "notes": "Delayed/history/scanner; not a substitute for entitled ES futures quote stream (Wave B provider_table)."
+        }
+      ],
+      "missing_capabilities": [
+        "Verified entitled ES futures quote stream with fresh capability evidence",
+        "Owner-resolved observational ingress when ACT-04 is in scope (FTEP-D038 deferred)"
+      ],
+      "optional_redundancy": [
+        {
+          "provider_id": "news.fixture",
+          "role": "ENGINEERING_VALIDATION_ONLY",
+          "notes": "Deterministic software validation; not prospective market evidence."
+        }
+      ],
+      "blockers": [
+        "PROBE-MOOMOO",
+        "EXT-MOOMOO-FUTURES-ENTITLEMENT",
+        "DEFER-FTEP-ACT-04-OBS-INGRESS",
+        "OWNER-OD-1-11"
+      ]
+    },
+    {
+      "requirement_id": "B",
+      "title": "News and event evidence",
+      "verdict": "SUFFICIENT_IF_VERIFIED",
+      "verification_conditions": [
+        "Finviz Elite live_session configured and probed (PROBE-FINVIZ)",
+        "Owner ES-equity headline linkage policy recorded (WAVE-A-003)",
+        "Optional live ingress only if manifest de-defers FTEP-ACT-04 / FTEP-D038"
+      ],
+      "smallest_stack": [
+        {
+          "provider_id": "news.fixture",
+          "capability_id": "CANONICAL_NEWS_ARTICLE_EVENT",
+          "campaign_role": "ENGINEERING_VALIDATION",
+          "access_state_observed": "CAPABILITY_VERIFIED",
+          "notes": "NewsArticleEvent pipeline, replay harness, fixture-backed tests (reconciliation-gate canonical_news_foundation_offline)."
+        },
+        {
+          "component": "recorded_eval_bridge",
+          "campaign_role": "INTELLIGENCE_INPUT",
+          "access_state_observed": "CAPABILITY_VERIFIED",
+          "notes": "FTEP-D006 RECORDED_ARTIFACTS_ONLY; recorded news_strategy_evaluation handoff without live model rerun."
+        },
+        {
+          "component": "aggregator_bridge",
+          "campaign_role": "NORMALIZATION",
+          "access_state_observed": "CAPABILITY_VERIFIED",
+          "notes": "Fixture-first received_time to retrieved_time bridge; does not close live ingress (WAVE-A-002)."
+        }
+      ],
+      "missing_capabilities": [
+        "Operational live or captured headline ingress into NewsArticleEvent (WAVE-A-002)",
+        "CME ES headline feed (equity-scoped Finviz/NewsAPI/Finnhub only in repo)",
+        "Owner ES-equity news linkage policy (WAVE-A-003)",
+        "Finviz live_session operational (PROBE-FINVIZ)"
+      ],
+      "optional_redundancy": [
+        {
+          "provider_id": "newsapi",
+          "campaign_role": "CONTEXT_ONLY",
+          "notes": "KEY_GATED bounded live window; not historical PIT archive (WAVE-A-008)."
+        },
+        {
+          "provider_id": "finnhub",
+          "campaign_role": "CONTEXT_ONLY",
+          "notes": "KEY_GATED bounded live window; not historical PIT archive (WAVE-A-008)."
+        },
+        {
+          "provider_id": "finviz",
+          "campaign_role": "CONTEXT_ONLY",
+          "notes": "Equity-scoped CSV export; live UNCONFIGURED in Wave A."
+        },
+        {
+          "provider_id": "premium_news_wires",
+          "campaign_role": "NOT_OPERATIONAL",
+          "notes": "Catalog only (WAVE-A-007, EXT-PREMIUM-WIRES)."
+        }
+      ],
+      "blockers": [
+        "OWNER-ES-EQUITY-NEWS-LINKAGE",
+        "PROBE-FINVIZ",
+        "EXT-PREMIUM-WIRES"
+      ],
+      "engineering_path_verdict": "CURRENTLY_SUFFICIENT",
+      "engineering_path_note": "RECORDED_ARTIFACTS_ONLY plus canonical fixtures/replay and recorded-eval bridge satisfy offline engineering validation only."
+    },
+    {
+      "requirement_id": "C",
+      "title": "Independent futures-capable Paper or sandbox comparison (execution realism)",
+      "verdict": "SUFFICIENT_IF_VERIFIED",
+      "smallest_stack": [
+        {
+          "provider_id": "internal_paper_simulator",
+          "capability_id": "INTERNAL_SIMULATION",
+          "campaign_role": "PRIMARY_FOR_FTEP_SKELETON",
+          "access_state_observed": "CAPABILITY_VERIFIED",
+          "notes": "Baseline for forward-test locks per ibkr-tradier-alpaca-audit; not ground truth."
+        },
+        {
+          "component": "paper.calibration.comparator_contract",
+          "campaign_role": "CALIBRATION_INFRASTRUCTURE",
+          "access_state_observed": "CAPABILITY_VERIFIED",
+          "notes": "Schema and comparator plumbing exist; numeric thresholds UNSET (OWNER-CALIBRATION-THRESHOLDS)."
+        }
+      ],
+      "missing_capabilities": [
+        "Verified futures-capable external Paper comparator (Tradier adapter fixture-only; no ES futures observational feed)",
+        "Owner-bound broker paper selection for phase-2 execution (OD-6 not resolved)"
+      ],
+      "optional_redundancy": [
+        {
+          "provider_id": "tradier_paper",
+          "campaign_role": "EXECUTION_CONTRACT_REFERENCE",
+          "notes": "Equity sandbox semantics reference; FIXTURE_ONLY in repo."
+        },
+        {
+          "provider_id": "ibkr_observational",
+          "campaign_role": "SECONDARY",
+          "notes": "Cross-check bars/delayed L1; not ES execution comparator."
+        }
+      ],
+      "blockers": [
+        "OWNER-CALIBRATION-THRESHOLDS",
+        "PROBE-G-A5-BROKER-CANDIDATES"
+      ]
+    },
+    {
+      "requirement_id": "D",
+      "title": "Historical and replay inputs",
+      "verdict": "CURRENTLY_SUFFICIENT",
+      "smallest_stack": [
+        {
+          "provider_id": "news.fixture",
+          "capability_id": "NEWS_REPLAY",
+          "campaign_role": "HISTORICAL_RESEARCH",
+          "access_state_observed": "CAPABILITY_VERIFIED",
+          "notes": "Deterministic NewsReplayHarness and canonical fixtures."
+        },
+        {
+          "component": "recorded_news_strategy_evaluation",
+          "campaign_role": "RECORDED_ARTIFACTS_ONLY",
+          "access_state_observed": "CAPABILITY_VERIFIED",
+          "notes": "Governed recorded evaluation artifacts; no live Claude rerun."
+        },
+        {
+          "component": "providers.snapshot_compare",
+          "campaign_role": "OFFLINE_COMPARISON",
+          "access_state_observed": "CAPABILITY_VERIFIED",
+          "notes": "Frozen-arm snapshot compare harness (Wave B PKG-PROVIDER-SNAPSHOT-COMPARE)."
+        }
+      ],
+      "missing_capabilities": [
+        "Historical point-in-time news archives via NewsAPI/Finnhub for backtest claims (WAVE-A-008)",
+        "Durable news or inference repository (WAVE-A-006, DEFER-DURABLE-NEWS-INFERENCE)"
+      ],
+      "optional_redundancy": [
+        {
+          "provider_id": "ibkr_observational",
+          "campaign_role": "HISTORICAL_BARS",
+          "notes": "Capture/replay paths exist; live entitlement limits apply."
+        }
+      ],
+      "blockers": [
+        "EXT-NEWSAPI-FINNHUB-PIT"
+      ]
+    }
+  ],
+  "integrations_deliberately_not_built": [
+    "Premium wire operational adapters (Reuters/DJ/Benzinga)",
+    "Live observational news ingress (DEFER-FTEP-ACT-04-OBS-INGRESS)",
+    "New ES headline vendor integration without named gap closure"
+  ],
+  "secrets_in_artifact": false
+}
