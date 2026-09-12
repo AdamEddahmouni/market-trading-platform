@@ -4,16 +4,16 @@ Generated: 2026-09-12 (orchestrator close)
 
 # Executive result
 
-**READY_FOR_FIRST_SIGNAL_ONLY_AUTHORIZATION**
+**SIGNAL_ONLY_AUTHORIZED_MARKET_CLOSED**
 
-Engineering stop line preserved: no empirical SIGNAL_ONLY session, decision lock, orders, Live activation, or paid provider purchases in this increment.
+Owner explicitly authorized Phase 1 **SIGNAL_ONLY** only (receipt: `signal-only-authorization-receipt-2026-09-12.json`). No empirical session started: US equity RTH closed (Saturday 2026-09-12). Engineering stop line preserved: zero decision locks, orders, Live activation, or paid provider purchases; **post-freeze manifest mutations: 0**.
 
 # Repository integration
 
 | Item | Value |
 | --- | --- |
 | Starting SHA | `099388f7f23e31e3d01107ceeba9c8822903848c` |
-| Final SHA | _(see git log after commit/push)_ |
+| Final SHA | `a754f5e` _(full: run `git rev-parse HEAD` on branch)_ |
 | Base | `work/ftep-v1-002-us-equity-news` @ `099388f` (same as `work/ftep-v1-activation`) |
 | PR #22–#28 | Open; CI largely green on #22–#27; #28 shows `validate-docs` / `validate-python-changed` failures on latest runs — **not merged** (owner merge auth only) |
 | V1-002 PR | Created/updated from `work/ftep-v1-002-us-equity-news` after commit push |
@@ -60,7 +60,7 @@ Engineering stop line preserved: no empirical SIGNAL_ONLY session, decision lock
 - **SIGNAL_ONLY** Phase 1 — `binding.test_mode`
 - **Internal simulation Paper** — bound (same ID as V1-001 canonical ledger)
 - **Freeze** — approved under OD-11 (`BIND_FREEZE_PREFLIGHT_ONLY`)
-- **First empirical session** — **NOT** approved (`signal_only_session_authorized: false`)
+- **First empirical session** — **Owner authorized** via external receipt; frozen manifest `operator_attestation.signal_only_session_authorized` remains `false` (immutable post-freeze)
 
 # Methodology
 
@@ -169,8 +169,20 @@ Opportunity Engine / PIT export track remains on open PR #27 — not merged; no 
 
 Merge canonical FTEP infrastructure PR stack **#22–#28** into integration base before production-line activation UI wiring (not required to authorize first governed SIGNAL_ONLY session once owner explicitly requests it).
 
-# Next owner action
+# Section 37 orchestrator handoff (2026-09-12 activation pass)
 
-**NEXT ACTION: OWNER MAY AUTHORIZE THE FIRST GOVERNED FTEP-V1-002 SIGNAL_ONLY PROSPECTIVE SESSION.**
+| Field | Value |
+| --- | --- |
+| **Classification** | `SIGNAL_ONLY_AUTHORIZED_MARKET_CLOSED` |
+| **Campaign** | `FTEP-V1-002` / US-equity-news-catalyst |
+| **Campaign ID** | `FTCAMP-f7083180990bc59578ca045e1e1318a356421bbc9b81ee514c14130cb0b356b1` |
+| **Fingerprint** | `F7083180990BC59578CA045E1E1318A356421BBC9B81EE514C14130CB0B356B1` |
+| **Git** | `work/ftep-v1-002-us-equity-news` @ `a754f5e` |
+| **Authorization** | `artifacts/ftep-v1-002/signal-only-authorization-receipt-2026-09-12.json` |
+| **Machine readiness** | `artifacts/ftep-v1-002/machine-readiness-receipt-2026-09-12.json` |
+| **Launch prep** | `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md` |
+| **FTEP-V1-001** | Unchanged; `FROZEN_BLOCKED_EXTERNAL_DATA_ENTITLEMENT` |
+| **Sessions started** | **0** |
+| **Safety** | Paper orders=0, Live orders=0, paid activations=0, manifest mutations=0 |
 
-STOP. Do not start it in this increment.
+**NEXT ACTION:** On next **US_EQUITY_RTH** open window, set `IMP_PERSIST_STATE=1`, confirm `campaign-readiness FTEP-V1-002` → `READY`, then start first governed SIGNAL_ONLY session per launch prep (no execution segment).

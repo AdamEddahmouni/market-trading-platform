@@ -2,16 +2,11 @@
 
 ## Summary
 
-Engineering pivot to **FTEP-V1-002** (`US-equity-news-catalyst`) on a **$0 incremental** provider stack (Moomoo US equity L1 + Finviz Elite news). **FTEP-V1-001** remains **frozen** with fingerprint `69C36BA…` and is classified **FROZEN_BLOCKED_EXTERNAL_DATA_ENTITLEMENT** for prospective ES market evidence.
+**FTEP-V1-002** (`US-equity-news-catalyst`) is **FROZEN** on $0 incremental stack (Moomoo US equity L1 + Finviz Elite news). Owner authorized **Phase 1 SIGNAL_ONLY** (`signal-only-authorization-receipt-2026-09-12.json`); first session deferred — **US_EQUITY_RTH closed** (2026-09-12 weekend). **FTEP-V1-001** unchanged / blocked on ES entitlement.
 
-## Owner decisions required (4)
+## Owner decisions (closed for V1-002 freeze)
 
-**Authority-resolved (engineering, not frozen):** OD-1 (news-strategy Option A on US equity lane), OD-3 (US_EQUITY_RTH).
-
-1. **OD-2** — Approve preregistered US equity symbol universe (proposed: SPY, AAPL, MSFT, NVDA, AMZN).
-2. **OD-6** — Confirm phased SIGNAL_ONLY first segment for V1-002 (no execution segment without separate authorization).
-3. **OD-11** — Authorize manifest freeze pathway for V1-002 (not granted in this increment).
-4. **OD-PAPER-ACCOUNT** — Select internal simulation Paper account before any empirical session (not authorized here).
+OD-1, OD-2 (AAPL, MSFT, NVDA, AMZN, META; SPY benchmark-only), OD-3, OD-6 (PHASE_1_SIGNAL_ONLY), OD-11 (pathway A bind/freeze/preflight), OD-PAPER-ACCOUNT (canonical internal simulation Paper).
 
 **Operator (not owner):** Finviz Elite `LOCAL_PROBE_REQUIRED` — see `artifacts/ftep-v1-002/finviz-local-probe-status-2026-09-12.json`; stale verified evidence remains `2026-08-22`.
 
