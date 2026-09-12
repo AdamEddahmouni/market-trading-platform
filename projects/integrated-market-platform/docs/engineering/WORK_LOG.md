@@ -36,6 +36,114 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-11 — Wave B capability matrix foundation (PKG-CAPABILITY-FOUNDATION)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `manifests`, `tools`, `artifacts` |
+| **Summary** | Added versioned capability-contract types (access states CATALOGED→BLOCKED, campaign roles, dimension semantics, PROMOTED evidence gate) and a deterministic snapshot builder over Wave A inventory/audit JSON plus value-blind readiness rows. Reconciliation index already marks provider-inventory and ibkr-tradier-alpaca lanes PRESENT at canonical paths. |
+| **Key files** | `manifests/providers/schemas/capability_matrix_snapshot.schema.json` (created), `src/market_platform_foundation/providers/capability_contract.py` (created), `src/market_platform_foundation/providers/capability_snapshot.py` (created), `tools/providers/capability_matrix.py` (created), `tests/providers/test_capability_matrix.py` (created), `docs/engineering/PROVIDER_READINESS.md` (modified) |
+| **Tests** | `python tools/imp.py test focused tests.providers.test_capability_matrix`; `python tools/imp.py validate changed` |
+| **Related** | `artifacts/wave-a-findings/reconciliation-gate.json` PKG-CAPABILITY-FOUNDATION, `docs/architecture/MARKET_DATA_CAPABILITY_CONTRACT.md` |
+| **Notes** | No live activation, no registry duplication, HTTP/UI matrix projection still deferred (DEFER-UNIFIED-UI-MATRIX). |
+
+## 2026-09-11 — Wave A reconciliation index and parent gate synthesis
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `artifacts` |
+| **Summary** | Completed Wave A reconciliation index for all present lane artifacts (including pit-infrastructure) plus absent provider-inventory and ibkr-tradier-alpaca lanes; added parent `reconciliation-gate.json` classifying requirements, minimum implementation packages with worktree boundaries, and ES/news stack verdict from verified Wave A facts only. No code or manifest changes. |
+| **Key files** | `artifacts/wave-a-findings/reconciliation-index.json` (modified), `artifacts/wave-a-findings/reconciliation-gate.json` (created) |
+| **Tests** | Not run (synthesis-only) |
+| **Related** | `artifacts/wave-a-findings/*.json`, `docs/engineering/FTEP_ACTIVATION_GATES.md`, `docs/architecture/MARKET_DATA_CAPABILITY_CONTRACT.md`, `docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md` |
+| **Notes** | Qualifying FTEP campaign remains unauthorized; two Wave A lane JSON files still absent on disk. |
+
+## 2026-09-11 — Wave A FTEP campaign audit artifact
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `artifacts`, `docs` |
+| **Summary** | Persisted secret-free Wave A `ftep-campaign-audit.json` for FTEP-V1-001 (activation status, satisfied/unsatisfied gates, code/config gaps, OD-1…OD-11 as pending owner decisions, vocabulary, paths, test index). Minimal NEWS_STRATEGY_EVALUATION Paper-boundary correction: bridge exists; campaign not frozen; fixture vs forward paths. No manifest/owner-packet/checklist/empirical changes. |
+| **Key files** | `artifacts/wave-a-findings/ftep-campaign-audit.json` (created), `docs/architecture/NEWS_STRATEGY_EVALUATION.md` (Paper execution boundary) |
+| **Tests** | None (read-only audit follow-up) |
+| **Related** | `artifacts/wave-a-findings/news-data-inventory.json`, `docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md` |
+| **Notes** | Checklist FTEP row deferred (C5); recorded in audit JSON. |
+
+## 2026-09-11 — Wave A UX hooks audit artifact
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `artifacts`, `ui/api` (inventory only) |
+| **Summary** | Persisted secret-free Wave A reconciliation JSON for parallel provider/capability type systems, existing React Query hooks vs HTTP endpoints, DISCOVER/NOW/Fusion surface wiring, eleven condensed gaps, and minimum future provider-governance hook set. No UI code changes. |
+| **Key files** | `artifacts/wave-a-findings/ux-hooks-audit.json` (created), `docs/engineering/PROVIDER_READINESS.md` (one-line pointer) |
+| **Tests** | None (read-only follow-up) |
+| **Related** | Wave A goal reconciliation bundle |
+| **Notes** | Backend/CLI vocabulary normalization should precede new UI matrix hooks. |
+
+## 2026-09-11 — FTEP-V1 activation manifest runtime gaps (Agent B)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `ui_api`, `docs`, `forward-test` |
+| **Summary** | Completed Agent B minimal plan: `freeze_activation_manifest.py` CLI, protocol SHA-256 verification in manifest validation/preflight, decision provenance campaign binding, durable `forward_test_campaign_bindings` with first-lock timestamp, GET preflight API, and non-campaign empirical path guards. FTEP-V1-001 remains `PENDING_OWNER_DECISIONS`; no empirical evidence. |
+| **Key files** | `tools/forward_test/freeze_activation_manifest.py`, `paper_forward_bridge/{protocol_ref,campaign_binding}.py`, `service.py`, `activation.py`, `preflight.py`, `sqlite_repository.py`, `ui_api/{forward_test_projections,server}.py`, forward-test tests, `PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | `python tools/imp.py validate fast`; `python tools/imp.py test affected`; `python tools/check_docs_links.py` |
+| **Related** | Agent B spec; [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md) |
+| **Notes** | Owner must sign OD-1 … OD-11 before freeze CLI succeeds on FTEP-V1-001. $0 incremental cost. Paper-only. |
+
+## 2026-09-11 — FTEP-V1 P0 activation follow-ups (campaign binding + preflight API)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `ui_api`, `docs`, `forward-test` |
+| **Summary** | Added durable campaign binding (one ACTIVE campaign per account), protocol reference hash verification, GET preflight API, and fail-closed non-campaign session guards. No manifest freeze or empirical campaign start. |
+| **Key files** | `paper_forward_bridge/{campaign_binding,protocol_ref}.py`, `service.py`, `preflight.py`, `activation.py`, `sqlite_repository.py`, `store.py`, `ui_api/{forward_test_projections,server}.py`, tests `test_forward_test_{activation,persistence,preflight_api,protocol_ref}.py`, `PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | `python tools/imp.py validate fast`; `python tools/imp.py test affected`; `python tools/check_docs_links.py` |
+| **Related** | Agent A/C P0 gaps; [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md) |
+| **Notes** | Owner must still sign OD-1 … OD-11 before manifest freeze. $0 incremental cost. Paper-only. |
+
+## 2026-09-11 — FTEP-V1 owner decision packet (OD-1 … OD-11)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `forward-test` |
+| **Summary** | Expanded owner decision packet per user spec §16: 28 Agent A inventory rows consolidated into 11 grouped decisions (OD-1 … OD-11) with recommended defaults, precedent table for sample floors, and C3 ES/RTH conflict note. Updated activation manifest skeleton (`PENDING_OWNER_DECISIONS`), protocol ref with doc SHA-256, and FTEP activation status section. No FROZEN status or empirical claims. |
+| **Key files** | `docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md`, `artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json`, `artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json`, `docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | None (docs/artifacts only) |
+| **Related** | Agent A audits `c4f6ca28`, `81265595`; [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md) |
+| **Notes** | Owner must sign OD-1 … OD-11 before manifest freeze. $0 incremental cost; Paper-only. |
+
+## 2026-09-11 — FTEP-V1 activation runtime gates
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `docs`, `forward-test` |
+| **Summary** | Implemented activation manifest load/validate/fingerprint, deterministic preflight, session manifest binding, cohort/strategy/universe validation on decisions, `evidence_class` without auto-promotion, observation `source_time_ns` guard, and schema v3–v4 persistence columns. Commit `58864aa` on `work/ftep-v1-activation`. |
+| **Key files** | `paper_forward_bridge/activation.py`, `preflight.py`, `service.py`, `types.py`, `temporal.py`, `repository.py`, `tests/intelligence/test_forward_test_activation.py`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | `python tools/imp.py test affected` — 1832 passed, 26 skipped; forward-test 30/30 |
+| **Related** | [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md), [FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md](FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md) |
+| **Notes** | Manifest `PENDING_OWNER_DECISIONS` until owner signs OD-01/ACT-01/ACT-03. $0 incremental cost. Not pushed. |
+
+## 2026-09-11 — FTEP-V1 owner decision packet and activation manifest skeleton
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `forward-test` |
+| **Summary** | Created FTEP-V1 owner decision packet and `FTEP-V1-001` activation manifest skeleton per Agent A re-run audit (`c4f6ca28`). Manifest is `PENDING_OWNER_DECISIONS` with 3 minimal-path owner choices (OD-01, ACT-01, ACT-03) and 17 pre-resolved safe/deterministic fields; no FROZEN status or empirical claims. |
+| **Key files** | `docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md` (created), `artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json` (created), `artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json` (created), `docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md` (header), `docs/engineering/WORK_LOG.md` |
+| **Tests** | None (docs/artifacts only) |
+| **Related** | [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md), Agent A audit `c4f6ca28`, [FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md](FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md) |
+| **Notes** | Superseded by activation runtime gates entry above for implementation status. |
+
 ## 2026-09-10 — PD-09 verifier persistence follow-up
 
 | Field | Value |

@@ -2,14 +2,25 @@
 
 This document is the operator checklist for external providers. It records
 credential presence and activation state without recording credential values.
-Run the report after changing local configuration:
+Run the report after changing local configuration.
+
+For UI HTTP read models and Wave A hook/gap inventory (not the in-repo capability matrix), see
+[`artifacts/wave-a-findings/ux-hooks-audit.json`](../../artifacts/wave-a-findings/ux-hooks-audit.json).
 
 ```powershell
 $env:PYTHONPATH = "src"
 python tools/provider_readiness.py
 python tools/provider_readiness.py --probe-local
 python tools/provider_readiness.py --json
+python tools/providers/capability_matrix.py
+python tools/providers/capability_matrix.py --output artifacts/wave-a-findings/capability-matrix-snapshot.json
 ```
+
+The capability-matrix command emits a deterministic, secret-free snapshot aligned to
+[`MARKET_DATA_CAPABILITY_CONTRACT.md`](../architecture/MARKET_DATA_CAPABILITY_CONTRACT.md)
+and Wave A inventory JSON under `artifacts/wave-a-findings/`. It merges value-blind
+gate rows from `provider_readiness.py` by default; use `--skip-readiness` for
+artifact-only output.
 
 `--probe-local` checks only loopback ports. It does not call external APIs,
 place orders, or attempt logins.
