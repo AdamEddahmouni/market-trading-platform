@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "overnight_isolation_proof",
+  "observed_at": "2026-09-12T06:40:00Z",
+  "program": "IMP Overnight Parallel Program 2026-09-12",
+  "active_foreground_worktree": {
+    "path": "C:/Users/adame/Desktop/market-trading-platform",
+    "branch": "work/ftep-v1-activation",
+    "head_sha": "099388f7f23e31e3d01107ceeba9c8822903848c",
+    "dirty_paths_observed": [
+      "projects/integrated-market-platform/artifacts/g13-runtime-performance.json",
+      "projects/integrated-market-platform/artifacts/g14-runtime-performance.json",
+      "projects/integrated-market-platform/artifacts/g8-runtime-performance.json"
+    ],
+    "note": "Foreground lane left untouched; no commits from overnight program in this checkout."
+  },
+  "overnight_integration_worktree": {
+    "path": "C:/Users/adame/Desktop/market-trading-platform/.worktrees/overnight-imp-parallel-2026-09-12",
+    "branch": "overnight/imp-parallel-2026-09-12",
+    "base_ref": "origin/main",
+    "base_sha": "588ada8a4f2baac2dee4496774814341a15979f6",
+    "base_description": "Merge pull request #20 preimplementation-planning-closure-20260911"
+  },
+  "remote": {
+    "name": "origin",
+    "url": "https://github.com/AdamEddahmouni/market-trading-platform.git",
+    "fetch_executed": true
+  },
+  "no_touch_zone": [
+    "artifacts/forward-test-campaigns/FTEP-V1-001/**",
+    "artifacts/ftep-v1-activation/**",
+    "coverage_gap_engine.py",
+    "capability_snapshot.py",
+    "ui_api/projections.py",
+    "paper_projections.py",
+    "test_coverage_gap_engine.py",
+    "news-data-inventory.json",
+    "docs/engineering/WORK_LOG.md",
+    "PR #19 integration state"
+  ],
+  "validation_baseline": {
+    "command": "python tools/imp.py validate fast",
+    "worktree": "overnight integration",
+    "result": "21 passed, 0 failures",
+    "perf_note": "SEVERE_REGRESSION vs local median (cold worktree); functional pass"
+  }
+}

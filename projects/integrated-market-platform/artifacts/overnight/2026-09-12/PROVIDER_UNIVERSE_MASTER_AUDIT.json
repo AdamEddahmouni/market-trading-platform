@@ -1,0 +1,58 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "overnight_provider_universe_master_audit",
+  "lane": "B",
+  "observed_at": "2026-09-12T06:45:00Z",
+  "synthesis_basis": [
+    "artifacts/wave-a-findings/provider-inventory.json (foreground branch; read-only)",
+    "docs/platform/PROGRAM_STATUS.md",
+    "docs/architecture/MARKET_DATA_CAPABILITY_CONTRACT.md"
+  ],
+  "note": "Overnight worktree based on origin/main; Wave A JSON artifacts exist on foreground branch work/ftep-v1-activation — reconciled by path reference, not copied.",
+  "provider_counts": {
+    "live_observational": 3,
+    "paper_execution": 2,
+    "regulatory_macro": 12,
+    "news_discovery": 5,
+    "llm": 4,
+    "fixture_and_replay": "dominant for CI"
+  },
+  "primary_observational_path": "moomoo.live",
+  "secondary_observational_path": "ibkr.observational",
+  "cross_cutting_authority": [
+    "providers/contracts.py",
+    "providers/registry.py",
+    "market_data/capability_registry.py",
+    "tools/provider_readiness.py"
+  ],
+  "top_gaps": [
+    {
+      "id": "GAP-CAPABILITY-MATRIX-SYNC",
+      "summary": "UI capability vocabulary parallel to provider registry",
+      "class": "IMPLEMENT_IN_ISOLATED_WORKTREE",
+      "foreground_overlap": true
+    },
+    {
+      "id": "GAP-ES-FUTURES-ENTITLEMENT",
+      "summary": "US_FUTURES_QUOTE not verified entitled",
+      "class": "NEEDS_OWNER_DECISION",
+      "foreground_overlap": true
+    },
+    {
+      "id": "GAP-NEWS-HEADLINE-VENDORS",
+      "summary": "Seven news provider ids configured_not_operational",
+      "class": "NEEDS_EXTERNAL_ACCESS"
+    },
+    {
+      "id": "GAP-LIVE-PROVIDER-CAMPAIGN",
+      "summary": "EVIDENCE-01C deferred; no observational trace campaign",
+      "class": "DEFER_TO_FOREGROUND_LANE"
+    }
+  ],
+  "verified_vs_candidate_legend": {
+    "CAPABILITY_VERIFIED": "Offline tests + fixture replay prove IMP software path",
+    "CATALOGED": "Integration present; live entitlement unproven",
+    "LIVE_PROVIDER_VERIFIED": "Bounded canary only (IBKR delayed L1)",
+    "CANDIDATE": "Documented external vendor not wired"
+  }
+}
