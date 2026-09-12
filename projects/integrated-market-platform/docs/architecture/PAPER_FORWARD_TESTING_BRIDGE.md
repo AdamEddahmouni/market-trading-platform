@@ -202,6 +202,15 @@ Factory: `create_forward_test_repository()` in
 
 - Durable storage is local SQLite only (no MongoDB / remote campaign DB)
 - Outcome metrics use observation payloads, not live provider polling
+- **Observational live news ingress** is implemented as opt-in scaffolding only
+  (`market_platform_foundation/news/observational_ingress.py`). It requires
+  `IMP_OBSERVATIONAL_NEWS_INGRESS=1` plus per-provider `IMP_NEWSAPI_LIVE` /
+  `IMP_FINNHUB_LIVE` gates, normalizes through `aggregator_bridge`, and is
+  **not** auto-wired into forward-test `observe` paths or Paper submission.
+  FTEP-V1 campaign connectivity remains deferred under manifest
+  `deferred_until_evidence` (`FTEP-ACT-04`, `FTEP-D038`). Operator-local
+  bounded probes: [OPERATOR_PROBE_RUNBOOK.md](../engineering/OPERATOR_PROBE_RUNBOOK.md)
+  §5–6.
 - EVIDENCE-01B campaign auto-bridge not wired
 - Route-policy fixes for forward-test UI mutations remain follow-up work
 

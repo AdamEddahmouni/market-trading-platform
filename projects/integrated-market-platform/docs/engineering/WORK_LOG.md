@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — Observational news ingress scaffold (FTEP-ACT-04)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `news`, `docs`, `artifacts` |
+| **Summary** | Added gate-gated `observational_ingress.py` (master `IMP_OBSERVATIONAL_NEWS_INGRESS` + existing NewsAPI/Finnhub live gates) that fetches via `NewsAggregator` and normalizes through `aggregator_bridge`; documented known limitations in PAPER_FORWARD_TESTING_BRIDGE and operator probe cross-link. Criterion **O** → MET with implementation-readiness note; campaign connectivity still deferred. |
+| **Key files** | `src/market_platform_foundation/news/observational_ingress.py`, `src/market_platform_foundation/news/config.py`, `tests/news/test_observational_ingress.py`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md`, `docs/engineering/OPERATOR_PROBE_RUNBOOK.md`, `.env.example`, `artifacts/ftep-v1-activation-goal-audit.json` |
+| **Tests** | `python -m unittest tests.news.test_observational_ingress -q` — 5 passed; `python tools/imp.py validate changed` — 1909 passed, 26 skipped |
+| **Related** | [PAPER_FORWARD_TESTING_BRIDGE.md](../architecture/PAPER_FORWARD_TESTING_BRIDGE.md), manifest `deferred_until_evidence` FTEP-ACT-04 / FTEP-D038 |
+| **Notes** | No forward-test auto-wire, Live, push, or freeze. DEFER-FTEP-ACT-04 gap narrowed to campaign bridge wiring only. |
+
 ## 2026-09-12 — PIT export, operator probe runbook, goal checkpoint
 
 | Field | Value |
