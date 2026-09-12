@@ -8,6 +8,7 @@
   "closure_commit": "af9b2e0",
   "docs_catalog_commit": "1ab2073",
   "reconciliation_gate_commit": "a6e86f5",
+  "ftep_gap_fill_commit": "fac808f",
   "goal": "Close Wave B prerequisite implementation increment without manifest freeze, Live, or qualifying empirical evidence.",
   "implementation_packages_complete": [
     "PKG-CAPABILITY-FOUNDATION",
@@ -133,7 +134,7 @@
         "docs/engineering/PROVIDER_ACTIVATION_INCREMENT.md",
         "docs/architecture/NEWS_STRATEGY_EVALUATION.md",
         "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md",
-        "artifacts/forward-test-campaigns/FTEP-V1-001/activation_manifest.json"
+        "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json"
       ],
       "blockers": ["OWNER-OD-1-11", "G-A3 strategy profile freeze"]
     },
@@ -154,6 +155,7 @@
   "authoritative_artifacts": {
     "reconciliation_gate": "artifacts/wave-a-findings/reconciliation-gate.json",
     "engineering_guide": "docs/engineering/PROVIDER_ACTIVATION_INCREMENT.md",
+    "es_news_provider_stack_selection": "artifacts/ftep-v1-001/es-news-provider-stack-selection.json",
     "notion_sync": "artifacts/wave-b-notion-sync-payload.md"
   },
   "secrets_in_artifact": false
