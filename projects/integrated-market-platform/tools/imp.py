@@ -702,6 +702,32 @@ def build_parser() -> argparse.ArgumentParser:
         help="Force campaign attention fixture",
     )
     watch_catalysts.add_argument("--input", type=Path, help="Optional attention row JSON file")
+    record_prospective_lock = ftep_actions.add_parser(
+        "record-prospective-lock",
+        help="governed prospective lock gates (--dry-run only; no lock writes)",
+    )
+    record_prospective_lock.add_argument(
+        "campaign_slug",
+        nargs="?",
+        default="FTEP-V1-002",
+        help="Forward-test campaign slug (default: FTEP-V1-002)",
+    )
+    record_prospective_lock.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Evaluate lock invariants without durable writes",
+    )
+    record_prospective_lock.add_argument("--json", action="store_true")
+    record_prospective_lock.add_argument(
+        "--fixture",
+        action="store_true",
+        help="Force campaign attention fixture for catalyst qualification",
+    )
+    record_prospective_lock.add_argument(
+        "--input",
+        type=Path,
+        help="Optional JSON file with attention-candidate rows",
+    )
     return parser
 
 
@@ -770,6 +796,19 @@ def _ftep_command(root: Path, args: argparse.Namespace) -> int:
             command.extend(["--input", str(args.input)])
         if getattr(args, "dry_run", False):
             command.append("--dry-run")
+        if getattr(args, "json", False):
+            command.append("--json")
+    elif args.action == "record-prospective-lock":
+        command = [
+            python,
+            str(root / "tools" / "ftep_record_prospective_lock.py"),
+            args.campaign_slug,
+            "--dry-run",
+        ]
+        if getattr(args, "fixture", False):
+            command.append("--fixture")
+        if getattr(args, "input", None):
+            command.extend(["--input", str(args.input)])
         if getattr(args, "json", False):
             command.append("--json")
     else:

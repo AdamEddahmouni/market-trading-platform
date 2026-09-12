@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — FTEP-V1-002 wave 19 prospective lock dry-run
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, `tools`, `tests` |
+| **Summary** | Wave 19 closed-market work: documented gap (no post-`create_session` auto lock listener; `watch-catalysts` is read-only). Added governed `ftep record-prospective-lock --dry-run` gate + invoke-step plan when all invariants pass; fixture tests assert blockers without durable writes. US_EQUITY_RTH closed — no governed session-start or locks. |
+| **Key files** | `ftep_prospective_lock.py`, `tools/ftep_record_prospective_lock.py`, `tools/imp.py`, `tests/intelligence/test_ftep_prospective_lock.py` |
+| **Tests** | `unittest tests.intelligence.test_ftep_prospective_lock` (3 passed); `imp.py ftep watch-catalysts --fixture` + `record-prospective-lock --dry-run --json` (manual closed-market) |
+| **Related** | FTEP-V1-002 goal wave 19; PR **#29** |
+| **Notes** | Goal not complete until first RTH governed session + real decision locks when owner enables `empirical_lock_authorized` |
+
 ## 2026-09-12 — FTEP-V1-002 wave 18 RTH bootstrap + provider health
 
 | Field | Value |
