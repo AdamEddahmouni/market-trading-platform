@@ -1,0 +1,287 @@
+{
+  "schema_version": "intelligence/paper_forward_bridge/activation_manifest/1.0.0",
+  "manifest_schema_version": 1,
+  "created_at": "2026-09-11T03:30:00Z",
+  "campaign_slug": "FTEP-V1-001",
+  "campaign_id": null,
+  "protocol_id": "FTEP-V1/0.1.0-PREREG",
+  "protocol_version": "0.1.0-PREREG",
+  "activation_status": "PENDING_OWNER_DECISIONS",
+  "evidence_class_target": "ACTUAL_FORWARD",
+  "classification": "PLANNED / PRE-REGISTERED / NOT YET EMPIRICAL EVIDENCE",
+  "audit_basis": "Agent A re-run c4f6ca28; first-run 81265595",
+  "authority_resolutions": {
+    "OD-1": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "A",
+      "strategy_binding": "news-strategy ES lane",
+      "baseline_policy_id": "news_deterministic_baseline@1.0.0",
+      "ai_policy_id": "news_ai_enhanced@1.0.0",
+      "intelligence_provider": "RECORDED_ARTIFACTS_ONLY",
+      "authority_source": "docs/architecture/NEWS_STRATEGY_EVALUATION.md L35-39",
+      "owner_sign_off_still_required": true,
+      "note": "Binding fields remain null until OD-11 freeze; authority pre-resolves Option A only."
+    },
+    "OD-3_calendar_interpretation": {
+      "classification": "ENGINEERING_DEFAULT_WITH_OWNER_ACK",
+      "resolution": "US_EQUITY_RTH for ES news-catalyst decisions",
+      "conflict": "C3 ES Globex vs RTH",
+      "authority_source": "docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md OD-3"
+    }
+  },
+  "paper_account_resolution": {
+    "status": "RESOLVE_AT_FREEZE_FROM_LEDGER",
+    "note": "Populate paper_account_id from single configured Paper ledger at freeze; remains owner attestation under OD-11."
+  },
+  "owner_decisions_required": [
+    "OD-1",
+    "FTEP-D002",
+    "OD-2",
+    "FTEP-D008",
+    "FTEP-D011",
+    "OD-3",
+    "FTEP-D013",
+    "OD-4",
+    "FTEP-D014",
+    "OD-5",
+    "FTEP-D017",
+    "OD-6",
+    "FTEP-D019",
+    "OD-7",
+    "FTEP-D025",
+    "OD-8",
+    "FTEP-D026",
+    "OD-9",
+    "FTEP-D030",
+    "OD-10",
+    "FTEP-D031",
+    "OD-11",
+    "FTEP-D035",
+    "FTEP-D037",
+    "FTEP-D039"
+  ],
+  "unresolved_fields": [
+    "OD-1",
+    "OD-2",
+    "OD-3",
+    "OD-4",
+    "OD-5",
+    "OD-6",
+    "OD-7",
+    "OD-8",
+    "OD-9",
+    "OD-10",
+    "OD-11"
+  ],
+  "owner_conditional_decisions": {
+    "if_od_1_equals_B": [
+      "FTEP-D003",
+      "FTEP-D010",
+      "FTEP-SUB-01",
+      "FTEP-SUB-03"
+    ],
+    "if_od_1_equals_C": [
+      "FTEP-D003",
+      "FTEP-SUB-03"
+    ],
+    "if_od_3_equals_B": [
+      "FTEP-SUB-04"
+    ],
+    "if_od_5_equals_B": [
+      "cohort_matching_key_redefinition"
+    ],
+    "optional_third_arm": [
+      "FTEP-D007"
+    ]
+  },
+  "strategy_binding": null,
+  "primary_metric": null,
+  "cohort_matching_key": null,
+  "owner_signed_at": null,
+  "manifest_fingerprint": null,
+  "resolved_fields": {
+    "FTEP-D001": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "PROTOCOL_REF.json + campaign artifact tree",
+      "resolution_source": "artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json"
+    },
+    "FTEP-D004": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "news_deterministic_baseline@1.0.0",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §2 L93-97",
+      "conditional_on": "OD-1=A"
+    },
+    "FTEP-D005": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "news_ai_enhanced@1.0.0",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §3 L111-114",
+      "conditional_on": "OD-1=A"
+    },
+    "FTEP-D006": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "RECORDED_ARTIFACTS_ONLY",
+      "resolution_source": "docs/architecture/NEWS_STRATEGY_EVALUATION.md L152-156"
+    },
+    "FTEP-D007": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "EXCLUDE_NAIVE_REFERENCE_ARM",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §3 L117-121"
+    },
+    "FTEP-D009": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "FUTURES_EQUITY_INDEX / ES",
+      "resolution_source": "docs/architecture/NEWS_STRATEGY_EVALUATION.md L35-39",
+      "conditional_on": "OD-1=A"
+    },
+    "FTEP-D012": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "CONTINUOUS_FUTURES_NON_EXECUTABLE",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §5 L158-159"
+    },
+    "FTEP-D015": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "REGIME_FILTER_NONE",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §7 Option A L211"
+    },
+    "FTEP-D016": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "NO_REGIME_SEGMENTATION_WHEN_D015_A",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §19 L507-508"
+    },
+    "FTEP-D018": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "FORBID_CONCURRENT",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §8 Option A L242"
+    },
+    "FTEP-D020": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "HORIZONS_5M_15M_30M_60M",
+      "resolution_source": "src/market_platform_foundation/intelligence/news_strategy_evaluation/config.py L14-18",
+      "conditional_on": "OD-1=A"
+    },
+    "FTEP-D022": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "PHASE_1_MIN_1_CONTRACT_PHASE_2_FIXED_QUANTITY",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §11 L308-310"
+    },
+    "FTEP-D023": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "PAPER_INTERNAL_ONLY",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §12 Option A L327"
+    },
+    "FTEP-D027": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "PAIRED_BOOTSTRAP_CI",
+      "resolution_source": "docs/engineering/CHAMPION_CHALLENGER_PROMOTION_V1.md L52"
+    },
+    "FTEP-D028": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "SINGLE_PRIMARY_ONLY",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §17 L478-480"
+    },
+    "FTEP-D029": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "NO_OPPORTUNITY_ENGINE_LINKAGE",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §15.3 L432-433"
+    },
+    "FTEP-D033": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "EXCLUDE_PROVIDER_DISCONNECTED",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §13 PROVIDER_DISCONNECTED"
+    },
+    "FTEP-D034": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "IMP_PERSIST_STATE_REQUIRED",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §23 L624"
+    },
+    "FTEP-D036": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "artifacts/forward-test-campaigns/FTEP-V1-001/",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md §24 L637-646"
+    },
+    "FTEP-ACT-02": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": 5,
+      "description": "integrity-clean locks before EXECUTION segment",
+      "resolution_source": "docs/engineering/EVIDENCE_01A_REAL_FORWARD_OBSERVATION_CAMPAIGN.md L39-42"
+    }
+  },
+  "recommended_not_binding": {
+    "note": "Recommended defaults from owner decision packet; binding only after OD-11 sign-off",
+    "OD-1": "A",
+    "strategy_binding": "A",
+    "baseline_policy_id": "news_deterministic_baseline@1.0.0",
+    "ai_policy_id": "news_ai_enhanced@1.0.0",
+    "OD-2": "ES / FUTURES_EQUITY_INDEX",
+    "universe": ["ES"],
+    "lane_id": "FUTURES_EQUITY_INDEX",
+    "OD-3": "US_EQUITY_RTH",
+    "calendar_scope": "US_EQUITY_RTH",
+    "calendar_window_et": "09:30-16:00",
+    "OD-4": "BOTH_A_AND_B",
+    "OD-5": "EVENT_DRIVEN",
+    "cadence": "EVENT_DRIVEN",
+    "OD-6": "PHASED_SIGNAL_ONLY_THEN_EXECUTION",
+    "test_mode_phase_1": "SIGNAL_ONLY",
+    "test_mode_phase_2": "EXECUTION",
+    "phase_transition_min_locks": 5,
+    "OD-7": "SECTION_14_PROPOSED_INTEGERS",
+    "OD-8": "percentage_return",
+    "primary_metric": "percentage_return",
+    "OD-9": "symbol_decision_bucket_horizon",
+    "cohort_matching_key": "(symbol, decision_bucket, evaluation_horizon_ns)",
+    "OD-10": "SHA256_DERIVE_AT_FREEZE",
+    "OD-11": "SIGN_AND_REOPEN_CHECKLIST"
+  },
+  "policies": {
+    "baseline_policy_id": null,
+    "ai_policy_id": null,
+    "naive_reference_included": false
+  },
+  "universe": null,
+  "lane_id": null,
+  "intelligence_provider": "RECORDED_ARTIFACTS_ONLY",
+  "calendar_scope": "US_EQUITY_RTH",
+  "cadence": "EVENT_DRIVEN",
+  "overlap_policy": "FORBID_CONCURRENT",
+  "regime_filter": "NONE",
+  "test_mode_phase_1": "SIGNAL_ONLY",
+  "test_mode_phase_2": "EXECUTION",
+  "phase_transition_min_locks": 5,
+  "horizons_ns": [
+    300000000000,
+    900000000000,
+    1800000000000,
+    3600000000000
+  ],
+  "sizing_phase_1": 1,
+  "slippage_model": "PAPER_INTERNAL_ONLY",
+  "statistical_test": "PAIRED_BOOTSTRAP_CI",
+  "multiple_testing": "SINGLE_PRIMARY_ONLY",
+  "sample_floors": {
+    "locked_decisions": 30,
+    "evaluated_decisions": 15,
+    "distinct_trading_days": 5,
+    "qualifying_sessions": 5,
+    "execution_mode_decisions": 10,
+    "per_arm_minimum": 10
+  },
+  "duration_floors": {
+    "min_qualifying_sessions": 5,
+    "min_session_duration_ns": 300000000000,
+    "min_distinct_trading_days": 5
+  },
+  "deferred_until_evidence": {
+    "FTEP-D032": "L2_L1_stale_threshold_when_freshness_evaluated",
+    "FTEP-D038": "provider_connectivity_if_observational_ingress_required",
+    "FTEP-ACT-04": "provider_connectivity_if_observational_ingress_required",
+    "FTEP-ACT-06": "evidence_01b_auto_bridge",
+    "FTEP-ACT-08": "route_policy_ui_mutation_wiring"
+  },
+  "safety_constraints": {
+    "mode": "INTERNAL_SIMULATION",
+    "live_execution": false,
+    "cost_usd": 0,
+    "empirical_evidence_claimed": false
+  }
+}
