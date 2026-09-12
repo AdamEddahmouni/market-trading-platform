@@ -53,6 +53,22 @@ class EvaluationState(StrEnum):
     INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
 
 
+class ForwardTestCohortArm(StrEnum):
+    BASELINE = "BASELINE"
+    AI_ENHANCED = "AI_ENHANCED"
+
+
+class ForwardTestEvidenceClass(StrEnum):
+    UNCLASSIFIED = "UNCLASSIFIED"
+    SOFTWARE_FIXTURE_ONLY = "SOFTWARE_FIXTURE_ONLY"
+    PAPER_OBSERVED = "PAPER_OBSERVED"
+    ACTUAL_FORWARD = "ACTUAL_FORWARD"
+    REPLAY = "REPLAY"
+    FIXTURE = "FIXTURE"
+    SYNTHETIC = "SYNTHETIC"
+    SHAKEDOWN = "SHAKEDOWN"
+
+
 @dataclass(frozen=True, slots=True)
 class ForwardTestSession:
     session_id: str
@@ -64,6 +80,12 @@ class ForwardTestSession:
     evaluation_horizon_ns: int
     created_at_ns: int
     status: ForwardTestSessionStatus
+    campaign_id: str | None = None
+    protocol_id: str | None = None
+    activation_version: str | None = None
+    manifest_fingerprint: str | None = None
+    cohort_arm: ForwardTestCohortArm | None = None
+    config_frozen: bool = False
     config: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -77,6 +99,12 @@ class ForwardTestSession:
             "evaluation_horizon_ns": self.evaluation_horizon_ns,
             "created_at_ns": self.created_at_ns,
             "status": self.status.value,
+            "campaign_id": self.campaign_id,
+            "protocol_id": self.protocol_id,
+            "activation_version": self.activation_version,
+            "manifest_fingerprint": self.manifest_fingerprint,
+            "cohort_arm": self.cohort_arm.value if self.cohort_arm else None,
+            "config_frozen": self.config_frozen,
             "config": dict(self.config),
         }
 
@@ -171,6 +199,8 @@ class ForwardTestDecision:
     execution_outcome: ExecutionOutcomeMetrics | None = None
     evaluation_state: EvaluationState = EvaluationState.PENDING
     failure_reason: str | None = None
+    evidence_class: ForwardTestEvidenceClass = ForwardTestEvidenceClass.UNCLASSIFIED
+    cohort_arm: ForwardTestCohortArm | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -202,4 +232,6 @@ class ForwardTestDecision:
             "execution_outcome": self.execution_outcome.to_dict() if self.execution_outcome else None,
             "evaluation_state": self.evaluation_state.value,
             "failure_reason": self.failure_reason,
+            "evidence_class": self.evidence_class.value,
+            "cohort_arm": self.cohort_arm.value if self.cohort_arm else None,
         }
