@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "ftep_paper_account_choice_table",
+  "observed_at": "2026-09-12T05:12:00Z",
+  "binding_status": "DEFERRED_NOT_AUTHORIZED",
+  "enumeration_source": "account_registry.list_operational_accounts + IMP persistence policy",
+  "persistence_enabled_at_probe": false,
+  "secrets_included": false,
+  "eligible_accounts": [
+    {
+      "display_name": "Internal simulation Paper (default bootstrap ledger)",
+      "provider": "INTERNAL",
+      "execution_mode": "INTERNAL_SIMULATION",
+      "data_mode": "FIXTURE_REPLAY_OR_OPERATOR_CONFIGURED",
+      "ftep_suitability": "ELIGIBLE_FOR_FTEP_V1_001_WHEN_PERSISTENCE_AND_PREFLIGHT_READY",
+      "limitations": [
+        "Not market truth; simulator fills only",
+        "Requires IMP_PERSIST_STATE=1 and valid paper ledger at freeze (OD-11)",
+        "No automatic binding — owner must select at freeze"
+      ],
+      "prior_interview_note": "One eligible internal account was observed previously; owner deferred binding."
+    }
+  ],
+  "excluded_from_selection": [
+    {
+      "class": "DEMO_REPLAY",
+      "reason": "Demo mutations prohibited; not Paper forward-test authority"
+    },
+    {
+      "class": "LIVE_CANARY",
+      "reason": "Observational only; LIVE-001 blocked for FTEP empirical locks"
+    },
+    {
+      "class": "EXTERNAL_BROKER_PAPER",
+      "reason": "No verified futures-capable external Paper comparator in repo evidence"
+    }
+  ],
+  "owner_action": "Select one eligible internal Paper account at OD-11 freeze; do not auto-bind."
+}

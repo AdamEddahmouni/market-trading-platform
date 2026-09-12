@@ -49,7 +49,8 @@ class CoverageGapEngineTests(unittest.TestCase):
         self.assertIn("G-A6", report.blockers)
         self.assertIn("WAVE-A-001", report.blockers)
         self.assertIn("WAVE-A-002", report.blockers)
-        self.assertIn("CG-01", report.blockers)
+        self.assertNotIn("CG-01", report.blockers)
+        self.assertNotIn("CG-02", report.blockers)
 
     def test_gap_resolution_is_deterministic(self) -> None:
         root = Path(__file__).resolve().parents[2]

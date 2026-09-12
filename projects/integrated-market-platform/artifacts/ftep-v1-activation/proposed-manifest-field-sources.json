@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "proposed_activation_manifest_field_sources",
+  "campaign_slug": "FTEP-V1-001",
+  "observed_at": "2026-09-12T05:12:00Z",
+  "activation_status": "PENDING_OWNER_DECISIONS",
+  "frozen": false,
+  "manifest_path": "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+  "fields": [
+    {"field": "strategy_binding", "value": "A", "source": "OWNER_SELECTED", "immutable_after_freeze": true},
+    {"field": "lane_id", "value": "FUTURES_EQUITY_INDEX", "source": "OWNER_SELECTED", "immutable_after_freeze": true},
+    {"field": "universe", "value": ["ES"], "source": "OWNER_SELECTED", "immutable_after_freeze": true},
+    {"field": "intelligence_provider", "value": "RECORDED_ARTIFACTS_ONLY", "source": "OWNER_SELECTED", "immutable_after_freeze": true},
+    {"field": "calendar_scope", "value": "US_EQUITY_RTH", "source": "OWNER_SELECTED", "immutable_after_freeze": true},
+    {"field": "cadence", "value": "EVENT_DRIVEN", "source": "OWNER_SELECTED", "immutable_after_freeze": true},
+    {"field": "test_mode_phase_1", "value": "SIGNAL_ONLY", "source": "OWNER_SELECTED", "immutable_after_freeze": true},
+    {"field": "test_mode_phase_2", "value": "EXECUTION", "source": "OWNER_SELECTED", "immutable_after_freeze": true},
+    {"field": "phase_transition_min_locks", "value": 5, "source": "OWNER_SELECTED", "immutable_after_freeze": true},
+    {"field": "sample_floors", "value": "30/15/5/5/10/10", "source": "OWNER_SELECTED", "immutable_after_freeze": true},
+    {"field": "primary_metric", "value": "percentage_return", "source": "OWNER_SELECTED", "immutable_after_freeze": true},
+    {"field": "statistical_test", "value": "PAIRED_BOOTSTRAP_CI", "source": "AUTHORITY_RESOLVED", "immutable_after_freeze": true},
+    {"field": "cohort_matching_key", "value": "(symbol, decision_bucket, evaluation_horizon_ns)", "source": "OWNER_SELECTED", "immutable_after_freeze": true},
+    {"field": "campaign_id", "value": null, "source": "ENGINEERING_DERIVED_AT_FREEZE", "immutable_after_freeze": true},
+    {"field": "paper_account_id", "value": null, "source": "UNRESOLVED", "immutable_after_freeze": true},
+    {"field": "owner_signed_at", "value": null, "source": "UNRESOLVED_OD_11", "immutable_after_freeze": true}
+  ],
+  "unresolved_at_freeze": ["paper_account_binding", "OD-11", "OWNER-CALIBRATION-THRESHOLDS"]
+}
