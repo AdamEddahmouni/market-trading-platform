@@ -2,6 +2,8 @@
 
 Supersedes monolithic draft PR **#19** (`work/ftep-v1-activation`). Pathway **B**, empirical locks, SIGNAL_ONLY sessions, and Live remain **out of scope** for this stack.
 
+**Stack status (2026-09-12 wave 16):** Poll **#22–#29** — all **MERGEABLE**, all required CI checks **SUCCESS** (0 failures). Heads: **#22** `854b0d94`, **#23** `6a153722`, **#24** `64c03de3`, **#25** `c47f1662`, **#26** `1f5be74e`, **#27** `f61a669a`, **#28** `9c8ccef7`, **#29** FTEP-V1-002 @ `342c35ca`. **MERGE_READY recommendation: YES** (strict merge order below; **no owner-delegated merge** in this wave — documentation only).
+
 **Stack status (2026-09-12 wave 15):** PR **#24** calibration head @ `64c03de3`. **#25** rebased onto `#24` → `c47f1662` (was **CONFLICTING** vs stale base `ee94af67`; now **MERGEABLE**). Cascade rebases: **#26** → `1f5be74e`, **#27** → `f61a669a` onto new stack tips; **#28** → `9c8ccef7` rebased onto `#27`. **#29** FTEP-V1-002 @ `7c562f74` **MERGEABLE** CI green. **#22–#27, #29** **MERGEABLE** on last poll; poll **#25–#28** CI after cascade.
 
 ## Merge order (strict)

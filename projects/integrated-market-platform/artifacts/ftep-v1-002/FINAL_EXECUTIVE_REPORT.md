@@ -227,3 +227,20 @@ Merge canonical FTEP infrastructure PR stack **#22–#28** into integration base
 | **Empirical pipeline** | `SIGNAL_ONLY_LAUNCH_PREP.md` documents operator catalyst attention collector (no auto listener on `ForwardTestService`) |
 | **Tree hygiene** | `campaign-progress.json` gitignored; `campaign-progress.template.json` committed |
 | **Goal complete?** | **No** — first RTH `session-start` with `governed-session-start-evidence.jsonl` still required |
+
+# Section 40 orchestrator handoff (2026-09-12 wave 16)
+
+| Field | Value |
+| --- | --- |
+| **Classification** | `SIGNAL_ONLY_AUTHORIZED_MARKET_CLOSED` |
+| **Campaign** | `FTEP-V1-002` |
+| **Branch / SHA** | `work/ftep-v1-002-us-equity-news` @ `342c35ca` |
+| **PR stack (#22–#29)** | All **MERGEABLE**; CI **green** (wave 16 poll). `MERGE_STACK.md` → **MERGE_READY: YES** (merge not executed) |
+| **US_EQUITY_RTH** | `us_equity_rth_open=false` (2026-09-12 weekend) |
+| **IMP_PERSIST_STATE=1** | `integrity-check` **PASS**; `campaign-readiness` **READY**; `campaign-status` → governed sessions **0**, locks **0** |
+| **Monday preflight** | `artifacts/ftep-v1-002/monday-preflight-receipt-2026-09-12.json` (status, readiness, integrity, session-start dry-run blocked by `US_EQUITY_RTH_CLOSED` only) |
+| **Catalyst pipeline** | Fixture smoke **PASS** (`opportunity-summaries` on `opportunity-attention-fixture.json`, count=2; non-prospective) |
+| **Governed session-start** | **Not run** (RTH closed); no `governed-session-start-evidence.jsonl` |
+| **session_ids** | *(none)* |
+| **Safety** | Paper orders=0, Live orders=0, manifest mutations=0 |
+| **Goal complete?** | **No** — await RTH open for governed dual-arm `session-start` with evidence append |
