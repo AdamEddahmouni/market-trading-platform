@@ -17,6 +17,9 @@ mapping, fill normalization, ADR-PROV-001 envelopes).
 **Probe:** `tools/providers/probe_tradier_sandbox.py` (credential-gated,
 stdlib-only, read-only first; see §7).
 
+Wave A reconciliation inventory (FTEP-V1-001, read-only):
+[`artifacts/wave-a-findings/ibkr-tradier-alpaca-audit.json`](../../artifacts/wave-a-findings/ibkr-tradier-alpaca-audit.json).
+
 ---
 
 ## 1. Documented behavior (spec / vendor-doc claims)

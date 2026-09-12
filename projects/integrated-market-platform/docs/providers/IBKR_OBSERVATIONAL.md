@@ -7,6 +7,9 @@ and not live execution.
 Evidence classes used below: **DOCUMENTED**, **OBSERVED**, **INFERRED**, **UNTESTED**.
 Observed runtime evidence outranks documentation.
 
+Wave A reconciliation inventory (FTEP-V1-001, read-only):
+[`artifacts/wave-a-findings/ibkr-tradier-alpaca-audit.json`](../../artifacts/wave-a-findings/ibkr-tradier-alpaca-audit.json).
+
 ## Architecture
 
 ```text

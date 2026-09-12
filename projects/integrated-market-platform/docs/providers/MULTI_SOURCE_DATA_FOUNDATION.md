@@ -82,3 +82,6 @@ OpenBB, MCP, object storage, DuckDB, hosted workers, paid consolidated feeds,
 and production execution are deferred integration boundaries. Existing IBKR,
 NewsAPI/Finnhub, Finviz, Moomoo, and Tradier work remains independently gated
 until an adapter is deliberately registered and tested.
+
+Wave A in-repo provider inventory (read-only reconciliation):
+[`artifacts/wave-a-findings/provider-inventory.json`](../../artifacts/wave-a-findings/provider-inventory.json).
