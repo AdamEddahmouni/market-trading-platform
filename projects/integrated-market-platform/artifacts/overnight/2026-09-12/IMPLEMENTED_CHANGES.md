@@ -14,7 +14,8 @@ None outside the above (no runtime code).
 
 ## Commits
 
-Recorded after git commit on `overnight/imp-parallel-2026-09-12` (see executive handoff SHA).
+- `ecad2fc` — `docs(overnight): IMP parallel program 2026-09-12 deliverables` (22 files, +782 lines)
+- Pushed to `origin/overnight/imp-parallel-2026-09-12`
 
 ## Validation
 
