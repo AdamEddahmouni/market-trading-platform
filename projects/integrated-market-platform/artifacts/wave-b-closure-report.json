@@ -2,10 +2,12 @@
   "schema_version": "1.0.0",
   "artifact_kind": "wave_b_closure_executive_report",
   "artifact_id": "wave-b-closure-report",
-  "observed_at": "2026-09-12T02:30:00Z",
+  "observed_at": "2026-09-12T02:49:00Z",
   "disposition": "PARTIALLY_COMPLETE",
   "package_3_baseline_commit": "613a6b4",
   "closure_commit": "af9b2e0",
+  "docs_catalog_commit": "1ab2073",
+  "reconciliation_gate_commit": "a6e86f5",
   "goal": "Close Wave B prerequisite implementation increment without manifest freeze, Live, or qualifying empirical evidence.",
   "implementation_packages_complete": [
     "PKG-CAPABILITY-FOUNDATION",
@@ -85,16 +87,69 @@
   ],
   "validation_summary": {
     "commands": [
-      "python tools/imp.py validate changed"
+      "python tools/imp.py validate changed",
+      "python tools/imp.py closure --skip-ui"
     ],
-    "providers_domain_note": "validate domain providers is not a manifest domain; providers suite ran under validate changed",
+    "providers_domain_note": "validate domain providers is not a manifest domain; providers suite ran under validate changed and full closure",
     "result": "passed",
-    "tests_run": 850,
+    "tests_run": 4606,
     "failures": 0,
     "errors": 0,
-    "skipped": 12,
-    "focused_tests": "tests.providers.test_provider_snapshot_compare (3 tests, OK)"
+    "skipped": 49,
+    "focused_tests": "tests.providers.test_provider_snapshot_compare (3 tests, OK)",
+    "closure_report": "artifacts/developer-workflow/closure-report.json",
+    "closure_generated_at": "2026-09-12T02:49:02.588233+00:00"
   },
+  "requirement_audit": [
+    {
+      "requirement_id": "WAVE-B-IMMUTABLE-MANIFEST-FREEZE-TOOLING",
+      "status": "MET",
+      "summary": "Freeze CLI, manifest immutability checks, and protocol hash verification exist in-repo; FTEP-V1-001 not frozen (OD-1–OD-11 outstanding).",
+      "evidence": [
+        "tools/forward_test/freeze_activation_manifest.py",
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/activation.py",
+        "artifacts/wave-a-findings/ftep-campaign-audit.json",
+        "docs/engineering/FTEP_ACTIVATION_GATES.md"
+      ]
+    },
+    {
+      "requirement_id": "WAVE-B-PROVIDER-SNAPSHOT-COMPARE-HARNESS",
+      "status": "MET",
+      "summary": "Offline frozen-arm comparison library, CLI, fixture, and unit tests; no live HTTP.",
+      "evidence": [
+        "src/market_platform_foundation/providers/snapshot_compare.py",
+        "tools/providers/snapshot_compare.py",
+        "tests/providers/test_provider_snapshot_compare.py",
+        "tests/fixtures/providers/frozen_compare_sample.json",
+        "docs/engineering/PROVIDER_ACTIVATION_INCREMENT.md"
+      ]
+    },
+    {
+      "requirement_id": "WAVE-B-FTEP-PROFILE-DOCS-POST-MERGE",
+      "status": "PARTIAL",
+      "summary": "Post-merge governance cross-links and Wave A catalog routing are documented; campaign activation manifest and strategy profile remain BLOCKING until owner freeze.",
+      "evidence": [
+        "docs/engineering/FTEP_ACTIVATION_GATES.md",
+        "docs/engineering/PROVIDER_ACTIVATION_INCREMENT.md",
+        "docs/architecture/NEWS_STRATEGY_EVALUATION.md",
+        "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md",
+        "artifacts/forward-test-campaigns/FTEP-V1-001/activation_manifest.json"
+      ],
+      "blockers": ["OWNER-OD-1-11", "G-A3 strategy profile freeze"]
+    },
+    {
+      "requirement_id": "WAVE-B-QUALIFYING-FTEP-ACTIVATION",
+      "status": "BLOCKED",
+      "summary": "Qualifying empirical forward test and ACTUAL_FORWARD evidence remain unauthorized.",
+      "blockers": [
+        "OWNER-OD-1-11",
+        "OWNER-CALIBRATION-THRESHOLDS",
+        "PROBE-MOOMOO",
+        "PROBE-FINVIZ",
+        "EXT-PREMIUM-WIRES"
+      ]
+    }
+  ],
   "secrets_scan_new_closure_paths": "no token patterns matched in new harness/docs/artifacts",
   "authoritative_artifacts": {
     "reconciliation_gate": "artifacts/wave-a-findings/reconciliation-gate.json",
