@@ -223,11 +223,12 @@
     {
       "id": "WAVE-A-001",
       "severity": "critical",
-      "classification": "BLOCKER",
-      "title": "FTEP-V1-001 activation manifest not frozen",
-      "summary": "activation_status PENDING_OWNER_DECISIONS; strategy_binding, manifest_fingerprint, and owner_signed_at are null.",
+      "classification": "OWNER_RESOLVED",
+      "title": "FTEP-V1-001 activation manifest frozen",
+      "summary": "activation_status FROZEN; manifest_fingerprint, owner_signed_at, and OD-11 pathway A recorded at freeze.",
       "evidence": [
         "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+        "artifacts/ftep-v1-activation/activation-freeze-receipt-2026-09-12.json",
         "docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md"
       ]
     },
@@ -248,10 +249,11 @@
     {
       "id": "WAVE-A-003",
       "severity": "high",
-      "classification": "DESIGN",
+      "classification": "OWNER_RESOLVED",
       "title": "ES campaign semantics use equity-ticker news providers",
-      "summary": "No direct ES headline feed; linkage policy from equity catalyst news to ES decisions is not fully specified in code.",
+      "summary": "OD-1/OD-3 frozen: deterministic news-strategy ES lane with US_EQUITY_RTH calendar; equity-scoped Finviz context is owner-authorized linkage.",
       "evidence": [
+        "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
         "docs/architecture/NEWS_STRATEGY_EVALUATION.md",
         "src/market_platform_foundation/news/aggregator.py"
       ]
@@ -315,7 +317,7 @@
     {
       "id": "WAVE-A-009",
       "severity": "high",
-      "classification": "INTEGRATION",
+      "classification": "DEFERRED",
       "title": "Observational market ingress deferred for campaign",
       "summary": "Manifest defers provider connectivity when observational ingress is required (FTEP-D038, FTEP-ACT-04).",
       "evidence": [
@@ -327,7 +329,7 @@
     {
       "id": "WAVE-A-010",
       "severity": "medium",
-      "classification": "INTEGRATION",
+      "classification": "DEFERRED",
       "title": "EVIDENCE-01B auto-bridge and recorded eval wiring incomplete",
       "summary": "Forward bridge known limitations; FTEP-ACT-06 deferred in manifest.",
       "evidence": [

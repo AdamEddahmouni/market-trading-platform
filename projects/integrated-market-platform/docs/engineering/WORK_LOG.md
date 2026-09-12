@@ -36,6 +36,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — FTEP pathway-B goal closure verification
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `validation`, `ftep-v1-activation` |
+| **Summary** | Post-goal follow-up: re-ran `campaign-readiness` (3 blockers, preflight READY, manifest FROZEN) and full `imp.py closure`. ui1/activation paths green; full suite 4618 tests, 7 platform errors (closure baseline classifies dirty-tree pre-existing). Goal closed at **BLOCKED_EXTERNAL_ENTITLEMENT** ceiling. |
+| **Key files** | `artifacts/developer-workflow/closure-report.json` |
+| **Tests** | `imp.py providers campaign-readiness FTEP-V1-001 --json` (NOT_READY); `imp.py closure` (full failed on platform errors only) |
+| **Related** | FTEP-V1 pathway B readiness goal; PR #19 |
+| **Notes** | Owner: enable Moomoo CME ES quote; at pathway B record G-A6 CAMPAIGN_BOUND; merge PR when approved. |
+
+## 2026-09-12 — FTEP post-freeze gap engine and probe overlay
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `ui_api`, `artifacts/ftep-v1-activation` |
+| **Summary** | Manifest-aware Wave A reconciliation (frozen WAVE-A-001/003; deferred 002/009/010), FTEP Moomoo probe overlay into capability snapshot, fresh probe receipts showing `US_FUTURES_QUOTE` not entitled, and UI-001 explore context REPLAY fix when persisted Paper sidecar is attached. |
+| **Key files** | `coverage_gap_engine.py`, `capability_snapshot.py`, `ui_api/projections.py`, `paper_projections.py`, `news-data-inventory.json`, `provider-probe-moomoo-*-2026-09-12.json`, `test_coverage_gap_engine.py` |
+| **Tests** | coverage+ui1 unittest 16 OK; forward activation+persistence 24 OK; `imp.py validate fast` pass; `validate changed` ui1/providers pass |
+| **Related** | Freeze SHA `de420ea`; PR #19 draft |
+| **Notes** | Max readiness **BLOCKED_EXTERNAL_ENTITLEMENT** until Moomoo CME ES quote entitlement; G-A6 binding remains operator step at pathway B. |
+
 ## 2026-09-12 — FTEP-V1-001 OD-11 pathway A freeze
 
 | Field | Value |

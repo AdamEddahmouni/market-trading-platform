@@ -50,8 +50,11 @@ class CoverageGapEngineTests(unittest.TestCase):
         self.assertEqual(report.disposition, GapDisposition.BLOCKING)
         self.assertIn("CAP-REQ-futures.es_quote.moomoo", report.blockers)
         self.assertIn("G-A6", report.blockers)
-        self.assertIn("WAVE-A-001", report.blockers)
-        self.assertIn("WAVE-A-002", report.blockers)
+        self.assertNotIn("WAVE-A-001", report.blockers)
+        self.assertNotIn("WAVE-A-002", report.blockers)
+        self.assertNotIn("WAVE-A-003", report.blockers)
+        self.assertNotIn("WAVE-A-009", report.blockers)
+        self.assertNotIn("WAVE-A-010", report.blockers)
         self.assertNotIn("CG-01", report.blockers)
         self.assertNotIn("CG-02", report.blockers)
 
@@ -131,7 +134,8 @@ class CampaignReadinessTests(unittest.TestCase):
         self.assertEqual(result.preflight.disposition, PreflightDisposition.READY)
         self.assertFalse(any("ACTIVATION_MANIFEST" in item for item in result.blockers))
         self.assertTrue(any(item.startswith("COVERAGE_GAP:") for item in result.blockers))
-        self.assertIn("COVERAGE_GAP:WAVE-A-002", result.blockers)
+        self.assertNotIn("COVERAGE_GAP:WAVE-A-002", result.blockers)
+        self.assertNotIn("COVERAGE_GAP:WAVE-A-001", result.blockers)
 
     def test_known_es_news_blockers_present(self) -> None:
         import os
@@ -152,7 +156,8 @@ class CampaignReadinessTests(unittest.TestCase):
             if item.startswith("COVERAGE_GAP:")
         }
         self.assertIn("CAP-REQ-futures.es_quote.moomoo", coverage_blockers)
-        self.assertIn("WAVE-A-003", coverage_blockers)
+        self.assertIn("CAP-REQ-binding.authority_campaign_bound", coverage_blockers)
+        self.assertNotIn("WAVE-A-003", coverage_blockers)
 
 
 if __name__ == "__main__":

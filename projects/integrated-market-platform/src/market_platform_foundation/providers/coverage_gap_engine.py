@@ -75,10 +75,16 @@ _CLASSIFICATION_TO_DISPOSITION: dict[str, GapDisposition] = {
     "OWNER_RESOLVED": GapDisposition.SATISFIED,
     "DESIGN": GapDisposition.BLOCKING,
     "INTEGRATION": GapDisposition.BLOCKING,
+    "DEFERRED": GapDisposition.DEFERRED,
     "BY_DESIGN": GapDisposition.INFORMATIONAL,
     "OPS": GapDisposition.INFORMATIONAL,
     "SCOPE": GapDisposition.INFORMATIONAL,
     "CLOSED": GapDisposition.SATISFIED,
+}
+
+_WAVE_A_DEFERRED_MANIFEST_KEYS: dict[str, tuple[str, ...]] = {
+    "WAVE-A-009": ("FTEP-ACT-04", "FTEP-D038"),
+    "WAVE-A-010": ("FTEP-ACT-06",),
 }
 
 
@@ -136,6 +142,111 @@ def load_wave_a_gap_catalog(repository_root: Path) -> dict[str, dict[str, Any]]:
                 }
 
     return catalog
+
+
+def _load_activation_manifest_context(
+    repository_root: Path,
+    campaign_slug: str,
+) -> dict[str, Any] | None:
+    path = (
+        repository_root
+        / "artifacts/forward-test-campaigns"
+        / campaign_slug
+        / "ACTIVATION_MANIFEST.json"
+    )
+    if not path.is_file():
+        return None
+    try:
+        payload = _load_json(path)
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _reconcile_wave_a_catalog_with_manifest(
+    profile: CampaignRequirementProfile,
+    repository_root: Path,
+    catalog: Mapping[str, Mapping[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """Align Wave A catalog rows with frozen manifest truth (no manifest mutation)."""
+
+    merged: dict[str, dict[str, Any]] = {
+        gap_id: dict(meta) for gap_id, meta in catalog.items()
+    }
+    manifest = _load_activation_manifest_context(repository_root, profile.campaign_slug)
+    if manifest is None:
+        return merged
+
+    status = str(
+        manifest.get("activation_status") or manifest.get("status") or ""
+    ).strip().upper()
+    manifest_path = (
+        f"artifacts/forward-test-campaigns/{profile.campaign_slug}/ACTIVATION_MANIFEST.json"
+    )
+    if status == "FROZEN":
+        merged["WAVE-A-001"] = {
+            "classification": "OWNER_RESOLVED",
+            "summary": "FTEP-V1-001 activation manifest frozen under OD-11 pathway A.",
+            "source": "activation_manifest",
+            "evidence_refs": (manifest_path,),
+        }
+
+    frozen_od = manifest.get("frozen_governed_owner_decisions")
+    if isinstance(frozen_od, dict) and frozen_od.get("OD-1"):
+        merged["WAVE-A-003"] = {
+            "classification": "OWNER_RESOLVED",
+            "summary": "ES news lane bound to deterministic baseline/enhanced policies at freeze (OD-1).",
+            "source": "activation_manifest",
+            "evidence_refs": (
+                manifest_path,
+                "docs/architecture/NEWS_STRATEGY_EVALUATION.md",
+            ),
+        }
+
+    deferred = manifest.get("deferred_until_evidence")
+    deferred_keys: set[str] = set()
+    if isinstance(deferred, dict):
+        deferred_keys = {str(key) for key in deferred.keys()}
+    for gap_id, manifest_keys in _WAVE_A_DEFERRED_MANIFEST_KEYS.items():
+        if deferred_keys.intersection(manifest_keys):
+            prior = merged.get(gap_id, {})
+            merged[gap_id] = {
+                "classification": "DEFERRED",
+                "summary": str(
+                    prior.get(
+                        "summary",
+                        "Deferred in frozen manifest until empirical evidence requires it.",
+                    )
+                ),
+                "source": "activation_manifest.deferred_until_evidence",
+                "evidence_refs": tuple(
+                    sorted({manifest_path, *tuple(prior.get("evidence_refs", ()))})
+                ),
+            }
+
+    resolved = manifest.get("resolved_fields")
+    binding = manifest.get("binding")
+    ftep_d006 = resolved.get("FTEP-D006") if isinstance(resolved, dict) else None
+    if (
+        isinstance(ftep_d006, dict)
+        and str(ftep_d006.get("resolution")) == "RECORDED_ARTIFACTS_ONLY"
+        and isinstance(binding, dict)
+        and str(binding.get("test_mode", "")).upper() == "SIGNAL_ONLY"
+    ):
+        merged["WAVE-A-002"] = {
+            "classification": "DEFERRED",
+            "summary": (
+                "Live headline ingress not required for SIGNAL_ONLY with "
+                "RECORDED_ARTIFACTS_ONLY intelligence (FTEP-D006)."
+            ),
+            "source": "activation_manifest.resolved_fields",
+            "evidence_refs": (
+                manifest_path,
+                "docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md",
+            ),
+        }
+
+    return merged
 
 
 def _provider_index(snapshot: CapabilityMatrixSnapshot) -> dict[str, Any]:
@@ -319,7 +430,11 @@ def resolve_coverage_gaps_for_campaign(
     readiness_report: Mapping[str, Any] | None = None,
 ) -> CoverageGapReport:
     profile = get_campaign_requirement_profile(profile_or_slug)
-    catalog = load_wave_a_gap_catalog(repository_root)
+    catalog = _reconcile_wave_a_catalog_with_manifest(
+        profile,
+        repository_root,
+        load_wave_a_gap_catalog(repository_root),
+    )
     matrix = snapshot or build_capability_matrix_snapshot(
         repository_root=repository_root,
         readiness_report=readiness_report,
