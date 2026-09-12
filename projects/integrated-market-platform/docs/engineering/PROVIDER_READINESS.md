@@ -4,6 +4,9 @@ This document is the operator checklist for external providers. It records
 credential presence and activation state without recording credential values.
 Run the report after changing local configuration.
 
+Wave B activation increment (capability matrix, gap engine, campaign readiness,
+calibration semantics, ES/news gate table): [PROVIDER_ACTIVATION_INCREMENT.md](./PROVIDER_ACTIVATION_INCREMENT.md).
+
 For UI HTTP read models and Wave A hook/gap inventory (not the in-repo capability matrix), see
 [`artifacts/wave-a-findings/ux-hooks-audit.json`](../../artifacts/wave-a-findings/ux-hooks-audit.json).
 

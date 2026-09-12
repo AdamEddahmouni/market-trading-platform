@@ -1,0 +1,305 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "wave_a_pit_infrastructure_audit",
+  "audit_id": "wave-a-pit-infrastructure-audit",
+  "observed_at": "2026-09-11T23:20:00Z",
+  "audit_scope": "Wave A read-only PIT/RDATA contracts, Wave 1 preregistered lanes, leakage/replay/SHA binding, durable evidence gaps; no manifest freeze; no provider live probes.",
+  "audit_basis": "Agent transcript b1a14c4f-dab8-45de-a1b3-b70c04cc1ad6; persisted for parent reconciliation",
+  "naming_note": {
+    "pit_export_contract_literal": false,
+    "maps_to": "ADR-PIT-001 + ADR-RDATA-001 + decision_research pit_gate/harness + FTEP §18 temporal law + runtime pit_joins"
+  },
+  "pit_and_rdata_contract_paths": {
+    "adr_authority": [
+      "docs/superpowers/decisions/2026-08-15-adr-pit-001-feature-label-availability.json",
+      "docs/superpowers/decisions/2026-08-15-adr-rdata-001-research-dataset-identity.json"
+    ],
+    "design_specs": [
+      "docs/superpowers/specs/2026-08-14-integrated-market-platform-foundation-design-revision-3.md",
+      "docs/superpowers/specs/2026-08-22-decision-research-001-design.md"
+    ],
+    "research_pit_and_identity": [
+      "src/market_platform_foundation/research/targets.py",
+      "src/market_platform_foundation/research/walk_forward.py",
+      "src/market_platform_foundation/research/dataset_manifest.py",
+      "src/market_platform_foundation/research/dataset_pipeline.py",
+      "src/market_platform_foundation/research/decision_research/pit_gate.py",
+      "src/market_platform_foundation/research/decision_research/examples.py",
+      "src/market_platform_foundation/research/decision_research/harness.py",
+      "src/market_platform_foundation/research/decision_research/cards.py",
+      "src/market_platform_foundation/research/decision_research/registry.py"
+    ],
+    "runtime_market_pit": [
+      "src/market_platform_foundation/runtime/pit_joins.py",
+      "src/market_platform_foundation/runtime/bitemporal_store.py"
+    ],
+    "ftep_forward_test_temporal": [
+      "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md",
+      "src/market_platform_foundation/intelligence/paper_forward_bridge/temporal.py",
+      "src/market_platform_foundation/intelligence/paper_forward_bridge/session_policy.py"
+    ],
+    "validation_selectors": [
+      "tools/validation_manifest.json"
+    ],
+    "out_of_scope_sibling": {
+      "stock_data_parquet_export": "pipelines/stock_data/src/operator_console/export.py",
+      "short_squeeze_frozen_export_api": "projects/short-squeeze-project (monorepo sibling)"
+    }
+  },
+  "wave1_preregistered_lanes": {
+    "lane_a_decision_research_ss_family": {
+      "program": "DECISION-RESEARCH-001",
+      "wave_label": "Wave 1 SS family (6 preregistered cards)",
+      "experiment_ids": [
+        "SS-BASE",
+        "SS-OF",
+        "SS-CAT",
+        "SS-MKT",
+        "SS-OF-CAT",
+        "SS-FV-DISC"
+      ],
+      "implementation": [
+        "src/market_platform_foundation/research/decision_research/ss_cards.py",
+        "src/market_platform_foundation/research/decision_research/experiments.py"
+      ],
+      "committed_prereg": "evidence/research/experiment-cards/*.json",
+      "fixtures": [
+        "tests/fixtures/research/ss_family_examples.json",
+        "tests/fixtures/research/experiment_cards.json"
+      ],
+      "offline_gate": {
+        "tool": "tools/research/run_decision_research_gate_validation.py",
+        "report": "evidence/research/decision-research-gate-report.json",
+        "invariants": ["DEC-MAN-001", "DEC-PRE-001", "DEC-PIT-001", "DEC-OOS-001", "DEC-INC-001", "DEC-DET-001"]
+      },
+      "relationship_to_ftep": "Fixture-bound OOS harness; execution_authority NONE; does not authorize FTEP empirical locks"
+    },
+    "lane_b_ftep_v1_001": {
+      "campaign_slug": "FTEP-V1-001",
+      "protocol_id": "FTEP-V1/0.1.0-PREREG",
+      "activation_status": "PENDING_OWNER_DECISIONS",
+      "artifacts": [
+        "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+        "artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json"
+      ],
+      "sha_binding": [
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/protocol_ref.py",
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/activation.py",
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/campaign_binding.py"
+      ],
+      "companion_wave_a_audits": [
+        "artifacts/wave-a-findings/ftep-campaign-audit.json",
+        "artifacts/wave-a-findings/news-data-inventory.json"
+      ],
+      "relationship_to_decision_research": "Separate prereg lane; RECORDED_ARTIFACTS_ONLY intelligence; empirical forward test blocked until manifest freeze and preflight READY"
+    },
+    "disambiguation": "imp-reconciliation Wave 1 G1/G2 is multi-asset domain program — not DECISION-RESEARCH-001 or FTEP-V1-001"
+  },
+  "sha_binding_and_replay": {
+    "canonical_hashing": "src/market_platform_foundation/canonical.py",
+    "replay_inputs": [
+      "tests/fixtures/research/ss_family_examples.json",
+      "tests/fixtures/news/canonical_replay_pack.json",
+      "tests/fixtures/news_strategy_evaluation/evaluation_replay_pack.json",
+      "src/market_platform_foundation/news/replay.py"
+    ],
+    "matlab_python_bridge": {
+      "present_in_imp": false,
+      "note": "Parquet/CSV export in pipelines/stock_data only; no MATLAB bridge module"
+    }
+  },
+  "gaps": [
+    {
+      "id": "PIT-A-001",
+      "severity": "medium",
+      "title": "No single PIT export API module",
+      "summary": "PIT semantics distributed across ADR, pit_gate, harness, FTEP temporal, and pit_joins."
+    },
+    {
+      "id": "PIT-A-002",
+      "severity": "high",
+      "title": "FTEP manifest not frozen",
+      "summary": "No ACTUAL_FORWARD empirical cohort; preflight NOT_READY.",
+      "wave_a_cross_ref": "WAVE-A-001",
+      "companion": "artifacts/wave-a-findings/ftep-campaign-audit.json"
+    },
+    {
+      "id": "PIT-A-003",
+      "severity": "high",
+      "title": "Observational ingress and canonical news split",
+      "summary": "Aggregator dict path vs NewsArticleEvent pipeline; ACT-04 deferred.",
+      "wave_a_cross_ref": "WAVE-A-002",
+      "companion": "artifacts/wave-a-findings/news-data-inventory.json"
+    },
+    {
+      "id": "PIT-A-004",
+      "severity": "medium",
+      "title": "EVIDENCE-01B auto-bridge not wired to forward bridge",
+      "summary": "FTEP-ACT-06 deferred; known limitation in PAPER_FORWARD_TESTING_BRIDGE.md."
+    },
+    {
+      "id": "PIT-A-005",
+      "severity": "medium",
+      "title": "Durable news/inference persistence missing",
+      "summary": "In-memory or fixture-backed today.",
+      "wave_a_cross_ref": "WAVE-A-006"
+    },
+    {
+      "id": "PIT-A-006",
+      "severity": "low",
+      "title": "Gate report artifact drift risk",
+      "summary": "Report expected on disk; regenerate via offline gate tool after card/fixture changes.",
+      "report_path": "evidence/research/decision-research-gate-report.json"
+    },
+    {
+      "id": "PIT-A-007",
+      "severity": "high",
+      "title": "paper_forward_bridge code gaps CG-01 CG-02",
+      "summary": "Campaign slug vs FTCAMP-hash reload; sample_floor disposition not invoked on service lock/evaluate paths.",
+      "companion": "artifacts/wave-a-findings/ftep-campaign-audit.json",
+      "code_gaps": ["CG-01", "CG-02"]
+    }
+  ],
+  "safe_this_increment": [
+    {
+      "id": "SAFE-CG-01",
+      "topic": "Campaign slug vs FTCAMP-hash manifest reload",
+      "blocks_provider_work": false,
+      "paths": [
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/service.py",
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/activation.py",
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/types.py"
+      ],
+      "reconciliation": {
+        "ftep_code_gap": "CG-01",
+        "pit_gap": "PIT-A-007"
+      }
+    },
+    {
+      "id": "SAFE-CG-02",
+      "topic": "Wire assess_sample_floor_disposition on lock/evaluate",
+      "blocks_provider_work": false,
+      "paths": [
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/session_policy.py",
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/service.py"
+      ],
+      "reconciliation": {
+        "ftep_code_gap": "CG-02",
+        "pit_gap": "PIT-A-007"
+      }
+    },
+    {
+      "id": "SAFE-GATE-REPORT",
+      "topic": "Offline decision-research gate report regeneration",
+      "blocks_provider_work": false,
+      "paths": ["tools/research/run_decision_research_gate_validation.py"]
+    },
+    {
+      "id": "SAFE-IMPLEMENT_NOW_AGGREGATOR_TO_CANONICAL_BRIDGE",
+      "topic": "NewsAggregator to NewsArticleEvent adapter",
+      "blocks_provider_work": false,
+      "paths": [
+        "src/market_platform_foundation/news/aggregator.py",
+        "src/market_platform_foundation/news/normalize.py"
+      ],
+      "reconciliation": {
+        "news_inventory_flag": "IMPLEMENT_NOW_AGGREGATOR_TO_CANONICAL_BRIDGE",
+        "blocked_by_wave_a": ["WAVE-A-001", "WAVE-A-002"]
+      }
+    },
+    {
+      "id": "SAFE-IMPLEMENT_NOW_RECORDED_EVAL_TO_FORWARD_BRIDGE",
+      "topic": "Recorded news_strategy_evaluation artifacts into paper_forward_bridge under RECORDED_ARTIFACTS_ONLY",
+      "blocks_provider_work": false,
+      "paths": [
+        "src/market_platform_foundation/intelligence/news_strategy_evaluation/",
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/service.py"
+      ],
+      "reconciliation": {
+        "news_inventory_flag": "IMPLEMENT_NOW_RECORDED_EVAL_TO_FORWARD_BRIDGE",
+        "blocked_by_wave_a": ["WAVE-A-001", "WAVE-A-002", "WAVE-A-010"]
+      }
+    },
+    {
+      "id": "SAFE-DOC-CHECKLIST",
+      "topic": "Forward-validation checklist and strategy eval doc hygiene",
+      "blocks_provider_work": false,
+      "paths": [
+        "docs/engineering/FORWARD_VALIDATION_READINESS_CHECKLIST.md",
+        "docs/architecture/NEWS_STRATEGY_EVALUATION.md"
+      ],
+      "reconciliation": {
+        "ftep_code_gap": "CG-04"
+      }
+    },
+    {
+      "id": "SAFE-FTEP-ACT-08-UI",
+      "topic": "Forward-test UI route-policy mutation wiring (frontend-only increment)",
+      "blocks_provider_work": false,
+      "paths": [
+        "ui/src/components/paper-workspace/",
+        "src/market_platform_foundation/ui_api/server.py"
+      ]
+    }
+  ],
+  "defer_this_increment": [
+    {
+      "id": "DEFER-MANIFEST-FREEZE",
+      "topic": "Freeze ACTIVATION_MANIFEST and OD-1 through OD-11 owner sign-off",
+      "blocker": "OWNER",
+      "paths": [
+        "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+        "docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md"
+      ]
+    },
+    {
+      "id": "DEFER-IMPLEMENT_NOW_OBSERVATIONAL_NEWS_INGRESS",
+      "topic": "Observational live/captured news ingress for forward test",
+      "blocker": "FTEP-D038,FTEP-ACT-04,WAVE-A-002,WAVE-A-009",
+      "reconciliation": {
+        "news_inventory_flag": "IMPLEMENT_NOW_OBSERVATIONAL_NEWS_INGRESS"
+      }
+    },
+    {
+      "id": "DEFER-FTEP-ACT-06",
+      "topic": "EVIDENCE-01B auto-bridge to forward bridge",
+      "blocker": "PROVIDER_CAMPAIGN_INTEGRATION",
+      "paths": ["src/market_platform_foundation/intelligence/forward_qualification/evidence01b/"]
+    },
+    {
+      "id": "DEFER-DURABLE-PERSISTENCE",
+      "topic": "Durable news and inference repository",
+      "blocker": "EXPLICIT_HOLD",
+      "wave_a_cross_ref": "WAVE-A-006"
+    },
+    {
+      "id": "DEFER-MATLAB-BRIDGE",
+      "topic": "MATLAB/Python bridge in IMP",
+      "blocker": "NOT_DESIGNED",
+      "note": "Use pipelines/stock_data Parquet path if external MATLAB consumption needed"
+    },
+    {
+      "id": "DEFER-ACTUAL_FORWARD",
+      "topic": "Empirical ACTUAL_FORWARD collection",
+      "blocker": "PREFLIGHT_NOT_READY,CFG-04",
+      "paths": ["src/market_platform_foundation/intelligence/paper_forward_bridge/preflight.py"]
+    }
+  ],
+  "related_wave_a_artifacts": [
+    {
+      "path": "artifacts/wave-a-findings/ftep-campaign-audit.json",
+      "role": "FTEP governance code gaps CG-01 CG-02 and owner decisions"
+    },
+    {
+      "path": "artifacts/wave-a-findings/news-data-inventory.json",
+      "role": "IMPLEMENT_NOW flags and news PIT ingress blockers"
+    }
+  ],
+  "explicit_non_actions_this_pass": [
+    "ACTIVATION_MANIFEST.json unchanged",
+    "no provider live probes",
+    "no manifest freeze",
+    "no empirical campaign enablement"
+  ],
+  "secrets_in_artifact": false
+}

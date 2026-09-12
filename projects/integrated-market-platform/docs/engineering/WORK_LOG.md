@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — Wave B closure docs and reconciliation artifacts
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `docs`, `artifacts` |
+| **Summary** | Closed Wave B increment documentation: added offline frozen provider snapshot compare harness, `PROVIDER_ACTIVATION_INCREMENT.md`, Notion sync payload, and executive `wave-b-closure-report.json`. Materialized Wave A lane JSON artifacts and updated `reconciliation-gate.json` to PARTIALLY_COMPLETE with external blockers (package 3 baseline `613a6b4`). |
+| **Key files** | `src/market_platform_foundation/providers/snapshot_compare.py`, `tools/providers/snapshot_compare.py`, `tests/providers/test_provider_snapshot_compare.py`, `docs/engineering/PROVIDER_ACTIVATION_INCREMENT.md`, `artifacts/wave-a-findings/*.json`, `artifacts/wave-b-closure-report.json`, `artifacts/wave-b-notion-sync-payload.md` |
+| **Tests** | `python -m unittest tests.providers.test_provider_snapshot_compare -q` (3 passed); `python tools/imp.py validate changed` (850 passed, 12 skipped) |
+| **Related** | `artifacts/wave-a-findings/reconciliation-gate.json`, `docs/engineering/PROVIDER_READINESS.md` |
+| **Notes** | No push, no Live, no manifest freeze. `validate domain providers` is not a manifest domain; providers suite ran under `validate changed`. |
+
 ## 2026-09-11 — Wave B calibration, comparator, and bridge fixes (PKG 3–5)
 
 | Field | Value |

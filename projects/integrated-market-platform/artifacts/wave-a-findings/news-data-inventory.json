@@ -1,0 +1,350 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "wave_a_read_only_audit",
+  "inventory_id": "wave-a-news-data-inventory",
+  "observed_at": "2026-09-11T22:31:00Z",
+  "audit_scope": "Event/news/data sources for FTEP-V1-001 ES-news first campaign (read-only trace; no live probes in this pass).",
+  "campaign_slug": "FTEP-V1-001",
+  "campaign_manifest_status": "PENDING_OWNER_DECISIONS",
+  "empirical_evidence_claimed": false,
+  "intelligence_provider": "RECORDED_ARTIFACTS_ONLY",
+  "deferred_manifest_keys": {
+    "FTEP-D038": "provider_connectivity_if_observational_ingress_required",
+    "FTEP-ACT-04": "provider_connectivity_if_observational_ingress_required"
+  },
+  "related_artifacts_not_duplicates": [
+    {
+      "path": "artifacts/ftep-activation-test.json",
+      "role": "validation_receipt_forward_test_activation_focused_suite"
+    },
+    {
+      "path": "artifacts/ftep-persistence-test.json",
+      "role": "validation_receipt_forward_test_persistence_focused_suite"
+    },
+    {
+      "path": "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+      "role": "authoritative_campaign_manifest"
+    }
+  ],
+  "sources_inventory_summary": {
+    "operational_primary": [
+      {
+        "provider_id": "finviz",
+        "role": "equity_news_csv_export_symbol_filter",
+        "live_gate": "finviz_client_path"
+      },
+      {
+        "provider_id": "newsapi",
+        "role": "everything_endpoint_7d_window",
+        "live_gate": "IMP_NEWSAPI_LIVE"
+      },
+      {
+        "provider_id": "finnhub",
+        "role": "company_news_7d_window",
+        "live_gate": "IMP_FINNHUB_LIVE"
+      },
+      {
+        "provider_id": "news.fixture",
+        "role": "deterministic_offline_canonical_events"
+      }
+    ],
+    "legacy_aggregate_path": {
+      "component": "NewsAggregator",
+      "output_shape": "merged_dict_items_with_received_time_and_source_provenance",
+      "note": "Parallel to canonical NewsArticleEvent pipeline; not unified in-repo."
+    },
+    "canonical_deterministic_path": {
+      "contract": "NewsArticleEvent",
+      "pipeline": "observability_dedupe_recency_source_catalyst",
+      "replay": "NewsReplayHarness_fixture_backed"
+    },
+    "configured_not_operational": [
+      "pr_newswire",
+      "globe_newswire",
+      "accesswire",
+      "reuters",
+      "dow_jones",
+      "benzinga",
+      "fda"
+    ],
+    "adjacent_not_headline_news": [
+      {
+        "component": "futures/macro_events.py",
+        "role": "scheduled_macro_risk_for_futures_families"
+      }
+    ],
+    "augmented_analysis": [
+      "intelligence/inference",
+      "intelligence/news_strategy_evaluation"
+    ]
+  },
+  "key_paths": {
+    "providers_and_aggregate": [
+      "src/market_platform_foundation/finviz/news.py",
+      "src/market_platform_foundation/news/aggregator.py",
+      "src/market_platform_foundation/news/providers.py",
+      "src/market_platform_foundation/news/config.py",
+      "tools/news/auth.py",
+      "tools/news/probe.py"
+    ],
+    "canonical_news_foundation": [
+      "src/market_platform_foundation/news/contracts.py",
+      "src/market_platform_foundation/news/normalize.py",
+      "src/market_platform_foundation/news/dedupe.py",
+      "src/market_platform_foundation/news/timestamps.py",
+      "src/market_platform_foundation/news/pipeline.py",
+      "src/market_platform_foundation/news/replay.py",
+      "src/market_platform_foundation/news/service.py",
+      "src/market_platform_foundation/news/sources.py",
+      "src/market_platform_foundation/news/catalysts.py",
+      "src/market_platform_foundation/news/fixture_provider.py"
+    ],
+    "ftep_governance": [
+      "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+      "artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json",
+      "src/market_platform_foundation/intelligence/paper_forward_bridge/",
+      "docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md",
+      "docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md"
+    ],
+    "authoritative_docs": [
+      "docs/architecture/NEWS_EVENT_FOUNDATION.md",
+      "docs/architecture/NEWS_AI_INTELLIGENCE.md",
+      "docs/architecture/NEWS_STRATEGY_EVALUATION.md",
+      "docs/providers/NEWS_SOURCES.md",
+      "docs/architecture/adr/0010-news-catalyst-deterministic-foundation.md",
+      "docs/architecture/adr/0011-news-ai-intelligence-boundary.md"
+    ],
+    "fixtures_and_tests": [
+      "tests/fixtures/news/canonical_replay_pack.json",
+      "tests/news/test_news_foundation.py",
+      "tests/news/test_news_event_time.py",
+      "tests/news/test_news_providers.py",
+      "tests/intelligence/test_news_inference.py",
+      "tests/intelligence/test_news_strategy_evaluation.py",
+      "tests/intelligence/test_forward_test_activation.py"
+    ]
+  },
+  "news_article_event_live_bridge_blockers": {
+    "summary": "Live provider fetch merges in NewsAggregator as dicts using received_time; canonical observability requires NewsArticleEvent.retrieved_time via normalize_raw_item. No in-repo adapter connects aggregator output to the canonical pipeline for campaign ingress.",
+    "aggregator_path": {
+      "entry": "NewsAggregator.fetch_news(symbol)",
+      "fields": ["received_time", "published_time", "source_provenance", "providers"],
+      "evidence": [
+        "src/market_platform_foundation/news/aggregator.py",
+        "src/market_platform_foundation/news/providers.py"
+      ]
+    },
+    "canonical_pipeline_path": {
+      "entry": "normalize_raw_item(..., retrieved_time=...) -> NewsArticleEvent -> NewsPipeline",
+      "observability_rule": "retrieved_time <= decision_as_of",
+      "evidence": [
+        "src/market_platform_foundation/news/normalize.py",
+        "src/market_platform_foundation/news/timestamps.py",
+        "src/market_platform_foundation/news/pipeline.py",
+        "docs/architecture/NEWS_EVENT_FOUNDATION.md"
+      ]
+    },
+    "documented_intent": "Existing NewsAggregator live path unchanged; canonical pipeline is additive (NEWS_EVENT_FOUNDATION.md limitations)."
+  },
+  "es_equity_news_semantics": {
+    "campaign_lane": "FUTURES_EQUITY_INDEX",
+    "primary_instrument": "ES",
+    "evaluation_data_today": "SOFTWARE_FIXTURE_ONLY synthetic minute-bar pack for software validation",
+    "provider_reality": "Finviz/NewsAPI/Finnhub ingest equity-ticker company news; no CME ES headline feed in news/",
+    "instrument_linkage": "Canonical events support multi-asset instrument_linkages; live aggregate path is symbol-scoped equity fetch",
+    "calendar_conflict": "Engineering default US_EQUITY_RTH for ES news-catalyst decisions vs OD-3 Globex scope (owner ack required)",
+    "evidence": [
+      "docs/architecture/NEWS_STRATEGY_EVALUATION.md",
+      "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+      "src/market_platform_foundation/intelligence/paper_forward_bridge/session_policy.py"
+    ],
+    "owner_decisions_not_recorded_here": ["OD-1", "OD-3", "OD-11"]
+  },
+  "recorded_artifacts_only_binding": {
+    "manifest_resolution": "FTEP-D006 -> RECORDED_ARTIFACTS_ONLY",
+    "implication": "Campaign does not authorize live Claude rerun; strategy evaluation and forward bridge consume recorded evaluation artifacts under governance guards.",
+    "inference_persistence": "in_memory_repository_only_today",
+    "evidence": [
+      "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+      "docs/architecture/NEWS_STRATEGY_EVALUATION.md",
+      "src/market_platform_foundation/intelligence/inference/"
+    ]
+  },
+  "reconciliation_flags": {
+    "pit_infrastructure_audit": "artifacts/wave-a-findings/pit-infrastructure-audit.json",
+    "ftep_campaign_audit": "artifacts/wave-a-findings/ftep-campaign-audit.json",
+    "ftep_code_gaps": [
+      {
+        "id": "CG-01",
+        "pit_safe_id": "SAFE-CG-01",
+        "summary": "Slug vs FTCAMP-hash manifest reload; blocks reliable recorded-eval wiring if unfixed"
+      },
+      {
+        "id": "CG-02",
+        "pit_safe_id": "SAFE-CG-02",
+        "summary": "Sample floor disposition not invoked on service paths"
+      }
+    ],
+    "implement_now_candidates_for_parent_gate": [
+      {
+        "id": "IMPLEMENT_NOW_AGGREGATOR_TO_CANONICAL_BRIDGE",
+        "topic": "Adapter from NewsAggregator dict items (received_time) to normalize_raw_item / NewsArticleEvent (retrieved_time) with provenance preservation",
+        "blocked_by": ["WAVE-A-001", "WAVE-A-002"],
+        "pit_safe_id": "SAFE-IMPLEMENT_NOW_AGGREGATOR_TO_CANONICAL_BRIDGE",
+        "ftep_code_gaps": [],
+        "coded_in_this_pass": false
+      },
+      {
+        "id": "IMPLEMENT_NOW_OBSERVATIONAL_NEWS_INGRESS",
+        "topic": "Captured or live observational ingress feeding canonical pipeline with event-time-safe retrieved_time for forward-test decisions",
+        "blocked_by": ["WAVE-A-002", "WAVE-A-009", "WAVE-A-010"],
+        "deferred_keys": ["FTEP-D038", "FTEP-ACT-04"],
+        "pit_defer_id": "DEFER-IMPLEMENT_NOW_OBSERVATIONAL_NEWS_INGRESS",
+        "ftep_code_gaps": [],
+        "coded_in_this_pass": false
+      },
+      {
+        "id": "IMPLEMENT_NOW_RECORDED_EVAL_TO_FORWARD_BRIDGE",
+        "topic": "Wire recorded news_strategy_evaluation artifacts into paper_forward_bridge under RECORDED_ARTIFACTS_ONLY",
+        "blocked_by": ["WAVE-A-001", "WAVE-A-002", "WAVE-A-010"],
+        "pit_safe_id": "SAFE-IMPLEMENT_NOW_RECORDED_EVAL_TO_FORWARD_BRIDGE",
+        "ftep_code_gaps": ["CG-01"],
+        "coded_in_this_pass": false
+      }
+    ],
+    "held_not_implement_now": [
+      "ES_equity_news_mapping_policy_owner_resolution",
+      "durable_news_and_inference_repository",
+      "premium_wire_integrations",
+      "NEWS_EVENT_semantic_routing_live_wiring"
+    ]
+  },
+  "gaps": [
+    {
+      "id": "WAVE-A-001",
+      "severity": "critical",
+      "classification": "BLOCKER",
+      "title": "FTEP-V1-001 activation manifest not frozen",
+      "summary": "activation_status PENDING_OWNER_DECISIONS; strategy_binding, manifest_fingerprint, and owner_signed_at are null.",
+      "evidence": [
+        "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+        "docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md"
+      ]
+    },
+    {
+      "id": "WAVE-A-002",
+      "severity": "critical",
+      "classification": "BLOCKER",
+      "title": "No end-to-end live or captured ingress into NewsArticleEvent for forward test",
+      "summary": "Aggregator dict path and canonical pipeline are split; empirical evaluation path remains fixture-oriented.",
+      "evidence": [
+        "src/market_platform_foundation/news/aggregator.py",
+        "src/market_platform_foundation/news/normalize.py",
+        "docs/architecture/NEWS_EVENT_FOUNDATION.md",
+        "docs/engineering/WORK_LOG.md"
+      ],
+      "reconciliation": "IMPLEMENT_NOW_AGGREGATOR_TO_CANONICAL_BRIDGE, IMPLEMENT_NOW_OBSERVATIONAL_NEWS_INGRESS"
+    },
+    {
+      "id": "WAVE-A-003",
+      "severity": "high",
+      "classification": "DESIGN",
+      "title": "ES campaign semantics use equity-ticker news providers",
+      "summary": "No direct ES headline feed; linkage policy from equity catalyst news to ES decisions is not fully specified in code.",
+      "evidence": [
+        "docs/architecture/NEWS_STRATEGY_EVALUATION.md",
+        "src/market_platform_foundation/news/aggregator.py"
+      ]
+    },
+    {
+      "id": "WAVE-A-004",
+      "severity": "high",
+      "classification": "OWNER",
+      "title": "RTH vs Globex calendar for ES catalyst windows (OD-3)",
+      "summary": "Engineering default US_EQUITY_RTH; Globex requires explicit owner option B resolution.",
+      "evidence": [
+        "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+        "docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md",
+        "src/market_platform_foundation/intelligence/paper_forward_bridge/session_policy.py"
+      ]
+    },
+    {
+      "id": "WAVE-A-005",
+      "severity": "medium",
+      "classification": "BY_DESIGN",
+      "title": "RECORDED_ARTIFACTS_ONLY intelligence provider",
+      "summary": "FTEP-D006 pre-resolves recorded artifacts only; live model rerun is out of campaign scope.",
+      "evidence": [
+        "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+        "docs/architecture/NEWS_STRATEGY_EVALUATION.md"
+      ]
+    },
+    {
+      "id": "WAVE-A-006",
+      "severity": "medium",
+      "classification": "OPS",
+      "title": "No durable news or inference persistence",
+      "summary": "Canonical foundation and inference records are in-memory or fixture-backed; repository abstraction exists for later storage.",
+      "evidence": [
+        "docs/architecture/NEWS_EVENT_FOUNDATION.md",
+        "src/market_platform_foundation/intelligence/inference/"
+      ]
+    },
+    {
+      "id": "WAVE-A-007",
+      "severity": "medium",
+      "classification": "SCOPE",
+      "title": "Premium and professor-named wires not operational",
+      "summary": "Reuters, Dow Jones, Benzinga, PR Newswire, etc. remain CONFIGURED entries in source catalog only.",
+      "evidence": [
+        "src/market_platform_foundation/news/sources.py",
+        "docs/architecture/NEWS_EVENT_FOUNDATION.md"
+      ]
+    },
+    {
+      "id": "WAVE-A-008",
+      "severity": "medium",
+      "classification": "DESIGN",
+      "title": "NewsAPI and Finnhub are not historical point-in-time sources",
+      "summary": "Bounded live windows; not retroactive PIT news archives for backtest claims.",
+      "evidence": [
+        "docs/providers/NEWS_SOURCES.md",
+        "src/market_platform_foundation/news/providers.py"
+      ]
+    },
+    {
+      "id": "WAVE-A-009",
+      "severity": "high",
+      "classification": "INTEGRATION",
+      "title": "Observational market ingress deferred for campaign",
+      "summary": "Manifest defers provider connectivity when observational ingress is required (FTEP-D038, FTEP-ACT-04).",
+      "evidence": [
+        "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+        "docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md"
+      ],
+      "reconciliation": "IMPLEMENT_NOW_OBSERVATIONAL_NEWS_INGRESS"
+    },
+    {
+      "id": "WAVE-A-010",
+      "severity": "medium",
+      "classification": "INTEGRATION",
+      "title": "EVIDENCE-01B auto-bridge and recorded eval wiring incomplete",
+      "summary": "Forward bridge known limitations; FTEP-ACT-06 deferred in manifest.",
+      "evidence": [
+        "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+        "docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md"
+      ]
+    },
+    {
+      "id": "WAVE-A-011",
+      "severity": "low",
+      "classification": "INTEGRATION",
+      "title": "NEWS_EVENT semantic routing detector inactive",
+      "summary": "ADR-0011 documents routing concept without live detector wiring.",
+      "evidence": [
+        "docs/architecture/adr/0011-news-ai-intelligence-boundary.md"
+      ]
+    }
+  ],
+  "audit_agent_reference": "Wave A lane E read-only inventory (agent transcript 90f622e1-0191-4cc7-ba27-7cfb6cb1acea); persisted for parent reconciliation only."
+}

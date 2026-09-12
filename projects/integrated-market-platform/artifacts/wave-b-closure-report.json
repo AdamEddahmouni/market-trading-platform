@@ -1,0 +1,104 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "wave_b_closure_executive_report",
+  "artifact_id": "wave-b-closure-report",
+  "observed_at": "2026-09-12T02:30:00Z",
+  "disposition": "PARTIALLY_COMPLETE",
+  "package_3_baseline_commit": "613a6b4",
+  "goal": "Close Wave B prerequisite implementation increment without manifest freeze, Live, or qualifying empirical evidence.",
+  "implementation_packages_complete": [
+    "PKG-CAPABILITY-FOUNDATION",
+    "PKG-DIAGNOSTICS-READINESS",
+    "PKG-CALIBRATION-SCHEMA",
+    "PKG-BRIDGE-CG",
+    "PKG-NEWS-PIPELINE",
+    "PKG-PROVIDER-SNAPSHOT-COMPARE"
+  ],
+  "provider_table": [
+    {
+      "provider_id": "moomoo",
+      "matrix_state": "CATALOGED_WITH_STALE_EVIDENCE",
+      "live_probe": "NEEDS_LOCAL_PRIVATE_PROBE",
+      "es_news_note": "US_FUTURES_QUOTE entitlement not evidenced; OpenD refresh required"
+    },
+    {
+      "provider_id": "ibkr_observational",
+      "matrix_state": "CATALOGED",
+      "live_probe": "NEEDS_LOCAL_PRIVATE_PROBE",
+      "es_news_note": "Delayed/history/scanner; not ES headline news"
+    },
+    {
+      "provider_id": "finviz",
+      "matrix_state": "CATALOGED",
+      "live_probe": "UNCONFIGURED",
+      "es_news_note": "Equity-scoped news only"
+    },
+    {
+      "provider_id": "newsapi",
+      "matrix_state": "CATALOGED",
+      "live_probe": "KEY_GATED",
+      "es_news_note": "Bounded live window; not historical PIT archive"
+    },
+    {
+      "provider_id": "finnhub",
+      "matrix_state": "CATALOGED",
+      "live_probe": "KEY_GATED",
+      "es_news_note": "Bounded live window; not historical PIT archive"
+    },
+    {
+      "provider_id": "tradier_paper",
+      "matrix_state": "FIXTURE_ONLY",
+      "live_probe": "NOT_APPLICABLE",
+      "es_news_note": "Paper adapter fixture-only in repo"
+    },
+    {
+      "provider_id": "premium_news_wires",
+      "matrix_state": "CATALOG_ONLY",
+      "live_probe": "NEEDS_EXTERNAL_PROVIDER",
+      "es_news_note": "Reuters/DJ/Benzinga etc. not operational"
+    }
+  ],
+  "es_news_gates": [
+    {"gate_id": "canonical_news_foundation_offline", "status": "PASS"},
+    {"gate_id": "aggregator_to_canonical_bridge", "status": "PASS"},
+    {"gate_id": "recorded_eval_to_forward_bridge", "status": "PASS"},
+    {"gate_id": "provider_snapshot_compare_harness", "status": "PASS"},
+    {"gate_id": "capability_matrix_and_gap_engine", "status": "PASS"},
+    {"gate_id": "observational_live_news_ingress", "status": "FAIL"},
+    {"gate_id": "equity_ticker_news_for_es_lane", "status": "FAIL"},
+    {"gate_id": "finviz_live_news_operational", "status": "FAIL"},
+    {"gate_id": "moomoo_es_futures_market_context", "status": "BLOCKED"},
+    {"gate_id": "ftep_manifest_and_preflight", "status": "BLOCKED"},
+    {"gate_id": "market_data_capability_campaign_binding_g_a6_g_a7", "status": "BLOCKED"},
+    {"gate_id": "simulator_calibration_numeric_gates", "status": "BLOCKED"}
+  ],
+  "remaining_blockers": [
+    "OWNER-OD-1-11 (manifest PENDING_OWNER_DECISIONS; no freeze)",
+    "OWNER-CALIBRATION-THRESHOLDS",
+    "PROBE-MOOMOO / EXT-MOOMOO-FUTURES-ENTITLEMENT",
+    "PROBE-FINVIZ",
+    "PROBE-G-A5-BROKER-CANDIDATES",
+    "EXT-PREMIUM-WIRES / EXT-NEWSAPI-FINNHUB-PIT",
+    "DEFER-FTEP-ACT-04-OBS-INGRESS (acceptable deferral)",
+    "DEFER-UNIFIED-UI-MATRIX (acceptable deferral)"
+  ],
+  "validation_summary": {
+    "commands": [
+      "python tools/imp.py validate changed"
+    ],
+    "providers_domain_note": "validate domain providers is not a manifest domain; providers suite ran under validate changed",
+    "result": "passed",
+    "tests_run": 850,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 12,
+    "focused_tests": "tests.providers.test_provider_snapshot_compare (3 tests, OK)"
+  },
+  "secrets_scan_new_closure_paths": "no token patterns matched in new harness/docs/artifacts",
+  "authoritative_artifacts": {
+    "reconciliation_gate": "artifacts/wave-a-findings/reconciliation-gate.json",
+    "engineering_guide": "docs/engineering/PROVIDER_ACTIVATION_INCREMENT.md",
+    "notion_sync": "artifacts/wave-b-notion-sync-payload.md"
+  },
+  "secrets_in_artifact": false
+}

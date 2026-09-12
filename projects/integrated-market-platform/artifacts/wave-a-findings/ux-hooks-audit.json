@@ -1,0 +1,336 @@
+{
+  "artifact_id": "wave-a-ux-hooks-audit",
+  "generated_at": "2026-09-11",
+  "scope": "read-only forensic audit; contracts and React Query hooks only — no UX redesign",
+  "workspace_root": "projects/integrated-market-platform",
+  "naming_note": {
+    "opportunity_radar_literal": false,
+    "surface_map": [
+      {
+        "inferred_term": "Opportunity / screener / radar",
+        "imp_surface": "DISCOVER",
+        "routes_or_apis": ["GET /discover/mixed", "POST /discover/mixed/refresh"],
+        "primary_ui": [
+          "ui/src/components/discover-shared/DiscoverObservability.tsx",
+          "ui/src/components/*/discover/*Page.tsx"
+        ]
+      },
+      {
+        "inferred_term": "Command-center attention",
+        "imp_surface": "NOW",
+        "routes_or_apis": ["GET /context", "GET /attention"],
+        "primary_ui": ["ui/src/App.tsx", "ui/src/components/ModeNowRoute.tsx"]
+      },
+      {
+        "inferred_term": "Cross-lane opportunity",
+        "imp_surface": "Opportunity Fusion (SHARED P4)",
+        "routes_or_apis": ["workspace options lane opportunity_snapshot"],
+        "primary_ui": ["ui/src/components/options/OpportunityFusionBlock.tsx"]
+      }
+    ]
+  },
+  "parallel_type_systems_summary": [
+    {
+      "id": "ui1_lane_capabilities",
+      "description": "Workspace/context lane capability_states and quality_summary",
+      "schemas": [
+        "ui/src/api/schemas.ts (CapabilityStateSchema, ContextResponseSchema)",
+        "manifests/ui1/schemas/capability_state.schema.json"
+      ],
+      "backend": "src/market_platform_foundation/ui_api/projections.py (build_capabilities)",
+      "http": ["GET /context", "GET /capabilities (deprecated)"],
+      "ui_reach": "partial — quality_summary wired; capability_states not consumed in components"
+    },
+    {
+      "id": "live_provider_health",
+      "description": "Moomoo-centric observational provider health and subscriptions",
+      "schemas": ["ui/src/api/schemas.ts (ProviderHealthResponseSchema)"],
+      "backend": "src/market_platform_foundation/ui_api/live_projections.py",
+      "http": ["GET /provider/health", "GET /provider/finviz/health", "GET /instruments/{id}/capabilities"],
+      "ui_reach": "yes — useProviderHealthQuery, diagnostics, live strips"
+    },
+    {
+      "id": "operator_env_readiness",
+      "description": "Credential presence, transport gates, preflight (no secret values)",
+      "schemas": [
+        "ui/src/api/schemas.ts (OperatorReadinessSchema, ProviderReadinessSchema, PreflightCheckSchema)"
+      ],
+      "backend": "src/market_platform_foundation/ui_api/operator_projections.py",
+      "cli": "tools/provider_readiness.py",
+      "http": ["GET /operator/readiness"],
+      "ui_reach": "partial — api.getOperatorReadiness only; no shared React Query hook"
+    },
+    {
+      "id": "g7_runtime_capability",
+      "description": "RuntimeCapabilityState / OBSERVATIONAL_* lane ids",
+      "backend": [
+        "src/market_platform_foundation/providers/runtime_capability.py",
+        "src/market_platform_foundation/providers/runtime_selection.py"
+      ],
+      "http": [],
+      "ui_reach": "no — backend-only today"
+    },
+    {
+      "id": "intelligence_build04_quality",
+      "description": "IntelligenceCapability, ProviderHealthSnapshot, assess_capabilities",
+      "backend": [
+        "src/market_platform_foundation/intelligence/quality/",
+        "src/market_platform_foundation/intelligence/governance/health.py"
+      ],
+      "http": [],
+      "ui_reach": "no — not projected to ui_api HTTP"
+    },
+    {
+      "id": "discover_embedded_health",
+      "description": "Ad hoc provider_health[] on mixed discover payload",
+      "backend": "src/market_platform_foundation/ui_api/mixed_discovery_projections.py",
+      "http": ["GET /discover/mixed", "POST /discover/mixed/refresh"],
+      "ui_reach": "yes — raw fetch in DiscoverObservability.tsx; not in schemas.ts"
+    },
+    {
+      "id": "paper_data_health_preview",
+      "description": "Portfolio data_health.state vs envelope quality_state; preview quality_state",
+      "schemas": ["ui/src/api/schemas.ts (PaperPortfolioResponseSchema, PaperOrderPreviewResponseSchema)"],
+      "backend": "src/market_platform_foundation/ui_api/paper_projections.py",
+      "http": ["GET /paper/portfolio", "POST /paper/orders/preview"],
+      "ui_reach": "yes — portfolio and OrderTicket paths; shape split across envelopes"
+    }
+  ],
+  "existing_hooks_and_endpoints": [
+    {
+      "hook_or_client": "useContextQuery",
+      "file": "ui/src/api/hooks.ts",
+      "endpoint": "GET /context",
+      "zod_schema": "ContextResponseSchema",
+      "poll_interval_ms": null
+    },
+    {
+      "hook_or_client": "useAttentionQuery",
+      "file": "ui/src/api/hooks.ts",
+      "endpoint": "GET /attention",
+      "zod_schema": "AttentionResponseSchema",
+      "poll_interval_ms": null
+    },
+    {
+      "hook_or_client": "useProviderHealthQuery",
+      "file": "ui/src/api/hooks.ts",
+      "endpoint": "GET /provider/health",
+      "zod_schema": "ProviderHealthResponseSchema",
+      "poll_interval_ms": 5000
+    },
+    {
+      "hook_or_client": "useInstrumentCapabilitiesQuery",
+      "file": "ui/src/api/hooks.ts",
+      "endpoint": "GET /instruments/{instrument_id}/capabilities",
+      "zod_schema": "InstrumentCapabilitiesResponseSchema",
+      "poll_interval_ms": null
+    },
+    {
+      "hook_or_client": "usePaperPortfolioQuery",
+      "file": "ui/src/api/hooks.ts",
+      "endpoint": "GET /paper/portfolio",
+      "zod_schema": "PaperPortfolioResponseSchema",
+      "poll_interval_ms": null
+    },
+    {
+      "hook_or_client": "usePreviewPaperOrderMutation",
+      "file": "ui/src/api/hooks.ts",
+      "endpoint": "POST /paper/orders/preview",
+      "zod_schema": "PaperOrderPreviewResponseSchema",
+      "poll_interval_ms": null
+    },
+    {
+      "hook_or_client": "useLiveCanarySnapshotQuery",
+      "file": "ui/src/api/hooks.ts",
+      "endpoint": "live canary snapshot (ui/src/api/liveCanary.ts)",
+      "zod_schema": null,
+      "poll_interval_ms": 15000
+    },
+    {
+      "hook_or_client": "api.getOperatorReadiness",
+      "file": "ui/src/api/endpoints.ts",
+      "endpoint": "GET /operator/readiness",
+      "zod_schema": "OperatorReadinessSchema",
+      "react_query_hook": null,
+      "note": "Used from OperatorControlCenterPage only"
+    },
+    {
+      "hook_or_client": "Discover mixed (inline fetch)",
+      "file": "ui/src/components/discover-shared/DiscoverObservability.tsx",
+      "endpoint": "GET /discover/mixed",
+      "zod_schema": null,
+      "react_query_hook": null
+    }
+  ],
+  "surface_wiring": [
+    {
+      "surface": "Global context bar",
+      "displays": "quality_summary.state",
+      "source": "GET /context",
+      "files": ["ui/src/components/ContextBar.tsx"]
+    },
+    {
+      "surface": "Workspace observability",
+      "displays": "data label + quality_summary",
+      "source": "GET /context + workspace evidence",
+      "files": [
+        "ui/src/components/workspace-shared/WorkspaceObservability.tsx",
+        "ui/src/components/workspace-shared/workspaceHealth.ts"
+      ]
+    },
+    {
+      "surface": "Live workspace lanes",
+      "displays": "connection state + diagnostics link",
+      "source": "GET /provider/health + live canary",
+      "files": ["ui/src/components/workspace-module-shared/LiveLaneOperationalStrip.tsx"]
+    },
+    {
+      "surface": "DISCOVER mixed queue",
+      "displays": "provider_health[].connection; candidate data_status",
+      "source": "GET /discover/mixed",
+      "files": ["ui/src/components/discover-shared/DiscoverObservability.tsx"]
+    },
+    {
+      "surface": "NOW (Live mode)",
+      "displays": "provider ribbon metrics",
+      "source": "GET /provider/health",
+      "files": [
+        "ui/src/components/ModeNowRoute.tsx",
+        "ui/src/components/live-now/LiveProviderRibbon.tsx",
+        "ui/src/components/live-now/liveDashboardViewModel.ts"
+      ]
+    },
+    {
+      "surface": "Paper NOW",
+      "displays": "data_health.state",
+      "source": "GET /paper/portfolio",
+      "files": [
+        "ui/src/components/paper-now/PaperNowPage.tsx",
+        "ui/src/components/paper-now/paperDashboardViewModel.ts"
+      ]
+    },
+    {
+      "surface": "Paper workspace preview",
+      "displays": "preview.quality_state; PaperPreviewStatus",
+      "source": "POST /paper/orders/preview",
+      "files": [
+        "ui/src/components/paper/OrderTicket.tsx",
+        "ui/src/components/paper-workspace/PaperPreviewStatus.tsx",
+        "ui/src/components/paper-workspace/paperPreviewPresentation.ts"
+      ]
+    },
+    {
+      "surface": "Portfolio observability",
+      "displays": "data_health panel",
+      "source": "GET /paper/portfolio",
+      "files": ["ui/src/components/portfolio-shared/PaperPortfolioObservability.tsx"]
+    },
+    {
+      "surface": "Diagnostics",
+      "displays": "Moomoo + Finviz diagnostics",
+      "source": "GET /provider/health",
+      "files": [
+        "ui/src/components/live/ProviderHealthPanel.tsx",
+        "ui/src/App.tsx (/diagnostics/provider)"
+      ]
+    },
+    {
+      "surface": "Operator control center",
+      "displays": "preflight + per-provider readiness rows",
+      "source": "GET /operator/readiness",
+      "files": ["ui/src/components/OperatorControlCenterPage.tsx"]
+    },
+    {
+      "surface": "capability_states",
+      "displays": "none in product components",
+      "source": "Present on /context, /attention, paper preview envelope",
+      "files": [],
+      "note": "No component reads ContextResponse.capability_states outside schemas/tests"
+    }
+  ],
+  "gaps_condensed": [
+    "No single cross-surface DTO mapping lane ids (bars.intraday_1m), Moomoo registry keys, G7 OBSERVATIONAL_*, and IntelligenceCapability.",
+    "capability_states is API-complete on /context but unused in UI components.",
+    "DISCOVER bypasses ui/src/api/endpoints.ts and schemas.ts (raw fetch, local types, no React Query).",
+    "Operator readiness (/operator/readiness) is not wired to DISCOVER setup hints or other product surfaces.",
+    "Missing useOperatorReadinessQuery despite getOperatorReadiness in endpoints.ts.",
+    "InstrumentCapabilitiesResponseSchema omits backend fields dimensions and probe_stale (Zod strips unknown keys).",
+    "Paper data_health uses state on portfolio but quality_state inside _paper_envelope for other paper responses.",
+    "Quality vocabulary mismatch: context live PASS/STALE/DEGRADED vs ui1 GOOD/PARTIAL vs capability AVAILABLE/GATED.",
+    "Intelligence quality and G7 runtime_capability models are not projected to ui_api HTTP.",
+    "manifests/ui1/openapi-v1.json omits /provider/health and /operator/readiness.",
+    "Opportunity Fusion exposes content quality_flags/status, not provider or lane readiness from /context or /provider/health."
+  ],
+  "minimum_hook_set_provider_governance_ui": {
+    "principle": "Reuse existing building blocks; normalize vocabularies in backend/CLI before cementing a third UI model",
+    "hooks_to_add_or_promote": [
+      {
+        "hook": "useOperatorReadinessQuery",
+        "wraps": "api.getOperatorReadiness",
+        "schema": "OperatorReadinessSchema",
+        "surfaces": ["SETTINGS", "CONTROL", "DISCOVER setup strips"]
+      },
+      {
+        "hook": "useMixedDiscoverQuery (proposed)",
+        "wraps": "GET /discover/mixed",
+        "schema": "MixedDiscoverResponseSchema (proposed in schemas.ts)",
+        "surfaces": ["DISCOVER"]
+      }
+    ],
+    "hooks_to_extend_usage": [
+      {
+        "hook": "useContextQuery",
+        "consume": ["capability_states", "quality_summary", "as_of_context"],
+        "surfaces": ["global strip", "lane readiness view model"]
+      },
+      {
+        "hook": "useProviderHealthQuery",
+        "surfaces": ["NOW", "Live lanes", "diagnostics", "DISCOVER cross-check"]
+      },
+      {
+        "hook": "useInstrumentCapabilitiesQuery",
+        "blocked_by": "schema extension for dimensions",
+        "surfaces": ["Live workspace symbol entitlement"]
+      },
+      {
+        "hook": "usePaperPortfolioQuery",
+        "consume": "data_health.state",
+        "surfaces": ["Paper NOW", "portfolio observability"]
+      },
+      {
+        "hook": "usePreviewPaperOrderMutation",
+        "consume": ["preview.quality_state", "optional envelope capability_states"],
+        "surfaces": ["Paper workspace OrderTicket"]
+      }
+    ],
+    "deferred_until_canonical_matrix_dto": [
+      "Unified provider capability matrix projection to HTTP",
+      "Single normalizer for quality/capability enums across surfaces"
+    ]
+  },
+  "key_file_paths": {
+    "ui_schemas": "ui/src/api/schemas.ts",
+    "ui_hooks": "ui/src/api/hooks.ts",
+    "ui_endpoints": "ui/src/api/endpoints.ts",
+    "ui_query_keys": "ui/src/api/queryKeyFactory.ts",
+    "ui_api_server": "src/market_platform_foundation/ui_api/server.py",
+    "context_projections": "src/market_platform_foundation/ui_api/projections.py",
+    "live_projections": "src/market_platform_foundation/ui_api/live_projections.py",
+    "mixed_discover_projections": "src/market_platform_foundation/ui_api/mixed_discovery_projections.py",
+    "operator_projections": "src/market_platform_foundation/ui_api/operator_projections.py",
+    "paper_projections": "src/market_platform_foundation/ui_api/paper_projections.py",
+    "provider_readiness_cli": "tools/provider_readiness.py",
+    "runtime_capability_g7": "src/market_platform_foundation/providers/runtime_capability.py",
+    "intelligence_quality": "src/market_platform_foundation/intelligence/quality/",
+    "product_contract": "docs/product/ux/backend-ui-requirements.md",
+    "discover_ui": "ui/src/components/discover-shared/DiscoverObservability.tsx",
+    "diagnostics_ui": "ui/src/components/live/ProviderHealthPanel.tsx",
+    "operator_ui": "ui/src/components/OperatorControlCenterPage.tsx",
+    "fusion_ui": "ui/src/components/options/OpportunityFusionBlock.tsx",
+    "openapi_manifest": "manifests/ui1/openapi-v1.json"
+  },
+  "reconciliation_tags": [
+    "IMPLEMENT_LATER:backend vocabulary normalization before UI matrix",
+    "WAVE_A_BUNDLE:provider-governance-ui-hooks"
+  ]
+}
