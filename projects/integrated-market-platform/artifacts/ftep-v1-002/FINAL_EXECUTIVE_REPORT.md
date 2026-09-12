@@ -173,8 +173,9 @@ Merge canonical FTEP infrastructure PR stack **#22–#28** into integration base
 
 | PR | Branch | Failing checks | Blocker class |
 | --- | --- | --- | --- |
-| #24 | `split/wave-b-calibration` | `validate-docs`, `validate-python-changed` | Stale stack base + doc link drift vs `main`; full `validate-python` passes |
-| #25–#28 | closure → freeze stack | Same pattern | Rebase onto merged #22–#24 required; #26–#28 need activation-core modules on base per `MERGE_STACK.md` |
+| #23 | `split/wave-b-provider-capability` | `validate-docs` (owner packet → missing V1-001 manifest JSON) | Fixed @ `17b36d5` — `validate-python-changed` still reports phase0/providers 1+1 (investigate) |
+| #24 | `split/wave-b-calibration` | Same doc chain + stack base | Cherry-picked doc/manifest fixes @ `45a48d4`/`17b36d5` follow-up; full `validate-python` green |
+| #25–#28 | closure → freeze stack | Doc link drift likely | Cherry-pick `bae092c`+`17b36d5` or rebase after #23 merges; #26–#28 need activation-core on base per `MERGE_STACK.md` |
 
 **#29 (V1-002):** `validate-python-changed` failed on `acbfe7e` because `tools/ftep_campaign_status.py` was missing from `POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` (repository closure audit). Fixed on branch; not a product regression.
 

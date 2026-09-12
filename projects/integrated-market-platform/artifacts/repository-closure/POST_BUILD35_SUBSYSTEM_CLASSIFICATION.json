@@ -553,6 +553,7 @@
         "tools/e2e",
         "tools/provider_readiness.py",
         "tools/ftep_campaign_status.py",
+        "tools/ftep_integrity_check.py",
         "tools/opportunity_summaries.py",
         "tools/research",
         "tools/state",
