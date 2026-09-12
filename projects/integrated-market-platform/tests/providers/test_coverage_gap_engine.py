@@ -9,6 +9,9 @@ from market_platform_foundation.intelligence.paper_forward_bridge.campaign_readi
     CampaignReadinessDisposition,
     evaluate_campaign_readiness,
 )
+from market_platform_foundation.intelligence.paper_forward_bridge.preflight import (
+    PreflightDisposition,
+)
 from market_platform_foundation.providers.capability_contract import (
     CapabilityAccessState,
     CapabilityMatrixSnapshot,
@@ -112,24 +115,37 @@ class CoverageGapEngineTests(unittest.TestCase):
 
 class CampaignReadinessTests(unittest.TestCase):
     def test_ftep_v1_001_fail_closed(self) -> None:
+        import os
+
+        os.environ["IMP_PERSIST_STATE"] = "1"
         root = Path(__file__).resolve().parents[2]
-        result = evaluate_campaign_readiness(
-            "FTEP-V1-001",
-            repository_root=root,
-            readiness_report={"providers": []},
-        )
+        try:
+            result = evaluate_campaign_readiness(
+                "FTEP-V1-001",
+                repository_root=root,
+                readiness_report={"providers": []},
+            )
+        finally:
+            os.environ.pop("IMP_PERSIST_STATE", None)
         self.assertEqual(result.disposition, CampaignReadinessDisposition.NOT_READY)
-        self.assertTrue(any("ACTIVATION_MANIFEST" in item for item in result.blockers))
+        self.assertEqual(result.preflight.disposition, PreflightDisposition.READY)
+        self.assertFalse(any("ACTIVATION_MANIFEST" in item for item in result.blockers))
         self.assertTrue(any(item.startswith("COVERAGE_GAP:") for item in result.blockers))
         self.assertIn("COVERAGE_GAP:WAVE-A-002", result.blockers)
 
     def test_known_es_news_blockers_present(self) -> None:
+        import os
+
+        os.environ["IMP_PERSIST_STATE"] = "1"
         root = Path(__file__).resolve().parents[2]
-        result = evaluate_campaign_readiness(
-            "FTEP-V1-001",
-            repository_root=root,
-            readiness_report={"providers": []},
-        )
+        try:
+            result = evaluate_campaign_readiness(
+                "FTEP-V1-001",
+                repository_root=root,
+                readiness_report={"providers": []},
+            )
+        finally:
+            os.environ.pop("IMP_PERSIST_STATE", None)
         coverage_blockers = {
             item.removeprefix("COVERAGE_GAP:")
             for item in result.blockers

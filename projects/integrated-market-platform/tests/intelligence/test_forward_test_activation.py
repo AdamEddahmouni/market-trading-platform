@@ -174,13 +174,31 @@ class ForwardTestActivationPreflightTests(unittest.TestCase):
         assert_forward_test_preflight_ready(result)
 
     def test_agent_a_skeleton_loads_without_binding_block(self) -> None:
-        os.environ.pop("IMP_FORWARD_TEST_CAMPAIGNS_DIR", None)
-        skeleton_path = ROOT / "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json"
-        loaded = json.loads(skeleton_path.read_text(encoding="utf-8"))
-        manifest = load_activation_manifest("FTEP-V1-001")
-        self.assertEqual(manifest.protocol_id, loaded["protocol_id"])
+        slug = _install_manifest(self._tmp.name, _base_manifest_dict(campaign_slug="FTEP-V1-001"))
+        manifest = load_activation_manifest(slug, campaigns_root_override=Path(self._tmp.name))
+        self.assertEqual(manifest.protocol_id, "FTEP-V1/0.1.0-PREREG")
         self.assertIsNone(manifest.campaign_id)
         self.assertEqual(manifest.binding["run_kind"], "FORWARD_TEST")
+
+    def test_ftep_v1_production_manifest_is_frozen(self) -> None:
+        os.environ.pop("IMP_FORWARD_TEST_CAMPAIGNS_DIR", None)
+        os.environ["IMP_PERSIST_STATE"] = "1"
+        try:
+            manifest_path = ROOT / "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json"
+            loaded = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest = load_activation_manifest("FTEP-V1-001")
+            self.assertEqual(manifest.protocol_id, loaded["protocol_id"])
+            self.assertEqual(manifest.status.value, "FROZEN")
+            self.assertIsNotNone(manifest.campaign_id)
+            self.assertTrue(str(manifest.campaign_id).startswith("FTCAMP-"))
+            self.assertEqual(manifest.binding["run_kind"], "FORWARD_TEST")
+            self.assertIsNotNone(manifest.paper_account_id)
+            self.assertEqual(
+                loaded["manifest_fingerprint"],
+                "69C36BA23813C009C27EE83924834D46F5804D0A0FA037E37ADB133F8BFEA99C",
+            )
+        finally:
+            os.environ.pop("IMP_PERSIST_STATE", None)
 
 
 class ForwardTestActivationRuntimeTests(unittest.TestCase):

@@ -2,20 +2,22 @@
   "schema_version": "1.0.0",
   "artifact_kind": "provider_probe_snapshot",
   "provider_id": "moomoo",
-  "observed_at": "2026-09-12T05:12:00Z",
-  "probe_command": "python tools/moomoo/check_live_environment.py",
+  "observed_at": "2026-09-12T05:55:00Z",
+  "probe_command": "python tools/moomoo/check_live_environment.py --json artifacts/ftep-v1-activation/provider-probe-moomoo-2026-09-12.json",
   "secrets_included": false,
   "connectivity": {
     "opend_installed": true,
-    "opend_running": false,
-    "loopback_11111": "UNREACHABLE",
+    "opend_running": true,
+    "loopback_11111": "REACHABLE",
     "sdk_present": false
   },
   "entitlement": {
-    "us_futures_quote": "UNKNOWN_NEEDS_LOCAL_PRIVATE_PROBE",
-    "note": "OpenD not running; cannot refresh US_FUTURES_QUOTE evidence for ES lane."
+    "us_futures_quote": "UNKNOWN_SDK_MISSING",
+    "note": "OpenD reachable; Python moomoo SDK not installed locally — quote context probe cannot refresh US_FUTURES_QUOTE."
   },
-  "disposition": "NEEDS_LOCAL_PRIVATE_PROBE",
+  "disposition": "OPEND_REACHABLE_SDK_MISSING",
   "ftep_role": "PRIMARY_MARKET_EVIDENCE_CANDIDATE",
-  "blocker_id": "PROBE-MOOMOO"
+  "blocker_id": "PROBE-MOOMOO",
+  "operator_check_status": "SDK_MISSING",
+  "ready_for_live_observational": false
 }

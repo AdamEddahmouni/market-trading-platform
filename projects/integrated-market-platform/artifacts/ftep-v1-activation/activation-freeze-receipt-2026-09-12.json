@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "ftep_activation_freeze_receipt",
+  "campaign_slug": "FTEP-V1-001",
+  "observed_at": "2026-09-12T05:52:00Z",
+  "authorization_pathway": "A",
+  "authorization_scope": "BIND_FREEZE_PREFLIGHT_ONLY",
+  "owner_session_decision": "paper binding A, authorization A",
+  "owner_signed_at": "2026-09-12T05:52:00Z",
+  "frozen_at": "2026-09-12T05:52:00Z",
+  "repository_source_sha": "4931a395db5bfed64cea496e58d9163db41ab9b8",
+  "activation_status": "FROZEN",
+  "manifest_fingerprint": "69C36BA23813C009C27EE83924834D46F5804D0A0FA037E37ADB133F8BFEA99C",
+  "campaign_id": "FTCAMP-69c36ba23813c009c27ee83924834d46f5804d0a0fa037e37adb133f8bfea99c",
+  "slug_canonical_id_verified": true,
+  "paper_account_binding": {
+    "option": "A",
+    "display_name": "Internal simulation Paper (default bootstrap ledger)",
+    "paper_account_id": "7CBA5536EED17C4A6246327EE7ABF223C58627660B93A642D8A99C2AEC10A579",
+    "execution_mode": "INTERNAL_SIMULATION",
+    "data_mode": "FIXTURE_REPLAY"
+  },
+  "empirical_lock_created": false,
+  "signal_only_session_started": false,
+  "execution_enabled": false,
+  "live_enabled": false,
+  "secrets_included": false,
+  "freeze_command": "python tools/forward_test/freeze_activation_manifest.py FTEP-V1-001 --frozen-at 2026-09-12T05:52:00Z --owner-signed-at 2026-09-12T05:52:00Z"
+}

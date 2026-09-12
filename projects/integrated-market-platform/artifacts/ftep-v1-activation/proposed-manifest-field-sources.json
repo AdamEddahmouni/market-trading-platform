@@ -2,9 +2,9 @@
   "schema_version": "1.0.0",
   "artifact_kind": "proposed_activation_manifest_field_sources",
   "campaign_slug": "FTEP-V1-001",
-  "observed_at": "2026-09-12T05:12:00Z",
-  "activation_status": "PENDING_OWNER_DECISIONS",
-  "frozen": false,
+  "observed_at": "2026-09-12T05:52:00Z",
+  "activation_status": "FROZEN",
+  "frozen": true,
   "manifest_path": "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
   "fields": [
     {"field": "strategy_binding", "value": "A", "source": "OWNER_SELECTED", "immutable_after_freeze": true},
@@ -20,9 +20,9 @@
     {"field": "primary_metric", "value": "percentage_return", "source": "OWNER_SELECTED", "immutable_after_freeze": true},
     {"field": "statistical_test", "value": "PAIRED_BOOTSTRAP_CI", "source": "AUTHORITY_RESOLVED", "immutable_after_freeze": true},
     {"field": "cohort_matching_key", "value": "(symbol, decision_bucket, evaluation_horizon_ns)", "source": "OWNER_SELECTED", "immutable_after_freeze": true},
-    {"field": "campaign_id", "value": null, "source": "ENGINEERING_DERIVED_AT_FREEZE", "immutable_after_freeze": true},
-    {"field": "paper_account_id", "value": null, "source": "UNRESOLVED", "immutable_after_freeze": true},
-    {"field": "owner_signed_at", "value": null, "source": "UNRESOLVED_OD_11", "immutable_after_freeze": true}
+    {"field": "campaign_id", "value": "FTCAMP-69c36ba23813c009c27ee83924834d46f5804d0a0fa037e37adb133f8bfea99c", "source": "ENGINEERING_DERIVED_AT_FREEZE", "immutable_after_freeze": true},
+    {"field": "paper_account_id", "value": "7CBA5536EED17C4A6246327EE7ABF223C58627660B93A642D8A99C2AEC10A579", "source": "OWNER_SELECTED_OPTION_A", "immutable_after_freeze": true},
+    {"field": "owner_signed_at", "value": "2026-09-12T05:52:00Z", "source": "OD_11_PATHWAY_A", "immutable_after_freeze": true}
   ],
-  "unresolved_at_freeze": ["paper_account_binding", "OD-11", "OWNER-CALIBRATION-THRESHOLDS"]
+  "unresolved_at_freeze": ["OWNER-CALIBRATION-THRESHOLDS"]
 }
