@@ -93,13 +93,14 @@ During an **active governed SIGNAL_ONLY session** (after both cohort `create_ses
 
 1. Keep persistence on (`IMP_PERSIST_STATE=1`).
 2. Refresh headline context (owner credentials; no secrets in logs): `python tools/finviz/probe.py` — append probe receipt paths to the wave operator log.
-3. Run the **event-driven attention collector dry path** on fixture or exported rows (does not create locks or orders):
+3. Run the **catalyst watch dry path** (fixture summaries + optional session correlation; no locks or orders):
    ```powershell
-   python tools/imp.py ftep opportunity-summaries --json
-   # or campaign fixture:
-   python tools/imp.py ftep opportunity-summaries --input artifacts/forward-test-campaigns/FTEP-V1-002/opportunity-attention-fixture.json --json
+   python tools/imp.py ftep watch-catalysts --json
+   # closed market / no session yet:
+   python tools/imp.py ftep watch-catalysts --fixture --json
    ```
-4. Correlate ranked summaries with open `session_id`s from `governed-session-start-evidence.jsonl` in the operator log. Do **not** call `create_decision` / lock APIs unless a separate owner authorization increment explicitly enables empirical locks (`empirical_lock_authorized` remains false in the frozen manifest).
+   Equivalent ranked rows only: `python tools/imp.py ftep opportunity-summaries --json`
+4. Correlate ranked summaries with open `session_id`s from `governed-session-start-evidence.jsonl` (included in `watch-catalysts` JSON when sessions exist). Do **not** call `create_decision` / lock APIs unless a separate owner authorization increment explicitly enables empirical locks (`empirical_lock_authorized` remains false in the frozen manifest).
 
 When **US_EQUITY_RTH is closed** (weekends, holidays, outside 09:30–16:00 America/New_York), run **fixture smoke only** — steps 2–3 with `--input` fixture or `--sample`; skip live Finviz probe and skip `session-start` without `--dry-run`.
 

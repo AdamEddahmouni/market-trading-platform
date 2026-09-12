@@ -11,6 +11,7 @@ from market_platform_foundation.research.security_identity import FTEP_V1_001_MA
 from .activation import ActivationManifestError, load_activation_manifest
 from .campaign_readiness import CampaignReadinessDisposition, evaluate_campaign_readiness
 from .campaign_status import collect_ftep_campaign_status
+from .ftep_catalyst_watch import load_governed_session_ids_from_evidence
 
 FTEP_V1_002_EXPECTED_FINGERPRINT = (
     "F7083180990BC59578CA045E1E1318A356421BBC9B81EE514C14130CB0B356B1"
@@ -162,6 +163,44 @@ def collect_ftep_integrity_checks(
                 "signal_only_session_requires_durable_state",
                 True,
                 "no governed session flag without durable counters",
+            )
+        )
+
+    governed_count = int(status.get("governed_session_count") or 0)
+    if governed_count > 0:
+        evidence_ids, evidence_path = load_governed_session_ids_from_evidence(
+            repository_root,
+            campaign_slug,
+        )
+        checks.append(
+            _check(
+                "governed_session_start_evidence_present",
+                bool(evidence_ids),
+                (
+                    f"sessions={governed_count} evidence_ids={len(evidence_ids)} "
+                    f"path={evidence_path or 'missing'}"
+                ),
+            )
+        )
+        if evidence_ids:
+            checks.append(
+                _check(
+                    "catalyst_watch_session_active_ready",
+                    True,
+                    (
+                        "run ftep watch-catalysts to correlate ranked summaries with "
+                        f"session_ids (rth_open={status.get('us_equity_rth_open')})"
+                    ),
+                    severity="WARN",
+                )
+            )
+    else:
+        checks.append(
+            _check(
+                "catalyst_watch_fixture_smoke_available",
+                True,
+                "no governed sessions; closed-market smoke via ftep watch-catalysts --fixture",
+                severity="WARN",
             )
         )
 

@@ -2,7 +2,7 @@
 
 ## Summary
 
-**FTEP-V1-002** (`US-equity-news-catalyst`) is **FROZEN** on $0 incremental stack (Moomoo US equity L1 + Finviz Elite news). Owner authorized **Phase 1 SIGNAL_ONLY** (`signal-only-authorization-receipt-2026-09-12.json`); first empirical session **not started** — **US_EQUITY_RTH closed** (2026-09-12 weekend; `campaign-status` → `us_equity_rth_open=false`). Branch `work/ftep-v1-002-us-equity-news` @ **`342c35ca`**; PR **#29** CI green (wave 16). With `IMP_PERSIST_STATE=1`, `integrity-check` → **PASS**; `campaign-readiness` → **READY**; governed dual-arm `session-start` awaits RTH. Activation split **#22–#29** all **MERGEABLE** / CI green — `MERGE_STACK.md` **MERGE_READY: YES** (no merge this wave). Monday closed-market preflight receipt: `monday-preflight-receipt-2026-09-12.json`; catalyst fixture smoke (2 ranked summaries). **FTEP-V1-001** fingerprint unchanged.
+**FTEP-V1-002** (`US-equity-news-catalyst`) is **FROZEN** on $0 incremental stack (Moomoo US equity L1 + Finviz Elite news). Owner authorized **Phase 1 SIGNAL_ONLY**; first empirical session **not started** — **US_EQUITY_RTH closed** (2026-09-12 weekend). Branch `work/ftep-v1-002-us-equity-news` @ wave **17** tip; PR **#29** MERGEABLE / CI green. `IMP_PERSIST_STATE=1`: `integrity-check` **PASS**, `campaign-readiness` **READY**. Closed-market catalyst path: `ftep watch-catalysts --fixture` (fixture smoke + optional session correlation). Stack **#22–#28**: `MERGE_STACK.md` **MERGE_READY: YES** with owner-only `gh pr merge` commands (main still `bf0715fd`). **FTEP-V1-001** fingerprint unchanged.
 
 ## Owner decisions (closed for V1-002 freeze)
 

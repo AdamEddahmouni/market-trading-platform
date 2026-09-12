@@ -2,6 +2,24 @@
 
 Supersedes monolithic draft PR **#19** (`work/ftep-v1-activation`). Pathway **B**, empirical locks, SIGNAL_ONLY sessions, and Live remain **out of scope** for this stack.
 
+**Stack status (2026-09-12 wave 17):** Poll **#22–#29** — all **MERGEABLE**, all required CI checks **SUCCESS** (0 failures). Heads unchanged from wave 16 poll (**#22** `854b0d94` … **#28** `9c8ccef7`; **#29** advances on `work/ftep-v1-002-us-equity-news` after wave 17 commit). **MERGE_READY recommendation: YES** (strict merge order below). **Owner merge only** this wave — agent does **not** execute `gh pr merge` (same policy as wave 16).
+
+**Owner stack merge (run from repo root after each step rebase if GitHub reports CONFLICTING):**
+
+```powershell
+gh pr merge 22 --merge --subject "feat(imp): FTEP-V1 activation preflight, manifest binding, and session policy"
+gh pr merge 23 --merge --subject "feat(imp): Wave B provider capability matrix and coverage gap engine"
+# Rebase #24 onto main if needed, then:
+gh pr merge 24 --merge --subject "feat(imp): Wave B paper calibration comparator and bridge fixes"
+gh pr merge 25 --merge --subject "feat(imp): Wave B closure evidence and reconciliation artifacts"
+gh pr merge 26 --merge --subject "feat(imp): FTEP ES-news stack selection and provider diagnostics"
+gh pr merge 27 --merge --subject "feat(imp): PIT export, observational ingress, and FTEP goal audit closure"
+gh pr merge 28 --merge --subject "fix(imp): FTEP-V1 freeze and signal-only readiness reconciliation"
+# Do NOT merge #29 until stack reconciliation goal explicitly includes V1-002 campaign branch.
+gh run list --branch main --limit 3
+python tools/imp.py ftep integrity-check FTEP-V1-001 --json  # fingerprint on main after #28
+```
+
 **Stack status (2026-09-12 wave 16):** Poll **#22–#29** — all **MERGEABLE**, all required CI checks **SUCCESS** (0 failures). Heads: **#22** `854b0d94`, **#23** `6a153722`, **#24** `64c03de3`, **#25** `c47f1662`, **#26** `1f5be74e`, **#27** `f61a669a`, **#28** `9c8ccef7`, **#29** FTEP-V1-002 @ `342c35ca`. **MERGE_READY recommendation: YES** (strict merge order below; **no owner-delegated merge** in this wave — documentation only).
 
 **Stack status (2026-09-12 wave 15):** PR **#24** calibration head @ `64c03de3`. **#25** rebased onto `#24` → `c47f1662` (was **CONFLICTING** vs stale base `ee94af67`; now **MERGEABLE**). Cascade rebases: **#26** → `1f5be74e`, **#27** → `f61a669a` onto new stack tips; **#28** → `9c8ccef7` rebased onto `#27`. **#29** FTEP-V1-002 @ `7c562f74` **MERGEABLE** CI green. **#22–#27, #29** **MERGEABLE** on last poll; poll **#25–#28** CI after cascade.

@@ -244,3 +244,21 @@ Merge canonical FTEP infrastructure PR stack **#22–#28** into integration base
 | **session_ids** | *(none)* |
 | **Safety** | Paper orders=0, Live orders=0, manifest mutations=0 |
 | **Goal complete?** | **No** — await RTH open for governed dual-arm `session-start` with evidence append |
+
+# Section 41 orchestrator handoff (2026-09-12 wave 17)
+
+| Field | Value |
+| --- | --- |
+| **Classification** | `SIGNAL_ONLY_AUTHORIZED_MARKET_CLOSED` |
+| **Campaign** | `FTEP-V1-002` |
+| **Branch / SHA** | `work/ftep-v1-002-us-equity-news` @ post–wave-17 commit (see git) |
+| **main SHA** | `bf0715fd` (stack **#22–#28** not merged; owner `gh pr merge` commands in `MERGE_STACK.md` wave 17) |
+| **PR stack (#22–#29)** | All **MERGEABLE** / CI **green** (wave 17 poll); **#29** @ `a3e3aa0` base |
+| **US_EQUITY_RTH** | `us_equity_rth_open=false` (2026-09-12 weekend) |
+| **IMP_PERSIST_STATE=1** | `integrity-check` **PASS**; `campaign-readiness` **READY**; governed sessions **0**, locks **0** |
+| **Governed session-start** | **Not run** (RTH closed); dry-run blocked by `US_EQUITY_RTH_CLOSED` only |
+| **Catalyst pipeline** | `ftep watch-catalysts --fixture` → `FIXTURE_SMOKE` **PASS** (count=2; session correlation when evidence exists) |
+| **session_ids** | *(none)* |
+| **Safety** | Paper orders=0, Live orders=0, manifest mutations=0 |
+| **FTEP-V1-001 fingerprint** | `69C36BA23813C009C27EE83924834D46F5804D0A0FA037E37ADB133F8BFEA99C` (unchanged) |
+| **Goal complete?** | **No** — first RTH governed `session-start` + `governed-session-start-evidence.jsonl` still required |

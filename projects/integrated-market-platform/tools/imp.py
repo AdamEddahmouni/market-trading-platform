@@ -680,6 +680,28 @@ def build_parser() -> argparse.ArgumentParser:
         help="Evaluate gates only; no session or lock writes",
     )
     session_start.add_argument("--json", action="store_true", help="Machine-readable JSON")
+    watch_catalysts = ftep_actions.add_parser(
+        "watch-catalysts",
+        help="read-only catalyst attention watch (fixture dry-run; no locks)",
+    )
+    watch_catalysts.add_argument(
+        "campaign_slug",
+        nargs="?",
+        default="FTEP-V1-002",
+        help="Forward-test campaign slug (default: FTEP-V1-002)",
+    )
+    watch_catalysts.add_argument("--json", action="store_true")
+    watch_catalysts.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Acknowledge read-only mode (default behavior)",
+    )
+    watch_catalysts.add_argument(
+        "--fixture",
+        action="store_true",
+        help="Force campaign attention fixture",
+    )
+    watch_catalysts.add_argument("--input", type=Path, help="Optional attention row JSON file")
     return parser
 
 
@@ -736,6 +758,16 @@ def _ftep_command(root: Path, args: argparse.Namespace) -> int:
             command.append("--json")
     elif args.action == "session-start":
         command = [python, str(root / "tools" / "ftep_session_start.py"), args.campaign_slug]
+        if getattr(args, "dry_run", False):
+            command.append("--dry-run")
+        if getattr(args, "json", False):
+            command.append("--json")
+    elif args.action == "watch-catalysts":
+        command = [python, str(root / "tools" / "ftep_watch_catalysts.py"), args.campaign_slug]
+        if getattr(args, "fixture", False):
+            command.append("--fixture")
+        if getattr(args, "input", None):
+            command.extend(["--input", str(args.input)])
         if getattr(args, "dry_run", False):
             command.append("--dry-run")
         if getattr(args, "json", False):

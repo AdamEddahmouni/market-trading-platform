@@ -36,6 +36,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — FTEP-V1-002 wave 17 watch-catalysts + merge stack
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, `tools`, `artifacts` |
+| **Summary** | Wave 17 closed-market work: added read-only `ftep watch-catalysts` (fixture dry-run + session correlation), extended integrity-check for governed-session evidence when durable sessions exist, documented owner-only `gh pr merge` sequence for stack #22–#28 in `MERGE_STACK.md`. RTH remained closed — no governed `session-start`. |
+| **Key files** | `ftep_catalyst_watch.py`, `tools/ftep_watch_catalysts.py`, `ftep_integrity.py`, `tools/imp.py`, `SIGNAL_ONLY_LAUNCH_PREP.md`, `MERGE_STACK.md`, `FINAL_EXECUTIVE_REPORT.md` |
+| **Tests** | `unittest tests.intelligence.test_ftep_catalyst_watch tests.intelligence.test_ftep_integrity` (5 passed); repository closure audit PASS |
+| **Related** | FTEP-V1-002 wave 16 preflight; PR #29 |
+
 ## 2026-09-12 — FTEP merge stack wave 15 reconciliation
 
 | Field | Value |
