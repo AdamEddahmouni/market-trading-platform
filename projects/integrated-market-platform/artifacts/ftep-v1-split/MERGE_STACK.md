@@ -54,7 +54,7 @@ Recorded after wave 7 closure; **do not merge** unless owner/governance in activ
 | [#25](https://github.com/AdamEddahmouni/market-trading-platform/pull/25) | `3a1d3dd8` | `#24` branch | full suite — **pass** | Yes after upstream stack |
 | [#26](https://github.com/AdamEddahmouni/market-trading-platform/pull/26) | `e4b79a44` | `#25` branch | full suite — **pass** | Yes after upstream stack |
 | [#27](https://github.com/AdamEddahmouni/market-trading-platform/pull/27) | `9b86e634` | `#26` branch | full suite — **pass** | Yes after upstream stack |
-| [#28](https://github.com/AdamEddahmouni/market-trading-platform/pull/28) | `95e662bc` | `#27` branch | prior run failed `validate-python-changed`; fixed @ `95e662bc` (protocol ref SHA); **re-run IMP Validation pending** on tip | **Conditional** — merge-ready after green full suite on `95e662bc` |
+| [#28](https://github.com/AdamEddahmouni/market-trading-platform/pull/28) | `ff2436d0` | `#27` branch | pre-`95e662bc` IMP run failed `validate-python-changed`; tip passes local `validate changed` (2155 tests, 0 failures); **GitHub IMP Validation re-sync pending** on PR synchronize | **Conditional** — merge-ready after green full suite on tip |
 
 **Recommendation:** Merge **#22 → #23** to `main` first (parallel-safe if conflict-free), then rebase #24–#28 sequentially. Hold **#28** until IMP Validation reports green on `95e662bc`. Parallel product track **FTEP-V1-002** lives on PR **#29** (`543bc912`); not part of this stack merge order.
 
