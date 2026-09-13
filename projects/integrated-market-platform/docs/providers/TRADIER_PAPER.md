@@ -1,21 +1,24 @@
 # Tradier paper execution provider — boundary document
 
-**Status:** Fixture-first adapter landed (4A). **Live HTTP transport not
-implemented.** No Tradier credentials exist in this repository as of
-**2026-08-22** (`.env` carries ANTHROPIC/FINRA/FRED/EIA keys only;
-`.private/providers.env` absent) → the live wire exercise is
-**BLOCKED_EXTERNAL**. Everything below is separated into DOCUMENTED claims
-(spec/vendor docs), OBSERVED results (**NONE-YET**), and FIXTURE assumptions.
-Nothing is claimed as observed unless a credentialed operator has recorded it
-here.
+**Status:** Fixture-first adapter landed (4A). **Sandbox HTTPS transport is
+implemented** (`tradier_sandbox_http.py`) and is opt-in via
+`IMP_TRADIER_SANDBOX_HTTP=1`. Live HTTP is allowed **only** against
+`https://sandbox.tradier.com/v1`. Production `api.tradier.com` and Alpaca live
+hosts are blocked before the socket opens. Authenticated sandbox behavior is
+still **NONE-YET** (no token on this cloud VM). The live wire exercise remains
+**BLOCKED_EXTERNAL** until an operator records §2. Nothing is claimed as
+observed unless a credentialed operator has recorded it here.
 
 **Adapter:** `src/market_platform_foundation/providers/adapters/tradier_paper.py`
 `TradierPaperExecutionProvider`, injected into
 `providers.composition.ProviderComposition.paper_execution`.
+**Sandbox HTTP:** `providers/adapters/tradier_sandbox_http.py`.
 **Contract:** `providers.broker_execution` (broker-neutral models, status
 mapping, fill normalization, ADR-PROV-001 envelopes).
 **Probe:** `tools/providers/probe_tradier_sandbox.py` (credential-gated,
 stdlib-only, read-only first; see §7).
+**Calibration classifier:** `tools/providers/run_calibration_harness.py`
+(does not place orders; does not fabricate fills).
 
 Wave A reconciliation inventory (FTEP-V1-001, read-only):
 [`artifacts/wave-a-findings/ibkr-tradier-alpaca-audit.json`](../../artifacts/wave-a-findings/ibkr-tradier-alpaca-audit.json).
@@ -202,12 +205,14 @@ All of the following must hold before any broker request exists
 | `IMP_BROKER_PAPER_EXECUTION=1` | unset | `unavailable` / `EXECUTION_NOT_ENABLED` (`PAPER_ONLY` authority gate) |
 | `IMP_TRADIER_TOKEN` | unset | `unavailable` / `TRADIER_TOKEN_NOT_CONFIGURED` |
 | `IMP_TRADIER_ENDPOINT` | sandbox URL | any non-sandbox value → **blocked** / `TRADIER_PRODUCTION_ENDPOINT_BLOCKED` (fail-closed prod guard) |
-| `IMP_TRADIER_ACCOUNT_ID` | unset | sandbox account selector (probe requires it to match a profile account if set) |
+| `IMP_TRADIER_ACCOUNT_ID` | unset | sandbox account selector (probe requires it to match a profile account if set); required for sandbox HTTP |
+| `IMP_TRADIER_SANDBOX_HTTP=1` | unset | without this opt-in, unmatched operations stay `BROKER_TRANSPORT_NOT_IMPLEMENTED` (CI fixture-only) |
 
 Additional fail-closed layers:
 
-- No matching replay fixture → `BROKER_TRANSPORT_NOT_IMPLEMENTED` (there is
-  deliberately no live HTTP path in the adapter yet).
+- No matching replay fixture and sandbox HTTP not opted in → `BROKER_TRANSPORT_NOT_IMPLEMENTED`.
+- Sandbox HTTP opted in but `IMP_TRADIER_ACCOUNT_ID` missing → `TRADIER_ACCOUNT_ID_NOT_CONFIGURED`.
+- Any non-sandbox URL, including `api.tradier.com`, is refused before urllib runs.
 - Unknown/unmappable instrument → `UNMAPPED_INSTRUMENT`.
 - Malformed intent → `BROKER_REQUEST_INVALID`; malformed provider record →
   `BROKER_RESPONSE_INVALID`.
@@ -287,8 +292,10 @@ Step 4 — record observations: paste the probe's sanitized evidence blocks
 into §2 of this document, resolve the pending mapping decisions flagged in
 §3 (`open`→`accepted` vs `working`, ack-status semantics, id typing,
 price/timestamp conversions), then update the fixture `status_raw` values if
-the observed wire differs. Only after §2 is filled may a live transport be
-considered; the adapter stays fixture-replay until then.
+the observed wire differs. Sandbox HTTP exists as an opt-in; **do not** treat
+fixture or unauthenticated 401 host-liveness as observed fill behavior.
+Calibration vs IMP `BarConservativeSimulator` (`phase7.bar-conservative/1.1.0`)
+is **not CALIBRATED**. Equity sandbox fills do not validate ES futures.
 
 ## 8. Authority
 

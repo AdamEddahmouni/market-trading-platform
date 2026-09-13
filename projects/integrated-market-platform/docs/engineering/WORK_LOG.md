@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — IMP vs Tradier sandbox calibration harness
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, `providers/adapters/tradier` |
+| **Summary** | Finished existing `paper/calibration/*` into a fail-closed IMP simulator vs Tradier sandbox comparator: correlation pairing, honest metrics (N, distributions, median, percentiles; fill/price/latency/partials/rejects/cancels), schema v6 observation persistence, campaign runner that classifies `COMPARATOR_NOT_CONFIGURED` / `WAITING_FOR_MARKET` without fabricating fills. Sandbox HTTPS opt-in only; production and Alpaca live hosts blocked. Simulator stamped `phase7.bar-conservative/1.1.0`. Not CALIBRATED. FTEP not `EMPIRICAL_ACTIVE`. Equity Paper does not validate ES. |
+| **Key files** | `src/market_platform_foundation/paper/calibration/{pairing,metrics,persistence,runner,asset_scope,comparator_contract}.py`; `src/market_platform_foundation/providers/adapters/{tradier_paper,tradier_sandbox_http}.py`; `tests/platform/test_calibration_harness.py`; `tools/providers/run_calibration_harness.py`; `docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md`; `docs/providers/TRADIER_PAPER.md` |
+| **Tests** | `PYTHONPATH=src python3 -m unittest tests.platform.test_simulator_calibration tests.platform.test_calibration_harness tests.platform.test_broker_paper_p4` — **38 passed** |
+| **Related** | [PAPER_SIMULATOR_CALIBRATION_CONTRACT.md](../architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md); [TRADIER_PAPER.md](../providers/TRADIER_PAPER.md) |
+| **Notes** | No sandbox token on this cloud VM. No Live orders. Alpaca not authenticated. Numeric gates remain UNSET/BLOCKING. |
+
 ## 2026-09-13 — Path A scan caller merged (PR #39)
 
 | Field | Value |

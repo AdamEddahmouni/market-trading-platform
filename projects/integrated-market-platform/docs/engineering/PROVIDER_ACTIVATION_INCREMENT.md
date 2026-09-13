@@ -60,11 +60,15 @@ Machine-readable hooks (package 3, commit `613a6b4`):
 | `manifests/paper/schemas/calibration_thresholds.schema.json` | Threshold document shape; numeric acceptance values remain **UNSET** until owner/campaign freeze |
 | `paper/calibration/comparator_contract.py` | Comparator binding contract per [PAPER_SIMULATOR_CALIBRATION_CONTRACT.md](../architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md) |
 | `paper/calibration/futures_suitability.py` | ES/futures suitability gates for comparator selection (advisory, not procurement) |
-| `paper/calibration/metrics.py` | Metric dimensions for calibration units |
+| `paper/calibration/metrics.py` | Metric dimensions for calibration units (N, distributions, median, percentiles; fill/price/latency/partials/rejects/cancels) |
+| `paper/calibration/pairing.py` | Correlation-id / pairing-table join of IMP vs comparator legs |
+| `paper/calibration/persistence.py` | Append-only schema v6 `forward_test_observations` |
+| `paper/calibration/runner.py` | Fail-closed classifier: `WAITING_FOR_MARKET` / `COMPARATOR_NOT_CONFIGURED` |
+| `paper/calibration/asset_scope.py` | Equity Paper does not validate ES fills |
 | `paper/calibration/thresholds.py` | Load/validate threshold payloads; fail closed when BLOCKING gates unset |
 
-**Safe claim:** schema and comparator plumbing exist; execution-bearing numeric gates are **BLOCKING/UNSET** until manifest freeze.  
-**Prohibited claim:** simulator or external paper benchmark is calibrated for FTEP-V1-001.
+**Safe claim:** pairing/metrics/persistence harness exists; Tradier sandbox HTTPS is opt-in and production-blocked; execution-bearing numeric gates remain **BLOCKING/UNSET**.
+**Prohibited claim:** simulator or external paper benchmark is calibrated; FTEP is `EMPIRICAL_ACTIVE`.
 
 ## Frozen provider snapshot comparison harness
 
