@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from ...clock import monotonic_wall_ns
 from .campaign_binding import CampaignBinding, CampaignBindingError, CampaignBindingState
 from .repository import (
+    ForwardTestRepositoryError,
     assert_locked_decision_immutable,
     assert_observations_append_only,
     assert_session_config_immutable,
@@ -28,6 +29,8 @@ class ForwardTestStore:
     _active_campaign_by_account: dict[str, str] = field(default_factory=dict)
 
     def put_session(self, session: ForwardTestSession) -> None:
+        if str(session.mode).upper() == "LIVE":
+            raise ForwardTestRepositoryError("FORWARD_TEST_LIVE_MODE_FORBIDDEN")
         existing = self._sessions.get(session.session_id)
         if existing is not None:
             assert_session_config_immutable(existing, session)
@@ -44,6 +47,8 @@ class ForwardTestStore:
         return [self._sessions[item] for item in ids if item in self._sessions]
 
     def put_decision(self, decision: ForwardTestDecision) -> None:
+        if str(decision.mode).upper() == "LIVE":
+            raise ForwardTestRepositoryError("FORWARD_TEST_LIVE_MODE_FORBIDDEN")
         existing = self._decisions.get(decision.forward_test_id)
         if existing is not None:
             assert_locked_decision_immutable(existing, decision)
@@ -61,12 +66,26 @@ class ForwardTestStore:
         *,
         account_id: str,
         session_id: str | None = None,
+        campaign_id: str | None = None,
+        strategy_id: str | None = None,
+        symbol: str | None = None,
     ) -> list[ForwardTestDecision]:
         ids = self._by_account_decisions.get(account_id, [])
         rows = [self._decisions[item] for item in ids if item in self._decisions]
-        if session_id is None:
-            return rows
-        return [row for row in rows if row.session_id == session_id]
+        if session_id is not None:
+            rows = [row for row in rows if row.session_id == session_id]
+        if strategy_id is not None:
+            rows = [row for row in rows if row.strategy_id == strategy_id]
+        if symbol is not None:
+            rows = [row for row in rows if row.symbol == str(symbol).upper()]
+        if campaign_id is not None:
+            filtered: list[ForwardTestDecision] = []
+            for row in rows:
+                session = self._sessions.get(row.session_id or "")
+                if session is not None and session.campaign_id == campaign_id:
+                    filtered.append(row)
+            rows = filtered
+        return rows
 
     def claim_paper_submission(self, forward_test_id: str) -> bool:
         if forward_test_id in self._paper_submission_keys:
@@ -82,6 +101,18 @@ class ForwardTestStore:
 
     def release_evaluation_claim(self, forward_test_id: str) -> None:
         self._evaluation_keys.discard(forward_test_id)
+
+    def commit_paper_submission(self, forward_test_id: str, decision: ForwardTestDecision) -> bool:
+        if not self.claim_paper_submission(forward_test_id):
+            return False
+        self.put_decision(decision)
+        return True
+
+    def commit_evaluation(self, forward_test_id: str, decision: ForwardTestDecision) -> bool:
+        if not self.claim_evaluation(forward_test_id):
+            return False
+        self.put_decision(decision)
+        return True
 
     def claim_active_binding(self, binding: CampaignBinding) -> None:
         active = self.get_active_binding(account_id=binding.account_id)

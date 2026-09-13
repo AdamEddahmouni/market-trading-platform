@@ -106,6 +106,8 @@ def evaluate_forward_test(
     *,
     decision: ForwardTestDecision,
     now_ns: int,
+    paper_realized_pnl_minor: int | None = None,
+    paper_fill_count: int | None = None,
 ) -> ForwardTestDecision:
     assert_observation_after_decision(
         observation_time_ns=now_ns,
@@ -131,11 +133,22 @@ def evaluate_forward_test(
         entry_price=entry_price,
         exit_price=exit_price,
     )
+    obs_realized = None
+    obs_fills = 0
+    for observation in decision.observations:
+        if observation.payload.get("realized_pnl_minor") is not None:
+            obs_realized = int(observation.payload["realized_pnl_minor"])
+        if observation.payload.get("fill_count") is not None:
+            obs_fills = max(obs_fills, int(observation.payload["fill_count"]))
+    realized = paper_realized_pnl_minor if paper_realized_pnl_minor is not None else obs_realized
+    fill_count = paper_fill_count if paper_fill_count is not None else obs_fills
+    if fill_count == 0 and decision.paper_order_id:
+        fill_count = 1
     execution_outcome = compute_execution_outcome(
         decision=decision,
-        realized_pnl_minor=None,
+        realized_pnl_minor=realized,
         unrealized_pnl_minor=None,
-        fill_count=1 if decision.paper_order_id else 0,
+        fill_count=fill_count,
     )
     evaluation_state = (
         EvaluationState.INSUFFICIENT_DATA

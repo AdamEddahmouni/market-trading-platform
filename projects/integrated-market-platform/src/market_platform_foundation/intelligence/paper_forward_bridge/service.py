@@ -28,6 +28,8 @@ from .lifecycle import ForwardTestLifecycleError, assert_transition
 from .paper_handoff import build_paper_preview_body, forward_test_correlation_id
 from .preflight import assert_forward_test_preflight_ready, run_forward_test_preflight
 from .repository import ForwardTestRepository
+from .run_identity import stamp_provenance
+from .paper_ledger_join import paper_execution_from_ledger, paper_execution_from_observations
 from .session_policy import (
     SampleFloorDisposition,
     SessionPolicyError,
@@ -71,6 +73,42 @@ class ForwardTestServiceError(ValueError):
 def _require_paper_mode(mode: str) -> None:
     if mode.upper() != "PAPER":
         raise ForwardTestServiceError("FORWARD_TEST_PAPER_MODE_REQUIRED")
+
+
+def _paper_execution_for(decision: ForwardTestDecision) -> tuple[int | None, int]:
+    obs_realized, obs_fills = paper_execution_from_observations(
+        tuple(item.payload for item in decision.observations)
+    )
+    try:
+        from ...local_state.paths import persistence_enabled
+        from ...local_state.startup import open_local_state
+    except Exception:
+        return obs_realized, obs_fills
+    if not persistence_enabled():
+        return obs_realized, obs_fills
+    local = open_local_state()
+    if local is None:
+        return obs_realized, obs_fills
+    realized, fills, _unrealized = paper_execution_from_ledger(
+        local.connection,
+        paper_order_id=decision.paper_order_id,
+    )
+    return (
+        realized if realized is not None else obs_realized,
+        fills if fills else obs_fills,
+    )
+
+
+def _paper_realized_for(decision: ForwardTestDecision) -> int | None:
+    realized, _fills = _paper_execution_for(decision)
+    return realized
+
+
+def _paper_fill_count_for(decision: ForwardTestDecision) -> int:
+    _realized, fills = _paper_execution_for(decision)
+    if fills:
+        return fills
+    return 1 if decision.paper_order_id else 0
 
 
 def _require_account_match(*, expected: str, actual: str) -> None:
@@ -496,14 +534,14 @@ class ForwardTestService:
             "feature_snapshot_id": strategy_decision.feature_snapshot_id,
             "market_snapshot_ref": strategy_decision.market_snapshot_ref,
         }
-        provenance = {
+        provenance = stamp_provenance({
             "schema_version": "intelligence/paper_forward_bridge/provenance/1.0.0",
             "strategy_id": strategy_decision.policy_id,
             "strategy_version": strategy_decision.policy_version,
             "decision_time_ns": decision_time_ns,
             "source_time_ns": source_time_ns,
             "payload_hash_ref": strategy_decision.feature_snapshot_id,
-        }
+        })
         if session is not None:
             provenance.update(_campaign_provenance(session))
         decision = ForwardTestDecision(
@@ -619,13 +657,13 @@ class ForwardTestService:
                 except SessionPolicyError as exc:
                     raise _policy_error(exc) from exc
         payload = dict(decision_payload or {})
-        provenance = {
+        provenance = stamp_provenance({
             "schema_version": "intelligence/paper_forward_bridge/provenance/1.0.0",
             "strategy_id": strategy_id,
             "strategy_version": strategy_version,
             "decision_time_ns": decision_time_ns,
             "source_time_ns": source_time_ns,
-        }
+        })
         if session is not None:
             provenance.update(_campaign_provenance(session))
         decision = ForwardTestDecision(
@@ -786,52 +824,38 @@ class ForwardTestService:
                     raise _policy_error(exc) from exc
         if decision.state != ForwardTestState.LOCKED:
             raise ForwardTestServiceError("FORWARD_TEST_NOT_LOCKED")
-        if not self._store.claim_paper_submission(forward_test_id):
-            raise ForwardTestServiceError("FORWARD_TEST_PAPER_ALREADY_SUBMITTED")
         if reject_reason:
-            rejected = replace(
+            final = replace(
                 decision,
                 state=ForwardTestState.REJECTED,
                 submitted_at_ns=submitted_at_ns,
                 failure_reason=reject_reason,
             )
-            self._store.put_decision(rejected)
-            return rejected
-        if decision.test_mode == ForwardTestMode.SIGNAL_ONLY:
-            observing = replace(
+        elif decision.test_mode == ForwardTestMode.SIGNAL_ONLY:
+            final = replace(
                 decision,
                 state=ForwardTestState.OBSERVING,
                 submitted_at_ns=submitted_at_ns,
+                paper_order_id=paper_order_id,
+                paper_intent_id=paper_intent_id,
                 evaluation_state=EvaluationState.OBSERVING,
             )
-            self._store.put_decision(observing)
-            return observing
-        target = ForwardTestState.PAPER_SUBMITTED
-        try:
-            assert_transition(decision.state, target)
-        except ForwardTestLifecycleError as exc:
-            raise ForwardTestServiceError(str(exc)) from exc
-        submitted = replace(
-            decision,
-            state=target,
-            submitted_at_ns=submitted_at_ns,
-            paper_order_id=paper_order_id,
-            paper_intent_id=paper_intent_id,
-        )
-        self._store.put_decision(submitted)
-        active = replace(
-            submitted,
-            state=ForwardTestState.PAPER_ACTIVE,
-            evaluation_state=EvaluationState.OBSERVING,
-        )
-        self._store.put_decision(active)
-        observing = replace(
-            active,
-            state=ForwardTestState.OBSERVING,
-            evaluation_state=EvaluationState.OBSERVING,
-        )
-        self._store.put_decision(observing)
-        return observing
+        else:
+            try:
+                assert_transition(decision.state, ForwardTestState.PAPER_SUBMITTED)
+            except ForwardTestLifecycleError as exc:
+                raise ForwardTestServiceError(str(exc)) from exc
+            final = replace(
+                decision,
+                state=ForwardTestState.OBSERVING,
+                submitted_at_ns=submitted_at_ns,
+                paper_order_id=paper_order_id,
+                paper_intent_id=paper_intent_id,
+                evaluation_state=EvaluationState.OBSERVING,
+            )
+        if not self._store.commit_paper_submission(forward_test_id, final):
+            raise ForwardTestServiceError("FORWARD_TEST_PAPER_ALREADY_SUBMITTED")
+        return final
 
     def build_paper_order_request(
         self,
@@ -910,21 +934,31 @@ class ForwardTestService:
             raise ForwardTestServiceError("FORWARD_TEST_NOT_EVALUABLE")
         if decision.state == ForwardTestState.EVALUATED:
             return decision
-        if not force and not self._store.claim_evaluation(forward_test_id):
-            return decision
         try:
-            evaluated = evaluate_forward_test(decision=decision, now_ns=now_ns)
+            evaluated = evaluate_forward_test(
+                decision=decision,
+                now_ns=now_ns,
+                paper_realized_pnl_minor=_paper_realized_for(decision),
+                paper_fill_count=_paper_fill_count_for(decision),
+            )
         except ValueError:
-            self._store.release_evaluation_claim(forward_test_id)
             raise
-        self._store.put_decision(evaluated)
+        if force:
+            self._store.put_decision(evaluated)
+            self._refresh_after_evaluate(session, account_id)
+            return evaluated
+        if not self._store.commit_evaluation(forward_test_id, evaluated):
+            return decision
+        self._refresh_after_evaluate(session, account_id)
+        return evaluated
+
+    def _refresh_after_evaluate(self, session, account_id: str) -> None:
         if session is not None and session.campaign_id:
             refreshed = self._store.get_session(session.session_id) or session
             self._refresh_sample_floor_disposition(
                 session=refreshed,
                 account_id=account_id,
             )
-        return evaluated
 
     def get_decision(self, *, forward_test_id: str, account_id: str) -> ForwardTestDecision:
         return self._require_decision(forward_test_id, account_id)
@@ -934,8 +968,17 @@ class ForwardTestService:
         *,
         account_id: str,
         session_id: str | None = None,
+        campaign_id: str | None = None,
+        strategy_id: str | None = None,
+        symbol: str | None = None,
     ) -> list[ForwardTestDecision]:
-        return self._store.list_decisions(account_id=account_id, session_id=session_id)
+        return self._store.list_decisions(
+            account_id=account_id,
+            session_id=session_id,
+            campaign_id=campaign_id,
+            strategy_id=strategy_id,
+            symbol=symbol,
+        )
 
     def get_session_summary(self, *, session_id: str, account_id: str) -> dict[str, Any]:
         session = self._store.get_session(session_id)

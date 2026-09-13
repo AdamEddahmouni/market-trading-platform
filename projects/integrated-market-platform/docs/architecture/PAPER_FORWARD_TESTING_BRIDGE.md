@@ -190,10 +190,14 @@ See [FTEP-V1_OWNER_DECISION_PACKET.md](../engineering/FTEP-V1_OWNER_DECISION_PAC
 
 When `IMP_PERSIST_STATE=1` or `IMP_STATE_DIR` is set, forward-test sessions,
 decisions, append-only observations, and idempotency claims are stored in the
-local SQLite state database (`local_state`, schema v2) alongside the Paper
+local SQLite state database (`local_state`, schema v6) alongside the Paper
 ledger. Restart recovery reopens the same account-scoped records; locked
 decision fields remain immutable; duplicate Paper submission and evaluation
-claims survive restart.
+claims survive restart. Schema v6 adds transactional multi-row writes,
+distinct persist/available/receive clocks, git SHA + simulator version on
+runs, campaign/strategy/instrument query filters, unique operator acks, and
+a reconstruction API that joins Paper ledger fills/PnL without scraping logs.
+PD-09 (PR #18) remains COMPLETE; v6 is a later increment on the same store.
 
 Factory: `create_forward_test_repository()` in
 `paper_forward_bridge/repository.py` (in-memory when persistence is off).

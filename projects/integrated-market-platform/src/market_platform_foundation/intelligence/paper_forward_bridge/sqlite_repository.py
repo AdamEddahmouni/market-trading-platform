@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from typing import Any
 
 from ...clock import monotonic_wall_ns
 from ...local_state.connection import LocalStateConnection
+from .run_identity import run_identity
 from .campaign_binding import (
     CampaignBinding,
     CampaignBindingError,
@@ -15,6 +17,7 @@ from .campaign_binding import (
     release_binding as sqlite_release_binding,
 )
 from .repository import (
+    ForwardTestRepositoryError,
     assert_locked_decision_immutable,
     assert_observations_append_only,
     assert_session_config_immutable,
@@ -28,49 +31,72 @@ from .types import ForwardTestDecision, ForwardTestObservation, ForwardTestSessi
 
 CLAIM_PAPER_SUBMISSION = "paper_submission"
 CLAIM_EVALUATION = "evaluation"
+_LIVE_MODE_FORBIDDEN = "FORWARD_TEST_LIVE_MODE_FORBIDDEN"
+
+
+def _reject_live_mode(mode: str) -> None:
+    if str(mode).upper() == "LIVE":
+        raise ForwardTestRepositoryError(_LIVE_MODE_FORBIDDEN)
 
 
 class SqliteForwardTestRepository:
     def __init__(self, connection: LocalStateConnection) -> None:
         self._connection = connection
 
+    def _run_write(self, callback):
+        if self._connection.in_transaction:
+            return callback()
+        with self._connection.transaction():
+            return callback()
+
     def put_session(self, session: ForwardTestSession) -> None:
+        _reject_live_mode(session.mode)
         existing = self.get_session(session.session_id)
         if existing is not None:
             assert_session_config_immutable(existing, session)
         row = session_to_row(session)
-        self._connection.execute(
-            """
-            INSERT INTO forward_test_sessions(
-                session_id, account_id, mode, strategy_id, strategy_version,
-                universe_json, evaluation_horizon_ns, created_at_ns, status, config_json,
-                campaign_id, protocol_id, activation_version, manifest_fingerprint,
-                cohort_arm, config_frozen
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(session_id) DO UPDATE SET
-                status=excluded.status,
-                config_json=excluded.config_json,
-                config_frozen=excluded.config_frozen
-            """,
-            (
-                row["session_id"],
-                row["account_id"],
-                row["mode"],
-                row["strategy_id"],
-                row["strategy_version"],
-                row["universe_json"],
-                row["evaluation_horizon_ns"],
-                row["created_at_ns"],
-                row["status"],
-                row["config_json"],
-                row["campaign_id"],
-                row["protocol_id"],
-                row["activation_version"],
-                row["manifest_fingerprint"],
-                row["cohort_arm"],
-                row["config_frozen"],
-            ),
-        )
+        identity = run_identity()
+        persist_time_ns = monotonic_wall_ns()
+
+        def _write() -> None:
+            self._connection.execute(
+                """
+                INSERT INTO forward_test_sessions(
+                    session_id, account_id, mode, strategy_id, strategy_version,
+                    universe_json, evaluation_horizon_ns, created_at_ns, status, config_json,
+                    campaign_id, protocol_id, activation_version, manifest_fingerprint,
+                    cohort_arm, config_frozen, git_sha, simulator_version, persist_time_ns
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(session_id) DO UPDATE SET
+                    status=excluded.status,
+                    config_json=excluded.config_json,
+                    config_frozen=excluded.config_frozen,
+                    persist_time_ns=excluded.persist_time_ns
+                """,
+                (
+                    row["session_id"],
+                    row["account_id"],
+                    row["mode"],
+                    row["strategy_id"],
+                    row["strategy_version"],
+                    row["universe_json"],
+                    row["evaluation_horizon_ns"],
+                    row["created_at_ns"],
+                    row["status"],
+                    row["config_json"],
+                    row["campaign_id"],
+                    row["protocol_id"],
+                    row["activation_version"],
+                    row["manifest_fingerprint"],
+                    row["cohort_arm"],
+                    row["config_frozen"],
+                    identity["git_sha"],
+                    identity["simulator_version"],
+                    persist_time_ns,
+                ),
+            )
+
+        self._run_write(_write)
 
     def get_session(self, session_id: str) -> ForwardTestSession | None:
         row = self._connection.execute(
@@ -91,11 +117,29 @@ class SqliteForwardTestRepository:
         return [session_from_row(dict(row)) for row in rows]
 
     def put_decision(self, decision: ForwardTestDecision) -> None:
+        _reject_live_mode(decision.mode)
+
+        def _write() -> None:
+            self._put_decision_body(decision)
+
+        self._run_write(_write)
+
+    def _put_decision_body(self, decision: ForwardTestDecision) -> None:
         existing = self.get_decision(decision.forward_test_id)
         if existing is not None:
             assert_locked_decision_immutable(existing, decision)
             assert_observations_append_only(existing, decision)
         row = decision_to_row(decision)
+        identity = run_identity()
+        persist_time_ns = monotonic_wall_ns()
+        available_time_ns = int(
+            (decision.provenance_snapshot or {}).get("available_time_ns")
+            or decision.source_time_ns
+        )
+        receive_time_ns = int(
+            (decision.provenance_snapshot or {}).get("receive_time_ns")
+            or persist_time_ns
+        )
         self._connection.execute(
             """
             INSERT INTO forward_test_decisions(
@@ -105,8 +149,9 @@ class SqliteForwardTestRepository:
                 evaluation_horizon_ns, decision_payload_json, provenance_snapshot_json,
                 paper_order_id, paper_intent_id, locked_at_ns, submitted_at_ns,
                 signal_outcome_json, execution_outcome_json, evaluation_state, failure_reason,
-                evidence_class, cohort_arm
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                evidence_class, cohort_arm, persist_time_ns, available_time_ns,
+                receive_time_ns, git_sha, simulator_version
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(forward_test_id) DO UPDATE SET
                 state=excluded.state,
                 paper_order_id=excluded.paper_order_id,
@@ -116,7 +161,8 @@ class SqliteForwardTestRepository:
                 signal_outcome_json=excluded.signal_outcome_json,
                 execution_outcome_json=excluded.execution_outcome_json,
                 evaluation_state=excluded.evaluation_state,
-                failure_reason=excluded.failure_reason
+                failure_reason=excluded.failure_reason,
+                persist_time_ns=excluded.persist_time_ns
             """,
             (
                 row["forward_test_id"],
@@ -148,6 +194,11 @@ class SqliteForwardTestRepository:
                 row["failure_reason"],
                 row["evidence_class"],
                 row["cohort_arm"],
+                persist_time_ns,
+                available_time_ns,
+                receive_time_ns,
+                identity["git_sha"],
+                identity["simulator_version"],
             ),
         )
         if existing is None:
@@ -158,6 +209,17 @@ class SqliteForwardTestRepository:
                 item for item in decision.observations if item.observation_id not in existing_ids
             )
             self._insert_observations(decision.forward_test_id, new_observations)
+        opportunity_id = (decision.decision_payload or {}).get("opportunity_id")
+        signal_id = (decision.decision_payload or {}).get("signal_id")
+        if opportunity_id:
+            self._connection.execute(
+                """
+                INSERT OR IGNORE INTO forward_test_signal_links(
+                    forward_test_id, opportunity_id, signal_id, persist_time_ns
+                ) VALUES (?, ?, ?, ?)
+                """,
+                (decision.forward_test_id, str(opportunity_id), signal_id, persist_time_ns),
+            )
 
     def get_decision(self, forward_test_id: str) -> ForwardTestDecision | None:
         row = self._connection.execute(
@@ -174,25 +236,30 @@ class SqliteForwardTestRepository:
         *,
         account_id: str,
         session_id: str | None = None,
+        campaign_id: str | None = None,
+        strategy_id: str | None = None,
+        symbol: str | None = None,
     ) -> list[ForwardTestDecision]:
-        if session_id is None:
-            rows = self._connection.execute(
-                """
-                SELECT * FROM forward_test_decisions
-                WHERE account_id=?
-                ORDER BY decision_time_ns ASC
-                """,
-                (account_id,),
-            ).fetchall()
-        else:
-            rows = self._connection.execute(
-                """
-                SELECT * FROM forward_test_decisions
-                WHERE account_id=? AND session_id=?
-                ORDER BY decision_time_ns ASC
-                """,
-                (account_id, session_id),
-            ).fetchall()
+        sql = """
+            SELECT d.* FROM forward_test_decisions d
+            LEFT JOIN forward_test_sessions s ON d.session_id = s.session_id
+            WHERE d.account_id=?
+        """
+        params: list[Any] = [account_id]
+        if session_id is not None:
+            sql += " AND d.session_id=?"
+            params.append(session_id)
+        if campaign_id is not None:
+            sql += " AND s.campaign_id=?"
+            params.append(campaign_id)
+        if strategy_id is not None:
+            sql += " AND d.strategy_id=?"
+            params.append(strategy_id)
+        if symbol is not None:
+            sql += " AND d.symbol=?"
+            params.append(str(symbol).upper())
+        sql += " ORDER BY d.decision_time_ns ASC"
+        rows = self._connection.execute(sql, tuple(params)).fetchall()
         decisions: list[ForwardTestDecision] = []
         for row in rows:
             forward_test_id = str(row["forward_test_id"])
@@ -221,6 +288,24 @@ class SqliteForwardTestRepository:
             (forward_test_id, CLAIM_EVALUATION, monotonic_wall_ns()),
         )
         return cursor.rowcount == 1
+
+    def commit_paper_submission(self, forward_test_id: str, decision: ForwardTestDecision) -> bool:
+        def _write() -> bool:
+            if not self.claim_paper_submission(forward_test_id):
+                return False
+            self._put_decision_body(decision)
+            return True
+
+        return bool(self._run_write(_write))
+
+    def commit_evaluation(self, forward_test_id: str, decision: ForwardTestDecision) -> bool:
+        def _write() -> bool:
+            if not self.claim_evaluation(forward_test_id):
+                return False
+            self._put_decision_body(decision)
+            return True
+
+        return bool(self._run_write(_write))
 
     def release_evaluation_claim(self, forward_test_id: str) -> None:
         self._connection.execute(
@@ -316,18 +401,39 @@ class SqliteForwardTestRepository:
         forward_test_id: str,
         observations: tuple[ForwardTestObservation, ...],
     ) -> None:
+        persist_time_ns = monotonic_wall_ns()
         for observation in observations:
+            payload_json = json.dumps(observation.payload, sort_keys=True, separators=(",", ":"))
+            existing = self._connection.execute(
+                """
+                SELECT payload_json FROM forward_test_observations
+                WHERE observation_id=?
+                """,
+                (observation.observation_id,),
+            ).fetchone()
+            if existing is not None and str(existing[0]) != payload_json:
+                raise ForwardTestRepositoryError("FORWARD_TEST_OBSERVATION_PAYLOAD_CONFLICT")
+            available_time_ns = int(
+                observation.payload.get("available_time_ns") or observation.source_time_ns
+            )
+            receive_time_ns = int(
+                observation.payload.get("receive_time_ns") or observation.observed_at_ns
+            )
             self._connection.execute(
                 """
                 INSERT OR IGNORE INTO forward_test_observations(
-                    observation_id, forward_test_id, observed_at_ns, source_time_ns, payload_json
-                ) VALUES (?, ?, ?, ?, ?)
+                    observation_id, forward_test_id, observed_at_ns, source_time_ns,
+                    payload_json, persist_time_ns, available_time_ns, receive_time_ns
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     observation.observation_id,
                     forward_test_id,
                     observation.observed_at_ns,
                     observation.source_time_ns,
-                    json.dumps(observation.payload, sort_keys=True, separators=(",", ":")),
+                    payload_json,
+                    persist_time_ns,
+                    available_time_ns,
+                    receive_time_ns,
                 ),
             )
