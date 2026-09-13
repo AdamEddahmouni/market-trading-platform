@@ -180,6 +180,19 @@ class OperatorLoopTests(unittest.TestCase):
         self.assertEqual(len(deduped), 1)
         self.assertEqual(len(deduped[0].duplicates), 1)
 
+    def test_repository_storage_id_is_stripped(self) -> None:
+        opportunity = _opportunity("opp-store")
+        from market_platform_foundation.intelligence.contracts import opportunity_v1_to_dict
+
+        class _Repo:
+            _stores = {"opportunities": {"opp-store": {**opportunity_v1_to_dict(opportunity), "_id": "opp-store"}}}
+
+        rows = assemble_opportunity_review_rows(
+            repository=_Repo(),
+            assessments_by_opportunity={"opp-store": AssessmentAction.EMIT},
+        )
+        self.assertEqual([row.opportunity_id for row in rows], ["opp-store"])
+
     def test_repository_does_not_mint_second_opportunity(self) -> None:
         repo = InMemoryIntelligenceRepository()
         opportunity = _opportunity("opp-repo")

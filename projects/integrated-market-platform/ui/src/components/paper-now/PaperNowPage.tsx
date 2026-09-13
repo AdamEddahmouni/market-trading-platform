@@ -9,6 +9,7 @@ import { PaperCandidateQueue } from "./PaperCandidateQueue";
 import { PaperExceptionsPanel } from "./PaperExceptionsPanel";
 import { PaperPreviewComposer } from "./PaperPreviewComposer";
 import { PaperRiskRibbon } from "./PaperRiskRibbon";
+import { OpportunityReviewQueue } from "../now/OpportunityReviewCard";
 import { nextPaperCandidateId } from "./paperDashboardViewModel";
 import { buildPaperOrderRequest, createAttentionPaperOrderDraft, createPaperOrderDraft, createPaperPreviewAttemptKey, paperOrderDraftFingerprint, type PaperOrderDraft, type PaperOrderSide, attentionSourceContextFromItem } from "./paperOrderDraft";
 
@@ -96,10 +97,10 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
 
   return (
     <section className="page paper-now-page">
-      <header className="paper-now-header"><div><span className="paper-eyebrow">Paper-only simulation</span><h1>Paper Command</h1><p>Review portfolio risk, validate a deliberate draft, then revalidate in the instrument workspace before simulated submission.</p></div><dl><div><dt>Session</dt><dd>{portfolio?.account.session_id ?? "Unavailable"}</dd></div><div><dt>Execution</dt><dd>{portfolio?.account.execution_mode ?? "Unavailable"}</dd></div><div><dt>Authority</dt><dd>{portfolio?.account.execution_authority ?? "Unavailable"}</dd></div><div><dt>Data health</dt><dd>{portfolio?.data_health.state ?? "Unavailable"}</dd></div></dl></header>
+      <header className="paper-now-header"><div><span className="paper-eyebrow">Paper-only simulation</span><h1>Paper Command</h1><p>Review portfolio risk, validate a deliberate draft, then revalidate in the instrument workspace before simulated submission.</p></div><dl><div><dt>Session</dt><dd>{portfolio?.account.session_id ?? "Unavailable"}</dd></div><div><dt>Account</dt><dd>{portfolio?.account.paper_account_id ?? "Unavailable"}</dd></div><div><dt>Execution</dt><dd>{portfolio?.account.execution_mode ?? "Unavailable"}</dd></div><div><dt>Authority</dt><dd>{portfolio?.account.execution_authority ?? "Unavailable"}</dd></div><div><dt>Data health</dt><dd>{portfolio?.data_health.state ?? "Unavailable"}</dd></div></dl></header>
       <PaperRiskRibbon portfolio={portfolio} state={portfolioState} />
       <div className="paper-decision-grid">
-        <PaperCandidateQueue items={items} state={attentionState} selectedAttentionId={selectedAttentionId} onSelect={(id) => { invalidatePreview(); setSelectedAttentionId(id); }} onWhy={onWhy} onExplain={onExplain} onInspect={onInspect} onOpenWorkspace={openAttentionWorkspace} />
+        <PaperCandidateQueue items={items} state={attentionState} selectedAttentionId={selectedAttentionId} onSelect={(id) => { invalidatePreview(); setSelectedAttentionId(id); }} onWhy={onWhy} onExplain={onExplain} onInspect={onInspect} onOpenWorkspace={openAttentionWorkspace} reviewSlot={<OpportunityReviewQueue mode="PAPER" accountId={portfolio?.account.paper_account_id} onOpenWorkspace={(instrumentId) => navigate(workspacePathForInstrument(instrumentId))} />} />
         <PaperPreviewComposer instrumentId={selected?.instrument_id ?? null} side={side} quantityText={quantityText} maxOrderShares={portfolio?.risk.limits.max_order_shares} disabledReason={disabledReason} pending={previewMutation.isPending} error={previewError} preview={confirmedPreview?.value ?? null} canContinue={canContinue} onSideChange={(value) => { invalidatePreview(); setSide(value); }} onQuantityChange={(value) => { invalidatePreview(); setQuantityText(value); }} onPreview={() => { void previewDraft(); }} onContinue={() => { if (draft && canContinue) continueToWorkspace(draft); }} />
         <PaperExceptionsPanel portfolio={portfolio} state={portfolioState} />
       </div>

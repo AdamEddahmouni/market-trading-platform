@@ -1,8 +1,13 @@
+import { lazy, Suspense } from "react";
 import type { AttentionItem, PaperPortfolioResponse } from "../../api/client";
 import { AttentionFeed } from "../AttentionFeed";
 import { DemoInspectNext } from "./DemoInspectNext";
 import { DemoPortfolioSummary } from "./DemoPortfolioSummary";
 import { DemoReplayOverview, deriveReplayProgress } from "./DemoReplayOverview";
+
+const OpportunityReviewQueue = lazy(() =>
+  import("../now/OpportunityReviewCard").then((module) => ({ default: module.OpportunityReviewQueue })),
+);
 
 export type LoadState = "loading" | "ready" | "error";
 export type ScrubState = "idle" | "pending" | "error";
@@ -68,6 +73,13 @@ export function DemoNowPage(props: DemoNowPageProps) {
             onInspect={props.onInspect}
             onOpenWorkspace={props.onOpenWorkspace}
           />
+          <div className="demo-opportunity-review">
+            <p className="demo-eyebrow">Opportunity Engine</p>
+            <h3>Opportunity review</h3>
+            <Suspense fallback={<p role="status">Loading opportunity review…</p>}>
+              <OpportunityReviewQueue mode="DEMO" />
+            </Suspense>
+          </div>
         </section>
         <DemoInspectNext
           items={props.items}

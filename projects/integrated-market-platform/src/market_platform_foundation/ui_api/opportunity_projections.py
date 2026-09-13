@@ -147,6 +147,20 @@ def build_opportunity_evidence_payload(store: ReplayStore, row_id: str) -> dict[
     return {"items": lineage, "copy": copy}
 
 
+def build_opportunity_explain_payload(store: ReplayStore, ref: str) -> dict[str, Any]:
+    row_id = ref.removeprefix("explain:opportunity:").removeprefix("explain:summary:")
+    detail = build_opportunity_detail_payload(store, row_id)
+    copy = "not OpportunityV1" if detail.get("identity_kind") == "NOT_OPPORTUNITY_V1" else "OpportunityV1 review row"
+    return {
+        "alignment_summary": detail.get("headline") or row_id,
+        "level": 2,
+        "meaning": copy,
+        "ref": ref,
+        "why": "Operator review projection; not an order and not fabricated EvidenceV1.",
+        "lineage_refs": detail.get("lineage_refs") or [],
+    }
+
+
 def apply_opportunity_ack(
     store: ReplayStore,
     *,

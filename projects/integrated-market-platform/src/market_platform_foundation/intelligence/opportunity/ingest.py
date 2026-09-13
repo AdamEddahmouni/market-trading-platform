@@ -67,18 +67,31 @@ def _summary_from_opportunity(
     )
 
 
+_STORAGE_ONLY_KEYS = frozenset({"_id"})
+
+
+def _without_storage_keys(document: Mapping[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in document.items() if key not in _STORAGE_ONLY_KEYS}
+
+
 def _opportunities_from_repository(repository: Any) -> tuple[OpportunityV1, ...]:
     stores = getattr(repository, "_stores", None)
     if not isinstance(stores, dict):
         return ()
     documents = stores.get("opportunities") or {}
+    getter = getattr(repository, "get_opportunity", None)
     rows: list[OpportunityV1] = []
-    for document in documents.values():
+    for record_id, document in documents.items():
         if isinstance(document, OpportunityV1):
             rows.append(document)
             continue
+        if callable(getter):
+            loaded = getter(str(record_id))
+            if loaded is not None:
+                rows.append(loaded)
+                continue
         if isinstance(document, dict):
-            rows.append(opportunity_v1_from_dict(document))
+            rows.append(opportunity_v1_from_dict(_without_storage_keys(document)))
     return tuple(rows)
 
 

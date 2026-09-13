@@ -1,7 +1,10 @@
 import { lazy } from "react";
 import { useContextQuery, useLiveCanarySnapshotQuery, usePaperPortfolioQuery, useProviderHealthQuery } from "../api/hooks";
-import { DemoNowPage, type DemoNowPageProps } from "./demo-now/DemoNowPage";
+import type { DemoNowPageProps } from "./demo-now/DemoNowPage";
 
+const DemoNowPage = lazy(() =>
+  import("./demo-now/DemoNowPage").then((module) => ({ default: module.DemoNowPage })),
+);
 const PaperNowPage = lazy(() =>
   import("./paper-now/PaperNowPage").then((module) => ({ default: module.PaperNowPage })),
 );

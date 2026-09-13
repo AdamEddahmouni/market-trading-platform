@@ -68,6 +68,28 @@ class OpportunityApiTests(unittest.TestCase):
         with self.assertRaises(KeyError):
             build_opportunity_detail_payload(self.store, "missing-id")
 
+    def test_detail_overlay_is_decision_support_not_ranking(self) -> None:
+        self.store.execution_mode = "INTERNAL_SIMULATION"
+        summary = build_opportunities_summary_payload(self.store)
+        if not summary["items"]:
+            self.skipTest("no adapter rows in replay fixture")
+        first = summary["items"][0]
+        orders = [item.get("rank_order") for item in summary["items"]]
+        detail = build_opportunity_detail_payload(self.store, first["summary_id"])
+        overlay = detail["decision_support"]
+        self.assertEqual(overlay["authority"], "DOWNSTREAM_RISK_NOT_RANKING")
+        self.assertNotIn("order_id", overlay)
+        after = build_opportunities_summary_payload(self.store)
+        self.assertEqual([item.get("rank_order") for item in after["items"]], orders)
+
+    def test_evidence_is_lineage_only(self) -> None:
+        summary = build_opportunities_summary_payload(self.store)
+        if not summary["items"]:
+            self.skipTest("no adapter rows in replay fixture")
+        evidence = build_opportunity_evidence_payload(self.store, summary["items"][0]["summary_id"])
+        self.assertIsInstance(evidence["items"], list)
+        self.assertNotIn("fabricated", str(evidence).lower())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -4,6 +4,10 @@ import type { AttentionItem, PaperPortfolioResponse } from "../../api/client";
 import demoNowCss from "../../styles/demo-now.css?raw";
 import { DemoNowPage, type DemoNowPageProps } from "./DemoNowPage";
 
+vi.mock("../now/OpportunityReviewCard", () => ({
+  OpportunityReviewQueue: () => <p>Opportunity review stub</p>,
+}));
+
 const attention: AttentionItem = {
   attention_id: "attention-1",
   priority_rank: 1,

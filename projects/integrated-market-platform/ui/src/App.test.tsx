@@ -665,7 +665,7 @@ describe("App mode launcher integration", () => {
     render(<App />);
     await enterMode("Demo");
     expect(screen.getByRole("region", { name: "Session environment" })).toHaveTextContent("DEMO");
-    expect(screen.getByRole("heading", { name: "See the market unfold" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "See the market unfold" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Command Center" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Paper Command" })).not.toBeInTheDocument();
   });
@@ -695,7 +695,7 @@ describe("App mode launcher integration", () => {
     expect(window.location.pathname).toBe("/");
 
     await enterMode("Demo");
-    expect(screen.getByRole("heading", { name: "See the market unfold" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "See the market unfold" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "NOW" })).toHaveClass("active");
   });
 
@@ -704,7 +704,7 @@ describe("App mode launcher integration", () => {
     const invalidate = vi.spyOn(QueryClient.prototype, "invalidateQueries");
     render(<App />);
     await enterMode("Demo");
-    fireEvent.click(screen.getByRole("button", { name: "Next event" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Next event" }));
     await waitFor(() => expect(screen.getByText("Event 2 of 4")).toBeInTheDocument());
     expect(scrub).toHaveBeenCalledWith(1);
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["context"] });
@@ -716,7 +716,7 @@ describe("App mode launcher integration", () => {
     vi.spyOn(api, "scrubReplay").mockRejectedValueOnce(new Error("offline"));
     render(<App />);
     await enterMode("Demo");
-    fireEvent.click(screen.getByRole("button", { name: "Next event" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Next event" }));
     await screen.findByText(/Replay could not move/);
     expect(screen.getByText("Event 1 of 4")).toBeInTheDocument();
   });

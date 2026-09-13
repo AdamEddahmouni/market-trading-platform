@@ -46,6 +46,8 @@ Opportunities require:
 
 Control and challenger/shadow forecasts do not create production opportunities.
 
+The operator review loop (`GET /opportunities/summary`) consumes already-minted `OpportunityV1` records and labeled attention adapters. It does not start a production scanner or FTEP empirical collection. Path A mint remains fixture-validated library code: MATCHED `StrategyMatch` → `bridge_strategy_match_to_opportunity` → `OpportunityEngine.assess`.
+
 ## Time semantics
 
 - `forecast.decision_time_ns <= opportunity_decision_time_ns` (hard integrity).

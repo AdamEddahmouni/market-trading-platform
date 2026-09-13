@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Opportunity Engine operator review loop
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `intelligence/opportunity`, `ui_api`, `ui/now` |
+| **Summary** | Canonical operator loop: ingest existing evidence into OpportunitySummary 1.1, explainable ranking vector, Demo/Paper NOW review card, Paper watch/dismiss, Live empty. No production scanner, no Live orders, no FTEP empirical collection. |
+| **Key files** | `intelligence/opportunity/{ingest,ranking,lifecycle,dedup,data_quality}.py`, `ui_api/opportunity_projections.py`, `ui/src/components/now/OpportunityReviewCard.tsx`, `GET /opportunities/summary` |
+| **Tests** | focused opportunity operator/API tests; UI OpportunityReviewCard + NOW pages; `validate changed` pending CI |
+| **Related** | Goal 001 plan; PR #32 |
+| **Notes** | Honest empty/unready queue is success. Ranking is not a 0–100 score. |
+
 ## 2026-09-12 — Post-merge landing banners: origin/main is 3bb5aa2f
 
 | Field | Value |

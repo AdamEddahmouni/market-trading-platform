@@ -103,6 +103,8 @@ The operator-facing representation should prioritize:
 7. portfolio impact;
 8. the shortest safe next action.
 
+Demo/Paper NOW presents this as an **Opportunity Review** row (`OpportunitySummary` 1.1) with an explainable `ranking_vector` (no serialized `rank_score` / 0–100 quality). HTTP: `GET /opportunities/summary`. Live observational mode returns an empty unavailable queue (`LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`). Risk/portfolio overlay on detail is `DOWNSTREAM_RISK_NOT_RANKING` and does not reorder the queue.
+
 ## Lifecycle
 
 Recommended states:

@@ -17,11 +17,10 @@ describe("queryKeys account isolation", () => {
     expect(local).not.toEqual(alt);
   });
 
-  it("isolates demo and paper portfolio keys", () => {
-    expect(queryKeys.demoPortfolio).toEqual(["demo", "portfolio"]);
-    expect(queryKeys.paperPortfolio).toEqual(["paper", "portfolio"]);
-    expect(queryKeys.demoPortfolio).not.toEqual(queryKeys.paperPortfolio);
-  });
+    it("scopes opportunity summary keys separately from attention", () => {
+      expect(queryKeys.opportunitiesSummary).toEqual(["opportunities", "summary"]);
+      expect(queryKeys.opportunitiesSummary).not.toEqual(queryKeys.attention);
+    });
 
   it("preserves workspace symbol isolation", () => {
     expect(queryKeys.workspaceSqueeze("BIYA", "frozen")).not.toEqual(

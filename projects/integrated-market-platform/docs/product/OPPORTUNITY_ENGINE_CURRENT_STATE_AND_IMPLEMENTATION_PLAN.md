@@ -38,6 +38,7 @@ IMP has a **canonical Opportunity Contract** (`docs/architecture/OPPORTUNITY_CON
 
 - Single OpenAPI-shaped `OpportunitySummary` projection for DISCOVER + NOW (backend only).
 - React Query keys via existing `queryKeys` factory patterns.
+- **Goal 001 (2026-09-13):** operator HTTP `GET /opportunities/summary|{id}` and `/evidence` landed on existing `ui_api`. Ranking is an explainable vector (no `rank_score`). Live GET is empty. This is the operator loop, not a second engine and not FTEP.
 
 ### Phase 2 — Registry and admission
 

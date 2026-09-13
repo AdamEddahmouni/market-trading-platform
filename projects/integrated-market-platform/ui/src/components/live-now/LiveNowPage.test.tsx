@@ -72,7 +72,8 @@ describe("LiveNowPage", () => {
     expect(props.onExplain).toHaveBeenCalledWith(attention);
     expect(props.onInspect).toHaveBeenCalledWith(attention);
     expect(props.onOpenWorkspace).toHaveBeenCalledWith(attention);
-    expect(screen.getByRole("link", { name: "Open live canary" })).toHaveAttribute("href", "/live-canary");
+    expect(screen.queryByText(/Opportunity review/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Opportunity Engine/)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Provider diagnostics" })).toHaveAttribute(
       "href",
       "/diagnostics/provider",
