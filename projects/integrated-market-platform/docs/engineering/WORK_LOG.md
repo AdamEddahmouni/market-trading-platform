@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Path A optional PD-09 persist hop after MINTED
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy`, `persistence` |
+| **Summary** | `PathAProspectiveComposer` writes schema v6 via existing `ForwardTestService.create_decision` after a Paper MINTED result when persist is on and an existing FT session is injected. Payload includes G7 freshness and `opportunity_id` so `forward_test_signal_links` populate. Persist-off minted decisions stay `INTENTIONAL_EPHEMERAL` (no second store). Live still does not mint. FTEP is not `EMPIRICAL_ACTIVE`. Fills are not fabricated. |
+| **Key files** | `strategy/path_a_prospective.py`, `tests/intelligence/test_path_a_prospective.py`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Focused `tests.intelligence.test_path_a_prospective` **15 passed**. Related Path A + freshness **45 passed**. `python3 tools/imp.py validate changed --paths-file` (16 merge-base paths) **2833 passed / 36 skipped / 0 fail / 0 err**. Docs links OK (188 files). |
+| **Related** | PR #42. Prior Path A prospective hop + repository-closure CLI classification. |
+| **Notes** | Requires an existing Paper FT session; Path A does not auto-activate FTEP. Demo MINTED does not write FT rows. |
+
 ## 2026-09-13 — Classify Path A prospective CLI in repository-closure inventory
 
 | Field | Value |

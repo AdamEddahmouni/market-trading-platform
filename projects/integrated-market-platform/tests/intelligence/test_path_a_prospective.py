@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import inspect
 import json
+import os
+import sys
+import tempfile
 import unittest
+from pathlib import Path
 
 from market_platform_foundation.intelligence.contracts import (
     ContractReference,
@@ -54,6 +58,10 @@ from market_platform_foundation.providers.identity import InstrumentIdentity
 from market_platform_foundation.providers.stubs import UnconfiguredEquityQuoteProvider
 from market_platform_foundation.strategy.path_a_prospective import (
     DELAYED_SOURCE,
+    PERSIST_INTENTIONAL_EPHEMERAL,
+    PERSIST_NOT_MINTED,
+    PERSIST_WRITTEN,
+    PathAPersistContext,
     PathAProspectiveComposer,
 )
 from market_platform_foundation.strategy.path_a_scan_caller import PathAScanCaller
@@ -72,6 +80,17 @@ from market_platform_foundation.strategy.scanning import (
 from market_platform_foundation.strategy.strategy_spec import StrategyDefinition
 from market_platform_foundation.ui_api.opportunity_projections import _opportunity_source
 from market_platform_foundation.ui_api.store import ReplayStore
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "tests" / "intelligence"))
+from forward_test_activation_support import (
+    BASELINE_POLICY,
+    CAMPAIGN_SLUG,
+    POLICY_VERSION,
+    create_activated_session,
+    enable_test_campaigns_root,
+    seed_baseline_campaign,
+)
 
 
 T = 1_700_000_000_000_000_000
@@ -110,11 +129,11 @@ def _quote_event(*, symbol: str = "AAPL", seq: int = 7, delayed: bool = True) ->
 
 
 class ScriptedQuoteProvider:
-    provider_id = "yahoo.finance.delayed"
     capability = "US_EQUITY_SNAPSHOT"
 
-    def __init__(self, result: ProviderResult) -> None:
+    def __init__(self, result: ProviderResult, *, provider_id: str = "yahoo.finance.delayed") -> None:
         self._result = result
+        self.provider_id = provider_id
 
     def fetch_quote(self, symbol: str) -> ProviderResult:
         del symbol
@@ -169,7 +188,11 @@ def _forecast(champion: ChampionAssignmentV1) -> ForecastV1:
     )
 
 
-def _scan_request(*, mode: str = "paper") -> ScanRequest:
+def _scan_request(
+    *,
+    mode: str = "paper",
+    disposition: StrategyMatchDisposition = StrategyMatchDisposition.REJECTED,
+) -> ScanRequest:
     definition = StrategyDefinition(
         alignment_type="FORECAST_MOMENTUM",
         hypothesis="prospective path a",
@@ -192,9 +215,7 @@ def _scan_request(*, mode: str = "paper") -> ScanRequest:
             StrategyRegistration(
                 strategy_id="strategy-path-a-prospective-1",
                 definition=definition,
-                evaluator=lambda _: StrategyEvaluationResult(
-                    disposition=StrategyMatchDisposition.REJECTED
-                ),
+                evaluator=lambda _: StrategyEvaluationResult(disposition=disposition),
             ),
         ),
         scope=ScanScope(account_id="acct-paper", mode=mode),
@@ -247,6 +268,50 @@ def _caller(repository: InMemoryIntelligenceRepository, champion: ChampionAssign
             account_actionability=AccountActionability.ACTIONABLE,
         ),
         engine=OpportunityEngine(),
+    )
+
+
+def _seed_repository() -> tuple[InMemoryIntelligenceRepository, ChampionAssignmentV1, ForecastV1]:
+    repository = InMemoryIntelligenceRepository()
+    repository.put_event(
+        EventV1(
+            event_id="path-a-anchor",
+            schema_version="1",
+            event_type="TRADE",
+            event_time_ns=T,
+            available_time_ns=T,
+            payload={"price": 100.0, "quantity": 10},
+            quality=QUALITY,
+            source=SourceReference(
+                provider_id="test.realtime",
+                source_type="QUOTE",
+                source_record_id="aapl-1",
+            ),
+            instrument_id="AAPL",
+        )
+    )
+    repository.put_snapshot(
+        SnapshotV1(
+            snapshot_id="snapshot-paper-1",
+            schema_version="1",
+            decision_time_ns=T,
+            scope=SCOPE,
+            quality=QUALITY,
+            source_event_refs=(ContractReference(kind="event", id="path-a-anchor"),),
+        )
+    )
+    champion = _champion()
+    forecast = _forecast(champion)
+    repository.put_forecast(forecast)
+    return repository, champion, forecast
+
+
+def _realtime_quote(*, symbol: str = "AAPL") -> ProviderResult:
+    return ProviderResult(
+        status="available",
+        events=(_quote_event(symbol=symbol, delayed=False),),
+        provider_id="test.realtime",
+        capability="US_EQUITY_SNAPSHOT",
     )
 
 
@@ -438,6 +503,177 @@ class PathAProspectiveTests(unittest.TestCase):
         self.assertNotIn("UniversalStrategyScanner", source)
         self.assertNotIn("PathAScanCaller", source)
         self.assertNotIn("PathAProspectiveComposer", source)
+
+
+class PathAProspectivePersistTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._saved_persist = os.environ.get("IMP_PERSIST_STATE")
+        self._saved_dir = os.environ.get("IMP_STATE_DIR")
+        self._saved_campaigns = os.environ.get("IMP_FORWARD_TEST_CAMPAIGNS_DIR")
+        self._saved_force = os.environ.get("IMP_FORWARD_TEST_EVAL_FORCE")
+        self._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+
+    def tearDown(self) -> None:
+        from market_platform_foundation.local_state.startup import reset_local_state_for_tests
+
+        reset_local_state_for_tests()
+        os.environ.pop("IMP_PERSIST_STATE", None)
+        os.environ.pop("IMP_STATE_DIR", None)
+        os.environ.pop("IMP_FORWARD_TEST_CAMPAIGNS_DIR", None)
+        os.environ.pop("IMP_FORWARD_TEST_EVAL_FORCE", None)
+        if self._saved_persist is not None:
+            os.environ["IMP_PERSIST_STATE"] = self._saved_persist
+        if self._saved_dir is not None:
+            os.environ["IMP_STATE_DIR"] = self._saved_dir
+        if self._saved_campaigns is not None:
+            os.environ["IMP_FORWARD_TEST_CAMPAIGNS_DIR"] = self._saved_campaigns
+        if self._saved_force is not None:
+            os.environ["IMP_FORWARD_TEST_EVAL_FORCE"] = self._saved_force
+        self._tmp.cleanup()
+
+    def _enable_persist(self) -> Path:
+        os.environ["IMP_STATE_DIR"] = self._tmp.name
+        os.environ["IMP_PERSIST_STATE"] = "1"
+        os.environ["IMP_FORWARD_TEST_EVAL_FORCE"] = "1"
+        campaigns_root = enable_test_campaigns_root(Path(self._tmp.name))
+        seed_baseline_campaign(campaigns_root, universe_symbols=("AAPL", "MSFT"))
+        return campaigns_root
+
+    def _composer(self, *, persist=None):
+        repository, champion, forecast = _seed_repository()
+        return PathAProspectiveComposer(
+            quote_provider=ScriptedQuoteProvider(
+                _realtime_quote(), provider_id="test.realtime"
+            ),
+            composition=ObservationalRuntimeComposition(),
+            path_a_caller=_caller(repository, champion, forecast),
+            persist=persist,
+        )
+
+    def test_persist_off_minted_decision_is_intentional_ephemeral(self) -> None:
+        from market_platform_foundation.intelligence.paper_forward_bridge import (
+            ForwardTestService,
+            create_forward_test_repository,
+        )
+        from market_platform_foundation.local_state.startup import (
+            open_local_state,
+            reset_local_state_for_tests,
+        )
+
+        os.environ.pop("IMP_PERSIST_STATE", None)
+        os.environ.pop("IMP_STATE_DIR", None)
+        service = ForwardTestService(create_forward_test_repository(connection=None))
+        result = self._composer(
+            persist=PathAPersistContext(
+                service=service,
+                account_id="paper-a",
+                session_id="sess-ephemeral",
+                strategy_id=BASELINE_POLICY,
+                strategy_version=POLICY_VERSION,
+            )
+        ).run(
+            "AAPL",
+            mode="paper",
+            scan_request=_scan_request(disposition=StrategyMatchDisposition.MATCHED),
+            as_of_time_ns=T + 2_000_000,
+        )
+        self.assertEqual(result.status, "MINTED")
+        self.assertEqual(result.persist_status, PERSIST_INTENTIONAL_EPHEMERAL)
+        self.assertIsNone(result.forward_test_id)
+        os.environ["IMP_STATE_DIR"] = self._tmp.name
+        os.environ["IMP_PERSIST_STATE"] = "1"
+        reset_local_state_for_tests()
+        local = open_local_state(force=True)
+        assert local is not None
+        count = local.connection.execute(
+            "SELECT COUNT(*) FROM forward_test_decisions"
+        ).fetchone()
+        self.assertEqual(int(count[0]), 0)
+        links = local.connection.execute(
+            "SELECT COUNT(*) FROM forward_test_signal_links"
+        ).fetchone()
+        self.assertEqual(int(links[0]), 0)
+
+    def test_persist_on_minted_decision_reconstructs_after_restart(self) -> None:
+        from market_platform_foundation.intelligence.paper_forward_bridge import (
+            ForwardTestService,
+            create_forward_test_repository,
+        )
+        from market_platform_foundation.intelligence.paper_forward_bridge.reconstruction import (
+            reconstruct_campaign,
+        )
+        from market_platform_foundation.local_state.startup import (
+            open_local_state,
+            reset_local_state_for_tests,
+        )
+
+        campaigns_root = self._enable_persist()
+        reset_local_state_for_tests()
+        local = open_local_state(force=True)
+        assert local is not None
+        service = ForwardTestService(
+            create_forward_test_repository(connection=local.connection)
+        )
+        session = create_activated_session(
+            service,
+            campaigns_root,
+            universe=("AAPL", "MSFT"),
+            evaluation_horizon_ns=3_600_000_000_000,
+            created_at_ns=T,
+        )
+        result = self._composer(
+            persist=PathAPersistContext(
+                service=service,
+                account_id="paper-a",
+                session_id=session.session_id,
+                strategy_id=BASELINE_POLICY,
+                strategy_version=POLICY_VERSION,
+            )
+        ).run(
+            "AAPL",
+            mode="paper",
+            scan_request=_scan_request(disposition=StrategyMatchDisposition.MATCHED),
+            as_of_time_ns=T + 2_000_000,
+        )
+        self.assertEqual(result.status, "MINTED")
+        self.assertEqual(result.persist_status, PERSIST_WRITTEN)
+        self.assertIsNotNone(result.forward_test_id)
+        opportunity_id = result.path_a.opportunities[0].opportunity_id
+        self.assertIn("freshness", result.freshness_payload)
+        reset_local_state_for_tests()
+        reopened = open_local_state(force=True)
+        assert reopened is not None
+        reconstructed = reconstruct_campaign(
+            reopened.connection,
+            account_id="paper-a",
+            campaign_id=CAMPAIGN_SLUG,
+        )
+        self.assertEqual(len(reconstructed["decisions"]), 1)
+        row = reconstructed["decisions"][0]
+        self.assertEqual(row["opportunity_id"], opportunity_id)
+        self.assertEqual(row["symbol"], "AAPL")
+        self.assertIsNotNone(row["freshness"])
+        self.assertEqual(row["freshness"]["status"], "FRESH")
+        self.assertIsNotNone(row["signal_link"])
+        other_account = reconstruct_campaign(
+            reopened.connection,
+            account_id="paper-b",
+            campaign_id=CAMPAIGN_SLUG,
+        )
+        self.assertEqual(other_account["decisions"], [])
+        msft = create_forward_test_repository(connection=reopened.connection).list_decisions(
+            account_id="paper-a",
+            symbol="MSFT",
+        )
+        self.assertEqual(msft, [])
+
+    def test_live_mode_does_not_persist(self) -> None:
+        result = PathAProspectiveComposer(
+            quote_provider=ScriptedQuoteProvider(_realtime_quote(), provider_id="test.realtime"),
+        ).run("AAPL", mode="live", as_of_time_ns=T)
+        self.assertEqual(result.status, "LIVE_FORBIDDEN")
+        self.assertEqual(result.persist_status, PERSIST_NOT_MINTED)
+        self.assertIsNone(result.forward_test_id)
 
 
 if __name__ == "__main__":

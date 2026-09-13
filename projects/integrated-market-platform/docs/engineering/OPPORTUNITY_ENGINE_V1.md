@@ -25,7 +25,7 @@ ChampionAssignmentV1 → ForecastV1 → OpportunityContext → OpportunityPolicy
   → OpportunityAssessmentV1 → OpportunityV1 (if EMIT)
 ```
 
-Mint path (Path A): MATCHED `StrategyMatch` → `bridge_strategy_match_to_opportunity` → `OpportunityEngine.assess` → persist assessment always, `OpportunityV1` only on `EMIT`. Bounded Paper/Demo `PathAScanCaller` runs the existing `UniversalStrategyScanner` library once and mints through that path. It is not a daemon, not Live, not FTEP, and not `StrategyPaperRuntime` workstation wiring. Goal 001 ingest remains a review assembler over already-minted rows.
+Mint path (Path A): MATCHED `StrategyMatch` → `bridge_strategy_match_to_opportunity` → `OpportunityEngine.assess` → persist assessment always, `OpportunityV1` only on `EMIT`. Bounded Paper/Demo `PathAScanCaller` runs the existing `UniversalStrategyScanner` library once and mints through that path. Optional PD-09 schema v6 persist is a later hop on `PathAProspectiveComposer` after MINTED Paper results (`ForwardTestService.create_decision` + `forward_test_signal_links`); persist-off stays `INTENTIONAL_EPHEMERAL`. It is not a daemon, not Live, not FTEP empirical, and not `StrategyPaperRuntime` workstation wiring. Goal 001 ingest remains a review assembler over already-minted rows.
 
 Every forecast evaluation produces a durable `OpportunityAssessmentV1`. Only eligible assessments emit `OpportunityV1`.
 

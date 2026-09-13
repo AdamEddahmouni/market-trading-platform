@@ -18,7 +18,7 @@ IMP has a **canonical Opportunity Contract** (`docs/architecture/OPPORTUNITY_CON
 | DISCOVER UI | Screener / mixed discover | `GET /discover/mixed` | **PARTIAL** UX; not the engine queue |
 | NOW / attention | Command-center attention feed | `GET /context`, `GET /attention` | **IMPLEMENTED**; distinct from `queryKeys.opportunitiesSummary` |
 | Options workspace | Opportunity fusion block | `OpportunityFusionBlock.tsx` | **IMPLEMENTED** UI |
-| Forward test bridge | Prospective decisions (FTEP) | `paper_forward_bridge/` | **ACTIVATION_BLOCKED** empirical; not engine-linked |
+| Forward test bridge | Prospective decisions (FTEP) | `paper_forward_bridge/` | **ACTIVATION_BLOCKED** empirical; Path A may write v6 `create_decision` rows when persist is on and a Paper session already exists — not FTEP `EMPIRICAL_ACTIVE` |
 
 ## Gaps vs contract
 
