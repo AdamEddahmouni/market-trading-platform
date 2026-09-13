@@ -36,29 +36,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-13 — Rebaseline PROGRAM_STATUS SHA to origin/main@9cb541c
+## 2026-09-13 — Path A prospective one-shot hop (Yahoo delayed + OpenD fail-closed)
 
 | Field | Value |
 |-------|-------|
-| **Status** | `complete` |
-| **Area** | `docs` |
-| **Summary** | Close the item-18 SHA lag that [#43](https://github.com/AdamEddahmouni/market-trading-platform/pull/43) skipped: `PROGRAM_STATUS` canonical origin/main SHA now matches git tip `9cb541cd520721404e1c3d789eba5445c45aae70` (PR #40) plus this draft’s IMPLEMENTED Paper vs Tradier sandbox calibration harness. Path A scan caller remains `MERGED` / `REMOTE VALIDATED` at `6833bf3` (PR #39). FTEP-V1-001/002 labels unchanged — **not** `EMPIRICAL_ACTIVE`. Simulator **not** `CALIBRATED`. Live remains disabled. |
-| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
-| **Tests** | `python3 tools/check_docs_links.py` — **188 OK**. Docs-only SHA/prose; calibration harness tests not re-run in this increment. |
-| **Related** | [PR #41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41); [PR #40](https://github.com/AdamEddahmouni/market-trading-platform/pull/40) merge `9cb541c`; [PR #43](https://github.com/AdamEddahmouni/market-trading-platform/pull/43) skipped these files |
-| **Notes** | Item 18 stays PARTIAL until #41/#42 land and Notion inner SHA callouts match git. Do not merge from this increment. Do not activate Live. |
-
-## 2026-09-13 — IMP vs Tradier sandbox calibration harness
-
-| Field | Value |
-|-------|-------|
-| **Status** | `complete` |
-| **Area** | `paper/calibration`, `providers/adapters/tradier` |
-| **Summary** | Finished existing `paper/calibration/*` into a fail-closed IMP simulator vs Tradier sandbox comparator: correlation pairing, honest metrics (N, distributions, median, percentiles; fill/price/latency/partials/rejects/cancels), schema v6 observation persistence, campaign runner that classifies `COMPARATOR_NOT_CONFIGURED` / `WAITING_FOR_MARKET` without fabricating fills. Sandbox HTTPS opt-in only; production and Alpaca live hosts blocked. Simulator stamped `phase7.bar-conservative/1.1.0`. Not CALIBRATED. FTEP not `EMPIRICAL_ACTIVE`. Equity Paper does not validate ES. |
-| **Key files** | `src/market_platform_foundation/paper/calibration/{pairing,metrics,persistence,runner,asset_scope,comparator_contract}.py`; `src/market_platform_foundation/providers/adapters/{tradier_paper,tradier_sandbox_http}.py`; `tests/platform/test_calibration_harness.py`; `tools/providers/run_calibration_harness.py`; `docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md`; `docs/providers/TRADIER_PAPER.md` |
-| **Tests** | `PYTHONPATH=src python3 -m unittest tests.platform.test_simulator_calibration tests.platform.test_calibration_harness tests.platform.test_broker_paper_p4` — **38 passed** |
-| **Related** | [PR #41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41); [PAPER_SIMULATOR_CALIBRATION_CONTRACT.md](../architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md); [TRADIER_PAPER.md](../providers/TRADIER_PAPER.md) |
-| **Notes** | No sandbox token on this cloud VM. No Live orders. Alpaca not authenticated. Numeric gates remain UNSET/BLOCKING. |
+| **Status** | `in-progress` |
+| **Area** | `providers`, `strategy`, `opportunity` |
+| **Summary** | One-shot Paper/Demo composer joins an equity quote adapter through admission, G7 freshness, and Path A. Yahoo delayed is the cloud-reachable prospective overlay (not real-time, not ES). Moomoo OpenD fails closed when the daemon or in-tree transport is absent. Live remains forbidden. FTEP is not EMPIRICAL_ACTIVE. |
+| **Key files** | `strategy/path_a_prospective.py`, `providers/adapters/yahoo_delayed_equity_quote.py`, `providers/adapters/moomoo_opend_equity_quote.py`, `providers/equity_quote_discovery.py`, `market_data/runtime_composition.py`, `ui_api/opportunity_projections.py`, `tools/path_a_prospective_run.py`, `tests/intelligence/test_path_a_prospective.py` |
+| **Tests** | `PYTHONPATH=src python3 -m unittest tests.intelligence.test_path_a_prospective tests.intelligence.test_path_a_scan_caller tests.intelligence.test_opportunity_ingest tests.intelligence.test_opportunity_freshness tests.ui1.test_opportunity_api tests.market_data.test_g7_runtime_composition -q` — 64 passed |
+| **Related** | Canonical start `9cb541c` (PR #40). Does not activate Live or FTEP empirical. |
+| **Notes** | ES-news remains BLOCKED_ON_ES_DATA. Yahoo hop is DELAYED_PROSPECTIVE; G7 `DELAYED_WHEN_REALTIME_REQUIRED`. |
 
 ## 2026-09-13 — Path A scan caller merged (PR #39)
 

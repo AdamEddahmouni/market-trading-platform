@@ -1,0 +1,310 @@
+"""One-shot Paper/Demo Path A hop: provider → admission → G7 → Path A.
+
+Not a daemon. Does not start LiveObservationalRuntime. Ingest stays a reader.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Mapping
+
+from market_platform_foundation.clock import monotonic_wall_ns
+from market_platform_foundation.intelligence.opportunity.freshness import (
+    OpportunityFreshnessPolicy,
+    OpportunityFreshnessResult,
+    evaluate_opportunity_freshness,
+    fail_closed_for_actionable,
+    merge_freshness_into_payload,
+)
+from market_platform_foundation.market_data.live_admission import LiveAdmissionEngine
+from market_platform_foundation.market_data.runtime_composition import ObservationalRuntimeComposition
+from market_platform_foundation.providers.contracts import EquityQuoteProvider, ProviderResult
+from market_platform_foundation.providers.runtime_capability import (
+    DataTimeliness,
+    EntitlementState,
+    ProviderHealth,
+    ProviderRuntimeState,
+)
+
+from .path_a_scan_caller import (
+    FORBIDDEN_LIVE_MODES,
+    PathAScanCallResult,
+    PathAScanCaller,
+    PathAScanCallerError,
+)
+from .scanning import ScanRequest
+
+
+def _normalize_mode(value: str) -> str:
+    return str(value).strip().lower()
+
+STATUS_LIVE_FORBIDDEN = "LIVE_FORBIDDEN"
+STATUS_PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
+STATUS_MALFORMED = "MALFORMED"
+STATUS_ADMISSION_BLOCKED = "ADMISSION_BLOCKED"
+STATUS_G7_NOT_ACTIONABLE = "G7_NOT_ACTIONABLE"
+STATUS_EMPTY = "EMPTY"
+STATUS_MINTED = "MINTED"
+STATUS_SCAN_SKIPPED = "SCAN_SKIPPED"
+
+DELAYED_SOURCE = "DELAYED_PROSPECTIVE"
+LIVE_OBSERVED_SOURCE = "PAPER_OBSERVATIONAL"
+
+
+@dataclass(frozen=True, slots=True)
+class PathAProspectiveResult:
+    status: str
+    mode: str
+    provider_id: str
+    instrument_id: str
+    reason_codes: tuple[str, ...]
+    timeliness: str
+    source: str
+    freshness: dict[str, Any]
+    provenance: dict[str, Any]
+    selection: dict[str, Any]
+    path_a: PathAScanCallResult | None = None
+    freshness_payload: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        body = {
+            "freshness": dict(self.freshness),
+            "instrument_id": self.instrument_id,
+            "mode": self.mode,
+            "path_a_status": None if self.path_a is None else self.path_a.status,
+            "provenance": dict(self.provenance),
+            "provider_id": self.provider_id,
+            "reason_codes": list(self.reason_codes),
+            "selection": dict(self.selection),
+            "source": self.source,
+            "status": self.status,
+            "timeliness": self.timeliness,
+        }
+        if self.freshness_payload:
+            body["freshness_payload"] = dict(self.freshness_payload)
+        return body
+
+
+def _timeliness_from_result(result: ProviderResult, event: Mapping[str, Any] | None) -> str:
+    if event is not None:
+        raw = str(event.get("timeliness") or "").upper()
+        if raw:
+            return raw
+    if "delayed" in str(result.provider_id).lower() or "yahoo" in str(result.provider_id).lower():
+        return "DELAYED"
+    return "UNKNOWN"
+
+
+class PathAProspectiveComposer:
+    """One entitled/delayed snapshot through G7 into one Path A call."""
+
+    def __init__(
+        self,
+        *,
+        quote_provider: EquityQuoteProvider,
+        composition: ObservationalRuntimeComposition | None = None,
+        admission: LiveAdmissionEngine | None = None,
+        path_a_caller: PathAScanCaller | None = None,
+        freshness_policy: OpportunityFreshnessPolicy | None = None,
+    ) -> None:
+        self.quote_provider = quote_provider
+        self.composition = composition or ObservationalRuntimeComposition()
+        self.admission = admission or LiveAdmissionEngine()
+        self.path_a_caller = path_a_caller
+        self.freshness_policy = freshness_policy or OpportunityFreshnessPolicy()
+
+    def run(
+        self,
+        symbol: str,
+        *,
+        mode: str = "paper",
+        scan_request: ScanRequest | None = None,
+        as_of_time_ns: int | None = None,
+        session_state: str | None = "REGULAR",
+    ) -> PathAProspectiveResult:
+        mode_n = _normalize_mode(mode)
+        instrument = str(symbol or "").strip().upper()
+        as_of = as_of_time_ns if as_of_time_ns is not None else monotonic_wall_ns()
+        if mode_n in FORBIDDEN_LIVE_MODES:
+            return self._finish(
+                STATUS_LIVE_FORBIDDEN,
+                mode=mode_n,
+                instrument=instrument,
+                reasons=("LIVE_SCAN_CALLER_FORBIDDEN",),
+                as_of=as_of,
+            )
+        fetched = self.quote_provider.fetch_quote(instrument)
+        provider_id = str(fetched.provider_id or getattr(self.quote_provider, "provider_id", "") or "")
+        if fetched.status != "available" or not fetched.events:
+            status = STATUS_MALFORMED if fetched.reason_code in {"MALFORMED_RECORD", "MISSING_TIMESTAMP"} else STATUS_PROVIDER_UNAVAILABLE
+            return self._finish(
+                status,
+                mode=mode_n,
+                instrument=instrument,
+                reasons=(str(fetched.reason_code or "PROVIDER_NOT_CONFIGURED"),),
+                provider_id=provider_id,
+                as_of=as_of,
+            )
+        event = dict(fetched.events[0])
+        timeliness = _timeliness_from_result(fetched, event)
+        source = DELAYED_SOURCE if timeliness == "DELAYED" else LIVE_OBSERVED_SOURCE
+        admitted = self.composition.ingest_one_shot(
+            event,
+            admission=self.admission,
+            wall_now_ns=as_of,
+        )
+        display = str((admitted.get("admission") or {}).get("display") or "")
+        if display == "BLOCKED" or not admitted.get("admitted"):
+            return self._finish(
+                STATUS_ADMISSION_BLOCKED,
+                mode=mode_n,
+                instrument=instrument,
+                reasons=tuple(admitted.get("eligibility_reason_codes") or ("ADMISSION_BLOCKED",)),
+                provider_id=provider_id,
+                timeliness=timeliness,
+                source=source,
+                as_of=as_of,
+                extra_provenance={"admission": admitted.get("admission")},
+            )
+        self._stamp_runtime(provider_id, timeliness)
+        snapshot = self.composition.runtime_capability_snapshot_for(
+            instrument, provider_id=provider_id
+        )
+        evaluation = evaluate_opportunity_freshness(
+            source=source,
+            as_of_time_ns=as_of,
+            last_source_time_ns=snapshot.get("last_source_time_ns"),
+            policy=self.freshness_policy,
+            runtime_capability=snapshot.get("runtime_capability"),
+            session_state=session_state,
+        )
+        selection = self.composition.select_for_capability(
+            "OBSERVATIONAL_L1",
+            instrument,
+            require_real_time=self.freshness_policy.realtime_required,
+            provider_id=provider_id,
+        )
+        reasons = [evaluation.reason_code]
+        if selection.get("outcome") not in {"SELECTED", "REPLAY_ONLY"}:
+            reasons.append(f"G7_SELECTION_{selection.get('outcome') or 'NO_PROVIDER'}")
+        path_a: PathAScanCallResult | None = None
+        status = STATUS_G7_NOT_ACTIONABLE if fail_closed_for_actionable(evaluation) else STATUS_SCAN_SKIPPED
+        if self.path_a_caller is not None and scan_request is not None:
+            try:
+                path_a = self.path_a_caller.run(scan_request)
+            except PathAScanCallerError as exc:
+                if "LIVE" in str(exc):
+                    return self._finish(
+                        STATUS_LIVE_FORBIDDEN,
+                        mode=mode_n,
+                        instrument=instrument,
+                        reasons=("LIVE_SCAN_CALLER_FORBIDDEN",),
+                        provider_id=provider_id,
+                        timeliness=timeliness,
+                        source=source,
+                        evaluation=evaluation,
+                        selection=selection,
+                        as_of=as_of,
+                    )
+                raise
+            status = path_a.status if not fail_closed_for_actionable(evaluation) else STATUS_G7_NOT_ACTIONABLE
+            if path_a.status == "EMPTY" and not fail_closed_for_actionable(evaluation):
+                status = STATUS_EMPTY
+            if path_a.status == "MINTED" and not fail_closed_for_actionable(evaluation):
+                status = STATUS_MINTED
+            reasons = tuple(dict.fromkeys((*reasons, *path_a.reason_codes)))
+        payload = merge_freshness_into_payload(
+            {
+                "instrument_id": instrument,
+                "provider_id": provider_id,
+                "opportunity_id": None if path_a is None or not path_a.opportunities else path_a.opportunities[0].opportunity_id,
+            },
+            evaluation,
+        )
+        return PathAProspectiveResult(
+            status=status,
+            mode=mode_n,
+            provider_id=provider_id,
+            instrument_id=instrument,
+            reason_codes=tuple(reasons) if isinstance(reasons, tuple) else tuple(reasons),
+            timeliness=timeliness,
+            source=source,
+            freshness=evaluation.to_dict(),
+            provenance={
+                "provider": provider_id,
+                "provider_feed": provider_id,
+                "instrument": instrument,
+                "asset_class": "EQUITY",
+                "event_time_ns": event.get("clocks", {}).get("event_time_ns") if isinstance(event.get("clocks"), dict) else None,
+                "receive_time_ns": event.get("clocks", {}).get("received_time_ns") if isinstance(event.get("clocks"), dict) else None,
+                "evaluation_time_ns": as_of,
+                "realtime_delayed_eod": timeliness,
+                "sequence": event.get("sequence"),
+                "normalization_version": event.get("normalization_version"),
+            },
+            selection=selection,
+            path_a=path_a,
+            freshness_payload=payload,
+        )
+
+    def _stamp_runtime(self, provider_id: str, timeliness: str) -> None:
+        delay = timeliness == "DELAYED"
+        self.composition.capability_registry.set_runtime_state(
+            ProviderRuntimeState(
+                provider_id=provider_id,
+                health=ProviderHealth.HEALTHY,
+                entitlement=EntitlementState.DELAYED if delay else EntitlementState.ENTITLED,
+                timeliness=DataTimeliness.DELAYED if delay else DataTimeliness.REAL_TIME,
+                live_verified=False,
+                notes="PATH_A_ONE_SHOT",
+            )
+        )
+        self.composition.active_provider_id = provider_id
+
+    def _finish(
+        self,
+        status: str,
+        *,
+        mode: str,
+        instrument: str,
+        reasons: tuple[str, ...],
+        provider_id: str = "",
+        timeliness: str = "UNKNOWN",
+        source: str = DELAYED_SOURCE,
+        evaluation: OpportunityFreshnessResult | None = None,
+        selection: Mapping[str, Any] | None = None,
+        as_of: int | None = None,
+        extra_provenance: Mapping[str, Any] | None = None,
+    ) -> PathAProspectiveResult:
+        if evaluation is None:
+            evaluation = evaluate_opportunity_freshness(
+                source=source,
+                as_of_time_ns=as_of,
+                policy=self.freshness_policy,
+                runtime_capability={"timeliness": timeliness, "entitlement": "UNKNOWN", "runtime_state": "UNAVAILABLE"},
+            )
+        provenance = {"provider": provider_id, "instrument": instrument}
+        if extra_provenance:
+            provenance.update(dict(extra_provenance))
+        return PathAProspectiveResult(
+            status=status,
+            mode=mode,
+            provider_id=provider_id,
+            instrument_id=instrument,
+            reason_codes=reasons,
+            timeliness=timeliness,
+            source=source,
+            freshness=evaluation.to_dict(),
+            provenance=dict(provenance),
+            selection=dict(selection or {}),
+            path_a=None,
+            freshness_payload=merge_freshness_into_payload({"instrument_id": instrument}, evaluation),
+        )
+
+
+__all__ = [
+    "DELAYED_SOURCE",
+    "LIVE_OBSERVED_SOURCE",
+    "PathAProspectiveComposer",
+    "PathAProspectiveResult",
+]

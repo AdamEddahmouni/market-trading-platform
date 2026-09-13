@@ -193,6 +193,7 @@ class ObservationalRuntimeComposition:
         *,
         require_real_time: bool = False,
         instrument_kind: str | None = None,
+        provider_id: str | None = None,
     ) -> dict[str, Any]:
         result = self.selector.select(
             ObservationalSelectionRequest(
@@ -200,12 +201,54 @@ class ObservationalRuntimeComposition:
                 instrument_id=instrument_id,
                 require_real_time=require_real_time,
                 instrument_kind=instrument_kind,
+                provider_id=provider_id,
             )
         )
         return result.to_dict()
 
     def evidence_for(self, instrument_id: str) -> dict[str, Any]:
         return self.lanes.build_evidence_bundle(instrument_id)
+
+    def ingest_one_shot(
+        self,
+        record: dict[str, Any],
+        *,
+        admission: Any | None = None,
+        wall_now_ns: int | None = None,
+    ) -> dict[str, Any]:
+        """Admit one provider record into the observational store. Not a daemon."""
+        from .live_admission import LiveAdmissionEngine
+
+        engine = admission or LiveAdmissionEngine()
+        wall = wall_now_ns
+        result = engine.evaluate_record(record, wall_now_ns=wall)
+        admitted = False
+        if result.get("envelope"):
+            admitted = self.store.apply_admitted(result)
+        body = dict(result)
+        body["admitted"] = admitted
+        return body
+
+    def runtime_capability_snapshot_for(
+        self,
+        instrument_id: str,
+        *,
+        provider_id: str | None = None,
+        capability_id: str = CAP_L1,
+    ) -> dict[str, Any]:
+        pid = provider_id or self.active_provider_id or ""
+        view = self.capability_registry.view_capability(
+            pid,
+            capability_id,
+            instrument_id=instrument_id,
+        )
+        quote = self.store.quote_for(instrument_id)
+        return {
+            "runtime_capability": view.to_dict(),
+            "last_source_time_ns": None if quote is None else quote.event_time_ns,
+            "provider_id": pid,
+            "quote_provider": None if quote is None else quote.provider,
+        }
 
     def manifest(self) -> dict[str, Any]:
         return {
