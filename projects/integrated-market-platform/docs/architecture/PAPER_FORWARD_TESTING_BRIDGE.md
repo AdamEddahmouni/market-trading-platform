@@ -223,7 +223,9 @@ Path A prospective hop (`PathAProspectiveComposer`): Paper/Demo CLI
 is honest `EMPTY` when no MATCHED strategy (not null). The hop
 `quote_provider` is always Moomoo OpenD via
 `primary_equity_quote_provider()`; Yahoo delayed is overlay-only and is not
-swapped in when OpenD is down. Honest CLI outcome with OpenD down is
+swapped in when OpenD is down. The hop CLI calls `diagnose_opend(start=True)`
+before quote fetch so an installed local OpenD can be started; if it is
+still down the outcome is
 `PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE` (or
 `MOOMOO_SDK_MISSING` if loopback TCP answers but the vendor SDK is
 absent). `--preregistration-path`

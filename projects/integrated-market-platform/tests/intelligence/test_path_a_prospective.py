@@ -753,7 +753,8 @@ class PathAProspectiveTests(unittest.TestCase):
             with patch("sys.stdout", stdout):
                 code = path_a_cli_main(["--symbol", "AAPL", "--mode", "paper"])
         self.assertEqual(code, 0)
-        payload = json.loads(stdout.getvalue())
+        dumped = stdout.getvalue()
+        payload = json.loads(dumped)
         self.assertEqual(payload["discovery"]["provider_id"], MOOMOO_OPEND_PROVIDER_ID)
         self.assertNotEqual(payload["discovery"]["provider_id"], "yahoo.finance.delayed")
         self.assertEqual(payload["discovery"]["overlay_provider_id"], "yahoo.finance.delayed")
@@ -763,6 +764,70 @@ class PathAProspectiveTests(unittest.TestCase):
         self.assertEqual(payload["result"]["reason_codes"], [OPEND_UNAVAILABLE])
         self.assertEqual(payload["result"]["provenance"].get("provider"), MOOMOO_OPEND_PROVIDER_ID)
         self.assertIsNone(payload["result"]["path_a_status"])
+        self.assertEqual(payload["opend_preflight"]["start_requested"], True)
+        self.assertFalse(payload["opend_preflight"]["ready"])
+        self.assertEqual(set(payload["opend_preflight"]), {"ready", "start_requested", "status"})
+        self.assertNotIn("moomoo_OpenD.exe", dumped)
+        self.assertNotIn("APPDATA", dumped)
+
+    def test_cli_starts_opend_before_quote_fetch_and_fails_closed(self) -> None:
+        from tools.path_a_prospective_run import main as path_a_cli_main
+
+        order: list[object] = []
+
+        def fake_diagnose(*, start: bool = False) -> dict[str, object]:
+            order.append(("diagnose", start))
+            return {"ready_for_live_observational": False, "status": "OPEN_D_NOT_INSTALLED"}
+
+        stdout = StringIO()
+        with patch.dict(os.environ, {"IMP_MOOMOO_HOST": "127.0.0.1", "IMP_MOOMOO_PORT": "1"}):
+            with patch("tools.path_a_prospective_run.diagnose_opend", side_effect=fake_diagnose):
+                with patch("sys.stdout", stdout):
+                    code = path_a_cli_main(["--symbol", "AAPL", "--mode", "paper"])
+        self.assertEqual(code, 0)
+        self.assertEqual(order, [("diagnose", True)])
+        dumped = stdout.getvalue()
+        payload = json.loads(dumped)
+        self.assertEqual(payload["opend_preflight"]["start_requested"], True)
+        self.assertEqual(payload["opend_preflight"]["status"], "OPEN_D_NOT_INSTALLED")
+        self.assertFalse(payload["opend_preflight"]["ready"])
+        self.assertEqual(set(payload["opend_preflight"]), {"ready", "start_requested", "status"})
+        self.assertNotIn("moomoo_OpenD.exe", dumped)
+        self.assertNotIn("APPDATA", dumped)
+        self.assertEqual(payload["discovery"]["provider_id"], MOOMOO_OPEND_PROVIDER_ID)
+        self.assertNotEqual(payload["discovery"]["provider_id"], "yahoo.finance.delayed")
+        self.assertEqual(payload["result"]["status"], "PROVIDER_UNAVAILABLE")
+        self.assertEqual(payload["result"]["reason_codes"], [OPEND_UNAVAILABLE])
+        self.assertIsNone(payload["result"]["path_a_status"])
+
+    def test_cli_diagnose_runs_before_discovery(self) -> None:
+        from tools.path_a_prospective_run import main as path_a_cli_main
+
+        order: list[str] = []
+
+        def fake_diagnose(*, start: bool = False) -> dict[str, object]:
+            del start
+            order.append("diagnose")
+            return {"ready_for_live_observational": False, "status": "OPEN_D_NOT_RUNNING"}
+
+        def fake_discover():
+            order.append("discover")
+            return discover_equity_quote_stack()
+
+        stdout = StringIO()
+        with patch.dict(os.environ, {"IMP_MOOMOO_HOST": "127.0.0.1", "IMP_MOOMOO_PORT": "1"}):
+            with patch("tools.path_a_prospective_run.diagnose_opend", side_effect=fake_diagnose):
+                with patch(
+                    "tools.path_a_prospective_run.discover_equity_quote_stack",
+                    side_effect=fake_discover,
+                ):
+                    with patch("sys.stdout", stdout):
+                        code = path_a_cli_main(["--symbol", "AAPL", "--mode", "paper"])
+        self.assertEqual(code, 0)
+        self.assertEqual(order, ["diagnose", "discover"])
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["result"]["reason_codes"], [OPEND_UNAVAILABLE])
+        self.assertNotEqual(payload["result"]["provider_id"], "yahoo.finance.delayed")
 
     def test_cli_ignores_yahoo_injected_via_discovery(self) -> None:
         from tools.path_a_prospective_run import main as path_a_cli_main
@@ -780,11 +845,15 @@ class PathAProspectiveTests(unittest.TestCase):
         stdout = StringIO()
         with patch.dict(os.environ, {"IMP_MOOMOO_HOST": "127.0.0.1", "IMP_MOOMOO_PORT": "1"}):
             with patch(
-                "tools.path_a_prospective_run.discover_equity_quote_stack",
-                return_value=(yahoo, discovery),
+                "tools.path_a_prospective_run.diagnose_opend",
+                return_value={"ready_for_live_observational": False, "status": "OPEN_D_NOT_RUNNING"},
             ):
-                with patch("sys.stdout", stdout):
-                    code = path_a_cli_main(["--symbol", "AAPL", "--mode", "paper"])
+                with patch(
+                    "tools.path_a_prospective_run.discover_equity_quote_stack",
+                    return_value=(yahoo, discovery),
+                ):
+                    with patch("sys.stdout", stdout):
+                        code = path_a_cli_main(["--symbol", "AAPL", "--mode", "paper"])
         self.assertEqual(code, 0)
         payload = json.loads(stdout.getvalue())
         self.assertEqual(payload["result"]["status"], "PROVIDER_UNAVAILABLE")
@@ -816,15 +885,19 @@ class PathAProspectiveTests(unittest.TestCase):
             return_value=T + 2_000_000,
         ):
             with patch(
-                "tools.path_a_prospective_run.primary_equity_quote_provider",
-                return_value=ScriptedQuoteProvider(available),
+                "tools.path_a_prospective_run.diagnose_opend",
+                return_value={"ready_for_live_observational": False, "status": "OPEN_D_NOT_RUNNING"},
             ):
                 with patch(
-                    "tools.path_a_prospective_run.discover_equity_quote_stack",
-                    return_value=(MoomooOpenDEquityQuoteProvider(), discovery),
+                    "tools.path_a_prospective_run.primary_equity_quote_provider",
+                    return_value=ScriptedQuoteProvider(available),
                 ):
-                    with patch("sys.stdout", stdout):
-                        code = path_a_cli_main(["--symbol", "AAPL", "--mode", "paper"])
+                    with patch(
+                        "tools.path_a_prospective_run.discover_equity_quote_stack",
+                        return_value=(MoomooOpenDEquityQuoteProvider(), discovery),
+                    ):
+                        with patch("sys.stdout", stdout):
+                            code = path_a_cli_main(["--symbol", "AAPL", "--mode", "paper"])
         self.assertEqual(code, 0)
         payload = json.loads(stdout.getvalue())
         self.assertEqual(payload["result"]["path_a_status"], "EMPTY")
@@ -1166,19 +1239,23 @@ class PathACliPersistTests(unittest.TestCase):
             return_value=T + 2_000_000,
         ):
             with patch(
-                "tools.path_a_prospective_run.primary_equity_quote_provider",
-                return_value=provider,
+                "tools.path_a_prospective_run.diagnose_opend",
+                return_value={"ready_for_live_observational": False, "status": "OPEN_D_NOT_RUNNING"},
             ):
                 with patch(
-                    "tools.path_a_prospective_run.discover_equity_quote_stack",
-                    return_value=(MoomooOpenDEquityQuoteProvider(), discovery),
+                    "tools.path_a_prospective_run.primary_equity_quote_provider",
+                    return_value=provider,
                 ):
                     with patch(
-                        "tools.path_a_prospective_run.build_paper_demo_path_a_invoke",
-                        return_value=invoke,
+                        "tools.path_a_prospective_run.discover_equity_quote_stack",
+                        return_value=(MoomooOpenDEquityQuoteProvider(), discovery),
                     ):
-                        with patch("sys.stdout", stdout):
-                            code = path_a_cli_main(argv)
+                        with patch(
+                            "tools.path_a_prospective_run.build_paper_demo_path_a_invoke",
+                            return_value=invoke,
+                        ):
+                            with patch("sys.stdout", stdout):
+                                code = path_a_cli_main(argv)
         return code, json.loads(stdout.getvalue())
 
     def test_persist_context_requires_all_four_identifiers(self) -> None:

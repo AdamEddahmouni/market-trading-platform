@@ -337,6 +337,8 @@ class PathAPreregistrationLoadHopTests(unittest.TestCase):
         self.assertIn("preregistration_path", source)
         self.assertIn("discover_equity_quote_stack", source)
         self.assertNotIn("quote_provider=", source.split("discover_equity_quote_stack", 1)[0])
+        self.assertIn("primary_equity_quote_provider", source)
+        self.assertIn("diagnose_opend(start=True)", source)
         self.assertNotIn("ForecastV1", source)
 
 

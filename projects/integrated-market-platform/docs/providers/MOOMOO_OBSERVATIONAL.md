@@ -121,8 +121,13 @@ observational**.
   `overlay_provider_id` only.
 - Path A hop CLI (`tools/path_a_prospective_run.py`) takes
   `quote_provider` from `primary_equity_quote_provider()`, not from the
-  discovery provider tuple. Persist CLI, catalog invoke, and Live argparse
-  refusal are unchanged. Honest outcome with OpenD down:
+  discovery provider tuple. Before quote fetch the hop calls
+  `diagnose_opend(start=True)` so an installed-but-down Windows OpenD
+  (`%APPDATA%\\moomoo_OpenD\\moomoo_OpenD.exe`) is started via
+  `tools/moomoo/check_live_environment.py --start-opend`. If it is still
+  down, the hop fail-closes (`PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE`)
+  and does **not** swap Yahoo into L1. Persist CLI, catalog invoke, and
+  Live argparse refusal are unchanged. Honest outcome with OpenD down:
   `PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE` (or
   `MOOMOO_SDK_MISSING` if loopback TCP answers but the vendor SDK is
   absent). FTEP is not `EMPIRICAL_ACTIVE`. Live stays off. A real OpenD

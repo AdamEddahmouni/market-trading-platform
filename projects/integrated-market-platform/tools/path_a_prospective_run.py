@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from market_platform_foundation.local_state.opend import diagnose_opend
 from market_platform_foundation.strategy.path_a_prospective import (
     PathAPersistContext,
     PathAProspectiveComposer,
@@ -79,6 +80,16 @@ def build_cli_persist_context(args: argparse.Namespace) -> PathAPersistContext |
     )
 
 
+def _opend_preflight(report: dict[str, object]) -> dict[str, object]:
+    """Value-blind OpenD start status. Never a mock tick; never Yahoo L1."""
+
+    return {
+        "ready": bool(report.get("ready_for_live_observational")),
+        "start_requested": True,
+        "status": str(report.get("status") or "CHECK_MODULE_UNAVAILABLE"),
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="One-shot Path A prospective hop (Paper/Demo).")
     parser.add_argument("--symbol", default="AAPL")
@@ -115,6 +126,7 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     args = parser.parse_args(argv)
+    preflight = _opend_preflight(diagnose_opend(start=True))
     _, discovery = discover_equity_quote_stack()
     provider = primary_equity_quote_provider()
     persist_context = build_cli_persist_context(args)
@@ -142,6 +154,7 @@ def main(argv: list[str] | None = None) -> int:
             "reason_code": discovery.reason_code,
             "timeliness": discovery.timeliness,
         },
+        "opend_preflight": preflight,
         "persist_context_injected": persist_context is not None,
         "result": result.to_dict(),
     }
