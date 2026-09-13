@@ -220,7 +220,13 @@ Factory: `create_forward_test_repository()` in
 
 Path A prospective hop (`PathAProspectiveComposer`): Paper/Demo CLI
 `tools/path_a_prospective_run.py` injects `PathAScanCaller` so `path_a_status`
-is honest `EMPTY` when no MATCHED strategy (not null). Honest EMPTY does not
+is honest `EMPTY` when no MATCHED strategy (not null). The hop
+`quote_provider` is always Moomoo OpenD via
+`primary_equity_quote_provider()`; Yahoo delayed is overlay-only and is not
+swapped in when OpenD is down. Honest CLI outcome with OpenD down is
+`PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE` (or
+`MOOMOO_TRANSPORT_NOT_IMPLEMENTED` if loopback TCP answers but vendor
+transport is unimplemented). Honest EMPTY does not
 enter the MATCHED loop or call Opportunity Engine. A Paper/Demo MATCHED
 test fixture does call `bridge_strategy_match_to_opportunity` →
 `OpportunityEngine.assess`. If G7 fail-closes, overall status stays

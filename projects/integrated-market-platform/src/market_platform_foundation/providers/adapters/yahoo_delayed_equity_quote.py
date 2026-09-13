@@ -1,8 +1,18 @@
-"""Yahoo Finance delayed/EOD equity snapshot. Not real-time L1 and not ES."""
+"""Yahoo Finance delayed cloud overlay — never Primary L1, never real-time, never ES.
+
+Moomoo OpenD observational quotes are the Primary L1 for the no-additional-cost
+stack (DoD item 2). This adapter is a distinctly-identified, cloud-reachable
+*overlay* used only when a caller explicitly asks for a delayed snapshot; it
+is never substituted into the OpenD/Moomoo provider identity and never
+labeled ``REAL_TIME``. It also refuses futures/ES-style symbols outright: the
+ES campaign (FTEP-V1-001) is frozen pending genuine futures entitlement and
+must not be quietly satisfied by an equity-delayed feed.
+"""
 
 from __future__ import annotations
 
 import json
+import re
 import ssl
 import urllib.error
 import urllib.parse
@@ -14,33 +24,59 @@ from ..contracts import ProviderResult
 
 YAHOO_PROVIDER_ID = "yahoo.finance.delayed"
 YAHOO_CAPABILITY = "US_EQUITY_SNAPSHOT"
+YAHOO_TIMELINESS = "DELAYED"
 YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1m&range=1d"
-USER_AGENT = "IMP-path-a-prospective/1.0 (+research; delayed-overlay)"
+USER_AGENT = "IMP-opend-primary-l1/1.0 (+research; delayed-overlay)"
+
+SYMBOL_REQUIRED = "INSTRUMENT_ID_REQUIRED"
+ES_SYMBOL_BLOCKED = "ES_FUTURES_NOT_SUPPORTED_BY_DELAYED_EQUITY_OVERLAY"
+PROVIDER_TIMEOUT = "PROVIDER_TIMEOUT"
+PROVIDER_DISCONNECTED = "PROVIDER_DISCONNECTED"
+RATE_LIMIT = "RATE_LIMIT"
+PROVIDER_HTTP_ERROR = "PROVIDER_HTTP_ERROR"
+MALFORMED_RECORD = "MALFORMED_RECORD"
+MISSING_TIMESTAMP = "MISSING_TIMESTAMP"
+
+# Yahoo continuous-futures suffix ("ES=F") and common ES aliases. Equity
+# tickers never match this; blocking here keeps the ES campaign fail-closed
+# on this overlay even if a caller passes a futures-looking symbol by mistake.
+_FUTURES_SUFFIX = re.compile(r"=F$")
+_ES_ALIASES = frozenset({"ES", "ES=F", "/ES", "ES1!", "MES", "MES=F", "/MES"})
 
 HttpFetch = Callable[[str], tuple[int, bytes]]
 
 
 def _default_fetch(url: str) -> tuple[int, bytes]:
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": "application/json"})
-    ctx = ssl.create_default_context()
+    """Never called in CI/tests — real network I/O only when explicitly used."""
+
+    request = urllib.request.Request(
+        url,
+        headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
+    )
+    context = ssl.create_default_context()
     try:
-        with urllib.request.urlopen(req, timeout=12, context=ctx) as resp:
-            return int(getattr(resp, "status", 200) or 200), resp.read(2_000_000)
+        with urllib.request.urlopen(request, timeout=12, context=context) as response:
+            return int(getattr(response, "status", 200) or 200), response.read(2_000_000)
     except urllib.error.HTTPError as exc:
         body = b""
         try:
             body = exc.read(1024)
-        except Exception:
+        except OSError:
             body = b""
         return int(exc.code), body
 
 
+def is_es_futures_symbol(symbol: str) -> bool:
+    wanted = symbol.strip().upper()
+    return wanted in _ES_ALIASES or bool(_FUTURES_SUFFIX.search(wanted))
+
+
 class YahooDelayedEquityQuoteProvider:
-    """Prospective delayed/EOD quotes. Never labeled REAL_TIME."""
+    """Cloud-reachable delayed/EOD equity overlay. Never claims REAL_TIME or ES."""
 
     provider_id = YAHOO_PROVIDER_ID
     capability = YAHOO_CAPABILITY
-    timeliness = "DELAYED"
+    timeliness = YAHOO_TIMELINESS
 
     def __init__(self, *, fetch: HttpFetch | None = None) -> None:
         self._fetch = fetch or _default_fetch
@@ -48,60 +84,33 @@ class YahooDelayedEquityQuoteProvider:
     def fetch_quote(self, symbol: str) -> ProviderResult:
         wanted = str(symbol or "").strip().upper()
         if not wanted:
-            return ProviderResult(
-                status="unavailable",
-                reason_code="INSTRUMENT_ID_REQUIRED",
-                provider_id=self.provider_id,
-                capability=self.capability,
-            )
+            return self._unavailable(SYMBOL_REQUIRED)
+        if is_es_futures_symbol(wanted):
+            return self._unavailable(ES_SYMBOL_BLOCKED)
+
         url = YAHOO_CHART_URL.format(symbol=urllib.parse.quote(wanted, safe=""))
         try:
             status, body = self._fetch(url)
         except TimeoutError:
-            return ProviderResult(
-                status="unavailable",
-                reason_code="PROVIDER_TIMEOUT",
-                provider_id=self.provider_id,
-                capability=self.capability,
-            )
-        except Exception:
-            return ProviderResult(
-                status="unavailable",
-                reason_code="PROVIDER_DISCONNECTED",
-                provider_id=self.provider_id,
-                capability=self.capability,
-            )
+            return self._unavailable(PROVIDER_TIMEOUT)
+        except OSError:
+            return self._unavailable(PROVIDER_DISCONNECTED)
+
         if status == 429:
-            return ProviderResult(
-                status="unavailable",
-                reason_code="RATE_LIMIT",
-                provider_id=self.provider_id,
-                capability=self.capability,
-            )
+            return self._unavailable(RATE_LIMIT)
         if status >= 400:
-            return ProviderResult(
-                status="unavailable",
-                reason_code="PROVIDER_HTTP_ERROR",
-                provider_id=self.provider_id,
-                capability=self.capability,
-            )
+            return self._unavailable(PROVIDER_HTTP_ERROR)
+
         try:
             payload = json.loads(body.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError, ValueError):
-            return ProviderResult(
-                status="unavailable",
-                reason_code="MALFORMED_RECORD",
-                provider_id=self.provider_id,
-                capability=self.capability,
-            )
-        event = _quote_event_from_chart(payload, symbol=wanted, received_ns=monotonic_wall_ns())
+            return self._unavailable(MALFORMED_RECORD)
+
+        event, reason_code = _quote_event_from_chart(
+            payload, symbol=wanted, received_ns=monotonic_wall_ns()
+        )
         if event is None:
-            return ProviderResult(
-                status="unavailable",
-                reason_code=str(payload.get("reason_code") or "MALFORMED_RECORD"),
-                provider_id=self.provider_id,
-                capability=self.capability,
-            )
+            return self._unavailable(reason_code or MALFORMED_RECORD)
         return ProviderResult(
             status="available",
             events=(event,),
@@ -109,27 +118,31 @@ class YahooDelayedEquityQuoteProvider:
             capability=self.capability,
         )
 
+    def _unavailable(self, reason_code: str) -> ProviderResult:
+        return ProviderResult(
+            status="unavailable",
+            reason_code=reason_code,
+            provider_id=self.provider_id,
+            capability=self.capability,
+        )
 
-def _quote_event_from_chart(payload: dict[str, Any], *, symbol: str, received_ns: int) -> dict[str, Any] | None:
+
+def _quote_event_from_chart(
+    payload: dict[str, Any], *, symbol: str, received_ns: int
+) -> tuple[dict[str, Any] | None, str | None]:
     chart = payload.get("chart") if isinstance(payload, dict) else None
     if not isinstance(chart, dict):
-        payload["reason_code"] = "MALFORMED_RECORD"
-        return None
-    error = chart.get("error")
-    if error:
-        payload["reason_code"] = "PROVIDER_HTTP_ERROR"
-        return None
+        return None, MALFORMED_RECORD
+    if chart.get("error"):
+        return None, PROVIDER_HTTP_ERROR
     results = chart.get("result")
-    if not isinstance(results, list) or not results:
-        payload["reason_code"] = "MALFORMED_RECORD"
-        return None
-    row = results[0] if isinstance(results[0], dict) else None
-    if row is None:
-        payload["reason_code"] = "MALFORMED_RECORD"
-        return None
+    if not isinstance(results, list) or not results or not isinstance(results[0], dict):
+        return None, MALFORMED_RECORD
+    row = results[0]
     meta = row.get("meta") if isinstance(row.get("meta"), dict) else {}
-    last = meta.get("regularMarketPrice")
     timestamps = row.get("timestamp") if isinstance(row.get("timestamp"), list) else []
+
+    last = meta.get("regularMarketPrice")
     if last is None:
         indicators = row.get("indicators") if isinstance(row.get("indicators"), dict) else {}
         quotes = indicators.get("quote") if isinstance(indicators.get("quote"), list) else []
@@ -140,13 +153,12 @@ def _quote_event_from_chart(payload: dict[str, Any], *, symbol: str, received_ns
                     last = value
                     break
     if last is None:
-        payload["reason_code"] = "MALFORMED_RECORD"
-        return None
+        return None, MALFORMED_RECORD
     try:
-        last_f = float(last)
+        last_price = float(last)
     except (TypeError, ValueError):
-        payload["reason_code"] = "MALFORMED_RECORD"
-        return None
+        return None, MALFORMED_RECORD
+
     event_epoch = None
     if timestamps:
         try:
@@ -160,39 +172,49 @@ def _quote_event_from_chart(payload: dict[str, Any], *, symbol: str, received_ns
         except (TypeError, ValueError):
             event_epoch = None
     if event_epoch is None:
-        payload["reason_code"] = "MISSING_TIMESTAMP"
-        return None
+        return None, MISSING_TIMESTAMP
     event_time_ns = event_epoch * 1_000_000_000
+
     bid = meta.get("bid")
     ask = meta.get("ask")
     try:
-        bid_f = float(bid) if bid not in {None, ""} else last_f
-        ask_f = float(ask) if ask not in {None, ""} else last_f
+        bid_price = float(bid) if bid not in {None, ""} else last_price
+        ask_price = float(ask) if ask not in {None, ""} else last_price
     except (TypeError, ValueError):
-        bid_f = last_f
-        ask_f = last_f
-    return {
-        "capability": "US_EQUITY_L1",
-        "clocks": {
-            "event_time_ns": event_time_ns,
-            "provider_time_ns": event_time_ns,
-            "received_time_ns": received_ns,
+        bid_price, ask_price = last_price, last_price
+
+    return (
+        {
+            "capability": YAHOO_CAPABILITY,
+            "clocks": {
+                "event_time_ns": event_time_ns,
+                "provider_time_ns": event_time_ns,
+                "received_time_ns": received_ns,
+            },
+            "entitlement": "DELAYED",
+            "instrument_id": symbol,
+            "normalization_version": "yahoo.finance.delayed/1.0.0",
+            "provider": YAHOO_PROVIDER_ID,
+            "provider_symbol": symbol,
+            "raw_payload": {
+                "ask_price": ask_price,
+                "ask_vol": 0,
+                "bid_price": bid_price,
+                "bid_vol": 0,
+                "last_price": last_price,
+            },
+            "sequence": event_epoch,
+            "timeliness": YAHOO_TIMELINESS,
         },
-        "instrument_id": symbol,
-        "provider": YAHOO_PROVIDER_ID,
-        "provider_symbol": symbol,
-        "raw_payload": {
-            "ask_price": ask_f,
-            "ask_vol": 0,
-            "bid_price": bid_f,
-            "bid_vol": 0,
-            "last_price": last_f,
-        },
-        "sequence": event_epoch,
-        "timeliness": "DELAYED",
-        "entitlement": "DELAYED",
-        "normalization_version": "yahoo.finance.delayed/1.0.0",
-    }
+        None,
+    )
 
 
-__all__ = ["YAHOO_PROVIDER_ID", "YahooDelayedEquityQuoteProvider"]
+__all__ = [
+    "ES_SYMBOL_BLOCKED",
+    "YAHOO_CAPABILITY",
+    "YAHOO_PROVIDER_ID",
+    "YAHOO_TIMELINESS",
+    "YahooDelayedEquityQuoteProvider",
+    "is_es_futures_symbol",
+]

@@ -165,6 +165,22 @@ def with_broker_paper_execution(
     return composition
 
 
+def with_moomoo_opend_primary_quote(composition: ProviderComposition) -> ProviderComposition:
+    """Wire the ``equity_quote`` slot to Moomoo OpenD — Primary L1 (DoD item 2).
+
+    Additive: the default composition keeps ``UnconfiguredEquityQuoteProvider``;
+    callers opt in explicitly. The returned adapter is fail-closed at call time
+    (loopback OpenD reachability + in-tree transport state are both checked
+    inside ``fetch_quote``) and never fabricates a tick. This does not touch
+    the Yahoo delayed cloud overlay, which is a distinct, separately-selected
+    provider identity and is never substituted into this slot.
+    """
+    from .adapters.moomoo_opend_equity_quote import MoomooOpenDEquityQuoteProvider
+
+    composition.equity_quote = MoomooOpenDEquityQuoteProvider()
+    return composition
+
+
 def with_moomoo_paper_execution(
     composition: ProviderComposition,
     *,
@@ -196,5 +212,6 @@ __all__ = [
     "configure_provider_composition",
     "get_provider_composition",
     "with_broker_paper_execution",
+    "with_moomoo_opend_primary_quote",
     "with_moomoo_paper_execution",
 ]
