@@ -16,6 +16,7 @@ from market_platform_foundation.strategy.path_a_prospective import (
     build_paper_demo_path_a_invoke,
 )
 from market_platform_foundation.providers.equity_quote_discovery import discover_equity_quote_stack
+from market_platform_foundation.providers.equity_quote_selection import primary_equity_quote_provider
 
 
 def _local_forward_test_service():
@@ -103,7 +104,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--persist-strategy-id", default=None)
     parser.add_argument("--persist-strategy-version", default=None)
     args = parser.parse_args(argv)
-    provider, discovery = discover_equity_quote_stack()
+    _, discovery = discover_equity_quote_stack()
+    provider = primary_equity_quote_provider()
     invoke = build_paper_demo_path_a_invoke(args.symbol, mode=args.mode)
     persist_context = build_cli_persist_context(args)
     result = PathAProspectiveComposer(
@@ -117,6 +119,7 @@ def main(argv: list[str] | None = None) -> int:
             "config_names_present": list(discovery.config_names_present),
             "finviz_token_names_present": list(discovery.finviz_token_names_present),
             "opend_reachable": discovery.opend_reachable,
+            "overlay_provider_id": discovery.overlay_provider_id,
             "provider_id": discovery.provider_id,
             "reason_code": discovery.reason_code,
             "timeliness": discovery.timeliness,
