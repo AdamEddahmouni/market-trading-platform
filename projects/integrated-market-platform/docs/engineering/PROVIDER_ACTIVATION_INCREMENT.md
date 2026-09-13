@@ -129,7 +129,7 @@ These are **software drafts**. They do **not** start a governed FTEP session, do
 | PR | Branch | State | Honest claim |
 | --- | --- | --- | --- |
 | [#41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41) | `cursor/calibration-harness-d1ba` | Draft OPEN; CI green | Calibration harness IMPLEMENTED. Not `CALIBRATED`. `COMPARATOR_NOT_CONFIGURED` on cloud. |
-| [#42](https://github.com/AdamEddahmouni/market-trading-platform/pull/42) | `cursor/provider-real-data-d1ba` | Draft OPEN; CLI classified; persist follow-up in flight | Quote → admission → G7 → optional Path A. Yahoo overlay is `DELAYED_PROSPECTIVE`, not realtime L1. Not FTEP. |
+| [#42](https://github.com/AdamEddahmouni/market-trading-platform/pull/42) | `cursor/provider-real-data-d1ba` | Draft OPEN; head `91b8889`; CI green including `validate-python-changed` | Quote → admission → G7 → optional Path A, plus optional v6 `create_decision` when persist is on and an existing Paper FT session is injected. Yahoo overlay is `DELAYED_PROSPECTIVE`, not realtime L1. Not FTEP. Not `EMPIRICAL_ACTIVE`. |
 
 Do not merge this docs PR as a substitute for landing those drafts. `PROGRAM_STATUS.md` / `WORK_LOG.md` are intentionally **not** edited here (those files are already changed on #41 and #42).
 

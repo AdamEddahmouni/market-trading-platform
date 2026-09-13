@@ -19,7 +19,7 @@ Wave B **implementation** packages remain complete (capability matrix, gap engin
 
 Remaining blockers for a lawful first qualifying observation are **entitlement**, **authorization B**, **campaign-readiness READY**, **dated ES contract**, and **calibration/execution** — not “the manifest is not frozen.”
 
-Open **IMPLEMENTED** drafts (not merged, not empirical activity): [PR #41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41) calibration harness (CI green; simulator **not** `CALIBRATED`); [PR #42](https://github.com/AdamEddahmouni/market-trading-platform/pull/42) quote→admission→G7→optional Path A hop (CLI classified; persist follow-up in flight). Live remains forbidden.
+Open **IMPLEMENTED** drafts (not merged, not empirical activity): [PR #41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41) calibration harness (CI green; simulator **not** `CALIBRATED`); [PR #42](https://github.com/AdamEddahmouni/market-trading-platform/pull/42) quote→admission→G7→optional Path A hop plus optional v6 `create_decision` (head `91b8889`; CI green including `validate-python-changed`). Live remains forbidden.
 
 ## Consolidated blockers
 
