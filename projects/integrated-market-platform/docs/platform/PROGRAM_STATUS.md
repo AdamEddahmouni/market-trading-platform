@@ -9,7 +9,7 @@
 | Establishing Milestone | `IMP-REBASE-01` |
 | Version | `1.15` |
 | Last Verified | `2026-09-13` |
-| Canonical origin/main SHA | `9cb541cd520721404e1c3d789eba5445c45aae70` (merged #40; this increment is the calibration harness PR) |
+| Canonical origin/main SHA | `9cb541cd520721404e1c3d789eba5445c45aae70` (merged #32, #34, #35, #36, #37, #38, #39, #40; this draft adds the Paper vs Tradier sandbox calibration harness) |
 | Supersedes | Root README as whole-program status authority |
 | Superseded By | None |
 

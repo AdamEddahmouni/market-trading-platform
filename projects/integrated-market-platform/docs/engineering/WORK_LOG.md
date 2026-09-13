@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Rebaseline PROGRAM_STATUS SHA to origin/main@9cb541c
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Close the item-18 SHA lag that [#43](https://github.com/AdamEddahmouni/market-trading-platform/pull/43) skipped: `PROGRAM_STATUS` canonical origin/main SHA now matches git tip `9cb541cd520721404e1c3d789eba5445c45aae70` (PR #40) plus this draft’s IMPLEMENTED Paper vs Tradier sandbox calibration harness. Path A scan caller remains `MERGED` / `REMOTE VALIDATED` at `6833bf3` (PR #39). FTEP-V1-001/002 labels unchanged — **not** `EMPIRICAL_ACTIVE`. Simulator **not** `CALIBRATED`. Live remains disabled. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python3 tools/check_docs_links.py` — **188 OK**. Docs-only SHA/prose; calibration harness tests not re-run in this increment. |
+| **Related** | [PR #41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41); [PR #40](https://github.com/AdamEddahmouni/market-trading-platform/pull/40) merge `9cb541c`; [PR #43](https://github.com/AdamEddahmouni/market-trading-platform/pull/43) skipped these files |
+| **Notes** | Item 18 stays PARTIAL until #41/#42 land and Notion inner SHA callouts match git. Do not merge from this increment. Do not activate Live. |
+
 ## 2026-09-13 — IMP vs Tradier sandbox calibration harness
 
 | Field | Value |
