@@ -162,11 +162,29 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help=(
             "Previously persisted PRODUCTION forecast JSON file or directory. "
-            "This hop only loads; it does not mint a probability. Create is "
-            "produce_paper_demo_forecast (BUILD 14 fusion, fail-closed). Load "
-            "requires identity, PIT, champion, horizon, account, and mode "
-            "to match Opportunity Engine hop policy; otherwise "
-            "FORECAST_UNAVAILABLE. Paper/Demo only."
+            "When --contributor-path / --calibration-path are set, this is also "
+            "the produce dest. Load requires identity, PIT, champion, horizon, "
+            "account, and mode to match Opportunity Engine hop policy; otherwise "
+            "FORECAST_UNAVAILABLE. Paper/Demo only. Does not mint a probability."
+        ),
+    )
+    parser.add_argument(
+        "--contributor-path",
+        default=None,
+        help=(
+            "Previously persisted PRODUCTION contributor JSON file "
+            "or directory. The hop fuses these through produce_paper_demo_forecast "
+            "(BUILD 14). Absent PRODUCTION contributors fail closed "
+            "(FORECAST_UNAVAILABLE). Paper/Demo only."
+        ),
+    )
+    parser.add_argument(
+        "--calibration-path",
+        default=None,
+        help=(
+            "Previously persisted CalibrationModelArtifact JSON file or directory. "
+            "Required to produce. Missing or IDENTITY_CONTROL fail closed "
+            "(FORECAST_UNAVAILABLE). Paper/Demo only."
         ),
     )
     args = parser.parse_args(argv)
@@ -188,6 +206,8 @@ def main(argv: list[str] | None = None) -> int:
         persist=persist_context,
         preregistration_path=args.preregistration_path,
         forecast_path=args.forecast_path,
+        contributor_path=args.contributor_path,
+        calibration_path=args.calibration_path,
     ).run(args.symbol, mode=args.mode)
     payload = {
         "discovery": {

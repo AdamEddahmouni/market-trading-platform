@@ -244,9 +244,12 @@ before any hop. Load requires identity match and `registered_at` before quote
 `event_time_ns`. `--forecast-path` may point at a previously persisted
 PRODUCTION `ForecastV1`; load requires identity/PIT/champion/horizon/account/mode
 to match Opportunity Engine hop policy; otherwise `FORECAST_UNAVAILABLE`.
-Create is a separate operator step (`produce_paper_demo_forecast`) that
-persists only a BUILD 14 `EMITTED_CALIBRATED` artifact; CONTROL, RESEARCH,
-IDENTITY_CONTROL, and uncalibrated output are not written. The hop does not
+Create is a Paper/Demo hop step (`produce_paper_demo_forecast`) that
+persists only a BUILD 14 `EMITTED_CALIBRATED` artifact when
+`--contributor-path` and `--calibration-path` supply PRODUCTION
+contributors and a pre-existing calibrator; CONTROL, RESEARCH,
+IDENTITY_CONTROL, missing contributors, and uncalibrated output are not
+written. The hop does not
 mint a probability. Software producer wiring is not FTEP `EMPIRICAL_ACTIVE`.
 Catalog evaluators never mint a preregistration. A scanner
 MATCHED with no eligible loaded forecast is `FORECAST_UNAVAILABLE`,

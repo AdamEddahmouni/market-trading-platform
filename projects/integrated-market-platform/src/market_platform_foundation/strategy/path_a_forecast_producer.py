@@ -15,11 +15,18 @@ output, or identity/PIT/champion/horizon/account/mode mismatch fail closed
 from __future__ import annotations
 
 import math
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
+from ..canonical import load_json_strict, write_canonical_json
+from ..intelligence.contracts.common import (
+    forecast_target_from_dict,
+    forecast_target_to_dict,
+    time_horizon_from_dict,
+    time_horizon_to_dict,
+)
 from ..intelligence.contracts.forecast import ForecastV1
 from ..intelligence.evaluation.types import forecast_role
 from ..intelligence.fusion import (
@@ -45,6 +52,7 @@ from ..intelligence.persistence.repository import IntelligenceRepository
 from ..intelligence.promotion.types import ChampionAssignmentV1
 from .path_a_forecast_store import (
     forecast_matches_path_a_hop_policy,
+    load_paper_demo_forecasts,
     persist_paper_demo_forecast,
 )
 from .path_a_scan_caller import ALLOWED_SCAN_MODES, FORBIDDEN_LIVE_MODES
@@ -131,6 +139,102 @@ def _contributor_identity(forecast: ForecastV1) -> tuple[object, ...]:
         forecast.target,
         forecast.horizon,
     )
+
+
+def calibration_artifact_to_dict(artifact: CalibrationModelArtifact) -> dict[str, Any]:
+    body: dict[str, Any] = {
+        "available_time_ns": artifact.available_time_ns,
+        "calibration_model_id": artifact.calibration_model_id,
+        "class_counts": dict(artifact.class_counts),
+        "dataset_fingerprint": artifact.dataset_fingerprint,
+        "fusion_policy_identity": artifact.fusion_policy_identity,
+        "horizon": time_horizon_to_dict(artifact.horizon),
+        "max_training_raw_probability": artifact.max_training_raw_probability,
+        "method": artifact.method.value,
+        "method_version": artifact.method_version,
+        "min_training_raw_probability": artifact.min_training_raw_probability,
+        "parameter_fingerprint": artifact.parameter_fingerprint,
+        "parameters": dict(artifact.parameters),
+        "sample_count": artifact.sample_count,
+        "target": forecast_target_to_dict(artifact.target),
+        "training_cutoff_ns": artifact.training_cutoff_ns,
+    }
+    if artifact.regime_key is not None:
+        body["regime_key"] = artifact.regime_key
+    return body
+
+
+def calibration_artifact_from_dict(payload: Mapping[str, Any]) -> CalibrationModelArtifact | None:
+    try:
+        method = CalibrationMethod(str(payload["method"]))
+        return CalibrationModelArtifact(
+            calibration_model_id=str(payload["calibration_model_id"]),
+            method=method,
+            method_version=str(payload["method_version"]),
+            target=forecast_target_from_dict(dict(payload["target"])),
+            horizon=time_horizon_from_dict(dict(payload["horizon"])),
+            fusion_policy_identity=str(payload["fusion_policy_identity"]),
+            dataset_fingerprint=str(payload["dataset_fingerprint"]),
+            training_cutoff_ns=int(payload["training_cutoff_ns"]),
+            available_time_ns=int(payload["available_time_ns"]),
+            parameters=dict(payload.get("parameters") or {}),
+            parameter_fingerprint=str(payload["parameter_fingerprint"]),
+            min_training_raw_probability=float(payload["min_training_raw_probability"]),
+            max_training_raw_probability=float(payload["max_training_raw_probability"]),
+            sample_count=int(payload["sample_count"]),
+            class_counts={str(k): int(v) for k, v in dict(payload.get("class_counts") or {}).items()},
+            regime_key=payload.get("regime_key"),
+        )
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def persist_paper_demo_calibration(
+    artifact: CalibrationModelArtifact,
+    *,
+    destination: str | Path,
+) -> dict[str, Any]:
+    """Serialize an already-constructed calibrator. Not a trainer."""
+
+    dest = Path(destination)
+    payload = calibration_artifact_to_dict(artifact)
+    if dest.suffix.lower() == ".json":
+        target = dest
+    else:
+        dest.mkdir(parents=True, exist_ok=True)
+        target = dest / f"{artifact.calibration_model_id}.json"
+    write_canonical_json(target, payload)
+    return payload
+
+
+def load_paper_demo_calibration(source: str | Path | None) -> CalibrationModelArtifact | None:
+    """Load one previously persisted calibrator. Missing/corrupt → None."""
+
+    if source is None:
+        return None
+    path = Path(source)
+    if not path.exists():
+        return None
+    targets = sorted(path.glob("*.json")) if path.is_dir() else (path,)
+    for child in targets:
+        try:
+            payload = load_json_strict(child)
+        except (OSError, TypeError, ValueError):
+            continue
+        if not isinstance(payload, Mapping):
+            continue
+        artifact = calibration_artifact_from_dict(payload)
+        if artifact is not None:
+            return artifact
+    return None
+
+
+def load_paper_demo_contributors(source: str | Path | None) -> tuple[ForecastV1, ...]:
+    """Load PRODUCTION-eligible contributor ForecastV1 rows. Missing → empty."""
+
+    if source is None:
+        return ()
+    return load_paper_demo_forecasts(source)
 
 
 def produce_paper_demo_forecast(
@@ -288,5 +392,10 @@ __all__ = [
     "STATUS_EMITTED_CALIBRATED",
     "STATUS_FORECAST_UNAVAILABLE",
     "STATUS_LIVE_FORBIDDEN",
+    "calibration_artifact_from_dict",
+    "calibration_artifact_to_dict",
+    "load_paper_demo_calibration",
+    "load_paper_demo_contributors",
+    "persist_paper_demo_calibration",
     "produce_paper_demo_forecast",
 ]

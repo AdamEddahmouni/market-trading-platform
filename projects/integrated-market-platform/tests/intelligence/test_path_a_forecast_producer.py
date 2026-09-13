@@ -43,8 +43,10 @@ from market_platform_foundation.intelligence.fusion.types import (
     ForecastContributorRole,
 )
 from market_platform_foundation.research.forecast import build_forecast
+from market_platform_foundation.providers.contracts import ProviderResult
 from market_platform_foundation.strategy.evaluation import default_forecast_momentum_spec
 from market_platform_foundation.strategy.path_a_forecast_producer import (
+    persist_paper_demo_calibration,
     produce_paper_demo_forecast,
 )
 from market_platform_foundation.strategy.path_a_forecast_store import (
@@ -55,6 +57,7 @@ from market_platform_foundation.strategy.path_a_preregistration_store import (
     persist_paper_demo_preregistration,
 )
 from market_platform_foundation.strategy.path_a_prospective import (
+    PathAProspectiveComposer,
     build_paper_demo_path_a_invoke,
 )
 from market_platform_foundation.strategy.path_a_scan_caller import PathAScanCallerError
@@ -77,6 +80,47 @@ def _quote_event(*, last_price: float = 190.1, event_time_ns: int = T) -> dict:
         "raw_payload": {"last_price": last_price},
         "clocks": {"event_time_ns": event_time_ns},
     }
+
+
+def _realtime_provider_event(*, last_price: float = 190.1, event_time_ns: int = T) -> dict:
+    return {
+        "capability": "US_EQUITY_L1",
+        "clocks": {
+            "event_time_ns": event_time_ns,
+            "provider_time_ns": event_time_ns,
+            "received_time_ns": event_time_ns + 1_000_000,
+        },
+        "instrument_id": "AAPL",
+        "provider": "test.realtime",
+        "provider_symbol": "AAPL",
+        "raw_payload": {
+            "ask_price": last_price + 0.1,
+            "ask_vol": 200,
+            "bid_price": last_price - 0.1,
+            "bid_vol": 100,
+            "last_price": last_price,
+        },
+        "sequence": 7,
+        "timeliness": "REAL_TIME",
+        "normalization_version": "test/1.0.0",
+    }
+
+
+class _RealtimeQuoteProvider:
+    capability = "US_EQUITY_SNAPSHOT"
+    provider_id = "test.realtime"
+
+    def __init__(self, event: dict | None = None) -> None:
+        self._event = event or _realtime_provider_event()
+
+    def fetch_quote(self, symbol: str) -> ProviderResult:
+        del symbol
+        return ProviderResult(
+            status="available",
+            events=(self._event,),
+            provider_id="test.realtime",
+            capability="US_EQUITY_SNAPSHOT",
+        )
 
 
 def _production_contributor(
@@ -181,6 +225,8 @@ class PathAForecastProducerHonestyTests(unittest.TestCase):
         self.assertIn("persist_paper_demo_forecast", source)
         self.assertIn("DEFAULT_PRODUCTION_FINAL_POLICY", source)
         self.assertIn("IDENTITY_CONTROL", source)
+        self.assertIn("load_paper_demo_contributors", source)
+        self.assertIn("load_paper_demo_calibration", source)
 
 
 class PathAForecastProducerTests(unittest.TestCase):
@@ -191,6 +237,10 @@ class PathAForecastProducerTests(unittest.TestCase):
         self.forecasts = self.store / "forecasts"
         self.prereg.mkdir()
         self.forecasts.mkdir()
+        self.contributors = self.store / "contributors"
+        self.calibration = self.store / "calibration"
+        self.contributors.mkdir()
+        self.calibration.mkdir()
 
     def tearDown(self) -> None:
         self._tmp.cleanup()
@@ -389,6 +439,84 @@ class PathAForecastProducerTests(unittest.TestCase):
         produced, _ignored = self._produce(contributors=(controlish,))
         self.assertEqual(produced.status, "FORECAST_UNAVAILABLE")
         self.assertEqual(load_paper_demo_forecasts(self.forecasts), ())
+
+    def _persist_hop_inputs(self) -> None:
+        persist_paper_demo_preregistration(
+            default_forecast_momentum_spec(),
+            registered_at=EARLY_REGISTERED_AT,
+            destination=self.prereg,
+        )
+        for row in _path_a_contributors():
+            persist_paper_demo_forecast(row, destination=self.contributors)
+        persist_paper_demo_calibration(_calibration_artifact(), destination=self.calibration)
+
+    def test_hop_produce_reaches_opportunity_engine_without_fixture_probability(self) -> None:
+        """Composer MATCHED/OE EMIT uses BUILD 14 produce, not fixture 0.8."""
+
+        self._persist_hop_inputs()
+        result = PathAProspectiveComposer(
+            quote_provider=_RealtimeQuoteProvider(),
+            preregistration_path=self.prereg,
+            contributor_path=self.contributors,
+            calibration_path=self.calibration,
+            forecast_path=self.forecasts,
+        ).run("AAPL", mode="paper", as_of_time_ns=T + 2_000_000)
+        self.assertTrue(result.freshness.get("actionable"))
+        self.assertIsNotNone(result.path_a)
+        self.assertEqual(result.path_a.status, "MINTED")
+        self.assertEqual(result.path_a.reason_codes, ("OPPORTUNITY_EMITTED",))
+        self.assertTrue(result.path_a.opportunities)
+        self.assertEqual(result.status, "MINTED")
+        fused = load_paper_demo_forecasts(self.forecasts)
+        self.assertEqual(len(fused), 1)
+        self.assertNotEqual(fused[0].estimate.calibrated_probability, 0.8)
+        self.assertNotEqual(fused[0].estimate.probability, 0.8)
+        self.assertEqual(fused[0].metadata.get("forecast_stage"), "FINAL_FUSED_CALIBRATED")
+        self.assertEqual(fused[0].metadata.get("calibration_status"), "CALIBRATED")
+
+    def test_hop_produce_fail_closed_without_production_contributors(self) -> None:
+        self._persist_hop_inputs()
+        empty = self.store / "empty-contributors"
+        empty.mkdir()
+        result = PathAProspectiveComposer(
+            quote_provider=_RealtimeQuoteProvider(),
+            preregistration_path=self.prereg,
+            contributor_path=empty,
+            calibration_path=self.calibration,
+            forecast_path=self.forecasts,
+        ).run("AAPL", mode="paper", as_of_time_ns=T + 2_000_000)
+        self.assertIsNotNone(result.path_a)
+        self.assertEqual(result.path_a.status, "FORECAST_UNAVAILABLE")
+        self.assertEqual(result.path_a.opportunities, ())
+        self.assertEqual(load_paper_demo_forecasts(self.forecasts), ())
+
+    def test_hop_produce_fail_closed_without_calibrator(self) -> None:
+        persist_paper_demo_preregistration(
+            default_forecast_momentum_spec(),
+            registered_at=EARLY_REGISTERED_AT,
+            destination=self.prereg,
+        )
+        for row in _path_a_contributors():
+            persist_paper_demo_forecast(row, destination=self.contributors)
+        result = PathAProspectiveComposer(
+            quote_provider=_RealtimeQuoteProvider(),
+            preregistration_path=self.prereg,
+            contributor_path=self.contributors,
+            calibration_path=self.calibration,
+            forecast_path=self.forecasts,
+        ).run("AAPL", mode="paper", as_of_time_ns=T + 2_000_000)
+        self.assertIsNotNone(result.path_a)
+        self.assertEqual(result.path_a.status, "FORECAST_UNAVAILABLE")
+        self.assertEqual(result.path_a.opportunities, ())
+        self.assertEqual(load_paper_demo_forecasts(self.forecasts), ())
+
+    def test_bootstrap_champion_does_not_suppress_print_timed_forecast(self) -> None:
+        invoke = self._invoke()
+        self.assertEqual(invoke.caller.champion_at_forecast.effective_from_ns, 0)
+        self.assertEqual(
+            invoke.caller.champion_at_forecast.assignment_reason.value,
+            "BOOTSTRAP",
+        )
 
 
 if __name__ == "__main__":
