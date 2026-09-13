@@ -54,7 +54,7 @@ from .scanning import (
     StrategyRegistration,
     UniversalStrategyScanner,
 )
-from .path_a_prospective import PathAProspectiveComposer, PathAProspectiveResult
+from .path_a_prospective import PathAPersistContext, PathAProspectiveComposer, PathAProspectiveResult
 from .path_a_scan_caller import (
     PathAScanCallResult,
     PathAScanCaller,
@@ -144,6 +144,7 @@ __all__ = [
     "StrategyRuntimeReconstruction",
     "StrategyRuntimeResult",
     "UniversalStrategyScanner",
+    "PathAPersistContext",
     "PathAProspectiveComposer",
     "PathAProspectiveResult",
     "PathAScanCallResult",

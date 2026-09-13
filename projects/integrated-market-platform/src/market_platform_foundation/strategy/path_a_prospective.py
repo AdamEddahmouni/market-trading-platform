@@ -50,6 +50,22 @@ STATUS_SCAN_SKIPPED = "SCAN_SKIPPED"
 DELAYED_SOURCE = "DELAYED_PROSPECTIVE"
 LIVE_OBSERVED_SOURCE = "PAPER_OBSERVATIONAL"
 
+PERSIST_NOT_MINTED = "NOT_MINTED"
+PERSIST_INTENTIONAL_EPHEMERAL = "INTENTIONAL_EPHEMERAL"
+PERSIST_SKIPPED_NO_SESSION = "SKIPPED_NO_SESSION"
+PERSIST_WRITTEN = "PERSISTED"
+
+
+@dataclass(frozen=True, slots=True)
+class PathAPersistContext:
+    """Existing Paper FT session for optional PD-09 v6 write. Does not activate FTEP."""
+
+    service: Any
+    account_id: str
+    session_id: str
+    strategy_id: str
+    strategy_version: str
+
 
 @dataclass(frozen=True, slots=True)
 class PathAProspectiveResult:
@@ -65,13 +81,17 @@ class PathAProspectiveResult:
     selection: dict[str, Any]
     path_a: PathAScanCallResult | None = None
     freshness_payload: dict[str, Any] = field(default_factory=dict)
+    persist_status: str = PERSIST_NOT_MINTED
+    forward_test_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         body = {
             "freshness": dict(self.freshness),
+            "forward_test_id": self.forward_test_id,
             "instrument_id": self.instrument_id,
             "mode": self.mode,
             "path_a_status": None if self.path_a is None else self.path_a.status,
+            "persist_status": self.persist_status,
             "provenance": dict(self.provenance),
             "provider_id": self.provider_id,
             "reason_codes": list(self.reason_codes),
@@ -106,12 +126,14 @@ class PathAProspectiveComposer:
         admission: LiveAdmissionEngine | None = None,
         path_a_caller: PathAScanCaller | None = None,
         freshness_policy: OpportunityFreshnessPolicy | None = None,
+        persist: PathAPersistContext | None = None,
     ) -> None:
         self.quote_provider = quote_provider
         self.composition = composition or ObservationalRuntimeComposition()
         self.admission = admission or LiveAdmissionEngine()
         self.path_a_caller = path_a_caller
         self.freshness_policy = freshness_policy or OpportunityFreshnessPolicy()
+        self.persist = persist
 
     def run(
         self,
@@ -221,7 +243,7 @@ class PathAProspectiveComposer:
             },
             evaluation,
         )
-        return PathAProspectiveResult(
+        result = PathAProspectiveResult(
             status=status,
             mode=mode_n,
             provider_id=provider_id,
@@ -246,6 +268,7 @@ class PathAProspectiveComposer:
             path_a=path_a,
             freshness_payload=payload,
         )
+        return self._persist_minted(result, evaluation=evaluation, as_of=as_of, event=event)
 
     def _stamp_runtime(self, provider_id: str, timeliness: str) -> None:
         delay = timeliness == "DELAYED"
@@ -260,6 +283,62 @@ class PathAProspectiveComposer:
             )
         )
         self.composition.active_provider_id = provider_id
+
+    def _persist_minted(
+        self,
+        result: PathAProspectiveResult,
+        *,
+        evaluation: OpportunityFreshnessResult,
+        as_of: int,
+        event: Mapping[str, Any],
+    ) -> PathAProspectiveResult:
+        from market_platform_foundation.intelligence.contracts.common import OpportunitySide
+        from market_platform_foundation.intelligence.paper_forward_bridge import ForwardTestMode
+        from market_platform_foundation.local_state.paths import persistence_enabled
+
+        if result.status != STATUS_MINTED or result.path_a is None or not result.path_a.opportunities:
+            return _result_with_persist(result, PERSIST_NOT_MINTED, None)
+        if result.mode != "paper":
+            return _result_with_persist(result, PERSIST_INTENTIONAL_EPHEMERAL, None)
+        if not persistence_enabled():
+            return _result_with_persist(result, PERSIST_INTENTIONAL_EPHEMERAL, None)
+        if self.persist is None:
+            return _result_with_persist(result, PERSIST_SKIPPED_NO_SESSION, None)
+        opportunity = result.path_a.opportunities[0]
+        side = opportunity.side
+        if side == OpportunitySide.SHORT:
+            direction = "SELL"
+        else:
+            direction = "BUY"
+        clocks = event.get("clocks") if isinstance(event.get("clocks"), dict) else {}
+        source_time_ns = clocks.get("event_time_ns")
+        if not isinstance(source_time_ns, int) or source_time_ns > as_of:
+            source_time_ns = as_of
+        payload = merge_freshness_into_payload(
+            {
+                "instrument_id": result.instrument_id,
+                "opportunity_id": opportunity.opportunity_id,
+                "path_a_status": result.status,
+                "provider_id": result.provider_id,
+                "signal_id": result.path_a.scan_id,
+            },
+            evaluation,
+        )
+        decision = self.persist.service.create_decision(
+            account_id=self.persist.account_id,
+            mode="PAPER",
+            session_id=self.persist.session_id,
+            symbol=result.instrument_id,
+            direction=direction,
+            decision_time_ns=as_of,
+            source_time_ns=source_time_ns,
+            strategy_id=self.persist.strategy_id,
+            strategy_version=self.persist.strategy_version,
+            test_mode=ForwardTestMode.SIGNAL_ONLY,
+            decision_payload=payload,
+            research_artifact_ref=opportunity.opportunity_id,
+        )
+        return _result_with_persist(result, PERSIST_WRITTEN, decision.forward_test_id)
 
     def _finish(
         self,
@@ -299,12 +378,42 @@ class PathAProspectiveComposer:
             selection=dict(selection or {}),
             path_a=None,
             freshness_payload=merge_freshness_into_payload({"instrument_id": instrument}, evaluation),
+            persist_status=PERSIST_NOT_MINTED,
+            forward_test_id=None,
         )
+
+
+def _result_with_persist(
+    result: PathAProspectiveResult,
+    persist_status: str,
+    forward_test_id: str | None,
+) -> PathAProspectiveResult:
+    return PathAProspectiveResult(
+        status=result.status,
+        mode=result.mode,
+        provider_id=result.provider_id,
+        instrument_id=result.instrument_id,
+        reason_codes=result.reason_codes,
+        timeliness=result.timeliness,
+        source=result.source,
+        freshness=result.freshness,
+        provenance=result.provenance,
+        selection=result.selection,
+        path_a=result.path_a,
+        freshness_payload=result.freshness_payload,
+        persist_status=persist_status,
+        forward_test_id=forward_test_id,
+    )
 
 
 __all__ = [
     "DELAYED_SOURCE",
     "LIVE_OBSERVED_SOURCE",
+    "PERSIST_INTENTIONAL_EPHEMERAL",
+    "PERSIST_NOT_MINTED",
+    "PERSIST_SKIPPED_NO_SESSION",
+    "PERSIST_WRITTEN",
+    "PathAPersistContext",
     "PathAProspectiveComposer",
     "PathAProspectiveResult",
 ]
