@@ -561,7 +561,267 @@ def build_parser() -> argparse.ArgumentParser:
     closure.add_argument("--output", type=Path, default=DEFAULT_CLOSURE_REPORT)
     closure.add_argument("--workers", type=int, default=2)
     closure.add_argument("--skip-ui", action="store_true")
+
+    providers = groups.add_parser(
+        "providers",
+        help="provider capability matrix and readiness diagnostics (read-only)",
+    )
+    provider_actions = providers.add_subparsers(dest="action", required=True)
+    capability_matrix = provider_actions.add_parser(
+        "capability-matrix",
+        help="emit deterministic capability-matrix snapshot",
+    )
+    capability_matrix.add_argument(
+        "--output",
+        type=Path,
+        help="Write snapshot JSON (default: stdout)",
+    )
+    capability_matrix.add_argument(
+        "--skip-readiness",
+        action="store_true",
+        help="Do not merge provider_readiness gate rows",
+    )
+    audit = provider_actions.add_parser(
+        "audit",
+        help="capability-matrix audit merged with value-blind readiness",
+    )
+    audit.add_argument("--json", action="store_true", help="Machine-readable JSON")
+    audit.add_argument(
+        "--probe-local",
+        action="store_true",
+        help="Probe loopback Moomoo/IBKR ports when building rows",
+    )
+    gaps = provider_actions.add_parser(
+        "gaps",
+        help="coverage-gap report for a campaign requirement profile",
+    )
+    gaps.add_argument(
+        "--profile",
+        default="FTEP-V1-001",
+        help="Campaign requirement profile id (default: FTEP-V1-001)",
+    )
+    gaps.add_argument("--json", action="store_true", help="Machine-readable JSON")
+    gaps.add_argument("--probe-local", action="store_true")
+    campaign_readiness = provider_actions.add_parser(
+        "campaign-readiness",
+        help="fail-closed preflight + gap-engine readiness for a campaign slug",
+    )
+    campaign_readiness.add_argument(
+        "campaign_slug",
+        nargs="?",
+        default="FTEP-V1-001",
+        help="Forward-test campaign slug (default: FTEP-V1-001)",
+    )
+    campaign_readiness.add_argument("--json", action="store_true")
+    campaign_readiness.add_argument("--probe-local", action="store_true")
+
+    ftep = groups.add_parser("ftep", help="read-only FTEP campaign observability")
+    ftep_actions = ftep.add_subparsers(dest="action", required=True)
+    campaign_status = ftep_actions.add_parser(
+        "campaign-status",
+        help="compose campaign progress from receipts and readiness gates",
+    )
+    campaign_status.add_argument(
+        "campaign_slug",
+        nargs="?",
+        default="FTEP-V1-002",
+        help="Forward-test campaign slug (default: FTEP-V1-002)",
+    )
+    campaign_status.add_argument("--json", action="store_true", help="Machine-readable JSON")
+    campaign_status.add_argument(
+        "--probe-local",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
+    opportunity_summaries = ftep_actions.add_parser(
+        "opportunity-summaries",
+        help="read-only ranked opportunity summaries from sample/fixture rows",
+    )
+    opportunity_summaries.add_argument(
+        "--campaign-slug",
+        default="FTEP-V1-002",
+        help="Campaign slug stamped on summaries (default: FTEP-V1-002)",
+    )
+    opportunity_summaries.add_argument("--json", action="store_true")
+    opportunity_summaries.add_argument(
+        "--sample",
+        action="store_true",
+        help="Use built-in fixture attention rows",
+    )
+    opportunity_summaries.add_argument(
+        "--input",
+        type=Path,
+        help="Optional JSON file with attention-candidate rows",
+    )
+    integrity_check = ftep_actions.add_parser(
+        "integrity-check",
+        help="deterministic manifest and readiness integrity assertions",
+    )
+    integrity_check.add_argument(
+        "campaign_slug",
+        nargs="?",
+        default="FTEP-V1-002",
+        help="Forward-test campaign slug (default: FTEP-V1-002)",
+    )
+    integrity_check.add_argument("--json", action="store_true", help="Machine-readable JSON")
+    session_start = ftep_actions.add_parser(
+        "session-start",
+        help="governed SIGNAL_ONLY session start (--dry-run gates only)",
+    )
+    session_start.add_argument(
+        "campaign_slug",
+        nargs="?",
+        default="FTEP-V1-002",
+        help="Forward-test campaign slug (default: FTEP-V1-002)",
+    )
+    session_start.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Evaluate gates only; no session or lock writes",
+    )
+    session_start.add_argument("--json", action="store_true", help="Machine-readable JSON")
+    watch_catalysts = ftep_actions.add_parser(
+        "watch-catalysts",
+        help="read-only catalyst attention watch (fixture dry-run; no locks)",
+    )
+    watch_catalysts.add_argument(
+        "campaign_slug",
+        nargs="?",
+        default="FTEP-V1-002",
+        help="Forward-test campaign slug (default: FTEP-V1-002)",
+    )
+    watch_catalysts.add_argument("--json", action="store_true")
+    watch_catalysts.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Acknowledge read-only mode (default behavior)",
+    )
+    watch_catalysts.add_argument(
+        "--fixture",
+        action="store_true",
+        help="Force campaign attention fixture",
+    )
+    watch_catalysts.add_argument("--input", type=Path, help="Optional attention row JSON file")
+    record_prospective_lock = ftep_actions.add_parser(
+        "record-prospective-lock",
+        help="governed prospective lock gates (--dry-run only; no lock writes)",
+    )
+    record_prospective_lock.add_argument(
+        "campaign_slug",
+        nargs="?",
+        default="FTEP-V1-002",
+        help="Forward-test campaign slug (default: FTEP-V1-002)",
+    )
+    record_prospective_lock.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Evaluate lock invariants without durable writes",
+    )
+    record_prospective_lock.add_argument("--json", action="store_true")
+    record_prospective_lock.add_argument(
+        "--fixture",
+        action="store_true",
+        help="Force campaign attention fixture for catalyst qualification",
+    )
+    record_prospective_lock.add_argument(
+        "--input",
+        type=Path,
+        help="Optional JSON file with attention-candidate rows",
+    )
     return parser
+
+
+def _providers_command(root: Path, args: argparse.Namespace) -> int:
+    python = _validation_python(root)
+    env = _python_environment(root)
+    if args.action == "capability-matrix":
+        command = [python, str(root / "tools" / "providers" / "capability_matrix.py")]
+        if args.output:
+            command.extend(["--output", str(args.output)])
+        if args.skip_readiness:
+            command.append("--skip-readiness")
+        command.extend(["--repository-root", str(root)])
+    else:
+        command = [python, str(root / "tools" / "provider_readiness.py"), args.action]
+        if args.action == "gaps":
+            command.extend(["--profile", args.profile])
+        elif args.action == "campaign-readiness":
+            command.append(args.campaign_slug)
+        if getattr(args, "json", False):
+            command.append("--json")
+        if getattr(args, "probe_local", False):
+            command.append("--probe-local")
+    result = _run(
+        root,
+        label=f"providers {args.action}",
+        command=command,
+        env=env,
+        stream_output=True,
+    )
+    return int(result["exit_code"])
+
+
+def _ftep_command(root: Path, args: argparse.Namespace) -> int:
+    python = _validation_python(root)
+    env = _python_environment(root)
+    if args.action == "campaign-status":
+        command = [python, str(root / "tools" / "ftep_campaign_status.py"), args.campaign_slug]
+        if getattr(args, "json", False):
+            command.append("--json")
+    elif args.action == "opportunity-summaries":
+        command = [python, str(root / "tools" / "opportunity_summaries.py")]
+        if args.campaign_slug:
+            command.extend(["--campaign-slug", args.campaign_slug])
+        if getattr(args, "sample", False):
+            command.append("--sample")
+        if getattr(args, "input", None):
+            command.extend(["--input", str(args.input)])
+        if getattr(args, "json", False):
+            command.append("--json")
+    elif args.action == "integrity-check":
+        command = [python, str(root / "tools" / "ftep_integrity_check.py"), args.campaign_slug]
+        if getattr(args, "json", False):
+            command.append("--json")
+    elif args.action == "session-start":
+        command = [python, str(root / "tools" / "ftep_session_start.py"), args.campaign_slug]
+        if getattr(args, "dry_run", False):
+            command.append("--dry-run")
+        if getattr(args, "json", False):
+            command.append("--json")
+    elif args.action == "watch-catalysts":
+        command = [python, str(root / "tools" / "ftep_watch_catalysts.py"), args.campaign_slug]
+        if getattr(args, "fixture", False):
+            command.append("--fixture")
+        if getattr(args, "input", None):
+            command.extend(["--input", str(args.input)])
+        if getattr(args, "dry_run", False):
+            command.append("--dry-run")
+        if getattr(args, "json", False):
+            command.append("--json")
+    elif args.action == "record-prospective-lock":
+        command = [
+            python,
+            str(root / "tools" / "ftep_record_prospective_lock.py"),
+            args.campaign_slug,
+            "--dry-run",
+        ]
+        if getattr(args, "fixture", False):
+            command.append("--fixture")
+        if getattr(args, "input", None):
+            command.extend(["--input", str(args.input)])
+        if getattr(args, "json", False):
+            command.append("--json")
+    else:
+        print(f"unknown ftep action: {args.action}", file=sys.stderr)
+        return 2
+    result = _run(
+        root,
+        label=f"ftep {args.action}",
+        command=command,
+        env=env,
+        stream_output=True,
+    )
+    return int(result["exit_code"])
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -681,6 +941,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.json_path:
             _write_json(args.json_path, report)
         return 0 if format_result["exit_code"] == 0 and changed_exit == 0 else 1
+
+    if args.group == "providers":
+        return _providers_command(root, args)
+
+    if args.group == "ftep":
+        return _ftep_command(root, args)
 
     if args.group == "closure":
         changed_files = _git_changed_files(root)

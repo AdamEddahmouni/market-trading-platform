@@ -2,16 +2,33 @@
 
 | Field | Value |
 | --- | --- |
-| **Classification** | `PLANNED` / `PRE-REGISTERED` / **NOT YET EMPIRICAL EVIDENCE** |
+| **Classification** | `PLANNED` / `PRE-REGISTERED` / **PENDING_OWNER_DECISIONS** / **NOT YET EMPIRICAL EVIDENCE** |
 | **Protocol ID** | `FTEP-V1/0.1.0-PREREG` |
 | **Preregistered** | 2026-09-11 (documentation freeze; no empirical run started) |
 | **Owner** | Platform engineering (`docs/engineering/`) |
 | **Governing increment** | Paper forward-testing bridge (PD-09 persistence closed) |
-| **Machine-readable companion** | **OPEN DECISION** — see [§ Versioning](#versioning-and-change-control) |
+| **Owner decision packet** | [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md) |
+| **Activation manifest** | [`artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json`](../../artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json) (`PENDING_OWNER_DECISIONS`) |
+| **Machine-readable companion** | [`artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json`](../../artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json) |
 
 > **This document is a protocol, not evidence.** It defines how the first governed
 > Paper forward-test campaign will be conducted. No results, edge claims, or
 > qualification closure are implied by its existence.
+
+## Activation status
+
+| Field | Value |
+| --- | --- |
+| **Status** | `PRE-REGISTERED` / **`PENDING_OWNER_DECISIONS`** — not `FROZEN`, not `ACTIVE` |
+| **Campaign slug** | `FTEP-V1-001` |
+| **Owner decision packet** | [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md) (11 grouped decisions OD-1 … OD-11) |
+| **Activation manifest** | [`artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json`](../../artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json) |
+| **Protocol reference** | [`artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json`](../../artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json) |
+| **Empirical evidence** | **None** — no governed locks under a frozen manifest |
+| **Next gate** | Owner signs OD-1 … OD-11 in decision packet → manifest transitions to `FROZEN` → preflight `READY` |
+
+OPEN DECISION sections below remain **unresolved in protocol text** until owner
+choices are copied into the activation manifest and signed.
 
 ## Purpose
 
@@ -645,7 +662,9 @@ artifacts/forward-test-campaigns/<campaign_id>/
   DISPOSITION.json              # KEEP|REJECT|REPEAT|MODIFY|BLOCKED + rationale
 ```
 
-**Not yet created.** Directory creation is part of campaign activation (Next B).
+Skeleton manifest created at `artifacts/forward-test-campaigns/FTEP-V1-001/`.
+Runtime activation gates implemented in `paper_forward_bridge/activation.py` and
+`preflight.py`. Owner decisions: [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md).
 
 ---
 

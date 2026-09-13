@@ -38,8 +38,12 @@ class ImpCliTests(unittest.TestCase):
         )
         fast = build_parser().parse_args(["validate", "fast"])
         changed = build_parser().parse_args(["validate", "changed", "--json", "result.json"])
+        gaps = build_parser().parse_args(
+            ["providers", "gaps", "--profile", "FTEP-V1-001", "--json"]
+        )
 
         self.assertEqual((affected.group, affected.action, affected.workers), ("test", "affected", 4))
+        self.assertEqual((gaps.group, gaps.action, gaps.profile), ("providers", "gaps", "FTEP-V1-001"))
         self.assertEqual((focused.group, focused.action), ("test", "focused"))
         self.assertEqual(fast.action, "fast")
         self.assertEqual(changed.action, "changed")

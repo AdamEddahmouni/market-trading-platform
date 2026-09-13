@@ -808,6 +808,48 @@ class UiApiHandler(BaseHTTPRequestHandler):
             if path == "/paper/broker/health":
                 self._send_json(broker_projections.build_broker_health_payload(self.store))
                 return
+            if path == "/paper/forward-tests/preflight":
+                account_id = query.get("account_id", [None])[0] or self.store.paper_ledger.paper_account_id
+                campaign_slug = query.get("campaign_slug", [None])[0]
+                if not campaign_slug:
+                    self._send_error_json(
+                        "FORWARD_TEST_CAMPAIGN_ID_REQUIRED",
+                        "FORWARD_TEST_CAMPAIGN_ID_REQUIRED",
+                        status=HTTPStatus.BAD_REQUEST,
+                    )
+                    return
+                cohort_arm = query.get("cohort_arm", [None])[0]
+                manifest_fingerprint = query.get("manifest_fingerprint", [None])[0]
+                try:
+                    self._send_json(
+                        forward_test_projections.build_forward_test_preflight_payload(
+                            self.store,
+                            account_id=str(account_id),
+                            campaign_slug=str(campaign_slug),
+                            cohort_arm=str(cohort_arm) if cohort_arm else None,
+                            manifest_fingerprint=str(manifest_fingerprint) if manifest_fingerprint else None,
+                        )
+                    )
+                except ValueError as exc:
+                    self._send_error_json("FORWARD_TEST_PREFLIGHT_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+                return
+            if path == "/paper/forward-tests/preflight":
+                account_id = query.get("account_id", [None])[0] or self.store.paper_ledger.paper_account_id
+                campaign_slug = query.get("campaign_slug", [None])[0]
+                campaign_id = query.get("campaign_id", [None])[0]
+                cohort_arm = query.get("cohort_arm", [None])[0]
+                manifest_fingerprint = query.get("manifest_fingerprint", [None])[0]
+                self._send_json(
+                    forward_test_projections.build_forward_test_preflight_payload(
+                        self.store,
+                        account_id=str(account_id),
+                        campaign_slug=str(campaign_slug) if campaign_slug else None,
+                        campaign_id=str(campaign_id) if campaign_id else None,
+                        cohort_arm=str(cohort_arm) if cohort_arm else None,
+                        manifest_fingerprint=str(manifest_fingerprint) if manifest_fingerprint else None,
+                    )
+                )
+                return
             if path == "/paper/forward-tests/sessions":
                 account_id = query.get("account_id", [None])[0] or self.store.paper_ledger.paper_account_id
                 self._send_json(

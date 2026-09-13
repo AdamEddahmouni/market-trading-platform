@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "observed_at": "2026-09-12T16:45:00Z",
+  "verification": {
+    "blockers": [
+      "COVERAGE_GAP:CAP-REQ-binding.authority_campaign_bound",
+      "COVERAGE_GAP:CAP-REQ-futures.es_quote.moomoo",
+      "COVERAGE_GAP:G-A6"
+    ],
+    "campaign_slug": "FTEP-V1-001",
+    "coverage_gap_blockers": [
+      "CAP-REQ-binding.authority_campaign_bound",
+      "CAP-REQ-futures.es_quote.moomoo",
+      "G-A6"
+    ],
+    "fingerprint": "69C36BA23813C009C27EE83924834D46F5804D0A0FA037E37ADB133F8BFEA99C",
+    "fingerprint_verified": true,
+    "manifest_status": "FROZEN",
+    "metadata": {
+      "expected_fingerprint": "69C36BA23813C009C27EE83924834D46F5804D0A0FA037E37ADB133F8BFEA99C",
+      "coverage_gap_disposition": "BLOCKING"
+    },
+    "preflight_disposition": "READY",
+    "prospective_disposition": "FROZEN_BLOCKED_EXTERNAL_DATA_ENTITLEMENT"
+  }
+}

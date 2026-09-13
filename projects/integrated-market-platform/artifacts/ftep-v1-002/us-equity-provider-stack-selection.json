@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "ftep_us_equity_provider_stack_selection",
+  "campaign_slug": "FTEP-V1-002",
+  "observed_at": "2026-09-12T14:30:00Z",
+  "incremental_cost_usd": 0,
+  "overall_disposition": "PROPOSED_PENDING_OWNER",
+  "qualifying_prospective_campaign_authorized": false,
+  "intelligence_provider_mode": "RECORDED_ARTIFACTS_ONLY",
+  "evidence_sources": [
+    "artifacts/ftep-v1-activation/provider-probe-moomoo-summary-2026-09-12.json",
+    "artifacts/wave-a-findings/finviz-moomoo-audit.json",
+    "evidence/market_data/finviz/capability-report.json",
+    "docs/providers/IBKR_OBSERVATIONAL.md"
+  ],
+  "smallest_stack": [
+    {
+      "provider_id": "MOOMOO",
+      "capability_id": "US_EQUITY_L1",
+      "campaign_role": "PRIMARY_MARKET_EVIDENCE",
+      "access_state_observed": "SAMPLE_VERIFIED",
+      "incremental_cost_usd": 0
+    },
+    {
+      "provider_id": "FINVIZ_ELITE",
+      "capability_id": "NEWS_EXPORT",
+      "campaign_role": "NEWS_CATALYST_CONTEXT",
+      "access_state_observed": "STALE_ACCESS_VERIFIED",
+      "incremental_cost_usd": 0
+    }
+  ],
+  "explicitly_excluded": [
+    {
+      "provider_id": "IBKR_OBSERVATIONAL",
+      "reason": "Not $0 immediate; ~$500 account funding constraint for US equity L1 entitlements"
+    },
+    {
+      "provider_id": "NEWSAPI",
+      "reason": "Paid API tier not in $0 incremental mandate"
+    }
+  ],
+  "parallel_campaign": {
+    "slug": "FTEP-V1-001",
+    "disposition": "FROZEN_BLOCKED_EXTERNAL_DATA_ENTITLEMENT",
+    "mutation_policy": "NO_CONVERT_ES_TO_EQUITY"
+  }
+}

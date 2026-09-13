@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "ftep_signal_only_authorization_receipt",
+  "campaign_slug": "FTEP-V1-002",
+  "campaign_name": "US-equity-news-catalyst",
+  "campaign_id": "FTCAMP-f7083180990bc59578ca045e1e1318a356421bbc9b81ee514c14130cb0b356b1",
+  "manifest_fingerprint": "F7083180990BC59578CA045E1E1318A356421BBC9B81EE514C14130CB0B356B1",
+  "authorized_at": "2026-09-12T15:23:00-04:00",
+  "authorized_at_utc": "2026-09-12T19:23:00Z",
+  "authorization_scope": "PHASE_1_SIGNAL_ONLY_PROSPECTIVE_SESSION",
+  "test_mode_phase": "SIGNAL_ONLY",
+  "execution_authorized": false,
+  "live_authorized": false,
+  "empirical_lock_authorized": false,
+  "paper_orders_authorized": false,
+  "manifest_mutation_performed": false,
+  "frozen_manifest_operator_attestation_note": "operator_attestation.signal_only_session_authorized remains false in frozen ACTIVATION_MANIFEST.json; authorization recorded only in this receipt per post-freeze immutability.",
+  "owner_authorization_channel": "orchestrator_conversation_explicit",
+  "owner_authorization_text_summary": "Owner explicitly authorized FTEP-V1-002 SIGNAL_ONLY only; never Paper EXECUTION, simulated orders, Live, or manifest/policy mutations.",
+  "paper_account_binding": {
+    "option": "A",
+    "paper_account_id": "7CBA5536EED17C4A6246327EE7ABF223C58627660B93A642D8A99C2AEC10A579",
+    "execution_mode": "INTERNAL_SIMULATION",
+    "data_mode": "FIXTURE_REPLAY"
+  },
+  "universe_symbols": ["AAPL", "MSFT", "NVDA", "AMZN", "META"],
+  "benchmark_symbols": ["SPY"],
+  "strategies": {
+    "baseline": "news_deterministic_baseline@1.0.0",
+    "ai_enhanced": "news_ai_enhanced@1.0.0"
+  },
+  "intelligence_provider": "RECORDED_ARTIFACTS_ONLY",
+  "cadence": "EVENT_DRIVEN",
+  "calendar_scope": "US_EQUITY_RTH",
+  "repository_branch": "work/ftep-v1-002-us-equity-news",
+  "repository_source_sha": "a754f5e5028fd72fbc109993c08f860b7fe77073",
+  "parallel_campaigns": {
+    "FTEP-V1-001": {
+      "status": "unchanged_blocked",
+      "modification": false,
+      "evidence_reuse": false
+    }
+  },
+  "signal_only_session_started": false,
+  "secrets_included": false
+}

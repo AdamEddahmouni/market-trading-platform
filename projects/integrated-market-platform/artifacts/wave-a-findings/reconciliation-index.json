@@ -1,0 +1,103 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "wave_a_reconciliation_index",
+  "artifact_id": "wave-a-reconciliation-index",
+  "observed_at": "2026-09-11T23:30:00Z",
+  "purpose": "Parent Wave A gate index: lane names and artifact paths only (no duplicated audit payloads).",
+  "git": {
+    "branch": "work/ftep-v1-activation",
+    "head_sha_at_index": "61a0593e56d37b0366e761b1ff3c8b88519250aa",
+    "merge_commit_sha": "61a0593e56d37b0366e761b1ff3c8b88519250aa",
+    "merge_message": "Merge remote-tracking branch 'origin/main' into work/ftep-v1-activation",
+    "merge_confirmed": true
+  },
+  "parent_synthesis_artifact": {
+    "artifact_id": "wave-a-reconciliation-gate",
+    "path": "artifacts/wave-a-findings/reconciliation-gate.json"
+  },
+  "wave_a_artifacts": [
+    {
+      "lane_name": "reconcile-with-main",
+      "artifact_id": "wave-a-repo-architecture-audit",
+      "path": "artifacts/wave-a-findings/repo-architecture-audit.json",
+      "materialization_status": "PRESENT"
+    },
+    {
+      "lane_name": "ftep-campaign",
+      "artifact_id": "wave-a-ftep-campaign-audit",
+      "path": "artifacts/wave-a-findings/ftep-campaign-audit.json",
+      "materialization_status": "PRESENT"
+    },
+    {
+      "lane_name": "news-data-inventory",
+      "artifact_id": "wave-a-news-data-inventory",
+      "path": "artifacts/wave-a-findings/news-data-inventory.json",
+      "materialization_status": "PRESENT"
+    },
+    {
+      "lane_name": "ux-hooks-provider-governance",
+      "artifact_id": "wave-a-ux-hooks-audit",
+      "path": "artifacts/wave-a-findings/ux-hooks-audit.json",
+      "materialization_status": "PRESENT"
+    },
+    {
+      "lane_name": "finviz-moomoo-provider-access",
+      "artifact_id": "wave-a-finviz-moomoo-audit",
+      "path": "artifacts/wave-a-findings/finviz-moomoo-audit.json",
+      "materialization_status": "PRESENT"
+    },
+    {
+      "lane_name": "pit-infrastructure",
+      "artifact_id": "wave-a-pit-infrastructure-audit",
+      "path": "artifacts/wave-a-findings/pit-infrastructure-audit.json",
+      "materialization_status": "PRESENT"
+    },
+    {
+      "lane_name": "provider-inventory",
+      "artifact_id": "wave-a-provider-inventory-audit",
+      "path": "artifacts/wave-a-findings/provider-inventory.json",
+      "materialization_status": "PRESENT"
+    },
+    {
+      "lane_name": "ibkr-tradier-alpaca",
+      "artifact_id": "wave-a-ibkr-tradier-alpaca-audit",
+      "path": "artifacts/wave-a-findings/ibkr-tradier-alpaca-audit.json",
+      "materialization_status": "PRESENT"
+    }
+  ],
+  "directory_listing_observed": [
+    "artifacts/wave-a-findings/finviz-moomoo-audit.json",
+    "artifacts/wave-a-findings/ftep-campaign-audit.json",
+    "artifacts/wave-a-findings/ibkr-tradier-alpaca-audit.json",
+    "artifacts/wave-a-findings/news-data-inventory.json",
+    "artifacts/wave-a-findings/pit-infrastructure-audit.json",
+    "artifacts/wave-a-findings/provider-inventory.json",
+    "artifacts/wave-a-findings/repo-architecture-audit.json",
+    "artifacts/wave-a-findings/reconciliation-gate.json",
+    "artifacts/wave-a-findings/reconciliation-index.json",
+    "artifacts/wave-a-findings/ux-hooks-audit.json"
+  ],
+  "validation_after_merge": {
+    "command": "python tools/imp.py validate fast",
+    "cwd": "projects/integrated-market-platform",
+    "status": "passed",
+    "tests_run": 21,
+    "skipped": 0,
+    "failures": 0,
+    "errors": 0,
+    "wall_seconds": 9.184,
+    "suites": [
+      "mandatory-isolated-security-offline-network-denial",
+      "mandatory-shared"
+    ],
+    "merge_related_failures": false,
+    "notes": "PERF classification SEVERE_REGRESSION vs baseline median (environment timing); zero test failures post-merge."
+  },
+  "index_completeness": {
+    "lanes_indexed": 8,
+    "lanes_present": 8,
+    "lanes_absent": 0,
+    "absent_lane_names": []
+  },
+  "secrets_in_artifact": false
+}

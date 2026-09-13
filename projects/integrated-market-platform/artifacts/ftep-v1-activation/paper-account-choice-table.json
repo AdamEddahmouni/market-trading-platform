@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "ftep_paper_account_choice_table",
+  "observed_at": "2026-09-12T05:52:00Z",
+  "binding_status": "BOUND_PATHWAY_A",
+  "selected_binding_option": "A",
+  "selected_paper_account_id": "7CBA5536EED17C4A6246327EE7ABF223C58627660B93A642D8A99C2AEC10A579",
+  "enumeration_source": "account_registry.list_operational_accounts + IMP persistence policy",
+  "persistence_enabled_at_probe": true,
+  "secrets_included": false,
+  "eligible_accounts": [
+    {
+      "display_name": "Internal simulation Paper (default bootstrap ledger)",
+      "provider": "INTERNAL",
+      "execution_mode": "INTERNAL_SIMULATION",
+      "data_mode": "FIXTURE_REPLAY_OR_OPERATOR_CONFIGURED",
+      "ftep_suitability": "BOUND_FOR_FTEP_V1_001_AT_OD_11",
+      "limitations": [
+        "Not market truth; simulator fills only",
+        "Requires IMP_PERSIST_STATE=1 and valid paper ledger at freeze (OD-11)",
+        "No automatic binding — owner must select at freeze"
+      ],
+      "prior_interview_note": "Owner selected option A at OD-11 pathway A freeze."
+    }
+  ],
+  "excluded_from_selection": [
+    {
+      "class": "DEMO_REPLAY",
+      "reason": "Demo mutations prohibited; not Paper forward-test authority"
+    },
+    {
+      "class": "LIVE_CANARY",
+      "reason": "Observational only; LIVE-001 blocked for FTEP empirical locks"
+    },
+    {
+      "class": "EXTERNAL_BROKER_PAPER",
+      "reason": "No verified futures-capable external Paper comparator in repo evidence"
+    }
+  ],
+  "owner_action": "Completed at OD-11 freeze (pathway A)."
+}

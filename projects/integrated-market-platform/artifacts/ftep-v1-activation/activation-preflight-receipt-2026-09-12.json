@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "ftep_activation_preflight_receipt",
+  "campaign_slug": "FTEP-V1-001",
+  "observed_at": "2026-09-12T05:55:00Z",
+  "imp_persist_state": "1",
+  "preflight_disposition": "READY",
+  "preflight_blockers": [],
+  "preflight_warnings": [],
+  "manifest_status": "FROZEN",
+  "manifest_fingerprint": "69C36BA23813C009C27EE83924834D46F5804D0A0FA037E37ADB133F8BFEA99C",
+  "campaign_id": "FTCAMP-69c36ba23813c009c27ee83924834d46f5804d0a0fa037e37adb133f8bfea99c",
+  "campaign_readiness_disposition": "NOT_READY",
+  "campaign_readiness_blockers": [
+    "COVERAGE_GAP:CAP-REQ-binding.authority_campaign_bound",
+    "COVERAGE_GAP:CAP-REQ-futures.es_quote.moomoo",
+    "COVERAGE_GAP:G-A6",
+    "COVERAGE_GAP:WAVE-A-001",
+    "COVERAGE_GAP:WAVE-A-002",
+    "COVERAGE_GAP:WAVE-A-003",
+    "COVERAGE_GAP:WAVE-A-009",
+    "COVERAGE_GAP:WAVE-A-010"
+  ],
+  "note": "Activation preflight READY under pathway A; campaign-readiness remains fail-closed on provider/coverage gaps until operator evidence clears.",
+  "secrets_included": false
+}

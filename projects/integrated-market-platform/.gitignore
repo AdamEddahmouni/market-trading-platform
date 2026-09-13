@@ -33,3 +33,5 @@ pipelines/stock_data/.pytest_cache/
 pipelines/stock_data/htmlcov/
 pipelines/stock_data/*.log
 pipelines/stock_data/*.egg-info/
+# Regenerated on every `ftep campaign-status` (volatile observed_at_ns).
+artifacts/ftep-v1-002/campaign-progress.json

@@ -1,0 +1,247 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "wave_a_read_only_audit",
+  "inventory_id": "wave-a-provider-inventory",
+  "observed_at": "2026-09-11T23:15:00Z",
+  "audit_scope": "Wave A lane B: in-repo provider/broker/data/news integration catalog (read-only; no live probes in this pass).",
+  "primary_observational_provider": "moomoo",
+  "audit_agent_reference": "Wave A provider inventory lane (agent transcript 1ba4efb1-1e5b-4f78-98ff-51f315c8821f); condensed for capability-matrix reconciliation.",
+  "related_wave_a_artifacts": [
+    {
+      "path": "artifacts/wave-a-findings/news-data-inventory.json",
+      "role": "news_lane_detail_and_ftep_deferred_keys"
+    },
+    {
+      "path": "artifacts/wave-a-findings/ux-hooks-audit.json",
+      "role": "ui_capability_vocabulary_parallel_to_provider_registry"
+    }
+  ],
+  "cross_cutting_machinery": {
+    "authority": [
+      "src/market_platform_foundation/providers/contracts.py",
+      "src/market_platform_foundation/providers/composition.py",
+      "docs/providers/MULTI_SOURCE_DATA_FOUNDATION.md"
+    ],
+    "registry_and_capability": [
+      "src/market_platform_foundation/providers/registry.py",
+      "src/market_platform_foundation/providers/runtime_capability.py",
+      "src/market_platform_foundation/market_data/capability_registry.py"
+    ],
+    "envelopes_and_broker_boundary": [
+      "src/market_platform_foundation/providers/envelope.py",
+      "src/market_platform_foundation/providers/broker_execution.py",
+      "src/market_platform_foundation/providers/stubs.py"
+    ],
+    "intelligence_normalization": [
+      "src/market_platform_foundation/intelligence/normalization/registry.py",
+      "src/market_platform_foundation/intelligence/normalization/providers/"
+    ],
+    "operator_readiness": [
+      "tools/provider_readiness.py",
+      "tools/validate.py"
+    ],
+    "whale_ledger": [
+      "src/market_platform_foundation/providers/whale_ledger.py"
+    ]
+  },
+  "providers_by_category": {
+    "live_observational": {
+      "count": 3,
+      "provider_ids": [
+        "moomoo.live",
+        "moomoo.captured.equity_quote",
+        "ibkr.observational"
+      ],
+      "notes": "UI/runtime label MOOMOO; depth-oriented primary path. IBKR secondary delayed/history/scanner/account reads."
+    },
+    "paper_execution": {
+      "count": 2,
+      "provider_ids": [
+        "tradier.paper",
+        "moomoo.paper"
+      ],
+      "notes": "Mutually exclusive composition slot; both fixture-first transport unless replay enabled. Internal IMP paper simulation is separate."
+    },
+    "regulatory_macro": {
+      "count": 12,
+      "provider_ids": [
+        "sec.edgar.fixture",
+        "sec.edgar.live",
+        "sec.ftd",
+        "finra",
+        "nasdaq_regsho",
+        "nyse_regsho",
+        "cboe_regsho",
+        "cftc.public.futures_positioning",
+        "fred.macro",
+        "eia",
+        "weather",
+        "cboe_options"
+      ],
+      "notes": "Short intelligence consolidates FINRA/Nasdaq/NYSE/CBOE threshold semantics under short_intelligence/."
+    },
+    "news_discovery": {
+      "count": 5,
+      "provider_ids": [
+        "newsapi",
+        "finnhub",
+        "finviz",
+        "news.fixture",
+        "sec.edgar"
+      ],
+      "notes": "sec.edgar appears in news source catalog (trust tier); parallel legacy NewsAggregator path. See news-data-inventory.json for configured_not_operational headline vendors (7 ids)."
+    },
+    "llm": {
+      "count": 4,
+      "provider_ids": [
+        "anthropic.messages",
+        "inference.fixture",
+        "grounded.evidence",
+        "stub.abstain"
+      ],
+      "notes": "Not market-data providers; intelligence/assistant boundary only."
+    }
+  },
+  "fixture_composition": {
+    "registration_entrypoint": "configure_fixture_provider_composition() in src/market_platform_foundation/providers/composition.py",
+    "fixture_root": "tests/fixtures/providers/",
+    "provider_ids_count": 16,
+    "provider_ids": [
+      "options.fixture.chain",
+      "options.fixture.activity",
+      "depth.fixture.futures_chain",
+      "cot.fixture.futures_positioning",
+      "bars.fixture.futures_settlement",
+      "macro.fixture.futures_macro",
+      "margin.fixture.futures_margin",
+      "distribution.fixture.forecast",
+      "cvd.fixture.order_flow",
+      "cvd.recorded.order_flow",
+      "mbo.fixture.order_flow",
+      "depth.fixture.order_book",
+      "depth.fixture.futures",
+      "large_prints.fixture.activity",
+      "catalyst.fixture.activity",
+      "fund_etf.fixture.activity"
+    ]
+  },
+  "stubs_gaps": {
+    "composition_unconfigured": [
+      {
+        "capability": "reference_data",
+        "stub": "UnconfiguredReferenceDataProvider",
+        "provider_id": "stub.reference.unconfigured"
+      },
+      {
+        "capability": "equity_quote",
+        "stub": "UnconfiguredEquityQuoteProvider",
+        "note": "Live quote path via moomoo capture adapter when admitted; default composition slot unconfigured."
+      },
+      {
+        "capability": "disclosure",
+        "stub": "UnconfiguredDisclosureProvider",
+        "note": "EDGAR adapters exist; default composition remains unconfigured until wired."
+      },
+      {
+        "capability": "paper_execution",
+        "stub": "DisabledPaperExecutionProvider",
+        "provider_id": "stub.execution.disabled"
+      }
+    ],
+    "brokers_without_adapter": [
+      {
+        "name": "alpaca",
+        "status": "NOT_AUTHORIZED",
+        "note": "Referenced in analysis allowlist only; no in-repo adapter."
+      }
+    ],
+    "news_catalog_configured_not_operational_count": 7,
+    "news_catalog_configured_not_operational_ids": [
+      "pr_newswire",
+      "globe_newswire",
+      "accesswire",
+      "reuters",
+      "dow_jones",
+      "benzinga",
+      "fda"
+    ],
+    "persistence_adjacent": [
+      {
+        "name": "mongodb",
+        "role": "intelligence_optional_durable_store",
+        "config_ref": "IMP_MONGODB_URI"
+      }
+    ]
+  },
+  "pipelines_stock_data_adjacent": {
+    "severity": "warning",
+    "path": "pipelines/stock_data/",
+    "governed_provider_composition": false,
+    "summary": "Separate operator scrapers (Nasdaq Trader directories, SEC EDGAR HTML, Yahoo Finance, Wikipedia, marketdata.app, Nasdaq.com, MarketBeat) are outside ADR-PROV envelopes unless explicitly ingested into foundation normalization.",
+    "scraper_module_glob": "pipelines/stock_data/src/scrapers/"
+  },
+  "doc_index": {
+    "count": 15,
+    "paths": [
+      "docs/providers/MOOMOO_OBSERVATIONAL.md",
+      "docs/providers/IBKR_OBSERVATIONAL.md",
+      "docs/providers/TRADIER_PAPER.md",
+      "docs/providers/SEC_EDGAR.md",
+      "docs/providers/SEC_FAILS_TO_DELIVER.md",
+      "docs/providers/FINRA_NASDAQ_SHORT_INTELLIGENCE.md",
+      "docs/providers/CFTC_COMMITMENTS_OF_TRADERS.md",
+      "docs/providers/FRED_ALFRED.md",
+      "docs/providers/EIA_ENERGY_FUNDAMENTALS.md",
+      "docs/providers/CBOE_PUBLIC_OPTIONS_STATISTICS.md",
+      "docs/providers/NOAA_NWS_CPC_WEATHER.md",
+      "docs/providers/FINVIZ_ELITE.md",
+      "docs/providers/NEWS_SOURCES.md",
+      "docs/providers/MULTI_SOURCE_DATA_FOUNDATION.md",
+      "docs/engineering/PROVIDER_READINESS.md"
+    ]
+  },
+  "test_suite_anchors": {
+    "providers_contracts_count": 40,
+    "providers_dir": "tests/providers/",
+    "market_data_live_dir": "tests/market_data/",
+    "news_dir": "tests/news/",
+    "ibkr_dir": "tests/ibkr/",
+    "live_gated_dirs": [
+      "tests/live_moomoo/",
+      "tests/live_fred/",
+      "tests/live_eia/",
+      "tests/live_cftc/",
+      "tests/live_finra/",
+      "tests/live_sec/",
+      "tests/live_sec_ftd/",
+      "tests/live_nasdaq/",
+      "tests/live_nyse/",
+      "tests/live_cboe/",
+      "tests/live_cboe_options/",
+      "tests/live_weather/"
+    ],
+    "representative_selectors": [
+      "tests/providers/test_providers.py",
+      "tests/providers/test_multi_source_foundation.py",
+      "tests/market_data/test_observational_boundary.py",
+      "tests/news/test_news_foundation.py"
+    ]
+  },
+  "vendor_leakage_summary": {
+    "strategy_layer": {
+      "status": "clean",
+      "evidence": "No Tradier/Finviz/NewsAPI/Finnhub/OpenD wire symbols under src/market_platform_foundation/strategy/ (grep at audit)."
+    },
+    "designed_boundaries": [
+      "broker_execution.py and providers/envelope.py map wire shapes to canonical broker statuses.",
+      "market_data/normalization.py absorbs Moomoo Bid/Ask/ticker_direction; provider tick direction not ground truth (test_observational_boundary.py).",
+      "intelligence/normalization/providers/* holds vendor-specific parsing."
+    ],
+    "residual_exposure": [
+      "ui_api projections expose MOOMOO/IBKR operator labels.",
+      "intelligence forward-qualification references provider capability names, not vendor wire schemas."
+    ],
+    "out_of_boundary_risk": "pipelines/stock_data scrapers (see pipelines_stock_data_adjacent)."
+  },
+  "reconciliation_note": "Extend registry.py, runtime_capability.py, and provider_readiness.py for the machine-readable capability matrix; do not add a second provider registry."
+}

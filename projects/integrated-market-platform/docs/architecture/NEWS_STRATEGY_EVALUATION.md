@@ -116,13 +116,18 @@ Calibration: sentiment/impact/confidence buckets labeled **EMPIRICAL_CONFIDENCE_
 
 ## Paper execution boundary
 
-This increment stops **before**:
+This laboratory package stops **before**:
 
 ```
 preview → submit → order → fill
 ```
 
-Future bridge (not implemented): validated `StrategyEvaluationDecision` → canonical Paper preview request through normal IMP authority.
+A governed **Paper forward-testing bridge** exists in `paper_forward_bridge/` (see [PAPER_FORWARD_TESTING_BRIDGE.md](PAPER_FORWARD_TESTING_BRIDGE.md)): time-locked `FORWARD_TEST` sessions may hand off to Paper preview/submit only under a **frozen** FTEP activation manifest. The preregistered campaign `FTEP-V1-001` remains `PENDING_OWNER_DECISIONS`; no empirical forward locks are authorized from this evaluation increment alone.
+
+| Path | Role |
+|------|------|
+| Fixture replay / evaluation CLI (`news_strategy_evaluation`) | `SOFTWARE_FIXTURE_ONLY` software validation |
+| Campaign-bound forward bridge | Prospective Paper path; requires manifest freeze and preflight `READY` |
 
 ## Safety boundary
 

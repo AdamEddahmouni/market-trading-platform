@@ -137,9 +137,54 @@ Failures are explicit: insufficient data, horizon not reached, Paper rejection, 
 
 Primary suite: `tests/intelligence/test_paper_forward_bridge.py`
 
+Activation suite: `tests/intelligence/test_forward_test_activation.py`
+
+Protocol ref suite: `tests/intelligence/test_forward_test_protocol_ref.py`
+
+Preflight API suite: `tests/intelligence/test_forward_test_preflight_api.py`
+
 Persistence suite: `tests/intelligence/test_forward_test_persistence.py`
 
 UI model tests: `ui/src/components/paper-workspace/buildForwardTestPanelModel.test.ts`
+
+## FTEP-V1 activation (campaign governance)
+
+Empirical Paper forward-test sessions require a **frozen activation manifest**
+under `artifacts/forward-test-campaigns/<campaign_slug>/ACTIVATION_MANIFEST.json`.
+
+| Module | Role |
+| --- | --- |
+| `activation.py` | Load/validate manifest, SHA-256 fingerprint, freeze state machine |
+| `protocol_ref.py` | Verify `PROTOCOL_REF.json` doc hash against preregistered protocol |
+| `campaign_binding.py` | One ACTIVE campaign per account; durable binding at session create |
+| `preflight.py` | Deterministic preflight (`READY` / `NOT_READY`) before session create |
+| `session_policy.py` | Launch-policy gates: calendar/RTH, phase transition, overlap, cohort, evidence class, eval force |
+| `service.py` | Gates `create_session`; binds manifest fields; validates decisions |
+
+Preflight enforces: Paper-only, `FORWARD_TEST`, manifest `FROZEN`/`ACTIVE`, fingerprint
+match, protocol reference hash, persistence when required, cohort-arm policy binding.
+Campaign binding enforces one ACTIVE campaign per account (`forward_test_campaign_bindings`).
+API preflight: `GET /paper/forward-tests/preflight?campaign_slug=...&account_id=...`.
+Freeze tooling: `python tools/forward_test/freeze_activation_manifest.py <campaign_slug> --frozen-at ...`.
+Non-campaign session create is rejected unless `IMP_FORWARD_TEST_CAMPAIGN_REQUIRED=0`.
+Empirical paths (`lock`, `submit`, `observe`, `evaluate`) require a campaign-bound session.
+
+Session fields added: `campaign_id`, `protocol_id`, `activation_version`,
+`manifest_fingerprint`, `cohort_arm`, `config_frozen`.
+
+Decision fields added: `evidence_class` (default `UNCLASSIFIED`; no auto-promotion to
+empirical classes), `cohort_arm`.
+
+Launch-policy enforcement (`session_policy.py`): when `calendar_scope` is set on the
+manifest, decision/lock times must fall inside US equity RTH (09:30–16:00 ET); phased
+`SIGNAL_ONLY` → `EXECUTION` requires `phase_transition_min_locks` integrity-clean locks;
+`overlap_policy=FORBID_CONCURRENT` blocks overlapping open decisions per symbol;
+empirical `evidence_class` values are rejected at create/lock; campaign-bound
+`evaluate(..., force=True)` is forbidden unless `IMP_FORWARD_TEST_EVAL_FORCE=1` (test
+override only). Sample floors in the manifest gate statistical disposition only, not
+individual locks.
+
+See [FTEP-V1_OWNER_DECISION_PACKET.md](../engineering/FTEP-V1_OWNER_DECISION_PACKET.md).
 
 ## Persistence (PD-09)
 
@@ -157,6 +202,15 @@ Factory: `create_forward_test_repository()` in
 
 - Durable storage is local SQLite only (no MongoDB / remote campaign DB)
 - Outcome metrics use observation payloads, not live provider polling
+- **Observational live news ingress** is implemented as opt-in scaffolding only
+  (`market_platform_foundation/news/observational_ingress.py`). It requires
+  `IMP_OBSERVATIONAL_NEWS_INGRESS=1` plus per-provider `IMP_NEWSAPI_LIVE` /
+  `IMP_FINNHUB_LIVE` gates, normalizes through `aggregator_bridge`, and is
+  **not** auto-wired into forward-test `observe` paths or Paper submission.
+  FTEP-V1 campaign connectivity remains deferred under manifest
+  `deferred_until_evidence` (`FTEP-ACT-04`, `FTEP-D038`). Operator-local
+  bounded probes: [OPERATOR_PROBE_RUNBOOK.md](../engineering/OPERATOR_PROBE_RUNBOOK.md)
+  §5–6.
 - EVIDENCE-01B campaign auto-bridge not wired
 - Route-policy fixes for forward-test UI mutations remain follow-up work
 

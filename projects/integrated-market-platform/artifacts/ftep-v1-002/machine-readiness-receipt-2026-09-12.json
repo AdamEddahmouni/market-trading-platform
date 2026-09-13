@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "ftep_machine_readiness_receipt",
+  "campaign_slug": "FTEP-V1-002",
+  "observed_at": "2026-09-12T20:30:00Z",
+  "repository_branch": "work/ftep-v1-002-us-equity-news",
+  "repository_source_sha": "4f6f05ee13b617f5ec9905ebad9a247f84f29110",
+  "manifest": {
+    "status": "FROZEN",
+    "fingerprint": "F7083180990BC59578CA045E1E1318A356421BBC9B81EE514C14130CB0B356B1",
+    "post_freeze_mutations": 0
+  },
+  "preflight": {
+    "with_imp_persist_state_1": "READY",
+    "default_shell": "NOT_READY",
+    "default_shell_blockers": ["PERSISTENCE_DISABLED"]
+  },
+  "signal_only": {
+    "authorization_receipt": "artifacts/ftep-v1-002/signal-only-authorization-receipt-2026-09-12.json",
+    "authorized": true,
+    "ready_for_session_launch": true
+  },
+  "execution": {
+    "authorized": false,
+    "ready": false
+  },
+  "live": {
+    "authorized": false,
+    "ready": false
+  },
+  "us_equity_rth": {
+    "session_eligible_at_observation": false,
+    "reason": "Saturday 2026-09-12 — regular session closed"
+  },
+  "providers": {
+    "moomoo_us_equity_l1": "SAMPLE_VERIFIED",
+    "finviz_news_export": "SATISFIED_STALE_EVIDENCE_LOCAL_PROBE_REQUIRED"
+  },
+  "safety_counters": {
+    "paper_orders": 0,
+    "live_orders": 0,
+    "paid_activations": 0,
+    "post_freeze_manifest_mutations": 0,
+    "signal_only_sessions_started": 0
+  },
+  "classification": "SIGNAL_ONLY_AUTHORIZED_MARKET_CLOSED",
+  "secrets_included": false
+}

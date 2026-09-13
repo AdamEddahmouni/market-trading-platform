@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "simulator_calibration_shakedown",
+  "classification": "ENGINEERING_SHAKEDOWN_ONLY",
+  "observed_at": "2026-09-12T05:12:00Z",
+  "evidence_class": "FIXTURE_BACKED_NOT_PROSPECTIVE",
+  "commands": [
+    "python -m unittest discover -s tests -p test_calibration* -q"
+  ],
+  "results": {
+    "tests_run": 4,
+    "failures": 0,
+    "errors": 0
+  },
+  "thresholds": {
+    "owner_preregistration": "UNSET",
+    "blocker_id": "OWNER-CALIBRATION-THRESHOLDS",
+    "qualifying_campaign_numeric_gates": false
+  },
+  "comparator_semantics": "EXTERNAL_PAPER_NOT_MARKET_TRUTH",
+  "note": "Metrics framework exercised on fixtures; no universal pass/fail thresholds invented."
+}

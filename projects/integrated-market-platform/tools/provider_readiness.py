@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import socket
+import sys
 from pathlib import Path
 from typing import Callable, Mapping
 from urllib.parse import urlparse
@@ -458,22 +459,225 @@ def _print_report(report: Mapping[str, object], *, as_json: bool) -> None:
         )
 
 
+def _collect_capability_snapshot(
+    repository_root: Path,
+    *,
+    probe_local_services: bool,
+) -> dict[str, object]:
+    from market_platform_foundation.providers.capability_snapshot import (
+        build_capability_matrix_snapshot,
+    )
+
+    readiness = collect_readiness(
+        os.environ,
+        repository_root=repository_root,
+        probe_local=_safe_local_probe,
+        probe_local_services=probe_local_services,
+    )
+    snapshot = build_capability_matrix_snapshot(
+        repository_root=repository_root,
+        readiness_report=readiness,
+    )
+    return {
+        "schema_version": "1.0",
+        "secrets_included": False,
+        "provider_count": len(snapshot.providers),
+        "sources": [dict(row) for row in snapshot.sources],
+        "providers": [row.to_dict() for row in snapshot.providers],
+        "observed_at": snapshot.observed_at,
+        "logical_id": snapshot.logical_id,
+    }
+
+
+def _collect_gap_report(
+    repository_root: Path,
+    profile_id: str,
+    *,
+    probe_local_services: bool,
+) -> dict[str, object]:
+    from market_platform_foundation.providers.coverage_gap_engine import (
+        resolve_coverage_gaps_for_campaign,
+    )
+
+    readiness = collect_readiness(
+        os.environ,
+        repository_root=repository_root,
+        probe_local=_safe_local_probe,
+        probe_local_services=probe_local_services,
+    )
+    report = resolve_coverage_gaps_for_campaign(
+        profile_id,
+        repository_root=repository_root,
+        readiness_report=readiness,
+    )
+    payload = report.to_dict()
+    payload["schema_version"] = "1.0"
+    payload["secrets_included"] = False
+    return payload
+
+
+def _collect_campaign_readiness(
+    repository_root: Path,
+    campaign_slug: str,
+    *,
+    probe_local_services: bool,
+) -> dict[str, object]:
+    from market_platform_foundation.intelligence.paper_forward_bridge.campaign_readiness import (
+        evaluate_campaign_readiness,
+    )
+
+    readiness = collect_readiness(
+        os.environ,
+        repository_root=repository_root,
+        probe_local=_safe_local_probe,
+        probe_local_services=probe_local_services,
+    )
+    result = evaluate_campaign_readiness(
+        campaign_slug,
+        repository_root=repository_root,
+        readiness_report=readiness,
+    )
+    payload = result.to_dict()
+    payload["schema_version"] = "1.0"
+    payload["secrets_included"] = False
+    return payload
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--json", action="store_true", help="Print a machine-readable report")
-    parser.add_argument(
+    subparsers = parser.add_subparsers(dest="command")
+
+    report_parser = subparsers.add_parser("report", help="Credential and gate readiness (default)")
+    report_parser.add_argument("--json", action="store_true", help="Print a machine-readable report")
+    report_parser.add_argument(
         "--probe-local",
         action="store_true",
         help="Probe loopback Moomoo and IBKR ports; never probes external hosts",
     )
-    args = parser.parse_args(argv)
-    report = collect_readiness(
-        os.environ,
-        probe_local=_safe_local_probe,
-        probe_local_services=args.probe_local,
+
+    audit_parser = subparsers.add_parser(
+        "audit",
+        help="Read-only capability-matrix audit merged with value-blind readiness",
     )
-    _print_report(report, as_json=args.json)
-    return 0
+    audit_parser.add_argument("--json", action="store_true", help="Print machine-readable JSON")
+    audit_parser.add_argument(
+        "--probe-local",
+        action="store_true",
+        help="Probe loopback ports when building readiness rows",
+    )
+
+    gaps_parser = subparsers.add_parser(
+        "gaps",
+        help="Deterministic coverage-gap report for a campaign requirement profile",
+    )
+    gaps_parser.add_argument(
+        "--profile",
+        default="FTEP-V1-001",
+        help="Campaign requirement profile id (default: FTEP-V1-001)",
+    )
+    gaps_parser.add_argument("--json", action="store_true", help="Print machine-readable JSON")
+    gaps_parser.add_argument(
+        "--probe-local",
+        action="store_true",
+        help="Probe loopback ports when building readiness rows",
+    )
+
+    readiness_parser = subparsers.add_parser(
+        "campaign-readiness",
+        help="Fail-closed campaign readiness (preflight + coverage gaps)",
+    )
+    readiness_parser.add_argument(
+        "campaign_slug",
+        nargs="?",
+        default="FTEP-V1-001",
+        help="Forward-test campaign slug (default: FTEP-V1-001)",
+    )
+    readiness_parser.add_argument("--json", action="store_true", help="Print machine-readable JSON")
+    readiness_parser.add_argument(
+        "--probe-local",
+        action="store_true",
+        help="Probe loopback ports when building readiness rows",
+    )
+
+    parser.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--probe-local", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--audit",
+        action="store_true",
+        help="Alias for audit --json (read-only capability matrix)",
+    )
+    parser.add_argument(
+        "--gaps",
+        action="store_true",
+        help="Alias for gaps --profile FTEP-V1-001 --json",
+    )
+    parser.add_argument(
+        "--campaign-readiness",
+        metavar="SLUG",
+        nargs="?",
+        const="FTEP-V1-001",
+        help="Alias for campaign-readiness SLUG --json",
+    )
+
+    args = parser.parse_args(argv)
+    command = args.command
+    if command is None:
+        if args.campaign_readiness is not None:
+            command = "campaign-readiness"
+        elif args.gaps:
+            command = "gaps"
+        elif args.audit:
+            command = "audit"
+        else:
+            command = "report"
+
+    probe_local = bool(getattr(args, "probe_local", False))
+    as_json = bool(getattr(args, "json", False))
+
+    if command == "report":
+        report = collect_readiness(
+            os.environ,
+            probe_local=_safe_local_probe,
+            probe_local_services=probe_local,
+        )
+        _print_report(report, as_json=as_json)
+        return 0
+
+    src = ROOT / "src"
+    if str(src) not in sys.path:
+        sys.path.insert(0, str(src))
+
+    if command == "audit":
+        payload = _collect_capability_snapshot(ROOT, probe_local_services=probe_local)
+        if as_json or args.audit:
+            print(json.dumps(payload, indent=2, sort_keys=True))
+        else:
+            print(f"providers={payload['provider_count']} observed_at={payload['observed_at']}")
+        return 0
+
+    if command == "gaps":
+        profile = getattr(args, "profile", "FTEP-V1-001")
+        payload = _collect_gap_report(ROOT, profile, probe_local_services=probe_local)
+        if as_json or args.gaps:
+            print(json.dumps(payload, indent=2, sort_keys=True))
+        else:
+            print(
+                f"profile={payload['profile_id']} disposition={payload['disposition']} "
+                f"blockers={len(payload['blockers'])}"
+            )
+        return 0
+
+    if command == "campaign-readiness":
+        slug = getattr(args, "campaign_slug", None) or args.campaign_readiness or "FTEP-V1-001"
+        payload = _collect_campaign_readiness(ROOT, slug, probe_local_services=probe_local)
+        if as_json or args.campaign_readiness is not None:
+            print(json.dumps(payload, indent=2, sort_keys=True))
+        else:
+            print(f"campaign={slug} disposition={payload['disposition']}")
+        return 0
+
+    parser.error(f"unknown command: {command}")
+    return 2
 
 
 if __name__ == "__main__":

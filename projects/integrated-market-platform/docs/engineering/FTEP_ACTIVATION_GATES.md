@@ -6,11 +6,15 @@
 
 This document separates **protocol preregistration** from **campaign activation**. The existing `FTEP-V1/0.1.0-PREREG` document is a design/preregistration artifact with unresolved decisions. It is not an activated campaign and it is not empirical evidence.
 
+Provider selection is governed by [IMP Provider Universe, Audit & Integration Strategy](../providers/PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md): **catalog broadly, audit current access first, derive coverage gaps, integrate selectively, and bind exact providers only when campaign requirements are known.**
+
+> **Snapshot banner:** The gate-status column below is the 2026-09-11 snapshot at `main@a4858103` (pre-implementation planning). It is **not** current campaign state. Current FTEP campaign truth: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) and [FTEP_CAMPAIGN_CATALOG.md](FTEP_CAMPAIGN_CATALOG.md).
+
 ## Gate summary
 
 A campaign may be labeled `FROZEN_FOR_ACTIVATION` only when every required gate below is satisfied and the resulting activation manifest is immutable/versioned before the first qualifying prospective observation.
 
-| Gate | Requirement | Current status at `main@a4858103` |
+| Gate | Requirement | Status at 2026-09-11 snapshot `main@a4858103` |
 |---|---|---|
 | G-A0 | Durable forward-test persistence and restart/idempotency | `PASS` — PD-09 merged |
 | G-A1 | FTEP Core version bound | `PLANNED` — doctrine established; campaign binding pending |
@@ -99,4 +103,4 @@ Operational bug fixes that do not change empirical semantics must still be recor
 
 ## What is not required before all implementation
 
-These gates govern the first empirical campaign. They do not prohibit implementation of clearly prerequisite infrastructure such as provider capability auditing, market-data adapters, calibration harnesses, immutable manifests, asset/strategy profiles or Opportunity Contract plumbing. Those implementations must themselves preserve the doctrine in `IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md`.
+These gates govern the first empirical campaign. They do not prohibit implementation of clearly prerequisite infrastructure such as provider capability auditing, market-data adapters, calibration harnesses, immutable manifests, asset/strategy profiles or Opportunity Contract plumbing. Those implementations must themselves preserve the doctrine in `IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md` and the provider strategy in `PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md`.

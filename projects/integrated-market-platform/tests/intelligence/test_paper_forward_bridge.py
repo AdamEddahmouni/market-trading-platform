@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import os
 import sys
+import tempfile
 import unittest
 from dataclasses import replace
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "tests" / "intelligence"))
 
 from market_platform_foundation.intelligence.news_strategy_evaluation.contracts import (  # noqa: E402
     EvaluationDecision,
@@ -50,6 +52,15 @@ from market_platform_foundation.ui_api.forward_test_projections import (  # noqa
 )
 from market_platform_foundation.ui_api.paper_projections import open_paper_session  # noqa: E402
 from market_platform_foundation.ui_api.store import ReplayStore  # noqa: E402
+from forward_test_activation_support import (  # noqa: E402
+    BASELINE_POLICY,
+    CAMPAIGN_SLUG,
+    POLICY_VERSION,
+    ActivatedForwardTestCase,
+    create_activated_session,
+    enable_test_campaigns_root,
+    seed_baseline_campaign,
+)
 
 
 T0 = 1_700_000_000_000_000_000
@@ -79,18 +90,16 @@ def _strategy_decision(*, instrument_id: str = "ACME") -> StrategyEvaluationDeci
     )
 
 
-class ForwardTestDomainTests(unittest.TestCase):
+class ForwardTestDomainTests(ActivatedForwardTestCase):
     def setUp(self) -> None:
+        super().setUp()
         self.store = ForwardTestStore()
         self.service = ForwardTestService(self.store)
 
     def test_create_lock_and_observe_lifecycle(self) -> None:
-        session = self.service.create_session(
-            account_id="paper-a",
-            mode="PAPER",
-            strategy_id="news_deterministic_baseline",
-            strategy_version="1.0.0",
-            universe=("ACME",),
+        session = create_activated_session(
+            self.service,
+            self.campaigns_root,
             evaluation_horizon_ns=HOUR,
             created_at_ns=T0,
         )
@@ -102,8 +111,8 @@ class ForwardTestDomainTests(unittest.TestCase):
             direction="POSITIVE_DIRECTIONAL_BIAS",
             decision_time_ns=T0,
             source_time_ns=T0 - 1,
-            strategy_id="news_deterministic_baseline",
-            strategy_version="1.0.0",
+            strategy_id=BASELINE_POLICY,
+            strategy_version=POLICY_VERSION,
             test_mode=ForwardTestMode.SIGNAL_ONLY,
         )
         self.assertEqual(decision.run_kind, ForwardTestRunKind.FORWARD_TEST)
@@ -129,10 +138,16 @@ class ForwardTestDomainTests(unittest.TestCase):
         self.assertGreaterEqual(len(with_obs.observations), 1)
 
     def test_strategy_evaluation_handoff(self) -> None:
+        session = create_activated_session(
+            self.service,
+            self.campaigns_root,
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0,
+        )
         decision = self.service.create_decision_from_strategy_evaluation(
             account_id="paper-a",
             mode="PAPER",
-            session_id=None,
+            session_id=session.session_id,
             strategy_decision=_strategy_decision(),
             decision_time_ns=T0,
             source_time_ns=T0 - 1,
@@ -151,18 +166,23 @@ class ForwardTestDomainTests(unittest.TestCase):
         self.assertEqual(body["quantity"], 10)
 
     def test_duplicate_paper_submission_blocked(self) -> None:
+        session = create_activated_session(
+            self.service,
+            self.campaigns_root,
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0,
+        )
         decision = self.service.create_decision(
             account_id="paper-a",
             mode="PAPER",
-            session_id=None,
+            session_id=session.session_id,
             symbol="ACME",
             direction="BUY",
             decision_time_ns=T0,
             source_time_ns=T0 - 1,
-            strategy_id="s1",
-            strategy_version="1.0.0",
+            strategy_id=BASELINE_POLICY,
+            strategy_version=POLICY_VERSION,
             test_mode=ForwardTestMode.SIGNAL_ONLY,
-            evaluation_horizon_ns=HOUR,
         )
         self.service.lock_decision(
             forward_test_id=decision.forward_test_id,
@@ -199,22 +219,27 @@ class ForwardTestTemporalTests(unittest.TestCase):
             assert_run_kind_forward(run_kind="BACKTEST")
 
 
-class ForwardTestEvaluationTests(unittest.TestCase):
+class ForwardTestEvaluationTests(ActivatedForwardTestCase):
     def test_evaluation_after_horizon(self) -> None:
         store = ForwardTestStore()
         service = ForwardTestService(store)
+        session = create_activated_session(
+            service,
+            self.campaigns_root,
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0,
+        )
         decision = service.create_decision(
             account_id="paper-a",
             mode="PAPER",
-            session_id=None,
+            session_id=session.session_id,
             symbol="ACME",
             direction="BUY",
             decision_time_ns=T0,
             source_time_ns=T0 - 1,
-            strategy_id="s1",
-            strategy_version="1.0.0",
+            strategy_id=BASELINE_POLICY,
+            strategy_version=POLICY_VERSION,
             test_mode=ForwardTestMode.SIGNAL_ONLY,
-            evaluation_horizon_ns=HOUR,
         )
         service.lock_decision(
             forward_test_id=decision.forward_test_id,
@@ -250,44 +275,54 @@ class ForwardTestEvaluationTests(unittest.TestCase):
         self.assertEqual(evaluated.signal_outcome.directional_correct, True)
 
 
-class ForwardTestAccountIsolationTests(unittest.TestCase):
+class ForwardTestAccountIsolationTests(ActivatedForwardTestCase):
     def test_cross_account_access_denied(self) -> None:
         store = ForwardTestStore()
         service = ForwardTestService(store)
+        session = create_activated_session(
+            service,
+            self.campaigns_root,
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0,
+        )
         decision = service.create_decision(
             account_id="paper-a",
             mode="PAPER",
-            session_id=None,
+            session_id=session.session_id,
             symbol="ACME",
             direction="BUY",
             decision_time_ns=T0,
             source_time_ns=T0 - 1,
-            strategy_id="s1",
-            strategy_version="1.0.0",
+            strategy_id=BASELINE_POLICY,
+            strategy_version=POLICY_VERSION,
             test_mode=ForwardTestMode.SIGNAL_ONLY,
-            evaluation_horizon_ns=HOUR,
         )
         with self.assertRaises(ForwardTestServiceError):
             service.get_decision(forward_test_id=decision.forward_test_id, account_id="paper-b")
 
 
-class ForwardTestDecisionSourceTests(unittest.TestCase):
+class ForwardTestDecisionSourceTests(ActivatedForwardTestCase):
     def test_forward_test_snapshot_correlation(self) -> None:
         store = ForwardTestStore()
         service = ForwardTestService(store)
+        session = create_activated_session(
+            service,
+            self.campaigns_root,
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0,
+        )
         decision = service.create_decision(
             account_id="paper-a",
             mode="PAPER",
-            session_id=None,
+            session_id=session.session_id,
             symbol="ACME",
             direction="BUY",
             decision_time_ns=T0,
             source_time_ns=T0 - 1,
-            strategy_id="s1",
-            strategy_version="1.0.0",
+            strategy_id=BASELINE_POLICY,
+            strategy_version=POLICY_VERSION,
             test_mode=ForwardTestMode.EXECUTION,
             quantity=1,
-            evaluation_horizon_ns=HOUR,
         )
         locked = service.lock_decision(
             forward_test_id=decision.forward_test_id,
@@ -307,6 +342,9 @@ class ForwardTestDecisionSourceTests(unittest.TestCase):
 class ForwardTestApiTests(unittest.TestCase):
     def setUp(self) -> None:
         os.environ["IMP_PAPER_EXECUTION"] = "1"
+        os.environ["IMP_FORWARD_TEST_EVAL_FORCE"] = "1"
+        self._activation_tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.campaigns_root = enable_test_campaigns_root(Path(self._activation_tmp.name))
         fixture_root = ROOT.parent
         self.store = ReplayStore(collection_root=fixture_root)
         self.store.load()
@@ -314,14 +352,22 @@ class ForwardTestApiTests(unittest.TestCase):
         self.store.paper_ledger.execution_authority = "AUTHORIZED"
         self.store.paper_ledger.execution_mode = "INTERNAL_SIMULATION"
         self.account_id = self.store.paper_ledger.paper_account_id
+        seed_baseline_campaign(self.campaigns_root, paper_account_id=self.account_id)
+
+    def tearDown(self) -> None:
+        os.environ.pop("IMP_FORWARD_TEST_CAMPAIGNS_DIR", None)
+        os.environ.pop("IMP_FORWARD_TEST_EVAL_FORCE", None)
+        self._activation_tmp.cleanup()
 
     def test_api_end_to_end_signal_only(self) -> None:
         session_payload = create_forward_test_session(
             self.store,
             {
                 "account_id": self.account_id,
-                "strategy_id": "news_deterministic_baseline",
-                "strategy_version": "1.0.0",
+                "campaign_id": CAMPAIGN_SLUG,
+                "cohort_arm": "BASELINE",
+                "strategy_id": BASELINE_POLICY,
+                "strategy_version": POLICY_VERSION,
                 "universe": ["ACME"],
                 "evaluation_horizon_ns": HOUR,
                 "created_at_ns": T0,
@@ -337,8 +383,8 @@ class ForwardTestApiTests(unittest.TestCase):
                 "direction": "POSITIVE_DIRECTIONAL_BIAS",
                 "decision_time_ns": T0,
                 "source_time_ns": T0 - 1,
-                "strategy_id": "news_deterministic_baseline",
-                "strategy_version": "1.0.0",
+                "strategy_id": BASELINE_POLICY,
+                "strategy_version": POLICY_VERSION,
                 "test_mode": "SIGNAL_ONLY",
             },
         )
@@ -376,22 +422,27 @@ class ForwardTestApiTests(unittest.TestCase):
         )
 
 
-class ForwardTestBacktestBoundaryTests(unittest.TestCase):
+class ForwardTestBacktestBoundaryTests(ActivatedForwardTestCase):
     def test_run_kind_forward_test_only(self) -> None:
         store = ForwardTestStore()
         service = ForwardTestService(store)
+        session = create_activated_session(
+            service,
+            self.campaigns_root,
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0,
+        )
         decision = service.create_decision(
             account_id="paper-a",
             mode="PAPER",
-            session_id=None,
+            session_id=session.session_id,
             symbol="ACME",
             direction="BUY",
             decision_time_ns=T0,
             source_time_ns=T0 - 1,
-            strategy_id="s1",
-            strategy_version="1.0.0",
+            strategy_id=BASELINE_POLICY,
+            strategy_version=POLICY_VERSION,
             test_mode=ForwardTestMode.SIGNAL_ONLY,
-            evaluation_horizon_ns=HOUR,
         )
         self.assertEqual(decision.run_kind.value, "FORWARD_TEST")
         self.assertNotEqual(decision.run_kind.value, "BACKTEST")

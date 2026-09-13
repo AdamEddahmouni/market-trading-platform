@@ -3,12 +3,21 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 
 from ...clock import monotonic_wall_ns
 from ...local_state.connection import LocalStateConnection
+from .campaign_binding import (
+    CampaignBinding,
+    CampaignBindingError,
+    get_active_binding as sqlite_get_active_binding,
+    record_first_lock_at_ns as sqlite_record_first_lock_at_ns,
+    release_binding as sqlite_release_binding,
+)
 from .repository import (
     assert_locked_decision_immutable,
     assert_observations_append_only,
+    assert_session_config_immutable,
     decision_from_row,
     decision_to_row,
     observation_from_row,
@@ -26,16 +35,22 @@ class SqliteForwardTestRepository:
         self._connection = connection
 
     def put_session(self, session: ForwardTestSession) -> None:
+        existing = self.get_session(session.session_id)
+        if existing is not None:
+            assert_session_config_immutable(existing, session)
         row = session_to_row(session)
         self._connection.execute(
             """
             INSERT INTO forward_test_sessions(
                 session_id, account_id, mode, strategy_id, strategy_version,
-                universe_json, evaluation_horizon_ns, created_at_ns, status, config_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                universe_json, evaluation_horizon_ns, created_at_ns, status, config_json,
+                campaign_id, protocol_id, activation_version, manifest_fingerprint,
+                cohort_arm, config_frozen
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(session_id) DO UPDATE SET
                 status=excluded.status,
-                config_json=excluded.config_json
+                config_json=excluded.config_json,
+                config_frozen=excluded.config_frozen
             """,
             (
                 row["session_id"],
@@ -48,6 +63,12 @@ class SqliteForwardTestRepository:
                 row["created_at_ns"],
                 row["status"],
                 row["config_json"],
+                row["campaign_id"],
+                row["protocol_id"],
+                row["activation_version"],
+                row["manifest_fingerprint"],
+                row["cohort_arm"],
+                row["config_frozen"],
             ),
         )
 
@@ -83,8 +104,9 @@ class SqliteForwardTestRepository:
                 confidence, strategy_id, strategy_version, research_artifact_ref,
                 evaluation_horizon_ns, decision_payload_json, provenance_snapshot_json,
                 paper_order_id, paper_intent_id, locked_at_ns, submitted_at_ns,
-                signal_outcome_json, execution_outcome_json, evaluation_state, failure_reason
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                signal_outcome_json, execution_outcome_json, evaluation_state, failure_reason,
+                evidence_class, cohort_arm
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(forward_test_id) DO UPDATE SET
                 state=excluded.state,
                 paper_order_id=excluded.paper_order_id,
@@ -124,6 +146,8 @@ class SqliteForwardTestRepository:
                 row["execution_outcome_json"],
                 row["evaluation_state"],
                 row["failure_reason"],
+                row["evidence_class"],
+                row["cohort_arm"],
             ),
         )
         if existing is None:
@@ -205,6 +229,75 @@ class SqliteForwardTestRepository:
             WHERE forward_test_id=? AND claim_type=?
             """,
             (forward_test_id, CLAIM_EVALUATION),
+        )
+
+    def claim_active_binding(self, binding: CampaignBinding) -> None:
+        active = sqlite_get_active_binding(self._connection, account_id=binding.account_id)
+        if active is not None:
+            if active.campaign_id != binding.campaign_id:
+                raise CampaignBindingError("FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE")
+            if active.manifest_fingerprint != binding.manifest_fingerprint:
+                raise CampaignBindingError("ACTIVATION_MANIFEST_FINGERPRINT_MISMATCH")
+            if active.protocol_sha256 != binding.protocol_sha256:
+                raise CampaignBindingError("PROTOCOL_REF_DOC_SHA256_MISMATCH")
+            # One ACTIVE row per campaign; additional cohort-arm sessions reuse it.
+            return
+        try:
+            self._connection.execute(
+                """
+                INSERT INTO forward_test_campaign_bindings(
+                    campaign_id, account_id, manifest_fingerprint, manifest_path,
+                    protocol_id, protocol_sha256, campaign_state, activated_at_ns,
+                    first_lock_at_ns, forward_test_session_id, created_at_ns, updated_at_ns
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    binding.campaign_id,
+                    binding.account_id,
+                    binding.manifest_fingerprint,
+                    binding.manifest_path,
+                    binding.protocol_id,
+                    binding.protocol_sha256,
+                    binding.campaign_state.value,
+                    binding.activated_at_ns,
+                    binding.first_lock_at_ns,
+                    binding.forward_test_session_id,
+                    binding.created_at_ns,
+                    binding.updated_at_ns,
+                ),
+            )
+        except sqlite3.IntegrityError as exc:
+            raise CampaignBindingError("FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE") from exc
+
+    def get_active_binding(self, *, account_id: str) -> CampaignBinding | None:
+        return sqlite_get_active_binding(self._connection, account_id=account_id)
+
+    def release_binding(
+        self,
+        *,
+        account_id: str,
+        campaign_id: str | None = None,
+        released_at_ns: int | None = None,
+    ) -> CampaignBinding | None:
+        return sqlite_release_binding(
+            self._connection,
+            account_id=account_id,
+            campaign_id=campaign_id,
+            released_at_ns=released_at_ns,
+        )
+
+    def record_first_lock_at_ns(
+        self,
+        *,
+        account_id: str,
+        campaign_id: str,
+        first_lock_at_ns: int,
+    ) -> None:
+        sqlite_record_first_lock_at_ns(
+            self._connection,
+            account_id=account_id,
+            campaign_id=campaign_id,
+            first_lock_at_ns=first_lock_at_ns,
         )
 
     def _load_observations(self, forward_test_id: str) -> tuple[ForwardTestObservation, ...]:

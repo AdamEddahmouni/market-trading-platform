@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "finviz_local_probe_status",
+  "campaign_slug": "FTEP-V1-002",
+  "observed_at": "2026-09-12T15:05:00Z",
+  "disposition": "LOCAL_PROBE_REQUIRED",
+  "configured_in_session": false,
+  "finviz_live_enabled": false,
+  "probe_command": "python tools/finviz/probe.py",
+  "probe_result": "NOT_CONFIGURED — no Finviz API key in secure store for this session",
+  "authoritative_stale_evidence": {
+    "path": "evidence/market_data/finviz/capability-report.json",
+    "probed_at": "2026-08-22T04:10:30.999741Z",
+    "news_export_verified": true,
+    "incremental_cost_usd": 0
+  },
+  "readiness_note": "Capability matrix NEWS_EXPORT remains SATISFIED via stale verified evidence; operator may refresh when credentials configured."
+}

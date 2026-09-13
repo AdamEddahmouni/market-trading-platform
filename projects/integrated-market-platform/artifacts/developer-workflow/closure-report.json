@@ -32,48 +32,20 @@
     ]
   },
   "changed_areas": [
-    "backend",
-    "documentation",
-    "other",
-    "paper",
-    "tests",
-    "ui"
+    "other"
   ],
   "changed_files": [
-    "docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md",
-    "docs/audits/paper-forward-testing-bridge/CLOSURE.json",
-    "docs/audits/paper-forward-testing-bridge/README.md",
-    "projects/integrated-market-platform/artifacts/g13-runtime-performance.json",
-    "projects/integrated-market-platform/artifacts/g14-runtime-performance.json",
-    "projects/integrated-market-platform/artifacts/g8-runtime-performance.json",
+    "projects/integrated-market-platform/artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md",
+    "projects/integrated-market-platform/artifacts/ftep-v1-002/campaign-progress.json",
     "projects/integrated-market-platform/artifacts/p3-plan-cli-check.json",
-    "projects/integrated-market-platform/docs/README.md",
-    "projects/integrated-market-platform/src/market_platform_foundation/paper/decision_source.py",
-    "projects/integrated-market-platform/src/market_platform_foundation/ui_api/server.py",
-    "projects/integrated-market-platform/tools/validation_manifest.json",
-    "projects/integrated-market-platform/ui/src/api/endpoints.ts",
-    "projects/integrated-market-platform/ui/src/api/hooks.ts",
-    "projects/integrated-market-platform/ui/src/components/paper-workspace/PaperWorkspacePage.tsx",
-    "src/market_platform_foundation/intelligence/paper_forward_bridge/__init__.py",
-    "src/market_platform_foundation/intelligence/paper_forward_bridge/evaluation.py",
-    "src/market_platform_foundation/intelligence/paper_forward_bridge/identity.py",
-    "src/market_platform_foundation/intelligence/paper_forward_bridge/lifecycle.py",
-    "src/market_platform_foundation/intelligence/paper_forward_bridge/paper_handoff.py",
-    "src/market_platform_foundation/intelligence/paper_forward_bridge/service.py",
-    "src/market_platform_foundation/intelligence/paper_forward_bridge/store.py",
-    "src/market_platform_foundation/intelligence/paper_forward_bridge/temporal.py",
-    "src/market_platform_foundation/intelligence/paper_forward_bridge/types.py",
-    "src/market_platform_foundation/ui_api/forward_test_projections.py",
-    "tests/intelligence/test_paper_forward_bridge.py",
-    "ui/src/components/paper-workspace/PaperForwardTestPanel.tsx",
-    "ui/src/components/paper-workspace/buildForwardTestPanelModel.test.ts",
-    "ui/src/components/paper-workspace/buildForwardTestPanelModel.ts"
+    "projects/integrated-market-platform/docs/engineering/WORK_LOG.md",
+    "projects/integrated-market-platform/src/market_platform_foundation/intelligence/paper_forward_bridge/campaign_binding.py",
+    "projects/integrated-market-platform/src/market_platform_foundation/intelligence/paper_forward_bridge/sqlite_repository.py",
+    "projects/integrated-market-platform/src/market_platform_foundation/intelligence/paper_forward_bridge/store.py",
+    "projects/integrated-market-platform/tests/intelligence/test_forward_test_persistence.py",
+    "projects/integrated-market-platform/tests/intelligence/test_ftep_session_start.py"
   ],
-  "documentation_changes": [
-    "docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md",
-    "docs/audits/paper-forward-testing-bridge/CLOSURE.json",
-    "docs/audits/paper-forward-testing-bridge/README.md"
-  ],
+  "documentation_changes": [],
   "environment": {
     "environment": {
       "environment_root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\.venv",
@@ -82,11 +54,11 @@
     },
     "imp_project_root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform",
     "next_commands": [
-      "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe tools/imp.py validate fast"
+      "python tools/imp.py validate fast"
     ],
     "python": {
-      "current_executable": "C:\\Users\\adame\\AppData\\Local\\Programs\\Python\\Python310\\python.exe",
-      "current_version": "3.10.11",
+      "current_executable": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe",
+      "current_version": "3.11.15",
       "resolution_source": "local_venv",
       "resolved_executable": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe",
       "resolved_version": "3.11.15",
@@ -102,18 +74,18 @@
       "npm_available": true
     },
     "worktree": {
-      "branch": "work/professor-paper-forward-testing",
+      "branch": "work/ftep-v1-002-us-equity-news",
       "git_metadata_dir": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.git",
       "is_linked_worktree": false,
       "root": "C:\\Users\\adame\\Desktop\\market-trading-platform"
     }
   },
-  "generated_at": "2026-09-11T01:38:31.083175+00:00",
+  "generated_at": "2026-09-12T19:32:28.552461+00:00",
   "report_type": "imp_closure",
   "repository_root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform",
   "risk": {
     "live_execution_authorized": false,
-    "paper_authority_changed": true,
+    "paper_authority_changed": false,
     "status": "review_required"
   },
   "schema_version": "1.0",
@@ -125,67 +97,29 @@
       "ci_wall_seconds": 0,
       "command_counts": {
         "closure docs": 1,
-        "closure format": 1,
+        "closure format": 8,
         "closure ui build": 1,
         "closure ui test": 1,
         "closure ui typecheck": 1,
-        "test focused": 21,
-        "validate changed": 40,
-        "validate domain": 25,
+        "format": 1,
+        "ftep campaign-status": 9,
+        "ftep integrity-check": 6,
+        "ftep session-start": 4,
+        "lint python": 1,
+        "providers campaign-readiness": 24,
+        "test focused": 88,
+        "validate changed": 96,
+        "validate domain": 27,
         "validate e2e": 6,
-        "validate fast": 54,
-        "validate full": 40
+        "validate fast": 82,
+        "validate full": 48
       },
-      "events": 191,
-      "redundant_command_events": 180,
-      "validation_wall_seconds": 47635.006557
+      "events": 404,
+      "redundant_command_events": 387,
+      "validation_wall_seconds": 56305.968828
     }
   },
   "validation": {
-    "closure ui build": {
-      "argv": [
-        "npm.cmd",
-        "run",
-        "build"
-      ],
-      "command": "closure ui build",
-      "exit_code": 1,
-      "status": "failed",
-      "wall_seconds": 11.357743
-    },
-    "closure ui test": {
-      "argv": [
-        "npm.cmd",
-        "test",
-        "--",
-        "--run"
-      ],
-      "command": "closure ui test",
-      "exit_code": 1,
-      "status": "failed",
-      "wall_seconds": 46.952939
-    },
-    "closure ui typecheck": {
-      "argv": [
-        "npm.cmd",
-        "run",
-        "typecheck"
-      ],
-      "command": "closure ui typecheck",
-      "exit_code": 2,
-      "status": "failed",
-      "wall_seconds": 7.889452
-    },
-    "documentation": {
-      "argv": [
-        "C:\\Users\\adame\\AppData\\Local\\Programs\\Python\\Python310\\python.exe",
-        "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\tools\\check_docs_links.py"
-      ],
-      "command": "closure docs",
-      "exit_code": 0,
-      "status": "passed",
-      "wall_seconds": 1.067391
-    },
     "format": {
       "argv": [
         "git",
@@ -195,7 +129,7 @@
       "command": "closure format",
       "exit_code": 0,
       "status": "passed",
-      "wall_seconds": 0.091289
+      "wall_seconds": 0.066045
     },
     "full": {
       "core_checkpoint_required": false,
@@ -268,8 +202,8 @@
       ],
       "skips": 49,
       "status": "passed",
-      "tests_run": 4539,
-      "wall_seconds": 215.0421129000024
+      "tests_run": 4647,
+      "wall_seconds": 198.2019796000095
     }
   }
 }
