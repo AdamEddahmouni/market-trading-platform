@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Path A prospective one-shot hop (Yahoo delayed + OpenD fail-closed)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `providers`, `strategy`, `opportunity` |
+| **Summary** | One-shot Paper/Demo composer joins an equity quote adapter through admission, G7 freshness, and Path A. Yahoo delayed is the cloud-reachable prospective overlay (not real-time, not ES). Moomoo OpenD fails closed when the daemon or in-tree transport is absent. Live remains forbidden. FTEP is not EMPIRICAL_ACTIVE. |
+| **Key files** | `strategy/path_a_prospective.py`, `providers/adapters/yahoo_delayed_equity_quote.py`, `providers/adapters/moomoo_opend_equity_quote.py`, `providers/equity_quote_discovery.py`, `market_data/runtime_composition.py`, `ui_api/opportunity_projections.py`, `tools/path_a_prospective_run.py`, `tests/intelligence/test_path_a_prospective.py` |
+| **Tests** | `PYTHONPATH=src python3 -m unittest tests.intelligence.test_path_a_prospective tests.intelligence.test_path_a_scan_caller tests.intelligence.test_opportunity_ingest tests.intelligence.test_opportunity_freshness tests.ui1.test_opportunity_api tests.market_data.test_g7_runtime_composition -q` — 64 passed |
+| **Related** | Canonical start `9cb541c` (PR #40). Does not activate Live or FTEP empirical. |
+| **Notes** | ES-news remains BLOCKED_ON_ES_DATA. Yahoo hop is DELAYED_PROSPECTIVE; G7 `DELAYED_WHEN_REALTIME_REQUIRED`. |
+
 ## 2026-09-13 — Path A scan caller merged (PR #39)
 
 | Field | Value |

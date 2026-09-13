@@ -78,12 +78,28 @@ def _feed_status(store: ReplayStore, ranked_count: int) -> tuple[str, str | None
     return "READY", None
 
 
+def _opportunity_source(store: ReplayStore) -> str:
+    if _is_live(store):
+        return "LIVE_OBSERVATIONAL"
+    explicit = getattr(store, "opportunity_source", None)
+    if explicit:
+        return str(explicit)
+    if store.data_mode in {"DELAYED_PROSPECTIVE", "PAPER_OBSERVATIONAL"}:
+        return store.data_mode
+    return "REPLAY"
+
+
 def build_ranked_rows(store: ReplayStore) -> tuple[Any, ...]:
     repository = getattr(store, "strategy_repository", None)
     assembled = assemble_opportunity_review_rows(
         attention_rows=_attention_rows(store),
         repository=repository,
-        source="REPLAY" if store.data_mode != "LIVE_OBSERVATIONAL" else "LIVE_OBSERVATIONAL",
+        source=_opportunity_source(store),
+        as_of_time_ns=getattr(store, "as_of_time_ns", None),
+        last_source_time_ns=getattr(store, "last_source_time_ns", None),
+        runtime_capability=getattr(store, "runtime_capability", None),
+        session_state=getattr(store, "session_state", None),
+        book_validity=getattr(store, "book_validity", None),
     )
     return rank_review_rows(
         assembled,
