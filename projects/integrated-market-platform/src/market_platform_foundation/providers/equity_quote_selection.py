@@ -3,10 +3,11 @@
 The no-additional-cost stack's locked decision: **Primary L1 = OpenD
 observational**. Loopback OpenD reachability is informational only — it never
 changes which adapter is "primary." The primary :class:`EquityQuoteProvider`
-slot is always the Moomoo OpenD adapter; when the daemon is down, or the
-in-tree transport is unimplemented, ``fetch_quote`` fails closed (see
-``adapters.moomoo_opend_equity_quote``) instead of silently substituting
-Yahoo or a mock tick under the Moomoo identity.
+slot is always the Moomoo OpenD adapter; when the daemon is down, the
+vendor SDK is missing, or the vendor row has no ``last_price``,
+``fetch_quote`` fails closed (see ``adapters.moomoo_opend_equity_quote``)
+instead of silently substituting Yahoo or a mock tick under the Moomoo
+identity.
 
 Yahoo delayed quotes remain reachable only through the explicitly-identified
 overlay accessor below — a distinct provider identity, never merged into the

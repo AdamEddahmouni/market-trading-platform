@@ -22,11 +22,14 @@ quality + PIT clocks + replay
 
 Vendor SDK (`moomoo-api`) is **not** a dependency of `market_platform_foundation`.
 The official Moomoo API Skill may assist agents; it is never on the runtime path.
+The Primary L1 adapter loads `tools/moomoo/opend_quote_transport.py` by file
+path and lazy-imports `moomoo` there. Missing SDK fails closed.
 
 ```text
 tools/moomoo/*   (optional processes, moomoo-api; probe.py / record.py /
                  capture_live.py / push_feed.py / check_live_environment.py /
-                 smoke_live.py / smoke_paper.py / smoke_reconnect.py)
+                 opend_quote_transport.py / smoke_live.py / smoke_paper.py /
+                 smoke_reconnect.py)
         ↓ serialized JSON/JSONL
 src/market_platform_foundation/market_data/   (CPython 3.11 stdlib)
   live_config → live_runtime → live_admission → observational_state
@@ -88,10 +91,18 @@ observational**.
   closed with `OPEND_NON_LOOPBACK_BLOCKED` without attempting a connection.
   Reachability is a live TCP probe evaluated inside `fetch_quote` (never
   cached at composition time). Unreachable → `OPEND_UNAVAILABLE`. Reachable
-  but in-tree transport unimplemented (the `moomoo-api` SDK is intentionally
-  not a dependency of this package — see above) → `MOOMOO_TRANSPORT_NOT_IMPLEMENTED`.
-  This adapter has no code path that returns `status="available"`: it never
-  fabricates a tick under the OpenD/Moomoo identity.
+  OpenD then uses the quote-only vendor transport in
+  `tools/moomoo/opend_quote_transport.py` (`OpenQuoteContext.get_market_snapshot`
+  only; the `moomoo-api` SDK is still not a dependency of this package).
+  Missing SDK → `MOOMOO_SDK_MISSING`. Auth failure (`qot_logined` false) →
+  `MOOMOO_AUTH_FAILURE`. Protocol/SDK exception or non-`RET_OK` →
+  `MOOMOO_PROTOCOL_ERROR`. A vendor row without `last_price` or without a
+  parseable `update_time`/`time` fails closed (`MOOMOO_LAST_PRICE_MISSING` /
+  `MISSING_TIMESTAMP`) — the adapter never fills `last_price` from
+  bid/ask/close/session fields. A real tick requires operator OpenD **and**
+  the vendor SDK; CI without a daemon stays `OPEND_UNAVAILABLE` with zero
+  events. `status="available"` is returned only when the vendor row itself
+  carries `last_price`.
 - `providers/adapters/yahoo_delayed_equity_quote.py` — `YahooDelayedEquityQuoteProvider`
   (`yahoo.finance.delayed`, capability `US_EQUITY_SNAPSHOT`, `timeliness="DELAYED"`).
   A distinctly-identified, cloud-reachable **overlay** — never the primary L1
@@ -113,9 +124,11 @@ observational**.
   discovery provider tuple. Persist CLI, catalog invoke, and Live argparse
   refusal are unchanged. Honest outcome with OpenD down:
   `PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE` (or
-  `MOOMOO_TRANSPORT_NOT_IMPLEMENTED` if a dummy TCP listener is up). FTEP
-  is not `EMPIRICAL_ACTIVE`. Live stays off. `moomoo-api` transport is not
-  implemented in-tree.
+  `MOOMOO_SDK_MISSING` if loopback TCP answers but the vendor SDK is
+  absent). FTEP is not `EMPIRICAL_ACTIVE`. Live stays off. A real OpenD
+  tick still requires an operator daemon **and** `moomoo-api` outside this
+  package; this increment wires the quote-only transport, it does not
+  declare empirical L1.
 - `providers/composition.py` — `with_moomoo_opend_primary_quote(composition)`
   wires the `equity_quote` slot to the OpenD adapter. Additive/opt-in: the
   default `ProviderComposition` keeps `UnconfiguredEquityQuoteProvider`
@@ -124,8 +137,9 @@ observational**.
   in `tests/intelligence/test_path_a_prospective.py`. The cloud CI/dev VM
   has no loopback OpenD daemon, so the "no OpenD → honest unavailable, no
   generated quotes" path is exercised unconditionally; a local loopback TCP
-  listener (never a moomoo protocol/tick) is used only to prove the
-  reachable-but-unimplemented-transport branch also fails closed.
+  listener (never a moomoo protocol/tick) proves the reachable-but-SDK-missing
+  branch also fails closed (`MOOMOO_SDK_MISSING`). Injected vendor-row mapping
+  is a contract test, not empirical evidence.
 
 ## SDK requirement
 

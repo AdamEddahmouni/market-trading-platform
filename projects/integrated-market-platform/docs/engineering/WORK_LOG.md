@@ -36,6 +36,19 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Fail-closed OpenD vendor quote transport (Primary L1)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `tools/moomoo` |
+| **Summary** | Wired quote-only OpenD vendor transport so a reachable loopback OpenD can return a real vendor snapshot through `MoomooOpenDEquityQuoteProvider`. Foundation still does not depend on `moomoo-api`; `tools/moomoo/opend_quote_transport.py` lazy-imports it. Fail closed on non-loopback, missing SDK, auth failure, protocol error, missing `last_price`, and missing vendor timestamp. Never synthesizes `last_price`. CI without a daemon stays `PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE`. Dummy TCP without SDK is `MOOMOO_SDK_MISSING`. Live Path A CLI still argparse-refused. FTEP is not `EMPIRICAL_ACTIVE`. Item 2 stays **PARTIAL** until an operator OpenD daemon actually yields a tick. |
+| **Key files** | `src/market_platform_foundation/providers/adapters/moomoo_opend_equity_quote.py`, `src/market_platform_foundation/providers/equity_quote_discovery.py`, `src/market_platform_foundation/providers/equity_quote_selection.py`, `src/market_platform_foundation/providers/composition.py`, `tools/moomoo/opend_quote_transport.py` (new), `tests/providers/test_moomoo_opend_primary_l1.py`, `tests/market_data/test_live_p21.py`, `docs/providers/MOOMOO_OBSERVATIONAL.md`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md`, `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | `tests.providers.test_moomoo_opend_primary_l1` **40 passed**. Combined with Path A hop + live-p21 trade-context + phase0 analysis **43 passed**. Honest CLI with OpenD down: `discovery.provider_id=moomoo.opend.observational`, `overlay_provider_id=yahoo.finance.delayed`, `opend_reachable=false`, `result.status=PROVIDER_UNAVAILABLE`, `reason_codes=["OPEND_UNAVAILABLE"]`, `path_a_status=null`. `--mode live` still argparse-refused. Did not edit Path A `forecast_resolver`, prereg store, or catalog evaluators. |
+| **Related** | Stacked on #48 `ff139ac` (OpenD hop + prereg). Follows hop unify #47. |
+| **Notes** | Operator OpenD + vendor SDK remain required for an empirical tick. Cloud VM has no loopback `:11111` and no `moomoo-api`. No secrets printed. Did not add paid vendors. Did not merge to main or Wave B. |
+
+
 ## 2026-09-13 — Restack Path A prereg load onto OpenD hop
 
 | Field | Value |

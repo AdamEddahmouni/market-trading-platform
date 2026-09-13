@@ -225,8 +225,8 @@ is honest `EMPTY` when no MATCHED strategy (not null). The hop
 `primary_equity_quote_provider()`; Yahoo delayed is overlay-only and is not
 swapped in when OpenD is down. Honest CLI outcome with OpenD down is
 `PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE` (or
-`MOOMOO_TRANSPORT_NOT_IMPLEMENTED` if loopback TCP answers but vendor
-transport is unimplemented). `--preregistration-path`
+`MOOMOO_SDK_MISSING` if loopback TCP answers but the vendor SDK is
+absent). `--preregistration-path`
 may point at a previously persisted Phase-6 record; create is a separate
 operator step (`persist_paper_demo_preregistration`) that stamps `registered_at`
 before any hop. Load requires identity match and `registered_at` before quote

@@ -10,6 +10,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from .adapters.moomoo_opend_equity_quote import opend_sdk_available
 from .adapters.yahoo_delayed_equity_quote import YAHOO_PROVIDER_ID
 from .contracts import EquityQuoteProvider
 from .equity_quote_selection import opend_readiness, primary_equity_quote_provider
@@ -63,10 +64,11 @@ def discover_equity_quote_stack() -> tuple[EquityQuoteProvider, EquityQuoteDisco
 
     Loopback OpenD reachability does not change which adapter occupies the
     primary slot. When the daemon is down, the OpenD adapter fails closed
-    (``OPEND_UNAVAILABLE``). When it is up, in-tree transport is still
-    unimplemented (``MOOMOO_TRANSPORT_NOT_IMPLEMENTED``). Yahoo delayed is
-    reported as ``overlay_provider_id`` only — never swapped into
-    ``quote_provider``.
+    (``OPEND_UNAVAILABLE``). When it is up but the vendor SDK is missing,
+    discovery reports ``MOOMOO_SDK_MISSING`` — never a fabricated tick.
+    SDK present is diagnostic only (``OPEND_SDK_PRESENT``); it is not a quote.
+    Yahoo delayed is reported as ``overlay_provider_id`` only — never swapped
+    into ``quote_provider``.
     """
 
     finviz = names_present(FINVIZ_TOKEN_NAMES)
@@ -79,9 +81,12 @@ def discover_equity_quote_stack() -> tuple[EquityQuoteProvider, EquityQuoteDisco
     elif not readiness.reachable:
         classification = "UNAVAILABLE"
         reason_code = "OPEND_UNAVAILABLE"
-    else:
+    elif not opend_sdk_available():
         classification = "CONFIGURED_BLOCKED"
-        reason_code = "MOOMOO_TRANSPORT_NOT_IMPLEMENTED"
+        reason_code = "MOOMOO_SDK_MISSING"
+    else:
+        classification = "CONFIGURED"
+        reason_code = "OPEND_SDK_PRESENT"
     discovery = EquityQuoteDiscovery(
         provider_id=provider.provider_id,
         classification=classification,

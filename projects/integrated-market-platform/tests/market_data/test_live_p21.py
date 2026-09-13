@@ -157,6 +157,7 @@ class MoomooSafetyRegressionTests(unittest.TestCase):
         modules = [
             ROOT / "src/market_platform_foundation/market_data/live_runtime.py",
             ROOT / "tools/moomoo/push_feed.py",
+            ROOT / "tools/moomoo/opend_quote_transport.py",
         ]
         for path in modules:
             source = path.read_text(encoding="utf-8")
