@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Unify OpenD hop quote_provider (Yahoo overlay-only)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `strategy`, `tools` |
+| **Summary** | Lifted #46 OpenD/Yahoo adapters, `equity_quote_selection`, `with_moomoo_opend_primary_quote`, and Primary L1 tests onto the #45 persist-CLI tree. Path A hop `quote_provider` is always `primary_equity_quote_provider()` (Moomoo OpenD). `discover_equity_quote_stack()` no longer swaps Yahoo in when OpenD is down; Yahoo stays overlay-only (`US_EQUITY_SNAPSHOT`, ES pre-HTTP reject). Persist CLI, catalog invoke, and Live argparse refusal are unchanged. Honest OpenD-down outcome is `PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE` (or `MOOMOO_TRANSPORT_NOT_IMPLEMENTED` if loopback TCP answers). Did not implement `moomoo-api` transport. FTEP is not `EMPIRICAL_ACTIVE`. Live stays off. Did not fold Finviz HTTP. |
+| **Key files** | `src/market_platform_foundation/providers/adapters/moomoo_opend_equity_quote.py`, `src/market_platform_foundation/providers/adapters/yahoo_delayed_equity_quote.py`, `src/market_platform_foundation/providers/equity_quote_selection.py` (new), `src/market_platform_foundation/providers/equity_quote_discovery.py`, `src/market_platform_foundation/providers/composition.py`, `tools/path_a_prospective_run.py`, `tests/providers/test_moomoo_opend_primary_l1.py` (new), `tests/intelligence/test_path_a_prospective.py`, `docs/providers/MOOMOO_OBSERVATIONAL.md`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md`, `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Pending `python3 tools/validate.py changed` vs merge-base with `cursor/path-a-persist-cli-d1ba`; focused hop + OpenD primary L1 to follow. |
+| **Related** | Stacked on #45 `ce49048`. Lifts #46 `01dd28e` adapters. Does not push onto #42/#45/#46. |
+| **Notes** | Operator OpenD + vendor transport remain empirical blockers after this software wire. Cloud VM has no loopback `:11111`. No secrets printed. |
+
 ## 2026-09-13 — Path A CLI can inject the optional PD-09 persist context
 
 | Field | Value |
