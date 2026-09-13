@@ -214,6 +214,33 @@ def with_finviz_elite_context(
     return composition
 
 
+def with_finviz_elite_observational_context(
+    composition: Any,
+    *,
+    env: dict[str, str] | None = None,
+    provider: Any | None = None,
+) -> Any:
+    """Join the Finviz Elite context overlay into the canonical observational hop.
+
+    ``composition`` is a ``market_data.runtime_composition.ObservationalRuntimeComposition``
+    (accepted loosely as ``Any`` here to avoid an import cycle between
+    ``providers`` and ``market_data``). Additive: the default
+    ``equity_context`` slot stays the unconfigured stub. Discovery always
+    returns the Finviz adapter identity, fail-closed when the Elite token is
+    absent (``NOT_CONFIGURED``); paid Elite HTTP is not invoked. This never
+    touches the L1 quote lane, admission, or the Paper comparator, and does
+    not enable Live or FTEP.
+    """
+    from .finviz_context_discovery import discover_finviz_context_stack
+
+    if not hasattr(composition, "equity_context"):
+        raise AttributeError("EQUITY_CONTEXT_SLOT_MISSING")
+    if provider is None:
+        provider, _ = discover_finviz_context_stack(env=env)
+    composition.equity_context = provider
+    return composition
+
+
 __all__ = [
     "ProviderComposition",
     "configure_fixture_provider_composition",
@@ -221,5 +248,6 @@ __all__ = [
     "get_provider_composition",
     "with_broker_paper_execution",
     "with_finviz_elite_context",
+    "with_finviz_elite_observational_context",
     "with_moomoo_paper_execution",
 ]

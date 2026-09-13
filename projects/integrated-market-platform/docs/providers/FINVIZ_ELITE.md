@@ -67,6 +67,31 @@ Finviz Elite is a **context overlay** in the provider composition
   `ProviderComposition.equity_context`. The default composition slot remains
   the unconfigured stub.
 
+### Join into the canonical observational hop
+
+The G6/G7 canonical observational hop (`ObservationalRuntimeComposition` in
+`market_data/runtime_composition.py`: quote → admission →
+`ObservationalStateStore` → `ObservationalLaneRuntime`) exposes its own
+`equity_context` slot, independent of `ProviderComposition`.
+
+- `ObservationalRuntimeComposition.equity_context` defaults to
+  `UnconfiguredEquityContextProvider`; `context_for(instrument_id)` and
+  `evidence_for(instrument_id)["context"]` fail closed (`PROVIDER_NOT_CONFIGURED`)
+  until a provider is attached.
+- `with_finviz_elite_observational_context()`
+  (`providers/composition.py`) attaches the Finviz Elite adapter to that slot
+  the same way `with_finviz_elite_context()` does for `ProviderComposition`.
+  Token absence still classifies `NOT_CONFIGURED`; no Elite HTTP runs in CI.
+- `ObservationalLaneRuntime.build_context_payload()` is the provider-neutral
+  lane builder: it always forces `is_l1=False` and `is_paper_comparator=False`
+  on the returned payload, and fails closed to `CONTEXT_TIMELINESS_INVALID`
+  if a provider (declared or per-event) ever claims `REAL_TIME` — defense in
+  depth beyond the adapter's own `DELAYED` contract. The context lane sits
+  alongside `l1`/`cvd`/`ofi`/`book_features` in `evidence_for()`'s bundle and
+  is excluded from the L1/L2 `evidence_hash` (a side-channel, not tick
+  replay-deterministic state), so it never mutates admission or the canonical
+  store. See `tests/market_data/test_finviz_observational_context.py`.
+
 This overlay does not activate Live, start FTEP, or declare
 `EMPIRICAL_ACTIVE`.
 

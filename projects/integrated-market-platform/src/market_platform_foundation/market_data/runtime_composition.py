@@ -19,6 +19,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
+from ..providers.contracts import EquityContextProvider
 from ..providers.ibkr_observational.adapter import (
     IbkrObservationalAdapter,
     IbkrObservationalConfig,
@@ -45,6 +46,7 @@ from ..providers.runtime_selection import (
     ObservationalSelectionRequest,
     SelectionOutcome,
 )
+from ..providers.stubs import UnconfiguredEquityContextProvider
 from .observational_lanes import ObservationalLaneRuntime
 from .observational_state import ObservationalStateStore
 
@@ -68,6 +70,9 @@ class ObservationalRuntimeComposition:
     store: ObservationalStateStore = field(default_factory=ObservationalStateStore)
     capability_registry: RuntimeCapabilityRegistry = field(
         default_factory=RuntimeCapabilityRegistry
+    )
+    equity_context: EquityContextProvider = field(
+        default_factory=UnconfiguredEquityContextProvider
     )
     selector: ObservationalProviderSelector = field(init=False)
     lanes: ObservationalLaneRuntime = field(init=False)
@@ -204,13 +209,25 @@ class ObservationalRuntimeComposition:
         )
         return result.to_dict()
 
+    def context_for(self, instrument_id: str) -> dict[str, Any]:
+        """Screening/news context overlay (e.g. Finviz Elite). Not L1, not admission.
+
+        Additive read: does not touch the canonical store, does not admit
+        anything, and never replaces the L1 quote lane. Fail-closed to
+        ``UNAVAILABLE`` when ``equity_context`` stays the unconfigured stub.
+        """
+        return self.lanes.build_context_payload(instrument_id, self.equity_context)
+
     def evidence_for(self, instrument_id: str) -> dict[str, Any]:
-        return self.lanes.build_evidence_bundle(instrument_id)
+        bundle = self.lanes.build_evidence_bundle(instrument_id)
+        bundle["context"] = self.context_for(instrument_id)
+        return bundle
 
     def manifest(self) -> dict[str, Any]:
         return {
             "active_provider_id": self.active_provider_id,
             "capability_registry": self.capability_registry.manifest(),
+            "context_provider_id": getattr(self.equity_context, "provider_id", ""),
             "has_ibkr_adapter": self.ibkr_adapter is not None,
             "has_ibkr_query_service": self.ibkr_query_service is not None,
             "logical_id": "market_data.runtime_composition",

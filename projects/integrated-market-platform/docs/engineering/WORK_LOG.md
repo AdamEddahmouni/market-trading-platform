@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Finviz Elite context overlay joined into canonical observational hop
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `market_data` / `providers` / Finviz |
+| **Summary** | Joined the fail-closed Finviz Elite **context** overlay into the canonical G6/G7 observational hop (`ObservationalRuntimeComposition`: quote → admission → `ObservationalStateStore` → `ObservationalLaneRuntime`), not just the general-purpose `ProviderComposition` registry from the prior entry. Added an `equity_context` slot (default `UnconfiguredEquityContextProvider`, fail-closed) to `ObservationalRuntimeComposition`, a provider-neutral `ObservationalLaneRuntime.build_context_payload()` lane builder, `context_for()` / `evidence_for()["context"]` on the composition, and a `with_finviz_elite_observational_context()` composition helper mirroring the existing `ProviderComposition` one. The context lane always forces `is_l1=False` / `is_paper_comparator=False` and fails closed to `CONTEXT_TIMELINESS_INVALID` if any provider (declared or per-event) ever claims `REAL_TIME` — defense in depth beyond the adapter's own `DELAYED` contract. The context key sits outside the L1/L2 `evidence_hash` (a side-channel, not tick replay-deterministic state), so admission and the canonical store are untouched. |
+| **Key files** | `src/market_platform_foundation/market_data/observational_lanes.py` (`build_context_payload`, `_context_unavailable`); `src/market_platform_foundation/market_data/runtime_composition.py` (`equity_context` field, `context_for`, `evidence_for` merge, `manifest` context_provider_id); `src/market_platform_foundation/providers/composition.py` (`with_finviz_elite_observational_context`); `tests/market_data/test_finviz_observational_context.py` (created); `docs/providers/FINVIZ_ELITE.md` |
+| **Tests** | `PYTHONPATH=src python3 -m unittest tests.market_data.test_finviz_observational_context tests.market_data.test_g7_observational_lanes tests.market_data.test_g7_runtime_composition tests.market_data.test_g8_live_runtime_composition tests.market_data.test_g11_runtime_composition tests.providers.test_finviz_elite_context tests.providers.test_providers` — **68 passed** (system `sklearn` installed via `pip install --user scikit-learn numpy` to unblock `providers`/`donor_bridge`/`integration` suite imports; without it those suites pre-existingly error identically on PR #44's original diff alone, confirmed via `--paths-file`). `python3 tools/imp.py test focused` (13 hop-join + provider-level selectors) **passed**. `python3 tools/imp.py lint` **passed**. `python3 tools/check_docs_links.py` **OK** (188 files). `PYTHONPATH=src python3 tools/validate.py changed` vs merge-base `origin/main` (`9cb541cd520721404e1c3d789eba5445c45aae70`) — **895 tests, 11 skipped, 0 fail / 0 err**. |
+| **Related** | [FINVIZ_ELITE.md](../providers/FINVIZ_ELITE.md) § Join into the canonical observational hop; prior entry below (`ProviderComposition.equity_context`); provider-activation DoD item 2 remains PARTIAL (OpenD down, Elite token absent) |
+| **Notes** | Does not edit `tools/path_a_prospective_run.py` or any `strategy/path_a_*` file (owned by PR #42 / `cursor/provider-real-data-d1ba`, not present on this branch); does not touch Path A persist-CLI work (`cursor/path-a-persist-cli-d1ba`). Item 2 stays PARTIAL until OpenD is up and an Elite token is present on an operator machine. |
+
 ## 2026-09-13 — Finviz Elite fail-closed context overlay
 
 | Field | Value |
