@@ -680,6 +680,8 @@ class PathAProspectiveTests(unittest.TestCase):
         composer_run = inspect.getsource(PathAProspectiveComposer.run)
         self.assertIn("quote_event=event", composer_run)
         self.assertIn("forecast_path=self.forecast_path", composer_run)
+        self.assertIn("contributor_path=self.contributor_path", composer_run)
+        self.assertIn("calibration_path=self.calibration_path", composer_run)
 
     def test_honesty_invoke_refuses_live(self) -> None:
         with self.assertRaisesRegex(PathAScanCallerError, "LIVE_SCAN_CALLER_FORBIDDEN"):

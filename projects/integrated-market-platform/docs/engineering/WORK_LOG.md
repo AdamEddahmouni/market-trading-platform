@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Path A hop MATCHED/OE EMIT from fail-closed produce
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy`, `opportunity`, `fusion` |
+| **Summary** | Paper/Demo Path A hop now *produces* on the composer/CLI from `--contributor-path` + `--calibration-path` via BUILD 14 `produce_paper_demo_forecast`, then loads the fused artifact. Absent PRODUCTION contributors or calibrator persist nothing (`FORECAST_UNAVAILABLE`). The BOOTSTRAP honesty champion is effective from 0 so a quote-print forecast is not OE-suppressed at receive/as_of. Tests prove composer `MINTED` / `OPPORTUNITY_EMITTED` on a G7-actionable REAL_TIME quote without fixture `probability=0.8`. Catalog evaluators still never call `build_preregistration`. Software MATCHED/OE EMIT is not FTEP `EMPIRICAL_ACTIVE`. Item 7 stays **PARTIAL**. Live stays off. |
+| **Key files** | `src/market_platform_foundation/strategy/path_a_forecast_producer.py` (contributor/calibrator load), `src/market_platform_foundation/strategy/path_a_prospective.py`, `src/market_platform_foundation/strategy/path_a_strategy_catalog.py`, `tools/path_a_prospective_run.py` (`--contributor-path` / `--calibration-path`; no `--probability`), `tests/intelligence/test_path_a_forecast_producer.py`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/platform/PROGRAM_STATUS.md`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | `tests.intelligence.test_path_a_forecast_producer` **16 passed**. Path A producer + store + prereg + prospective + catalog + scan caller **98 passed / 0 fail**. Live still `LIVE_SCAN_CALLER_FORBIDDEN`. |
+| **Related** | Stacks on #51 `65e19cd` (ForecastV1 producer). Item 7 of the provider activation program. |
+| **Notes** | A fused software artifact is not empirical. Default production fusion still has no live specialist contributors on an operator weekday hop unless those JSON inputs exist. Did not touch OpenD transport / #50. Did not declare FTEP `EMPIRICAL_ACTIVE` or Live. Frozen FTEP-V1-001 JSON not touched. |
+
 ## 2026-09-13 — Path A fail-closed PRODUCTION ForecastV1 producer
 
 | Field | Value |
