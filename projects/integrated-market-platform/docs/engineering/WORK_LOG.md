@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Merge #48 `227a61a` into Path A forecast load
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy`, `docs` |
+| **Summary** | Merged `origin/cursor/path-a-prereg-load-d1ba` (`227a61a`, docs restack evidence on `ff139ac`) into `cursor/path-a-forecast-load-d1ba` so #49 is no longer CONFLICTING. Sole content conflict was `WORK_LOG.md` (kept both entries). ForecastV1 remains load-only; no probability mint. Item 7 stays **PARTIAL**. FTEP is not `EMPIRICAL_ACTIVE`. |
+| **Key files** | `docs/engineering/WORK_LOG.md` |
+| **Tests** | After merge, focused Path A + catalog + scan caller + prospective **82 passed**. Live still `LIVE_SCAN_CALLER_FORBIDDEN`. |
+| **Related** | PR #49 onto restacked #48. |
+| **Notes** | Merge, not rebase/force-push. Did not declare FTEP `EMPIRICAL_ACTIVE`. Did not mint probability. |
+
 ## 2026-09-13 — Path A loads a previously persisted PRODUCTION ForecastV1
 
 | Field | Value |
@@ -45,8 +57,20 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Summary** | Paper/Demo Path A CLI no longer pre-builds the invoke before fetch. Composer fetches once (OpenD primary), G7 remains freshness authority, and auto-builds the honesty invoke with the admitted `quote_event` so the catalog is not stuck on `FCAST_NO_QUOTE_OBSERVATION`. `forecast_resolver` loads a previously persisted PRODUCTION `ForecastV1` (`strategy/path_a_forecast_store.py`) only when identity/PIT/champion/horizon/account/mode match Opportunity Engine hop policy; CONTROL, RESEARCH, uncalibrated, or absent artifacts return `None` (`FORECAST_UNAVAILABLE`). Persist is serialization of an already-constructed `ForecastV1`, not a producer. The hop does not mint a probability from last_price, does not call CONTROL `build_forecast_v1`, and does not add a CLI `--probability`. Live stays `LIVE_FORBIDDEN`. Item 7 stays **PARTIAL**. FTEP is not `EMPIRICAL_ACTIVE`. Frozen FTEP-V1-001 JSON not touched. |
 | **Key files** | `src/market_platform_foundation/strategy/path_a_forecast_store.py` (new), `src/market_platform_foundation/strategy/path_a_prospective.py`, `src/market_platform_foundation/strategy/path_a_strategy_catalog.py`, `tools/path_a_prospective_run.py` (additive `--forecast-path`; no pre-fetch invoke), `tests/intelligence/test_path_a_forecast_store.py` (new), `tests/intelligence/test_path_a_preregistration_store.py`, `tests/intelligence/test_path_a_prospective.py`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/platform/PROGRAM_STATUS.md`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md` |
 | **Tests** | New `tests.intelligence.test_path_a_forecast_store` **15 passed** (missing → `FORECAST_UNAVAILABLE`; CONTROL/RESEARCH/uncalibrated rejected at load not OE SUPPRESS; research `build_forecast` dict rejected; catalog never calls `build_preregistration`; Live still forbidden; composer threads fetched quote into scan context). Focused Path A + catalog + scan caller + ingest + freshness **112 passed**. `python3 tools/validate.py changed --paths-file` (11 merge-base paths vs `origin/cursor/path-a-prereg-load-d1ba`@`ff139ac`) **2547 passed / 25 skipped / 0 fail / 0 err** (`core_checkpoint_required=true`, same unowned `tools/path_a_prospective_run.py` escalation as prior Path A CLI PRs). `python3 tools/check_docs_links.py` **OK (188 files)**. Live still `LIVE_SCAN_CALLER_FORBIDDEN`. |
-| **Related** | Stacks on restacked #48 `ff139ac` (prereg `fcf6116` + OpenD `a9377a6`). Item 7 of the provider activation program. |
+| **Related** | Stacks on restacked #48 `ff139ac` (prereg `fcf6116` + OpenD `a9377a6`); later merged `#48` tip `227a61a` (docs restack evidence). Item 7 of the provider activation program. |
 | **Notes** | A software-constructed PRODUCTION `ForecastV1` used in tests is not empirical and is not item 7 PROVED. No empirical fused/calibrated producer exists on this hop. Whale alignments still abstain on `ABSTAIN_INSTITUTIONAL_UNAVAILABLE`. Did not implement `moomoo-api` transport. Did not merge Wave B #21–#28. Did not declare FTEP `EMPIRICAL_ACTIVE` or Live. |
+
+## 2026-09-13 — Restack Path A prereg load onto OpenD hop
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy`, `providers`, `tools` |
+| **Summary** | Merged `#47` OpenD hop (`a9377a6`) into `#48` prereg load (`fcf6116`) so one hop has OpenD primary L1 and Phase-6 preregistration load. CLI keeps `primary_equity_quote_provider()` and `--preregistration-path` plus `--persist-*`. Yahoo stays overlay-only. Catalog evaluators still never mint. `forecast_resolver` stays `None`. Item 7 stays **PARTIAL**. FTEP is not `EMPIRICAL_ACTIVE`. Live stays off. |
+| **Key files** | `tools/path_a_prospective_run.py` (both OpenD primary and `--preregistration-path`), `tests/intelligence/test_path_a_preregistration_store.py` (CLI source assertion now requires both), `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md`, `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Focused Path A + catalog + scan caller + ingest + freshness + OpenD Primary L1 **118 passed** (`test_path_a_preregistration_store` **13**, `test_path_a_prospective` **40**, `test_moomoo_opend_primary_l1` **21**, catalog **8**). Honest CLI with OpenD down: `discovery.provider_id=moomoo.opend.observational`, `overlay_provider_id=yahoo.finance.delayed`, `opend_reachable=false`, `result.status=PROVIDER_UNAVAILABLE`, `reason_codes=["OPEND_UNAVAILABLE"]`, `path_a_status=null`; `--preregistration-path` and `--persist-*` still present. `python3 tools/validate.py changed --paths-file` (10 merge-base paths vs `origin/cursor/opend-hop-unify-d1ba`@`a9377a6`) **2532 passed / 25 skipped / 0 fail / 0 err** (`core_checkpoint_required=true`). `python3 tools/imp.py lint` passed. `python3 tools/check_docs_links.py` **OK (188 files)**. `validate.py changed --plan` with no paths-file on a clean tree: **0 suites**. |
+| **Related** | PR #48 restacked onto #47. Stack is `#45` `ce49048` → `#47` `a9377a6` → `#48`. |
+| **Notes** | Merge, not rebase/force-push. Four content conflicts: CLI, `WORK_LOG.md`, `PROGRAM_STATUS.md`, `PAPER_FORWARD_TESTING_BRIDGE.md`. Did not mint `ForecastV1`, inject fixture probability, activate Live, declare FTEP `EMPIRICAL_ACTIVE`, merge to main, or merge Wave B / #46 onto main. |
 
 ## 2026-09-13 — Path A loads a previously persisted Phase-6 preregistration
 
