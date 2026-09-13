@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Durable forward-test persistence merged (PR #34)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | PR #34 merged to `main` at `2dd49ea`. PROGRAM_STATUS labels the schema v6 increment `MERGED` / `REMOTE VALIDATED`. PD-09 remains COMPLETE. FTEP labels unchanged. Path A / G7 remain DEFERRED. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python3 tools/check_docs_links.py`; GitHub `validate` on this docs PR |
+| **Related** | [PR #34](https://github.com/AdamEddahmouni/market-trading-platform/pull/34); merge SHA `2dd49ea1a75a45f8eefba79576ac4ac537cbde5d` |
+| **Notes** | Simulator still not externally validated. |
+
 ## 2026-09-13 — Durable forward-test persistence increment (schema v6)
 
 | Field | Value |
@@ -45,7 +57,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Summary** | Extends PD-09 `local_state` SQLite to schema v6 without a second store: transactional FT writes, atomic paper-submit/evaluation claims (H2/H3), reconstruction from Paper ledger + observations (H7), git SHA + simulator version provenance, campaign/strategy/instrument isolation queries, Paper/Live leak-closed at the repository, unique operator acks. Does not start FTEP empirical sessions or flip campaign labels. |
 | **Key files** | `src/market_platform_foundation/local_state/{schema,migrations,connection}.py`, `intelligence/paper_forward_bridge/{sqlite_repository,store,service,evaluation,reconstruction,paper_ledger_join,run_identity}.py`, `ui_api/operator_opportunity_state.py`, `tests/intelligence/test_forward_test_persistence.py` |
 | **Tests** | Persistence unittest **39 passed**. Related bridge+policy **20 passed**. FAST **23 passed**. `validate changed` vs `origin/main...HEAD` **2443 passed / 39 skipped / 0 fail** (104s). Docs links OK. GitHub PR #34 checks all pass (`validate-python-changed` 2m27s). FULL/closure not run (`paper/**` untouched). |
-| **Related** | PD-09 remains COMPLETE (PR #18). This is a new increment. |
+| **Related** | PD-09 remains COMPLETE (PR #18). Merged as [PR #34](https://github.com/AdamEddahmouni/market-trading-platform/pull/34) at `2dd49ea`. |
 | **Notes** | Simulator is not externally validated. Path A / G7 remain DEFERRED. |
 
 ## 2026-09-13 — Opportunity Engine operator review loop (Goal 001)
