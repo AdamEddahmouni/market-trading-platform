@@ -16,8 +16,10 @@ legitimately abstains on ``ABSTAIN_NO_PREREGISTRATION`` (whale alignments also
 This module never returns a hardcoded ``MATCHED`` disposition.
 
 A scanner MATCHED from a lawful loaded record is still not an Opportunity
-Engine EMIT and not a tradable edge: the honesty invoke leaves
-``forecast_resolver`` returning ``None``.
+Engine EMIT unless a previously persisted PRODUCTION ``ForecastV1`` also
+loads through the fail-closed resolver. The catalog never mints a
+probability from last_price. Absent/mismatch forecast load is
+``FORECAST_UNAVAILABLE``.
 """
 
 from __future__ import annotations

@@ -219,10 +219,12 @@ Factory: `create_forward_test_repository()` in
 `paper_forward_bridge/repository.py` (in-memory when persistence is off).
 
 Path A prospective hop (`PathAProspectiveComposer`): Paper/Demo CLI
-`tools/path_a_prospective_run.py` injects `PathAScanCaller` so `path_a_status`
-is honest `EMPTY` when no MATCHED strategy (not null). The hop
-`quote_provider` is always Moomoo OpenD via
-`primary_equity_quote_provider()`; Yahoo delayed is overlay-only and is not
+`tools/path_a_prospective_run.py` does not pre-build the invoke before fetch.
+Composer fetches once (OpenD primary via `primary_equity_quote_provider()`),
+G7 remains freshness authority, and auto-builds `PathAScanCaller` with the
+admitted `quote_event` so `path_a_status` is honest `EMPTY` when no MATCHED
+strategy (not null) and the catalog is not stuck on
+`FCAST_NO_QUOTE_OBSERVATION`. Yahoo delayed is overlay-only and is not
 swapped in when OpenD is down. G7 capability/selection registers hop L1
 identity `moomoo.opend.observational` (`US_EQUITY_L1`); Yahoo remains
 unknown as hop L1. Unstamped OpenD fail-closes (`PROVIDER_DOWN`) until a hop
@@ -239,8 +241,11 @@ After `python tools/imp.py env install-opend`, hop uses the IMP
 may point at a previously persisted Phase-6 record; create is a separate
 operator step (`persist_paper_demo_preregistration`) that stamps `registered_at`
 before any hop. Load requires identity match and `registered_at` before quote
-`event_time_ns`. Catalog evaluators never mint a preregistration. A scanner
-MATCHED with `forecast_resolver` returning `None` is `FORECAST_UNAVAILABLE`,
+`event_time_ns`. `--forecast-path` may point at a previously persisted
+PRODUCTION `ForecastV1`; load requires identity/PIT/champion/horizon/account/mode
+to match Opportunity Engine hop policy; otherwise `FORECAST_UNAVAILABLE`.
+The hop does not mint a probability. Catalog evaluators never mint a preregistration. A scanner
+MATCHED with no eligible loaded forecast is `FORECAST_UNAVAILABLE`,
 not OE EMIT. Honest EMPTY does not
 enter the MATCHED loop or call Opportunity Engine. A Paper/Demo MATCHED
 test fixture does call `bridge_strategy_match_to_opportunity` →
