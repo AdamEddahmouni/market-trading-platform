@@ -20,9 +20,9 @@ import contextlib
 import json
 import os
 import socket
+import sys
 import unittest
 from pathlib import Path
-import sys
 from typing import Any
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -218,12 +218,12 @@ class MoomooOpenDPrimaryL1Tests(unittest.TestCase):
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind(("127.0.0.1", 0))
-        listener.listen(1)
+        listener.listen(32)
         host, port = listener.getsockname()
         try:
             with _env(IMP_MOOMOO_HOST=host, IMP_MOOMOO_PORT=str(port)):
-                self.assertTrue(opend_reachable(host=host, port=port))
                 self.assertFalse(opend_sdk_available())
+                self.assertTrue(opend_reachable(host=host, port=port))
                 result = MoomooOpenDEquityQuoteProvider().fetch_quote("AAPL")
         finally:
             listener.close()
@@ -235,7 +235,7 @@ class MoomooOpenDPrimaryL1Tests(unittest.TestCase):
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind(("127.0.0.1", 0))
-        listener.listen(1)
+        listener.listen(32)
         host, port = listener.getsockname()
         try:
             with _env(IMP_MOOMOO_HOST=host, IMP_MOOMOO_PORT=str(port)):
@@ -252,7 +252,7 @@ class MoomooOpenDPrimaryL1Tests(unittest.TestCase):
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind(("127.0.0.1", 0))
-        listener.listen(1)
+        listener.listen(32)
         host, port = listener.getsockname()
         try:
             with _env(IMP_MOOMOO_HOST=host, IMP_MOOMOO_PORT=str(port)):
@@ -271,7 +271,7 @@ class MoomooOpenDPrimaryL1Tests(unittest.TestCase):
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind(("127.0.0.1", 0))
-        listener.listen(1)
+        listener.listen(32)
         host, port = listener.getsockname()
         try:
             with _env(IMP_MOOMOO_HOST=host, IMP_MOOMOO_PORT=str(port)):
@@ -294,7 +294,7 @@ class MoomooOpenDPrimaryL1Tests(unittest.TestCase):
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind(("127.0.0.1", 0))
-        listener.listen(1)
+        listener.listen(32)
         host, port = listener.getsockname()
         try:
             with _env(IMP_MOOMOO_HOST=host, IMP_MOOMOO_PORT=str(port)):
@@ -313,7 +313,7 @@ class MoomooOpenDPrimaryL1Tests(unittest.TestCase):
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind(("127.0.0.1", 0))
-        listener.listen(1)
+        listener.listen(32)
         host, port = listener.getsockname()
         try:
             with _env(IMP_MOOMOO_HOST=host, IMP_MOOMOO_PORT=str(port)):
@@ -332,7 +332,7 @@ class MoomooOpenDPrimaryL1Tests(unittest.TestCase):
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind(("127.0.0.1", 0))
-        listener.listen(1)
+        listener.listen(32)
         host, port = listener.getsockname()
         try:
             with _env(IMP_MOOMOO_HOST=host, IMP_MOOMOO_PORT=str(port)):
@@ -452,7 +452,7 @@ class OpenDDiscoveryTests(unittest.TestCase):
         listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind(("127.0.0.1", 0))
-        listener.listen(1)
+        listener.listen(32)
         host, port = listener.getsockname()
         try:
             with _env(IMP_MOOMOO_HOST=host, IMP_MOOMOO_PORT=str(port)):
