@@ -25,7 +25,7 @@ ChampionAssignmentV1 → ForecastV1 → OpportunityContext → OpportunityPolicy
   → OpportunityAssessmentV1 → OpportunityV1 (if EMIT)
 ```
 
-Mint path (Path A, fixture Paper library): MATCHED `StrategyMatch` → `bridge_strategy_match_to_opportunity` → `OpportunityEngine.assess` → persist assessment always, `OpportunityV1` only on `EMIT`. Goal 001 does not add a competing constructor, daemon, or FTEP bind. The operator review loop reads already-minted rows plus labeled attention adapters; it does not start a production scanner.
+Mint path (Path A): MATCHED `StrategyMatch` → `bridge_strategy_match_to_opportunity` → `OpportunityEngine.assess` → persist assessment always, `OpportunityV1` only on `EMIT`. Bounded Paper/Demo `PathAScanCaller` runs the existing `UniversalStrategyScanner` library once and mints through that path. It is not a daemon, not Live, not FTEP, and not `StrategyPaperRuntime` workstation wiring. Goal 001 ingest remains a review assembler over already-minted rows.
 
 Every forecast evaluation produces a durable `OpportunityAssessmentV1`. Only eligible assessments emit `OpportunityV1`.
 
