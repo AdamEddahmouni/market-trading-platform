@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Finviz Elite overlay on OpenD Path A hop CLI
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, Path A hop CLI |
+| **Summary** | Joined Finviz Elite screening/news overlay into the OpenD Path A hop CLI on the #55 one-interpreter / G7 OpenD identity base. Hop JSON now includes `equity_context` (overlay classifier). Token absent fail-closes `NOT_CONFIGURED`. Fetched token without `IMP_FINVIZ_LIVE` is `LIVE_DISABLED`. OpenD stays hop L1 (`primary_equity_quote_provider()`). Yahoo stays `overlay_provider_id`. Leftover nested login still repairs into gitignored canonical `.private`. Live off. FTEP is not `EMPIRICAL_ACTIVE`. Item 2 stays PARTIAL. |
+| **Key files** | `tools/path_a_prospective_run.py` (`equity_context` hop JSON + observational composition overlay), `providers/adapters/finviz_elite_context.py` (lifted), `providers/finviz_context_discovery.py` (lifted leftover-login auto-fetch), `providers/composition.py` (`with_finviz_elite_*` plus existing `with_moomoo_opend_primary_quote`), `market_data/runtime_composition.py` (`equity_context` slot kept beside OpenD `ingest_one_shot` / G7 snapshot), `market_data/observational_lanes.py` (`build_context_payload`), `tests/intelligence/test_path_a_prospective.py` (hop overlay classifier), `tests/providers/test_finviz_elite_context.py`, `tests/market_data/test_finviz_observational_context.py`, `docs/providers/FINVIZ_ELITE.md`, `docs/providers/MOOMOO_OBSERVATIONAL.md`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md`, `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Pending this session's focused + changed validation; counts recorded after the run. |
+| **Related** | Stacked on #55 `bb05b7a` (`cursor/hop-one-interpreter-d1ba`). Overlay wiring lifted from #44/`4c2c931` and #54/`87df20f`. Did not stack onto #53 (MATCHED produce) so G7 OpenD identity + one-interpreter stay. |
+| **Notes** | Did not merge. Did not mock ticks. Did not declare item 2 PROVED. Cloud VM still has no Elite token and no OpenD. Operator AdamsGalaxyBook overlay FETCHED on #54 is software-join input, not this hop CLI empirical. |
+
 ## 2026-09-13 — One-interpreter OpenD hop extra
 
 | Field | Value |

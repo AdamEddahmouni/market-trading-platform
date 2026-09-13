@@ -143,7 +143,10 @@ observational**.
   tick still requires an operator daemon **and** `moomoo-api` in the
   **same** IMP interpreter (`python tools/imp.py env install-opend`); this
   increment wires the quote-only transport, it does not
-  declare empirical L1.
+  declare empirical L1. Hop JSON also includes Finviz Elite
+  `equity_context` (screening/news overlay classifier). That lane is never
+  hop L1: token absent is `NOT_CONFIGURED`; a fetched token without
+  `IMP_FINVIZ_LIVE` is `LIVE_DISABLED`. Yahoo stays `overlay_provider_id`.
 - `providers/composition.py` — `with_moomoo_opend_primary_quote(composition)`
   wires the `equity_quote` slot to the OpenD adapter. Additive/opt-in: the
   default `ProviderComposition` keeps `UnconfiguredEquityQuoteProvider`

@@ -12,11 +12,13 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
 from market_platform_foundation.local_state.opend import diagnose_opend
+from market_platform_foundation.market_data.runtime_composition import ObservationalRuntimeComposition
 from market_platform_foundation.strategy.path_a_prospective import (
     PathAPersistContext,
     PathAProspectiveComposer,
     build_paper_demo_path_a_invoke,
 )
+from market_platform_foundation.providers.composition import with_finviz_elite_observational_context
 from market_platform_foundation.providers.equity_quote_discovery import discover_equity_quote_stack
 from market_platform_foundation.providers.equity_quote_selection import primary_equity_quote_provider
 
@@ -99,6 +101,28 @@ def _hop_interpreter() -> dict[str, object]:
     return diagnose_hop_interpreter()
 
 
+def _finviz_hop_overlay(symbol: str) -> tuple[object, dict[str, object]]:
+    """Finviz Elite screening/news overlay for hop JSON. Never hop L1.
+
+    Fail-closed: missing Elite token stays ``NOT_CONFIGURED``. Yahoo is
+    never this overlay identity. Values are never included.
+    """
+
+    from market_platform_foundation.providers.adapters.finviz_elite_context import (
+        overlay_payload,
+    )
+    from market_platform_foundation.providers.finviz_context_discovery import (
+        discover_finviz_context_stack,
+    )
+
+    adapter, discovery = discover_finviz_context_stack()
+    payload = overlay_payload(
+        discovery=discovery.to_dict(),
+        result=adapter.fetch_context(symbol),
+    )
+    return adapter, payload
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="One-shot Path A prospective hop (Paper/Demo).")
     parser.add_argument("--symbol", default="AAPL")
@@ -138,6 +162,11 @@ def main(argv: list[str] | None = None) -> int:
     preflight = _opend_preflight(diagnose_opend(start=True))
     _, discovery = discover_equity_quote_stack()
     provider = primary_equity_quote_provider()
+    overlay_adapter, equity_context = _finviz_hop_overlay(args.symbol)
+    composition = with_finviz_elite_observational_context(
+        ObservationalRuntimeComposition(),
+        provider=overlay_adapter,
+    )
     persist_context = build_cli_persist_context(args)
     prereg_path = args.preregistration_path
     caller = None
@@ -148,6 +177,7 @@ def main(argv: list[str] | None = None) -> int:
         request = invoke.scan_request
     result = PathAProspectiveComposer(
         quote_provider=provider,
+        composition=composition,
         path_a_caller=caller,
         persist=persist_context,
         preregistration_path=prereg_path,
@@ -163,6 +193,7 @@ def main(argv: list[str] | None = None) -> int:
             "reason_code": discovery.reason_code,
             "timeliness": discovery.timeliness,
         },
+        "equity_context": equity_context,
         "hop_interpreter": _hop_interpreter(),
         "opend_preflight": preflight,
         "persist_context_injected": persist_context is not None,
