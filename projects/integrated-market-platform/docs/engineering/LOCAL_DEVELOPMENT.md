@@ -28,6 +28,13 @@ uv venv --python <cpython-3.11-path> .venv
 uv pip install --python .venv\Scripts\python.exe tzdata
 ```
 
+Optional OpenD hop (vendor SDK in the **same** IMP `.venv`; sklearn is already
+there). Do not `PYTHONPATH` another venv's `site-packages`:
+
+```powershell
+python tools\imp.py env install-opend
+```
+
 ### Frontend
 
 ```powershell

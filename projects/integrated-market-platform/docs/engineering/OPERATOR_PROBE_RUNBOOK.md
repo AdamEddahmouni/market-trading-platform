@@ -16,7 +16,10 @@ Prerequisites: [PROVIDER_READINESS.md](./PROVIDER_READINESS.md), [PROVIDER_ACTIV
 ## 1. Moomoo OpenD + SDK 3.11
 
 1. Install/start **Moomoo OpenD** on loopback `127.0.0.1:11111` and sign in with an entitled account (see [MOOMOO_OBSERVATIONAL.md](../providers/MOOMOO_OBSERVATIONAL.md)).
-2. Use a **Python 3.11** venv with the external `moomoo-api` SDK (documented in provider doc; not vendored in IMP).
+2. Use the **IMP** CPython 3.11 `.venv` after the optional OpenD extra
+   (`python tools/imp.py env install-opend`). `import moomoo` must be vendor
+   `OpenQuoteContext`, never `tools/moomoo`. Do not mix a second venv via
+   `PYTHONPATH`.
 3. From IMP root with `PYTHONPATH=src`:
 
    ```powershell

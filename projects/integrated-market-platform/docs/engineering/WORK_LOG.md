@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — One-interpreter OpenD hop extra
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tools`, `providers`, Path A hop |
+| **Summary** | Path A hop no longer needs IMP `.venv` plus `PYTHONPATH` into `moomoo-api-test`. Optional extra `python tools/imp.py env install-opend` installs `moomoo-api==10.10.7008` into the IMP interpreter (sklearn already there). `import moomoo` must be vendor `OpenQuoteContext`, never `tools/moomoo`. Missing SDK stays `MOOMOO_SDK_MISSING` (never a mock tick). Cloud/default bootstrap does not install the extra. Live stays off. FTEP is not `EMPIRICAL_ACTIVE`. |
+| **Key files** | `tools/moomoo/requirements-opend.txt` (new), `tools/moomoo/opend_hop_interpreter.py` (new), `tools/moomoo/opend_quote_transport.py`, `tools/imp.py` (`env install-opend`), `tools/path_a_prospective_run.py` (`hop_interpreter` JSON), `tests/providers/test_opend_hop_interpreter.py` (new), `tests/validation/test_opend_extra_env.py` (new), `docs/providers/MOOMOO_OBSERVATIONAL.md`, `docs/engineering/DEPENDENCIES.md`, `docs/engineering/DEVELOPER_OPERATING_SYSTEM.md`, `docs/engineering/LOCAL_DEVELOPMENT.md`, `docs/engineering/OPERATOR_PROBE_RUNBOOK.md`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md`, `docs/platform/PROGRAM_STATUS.md`, `README.md` |
+| **Tests** | `python3 -m unittest` hop interpreter + OpenD vendor transport + Path A + G7 + env **116 passed / 0 fail**. Honest CLI with OpenD down: `hop_interpreter.vendor_sdk=false`, `vendor_sdk_is_opend_quote_context=false`, `reason_code=MOOMOO_SDK_MISSING`, `secrets_included=false`; `result.status=PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE`. `python3 tools/validate.py changed --paths-file` (16 paths vs #52 `bf1aaaa`) **1023 passed / 0 skipped / 0 fail / 0 err** (`core_checkpoint_required=true` from unowned hop CLI / extra paths). `python3 tools/imp.py lint` passed. `python3 tools/check_docs_links.py` **OK (188 files)**. |
+| **Related** | Stacked on #52 `bf1aaaa`. Operator mix was IMP `.venv` + `PYTHONPATH` to `moomoo-api-test` site-packages. |
+| **Notes** | After extra: `$env:PYTHONPATH='src'; .venv\Scripts\python.exe tools\path_a_prospective_run.py --symbol AAPL --mode paper`. Did not merge. Did not mock ticks. Did not touch Finviz auto-fetch or #50–#53. |
+
 ## 2026-09-13 — G7 knows OpenD hop L1 identity
 
 | Field | Value |

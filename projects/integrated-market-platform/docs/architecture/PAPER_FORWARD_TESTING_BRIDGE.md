@@ -231,7 +231,9 @@ before quote fetch so an installed local OpenD can be started; if it is
 still down the outcome is
 `PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE` (or
 `MOOMOO_SDK_MISSING` if loopback TCP answers but the vendor SDK is
-absent). `--preregistration-path`
+absent). After `python tools/imp.py env install-opend`, hop uses the IMP
+`.venv` only (`PYTHONPATH=src`); do not mix `moomoo-api-test` site-packages.
+`--preregistration-path`
 may point at a previously persisted Phase-6 record; create is a separate
 operator step (`persist_paper_demo_preregistration`) that stamps `registered_at`
 before any hop. Load requires identity match and `registered_at` before quote

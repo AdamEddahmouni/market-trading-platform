@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
 from market_platform_foundation.local_state.opend import diagnose_opend
@@ -90,6 +91,14 @@ def _opend_preflight(report: dict[str, object]) -> dict[str, object]:
     }
 
 
+def _hop_interpreter() -> dict[str, object]:
+    """Secret-free one-interpreter hop status. Never a tick; never Live."""
+
+    from tools.moomoo.opend_hop_interpreter import diagnose_hop_interpreter
+
+    return diagnose_hop_interpreter()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="One-shot Path A prospective hop (Paper/Demo).")
     parser.add_argument("--symbol", default="AAPL")
@@ -154,6 +163,7 @@ def main(argv: list[str] | None = None) -> int:
             "reason_code": discovery.reason_code,
             "timeliness": discovery.timeliness,
         },
+        "hop_interpreter": _hop_interpreter(),
         "opend_preflight": preflight,
         "persist_context_injected": persist_context is not None,
         "result": result.to_dict(),

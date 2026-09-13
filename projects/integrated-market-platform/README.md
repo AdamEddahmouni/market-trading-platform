@@ -94,9 +94,10 @@ written atomically, and are never included in status, operation, or error
 responses.
 
 Prerequisites are the repository CPython 3.11 `.venv`, Node.js/npm, and a prior
-`npm install` in `ui/`. When `%USERPROFILE%\moomoo-api-test\.venv` exists, the
-API automatically uses it so the Moomoo SDK is available; otherwise it uses the
-repository venv. Moomoo OpenD must be running separately on loopback port
+`npm install` in `ui/`. Path A hop uses that IMP `.venv` after
+`python tools/imp.py env install-opend` (`PYTHONPATH=src` only). Do not mix a
+second venv's `site-packages`. When `%USERPROFILE%\moomoo-api-test\.venv` exists, the
+API launcher may still select it; hop itself must use the IMP interpreter. Moomoo OpenD must be running separately on loopback port
 `11111` for Moomoo quotes. The launcher enables observational data and internal
 paper simulation but never enables live order execution.
 

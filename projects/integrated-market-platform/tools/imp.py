@@ -387,6 +387,15 @@ def _load_environment_module():
     return environment_module
 
 
+def _load_opend_hop_interpreter():
+    root = str(REPOSITORY_ROOT)
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from tools.moomoo import opend_hop_interpreter as hop_module
+
+    return hop_module
+
+
 def _validation_python(root: Path) -> str:
     environment_module = _load_environment_module()
     try:
@@ -508,6 +517,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--force",
         action="store_true",
         help="replace an existing mismatched .venv link",
+    )
+    env_actions.add_parser(
+        "install-opend",
+        help="install optional vendor OpenD SDK (moomoo-api) into the IMP interpreter",
     )
 
     formatting = groups.add_parser("format", help="check changed-file whitespace")
@@ -842,6 +855,18 @@ def main(argv: Sequence[str] | None = None) -> int:
                 _write_json(args.json_path, payload)
             print(json.dumps(payload, indent=2, sort_keys=True))
             return 0
+        if getattr(args, "env_action", None) == "install-opend":
+            environment_module = _load_environment_module()
+            hop_module = _load_opend_hop_interpreter()
+            try:
+                python = environment_module.effective_python_executable(root)
+            except RuntimeError:
+                python = Path(sys.executable)
+            payload = hop_module.install_opend_extra(python=Path(python))
+            if args.json_path:
+                _write_json(args.json_path, payload)
+            print(json.dumps(payload, indent=2, sort_keys=True))
+            return 0 if payload.get("status") == "READY" else 1
         report = _diagnostics(root)
         status, hard_failures = _environment_status(report)
         report["status"] = status
