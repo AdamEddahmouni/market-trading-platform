@@ -48,6 +48,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | Stacked on #56 `4418b91` (`cursor/finviz-hop-overlay-d1ba`). Operator-zero after leftover login exists. |
 | **Notes** | Did not merge. Did not activate Live. Did not declare FTEP `EMPIRICAL_ACTIVE`. Paper only. |
 
+## 2026-09-13 — Path A fail-closed PRODUCTION ForecastV1 producer
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy`, `opportunity`, `fusion` |
+| **Summary** | Paper/Demo Path A can now *produce* a PRODUCTION `ForecastV1` through BUILD 14 `ForecastFusionService` (`strategy/path_a_forecast_producer.py`) and persist it only via `persist_paper_demo_forecast` when fusion emits `EMITTED_CALIBRATED` with `calibration_status=CALIBRATED` and identity/PIT/champion/horizon/account/mode hop gates pass. CONTROL-only, RESEARCH dicts, IDENTITY_CONTROL, missing calibration, uncalibrated contributors, and Live persist nothing (`FORECAST_UNAVAILABLE` / `LIVE_FORBIDDEN`). The hop remains load-only (`--forecast-path`). Catalog evaluators still never call `build_preregistration`. No last_price mint, no fixture `probability=0.8`. Software producer wiring is not FTEP `EMPIRICAL_ACTIVE`. Item 7 stays **PARTIAL**. Live stays off. |
+| **Key files** | `src/market_platform_foundation/strategy/path_a_forecast_producer.py` (new), `src/market_platform_foundation/strategy/path_a_forecast_store.py` (`forecast_matches_path_a_hop_policy`), `src/market_platform_foundation/strategy/path_a_prospective.py`, `src/market_platform_foundation/strategy/path_a_strategy_catalog.py`, `tools/path_a_prospective_run.py` (help text only; no `--probability`), `tests/intelligence/test_path_a_forecast_producer.py` (new), `tests/intelligence/test_path_a_forecast_store.py`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/platform/PROGRAM_STATUS.md`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | New `tests.intelligence.test_path_a_forecast_producer` **12 passed** (CONTROL-only / missing calibration / IDENTITY_CONTROL / research dict / CONTROL-tagged-as-PRODUCTION / horizon mismatch do not persist; Live forbidden; fused+calibrated persist loads and Path A `MINTED` / OE EMIT — software-only). Store + producer **27 passed**. Focused Path A + catalog + scan caller + freshness + producer **124 passed**. `python3 tools/validate.py changed --paths-file` (10 paths vs `origin/cursor/path-a-forecast-load-d1ba`@`f920ef5`) **2559 passed / 25 skipped / 0 fail / 0 err** (`core_checkpoint_required=true`, same unowned `tools/path_a_prospective_run.py` escalation as prior Path A CLI PRs). `python3 tools/check_docs_links.py` **OK (188 files)**. Live still `LIVE_SCAN_CALLER_FORBIDDEN`. |
+| **Related** | Originally stacked on #49 `f920ef5`. Cherry-picked onto leftover OpenD hop #57. Item 7 of the provider activation program. |
+| **Notes** | A fused software artifact is not empirical. Default production fusion still has no live specialist contributors on this hop, so the operator path fail-closes without them. Did not declare FTEP `EMPIRICAL_ACTIVE` or Live. Frozen FTEP-V1-001 JSON not touched. |
+
 ## 2026-09-13 — Path A loads a previously persisted PRODUCTION ForecastV1
 
 | Field | Value |

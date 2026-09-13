@@ -17,8 +17,10 @@ This module never returns a hardcoded ``MATCHED`` disposition.
 
 A scanner MATCHED from a lawful loaded record is still not an Opportunity
 Engine EMIT unless a previously persisted PRODUCTION ``ForecastV1`` also
-loads through the fail-closed resolver. The catalog never mints a
-probability from last_price. Absent/mismatch forecast load is
+loads through the fail-closed resolver. Create of that artifact is
+``produce_paper_demo_forecast`` (BUILD 14 fusion, fail-closed). The catalog
+never mints a probability from last_price and never calls
+``build_preregistration``. Absent/mismatch forecast load is
 ``FORECAST_UNAVAILABLE``.
 """
 

@@ -162,7 +162,8 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help=(
             "Previously persisted PRODUCTION forecast JSON file or directory. "
-            "This hop only loads; it does not mint a probability. Load "
+            "This hop only loads; it does not mint a probability. Create is "
+            "produce_paper_demo_forecast (BUILD 14 fusion, fail-closed). Load "
             "requires identity, PIT, champion, horizon, account, and mode "
             "to match Opportunity Engine hop policy; otherwise "
             "FORECAST_UNAVAILABLE. Paper/Demo only."
