@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Path A hop CLI loads a real (non-fixture) baseline strategy catalog
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy`, `opportunity` |
+| **Summary** | `build_paper_demo_path_a_invoke` (Paper/Demo only) no longer registers `strategies=()`. It now loads `build_paper_demo_strategy_catalog()` (`strategy/path_a_strategy_catalog.py`): the existing production `FORECAST_MOMENTUM` / `WHALE_ALIGNED` / `WHALE_CONTRARIAN` baseline-only specs (`strategy/evaluation.py`) wired to the real `interpret_strategy` evaluator, using the real fetched quote's last price/timestamp when available. No preregistration authority is wired into this one-shot hop, so every entry legitimately abstains (`ABSTAIN_NO_PREREGISTRATION`; whale alignments also `ABSTAIN_INSTITUTIONAL_UNAVAILABLE` — no `WhaleLedger` configured). Path A therefore still returns honest `EMPTY` / `NO_MATCHED_STRATEGY` on this hop, but from a genuine evaluation of 3 real strategies instead of a trivially empty candidate list. No hardcoded/lambda `MATCHED` is introduced anywhere. Confirmed live against the real Sunday Yahoo delayed overlay: `status=G7_NOT_ACTIONABLE`, `path_a_status=EMPTY`. Item 7 (Opportunity Engine in the hop) remains empirically **PARTIAL** — this closes only the empty-catalog software gap, not an empirical MATCHED. |
+| **Key files** | `src/market_platform_foundation/strategy/path_a_strategy_catalog.py` (new), `src/market_platform_foundation/strategy/path_a_prospective.py`, `tests/intelligence/test_path_a_strategy_catalog.py` (new), `tests/intelligence/test_path_a_prospective.py`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | New `tests.intelligence.test_path_a_strategy_catalog` **8 passed**. Focused Path A + scan caller + ingest + freshness (PR command + catalog module) **72 passed**. Wider focused Path A + scan caller + ingest + freshness + strategy scanning + equity paper runtime **97 passed**. Manual CLI run against real Yahoo delayed overlay: `discovery.provider_id=yahoo.finance.delayed`, `result.status=G7_NOT_ACTIONABLE`, `result.path_a_status=EMPTY`, `reason_codes` includes `NO_MATCHED_STRATEGY`. Live mode still refused (`--mode live` rejected by argparse; `build_paper_demo_path_a_invoke(mode="live")` raises `LIVE_SCAN_CALLER_FORBIDDEN`). `python3 tools/imp.py validate changed --paths-file` (merge-base `origin/main`, 18 paths) **2854 passed / 36 skipped / 0 fail / 0 err**. Docs links OK (188 files). |
+| **Related** | PR #42. Follows Path A CLI invoke (`44fdcec`) and MATCHED OE fixture (`33e6705`). |
+| **Notes** | The catalog is a genuine extension point: if a real preregistration authority and/or an entitled institutional (`WhaleLedger`) source are wired into Path A in a future increment, the same evaluator would start producing genuine `MATCHED` dispositions with no change to the scanner or caller. Until then, abstention is the honest outcome regardless of the real quote's price. The CLI (`tools/path_a_prospective_run.py`) still builds its invoke before fetching the quote, so the CLI-run catalog currently evaluates without live quote context (composer-internal auto-build, used by tests, does thread the fetched quote through `quote_event`); this does not change the abstain-always outcome today. |
+
 ## 2026-09-13 — Path A MATCHED fixture invokes Opportunity Engine
 
 | Field | Value |

@@ -604,15 +604,35 @@ class PathAProspectiveTests(unittest.TestCase):
         with self.assertRaisesRegex(PathAScanCallerError, "LIVE_SCAN_CALLER_FORBIDDEN"):
             build_paper_demo_path_a_invoke("AAPL", mode="actual_live")
 
-    def test_honesty_invoke_is_empty_without_matched_fixture(self) -> None:
+    def test_honesty_invoke_loads_real_catalog_but_stays_honest_empty(self) -> None:
+        """The empty-catalog gap is closed: real strategies load, but with no
+        preregistration authority wired into this hop they legitimately
+        abstain rather than mint a fabricated MATCHED row."""
         invoke = build_paper_demo_path_a_invoke("AAPL", mode="paper", as_of_time_ns=T)
-        self.assertEqual(invoke.scan_request.strategies, ())
+        self.assertGreater(len(invoke.scan_request.strategies), 0)
         self.assertEqual(invoke.scan_request.scope.mode, "paper")
         result = invoke.caller.run(invoke.scan_request)
         self.assertEqual(result.status, "EMPTY")
         self.assertEqual(result.reason_codes, ("NO_MATCHED_STRATEGY",))
         self.assertEqual(result.matched_count, 0)
         self.assertEqual(result.opportunities, ())
+        matches = invoke.caller.scanner.run(invoke.scan_request).matches
+        self.assertTrue(matches)
+        self.assertTrue(
+            all(match.disposition == StrategyMatchDisposition.ABSTAINED for match in matches)
+        )
+        self.assertTrue(
+            any("ABSTAIN_NO_PREREGISTRATION" in match.abstention_reasons for match in matches)
+        )
+
+    def test_honesty_invoke_catalog_is_real_not_a_lambda_fixture(self) -> None:
+        from market_platform_foundation.strategy import path_a_strategy_catalog
+
+        catalog = path_a_strategy_catalog.build_paper_demo_strategy_catalog()
+        self.assertGreater(len(catalog), 0)
+        source = inspect.getsource(path_a_strategy_catalog)
+        self.assertNotIn("lambda", source)
+        self.assertIn("interpret_strategy", source)
 
     def test_composer_invokes_path_a_without_injected_caller(self) -> None:
         available = ProviderResult(
