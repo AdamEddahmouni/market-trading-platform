@@ -67,6 +67,8 @@ def _login_pair(env: Mapping[str, str] | None) -> tuple[str | None, str | None, 
 
     1. Canonical IMP ``.private/finviz-login.json`` (or ``IMP_FINVIZ_SECRET_DIR``)
     2. Leftover nested ``integrated-market-platform/.private/finviz-login.json``
+       relative to the current worktree, the git common-dir main checkout,
+       and the parent of ``.worktrees`` (no junction required)
     3. ``.private/providers.env`` / short-squeeze ``providers.env`` / ``IMP_PROVIDER_ENV``
     4. Process-env ``FINVIZ_USERNAME`` / ``FINVIZ_PASSWORD``
     """

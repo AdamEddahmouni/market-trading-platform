@@ -9,6 +9,8 @@ from pathlib import Path
 
 from market_platform_foundation.git_ref import (
     _parse_gitdir_pointer,
+    git_common_dir,
+    main_working_tree,
     read_git_head,
     repo_root,
 )
@@ -105,6 +107,35 @@ class GitRefRepositoryDiscoveryTests(unittest.TestCase):
         worktree = Path(self.temporary.name) / "linked-head"
         _run_git(self.base, "worktree", "add", str(worktree), "-b", "linked-head-branch")
         self.assertEqual(read_git_head(start=worktree), self.head)
+
+    def test_main_working_tree_matches_standard_checkout(self) -> None:
+        self.assertEqual(main_working_tree(start=self.base), self.base.resolve())
+        nested = self.base / "projects" / "integrated-market-platform"
+        nested.mkdir(parents=True)
+        self.assertEqual(main_working_tree(start=nested), self.base.resolve())
+        common = git_common_dir(start=nested)
+        self.assertIsNotNone(common)
+        assert common is not None
+        self.assertEqual(common, (self.base / ".git").resolve())
+
+    def test_linked_worktree_main_working_tree_is_primary_checkout(self) -> None:
+        worktree = Path(self.temporary.name) / "linked-main"
+        _run_git(self.base, "worktree", "add", str(worktree), "-b", "linked-main-branch")
+        nested = worktree / "projects" / "integrated-market-platform"
+        nested.mkdir(parents=True)
+        self.assertEqual(repo_root(nested), worktree.resolve())
+        self.assertEqual(main_working_tree(start=nested), self.base.resolve())
+        self.assertNotEqual(main_working_tree(start=nested), worktree.resolve())
+        common = git_common_dir(start=nested)
+        self.assertIsNotNone(common)
+        assert common is not None
+        self.assertEqual(common, (self.base / ".git").resolve())
+
+    def test_main_working_tree_missing_git_is_none(self) -> None:
+        orphan = Path(self.temporary.name) / "orphan-main"
+        orphan.mkdir()
+        self.assertIsNone(main_working_tree(start=orphan))
+        self.assertIsNone(git_common_dir(start=orphan))
 
     def test_non_git_directory_rejected(self) -> None:
         orphan = Path(self.temporary.name) / "orphan"
