@@ -4,6 +4,14 @@ import type { AttentionItem, PaperPortfolioResponse } from "../../api/client";
 import demoNowCss from "../../styles/demo-now.css?raw";
 import { DemoNowPage, type DemoNowPageProps } from "./DemoNowPage";
 
+vi.mock("../../api/opportunityClient", () => ({
+  useOpportunitiesSummaryQuery: () => ({
+    data: { items: [], feed_status: "EMPTY" },
+    isLoading: false,
+    isError: false,
+  }),
+}));
+
 const attention: AttentionItem = {
   attention_id: "attention-1",
   priority_rank: 1,

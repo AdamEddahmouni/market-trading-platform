@@ -33,8 +33,9 @@ class OpportunityV1:
 
     What: screened economic interest with edge estimates — no execution fields.
     Not: broker order, trade proposal, or risk authorization.
-    Producers: opportunity ranking layer (future BUILD).
-    Consumers: trade-proposal and risk decision layers.
+    Producers: StrategyMatch MATCHED bridge → OpportunityEngine.assess (BUILD 21).
+    Consumers: comparator, Paper qualification, operator review projection.
+    Not: a universal rank score or execution authority.
     Immutable after construction.
     """
 
@@ -89,6 +90,10 @@ _FORBIDDEN_EXECUTION_KEYS = frozenset(
         "authorized",
         "submit_order",
         "side_buy_sell",
+        "universal_score",
+        "opaque_score",
+        "economic_score",
+        "rank_score",
     }
 )
 

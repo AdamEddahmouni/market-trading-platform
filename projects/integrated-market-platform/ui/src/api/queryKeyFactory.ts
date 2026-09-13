@@ -13,6 +13,7 @@ export {
 export const queryKeyFactory = {
   context: () => canonicalQueryKey("context"),
   attention: () => canonicalQueryKey("attention"),
+  opportunitiesSummary: () => canonicalQueryKey("opportunities", { capability: "summary" }),
   instrument: (instrumentId: string) => canonicalQueryKey("ins", { instrumentId }),
   exploreSqueeze: () => canonicalQueryKey("explore", { workspace: "squeeze" }),
   exploreSqueezeScanner: () => canonicalQueryKey("explore", { workspace: "squeeze-scanner" }),

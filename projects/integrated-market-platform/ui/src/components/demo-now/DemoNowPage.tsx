@@ -1,5 +1,7 @@
 import type { AttentionItem, PaperPortfolioResponse } from "../../api/client";
+import { useOpportunitiesSummaryQuery } from "../../api/opportunityClient";
 import { AttentionFeed } from "../AttentionFeed";
+import { OpportunityReviewList } from "../now/OpportunityReviewCard";
 import { DemoInspectNext } from "./DemoInspectNext";
 import { DemoPortfolioSummary } from "./DemoPortfolioSummary";
 import { DemoReplayOverview, deriveReplayProgress } from "./DemoReplayOverview";
@@ -25,6 +27,12 @@ export type DemoNowPageProps = {
 };
 
 export function DemoNowPage(props: DemoNowPageProps) {
+  const opportunitiesQuery = useOpportunitiesSummaryQuery(true);
+  const opportunityState = opportunitiesQuery.isLoading
+    ? "loading"
+    : opportunitiesQuery.isError || !opportunitiesQuery.data
+      ? "error"
+      : "ready";
   const progress = props.replayState === "ready" ? deriveReplayProgress(props.cursorIndex, props.eventCount) : null;
   const canAdvance = Boolean(progress?.hasNext);
   return (
@@ -59,6 +67,17 @@ export function DemoNowPage(props: DemoNowPageProps) {
               <h2 id="demo-attention-title">What matters now</h2>
             </div>
           </div>
+          <OpportunityReviewList
+            items={opportunitiesQuery.data?.items ?? []}
+            state={opportunityState}
+            feedStatus={opportunitiesQuery.data?.feed_status}
+            unreadyReason={opportunitiesQuery.data?.unready_reason}
+            nextAction={opportunitiesQuery.data?.next_action}
+            readOnly
+            onExplain={props.onExplain}
+            onInspect={props.onInspect}
+            onOpenWorkspace={props.onOpenWorkspace}
+          />
           <AttentionFeed
             items={props.items}
             state={props.attentionState}

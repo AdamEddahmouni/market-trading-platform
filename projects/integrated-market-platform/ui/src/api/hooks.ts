@@ -7,6 +7,7 @@ import type { Mode } from "../components/mode-session/types";
 export const queryKeys = {
   context: ["context"] as const,
   attention: ["attention"] as const,
+  opportunitiesSummary: ["opportunities", "summary"] as const,
   instrument: (instrumentId: string) => ["instrument", instrumentId] as const,
   exploreSqueeze: ["explore", "squeeze"] as const,
   exploreSqueezeScanner: ["explore", "squeeze", "scanner"] as const,

@@ -12,6 +12,15 @@ vi.mock("../../api/hooks", () => ({
   usePreviewPaperOrderMutation: () => ({ mutateAsync: mocks.previewPaperOrder, isPending: false }),
 }));
 
+vi.mock("../../api/opportunityClient", () => ({
+  useOpportunitiesSummaryQuery: () => ({
+    data: { items: [], feed_status: "EMPTY" },
+    isLoading: false,
+    isError: false,
+  }),
+  useOpportunityAckMutation: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
 function previewResponse(preview: Partial<PaperOrderPreviewResponse["preview"]> = {}): PaperOrderPreviewResponse {
   return {
     as_of_context: {
@@ -70,6 +79,7 @@ describe("PaperNowPage", () => {
   it("composes one Paper Command heading and four named decision regions", () => {
     renderPage();
     expect(screen.getByRole("heading", { level: 1, name: "Paper Command" })).toBeInTheDocument();
+    expect(screen.getByText("paper-acct")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Risk summary" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Candidate queue" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Order preview" })).toBeInTheDocument();

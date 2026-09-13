@@ -300,6 +300,39 @@ class QualityLiquidityTests(unittest.TestCase):
         )
         self.assertEqual(result.assessment.assessment_action, AssessmentAction.FAIL_CLOSED)
 
+    def test_quality_abstain(self) -> None:
+        forecast = champion_forecast(self.champion)
+        context = default_opportunity_context(decision_time_ns=T + 1)
+        object.__setattr__(
+            context,
+            "quality_decision",
+            quality_decision(action=DecisionAction.ABSTAIN),
+        )
+        result = self.engine.assess(
+            forecast=forecast,
+            policy=self.policy,
+            context=context,
+            champion_at_forecast=self.champion,
+            champion_at_opportunity=self.champion,
+            opportunity_decision_time_ns=T + 1,
+        )
+        self.assertEqual(result.assessment.assessment_action, AssessmentAction.ABSTAIN)
+        self.assertIn(AssessmentReasonCode.QUALITY_ABSTAIN, result.assessment.reason_codes)
+
+    def test_forecast_half_probability_suppresses(self) -> None:
+        forecast = champion_forecast(self.champion, probability=0.5, calibrated_probability=0.5)
+        context = default_opportunity_context(decision_time_ns=T + 1)
+        result = self.engine.assess(
+            forecast=forecast,
+            policy=self.policy,
+            context=context,
+            champion_at_forecast=self.champion,
+            champion_at_opportunity=self.champion,
+            opportunity_decision_time_ns=T + 1,
+        )
+        self.assertEqual(result.assessment.assessment_action, AssessmentAction.SUPPRESS)
+        self.assertIn(AssessmentReasonCode.FORECAST_ABSTAINED, result.assessment.reason_codes)
+
     def test_wide_spread_suppressed(self) -> None:
         forecast = champion_forecast(self.champion)
         context = default_opportunity_context(decision_time_ns=T + 1, spread_bps=100.0)

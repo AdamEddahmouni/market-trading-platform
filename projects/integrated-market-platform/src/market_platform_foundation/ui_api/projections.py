@@ -979,6 +979,10 @@ def build_explain_payload(store: ReplayStore, ref: str) -> dict[str, object]:
             "ref": ref,
             "why": str(futures.get("disclaimer", "")),
         }
+    elif ref.startswith("explain:opportunity:") or ref.startswith("explain:summary:"):
+        from .opportunity_projections import build_opportunity_explain_body
+
+        body = build_opportunity_explain_body(store, ref)
     else:
         raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
     return {
@@ -1018,13 +1022,20 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
             ],
         },
     }
-    if "strategy" in ref:
+    opportunity_inspect = ref.startswith("inspect:opportunity:") or ref.startswith("inspect:summary:")
+    if opportunity_inspect:
+        lineage = explanation.get("lineage_refs") or []
+        if not isinstance(lineage, list):
+            lineage = []
+        tabs["SUMMARY"]["lineage_refs"] = lineage
+        tabs["EVIDENCE"]["items"] = list(lineage)
+    if "strategy" in ref and not opportunity_inspect:
         tabs["DERIVATION"] = {
             "method": "run_strategy_evaluation + interpret_strategy",
             "inputs": ["bar_derived_features", "naive_forecast"],
             "source": "Phase 6 preregistered strategy pipeline",
         }
-    if "squeeze" in ref:
+    if "squeeze" in ref and not opportunity_inspect:
         if ref.startswith("inspect:squeeze:timeline:"):
             symbol = ref.removeprefix("inspect:squeeze:timeline:")
             squeeze_data_mode = "frozen"
@@ -1086,7 +1097,7 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
                 "rule_outcome_totals": readiness.get("rule_outcome_totals", {}),
                 "raw": squeeze.get("provenance"),
             }
-    if "catalyst" in ref and "fund-etf" not in ref:
+    if "catalyst" in ref and "fund-etf" not in ref and not opportunity_inspect:
         symbol = ref.rsplit(":", 1)[-1]
         from ..providers.projections import build_workspace_catalyst_payload as build_fixture_catalyst
 
@@ -1129,7 +1140,7 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
                 "instrument_hint": trade.get("instrument_hint"),
                 "headline": trade.get("news_headline") or trade.get("reasoning"),
             }
-    if "fund-etf" in ref:
+    if "fund-etf" in ref and not opportunity_inspect:
         symbol = ref.rsplit(":", 1)[-1]
         from ..providers.projections import build_workspace_fund_etf_payload
 
@@ -1157,7 +1168,7 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
             "source": "ADR-WHALE-008 admitted synthetic fixture",
         }
         tabs["FUND_ETF"] = {"events": fund_etf.get("events", [])}
-    if "disclosure" in ref:
+    if "disclosure" in ref and not opportunity_inspect:
         symbol = ref.rsplit(":", 1)[-1]
         from ..providers.projections import build_workspace_disclosure_payload
 
@@ -1185,7 +1196,7 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
             "disclosure_lag_note": disclosure.get("disclosure_lag_note"),
             "research_only": disclosure.get("research_only"),
         }
-    if "futures" in ref:
+    if "futures" in ref and not opportunity_inspect:
         symbol = ref.rsplit(":", 1)[-1]
         from ..providers.projections import build_workspace_futures_payload
 

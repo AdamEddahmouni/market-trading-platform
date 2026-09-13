@@ -25,8 +25,13 @@ vi.mock("lightweight-charts", () => ({
   })),
 }));
 
-vi.mock("./components/live/LiveMarketPanel", () => ({
-  LiveMarketPanel: () => null,
+vi.mock("./api/opportunityClient", () => ({
+  useOpportunitiesSummaryQuery: () => ({
+    data: { items: [], feed_status: "EMPTY" },
+    isLoading: false,
+    isError: false,
+  }),
+  useOpportunityAckMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 const replaySession = { cursor_index: 0, event_count: 4 };
@@ -189,6 +194,7 @@ vi.mock("./api/hooks", () => ({
   queryKeys: {
     context: ["context"],
     attention: ["attention"],
+    opportunitiesSummary: ["opportunities", "summary"],
     liveCanarySnapshot: (laneId?: string, accountId?: string) =>
       ["live", "canary-snapshot", laneId ?? "account", accountId ?? "fp-canary-local"],
     assistantMessages: (conversationId: string | null) => ["assistant", conversationId],
@@ -665,7 +671,7 @@ describe("App mode launcher integration", () => {
     render(<App />);
     await enterMode("Demo");
     expect(screen.getByRole("region", { name: "Session environment" })).toHaveTextContent("DEMO");
-    expect(screen.getByRole("heading", { name: "See the market unfold" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "See the market unfold" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Command Center" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Paper Command" })).not.toBeInTheDocument();
   });
@@ -695,7 +701,7 @@ describe("App mode launcher integration", () => {
     expect(window.location.pathname).toBe("/");
 
     await enterMode("Demo");
-    expect(screen.getByRole("heading", { name: "See the market unfold" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "See the market unfold" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "NOW" })).toHaveClass("active");
   });
 

@@ -316,6 +316,17 @@ class OpportunityV1Tests(unittest.TestCase):
                 metadata={"quantity": 100},
             )
 
+    def test_rank_score_metadata_forbidden(self) -> None:
+        with self.assertRaises(ValueError):
+            OpportunityV1(
+                opportunity_id="opp-rank",
+                schema_version="1",
+                scope=_scope(),
+                created_at_ns=DECISION_NS,
+                quality=_quality(),
+                metadata={"rank_score": 12},
+            )
+
 
 class OutcomeV1Tests(unittest.TestCase):
     def test_settled_outcome(self) -> None:
