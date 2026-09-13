@@ -10,6 +10,7 @@ from .schema import (
     FORWARD_TEST_ACTIVATION_MIGRATION,
     FORWARD_TEST_CAMPAIGN_BINDINGS,
     FORWARD_TEST_CREATE_STATEMENTS,
+    FORWARD_TEST_DURABLE_V6,
     OPPORTUNITY_OPERATOR_ACKS,
     SCHEMA_VERSION,
 )
@@ -25,6 +26,7 @@ MIGRATIONS: dict[int, tuple[str, ...]] = {
     3: FORWARD_TEST_ACTIVATION_MIGRATION,
     4: FORWARD_TEST_CAMPAIGN_BINDINGS,
     5: OPPORTUNITY_OPERATOR_ACKS,
+    6: FORWARD_TEST_DURABLE_V6,
 }
 
 
@@ -54,13 +56,18 @@ def apply_migrations(conn: sqlite3.Connection) -> int:
         statements = MIGRATIONS.get(version)
         if statements is None:
             raise SchemaVersionError(f"MISSING_MIGRATION:{version}")
-        for statement in statements:
-            conn.execute(statement)
-        conn.execute(
-            "INSERT INTO schema_meta(schema_version, applied_at) VALUES (?, ?)",
-            (version, applied_at),
-        )
-    conn.commit()
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            for statement in statements:
+                conn.execute(statement)
+            conn.execute(
+                "INSERT INTO schema_meta(schema_version, applied_at) VALUES (?, ?)",
+                (version, applied_at),
+            )
+            conn.execute("COMMIT")
+        except Exception:
+            conn.execute("ROLLBACK")
+            raise
     final = current_schema_version(conn)
     if final != SCHEMA_VERSION:
         raise SchemaVersionError(f"SCHEMA_VERIFY_FAILED:{final}")

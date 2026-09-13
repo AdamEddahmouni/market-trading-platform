@@ -41,7 +41,7 @@ def record_operator_ack(
     if repo is not None:
         repo.connection.execute(
             """
-            INSERT INTO opportunity_operator_acks(
+            INSERT OR IGNORE INTO opportunity_operator_acks(
                 summary_id, opportunity_id, paper_account_id, action, created_at_ns
             ) VALUES (?, ?, ?, ?, ?)
             """,
@@ -58,17 +58,31 @@ def record_operator_ack(
     return record
 
 
-def list_operator_acks() -> tuple[dict[str, Any], ...]:
+def list_operator_acks(*, paper_account_id: str | None = None) -> tuple[dict[str, Any], ...]:
     repo = open_local_state() if persistence_enabled() else None
     if repo is None:
-        return tuple(_PROCESS_ACKS)
-    rows = repo.connection.execute(
-        """
-        SELECT summary_id, opportunity_id, paper_account_id, action, created_at_ns
-        FROM opportunity_operator_acks
-        ORDER BY created_at_ns ASC
-        """
-    ).fetchall()
+        records = tuple(_PROCESS_ACKS)
+        if paper_account_id is None:
+            return records
+        return tuple(row for row in records if row.get("paper_account_id") == paper_account_id)
+    if paper_account_id is None:
+        rows = repo.connection.execute(
+            """
+            SELECT summary_id, opportunity_id, paper_account_id, action, created_at_ns
+            FROM opportunity_operator_acks
+            ORDER BY created_at_ns ASC
+            """
+        ).fetchall()
+    else:
+        rows = repo.connection.execute(
+            """
+            SELECT summary_id, opportunity_id, paper_account_id, action, created_at_ns
+            FROM opportunity_operator_acks
+            WHERE paper_account_id=?
+            ORDER BY created_at_ns ASC
+            """,
+            (paper_account_id,),
+        ).fetchall()
     return tuple(
         {
             "summary_id": row[0],

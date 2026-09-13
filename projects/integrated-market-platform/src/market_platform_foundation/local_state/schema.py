@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 PAPER_EVENT_SCHEMA_VERSION = 1
 LAYOUT_SCHEMA_VERSION = 1
 RECENT_INSTRUMENT_LIMIT = 24
@@ -268,5 +268,51 @@ OPPORTUNITY_OPERATOR_ACKS: tuple[str, ...] = (
     """
     CREATE INDEX IF NOT EXISTS idx_opportunity_operator_acks_summary
     ON opportunity_operator_acks(summary_id, created_at_ns)
+    """,
+)
+
+FORWARD_TEST_DURABLE_V6: tuple[str, ...] = (
+    "ALTER TABLE forward_test_sessions ADD COLUMN git_sha TEXT",
+    "ALTER TABLE forward_test_sessions ADD COLUMN simulator_version TEXT",
+    "ALTER TABLE forward_test_sessions ADD COLUMN persist_time_ns INTEGER",
+    "ALTER TABLE forward_test_decisions ADD COLUMN persist_time_ns INTEGER",
+    "ALTER TABLE forward_test_decisions ADD COLUMN available_time_ns INTEGER",
+    "ALTER TABLE forward_test_decisions ADD COLUMN receive_time_ns INTEGER",
+    "ALTER TABLE forward_test_decisions ADD COLUMN git_sha TEXT",
+    "ALTER TABLE forward_test_decisions ADD COLUMN simulator_version TEXT",
+    "ALTER TABLE forward_test_observations ADD COLUMN persist_time_ns INTEGER",
+    "ALTER TABLE forward_test_observations ADD COLUMN available_time_ns INTEGER",
+    "ALTER TABLE forward_test_observations ADD COLUMN receive_time_ns INTEGER",
+    """
+    DELETE FROM opportunity_operator_acks
+    WHERE ack_id NOT IN (
+        SELECT MIN(ack_id) FROM opportunity_operator_acks
+        GROUP BY paper_account_id, summary_id, action
+    )
+    """,
+    """
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_opportunity_operator_acks_unique
+    ON opportunity_operator_acks(paper_account_id, summary_id, action)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_forward_test_sessions_campaign
+    ON forward_test_sessions(account_id, campaign_id)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_forward_test_sessions_strategy
+    ON forward_test_sessions(account_id, strategy_id)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_forward_test_decisions_symbol_strategy
+    ON forward_test_decisions(account_id, symbol, strategy_id)
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS forward_test_signal_links (
+        forward_test_id TEXT NOT NULL,
+        opportunity_id TEXT NOT NULL,
+        signal_id TEXT,
+        persist_time_ns INTEGER NOT NULL,
+        PRIMARY KEY (forward_test_id, opportunity_id)
+    )
     """,
 )

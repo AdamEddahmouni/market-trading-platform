@@ -19,6 +19,7 @@ from .preflight import (
     assert_forward_test_preflight_ready,
     run_forward_test_preflight,
 )
+from .reconstruction import reconstruct_campaign
 from .repository import (
     ForwardTestRepository,
     ForwardTestRepositoryError,
@@ -66,6 +67,7 @@ __all__ = [
     "evaluate_forward_test",
     "freeze_manifest",
     "load_activation_manifest",
+    "reconstruct_campaign",
     "refresh_evaluability",
     "run_forward_test_preflight",
     "seed_test_frozen_manifest",

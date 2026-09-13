@@ -441,5 +441,448 @@ class IsolatedForwardTestPersistenceTest(unittest.TestCase):
         )
 
 
+class DurableForwardTestPersistenceV6Tests(IsolatedForwardTestPersistenceTest):
+    def test_schema_version_is_six(self) -> None:
+        local = open_local_state(force=True)
+        assert local is not None
+        self.assertEqual(local.connection.schema_version(), 6)
+        tables = {
+            str(row[0])
+            for row in local.connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        }
+        self.assertIn("forward_test_signal_links", tables)
+
+    def test_populated_v2_migrates_to_v6(self) -> None:
+        import sqlite3
+
+        from market_platform_foundation.local_state.schema import (
+            CREATE_STATEMENTS,
+            FORWARD_TEST_CREATE_STATEMENTS,
+        )
+
+        reset_local_state_for_tests()
+        db_path = Path(self._tmp.name) / "imp-state.sqlite3"
+        for extra in (db_path, Path(f"{db_path}-wal"), Path(f"{db_path}-shm")):
+            extra.unlink(missing_ok=True)
+        conn = sqlite3.connect(str(db_path))
+        for statement in (*CREATE_STATEMENTS, *FORWARD_TEST_CREATE_STATEMENTS):
+            conn.execute(statement)
+        conn.execute("INSERT INTO schema_meta(schema_version, applied_at) VALUES (1, 't')")
+        conn.execute("INSERT INTO schema_meta(schema_version, applied_at) VALUES (2, 't')")
+        conn.execute(
+            """
+            INSERT INTO forward_test_sessions(
+                session_id, account_id, mode, strategy_id, strategy_version,
+                universe_json, evaluation_horizon_ns, created_at_ns, status, config_json
+            ) VALUES ('fts-legacy', 'paper-a', 'PAPER', 'news_deterministic_baseline',
+                      '1.0.0', '["ACME"]', ?, ?, 'ACTIVE', '{}')
+            """,
+            (HOUR, T0),
+        )
+        conn.commit()
+        conn.close()
+        local = open_local_state(force=True)
+        assert local is not None
+        self.assertEqual(local.connection.schema_version(), 6)
+        row = local.connection.execute(
+            "SELECT session_id, git_sha FROM forward_test_sessions WHERE session_id='fts-legacy'"
+        ).fetchone()
+        self.assertIsNotNone(row)
+        self.assertEqual(row[0], "fts-legacy")
+        columns = {
+            str(item[1])
+            for item in local.connection.execute("PRAGMA table_info(forward_test_sessions)").fetchall()
+        }
+        self.assertIn("git_sha", columns)
+        self.assertIn("persist_time_ns", columns)
+        self.assertIn("simulator_version", columns)
+
+    def test_v5_duplicate_acks_deduped_on_v6(self) -> None:
+        import sqlite3
+
+        from market_platform_foundation.local_state.schema import (
+            CREATE_STATEMENTS,
+            FORWARD_TEST_ACTIVATION_MIGRATION,
+            FORWARD_TEST_CAMPAIGN_BINDINGS,
+            FORWARD_TEST_CREATE_STATEMENTS,
+            OPPORTUNITY_OPERATOR_ACKS,
+        )
+
+        reset_local_state_for_tests()
+        db_path = Path(self._tmp.name) / "imp-state.sqlite3"
+        for extra in (db_path, Path(f"{db_path}-wal"), Path(f"{db_path}-shm")):
+            extra.unlink(missing_ok=True)
+        conn = sqlite3.connect(str(db_path))
+        statements = (
+            *CREATE_STATEMENTS,
+            *FORWARD_TEST_CREATE_STATEMENTS,
+            *FORWARD_TEST_ACTIVATION_MIGRATION,
+            *FORWARD_TEST_CAMPAIGN_BINDINGS,
+            *OPPORTUNITY_OPERATOR_ACKS,
+        )
+        for statement in statements:
+            conn.execute(statement)
+        for version in range(1, 6):
+            conn.execute(
+                "INSERT INTO schema_meta(schema_version, applied_at) VALUES (?, 't')",
+                (version,),
+            )
+        conn.execute(
+            """
+            INSERT INTO opportunity_operator_acks(
+                summary_id, opportunity_id, paper_account_id, action, created_at_ns
+            ) VALUES
+                ('sum-1', 'opp-1', 'paper-a', 'WATCHED', 1),
+                ('sum-1', 'opp-1', 'paper-a', 'WATCHED', 2)
+            """
+        )
+        conn.commit()
+        conn.close()
+        local = open_local_state(force=True)
+        assert local is not None
+        self.assertEqual(local.connection.schema_version(), 6)
+        count = local.connection.execute(
+            "SELECT COUNT(*) FROM opportunity_operator_acks WHERE paper_account_id='paper-a'"
+        ).fetchone()
+        self.assertEqual(int(count[0]), 1)
+
+    def test_live_mode_rejected_at_repository(self) -> None:
+        repo = self._repo()
+        session = create_activated_session(
+            self._service(repo),
+            self.campaigns_root,
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0,
+        )
+        live = replace(session, mode="LIVE")
+        with self.assertRaises(ForwardTestRepositoryError) as ctx:
+            repo.put_session(live)
+        self.assertEqual(str(ctx.exception), "FORWARD_TEST_LIVE_MODE_FORBIDDEN")
+
+    def test_two_campaigns_isolated_after_restart(self) -> None:
+        from market_platform_foundation.intelligence.paper_forward_bridge import (
+            seed_test_frozen_manifest,
+        )
+
+        service = self._service()
+        session_a = create_activated_session(
+            service,
+            self.campaigns_root,
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0,
+        )
+        seed_test_frozen_manifest(
+            self.campaigns_root,
+            campaign_slug="FTEP-V1-TEST-B",
+            paper_account_id="paper-b",
+            universe_symbols=("BETA",),
+            evaluation_horizon_ns=HOUR,
+        )
+        session_b = service.create_session(
+            account_id="paper-b",
+            mode="PAPER",
+            strategy_id=BASELINE_POLICY,
+            strategy_version=POLICY_VERSION,
+            universe=("BETA",),
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0 + 1,
+            campaign_id="FTEP-V1-TEST-B",
+            cohort_arm="BASELINE",
+            campaigns_root_override=self.campaigns_root,
+        )
+        decision_a = service.create_decision(
+            account_id="paper-a",
+            mode="PAPER",
+            session_id=session_a.session_id,
+            symbol="ACME",
+            direction="BUY",
+            decision_time_ns=T0,
+            source_time_ns=T0 - 1,
+            strategy_id=BASELINE_POLICY,
+            strategy_version=POLICY_VERSION,
+            test_mode=ForwardTestMode.SIGNAL_ONLY,
+        )
+        decision_b = service.create_decision(
+            account_id="paper-b",
+            mode="PAPER",
+            session_id=session_b.session_id,
+            symbol="BETA",
+            direction="BUY",
+            decision_time_ns=T0,
+            source_time_ns=T0 - 1,
+            strategy_id=BASELINE_POLICY,
+            strategy_version=POLICY_VERSION,
+            test_mode=ForwardTestMode.SIGNAL_ONLY,
+        )
+        _, restarted = self._restart()
+        recovered_a = restarted.list_decisions(
+            account_id="paper-a",
+            campaign_id=CAMPAIGN_SLUG,
+        )
+        recovered_b = restarted.list_decisions(
+            account_id="paper-b",
+            campaign_id="FTEP-V1-TEST-B",
+        )
+        self.assertEqual([item.forward_test_id for item in recovered_a], [decision_a.forward_test_id])
+        self.assertEqual([item.forward_test_id for item in recovered_b], [decision_b.forward_test_id])
+        self.assertEqual(
+            restarted.list_decisions(account_id="paper-a", campaign_id="FTEP-V1-TEST-B"),
+            [],
+        )
+
+    def test_instrument_and_strategy_isolation_after_restart(self) -> None:
+        service = self._service()
+        session = service.create_session(
+            account_id="paper-a",
+            mode="PAPER",
+            strategy_id=BASELINE_POLICY,
+            strategy_version=POLICY_VERSION,
+            universe=("ACME", "ES"),
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0,
+            campaign_id=CAMPAIGN_SLUG,
+            cohort_arm="BASELINE",
+            campaigns_root_override=self.campaigns_root,
+        )
+        acme = service.create_decision(
+            account_id="paper-a",
+            mode="PAPER",
+            session_id=session.session_id,
+            symbol="ACME",
+            direction="BUY",
+            decision_time_ns=T0,
+            source_time_ns=T0 - 1,
+            strategy_id=BASELINE_POLICY,
+            strategy_version=POLICY_VERSION,
+            test_mode=ForwardTestMode.SIGNAL_ONLY,
+        )
+        es = service.create_decision(
+            account_id="paper-a",
+            mode="PAPER",
+            session_id=session.session_id,
+            symbol="ES",
+            direction="BUY",
+            decision_time_ns=T0 + 1,
+            source_time_ns=T0,
+            strategy_id=BASELINE_POLICY,
+            strategy_version=POLICY_VERSION,
+            test_mode=ForwardTestMode.SIGNAL_ONLY,
+        )
+        ai_session = service.create_session(
+            account_id="paper-a",
+            mode="PAPER",
+            strategy_id="news_ai_enhanced",
+            strategy_version=POLICY_VERSION,
+            universe=("ACME",),
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0 + 2,
+            campaign_id=CAMPAIGN_SLUG,
+            cohort_arm="AI_ENHANCED",
+            campaigns_root_override=self.campaigns_root,
+        )
+        ai = service.create_decision(
+            account_id="paper-a",
+            mode="PAPER",
+            session_id=ai_session.session_id,
+            symbol="ACME",
+            direction="BUY",
+            decision_time_ns=T0 + 2,
+            source_time_ns=T0 + 1,
+            strategy_id="news_ai_enhanced",
+            strategy_version=POLICY_VERSION,
+            test_mode=ForwardTestMode.SIGNAL_ONLY,
+        )
+        _, restarted = self._restart()
+        only_es = restarted.list_decisions(account_id="paper-a", symbol="ES")
+        self.assertEqual([item.forward_test_id for item in only_es], [es.forward_test_id])
+        baseline_only = restarted.list_decisions(
+            account_id="paper-a",
+            strategy_id=BASELINE_POLICY,
+        )
+        self.assertEqual(
+            {item.forward_test_id for item in baseline_only},
+            {acme.forward_test_id, es.forward_test_id},
+        )
+        self.assertNotIn(ai.forward_test_id, {item.forward_test_id for item in baseline_only})
+
+    def test_evaluation_claim_rolls_back_with_transaction(self) -> None:
+        service = self._service()
+        _session, locked = self._seed_locked_decision(service)
+        local = open_local_state(force=True)
+        assert local is not None
+        repo = self._repo()
+        with self.assertRaises(RuntimeError):
+            with local.connection.transaction():
+                self.assertTrue(repo.claim_evaluation(locked.forward_test_id))
+                raise RuntimeError("boom")
+        claimed = repo.claim_evaluation(locked.forward_test_id)
+        self.assertTrue(claimed)
+
+    def test_reconstruct_metrics_from_paper_ledger_and_observations(self) -> None:
+        from market_platform_foundation.intelligence.paper_forward_bridge.reconstruction import (
+            reconstruct_campaign,
+        )
+
+        service = self._service()
+        session, locked = self._seed_locked_decision(service)
+        submitted = service.submit_to_paper(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+            submitted_at_ns=T0 + 1,
+            paper_order_id="ord-1",
+        )
+        service.attach_observation(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+            observed_at_ns=T0 + HOUR,
+            source_time_ns=T0 + HOUR,
+            payload={
+                "reference_price": 100.0,
+                "close_price": 110.0,
+                "realized_pnl_minor": 250,
+                "fill_count": 2,
+            },
+        )
+        local = open_local_state(force=True)
+        assert local is not None
+        local.connection.execute(
+            """
+            INSERT INTO paper_events(
+                event_id, session_id, event_type, event_time, available_time,
+                correlation_id, payload_json, schema_version, sequence
+            ) VALUES ('ev-fill', 'ps-1', 'FillRecorded', ?, ?, 'c',
+                      '{"order_id":"ord-1","fill":{"fill_id":"f1"}}', 1, 1)
+            """,
+            (T0 + 2, T0 + 2),
+        )
+        local.connection.execute(
+            """
+            INSERT INTO paper_events(
+                event_id, session_id, event_type, event_time, available_time,
+                correlation_id, payload_json, schema_version, sequence
+            ) VALUES ('ev-pnl', 'ps-1', 'PositionChanged', ?, ?, 'c',
+                      '{"realized_pnl_minor": 250}', 1, 2)
+            """,
+            (T0 + 3, T0 + 3),
+        )
+        reconstructed = reconstruct_campaign(
+            local.connection,
+            account_id="paper-a",
+            campaign_id=CAMPAIGN_SLUG,
+        )
+        self.assertEqual(reconstructed["session_count"], 1)
+        self.assertEqual(reconstructed["decision_count"], 1)
+        row = reconstructed["decisions"][0]
+        self.assertEqual(row["realized_pnl_minor"], 250)
+        self.assertEqual(row["fill_count"], 1)
+        self.assertEqual(row["signal_outcome"]["quality"], "COMPLETE")
+        recovered = service.get_decision(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+        )
+        self.assertEqual(recovered.paper_order_id, "ord-1")
+        self.assertEqual(
+            recovered.provenance_snapshot.get("git_sha"),
+            submitted.provenance_snapshot.get("git_sha"),
+        )
+        self.assertIsNotNone(recovered.provenance_snapshot.get("simulator_version"))
+
+    def test_operator_ack_idempotent_and_account_scoped(self) -> None:
+        from market_platform_foundation.ui_api.operator_opportunity_state import (
+            list_operator_acks,
+            record_operator_ack,
+        )
+
+        record_operator_ack(
+            summary_id="sum-1",
+            opportunity_id="opp-1",
+            paper_account_id="paper-a",
+            action="WATCHED",
+            created_at_ns=T0,
+        )
+        record_operator_ack(
+            summary_id="sum-1",
+            opportunity_id="opp-1",
+            paper_account_id="paper-a",
+            action="WATCHED",
+            created_at_ns=T0 + 1,
+        )
+        record_operator_ack(
+            summary_id="sum-2",
+            opportunity_id="opp-2",
+            paper_account_id="paper-b",
+            action="DISMISSED",
+            created_at_ns=T0 + 2,
+        )
+        acks_a = list_operator_acks(paper_account_id="paper-a")
+        acks_b = list_operator_acks(paper_account_id="paper-b")
+        self.assertEqual(len(acks_a), 1)
+        self.assertEqual(len(acks_b), 1)
+
+    def test_identities_stable_after_restart(self) -> None:
+        service = self._service()
+        _session, locked = self._seed_locked_decision(service)
+        original_id = locked.forward_test_id
+        _, restarted = self._restart()
+        recovered = restarted.get_decision(
+            forward_test_id=original_id,
+            account_id="paper-a",
+        )
+        self.assertEqual(recovered.forward_test_id, original_id)
+        self.assertEqual(recovered.session_id, locked.session_id)
+        self.assertIsNotNone(recovered.provenance_snapshot.get("git_sha"))
+        self.assertIsNotNone(recovered.provenance_snapshot.get("simulator_version"))
+        local = open_local_state(force=True)
+        assert local is not None
+        decision_row = local.connection.execute(
+            """
+            SELECT persist_time_ns, available_time_ns, receive_time_ns, git_sha
+            FROM forward_test_decisions WHERE forward_test_id=?
+            """,
+            (original_id,),
+        ).fetchone()
+        self.assertIsNotNone(decision_row)
+        self.assertIsNotNone(decision_row[0])
+        self.assertIsNotNone(decision_row[3])
+        session_row = local.connection.execute(
+            """
+            SELECT git_sha, simulator_version, persist_time_ns
+            FROM forward_test_sessions WHERE session_id=?
+            """,
+            (locked.session_id,),
+        ).fetchone()
+        self.assertIsNotNone(session_row)
+        self.assertIsNotNone(session_row[0])
+        self.assertIsNotNone(session_row[1])
+        self.assertIsNotNone(session_row[2])
+
+    def test_observation_payload_conflict_rejected(self) -> None:
+        service = self._service()
+        _session, locked = self._seed_locked_decision(service)
+        service.submit_to_paper(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+            submitted_at_ns=T0 + 1,
+        )
+        observed = service.attach_observation(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+            observed_at_ns=T0 + HOUR,
+            source_time_ns=T0 + HOUR,
+            payload={"reference_price": 100.0, "close_price": 105.0},
+        )
+        tampered = replace(
+            observed,
+            observations=(
+                replace(observed.observations[0], payload={"reference_price": 1.0}),
+            ),
+        )
+        with self.assertRaises(ForwardTestRepositoryError) as ctx:
+            service._store.put_decision(tampered)
+        self.assertEqual(str(ctx.exception), "FORWARD_TEST_OBSERVATION_PAYLOAD_CONFLICT")
+
+
 if __name__ == "__main__":
     unittest.main()

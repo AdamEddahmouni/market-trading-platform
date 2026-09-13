@@ -45,6 +45,9 @@ class ForwardTestRepository(Protocol):
         *,
         account_id: str,
         session_id: str | None = None,
+        campaign_id: str | None = None,
+        strategy_id: str | None = None,
+        symbol: str | None = None,
     ) -> list[ForwardTestDecision]: ...
 
     def claim_paper_submission(self, forward_test_id: str) -> bool: ...
@@ -52,6 +55,10 @@ class ForwardTestRepository(Protocol):
     def claim_evaluation(self, forward_test_id: str) -> bool: ...
 
     def release_evaluation_claim(self, forward_test_id: str) -> None: ...
+
+    def commit_paper_submission(self, forward_test_id: str, decision: ForwardTestDecision) -> bool: ...
+
+    def commit_evaluation(self, forward_test_id: str, decision: ForwardTestDecision) -> bool: ...
 
     def claim_active_binding(self, binding: CampaignBinding) -> None: ...
 
@@ -116,6 +123,8 @@ def session_to_row(session: ForwardTestSession) -> dict[str, Any]:
         "manifest_fingerprint": session.manifest_fingerprint,
         "cohort_arm": session.cohort_arm.value if session.cohort_arm else None,
         "config_frozen": 1 if session.config_frozen else 0,
+        "git_sha": session.git_sha,
+        "simulator_version": session.simulator_version,
     }
 
 
@@ -142,6 +151,8 @@ def session_from_row(row: dict[str, Any]) -> ForwardTestSession:
         cohort_arm=cohort_arm,
         config_frozen=config_frozen,
         config=dict(config) if isinstance(config, dict) else {},
+        git_sha=row.get("git_sha"),
+        simulator_version=row.get("simulator_version"),
     )
 
 
@@ -304,6 +315,9 @@ def assert_observations_append_only(
     proposed_ids = [item.observation_id for item in proposed.observations]
     if proposed_ids[: len(existing_ids)] != existing_ids:
         raise ForwardTestRepositoryError("FORWARD_TEST_OBSERVATIONS_APPEND_ONLY")
+    for existing_obs, proposed_obs in zip(existing.observations, proposed.observations):
+        if _json_dumps(existing_obs.payload) != _json_dumps(proposed_obs.payload):
+            raise ForwardTestRepositoryError("FORWARD_TEST_OBSERVATION_PAYLOAD_CONFLICT")
 
 
 def assert_locked_decision_immutable(

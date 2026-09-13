@@ -57,6 +57,10 @@ class LocalStateConnection:
     def transaction(self) -> "StateTransaction":
         return StateTransaction(self)
 
+    @property
+    def in_transaction(self) -> bool:
+        return bool(self._conn.in_transaction)
+
     def backup(self, dest: Path) -> None:
         dest.parent.mkdir(parents=True, exist_ok=True)
         with self._lock:

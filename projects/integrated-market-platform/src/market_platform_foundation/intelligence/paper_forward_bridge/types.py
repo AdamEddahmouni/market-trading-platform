@@ -87,6 +87,8 @@ class ForwardTestSession:
     cohort_arm: ForwardTestCohortArm | None = None
     config_frozen: bool = False
     config: dict[str, Any] = field(default_factory=dict)
+    git_sha: str | None = None
+    simulator_version: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -106,6 +108,8 @@ class ForwardTestSession:
             "cohort_arm": self.cohort_arm.value if self.cohort_arm else None,
             "config_frozen": self.config_frozen,
             "config": dict(self.config),
+            "git_sha": self.git_sha,
+            "simulator_version": self.simulator_version,
         }
 
 
