@@ -36,6 +36,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — G7 freshness reconstruction test import
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/opportunity` |
+| **Summary** | GitHub `validate-python-changed` on PR #37 failed with 1 error: `test_reconstruct_surfaces_payload_freshness` referenced `POLICY_VERSION` without importing it from `forward_test_activation_support`. Import added; no production behavior change. |
+| **Key files** | `tests/intelligence/test_opportunity_freshness.py` |
+| **Tests** | `PYTHONPATH=src python3 -m unittest tests.intelligence.test_opportunity_freshness` **24 passed** including the reconstruction case. FAST **23 passed**. |
+| **Related** | [PR #37](https://github.com/AdamEddahmouni/market-trading-platform/pull/37); G7 freshness binding entry below. |
+| **Notes** | Does not reopen G7 runtime COMPLETE. Path A not started. FTEP labels unchanged. |
+
+## 2026-09-13 — Opportunity Engine G7 freshness binding
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/opportunity` |
+| **Summary** | Added a platform Opportunity Engine freshness evaluator that uses G7 runtime capability axes (timeliness/entitlement) plus session/delay/book-invalid awareness. Structured FRESH/STALE/UNKNOWN/NOT_APPLICABLE results are explainable, clock-injectable, fail-closed for STALE/UNKNOWN eligibility, and persisted on `data_quality` plus FT `decision_payload` when present. Does not reopen G7 runtime COMPLETE, start Path A, or flip FTEP empirical labels. |
+| **Key files** | `src/market_platform_foundation/intelligence/opportunity/{freshness,data_quality,ingest}.py`, `paper_forward_bridge/reconstruction.py`, `tests/intelligence/test_opportunity_freshness.py`, `docs/platform/PROGRAM_STATUS.md`, `docs/product/OPPORTUNITY_ENGINE_CURRENT_STATE_AND_IMPLEMENTATION_PLAN.md` |
+| **Tests** | `PYTHONPATH=src python3 -m unittest tests.intelligence.test_opportunity_freshness` plus honesty/ingest/operator-loop **45 passed**. FAST / `validate changed` recorded after the CI-equivalent run. |
+| **Related** | G7 runtime wiring remains COMPLETE. Persistence DoD remainder MERGED as [PR #36](https://github.com/AdamEddahmouni/market-trading-platform/pull/36) at `3e74c49`. |
+| **Notes** | Simulator still not calibrated. FTEP not `EMPIRICAL_ACTIVE`. Path A not started. |
+
 ## 2026-09-13 — Persistence DoD remainder closed (signal-link restart; persist-off acks)
 
 | Field | Value |

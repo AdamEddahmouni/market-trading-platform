@@ -25,7 +25,7 @@ IMP has a **canonical Opportunity Contract** (`docs/architecture/OPPORTUNITY_CON
 1. **No production ingest bus** — Goal 001 ingest reads already-minted repo rows and labeled adapters; OF-03 family registry remains a later goal.
 2. **No FTEP-tuned ranking numerics** — comparator lexicographic order or labeled stub; not campaign-calibrated.
 3. **UI vocabulary split** — `capability_states` vs `provider health` vs operator readiness remain distinct; unready NOW links `/control`.
-4. **Real-provider observational campaign absent** — opportunity `data_quality` is an honesty projector; G7 freshness is later decision support.
+4. **Real-provider observational campaign absent** — opportunity `data_quality` now carries structured G7 freshness evaluation; live campaign evidence remains deferred. Honesty sources stay UNAVAILABLE/NOT_APPLICABLE.
 5. **Evidence class promotion** — no automated lifecycle from `CANDIDATE` → `VERIFIED`.
 
 ## Implementation plan (phased, safe)
@@ -46,10 +46,11 @@ IMP has a **canonical Opportunity Contract** (`docs/architecture/OPPORTUNITY_CON
 - Strategy family registry in OF-03 capability style (metadata only).
 - Admission tests: contract field validation per strategy fixture.
 
-### Phase 3 — Observational quality binding
+### Phase 3 — Observational quality binding — **IMPLEMENTED** (software)
 
-- Wire G7 `RuntimeCapabilityRegistry` freshness into `data_quality` on snapshots.
-- Blocked on live provider campaign (EVIDENCE-01C deferred).
+- `evaluate_opportunity_freshness` binds G7 `RuntimeCapabilityRegistry` axes (timeliness/entitlement/runtime_state) into operator `data_quality.freshness_evaluation`.
+- Structured FRESH/STALE/UNKNOWN/NOT_APPLICABLE; injectable `as_of_time_ns`; STALE/UNKNOWN fail-close eligibility.
+- Live provider campaign (EVIDENCE-01C) remains deferred; adapter presence is still not FRESH.
 
 ### Phase 4 — Portfolio interaction
 
