@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — FTEP-V1-002 wave 20 empirical lock receipt gate
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, `artifacts/ftep-v1-002`, `tests` |
+| **Summary** | Resolved `EMPIRICAL_LOCK_NOT_AUTHORIZED` blocker: prospective lock dry-run now honors append-only `empirical-lock-authorization-receipt-*.json` (and optional `empirical_lock_authorized` on signal-only receipts) while frozen manifest `operator_attestation.empirical_lock_authorized` stays false. Recorded owner SIGNAL_ONLY prospective decision-lock authorization; updated launch prep. US_EQUITY_RTH closed — no live locks. |
+| **Key files** | `campaign_status.py`, `ftep_prospective_lock.py`, `artifacts/ftep-v1-002/empirical-lock-authorization-receipt-2026-09-12.json`, `SIGNAL_ONLY_LAUNCH_PREP.md`, `tests/intelligence/test_ftep_prospective_lock.py`, `tests/intelligence/test_ftep_campaign_status.py` |
+| **Tests** | `unittest tests.intelligence.test_ftep_prospective_lock tests.intelligence.test_ftep_campaign_status` |
+| **Related** | FTEP-V1-002 goal @ `e86848fb`; PR **#29** |
+| **Notes** | Goal still not complete until first RTH governed session + durable locks; lock dry-run clears auth blocker when receipt present |
+
 ## 2026-09-12 — FTEP-V1-002 wave 19 prospective lock dry-run
 
 | Field | Value |

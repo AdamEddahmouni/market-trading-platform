@@ -23,6 +23,8 @@ class FtepCampaignStatusTests(unittest.TestCase):
         self.assertFalse(payload["us_equity_rth_open"])
         self.assertEqual(payload["campaign_readiness_disposition"], "READY")
         self.assertTrue(payload["signal_only_authorized"])
+        self.assertTrue(payload["empirical_lock_authorized"])
+        self.assertFalse(payload["manifest_operator_empirical_lock_authorized"])
         self.assertFalse(payload["signal_only_session_started"])
         self.assertEqual(payload["empirical_lock_count"], 0)
         self.assertEqual(payload["empirical_counts_source"], "durable")

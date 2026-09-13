@@ -16,6 +16,10 @@ if str(SRC) not in sys.path:
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from market_platform_foundation.intelligence.paper_forward_bridge.campaign_status import (  # noqa: E402
+    empirical_lock_authorized,
+    manifest_operator_empirical_lock_authorized,
+)
 from market_platform_foundation.intelligence.paper_forward_bridge.ftep_prospective_lock import (  # noqa: E402
     collect_ftep_prospective_lock_gates,
     manifest_empirical_lock_authorized,
@@ -26,8 +30,12 @@ class FtepProspectiveLockDryRunTests(unittest.TestCase):
     def setUp(self) -> None:
         os.environ["IMP_PERSIST_STATE"] = "1"
 
-    def test_manifest_empirical_lock_not_authorized_for_v1_002(self) -> None:
-        self.assertFalse(manifest_empirical_lock_authorized(ROOT, "FTEP-V1-002"))
+    def test_manifest_operator_empirical_lock_still_false_for_v1_002(self) -> None:
+        self.assertFalse(manifest_operator_empirical_lock_authorized("FTEP-V1-002"))
+
+    def test_empirical_lock_authorized_via_append_only_receipt(self) -> None:
+        self.assertTrue(empirical_lock_authorized(ROOT, "FTEP-V1-002"))
+        self.assertTrue(manifest_empirical_lock_authorized(ROOT, "FTEP-V1-002"))
 
     def test_prospective_lock_dry_run_cli_json_closed_market(self) -> None:
         result = subprocess.run(
@@ -49,7 +57,7 @@ class FtepProspectiveLockDryRunTests(unittest.TestCase):
         self.assertEqual(payload["artifact_kind"], "ftep_prospective_lock_gate")
         self.assertFalse(payload["would_record_lock"])
         self.assertIn("US_EQUITY_RTH_CLOSED", payload["blockers"])
-        self.assertIn("EMPIRICAL_LOCK_NOT_AUTHORIZED", payload["blockers"])
+        self.assertNotIn("EMPIRICAL_LOCK_NOT_AUTHORIZED", payload["blockers"])
         self.assertIn("NO_GOVERNED_SESSION", payload["blockers"])
         self.assertNotIn("forward_test_invoke_steps", payload)
 

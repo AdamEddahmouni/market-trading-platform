@@ -8,6 +8,7 @@
 | --- | --- |
 | Manifest | `FROZEN` @ fingerprint `F7083180990BC59578CA045E1E1318A356421BBC9B81EE514C14130CB0B356B1` |
 | Authorization receipt | `ftep_signal_only_authorization_receipt` present |
+| Prospective lock authorization | `ftep_empirical_lock_authorization_receipt` present (`empirical-lock-authorization-receipt-2026-09-12.json`; manifest `operator_attestation.empirical_lock_authorized` stays **false**) |
 | Persistence | `IMP_PERSIST_STATE=1` or `IMP_STATE_DIR` set |
 | Preflight | `READY` (PAPER / FORWARD_TEST) |
 | Campaign readiness | `READY` (coverage gaps satisfied; WAVE-A-002 deferred) |
@@ -114,7 +115,11 @@ During an **active governed SIGNAL_ONLY session** (after both cohort `create_ses
    python tools/imp.py ftep watch-catalysts --fixture --json
    ```
    Equivalent ranked rows only: `python tools/imp.py ftep opportunity-summaries --json`
-4. Correlate ranked summaries with open `session_id`s from `governed-session-start-evidence.jsonl` (included in `watch-catalysts` JSON when sessions exist). Do **not** call `create_decision` / lock APIs unless a separate owner authorization increment explicitly enables empirical locks (`empirical_lock_authorized` remains false in the frozen manifest).
+4. When gates pass during an active governed session, evaluate the lock dry-run path (no durable writes without owner removing `--dry-run`):
+   ```powershell
+   python tools/imp.py ftep record-prospective-lock --dry-run --json
+   ```
+   Expect empty `blockers` except calendar/session prerequisites; non-empty `forward_test_invoke_steps` when RTH open, integrity PASS, governed `session_id` present, and qualifying tier-1/2 catalyst summaries exist. Post-freeze lock authorization is carried by `empirical-lock-authorization-receipt-2026-09-12.json` (not a manifest edit).
 
 When **US_EQUITY_RTH is closed** (weekends, holidays, outside 09:30–16:00 America/New_York), run **fixture smoke only** — steps 2–3 with `--input` fixture or `--sample`; skip live Finviz probe and skip `session-start` without `--dry-run`.
 

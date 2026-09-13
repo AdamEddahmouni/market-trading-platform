@@ -6,7 +6,11 @@ from pathlib import Path
 from typing import Any
 
 from .activation import load_activation_manifest, manifest_universe_symbols
-from .campaign_status import collect_ftep_campaign_status
+from .campaign_status import (
+    collect_ftep_campaign_status,
+    empirical_lock_authorized,
+    manifest_operator_empirical_lock_authorized,
+)
 from .ftep_catalyst_watch import collect_ftep_catalyst_watch
 from .ftep_integrity import collect_ftep_integrity_checks
 
@@ -18,11 +22,9 @@ def manifest_empirical_lock_authorized(
     repository_root: Path,
     campaign_slug: str,
 ) -> bool:
-    manifest = load_activation_manifest(campaign_slug)
-    attestation = manifest.raw.get("operator_attestation") or {}
-    if not isinstance(attestation, dict):
-        return False
-    return bool(attestation.get("empirical_lock_authorized"))
+    """Backward-compatible alias: manifest attestation OR post-freeze authorization receipts."""
+
+    return empirical_lock_authorized(repository_root, campaign_slug)
 
 
 def _select_qualifying_summary(
@@ -132,7 +134,7 @@ def collect_ftep_prospective_lock_gates(
         blockers.append("SIGNAL_ONLY_NOT_AUTHORIZED")
     if status.get("manifest_status") != "FROZEN":
         blockers.append("ACTIVATION_MANIFEST_NOT_FROZEN")
-    if not manifest_empirical_lock_authorized(repository_root, campaign_slug):
+    if not empirical_lock_authorized(repository_root, campaign_slug):
         blockers.append("EMPIRICAL_LOCK_NOT_AUTHORIZED")
     if not status.get("us_equity_rth_open"):
         blockers.append("US_EQUITY_RTH_CLOSED")
@@ -180,9 +182,12 @@ def collect_ftep_prospective_lock_gates(
             "manifest_fingerprint": status.get("manifest_fingerprint"),
             "governed_session_count": governed_count,
             "empirical_lock_count": status.get("empirical_lock_count"),
-            "empirical_lock_authorized": manifest_empirical_lock_authorized(
+            "empirical_lock_authorized": empirical_lock_authorized(
                 repository_root,
                 campaign_slug,
+            ),
+            "manifest_operator_empirical_lock_authorized": manifest_operator_empirical_lock_authorized(
+                campaign_slug
             ),
         },
         "secrets_included": False,

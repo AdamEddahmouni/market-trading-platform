@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "ftep_empirical_lock_authorization_receipt",
+  "campaign_slug": "FTEP-V1-002",
+  "campaign_name": "US-equity-news-catalyst",
+  "campaign_id": "FTCAMP-f7083180990bc59578ca045e1e1318a356421bbc9b81ee514c14130cb0b356b1",
+  "manifest_fingerprint": "F7083180990BC59578CA045E1E1318A356421BBC9B81EE514C14130CB0B356B1",
+  "authorized_at": "2026-09-12T19:56:00-04:00",
+  "authorized_at_utc": "2026-09-12T23:56:00Z",
+  "authorization_scope": "PHASE_1_SIGNAL_ONLY_PROSPECTIVE_DECISION_LOCK",
+  "test_mode_phase": "SIGNAL_ONLY",
+  "empirical_lock_authorized": true,
+  "execution_authorized": false,
+  "live_authorized": false,
+  "paper_orders_authorized": false,
+  "manifest_mutation_performed": false,
+  "frozen_manifest_operator_attestation_note": "operator_attestation.empirical_lock_authorized remains false in frozen ACTIVATION_MANIFEST.json; lock authorization recorded only in this append-only receipt per post-freeze immutability.",
+  "prior_authorization_receipt": "artifacts/ftep-v1-002/signal-only-authorization-receipt-2026-09-12.json",
+  "owner_authorization_channel": "orchestrator_conversation_explicit",
+  "owner_authorization_text_summary": "Owner authorized governed FTEP-V1-002 SIGNAL_ONLY prospective decision locks (create_decision + lock_decision) during active RTH sessions with qualifying catalyst attention; never Paper EXECUTION, simulated orders, Live, or manifest/policy mutations.",
+  "lock_constraints": {
+    "test_mode": "SIGNAL_ONLY",
+    "requires_governed_session": true,
+    "requires_us_equity_rth_open": true,
+    "requires_integrity_pass": true,
+    "requires_qualifying_catalyst_tier_lte": 2,
+    "zero_paper_order_preview_or_submit": true
+  },
+  "universe_symbols": ["AAPL", "MSFT", "NVDA", "AMZN", "META"],
+  "repository_branch": "work/ftep-v1-002-us-equity-news",
+  "repository_source_sha": "e86848fb",
+  "secrets_included": false
+}

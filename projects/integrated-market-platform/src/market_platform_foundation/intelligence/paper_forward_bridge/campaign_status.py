@@ -69,12 +69,18 @@ def _artifact_dir_for_slug(campaign_slug: str) -> str:
     return campaign_slug.lower().replace("_", "-")
 
 
-def _load_signal_only_receipts(repository_root: Path, campaign_slug: str) -> list[dict[str, Any]]:
-    artifact_dir = repository_root / "artifacts" / _artifact_dir_for_slug(campaign_slug)
+def _artifact_dir(repository_root: Path, campaign_slug: str) -> Path:
+    return repository_root / "artifacts" / _artifact_dir_for_slug(campaign_slug)
+
+
+def _load_json_receipts(
+    artifact_dir: Path,
+    glob_pattern: str,
+) -> list[dict[str, Any]]:
     if not artifact_dir.is_dir():
         return []
     receipts: list[dict[str, Any]] = []
-    for path in sorted(artifact_dir.glob("signal-only-authorization-receipt-*.json")):
+    for path in sorted(artifact_dir.glob(glob_pattern)):
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
@@ -82,6 +88,50 @@ def _load_signal_only_receipts(repository_root: Path, campaign_slug: str) -> lis
         if isinstance(payload, dict):
             receipts.append(payload)
     return receipts
+
+
+def _load_signal_only_receipts(repository_root: Path, campaign_slug: str) -> list[dict[str, Any]]:
+    return _load_json_receipts(
+        _artifact_dir(repository_root, campaign_slug),
+        "signal-only-authorization-receipt-*.json",
+    )
+
+
+def _load_empirical_lock_authorization_receipts(
+    repository_root: Path,
+    campaign_slug: str,
+) -> list[dict[str, Any]]:
+    return _load_json_receipts(
+        _artifact_dir(repository_root, campaign_slug),
+        "empirical-lock-authorization-receipt-*.json",
+    )
+
+
+def manifest_operator_empirical_lock_authorized(campaign_slug: str) -> bool:
+    """Frozen manifest operator_attestation only (post-freeze receipts are separate)."""
+
+    try:
+        manifest = load_activation_manifest(campaign_slug)
+    except (ActivationManifestError, FileNotFoundError, ValueError):
+        return False
+    attestation = manifest.raw.get("operator_attestation") or {}
+    if not isinstance(attestation, dict):
+        return False
+    return bool(attestation.get("empirical_lock_authorized"))
+
+
+def empirical_lock_authorized(repository_root: Path, campaign_slug: str) -> bool:
+    """Manifest attestation or append-only owner authorization receipts (no manifest mutation)."""
+
+    if manifest_operator_empirical_lock_authorized(campaign_slug):
+        return True
+    for receipt in _load_signal_only_receipts(repository_root, campaign_slug):
+        if bool(receipt.get("empirical_lock_authorized")):
+            return True
+    for receipt in _load_empirical_lock_authorization_receipts(repository_root, campaign_slug):
+        if bool(receipt.get("empirical_lock_authorized")):
+            return True
+    return False
 
 
 def collect_ftep_campaign_status(
@@ -148,18 +198,36 @@ def collect_ftep_campaign_status(
         "governed_session_count": governed_session_count,
         "empirical_counts_source": empirical.get("empirical_counts_source"),
         "notes": notes,
+        "empirical_lock_authorized": empirical_lock_authorized(repository_root, campaign_slug),
+        "manifest_operator_empirical_lock_authorized": manifest_operator_empirical_lock_authorized(
+            campaign_slug
+        ),
         "authorization_receipt_paths": [
-            str(repository_root / "artifacts" / _artifact_dir_for_slug(campaign_slug) / path.name)
+            str(_artifact_dir(repository_root, campaign_slug) / path.name)
             for path in sorted(
-                (repository_root / "artifacts" / _artifact_dir_for_slug(campaign_slug)).glob(
+                _artifact_dir(repository_root, campaign_slug).glob(
                     "signal-only-authorization-receipt-*.json"
                 )
             )
         ]
-        if (repository_root / "artifacts" / _artifact_dir_for_slug(campaign_slug)).is_dir()
+        if _artifact_dir(repository_root, campaign_slug).is_dir()
+        else [],
+        "empirical_lock_authorization_receipt_paths": [
+            str(_artifact_dir(repository_root, campaign_slug) / path.name)
+            for path in sorted(
+                _artifact_dir(repository_root, campaign_slug).glob(
+                    "empirical-lock-authorization-receipt-*.json"
+                )
+            )
+        ]
+        if _artifact_dir(repository_root, campaign_slug).is_dir()
         else [],
         "secrets_included": False,
     }
 
 
-__all__ = ["collect_ftep_campaign_status"]
+__all__ = [
+    "collect_ftep_campaign_status",
+    "empirical_lock_authorized",
+    "manifest_operator_empirical_lock_authorized",
+]
