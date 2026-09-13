@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 PAPER_EVENT_SCHEMA_VERSION = 1
 LAYOUT_SCHEMA_VERSION = 1
 RECENT_INSTRUMENT_LIMIT = 24
@@ -251,5 +251,22 @@ FORWARD_TEST_CAMPAIGN_BINDINGS: tuple[str, ...] = (
     CREATE UNIQUE INDEX IF NOT EXISTS idx_ft_campaign_active_account
     ON forward_test_campaign_bindings(account_id)
     WHERE campaign_state = 'ACTIVE'
+    """,
+)
+
+OPPORTUNITY_OPERATOR_ACKS: tuple[str, ...] = (
+    """
+    CREATE TABLE IF NOT EXISTS opportunity_operator_acks (
+        ack_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        summary_id TEXT NOT NULL,
+        opportunity_id TEXT,
+        paper_account_id TEXT NOT NULL,
+        action TEXT NOT NULL,
+        created_at_ns INTEGER NOT NULL
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_opportunity_operator_acks_summary
+    ON opportunity_operator_acks(summary_id, created_at_ns)
     """,
 )

@@ -937,6 +937,42 @@ def opportunity_comparison_identity_hash(
     return sha256_bytes(canonical_bytes(opportunity_comparison_identity_payload(result)))
 
 
+def explain_lexicographic_key(vector: ComparisonVectorV1) -> list[dict[str, Any]]:
+    """Named PRESENT/UNAVAILABLE dimensions. Does not compute a score."""
+
+    def _dim(name: str, value: Any, unit: str | None = None) -> dict[str, Any]:
+        if value is None:
+            return {"name": name, "status": "UNAVAILABLE", "reason_code": "FIELD_ABSENT"}
+        body: dict[str, Any] = {"name": name, "status": "PRESENT", "value": value}
+        if unit is not None:
+            body["unit"] = unit
+        return body
+
+    uncertainty_width = None
+    if vector.uncertainty is not None:
+        lower = vector.uncertainty.net_pnl_lower
+        upper = vector.uncertainty.net_pnl_upper
+        if lower is not None and upper is not None:
+            uncertainty_width = upper.amount_minor - lower.amount_minor
+    liquidity = None
+    if vector.liquidity_state is not None:
+        liquidity = str(vector.liquidity_state)
+    return [
+        _dim("actionability", str(vector.actionability)),
+        _dim("expected_net_pnl_minor", vector.expected_net_pnl_minor, "minor"),
+        _dim("expected_return_bps", vector.expected_return_bps, "bps"),
+        _dim("maximum_loss_minor", vector.maximum_loss_minor, "minor"),
+        _dim("capital_required_minor", vector.capital_required_minor, "minor"),
+        _dim("buying_power_required_minor", vector.buying_power_required_minor, "minor"),
+        _dim("expected_hold_ns", vector.expected_hold_ns, "ns"),
+        _dim("maximum_hold_ns", vector.maximum_hold_ns, "ns"),
+        _dim("capital_lock_ns", vector.capital_lock_ns, "ns"),
+        _dim("fill_probability", vector.fill_probability, "probability"),
+        _dim("liquidity_state", liquidity),
+        _dim("uncertainty_width", uncertainty_width, "minor"),
+    ]
+
+
 # Discoverable compatibility names without creating additional authorities.
 ComparisonCandidateV1 = OpportunityComparisonCandidateV1
 OpportunityComparisonInputV1 = OpportunityComparisonCandidateV1
@@ -970,6 +1006,7 @@ __all__ = [
     "compare_opportunities",
     "comparison_constraints_to_dict",
     "comparison_vector_to_dict",
+    "explain_lexicographic_key",
     "opportunity_comparison_identity_hash",
     "opportunity_comparison_identity_payload",
     "OpportunityComparisonCandidateV1",

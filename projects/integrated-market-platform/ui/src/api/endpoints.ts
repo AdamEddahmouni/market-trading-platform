@@ -1,6 +1,7 @@
 import { fetchJson, fetchRawJson, postJson } from "./fetchJson";
 import {
   AttentionResponseSchema,
+  OpportunitiesSummaryResponseSchema,
   ContextResponseSchema,
   ExploreSqueezeResponseSchema,
   ExploreFuturesResponseSchema,
@@ -51,6 +52,7 @@ import {
 export const api = {
   getContext: () => fetchJson("/context", ContextResponseSchema),
   getAttention: () => fetchJson("/attention", AttentionResponseSchema),
+  getOpportunitiesSummary: () => fetchJson("/opportunities/summary", OpportunitiesSummaryResponseSchema),
   getInstrument: (id: string) =>
     fetchJson(`/instruments/${encodeURIComponent(id)}/overview`, InstrumentOverviewSchema),
   getExplain: (ref: string) => fetchRawJson(`/explain/${encodeURIComponent(ref)}`),

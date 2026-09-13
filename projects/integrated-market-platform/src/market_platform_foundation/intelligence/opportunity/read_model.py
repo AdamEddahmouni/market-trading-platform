@@ -10,7 +10,26 @@ from typing import Any, Mapping, Protocol
 
 from market_platform_foundation.news.contracts import PipelineEventResult
 
-READ_MODEL_SCHEMA_VERSION = "opportunity/read_model/1.0.0"
+READ_MODEL_SCHEMA_VERSION = "opportunity/read_model/1.1.0"
+
+RANKING_BASIS_COMPARATOR = "COMPARATOR_LEXICOGRAPHIC"
+RANKING_BASIS_STUB = "PROVISIONAL_STUB_NOT_FTEP"
+RANKING_BASIS_ATTENTION = "ATTENTION_ORDER"
+
+COMPARATOR_DIMENSION_NAMES: tuple[str, ...] = (
+    "actionability",
+    "expected_net_pnl_minor",
+    "expected_return_bps",
+    "maximum_loss_minor",
+    "capital_required_minor",
+    "buying_power_required_minor",
+    "expected_hold_ns",
+    "maximum_hold_ns",
+    "capital_lock_ns",
+    "fill_probability",
+    "liquidity_state",
+    "uncertainty_width",
+)
 
 # Provisional stub weights (documented; replace when campaign calibration lands).
 PROVISIONAL_RANKING_WEIGHTS: dict[str, float] = {
@@ -19,6 +38,41 @@ PROVISIONAL_RANKING_WEIGHTS: dict[str, float] = {
     "headline_length_norm": 0.15,
     "accepted_pipeline": 0.20,
 }
+
+
+@dataclass(frozen=True, slots=True)
+class RankingDimensionV1:
+    name: str
+    status: str
+    value: Any = None
+    unit: str | None = None
+    reason_code: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        body: dict[str, Any] = {"name": self.name, "status": self.status}
+        if self.value is not None:
+            body["value"] = self.value
+        if self.unit is not None:
+            body["unit"] = self.unit
+        if self.reason_code is not None:
+            body["reason_code"] = self.reason_code
+        return body
+
+
+@dataclass(frozen=True, slots=True)
+class RankingVectorV1:
+    basis: str
+    dimensions: tuple[RankingDimensionV1, ...] = ()
+    rank_order: int | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        body: dict[str, Any] = {
+            "basis": self.basis,
+            "dimensions": [item.to_dict() for item in self.dimensions],
+        }
+        if self.rank_order is not None:
+            body["rank_order"] = self.rank_order
+        return body
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,10 +88,29 @@ class OpportunitySummary:
     accepted: bool = True
     rank_score: float | None = None
     rank_order: int | None = None
+    opportunity_id: str | None = None
+    strategy_family: str | None = None
+    strategy_version: str | None = None
+    side: str | None = None
+    horizon_ns: int | None = None
+    valid_until_ns: int | None = None
+    mechanism: str | None = None
+    evidence_class: str | None = None
+    eligibility_state: str | None = None
+    data_quality: dict[str, Any] | None = None
+    ranking_vector: RankingVectorV1 | None = None
+    lifecycle_state: str | None = None
+    lineage_refs: tuple[dict[str, Any], ...] = ()
+    account_id: str | None = None
+    mode: str | None = None
+    next_safe_action: str = "NONE"
+    unavailable_fields: tuple[str, ...] = ()
+    duplicates: tuple[str, ...] = ()
+    identity_kind: str = "NOT_OPPORTUNITY_V1"
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        body: dict[str, Any] = {
             "schema_version": READ_MODEL_SCHEMA_VERSION,
             "summary_id": self.summary_id,
             "instrument_id": self.instrument_id,
@@ -46,10 +119,29 @@ class OpportunitySummary:
             "source_event_id": self.source_event_id,
             "campaign_slug": self.campaign_slug,
             "accepted": self.accepted,
-            "rank_score": self.rank_score,
             "rank_order": self.rank_order,
+            "opportunity_id": self.opportunity_id,
+            "strategy_family": self.strategy_family,
+            "strategy_version": self.strategy_version,
+            "side": self.side,
+            "horizon_ns": self.horizon_ns,
+            "valid_until_ns": self.valid_until_ns,
+            "mechanism": self.mechanism,
+            "evidence_class": self.evidence_class,
+            "eligibility_state": self.eligibility_state,
+            "data_quality": dict(self.data_quality) if self.data_quality else None,
+            "ranking_vector": self.ranking_vector.to_dict() if self.ranking_vector else None,
+            "lifecycle_state": self.lifecycle_state,
+            "lineage_refs": [dict(item) for item in self.lineage_refs],
+            "account_id": self.account_id,
+            "mode": self.mode,
+            "next_safe_action": self.next_safe_action,
+            "unavailable_fields": list(self.unavailable_fields),
+            "duplicates": list(self.duplicates),
+            "identity_kind": self.identity_kind,
             "metadata": dict(self.metadata),
         }
+        return body
 
 
 class OpportunitySummaryStore(Protocol):
@@ -155,11 +247,17 @@ def ftep_attention_candidate_to_summary(
 
 
 __all__ = [
+    "COMPARATOR_DIMENSION_NAMES",
     "InMemoryOpportunitySummaryStore",
     "OpportunitySummary",
     "OpportunitySummaryStore",
     "PROVISIONAL_RANKING_WEIGHTS",
+    "RANKING_BASIS_ATTENTION",
+    "RANKING_BASIS_COMPARATOR",
+    "RANKING_BASIS_STUB",
     "READ_MODEL_SCHEMA_VERSION",
+    "RankingDimensionV1",
+    "RankingVectorV1",
     "ftep_attention_candidate_to_summary",
     "ftep_pipeline_result_to_summary",
     "provisional_rank_score",

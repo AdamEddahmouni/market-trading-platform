@@ -23,6 +23,7 @@ from .clustering import (
 )
 from .comparison import (
     ALLOCATOR_IMPLEMENTATION_VERSION,
+    COMPARATOR_IMPLEMENTATION_VERSION,
     AccountComparisonConstraintsV1,
     AllocationEvaluationV1,
     AllocationIntentV1,

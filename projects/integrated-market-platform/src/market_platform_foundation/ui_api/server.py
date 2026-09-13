@@ -18,6 +18,7 @@ from . import broker_projections
 from . import canary_projections
 from . import live_projections
 from . import operator_projections
+from . import opportunity_projections
 from . import forward_test_projections
 from . import paper_projections
 from . import projections
@@ -269,6 +270,30 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 limit_raw = query.get("limit", [None])[0]
                 limit = int(limit_raw) if limit_raw else None
                 self._send_json(projections.build_attention_page(self.store, cursor=cursor, limit=limit))
+                return
+            if path == "/opportunities/summary":
+                cursor = query.get("cursor", [None])[0]
+                limit_raw = query.get("limit", [None])[0]
+                limit = int(limit_raw) if limit_raw else None
+                self._send_json(
+                    opportunity_projections.build_opportunities_summary_payload(
+                        self.store, cursor=cursor, limit=limit
+                    )
+                )
+                return
+            if path.startswith("/opportunities/") and path.endswith("/evidence"):
+                row_id = path.removeprefix("/opportunities/").removesuffix("/evidence").strip("/")
+                try:
+                    self._send_json(opportunity_projections.build_opportunity_evidence_payload(self.store, row_id))
+                except KeyError:
+                    self._send_error_json("OPPORTUNITY_NOT_FOUND", "Unknown opportunity", status=HTTPStatus.NOT_FOUND)
+                return
+            if path.startswith("/opportunities/") and path.count("/") == 2:
+                row_id = path.removeprefix("/opportunities/").strip("/")
+                try:
+                    self._send_json(opportunity_projections.build_opportunity_detail_payload(self.store, row_id))
+                except KeyError:
+                    self._send_error_json("OPPORTUNITY_NOT_FOUND", "Unknown opportunity", status=HTTPStatus.NOT_FOUND)
                 return
             if path.startswith("/instruments/") and path.endswith("/overview"):
                 instrument_id = path.removeprefix("/instruments/").removesuffix("/overview")
@@ -949,6 +974,21 @@ class UiApiHandler(BaseHTTPRequestHandler):
             self._send_json(handle_auth_logout(token))
             return
         if not self._authorize_request("POST", path, parse_qs(parsed.query), body):
+            return
+        if path.startswith("/opportunities/") and path.endswith(("/watch", "/dismiss", "/review")):
+            row_id, action = path.removeprefix("/opportunities/").rsplit("/", 1)
+            mapped = {"watch": "WATCHED", "dismiss": "DISMISSED", "review": "REVIEWED"}[action]
+            try:
+                self._send_json(
+                    opportunity_projections.apply_opportunity_ack(self.store, row_id=row_id, action=mapped)
+                )
+            except PermissionError as exc:
+                status = HTTPStatus.FORBIDDEN
+                self._send_error_json(str(exc), str(exc), status=status)
+            except KeyError:
+                self._send_error_json("OPPORTUNITY_NOT_FOUND", "Unknown opportunity", status=HTTPStatus.NOT_FOUND)
+            except ValueError as exc:
+                self._send_error_json("OPERATOR_ACK_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
         if path == "/operator/lifecycle/actions":
             from tools.platform.control_service import _spawn_action, normalize_action

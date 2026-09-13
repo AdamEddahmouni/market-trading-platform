@@ -7,6 +7,7 @@ import type { Mode } from "../components/mode-session/types";
 export const queryKeys = {
   context: ["context"] as const,
   attention: ["attention"] as const,
+  opportunitiesSummary: ["opportunities", "summary"] as const,
   instrument: (instrumentId: string) => ["instrument", instrumentId] as const,
   exploreSqueeze: ["explore", "squeeze"] as const,
   exploreSqueezeScanner: ["explore", "squeeze", "scanner"] as const,
@@ -66,6 +67,14 @@ export function useContextQuery() {
 
 export function useAttentionQuery() {
   return useQuery({ queryKey: queryKeys.attention, queryFn: api.getAttention });
+}
+
+export function useOpportunitiesSummaryQuery(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.opportunitiesSummary,
+    queryFn: api.getOpportunitiesSummary,
+    enabled,
+  });
 }
 
 export function useInstrumentQuery(instrumentId: string, enabled = true) {
