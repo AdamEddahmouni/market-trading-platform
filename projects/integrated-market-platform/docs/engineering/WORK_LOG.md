@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Path A scan caller merged (PR #39)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | PR #39 merged to `main` at `6833bf3`. PROGRAM_STATUS labels Path A Paper/Demo scan caller `MERGED` / `REMOTE VALIDATED`. G7 freshness remains MERGED. FTEP labels unchanged. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | GitHub IMP Validation + Guardrails on PR #39 head `75b575f` all pass (`validate-python-changed` 1860 tests / 25 skipped / 0 fail / 0 err). Focused Path A + ingest/operator-loop **24 passed**. FAST **23 passed**. |
+| **Related** | [PR #39](https://github.com/AdamEddahmouni/market-trading-platform/pull/39); merge SHA `6833bf3c400ab02f3203f715a6653a23d8e7f6f0` |
+| **Notes** | Simulator still not calibrated. FTEP not `EMPIRICAL_ACTIVE`. Live execution disabled. |
+
 ## 2026-09-13 — Path A Paper/Demo scan caller
 
 | Field | Value |
