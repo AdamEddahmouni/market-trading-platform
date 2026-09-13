@@ -7,6 +7,10 @@ from typing import Any, Mapping
 from ..contracts.opportunity import OpportunityV1, opportunity_v1_from_dict
 from ..persistence.codec import PERSISTENCE_METADATA_FIELDS
 from .data_quality import project_opportunity_data_quality
+from .freshness import (
+    OpportunityFreshnessPolicy,
+    fail_closed_for_actionable,
+)
 from .lifecycle import OperatorLifecycleState, derive_lifecycle_from_assessment
 from .read_model import OpportunitySummary, ftep_attention_candidate_to_summary
 from .types import AssessmentAction
@@ -35,10 +39,15 @@ def _summary_from_opportunity(
     *,
     assessment_action: AssessmentAction | None,
     source: str,
+    data_quality: Mapping[str, Any] | None = None,
 ) -> OpportunitySummary:
     instruments = opportunity.scope.instrument_ids
     instrument_id = instruments[0] if instruments else ""
     lifecycle = derive_lifecycle_from_assessment(assessment_action)
+    quality = dict(data_quality or project_opportunity_data_quality(source=source))
+    evaluation = quality.get("freshness_evaluation") or {}
+    if fail_closed_for_actionable(evaluation):
+        lifecycle = OperatorLifecycleState.INELIGIBLE
     eligible = lifecycle == OperatorLifecycleState.ELIGIBLE
     unavailable = _unavailable()
     if opportunity.expected_net_edge is None:
@@ -55,7 +64,7 @@ def _summary_from_opportunity(
         evidence_class="CANDIDATE",
         eligibility_state=lifecycle.value,
         lifecycle_state=lifecycle.value,
-        data_quality=project_opportunity_data_quality(source=source),
+        data_quality=quality,
         lineage_refs=tuple(
             {"kind": getattr(ref.kind, "value", ref.kind), "id": ref.id}
             for ref in opportunity.lineage_refs
@@ -121,10 +130,25 @@ def assemble_opportunity_review_rows(
     attention_rows: tuple[Mapping[str, Any], ...] = (),
     repository: Any | None = None,
     source: str = "REPLAY",
+    as_of_time_ns: int | None = None,
+    last_source_time_ns: int | None = None,
+    runtime_capability: Mapping[str, Any] | None = None,
+    session_state: str | None = None,
+    book_validity: str | None = None,
+    freshness_policy: OpportunityFreshnessPolicy | None = None,
 ) -> tuple[OpportunitySummary, ...]:
     collected: list[OpportunitySummary] = []
     minted = list(opportunities)
     actions = dict(assessments_by_opportunity or {})
+    quality = project_opportunity_data_quality(
+        source=source,
+        as_of_time_ns=as_of_time_ns,
+        last_source_time_ns=last_source_time_ns,
+        runtime_capability=runtime_capability,
+        session_state=session_state,
+        book_validity=book_validity,
+        freshness_policy=freshness_policy,
+    )
     if repository is not None:
         minted.extend(_opportunities_from_repository(repository))
         for opportunity_id, action in assessments_from_repository(repository).items():
@@ -147,6 +171,7 @@ def assemble_opportunity_review_rows(
                 opportunity,
                 assessment_action=action,
                 source=source,
+                data_quality=quality,
             )
         )
     for row in attention_rows:
@@ -165,7 +190,7 @@ def assemble_opportunity_review_rows(
                 evidence_class=None,
                 eligibility_state="UNAVAILABLE",
                 lifecycle_state=OperatorLifecycleState.NORMALIZED.value,
-                data_quality=project_opportunity_data_quality(source=source),
+                data_quality=quality,
                 next_safe_action="OPEN_WORKSPACE" if summary.instrument_id else "NONE",
                 unavailable_fields=_unavailable(
                     "opportunity_id",

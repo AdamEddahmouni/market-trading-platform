@@ -76,6 +76,7 @@ def reconstruct_campaign(
                 or payload.get("opportunity_id"),
                 "signal_id": (link or {}).get("signal_id") or payload.get("signal_id"),
                 "signal_link": link,
+                "freshness": payload.get("freshness"),
                 "signal_outcome": signal.to_dict(),
                 "realized_pnl_minor": realized,
                 "unrealized_pnl_minor": unrealized,

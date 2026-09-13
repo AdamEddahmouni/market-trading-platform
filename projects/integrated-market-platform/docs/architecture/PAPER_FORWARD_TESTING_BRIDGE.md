@@ -197,7 +197,8 @@ claims survive restart. Schema v6 adds transactional multi-row writes,
 distinct persist/available/receive clocks, git SHA + simulator version on
 runs, campaign/strategy/instrument query filters, unique operator acks, and
 a reconstruction API that joins Paper ledger fills/PnL without scraping logs.
-PD-09 (PR #18) remains COMPLETE; v6 is a later increment on the same store.
+When a decision payload includes structured `freshness` evidence, reconstruction
+surfaces it on the decision row. PD-09 (PR #18) remains COMPLETE; v6 is a later increment on the same store.
 
 Signal identity is persisted in `forward_test_signal_links` when
 `decision_payload.opportunity_id` is set (`INSERT OR IGNORE`). The link
