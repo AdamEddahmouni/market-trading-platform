@@ -4,16 +4,18 @@
 | --- | --- |
 | **Protocol ID** | `FTEP-V1/0.1.0-PREREG` |
 | **Campaign slug** | `FTEP-V1-001` |
-| **Manifest status** | `PENDING_OWNER_DECISIONS` |
+| **Manifest status** | **Historical packet.** V1-001 owner resolutions are recorded in the frozen activation manifest (`activation_status=FROZEN`, OD-11 pathway **A**). Catalog: `MANIFEST_FROZEN`; **not** `FROZEN_FOR_ACTIVATION`; SIGNAL_ONLY **not** authorized; **not** `EMPIRICAL_ACTIVE`. |
 | **Audit basis** | Agent A re-run (`c4f6ca28`) + first-run inventory (`81265595`) |
 | **Cost** | $0 incremental (Paper-only; `safety_constraints.cost_usd: 0`) |
 
-> **Operator action required.** This packet consolidates **28** Agent A
+> **Historical OD text.** This packet consolidates **28** Agent A
 > `OWNER_DECISION_REQUIRED` inventory rows into **11** irreducible decision
-> groups. Engineering has pre-resolved deterministic and safe-default fields in
+> groups. OD-1…OD-11 resolutions live in the frozen
 > [`ACTIVATION_MANIFEST.json`](../../artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json).
-> The manifest cannot transition to `FROZEN` until the owner signs each group
-> below (or explicitly selects non-recommended alternatives).
+> The OD sections below remain the decision worksheet, **not** current campaign
+> status. Do **not** mutate the frozen JSON to “update” this packet. Current
+> labels: [FTEP_CAMPAIGN_CATALOG.md](FTEP_CAMPAIGN_CATALOG.md). `FTEP-V1/0.1.0-PREREG`
+> and frozen `PROTOCOL_REF.json` are hash-bound preregistration artifacts.
 
 ## Audit summary
 

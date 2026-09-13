@@ -195,9 +195,9 @@ Progression is not automatic. Fixture success proves software behavior under the
 
 ## 11. Current-state interpretation
 
-> **Snapshot banner:** The bullets below interpret `main@a4858103` (2026-09-11 planning closure). They are **not** current campaign status. Current campaign truth: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) and [FTEP_CAMPAIGN_CATALOG.md](../engineering/FTEP_CAMPAIGN_CATALOG.md).
+> **Snapshot banner:** The bullets below interpret `main@a4858103` (2026-09-11 planning closure). They are **not** current campaign status. Git tip: `origin/main@9cb541c` (PR #40). Current campaign truth: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) and [FTEP_CAMPAIGN_CATALOG.md](../engineering/FTEP_CAMPAIGN_CATALOG.md). No first FTEP empirical campaign is `EMPIRICAL_ACTIVE` at that tip. Do not rewrite this doctrine into an activation claim.
 
-As of `main@a4858103baa3531051791a632ed36a9339fd6414`:
+As of `main@a4858103baa3531051791a632ed36a9339fd6414` (planning-closure snapshot):
 
 - the governed Paper forward-testing bridge exists;
 - PD-09 durable forward-test SQLite persistence is implemented and merged;
@@ -207,7 +207,7 @@ As of `main@a4858103baa3531051791a632ed36a9339fd6414`:
 - no first FTEP empirical campaign is activated by this doctrine;
 - Live production execution remains separately blocked/unauthorized.
 
-The next work before a first execution-bearing ES/news campaign is governed by [FTEP Activation & Pre-Implementation Gates](../engineering/FTEP_ACTIVATION_GATES.md).
+The next work before a first execution-bearing ES/news campaign is governed by [FTEP Activation & Pre-Implementation Gates](../engineering/FTEP_ACTIVATION_GATES.md). At `9cb541c`, V1-001 is `MANIFEST_FROZEN` and entitlement-blocked; V1-002 is `MANIFEST_FROZEN` + `SIGNAL_ONLY_AUTHORIZED` with **0** sessions; the simulator is **not** `CALIBRATED`; Live remains blocked. Open IMPLEMENTED drafts (not merged): [PR #41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41), [PR #42](https://github.com/AdamEddahmouni/market-trading-platform/pull/42).
 
 ## 12. Non-negotiable boundaries
 

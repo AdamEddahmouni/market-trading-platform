@@ -24,6 +24,8 @@ Stack evidence:
 Readiness:
 
 ```powershell
-python tools/imp.py providers campaign-readiness FTEP-V1-001 --json
-python tools/imp.py providers campaign-readiness FTEP-V1-002 --json
+python3 tools/imp.py providers campaign-readiness FTEP-V1-001 --json
+python3 tools/imp.py providers campaign-readiness FTEP-V1-002 --json
 ```
+
+`FTEP-V1/0.1.0-PREREG` and frozen `PROTOCOL_REF.json` classification strings are **freeze-time / hash-bound**. Do not casual-edit them. Current campaign labels are this catalog + [GLOSSARY.md](../platform/GLOSSARY.md).

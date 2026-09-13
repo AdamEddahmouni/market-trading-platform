@@ -122,7 +122,7 @@ This laboratory package stops **before**:
 preview → submit → order → fill
 ```
 
-A governed **Paper forward-testing bridge** exists in `paper_forward_bridge/` (see [PAPER_FORWARD_TESTING_BRIDGE.md](PAPER_FORWARD_TESTING_BRIDGE.md)): time-locked `FORWARD_TEST` sessions may hand off to Paper preview/submit only under a **frozen** FTEP activation manifest. The preregistered campaign `FTEP-V1-001` remains `PENDING_OWNER_DECISIONS`; no empirical forward locks are authorized from this evaluation increment alone.
+A governed **Paper forward-testing bridge** exists in `paper_forward_bridge/` (see [PAPER_FORWARD_TESTING_BRIDGE.md](PAPER_FORWARD_TESTING_BRIDGE.md)): time-locked `FORWARD_TEST` sessions may hand off to Paper preview/submit only under a **frozen** FTEP activation manifest. The ES-news campaign `FTEP-V1-001` is `MANIFEST_FROZEN` (OD-11 pathway A) and remains **not** `SIGNAL_ONLY_AUTHORIZED` and **not** `EMPIRICAL_ACTIVE` (`FROZEN_BLOCKED_EXTERNAL_DATA_ENTITLEMENT`). This evaluation increment still authorizes no empirical forward locks. Current labels: [FTEP_CAMPAIGN_CATALOG.md](../engineering/FTEP_CAMPAIGN_CATALOG.md).
 
 | Path | Role |
 |------|------|

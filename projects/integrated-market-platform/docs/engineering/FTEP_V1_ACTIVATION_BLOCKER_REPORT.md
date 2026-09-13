@@ -1,60 +1,80 @@
 # FTEP-V1 Activation Blocker Report
 
-**Classification:** `CURRENT_ENGINEERING_TRUTH`  
-**Established:** 2026-09-12  
-**Branch:** `work/ftep-v1-activation`  
-**Machine-readable audit:** [artifacts/ftep-v1-activation-goal-audit.json](../../artifacts/ftep-v1-activation-goal-audit.json)  
-**Executive closure:** [artifacts/wave-b-closure-report.json](../../artifacts/wave-b-closure-report.json)
+| Field | Value |
+| --- | --- |
+| **Classification** | `CURRENT_ENGINEERING_TRUTH` |
+| **Established** | 2026-09-12 |
+| **Last verified** | 2026-09-13 against `origin/main@9cb541c` (PR #40) |
+| **Machine-readable audit** | [artifacts/ftep-v1-activation-goal-audit.json](../../artifacts/ftep-v1-activation-goal-audit.json) (historical Wave B closure) |
+| **Executive closure** | [artifacts/wave-b-closure-report.json](../../artifacts/wave-b-closure-report.json) (historical) |
+| **Current campaign labels** | [FTEP_CAMPAIGN_CATALOG.md](FTEP_CAMPAIGN_CATALOG.md) |
 
 ## Executive disposition
 
-**IMPLEMENTATION_OBJECTIVE_COMPLETE** — Section 28 success criteria **A–Z**: **26/26 MET** with per-criterion `implementation_disposition: IMPLEMENTATION_COMPLETE` (see goal audit). Observational ingress scaffold landed in **`437cd1c`**; campaign ACT-04 wire remains governance-deferred. Qualifying **FTEP-V1-001 / ES-news** empirical activation is **out of scope** for this engineering goal and remains **not authorized**. **implementation_objective_complete:** `true`; **qualifying_activation_out_of_scope:** `true`.
+Wave B **implementation** packages remain complete (capability matrix, gap engine, campaign-readiness, freeze tooling, integrity). That is **not** campaign activation.
 
-Do **not** freeze the activation manifest until owner decisions, calibration numerics, and probes are resolved.
+**FTEP-V1-001** is **`MANIFEST_FROZEN`** (fingerprint invariant `69C36BA23813C009C27EE83924834D46F5804D0A0FA037E37ADB133F8BFEA99C`). OD-1…OD-11 are recorded in the frozen manifest (OD-11 pathway **A** = bind/freeze/preflight only). Prospective disposition is **`FROZEN_BLOCKED_EXTERNAL_DATA_ENTITLEMENT`**. SIGNAL_ONLY is **not** authorized. **Not** `FROZEN_FOR_ACTIVATION`. **Not** `EMPIRICAL_ACTIVE`. **Do not mutate** the frozen JSON, OD fields, universe, or fingerprint.
+
+**FTEP-V1-002** is **`MANIFEST_FROZEN` + `SIGNAL_ONLY_AUTHORIZED`** via committed receipts. Governed sessions **0**. **Not** `EMPIRICAL_ACTIVE`. Does **not** unblock V1-001.
+
+Remaining blockers for a lawful first qualifying observation are **entitlement**, **authorization B**, **campaign-readiness READY**, **dated ES contract**, and **calibration/execution** — not “the manifest is not frozen.”
+
+Open **IMPLEMENTED** drafts (not merged, not empirical activity): [PR #41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41) calibration harness (CI green; simulator **not** `CALIBRATED`); [PR #42](https://github.com/AdamEddahmouni/market-trading-platform/pull/42) quote→admission→G7→optional Path A hop (CLI classified; persist follow-up in flight). Live remains forbidden.
 
 ## Consolidated blockers
 
 | Blocker ID | Owner | Type | Why it blocks qualifying activation | Next action |
 |------------|-------|------|-------------------------------------|-------------|
-| OWNER-OD-1-11 | Owner | Human decision | Activation manifest fields and campaign policy choices unresolved | Complete [FTEP-V1_OWNER_DECISION_PACKET.md](./FTEP-V1_OWNER_DECISION_PACKET.md); record in manifest |
-| OWNER-CALIBRATION-THRESHOLDS | Owner | Human decision | Numeric calibration gates UNSET per [PAPER_SIMULATOR_CALIBRATION_CONTRACT.md](../architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md) | Preregister campaign-specific thresholds; bind in manifest |
-| PROBE-MOOMOO | Operator | Local probe | ES futures quote entitlement stale; OpenD refresh required | Run non-destructive Moomoo probe; update capability snapshot |
-| EXT-MOOMOO-FUTURES-ENTITLEMENT | External | Entitlement | `US_FUTURES_QUOTE` not evidenced for campaign PRIMARY_MARKET_EVIDENCE | Verify account/plan; refresh evidence artifact |
-| PROBE-FINVIZ | Operator | Local probe | Finviz live_session not configured in repo evidence | Configure safely; probe; update matrix |
-| PROBE-G-A5-BROKER-CANDIDATES | Operator | Local probe | Alpaca/Tradier comparator state not freshly verified | Run broker audit probes per [PROVIDER_ACTIVATION_INCREMENT.md](./PROVIDER_ACTIVATION_INCREMENT.md) |
+| OWNER-OD-1-11 | Owner | **Closed for this freeze** | OD-1…OD-11 recorded in frozen V1-001 JSON (pathway A). Freeze-of-fields is done. | Do **not** re-open freeze. Session/lock authorization is a **separate** receipt (pathway B). |
+| FROZEN-V1-001-DO-NOT-MUTATE | Engineering | Integrity | Fingerprint `69C36BA…` is invariant. Catalog + glossary win over the frozen JSON `classification` string that misuses `FROZEN_FOR_ACTIVATION`. | Append-only receipts / new campaign version only. Never rewrite frozen JSON. |
+| AUTH-SIGNAL-ONLY-B | Owner | Authorization | Frozen attestation `signal_only_session_authorized: false`. No V1-001 SIGNAL_ONLY receipt. Pathway A does not authorize sessions. | Append-only SIGNAL_ONLY receipt after ES gaps clear. Do not flip frozen `operator_attestation`. |
+| OWNER-CALIBRATION-THRESHOLDS | Owner | Human decision | Numeric calibration gates **UNSET/BLOCKING** per [PAPER_SIMULATOR_CALIBRATION_CONTRACT.md](../architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md). Simulator **not** `CALIBRATED`. | Preregister campaign-specific thresholds from a declared-scope cohort. Draft harness: PR #41 (not merged; not calibrated). |
+| PROBE-MOOMOO | Operator | Local probe | Last dated ES quote probe (2026-09-12) **NOT_ENTITLED**. Cloud VM has no OpenD. STALE vs this VM; does **not** become entitled. | Run non-destructive Moomoo probe on an operator machine; do not substitute IBKR delayed L1 or V1-002 equity L1. |
+| EXT-MOOMOO-FUTURES-ENTITLEMENT | External | Entitlement | `US_FUTURES_QUOTE` not evidenced for campaign PRIMARY_MARKET_EVIDENCE. Executable: `FROZEN_BLOCKED_EXTERNAL_DATA_ENTITLEMENT`. | Verify account/plan; refresh evidence artifact. Closing equity L1 CAMPAIGN_BOUND **does not** close ES G-A6/G-A7. |
+| G-A6-ES-AUTHORITY | Engineering / Owner | Coverage gap | Live campaign-readiness still reports `COVERAGE_GAP:G-A6` / `G_A6_CAMPAIGN_BOUND_MISSING` for ES. V1-001 has no `market_data_bindings`. | Bind ES market-data authority CAMPAIGN_BOUND. Equity overlay is not ES G-A6. |
+| G-A11-DATED-CONTRACT | Owner | Campaign binding | Universe is symbol `ES` only — not an executable dated contract month. | New campaign version if a dated key must be bound. Do not silent-edit frozen JSON. |
+| PROBE-FINVIZ | Operator | Local probe | Finviz Elite token absent on cloud; `NEWS_EXPORT` CONTEXT_ONLY is not ES quote. | Configure safely; probe; update matrix. Live news ingress remains deferred (WAVE-A-002 / FTEP-ACT-04). |
+| PROBE-G-A5-BROKER-CANDIDATES | Operator | Local probe | No usable Paper/sandbox comparator on cloud (`COMPARATOR_NOT_CONFIGURED` on PR #41). | Run broker audit probes; Tradier sandbox HTTPS is opt-in on PR #41 only. Alpaca remains Phase 0 prohibited. |
 | EXT-PREMIUM-WIRES | External | Provider | No operational Reuters/DJ/Benzinga-class wire in repo | Select provider + terms if campaign requires premium headlines |
 | EXT-NEWSAPI-FINNHUB-PIT | External | Data rights | Bounded live windows; not historical PIT archive for ES/news claims | Do not claim PIT news archive without new source |
-| DEFER-FTEP-ACT-04-OBS-INGRESS | Owner/Engineering | Governance deferral | Live observational news ingress intentionally deferred (FTEP-D038) | Re-open only if manifest de-defers ACT-04 |
+| DEFER-FTEP-ACT-04-OBS-INGRESS | Owner/Engineering | Governance deferral | Live observational news ingress intentionally deferred (FTEP-D038) | Re-open only if a **new** campaign version de-defers ACT-04 |
 | DEFER-FTEP-ACT-06 | Engineering | Deferred scope | EVIDENCE-01B auto-bridge to forward path | Track in reconciliation-gate; not required for offline Wave B closure |
 
-## Safe operator sequence (after blockers)
+## Safe operator sequence (after remaining blockers)
 
-1. Resolve **OWNER-OD-1-11** and **OWNER-CALIBRATION-THRESHOLDS**.
-2. Run **PROBE-*** commands per [OPERATOR_PROBE_RUNBOOK.md](./OPERATOR_PROBE_RUNBOOK.md); regenerate `artifacts/wave-a-findings/capability-matrix-snapshot.json`.
-3. `python tools/imp.py providers campaign-readiness FTEP-V1-001 --json` — must fail closed until gaps clear.
-4. `python tools/forward_test/freeze_activation_manifest.py` — only when manifest complete.
-5. Shakedown segment per gates G-A20; qualifying cohort only after freeze.
+1. **Do not mutate** frozen V1-001 JSON / fingerprint. OD-1–11 are already recorded.
+2. Close **ES** G-A5/G-A6/G-A7 (entitled `US_FUTURES_QUOTE` ≥ `SAMPLE_VERIFIED` + campaign-bound ES capability contract). IBKR delayed L1 / CME-not-in-tree / fixtures / V1-002 L1 **do not** count.
+3. Bind **dated ES contract month** (G-A11) via a **new** campaign version if needed.
+4. Owner **SIGNAL_ONLY** authorization as an **append-only receipt** (pathway B). Frozen attestation stays `false`.
+5. `python3 tools/imp.py providers campaign-readiness FTEP-V1-001 --json` — must be `READY` on the **session** host (`IMP_PERSIST_STATE=1` or `IMP_STATE_DIR`; coverage gaps cleared).
+6. Integrity PASS; V1-001 fingerprint unchanged; `US_EQUITY_RTH` open; `ftep session-start` succeeds → then and only then `EMPIRICAL_ACTIVE`.
+
+Until a governed prospective session starts, the label stays **not** `EMPIRICAL_ACTIVE`.
 
 ## Explicit prohibited claims
 
 Do **not** state or imply:
 
-- FTEP-V1-001 is **active**, **frozen**, or collecting **qualifying prospective** evidence.
+- FTEP-V1-001 is `FROZEN_FOR_ACTIVATION`, `SIGNAL_ONLY_AUTHORIZED`, `EMPIRICAL_ACTIVE`, or collecting qualifying **`ACTUAL_FORWARD`** evidence.
+- The V1-001 manifest is **not** frozen (it **is** `MANIFEST_FROZEN`; freeze ≠ activation).
+- V1-002 authorization, Path A, G7, persistence schema, calibration harness, or delayed Yahoo overlay **unblocks** V1-001 or counts as `EMPIRICAL_ACTIVE`.
 - **CONNECTED** implies **ENTITLED**, **CAPABILITY_VERIFIED**, or **CAMPAIGN_SUITABLE**.
-- Internal Paper simulator or external Paper broker fills are **market truth**.
+- Internal Paper simulator or external Paper broker fills are **market truth** or `CALIBRATED`.
 - Fixture/replay or `RECORDED_ARTIFACTS_ONLY` paths constitute **prospective market validation**.
-- ES/news campaign has **verified lawful live** headline or futures streams without dated probe artifacts.
-- **Live trading authority** is enabled (LIVE-001 remains blocked).
-- Owner decisions **OD-1–OD-11** are resolved without signed manifest evidence.
+- ES/news campaign has **verified lawful live** headline or futures streams without dated entitled-probe artifacts.
+- **Live trading authority** is enabled (`LIVE-001` remains blocked).
+- Owner decisions **OD-1–OD-11** are still unresolved (they are recorded; session authorization is a separate remaining gate).
 - Universal calibration acceptance numbers exist without owner preregistration.
 - Notion or external systems were updated unless actually performed in that environment.
+- Open drafts **#41** / **#42** are merged or empirically observed.
 
 ## Allowed claims (with evidence)
 
 - Wave B **engineering packages** (capability matrix, gap engine, campaign-readiness, calibration schema, snapshot-compare, CG/news bridges) are implemented and covered by tests.
-- **Immutable freeze tooling** exists; manifest is **not** frozen.
-- Smallest ES/news stack and deficiencies are documented in [es-news-provider-stack-selection.json](../../artifacts/ftep-v1-001/es-news-provider-stack-selection.json).
-- `python tools/imp.py validate fast` and prior full **closure** runs passed on this branch (see wave-b-closure-report).
+- **Immutable freeze tooling** exists; **V1-001 and V1-002 manifests are frozen**. V1-001 is entitlement-blocked and not session-authorized. V1-002 is SIGNAL_ONLY-authorized with **0** sessions.
+- Smallest ES/news stack and deficiencies are documented in [es-news-provider-stack-selection.json](../../artifacts/ftep-v1-001/es-news-provider-stack-selection.json) (`overall_disposition: BLOCKED`).
+- `python3 tools/imp.py validate fast` and prior full **closure** runs passed on the Wave B branch (see wave-b-closure-report). Last green **main** is the #40 merge.
+- PR #41 / PR #42 are **IMPLEMENTED** drafts: not merged, not `CALIBRATED`, not `EMPIRICAL_ACTIVE`.
 
 ## Automatable gaps still in repository
 
@@ -63,12 +83,14 @@ Do **not** state or imply:
 | PIT-A-001 unified export API | **Closed** (`research/pit_export.py`) | Durable store (PIT-A-005) still open |
 | DEFER-UNIFIED-UI-MATRIX | Yes, deferred | Acceptable deferral per wave-b |
 | DEFER-FTEP-ACT-04 observational ingress | Yes, when governance opens | Currently owner-gated deferral |
-| Local probes / entitlements / owner packet | **No** | Operator + owner + external providers |
+| Local probes / entitlements / SIGNAL_ONLY receipt | **No** | Operator + owner + external providers |
+| Numeric calibration thresholds | **No** until owner freeze | Harness exists on draft PR #41; not `CALIBRATED` |
 
-**Conclusion:** No remaining **activation-critical** engineering gap is unimplemented except items **explicitly deferred** or requiring **human/external** action. Further repo work without probes and owner decisions would not truthfully advance qualifying activation.
+**Conclusion:** Qualifying activation is **not** waiting on “freeze the manifest.” V1-001 is frozen and entitlement-blocked. Further repo work without entitled ES data, authorization B, and a started governed session would not truthfully advance `EMPIRICAL_ACTIVE`.
 
 ## Related documentation
 
 - [FTEP_ACTIVATION_GATES.md](./FTEP_ACTIVATION_GATES.md)
+- [FTEP_CAMPAIGN_CATALOG.md](./FTEP_CAMPAIGN_CATALOG.md)
 - [PROVIDER_ACTIVATION_INCREMENT.md](./PROVIDER_ACTIVATION_INCREMENT.md)
 - [artifacts/wave-a-findings/reconciliation-gate.json](../../artifacts/wave-a-findings/reconciliation-gate.json)

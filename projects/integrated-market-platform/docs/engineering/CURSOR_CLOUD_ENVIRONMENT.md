@@ -22,18 +22,22 @@ Installs:
 
 ## Validation commands
 
-Default cloud validation is the `python tools/imp.py` pyramid from current
+Default cloud validation is the `python3 tools/imp.py` pyramid from current
 `main` (FAST → focused/affected → domain/changed → FULL), not
-`python -m unittest discover`. `cloud-handoff/full-state-2026-08-25` is
-historical; current landing is this monorepo's `origin/main` (`3bb5aa2f`, merged #29 then #30).
+`python3 -m unittest discover`. `cloud-handoff/full-state-2026-08-25` is
+historical; current landing is this monorepo's `origin/main` (`9cb541c`,
+merged #40 after #32/#34–#39). On this cloud image `python` is not on PATH;
+use `python3` (or the venv interpreter after `source .venv/bin/activate`).
+Moomoo OpenD and IBKR Gateway/TWS are **not** available on the cloud VM;
+keep live gates off.
 
 ```bash
 export PYTHONPATH=src
 source .venv/bin/activate
-python tools/imp.py validate fast
-python tools/imp.py test affected
-python tools/imp.py validate changed
-python tools/imp.py validate full   # Paper-execution-path / release only
+python3 tools/imp.py validate fast
+python3 tools/imp.py test affected
+python3 tools/imp.py validate changed
+python3 tools/imp.py validate full   # Paper-execution-path / release only
 ```
 
 ## Required secrets (names only)

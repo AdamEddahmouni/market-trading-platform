@@ -1,9 +1,12 @@
 # Provider activation increment (Wave B closure)
 
-**Status:** `CURRENT_ENGINEERING_GUIDE`  
-**Scope:** Post–Wave A prerequisite implementation (packages 1–3 + bridge/news), without manifest freeze, Live trading, or qualifying empirical evidence.
+| Field | Value |
+| --- | --- |
+| **Status** | `CURRENT_ENGINEERING_GUIDE` |
+| **Last verified** | 2026-09-13 against `origin/main@9cb541c` (PR #40) |
+| **Scope** | Post–Wave A prerequisite implementation (packages 1–3 + bridge/news). V1-001 and V1-002 manifests **are frozen**. This increment still grants **no** Live trading, **no** `EMPIRICAL_ACTIVE` campaign, and **no** `CALIBRATED` simulator. |
 
-This document complements [PROVIDER_READINESS.md](./PROVIDER_READINESS.md) (operator commands) and the architecture contracts it references.
+This document complements [PROVIDER_READINESS.md](./PROVIDER_READINESS.md) (operator commands) and the architecture contracts it references. Current campaign labels: [FTEP_CAMPAIGN_CATALOG.md](FTEP_CAMPAIGN_CATALOG.md).
 
 ## Capability matrix
 
@@ -43,7 +46,7 @@ The engine aggregates campaign-scoped requirements (including activation gates *
 
 Implementation: `src/market_platform_foundation/intelligence/paper_forward_bridge/campaign_readiness.py`.
 
-Composes `run_forward_test_preflight`, [FTEP_ACTIVATION_GATES.md](./FTEP_ACTIVATION_GATES.md), and gap-engine output for campaign profiles (**FTEP-V1-001** frozen ES-news; **FTEP-V1-002** proposed US-equity-news). A `NOT_READY` preflight result is expected while `activation_status` remains `PENDING_OWNER_DECISIONS` (V1-002) or while external entitlement gaps block V1-001 prospective collection.
+Composes `run_forward_test_preflight`, [FTEP_ACTIVATION_GATES.md](./FTEP_ACTIVATION_GATES.md), and gap-engine output for campaign profiles (**FTEP-V1-001** `MANIFEST_FROZEN` ES-news; **FTEP-V1-002** `MANIFEST_FROZEN` + `SIGNAL_ONLY_AUTHORIZED` US-equity-news — **not proposed**). A `NOT_READY` campaign-readiness result is expected for V1-001 while ES entitlement / G-A6 coverage gaps remain (`FROZEN_BLOCKED_EXTERNAL_DATA_ENTITLEMENT`). V1-002 is frozen and SIGNAL_ONLY-authorized with **0** governed sessions — **not** `EMPIRICAL_ACTIVE`. Neither campaign is `FROZEN_FOR_ACTIVATION`.
 
 ```powershell
 python tools/imp.py providers campaign-readiness FTEP-V1-002 --json
@@ -63,8 +66,9 @@ Machine-readable hooks (package 3, commit `613a6b4`):
 | `paper/calibration/metrics.py` | Metric dimensions for calibration units |
 | `paper/calibration/thresholds.py` | Load/validate threshold payloads; fail closed when BLOCKING gates unset |
 
-**Safe claim:** schema and comparator plumbing exist; execution-bearing numeric gates are **BLOCKING/UNSET** until manifest freeze.  
-**Prohibited claim:** simulator or external paper benchmark is calibrated for FTEP-V1-001.
+**Safe claim:** schema and comparator plumbing exist; execution-bearing numeric gates are **BLOCKING/UNSET**. Manifest freeze did **not** set numeric thresholds. Draft calibration harness: [PR #41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41) (IMPLEMENTED, not merged; CI green; not `CALIBRATED`).
+
+**Prohibited claim:** simulator or external paper benchmark is calibrated for FTEP-V1-001 or V1-002.
 
 ## Frozen provider snapshot comparison harness
 
@@ -88,16 +92,16 @@ Snapshot logical ID: `providers.frozen_observation_compare`. No live HTTP.
 | Equity-ticker news for ES lane | **FAIL** | No CME ES headline feed; linkage policy needs owner decision |
 | Moomoo ES futures context | **BLOCKED** | Stale evidence: `US_FUTURES_QUOTE` not entitled; needs local probe |
 | Finviz live news | **FAIL** | `live_session` UNCONFIGURED in Wave A |
-| FTEP manifest / preflight | **BLOCKED** | `PENDING_OWNER_DECISIONS` |
-| G-A6/G-A7 campaign binding | **BLOCKED** | Matrix exists; owner manifest bindings + probes outstanding |
-| Simulator calibration numeric gates | **BLOCKED** | Thresholds UNSET per calibration contract |
+| FTEP manifest / preflight | **FROZEN** (not empirical) | V1-001 `MANIFEST_FROZEN`; preflight READY with persist-on (2026-09-12 receipt). Campaign-readiness still `NOT_READY` on ES coverage gaps. SIGNAL_ONLY **not** authorized. **Not** `EMPIRICAL_ACTIVE`. |
+| G-A6/G-A7 campaign binding | **BLOCKED** | Still BLOCKING on **ES entitlement** (`US_FUTURES_QUOTE` NOT_ENTITLED; `COVERAGE_GAP:G-A6`). V1-002 equity L1 **must not** close ES G-A6. |
+| Simulator calibration numeric gates | **BLOCKED** | Thresholds UNSET/BLOCKING. PR #41 harness IMPLEMENTED (draft); not `CALIBRATED`. |
 
 ## Safe vs prohibited claims
 
 | Safe (with cited evidence) | Prohibited |
 | --- | --- |
 | Bridge CG-01/CG-02 fixes and fixture tests pass | Qualifying **ACTUAL_FORWARD** evidence has started |
-| Recorded-artifacts-only intelligence path is wired | Manifest is **FROZEN_FOR_ACTIVATION** without OD-11 |
+| Recorded-artifacts-only intelligence path is wired | Manifest freeze is `FROZEN_FOR_ACTIVATION` or `EMPIRICAL_ACTIVE` |
 | Capability matrix snapshot validates against schema | Any provider is **PROMOTED** without verification evidence rows |
 | Gap engine returns deterministic disposition for FTEP-V1-001 | Live observational news is production-ready for campaign |
 | Frozen snapshot compare runs on fixtures | Moomoo ES futures quotes are entitled without fresh probe |
@@ -117,6 +121,17 @@ Unified offline export binding (ADR-PIT-001 + ADR-RDATA-001):
 | `tests/research/test_pit_export.py` | Determinism and fail-closed validation |
 
 Operator probe steps (no Live activation): [OPERATOR_PROBE_RUNBOOK.md](./OPERATOR_PROBE_RUNBOOK.md).
+
+## Open IMPLEMENTED drafts (not merged)
+
+These are **software drafts**. They do **not** start a governed FTEP session, do **not** declare `EMPIRICAL_ACTIVE`, and do **not** declare the simulator `CALIBRATED`.
+
+| PR | Branch | State | Honest claim |
+| --- | --- | --- | --- |
+| [#41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41) | `cursor/calibration-harness-d1ba` | Draft OPEN; CI green | Calibration harness IMPLEMENTED. Not `CALIBRATED`. `COMPARATOR_NOT_CONFIGURED` on cloud. |
+| [#42](https://github.com/AdamEddahmouni/market-trading-platform/pull/42) | `cursor/provider-real-data-d1ba` | Draft OPEN; CLI classified; persist follow-up in flight | Quote → admission → G7 → optional Path A. Yahoo overlay is `DELAYED_PROSPECTIVE`, not realtime L1. Not FTEP. |
+
+Do not merge this docs PR as a substitute for landing those drafts. `PROGRAM_STATUS.md` / `WORK_LOG.md` are intentionally **not** edited here (those files are already changed on #41 and #42).
 
 ## Related artifacts
 

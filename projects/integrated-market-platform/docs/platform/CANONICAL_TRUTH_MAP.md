@@ -7,8 +7,8 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Topic-to-authority routing and conflict disposition |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.3` |
-| Last Verified | `2026-09-05` |
+| Version | `1.4` |
+| Last Verified | `2026-09-13` |
 | Supersedes | No single current whole-program authority index |
 | Superseded By | None |
 
@@ -35,7 +35,10 @@ validation counts, or gate logic.
 |---|---|---|---|---|---|
 | Program documentation index | [Platform documentation](README.md) | Canonical explanation | `CURRENT_CANONICAL_TRUTH` | Reading order and navigation | None |
 | Whole-program composition | [Master Architecture](MASTER_ARCHITECTURE.md) | Canonical explanation | `CURRENT_CANONICAL_TRUTH` | Program shape and architectural relationships | None |
-| Current program state | [Program Status](PROGRAM_STATUS.md) | Canonical explanation | `CURRENT_CANONICAL_TRUTH` | Material milestone, family, authority, and limitation state | None |
+| Current program state | [Program Status](PROGRAM_STATUS.md) | Canonical explanation | `CURRENT_CANONICAL_TRUTH` | Material milestone, family, authority, and limitation state | SHA field on main still cites `6833bf3` (#39); git tip is `9cb541c` (#40). Git wins over the lagged SHA field. FTEP labels on that file match catalog. This rebaseline does **not** edit PROGRAM_STATUS (open drafts #41/#42 already touch it). |
+| FTEP campaign labels | [FTEP campaign catalog](../engineering/FTEP_CAMPAIGN_CATALOG.md), [GLOSSARY](GLOSSARY.md) FTEP labels, frozen artifacts under `artifacts/forward-test-campaigns/`, and executable gates | Canonical explanation + frozen artifacts + code | `CURRENT_CANONICAL_TRUTH` | Per-campaign `MANIFEST_FROZEN` / `FROZEN_FOR_ACTIVATION` / `SIGNAL_ONLY_AUTHORIZED` / `EMPIRICAL_ACTIVE` | Catalog + glossary win over freeze-time classification strings in frozen V1-001 JSON and hash-bound `PROTOCOL_REF.json`. Do not casual-edit those artifacts. |
+| FTEP activation gates | [FTEP_ACTIVATION_GATES.md](../engineering/FTEP_ACTIVATION_GATES.md) | Canonical governance | `CURRENT_CANONICAL_TRUTH` | G-A0–G-A22 **rules** | The 2026-09-11 status **column** is a planning snapshot at `a4858103`, not 2026-09-13 campaign state. G-A6/G-A7 remain BLOCKING for ES. |
+| Provider activation increment | [PROVIDER_ACTIVATION_INCREMENT.md](../engineering/PROVIDER_ACTIVATION_INCREMENT.md) | Current engineering guide | `CURRENT_CANONICAL_TRUTH` | Wave B tooling + ES/news stack dispositions | V1-002 is **frozen**, not proposed. Open IMPLEMENTED drafts (not merged, not `EMPIRICAL_ACTIVE`): [PR #41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41), [PR #42](https://github.com/AdamEddahmouni/market-trading-platform/pull/42). |
 | Post-core planning | [Master Roadmap](MASTER_ROADMAP.md) | Canonical roadmap | `APPROVED_FUTURE_DESIGN` | Milestone boundaries and dependencies only | None |
 | Documentation governance | [Documentation Standard](DOCUMENTATION_STANDARD.md) | Canonical explanation | `CURRENT_CANONICAL_TRUTH` | Prospective documentation rules | None |
 | Run, attempt, and reproducibility semantics | [Reproducibility and Run Standard](REPRODUCIBILITY_AND_RUN_STANDARD.md) | Canonical explanation | `CURRENT_CANONICAL_TRUTH` | Run identity, attempts, outcomes, dispositions, artifacts, attribution, and reproducibility classes | None |

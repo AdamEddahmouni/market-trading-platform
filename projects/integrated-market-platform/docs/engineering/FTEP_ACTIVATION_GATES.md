@@ -4,11 +4,13 @@
 **Established:** 2026-09-11  
 **Applies to:** activation of the first and subsequent empirical forward-test campaigns
 
-This document separates **protocol preregistration** from **campaign activation**. The existing `FTEP-V1/0.1.0-PREREG` document is a design/preregistration artifact with unresolved decisions. It is not an activated campaign and it is not empirical evidence.
+This document separates **protocol preregistration** from **campaign activation**. The existing `FTEP-V1/0.1.0-PREREG` document is a design/preregistration artifact. Its OPEN DECISION sections are protocol text, not current campaign status. Campaign labels live in [FTEP_CAMPAIGN_CATALOG.md](FTEP_CAMPAIGN_CATALOG.md) and [GLOSSARY.md](../platform/GLOSSARY.md). Frozen V1-001 `PROTOCOL_REF.json` is hash-bound to that protocol document — do not casual-edit either. Manifest freeze is not `FROZEN_FOR_ACTIVATION` and is not `EMPIRICAL_ACTIVE`.
 
 Provider selection is governed by [IMP Provider Universe, Audit & Integration Strategy](../providers/PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md): **catalog broadly, audit current access first, derive coverage gaps, integrate selectively, and bind exact providers only when campaign requirements are known.**
 
-> **Snapshot banner:** The gate-status column below is the 2026-09-11 snapshot at `main@a4858103` (pre-implementation planning). It is **not** current campaign state. Current FTEP campaign truth: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) and [FTEP_CAMPAIGN_CATALOG.md](FTEP_CAMPAIGN_CATALOG.md).
+> **Snapshot banner:** The gate-status column below is the 2026-09-11 snapshot at `main@a4858103` (pre-implementation planning). It is **not** current campaign state. Git tip: `origin/main@9cb541c` (PR #40). Current FTEP campaign truth: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) and [FTEP_CAMPAIGN_CATALOG.md](FTEP_CAMPAIGN_CATALOG.md).
+>
+> **Current at `9cb541c`:** G-A0 remains `PASS`. G-A6 and G-A7 remain **BLOCKING** for V1-001 ES prospective evidence (`FROZEN_BLOCKED_EXTERNAL_DATA_ENTITLEMENT`). V1-001 is `MANIFEST_FROZEN`, **not** `FROZEN_FOR_ACTIVATION`, SIGNAL_ONLY **not** authorized, **not** `EMPIRICAL_ACTIVE`. V1-002 is `MANIFEST_FROZEN` + `SIGNAL_ONLY_AUTHORIZED` with **0** governed sessions — **not** `EMPIRICAL_ACTIVE`. Simulator numeric gates remain `UNSET/BLOCKING` (not `CALIBRATED`). Live remains forbidden. Open **IMPLEMENTED** drafts (not merged, not empirical activity): [PR #41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41) calibration harness (CI green; not `CALIBRATED`); [PR #42](https://github.com/AdamEddahmouni/market-trading-platform/pull/42) quote→admission→G7→optional Path A hop (CLI classified; persist follow-up in flight). Do **not** mark G-A6/G-A7 `PASS`.
 
 ## Gate summary
 
@@ -75,7 +77,7 @@ The final activation manifest must contain at minimum:
 
 ## First-campaign sequencing
 
-The current first-campaign candidate remains the professor-priority news/catalyst lane on ES, but it is not binding until the activation manifest is frozen.
+The current first-campaign candidate remains the professor-priority news/catalyst lane on ES. V1-001 is `MANIFEST_FROZEN` (OD-11 pathway A = bind/freeze/preflight only) but is **not** `FROZEN_FOR_ACTIVATION` and **not** `EMPIRICAL_ACTIVE`. Do not convert the ES campaign to equity.
 
 Recommended sequence:
 
