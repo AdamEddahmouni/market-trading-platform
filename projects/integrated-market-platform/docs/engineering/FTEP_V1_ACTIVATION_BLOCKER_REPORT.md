@@ -13,13 +13,15 @@
 
 Wave B **implementation** packages remain complete (capability matrix, gap engine, campaign-readiness, freeze tooling, integrity). That is **not** campaign activation.
 
+Program decision: **`FTEP_EMPIRICAL_NOT_READY`**. Not `EMPIRICAL_ACTIVE`. Live off.
+
 **FTEP-V1-001** is **`MANIFEST_FROZEN`** (fingerprint invariant `69C36BA23813C009C27EE83924834D46F5804D0A0FA037E37ADB133F8BFEA99C`). OD-1…OD-11 are recorded in the frozen manifest (OD-11 pathway **A** = bind/freeze/preflight only). Prospective disposition is **`FROZEN_BLOCKED_EXTERNAL_DATA_ENTITLEMENT`**. SIGNAL_ONLY is **not** authorized. **Not** `FROZEN_FOR_ACTIVATION`. **Not** `EMPIRICAL_ACTIVE`. **Do not mutate** the frozen JSON, OD fields, universe, or fingerprint.
 
 **FTEP-V1-002** is **`MANIFEST_FROZEN` + `SIGNAL_ONLY_AUTHORIZED`** via committed receipts. Governed sessions **0**. **Not** `EMPIRICAL_ACTIVE`. Does **not** unblock V1-001.
 
 Remaining blockers for a lawful first qualifying observation are **entitlement**, **authorization B**, **campaign-readiness READY**, **dated ES contract**, and **calibration/execution** — not “the manifest is not frozen.”
 
-Open **IMPLEMENTED** drafts (not merged, not empirical activity): [PR #41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41) calibration harness (CI green; simulator **not** `CALIBRATED`); [PR #42](https://github.com/AdamEddahmouni/market-trading-platform/pull/42) quote→admission→G7→optional Path A hop plus optional v6 `create_decision` (head `91b8889`; CI green including `validate-python-changed`). Live remains forbidden.
+Open **IMPLEMENTED** drafts (not merged, not empirical activity): [PR #41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41) calibration harness (head `7f7e63b`; CI green; simulator **not** `CALIBRATED`; Tradier sandbox token empirically **ABSENT**); [PR #42](https://github.com/AdamEddahmouni/market-trading-platform/pull/42) quote→admission→G7→Path A hop (head `df2b66c`; honest `EMPTY`; persist CLI lives on stacked [#45](https://github.com/AdamEddahmouni/market-trading-platform/pull/45)). Operator OpenD hop on [#50](https://github.com/AdamEddahmouni/market-trading-platform/pull/50) `2c9a4e4`: AAPL `last_price=332.27`, `G7_NOT_ACTIONABLE` (Sunday). Finviz Elite overlay empirically `FETCHED` on [#54](https://github.com/AdamEddahmouni/market-trading-platform/pull/54) (`LIVE_DISABLED`) but **not** in Path A hop CLI JSON. No PRODUCTION `ForecastV1` contributor JSON in-repo. Live remains forbidden.
 
 ## Consolidated blockers
 
@@ -29,12 +31,12 @@ Open **IMPLEMENTED** drafts (not merged, not empirical activity): [PR #41](https
 | FROZEN-V1-001-DO-NOT-MUTATE | Engineering | Integrity | Fingerprint `69C36BA…` is invariant. Catalog + glossary win over the frozen JSON `classification` string that misuses `FROZEN_FOR_ACTIVATION`. | Append-only receipts / new campaign version only. Never rewrite frozen JSON. |
 | AUTH-SIGNAL-ONLY-B | Owner | Authorization | Frozen attestation `signal_only_session_authorized: false`. No V1-001 SIGNAL_ONLY receipt. Pathway A does not authorize sessions. | Append-only SIGNAL_ONLY receipt after ES gaps clear. Do not flip frozen `operator_attestation`. |
 | OWNER-CALIBRATION-THRESHOLDS | Owner | Human decision | Numeric calibration gates **UNSET/BLOCKING** per [PAPER_SIMULATOR_CALIBRATION_CONTRACT.md](../architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md). Simulator **not** `CALIBRATED`. | Preregister campaign-specific thresholds from a declared-scope cohort. Draft harness: PR #41 (not merged; not calibrated). |
-| PROBE-MOOMOO | Operator | Local probe | Last dated ES quote probe (2026-09-12) **NOT_ENTITLED**. Cloud VM has no OpenD. STALE vs this VM; does **not** become entitled. | Run non-destructive Moomoo probe on an operator machine; do not substitute IBKR delayed L1 or V1-002 equity L1. |
+| PROBE-MOOMOO | Operator | Local probe | Last dated **ES** quote probe (2026-09-12) **NOT_ENTITLED**. Cloud VM has no OpenD. An operator-machine **equity** hop on [#50](https://github.com/AdamEddahmouni/market-trading-platform/pull/50) `2c9a4e4` admitted AAPL `last_price=332.27` (`G7_NOT_ACTIONABLE`, Sunday stale) — that is **not** ES entitlement and does **not** close G-A6/G-A7. | Run non-destructive Moomoo **ES** probe on an operator machine; do not substitute IBKR delayed L1 or V1-002 equity L1. |
 | EXT-MOOMOO-FUTURES-ENTITLEMENT | External | Entitlement | `US_FUTURES_QUOTE` not evidenced for campaign PRIMARY_MARKET_EVIDENCE. Executable: `FROZEN_BLOCKED_EXTERNAL_DATA_ENTITLEMENT`. | Verify account/plan; refresh evidence artifact. Closing equity L1 CAMPAIGN_BOUND **does not** close ES G-A6/G-A7. |
 | G-A6-ES-AUTHORITY | Engineering / Owner | Coverage gap | Live campaign-readiness still reports `COVERAGE_GAP:G-A6` / `G_A6_CAMPAIGN_BOUND_MISSING` for ES. V1-001 has no `market_data_bindings`. | Bind ES market-data authority CAMPAIGN_BOUND. Equity overlay is not ES G-A6. |
 | G-A11-DATED-CONTRACT | Owner | Campaign binding | Universe is symbol `ES` only — not an executable dated contract month. | New campaign version if a dated key must be bound. Do not silent-edit frozen JSON. |
-| PROBE-FINVIZ | Operator | Local probe | Finviz Elite token absent on cloud; `NEWS_EXPORT` CONTEXT_ONLY is not ES quote. | Configure safely; probe; update matrix. Live news ingress remains deferred (WAVE-A-002 / FTEP-ACT-04). |
-| PROBE-G-A5-BROKER-CANDIDATES | Operator | Local probe | No usable Paper/sandbox comparator on cloud (`COMPARATOR_NOT_CONFIGURED` on PR #41). | Run broker audit probes; Tradier sandbox HTTPS is opt-in on PR #41 only. Alpaca remains Phase 0 prohibited. |
+| PROBE-FINVIZ | Operator | Local probe | Cloud Finviz names **ABSENT**. Operator overlay empirically `FETCHED` on [#54](https://github.com/AdamEddahmouni/market-trading-platform/pull/54) (`LIVE_DISABLED`) but **not** in Path A hop CLI JSON. `NEWS_EXPORT` CONTEXT_ONLY is not ES quote. | Do not treat overlay `FETCHED` as hop L1 or as ES news. Live news ingress remains deferred (WAVE-A-002 / FTEP-ACT-04). |
+| PROBE-G-A5-BROKER-CANDIDATES | Operator | Local probe | No usable Paper/sandbox comparator (`COMPARATOR_NOT_CONFIGURED` on PR #41). Tradier sandbox token empirically **ABSENT** on the operator machine. | Ready runner exists on PR #41; do not fabricate fills. Alpaca remains Phase 0 prohibited. |
 | EXT-PREMIUM-WIRES | External | Provider | No operational Reuters/DJ/Benzinga-class wire in repo | Select provider + terms if campaign requires premium headlines |
 | EXT-NEWSAPI-FINNHUB-PIT | External | Data rights | Bounded live windows; not historical PIT archive for ES/news claims | Do not claim PIT news archive without new source |
 | DEFER-FTEP-ACT-04-OBS-INGRESS | Owner/Engineering | Governance deferral | Live observational news ingress intentionally deferred (FTEP-D038) | Re-open only if a **new** campaign version de-defers ACT-04 |
@@ -49,7 +51,7 @@ Open **IMPLEMENTED** drafts (not merged, not empirical activity): [PR #41](https
 5. `python3 tools/imp.py providers campaign-readiness FTEP-V1-001 --json` — must be `READY` on the **session** host (`IMP_PERSIST_STATE=1` or `IMP_STATE_DIR`; coverage gaps cleared).
 6. Integrity PASS; V1-001 fingerprint unchanged; `US_EQUITY_RTH` open; `ftep session-start` succeeds → then and only then `EMPIRICAL_ACTIVE`.
 
-Until a governed prospective session starts, the label stays **not** `EMPIRICAL_ACTIVE`.
+Until a governed prospective session starts, the label stays **`FTEP_EMPIRICAL_NOT_READY`** / **not** `EMPIRICAL_ACTIVE`.
 
 ## Explicit prohibited claims
 
@@ -74,7 +76,7 @@ Do **not** state or imply:
 - **Immutable freeze tooling** exists; **V1-001 and V1-002 manifests are frozen**. V1-001 is entitlement-blocked and not session-authorized. V1-002 is SIGNAL_ONLY-authorized with **0** sessions.
 - Smallest ES/news stack and deficiencies are documented in [es-news-provider-stack-selection.json](../../artifacts/ftep-v1-001/es-news-provider-stack-selection.json) (`overall_disposition: BLOCKED`).
 - `python3 tools/imp.py validate fast` and prior full **closure** runs passed on the Wave B branch (see wave-b-closure-report). Last green **main** is the #40 merge.
-- PR #41 / PR #42 are **IMPLEMENTED** drafts: not merged, not `CALIBRATED`, not `EMPIRICAL_ACTIVE`.
+- PR #41 / PR #42 (and stacked OpenD/Finviz/Path A drafts) are **IMPLEMENTED** drafts: not merged, not `CALIBRATED`, not `EMPIRICAL_ACTIVE`. Overlay `FETCHED` and the Sunday OpenD AAPL print do **not** start a governed session.
 
 ## Automatable gaps still in repository
 

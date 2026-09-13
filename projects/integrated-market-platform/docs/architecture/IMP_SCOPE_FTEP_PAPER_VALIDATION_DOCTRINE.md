@@ -207,7 +207,7 @@ As of `main@a4858103baa3531051791a632ed36a9339fd6414` (planning-closure snapshot
 - no first FTEP empirical campaign is activated by this doctrine;
 - Live production execution remains separately blocked/unauthorized.
 
-The next work before a first execution-bearing ES/news campaign is governed by [FTEP Activation & Pre-Implementation Gates](../engineering/FTEP_ACTIVATION_GATES.md). At `9cb541c`, V1-001 is `MANIFEST_FROZEN` and entitlement-blocked; V1-002 is `MANIFEST_FROZEN` + `SIGNAL_ONLY_AUTHORIZED` with **0** sessions; the simulator is **not** `CALIBRATED`; Live remains blocked. Open IMPLEMENTED drafts (not merged): [PR #41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41), [PR #42](https://github.com/AdamEddahmouni/market-trading-platform/pull/42).
+The next work before a first execution-bearing ES/news campaign is governed by [FTEP Activation & Pre-Implementation Gates](../engineering/FTEP_ACTIVATION_GATES.md). At `9cb541c`, program decision is **`FTEP_EMPIRICAL_NOT_READY`**. V1-001 is `MANIFEST_FROZEN` and entitlement-blocked; V1-002 is `MANIFEST_FROZEN` + `SIGNAL_ONLY_AUTHORIZED` with **0** sessions; the simulator is **not** `CALIBRATED`; Live remains blocked. Open IMPLEMENTED drafts (not merged): [PR #41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41), [PR #42](https://github.com/AdamEddahmouni/market-trading-platform/pull/42). Operator honesty that does **not** flip this doctrine: Finviz overlay empirically `FETCHED` on [#54](https://github.com/AdamEddahmouni/market-trading-platform/pull/54) but not in Path A hop CLI; Tradier token **ABSENT**; no PRODUCTION `ForecastV1` contributor JSON; OpenD AAPL `332.27` was `G7_NOT_ACTIONABLE` Sunday.
 
 ## 12. Non-negotiable boundaries
 

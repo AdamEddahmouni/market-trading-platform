@@ -4,7 +4,7 @@
 | --- | --- |
 | **Protocol ID** | `FTEP-V1/0.1.0-PREREG` |
 | **Campaign slug** | `FTEP-V1-001` |
-| **Manifest status** | **Historical packet.** V1-001 owner resolutions are recorded in the frozen activation manifest (`activation_status=FROZEN`, OD-11 pathway **A**). Catalog: `MANIFEST_FROZEN`; **not** `FROZEN_FOR_ACTIVATION`; SIGNAL_ONLY **not** authorized; **not** `EMPIRICAL_ACTIVE`. |
+| **Manifest status** | **Historical packet.** V1-001 owner resolutions are recorded in the frozen activation manifest (`activation_status=FROZEN`, OD-11 pathway **A**). Catalog: `MANIFEST_FROZEN`; **not** `FROZEN_FOR_ACTIVATION`; SIGNAL_ONLY **not** authorized; **not** `EMPIRICAL_ACTIVE`. Current program decision: **`FTEP_EMPIRICAL_NOT_READY`**. |
 | **Audit basis** | Agent A re-run (`c4f6ca28`) + first-run inventory (`81265595`) |
 | **Cost** | $0 incremental (Paper-only; `safety_constraints.cost_usd: 0`) |
 

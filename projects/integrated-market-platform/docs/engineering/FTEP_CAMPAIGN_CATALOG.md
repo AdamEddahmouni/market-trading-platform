@@ -9,6 +9,8 @@ Status vocabulary (do not collapse these labels):
 | `SIGNAL_ONLY_AUTHORIZED` | Owner authorized SIGNAL_ONLY sessions via a committed receipt. Paper EXECUTION and Live remain unauthorized. Authorization is not activity. |
 | `EMPIRICAL_ACTIVE` | At least one governed prospective session has started. Receipts and freeze do not imply this. |
 
+Current program decision (2026-09-13, git tip `9cb541c`): **`FTEP_EMPIRICAL_NOT_READY`**. That is the activation-readiness label; it is **not** a catalog enum and does **not** start a session. Neither campaign below is `EMPIRICAL_ACTIVE`.
+
 | Campaign | Slug | Status | Asset lane | Incremental cost | Notes |
 |----------|------|--------|------------|------------------|-------|
 | ES news catalyst (first) | `FTEP-V1-001` | **MANIFEST_FROZEN**; not `SIGNAL_ONLY_AUTHORIZED`; not `EMPIRICAL_ACTIVE` | `FUTURES_EQUITY_INDEX` / ES | $0 engineering; ES quote **not entitled** | Prospective disposition: `FROZEN_BLOCKED_EXTERNAL_DATA_ENTITLEMENT`. Do not mutate manifest, OD fields, or universe. |

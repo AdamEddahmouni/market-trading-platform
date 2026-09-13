@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — PROGRAM_STATUS SHA honesty + FTEP_EMPIRICAL_NOT_READY (docs #43)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Land the item-18 SHA field on this docs branch: `PROGRAM_STATUS` canonical origin/main SHA is now `9cb541cd520721404e1c3d789eba5445c45aae70` (merged #32/#34–#40). Fold current honesty into #43-owned FTEP/git docs: program decision `FTEP_EMPIRICAL_NOT_READY`; Finviz overlay empirically `FETCHED` on #54 but not in Path A hop CLI; Tradier token ABSENT; no PRODUCTION `ForecastV1` contributor JSON; OpenD AAPL `332.27` was `G7_NOT_ACTIONABLE` Sunday. Did **not** copy #41's harness subject row or #42's Path A hop row. Documented merge order: land #41 then rebase #42 (then rebase this PR). Not merged. Not `EMPIRICAL_ACTIVE`. Live off. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md`, `docs/engineering/FTEP_ACTIVATION_GATES.md`, `docs/engineering/FTEP_CAMPAIGN_CATALOG.md`, `docs/engineering/FTEP_V1_ACTIVATION_BLOCKER_REPORT.md`, `docs/engineering/PROVIDER_ACTIVATION_INCREMENT.md`, `docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md`, `docs/platform/CANONICAL_TRUTH_MAP.md`, `docs/architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md` |
+| **Tests** | `python3 tools/check_docs_links.py` — **188 OK**. `python3 tools/imp.py validate changed` — **0 tests** (docs-only). `python3 -m unittest tests.intelligence.test_forward_test_protocol_ref -q` — **3 OK** (fingerprint `69C36BA` / PROTOCOL_REF unchanged). |
+| **Related** | [PR #43](https://github.com/AdamEddahmouni/market-trading-platform/pull/43); [PR #41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41); [PR #42](https://github.com/AdamEddahmouni/market-trading-platform/pull/42); merge SHA `9cb541cd520721404e1c3d789eba5445c45aae70` |
+| **Notes** | Item 18 stays PARTIAL until this draft (and/or #41) merges and Notion matches git. Do not merge from this increment. Do not activate Live. |
+
 ## 2026-09-13 — Path A scan caller merged (PR #39)
 
 | Field | Value |

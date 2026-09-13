@@ -9,7 +9,7 @@
 | Establishing Milestone | `IMP-REBASE-01` |
 | Version | `1.14` |
 | Last Verified | `2026-09-13` |
-| Canonical origin/main SHA | `6833bf3c400ab02f3203f715a6653a23d8e7f6f0` (merged #32, #34, #35, #36, #37, #38, #39) |
+| Canonical origin/main SHA | `9cb541cd520721404e1c3d789eba5445c45aae70` (merged #32, #34, #35, #36, #37, #38, #39, #40) |
 | Supersedes | Root README as whole-program status authority |
 | Superseded By | None |
 
@@ -131,9 +131,12 @@ mandatory. Automatic broker failover remains disabled.
   campaign database or EVIDENCE-01B auto-bridge yet.
 - FTEP-V1-001 / ES-news remains `MANIFEST_FROZEN` and entitlement-blocked
   (`FROZEN_BLOCKED_EXTERNAL_DATA_ENTITLEMENT`); SIGNAL_ONLY is not authorized.
+  Program decision is **`FTEP_EMPIRICAL_NOT_READY`** (not `EMPIRICAL_ACTIVE`).
 - FTEP-V1-002 is `MANIFEST_FROZEN` and `SIGNAL_ONLY_AUTHORIZED` (committed
   receipts); empirical lock is authorized via receipt; **0** governed sessions
   so it is **not** `EMPIRICAL_ACTIVE`. Paper EXECUTION and Live remain unauthorized.
+- Provider-activation honesty at this tip (unmerged drafts; not FTEP activity):
+  Finviz Elite overlay empirically `FETCHED` on [#54](https://github.com/AdamEddahmouni/market-trading-platform/pull/54) (`LIVE_DISABLED`) but **not** in Path A hop CLI JSON; Tradier sandbox token empirically **ABSENT** (comparator `COMPARATOR_NOT_CONFIGURED`); no PRODUCTION `ForecastV1` contributor JSON in-repo; operator OpenD hop AAPL `last_price=332.27` was `G7_NOT_ACTIONABLE` on Sunday.
 
 These are program limitations, not defects in REBASE-01 acceptance.
 
