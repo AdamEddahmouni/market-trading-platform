@@ -5,10 +5,14 @@ not mint a probability from a quote, does not call CONTROL baseline
 construction, and does not wrap a research score dict as a production
 forecast.
 
-Create/persist is serialization of an already-constructed ``ForecastV1``
-(separate from scan). Load is fail-closed against Opportunity Engine hop
-policy: identity, PIT, champion, horizon, account, and mode must match;
-CONTROL, RESEARCH, and uncalibrated artifacts return ``None``.
+``persist_paper_demo_forecast`` is serialization of an already-constructed
+``ForecastV1`` (separate from scan). The fail-closed *producer* is
+``path_a_forecast_producer.produce_paper_demo_forecast``: it may call this
+serializer only after BUILD 14 fusion emits ``EMITTED_CALIBRATED`` and
+identity/PIT/champion/horizon/account/mode plus calibration gates pass.
+Load is fail-closed against Opportunity Engine hop policy: identity, PIT,
+champion, horizon, account, and mode must match; CONTROL, RESEARCH, and
+uncalibrated artifacts return ``None``.
 """
 
 from __future__ import annotations
@@ -90,7 +94,7 @@ def select_eligible_forecast(
         forecast = _coerce_forecast(record)
         if forecast is None:
             continue
-        if not _matches_hop_policy(forecast, champion=champion, policy=policy):
+        if not forecast_matches_path_a_hop_policy(forecast, champion=champion, policy=policy):
             continue
         resolved = _resolve_forecast(
             match=match,
@@ -107,7 +111,7 @@ def select_eligible_forecast(
     return eligible[0]
 
 
-def _matches_hop_policy(
+def forecast_matches_path_a_hop_policy(
     forecast: ForecastV1,
     *,
     champion: ChampionAssignmentV1,
@@ -167,6 +171,7 @@ def _load_forecast_payload(path: Path) -> tuple[ForecastV1, ...]:
 
 
 __all__ = [
+    "forecast_matches_path_a_hop_policy",
     "load_paper_demo_forecasts",
     "persist_paper_demo_forecast",
     "select_eligible_forecast",

@@ -191,7 +191,10 @@ def build_paper_demo_path_a_invoke(
     ``forecast_resolver`` loads a previously persisted PRODUCTION ``ForecastV1``
     only when identity/PIT/champion/horizon/account/mode match Opportunity
     Engine hop policy. Absent or mismatch → ``None`` (``FORECAST_UNAVAILABLE``).
-    Does not mint a probability from last_price.
+    Create is a separate operator step
+    (``path_a_forecast_producer.produce_paper_demo_forecast``) that persists
+    only a BUILD 14 ``EMITTED_CALIBRATED`` artifact. Does not mint a
+    probability from last_price.
     """
 
     mode_n = _normalize_mode(mode)
