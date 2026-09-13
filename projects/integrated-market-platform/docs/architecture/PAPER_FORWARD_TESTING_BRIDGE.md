@@ -223,7 +223,10 @@ Path A prospective hop (`PathAProspectiveComposer`): Paper/Demo CLI
 is honest `EMPTY` when no MATCHED strategy (not null). The hop
 `quote_provider` is always Moomoo OpenD via
 `primary_equity_quote_provider()`; Yahoo delayed is overlay-only and is not
-swapped in when OpenD is down. The hop CLI calls `diagnose_opend(start=True)`
+swapped in when OpenD is down. G7 capability/selection registers hop L1
+identity `moomoo.opend.observational` (`US_EQUITY_L1`); Yahoo remains
+unknown as hop L1. Unstamped OpenD fail-closes (`PROVIDER_DOWN`) until a hop
+stamps health after an admitted fetch. The hop CLI calls `diagnose_opend(start=True)`
 before quote fetch so an installed local OpenD can be started; if it is
 still down the outcome is
 `PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE` (or
