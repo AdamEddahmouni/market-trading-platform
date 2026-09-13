@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — Post-merge landing banners: origin/main is 3bb5aa2f
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Independently verified `origin/main` is `3bb5aa2f` after merging PRs **#29** then **#30**. Replaced leftover current “until #29 merges” landing banners; recorded Last Verified + canonical SHA on PROGRAM_STATUS. Did not rewrite doctrine, did not claim `EMPIRICAL_ACTIVE`, did not claim Notion synced. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/DEVELOPER_OPERATING_SYSTEM.md`, `AGENTS.md`, `docs/engineering/CURSOR_CLOUD_ENVIRONMENT.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/check_docs_links.py`; required GitHub `validate` on this docs PR |
+| **Related** | Merged **#29** (`6f7f1d4d`) then **#30** (`3bb5aa2f`); split PRs **#22–#28** and **#21** left open |
+| **Notes** | `588ada8a` remains only in historical snapshot artifacts (e.g. wave-a repo-architecture audit). #21 still has unique blob diffs vs main after the strategy copy. |
+
 ## 2026-09-12 — P3/P4 docs and governance coherence for post-#29 clone
 
 | Field | Value |
