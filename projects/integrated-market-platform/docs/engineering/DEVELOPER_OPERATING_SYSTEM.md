@@ -142,8 +142,8 @@ is secondary/enabling and must not displace primary product increments.
 ## Local lane topology (historical 2026-09-10)
 
 The table below is the **2026-09-10** worktree topology. It is **not** current
-procedure. Current landing until merge is PR **#29** /
-`work/ftep-v1-002-us-equity-news`. After #29 merges, land on `origin/main`.
+procedure. Current landing is `origin/main` (`3bb5aa2f`, merged PRs **#29** then
+**#30**).
 
 | Lane | Branch | Worktree | Purpose |
 |------|--------|----------|---------|
