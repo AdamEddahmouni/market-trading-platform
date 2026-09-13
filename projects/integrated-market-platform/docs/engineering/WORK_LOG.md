@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Path A MATCHED fixture invokes Opportunity Engine
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy`, `opportunity` |
+| **Summary** | Paper/Demo MATCHED fixtures on `PathAProspectiveComposer` now have tests that `PathAScanCaller` enters the MATCHED loop and calls `bridge_strategy_match_to_opportunity` → `OpportunityEngine.assess`. Honest EMPTY still does not call the engine (`NO_MATCHED_STRATEGY`). If G7 fail-closes, overall status stays `G7_NOT_ACTIONABLE` even when Path A is `MINTED`. Live remains `LIVE_FORBIDDEN` and does not assess. Production CLI honesty invoke is unchanged (`strategies=()`). FTEP is not `EMPIRICAL_ACTIVE`. Fills are not fabricated. This is software proof, not an empirical MATCHED hop. |
+| **Key files** | `tests/intelligence/test_path_a_prospective.py`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/platform/PROGRAM_STATUS.md`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md`, `docs/product/OPPORTUNITY_ENGINE_CURRENT_STATE_AND_IMPLEMENTATION_PLAN.md` |
+| **Tests** | Focused Path A + scan caller + ingest + freshness **63 passed**. MATCHED Paper/Demo fixtures call `assess`; EMPTY does not; Live does not. `python3 tools/imp.py validate changed --paths-file` (16 merge-base paths vs `origin/main`) **2845 passed / 36 skipped / 0 fail / 0 err**. Docs links OK (188 files). |
+| **Related** | PR #42. Prior Path A CLI invoke + persist hop. |
+| **Notes** | No new unclassified files. Ingest still does not import the scanner. Not a daemon. Item 7 stays empirically PARTIAL. |
+
 ## 2026-09-13 — Path A CLI invokes PathAScanCaller on Paper/Demo
 
 | Field | Value |

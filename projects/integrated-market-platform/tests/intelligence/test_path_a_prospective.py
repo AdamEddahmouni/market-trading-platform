@@ -8,6 +8,7 @@ import os
 import sys
 import tempfile
 import unittest
+from dataclasses import replace
 from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
@@ -231,7 +232,30 @@ def _scan_request(
     )
 
 
-def _caller(repository: InMemoryIntelligenceRepository, champion: ChampionAssignmentV1, forecast: ForecastV1) -> PathAScanCaller:
+class RecordingOpportunityEngine(OpportunityEngine):
+    """Test double: real assess, with a call count. Not a live fill."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.assess_calls = 0
+
+    def assess(self, **kwargs):  # type: ignore[no-untyped-def]
+        self.assess_calls += 1
+        return super().assess(**kwargs)
+
+
+def _caller(
+    repository: InMemoryIntelligenceRepository,
+    champion: ChampionAssignmentV1,
+    forecast: ForecastV1,
+    *,
+    engine: OpportunityEngine | None = None,
+    context_mode: str = "PAPER",
+    scope: IntelligenceScope | None = None,
+) -> PathAScanCaller:
+    mode_n = str(context_mode or "PAPER").strip().upper()
+    used_scope = scope if scope is not None else SCOPE
+    scenario_id = "demo-path-a" if mode_n == "DEMO" else "paper-path-a"
     policy: OpportunityPolicyV1 = build_opportunity_policy(
         champion_scope=champion.champion_scope,
         max_forecast_age_ns=HORIZON,
@@ -250,14 +274,14 @@ def _caller(repository: InMemoryIntelligenceRepository, champion: ChampionAssign
             snapshot_available_time_ns=T,
             spread_bps=5,
             spread_available_time_ns=T,
-            mode="PAPER",
-            scenario_id="paper-path-a",
+            mode=mode_n,
+            scenario_id=scenario_id,
             account_id="acct-paper",
         ),
         economic_assessment=UniversalEconomicAssessmentV1.create(
-            scope=SCOPE,
+            scope=used_scope,
             account_id="acct-paper",
-            mode="PAPER",
+            mode=mode_n,
             assessed_at_ns=T,
             expires_at_ns=T + 50_000_000_000,
             assumptions=EconomicAssumptionsV1(assumptions_id="economics-p", version="1"),
@@ -272,8 +296,64 @@ def _caller(repository: InMemoryIntelligenceRepository, champion: ChampionAssign
             capital_lock_ns=HORIZON,
             account_actionability=AccountActionability.ACTIONABLE,
         ),
-        engine=OpportunityEngine(),
+        engine=engine if engine is not None else OpportunityEngine(),
     )
+
+
+def _delayed_available() -> ProviderResult:
+    return ProviderResult(
+        status="available",
+        events=(_quote_event(),),
+        provider_id="yahoo.finance.delayed",
+        capability="US_EQUITY_SNAPSHOT",
+    )
+
+
+def _run_matched_fixture_hop(*, mode: str = "paper") -> tuple[object, RecordingOpportunityEngine]:
+    """Paper/Demo MATCHED fixture through the prospective composer. Not empirical."""
+
+    repository, champion, forecast = _seed_repository()
+    engine = RecordingOpportunityEngine()
+    mode_n = str(mode).strip().lower()
+    context_mode = mode_n.upper()
+    scope = SCOPE
+    if mode_n == "demo":
+        scope = IntelligenceScope(
+            instrument_ids=(INSTRUMENT_ID,),
+            context_id="acct-paper:demo:snapshot-paper-1",
+        )
+        champion = replace(
+            champion,
+            champion_scope=replace(
+                champion.champion_scope, mode="DEMO", scenario_id="demo-path-a"
+            ),
+        )
+        forecast = replace(
+            forecast,
+            forecast_id="forecast-path-a-prospective-demo-1",
+            scope=scope,
+            metadata={**dict(forecast.metadata), "mode": "DEMO", "scenario_id": "demo-path-a"},
+        )
+        repository.put_forecast(forecast)
+    caller = _caller(
+        repository,
+        champion,
+        forecast,
+        engine=engine,
+        context_mode=context_mode,
+        scope=scope,
+    )
+    result = PathAProspectiveComposer(
+        quote_provider=ScriptedQuoteProvider(_delayed_available()),
+        composition=ObservationalRuntimeComposition(),
+        path_a_caller=caller,
+    ).run(
+        "AAPL",
+        mode=mode_n,
+        scan_request=_scan_request(mode=mode_n, disposition=StrategyMatchDisposition.MATCHED),
+        as_of_time_ns=T + 2_000_000,
+    )
+    return result, engine
 
 
 def _seed_repository() -> tuple[InMemoryIntelligenceRepository, ChampionAssignmentV1, ForecastV1]:
@@ -608,6 +688,65 @@ class PathAProspectiveTests(unittest.TestCase):
         with patch("sys.stderr", stderr):
             with self.assertRaises(SystemExit):
                 path_a_cli_main(["--mode", "live"])
+
+    def test_matched_loop_source_calls_bridge_and_engine(self) -> None:
+        source = inspect.getsource(PathAScanCaller.run)
+        self.assertIn("bridge_strategy_match_to_opportunity", source)
+        self.assertIn("engine=self.engine", source)
+        self.assertIn("NO_MATCHED_STRATEGY", source)
+
+    def test_matched_paper_fixture_invokes_opportunity_engine_g7_fail_close(self) -> None:
+        result, engine = _run_matched_fixture_hop(mode="paper")
+        self.assertGreaterEqual(engine.assess_calls, 1)
+        self.assertIsNotNone(result.path_a)
+        self.assertEqual(result.path_a.status, "MINTED")
+        self.assertEqual(len(result.path_a.assessments), engine.assess_calls)
+        self.assertEqual(len(result.path_a.opportunities), 1)
+        self.assertEqual(result.status, "G7_NOT_ACTIONABLE")
+        self.assertFalse(result.freshness.get("actionable"))
+        self.assertEqual(result.freshness.get("reason_code"), "DELAYED_WHEN_REALTIME_REQUIRED")
+        self.assertEqual(result.persist_status, PERSIST_NOT_MINTED)
+        self.assertNotEqual(result.path_a.status, "EMPTY")
+        self.assertNotIn("NO_MATCHED_STRATEGY", result.path_a.reason_codes)
+
+    def test_matched_demo_fixture_invokes_opportunity_engine_g7_fail_close(self) -> None:
+        result, engine = _run_matched_fixture_hop(mode="demo")
+        self.assertGreaterEqual(engine.assess_calls, 1)
+        self.assertEqual(result.mode, "demo")
+        self.assertIsNotNone(result.path_a)
+        self.assertEqual(result.path_a.status, "MINTED")
+        self.assertEqual(result.status, "G7_NOT_ACTIONABLE")
+        self.assertEqual(result.persist_status, PERSIST_NOT_MINTED)
+
+    def test_honesty_empty_does_not_invoke_opportunity_engine(self) -> None:
+        with patch(
+            "market_platform_foundation.strategy.path_a_scan_caller.bridge_strategy_match_to_opportunity"
+        ) as bridged:
+            result = PathAProspectiveComposer(
+                quote_provider=ScriptedQuoteProvider(_delayed_available()),
+            ).run("AAPL", mode="paper", as_of_time_ns=T + 2_000_000)
+        self.assertEqual(result.status, "G7_NOT_ACTIONABLE")
+        self.assertIsNotNone(result.path_a)
+        self.assertEqual(result.path_a.status, "EMPTY")
+        self.assertEqual(result.path_a.reason_codes, ("NO_MATCHED_STRATEGY",))
+        self.assertEqual(result.path_a.matched_count, 0)
+        bridged.assert_not_called()
+
+    def test_matched_fixture_live_does_not_invoke_engine(self) -> None:
+        repository, champion, forecast = _seed_repository()
+        engine = RecordingOpportunityEngine()
+        result = PathAProspectiveComposer(
+            quote_provider=ScriptedQuoteProvider(_delayed_available()),
+            path_a_caller=_caller(repository, champion, forecast, engine=engine),
+        ).run(
+            "AAPL",
+            mode="live",
+            scan_request=_scan_request(disposition=StrategyMatchDisposition.MATCHED),
+            as_of_time_ns=T,
+        )
+        self.assertEqual(result.status, "LIVE_FORBIDDEN")
+        self.assertEqual(engine.assess_calls, 0)
+        self.assertIsNone(result.path_a)
 
 
 class PathAProspectivePersistTests(unittest.TestCase):
