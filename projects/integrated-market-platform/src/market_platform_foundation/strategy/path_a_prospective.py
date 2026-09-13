@@ -44,6 +44,7 @@ from .path_a_scan_caller import (
     PathAScanCaller,
     PathAScanCallerError,
 )
+from .path_a_strategy_catalog import build_paper_demo_strategy_catalog
 from .scanning import (
     CapabilityContextSnapshot,
     PointInTimeUniverse,
@@ -88,14 +89,38 @@ class PathAHonestyInvoke:
     scan_request: ScanRequest
 
 
+def _quote_context_from_event(event: Mapping[str, Any] | None) -> dict[str, Any] | None:
+    if not isinstance(event, Mapping):
+        return None
+    raw_payload = event.get("raw_payload")
+    last_price = raw_payload.get("last_price") if isinstance(raw_payload, Mapping) else None
+    if last_price is None:
+        return None
+    clocks = event.get("clocks")
+    event_time_ns = clocks.get("event_time_ns") if isinstance(clocks, Mapping) else None
+    context: dict[str, Any] = {"last_price": last_price}
+    if isinstance(event_time_ns, int):
+        context["event_time_ns"] = event_time_ns
+    return context
+
+
 def build_paper_demo_path_a_invoke(
     symbol: str,
     *,
     mode: str = "paper",
     as_of_time_ns: int | None = None,
     account_id: str | None = None,
+    quote_event: Mapping[str, Any] | None = None,
 ) -> PathAHonestyInvoke:
-    """Build a one-shot Paper/Demo Path A caller. Does not mint MATCHED rows."""
+    """Build a one-shot Paper/Demo Path A caller.
+
+    Registers the real (non-fixture) baseline strategy catalog
+    (``build_paper_demo_strategy_catalog``) so the scanner actually evaluates
+    against real quote data when ``quote_event`` is supplied. No
+    preregistration authority is wired into this one-shot hop, so every
+    baseline entry legitimately abstains — this never mints a fabricated
+    ``MATCHED`` row.
+    """
 
     mode_n = _normalize_mode(mode)
     if mode_n in FORBIDDEN_LIVE_MODES:
@@ -146,6 +171,14 @@ def build_paper_demo_path_a_invoke(
             account_id=account,
         ),
     )
+    quote_context = _quote_context_from_event(quote_event)
+    scan_context: dict[str, Any] = {
+        "honesty": "NO_PREREGISTRATION_AUTHORITY_FOR_PATH_A_HOP",
+        "session": "REGULAR",
+    }
+    if quote_context is not None:
+        scan_context["quote"] = quote_context
+    catalog = build_paper_demo_strategy_catalog()
     request = ScanRequest(
         universe=PointInTimeUniverse(
             as_of,
@@ -155,14 +188,14 @@ def build_paper_demo_path_a_invoke(
             snapshot_id=snapshot_id,
             as_of_time_ns=as_of,
             quality_assessment=QualityAssessment(decision_time_ns=as_of),
-            context={"honesty": "NO_MATCHED_STRATEGY_FIXTURE", "session": "REGULAR"},
+            context=scan_context,
         ),
-        strategies=(),
+        strategies=catalog,
         scope=ScanScope(account_id=account, mode=mode_n),
         trigger=ScanTrigger(ScanTriggerType.SESSION_OPEN, {"session": "REGULAR"}),
         decision_time_ns=as_of,
         expires_at_ns=as_of + HONESTY_SCAN_TTL_NS,
-        budget=ScanBudget(max_evaluations=1, max_cost_units=1),
+        budget=ScanBudget(max_evaluations=len(catalog), max_cost_units=len(catalog)),
     )
     return PathAHonestyInvoke(caller=caller, scan_request=request)
 
@@ -326,7 +359,7 @@ class PathAProspectiveComposer:
         request = scan_request
         if caller is None and request is None:
             invoke = build_paper_demo_path_a_invoke(
-                instrument, mode=mode_n, as_of_time_ns=as_of
+                instrument, mode=mode_n, as_of_time_ns=as_of, quote_event=event
             )
             caller = invoke.caller
             request = invoke.scan_request
