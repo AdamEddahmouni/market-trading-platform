@@ -199,17 +199,24 @@ def with_finviz_elite_context(
     *,
     env: dict[str, str] | None = None,
     provider: Any | None = None,
+    token_fetcher: Any | None = None,
+    session_factory: Any | None = None,
 ) -> ProviderComposition:
     """Inject the Finviz Elite context overlay. Not L1 and not a comparator.
 
     Additive: default composition keeps the unconfigured stub. Discovery
-    always returns the Finviz adapter identity, fail-closed when the Elite
-    token is absent. Does not enable Live, FTEP, or paid HTTP.
+    always returns the Finviz adapter identity. A missing export token is
+    auto-fetched from existing local provider info (operator-zero); fetch
+    failure stays ``NOT_CONFIGURED``. Does not enable Live, FTEP, or paid HTTP.
     """
     from .finviz_context_discovery import discover_finviz_context_stack
 
     if provider is None:
-        provider, _ = discover_finviz_context_stack(env=env)
+        provider, _ = discover_finviz_context_stack(
+            env=env,
+            token_fetcher=token_fetcher,
+            session_factory=session_factory,
+        )
     composition.equity_context = provider
     return composition
 
@@ -219,6 +226,8 @@ def with_finviz_elite_observational_context(
     *,
     env: dict[str, str] | None = None,
     provider: Any | None = None,
+    token_fetcher: Any | None = None,
+    session_factory: Any | None = None,
 ) -> Any:
     """Join the Finviz Elite context overlay into the canonical observational hop.
 
@@ -226,17 +235,22 @@ def with_finviz_elite_observational_context(
     (accepted loosely as ``Any`` here to avoid an import cycle between
     ``providers`` and ``market_data``). Additive: the default
     ``equity_context`` slot stays the unconfigured stub. Discovery always
-    returns the Finviz adapter identity, fail-closed when the Elite token is
-    absent (``NOT_CONFIGURED``); paid Elite HTTP is not invoked. This never
-    touches the L1 quote lane, admission, or the Paper comparator, and does
-    not enable Live or FTEP.
+    returns the Finviz adapter identity. A missing export token is
+    auto-fetched from existing local provider info with no operator prompt;
+    fetch failure stays ``NOT_CONFIGURED``. Paid Elite HTTP is not invoked in
+    CI. This never touches the L1 quote lane, admission, or the Paper
+    comparator, and does not enable Live or FTEP.
     """
     from .finviz_context_discovery import discover_finviz_context_stack
 
     if not hasattr(composition, "equity_context"):
         raise AttributeError("EQUITY_CONTEXT_SLOT_MISSING")
     if provider is None:
-        provider, _ = discover_finviz_context_stack(env=env)
+        provider, _ = discover_finviz_context_stack(
+            env=env,
+            token_fetcher=token_fetcher,
+            session_factory=session_factory,
+        )
     composition.equity_context = provider
     return composition
 

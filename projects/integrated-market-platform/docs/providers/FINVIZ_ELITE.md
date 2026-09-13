@@ -41,6 +41,7 @@ requests continue through the governed stdlib client.
 |---|---|
 | `FINVIZ_API_KEY` (or `FINVIZ_AUTH_TOKEN`) | Elite export token |
 | `FINVIZ_API_TOKEN` / `FINVIZ_ELITE_TOKEN` / `IMP_FINVIZ_ELITE_TOKEN` / `IMP_FINVIZ_TOKEN` | Additional env aliases recognized by the fail-closed context overlay (presence only; never logged) |
+| `FINVIZ_USERNAME` / `FINVIZ_PASSWORD` | Elite login names already used in `.private/providers.env` for operator-zero token refresh (values never logged or committed) |
 | `IMP_FINVIZ_LIVE=1` | Opt-in live probe / paid Elite HTTP |
 | `IMP_FINVIZ_CAPTURE_DIR` | Prospective capture root |
 | `IMP_FINVIZ_EVIDENCE_DIR` | Evidence output override |
@@ -57,10 +58,14 @@ Finviz Elite is a **context overlay** in the provider composition
 (`equity_context`), not a quote/tick hop and not the Paper comparator.
 
 - `providers/finviz_context_discovery.py` always returns
-  `finviz.elite.context`. Token absence is `NOT_CONFIGURED`. A present token
-  without `IMP_FINVIZ_LIVE` (and without an injected test transport) is
-  `CONFIGURED_BLOCKED` / `LIVE_DISABLED`. Classification is never
-  `REAL_TIME`, never Yahoo-as-Finviz, and never ES.
+  `finviz.elite.context`. A static long-lived export token is not required:
+  hop overlay discovery auto-fetches from existing local provider info
+  (`.private/finviz-login.json`, then `.private/providers.env` /
+  `IMP_PROVIDER_ENV` `FINVIZ_USERNAME`/`FINVIZ_PASSWORD`) with no operator
+  prompt after that one-time setup. Fetch failure stays `NOT_CONFIGURED`
+  (overlay ABSENT). A present token without `IMP_FINVIZ_LIVE` (and without
+  an injected test transport) is `CONFIGURED_BLOCKED` / `LIVE_DISABLED`.
+  Classification is never `REAL_TIME`, never Yahoo-as-Finviz, and never ES.
 - `FinvizEliteContextProvider.fetch_context` is screening/news only. Paid
   Elite HTTP requires the existing live gate; CI uses injected clients.
 - `with_finviz_elite_context()` injects the adapter into
@@ -81,7 +86,9 @@ The G6/G7 canonical observational hop (`ObservationalRuntimeComposition` in
 - `with_finviz_elite_observational_context()`
   (`providers/composition.py`) attaches the Finviz Elite adapter to that slot
   the same way `with_finviz_elite_context()` does for `ProviderComposition`.
-  Token absence still classifies `NOT_CONFIGURED`; no Elite HTTP runs in CI.
+  Missing export tokens are auto-fetched from the existing local login
+  store; fetch failure still classifies `NOT_CONFIGURED`. No Elite HTTP
+  runs in CI. Yahoo stays overlay-only; this lane is never hop L1.
 - `ObservationalLaneRuntime.build_context_payload()` is the provider-neutral
   lane builder: it always forces `is_l1=False` and `is_paper_comparator=False`
   on the returned payload, and fails closed to `CONTEXT_TIMELINESS_INVALID`
@@ -117,17 +124,22 @@ This overlay does not activate Live, start FTEP, or declare
   succeeds, stored login credentials drive the current Finviz email-login
   flow, API-key extraction, validation, atomic persistence, and one retry of
   the original export.
+- Hop overlay discovery is operator-zero after that local provider info
+  exists: it refreshes the auto-resetting Elite export token from those
+  same files with no pasted password and no extra operator step. Fetch
+  failure fail-closes the overlay (`NOT_CONFIGURED`). The refreshed token
+  is bound for overlay use only; it is not hop L1 and does not replace
+  OpenD or Yahoo.
 - `IMP_FINVIZ_LOGIN_TRANSPORT=auto` uses `curl_cffi` with Chrome impersonation
   when that optional tool-layer package is already installed; otherwise it
   falls back to the stdlib cookie session. `urllib` forces the stdlib path.
 - MFA, CAPTCHA, an inactive Elite subscription, or repeated recovery failure
   stops automatic attempts at `AUTH_OPERATOR_ACTION_REQUIRED`. The last valid
   discovery captures remain available as `SNAPSHOT` or `STALE`.
-- Run `python tools/finviz/auth.py configure` to store an existing token
-  securely. For login-only setup, run
-  `python tools/finviz/auth.py configure-login`; it prompts for the email and
-  password without echoing the password, stores them in `.private/`, and
-  attempts read-only token recovery. Never put credentials in committed files.
+- One-time setup (already done on the operator machine) stores login in
+  `.private/` via `python tools/finviz/auth.py configure-login`. After
+  that, overlay discovery must not prompt. Never put credentials in
+  committed files.
 
 ## Tooling
 

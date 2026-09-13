@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Finviz Elite overlay auto-fetch from local provider info
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `market_data` |
+| **Summary** | Hop overlay discovery auto-fetches the auto-resetting Finviz Elite export token from existing local provider info (`.private/finviz-login.json`, `.private/providers.env`) with no operator prompt after setup. Fetch failure stays fail-closed `NOT_CONFIGURED`. Successful fetch binds the token for overlay only — not hop L1, not Yahoo, not OpenD. Live remains off. FTEP is not `EMPIRICAL_ACTIVE`. |
+| **Key files** | `src/market_platform_foundation/providers/finviz_context_discovery.py`, `src/market_platform_foundation/providers/adapters/finviz_elite_context.py`, `src/market_platform_foundation/providers/composition.py`, `tests/providers/test_finviz_elite_context.py`, `tests/market_data/test_finviz_observational_context.py`, `docs/providers/FINVIZ_ELITE.md` |
+| **Tests** | `PYTHONPATH=src python3 -m unittest tests.providers.test_finviz_elite_context tests.market_data.test_finviz_observational_context` — **32 passed**. |
+| **Related** | [FINVIZ_ELITE.md](../providers/FINVIZ_ELITE.md); stacked on fail-closed overlay PR #44 |
+| **Notes** | Cloud VM has no Elite login file: software auto-fetch is proved with HTTP stubs; empirical overlay remains ABSENT. No secrets printed or committed. |
+
 ## 2026-09-13 — Finviz Elite context overlay joined into canonical observational hop
 
 | Field | Value |

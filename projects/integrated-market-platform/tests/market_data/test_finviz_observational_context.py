@@ -8,10 +8,12 @@ the Paper comparator, and never ``REAL_TIME``.
 
 from __future__ import annotations
 
+import json
 import sys
 import unittest
 from pathlib import Path
 from typing import Any
+from unittest.mock import MagicMock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
@@ -40,15 +42,74 @@ from market_platform_foundation.providers.contracts import (  # noqa: E402
     ProviderResult,
 )
 from market_platform_foundation.providers.finviz_context_discovery import (  # noqa: E402
+    FINVIZ_LOGIN_NAMES,
     FINVIZ_TOKEN_NAMES,
+    discover_finviz_context_stack,
 )
 
 FIXTURES = ROOT / "tests" / "fixtures" / "finviz"
 TEST_TOKEN = "test-token-not-a-secret"
+FETCHED_TOKEN = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+LOGIN_PASSWORD = "not-a-real-password"
 
 
 def _absent_env() -> dict[str, str]:
-    return {name: "" for name in FINVIZ_TOKEN_NAMES}
+    env = {name: "" for name in FINVIZ_TOKEN_NAMES}
+    for name in FINVIZ_LOGIN_NAMES:
+        env[name] = ""
+    return env
+
+
+def _login_env() -> dict[str, str]:
+    env = _absent_env()
+    env["FINVIZ_USERNAME"] = "operator@example.com"
+    env["FINVIZ_PASSWORD"] = LOGIN_PASSWORD
+    return env
+
+
+def _stub_login_session(*, token: str = FETCHED_TOKEN, fail: bool = False) -> MagicMock:
+    session = MagicMock()
+    if fail:
+        session.get.return_value = MagicMock(
+            status_code=401,
+            text="unauthorized",
+            url="https://finviz.com/login-email?remember=true",
+            headers={"content-type": "text/html"},
+        )
+        session.post.return_value = MagicMock(
+            status_code=401,
+            text="unauthorized",
+            url="https://finviz.com/login_submit",
+            headers={"content-type": "text/html"},
+        )
+        return session
+    session.get.side_effect = [
+        MagicMock(
+            status_code=200,
+            text='<form action="/login_submit"></form>',
+            url="https://finviz.com/login-email?remember=true",
+            headers={"content-type": "text/html"},
+        ),
+        MagicMock(
+            status_code=200,
+            text=f'<a href="/export/screener?auth={token}">API</a>',
+            url="https://elite.finviz.com/api_explanation",
+            headers={"content-type": "text/html"},
+        ),
+        MagicMock(
+            status_code=200,
+            text="Ticker,Price\nAAPL,100\n",
+            url="https://elite.finviz.com/export/screener",
+            headers={"content-type": "text/csv"},
+        ),
+    ]
+    session.post.return_value = MagicMock(
+        status_code=200,
+        text="account",
+        url="https://finviz.com/",
+        headers={"content-type": "text/html"},
+    )
+    return session
 
 
 def _token_env() -> dict[str, str]:
@@ -257,6 +318,72 @@ class ObservationalContextOverlayTests(unittest.TestCase):
 
         with self.assertRaises(AttributeError):
             with_finviz_elite_observational_context(_NoSlot(), env=_absent_env())
+
+    def test_autofetch_failure_keeps_hop_context_absent_and_l1_untouched(self) -> None:
+        composition = with_finviz_elite_observational_context(
+            ObservationalRuntimeComposition(),
+            env=_login_env(),
+            session_factory=lambda: _stub_login_session(fail=True),
+        )
+        composition.store.apply_quote_update(
+            instrument_id="AAPL",
+            bid_price=100.0,
+            ask_price=101.0,
+            provider="moomoo.opend",
+            event_time_ns=900,
+            received_ns=1000,
+        )
+        bundle = composition.evidence_for("AAPL")
+        self.assertEqual(bundle["l1"]["provenance"]["provider"], "moomoo.opend")
+        context = bundle["context"]
+        self.assertFalse(context["available"])
+        self.assertEqual(context["reason"], "NOT_CONFIGURED")
+        self.assertFalse(context["is_l1"])
+        self.assertNotEqual(context.get("provider_id"), "moomoo.opend")
+        self.assertNotEqual(context.get("provider_id"), "yahoo.finance.delayed")
+        dumped = json.dumps(bundle["context"])
+        self.assertNotIn(LOGIN_PASSWORD, dumped)
+        self.assertNotIn(FETCHED_TOKEN, dumped)
+
+    def test_autofetch_success_is_overlay_only_not_hop_l1(self) -> None:
+        provider = FinvizEliteContextProvider(
+            env=_login_env(),
+            screener=_FakeScreener(),
+            news_client=_FakeNews(),
+        )
+        adapter, discovery = discover_finviz_context_stack(
+            env=_login_env(),
+            provider=provider,
+            session_factory=lambda: _stub_login_session(),
+        )
+        self.assertEqual(discovery.auto_fetch_status, "FETCHED")
+        self.assertTrue(discovery.overlay_token_present)
+        self.assertFalse(discovery.is_l1)
+        composition = with_finviz_elite_observational_context(
+            ObservationalRuntimeComposition(), provider=adapter
+        )
+        composition.store.apply_quote_update(
+            instrument_id="AAPL",
+            bid_price=100.0,
+            ask_price=101.0,
+            provider="moomoo.opend",
+            event_time_ns=900,
+            received_ns=1000,
+        )
+        bundle = composition.evidence_for("AAPL")
+        self.assertEqual(bundle["l1"]["provenance"]["provider"], "moomoo.opend")
+        context = bundle["context"]
+        self.assertTrue(context["available"])
+        self.assertEqual(context["provider_id"], FINVIZ_CONTEXT_PROVIDER_ID)
+        self.assertEqual(context["role"], "CONTEXT")
+        self.assertEqual(context["timeliness"], "DELAYED")
+        self.assertFalse(context["is_l1"])
+        self.assertFalse(context["is_paper_comparator"])
+        self.assertNotEqual(context["provider_id"], "yahoo.finance.delayed")
+        dumped = json.dumps(context)
+        self.assertNotIn(FETCHED_TOKEN, dumped)
+        self.assertNotIn(LOGIN_PASSWORD, dumped)
+        self.assertNotIn("yahoo", dumped.lower())
 
 
 if __name__ == "__main__":

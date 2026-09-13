@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
+from unittest.mock import MagicMock, patch
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
@@ -25,7 +28,14 @@ from market_platform_foundation.providers.composition import (
     with_finviz_elite_context,
 )
 from market_platform_foundation.providers.contracts import PROVIDER_UNAVAILABLE
+from market_platform_foundation.finviz.credential_manager import (  # noqa: E402
+    reset_finviz_credential_manager,
+)
+from market_platform_foundation.finviz.secure_store import (  # noqa: E402
+    write_login_credentials,
+)
 from market_platform_foundation.providers.finviz_context_discovery import (
+    FINVIZ_LOGIN_NAMES,
     FINVIZ_TOKEN_NAMES,
     discover_finviz_context_stack,
     run_finviz_context_overlay,
@@ -34,6 +44,8 @@ from market_platform_foundation.providers.finviz_context_discovery import (
 
 FIXTURES = ROOT / "tests" / "fixtures" / "finviz"
 TEST_TOKEN = "test-token-not-a-secret"
+FETCHED_TOKEN = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+LOGIN_PASSWORD = "not-a-real-password"
 
 
 class _FakeScreener:
@@ -74,7 +86,10 @@ class _FakeNews:
 
 
 def _absent_env() -> dict[str, str]:
-    return {name: "" for name in FINVIZ_TOKEN_NAMES}
+    env = {name: "" for name in FINVIZ_TOKEN_NAMES}
+    for name in FINVIZ_LOGIN_NAMES:
+        env[name] = ""
+    return env
 
 
 def _token_env(*, live: bool = False) -> dict[str, str]:
@@ -234,6 +249,216 @@ class FinvizContextDiscoveryTests(unittest.TestCase):
         self.assertFalse(payload["result"]["is_l1"])
         self.assertFalse(payload["result"]["is_paper_comparator"])
         self.assertEqual(payload["discovery"]["role"], "CONTEXT")
+
+
+def _login_env() -> dict[str, str]:
+    env = _absent_env()
+    env["FINVIZ_USERNAME"] = "operator@example.com"
+    env["FINVIZ_PASSWORD"] = LOGIN_PASSWORD
+    return env
+
+
+def _stub_login_session(*, token: str = FETCHED_TOKEN, fail: bool = False) -> MagicMock:
+    session = MagicMock()
+    if fail:
+        session.get.return_value = MagicMock(
+            status_code=401,
+            text="unauthorized",
+            url="https://finviz.com/login-email?remember=true",
+            headers={"content-type": "text/html"},
+        )
+        session.post.return_value = MagicMock(
+            status_code=401,
+            text="unauthorized",
+            url="https://finviz.com/login_submit",
+            headers={"content-type": "text/html"},
+        )
+        return session
+    session.get.side_effect = [
+        MagicMock(
+            status_code=200,
+            text='<form action="/login_submit"></form>',
+            url="https://finviz.com/login-email?remember=true",
+            headers={"content-type": "text/html"},
+        ),
+        MagicMock(
+            status_code=200,
+            text=f'<a href="/export/screener?auth={token}">API</a>',
+            url="https://elite.finviz.com/api_explanation",
+            headers={"content-type": "text/html"},
+        ),
+        MagicMock(
+            status_code=200,
+            text="Ticker,Price\nAAPL,100\n",
+            url="https://elite.finviz.com/export/screener",
+            headers={"content-type": "text/csv"},
+        ),
+    ]
+    session.post.return_value = MagicMock(
+        status_code=200,
+        text="account",
+        url="https://finviz.com/",
+        headers={"content-type": "text/html"},
+    )
+    return session
+
+
+class FinvizOverlayAutofetchTests(unittest.TestCase):
+    def test_fetch_failure_keeps_overlay_absent(self) -> None:
+        provider, discovery = discover_finviz_context_stack(
+            env=_login_env(),
+            session_factory=lambda: _stub_login_session(fail=True),
+        )
+        self.assertEqual(discovery.classification, "NOT_CONFIGURED")
+        self.assertEqual(discovery.reason_code, "NOT_CONFIGURED")
+        self.assertEqual(discovery.auto_fetch_status, "FETCH_FAILED")
+        self.assertFalse(discovery.overlay_token_present)
+        self.assertFalse(discovery.is_l1)
+        result = provider.fetch_context("AAPL")
+        self.assertEqual(result.status, "unavailable")
+        self.assertEqual(result.reason_code, "NOT_CONFIGURED")
+
+    def test_token_fetcher_failure_is_not_configured(self) -> None:
+        def boom() -> str:
+            raise RuntimeError("login transport failed")
+
+        _, discovery = discover_finviz_context_stack(
+            env=_login_env(),
+            token_fetcher=boom,
+        )
+        self.assertEqual(discovery.classification, "NOT_CONFIGURED")
+        self.assertEqual(discovery.reason_code, "NOT_CONFIGURED")
+        self.assertEqual(discovery.auto_fetch_status, "FETCH_FAILED")
+
+    def test_http_stub_fetch_makes_overlay_token_present(self) -> None:
+        screener = _FakeScreener()
+        news = _FakeNews()
+        received: list[str] = []
+
+        def factory(token: str) -> tuple[Any, Any]:
+            received.append("ok")
+            self.assertEqual(token, FETCHED_TOKEN)
+            return screener, news
+
+        provider = FinvizEliteContextProvider(
+            env=_login_env(),
+            screener=screener,
+            news_client=news,
+            client_factory=factory,
+        )
+        adapter, discovery = discover_finviz_context_stack(
+            env=_login_env(),
+            provider=provider,
+            session_factory=lambda: _stub_login_session(),
+        )
+        self.assertEqual(discovery.classification, "CONFIGURED")
+        self.assertEqual(discovery.reason_code, "FINVIZ_CONTEXT_OVERLAY")
+        self.assertEqual(discovery.auto_fetch_status, "FETCHED")
+        self.assertTrue(discovery.overlay_token_present)
+        self.assertFalse(discovery.is_l1)
+        self.assertFalse(discovery.is_paper_comparator)
+        self.assertEqual(adapter.provider_id, FINVIZ_CONTEXT_PROVIDER_ID)
+        result = adapter.fetch_context("AAPL")
+        self.assertEqual(result.status, "available")
+        self.assertEqual(result.provider_id, FINVIZ_CONTEXT_PROVIDER_ID)
+        self.assertEqual(screener.calls, 1)
+        self.assertEqual(received, [])
+        dumped = json.dumps(discovery.to_dict())
+        self.assertNotIn(FETCHED_TOKEN, dumped)
+        self.assertNotIn(LOGIN_PASSWORD, dumped)
+        self.assertNotIn("operator@example.com", dumped)
+        payload = run_finviz_context_overlay(
+            "AAPL",
+            env=_login_env(),
+            provider=adapter,
+        )
+        dumped_payload = json.dumps(payload)
+        self.assertNotIn(FETCHED_TOKEN, dumped_payload)
+        self.assertNotIn(LOGIN_PASSWORD, dumped_payload)
+        self.assertNotIn("yahoo", dumped_payload.lower())
+
+    def test_fetched_token_without_transport_stays_live_disabled(self) -> None:
+        _, discovery = discover_finviz_context_stack(
+            env=_login_env(),
+            session_factory=lambda: _stub_login_session(),
+        )
+        self.assertEqual(discovery.classification, "CONFIGURED_BLOCKED")
+        self.assertEqual(discovery.reason_code, "LIVE_DISABLED")
+        self.assertTrue(discovery.overlay_token_present)
+        self.assertFalse(discovery.is_l1)
+
+    def test_autofetch_from_existing_login_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            secret = Path(tmp)
+            isolated = {
+                "IMP_FINVIZ_SECRET_DIR": str(secret),
+                "IMP_PROVIDER_ENV": str(secret / "missing.env"),
+            }
+            for name in (*FINVIZ_TOKEN_NAMES, *FINVIZ_LOGIN_NAMES):
+                isolated[name] = ""
+            with patch.dict(os.environ, isolated, clear=False):
+                reset_finviz_credential_manager()
+                self.assertTrue(
+                    write_login_credentials("operator@example.com", LOGIN_PASSWORD)
+                )
+                adapter, discovery = discover_finviz_context_stack(
+                    env=None,
+                    session_factory=lambda: _stub_login_session(),
+                )
+                self.assertEqual(discovery.auto_fetch_status, "FETCHED")
+                self.assertTrue(adapter.configured())
+                self.assertTrue(discovery.overlay_token_present)
+                self.assertEqual(adapter.provider_id, FINVIZ_CONTEXT_PROVIDER_ID)
+                dumped = json.dumps(discovery.to_dict())
+                self.assertNotIn(FETCHED_TOKEN, dumped)
+                self.assertNotIn(LOGIN_PASSWORD, dumped)
+                reset_finviz_credential_manager()
+
+    def test_autofetch_from_providers_env_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            secret = Path(tmp)
+            providers = secret / "providers.env"
+            providers.write_text(
+                "FINVIZ_USERNAME=operator@example.com\n"
+                f"FINVIZ_PASSWORD={LOGIN_PASSWORD}\n",
+                encoding="utf-8",
+            )
+            isolated = {
+                "IMP_FINVIZ_SECRET_DIR": str(secret),
+                "IMP_PROVIDER_ENV": str(providers),
+            }
+            for name in (*FINVIZ_TOKEN_NAMES, *FINVIZ_LOGIN_NAMES):
+                isolated[name] = ""
+            with patch.dict(os.environ, isolated, clear=False):
+                reset_finviz_credential_manager()
+                adapter, discovery = discover_finviz_context_stack(
+                    env=None,
+                    session_factory=lambda: _stub_login_session(),
+                )
+                self.assertEqual(discovery.auto_fetch_status, "FETCHED")
+                self.assertTrue(adapter.configured())
+                dumped = json.dumps(discovery.to_dict())
+                self.assertNotIn(FETCHED_TOKEN, dumped)
+                self.assertNotIn(LOGIN_PASSWORD, dumped)
+                reset_finviz_credential_manager()
+
+    def test_cloud_without_local_provider_info_stays_absent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            secret = Path(tmp)
+            isolated = {
+                "IMP_FINVIZ_SECRET_DIR": str(secret),
+                "IMP_PROVIDER_ENV": str(secret / "missing.env"),
+            }
+            for name in (*FINVIZ_TOKEN_NAMES, *FINVIZ_LOGIN_NAMES):
+                isolated[name] = ""
+            with patch.dict(os.environ, isolated, clear=False):
+                reset_finviz_credential_manager()
+                _, discovery = discover_finviz_context_stack(env=None)
+                self.assertEqual(discovery.classification, "NOT_CONFIGURED")
+                self.assertEqual(discovery.reason_code, "NOT_CONFIGURED")
+                self.assertEqual(discovery.auto_fetch_status, "CREDENTIALS_ABSENT")
+                self.assertFalse(discovery.overlay_token_present)
+                reset_finviz_credential_manager()
 
 
 if __name__ == "__main__":

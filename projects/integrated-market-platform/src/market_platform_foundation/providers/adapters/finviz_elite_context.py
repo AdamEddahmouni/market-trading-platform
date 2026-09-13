@@ -24,6 +24,11 @@ FINVIZ_TOKEN_NAMES = (
     "IMP_FINVIZ_TOKEN",
 )
 
+FINVIZ_LOGIN_NAMES = (
+    "FINVIZ_USERNAME",
+    "FINVIZ_PASSWORD",
+)
+
 _PLACEHOLDERS = frozenset({"", "CHANGEME", "EXAMPLE", "PLACEHOLDER", "NOT_A_SECRET"})
 _ES_OR_FUTURES = frozenset({"ES", "MES", "NQ", "MNQ", "YM", "RTY", "CL", "GC", "SI"})
 _LIVE_TRUTHY = frozenset({"1", "true", "yes"})
@@ -95,17 +100,33 @@ class FinvizEliteContextProvider:
         screener: Any | None = None,
         news_client: Any | None = None,
         client_factory: ClientFactory | None = None,
+        overlay_token: str | None = None,
     ) -> None:
         self._env = env
         self._screener = screener
         self._news_client = news_client
         self._client_factory = client_factory
+        self._overlay_token = overlay_token if token_value_present(overlay_token) else None
 
     def token_names_present(self) -> tuple[str, ...]:
         return token_names_present(self._env)
 
+    def bind_overlay_token(self, token: str) -> None:
+        """Keep a fetched Elite token in-process for overlay use only. Never log it."""
+
+        if token_value_present(token):
+            self._overlay_token = str(token).strip()
+
+    def overlay_token_present(self) -> bool:
+        return token_value_present(self._overlay_token)
+
+    def _resolved_token(self) -> str | None:
+        if token_value_present(self._overlay_token):
+            return str(self._overlay_token).strip()
+        return configured_token(self._env)
+
     def configured(self) -> bool:
-        return bool(configured_token(self._env))
+        return bool(self._resolved_token())
 
     def live_enabled(self) -> bool:
         return finviz_live_enabled(self._env)
@@ -123,7 +144,7 @@ class FinvizEliteContextProvider:
             return self._unavailable("INSTRUMENT_ID_REQUIRED")
         if _is_es_or_futures(wanted):
             return self._unavailable("FINVIZ_NOT_ES_OR_FUTURES")
-        token = configured_token(self._env)
+        token = self._resolved_token()
         if not token:
             return self._unavailable("NOT_CONFIGURED")
         screener, news_client = self._resolve_clients(token)
@@ -250,6 +271,7 @@ __all__ = [
     "FINVIZ_CONTEXT_PROVIDER_ID",
     "FINVIZ_CONTEXT_ROLE",
     "FINVIZ_CONTEXT_TIMELINESS",
+    "FINVIZ_LOGIN_NAMES",
     "FINVIZ_TOKEN_NAMES",
     "FinvizEliteContextProvider",
     "attach_finviz_context",
@@ -257,4 +279,5 @@ __all__ = [
     "finviz_live_enabled",
     "overlay_payload",
     "token_names_present",
+    "token_value_present",
 ]
