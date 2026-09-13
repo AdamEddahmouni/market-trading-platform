@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Opportunity Engine G7 freshness merged (PR #37)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | PR #37 merged to `main` at `ea39223`. PROGRAM_STATUS labels Opportunity Engine G7 freshness `MERGED` / `REMOTE VALIDATED`. G7 runtime wiring remains COMPLETE. FTEP labels unchanged. Path A not started in this docs PR. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | GitHub IMP Validation + Guardrails on PR #37 head `028a564` all pass (`validate-python-changed` 1411 tests / 25 skipped / 0 fail / 0 err). Focused freshness unittest **24 passed**. FAST **23 passed**. |
+| **Related** | [PR #37](https://github.com/AdamEddahmouni/market-trading-platform/pull/37); merge SHA `ea39223825486b3c0c4f6bc3dcc88524dc655ed0` |
+| **Notes** | Simulator still not externally validated. FTEP not `EMPIRICAL_ACTIVE`. |
+
 ## 2026-09-13 — G7 freshness reconstruction test import
 
 | Field | Value |
