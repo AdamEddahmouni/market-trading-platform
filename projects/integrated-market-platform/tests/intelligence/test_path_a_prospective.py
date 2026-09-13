@@ -8,7 +8,9 @@ import os
 import sys
 import tempfile
 import unittest
+from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 from market_platform_foundation.intelligence.contracts import (
     ContractReference,
@@ -52,6 +54,7 @@ from market_platform_foundation.providers.adapters.moomoo_opend_equity_quote imp
 from market_platform_foundation.providers.contracts import ProviderResult
 from market_platform_foundation.providers.equity_quote_discovery import (
     FINVIZ_TOKEN_NAMES,
+    EquityQuoteDiscovery,
     names_present,
 )
 from market_platform_foundation.providers.identity import InstrumentIdentity
@@ -63,8 +66,9 @@ from market_platform_foundation.strategy.path_a_prospective import (
     PERSIST_WRITTEN,
     PathAPersistContext,
     PathAProspectiveComposer,
+    build_paper_demo_path_a_invoke,
 )
-from market_platform_foundation.strategy.path_a_scan_caller import PathAScanCaller
+from market_platform_foundation.strategy.path_a_scan_caller import PathAScanCaller, PathAScanCallerError
 from market_platform_foundation.strategy.scanning import (
     CapabilityContextSnapshot,
     PointInTimeUniverse,
@@ -82,6 +86,7 @@ from market_platform_foundation.ui_api.opportunity_projections import _opportuni
 from market_platform_foundation.ui_api.store import ReplayStore
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tests" / "intelligence"))
 from forward_test_activation_support import (
     BASELINE_POLICY,
@@ -503,6 +508,106 @@ class PathAProspectiveTests(unittest.TestCase):
         self.assertNotIn("UniversalStrategyScanner", source)
         self.assertNotIn("PathAScanCaller", source)
         self.assertNotIn("PathAProspectiveComposer", source)
+
+    def test_cli_source_injects_path_a_caller(self) -> None:
+        from tools import path_a_prospective_run
+
+        source = inspect.getsource(path_a_prospective_run.main)
+        self.assertIn("build_paper_demo_path_a_invoke", source)
+        self.assertIn("path_a_caller", source)
+        self.assertIn("scan_request", source)
+        self.assertNotIn("LiveObservationalRuntime", source)
+
+    def test_honesty_invoke_refuses_live(self) -> None:
+        with self.assertRaisesRegex(PathAScanCallerError, "LIVE_SCAN_CALLER_FORBIDDEN"):
+            build_paper_demo_path_a_invoke("AAPL", mode="live")
+        with self.assertRaisesRegex(PathAScanCallerError, "LIVE_SCAN_CALLER_FORBIDDEN"):
+            build_paper_demo_path_a_invoke("AAPL", mode="actual_live")
+
+    def test_honesty_invoke_is_empty_without_matched_fixture(self) -> None:
+        invoke = build_paper_demo_path_a_invoke("AAPL", mode="paper", as_of_time_ns=T)
+        self.assertEqual(invoke.scan_request.strategies, ())
+        self.assertEqual(invoke.scan_request.scope.mode, "paper")
+        result = invoke.caller.run(invoke.scan_request)
+        self.assertEqual(result.status, "EMPTY")
+        self.assertEqual(result.reason_codes, ("NO_MATCHED_STRATEGY",))
+        self.assertEqual(result.matched_count, 0)
+        self.assertEqual(result.opportunities, ())
+
+    def test_composer_invokes_path_a_without_injected_caller(self) -> None:
+        available = ProviderResult(
+            status="available",
+            events=(_quote_event(),),
+            provider_id="yahoo.finance.delayed",
+            capability="US_EQUITY_SNAPSHOT",
+        )
+        result = PathAProspectiveComposer(
+            quote_provider=ScriptedQuoteProvider(available),
+        ).run("AAPL", mode="paper", as_of_time_ns=T + 2_000_000)
+        self.assertEqual(result.status, "G7_NOT_ACTIONABLE")
+        self.assertIsNotNone(result.path_a)
+        self.assertEqual(result.path_a.status, "EMPTY")
+        self.assertEqual(result.path_a.reason_codes, ("NO_MATCHED_STRATEGY",))
+        self.assertEqual(result.to_dict()["path_a_status"], "EMPTY")
+
+    def test_composer_demo_invokes_path_a_honesty_empty(self) -> None:
+        available = ProviderResult(
+            status="available",
+            events=(_quote_event(),),
+            provider_id="yahoo.finance.delayed",
+            capability="US_EQUITY_SNAPSHOT",
+        )
+        result = PathAProspectiveComposer(
+            quote_provider=ScriptedQuoteProvider(available),
+        ).run("AAPL", mode="demo", as_of_time_ns=T + 2_000_000)
+        self.assertEqual(result.status, "G7_NOT_ACTIONABLE")
+        self.assertEqual(result.mode, "demo")
+        self.assertIsNotNone(result.path_a)
+        self.assertEqual(result.path_a.status, "EMPTY")
+
+    def test_cli_paper_path_a_status_is_empty_not_null(self) -> None:
+        from tools.path_a_prospective_run import main as path_a_cli_main
+
+        available = ProviderResult(
+            status="available",
+            events=(_quote_event(),),
+            provider_id="yahoo.finance.delayed",
+            capability="US_EQUITY_SNAPSHOT",
+        )
+        discovery = EquityQuoteDiscovery(
+            provider_id="yahoo.finance.delayed",
+            classification="AVAILABLE_NOT_ACTIVE",
+            timeliness="DELAYED",
+            reason_code="YAHOO_DELAYED_OVERLAY",
+            config_names_present=(),
+            finviz_token_names_present=(),
+            opend_reachable=False,
+        )
+        stdout = StringIO()
+        with patch(
+            "market_platform_foundation.strategy.path_a_prospective.monotonic_wall_ns",
+            return_value=T + 2_000_000,
+        ):
+            with patch(
+                "tools.path_a_prospective_run.discover_equity_quote_stack",
+                return_value=(ScriptedQuoteProvider(available), discovery),
+            ):
+                with patch("sys.stdout", stdout):
+                    code = path_a_cli_main(["--symbol", "AAPL", "--mode", "paper"])
+        self.assertEqual(code, 0)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["result"]["path_a_status"], "EMPTY")
+        self.assertEqual(payload["result"]["status"], "G7_NOT_ACTIONABLE")
+        self.assertEqual(payload["result"]["mode"], "paper")
+        self.assertIsNotNone(payload["result"]["path_a_status"])
+
+    def test_cli_live_mode_is_refused(self) -> None:
+        from tools.path_a_prospective_run import main as path_a_cli_main
+
+        stderr = StringIO()
+        with patch("sys.stderr", stderr):
+            with self.assertRaises(SystemExit):
+                path_a_cli_main(["--mode", "live"])
 
 
 class PathAProspectivePersistTests(unittest.TestCase):

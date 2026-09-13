@@ -218,7 +218,10 @@ Operator watch/review/dismiss acknowledgements:
 Factory: `create_forward_test_repository()` in
 `paper_forward_bridge/repository.py` (in-memory when persistence is off).
 
-Path A prospective hop (`PathAProspectiveComposer`): after a Paper **MINTED**
+Path A prospective hop (`PathAProspectiveComposer`): Paper/Demo CLI
+`tools/path_a_prospective_run.py` injects `PathAScanCaller` so `path_a_status`
+is honest `EMPTY` when no MATCHED strategy (not null). If G7 fail-closes,
+overall status stays `G7_NOT_ACTIONABLE`. After a Paper **MINTED**
 result, optional v6 write uses the existing `ForwardTestService.create_decision`
 API with G7 `freshness` in `decision_payload_json` (and `forward_test_signal_links`
 when `opportunity_id` is set). Requires an existing Paper FT session — Path A
