@@ -44,7 +44,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Area** | `finviz`, hop overlay discovery |
 | **Summary** | Leftover Elite login discovery now searches the current worktree, the git common-dir main checkout, and the parent of `.worktrees` for `integrated-market-platform/.private/finviz-login.json`. Sibling hops no longer need a junction to the Desktop leftover nested clone. Overlay stays overlay-only (never L1). Live off. FTEP is not `EMPIRICAL_ACTIVE`. Secrets are never printed or committed. |
 | **Key files** | `src/market_platform_foundation/git_ref.py` (`git_common_dir`, `main_working_tree`), `src/market_platform_foundation/finviz/config.py` (worktree-aware leftover roots), `src/market_platform_foundation/providers/finviz_context_discovery.py` (search-order docstring), `tests/finviz/test_leftover_login_discovery.py` (new), `tests/platform/test_git_ref.py`, `docs/providers/FINVIZ_ELITE.md` |
-| **Tests** | Focused leftover discovery + git_ref + existing Finviz overlay autofetch; `validate changed` after first push. |
+| **Tests** | `PYTHONPATH=src .venv/bin/python -m unittest` leftover discovery + git_ref + Finviz overlay autofetch **56 ran / 1 skipped / 0 fail**. Full `tests/finviz` **65 passed**. `.venv/bin/python tools/validate.py changed --paths-file` (7 paths vs #56 `4418b91`) **1526 passed / 14 skipped / 0 fail / 0 err** (`core_checkpoint_required=true` from unowned `git_ref.py`). `python3 tools/imp.py lint` passed. `python3 tools/check_docs_links.py` **OK (188 files)**. |
 | **Related** | Stacked on #56 `4418b91` (`cursor/finviz-hop-overlay-d1ba`). Operator-zero after leftover login exists. |
 | **Notes** | Did not merge. Did not activate Live. Did not declare FTEP `EMPIRICAL_ACTIVE`. Paper only. |
 
