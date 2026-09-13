@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Persistence DoD remainder closed (signal-link restart; persist-off acks)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, `ui_api/operator_opportunity_state` |
+| **Summary** | Closed the two leftover durable-persistence PARTIALs without a second store. Signal links keyed by `decision_payload.opportunity_id` now have a restart/reconstruct test (opportunity → decision → `paper_order_id` → ledger). Persist-off operator acks are documented and tested as `INTENTIONAL_EPHEMERAL`; `persistence_required` campaigns stay `PERSISTENCE_DISABLED`. Does not start Opportunity Engine G7 freshness, Path A, FTEP empirical, or simulator calibration. |
+| **Key files** | `src/market_platform_foundation/intelligence/paper_forward_bridge/reconstruction.py`, `src/market_platform_foundation/ui_api/operator_opportunity_state.py`, `tests/intelligence/test_forward_test_persistence.py`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md`, `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Persistence unittest **46 passed** (was 39). FAST **23 passed**. Docs links OK. `validate changed` (merge-base paths) **1897 passed / 36 skipped / 0 fail**. GitHub PR #36 checks all pass (`validate-python-changed` 1m58s). FULL/closure not run (`paper/**` untouched). |
+| **Related** | PD-09 remains COMPLETE (PR #18). Schema v6 MERGED as [PR #34](https://github.com/AdamEddahmouni/market-trading-platform/pull/34) at `2dd49ea`. Canonical `origin/main` at this writing: `936f44b` ([PR #35](https://github.com/AdamEddahmouni/market-trading-platform/pull/35)). |
+| **Notes** | OpportunityV1 objects stay in the intelligence repo; the campaign store persists the link identity only. Simulator still not externally validated. FTEP labels unchanged. |
+
 ## 2026-09-13 — Durable forward-test persistence merged (PR #34)
 
 | Field | Value |

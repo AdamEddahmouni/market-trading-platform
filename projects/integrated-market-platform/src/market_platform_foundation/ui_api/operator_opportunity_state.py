@@ -1,4 +1,14 @@
-"""Paper-only operator watch/review/dismiss. Does not mutate OpportunityV1."""
+"""Paper-only operator watch/review/dismiss. Does not mutate OpportunityV1.
+
+Ack durability follows the single PD-09 store:
+
+- Persist-on (`IMP_PERSIST_STATE=1` or `IMP_STATE_DIR`): unique rows in
+  `opportunity_operator_acks`. Survive process restart.
+- Persist-off: process-local `_PROCESS_ACKS` only. This is
+  `INTENTIONAL_EPHEMERAL` — durable acks in persist-off mode are
+  `NOT_APPLICABLE` because they would require a second store. Campaigns with
+  `persistence_required` are preflight-blocked (`PERSISTENCE_DISABLED`).
+"""
 
 from __future__ import annotations
 
@@ -8,7 +18,16 @@ from ..intelligence.opportunity.lifecycle import OperatorLifecycleState
 from ..local_state.paths import persistence_enabled
 from ..local_state.startup import open_local_state
 
+OPERATOR_ACK_STORAGE_DURABLE = "DURABLE_SQLITE"
+OPERATOR_ACK_STORAGE_PROCESS_LOCAL = "PROCESS_LOCAL"
+
 _PROCESS_ACKS: list[dict[str, Any]] = []
+
+
+def operator_ack_storage() -> str:
+    if persistence_enabled():
+        return OPERATOR_ACK_STORAGE_DURABLE
+    return OPERATOR_ACK_STORAGE_PROCESS_LOCAL
 
 
 def reset_operator_acks() -> None:
