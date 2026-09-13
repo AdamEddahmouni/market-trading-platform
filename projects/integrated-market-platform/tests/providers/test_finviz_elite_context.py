@@ -414,6 +414,47 @@ class FinvizOverlayAutofetchTests(unittest.TestCase):
                 self.assertNotIn(LOGIN_PASSWORD, dumped)
                 reset_finviz_credential_manager()
 
+    def test_autofetch_from_leftover_nested_login_repairs_canonical(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            canonical = Path(tmp) / "canonical"
+            leftover_login = (
+                Path(tmp) / "integrated-market-platform" / ".private" / "finviz-login.json"
+            )
+            leftover_login.parent.mkdir(parents=True)
+            leftover_login.write_text(
+                json.dumps(
+                    {"username": "operator@example.com", "password": LOGIN_PASSWORD}
+                ),
+                encoding="utf-8",
+            )
+            isolated = {
+                "IMP_FINVIZ_SECRET_DIR": str(canonical),
+                "IMP_PROVIDER_ENV": str(canonical / "missing.env"),
+            }
+            for name in (*FINVIZ_TOKEN_NAMES, *FINVIZ_LOGIN_NAMES):
+                isolated[name] = ""
+            with patch(
+                "market_platform_foundation.finviz.config.extra_operator_login_files",
+                return_value=(leftover_login,),
+            ), patch.dict(os.environ, isolated, clear=False):
+                reset_finviz_credential_manager()
+                adapter, discovery = discover_finviz_context_stack(
+                    env=None,
+                    session_factory=lambda: _stub_login_session(),
+                )
+                self.assertEqual(discovery.login_source, "NESTED_LOGIN_FILE")
+                self.assertEqual(discovery.auto_fetch_status, "FETCHED")
+                self.assertTrue(discovery.overlay_token_present)
+                self.assertTrue(adapter.configured())
+                self.assertFalse(discovery.is_l1)
+                self.assertTrue((canonical / "finviz-token.txt").is_file())
+                self.assertTrue((canonical / "finviz-login.json").is_file())
+                dumped = json.dumps(discovery.to_dict())
+                self.assertNotIn(FETCHED_TOKEN, dumped)
+                self.assertNotIn(LOGIN_PASSWORD, dumped)
+                self.assertNotIn("operator@example.com", dumped)
+                reset_finviz_credential_manager()
+
     def test_autofetch_from_providers_env_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             secret = Path(tmp)
@@ -436,6 +477,7 @@ class FinvizOverlayAutofetchTests(unittest.TestCase):
                     session_factory=lambda: _stub_login_session(),
                 )
                 self.assertEqual(discovery.auto_fetch_status, "FETCHED")
+                self.assertEqual(discovery.login_source, "PROVIDER_ENV_FILE")
                 self.assertTrue(adapter.configured())
                 dumped = json.dumps(discovery.to_dict())
                 self.assertNotIn(FETCHED_TOKEN, dumped)

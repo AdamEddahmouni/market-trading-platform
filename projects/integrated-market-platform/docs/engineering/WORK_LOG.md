@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Discover leftover nested Elite login for hop overlay
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers` / Finviz |
+| **Summary** | Hop overlay discovery now finds Elite login on the leftover nested IMP `.private/finviz-login.json` and short-squeeze `providers.env` (existing stores, names only). Successful fetch repairs token/login into canonical gitignored `.private`. Fetch failure stays `NOT_CONFIGURED`. Overlay is not hop L1. Item 2 remains PARTIAL on this cloud VM. |
+| **Key files** | `src/market_platform_foundation/finviz/config.py`, `src/market_platform_foundation/finviz/secure_store.py`, `src/market_platform_foundation/providers/finviz_context_discovery.py`, `tests/providers/test_finviz_elite_context.py`, `docs/providers/FINVIZ_ELITE.md` |
+| **Tests** | `PYTHONPATH=src python3 -m unittest tests.providers.test_finviz_elite_context tests.market_data.test_finviz_observational_context` — **33 passed**. |
+| **Related** | [FINVIZ_ELITE.md](../providers/FINVIZ_ELITE.md); PR stacked on #44 |
+| **Notes** | Cloud VM has no leftover clone or Elite login file. Empirical overlay still ABSENT. No secrets committed. |
+
 ## 2026-09-13 — Finviz Elite overlay auto-fetch from local provider info
 
 | Field | Value |

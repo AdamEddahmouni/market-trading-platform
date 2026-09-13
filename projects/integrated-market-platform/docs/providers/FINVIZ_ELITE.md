@@ -59,10 +59,15 @@ Finviz Elite is a **context overlay** in the provider composition
 
 - `providers/finviz_context_discovery.py` always returns
   `finviz.elite.context`. A static long-lived export token is not required:
-  hop overlay discovery auto-fetches from existing local provider info
-  (`.private/finviz-login.json`, then `.private/providers.env` /
-  `IMP_PROVIDER_ENV` `FINVIZ_USERNAME`/`FINVIZ_PASSWORD`) with no operator
-  prompt after that one-time setup. Fetch failure stays `NOT_CONFIGURED`
+  hop overlay discovery auto-fetches from existing local provider info, in
+  order: canonical IMP `.private/finviz-login.json`; leftover nested
+  `integrated-market-platform/.private/finviz-login.json` (`username` /
+  `password` keys); then `.private/providers.env` and short-squeeze
+  `short-squeeze-project/short-squeeze-core/.private/providers.env`
+  (`FINVIZ_USERNAME` / `FINVIZ_PASSWORD` / `FINVIZ_API_KEY`). No operator
+  prompt after that one-time setup. A successful fetch repairs the token
+  (and login, if it came from a leftover path) into canonical gitignored
+  `.private` — never into git. Fetch failure stays `NOT_CONFIGURED`
   (overlay ABSENT). A present token without `IMP_FINVIZ_LIVE` (and without
   an injected test transport) is `CONFIGURED_BLOCKED` / `LIVE_DISABLED`.
   Classification is never `REAL_TIME`, never Yahoo-as-Finviz, and never ES.
@@ -126,10 +131,12 @@ This overlay does not activate Live, start FTEP, or declare
   the original export.
 - Hop overlay discovery is operator-zero after that local provider info
   exists: it refreshes the auto-resetting Elite export token from those
-  same files with no pasted password and no extra operator step. Fetch
-  failure fail-closes the overlay (`NOT_CONFIGURED`). The refreshed token
-  is bound for overlay use only; it is not hop L1 and does not replace
-  OpenD or Yahoo.
+  same files — including the leftover nested IMP login JSON and
+  short-squeeze `providers.env` — with no pasted password and no extra
+  operator step. Fetch failure fail-closes the overlay (`NOT_CONFIGURED`).
+  The refreshed token is bound for overlay use only; it is not hop L1 and
+  does not replace OpenD or Yahoo. Canonical `projects/integrated-market-platform/.private`
+  may hold meta only until a successful fetch repairs the token there.
 - `IMP_FINVIZ_LOGIN_TRANSPORT=auto` uses `curl_cffi` with Chrome impersonation
   when that optional tool-layer package is already installed; otherwise it
   falls back to the stdlib cookie session. `urllib` forces the stdlib path.
