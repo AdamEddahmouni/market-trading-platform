@@ -13,7 +13,6 @@ sys.path.insert(0, str(ROOT / "src"))
 from market_platform_foundation.strategy.path_a_prospective import (
     PathAPersistContext,
     PathAProspectiveComposer,
-    build_paper_demo_path_a_invoke,
 )
 from market_platform_foundation.providers.equity_quote_discovery import discover_equity_quote_stack
 from market_platform_foundation.providers.equity_quote_selection import primary_equity_quote_provider
@@ -114,23 +113,30 @@ def main(argv: list[str] | None = None) -> int:
             "event_time_ns. Paper/Demo only."
         ),
     )
+    parser.add_argument(
+        "--forecast-path",
+        default=None,
+        help=(
+            "Previously persisted PRODUCTION forecast JSON file or directory. "
+            "This hop only loads; it does not mint a probability. Load "
+            "requires identity, PIT, champion, horizon, account, and mode "
+            "to match Opportunity Engine hop policy; otherwise "
+            "FORECAST_UNAVAILABLE. Paper/Demo only."
+        ),
+    )
     args = parser.parse_args(argv)
     _, discovery = discover_equity_quote_stack()
     provider = primary_equity_quote_provider()
     persist_context = build_cli_persist_context(args)
-    prereg_path = args.preregistration_path
-    caller = None
-    request = None
-    if prereg_path is None:
-        invoke = build_paper_demo_path_a_invoke(args.symbol, mode=args.mode)
-        caller = invoke.caller
-        request = invoke.scan_request
+    # Composer fetches once, then auto-builds the invoke with that quote so
+    # the catalog is not stuck on FCAST_NO_QUOTE_OBSERVATION. G7 remains
+    # freshness authority over the same admitted event.
     result = PathAProspectiveComposer(
         quote_provider=provider,
-        path_a_caller=caller,
         persist=persist_context,
-        preregistration_path=prereg_path,
-    ).run(args.symbol, mode=args.mode, scan_request=request)
+        preregistration_path=args.preregistration_path,
+        forecast_path=args.forecast_path,
+    ).run(args.symbol, mode=args.mode)
     payload = {
         "discovery": {
             "classification": discovery.classification,

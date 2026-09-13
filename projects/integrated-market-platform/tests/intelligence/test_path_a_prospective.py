@@ -673,10 +673,13 @@ class PathAProspectiveTests(unittest.TestCase):
         from tools import path_a_prospective_run
 
         source = inspect.getsource(path_a_prospective_run.main)
-        self.assertIn("build_paper_demo_path_a_invoke", source)
-        self.assertIn("path_a_caller", source)
-        self.assertIn("scan_request", source)
+        self.assertIn("PathAProspectiveComposer", source)
+        self.assertIn("primary_equity_quote_provider", source)
+        self.assertNotIn("build_paper_demo_path_a_invoke", source)
         self.assertNotIn("LiveObservationalRuntime", source)
+        composer_run = inspect.getsource(PathAProspectiveComposer.run)
+        self.assertIn("quote_event=event", composer_run)
+        self.assertIn("forecast_path=self.forecast_path", composer_run)
 
     def test_honesty_invoke_refuses_live(self) -> None:
         with self.assertRaisesRegex(PathAScanCallerError, "LIVE_SCAN_CALLER_FORBIDDEN"):
@@ -1174,7 +1177,7 @@ class PathACliPersistTests(unittest.TestCase):
                     return_value=(MoomooOpenDEquityQuoteProvider(), discovery),
                 ):
                     with patch(
-                        "tools.path_a_prospective_run.build_paper_demo_path_a_invoke",
+                        "market_platform_foundation.strategy.path_a_prospective.build_paper_demo_path_a_invoke",
                         return_value=invoke,
                     ):
                         with patch("sys.stdout", stdout):

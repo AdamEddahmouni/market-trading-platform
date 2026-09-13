@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Path A loads a previously persisted PRODUCTION ForecastV1
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy`, `opportunity` |
+| **Summary** | Paper/Demo Path A CLI no longer pre-builds the invoke before fetch. Composer fetches once (OpenD primary), G7 remains freshness authority, and auto-builds the honesty invoke with the admitted `quote_event` so the catalog is not stuck on `FCAST_NO_QUOTE_OBSERVATION`. `forecast_resolver` loads a previously persisted PRODUCTION `ForecastV1` (`strategy/path_a_forecast_store.py`) only when identity/PIT/champion/horizon/account/mode match Opportunity Engine hop policy; CONTROL, RESEARCH, uncalibrated, or absent artifacts return `None` (`FORECAST_UNAVAILABLE`). Persist is serialization of an already-constructed `ForecastV1`, not a producer. The hop does not mint a probability from last_price, does not call CONTROL `build_forecast_v1`, and does not add a CLI `--probability`. Live stays `LIVE_FORBIDDEN`. Item 7 stays **PARTIAL**. FTEP is not `EMPIRICAL_ACTIVE`. Frozen FTEP-V1-001 JSON not touched. |
+| **Key files** | `src/market_platform_foundation/strategy/path_a_forecast_store.py` (new), `src/market_platform_foundation/strategy/path_a_prospective.py`, `src/market_platform_foundation/strategy/path_a_strategy_catalog.py`, `tools/path_a_prospective_run.py` (additive `--forecast-path`; no pre-fetch invoke), `tests/intelligence/test_path_a_forecast_store.py` (new), `tests/intelligence/test_path_a_preregistration_store.py`, `tests/intelligence/test_path_a_prospective.py`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/platform/PROGRAM_STATUS.md`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | New `tests.intelligence.test_path_a_forecast_store` **15 passed** (missing → `FORECAST_UNAVAILABLE`; CONTROL/RESEARCH/uncalibrated rejected at load not OE SUPPRESS; research `build_forecast` dict rejected; catalog never calls `build_preregistration`; Live still forbidden; composer threads fetched quote into scan context). Focused Path A + catalog + scan caller + ingest + freshness **112 passed**. `python3 tools/check_docs_links.py` **OK (188 files)**. `python3 tools/validate.py changed --paths-file` vs merge-base `origin/cursor/path-a-prereg-load-d1ba`@`ff139ac` recorded in the follow-up note if a later commit lands counts. Live still `LIVE_SCAN_CALLER_FORBIDDEN`. |
+| **Related** | Stacks on restacked #48 `ff139ac` (prereg `fcf6116` + OpenD `a9377a6`). Item 7 of the provider activation program. |
+| **Notes** | A software-constructed PRODUCTION `ForecastV1` used in tests is not empirical and is not item 7 PROVED. No empirical fused/calibrated producer exists on this hop. Whale alignments still abstain on `ABSTAIN_INSTITUTIONAL_UNAVAILABLE`. Did not implement `moomoo-api` transport. Did not merge Wave B #21–#28. Did not declare FTEP `EMPIRICAL_ACTIVE` or Live. |
+
 ## 2026-09-13 — Path A loads a previously persisted Phase-6 preregistration
 
 | Field | Value |

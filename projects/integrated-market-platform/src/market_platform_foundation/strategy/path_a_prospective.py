@@ -19,7 +19,10 @@ from market_platform_foundation.intelligence.opportunity.freshness import (
     merge_freshness_into_payload,
 )
 from market_platform_foundation.intelligence.opportunity.policy import build_opportunity_policy
-from market_platform_foundation.intelligence.opportunity.types import OpportunityContext
+from market_platform_foundation.intelligence.opportunity.types import (
+    OpportunityContext,
+    OpportunityPolicyV1,
+)
 from market_platform_foundation.intelligence.persistence import InMemoryIntelligenceRepository
 from market_platform_foundation.intelligence.promotion.types import (
     ChampionAssignmentReason,
@@ -44,6 +47,10 @@ from .path_a_scan_caller import (
     PathAScanCallResult,
     PathAScanCaller,
     PathAScanCallerError,
+)
+from .path_a_forecast_store import (
+    load_paper_demo_forecasts,
+    select_eligible_forecast,
 )
 from .path_a_preregistration_store import (
     load_paper_demo_preregistrations,
@@ -141,6 +148,27 @@ def _eligible_preregistrations(
     return eligible
 
 
+def _paper_demo_forecast_resolver(
+    *,
+    forecast_path: str | Path | None,
+    request: ScanRequest,
+    champion: ChampionAssignmentV1,
+    policy: OpportunityPolicyV1,
+):
+    records = load_paper_demo_forecasts(forecast_path) if forecast_path is not None else ()
+
+    def resolve(match):
+        return select_eligible_forecast(
+            match,
+            records,
+            request=request,
+            champion=champion,
+            policy=policy,
+        )
+
+    return resolve
+
+
 def build_paper_demo_path_a_invoke(
     symbol: str,
     *,
@@ -149,6 +177,7 @@ def build_paper_demo_path_a_invoke(
     account_id: str | None = None,
     quote_event: Mapping[str, Any] | None = None,
     preregistration_path: str | Path | None = None,
+    forecast_path: str | Path | None = None,
 ) -> PathAHonestyInvoke:
     """Build a one-shot Paper/Demo Path A caller.
 
@@ -157,7 +186,12 @@ def build_paper_demo_path_a_invoke(
     against real quote data when ``quote_event`` is supplied. Loads a
     previously persisted Phase-6 record only when identity matches the spec
     and ``registered_at`` is before quote ``event_time_ns``. Does not mint a
-    preregistration at eval time. ``forecast_resolver`` stays ``None``.
+    preregistration at eval time.
+
+    ``forecast_resolver`` loads a previously persisted PRODUCTION ``ForecastV1``
+    only when identity/PIT/champion/horizon/account/mode match Opportunity
+    Engine hop policy. Absent or mismatch → ``None`` (``FORECAST_UNAVAILABLE``).
+    Does not mint a probability from last_price.
     """
 
     mode_n = _normalize_mode(mode)
@@ -189,25 +223,11 @@ def build_paper_demo_path_a_invoke(
         effective_from_ns=as_of - 1 if as_of > 0 else 0,
         assignment_reason=ChampionAssignmentReason.BOOTSTRAP,
     )
-    caller = PathAScanCaller(
-        scanner=UniversalStrategyScanner(query_planner=None, repository=repository),
-        repository=repository,
-        forecast_resolver=lambda _match: None,
-        champion_at_forecast=champion,
-        champion_at_opportunity=champion,
-        opportunity_policy=build_opportunity_policy(
-            champion_scope=champion.champion_scope,
-            max_forecast_age_ns=HONESTY_HORIZON_NS,
-            max_opportunity_lifetime_ns=20_000_000_000,
-            minimum_probability_edge=0.05,
-        ),
-        opportunity_context=OpportunityContext(
-            snapshot_ref=ContractReference(kind="snapshot", id=snapshot_id),
-            snapshot_available_time_ns=as_of,
-            mode=mode_n,
-            scenario_id="path-a-honesty",
-            account_id=account,
-        ),
+    policy = build_opportunity_policy(
+        champion_scope=champion.champion_scope,
+        max_forecast_age_ns=HONESTY_HORIZON_NS,
+        max_opportunity_lifetime_ns=20_000_000_000,
+        minimum_probability_edge=0.05,
     )
     quote_context = _quote_context_from_event(quote_event)
     eligible = _eligible_preregistrations(
@@ -242,6 +262,26 @@ def build_paper_demo_path_a_invoke(
         decision_time_ns=as_of,
         expires_at_ns=as_of + HONESTY_SCAN_TTL_NS,
         budget=ScanBudget(max_evaluations=len(catalog), max_cost_units=len(catalog)),
+    )
+    caller = PathAScanCaller(
+        scanner=UniversalStrategyScanner(query_planner=None, repository=repository),
+        repository=repository,
+        forecast_resolver=_paper_demo_forecast_resolver(
+            forecast_path=forecast_path,
+            request=request,
+            champion=champion,
+            policy=policy,
+        ),
+        champion_at_forecast=champion,
+        champion_at_opportunity=champion,
+        opportunity_policy=policy,
+        opportunity_context=OpportunityContext(
+            snapshot_ref=ContractReference(kind="snapshot", id=snapshot_id),
+            snapshot_available_time_ns=as_of,
+            mode=mode_n,
+            scenario_id="path-a-honesty",
+            account_id=account,
+        ),
     )
     return PathAHonestyInvoke(caller=caller, scan_request=request)
 
@@ -318,6 +358,7 @@ class PathAProspectiveComposer:
         freshness_policy: OpportunityFreshnessPolicy | None = None,
         persist: PathAPersistContext | None = None,
         preregistration_path: str | Path | None = None,
+        forecast_path: str | Path | None = None,
     ) -> None:
         self.quote_provider = quote_provider
         self.composition = composition or ObservationalRuntimeComposition()
@@ -326,6 +367,7 @@ class PathAProspectiveComposer:
         self.freshness_policy = freshness_policy or OpportunityFreshnessPolicy()
         self.persist = persist
         self.preregistration_path = preregistration_path
+        self.forecast_path = forecast_path
 
     def run(
         self,
@@ -412,6 +454,7 @@ class PathAProspectiveComposer:
                 as_of_time_ns=as_of,
                 quote_event=event,
                 preregistration_path=self.preregistration_path,
+                forecast_path=self.forecast_path,
             )
             caller = invoke.caller
             request = invoke.scan_request
