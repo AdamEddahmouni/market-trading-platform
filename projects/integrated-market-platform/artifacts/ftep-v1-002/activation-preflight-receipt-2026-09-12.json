@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "ftep_activation_preflight_receipt",
+  "campaign_slug": "FTEP-V1-002",
+  "observed_at": "2026-09-12T19:30:00Z",
+  "imp_persist_state_required": "1",
+  "imp_persist_state_observed_in_orchestrator_shell": false,
+  "preflight_disposition_with_persistence_enabled": "READY",
+  "preflight_disposition_current_shell": "NOT_READY",
+  "preflight_blockers_current_shell": ["PERSISTENCE_DISABLED"],
+  "preflight_blockers_with_persistence": [],
+  "preflight_warnings": [],
+  "manifest_status": "FROZEN",
+  "manifest_fingerprint": "F7083180990BC59578CA045E1E1318A356421BBC9B81EE514C14130CB0B356B1",
+  "campaign_id": "FTCAMP-f7083180990bc59578ca045e1e1318a356421bbc9b81ee514c14130cb0b356b1",
+  "campaign_readiness_disposition_with_persistence": "READY",
+  "campaign_readiness_disposition_current_shell": "NOT_READY",
+  "campaign_readiness_blockers_current_shell": ["PERSISTENCE_DISABLED"],
+  "coverage_gap_disposition": "SATISFIED",
+  "prospective_market_evidence": {
+    "provider_id": "MOOMOO",
+    "capability_id": "US_EQUITY_L1",
+    "disposition": "SAMPLE_VERIFIED"
+  },
+  "signal_only_authorization_receipt": "artifacts/ftep-v1-002/signal-only-authorization-receipt-2026-09-12.json",
+  "note": "Preflight READY when IMP_PERSIST_STATE=1 (manifest requires persistence). Orchestrator shell default has persistence disabled.",
+  "secrets_included": false
+}

@@ -81,6 +81,19 @@ Legend: `❌` blocked today · `🟡` exists but unexercised / needs verificatio
 | Acceptance artifacts | ❌ | Wire contract recorded when OpenD exercised (TD-004 close criterion) |
 | **Current blocker** | ❌ | OpenD TCP unavailable (TD-004, `OPEN_D_NOT_INSTALLED`) |
 
+### FTEP-V1-001 (`artifacts/forward-test-campaigns/FTEP-V1-001/`, protocol: `docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md`)
+
+| Prerequisite | State | Notes |
+|---|---|---|
+| OD-1 … OD-11 owner decisions + manifest freeze | ✅ | `activation_status` = `FROZEN`; OD-11 pathway **A** (bind + freeze + preflight only); receipt `artifacts/ftep-v1-activation/activation-freeze-receipt-2026-09-12.json` |
+| Paper account binding (internal simulation) | ✅ | Bound at freeze; `IMP_PERSIST_STATE=1` required for sessions |
+| Activation preflight (`run_forward_test_preflight`) | ✅ | READY with persistence enabled — receipt `artifacts/ftep-v1-activation/activation-preflight-receipt-2026-09-12.json` |
+| Provider / coverage readiness (`campaign-readiness`) | ❌ | NOT_READY — Moomoo SDK/entitlements, Wave A external gaps remain |
+| Moomoo OpenD loopback | 🟡 | OpenD running and `127.0.0.1:11111` reachable; Python SDK missing locally (`PROBE-MOOMOO`) |
+| First SIGNAL_ONLY prospective session | ❌ | **Not authorized** under pathway A — owner must select authorization **B** after gaps clear |
+| First empirical lock / EXECUTION / Live | ❌ | **Not authorized** |
+| **Current blocker** | 🟡 **FROZEN — PREFLIGHT READY; SESSION NOT AUTHORIZED** | Manifest frozen; qualifying observation blocked on coverage gaps + pathway A scope |
+
 ## Cross-cutting prerequisites (apply to every row)
 
 - [ ] Env vars and credentials are provided via the private env path (never committed); each

@@ -112,4 +112,22 @@ def normalize_raw_item(
     )
 
 
-__all__ = ["NORMALIZATION_VERSION", "normalize_raw_item"]
+def normalize_finviz_export_item(
+    item: dict[str, Any],
+    *,
+    retrieved_time: str,
+) -> NewsArticleEvent:
+    """Map Finviz Elite news export rows into the canonical NewsArticleEvent contract."""
+    return normalize_raw_item(
+        item,
+        provider_id="finviz",
+        source_id="finviz_elite",
+        retrieved_time=retrieved_time,
+    )
+
+
+__all__ = [
+    "NORMALIZATION_VERSION",
+    "normalize_finviz_export_item",
+    "normalize_raw_item",
+]

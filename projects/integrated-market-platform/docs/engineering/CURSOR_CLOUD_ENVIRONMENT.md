@@ -22,24 +22,19 @@ Installs:
 
 ## Validation commands
 
+Default cloud validation is the `python tools/imp.py` pyramid from current
+`main` (FAST → focused/affected → domain/changed → FULL), not
+`python -m unittest discover`. `cloud-handoff/full-state-2026-08-25` is
+historical; current landing is this monorepo's `main` / PR #29 until merged.
+
 ```bash
 export PYTHONPATH=src
 source .venv/bin/activate
-python -m unittest discover -s tests/intelligence -q
-python -m unittest tests.platform.test_shadow_p6 -q
-python tools/validate.py changed
-python tools/validate.py full   # final checkpoint only
+python tools/imp.py validate fast
+python tools/imp.py test affected
+python tools/imp.py validate changed
+python tools/imp.py validate full   # Paper-execution-path / release only
 ```
-
-## Handoff branch
-
-Cloud Agents should start from:
-
-```text
-cloud-handoff/full-state-2026-08-25
-```
-
-Verify checkout against `artifacts/cloud-handoff/CLOUD_FILE_HASHES.json`.
 
 ## Required secrets (names only)
 
@@ -77,8 +72,11 @@ See `.env.example` for the complete variable catalog.
 | Service | Local endpoint | Cloud fallback |
 |---------|----------------|----------------|
 | Moomoo OpenD | `127.0.0.1:11111` | Fixtures, replay, mock paths; live gates remain off |
-| IBKR Client Portal Gateway | `https://127.0.0.1:5000/v1/api` | Fixture-first tests; live gates remain off |
+| IBKR TWS / Gateway socket | `127.0.0.1:4001` | One IBKR **transport**; not execution authority; not claimed available now |
+| IBKR Client Portal Gateway | `https://127.0.0.1:5000/v1/api` | A **second** IBKR transport, not TWS and not the only path; not execution authority; not claimed available now |
 | MongoDB (optional) | `127.0.0.1:27017` | `InMemoryIntelligenceRepository`; integration tests skip |
+
+TWS (`4001`) and Client Portal (`5000`) are two IBKR transports. Neither grants Live execution. Do **not** treat `127.0.0.1:5000` as the only or TWS path. IBKR is not claimed available in cloud.
 
 ## Known validation differences
 

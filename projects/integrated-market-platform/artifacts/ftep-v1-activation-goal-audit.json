@@ -1,0 +1,347 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "ftep_v1_activation_goal_audit",
+  "artifact_id": "ftep-v1-activation-goal-audit",
+  "observed_at": "2026-09-12T04:39:10Z",
+  "goal_reference": "User objective section 28 success criteria A–Z (FTEP v1 activation increment)",
+  "branch": "work/ftep-v1-activation",
+  "head_sha": "08b3960edb0f6856488cd5c5de723b93ba07aa54",
+  "overall_disposition": "IMPLEMENTATION_OBJECTIVE_COMPLETE",
+  "qualifying_ftep_v1_001_activation": false,
+  "engineering_complete": true,
+  "update_goal_complete": true,
+  "validation_receipt": {
+    "command": "python tools/imp.py validate fast",
+    "status": "passed",
+    "tests_run": 21,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "observed_at": "2026-09-12T04:39:10Z"
+  },
+  "closure_cross_refs": [
+    "artifacts/wave-b-closure-report.json",
+    "artifacts/wave-a-findings/reconciliation-gate.json",
+    "artifacts/developer-workflow/closure-report.json"
+  ],
+  "summary_counts": {
+    "MET": 26,
+    "PARTIAL": 0,
+    "BLOCKED": 0,
+    "EXTERNAL": 0,
+    "NOT_APPLICABLE": 0
+  },
+  "criteria": [
+    {
+      "criterion_id": "A",
+      "title": "Current repository/provider state is reconciled",
+      "status": "MET",
+      "evidence_path": "artifacts/wave-a-findings/repo-architecture-audit.json",
+      "evidence_command": null,
+      "blocker_owner": null,
+      "notes": "origin/main governance merged; reconcile-with-main COMPLETE per post_merge section.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "B",
+      "title": "Current provider integrations are inventoried",
+      "status": "MET",
+      "evidence_path": "artifacts/wave-a-findings/provider-inventory.json",
+      "evidence_command": null,
+      "blocker_owner": null,
+      "notes": "Structured catalog with modules, tests, and role hints.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "C",
+      "title": "Finviz/Moomoo/IBKR/Tradier/Alpaca/current API status audited as far as safely possible",
+      "status": "MET",
+      "evidence_path": "docs/engineering/OPERATOR_PROBE_RUNBOOK.md",
+      "evidence_command": null,
+      "blocker_owner": "OPERATOR",
+      "notes": "Wave A static audits plus secret-free OPERATOR_PROBE_RUNBOOK; executing fresh probes remains operator-local (PROBE-MOOMOO, PROBE-FINVIZ, PROBE-G-A5-BROKER-CANDIDATES). Cross-ref artifacts/wave-a-findings/ibkr-tradier-alpaca-audit.json.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE",
+      "activation_residual": "REQUIRES_HUMAN_OPERATOR",
+      "activation_residual_note": "Execute PROBE-MOOMOO, PROBE-FINVIZ, PROBE-G-A5-BROKER-CANDIDATES per OPERATOR_PROBE_RUNBOOK"
+    },
+    {
+      "criterion_id": "D",
+      "title": "One canonical provider capability model exists",
+      "status": "MET",
+      "evidence_path": "src/market_platform_foundation/providers/capability_contract.py",
+      "evidence_command": "python -m unittest tests.providers.test_capability_matrix -q",
+      "blocker_owner": null,
+      "notes": "Aligned to docs/architecture/MARKET_DATA_CAPABILITY_CONTRACT.md; no duplicate registry.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "E",
+      "title": "One machine-readable capability matrix exists",
+      "status": "MET",
+      "evidence_path": "artifacts/wave-a-findings/capability-matrix-snapshot.json",
+      "evidence_command": "python tools/providers/capability_matrix.py --output artifacts/wave-a-findings/capability-matrix-snapshot.json",
+      "blocker_owner": null,
+      "notes": "Schema manifests/providers/schemas/capability_matrix_snapshot.schema.json.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "F",
+      "title": "Evidence provenance and dates are preserved",
+      "status": "MET",
+      "evidence_path": "artifacts/wave-a-findings/capability-matrix-snapshot.json",
+      "evidence_command": null,
+      "blocker_owner": null,
+      "notes": "observed_at and evidence_sources across Wave A/B artifacts; unknowns not coerced to false negatives.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "G",
+      "title": "Provider access states are explicit",
+      "status": "MET",
+      "evidence_path": "src/market_platform_foundation/providers/capability_contract.py",
+      "evidence_command": null,
+      "blocker_owner": null,
+      "notes": "CATALOGED through PROMOTED vocabulary; independent non-linear states.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "H",
+      "title": "Provider roles are explicit",
+      "status": "MET",
+      "evidence_path": "src/market_platform_foundation/providers/capability_contract.py",
+      "evidence_command": null,
+      "blocker_owner": null,
+      "notes": "Scoped campaign roles (e.g. PRIMARY_MARKET_EVIDENCE, PAPER_COMPARATOR).",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "I",
+      "title": "Provider rights/entitlement uncertainty is explicit",
+      "status": "MET",
+      "evidence_path": "artifacts/wave-a-findings/reconciliation-gate.json",
+      "evidence_command": null,
+      "blocker_owner": null,
+      "notes": "UNKNOWN and KEY_GATED states in provider_table and ES/news verdict.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "J",
+      "title": "Safe diagnostics/probes exist",
+      "status": "MET",
+      "evidence_path": "tools/provider_readiness.py",
+      "evidence_command": "python tools/imp.py providers audit --help",
+      "blocker_owner": null,
+      "notes": "Read-only audit, gaps, campaign-readiness; secret-safe CLI via imp.py providers.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "K",
+      "title": "Coverage gaps can be generated deterministically",
+      "status": "MET",
+      "evidence_path": "src/market_platform_foundation/providers/coverage_gap_engine.py",
+      "evidence_command": "python -m unittest tests.providers.test_coverage_gap_engine -q",
+      "blocker_owner": null,
+      "notes": "Requirement profiles beyond single campaign; FTEP-V1-001 ES/news profile bound.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "L",
+      "title": "ES/news gaps are known instead of guessed",
+      "status": "MET",
+      "evidence_path": "artifacts/wave-a-findings/news-data-inventory.json",
+      "evidence_command": null,
+      "blocker_owner": null,
+      "notes": "WAVE-A gap IDs and reconciliation-gate es_news_stack_verdict.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "M",
+      "title": "Smallest sufficient stack identified or exact deficiency proven",
+      "status": "MET",
+      "evidence_path": "artifacts/ftep-v1-001/es-news-provider-stack-selection.json",
+      "evidence_command": null,
+      "blocker_owner": null,
+      "notes": "overall_disposition BLOCKED with SUFFICIENT_IF_VERIFIED / MISSING CAPABILITY rows; not guessed.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "N",
+      "title": "Bulk provider integration avoided",
+      "status": "MET",
+      "evidence_path": "artifacts/wave-a-findings/reconciliation-gate.json",
+      "evidence_command": null,
+      "blocker_owner": null,
+      "notes": "IMPLEMENT_NOW packages only; external catalog is research-only.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "O",
+      "title": "Canonical normalization exists where needed",
+      "status": "MET",
+      "evidence_path": "src/market_platform_foundation/news/observational_ingress.py",
+      "evidence_command": "python -m unittest tests.news.test_observational_ingress -q",
+      "blocker_owner": null,
+      "notes": "Offline bridges PASS; observational live ingress scaffold is implementation-ready (IMP_OBSERVATIONAL_NEWS_INGRESS + IMP_NEWSAPI_LIVE/IMP_FINNHUB_LIVE, aggregator_bridge, not forward-test auto-wire). Live FTEP-V1 campaign use remains deferred (DEFER-FTEP-ACT-04-OBS-INGRESS, FTEP-D038, manifest deferred_until_evidence).",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE",
+      "activation_residual": "REQUIRES_HUMAN_OPERATOR",
+      "activation_residual_note": "DEFER-FTEP-ACT-04 campaign forward-test wire; live gates operator-local"
+    },
+    {
+      "criterion_id": "P",
+      "title": "Cross-source comparison is possible",
+      "status": "MET",
+      "evidence_path": "src/market_platform_foundation/providers/snapshot_compare.py",
+      "evidence_command": "python -m unittest tests.providers.test_provider_snapshot_compare -q",
+      "blocker_owner": null,
+      "notes": "Frozen-arm offline harness; no silent winner selection.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "Q",
+      "title": "External comparator semantics are explicit",
+      "status": "MET",
+      "evidence_path": "docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md",
+      "evidence_command": null,
+      "blocker_owner": null,
+      "notes": "Comparator never ground truth; futures_suitability table from Wave A broker audit.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "R",
+      "title": "Simulator calibration metrics/framework exist",
+      "status": "MET",
+      "evidence_path": "src/market_platform_foundation/paper/calibration/metrics.py",
+      "evidence_command": "python -m unittest discover -s tests/paper -p 'test_calibration*' -q",
+      "blocker_owner": null,
+      "notes": "Engineering/shakedown metrics from fixtures; qualifying numeric campaign calibration not run.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "S",
+      "title": "Calibration thresholds configurable/preregisterable rather than invented",
+      "status": "MET",
+      "evidence_path": "src/market_platform_foundation/paper/calibration/thresholds.py",
+      "evidence_command": null,
+      "blocker_owner": "OWNER",
+      "notes": "Schema without universal defaults; OWNER-CALIBRATION-THRESHOLDS unset for qualifying campaign.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE",
+      "activation_residual": "REQUIRES_HUMAN_OPERATOR",
+      "activation_residual_note": "OWNER-CALIBRATION-THRESHOLDS preregistration"
+    },
+    {
+      "criterion_id": "T",
+      "title": "FTEP remains layered/reusable",
+      "status": "MET",
+      "evidence_path": "src/market_platform_foundation/intelligence/paper_forward_bridge/ftep_profile_refs.py",
+      "evidence_command": "python -m unittest tests.intelligence.test_ftep_profile_refs -q",
+      "blocker_owner": null,
+      "notes": "Core → asset → strategy → manifest layering documented in docs/engineering/ftep/FTEP_CORE_V1.md.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "U",
+      "title": "Futures + News/Catalyst profile readiness is explicit",
+      "status": "MET",
+      "evidence_path": "docs/engineering/FTEP_ACTIVATION_GATES.md",
+      "evidence_command": "python tools/imp.py providers campaign-readiness FTEP-V1-001 --json",
+      "blocker_owner": "OWNER",
+      "notes": "G-A2/G-A3 BLOCKING until profile freeze; explicit fail-closed readiness output, not silent ready.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE",
+      "activation_residual": "REQUIRES_HUMAN_OPERATOR",
+      "activation_residual_note": "G-A2/G-A3 profile freeze after OWNER-OD-1-11"
+    },
+    {
+      "criterion_id": "V",
+      "title": "Campaign readiness evaluation fails closed",
+      "status": "MET",
+      "evidence_path": "src/market_platform_foundation/intelligence/paper_forward_bridge/campaign_readiness.py",
+      "evidence_command": "python -m unittest tests.providers.test_coverage_gap_engine.CampaignReadinessTests -q",
+      "blocker_owner": null,
+      "notes": "Composes preflight + gap engine; qualifying campaign remains not ready.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "W",
+      "title": "Campaign manifests can be immutably frozen once open decisions resolved",
+      "status": "MET",
+      "evidence_path": "tools/forward_test/freeze_activation_manifest.py",
+      "evidence_command": null,
+      "blocker_owner": "OWNER",
+      "notes": "Tooling MET; FTEP-V1-001 manifest PENDING_OWNER_DECISIONS — freeze intentionally not executed.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE",
+      "activation_residual": "REQUIRES_HUMAN_OPERATOR",
+      "activation_residual_note": "freeze_activation_manifest.py after manifest complete (OD-11)"
+    },
+    {
+      "criterion_id": "X",
+      "title": "PIT/research infrastructure advances where dependency-safe",
+      "status": "MET",
+      "evidence_path": "src/market_platform_foundation/research/pit_export.py",
+      "evidence_command": "python -m unittest tests.research.test_pit_export -q",
+      "blocker_owner": "ENGINEERING",
+      "notes": "PIT-A-001 unified export manifest module + tests; durable news/inference store (PIT-A-005) remains future work and does not block activation increment.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "Y",
+      "title": "Existing safety/performance invariants remain intact",
+      "status": "MET",
+      "evidence_path": "artifacts/developer-workflow/closure-report.json",
+      "evidence_command": "python tools/imp.py validate fast",
+      "blocker_owner": null,
+      "notes": "Full closure 4606 tests passed at wave-b; fast gate 21/21 this audit; Live authority not granted.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    },
+    {
+      "criterion_id": "Z",
+      "title": "Tests and documentation complete for the implemented increment",
+      "status": "MET",
+      "evidence_path": "docs/engineering/PROVIDER_ACTIVATION_INCREMENT.md",
+      "evidence_command": "python tools/imp.py closure --skip-ui",
+      "blocker_owner": null,
+      "notes": "Operator docs, PROGRAM_STATUS v1.12, WORK_LOG; does not claim qualifying empirical validation.",
+      "implementation_disposition": "IMPLEMENTATION_COMPLETE"
+    }
+  ],
+  "automatable_gaps_remaining_in_repo": [
+    {
+      "gap_id": "PIT-A-005",
+      "summary": "Durable news/inference persistence for historical PIT archive claims",
+      "priority": "low_vs_activation",
+      "blocker_owner": "ENGINEERING"
+    },
+    {
+      "gap_id": "DEFER-FTEP-ACT-04-OBS-INGRESS",
+      "summary": "Campaign-scale observational ingress wiring to forward-test bridge (scaffold exists; operator gates only)",
+      "priority": "deferred_by_governance",
+      "blocker_owner": "OWNER"
+    },
+    {
+      "gap_id": "DEFER-UNIFIED-UI-MATRIX",
+      "summary": "Unified UI capability/readiness surfaces",
+      "priority": "deferred_acceptable",
+      "blocker_owner": "PRODUCT"
+    }
+  ],
+  "non_automatable_blockers_dominant": [
+    "OWNER-OD-1-11",
+    "OWNER-CALIBRATION-THRESHOLDS",
+    "PROBE-MOOMOO",
+    "PROBE-FINVIZ",
+    "EXT-MOOMOO-FUTURES-ENTITLEMENT",
+    "EXT-PREMIUM-WIRES",
+    "EXT-NEWSAPI-FINNHUB-PIT"
+  ],
+  "secrets_in_artifact": false,
+  "implementation_objective_complete": true,
+  "qualifying_activation_out_of_scope": true,
+  "summary": {
+    "implementation_objective_complete": true,
+    "qualifying_activation_out_of_scope": true,
+    "section_28_criteria_met": 26,
+    "section_28_criteria_total": 26,
+    "implementation_gaps_remaining": 0,
+    "residual_blocker_class": "REQUIRES_HUMAN_OPERATOR_AND_EXTERNAL_ONLY",
+    "observational_ingress_commit": "437cd1c17302d9350069ef48a60dea4dd1fe7b89"
+  }
+}

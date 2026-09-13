@@ -1,0 +1,16 @@
+[
+  {
+    "attention_id": "att-ftep002-aapl-earnings",
+    "symbol": "AAPL",
+    "headline": "AAPL catalyst signal (FTEP-V1-002 fixture)",
+    "tier": 2,
+    "catalyst_ids": ["earnings"]
+  },
+  {
+    "attention_id": "att-ftep002-nvda-guidance",
+    "symbol": "NVDA",
+    "headline": "NVIDIA reports stronger than expected quarterly earnings outlook (fixture)",
+    "tier": 1,
+    "catalyst_ids": ["earnings", "guidance", "analyst"]
+  }
+]

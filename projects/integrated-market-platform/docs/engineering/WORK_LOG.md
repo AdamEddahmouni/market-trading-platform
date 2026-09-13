@@ -36,6 +36,486 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — P3/P4 docs and governance coherence for post-#29 clone
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `AGENTS.md`, `.github` |
+| **Summary** | Smallest docs/governance pass so a clone of `main` after PR #29 is coherent: copied unique provider-universe strategy from #21; corrected FTEP catalog/PROGRAM_STATUS (V1-001 `MANIFEST_FROZEN` + entitlement blocked / SIGNAL_ONLY not authorized; V1-002 `MANIFEST_FROZEN` + `SIGNAL_ONLY_AUTHORIZED` via receipt, empirical lock via receipt, 0 sessions / not `EMPIRICAL_ACTIVE`); Start-here navigation; snapshot banners; monorepo origin; repo-root AGENTS.md; DoD/PR template no longer force FULL/closure on docs PRs. |
+| **Key files** | `docs/engineering/FTEP_CAMPAIGN_CATALOG.md`, `docs/platform/PROGRAM_STATUS.md`, `docs/README.md`, `AGENTS.md` (repo root + IMP), `docs/platform/GLOSSARY.md`, `.github/pull_request_template.md`, `docs/providers/PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md` |
+| **Tests** | `python tools/check_docs_links.py` (intended); required GitHub `validate` on PR #29 after push |
+| **Related** | PR **#29**; unique file from PR **#21** (left open) |
+| **Notes** | Did not merge split PRs #22–#28; did not commit `p3-plan-cli-check.json` |
+
+## 2026-09-12 — FTEP-V1-002 wave 20 empirical lock receipt gate
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, `artifacts/ftep-v1-002`, `tests` |
+| **Summary** | Resolved `EMPIRICAL_LOCK_NOT_AUTHORIZED` blocker: prospective lock dry-run now honors append-only `empirical-lock-authorization-receipt-*.json` (and optional `empirical_lock_authorized` on signal-only receipts) while frozen manifest `operator_attestation.empirical_lock_authorized` stays false. Recorded owner SIGNAL_ONLY prospective decision-lock authorization; updated launch prep. US_EQUITY_RTH closed — no live locks. |
+| **Key files** | `campaign_status.py`, `ftep_prospective_lock.py`, `artifacts/ftep-v1-002/empirical-lock-authorization-receipt-2026-09-12.json`, `SIGNAL_ONLY_LAUNCH_PREP.md`, `tests/intelligence/test_ftep_prospective_lock.py`, `tests/intelligence/test_ftep_campaign_status.py` |
+| **Tests** | `unittest tests.intelligence.test_ftep_prospective_lock tests.intelligence.test_ftep_campaign_status` |
+| **Related** | FTEP-V1-002 goal @ `e86848fb`; PR **#29** |
+| **Notes** | Goal still not complete until first RTH governed session + durable locks; lock dry-run clears auth blocker when receipt present |
+
+## 2026-09-12 — FTEP-V1-002 wave 19 prospective lock dry-run
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, `tools`, `tests` |
+| **Summary** | Wave 19 closed-market work: documented gap (no post-`create_session` auto lock listener; `watch-catalysts` is read-only). Added governed `ftep record-prospective-lock --dry-run` gate + invoke-step plan when all invariants pass; fixture tests assert blockers without durable writes. US_EQUITY_RTH closed — no governed session-start or locks. |
+| **Key files** | `ftep_prospective_lock.py`, `tools/ftep_record_prospective_lock.py`, `tools/imp.py`, `tests/intelligence/test_ftep_prospective_lock.py` |
+| **Tests** | `unittest tests.intelligence.test_ftep_prospective_lock` (3 passed); `imp.py ftep watch-catalysts --fixture` + `record-prospective-lock --dry-run --json` (manual closed-market) |
+| **Related** | FTEP-V1-002 goal wave 19; PR **#29** |
+| **Notes** | Goal not complete until first RTH governed session + real decision locks when owner enables `empirical_lock_authorized` |
+
+## 2026-09-12 — FTEP-V1-002 wave 18 RTH bootstrap + provider health
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `scripts`, `artifacts/ftep-v1-002`, `docs` |
+| **Summary** | Wave 18 closed-market work: recorded read-only provider health receipt (IMP providers probes + integrity PASS), added `scripts/ftep-rth-session-bootstrap.ps1` consolidating launch prep gates/dry-run/owner-confirmed session-start/watch-catalysts. PR #29 CI green @ `e35ab053`. Campaign progress §30 gap scan: `campaign-status` export + template sufficient. |
+| **Key files** | `scripts/ftep-rth-session-bootstrap.ps1`, `artifacts/ftep-v1-002/provider-health-receipt-2026-09-12.json`, `SIGNAL_ONLY_LAUNCH_PREP.md`, `FINAL_EXECUTIVE_REPORT.md` |
+| **Tests** | `imp.py ftep campaign-status/integrity-check/providers campaign-readiness+audit --probe-local` (manual); PR #29 checks 9/9 pass |
+| **Related** | FTEP-V1-002 goal wave 18; PR **#29** |
+| **Notes** | Goal not complete until first RTH governed session + evidence jsonl; no stack merges |
+
+## 2026-09-12 — FTEP-V1-002 wave 17 watch-catalysts + merge stack
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, `tools`, `artifacts` |
+| **Summary** | Wave 17 closed-market work: added read-only `ftep watch-catalysts` (fixture dry-run + session correlation), extended integrity-check for governed-session evidence when durable sessions exist, documented owner-only `gh pr merge` sequence for stack #22–#28 in `MERGE_STACK.md`. RTH remained closed — no governed `session-start`. |
+| **Key files** | `ftep_catalyst_watch.py`, `tools/ftep_watch_catalysts.py`, `ftep_integrity.py`, `tools/imp.py`, `SIGNAL_ONLY_LAUNCH_PREP.md`, `MERGE_STACK.md`, `FINAL_EXECUTIVE_REPORT.md` |
+| **Tests** | `unittest tests.intelligence.test_ftep_catalyst_watch tests.intelligence.test_ftep_integrity` (5 passed); repository closure audit PASS |
+| **Related** | FTEP-V1-002 wave 16 preflight; PR #29 |
+
+## 2026-09-12 — FTEP merge stack wave 15 reconciliation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, merge stack |
+| **Summary** | MERGE_STACK wave 15: #25 rebased onto #24 (`c47f1662`), cascade #26–#28 (#28 @ `9c8ccef7`), #29 @ `7c562f74` MERGEABLE CI green. |
+| **Key files** | `artifacts/ftep-v1-split/MERGE_STACK.md` |
+| **Tests** | n/a (docs only) |
+| **Related** | PRs **#25–#29**, `MERGE_STACK.md` |
+
+## 2026-09-12 — FTEP-V1-002 wave 14 verify + empirical prep
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `docs`, merge stack |
+| **Summary** | Wave 14 verification @ `2089a634`: PR #29 CI green; `IMP_PERSIST_STATE=1` integrity-check PASS, campaign-readiness READY, RTH closed — no governed session-start. Documented operator catalyst attention collector in launch prep; gitignored volatile `campaign-progress.json` with committed template. MERGE_STACK wave 14 notes (#25 CONFLICTING vs #24 `64c03de3`, no rebase). |
+| **Key files** | `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md`, `campaign-progress.template.json`, `.gitignore`, `artifacts/ftep-v1-split/MERGE_STACK.md`, `artifacts/ftep-v1-002/FINAL_EXECUTIVE_REPORT.md` |
+| **Tests** | `imp.py ftep integrity-check/campaign-status/session-start --dry-run` (manual); PR #29 checks green |
+| **Related** | PR **#29**, FTEP-V1-002 goal wave 14 |
+| **Notes** | Goal not complete until first RTH governed session + evidence jsonl |
+
+## 2026-09-12 — FTEP-V1-002 wave 13 stack #24 + RTH gate
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `docs`, merge stack |
+| **Summary** | Rebased `split/wave-b-calibration` onto PR #23 (`6a15372`), vendored missing activation-core bridge/schema pieces for `validate-python-changed`, pushed `eb52824`. Verified FTEP-V1-002 @ `22d3741`: PR #29 CI green, `integrity-check` PASS, RTH closed — no governed `session-start` (document-only). |
+| **Key files** | `artifacts/ftep-v1-split/MERGE_STACK.md`, `artifacts/ftep-v1-002/FINAL_EXECUTIVE_REPORT.md`, `artifacts/ftep-v1-002/notion-sync-payload-2026-09-12.md` |
+| **Tests** | Local `validate changed` on #24 path list — 2977 passed; `ftep integrity-check FTEP-V1-002` → PASS |
+| **Related** | PR #24, PR #29; wave 12 dual-arm binding |
+| **Notes** | `session_ids`: none; `empirical_lock_count`: 0; no merge to `main` |
+
+## 2026-09-12 — FTEP-V1-002 wave 12 dual-arm campaign binding
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep-v1-002`, `forward-test`, `paper_forward_bridge` |
+| **Summary** | Fixed durable campaign binding so a frozen A/B campaign can open **two** SIGNAL_ONLY sessions (baseline + AI-enhanced) under one ACTIVE binding row; SQLite no longer fails the second arm with `FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE`. Documented dual-arm operator flow in `SIGNAL_ONLY_LAUNCH_PREP.md`. No manifest mutation; V1-001 untouched. |
+| **Key files** | `paper_forward_bridge/sqlite_repository.py`, `paper_forward_bridge/campaign_binding.py`, `paper_forward_bridge/store.py`, `tests/intelligence/test_forward_test_persistence.py`, `tests/intelligence/test_ftep_session_start.py`, `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md` |
+| **Tests** | `python tools/imp.py validate changed` — 1902 passed, 26 skipped; dual-arm persistence + session-start unit tests |
+| **Related** | Wave 11 `ftep session-start`; `PAPER_FORWARD_TESTING_BRIDGE.md` (one ACTIVE campaign per account) |
+| **Notes** | Saturday RTH closed — no empirical session or locks; goal completion awaits first open-RTH governed session with evidence. |
+
+## 2026-09-12 — FTEP-V1-002 wave 11 governed session-start
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep-v1-002`, `forward-test`, `tools` |
+| **Summary** | Added non–dry-run `ftep session-start` path: gates on persistence, integrity, RTH, and readiness, then calls `ForwardTestService.create_session` (SIGNAL_ONLY, no orders) and appends `governed-session-start-evidence.jsonl`. Campaign status now reads governed session/lock counts from durable SQLite; `campaign-status` exports `artifacts/ftep-v1-002/campaign-progress.json`. |
+| **Key files** | `tools/ftep_session_start.py`, `tools/ftep_campaign_status.py`, `tools/imp.py`, `paper_forward_bridge/campaign_status.py`, `paper_forward_bridge/ftep_integrity.py`, `tests/intelligence/test_ftep_session_start.py`, `artifacts/ftep-v1-002/campaign-progress.json` |
+| **Tests** | `python tools/imp.py validate changed` — 1901 passed, 26 skipped |
+| **Related** | `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md` |
+| **Notes** | US equity RTH closed on pass date; no production session started. Second cohort arm may record `FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE` until binding supports multiple sessions per campaign. |
+
+
+## 2026-09-12 — FTEP split PR #28 rebase onto #27
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep-v1-split`, `forward-test` |
+| **Summary** | Rebased `split/ftep-v1-freeze-readiness` onto **#27** head (`9b86e634`); resolved `test_forward_test_activation.py` add/add while preserving frozen **FTEP-V1-001** fingerprint and production freeze assertions. Updated `MERGE_STACK.md` wave 10 reconciliation. |
+| **Key files** | `artifacts/ftep-v1-split/MERGE_STACK.md`, `tests/intelligence/test_forward_test_activation.py` |
+| **Tests** | `unittest tests.intelligence.test_forward_test_activation` 12 OK (worktree `.venv`) |
+| **Related** | PR **#28**; `MERGE_STACK.md` |
+| **Notes** | Force-push required; owner merge only per stack policy. |
+
+## 2026-09-12 — FTEP-V1-002 owner freeze and readiness
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep-v1-002`, `forward-test`, `providers` |
+| **Summary** | Applied owner OD-2/OD-6/OD-PAPER/OD-11 on **FTEP-V1-002**: universe AAPL/MSFT/NVDA/AMZN/META, SPY benchmark-only, canonical Paper bind, immutable freeze, campaign-bound MOOMOO overlay (G-A6), preflight/readiness **READY**. **FTEP-V1-001** fingerprint unchanged. Stop line: zero sessions/locks/execution. |
+| **Key files** | `artifacts/forward-test-campaigns/FTEP-V1-002/ACTIVATION_MANIFEST.json`, `frozen_manifest_verifier.py`, `capability_snapshot.py`, `coverage_gap_engine.py`, `artifacts/ftep-v1-002/frozen-manifest-verification-*.json`, `FINAL_EXECUTIVE_REPORT.md` |
+| **Tests** | 16 unittest OK; `imp.py validate fast` 21/0; `imp.py validate changed` 2159/0 |
+| **Related** | Section 32 executive result `READY_FOR_FIRST_SIGNAL_ONLY_AUTHORIZATION` |
+| **Notes** | Finviz live probe still `LOCAL_PROBE_REQUIRED`; stale export remains authoritative. PR stack #22–#28 not merged. |
+
+## 2026-09-12 — FTEP-V1-002 final executive report
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep-v1-002`, `artifacts` |
+| **Summary** | Added `FINAL_EXECUTIVE_REPORT.md` at engineering stop line: executive `READY_WITH_OWNER_DECISIONS`, safety block, owner OD index, artifact paths; goal verification re-run (16 unittest, fast, changed, campaign-readiness). |
+| **Key files** | `artifacts/ftep-v1-002/FINAL_EXECUTIVE_REPORT.md` |
+| **Tests** | 16 unittest OK; `imp.py validate fast` 21/0; `imp.py validate changed` 2159/0 |
+| **Related** | `artifacts/ftep-v1-002/owner-decision-packet-2026-09-12.md` |
+| **Notes** | Owner freeze/SIGNAL_ONLY remain out-of-band. |
+
+## 2026-09-12 — FTEP-V1-002 pre-freeze closure audit
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep-v1-002`, `readiness`, `artifacts` |
+| **Summary** | Closed pre-freeze gaps on proposed V1-002 manifest: added `resolved_fields` (incl. FTEP-D006), `authority_resolutions` for OD-1/OD-3, deferred Wave A ingress; trimmed owner packet to four decisions; documented Finviz `LOCAL_PROBE_REQUIRED` without degrading stale capability evidence. |
+| **Key files** | `artifacts/forward-test-campaigns/FTEP-V1-002/ACTIVATION_MANIFEST.json`, `artifacts/ftep-v1-002/owner-decision-packet-2026-09-12.md`, `finviz-local-probe-status-2026-09-12.json`, `notion-sync-payload-2026-09-12.md`, `tests/intelligence/test_ftep_v1_002_campaign.py` |
+| **Tests** | `unittest` FTEP-V1-002 + finviz + coverage (16 OK); `imp.py validate fast` 21/0; `imp.py validate changed` 2159/0; `campaign-readiness FTEP-V1-002` — WAVE-A-002 deferred (not blocker) |
+| **Related** | `artifacts/ftep-v1-002/reconciliation-matrix-2026-09-12.json`, `FTEP_CAMPAIGN_CATALOG.md` |
+| **Notes** | Executive: `READY_WITH_OWNER_DECISIONS`. No Notion MCP in repo; sync payload only. Finviz probe attempted — credentials absent; `evidence/market_data/finviz/capability-report.json` restored from git. |
+
+## 2026-09-12 — FTEP-V1-002 validation manifest follow-up
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `validation`, `ftep-v1-002` |
+| **Summary** | After orchestrator completion, wired `paper_forward_bridge` changed-validation leaf to include V1-002 campaign tests, frozen-manifest verifier, and governance artifacts so `imp.py validate changed` exercises the pivot. |
+| **Key files** | `tools/validation_manifest.json` |
+| **Tests** | `python tools/imp.py validate fast` — 21/0; `python tools/imp.py validate changed` — 2159 passed, 0 failures |
+| **Related** | [FTEP-V1-002 executive report](../../artifacts/ftep-v1-002/FINAL_EXECUTIVE_REPORT.md) |
+| **Notes** | Work remains uncommitted on `work/ftep-v1-002-us-equity-news`; owner freeze decisions still open. |
+
+## 2026-09-12 — FTEP-V1-002 US equity news-catalyst pivot
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep-v1-002`, `providers`, `forward-test` |
+| **Summary** | Pivoted engineering focus to **FTEP-V1-002** ($0 Moomoo US equity L1 + Finviz Elite news) while preserving **FTEP-V1-001** frozen manifest/fingerprint. Added campaign profile, proposed manifest, catalyst taxonomy contract, frozen-manifest verifier (`FROZEN_BLOCKED_EXTERNAL_DATA_ENTITLEMENT` for V1-001), Moomoo prospective market-evidence bridge, and reconciliation artifacts. No freeze, SIGNAL_ONLY sessions, or empirical collection authorized. |
+| **Key files** | `artifacts/forward-test-campaigns/FTEP-V1-002/`, `artifacts/ftep-v1-002/`, `src/.../frozen_manifest_verifier.py`, `src/.../moomoo_prospective_market_evidence.py`, `capability_requirements.py`, `docs/engineering/FTEP_CAMPAIGN_CATALOG.md`, `docs/engineering/ftep/assets/US_EQUITY_PROFILE_V1.md` |
+| **Tests** | `python -m unittest tests.intelligence.test_ftep_v1_002_campaign tests.news.test_finviz_news_normalize tests.providers.test_coverage_gap_engine -q` |
+| **Related** | [FTEP_CAMPAIGN_CATALOG.md](./FTEP_CAMPAIGN_CATALOG.md), branch `work/ftep-v1-002-us-equity-news` @ `099388f` base |
+| **Notes** | PR stack #22–#28 still open on `main`; merge stack unchanged. |
+
+## 2026-09-12 — FTEP-V1 split slices 4–7 and merge stack
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep-v1-activation`, `docs`, `providers` |
+| **Summary** | Finished split slices 4–7 as stacked PRs **#25–#28** (Wave B closure → ES/news stack → goal audit → freeze/readiness). Published merge order in `artifacts/ftep-v1-split/MERGE_STACK.md`. Closed superseded draft **#19**. Frozen manifest fingerprint unchanged on slice #28; pathway B not authorized. |
+| **Key files** | `artifacts/ftep-v1-split/MERGE_STACK.md`; branches `split/ftep-v1-wave-b-closure`, `split/ftep-v1-es-news-stack`, `split/ftep-v1-goal-audit`, `split/ftep-v1-freeze-readiness` |
+| **Tests** | Per-slice `imp.py validate fast` pass (slices 4–7 worktrees); slice 4 `test_provider_snapshot_compare` OK; slice 6 observational ingress + PIT export OK; monolith `test_coverage_gap_engine` 6 OK; slice 5 profile-ref tests require merged #22 (documented stack dep) |
+| **Related** | PRs #22–#28; closed #19 |
+| **Notes** | Merge **#22** before **#28**; rebase each stacked PR onto `main` after its predecessor merges. |
+
+## 2026-09-12 — FTEP pathway-B goal closure verification
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `validation`, `ftep-v1-activation` |
+| **Summary** | Post-goal follow-up: re-ran `campaign-readiness` (3 blockers, preflight READY, manifest FROZEN) and full `imp.py closure`. ui1/activation paths green; full suite 4618 tests, 7 platform errors (closure baseline classifies dirty-tree pre-existing). Goal closed at **BLOCKED_EXTERNAL_ENTITLEMENT** ceiling. |
+| **Key files** | `artifacts/developer-workflow/closure-report.json` |
+| **Tests** | `imp.py providers campaign-readiness FTEP-V1-001 --json` (NOT_READY); `imp.py closure` (full failed on platform errors only) |
+| **Related** | FTEP-V1 pathway B readiness goal; PR #19 |
+| **Notes** | Owner: enable Moomoo CME ES quote; at pathway B record G-A6 CAMPAIGN_BOUND; merge PR when approved. |
+
+## 2026-09-12 — FTEP post-freeze gap engine and probe overlay
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `ui_api`, `artifacts/ftep-v1-activation` |
+| **Summary** | Manifest-aware Wave A reconciliation (frozen WAVE-A-001/003; deferred 002/009/010), FTEP Moomoo probe overlay into capability snapshot, fresh probe receipts showing `US_FUTURES_QUOTE` not entitled, and UI-001 explore context REPLAY fix when persisted Paper sidecar is attached. |
+| **Key files** | `coverage_gap_engine.py`, `capability_snapshot.py`, `ui_api/projections.py`, `paper_projections.py`, `news-data-inventory.json`, `provider-probe-moomoo-*-2026-09-12.json`, `test_coverage_gap_engine.py` |
+| **Tests** | coverage+ui1 unittest 16 OK; forward activation+persistence 24 OK; `imp.py validate fast` pass; `validate changed` ui1/providers pass |
+| **Related** | Freeze SHA `de420ea`; PR #19 draft |
+| **Notes** | Max readiness **BLOCKED_EXTERNAL_ENTITLEMENT** until Moomoo CME ES quote entitlement; G-A6 binding remains operator step at pathway B. |
+
+## 2026-09-12 — FTEP-V1-001 OD-11 pathway A freeze
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, `artifacts/ftep-v1-activation`, `artifacts/forward-test-campaigns/FTEP-V1-001` |
+| **Summary** | Owner pathway **A**: bound internal-simulation Paper account, recorded OD-1–OD-11 in governed manifest state, froze `ACTIVATION_MANIFEST.json` (fingerprint + `FTCAMP-*` id), ran activation preflight READY with `IMP_PERSIST_STATE=1`, refreshed secret-free Moomoo probe (OpenD reachable; SDK missing). Stopped before first empirical lock or SIGNAL_ONLY session. |
+| **Key files** | `artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json`, `artifacts/ftep-v1-activation/activation-freeze-receipt-2026-09-12.json`, `artifacts/ftep-v1-activation/activation-preflight-receipt-2026-09-12.json`, `docs/engineering/FORWARD_VALIDATION_READINESS_CHECKLIST.md` |
+| **Tests** | `python tools/imp.py validate changed`; forward-test activation + coverage readiness tests |
+| **Related** | [FTEP-V1_OWNER_DECISION_PACKET.md](./FTEP-V1_OWNER_DECISION_PACKET.md), [PAPER_FORWARD_TESTING_BRIDGE.md](../architecture/PAPER_FORWARD_TESTING_BRIDGE.md) |
+| **Notes** | `campaign-readiness` remains NOT_READY on coverage gaps; calibration numerics still deferred. |
+
+## 2026-09-12 — FTEP-V1 activation lead closure (pre-freeze)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, `providers`, `artifacts/ftep-v1-activation` |
+| **Summary** | Closed CG-01/CG-02 in coverage gap engine and Wave A audit; reconciled OD-1–9 into proposed manifest fields without freeze; marked WAVE-A-004 owner-resolved; added secret-free probe/shakedown/paper-choice artifacts; Moomoo probe shows OpenD down (NEEDS_LOCAL_PRIVATE_PROBE). Stopped before OD-11 freeze and Paper bind. |
+| **Key files** | `src/market_platform_foundation/providers/coverage_gap_engine.py`, `artifacts/wave-a-findings/ftep-campaign-audit.json`, `artifacts/wave-a-findings/news-data-inventory.json`, `artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json`, `artifacts/ftep-v1-activation/*`, `tests/providers/test_coverage_gap_engine.py` |
+| **Tests** | `python tools/imp.py validate fast` (21 pass); `validate changed` (2116 pass); `unittest tests.providers.test_coverage_gap_engine` (6 pass); calibration discover (4 pass) |
+| **Related** | [FTEP_V1_ACTIVATION_BLOCKER_REPORT.md](./FTEP_V1_ACTIVATION_BLOCKER_REPORT.md), [OPERATOR_PROBE_RUNBOOK.md](./OPERATOR_PROBE_RUNBOOK.md) |
+| **Notes** | Campaign-readiness remains NOT_READY (manifest pending OD-11, probes, entitlements). Local uncommitted delta on branch `work/ftep-v1-activation`. |
+
+
+## 2026-09-12 — FTEP v1 implementation goal closure audit
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `artifacts`, `docs` |
+| **Summary** | Rigorous section-28 remap: all criteria A–Z `IMPLEMENTATION_COMPLETE`; goal audit flags `implementation_objective_complete` and `qualifying_activation_out_of_scope`; refreshed PR body (26/26 MET, `437cd1c` ingress). Qualifying activation remains owner/operator/external. |
+| **Key files** | `artifacts/ftep-v1-activation-goal-audit.json`, `artifacts/ftep-v1-activation-PR-BODY.md`, `docs/engineering/FTEP_V1_ACTIVATION_BLOCKER_REPORT.md` |
+| **Tests** | `python tools/imp.py validate fast` — 21 passed, 0 failures |
+| **Related** | [FTEP_V1_ACTIVATION_BLOCKER_REPORT.md](./FTEP_V1_ACTIVATION_BLOCKER_REPORT.md) |
+| **Notes** | UpdateGoal invoked only if parent Cursor goal tool available; no push/freeze/Live. |
+
+## 2026-09-12 — Observational news ingress scaffold (FTEP-ACT-04)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `news`, `docs`, `artifacts` |
+| **Summary** | Added gate-gated `observational_ingress.py` (master `IMP_OBSERVATIONAL_NEWS_INGRESS` + existing NewsAPI/Finnhub live gates) that fetches via `NewsAggregator` and normalizes through `aggregator_bridge`; documented known limitations in PAPER_FORWARD_TESTING_BRIDGE and operator probe cross-link. Criterion **O** → MET with implementation-readiness note; campaign connectivity still deferred. |
+| **Key files** | `src/market_platform_foundation/news/observational_ingress.py`, `src/market_platform_foundation/news/config.py`, `tests/news/test_observational_ingress.py`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md`, `docs/engineering/OPERATOR_PROBE_RUNBOOK.md`, `.env.example`, `artifacts/ftep-v1-activation-goal-audit.json` |
+| **Tests** | `python -m unittest tests.news.test_observational_ingress -q` — 5 passed; `python tools/imp.py validate changed` — 1909 passed, 26 skipped |
+| **Related** | [PAPER_FORWARD_TESTING_BRIDGE.md](../architecture/PAPER_FORWARD_TESTING_BRIDGE.md), manifest `deferred_until_evidence` FTEP-ACT-04 / FTEP-D038 |
+| **Notes** | No forward-test auto-wire, Live, push, or freeze. DEFER-FTEP-ACT-04 gap narrowed to campaign bridge wiring only. |
+
+## 2026-09-12 — PIT export, operator probe runbook, goal checkpoint
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `research`, `docs`, `artifacts` |
+| **Summary** | Closed PIT-A-001 with `research/pit_export.py` and tests; added secret-free `OPERATOR_PROBE_RUNBOOK.md`; refreshed goal audit to 24 MET / 1 PARTIAL with `engineering_complete: true`; drafted PR body. Qualifying activation still blocked on owner/operator/external actions. |
+| **Key files** | `src/market_platform_foundation/research/pit_export.py`, `tests/research/test_pit_export.py`, `docs/engineering/OPERATOR_PROBE_RUNBOOK.md`, `artifacts/ftep-v1-activation-goal-audit.json`, `artifacts/ftep-v1-activation-PR-BODY.md`, `docs/README.md`, `docs/engineering/PROVIDER_ACTIVATION_INCREMENT.md`, `docs/engineering/FTEP_V1_ACTIVATION_BLOCKER_REPORT.md` |
+| **Tests** | `python -m unittest tests.research.test_pit_export -q` — 4 passed; `python tools/imp.py validate fast` — 21 passed |
+| **Related** | `artifacts/ftep-v1-activation-goal-audit.json`, [FTEP_V1_ACTIVATION_BLOCKER_REPORT.md](./FTEP_V1_ACTIVATION_BLOCKER_REPORT.md) |
+| **Notes** | Criterion **O** remains PARTIAL (DEFER-FTEP-ACT-04). No push/freeze/Live. |
+
+## 2026-09-12 — FTEP v1 activation goal audit (section 28 A–Z)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `artifacts`, `docs` |
+| **Summary** | Final engineering completion audit for `/goal` section 28 criteria A–Z: machine-readable `ftep-v1-activation-goal-audit.json` (22 MET, 4 PARTIAL), consolidated `FTEP_V1_ACTIVATION_BLOCKER_REPORT.md`, wave-b-closure cross-link; qualifying FTEP-V1-001 activation remains blocked. |
+| **Key files** | `artifacts/ftep-v1-activation-goal-audit.json` (created), `docs/engineering/FTEP_V1_ACTIVATION_BLOCKER_REPORT.md` (created), `artifacts/wave-b-closure-report.json` (updated) |
+| **Tests** | `python tools/imp.py validate fast` — 21 passed, 0 failures |
+| **Related** | `artifacts/wave-b-closure-report.json`, `artifacts/wave-a-findings/reconciliation-gate.json` |
+| **Notes** | No UpdateGoal complete; no push/freeze/Live. |
+
+## 2026-09-12 — Wave B closure report sync (fac808f)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `artifacts` |
+| **Summary** | Linked Wave B executive closure report to fac808f gap-fill deliverables: `ftep_gap_fill_commit` and authoritative path to ES/news stack selection artifact; corrected activation manifest evidence path casing. |
+| **Key files** | `artifacts/wave-b-closure-report.json` |
+| **Tests** | Not run (JSON metadata only) |
+| **Related** | Commit `2e9c7ac`; prior `fac808f` FTEP gap-fill entry below |
+| **Notes** | No push. |
+
+## 2026-09-12 — FTEP gap fill: ES stack artifact, profile refs, imp providers
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `artifacts`, `intelligence`, `developer-tooling`, `docs` |
+| **Summary** | Closed remaining safe Wave B / goal gaps without manifest freeze or Live: machine-readable ES/news provider stack selection (goal §11 A–D verdicts from Wave A facts), FTEP profile doc SHA reference module, `imp.py providers` router for capability-matrix and readiness diagnostics, PROGRAM_STATUS activation/blocker update, and committed FTEP validation receipts. |
+| **Key files** | `artifacts/ftep-v1-001/es-news-provider-stack-selection.json`, `src/.../paper_forward_bridge/ftep_profile_refs.py`, `tools/imp.py`, `tests/intelligence/test_ftep_profile_refs.py`, `tests/validation/test_imp_cli.py`, `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/PROVIDER_ACTIVATION_INCREMENT.md`, `artifacts/ftep-activation-test.json`, `artifacts/ftep-persistence-test.json` |
+| **Tests** | `python tools/imp.py test focused tests.intelligence.test_ftep_profile_refs tests.validation.test_imp_cli`; `python tools/imp.py validate changed` |
+| **Related** | [wave-b-closure-report.json](../../artifacts/wave-b-closure-report.json), [reconciliation-gate.json](../../artifacts/wave-a-findings/reconciliation-gate.json) |
+| **Notes** | Goal disposition remains PARTIALLY_COMPLETE. Qualifying campaign still blocked on OWNER-OD-1–11, probes, calibration numerics. No push. |
+
+## 2026-09-12 — Wave B post-closure catalog, FULL validate, requirement audit
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `artifacts`, `validation` |
+| **Summary** | Committed research-only provider candidate catalog and Wave A cross-links in provider/news docs; corrected decision-research gate `registry_root` to monorepo path. Ran `python tools/imp.py closure --skip-ui` (4606 passed, 49 skipped). Updated `wave-b-closure-report.json` with `requirement_audit` for manifest-freeze tooling, snapshot compare harness, and FTEP profile docs; refreshed reconciliation gate HEAD. |
+| **Key files** | `docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md`, `docs/providers/*.md`, `docs/architecture/NEWS_STRATEGY_EVALUATION.md`, `evidence/research/decision-research-gate-report.json`, `artifacts/wave-b-closure-report.json`, `artifacts/wave-a-findings/reconciliation-gate.json`, `artifacts/developer-workflow/closure-report.json` |
+| **Tests** | `python tools/imp.py closure --skip-ui` — FULL passed (4606 tests, 49 skipped, 0 failures) |
+| **Related** | `artifacts/wave-b-closure-report.json`, commits `1ab2073` (docs/catalog), `a456110` (FULL closure + requirement audit) |
+| **Notes** | No push, no Live, no manifest freeze. Left local `g8`/`g13`/`g14` runtime perf drift and untracked `ftep-*-test.json` out of commits. Wave B disposition remains PARTIALLY_COMPLETE. |
+
+## 2026-09-12 — Wave B closure docs and reconciliation artifacts
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `docs`, `artifacts` |
+| **Summary** | Closed Wave B increment documentation: added offline frozen provider snapshot compare harness, `PROVIDER_ACTIVATION_INCREMENT.md`, Notion sync payload, and executive `wave-b-closure-report.json`. Materialized Wave A lane JSON artifacts and updated `reconciliation-gate.json` to PARTIALLY_COMPLETE with external blockers (package 3 baseline `613a6b4`). |
+| **Key files** | `src/market_platform_foundation/providers/snapshot_compare.py`, `tools/providers/snapshot_compare.py`, `tests/providers/test_provider_snapshot_compare.py`, `docs/engineering/PROVIDER_ACTIVATION_INCREMENT.md`, `artifacts/wave-a-findings/*.json`, `artifacts/wave-b-closure-report.json`, `artifacts/wave-b-notion-sync-payload.md` |
+| **Tests** | `python -m unittest tests.providers.test_provider_snapshot_compare -q` (3 passed); `python tools/imp.py validate changed` (850 passed, 12 skipped) |
+| **Related** | `artifacts/wave-a-findings/reconciliation-gate.json`, `docs/engineering/PROVIDER_READINESS.md` |
+| **Notes** | No push, no Live, no manifest freeze. `validate domain providers` is not a manifest domain; providers suite ran under `validate changed`. |
+
+## 2026-09-11 — Wave B calibration, comparator, and bridge fixes (PKG 3–5)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper`, `paper_forward_bridge`, `news`, `artifacts` |
+| **Summary** | Added preregisterable paper simulator calibration thresholds (UNSET/BLOCKING), fixture-backed IMP vs comparator metrics, external comparator contract with explicit not-market-truth semantics, and Wave A futures suitability advisory hook. Fixed CG-01 manifest reload via stored campaign slug vs FTCAMP hash, wired sample-floor disposition on lock/evaluate (CG-02), and introduced NewsAggregator→NewsArticleEvent plus recorded-eval forward handoff helpers. Updated reconciliation-gate for PKG-DIAGNOSTICS-READINESS `373e47e` and marked packages 3–5 complete. |
+| **Key files** | `src/market_platform_foundation/paper/calibration/**`, `src/market_platform_foundation/news/aggregator_bridge.py`, `src/market_platform_foundation/intelligence/paper_forward_bridge/{service,activation,repository,session_policy,recorded_eval_bridge}.py`, `manifests/paper/schemas/calibration_thresholds.schema.json`, `tests/{platform/test_simulator_calibration,news/test_aggregator_bridge,intelligence/test_forward_test_campaign_slug,intelligence/test_recorded_eval_bridge}.py`, `artifacts/wave-a-findings/reconciliation-gate.json`, `tools/validation_manifest.json` |
+| **Tests** | `python -B -m unittest` on new tests (12 passed); `python tools/validate.py changed` (2977 passed, 29 skipped) |
+| **Related** | `docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md`, `artifacts/wave-a-findings/reconciliation-gate.json` |
+| **Notes** | No manifest freeze, no live probes, FTEP-ACT-06 auto-bridge still deferred. |
+
+## 2026-09-11 — Wave B gap engine and campaign readiness (PKG-DIAGNOSTICS-READINESS)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `paper_forward_bridge`, `tools`, `artifacts` |
+| **Summary** | Added deterministic coverage-gap resolver and FTEP-V1-001 ES/news requirement profile over the capability snapshot, plus fail-closed campaign readiness composing forward-test preflight and gap output. Extended `provider_readiness.py` with read-only `audit`, `gaps`, and `campaign-readiness` subcommands; emitted validated `capability-matrix-snapshot.json` and marked PKG-CAPABILITY-FOUNDATION complete in reconciliation-gate. |
+| **Key files** | `src/market_platform_foundation/providers/capability_requirements.py`, `coverage_gap_engine.py`, `intelligence/paper_forward_bridge/campaign_readiness.py`, `tools/provider_readiness.py`, `tests/providers/test_coverage_gap_engine.py`, `artifacts/wave-a-findings/capability-matrix-snapshot.json`, `artifacts/wave-a-findings/reconciliation-gate.json`, `docs/engineering/PROVIDER_READINESS.md` |
+| **Tests** | `python -m unittest tests.providers.test_coverage_gap_engine tests.providers.test_capability_matrix -q` (12 passed); `.venv` `python tools/validate.py changed` (2668 passed, 40 skipped) |
+| **Related** | `artifacts/wave-a-findings/reconciliation-gate.json` PKG-DIAGNOSTICS-READINESS, PKG-CAPABILITY-FOUNDATION `60cce0e` |
+| **Notes** | No live probes, no manifest freeze, no new provider integrations. Fixed `secrets_included` hygiene in snapshot redaction. |
+
+## 2026-09-11 — Wave B capability matrix foundation (PKG-CAPABILITY-FOUNDATION)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `manifests`, `tools`, `artifacts` |
+| **Summary** | Added versioned capability-contract types (access states CATALOGED→BLOCKED, campaign roles, dimension semantics, PROMOTED evidence gate) and a deterministic snapshot builder over Wave A inventory/audit JSON plus value-blind readiness rows. Reconciliation index already marks provider-inventory and ibkr-tradier-alpaca lanes PRESENT at canonical paths. |
+| **Key files** | `manifests/providers/schemas/capability_matrix_snapshot.schema.json` (created), `src/market_platform_foundation/providers/capability_contract.py` (created), `src/market_platform_foundation/providers/capability_snapshot.py` (created), `tools/providers/capability_matrix.py` (created), `tests/providers/test_capability_matrix.py` (created), `docs/engineering/PROVIDER_READINESS.md` (modified) |
+| **Tests** | `python tools/imp.py test focused tests.providers.test_capability_matrix`; `python tools/imp.py validate changed` |
+| **Related** | `artifacts/wave-a-findings/reconciliation-gate.json` PKG-CAPABILITY-FOUNDATION, `docs/architecture/MARKET_DATA_CAPABILITY_CONTRACT.md` |
+| **Notes** | No live activation, no registry duplication, HTTP/UI matrix projection still deferred (DEFER-UNIFIED-UI-MATRIX). |
+
+## 2026-09-11 — Wave A reconciliation index and parent gate synthesis
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `artifacts` |
+| **Summary** | Completed Wave A reconciliation index for all present lane artifacts (including pit-infrastructure) plus absent provider-inventory and ibkr-tradier-alpaca lanes; added parent `reconciliation-gate.json` classifying requirements, minimum implementation packages with worktree boundaries, and ES/news stack verdict from verified Wave A facts only. No code or manifest changes. |
+| **Key files** | `artifacts/wave-a-findings/reconciliation-index.json` (modified), `artifacts/wave-a-findings/reconciliation-gate.json` (created) |
+| **Tests** | Not run (synthesis-only) |
+| **Related** | `artifacts/wave-a-findings/*.json`, `docs/engineering/FTEP_ACTIVATION_GATES.md`, `docs/architecture/MARKET_DATA_CAPABILITY_CONTRACT.md`, `docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md` |
+| **Notes** | Qualifying FTEP campaign remains unauthorized; two Wave A lane JSON files still absent on disk. |
+
+## 2026-09-11 — Wave A FTEP campaign audit artifact
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `artifacts`, `docs` |
+| **Summary** | Persisted secret-free Wave A `ftep-campaign-audit.json` for FTEP-V1-001 (activation status, satisfied/unsatisfied gates, code/config gaps, OD-1…OD-11 as pending owner decisions, vocabulary, paths, test index). Minimal NEWS_STRATEGY_EVALUATION Paper-boundary correction: bridge exists; campaign not frozen; fixture vs forward paths. No manifest/owner-packet/checklist/empirical changes. |
+| **Key files** | `artifacts/wave-a-findings/ftep-campaign-audit.json` (created), `docs/architecture/NEWS_STRATEGY_EVALUATION.md` (Paper execution boundary) |
+| **Tests** | None (read-only audit follow-up) |
+| **Related** | `artifacts/wave-a-findings/news-data-inventory.json`, `docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md` |
+| **Notes** | Checklist FTEP row deferred (C5); recorded in audit JSON. |
+
+## 2026-09-11 — Wave A UX hooks audit artifact
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `artifacts`, `ui/api` (inventory only) |
+| **Summary** | Persisted secret-free Wave A reconciliation JSON for parallel provider/capability type systems, existing React Query hooks vs HTTP endpoints, DISCOVER/NOW/Fusion surface wiring, eleven condensed gaps, and minimum future provider-governance hook set. No UI code changes. |
+| **Key files** | `artifacts/wave-a-findings/ux-hooks-audit.json` (created), `docs/engineering/PROVIDER_READINESS.md` (one-line pointer) |
+| **Tests** | None (read-only follow-up) |
+| **Related** | Wave A goal reconciliation bundle |
+| **Notes** | Backend/CLI vocabulary normalization should precede new UI matrix hooks. |
+
+## 2026-09-11 — FTEP-V1 activation manifest runtime gaps (Agent B)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `ui_api`, `docs`, `forward-test` |
+| **Summary** | Completed Agent B minimal plan: `freeze_activation_manifest.py` CLI, protocol SHA-256 verification in manifest validation/preflight, decision provenance campaign binding, durable `forward_test_campaign_bindings` with first-lock timestamp, GET preflight API, and non-campaign empirical path guards. FTEP-V1-001 remains `PENDING_OWNER_DECISIONS`; no empirical evidence. |
+| **Key files** | `tools/forward_test/freeze_activation_manifest.py`, `paper_forward_bridge/{protocol_ref,campaign_binding}.py`, `service.py`, `activation.py`, `preflight.py`, `sqlite_repository.py`, `ui_api/{forward_test_projections,server}.py`, forward-test tests, `PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | `python tools/imp.py validate fast`; `python tools/imp.py test affected`; `python tools/check_docs_links.py` |
+| **Related** | Agent B spec; [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md) |
+| **Notes** | Owner must sign OD-1 … OD-11 before freeze CLI succeeds on FTEP-V1-001. $0 incremental cost. Paper-only. |
+
+## 2026-09-11 — FTEP-V1 P0 activation follow-ups (campaign binding + preflight API)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `ui_api`, `docs`, `forward-test` |
+| **Summary** | Added durable campaign binding (one ACTIVE campaign per account), protocol reference hash verification, GET preflight API, and fail-closed non-campaign session guards. No manifest freeze or empirical campaign start. |
+| **Key files** | `paper_forward_bridge/{campaign_binding,protocol_ref}.py`, `service.py`, `preflight.py`, `activation.py`, `sqlite_repository.py`, `store.py`, `ui_api/{forward_test_projections,server}.py`, tests `test_forward_test_{activation,persistence,preflight_api,protocol_ref}.py`, `PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | `python tools/imp.py validate fast`; `python tools/imp.py test affected`; `python tools/check_docs_links.py` |
+| **Related** | Agent A/C P0 gaps; [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md) |
+| **Notes** | Owner must still sign OD-1 … OD-11 before manifest freeze. $0 incremental cost. Paper-only. |
+
+## 2026-09-11 — FTEP-V1 owner decision packet (OD-1 … OD-11)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `forward-test` |
+| **Summary** | Expanded owner decision packet per user spec §16: 28 Agent A inventory rows consolidated into 11 grouped decisions (OD-1 … OD-11) with recommended defaults, precedent table for sample floors, and C3 ES/RTH conflict note. Updated activation manifest skeleton (`PENDING_OWNER_DECISIONS`), protocol ref with doc SHA-256, and FTEP activation status section. No FROZEN status or empirical claims. |
+| **Key files** | `docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md`, `artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json`, `artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json`, `docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | None (docs/artifacts only) |
+| **Related** | Agent A audits `c4f6ca28`, `81265595`; [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md) |
+| **Notes** | Owner must sign OD-1 … OD-11 before manifest freeze. $0 incremental cost; Paper-only. |
+
+## 2026-09-11 — FTEP-V1 activation runtime gates
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence`, `docs`, `forward-test` |
+| **Summary** | Implemented activation manifest load/validate/fingerprint, deterministic preflight, session manifest binding, cohort/strategy/universe validation on decisions, `evidence_class` without auto-promotion, observation `source_time_ns` guard, and schema v3–v4 persistence columns. Commit `58864aa` on `work/ftep-v1-activation`. |
+| **Key files** | `paper_forward_bridge/activation.py`, `preflight.py`, `service.py`, `types.py`, `temporal.py`, `repository.py`, `tests/intelligence/test_forward_test_activation.py`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | `python tools/imp.py test affected` — 1832 passed, 26 skipped; forward-test 30/30 |
+| **Related** | [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md), [FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md](FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md) |
+| **Notes** | Manifest `PENDING_OWNER_DECISIONS` until owner signs OD-01/ACT-01/ACT-03. $0 incremental cost. Not pushed. |
+
+## 2026-09-11 — FTEP-V1 owner decision packet and activation manifest skeleton
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `forward-test` |
+| **Summary** | Created FTEP-V1 owner decision packet and `FTEP-V1-001` activation manifest skeleton per Agent A re-run audit (`c4f6ca28`). Manifest is `PENDING_OWNER_DECISIONS` with 3 minimal-path owner choices (OD-01, ACT-01, ACT-03) and 17 pre-resolved safe/deterministic fields; no FROZEN status or empirical claims. |
+| **Key files** | `docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md` (created), `artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json` (created), `artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json` (created), `docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md` (header), `docs/engineering/WORK_LOG.md` |
+| **Tests** | None (docs/artifacts only) |
+| **Related** | [FTEP-V1_OWNER_DECISION_PACKET.md](FTEP-V1_OWNER_DECISION_PACKET.md), Agent A audit `c4f6ca28`, [FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md](FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md) |
+| **Notes** | Superseded by activation runtime gates entry above for implementation status. |
+
 ## 2026-09-10 — PD-09 verifier persistence follow-up
 
 | Field | Value |

@@ -23,6 +23,15 @@ def build_as_of_context(store: ReplayStore) -> dict[str, object]:
     from .live_projections import resolve_live_operating_modes
 
     data_mode, execution_mode, data_provider, execution_authority = resolve_live_operating_modes(store)
+    from ..market_data.live_config import live_observational_enabled
+
+    if (
+        data_mode == "FIXTURE_REPLAY"
+        and getattr(store, "execution_deferred", False)
+        and not live_observational_enabled()
+    ):
+        execution_mode = "NONE"
+        execution_authority = "BLOCKED"
     as_of_time = store.as_of_time()
     if data_mode == "LIVE_OBSERVATIONAL":
         import time

@@ -1,0 +1,288 @@
+{
+  "account_scope": {
+    "account_id": "7CBA5536EED17C4A6246327EE7ABF223C58627660B93A642D8A99C2AEC10A579",
+    "data_mode": "FIXTURE_REPLAY",
+    "execution_mode": "INTERNAL_SIMULATION",
+    "mode": "PAPER",
+    "provider": "INTERNAL"
+  },
+  "activation_status": "FROZEN",
+  "asset_profile_version": "US_EQUITY_PROFILE_V1",
+  "authority_resolutions": {
+    "OD-1": {
+      "ai_policy_id": "news_ai_enhanced@1.0.0",
+      "authority_source": "docs/architecture/NEWS_STRATEGY_EVALUATION.md L35-39; docs/engineering/ftep/assets/US_EQUITY_PROFILE_V1.md",
+      "baseline_policy_id": "news_deterministic_baseline@1.0.0",
+      "classification": "AUTHORITY_RESOLVED",
+      "intelligence_provider": "RECORDED_ARTIFACTS_ONLY",
+      "note": "Proposed engineering default for V1-002 pivot; not frozen until OD-11.",
+      "owner_sign_off_still_required": false,
+      "resolution": "A",
+      "strategy_binding": "news-strategy US equity lane (same policy IDs as FTEP-V1-001 Option A)"
+    },
+    "OD-3_calendar_interpretation": {
+      "authority_source": "docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md OD-3 Option A",
+      "classification": "AUTHORITY_RESOLVED",
+      "note": "Aligns with binding.calendar_scope and US_EQUITY_PROFILE_V1.",
+      "owner_sign_off_still_required": false,
+      "resolution": "US_EQUITY_RTH"
+    }
+  },
+  "binding": {
+    "cohort_arms": {
+      "ai_enhanced": {
+        "policy_id": "news_ai_enhanced",
+        "policy_version": "1.0.0"
+      },
+      "baseline": {
+        "policy_id": "news_deterministic_baseline",
+        "policy_version": "1.0.0"
+      }
+    },
+    "evaluation_horizon_ns": 300000000000,
+    "execution_mode": "INTERNAL_SIMULATION",
+    "mode": "PAPER",
+    "paper_account_id": "7CBA5536EED17C4A6246327EE7ABF223C58627660B93A642D8A99C2AEC10A579",
+    "persistence_required": true,
+    "run_kind": "FORWARD_TEST",
+    "test_mode": "SIGNAL_ONLY",
+    "universe": {
+      "asset_class": "US_EQUITY",
+      "benchmark_role": "BENCHMARK_CONTEXT_ONLY",
+      "benchmark_symbols": [
+        "SPY"
+      ],
+      "symbols": [
+        "AAPL",
+        "MSFT",
+        "NVDA",
+        "AMZN",
+        "META"
+      ]
+    }
+  },
+  "cadence": "EVENT_DRIVEN",
+  "calendar_scope": "US_EQUITY_RTH",
+  "campaign_id": "FTCAMP-f7083180990bc59578ca045e1e1318a356421bbc9b81ee514c14130cb0b356b1",
+  "campaign_slug": "FTEP-V1-002",
+  "catalyst_taxonomy_binding": {
+    "asset_class_filter": [
+      "EQUITY"
+    ],
+    "catalyst_taxonomy_version": "CATALYST_TAXONOMY_CONTRACT_V1",
+    "enabled_catalyst_ids": [
+      "earnings",
+      "guidance",
+      "partnership",
+      "contract",
+      "acquisition",
+      "merger",
+      "offering",
+      "financing",
+      "analyst",
+      "bankruptcy",
+      "management",
+      "fda",
+      "approval",
+      "clinical",
+      "sec_filing",
+      "investigation"
+    ],
+    "registry_version": "news/catalysts/1.0.0"
+  },
+  "catalyst_taxonomy_version": "CATALYST_TAXONOMY_CONTRACT_V1",
+  "classification": "FROZEN_FOR_ACTIVATION / NOT YET EMPIRICAL EVIDENCE",
+  "created_at": "2026-09-12T14:00:00Z",
+  "deferred_until_evidence": {
+    "FTEP-ACT-04": "provider_connectivity_if_observational_ingress_required",
+    "FTEP-ACT-06": "evidence_01b_auto_bridge",
+    "FTEP-ACT-08": "route_policy_ui_mutation_wiring",
+    "FTEP-D032": "L2_L1_stale_threshold_when_freshness_evaluated",
+    "FTEP-D038": "provider_connectivity_if_observational_ingress_required"
+  },
+  "fingerprint": "F7083180990BC59578CA045E1E1318A356421BBC9B81EE514C14130CB0B356B1",
+  "frozen_at": "2026-09-12T16:30:00Z",
+  "frozen_governed_owner_decisions": {
+    "OD-1": {
+      "classification": "AUTHORITY_RESOLVED",
+      "recorded_at": "2026-09-12T15:00:00Z",
+      "resolution": "A",
+      "source": "authority_resolutions.OD-1"
+    },
+    "OD-11": {
+      "authorization_pathway": "A",
+      "authorization_scope": "BIND_FREEZE_PREFLIGHT_ONLY",
+      "resolution": "authorization_pathway_A",
+      "signed_at": "2026-09-12T16:30:00Z",
+      "source": "OWNER_SIGNED"
+    },
+    "OD-2": {
+      "benchmark_symbols": [
+        "SPY"
+      ],
+      "resolution": "US_EQUITY / AAPL,MSFT,NVDA,AMZN,META; SPY benchmark only",
+      "source": "OWNER_SELECTED",
+      "universe": [
+        "AAPL",
+        "MSFT",
+        "NVDA",
+        "AMZN",
+        "META"
+      ]
+    },
+    "OD-3": {
+      "classification": "AUTHORITY_RESOLVED",
+      "recorded_at": "2026-09-12T15:00:00Z",
+      "resolution": "US_EQUITY_RTH",
+      "source": "authority_resolutions.OD-3_calendar_interpretation"
+    },
+    "OD-6": {
+      "phase_transition_min_locks": 5,
+      "resolution": "PHASE_1_SIGNAL_ONLY",
+      "source": "OWNER_SELECTED"
+    },
+    "paper_account_binding": {
+      "display_name": "Internal simulation Paper (default bootstrap ledger)",
+      "paper_account_id": "7CBA5536EED17C4A6246327EE7ABF223C58627660B93A642D8A99C2AEC10A579",
+      "resolution": "A",
+      "source": "OWNER_SELECTED"
+    }
+  },
+  "ftep_core_version": "FTEP_CORE_V1",
+  "intelligence_provider": "RECORDED_ARTIFACTS_ONLY",
+  "lane_id": "US_EQUITY",
+  "manifest_fingerprint": "F7083180990BC59578CA045E1E1318A356421BBC9B81EE514C14130CB0B356B1",
+  "manifest_schema_version": 1,
+  "market_data_bindings": {
+    "authority": {
+      "campaign_role": "AUTHORITY",
+      "capability_id": "US_EQUITY_L1",
+      "evidence_ref": "artifacts/ftep-v1-activation/provider-probe-moomoo-summary-2026-09-12.json",
+      "incremental_cost_usd": 0,
+      "provider_id": "MOOMOO"
+    },
+    "news_context": {
+      "campaign_role": "CONTEXT_ONLY",
+      "capability_id": "NEWS_EXPORT",
+      "evidence_ref": "evidence/market_data/finviz/capability-report.json",
+      "incremental_cost_usd": 0,
+      "local_probe_status_ref": "artifacts/ftep-v1-002/finviz-local-probe-status-2026-09-12.json",
+      "provider_id": "FINVIZ_ELITE"
+    },
+    "optional_regulatory": {
+      "campaign_role": "CONTEXT_ONLY",
+      "capability_id": "PUBLIC_FILINGS",
+      "incremental_cost_usd": 0,
+      "methodology_required": false,
+      "provider_id": "SEC_EDGAR"
+    }
+  },
+  "operator_attestation": {
+    "empirical_lock_authorized": false,
+    "execution_authorized": false,
+    "freeze_authorized": true,
+    "live_authorized": false,
+    "owner_signed_at": "2026-09-12T16:30:00Z",
+    "pathway": "A",
+    "scope": "BIND_FREEZE_PREFLIGHT_ONLY",
+    "signal_only_session_authorized": false
+  },
+  "owner_decisions_pending": [],
+  "owner_decisions_recorded": {
+    "OD-1": {
+      "classification": "AUTHORITY_RESOLVED",
+      "recorded_at": "2026-09-12T15:00:00Z",
+      "resolution": "A",
+      "source": "authority_resolutions.OD-1"
+    },
+    "OD-11": {
+      "authorization_scope": "BIND_FREEZE_PREFLIGHT_ONLY",
+      "classification": "OWNER_SIGNED",
+      "recorded_at": "2026-09-12T16:30:00Z",
+      "resolution": "authorization_pathway_A",
+      "source": "OWNER_AUTHORIZATION"
+    },
+    "OD-2": {
+      "classification": "OWNER_SELECTED",
+      "recorded_at": "2026-09-12T16:30:00Z",
+      "resolution": "AAPL,MSFT,NVDA,AMZN,META; SPY benchmark only",
+      "source": "OWNER_AUTHORIZATION"
+    },
+    "OD-3": {
+      "classification": "AUTHORITY_RESOLVED",
+      "recorded_at": "2026-09-12T15:00:00Z",
+      "resolution": "US_EQUITY_RTH",
+      "source": "authority_resolutions.OD-3_calendar_interpretation"
+    },
+    "OD-6": {
+      "classification": "OWNER_SELECTED",
+      "recorded_at": "2026-09-12T16:30:00Z",
+      "resolution": "PHASE_1_SIGNAL_ONLY",
+      "source": "OWNER_AUTHORIZATION"
+    },
+    "OD-PAPER-ACCOUNT": {
+      "classification": "OWNER_SELECTED",
+      "paper_account_id": "7CBA5536EED17C4A6246327EE7ABF223C58627660B93A642D8A99C2AEC10A579",
+      "recorded_at": "2026-09-12T16:30:00Z",
+      "resolution": "A",
+      "source": "OWNER_AUTHORIZATION"
+    }
+  },
+  "owner_decisions_required": [],
+  "owner_signed_at": "2026-09-12T16:30:00Z",
+  "paper_account_id": "7CBA5536EED17C4A6246327EE7ABF223C58627660B93A642D8A99C2AEC10A579",
+  "proposed_configuration_note": "Engineering-proposed manifest for owner review. OD-1 and OD-3 marked AUTHORITY_RESOLVED (not frozen). Finviz Elite evidence: STALE_2026-08-22 with LOCAL_PROBE_REQUIRED on 2026-09-12 (credentials absent in agent session). Do not freeze without OD-11 authorization in conversation.",
+  "protocol_id": "FTEP-V1/0.1.0-PREREG",
+  "protocol_version": "0.1.0-PREREG",
+  "provenance": {
+    "engineering_branch": "work/ftep-v1-002-us-equity-news",
+    "incremental_cost_usd": 0,
+    "pivot_from": "FTEP-V1-001",
+    "pivot_rationale": "$0 incremental US equity news-catalyst path; FTEP-V1-001 ES-news remains frozen unchanged."
+  },
+  "repository_source_sha": "099388f7f23e31e3d01107ceeba9c8822903848c",
+  "resolved_fields": {
+    "FTEP-D001": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "PROTOCOL_REF.json + campaign artifact tree",
+      "resolution_source": "artifacts/forward-test-campaigns/FTEP-V1-002/PROTOCOL_REF.json"
+    },
+    "FTEP-D004": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "conditional_on": "OD-1=A",
+      "resolution": "news_deterministic_baseline@1.0.0",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md \u00a72"
+    },
+    "FTEP-D005": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "conditional_on": "OD-1=A",
+      "resolution": "news_ai_enhanced@1.0.0",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md \u00a73"
+    },
+    "FTEP-D006": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "RECORDED_ARTIFACTS_ONLY",
+      "resolution_source": "docs/architecture/NEWS_STRATEGY_EVALUATION.md L152-156"
+    },
+    "FTEP-D009": {
+      "classification": "OWNER_SELECTED",
+      "conditional_on": "OD-2",
+      "resolution": "US_EQUITY / AAPL,MSFT,NVDA,AMZN,META; SPY benchmark only",
+      "resolution_source": "OWNER_AUTHORIZATION OD-2"
+    },
+    "FTEP-D023": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "PAPER_INTERNAL_ONLY",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md \u00a712"
+    }
+  },
+  "safety_constraints": {
+    "cost_usd": 0,
+    "empirical_evidence_claimed": false,
+    "live_execution": false,
+    "mode": "INTERNAL_SIMULATION"
+  },
+  "schema_version": "intelligence/paper_forward_bridge/activation_manifest/1.0.0",
+  "status": "FROZEN",
+  "strategy_profile_version": "NEWS_CATALYST_PROFILE_V1"
+}

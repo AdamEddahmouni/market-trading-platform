@@ -65,6 +65,11 @@ def finnhub_live_enabled() -> bool:
     return _gate_enabled("IMP_FINNHUB_LIVE")
 
 
+def observational_news_ingress_enabled() -> bool:
+    """Master gate for opt-in observational live news → canonical events (default off)."""
+    return _gate_enabled("IMP_OBSERVATIONAL_NEWS_INGRESS")
+
+
 def _int_env(name: str, default: int) -> int:
     raw = _runtime_values().get(name, "").strip()
     if not raw:
@@ -121,5 +126,6 @@ __all__ = [
     "finnhub_live_enabled",
     "newsapi_api_key",
     "newsapi_live_enabled",
+    "observational_news_ingress_enabled",
     "verify_news_config",
 ]

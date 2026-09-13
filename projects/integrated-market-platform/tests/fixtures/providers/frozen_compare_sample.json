@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0.0",
+  "logical_id": "providers.frozen_observation_compare",
+  "observed_at": "2026-09-11T12:00:00Z",
+  "capability_id": "US_EQUITY_L1",
+  "arms": [
+    {
+      "provider_id": "alpha",
+      "observations": [
+        {
+          "instrument_key": "AAPL",
+          "value": 190.5,
+          "latency_ns": 1000000,
+          "received_time_ns": 100
+        },
+        {
+          "instrument_key": "MSFT",
+          "value": 420.0,
+          "latency_ns": 900000,
+          "received_time_ns": 101
+        }
+      ]
+    },
+    {
+      "provider_id": "beta",
+      "observations": [
+        {
+          "instrument_key": "AAPL",
+          "value": 190.51,
+          "latency_ns": 1500000,
+          "received_time_ns": 102
+        }
+      ]
+    }
+  ]
+}

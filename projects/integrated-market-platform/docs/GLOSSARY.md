@@ -2,6 +2,8 @@
 
 Concise definitions for terms used across architecture and engineering docs.
 
+Program terms (IMP, FTEP, campaign, `FROZEN_FOR_ACTIVATION`, Market Evidence vs IMP Simulation vs Comparator) live in [platform/GLOSSARY.md](platform/GLOSSARY.md).
+
 | Term | Definition |
 |------|------------|
 | **Demo** | UI session mode for fixture replay exploration. Read-only; no execution authority. |

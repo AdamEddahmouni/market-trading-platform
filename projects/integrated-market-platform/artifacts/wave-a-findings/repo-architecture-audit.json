@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "wave_a_read_only_audit",
+  "artifact_id": "wave-a-repo-architecture-audit",
+  "observed_at": "2026-09-11T23:05:00Z",
+  "audit_scope": "Wave A repository architecture follow-up: git baseline, main merge-gap governance docs, reconcile-with-main.",
+  "git": {
+    "branch": "work/ftep-v1-activation",
+    "head_sha_pre_merge": "9ea33fd87f889e860e90a3cf6f6eab6ae3f1cdda",
+    "head_sha_post_merge": "61a0593e56d37b0366e761b1ff3c8b88519250aa",
+    "origin_main_sha": "588ada8a4f2baac2dee4496774814341a15979f6",
+    "merge_base_with_origin_main": "a4858103baa3531051791a632ed36a9339fd6414",
+    "ahead_of_origin_main_commits": 8,
+    "behind_origin_main_commits": 14,
+    "dirty_files_at_audit_start": [
+      " M projects/integrated-market-platform/artifacts/p3-plan-cli-check.json",
+      " M projects/integrated-market-platform/docs/research/PROVIDER_AND_DATA_RESEARCH_MATRIX.md",
+      "?? projects/integrated-market-platform/artifacts/ftep-activation-test.json",
+      "?? projects/integrated-market-platform/artifacts/ftep-persistence-test.json",
+      "?? projects/integrated-market-platform/docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"
+    ],
+    "fetch_origin": "executed (monorepo root)"
+  },
+  "merge_gap_doc_paths_from_main": [
+    "projects/integrated-market-platform/docs/architecture/MARKET_DATA_CAPABILITY_CONTRACT.md",
+    "projects/integrated-market-platform/docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md",
+    "projects/integrated-market-platform/docs/engineering/FTEP_ACTIVATION_GATES.md",
+    "projects/integrated-market-platform/docs/engineering/ftep/CAMPAIGN_MANIFEST_TEMPLATE_V1.md",
+    "projects/integrated-market-platform/docs/platform/PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md"
+  ],
+  "merge_gap_ftep_template_paths_from_main": [
+    "projects/integrated-market-platform/docs/engineering/ftep/CAMPAIGN_MANIFEST_TEMPLATE_V1.md"
+  ],
+  "recommended_order": [
+    {
+      "priority": 1,
+      "id": "reconcile-with-main",
+      "summary": "Merge origin/main governance contracts and planning closure into work/ftep-v1-activation before FTEP activation implementation proceeds."
+    }
+  ],
+  "merge_reconciliation": {
+    "attempted": true,
+    "merged": true,
+    "merge_commit_sha": "61a0593e56d37b0366e761b1ff3c8b88519250aa",
+    "dirty_tree_blocked_merge": false,
+    "blocker": null,
+    "conflicts": [
+      {
+        "path": "projects/integrated-market-platform/docs/README.md",
+        "resolution_policy": "main governance/docs index rows for FTEP core, profiles, and campaign manifest template; retain branch FTEP-V1 owner decision packet link",
+        "resolved": true
+      }
+    ],
+    "auto_merged_without_conflict": [
+      "projects/integrated-market-platform/docs/PROJECT_STATUS.md"
+    ],
+    "brought_from_main": [
+      "projects/integrated-market-platform/docs/architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md",
+      "projects/integrated-market-platform/docs/architecture/MARKET_DATA_CAPABILITY_CONTRACT.md",
+      "projects/integrated-market-platform/docs/architecture/OPPORTUNITY_CONTRACT.md",
+      "projects/integrated-market-platform/docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md",
+      "projects/integrated-market-platform/docs/engineering/FTEP_ACTIVATION_GATES.md",
+      "projects/integrated-market-platform/docs/engineering/ftep/CAMPAIGN_MANIFEST_TEMPLATE_V1.md",
+      "projects/integrated-market-platform/docs/engineering/ftep/FTEP_CORE_V1.md",
+      "projects/integrated-market-platform/docs/engineering/ftep/assets/FUTURES_PROFILE_V1.md",
+      "projects/integrated-market-platform/docs/engineering/ftep/strategies/NEWS_CATALYST_PROFILE_V1.md",
+      "projects/integrated-market-platform/docs/platform/PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md",
+      "projects/integrated-market-platform/docs/research/STRATEGY_READINESS_MODEL.md"
+    ]
+  },
+  "post_merge": {
+    "merged": true,
+    "merge_commit_sha": "61a0593e56d37b0366e761b1ff3c8b88519250aa",
+    "conflict_files_resolved": [
+      "projects/integrated-market-platform/docs/README.md"
+    ],
+    "reconcile_with_main": {
+      "status": "COMPLETE"
+    }
+  },
+  "secrets_in_artifact": false
+}

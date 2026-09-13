@@ -139,10 +139,11 @@ Forensic baselines and optimization ledgers live under
 Optimize measured hotspots only; preserve assurance invariants. Performance work
 is secondary/enabling and must not displace primary product increments.
 
-## Local lane topology (2026-09-10)
+## Local lane topology (historical 2026-09-10)
 
-When professor-directed product work and performance engineering must not mix
-in one dirty tree:
+The table below is the **2026-09-10** worktree topology. It is **not** current
+procedure. Current landing until merge is PR **#29** /
+`work/ftep-v1-002-us-equity-news`. After #29 merges, land on `origin/main`.
 
 | Lane | Branch | Worktree | Purpose |
 |------|--------|----------|---------|
@@ -151,9 +152,9 @@ in one dirty tree:
 | Performance P3–P7 | `perf/p3-validation-selector` … `perf/p7-continuous-performance-budgets` | Sibling worktrees | Selector/evidence/scheduler/budget optimization only |
 
 Create performance refactors in the dedicated worktree; integrate back through
-explicit merge/cherry-pick after validation. Do not begin P3 in the professor
-root workspace. Remote `main` remains the accepted baseline until an explicit
-publish step.
+explicit merge/cherry-pick after validation. Do not treat the 2026-09-10
+professor root as the current landing branch. Remote `main` remains the accepted
+baseline until an explicit publish step.
 
 ### Linked Git worktrees
 

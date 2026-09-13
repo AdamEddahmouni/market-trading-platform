@@ -1,0 +1,451 @@
+{
+  "account_scope": {
+    "account_id": "7CBA5536EED17C4A6246327EE7ABF223C58627660B93A642D8A99C2AEC10A579",
+    "data_mode": "FIXTURE_REPLAY",
+    "execution_mode": "INTERNAL_SIMULATION",
+    "mode": "PAPER",
+    "provider": "INTERNAL"
+  },
+  "activation_authorization_pathway": "A",
+  "activation_status": "FROZEN",
+  "audit_basis": "Agent A re-run c4f6ca28; first-run 81265595",
+  "authority_resolutions": {
+    "OD-1": {
+      "ai_policy_id": "news_ai_enhanced@1.0.0",
+      "authority_source": "docs/architecture/NEWS_STRATEGY_EVALUATION.md L35-39",
+      "baseline_policy_id": "news_deterministic_baseline@1.0.0",
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "intelligence_provider": "RECORDED_ARTIFACTS_ONLY",
+      "note": "Binding fields remain null until OD-11 freeze; authority pre-resolves Option A only.",
+      "owner_sign_off_still_required": true,
+      "resolution": "A",
+      "strategy_binding": "news-strategy ES lane"
+    },
+    "OD-3_calendar_interpretation": {
+      "authority_source": "docs/engineering/FTEP-V1_OWNER_DECISION_PACKET.md OD-3",
+      "classification": "ENGINEERING_DEFAULT_WITH_OWNER_ACK",
+      "conflict": "C3 ES Globex vs RTH",
+      "resolution": "US_EQUITY_RTH for ES news-catalyst decisions"
+    }
+  },
+  "binding": {
+    "cohort_arms": {
+      "ai_enhanced": {
+        "policy_id": "news_ai_enhanced",
+        "policy_version": "1.0.0"
+      },
+      "baseline": {
+        "policy_id": "news_deterministic_baseline",
+        "policy_version": "1.0.0"
+      }
+    },
+    "evaluation_horizon_ns": 300000000000,
+    "execution_mode": "INTERNAL_SIMULATION",
+    "mode": "PAPER",
+    "paper_account_id": "7CBA5536EED17C4A6246327EE7ABF223C58627660B93A642D8A99C2AEC10A579",
+    "persistence_required": true,
+    "run_kind": "FORWARD_TEST",
+    "test_mode": "SIGNAL_ONLY",
+    "universe": {
+      "asset_class": "FUTURES_EQUITY_INDEX",
+      "symbols": [
+        "ES"
+      ]
+    }
+  },
+  "cadence": "EVENT_DRIVEN",
+  "calendar_scope": "US_EQUITY_RTH",
+  "campaign_id": "FTCAMP-69c36ba23813c009c27ee83924834d46f5804d0a0fa037e37adb133f8bfea99c",
+  "campaign_slug": "FTEP-V1-001",
+  "classification": "FROZEN_FOR_ACTIVATION / NOT YET EMPIRICAL EVIDENCE",
+  "cohort_matching_key": "(symbol, decision_bucket, evaluation_horizon_ns)",
+  "created_at": "2026-09-11T03:30:00Z",
+  "deferred_until_evidence": {
+    "FTEP-ACT-04": "provider_connectivity_if_observational_ingress_required",
+    "FTEP-ACT-06": "evidence_01b_auto_bridge",
+    "FTEP-ACT-08": "route_policy_ui_mutation_wiring",
+    "FTEP-D032": "L2_L1_stale_threshold_when_freshness_evaluated",
+    "FTEP-D038": "provider_connectivity_if_observational_ingress_required"
+  },
+  "duration_floors": {
+    "min_distinct_trading_days": 5,
+    "min_qualifying_sessions": 5,
+    "min_session_duration_ns": 300000000000
+  },
+  "evidence_class_target": "ACTUAL_FORWARD",
+  "fingerprint": "69C36BA23813C009C27EE83924834D46F5804D0A0FA037E37ADB133F8BFEA99C",
+  "frozen_at": "2026-09-12T05:52:00Z",
+  "frozen_governed_owner_decisions": {
+    "OD-1": {
+      "ai_policy_id": "news_ai_enhanced@1.0.0",
+      "baseline_policy_id": "news_deterministic_baseline@1.0.0",
+      "intelligence_provider": "RECORDED_ARTIFACTS_ONLY",
+      "lane_id": "FUTURES_EQUITY_INDEX",
+      "resolution": "news-strategy ES lane (Option A)",
+      "source": "OWNER_SELECTED",
+      "strategy_binding": "A",
+      "universe": [
+        "ES"
+      ]
+    },
+    "OD-10": {
+      "resolution": "FTCAMP-{sha256(manifest_fingerprint).lower()} at freeze",
+      "source": "ENGINEERING_DERIVED"
+    },
+    "OD-11": {
+      "FTEP-D035": "ACCEPTED",
+      "FTEP-D037": "CHECKLIST_REOPENED",
+      "FTEP-D039": "OPERATOR_RUNBOOK_ACKNOWLEDGED",
+      "authorization_pathway": "A",
+      "authorization_scope": "BIND_FREEZE_PREFLIGHT_ONLY",
+      "owner_session_decision": "paper binding A, authorization A",
+      "resolution": "authorization_pathway_A",
+      "signed_at": "2026-09-12T05:52:00Z",
+      "source": "OWNER_SIGNED"
+    },
+    "OD-2": {
+      "resolution": "ES / FUTURES_EQUITY_INDEX from OD-1",
+      "source": "AUTHORITY_RESOLVED"
+    },
+    "OD-3": {
+      "calendar_window_et": "09:30-16:00",
+      "off_hours_platform": "READ_ONLY_NON_GOVERNED_LOCKS",
+      "resolution": "US_EQUITY_RTH",
+      "source": "OWNER_SELECTED"
+    },
+    "OD-4": {
+      "resolution": "dual duration floor (5 sessions \u00d7 5 min \u00d7 5 trading days)",
+      "source": "OWNER_SELECTED"
+    },
+    "OD-5": {
+      "resolution": "EVENT_DRIVEN",
+      "source": "OWNER_SELECTED"
+    },
+    "OD-6": {
+      "phase_transition_min_locks": 5,
+      "resolution": "PHASED_SIGNAL_ONLY_THEN_EXECUTION",
+      "source": "OWNER_SELECTED"
+    },
+    "OD-7": {
+      "resolution": "protocol \u00a714 proposed integers (30/15/5/5/10/10)",
+      "source": "OWNER_SELECTED"
+    },
+    "OD-8": {
+      "resolution": "percentage_return",
+      "source": "OWNER_SELECTED",
+      "statistical_test": "PAIRED_BOOTSTRAP_CI"
+    },
+    "OD-9": {
+      "resolution": "(symbol, decision_bucket, evaluation_horizon_ns)",
+      "source": "OWNER_SELECTED"
+    },
+    "paper_account_binding": {
+      "display_name": "Internal simulation Paper (default bootstrap ledger)",
+      "paper_account_id": "7CBA5536EED17C4A6246327EE7ABF223C58627660B93A642D8A99C2AEC10A579",
+      "resolution": "A",
+      "source": "OWNER_SELECTED"
+    }
+  },
+  "horizons_ns": [
+    300000000000,
+    900000000000,
+    1800000000000,
+    3600000000000
+  ],
+  "intelligence_provider": "RECORDED_ARTIFACTS_ONLY",
+  "lane_id": "FUTURES_EQUITY_INDEX",
+  "manifest_fingerprint": "69C36BA23813C009C27EE83924834D46F5804D0A0FA037E37ADB133F8BFEA99C",
+  "manifest_schema_version": 1,
+  "multiple_testing": "SINGLE_PRIMARY_ONLY",
+  "operator_attestation": {
+    "empirical_lock_authorized": false,
+    "execution_authorized": false,
+    "live_authorized": false,
+    "owner_signed_at": "2026-09-12T05:52:00Z",
+    "pathway": "A",
+    "scope": "BIND_FREEZE_PREFLIGHT_ONLY",
+    "signal_only_session_authorized": false
+  },
+  "overlap_policy": "FORBID_CONCURRENT",
+  "owner_conditional_decisions": {
+    "if_od_1_equals_B": [
+      "FTEP-D003",
+      "FTEP-D010",
+      "FTEP-SUB-01",
+      "FTEP-SUB-03"
+    ],
+    "if_od_1_equals_C": [
+      "FTEP-D003",
+      "FTEP-SUB-03"
+    ],
+    "if_od_3_equals_B": [
+      "FTEP-SUB-04"
+    ],
+    "if_od_5_equals_B": [
+      "cohort_matching_key_redefinition"
+    ],
+    "optional_third_arm": [
+      "FTEP-D007"
+    ]
+  },
+  "owner_decisions_pending": [],
+  "owner_decisions_recorded": {
+    "OD-1": {
+      "ai_policy_id": "news_ai_enhanced@1.0.0",
+      "baseline_policy_id": "news_deterministic_baseline@1.0.0",
+      "intelligence_provider": "RECORDED_ARTIFACTS_ONLY",
+      "lane_id": "FUTURES_EQUITY_INDEX",
+      "resolution": "news-strategy ES lane (Option A)",
+      "source": "OWNER_SELECTED",
+      "strategy_binding": "A",
+      "universe": [
+        "ES"
+      ]
+    },
+    "OD-10": {
+      "resolution": "FTCAMP-{sha256(manifest_fingerprint).lower()} at freeze",
+      "source": "ENGINEERING_DERIVED"
+    },
+    "OD-11": {
+      "FTEP-D035": "ACCEPTED",
+      "FTEP-D037": "CHECKLIST_REOPENED",
+      "FTEP-D039": "OPERATOR_RUNBOOK_ACKNOWLEDGED",
+      "authorization_pathway": "A",
+      "authorization_scope": "BIND_FREEZE_PREFLIGHT_ONLY",
+      "owner_session_decision": "paper binding A, authorization A",
+      "resolution": "authorization_pathway_A",
+      "signed_at": "2026-09-12T05:52:00Z",
+      "source": "OWNER_SIGNED"
+    },
+    "OD-2": {
+      "resolution": "ES / FUTURES_EQUITY_INDEX from OD-1",
+      "source": "AUTHORITY_RESOLVED"
+    },
+    "OD-3": {
+      "calendar_window_et": "09:30-16:00",
+      "off_hours_platform": "READ_ONLY_NON_GOVERNED_LOCKS",
+      "resolution": "US_EQUITY_RTH",
+      "source": "OWNER_SELECTED"
+    },
+    "OD-4": {
+      "resolution": "dual duration floor (5 sessions \u00d7 5 min \u00d7 5 trading days)",
+      "source": "OWNER_SELECTED"
+    },
+    "OD-5": {
+      "resolution": "EVENT_DRIVEN",
+      "source": "OWNER_SELECTED"
+    },
+    "OD-6": {
+      "phase_transition_min_locks": 5,
+      "resolution": "PHASED_SIGNAL_ONLY_THEN_EXECUTION",
+      "source": "OWNER_SELECTED"
+    },
+    "OD-7": {
+      "resolution": "protocol \u00a714 proposed integers (30/15/5/5/10/10)",
+      "source": "OWNER_SELECTED"
+    },
+    "OD-8": {
+      "resolution": "percentage_return",
+      "source": "OWNER_SELECTED",
+      "statistical_test": "PAIRED_BOOTSTRAP_CI"
+    },
+    "OD-9": {
+      "resolution": "(symbol, decision_bucket, evaluation_horizon_ns)",
+      "source": "OWNER_SELECTED"
+    },
+    "paper_account_binding": {
+      "display_name": "Internal simulation Paper (default bootstrap ledger)",
+      "paper_account_id": "7CBA5536EED17C4A6246327EE7ABF223C58627660B93A642D8A99C2AEC10A579",
+      "resolution": "A",
+      "source": "OWNER_SELECTED"
+    }
+  },
+  "owner_decisions_required": [],
+  "owner_signed_at": "2026-09-12T05:52:00Z",
+  "paper_account_id": "7CBA5536EED17C4A6246327EE7ABF223C58627660B93A642D8A99C2AEC10A579",
+  "paper_account_resolution": {
+    "binding_option": "A",
+    "bound_at": "2026-09-12T05:52:00Z",
+    "data_mode": "FIXTURE_REPLAY",
+    "display_name": "Internal simulation Paper (default bootstrap ledger)",
+    "execution_mode": "INTERNAL_SIMULATION",
+    "note": "Owner-selected internal simulation Paper at OD-11 pathway A.",
+    "provider": "INTERNAL",
+    "status": "BOUND"
+  },
+  "phase_transition_min_locks": 5,
+  "policies": {
+    "ai_policy_id": "news_ai_enhanced@1.0.0",
+    "baseline_policy_id": "news_deterministic_baseline@1.0.0",
+    "naive_reference_included": false
+  },
+  "primary_metric": "percentage_return",
+  "proposed_configuration_note": "OD-1 through OD-11 owner resolutions recorded; governed freeze authorized under pathway A.",
+  "proposed_configuration_reconciled_at": "2026-09-12T05:10:00Z",
+  "protocol_id": "FTEP-V1/0.1.0-PREREG",
+  "protocol_version": "0.1.0-PREREG",
+  "recommended_not_binding": {
+    "OD-1": "A",
+    "OD-10": "SHA256_DERIVE_AT_FREEZE",
+    "OD-11": "SIGN_AND_REOPEN_CHECKLIST",
+    "OD-2": "ES / FUTURES_EQUITY_INDEX",
+    "OD-3": "US_EQUITY_RTH",
+    "OD-4": "BOTH_A_AND_B",
+    "OD-5": "EVENT_DRIVEN",
+    "OD-6": "PHASED_SIGNAL_ONLY_THEN_EXECUTION",
+    "OD-7": "SECTION_14_PROPOSED_INTEGERS",
+    "OD-8": "percentage_return",
+    "OD-9": "symbol_decision_bucket_horizon",
+    "ai_policy_id": "news_ai_enhanced@1.0.0",
+    "baseline_policy_id": "news_deterministic_baseline@1.0.0",
+    "cadence": "EVENT_DRIVEN",
+    "calendar_scope": "US_EQUITY_RTH",
+    "calendar_window_et": "09:30-16:00",
+    "cohort_matching_key": "(symbol, decision_bucket, evaluation_horizon_ns)",
+    "lane_id": "FUTURES_EQUITY_INDEX",
+    "note": "Recommended defaults from owner decision packet; binding only after OD-11 sign-off",
+    "phase_transition_min_locks": 5,
+    "primary_metric": "percentage_return",
+    "strategy_binding": "A",
+    "test_mode_phase_1": "SIGNAL_ONLY",
+    "test_mode_phase_2": "EXECUTION",
+    "universe": [
+      "ES"
+    ]
+  },
+  "regime_filter": "NONE",
+  "repository_source_sha": "4931a395db5bfed64cea496e58d9163db41ab9b8",
+  "resolved_fields": {
+    "FTEP-ACT-02": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "description": "integrity-clean locks before EXECUTION segment",
+      "resolution": 5,
+      "resolution_source": "docs/engineering/EVIDENCE_01A_REAL_FORWARD_OBSERVATION_CAMPAIGN.md L39-42"
+    },
+    "FTEP-D001": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "PROTOCOL_REF.json + campaign artifact tree",
+      "resolution_source": "artifacts/forward-test-campaigns/FTEP-V1-001/PROTOCOL_REF.json"
+    },
+    "FTEP-D004": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "conditional_on": "OD-1=A",
+      "resolution": "news_deterministic_baseline@1.0.0",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md \u00a72 L93-97"
+    },
+    "FTEP-D005": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "conditional_on": "OD-1=A",
+      "resolution": "news_ai_enhanced@1.0.0",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md \u00a73 L111-114"
+    },
+    "FTEP-D006": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "RECORDED_ARTIFACTS_ONLY",
+      "resolution_source": "docs/architecture/NEWS_STRATEGY_EVALUATION.md L152-156"
+    },
+    "FTEP-D007": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "EXCLUDE_NAIVE_REFERENCE_ARM",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md \u00a73 L117-121"
+    },
+    "FTEP-D009": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "conditional_on": "OD-1=A",
+      "resolution": "FUTURES_EQUITY_INDEX / ES",
+      "resolution_source": "docs/architecture/NEWS_STRATEGY_EVALUATION.md L35-39"
+    },
+    "FTEP-D012": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "CONTINUOUS_FUTURES_NON_EXECUTABLE",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md \u00a75 L158-159"
+    },
+    "FTEP-D015": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "REGIME_FILTER_NONE",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md \u00a77 Option A L211"
+    },
+    "FTEP-D016": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "NO_REGIME_SEGMENTATION_WHEN_D015_A",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md \u00a719 L507-508"
+    },
+    "FTEP-D018": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "FORBID_CONCURRENT",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md \u00a78 Option A L242"
+    },
+    "FTEP-D020": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "conditional_on": "OD-1=A",
+      "resolution": "HORIZONS_5M_15M_30M_60M",
+      "resolution_source": "src/market_platform_foundation/intelligence/news_strategy_evaluation/config.py L14-18"
+    },
+    "FTEP-D022": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "PHASE_1_MIN_1_CONTRACT_PHASE_2_FIXED_QUANTITY",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md \u00a711 L308-310"
+    },
+    "FTEP-D023": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "PAPER_INTERNAL_ONLY",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md \u00a712 Option A L327"
+    },
+    "FTEP-D027": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "PAIRED_BOOTSTRAP_CI",
+      "resolution_source": "docs/engineering/CHAMPION_CHALLENGER_PROMOTION_V1.md L52"
+    },
+    "FTEP-D028": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "SINGLE_PRIMARY_ONLY",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md \u00a717 L478-480"
+    },
+    "FTEP-D029": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "NO_OPPORTUNITY_ENGINE_LINKAGE",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md \u00a715.3 L432-433"
+    },
+    "FTEP-D033": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "EXCLUDE_PROVIDER_DISCONNECTED",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md \u00a713 PROVIDER_DISCONNECTED"
+    },
+    "FTEP-D034": {
+      "classification": "DETERMINISTIC_FROM_AUTHORITY",
+      "resolution": "IMP_PERSIST_STATE_REQUIRED",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md \u00a723 L624"
+    },
+    "FTEP-D036": {
+      "classification": "SAFE_ENGINEERING_DEFAULT",
+      "resolution": "artifacts/forward-test-campaigns/FTEP-V1-001/",
+      "resolution_source": "docs/engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md \u00a724 L637-646"
+    }
+  },
+  "safety_constraints": {
+    "cost_usd": 0,
+    "empirical_evidence_claimed": false,
+    "live_execution": false,
+    "mode": "INTERNAL_SIMULATION"
+  },
+  "sample_floors": {
+    "distinct_trading_days": 5,
+    "evaluated_decisions": 15,
+    "execution_mode_decisions": 10,
+    "locked_decisions": 30,
+    "per_arm_minimum": 10,
+    "qualifying_sessions": 5
+  },
+  "schema_version": "intelligence/paper_forward_bridge/activation_manifest/1.0.0",
+  "sizing_phase_1": 1,
+  "slippage_model": "PAPER_INTERNAL_ONLY",
+  "statistical_test": "PAIRED_BOOTSTRAP_CI",
+  "status": "FROZEN",
+  "strategy_binding": "A",
+  "test_mode_phase_1": "SIGNAL_ONLY",
+  "test_mode_phase_2": "EXECUTION",
+  "universe": [
+    "ES"
+  ],
+  "unresolved_fields": []
+}

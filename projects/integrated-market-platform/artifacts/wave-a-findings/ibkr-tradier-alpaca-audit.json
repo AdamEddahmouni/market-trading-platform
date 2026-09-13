@@ -1,0 +1,429 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "wave_a_read_only_audit",
+  "audit_id": "wave-a-ibkr-tradier-alpaca-audit",
+  "observed_at": "2026-09-11T23:15:00Z",
+  "audit_scope": "Wave A broker integration reconciliation for IBKR observational, Tradier paper execution, and Alpaca candidacy (read-only trace; no live probes, orders, or credential values in this pass).",
+  "campaign_slug": "FTEP-V1-001",
+  "campaign_manifest_status": "PENDING_OWNER_DECISIONS",
+  "empirical_evidence_claimed": false,
+  "live_probes_this_pass": false,
+  "orders_this_pass": false,
+  "secrets_included": false,
+  "audit_basis": "Repository wiring inspection, tools/provider_readiness.py contract, recorded G11.1 canary artifacts (2026-09-09), and value-blind local config presence checks on 2026-09-11.",
+  "related_wave_a_artifacts": [
+    {
+      "path": "artifacts/wave-a-findings/ftep-campaign-audit.json",
+      "role": "companion_ftep_governance_and_deferred_connectivity"
+    },
+    {
+      "path": "artifacts/wave-a-findings/news-data-inventory.json",
+      "role": "companion_news_and_deferred_observational_ingress"
+    },
+    {
+      "path": "artifacts/wave-a-findings/ux-hooks-audit.json",
+      "role": "companion_operator_readiness_projection"
+    }
+  ],
+  "local_config_today": {
+    "repository_root_env_file": {
+      "path": ".env",
+      "present": false,
+      "note": "Value-blind presence check only; no keys read into this artifact."
+    },
+    "private_provider_env_file": {
+      "path": ".private/providers.env",
+      "present": false,
+      "expected_keys_when_present": [
+        "IBKR_USERNAME",
+        "IBKR_PASSWORD",
+        "IBKR_TOTP_SECRET",
+        "NEWSAPI_API_KEY",
+        "FINNHUB_API_KEY"
+      ],
+      "note": "Absent locally on 2026-09-11 audit workstation; IBKR doc still documents optional credential file with manual Gateway login."
+    },
+    "imp_provider_env_override": "unset"
+  },
+  "gates_today_summary": {
+    "classification": "ALL_RELEVANT_BROKER_GATES_DISABLED",
+    "observed_via": "tools/provider_readiness.py (default; no --probe-local)",
+    "rows": [
+      {
+        "provider": "ibkr_observational",
+        "gate_env": ["IMP_IBKR_LIVE"],
+        "gate_state": "DISABLED",
+        "companion_gates": ["IMP_LIVE_OBSERVATIONAL not required for IBKR secondary path"]
+      },
+      {
+        "provider": "tradier_paper",
+        "gate_env": ["IMP_TRADIER_PAPER", "IMP_BROKER_PAPER_EXECUTION"],
+        "gate_state": "DISABLED",
+        "credential_state": "MISSING",
+        "transport_state": "FIXTURE_ONLY"
+      },
+      {
+        "provider": "alpaca",
+        "gate_env": [],
+        "gate_state": "NOT_APPLICABLE_NO_ADAPTER",
+        "authorization_state": "NOT_AUTHORIZED",
+        "note": "ALPACA listed in PROVIDER_IDS only; no IMP_ALPACA_* gate or provider_readiness row."
+      },
+      {
+        "provider": "moomoo_observational",
+        "gate_env": ["IMP_LIVE_OBSERVATIONAL", "IMP_MOOMOO_LIVE"],
+        "gate_state": "DISABLED",
+        "role": "primary_observational_reference_not_in_scope_for_this_artifact"
+      }
+    ],
+    "ftep_forward_test_execution_default": {
+      "source": "paper_forward_bridge/activation.py safety resolution",
+      "execution_mode": "INTERNAL_SIMULATION",
+      "implication": "FTEP-V1-001 skeleton does not require broker paper gates for phase-1 SIGNAL_ONLY; broker adapters are comparator / phase-2 EXECUTION candidates only."
+    }
+  },
+  "loopback_probes_summary": {
+    "this_pass": {
+      "executed": false,
+      "reason": "Explicit Wave A non-action: no --probe-local and no IBKR/Moomoo canary rerun.",
+      "transport_state_reported": "NOT_CHECKED for ibkr_observational and moomoo_observational"
+    },
+    "tool_contract": {
+      "cli": "python tools/provider_readiness.py --probe-local",
+      "behavior": "Socket connect to loopback Moomoo OpenD (default 127.0.0.1:11111) and IBKR gateway/TWS host/port from env; never probes non-loopback hosts.",
+      "default_ports": {
+        "ibkr_client_portal": "IMP_IBKR_GATEWAY_URL default https://127.0.0.1:5000/v1/api",
+        "ibkr_tws": "IMP_IBKR_TWS_HOST 127.0.0.1, IMP_IBKR_TWS_PORT 4001 when IMP_IBKR_TRANSPORT=tws"
+      }
+    },
+    "historical_recorded_2026_09_09_g11_1": {
+      "source": "docs/audits/imp-reconciliation/14i-g11-live-verification-matrix.md",
+      "gateway_loopback": "127.0.0.1:4001 REACHABLE when operator had Desktop IB Gateway logged in",
+      "client_portal_5000": "closed during that forensic pass",
+      "not_revalidated_2026_09_11": true
+    }
+  },
+  "brokers": {
+    "ibkr": {
+      "provider_id": "ibkr_observational",
+      "integration_level": "SOFTWARE_COMPLETE_SECONDARY_OBSERVATIONAL_LIVE_PARTIAL",
+      "execution_boundary": "READ_ONLY_OBSERVATIONAL_NO_ORDER_APIS",
+      "data_roles": [
+        "delayed_L1",
+        "historical_bars",
+        "contract_secdef",
+        "read_only_account_observation",
+        "L2_and_tick_trades_when_entitled"
+      ],
+      "runtime_wiring": {
+        "outer_bootstrap": "tools/ibkr/runtime_bootstrap.py",
+        "canonical_adapter": "src/market_platform_foundation/providers/ibkr_observational/",
+        "query_surface_g11": "tools/ibkr/query_provider.py + IbkrObservationalQueryService",
+        "ui_api_install": "tools/ui1/run_ui_api.py calls install_ibkr_observational_provider()"
+      },
+      "gates_today": {
+        "IMP_IBKR_LIVE": "DISABLED",
+        "IMP_IBKR_TRANSPORT": "default client_portal unless tws selected"
+      },
+      "local_config_today": {
+        "providers_env": "absent",
+        "ibkr_credential_file_state": "MANUAL_SESSION_REQUIRED",
+        "manual_login_required": true
+      },
+      "transport_today": "NOT_CHECKED",
+      "historical_canary_2026_09_09": {
+        "harness": "tools/ibkr/canary.py",
+        "precondition_note": "Bounded run used IMP_IBKR_LIVE=1 with open loopback Gateway/TWS; distinct from unset gate in ordinary dev shells.",
+        "capabilities": [
+          {
+            "capability": "IBKR_CONTRACT_RESOLUTION",
+            "result": "LIVE_PROVIDER_VERIFIED"
+          },
+          {
+            "capability": "IBKR_HISTORICAL_BARS",
+            "result": "LIVE_PROVIDER_VERIFIED"
+          },
+          {
+            "capability": "IBKR_ACCOUNT_READ",
+            "result": "LIVE_PROVIDER_VERIFIED",
+            "note": "Account identity redacted in exported evidence"
+          },
+          {
+            "capability": "IBKR_L1",
+            "result": "LIVE_PROVIDER_VERIFIED",
+            "entitlement": "DELAYED_not_realtime"
+          },
+          {
+            "capability": "IBKR_L2",
+            "result": "LIVE_CONNECTED_NOT_ENTITLED",
+            "provider_errors": ["10092"]
+          },
+          {
+            "capability": "IBKR_TRADES",
+            "result": "LIVE_CONNECTED_NOT_ENTITLED",
+            "provider_errors": ["10189"]
+          }
+        ],
+        "external_account_limit_not_imp_blocker": true,
+        "execution_invoked": false
+      },
+      "program_status_pointer": "G6–G12 COMPLETE; L2/TRADES entitlement limits classified external to software backlog (WORK_LOG 2026-09-09 G12)"
+    },
+    "tradier": {
+      "provider_id": "tradier_paper",
+      "integration_level": "FIXTURE_ADAPTER_LANDED_LIVE_HTTP_NOT_IMPLEMENTED",
+      "execution_boundary": "BROKER_PAPER_SANDBOX_INTENDED_P4_4A",
+      "adapter": "src/market_platform_foundation/providers/adapters/tradier_paper.py",
+      "composition_hook": "providers.composition.ProviderComposition.paper_execution",
+      "gates_today": {
+        "IMP_TRADIER_PAPER": "DISABLED",
+        "IMP_BROKER_PAPER_EXECUTION": "DISABLED"
+      },
+      "credential_today": {
+        "IMP_TRADIER_TOKEN": "MISSING",
+        "IMP_TRADIER_ACCOUNT_ID": "not_present_in_readiness_row"
+      },
+      "transport_state": "FIXTURE_ONLY",
+      "documented_local_blocker_as_of_2026_08_22": "BLOCKED_EXTERNAL_no_Tradier_credentials_in_repo",
+      "probe_tool": "tools/providers/probe_tradier_sandbox.py",
+      "live_orders_possible_today": false
+    },
+    "alpaca": {
+      "provider_id": "ALPACA",
+      "integration_level": "IDENTIFIER_ONLY_NO_IN_REPO_ADAPTER",
+      "execution_boundary": "NOT_AUTHORIZED",
+      "adapter_path": null,
+      "gates_today": "none_implemented",
+      "credential_today": "not_tracked_by_provider_readiness",
+      "transport_state": "NOT_IMPLEMENTED",
+      "authorization_sources": [
+        {
+          "doc": "docs/superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md",
+          "claim": "BROKER_PAPER with IBKR/ALPACA NOT AUTHORIZED until P4 amendment lands each adapter"
+        },
+        {
+          "manifest": "manifests/phase0/prohibited-targets.json",
+          "claim": "alpaca module name in prohibited dynamic-load broker category for Phase 0 safety"
+        }
+      ],
+      "runtime_behavior_if_requested": "PAPER_EXECUTION_NOT_AUTHORIZED / BLOCKED via operating_modes and DisabledPaperExecutionProvider unless explicitly wired",
+      "catalog_only_pointer": "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"
+    }
+  },
+  "ftep_calibration_comparator_suitability": {
+    "purpose": "Advisory matrix for FTEP-V1-001 (ES-first, RECORDED_ARTIFACTS_ONLY intelligence, deferred observational ingress FTEP-D038) and offline news-strategy calibration comparators — not a broker selection decision.",
+    "default_campaign_execution_path": "INTERNAL_SIMULATION via paper_forward_bridge safety resolution",
+    "dimensions": [
+      "observational_market_data_for_ES_lane",
+      "paper_execution_phase_2_EXECUTION",
+      "broker_record_reconciliation_P4",
+      "calibration_price_path_independence",
+      "operator_setup_burden_today"
+    ],
+    "table": [
+      {
+        "broker": "ibkr",
+        "observational_es_support": "PARTIAL",
+        "observational_es_note": "Multi-asset runtime and futures semantics exist in codebase; primary campaign observational path remains Moomoo-first; IBKR delayed L1 unsuitable for intrabar microstructure.",
+        "paper_execution_phase_2": "NOT_IN_SCOPE_OBSERVATIONAL_PACKAGE",
+        "broker_reconciliation": "NOT_WIRED",
+        "calibration_comparator_role": "SECONDARY",
+        "calibration_comparator_note": "Historical bars and delayed L1 useful for cross-checks and capture/replay research; L2/CVD blocked without entitlements.",
+        "ftep_v1_001_readiness_today": "DEFERRED_WITH_FTEP_D038",
+        "setup_burden_today": "HIGH_manual_Gateway_plus_optional_providers_env"
+      },
+      {
+        "broker": "tradier",
+        "observational_es_support": "NOT_APPLICABLE",
+        "observational_es_note": "Equity sandbox execution adapter; no ES futures observational feed.",
+        "paper_execution_phase_2": "FIXTURE_ONLY",
+        "broker_reconciliation": "FIXTURE_AND_CODE_SEAMS_ONLY",
+        "calibration_comparator_role": "EXECUTION_CONTRACT_REFERENCE",
+        "calibration_comparator_note": "Intended P4 sandbox comparator for equity paper lifecycle semantics, not ES mark calibration.",
+        "ftep_v1_001_readiness_today": "NOT_SUITABLE_PRIMARY_FOR_ES_CAMPAIGN",
+        "setup_burden_today": "MEDIUM_token_plus_unimplemented_HTTP_transport"
+      },
+      {
+        "broker": "alpaca",
+        "observational_es_support": "NOT_INTEGRATED",
+        "observational_es_note": "External catalog candidate only.",
+        "paper_execution_phase_2": "NOT_AUTHORIZED",
+        "broker_reconciliation": "NOT_INTEGRATED",
+        "calibration_comparator_role": "OUT_OF_SCOPE",
+        "calibration_comparator_note": "Requires future P4 amendment and adapter before any comparator use.",
+        "ftep_v1_001_readiness_today": "NOT_AVAILABLE",
+        "setup_burden_today": "UNKNOWN_no_local_config_surface"
+      },
+      {
+        "broker": "internal_simulation",
+        "observational_es_support": "FIXTURE_AND_MARK_PROJECTION",
+        "observational_es_note": "Authoritative FTEP skeleton path; SOFTWARE_FIXTURE_ONLY evaluation data per news inventory.",
+        "paper_execution_phase_2": "AUTHORIZED_WHEN_PAPER_GATES_ON",
+        "broker_reconciliation": "IN_LEDGER_ONLY",
+        "calibration_comparator_role": "PRIMARY_FOR_FTEP_SKELETON",
+        "calibration_comparator_note": "Baseline for forward-test locks until owner binds broker paper in OD-6 phase 2.",
+        "ftep_v1_001_readiness_today": "ENGINEERING_READY_SUBJECT_TO_MANIFEST_OD",
+        "setup_burden_today": "LOW_no_external_broker"
+      }
+    ]
+  },
+  "unknowns": [
+    {
+      "id": "UNK-01",
+      "topic": "Operator workstation Gateway/OpenD reachability on 2026-09-11",
+      "reason": "This pass did not run --probe-local or canary; last measured TCP state is 2026-09-09 G11.1 forensic matrix."
+    },
+    {
+      "id": "UNK-02",
+      "topic": "Whether Alpaca keys ever existed in a prior local .env on operator machine",
+      "reason": "FTEP_ACTIVATION_GATES and PROJECT_STATUS call for fresh audit; this artifact only confirms absent tracked files in canonical checkout on audit date."
+    },
+    {
+      "id": "UNK-03",
+      "topic": "Owner phase-2 EXECUTION broker choice for FTEP-V1-001",
+      "reason": "OD-6 recommends PHASED_SIGNAL_ONLY_THEN_EXECUTION but does not bind Tradier vs internal simulation vs future IBKR paper."
+    },
+    {
+      "id": "UNK-04",
+      "topic": "IBKR entitlement upgrade timeline for L2 and tick-by-tick trades",
+      "reason": "External brokerage subscription decision; software path LIVE_CONNECTED_NOT_ENTITLED when connected."
+    },
+    {
+      "id": "UNK-05",
+      "topic": "Tradier sandbox HTTP transport completion date",
+      "reason": "Adapter remains FIXTURE_ONLY; live wire explicitly not implemented per TRADIER_PAPER.md."
+    }
+  ],
+  "findings": [
+    {
+      "id": "WAVE-A-BRK-001",
+      "severity": "high",
+      "classification": "INTEGRATION",
+      "title": "Broker live gates disabled; local secret store absent",
+      "summary": "IMP_IBKR_LIVE, IMP_TRADIER_PAPER, and IMP_BROKER_PAPER_EXECUTION all DISABLED; .env and .private/providers.env absent on audit workstation.",
+      "evidence": [
+        "tools/provider_readiness.py",
+        "docs/engineering/PROVIDER_READINESS.md"
+      ]
+    },
+    {
+      "id": "WAVE-A-BRK-002",
+      "severity": "medium",
+      "classification": "BY_DESIGN",
+      "title": "IBKR software complete with external entitlement ceiling",
+      "summary": "2026-09-09 canary verified contract/history/account/delayed L1; L2 and TRADES NOT_ENTITLED on connected account.",
+      "evidence": [
+        "docs/audits/imp-reconciliation/14i-g11-live-verification-matrix.md",
+        "docs/providers/IBKR_OBSERVATIONAL.md",
+        "docs/engineering/WORK_LOG.md"
+      ]
+    },
+    {
+      "id": "WAVE-A-BRK-003",
+      "severity": "medium",
+      "classification": "SCOPE",
+      "title": "Tradier remains fixture-first",
+      "summary": "P4 Tradier adapter supports deterministic fixtures; sandbox HTTP and credentials not operational for live submission.",
+      "evidence": [
+        "docs/providers/TRADIER_PAPER.md",
+        "src/market_platform_foundation/providers/adapters/tradier_paper.py"
+      ]
+    },
+    {
+      "id": "WAVE-A-BRK-004",
+      "severity": "medium",
+      "classification": "AUTHORIZATION",
+      "title": "Alpaca not integrated",
+      "summary": "Provider id registered; no adapter, no readiness row, P4 spec NOT AUTHORIZED until amendment.",
+      "evidence": [
+        "src/market_platform_foundation/operating_modes.py",
+        "docs/superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md"
+      ]
+    },
+    {
+      "id": "WAVE-A-BRK-005",
+      "severity": "high",
+      "classification": "CAMPAIGN",
+      "title": "FTEP broker connectivity deferred",
+      "summary": "FTEP-D038 and FTEP-ACT-04 defer provider connectivity when observational ingress required; aligns with DISABLED gates today.",
+      "evidence": [
+        "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+        "artifacts/wave-a-findings/ftep-campaign-audit.json"
+      ]
+    }
+  ],
+  "key_paths": {
+    "readiness_and_gates": [
+      "tools/provider_readiness.py",
+      "docs/engineering/PROVIDER_READINESS.md",
+      ".env.example"
+    ],
+    "ibkr_observational": [
+      "docs/providers/IBKR_OBSERVATIONAL.md",
+      "tools/ibkr/runtime_bootstrap.py",
+      "tools/ibkr/canary.py",
+      "tools/ibkr/config.py",
+      "src/market_platform_foundation/providers/ibkr_observational/",
+      "src/market_platform_foundation/market_data/ibkr_runtime_bridge.py",
+      "tests/ibkr/",
+      "tests/providers/test_ibkr_observational_safety.py"
+    ],
+    "tradier_paper": [
+      "docs/providers/TRADIER_PAPER.md",
+      "src/market_platform_foundation/providers/adapters/tradier_paper.py",
+      "tools/providers/probe_tradier_sandbox.py",
+      "tests/fixtures/providers/tradier/",
+      "tests/platform/test_broker_runtime_wiring.py"
+    ],
+    "alpaca_and_authorization": [
+      "src/market_platform_foundation/operating_modes.py",
+      "src/market_platform_foundation/providers/composition.py",
+      "src/market_platform_foundation/paper/broker_paper.py",
+      "docs/superpowers/specs/2026-08-22-platform-p4-broker-paper-001-design.md",
+      "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"
+    ],
+    "ftep_and_calibration_context": [
+      "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json",
+      "docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md",
+      "docs/architecture/NEWS_STRATEGY_EVALUATION.md",
+      "src/market_platform_foundation/intelligence/paper_forward_bridge/activation.py"
+    ]
+  },
+  "evidence_file_refs": [
+    {
+      "path": "docs/audits/imp-reconciliation/14i-g11-live-verification-matrix.md",
+      "role": "G11.1_canary_capability_matrix_and_false_blocker_correction"
+    },
+    {
+      "path": "docs/audits/imp-reconciliation/g11-live-canary-summary.json",
+      "role": "recorded_canary_summary"
+    },
+    {
+      "path": "docs/audits/imp-reconciliation/g11-live-capability-evidence.json",
+      "role": "per_capability_live_evidence"
+    },
+    {
+      "path": "evidence/market_data/ibkr/canary-report.json",
+      "role": "bounded_canary_export_when_present"
+    },
+    {
+      "path": "docs/engineering/WORK_LOG.md",
+      "role": "G11_G11.1_G12_ibkr_entries_2026_09_08_through_2026_09_09"
+    },
+    {
+      "path": "docs/engineering/FORWARD_VALIDATION_READINESS_CHECKLIST.md",
+      "role": "tradier_sandbox_and_broker_inventory_rows"
+    },
+    {
+      "path": "artifacts/wave-a-findings/ftep-campaign-audit.json",
+      "role": "deferred_FTEP_D038_ACT_04"
+    }
+  ],
+  "explicit_non_actions_this_pass": [
+    "no IMP_IBKR_LIVE or Tradier gate enablement",
+    "no tools/provider_readiness.py --probe-local",
+    "no tools/ibkr/canary.py or probe_tradier_sandbox.py execution",
+    "no paper or live orders",
+    "no credential values copied into artifact"
+  ]
+}

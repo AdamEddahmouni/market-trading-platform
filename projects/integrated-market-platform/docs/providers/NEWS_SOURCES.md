@@ -9,6 +9,15 @@ For the canonical deterministic news/event foundation (publication vs retrieval
 time, source trust, catalyst filtering, replay), see
 [NEWS_EVENT_FOUNDATION.md](../architecture/NEWS_EVENT_FOUNDATION.md).
 
+Wave A reconciliation inventory (FTEP-V1-001, read-only):
+[`artifacts/wave-a-findings/news-data-inventory.json`](../../artifacts/wave-a-findings/news-data-inventory.json).
+
+FTEP-V1-002 ($0 incremental) uses **Finviz Elite** as the primary news export for
+US-equity catalyst campaigns; NewsAPI/Finnhub remain optional and are not
+mandatory for the zero-cost prospective path (see
+[`FTEP_CAMPAIGN_CATALOG.md`](../engineering/FTEP_CAMPAIGN_CATALOG.md)).
+Canonical normalization: `news/normalize.py` → `normalize_finviz_export_item`.
+
 ## Configuration
 
 Store keys in the ignored private provider file with the secure prompt:

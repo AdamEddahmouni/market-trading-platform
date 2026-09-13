@@ -7,6 +7,9 @@ and not live execution.
 Evidence classes used below: **DOCUMENTED**, **OBSERVED**, **INFERRED**, **UNTESTED**.
 Observed runtime evidence outranks documentation.
 
+Wave A reconciliation inventory (FTEP-V1-001, read-only):
+[`artifacts/wave-a-findings/ibkr-tradier-alpaca-audit.json`](../../artifacts/wave-a-findings/ibkr-tradier-alpaca-audit.json).
+
 ## Architecture
 
 ```text
@@ -180,3 +183,9 @@ compatibility only (`CAPTURED_REPLAY_NOT_ADMITTED`).
 - Headless SRP/TOTP login is unofficial and version-sensitive.
 - ES futures acceptance remains blocked per `ADR-DATA-001`; captures are not
   admitted datasets regardless of instrument.
+- **FTEP-V1-002 constraint:** IBKR is not the immediate $0-incremental US equity
+  market-data path. Operator documentation and Wave A audits record an approximate
+  **$500** account funding requirement before entitled US equity L1 subscriptions
+  are realistic; this increment does not fund IBKR market data. Prefer Moomoo
+  `US_EQUITY_L1` where owner OpenD access already exists (see
+  [`artifacts/ftep-v1-002/us-equity-provider-stack-selection.json`](../../artifacts/ftep-v1-002/us-equity-provider-stack-selection.json)).

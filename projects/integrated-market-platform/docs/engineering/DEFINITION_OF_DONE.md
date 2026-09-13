@@ -6,9 +6,10 @@
 
 - [ ] Authoritative doc updated if behavior/architecture changed
 - [ ] [WORK_LOG.md](WORK_LOG.md) entry (substantive work)
-- [ ] `python tools/imp.py closure` produced a machine-readable closure report
+- [ ] `python tools/imp.py test affected` and `python tools/check_docs_links.py`
 - [ ] Completion record if large feature (`docs/superpowers/plans/*-completion.md`)
 - [ ] No stale plan checkboxes claiming incomplete for shipped work
+- [ ] `python tools/imp.py closure` / FULL are **not** required for docs-only PRs
 
 ## UI
 
@@ -17,7 +18,7 @@
 - [ ] `App.test.tsx` updated if routes/nav/handoffs change
 - [ ] `npm run build` passes (bundle budget)
 - [ ] Accessibility basics (labels, keyboard where interactive)
-- [ ] `validate.py changed`
+- [ ] `python tools/imp.py test affected`
 
 ## Backend
 
@@ -44,7 +45,7 @@
 - [ ] [PAPER_EXECUTION_CHANGE.md](sops/PAPER_EXECUTION_CHANGE.md) checklist
 - [ ] Demo/Live leakage checked
 - [ ] Authority loss / stale preview tests
-- [ ] `validate.py full` + UI build
+- [ ] `python tools/imp.py validate full` + UI build
 
 ## Performance
 
@@ -54,7 +55,7 @@
 ## Release
 
 - [ ] Clean tree (intentional changes only)
-- [ ] `validate.py full`
+- [ ] `python tools/imp.py validate full`
 - [ ] UI vitest + build
 - [ ] [RELEASE.md](sops/RELEASE.md) checklist
-- [ ] [PROJECT_STATUS.md](../PROJECT_STATUS.md) if milestone
+- [ ] [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) if milestone

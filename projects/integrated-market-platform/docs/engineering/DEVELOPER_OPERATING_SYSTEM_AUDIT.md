@@ -1,5 +1,7 @@
 # IMP Developer Operating System — Current-State Audit
 
+> **HISTORICAL 2026-09-02.** Hooks and skills now exist (`.cursor/hooks.json`, `.cursor/skills/`). This audit is a dated baseline, not current procedure. Current workflow: [DEVELOPER_OPERATING_SYSTEM.md](DEVELOPER_OPERATING_SYSTEM.md).
+
 **Date:** 2026-09-02
 **Repository:** `integrated-market-platform`
 **Purpose:** Evidence-backed baseline for reducing developer workflow latency without changing product behavior or safety authority.

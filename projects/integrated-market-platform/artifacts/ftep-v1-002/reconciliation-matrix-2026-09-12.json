@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_kind": "ftep_reconciliation_matrix",
+  "campaign_slug": "FTEP-V1-002",
+  "observed_at": "2026-09-12T14:30:00Z",
+  "incremental_cost_usd": 0,
+  "executive_path": "READY_WITH_OWNER_DECISIONS",
+  "rows": [
+    {
+      "requirement": "US equity L1 market context (SIGNAL_ONLY prospective binding)",
+      "signal_only": true,
+      "source": "MOOMOO / US_EQUITY_L1",
+      "verified": true,
+      "gap": "Campaign capability contract not yet bound (G-A6)",
+      "action": "Owner freeze + campaign bind after OD-11"
+    },
+    {
+      "requirement": "Finviz Elite headline export",
+      "signal_only": true,
+      "source": "FINVIZ_ELITE / NEWS_EXPORT",
+      "verified": "STALE_2026-08-22",
+      "gap": "Live credential refresh not run this session (LOCAL_PROBE_REQUIRED 2026-09-12)",
+      "action": "Operator: `python tools/finviz/probe.py` when credentials configured; stale 2026-08-22 remains authoritative for readiness"
+    },
+    {
+      "requirement": "Deterministic catalyst taxonomy",
+      "signal_only": true,
+      "source": "news/catalysts/1.0.0 + CATALYST_TAXONOMY_CONTRACT_V1",
+      "verified": true,
+      "gap": "Manifest catalyst binding proposed only",
+      "action": "Owner approves enabled_catalyst_ids at freeze"
+    },
+    {
+      "requirement": "SEC EDGAR 8-K/10-K context",
+      "signal_only": true,
+      "source": "SEC_EDGAR public HTTP",
+      "verified": true,
+      "gap": "Not required for baseline SIGNAL_ONLY lane",
+      "action": "Defer unless methodology mandates filings arm"
+    },
+    {
+      "requirement": "IBKR observational L1",
+      "signal_only": true,
+      "source": "IBKR",
+      "verified": "DELAYED_L1_ONLY",
+      "gap": "~$500 funding constraint for entitled US equity stream",
+      "action": "Documented; not selected as $0 immediate path"
+    },
+    {
+      "requirement": "NewsAPI / Finnhub paid tiers",
+      "signal_only": false,
+      "source": "NEWSAPI/FINNHUB",
+      "verified": false,
+      "gap": "Not in $0 stack",
+      "action": "Exclude from mandatory SIGNAL_ONLY path"
+    },
+    {
+      "requirement": "FTEP-V1-001 ES futures quote",
+      "signal_only": true,
+      "source": "MOOMOO / US_FUTURES_QUOTE",
+      "verified": "NOT_ENTITLED",
+      "gap": "CME ES Quote Store",
+      "action": "Leave FTEP-V1-001 frozen; do not convert"
+    }
+  ],
+  "blocked_no_zero_cost_prospective_path": false
+}

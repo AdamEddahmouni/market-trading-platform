@@ -7,17 +7,23 @@ Local market operating workstation: **Demo** (fixture replay), **Paper**
 **Documentation:** [docs/README.md](docs/README.md) · [AGENTS.md](AGENTS.md) ·
 [Engineering Handbook](docs/engineering/ENGINEERING_HANDBOOK.md) ·
 [Architecture](docs/architecture/ARCHITECTURE.md) ·
-[Project Status](docs/PROJECT_STATUS.md) ·
+[Program Status](docs/platform/PROGRAM_STATUS.md) ·
+[Project Status snapshot](docs/PROJECT_STATUS.md) ·
 [Provider readiness](docs/engineering/PROVIDER_READINESS.md)
 
-This repository contains the governed, CPython 3.11 standard-library-only
-foundation together with the later research, evidence, supervised-execution,
-operations, and user-surface work built on it. Phases 0 through 8 are `PASS`
-on the admitted equity intraday fixture
-(`ADMITTED-SHORTSQ-BIYA-BARS-001`). The exact-hash Foundation binding remains
+Current whole-program truth is [Program Status](docs/platform/PROGRAM_STATUS.md).
+This tree is the IMP snapshot inside the monorepo
+`AdamEddahmouni/market-trading-platform`. The archived child remote
+`AdamEddahmouni/integrated-market-intelligence-platform` is not the current origin.
+
+This tree contains the governed, CPython 3.11 standard-library-only
+foundation together with later research, evidence, supervised-execution,
+operations, and user-surface work. Phases 0 through 8 remain `PASS` on the
+admitted equity intraday fixture (`ADMITTED-SHORTSQ-BIYA-BARS-001`). The
+exact-hash Foundation binding remains
 [canonical-authority.json](manifests/phase0/canonical-authority.json).
 
-Current whole-program truth now lives in [`docs/platform/`](docs/platform/README.md):
+Current whole-program truth lives in [`docs/platform/`](docs/platform/README.md):
 
 - [Program Status](docs/platform/PROGRAM_STATUS.md) records the accepted state
   now, including BUILD history, repository closure, EVIDENCE, future-family
@@ -94,8 +100,12 @@ repository venv. Moomoo OpenD must be running separately on loopback port
 `11111` for Moomoo quotes. The launcher enables observational data and internal
 paper simulation but never enables live order execution.
 
-Pre-land acceptance (2026-08-21): FAST 18 passes; mutation 6/6 detected; FULL 1183 passes / 7 skips — [reports/pre-land-full.json](reports/pre-land-full.json).
-Post-land FULL (2026-08-22): 1391 tests / 7 skips with **one documented failure** — the Phase 1 ADR acceptance-index line-ending drift ([PHASE1_ADR_LINE_ENDING_DRIFT](docs/engineering/PHASE1_ADR_LINE_ENDING_DRIFT.md)); no other failures or errors. **Resolved the same day:** the Phase 1 decision bundle was re-published with true LF-byte hashes and the verifier constants updated; FULL is now green — 1485 tests / 7 skips / 0 failures / 0 errors ([reports/post-drift-fix-full.json](reports/post-drift-fix-full.json)).
+Historical FULL counts (2026-08-21/22) are recorded snapshots, not current
+program truth: pre-land FAST 18 / FULL 1183
+([reports/pre-land-full.json](reports/pre-land-full.json)); post-land FULL 1485
+([reports/post-drift-fix-full.json](reports/post-drift-fix-full.json)). Current
+accepted state and later FULL evidence live in
+[Program Status](docs/platform/PROGRAM_STATUS.md).
 
 ## Five-lane cooperative expansion (fixture scope)
 
@@ -140,9 +150,10 @@ fixture-proven only — the Moomoo OpenAPI is reachable solely through the
 proprietary OpenD gateway (TCP-only), so real-wire behavior remains
 unconfirmed. P5 status: neutral security foundations landed
 (`ROLE_ENFORCEMENT_STATUS=MODEL_ONLY_NOT_ENFORCED`); hosted deployment and
-auth enforcement are not started. P6 status: shadow/forward-validation
-infrastructure landed; no forward-validation evidence has been collected.
-Production execution (`LIVE-001`) is blocked pending separate authorization.
+auth enforcement are not started. P6 Shadow Run 1 is **deferred** historical
+protocol (not the current forward-test campaign); see
+[Program Status](docs/platform/PROGRAM_STATUS.md). Production execution
+(`LIVE-001`) is blocked pending separate authorization.
 
 ## Revision 3 guidance
 
@@ -193,8 +204,10 @@ data. Broker/ledger reconciliation (4B) is append-only and fail-closed: every
 mismatch surfaces as an immutable ledger event and is resolved or held open
 (`P4-REC-001/002`) — differences are never silently absorbed. Live execution
 (`LIVE-001`) remains blocked and requires separate authorization.
-The repository remote is `origin` →
-`https://github.com/AdamEddahmouni/integrated-market-intelligence-platform.git`.
+Canonical origin is the monorepo
+`https://github.com/AdamEddahmouni/market-trading-platform.git`.
+The former child remote `integrated-market-intelligence-platform` is archived
+and is not the current origin.
 
 ### Observational and public-data providers (fixture-first)
 
@@ -218,9 +231,11 @@ Phase 9 whale families remain **fixture-first** on admitted slices: `regulatory_
 
 ES-session acceptance remains blocked per `ADR-DATA-001` until lawful ES bytes
 are procured. UI-001 provides replay-only research UI on the admitted fixture.
-Additional broker execution adapters (IBKR, Alpaca, Moomoo execution),
-non-disclosure whale ingestion, crypto expansion, and prediction-market
-expansion require separate ADR authorization and phase gates.
+IBKR observational adapters exist in-tree (G6–G11); they are not execution
+authority and are not claimed currently available. Alpaca has **no** adapter.
+Moomoo execution, additional broker-execution adapters, non-disclosure whale
+ingestion, crypto expansion, and prediction-market expansion require separate
+ADR authorization and phase gates.
 
 ## Research UI V1
 
