@@ -229,10 +229,16 @@ empirical MATCHED hop. After a Paper **MINTED**
 result, optional v6 write uses the existing `ForwardTestService.create_decision`
 API with G7 `freshness` in `decision_payload_json` (and `forward_test_signal_links`
 when `opportunity_id` is set). Requires an existing Paper FT session — Path A
-does not auto-activate FTEP. Persist-off minted decisions stay
-`INTENTIONAL_EPHEMERAL` (no second store). Demo MINTED does not write FT rows
-(`FORWARD_TEST_PAPER_MODE_REQUIRED`). Live never mints. Reconstruction after
-restart is the PD-09 path; fills are not fabricated.
+does not auto-activate FTEP. `tools/path_a_prospective_run.py` can inject that
+session's `PathAPersistContext` via `--persist-account-id`/`--persist-session-id`/
+`--persist-strategy-id`/`--persist-strategy-version`, but only when the
+existing `IMP_STATE_DIR`/`IMP_PERSIST_STATE` persist-on switch is already set
+and every identifier is supplied; the CLI never creates, freezes, or
+activates a campaign/session itself, so an operator must create the session
+out-of-band (e.g. `tools/ftep_session_start.py`) first. Persist-off minted
+decisions stay `INTENTIONAL_EPHEMERAL` (no second store). Demo MINTED does
+not write FT rows (`FORWARD_TEST_PAPER_MODE_REQUIRED`). Live never mints.
+Reconstruction after restart is the PD-09 path; fills are not fabricated.
 
 ## Known limitations
 

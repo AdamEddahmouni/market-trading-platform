@@ -11,6 +11,7 @@ import unittest
 from dataclasses import replace
 from io import StringIO
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from market_platform_foundation.intelligence.contracts import (
@@ -64,7 +65,9 @@ from market_platform_foundation.strategy.path_a_prospective import (
     DELAYED_SOURCE,
     PERSIST_INTENTIONAL_EPHEMERAL,
     PERSIST_NOT_MINTED,
+    PERSIST_SKIPPED_NO_SESSION,
     PERSIST_WRITTEN,
+    PathAHonestyInvoke,
     PathAPersistContext,
     PathAProspectiveComposer,
     build_paper_demo_path_a_invoke,
@@ -354,6 +357,41 @@ def _run_matched_fixture_hop(*, mode: str = "paper") -> tuple[object, RecordingO
         as_of_time_ns=T + 2_000_000,
     )
     return result, engine
+
+
+def _matched_fixture_invoke(*, mode: str = "paper") -> PathAHonestyInvoke:
+    """MATCHED fixture caller/request pair, for CLI-level persist wiring tests.
+
+    Timeliness/G7 outcome is controlled by whichever quote provider the
+    caller injects separately; this only supplies the strategy match so
+    Path A can reach MINTED.
+    """
+
+    repository, champion, forecast = _seed_repository()
+    mode_n = str(mode).strip().lower()
+    context_mode = mode_n.upper()
+    scope = SCOPE
+    if mode_n == "demo":
+        scope = IntelligenceScope(
+            instrument_ids=(INSTRUMENT_ID,),
+            context_id="acct-paper:demo:snapshot-paper-1",
+        )
+        champion = replace(
+            champion,
+            champion_scope=replace(
+                champion.champion_scope, mode="DEMO", scenario_id="demo-path-a"
+            ),
+        )
+        forecast = replace(
+            forecast,
+            forecast_id="forecast-path-a-prospective-demo-1",
+            scope=scope,
+            metadata={**dict(forecast.metadata), "mode": "DEMO", "scenario_id": "demo-path-a"},
+        )
+        repository.put_forecast(forecast)
+    caller = _caller(repository, champion, forecast, context_mode=context_mode, scope=scope)
+    request = _scan_request(mode=mode_n, disposition=StrategyMatchDisposition.MATCHED)
+    return PathAHonestyInvoke(caller=caller, scan_request=request)
 
 
 def _seed_repository() -> tuple[InMemoryIntelligenceRepository, ChampionAssignmentV1, ForecastV1]:
@@ -918,6 +956,314 @@ class PathAProspectivePersistTests(unittest.TestCase):
         self.assertEqual(result.status, "LIVE_FORBIDDEN")
         self.assertEqual(result.persist_status, PERSIST_NOT_MINTED)
         self.assertIsNone(result.forward_test_id)
+
+
+class PathACliPersistTests(unittest.TestCase):
+    """Production CLI (tools/path_a_prospective_run.py) can inject
+    PathAPersistContext for Paper/Demo, closing the reachability gap left
+    after PR #42's PathAProspectiveComposer-level persist hop."""
+
+    def setUp(self) -> None:
+        self._saved_persist = os.environ.get("IMP_PERSIST_STATE")
+        self._saved_dir = os.environ.get("IMP_STATE_DIR")
+        self._saved_campaigns = os.environ.get("IMP_FORWARD_TEST_CAMPAIGNS_DIR")
+        self._saved_force = os.environ.get("IMP_FORWARD_TEST_EVAL_FORCE")
+        self._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+
+    def tearDown(self) -> None:
+        from market_platform_foundation.local_state.startup import reset_local_state_for_tests
+
+        reset_local_state_for_tests()
+        os.environ.pop("IMP_PERSIST_STATE", None)
+        os.environ.pop("IMP_STATE_DIR", None)
+        os.environ.pop("IMP_FORWARD_TEST_CAMPAIGNS_DIR", None)
+        os.environ.pop("IMP_FORWARD_TEST_EVAL_FORCE", None)
+        if self._saved_persist is not None:
+            os.environ["IMP_PERSIST_STATE"] = self._saved_persist
+        if self._saved_dir is not None:
+            os.environ["IMP_STATE_DIR"] = self._saved_dir
+        if self._saved_campaigns is not None:
+            os.environ["IMP_FORWARD_TEST_CAMPAIGNS_DIR"] = self._saved_campaigns
+        if self._saved_force is not None:
+            os.environ["IMP_FORWARD_TEST_EVAL_FORCE"] = self._saved_force
+        self._tmp.cleanup()
+
+    @staticmethod
+    def _realtime_discovery_and_provider() -> tuple[ScriptedQuoteProvider, EquityQuoteDiscovery]:
+        discovery = EquityQuoteDiscovery(
+            provider_id="test.realtime",
+            classification="AVAILABLE_NOT_ACTIVE",
+            timeliness="REAL_TIME",
+            reason_code="TEST_REALTIME_FIXTURE",
+            config_names_present=(),
+            finviz_token_names_present=(),
+            opend_reachable=False,
+        )
+        provider = ScriptedQuoteProvider(_realtime_quote(), provider_id="test.realtime")
+        return provider, discovery
+
+    @staticmethod
+    def _delayed_discovery_and_provider() -> tuple[ScriptedQuoteProvider, EquityQuoteDiscovery]:
+        discovery = EquityQuoteDiscovery(
+            provider_id="yahoo.finance.delayed",
+            classification="AVAILABLE_NOT_ACTIVE",
+            timeliness="DELAYED",
+            reason_code="YAHOO_DELAYED_OVERLAY",
+            config_names_present=(),
+            finviz_token_names_present=(),
+            opend_reachable=False,
+        )
+        return ScriptedQuoteProvider(_delayed_available()), discovery
+
+    def _activated_session(self, *, universe: tuple[str, ...] = ("AAPL", "MSFT")):
+        from market_platform_foundation.intelligence.paper_forward_bridge import (
+            ForwardTestService,
+            create_forward_test_repository,
+        )
+        from market_platform_foundation.local_state.startup import (
+            open_local_state,
+            reset_local_state_for_tests,
+        )
+
+        os.environ["IMP_STATE_DIR"] = self._tmp.name
+        os.environ["IMP_PERSIST_STATE"] = "1"
+        os.environ["IMP_FORWARD_TEST_EVAL_FORCE"] = "1"
+        campaigns_root = enable_test_campaigns_root(Path(self._tmp.name))
+        seed_baseline_campaign(campaigns_root, universe_symbols=universe)
+        reset_local_state_for_tests()
+        local = open_local_state(force=True)
+        assert local is not None
+        setup_service = ForwardTestService(create_forward_test_repository(connection=local.connection))
+        session = create_activated_session(
+            setup_service,
+            campaigns_root,
+            universe=universe,
+            evaluation_horizon_ns=3_600_000_000_000,
+            created_at_ns=T,
+        )
+        reset_local_state_for_tests()
+        return session
+
+    def _run_cli(self, argv: list[str], *, provider, discovery, invoke) -> tuple[int, dict]:
+        from tools.path_a_prospective_run import main as path_a_cli_main
+
+        stdout = StringIO()
+        with patch(
+            "market_platform_foundation.strategy.path_a_prospective.monotonic_wall_ns",
+            return_value=T + 2_000_000,
+        ):
+            with patch(
+                "tools.path_a_prospective_run.discover_equity_quote_stack",
+                return_value=(provider, discovery),
+            ):
+                with patch(
+                    "tools.path_a_prospective_run.build_paper_demo_path_a_invoke",
+                    return_value=invoke,
+                ):
+                    with patch("sys.stdout", stdout):
+                        code = path_a_cli_main(argv)
+        return code, json.loads(stdout.getvalue())
+
+    def test_persist_context_requires_all_four_identifiers(self) -> None:
+        from tools.path_a_prospective_run import build_cli_persist_context
+
+        os.environ["IMP_STATE_DIR"] = self._tmp.name
+        os.environ["IMP_PERSIST_STATE"] = "1"
+        complete = dict(
+            mode="paper",
+            persist_account_id="paper-a",
+            persist_session_id="sess-1",
+            persist_strategy_id=BASELINE_POLICY,
+            persist_strategy_version=POLICY_VERSION,
+        )
+        for missing in (
+            "persist_account_id",
+            "persist_session_id",
+            "persist_strategy_id",
+            "persist_strategy_version",
+        ):
+            partial = dict(complete)
+            partial[missing] = None
+            self.assertIsNone(build_cli_persist_context(SimpleNamespace(**partial)))
+        live_args = dict(complete)
+        live_args["mode"] = "live"
+        self.assertIsNone(build_cli_persist_context(SimpleNamespace(**live_args)))
+
+    def test_persist_context_none_when_persistence_switch_off(self) -> None:
+        from tools.path_a_prospective_run import build_cli_persist_context
+
+        os.environ.pop("IMP_STATE_DIR", None)
+        os.environ.pop("IMP_PERSIST_STATE", None)
+        args = SimpleNamespace(
+            mode="paper",
+            persist_account_id="paper-a",
+            persist_session_id="sess-1",
+            persist_strategy_id=BASELINE_POLICY,
+            persist_strategy_version=POLICY_VERSION,
+        )
+        self.assertIsNone(build_cli_persist_context(args))
+
+    def test_cli_persist_off_minted_is_intentional_ephemeral_no_create_decision(self) -> None:
+        os.environ.pop("IMP_PERSIST_STATE", None)
+        os.environ.pop("IMP_STATE_DIR", None)
+        provider, discovery = self._realtime_discovery_and_provider()
+        code, payload = self._run_cli(
+            ["--symbol", "AAPL", "--mode", "paper"],
+            provider=provider,
+            discovery=discovery,
+            invoke=_matched_fixture_invoke(mode="paper"),
+        )
+        self.assertEqual(code, 0)
+        result = payload["result"]
+        self.assertFalse(payload["persist_context_injected"])
+        self.assertEqual(result["path_a_status"], "MINTED")
+        self.assertEqual(result["persist_status"], PERSIST_INTENTIONAL_EPHEMERAL)
+        self.assertIsNone(result["forward_test_id"])
+
+    def test_cli_persist_on_without_session_args_is_skipped_no_session(self) -> None:
+        os.environ["IMP_STATE_DIR"] = self._tmp.name
+        os.environ["IMP_PERSIST_STATE"] = "1"
+        provider, discovery = self._realtime_discovery_and_provider()
+        code, payload = self._run_cli(
+            ["--symbol", "AAPL", "--mode", "paper"],
+            provider=provider,
+            discovery=discovery,
+            invoke=_matched_fixture_invoke(mode="paper"),
+        )
+        self.assertEqual(code, 0)
+        result = payload["result"]
+        self.assertFalse(payload["persist_context_injected"])
+        self.assertEqual(result["path_a_status"], "MINTED")
+        self.assertEqual(result["persist_status"], PERSIST_SKIPPED_NO_SESSION)
+        self.assertIsNone(result["forward_test_id"])
+
+    def test_cli_persist_on_paper_with_injected_context_exercises_create_decision(self) -> None:
+        from market_platform_foundation.local_state.startup import open_local_state
+
+        session = self._activated_session()
+        provider, discovery = self._realtime_discovery_and_provider()
+        code, payload = self._run_cli(
+            [
+                "--symbol",
+                "AAPL",
+                "--mode",
+                "paper",
+                "--persist-account-id",
+                "paper-a",
+                "--persist-session-id",
+                session.session_id,
+                "--persist-strategy-id",
+                BASELINE_POLICY,
+                "--persist-strategy-version",
+                POLICY_VERSION,
+            ],
+            provider=provider,
+            discovery=discovery,
+            invoke=_matched_fixture_invoke(mode="paper"),
+        )
+        self.assertEqual(code, 0)
+        result = payload["result"]
+        self.assertTrue(payload["persist_context_injected"])
+        self.assertEqual(result["path_a_status"], "MINTED")
+        self.assertEqual(result["persist_status"], PERSIST_WRITTEN)
+        self.assertIsNotNone(result["forward_test_id"])
+        reopened = open_local_state(force=True)
+        assert reopened is not None
+        count = reopened.connection.execute(
+            "SELECT COUNT(*) FROM forward_test_decisions"
+        ).fetchone()
+        self.assertEqual(int(count[0]), 1)
+
+    def test_cli_persist_on_demo_with_injected_context_stays_intentional_ephemeral(self) -> None:
+        from market_platform_foundation.local_state.startup import open_local_state
+
+        session = self._activated_session()
+        provider, discovery = self._realtime_discovery_and_provider()
+        code, payload = self._run_cli(
+            [
+                "--symbol",
+                "AAPL",
+                "--mode",
+                "demo",
+                "--persist-account-id",
+                "paper-a",
+                "--persist-session-id",
+                session.session_id,
+                "--persist-strategy-id",
+                BASELINE_POLICY,
+                "--persist-strategy-version",
+                POLICY_VERSION,
+            ],
+            provider=provider,
+            discovery=discovery,
+            invoke=_matched_fixture_invoke(mode="demo"),
+        )
+        self.assertEqual(code, 0)
+        result = payload["result"]
+        self.assertTrue(payload["persist_context_injected"])
+        self.assertEqual(result["mode"], "demo")
+        self.assertEqual(result["path_a_status"], "MINTED")
+        self.assertEqual(result["persist_status"], PERSIST_INTENTIONAL_EPHEMERAL)
+        self.assertIsNone(result["forward_test_id"])
+        reopened = open_local_state(force=True)
+        assert reopened is not None
+        count = reopened.connection.execute(
+            "SELECT COUNT(*) FROM forward_test_decisions"
+        ).fetchone()
+        self.assertEqual(int(count[0]), 0)
+
+    def test_cli_g7_fail_close_binds_even_with_persist_context_injected(self) -> None:
+        session = self._activated_session()
+        provider, discovery = self._delayed_discovery_and_provider()
+        code, payload = self._run_cli(
+            [
+                "--symbol",
+                "AAPL",
+                "--mode",
+                "paper",
+                "--persist-account-id",
+                "paper-a",
+                "--persist-session-id",
+                session.session_id,
+                "--persist-strategy-id",
+                BASELINE_POLICY,
+                "--persist-strategy-version",
+                POLICY_VERSION,
+            ],
+            provider=provider,
+            discovery=discovery,
+            invoke=_matched_fixture_invoke(mode="paper"),
+        )
+        self.assertEqual(code, 0)
+        result = payload["result"]
+        self.assertTrue(payload["persist_context_injected"])
+        self.assertEqual(result["status"], "G7_NOT_ACTIONABLE")
+        self.assertEqual(result["path_a_status"], "MINTED")
+        self.assertEqual(result["persist_status"], PERSIST_NOT_MINTED)
+        self.assertIsNone(result["forward_test_id"])
+
+    def test_cli_live_mode_refused_even_with_persist_args(self) -> None:
+        from tools.path_a_prospective_run import main as path_a_cli_main
+
+        os.environ["IMP_STATE_DIR"] = self._tmp.name
+        os.environ["IMP_PERSIST_STATE"] = "1"
+        stderr = StringIO()
+        with patch("sys.stderr", stderr):
+            with self.assertRaises(SystemExit):
+                path_a_cli_main(
+                    [
+                        "--mode",
+                        "live",
+                        "--persist-account-id",
+                        "paper-a",
+                        "--persist-session-id",
+                        "sess-1",
+                        "--persist-strategy-id",
+                        BASELINE_POLICY,
+                        "--persist-strategy-version",
+                        POLICY_VERSION,
+                    ]
+                )
 
 
 if __name__ == "__main__":

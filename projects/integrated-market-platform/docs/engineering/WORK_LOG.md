@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Path A CLI can inject the optional PD-09 persist context
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tools`, `strategy` |
+| **Summary** | `tools/path_a_prospective_run.py` now accepts `--persist-account-id`/`--persist-session-id`/`--persist-strategy-id`/`--persist-strategy-version` and, when every value is supplied AND the existing `IMP_STATE_DIR`/`IMP_PERSIST_STATE` persist-on switch is already set, builds a `ForwardTestService` off durable local state and injects `PathAPersistContext` into `PathAProspectiveComposer`. This closes the gap where `ForwardTestService.create_decision` was reachable only inside library tests (PR #42, `91b8889`) but structurally unreachable from the production CLI. The CLI never creates or activates a campaign/session itself — it only wires an operator-supplied, already-governed session (e.g. one created via `tools/ftep_session_start.py`). `--mode` still only accepts `paper`/`demo`; Live stays refused by `argparse` `choices`. Demo MINTED still stays `INTENTIONAL_EPHEMERAL` (composer only writes through for Paper). G7 fail-close (`G7_NOT_ACTIONABLE`) still short-circuits persistence even when a valid context is injected. Persist-off (switch unset) still yields `INTENTIONAL_EPHEMERAL` with no `create_decision` call; persist-on without full session args yields `PERSIST_SKIPPED_NO_SESSION` (unchanged fail-closed default). |
+| **Key files** | `tools/path_a_prospective_run.py`, `tests/intelligence/test_path_a_prospective.py` |
+| **Tests** | `tests.intelligence.test_path_a_prospective` **35 passed** (27 pre-existing + 8 new `PathACliPersistTests`: persist-off → `INTENTIONAL_EPHEMERAL`/no write; persist-on without session args → `PERSIST_SKIPPED_NO_SESSION`; persist-on Paper with injected fixture session → `create_decision` exercised, `PERSIST_WRITTEN`, one row in `forward_test_decisions`; persist-on Demo stays `INTENTIONAL_EPHEMERAL` with zero rows; G7 fail-close still binds `G7_NOT_ACTIONABLE`/`PERSIST_NOT_MINTED` even with context injected; Live still refused with persist args present; `build_cli_persist_context` requires all four identifiers and the existing persist-on switch). Related intelligence suites (`test_path_a_scan_caller`, `test_opportunity_freshness`, `test_intelligence_contracts`, `test_opportunity_comparison`) **57 passed**. `python3 tools/validate.py changed --paths-file` (2 merge-base paths vs `origin/cursor/provider-real-data-d1ba`@`33e6705`) **2042 passed / 25 skipped / 0 fail / 0 err** (`core_checkpoint_required=true`, escalated by the still-unowned `tools/path_a_prospective_run.py` executable path, same as PR #42's prior CLI changes). `python3 tools/imp.py lint` **passed**. |
+| **Related** | PR #42 (`91b8889` persist hop, `44fdcec`/`33e6705` CLI scan-caller invoke). Item 8 of the activation program (canonical hop → optional PD-09 v6 persistence). |
+| **Notes** | Real reachability still requires an operator-supplied, already-frozen/activated Forward-Test session (out-of-band, e.g. via `tools/ftep_session_start.py`); the CLI does not fabricate or freeze a campaign, matching the doctrine's "no campaign activation from documentation alone." No MATCHED fixture is minted by default (`build_paper_demo_path_a_invoke` honesty invoke is untouched); MATCHED-fixture cases only exist inside the new tests. FTEP is not `EMPIRICAL_ACTIVE`/`CALIBRATED`. No secrets printed — `persist_context_injected` is a boolean; session/account/strategy identifiers are operator-supplied CLI args, not credentials. |
+
 ## 2026-09-13 — Path A MATCHED fixture invokes Opportunity Engine
 
 | Field | Value |
