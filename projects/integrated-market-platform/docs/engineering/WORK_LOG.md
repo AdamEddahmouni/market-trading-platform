@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Restack Path A MATCHED produce onto leftover OpenD hop
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy`, `providers`, Path A hop CLI |
+| **Summary** | Cherry-picked Path A ForecastV1 load (#49), fail-closed producer (#51), and hop-side `--contributor-path`/`--calibration-path` produce (#53) onto leftover OpenD hop #57. Weekday hops can now run produce + G7 OpenD identity + Finviz leftover overlay on one branch. Conflicts kept OpenD as hop L1, Finviz overlay-only (never L1), leftover leftover-login discovery, one-interpreter `hop_interpreter`, and `diagnose_opend(start=True)`. BOOTSTRAP honesty champion `effective_from_ns=0`. Did not mint ForecastV1 JSON. Did not treat CONTROL/fixture `0.8` as empirical. Item 7 stays **PARTIAL**. FTEP is not `EMPIRICAL_ACTIVE`. Live off. Frozen FTEP-V1-001 JSON not touched. |
+| **Key files** | `src/market_platform_foundation/strategy/path_a_forecast_store.py` (new on this stack), `src/market_platform_foundation/strategy/path_a_forecast_producer.py` (new on this stack), `src/market_platform_foundation/strategy/path_a_prospective.py`, `tools/path_a_prospective_run.py` (produce flags kept beside OpenD/Finviz leftover hop JSON), `tests/intelligence/test_path_a_forecast_producer.py`, `tests/intelligence/test_path_a_forecast_store.py`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md`, `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | `PYTHONPATH=src .venv/bin/python -m unittest tests.intelligence.test_path_a_forecast_producer` **16 passed**. Producer + store **31 passed**. Path A producer + store + prereg + prospective + catalog + scan caller **104 passed**. Leftover leftover-login + OpenD hop interpreter + OpenD Primary L1 + Finviz overlay + producer **106 passed**. Honest CLI OpenD down: `discovery.provider_id=moomoo.opend.observational`, `overlay_provider_id=yahoo.finance.delayed`, `equity_context.discovery.classification=NOT_CONFIGURED`, `auto_fetch_status=CREDENTIALS_ABSENT`, `is_l1=false`, `result.status=PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE`. `--mode live` argparse refused. `.venv/bin/python tools/validate.py changed --paths-file` (13 paths vs #57 `ee32e7a`) **2623 passed / 25 skipped / 0 fail / 0 err** (`core_checkpoint_required=true` from unowned `tools/path_a_prospective_run.py`). `python3 tools/imp.py lint` passed. `python3 tools/check_docs_links.py` **OK (188 files)**. `python` absent; `python3` / `.venv/bin/python` used. GitHub CI on produce restack tip `be2ede4` **9/9 SUCCESS**, mergeable `MERGEABLE`. |
+| **Related** | Draft #58 on base `cursor/finviz-leftover-discovery-d1ba`. Source produce from #53 `6f0ead8` (`09edef2` feat). Did not merge #53 onto main. Did not merge #58. |
+| **Notes** | Software `MINTED` / `OPPORTUNITY_EMITTED` is not an empirical hop. Item 7 stays PARTIAL until a real PRODUCTION ForecastV1 exists and a weekday G7-actionable MATCHED hop. No mock data. Did not activate Live. GitHub CI 9/9 is software-green, not FTEP `EMPIRICAL_ACTIVE`. |
+
 ## 2026-09-13 — Worktree-aware Finviz leftover login discovery
 
 | Field | Value |
