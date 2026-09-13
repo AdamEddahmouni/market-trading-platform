@@ -10,6 +10,28 @@ from .paper_ledger_join import paper_execution_from_ledger, paper_execution_from
 from .sqlite_repository import SqliteForwardTestRepository
 
 
+def _signal_link_row(
+    connection: LocalStateConnection,
+    *,
+    forward_test_id: str,
+) -> dict[str, Any] | None:
+    row = connection.execute(
+        """
+        SELECT opportunity_id, signal_id, persist_time_ns
+        FROM forward_test_signal_links
+        WHERE forward_test_id=?
+        """,
+        (forward_test_id,),
+    ).fetchone()
+    if row is None:
+        return None
+    return {
+        "opportunity_id": row[0],
+        "signal_id": row[1],
+        "persist_time_ns": row[2],
+    }
+
+
 def reconstruct_campaign(
     connection: LocalStateConnection,
     *,
@@ -40,6 +62,8 @@ def reconstruct_campaign(
         )
         realized = ledger_realized if ledger_realized is not None else obs_realized
         fill_count = ledger_fills if ledger_fills else obs_fills
+        payload = decision.decision_payload or {}
+        link = _signal_link_row(connection, forward_test_id=decision.forward_test_id)
         reconstructed.append(
             {
                 "forward_test_id": decision.forward_test_id,
@@ -48,6 +72,10 @@ def reconstruct_campaign(
                 "strategy_id": decision.strategy_id,
                 "state": decision.state.value,
                 "paper_order_id": decision.paper_order_id,
+                "opportunity_id": (link or {}).get("opportunity_id")
+                or payload.get("opportunity_id"),
+                "signal_id": (link or {}).get("signal_id") or payload.get("signal_id"),
+                "signal_link": link,
                 "signal_outcome": signal.to_dict(),
                 "realized_pnl_minor": realized,
                 "unrealized_pnl_minor": unrealized,

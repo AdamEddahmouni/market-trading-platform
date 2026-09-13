@@ -199,6 +199,21 @@ runs, campaign/strategy/instrument query filters, unique operator acks, and
 a reconstruction API that joins Paper ledger fills/PnL without scraping logs.
 PD-09 (PR #18) remains COMPLETE; v6 is a later increment on the same store.
 
+Signal identity is persisted in `forward_test_signal_links` when
+`decision_payload.opportunity_id` is set (`INSERT OR IGNORE`). The link
+survives close/reopen; reconstruction exposes `opportunity_id` /
+`signal_id` / `paper_order_id` / ledger PnL. Full `OpportunityV1` records
+remain in the intelligence repository — they are not a second campaign
+store.
+
+Operator watch/review/dismiss acknowledgements:
+
+- Persist-on: unique `opportunity_operator_acks` rows. Survive restart.
+- Persist-off: process-local memory only (`INTENTIONAL_EPHEMERAL`).
+  Durable acks with persistence disabled are `NOT_APPLICABLE` — they
+  would require a second store. Campaigns with `persistence_required`
+  are preflight-blocked (`PERSISTENCE_DISABLED`).
+
 Factory: `create_forward_test_repository()` in
 `paper_forward_bridge/repository.py` (in-memory when persistence is off).
 

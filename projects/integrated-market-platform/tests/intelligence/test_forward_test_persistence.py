@@ -883,6 +883,229 @@ class DurableForwardTestPersistenceV6Tests(IsolatedForwardTestPersistenceTest):
             service._store.put_decision(tampered)
         self.assertEqual(str(ctx.exception), "FORWARD_TEST_OBSERVATION_PAYLOAD_CONFLICT")
 
+    def test_operator_acks_survive_restart(self) -> None:
+        from market_platform_foundation.ui_api.operator_opportunity_state import (
+            OPERATOR_ACK_STORAGE_DURABLE,
+            list_operator_acks,
+            operator_ack_storage,
+            record_operator_ack,
+            reset_operator_acks,
+        )
+
+        self.assertEqual(operator_ack_storage(), OPERATOR_ACK_STORAGE_DURABLE)
+        record_operator_ack(
+            summary_id="sum-restart",
+            opportunity_id="opp-restart",
+            paper_account_id="paper-a",
+            action="WATCHED",
+            created_at_ns=T0,
+        )
+        reset_operator_acks()
+        self._restart()
+        acks = list_operator_acks(paper_account_id="paper-a")
+        self.assertEqual(len(acks), 1)
+        self.assertEqual(acks[0]["summary_id"], "sum-restart")
+        self.assertEqual(acks[0]["opportunity_id"], "opp-restart")
+
+    def test_signal_link_survives_restart_and_reconstructs(self) -> None:
+        from market_platform_foundation.intelligence.paper_forward_bridge.reconstruction import (
+            reconstruct_campaign,
+        )
+
+        service = self._service()
+        session = create_activated_session(
+            service,
+            self.campaigns_root,
+            evaluation_horizon_ns=HOUR,
+            created_at_ns=T0,
+        )
+        decision = service.create_decision(
+            account_id="paper-a",
+            mode="PAPER",
+            session_id=session.session_id,
+            symbol="ACME",
+            direction="BUY",
+            decision_time_ns=T0,
+            source_time_ns=T0 - 1,
+            strategy_id=BASELINE_POLICY,
+            strategy_version=POLICY_VERSION,
+            test_mode=ForwardTestMode.SIGNAL_ONLY,
+            decision_payload={"opportunity_id": "opp-link-1", "signal_id": "sig-1"},
+        )
+        locked = service.lock_decision(
+            forward_test_id=decision.forward_test_id,
+            account_id="paper-a",
+            locked_at_ns=T0,
+        )
+        service.submit_to_paper(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+            submitted_at_ns=T0 + 1,
+            paper_order_id="ord-link-1",
+        )
+        local = open_local_state(force=True)
+        assert local is not None
+        local.connection.execute(
+            """
+            INSERT INTO paper_events(
+                event_id, session_id, event_type, event_time, available_time,
+                correlation_id, payload_json, schema_version, sequence
+            ) VALUES ('ev-fill-link', 'ps-1', 'FillRecorded', ?, ?, 'c',
+                      '{"order_id":"ord-link-1","fill":{"fill_id":"f-link"}}', 1, 1)
+            """,
+            (T0 + 2, T0 + 2),
+        )
+        local.connection.execute(
+            """
+            INSERT INTO paper_events(
+                event_id, session_id, event_type, event_time, available_time,
+                correlation_id, payload_json, schema_version, sequence
+            ) VALUES ('ev-pnl-link', 'ps-1', 'PositionChanged', ?, ?, 'c',
+                      '{"realized_pnl_minor": 250}', 1, 2)
+            """,
+            (T0 + 3, T0 + 3),
+        )
+        repo, restarted = self._restart()
+        recovered = restarted.get_decision(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+        )
+        self.assertEqual(recovered.decision_payload["opportunity_id"], "opp-link-1")
+        self.assertEqual(recovered.decision_payload["signal_id"], "sig-1")
+        self.assertEqual(recovered.paper_order_id, "ord-link-1")
+        local = open_local_state(force=True)
+        assert local is not None
+        links = local.connection.execute(
+            """
+            SELECT forward_test_id, opportunity_id, signal_id
+            FROM forward_test_signal_links
+            WHERE opportunity_id=?
+            """,
+            ("opp-link-1",),
+        ).fetchall()
+        self.assertEqual(len(links), 1)
+        self.assertEqual(links[0][0], locked.forward_test_id)
+        self.assertEqual(links[0][2], "sig-1")
+        repo.put_decision(recovered)
+        count = local.connection.execute(
+            "SELECT COUNT(*) FROM forward_test_signal_links WHERE opportunity_id=?",
+            ("opp-link-1",),
+        ).fetchone()
+        self.assertEqual(int(count[0]), 1)
+        reconstructed = reconstruct_campaign(
+            local.connection,
+            account_id="paper-a",
+            campaign_id=CAMPAIGN_SLUG,
+        )
+        self.assertEqual(reconstructed["decision_count"], 1)
+        row = reconstructed["decisions"][0]
+        self.assertEqual(row["opportunity_id"], "opp-link-1")
+        self.assertEqual(row["signal_id"], "sig-1")
+        self.assertEqual(row["paper_order_id"], "ord-link-1")
+        self.assertEqual(row["realized_pnl_minor"], 250)
+        self.assertEqual(row["signal_link"]["opportunity_id"], "opp-link-1")
+        self.assertEqual(row["signal_link"]["signal_id"], "sig-1")
+
+    def test_decision_without_opportunity_id_has_no_signal_link(self) -> None:
+        service = self._service()
+        _session, locked = self._seed_locked_decision(service)
+        local = open_local_state(force=True)
+        assert local is not None
+        count = local.connection.execute(
+            "SELECT COUNT(*) FROM forward_test_signal_links WHERE forward_test_id=?",
+            (locked.forward_test_id,),
+        ).fetchone()
+        self.assertEqual(int(count[0]), 0)
+
+
+class PersistOffOperatorAckSemanticsTests(unittest.TestCase):
+    def setUp(self) -> None:
+        from market_platform_foundation.ui_api.operator_opportunity_state import (
+            reset_operator_acks,
+        )
+
+        self._saved_persist = os.environ.pop("IMP_PERSIST_STATE", None)
+        self._saved_dir = os.environ.pop("IMP_STATE_DIR", None)
+        self._saved_campaigns = os.environ.pop("IMP_FORWARD_TEST_CAMPAIGNS_DIR", None)
+        reset_operator_acks()
+        reset_local_state_for_tests()
+        self._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+
+    def tearDown(self) -> None:
+        from market_platform_foundation.ui_api.operator_opportunity_state import (
+            reset_operator_acks,
+        )
+
+        reset_operator_acks()
+        reset_local_state_for_tests()
+        os.environ.pop("IMP_PERSIST_STATE", None)
+        os.environ.pop("IMP_STATE_DIR", None)
+        os.environ.pop("IMP_FORWARD_TEST_CAMPAIGNS_DIR", None)
+        if self._saved_persist is not None:
+            os.environ["IMP_PERSIST_STATE"] = self._saved_persist
+        if self._saved_dir is not None:
+            os.environ["IMP_STATE_DIR"] = self._saved_dir
+        if self._saved_campaigns is not None:
+            os.environ["IMP_FORWARD_TEST_CAMPAIGNS_DIR"] = self._saved_campaigns
+        self._tmp.cleanup()
+
+    def test_operator_ack_storage_is_process_local(self) -> None:
+        from market_platform_foundation.ui_api.operator_opportunity_state import (
+            OPERATOR_ACK_STORAGE_PROCESS_LOCAL,
+            operator_ack_storage,
+        )
+
+        self.assertEqual(operator_ack_storage(), OPERATOR_ACK_STORAGE_PROCESS_LOCAL)
+
+    def test_persist_off_acks_vanish_after_process_reset(self) -> None:
+        from market_platform_foundation.ui_api.operator_opportunity_state import (
+            list_operator_acks,
+            record_operator_ack,
+            reset_operator_acks,
+        )
+
+        record_operator_ack(
+            summary_id="sum-ephemeral",
+            opportunity_id="opp-ephemeral",
+            paper_account_id="paper-a",
+            action="WATCHED",
+            created_at_ns=T0,
+        )
+        self.assertEqual(len(list_operator_acks(paper_account_id="paper-a")), 1)
+        reset_operator_acks()
+        self.assertEqual(list_operator_acks(), ())
+
+    def test_persist_off_acks_do_not_write_sqlite(self) -> None:
+        from market_platform_foundation.ui_api.operator_opportunity_state import (
+            record_operator_ack,
+        )
+
+        record_operator_ack(
+            summary_id="sum-no-sqlite",
+            opportunity_id="opp-no-sqlite",
+            paper_account_id="paper-a",
+            action="DISMISSED",
+            created_at_ns=T0,
+        )
+        os.environ["IMP_STATE_DIR"] = self._tmp.name
+        os.environ["IMP_PERSIST_STATE"] = "1"
+        local = open_local_state(force=True)
+        assert local is not None
+        count = local.connection.execute(
+            "SELECT COUNT(*) FROM opportunity_operator_acks"
+        ).fetchone()
+        self.assertEqual(int(count[0]), 0)
+
+    def test_persistence_required_campaign_blocked_when_persist_off(self) -> None:
+        from market_platform_foundation.intelligence.paper_forward_bridge.preflight import (
+            PreflightDisposition,
+            run_forward_test_preflight,
+        )
+
+        result = run_forward_test_preflight(campaign_slug="FTEP-V1-001", mode="PAPER")
+        self.assertEqual(result.disposition, PreflightDisposition.NOT_READY)
+        self.assertIn("PERSISTENCE_DISABLED", result.blockers)
+
 
 if __name__ == "__main__":
     unittest.main()
