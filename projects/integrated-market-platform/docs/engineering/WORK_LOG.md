@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Classify Path A prospective CLI in repository-closure inventory
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `validation`, `tools` |
+| **Summary** | PR #42 `validate-python-changed` failed with `ClosureAuditError: unclassified path: tools/path_a_prospective_run.py`. Classified the one-shot Paper/Demo Path A CLI as `RETAINED_SUPPORTING` under `qualification-and-operations-tooling`, matching sibling IMP CLIs (`opportunity_summaries.py`, FTEP operator tools). Live guards and FTEP empirical status unchanged. |
+| **Key files** | `artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` |
+| **Tests** | Focused `test_canonical_audit_is_complete_non_destructive_and_uses_closed_vocabulary` **passed**. `python3 tools/imp.py validate changed --paths-file` with the same 12 merge-base paths CI used **2830 passed / 36 skipped / 0 fail / 0 err**. |
+| **Related** | PR #42. Prior Path A prospective hop entry. |
+| **Notes** | Did not declare FTEP `EMPIRICAL_ACTIVE`. Did not substitute mock data as empirical. |
+
 ## 2026-09-13 — Path A prospective one-shot hop (Yahoo delayed + OpenD fail-closed)
 
 | Field | Value |
