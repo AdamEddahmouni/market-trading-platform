@@ -313,6 +313,7 @@ class OpportunityFreshnessReconstructionTests(unittest.TestCase):
         from forward_test_activation_support import (
             BASELINE_POLICY,
             CAMPAIGN_SLUG,
+            POLICY_VERSION,
             create_activated_session,
             enable_test_campaigns_root,
             seed_baseline_campaign,

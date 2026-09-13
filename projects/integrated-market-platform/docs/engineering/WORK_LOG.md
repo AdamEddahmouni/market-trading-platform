@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — G7 freshness reconstruction test import
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/opportunity` |
+| **Summary** | GitHub `validate-python-changed` on PR #37 failed with 1 error: `test_reconstruct_surfaces_payload_freshness` referenced `POLICY_VERSION` without importing it from `forward_test_activation_support`. Import added; no production behavior change. |
+| **Key files** | `tests/intelligence/test_opportunity_freshness.py` |
+| **Tests** | `PYTHONPATH=src python3 -m unittest tests.intelligence.test_opportunity_freshness` **24 passed** including the reconstruction case. FAST **23 passed**. |
+| **Related** | [PR #37](https://github.com/AdamEddahmouni/market-trading-platform/pull/37); G7 freshness binding entry below. |
+| **Notes** | Does not reopen G7 runtime COMPLETE. Path A not started. FTEP labels unchanged. |
+
 ## 2026-09-13 — Opportunity Engine G7 freshness binding
 
 | Field | Value |
