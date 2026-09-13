@@ -2,11 +2,11 @@
 
 **Date:** 2026-09-13
 **Lane:** C
-**Classification:** `IMPLEMENTED` for the Goal 001 operator review loop (Demo/Paper NOW + `ui_api`); BUILD 21 mint remains fixture-library Path A. Not a production scanner and not FTEP.
+**Classification:** `IMPLEMENTED` for the Goal 001 operator review loop (Demo/Paper NOW + `ui_api`); Path A scan caller is a bounded Paper/Demo callable over the existing scanner library. Not a production daemon and not FTEP.
 
 ## Executive summary
 
-IMP has a **canonical Opportunity Contract** (`docs/architecture/OPPORTUNITY_CONTRACT.md`), BUILD 21 `OpportunityV1` + comparator, and a Goal 001 **operator review loop**: ingest existing evidence → explainable rank → NOW review card → optional Paper watch/dismiss. Ranking is a named vector, not an opaque 0–100 score. Live GET is empty `UNAVAILABLE`. Path A mint is unchanged as fixture library code.
+IMP has a **canonical Opportunity Contract** (`docs/architecture/OPPORTUNITY_CONTRACT.md`), BUILD 21 `OpportunityV1` + comparator, and a Goal 001 **operator review loop**: ingest existing evidence → explainable rank → NOW review card → optional Paper watch/dismiss. Ranking is a named vector, not an opaque 0–100 score. Live GET is empty `UNAVAILABLE`. Path A mint is reachable from a bounded Paper/Demo `PathAScanCaller` (scanner library → bridge); ingest still does not import the scanner.
 
 ## Current surfaces (verified in repo)
 

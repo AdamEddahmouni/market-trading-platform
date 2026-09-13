@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Path A Paper/Demo scan caller
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy` / `intelligence/opportunity` |
+| **Summary** | Added bounded `PathAScanCaller`: one `UniversalStrategyScanner` pass → Path A mint (`bridge_strategy_match_to_opportunity`). Paper/Demo only; Live raises `LIVE_SCAN_CALLER_FORBIDDEN`. Honest EMPTY when no MATCHED strategy. Ingest stays a review assembler. Not a daemon, not `StrategyPaperRuntime` workstation wiring, not FTEP. |
+| **Key files** | `src/market_platform_foundation/strategy/path_a_scan_caller.py`, `tests/intelligence/test_path_a_scan_caller.py`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | `PYTHONPATH=src python3 -m unittest tests.intelligence.test_path_a_scan_caller` plus ingest/operator-loop **24 passed**. FAST **23 passed**. |
+| **Related** | G7 freshness MERGED [PR #37](https://github.com/AdamEddahmouni/market-trading-platform/pull/37) at `ea39223`. Docs rebaseline [PR #38](https://github.com/AdamEddahmouni/market-trading-platform/pull/38) at `63962a9`. |
+| **Notes** | Simulator still not calibrated. FTEP not `EMPIRICAL_ACTIVE`. Live execution disabled. |
+
 ## 2026-09-13 — Opportunity Engine G7 freshness merged (PR #37)
 
 | Field | Value |

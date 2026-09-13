@@ -54,6 +54,11 @@ from .scanning import (
     StrategyRegistration,
     UniversalStrategyScanner,
 )
+from .path_a_scan_caller import (
+    PathAScanCallResult,
+    PathAScanCaller,
+    PathAScanCallerError,
+)
 from .strategy_spec import (
     ALIGNMENT_TYPES,
     SPEC_VERSION,
@@ -138,5 +143,8 @@ __all__ = [
     "StrategyRuntimeReconstruction",
     "StrategyRuntimeResult",
     "UniversalStrategyScanner",
+    "PathAScanCallResult",
+    "PathAScanCaller",
+    "PathAScanCallerError",
     "verify_preregistration",
 ]
