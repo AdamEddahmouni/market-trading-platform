@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Moomoo OpenD Primary L1 equity-quote selection (DoD item 2)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend` / `providers` |
+| **Summary** | Added the broker-neutral `EquityQuoteProvider`-level primary/overlay selection for the $0 no-additional-cost stack: `MoomooOpenDEquityQuoteProvider` (`moomoo.opend.observational`, capability `US_EQUITY_L1`) is the Primary L1, loopback-only, fail-closed at call time (`OPEND_NON_LOOPBACK_BLOCKED` / `OPEND_UNAVAILABLE` / `MOOMOO_TRANSPORT_NOT_IMPLEMENTED`) and never fabricates a tick. `YahooDelayedEquityQuoteProvider` (`yahoo.finance.delayed`, `timeliness="DELAYED"`) is a distinctly-identified cloud overlay — never the primary slot, never `REAL_TIME`, and rejects ES/futures symbols before any HTTP call. `equity_quote_selection.py` documents that OpenD reachability is diagnostic-only and never swaps the primary provider. `with_moomoo_opend_primary_quote()` wires the composition slot additively; the default composition is unchanged (`UnconfiguredEquityQuoteProvider`). On this cloud VM there is no loopback OpenD daemon, so the "no OpenD → honest unavailable, no generated quotes" path is proven unconditionally; operator-machine OpenD (loopback daemon + in-tree vendor transport) remains required to reach `AVAILABLE`/`REAL_TIME` and is out of scope for this increment. |
+| **Key files** | `src/market_platform_foundation/providers/adapters/moomoo_opend_equity_quote.py` (new), `src/market_platform_foundation/providers/adapters/yahoo_delayed_equity_quote.py` (new), `src/market_platform_foundation/providers/equity_quote_selection.py` (new), `src/market_platform_foundation/providers/composition.py` (added `with_moomoo_opend_primary_quote`), `tests/providers/test_moomoo_opend_primary_l1.py` (new, 21 tests), `docs/providers/MOOMOO_OBSERVATIONAL.md` |
+| **Tests** | `PYTHONPATH=src python3 -m unittest tests.providers.test_moomoo_opend_primary_l1 -v` — 21 passed. `PYTHONPATH=src python3 -m unittest discover -s tests/providers -q` — 363 passed (no regression). `python3 tools/imp.py lint` — passed. `python3 tools/check_docs_links.py` — OK (188 files). `PYTHONPATH=src python3 tools/validate.py changed --explain` (working tree vs `origin/main` `9cb541c`) — **664 tests, 11 skipped, 0 failures, 0 errors**. |
+| **Related** | DoD item 2 (locked stack: Primary L1 = OpenD observational); [`us-equity-provider-stack-selection.json`](../../artifacts/ftep-v1-002/us-equity-provider-stack-selection.json); does not touch `tools/path_a_prospective_run.py`, Finviz overlay files, or paper/calibration files; does not push to `cursor/provider-real-data-d1ba` (PR #42), `cursor/path-a-persist-cli-d1ba`, or `cursor/finviz-elite-fail-closed-d1ba` (PR #44). |
+| **Notes** | Live stays off; FTEP not declared `EMPIRICAL_ACTIVE`/`CALIBRATED`/`REAL_TIME`. Independent, separately-authored implementation of the same DoD item 2 requirement in parallel with PR #42's unmerged `provider-real-data` branch — both branches are expected to converge (or be reconciled) at merge time; this branch does not depend on or modify PR #42's branch. `PROGRAM_STATUS.md` intentionally not updated in this increment (matches PR #44 precedent: item 2 remains PARTIAL pending operator OpenD). |
+
 ## 2026-09-13 — Path A scan caller merged (PR #39)
 
 | Field | Value |

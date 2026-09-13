@@ -72,6 +72,47 @@ through the runtime ingest path), `push_feed.py` (fixture feed push),
 - Timezone: UTC recommended
 - Probe refuses non-localhost hosts
 
+## Primary L1 equity-quote selection (DoD item 2)
+
+Distinct from the `LiveObservationalRuntime` ingest path above: the
+broker-neutral `EquityQuoteProvider` contract (`providers/contracts.py`,
+ADR-PROV-001) has its own request/response quote-source selection, used by
+the $0 no-additional-cost stack (see
+[`us-equity-provider-stack-selection.json`](../../artifacts/ftep-v1-002/us-equity-provider-stack-selection.json)).
+The locked decision for that stack: **Primary L1 = Moomoo OpenD
+observational**.
+
+- `providers/adapters/moomoo_opend_equity_quote.py` — `MoomooOpenDEquityQuoteProvider`
+  (`moomoo.opend.observational`, capability `US_EQUITY_L1`). Loopback-only
+  (`127.0.0.1`/`localhost`/`::1`); a non-loopback `IMP_MOOMOO_HOST` fails
+  closed with `OPEND_NON_LOOPBACK_BLOCKED` without attempting a connection.
+  Reachability is a live TCP probe evaluated inside `fetch_quote` (never
+  cached at composition time). Unreachable → `OPEND_UNAVAILABLE`. Reachable
+  but in-tree transport unimplemented (the `moomoo-api` SDK is intentionally
+  not a dependency of this package — see above) → `MOOMOO_TRANSPORT_NOT_IMPLEMENTED`.
+  This adapter has no code path that returns `status="available"`: it never
+  fabricates a tick under the OpenD/Moomoo identity.
+- `providers/adapters/yahoo_delayed_equity_quote.py` — `YahooDelayedEquityQuoteProvider`
+  (`yahoo.finance.delayed`, capability `US_EQUITY_SNAPSHOT`, `timeliness="DELAYED"`).
+  A distinctly-identified, cloud-reachable **overlay** — never the primary L1
+  slot, never labeled `REAL_TIME`, and never usable for ES/futures symbols
+  (`ES=F`, `/ES`, `MES`, … fail closed with
+  `ES_FUTURES_NOT_SUPPORTED_BY_DELAYED_EQUITY_OVERLAY` before any HTTP call).
+- `providers/equity_quote_selection.py` — `primary_equity_quote_provider()`
+  always returns the Moomoo OpenD adapter; `opend_readiness()` is a
+  diagnostic-only reachability snapshot that never changes which provider is
+  primary; `delayed_cloud_overlay_provider()` returns the Yahoo overlay under
+  its own identity.
+- `providers/composition.py` — `with_moomoo_opend_primary_quote(composition)`
+  wires the `equity_quote` slot to the OpenD adapter. Additive/opt-in: the
+  default `ProviderComposition` keeps `UnconfiguredEquityQuoteProvider`
+  (fail-closed `PROVIDER_NOT_CONFIGURED`) unless a caller opts in.
+- Tests: `tests/providers/test_moomoo_opend_primary_l1.py`. The cloud CI/dev
+  VM has no loopback OpenD daemon, so the "no OpenD → honest unavailable, no
+  generated quotes" path is exercised unconditionally; a local loopback TCP
+  listener (never a moomoo protocol/tick) is used only to prove the
+  reachable-but-unimplemented-transport branch also fails closed.
+
 ## SDK requirement
 
 Optional characterization environment (not the governed foundation):
