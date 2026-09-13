@@ -36,6 +36,90 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Restack Path A hop (#42) onto merged calibration (#41)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Rebase `cursor/provider-real-data-d1ba` onto `origin/main` after PR #41 merge `4ba44cf`. Restore the merged Tradier sandbox calibration harness row beside the Path A prospective hop row. Canonical SHA is `4ba44cf` (merged #32–#41). FTEP-V1-001/002 labels unchanged — **not** `EMPIRICAL_ACTIVE`. Simulator **not** `CALIBRATED`. Live remains disabled. Item 7 stays PARTIAL. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | Docs-only restack; hop tests not re-run in this increment. CI must go 9/9 on the new head before merge. |
+| **Related** | [PR #42](https://github.com/AdamEddahmouni/market-trading-platform/pull/42); [PR #41](https://github.com/AdamEddahmouni/market-trading-platform/pull/41) merge `4ba44cf` |
+| **Notes** | Does not activate Live. Does not mint ForecastV1. Does not change the FTEP-V1-001 fingerprint. |
+
+## 2026-09-13 — Path A hop CLI loads a real (non-fixture) baseline strategy catalog
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy`, `opportunity` |
+| **Summary** | `build_paper_demo_path_a_invoke` (Paper/Demo only) no longer registers `strategies=()`. It now loads `build_paper_demo_strategy_catalog()` (`strategy/path_a_strategy_catalog.py`): the existing production `FORECAST_MOMENTUM` / `WHALE_ALIGNED` / `WHALE_CONTRARIAN` baseline-only specs (`strategy/evaluation.py`) wired to the real `interpret_strategy` evaluator, using the real fetched quote's last price/timestamp when available. No preregistration authority is wired into this one-shot hop, so every entry legitimately abstains (`ABSTAIN_NO_PREREGISTRATION`; whale alignments also `ABSTAIN_INSTITUTIONAL_UNAVAILABLE` — no `WhaleLedger` configured). Path A therefore still returns honest `EMPTY` / `NO_MATCHED_STRATEGY` on this hop, but from a genuine evaluation of 3 real strategies instead of a trivially empty candidate list. No hardcoded/lambda `MATCHED` is introduced anywhere. Confirmed live against the real Sunday Yahoo delayed overlay: `status=G7_NOT_ACTIONABLE`, `path_a_status=EMPTY`. Item 7 (Opportunity Engine in the hop) remains empirically **PARTIAL** — this closes only the empty-catalog software gap, not an empirical MATCHED. |
+| **Key files** | `src/market_platform_foundation/strategy/path_a_strategy_catalog.py` (new), `src/market_platform_foundation/strategy/path_a_prospective.py`, `tests/intelligence/test_path_a_strategy_catalog.py` (new), `tests/intelligence/test_path_a_prospective.py`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | New `tests.intelligence.test_path_a_strategy_catalog` **8 passed**. Focused Path A + scan caller + ingest + freshness (PR command + catalog module) **72 passed**. Wider focused Path A + scan caller + ingest + freshness + strategy scanning + equity paper runtime **97 passed**. Manual CLI run against real Yahoo delayed overlay: `discovery.provider_id=yahoo.finance.delayed`, `result.status=G7_NOT_ACTIONABLE`, `result.path_a_status=EMPTY`, `reason_codes` includes `NO_MATCHED_STRATEGY`. Live mode still refused (`--mode live` rejected by argparse; `build_paper_demo_path_a_invoke(mode="live")` raises `LIVE_SCAN_CALLER_FORBIDDEN`). `python3 tools/imp.py validate changed --paths-file` (merge-base `origin/main`, 18 paths) **2854 passed / 36 skipped / 0 fail / 0 err**. Docs links OK (188 files). |
+| **Related** | PR #42. Follows Path A CLI invoke (`44fdcec`) and MATCHED OE fixture (`33e6705`). |
+| **Notes** | The catalog is a genuine extension point: if a real preregistration authority and/or an entitled institutional (`WhaleLedger`) source are wired into Path A in a future increment, the same evaluator would start producing genuine `MATCHED` dispositions with no change to the scanner or caller. Until then, abstention is the honest outcome regardless of the real quote's price. The CLI (`tools/path_a_prospective_run.py`) still builds its invoke before fetching the quote, so the CLI-run catalog currently evaluates without live quote context (composer-internal auto-build, used by tests, does thread the fetched quote through `quote_event`); this does not change the abstain-always outcome today. |
+
+## 2026-09-13 — Path A MATCHED fixture invokes Opportunity Engine
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy`, `opportunity` |
+| **Summary** | Paper/Demo MATCHED fixtures on `PathAProspectiveComposer` now have tests that `PathAScanCaller` enters the MATCHED loop and calls `bridge_strategy_match_to_opportunity` → `OpportunityEngine.assess`. Honest EMPTY still does not call the engine (`NO_MATCHED_STRATEGY`). If G7 fail-closes, overall status stays `G7_NOT_ACTIONABLE` even when Path A is `MINTED`. Live remains `LIVE_FORBIDDEN` and does not assess. Production CLI honesty invoke is unchanged (`strategies=()`). FTEP is not `EMPIRICAL_ACTIVE`. Fills are not fabricated. This is software proof, not an empirical MATCHED hop. |
+| **Key files** | `tests/intelligence/test_path_a_prospective.py`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/platform/PROGRAM_STATUS.md`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md`, `docs/product/OPPORTUNITY_ENGINE_CURRENT_STATE_AND_IMPLEMENTATION_PLAN.md` |
+| **Tests** | Focused Path A + scan caller + ingest + freshness **63 passed**. MATCHED Paper/Demo fixtures call `assess`; EMPTY does not; Live does not. `python3 tools/imp.py validate changed --paths-file` (16 merge-base paths vs `origin/main`) **2845 passed / 36 skipped / 0 fail / 0 err**. Docs links OK (188 files). |
+| **Related** | PR #42. Prior Path A CLI invoke + persist hop. |
+| **Notes** | No new unclassified files. Ingest still does not import the scanner. Not a daemon. Item 7 stays empirically PARTIAL. |
+
+## 2026-09-13 — Path A CLI invokes PathAScanCaller on Paper/Demo
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy`, `tools` |
+| **Summary** | Paper/Demo `tools/path_a_prospective_run.py` now injects `PathAScanCaller` via `build_paper_demo_path_a_invoke` instead of running the composer with a null caller. No MATCHED strategies yields honest `EMPTY` / `NO_MATCHED_STRATEGY` (no fixture mint). If G7 fail-closes, overall status stays `G7_NOT_ACTIONABLE` while Path A still runs for that honesty EMPTY. Composer auto-builds the same invoke when tests do not inject a caller. Live remains `LIVE_FORBIDDEN`. FTEP is not `EMPIRICAL_ACTIVE`. Fills are not fabricated. |
+| **Key files** | `strategy/path_a_prospective.py`, `tools/path_a_prospective_run.py`, `strategy/__init__.py`, `tests/intelligence/test_path_a_prospective.py`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/platform/PROGRAM_STATUS.md`, `docs/product/OPPORTUNITY_ENGINE_CURRENT_STATE_AND_IMPLEMENTATION_PLAN.md`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | Focused Path A + scan caller + ingest + freshness **58 passed**. CLI injects caller; Live argparse refuses `--mode live`. `python3 tools/imp.py validate changed --paths-file` (16 merge-base paths vs `origin/main`) **2840 passed / 36 skipped / 0 fail / 0 err**. Docs links OK (188 files). |
+| **Related** | PR #42. Prior Path A persist hop + prospective hop. |
+| **Notes** | No new unclassified files. Ingest still does not import the scanner. Not a daemon. |
+
+## 2026-09-13 — Path A optional PD-09 persist hop after MINTED
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy`, `persistence` |
+| **Summary** | `PathAProspectiveComposer` writes schema v6 via existing `ForwardTestService.create_decision` after a Paper MINTED result when persist is on and an existing FT session is injected. Payload includes G7 freshness and `opportunity_id` so `forward_test_signal_links` populate. Persist-off minted decisions stay `INTENTIONAL_EPHEMERAL` (no second store). Live still does not mint. FTEP is not `EMPIRICAL_ACTIVE`. Fills are not fabricated. |
+| **Key files** | `strategy/path_a_prospective.py`, `tests/intelligence/test_path_a_prospective.py`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Focused `tests.intelligence.test_path_a_prospective` **15 passed**. Related Path A + freshness **45 passed**. `python3 tools/imp.py validate changed --paths-file` (16 merge-base paths) **2833 passed / 36 skipped / 0 fail / 0 err**. Docs links OK (188 files). |
+| **Related** | PR #42. Prior Path A prospective hop + repository-closure CLI classification. |
+| **Notes** | Requires an existing Paper FT session; Path A does not auto-activate FTEP. Demo MINTED does not write FT rows. |
+
+## 2026-09-13 — Classify Path A prospective CLI in repository-closure inventory
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `validation`, `tools` |
+| **Summary** | PR #42 `validate-python-changed` failed with `ClosureAuditError: unclassified path: tools/path_a_prospective_run.py`. Classified the one-shot Paper/Demo Path A CLI as `RETAINED_SUPPORTING` under `qualification-and-operations-tooling`, matching sibling IMP CLIs (`opportunity_summaries.py`, FTEP operator tools). Live guards and FTEP empirical status unchanged. |
+| **Key files** | `artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` |
+| **Tests** | Focused `test_canonical_audit_is_complete_non_destructive_and_uses_closed_vocabulary` **passed**. `python3 tools/imp.py validate changed --paths-file` with the same 12 merge-base paths CI used **2830 passed / 36 skipped / 0 fail / 0 err**. |
+| **Related** | PR #42. Prior Path A prospective hop entry. |
+| **Notes** | Did not declare FTEP `EMPIRICAL_ACTIVE`. Did not substitute mock data as empirical. |
+
+## 2026-09-13 — Path A prospective one-shot hop (Yahoo delayed + OpenD fail-closed)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `providers`, `strategy`, `opportunity` |
+| **Summary** | One-shot Paper/Demo composer joins an equity quote adapter through admission, G7 freshness, and Path A. Yahoo delayed is the cloud-reachable prospective overlay (not real-time, not ES). Moomoo OpenD fails closed when the daemon or in-tree transport is absent. Live remains forbidden. FTEP is not EMPIRICAL_ACTIVE. |
+| **Key files** | `strategy/path_a_prospective.py`, `providers/adapters/yahoo_delayed_equity_quote.py`, `providers/adapters/moomoo_opend_equity_quote.py`, `providers/equity_quote_discovery.py`, `market_data/runtime_composition.py`, `ui_api/opportunity_projections.py`, `tools/path_a_prospective_run.py`, `tests/intelligence/test_path_a_prospective.py` |
+| **Tests** | `PYTHONPATH=src python3 -m unittest tests.intelligence.test_path_a_prospective tests.intelligence.test_path_a_scan_caller tests.intelligence.test_opportunity_ingest tests.intelligence.test_opportunity_freshness tests.ui1.test_opportunity_api tests.market_data.test_g7_runtime_composition -q` — 64 passed |
+| **Related** | Canonical start `9cb541c` (PR #40). Does not activate Live or FTEP empirical. |
+| **Notes** | ES-news remains BLOCKED_ON_ES_DATA. Yahoo hop is DELAYED_PROSPECTIVE; G7 `DELAYED_WHEN_REALTIME_REQUIRED`. |
+
 ## 2026-09-13 — Rebaseline PROGRAM_STATUS SHA to origin/main@9cb541c
 
 | Field | Value |

@@ -1,0 +1,944 @@
+"""One-shot Path A prospective hop: mocked providers, no Live, no secrets."""
+
+from __future__ import annotations
+
+import inspect
+import json
+import os
+import sys
+import tempfile
+import unittest
+from dataclasses import replace
+from io import StringIO
+from pathlib import Path
+from unittest.mock import patch
+
+from market_platform_foundation.intelligence.contracts import (
+    ContractReference,
+    EventV1,
+    ForecastEstimate,
+    ForecastTarget,
+    ForecastV1,
+    IntelligenceScope,
+    QualityState,
+    QualitySummary,
+    SnapshotV1,
+    SourceReference,
+    StrategyMatchDisposition,
+    TimeHorizonNs,
+)
+from market_platform_foundation.intelligence.opportunity import (
+    AccountActionability,
+    EconomicAssumptionsV1,
+    MoneyMinorUnits,
+    OpportunityContext,
+    UniversalEconomicAssessmentV1,
+    build_opportunity_policy,
+)
+from market_platform_foundation.intelligence.opportunity.engine import OpportunityEngine
+from market_platform_foundation.intelligence.opportunity.ingest import assemble_opportunity_review_rows
+from market_platform_foundation.intelligence.opportunity.types import OpportunityPolicyV1
+from market_platform_foundation.intelligence.persistence import InMemoryIntelligenceRepository
+from market_platform_foundation.intelligence.promotion.types import (
+    ChampionAssignmentReason,
+    ChampionAssignmentV1,
+    ChampionScopeV1,
+)
+from market_platform_foundation.intelligence.quality.models import QualityAssessment
+from market_platform_foundation.market_data.runtime_composition import ObservationalRuntimeComposition
+from market_platform_foundation.providers.adapters.yahoo_delayed_equity_quote import (
+    YahooDelayedEquityQuoteProvider,
+)
+from market_platform_foundation.providers.adapters.moomoo_opend_equity_quote import (
+    UnreachableOpenDEquityQuoteProvider,
+)
+from market_platform_foundation.providers.contracts import ProviderResult
+from market_platform_foundation.providers.equity_quote_discovery import (
+    FINVIZ_TOKEN_NAMES,
+    EquityQuoteDiscovery,
+    names_present,
+)
+from market_platform_foundation.providers.identity import InstrumentIdentity
+from market_platform_foundation.providers.stubs import UnconfiguredEquityQuoteProvider
+from market_platform_foundation.strategy.path_a_prospective import (
+    DELAYED_SOURCE,
+    PERSIST_INTENTIONAL_EPHEMERAL,
+    PERSIST_NOT_MINTED,
+    PERSIST_WRITTEN,
+    PathAPersistContext,
+    PathAProspectiveComposer,
+    build_paper_demo_path_a_invoke,
+)
+from market_platform_foundation.strategy.path_a_scan_caller import PathAScanCaller, PathAScanCallerError
+from market_platform_foundation.strategy.scanning import (
+    CapabilityContextSnapshot,
+    PointInTimeUniverse,
+    ScanBudget,
+    ScanRequest,
+    ScanScope,
+    ScanTrigger,
+    ScanTriggerType,
+    StrategyEvaluationResult,
+    StrategyRegistration,
+    UniversalStrategyScanner,
+)
+from market_platform_foundation.strategy.strategy_spec import StrategyDefinition
+from market_platform_foundation.ui_api.opportunity_projections import _opportunity_source
+from market_platform_foundation.ui_api.store import ReplayStore
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "tests" / "intelligence"))
+from forward_test_activation_support import (
+    BASELINE_POLICY,
+    CAMPAIGN_SLUG,
+    POLICY_VERSION,
+    create_activated_session,
+    enable_test_campaigns_root,
+    seed_baseline_campaign,
+)
+
+
+T = 1_700_000_000_000_000_000
+HORIZON = 300_000_000_000
+INSTRUMENT = InstrumentIdentity("canonical", "AAPL", "EQUITY", "XNYS", "USD")
+INSTRUMENT_ID = INSTRUMENT.qualified_id()
+QUALITY = QualitySummary(state=QualityState.GOOD)
+SCOPE = IntelligenceScope(
+    instrument_ids=(INSTRUMENT_ID,),
+    context_id="acct-paper:paper:snapshot-paper-1",
+)
+
+
+def _quote_event(*, symbol: str = "AAPL", seq: int = 7, delayed: bool = True) -> dict:
+    return {
+        "capability": "US_EQUITY_L1",
+        "clocks": {
+            "event_time_ns": T,
+            "provider_time_ns": T,
+            "received_time_ns": T + 1_000_000,
+        },
+        "instrument_id": symbol,
+        "provider": "yahoo.finance.delayed" if delayed else "test.realtime",
+        "provider_symbol": symbol,
+        "raw_payload": {
+            "ask_price": 190.2,
+            "ask_vol": 200,
+            "bid_price": 190.0,
+            "bid_vol": 100,
+            "last_price": 190.1,
+        },
+        "sequence": seq,
+        "timeliness": "DELAYED" if delayed else "REAL_TIME",
+        "normalization_version": "test/1.0.0",
+    }
+
+
+class ScriptedQuoteProvider:
+    capability = "US_EQUITY_SNAPSHOT"
+
+    def __init__(self, result: ProviderResult, *, provider_id: str = "yahoo.finance.delayed") -> None:
+        self._result = result
+        self.provider_id = provider_id
+
+    def fetch_quote(self, symbol: str) -> ProviderResult:
+        del symbol
+        return self._result
+
+
+def _champion() -> ChampionAssignmentV1:
+    return ChampionAssignmentV1(
+        assignment_id="champion-path-a-prospective-1",
+        schema_version="1",
+        champion_scope=ChampionScopeV1(
+            component="forecast",
+            target_kind="direction",
+            horizon_ns=HORIZON,
+            mode="PAPER",
+            scenario_id="paper-path-a",
+        ),
+        candidate_id="candidate-path-a-prospective-1",
+        candidate_artifact_hash="artifact-path-a-prospective-1",
+        promotion_decision_id=None,
+        previous_assignment_id=None,
+        effective_from_ns=T - 1,
+        assignment_reason=ChampionAssignmentReason.BOOTSTRAP,
+    )
+
+
+def _forecast(champion: ChampionAssignmentV1) -> ForecastV1:
+    return ForecastV1(
+        forecast_id="forecast-path-a-prospective-1",
+        schema_version="1",
+        scope=SCOPE,
+        decision_time_ns=T,
+        snapshot_id="snapshot-paper-1",
+        target=ForecastTarget(target_kind="direction", instrument_id="AAPL", parameters={}),
+        horizon=TimeHorizonNs(duration_ns=HORIZON),
+        estimate=ForecastEstimate(
+            estimate_kind="classification_probability",
+            probability=0.8,
+            calibrated_probability=0.8,
+        ),
+        quality=QUALITY,
+        resolve_time_ns=T + HORIZON,
+        metadata={
+            "account_id": "acct-paper",
+            "mode": "PAPER",
+            "scenario_id": "paper-path-a",
+            "forecast_stage": "FINAL_FUSED_CALIBRATED",
+            "contributor_role": "PRODUCTION",
+            "champion_candidate_id": champion.candidate_id,
+            "candidate_artifact_hash": champion.candidate_artifact_hash,
+        },
+    )
+
+
+def _scan_request(
+    *,
+    mode: str = "paper",
+    disposition: StrategyMatchDisposition = StrategyMatchDisposition.REJECTED,
+) -> ScanRequest:
+    definition = StrategyDefinition(
+        alignment_type="FORECAST_MOMENTUM",
+        hypothesis="prospective path a",
+        evidence_requirements=(),
+        instrument_id="AAPL",
+        asset_class="EQUITY",
+        family="TREND",
+        style="MOMENTUM",
+        timeframe="5M",
+    )
+    return ScanRequest(
+        universe=PointInTimeUniverse(T, (INSTRUMENT,)),
+        capability_snapshot=CapabilityContextSnapshot(
+            snapshot_id="snapshot-paper-1",
+            as_of_time_ns=T,
+            quality_assessment=QualityAssessment(decision_time_ns=T),
+            context={"session": "REGULAR"},
+        ),
+        strategies=(
+            StrategyRegistration(
+                strategy_id="strategy-path-a-prospective-1",
+                definition=definition,
+                evaluator=lambda _: StrategyEvaluationResult(disposition=disposition),
+            ),
+        ),
+        scope=ScanScope(account_id="acct-paper", mode=mode),
+        trigger=ScanTrigger(ScanTriggerType.SESSION_OPEN, {"session": "REGULAR"}),
+        decision_time_ns=T,
+        expires_at_ns=T + 60_000_000_000,
+        budget=ScanBudget(max_evaluations=1, max_cost_units=1),
+    )
+
+
+class RecordingOpportunityEngine(OpportunityEngine):
+    """Test double: real assess, with a call count. Not a live fill."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.assess_calls = 0
+
+    def assess(self, **kwargs):  # type: ignore[no-untyped-def]
+        self.assess_calls += 1
+        return super().assess(**kwargs)
+
+
+def _caller(
+    repository: InMemoryIntelligenceRepository,
+    champion: ChampionAssignmentV1,
+    forecast: ForecastV1,
+    *,
+    engine: OpportunityEngine | None = None,
+    context_mode: str = "PAPER",
+    scope: IntelligenceScope | None = None,
+) -> PathAScanCaller:
+    mode_n = str(context_mode or "PAPER").strip().upper()
+    used_scope = scope if scope is not None else SCOPE
+    scenario_id = "demo-path-a" if mode_n == "DEMO" else "paper-path-a"
+    policy: OpportunityPolicyV1 = build_opportunity_policy(
+        champion_scope=champion.champion_scope,
+        max_forecast_age_ns=HORIZON,
+        max_opportunity_lifetime_ns=20_000_000_000,
+        minimum_probability_edge=0.05,
+    )
+    return PathAScanCaller(
+        scanner=UniversalStrategyScanner(query_planner=None, repository=repository),
+        repository=repository,
+        forecast_resolver=lambda _match: forecast,
+        champion_at_forecast=champion,
+        champion_at_opportunity=champion,
+        opportunity_policy=policy,
+        opportunity_context=OpportunityContext(
+            snapshot_ref=ContractReference(kind="snapshot", id="snapshot-paper-1"),
+            snapshot_available_time_ns=T,
+            spread_bps=5,
+            spread_available_time_ns=T,
+            mode=mode_n,
+            scenario_id=scenario_id,
+            account_id="acct-paper",
+        ),
+        economic_assessment=UniversalEconomicAssessmentV1.create(
+            scope=used_scope,
+            account_id="acct-paper",
+            mode=mode_n,
+            assessed_at_ns=T,
+            expires_at_ns=T + 50_000_000_000,
+            assumptions=EconomicAssumptionsV1(assumptions_id="economics-p", version="1"),
+            expected_gross_pnl=MoneyMinorUnits(2_000, "USD", 2),
+            expected_net_pnl=MoneyMinorUnits(1_500, "USD", 2),
+            capital_required=MoneyMinorUnits(10_100, "USD", 2),
+            buying_power_required=MoneyMinorUnits(10_100, "USD", 2),
+            maximum_loss=MoneyMinorUnits(1_000, "USD", 2),
+            expected_return_bps=150,
+            expected_hold_ns=HORIZON,
+            maximum_hold_ns=HORIZON,
+            capital_lock_ns=HORIZON,
+            account_actionability=AccountActionability.ACTIONABLE,
+        ),
+        engine=engine if engine is not None else OpportunityEngine(),
+    )
+
+
+def _delayed_available() -> ProviderResult:
+    return ProviderResult(
+        status="available",
+        events=(_quote_event(),),
+        provider_id="yahoo.finance.delayed",
+        capability="US_EQUITY_SNAPSHOT",
+    )
+
+
+def _run_matched_fixture_hop(*, mode: str = "paper") -> tuple[object, RecordingOpportunityEngine]:
+    """Paper/Demo MATCHED fixture through the prospective composer. Not empirical."""
+
+    repository, champion, forecast = _seed_repository()
+    engine = RecordingOpportunityEngine()
+    mode_n = str(mode).strip().lower()
+    context_mode = mode_n.upper()
+    scope = SCOPE
+    if mode_n == "demo":
+        scope = IntelligenceScope(
+            instrument_ids=(INSTRUMENT_ID,),
+            context_id="acct-paper:demo:snapshot-paper-1",
+        )
+        champion = replace(
+            champion,
+            champion_scope=replace(
+                champion.champion_scope, mode="DEMO", scenario_id="demo-path-a"
+            ),
+        )
+        forecast = replace(
+            forecast,
+            forecast_id="forecast-path-a-prospective-demo-1",
+            scope=scope,
+            metadata={**dict(forecast.metadata), "mode": "DEMO", "scenario_id": "demo-path-a"},
+        )
+        repository.put_forecast(forecast)
+    caller = _caller(
+        repository,
+        champion,
+        forecast,
+        engine=engine,
+        context_mode=context_mode,
+        scope=scope,
+    )
+    result = PathAProspectiveComposer(
+        quote_provider=ScriptedQuoteProvider(_delayed_available()),
+        composition=ObservationalRuntimeComposition(),
+        path_a_caller=caller,
+    ).run(
+        "AAPL",
+        mode=mode_n,
+        scan_request=_scan_request(mode=mode_n, disposition=StrategyMatchDisposition.MATCHED),
+        as_of_time_ns=T + 2_000_000,
+    )
+    return result, engine
+
+
+def _seed_repository() -> tuple[InMemoryIntelligenceRepository, ChampionAssignmentV1, ForecastV1]:
+    repository = InMemoryIntelligenceRepository()
+    repository.put_event(
+        EventV1(
+            event_id="path-a-anchor",
+            schema_version="1",
+            event_type="TRADE",
+            event_time_ns=T,
+            available_time_ns=T,
+            payload={"price": 100.0, "quantity": 10},
+            quality=QUALITY,
+            source=SourceReference(
+                provider_id="test.realtime",
+                source_type="QUOTE",
+                source_record_id="aapl-1",
+            ),
+            instrument_id="AAPL",
+        )
+    )
+    repository.put_snapshot(
+        SnapshotV1(
+            snapshot_id="snapshot-paper-1",
+            schema_version="1",
+            decision_time_ns=T,
+            scope=SCOPE,
+            quality=QUALITY,
+            source_event_refs=(ContractReference(kind="event", id="path-a-anchor"),),
+        )
+    )
+    champion = _champion()
+    forecast = _forecast(champion)
+    repository.put_forecast(forecast)
+    return repository, champion, forecast
+
+
+def _realtime_quote(*, symbol: str = "AAPL") -> ProviderResult:
+    return ProviderResult(
+        status="available",
+        events=(_quote_event(symbol=symbol, delayed=False),),
+        provider_id="test.realtime",
+        capability="US_EQUITY_SNAPSHOT",
+    )
+
+
+class PathAProspectiveTests(unittest.TestCase):
+    def test_config_discovery_does_not_leak_secrets(self) -> None:
+        present = names_present(FINVIZ_TOKEN_NAMES)
+        self.assertIsInstance(present, tuple)
+        dumped = json.dumps(present)
+        self.assertNotIn("secret", dumped.lower())
+        self.assertNotIn("api_key=", dumped.lower())
+
+    def test_unconfigured_provider_is_unavailable(self) -> None:
+        result = PathAProspectiveComposer(
+            quote_provider=UnconfiguredEquityQuoteProvider(),
+        ).run("AAPL", mode="paper", as_of_time_ns=T)
+        self.assertEqual(result.status, "PROVIDER_UNAVAILABLE")
+        self.assertIn("PROVIDER_NOT_CONFIGURED", result.reason_codes)
+
+    def test_opend_disconnected_is_unavailable_not_mock(self) -> None:
+        result = PathAProspectiveComposer(
+            quote_provider=UnreachableOpenDEquityQuoteProvider(),
+        ).run("AAPL", mode="paper", as_of_time_ns=T)
+        self.assertEqual(result.status, "PROVIDER_UNAVAILABLE")
+        self.assertEqual(result.reason_codes, ("OPEND_UNAVAILABLE",))
+
+    def test_live_mode_forbidden(self) -> None:
+        available = ProviderResult(
+            status="available",
+            events=(_quote_event(),),
+            provider_id="yahoo.finance.delayed",
+            capability="US_EQUITY_SNAPSHOT",
+        )
+        result = PathAProspectiveComposer(
+            quote_provider=ScriptedQuoteProvider(available),
+        ).run("AAPL", mode="live", as_of_time_ns=T)
+        self.assertEqual(result.status, "LIVE_FORBIDDEN")
+
+    def test_malformed_record(self) -> None:
+        result = PathAProspectiveComposer(
+            quote_provider=ScriptedQuoteProvider(
+                ProviderResult(
+                    status="unavailable",
+                    reason_code="MALFORMED_RECORD",
+                    provider_id="yahoo.finance.delayed",
+                    capability="US_EQUITY_SNAPSHOT",
+                )
+            ),
+        ).run("AAPL", mode="paper", as_of_time_ns=T)
+        self.assertEqual(result.status, "MALFORMED")
+
+    def test_timeout(self) -> None:
+        def boom(_url: str) -> tuple[int, bytes]:
+            raise TimeoutError("slow")
+
+        result = PathAProspectiveComposer(
+            quote_provider=YahooDelayedEquityQuoteProvider(fetch=boom),
+        ).run("AAPL", mode="paper", as_of_time_ns=T)
+        self.assertEqual(result.status, "PROVIDER_UNAVAILABLE")
+        self.assertEqual(result.reason_codes, ("PROVIDER_TIMEOUT",))
+
+    def test_rate_limit(self) -> None:
+        result = PathAProspectiveComposer(
+            quote_provider=YahooDelayedEquityQuoteProvider(fetch=lambda _url: (429, b"")),
+        ).run("AAPL", mode="paper", as_of_time_ns=T)
+        self.assertEqual(result.status, "PROVIDER_UNAVAILABLE")
+        self.assertEqual(result.reason_codes, ("RATE_LIMIT",))
+
+    def test_yahoo_normalizes_delayed_provenance(self) -> None:
+        chart = {
+            "chart": {
+                "result": [
+                    {
+                        "meta": {
+                            "regularMarketPrice": 190.1,
+                            "regularMarketTime": 1_700_000_000,
+                            "bid": 190.0,
+                            "ask": 190.2,
+                        },
+                        "timestamp": [1_700_000_000],
+                    }
+                ],
+                "error": None,
+            }
+        }
+        provider = YahooDelayedEquityQuoteProvider(
+            fetch=lambda _url: (200, json.dumps(chart).encode("utf-8"))
+        )
+        fetched = provider.fetch_quote("AAPL")
+        self.assertEqual(fetched.status, "available")
+        event = fetched.events[0]
+        self.assertEqual(event["timeliness"], "DELAYED")
+        self.assertEqual(event["provider"], "yahoo.finance.delayed")
+        self.assertEqual(event["clocks"]["event_time_ns"], 1_700_000_000 * 1_000_000_000)
+
+    def test_delayed_quote_through_g7_is_not_actionable(self) -> None:
+        available = ProviderResult(
+            status="available",
+            events=(_quote_event(),),
+            provider_id="yahoo.finance.delayed",
+            capability="US_EQUITY_SNAPSHOT",
+        )
+        repository = InMemoryIntelligenceRepository()
+        repository.put_event(
+            EventV1(
+                event_id="path-a-anchor",
+                schema_version="1",
+                event_type="TRADE",
+                event_time_ns=T,
+                available_time_ns=T,
+                payload={"price": 100.0, "quantity": 10},
+                quality=QUALITY,
+                source=SourceReference(
+                    provider_id="yahoo.finance.delayed",
+                    source_type="QUOTE",
+                    source_record_id="aapl-1",
+                ),
+                instrument_id="AAPL",
+            )
+        )
+        repository.put_snapshot(
+            SnapshotV1(
+                snapshot_id="snapshot-paper-1",
+                schema_version="1",
+                decision_time_ns=T,
+                scope=SCOPE,
+                quality=QUALITY,
+                source_event_refs=(ContractReference(kind="event", id="path-a-anchor"),),
+            )
+        )
+        champion = _champion()
+        forecast = _forecast(champion)
+        repository.put_forecast(forecast)
+        composer = PathAProspectiveComposer(
+            quote_provider=ScriptedQuoteProvider(available),
+            composition=ObservationalRuntimeComposition(),
+            path_a_caller=_caller(repository, champion, forecast),
+        )
+        result = composer.run(
+            "AAPL",
+            mode="paper",
+            scan_request=_scan_request(),
+            as_of_time_ns=T + 2_000_000,
+        )
+        self.assertEqual(result.source, DELAYED_SOURCE)
+        self.assertEqual(result.timeliness, "DELAYED")
+        self.assertFalse(result.freshness.get("actionable"))
+        self.assertEqual(result.freshness.get("reason_code"), "DELAYED_WHEN_REALTIME_REQUIRED")
+        self.assertEqual(result.status, "G7_NOT_ACTIONABLE")
+        self.assertEqual(result.selection.get("outcome"), "NO_PROVIDER")
+        self.assertNotEqual(result.selection.get("provider_id"), "ibkr.observational")
+        self.assertIsNotNone(result.path_a)
+        self.assertEqual(result.path_a.status, "EMPTY")
+        self.assertEqual(result.provenance.get("provider"), "yahoo.finance.delayed")
+        self.assertIn("freshness", result.freshness_payload)
+
+    def test_two_instruments_stay_isolated(self) -> None:
+        aapl = ProviderResult(
+            status="available",
+            events=(_quote_event(symbol="AAPL", seq=1),),
+            provider_id="yahoo.finance.delayed",
+        )
+        msft = ProviderResult(
+            status="available",
+            events=(_quote_event(symbol="MSFT", seq=2),),
+            provider_id="yahoo.finance.delayed",
+        )
+        composition = ObservationalRuntimeComposition()
+        PathAProspectiveComposer(
+            quote_provider=ScriptedQuoteProvider(aapl),
+            composition=composition,
+        ).run("AAPL", mode="paper", as_of_time_ns=T + 2_000_000)
+        PathAProspectiveComposer(
+            quote_provider=ScriptedQuoteProvider(msft),
+            composition=composition,
+        ).run("MSFT", mode="paper", as_of_time_ns=T + 2_000_000)
+        self.assertIsNotNone(composition.store.quote_for("AAPL"))
+        self.assertIsNotNone(composition.store.quote_for("MSFT"))
+        self.assertEqual(composition.store.quote_for("AAPL").instrument_id, "AAPL")
+        self.assertEqual(composition.store.quote_for("MSFT").instrument_id, "MSFT")
+
+    def test_projections_keep_replay_default(self) -> None:
+        store = ReplayStore(collection_root=None)
+        self.assertEqual(_opportunity_source(store), "REPLAY")
+        store.opportunity_source = DELAYED_SOURCE
+        self.assertEqual(_opportunity_source(store), DELAYED_SOURCE)
+
+    def test_ingest_still_not_a_scanner(self) -> None:
+        source = inspect.getsource(assemble_opportunity_review_rows)
+        self.assertNotIn("UniversalStrategyScanner", source)
+        self.assertNotIn("PathAScanCaller", source)
+        self.assertNotIn("PathAProspectiveComposer", source)
+
+    def test_cli_source_injects_path_a_caller(self) -> None:
+        from tools import path_a_prospective_run
+
+        source = inspect.getsource(path_a_prospective_run.main)
+        self.assertIn("build_paper_demo_path_a_invoke", source)
+        self.assertIn("path_a_caller", source)
+        self.assertIn("scan_request", source)
+        self.assertNotIn("LiveObservationalRuntime", source)
+
+    def test_honesty_invoke_refuses_live(self) -> None:
+        with self.assertRaisesRegex(PathAScanCallerError, "LIVE_SCAN_CALLER_FORBIDDEN"):
+            build_paper_demo_path_a_invoke("AAPL", mode="live")
+        with self.assertRaisesRegex(PathAScanCallerError, "LIVE_SCAN_CALLER_FORBIDDEN"):
+            build_paper_demo_path_a_invoke("AAPL", mode="actual_live")
+
+    def test_honesty_invoke_loads_real_catalog_but_stays_honest_empty(self) -> None:
+        """The empty-catalog gap is closed: real strategies load, but with no
+        preregistration authority wired into this hop they legitimately
+        abstain rather than mint a fabricated MATCHED row."""
+        invoke = build_paper_demo_path_a_invoke("AAPL", mode="paper", as_of_time_ns=T)
+        self.assertGreater(len(invoke.scan_request.strategies), 0)
+        self.assertEqual(invoke.scan_request.scope.mode, "paper")
+        result = invoke.caller.run(invoke.scan_request)
+        self.assertEqual(result.status, "EMPTY")
+        self.assertEqual(result.reason_codes, ("NO_MATCHED_STRATEGY",))
+        self.assertEqual(result.matched_count, 0)
+        self.assertEqual(result.opportunities, ())
+        matches = invoke.caller.scanner.run(invoke.scan_request).matches
+        self.assertTrue(matches)
+        self.assertTrue(
+            all(match.disposition == StrategyMatchDisposition.ABSTAINED for match in matches)
+        )
+        self.assertTrue(
+            any("ABSTAIN_NO_PREREGISTRATION" in match.abstention_reasons for match in matches)
+        )
+
+    def test_honesty_invoke_catalog_is_real_not_a_lambda_fixture(self) -> None:
+        from market_platform_foundation.strategy import path_a_strategy_catalog
+
+        catalog = path_a_strategy_catalog.build_paper_demo_strategy_catalog()
+        self.assertGreater(len(catalog), 0)
+        source = inspect.getsource(path_a_strategy_catalog)
+        self.assertNotIn("lambda", source)
+        self.assertIn("interpret_strategy", source)
+
+    def test_composer_invokes_path_a_without_injected_caller(self) -> None:
+        available = ProviderResult(
+            status="available",
+            events=(_quote_event(),),
+            provider_id="yahoo.finance.delayed",
+            capability="US_EQUITY_SNAPSHOT",
+        )
+        result = PathAProspectiveComposer(
+            quote_provider=ScriptedQuoteProvider(available),
+        ).run("AAPL", mode="paper", as_of_time_ns=T + 2_000_000)
+        self.assertEqual(result.status, "G7_NOT_ACTIONABLE")
+        self.assertIsNotNone(result.path_a)
+        self.assertEqual(result.path_a.status, "EMPTY")
+        self.assertEqual(result.path_a.reason_codes, ("NO_MATCHED_STRATEGY",))
+        self.assertEqual(result.to_dict()["path_a_status"], "EMPTY")
+
+    def test_composer_demo_invokes_path_a_honesty_empty(self) -> None:
+        available = ProviderResult(
+            status="available",
+            events=(_quote_event(),),
+            provider_id="yahoo.finance.delayed",
+            capability="US_EQUITY_SNAPSHOT",
+        )
+        result = PathAProspectiveComposer(
+            quote_provider=ScriptedQuoteProvider(available),
+        ).run("AAPL", mode="demo", as_of_time_ns=T + 2_000_000)
+        self.assertEqual(result.status, "G7_NOT_ACTIONABLE")
+        self.assertEqual(result.mode, "demo")
+        self.assertIsNotNone(result.path_a)
+        self.assertEqual(result.path_a.status, "EMPTY")
+
+    def test_cli_paper_path_a_status_is_empty_not_null(self) -> None:
+        from tools.path_a_prospective_run import main as path_a_cli_main
+
+        available = ProviderResult(
+            status="available",
+            events=(_quote_event(),),
+            provider_id="yahoo.finance.delayed",
+            capability="US_EQUITY_SNAPSHOT",
+        )
+        discovery = EquityQuoteDiscovery(
+            provider_id="yahoo.finance.delayed",
+            classification="AVAILABLE_NOT_ACTIVE",
+            timeliness="DELAYED",
+            reason_code="YAHOO_DELAYED_OVERLAY",
+            config_names_present=(),
+            finviz_token_names_present=(),
+            opend_reachable=False,
+        )
+        stdout = StringIO()
+        with patch(
+            "market_platform_foundation.strategy.path_a_prospective.monotonic_wall_ns",
+            return_value=T + 2_000_000,
+        ):
+            with patch(
+                "tools.path_a_prospective_run.discover_equity_quote_stack",
+                return_value=(ScriptedQuoteProvider(available), discovery),
+            ):
+                with patch("sys.stdout", stdout):
+                    code = path_a_cli_main(["--symbol", "AAPL", "--mode", "paper"])
+        self.assertEqual(code, 0)
+        payload = json.loads(stdout.getvalue())
+        self.assertEqual(payload["result"]["path_a_status"], "EMPTY")
+        self.assertEqual(payload["result"]["status"], "G7_NOT_ACTIONABLE")
+        self.assertEqual(payload["result"]["mode"], "paper")
+        self.assertIsNotNone(payload["result"]["path_a_status"])
+
+    def test_cli_live_mode_is_refused(self) -> None:
+        from tools.path_a_prospective_run import main as path_a_cli_main
+
+        stderr = StringIO()
+        with patch("sys.stderr", stderr):
+            with self.assertRaises(SystemExit):
+                path_a_cli_main(["--mode", "live"])
+
+    def test_matched_loop_source_calls_bridge_and_engine(self) -> None:
+        source = inspect.getsource(PathAScanCaller.run)
+        self.assertIn("bridge_strategy_match_to_opportunity", source)
+        self.assertIn("engine=self.engine", source)
+        self.assertIn("NO_MATCHED_STRATEGY", source)
+
+    def test_matched_paper_fixture_invokes_opportunity_engine_g7_fail_close(self) -> None:
+        result, engine = _run_matched_fixture_hop(mode="paper")
+        self.assertGreaterEqual(engine.assess_calls, 1)
+        self.assertIsNotNone(result.path_a)
+        self.assertEqual(result.path_a.status, "MINTED")
+        self.assertEqual(len(result.path_a.assessments), engine.assess_calls)
+        self.assertEqual(len(result.path_a.opportunities), 1)
+        self.assertEqual(result.status, "G7_NOT_ACTIONABLE")
+        self.assertFalse(result.freshness.get("actionable"))
+        self.assertEqual(result.freshness.get("reason_code"), "DELAYED_WHEN_REALTIME_REQUIRED")
+        self.assertEqual(result.persist_status, PERSIST_NOT_MINTED)
+        self.assertNotEqual(result.path_a.status, "EMPTY")
+        self.assertNotIn("NO_MATCHED_STRATEGY", result.path_a.reason_codes)
+
+    def test_matched_demo_fixture_invokes_opportunity_engine_g7_fail_close(self) -> None:
+        result, engine = _run_matched_fixture_hop(mode="demo")
+        self.assertGreaterEqual(engine.assess_calls, 1)
+        self.assertEqual(result.mode, "demo")
+        self.assertIsNotNone(result.path_a)
+        self.assertEqual(result.path_a.status, "MINTED")
+        self.assertEqual(result.status, "G7_NOT_ACTIONABLE")
+        self.assertEqual(result.persist_status, PERSIST_NOT_MINTED)
+
+    def test_honesty_empty_does_not_invoke_opportunity_engine(self) -> None:
+        with patch(
+            "market_platform_foundation.strategy.path_a_scan_caller.bridge_strategy_match_to_opportunity"
+        ) as bridged:
+            result = PathAProspectiveComposer(
+                quote_provider=ScriptedQuoteProvider(_delayed_available()),
+            ).run("AAPL", mode="paper", as_of_time_ns=T + 2_000_000)
+        self.assertEqual(result.status, "G7_NOT_ACTIONABLE")
+        self.assertIsNotNone(result.path_a)
+        self.assertEqual(result.path_a.status, "EMPTY")
+        self.assertEqual(result.path_a.reason_codes, ("NO_MATCHED_STRATEGY",))
+        self.assertEqual(result.path_a.matched_count, 0)
+        bridged.assert_not_called()
+
+    def test_matched_fixture_live_does_not_invoke_engine(self) -> None:
+        repository, champion, forecast = _seed_repository()
+        engine = RecordingOpportunityEngine()
+        result = PathAProspectiveComposer(
+            quote_provider=ScriptedQuoteProvider(_delayed_available()),
+            path_a_caller=_caller(repository, champion, forecast, engine=engine),
+        ).run(
+            "AAPL",
+            mode="live",
+            scan_request=_scan_request(disposition=StrategyMatchDisposition.MATCHED),
+            as_of_time_ns=T,
+        )
+        self.assertEqual(result.status, "LIVE_FORBIDDEN")
+        self.assertEqual(engine.assess_calls, 0)
+        self.assertIsNone(result.path_a)
+
+
+class PathAProspectivePersistTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._saved_persist = os.environ.get("IMP_PERSIST_STATE")
+        self._saved_dir = os.environ.get("IMP_STATE_DIR")
+        self._saved_campaigns = os.environ.get("IMP_FORWARD_TEST_CAMPAIGNS_DIR")
+        self._saved_force = os.environ.get("IMP_FORWARD_TEST_EVAL_FORCE")
+        self._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+
+    def tearDown(self) -> None:
+        from market_platform_foundation.local_state.startup import reset_local_state_for_tests
+
+        reset_local_state_for_tests()
+        os.environ.pop("IMP_PERSIST_STATE", None)
+        os.environ.pop("IMP_STATE_DIR", None)
+        os.environ.pop("IMP_FORWARD_TEST_CAMPAIGNS_DIR", None)
+        os.environ.pop("IMP_FORWARD_TEST_EVAL_FORCE", None)
+        if self._saved_persist is not None:
+            os.environ["IMP_PERSIST_STATE"] = self._saved_persist
+        if self._saved_dir is not None:
+            os.environ["IMP_STATE_DIR"] = self._saved_dir
+        if self._saved_campaigns is not None:
+            os.environ["IMP_FORWARD_TEST_CAMPAIGNS_DIR"] = self._saved_campaigns
+        if self._saved_force is not None:
+            os.environ["IMP_FORWARD_TEST_EVAL_FORCE"] = self._saved_force
+        self._tmp.cleanup()
+
+    def _enable_persist(self) -> Path:
+        os.environ["IMP_STATE_DIR"] = self._tmp.name
+        os.environ["IMP_PERSIST_STATE"] = "1"
+        os.environ["IMP_FORWARD_TEST_EVAL_FORCE"] = "1"
+        campaigns_root = enable_test_campaigns_root(Path(self._tmp.name))
+        seed_baseline_campaign(campaigns_root, universe_symbols=("AAPL", "MSFT"))
+        return campaigns_root
+
+    def _composer(self, *, persist=None):
+        repository, champion, forecast = _seed_repository()
+        return PathAProspectiveComposer(
+            quote_provider=ScriptedQuoteProvider(
+                _realtime_quote(), provider_id="test.realtime"
+            ),
+            composition=ObservationalRuntimeComposition(),
+            path_a_caller=_caller(repository, champion, forecast),
+            persist=persist,
+        )
+
+    def test_persist_off_minted_decision_is_intentional_ephemeral(self) -> None:
+        from market_platform_foundation.intelligence.paper_forward_bridge import (
+            ForwardTestService,
+            create_forward_test_repository,
+        )
+        from market_platform_foundation.local_state.startup import (
+            open_local_state,
+            reset_local_state_for_tests,
+        )
+
+        os.environ.pop("IMP_PERSIST_STATE", None)
+        os.environ.pop("IMP_STATE_DIR", None)
+        service = ForwardTestService(create_forward_test_repository(connection=None))
+        result = self._composer(
+            persist=PathAPersistContext(
+                service=service,
+                account_id="paper-a",
+                session_id="sess-ephemeral",
+                strategy_id=BASELINE_POLICY,
+                strategy_version=POLICY_VERSION,
+            )
+        ).run(
+            "AAPL",
+            mode="paper",
+            scan_request=_scan_request(disposition=StrategyMatchDisposition.MATCHED),
+            as_of_time_ns=T + 2_000_000,
+        )
+        self.assertEqual(result.status, "MINTED")
+        self.assertEqual(result.persist_status, PERSIST_INTENTIONAL_EPHEMERAL)
+        self.assertIsNone(result.forward_test_id)
+        os.environ["IMP_STATE_DIR"] = self._tmp.name
+        os.environ["IMP_PERSIST_STATE"] = "1"
+        reset_local_state_for_tests()
+        local = open_local_state(force=True)
+        assert local is not None
+        count = local.connection.execute(
+            "SELECT COUNT(*) FROM forward_test_decisions"
+        ).fetchone()
+        self.assertEqual(int(count[0]), 0)
+        links = local.connection.execute(
+            "SELECT COUNT(*) FROM forward_test_signal_links"
+        ).fetchone()
+        self.assertEqual(int(links[0]), 0)
+
+    def test_persist_on_minted_decision_reconstructs_after_restart(self) -> None:
+        from market_platform_foundation.intelligence.paper_forward_bridge import (
+            ForwardTestService,
+            create_forward_test_repository,
+        )
+        from market_platform_foundation.intelligence.paper_forward_bridge.reconstruction import (
+            reconstruct_campaign,
+        )
+        from market_platform_foundation.local_state.startup import (
+            open_local_state,
+            reset_local_state_for_tests,
+        )
+
+        campaigns_root = self._enable_persist()
+        reset_local_state_for_tests()
+        local = open_local_state(force=True)
+        assert local is not None
+        service = ForwardTestService(
+            create_forward_test_repository(connection=local.connection)
+        )
+        session = create_activated_session(
+            service,
+            campaigns_root,
+            universe=("AAPL", "MSFT"),
+            evaluation_horizon_ns=3_600_000_000_000,
+            created_at_ns=T,
+        )
+        result = self._composer(
+            persist=PathAPersistContext(
+                service=service,
+                account_id="paper-a",
+                session_id=session.session_id,
+                strategy_id=BASELINE_POLICY,
+                strategy_version=POLICY_VERSION,
+            )
+        ).run(
+            "AAPL",
+            mode="paper",
+            scan_request=_scan_request(disposition=StrategyMatchDisposition.MATCHED),
+            as_of_time_ns=T + 2_000_000,
+        )
+        self.assertEqual(result.status, "MINTED")
+        self.assertEqual(result.persist_status, PERSIST_WRITTEN)
+        self.assertIsNotNone(result.forward_test_id)
+        opportunity_id = result.path_a.opportunities[0].opportunity_id
+        self.assertIn("freshness", result.freshness_payload)
+        reset_local_state_for_tests()
+        reopened = open_local_state(force=True)
+        assert reopened is not None
+        reconstructed = reconstruct_campaign(
+            reopened.connection,
+            account_id="paper-a",
+            campaign_id=CAMPAIGN_SLUG,
+        )
+        self.assertEqual(len(reconstructed["decisions"]), 1)
+        row = reconstructed["decisions"][0]
+        self.assertEqual(row["opportunity_id"], opportunity_id)
+        self.assertEqual(row["symbol"], "AAPL")
+        self.assertIsNotNone(row["freshness"])
+        self.assertEqual(row["freshness"]["status"], "FRESH")
+        self.assertIsNotNone(row["signal_link"])
+        other_account = reconstruct_campaign(
+            reopened.connection,
+            account_id="paper-b",
+            campaign_id=CAMPAIGN_SLUG,
+        )
+        self.assertEqual(other_account["decisions"], [])
+        msft = create_forward_test_repository(connection=reopened.connection).list_decisions(
+            account_id="paper-a",
+            symbol="MSFT",
+        )
+        self.assertEqual(msft, [])
+
+    def test_live_mode_does_not_persist(self) -> None:
+        result = PathAProspectiveComposer(
+            quote_provider=ScriptedQuoteProvider(_realtime_quote(), provider_id="test.realtime"),
+        ).run("AAPL", mode="live", as_of_time_ns=T)
+        self.assertEqual(result.status, "LIVE_FORBIDDEN")
+        self.assertEqual(result.persist_status, PERSIST_NOT_MINTED)
+        self.assertIsNone(result.forward_test_id)
+
+
+if __name__ == "__main__":
+    unittest.main()

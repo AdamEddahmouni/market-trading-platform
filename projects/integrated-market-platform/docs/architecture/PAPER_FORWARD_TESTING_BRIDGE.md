@@ -218,6 +218,22 @@ Operator watch/review/dismiss acknowledgements:
 Factory: `create_forward_test_repository()` in
 `paper_forward_bridge/repository.py` (in-memory when persistence is off).
 
+Path A prospective hop (`PathAProspectiveComposer`): Paper/Demo CLI
+`tools/path_a_prospective_run.py` injects `PathAScanCaller` so `path_a_status`
+is honest `EMPTY` when no MATCHED strategy (not null). Honest EMPTY does not
+enter the MATCHED loop or call Opportunity Engine. A Paper/Demo MATCHED
+test fixture does call `bridge_strategy_match_to_opportunity` →
+`OpportunityEngine.assess`. If G7 fail-closes, overall status stays
+`G7_NOT_ACTIONABLE` even when Path A is `MINTED`. That fixture is not an
+empirical MATCHED hop. After a Paper **MINTED**
+result, optional v6 write uses the existing `ForwardTestService.create_decision`
+API with G7 `freshness` in `decision_payload_json` (and `forward_test_signal_links`
+when `opportunity_id` is set). Requires an existing Paper FT session — Path A
+does not auto-activate FTEP. Persist-off minted decisions stay
+`INTENTIONAL_EPHEMERAL` (no second store). Demo MINTED does not write FT rows
+(`FORWARD_TEST_PAPER_MODE_REQUIRED`). Live never mints. Reconstruction after
+restart is the PD-09 path; fills are not fabricated.
+
 ## Known limitations
 
 - Durable storage is local SQLite only (no MongoDB / remote campaign DB)

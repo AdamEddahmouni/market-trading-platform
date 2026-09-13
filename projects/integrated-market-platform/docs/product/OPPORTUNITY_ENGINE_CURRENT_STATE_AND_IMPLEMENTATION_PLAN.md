@@ -6,7 +6,7 @@
 
 ## Executive summary
 
-IMP has a **canonical Opportunity Contract** (`docs/architecture/OPPORTUNITY_CONTRACT.md`), BUILD 21 `OpportunityV1` + comparator, and a Goal 001 **operator review loop**: ingest existing evidence → explainable rank → NOW review card → optional Paper watch/dismiss. Ranking is a named vector, not an opaque 0–100 score. Live GET is empty `UNAVAILABLE`. Path A mint is reachable from a bounded Paper/Demo `PathAScanCaller` (scanner library → bridge); ingest still does not import the scanner.
+IMP has a **canonical Opportunity Contract** (`docs/architecture/OPPORTUNITY_CONTRACT.md`), BUILD 21 `OpportunityV1` + comparator, and a Goal 001 **operator review loop**: ingest existing evidence → explainable rank → NOW review card → optional Paper watch/dismiss. Ranking is a named vector, not an opaque 0–100 score. Live GET is empty `UNAVAILABLE`. Path A mint is reachable from a bounded Paper/Demo `PathAScanCaller` (scanner library → bridge), including the one-shot prospective CLI; a MATCHED fixture on that hop invokes `OpportunityEngine.assess` (G7 fail-close still `G7_NOT_ACTIONABLE`; honest EMPTY is not MATCHED). Ingest still does not import the scanner.
 
 ## Current surfaces (verified in repo)
 
@@ -18,7 +18,7 @@ IMP has a **canonical Opportunity Contract** (`docs/architecture/OPPORTUNITY_CON
 | DISCOVER UI | Screener / mixed discover | `GET /discover/mixed` | **PARTIAL** UX; not the engine queue |
 | NOW / attention | Command-center attention feed | `GET /context`, `GET /attention` | **IMPLEMENTED**; distinct from `queryKeys.opportunitiesSummary` |
 | Options workspace | Opportunity fusion block | `OpportunityFusionBlock.tsx` | **IMPLEMENTED** UI |
-| Forward test bridge | Prospective decisions (FTEP) | `paper_forward_bridge/` | **ACTIVATION_BLOCKED** empirical; not engine-linked |
+| Forward test bridge | Prospective decisions (FTEP) | `paper_forward_bridge/` | **ACTIVATION_BLOCKED** empirical; Path A may write v6 `create_decision` rows when persist is on and a Paper session already exists — not FTEP `EMPIRICAL_ACTIVE` |
 
 ## Gaps vs contract
 

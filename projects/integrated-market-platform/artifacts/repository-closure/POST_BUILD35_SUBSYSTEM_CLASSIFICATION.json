@@ -558,6 +558,7 @@
         "tools/ftep_session_start.py",
         "tools/ftep_watch_catalysts.py",
         "tools/opportunity_summaries.py",
+        "tools/path_a_prospective_run.py",
         "tools/research",
         "tools/state",
         "tools/system_acceptance"
