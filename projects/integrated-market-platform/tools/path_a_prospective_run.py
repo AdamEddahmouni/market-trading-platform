@@ -10,7 +10,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from market_platform_foundation.strategy.path_a_prospective import PathAProspectiveComposer
+from market_platform_foundation.strategy.path_a_prospective import (
+    PathAProspectiveComposer,
+    build_paper_demo_path_a_invoke,
+)
 from market_platform_foundation.providers.equity_quote_discovery import discover_equity_quote_stack
 
 
@@ -20,7 +23,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mode", default="paper", choices=("paper", "demo"))
     args = parser.parse_args(argv)
     provider, discovery = discover_equity_quote_stack()
-    result = PathAProspectiveComposer(quote_provider=provider).run(args.symbol, mode=args.mode)
+    invoke = build_paper_demo_path_a_invoke(args.symbol, mode=args.mode)
+    result = PathAProspectiveComposer(
+        quote_provider=provider,
+        path_a_caller=invoke.caller,
+    ).run(args.symbol, mode=args.mode, scan_request=invoke.scan_request)
     payload = {
         "discovery": {
             "classification": discovery.classification,

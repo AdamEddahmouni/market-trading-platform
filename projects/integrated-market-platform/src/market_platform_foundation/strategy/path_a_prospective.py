@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping
 
 from market_platform_foundation.clock import monotonic_wall_ns
+from market_platform_foundation.intelligence.contracts.common import ContractReference
 from market_platform_foundation.intelligence.opportunity.freshness import (
     OpportunityFreshnessPolicy,
     OpportunityFreshnessResult,
@@ -16,9 +17,19 @@ from market_platform_foundation.intelligence.opportunity.freshness import (
     fail_closed_for_actionable,
     merge_freshness_into_payload,
 )
+from market_platform_foundation.intelligence.opportunity.policy import build_opportunity_policy
+from market_platform_foundation.intelligence.opportunity.types import OpportunityContext
+from market_platform_foundation.intelligence.persistence import InMemoryIntelligenceRepository
+from market_platform_foundation.intelligence.promotion.types import (
+    ChampionAssignmentReason,
+    ChampionAssignmentV1,
+    ChampionScopeV1,
+)
+from market_platform_foundation.intelligence.quality.models import QualityAssessment
 from market_platform_foundation.market_data.live_admission import LiveAdmissionEngine
 from market_platform_foundation.market_data.runtime_composition import ObservationalRuntimeComposition
 from market_platform_foundation.providers.contracts import EquityQuoteProvider, ProviderResult
+from market_platform_foundation.providers.identity import InstrumentIdentity
 from market_platform_foundation.providers.runtime_capability import (
     DataTimeliness,
     EntitlementState,
@@ -27,12 +38,22 @@ from market_platform_foundation.providers.runtime_capability import (
 )
 
 from .path_a_scan_caller import (
+    ALLOWED_SCAN_MODES,
     FORBIDDEN_LIVE_MODES,
     PathAScanCallResult,
     PathAScanCaller,
     PathAScanCallerError,
 )
-from .scanning import ScanRequest
+from .scanning import (
+    CapabilityContextSnapshot,
+    PointInTimeUniverse,
+    ScanBudget,
+    ScanRequest,
+    ScanScope,
+    ScanTrigger,
+    ScanTriggerType,
+    UniversalStrategyScanner,
+)
 
 
 def _normalize_mode(value: str) -> str:
@@ -54,6 +75,96 @@ PERSIST_NOT_MINTED = "NOT_MINTED"
 PERSIST_INTENTIONAL_EPHEMERAL = "INTENTIONAL_EPHEMERAL"
 PERSIST_SKIPPED_NO_SESSION = "SKIPPED_NO_SESSION"
 PERSIST_WRITTEN = "PERSISTED"
+
+HONESTY_HORIZON_NS = 300_000_000_000
+HONESTY_SCAN_TTL_NS = 60_000_000_000
+
+
+@dataclass(frozen=True, slots=True)
+class PathAHonestyInvoke:
+    """Paper/Demo Path A invoke with no MATCHED fixture. Honest EMPTY is success."""
+
+    caller: PathAScanCaller
+    scan_request: ScanRequest
+
+
+def build_paper_demo_path_a_invoke(
+    symbol: str,
+    *,
+    mode: str = "paper",
+    as_of_time_ns: int | None = None,
+    account_id: str | None = None,
+) -> PathAHonestyInvoke:
+    """Build a one-shot Paper/Demo Path A caller. Does not mint MATCHED rows."""
+
+    mode_n = _normalize_mode(mode)
+    if mode_n in FORBIDDEN_LIVE_MODES:
+        raise PathAScanCallerError("LIVE_SCAN_CALLER_FORBIDDEN")
+    if mode_n not in ALLOWED_SCAN_MODES:
+        raise PathAScanCallerError("MODE_NOT_PAPER_OR_DEMO")
+    instrument = str(symbol or "").strip().upper()
+    if not instrument:
+        raise PathAScanCallerError("INSTRUMENT_REQUIRED")
+    as_of = as_of_time_ns if as_of_time_ns is not None else monotonic_wall_ns()
+    account = str(account_id or f"acct-{mode_n}").strip()
+    snapshot_id = f"snapshot-path-a-honesty-{instrument.lower()}"
+    repository = InMemoryIntelligenceRepository()
+    champion = ChampionAssignmentV1(
+        assignment_id="champion-path-a-honesty",
+        schema_version="1",
+        champion_scope=ChampionScopeV1(
+            component="forecast",
+            target_kind="direction",
+            horizon_ns=HONESTY_HORIZON_NS,
+            mode=mode_n.upper(),
+            scenario_id="path-a-honesty",
+        ),
+        candidate_id="candidate-path-a-honesty",
+        candidate_artifact_hash="artifact-path-a-honesty",
+        promotion_decision_id=None,
+        previous_assignment_id=None,
+        effective_from_ns=as_of - 1 if as_of > 0 else 0,
+        assignment_reason=ChampionAssignmentReason.BOOTSTRAP,
+    )
+    caller = PathAScanCaller(
+        scanner=UniversalStrategyScanner(query_planner=None, repository=repository),
+        repository=repository,
+        forecast_resolver=lambda _match: None,
+        champion_at_forecast=champion,
+        champion_at_opportunity=champion,
+        opportunity_policy=build_opportunity_policy(
+            champion_scope=champion.champion_scope,
+            max_forecast_age_ns=HONESTY_HORIZON_NS,
+            max_opportunity_lifetime_ns=20_000_000_000,
+            minimum_probability_edge=0.05,
+        ),
+        opportunity_context=OpportunityContext(
+            snapshot_ref=ContractReference(kind="snapshot", id=snapshot_id),
+            snapshot_available_time_ns=as_of,
+            mode=mode_n,
+            scenario_id="path-a-honesty",
+            account_id=account,
+        ),
+    )
+    request = ScanRequest(
+        universe=PointInTimeUniverse(
+            as_of,
+            (InstrumentIdentity("canonical", instrument, "EQUITY", "XNYS", "USD"),),
+        ),
+        capability_snapshot=CapabilityContextSnapshot(
+            snapshot_id=snapshot_id,
+            as_of_time_ns=as_of,
+            quality_assessment=QualityAssessment(decision_time_ns=as_of),
+            context={"honesty": "NO_MATCHED_STRATEGY_FIXTURE", "session": "REGULAR"},
+        ),
+        strategies=(),
+        scope=ScanScope(account_id=account, mode=mode_n),
+        trigger=ScanTrigger(ScanTriggerType.SESSION_OPEN, {"session": "REGULAR"}),
+        decision_time_ns=as_of,
+        expires_at_ns=as_of + HONESTY_SCAN_TTL_NS,
+        budget=ScanBudget(max_evaluations=1, max_cost_units=1),
+    )
+    return PathAHonestyInvoke(caller=caller, scan_request=request)
 
 
 @dataclass(frozen=True, slots=True)
@@ -211,9 +322,17 @@ class PathAProspectiveComposer:
             reasons.append(f"G7_SELECTION_{selection.get('outcome') or 'NO_PROVIDER'}")
         path_a: PathAScanCallResult | None = None
         status = STATUS_G7_NOT_ACTIONABLE if fail_closed_for_actionable(evaluation) else STATUS_SCAN_SKIPPED
-        if self.path_a_caller is not None and scan_request is not None:
+        caller = self.path_a_caller
+        request = scan_request
+        if caller is None and request is None:
+            invoke = build_paper_demo_path_a_invoke(
+                instrument, mode=mode_n, as_of_time_ns=as_of
+            )
+            caller = invoke.caller
+            request = invoke.scan_request
+        if caller is not None and request is not None:
             try:
-                path_a = self.path_a_caller.run(scan_request)
+                path_a = caller.run(request)
             except PathAScanCallerError as exc:
                 if "LIVE" in str(exc):
                     return self._finish(
@@ -413,7 +532,9 @@ __all__ = [
     "PERSIST_NOT_MINTED",
     "PERSIST_SKIPPED_NO_SESSION",
     "PERSIST_WRITTEN",
+    "PathAHonestyInvoke",
     "PathAPersistContext",
     "PathAProspectiveComposer",
     "PathAProspectiveResult",
+    "build_paper_demo_path_a_invoke",
 ]
