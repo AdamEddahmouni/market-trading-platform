@@ -44,7 +44,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Area** | `strategy`, `tools` |
 | **Summary** | Paper/Demo `tools/path_a_prospective_run.py` now injects `PathAScanCaller` via `build_paper_demo_path_a_invoke` instead of running the composer with a null caller. No MATCHED strategies yields honest `EMPTY` / `NO_MATCHED_STRATEGY` (no fixture mint). If G7 fail-closes, overall status stays `G7_NOT_ACTIONABLE` while Path A still runs for that honesty EMPTY. Composer auto-builds the same invoke when tests do not inject a caller. Live remains `LIVE_FORBIDDEN`. FTEP is not `EMPIRICAL_ACTIVE`. Fills are not fabricated. |
 | **Key files** | `strategy/path_a_prospective.py`, `tools/path_a_prospective_run.py`, `strategy/__init__.py`, `tests/intelligence/test_path_a_prospective.py`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/platform/PROGRAM_STATUS.md`, `docs/product/OPPORTUNITY_ENGINE_CURRENT_STATE_AND_IMPLEMENTATION_PLAN.md`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md` |
-| **Tests** | Focused `tests.intelligence.test_path_a_prospective` + scan caller + ingest + freshness **58 passed**. CLI injects caller; Live argparse refuses `--mode live`. |
+| **Tests** | Focused Path A + scan caller + ingest + freshness **58 passed**. CLI injects caller; Live argparse refuses `--mode live`. `python3 tools/imp.py validate changed --paths-file` (16 merge-base paths vs `origin/main`) **2840 passed / 36 skipped / 0 fail / 0 err**. Docs links OK (188 files). |
 | **Related** | PR #42. Prior Path A persist hop + prospective hop. |
 | **Notes** | No new unclassified files. Ingest still does not import the scanner. Not a daemon. |
 
