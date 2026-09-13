@@ -220,7 +220,13 @@ Factory: `create_forward_test_repository()` in
 
 Path A prospective hop (`PathAProspectiveComposer`): Paper/Demo CLI
 `tools/path_a_prospective_run.py` injects `PathAScanCaller` so `path_a_status`
-is honest `EMPTY` when no MATCHED strategy (not null). Honest EMPTY does not
+is honest `EMPTY` when no MATCHED strategy (not null). `--preregistration-path`
+may point at a previously persisted Phase-6 record; create is a separate
+operator step (`persist_paper_demo_preregistration`) that stamps `registered_at`
+before any hop. Load requires identity match and `registered_at` before quote
+`event_time_ns`. Catalog evaluators never mint a preregistration. A scanner
+MATCHED with `forecast_resolver` returning `None` is `FORECAST_UNAVAILABLE`,
+not OE EMIT. Honest EMPTY does not
 enter the MATCHED loop or call Opportunity Engine. A Paper/Demo MATCHED
 test fixture does call `bridge_strategy_match_to_opportunity` →
 `OpportunityEngine.assess`. If G7 fail-closes, overall status stays
