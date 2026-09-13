@@ -329,14 +329,14 @@ class PathAPreregistrationLoadHopTests(unittest.TestCase):
         self.assertEqual(result.path_a.opportunities, ())
         self.assertNotEqual(result.path_a.status, "MINTED")
 
-    def test_cli_flag_is_additive_and_does_not_change_quote_provider(self) -> None:
+    def test_cli_keeps_opend_primary_and_prereg_flag(self) -> None:
         from tools import path_a_prospective_run
 
         source = inspect.getsource(path_a_prospective_run.main)
         self.assertIn("--preregistration-path", source)
         self.assertIn("preregistration_path", source)
         self.assertIn("discover_equity_quote_stack", source)
-        self.assertNotIn("quote_provider=", source.split("discover_equity_quote_stack", 1)[0])
+        self.assertIn("primary_equity_quote_provider", source)
         self.assertNotIn("ForecastV1", source)
 
 

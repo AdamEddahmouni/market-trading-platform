@@ -48,6 +48,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | Follows catalog wiring (`df2b66c`) and persist-CLI restack (`ce49048`). Item 7 of the provider activation program. |
 | **Notes** | A scanner MATCHED on `baseline_only` last-price is still not a tradable/OE-honest match. Whale alignments still abstain on `ABSTAIN_INSTITUTIONAL_UNAVAILABLE` (no `WhaleLedger`). Did not change adapters, `discover_equity_quote_stack`, or CLI `quote_provider` (owned by the OpenD hop-unify worker). |
 
+## 2026-09-13 — Unify OpenD hop quote_provider (Yahoo overlay-only)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `strategy`, `tools` |
+| **Summary** | Lifted #46 OpenD/Yahoo adapters, `equity_quote_selection`, `with_moomoo_opend_primary_quote`, and Primary L1 tests onto the #45 persist-CLI tree. Path A hop `quote_provider` is always `primary_equity_quote_provider()` (Moomoo OpenD). `discover_equity_quote_stack()` no longer swaps Yahoo in when OpenD is down; Yahoo stays overlay-only (`US_EQUITY_SNAPSHOT`, ES pre-HTTP reject). Persist CLI, catalog invoke, and Live argparse refusal are unchanged. Honest OpenD-down outcome is `PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE` (or `MOOMOO_TRANSPORT_NOT_IMPLEMENTED` if loopback TCP answers). Did not implement `moomoo-api` transport. FTEP is not `EMPIRICAL_ACTIVE`. Live stays off. Did not fold Finviz HTTP. |
+| **Key files** | `src/market_platform_foundation/providers/adapters/moomoo_opend_equity_quote.py`, `src/market_platform_foundation/providers/adapters/yahoo_delayed_equity_quote.py`, `src/market_platform_foundation/providers/equity_quote_selection.py` (new), `src/market_platform_foundation/providers/equity_quote_discovery.py`, `src/market_platform_foundation/providers/composition.py`, `tools/path_a_prospective_run.py`, `tests/providers/test_moomoo_opend_primary_l1.py` (new), `tests/intelligence/test_path_a_prospective.py`, `docs/providers/MOOMOO_OBSERVATIONAL.md`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md`, `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | `tests.intelligence.test_path_a_prospective` **40 passed**. `tests.providers.test_moomoo_opend_primary_l1` **21 passed** (61 combined). Honest CLI with OpenD down: `discovery.provider_id=moomoo.opend.observational`, `overlay_provider_id=yahoo.finance.delayed`, `opend_reachable=false`, `result.status=PROVIDER_UNAVAILABLE`, `reason_codes=["OPEND_UNAVAILABLE"]`, `path_a_status=null`. `--mode live` still argparse-refused. `python3 tools/validate.py changed --paths-file` (12 merge-base paths vs `origin/cursor/path-a-persist-cli-d1ba`@`ce49048`) **2316 passed / 36 skipped / 0 fail / 0 err** (`core_checkpoint_required=true` from `tools/path_a_prospective_run.py`). `python3 tools/imp.py lint` passed. Docs links OK (188 files). |
+| **Related** | Stacked on #45 `ce49048`. Lifts #46 `01dd28e` adapters. Does not push onto #42/#45/#46. |
+| **Notes** | Operator OpenD + vendor transport remain empirical blockers after this software wire. Cloud VM has no loopback `:11111`. No secrets printed. |
+
 ## 2026-09-13 — Path A hop CLI loads a real (non-fixture) baseline strategy catalog
 
 | Field | Value |

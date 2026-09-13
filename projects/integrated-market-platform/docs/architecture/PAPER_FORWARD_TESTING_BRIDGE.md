@@ -220,7 +220,13 @@ Factory: `create_forward_test_repository()` in
 
 Path A prospective hop (`PathAProspectiveComposer`): Paper/Demo CLI
 `tools/path_a_prospective_run.py` injects `PathAScanCaller` so `path_a_status`
-is honest `EMPTY` when no MATCHED strategy (not null). `--preregistration-path`
+is honest `EMPTY` when no MATCHED strategy (not null). The hop
+`quote_provider` is always Moomoo OpenD via
+`primary_equity_quote_provider()`; Yahoo delayed is overlay-only and is not
+swapped in when OpenD is down. Honest CLI outcome with OpenD down is
+`PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE` (or
+`MOOMOO_TRANSPORT_NOT_IMPLEMENTED` if loopback TCP answers but vendor
+transport is unimplemented). `--preregistration-path`
 may point at a previously persisted Phase-6 record; create is a separate
 operator step (`persist_paper_demo_preregistration`) that stamps `registered_at`
 before any hop. Load requires identity match and `registered_at` before quote
