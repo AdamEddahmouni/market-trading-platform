@@ -6,9 +6,13 @@ and protocol errors fail closed. This module never synthesizes ``last_price``.
 
 from __future__ import annotations
 
+import importlib
+import sys
+from pathlib import Path
 from typing import Any
 
 _LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+_TOOLS_DIR = Path(__file__).resolve().parent.parent
 
 MOOMOO_SDK_MISSING = "MOOMOO_SDK_MISSING"
 MOOMOO_AUTH_FAILURE = "MOOMOO_AUTH_FAILURE"
@@ -77,12 +81,53 @@ def fetch_snapshot(
                     pass
 
 
+def _is_vendor_sdk(module: Any) -> bool:
+    """True only for the vendor quote package, not ``tools/moomoo``."""
+
+    opener = getattr(module, "OpenQuoteContext", None)
+    return callable(opener)
+
+
 def _import_sdk() -> Any | None:
+    """Load vendor ``moomoo-api``, ignoring a shadowed ``tools/moomoo`` package.
+
+    ``python tools/*.py`` and ``python tools/validation_worker.py`` put
+    ``tools/`` on ``sys.path[0]``. That makes ``import moomoo`` resolve to this
+    directory (no ``OpenQuoteContext``) and would otherwise report a fake SDK
+    while also hiding a real site-packages install. Quote fetch stays
+    fail-closed: missing vendor SDK is ``MOOMOO_SDK_MISSING``, never a tick.
+    """
+
+    cached = sys.modules.get("moomoo")
+    if cached is not None and _is_vendor_sdk(cached):
+        return cached
+
+    tools_resolved = _TOOLS_DIR.resolve()
+    filtered: list[str] = []
+    for entry in sys.path:
+        try:
+            if Path(entry).resolve() == tools_resolved:
+                continue
+        except OSError:
+            pass
+        filtered.append(entry)
+
+    prior_path = list(sys.path)
+    popped = None
+    if cached is not None and not _is_vendor_sdk(cached):
+        popped = sys.modules.pop("moomoo", None)
     try:
-        import moomoo as ft  # type: ignore[import-not-found]
-    except ImportError:
-        return None
-    return ft
+        sys.path[:] = filtered
+        importlib.invalidate_caches()
+        try:
+            import moomoo as ft  # type: ignore[import-not-found]
+        except ImportError:
+            return None
+        return ft if _is_vendor_sdk(ft) else None
+    finally:
+        sys.path[:] = prior_path
+        if popped is not None and "moomoo" not in sys.modules:
+            sys.modules["moomoo"] = popped
 
 
 def _unavailable(reason_code: str) -> dict[str, Any]:

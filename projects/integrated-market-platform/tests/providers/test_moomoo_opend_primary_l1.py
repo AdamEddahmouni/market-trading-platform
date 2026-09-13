@@ -385,6 +385,27 @@ class OpenDVendorTransportTests(unittest.TestCase):
         self.assertEqual(payload["reason_code"], MOOMOO_SDK_MISSING)
         self.assertIsNone(payload["row"])
 
+    def test_tools_dir_on_sys_path_is_not_vendor_sdk(self) -> None:
+        """``python tools/validation_worker.py`` puts tools/ on sys.path[0]."""
+        from tools.moomoo.opend_quote_transport import fetch_snapshot, sdk_available
+
+        tools_dir = str(_ROOT / "tools")
+        prior_path = list(sys.path)
+        prior = sys.modules.get("moomoo")
+        try:
+            sys.path.insert(0, tools_dir)
+            sys.modules.pop("moomoo", None)
+            self.assertFalse(sdk_available())
+            self.assertFalse(opend_sdk_available())
+            payload = fetch_snapshot("AAPL", host="127.0.0.1", port=11111)
+            self.assertEqual(payload["reason_code"], MOOMOO_SDK_MISSING)
+            self.assertIsNone(payload["row"])
+        finally:
+            sys.path[:] = prior_path
+            sys.modules.pop("moomoo", None)
+            if prior is not None:
+                sys.modules["moomoo"] = prior
+
     def test_non_loopback_blocked_even_with_fake_sdk(self) -> None:
         from tools.moomoo.opend_quote_transport import fetch_snapshot
 

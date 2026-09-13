@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — OpenD SDK import ignores tools/ shadow
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `tools/moomoo` |
+| **Summary** | `python tools/validation_worker.py` (and `python tools/*.py`) put `tools/` on `sys.path[0]`, so `import moomoo` bound the local `tools/moomoo` directory. `sdk_available()` treated that as the vendor SDK, so dummy-TCP tests reported `OPEND_SDK_PRESENT` instead of `MOOMOO_SDK_MISSING`. Import now requires `OpenQuoteContext` and skips the `tools/` shadow so a real site-packages SDK is not hidden. Still fail-closed; never mocks ticks; Yahoo is not hop L1. |
+| **Key files** | `tools/moomoo/opend_quote_transport.py`, `tests/providers/test_moomoo_opend_primary_l1.py` |
+| **Tests** | Focused Path A + OpenD + live-p21 **107 passed**. `python3 tools/validation_worker.py --suite-id providers` **383 passed / 0 fail**. CI run 34783594336 had failed `test_reachable_loopback_without_sdk_fails_closed_never_mocks` and `test_discovery_reachable_without_sdk_is_sdk_missing`. |
+| **Related** | PR #50. Follows fail-closed OpenD vendor quote transport. |
+| **Notes** | FTEP is not `EMPIRICAL_ACTIVE`. Item 2 stays **PARTIAL**. Did not merge. |
+
 ## 2026-09-13 — Fail-closed OpenD vendor quote transport (Primary L1)
 
 | Field | Value |
