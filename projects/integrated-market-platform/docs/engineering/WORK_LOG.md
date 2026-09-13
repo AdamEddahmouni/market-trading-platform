@@ -40,11 +40,11 @@ For large features, also add or update a completion note under `docs/superpowers
 
 | Field | Value |
 |-------|-------|
-| **Status** | `in-progress` |
+| **Status** | `complete` |
 | **Area** | `local_state`, `intelligence/paper_forward_bridge` |
 | **Summary** | Extends PD-09 `local_state` SQLite to schema v6 without a second store: transactional FT writes, atomic paper-submit/evaluation claims (H2/H3), reconstruction from Paper ledger + observations (H7), git SHA + simulator version provenance, campaign/strategy/instrument isolation queries, Paper/Live leak-closed at the repository, unique operator acks. Does not start FTEP empirical sessions or flip campaign labels. |
 | **Key files** | `src/market_platform_foundation/local_state/{schema,migrations,connection}.py`, `intelligence/paper_forward_bridge/{sqlite_repository,store,service,evaluation,reconstruction,paper_ledger_join,run_identity}.py`, `ui_api/operator_opportunity_state.py`, `tests/intelligence/test_forward_test_persistence.py` |
-| **Tests** | `python3 -m unittest tests.intelligence.test_forward_test_persistence` — 39 passed (PD-09 + schema v6). Related `test_paper_forward_bridge` + `test_forward_test_session_policy` — 20 passed. FAST / `validate changed` pending this revision. |
+| **Tests** | Persistence unittest **39 passed**. Related bridge+policy **20 passed**. FAST **23 passed**. `validate changed` vs `origin/main...HEAD` **2443 passed / 39 skipped / 0 fail** (104s). Docs links OK. GitHub PR #34 checks all pass (`validate-python-changed` 2m27s). FULL/closure not run (`paper/**` untouched). |
 | **Related** | PD-09 remains COMPLETE (PR #18). This is a new increment. |
 | **Notes** | Simulator is not externally validated. Path A / G7 remain DEFERRED. |
 
