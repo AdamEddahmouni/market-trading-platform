@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Opportunity Engine operator review loop (Goal 001)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/opportunity`, `ui_api`, `ui/now` |
+| **Summary** | Landed the Demo/Paper operator review loop on existing `OpportunityV1`: ingest (strip storage `_id`), explainable ranking vector, `GET /opportunities*`, NOW Opportunity Review Card, Paper watch/dismiss, non-ranking `decision_support`, explain/inspect. Live NOW does not query. Honest empty/unready queue is valid. Opportunity Zod/fetch is lazy Demo/Paper only so the initial gzip budget stays 203 KiB. |
+| **Key files** | `src/market_platform_foundation/intelligence/opportunity/{ingest,ranking,lifecycle,dedup,data_quality}.py`, `ui_api/opportunity_projections.py`, `ui_api/projections.py`, `manifests/ui1/schemas/opportunity_summary.schema.json`, `ui/src/api/opportunityClient.ts`, `ui/src/components/now/OpportunityReviewCard.tsx`, `ui/src/components/{ModeNowRoute,demo-now/DemoNowPage,paper-now/PaperNowPage,paper-now/PaperCandidateQueue}.tsx`, `tools/validation_manifest.json`, `docs/architecture/OPPORTUNITY_CONTRACT.md`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/product/OPPORTUNITY_ENGINE_CURRENT_STATE_AND_IMPLEMENTATION_PLAN.md` |
+| **Tests** | focused intelligence/ui1 opportunity selectors; `cd ui && npm test && npm run typecheck && npm run build`; `python tools/imp.py validate fast`; `python tools/imp.py validate changed` |
+| **Related** | Goal 001 plan; precursor PR #32 |
+| **Notes** | Path A mint unchanged as fixture library. No production scanner, Live ranking, FTEP sessions, or fabricated MATCHED rows. |
+
 ## 2026-09-12 — Post-merge landing banners: origin/main is 3bb5aa2f
 
 | Field | Value |

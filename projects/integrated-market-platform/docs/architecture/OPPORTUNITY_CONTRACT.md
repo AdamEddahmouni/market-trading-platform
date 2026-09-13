@@ -103,6 +103,10 @@ The operator-facing representation should prioritize:
 7. portfolio impact;
 8. the shortest safe next action.
 
+Goal 001 projects that presentation onto the operator **review row** (`OpportunitySummary` 1.1 / `GET /opportunities/summary`), not a second persist type. Demo/Paper NOW renders it as the Opportunity Review Card. Missing fields are `UNAVAILABLE`. Ranking is a named vector plus 1-based `rank_order`; HTTP omits `rank_score`. Live NOW does not query or rank. An empty or unready queue is valid when no `OpportunityV1` has been minted.
+
+Operator lifecycle (`DETECTED` → `NORMALIZED` → `ELIGIBLE`/`INELIGIBLE` → `RANKED` → `REVIEWED`/`WATCHED`/`DISMISSED`) lives on the review row only. It does not mutate frozen `OpportunityV1`.
+
 ## Lifecycle
 
 Recommended states:

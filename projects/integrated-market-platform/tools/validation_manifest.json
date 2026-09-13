@@ -152,6 +152,18 @@
       "isolation": "shared"
     },
     {
+      "id": "opportunity-not-an-order",
+      "selector": "tests/intelligence/test_intelligence_contracts.py::OpportunityV1Tests::test_opportunity_not_order",
+      "order": 160,
+      "isolation": "shared"
+    },
+    {
+      "id": "opportunity-ranking-no-universal-score",
+      "selector": "tests/intelligence/test_opportunity_comparison.py::GlobalOpportunityComparatorTests::test_preserves_heterogeneous_explicit_dimensions_without_universal_score",
+      "order": 170,
+      "isolation": "shared"
+    },
+    {
       "id": "contract-positioning-serialization",
       "selector": "tests/contracts/test_futures_contract.py::FuturesCurveTests::test_positioning_snapshot_round_trip",
       "order": 130,

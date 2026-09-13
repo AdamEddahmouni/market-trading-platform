@@ -25,8 +25,12 @@ vi.mock("lightweight-charts", () => ({
   })),
 }));
 
-vi.mock("./components/live/LiveMarketPanel", () => ({
-  LiveMarketPanel: () => null,
+vi.mock("./api/opportunityClient", () => ({
+  useOpportunitiesSummaryQuery: () => ({
+    data: { items: [], feed_status: "EMPTY" },
+    isLoading: false,
+    isError: false,
+  }),
 }));
 
 const replaySession = { cursor_index: 0, event_count: 4 };
@@ -189,6 +193,7 @@ vi.mock("./api/hooks", () => ({
   queryKeys: {
     context: ["context"],
     attention: ["attention"],
+    opportunitiesSummary: ["opportunities", "summary"],
     liveCanarySnapshot: (laneId?: string, accountId?: string) =>
       ["live", "canary-snapshot", laneId ?? "account", accountId ?? "fp-canary-local"],
     assistantMessages: (conversationId: string | null) => ["assistant", conversationId],

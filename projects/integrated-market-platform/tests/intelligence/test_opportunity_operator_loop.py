@@ -184,6 +184,8 @@ class OperatorLoopTests(unittest.TestCase):
         repo = InMemoryIntelligenceRepository()
         opportunity = _opportunity("opp-repo")
         repo.put_opportunity(opportunity)
+        stored = repo._stores["opportunities"]["opp-repo"]
+        self.assertIn("_id", stored)
         rows = assemble_opportunity_review_rows(
             opportunities=(opportunity,),
             repository=repo,
@@ -191,6 +193,7 @@ class OperatorLoopTests(unittest.TestCase):
         )
         ids = [row.opportunity_id for row in rows]
         self.assertEqual(ids.count("opp-repo"), 1)
+        self.assertNotIn("_id", rows[0].to_dict())
 
     def test_read_model_omits_rank_score(self) -> None:
         ranked = rank_opportunity_summaries(

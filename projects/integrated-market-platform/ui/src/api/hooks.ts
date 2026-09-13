@@ -69,14 +69,6 @@ export function useAttentionQuery() {
   return useQuery({ queryKey: queryKeys.attention, queryFn: api.getAttention });
 }
 
-export function useOpportunitiesSummaryQuery(enabled = true) {
-  return useQuery({
-    queryKey: queryKeys.opportunitiesSummary,
-    queryFn: api.getOpportunitiesSummary,
-    enabled,
-  });
-}
-
 export function useInstrumentQuery(instrumentId: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.instrument(instrumentId),

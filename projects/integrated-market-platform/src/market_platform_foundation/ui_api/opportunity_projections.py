@@ -11,6 +11,30 @@ from .operator_opportunity_state import dismissed_ids, list_operator_acks, recor
 from .store import ReplayStore
 
 
+def decision_support_overlay() -> dict[str, Any]:
+    """Downstream risk context. Must not rank or include order identity."""
+
+    return {
+        "authority": "DOWNSTREAM_RISK_NOT_RANKING",
+        "kill_switch": "UNAVAILABLE",
+        "gross_exposure": {"status": "UNAVAILABLE"},
+        "concentration": {"status": "UNAVAILABLE"},
+        "risk_decision": {"status": "UNAVAILABLE"},
+        "reason_codes": [],
+    }
+
+
+def _serialize_review_row(row: Any) -> dict[str, Any]:
+    body = row.to_dict()
+    body.pop("rank_score", None)
+    body["decision_support"] = decision_support_overlay()
+    if row.opportunity_id:
+        body["explanation_ref"] = f"explain:opportunity:{row.opportunity_id}"
+    else:
+        body["explanation_ref"] = f"explain:summary:{row.summary_id}"
+    return body
+
+
 def _is_live(store: ReplayStore) -> bool:
     return store.data_mode == "LIVE_OBSERVATIONAL" or str(store.mode).upper() == "LIVE"
 
@@ -94,14 +118,12 @@ def build_opportunities_summary_payload(
         "as_of_context": projections.build_as_of_context(store),
         "quality_summary": projections.build_quality_summary(store),
         "feed_status": status,
-        "items": [row.to_dict() for row in page],
+        "items": [_serialize_review_row(row) for row in page],
         "next_cursor": next_cursor,
     }
     if status == "UNREADY":
         payload["unready_reason"] = unready_reason
         payload["next_action"] = "/control"
-    for item in payload["items"]:
-        item.pop("rank_score", None)
     return payload
 
 
@@ -112,21 +134,12 @@ def build_opportunity_detail_payload(store: ReplayStore, row_id: str) -> dict[st
     acks = list_operator_acks()
     for row in ranked:
         if row.summary_id == row_id or row.opportunity_id == row_id:
-            body = row.to_dict()
-            body["decision_support"] = {
-                "authority": "DOWNSTREAM_RISK_NOT_RANKING",
-                "kill_switch": "UNAVAILABLE",
-                "gross_exposure": {"status": "UNAVAILABLE"},
-                "concentration": {"status": "UNAVAILABLE"},
-                "risk_decision": {"status": "UNAVAILABLE"},
-                "reason_codes": [],
-            }
+            body = _serialize_review_row(row)
             if row.instrument_id:
                 body["preview_href"] = f"/workspace/{row.instrument_id}"
             matching = [ack for ack in acks if row.summary_id == ack["summary_id"] or row.opportunity_id == ack.get("opportunity_id")]
             if matching:
                 body["lifecycle_state"] = matching[-1]["action"]
-            body.pop("rank_score", None)
             return body
     dismissed = [ack for ack in acks if row_id in {ack["summary_id"], ack.get("opportunity_id")}]
     if dismissed:
@@ -145,6 +158,31 @@ def build_opportunity_evidence_payload(store: ReplayStore, row_id: str) -> dict[
     lineage = detail.get("lineage_refs") or []
     copy = "not OpportunityV1" if detail.get("identity_kind") == "NOT_OPPORTUNITY_V1" else None
     return {"items": lineage, "copy": copy}
+
+
+def build_opportunity_explain_body(store: ReplayStore, ref: str) -> dict[str, Any]:
+    if _is_live(store):
+        raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+    if ref.startswith("explain:opportunity:"):
+        row_id = ref.removeprefix("explain:opportunity:")
+    elif ref.startswith("explain:summary:"):
+        row_id = ref.removeprefix("explain:summary:")
+    else:
+        raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+    try:
+        detail = build_opportunity_detail_payload(store, row_id)
+    except KeyError as exc:
+        raise ValueError("UI_EXPLAIN_REF_NOT_FOUND") from exc
+    identity = detail.get("identity_kind")
+    why = "not OpportunityV1" if identity == "NOT_OPPORTUNITY_V1" else str(detail.get("headline") or "OpportunityV1 review row")
+    return {
+        "alignment_summary": str(detail.get("lifecycle_state") or "UNAVAILABLE"),
+        "level": 2,
+        "meaning": str(detail.get("headline") or row_id),
+        "ref": ref,
+        "why": why,
+        "lineage_refs": detail.get("lineage_refs") or [],
+    }
 
 
 def apply_opportunity_ack(

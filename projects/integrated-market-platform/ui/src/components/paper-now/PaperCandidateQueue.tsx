@@ -1,4 +1,6 @@
 import type { AttentionItem } from "../../api/client";
+import type { OpportunityReviewRow } from "../../api/opportunityClient";
+import { OpportunityReviewList } from "../now/OpportunityReviewCard";
 import { sortPaperCandidates } from "./paperDashboardViewModel";
 
 type Props = {
@@ -6,14 +8,34 @@ type Props = {
   onSelect: (attentionId: string) => void; onWhy: (item: AttentionItem) => void;
   onExplain: (item: AttentionItem) => void; onInspect: (item: AttentionItem) => void;
   onOpenWorkspace: (item: AttentionItem) => void;
+  opportunityItems?: OpportunityReviewRow[];
+  opportunityState?: "loading" | "ready" | "error";
+  feedStatus?: string;
+  unreadyReason?: string;
+  nextAction?: string;
+  paperAccountId?: string;
 };
 
-export function PaperCandidateQueue({ items, state, selectedAttentionId, onSelect, onWhy, onExplain, onInspect, onOpenWorkspace }: Props) {
+export function PaperCandidateQueue({
+  items, state, selectedAttentionId, onSelect, onWhy, onExplain, onInspect, onOpenWorkspace,
+  opportunityItems = [], opportunityState = "ready", feedStatus, unreadyReason, nextAction, paperAccountId,
+}: Props) {
   const sorted = sortPaperCandidates(items);
   const hasEligible = sorted.some((item) => Boolean(item.instrument_id?.trim()));
   return (
     <section className="paper-panel paper-candidate-panel" aria-label="Candidate queue">
       <header><h2>Candidate queue</h2><span>{sorted.length} signals</span></header>
+      <OpportunityReviewList
+        items={opportunityItems}
+        state={opportunityState}
+        feedStatus={feedStatus}
+        unreadyReason={unreadyReason}
+        nextAction={nextAction}
+        paperAccountId={paperAccountId}
+        onExplain={onExplain}
+        onInspect={onInspect}
+        onOpenWorkspace={onOpenWorkspace}
+      />
       {state === "loading" ? <p role="status">Loading attention feed…</p> : null}
       {state === "error" ? <p role="alert">Attention feed unavailable.</p> : null}
       {state === "ready" ? (

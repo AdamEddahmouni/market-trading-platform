@@ -38,6 +38,7 @@
 | `intent_id` / `order_id` | Server-assigned persistence |
 | Lane module IDs | Canonical set in `WORKSPACE_LANE_REGISTRY` / `WORKSPACE_LANE_MODULE_IDS` ([laneRegistry.ts](../../ui/src/components/workspace-module-shared/laneRegistry.ts)); UI paper provenance derives from it; backend validates structurally, never enumerates |
 | Attention IDs | Backend-assigned attention item identity |
+| Opportunity review IDs | `summary_id` plus optional governed `opportunity_id`; HTTP `GET /opportunities/summary` — not an order id |
 
 Do not overload `correlation_id` with display labels or reuse for unrelated caches.
 

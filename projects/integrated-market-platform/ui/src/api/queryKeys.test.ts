@@ -29,6 +29,11 @@ describe("queryKeys account isolation", () => {
     );
   });
 
+  it("keeps opportunities summary on its own key, not attention", () => {
+    expect(queryKeys.opportunitiesSummary).toEqual(["opportunities", "summary"]);
+    expect(queryKeys.opportunitiesSummary).not.toEqual(queryKeys.attention);
+  });
+
   it("aligns G14 product keys with canonical compact helpers", () => {
     expect(queryKeys.optionsProduct("AAPL", "PAPER")).toEqual(["op", "AAPL", "PAPER", "u", "fixture"]);
     expect(queryKeys.futuresProduct("ES202512", "PAPER")).toEqual(["fp", "ES202512", "PAPER", "u", "fixture"]);

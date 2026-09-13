@@ -979,6 +979,10 @@ def build_explain_payload(store: ReplayStore, ref: str) -> dict[str, object]:
             "ref": ref,
             "why": str(futures.get("disclaimer", "")),
         }
+    elif ref.startswith("explain:opportunity:") or ref.startswith("explain:summary:"):
+        from .opportunity_projections import build_opportunity_explain_body
+
+        body = build_opportunity_explain_body(store, ref)
     else:
         raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
     return {
@@ -1018,6 +1022,12 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
             ],
         },
     }
+    if ref.startswith("inspect:opportunity:") or ref.startswith("inspect:summary:"):
+        lineage = explanation.get("lineage_refs") or []
+        if not isinstance(lineage, list):
+            lineage = []
+        tabs["SUMMARY"]["lineage_refs"] = lineage
+        tabs["EVIDENCE"]["items"] = list(lineage)
     if "strategy" in ref:
         tabs["DERIVATION"] = {
             "method": "run_strategy_evaluation + interpret_strategy",

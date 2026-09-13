@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Mapping
 
 from ..contracts.opportunity import OpportunityV1, opportunity_v1_from_dict
+from ..persistence.codec import PERSISTENCE_METADATA_FIELDS
 from .data_quality import project_opportunity_data_quality
 from .lifecycle import OperatorLifecycleState, derive_lifecycle_from_assessment
 from .read_model import OpportunitySummary, ftep_attention_candidate_to_summary
@@ -78,7 +79,12 @@ def _opportunities_from_repository(repository: Any) -> tuple[OpportunityV1, ...]
             rows.append(document)
             continue
         if isinstance(document, dict):
-            rows.append(opportunity_v1_from_dict(document))
+            payload = {
+                key: value
+                for key, value in document.items()
+                if key not in PERSISTENCE_METADATA_FIELDS
+            }
+            rows.append(opportunity_v1_from_dict(payload))
     return tuple(rows)
 
 
