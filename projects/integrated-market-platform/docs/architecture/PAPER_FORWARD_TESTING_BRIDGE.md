@@ -226,7 +226,13 @@ is honest `EMPTY` when no MATCHED strategy (not null). The hop
 swapped in when OpenD is down. Honest CLI outcome with OpenD down is
 `PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE` (or
 `MOOMOO_TRANSPORT_NOT_IMPLEMENTED` if loopback TCP answers but vendor
-transport is unimplemented). Honest EMPTY does not
+transport is unimplemented). `--preregistration-path`
+may point at a previously persisted Phase-6 record; create is a separate
+operator step (`persist_paper_demo_preregistration`) that stamps `registered_at`
+before any hop. Load requires identity match and `registered_at` before quote
+`event_time_ns`. Catalog evaluators never mint a preregistration. A scanner
+MATCHED with `forecast_resolver` returning `None` is `FORECAST_UNAVAILABLE`,
+not OE EMIT. Honest EMPTY does not
 enter the MATCHED loop or call Opportunity Engine. A Paper/Demo MATCHED
 test fixture does call `bridge_strategy_match_to_opportunity` →
 `OpportunityEngine.assess`. If G7 fail-closes, overall status stays

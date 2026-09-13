@@ -7,20 +7,17 @@ Path A's Paper/Demo honesty invoke stops shipping ``strategies=()``.
 
 Honesty boundary: these alignments are documented (``strategy_spec.py``) as
 ``baseline_only`` interpretations of a naive last-value score — "not tradable
-edges" — and Path A has no preregistration authority wired into a one-shot
-CLI hop. Calling ``interpret_strategy`` with ``preregistration=None`` is the
-truthful statement of that fact: ``verify_preregistration`` is never invented,
-so every evaluation legitimately abstains on ``ABSTAIN_NO_PREREGISTRATION``
-(and, for the whale alignments, also on ``ABSTAIN_INSTITUTIONAL_UNAVAILABLE``
-since no ``WhaleLedger`` is configured for this hop). This module never
-returns a hardcoded ``MATCHED`` disposition; the scanner's own real
-evaluation loop decides the outcome from real inputs.
+edges". Catalog evaluators never mint a Phase-6 record at eval time. They receive a
+previously persisted Phase-6 record from ``build_paper_demo_path_a_invoke``
+only when identity matches and ``registered_at`` is before quote
+``event_time_ns``; otherwise ``preregistration=None`` and evaluation
+legitimately abstains on ``ABSTAIN_NO_PREREGISTRATION`` (whale alignments also
+``ABSTAIN_INSTITUTIONAL_UNAVAILABLE`` — no ``WhaleLedger`` on this hop).
+This module never returns a hardcoded ``MATCHED`` disposition.
 
-If a real preregistration authority and/or an entitled institutional ledger
-are wired into Path A in a future increment, this same evaluator would start
-producing genuine ``MATCHED`` dispositions without any change to the scanner
-or the caller — the honesty gate lives entirely in the missing
-preregistration/ledger, not in this code.
+A scanner MATCHED from a lawful loaded record is still not an Opportunity
+Engine EMIT and not a tradable edge: the honesty invoke leaves
+``forecast_resolver`` returning ``None``.
 """
 
 from __future__ import annotations
@@ -93,16 +90,18 @@ def _forecast_for_context(context: StrategyEvaluationContext) -> tuple[dict[str,
 
 def _baseline_interpretation_evaluator(
     spec: dict[str, Any],
+    preregistration: dict[str, Any] | None = None,
 ):
     def evaluator(context: StrategyEvaluationContext) -> StrategyEvaluationResult:
         forecast, observation_time_ns = _forecast_for_context(context)
         forecast_status, _ = verify_forecast_interface(forecast)
         decision_time_ns = context.capability_snapshot.as_of_time_ns
+        # Loaded by the invoke builder, not minted here. preregistration=None
+        # when no stored record is eligible.
+        loaded = preregistration
         interpretation = interpret_strategy(
             strategy_spec=spec,
-            # Honest: Path A's one-shot hop has no preregistration authority.
-            # Never invent a preregistration record to force a match.
-            preregistration=None,
+            preregistration=loaded,
             forecast=forecast,
             forecast_status=forecast_status,
             prediction_cutoff=decision_time_ns,
@@ -119,27 +118,46 @@ def _baseline_interpretation_evaluator(
     return evaluator
 
 
-def _registration_for_spec(spec: dict[str, Any]) -> StrategyRegistration:
+def _registration_for_spec(
+    spec: dict[str, Any],
+    preregistration: dict[str, Any] | None = None,
+) -> StrategyRegistration:
     definition = StrategyDefinition.from_legacy_spec(spec)
     alignment = str(spec["alignment_type"]).lower().replace("_", "-")
     return StrategyRegistration(
         strategy_id=f"path-a-baseline-{alignment}",
         definition=definition,
-        evaluator=_baseline_interpretation_evaluator(coerce_strategy_spec(spec)),
+        evaluator=_baseline_interpretation_evaluator(
+            coerce_strategy_spec(spec),
+            preregistration=preregistration,
+        ),
     )
 
 
-def build_paper_demo_strategy_catalog() -> tuple[StrategyRegistration, ...]:
+def paper_demo_catalog_specs() -> tuple[dict[str, Any], ...]:
+    return tuple(factory() for factory in _CATALOG_SPEC_FACTORIES)
+
+
+def build_paper_demo_strategy_catalog(
+    preregistrations: Mapping[str, Mapping[str, Any]] | None = None,
+) -> tuple[StrategyRegistration, ...]:
     """Real (non-fixture) baseline strategy catalog for Paper/Demo Path A.
 
     Every entry is a genuine ``StrategyRegistration`` backed by the existing
     production ``interpret_strategy`` evaluator — never a hardcoded
-    disposition. Given no preregistration authority is wired into this
-    one-shot hop, entries legitimately abstain on real quotes; that is an
-    honest ``NO_MATCHED_STRATEGY`` outcome, not a mock.
+    disposition. ``preregistrations`` is an identity-hash map of records the
+    invoke builder already selected as eligible. Missing keys stay
+    ``preregistration=None``.
     """
 
-    return tuple(_registration_for_spec(factory()) for factory in _CATALOG_SPEC_FACTORIES)
+    loaded = preregistrations or {}
+    rows: list[StrategyRegistration] = []
+    for spec in paper_demo_catalog_specs():
+        identity = str(spec["strategy_identity_hash"])
+        record = loaded.get(identity)
+        record_dict = dict(record) if isinstance(record, Mapping) else None
+        rows.append(_registration_for_spec(spec, preregistration=record_dict))
+    return tuple(rows)
 
 
 __all__ = [
@@ -147,4 +165,5 @@ __all__ = [
     "NO_QUOTE_OBSERVATION_REASON",
     "PATH_A_CATALOG_HORIZON_NS",
     "build_paper_demo_strategy_catalog",
+    "paper_demo_catalog_specs",
 ]

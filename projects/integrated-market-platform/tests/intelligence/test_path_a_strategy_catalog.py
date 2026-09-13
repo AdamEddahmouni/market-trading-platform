@@ -41,6 +41,8 @@ class PathAStrategyCatalogTests(unittest.TestCase):
         self.assertNotIn("lambda", source)
         self.assertIn("interpret_strategy", source)
         self.assertIn("preregistration=None", source)
+        self.assertNotIn("build_preregistration(", source)
+        self.assertNotIn("from .preregistration import", source)
 
     def test_honesty_invoke_registers_real_catalog(self) -> None:
         invoke = build_paper_demo_path_a_invoke("AAPL", mode="paper", as_of_time_ns=T)
