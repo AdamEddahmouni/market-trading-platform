@@ -5,10 +5,34 @@ from __future__ import annotations
 from typing import Any
 
 from ..intelligence.opportunity.ingest import assemble_opportunity_review_rows
-from ..intelligence.opportunity.ranking import rank_review_rows
+from ..intelligence.opportunity.ranking import comparison_vectors_from_repository, rank_review_rows
 from . import projections
 from .operator_opportunity_state import dismissed_ids, list_operator_acks, record_operator_ack
 from .store import ReplayStore
+
+
+def decision_support_overlay() -> dict[str, Any]:
+    """Downstream risk context. Must not rank or include order identity."""
+
+    return {
+        "authority": "DOWNSTREAM_RISK_NOT_RANKING",
+        "kill_switch": "UNAVAILABLE",
+        "gross_exposure": {"status": "UNAVAILABLE"},
+        "concentration": {"status": "UNAVAILABLE"},
+        "risk_decision": {"status": "UNAVAILABLE"},
+        "reason_codes": [],
+    }
+
+
+def _serialize_review_row(row: Any) -> dict[str, Any]:
+    body = row.to_dict()
+    body.pop("rank_score", None)
+    body["decision_support"] = decision_support_overlay()
+    if row.opportunity_id:
+        body["explanation_ref"] = f"explain:opportunity:{row.opportunity_id}"
+    else:
+        body["explanation_ref"] = f"explain:summary:{row.summary_id}"
+    return body
 
 
 def _is_live(store: ReplayStore) -> bool:
@@ -61,7 +85,11 @@ def build_ranked_rows(store: ReplayStore) -> tuple[Any, ...]:
         repository=repository,
         source="REPLAY" if store.data_mode != "LIVE_OBSERVATIONAL" else "LIVE_OBSERVATIONAL",
     )
-    return rank_review_rows(assembled, dismissed_ids=dismissed_ids())
+    return rank_review_rows(
+        assembled,
+        comparison_vectors=comparison_vectors_from_repository(repository),
+        dismissed_ids=dismissed_ids(),
+    )
 
 
 def build_opportunities_summary_payload(
@@ -94,14 +122,12 @@ def build_opportunities_summary_payload(
         "as_of_context": projections.build_as_of_context(store),
         "quality_summary": projections.build_quality_summary(store),
         "feed_status": status,
-        "items": [row.to_dict() for row in page],
+        "items": [_serialize_review_row(row) for row in page],
         "next_cursor": next_cursor,
     }
     if status == "UNREADY":
         payload["unready_reason"] = unready_reason
         payload["next_action"] = "/control"
-    for item in payload["items"]:
-        item.pop("rank_score", None)
     return payload
 
 
@@ -112,21 +138,12 @@ def build_opportunity_detail_payload(store: ReplayStore, row_id: str) -> dict[st
     acks = list_operator_acks()
     for row in ranked:
         if row.summary_id == row_id or row.opportunity_id == row_id:
-            body = row.to_dict()
-            body["decision_support"] = {
-                "authority": "DOWNSTREAM_RISK_NOT_RANKING",
-                "kill_switch": "UNAVAILABLE",
-                "gross_exposure": {"status": "UNAVAILABLE"},
-                "concentration": {"status": "UNAVAILABLE"},
-                "risk_decision": {"status": "UNAVAILABLE"},
-                "reason_codes": [],
-            }
+            body = _serialize_review_row(row)
             if row.instrument_id:
                 body["preview_href"] = f"/workspace/{row.instrument_id}"
             matching = [ack for ack in acks if row.summary_id == ack["summary_id"] or row.opportunity_id == ack.get("opportunity_id")]
             if matching:
                 body["lifecycle_state"] = matching[-1]["action"]
-            body.pop("rank_score", None)
             return body
     dismissed = [ack for ack in acks if row_id in {ack["summary_id"], ack.get("opportunity_id")}]
     if dismissed:
@@ -147,16 +164,27 @@ def build_opportunity_evidence_payload(store: ReplayStore, row_id: str) -> dict[
     return {"items": lineage, "copy": copy}
 
 
-def build_opportunity_explain_payload(store: ReplayStore, ref: str) -> dict[str, Any]:
-    row_id = ref.removeprefix("explain:opportunity:").removeprefix("explain:summary:")
-    detail = build_opportunity_detail_payload(store, row_id)
-    copy = "not OpportunityV1" if detail.get("identity_kind") == "NOT_OPPORTUNITY_V1" else "OpportunityV1 review row"
+def build_opportunity_explain_body(store: ReplayStore, ref: str) -> dict[str, Any]:
+    if _is_live(store):
+        raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+    if ref.startswith("explain:opportunity:"):
+        row_id = ref.removeprefix("explain:opportunity:")
+    elif ref.startswith("explain:summary:"):
+        row_id = ref.removeprefix("explain:summary:")
+    else:
+        raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
+    try:
+        detail = build_opportunity_detail_payload(store, row_id)
+    except KeyError as exc:
+        raise ValueError("UI_EXPLAIN_REF_NOT_FOUND") from exc
+    identity = detail.get("identity_kind")
+    why = "not OpportunityV1" if identity == "NOT_OPPORTUNITY_V1" else str(detail.get("headline") or "OpportunityV1 review row")
     return {
-        "alignment_summary": detail.get("headline") or row_id,
+        "alignment_summary": str(detail.get("lifecycle_state") or "UNAVAILABLE"),
         "level": 2,
-        "meaning": copy,
+        "meaning": str(detail.get("headline") or row_id),
         "ref": ref,
-        "why": "Operator review projection; not an order and not fabricated EvidenceV1.",
+        "why": why,
         "lineage_refs": detail.get("lineage_refs") or [],
     }
 

@@ -25,8 +25,13 @@ vi.mock("lightweight-charts", () => ({
   })),
 }));
 
-vi.mock("./components/live/LiveMarketPanel", () => ({
-  LiveMarketPanel: () => null,
+vi.mock("./api/opportunityClient", () => ({
+  useOpportunitiesSummaryQuery: () => ({
+    data: { items: [], feed_status: "EMPTY" },
+    isLoading: false,
+    isError: false,
+  }),
+  useOpportunityAckMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 const replaySession = { cursor_index: 0, event_count: 4 };
@@ -189,6 +194,7 @@ vi.mock("./api/hooks", () => ({
   queryKeys: {
     context: ["context"],
     attention: ["attention"],
+    opportunitiesSummary: ["opportunities", "summary"],
     liveCanarySnapshot: (laneId?: string, accountId?: string) =>
       ["live", "canary-snapshot", laneId ?? "account", accountId ?? "fp-canary-local"],
     assistantMessages: (conversationId: string | null) => ["assistant", conversationId],
@@ -704,7 +710,7 @@ describe("App mode launcher integration", () => {
     const invalidate = vi.spyOn(QueryClient.prototype, "invalidateQueries");
     render(<App />);
     await enterMode("Demo");
-    fireEvent.click(await screen.findByRole("button", { name: "Next event" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next event" }));
     await waitFor(() => expect(screen.getByText("Event 2 of 4")).toBeInTheDocument());
     expect(scrub).toHaveBeenCalledWith(1);
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["context"] });
@@ -716,7 +722,7 @@ describe("App mode launcher integration", () => {
     vi.spyOn(api, "scrubReplay").mockRejectedValueOnce(new Error("offline"));
     render(<App />);
     await enterMode("Demo");
-    fireEvent.click(await screen.findByRole("button", { name: "Next event" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next event" }));
     await screen.findByText(/Replay could not move/);
     expect(screen.getByText("Event 1 of 4")).toBeInTheDocument();
   });

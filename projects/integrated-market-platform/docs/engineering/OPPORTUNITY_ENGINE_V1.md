@@ -25,6 +25,8 @@ ChampionAssignmentV1 → ForecastV1 → OpportunityContext → OpportunityPolicy
   → OpportunityAssessmentV1 → OpportunityV1 (if EMIT)
 ```
 
+Mint path (Path A, fixture Paper library): MATCHED `StrategyMatch` → `bridge_strategy_match_to_opportunity` → `OpportunityEngine.assess` → persist assessment always, `OpportunityV1` only on `EMIT`. Goal 001 does not add a competing constructor, daemon, or FTEP bind. The operator review loop reads already-minted rows plus labeled attention adapters; it does not start a production scanner.
+
 Every forecast evaluation produces a durable `OpportunityAssessmentV1`. Only eligible assessments emit `OpportunityV1`.
 
 ## OpportunityV1 (reused BUILD 01 contract)
@@ -45,8 +47,6 @@ Opportunities require:
 3. Same champion assignment still authoritative at `opportunity_decision_time_ns` (v1 rule: suppress if champion changed).
 
 Control and challenger/shadow forecasts do not create production opportunities.
-
-The operator review loop (`GET /opportunities/summary`) consumes already-minted `OpportunityV1` records and labeled attention adapters. It does not start a production scanner or FTEP empirical collection. Path A mint remains fixture-validated library code: MATCHED `StrategyMatch` → `bridge_strategy_match_to_opportunity` → `OpportunityEngine.assess`.
 
 ## Time semantics
 

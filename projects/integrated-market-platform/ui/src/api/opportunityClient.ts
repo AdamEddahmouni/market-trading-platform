@@ -1,7 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { fetchJson } from "./fetchJson";
+import { fetchJson, postJson } from "./fetchJson";
 import { queryKeys } from "./hooks";
+import { AsOfContextSchema } from "./schemas";
 
 export const OpportunityReviewRowSchema = z
   .object({
@@ -16,6 +17,7 @@ export const OpportunityReviewRowSchema = z
     next_safe_action: z.string().optional(),
     rank_order: z.number().nullable().optional(),
     unavailable_fields: z.array(z.string()).optional(),
+    explanation_ref: z.string().optional(),
     ranking_vector: z
       .object({
         basis: z.string(),
@@ -35,7 +37,8 @@ export const OpportunityReviewRowSchema = z
     data_quality: z.record(z.string(), z.unknown()).nullable().optional(),
     decision_support: z
       .object({
-        authority: z.string(),
+        authority: z.string().optional(),
+        kill_switch: z.string().optional(),
         reason_codes: z.array(z.string()).optional(),
       })
       .passthrough()
@@ -44,7 +47,7 @@ export const OpportunityReviewRowSchema = z
   .passthrough();
 
 export const OpportunitiesSummaryResponseSchema = z.object({
-  as_of_context: z.object({ mode: z.string() }).passthrough(),
+  as_of_context: AsOfContextSchema,
   quality_summary: z.object({ state: z.string() }).passthrough(),
   feed_status: z.string(),
   reason: z.string().optional(),
@@ -66,5 +69,29 @@ export function useOpportunitiesSummaryQuery(enabled = true) {
     queryKey: queryKeys.opportunitiesSummary,
     queryFn: getOpportunitiesSummary,
     enabled,
+  });
+}
+
+const OpportunityAckSchema = z
+  .object({
+    summary_id: z.string(),
+    action: z.string(),
+  })
+  .passthrough();
+
+export type OpportunityAckAction = "watch" | "dismiss" | "review";
+
+export function postOpportunityAck(rowId: string, action: OpportunityAckAction) {
+  return postJson(`/opportunities/${rowId}/${action}`, {}, OpportunityAckSchema);
+}
+
+export function useOpportunityAckMutation() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ rowId, action }: { rowId: string; action: OpportunityAckAction }) =>
+      postOpportunityAck(rowId, action),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: queryKeys.opportunitiesSummary });
+    },
   });
 }

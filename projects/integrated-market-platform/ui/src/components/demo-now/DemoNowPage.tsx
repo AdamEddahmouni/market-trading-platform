@@ -1,13 +1,10 @@
-import { lazy, Suspense } from "react";
 import type { AttentionItem, PaperPortfolioResponse } from "../../api/client";
+import { useOpportunitiesSummaryQuery } from "../../api/opportunityClient";
 import { AttentionFeed } from "../AttentionFeed";
+import { OpportunityReviewList } from "../now/OpportunityReviewCard";
 import { DemoInspectNext } from "./DemoInspectNext";
 import { DemoPortfolioSummary } from "./DemoPortfolioSummary";
 import { DemoReplayOverview, deriveReplayProgress } from "./DemoReplayOverview";
-
-const OpportunityReviewQueue = lazy(() =>
-  import("../now/OpportunityReviewCard").then((module) => ({ default: module.OpportunityReviewQueue })),
-);
 
 export type LoadState = "loading" | "ready" | "error";
 export type ScrubState = "idle" | "pending" | "error";
@@ -30,6 +27,12 @@ export type DemoNowPageProps = {
 };
 
 export function DemoNowPage(props: DemoNowPageProps) {
+  const opportunitiesQuery = useOpportunitiesSummaryQuery(true);
+  const opportunityState = opportunitiesQuery.isLoading
+    ? "loading"
+    : opportunitiesQuery.isError || !opportunitiesQuery.data
+      ? "error"
+      : "ready";
   const progress = props.replayState === "ready" ? deriveReplayProgress(props.cursorIndex, props.eventCount) : null;
   const canAdvance = Boolean(progress?.hasNext);
   return (
@@ -64,6 +67,17 @@ export function DemoNowPage(props: DemoNowPageProps) {
               <h2 id="demo-attention-title">What matters now</h2>
             </div>
           </div>
+          <OpportunityReviewList
+            items={opportunitiesQuery.data?.items ?? []}
+            state={opportunityState}
+            feedStatus={opportunitiesQuery.data?.feed_status}
+            unreadyReason={opportunitiesQuery.data?.unready_reason}
+            nextAction={opportunitiesQuery.data?.next_action}
+            readOnly
+            onExplain={props.onExplain}
+            onInspect={props.onInspect}
+            onOpenWorkspace={props.onOpenWorkspace}
+          />
           <AttentionFeed
             items={props.items}
             state={props.attentionState}
@@ -73,13 +87,6 @@ export function DemoNowPage(props: DemoNowPageProps) {
             onInspect={props.onInspect}
             onOpenWorkspace={props.onOpenWorkspace}
           />
-          <div className="demo-opportunity-review">
-            <p className="demo-eyebrow">Opportunity Engine</p>
-            <h3>Opportunity review</h3>
-            <Suspense fallback={<p role="status">Loading opportunity review…</p>}>
-              <OpportunityReviewQueue mode="DEMO" />
-            </Suspense>
-          </div>
         </section>
         <DemoInspectNext
           items={props.items}

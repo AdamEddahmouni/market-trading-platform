@@ -1,134 +1,189 @@
-import { useOpportunitiesSummaryQuery, type OpportunityReviewRow } from "../../api/opportunitiesClient";
+import type { AttentionItem } from "../../api/client";
+import type { OpportunityAckAction, OpportunityReviewRow } from "../../api/opportunityClient";
 
 export type OpportunityReviewCardProps = {
   row: OpportunityReviewRow;
-  mode: "DEMO" | "PAPER";
-  accountId?: string;
-  onExplain?: (row: OpportunityReviewRow) => void;
-  onInspect?: (row: OpportunityReviewRow) => void;
-  onOpenWorkspace?: (instrumentId: string) => void;
+  paperAccountId?: string;
+  readOnly?: boolean;
+  onExplain: (item: AttentionItem) => void;
+  onInspect: (item: AttentionItem) => void;
+  onOpenWorkspace: (item: AttentionItem) => void;
+  onAck?: (row: OpportunityReviewRow, action: OpportunityAckAction) => void;
 };
 
-function dimensionLine(row: OpportunityReviewRow): string {
-  const dimensions = row.ranking_vector?.dimensions ?? [];
-  const present = dimensions.filter((item) => item.status === "PRESENT");
-  if (!present.length) return "Ranking dimensions unavailable.";
-  return present
-    .slice(0, 4)
-    .map((item) => `${item.name}: ${item.value ?? "UNAVAILABLE"}`)
-    .join(" · ");
+export function explanationRefForRow(row: OpportunityReviewRow): string {
+  if (row.explanation_ref) return row.explanation_ref;
+  if (row.opportunity_id) return `explain:opportunity:${row.opportunity_id}`;
+  return `explain:summary:${row.summary_id}`;
+}
+
+export function attentionItemFromOpportunity(row: OpportunityReviewRow): AttentionItem {
+  return {
+    attention_id: row.summary_id,
+    priority_rank: row.rank_order ?? 0,
+    headline: row.headline,
+    instrument_id: row.instrument_id ?? undefined,
+    explanation_ref: explanationRefForRow(row),
+    reasons: [],
+  };
+}
+
+function displayValue(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "UNAVAILABLE";
+  return String(value);
 }
 
 export function OpportunityReviewCard({
   row,
-  mode,
-  accountId,
+  paperAccountId,
+  readOnly = false,
   onExplain,
   onInspect,
   onOpenWorkspace,
+  onAck,
 }: OpportunityReviewCardProps) {
-  const eligible = row.eligibility_state === "ELIGIBLE" || row.lifecycle_state === "RANKED";
-  const canPreview = mode === "PAPER" && eligible && Boolean(row.instrument_id);
+  const attention = attentionItemFromOpportunity(row);
+  const identity = row.identity_kind === "OPPORTUNITY_V1" ? "OpportunityV1" : "not OpportunityV1";
   const basis = row.ranking_vector?.basis;
-  const provisional = basis != null && basis !== "COMPARATOR_LEXICOGRAPHIC";
-  const identity = row.identity_kind === "OPPORTUNITY_V1" ? row.opportunity_id ?? row.summary_id : "not OpportunityV1";
-  const qualityStatus =
-    row.data_quality && typeof row.data_quality.status === "string"
-      ? row.data_quality.status
-      : "UNAVAILABLE";
+  const provisional = Boolean(basis && basis !== "COMPARATOR_LEXICOGRAPHIC");
+  const dimensions = row.ranking_vector?.dimensions ?? [];
+  const quality = row.data_quality ?? {};
+  const qualityStatus = displayValue(quality.status);
+  const ineligible = row.eligibility_state === "INELIGIBLE" || row.next_safe_action === "STOP";
+  const canOpen = Boolean(row.instrument_id && row.next_safe_action === "OPEN_WORKSPACE" && !ineligible);
+  const overlay = row.decision_support;
 
   return (
-    <article className="opportunity-review-card attention-card" data-identity={row.identity_kind ?? "UNAVAILABLE"}>
+    <article className="opportunity-review-card" data-identity={row.identity_kind ?? "NOT_OPPORTUNITY_V1"}>
       <div className="card-head">
         <h3>{row.headline}</h3>
-        {row.instrument_id ? <span className="symbol">{row.instrument_id}</span> : null}
+        {row.instrument_id ? <code>{row.instrument_id}</code> : <span className="unavailable">Instrument UNAVAILABLE</span>}
       </div>
-      <p className="muted">
+      <p className="opportunity-identity">
         {identity}
         {row.rank_order != null ? ` · rank ${row.rank_order}` : ""}
-        {accountId ? ` · account ${accountId}` : ""}
+        {row.lifecycle_state ? ` · ${row.lifecycle_state}` : ""}
       </p>
       {provisional ? (
-        <p className="unavailable">Provisional order — not FTEP-tuned / not campaign-calibrated.</p>
+        <p className="opportunity-provisional">Provisional order — not FTEP-tuned / not campaign-calibrated</p>
       ) : null}
-      <p>{dimensionLine(row)}</p>
-      <p className="muted">Data quality: {qualityStatus}</p>
-      {row.decision_support ? (
-        <p className="muted">
-          Risk overlay {row.decision_support.authority} — not used for ranking.
+      <ul className="reason-codes">
+        {dimensions.map((dimension) => (
+          <li key={dimension.name}>
+            <code>{dimension.name}</code>{" "}
+            {dimension.status === "PRESENT" ? displayValue(dimension.value) : "UNAVAILABLE"}
+            {dimension.unit && dimension.status === "PRESENT" ? ` ${dimension.unit}` : ""}
+            {dimension.reason_code ? ` (${dimension.reason_code})` : ""}
+          </li>
+        ))}
+      </ul>
+      <p className="opportunity-quality">
+        Data quality {qualityStatus}
+        {quality.freshness ? ` · freshness ${displayValue(quality.freshness)}` : ""}
+      </p>
+      {paperAccountId ? (
+        <p className="opportunity-account">
+          Paper account <code>{paperAccountId}</code>
         </p>
       ) : null}
-      <p>Next: {row.next_safe_action ?? "NONE"}</p>
+      {overlay ? (
+        <p className="opportunity-decision-support">
+          Risk overlay {overlay.authority ?? "DOWNSTREAM_RISK_NOT_RANKING"} · kill switch{" "}
+          {overlay.kill_switch ?? "UNAVAILABLE"}
+        </p>
+      ) : null}
+      <p className="opportunity-next">
+        Next safe action: {ineligible ? "STOP" : row.next_safe_action ?? "NONE"}
+      </p>
       <div className="card-actions">
-        {onExplain ? (
-          <button type="button" onClick={() => onExplain(row)}>
-            Explain
+        <button type="button" onClick={() => onExplain(attention)}>
+          Explain
+        </button>
+        <button type="button" onClick={() => onInspect(attention)}>
+          Inspect
+        </button>
+        {canOpen ? (
+          <button type="button" onClick={() => onOpenWorkspace(attention)}>
+            Open workspace
           </button>
         ) : null}
-        {onInspect ? (
-          <button type="button" onClick={() => onInspect(row)}>
-            Inspect
-          </button>
+        {paperAccountId && onAck && !readOnly ? (
+          <>
+            <button type="button" onClick={() => onAck(row, "review")}>
+              Mark reviewed
+            </button>
+            <button type="button" onClick={() => onAck(row, "watch")}>
+              Watch
+            </button>
+            <button type="button" onClick={() => onAck(row, "dismiss")}>
+              Dismiss
+            </button>
+          </>
         ) : null}
-        {canPreview && row.instrument_id && onOpenWorkspace ? (
-          <button type="button" onClick={() => onOpenWorkspace(row.instrument_id as string)}>
-            Open Paper workspace
-          </button>
-        ) : null}
-        {!eligible ? <span className="unavailable">Ineligible — no preview.</span> : null}
-        {mode === "DEMO" ? <span className="muted">Demo is read-only.</span> : null}
+        {readOnly ? <span className="muted">Demo is read-only.</span> : null}
       </div>
     </article>
   );
 }
 
-export type OpportunityReviewQueueProps = {
-  mode: "DEMO" | "PAPER";
-  accountId?: string;
-  onExplain?: (row: OpportunityReviewRow) => void;
-  onInspect?: (row: OpportunityReviewRow) => void;
-  onOpenWorkspace?: (instrumentId: string) => void;
+export type OpportunityReviewListProps = {
+  items: OpportunityReviewRow[];
+  state: "loading" | "ready" | "error";
+  feedStatus?: string;
+  unreadyReason?: string;
+  nextAction?: string;
+  paperAccountId?: string;
+  readOnly?: boolean;
+  onExplain: (item: AttentionItem) => void;
+  onInspect: (item: AttentionItem) => void;
+  onOpenWorkspace: (item: AttentionItem) => void;
+  onAck?: (row: OpportunityReviewRow, action: OpportunityAckAction) => void;
 };
 
-export function OpportunityReviewQueue({
-  mode,
-  accountId,
+export function OpportunityReviewList({
+  items,
+  state,
+  feedStatus,
+  unreadyReason,
+  nextAction,
+  paperAccountId,
+  readOnly = false,
   onExplain,
   onInspect,
   onOpenWorkspace,
-}: OpportunityReviewQueueProps) {
-  const query = useOpportunitiesSummaryQuery(true);
-  if (query.isLoading) return <p role="status">Loading opportunity review…</p>;
-  if (query.isError || !query.data) return <p role="alert">Opportunity review unavailable.</p>;
-  const feed = query.data;
-  if (feed.feed_status === "UNAVAILABLE") {
-    return <p className="unavailable">{feed.reason ?? "Opportunity Engine is not available in this mode."}</p>;
-  }
-  if (feed.feed_status === "UNREADY") {
+  onAck,
+}: OpportunityReviewListProps) {
+  if (state === "loading") return <p role="status">Loading opportunity review…</p>;
+  if (state === "error") return <p role="alert">Opportunity review unavailable.</p>;
+  if (feedStatus === "UNREADY") {
     return (
-      <p className="unavailable">
-        Opportunity queue is unready. {feed.unready_reason ?? "Operator readiness is not PASS."}{" "}
-        <a href={feed.next_action ?? "/control"}>Open Control</a>
+      <p role="status" className="unavailable">
+        Opportunity review is unready{unreadyReason ? ` (${unreadyReason})` : ""}.{" "}
+        <a href={nextAction || "/control"}>Open Control Center</a>
       </p>
     );
   }
-  if (!feed.items.length) {
-    return <p className="unavailable">No governed opportunities. An empty queue is valid when nothing is MATCHED.</p>;
+  if (!items.length) {
+    return (
+      <p className="unavailable">
+        No OpportunityV1 candidates. An empty queue is valid when nothing has been minted.
+      </p>
+    );
   }
   return (
-    <div className="opportunity-review-queue">
-      {feed.items.map((row) => (
+    <div className="opportunity-review-list">
+      {items.map((row) => (
         <OpportunityReviewCard
           key={row.summary_id}
           row={row}
-          mode={mode}
-          accountId={accountId}
+          paperAccountId={paperAccountId}
+          readOnly={readOnly}
           onExplain={onExplain}
           onInspect={onInspect}
           onOpenWorkspace={onOpenWorkspace}
+          onAck={onAck}
         />
       ))}
     </div>
   );
 }
-

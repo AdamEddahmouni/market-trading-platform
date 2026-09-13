@@ -1,46 +1,80 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "ui1.opportunity_summary",
-  "title": "OpportunitiesSummary",
+  "title": "OpportunitySummary",
   "type": "object",
-  "required": ["as_of_context", "quality_summary", "feed_status", "items"],
+  "required": ["summary_id", "headline"],
   "properties": {
-    "as_of_context": { "type": "object" },
-    "quality_summary": { "type": "object" },
-    "feed_status": { "type": "string" },
-    "reason": { "type": "string" },
-    "unready_reason": { "type": "string" },
-    "next_action": { "type": "string" },
-    "next_cursor": { "type": ["string", "null"] },
-    "items": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["summary_id", "headline"],
-        "properties": {
-          "summary_id": { "type": "string" },
-          "headline": { "type": "string" },
-          "instrument_id": { "type": ["string", "null"] },
-          "opportunity_id": { "type": ["string", "null"] },
-          "identity_kind": { "type": "string" },
-          "eligibility_state": { "type": ["string", "null"] },
-          "lifecycle_state": { "type": ["string", "null"] },
-          "next_safe_action": { "type": "string" },
-          "rank_order": { "type": ["integer", "null"] },
-          "ranking_vector": { "type": ["object", "null"] },
-          "data_quality": { "type": ["object", "null"] },
-          "unavailable_fields": { "type": "array", "items": { "type": "string" } }
-        },
-        "additionalProperties": true,
-        "not": {
-          "anyOf": [
-            { "required": ["rank_score"] },
-            { "required": ["universal_score"] },
-            { "required": ["opaque_score"] }
-          ]
+    "schema_version": { "type": "string" },
+    "summary_id": { "type": "string" },
+    "instrument_id": { "type": ["string", "null"] },
+    "headline": { "type": "string" },
+    "catalyst_ids": { "type": "array", "items": { "type": "string" } },
+    "source_event_id": { "type": "string" },
+    "campaign_slug": { "type": ["string", "null"] },
+    "accepted": { "type": "boolean" },
+    "rank_order": { "type": ["integer", "null"] },
+    "opportunity_id": { "type": ["string", "null"] },
+    "strategy_family": { "type": ["string", "null"] },
+    "strategy_version": { "type": ["string", "null"] },
+    "side": { "type": ["string", "null"] },
+    "horizon_ns": { "type": ["integer", "null"], "description": "Epoch nanoseconds" },
+    "valid_until_ns": { "type": ["integer", "null"], "description": "Epoch nanoseconds" },
+    "mechanism": { "type": ["string", "null"] },
+    "evidence_class": { "type": ["string", "null"] },
+    "eligibility_state": { "type": ["string", "null"] },
+    "data_quality": { "type": ["object", "null"] },
+    "ranking_vector": {
+      "type": ["object", "null"],
+      "required": ["basis", "dimensions"],
+      "properties": {
+        "basis": { "type": "string" },
+        "rank_order": { "type": ["integer", "null"] },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "status"],
+            "properties": {
+              "name": { "type": "string" },
+              "status": { "type": "string" },
+              "value": true,
+              "unit": { "type": ["string", "null"] },
+              "reason_code": { "type": ["string", "null"] }
+            }
+          }
         }
       }
-    }
+    },
+    "lifecycle_state": { "type": ["string", "null"] },
+    "lineage_refs": { "type": "array" },
+    "account_id": { "type": ["string", "null"] },
+    "mode": { "type": ["string", "null"] },
+    "next_safe_action": { "type": "string" },
+    "unavailable_fields": { "type": "array", "items": { "type": "string" } },
+    "duplicates": { "type": "array", "items": { "type": "string" } },
+    "identity_kind": { "type": "string" },
+    "explanation_ref": { "type": "string" },
+    "decision_support": {
+      "type": "object",
+      "properties": {
+        "authority": { "type": "string" },
+        "kill_switch": { "type": "string" },
+        "gross_exposure": { "type": "object" },
+        "concentration": { "type": "object" },
+        "risk_decision": { "type": "object" },
+        "reason_codes": { "type": "array", "items": { "type": "string" } }
+      },
+      "not": { "required": ["order_id"] }
+    },
+    "metadata": { "type": "object" }
   },
-  "additionalProperties": true
+  "additionalProperties": true,
+  "not": {
+    "anyOf": [
+      { "required": ["rank_score"] },
+      { "required": ["universal_score"] },
+      { "required": ["opaque_score"] }
+    ]
+  }
 }

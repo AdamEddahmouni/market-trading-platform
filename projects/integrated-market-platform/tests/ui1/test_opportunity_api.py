@@ -64,31 +64,45 @@ class OpportunityApiTests(unittest.TestCase):
         evidence = build_opportunity_evidence_payload(self.store, row_id)
         self.assertIsInstance(evidence["items"], list)
 
+    def test_decision_support_does_not_reorder_or_include_order_id(self) -> None:
+        from market_platform_foundation.ui_api.opportunity_projections import decision_support_overlay
+
+        payload = build_opportunities_summary_payload(self.store)
+        orders = [item.get("rank_order") for item in payload["items"]]
+        ids = [item.get("summary_id") for item in payload["items"]]
+        overlay = decision_support_overlay()
+        overlay["concentration"] = {"status": "WORSE"}
+        self.assertNotIn("order_id", overlay)
+        again = build_opportunities_summary_payload(self.store)
+        self.assertEqual([item.get("rank_order") for item in again["items"]], orders)
+        self.assertEqual([item.get("summary_id") for item in again["items"]], ids)
+        for item in payload["items"]:
+            support = item.get("decision_support") or {}
+            self.assertEqual(support.get("authority"), "DOWNSTREAM_RISK_NOT_RANKING")
+            self.assertNotIn("order_id", support)
+            self.assertNotIn("rank_score", item)
+
+    def test_explain_unknown_id_fail_closed_and_evidence_is_lineage_only(self) -> None:
+        from market_platform_foundation.ui_api.projections import build_explain_payload, build_inspect_payload
+
+        with self.assertRaises(ValueError):
+            build_explain_payload(self.store, "explain:opportunity:missing-id")
+        summary = build_opportunities_summary_payload(self.store)
+        if not summary["items"]:
+            self.skipTest("no adapter rows in replay fixture")
+        item = summary["items"][0]
+        ref = item.get("explanation_ref") or f"explain:summary:{item['summary_id']}"
+        explain = build_explain_payload(self.store, ref)
+        if item.get("identity_kind") == "NOT_OPPORTUNITY_V1":
+            self.assertEqual(explain["explanation"]["why"], "not OpportunityV1")
+        inspect = build_inspect_payload(self.store, ref.replace("explain:", "inspect:", 1))
+        self.assertEqual(inspect["tabs"]["EVIDENCE"]["items"], item.get("lineage_refs") or [])
+        evidence = build_opportunity_evidence_payload(self.store, item["summary_id"])
+        self.assertEqual(evidence["items"], item.get("lineage_refs") or [])
+
     def test_unknown_id_fail_closed(self) -> None:
         with self.assertRaises(KeyError):
             build_opportunity_detail_payload(self.store, "missing-id")
-
-    def test_detail_overlay_is_decision_support_not_ranking(self) -> None:
-        self.store.execution_mode = "INTERNAL_SIMULATION"
-        summary = build_opportunities_summary_payload(self.store)
-        if not summary["items"]:
-            self.skipTest("no adapter rows in replay fixture")
-        first = summary["items"][0]
-        orders = [item.get("rank_order") for item in summary["items"]]
-        detail = build_opportunity_detail_payload(self.store, first["summary_id"])
-        overlay = detail["decision_support"]
-        self.assertEqual(overlay["authority"], "DOWNSTREAM_RISK_NOT_RANKING")
-        self.assertNotIn("order_id", overlay)
-        after = build_opportunities_summary_payload(self.store)
-        self.assertEqual([item.get("rank_order") for item in after["items"]], orders)
-
-    def test_evidence_is_lineage_only(self) -> None:
-        summary = build_opportunities_summary_payload(self.store)
-        if not summary["items"]:
-            self.skipTest("no adapter rows in replay fixture")
-        evidence = build_opportunity_evidence_payload(self.store, summary["items"][0]["summary_id"])
-        self.assertIsInstance(evidence["items"], list)
-        self.assertNotIn("fabricated", str(evidence).lower())
 
 
 if __name__ == "__main__":

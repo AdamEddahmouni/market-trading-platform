@@ -301,12 +301,6 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 return
             if path.startswith("/explain/"):
                 ref = path.removeprefix("/explain/")
-                if ref.startswith("explain:opportunity:") or ref.startswith("explain:summary:"):
-                    try:
-                        self._send_json(opportunity_projections.build_opportunity_explain_payload(self.store, ref))
-                    except KeyError:
-                        self._send_error_json("UI_EXPLAIN_REF_NOT_FOUND", "Unknown opportunity", status=HTTPStatus.NOT_FOUND)
-                    return
                 self._send_json(projections.build_explain_payload(self.store, ref))
                 return
             if path.startswith("/inspect/"):

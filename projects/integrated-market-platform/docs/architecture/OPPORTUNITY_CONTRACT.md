@@ -103,7 +103,9 @@ The operator-facing representation should prioritize:
 7. portfolio impact;
 8. the shortest safe next action.
 
-Demo/Paper NOW presents this as an **Opportunity Review** row (`OpportunitySummary` 1.1) with an explainable `ranking_vector` (no serialized `rank_score` / 0–100 quality). HTTP: `GET /opportunities/summary`. Live observational mode returns an empty unavailable queue (`LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`). Risk/portfolio overlay on detail is `DOWNSTREAM_RISK_NOT_RANKING` and does not reorder the queue.
+Goal 001 projects that presentation onto the operator **review row** (`OpportunitySummary` 1.1 / `GET /opportunities/summary`), not a second persist type. Demo/Paper NOW renders it as the Opportunity Review Card. Missing fields are `UNAVAILABLE`. Ranking is a named vector plus 1-based `rank_order`; HTTP omits `rank_score`. Live NOW does not query or rank. An empty or unready queue is valid when no `OpportunityV1` has been minted.
+
+Operator lifecycle (`DETECTED` → `NORMALIZED` → `ELIGIBLE`/`INELIGIBLE` → `RANKED` → `REVIEWED`/`WATCHED`/`DISMISSED`) lives on the review row only. It does not mutate frozen `OpportunityV1`.
 
 ## Lifecycle
 

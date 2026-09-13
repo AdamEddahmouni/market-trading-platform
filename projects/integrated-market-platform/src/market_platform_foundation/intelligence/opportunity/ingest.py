@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Mapping
 
 from ..contracts.opportunity import OpportunityV1, opportunity_v1_from_dict
+from ..persistence.codec import PERSISTENCE_METADATA_FIELDS
 from .data_quality import project_opportunity_data_quality
 from .lifecycle import OperatorLifecycleState, derive_lifecycle_from_assessment
 from .read_model import OpportunitySummary, ftep_attention_candidate_to_summary
@@ -67,11 +68,8 @@ def _summary_from_opportunity(
     )
 
 
-_STORAGE_ONLY_KEYS = frozenset({"_id"})
-
-
 def _without_storage_keys(document: Mapping[str, Any]) -> dict[str, Any]:
-    return {key: value for key, value in document.items() if key not in _STORAGE_ONLY_KEYS}
+    return {key: value for key, value in document.items() if key not in PERSISTENCE_METADATA_FIELDS}
 
 
 def _opportunities_from_repository(repository: Any) -> tuple[OpportunityV1, ...]:
@@ -95,6 +93,27 @@ def _opportunities_from_repository(repository: Any) -> tuple[OpportunityV1, ...]
     return tuple(rows)
 
 
+def assessments_from_repository(repository: Any) -> dict[str, AssessmentAction]:
+    stores = getattr(repository, "_stores", None)
+    if not isinstance(stores, dict):
+        return {}
+    from .serialization import opportunity_assessment_v1_from_dict
+
+    actions: dict[str, AssessmentAction] = {}
+    for document in (stores.get("opportunity_assessments") or {}).values():
+        record = document
+        if isinstance(document, dict):
+            try:
+                record = opportunity_assessment_v1_from_dict(_without_storage_keys(document))
+            except (TypeError, ValueError, KeyError):
+                continue
+        opportunity_id = getattr(record, "opportunity_id", None)
+        action = getattr(record, "assessment_action", None)
+        if opportunity_id and action is not None:
+            actions[str(opportunity_id)] = AssessmentAction(str(action))
+    return actions
+
+
 def assemble_opportunity_review_rows(
     *,
     opportunities: tuple[OpportunityV1, ...] = (),
@@ -105,8 +124,11 @@ def assemble_opportunity_review_rows(
 ) -> tuple[OpportunitySummary, ...]:
     collected: list[OpportunitySummary] = []
     minted = list(opportunities)
+    actions = dict(assessments_by_opportunity or {})
     if repository is not None:
         minted.extend(_opportunities_from_repository(repository))
+        for opportunity_id, action in assessments_from_repository(repository).items():
+            actions.setdefault(opportunity_id, action)
     seen_ids: set[str] = set()
     for opportunity in minted:
         if opportunity.opportunity_id in seen_ids:
@@ -117,10 +139,9 @@ def assemble_opportunity_review_rows(
         if _instrument_fail_closed(instrument_id):
             continue
         action = None
-        if assessments_by_opportunity:
-            raw = assessments_by_opportunity.get(opportunity.opportunity_id)
-            if raw is not None:
-                action = AssessmentAction(str(raw))
+        raw = actions.get(opportunity.opportunity_id)
+        if raw is not None:
+            action = AssessmentAction(str(raw))
         collected.append(
             _summary_from_opportunity(
                 opportunity,

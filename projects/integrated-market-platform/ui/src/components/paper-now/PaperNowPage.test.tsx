@@ -12,8 +12,13 @@ vi.mock("../../api/hooks", () => ({
   usePreviewPaperOrderMutation: () => ({ mutateAsync: mocks.previewPaperOrder, isPending: false }),
 }));
 
-vi.mock("../now/OpportunityReviewCard", () => ({
-  OpportunityReviewQueue: () => <p>Opportunity review stub</p>,
+vi.mock("../../api/opportunityClient", () => ({
+  useOpportunitiesSummaryQuery: () => ({
+    data: { items: [], feed_status: "EMPTY" },
+    isLoading: false,
+    isError: false,
+  }),
+  useOpportunityAckMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 function previewResponse(preview: Partial<PaperOrderPreviewResponse["preview"]> = {}): PaperOrderPreviewResponse {

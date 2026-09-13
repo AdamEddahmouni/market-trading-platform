@@ -17,15 +17,21 @@ describe("queryKeys account isolation", () => {
     expect(local).not.toEqual(alt);
   });
 
-    it("scopes opportunity summary keys separately from attention", () => {
-      expect(queryKeys.opportunitiesSummary).toEqual(["opportunities", "summary"]);
-      expect(queryKeys.opportunitiesSummary).not.toEqual(queryKeys.attention);
-    });
+  it("isolates demo and paper portfolio keys", () => {
+    expect(queryKeys.demoPortfolio).toEqual(["demo", "portfolio"]);
+    expect(queryKeys.paperPortfolio).toEqual(["paper", "portfolio"]);
+    expect(queryKeys.demoPortfolio).not.toEqual(queryKeys.paperPortfolio);
+  });
 
   it("preserves workspace symbol isolation", () => {
     expect(queryKeys.workspaceSqueeze("BIYA", "frozen")).not.toEqual(
       queryKeys.workspaceSqueeze("AAPL", "frozen"),
     );
+  });
+
+  it("keeps opportunities summary on its own key, not attention", () => {
+    expect(queryKeys.opportunitiesSummary).toEqual(["opportunities", "summary"]);
+    expect(queryKeys.opportunitiesSummary).not.toEqual(queryKeys.attention);
   });
 
   it("aligns G14 product keys with canonical compact helpers", () => {

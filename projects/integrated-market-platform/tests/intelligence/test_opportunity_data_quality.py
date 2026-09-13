@@ -1,4 +1,4 @@
-"""Honesty projector: never fabricate FRESH/ENTITLED from env flags."""
+"""Honesty projector for operator data_quality."""
 
 from __future__ import annotations
 
@@ -10,14 +10,25 @@ from market_platform_foundation.intelligence.opportunity.data_quality import (
 
 
 class OpportunityDataQualityTests(unittest.TestCase):
-    def test_recorded_artifacts_stay_unavailable_under_live_env(self) -> None:
-        quality = project_opportunity_data_quality(source="RECORDED_ARTIFACTS", live_observational_env=True)
+    def test_recorded_artifacts_do_not_claim_fresh_or_entitled(self) -> None:
+        quality = project_opportunity_data_quality(
+            source="RECORDED_ARTIFACTS",
+            live_observational_env=True,
+        )
         self.assertEqual(quality["freshness"], "UNAVAILABLE")
+        self.assertEqual(quality["entitlement"], "UNAVAILABLE")
         self.assertEqual(quality["source"], "RECORDED_ARTIFACTS")
+        self.assertNotIn("quote", quality)
 
-    def test_live_observational_is_unavailable(self) -> None:
-        quality = project_opportunity_data_quality(source="LIVE_OBSERVATIONAL")
-        self.assertEqual(quality["status"], "UNAVAILABLE")
+    def test_live_observational_source_is_unavailable(self) -> None:
+        live = project_opportunity_data_quality(source="LIVE_OBSERVATIONAL")
+        self.assertEqual(live["status"], "UNAVAILABLE")
+        self.assertEqual(live["reason_codes"], ["LIVE_OBSERVATIONAL_NOT_ENGINE_QUALITY"])
+
+    def test_replay_does_not_set_fresh_from_adapter_presence(self) -> None:
+        quality = project_opportunity_data_quality(source="REPLAY")
+        self.assertEqual(quality["freshness"], "UNAVAILABLE")
+        self.assertEqual(quality["entitlement"], "UNAVAILABLE")
 
 
 if __name__ == "__main__":

@@ -251,6 +251,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
     await Promise.all([
       client.invalidateQueries({ queryKey: queryKeys.context }),
       client.invalidateQueries({ queryKey: queryKeys.attention }),
+      client.invalidateQueries({ queryKey: queryKeys.opportunitiesSummary }),
       client.invalidateQueries({ queryKey: ["instrument"] }),
     ]);
   };

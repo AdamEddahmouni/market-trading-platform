@@ -4,8 +4,12 @@ import type { AttentionItem, PaperPortfolioResponse } from "../../api/client";
 import demoNowCss from "../../styles/demo-now.css?raw";
 import { DemoNowPage, type DemoNowPageProps } from "./DemoNowPage";
 
-vi.mock("../now/OpportunityReviewCard", () => ({
-  OpportunityReviewQueue: () => <p>Opportunity review stub</p>,
+vi.mock("../../api/opportunityClient", () => ({
+  useOpportunitiesSummaryQuery: () => ({
+    data: { items: [], feed_status: "EMPTY" },
+    isLoading: false,
+    isError: false,
+  }),
 }));
 
 const attention: AttentionItem = {

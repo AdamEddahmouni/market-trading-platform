@@ -1,4 +1,4 @@
-"""FAST-bound Opportunity Engine invariants."""
+"""P0/P11 persist-contract invariants for OpportunityV1."""
 
 from __future__ import annotations
 
@@ -9,22 +9,34 @@ from market_platform_foundation.intelligence.contracts import (
     OpportunityV1,
     QualityState,
     QualitySummary,
-    opportunity_v1_to_dict,
 )
+
+SCOPE = IntelligenceScope(instrument_ids=("AAPL",), context_id="regular")
+QUALITY = QualitySummary(state=QualityState.GOOD)
 
 
 class OpportunityEngineInvariantsTests(unittest.TestCase):
-    def test_opportunity_is_not_an_order(self) -> None:
-        opportunity = OpportunityV1(
-            opportunity_id="opp-1",
-            schema_version="1",
-            scope=IntelligenceScope(instrument_ids=("AAPL",), context_id="regular"),
-            created_at_ns=1,
-            quality=QualitySummary(state=QualityState.GOOD),
-        )
-        payload = opportunity_v1_to_dict(opportunity)
-        self.assertNotIn("order_id", payload)
-        self.assertNotIn("quantity", payload)
+    def test_opportunity_metadata_rejects_universal_score(self) -> None:
+        with self.assertRaises(ValueError):
+            OpportunityV1(
+                opportunity_id="opp-score",
+                schema_version="1",
+                scope=SCOPE,
+                created_at_ns=10_000,
+                quality=QUALITY,
+                metadata={"universal_score": 88},
+            )
+
+    def test_opportunity_metadata_rejects_rank_score(self) -> None:
+        with self.assertRaises(ValueError):
+            OpportunityV1(
+                opportunity_id="opp-rank",
+                schema_version="1",
+                scope=SCOPE,
+                created_at_ns=10_000,
+                quality=QUALITY,
+                metadata={"rank_score": 12},
+            )
 
 
 if __name__ == "__main__":

@@ -937,6 +937,21 @@ def opportunity_comparison_identity_hash(
     return sha256_bytes(canonical_bytes(opportunity_comparison_identity_payload(result)))
 
 
+def comparison_vector_from_sidecar(
+    opportunity: OpportunityV1,
+    sidecar: UniversalEconomicAssessmentV1,
+) -> ComparisonVectorV1:
+    """Project a sidecar onto the comparator vector. Does not rank or score."""
+
+    return _vector(
+        OpportunityComparisonCandidateV1(
+            cluster_id=opportunity.opportunity_id,
+            opportunity=opportunity,
+            economic_assessment=sidecar,
+        )
+    )
+
+
 def explain_lexicographic_key(vector: ComparisonVectorV1) -> list[dict[str, Any]]:
     """Named PRESENT/UNAVAILABLE dimensions. Does not compute a score."""
 
@@ -1005,6 +1020,7 @@ __all__ = [
     "GlobalOpportunityComparisonResultV1",
     "compare_opportunities",
     "comparison_constraints_to_dict",
+    "comparison_vector_from_sidecar",
     "comparison_vector_to_dict",
     "explain_lexicographic_key",
     "opportunity_comparison_identity_hash",

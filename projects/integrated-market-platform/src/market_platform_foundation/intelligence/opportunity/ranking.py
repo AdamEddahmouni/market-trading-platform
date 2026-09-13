@@ -5,7 +5,11 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import Any
 
-from .comparison import ComparisonVectorV1
+from .comparison import (
+    ComparisonVectorV1,
+    OpportunityComparisonError,
+    comparison_vector_from_sidecar,
+)
 from .dedup import dedup_review_rows
 from .lifecycle import OperatorLifecycleState
 from .read_model import (
@@ -18,6 +22,45 @@ from .read_model import (
     RankingVectorV1,
     provisional_rank_score,
 )
+
+
+def _sidecar_id(opportunity: Any) -> str | None:
+    metadata = getattr(opportunity, "metadata", None) or {}
+    raw = metadata.get("economic_assessment_ref") if isinstance(metadata, dict) else None
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    if isinstance(raw, dict) and raw.get("id"):
+        return str(raw["id"])
+    for ref in getattr(opportunity, "lineage_refs", ()) or ():
+        kind = getattr(ref.kind, "value", ref.kind)
+        if str(kind) == "universal_economic_assessment":
+            return str(ref.id)
+    return None
+
+
+def comparison_vectors_from_repository(repository: Any) -> dict[str, ComparisonVectorV1]:
+    """Load comparator vectors from persisted sidecars. Missing sidecar → omit (stub later)."""
+
+    if repository is None:
+        return {}
+    from .ingest import _opportunities_from_repository
+
+    getter = getattr(repository, "get_economic_assessment", None)
+    vectors: dict[str, ComparisonVectorV1] = {}
+    if not callable(getter):
+        return vectors
+    for opportunity in _opportunities_from_repository(repository):
+        sidecar_id = _sidecar_id(opportunity)
+        if not sidecar_id:
+            continue
+        sidecar = getter(sidecar_id)
+        if sidecar is None:
+            continue
+        try:
+            vectors[opportunity.opportunity_id] = comparison_vector_from_sidecar(opportunity, sidecar)
+        except (OpportunityComparisonError, TypeError, ValueError):
+            continue
+    return vectors
 
 
 def unavailable_comparator_dimensions() -> tuple[RankingDimensionV1, ...]:
