@@ -1,8 +1,10 @@
 # IMP Project Status
 
-**Status:** Authoritative concise current snapshot.  
+**Status:** 2026-09-11 snapshot.  
 **Last updated:** 2026-09-11 (pre-implementation planning closure)  
 **Canonical remote baseline reviewed:** `main@a4858103baa3531051791a632ed36a9339fd6414` (PR #18 merged)
+
+> **Snapshot banner:** This document is a 2026-09-11 snapshot at `main@a4858103`. It is **not** current campaign state. Current program truth: [PROGRAM_STATUS.md](platform/PROGRAM_STATUS.md). Current FTEP campaigns: [FTEP_CAMPAIGN_CATALOG.md](engineering/FTEP_CAMPAIGN_CATALOG.md).
 
 For the deep whole-program state matrix, see [Program Status](platform/PROGRAM_STATUS.md). For the current FTEP/Paper doctrine, see [IMP Scope, FTEP, and Paper-Validation Doctrine](architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md).
 

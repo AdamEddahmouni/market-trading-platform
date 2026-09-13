@@ -53,21 +53,13 @@ FULL closure. `tools/validation_manifest.json` remains the sole test inventory;
 
 ## Canonical edit target
 
-IMP exists in two trees, and they are not interchangeable edit targets:
+IMP's single edit target in **this** monorepo is
+`projects/integrated-market-platform/`. Parent-root CI and the local
+workflow run against this tree. Do **not** edit the leftover nested clone at
+repo-root `integrated-market-platform/`.
 
-- `projects/integrated-market-platform/` — the **canonical edit target**: the
-  tracked snapshot inside the parent monorepo
-  (`AdamEddahmouni/market-trading-platform`). Parent-root CI and the local
-  monorepo workflow run against this tree, and IMP changes are committed here.
-- `integrated-market-platform/` — the standalone child repository (own `.git`;
-  archived upstream). It is a mirror/upstream lineage source: consult it for
-  history or standalone runs, but do not independently edit both trees in one
-  increment.
-
-Edit `projects/integrated-market-platform/` unless a task explicitly requires
-the child repository. `tools/validate.py changed` automatically normalizes the
-`projects/integrated-market-platform/` prefix when run inside the monorepo, so
-changed-path validation selects the same suites from either tree.
+`tools/validate.py changed` automatically normalizes the
+`projects/integrated-market-platform/` prefix when run inside the monorepo.
 
 ## Working rules
 
@@ -100,19 +92,14 @@ export PYTHONPATH=src
 source .venv/bin/activate
 ```
 
-Intelligence BUILD 04.5–09 additionally requires `numpy`, `pymongo`, and `scikit-learn` (installed by the script above).
-
-Validation in cloud:
-
-```bash
-python -m unittest discover -s tests/intelligence -q
-python -m unittest tests.platform.test_shadow_p6 -q
-python tools/validate.py changed
-```
+Default cloud validation is the `python tools/imp.py` pyramid from current
+`main` (FAST → focused/affected → domain/changed → FULL), not
+`python -m unittest discover`. See
+[Developer Operating System](docs/engineering/DEVELOPER_OPERATING_SYSTEM.md).
 
 - **MongoDB**: optional. Unit tests use `InMemoryIntelligenceRepository`; Mongo integration tests skip without `IMP_TEST_MONGODB_URI`.
-- **Moomoo OpenD / IBKR gateway**: not available on cloud VM. Use fixtures, replay, and mock paths; keep live gates off.
-- **Handoff branch**: start from `cloud-handoff/full-state-2026-08-25` and verify against `artifacts/cloud-handoff/CLOUD_FILE_HASHES.json`.
+- **Moomoo OpenD / IBKR**: not available on cloud VM. IBKR TWS (`4001`) and Client Portal Gateway (`5000`) are two transports; neither is execution authority. Use fixtures, replay, and mock paths; keep live gates off. Do not claim IBKR is available now.
+- **Landing branch**: current landing is this monorepo's `main` / PR #29 (`work/ftep-v1-002-us-equity-news`) until merged. `cloud-handoff/full-state-2026-08-25` is historical.
 - See `docs/engineering/CURSOR_CLOUD_ENVIRONMENT.md` for secret names (values via Cursor Cloud Secrets only).
 
 ## Canonical program truth and change isolation

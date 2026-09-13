@@ -7,8 +7,8 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Controlled program terminology |
 | Establishing Milestone | `IMP-REBASE-01`; extended by `IMP-REBASE-02` |
-| Version | `1.1` |
-| Last Verified | `2026-08-27` |
+| Version | `1.2` |
+| Last Verified | `2026-09-12` |
 | Supersedes | No single current whole-program controlled vocabulary |
 | Superseded By | None |
 
@@ -78,6 +78,21 @@ a valid program-status value.
 | Canonical | Current explanatory authority for one declared subject; constrained by executable and historical truth |
 | Historical | Authoritative evidence about a recorded cutoff, not automatic control of present behavior |
 | Future design | Accepted direction that grants no implementation, production, release, or execution authority |
+
+## IMP, FTEP, and campaign terms
+
+| Term | Controlled meaning |
+|---|---|
+| IMP | The whole Integrated Market Platform: opportunity discovery, evidence, portfolio/risk, governed Paper execution, monitoring, and operator workflow. No campaign is IMP. |
+| FTEP | The reusable Forward-Test Experimental Protocol used to test candidates prospectively. FTEP is the protocol, not a campaign and not the platform. |
+| Campaign | A frozen, bounded empirical experiment assembled from FTEP components (core + asset profile + strategy profile + activation manifest). V1-001 ES and V1-002 US equity are campaigns. |
+| `MANIFEST_FROZEN` | The campaign activation manifest is immutable and fingerprint-bound. Distinct from preregistration and from empirical activity. |
+| `FROZEN_FOR_ACTIVATION` | Every required activation gate is satisfied **and** the manifest is frozen before the first qualifying prospective observation. Manifest freeze alone is not this state. |
+| `SIGNAL_ONLY_AUTHORIZED` | Owner authorized SIGNAL_ONLY sessions via a committed receipt. Paper EXECUTION and Live remain unauthorized. Authorization is not activity. |
+| `EMPIRICAL_ACTIVE` | At least one governed prospective session has started. Freeze and receipts do not imply this. |
+| Market Evidence | Prospective external reality available at the decision cutoff (quotes, trades, bars, news/events, reference data) with provenance. Not IMP fills. |
+| IMP Execution Simulation | IMP's hypothetical orders, fills, positions, and P&L under Paper gates. Not market ground truth. |
+| External Simulation Comparator | A suitable independent Paper/sandbox/replay environment used as a challenger, never as ground truth. |
 
 ## Fabric and workload terms
 

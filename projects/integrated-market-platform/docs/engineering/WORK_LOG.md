@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-12 — P3/P4 docs and governance coherence for post-#29 clone
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `AGENTS.md`, `.github` |
+| **Summary** | Smallest docs/governance pass so a clone of `main` after PR #29 is coherent: copied unique provider-universe strategy from #21; corrected FTEP catalog/PROGRAM_STATUS (V1-001 `MANIFEST_FROZEN` + entitlement blocked / SIGNAL_ONLY not authorized; V1-002 `MANIFEST_FROZEN` + `SIGNAL_ONLY_AUTHORIZED` via receipt, empirical lock via receipt, 0 sessions / not `EMPIRICAL_ACTIVE`); Start-here navigation; snapshot banners; monorepo origin; repo-root AGENTS.md; DoD/PR template no longer force FULL/closure on docs PRs. |
+| **Key files** | `docs/engineering/FTEP_CAMPAIGN_CATALOG.md`, `docs/platform/PROGRAM_STATUS.md`, `docs/README.md`, `AGENTS.md` (repo root + IMP), `docs/platform/GLOSSARY.md`, `.github/pull_request_template.md`, `docs/providers/PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md` |
+| **Tests** | `python tools/check_docs_links.py` (intended); required GitHub `validate` on PR #29 after push |
+| **Related** | PR **#29**; unique file from PR **#21** (left open) |
+| **Notes** | Did not merge split PRs #22–#28; did not commit `p3-plan-cli-check.json` |
+
 ## 2026-09-12 — FTEP-V1-002 wave 20 empirical lock receipt gate
 
 | Field | Value |

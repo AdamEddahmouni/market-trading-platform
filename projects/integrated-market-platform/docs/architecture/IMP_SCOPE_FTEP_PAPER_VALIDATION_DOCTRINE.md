@@ -195,6 +195,8 @@ Progression is not automatic. Fixture success proves software behavior under the
 
 ## 11. Current-state interpretation
 
+> **Snapshot banner:** The bullets below interpret `main@a4858103` (2026-09-11 planning closure). They are **not** current campaign status. Current campaign truth: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) and [FTEP_CAMPAIGN_CATALOG.md](../engineering/FTEP_CAMPAIGN_CATALOG.md).
+
 As of `main@a4858103baa3531051791a632ed36a9339fd6414`:
 
 - the governed Paper forward-testing bridge exists;

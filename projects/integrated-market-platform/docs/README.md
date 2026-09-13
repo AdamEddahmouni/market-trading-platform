@@ -34,14 +34,17 @@ When documents disagree, resolve in this order (highest first):
 | Topic | Document |
 |-------|----------|
 | What IMP is | [README.md](../README.md) |
-| Current status & roadmap | [PROJECT_STATUS.md](PROJECT_STATUS.md) |
-| Pre-implementation planning closure | [PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md](platform/PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md) |
+| Current program status | [PROGRAM_STATUS.md](platform/PROGRAM_STATUS.md) |
 | FTEP / Paper-validation doctrine | [IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md](architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md) |
+| Developer operating system | [DEVELOPER_OPERATING_SYSTEM.md](engineering/DEVELOPER_OPERATING_SYSTEM.md) |
+| Project status snapshot (2026-09-11 @ `a4858103`, **not** current campaign state) | [PROJECT_STATUS.md](PROJECT_STATUS.md) |
+| Pre-implementation planning closure | [PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md](platform/PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md) |
 | FTEP activation gates | [FTEP_ACTIVATION_GATES.md](engineering/FTEP_ACTIVATION_GATES.md) |
-| FTEP-V1 activation blockers (current) | [FTEP_V1_ACTIVATION_BLOCKER_REPORT.md](engineering/FTEP_V1_ACTIVATION_BLOCKER_REPORT.md) |
+| FTEP campaign catalog | [FTEP_CAMPAIGN_CATALOG.md](engineering/FTEP_CAMPAIGN_CATALOG.md) |
+| FTEP-V1 activation blockers | [FTEP_V1_ACTIVATION_BLOCKER_REPORT.md](engineering/FTEP_V1_ACTIVATION_BLOCKER_REPORT.md) |
+| Provider universe / audit / integration strategy | [PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md](providers/PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md) |
 | Developer setup | [LOCAL_DEVELOPMENT.md](engineering/LOCAL_DEVELOPMENT.md) |
 | System architecture | [ARCHITECTURE.md](architecture/ARCHITECTURE.md) |
-| Developer operating system | [DEVELOPER_OPERATING_SYSTEM.md](engineering/DEVELOPER_OPERATING_SYSTEM.md) |
 | Demo / Paper / Live safety | [MODE_AUTHORITY.md](architecture/MODE_AUTHORITY.md) |
 | Engineering rules | [ENGINEERING_HANDBOOK.md](engineering/ENGINEERING_HANDBOOK.md) |
 | AI agent workflow | [AI_AGENT_GUIDE.md](engineering/AI_AGENT_GUIDE.md) |
@@ -139,6 +142,7 @@ When documents disagree, resolve in this order (highest first):
 |-------|----------|
 | Runbook | [operations/RUNBOOK.md](operations/RUNBOOK.md) |
 | Provider docs | [providers/](providers/) |
+| Provider universe / audit / integration strategy | [PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md](providers/PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md) |
 | Provider integration foundation | [MULTI_SOURCE_DATA_FOUNDATION.md](providers/MULTI_SOURCE_DATA_FOUNDATION.md) |
 | NewsAPI / Finnhub | [NEWS_SOURCES.md](providers/NEWS_SOURCES.md) |
 | Cursor Cloud | [CURSOR_CLOUD_ENVIRONMENT.md](engineering/CURSOR_CLOUD_ENVIRONMENT.md) |
