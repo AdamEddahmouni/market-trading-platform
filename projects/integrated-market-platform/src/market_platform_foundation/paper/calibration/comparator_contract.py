@@ -4,12 +4,23 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Mapping
+from urllib.parse import urlparse
 
 COMPARATOR_NOT_MARKET_TRUTH_STATEMENT = (
     "External Paper, sandbox, replay, or vendor simulator output is a comparator "
     "challenge model with its own limitations. It is never market ground truth and "
     "must not silently override IMP simulation results."
 )
+
+_LIVE_HOSTS = frozenset(
+    {
+        "api.tradier.com",
+        "stream.tradier.com",
+        "api.alpaca.markets",
+    }
+)
+_LIVE_ENVIRONMENTS = frozenset({"live", "production", "prod"})
+_LIVE_ACCOUNT_MODES = frozenset({"live", "production", "real", "funded"})
 
 
 class ComparatorContractError(ValueError):
@@ -37,6 +48,25 @@ class ExternalPaperComparatorBinding:
         }
 
 
+def _environment_host(environment: str) -> str:
+    text = environment.strip()
+    if "://" in text:
+        return (urlparse(text).hostname or "").lower()
+    return ""
+
+
+def assert_paper_only_environment(*, environment: str, account_mode: str) -> None:
+    """Fail closed on Live/production hosts or ambiguous live account modes."""
+    host = _environment_host(environment)
+    if host in _LIVE_HOSTS:
+        raise ComparatorContractError("COMPARATOR_LIVE_HOST_FORBIDDEN")
+    env_key = environment.strip().lower()
+    if env_key in _LIVE_ENVIRONMENTS:
+        raise ComparatorContractError("COMPARATOR_LIVE_HOST_FORBIDDEN")
+    if account_mode.strip().lower() in _LIVE_ACCOUNT_MODES:
+        raise ComparatorContractError("COMPARATOR_LIVE_ACCOUNT_FORBIDDEN")
+
+
 def validate_comparator_binding(payload: Mapping[str, Any]) -> ExternalPaperComparatorBinding:
     comparator_id = str(payload.get("comparator_id") or "").strip()
     environment = str(payload.get("environment") or "").strip()
@@ -45,6 +75,7 @@ def validate_comparator_binding(payload: Mapping[str, Any]) -> ExternalPaperComp
         raise ComparatorContractError("COMPARATOR_BINDING_INCOMPLETE")
     if bool(payload.get("is_market_truth")):
         raise ComparatorContractError("COMPARATOR_MARKET_TRUTH_FORBIDDEN")
+    assert_paper_only_environment(environment=environment, account_mode=account_mode)
     limitations_raw = payload.get("limitations") or []
     if not isinstance(limitations_raw, list) or not limitations_raw:
         raise ComparatorContractError("COMPARATOR_LIMITATIONS_REQUIRED")
@@ -65,5 +96,6 @@ __all__ = [
     "COMPARATOR_NOT_MARKET_TRUTH_STATEMENT",
     "ComparatorContractError",
     "ExternalPaperComparatorBinding",
+    "assert_paper_only_environment",
     "validate_comparator_binding",
 ]

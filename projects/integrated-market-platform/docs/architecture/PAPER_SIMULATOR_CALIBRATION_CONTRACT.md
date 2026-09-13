@@ -31,6 +31,25 @@ Each calibration record must bind at least:
 
 Do not generalize calibration from one materially different asset/order/data regime to another without evidence.
 
+**Hard rule:** US-equity Paper/sandbox (including Tradier sandbox) does **not**
+validate ES futures fill realism. Cross-asset reuse of a calibration pass is
+prohibited.
+
+## Current harness (not a pass)
+
+IMP Paper submit uses `BarConservativeSimulator`
+(`phase7.bar-conservative/1.1.0`) as a synchronous one-shot. LIMIT does not
+constrain fill price; STOP is unimplemented; book-aware L2 is not on the
+Paper path. Pairing joins IMP vs comparator on
+`forward_test:{forward_test_id}` (and an explicit pairing table when echo fails).
+Observations persist on PD-09 schema v6 `forward_test_observations` — no
+second campaign DB.
+
+The campaign runner classifies `COMPARATOR_NOT_CONFIGURED` or
+`WAITING_FOR_MARKET` when credentials are absent or the session is closed. It
+does not fabricate empirical fills, does not declare `CALIBRATED`, and does
+not flip FTEP to `EMPIRICAL_ACTIVE`. Numeric gates remain `UNSET/BLOCKING`.
+
 ## Required comparison metrics
 
 Use every metric material to the campaign claim:

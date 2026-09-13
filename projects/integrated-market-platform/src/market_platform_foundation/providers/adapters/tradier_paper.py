@@ -2,10 +2,12 @@
 
 Fixture-first: CI exercises the adapter deterministically against recorded
 sandbox responses (``tests/fixtures/providers/tradier_sandbox_*.json``,
-mirroring the ``IMP_LIVE_FIXTURE_FEED`` philosophy). A live HTTP transport is
-intentionally **not** implemented until the sandbox wire contract is verified
-and recorded in ``docs/providers/TRADIER_PAPER.md``; without a fixture record
-the adapter fails closed (``BROKER_TRANSPORT_NOT_IMPLEMENTED``).
+mirroring the ``IMP_LIVE_FIXTURE_FEED`` philosophy). Live HTTPS is allowed
+only against ``https://sandbox.tradier.com/v1`` when
+``IMP_TRADIER_SANDBOX_HTTP=1`` and a sandbox token/account are configured.
+Production ``api.tradier.com`` remains hard-blocked. Without a fixture
+record and without the sandbox-HTTP opt-in the adapter fails closed
+(``BROKER_TRANSPORT_NOT_IMPLEMENTED``).
 
 Every broker event is serialized through
 ``broker_execution.build_broker_execution_envelope``, which reuses
@@ -30,11 +32,22 @@ from ..broker_execution import (
     new_ingest_run_id,
 )
 from ..contracts import EXECUTION_DISABLED, ProviderResult, SymbolMapping
+from .tradier_sandbox_http import (
+    TRADIER_SANDBOX_ENDPOINT,
+    TradierHttpTransport,
+    TradierSandboxHttpError,
+    TradierSandboxHttpTransport,
+    tradier_http_cancel_order,
+    tradier_http_fetch_account,
+    tradier_http_fetch_order,
+    tradier_http_fetch_positions,
+    tradier_http_place_order,
+)
 
-TRADIER_SANDBOX_ENDPOINT = "https://sandbox.tradier.com/v1"
 TRADIER_PROVIDER_ID = "tradier.paper"
 TRADIER_CAPABILITY = "paper_execution"
 TRADIER_ENTITLEMENT_SANDBOX = "TRADIER_PAPER_SANDBOX"
+TRADIER_SANDBOX_HTTP_GATE = "IMP_TRADIER_SANDBOX_HTTP"
 
 _FIXTURE_GLOB = "tradier_sandbox_*.json"
 _DEFAULT_FIXTURE_DIR = Path(__file__).resolve().parents[4] / "tests" / "fixtures" / "providers"
@@ -105,12 +118,14 @@ class TradierPaperExecutionProvider:
         symbol_map: dict[str, str] | None = None,
         replay_store: TradierReplayStore | None = None,
         enable_identity_symbol: bool = True,
+        http_transport: TradierHttpTransport | None = None,
     ) -> None:
         self._env = dict(os.environ if env is None else env)
         self._symbol_map = dict(symbol_map or {})
         self._replay = replay_store if replay_store is not None else TradierReplayStore()
         self._enable_identity_symbol = enable_identity_symbol
         self._entitlement = TRADIER_ENTITLEMENT_SANDBOX
+        self._http = http_transport
 
     # -- gates -----------------------------------------------------------------
 
@@ -125,6 +140,53 @@ class TradierPaperExecutionProvider:
         if endpoint != TRADIER_SANDBOX_ENDPOINT:
             return ProviderResult(status="blocked", reason_code="TRADIER_PRODUCTION_ENDPOINT_BLOCKED", provider_id=self.provider_id, capability=self.capability)
         return None
+
+    def _sandbox_http_enabled(self) -> bool:
+        return self._env.get(TRADIER_SANDBOX_HTTP_GATE) == "1"
+
+    def _account_id(self) -> str:
+        return str(self._env.get("IMP_TRADIER_ACCOUNT_ID") or "").strip()
+
+    def _token(self) -> str:
+        return str(self._env.get("IMP_TRADIER_TOKEN") or "").strip()
+
+    def _endpoint(self) -> str:
+        return self._env.get("IMP_TRADIER_ENDPOINT") or TRADIER_SANDBOX_ENDPOINT
+
+    def _http_transport(self) -> TradierHttpTransport:
+        if self._http is not None:
+            return self._http
+        return TradierSandboxHttpTransport()
+
+    def _wire_or_unavailable(
+        self,
+        *,
+        record: dict[str, Any] | None,
+        wire_fn,
+    ) -> dict[str, Any] | ProviderResult:
+        if record is not None:
+            return record
+        if not self._sandbox_http_enabled():
+            return self._unavailable("BROKER_TRANSPORT_NOT_IMPLEMENTED")
+        account_id = self._account_id()
+        if not account_id:
+            return self._unavailable("TRADIER_ACCOUNT_ID_NOT_CONFIGURED")
+        try:
+            wired = wire_fn()
+        except TradierSandboxHttpError as exc:
+            code = str(exc)
+            if code.startswith("TRADIER_"):
+                status = "blocked" if "PRODUCTION" in code or "ALPACA" in code else "unavailable"
+                return ProviderResult(
+                    status=status,
+                    reason_code=code.split(":", 1)[0],
+                    provider_id=self.provider_id,
+                    capability=self.capability,
+                )
+            return self._unavailable(code.split(":", 1)[0] if ":" in code else code)
+        if wired is None:
+            return self._unavailable("BROKER_TRANSPORT_NOT_IMPLEMENTED")
+        return wired
 
     # -- symbol resolution (P4-MAP-001) ----------------------------------------
 
@@ -193,8 +255,20 @@ class TradierPaperExecutionProvider:
             client_order_id=request.client_order_id,
             idempotency_key=request.idempotency_key,
         )
-        if record is None:
-            return self._unavailable("BROKER_TRANSPORT_NOT_IMPLEMENTED")
+        resolved = self._wire_or_unavailable(
+            record=record,
+            wire_fn=lambda: tradier_http_place_order(
+                self._http_transport(),
+                endpoint=self._endpoint(),
+                token=self._token(),
+                account_id=self._account_id(),
+                request=request,
+                instrument_id=mapping.instrument_id,
+            ),
+        )
+        if isinstance(resolved, ProviderResult):
+            return resolved
+        record = resolved
 
         status = str(record.get("status", ""))
         if is_ambiguous_broker_status(status):
@@ -232,8 +306,19 @@ class TradierPaperExecutionProvider:
         if gated is not None:
             return gated
         _, record = self._replay.dispatch("fetch_order", broker_order_id=broker_order_id)
-        if record is None:
-            return self._unavailable("BROKER_TRANSPORT_NOT_IMPLEMENTED")
+        resolved = self._wire_or_unavailable(
+            record=record,
+            wire_fn=lambda: tradier_http_fetch_order(
+                self._http_transport(),
+                endpoint=self._endpoint(),
+                token=self._token(),
+                account_id=self._account_id(),
+                broker_order_id=broker_order_id,
+            ),
+        )
+        if isinstance(resolved, ProviderResult):
+            return resolved
+        record = resolved
         try:
             status_event = ensure_broker_fill_ids(BrokerOrderStatusEvent.from_record(record))
         except (KeyError, ValueError, TypeError):
@@ -262,8 +347,19 @@ class TradierPaperExecutionProvider:
             client_order_id=client_order_id,
             broker_order_id=broker_order_id,
         )
-        if record is None:
-            return self._unavailable("BROKER_TRANSPORT_NOT_IMPLEMENTED")
+        resolved = self._wire_or_unavailable(
+            record=record,
+            wire_fn=lambda: tradier_http_cancel_order(
+                self._http_transport(),
+                endpoint=self._endpoint(),
+                token=self._token(),
+                account_id=self._account_id(),
+                broker_order_id=str(broker_order_id or ""),
+            ),
+        )
+        if isinstance(resolved, ProviderResult):
+            return resolved
+        record = resolved
         status = str(record.get("status", ""))
         if is_ambiguous_broker_status(status):
             return ProviderResult(status="ambiguous", reason_code="BROKER_AMBIGUOUS_OUTCOME", provider_id=self.provider_id, capability=self.capability)
@@ -293,8 +389,18 @@ class TradierPaperExecutionProvider:
         if gated is not None:
             return gated
         _, record = self._replay.dispatch("fetch_account")
-        if record is None:
-            return self._unavailable("BROKER_TRANSPORT_NOT_IMPLEMENTED")
+        resolved = self._wire_or_unavailable(
+            record=record,
+            wire_fn=lambda: tradier_http_fetch_account(
+                self._http_transport(),
+                endpoint=self._endpoint(),
+                token=self._token(),
+                account_id=self._account_id(),
+            ),
+        )
+        if isinstance(resolved, ProviderResult):
+            return resolved
+        record = resolved
         return ProviderResult(status="ok", events=({**record, "provider_id": self.provider_id, "capability": self.capability},), provider_id=self.provider_id, capability=self.capability)
 
     def fetch_positions(self) -> ProviderResult:
@@ -302,8 +408,18 @@ class TradierPaperExecutionProvider:
         if gated is not None:
             return gated
         _, record = self._replay.dispatch("fetch_positions")
-        if record is None:
-            return self._unavailable("BROKER_TRANSPORT_NOT_IMPLEMENTED")
+        resolved = self._wire_or_unavailable(
+            record=record,
+            wire_fn=lambda: tradier_http_fetch_positions(
+                self._http_transport(),
+                endpoint=self._endpoint(),
+                token=self._token(),
+                account_id=self._account_id(),
+            ),
+        )
+        if isinstance(resolved, ProviderResult):
+            return resolved
+        record = resolved
         return ProviderResult(status="ok", events=({**record, "provider_id": self.provider_id, "capability": self.capability},), provider_id=self.provider_id, capability=self.capability)
 
 
@@ -313,6 +429,7 @@ def make_tradier_paper_provider(
     symbol_map: dict[str, str] | None = None,
     replay_store: TradierReplayStore | None = None,
     enable_identity_symbol: bool = True,
+    http_transport: TradierHttpTransport | None = None,
 ) -> TradierPaperExecutionProvider:
     """Factory: build the Tradier paper adapter with optional explicit config."""
     return TradierPaperExecutionProvider(
@@ -320,6 +437,7 @@ def make_tradier_paper_provider(
         symbol_map=symbol_map,
         replay_store=replay_store,
         enable_identity_symbol=enable_identity_symbol,
+        http_transport=http_transport,
     )
 
 
@@ -328,6 +446,7 @@ __all__ = [
     "TRADIER_ENTITLEMENT_SANDBOX",
     "TRADIER_PROVIDER_ID",
     "TRADIER_SANDBOX_ENDPOINT",
+    "TRADIER_SANDBOX_HTTP_GATE",
     "TradierPaperExecutionProvider",
     "TradierReplayStore",
     "make_tradier_paper_provider",
