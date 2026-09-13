@@ -9,6 +9,7 @@ from typing import Any
 from .contracts import (
     DisclosureProvider,
     DistributionForecastProvider,
+    EquityContextProvider,
     EquityQuoteProvider,
     FuturesBarsProvider,
     FuturesChainProvider,
@@ -24,6 +25,7 @@ from .stubs import (
     DisabledPaperExecutionProvider,
     UnconfiguredDisclosureProvider,
     UnconfiguredDistributionForecastProvider,
+    UnconfiguredEquityContextProvider,
     UnconfiguredEquityQuoteProvider,
     UnconfiguredFuturesBarsProvider,
     UnconfiguredFuturesChainProvider,
@@ -43,6 +45,7 @@ class ProviderComposition:
         default_factory=UnconfiguredReferenceDataProvider
     )
     equity_quote: EquityQuoteProvider = field(default_factory=UnconfiguredEquityQuoteProvider)
+    equity_context: EquityContextProvider = field(default_factory=UnconfiguredEquityContextProvider)
     option_chain: OptionChainProvider = field(default_factory=UnconfiguredOptionChainProvider)
     futures_chain: FuturesChainProvider = field(default_factory=UnconfiguredFuturesChainProvider)
     futures_positioning: FuturesPositioningProvider = field(
@@ -68,6 +71,7 @@ class ProviderComposition:
             self.disclosure,
             self.reference_data,
             self.equity_quote,
+            self.equity_context,
             self.option_chain,
             self.futures_chain,
             self.futures_positioning,
@@ -190,11 +194,32 @@ def with_moomoo_paper_execution(
     return composition
 
 
+def with_finviz_elite_context(
+    composition: ProviderComposition,
+    *,
+    env: dict[str, str] | None = None,
+    provider: Any | None = None,
+) -> ProviderComposition:
+    """Inject the Finviz Elite context overlay. Not L1 and not a comparator.
+
+    Additive: default composition keeps the unconfigured stub. Discovery
+    always returns the Finviz adapter identity, fail-closed when the Elite
+    token is absent. Does not enable Live, FTEP, or paid HTTP.
+    """
+    from .finviz_context_discovery import discover_finviz_context_stack
+
+    if provider is None:
+        provider, _ = discover_finviz_context_stack(env=env)
+    composition.equity_context = provider
+    return composition
+
+
 __all__ = [
     "ProviderComposition",
     "configure_fixture_provider_composition",
     "configure_provider_composition",
     "get_provider_composition",
     "with_broker_paper_execution",
+    "with_finviz_elite_context",
     "with_moomoo_paper_execution",
 ]

@@ -40,7 +40,8 @@ requests continue through the governed stdlib client.
 | Variable | Purpose |
 |---|---|
 | `FINVIZ_API_KEY` (or `FINVIZ_AUTH_TOKEN`) | Elite export token |
-| `IMP_FINVIZ_LIVE=1` | Opt-in live probe |
+| `FINVIZ_API_TOKEN` / `FINVIZ_ELITE_TOKEN` / `IMP_FINVIZ_ELITE_TOKEN` / `IMP_FINVIZ_TOKEN` | Additional env aliases recognized by the fail-closed context overlay (presence only; never logged) |
+| `IMP_FINVIZ_LIVE=1` | Opt-in live probe / paid Elite HTTP |
 | `IMP_FINVIZ_CAPTURE_DIR` | Prospective capture root |
 | `IMP_FINVIZ_EVIDENCE_DIR` | Evidence output override |
 | `IMP_FINVIZ_SECRET_DIR` | Token/login file store (default `.private/`) |
@@ -49,6 +50,25 @@ requests continue through the governed stdlib client.
 
 See [Finviz capability matrix](../research/finviz-elite-capability-matrix.md)
 for the verified API surfaces, rate limits, and fixture-verified fields.
+
+## Canonical pipeline overlay
+
+Finviz Elite is a **context overlay** in the provider composition
+(`equity_context`), not a quote/tick hop and not the Paper comparator.
+
+- `providers/finviz_context_discovery.py` always returns
+  `finviz.elite.context`. Token absence is `NOT_CONFIGURED`. A present token
+  without `IMP_FINVIZ_LIVE` (and without an injected test transport) is
+  `CONFIGURED_BLOCKED` / `LIVE_DISABLED`. Classification is never
+  `REAL_TIME`, never Yahoo-as-Finviz, and never ES.
+- `FinvizEliteContextProvider.fetch_context` is screening/news only. Paid
+  Elite HTTP requires the existing live gate; CI uses injected clients.
+- `with_finviz_elite_context()` injects the adapter into
+  `ProviderComposition.equity_context`. The default composition slot remains
+  the unconfigured stub.
+
+This overlay does not activate Live, start FTEP, or declare
+`EMPIRICAL_ACTIVE`.
 
 ## Security
 

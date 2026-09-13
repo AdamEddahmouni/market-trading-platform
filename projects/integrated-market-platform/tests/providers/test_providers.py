@@ -54,6 +54,7 @@ class ProviderContractTests(unittest.TestCase):
             "disclosure": composition.disclosure.fetch_disclosures("BIYA"),
             "reference_data": composition.reference_data.resolve_symbol("BIYA"),
             "equity_quote": composition.equity_quote.fetch_quote("BIYA"),
+            "equity_context": composition.equity_context.fetch_context("BIYA"),
             "option_chain": composition.option_chain.fetch_chain("BIYA"),
             "futures_chain": composition.futures_chain.fetch_chain("ES"),
             "futures_positioning": composition.futures_positioning.fetch_positioning("ES"),

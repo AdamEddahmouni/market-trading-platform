@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Finviz Elite fail-closed context overlay
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers` / Finviz |
+| **Summary** | Wired Finviz Elite as a fail-closed **context** overlay (`equity_context`): screening/news only, never L1, never ES, never Yahoo-as-Finviz, never Paper comparator. Token absence classifies `NOT_CONFIGURED`; token present without `IMP_FINVIZ_LIVE` is `CONFIGURED_BLOCKED` / `LIVE_DISABLED`. Paid Elite HTTP is not called in CI. Does not declare FTEP `EMPIRICAL_ACTIVE` or enable Live. |
+| **Key files** | `src/market_platform_foundation/providers/adapters/finviz_elite_context.py` (created); `src/market_platform_foundation/providers/finviz_context_discovery.py` (created); `src/market_platform_foundation/providers/{contracts,stubs,composition}.py`; `tests/providers/test_finviz_elite_context.py` (created); `tests/providers/test_providers.py`; `docs/providers/FINVIZ_ELITE.md` |
+| **Tests** | `PYTHONPATH=src python3 -m unittest tests.providers.test_finviz_elite_context tests.providers.test_providers.ProviderContractTests` — **15 passed**. |
+| **Related** | [FINVIZ_ELITE.md](../providers/FINVIZ_ELITE.md); provider-activation DoD item 2 remains PARTIAL (OpenD down, Elite token absent) |
+| **Notes** | Does not edit hop CLI files owned by PR #42. Item 2 stays PARTIAL until OpenD is up and an Elite token is present on an operator machine. |
+
 ## 2026-09-13 — Path A scan caller merged (PR #39)
 
 | Field | Value |

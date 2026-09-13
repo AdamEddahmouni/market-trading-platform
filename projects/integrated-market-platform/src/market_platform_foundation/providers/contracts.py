@@ -63,6 +63,16 @@ class EquityQuoteProvider(Protocol):
         ...
 
 
+class EquityContextProvider(Protocol):
+    """US-equity screening/news overlay. Not L1, not a Paper comparator."""
+
+    provider_id: str
+    capability: str
+
+    def fetch_context(self, symbol: str) -> ProviderResult:
+        ...
+
+
 class OptionChainProvider(Protocol):
     """Options chain snapshots (Tradier-class capability)."""
 
@@ -192,6 +202,7 @@ class PaperExecutionProvider(Protocol):
 __all__ = [
     "DisclosureProvider",
     "DistributionForecastProvider",
+    "EquityContextProvider",
     "EquityQuoteProvider",
     "EXECUTION_DISABLED",
     "FuturesBarsProvider",
