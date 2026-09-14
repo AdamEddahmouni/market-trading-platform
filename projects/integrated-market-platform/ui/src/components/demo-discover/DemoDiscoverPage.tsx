@@ -1,4 +1,5 @@
 import { DiscoverObservability } from "../discover-shared/DiscoverObservability";
+import { OpportunityRadarDensePanel } from "../imp-product/OpportunityRadarDensePanel";
 import { OpportunityRadarIntro } from "../imp-product/OpportunityRadarIntro";
 
 export function DemoDiscoverPage() {
@@ -24,6 +25,8 @@ export function DemoDiscoverPage() {
         <strong>Demo is exploration only.</strong>
         <p>Discovery refresh and promote actions are unavailable. Switch to Paper mode to run the full discovery desk.</p>
       </aside>
+
+      <OpportunityRadarDensePanel readOnly />
 
       <DiscoverObservability />
     </section>

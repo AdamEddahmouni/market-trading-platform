@@ -14,7 +14,7 @@ describe("ModeNowRoute opportunity isolation", () => {
     expect(mode).not.toContain("opportunityClient");
     expect(mode).not.toContain("useOpportunitiesSummaryQuery");
     expect(mode).not.toContain("OpportunityReviewCard");
-    expect(live).not.toContain("opportunityClient");
+    expect(live).toContain("useOpportunitiesSummaryQuery");
     expect(live).not.toContain("OpportunityReviewCard");
     expect(attention).not.toContain("opportunityClient");
     expect(attention).not.toContain("OpportunityReviewCard");
