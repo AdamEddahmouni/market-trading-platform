@@ -20,6 +20,10 @@ body,
   grid-template-rows: auto auto auto 1fr;
 }
 
+.app-shell.imp-product-embedded .app-body {
+  grid-template-columns: 1fr auto;
+}
+
 .app-body {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -180,8 +184,8 @@ body,
 }
 
 .nav-link.active {
-  color: var(--text-primary);
-  background: var(--surface-2);
+  color: var(--accent-primary-bright);
+  background: rgba(255, 106, 0, 0.1);
 }
 
 .gated-badge {

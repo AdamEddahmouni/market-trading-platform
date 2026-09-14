@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { DiscoverObservability } from "../discover-shared/DiscoverObservability";
+import { OpportunityRadarIntro } from "../imp-product/OpportunityRadarIntro";
 
 export function LiveDiscoverPage() {
   return (
@@ -7,7 +8,7 @@ export function LiveDiscoverPage() {
       <header className="live-discover-header">
         <div>
           <span className="live-eyebrow">Live · Read-only observational</span>
-          <h1>Discover</h1>
+          <h1>Opportunity Radar</h1>
           <p>
             Monitor the mixed live screener without discovery mutations or workspace promotion. Use the live
             canary for operational safety review.
@@ -15,6 +16,10 @@ export function LiveDiscoverPage() {
         </div>
         <Link to="/live-canary">Open live canary</Link>
       </header>
+
+      <OpportunityRadarIntro>
+        Live monitor only — no discovery mutations or workspace promotion.
+      </OpportunityRadarIntro>
 
       <aside className="panel mode-restriction-note" role="note">
         <strong>Live is read-only here.</strong>

@@ -1,15 +1,15 @@
 .mode-session {
-  --mode-bg: #07111f;
-  --mode-panel: #0b1b2b;
-  --mode-panel-raised: #10243a;
-  --mode-line: #294158;
-  --mode-text: #f4f7fb;
-  --mode-secondary: #b9c8d8;
-  --mode-muted: #7f94a9;
-  --mode-demo: #91a5b9;
+  --mode-bg: #0a0c10;
+  --mode-panel: #12161c;
+  --mode-panel-raised: #1a1f28;
+  --mode-line: #2c323c;
+  --mode-text: #f0f2f6;
+  --mode-secondary: #b4bcc8;
+  --mode-muted: #7a8494;
+  --mode-demo: #9aa8b8;
   --mode-paper: #56c596;
-  --mode-live: #e0a94b;
-  --mode-focus: #8cc8ff;
+  --mode-live: #ff8a00;
+  --mode-focus: #ff8a00;
   position: relative;
   isolation: isolate;
   min-height: 100vh;
@@ -44,7 +44,7 @@
   width: 54rem;
   height: 54rem;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(224, 169, 75, 0.3), rgba(224, 169, 75, 0.08) 38%, transparent 69%);
+  background: radial-gradient(circle, rgba(255, 106, 0, 0.28), rgba(255, 106, 0, 0.06) 38%, transparent 69%);
   filter: blur(10px);
 }
 

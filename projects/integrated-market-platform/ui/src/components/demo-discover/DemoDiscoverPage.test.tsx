@@ -74,7 +74,7 @@ describe("DemoDiscoverPage", () => {
   it("renders read-only demo discover without refresh or promote mutations", async () => {
     renderPage();
 
-    expect(await screen.findByRole("heading", { name: "Discover" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Opportunity Radar" })).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
     expect(screen.getByText("AAPL")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Refresh all screens" })).not.toBeInTheDocument();

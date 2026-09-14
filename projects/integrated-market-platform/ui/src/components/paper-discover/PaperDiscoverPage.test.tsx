@@ -139,7 +139,7 @@ describe("PaperDiscoverPage mixed live mode", () => {
   it("defaults to the ranked mixed queue with explicit market-data status", async () => {
     renderPage();
 
-    expect(await screen.findByRole("heading", { name: "Discover" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Opportunity Radar" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Mixed live screener" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Mixed Live" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("EXEC NONE · INVESTIGATE only")).toBeInTheDocument();

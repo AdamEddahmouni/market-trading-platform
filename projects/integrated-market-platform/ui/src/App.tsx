@@ -14,7 +14,7 @@ import { ContextBar } from "./components/ContextBar";
 import { ExplanationDrawer } from "./components/ExplanationDrawer";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { LazyBoundary } from "./components/LazyBoundary";
-import { NavShell } from "./components/NavShell";
+import { ImpProductChrome } from "./components/imp-product/ImpProductChrome";
 import { ModeDiscoverRoute } from "./components/ModeDiscoverRoute";
 import { ModeExploreRoute } from "./components/ModeExploreRoute";
 import { ModeNowRoute } from "./components/ModeNowRoute";
@@ -51,6 +51,7 @@ import "./styles/live-discover.css";
 import "./styles/workspace-module-mode.css";
 import "./styles/shared-ui.css";
 import "./styles/operator-control.css";
+import "./styles/imp-product.css";
 
 const AssistantHistoryPage = lazy(() =>
   import("./components/AssistantHistoryPage").then((module) => ({
@@ -312,59 +313,67 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
     onSwitchMode();
   };
 
+  const nowRoute = (
+    <ModeNowRoute
+      mode={mode}
+      paperActionsPermitted={operatorPaperSubmitPermitted}
+      items={attentionQuery.data?.items ?? []}
+      tierSummary={attentionQuery.data?.tier_summary}
+      attentionState={attentionState}
+      replayState={replayState}
+      cursorIndex={cursorIndex}
+      eventCount={replaySessionQuery.data?.event_count}
+      scrubState={scrubState}
+      onScrub={(index) => {
+        void scrub(index);
+      }}
+      onOpenTimeline={() => navigate(`/workspace/${encodeURIComponent(ADMITTED_REPLAY_INSTRUMENT_ID)}`)}
+      onWhy={openExplain}
+      onExplain={openExplain}
+      onInspect={openInspect}
+      onOpenWorkspace={(item) => {
+        if (item.instrument_id) navigate(`/workspace/${encodeURIComponent(item.instrument_id)}`);
+      }}
+    />
+  );
+
   return (
-    <div className="app-shell">
-      <ModeEnvironmentBar
-        mode={mode}
-        context={contextQuery.data?.as_of_context}
-        contextState={contextState}
-        onSwitchMode={returnToLauncher}
-      />
-      <NavShell mode={mode} />
-      {contextQuery.data ? (
-        <ContextBar context={contextQuery.data} />
-      ) : (
-        <div className="context-bar context-bar-unavailable" aria-hidden="true">
-          Backend context is not available.
-        </div>
-      )}
-      <StartupRecoveryBanner />
+    <ImpProductChrome
+      mode={mode}
+      onSwitchMode={returnToLauncher}
+      topStack={
+        <>
+          <ModeEnvironmentBar
+            mode={mode}
+            context={contextQuery.data?.as_of_context}
+            contextState={contextState}
+            onSwitchMode={returnToLauncher}
+          />
+          {contextQuery.data ? (
+            <ContextBar context={contextQuery.data} />
+          ) : (
+            <div className="context-bar context-bar-unavailable" aria-hidden="true">
+              Backend context is not available.
+            </div>
+          )}
+          <StartupRecoveryBanner />
+        </>
+      }
+    >
+      <div className="app-shell imp-product-embedded">
       <div className="app-body">
         <main className="main-content">
           <LazyBoundary>
             <Routes>
-            <Route
-              path="/"
-              element={
-                <ModeNowRoute
-                  mode={mode}
-                  paperActionsPermitted={operatorPaperSubmitPermitted}
-                  items={attentionQuery.data?.items ?? []}
-                  tierSummary={attentionQuery.data?.tier_summary}
-                  attentionState={attentionState}
-                  replayState={replayState}
-                  cursorIndex={cursorIndex}
-                  eventCount={replaySessionQuery.data?.event_count}
-                  scrubState={scrubState}
-                  onScrub={(index) => {
-                    void scrub(index);
-                  }}
-                  onOpenTimeline={() => navigate(`/workspace/${encodeURIComponent(ADMITTED_REPLAY_INSTRUMENT_ID)}`)}
-                  onWhy={openExplain}
-                  onExplain={openExplain}
-                  onInspect={openInspect}
-                  onOpenWorkspace={(item) => {
-                    if (item.instrument_id) navigate(`/workspace/${encodeURIComponent(item.instrument_id)}`);
-                  }}
-                />
-              }
-            />
+            <Route path="/" element={nowRoute} />
+            <Route path="/signals" element={nowRoute} />
             <Route
               path="/explore"
               element={<ModeExploreRoute mode={mode} onExplain={openExplainRef} />}
             />
             <Route path="/discover" element={<ModeDiscoverRoute mode={mode} />} />
             <Route path="/workspace" element={<WorkspaceIndex />} />
+            <Route path="/lab" element={<WorkspaceIndex />} />
             <Route
               path="/workspace/:symbol"
               element={
@@ -544,7 +553,8 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
           setInspectorTab(null);
         }}
       />
-    </div>
+      </div>
+    </ImpProductChrome>
   );
 }
 

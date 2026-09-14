@@ -1,4 +1,5 @@
 import { DiscoverObservability } from "../discover-shared/DiscoverObservability";
+import { OpportunityRadarIntro } from "../imp-product/OpportunityRadarIntro";
 
 export function DemoDiscoverPage() {
   return (
@@ -6,7 +7,7 @@ export function DemoDiscoverPage() {
       <header className="demo-discover-header">
         <div>
           <span className="demo-eyebrow">Demo · Historical research</span>
-          <h1>Discover</h1>
+          <h1>Opportunity Radar</h1>
           <p>
             Inspect the mixed live screener queue without triggering discovery refreshes or workspace
             promotion. Workspace links are read-only navigation.
@@ -14,6 +15,10 @@ export function DemoDiscoverPage() {
         </div>
         <span className="demo-state-badge">Observational queue</span>
       </header>
+
+      <OpportunityRadarIntro>
+        Demo inspects the queue without discovery refresh or promotion.
+      </OpportunityRadarIntro>
 
       <aside className="panel mode-restriction-note" role="note">
         <strong>Demo is exploration only.</strong>

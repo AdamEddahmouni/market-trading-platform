@@ -45,7 +45,7 @@ describe("LiveDiscoverPage", () => {
   it("renders read-only live discover with canary link and no refresh control", async () => {
     renderPage();
 
-    expect(await screen.findByRole("heading", { name: "Discover" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Opportunity Radar" })).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/read-only/i);
     expect(screen.getByRole("link", { name: "Open live canary" })).toHaveAttribute(
       "href",
