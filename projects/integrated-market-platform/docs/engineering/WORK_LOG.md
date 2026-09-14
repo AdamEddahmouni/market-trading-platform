@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — UX-00 P2: remove orphaned ImpTopOpportunityCards
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui` |
+| **Summary** | Deleted unused `ImpTopOpportunityCards` component and its dedicated test file; pruned CSS only that component used. Overview uses `ImpOverviewPrimaryQueue`; radar dense panel keeps shared tag chip styles. |
+| **Key files** | `ui/src/components/imp-product/ImpTopOpportunityCards.tsx` (deleted), `ImpTopOpportunityCards.test.tsx` (deleted), `ui/src/styles/imp-product.css`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `cd ui && npm test` — full suite (pending on PR CI) |
+| **Related** | UX-00 forensic audit §13 P2 #4 |
+| **Notes** | Isolated dead-code removal. No hop, FTEP, PROGRAM_STATUS SHA, or opportunity API changes. |
+
 ## 2026-09-14 — Track H leftover: fail-close remaining backend error_category gaps
 
 | Field | Value |
