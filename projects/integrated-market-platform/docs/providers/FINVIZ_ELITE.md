@@ -126,9 +126,13 @@ Paper comparator.
   are never printed or committed.
 
 This overlay does not activate Live, start FTEP, or declare
-`EMPIRICAL_ACTIVE`. Item 2 (OpenD + Finviz combined empirical hop) stays
-PARTIAL until an operator machine sees both OpenD L1 and the overlay
-classifier on the same hop CLI JSON.
+`EMPIRICAL_ACTIVE`. **Provider-activation DoD item 2 is CLOSED** as of
+2026-09-14 US cash RTH: an operator hop admitted OpenD L1
+(`moomoo.opend.observational`) and this overlay (`finviz.elite.context`,
+`auto_fetch_status=FETCHED`, `LIVE_DISABLED`) on the same Path A hop JSON
+with `result.freshness.actionable=true` (`tools/hop_json_gate_check.py`
+→ `ITEM2_FLIP=yes`). Items 7 and 9 remain PARTIAL; FTEP stays
+`FTEP_EMPIRICAL_NOT_READY`.
 
 ## Security
 
