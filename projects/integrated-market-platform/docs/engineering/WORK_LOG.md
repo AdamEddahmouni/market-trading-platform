@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Grok intelligence ingest API (Lane I contracts)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `intelligence/contracts` |
+| **Summary** | Documented analysis-only Grok/agent Intelligence Ingest API with `AgentEnrichmentEvidenceV1`, forbidden mutation guards, bot role matrix, UI non-blocking timing gate, and Grok workspace config templates (no secrets, no trading authority). |
+| **Key files** | `docs/architecture/GROK_INTELLIGENCE_INGEST_API.md`, `docs/architecture/adr/0013-grok-intelligence-ingest-boundary.md`, `docs/engineering/templates/GROK_AGENT_WORKSPACE_CONFIG.md`, `intelligence/contracts/agent_ingest.py`, `intelligence/contracts/ingest_ui_timing.py`, `tests/contracts/test_grok_intelligence_ingest_contract.py` |
+| **Tests** | `python -m unittest tests.contracts.test_grok_intelligence_ingest_contract` → **7 passed** |
+| **Related** | [GROK_INTELLIGENCE_INGEST_API.md](../architecture/GROK_INTELLIGENCE_INGEST_API.md), ADR-0013 |
+| **Notes** | HTTP/persistence ingest adapters deferred; does not touch FTEP/calibration/UI runtime. |
+
 ## 2026-09-14 — Merge origin/main (1b60b5a) into PR #136 test-only branch
 
 | Field | Value |

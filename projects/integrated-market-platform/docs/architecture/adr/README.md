@@ -29,6 +29,7 @@ Use [0000-template.md](0000-template.md). Number sequentially: `0001-short-title
 | [0010](0010-news-catalyst-deterministic-foundation.md) | News catalyst deterministic foundation | Accepted |
 | [0011](0011-news-ai-intelligence-boundary.md) | News AI intelligence boundary (analysis only) | Accepted |
 | [0012](0012-news-strategy-evaluation-laboratory.md) | News strategy evaluation laboratory | Accepted |
+| [0013](0013-grok-intelligence-ingest-boundary.md) | Grok intelligence ingest boundary (analysis only) | Accepted |
 
 ## Related existing decisions
 

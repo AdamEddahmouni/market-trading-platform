@@ -69,6 +69,7 @@ When documents disagree, resolve in this order (highest first):
 | Data contracts & timestamps | [DATA_CONTRACTS.md](architecture/DATA_CONTRACTS.md) |
 | News/event foundation (deterministic) | [NEWS_EVENT_FOUNDATION.md](architecture/NEWS_EVENT_FOUNDATION.md) |
 | News AI intelligence (analysis only) | [NEWS_AI_INTELLIGENCE.md](architecture/NEWS_AI_INTELLIGENCE.md) |
+| Grok/agent intelligence ingest (analysis only) | [GROK_INTELLIGENCE_INGEST_API.md](architecture/GROK_INTELLIGENCE_INGEST_API.md) |
 | News strategy evaluation laboratory | [NEWS_STRATEGY_EVALUATION.md](architecture/NEWS_STRATEGY_EVALUATION.md) |
 | Paper forward-testing bridge | [PAPER_FORWARD_TESTING_BRIDGE.md](architecture/PAPER_FORWARD_TESTING_BRIDGE.md) |
 | Forward-test experimental protocol (preregistered) | [FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md](engineering/FORWARD_TEST_EXPERIMENTAL_PROTOCOL_V1.md) |
