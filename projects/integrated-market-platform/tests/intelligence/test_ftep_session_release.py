@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
@@ -185,6 +186,43 @@ class FtepSessionReleaseTests(unittest.TestCase):
         assert active is not None
         self.assertEqual(active.campaign_state, CampaignBindingState.ACTIVE)
 
+    def test_main_execute_account_id_only_refused(self) -> None:
+        service = self._service()
+        create_activated_session(
+            service,
+            self.campaigns_root,
+            evaluation_horizon_ns=HOUR_NS,
+            created_at_ns=T0,
+        )
+        exit_code = session_release_main(
+            ["FTEP-V1-001", "--account-id", "paper-a", "--json"],
+        )
+        self.assertEqual(exit_code, 1)
+        local = open_local_state(force=True)
+        assert local is not None
+        active = get_active_binding(local.connection, account_id="paper-a")
+        self.assertIsNotNone(active)
+        assert active is not None
+        self.assertEqual(active.campaign_state, CampaignBindingState.ACTIVE)
+
+    def test_execute_blocked_without_persistence(self) -> None:
+        prior_persist = os.environ.pop("IMP_PERSIST_STATE", None)
+        prior_state_dir = os.environ.pop("IMP_STATE_DIR", None)
+        try:
+            payload, exit_code = execute_governed_session_release(
+                ROOT,
+                "FTEP-V1-001",
+                account_id="paper-a",
+                require_frozen_manifest_fingerprint=True,
+            )
+        finally:
+            if prior_persist is not None:
+                os.environ["IMP_PERSIST_STATE"] = prior_persist
+            if prior_state_dir is not None:
+                os.environ["IMP_STATE_DIR"] = prior_state_dir
+        self.assertEqual(exit_code, 1)
+        self.assertIn("PERSISTENCE_NOT_CONFIGURED", payload["blockers"])
+
     def test_no_active_binding(self) -> None:
         payload = collect_session_release_gates(
             ROOT,
@@ -265,6 +303,51 @@ class FtepSessionReleaseTests(unittest.TestCase):
         )
         self.assertFalse(payload["would_release_binding"])
         self.assertIn("CAMPAIGN_SLUG_MISMATCH", payload["blockers"])
+
+    def test_campaign_id_mismatch_refused(self) -> None:
+        service = self._service()
+        create_activated_session(
+            service,
+            self.campaigns_root,
+            evaluation_horizon_ns=HOUR_NS,
+            created_at_ns=T0,
+        )
+        payload = collect_session_release_gates(
+            ROOT,
+            "FTEP-V1-001",
+            account_id="paper-a",
+            campaign_id="FTCAMP-not-the-active-binding",
+            require_frozen_manifest_fingerprint=True,
+            require_persistence=True,
+        )
+        self.assertFalse(payload["would_release_binding"])
+        self.assertIn("CAMPAIGN_ID_MISMATCH", payload["blockers"])
+
+    def test_imp_ftep_session_release_command_wiring(self) -> None:
+        from tools.imp import REPOSITORY_ROOT, _ftep_command, build_parser
+
+        args = build_parser().parse_args(
+            [
+                "ftep",
+                "session-release",
+                "FTEP-V1-001",
+                "--account-id",
+                "paper-a",
+                "--require-frozen-manifest-fingerprint",
+                "--dry-run",
+                "--json",
+            ]
+        )
+        with patch("tools.imp._run", return_value={"exit_code": 0}) as run:
+            exit_code = _ftep_command(REPOSITORY_ROOT, args)
+        self.assertEqual(exit_code, 0)
+        command = run.call_args.kwargs["command"]
+        self.assertTrue(any("ftep_session_release.py" in str(part) for part in command))
+        self.assertIn("--account-id", command)
+        self.assertIn("paper-a", command)
+        self.assertIn("--require-frozen-manifest-fingerprint", command)
+        self.assertIn("--dry-run", command)
+        self.assertIn("--json", command)
 
     def test_repo_empirical_manifest_path_detected(self) -> None:
         repo_manifest = ROOT / "artifacts/forward-test-campaigns/FTEP-V1-001/ACTIVATION_MANIFEST.json"
