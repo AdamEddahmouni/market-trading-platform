@@ -1,0 +1,34 @@
+{
+  "id": "0001045810-25-000011:nd:0",
+  "accessionNumber": "0001045810-25-000011",
+  "formType": "4",
+  "ticker": "NVDA",
+  "issuerCik": "0001045810",
+  "issuerName": "NVIDIA CORP",
+  "insider": {
+    "name": "Officer Example",
+    "cik": "0001234567",
+    "title": "EVP",
+    "isDirector": false,
+    "isOfficer": true,
+    "isTenPctOwner": false
+  },
+  "transactedAt": "2025-01-15",
+  "filedAt": "2025-01-17",
+  "code": "P",
+  "acquiredDisposed": "A",
+  "securityTitle": "Common Stock",
+  "shares": 2500,
+  "pricePerShare": 120.5,
+  "sharesOwnedAfter": 12500,
+  "ownership": "direct",
+  "isDerivative": false,
+  "provenance": {
+    "source": "edgar",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000011/xslF345X05/form4.xml",
+    "retrievedAt": "2026-08-24T12:00:00.000Z",
+    "parser": "form-ownership-xml@1",
+    "confidence": 1,
+    "needsReview": false
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "id": "0000789019-25-000050:d:1",
+  "accessionNumber": "0000789019-25-000050",
+  "formType": "4",
+  "ticker": "MSFT",
+  "issuerCik": "0000789019",
+  "issuerName": "MICROSOFT CORP",
+  "insider": {
+    "name": "Ten Percent Owner Example",
+    "cik": "0001111111",
+    "title": null,
+    "isDirector": false,
+    "isOfficer": false,
+    "isTenPctOwner": true
+  },
+  "transactedAt": "2025-02-10",
+  "filedAt": "2025-02-12",
+  "code": "S",
+  "acquiredDisposed": "D",
+  "securityTitle": "Employee Stock Option (right to buy)",
+  "shares": 500,
+  "pricePerShare": 0,
+  "sharesOwnedAfter": null,
+  "ownership": "direct",
+  "isDerivative": true,
+  "provenance": {
+    "source": "edgar",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/789019/000078901925000050/xslF345X05/form4.xml",
+    "retrievedAt": "2026-08-24T12:00:00.000Z",
+    "parser": "form-ownership-xml@1",
+    "confidence": 1,
+    "needsReview": false
+  }
+}

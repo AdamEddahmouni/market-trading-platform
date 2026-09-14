@@ -47,6 +47,13 @@ second campaign DB.
 
 The campaign runner classifies `COMPARATOR_NOT_CONFIGURED` or
 `WAITING_FOR_MARKET` when credentials are absent or the session is closed.
+
+**BAR_OHLCV_1M dry-run (Item 9):** `tools/providers/run_bar_ohlcv_comparator_experiment.py`
+loads lawful 1m bars (`ADMITTED-SHORTSQ-BIYA-BARS-001` fixture or loopback OpenD
+`K_1M` via quote context), reports signal/bar timestamps and provenance, and
+dry-runs `BarConservativeSimulator` without broker orders or `CALIBRATED`.
+Missing or mistimed bars classify `EXPERIMENT_CONTRACT_MISMATCH` (including
+`SIM_NO_POST_SIGNAL_BAR` when `available_time` is not strictly after signal time).
 Alpaca Paper (`https://paper-api.alpaca.markets`, stdlib urllib, no SDK import)
 is the no-fee HTTPS comparator; missing keys stay `COMPARATOR_NOT_CONFIGURED`
 with `orders_placed=false` and `fabricated_fills=false`. Live

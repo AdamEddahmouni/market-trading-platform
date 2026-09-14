@@ -1,0 +1,34 @@
+{
+  "id": "0001318605-25-000010:nd:2",
+  "accessionNumber": "0001318605-25-000010",
+  "formType": "4",
+  "ticker": null,
+  "issuerCik": "0001318605",
+  "issuerName": "Tesla, Inc.",
+  "insider": {
+    "name": "Officer Without Ticker Row",
+    "cik": "0002222222",
+    "title": "CFO",
+    "isDirector": false,
+    "isOfficer": true,
+    "isTenPctOwner": false
+  },
+  "transactedAt": "2025-03-01",
+  "filedAt": "2025-03-03",
+  "code": "F",
+  "acquiredDisposed": "D",
+  "securityTitle": "Common Stock",
+  "shares": 100,
+  "pricePerShare": null,
+  "sharesOwnedAfter": 5000,
+  "ownership": "direct",
+  "isDerivative": false,
+  "provenance": {
+    "source": "edgar",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1318605/000131860525000010/xslF345X05/form4.xml",
+    "retrievedAt": "2026-08-24T12:00:00.000Z",
+    "parser": "form-ownership-xml@1",
+    "confidence": 1,
+    "needsReview": false
+  }
+}

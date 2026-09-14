@@ -30,6 +30,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Force campaign attention fixture even when a governed session is active",
     )
     parser.add_argument(
+        "--live-ingress",
+        action="store_true",
+        help=(
+            "During active governed RTH sessions, ingest Finviz Elite news prospectively "
+            "(requires IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS=1 and IMP_FINVIZ_LIVE)"
+        ),
+    )
+    parser.add_argument(
         "--input",
         type=Path,
         help="Optional JSON file with attention-candidate rows",
@@ -49,6 +57,7 @@ def main(argv: list[str] | None = None) -> int:
         args.campaign_slug,
         fixture_only=args.fixture,
         input_path=args.input,
+        live_ingress=args.live_ingress,
     )
     if args.json:
         print(json.dumps(payload, indent=2, sort_keys=True))

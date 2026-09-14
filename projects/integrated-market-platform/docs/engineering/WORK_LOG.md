@@ -48,6 +48,90 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [GROK_INTELLIGENCE_INGEST_API.md](../architecture/GROK_INTELLIGENCE_INGEST_API.md), ADR-0013 |
 | **Notes** | HTTP/persistence ingest adapters deferred; does not touch FTEP/calibration/UI runtime. |
 
+## 2026-09-14 — Observation ingress router foundation (Lane F)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `intelligence`, `docs` |
+| **Summary** | Added in-process `ObservationIngressRouter` for idempotent, bounded, deterministic `EventV1` fan-out to typed consumers (store, detector stub, OE evidence, audit/replay journal, enrichment triggers) plus `dispatch_normalization_result` bridge. Documented missing capability gap in `OBSERVATION_INGRESS_ROUTER_V1.md`. Proved dispatch via existing Moomoo BUILD 03 normalization in unit tests only — not yet wired into live normalize paths. |
+| **Key files** | `src/market_platform_foundation/intelligence/observation_ingress/**`, `docs/engineering/OBSERVATION_INGRESS_ROUTER_V1.md`, `tests/intelligence/test_observation_ingress_router.py` |
+| **Tests** | `python -m unittest tests.intelligence.test_observation_ingress_router -v` |
+| **Related** | Lane F observation ingress; PR #140; BUILD 03 normalization; BUILD 07 replay |
+| **Notes** | Foundation / draft until normalize-path wiring; no broker subscribers; no FTEP/OpenD ledger edits. |
+
+## 2026-09-14 — Lane E: preview stale server codes → REVALIDATION_REQUIRED
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/paper-workspace` |
+| **Summary** | Reconciled UX-00 P2 #6 onto `reconcile/ux-preview-revalidation-20260914`: removed unreachable `STALE` presentation status; map `PREVIEW_*_STALE`, `PREVIEW_EXPIRED`, `PREVIEW_INTENT_MISMATCH`, and `PREVIEW_REQUIRED` errors to `REVALIDATION_REQUIRED` (supersedes draft PR #127). |
+| **Key files** | `ui/src/components/paper-workspace/paperPreviewPresentation.ts`, `PaperPreviewStatus.tsx`, `paperPreviewPresentation.test.ts`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `cd ui && npm run typecheck`; `npm test -- paperPreviewPresentation.test.ts PaperPreviewStatus.test.tsx` |
+| **Related** | UX-00 forensic audit §13 P2 #6; supersedes PR #127 |
+| **Notes** | No submit authority or backend risk changes. Lane J (#128/#126/#124/#123/#114/#115) untouched. Empirical: NONE. |
+
+## 2026-09-14 — Item 7 Lane D production forecast progression diagnostics
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` — diagnostics-only foundation; Item 7 **`ITEM7_PARTIAL`** (not complete) |
+| **Area** | `intelligence/production`, Item 7 Lane D |
+| **Summary** | Added fail-closed Item 7 progression reporting for lawful quote → grid → pre-existing PRODUCTION `ForecastV1` → ledger → settlement → specialist/calibration empirical floors. Emits machine-readable JSON plus a readable summary with stage vector and first failing stage. Does not mint forecasts from quotes or assert `ITEM7_COMPLETE`. |
+| **Key files** | `src/market_platform_foundation/intelligence/production/progression.py`, `tools/item7_forecast_progression_report.py`, `tests/intelligence/test_item7_production_forecast_progression.py` |
+| **Tests** | `PYTHONPATH=src python -m unittest tests.intelligence.test_item7_production_forecast_progression -v`; `python tools/imp.py validate fast` |
+| **Related** | Item 7 PARTIAL; OpenD capture → ledger bridge (read-only); Path A `path_a_forecast_store` / `path_a_forecast_producer`; draft PR #144 |
+| **Notes** | Software diagnostics only — approve-as-draft, not Item 7 closure. Independent of BBO snapshot lane. No edits to `opend_capture_ledger.py`, FTEP, or hop CLI. |
+
+## 2026-09-14 — Item 7 Lane C SNAPSHOT_BBO market-snapshot diagnostic
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `tools/moomoo`, `tests/providers`, Item 7 BBO |
+| **Summary** | Added read-only Item 7 harness that classifies vendor `get_market_snapshot` bid/ask without synthesizing from `last_price`, under distinct capability `SNAPSHOT_BBO` (not `US_EQUITY_L1`). Fixture tests cover missing/invalid spread/stale/delayed/valid BBO, temporal order, identity, and entitlement failure; live CLI probes only when US RTH and loopback OpenD are available, else honest block. Outcomes are `REAL_SNAPSHOT_BBO_VALIDATED` or `DERIVED_BBO_DESIGN_REQUIRED` only — never `ITEM7_COMPLETE`. Program Item 7 remains **PARTIAL**. |
+| **Key files** | `tools/moomoo/item7_bbo_snapshot.py`, `tools/item7_bbo_snapshot_probe.py`, `tests/providers/test_item7_bbo_snapshot.py`, `artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` |
+| **Tests** | `PYTHONPATH=src python -m unittest tests.providers.test_item7_bbo_snapshot -v` |
+| **Related** | Lane C Item 7; `docs/providers/MOOMOO_OBSERVATIONAL.md`; G5 depth remains separate derived path |
+| **Notes** | Did not touch opend_capture_ledger, FTEP, paper/calibration, UI, or L1 adapter semantics. No orders. Classified top-level probe CLI in POST_BUILD35 closure inventory (fixes CI `validation` suite ERROR on unclassified path). |
+
+## 2026-09-14 — Item 9 BAR_OHLCV_1M comparator input reconcile (PR #134)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, `providers/moomoo`, `tools` |
+| **Summary** | Reconciled `work/item9-bar-ohlcv-1m` onto `origin/main` `0e2d731a` for PR #134. Lawful `BAR_OHLCV_1M` comparator dry-run harness loads admitted BIYA fixture or injected OpenD 1m klines with `available_time` at bar end, preserves signal/bar/provenance timing, and dry-runs `BarConservativeSimulator` without broker orders or `CALIBRATED`. Expanded fail-closed tests for malformed, stale, empty, same-time, and first post-signal fill paths. |
+| **Key files** | `src/market_platform_foundation/paper/calibration/bar_ohlcv_sources.py`; `src/market_platform_foundation/paper/calibration/bar_ohlcv_experiment.py`; `tools/providers/run_bar_ohlcv_comparator_experiment.py`; `tools/moomoo/opend_quote_transport.py`; `tests/platform/test_bar_ohlcv_comparator_experiment.py`; `docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py validate fast`; `python tools/imp.py test focused test_bar_ohlcv_comparator_experiment` |
+| **Related** | [PAPER_SIMULATOR_CALIBRATION_CONTRACT.md](../architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md); PR #134; Item 9 PARTIAL — `COMPARATOR_INPUT_READY` / `RTH_PROOF_PENDING` |
+| **Notes** | Alpaca comparator leg unchanged (GET-only). Live RTH OpenD 1m proof remains operator-dependent; no merge. |
+
+## 2026-09-14 — Lane H Market Trackers SEC 3/4/5 adapter prep
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `market_trackers/sec_insider`, `docs/providers`, fixtures |
+| **Summary** | Preparation-only adapter for LuxAlgo Market Trackers `insider-transactions`: pinned upstream commits/licenses, schema characterization, external source receipt, PIT clocks (no transaction-date public knowledge), EventV1 map prep with XA-01 fail-closed ticker resolution, deterministic public-record evidence for OE, candidate feature catalog, and golden fixtures — independent of Observation Ingress Router (Lane F). |
+| **Key files** | `src/market_platform_foundation/market_trackers/**`, `docs/providers/MARKET_TRACKERS_SEC_INSIDER.md`, `docs/engineering/specs/MARKET_TRACKERS_SEC_INSIDER_ADAPTER_PREP.md`, `tests/fixtures/market_trackers/sec_insider/**`, `tests/market_trackers/test_sec_insider_adapter_prep.py`, `tools/validation_manifest.json` |
+| **Tests** | `PYTHONPATH=src python -m unittest tests.market_trackers.test_sec_insider_adapter_prep` → **9 passed** (post review fixes) |
+| **Related** | PR #143; Lane H takeover; `docs/providers/SEC_EDGAR.md`; `PROVIDER_NORMALIZATION_V1.md` |
+| **Notes** | Live Market Trackers fetch NOT_EXECUTED; no execution dependency; Market Trackers replaceable over EDGAR primary. |
+
+## 2026-09-14 — FTEP-V1-002 prospective Finviz catalyst ingress (PR #133)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, FTEP-V1-002 SIGNAL_ONLY |
+| **Summary** | Opt-in Finviz Elite prospective ingress for read-only `watch-catalysts`: frozen-manifest catalyst pipeline, explicit `attention_data_kind` (FIXTURE vs LIVE_PROSPECTIVE), published vs retrieved timestamps on summaries, session correlation unchanged, no locks or manifest mutation. Gates: `IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS=1` + `IMP_FINVIZ_LIVE` + configured token (env or credential store via `configured_token`); CLI `--live-ingress` only. `--live-ingress` fails closed in FIXTURE_SMOKE (`LIVE_INGRESS_UNAVAILABLE`); failed/zero-row live ingress does not substitute fixture rows. |
+| **Key files** | `ftep_prospective_catalyst_ingress.py`, `ftep_catalyst_watch.py`, `opportunity/read_model.py`, `tools/ftep_watch_catalysts.py`, `tests/intelligence/test_ftep_prospective_catalyst_ingress.py`, `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md` |
+| **Tests** | `tools/imp.py test focused` on `test_ftep_prospective_catalyst_ingress` + `test_ftep_catalyst_watch`; `validate fast` (rebased on `origin/main` `0e2d731`) |
+| **Related** | PR #133; `SIGNAL_ONLY_LAUNCH_PREP.md` |
+| **Notes** | SIGNAL_ONLY — not `FTEP_EMPIRICAL_ACTIVE`. Owner RTH live proof still pending operator gates + governed sessions. |
+
 ## 2026-09-14 — Merge origin/main (1b60b5a) into PR #136 test-only branch
 
 | Field | Value |

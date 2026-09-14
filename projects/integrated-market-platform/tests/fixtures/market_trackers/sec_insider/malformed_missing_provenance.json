@@ -1,0 +1,26 @@
+{
+  "id": "broken-row:nd:0",
+  "accessionNumber": "0000000000-25-000001",
+  "formType": "4",
+  "ticker": "ZZZZ",
+  "issuerCik": "0000000000",
+  "issuerName": "Example Corp",
+  "insider": {
+    "name": "Broken",
+    "cik": "0000000001",
+    "title": null,
+    "isDirector": false,
+    "isOfficer": true,
+    "isTenPctOwner": false
+  },
+  "transactedAt": "2025-01-01",
+  "filedAt": "2025-01-02",
+  "code": "P",
+  "acquiredDisposed": "A",
+  "securityTitle": "Common Stock",
+  "shares": 1,
+  "pricePerShare": 1,
+  "sharesOwnedAfter": 1,
+  "ownership": "direct",
+  "isDerivative": false
+}
