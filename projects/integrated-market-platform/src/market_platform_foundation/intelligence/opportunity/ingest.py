@@ -8,6 +8,12 @@ from ..contracts.opportunity import OpportunityV1, opportunity_v1_from_dict
 from ..persistence.codec import PERSISTENCE_METADATA_FIELDS
 from .clustering import OpportunityClusteringError, derive_thesis_identity
 from .data_quality import project_opportunity_data_quality
+from .family_lookup import (
+    STATUS_DENIED,
+    STATUS_UNAVAILABLE,
+    ReviewFamilyResolution,
+    resolve_review_family,
+)
 from .freshness import (
     OpportunityFreshnessPolicy,
     fail_closed_for_actionable,
@@ -41,6 +47,7 @@ def _summary_from_opportunity(
     assessment_action: AssessmentAction | None,
     source: str,
     data_quality: Mapping[str, Any] | None = None,
+    family_resolution: ReviewFamilyResolution | None = None,
 ) -> OpportunitySummary:
     instruments = opportunity.scope.instrument_ids
     instrument_id = instruments[0] if instruments else ""
@@ -49,23 +56,37 @@ def _summary_from_opportunity(
     evaluation = quality.get("freshness_evaluation") or {}
     if fail_closed_for_actionable(evaluation):
         lifecycle = OperatorLifecycleState.INELIGIBLE
+    resolution = family_resolution or resolve_review_family(opportunity.metadata)
+    if resolution.status == STATUS_DENIED:
+        lifecycle = OperatorLifecycleState.INELIGIBLE
     eligible = lifecycle == OperatorLifecycleState.ELIGIBLE
     unavailable = _unavailable()
     if opportunity.expected_net_edge is None:
         unavailable += ("expected_net_edge",)
     if opportunity.expected_return is None:
         unavailable += ("expected_return",)
+    if resolution.status == STATUS_UNAVAILABLE:
+        unavailable += ("strategy_family",)
     metadata: dict[str, Any] = {"adapter": "opportunity_v1_repo"}
     try:
         metadata["thesis_identity"] = derive_thesis_identity(opportunity)
     except OpportunityClusteringError:
         metadata["thesis_identity_status"] = "UNAVAILABLE"
         metadata["thesis_identity_reason"] = "UNDERLYING_THESIS_ID_INVALID"
+    metadata["family_admission_status"] = resolution.status
+    if resolution.reason_code:
+        metadata["family_admission_reason"] = resolution.reason_code
+    if resolution.admission_kind:
+        metadata["family_admission_kind"] = resolution.admission_kind
+    if resolution.definition_hash:
+        metadata["family_definition_hash"] = resolution.definition_hash
     return OpportunitySummary(
         summary_id=opportunity.opportunity_id,
         instrument_id=instrument_id,
         headline=opportunity.reason_summary or opportunity.opportunity_id,
         opportunity_id=opportunity.opportunity_id,
+        strategy_family=resolution.family_id,
+        strategy_version=resolution.strategy_version,
         side=opportunity.side.value if opportunity.side is not None else None,
         valid_until_ns=opportunity.valid_until_ns,
         evidence_class="CANDIDATE",
@@ -143,6 +164,7 @@ def assemble_opportunity_review_rows(
     session_state: str | None = None,
     book_validity: str | None = None,
     freshness_policy: OpportunityFreshnessPolicy | None = None,
+    strategy_family_registry: Any | None = None,
 ) -> tuple[OpportunitySummary, ...]:
     collected: list[OpportunitySummary] = []
     minted = list(opportunities)
@@ -179,6 +201,10 @@ def assemble_opportunity_review_rows(
                 assessment_action=action,
                 source=source,
                 data_quality=quality,
+                family_resolution=resolve_review_family(
+                    opportunity.metadata,
+                    registry=strategy_family_registry,
+                ),
             )
         )
     for row in attention_rows:
