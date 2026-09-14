@@ -66,6 +66,43 @@ def _git_common_dir(git_dir: Path) -> Path:
     return (git_dir / relative).resolve()
 
 
+def git_common_dir(*, start: Path | None = None) -> Path | None:
+    """Shared git metadata directory (primary ``.git`` for linked worktrees).
+
+    Fail closed: missing or unreadable git metadata returns None. Never spawns
+    a git subprocess and never reads working-tree file contents.
+    """
+
+    git_dir = _git_dir(start)
+    if git_dir is None:
+        return None
+    return _git_common_dir(git_dir)
+
+
+def main_working_tree(*, start: Path | None = None) -> Path | None:
+    """Working tree that owns the shared git directory.
+
+    Linked worktrees store a ``commondir`` pointer into the primary ``.git``
+    directory; that directory's parent is the main checkout. Ordinary
+    single-checkout clones return the same path as the current worktree.
+    Fail closed: missing git metadata returns None.
+    """
+
+    located = _locate_git((start or Path(__file__).resolve()))
+    if located is None:
+        return None
+    worktree_root, git_dir = located
+    common = _git_common_dir(git_dir)
+    if common.name == ".git":
+        parent = common.parent
+        try:
+            if parent.is_dir():
+                return parent
+        except OSError:
+            return worktree_root
+    return worktree_root
+
+
 def repo_root(start: Path | None = None) -> Path:
     start_path = (start or Path(__file__).resolve()).resolve()
     if start_path.is_file():

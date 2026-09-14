@@ -62,7 +62,9 @@ Finviz Elite is a **context overlay** in the provider composition
   hop overlay discovery auto-fetches from existing local provider info, in
   order: canonical IMP `.private/finviz-login.json`; leftover nested
   `integrated-market-platform/.private/finviz-login.json` (`username` /
-  `password` keys); then `.private/providers.env` and short-squeeze
+  `password` keys) relative to the current worktree, the git common-dir
+  main checkout, and the parent of `.worktrees` (sibling hops do not need a
+  junction); then `.private/providers.env` and short-squeeze
   `short-squeeze-project/short-squeeze-core/.private/providers.env`
   (`FINVIZ_USERNAME` / `FINVIZ_PASSWORD` / `FINVIZ_API_KEY`). No operator
   prompt after that one-time setup. A successful fetch repairs the token
@@ -118,9 +120,10 @@ Paper comparator.
   own (`PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE` when OpenD is down).
 - Token obtained, Live gate off: `FETCHED` / `LIVE_DISABLED`
   (`CONFIGURED_BLOCKED`). Paid Elite HTTP is not invoked.
-- Operator-zero leftover nested login (`NESTED_LOGIN_FILE`) repairs into
-  canonical gitignored IMP `.private`. Secrets are never printed or
-  committed.
+- Operator-zero leftover nested login (`NESTED_LOGIN_FILE`) is found from
+  a sibling `.worktrees` hop via git common-dir / main checkout without a
+  junction, then repairs into canonical gitignored IMP `.private`. Secrets
+  are never printed or committed.
 
 This overlay does not activate Live, start FTEP, or declare
 `EMPIRICAL_ACTIVE`. Item 2 (OpenD + Finviz combined empirical hop) stays
@@ -151,12 +154,14 @@ classifier on the same hop CLI JSON.
   the original export.
 - Hop overlay discovery is operator-zero after that local provider info
   exists: it refreshes the auto-resetting Elite export token from those
-  same files — including the leftover nested IMP login JSON and
-  short-squeeze `providers.env` — with no pasted password and no extra
-  operator step. Fetch failure fail-closes the overlay (`NOT_CONFIGURED`).
-  The refreshed token is bound for overlay use only; it is not hop L1 and
-  does not replace OpenD or Yahoo. Canonical `projects/integrated-market-platform/.private`
-  may hold meta only until a successful fetch repairs the token there.
+  same files — including the leftover nested IMP login JSON (worktree,
+  git common-dir main checkout, and `.worktrees` parent) and
+  short-squeeze `providers.env` — with no pasted password, no extra
+  operator step, and no junction. Fetch failure fail-closes the overlay
+  (`NOT_CONFIGURED`). The refreshed token is bound for overlay use only;
+  it is not hop L1 and does not replace OpenD or Yahoo. Canonical
+  `projects/integrated-market-platform/.private` may hold meta only until
+  a successful fetch repairs the token there.
 - `IMP_FINVIZ_LOGIN_TRANSPORT=auto` uses `curl_cffi` with Chrome impersonation
   when that optional tool-layer package is already installed; otherwise it
   falls back to the stdlib cookie session. `urllib` forces the stdlib path.
