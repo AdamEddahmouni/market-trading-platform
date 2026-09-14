@@ -42,12 +42,20 @@ def seed_baseline_campaign(
 
 class ActivatedForwardTestCase(unittest.TestCase):
     def setUp(self) -> None:
+        from market_platform_foundation.local_state.startup import reset_local_state_for_tests
+
         self._tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        os.environ["IMP_STATE_DIR"] = self._tmp.name
         self.campaigns_root = enable_test_campaigns_root(Path(self._tmp.name))
         seed_baseline_campaign(self.campaigns_root)
         os.environ["IMP_FORWARD_TEST_EVAL_FORCE"] = "1"
+        reset_local_state_for_tests()
 
     def tearDown(self) -> None:
+        from market_platform_foundation.local_state.startup import reset_local_state_for_tests
+
+        reset_local_state_for_tests()
+        os.environ.pop("IMP_STATE_DIR", None)
         os.environ.pop("IMP_FORWARD_TEST_CAMPAIGNS_DIR", None)
         os.environ.pop("IMP_FORWARD_TEST_EVAL_FORCE", None)
         self._tmp.cleanup()

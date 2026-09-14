@@ -341,9 +341,13 @@ class ForwardTestDecisionSourceTests(ActivatedForwardTestCase):
 
 class ForwardTestApiTests(unittest.TestCase):
     def setUp(self) -> None:
+        from market_platform_foundation.local_state.startup import reset_local_state_for_tests
+
         os.environ["IMP_PAPER_EXECUTION"] = "1"
         os.environ["IMP_FORWARD_TEST_EVAL_FORCE"] = "1"
         self._activation_tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        os.environ["IMP_STATE_DIR"] = self._activation_tmp.name
+        reset_local_state_for_tests()
         self.campaigns_root = enable_test_campaigns_root(Path(self._activation_tmp.name))
         fixture_root = ROOT.parent
         self.store = ReplayStore(collection_root=fixture_root)
@@ -355,6 +359,10 @@ class ForwardTestApiTests(unittest.TestCase):
         seed_baseline_campaign(self.campaigns_root, paper_account_id=self.account_id)
 
     def tearDown(self) -> None:
+        from market_platform_foundation.local_state.startup import reset_local_state_for_tests
+
+        reset_local_state_for_tests()
+        os.environ.pop("IMP_STATE_DIR", None)
         os.environ.pop("IMP_FORWARD_TEST_CAMPAIGNS_DIR", None)
         os.environ.pop("IMP_FORWARD_TEST_EVAL_FORCE", None)
         self._activation_tmp.cleanup()

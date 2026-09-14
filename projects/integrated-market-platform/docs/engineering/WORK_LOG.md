@@ -60,6 +60,42 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | Item 7 capture→ledger bridge; hop ingest `source_record_id=str(sequence)` collision class |
 | **Notes** | Does not create ledger examples, change Path A grid/BBO, mint forecasts, or scope event identity across capture files. Identity scoping remains follow-up. |
 
+## 2026-09-14 — FTEP session-release test closure (PR #131)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/intelligence/test_ftep_session_release.py` |
+| **Summary** | Closed remaining PR #131 regression gaps: CLI `--account-id`-only execute refusal, persistence-not-configured execute block, `CAMPAIGN_ID_MISMATCH`, and `imp.py ftep session-release` command delegation wiring. |
+| **Key files** | `tests/intelligence/test_ftep_session_release.py`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python -m unittest tests.intelligence.test_ftep_session_release -v` — 14 passed |
+| **Related** | PR #131, prior entry “FTEP session-release fail-closed guards” |
+| **Notes** | No runtime behavior change; tests only. |
+
+## 2026-09-14 — FTEP session-release fail-closed guards (PR #131)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep`, `tools/ftep_session_release.py`, `tests/intelligence` |
+| **Summary** | Hardened governed `session-release` execute: requires an explicit manifest guard (`--expect-manifest-fingerprint`, `--expect-manifest-path-substring`, or `--require-frozen-manifest-fingerprint`), blocks repo `artifacts/forward-test-campaigns/` bindings without those guards, and compares `campaign_slug` to the active binding `campaign_id`. Added regression tests for dry-run immutability, `NO_ACTIVE_BINDING`, frozen-guard happy path, slug mismatch, and unguarded execute refusal. |
+| **Key files** | `tools/ftep_session_release.py`, `tests/intelligence/test_ftep_session_release.py` |
+| **Tests** | `PYTHONPATH=src .venv/Scripts/python.exe -m unittest tests.intelligence.test_ftep_session_release -v` — 10 passed |
+| **Related** | Draft PR #131 |
+| **Notes** | Rebased onto `origin/main` at `bcf7be98` when clean; execute path unchanged for operators who already pass frozen/fingerprint guards. |
+
+## 2026-09-14 — FTEP session-release CLI and persist test isolation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep`, `tools/imp.py`, `paper_forward_bridge`, `tests/intelligence` |
+| **Summary** | Added governed operator path `python tools/imp.py ftep session-release` wrapping durable `release_binding` with account/session/campaign guards, optional manifest fingerprint and path substring checks, dry-run gates, and JSONL release evidence. Stopped persistence tests from writing default `.local` when `IMP_PERSIST_STATE=1` leaks across cases by isolating `ActivatedForwardTestCase` / API forward-test tests to temp `IMP_STATE_DIR` and restoring env in FTEP session-start tests. |
+| **Key files** | `projects/integrated-market-platform/tools/ftep_session_release.py` (new); `tools/imp.py`; `tests/intelligence/test_ftep_session_release.py` (new); `tests/intelligence/forward_test_activation_support.py`; `tests/intelligence/test_paper_forward_bridge.py`; `tests/intelligence/test_ftep_session_start.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `unittest discover -s tests/intelligence -p test_ftep*.py` → **43 passed**; `tests.intelligence.test_forward_test_persistence` → **48 passed**; targeted forward-test/FTEP subset → **14 passed**; `python tools/imp.py test affected` → intelligence/runtime **passed**; validation/providers suites reported pre-existing failures on this branch snapshot |
+| **Related** | Prior handoff entry documenting leftover `fts-BDF1D132A88A3EDF` fixture binding |
+| **Notes** | No frozen manifest edits; no Paper/Live orders in tests. Operator may release the known temp-manifest binding via guarded CLI against primary `.local` state. |
+
 ## 2026-09-14 — Alpaca Paper GET-only comparator probe (live host blocked)
 
 | Field | Value |
