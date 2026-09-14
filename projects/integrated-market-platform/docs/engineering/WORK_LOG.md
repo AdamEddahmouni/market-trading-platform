@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Non-semantic coverage tests for OE, FTEP, providers, Radar, persistence, comparator
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/intelligence`, `tests/providers`, `tests/platform`, `tests/ui1`, `ui/imp-product` |
+| **Summary** | Added fail-closed/wiring tests only: OE ingest timestamps and lifecycle enum bounds; FTEP identity/provenance and V1-002 manifest immutability; provider unknown-profile and coverage-gap serialization; Radar UNREADY/Live/INELIGIBLE surfaces; persist-off and Paper ledger join; comparator binding and threshold schema. No production runtime changes. |
+| **Key files** | `tests/intelligence/test_opportunity_non_semantic_contracts.py`, `tests/intelligence/test_ftep_non_semantic_contracts.py`, `tests/providers/test_coverage_gap_fail_closed.py`, `tests/platform/test_persistence_and_comparator_contracts.py`, `tests/ui1/test_opportunity_radar_feed.py`, `ui/src/components/imp-product/OpportunityRadarDensePanel.test.tsx`, `ui/src/components/imp-product/OpportunityFeedStatusBanner.test.tsx` |
+| **Tests** | Rebased onto `origin/main` `2e022383` (post #125/#131 durable-state FTEP). Focused unittest + UI vitest on new files (see PR). |
+| **Related** | Cloud PR #118; coverage-gap audit receipt `internal/coverage-gap-audit.md` (project store); FTEP durable-state #125, session-release #131 |
+| **Notes** | Did not mutate FTEP-V1-002 artifacts, hop worktree `1381619`, Path A, G7, OpenD, Alpaca, or production runtime. Live off. Not `EMPIRICAL_ACTIVE` / not `CALIBRATED`. |
+
 ## 2026-09-14 — Classify capture ledger immutable persist conflicts
 
 | Field | Value |
