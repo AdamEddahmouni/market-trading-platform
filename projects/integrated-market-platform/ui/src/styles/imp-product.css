@@ -545,6 +545,52 @@
   max-width: 52rem;
 }
 
+.imp-discover-section-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.45rem;
+}
+
+.imp-discover-badge {
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+}
+
+.imp-discover-badge-contract {
+  border-color: rgba(255, 106, 0, 0.45);
+  color: var(--accent-primary-bright);
+  background: rgba(255, 106, 0, 0.08);
+}
+
+.imp-discover-badge-investigate {
+  border-color: rgba(140, 160, 200, 0.45);
+  color: var(--text-secondary);
+  background: rgba(140, 160, 200, 0.08);
+}
+
+.imp-discover-badge-not-contract {
+  color: var(--text-muted);
+  background: var(--surface-0);
+}
+
+.imp-discover-contract-queue {
+  border-left: 3px solid rgba(255, 106, 0, 0.55);
+  padding-left: 0.75rem;
+}
+
+.imp-discover-investigation-only {
+  border-left: 3px solid rgba(140, 160, 200, 0.45);
+  padding-left: 0.75rem;
+  background: linear-gradient(90deg, rgba(140, 160, 200, 0.06), transparent 40%);
+  border-radius: var(--radius-sm);
+}
+
 .imp-overview-primary-queue {
   margin: 0.75rem 0 1rem;
   padding: 0.85rem 1rem;

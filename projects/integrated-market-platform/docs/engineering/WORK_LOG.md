@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — UX-00 P1: Discover screener investigation-only boundary
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui` |
+| **Summary** | Clarified Opportunity Radar Discover IA: ranked queue vs mixed screener badges, copy, and visual boundary so the semi-live desk reads investigation-only, not a second contract queue. |
+| **Key files** | `ui/src/components/discover-shared/DiscoverPageSections.tsx`, `DiscoverPageSections.test.tsx`, `ui/src/styles/imp-product.css`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `cd ui && npm test -- DiscoverPageSections.test.tsx` + full suite |
+| **Related** | UX-00 forensic audit §13 P1 Discover #3 |
+| **Notes** | No `/discover` API or opportunityClient semantics changed. No hop, FTEP, Paper fills, or PROGRAM_STATUS SHA. |
+
 ## 2026-09-14 — Track H leftover: fail-close remaining backend error_category gaps
 
 | Field | Value |
