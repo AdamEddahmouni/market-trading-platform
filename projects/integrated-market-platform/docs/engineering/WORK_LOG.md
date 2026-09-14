@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — UX-00 P2 wayfinding and operator trust strip
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/imp-product`, `ui/nav`, `ui/context` |
+| **Summary** | Renamed primary nav **Workspace** (decision desk) vs **Portfolio** (orders history); **Lab** links to `/research` with `/lab` redirect. Sticky workspace lane subnav with `aria-current`. Paper **account chip** on `ContextBar`; read-only **capability strip** and **provider matrix** drawer aggregating context capabilities, operator readiness, and deep links (no new API fields). |
+| **Key files** | `NavShell.tsx`, `WorkspaceModuleNav.tsx`, `ContextBar.tsx`, `ImpCapabilityStrip.tsx`, `ImpProviderMatrixDrawer.tsx`, `App.tsx`, `layout.css`, `imp-product.css` |
+| **Tests** | `ui` vitest (nav, context, capability, workspace nav) |
+| **Related** | Project store `internal/ux-00-p2-wayfinding.md`, `docs/ux-00-followthrough.md` §12 P2 |
+| **Notes** | Board-03 chrome preserved; frozen lanes untouched. |
+
 ## 2026-09-14 — UX-00 Overview primary queue + mobile sidebar
 
 | Field | Value |

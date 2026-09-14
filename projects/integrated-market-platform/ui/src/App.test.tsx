@@ -230,6 +230,11 @@ vi.mock("./api/hooks", () => ({
     isError: !portfolioMocks.data,
     data: portfolioMocks.data,
   }),
+  useOperatorReadinessQuery: () => ({
+    isLoading: false,
+    error: null,
+    data: { status: "READY", checks: [], providers: [] },
+  }),
   usePaperForwardTestsQuery: () => ({
     isLoading: false,
     isError: false,
@@ -623,7 +628,7 @@ describe("App mode launcher integration", () => {
   }
 
   async function openWorkspaceOverview() {
-    await openNavLink(/^Orders —/i);
+    await openNavLink(/^Workspace —/i);
     expect(await screen.findByRole("heading", { name: "BIYA" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Workspace modules" })).toBeInTheDocument();
   }

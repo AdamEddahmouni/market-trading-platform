@@ -55,17 +55,17 @@ const primaryLinks: NavLinkDef[] = [
     label: "Portfolio",
     modeHint: {
       DEMO: "Read-only",
-      PAPER: "Simulation",
+      PAPER: "Orders history",
       LIVE: "Broker-observed",
     },
   },
   {
     to: "/workspace",
-    label: "Orders",
+    label: "Workspace",
     modeHint: {
-      DEMO: "Read-only",
-      PAPER: "Simulation",
-      LIVE: "Observational",
+      DEMO: "Read-only desk",
+      PAPER: "Decision desk",
+      LIVE: "Observational desk",
     },
   },
   {
@@ -78,12 +78,12 @@ const primaryLinks: NavLinkDef[] = [
     },
   },
   {
-    to: "/lab",
+    to: "/research",
     label: "Lab",
     modeHint: {
-      DEMO: "Workspace lanes",
-      PAPER: "Workspace lanes",
-      LIVE: "Observational lanes",
+      DEMO: "Model & sim labs",
+      PAPER: "Model & sim labs",
+      LIVE: "Read-only labs",
     },
   },
 ];

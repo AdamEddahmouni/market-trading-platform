@@ -112,6 +112,9 @@ export const CapabilityStateSchema = z.object({
   explanation_ref: z.string().optional(),
 });
 
+export type CapabilityState = z.infer<typeof CapabilityStateSchema>;
+export type OperatorReadiness = z.infer<typeof OperatorReadinessSchema>;
+
 export const AttentionReasonSchema = z.object({
   code: z.string(),
   label: z.string(),
