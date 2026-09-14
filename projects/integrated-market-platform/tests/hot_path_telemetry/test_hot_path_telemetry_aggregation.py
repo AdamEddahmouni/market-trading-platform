@@ -29,7 +29,7 @@ class HotPathTelemetryAggregationTests(unittest.TestCase):
         presence = report["timestamp_presence"]
         self.assertEqual(presence["source_event_at"]["missing_count"], 1)
         self.assertEqual(presence["normalized_at"]["missing_count"], 1)
-        self.assertEqual(presence["operator_surfaced_at"]["missing_count"], 1)
+        self.assertEqual(presence["operator_surfaced_at"]["present_count"], 0)
 
     def test_duplicate_quality_counter(self) -> None:
         counters = HotPathQualityCounters()

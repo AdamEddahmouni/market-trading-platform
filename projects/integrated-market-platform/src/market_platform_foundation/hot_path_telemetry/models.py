@@ -24,16 +24,14 @@ class TimestampExerciseClass(StrEnum):
 
 
 def timestamp_exercise_classes() -> dict[str, TimestampExerciseClass]:
-    """Declared measurement coverage for fixture/replay baseline (not live)."""
+    """Legacy static defaults — prefer ``derive_timestamp_exercise`` for baselines."""
     return {
-        "source_event_at": TimestampExerciseClass.MEASURED,
-        "provider_received_at": TimestampExerciseClass.MEASURED,
-        "imp_received_at": TimestampExerciseClass.MEASURED,
-        "normalized_at": TimestampExerciseClass.MEASURED,
-        "router_dispatched_at": TimestampExerciseClass.MEASURED,
-        "detected_at": TimestampExerciseClass.MEASURED,
-        "opportunity_created_at": TimestampExerciseClass.NOT_EXERCISED,
-        "operator_surfaced_at": TimestampExerciseClass.NOT_EXERCISED,
+        name: (
+            TimestampExerciseClass.NOT_EXERCISED
+            if name in {"opportunity_created_at", "operator_surfaced_at"}
+            else TimestampExerciseClass.NOT_EXERCISED
+        )
+        for name in HOT_PATH_TIMESTAMP_NAMES
     }
 
 

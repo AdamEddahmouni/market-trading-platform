@@ -8,6 +8,7 @@ from pathlib import Path
 
 from market_platform_foundation.canonical import write_canonical_json
 from market_platform_foundation.hot_path_telemetry.baseline import build_replay_latency_baseline, fixture_sha256
+from market_platform_foundation.hot_path_telemetry.exercise import validate_baseline_document
 from market_platform_foundation.rt01.workloads import fixture_path
 
 ACCEPTANCE_NAME = "HOT_PATH_TELEMETRY_BASELINE_READY"
@@ -26,15 +27,15 @@ class HotPathTelemetryBaselineAcceptanceTests(unittest.TestCase):
         self.assertEqual(body["measurement_class"], "MEASURED_FIXTURE_REPLAY")
         self.assertEqual(body["fixture_sha256"], expected_hash)
         self.assertNotEqual(body["rt01_span_count"], 0)
-        self.assertIn("p50_ns", body["latency_segments_ns"]["imp_receive_to_normalized"])
-        self.assertEqual(
-            body["timestamp_exercise"]["opportunity_created_at"],
-            "NOT_EXERCISED",
-        )
-        self.assertEqual(
-            body["timestamp_exercise"]["operator_surfaced_at"],
-            "NOT_EXERCISED",
-        )
+        validate_baseline_document(body)
+        imp_segment = body["latency_segments_ns"]["imp_receive_to_normalized"]
+        self.assertGreater(imp_segment["count"], 0)
+        self.assertIn("p50_ns", imp_segment)
+        self.assertEqual(body["timestamp_exercise"]["opportunity_created_at"], "NOT_EXERCISED")
+        self.assertEqual(body["timestamp_exercise"]["operator_surfaced_at"], "NOT_EXERCISED")
+        for name, klass in body["timestamp_exercise"].items():
+            if klass == "MEASURED":
+                self.assertGreater(body["timestamp_presence"][name]["present_count"], 0)
 
         write_canonical_json(BASELINE_PATH, body)
         acceptance = {

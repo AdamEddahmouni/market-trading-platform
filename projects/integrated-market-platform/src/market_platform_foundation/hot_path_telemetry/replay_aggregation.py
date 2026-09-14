@@ -52,8 +52,9 @@ def quality_from_replay_result(
     events: tuple[EventV1, ...] = (),
 ) -> HotPathQualityCounters:
     counters = HotPathQualityCounters(received=result.trace_summary.delivered_count)
-    if events:
-        counters = record_normalized_success(counters, count=len(events))
+    normalized_count = len(events) or result.source_event_count
+    if normalized_count:
+        counters = record_normalized_success(counters, count=normalized_count)
     for decision in result.decision_results:
         qd = decision.quality_decision
         if qd is None:
@@ -63,16 +64,25 @@ def quality_from_replay_result(
     return counters
 
 
-def aggregate_replay_outputs(
+def _iter_source_events(
     result: ReplayRunResult,
-    repository: IntelligenceRepository,
-) -> dict[str, Any]:
-    events = tuple(
-        repository.iter_events_by_availability(
+    source_repository: IntelligenceRepository,
+) -> tuple[EventV1, ...]:
+    return tuple(
+        source_repository.iter_events_by_availability(
             start_time_ns=0,
-            end_time_ns=max(result.end_time_ns, result.start_time_ns),
+            end_time_ns=max(result.end_time_ns, result.start_time_ns, 1),
         )
     )
+
+
+def aggregate_replay_outputs(
+    result: ReplayRunResult,
+    output_repository: IntelligenceRepository,
+    *,
+    source_repository: IntelligenceRepository | None = None,
+) -> dict[str, Any]:
+    events = _iter_source_events(result, source_repository or output_repository)
     event_rows = [_event_row(event) for event in events]
     presence = presence_from_event_rows(event_rows)
 
@@ -80,11 +90,11 @@ def aggregate_replay_outputs(
     routes: list[RoutingDecisionV1] = []
     for decision in result.decision_results:
         for ref in decision.detection_refs:
-            row = repository.get_detection(ref.id)
+            row = output_repository.get_detection(ref.id)
             if row is not None:
                 detections.append(row)
         for ref in decision.routing_decision_refs:
-            row = repository.get_routing_decision(ref.id)
+            row = output_repository.get_routing_decision(ref.id)
             if row is not None:
                 routes.append(row)
 

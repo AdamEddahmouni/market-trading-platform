@@ -9,7 +9,7 @@ from market_platform_foundation.rt01.enums import TraceStage, TraceStatus
 from market_platform_foundation.rt01.span import TraceSpan
 
 from .models import HOT_PATH_TIMESTAMP_NAMES
-from .stats import empty_presence, latency_summary, merge_presence
+from .stats import empty_presence, latency_summary
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,30 +20,34 @@ class TraceTimestampRow:
     normalized_at: int | None = None
 
 
-def _span_by_stage(spans: list[TraceSpan], stage: TraceStage) -> TraceSpan | None:
-    matches = [span for span in spans if span.stage == stage]
-    if not matches:
-        return None
-    return min(matches, key=lambda row: row.clocks.start_monotonic_ns)
+def rows_from_spans(spans: list[TraceSpan]) -> list[TraceTimestampRow]:
+    receive_spans = sorted(
+        [span for span in spans if span.stage == TraceStage.PROVIDER_RECEIVE],
+        key=lambda row: row.clocks.start_monotonic_ns,
+    )
+    normalize_spans = sorted(
+        [span for span in spans if span.stage == TraceStage.NORMALIZE],
+        key=lambda row: row.clocks.start_monotonic_ns,
+    )
+    rows: list[TraceTimestampRow] = []
+    for index, receive in enumerate(receive_spans):
+        normalize = normalize_spans[index] if index < len(normalize_spans) else None
+        rows.append(
+            TraceTimestampRow(
+                source_event_at=receive.provider_event_time_ns,
+                provider_received_at=receive.provider_received_time_ns,
+                imp_received_at=receive.clocks.end_monotonic_ns,
+                normalized_at=normalize.clocks.end_monotonic_ns if normalize is not None else None,
+            )
+        )
+    return rows
 
 
 def trace_timestamp_row(spans: list[TraceSpan]) -> TraceTimestampRow:
-    receive = _span_by_stage(spans, TraceStage.PROVIDER_RECEIVE)
-    normalize = _span_by_stage(spans, TraceStage.NORMALIZE)
-    source_event = receive.provider_event_time_ns if receive else None
-    provider_received = receive.provider_received_time_ns if receive else None
-    imp_received: int | None = None
-    if receive is not None:
-        imp_received = receive.clocks.end_monotonic_ns
-    normalized: int | None = None
-    if normalize is not None:
-        normalized = normalize.clocks.end_monotonic_ns
-    return TraceTimestampRow(
-        source_event_at=source_event,
-        provider_received_at=provider_received,
-        imp_received_at=imp_received,
-        normalized_at=normalized,
-    )
+    rows = rows_from_spans(spans)
+    if not rows:
+        return TraceTimestampRow()
+    return rows[0]
 
 
 def _presence_for_rows(rows: list[TraceTimestampRow]) -> dict[str, dict[str, int]]:
@@ -59,11 +63,17 @@ def _presence_for_rows(rows: list[TraceTimestampRow]) -> dict[str, dict[str, int
             value = getattr(row, attr)
             bucket = presence[name]
             if value is None:
-                presence[name] = {"present_count": bucket["present_count"], "missing_count": bucket["missing_count"] + 1}
+                presence[name] = {
+                    "present_count": bucket["present_count"],
+                    "missing_count": bucket["missing_count"] + 1,
+                }
             else:
-                presence[name] = {"present_count": bucket["present_count"] + 1, "missing_count": bucket["missing_count"]}
+                presence[name] = {
+                    "present_count": bucket["present_count"] + 1,
+                    "missing_count": bucket["missing_count"],
+                }
     for name in ("router_dispatched_at", "detected_at", "opportunity_created_at", "operator_surfaced_at"):
-        presence[name] = {"present_count": 0, "missing_count": len(rows)}
+        presence[name] = empty_presence()
     return presence
 
 
@@ -85,11 +95,7 @@ def _segment_samples(rows: list[TraceTimestampRow], left: str, right: str) -> tu
 
 
 def aggregate_rt01_spans(spans: list[TraceSpan]) -> dict[str, Any]:
-    by_trace: dict[str, list[TraceSpan]] = {}
-    for span in spans:
-        by_trace.setdefault(span.trace_id, []).append(span)
-
-    rows = [trace_timestamp_row(trace_spans) for trace_spans in by_trace.values()]
+    rows = rows_from_spans(spans)
     presence = _presence_for_rows(rows)
 
     segments: dict[str, dict[str, Any]] = {}
@@ -101,10 +107,7 @@ def aggregate_rt01_spans(spans: list[TraceSpan]) -> dict[str, Any]:
         segments[segment_id] = latency_summary(samples, missing_pair_count=missing)
 
     normalized_ok = sum(
-        1
-        for trace_spans in by_trace.values()
-        for span in trace_spans
-        if span.stage == TraceStage.NORMALIZE and span.status == TraceStatus.OK
+        1 for span in spans if span.stage == TraceStage.NORMALIZE and span.status == TraceStatus.OK
     )
 
     return {
@@ -115,4 +118,4 @@ def aggregate_rt01_spans(spans: list[TraceSpan]) -> dict[str, Any]:
     }
 
 
-__all__ = ["aggregate_rt01_spans", "trace_timestamp_row", "TraceTimestampRow"]
+__all__ = ["aggregate_rt01_spans", "rows_from_spans", "trace_timestamp_row", "TraceTimestampRow"]

@@ -13,11 +13,8 @@ from market_platform_foundation.rt01.export import export_document
 from market_platform_foundation.rt01.tracer import Tracer, configure_tracer
 from market_platform_foundation.rt01.workloads import fixture_path, run_fixture_ingest_workload
 
-from .models import (
-    HotPathQualityCounters,
-    ReplayLatencyBaselineDocument,
-    timestamp_exercise_classes,
-)
+from .exercise import derive_timestamp_exercise, validate_baseline_document
+from .models import HotPathQualityCounters, ReplayLatencyBaselineDocument
 from .quality_mapping import apply_finding_code, record_normalized_success
 from .replay_aggregation import aggregate_replay_outputs
 from .rt01_aggregation import aggregate_rt01_spans
@@ -36,7 +33,7 @@ def _merge_quality(left: HotPathQualityCounters, right: HotPathQualityCounters) 
     return HotPathQualityCounters(**merged)
 
 
-def _optional_build_09_replay() -> tuple[Any, Any] | tuple[None, None]:
+def _optional_build_09_replay() -> tuple[Any, Any, Any] | tuple[None, None, None]:
     try:
         from market_platform_foundation.intelligence.normalization import (
             IngestionMode,
@@ -60,7 +57,7 @@ def _optional_build_09_replay() -> tuple[Any, Any] | tuple[None, None]:
         from tests.intelligence.test_signal_integration import _moomoo_quote_fixture, _moomoo_trade_fixture
         from tests.intelligence.test_snapshot_fixtures import SCOPE
     except ImportError:
-        return None, None
+        return None, None, None
 
     ONE_SECOND = 1_000_000_000
     D1 = T + 4 * ONE_SECOND
@@ -128,7 +125,7 @@ def _optional_build_09_replay() -> tuple[Any, Any] | tuple[None, None]:
         output_repository=output,
         pipeline_config=config,
     )
-    return result, output
+    return result, output, source
 
 
 def build_replay_latency_baseline(
@@ -154,18 +151,17 @@ def build_replay_latency_baseline(
     if include_build_09_replay:
         replay_pair = _optional_build_09_replay()
         if replay_pair[0] is not None and replay_pair[1] is not None:
-            result, output = replay_pair
+            result, output, source = replay_pair
             replay_run_id = result.run_id
-            replay_agg = aggregate_replay_outputs(result, output)
+            replay_agg = aggregate_replay_outputs(result, output, source_repository=source)
             for key, value in replay_agg["timestamp_presence"].items():
                 presence[key] = merge_presence(presence.get(key, {"present_count": 0, "missing_count": 0}), value)
             segments.update(replay_agg["latency_segments_ns"])
             replay_counters = HotPathQualityCounters(**replay_agg["quality_counters"])
             counters = _merge_quality(counters, replay_counters)
 
-    exercise = {key: value.value for key, value in timestamp_exercise_classes().items()}
-
-    return ReplayLatencyBaselineDocument(
+    exercise = derive_timestamp_exercise(presence)
+    document = ReplayLatencyBaselineDocument(
         schema_version="hot_path_telemetry.replay_latency_baseline/1.0.0",
         artifact_type="REPLAY_LATENCY_BASELINE",
         measurement_class="MEASURED_FIXTURE_REPLAY",
@@ -183,6 +179,8 @@ def build_replay_latency_baseline(
             "data_source": "FIXTURE_REPLAY",
         },
     )
+    validate_baseline_document(document.to_dict())
+    return document
 
 
 __all__ = ["build_replay_latency_baseline", "fixture_sha256"]
