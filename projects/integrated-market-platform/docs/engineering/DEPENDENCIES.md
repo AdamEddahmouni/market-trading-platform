@@ -33,7 +33,13 @@
 
 ## Provider SDKs
 
-Moomoo SDK via separate venv (`%USERPROFILE%\moomoo-api-test\.venv`) when present — not in foundation package.
+Optional OpenD hop extra: install `moomoo-api==10.10.7008` into the **IMP**
+`.venv` (`python tools/imp.py env install-opend` or
+`python -m pip install -r tools/moomoo/requirements-opend.txt`). Path A hop then
+uses that one interpreter (`PYTHONPATH=src` only). Do not mix IMP `.venv` with
+`%USERPROFILE%\moomoo-api-test\.venv` via `PYTHONPATH`. The SDK is not a
+`market_platform_foundation` import; missing SDK stays fail-closed. Cloud
+install does not include this extra.
 
 ## Library selection rules
 

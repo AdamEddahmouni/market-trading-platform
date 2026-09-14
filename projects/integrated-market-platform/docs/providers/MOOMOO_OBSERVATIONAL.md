@@ -140,8 +140,9 @@ observational**.
   `PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE` (or
   `MOOMOO_SDK_MISSING` if loopback TCP answers but the vendor SDK is
   absent). FTEP is not `EMPIRICAL_ACTIVE`. Live stays off. A real OpenD
-  tick still requires an operator daemon **and** `moomoo-api` outside this
-  package; this increment wires the quote-only transport, it does not
+  tick still requires an operator daemon **and** `moomoo-api` in the
+  **same** IMP interpreter (`python tools/imp.py env install-opend`); this
+  increment wires the quote-only transport, it does not
   declare empirical L1.
 - `providers/composition.py` — `with_moomoo_opend_primary_quote(composition)`
   wires the `equity_quote` slot to the OpenD adapter. Additive/opt-in: the
@@ -160,12 +161,28 @@ observational**.
 
 ## SDK requirement
 
-Optional characterization environment (not the governed foundation):
+Optional extra on the IMP interpreter (not a `market_platform_foundation`
+dependency; not installed by cloud/default bootstrap):
 
-- CPython 3.11
-- `moomoo-api==10.10.7008` matching OpenD `10.10.7008`
+- CPython 3.11 IMP `.venv` (already has sklearn / intelligence BUILD deps)
+- `python tools/imp.py env install-opend` → `moomoo-api==10.10.7008` matching OpenD `10.10.7008`
 
-Known working venv: `C:\Users\adame\moomoo-api-test\.venv` (outside this repository).
+`import moomoo` must resolve to the vendor package (`OpenQuoteContext`). The
+local `tools/moomoo` directory is never the SDK. Missing SDK fail-closes
+(`MOOMOO_SDK_MISSING`) and never mocks a tick.
+
+After that one-time extra, Path A hop is one interpreter:
+
+```powershell
+$imp = "<IMP root>"
+Set-Location $imp
+Remove-Item Env:IMP_PERSIST_STATE,Env:IMP_STATE_DIR,Env:IMP_MOOMOO_LIVE,Env:IMP_LIVE_OBSERVATIONAL,Env:IMP_LIVE_INTERNAL_SIMULATION,Env:IMP_PAPER_EXECUTION -ErrorAction SilentlyContinue
+$env:PYTHONPATH = "src"
+& .\.venv\Scripts\python.exe tools\path_a_prospective_run.py --symbol AAPL --mode paper
+```
+
+Do not append `%USERPROFILE%\moomoo-api-test\.venv\Lib\site-packages` to
+`PYTHONPATH` and do not run the hop with that sibling venv's python.
 
 ## Security boundary
 
@@ -175,7 +192,8 @@ OpenTradeContext, paid entitlement purchases, Hermes modification, WAN exposure 
 ## How to probe
 
 ```powershell
-& C:\Users\adame\moomoo-api-test\.venv\Scripts\python.exe tools/moomoo/probe.py `
+$env:PYTHONPATH = "src"
+.\.venv\Scripts\python.exe tools/moomoo/probe.py `
   --output evidence/market_data/moomoo/capability-report.json `
   --subscribe-seconds 8
 ```
@@ -183,7 +201,8 @@ OpenTradeContext, paid entitlement purchases, Hermes modification, WAN exposure 
 Bounded recorder:
 
 ```powershell
-& C:\Users\adame\moomoo-api-test\.venv\Scripts\python.exe tools/moomoo/record.py `
+$env:PYTHONPATH = "src"
+.\.venv\Scripts\python.exe tools/moomoo/record.py `
   --codes US.AAPL --seconds 6
 ```
 

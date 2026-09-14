@@ -1,0 +1,5 @@
+# Optional OpenD hop extra — not a market_platform_foundation dependency.
+# Install into the IMP CPython 3.11 .venv (sklearn already lives there).
+# Do not mix a second venv or PYTHONPATH-append another venv's site-packages.
+# Pin matches OpenD 10.10.7008. Missing SDK stays fail-closed; never mock ticks.
+moomoo-api==10.10.7008

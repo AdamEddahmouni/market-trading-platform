@@ -21,10 +21,16 @@ OPEND_NON_LOOPBACK_BLOCKED = "OPEND_NON_LOOPBACK_BLOCKED"
 MOOMOO_LAST_PRICE_MISSING = "MOOMOO_LAST_PRICE_MISSING"
 
 
+def load_vendor_sdk() -> Any | None:
+    """Return the vendor ``moomoo`` module, or None. Never a tick."""
+
+    return _import_sdk()
+
+
 def sdk_available() -> bool:
     """True when the vendor quote SDK imports. Never treated as a tick."""
 
-    return _import_sdk() is not None
+    return load_vendor_sdk() is not None
 
 
 def fetch_snapshot(
@@ -42,7 +48,7 @@ def fetch_snapshot(
 
     if host not in _LOOPBACK_HOSTS:
         return _unavailable(OPEND_NON_LOOPBACK_BLOCKED)
-    ft = sdk if sdk is not None else _import_sdk()
+    ft = sdk if sdk is not None else load_vendor_sdk()
     if ft is None or not hasattr(ft, "OpenQuoteContext"):
         return _unavailable(MOOMOO_SDK_MISSING)
     if not hasattr(ft, "RET_OK"):
@@ -81,7 +87,7 @@ def fetch_snapshot(
                     pass
 
 
-def _is_vendor_sdk(module: Any) -> bool:
+def is_vendor_sdk(module: Any) -> bool:
     """True only for the vendor quote package, not ``tools/moomoo``."""
 
     opener = getattr(module, "OpenQuoteContext", None)
@@ -99,7 +105,7 @@ def _import_sdk() -> Any | None:
     """
 
     cached = sys.modules.get("moomoo")
-    if cached is not None and _is_vendor_sdk(cached):
+    if cached is not None and is_vendor_sdk(cached):
         return cached
 
     tools_resolved = _TOOLS_DIR.resolve()
@@ -114,7 +120,7 @@ def _import_sdk() -> Any | None:
 
     prior_path = list(sys.path)
     popped = None
-    if cached is not None and not _is_vendor_sdk(cached):
+    if cached is not None and not is_vendor_sdk(cached):
         popped = sys.modules.pop("moomoo", None)
     try:
         sys.path[:] = filtered
@@ -123,7 +129,7 @@ def _import_sdk() -> Any | None:
             import moomoo as ft  # type: ignore[import-not-found]
         except ImportError:
             return None
-        return ft if _is_vendor_sdk(ft) else None
+        return ft if is_vendor_sdk(ft) else None
     finally:
         sys.path[:] = prior_path
         if popped is not None and "moomoo" not in sys.modules:
@@ -232,5 +238,7 @@ __all__ = [
     "MOOMOO_SDK_MISSING",
     "OPEND_NON_LOOPBACK_BLOCKED",
     "fetch_snapshot",
+    "is_vendor_sdk",
+    "load_vendor_sdk",
     "sdk_available",
 ]
