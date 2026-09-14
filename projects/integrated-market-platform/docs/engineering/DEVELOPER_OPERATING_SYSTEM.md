@@ -143,8 +143,8 @@ is secondary/enabling and must not displace primary product increments.
 ## Local lane topology (historical 2026-09-10)
 
 The table below is the **2026-09-10** worktree topology. It is **not** current
-procedure. Current landing is `origin/main` (`3bb5aa2f`, merged PRs **#29** then
-**#30**).
+procedure. Current landing is `origin/main` (`5e0ec717`, merged PR **#100**).
+`PROGRAM_STATUS` Canonical SHA field cites `a03f94cb` (#95), not git HEAD.
 
 | Lane | Branch | Worktree | Purpose |
 |------|--------|----------|---------|

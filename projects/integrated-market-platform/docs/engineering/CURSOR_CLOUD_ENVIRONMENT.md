@@ -25,7 +25,7 @@ Installs:
 Default cloud validation is the `python tools/imp.py` pyramid from current
 `main` (FAST → focused/affected → domain/changed → FULL), not
 `python -m unittest discover`. `cloud-handoff/full-state-2026-08-25` is
-historical; current landing is this monorepo's `origin/main` (`3bb5aa2f`, merged #29 then #30).
+historical; current landing is this monorepo's `origin/main` (`5e0ec717`, merged #100). `PROGRAM_STATUS` Canonical SHA field cites `a03f94cb` (#95), not git HEAD.
 
 ```bash
 export PYTHONPATH=src
