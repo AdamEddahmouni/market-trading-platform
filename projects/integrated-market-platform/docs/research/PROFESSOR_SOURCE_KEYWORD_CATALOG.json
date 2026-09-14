@@ -1,17 +1,17 @@
 {
-  "schema_version": "1.0.0",
+  "schema_version": "1.1.0",
   "status": "RESEARCH_ONLY",
-  "observed_at": "2026-09-14T10:45:00Z",
-  "git_baseline": "origin/main fetched 2026-09-14; catalog branch cursor/professor-source-catalog-d1ba",
+  "observed_at": "2026-09-14T12:50:00Z",
+  "git_baseline": "origin/main 5459619a3f673441730762d447071940f3cb4814 (#111); continue PR #102 catalog 73c7475257e6782ba0246e14f0fce9dc98843d4f",
   "runtime_policy_frozen": {
     "summary": "Lane D research only. No runtime provider selection changes.",
     "constraints": [
       "Do not add paid providers or imply procurement.",
       "G7 freshness semantics unchanged.",
       "Moomoo OpenD remains primary observational L1 path when admitted.",
-      "Yahoo and similar free delayed/EOD paths remain overlay or validation reference only — not real-time L1.",
+      "Yahoo and similar free delayed/EOD paths remain overlay or validation reference only \u2014 not real-time L1.",
       "Finviz Elite remains context overlay with hop gating (IMP_FINVIZ_LIVE, fail-closed token).",
-      "Path A remains bounded Paper/Demo caller — not a news ingest daemon.",
+      "Path A remains bounded Paper/Demo caller \u2014 not a news ingest daemon.",
       "Professor-named headline wires remain CONFIGURED in SourceTrustCatalog unless separately authorized."
     ]
   },
@@ -36,14 +36,28 @@
     "artifacts/wave-a-findings/news-data-inventory.json",
     "artifacts/wave-a-findings/provider-inventory.json",
     "src/market_platform_foundation/news/sources.py",
-    "src/market_platform_foundation/news/catalysts.py"
+    "src/market_platform_foundation/news/catalysts.py",
+    "docs/providers/CBOE_PUBLIC_OPTIONS_STATISTICS.md",
+    "docs/providers/SEC_FAILS_TO_DELIVER.md",
+    "docs/providers/NOAA_NWS_CPC_WEATHER.md",
+    "docs/research/CRYPTO_FEASIBILITY_STUDY_PLAN.md",
+    "docs/architecture/NEWS_STRATEGY_EVALUATION.md"
   ],
   "sources": [
     {
       "source_id": "sec_edgar",
       "display_name": "SEC EDGAR (data.sec.gov)",
-      "asset_applicability": ["US_EQUITY", "REGULATORY", "FILINGS"],
-      "data_types": ["submissions_json", "xbrl_companyfacts", "filing_documents", "8k_10k_10q_forms"],
+      "asset_applicability": [
+        "US_EQUITY",
+        "REGULATORY",
+        "FILINGS"
+      ],
+      "data_types": [
+        "submissions_json",
+        "xbrl_companyfacts",
+        "filing_documents",
+        "8k_10k_10q_forms"
+      ],
       "access_method": "HTTPS REST + bulk ZIP; User-Agent required; ~10 req/s fair access",
       "cost_summary": "Free public read APIs",
       "free_or_student": "Free; no API key; academic use with attribution and rate compliance",
@@ -60,14 +74,29 @@
       "imp_provider_id": "sec.edgar.live",
       "news_source_catalog_id": "sec_edgar",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["docs/providers/SEC_EDGAR.md", "docs/providers/SEC_FAILS_TO_DELIVER.md"],
-      "notes": "access_in_imp_claimed false until operator runs gated live probe on their machine; adapter exists in-repo."
+      "canonical_refs": [
+        "docs/providers/SEC_EDGAR.md",
+        "docs/providers/SEC_FAILS_TO_DELIVER.md"
+      ],
+      "notes": "access_in_imp_claimed false until operator runs gated live probe on their machine; adapter exists in-repo.",
+      "inclusion_rationale": "Professor-named primary US equity disclosure source; IMP already has an EDGAR adapter.",
+      "validation_method": "IN_REPO_DOC_AND_ADAPTER",
+      "professor_named": true,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "fda",
       "display_name": "FDA (press releases, approvals database)",
-      "asset_applicability": ["US_EQUITY", "BIOTECH", "REGULATORY"],
-      "data_types": ["press_releases", "approval_actions", "safety_communications"],
+      "asset_applicability": [
+        "US_EQUITY",
+        "BIOTECH",
+        "REGULATORY"
+      ],
+      "data_types": [
+        "press_releases",
+        "approval_actions",
+        "safety_communications"
+      ],
       "access_method": "Public web/RSS; no standard low-latency API in IMP",
       "cost_summary": "Free public",
       "free_or_student": "Free",
@@ -83,14 +112,27 @@
       "imp_availability": "CONFIGURED",
       "news_source_catalog_id": "fda",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["docs/architecture/NEWS_EVENT_FOUNDATION.md"],
-      "notes": "SourceTrustCatalog CONFIGURED only; catalyst keywords fda/clinical exist in registry."
+      "canonical_refs": [
+        "docs/architecture/NEWS_EVENT_FOUNDATION.md"
+      ],
+      "notes": "SourceTrustCatalog CONFIGURED only; catalyst keywords fda/clinical exist in registry.",
+      "inclusion_rationale": "Professor-named biotech/regulatory narrative source; CONFIGURED only until ingest is authorized.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "professor_named": true,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "pr_newswire",
       "display_name": "PR Newswire (Cision)",
-      "asset_applicability": ["US_EQUITY", "CORPORATE", "MULTI_ASSET_ISSUER_NEWS"],
-      "data_types": ["issuer_press_releases", "corporate_actions_narrative"],
+      "asset_applicability": [
+        "US_EQUITY",
+        "CORPORATE",
+        "MULTI_ASSET_ISSUER_NEWS"
+      ],
+      "data_types": [
+        "issuer_press_releases",
+        "corporate_actions_narrative"
+      ],
       "access_method": "Commercial feed/API or licensed redistribution; public site not IMP ingest",
       "cost_summary": "Enterprise licensing; not $0 incremental",
       "free_or_student": "No durable free API tier for production ingest",
@@ -106,14 +148,27 @@
       "imp_availability": "CONFIGURED",
       "news_source_catalog_id": "pr_newswire",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["src/market_platform_foundation/news/sources.py"],
-      "notes": "Fixture-only policy note in catalog entry; seven headline vendors configured_not_operational per Wave A."
+      "canonical_refs": [
+        "src/market_platform_foundation/news/sources.py"
+      ],
+      "notes": "Fixture-only policy note in catalog entry; seven headline vendors configured_not_operational per Wave A.",
+      "inclusion_rationale": "Professor-named issuer wire; CONFIGURED trust-catalog seed, not an operational adapter.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "professor_named": true,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "globe_newswire",
       "display_name": "GlobeNewswire (Intrado)",
-      "asset_applicability": ["US_EQUITY", "CORPORATE", "INTERNATIONAL_ISSUERS"],
-      "data_types": ["press_releases", "corporate_news"],
+      "asset_applicability": [
+        "US_EQUITY",
+        "CORPORATE",
+        "INTERNATIONAL_ISSUERS"
+      ],
+      "data_types": [
+        "press_releases",
+        "corporate_news"
+      ],
       "access_method": "Commercial API/feed or site",
       "cost_summary": "Commercial",
       "free_or_student": "Limited public RSS; not IMP operational",
@@ -121,7 +176,7 @@
       "timeliness": "Wire-class when licensed",
       "timestamp_quality": "Release metadata on wire",
       "structure": "Structured feed or HTML",
-      "reliability": "Tier-1–2 issuer PR channel",
+      "reliability": "Tier-1\u20132 issuer PR channel",
       "licensing": "Redistribution restricted without license",
       "historical_availability": "Vendor archives",
       "pit_suitability": "Good with licensed timestamps + capture discipline",
@@ -129,13 +184,25 @@
       "imp_availability": "CONFIGURED",
       "news_source_catalog_id": "globe_newswire",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["artifacts/wave-a-findings/news-data-inventory.json"]
+      "canonical_refs": [
+        "artifacts/wave-a-findings/news-data-inventory.json"
+      ],
+      "inclusion_rationale": "Professor-named issuer wire (Global Newswire); CONFIGURED only.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "professor_named": true,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "accesswire",
       "display_name": "ACCESS Newswire / Accesswire",
-      "asset_applicability": ["US_EQUITY", "SMALL_CAP", "CORPORATE"],
-      "data_types": ["press_releases"],
+      "asset_applicability": [
+        "US_EQUITY",
+        "SMALL_CAP",
+        "CORPORATE"
+      ],
+      "data_types": [
+        "press_releases"
+      ],
       "access_method": "Commercial distribution; public pages",
       "cost_summary": "Commercial issuer distribution",
       "free_or_student": "Public read-only web; no IMP API",
@@ -143,7 +210,7 @@
       "timeliness": "Varies; often small-cap issuer channel",
       "timestamp_quality": "Site publication time",
       "structure": "HTML/RSS",
-      "reliability": "Medium–high for issuer PR; verify ticker linkage",
+      "reliability": "Medium\u2013high for issuer PR; verify ticker linkage",
       "licensing": "Terms on automated access",
       "historical_availability": "Site archive partial",
       "pit_suitability": "Moderate; requires capture not retroactive NewsAPI-style reconstruction",
@@ -151,13 +218,29 @@
       "imp_availability": "CONFIGURED",
       "news_source_catalog_id": "accesswire",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["src/market_platform_foundation/news/sources.py"]
+      "canonical_refs": [
+        "src/market_platform_foundation/news/sources.py"
+      ],
+      "inclusion_rationale": "Professor-named small-cap issuer wire; CONFIGURED only.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "professor_named": true,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "reuters",
       "display_name": "Reuters / LSEG Refinitiv news",
-      "asset_applicability": ["US_EQUITY", "MACRO", "FX", "COMMODITY", "FUTURES_CONTEXT"],
-      "data_types": ["headlines", "articles", "macro_wire"],
+      "asset_applicability": [
+        "US_EQUITY",
+        "MACRO",
+        "FX",
+        "COMMODITY",
+        "FUTURES_CONTEXT"
+      ],
+      "data_types": [
+        "headlines",
+        "articles",
+        "macro_wire"
+      ],
       "access_method": "Enterprise Refinitiv/Bloomberg-class licensing; Reuters.com not a substitute for wire",
       "cost_summary": "High enterprise",
       "free_or_student": "No production wire without institutional entitlement",
@@ -173,13 +256,26 @@
       "imp_availability": "CONFIGURED",
       "news_source_catalog_id": "reuters",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"]
+      "canonical_refs": [
+        "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"
+      ],
+      "inclusion_rationale": "Professor-named professional wire; CONFIGURED; enterprise licensing required for live ingest.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "professor_named": true,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "dow_jones",
       "display_name": "Dow Jones Newswires",
-      "asset_applicability": ["US_EQUITY", "MACRO"],
-      "data_types": ["headlines", "articles", "calendars_adjacent"],
+      "asset_applicability": [
+        "US_EQUITY",
+        "MACRO"
+      ],
+      "data_types": [
+        "headlines",
+        "articles",
+        "calendars_adjacent"
+      ],
       "access_method": "Enterprise DJ / Factiva licensing",
       "cost_summary": "Enterprise",
       "free_or_student": "Limited academic Factiva via library only; not IMP wired",
@@ -195,13 +291,28 @@
       "imp_availability": "CONFIGURED",
       "news_source_catalog_id": "dow_jones",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["artifacts/wave-a-findings/news-data-inventory.json"]
+      "canonical_refs": [
+        "artifacts/wave-a-findings/news-data-inventory.json"
+      ],
+      "inclusion_rationale": "Professor-named professional wire; CONFIGURED; enterprise/Factiva licensing required.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "professor_named": true,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "benzinga",
       "display_name": "Benzinga (News + Calendar API)",
-      "asset_applicability": ["US_EQUITY", "OPTIONS_CONTEXT", "MACRO_CALENDAR"],
-      "data_types": ["news", "earnings_calendar", "economics_calendar", "ratings"],
+      "asset_applicability": [
+        "US_EQUITY",
+        "OPTIONS_CONTEXT",
+        "MACRO_CALENDAR"
+      ],
+      "data_types": [
+        "news",
+        "earnings_calendar",
+        "economics_calendar",
+        "ratings"
+      ],
       "access_method": "Commercial REST API v2",
       "cost_summary": "Commercial tiers",
       "free_or_student": "No free production tier documented for full wire",
@@ -217,13 +328,27 @@
       "imp_availability": "CONFIGURED",
       "news_source_catalog_id": "benzinga",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md", "docs/engineering/PROVIDER_READINESS.md"]
+      "canonical_refs": [
+        "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md",
+        "docs/engineering/PROVIDER_READINESS.md"
+      ],
+      "inclusion_rationale": "Professor-named retail/pro news+calendar vendor; CONFIGURED; characterized in candidate catalog.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "professor_named": true,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "finviz_elite",
       "display_name": "Finviz Elite",
-      "asset_applicability": ["US_EQUITY"],
-      "data_types": ["screener_export", "news_csv", "options_export", "fundamentals_screener_fields"],
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "data_types": [
+        "screener_export",
+        "news_csv",
+        "options_export",
+        "fundamentals_screener_fields"
+      ],
       "access_method": "HTTPS elite.finviz.com exports; governed stdlib client; optional login recovery",
       "cost_summary": "Paid Elite subscription",
       "free_or_student": "No free Elite exports; delayed public site not equivalent",
@@ -234,20 +359,33 @@
       "reliability": "Good for discovery; NO_RETROACTIVE_FINVIZ_SCREEN_RECONSTRUCTION",
       "licensing": "Finviz ToS; not redistribution feed",
       "historical_availability": "Prospective capture only via tools/discovery/run.py",
-      "pit_suitability": "Prospective capture with manifest — not retroactive screens",
+      "pit_suitability": "Prospective capture with manifest \u2014 not retroactive screens",
       "imp_role": "OVERLAY",
       "imp_availability": "OPERATIONAL",
       "imp_provider_id": "finviz",
       "news_source_catalog_id": "finviz_elite",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["docs/providers/FINVIZ_ELITE.md", "docs/providers/NEWS_SOURCES.md"],
-      "notes": "equity_context overlay; hop gating and IMP_FINVIZ_LIVE; never execution or L1 substitute."
+      "canonical_refs": [
+        "docs/providers/FINVIZ_ELITE.md",
+        "docs/providers/NEWS_SOURCES.md"
+      ],
+      "notes": "equity_context overlay; hop gating and IMP_FINVIZ_LIVE; never execution or L1 substitute.",
+      "inclusion_rationale": "Operational overlay already gated in IMP; discovery/news export, not L1.",
+      "validation_method": "IN_REPO_DOC_AND_ADAPTER",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "newsapi",
       "display_name": "NewsAPI.org",
-      "asset_applicability": ["US_EQUITY", "MACRO_NARRATIVE"],
-      "data_types": ["aggregated_headlines", "everything_endpoint"],
+      "asset_applicability": [
+        "US_EQUITY",
+        "MACRO_NARRATIVE"
+      ],
+      "data_types": [
+        "aggregated_headlines",
+        "everything_endpoint"
+      ],
       "access_method": "REST; IMP_NEWSAPI_LIVE gate",
       "cost_summary": "Free dev tier limits; paid for production volume",
       "free_or_student": "Developer tier with constraints",
@@ -258,19 +396,34 @@
       "reliability": "Medium; secondary aggregator not wire-primary",
       "licensing": "Display and storage limits on free tier",
       "historical_availability": "Bounded window; not PIT archive",
-      "pit_suitability": "Weak for strict PIT — current-only unless prospective capture recorded",
+      "pit_suitability": "Weak for strict PIT \u2014 current-only unless prospective capture recorded",
       "imp_role": "OVERLAY",
       "imp_availability": "OPERATIONAL",
       "imp_provider_id": "newsapi",
       "news_source_catalog_id": "newsapi",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["docs/providers/NEWS_SOURCES.md"]
+      "canonical_refs": [
+        "docs/providers/NEWS_SOURCES.md"
+      ],
+      "inclusion_rationale": "Operational gated aggregator overlay; not a professor-named primary wire.",
+      "validation_method": "IN_REPO_DOC_AND_ADAPTER",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "finnhub",
       "display_name": "Finnhub",
-      "asset_applicability": ["US_EQUITY", "MACRO_CALENDAR_LITE", "CRYPTO_CANDLES_ADJACENT"],
-      "data_types": ["company_news", "earnings_calendar", "economic_calendar", "forex_crypto_candles"],
+      "asset_applicability": [
+        "US_EQUITY",
+        "MACRO_CALENDAR_LITE",
+        "CRYPTO_CANDLES_ADJACENT"
+      ],
+      "data_types": [
+        "company_news",
+        "earnings_calendar",
+        "economic_calendar",
+        "forex_crypto_candles"
+      ],
       "access_method": "REST; IMP_FINNHUB_LIVE gate",
       "cost_summary": "Free tier + paid",
       "free_or_student": "Free tier rate limits",
@@ -287,36 +440,71 @@
       "imp_provider_id": "finnhub",
       "news_source_catalog_id": "finnhub",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["docs/providers/NEWS_SOURCES.md"]
+      "canonical_refs": [
+        "docs/providers/NEWS_SOURCES.md"
+      ],
+      "inclusion_rationale": "Operational gated overlay + lite calendars already in IMP news path.",
+      "validation_method": "IN_REPO_DOC_AND_ADAPTER",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "moomoo_opend",
       "display_name": "Moomoo OpenD observational",
-      "asset_applicability": ["US_EQUITY", "OPTIONS", "FUTURES", "HK_ADJACENT"],
-      "data_types": ["quotes", "trades", "depth", "bars", "order_book_adjacent"],
+      "asset_applicability": [
+        "US_EQUITY",
+        "OPTIONS",
+        "FUTURES",
+        "HK_ADJACENT"
+      ],
+      "data_types": [
+        "quotes",
+        "trades",
+        "depth",
+        "bars",
+        "order_book_adjacent"
+      ],
       "access_method": "Local OpenD 127.0.0.1:11111 + SDK; IMP_MOOMOO_LIVE + IMP_LIVE_OBSERVATIONAL",
       "cost_summary": "Broker entitlements; data fees per exchange",
       "free_or_student": "Promotional data on some accounts; not assumed",
       "auth": "Operator session login to OpenD",
       "timeliness": "Real-time when entitled; primary IMP observational path",
       "timestamp_quality": "Exchange/broker event times via adapter envelopes",
-      "structure": "Structured SDK payloads → normalized events",
+      "structure": "Structured SDK payloads \u2192 normalized events",
       "reliability": "Primary path when daemon up; fail closed when down",
       "licensing": "Display and redistribution per broker/exchange",
       "historical_availability": "History per entitlement; captures non-admitted unless policy says otherwise",
-      "pit_suitability": "Prospective normalized captures with provenance — not retroactive Finviz-style",
+      "pit_suitability": "Prospective normalized captures with provenance \u2014 not retroactive Finviz-style",
       "imp_role": "PRIMARY_EVIDENCE",
       "imp_availability": "OPERATIONAL",
       "imp_provider_id": "moomoo.live",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["docs/providers/MOOMOO_OBSERVATIONAL.md", "docs/engineering/PROVIDER_READINESS.md"],
-      "notes": "Cloud VM typically has no OpenD; access_in_imp_claimed remains false until operator hop proves connectivity."
+      "canonical_refs": [
+        "docs/providers/MOOMOO_OBSERVATIONAL.md",
+        "docs/engineering/PROVIDER_READINESS.md"
+      ],
+      "notes": "Cloud VM typically has no OpenD; access_in_imp_claimed remains false until operator hop proves connectivity.",
+      "inclusion_rationale": "Primary observational L1 path when admitted; market-data evidence, not a headline wire.",
+      "validation_method": "IN_REPO_DOC_AND_ADAPTER",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "ibkr_observational",
       "display_name": "IBKR Client Portal observational",
-      "asset_applicability": ["US_EQUITY", "OPTIONS", "FUTURES", "FX", "BONDS"],
-      "data_types": ["delayed_quotes", "history", "scanner", "account_reads"],
+      "asset_applicability": [
+        "US_EQUITY",
+        "OPTIONS",
+        "FUTURES",
+        "FX",
+        "BONDS"
+      ],
+      "data_types": [
+        "delayed_quotes",
+        "history",
+        "scanner",
+        "account_reads"
+      ],
       "access_method": "Local CP Gateway + manual login",
       "cost_summary": "Market data subscriptions",
       "free_or_student": "Delayed bundles; paper ambiguity documented",
@@ -332,14 +520,28 @@
       "imp_availability": "OPERATIONAL",
       "imp_provider_id": "ibkr.observational",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["docs/providers/IBKR_OBSERVATIONAL.md"]
+      "canonical_refs": [
+        "docs/providers/IBKR_OBSERVATIONAL.md"
+      ],
+      "inclusion_rationale": "Secondary observational/validation broker path; delayed unless entitled.",
+      "validation_method": "IN_REPO_DOC_AND_ADAPTER",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "yahoo_finance_overlay",
       "display_name": "Yahoo Finance (pipeline/scraper adjacent)",
-      "asset_applicability": ["US_EQUITY", "ETF", "INDEX_PROXY"],
-      "data_types": ["delayed_quotes", "EOD_history", "fundamentals_adjacent"],
-      "access_method": "Unofficial endpoints via pipelines/stock_data scrapers — outside default composition",
+      "asset_applicability": [
+        "US_EQUITY",
+        "ETF",
+        "INDEX_PROXY"
+      ],
+      "data_types": [
+        "delayed_quotes",
+        "EOD_history",
+        "fundamentals_adjacent"
+      ],
+      "access_method": "Unofficial endpoints via pipelines/stock_data scrapers \u2014 outside default composition",
       "cost_summary": "Free; unstable unofficial API",
       "free_or_student": "Free",
       "auth": "None",
@@ -353,14 +555,29 @@
       "imp_role": "VALIDATION_REFERENCE",
       "imp_availability": "PIPELINE_ADJACENT",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["artifacts/wave-a-findings/provider-inventory.json"],
-      "notes": "Must not be labeled real-time L1 or Finviz/OpenD substitute per activation plan."
+      "canonical_refs": [
+        "artifacts/wave-a-findings/provider-inventory.json"
+      ],
+      "notes": "Must not be labeled real-time L1 or Finviz/OpenD substitute per activation plan.",
+      "inclusion_rationale": "Honesty row: delayed/EOD overlay only; must not be labeled real-time L1.",
+      "validation_method": "IN_REPO_DOC_CHARACTERIZATION",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "exchange_nasdaq_nyse_cboe",
       "display_name": "US exchange / operator public sources",
-      "asset_applicability": ["US_EQUITY", "OPTIONS", "LISTINGS"],
-      "data_types": ["reg_sho_threshold_lists", "halts", "public_options_statistics", "directory_files"],
+      "asset_applicability": [
+        "US_EQUITY",
+        "OPTIONS",
+        "LISTINGS"
+      ],
+      "data_types": [
+        "reg_sho_threshold_lists",
+        "halts",
+        "public_options_statistics",
+        "directory_files"
+      ],
       "access_method": "Public FTP/HTTPS (Nasdaq Trader, exchange sites)",
       "cost_summary": "Free public regulatory/ops files",
       "free_or_student": "Free",
@@ -376,13 +593,27 @@
       "imp_availability": "OPERATIONAL",
       "imp_provider_id": "nasdaq_regsho / nyse_regsho / cboe_regsho / cboe_options",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["docs/providers/US_THRESHOLD_COVERAGE.md", "docs/providers/CBOE_PUBLIC_OPTIONS_STATISTICS.md", "docs/providers/FINRA_NASDAQ_SHORT_INTELLIGENCE.md"]
+      "canonical_refs": [
+        "docs/providers/US_THRESHOLD_COVERAGE.md",
+        "docs/providers/CBOE_PUBLIC_OPTIONS_STATISTICS.md",
+        "docs/providers/FINRA_NASDAQ_SHORT_INTELLIGENCE.md"
+      ],
+      "inclusion_rationale": "Official threshold/halts/public files for US listings and some options stats.",
+      "validation_method": "IN_REPO_DOC_AND_ADAPTER",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "finra_short",
       "display_name": "FINRA short interest / OTC transparency",
-      "asset_applicability": ["US_EQUITY", "SHORT_SQUEEZE_CONTEXT"],
-      "data_types": ["short_interest", "otc_transparency"],
+      "asset_applicability": [
+        "US_EQUITY",
+        "SHORT_SQUEEZE_CONTEXT"
+      ],
+      "data_types": [
+        "short_interest",
+        "otc_transparency"
+      ],
       "access_method": "FINRA APIs with client credentials when IMP_FINRA_LIVE",
       "cost_summary": "Free API with registration",
       "free_or_student": "Free with FINRA API registration",
@@ -398,13 +629,26 @@
       "imp_availability": "OPERATIONAL",
       "imp_provider_id": "finra",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["docs/providers/FINRA_NASDAQ_SHORT_INTELLIGENCE.md"]
+      "canonical_refs": [
+        "docs/providers/FINRA_NASDAQ_SHORT_INTELLIGENCE.md"
+      ],
+      "inclusion_rationale": "Official short-interest/OTC transparency used for squeeze context, not headlines.",
+      "validation_method": "IN_REPO_DOC_AND_ADAPTER",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "issuer_ir",
       "display_name": "Issuer investor relations sites",
-      "asset_applicability": ["US_EQUITY"],
-      "data_types": ["earnings_slides", "press_releases", "SEC_links", "webcasts"],
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "data_types": [
+        "earnings_slides",
+        "press_releases",
+        "SEC_links",
+        "webcasts"
+      ],
       "access_method": "Manual/scrape/RSS per issuer; not unified IMP adapter",
       "cost_summary": "Free public",
       "free_or_student": "Free",
@@ -419,13 +663,25 @@
       "imp_role": "RESEARCH_ONLY",
       "imp_availability": "KNOWN",
       "access_in_imp_claimed": false,
-      "notes": "Complements EDGAR and wires; no SourceTrustCatalog entry today."
+      "notes": "Complements EDGAR and wires; no SourceTrustCatalog entry today.",
+      "inclusion_rationale": "Complements EDGAR/wires; no unified adapter; issuer-controlled timing.",
+      "validation_method": "IN_REPO_DOC_CHARACTERIZATION",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "fred_alfred",
       "display_name": "FRED / ALFRED (St. Louis Fed)",
-      "asset_applicability": ["MACRO", "RATES", "FUTURES_MACRO_CONTEXT"],
-      "data_types": ["economic_series", "vintage_dates", "release_calendar_adjacent"],
+      "asset_applicability": [
+        "MACRO",
+        "RATES",
+        "FUTURES_MACRO_CONTEXT"
+      ],
+      "data_types": [
+        "economic_series",
+        "vintage_dates",
+        "release_calendar_adjacent"
+      ],
       "access_method": "REST API; IMP_FRED_LIVE gate",
       "cost_summary": "Free API key",
       "free_or_student": "Free",
@@ -441,13 +697,27 @@
       "imp_availability": "OPERATIONAL",
       "imp_provider_id": "fred.macro",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["docs/providers/FRED_ALFRED.md"]
+      "canonical_refs": [
+        "docs/providers/FRED_ALFRED.md"
+      ],
+      "inclusion_rationale": "Canonical US macro vintage store already wired; PIT via ALFRED realtime windows.",
+      "validation_method": "IN_REPO_DOC_AND_ADAPTER",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "eia",
       "display_name": "EIA energy fundamentals",
-      "asset_applicability": ["COMMODITY", "FUTURES_ENERGY", "MACRO"],
-      "data_types": ["inventory_reports", "production", "prices"],
+      "asset_applicability": [
+        "COMMODITY",
+        "FUTURES_ENERGY",
+        "MACRO"
+      ],
+      "data_types": [
+        "inventory_reports",
+        "production",
+        "prices"
+      ],
       "access_method": "REST; IMP_EIA_LIVE gate",
       "cost_summary": "Free API key",
       "free_or_student": "Free",
@@ -463,13 +733,26 @@
       "imp_availability": "OPERATIONAL",
       "imp_provider_id": "eia",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["docs/providers/EIA_ENERGY_FUNDAMENTALS.md"]
+      "canonical_refs": [
+        "docs/providers/EIA_ENERGY_FUNDAMENTALS.md"
+      ],
+      "inclusion_rationale": "Official energy inventory/production catalysts already wired.",
+      "validation_method": "IN_REPO_DOC_AND_ADAPTER",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "cftc_cot",
       "display_name": "CFTC Commitments of Traders",
-      "asset_applicability": ["FUTURES", "COMMODITY", "MACRO_POSITIONING"],
-      "data_types": ["cot_reports", "disaggregated_futures"],
+      "asset_applicability": [
+        "FUTURES",
+        "COMMODITY",
+        "MACRO_POSITIONING"
+      ],
+      "data_types": [
+        "cot_reports",
+        "disaggregated_futures"
+      ],
       "access_method": "Public CFTC downloads/API paths in adapter",
       "cost_summary": "Free",
       "free_or_student": "Free",
@@ -485,13 +768,30 @@
       "imp_availability": "OPERATIONAL",
       "imp_provider_id": "cftc.public.futures_positioning",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["docs/providers/CFTC_COMMITMENTS_OF_TRADERS.md"]
+      "canonical_refs": [
+        "docs/providers/CFTC_COMMITMENTS_OF_TRADERS.md"
+      ],
+      "inclusion_rationale": "Official futures positioning; weekly PIT, not a news wire.",
+      "validation_method": "IN_REPO_DOC_AND_ADAPTER",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "macro_official_releases",
       "display_name": "US official macro releases (BLS, BEA, Census, Treasury, Fed)",
-      "asset_applicability": ["MACRO", "FUTURES", "FX"],
-      "data_types": ["cpi", "payrolls", "gdp", "pce", "fomc_statements", "auctions"],
+      "asset_applicability": [
+        "MACRO",
+        "FUTURES",
+        "FX"
+      ],
+      "data_types": [
+        "cpi",
+        "payrolls",
+        "gdp",
+        "pce",
+        "fomc_statements",
+        "auctions"
+      ],
       "access_method": "Public release sites + calendars; IMP uses FRED/EIA/Benzinga-class calendars only where wired",
       "cost_summary": "Free public",
       "free_or_student": "Free",
@@ -506,14 +806,29 @@
       "imp_role": "VALIDATION_REFERENCE",
       "imp_availability": "KNOWN",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["src/market_platform_foundation/news/catalysts.py", "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"],
-      "notes": "futures/macro_events.py provides scheduled macro risk adjacent to headlines."
+      "canonical_refs": [
+        "src/market_platform_foundation/news/catalysts.py",
+        "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"
+      ],
+      "notes": "futures/macro_events.py provides scheduled macro risk adjacent to headlines.",
+      "inclusion_rationale": "Umbrella for BLS/BEA/Fed/Treasury primary release sites; v1.1 splits named agencies.",
+      "validation_method": "IN_REPO_DOC_CHARACTERIZATION",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "economic_calendars_aggregate",
       "display_name": "Economic calendars (Finnhub / Benzinga / public web)",
-      "asset_applicability": ["MACRO", "FUTURES", "FX"],
-      "data_types": ["scheduled_events", "consensus_actual", "importance"],
+      "asset_applicability": [
+        "MACRO",
+        "FUTURES",
+        "FX"
+      ],
+      "data_types": [
+        "scheduled_events",
+        "consensus_actual",
+        "importance"
+      ],
       "access_method": "Finnhub API when gated; Benzinga commercial; Investing.com-style scrape NOT in IMP",
       "cost_summary": "Free tier to enterprise",
       "free_or_student": "Finnhub free tier partial",
@@ -521,7 +836,7 @@
       "timeliness": "Schedule forward-looking; actuals after release",
       "timestamp_quality": "Scheduled UTC times; verify timezone",
       "structure": "JSON when API",
-      "reliability": "Medium — aggregator errors happen",
+      "reliability": "Medium \u2014 aggregator errors happen",
       "licensing": "Vendor ToS",
       "historical_availability": "Limited on free tiers",
       "pit_suitability": "Schedule OK; actuals need primary release alignment",
@@ -529,13 +844,24 @@
       "imp_availability": "OPERATIONAL",
       "imp_provider_id": "finnhub",
       "access_in_imp_claimed": false,
-      "notes": "Benzinga calendar characterized in PROVIDER_CANDIDATE_CATALOG only — not operational."
+      "notes": "Benzinga calendar characterized in PROVIDER_CANDIDATE_CATALOG only \u2014 not operational.",
+      "inclusion_rationale": "Schedule overlay (Finnhub operational; Benzinga research-only).",
+      "validation_method": "IN_REPO_DOC_AND_ADAPTER",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "us_options_opra",
       "display_name": "US listed options (OPRA consolidated)",
-      "asset_applicability": ["US_OPTIONS"],
-      "data_types": ["quotes", "trades", "chains", "greeks_vendor"],
+      "asset_applicability": [
+        "US_OPTIONS"
+      ],
+      "data_types": [
+        "quotes",
+        "trades",
+        "chains",
+        "greeks_vendor"
+      ],
       "access_method": "Broker entitlements (Moomoo/IBKR) or licensed vendor (Polygon/ORATS research catalog)",
       "cost_summary": "OPRA fees + vendor markup",
       "free_or_student": "Delayed chains only via some brokers",
@@ -551,14 +877,31 @@
       "imp_availability": "OPERATIONAL",
       "imp_provider_id": "moomoo.live / options.fixture.*",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md", "artifacts/wave-a-findings/provider-inventory.json"],
-      "notes": "Fixture options providers for tests; live path entitlement-gated."
+      "canonical_refs": [
+        "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md",
+        "artifacts/wave-a-findings/provider-inventory.json"
+      ],
+      "notes": "Fixture options providers for tests; live path entitlement-gated.",
+      "inclusion_rationale": "Entitled OPRA via broker; vendor OPRA feeds remain research-only.",
+      "validation_method": "IN_REPO_DOC_AND_ADAPTER",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "us_futures_cme",
       "display_name": "US futures (CME Globex ecosystem)",
-      "asset_applicability": ["FUTURES", "ES", "COMMODITY"],
-      "data_types": ["top_of_book", "depth", "trades", "settlement", "margin"],
+      "asset_applicability": [
+        "FUTURES",
+        "ES",
+        "COMMODITY"
+      ],
+      "data_types": [
+        "top_of_book",
+        "depth",
+        "trades",
+        "settlement",
+        "margin"
+      ],
       "access_method": "OpenD/IBKR observational; MDP/Databento in research catalog only",
       "cost_summary": "Exchange + broker fees",
       "free_or_student": "Delayed/sim only without licenses",
@@ -574,14 +917,28 @@
       "imp_availability": "OPERATIONAL",
       "imp_provider_id": "moomoo.live / depth.fixture.futures*",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["docs/research/FUTURES_CURRENT_STATE_AUDIT.md", "docs/providers/MOOMOO_OBSERVATIONAL.md"]
+      "canonical_refs": [
+        "docs/research/FUTURES_CURRENT_STATE_AUDIT.md",
+        "docs/providers/MOOMOO_OBSERVATIONAL.md"
+      ],
+      "inclusion_rationale": "CME ecosystem via OpenD/fixtures; MDP vendors remain research-only.",
+      "validation_method": "IN_REPO_DOC_AND_ADAPTER",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "crypto_cex",
       "display_name": "Crypto spot/perp (CEX feeds)",
-      "asset_applicability": ["CRYPTO"],
-      "data_types": ["trades", "L2", "funding", "liquidations"],
-      "access_method": "Public WS (Coinbase etc.) or Kaiko-class vendor — research catalog",
+      "asset_applicability": [
+        "CRYPTO"
+      ],
+      "data_types": [
+        "trades",
+        "L2",
+        "funding",
+        "liquidations"
+      ],
+      "access_method": "Public WS (Coinbase etc.) or Kaiko-class vendor \u2014 research catalog",
       "cost_summary": "Free public top-of-book to enterprise L2",
       "free_or_student": "Public APIs limited",
       "auth": "API keys for trading; public for some MD",
@@ -595,14 +952,28 @@
       "imp_role": "RESEARCH_ONLY",
       "imp_availability": "NOT_IN_REPO",
       "access_in_imp_claimed": false,
-      "canonical_refs": ["docs/research/CRYPTO_FEASIBILITY_STUDY_PLAN.md", "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"],
-      "notes": "Alpaca crypto referenced in candidate catalog; in-repo Alpaca adapter NOT_AUTHORIZED."
+      "canonical_refs": [
+        "docs/research/CRYPTO_FEASIBILITY_STUDY_PLAN.md",
+        "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"
+      ],
+      "notes": "Alpaca crypto referenced in candidate catalog; in-repo Alpaca adapter NOT_AUTHORIZED.",
+      "inclusion_rationale": "Crypto remains unauthorized in default IMP composition; research characterization only.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
     },
     {
       "source_id": "news_fixture",
       "display_name": "IMP news fixture wire",
-      "asset_applicability": ["US_EQUITY", "FUTURES", "MACRO", "REGULATORY"],
-      "data_types": ["deterministic_news_events"],
+      "asset_applicability": [
+        "US_EQUITY",
+        "FUTURES",
+        "MACRO",
+        "REGULATORY"
+      ],
+      "data_types": [
+        "deterministic_news_events"
+      ],
       "access_method": "In-repo fixtures + NewsReplayHarness",
       "cost_summary": "N/A",
       "free_or_student": "N/A",
@@ -619,7 +990,766 @@
       "imp_provider_id": "news.fixture",
       "news_source_catalog_id": "fixture_wire",
       "access_in_imp_claimed": true,
-      "canonical_refs": ["tests/fixtures/news/canonical_replay_pack.json"]
+      "canonical_refs": [
+        "tests/fixtures/news/canonical_replay_pack.json"
+      ],
+      "inclusion_rationale": "Deterministic NewsArticleEvent pack for replay tests; only claimed IMP access in this catalog.",
+      "validation_method": "FIXTURE_REPLAY",
+      "professor_named": false,
+      "catalog_increment": "1.0.0"
+    },
+    {
+      "source_id": "cboe_public_options",
+      "display_name": "Cboe public options market statistics",
+      "asset_applicability": [
+        "US_OPTIONS",
+        "US_EQUITY"
+      ],
+      "data_types": [
+        "put_call_ratios",
+        "volume_share",
+        "open_interest_aggregates",
+        "intraday_call_put_buckets"
+      ],
+      "access_method": "Public Cboe HTTPS HTML/CSV/JSON; stdlib adapters in cboe_options/",
+      "cost_summary": "Free public pages; delayed market-share tables",
+      "free_or_student": "Free",
+      "auth": "None",
+      "timeliness": "Daily plus delayed (\u226520 min documented) market-share; not OPRA NBBO",
+      "timestamp_quality": "trade_date / source_data_as_of_time / available_time / retrieved_time separated in IMP docs",
+      "structure": "HTML, CSV, embedded JSON",
+      "reliability": "High for Cboe-published aggregates; publisher \u2260 execution venue",
+      "licensing": "Cboe site terms; redistribution of delayed stats per Cboe",
+      "historical_availability": "Partial archives (P/C through ~2019; historical form CHARACTERIZED)",
+      "pit_suitability": "Good when available_time is captured; historical pages retrieved today do not prove historical publication time",
+      "imp_role": "PRIMARY_EVIDENCE",
+      "imp_availability": "OPERATIONAL",
+      "imp_provider_id": "cboe_options",
+      "access_in_imp_claimed": false,
+      "canonical_refs": [
+        "docs/providers/CBOE_PUBLIC_OPTIONS_STATISTICS.md"
+      ],
+      "notes": "Split from v1.0 bundled exchange row. Aggregate stats \u2260 signed flow or consolidated OPRA.",
+      "inclusion_rationale": "PD-05 options-market equivalent of official public files; already an IMP evidence package.",
+      "validation_method": "IN_REPO_DOC_AND_ADAPTER",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "sec_fails_to_deliver",
+      "display_name": "SEC fails-to-deliver (FTD)",
+      "asset_applicability": [
+        "US_EQUITY",
+        "SHORT_SQUEEZE_CONTEXT"
+      ],
+      "data_types": [
+        "net_fail_balance_outstanding",
+        "cusip_symbol_settlement"
+      ],
+      "access_method": "SEC HTTPS ZIP archives; SEC_USER_AGENT; sec_ftd adapter",
+      "cost_summary": "Free public",
+      "free_or_student": "Free",
+      "auth": "SEC_USER_AGENT",
+      "timeliness": "Twice monthly with substantial lag",
+      "timestamp_quality": "SETTLEMENT DATE + archive publication lag; not real-time",
+      "structure": "Pipe-delimited inside ZIP",
+      "reliability": "High for settlement-fail balances; not naked-short proof",
+      "licensing": "US government public",
+      "historical_availability": "From Feb 2004; half-month archives from Jul 2009",
+      "pit_suitability": "Good with publication-lag gates; live captures not admitted as research datasets per FTD docs",
+      "imp_role": "PRIMARY_EVIDENCE",
+      "imp_availability": "OPERATIONAL",
+      "imp_provider_id": "sec.ftd",
+      "access_in_imp_claimed": false,
+      "canonical_refs": [
+        "docs/providers/SEC_FAILS_TO_DELIVER.md"
+      ],
+      "notes": "Complements FINRA SI and threshold lists; balance outstanding \u2260 daily fail volume.",
+      "inclusion_rationale": "Squeeze/market-structure primary evidence missing as its own v1.0 row.",
+      "validation_method": "IN_REPO_DOC_AND_ADAPTER",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "noaa_nws_cpc",
+      "display_name": "NOAA / NWS / CPC weather vintages",
+      "asset_applicability": [
+        "COMMODITY",
+        "FUTURES_ENERGY",
+        "NATURAL_GAS_DEMAND"
+      ],
+      "data_types": [
+        "nws_forecasts",
+        "cpc_hdd_cdd",
+        "forecast_vintages"
+      ],
+      "access_method": "Public NWS API (User-Agent) + CPC HTTPS/FTP; weather package in-repo",
+      "cost_summary": "Free public; optional NCEI CDO token deferred",
+      "free_or_student": "Free",
+      "auth": "Descriptive User-Agent; no NWS key",
+      "timeliness": "Forecast issue times; not a trading signal",
+      "timestamp_quality": "Forecast/realization available_time is the IMP clock",
+      "structure": "JSON (NWS) + CPC tabular products",
+      "reliability": "High for what-was-knowable weather; not NG demand model",
+      "licensing": "US government public",
+      "historical_availability": "CPC seven-day forecast archive OBSERVED; deeper NDFD decode DEFERRED",
+      "pit_suitability": "Designed around vintage available_time; do not use latest forecast as historical",
+      "imp_role": "PRIMARY_EVIDENCE",
+      "imp_availability": "OPERATIONAL",
+      "imp_provider_id": "weather",
+      "access_in_imp_claimed": false,
+      "canonical_refs": [
+        "docs/providers/NOAA_NWS_CPC_WEATHER.md"
+      ],
+      "inclusion_rationale": "PD-05 commodities/energy demand context; official weather vintages already in IMP.",
+      "validation_method": "IN_REPO_DOC_AND_ADAPTER",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "bls_official",
+      "display_name": "BLS official macro releases",
+      "asset_applicability": [
+        "MACRO",
+        "FUTURES",
+        "FX",
+        "RATES"
+      ],
+      "data_types": [
+        "cpi",
+        "ppi",
+        "payrolls",
+        "jolts",
+        "release_calendar"
+      ],
+      "access_method": "bls.gov release pages + calendars; FRED/ALFRED mirrors when wired",
+      "cost_summary": "Free public",
+      "free_or_student": "Free",
+      "auth": "None on primary HTML; FRED key if mirrored",
+      "timeliness": "Embargoed clock times (often 8:30 a.m. ET)",
+      "timestamp_quality": "Official scheduled and actual publication timestamps",
+      "structure": "Tables/HTML/PDF; FRED JSON mirrors",
+      "reliability": "Primary for CPI/NFP-class surprises",
+      "licensing": "US government public",
+      "historical_availability": "Deep via FRED/ALFRED vintages",
+      "pit_suitability": "Use ALFRED vintages + freeze consensus before release; calendar alone is not the print",
+      "imp_role": "VALIDATION_REFERENCE",
+      "imp_availability": "KNOWN",
+      "access_in_imp_claimed": false,
+      "canonical_refs": [
+        "docs/research/PROFESSOR_SOURCE_KEYWORD_CATALOG.json"
+      ],
+      "notes": "Split from v1.0 macro_official_releases umbrella. No dedicated BLS adapter.",
+      "inclusion_rationale": "PD-05 macro primary source named in News domain primer.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "bea_official",
+      "display_name": "BEA official national accounts",
+      "asset_applicability": [
+        "MACRO",
+        "FUTURES",
+        "EQUITY_BETA"
+      ],
+      "data_types": [
+        "gdp",
+        "pce",
+        "personal_income"
+      ],
+      "access_method": "bea.gov releases; FRED mirrors",
+      "cost_summary": "Free public",
+      "free_or_student": "Free",
+      "auth": "None on primary; FRED key if mirrored",
+      "timeliness": "Scheduled release calendar",
+      "timestamp_quality": "Official release instant; revisions are new vintages",
+      "structure": "Tables + FRED series",
+      "reliability": "Primary for GDP/PCE",
+      "licensing": "US government public",
+      "historical_availability": "Deep via ALFRED",
+      "pit_suitability": "Revision vintages required; do not backfill latest restated GDP",
+      "imp_role": "VALIDATION_REFERENCE",
+      "imp_availability": "KNOWN",
+      "access_in_imp_claimed": false,
+      "inclusion_rationale": "PD-05 macro map; PCE/GDP distinct from BLS CPI/payrolls.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "federal_reserve_fomc",
+      "display_name": "Federal Reserve FOMC / Board releases",
+      "asset_applicability": [
+        "MACRO",
+        "RATES",
+        "FUTURES",
+        "FX",
+        "EQUITY_BETA"
+      ],
+      "data_types": [
+        "fomc_statements",
+        "sep_projections",
+        "minutes",
+        "speeches",
+        "h15_rates"
+      ],
+      "access_method": "federalreserve.gov calendars and statements; FRED mirrors",
+      "cost_summary": "Free public",
+      "free_or_student": "Free",
+      "auth": "None",
+      "timeliness": "Statement typically 2:00 p.m. ET on meeting days; minutes lagged",
+      "timestamp_quality": "Official timestamps on materials",
+      "structure": "HTML/PDF + FRED",
+      "reliability": "Primary policy source",
+      "licensing": "US government public",
+      "historical_availability": "Deep historical statements/minutes",
+      "pit_suitability": "Statement vs minutes are different events; do not collapse",
+      "imp_role": "VALIDATION_REFERENCE",
+      "imp_availability": "KNOWN",
+      "access_in_imp_claimed": false,
+      "canonical_refs": [
+        "src/market_platform_foundation/news/catalysts.py"
+      ],
+      "inclusion_rationale": "PD-05/PD-06 rate_decision and central_bank taxonomies need a named Fed primary.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "us_treasury_official",
+      "display_name": "US Treasury auctions / refunding / fiscal",
+      "asset_applicability": [
+        "BONDS_FIXED_INCOME",
+        "RATES",
+        "MACRO"
+      ],
+      "data_types": [
+        "auctions",
+        "refunding",
+        "debt_to_penny",
+        "yield_curve_adjacent"
+      ],
+      "access_method": "treasurydirect.gov / fiscaldata.treasury.gov public APIs",
+      "cost_summary": "Free public",
+      "free_or_student": "Free",
+      "auth": "None for public Fiscal Data",
+      "timeliness": "Auction calendar + results after close",
+      "timestamp_quality": "Official auction times and result stamps",
+      "structure": "JSON Fiscal Data + HTML calendars",
+      "reliability": "Primary for US coupon/bill supply",
+      "licensing": "US government public",
+      "historical_availability": "Deep auction history",
+      "pit_suitability": "Good for scheduled auction events; not a dealer-run FI tape",
+      "imp_role": "VALIDATION_REFERENCE",
+      "imp_availability": "KNOWN",
+      "access_in_imp_claimed": false,
+      "notes": "No IMP Treasury adapter. Distinct from ICE evaluated bond pricing.",
+      "inclusion_rationale": "PD-05 bonds/fixed-income official source map.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "usda_wasde",
+      "display_name": "USDA WASDE / NASS crop reports",
+      "asset_applicability": [
+        "COMMODITY",
+        "FUTURES_AG"
+      ],
+      "data_types": [
+        "wasde_balance_sheets",
+        "crop_production",
+        "grain_stocks"
+      ],
+      "access_method": "usda.gov / nass.usda.gov public releases; no IMP adapter",
+      "cost_summary": "Free public",
+      "free_or_student": "Free",
+      "auth": "None on public PDFs/tables",
+      "timeliness": "Embargoed monthly/periodic clocks",
+      "timestamp_quality": "Official release timestamps",
+      "structure": "PDF/tables; some NASS Quick Stats API",
+      "reliability": "Primary for grain/oilseed balance-sheet surprises",
+      "licensing": "US government public",
+      "historical_availability": "Deep WASDE archive",
+      "pit_suitability": "Good if capture records retrieval_time; not wired",
+      "imp_role": "RESEARCH_ONLY",
+      "imp_availability": "KNOWN",
+      "access_in_imp_claimed": false,
+      "notes": "Registry has inventory/production terms; WASDE is the ag primary.",
+      "inclusion_rationale": "PD-05 commodities/futures instrument-specific catalyst source.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "occ_options_public",
+      "display_name": "OCC public options volume / OI",
+      "asset_applicability": [
+        "US_OPTIONS"
+      ],
+      "data_types": [
+        "cleared_volume",
+        "open_interest",
+        "exercise_assignment_adjacent"
+      ],
+      "access_method": "Public OCC market-data pages/files; no IMP adapter",
+      "cost_summary": "Free public aggregates",
+      "free_or_student": "Free public files; not OPRA",
+      "auth": "None for public reports",
+      "timeliness": "Daily delayed aggregates",
+      "timestamp_quality": "Report date; not exchange matching-engine time",
+      "structure": "CSV/HTML reports",
+      "reliability": "High for cleared-volume context; not NBBO",
+      "licensing": "OCC terms",
+      "historical_availability": "Historical volume/OI reports on OCC site",
+      "pit_suitability": "Daily snapshot PIT if dated files captured",
+      "imp_role": "VALIDATION_REFERENCE",
+      "imp_availability": "KNOWN",
+      "access_in_imp_claimed": false,
+      "inclusion_rationale": "PD-05 options official clearing-house public files alongside Cboe stats.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "ice_fixed_income",
+      "display_name": "ICE Data API / Continuous Evaluated Pricing",
+      "asset_applicability": [
+        "BONDS_FIXED_INCOME"
+      ],
+      "data_types": [
+        "evaluated_bond_prices",
+        "liquidity_tca_adjacent"
+      ],
+      "access_method": "ICE Data API + CEP entitlement; not in IMP",
+      "cost_summary": "Enterprise evaluated-pricing fees",
+      "free_or_student": "No production free tier",
+      "auth": "Contract + API credentials",
+      "timeliness": "Evaluated snapshots, not TRACE prints",
+      "timestamp_quality": "Vendor evaluation timestamps",
+      "structure": "Vendor API",
+      "reliability": "High institutional FI reference when entitled",
+      "licensing": "Strict; display vs internal use matters",
+      "historical_availability": "Vendor archive per contract",
+      "pit_suitability": "Vendor snapshots only; not a substitute for TRACE PIT without rights",
+      "imp_role": "RESEARCH_ONLY",
+      "imp_availability": "NOT_IN_REPO",
+      "access_in_imp_claimed": false,
+      "canonical_refs": [
+        "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"
+      ],
+      "inclusion_rationale": "PD-05 FI candidate from Wave A catalog; no procurement implied.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "sharadar_sf1",
+      "display_name": "Sharadar SF1 (Nasdaq Data Link)",
+      "asset_applicability": [
+        "US_EQUITY",
+        "FUNDAMENTALS_PIT"
+      ],
+      "data_types": [
+        "fundamentals_as_reported",
+        "datekey_vintages"
+      ],
+      "access_method": "Nasdaq Data Link commercial; not in IMP",
+      "cost_summary": "Commercial academic/pro tiers",
+      "free_or_student": "Possible academic via Nasdaq Data Link; not assumed",
+      "auth": "API key + dataset entitlement",
+      "timeliness": "Filing/datekey delayed vs event time",
+      "timestamp_quality": "datekey vs report period dimensions (ARQ/ARY)",
+      "structure": "Tabular API",
+      "reliability": "High for research-tier PIT fundamentals when datekey used",
+      "licensing": "Vendor redistribution limits",
+      "historical_availability": "Deep SF1 history",
+      "pit_suitability": "Strong if datekey used; latest restated fundamentals are not PIT",
+      "imp_role": "RESEARCH_ONLY",
+      "imp_availability": "NOT_IN_REPO",
+      "access_in_imp_claimed": false,
+      "canonical_refs": [
+        "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"
+      ],
+      "inclusion_rationale": "PD-05 fundamentals PIT candidate distinct from EDGAR raw filings.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "cme_mdp3",
+      "display_name": "CME Group MDP 3.0 / DataMine",
+      "asset_applicability": [
+        "FUTURES",
+        "ES",
+        "COMMODITY"
+      ],
+      "data_types": [
+        "mbo",
+        "mbp10",
+        "trades",
+        "historical_datamine"
+      ],
+      "access_method": "Licensed multicast / PubSub / DataMine API; not IMP default path",
+      "cost_summary": "Exchange + vendor pass-through fees",
+      "free_or_student": "Delayed tiers exist; not assumed for IMP",
+      "auth": "CME/vendor entitlements",
+      "timeliness": "Real-time when licensed",
+      "timestamp_quality": "Exchange event times (SBE)",
+      "structure": "SBE multicast + vendor normalized",
+      "reliability": "Primary exchange MD; IMP currently uses OpenD/fixtures instead",
+      "licensing": "CME market-data agreements; redistribution restricted",
+      "historical_availability": "DataMine v2 historical entitlements",
+      "pit_suitability": "Strong licensed replay; not available in IMP today",
+      "imp_role": "RESEARCH_ONLY",
+      "imp_availability": "NOT_IN_REPO",
+      "access_in_imp_claimed": false,
+      "canonical_refs": [
+        "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md",
+        "docs/research/FUTURES_CURRENT_STATE_AUDIT.md"
+      ],
+      "notes": "Does not replace OpenD observational path. Research characterization only.",
+      "inclusion_rationale": "PD-05 futures native-exchange MD map vs broker OpenD.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "databento_md",
+      "display_name": "Databento (normalized live + historical MD)",
+      "asset_applicability": [
+        "FUTURES",
+        "US_EQUITY",
+        "US_OPTIONS"
+      ],
+      "data_types": [
+        "mbo",
+        "mbp",
+        "ohlcv",
+        "normalized_replay"
+      ],
+      "access_method": "Databento API; not in IMP",
+      "cost_summary": "Usage + dataset entitlements; CME/OPRA pass-through",
+      "free_or_student": "No production free OPRA/CME",
+      "auth": "API key + dataset license",
+      "timeliness": "Live + historical replay when entitled",
+      "timestamp_quality": "Vendor-normalized exchange times",
+      "structure": "Normalized records",
+      "reliability": "High research MD vendor when licensed",
+      "licensing": "Exchange pass-through + Databento ToS",
+      "historical_availability": "Dataset-dependent tick history",
+      "pit_suitability": "Strong licensed replay; not wired",
+      "imp_role": "RESEARCH_ONLY",
+      "imp_availability": "NOT_IN_REPO",
+      "access_in_imp_claimed": false,
+      "canonical_refs": [
+        "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"
+      ],
+      "inclusion_rationale": "PD-05 futures/equity/options historical-replay candidate from Wave A.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "polygon_opra",
+      "display_name": "Polygon/Massive OPRA options",
+      "asset_applicability": [
+        "US_OPTIONS"
+      ],
+      "data_types": [
+        "chains",
+        "quotes",
+        "trades",
+        "greeks_paid"
+      ],
+      "access_method": "REST/WS; OPRA license required for real-time",
+      "cost_summary": "OPRA + vendor tiers",
+      "free_or_student": "Delayed/limited tiers; not full OPRA",
+      "auth": "API key + OPRA entitlement",
+      "timeliness": "Tiered EOD \u2192 real-time",
+      "timestamp_quality": "Exchange/vendor stamps",
+      "structure": "JSON/WS",
+      "reliability": "Vendor quality; not a substitute for entitled broker OPRA in IMP",
+      "licensing": "OPRA display/redistribution",
+      "historical_availability": "Plan-dependent",
+      "pit_suitability": "Vendor snapshots; rights-limited",
+      "imp_role": "RESEARCH_ONLY",
+      "imp_availability": "NOT_IN_REPO",
+      "access_in_imp_claimed": false,
+      "canonical_refs": [
+        "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"
+      ],
+      "inclusion_rationale": "PD-05 options vendor map distinct from OpenD OPRA entitlement.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "orats_iv",
+      "display_name": "ORATS Data API v2 (IV surfaces)",
+      "asset_applicability": [
+        "US_OPTIONS"
+      ],
+      "data_types": [
+        "iv_surfaces",
+        "eod_intraday_analytics"
+      ],
+      "access_method": "ORATS Data API; not in IMP",
+      "cost_summary": "Commercial analytics",
+      "free_or_student": "No assumed student OPRA substitute",
+      "auth": "API token",
+      "timeliness": "EOD + intraday products",
+      "timestamp_quality": "Vendor as-of times",
+      "structure": "JSON",
+      "reliability": "High for smoothed IV research; not full OPRA tick",
+      "licensing": "Vendor ToS; not OPRA redistribution",
+      "historical_availability": "History advertised to ~2007",
+      "pit_suitability": "Vendor as-of; not raw OPRA reconstruction",
+      "imp_role": "RESEARCH_ONLY",
+      "imp_availability": "NOT_IN_REPO",
+      "access_in_imp_claimed": false,
+      "canonical_refs": [
+        "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"
+      ],
+      "inclusion_rationale": "PD-05 options analytics candidate (IV), separate from public Cboe stats.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "s3_partners_borrow",
+      "display_name": "S3 Partners securities finance / SI",
+      "asset_applicability": [
+        "US_EQUITY",
+        "SHORT_SQUEEZE_CONTEXT"
+      ],
+      "data_types": [
+        "daily_si",
+        "borrow_rates",
+        "crowding"
+      ],
+      "access_method": "API/SFTP/Snowflake/Bloomberg DL; not in IMP",
+      "cost_summary": "Institutional",
+      "free_or_student": "No",
+      "auth": "Contract",
+      "timeliness": "Daily institutional",
+      "timestamp_quality": "Vendor as-of dates",
+      "structure": "Vendor tables",
+      "reliability": "High institutional borrow analytics when licensed",
+      "licensing": "Highly restricted redistribution",
+      "historical_availability": "Vendor archive",
+      "pit_suitability": "Vendor daily snapshots; not FINRA SI substitute without license",
+      "imp_role": "RESEARCH_ONLY",
+      "imp_availability": "NOT_IN_REPO",
+      "access_in_imp_claimed": false,
+      "canonical_refs": [
+        "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"
+      ],
+      "notes": "IMP squeeze primary remains FINRA SI + threshold + SEC FTD.",
+      "inclusion_rationale": "PD-05 short/borrow commercial map; documents why IMP stays on official SI first.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "coinbase_advanced_public",
+      "display_name": "Coinbase Advanced Trade public WS",
+      "asset_applicability": [
+        "CRYPTO"
+      ],
+      "data_types": [
+        "ticker",
+        "level2",
+        "market_trades"
+      ],
+      "access_method": "Public Coinbase WS; trading keys separate; not IMP authorized",
+      "cost_summary": "Public MD free; trading not in scope",
+      "free_or_student": "Public ticker/L2",
+      "auth": "None for public channels; keys for private",
+      "timeliness": "Real-time on venue",
+      "timestamp_quality": "Exchange event time",
+      "structure": "JSON WebSocket",
+      "reliability": "Venue-specific; not global crypto tape",
+      "licensing": "Coinbase ToS; no IMP crypto adapter authorized",
+      "historical_availability": "Limited vs Kaiko-class replay",
+      "pit_suitability": "Prospective capture only; research track",
+      "imp_role": "RESEARCH_ONLY",
+      "imp_availability": "NOT_IN_REPO",
+      "access_in_imp_claimed": false,
+      "canonical_refs": [
+        "docs/research/CRYPTO_FEASIBILITY_STUDY_PLAN.md",
+        "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"
+      ],
+      "inclusion_rationale": "PD-05 crypto public-venue map; does not authorize crypto in IMP runtime.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "kaiko_cex",
+      "display_name": "Kaiko CEX L1/L2 research data",
+      "asset_applicability": [
+        "CRYPTO"
+      ],
+      "data_types": [
+        "trades",
+        "l2_snapshots",
+        "tick_updates",
+        "short_replay"
+      ],
+      "access_method": "Kaiko REST/files; not in IMP",
+      "cost_summary": "Commercial",
+      "free_or_student": "No assumed free L2 history",
+      "auth": "Vendor key",
+      "timeliness": "Historical + limited stream replay (~72h advertised in candidate catalog)",
+      "timestamp_quality": "Venue event times in vendor schema",
+      "structure": "CSV/API",
+      "reliability": "High research L2 reconstruction when licensed",
+      "licensing": "Vendor ToS",
+      "historical_availability": "Vendor tick CSV",
+      "pit_suitability": "Vendor replay; research only",
+      "imp_role": "RESEARCH_ONLY",
+      "imp_availability": "NOT_IN_REPO",
+      "access_in_imp_claimed": false,
+      "canonical_refs": [
+        "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"
+      ],
+      "inclusion_rationale": "PD-05 crypto historical L2 candidate vs public CEX WS.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "tiingo_news",
+      "display_name": "Tiingo news + EOD",
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "data_types": [
+        "ticker_tagged_news",
+        "eod_prices",
+        "fundamentals_as_reported_partial"
+      ],
+      "access_method": "Tiingo REST; not in IMP",
+      "cost_summary": "Tiered commercial",
+      "free_or_student": "Limited trial; not production wire",
+      "auth": "API token",
+      "timeliness": "News API delay vs licensed wires",
+      "timestamp_quality": "Vendor published fields",
+      "structure": "JSON",
+      "reliability": "Medium news overlay; EOD cleansed prices separate",
+      "licensing": "Vendor ToS; news redistribution limits",
+      "historical_availability": "Plan-dependent",
+      "pit_suitability": "Prospective capture; asReported fundamentals are partial PIT only",
+      "imp_role": "RESEARCH_ONLY",
+      "imp_availability": "NOT_IN_REPO",
+      "access_in_imp_claimed": false,
+      "canonical_refs": [
+        "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"
+      ],
+      "inclusion_rationale": "PD-05 additional EVT/MD vendor map overlapping NewsAPI/Finnhub class.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "wrds_ibes",
+      "display_name": "WRDS I/B/E/S analyst estimates",
+      "asset_applicability": [
+        "US_EQUITY",
+        "EXPECTATIONS_PIT"
+      ],
+      "data_types": [
+        "eps_estimates",
+        "recommendations",
+        "guidance_adjacent"
+      ],
+      "access_method": "WRDS academic entitlement; not in IMP",
+      "cost_summary": "University WRDS subscription",
+      "free_or_student": "Academic if the operator's institution has WRDS; not assumed here",
+      "auth": "WRDS login",
+      "timeliness": "Research lag vs real-time First Call",
+      "timestamp_quality": "I/B/E/S activation/announcement dates when used correctly",
+      "structure": "WRDS tables",
+      "reliability": "Standard academic estimates database",
+      "licensing": "WRDS/LSEG academic terms; no redistribution",
+      "historical_availability": "Deep",
+      "pit_suitability": "Strong for research if announcement dates used; easy to leak with latest consensus",
+      "imp_role": "RESEARCH_ONLY",
+      "imp_availability": "NOT_IN_REPO",
+      "access_in_imp_claimed": false,
+      "notes": "Named in News/Catalysts domain primer as Tier 3 academic set.",
+      "inclusion_rationale": "PD-06 surprise research needs PIT consensus; IMP has no estimates adapter.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "wrds_ravenpack",
+      "display_name": "WRDS RavenPack news analytics",
+      "asset_applicability": [
+        "US_EQUITY",
+        "NEWS_ANALYTICS"
+      ],
+      "data_types": [
+        "entity_sentiment",
+        "novelty",
+        "event_analytics"
+      ],
+      "access_method": "WRDS if entitled; not in IMP",
+      "cost_summary": "Institutional/academic via WRDS",
+      "free_or_student": "Only with WRDS RavenPack module; not assumed",
+      "auth": "WRDS",
+      "timeliness": "Vendor event timestamps",
+      "timestamp_quality": "Advertised point-in-time news analytics",
+      "structure": "WRDS tables",
+      "reliability": "Vendor model; must not overwrite IMP source facts",
+      "licensing": "WRDS/RavenPack terms",
+      "historical_availability": "Vendor history via WRDS",
+      "pit_suitability": "Use vendor timestamps; still not a licensed wire ingest",
+      "imp_role": "RESEARCH_ONLY",
+      "imp_availability": "NOT_IN_REPO",
+      "access_in_imp_claimed": false,
+      "inclusion_rationale": "Domain-primer Tier 3 analytics; challenger to IMP deterministic taxonomy, not a replacement.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
+    },
+    {
+      "source_id": "fx_official_macro",
+      "display_name": "FX official macro + central-bank primaries",
+      "asset_applicability": [
+        "FX",
+        "MACRO"
+      ],
+      "data_types": [
+        "rate_decisions",
+        "cpi_payroll_surprises",
+        "intervention_statements"
+      ],
+      "access_method": "Fed/ECB/BOJ/BOE primary sites + FRED; Finnhub forex candles overlay-adjacent",
+      "cost_summary": "Free official; vendor FX MD commercial",
+      "free_or_student": "Official statements free",
+      "auth": "None on primaries",
+      "timeliness": "Embargoed prints + unscheduled intervention comments",
+      "timestamp_quality": "Official release stamps; vendor FX ticks not in IMP",
+      "structure": "HTML/PDF + FRED",
+      "reliability": "Primary for policy/surprise; not a spot FX tape",
+      "licensing": "Official public + vendor MD separate",
+      "historical_availability": "Deep official; tick FX is vendor",
+      "pit_suitability": "Surprise \u00d7 regime; do not treat 'USD up on NFP' as a sign rule",
+      "imp_role": "VALIDATION_REFERENCE",
+      "imp_availability": "KNOWN",
+      "access_in_imp_claimed": false,
+      "canonical_refs": [
+        "docs/research/PROVIDER_CANDIDATE_CATALOG_2026-09-11.md"
+      ],
+      "notes": "Finnhub forex_candles remains overlay-adjacent; Refinitiv RDP FX is NOT_IN_REPO.",
+      "inclusion_rationale": "PD-05 FX/currencies equivalent catalog; IMP has no dedicated FX MD adapter.",
+      "validation_method": "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+      "catalog_increment": "1.1.0",
+      "professor_named": false
     }
   ],
   "catalyst_taxonomy": [
@@ -627,162 +1757,1728 @@
       "catalyst_id": "earnings",
       "display_name": "Earnings",
       "category": "CORPORATE",
-      "asset_applicability": ["US_EQUITY"],
-      "example_terms": ["earnings", "eps", "quarterly results", "Q1 results", "beats estimates", "misses estimates"],
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "earnings",
+        "eps",
+        "quarterly results",
+        "Q1 results",
+        "beats estimates",
+        "misses estimates"
+      ],
       "in_default_catalyst_registry": true,
       "registry_catalyst_id": "earnings",
-      "professor_priority": "P0"
+      "professor_priority": "P0",
+      "catalog_increment": "1.0.0",
+      "inclusion_rationale": "v1.0 professor/equity taxonomy row retained.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL"
     },
     {
       "catalyst_id": "guidance",
       "display_name": "Guidance / outlook",
       "category": "CORPORATE",
-      "asset_applicability": ["US_EQUITY"],
-      "example_terms": ["guidance", "outlook", "forecast", "raises guidance", "lowers guidance"],
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "guidance",
+        "outlook",
+        "forecast",
+        "raises guidance",
+        "lowers guidance"
+      ],
       "in_default_catalyst_registry": true,
       "registry_catalyst_id": "guidance",
-      "professor_priority": "P0"
+      "professor_priority": "P0",
+      "catalog_increment": "1.0.0",
+      "inclusion_rationale": "v1.0 professor/equity taxonomy row retained.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL"
     },
     {
       "catalyst_id": "ma",
       "display_name": "M&A (merger / acquisition)",
       "category": "CORPORATE",
-      "asset_applicability": ["US_EQUITY"],
-      "example_terms": ["merger", "acquisition", "takeover", "to acquire", "definitive agreement", "go-shop"],
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "merger",
+        "acquisition",
+        "takeover",
+        "to acquire",
+        "definitive agreement",
+        "go-shop"
+      ],
       "in_default_catalyst_registry": true,
       "registry_catalyst_id": "acquisition",
       "professor_priority": "P0",
-      "notes": "Registry splits acquisition + merger entries; map both for taxonomy completeness."
+      "notes": "Registry splits acquisition + merger entries; map both for taxonomy completeness.",
+      "catalog_increment": "1.0.0",
+      "inclusion_rationale": "v1.0 professor/equity taxonomy row retained.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL"
     },
     {
       "catalyst_id": "offerings_dilution",
       "display_name": "Offerings / dilution",
       "category": "CORPORATE",
-      "asset_applicability": ["US_EQUITY"],
-      "example_terms": ["secondary offering", "public offering", "ATM offering", "shelf registration", "convertible notes"],
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "secondary offering",
+        "public offering",
+        "ATM offering",
+        "shelf registration",
+        "convertible notes"
+      ],
       "in_default_catalyst_registry": true,
       "registry_catalyst_id": "offering",
-      "professor_priority": "P0"
+      "professor_priority": "P0",
+      "catalog_increment": "1.0.0",
+      "inclusion_rationale": "v1.0 professor/equity taxonomy row retained.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL"
     },
     {
       "catalyst_id": "buybacks",
       "display_name": "Buybacks / repurchase",
       "category": "CORPORATE",
-      "asset_applicability": ["US_EQUITY"],
-      "example_terms": ["buyback", "repurchase program", "share repurchase", "authorization to repurchase"],
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "buyback",
+        "repurchase program",
+        "share repurchase",
+        "authorization to repurchase"
+      ],
       "in_default_catalyst_registry": false,
       "professor_priority": "P1",
-      "notes": "Suggested extension — not in DEFAULT_CATALYST_REGISTRY as of sources.py baseline."
+      "notes": "Suggested extension \u2014 not in DEFAULT_CATALYST_REGISTRY as of sources.py baseline.",
+      "catalog_increment": "1.0.0",
+      "inclusion_rationale": "v1.0 professor/equity taxonomy row retained.",
+      "validation_status": "RESEARCH_UNMEASURED"
     },
     {
       "catalyst_id": "dividends",
       "display_name": "Dividends",
       "category": "CORPORATE",
-      "asset_applicability": ["US_EQUITY"],
-      "example_terms": ["dividend", "special dividend", "ex-dividend", "yield", "payout"],
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "dividend",
+        "special dividend",
+        "ex-dividend",
+        "yield",
+        "payout"
+      ],
       "in_default_catalyst_registry": false,
-      "professor_priority": "P1"
+      "professor_priority": "P1",
+      "catalog_increment": "1.0.0",
+      "inclusion_rationale": "v1.0 professor/equity taxonomy row retained.",
+      "validation_status": "RESEARCH_UNMEASURED"
     },
     {
       "catalyst_id": "fda_regulatory",
       "display_name": "FDA / biotech regulatory",
       "category": "REGULATORY",
-      "asset_applicability": ["US_EQUITY", "BIOTECH"],
-      "example_terms": ["fda approval", "fda clearance", "complete response letter", "pdufa", "breakthrough therapy"],
+      "asset_applicability": [
+        "US_EQUITY",
+        "BIOTECH"
+      ],
+      "example_terms": [
+        "fda approval",
+        "fda clearance",
+        "complete response letter",
+        "pdufa",
+        "breakthrough therapy"
+      ],
       "in_default_catalyst_registry": true,
       "registry_catalyst_id": "fda",
-      "professor_priority": "P0"
+      "professor_priority": "P0",
+      "catalog_increment": "1.0.0",
+      "inclusion_rationale": "v1.0 professor/equity taxonomy row retained.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL"
     },
     {
       "catalyst_id": "litigation",
       "display_name": "Litigation / legal",
       "category": "REGULATORY",
-      "asset_applicability": ["US_EQUITY"],
-      "example_terms": ["lawsuit", "settlement", "class action", "sec charges", "doj"],
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "lawsuit",
+        "settlement",
+        "class action",
+        "sec charges",
+        "doj"
+      ],
       "in_default_catalyst_registry": false,
       "professor_priority": "P1",
-      "notes": "Partial overlap with investigation registry term; consider distinct catalyst_id litigation."
+      "notes": "Partial overlap with investigation registry term; consider distinct catalyst_id litigation.",
+      "catalog_increment": "1.0.0",
+      "inclusion_rationale": "v1.0 professor/equity taxonomy row retained.",
+      "validation_status": "RESEARCH_UNMEASURED"
     },
     {
       "catalyst_id": "management",
       "display_name": "Management change",
       "category": "CORPORATE",
-      "asset_applicability": ["US_EQUITY"],
-      "example_terms": ["ceo", "cfo", "executive", "management change", "resigns", "appointed"],
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "ceo",
+        "cfo",
+        "executive",
+        "management change",
+        "resigns",
+        "appointed"
+      ],
       "in_default_catalyst_registry": true,
       "registry_catalyst_id": "management",
-      "professor_priority": "P1"
+      "professor_priority": "P1",
+      "catalog_increment": "1.0.0",
+      "inclusion_rationale": "v1.0 professor/equity taxonomy row retained.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL"
     },
     {
       "catalyst_id": "analyst",
       "display_name": "Analyst actions",
       "category": "CORPORATE",
-      "asset_applicability": ["US_EQUITY"],
-      "example_terms": ["upgrade", "downgrade", "price target", "initiates coverage", "outperform"],
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "upgrade",
+        "downgrade",
+        "price target",
+        "initiates coverage",
+        "outperform"
+      ],
       "in_default_catalyst_registry": true,
       "registry_catalyst_id": "analyst",
-      "professor_priority": "P1"
+      "professor_priority": "P1",
+      "catalog_increment": "1.0.0",
+      "inclusion_rationale": "v1.0 professor/equity taxonomy row retained.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL"
     },
     {
       "catalyst_id": "macro",
       "display_name": "Macro data / central bank",
       "category": "MACRO",
-      "asset_applicability": ["MACRO", "FUTURES", "FX"],
-      "example_terms": ["cpi", "nonfarm payrolls", "fomc", "rate decision", "gdp", "pce"],
+      "asset_applicability": [
+        "MACRO",
+        "FUTURES",
+        "FX"
+      ],
+      "example_terms": [
+        "cpi",
+        "nonfarm payrolls",
+        "fomc",
+        "rate decision",
+        "gdp",
+        "pce"
+      ],
       "in_default_catalyst_registry": true,
       "registry_catalyst_id": "cpi",
       "professor_priority": "P0",
-      "notes": "Multiple registry entries (cpi, payroll, rate_decision, central_bank) cover this taxonomy row."
+      "notes": "Multiple registry entries (cpi, payroll, rate_decision, central_bank) cover this taxonomy row.",
+      "catalog_increment": "1.0.0",
+      "inclusion_rationale": "v1.0 professor/equity taxonomy row retained.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL"
     },
     {
       "catalyst_id": "geopolitical",
       "display_name": "Geopolitical",
       "category": "MACRO",
-      "asset_applicability": ["MACRO", "FUTURES", "FX", "COMMODITY"],
-      "example_terms": ["sanctions", "tariff", "war", "ceasefire", "embargo", "election"],
+      "asset_applicability": [
+        "MACRO",
+        "FUTURES",
+        "FX",
+        "COMMODITY"
+      ],
+      "example_terms": [
+        "sanctions",
+        "tariff",
+        "war",
+        "ceasefire",
+        "embargo",
+        "election"
+      ],
       "in_default_catalyst_registry": false,
-      "professor_priority": "P1"
+      "professor_priority": "P1",
+      "catalog_increment": "1.0.0",
+      "inclusion_rationale": "v1.0 professor/equity taxonomy row retained.",
+      "validation_status": "RESEARCH_UNMEASURED"
     },
     {
       "catalyst_id": "unusual_volume",
       "display_name": "Unusual volume / activity",
       "category": "MARKET_STRUCTURE",
-      "asset_applicability": ["US_EQUITY"],
-      "example_terms": ["unusual volume", "volume spike", "block trade", "dark pool print"],
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "unusual volume",
+        "volume spike",
+        "block trade",
+        "dark pool print"
+      ],
       "in_default_catalyst_registry": false,
       "professor_priority": "P1",
-      "notes": "Often price/volume feature not headline keyword — link to market data not news-only."
+      "notes": "Often price/volume feature not headline keyword \u2014 link to market data not news-only.",
+      "catalog_increment": "1.0.0",
+      "inclusion_rationale": "v1.0 professor/equity taxonomy row retained.",
+      "validation_status": "RESEARCH_UNMEASURED"
     },
     {
       "catalyst_id": "short_squeeze",
       "display_name": "Short squeeze / borrow stress",
       "category": "MARKET_STRUCTURE",
-      "asset_applicability": ["US_EQUITY"],
-      "example_terms": ["short squeeze", "high short interest", "borrow rate", "ctb", "gamma squeeze"],
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "short squeeze",
+        "high short interest",
+        "borrow rate",
+        "ctb",
+        "gamma squeeze"
+      ],
       "in_default_catalyst_registry": false,
       "professor_priority": "P0",
-      "notes": "FINRA SI + threshold lists are primary evidence; headlines secondary."
+      "notes": "FINRA SI + threshold lists are primary evidence; headlines secondary.",
+      "catalog_increment": "1.0.0",
+      "inclusion_rationale": "v1.0 professor/equity taxonomy row retained.",
+      "validation_status": "RESEARCH_UNMEASURED"
     },
     {
       "catalyst_id": "options_activity",
       "display_name": "Options flow / activity",
       "category": "OPTIONS",
-      "asset_applicability": ["US_OPTIONS", "US_EQUITY"],
-      "example_terms": ["unusual options activity", "call sweep", "put sweep", "open interest spike", "volatility crush"],
+      "asset_applicability": [
+        "US_OPTIONS",
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "unusual options activity",
+        "call sweep",
+        "put sweep",
+        "open interest spike",
+        "volatility crush"
+      ],
       "in_default_catalyst_registry": false,
       "professor_priority": "P1",
-      "notes": "Prefer chain/trade evidence over headline regex."
+      "notes": "Prefer chain/trade evidence over headline regex.",
+      "catalog_increment": "1.0.0",
+      "inclusion_rationale": "v1.0 professor/equity taxonomy row retained.",
+      "validation_status": "RESEARCH_UNMEASURED"
     },
     {
       "catalyst_id": "futures_macro_catalysts",
       "display_name": "Futures / commodity catalysts",
       "category": "MACRO",
-      "asset_applicability": ["FUTURES", "COMMODITY"],
-      "example_terms": ["eia crude", "inventory build", "opec cut", "nfp", "fomc", "crop report", "wasde"],
+      "asset_applicability": [
+        "FUTURES",
+        "COMMODITY"
+      ],
+      "example_terms": [
+        "eia crude",
+        "inventory build",
+        "opec cut",
+        "nfp",
+        "fomc",
+        "crop report",
+        "wasde"
+      ],
       "in_default_catalyst_registry": true,
       "registry_catalyst_id": "inventory",
       "professor_priority": "P0",
-      "notes": "Registry includes inventory, opec, production; EIA/COT/macro_events adjacent."
+      "notes": "Registry includes inventory, opec, production; EIA/COT/macro_events adjacent.",
+      "catalog_increment": "1.0.0",
+      "inclusion_rationale": "v1.0 professor/equity taxonomy row retained.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL"
+    },
+    {
+      "catalyst_id": "partnership",
+      "display_name": "Partnership / alliance",
+      "category": "CORPORATE",
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "partnership",
+        "collaboration",
+        "alliance",
+        "strategic partnership",
+        "joint venture"
+      ],
+      "in_default_catalyst_registry": true,
+      "registry_catalyst_id": "partnership",
+      "professor_priority": "P0",
+      "notes": "Professor-named example term in PD-06.",
+      "inclusion_rationale": "Explicit professor example after source filtering.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "earnings_call",
+      "display_name": "Earnings call / transcript",
+      "category": "CORPORATE",
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "earnings call",
+        "conference call",
+        "prepared remarks",
+        "Q&A session",
+        "transcript"
+      ],
+      "in_default_catalyst_registry": false,
+      "professor_priority": "P0",
+      "notes": "Professor-named 'calls'. Distinct from earnings print; research extension only.",
+      "inclusion_rationale": "PD-06 professor example: partnership, earnings, calls.",
+      "validation_status": "RESEARCH_UNMEASURED",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "contract",
+      "display_name": "Contract award",
+      "category": "CORPORATE",
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "contract award",
+        "wins contract",
+        "contract win",
+        "purchase order",
+        "government contract"
+      ],
+      "in_default_catalyst_registry": true,
+      "registry_catalyst_id": "contract",
+      "professor_priority": "P1",
+      "inclusion_rationale": "In DEFAULT_CATALYST_REGISTRY but omitted from v1.0 catalog map.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "financing",
+      "display_name": "Financing / capital raise",
+      "category": "CORPORATE",
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "financing",
+        "raises capital",
+        "debt offering",
+        "credit facility",
+        "term loan"
+      ],
+      "in_default_catalyst_registry": true,
+      "registry_catalyst_id": "financing",
+      "professor_priority": "P0",
+      "notes": "Complement to offerings_dilution; registry splits offering vs financing.",
+      "inclusion_rationale": "PD-06 financing family; v1.0 only mapped offering.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "bankruptcy",
+      "display_name": "Bankruptcy / restructuring",
+      "category": "CORPORATE",
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "bankruptcy",
+        "chapter 11",
+        "chapter 7",
+        "restructuring",
+        "going concern"
+      ],
+      "in_default_catalyst_registry": true,
+      "registry_catalyst_id": "bankruptcy",
+      "professor_priority": "P1",
+      "inclusion_rationale": "Registry entry missing from v1.0 taxonomy table.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "approval",
+      "display_name": "Regulatory approval (generic)",
+      "category": "REGULATORY",
+      "asset_applicability": [
+        "US_EQUITY",
+        "REGULATORY"
+      ],
+      "example_terms": [
+        "approval",
+        "approved",
+        "clearance",
+        "authorized",
+        "granted approval"
+      ],
+      "in_default_catalyst_registry": true,
+      "registry_catalyst_id": "approval",
+      "professor_priority": "P1",
+      "notes": "Broader than FDA-specific; high false-positive risk on generic 'approved'.",
+      "inclusion_rationale": "Registry split from fda; document FP risk before any runtime change.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "clinical",
+      "display_name": "Clinical trial readout",
+      "category": "REGULATORY",
+      "asset_applicability": [
+        "US_EQUITY",
+        "BIOTECH"
+      ],
+      "example_terms": [
+        "clinical trial",
+        "phase 3",
+        "phase 2",
+        "primary endpoint",
+        "statistical significance",
+        "clinical hold"
+      ],
+      "in_default_catalyst_registry": true,
+      "registry_catalyst_id": "clinical",
+      "professor_priority": "P0",
+      "inclusion_rationale": "Biotech instrument-specific; v1.0 bundled under fda_regulatory.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "sec_filing",
+      "display_name": "SEC filing mention",
+      "category": "REGULATORY",
+      "asset_applicability": [
+        "US_EQUITY",
+        "REGULATORY"
+      ],
+      "example_terms": [
+        "sec filing",
+        "form 8-k",
+        "form 10-k",
+        "form 10-q",
+        "s-1",
+        "s-3"
+      ],
+      "in_default_catalyst_registry": true,
+      "registry_catalyst_id": "sec_filing",
+      "professor_priority": "P0",
+      "notes": "Headline keyword \u2260 EDGAR acceptance time. Prefer sec_edgar primary.",
+      "inclusion_rationale": "Maps registry sec_filing; primary evidence remains EDGAR.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "investigation",
+      "display_name": "Investigation / probe",
+      "category": "REGULATORY",
+      "asset_applicability": [
+        "US_EQUITY",
+        "REGULATORY"
+      ],
+      "example_terms": [
+        "investigation",
+        "probe",
+        "subpoena",
+        "wells notice",
+        "doj investigation"
+      ],
+      "in_default_catalyst_registry": true,
+      "registry_catalyst_id": "investigation",
+      "professor_priority": "P1",
+      "notes": "Partial overlap with research-only litigation row.",
+      "inclusion_rationale": "Registry entry; litigation remains a documented gap.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "rate_decision",
+      "display_name": "Policy rate decision",
+      "category": "MACRO",
+      "asset_applicability": [
+        "MACRO",
+        "FUTURES",
+        "FX",
+        "RATES"
+      ],
+      "example_terms": [
+        "rate decision",
+        "fomc",
+        "fed decision",
+        "hikes rates",
+        "cuts rates",
+        "holds rates"
+      ],
+      "in_default_catalyst_registry": true,
+      "registry_catalyst_id": "rate_decision",
+      "professor_priority": "P0",
+      "inclusion_rationale": "Unbundle v1.0 macro row for PD-06 market-specific taxonomies.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "cpi",
+      "display_name": "CPI / inflation print",
+      "category": "MACRO",
+      "asset_applicability": [
+        "MACRO",
+        "FUTURES",
+        "FX",
+        "RATES"
+      ],
+      "example_terms": [
+        "cpi",
+        "consumer price index",
+        "inflation",
+        "core cpi",
+        "cpi-u"
+      ],
+      "in_default_catalyst_registry": true,
+      "registry_catalyst_id": "cpi",
+      "professor_priority": "P0",
+      "inclusion_rationale": "Scheduled macro surprise family; official BLS primary.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "payroll",
+      "display_name": "Payrolls / employment print",
+      "category": "MACRO",
+      "asset_applicability": [
+        "MACRO",
+        "FUTURES",
+        "FX"
+      ],
+      "example_terms": [
+        "payroll",
+        "nonfarm payrolls",
+        "jobs report",
+        "nfp",
+        "unemployment rate"
+      ],
+      "in_default_catalyst_registry": true,
+      "registry_catalyst_id": "payroll",
+      "professor_priority": "P0",
+      "inclusion_rationale": "Distinct from CPI; FX and ES both sensitive.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "central_bank",
+      "display_name": "Central bank (non-Fed named)",
+      "category": "MACRO",
+      "asset_applicability": [
+        "MACRO",
+        "FX",
+        "RATES"
+      ],
+      "example_terms": [
+        "central bank",
+        "ecb",
+        "boj",
+        "boe",
+        "snb",
+        "rba"
+      ],
+      "in_default_catalyst_registry": true,
+      "registry_catalyst_id": "central_bank",
+      "professor_priority": "P1",
+      "inclusion_rationale": "FX/rates instrument-specific; v1.0 bundled into macro.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "opec",
+      "display_name": "OPEC / OPEC+ policy",
+      "category": "MACRO",
+      "asset_applicability": [
+        "COMMODITY",
+        "FUTURES_ENERGY"
+      ],
+      "example_terms": [
+        "opec",
+        "opec+",
+        "production cut",
+        "production increase",
+        "quota"
+      ],
+      "in_default_catalyst_registry": true,
+      "registry_catalyst_id": "opec",
+      "professor_priority": "P0",
+      "inclusion_rationale": "Energy futures instrument-specific.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "supply",
+      "display_name": "Supply disruption",
+      "category": "MACRO",
+      "asset_applicability": [
+        "COMMODITY",
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "supply disruption",
+        "supply chain",
+        "shortage",
+        "outage",
+        "force majeure"
+      ],
+      "in_default_catalyst_registry": true,
+      "registry_catalyst_id": "supply",
+      "professor_priority": "P1",
+      "inclusion_rationale": "Registry entry omitted from v1.0 table.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "production",
+      "display_name": "Production change",
+      "category": "MACRO",
+      "asset_applicability": [
+        "COMMODITY"
+      ],
+      "example_terms": [
+        "production increase",
+        "production cut",
+        "output rose",
+        "output fell"
+      ],
+      "in_default_catalyst_registry": true,
+      "registry_catalyst_id": "production",
+      "professor_priority": "P1",
+      "inclusion_rationale": "Registry entry omitted from v1.0 table.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "preannouncement",
+      "display_name": "Preannouncement / profit warning",
+      "category": "CORPORATE",
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "preannouncement",
+        "profit warning",
+        "preliminary results",
+        "updates outlook ahead"
+      ],
+      "in_default_catalyst_registry": false,
+      "professor_priority": "P1",
+      "inclusion_rationale": "Domain-primer earnings program item; research extension.",
+      "validation_status": "RESEARCH_UNMEASURED",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "cybersecurity",
+      "display_name": "Cybersecurity incident",
+      "category": "REGULATORY",
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "cybersecurity incident",
+        "data breach",
+        "ransomware",
+        "item 1.05",
+        "material cybersecurity"
+      ],
+      "in_default_catalyst_registry": false,
+      "professor_priority": "P1",
+      "notes": "Prefer 8-K Item 1.05 primary over headline regex.",
+      "inclusion_rationale": "8-K taxonomy family from domain primer.",
+      "validation_status": "RESEARCH_UNMEASURED",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "restatement",
+      "display_name": "Restatement / auditor event",
+      "category": "REGULATORY",
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "restatement",
+        "non-reliance",
+        "auditor resignation",
+        "material weakness",
+        "item 4.02"
+      ],
+      "in_default_catalyst_registry": false,
+      "professor_priority": "P1",
+      "inclusion_rationale": "SEC disclosure taxonomy; not in default registry.",
+      "validation_status": "RESEARCH_UNMEASURED",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "spinoff",
+      "display_name": "Spin-off / split / special dividend structure",
+      "category": "CORPORATE",
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "spin-off",
+        "spinoff",
+        "split-off",
+        "special dividend",
+        "rights offering"
+      ],
+      "in_default_catalyst_registry": false,
+      "professor_priority": "P1",
+      "inclusion_rationale": "M&A/corporate-actions family beyond merger/acquisition keywords.",
+      "validation_status": "RESEARCH_UNMEASURED",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "rumor_confirmation",
+      "display_name": "Rumor / confirmation / denial state",
+      "category": "CORPORATE",
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "reportedly",
+        "sources say",
+        "declined to comment",
+        "confirms reports",
+        "denies reports"
+      ],
+      "in_default_catalyst_registry": false,
+      "professor_priority": "P1",
+      "notes": "State machine UNVERIFIED_RUMOR \u2192 CORROBORATED_REPORT \u2192 PRIMARY_CONFIRMATION/DENIAL. Not a runtime matcher.",
+      "inclusion_rationale": "Domain-primer rumor doctrine; headline terms are weak without state tracking.",
+      "validation_status": "RESEARCH_UNMEASURED",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "wasde_crop",
+      "display_name": "WASDE / crop report",
+      "category": "MACRO",
+      "asset_applicability": [
+        "FUTURES",
+        "COMMODITY"
+      ],
+      "example_terms": [
+        "wasde",
+        "crop report",
+        "grain stocks",
+        "ending stocks",
+        "yield estimate"
+      ],
+      "in_default_catalyst_registry": false,
+      "professor_priority": "P0",
+      "inclusion_rationale": "Instrument-specific ag futures catalyst; v1.0 only listed WASDE as an example term.",
+      "validation_status": "RESEARCH_UNMEASURED",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "fomc_minutes",
+      "display_name": "FOMC minutes / SEP",
+      "category": "MACRO",
+      "asset_applicability": [
+        "MACRO",
+        "RATES",
+        "FUTURES",
+        "FX"
+      ],
+      "example_terms": [
+        "fomc minutes",
+        "sep projections",
+        "dot plot",
+        "implementation note"
+      ],
+      "in_default_catalyst_registry": false,
+      "professor_priority": "P1",
+      "notes": "Distinct event from rate_decision statement.",
+      "inclusion_rationale": "Unscheduled-vs-scheduled policy family split.",
+      "validation_status": "RESEARCH_UNMEASURED",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "treasury_auction",
+      "display_name": "Treasury auction / refunding",
+      "category": "MACRO",
+      "asset_applicability": [
+        "BONDS_FIXED_INCOME",
+        "RATES"
+      ],
+      "example_terms": [
+        "treasury auction",
+        "refunding",
+        "10-year auction",
+        "high yield",
+        "bid-to-cover"
+      ],
+      "in_default_catalyst_registry": false,
+      "professor_priority": "P1",
+      "inclusion_rationale": "PD-05/PD-06 FI instrument-specific events.",
+      "validation_status": "RESEARCH_UNMEASURED",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "weather_hdd_cdd",
+      "display_name": "Weather demand (HDD/CDD)",
+      "category": "MACRO",
+      "asset_applicability": [
+        "COMMODITY",
+        "FUTURES_ENERGY"
+      ],
+      "example_terms": [
+        "heating degree day",
+        "cooling degree day",
+        "colder than normal",
+        "warmer than normal"
+      ],
+      "in_default_catalyst_registry": false,
+      "professor_priority": "P1",
+      "notes": "Prefer NOAA vintage features over headlines.",
+      "inclusion_rationale": "Commodities weather-demand family tied to noaa_nws_cpc.",
+      "validation_status": "RESEARCH_UNMEASURED",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "crypto_hack",
+      "display_name": "Crypto exploit / hack",
+      "category": "CRYPTO",
+      "asset_applicability": [
+        "CRYPTO"
+      ],
+      "example_terms": [
+        "hacked",
+        "exploit",
+        "bridge exploit",
+        "funds drained",
+        "pause withdrawals"
+      ],
+      "in_default_catalyst_registry": false,
+      "professor_priority": "P1",
+      "inclusion_rationale": "PD-06 crypto instrument-specific; research-only while crypto adapter unauthorized.",
+      "validation_status": "RESEARCH_UNMEASURED",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "crypto_listing",
+      "display_name": "Crypto listing / delisting",
+      "category": "CRYPTO",
+      "asset_applicability": [
+        "CRYPTO"
+      ],
+      "example_terms": [
+        "will list",
+        "lists",
+        "delisting",
+        "trading pair added",
+        "supported asset"
+      ],
+      "in_default_catalyst_registry": false,
+      "professor_priority": "P2",
+      "inclusion_rationale": "Venue-specific crypto catalyst; not in default registry.",
+      "validation_status": "RESEARCH_UNMEASURED",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "crypto_etf",
+      "display_name": "Crypto ETF / product filing",
+      "category": "CRYPTO",
+      "asset_applicability": [
+        "CRYPTO",
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "spot etf",
+        "19b-4",
+        "bitcoin etf",
+        "ether etf",
+        "sec approves etf"
+      ],
+      "in_default_catalyst_registry": false,
+      "professor_priority": "P1",
+      "inclusion_rationale": "Cross-asset crypto/equity product events.",
+      "validation_status": "RESEARCH_UNMEASURED",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "fx_intervention",
+      "display_name": "FX intervention / currency policy",
+      "category": "MACRO",
+      "asset_applicability": [
+        "FX"
+      ],
+      "example_terms": [
+        "currency intervention",
+        "jawbon",
+        "too rapid a rise",
+        "selling dollars",
+        "buying yen"
+      ],
+      "in_default_catalyst_registry": false,
+      "professor_priority": "P1",
+      "inclusion_rationale": "PD-06 FX-specific unscheduled catalyst.",
+      "validation_status": "RESEARCH_UNMEASURED",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "product_recall",
+      "display_name": "Product recall / safety",
+      "category": "CORPORATE",
+      "asset_applicability": [
+        "US_EQUITY"
+      ],
+      "example_terms": [
+        "recall",
+        "voluntary recall",
+        "safety warning",
+        "fda recall",
+        "nhtsa recall"
+      ],
+      "in_default_catalyst_registry": false,
+      "professor_priority": "P2",
+      "inclusion_rationale": "Domain-primer exogenous shock family.",
+      "validation_status": "RESEARCH_UNMEASURED",
+      "catalog_increment": "1.1.0"
+    },
+    {
+      "catalyst_id": "inventory",
+      "display_name": "Inventory / stocks report",
+      "category": "MACRO",
+      "asset_applicability": [
+        "COMMODITY",
+        "FUTURES"
+      ],
+      "example_terms": [
+        "inventory",
+        "crude inventories",
+        "eia report",
+        "weekly petroleum",
+        "natural gas storage"
+      ],
+      "in_default_catalyst_registry": true,
+      "registry_catalyst_id": "inventory",
+      "professor_priority": "P0",
+      "notes": "Unbundled from futures_macro_catalysts in 1.1.0 for EIA/WASDE source links.",
+      "inclusion_rationale": "DEFAULT_CATALYST_REGISTRY inventory id; energy/ag stocks prints.",
+      "validation_status": "FIXTURE_COVERED_UNMEASURED_EMPIRICAL",
+      "catalog_increment": "1.1.0"
     }
-  ]
+  ],
+  "increment": {
+    "id": "1.1.0-pd05-pd06-market-maps",
+    "predecessor_pr": 102,
+    "predecessor_merge": "73c7475257e6782ba0246e14f0fce9dc98843d4f",
+    "predecessor_schema": "1.0.0",
+    "predecessor_source_count": 26,
+    "predecessor_catalyst_count": 16,
+    "this_source_count": 48,
+    "this_catalyst_count": 47,
+    "scope": "Market-by-market source maps (equity/options/futures/commodities/FI/FX/crypto/macro), inclusion/validation fields, remaining DEFAULT_CATALYST_REGISTRY coverage, professor 'calls'/partnership keyword packs, 8-K item map. Docs/JSON only."
+  },
+  "pd05_pd06": {
+    "directive_ids": [
+      "PD-05",
+      "PD-06"
+    ],
+    "notion_task": "https://app.notion.com/p/3d72085cc43c8157bcabedc977a40693",
+    "pd05": "https://app.notion.com/p/3d72085cc43c81aea848f1d26a388314",
+    "pd06": "https://app.notion.com/p/3d72085cc43c818c9026def8e40cc032",
+    "still_open": [
+      "CONFIGURED professor wires are not operational adapters.",
+      "False-positive/false-negative measurement from forward/replay evidence is not claimed.",
+      "No runtime DEFAULT_CATALYST_REGISTRY expansion in this increment.",
+      "Academic WRDS/I/B/E/S/RavenPack entitlements are not assumed present."
+    ]
+  },
+  "keyword_packs": [
+    {
+      "pack_id": "pack_earnings_print",
+      "catalyst_id": "earnings",
+      "status": "RESEARCH_ONLY_NOT_WIRED",
+      "terms": [
+        "earnings",
+        "eps",
+        "earnings per share",
+        "quarterly results",
+        "q1 results",
+        "q2 results",
+        "q3 results",
+        "q4 results",
+        "beats estimates",
+        "misses estimates",
+        "in-line with estimates",
+        "consensus estimates"
+      ],
+      "notes": "Print vs call vs guidance should stay separate packs."
+    },
+    {
+      "pack_id": "pack_earnings_call",
+      "catalyst_id": "earnings_call",
+      "status": "RESEARCH_ONLY_NOT_WIRED",
+      "terms": [
+        "earnings call",
+        "conference call",
+        "prepared remarks",
+        "question-and-answer",
+        "q&a session",
+        "webcast",
+        "transcript"
+      ],
+      "notes": "Professor 'calls'. Not in DEFAULT_CATALYST_REGISTRY."
+    },
+    {
+      "pack_id": "pack_partnership",
+      "catalyst_id": "partnership",
+      "status": "RESEARCH_ONLY_NOT_WIRED",
+      "terms": [
+        "partnership",
+        "strategic partnership",
+        "collaboration",
+        "alliance",
+        "joint venture",
+        "memorandum of understanding",
+        "mou"
+      ],
+      "notes": "Professor-named PD-06 example."
+    },
+    {
+      "pack_id": "pack_guidance",
+      "catalyst_id": "guidance",
+      "status": "RESEARCH_ONLY_NOT_WIRED",
+      "terms": [
+        "guidance",
+        "outlook",
+        "forecast",
+        "raises guidance",
+        "lowers guidance",
+        "withdraws guidance",
+        "initiates guidance",
+        "full-year outlook"
+      ],
+      "notes": ""
+    },
+    {
+      "pack_id": "pack_8k_items",
+      "catalyst_id": "sec_filing",
+      "status": "RESEARCH_ONLY_NOT_WIRED",
+      "terms": [
+        "item 1.01",
+        "item 1.02",
+        "item 1.05",
+        "item 2.01",
+        "item 2.02",
+        "item 2.05",
+        "item 2.06",
+        "item 4.01",
+        "item 4.02",
+        "item 5.02",
+        "item 7.01",
+        "item 8.01",
+        "form 8-k"
+      ],
+      "notes": "Item codes are more precise than generic 'sec filing' headlines."
+    },
+    {
+      "pack_id": "pack_buybacks",
+      "catalyst_id": "buybacks",
+      "status": "RESEARCH_ONLY_NOT_WIRED",
+      "terms": [
+        "buyback",
+        "share repurchase",
+        "repurchase program",
+        "repurchase authorization",
+        "accelerated share repurchase",
+        "asr"
+      ],
+      "notes": "Gap vs registry; research only."
+    },
+    {
+      "pack_id": "pack_dividends",
+      "catalyst_id": "dividends",
+      "status": "RESEARCH_ONLY_NOT_WIRED",
+      "terms": [
+        "dividend",
+        "special dividend",
+        "ex-dividend",
+        "dividend increased",
+        "dividend cut",
+        "suspended dividend"
+      ],
+      "notes": "Gap vs registry; research only."
+    },
+    {
+      "pack_id": "pack_litigation",
+      "catalyst_id": "litigation",
+      "status": "RESEARCH_ONLY_NOT_WIRED",
+      "terms": [
+        "lawsuit",
+        "class action",
+        "settlement",
+        "sec charges",
+        "doj charges",
+        "indictment",
+        "consent decree"
+      ],
+      "notes": "Overlap with investigation; keep distinct ids."
+    },
+    {
+      "pack_id": "pack_geopolitical",
+      "catalyst_id": "geopolitical",
+      "status": "RESEARCH_ONLY_NOT_WIRED",
+      "terms": [
+        "sanctions",
+        "tariff",
+        "embargo",
+        "ceasefire",
+        "military strike",
+        "election",
+        "geopolitical"
+      ],
+      "notes": "High FP; prefer entity+geo tagging later."
+    },
+    {
+      "pack_id": "pack_options_flow_headlines",
+      "catalyst_id": "options_activity",
+      "status": "RESEARCH_ONLY_NOT_WIRED",
+      "terms": [
+        "unusual options activity",
+        "call sweep",
+        "put sweep",
+        "open interest spike",
+        "volatility crush",
+        "gamma squeeze"
+      ],
+      "notes": "Prefer chain/trade evidence; headlines secondary."
+    },
+    {
+      "pack_id": "pack_short_squeeze_headlines",
+      "catalyst_id": "short_squeeze",
+      "status": "RESEARCH_ONLY_NOT_WIRED",
+      "terms": [
+        "short squeeze",
+        "high short interest",
+        "cost to borrow",
+        "hard to borrow",
+        "gamma squeeze",
+        "reg sho"
+      ],
+      "notes": "FINRA SI + threshold + FTD are primary."
+    },
+    {
+      "pack_id": "pack_wasde",
+      "catalyst_id": "wasde_crop",
+      "status": "RESEARCH_ONLY_NOT_WIRED",
+      "terms": [
+        "wasde",
+        "world agricultural supply",
+        "ending stocks",
+        "crop production",
+        "grain stocks",
+        "yield"
+      ],
+      "notes": ""
+    },
+    {
+      "pack_id": "pack_crypto_hack",
+      "catalyst_id": "crypto_hack",
+      "status": "RESEARCH_ONLY_NOT_WIRED",
+      "terms": [
+        "hacked",
+        "exploit",
+        "flash loan",
+        "bridge exploit",
+        "paused withdrawals",
+        "reentrancy"
+      ],
+      "notes": "Research-only while crypto unauthorized."
+    }
+  ],
+  "market_source_maps": [
+    {
+      "market_id": "US_EQUITY",
+      "professor_named_source_ids": [
+        "accesswire",
+        "benzinga",
+        "dow_jones",
+        "fda",
+        "globe_newswire",
+        "pr_newswire",
+        "reuters",
+        "sec_edgar"
+      ],
+      "primary_evidence_source_ids": [
+        "sec_edgar",
+        "sec_fails_to_deliver",
+        "finra_short",
+        "exchange_nasdaq_nyse_cboe",
+        "moomoo_opend"
+      ],
+      "overlay_source_ids": [
+        "finviz_elite",
+        "newsapi",
+        "finnhub",
+        "economic_calendars_aggregate"
+      ],
+      "validation_reference_source_ids": [
+        "ibkr_observational",
+        "yahoo_finance_overlay",
+        "news_fixture"
+      ],
+      "research_only_source_ids": [
+        "pr_newswire",
+        "globe_newswire",
+        "accesswire",
+        "reuters",
+        "dow_jones",
+        "benzinga",
+        "fda",
+        "issuer_ir",
+        "sharadar_sf1",
+        "tiingo_news",
+        "wrds_ibes",
+        "wrds_ravenpack",
+        "s3_partners_borrow"
+      ],
+      "notes": "Professor-named wires remain CONFIGURED. Access claimed false except news_fixture."
+    },
+    {
+      "market_id": "US_OPTIONS",
+      "professor_named_source_ids": [],
+      "primary_evidence_source_ids": [
+        "us_options_opra",
+        "cboe_public_options",
+        "moomoo_opend"
+      ],
+      "overlay_source_ids": [
+        "finviz_elite"
+      ],
+      "validation_reference_source_ids": [
+        "occ_options_public",
+        "ibkr_observational",
+        "news_fixture"
+      ],
+      "research_only_source_ids": [
+        "polygon_opra",
+        "orats_iv",
+        "databento_md"
+      ],
+      "notes": "Public Cboe/OCC aggregates \u2260 OPRA NBBO. Unusual-activity headlines are not chain evidence."
+    },
+    {
+      "market_id": "FUTURES",
+      "professor_named_source_ids": [],
+      "primary_evidence_source_ids": [
+        "us_futures_cme",
+        "moomoo_opend",
+        "cftc_cot",
+        "eia"
+      ],
+      "overlay_source_ids": [
+        "economic_calendars_aggregate",
+        "fred_alfred"
+      ],
+      "validation_reference_source_ids": [
+        "ibkr_observational",
+        "macro_official_releases",
+        "news_fixture"
+      ],
+      "research_only_source_ids": [
+        "cme_mdp3",
+        "databento_md",
+        "usda_wasde"
+      ],
+      "notes": "OpenD remains observational path; MDP/Databento are research maps only."
+    },
+    {
+      "market_id": "COMMODITIES",
+      "professor_named_source_ids": [],
+      "primary_evidence_source_ids": [
+        "eia",
+        "cftc_cot",
+        "noaa_nws_cpc",
+        "us_futures_cme"
+      ],
+      "overlay_source_ids": [
+        "economic_calendars_aggregate"
+      ],
+      "validation_reference_source_ids": [
+        "fred_alfred",
+        "news_fixture"
+      ],
+      "research_only_source_ids": [
+        "usda_wasde",
+        "cme_mdp3"
+      ],
+      "notes": "Do not collapse EIA + COT + NOAA + price into a single bullish/bearish score."
+    },
+    {
+      "market_id": "BONDS_FIXED_INCOME",
+      "professor_named_source_ids": [],
+      "primary_evidence_source_ids": [
+        "fred_alfred"
+      ],
+      "overlay_source_ids": [
+        "economic_calendars_aggregate"
+      ],
+      "validation_reference_source_ids": [
+        "us_treasury_official",
+        "federal_reserve_fomc",
+        "bls_official",
+        "news_fixture"
+      ],
+      "research_only_source_ids": [
+        "ice_fixed_income"
+      ],
+      "notes": "No IMP TRACE/ICE CEP adapter. FRED rates + Treasury calendars are the $0 official map."
+    },
+    {
+      "market_id": "FX",
+      "professor_named_source_ids": [
+        "reuters"
+      ],
+      "primary_evidence_source_ids": [],
+      "overlay_source_ids": [
+        "finnhub",
+        "economic_calendars_aggregate"
+      ],
+      "validation_reference_source_ids": [
+        "fx_official_macro",
+        "federal_reserve_fomc",
+        "bls_official",
+        "fred_alfred",
+        "news_fixture"
+      ],
+      "research_only_source_ids": [
+        "reuters",
+        "dow_jones"
+      ],
+      "notes": "No dedicated IMP FX tape. Surprise \u00d7 regime; Reuters CONFIGURED not operational."
+    },
+    {
+      "market_id": "CRYPTO",
+      "professor_named_source_ids": [],
+      "primary_evidence_source_ids": [],
+      "overlay_source_ids": [],
+      "validation_reference_source_ids": [
+        "news_fixture"
+      ],
+      "research_only_source_ids": [
+        "crypto_cex",
+        "coinbase_advanced_public",
+        "kaiko_cex"
+      ],
+      "notes": "NOT_IN_REPO / unauthorized in default composition. Catalog only."
+    },
+    {
+      "market_id": "MACRO",
+      "professor_named_source_ids": [
+        "reuters",
+        "dow_jones",
+        "benzinga"
+      ],
+      "primary_evidence_source_ids": [
+        "fred_alfred",
+        "eia",
+        "cftc_cot"
+      ],
+      "overlay_source_ids": [
+        "economic_calendars_aggregate",
+        "finnhub"
+      ],
+      "validation_reference_source_ids": [
+        "bls_official",
+        "bea_official",
+        "federal_reserve_fomc",
+        "us_treasury_official",
+        "macro_official_releases",
+        "news_fixture"
+      ],
+      "research_only_source_ids": [
+        "benzinga",
+        "reuters",
+        "dow_jones",
+        "usda_wasde"
+      ],
+      "notes": "Actuals from official agencies; calendars are overlay; wires CONFIGURED."
+    }
+  ],
+  "source_catalyst_links": [
+    {
+      "source_id": "sec_edgar",
+      "catalyst_ids": [
+        "sec_filing",
+        "earnings",
+        "ma",
+        "offerings_dilution",
+        "management",
+        "cybersecurity",
+        "restatement"
+      ]
+    },
+    {
+      "source_id": "fda",
+      "catalyst_ids": [
+        "fda_regulatory",
+        "clinical",
+        "approval",
+        "product_recall"
+      ]
+    },
+    {
+      "source_id": "pr_newswire",
+      "catalyst_ids": [
+        "earnings",
+        "guidance",
+        "partnership",
+        "ma",
+        "offerings_dilution"
+      ]
+    },
+    {
+      "source_id": "bls_official",
+      "catalyst_ids": [
+        "cpi",
+        "payroll",
+        "macro"
+      ]
+    },
+    {
+      "source_id": "federal_reserve_fomc",
+      "catalyst_ids": [
+        "rate_decision",
+        "fomc_minutes",
+        "central_bank"
+      ]
+    },
+    {
+      "source_id": "eia",
+      "catalyst_ids": [
+        "futures_macro_catalysts",
+        "inventory"
+      ]
+    },
+    {
+      "source_id": "usda_wasde",
+      "catalyst_ids": [
+        "wasde_crop",
+        "production",
+        "inventory"
+      ]
+    },
+    {
+      "source_id": "cboe_public_options",
+      "catalyst_ids": [
+        "options_activity"
+      ]
+    },
+    {
+      "source_id": "finra_short",
+      "catalyst_ids": [
+        "short_squeeze"
+      ]
+    },
+    {
+      "source_id": "sec_fails_to_deliver",
+      "catalyst_ids": [
+        "short_squeeze"
+      ]
+    },
+    {
+      "source_id": "noaa_nws_cpc",
+      "catalyst_ids": [
+        "weather_hdd_cdd"
+      ]
+    },
+    {
+      "source_id": "us_treasury_official",
+      "catalyst_ids": [
+        "treasury_auction"
+      ]
+    },
+    {
+      "source_id": "news_fixture",
+      "catalyst_ids": [
+        "earnings",
+        "rate_decision",
+        "fda_regulatory"
+      ]
+    },
+    {
+      "source_id": "coinbase_advanced_public",
+      "catalyst_ids": [
+        "crypto_hack",
+        "crypto_listing"
+      ]
+    }
+  ],
+  "form_8k_item_map": [
+    {
+      "item": "1.01",
+      "title": "Entry into a Material Definitive Agreement",
+      "related_catalyst_ids": [
+        "ma",
+        "contract",
+        "financing"
+      ]
+    },
+    {
+      "item": "1.02",
+      "title": "Termination of a Material Definitive Agreement",
+      "related_catalyst_ids": [
+        "ma",
+        "contract"
+      ]
+    },
+    {
+      "item": "1.05",
+      "title": "Material Cybersecurity Incidents",
+      "related_catalyst_ids": [
+        "cybersecurity"
+      ]
+    },
+    {
+      "item": "2.01",
+      "title": "Completion of Acquisition or Disposition of Assets",
+      "related_catalyst_ids": [
+        "ma"
+      ]
+    },
+    {
+      "item": "2.02",
+      "title": "Results of Operations and Financial Condition",
+      "related_catalyst_ids": [
+        "earnings",
+        "guidance",
+        "preannouncement"
+      ]
+    },
+    {
+      "item": "2.05",
+      "title": "Costs Associated with Exit or Disposal Activities",
+      "related_catalyst_ids": [
+        "bankruptcy",
+        "spinoff"
+      ]
+    },
+    {
+      "item": "2.06",
+      "title": "Material Impairments",
+      "related_catalyst_ids": [
+        "restatement"
+      ]
+    },
+    {
+      "item": "4.01",
+      "title": "Changes in Registrant's Certifying Accountant",
+      "related_catalyst_ids": [
+        "restatement"
+      ]
+    },
+    {
+      "item": "4.02",
+      "title": "Non-Reliance on Previously Issued Financial Statements",
+      "related_catalyst_ids": [
+        "restatement"
+      ]
+    },
+    {
+      "item": "5.02",
+      "title": "Departure/Appointment of Directors or Certain Officers",
+      "related_catalyst_ids": [
+        "management"
+      ]
+    },
+    {
+      "item": "7.01",
+      "title": "Regulation FD Disclosure",
+      "related_catalyst_ids": [
+        "guidance",
+        "earnings_call"
+      ]
+    },
+    {
+      "item": "8.01",
+      "title": "Other Events",
+      "related_catalyst_ids": [
+        "sec_filing"
+      ]
+    }
+  ],
+  "default_catalyst_registry_coverage": {
+    "registry_version": "news/catalysts/1.0.0",
+    "registry_ids": [
+      "earnings",
+      "guidance",
+      "partnership",
+      "contract",
+      "acquisition",
+      "merger",
+      "offering",
+      "financing",
+      "analyst",
+      "bankruptcy",
+      "management",
+      "fda",
+      "approval",
+      "clinical",
+      "sec_filing",
+      "investigation",
+      "rate_decision",
+      "cpi",
+      "payroll",
+      "inventory",
+      "opec",
+      "central_bank",
+      "supply",
+      "production"
+    ],
+    "mapped_in_this_catalog": [
+      "acquisition",
+      "analyst",
+      "approval",
+      "bankruptcy",
+      "central_bank",
+      "clinical",
+      "contract",
+      "cpi",
+      "earnings",
+      "fda",
+      "financing",
+      "guidance",
+      "inventory",
+      "investigation",
+      "management",
+      "merger",
+      "offering",
+      "opec",
+      "partnership",
+      "payroll",
+      "production",
+      "rate_decision",
+      "sec_filing",
+      "supply"
+    ],
+    "unmapped_registry_ids": [],
+    "research_only_gap_ids": [
+      "buybacks",
+      "dividends",
+      "litigation",
+      "geopolitical",
+      "unusual_volume",
+      "short_squeeze",
+      "options_activity",
+      "earnings_call"
+    ]
+  }
 }

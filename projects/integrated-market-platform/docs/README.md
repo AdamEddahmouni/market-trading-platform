@@ -68,6 +68,7 @@ When documents disagree, resolve in this order (highest first):
 | Paper decision lifecycle | [PAPER_DECISION_LIFECYCLE.md](architecture/PAPER_DECISION_LIFECYCLE.md) |
 | Data contracts & timestamps | [DATA_CONTRACTS.md](architecture/DATA_CONTRACTS.md) |
 | News/event foundation (deterministic) | [NEWS_EVENT_FOUNDATION.md](architecture/NEWS_EVENT_FOUNDATION.md) |
+| Professor source/keyword catalog (research JSON) | [PROFESSOR_SOURCE_KEYWORD_CATALOG.md](research/PROFESSOR_SOURCE_KEYWORD_CATALOG.md) |
 | News AI intelligence (analysis only) | [NEWS_AI_INTELLIGENCE.md](architecture/NEWS_AI_INTELLIGENCE.md) |
 | News strategy evaluation laboratory | [NEWS_STRATEGY_EVALUATION.md](architecture/NEWS_STRATEGY_EVALUATION.md) |
 | Paper forward-testing bridge | [PAPER_FORWARD_TESTING_BRIDGE.md](architecture/PAPER_FORWARD_TESTING_BRIDGE.md) |

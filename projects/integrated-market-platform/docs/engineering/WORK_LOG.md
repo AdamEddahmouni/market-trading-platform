@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Professor source/keyword catalog 1.1.0 (PD-05/PD-06 continuation)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/research` |
+| **Summary** | Continued the #102 research catalog on `origin/main` `5459619a`: schema 1.1.0 adds market-by-market source maps (equity/options/futures/commodities/FI/FX/crypto/macro), inclusion/validation fields, full `DEFAULT_CATALYST_REGISTRY` coverage, professor partnership/calls keyword packs, and an 8-K item map. Docs/JSON only. |
+| **Key files** | `docs/research/PROFESSOR_SOURCE_KEYWORD_CATALOG.json`, `docs/research/PROFESSOR_SOURCE_KEYWORD_CATALOG.schema.json`, `docs/research/PROFESSOR_SOURCE_KEYWORD_CATALOG.md`, `docs/README.md` |
+| **Tests** | `python3` JSON load + required-field checks (48 sources, 46 catalysts, 8 market maps); `python3 tools/check_docs_links.py` after docs edit |
+| **Related** | PR #102 `73c7475`; Project store `docs/professor-source-keyword-catalog.md` |
+| **Notes** | No edits to `news/sources.py`, `news/catalysts.py`, hop, FTEP manifests, Path A, G7, or OpenD. Live off. Keyword packs not wired. `access_in_imp_claimed` remains true only for `news_fixture`. |
+
 ## 2026-09-14 — Track H leftover: fail-close remaining backend error_category gaps
 
 | Field | Value |

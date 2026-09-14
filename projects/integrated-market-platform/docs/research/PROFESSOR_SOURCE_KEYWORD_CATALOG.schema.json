@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "imp://research/professor-source-keyword-catalog/1.0.0",
+  "$id": "imp://research/professor-source-keyword-catalog/1.1.0",
   "title": "Professor source and keyword catalog",
   "type": "object",
   "required": [
@@ -11,12 +11,18 @@
     "imp_role_legend",
     "imp_availability_legend",
     "sources",
-    "catalyst_taxonomy"
+    "catalyst_taxonomy",
+    "market_source_maps",
+    "keyword_packs",
+    "default_catalyst_registry_coverage"
   ],
   "properties": {
     "schema_version": { "type": "string" },
     "status": { "const": "RESEARCH_ONLY" },
     "observed_at": { "type": "string", "format": "date-time" },
+    "git_baseline": { "type": "string" },
+    "increment": { "type": "object" },
+    "pd05_pd06": { "type": "object" },
     "runtime_policy_frozen": { "type": "object" },
     "imp_role_legend": { "type": "object" },
     "imp_availability_legend": { "type": "object" },
@@ -28,6 +34,38 @@
       "type": "array",
       "items": { "$ref": "#/$defs/catalyst_entry" }
     },
+    "keyword_packs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/keyword_pack" }
+    },
+    "market_source_maps": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/market_map" }
+    },
+    "source_catalyst_links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source_id", "catalyst_ids"],
+        "properties": {
+          "source_id": { "type": "string" },
+          "catalyst_ids": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "form_8k_item_map": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["item", "title", "related_catalyst_ids"],
+        "properties": {
+          "item": { "type": "string" },
+          "title": { "type": "string" },
+          "related_catalyst_ids": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "default_catalyst_registry_coverage": { "type": "object" },
     "related_authoritative_docs": { "type": "array", "items": { "type": "string" } }
   },
   "$defs": {
@@ -51,7 +89,10 @@
         "pit_suitability",
         "imp_role",
         "imp_availability",
-        "access_in_imp_claimed"
+        "access_in_imp_claimed",
+        "inclusion_rationale",
+        "validation_method",
+        "catalog_increment"
       ],
       "properties": {
         "source_id": { "type": "string" },
@@ -86,6 +127,18 @@
           "type": "boolean",
           "description": "False unless verified wiring + operator credentials exist; documentation alone is false."
         },
+        "professor_named": { "type": "boolean" },
+        "inclusion_rationale": { "type": "string" },
+        "validation_method": {
+          "enum": [
+            "FIXTURE_REPLAY",
+            "IN_REPO_DOC_AND_ADAPTER",
+            "IN_REPO_DOC_CHARACTERIZATION",
+            "RESEARCH_VENDOR_OR_AGENCY_DOCS",
+            "OPERATOR_PROBE_REQUIRED"
+          ]
+        },
+        "catalog_increment": { "type": "string" },
         "canonical_refs": { "type": "array", "items": { "type": "string" } },
         "notes": { "type": "string" }
       }
@@ -108,7 +161,41 @@
         "example_terms": { "type": "array", "items": { "type": "string" } },
         "in_default_catalyst_registry": { "type": "boolean" },
         "registry_catalyst_id": { "type": "string" },
-        "professor_priority": { "type": "string" }
+        "professor_priority": { "type": "string" },
+        "inclusion_rationale": { "type": "string" },
+        "validation_status": { "type": "string" },
+        "catalog_increment": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "keyword_pack": {
+      "type": "object",
+      "required": ["pack_id", "catalyst_id", "status", "terms"],
+      "properties": {
+        "pack_id": { "type": "string" },
+        "catalyst_id": { "type": "string" },
+        "status": { "const": "RESEARCH_ONLY_NOT_WIRED" },
+        "terms": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": "string" }
+      }
+    },
+    "market_map": {
+      "type": "object",
+      "required": [
+        "market_id",
+        "primary_evidence_source_ids",
+        "overlay_source_ids",
+        "validation_reference_source_ids",
+        "research_only_source_ids"
+      ],
+      "properties": {
+        "market_id": { "type": "string" },
+        "professor_named_source_ids": { "type": "array", "items": { "type": "string" } },
+        "primary_evidence_source_ids": { "type": "array", "items": { "type": "string" } },
+        "overlay_source_ids": { "type": "array", "items": { "type": "string" } },
+        "validation_reference_source_ids": { "type": "array", "items": { "type": "string" } },
+        "research_only_source_ids": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": "string" }
       }
     }
   }
