@@ -5,6 +5,7 @@ from __future__ import annotations
 import unittest
 
 from market_platform_foundation.intelligence.contracts import (
+    ContractReference,
     IntelligenceScope,
     OpportunitySide,
     OpportunityV1,
@@ -115,6 +116,38 @@ class OpportunityRankingVectorTests(unittest.TestCase):
 
         self.assertEqual(comparison_vectors_from_repository(None), {})
         self.assertEqual(comparison_vectors_from_repository(object()), {})
+
+    def test_shared_explicit_thesis_keeps_ranked_winner_not_summary_id(self) -> None:
+        def _with_thesis(opportunity_id: str, thesis: str) -> OpportunityV1:
+            return OpportunityV1(
+                opportunity_id=opportunity_id,
+                schema_version="1",
+                scope=IntelligenceScope(instrument_ids=("AAPL",), context_id="regular"),
+                created_at_ns=10_000,
+                quality=QUALITY,
+                side=OpportunitySide.LONG,
+                reason_summary=f"{opportunity_id} candidate",
+                source_forecast_refs=(ContractReference(kind="forecast", id=f"fc-{opportunity_id}"),),
+                metadata={"underlying_thesis_id": thesis},
+            )
+
+        rows = assemble_opportunity_review_rows(
+            opportunities=(_with_thesis("opp-a", "earnings-aapl"), _with_thesis("opp-z", "earnings-aapl")),
+            assessments_by_opportunity={
+                "opp-a": AssessmentAction.EMIT,
+                "opp-z": AssessmentAction.EMIT,
+            },
+        )
+        self.assertEqual({row.metadata.get("thesis_identity") for row in rows}, {"underlying:earnings-aapl"})
+        ranked = rank_review_rows(
+            rows,
+            comparison_vectors={"opp-a": _vector(pnl=10), "opp-z": _vector(pnl=900)},
+        )
+        self.assertEqual(len(ranked), 1)
+        self.assertEqual(ranked[0].opportunity_id, "opp-z")
+        self.assertEqual(ranked[0].duplicates, ("opp-a",))
+        self.assertNotIn("rank_score", ranked[0].to_dict())
+        self.assertEqual(ranked[0].rank_order, 1)
 
 
 if __name__ == "__main__":

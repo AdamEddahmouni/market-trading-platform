@@ -6,6 +6,7 @@ from typing import Any, Mapping
 
 from ..contracts.opportunity import OpportunityV1, opportunity_v1_from_dict
 from ..persistence.codec import PERSISTENCE_METADATA_FIELDS
+from .clustering import OpportunityClusteringError, derive_thesis_identity
 from .data_quality import project_opportunity_data_quality
 from .freshness import (
     OpportunityFreshnessPolicy,
@@ -54,6 +55,12 @@ def _summary_from_opportunity(
         unavailable += ("expected_net_edge",)
     if opportunity.expected_return is None:
         unavailable += ("expected_return",)
+    metadata: dict[str, Any] = {"adapter": "opportunity_v1_repo"}
+    try:
+        metadata["thesis_identity"] = derive_thesis_identity(opportunity)
+    except OpportunityClusteringError:
+        metadata["thesis_identity_status"] = "UNAVAILABLE"
+        metadata["thesis_identity_reason"] = "UNDERLYING_THESIS_ID_INVALID"
     return OpportunitySummary(
         summary_id=opportunity.opportunity_id,
         instrument_id=instrument_id,
@@ -73,7 +80,7 @@ def _summary_from_opportunity(
         identity_kind="OPPORTUNITY_V1",
         accepted=eligible,
         unavailable_fields=unavailable,
-        metadata={"adapter": "opportunity_v1_repo"},
+        metadata=metadata,
     )
 
 
