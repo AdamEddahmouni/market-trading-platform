@@ -485,15 +485,9 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     )
                     return
                 as_of = projections.build_as_of_context(self.store)
-                live_payload = live_projections.build_live_order_flow_payload(symbol)
-                if live_payload is not None and live_payload.get("available"):
-                    self._send_json(_enrich_lane_payload(live_payload, lane_id="order-flow"))
-                    return
-                from ..providers.projections import build_workspace_order_flow_payload
-
                 self._send_json(
                     _enrich_lane_payload(
-                        build_workspace_order_flow_payload(
+                        live_projections.resolve_workspace_order_flow_payload(
                             symbol,
                             as_of_context=as_of,
                             prediction_cutoff=self.store.prediction_cutoff(),
@@ -654,15 +648,9 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     )
                     return
                 as_of = projections.build_as_of_context(self.store)
-                live_book = live_projections.build_live_order_book_payload(symbol)
-                if live_book is not None and live_book.get("available"):
-                    self._send_json(_enrich_lane_payload(live_book, lane_id="order-book"))
-                    return
-                from ..providers.projections import build_workspace_order_book_payload
-
                 self._send_json(
                     _enrich_lane_payload(
-                        build_workspace_order_book_payload(
+                        live_projections.resolve_workspace_order_book_payload(
                             symbol,
                             as_of_context=as_of,
                             prediction_cutoff=self.store.prediction_cutoff(),

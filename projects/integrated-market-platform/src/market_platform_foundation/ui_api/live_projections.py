@@ -2,18 +2,85 @@
 
 from __future__ import annotations
 
-import time
 from typing import Any
 
 from ..market_data.live_config import live_observational_enabled, live_internal_simulation_enabled, moomoo_live_enabled
 from ..market_data.live_runtime import get_live_runtime
+from ..market_data.provider_lifecycle import ProviderConnectionState
 from .store import ReplayStore
+
+_UNHEALTHY_LIVE_STATES = frozenset(
+    {
+        ProviderConnectionState.DISABLED,
+        ProviderConnectionState.DISCONNECTED,
+        ProviderConnectionState.ERROR,
+        ProviderConnectionState.RECONNECTING,
+    }
+)
+_NON_ACTIONABLE_MARK_QUALITY = frozenset({"DISCONNECTED", "STALE", "UNAVAILABLE"})
+_LIVE_BOOK_DISCLAIMER = "LIVE OBSERVATIONAL · MOOMOO MBP (not MBO)"
+_LIVE_FLOW_DISCLAIMER = "LIVE OBSERVATIONAL · MOOMOO"
 
 
 def _runtime_or_none():
     if not live_observational_enabled():
         return None
     return get_live_runtime(create=True)
+
+
+def _connection_state(runtime: Any) -> ProviderConnectionState | str:
+    state = getattr(getattr(runtime, "lifecycle", None), "connection_state", None)
+    return state if state is not None else ""
+
+
+def _live_feed_unhealthy(runtime: Any) -> bool:
+    state = _connection_state(runtime)
+    if state in _UNHEALTHY_LIVE_STATES:
+        return True
+    return str(getattr(state, "value", state) or "").upper() in {
+        member.value for member in _UNHEALTHY_LIVE_STATES
+    }
+
+
+def _live_unavailable_payload(
+    instrument_id: str,
+    *,
+    reason: str,
+    disclaimer: str,
+    state: str,
+) -> dict[str, Any]:
+    symbol = instrument_id.upper()
+    return {
+        "available": False,
+        "disclaimer": disclaimer,
+        "instrument_id": symbol,
+        "provider_id": "MOOMOO",
+        "reason": reason,
+        "source": "LIVE_OBSERVATIONAL",
+        "state": state,
+        "symbol": symbol,
+    }
+
+
+def _book_block_reason(book: dict[str, Any], runtime: Any) -> str | None:
+    if _live_feed_unhealthy(runtime):
+        return "LIVE_FEED_UNHEALTHY"
+    quality = str(book.get("quality") or "").upper()
+    freshness = str(book.get("freshness_status") or "").upper()
+    if quality == "STALE" or freshness == "STALE":
+        return "STALE_BOOK"
+    if book.get("book_state_valid") is False:
+        return "INVALID_BOOK"
+    return None
+
+
+def _order_flow_block_reason(runtime: Any, instrument_id: str) -> str | None:
+    if _live_feed_unhealthy(runtime):
+        return "LIVE_FEED_UNHEALTHY"
+    freshness_ms = runtime.state.freshness_ms(instrument_id)
+    if freshness_ms is not None and freshness_ms > 5000:
+        return "STALE_TRADES"
+    return None
 
 
 def build_provider_health_payload(store: ReplayStore) -> dict[str, Any]:
@@ -172,6 +239,14 @@ def build_live_order_flow_payload(instrument_id: str) -> dict[str, Any] | None:
     if runtime is None:
         return None
     symbol = instrument_id.upper()
+    block = _order_flow_block_reason(runtime, symbol)
+    if block is not None:
+        return _live_unavailable_payload(
+            symbol,
+            reason=block,
+            disclaimer=_LIVE_FLOW_DISCLAIMER,
+            state="STALE" if block == "STALE_TRADES" else "UNAVAILABLE",
+        )
     trades = runtime.state.trades_for(symbol)
     book = runtime.state.book_for(symbol)
     metrics = runtime.state.metrics_report()
@@ -179,14 +254,12 @@ def build_live_order_flow_payload(instrument_id: str) -> dict[str, Any] | None:
         reason = "NO_LIVE_TRADES"
         if book is None and runtime.capability_registry.get("US_EQUITY_DEPTH") and not runtime.capability_registry.get("US_EQUITY_DEPTH").account_entitled:
             reason = "ENTITLEMENT_MISSING"
-        return {
-            "available": False,
-            "disclaimer": "LIVE OBSERVATIONAL · MOOMOO",
-            "instrument_id": symbol,
-            "provider_id": "MOOMOO",
-            "reason": reason,
-            "symbol": symbol,
-        }
+        return _live_unavailable_payload(
+            symbol,
+            reason=reason,
+            disclaimer=_LIVE_FLOW_DISCLAIMER,
+            state="UNAVAILABLE",
+        )
     cvd_input: list[dict[str, Any]] = []
     for trade in trades:
         signed = 0.0
@@ -251,7 +324,20 @@ def build_live_order_book_payload(instrument_id: str) -> dict[str, Any] | None:
     symbol = instrument_id.upper()
     book = runtime.state.book_for(symbol)
     if not book:
-        return None
+        return _live_unavailable_payload(
+            symbol,
+            reason="NO_LIVE_BOOK",
+            disclaimer=_LIVE_BOOK_DISCLAIMER,
+            state="UNAVAILABLE",
+        )
+    block = _book_block_reason(book, runtime)
+    if block is not None:
+        return _live_unavailable_payload(
+            symbol,
+            reason=block,
+            disclaimer=_LIVE_BOOK_DISCLAIMER,
+            state="STALE" if block == "STALE_BOOK" else "UNAVAILABLE",
+        )
     bids = list(book.get("bids") or [])
     asks = list(book.get("asks") or [])
     best_bid = bids[0] if bids else None
@@ -272,12 +358,51 @@ def build_live_order_book_payload(instrument_id: str) -> dict[str, Any] | None:
     }
     return {
         "available": True,
-        "disclaimer": "LIVE OBSERVATIONAL · MOOMOO MBP (not MBO)",
+        "disclaimer": _LIVE_BOOK_DISCLAIMER,
         "provider_id": "MOOMOO",
         "snapshot_count": 1,
         "snapshots": [snapshot],
+        "source": "LIVE_OBSERVATIONAL",
         "symbol": symbol,
     }
+
+
+def resolve_workspace_order_book_payload(
+    symbol: str,
+    *,
+    as_of_context: dict[str, Any],
+    prediction_cutoff: int,
+) -> dict[str, Any]:
+    """Serve live book when observational mode is on; never substitute fixture data."""
+    live_book = build_live_order_book_payload(symbol)
+    if live_book is not None:
+        return live_book
+    from ..providers.projections import build_workspace_order_book_payload
+
+    return build_workspace_order_book_payload(
+        symbol,
+        as_of_context=as_of_context,
+        prediction_cutoff=prediction_cutoff,
+    )
+
+
+def resolve_workspace_order_flow_payload(
+    symbol: str,
+    *,
+    as_of_context: dict[str, Any],
+    prediction_cutoff: int,
+) -> dict[str, Any]:
+    """Serve live order-flow when observational mode is on; never substitute fixture data."""
+    live_payload = build_live_order_flow_payload(symbol)
+    if live_payload is not None:
+        return live_payload
+    from ..providers.projections import build_workspace_order_flow_payload
+
+    return build_workspace_order_flow_payload(
+        symbol,
+        as_of_context=as_of_context,
+        prediction_cutoff=prediction_cutoff,
+    )
 
 
 def resolve_live_operating_modes(store: ReplayStore) -> tuple[str, str, str, str]:
@@ -311,6 +436,9 @@ def apply_live_marks_to_ledger(store: ReplayStore) -> None:
         return
     mark = runtime.live_mark_for(focus)
     if mark is None:
+        return
+    quality = str(mark.get("mark_quality") or "").upper()
+    if quality in _NON_ACTIONABLE_MARK_QUALITY:
         return
     store.paper_ledger.apply_live_mark(
         mark_minor=int(mark["mark_minor"]),
