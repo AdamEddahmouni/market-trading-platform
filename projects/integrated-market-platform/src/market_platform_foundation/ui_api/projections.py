@@ -529,15 +529,26 @@ def build_instrument_overview(store: ReplayStore, instrument_id: str) -> dict[st
         payload = bar.get("bar_payload", {})
         if not isinstance(payload, dict):
             continue
+        normalized_event_id = str(bar["normalized_event_id"])
         bars_payload.append(
             {
                 "available_time": int(bar["available_time"]),
+                "available_time_ns": int(bar["available_time"]),
+                "bar_id": normalized_event_id,
                 "close": str(payload.get("close", "0")),
                 "epistemic_class": "OBSERVED",
                 "high": str(payload.get("high", "0")),
                 "low": str(payload.get("low", "0")),
                 "open": str(payload.get("open", "0")),
+                "provenance": {
+                    "event_type": "BAR_OHLCV_1M",
+                    "ingest_run_id": str(bar.get("ingest_run_id", "")),
+                    "normalized_event_id": normalized_event_id,
+                    "raw_reference": str(bar.get("raw_reference", "")),
+                    "source_instance_id": str(bar.get("source_instance_id", "")),
+                },
                 "quality_state": str(bar.get("quality_state", "GOOD")),
+                "source_time_ns": int(bar["event_time"]),
                 "time": _bar_time_iso(int(bar["available_time"])),
                 "volume": int(payload.get("volume", 0)),
             }

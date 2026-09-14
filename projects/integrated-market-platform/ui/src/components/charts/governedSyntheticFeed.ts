@@ -32,13 +32,20 @@ function makeBar(
     close,
     volume: 8_000 + (seed % 40) * 250,
   };
+  const barEndMs = openMs + MS_PER_BAR[timeframe];
+  const syntheticId = `${instrumentId}:${timeframe}:${openMs}`;
   return {
-    bar_id: `${instrumentId}:${timeframe}:${openMs}`,
+    bar_id: syntheticId,
     instrument_id: instrumentId,
     timeframe,
     source_time_ns: openMs * 1_000_000,
+    available_time_ns: barEndMs * 1_000_000,
     ohlcv,
     data_kind: "SYNTHETIC_GOVERNED",
+    provenance: {
+      event_type: "BAR_OHLCV_1M",
+      normalized_event_id: syntheticId,
+    },
   };
 }
 

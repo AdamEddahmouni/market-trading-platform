@@ -16,7 +16,7 @@ export type ImpVelaChartInstance = {
   ready: () => Promise<void>;
   destroy: () => void;
   resize: () => void;
-  setMarket: (next: { bars?: unknown[] }) => Promise<unknown>;
+  setMarket: (next: { data?: unknown[]; bars?: unknown[] }) => Promise<unknown>;
   setTheme: (theme: "dark" | "light") => unknown;
   drawings: {
     supported: boolean;

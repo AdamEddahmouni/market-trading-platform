@@ -1,11 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import {
-  createChart,
-  type CandlestickData,
-  type IChartApi,
-  type ISeriesApi,
-  type Time,
-} from "lightweight-charts";
+import { useEffect, useMemo, useState } from "react";
 import {
   ADMITTED_REPLAY_INSTRUMENT_ID,
   FROZEN_DEMO_REFERENCE_SYMBOL,
@@ -13,19 +6,19 @@ import {
   type WorkspaceSqueezeResponse,
 } from "../../api/client";
 import { useContextQuery, useWorkspaceEvidenceQuery } from "../../api/hooks";
+import { WorkspacePriceChart } from "../charts/WorkspacePriceChart";
+import {
+  mapWorkspaceBarsToImpRecords,
+  type WorkspaceCanonicalBar,
+} from "../charts/workspaceImpBarFeed";
+import { projectWorkspaceEvidenceMarkers } from "../charts/workspaceSemanticMarkers";
 import { SqueezeWorkspacePanel } from "../squeeze/SqueezeWorkspacePanel";
 import { LiveMarketPanel } from "../live/LiveMarketPanel";
 import { WhatMattersNowPanel } from "../workspace/WhatMattersNowPanel";
 import { WorkspaceEvidenceDrawer } from "../workspace/WorkspaceEvidenceDrawer";
 import { formatDataHealthLabel } from "./workspaceHealth";
 
-export type WorkspaceBar = {
-  time: string;
-  open: string;
-  high: string;
-  low: string;
-  close: string;
-};
+export type WorkspaceBar = WorkspaceCanonicalBar;
 
 export type WorkspaceObservabilityProps = {
   instrumentId: string;
@@ -41,11 +34,6 @@ export type WorkspaceObservabilityProps = {
   cursorIndex: number;
   maxIndex: number;
 };
-
-function toChartTime(iso: string): Time {
-  const ms = Date.parse(iso);
-  return Math.floor(ms / 1000) as Time;
-}
 
 export function useWorkspaceContext(instrumentId: string) {
   const contextQuery = useContextQuery();
@@ -80,12 +68,19 @@ export function WorkspaceObservability({
   cursorIndex,
   maxIndex,
 }: WorkspaceObservabilityProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const chartRef = useRef<IChartApi | null>(null);
-  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const [selectedLane, setSelectedLane] = useState<WorkspaceEvidenceLane | null>(null);
 
   const { evidence, evidenceQuery, isLive, dataLabel } = useWorkspaceContext(instrumentId);
+
+  const impBars = useMemo(
+    () => (replayChartAvailable ? mapWorkspaceBarsToImpRecords(instrumentId, bars) : null),
+    [bars, instrumentId, replayChartAvailable],
+  );
+
+  const chartMarkers = useMemo(() => {
+    if (!impBars || !evidence) return [];
+    return projectWorkspaceEvidenceMarkers(evidence.what_matters_now, impBars);
+  }, [evidence, impBars]);
 
   useEffect(() => {
     void fetch("/operator/workspace", {
@@ -105,50 +100,6 @@ export function WorkspaceObservability({
       }),
     }).catch(() => undefined);
   }, [instrumentId, isLive]);
-
-  useEffect(() => {
-    if (!containerRef.current || !replayChartAvailable) return;
-    const chart = createChart(containerRef.current, {
-      layout: { background: { color: "#141820" }, textColor: "#e8ecf4" },
-      grid: { vertLines: { color: "#2a3142" }, horzLines: { color: "#2a3142" } },
-      width: containerRef.current.clientWidth,
-      height: 320,
-    });
-    const series = chart.addCandlestickSeries({
-      upColor: "#3d9970",
-      downColor: "#c44e52",
-      borderVisible: false,
-      wickUpColor: "#3d9970",
-      wickDownColor: "#c44e52",
-    });
-    chartRef.current = chart;
-    seriesRef.current = series;
-    const resize = () => {
-      if (containerRef.current && chartRef.current) {
-        chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
-      }
-    };
-    window.addEventListener("resize", resize);
-    return () => {
-      window.removeEventListener("resize", resize);
-      chart.remove();
-      chartRef.current = null;
-      seriesRef.current = null;
-    };
-  }, [replayChartAvailable]);
-
-  useEffect(() => {
-    if (!seriesRef.current || !replayChartAvailable) return;
-    const data: CandlestickData[] = bars.map((bar) => ({
-      time: toChartTime(bar.time),
-      open: Number(bar.open),
-      high: Number(bar.high),
-      low: Number(bar.low),
-      close: Number(bar.close),
-    }));
-    seriesRef.current.setData(data);
-    chartRef.current?.timeScale().fitContent();
-  }, [bars, replayChartAvailable]);
 
   return (
     <>
@@ -181,7 +132,12 @@ export function WorkspaceObservability({
               onChange={(event) => onScrub(Number(event.target.value))}
             />
           </div>
-          <div ref={containerRef} className="price-chart" />
+          <WorkspacePriceChart
+            bars={bars}
+            impBars={impBars}
+            markers={chartMarkers}
+            replayChartAvailable={replayChartAvailable}
+          />
           <section className="feature-grid">
             <h2>Derived features</h2>
             <ul>

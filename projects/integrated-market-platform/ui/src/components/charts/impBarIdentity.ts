@@ -14,6 +14,15 @@ export type ImpOhlcv = {
 
 export type ImpBarDataKind = "SYNTHETIC_GOVERNED" | "REPLAY" | "LIVE";
 
+/** Canonical BAR_OHLCV_1M provenance carried at the IMP boundary (not on Vela). */
+export type ImpBarProvenance = {
+  event_type: "BAR_OHLCV_1M";
+  normalized_event_id: string;
+  raw_reference?: string;
+  ingest_run_id?: string;
+  source_instance_id?: string;
+};
+
 /** Canonical IMP bar record (governed timestamps and identity). */
 export type ImpBarRecord = {
   bar_id: string;
@@ -21,8 +30,11 @@ export type ImpBarRecord = {
   timeframe: ImpTimeframe;
   /** Bar open instant — epoch nanoseconds (IMP source-time semantics). */
   source_time_ns: number;
+  /** Bar availability instant — epoch nanoseconds (PIT / replay cutoff semantics). */
+  available_time_ns: number;
   ohlcv: ImpOhlcv;
   data_kind: ImpBarDataKind;
+  provenance: ImpBarProvenance;
 };
 
 export type VelaBarProjection = {
