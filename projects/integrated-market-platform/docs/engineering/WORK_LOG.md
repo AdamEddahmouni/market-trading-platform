@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Lane E: preview stale server codes → REVALIDATION_REQUIRED
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/paper-workspace` |
+| **Summary** | Reconciled UX-00 P2 #6 onto `reconcile/ux-preview-revalidation-20260914`: removed unreachable `STALE` presentation status; map `PREVIEW_*_STALE`, `PREVIEW_EXPIRED`, `PREVIEW_INTENT_MISMATCH`, and `PREVIEW_REQUIRED` errors to `REVALIDATION_REQUIRED` (supersedes draft PR #127). |
+| **Key files** | `ui/src/components/paper-workspace/paperPreviewPresentation.ts`, `PaperPreviewStatus.tsx`, `paperPreviewPresentation.test.ts`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `cd ui && npm run typecheck`; `npm test -- paperPreviewPresentation.test.ts PaperPreviewStatus.test.tsx` |
+| **Related** | UX-00 forensic audit §13 P2 #6; supersedes PR #127 |
+| **Notes** | No submit authority or backend risk changes. Lane J (#128/#126/#124/#123/#114/#115) untouched. Empirical: NONE. |
+
 ## 2026-09-14 — Merge origin/main (1b60b5a) into PR #136 test-only branch
 
 | Field | Value |

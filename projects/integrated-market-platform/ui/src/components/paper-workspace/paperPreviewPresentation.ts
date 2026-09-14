@@ -5,10 +5,23 @@ export type PaperPreviewPresentationStatus =
   | "PREVIEWING"
   | "ACCEPTED"
   | "REJECTED"
-  | "STALE"
   | "REVALIDATION_REQUIRED"
   | "AUTHORITY_UNAVAILABLE"
   | "ERROR";
+
+/** Server preview binding failures and local input drift share one operator-facing state. */
+const PREVIEW_REVALIDATION_MARKERS = [
+  "PREVIEW_EXPIRED",
+  "PREVIEW_INTENT_MISMATCH",
+  "PREVIEW_PORTFOLIO_STALE",
+  "PREVIEW_POLICY_STALE",
+  "PREVIEW_MARGIN_STALE",
+  "PREVIEW_REQUIRED",
+] as const;
+
+function errorRequiresPreviewRevalidation(error: string): boolean {
+  return PREVIEW_REVALIDATION_MARKERS.some((marker) => error.includes(marker));
+}
 
 export type PaperPreviewPresentationState = {
   status: PaperPreviewPresentationStatus;
@@ -56,6 +69,14 @@ export function derivePreviewPresentationState(input: PreviewPresentationInput):
   }
 
   if (input.error) {
+    if (errorRequiresPreviewRevalidation(input.error)) {
+      return {
+        ...base,
+        status: "REVALIDATION_REQUIRED",
+        title: "Revalidation required",
+        message: input.error,
+      };
+    }
     return {
       ...base,
       status: "ERROR",
