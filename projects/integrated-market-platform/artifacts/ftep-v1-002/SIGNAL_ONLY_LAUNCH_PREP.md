@@ -111,6 +111,8 @@ During an **active governed SIGNAL_ONLY session** (after both cohort `create_ses
 3. Run the **catalyst watch dry path** (fixture summaries + optional session correlation; no locks or orders):
    ```powershell
    python tools/imp.py ftep watch-catalysts --json
+   # active RTH session + Finviz live gates (SIGNAL_ONLY prospective ingress, no locks):
+   python tools/ftep_watch_catalysts.py FTEP-V1-002 --live-ingress --json
    # closed market / no session yet:
    python tools/imp.py ftep watch-catalysts --fixture --json
    ```
