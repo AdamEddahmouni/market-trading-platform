@@ -7,6 +7,12 @@ from .artifacts import (
     verify_training_dataset_fingerprint,
 )
 from .contamination import ContaminationLedger, assess_holdout_contamination
+from .dataset_manifest import (
+    assess_validation_dataset_pit,
+    build_validation_dataset_manifest,
+    reject_ftep_dataset_binding,
+    require_clean_validation_dataset_manifest,
+)
 from .engine import ValidationEngine, ValidationRunContext
 from .errors import ValidationError
 from .folds import fold_example_temporal_violation, generate_walk_forward_folds
@@ -15,6 +21,7 @@ from .identity import (
     derive_contamination_record_id,
     derive_holdout_commitment_id,
     derive_validation_dataset_fingerprint,
+    derive_validation_dataset_id,
     derive_validation_plan_id,
     derive_validation_report_id,
 )
@@ -32,6 +39,8 @@ from .serialization import (
     holdout_commitment_v1_to_dict,
     holdout_unlock_receipt_v1_from_dict,
     holdout_unlock_receipt_v1_to_dict,
+    validation_dataset_manifest_v1_from_dict,
+    validation_dataset_manifest_v1_to_dict,
     validation_plan_v1_from_dict,
     validation_plan_v1_to_dict,
     validation_report_v1_from_dict,
@@ -115,13 +124,16 @@ __all__ = [
     "assess_prompt_only_time_travel",
     "assess_retrieval_source",
     "assess_tool_policy",
+    "assess_validation_dataset_pit",
     "assert_purge_clean_or_raise",
+    "build_validation_dataset_manifest",
     "build_validation_plan",
     "contamination_record_v1_from_dict",
     "contamination_record_v1_to_dict",
     "derive_contamination_record_id",
     "derive_holdout_commitment_id",
     "derive_validation_dataset_fingerprint",
+    "derive_validation_dataset_id",
     "derive_validation_plan_id",
     "derive_validation_report_id",
     "evaluate_statistical_criteria",
@@ -137,9 +149,13 @@ __all__ = [
     "moving_block_bootstrap_ci",
     "paired_metric_deltas",
     "predict_logistic_probability",
+    "reject_ftep_dataset_binding",
+    "require_clean_validation_dataset_manifest",
     "require_historical_inference_allowed",
     "run_candidate_inference",
     "statistical_candidate_profile",
+    "validation_dataset_manifest_v1_from_dict",
+    "validation_dataset_manifest_v1_to_dict",
     "validation_plan_v1_from_dict",
     "validation_plan_v1_to_dict",
     "validation_report_v1_from_dict",

@@ -14,7 +14,9 @@ from .artifacts import verify_candidate_ready_for_validation
 from .contamination import ContaminationLedger, assess_holdout_contamination
 from .embargo import verify_embargo_for_fold_sequence
 from .errors import ValidationError
+from .dataset_manifest import build_validation_dataset_manifest
 from .folds import fold_example_temporal_violation, generate_walk_forward_folds
+from .serialization import validation_dataset_manifest_v1_to_dict
 from .holdout import ValidationDataAccessGuard, verify_plan_matches_commitment
 from .identity import derive_validation_dataset_fingerprint, derive_validation_report_id
 from .metrics import aggregate_metric_values, compute_example_primary_metric, evaluate_guardrails
@@ -134,6 +136,7 @@ class ValidationEngine:
             knowledge_status = KnowledgeAssessmentStatus.FAIL_KNOWLEDGE_CUTOFF
 
         fold_results: list[FoldMetricResult] = []
+        dataset_manifests: list[Any] = []
         if plan.walk_forward_spec is not None:
             folds = generate_walk_forward_folds(plan.walk_forward_spec, purge_ns=plan.purge_ns)
             datasets_by_fold: dict[str, TrainingDatasetManifestV1] = {}
@@ -209,6 +212,17 @@ class ValidationEngine:
                         knowledge_assessment_status=knowledge_status,
                         contamination_disposition=contamination,
                         disposition=fold_disposition,
+                    )
+                )
+                dataset_manifests.append(
+                    build_validation_dataset_manifest(
+                        plan,
+                        fold_or_holdout_ref=fold.fold_id,
+                        examples=examples,
+                        decision_start_ns=fold.validation_start_ns,
+                        decision_end_ns=fold.validation_end_ns,
+                        training_cutoff_ns=fold.training_cutoff_ns,
+                        training_start_ns=fold.training_start_ns,
                     )
                 )
 
@@ -304,6 +318,17 @@ class ValidationEngine:
                 )
             )
 
+        if context.candidates:
+            dataset_manifests.append(
+                build_validation_dataset_manifest(
+                    plan,
+                    fold_or_holdout_ref="holdout",
+                    examples=context.holdout_examples,
+                    decision_start_ns=plan.holdout_spec.holdout_start_ns,
+                    decision_end_ns=plan.holdout_spec.holdout_end_ns,
+                )
+            )
+
         final_disposition = holdout_results[0].disposition if holdout_results else ValidationDisposition.INCONCLUSIVE
         report_id = derive_validation_report_id(
             validation_plan_id=plan.validation_plan_id,
@@ -331,6 +356,11 @@ class ValidationEngine:
             knowledge_assessment_status=knowledge_status,
             candidate_family_size=len(context.candidates),
             final_disposition=final_disposition,
+            metadata={
+                "validation_dataset_manifests": [
+                    validation_dataset_manifest_v1_to_dict(item) for item in dataset_manifests
+                ]
+            },
         )
 
         if persist:

@@ -22,6 +22,7 @@ from .types import (
     StatisticalPlan,
     TemporalKnowledgePolicyV1,
     ToolPolicyClass,
+    ValidationDatasetManifestV1,
     ValidationDisposition,
     ValidationPlanV1,
     ValidationReportV1,
@@ -359,6 +360,44 @@ def validation_report_v1_to_dict(report: ValidationReportV1) -> dict[str, Any]:
     }
 
 
+def validation_dataset_manifest_v1_to_dict(manifest: ValidationDatasetManifestV1) -> dict[str, Any]:
+    return {
+        "validation_dataset_id": manifest.validation_dataset_id,
+        "schema_version": manifest.schema_version,
+        "validation_plan_id": manifest.validation_plan_id,
+        "fold_or_holdout_ref": manifest.fold_or_holdout_ref,
+        "decision_start_ns": manifest.decision_start_ns,
+        "decision_end_ns": manifest.decision_end_ns,
+        "forecast_ids": list(manifest.forecast_ids),
+        "outcome_ids": list(manifest.outcome_ids),
+        "dataset_fingerprint": manifest.dataset_fingerprint,
+        "target_kind": manifest.target_kind,
+        "horizon_ns": manifest.horizon_ns,
+        "mode": manifest.mode,
+        "scenario_id": manifest.scenario_id,
+        "metadata": dict(manifest.metadata),
+    }
+
+
+def validation_dataset_manifest_v1_from_dict(payload: dict[str, Any]) -> ValidationDatasetManifestV1:
+    return ValidationDatasetManifestV1(
+        validation_dataset_id=str(payload["validation_dataset_id"]),
+        schema_version=str(payload.get("schema_version", INTELLIGENCE_SCHEMA_VERSION)),
+        validation_plan_id=str(payload["validation_plan_id"]),
+        fold_or_holdout_ref=str(payload["fold_or_holdout_ref"]),
+        decision_start_ns=int(payload["decision_start_ns"]),
+        decision_end_ns=int(payload["decision_end_ns"]),
+        forecast_ids=tuple(str(v) for v in payload.get("forecast_ids", ())),
+        outcome_ids=tuple(str(v) for v in payload.get("outcome_ids", ())),
+        dataset_fingerprint=str(payload["dataset_fingerprint"]),
+        target_kind=str(payload["target_kind"]),
+        horizon_ns=int(payload["horizon_ns"]),
+        mode=str(payload["mode"]),
+        scenario_id=payload.get("scenario_id"),
+        metadata=dict(payload.get("metadata", {})),
+    )
+
+
 def validation_report_v1_from_dict(payload: dict[str, Any]) -> ValidationReportV1:
     fold_results = tuple(
         FoldMetricResult(
@@ -434,6 +473,8 @@ __all__ = [
     "holdout_commitment_v1_to_dict",
     "holdout_unlock_receipt_v1_from_dict",
     "holdout_unlock_receipt_v1_to_dict",
+    "validation_dataset_manifest_v1_from_dict",
+    "validation_dataset_manifest_v1_to_dict",
     "validation_plan_v1_from_dict",
     "validation_plan_v1_to_dict",
     "validation_report_v1_from_dict",

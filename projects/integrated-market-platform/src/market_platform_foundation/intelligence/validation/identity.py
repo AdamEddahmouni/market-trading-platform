@@ -132,6 +132,28 @@ def derive_validation_dataset_fingerprint(
     return _sha256_prefix("VALDS", payload)
 
 
+def derive_validation_dataset_id(
+    *,
+    dataset_fingerprint: str,
+    training_cutoff_ns: int | None,
+    training_start_ns: int | None,
+    purge_ns: int,
+    embargo_ns: int,
+    scenario_id: str | None,
+    walk_forward_mode: str | None,
+) -> str:
+    payload = {
+        "dataset_fingerprint": dataset_fingerprint,
+        "training_cutoff_ns": training_cutoff_ns,
+        "training_start_ns": training_start_ns,
+        "purge_ns": purge_ns,
+        "embargo_ns": embargo_ns,
+        "scenario_id": scenario_id,
+        "walk_forward_mode": walk_forward_mode,
+    }
+    return _sha256_prefix("VALSET", payload)
+
+
 def derive_contamination_record_id(
     *,
     validation_plan_id: str,
@@ -178,6 +200,7 @@ __all__ = [
     "derive_contamination_record_id",
     "derive_holdout_commitment_id",
     "derive_validation_dataset_fingerprint",
+    "derive_validation_dataset_id",
     "derive_validation_plan_id",
     "derive_validation_report_id",
     "validation_plan_identity_payload",
