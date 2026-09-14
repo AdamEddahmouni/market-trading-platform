@@ -32,6 +32,7 @@ from market_platform_foundation.paper.calibration.bar_ohlcv_prospective_proof im
     load_latest_completed_bars_for_display,
     poll_prospective_proof,
     prospective_run_without_poll_outcome,
+    resolve_runtime_git_sha,
     run_prospective_proof,
     run_transport_proof,
     validate_prospective_signal_request,
@@ -400,6 +401,12 @@ class BarOhlcvProspectiveProofTests(unittest.TestCase):
         self.assertTrue(loaded.ok)
         self.assertEqual(len(display), 1)
         self.assertEqual(display[0].instrument_id, "AAPL")
+
+    def test_resolve_runtime_git_sha_reads_head_without_subprocess(self) -> None:
+        sha = resolve_runtime_git_sha(start=ROOT)
+        self.assertNotEqual(sha, "")
+        if sha != "unknown":
+            self.assertEqual(len(sha), 40)
 
     def test_receipt_includes_contract_version(self) -> None:
         row = _kline_row()

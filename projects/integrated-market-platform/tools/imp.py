@@ -794,7 +794,11 @@ def build_parser() -> argparse.ArgumentParser:
     session_release.add_argument("--json", action="store_true", help="Machine-readable JSON")
     watch_catalysts = ftep_actions.add_parser(
         "watch-catalysts",
-        help="read-only catalyst attention watch (fixture dry-run; no locks)",
+        help=(
+            "read-only catalyst attention watch (fixture dry-run; no locks). "
+            "Does not forward --live-ingress; use tools/ftep_watch_catalysts.py "
+            "FTEP-V1-002 --live-ingress for prospective Finviz ingress."
+        ),
     )
     watch_catalysts.add_argument(
         "campaign_slug",
@@ -840,6 +844,17 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Optional JSON file with attention-candidate rows",
     )
+    finviz_preflight = ftep_actions.add_parser(
+        "finviz-prospective-preflight",
+        help="software-only Finviz prospective watch preflight (no live fetch)",
+    )
+    finviz_preflight.add_argument(
+        "campaign_slug",
+        nargs="?",
+        default="FTEP-V1-002",
+        help="Forward-test campaign slug (default: FTEP-V1-002)",
+    )
+    finviz_preflight.add_argument("--json", action="store_true")
     return parser
 
 
@@ -945,6 +960,14 @@ def _ftep_command(root: Path, args: argparse.Namespace) -> int:
             command.append("--fixture")
         if getattr(args, "input", None):
             command.extend(["--input", str(args.input)])
+        if getattr(args, "json", False):
+            command.append("--json")
+    elif args.action == "finviz-prospective-preflight":
+        command = [
+            python,
+            str(root / "tools" / "ftep_finviz_prospective_preflight.py"),
+            args.campaign_slug,
+        ]
         if getattr(args, "json", False):
             command.append("--json")
     else:
