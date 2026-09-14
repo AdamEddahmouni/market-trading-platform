@@ -8,6 +8,7 @@ import tempfile
 import unittest
 from dataclasses import replace
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
@@ -20,6 +21,10 @@ from market_platform_foundation.intelligence.paper_forward_bridge import (  # no
     ForwardTestServiceError,
     ForwardTestState,
     create_forward_test_repository,
+)
+from market_platform_foundation.intelligence.paper_forward_bridge.sqlite_repository import (  # noqa: E402
+    CLAIM_EVALUATION,
+    CLAIM_PAPER_SUBMISSION,
 )
 from market_platform_foundation.intelligence.paper_forward_bridge.types import (  # noqa: E402
     ForwardTestObservation,
@@ -719,6 +724,138 @@ class DurableForwardTestPersistenceV6Tests(IsolatedForwardTestPersistenceTest):
                 raise RuntimeError("boom")
         claimed = repo.claim_evaluation(locked.forward_test_id)
         self.assertTrue(claimed)
+
+    def _claim_types(self, forward_test_id: str) -> set[str]:
+        local = open_local_state(force=True)
+        assert local is not None
+        rows = local.connection.execute(
+            "SELECT claim_type FROM forward_test_claims WHERE forward_test_id=?",
+            (forward_test_id,),
+        ).fetchall()
+        return {str(row[0]) for row in rows}
+
+    def test_commit_evaluation_rolls_back_claim_when_put_fails_and_survives_restart(
+        self,
+    ) -> None:
+        """H2: claim_evaluation + put must share one transaction across restart."""
+        service = self._service()
+        _session, locked = self._seed_locked_decision(service)
+        service.submit_to_paper(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+            submitted_at_ns=T0 + 1,
+        )
+        service.attach_observation(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+            observed_at_ns=T0 + HOUR,
+            source_time_ns=T0 + HOUR,
+            payload={"reference_price": 100.0, "close_price": 105.0},
+        )
+        current = service.get_decision(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+        )
+        service._store.put_decision(replace(current, state=ForwardTestState.EVALUABLE))
+
+        with patch.object(
+            service._store,
+            "_put_decision_body",
+            side_effect=RuntimeError("simulated put failure"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "simulated put failure"):
+                service.evaluate(
+                    forward_test_id=locked.forward_test_id,
+                    account_id="paper-a",
+                    now_ns=T0 + HOUR + 1,
+                    force=False,
+                )
+
+        self.assertNotIn(CLAIM_EVALUATION, self._claim_types(locked.forward_test_id))
+        stalled = service.get_decision(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+        )
+        self.assertEqual(stalled.state, ForwardTestState.EVALUABLE)
+        self.assertIsNone(stalled.signal_outcome)
+
+        _, restarted = self._restart()
+        self.assertNotIn(CLAIM_EVALUATION, self._claim_types(locked.forward_test_id))
+        evaluated = restarted.evaluate(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+            now_ns=T0 + HOUR + 1,
+            force=False,
+        )
+        self.assertEqual(evaluated.state, ForwardTestState.EVALUATED)
+        self.assertIsNotNone(evaluated.signal_outcome)
+
+        _, restarted_again = self._restart()
+        recovered = restarted_again.get_decision(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+        )
+        self.assertEqual(recovered.state, ForwardTestState.EVALUATED)
+        self.assertIn(CLAIM_EVALUATION, self._claim_types(locked.forward_test_id))
+        self.assertFalse(restarted_again._store.claim_evaluation(locked.forward_test_id))
+
+    def test_commit_paper_submission_rolls_back_claim_when_put_fails_and_survives_restart(
+        self,
+    ) -> None:
+        """H3: claim_paper_submission + put must share one transaction across restart."""
+        service = self._service()
+        _session, locked = self._seed_locked_decision(service)
+
+        with patch.object(
+            service._store,
+            "_put_decision_body",
+            side_effect=RuntimeError("simulated put failure"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "simulated put failure"):
+                service.submit_to_paper(
+                    forward_test_id=locked.forward_test_id,
+                    account_id="paper-a",
+                    submitted_at_ns=T0 + 1,
+                    paper_order_id="ord-rb-1",
+                )
+
+        self.assertNotIn(CLAIM_PAPER_SUBMISSION, self._claim_types(locked.forward_test_id))
+        stalled = service.get_decision(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+        )
+        self.assertEqual(stalled.state, ForwardTestState.LOCKED)
+        self.assertIsNone(stalled.paper_order_id)
+
+        _, restarted = self._restart()
+        self.assertNotIn(CLAIM_PAPER_SUBMISSION, self._claim_types(locked.forward_test_id))
+        submitted = restarted.submit_to_paper(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+            submitted_at_ns=T0 + 1,
+            paper_order_id="ord-rb-1",
+        )
+        self.assertEqual(submitted.state, ForwardTestState.OBSERVING)
+        self.assertEqual(submitted.paper_order_id, "ord-rb-1")
+
+        _, restarted_again = self._restart()
+        recovered = restarted_again.get_decision(
+            forward_test_id=locked.forward_test_id,
+            account_id="paper-a",
+        )
+        self.assertEqual(recovered.state, ForwardTestState.OBSERVING)
+        self.assertEqual(recovered.paper_order_id, "ord-rb-1")
+        self.assertIn(CLAIM_PAPER_SUBMISSION, self._claim_types(locked.forward_test_id))
+        self.assertFalse(
+            restarted_again._store.claim_paper_submission(locked.forward_test_id)
+        )
+        with self.assertRaises(ForwardTestServiceError):
+            restarted_again.submit_to_paper(
+                forward_test_id=locked.forward_test_id,
+                account_id="paper-a",
+                submitted_at_ns=T0 + 2,
+                paper_order_id="ord-rb-2",
+            )
 
     def test_reconstruct_metrics_from_paper_ledger_and_observations(self) -> None:
         from market_platform_foundation.intelligence.paper_forward_bridge.reconstruction import (
