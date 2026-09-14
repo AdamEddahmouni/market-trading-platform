@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — UX-00 P2: drop unused preview STALE; map server stale codes
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui` |
+| **Summary** | Removed unreachable `STALE` preview presentation status; `PREVIEW_*_STALE` / expired / intent mismatch errors now map to `REVALIDATION_REQUIRED` (same styling as input drift). |
+| **Key files** | `ui/src/components/paper-workspace/paperPreviewPresentation.ts`, `PaperPreviewStatus.tsx`, `paperPreviewPresentation.test.ts`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `cd ui && npm test -- paperPreviewPresentation.test.ts PaperPreviewStatus.test.tsx` + full suite |
+| **Related** | UX-00 forensic audit §13 P2 #6 |
+| **Notes** | No Paper submit/API contract changes. No hop, FTEP, #125, or PROGRAM_STATUS SHA. |
+
 ## 2026-09-14 — Track H leftover: fail-close remaining backend error_category gaps
 
 | Field | Value |
