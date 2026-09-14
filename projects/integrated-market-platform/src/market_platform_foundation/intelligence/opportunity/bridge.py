@@ -9,7 +9,10 @@ the P4 adapter are inputs, not alternate opportunity builders.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..enrichment.outbox import EnrichmentOutbox
 
 from ..contracts.common import ContractKind, ContractReference
 from ..contracts.forecast import ForecastV1
@@ -151,6 +154,8 @@ def bridge_strategy_match_to_opportunity(
     economic_assessment: UniversalEconomicAssessmentV1 | None = None,
     repository: IntelligenceRepository | None = None,
     engine: OpportunityEngine | None = None,
+    enrichment_outbox: EnrichmentOutbox | None = None,
+    enrichment_event_id: str | None = None,
 ) -> OpportunityBridgeResult:
     """Canonical StrategyMatch → OpportunityEngine mint; persist once."""
     _validate_inputs(
@@ -208,6 +213,15 @@ def bridge_strategy_match_to_opportunity(
         repository.put_opportunity_assessment(assessment)
         if opportunity is not None:
             repository.put_opportunity(opportunity)
+    if enrichment_outbox is not None:
+        from ..enrichment.enqueue import maybe_enqueue_from_bridge_result
+
+        maybe_enqueue_from_bridge_result(
+            enrichment_outbox,
+            OpportunityAssessmentResult(assessment=assessment, opportunity=opportunity),
+            detected_at_ns=opportunity_decision_time_ns,
+            event_id=enrichment_event_id,
+        )
     return OpportunityBridgeResult(
         assessment=assessment,
         opportunity=opportunity,
