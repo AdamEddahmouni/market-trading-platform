@@ -426,6 +426,8 @@
       "resource_weight": 1,
       "source_globs": [
         "src/market_platform_foundation/research/decision_research/**",
+        "src/market_platform_foundation/research/wave1/**",
+        "config/wave1/**",
         "tests/fixtures/research/**"
       ],
       "test_globs": [

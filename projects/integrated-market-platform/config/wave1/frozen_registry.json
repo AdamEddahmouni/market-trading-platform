@@ -1,0 +1,145 @@
+{
+  "registry_fingerprint": "E46369E9397599B6D5A4BE0698D481BA14743A00FF18641A3EA370C35D3D12B5",
+  "implementation_version": "wave1-harness-v1",
+  "program_track": "TRACK_E",
+  "schema_version": "1.0.0",
+  "wave": 1,
+  "families": [
+    {
+      "adapter_kind": "xs_medium_term_momentum",
+      "baseline_id": "W1-F01-BASE",
+      "evaluation_window": {
+        "folds": 3,
+        "min_oos_block": 20,
+        "oos_block_frac": 0.2,
+        "schema": "expanding_window"
+      },
+      "family_id": "W1-F01",
+      "hypothesis_ref": "TRACK_E/W1/prereg/W1-F01",
+      "min_sample_oos": 40,
+      "negative_controls": ["label_shuffle", "feature_permutation"],
+      "primary_metric": "paired_return_delta_bps",
+      "primary_metric_threshold_bps": 0.0,
+      "title": "XS medium-term momentum"
+    },
+    {
+      "adapter_kind": "futures_ts_mom_vol_scaling",
+      "baseline_id": "W1-F02-BASE",
+      "evaluation_window": {
+        "folds": 3,
+        "min_oos_block": 20,
+        "oos_block_frac": 0.2,
+        "schema": "expanding_window"
+      },
+      "family_id": "W1-F02",
+      "hypothesis_ref": "TRACK_E/W1/prereg/W1-F02",
+      "min_sample_oos": 40,
+      "negative_controls": ["label_shuffle", "vol_scale_null"],
+      "primary_metric": "paired_return_delta_bps",
+      "primary_metric_threshold_bps": 0.0,
+      "title": "Futures TS mom/vol scaling"
+    },
+    {
+      "adapter_kind": "continuous_price_action_geometry",
+      "baseline_id": "W1-F03-BASE",
+      "evaluation_window": {
+        "folds": 3,
+        "min_oos_block": 20,
+        "oos_block_frac": 0.2,
+        "schema": "expanding_window"
+      },
+      "family_id": "W1-F03",
+      "hypothesis_ref": "TRACK_E/W1/prereg/W1-F03",
+      "min_sample_oos": 40,
+      "negative_controls": ["label_shuffle", "geometry_mirror"],
+      "primary_metric": "paired_return_delta_bps",
+      "primary_metric_threshold_bps": 0.0,
+      "title": "Continuous price-action geometry"
+    },
+    {
+      "adapter_kind": "rv_continuous_vs_regime",
+      "baseline_id": "W1-F04-BASE",
+      "evaluation_window": {
+        "folds": 3,
+        "min_oos_block": 20,
+        "oos_block_frac": 0.2,
+        "schema": "expanding_window"
+      },
+      "family_id": "W1-F04",
+      "hypothesis_ref": "TRACK_E/W1/prereg/W1-F04",
+      "min_sample_oos": 40,
+      "negative_controls": ["label_shuffle", "regime_permutation"],
+      "primary_metric": "paired_return_delta_bps",
+      "primary_metric_threshold_bps": 0.0,
+      "title": "RV continuous-vs-regime"
+    },
+    {
+      "adapter_kind": "execution_cost_stack_survival",
+      "baseline_id": "W1-F05-BASE",
+      "evaluation_window": {
+        "folds": 3,
+        "min_oos_block": 20,
+        "oos_block_frac": 0.2,
+        "schema": "expanding_window"
+      },
+      "family_id": "W1-F05",
+      "hypothesis_ref": "TRACK_E/W1/prereg/W1-F05",
+      "min_sample_oos": 40,
+      "negative_controls": ["label_shuffle", "cost_stack_inflate"],
+      "primary_metric": "survival_rate_delta",
+      "primary_metric_threshold_bps": 0.0,
+      "title": "Execution-cost-stack survival"
+    },
+    {
+      "adapter_kind": "allocation_inverse_vol_erc_minvar",
+      "baseline_id": "W1-F06-BASE",
+      "evaluation_window": {
+        "folds": 3,
+        "min_oos_block": 20,
+        "oos_block_frac": 0.2,
+        "schema": "expanding_window"
+      },
+      "family_id": "W1-F06",
+      "hypothesis_ref": "TRACK_E/W1/prereg/W1-F06",
+      "min_sample_oos": 40,
+      "negative_controls": ["label_shuffle", "weight_permutation"],
+      "primary_metric": "paired_return_delta_bps",
+      "primary_metric_threshold_bps": 0.0,
+      "title": "Allocation inverse-vol/ERC/min-var"
+    },
+    {
+      "adapter_kind": "pit_macro_state_calibration",
+      "baseline_id": "W1-F07-BASE",
+      "evaluation_window": {
+        "folds": 3,
+        "min_oos_block": 20,
+        "oos_block_frac": 0.2,
+        "schema": "expanding_window"
+      },
+      "family_id": "W1-F07",
+      "hypothesis_ref": "TRACK_E/W1/prereg/W1-F07",
+      "min_sample_oos": 40,
+      "negative_controls": ["label_shuffle", "macro_state_shuffle"],
+      "primary_metric": "calibration_brier_delta",
+      "primary_metric_threshold_bps": 0.0,
+      "title": "PIT macro-state calibration"
+    },
+    {
+      "adapter_kind": "l1_tob_ofi_incremental",
+      "baseline_id": "W1-F08-BASE",
+      "evaluation_window": {
+        "folds": 3,
+        "min_oos_block": 20,
+        "oos_block_frac": 0.2,
+        "schema": "expanding_window"
+      },
+      "family_id": "W1-F08",
+      "hypothesis_ref": "TRACK_E/W1/prereg/W1-F08",
+      "min_sample_oos": 40,
+      "negative_controls": ["label_shuffle", "ofi_sign_flip"],
+      "primary_metric": "paired_return_delta_bps",
+      "primary_metric_threshold_bps": 0.0,
+      "title": "L1 TOB/OFI incremental value"
+    }
+  ]
+}

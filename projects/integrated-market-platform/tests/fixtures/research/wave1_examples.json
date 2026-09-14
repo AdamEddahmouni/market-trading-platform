@@ -1,0 +1,1730 @@
+[
+  {
+    "example_id": "w1-ex-0000",
+    "decision_time_ns": 1784188800000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.5,
+      "realized_vol": 0.12,
+      "ts_mom": 0.3,
+      "target_vol": 0.15,
+      "geometry_slope": -0.30000000000000004,
+      "geometry_curvature": 0.0,
+      "rv_continuous": 0.08,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 5.0,
+      "alpha_bps": -29.5,
+      "equal_weight_return_bps": -37.5,
+      "inverse_vol_return_bps": -36.0,
+      "macro_prob": 0.45,
+      "macro_prob_calibrated": 0.44,
+      "mid_return_bps": -37.5,
+      "ofi": -40.0
+    },
+    "outcome": {
+      "forward_return_bps": -37.5,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0001",
+    "decision_time_ns": 1784188860000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.6,
+      "realized_vol": 0.13999999999999999,
+      "ts_mom": 0.35,
+      "target_vol": 0.15,
+      "geometry_slope": -0.2,
+      "geometry_curvature": 0.02,
+      "rv_continuous": 0.09,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 6.0,
+      "alpha_bps": -17.0,
+      "equal_weight_return_bps": -25.0,
+      "inverse_vol_return_bps": -23.5,
+      "macro_prob": 0.46,
+      "macro_prob_calibrated": 0.45,
+      "mid_return_bps": -25.0,
+      "ofi": -30.0
+    },
+    "outcome": {
+      "forward_return_bps": -25.0,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0002",
+    "decision_time_ns": 1784188920000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.7,
+      "realized_vol": 0.16,
+      "ts_mom": 0.4,
+      "target_vol": 0.15,
+      "geometry_slope": -0.1,
+      "geometry_curvature": 0.04,
+      "rv_continuous": 0.1,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 7.0,
+      "alpha_bps": -4.5,
+      "equal_weight_return_bps": -12.5,
+      "inverse_vol_return_bps": -11.0,
+      "macro_prob": 0.47000000000000003,
+      "macro_prob_calibrated": 0.46,
+      "mid_return_bps": -12.5,
+      "ofi": -20.0
+    },
+    "outcome": {
+      "forward_return_bps": -12.5,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0003",
+    "decision_time_ns": 1784188980000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.8,
+      "realized_vol": 0.12,
+      "ts_mom": 0.45,
+      "target_vol": 0.15,
+      "geometry_slope": 0.0,
+      "geometry_curvature": 0.06,
+      "rv_continuous": 0.11,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 5.0,
+      "alpha_bps": 8.0,
+      "equal_weight_return_bps": 0.0,
+      "inverse_vol_return_bps": 1.5,
+      "macro_prob": 0.48,
+      "macro_prob_calibrated": 0.47,
+      "mid_return_bps": 0.0,
+      "ofi": -10.0
+    },
+    "outcome": {
+      "forward_return_bps": 0.0,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0004",
+    "decision_time_ns": 1784189040000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.9,
+      "realized_vol": 0.13999999999999999,
+      "ts_mom": 0.3,
+      "target_vol": 0.15,
+      "geometry_slope": 0.1,
+      "geometry_curvature": 0.08,
+      "rv_continuous": 0.08,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 6.0,
+      "alpha_bps": 20.5,
+      "equal_weight_return_bps": 12.5,
+      "inverse_vol_return_bps": 14.0,
+      "macro_prob": 0.49,
+      "macro_prob_calibrated": 0.48,
+      "mid_return_bps": 12.5,
+      "ofi": 0.0
+    },
+    "outcome": {
+      "forward_return_bps": 12.5,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0005",
+    "decision_time_ns": 1784189100000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.5,
+      "realized_vol": 0.16,
+      "ts_mom": 0.35,
+      "target_vol": 0.15,
+      "geometry_slope": 0.2,
+      "geometry_curvature": 0.0,
+      "rv_continuous": 0.09,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 7.0,
+      "alpha_bps": 33.0,
+      "equal_weight_return_bps": 25.0,
+      "inverse_vol_return_bps": 26.5,
+      "macro_prob": 0.5,
+      "macro_prob_calibrated": 0.49,
+      "mid_return_bps": 25.0,
+      "ofi": 10.0
+    },
+    "outcome": {
+      "forward_return_bps": 25.0,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0006",
+    "decision_time_ns": 1784189160000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.6,
+      "realized_vol": 0.12,
+      "ts_mom": 0.4,
+      "target_vol": 0.15,
+      "geometry_slope": -0.30000000000000004,
+      "geometry_curvature": 0.02,
+      "rv_continuous": 0.1,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 5.0,
+      "alpha_bps": 45.5,
+      "equal_weight_return_bps": 37.5,
+      "inverse_vol_return_bps": 39.0,
+      "macro_prob": 0.51,
+      "macro_prob_calibrated": 0.5,
+      "mid_return_bps": 37.5,
+      "ofi": 20.0
+    },
+    "outcome": {
+      "forward_return_bps": 37.5,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0007",
+    "decision_time_ns": 1784189220000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.7,
+      "realized_vol": 0.13999999999999999,
+      "ts_mom": 0.45,
+      "target_vol": 0.15,
+      "geometry_slope": -0.2,
+      "geometry_curvature": 0.04,
+      "rv_continuous": 0.11,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 6.0,
+      "alpha_bps": -29.5,
+      "equal_weight_return_bps": -37.5,
+      "inverse_vol_return_bps": -36.0,
+      "macro_prob": 0.52,
+      "macro_prob_calibrated": 0.51,
+      "mid_return_bps": -37.5,
+      "ofi": 30.0
+    },
+    "outcome": {
+      "forward_return_bps": -37.5,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0008",
+    "decision_time_ns": 1784189280000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.8,
+      "realized_vol": 0.16,
+      "ts_mom": 0.3,
+      "target_vol": 0.15,
+      "geometry_slope": -0.1,
+      "geometry_curvature": 0.06,
+      "rv_continuous": 0.08,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 7.0,
+      "alpha_bps": -17.0,
+      "equal_weight_return_bps": -25.0,
+      "inverse_vol_return_bps": -23.5,
+      "macro_prob": 0.53,
+      "macro_prob_calibrated": 0.52,
+      "mid_return_bps": -25.0,
+      "ofi": 40.0
+    },
+    "outcome": {
+      "forward_return_bps": -25.0,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0009",
+    "decision_time_ns": 1784189340000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.9,
+      "realized_vol": 0.12,
+      "ts_mom": 0.35,
+      "target_vol": 0.15,
+      "geometry_slope": 0.0,
+      "geometry_curvature": 0.08,
+      "rv_continuous": 0.09,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 5.0,
+      "alpha_bps": -4.5,
+      "equal_weight_return_bps": -12.5,
+      "inverse_vol_return_bps": -11.0,
+      "macro_prob": 0.54,
+      "macro_prob_calibrated": 0.53,
+      "mid_return_bps": -12.5,
+      "ofi": -40.0
+    },
+    "outcome": {
+      "forward_return_bps": -12.5,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0010",
+    "decision_time_ns": 1784189400000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.5,
+      "realized_vol": 0.13999999999999999,
+      "ts_mom": 0.4,
+      "target_vol": 0.15,
+      "geometry_slope": 0.1,
+      "geometry_curvature": 0.0,
+      "rv_continuous": 0.1,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 6.0,
+      "alpha_bps": 8.0,
+      "equal_weight_return_bps": 0.0,
+      "inverse_vol_return_bps": 1.5,
+      "macro_prob": 0.45,
+      "macro_prob_calibrated": 0.44,
+      "mid_return_bps": 0.0,
+      "ofi": -30.0
+    },
+    "outcome": {
+      "forward_return_bps": 0.0,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0011",
+    "decision_time_ns": 1784189460000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.6,
+      "realized_vol": 0.16,
+      "ts_mom": 0.45,
+      "target_vol": 0.15,
+      "geometry_slope": 0.2,
+      "geometry_curvature": 0.02,
+      "rv_continuous": 0.11,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 7.0,
+      "alpha_bps": 20.5,
+      "equal_weight_return_bps": 12.5,
+      "inverse_vol_return_bps": 14.0,
+      "macro_prob": 0.46,
+      "macro_prob_calibrated": 0.45,
+      "mid_return_bps": 12.5,
+      "ofi": -20.0
+    },
+    "outcome": {
+      "forward_return_bps": 12.5,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0012",
+    "decision_time_ns": 1784189520000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.7,
+      "realized_vol": 0.12,
+      "ts_mom": 0.3,
+      "target_vol": 0.15,
+      "geometry_slope": -0.30000000000000004,
+      "geometry_curvature": 0.04,
+      "rv_continuous": 0.08,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 5.0,
+      "alpha_bps": 33.0,
+      "equal_weight_return_bps": 25.0,
+      "inverse_vol_return_bps": 26.5,
+      "macro_prob": 0.47000000000000003,
+      "macro_prob_calibrated": 0.46,
+      "mid_return_bps": 25.0,
+      "ofi": -10.0
+    },
+    "outcome": {
+      "forward_return_bps": 25.0,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0013",
+    "decision_time_ns": 1784189580000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.8,
+      "realized_vol": 0.13999999999999999,
+      "ts_mom": 0.35,
+      "target_vol": 0.15,
+      "geometry_slope": -0.2,
+      "geometry_curvature": 0.06,
+      "rv_continuous": 0.09,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 6.0,
+      "alpha_bps": 45.5,
+      "equal_weight_return_bps": 37.5,
+      "inverse_vol_return_bps": 39.0,
+      "macro_prob": 0.48,
+      "macro_prob_calibrated": 0.47,
+      "mid_return_bps": 37.5,
+      "ofi": 0.0
+    },
+    "outcome": {
+      "forward_return_bps": 37.5,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0014",
+    "decision_time_ns": 1784189640000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.9,
+      "realized_vol": 0.16,
+      "ts_mom": 0.4,
+      "target_vol": 0.15,
+      "geometry_slope": -0.1,
+      "geometry_curvature": 0.08,
+      "rv_continuous": 0.1,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 7.0,
+      "alpha_bps": -29.5,
+      "equal_weight_return_bps": -37.5,
+      "inverse_vol_return_bps": -36.0,
+      "macro_prob": 0.49,
+      "macro_prob_calibrated": 0.48,
+      "mid_return_bps": -37.5,
+      "ofi": 10.0
+    },
+    "outcome": {
+      "forward_return_bps": -37.5,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0015",
+    "decision_time_ns": 1784189700000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.5,
+      "realized_vol": 0.12,
+      "ts_mom": 0.45,
+      "target_vol": 0.15,
+      "geometry_slope": 0.0,
+      "geometry_curvature": 0.0,
+      "rv_continuous": 0.11,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 5.0,
+      "alpha_bps": -17.0,
+      "equal_weight_return_bps": -25.0,
+      "inverse_vol_return_bps": -23.5,
+      "macro_prob": 0.5,
+      "macro_prob_calibrated": 0.49,
+      "mid_return_bps": -25.0,
+      "ofi": 20.0
+    },
+    "outcome": {
+      "forward_return_bps": -25.0,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0016",
+    "decision_time_ns": 1784189760000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.6,
+      "realized_vol": 0.13999999999999999,
+      "ts_mom": 0.3,
+      "target_vol": 0.15,
+      "geometry_slope": 0.1,
+      "geometry_curvature": 0.02,
+      "rv_continuous": 0.08,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 6.0,
+      "alpha_bps": -4.5,
+      "equal_weight_return_bps": -12.5,
+      "inverse_vol_return_bps": -11.0,
+      "macro_prob": 0.51,
+      "macro_prob_calibrated": 0.5,
+      "mid_return_bps": -12.5,
+      "ofi": 30.0
+    },
+    "outcome": {
+      "forward_return_bps": -12.5,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0017",
+    "decision_time_ns": 1784189820000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.7,
+      "realized_vol": 0.16,
+      "ts_mom": 0.35,
+      "target_vol": 0.15,
+      "geometry_slope": 0.2,
+      "geometry_curvature": 0.04,
+      "rv_continuous": 0.09,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 7.0,
+      "alpha_bps": 8.0,
+      "equal_weight_return_bps": 0.0,
+      "inverse_vol_return_bps": 1.5,
+      "macro_prob": 0.52,
+      "macro_prob_calibrated": 0.51,
+      "mid_return_bps": 0.0,
+      "ofi": 40.0
+    },
+    "outcome": {
+      "forward_return_bps": 0.0,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0018",
+    "decision_time_ns": 1784189880000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.8,
+      "realized_vol": 0.12,
+      "ts_mom": 0.4,
+      "target_vol": 0.15,
+      "geometry_slope": -0.30000000000000004,
+      "geometry_curvature": 0.06,
+      "rv_continuous": 0.1,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 5.0,
+      "alpha_bps": 20.5,
+      "equal_weight_return_bps": 12.5,
+      "inverse_vol_return_bps": 14.0,
+      "macro_prob": 0.53,
+      "macro_prob_calibrated": 0.52,
+      "mid_return_bps": 12.5,
+      "ofi": -40.0
+    },
+    "outcome": {
+      "forward_return_bps": 12.5,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0019",
+    "decision_time_ns": 1784189940000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.9,
+      "realized_vol": 0.13999999999999999,
+      "ts_mom": 0.45,
+      "target_vol": 0.15,
+      "geometry_slope": -0.2,
+      "geometry_curvature": 0.08,
+      "rv_continuous": 0.11,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 6.0,
+      "alpha_bps": 33.0,
+      "equal_weight_return_bps": 25.0,
+      "inverse_vol_return_bps": 26.5,
+      "macro_prob": 0.54,
+      "macro_prob_calibrated": 0.53,
+      "mid_return_bps": 25.0,
+      "ofi": -30.0
+    },
+    "outcome": {
+      "forward_return_bps": 25.0,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0020",
+    "decision_time_ns": 1784190000000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.5,
+      "realized_vol": 0.16,
+      "ts_mom": 0.3,
+      "target_vol": 0.15,
+      "geometry_slope": -0.1,
+      "geometry_curvature": 0.0,
+      "rv_continuous": 0.08,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 7.0,
+      "alpha_bps": 45.5,
+      "equal_weight_return_bps": 37.5,
+      "inverse_vol_return_bps": 39.0,
+      "macro_prob": 0.45,
+      "macro_prob_calibrated": 0.44,
+      "mid_return_bps": 37.5,
+      "ofi": -20.0
+    },
+    "outcome": {
+      "forward_return_bps": 37.5,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0021",
+    "decision_time_ns": 1784190060000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.6,
+      "realized_vol": 0.12,
+      "ts_mom": 0.35,
+      "target_vol": 0.15,
+      "geometry_slope": 0.0,
+      "geometry_curvature": 0.02,
+      "rv_continuous": 0.09,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 5.0,
+      "alpha_bps": -29.5,
+      "equal_weight_return_bps": -37.5,
+      "inverse_vol_return_bps": -36.0,
+      "macro_prob": 0.46,
+      "macro_prob_calibrated": 0.45,
+      "mid_return_bps": -37.5,
+      "ofi": -10.0
+    },
+    "outcome": {
+      "forward_return_bps": -37.5,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0022",
+    "decision_time_ns": 1784190120000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.7,
+      "realized_vol": 0.13999999999999999,
+      "ts_mom": 0.4,
+      "target_vol": 0.15,
+      "geometry_slope": 0.1,
+      "geometry_curvature": 0.04,
+      "rv_continuous": 0.1,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 6.0,
+      "alpha_bps": -17.0,
+      "equal_weight_return_bps": -25.0,
+      "inverse_vol_return_bps": -23.5,
+      "macro_prob": 0.47000000000000003,
+      "macro_prob_calibrated": 0.46,
+      "mid_return_bps": -25.0,
+      "ofi": 0.0
+    },
+    "outcome": {
+      "forward_return_bps": -25.0,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0023",
+    "decision_time_ns": 1784190180000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.8,
+      "realized_vol": 0.16,
+      "ts_mom": 0.45,
+      "target_vol": 0.15,
+      "geometry_slope": 0.2,
+      "geometry_curvature": 0.06,
+      "rv_continuous": 0.11,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 7.0,
+      "alpha_bps": -4.5,
+      "equal_weight_return_bps": -12.5,
+      "inverse_vol_return_bps": -11.0,
+      "macro_prob": 0.48,
+      "macro_prob_calibrated": 0.47,
+      "mid_return_bps": -12.5,
+      "ofi": 10.0
+    },
+    "outcome": {
+      "forward_return_bps": -12.5,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0024",
+    "decision_time_ns": 1784190240000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.9,
+      "realized_vol": 0.12,
+      "ts_mom": 0.3,
+      "target_vol": 0.15,
+      "geometry_slope": -0.30000000000000004,
+      "geometry_curvature": 0.08,
+      "rv_continuous": 0.08,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 5.0,
+      "alpha_bps": 8.0,
+      "equal_weight_return_bps": 0.0,
+      "inverse_vol_return_bps": 1.5,
+      "macro_prob": 0.49,
+      "macro_prob_calibrated": 0.48,
+      "mid_return_bps": 0.0,
+      "ofi": 20.0
+    },
+    "outcome": {
+      "forward_return_bps": 0.0,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0025",
+    "decision_time_ns": 1784190300000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.5,
+      "realized_vol": 0.13999999999999999,
+      "ts_mom": 0.35,
+      "target_vol": 0.15,
+      "geometry_slope": -0.2,
+      "geometry_curvature": 0.0,
+      "rv_continuous": 0.09,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 6.0,
+      "alpha_bps": 20.5,
+      "equal_weight_return_bps": 12.5,
+      "inverse_vol_return_bps": 14.0,
+      "macro_prob": 0.5,
+      "macro_prob_calibrated": 0.49,
+      "mid_return_bps": 12.5,
+      "ofi": 30.0
+    },
+    "outcome": {
+      "forward_return_bps": 12.5,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0026",
+    "decision_time_ns": 1784190360000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.6,
+      "realized_vol": 0.16,
+      "ts_mom": 0.4,
+      "target_vol": 0.15,
+      "geometry_slope": -0.1,
+      "geometry_curvature": 0.02,
+      "rv_continuous": 0.1,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 7.0,
+      "alpha_bps": 33.0,
+      "equal_weight_return_bps": 25.0,
+      "inverse_vol_return_bps": 26.5,
+      "macro_prob": 0.51,
+      "macro_prob_calibrated": 0.5,
+      "mid_return_bps": 25.0,
+      "ofi": 40.0
+    },
+    "outcome": {
+      "forward_return_bps": 25.0,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0027",
+    "decision_time_ns": 1784190420000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.7,
+      "realized_vol": 0.12,
+      "ts_mom": 0.45,
+      "target_vol": 0.15,
+      "geometry_slope": 0.0,
+      "geometry_curvature": 0.04,
+      "rv_continuous": 0.11,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 5.0,
+      "alpha_bps": 45.5,
+      "equal_weight_return_bps": 37.5,
+      "inverse_vol_return_bps": 39.0,
+      "macro_prob": 0.52,
+      "macro_prob_calibrated": 0.51,
+      "mid_return_bps": 37.5,
+      "ofi": -40.0
+    },
+    "outcome": {
+      "forward_return_bps": 37.5,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0028",
+    "decision_time_ns": 1784190480000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.8,
+      "realized_vol": 0.13999999999999999,
+      "ts_mom": 0.3,
+      "target_vol": 0.15,
+      "geometry_slope": 0.1,
+      "geometry_curvature": 0.06,
+      "rv_continuous": 0.08,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 6.0,
+      "alpha_bps": -29.5,
+      "equal_weight_return_bps": -37.5,
+      "inverse_vol_return_bps": -36.0,
+      "macro_prob": 0.53,
+      "macro_prob_calibrated": 0.52,
+      "mid_return_bps": -37.5,
+      "ofi": -30.0
+    },
+    "outcome": {
+      "forward_return_bps": -37.5,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0029",
+    "decision_time_ns": 1784190540000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.9,
+      "realized_vol": 0.16,
+      "ts_mom": 0.35,
+      "target_vol": 0.15,
+      "geometry_slope": 0.2,
+      "geometry_curvature": 0.08,
+      "rv_continuous": 0.09,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 7.0,
+      "alpha_bps": -17.0,
+      "equal_weight_return_bps": -25.0,
+      "inverse_vol_return_bps": -23.5,
+      "macro_prob": 0.54,
+      "macro_prob_calibrated": 0.53,
+      "mid_return_bps": -25.0,
+      "ofi": -20.0
+    },
+    "outcome": {
+      "forward_return_bps": -25.0,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0030",
+    "decision_time_ns": 1784190600000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.5,
+      "realized_vol": 0.12,
+      "ts_mom": 0.4,
+      "target_vol": 0.15,
+      "geometry_slope": -0.30000000000000004,
+      "geometry_curvature": 0.0,
+      "rv_continuous": 0.1,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 5.0,
+      "alpha_bps": -4.5,
+      "equal_weight_return_bps": -12.5,
+      "inverse_vol_return_bps": -11.0,
+      "macro_prob": 0.45,
+      "macro_prob_calibrated": 0.44,
+      "mid_return_bps": -12.5,
+      "ofi": -10.0
+    },
+    "outcome": {
+      "forward_return_bps": -12.5,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0031",
+    "decision_time_ns": 1784190660000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.6,
+      "realized_vol": 0.13999999999999999,
+      "ts_mom": 0.45,
+      "target_vol": 0.15,
+      "geometry_slope": -0.2,
+      "geometry_curvature": 0.02,
+      "rv_continuous": 0.11,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 6.0,
+      "alpha_bps": 8.0,
+      "equal_weight_return_bps": 0.0,
+      "inverse_vol_return_bps": 1.5,
+      "macro_prob": 0.46,
+      "macro_prob_calibrated": 0.45,
+      "mid_return_bps": 0.0,
+      "ofi": 0.0
+    },
+    "outcome": {
+      "forward_return_bps": 0.0,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0032",
+    "decision_time_ns": 1784190720000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.7,
+      "realized_vol": 0.16,
+      "ts_mom": 0.3,
+      "target_vol": 0.15,
+      "geometry_slope": -0.1,
+      "geometry_curvature": 0.04,
+      "rv_continuous": 0.08,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 7.0,
+      "alpha_bps": 20.5,
+      "equal_weight_return_bps": 12.5,
+      "inverse_vol_return_bps": 14.0,
+      "macro_prob": 0.47000000000000003,
+      "macro_prob_calibrated": 0.46,
+      "mid_return_bps": 12.5,
+      "ofi": 10.0
+    },
+    "outcome": {
+      "forward_return_bps": 12.5,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0033",
+    "decision_time_ns": 1784190780000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.8,
+      "realized_vol": 0.12,
+      "ts_mom": 0.35,
+      "target_vol": 0.15,
+      "geometry_slope": 0.0,
+      "geometry_curvature": 0.06,
+      "rv_continuous": 0.09,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 5.0,
+      "alpha_bps": 33.0,
+      "equal_weight_return_bps": 25.0,
+      "inverse_vol_return_bps": 26.5,
+      "macro_prob": 0.48,
+      "macro_prob_calibrated": 0.47,
+      "mid_return_bps": 25.0,
+      "ofi": 20.0
+    },
+    "outcome": {
+      "forward_return_bps": 25.0,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0034",
+    "decision_time_ns": 1784190840000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.9,
+      "realized_vol": 0.13999999999999999,
+      "ts_mom": 0.4,
+      "target_vol": 0.15,
+      "geometry_slope": 0.1,
+      "geometry_curvature": 0.08,
+      "rv_continuous": 0.1,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 6.0,
+      "alpha_bps": 45.5,
+      "equal_weight_return_bps": 37.5,
+      "inverse_vol_return_bps": 39.0,
+      "macro_prob": 0.49,
+      "macro_prob_calibrated": 0.48,
+      "mid_return_bps": 37.5,
+      "ofi": 30.0
+    },
+    "outcome": {
+      "forward_return_bps": 37.5,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0035",
+    "decision_time_ns": 1784190900000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.5,
+      "realized_vol": 0.16,
+      "ts_mom": 0.45,
+      "target_vol": 0.15,
+      "geometry_slope": 0.2,
+      "geometry_curvature": 0.0,
+      "rv_continuous": 0.11,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 7.0,
+      "alpha_bps": -29.5,
+      "equal_weight_return_bps": -37.5,
+      "inverse_vol_return_bps": -36.0,
+      "macro_prob": 0.5,
+      "macro_prob_calibrated": 0.49,
+      "mid_return_bps": -37.5,
+      "ofi": 40.0
+    },
+    "outcome": {
+      "forward_return_bps": -37.5,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0036",
+    "decision_time_ns": 1784190960000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.6,
+      "realized_vol": 0.12,
+      "ts_mom": 0.3,
+      "target_vol": 0.15,
+      "geometry_slope": -0.30000000000000004,
+      "geometry_curvature": 0.02,
+      "rv_continuous": 0.08,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 5.0,
+      "alpha_bps": -17.0,
+      "equal_weight_return_bps": -25.0,
+      "inverse_vol_return_bps": -23.5,
+      "macro_prob": 0.51,
+      "macro_prob_calibrated": 0.5,
+      "mid_return_bps": -25.0,
+      "ofi": -40.0
+    },
+    "outcome": {
+      "forward_return_bps": -25.0,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0037",
+    "decision_time_ns": 1784191020000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.7,
+      "realized_vol": 0.13999999999999999,
+      "ts_mom": 0.35,
+      "target_vol": 0.15,
+      "geometry_slope": -0.2,
+      "geometry_curvature": 0.04,
+      "rv_continuous": 0.09,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 6.0,
+      "alpha_bps": -4.5,
+      "equal_weight_return_bps": -12.5,
+      "inverse_vol_return_bps": -11.0,
+      "macro_prob": 0.52,
+      "macro_prob_calibrated": 0.51,
+      "mid_return_bps": -12.5,
+      "ofi": -30.0
+    },
+    "outcome": {
+      "forward_return_bps": -12.5,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0038",
+    "decision_time_ns": 1784191080000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.8,
+      "realized_vol": 0.16,
+      "ts_mom": 0.4,
+      "target_vol": 0.15,
+      "geometry_slope": -0.1,
+      "geometry_curvature": 0.06,
+      "rv_continuous": 0.1,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 7.0,
+      "alpha_bps": 8.0,
+      "equal_weight_return_bps": 0.0,
+      "inverse_vol_return_bps": 1.5,
+      "macro_prob": 0.53,
+      "macro_prob_calibrated": 0.52,
+      "mid_return_bps": 0.0,
+      "ofi": -20.0
+    },
+    "outcome": {
+      "forward_return_bps": 0.0,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0039",
+    "decision_time_ns": 1784191140000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.9,
+      "realized_vol": 0.12,
+      "ts_mom": 0.45,
+      "target_vol": 0.15,
+      "geometry_slope": 0.0,
+      "geometry_curvature": 0.08,
+      "rv_continuous": 0.11,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 5.0,
+      "alpha_bps": 20.5,
+      "equal_weight_return_bps": 12.5,
+      "inverse_vol_return_bps": 14.0,
+      "macro_prob": 0.54,
+      "macro_prob_calibrated": 0.53,
+      "mid_return_bps": 12.5,
+      "ofi": -10.0
+    },
+    "outcome": {
+      "forward_return_bps": 12.5,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0040",
+    "decision_time_ns": 1784191200000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.5,
+      "realized_vol": 0.13999999999999999,
+      "ts_mom": 0.3,
+      "target_vol": 0.15,
+      "geometry_slope": 0.1,
+      "geometry_curvature": 0.0,
+      "rv_continuous": 0.08,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 6.0,
+      "alpha_bps": 33.0,
+      "equal_weight_return_bps": 25.0,
+      "inverse_vol_return_bps": 26.5,
+      "macro_prob": 0.45,
+      "macro_prob_calibrated": 0.44,
+      "mid_return_bps": 25.0,
+      "ofi": 0.0
+    },
+    "outcome": {
+      "forward_return_bps": 25.0,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0041",
+    "decision_time_ns": 1784191260000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.6,
+      "realized_vol": 0.16,
+      "ts_mom": 0.35,
+      "target_vol": 0.15,
+      "geometry_slope": 0.2,
+      "geometry_curvature": 0.02,
+      "rv_continuous": 0.09,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 7.0,
+      "alpha_bps": 45.5,
+      "equal_weight_return_bps": 37.5,
+      "inverse_vol_return_bps": 39.0,
+      "macro_prob": 0.46,
+      "macro_prob_calibrated": 0.45,
+      "mid_return_bps": 37.5,
+      "ofi": 10.0
+    },
+    "outcome": {
+      "forward_return_bps": 37.5,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0042",
+    "decision_time_ns": 1784191320000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.7,
+      "realized_vol": 0.12,
+      "ts_mom": 0.4,
+      "target_vol": 0.15,
+      "geometry_slope": -0.30000000000000004,
+      "geometry_curvature": 0.04,
+      "rv_continuous": 0.1,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 5.0,
+      "alpha_bps": -29.5,
+      "equal_weight_return_bps": -37.5,
+      "inverse_vol_return_bps": -36.0,
+      "macro_prob": 0.47000000000000003,
+      "macro_prob_calibrated": 0.46,
+      "mid_return_bps": -37.5,
+      "ofi": 20.0
+    },
+    "outcome": {
+      "forward_return_bps": -37.5,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0043",
+    "decision_time_ns": 1784191380000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.8,
+      "realized_vol": 0.13999999999999999,
+      "ts_mom": 0.45,
+      "target_vol": 0.15,
+      "geometry_slope": -0.2,
+      "geometry_curvature": 0.06,
+      "rv_continuous": 0.11,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 6.0,
+      "alpha_bps": -17.0,
+      "equal_weight_return_bps": -25.0,
+      "inverse_vol_return_bps": -23.5,
+      "macro_prob": 0.48,
+      "macro_prob_calibrated": 0.47,
+      "mid_return_bps": -25.0,
+      "ofi": 30.0
+    },
+    "outcome": {
+      "forward_return_bps": -25.0,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0044",
+    "decision_time_ns": 1784191440000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.9,
+      "realized_vol": 0.16,
+      "ts_mom": 0.3,
+      "target_vol": 0.15,
+      "geometry_slope": -0.1,
+      "geometry_curvature": 0.08,
+      "rv_continuous": 0.08,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 7.0,
+      "alpha_bps": -4.5,
+      "equal_weight_return_bps": -12.5,
+      "inverse_vol_return_bps": -11.0,
+      "macro_prob": 0.49,
+      "macro_prob_calibrated": 0.48,
+      "mid_return_bps": -12.5,
+      "ofi": 40.0
+    },
+    "outcome": {
+      "forward_return_bps": -12.5,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0045",
+    "decision_time_ns": 1784191500000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.5,
+      "realized_vol": 0.12,
+      "ts_mom": 0.35,
+      "target_vol": 0.15,
+      "geometry_slope": 0.0,
+      "geometry_curvature": 0.0,
+      "rv_continuous": 0.09,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 5.0,
+      "alpha_bps": 8.0,
+      "equal_weight_return_bps": 0.0,
+      "inverse_vol_return_bps": 1.5,
+      "macro_prob": 0.5,
+      "macro_prob_calibrated": 0.49,
+      "mid_return_bps": 0.0,
+      "ofi": -40.0
+    },
+    "outcome": {
+      "forward_return_bps": 0.0,
+      "survival": false
+    }
+  },
+  {
+    "example_id": "w1-ex-0046",
+    "decision_time_ns": 1784191560000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.6,
+      "realized_vol": 0.13999999999999999,
+      "ts_mom": 0.4,
+      "target_vol": 0.15,
+      "geometry_slope": 0.1,
+      "geometry_curvature": 0.02,
+      "rv_continuous": 0.1,
+      "rv_regime_scale": 1.0,
+      "stack_cost_bps": 6.0,
+      "alpha_bps": 20.5,
+      "equal_weight_return_bps": 12.5,
+      "inverse_vol_return_bps": 14.0,
+      "macro_prob": 0.51,
+      "macro_prob_calibrated": 0.5,
+      "mid_return_bps": 12.5,
+      "ofi": -30.0
+    },
+    "outcome": {
+      "forward_return_bps": 12.5,
+      "survival": true
+    }
+  },
+  {
+    "example_id": "w1-ex-0047",
+    "decision_time_ns": 1784191620000000000,
+    "feature_tags": [
+      "XS_MOM_MEDIUM",
+      "FUTURES_TS_MOM",
+      "PRICE_GEOMETRY",
+      "RV_CONTINUOUS",
+      "EXEC_COST_STACK",
+      "ALLOCATION",
+      "MACRO_STATE",
+      "L1_TOB_OFI"
+    ],
+    "features": {
+      "xs_mom_medium": 0.7,
+      "realized_vol": 0.16,
+      "ts_mom": 0.45,
+      "target_vol": 0.15,
+      "geometry_slope": 0.2,
+      "geometry_curvature": 0.04,
+      "rv_continuous": 0.11,
+      "rv_regime_scale": 1.2,
+      "stack_cost_bps": 7.0,
+      "alpha_bps": 33.0,
+      "equal_weight_return_bps": 25.0,
+      "inverse_vol_return_bps": 26.5,
+      "macro_prob": 0.52,
+      "macro_prob_calibrated": 0.51,
+      "mid_return_bps": 25.0,
+      "ofi": -20.0
+    },
+    "outcome": {
+      "forward_return_bps": 25.0,
+      "survival": true
+    }
+  }
+]
