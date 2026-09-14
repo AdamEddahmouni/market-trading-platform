@@ -9,6 +9,7 @@ from ...canonical import canonical_bytes, sha256_bytes
 CONSTRUCTION_ID_PREFIX = "FCSPEC-"
 OBSERVATION_ID_PREFIX = "FOBS-"
 EXPERIMENT_ID_PREFIX = "FEXP-"
+SECURITY_BINDING_ID_PREFIX = "FSEC-"
 IDENTITY_VERSION = "quant-factor-content-sha256-v1"
 
 
@@ -21,5 +22,6 @@ __all__ = [
     "EXPERIMENT_ID_PREFIX",
     "IDENTITY_VERSION",
     "OBSERVATION_ID_PREFIX",
+    "SECURITY_BINDING_ID_PREFIX",
     "factor_hash",
 ]

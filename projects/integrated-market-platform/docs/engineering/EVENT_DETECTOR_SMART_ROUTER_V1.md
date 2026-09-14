@@ -120,7 +120,7 @@ Severity uses current spread divided by the 50 bps entry threshold: `<1.5x LOW`,
 
 The positioning detector compares two actually processed canonical `SHORT_INTEREST` events. It requires positive prior quantity and triggers at an absolute relative change of at least 10%. Missing prior state is never treated as zero. Reasons are `SHORT_INTEREST_INCREASE` or `SHORT_INTEREST_DECREASE`; exact prior/current event references are retained.
 
-`NEWS_EVENT` remains inactive. BUILD 09 performs no sentiment analysis, keyword classification, fuzzy filing-to-news conversion, or LLM call. `UNUSUAL_OPTIONS_ACTIVITY` remains inactive because the standard canonical snapshot/signal boundary lacks option-chain measurements.
+`NEWS_EVENT` remains inactive. BUILD 09 performs no sentiment analysis, keyword classification, fuzzy filing-to-news conversion, or LLM call. Presence of `NEWS`, headline, or SEC filing events on a `DetectionFrame` does not activate the detector: `detect()` records `NEWS_EVENT:INACTIVE_INPUT_UNAVAILABLE` (and `NEWS_EVENT:FILING_IS_NOT_NEWS_EVENT` for filings) and never emits `DetectionV1` of that type. `UNUSUAL_OPTIONS_ACTIVITY` remains inactive because the standard canonical snapshot/signal boundary lacks option-chain measurements; option-like signals produce `UNUSUAL_OPTIONS_ACTIVITY:OPTION_CHAIN_NOT_CANONICAL` and never a detection. Inactive Path B honesty does not replace Path A.
 
 `REGIME_SHIFT` emits only when valid caller-supplied previous/current keys differ. Repeated current keys are suppressed. Metadata records the source context version and explicitly states that BUILD 09 did not generate the regime.
 

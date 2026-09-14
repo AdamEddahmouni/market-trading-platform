@@ -20,6 +20,7 @@ from ..contracts import (
     SignalV1,
 )
 from ..quality import DecisionAction
+from .errors import DetectionError
 from .identity import derive_detection_id
 from .models import (
     DetectionEngineResult,
@@ -29,6 +30,46 @@ from .models import (
     DetectorSupportStatus,
 )
 from .policy import DetectionPolicyV1
+
+INACTIVE_SEMANTIC_TYPES = frozenset(
+    {
+        SemanticEventType.NEWS_EVENT,
+        SemanticEventType.UNUSUAL_OPTIONS_ACTIVITY,
+    }
+)
+_NEWS_TEMPTING_EVENT_TYPES = frozenset(
+    {
+        "NEWS",
+        "NEWS_EVENT",
+        "HEADLINE",
+        "STORY",
+        "PRESS_RELEASE",
+        "ARTICLE",
+    }
+)
+_FILING_TEMPTING_EVENT_TYPES = frozenset(
+    {
+        "FILING",
+        "FILINGS",
+        "SEC_FILING",
+        "8-K",
+        "8K",
+        "FORM_8K",
+        "FORM-8-K",
+    }
+)
+_OPTIONS_TEMPTING_SIGNAL_TYPES = frozenset(
+    {
+        "option_volume",
+        "option_oi",
+        "option_iv",
+        "unusual_options_activity",
+        "call_volume",
+        "put_volume",
+        "iv_rank",
+        "open_interest",
+    }
+)
 
 
 @dataclass(slots=True)
@@ -179,6 +220,7 @@ class EventDetectorEngine:
         self._detect_liquidity(frame, state, detections, diagnostics)
         self._detect_short_interest(frame, state, detections, diagnostics)
         self._detect_regime(frame, state, detections)
+        self._fail_closed_inactive_detectors(frame, detections, diagnostics)
         ordered = tuple(
             sorted(
                 detections,
@@ -250,6 +292,8 @@ class EventDetectorEngine:
         identity_context: dict[str, str],
         metadata: dict[str, Any],
     ) -> DetectionV1:
+        if event_type in INACTIVE_SEMANTIC_TYPES:
+            raise DetectionError("INACTIVE_DETECTOR_CANNOT_EMIT")
         signal_refs = tuple(_ref(ContractKind.SIGNAL, row.signal_id) for row in source_signals)
         event_refs = tuple(_ref(ContractKind.EVENT, row.event_id) for row in source_events)
         detection_id = derive_detection_id(
@@ -478,5 +522,32 @@ class EventDetectorEngine:
             )
         )
 
+    def _fail_closed_inactive_detectors(
+        self,
+        frame: DetectionFrame,
+        detections: list[DetectionV1],
+        diagnostics: list[str],
+    ) -> None:
+        """NEWS_EVENT and UOA stay inactive. Tempting inputs do not activate them.
 
-__all__ = ["EventDetectorEngine"]
+        Path A is untouched. This records honesty diagnostics and never emits
+        those semantic detections, including when NEWS/FILING events or
+        option-like signals are present on the frame.
+        """
+        diagnostics.append("NEWS_EVENT:INACTIVE_INPUT_UNAVAILABLE")
+        diagnostics.append("UNUSUAL_OPTIONS_ACTIVITY:INACTIVE_INPUT_UNAVAILABLE")
+        event_types = {str(row.event_type).upper().replace(" ", "_") for row in frame.events}
+        if event_types & _FILING_TEMPTING_EVENT_TYPES:
+            diagnostics.append("NEWS_EVENT:FILING_IS_NOT_NEWS_EVENT")
+        if event_types & _NEWS_TEMPTING_EVENT_TYPES:
+            diagnostics.append("NEWS_EVENT:NEWS_LANE_NOT_CANONICAL")
+        signal_types = {str(row.signal_type).lower() for row in frame.signals}
+        if signal_types & _OPTIONS_TEMPTING_SIGNAL_TYPES or any(
+            "option" in signal_type for signal_type in signal_types
+        ):
+            diagnostics.append("UNUSUAL_OPTIONS_ACTIVITY:OPTION_CHAIN_NOT_CANONICAL")
+        if any(row.semantic_event_type in INACTIVE_SEMANTIC_TYPES for row in detections):
+            raise DetectionError("INACTIVE_DETECTOR_CANNOT_EMIT")
+
+
+__all__ = ["EventDetectorEngine", "INACTIVE_SEMANTIC_TYPES"]
