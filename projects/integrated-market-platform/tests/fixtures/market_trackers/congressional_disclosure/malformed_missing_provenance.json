@@ -1,0 +1,24 @@
+{
+  "id": "house:H-PTR-BAD-1:0",
+  "chamber": "house",
+  "docId": "H-PTR-BAD-1",
+  "rowIndex": 0,
+  "member": {
+    "name": "Representative Bad Row",
+    "bioguideId": null,
+    "party": null,
+    "state": "EX"
+  },
+  "filedAt": "2025-01-01",
+  "transactedAt": "2024-12-15",
+  "ticker": "ZZZZ",
+  "assetDescription": "Example Corp",
+  "assetType": "stock",
+  "side": "buy",
+  "amountRange": {
+    "min": 1001,
+    "max": 15000,
+    "text": "$1,001 - $15,000"
+  },
+  "owner": null
+}
