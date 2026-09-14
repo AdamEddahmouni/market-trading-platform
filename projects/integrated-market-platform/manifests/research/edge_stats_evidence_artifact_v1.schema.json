@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "imp.research.edge_stats.evidence_artifact.v1",
+  "title": "EdgeStatsEvidenceArtifactV1",
+  "type": "object",
+  "required": [
+    "artifact_type",
+    "authority_class",
+    "ci",
+    "content_sha256",
+    "dataset",
+    "engine_version",
+    "estimate",
+    "generated_at",
+    "matched_examples",
+    "n",
+    "outcome",
+    "pit_class",
+    "query",
+    "recent_full_comparison",
+    "regime_splits",
+    "schema_version",
+    "time_splits"
+  ],
+  "properties": {
+    "artifact_type": { "const": "EDGE_STATS_EVIDENCE_ARTIFACT" },
+    "authority_class": { "const": "EVIDENCE_NOT_PREDICTION" },
+    "schema_version": { "const": "1.0.0" },
+    "pit_class": { "const": "HISTORICAL_BAR_END_PIT" },
+    "engine_version": { "type": "string" },
+    "generated_at": { "type": "string" },
+    "n": { "type": "integer", "minimum": 0 },
+    "estimate": { "type": "number" },
+    "content_sha256": { "type": "string", "pattern": "^[0-9A-F]{64}$" },
+    "dataset": {
+      "type": "object",
+      "required": ["source_object_id", "source_sha256", "collection_relative_path", "bar_count"],
+      "properties": {
+        "source_object_id": { "const": "ADMITTED-SHORTSQ-BIYA-BARS-001" },
+        "source_sha256": { "type": "string" },
+        "collection_relative_path": { "type": "string" },
+        "bar_count": { "type": "integer" }
+      }
+    },
+    "query": {
+      "type": "object",
+      "required": ["version_hash", "schema_version", "squeeze_states", "outcome"],
+      "properties": {
+        "version_hash": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": true
+}
