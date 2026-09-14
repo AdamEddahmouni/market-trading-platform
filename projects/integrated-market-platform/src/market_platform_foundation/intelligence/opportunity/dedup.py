@@ -35,26 +35,11 @@ def review_thesis_key(row: OpportunitySummary) -> str:
 
 
 def keep_ranked_thesis_winners(ordered: tuple[OpportunitySummary, ...]) -> tuple[OpportunitySummary, ...]:
-    """Keep the first (already ranked) OpportunityV1 per thesis; extras in duplicates[]."""
+    """Keep one row per thesis; extras in duplicates[] (supersession or rank-order duplicate)."""
 
-    winners: list[OpportunitySummary] = []
-    index_by_key: dict[str, int] = {}
-    for row in ordered:
-        key = review_thesis_key(row)
-        existing = index_by_key.get(key)
-        if existing is None:
-            index_by_key[key] = len(winners)
-            winners.append(row)
-            continue
-        winner = winners[existing]
-        metadata = dict(winner.metadata)
-        metadata["duplicate_reason"] = DUPLICATE_THESIS_SUPPRESSED
-        winners[existing] = replace(
-            winner,
-            duplicates=winner.duplicates + (row.summary_id,),
-            metadata=metadata,
-        )
-    return tuple(winners)
+    from .supersession import apply_thesis_supersession
+
+    return apply_thesis_supersession(ordered)
 
 
 def dedup_review_rows(rows: tuple[OpportunitySummary, ...]) -> tuple[OpportunitySummary, ...]:
