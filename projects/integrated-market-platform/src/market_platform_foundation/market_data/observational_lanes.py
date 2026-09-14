@@ -511,6 +511,18 @@ class ObservationalLaneRuntime:
         self._prev_book_snapshots.pop(key, None)
 
     def _depth_stale_block(self, symbol: str, book: dict[str, Any]) -> dict[str, Any] | None:
+        freshness = _book_freshness_state(book)
+        if freshness == "STALE":
+            # Clock-independent: an explicit STALE book must not emit
+            # authoritative OFI/book-features even when as_of was never injected.
+            return {
+                "available": False,
+                "book_state_valid": book.get("book_state_valid", False),
+                "book_status": book.get("book_status"),
+                "instrument_id": symbol,
+                "reason": "STALE_BOOK",
+                "state": "STALE",
+            }
         as_of = self._as_of_time_ns
         if as_of is None:
             return None
