@@ -265,6 +265,161 @@ class RuntimeCapabilityTests(unittest.TestCase):
         self.assertIsNone(result.provider_id)
         self.assertEqual(result.diagnostics, (f"UNKNOWN_PROVIDER:{YAHOO_PROVIDER_ID}",))
 
+    def test_yahoo_overlay_is_registered_delayed_not_l1(self) -> None:
+        from market_platform_foundation.providers.adapters.yahoo_delayed_equity_quote import (
+            YAHOO_CAPABILITY,
+            YAHOO_PROVIDER_ID,
+        )
+        from market_platform_foundation.providers.runtime_capability import (
+            CAP_DELAYED_OVERLAY,
+        )
+        from market_platform_foundation.providers.yahoo_delayed_capability import (
+            YAHOO_LICENSE_CLASS,
+            YAHOO_NORMALIZER_VERSION,
+        )
+
+        registry = RuntimeCapabilityRegistry()
+        overlay_providers = registry.providers_for_lane_capability(CAP_DELAYED_OVERLAY)
+        self.assertIn(YAHOO_PROVIDER_ID, overlay_providers)
+        self.assertNotIn(YAHOO_PROVIDER_ID, registry.providers_for_lane_capability(CAP_L1))
+        view = registry.view_capability(
+            YAHOO_PROVIDER_ID, CAP_DELAYED_OVERLAY, instrument_id="AAPL"
+        )
+        self.assertTrue(view.implemented)
+        self.assertEqual(view.capability_id, YAHOO_CAPABILITY)
+        self.assertEqual(view.lane_capability_id, CAP_DELAYED_OVERLAY)
+        self.assertEqual(view.timeliness, DataTimeliness.DELAYED)
+        self.assertNotEqual(view.timeliness, DataTimeliness.REAL_TIME)
+        self.assertEqual(view.entitlement, EntitlementState.DELAYED)
+        self.assertEqual(view.runtime_state, RuntimeCapabilityState.DEGRADED)
+        self.assertEqual(view.provenance.get("overlay_role"), "DELAYED_EOD")
+        self.assertFalse(view.provenance.get("hop_l1"))
+        self.assertEqual(view.provenance.get("instrument_id"), "AAPL")
+        descriptor = next(
+            cap
+            for cap in registry.implemented_capabilities(YAHOO_PROVIDER_ID)
+            if cap.capability_id == YAHOO_CAPABILITY
+        )
+        self.assertTrue(descriptor.supports_history)
+        self.assertFalse(descriptor.supports_pit)
+        self.assertEqual(descriptor.license_class, YAHOO_LICENSE_CLASS)
+        self.assertEqual(descriptor.normalizer_version, YAHOO_NORMALIZER_VERSION)
+
+    def test_yahoo_overlay_require_real_time_is_delayed_rejected(self) -> None:
+        from market_platform_foundation.providers.adapters.yahoo_delayed_equity_quote import (
+            YAHOO_PROVIDER_ID,
+        )
+        from market_platform_foundation.providers.runtime_capability import (
+            CAP_DELAYED_OVERLAY,
+        )
+
+        registry = RuntimeCapabilityRegistry()
+        view = registry.view_capability(
+            YAHOO_PROVIDER_ID,
+            CAP_DELAYED_OVERLAY,
+            instrument_id="AAPL",
+            require_real_time=True,
+        )
+        self.assertEqual(view.runtime_state, RuntimeCapabilityState.DELAYED)
+        selector = ObservationalProviderSelector(registry)
+        result = selector.select(
+            ObservationalSelectionRequest(
+                capability_id=CAP_DELAYED_OVERLAY,
+                instrument_id="AAPL",
+                require_real_time=True,
+                provider_id=YAHOO_PROVIDER_ID,
+            )
+        )
+        self.assertEqual(result.outcome, SelectionOutcome.DELAYED_REJECTED)
+
+    def test_yahoo_overlay_selects_without_require_real_time(self) -> None:
+        from market_platform_foundation.providers.adapters.yahoo_delayed_equity_quote import (
+            YAHOO_PROVIDER_ID,
+        )
+        from market_platform_foundation.providers.runtime_capability import (
+            CAP_DELAYED_OVERLAY,
+        )
+
+        selector = ObservationalProviderSelector()
+        result = selector.select(
+            ObservationalSelectionRequest(
+                capability_id=CAP_DELAYED_OVERLAY,
+                instrument_id="AAPL",
+                provider_id=YAHOO_PROVIDER_ID,
+            )
+        )
+        self.assertEqual(result.outcome, SelectionOutcome.SELECTED)
+        self.assertEqual(result.provider_id, YAHOO_PROVIDER_ID)
+        self.assertEqual(result.provenance["instrument_id"], "AAPL")
+        self.assertEqual(result.provenance.get("overlay_role"), "DELAYED_EOD")
+        self.assertFalse(result.provenance.get("hop_l1"))
+        self.assertEqual(result.capability_view.timeliness, DataTimeliness.DELAYED)
+
+    def test_yahoo_overlay_stamped_real_time_still_views_delayed(self) -> None:
+        from market_platform_foundation.providers.adapters.yahoo_delayed_equity_quote import (
+            YAHOO_PROVIDER_ID,
+        )
+        from market_platform_foundation.providers.runtime_capability import (
+            CAP_DELAYED_OVERLAY,
+        )
+
+        registry = RuntimeCapabilityRegistry()
+        registry.set_runtime_state(
+            ProviderRuntimeState(
+                provider_id=YAHOO_PROVIDER_ID,
+                health=ProviderHealth.HEALTHY,
+                entitlement=EntitlementState.ENTITLED,
+                timeliness=DataTimeliness.REAL_TIME,
+                live_verified=True,
+                notes="SHOULD_NOT_BECOME_HOP_L1",
+            )
+        )
+        stored = registry.runtime_state_for(YAHOO_PROVIDER_ID)
+        self.assertEqual(stored.timeliness, DataTimeliness.DELAYED)
+        self.assertEqual(stored.entitlement, EntitlementState.DELAYED)
+        self.assertFalse(stored.live_verified)
+        self.assertIn("DELAYED_OVERLAY_NOT_REAL_TIME", stored.notes)
+        view = registry.view_capability(YAHOO_PROVIDER_ID, CAP_DELAYED_OVERLAY)
+        self.assertEqual(view.timeliness, DataTimeliness.DELAYED)
+        self.assertNotEqual(view.timeliness, DataTimeliness.REAL_TIME)
+        self.assertEqual(view.runtime_state, RuntimeCapabilityState.DEGRADED)
+        self.assertFalse(view.provenance.get("hop_l1"))
+
+    def test_yahoo_overlay_execution_forbidden(self) -> None:
+        from market_platform_foundation.providers.adapters.yahoo_delayed_equity_quote import (
+            YAHOO_PROVIDER_ID,
+        )
+        from market_platform_foundation.providers.yahoo_delayed_capability import (
+            YAHOO_FORBIDDEN_CAPABILITIES,
+        )
+
+        registry = RuntimeCapabilityRegistry()
+        for cap in YAHOO_FORBIDDEN_CAPABILITIES:
+            view = registry.view_capability(YAHOO_PROVIDER_ID, cap)
+            self.assertEqual(view.reason_code, "EXECUTION_CAPABILITY_FORBIDDEN")
+
+    def test_yahoo_overlay_rejects_es_instrument(self) -> None:
+        from market_platform_foundation.providers.adapters.yahoo_delayed_equity_quote import (
+            YAHOO_PROVIDER_ID,
+        )
+        from market_platform_foundation.providers.runtime_capability import (
+            CAP_DELAYED_OVERLAY,
+        )
+
+        selector = ObservationalProviderSelector()
+        result = selector.select(
+            ObservationalSelectionRequest(
+                capability_id=CAP_DELAYED_OVERLAY,
+                instrument_id="ES=F",
+                provider_id=YAHOO_PROVIDER_ID,
+            )
+        )
+        self.assertEqual(result.outcome, SelectionOutcome.UNSUPPORTED_INSTRUMENT)
+        self.assertEqual(
+            result.diagnostics,
+            ("ES_FUTURES_NOT_SUPPORTED_BY_DELAYED_EQUITY_OVERLAY",),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
