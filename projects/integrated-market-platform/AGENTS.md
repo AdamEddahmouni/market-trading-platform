@@ -38,6 +38,7 @@ Run from the repository root:
 python tools/imp.py env
 python tools/imp.py format
 python tools/imp.py lint
+python tools/imp.py ci jobs
 python tools/imp.py validate fast
 python tools/imp.py test focused <selector>
 python tools/imp.py test affected
