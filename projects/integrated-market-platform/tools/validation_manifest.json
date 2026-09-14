@@ -1351,6 +1351,30 @@
       ]
     },
     {
+      "id": "market_trackers",
+      "path": "tests/market_trackers",
+      "classification": "offline",
+      "tiers": [
+        "full"
+      ],
+      "domains": [
+        "sec",
+        "intelligence"
+      ],
+      "parallel_safety": "PARALLEL_SAFE",
+      "resource_weight": 1,
+      "source_globs": [
+        "src/market_platform_foundation/market_trackers/**",
+        "tests/fixtures/market_trackers/**"
+      ],
+      "test_globs": [
+        "tests/market_trackers/test_*.py"
+      ],
+      "neighbors": [
+        "sec_edgar"
+      ]
+    },
+    {
       "id": "cftc",
       "path": "tests/cftc",
       "classification": "offline",

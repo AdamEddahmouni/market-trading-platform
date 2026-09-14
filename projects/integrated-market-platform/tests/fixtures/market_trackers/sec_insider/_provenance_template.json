@@ -1,0 +1,8 @@
+{
+  "source": "edgar",
+  "sourceUrl": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000011/xslF345X05/form4.xml",
+  "retrievedAt": "2026-08-24T12:00:00.000Z",
+  "parser": "form-ownership-xml@1",
+  "confidence": 1,
+  "needsReview": false
+}
