@@ -569,6 +569,7 @@
         "tools/path_a_rth_preflight.py",
         "tools/research",
         "tools/state",
+        "tools/state_path_diagnostic.py",
         "tools/system_acceptance"
       ],
       "responsibility": "Qualification, deployment preparation, state administration, safety exercises, and acceptance publication around BUILD25 through BUILD35 authorities.",

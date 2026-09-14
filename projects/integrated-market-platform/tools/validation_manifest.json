@@ -515,6 +515,7 @@
         "src/market_platform_foundation/finviz/**",
         "src/market_platform_foundation/ui_api/server.py",
         "tools/provider_readiness.py",
+        "tools/state_path_diagnostic.py",
         ".github/workflows/imp-validate.yml",
         "fixtures/auth/**",
         "tests/fixtures/providers/moomoo/**",
@@ -2257,6 +2258,13 @@
         "AGENTS.md"
       ],
       "reason": "Repository agent routing prose; governance validation only"
+    },
+    {
+      "id": "gitignore",
+      "patterns": [
+        ".gitignore"
+      ],
+      "reason": "Repository ignore rules; governance validation only"
     }
   ],
   "subsystem_partitions": [
