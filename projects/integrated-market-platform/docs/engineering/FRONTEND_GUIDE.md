@@ -6,6 +6,18 @@
 
 React 18, TypeScript, Vite, React Router 6, TanStack Query 5, Zod, Lightweight Charts.
 
+## Primary nav (shipped)
+
+`NavShell` labels after UX-00 P2. Keep labels and `App.tsx` routes in lockstep; do not invent paths.
+
+| Label | Route | Meaning |
+|-------|-------|---------|
+| Workspace | `/workspace` | Decision desk (Paper submit boundary) |
+| Portfolio | `/portfolio` | Orders history |
+| Lab | `/research` | Model & sim labs. `/lab` redirects here; it is not a workspace alias |
+
+A gated **Research** item also links to `/research`. Paper mode hints: Workspace — Decision desk; Portfolio — Orders history; Lab — Model & sim labs. Operator URLs: [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md).
+
 ## Mode route pattern
 
 ```
@@ -58,7 +70,7 @@ Paper draft handoffs use React Router `location.state` — short-lived, not a pe
 
 ## Paper cockpit
 
-`PaperWorkspacePage` → `PaperDecisionCockpit` + `WorkspaceObservability`. See [PAPER_DECISION_LIFECYCLE.md](../architecture/PAPER_DECISION_LIFECYCLE.md).
+**Workspace** is the decision desk: `PaperWorkspacePage` → `PaperDecisionCockpit` + `WorkspaceObservability`. **Portfolio** (`/portfolio`) is orders history, not the submit surface. See [PAPER_DECISION_LIFECYCLE.md](../architecture/PAPER_DECISION_LIFECYCLE.md).
 
 ## CSS organization
 
