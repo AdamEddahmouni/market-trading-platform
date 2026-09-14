@@ -68,4 +68,6 @@ Separate governance only. It is never inferred from this document and remains fa
 
 ## Registry requirement
 
-The Strategy & Signal Research Registry may retain prose summaries, but canonical status must be expressible using this vector. Future implementation should avoid a single `maturity` field as the source of truth.
+The Strategy & Signal Research Registry may retain prose summaries, but canonical status must be expressible using this vector. A single `maturity` field is forbidden as the source of truth.
+
+Runtime source of truth: `src/market_platform_foundation/research/strategy_readiness.py` (`research/strategy_readiness/1.0.0`). The executable registry stores the 10 named axes, requires `evidence_refs` for `VALIDATED`, and never infers Live eligibility from other VALIDATED axes. Builtin family vectors are conservative seeds (SHORT_SQUEEZE / NEWS_CATALYST are OOS-ready, not Live-eligible). Do not treat a derived operator summary as a substitute for the axis vector.
