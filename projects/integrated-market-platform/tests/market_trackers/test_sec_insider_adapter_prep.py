@@ -89,6 +89,17 @@ class MarketTrackersSecInsiderAdapterPrepTests(unittest.TestCase):
         self.assertTrue(bundle.receipt.primary_source_url.startswith("https://www.sec.gov/"))
         self.assertIn("NOT_TRADE_RECOMMENDATION", bundle.receipt.quality_flags)
 
+    def test_step_failure_fail_closed_no_partial_admit(self) -> None:
+        row = _load("form4_open_market_purchase.json")
+        row = dict(row)
+        row["accessionNumber"] = ""
+        bundle = build_adapter_prep_bundle(row, platform_received_time_ns=_PLATFORM_RECEIVED_NS)
+        self.assertTrue(bundle.errors)
+        self.assertIsNone(bundle.event_map)
+        self.assertIsNone(bundle.evidence)
+        self.assertIsNone(bundle.receipt)
+        self.assertIsNone(bundle.pit)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1359,7 +1359,7 @@
       ],
       "domains": [
         "sec",
-        "intelligence"
+        "participant"
       ],
       "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 1,

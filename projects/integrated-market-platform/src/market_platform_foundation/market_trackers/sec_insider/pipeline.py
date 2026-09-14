@@ -81,6 +81,18 @@ def build_adapter_prep_bundle(
     except ValueError as exc:
         errors.append(str(exc))
 
+    if errors:
+        return AdapterPrepBundle(
+            validation=validation,
+            receipt=None,
+            pit=None,
+            event_map=None,
+            evidence=None,
+            candidate_features=candidate_feature_catalog(),
+            doctrine_notes=pit_doctrine_notes(),
+            errors=tuple(errors),
+        )
+
     return AdapterPrepBundle(
         validation=validation,
         receipt=receipt,
@@ -89,5 +101,5 @@ def build_adapter_prep_bundle(
         evidence=evidence,
         candidate_features=candidate_feature_catalog(),
         doctrine_notes=pit_doctrine_notes(),
-        errors=tuple(errors),
+        errors=(),
     )
