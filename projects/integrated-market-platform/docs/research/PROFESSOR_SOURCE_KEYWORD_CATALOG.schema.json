@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "imp://research/professor-source-keyword-catalog/1.0.0",
+  "title": "Professor source and keyword catalog",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "status",
+    "observed_at",
+    "runtime_policy_frozen",
+    "imp_role_legend",
+    "imp_availability_legend",
+    "sources",
+    "catalyst_taxonomy"
+  ],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "status": { "const": "RESEARCH_ONLY" },
+    "observed_at": { "type": "string", "format": "date-time" },
+    "runtime_policy_frozen": { "type": "object" },
+    "imp_role_legend": { "type": "object" },
+    "imp_availability_legend": { "type": "object" },
+    "sources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/source_entry" }
+    },
+    "catalyst_taxonomy": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/catalyst_entry" }
+    },
+    "related_authoritative_docs": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "source_entry": {
+      "type": "object",
+      "required": [
+        "source_id",
+        "display_name",
+        "asset_applicability",
+        "data_types",
+        "access_method",
+        "cost_summary",
+        "free_or_student",
+        "auth",
+        "timeliness",
+        "timestamp_quality",
+        "structure",
+        "reliability",
+        "licensing",
+        "historical_availability",
+        "pit_suitability",
+        "imp_role",
+        "imp_availability",
+        "access_in_imp_claimed"
+      ],
+      "properties": {
+        "source_id": { "type": "string" },
+        "display_name": { "type": "string" },
+        "asset_applicability": { "type": "array", "items": { "type": "string" } },
+        "data_types": { "type": "array", "items": { "type": "string" } },
+        "access_method": { "type": "string" },
+        "cost_summary": { "type": "string" },
+        "free_or_student": { "type": "string" },
+        "auth": { "type": "string" },
+        "timeliness": { "type": "string" },
+        "timestamp_quality": { "type": "string" },
+        "structure": { "type": "string" },
+        "reliability": { "type": "string" },
+        "licensing": { "type": "string" },
+        "historical_availability": { "type": "string" },
+        "pit_suitability": { "type": "string" },
+        "imp_role": {
+          "enum": [
+            "PRIMARY_EVIDENCE",
+            "OVERLAY",
+            "VALIDATION_REFERENCE",
+            "RESEARCH_ONLY"
+          ]
+        },
+        "imp_availability": {
+          "enum": ["OPERATIONAL", "CONFIGURED", "KNOWN", "NOT_IN_REPO", "PIPELINE_ADJACENT"]
+        },
+        "imp_provider_id": { "type": "string" },
+        "news_source_catalog_id": { "type": "string" },
+        "access_in_imp_claimed": {
+          "type": "boolean",
+          "description": "False unless verified wiring + operator credentials exist; documentation alone is false."
+        },
+        "canonical_refs": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": "string" }
+      }
+    },
+    "catalyst_entry": {
+      "type": "object",
+      "required": [
+        "catalyst_id",
+        "display_name",
+        "category",
+        "asset_applicability",
+        "example_terms",
+        "in_default_catalyst_registry"
+      ],
+      "properties": {
+        "catalyst_id": { "type": "string" },
+        "display_name": { "type": "string" },
+        "category": { "type": "string" },
+        "asset_applicability": { "type": "array", "items": { "type": "string" } },
+        "example_terms": { "type": "array", "items": { "type": "string" } },
+        "in_default_catalyst_registry": { "type": "boolean" },
+        "registry_catalyst_id": { "type": "string" },
+        "professor_priority": { "type": "string" }
+      }
+    }
+  }
+}
