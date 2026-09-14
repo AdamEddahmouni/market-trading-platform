@@ -17,7 +17,7 @@ This module is the single runtime-capability facade; it does not replace
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from typing import Any
 
@@ -37,6 +37,12 @@ from .moomoo_opend_capability import (
     MOOMOO_OPEND_FORBIDDEN_CAPABILITIES,
     MOOMOO_OPEND_PROVIDER_ID,
     register_moomoo_opend_observational,
+)
+from .yahoo_delayed_capability import (
+    YAHOO_CAPABILITY,
+    YAHOO_FORBIDDEN_CAPABILITIES,
+    YAHOO_PROVIDER_ID,
+    register_yahoo_delayed_capability,
 )
 
 
@@ -94,6 +100,7 @@ CAP_HISTORICAL_BARS = "OBSERVATIONAL_HISTORICAL_BARS"
 CAP_REPLAY = "OBSERVATIONAL_REPLAY"
 CAP_CONTRACT_RESOLUTION = "OBSERVATIONAL_CONTRACT_RESOLUTION"
 CAP_ACCOUNT_READ = "OBSERVATIONAL_ACCOUNT_READ"
+CAP_DELAYED_OVERLAY = "OBSERVATIONAL_DELAYED_OVERLAY"
 
 # Map registry capability ids to lane-facing ids.
 _REGISTRY_CAPABILITY_ALIASES: dict[str, str] = {
@@ -110,6 +117,7 @@ _REGISTRY_CAPABILITY_ALIASES: dict[str, str] = {
     "US_FUTURES_QUOTE": CAP_FUTURE_CONTRACT,
     "options_activity": CAP_OPTION_CHAIN,
     "futures_depth": CAP_FUTURE_CONTRACT,
+    YAHOO_CAPABILITY: CAP_DELAYED_OVERLAY,
 }
 
 _LANE_TO_REGISTRY_CAPABILITIES: dict[str, tuple[str, ...]] = {
@@ -123,6 +131,7 @@ _LANE_TO_REGISTRY_CAPABILITIES: dict[str, tuple[str, ...]] = {
     CAP_REPLAY: (IBKR_CAPABILITY_L1, IBKR_CAPABILITY_L2),
     CAP_HISTORICAL_BARS: (IBKR_CAPABILITY_HISTORICAL_BARS, "US_EQUITY_BARS"),
     "OBSERVATIONAL_ACCOUNT_READ": (IBKR_CAPABILITY_ACCOUNT_READ,),
+    CAP_DELAYED_OVERLAY: (YAHOO_CAPABILITY,),
 }
 
 
@@ -221,8 +230,28 @@ class RuntimeCapabilityRegistry:
                 live_verified=False,
                 notes="OPEND_UNVERIFIED_FAIL_CLOSED",
             )
+        if YAHOO_PROVIDER_ID not in known_ids:
+            try:
+                register_yahoo_delayed_capability(self._registry)
+            except Exception:
+                pass  # already registered
+        if YAHOO_PROVIDER_ID not in self._runtime_states:
+            self._runtime_states[YAHOO_PROVIDER_ID] = ProviderRuntimeState(
+                provider_id=YAHOO_PROVIDER_ID,
+                health=ProviderHealth.UNKNOWN,
+                entitlement=EntitlementState.DELAYED,
+                timeliness=DataTimeliness.DELAYED,
+                live_verified=False,
+                notes="DELAYED_OVERLAY_NOT_HOP_L1",
+            )
+        else:
+            self._runtime_states[YAHOO_PROVIDER_ID] = _coerce_yahoo_runtime_state(
+                self._runtime_states[YAHOO_PROVIDER_ID]
+            )
 
     def set_runtime_state(self, state: ProviderRuntimeState) -> None:
+        if state.provider_id == YAHOO_PROVIDER_ID:
+            state = _coerce_yahoo_runtime_state(state)
         self._runtime_states[state.provider_id] = state
 
     def set_capability_override(
@@ -277,6 +306,7 @@ class RuntimeCapabilityRegistry:
             "US_EQUITY_TICKS",
             "options_activity",
             "futures_depth",
+            YAHOO_CAPABILITY,
         ):
             for desc in self._registry.providers_for(cap_id):
                 if desc.provider_id == provider_id:
@@ -292,9 +322,26 @@ class RuntimeCapabilityRegistry:
         require_real_time: bool = False,
     ) -> RuntimeCapabilityView:
         """Evaluate all axes for one provider+capability pair."""
+        view = self._evaluate_capability(
+            provider_id,
+            capability_id,
+            instrument_id=instrument_id,
+            require_real_time=require_real_time,
+        )
+        return _with_yahoo_overlay_invariants(view, require_real_time=require_real_time)
+
+    def _evaluate_capability(
+        self,
+        provider_id: str,
+        capability_id: str,
+        *,
+        instrument_id: str | None = None,
+        require_real_time: bool = False,
+    ) -> RuntimeCapabilityView:
         if (
             capability_id in IBKR_FORBIDDEN_CAPABILITIES
             or capability_id in MOOMOO_OPEND_FORBIDDEN_CAPABILITIES
+            or capability_id in YAHOO_FORBIDDEN_CAPABILITIES
             or capability_id.endswith("_EXECUTION")
         ):
             return RuntimeCapabilityView(
@@ -492,8 +539,88 @@ class RuntimeCapabilityRegistry:
         return base
 
 
+def _coerce_yahoo_runtime_state(state: ProviderRuntimeState) -> ProviderRuntimeState:
+    """Yahoo overlay is never REAL_TIME, never hop-verified, never ENTITLED as live."""
+    timeliness = state.timeliness
+    notes = state.notes or "DELAYED_OVERLAY_NOT_HOP_L1"
+    if timeliness is DataTimeliness.REAL_TIME:
+        timeliness = DataTimeliness.DELAYED
+        if "DELAYED_OVERLAY_NOT_REAL_TIME" not in notes:
+            notes = f"{notes};DELAYED_OVERLAY_NOT_REAL_TIME"
+    elif timeliness is DataTimeliness.UNKNOWN:
+        timeliness = DataTimeliness.DELAYED
+    entitlement = state.entitlement
+    if entitlement in {EntitlementState.ENTITLED, EntitlementState.UNKNOWN}:
+        entitlement = EntitlementState.DELAYED
+    return ProviderRuntimeState(
+        provider_id=YAHOO_PROVIDER_ID,
+        health=state.health,
+        entitlement=entitlement,
+        timeliness=timeliness,
+        live_verified=False,
+        notes=notes,
+    )
+
+
+def _with_yahoo_overlay_invariants(
+    view: RuntimeCapabilityView,
+    *,
+    require_real_time: bool,
+) -> RuntimeCapabilityView:
+    """Delayed overlay never reports REAL_TIME or hop L1, even if stamped."""
+    if view.provider_id != YAHOO_PROVIDER_ID:
+        return view
+    if view.observational_authority is ObservationalAuthority.EXECUTION_FORBIDDEN:
+        return view
+
+    timeliness = view.timeliness
+    reason_code = view.reason_code
+    if timeliness is DataTimeliness.REAL_TIME:
+        timeliness = DataTimeliness.DELAYED
+        reason_code = "DELAYED_OVERLAY_NOT_REAL_TIME"
+    elif timeliness is DataTimeliness.UNKNOWN:
+        timeliness = DataTimeliness.DELAYED
+
+    entitlement = view.entitlement
+    if entitlement in {EntitlementState.ENTITLED, EntitlementState.UNKNOWN}:
+        entitlement = EntitlementState.DELAYED
+
+    runtime_state = view.runtime_state
+    blocked = {
+        RuntimeCapabilityState.UNAVAILABLE,
+        RuntimeCapabilityState.PROVIDER_UNAVAILABLE,
+        RuntimeCapabilityState.NOT_ENTITLED,
+        RuntimeCapabilityState.STALE,
+    }
+    if view.implemented and runtime_state not in blocked:
+        if require_real_time and timeliness is DataTimeliness.DELAYED:
+            runtime_state = RuntimeCapabilityState.DELAYED
+            if reason_code is None:
+                reason_code = "DELAYED_DATA"
+        elif timeliness is DataTimeliness.DELAYED and runtime_state is RuntimeCapabilityState.READY:
+            runtime_state = RuntimeCapabilityState.DEGRADED
+
+    provenance = dict(view.provenance)
+    provenance["overlay_role"] = "DELAYED_EOD"
+    provenance["hop_l1"] = False
+    provenance["timeliness"] = timeliness.value
+    provenance["live_verified"] = False
+    if view.instrument_id:
+        provenance["instrument_id"] = view.instrument_id
+
+    return replace(
+        view,
+        entitlement=entitlement,
+        provenance=provenance,
+        reason_code=reason_code,
+        runtime_state=runtime_state,
+        timeliness=timeliness,
+    )
+
+
 __all__ = [
     "CAP_CONTRACT_RESOLUTION",
+    "CAP_DELAYED_OVERLAY",
     "CAP_FUTURE_CONTRACT",
     "CAP_HISTORICAL_BARS",
     "CAP_L1",

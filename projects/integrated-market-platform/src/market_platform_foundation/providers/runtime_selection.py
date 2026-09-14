@@ -185,17 +185,24 @@ class ObservationalProviderSelector:
             if outcome == SelectionOutcome.NO_PROVIDER:
                 diagnostics.append("LIVE_UNVERIFIED_REPLAY_DISALLOWED")
 
+        provenance: dict[str, Any] = {}
+        if outcome != SelectionOutcome.NO_PROVIDER:
+            provenance = {
+                "instrument_id": instrument_id,
+                "capability_id": request.capability_id,
+                "provider_id": selected_id,
+                "selection_policy": "deterministic_priority",
+            }
+            for key in ("overlay_role", "hop_l1", "timeliness"):
+                if key in selected_view.provenance:
+                    provenance[key] = selected_view.provenance[key]
+
         return ObservationalSelectionResult(
             outcome=outcome,
             provider_id=selected_id if outcome != SelectionOutcome.NO_PROVIDER else None,
             capability_view=selected_view if outcome != SelectionOutcome.NO_PROVIDER else None,
             diagnostics=tuple(sorted(diagnostics)),
-            provenance={
-                "instrument_id": instrument_id,
-                "capability_id": request.capability_id,
-                "provider_id": selected_id,
-                "selection_policy": "deterministic_priority",
-            } if outcome != SelectionOutcome.NO_PROVIDER else {},
+            provenance=provenance,
         )
 
 
@@ -204,8 +211,21 @@ def _validate_instrument_kind(
     instrument_kind: str | None,
     instrument_id: str,
 ) -> str | None:
-    from .runtime_capability import CAP_FUTURE_CONTRACT, CAP_OPTION_CONTRACT
+    from .adapters.yahoo_delayed_equity_quote import (
+        YAHOO_CAPABILITY,
+        is_es_futures_symbol,
+    )
+    from .runtime_capability import (
+        CAP_DELAYED_OVERLAY,
+        CAP_FUTURE_CONTRACT,
+        CAP_OPTION_CONTRACT,
+    )
     from ..xa01.enums import InstrumentKind
+
+    if capability_id in {CAP_DELAYED_OVERLAY, YAHOO_CAPABILITY} and is_es_futures_symbol(
+        instrument_id
+    ):
+        return "ES_FUTURES_NOT_SUPPORTED_BY_DELAYED_EQUITY_OVERLAY"
 
     if instrument_kind is None:
         return None
