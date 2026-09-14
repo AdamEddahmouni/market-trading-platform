@@ -7,16 +7,26 @@ import unittest
 from pathlib import Path
 
 from market_platform_foundation.research.export_v1 import (
+    EXPORT_EVIDENCE_CLASS_NON_EMPIRICAL_FIXTURE,
+    EXPORT_OPERATOR_PIT_STATUS_PENDING,
     PROFILE_EVENT_MACRO,
     PROFILE_MARKET_TECHNICAL,
     build_research_export_v1,
+    build_matlab_handoff_manifest,
     build_matlab_parity_reference,
     derive_export_id,
+    load_matlab_handoff_manifest,
     load_research_export_v1_package,
     manifest_hash,
     matlab_parity_check,
     verify_research_export_v1_package,
     write_research_export_v1_package,
+)
+from market_platform_foundation.research.wave1.errors import Wave1ExportGateError
+from market_platform_foundation.research.wave1.export_gate import (
+    PIT_PASS_STATUS,
+    assess_research_export_pit,
+    require_pit_pass_for_oos,
 )
 from market_platform_foundation.research.export_v1_audit import run_pit_audit
 from market_platform_foundation.research.export_v1_profiles import (
@@ -36,6 +46,9 @@ class ResearchExportV1Tests(unittest.TestCase):
         self.assertEqual(first.manifest["export_schema_version"], "1.0.0")
         self.assertEqual(first.manifest["pit_audit"]["status"], "PASS")
         self.assertEqual(first.manifest["leakage_firewall"]["status"], "PASS")
+        meta = first.manifest["metadata"]
+        self.assertEqual(meta["pit_status"], EXPORT_OPERATOR_PIT_STATUS_PENDING)
+        self.assertEqual(meta["evidence_class"], EXPORT_EVIDENCE_CLASS_NON_EMPIRICAL_FIXTURE)
         self.assertIn("validation_dataset_manifest", first.manifest)
         self.assertIn("pit_export_binding", first.manifest)
         self.assertGreater(len(first.tables["realized_outcomes"]), 0)
@@ -66,6 +79,29 @@ class ResearchExportV1Tests(unittest.TestCase):
             self.assertTrue(parity_path.is_file())
             stored_ref = __import__("json").loads(parity_path.read_text(encoding="utf-8"))
             self.assertTrue(matlab_parity_check(loaded, stored_ref))
+            handoff_path = out / "matlab_handoff_manifest.json"
+            self.assertTrue(handoff_path.is_file())
+            self.assertTrue((out / "validation_dataset_manifest.json").is_file())
+            handoff = load_matlab_handoff_manifest(out)
+            self.assertEqual(handoff, build_matlab_handoff_manifest(package))
+
+    def test_built_export_blocks_wave1_oos_until_operator_pit_pass(self) -> None:
+        package = build_research_export_v1(profile=PROFILE_MARKET_TECHNICAL)
+        vdm = package.manifest["validation_dataset_manifest"]
+        assessment = assess_research_export_pit(package.manifest, validation_dataset_manifest=vdm)
+        self.assertNotEqual(assessment.status, PIT_PASS_STATUS)
+        self.assertIn("EXPORT_NOT_PIT_PASS", assessment.pit_codes)
+        self.assertIn("NON_EMPIRICAL_FIXTURE", assessment.pit_codes)
+        with self.assertRaises(Wave1ExportGateError) as ctx:
+            require_pit_pass_for_oos(package.manifest, validation_dataset_manifest=vdm)
+        self.assertEqual(ctx.exception.code, "W1_OOS_BLOCKED_EXPORT_NOT_PIT_PASS")
+
+    def test_profile_c_metadata_pending(self) -> None:
+        package = build_research_export_v1(profile=PROFILE_EVENT_MACRO)
+        self.assertEqual(
+            package.manifest["metadata"]["pit_status"],
+            EXPORT_OPERATOR_PIT_STATUS_PENDING,
+        )
 
     def test_frozen_input_regeneration(self) -> None:
         context_a, tables_a, _ = build_market_technical_tables()
