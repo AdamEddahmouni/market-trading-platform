@@ -20,7 +20,7 @@ A gated **Research** item also links to `/research`. Paper mode hints: Workspace
 
 ## Keyboard (board-03 chrome)
 
-`ImpProductChrome` owns search focus (`/` and `Ctrl/Cmd+K`), the `?` shortcut dialog, skip-to-main, and mobile-nav Escape/focus trap. `App.tsx` still owns `A` (assistant) and Escape for explanation/inspector/assistant. Letter shortcuts skip typing targets (`INPUT` / `TEXTAREA` / `SELECT` / contenteditable / combobox). See [ACCESSIBILITY.md](ACCESSIBILITY.md).
+`ImpProductChrome` is lazy-loaded with the workstation (not the mode launcher). It owns skip-to-main, search focus (`/` and `Ctrl/Cmd+K`), `A` (assistant toggle), the `?` header control and shortcut dialog, and mobile-nav Escape/focus trap that restores focus to **Menu**. `App.tsx` still owns Escape for explanation/inspector/assistant. Letter shortcuts skip typing targets (`INPUT` / `TEXTAREA` / `SELECT` / contenteditable / combobox). See [ACCESSIBILITY.md](ACCESSIBILITY.md).
 
 ## Mode route pattern
 

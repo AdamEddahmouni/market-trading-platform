@@ -54,7 +54,8 @@ describe("ImpProductChrome", () => {
     renderChrome();
     fireEvent.keyDown(window, { key: "?" });
     const dialog = screen.getByRole("dialog", { name: "Keyboard shortcuts" });
-    expect(within(dialog).getByText("Focus command search")).toBeInTheDocument();
+    expect(within(dialog).getByRole("row", { name: /Ctrl\/Cmd\+K/ })).toBeInTheDocument();
+    expect(within(dialog).getByRole("row", { name: /^\/ / })).toBeInTheDocument();
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByRole("dialog", { name: "Keyboard shortcuts" })).not.toBeInTheDocument();
 

@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — UX-01 keyboard, skip-link, and mobile nav a11y
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/chrome` |
+| **Summary** | Isolated board-03 presentation/a11y: skip-to-main, header `?` control, mobile nav dialog with Escape/Tab trap, `/` and `Ctrl/Cmd+K` search focus, and letter shortcuts that skip SELECT/contenteditable. Escape restores focus to **Menu** after clearing main-column `inert` (not the sidebar Close control). Shortcut tests query `getByRole("row")` inside the dialog so duplicate "Focus command search" cells do not collide. `ImpProductChrome` is lazy so gzip stays under 203 KiB. No preview/submit, Live/Demo gate, or backend contract changes. |
+| **Key files** | `ui/src/components/imp-product/ImpProductChrome.tsx`, `ui/src/components/imp-product/ImpProductChrome.test.tsx`, `ui/src/components/imp-product/ImpKeyboardShortcuts.tsx`, `ui/src/lib/isTypingTarget.ts`, `ui/src/lib/useFocusTrap.ts`, `ui/src/App.tsx`, `ui/src/styles/imp-product.css`, `docs/engineering/ACCESSIBILITY.md`, `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `cd ui && npm test -- --run` **104 files / 496 passed**; `npm run typecheck` pass; `npm run build` initial **201.05 KiB gzip** (budget 203.00). Chrome unit file 5/5 including the two CI regressions. `python3 tools/check_docs_links.py` OK 189 files. |
+| **Related** | UX-00 forensic audit §9 / P2.8 / P3 keyboard; PR #114 |
+| **Notes** | KEEP board-03. No Lovable. Did not touch hop/OpenD/G7/Path A/FTEP/persistence/V1-002/OrderTicket hosts. Live off. Portfolio ticket and Overview candidate-queue P1 leftovers remain. |
+
 ## 2026-09-14 — Track H leftover: fail-close remaining backend error_category gaps
 
 | Field | Value |

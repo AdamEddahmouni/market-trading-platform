@@ -8,7 +8,8 @@
 - Keyboard operability for interactive controls
 - Visible focus indicators (theme tokens)
 - Labels for form inputs (`htmlFor` / `aria-label`)
-- Skip link to `#imp-main-content` in `ImpProductChrome`
+- Skip link to `#imp-main-content` (board-03 chrome)
+- Header `?` control and `A` toggle the shortcut dialog / research assistant from chrome keyboard bindings
 - Status messages use appropriate live regions where dynamic
 - Tables: `th` scope, captions where helpful
 - Modals/dialogs: focus trap and escape dismiss where implemented (mobile nav, keyboard shortcuts, Live confirmation)
@@ -25,9 +26,9 @@
 | `/` | Focus command search |
 | `A` | Toggle research assistant |
 | `Esc` | Close shortcuts, mobile menu, or drawers |
-| `?` | Keyboard shortcut list |
+| `?` | Keyboard shortcut list (also the header `?` control) |
 
-Mobile navigation (`<900px`) is a dialog: Escape dismisses it, Tab cycles inside it, and focus returns to **Menu**.
+Mobile navigation (`<900px`) is a dialog: Escape dismisses it, Tab cycles inside it, and focus returns to **Menu** after `inert` is cleared on the main column.
 
 ## Mode-specific copy
 

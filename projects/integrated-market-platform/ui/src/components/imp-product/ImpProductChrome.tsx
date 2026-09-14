@@ -14,6 +14,7 @@ const MOBILE_NAV_MAX_PX = 900;
 type Props = {
   mode: Mode;
   onSwitchMode: () => void;
+  onToggleAssistant?: () => void;
   children: ReactNode;
   topStack: ReactNode;
 };
@@ -22,16 +23,21 @@ function mediaQuery(): string {
   return `(max-width: ${MOBILE_NAV_MAX_PX}px)`;
 }
 
-export function ImpProductChrome({ mode, onSwitchMode, children, topStack }: Props) {
+export function ImpProductChrome({ mode, onSwitchMode, onToggleAssistant, children, topStack }: Props) {
   const [navOpen, setNavOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [isNarrow, setIsNarrow] = useState(() => window.matchMedia(mediaQuery()).matches);
   const sidebarRef = useRef<HTMLElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const restoreNavFocusRef = useRef(true);
+  const skipTrapRestoreRef = useRef(false);
+  const hadMobileNavRef = useRef(false);
+  const onToggleAssistantRef = useRef(onToggleAssistant);
+  onToggleAssistantRef.current = onToggleAssistant;
   const mobileNavActive = isNarrow && navOpen;
 
-  useFocusTrap(mobileNavActive, sidebarRef, restoreNavFocusRef);
+  useFocusTrap(mobileNavActive, sidebarRef, skipTrapRestoreRef);
 
   useEffect(() => {
     const media = window.matchMedia(mediaQuery());
@@ -46,14 +52,16 @@ export function ImpProductChrome({ mode, onSwitchMode, children, topStack }: Pro
   useEffect(() => {
     const sidebar = sidebarRef.current;
     const main = mainRef.current;
-    if (sidebar) {
-      if (isNarrow && !navOpen) sidebar.setAttribute("inert", "");
-      else sidebar.removeAttribute("inert");
+    if (sidebar) sidebar.toggleAttribute("inert", isNarrow && !navOpen);
+    if (main) main.toggleAttribute("inert", mobileNavActive);
+    if (mobileNavActive) {
+      hadMobileNavRef.current = true;
+      return;
     }
-    if (main) {
-      if (mobileNavActive) main.setAttribute("inert", "");
-      else main.removeAttribute("inert");
+    if (hadMobileNavRef.current && restoreNavFocusRef.current) {
+      menuButtonRef.current?.focus();
     }
+    hadMobileNavRef.current = false;
   }, [isNarrow, navOpen, mobileNavActive]);
 
   useEffect(() => {
@@ -99,6 +107,11 @@ export function ImpProductChrome({ mode, onSwitchMode, children, topStack }: Pro
       if (event.key === "/") {
         event.preventDefault();
         document.getElementById(IMP_COMMAND_SEARCH_INPUT_ID)?.focus();
+        return;
+      }
+      if ((event.key === "a" || event.key === "A") && onToggleAssistantRef.current) {
+        event.preventDefault();
+        onToggleAssistantRef.current();
       }
     };
     window.addEventListener("keydown", onKeyDown, true);
@@ -165,6 +178,7 @@ export function ImpProductChrome({ mode, onSwitchMode, children, topStack }: Pro
         <header className="imp-top-bar">
           <button
             type="button"
+            ref={menuButtonRef}
             className="imp-nav-toggle"
             aria-expanded={navOpen}
             aria-controls="imp-product-sidebar-nav"

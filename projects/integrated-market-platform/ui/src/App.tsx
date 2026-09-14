@@ -14,8 +14,6 @@ import { ContextBar } from "./components/ContextBar";
 import { ExplanationDrawer } from "./components/ExplanationDrawer";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { LazyBoundary } from "./components/LazyBoundary";
-import { ImpProductChrome, IMP_MAIN_CONTENT_ID } from "./components/imp-product/ImpProductChrome";
-import { isTypingTarget } from "./lib/isTypingTarget";
 import { ModeDiscoverRoute } from "./components/ModeDiscoverRoute";
 import { ModeExploreRoute } from "./components/ModeExploreRoute";
 import { ModeNowRoute } from "./components/ModeNowRoute";
@@ -124,6 +122,11 @@ const ImpContextTrustLayer = lazy(() =>
     default: module.ImpContextTrustLayer,
   })),
 );
+const ImpProductChrome = lazy(() =>
+  import("./components/imp-product/ImpProductChrome").then((module) => ({
+    default: module.ImpProductChrome,
+  })),
+);
 const OperatorControlCenterPage = lazy(() =>
   import("./components/OperatorControlCenterPage").then((module) => ({
     default: module.OperatorControlCenterPage,
@@ -230,10 +233,6 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
         setDrawerPayload(null);
         setInspectorPayload(null);
         if (assistantOpen) setAssistantOpen(false);
-      }
-      if (event.key === "a" || event.key === "A") {
-        if (isTypingTarget(event.target)) return;
-        setAssistantOpen((open) => !open);
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -345,9 +344,11 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
   const signalsRoute = <ModeNowRoute {...nowRouteProps} desk="signals" />;
 
   return (
+    <LazyBoundary label="Loading workstation…">
     <ImpProductChrome
       mode={mode}
       onSwitchMode={returnToLauncher}
+      onToggleAssistant={() => setAssistantOpen((open) => !open)}
       topStack={
         <>
           <ModeEnvironmentBar
@@ -376,7 +377,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
     >
       <div className="app-shell imp-product-embedded">
       <div className="app-body">
-        <main className="main-content" id={IMP_MAIN_CONTENT_ID} tabIndex={-1}>
+        <main className="main-content" id="imp-main-content" tabIndex={-1}>
           <LazyBoundary>
             <Routes>
             <Route path="/" element={overviewRoute} />
@@ -579,6 +580,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
       />
       </div>
     </ImpProductChrome>
+    </LazyBoundary>
   );
 }
 

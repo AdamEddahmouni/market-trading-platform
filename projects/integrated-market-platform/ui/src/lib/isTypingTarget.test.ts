@@ -7,7 +7,7 @@ describe("isTypingTarget", () => {
     const textarea = document.createElement("textarea");
     const select = document.createElement("select");
     const editable = document.createElement("div");
-    editable.contentEditable = "true";
+    editable.setAttribute("contenteditable", "true");
     const comboboxChild = document.createElement("span");
     const combobox = document.createElement("div");
     combobox.setAttribute("role", "combobox");
