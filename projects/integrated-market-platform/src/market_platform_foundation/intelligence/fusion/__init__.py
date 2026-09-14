@@ -38,6 +38,7 @@ from .types import (
     CalibrationStatus,
     CONTROL_FORECAST_STAGE,
     FINAL_FORECAST_STAGE,
+    PRODUCTION_FORECAST_STAGE,
     ForecastContributorRole,
     ForecastDecisionResult,
     ForecastDecisionStatus,
@@ -55,6 +56,7 @@ from .uncertainty import UncertaintyAssessor, inter_group_dispersion, predictive
 
 __all__ = [
     "CONTROL_FORECAST_STAGE",
+    "PRODUCTION_FORECAST_STAGE",
     "CalibrationApplicator",
     "CalibrationApplicationResult",
     "CalibrationDataset",

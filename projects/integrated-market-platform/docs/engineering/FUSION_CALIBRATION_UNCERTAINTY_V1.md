@@ -6,14 +6,14 @@ BUILD 14 combines explicit probabilistic forecast contributors using dependency-
 
 ## Current production limitation
 
-Current production has no eligible production probabilistic specialist contributor. BUILD 08 forecasts remain controls (`contributor_role=CONTROL`, `forecast_stage=CONTROL_RAW`). Therefore BUILD 14 currently abstains in the default production path rather than manufacturing a final forecast. This is not a bug.
+A fail-closed Path A PRODUCTION specialist library (`intelligence/production`) can emit `ForecastV1` with innate `contributor_role=PRODUCTION` / `forecast_stage=PRODUCTION_RAW` from a PIT-legal 5m logistic, and can train a temporally legal `CalibrationModelArtifact` (`LOGISTIC_PROBABILITY` or `ISOTONIC`) on settled labels through the BUILD 14 firewall. Default fusion still abstains unless an operator hop is given those lawful JSON inputs (`--contributor-path` / `--calibration-path`). There is no committed empirical contributor or calibrator JSON in the repository. Software emit/persist (including test tempdirs) is not FTEP `EMPIRICAL_ACTIVE`. BUILD 08 forecasts remain controls (`contributor_role=CONTROL`, `forecast_stage=CONTROL_RAW`). The BUILD 11 microstructure specialist still emits `EvidenceV1` only. Therefore BUILD 14 currently abstains in the default production path rather than manufacturing a final forecast. This is not a bug.
 
 ## Control vs production contributors
 
 | Role | Default source | Production fusion |
 |------|----------------|-------------------|
 | `CONTROL` | BUILD 08 baselines | Excluded by default |
-| `PRODUCTION` | Future specialist forecasts | Eligible when explicitly tagged |
+| `PRODUCTION` | Path A PRODUCTION specialist library (`intelligence/production`); hop JSON only when lawfully persisted | Eligible when explicitly tagged `PRODUCTION` / `PRODUCTION_RAW` |
 | `RESEARCH` | Diagnostic/test only | Only in explicit research policy |
 
 ## Sealed fusion manifest

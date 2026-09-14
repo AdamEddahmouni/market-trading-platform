@@ -249,8 +249,13 @@ persists only a BUILD 14 `EMITTED_CALIBRATED` artifact when
 `--contributor-path` and `--calibration-path` supply PRODUCTION
 contributors and a pre-existing calibrator; CONTROL, RESEARCH,
 IDENTITY_CONTROL, missing contributors, and uncalibrated output are not
-written. The hop does not
+written. A fail-closed library (`intelligence/production` +
+`strategy/path_a_production_emit.py`) can emit those PRODUCTION_RAW
+contributors from a PIT-legal 5m logistic and train a temporally legal
+calibrator on settled labels; persist is lawful Paper/Demo JSON only
+(tests may use tempdirs). The hop does not
 mint a probability. Software producer wiring is not FTEP `EMPIRICAL_ACTIVE`.
+Item 7 stays PARTIAL until a real weekday G7-actionable hop consumes those files.
 Catalog evaluators never mint a preregistration. A scanner
 MATCHED with no eligible loaded forecast is `FORECAST_UNAVAILABLE`,
 not OE EMIT. Honest EMPTY does not

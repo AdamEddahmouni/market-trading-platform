@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Path A PRODUCTION specialist ForecastV1 emitter + temporal calibrator
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/production`, `fusion`, `strategy` |
+| **Summary** | Fail-closed library emits innate PRODUCTION / `PRODUCTION_RAW` `ForecastV1` from a PIT-legal 5m logistic (snapshot-bound momentum + net-signed-share; not a quote print, not CONTROL `build_forecast_v1`, not research `build_forecast`). Temporally legal `CalibrationModelArtifact` trainer (`LOGISTIC_PROBABILITY` or `ISOTONIC`) uses the BUILD 14 label firewall; `IDENTITY_CONTROL` and Live are rejected. Persist is Paper/Demo JSON only when identity/PIT gates pass; tests use tempdirs. No committed empirical JSON. Default fusion still abstains without hop `--contributor-path` / `--calibration-path`. Item 7 stays **PARTIAL**. Live stays off. FTEP is not `EMPIRICAL_ACTIVE`. |
+| **Key files** | `src/market_platform_foundation/intelligence/production/` (new: `emitter.py`, `model.py`, `calibrator.py`, `identity.py`), `src/market_platform_foundation/strategy/path_a_production_emit.py` (new persist gates), `src/market_platform_foundation/intelligence/fusion/types.py` (`PRODUCTION_FORECAST_STAGE`), `tests/intelligence/test_path_a_production_emit.py`, `docs/engineering/FUSION_CALIBRATION_UNCERTAINTY_V1.md`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md`, `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | `tests.intelligence.test_path_a_production_emit` **13 passed**. Emit + producer + calibration dataset + BUILD 14 lifecycle **35 passed / 0 fail**. `python3 tools/validate.py changed --paths-file` (15 paths vs `#53` `6f0ead8`) **2494 passed / 28 skipped / 0 fail / 0 err**. `python3 tools/check_docs_links.py` **OK (188 files)**. Live still `LIVE_SCAN_CALLER_FORBIDDEN`. |
+| **Related** | Stacks on #53 `6f0ead8` (hop `--contributor-path` / `--calibration-path`). Item 7 of the provider activation program. |
+| **Notes** | Software emit/persist is not empirical. A real weekday G7-actionable hop must still consume the JSON files. Did not mint from last_price, fixture 0.8, or CONTROL/research constructors. Did not declare FTEP `EMPIRICAL_ACTIVE` or Live. Frozen FTEP-V1-001 JSON not touched. |
+
 ## 2026-09-13 — Restack Path A MATCHED produce onto leftover OpenD hop
 
 | Field | Value |

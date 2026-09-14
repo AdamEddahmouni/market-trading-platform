@@ -81,6 +81,7 @@ POOLING_METHOD = "DEPENDENCY_GROUP_EQUALIZED_LINEAR_POOL_V1"
 DEPENDENCE_RESOLVER_VERSION = "forecast-dependence-resolver-v1"
 FINAL_FORECAST_STAGE = "FINAL_FUSED_CALIBRATED"
 CONTROL_FORECAST_STAGE = "CONTROL_RAW"
+PRODUCTION_FORECAST_STAGE = "PRODUCTION_RAW"
 
 
 @dataclass(frozen=True, slots=True)
@@ -203,6 +204,7 @@ __all__ = [
     "DependenceState",
     "EpistemicState",
     "FINAL_FORECAST_STAGE",
+    "PRODUCTION_FORECAST_STAGE",
     "ForecastContributorRole",
     "ForecastDecisionResult",
     "ForecastDecisionStatus",
