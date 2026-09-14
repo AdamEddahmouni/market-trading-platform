@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Lane D professor source and keyword catalog
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/research` |
+| **Summary** | Added research-only structured JSON catalog (26 sources, catalyst taxonomy), JSON schema doc, and index markdown for professor source/keyword completion without runtime provider changes. |
+| **Key files** | `docs/research/PROFESSOR_SOURCE_KEYWORD_CATALOG.json`, `docs/research/PROFESSOR_SOURCE_KEYWORD_CATALOG.schema.json`, `docs/research/PROFESSOR_SOURCE_KEYWORD_CATALOG.md` |
+| **Tests** | `python3` JSON parse validation (26 sources) |
+| **Related** | Project store `docs/professor-source-keyword-catalog.md`, `internal/lane-d-sources.md`; Wave A `news-data-inventory.json` |
+| **Notes** | `access_in_imp_claimed` false for all live sources; CONFIGURED headline wires unchanged in `news/sources.py`. |
+
 ## 2026-09-14 — Lane A: reconcile landing-branch docs to git HEAD 5e0ec717
 
 | Field | Value |
