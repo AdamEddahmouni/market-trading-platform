@@ -121,11 +121,15 @@ export function LiveNowPage({
       <ImpOverviewBoard
         kpiCells={kpiCells}
         kpiState={kpiState}
+        attentionItems={items}
+        attentionState={attentionState}
+        attentionEmptyMessage="Nothing requires attention in the current live feed."
         opportunityItems={opportunitiesQuery.data?.items ?? []}
         opportunityState={opportunityState}
         feedStatus={opportunitiesQuery.data?.feed_status}
         unreadyReason={opportunitiesQuery.data?.unready_reason}
         nextAction={opportunitiesQuery.data?.next_action}
+        onWhy={onWhy}
         onExplain={onExplain}
         onInspect={onInspect}
         onOpenWorkspace={onOpenWorkspace}
@@ -136,8 +140,6 @@ export function LiveNowPage({
         <LiveSafetySnapshot snapshot={canarySnapshot} state={safetyState} />
         <LiveSymbolLookup health={providerHealth} state={providerState} />
       </div>
-
-      {attentionSection}
       </ImpOverviewBoard>
       )}
     </section>

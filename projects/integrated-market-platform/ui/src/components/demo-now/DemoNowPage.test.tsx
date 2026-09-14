@@ -63,10 +63,9 @@ describe("DemoNowPage", () => {
     renderPage();
     expect(screen.getByRole("heading", { level: 1, name: "See the market unfold" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Overview KPIs" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Top opportunities" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Primary review queue" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Replay overview" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Simulated portfolio" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "What matters now" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Inspect next" })).toBeInTheDocument();
   });
 
@@ -77,6 +76,7 @@ describe("DemoNowPage", () => {
         <DemoNowPage {...value} />
       </MemoryRouter>,
     );
+    fireEvent.click(screen.getByRole("tab", { name: "Attention" }));
     fireEvent.click(screen.getByRole("button", { name: "Why here?" }));
     fireEvent.click(screen.getAllByRole("button", { name: "Explain" })[0]);
     fireEvent.click(screen.getByRole("button", { name: "Inspect" }));
@@ -91,6 +91,7 @@ describe("DemoNowPage", () => {
 
   it("degrades attention and portfolio independently while replay remains usable", () => {
     renderPage({ attentionState: "error", portfolioState: "error", portfolio: undefined });
+    fireEvent.click(screen.getByRole("tab", { name: "Attention" }));
     expect(screen.getByText("Attention feed unavailable.")).toBeInTheDocument();
     expect(screen.getByText(/Simulated portfolio unavailable/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Next event" })).toBeEnabled();
@@ -112,7 +113,7 @@ describe("Demo Now layout structure", () => {
     expect(document.querySelector(".demo-now-grid-bottom")).toBeTruthy();
     expect(document.querySelector(".demo-replay-panel")).toBeTruthy();
     expect(document.querySelector(".demo-portfolio-panel")).toBeTruthy();
-    expect(document.querySelector(".demo-attention-panel")).toBeTruthy();
+    expect(document.querySelector(".imp-overview-primary-queue")).toBeTruthy();
     expect(document.querySelector(".demo-inspect-panel")).toBeTruthy();
   });
 });

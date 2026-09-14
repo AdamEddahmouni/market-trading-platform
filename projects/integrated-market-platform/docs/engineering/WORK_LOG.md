@@ -36,30 +36,41 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-<<<<<<< HEAD
-## 2026-09-14 — Lane G developer runbook (current vs historical)
-=======
-## 2026-09-14 — UX-00 followthrough (board-03 wiring)
->>>>>>> 2b30aa16 (ui: UX-00 followthrough wiring (signals desk, discover, quality))
+## 2026-09-14 — UX-00 Overview primary queue + mobile sidebar
 
 | Field | Value |
 |-------|-------|
 | **Status** | `complete` |
-<<<<<<< HEAD
+| **Area** | `ui/imp-product`, `ui/now` |
+| **Summary** | Unified Demo/Live/Paper Overview into one tabbed **Primary review queue** (Ranked, Attention, Both) via `ImpOverviewPrimaryQueue`, removing duplicate ranked/attention blocks from NOW bodies. Added collapsible sidebar overlay below 900px in `ImpProductChrome`. |
+| **Key files** | `ui/src/components/imp-product/ImpOverviewPrimaryQueue.tsx`, `ImpOverviewBoard.tsx`, `ImpProductChrome.tsx`, `imp-product.css`, `DemoNowPage.tsx`, `LiveNowPage.tsx`, `PaperNowPage.tsx` |
+| **Tests** | `ui`: vitest **469 passed**, typecheck pass, build pass |
+| **Related** | Project store `docs/ux-00-followthrough.md`, `internal/ux-00-overview-queue.md`; UX-00 audit §12 |
+| **Notes** | Rebased onto `origin/main` @ `99b7d82e` after #105. No backend or frozen-lane changes. |
+
+## 2026-09-14 — UX-00 followthrough (board-03 wiring)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/imp-product`, `ui/discover`, `ui/now` |
+| **Summary** | Wired ContextBar quality badge to provider diagnostics, split `/signals` into an attention-only desk, structured Discover ranked vs mixed screener sections with drawer actions on dense radar, shared opportunity feed status banner, Paper NOW workspace handoff without requiring PASS preview, Ctrl+K command search focus, and removed duplicate Switch mode from the environment bar. |
+| **Key files** | `ui/src/App.tsx`, `ui/src/components/ModeNowRoute.tsx`, `ui/src/components/ModeDiscoverRoute.tsx`, `ui/src/components/imp-product/OpportunityFeedStatusBanner.tsx`, `ui/src/components/discover-shared/DiscoverPageSections.tsx`, mode NOW/discover pages, `ui/src/styles/imp-product.css` |
+| **Tests** | `ui`: vitest **468 passed**, typecheck pass, build + bundle budget pass |
+| **Related** | Project store `docs/ux-00-forensic-audit.md` §12; PR #104 |
+| **Notes** | No backend contract changes; board-03 chrome preserved. |
+
+## 2026-09-14 — Lane G developer runbook (current vs historical)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
 | **Area** | `docs` |
 | **Summary** | Verified developer workflow against current `origin/main` and added authoritative [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md) with CURRENT setup, launch/shutdown, ports, logs, validation, provider/FTEP dry-run commands, and SQLite-vs-ephemeral persistence clarification. Refreshed stale pinned-SHA landing banners in AGENTS/CURSOR_CLOUD/DEVELOPER_OPERATING_SYSTEM in favor of `git fetch` + Program Status; linked operations troubleshooting runbook to the new sheet. |
 | **Key files** | `docs/engineering/DEVELOPER_RUNBOOK.md` (new), `docs/README.md`, `docs/engineering/LOCAL_DEVELOPMENT.md`, `docs/engineering/CURSOR_CLOUD_ENVIRONMENT.md`, `docs/engineering/DEVELOPER_OPERATING_SYSTEM.md`, `docs/operations/RUNBOOK.md`, `AGENTS.md` |
 | **Tests** | `python3 tools/check_docs_links.py` OK; `tools/validate.py` fast + `domain core` + `full` (5202/48/0); `ui` typecheck + 468 vitest + build; FTEP dry-run only (`session-start --dry-run`) |
 | **Related** | Project store `docs/lane-g-runbook-verification.md`, `internal/lane-g-runbook.md`; PR #103 |
 | **Notes** | No governed session, no orders. Rebased onto `origin/main` after #102. |
-=======
-| **Area** | `ui/imp-product`, `ui/discover`, `ui/now` |
-| **Summary** | Wired ContextBar quality badge to provider diagnostics, split `/signals` into an attention-only desk, structured Discover ranked vs mixed screener sections with drawer actions on dense radar, shared opportunity feed status banner, Paper NOW workspace handoff without requiring PASS preview, Ctrl+K command search focus, and removed duplicate Switch mode from the environment bar. |
-| **Key files** | `ui/src/App.tsx`, `ui/src/components/ModeNowRoute.tsx`, `ui/src/components/ModeDiscoverRoute.tsx`, `ui/src/components/imp-product/OpportunityFeedStatusBanner.tsx`, `ui/src/components/discover-shared/DiscoverPageSections.tsx`, mode NOW/discover pages, `ui/src/styles/imp-product.css` |
-| **Tests** | `ui`: vitest **468 passed**, typecheck pass, build + bundle budget pass |
-| **Related** | Project store `docs/ux-00-forensic-audit.md` §12 |
-| **Notes** | No backend contract changes; board-03 chrome preserved. |
->>>>>>> 2b30aa16 (ui: UX-00 followthrough wiring (signals desk, discover, quality))
 
 ## 2026-09-14 — Lane D professor source and keyword catalog
 

@@ -1,7 +1,6 @@
 import type { AttentionItem, PaperPortfolioResponse } from "../../api/client";
 import { useOpportunitiesSummaryQuery } from "../../api/opportunityClient";
 import { AttentionFeed } from "../AttentionFeed";
-import { OpportunityReviewList } from "../now/OpportunityReviewCard";
 import { ImpOverviewBoard } from "../imp-product/ImpOverviewBoard";
 import { overviewKpisFromPortfolio } from "../imp-product/impOverviewMetrics";
 import { DemoInspectNext } from "./DemoInspectNext";
@@ -56,19 +55,6 @@ export function DemoNowPage({ desk = "overview", ...props }: DemoNowPageProps) {
           <h2 id="demo-attention-title">What matters now</h2>
         </div>
       </div>
-      {!signalsDesk ? (
-        <OpportunityReviewList
-          items={opportunitiesQuery.data?.items ?? []}
-          state={opportunityState}
-          feedStatus={opportunitiesQuery.data?.feed_status}
-          unreadyReason={opportunitiesQuery.data?.unready_reason}
-          nextAction={opportunitiesQuery.data?.next_action}
-          readOnly
-          onExplain={props.onExplain}
-          onInspect={props.onInspect}
-          onOpenWorkspace={props.onOpenWorkspace}
-        />
-      ) : null}
       <AttentionFeed
         items={props.items}
         state={props.attentionState}
@@ -97,7 +83,7 @@ export function DemoNowPage({ desk = "overview", ...props }: DemoNowPageProps) {
         ) : null}
       </div>
       <div className="demo-now-grid demo-now-grid-bottom">
-        {attentionPanel}
+        {signalsDesk ? attentionPanel : null}
         <DemoInspectNext
           items={props.items}
           canAdvance={canAdvance}
@@ -133,11 +119,16 @@ export function DemoNowPage({ desk = "overview", ...props }: DemoNowPageProps) {
       <ImpOverviewBoard
         kpiCells={kpiCells}
         kpiState={kpiState}
+        attentionItems={props.items}
+        attentionState={props.attentionState}
+        attentionEmptyMessage="Nothing requires attention at the current event."
         opportunityItems={opportunitiesQuery.data?.items ?? []}
         opportunityState={opportunityState}
         feedStatus={opportunitiesQuery.data?.feed_status}
         unreadyReason={opportunitiesQuery.data?.unready_reason}
         nextAction={opportunitiesQuery.data?.next_action}
+        readOnly
+        onWhy={props.onWhy}
         onExplain={props.onExplain}
         onInspect={props.onInspect}
         onOpenWorkspace={props.onOpenWorkspace}

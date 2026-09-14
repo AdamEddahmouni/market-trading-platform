@@ -158,7 +158,7 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
         onAck={(row, action) => {
           opportunityAck.mutate({ rowId: row.opportunity_id || row.summary_id, action });
         }}
-        showRankedOpportunities={!signalsDesk}
+        showRankedOpportunities={false}
       />
       {!signalsDesk ? (
         <PaperPreviewComposer
@@ -203,14 +203,21 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
       <ImpOverviewBoard
         kpiCells={kpiCells}
         kpiState={kpiState}
+        attentionItems={items}
+        attentionState={attentionState}
         opportunityItems={opportunitiesQuery.data?.items ?? []}
         opportunityState={opportunityState}
         feedStatus={opportunitiesQuery.data?.feed_status}
         unreadyReason={opportunitiesQuery.data?.unready_reason}
         nextAction={opportunitiesQuery.data?.next_action}
+        paperAccountId={portfolio?.account.paper_account_id}
+        onWhy={onWhy}
         onExplain={onExplain}
         onInspect={onInspect}
         onOpenWorkspace={openOpportunityWorkspace}
+        onAck={(row, action) => {
+          opportunityAck.mutate({ rowId: row.opportunity_id || row.summary_id, action });
+        }}
       >
       <PaperRiskRibbon portfolio={portfolio} state={portfolioState} />
       {decisionGrid}
