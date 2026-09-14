@@ -9,10 +9,16 @@
 > record is preserved for provenance only and must not be used as
 > authorization for future implementation.
 
-This matrix is subordinate to the approved Revision 3 specification. Donors
-remain external snapshots. `PORT_ADAPT` requires independent reimplementation;
-it is not permission to copy. No row authorizes a phase, network access, model,
-AI provider, broker, paper order, or live order.
+This matrix is a historical pre-correction snapshot. It is **not** subordinate
+to Revision 3 for Heller / GridIQ / DS-340W identity — that
+donor-authorization language in Revision 3 is superseded by the
+[Donor Authority Supersession Notice](../../superpowers/governance/2026-09-07-donor-authority-supersession-notice.md).
+DS-340W and GridIQ rows below are mistaken-donor characterizations, not IMP
+donor authorization. Independent IMP `storage/*` dataset/cache code remains
+**ADAPT** from platform requirement. Donors remain external snapshots.
+`PORT_ADAPT` requires independent reimplementation; it is not permission to
+copy. No row authorizes a phase, network access, model, AI provider, broker,
+paper order, or live order.
 
 | Donor | Component | Evidence path | Classification | Canonical destination | Phase | Preconditions | Verification | Rights state | Primary risk |
 |---|---|---|---|---|---|---|---|---|---|

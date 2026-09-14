@@ -1,7 +1,7 @@
 # Donor Authority Supersession Notice
 
-**Status: CURRENT** (2026-09-07) · **Classification:** `GOVERNANCE` ·
-**Truth class:** `CURRENT_CANONICAL_TRUTH`
+**Status: CURRENT** (2026-09-07; amended 2026-09-14) · **Classification:**
+`GOVERNANCE` · **Truth class:** `CURRENT_CANONICAL_TRUTH`
 
 ## What changed
 
@@ -22,7 +22,7 @@ correction and must no longer be read as current authorization.
 | Donor reuse matrix | `docs/research/donors/DONOR_REUSE_MATRIX.md` | SUPERSEDED — annotated in place |
 | GridIQ notes | `docs/research/donors/GRID_IQ_NOTES.md` | SUPERSEDED — annotated in place |
 | DS-340W notes | `docs/research/donors/DS340W_NOTES.md` | SUPERSEDED — annotated in place |
-| External donor/reference index | `docs/research/donors/README.md` | SUPERSEDED — annotated in place |
+| External donor/reference index | `docs/research/donors/README.md` | SUPERSEDED — annotated in place; Heller rows re-attributed as mistaken transfers |
 | Revision-3 donor integration plan | `docs/superpowers/plans/2026-08-14-revision-3-donor-integration-and-evidence-transition.md` | SUPERSEDED — annotated in place |
 | Phase 0A donor characterization plan | `docs/superpowers/plans/2026-08-15-phase-0a-data-feasibility-and-donor-characterization.md` | SUPERSEDED — annotated in place |
 | Provider duplication audit | `docs/engineering/PROVIDER_DUPLICATION_AUDIT.md` | SUPERSEDED — donor-related rows annotated in place |
@@ -31,21 +31,39 @@ correction and must no longer be read as current authorization.
 | Phase 0A collection fixture inventory | `docs/research/fixtures/2026-08-15-phase-0a-collection-fixture-inventory.md` | SUPERSEDED — annotated in place |
 | Revision-3 donor preservation manifests | `docs/superpowers/governance/2026-08-14-revision-3-donor-preservation-before.json`, `...-difference.json` | SUPERSEDED — annotated in place |
 
+## Hash-bound records (not annotated in place)
+
+These files keep their bound bytes so Phase 0 / Phase 0A / Phase 1 hash
+verifiers stay honest. Do **not** add banners. This notice is the current
+disposition for Heller / GridIQ / DS-340W **donor-authorization** language
+inside them.
+
+| Record | Path | Binding | What this notice supersedes |
+|---|---|---|---|
+| Foundation Revision 3 | `docs/superpowers/specs/2026-08-14-integrated-market-platform-foundation-design-revision-3.md` | SHA-256 `7C6AE5FC9037CA37D44CD1A2FAACD0CB821192920C46CF001541DCD2121FEB35` (verified on this tree) | Inventory rows 6–7 and §§5–6 "donor assessments" for DS-340W and GridIQ. Remainder of Revision 3 (authorized donors, model/dataset architecture, whale doctrine, no-live boundary) is unchanged. |
+| Phase 0A design spec | `docs/superpowers/specs/2026-08-15-phase-0a-data-feasibility-and-donor-characterization-design.md` | logical ID `phase0a.design_specification` in Phase 0A approvals / authorization (do not rewrite) | Characterization of DS-340W / GridIQ as collection donors (§1 item 3, §9 table). |
+
+Do not resolve a conflict between a SUPERSEDED Heller record and Revision 3 by
+treating Revision 3 as still authorizing those materials as IMP donors.
+
 ## What remains valid
 
 - **Native IMP implementations are untouched and remain valid.** Any code in
   `src/market_platform_foundation/` (including `donor_patterns/`, the dataset
-  projection/cache subsystem, the assistant audit store, and UI patterns) that
-  was historically described as GridIQ-inspired was independently
-  reimplemented from a legitimate platform requirement. It does not depend on
-  donor authorization.
+  projection/cache subsystem under `storage/*`, the assistant audit store, and
+  UI patterns) that was historically described as GridIQ-inspired was
+  independently reimplemented from a legitimate platform requirement
+  (**ADAPT**). It does not depend on GridIQ or DS-340W donor authorization.
 - **Authorized donors remain authorized** where the professor/user explicitly
   directed them (CVD, Options, futuresX patterns, short-squeeze bridge/gates).
-- **Historical records are preserved for provenance only.** Nothing is
-  deleted; nothing is rewritten.
+- **Historical records are preserved for provenance only.** Hash-bound
+  specifications are not rewritten. Annotated records keep their historical
+  body.
 
 ## Operating rule
 
 Lucas Heller's DS-340W and GridIQ materials must not be used as authorization
-for future implementation. Any future reference to donor inputs must cite this
-notice and the current donor index (`docs/research/donors/README.md`).
+for future implementation. **Current identity authority** for those names is
+this notice — not Revision 3, not the historical donor index, and not
+ADR-GRIDIQ-001. The index at `docs/research/donors/README.md` is provenance
+only.

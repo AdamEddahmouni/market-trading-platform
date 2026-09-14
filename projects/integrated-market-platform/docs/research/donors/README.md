@@ -7,12 +7,19 @@
 > sources for this platform. Any native IMP implementation independently
 > reimplemented from a legitimate platform requirement remains valid. This
 > index is preserved for provenance only and must not be used as
-> authorization for future implementation.
+> authorization for future implementation. Current identity authority for
+> Heller / GridIQ / DS-340W is the
+> [Donor Authority Supersession Notice](../../superpowers/governance/2026-09-07-donor-authority-supersession-notice.md).
+> Do **not** resolve conflicts by reading Revision 3 as still authorizing
+> those materials as IMP donors.
 
-Revision 3 is authoritative if this index conflicts with it. The workspace root
-is a collection; the seven entries below are external donor/reference projects,
-not canonical repositories, clean-clone dependencies, package dependencies, or
-runtime dependencies. They remain outside `integrated-market-platform/`.
+The workspace root is a collection. Entries 1–5 below are external
+donor/reference projects, not canonical repositories, clean-clone
+dependencies, package dependencies, or runtime dependencies. Entries 6–7
+are **mistaken transfers** (Lucas Heller; **not** IMP donors). All seven
+remain outside `integrated-market-platform/`. Independent IMP `storage/*`
+dataset/cache implementations remain **ADAPT** from platform requirement,
+not from GridIQ donor authorization.
 
 | # | Exact observed collection path | Reference value | Governed note |
 |---:|---|---|---|
@@ -21,8 +28,8 @@ runtime dependencies. They remain outside `integrated-market-platform/`.
 | 3 | `short-squeeze-project` | provenance, freshness, missingness, and readiness gates | external collection note only |
 | 4 | `internship-project-main` | news/options workflow, audit, liquidity, and paper evaluation | external collection note only |
 | 5 | `L1VolumeBubble-main (1)` | volume-anomaly and absorption visualization | external collection note only |
-| 6 | `DS-340W-Fantasy-Football-Prediction-main/DS-340W-Fantasy-Football-Prediction-main` | time-series model and robustness research patterns | [DS340W_NOTES.md](DS340W_NOTES.md) |
-| 7 | `DS-440-CAPSTONE-GridIQ-main/DS-440-CAPSTONE-GridIQ-main` | dataset, cache, API, UI, persistence, and grounded-chat patterns | [GRID_IQ_NOTES.md](GRID_IQ_NOTES.md) |
+| 6 | `DS-340W-Fantasy-Football-Prediction-main/DS-340W-Fantasy-Football-Prediction-main` | historical mistaken-transfer notes (not an IMP donor) | [DS340W_NOTES.md](DS340W_NOTES.md) |
+| 7 | `DS-440-CAPSTONE-GridIQ-main/DS-440-CAPSTONE-GridIQ-main` | historical mistaken-transfer notes (not an IMP donor); IMP storage ADAPT is independent | [GRID_IQ_NOTES.md](GRID_IQ_NOTES.md) |
 
 The complete component classification is in
 [DONOR_REUSE_MATRIX.md](DONOR_REUSE_MATRIX.md). Conservative rights states are

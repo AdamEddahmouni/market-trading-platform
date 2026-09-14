@@ -9,10 +9,13 @@
 > preserved for provenance only and must not be used as authorization for
 > future implementation.
 
-These notes describe an external, immutable donor snapshot. Revision 3 is the
-authority if this summary conflicts with it. Nothing here authorizes donor
-execution, dependency installation, data copying, model implementation, or a
-phase transition.
+These notes describe an external, immutable snapshot that was **mistakenly
+treated as an IMP donor**. Current identity authority is the
+[Donor Authority Supersession Notice](../../superpowers/governance/2026-09-07-donor-authority-supersession-notice.md).
+Revision 3 is hash-bound historical specification and must not be read as
+re-authorizing DS-340W as a donor. Nothing here authorizes donor execution,
+dependency installation, data copying, model implementation, or a phase
+transition.
 
 ## Identity and inspection boundary
 
