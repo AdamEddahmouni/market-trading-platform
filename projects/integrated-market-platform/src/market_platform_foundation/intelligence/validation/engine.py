@@ -14,7 +14,7 @@ from .artifacts import verify_candidate_ready_for_validation
 from .contamination import ContaminationLedger, assess_holdout_contamination
 from .embargo import verify_embargo_for_fold_sequence
 from .errors import ValidationError
-from .folds import generate_walk_forward_folds
+from .folds import fold_example_temporal_violation, generate_walk_forward_folds
 from .holdout import ValidationDataAccessGuard, verify_plan_matches_commitment
 from .identity import derive_validation_dataset_fingerprint, derive_validation_report_id
 from .metrics import aggregate_metric_values, compute_example_primary_metric, evaluate_guardrails
@@ -164,6 +164,14 @@ class ValidationEngine:
                         contamination = ContaminationDisposition.CONTAMINATED
 
                 examples = context.fold_examples.get(fold.fold_id, ())
+                leak_codes = tuple(
+                    code
+                    for ex in examples
+                    if (code := fold_example_temporal_violation(ex, fold)) is not None
+                )
+                if leak_codes:
+                    fold_disposition = ValidationDisposition.INVALID_TEMPORAL_LEAKAGE
+                    contamination = ContaminationDisposition.CONTAMINATED
                 candidate_id = fold.candidate_id or context.candidates[0].candidate_id
                 candidate_values = tuple(
                     compute_example_primary_metric(

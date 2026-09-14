@@ -240,6 +240,200 @@ class WalkForwardTests(unittest.TestCase):
         folds = generate_walk_forward_folds(spec)
         self.assertIsNone(folds[0].candidate_id)
 
+    def test_expanding_training_start_unbounded(self) -> None:
+        spec = WalkForwardSpec(
+            mode=WalkForwardMode.EXPANDING,
+            fold_boundaries_ns=(T, T + 5, T + 10),
+            fold_candidate_ids=("c1", "c1"),
+        )
+        folds = generate_walk_forward_folds(spec)
+        self.assertIsNone(folds[0].training_start_ns)
+        self.assertIsNone(folds[1].training_start_ns)
+        self.assertEqual(folds[0].training_cutoff_ns, T)
+        self.assertEqual(folds[1].training_cutoff_ns, T + 5)
+
+    def test_rolling_requires_positive_window(self) -> None:
+        with self.assertRaises(ValueError) as ctx:
+            WalkForwardSpec(
+                mode=WalkForwardMode.ROLLING,
+                fold_boundaries_ns=(T, T + 5, T + 10),
+            )
+        self.assertIn("WALK_FORWARD_ROLLING_WINDOW_REQUIRED", str(ctx.exception))
+        with self.assertRaises(ValueError) as ctx:
+            WalkForwardSpec(
+                mode=WalkForwardMode.ROLLING,
+                fold_boundaries_ns=(T, T + 5, T + 10),
+                rolling_window_ns=0,
+            )
+        self.assertIn("WALK_FORWARD_ROLLING_WINDOW_INVALID", str(ctx.exception))
+
+    def test_rolling_window_rejected_for_expanding(self) -> None:
+        with self.assertRaises(ValueError) as ctx:
+            WalkForwardSpec(
+                mode=WalkForwardMode.EXPANDING,
+                fold_boundaries_ns=(T, T + 5, T + 10),
+                rolling_window_ns=4,
+            )
+        self.assertIn("WALK_FORWARD_ROLLING_WINDOW_REQUIRES_ROLLING_MODE", str(ctx.exception))
+
+    def test_rolling_distinct_from_expanding(self) -> None:
+        window_ns = 3
+        expanding = generate_walk_forward_folds(
+            WalkForwardSpec(
+                mode=WalkForwardMode.EXPANDING,
+                fold_boundaries_ns=(T, T + 5, T + 10),
+                fold_candidate_ids=("c1", "c1"),
+            )
+        )
+        rolling = generate_walk_forward_folds(
+            WalkForwardSpec(
+                mode=WalkForwardMode.ROLLING,
+                fold_boundaries_ns=(T, T + 5, T + 10),
+                fold_candidate_ids=("c1", "c1"),
+                rolling_window_ns=window_ns,
+            )
+        )
+        self.assertEqual(expanding[0].training_cutoff_ns, rolling[0].training_cutoff_ns)
+        self.assertEqual(expanding[1].training_cutoff_ns, rolling[1].training_cutoff_ns)
+        self.assertEqual(rolling[0].training_start_ns, rolling[0].training_cutoff_ns - window_ns)
+        self.assertEqual(rolling[1].training_start_ns, rolling[1].training_cutoff_ns - window_ns)
+        self.assertNotEqual(rolling[0].training_start_ns, rolling[1].training_start_ns)
+        self.assertIsNone(expanding[0].training_start_ns)
+
+    def test_rolling_window_changes_plan_id(self) -> None:
+        manifest = _manifest_with_holdout(T + 8)
+        candidate = type("C", (), {"candidate_id": "c1", "artifact_hash": "h1"})()
+        expanding = build_validation_plan(
+            manifest,
+            (candidate,),  # type: ignore[arg-type]
+            control_ref="control",
+            fold_boundaries_ns=(T, T + 4, T + 8),
+        )
+        rolling = build_validation_plan(
+            manifest,
+            (candidate,),  # type: ignore[arg-type]
+            control_ref="control",
+            fold_boundaries_ns=(T, T + 4, T + 8),
+            walk_forward_mode=WalkForwardMode.ROLLING,
+            rolling_window_ns=4,
+        )
+        self.assertNotEqual(expanding.validation_plan_id, rolling.validation_plan_id)
+        payload = validation_plan_v1_to_dict(rolling)
+        restored = validation_plan_v1_from_dict(payload)
+        self.assertEqual(rolling.validation_plan_id, restored.validation_plan_id)
+        self.assertEqual(restored.walk_forward_spec.mode, WalkForwardMode.ROLLING)
+        self.assertEqual(restored.walk_forward_spec.rolling_window_ns, 4)
+
+
+class FoldWindowMembershipTests(unittest.TestCase):
+    def test_in_window_example_is_admissible(self) -> None:
+        from market_platform_foundation.intelligence.validation.folds import (
+            fold_example_temporal_violation,
+        )
+
+        fold = generate_walk_forward_folds(
+            WalkForwardSpec(
+                mode=WalkForwardMode.EXPANDING,
+                fold_boundaries_ns=(T, T + 5, T + 10),
+                fold_candidate_ids=("c1", "c1"),
+            )
+        )[0]
+        example = ValidationExample(
+            example_id="in-window",
+            snapshot_id="snap-in",
+            decision_time_ns=T,
+            label_available_time_ns=T + HORIZON_5M,
+            binary_label=1,
+            candidate_probability=0.7,
+            control_probability=0.6,
+        )
+        self.assertIsNone(fold_example_temporal_violation(example, fold))
+
+    def test_out_of_window_example_is_leakage(self) -> None:
+        from market_platform_foundation.intelligence.validation.folds import (
+            fold_example_temporal_violation,
+        )
+
+        fold = generate_walk_forward_folds(
+            WalkForwardSpec(
+                mode=WalkForwardMode.EXPANDING,
+                fold_boundaries_ns=(T, T + 5, T + 10),
+                fold_candidate_ids=("c1", "c1"),
+            )
+        )[0]
+        example = ValidationExample(
+            example_id="out-of-window",
+            snapshot_id="snap-out",
+            decision_time_ns=T + 5,
+            label_available_time_ns=T + 5 + HORIZON_5M,
+            binary_label=1,
+            candidate_probability=0.7,
+            control_probability=0.6,
+        )
+        self.assertEqual(fold_example_temporal_violation(example, fold), "VALIDATION_WINDOW_MISMATCH")
+
+    def test_label_known_at_decision_is_leakage(self) -> None:
+        from market_platform_foundation.intelligence.validation.folds import (
+            fold_example_temporal_violation,
+        )
+
+        fold = generate_walk_forward_folds(
+            WalkForwardSpec(
+                mode=WalkForwardMode.EXPANDING,
+                fold_boundaries_ns=(T, T + 5, T + 10),
+                fold_candidate_ids=("c1", "c1"),
+            )
+        )[0]
+        example = ValidationExample(
+            example_id="label-at-decision",
+            snapshot_id="snap-label",
+            decision_time_ns=T + 1,
+            label_available_time_ns=T + 1,
+            binary_label=1,
+            candidate_probability=0.7,
+            control_probability=0.6,
+        )
+        self.assertEqual(fold_example_temporal_violation(example, fold), "FUTURE_LABEL_ACCESS")
+
+    def test_engine_marks_out_of_window_fold_invalid(self) -> None:
+        repo = InMemoryIntelligenceRepository()
+        manifest = _manifest_with_holdout(T + 8)
+        candidate, _dataset, artifact_bytes = _trained_candidate(repo, manifest)
+        plan = build_validation_plan(
+            manifest,
+            (candidate,),
+            control_ref="baseline_control",
+            fold_boundaries_ns=(T, T + 4, T + 8),
+            fold_candidate_ids=(candidate.candidate_id, candidate.candidate_id),
+            minimum_paired_sample=3,
+        )
+        leaked = ValidationExample(
+            example_id="leaked-fold",
+            snapshot_id="snap-leak",
+            decision_time_ns=T + 100,
+            label_available_time_ns=T + 100 + HORIZON_5M,
+            binary_label=1,
+            candidate_probability=0.8,
+            control_probability=0.4,
+            forecast_id="fc-leak",
+            outcome_id="out-leak",
+        )
+        report = ValidationEngine(repo).validate(
+            ValidationRunContext(
+                plan=plan,
+                experiment=manifest,
+                candidates=(candidate,),
+                training_dataset=None,
+                holdout_examples=_holdout_examples(candidate_better=True),
+                fold_examples={"fold-1": (leaked,), "fold-2": ()},
+                knowledge_profiles={candidate.candidate_id: statistical_candidate_profile(candidate.candidate_id)},
+                artifact_bytes_by_candidate={candidate.candidate_id: artifact_bytes},
+                guardrail_thresholds={},
+            ),
+            persist=False,
+        )
+        self.assertEqual(report.fold_results[0].disposition, ValidationDisposition.INVALID_TEMPORAL_LEAKAGE)
+
 
 class PurgeTests(unittest.TestCase):
     def test_clean_example(self) -> None:

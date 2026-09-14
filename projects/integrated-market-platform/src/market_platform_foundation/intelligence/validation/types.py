@@ -86,10 +86,13 @@ class ValidationFoldSpec:
     validation_end_ns: int
     training_cutoff_ns: int
     candidate_id: str | None = None
+    training_start_ns: int | None = None
 
     def __post_init__(self) -> None:
         if self.validation_start_ns >= self.validation_end_ns:
             raise ValueError("FOLD_VALIDATION_RANGE_INVALID")
+        if self.training_start_ns is not None and self.training_start_ns >= self.training_cutoff_ns:
+            raise ValueError("FOLD_TRAINING_WINDOW_INVALID")
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,12 +100,20 @@ class WalkForwardSpec:
     mode: WalkForwardMode
     fold_boundaries_ns: tuple[int, ...]
     fold_candidate_ids: tuple[str | None, ...] = ()
+    rolling_window_ns: int | None = None
 
     def __post_init__(self) -> None:
         if len(self.fold_boundaries_ns) < 2:
             raise ValueError("FOLD_BOUNDARIES_INSUFFICIENT")
         if self.fold_candidate_ids and len(self.fold_candidate_ids) != len(self.fold_boundaries_ns) - 1:
             raise ValueError("FOLD_CANDIDATE_COUNT_MISMATCH")
+        if self.mode == WalkForwardMode.ROLLING:
+            if self.rolling_window_ns is None:
+                raise ValueError("WALK_FORWARD_ROLLING_WINDOW_REQUIRED")
+            if self.rolling_window_ns <= 0:
+                raise ValueError("WALK_FORWARD_ROLLING_WINDOW_INVALID")
+        elif self.rolling_window_ns is not None:
+            raise ValueError("WALK_FORWARD_ROLLING_WINDOW_REQUIRES_ROLLING_MODE")
 
 
 @dataclass(frozen=True, slots=True)

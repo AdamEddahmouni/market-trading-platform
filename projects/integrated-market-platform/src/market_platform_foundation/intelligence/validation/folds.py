@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from .errors import ValidationError
-from .types import ValidationFoldSpec, WalkForwardMode, WalkForwardSpec
+from .types import ValidationExample, ValidationFoldSpec, WalkForwardMode, WalkForwardSpec
 
 
 def generate_walk_forward_folds(
     spec: WalkForwardSpec,
     *,
-  purge_ns: int = 0,
+    purge_ns: int = 0,
 ) -> tuple[ValidationFoldSpec, ...]:
     boundaries = spec.fold_boundaries_ns
     if len(boundaries) < 2:
@@ -32,8 +32,17 @@ def generate_walk_forward_folds(
 
         if spec.mode == WalkForwardMode.EXPANDING:
             training_cutoff = validation_start - purge_ns
+            training_start: int | None = None
         elif spec.mode == WalkForwardMode.ROLLING:
+            if spec.rolling_window_ns is None:
+                raise ValidationError("WALK_FORWARD_ROLLING_WINDOW_REQUIRED")
+            if spec.rolling_window_ns <= 0:
+                raise ValidationError(
+                    "WALK_FORWARD_ROLLING_WINDOW_INVALID",
+                    details={"rolling_window_ns": spec.rolling_window_ns},
+                )
             training_cutoff = validation_start - purge_ns
+            training_start = training_cutoff - spec.rolling_window_ns
         else:
             raise ValidationError("WALK_FORWARD_MODE_UNSUPPORTED", details={"mode": spec.mode})
 
@@ -45,9 +54,35 @@ def generate_walk_forward_folds(
                 validation_end_ns=validation_end,
                 training_cutoff_ns=training_cutoff,
                 candidate_id=candidate_id,
+                training_start_ns=training_start,
             )
         )
     return tuple(folds)
 
 
-__all__ = ["generate_walk_forward_folds"]
+def fold_example_temporal_violation(
+    example: ValidationExample,
+    fold: ValidationFoldSpec,
+) -> str | None:
+    """Return a leak code when a scored fold example violates the temporal contract.
+
+    Scoring uses labels that realize after the decision. A label available at or
+    before decision time is fail-closed as ``FUTURE_LABEL_ACCESS``. Fold examples
+    must also sit in the half-open validation window and must not be training-period
+    rows scored as out-of-sample.
+    """
+    if example.label_available_time_ns <= example.decision_time_ns:
+        return "FUTURE_LABEL_ACCESS"
+    if not (fold.validation_start_ns <= example.decision_time_ns < fold.validation_end_ns):
+        return "VALIDATION_WINDOW_MISMATCH"
+    if example.decision_time_ns < fold.training_cutoff_ns:
+        return "TRAINING_PERIOD_SCORED_AS_VALIDATION"
+    if (
+        fold.training_start_ns is not None
+        and fold.training_start_ns <= example.decision_time_ns < fold.training_cutoff_ns
+    ):
+        return "TRAINING_PERIOD_SCORED_AS_VALIDATION"
+    return None
+
+
+__all__ = ["fold_example_temporal_violation", "generate_walk_forward_folds"]

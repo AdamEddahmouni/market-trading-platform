@@ -9,7 +9,7 @@ from .artifacts import (
 from .contamination import ContaminationLedger, assess_holdout_contamination
 from .engine import ValidationEngine, ValidationRunContext
 from .errors import ValidationError
-from .folds import generate_walk_forward_folds
+from .folds import fold_example_temporal_violation, generate_walk_forward_folds
 from .holdout import ValidationDataAccessGuard, verify_plan_matches_commitment
 from .identity import (
     derive_contamination_record_id,
@@ -125,6 +125,7 @@ __all__ = [
     "derive_validation_plan_id",
     "derive_validation_report_id",
     "evaluate_statistical_criteria",
+    "fold_example_temporal_violation",
     "generate_walk_forward_folds",
     "holdout_commitment_v1_from_dict",
     "holdout_commitment_v1_to_dict",
