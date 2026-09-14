@@ -73,20 +73,25 @@ def _statistical_plan_from_dict(payload: dict[str, Any]) -> StatisticalPlan:
 def _walk_forward_to_dict(spec: WalkForwardSpec | None) -> dict[str, Any] | None:
     if spec is None:
         return None
-    return {
+    payload: dict[str, Any] = {
         "mode": spec.mode.value,
         "fold_boundaries_ns": list(spec.fold_boundaries_ns),
         "fold_candidate_ids": list(spec.fold_candidate_ids),
     }
+    if spec.rolling_window_ns is not None:
+        payload["rolling_window_ns"] = spec.rolling_window_ns
+    return payload
 
 
 def _walk_forward_from_dict(payload: dict[str, Any] | None) -> WalkForwardSpec | None:
     if payload is None:
         return None
+    rolling_raw = payload.get("rolling_window_ns")
     return WalkForwardSpec(
         mode=WalkForwardMode(str(payload["mode"])),
         fold_boundaries_ns=tuple(int(v) for v in payload["fold_boundaries_ns"]),
         fold_candidate_ids=tuple(payload.get("fold_candidate_ids", ())),
+        rolling_window_ns=None if rolling_raw is None else int(rolling_raw),
     )
 
 

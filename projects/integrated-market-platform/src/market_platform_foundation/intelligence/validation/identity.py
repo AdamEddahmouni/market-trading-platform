@@ -28,11 +28,14 @@ def _sha256_prefix(prefix: str, payload: dict[str, Any]) -> str:
 def walk_forward_identity_payload(spec: WalkForwardSpec | None) -> dict[str, Any] | None:
     if spec is None:
         return None
-    return {
+    payload: dict[str, Any] = {
         "mode": spec.mode.value,
         "fold_boundaries_ns": list(spec.fold_boundaries_ns),
         "fold_candidate_ids": list(spec.fold_candidate_ids),
     }
+    if spec.rolling_window_ns is not None:
+        payload["rolling_window_ns"] = spec.rolling_window_ns
+    return payload
 
 
 def holdout_identity_payload(spec: HoldoutSpec) -> dict[str, Any]:

@@ -27,6 +27,7 @@ def build_validation_plan(
     fold_candidate_ids: tuple[str | None, ...] = (),
     purge_ns: int = 0,
     embargo_ns: int = 0,
+    rolling_window_ns: int | None = None,
     statistical_plan: StatisticalPlan | None = None,
     guardrail_metrics: tuple[str, ...] = (),
     minimum_paired_sample: int = 5,
@@ -52,6 +53,7 @@ def build_validation_plan(
             mode=walk_forward_mode,
             fold_boundaries_ns=fold_boundaries_ns,
             fold_candidate_ids=fold_candidate_ids,
+            rolling_window_ns=rolling_window_ns,
         )
 
     stats = statistical_plan or StatisticalPlan(
