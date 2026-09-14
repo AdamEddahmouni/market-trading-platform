@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Developer runbook P2 nav names
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Aligned operator/dev instructions with shipped #108 nav: **Workspace** (decision desk) vs **Portfolio** (orders history); **Lab** → `/research` with `/lab` redirect. Docs-only; no UI/backend or frozen-lane changes. |
+| **Key files** | `docs/engineering/DEVELOPER_RUNBOOK.md`, `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | Pending local `python3 tools/check_docs_links.py` and IMP Validation (incl. `validate-ui`) |
+| **Related** | [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md), [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md), PR #108 @ `0cf1c414` |
+| **Notes** | Did not invent routes. Live remains off. |
+
 ## 2026-09-14 — UX-00 P2 wayfinding and operator trust strip
 
 | Field | Value |

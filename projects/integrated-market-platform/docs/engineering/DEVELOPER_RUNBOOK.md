@@ -98,6 +98,20 @@ After env changes on Windows: `powershell -File tools/ui1/restart_ui_api.ps1`.
 
 Example read-only API probe (no orders): `curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8766/diagnostics/provider`
 
+### Primary UI surfaces (shipped)
+
+Open `http://127.0.0.1:5173` after API + UI start. Use **sidebar labels** from `NavShell`. Do not invent routes.
+
+| Nav label | Route | Operator meaning |
+|-----------|-------|------------------|
+| **Workspace** | `/workspace` | Decision desk (canonical Paper submit boundary) |
+| **Portfolio** | `/portfolio` | Orders history — not the submit surface |
+| **Lab** | `/research` | Model and sim labs. `/lab` redirects to `/research` |
+
+A gated **Research** item also opens `/research`. **Risk** in the sidebar is `/control` (control center row above). Live stays observational; this runbook does not enable Live execution.
+
+Source: `ui/src/components/NavShell.tsx` and `ui/src/App.tsx`. Patterns: [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md).
+
 ---
 
 ## Logs and local state
@@ -195,5 +209,6 @@ See [operations/RUNBOOK.md](../operations/RUNBOOK.md) for UI/API/provider failur
 ## Related authorities
 
 - [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md) — prerequisites and Windows setup narrative  
+- [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md) — shipped primary nav labels and UI patterns
 - [CURSOR_CLOUD_ENVIRONMENT.md](CURSOR_CLOUD_ENVIRONMENT.md) — cloud secrets **names** only  
 - [AGENTS.md](../../AGENTS.md) — agent entry and safety invariants
