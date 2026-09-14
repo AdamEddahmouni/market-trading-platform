@@ -90,7 +90,7 @@ class ObservationIngressRouter:
             consumer_ids=self.consumer_ids,
         )
         outcomes: list[IngressConsumerOutcome] = []
-        for consumer in self._consumers:
+        for index, consumer in enumerate(self._consumers):
             try:
                 outcome = consumer.consume(event, context=context)
             except Exception as exc:  # noqa: BLE001 — fail-closed surface
@@ -102,6 +102,15 @@ class ObservationIngressRouter:
                 )
             outcomes.append(outcome)
             if outcome.status == IngressConsumerStatus.FAILED and consumer.required and self.policy.fail_closed:
+                for remaining in self._consumers[index + 1 :]:
+                    outcomes.append(
+                        IngressConsumerOutcome(
+                            consumer_id=remaining.consumer_id,
+                            kind=remaining.kind,
+                            status=IngressConsumerStatus.SKIPPED,
+                            detail="FAIL_CLOSED_PRIOR_REQUIRED_FAILURE",
+                        )
+                    )
                 self._metrics["failed"] += 1
                 raise IngressDispatchError(
                     code="INGRESS_REQUIRED_CONSUMER_FAILED",
@@ -110,7 +119,11 @@ class ObservationIngressRouter:
                     partial_outcomes=tuple(row.to_dict() for row in outcomes),
                 )
             if consumer.kind == IngressConsumerKind.ENRICHMENT_TRIGGER and outcome.status == IngressConsumerStatus.OK:
-                self._record_enrichment_trigger(event, consumer_id=consumer.consumer_id, scheduled_at_ns=context.dispatch_time_ns)
+                self._record_enrichment_trigger(
+                    event,
+                    consumer_id=consumer.consumer_id,
+                    scheduled_at_ns=context.dispatch_time_ns,
+                )
 
         receipt = IngressDispatchReceiptV1(
             dispatch_id=dispatch_id,

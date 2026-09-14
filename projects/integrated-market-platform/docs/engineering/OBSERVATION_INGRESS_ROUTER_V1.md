@@ -66,7 +66,7 @@ Package: `market_platform_foundation.intelligence.observation_ingress`
 
 - Rejects `QualityState.INVALID` events
 - Rejects forbidden consumer kinds (`BROKER_ACTION`, `EXECUTION`, `ORDER_SUBMIT`)
-- `fail_closed=True` default: required consumer `FAILED` raises `IngressDispatchError`
+- `fail_closed=True` default: required consumer `FAILED` raises `IngressDispatchError` after recording `SKIPPED` outcomes for not-yet-run consumers (complete outcome list on the error)
 - Journal and enrichment trigger buffers are bounded (`IngressRouterPolicyV1`)
 
 ## Proof path (V1)

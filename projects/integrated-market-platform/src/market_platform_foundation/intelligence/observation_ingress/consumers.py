@@ -51,12 +51,18 @@ def store_consumer(
 
     def _consume(event: EventV1, context: IngressDispatchContext) -> IngressConsumerOutcome:
         result = repository.put_event(event)
-        detail = str(result)
+        if result == RepositoryPutResult.ALREADY_PRESENT:
+            return IngressConsumerOutcome(
+                consumer_id=consumer_id,
+                kind=kind,
+                status=IngressConsumerStatus.DUPLICATE,
+                detail=RepositoryPutResult.ALREADY_PRESENT.value,
+            )
         return IngressConsumerOutcome(
             consumer_id=consumer_id,
             kind=kind,
             status=IngressConsumerStatus.OK,
-            detail=detail,
+            detail=RepositoryPutResult.INSERTED.value,
         )
 
     return CallableIngressConsumer(
