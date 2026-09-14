@@ -29,12 +29,17 @@ def build_production_observation_ingress_router(
     audit = audit_replay_sink if audit_replay_sink is not None else []
     evidence = oe_evidence_sink if oe_evidence_sink is not None else []
     seen = detector_seen if detector_seen is not None else set()
+    sec_vertical_enrichment: dict[str, dict[str, str]] = {}
     return ObservationIngressRouter(
         [
             store_consumer(repository),
             audit_sink_consumer(audit),
-            oe_evidence_consumer(evidence),
-            detector_stub_consumer(seen),
+            detector_stub_consumer(
+                seen,
+                repository=repository,
+                oe_evidence_enrichment=sec_vertical_enrichment,
+            ),
+            oe_evidence_consumer(evidence, sec_vertical_enrichment=sec_vertical_enrichment),
             enrichment_trigger_consumer(),
         ],
         policy=policy,

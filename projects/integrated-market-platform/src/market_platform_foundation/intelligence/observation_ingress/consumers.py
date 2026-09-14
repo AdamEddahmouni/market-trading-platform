@@ -6,7 +6,9 @@ from dataclasses import dataclass
 from typing import Callable, Protocol, runtime_checkable
 
 from ..contracts.event import EventV1
+from ..opportunity.sec_insider import accepts_sec_insider_event, run_sec_insider_vertical
 from ..persistence.repository import IntelligenceRepository, RepositoryPutResult
+from .sec_insider_snapshot import build_sec_insider_ingress_snapshot
 from .types import (
     IngressConsumerKind,
     IngressConsumerOutcome,
@@ -103,17 +105,19 @@ def oe_evidence_consumer(
     *,
     consumer_id: str = "ingress.oe_evidence",
     required: bool = False,
+    sec_vertical_enrichment: dict[str, dict[str, str]] | None = None,
 ) -> IngressConsumerHandler:
     kind = validate_consumer_kind(IngressConsumerKind.OE_EVIDENCE)
 
     def _consume(event: EventV1, context: IngressDispatchContext) -> IngressConsumerOutcome:
-        evidence_rows.append(
-            {
-                "dispatch_time_ns": str(context.dispatch_time_ns),
-                "event_id": event.event_id,
-                "event_type": event.event_type,
-            }
-        )
+        row: dict[str, str] = {
+            "dispatch_time_ns": str(context.dispatch_time_ns),
+            "event_id": event.event_id,
+            "event_type": event.event_type,
+        }
+        if sec_vertical_enrichment is not None:
+            row.update(sec_vertical_enrichment.get(event.event_id, {}))
+        evidence_rows.append(row)
         return IngressConsumerOutcome(
             consumer_id=consumer_id,
             kind=kind,
@@ -157,16 +161,52 @@ def detector_stub_consumer(
     *,
     consumer_id: str = "ingress.detector_stub",
     required: bool = False,
+    repository: IntelligenceRepository | None = None,
+    oe_evidence_enrichment: dict[str, dict[str, str]] | None = None,
 ) -> IngressConsumerHandler:
+    """DETECTOR lane: observe all events; SEC insider rows run the canonical vertical."""
+
     kind = validate_consumer_kind(IngressConsumerKind.DETECTOR)
 
     def _consume(event: EventV1, context: IngressDispatchContext) -> IngressConsumerOutcome:
         seen.add(event.event_id)
+        if repository is None or not accepts_sec_insider_event(event):
+            return IngressConsumerOutcome(
+                consumer_id=consumer_id,
+                kind=kind,
+                status=IngressConsumerStatus.OK,
+                detail="OBSERVED",
+            )
+        decision_time_ns = max(context.dispatch_time_ns, event.available_time_ns + 1)
+        snapshot = build_sec_insider_ingress_snapshot(event, decision_time_ns=decision_time_ns)
+        repository.put_snapshot(snapshot)
+        vertical = run_sec_insider_vertical(event=event, snapshot=snapshot)
+        if not vertical.ok:
+            return IngressConsumerOutcome(
+                consumer_id=consumer_id,
+                kind=kind,
+                status=IngressConsumerStatus.OK,
+                detail=f"SEC_VERTICAL_SKIPPED:{','.join(vertical.reason_codes)}",
+            )
+        assert vertical.detection is not None
+        assert vertical.evidence is not None
+        repository.put_detection(vertical.detection)
+        repository.put_evidence(vertical.evidence)
+        if oe_evidence_enrichment is not None and vertical.candidate is not None:
+            oe_evidence_enrichment[event.event_id] = {
+                "dispatch_time_ns": str(context.dispatch_time_ns),
+                "event_id": event.event_id,
+                "event_type": event.event_type,
+                "detection_id": vertical.detection.detection_id,
+                "evidence_id": vertical.evidence.evidence_id,
+                "opportunity_candidate_id": str(vertical.candidate.get("opportunity_id", "")),
+                "strategy_family": str(vertical.candidate.get("strategy_family", "")),
+            }
         return IngressConsumerOutcome(
             consumer_id=consumer_id,
             kind=kind,
             status=IngressConsumerStatus.OK,
-            detail="OBSERVED",
+            detail="SEC_INSIDER_VERTICAL_OK",
         )
 
     return CallableIngressConsumer(

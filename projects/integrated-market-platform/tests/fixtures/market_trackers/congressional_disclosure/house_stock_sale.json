@@ -1,0 +1,32 @@
+{
+  "id": "house:H-PTR-EXAMPLE-2025-011:1",
+  "chamber": "house",
+  "docId": "H-PTR-EXAMPLE-2025-011",
+  "rowIndex": 1,
+  "member": {
+    "name": "Representative Example B.",
+    "bioguideId": "E000001",
+    "party": null,
+    "state": "EX"
+  },
+  "filedAt": "2025-03-05",
+  "transactedAt": "2025-02-20",
+  "ticker": "AAPL",
+  "assetDescription": "Apple Inc. (AAPL)",
+  "assetType": "stock",
+  "side": "sell",
+  "amountRange": {
+    "min": 1001,
+    "max": 15000,
+    "text": "$1,001 - $15,000"
+  },
+  "owner": "spouse",
+  "provenance": {
+    "source": "house-clerk",
+    "sourceUrl": "https://disclosures-clerk.house.gov/public_disc/example-ptr-2025-011.pdf",
+    "retrievedAt": "2026-08-24T15:00:00.000Z",
+    "parser": "congress-ptr@1",
+    "confidence": 0.9,
+    "needsReview": false
+  }
+}

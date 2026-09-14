@@ -198,10 +198,10 @@ class EventDetectorEngine:
             ),
             DetectorSupport(
                 SemanticEventType.SEC_INSIDER_DISCLOSURE,
-                "FILING EventV1 with payload.sec_insider / lane_payload_kind adapter",
-                DetectorSupportStatus.IMPLEMENTED_WITH_EXTERNAL_CONTEXT,
-                "Lane C isolated vertical in intelligence.opportunity.sec_insider",
-                "not invoked from EventDetectorEngine.detect(); FILING_IS_NOT_NEWS guard unchanged",
+                "INSIDER_OWNERSHIP_ROW (Lane B) or legacy FILING+sec_insider adapter",
+                DetectorSupportStatus.IMPLEMENTED,
+                "deterministic disclosure materiality detector (no Form 4 P/D → side)",
+                "FILING_IS_NOT_NEWS guard unchanged for inactive NEWS_EVENT",
             ),
         )
 
@@ -227,6 +227,7 @@ class EventDetectorEngine:
         self._detect_liquidity(frame, state, detections, diagnostics)
         self._detect_short_interest(frame, state, detections, diagnostics)
         self._detect_regime(frame, state, detections)
+        self._detect_sec_insider(frame, detections, diagnostics)
         self._fail_closed_inactive_detectors(frame, detections, diagnostics)
         ordered = tuple(
             sorted(
@@ -528,6 +529,40 @@ class EventDetectorEngine:
                 },
             )
         )
+
+    def _detect_sec_insider(
+        self,
+        frame: DetectionFrame,
+        detections: list[DetectionV1],
+        diagnostics: list[str],
+    ) -> None:
+        from ..opportunity.sec_insider.adapters import accepts_sec_insider_event
+        from ..opportunity.sec_insider.detector import build_detection as build_sec_insider_detection
+        from ..opportunity.sec_insider.validation import validate_sec_insider_inputs
+
+        insider_events = [row for row in frame.events if accepts_sec_insider_event(row)]
+        if not insider_events:
+            diagnostics.append("SEC_INSIDER_DISCLOSURE:NO_ACCEPTED_EVENT")
+            return
+        for event in sorted(insider_events, key=lambda row: (row.available_time_ns, row.event_id)):
+            if event.quality.state == QualityState.INVALID or (
+                event.quality.state in {QualityState.DEGRADED, QualityState.UNKNOWN}
+                and not self.policy.allow_degraded_inputs
+            ):
+                diagnostics.append("SEC_INSIDER_DISCLOSURE:INPUT_QUALITY_REJECTED")
+                continue
+            validated = validate_sec_insider_inputs(event=event, snapshot=frame.snapshot)
+            if not validated.ok or validated.facts is None:
+                code = validated.reason_codes[0] if validated.reason_codes else "VALIDATION_FAILED"
+                diagnostics.append(f"SEC_INSIDER_DISCLOSURE:{code}")
+                continue
+            detections.append(
+                build_sec_insider_detection(
+                    event=event,
+                    snapshot=frame.snapshot,
+                    facts=validated.facts,
+                )
+            )
 
     def _fail_closed_inactive_detectors(
         self,

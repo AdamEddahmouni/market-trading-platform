@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from enum import StrEnum
 from typing import Any, Callable, Protocol, runtime_checkable
@@ -53,6 +53,10 @@ class IngestDisposition(StrEnum):
     INSERTED = "INSERTED"
     ALREADY_PRESENT = "ALREADY_PRESENT"
     UPDATED = "UPDATED"
+    RESEARCH_ONLY_LATE_RESULT = "RESEARCH_ONLY_LATE_RESULT"
+
+
+RESEARCH_ONLY_LATE_RESULT = IngestDisposition.RESEARCH_ONLY_LATE_RESULT.value
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,6 +95,25 @@ def is_agent_enrichment_expired(record: AgentEnrichmentEvidenceV1, *, as_of_iso:
     as_of = _parse_iso8601(as_of_iso)
     expires = _parse_iso8601(record.expires_at)
     return expires <= as_of
+
+
+def _as_of_ns(as_of_iso: str) -> int:
+    parsed = _parse_iso8601(as_of_iso)
+    return int(parsed.timestamp() * 1_000_000_000)
+
+
+def _is_past_hard_expiry(
+    opportunity: OpportunityV1 | None,
+    *,
+    as_of_ns: int,
+    hard_expiry_ns: int | None = None,
+) -> bool:
+    resolved = hard_expiry_ns
+    if resolved is None and opportunity is not None:
+        resolved = opportunity.valid_until_ns
+    if resolved is None:
+        return False
+    return as_of_ns >= resolved
 
 
 _FORBIDDEN_MUTATION_VALUES = frozenset(item.value for item in ForbiddenIngestMutation)
@@ -160,9 +183,24 @@ class AgentEnrichmentIngestRuntime:
         _scan_forbidden_mutations(payload)
         record = agent_enrichment_evidence_v1_from_dict(payload)
         _validate_claim_operation_alignment(record)
+        opportunity = None
+        if self._get_opportunity is not None:
+            opportunity = self._get_opportunity(record.opportunity_id)
         self._require_attachable_opportunity(record.opportunity_id)
+        late_research_only = False
         if is_agent_enrichment_expired(record, as_of_iso=as_of_iso):
-            raise ValueError("AGENT_ENRICHMENT_ALREADY_EXPIRED")
+            as_of_ns = _as_of_ns(as_of_iso)
+            if _is_past_hard_expiry(opportunity, as_of_ns=as_of_ns):
+                late_research_only = True
+                record = replace(
+                    record,
+                    metadata={
+                        **dict(record.metadata),
+                        "ingest_disposition": RESEARCH_ONLY_LATE_RESULT,
+                    },
+                )
+            else:
+                raise ValueError("AGENT_ENRICHMENT_ALREADY_EXPIRED")
         allow_update = record.operation == IngestOperation.UPDATE_OWN_EVIDENCE_RECORD
         if allow_update:
             if existing_record is None:
@@ -184,7 +222,9 @@ class AgentEnrichmentIngestRuntime:
             record,
             allow_agent_update=allow_update,
         )
-        if result == RepositoryPutResult.ALREADY_PRESENT:
+        if late_research_only:
+            disposition = IngestDisposition.RESEARCH_ONLY_LATE_RESULT
+        elif result == RepositoryPutResult.ALREADY_PRESENT:
             disposition = IngestDisposition.ALREADY_PRESENT
         elif allow_update and prior is not None:
             disposition = IngestDisposition.UPDATED
@@ -252,6 +292,7 @@ __all__ = [
     "AgentEnrichmentIngestRuntime",
     "AgentEnrichmentPersistence",
     "IngestDisposition",
+    "RESEARCH_ONLY_LATE_RESULT",
     "enrichments_for_opportunity_detail",
     "is_agent_enrichment_expired",
 ]
