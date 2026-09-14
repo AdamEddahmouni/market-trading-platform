@@ -111,14 +111,19 @@ Snapshot logical ID: `providers.frozen_observation_compare`. No live HTTP.
 
 Unified provider capability matrix HTTP projection and cross-surface enum normalization remain **deferred** (`DEFER-UNIFIED-UI-MATRIX`). Operator readiness CLI and projections are the supported path until a canonical matrix DTO exists.
 
-## PIT research export (PIT-A-001)
+## PIT research export (PIT-A-001 + Research Export v1)
 
 Unified offline export binding (ADR-PIT-001 + ADR-RDATA-001):
 
 | Module | Role |
 | --- | --- |
 | `research/pit_export.py` | Immutable export manifest: `source_sha256`, `prediction_cutoff_ns`, dataset fingerprints, experiment binding |
-| `tests/research/test_pit_export.py` | Determinism and fail-closed validation |
+| `research/export_v1.py` | Full Research Export v1 package: profiles, PIT audit, `ValidationDatasetManifestV1` wrap, loaders, MATLAB parity sidecar |
+| `tests/research/test_pit_export.py` | PIT-A-001 determinism and fail-closed validation |
+| `tests/research/test_research_export_v1.py` | Profile A/C end-to-end, regeneration, loader parity |
+| `docs/research/RESEARCH_EXPORT_V1.md` | Operator and developer contract |
+
+CLI: `python3 tools/research/build_research_export_v1.py --profile MARKET_TECHNICAL|EVENT_MACRO --output-dir …`
 
 Operator probe steps (no Live activation): [OPERATOR_PROBE_RUNBOOK.md](./OPERATOR_PROBE_RUNBOOK.md).
 
