@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — FTEP integrity: durable counts when SIGNAL_ONLY started
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `intelligence/paper_forward_bridge` |
+| **Summary** | Fixed `signal_only_session_requires_durable_state` to pass when `signal_only_session_started` is true and durable `governed_session_count` is positive (removed committed always-fail stub). Added regression test seeding two forward-test sessions against FTEP-V1-002 campaign id. |
+| **Key files** | `src/market_platform_foundation/intelligence/paper_forward_bridge/ftep_integrity.py`, `tests/intelligence/test_ftep_integrity.py` |
+| **Tests** | `python -m unittest tests.intelligence.test_ftep_integrity -v` |
+| **Related** | RTH integrity checker leftover (`c8471a74`) |
+| **Notes** | Does not weaken EMPIRICAL_ACTIVE, auto-record locks, or change V1-002 manifest. |
+
 ## 2026-09-14 — Track H leftover: fail-close remaining backend error_category gaps
 
 | Field | Value |
