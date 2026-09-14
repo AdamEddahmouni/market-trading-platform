@@ -18,6 +18,7 @@ from . import broker_projections
 from . import canary_projections
 from . import live_projections
 from . import operator_projections
+from . import agent_enrichment_ingest
 from . import opportunity_projections
 from . import forward_test_projections
 from . import paper_projections
@@ -112,7 +113,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self) -> None:
         self.send_response(HTTPStatus.NO_CONTENT)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-IMP-Session")
         self.end_headers()
 
@@ -946,10 +947,79 @@ class UiApiHandler(BaseHTTPRequestHandler):
             log_server_event("ui_api.internal_error", path=path, error=repr(exc))
             self._send_error_json("UI_INTERNAL_ERROR", str(exc), status=HTTPStatus.INTERNAL_SERVER_ERROR)
 
+    def do_PUT(self) -> None:
+        parsed = urlparse(self.path)
+        path = parsed.path.rstrip("/") or "/"
+        length = int(self.headers.get("Content-Length", "0"))
+        if path.startswith("/intelligence/ingest/enrichment"):
+            try:
+                agent_enrichment_ingest.enforce_agent_enrichment_body_limit(length)
+            except ValueError as exc:
+                status = (
+                    HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+                    if "BODY_TOO_LARGE" in str(exc)
+                    else HTTPStatus.BAD_REQUEST
+                )
+                self._send_error_json(str(exc), str(exc), status=status)
+                return
+        raw = self.rfile.read(length) if length else b"{}"
+        try:
+            body = json.loads(raw.decode("utf-8"))
+        except json.JSONDecodeError:
+            self._send_error_json("UI_JSON_INVALID", "Invalid JSON body", status=HTTPStatus.BAD_REQUEST)
+            return
+        if not isinstance(body, dict):
+            self._send_error_json("UI_JSON_INVALID", "Body must be an object", status=HTTPStatus.BAD_REQUEST)
+            return
+        if not self._authorize_request("PUT", path, parse_qs(parsed.query), body):
+            return
+        if path.startswith("/intelligence/ingest/enrichment/"):
+            record_id = path.removeprefix("/intelligence/ingest/enrichment/").strip("/")
+            if not record_id:
+                self._send_error_json(
+                    "AGENT_ENRICHMENT_RECORD_ID_REQUIRED",
+                    "record_id required",
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            try:
+                self._send_json(
+                    agent_enrichment_ingest.handle_agent_enrichment_ingest_put(
+                        self.store,
+                        record_id,
+                        body,
+                    )
+                )
+            except ValueError as exc:
+                code = str(exc)
+                if "INGEST_MUTATION" in code or "FORBIDDEN" in code:
+                    self._send_error_json("INGEST_MUTATION_FORBIDDEN", code, status=HTTPStatus.FORBIDDEN)
+                    return
+                if "OPPORTUNITY_NOT_FOUND" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.NOT_FOUND)
+                    return
+                if "REPOSITORY_UNSUPPORTED" in code or "REPOSITORY_UNAVAILABLE" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.SERVICE_UNAVAILABLE)
+                    return
+                self._send_error_json("AGENT_ENRICHMENT_INGEST_FAILED", code, status=HTTPStatus.BAD_REQUEST)
+            return
+        self._send_error_json("UI_ROUTE_NOT_FOUND", f"Unknown path: {path}", status=HTTPStatus.NOT_FOUND)
+
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
         length = int(self.headers.get("Content-Length", "0"))
+        if path == "/intelligence/ingest/enrichment" or path.startswith("/intelligence/ingest/enrichment/"):
+            try:
+                agent_enrichment_ingest.enforce_agent_enrichment_body_limit(length)
+            except ValueError as exc:
+                status = (
+                    HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+                    if "BODY_TOO_LARGE" in str(exc)
+                    else HTTPStatus.BAD_REQUEST
+                )
+                self._send_error_json(str(exc), str(exc), status=status)
+                return
         raw = self.rfile.read(length) if length else b"{}"
         try:
             body = json.loads(raw.decode("utf-8"))
@@ -1002,6 +1072,52 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(_spawn_action(Path(__file__).resolve().parents[3], action), status=HTTPStatus.ACCEPTED)
             except (OSError, ValueError) as exc:
                 self._send_error_json("OPERATOR_LIFECYCLE_ACTION_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/intelligence/ingest/enrichment":
+            try:
+                self._send_json(agent_enrichment_ingest.handle_agent_enrichment_ingest_post(self.store, body))
+            except ValueError as exc:
+                code = str(exc)
+                if "INGEST_MUTATION" in code or "FORBIDDEN" in code:
+                    self._send_error_json("INGEST_MUTATION_FORBIDDEN", code, status=HTTPStatus.FORBIDDEN)
+                    return
+                if "OPPORTUNITY_NOT_FOUND" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.NOT_FOUND)
+                    return
+                if "REPOSITORY_UNSUPPORTED" in code or "REPOSITORY_UNAVAILABLE" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.SERVICE_UNAVAILABLE)
+                    return
+                self._send_error_json("AGENT_ENRICHMENT_INGEST_FAILED", code, status=HTTPStatus.BAD_REQUEST)
+            return
+        if path.startswith("/intelligence/ingest/enrichment/"):
+            record_id = path.removeprefix("/intelligence/ingest/enrichment/").strip("/")
+            if not record_id:
+                self._send_error_json(
+                    "AGENT_ENRICHMENT_RECORD_ID_REQUIRED",
+                    "record_id required",
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            try:
+                self._send_json(
+                    agent_enrichment_ingest.handle_agent_enrichment_ingest_put(
+                        self.store,
+                        record_id,
+                        body,
+                    )
+                )
+            except ValueError as exc:
+                code = str(exc)
+                if "INGEST_MUTATION" in code or "FORBIDDEN" in code:
+                    self._send_error_json("INGEST_MUTATION_FORBIDDEN", code, status=HTTPStatus.FORBIDDEN)
+                    return
+                if "OPPORTUNITY_NOT_FOUND" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.NOT_FOUND)
+                    return
+                if "REPOSITORY_UNSUPPORTED" in code or "REPOSITORY_UNAVAILABLE" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.SERVICE_UNAVAILABLE)
+                    return
+                self._send_error_json("AGENT_ENRICHMENT_INGEST_FAILED", code, status=HTTPStatus.BAD_REQUEST)
             return
         if path == "/discover/mixed/refresh":
             from .mixed_discovery_projections import refresh_mixed_discovery
