@@ -42,9 +42,9 @@ For large features, also add or update a completion note under `docs/superpowers
 |-------|-------|
 | **Status** | `complete` |
 | **Area** | `ui/api` |
-| **Summary** | Frontend typed union in `ui/src/api/errors.ts` matches the twelve backend WS05 `error_category` values from PR #90. Request failures parse `{ error, reason_code, error_category }` and fail closed when the category is omitted or unknown — no frontend `reason_code` map and no server-map expansion. Classified Paper preview/submit errors surface `error_category: reason_code: error`. |
+| **Summary** | Frontend typed union in `ui/src/api/errors.ts` matches the twelve backend WS05 `error_category` values from PR #90. Request failures parse `{ error, reason_code, error_category }` and fail closed when the category is omitted or unknown — no frontend `reason_code` map and no server-map expansion. `fetchJson` dynamically imports the parser so it stays off the initial JS budget; classified Paper preview/submit errors surface `error_category: reason_code: error`. |
 | **Key files** | `ui/src/api/errors.ts`, `ui/src/api/fetchJson.ts`, `ui/src/components/paper/OrderTicket.tsx`, `ui/src/components/paper-now/PaperNowPage.tsx`, `ui/src/components/paper-derivative/DerivativePaperPreviewPanel.tsx`, `tests/ui1/test_error_taxonomy.py`, `docs/engineering/FRONTEND_GUIDE.md` |
-| **Tests** | pending local `npm test` / `npm run typecheck` / `npm run build` and `python3 -m unittest tests.ui1.test_error_taxonomy` |
+| **Tests** | `python3 -m unittest tests.ui1.test_error_taxonomy` 6/6; `cd ui && npm run typecheck`; `npm test -- --run` 488 passed; `npm run build` initial **202.96 KiB gzip** (budget 203.00; `errors-*.js` async chunk 0.62 KiB gzip). PR #109 `validate-ui` failed on `04f6dd58` at 203.30 KiB — parser moved off the initial graph. |
 | **Related** | PR #90 backend taxonomy; TD-AP1 / API-004 frontend union |
 | **Notes** | Opportunity API semantics, board-03 chrome, and `ui_api/errors.py` reason-code map unchanged. |
 
