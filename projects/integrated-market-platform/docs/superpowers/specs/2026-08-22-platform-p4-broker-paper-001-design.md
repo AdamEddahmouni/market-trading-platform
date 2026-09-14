@@ -58,7 +58,9 @@ first execution-contract adapter (4A) can land and gate before reconciliation
 | `BROKER_DELAYED` | `BROKER_PAPER` | `TRADIER` | **AUTHORIZED (4A)** — sandbox-only endpoints, token gate, paper account |
 | `FIXTURE_REPLAY` | `BROKER_PAPER` | `TRADIER` | **AUTHORIZED (4A)** — sandbox-contract fixture replay, no network |
 | `LIVE_OBSERVATIONAL` | `BROKER_PAPER` | any external | **NOT AUTHORIZED** — live observational data never feeds broker orders (unchanged from PLATFORM-DATA-001) |
-| any | `BROKER_PAPER` | `IBKR` / `ALPACA` | **NOT AUTHORIZED** until a P4 amendment lands each adapter |
+| any | `BROKER_PAPER` | `ALPACA` Paper host (`https://paper-api.alpaca.markets`, stdlib urllib, no `import alpaca`) | **AUTHORIZED** — paper keys + exact Paper origin only; first probe is read-only `GET /v2/account` |
+| any | `BROKER_PAPER` | `ALPACA` live (`https://api.alpaca.markets`) | **NOT AUTHORIZED** |
+| any | `BROKER_PAPER` | `IBKR` | **NOT AUTHORIZED** until a P4 amendment lands the adapter |
 | any | `LIVE` | any | **NOT AUTHORIZED** (`LIVE-001` separate authorization) |
 
 The Tradier sandbox executes at **simulated prices on delayed market data** —

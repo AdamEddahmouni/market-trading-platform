@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Mapping, Sequence
+from urllib.parse import urlparse
 
 from ...execution.simulator import SIMULATOR_VERSION
 from ...intelligence.paper_forward_bridge.paper_handoff import (
@@ -20,6 +21,7 @@ from ...intelligence.paper_forward_bridge.repository import ForwardTestRepositor
 from ...intelligence.paper_forward_bridge.session_policy import is_within_us_equity_rth
 from ...intelligence.paper_forward_bridge.types import ForwardTestDecision
 from ...market_sessions import us_equity_session_label
+from ...providers.adapters.alpaca_paper_http import ALPACA_LIVE_HOST, ALPACA_PAPER_ORIGIN
 from .asset_scope import (
     EQUITY_PAPER_DOES_NOT_VALIDATE_ES,
     assert_calibration_unit_asset_scope,
@@ -44,6 +46,12 @@ _TRADIER_GATES = (
     "IMP_TRADIER_PAPER",
     "IMP_BROKER_PAPER_EXECUTION",
     "IMP_TRADIER_TOKEN",
+)
+_ALPACA_GATES = (
+    "IMP_ALPACA_PAPER",
+    "IMP_BROKER_PAPER_EXECUTION",
+    "APCA_API_KEY_ID",
+    "APCA_API_SECRET_KEY",
 )
 
 
@@ -89,6 +97,37 @@ def tradier_sandbox_configured(env: Mapping[str, str]) -> bool:
     return True
 
 
+def _alpaca_base_url(env: Mapping[str, str]) -> str:
+    return str(env.get("APCA_API_BASE_URL") or env.get("ALPACA_BASE_URL") or "").strip()
+
+
+def _hostname(url: str) -> str:
+    if not url:
+        return ""
+    return (urlparse(url).hostname or "").lower()
+
+
+def alpaca_paper_configured(env: Mapping[str, str]) -> bool:
+    if env.get("IMP_ALPACA_PAPER") != "1":
+        return False
+    if env.get("IMP_BROKER_PAPER_EXECUTION") != "1":
+        return False
+    if not str(env.get("APCA_API_KEY_ID") or "").strip():
+        return False
+    if not str(env.get("APCA_API_SECRET_KEY") or "").strip():
+        return False
+    url = _alpaca_base_url(env) or ALPACA_PAPER_ORIGIN
+    parsed = urlparse(url)
+    if parsed.hostname != "paper-api.alpaca.markets":
+        return False
+    if parsed.scheme != "https":
+        return False
+    path = (parsed.path or "").rstrip("/")
+    if path not in ("", "/v2"):
+        return False
+    return True
+
+
 def classify_calibration_run(
     *,
     env: Mapping[str, str],
@@ -101,12 +140,18 @@ def classify_calibration_run(
     endpoint = str(env.get("IMP_TRADIER_ENDPOINT") or "")
     if endpoint and endpoint != "https://sandbox.tradier.com/v1":
         return STATUS_ENVIRONMENT_AMBIGUOUS
-    if env.get("APCA_API_BASE_URL") or env.get("ALPACA_BASE_URL"):
-        alpaca_url = str(env.get("APCA_API_BASE_URL") or env.get("ALPACA_BASE_URL") or "")
-        if "api.alpaca.markets" in alpaca_url and "paper-api.alpaca.markets" not in alpaca_url:
+    alpaca_url = _alpaca_base_url(env)
+    if alpaca_url:
+        host = _hostname(alpaca_url)
+        if host == ALPACA_LIVE_HOST:
             return STATUS_LIVE_FORBIDDEN
+        if host and host != "paper-api.alpaca.markets":
+            return STATUS_ENVIRONMENT_AMBIGUOUS
+    tradier_ok = tradier_sandbox_configured(env)
+    alpaca_ok = alpaca_paper_configured(env)
+    if tradier_ok and alpaca_ok:
         return STATUS_ENVIRONMENT_AMBIGUOUS
-    if not tradier_sandbox_configured(env):
+    if not tradier_ok and not alpaca_ok:
         return STATUS_COMPARATOR_NOT_CONFIGURED
     label = session_label if session_label is not None else us_equity_session_label(
         datetime.fromtimestamp(now_ns / 1_000_000_000)
@@ -177,6 +222,7 @@ def run_calibration_campaign(
     detail = {
         "requested_mode": requested_mode,
         "tradier_gates": {name: bool(env.get(name)) for name in _TRADIER_GATES},
+        "alpaca_gates": {name: bool(env.get(name)) for name in _ALPACA_GATES},
         "orders_placed": False,
         "fabricated_fills": False,
     }
@@ -210,9 +256,20 @@ def run_calibration_campaign(
         )
 
     try:
-        binding = validate_comparator_binding(
-            comparator_payload
-            or {
+        default_payload: dict[str, Any]
+        if alpaca_paper_configured(env):
+            default_payload = {
+                "comparator_id": "alpaca.paper",
+                "environment": ALPACA_PAPER_ORIGIN,
+                "account_mode": "paper",
+                "limitations": [
+                    "equity_only",
+                    EQUITY_PAPER_DOES_NOT_VALIDATE_ES,
+                    "alpaca_paper_host",
+                ],
+            }
+        else:
+            default_payload = {
                 "comparator_id": "tradier",
                 "environment": "https://sandbox.tradier.com/v1",
                 "account_mode": "paper",
@@ -222,7 +279,7 @@ def run_calibration_campaign(
                     "sandbox_delayed_l1",
                 ],
             }
-        )
+        binding = validate_comparator_binding(comparator_payload or default_payload)
     except ComparatorContractError as exc:
         return _empty_result(
             status=STATUS_ENVIRONMENT_AMBIGUOUS,
@@ -293,6 +350,7 @@ __all__ = [
     "STATUS_LIVE_FORBIDDEN",
     "STATUS_WAITING_FOR_MARKET",
     "CalibrationRunResult",
+    "alpaca_paper_configured",
     "classify_calibration_run",
     "run_calibration_campaign",
     "tradier_sandbox_configured",

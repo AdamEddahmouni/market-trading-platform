@@ -378,9 +378,30 @@ def collect_readiness(
             transport_state="FIXTURE_ONLY",
             required_credentials=("IMP_TRADIER_TOKEN",),
             next_action=(
-                "Implement and verify the sandbox HTTP transport before submitting orders."
-                if tradier_configured
-                else "Add a Tradier sandbox token only when sandbox lifecycle testing is needed."
+                "Add a Tradier sandbox token only when sandbox lifecycle testing is needed."
+                if not tradier_configured
+                else "Tradier #41 remains fail-closed; prefer Alpaca Paper for the no-fee comparator."
+            ),
+        )
+    )
+
+    alpaca_configured = _all_present(environment, ("APCA_API_KEY_ID", "APCA_API_SECRET_KEY"))
+    providers.append(
+        _row(
+            "alpaca_paper",
+            "paper_execution",
+            credential_state="CONFIGURED" if alpaca_configured else "MISSING",
+            gate_state=(
+                "ENABLED"
+                if _all_enabled(environment, "IMP_ALPACA_PAPER", "IMP_BROKER_PAPER_EXECUTION")
+                else "DISABLED"
+            ),
+            transport_state="HTTPS_PAPER_HOST" if alpaca_configured else "COMPARATOR_NOT_CONFIGURED",
+            required_credentials=("APCA_API_KEY_ID", "APCA_API_SECRET_KEY"),
+            next_action=(
+                "Set APCA_API_BASE_URL=https://paper-api.alpaca.markets and probe GET /v2/account."
+                if alpaca_configured
+                else "Add free Alpaca Paper keys in gitignored .private; never commit secrets; never use api.alpaca.markets."
             ),
         )
     )

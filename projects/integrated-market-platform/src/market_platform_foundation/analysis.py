@@ -9,6 +9,9 @@ from pathlib import Path
 
 from .policy import FIXED_COMMANDS
 
+# The ``alpaca`` SDK package remains prohibited. A stdlib urllib adapter
+# whose import root is not ``alpaca`` (for example ``alpaca_paper_http``)
+# is allowed and must never ``import alpaca``. Live Alpaca stays unauthorized.
 _PROHIBITED_MODULE_ROOTS = {
     "alpaca",
     "binance",

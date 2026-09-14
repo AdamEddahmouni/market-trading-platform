@@ -145,6 +145,8 @@ When documents disagree, resolve in this order (highest first):
 | Provider universe / audit / integration strategy | [PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md](providers/PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md) |
 | Provider integration foundation | [MULTI_SOURCE_DATA_FOUNDATION.md](providers/MULTI_SOURCE_DATA_FOUNDATION.md) |
 | NewsAPI / Finnhub | [NEWS_SOURCES.md](providers/NEWS_SOURCES.md) |
+| Tradier paper (fail-closed #41) | [TRADIER_PAPER.md](providers/TRADIER_PAPER.md) |
+| Alpaca Paper comparator | [ALPACA_PAPER.md](providers/ALPACA_PAPER.md) |
 | Cursor Cloud | [CURSOR_CLOUD_ENVIRONMENT.md](engineering/CURSOR_CLOUD_ENVIRONMENT.md) |
 
 ---

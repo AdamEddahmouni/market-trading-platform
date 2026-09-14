@@ -203,14 +203,15 @@ def _broker_record(
             )
         )
     elif broker_key == "alpaca":
-        role = CampaignRole.PROHIBITED
-        access = CapabilityAccessState.BLOCKED
-        support = CapabilitySupportLevel.KNOWN_UNSUPPORTED
+        role = CampaignRole.COMPARATOR_ONLY
+        access = CapabilityAccessState.CATALOGED
+        support = CapabilitySupportLevel.KNOWN_SUPPORTED
         capabilities.append(
             ProviderCapabilityEntry(
                 "PAPER_EXECUTION",
-                CapabilitySupportLevel.KNOWN_UNSUPPORTED,
-                access_state=CapabilityAccessState.BLOCKED,
+                CapabilitySupportLevel.KNOWN_SUPPORTED,
+                access_state=CapabilityAccessState.CATALOGED,
+                notes="stdlib paper-host urllib only; live api.alpaca.markets unauthorized; alpaca SDK import remains prohibited",
             )
         )
 

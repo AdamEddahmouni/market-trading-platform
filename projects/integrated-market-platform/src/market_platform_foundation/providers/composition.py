@@ -135,8 +135,8 @@ def configure_fixture_provider_composition() -> ProviderComposition:
 def _ensure_no_paper_execution_conflict(composition: ProviderComposition, incoming_provider_id: str) -> None:
     """Fail closed if two broker paper adapters would share one composition.
 
-    At most one external paper execution provider (Tradier 4A or Moomoo 4C)
-    may be active in a single composition slot; mixing them is a
+    At most one external paper execution provider (Tradier 4A, Alpaca Paper,
+    or Moomoo 4C) may be active in a single composition slot; mixing them is a
     configuration error, not a fallback (P4-SAFE-001 discipline).
     """
     current = getattr(composition.paper_execution, "provider_id", "")
@@ -155,8 +155,8 @@ def with_broker_paper_execution(
 
     Additive (Platformization P4): the default composition keeps the disabled
     stub; this helper replaces ``paper_execution`` with the Tradier sandbox
-    adapter when a caller opts in. Mutually exclusive with the Moomoo paper
-    adapter (4C): both must never be active in one composition.
+    adapter when a caller opts in. Mutually exclusive with Alpaca Paper and
+    the Moomoo paper adapter (4C): two must never be active in one composition.
     """
     from .adapters.tradier_paper import TRADIER_PROVIDER_ID, TradierPaperExecutionProvider
 
@@ -165,6 +165,31 @@ def with_broker_paper_execution(
         env=env,
         symbol_map=symbol_map,
         replay_store=replay_store,
+    )
+    return composition
+
+
+def with_alpaca_paper_execution(
+    composition: ProviderComposition,
+    *,
+    env: dict[str, str] | None = None,
+    symbol_map: dict[str, str] | None = None,
+    replay_store: Any = None,
+    http_transport: Any = None,
+) -> ProviderComposition:
+    """Inject the stdlib Alpaca Paper adapter into the composition slot.
+
+    Paper host only (``https://paper-api.alpaca.markets``). Live Alpaca is
+    unauthorized. Mutually exclusive with Tradier 4A and Moomoo 4C.
+    """
+    from .adapters.alpaca_paper import ALPACA_PROVIDER_ID, AlpacaPaperExecutionProvider
+
+    _ensure_no_paper_execution_conflict(composition, ALPACA_PROVIDER_ID)
+    composition.paper_execution = AlpacaPaperExecutionProvider(
+        env=env,
+        symbol_map=symbol_map,
+        replay_store=replay_store,
+        http_transport=http_transport,
     )
     return composition
 
@@ -258,7 +283,8 @@ def with_moomoo_paper_execution(
     Sub-milestone 4C: targets the separate Moomoo OpenAPI simulated trading
     environment only, behind its own gates (``IMP_MOOMOO_PAPER*``), explicitly
     distinct from both the observational Moomoo runtime and the Tradier 4A
-    adapter. Both must never be active simultaneously in one composition.
+    adapter and Alpaca Paper. Those must never be active simultaneously in one
+    composition.
     """
     from .adapters.moomoo_paper import MOOMOO_PROVIDER_ID, MoomooPaperExecutionProvider
 
@@ -276,6 +302,7 @@ __all__ = [
     "configure_fixture_provider_composition",
     "configure_provider_composition",
     "get_provider_composition",
+    "with_alpaca_paper_execution",
     "with_broker_paper_execution",
     "with_finviz_elite_context",
     "with_finviz_elite_observational_context",

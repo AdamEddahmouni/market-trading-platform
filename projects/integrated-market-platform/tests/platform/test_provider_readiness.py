@@ -74,6 +74,7 @@ class ProviderReadinessTests(unittest.TestCase):
             self.assertEqual(checks["moomoo_observational"]["transport_state"], "REACHABLE")
             self.assertEqual(checks["ibkr_observational"]["transport_state"], "UNAVAILABLE")
             self.assertEqual(checks["tradier_paper"]["transport_state"], "FIXTURE_ONLY")
+            self.assertEqual(checks["alpaca_paper"]["transport_state"], "COMPARATOR_NOT_CONFIGURED")
             self.assertEqual(checks["moomoo_paper"]["transport_state"], "FIXTURE_ONLY")
             serialized = json.dumps(report)
             self.assertNotIn("sandbox-token", serialized)
@@ -156,6 +157,7 @@ class ProviderReadinessTests(unittest.TestCase):
 
         self.assertEqual(checks["moomoo_observational"]["gate_state"], "DISABLED")
         self.assertEqual(checks["tradier_paper"]["gate_state"], "DISABLED")
+        self.assertEqual(checks["alpaca_paper"]["gate_state"], "DISABLED")
         self.assertEqual(checks["moomoo_paper"]["gate_state"], "DISABLED")
 
 

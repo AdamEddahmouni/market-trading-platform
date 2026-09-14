@@ -439,6 +439,7 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(result.empirical_active)
         self.assertFalse(result.detail["fabricated_fills"])
         self.assertFalse(result.detail["orders_placed"])
+        self.assertIn("alpaca_gates", result.detail)
 
     def test_configured_outside_rth_is_waiting_for_market(self) -> None:
         result = run_calibration_campaign(
