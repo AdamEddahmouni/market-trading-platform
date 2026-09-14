@@ -118,7 +118,8 @@ Unified offline export binding (ADR-PIT-001 + ADR-RDATA-001):
 | Module | Role |
 | --- | --- |
 | `research/pit_export.py` | Immutable export manifest: `source_sha256`, `prediction_cutoff_ns`, dataset fingerprints, experiment binding |
-| `research/export_v1.py` | Full Research Export v1 package: profiles, PIT audit, `ValidationDatasetManifestV1` wrap, loaders, MATLAB parity sidecar |
+| `research/export_v1.py` | Full Research Export v1 package: profiles, PIT audit, `ValidationDatasetManifestV1` wrap, loaders, MATLAB JSON handoff; fixture `metadata.pit_status=PIT-PENDING`; `EXTERNAL_RESEARCH_DATA` mix fail-closed |
+| `research/matlab_environment.py` | QR-01 toolbox honesty recorder (cloud example is UNAVAILABLE; not a FAST/CHANGED MATLAB runtime) |
 | `tests/research/test_pit_export.py` | PIT-A-001 determinism and fail-closed validation |
 | `tests/research/test_research_export_v1.py` | Profile A/C end-to-end, regeneration, loader parity |
 | `docs/research/RESEARCH_EXPORT_V1.md` | Operator and developer contract |

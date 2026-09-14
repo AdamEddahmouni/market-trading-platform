@@ -38,7 +38,12 @@ EXPORT_SCHEMA_VERSION = "1.0.0"
 RESEARCH_EXPORT_IMPLEMENTATION = "research_export_v1/1.0.0"
 RESEARCH_EXPORT_EXPERIMENT_ID = "RESEARCH-EXPORT-V1"
 EXPORT_OPERATOR_PIT_STATUS_PENDING = "PIT-PENDING"
+EXPORT_OPERATOR_PIT_STATUS_PASS = "PIT-PASS"
+EXPORT_OPERATOR_PIT_STATUSES = frozenset(
+    {EXPORT_OPERATOR_PIT_STATUS_PENDING, EXPORT_OPERATOR_PIT_STATUS_PASS}
+)
 EXPORT_EVIDENCE_CLASS_NON_EMPIRICAL_FIXTURE = "NON_EMPIRICAL_FIXTURE"
+EXPORT_EVIDENCE_CLASS_EXTERNAL_RESEARCH_DATA = "EXTERNAL_RESEARCH_DATA"
 MATLAB_HANDOFF_CONTRACT = "research_export_v1_matlab_handoff/1.0.0"
 
 
@@ -51,6 +56,70 @@ def default_export_operator_metadata() -> dict[str, Any]:
             "Fixture-backed Research Export v1 build; pit_audit PASS does not authorize Wave 1 OOS."
         ),
     }
+
+
+def _operator_metadata(manifest: dict[str, Any]) -> dict[str, Any]:
+    meta = manifest.get("metadata")
+    return meta if isinstance(meta, dict) else {}
+
+
+def collect_export_evidence_classes(
+    manifest: dict[str, Any],
+    tables: dict[str, list[dict[str, Any]]] | None = None,
+) -> set[str]:
+    """Union of operator and row-level evidence_class labels."""
+    classes: set[str] = set()
+    meta = _operator_metadata(manifest)
+    declared = meta.get("evidence_class")
+    if declared:
+        classes.add(str(declared))
+    extras = meta.get("evidence_classes")
+    if isinstance(extras, (list, tuple, set, frozenset)):
+        classes.update(str(item) for item in extras if item)
+    if tables:
+        for rows in tables.values():
+            if not isinstance(rows, list):
+                continue
+            for row in rows:
+                if isinstance(row, dict) and row.get("evidence_class"):
+                    classes.add(str(row["evidence_class"]))
+    return classes
+
+
+def package_has_canonical_imp_surface(manifest: dict[str, Any]) -> bool:
+    """True when the package is an IMP Research Export (fixture or empirical), not MATLAB-only."""
+    profile = manifest.get("export_profile")
+    if profile in {PROFILE_MARKET_TECHNICAL, PROFILE_EVENT_MACRO}:
+        return True
+    sources = manifest.get("source_fixture_paths") or []
+    if sources:
+        return True
+    impl = str(manifest.get("implementation_version") or "")
+    return impl.startswith("research_export_v1")
+
+
+def require_operator_export_metadata(manifest: dict[str, Any]) -> None:
+    """Require honest operator PIT metadata. Does not upgrade PIT-PENDING to PIT-PASS."""
+    meta = _operator_metadata(manifest)
+    if not meta:
+        raise ValueError("OPERATOR_EXPORT_METADATA_MISSING")
+    if meta.get("pit_status") not in EXPORT_OPERATOR_PIT_STATUSES:
+        raise ValueError("OPERATOR_PIT_STATUS_REQUIRED")
+    if not meta.get("evidence_class"):
+        raise ValueError("OPERATOR_EVIDENCE_CLASS_REQUIRED")
+
+
+def require_unmixed_evidence_class(
+    manifest: dict[str, Any],
+    tables: dict[str, list[dict[str, Any]]] | None = None,
+) -> None:
+    """EXTERNAL_RESEARCH_DATA cannot share a package with canonical IMP export rows."""
+    classes = collect_export_evidence_classes(manifest, tables)
+    if EXPORT_EVIDENCE_CLASS_EXTERNAL_RESEARCH_DATA not in classes:
+        return
+    has_other = bool(classes - {EXPORT_EVIDENCE_CLASS_EXTERNAL_RESEARCH_DATA})
+    if has_other or package_has_canonical_imp_surface(manifest):
+        raise ValueError("MIXED_EXTERNAL_RESEARCH_DATA")
 
 
 def producing_code_sha256() -> str:
@@ -353,6 +422,8 @@ def verify_research_export_v1_package(package: ResearchExportV1Package) -> None:
             continue
         if stored_hashes[name] != _table_content_hash(rows):
             raise ValueError(f"TABLE_HASH_MISMATCH:{name}")
+    require_operator_export_metadata(manifest)
+    require_unmixed_evidence_class(manifest, package.tables)
     pit_audit = run_pit_audit(
         market_observations=list(package.tables.get("market_observations") or []),
         feature_snapshots=list(package.tables.get("feature_snapshots") or []),
@@ -388,11 +459,21 @@ def build_matlab_handoff_manifest(package: ResearchExportV1Package) -> dict[str,
     }
 
 
+def verify_matlab_handoff_manifest(handoff: dict[str, Any]) -> None:
+    """MATLAB jsondecode entry must carry operator PIT metadata and must not mix EXTERNAL_RESEARCH_DATA."""
+    if handoff.get("matlab_handoff_contract") != MATLAB_HANDOFF_CONTRACT:
+        raise ValueError("MATLAB_HANDOFF_CONTRACT_MISMATCH")
+    require_operator_export_metadata(handoff)
+    require_unmixed_evidence_class(handoff)
+
+
 def load_matlab_handoff_manifest(package_dir: Path) -> dict[str, Any]:
     path = package_dir / "matlab_handoff_manifest.json"
     if not path.is_file():
         raise ValueError("MATLAB_HANDOFF_MANIFEST_MISSING")
-    return json.loads(path.read_text(encoding="utf-8"))
+    handoff = json.loads(path.read_text(encoding="utf-8"))
+    verify_matlab_handoff_manifest(handoff)
+    return handoff
 
 
 def build_matlab_parity_reference(package: ResearchExportV1Package) -> dict[str, Any]:
@@ -440,7 +521,10 @@ def matlab_parity_check(package: ResearchExportV1Package, reference: dict[str, A
 
 
 __all__ = [
+    "EXPORT_EVIDENCE_CLASS_EXTERNAL_RESEARCH_DATA",
     "EXPORT_EVIDENCE_CLASS_NON_EMPIRICAL_FIXTURE",
+    "EXPORT_OPERATOR_PIT_STATUSES",
+    "EXPORT_OPERATOR_PIT_STATUS_PASS",
     "EXPORT_OPERATOR_PIT_STATUS_PENDING",
     "EXPORT_SCHEMA_VERSION",
     "MATLAB_HANDOFF_CONTRACT",
@@ -452,13 +536,18 @@ __all__ = [
     "build_matlab_handoff_manifest",
     "build_matlab_parity_reference",
     "build_research_export_v1",
+    "collect_export_evidence_classes",
     "default_export_operator_metadata",
     "derive_export_id",
     "load_matlab_handoff_manifest",
     "load_research_export_v1_package",
     "manifest_hash",
     "matlab_parity_check",
+    "package_has_canonical_imp_surface",
     "producing_code_sha256",
+    "require_operator_export_metadata",
+    "require_unmixed_evidence_class",
+    "verify_matlab_handoff_manifest",
     "verify_research_export_v1_package",
     "write_research_export_v1_package",
 ]
