@@ -1949,6 +1949,58 @@
       ]
     },
     {
+      "id": "hot_path_telemetry",
+      "path": "tests/hot_path_telemetry",
+      "classification": "offline",
+      "tiers": [
+        "full",
+        "changed"
+      ],
+      "domains": [
+        "core"
+      ],
+      "parallel_safety": "PARALLEL_SAFE",
+      "resource_weight": 1,
+      "source_globs": [
+        "src/market_platform_foundation/hot_path_telemetry/**",
+        "src/market_platform_foundation/rt01/**"
+      ],
+      "test_globs": [
+        "tests/hot_path_telemetry/test_*.py"
+      ],
+      "neighbors": [
+        "rt01",
+        "intelligence"
+      ]
+    },
+    {
+      "id": "hot_path_telemetry_artifact",
+      "path": "tests/artifact",
+      "classification": "offline",
+      "tiers": [
+        "full",
+        "changed"
+      ],
+      "domains": [
+        "core"
+      ],
+      "parallel_safety": "PARALLEL_SAFE",
+      "resource_weight": 1,
+      "source_globs": [
+        "src/market_platform_foundation/hot_path_telemetry/**",
+        "tests/artifact/replay_latency_baseline.json",
+        "tests/artifact/hot_path_telemetry_baseline_acceptance.json"
+      ],
+      "test_globs": [
+        "tests/artifact/test_hot_path_telemetry_baseline.py"
+      ],
+      "neighbors": [
+        "hot_path_telemetry",
+        "rt01",
+        "intelligence"
+      ]
+    },
+    {
       "id": "xa01",
       "path": "tests/xa01",
       "classification": "offline",

@@ -9,6 +9,7 @@ from ..intelligence.opportunity.ingest import assemble_opportunity_review_rows
 from ..intelligence.opportunity.ranking import comparison_vectors_from_repository, rank_review_rows
 from . import projections
 from .operator_opportunity_state import dismissed_ids, list_operator_acks, record_operator_ack
+from .agent_enrichment_ingest import overlay_agent_enrichment_on_detail
 from .store import ReplayStore
 
 _REVIEW_METADATA_PROJECTION = (
@@ -223,7 +224,7 @@ def build_opportunity_detail_payload(store: ReplayStore, row_id: str) -> dict[st
             matching = [ack for ack in acks if row.summary_id == ack["summary_id"] or row.opportunity_id == ack.get("opportunity_id")]
             if matching:
                 body["lifecycle_state"] = matching[-1]["action"]
-            return body
+            return overlay_agent_enrichment_on_detail(store, body)
     dismissed = [ack for ack in acks if row_id in {ack["summary_id"], ack.get("opportunity_id")}]
     if dismissed:
         last = dismissed[-1]
