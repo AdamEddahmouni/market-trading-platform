@@ -84,7 +84,9 @@ lands, it should accept the same receipt + bundle shape documented in
 | `provenance.retrievedAt` | When Market Trackers fetched/parsed — aggregator evidence only |
 | EDGAR `acceptanceDateTime` | Authoritative sub-day public availability — reconcile via `provenance.sourceUrl` |
 
-Flags always include `PUBLIC_KNOWLEDGE_NOT_TRANSACTION_DATE` and `PRIMARY_SOURCE_EDGAR_WINS`.
+Flags always include `PUBLIC_KNOWLEDGE_NOT_TRANSACTION_DATE` and `MARKET_TRACKERS_REPLACEABLE`.
+When EDGAR primary is supplied, `PRIMARY_SOURCE_EDGAR_WINS` is added; otherwise
+`SEC_PRIMARY_NOT_SUPPLIED_AGGREGATOR_FILING_ONLY` and `AGGREGATOR_FILING_PUBLICATION_ONLY`.
 
 ## Identity (XA-01)
 
