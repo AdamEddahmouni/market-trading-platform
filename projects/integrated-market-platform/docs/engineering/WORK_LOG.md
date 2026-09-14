@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Board 03 overview KPI strip and Opportunity Radar density
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/imp-product`, `ui/now`, `ui/discover` |
+| **Summary** | Finish Track G board-03 product shell on Overview (`/`) and Opportunity Radar discover routes: KPI strip from admitted portfolio or live observational context, compact Top Opportunities cards backed by `/opportunities/summary` (no invented quotes), dense ranked queue table on discover pages, and graphite/orange styling. Empty, error, and unready states remain mock-safe. |
+| **Key files** | `ui/src/components/imp-product/*`, `ui/src/components/demo-now/DemoNowPage.tsx`, `ui/src/components/paper-now/PaperNowPage.tsx`, `ui/src/components/live-now/LiveNowPage.tsx`, `ui/src/components/*-discover/*DiscoverPage.tsx`, `ui/src/styles/imp-product.css`, related tests |
+| **Tests** | `ui`: vitest 468 passed; `ui`: `npm run build` pass (initial gzip ~202.5 KiB) |
+| **Related** | PR #93 board-03 chrome; [ui-concepts board 03](/cursor/stores/bc-81919f43-9489-40d5-b7fe-bae5c3f9d1ba/media/ui-concepts/03-overview-bull-mark.png) |
+| **Notes** | No live ticker, no Lovable pack, no backend contract changes. Sharpe/win-rate KPIs omitted until API fields exist. |
+
 ## 2026-09-14 — Research Export v1 honest PIT-PENDING metadata
 
 | Field | Value |
