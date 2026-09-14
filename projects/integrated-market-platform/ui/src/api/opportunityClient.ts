@@ -135,7 +135,7 @@ export function getOpportunityEvidence(rowId: string) {
 
 export function useOpportunityEvidenceQuery(rowId: string | null, enabled = true) {
   return useQuery({
-    queryKey: ["opportunities", "evidence", rowId],
+    queryKey: queryKeys.opportunityEvidence(rowId as string),
     queryFn: () => getOpportunityEvidence(rowId as string),
     enabled: enabled && Boolean(rowId),
   });
