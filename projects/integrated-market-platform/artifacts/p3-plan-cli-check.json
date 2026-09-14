@@ -34,7 +34,7 @@
   "executes_tests": false,
   "execution_schedule": {
     "effective_workers": 2,
-    "manifest_hash": "6d250d927bc4674aed0385892ed5d8444c660b90cbb522a3b370b46fa0da8ae1",
+    "manifest_hash": "9beb571605a3034347ace8bcbd42ac91a26aadff5205f0eb1e317b6cf1ce2253",
     "requested_workers": 2,
     "scheduler_version": "p2-bl-0901-1",
     "suite_policies": {
@@ -90,11 +90,15 @@
     "tests/market_data/test_live_admission.py::LiveAdmissionTests::test_provider_disconnect_blocks",
     "tests/market_data/test_live_pit_adversarial.py::LivePitAdversarialTests::test_capture_replay_equivalence",
     "tests/runtime/test_pit_joins.py::PitJoinTests::test_missing_join_fail_closed",
-    "tests/market_data/test_live_runtime.py::LiveRuntimeTests::test_quota_exhaustion"
+    "tests/market_data/test_live_runtime.py::LiveRuntimeTests::test_quota_exhaustion",
+    "tests/intelligence/test_intelligence_contracts.py::OpportunityV1Tests::test_opportunity_not_order",
+    "tests/intelligence/test_opportunity_comparison.py::GlobalOpportunityComparatorTests::test_preserves_heterogeneous_explicit_dimensions_without_universal_score"
   ],
-  "mandatory_suites": [],
-  "manifest_hash": "6d250d927bc4674aed0385892ed5d8444c660b90cbb522a3b370b46fa0da8ae1",
-  "manifest_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\tools\\validation_manifest.json",
+  "mandatory_suites": [
+    "intelligence"
+  ],
+  "manifest_hash": "9beb571605a3034347ace8bcbd42ac91a26aadff5205f0eb1e317b6cf1ce2253",
+  "manifest_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\item7-bbo-snapshot\\projects\\integrated-market-platform\\tools\\validation_manifest.json",
   "mode": "changed",
   "omitted_domains": [
     "short-intelligence",

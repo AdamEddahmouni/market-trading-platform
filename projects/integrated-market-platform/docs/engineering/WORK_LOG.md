@@ -40,13 +40,13 @@ For large features, also add or update a completion note under `docs/superpowers
 
 | Field | Value |
 |-------|-------|
-| **Status** | `complete` |
+| **Status** | `in-progress` |
 | **Area** | `tools/moomoo`, `tests/providers`, Item 7 BBO |
-| **Summary** | Added read-only Item 7 harness that classifies vendor `get_market_snapshot` bid/ask without synthesizing from `last_price`, under distinct capability `SNAPSHOT_BBO` (not `US_EQUITY_L1`). Fixture tests cover missing/invalid spread/stale/delayed/valid BBO, temporal order, identity, and entitlement failure; live CLI probes only when US RTH and loopback OpenD are available, else honest block. Outcomes are `REAL_SNAPSHOT_BBO_VALIDATED` or `DERIVED_BBO_DESIGN_REQUIRED` only — never `ITEM7_COMPLETE`. |
-| **Key files** | `tools/moomoo/item7_bbo_snapshot.py`, `tools/item7_bbo_snapshot_probe.py`, `tests/providers/test_item7_bbo_snapshot.py` |
+| **Summary** | Added read-only Item 7 harness that classifies vendor `get_market_snapshot` bid/ask without synthesizing from `last_price`, under distinct capability `SNAPSHOT_BBO` (not `US_EQUITY_L1`). Fixture tests cover missing/invalid spread/stale/delayed/valid BBO, temporal order, identity, and entitlement failure; live CLI probes only when US RTH and loopback OpenD are available, else honest block. Outcomes are `REAL_SNAPSHOT_BBO_VALIDATED` or `DERIVED_BBO_DESIGN_REQUIRED` only — never `ITEM7_COMPLETE`. Program Item 7 remains **PARTIAL**. |
+| **Key files** | `tools/moomoo/item7_bbo_snapshot.py`, `tools/item7_bbo_snapshot_probe.py`, `tests/providers/test_item7_bbo_snapshot.py`, `artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` |
 | **Tests** | `PYTHONPATH=src python -m unittest tests.providers.test_item7_bbo_snapshot -v` |
 | **Related** | Lane C Item 7; `docs/providers/MOOMOO_OBSERVATIONAL.md`; G5 depth remains separate derived path |
-| **Notes** | Did not touch opend_capture_ledger, FTEP, paper/calibration, UI, or L1 adapter semantics. No orders. |
+| **Notes** | Did not touch opend_capture_ledger, FTEP, paper/calibration, UI, or L1 adapter semantics. No orders. Classified top-level probe CLI in POST_BUILD35 closure inventory (fixes CI `validation` suite ERROR on unclassified path). |
 
 ## 2026-09-14 — Merge origin/main (1b60b5a) into PR #136 test-only branch
 

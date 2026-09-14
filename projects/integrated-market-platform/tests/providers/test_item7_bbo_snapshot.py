@@ -29,6 +29,7 @@ OUTCOME_REAL = _item7.OUTCOME_REAL_SNAPSHOT_BBO_VALIDATED
 SNAPSHOT_BBO_CAPABILITY = _item7.SNAPSHOT_BBO_CAPABILITY
 assess_snapshot_bbo = _item7.assess_snapshot_bbo
 blocked_diagnostic = _item7.blocked_diagnostic
+fetch_vendor_market_snapshot = _item7.fetch_vendor_market_snapshot
 is_us_equity_rth = _item7.is_us_equity_rth
 run_live_probe = _item7.run_live_probe
 VendorSnapshotFetch = _item7.VendorSnapshotFetch
@@ -135,10 +136,18 @@ class Item7BboSnapshotTests(unittest.TestCase):
         self.assertTrue(is_us_equity_rth(wednesday_noon))
         sunday = datetime(2026, 9, 13, 12, 0, tzinfo=_ET)
         self.assertFalse(is_us_equity_rth(sunday))
-        diag = run_live_probe(require_rth=True, fetcher=lambda *_a, **_k: VendorSnapshotFetch(None, _row()))
-        if not is_us_equity_rth():
-            self.assertEqual(diag.probe_status, "BLOCKED")
-            self.assertEqual(diag.block_reason, "OUTSIDE_US_EQUITY_RTH")
+        diag = run_live_probe(
+            require_rth=True,
+            clock=sunday,
+            fetcher=lambda *_a, **_k: VendorSnapshotFetch(None, _row()),
+        )
+        self.assertEqual(diag.probe_status, "BLOCKED")
+        self.assertEqual(diag.block_reason, "OUTSIDE_US_EQUITY_RTH")
+
+    def test_non_loopback_host_fail_closed_before_fetch(self) -> None:
+        fetched = fetch_vendor_market_snapshot("AAPL", host="203.0.113.1", port=11111)
+        self.assertEqual(fetched.reason_code, "OPEND_NON_LOOPBACK_BLOCKED")
+        self.assertIsNone(fetched.row)
 
     def test_blocked_diagnostic_has_raw_hash_only_when_row_present(self) -> None:
         diag = assess_snapshot_bbo(_row(), clocks=_clocks())

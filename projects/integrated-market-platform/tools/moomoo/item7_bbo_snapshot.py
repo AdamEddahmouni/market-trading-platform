@@ -332,11 +332,12 @@ def run_live_probe(
     stale_threshold_ns: int = DEFAULT_STALE_THRESHOLD_NS,
     fetcher: Callable[..., VendorSnapshotFetch] | None = None,
     sdk: Any | None = None,
+    clock: datetime | None = None,
 ) -> BboDiagnostic:
     """Probe OpenD when reachable; honest block otherwise."""
 
     request_ns = monotonic_wall_ns()
-    rth_open = is_us_equity_rth()
+    rth_open = is_us_equity_rth(clock)
     injected_fetch = fetcher is not None
     if require_rth and not rth_open:
         return blocked_diagnostic(
