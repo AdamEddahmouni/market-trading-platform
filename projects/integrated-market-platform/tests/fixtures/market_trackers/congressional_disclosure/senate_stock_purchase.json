@@ -1,0 +1,32 @@
+{
+  "id": "senate:PTR-EXAMPLE-2025-00042:0",
+  "chamber": "senate",
+  "docId": "PTR-EXAMPLE-2025-00042",
+  "rowIndex": 0,
+  "member": {
+    "name": "Senator Example A.",
+    "bioguideId": "E000000",
+    "party": "I",
+    "state": "EX"
+  },
+  "filedAt": "2025-02-10",
+  "transactedAt": "2025-01-28",
+  "ticker": "MSFT",
+  "assetDescription": "Microsoft Corporation (MSFT)",
+  "assetType": "stock",
+  "side": "buy",
+  "amountRange": {
+    "min": 15000,
+    "max": 50000,
+    "text": "$15,001 - $50,000"
+  },
+  "owner": "self",
+  "provenance": {
+    "source": "senate-efd",
+    "sourceUrl": "https://efdsearch.senate.gov/search/view/ptr/example-ptr-2025-00042/",
+    "retrievedAt": "2026-08-24T14:30:00.000Z",
+    "parser": "congress-ptr@1",
+    "confidence": 1,
+    "needsReview": false
+  }
+}

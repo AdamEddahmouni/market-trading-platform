@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Lane H: congressional PTR adapter preparation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `market_trackers`, `docs` |
+| **Summary** | Prepared Market Trackers `congress-trades` adapter spec, PIT contract, golden fixtures, and prep pipeline mirroring SEC insider doctrine (replaceable aggregator vs chamber PTR primary). EventV1 mapping module documents `CONGRESSIONAL_PTR_ROW` without registry/runtime normalizer. |
+| **Key files** | `src/market_platform_foundation/market_trackers/congressional_disclosure/**`, `docs/providers/MARKET_TRACKERS_CONGRESSIONAL_DISCLOSURE.md`, `docs/engineering/specs/MARKET_TRACKERS_CONGRESSIONAL_DISCLOSURE_ADAPTER_PREP.md`, `docs/engineering/contracts/MARKET_TRACKERS_CONGRESSIONAL_DISCLOSURE_PIT.md`, `tests/market_trackers/test_congressional_disclosure_*.py`, `tests/fixtures/market_trackers/congressional_disclosure/**` |
+| **Tests** | `python -m unittest tests.market_trackers.test_congressional_disclosure_adapter_prep tests.market_trackers.test_congressional_disclosure_pit_reconcile` |
+| **Related** | `MARKET_TRACKERS_SEC_INSIDER_ADAPTER_PREP.md`, Lane B SEC `normalize_sec_insider_row` |
+| **Notes** | Acceptance: `CONGRESSIONAL_DISCLOSURE_ADAPTER_PREP_READY`. Live Market Trackers fetch NOT_EXECUTED. |
+
 ## 2026-09-15 — PROGRAM_STATUS: Phase 2 merge queue empty at `0eca0c8b`
 
 | Field | Value |
