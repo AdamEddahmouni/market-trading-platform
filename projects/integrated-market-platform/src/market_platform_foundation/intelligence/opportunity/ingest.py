@@ -20,6 +20,7 @@ from .freshness import (
 )
 from .lifecycle import OperatorLifecycleState, derive_lifecycle_from_assessment
 from .read_model import OpportunitySummary, ftep_attention_candidate_to_summary
+from .evidence_promotion import EVIDENCE_CLASS_CANDIDATE
 from .types import AssessmentAction
 
 
@@ -89,7 +90,7 @@ def _summary_from_opportunity(
         strategy_version=resolution.strategy_version,
         side=opportunity.side.value if opportunity.side is not None else None,
         valid_until_ns=opportunity.valid_until_ns,
-        evidence_class="CANDIDATE",
+        evidence_class=EVIDENCE_CLASS_CANDIDATE,
         eligibility_state=lifecycle.value,
         lifecycle_state=lifecycle.value,
         data_quality=quality,
