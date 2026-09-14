@@ -49,8 +49,23 @@ def empty_is_not_zero(flags: tuple[str, ...]) -> bool:
     return quality_blocks_fundamentals(flags)
 
 
+def vintage_honesty_flags(*, history_class: str, pit_confidence: str) -> tuple[str, ...]:
+    """Stamp current API history as not original-release vintage.
+
+    Does not select, rank, or derive analytics. ``HISTORICAL_VINTAGE_UNAVAILABLE``
+    and ``PIT_UNCERTAIN`` are honesty flags, not blocking fundamentals gates.
+    """
+    if history_class != "CURRENT_API_HISTORY":
+        return ()
+    flags = [EiaQualityFlag.HISTORICAL_VINTAGE_UNAVAILABLE.value]
+    if pit_confidence == "HISTORICAL_PIT_UNCERTAIN":
+        flags.append(EiaQualityFlag.PIT_UNCERTAIN.value)
+    return tuple(flags)
+
+
 __all__ = [
     "EiaQualityFlag",
     "empty_is_not_zero",
     "quality_blocks_fundamentals",
+    "vintage_honesty_flags",
 ]

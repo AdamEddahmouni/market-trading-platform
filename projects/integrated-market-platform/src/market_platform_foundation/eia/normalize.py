@@ -14,7 +14,7 @@ from .contracts import (
     EnergyMetricClass,
     EnergyReleaseFamily,
 )
-from .quality import EiaQualityFlag
+from .quality import EiaQualityFlag, vintage_honesty_flags
 from .registry import FULL_REGISTRY, RegistryEntry, lookup_canonical
 from .release_schedule import publication_time_utc, release_for_period_end
 
@@ -95,6 +95,12 @@ def normalize_api_row(
         flags.append(EiaQualityFlag.METRIC_CLASS_MISMATCH.value)
     if entry.metric_class == EnergyMetricClass.FLOW_RATE and entry.unit == "Thousand Barrels" and "per Day" not in entry.unit:
         flags.append(EiaQualityFlag.METRIC_CLASS_MISMATCH.value)
+    flags.extend(
+        vintage_honesty_flags(
+            history_class=history_class.value,
+            pit_confidence=entry.pit_confidence.value,
+        )
+    )
 
     return EnergyFundamentalObservation(
         canonical_indicator_id=entry.canonical_indicator_id,
