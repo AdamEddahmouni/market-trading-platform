@@ -42,6 +42,25 @@ def finviz_live_enabled() -> bool:
     return os.environ.get("IMP_FINVIZ_LIVE", "").strip().lower() in ("1", "true", "yes")
 
 
+def leftover_nested_imp_root() -> Path:
+    """Repo-root leftover ``integrated-market-platform/`` clone (not canonical IMP)."""
+
+    return REPO_ROOT.parent.parent / "integrated-market-platform"
+
+
+def extra_operator_login_files() -> tuple[Path, ...]:
+    """Existing operator ``finviz-login.json`` files outside canonical IMP ``.private``.
+
+    Skipped when ``IMP_FINVIZ_SECRET_DIR`` isolates tests. Never logs file
+    contents. The leftover nested clone on the operator machine stores Elite
+    login at ``integrated-market-platform/.private/finviz-login.json``.
+    """
+
+    if os.environ.get("IMP_FINVIZ_SECRET_DIR"):
+        return ()
+    return (leftover_nested_imp_root() / ".private" / "finviz-login.json",)
+
+
 def provider_env_path() -> Path | None:
     override = os.environ.get("IMP_PROVIDER_ENV")
     if override:
@@ -49,7 +68,9 @@ def provider_env_path() -> Path | None:
         return path if path.is_file() else None
     candidates = [
         REPO_ROOT / ".private" / "providers.env",
+        leftover_nested_imp_root() / ".private" / "providers.env",
         REPO_ROOT.parent / "short-squeeze-project" / "short-squeeze-core" / ".private" / "providers.env",
+        REPO_ROOT.parent.parent / "short-squeeze-project" / "short-squeeze-core" / ".private" / "providers.env",
     ]
     for candidate in candidates:
         if candidate.is_file():

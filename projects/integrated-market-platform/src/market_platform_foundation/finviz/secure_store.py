@@ -142,17 +142,24 @@ def clear_secure_token() -> bool:
         return False
 
 
-def read_login_credentials() -> tuple[str | None, str | None]:
-    path = _login_path()
+def read_login_file(path: Path) -> tuple[str | None, str | None]:
+    """Read ``username`` / ``password`` keys from a login JSON file. Never log them."""
+
     if not path.is_file():
         return None, None
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            return None, None
         username = str(data.get("username") or "")
         password = str(data.get("password") or "")
         return (username or None, password or None)
     except (OSError, json.JSONDecodeError, TypeError, ValueError):
         return None, None
+
+
+def read_login_credentials() -> tuple[str | None, str | None]:
+    return read_login_file(_login_path())
 
 
 def write_login_credentials(username: str, password: str) -> bool:

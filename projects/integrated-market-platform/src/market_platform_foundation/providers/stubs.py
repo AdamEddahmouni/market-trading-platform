@@ -58,6 +58,20 @@ class UnconfiguredEquityQuoteProvider:
         )
 
 
+class UnconfiguredEquityContextProvider:
+    provider_id = "stub.equity_context.unconfigured"
+    capability = "equity_context"
+
+    def fetch_context(self, symbol: str) -> ProviderResult:
+        del symbol
+        return ProviderResult(
+            status="unavailable",
+            reason_code=PROVIDER_UNAVAILABLE,
+            provider_id=self.provider_id,
+            capability=self.capability,
+        )
+
+
 class UnconfiguredOptionChainProvider:
     provider_id = "stub.option_chain.unconfigured"
     capability = "option_chain"
@@ -236,6 +250,7 @@ __all__ = [
     "DisabledPaperExecutionProvider",
     "UnconfiguredDisclosureProvider",
     "UnconfiguredDistributionForecastProvider",
+    "UnconfiguredEquityContextProvider",
     "UnconfiguredEquityQuoteProvider",
     "UnconfiguredFuturesBarsProvider",
     "UnconfiguredFuturesChainProvider",

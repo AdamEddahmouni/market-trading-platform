@@ -1481,5 +1481,130 @@ class PathACliPersistTests(unittest.TestCase):
                 )
 
 
+class PathACliFinvizOverlayTests(unittest.TestCase):
+    """Finviz Elite overlay on OpenD Path A hop CLI. Never L1. Token-absent fail-closed."""
+
+    def test_cli_source_joins_overlay_without_replacing_opend(self) -> None:
+        from tools import path_a_prospective_run
+
+        source = inspect.getsource(path_a_prospective_run.main)
+        helper = inspect.getsource(path_a_prospective_run._finviz_hop_overlay)
+        self.assertIn("_finviz_hop_overlay", source)
+        self.assertIn("equity_context", source)
+        self.assertIn("primary_equity_quote_provider", source)
+        self.assertIn("with_finviz_elite_observational_context", source)
+        self.assertIn("discover_finviz_context_stack", helper)
+        self.assertIn("overlay_payload", helper)
+        self.assertNotIn("fetch_quote", helper)
+        self.assertNotIn("yahoo.finance.delayed", helper)
+
+    def test_cli_opend_down_emits_not_configured_overlay_classifier(self) -> None:
+        from tools.path_a_prospective_run import main as path_a_cli_main
+
+        stdout = StringIO()
+        with tempfile.TemporaryDirectory() as secret_dir:
+            isolated = {
+                "IMP_MOOMOO_HOST": "127.0.0.1",
+                "IMP_MOOMOO_PORT": "1",
+                "IMP_FINVIZ_SECRET_DIR": secret_dir,
+                "IMP_FINVIZ_LIVE": "",
+                "FINVIZ_API_KEY": "",
+                "FINVIZ_AUTH_TOKEN": "",
+                "FINVIZ_API_TOKEN": "",
+                "FINVIZ_ELITE_TOKEN": "",
+                "IMP_FINVIZ_ELITE_TOKEN": "",
+                "IMP_FINVIZ_TOKEN": "",
+                "FINVIZ_USERNAME": "",
+                "FINVIZ_PASSWORD": "",
+            }
+            with patch.dict(os.environ, isolated, clear=False):
+                with patch("sys.stdout", stdout):
+                    code = path_a_cli_main(["--symbol", "AAPL", "--mode", "paper"])
+        self.assertEqual(code, 0)
+        dumped = stdout.getvalue()
+        payload = json.loads(dumped)
+        overlay = payload["equity_context"]
+        discovery = overlay["discovery"]
+        result = overlay["result"]
+        self.assertEqual(payload["discovery"]["provider_id"], MOOMOO_OPEND_PROVIDER_ID)
+        self.assertEqual(payload["result"]["provider_id"], MOOMOO_OPEND_PROVIDER_ID)
+        self.assertNotEqual(payload["discovery"]["provider_id"], "yahoo.finance.delayed")
+        self.assertEqual(payload["discovery"]["overlay_provider_id"], "yahoo.finance.delayed")
+        self.assertEqual(payload["result"]["status"], "PROVIDER_UNAVAILABLE")
+        self.assertEqual(payload["result"]["reason_codes"], [OPEND_UNAVAILABLE])
+        self.assertEqual(discovery["provider_id"], "finviz.elite.context")
+        self.assertEqual(discovery["classification"], "NOT_CONFIGURED")
+        self.assertEqual(discovery["reason_code"], "NOT_CONFIGURED")
+        self.assertEqual(discovery["timeliness"], "DELAYED")
+        self.assertNotEqual(discovery["timeliness"], "REAL_TIME")
+        self.assertFalse(discovery["is_l1"])
+        self.assertFalse(discovery["is_paper_comparator"])
+        self.assertFalse(discovery["overlay_token_present"])
+        self.assertFalse(discovery["live_enabled"])
+        self.assertEqual(result["status"], "unavailable")
+        self.assertEqual(result["reason_code"], "NOT_CONFIGURED")
+        self.assertFalse(result["is_l1"])
+        self.assertFalse(result["is_paper_comparator"])
+        self.assertEqual(result["provider_id"], "finviz.elite.context")
+        self.assertNotIn("yahoo.finance.delayed", json.dumps(overlay))
+        self.assertNotIn("password", dumped.casefold())
+        self.assertNotIn("EMPIRICAL_ACTIVE", dumped)
+
+    def test_cli_fetched_overlay_stays_live_disabled_and_not_l1(self) -> None:
+        from market_platform_foundation.providers.adapters.finviz_elite_context import (
+            overlay_payload,
+        )
+        from market_platform_foundation.providers.finviz_context_discovery import (
+            discover_finviz_context_stack,
+        )
+        from tools.path_a_prospective_run import main as path_a_cli_main
+
+        env = {
+            "FINVIZ_API_KEY": "",
+            "FINVIZ_AUTH_TOKEN": "",
+            "FINVIZ_API_TOKEN": "",
+            "FINVIZ_ELITE_TOKEN": "",
+            "IMP_FINVIZ_ELITE_TOKEN": "",
+            "IMP_FINVIZ_TOKEN": "",
+            "FINVIZ_USERNAME": "operator@example.com",
+            "FINVIZ_PASSWORD": "not-a-real-password",
+            "IMP_FINVIZ_LIVE": "",
+        }
+        adapter, discovery = discover_finviz_context_stack(
+            env=env,
+            token_fetcher=lambda: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+        )
+        overlay = overlay_payload(
+            discovery=discovery.to_dict(),
+            result=adapter.fetch_context("AAPL"),
+        )
+        stdout = StringIO()
+        with patch.dict(os.environ, {"IMP_MOOMOO_HOST": "127.0.0.1", "IMP_MOOMOO_PORT": "1"}):
+            with patch(
+                "tools.path_a_prospective_run._finviz_hop_overlay",
+                return_value=(adapter, overlay),
+            ):
+                with patch("sys.stdout", stdout):
+                    code = path_a_cli_main(["--symbol", "AAPL", "--mode", "paper"])
+        self.assertEqual(code, 0)
+        dumped = stdout.getvalue()
+        payload = json.loads(dumped)
+        hop_overlay = payload["equity_context"]
+        self.assertEqual(payload["discovery"]["provider_id"], MOOMOO_OPEND_PROVIDER_ID)
+        self.assertEqual(payload["result"]["provider_id"], MOOMOO_OPEND_PROVIDER_ID)
+        self.assertEqual(payload["result"]["status"], "PROVIDER_UNAVAILABLE")
+        self.assertEqual(hop_overlay["discovery"]["provider_id"], "finviz.elite.context")
+        self.assertEqual(hop_overlay["discovery"]["auto_fetch_status"], "FETCHED")
+        self.assertEqual(hop_overlay["discovery"]["classification"], "CONFIGURED_BLOCKED")
+        self.assertEqual(hop_overlay["discovery"]["reason_code"], "LIVE_DISABLED")
+        self.assertTrue(hop_overlay["discovery"]["overlay_token_present"])
+        self.assertFalse(hop_overlay["discovery"]["is_l1"])
+        self.assertFalse(hop_overlay["result"]["is_l1"])
+        self.assertEqual(hop_overlay["result"]["reason_code"], "LIVE_DISABLED")
+        self.assertNotIn("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee", dumped)
+        self.assertNotIn("not-a-real-password", dumped)
+        self.assertNotIn("EMPIRICAL_ACTIVE", dumped)
+
+
 if __name__ == "__main__":
     unittest.main()

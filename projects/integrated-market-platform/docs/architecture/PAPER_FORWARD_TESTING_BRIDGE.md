@@ -231,7 +231,9 @@ before quote fetch so an installed local OpenD can be started; if it is
 still down the outcome is
 `PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE` (or
 `MOOMOO_SDK_MISSING` if loopback TCP answers but the vendor SDK is
-absent). After `python tools/imp.py env install-opend`, hop uses the IMP
+absent). Hop JSON includes Finviz Elite `equity_context` as a screening/news
+overlay classifier (fail-closed `NOT_CONFIGURED` without a token; never hop L1).
+After `python tools/imp.py env install-opend`, hop uses the IMP
 `.venv` only (`PYTHONPATH=src`); do not mix `moomoo-api-test` site-packages.
 `--preregistration-path`
 may point at a previously persisted Phase-6 record; create is a separate

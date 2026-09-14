@@ -19,11 +19,16 @@ from ..order_flow.ofi import (
     compute_ofi,
     usable_ofi_value,
 )
+from ..providers.contracts import PROVIDER_UNAVAILABLE
 from ..providers.runtime_capability import EntitlementState, ProviderHealth
 from ..xa01.enums import InstrumentKind
 from .depth_admission import DepthAdmissionContext
 from .live_config import depth_freshness_policy
 from .observational_state import ObservationalStateStore, QuoteSnapshot
+
+# Context (screening/news) overlays — e.g. Finviz Elite — are never allowed to
+# claim REAL_TIME. They are a side-channel next to L1, not a tick source.
+_CONTEXT_FORBIDDEN_TIMELINESS = frozenset({"REAL_TIME"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -394,6 +399,97 @@ class ObservationalLaneRuntime:
                 "source_time_ns": source_time_ns,
             },
             "state": "READY",
+        }
+
+    def build_context_payload(self, instrument_id: str, provider: Any) -> dict[str, Any]:
+        """Screening/news context overlay (e.g. Finviz Elite). Not L1, not a comparator.
+
+        Fail-closed and provider-neutral: an unconfigured or misbehaving
+        provider degrades to ``UNAVAILABLE`` rather than fabricating data.
+        ``is_l1`` and ``is_paper_comparator`` are always forced ``False`` here
+        regardless of what the provider reports, and any provider — declared
+        or event-level — claim of ``REAL_TIME`` timeliness is rejected rather
+        than surfaced, since a context/news overlay is never a tick source.
+        """
+        symbol = instrument_id.upper()
+        provider_id = str(getattr(provider, "provider_id", "") or "")
+        role = str(getattr(provider, "role", "") or "CONTEXT")
+        declared_timeliness = str(getattr(provider, "timeliness", "") or "UNKNOWN").upper()
+        if declared_timeliness in _CONTEXT_FORBIDDEN_TIMELINESS:
+            return self._context_unavailable(
+                symbol,
+                provider_id=provider_id,
+                role=role,
+                timeliness=declared_timeliness,
+                reason="CONTEXT_TIMELINESS_INVALID",
+            )
+        fetch_context = getattr(provider, "fetch_context", None)
+        if fetch_context is None:
+            return self._context_unavailable(
+                symbol,
+                provider_id=provider_id,
+                role=role,
+                timeliness=declared_timeliness,
+                reason=PROVIDER_UNAVAILABLE,
+            )
+        result = fetch_context(symbol)
+        result_provider_id = str(getattr(result, "provider_id", "") or provider_id)
+        if getattr(result, "status", "") != "available":
+            return self._context_unavailable(
+                symbol,
+                provider_id=result_provider_id,
+                role=role,
+                timeliness=declared_timeliness,
+                reason=str(getattr(result, "reason_code", "") or PROVIDER_UNAVAILABLE),
+            )
+        events = getattr(result, "events", ()) or ()
+        event = dict(events[0]) if events else {}
+        event_timeliness = str(event.get("timeliness") or declared_timeliness).upper()
+        if event_timeliness in _CONTEXT_FORBIDDEN_TIMELINESS:
+            return self._context_unavailable(
+                symbol,
+                provider_id=result_provider_id,
+                role=role,
+                timeliness=event_timeliness,
+                reason="CONTEXT_TIMELINESS_INVALID",
+            )
+        return {
+            "available": True,
+            "context": event,
+            "instrument_id": symbol,
+            "is_l1": False,
+            "is_paper_comparator": False,
+            "provenance": {
+                "instrument_id": symbol,
+                "provider": result_provider_id,
+                "role": role,
+                "timeliness": event_timeliness,
+            },
+            "provider_id": result_provider_id,
+            "role": role,
+            "state": "READY",
+            "timeliness": event_timeliness,
+        }
+
+    @staticmethod
+    def _context_unavailable(
+        symbol: str,
+        *,
+        provider_id: str,
+        role: str,
+        timeliness: str,
+        reason: str,
+    ) -> dict[str, Any]:
+        return {
+            "available": False,
+            "instrument_id": symbol,
+            "is_l1": False,
+            "is_paper_comparator": False,
+            "provider_id": provider_id,
+            "reason": reason,
+            "role": role,
+            "state": "UNAVAILABLE",
+            "timeliness": timeliness,
         }
 
     def build_evidence_bundle(self, instrument_id: str) -> dict[str, Any]:
