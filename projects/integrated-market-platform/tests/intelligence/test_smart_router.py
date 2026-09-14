@@ -50,6 +50,7 @@ class SmartRouterTests(unittest.TestCase):
             SemanticEventType.LIQUIDITY_EVENT: ExpertDomain.MICROSTRUCTURE,
             SemanticEventType.NEWS_EVENT: ExpertDomain.NARRATIVE_SENTIMENT,
             SemanticEventType.REGIME_SHIFT: ExpertDomain.REGIME_CROSS_ASSET,
+            SemanticEventType.SEC_INSIDER_DISCLOSURE: ExpertDomain.CORPORATE_FUNDAMENTAL,
         }
         for event_type, domain in expected.items():
             template = self.router.policy.template_for(event_type)
