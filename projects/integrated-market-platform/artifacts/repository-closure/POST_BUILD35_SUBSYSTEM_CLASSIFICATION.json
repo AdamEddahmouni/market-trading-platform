@@ -560,6 +560,8 @@
         "tools/ftep_session_release.py",
         "tools/ftep_watch_catalysts.py",
         "tools/hop_json_gate_check.py",
+        "tools/item7_bbo_snapshot_probe.py",
+        "tools/item7_forecast_progression_report.py",
         "tools/opportunity_summaries.py",
         "tools/path_a_prospective_run.py",
         "tools/path_a_rth_preflight.py",
