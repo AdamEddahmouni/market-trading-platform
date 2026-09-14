@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import os
 import unittest
+from unittest.mock import patch
 
+from market_platform_foundation.finviz.credential_manager import reset_finviz_credential_manager
 from market_platform_foundation.intelligence.paper_forward_bridge.ftep_catalyst_watch import (
     collect_ftep_catalyst_watch,
 )
@@ -14,6 +16,9 @@ from market_platform_foundation.intelligence.paper_forward_bridge.ftep_prospecti
 )
 from market_platform_foundation.local_state.paths import REPO_ROOT
 from market_platform_foundation.news.timestamps import epoch_ns_from_iso
+from market_platform_foundation.providers.adapters.finviz_elite_context import FINVIZ_TOKEN_NAMES
+
+_STORE_FIXTURE_TOKEN = "fixture-secure-store-token"
 
 
 class _StubFinvizClient:
@@ -32,6 +37,34 @@ class _StubFinvizClient:
 
 
 class FtepProspectiveCatalystIngressTests(unittest.TestCase):
+    def test_gate_enabled_when_token_only_in_credential_store(self) -> None:
+        isolated = {
+            "IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS": "1",
+            "IMP_FINVIZ_LIVE": "1",
+        }
+        for name in FINVIZ_TOKEN_NAMES:
+            isolated[name] = ""
+        with patch(
+            "market_platform_foundation.finviz.credential_manager.read_secure_token",
+            return_value=_STORE_FIXTURE_TOKEN,
+        ), patch.dict(os.environ, isolated, clear=False):
+            reset_finviz_credential_manager()
+            self.assertTrue(prospective_catalyst_ingress_enabled(None))
+            reset_finviz_credential_manager()
+
+    def test_injected_env_does_not_use_credential_store_for_gate(self) -> None:
+        env = {
+            "IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS": "1",
+            "IMP_FINVIZ_LIVE": "1",
+        }
+        with patch(
+            "market_platform_foundation.finviz.credential_manager.read_secure_token",
+            return_value=_STORE_FIXTURE_TOKEN,
+        ):
+            reset_finviz_credential_manager()
+            self.assertFalse(prospective_catalyst_ingress_enabled(env))
+            reset_finviz_credential_manager()
+
     def test_gates_inactive_without_env(self) -> None:
         env = {
             "IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS": "0",

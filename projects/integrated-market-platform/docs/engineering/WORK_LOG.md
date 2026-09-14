@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — prospective ingress Finviz token store fallback
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, FTEP-V1-002 SIGNAL_ONLY |
+| **Summary** | `prospective_catalyst_ingress_enabled` and live Finviz client construction now pass the original `env` into `configured_token` so process-default resolution matches the rest of IMP (credential manager / secure store when env vars are absent). Fixes false `PROSPECTIVE_CATALYST_INGRESS_GATES_INACTIVE` when the Elite token exists only in the operator store. |
+| **Key files** | `ftep_prospective_catalyst_ingress.py`, `tests/intelligence/test_ftep_prospective_catalyst_ingress.py` |
+| **Tests** | `python -m unittest tests.intelligence.test_ftep_prospective_catalyst_ingress -v` → **6 passed** |
+| **Related** | PR #133 (`work/v1-002-prospective-catalyst-ingress`) |
+| **Notes** | Injected test `env` dicts still skip store fallback by design (`configured_token` contract). No live Finviz calls in new tests. |
+
 ## 2026-09-14 — watch-catalysts --live-ingress fail-closed in FIXTURE_SMOKE
 
 | Field | Value |

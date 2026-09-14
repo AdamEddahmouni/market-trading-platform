@@ -32,7 +32,8 @@ def prospective_catalyst_ingress_enabled(env: Mapping[str, str] | None = None) -
     mapping = _env_mapping(env)
     if not finviz_live_enabled(mapping):
         return False
-    if not configured_token(mapping):
+    # Pass through original env (None → process env + credential store), not mapping.
+    if not configured_token(env):
         return False
     return str(mapping.get(_INGRESS_ENV, "")).strip().lower() in {"1", "true", "yes"}
 
@@ -141,8 +142,7 @@ def collect_finviz_prospective_attention_rows(
             rows=(),
             stats=empty_stats,
         )
-    mapping = _env_mapping(env)
-    if not prospective_catalyst_ingress_enabled(mapping):
+    if not prospective_catalyst_ingress_enabled(env):
         return ProspectiveCatalystIngressResult(
             attempted=True,
             ready=False,
@@ -162,7 +162,7 @@ def collect_finviz_prospective_attention_rows(
     if news_client is None:
         from ...finviz.news import FinvizNewsClient
 
-        token = configured_token(mapping)
+        token = configured_token(env)
         news_client = FinvizNewsClient(api_key=token)
 
     fetch = news_client.fetch_news(force=True)
