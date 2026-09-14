@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
+from ..execution.fill_model import LIVE_EXECUTION_FORBIDDEN, FillModelLiveForbidden
 from ..execution.simulator import SIMULATOR_VERSION, BarConservativeSimulator
 from ..numeric import decimal_to_minor_units
 from ..operating_modes import PAPER_EXECUTION_AUTHORITIES
@@ -177,6 +178,10 @@ def execute_order_intent(
     ``simulator`` overrides that cache for dry-run callers (preview) whose
     fills are never recorded and therefore must not consume bar capacity.
     """
+    if str(ledger.execution_mode).upper() == "LIVE":
+        raise FillModelLiveForbidden(LIVE_EXECUTION_FORBIDDEN)
+    intent = dict(intent)
+    intent.setdefault("execution_mode", ledger.execution_mode)
     projection = ledger._project_ledger()
     decision = evaluate_risk(
         intent=intent,

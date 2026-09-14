@@ -7,6 +7,7 @@ from typing import Any
 
 from ..canonical import canonical_bytes, sha256_bytes
 from ..numeric import apply_participation_cap, decimal_to_minor_units
+from .fill_model import assert_simulation_execution_allowed, stamp_fill_model_provenance
 
 SIMULATOR_VERSION = "phase7.bar-conservative/1.1.0"
 SOURCE_CAPABILITY = "BAR_OHLCV_1M"
@@ -26,9 +27,32 @@ class BarConservativeSimulator:
     def __init__(self, *, policy: dict[str, Any]) -> None:
         self.policy = policy
         self._bar_allocations: dict[int, int] = {}
+        self._git_sha: str | None = None
 
     def reset_allocations(self) -> None:
         self._bar_allocations = {}
+
+    def _finalize(
+        self,
+        order: dict[str, Any],
+        fill: dict[str, Any] | None,
+        *,
+        intent: dict[str, Any],
+    ) -> tuple[dict[str, Any], dict[str, Any] | None]:
+        mode = assert_simulation_execution_allowed(
+            intent.get("execution_mode") or self.policy.get("execution_mode")
+        )
+        order, fill = stamp_fill_model_provenance(
+            order=order,
+            fill=fill,
+            simulator_version=SIMULATOR_VERSION,
+            source_capability=SOURCE_CAPABILITY,
+            registry_id=self.registry_id,
+            execution_mode=mode,
+            git_sha=self._git_sha,
+        )
+        self._git_sha = str(order.get("git_sha") or "UNAVAILABLE")
+        return order, fill
 
     def simulate(
         self,
@@ -38,6 +62,9 @@ class BarConservativeSimulator:
         bars: list[dict[str, Any]],
         squeeze_context: dict[str, Any] | None = None,
     ) -> tuple[dict[str, Any], dict[str, Any] | None]:
+        assert_simulation_execution_allowed(
+            intent.get("execution_mode") or self.policy.get("execution_mode")
+        )
         order_body = {
             "allocation_model": SIMULATOR_VERSION,
             "created_time": intent["created_time"],
@@ -65,19 +92,19 @@ class BarConservativeSimulator:
         if risk_decision["decision"] not in {"APPROVE", "RESIZE"}:
             order["state"] = "REJECTED"
             order["reason_codes"] = ["SIM_RISK_NOT_APPROVED"]
-            return order, None
+            return self._finalize(order, None, intent=intent)
 
         approved_qty = int(risk_decision["approved_quantity"])
         if approved_qty <= 0:
             order["state"] = "REJECTED"
             order["reason_codes"] = ["SIM_ZERO_APPROVED_QUANTITY"]
-            return order, None
+            return self._finalize(order, None, intent=intent)
 
         activation_bar = self._next_bar_after(intent["created_time"], bars)
         if activation_bar is None:
             order["state"] = "REJECTED"
             order["reason_codes"] = ["SIM_NO_POST_SIGNAL_BAR"]
-            return order, None
+            return self._finalize(order, None, intent=intent)
 
         activation_time = int(activation_bar["available_time"])
         order["activation_time"] = activation_time
@@ -87,19 +114,19 @@ class BarConservativeSimulator:
         if fill_bar is None:
             order["state"] = "REJECTED"
             order["reason_codes"] = ["SIM_NO_FILL_BAR"]
-            return order, None
+            return self._finalize(order, None, intent=intent)
 
         fill_time = int(fill_bar["available_time"])
         if fill_time < activation_time:
             order["state"] = "REJECTED"
             order["reason_codes"] = ["SIM_FILL_BEFORE_ACTIVATION"]
-            return order, None
+            return self._finalize(order, None, intent=intent)
 
         payload = fill_bar.get("bar_payload", {})
         if not isinstance(payload, dict):
             order["state"] = "REJECTED"
             order["reason_codes"] = ["SIM_INVALID_BAR_PAYLOAD"]
-            return order, None
+            return self._finalize(order, None, intent=intent)
 
         direction = str(intent["direction"])
         price_key = "high" if direction == "long" else "low"
@@ -112,7 +139,7 @@ class BarConservativeSimulator:
         except ValueError:
             order["state"] = "REJECTED"
             order["reason_codes"] = ["SIM_INVALID_FILL_PRICE"]
-            return order, None
+            return self._finalize(order, None, intent=intent)
 
         bar_volume = int(payload.get("volume", 0))
         cap_num, cap_den = self._effective_participation_policy(squeeze_context)
@@ -127,7 +154,7 @@ class BarConservativeSimulator:
         if fill_qty <= 0:
             order["state"] = "REJECTED"
             order["reason_codes"] = ["SIM_NO_ELIGIBLE_VOLUME"]
-            return order, None
+            return self._finalize(order, None, intent=intent)
 
         self._bar_allocations[fill_time] = prior + fill_qty
         fill_body = {
@@ -148,7 +175,7 @@ class BarConservativeSimulator:
         }
         order["state"] = "FILLED" if fill_qty == approved_qty else "PARTIALLY_FILLED"
         order["filled_quantity"] = fill_qty
-        return order, fill
+        return self._finalize(order, fill, intent=intent)
 
     def _effective_participation_policy(
         self,
@@ -282,6 +309,7 @@ def simulate_calendar_spread_pnl(
 __all__ = [
     "BarConservativeSimulator",
     "SIMULATOR_VERSION",
+    "SOURCE_CAPABILITY",
     "simulate_calendar_spread_pnl",
     "simulate_futures_roll",
     "simulate_variation_margin_change",
