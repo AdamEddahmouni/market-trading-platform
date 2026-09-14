@@ -82,6 +82,37 @@ class Wave1HarnessTests(unittest.TestCase):
         self.assertEqual(report.oos_mode, "OOS_PIT_PASS")
         self.assertTrue(all(r.oos_mode == "OOS_PIT_PASS" for r in report.family_results))
 
+    def test_external_research_data_stays_in_sample_even_if_pit_pass(self) -> None:
+        export = copy.deepcopy(self.export)
+        export["metadata"] = {
+            "evidence_class": "EXTERNAL_RESEARCH_DATA",
+            "pit_status": "PIT-PASS",
+        }
+        with self.assertRaises(Wave1ExportGateError) as ctx:
+            require_pit_pass_for_oos(
+                export,
+                validation_dataset_manifest=export["validation_dataset_manifest"],
+            )
+        self.assertEqual(ctx.exception.code, "W1_OOS_BLOCKED_EXTERNAL_RESEARCH_DATA")
+        report = run_wave1_from_export_stub(export, allow_oos=True)
+        self.assertEqual(report.oos_mode, "IN_SAMPLE_ONLY")
+        self.assertEqual(report.evidence_class, "EXTERNAL_RESEARCH_DATA")
+        self.assertTrue(all(r.oos_mode == "IN_SAMPLE_ONLY" for r in report.family_results))
+
+    def test_mixed_external_and_fixture_class_blocks_oos(self) -> None:
+        export = copy.deepcopy(self.export)
+        export["metadata"] = {
+            "evidence_class": "OUT_OF_SAMPLE_REPLAY",
+            "evidence_classes": ["EXTERNAL_RESEARCH_DATA"],
+            "pit_status": "PIT-PASS",
+        }
+        with self.assertRaises(Wave1ExportGateError) as ctx:
+            require_pit_pass_for_oos(
+                export,
+                validation_dataset_manifest=export["validation_dataset_manifest"],
+            )
+        self.assertEqual(ctx.exception.code, "W1_OOS_BLOCKED_MIXED_EXTERNAL_RESEARCH_DATA")
+
 
 if __name__ == "__main__":
     unittest.main()

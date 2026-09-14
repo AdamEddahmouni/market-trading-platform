@@ -48,6 +48,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [OPPORTUNITY_CONTRACT.md](../architecture/OPPORTUNITY_CONTRACT.md); OE-04 #106; OE-05 #105; supersedes rebased landing for #116 |
 | **Notes** | Isolated worktree `.worktrees/rebase-pr-116`, branch `work/rebase-pr-116-20260914` on `origin/main` `79ae537`. Live off. No hop/OpenD/G7/Path A/FTEP/SQLite schema/V1-002/execution gates. |
 
+## 2026-09-14 — Research Export PIT-PENDING + EXTERNAL_RESEARCH_DATA fail-closed
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `research/export_v1`, `research/wave1`, `research/matlab` |
+| **Summary** | Fixture Research Export v1 packages still emit honest `metadata.pit_status=PIT-PENDING` / `NON_EMPIRICAL_FIXTURE`. Loaders now require operator PIT metadata, refuse mixed `EXTERNAL_RESEARCH_DATA` on canonical IMP packages, and Wave 1 OOS stays blocked for fixture, external, and mixed classes. QR-01 MATLAB toolbox schema + UNAVAILABLE example landed (cloud `BLOCKED_NO_MATLAB`; not a production runtime). MATLAB consumes Research Export v1 JSON; overnight Parquet bridge remains historical. |
+| **Key files** | `src/market_platform_foundation/research/export_v1.py`, `wave1/export_gate.py`, `wave1/runner.py`, `wave1/harness.py`, `matlab_environment.py`, `research/matlab/**`, `tests/research/test_research_export_v1.py`, `tests/research/test_wave1_experiment_harness.py`, `tests/research/test_matlab_environment.py`, `docs/research/RESEARCH_EXPORT_V1.md`, `docs/README.md`, `tools/research/build_research_export_v1.py`, `tools/validation_manifest.json` |
+| **Tests** | Focused: `PYTHONPATH=src .venv/Scripts/python.exe -m unittest tests.research.test_research_export_v1 tests.research.test_wave1_experiment_harness tests.research.test_matlab_environment -v` → **24 passed** (rebase worktree on `origin/main` `2e022383`). |
+| **Related** | [RESEARCH_EXPORT_V1.md](../research/RESEARCH_EXPORT_V1.md), QR-01/QR-03 MATLAB lab plan, Wave 1 `export_gate.py`; landed via squash-merge PR #137 (supersedes #119) |
+| **Notes** | Did not stamp `PIT-PASS`. Did not run Wave 1 OOS. No hop `1381619`, no FTEP session, Live off. MATLAB not installed on this host. |
+
 ## 2026-09-14 — POST_BUILD35 inventory for ci_job_selector (PR #132)
 
 | Field | Value |

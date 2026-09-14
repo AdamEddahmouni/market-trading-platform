@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "imp://research/matlab-toolbox-manifest/1.0.0",
+  "title": "IMP MATLAB research toolbox honesty manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "matlab_release",
+    "recorded_at_ns",
+    "recorded_host_id",
+    "repository_head_sha",
+    "toolboxes",
+    "isolation",
+    "smoke_status"
+  ],
+  "properties": {
+    "schema_version": { "const": "matlab_toolbox_manifest/1.0.0" },
+    "matlab_release": {
+      "type": "string",
+      "description": "Exact local release (R20XXx) or UNAVAILABLE. Never invent INSTALLED."
+    },
+    "matlab_root": {
+      "type": ["string", "null"],
+      "description": "Operator-local path. Must be null/omitted in committed examples. Never commit a real host path."
+    },
+    "recorded_at_ns": { "type": "integer", "minimum": 0 },
+    "recorded_host_id": {
+      "type": "string",
+      "description": "Non-secret host identity, or UNAVAILABLE on cloud/CI."
+    },
+    "repository_head_sha": {
+      "type": "string",
+      "description": "Git SHA the recorder actually ran, or UNAVAILABLE. Not the PROGRAM_STATUS Canonical SHA field."
+    },
+    "toolboxes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/toolbox_entry" }
+    },
+    "isolation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["production_runtime", "mode_authority", "paper_live_broker"],
+      "properties": {
+        "production_runtime": { "const": false },
+        "mode_authority": { "const": "NONE" },
+        "paper_live_broker": { "const": "DENIED" }
+      }
+    },
+    "smoke_status": {
+      "enum": ["NOT_RUN", "PASS", "BLOCKED_NO_MATLAB"]
+    }
+  },
+  "$defs": {
+    "toolbox_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["product", "class", "status"],
+      "properties": {
+        "product": { "type": "string" },
+        "class": {
+          "enum": [
+            "PRIMARY",
+            "HIGH_VALUE_SPECIALIZED",
+            "SPECIALIZED",
+            "ON_DEMAND",
+            "OPTIONAL",
+            "PROHIBITED_AS_CANONICAL"
+          ]
+        },
+        "status": {
+          "enum": ["INSTALLED", "LICENSED_UNAVAILABLE", "UNAVAILABLE", "PROHIBITED"]
+        },
+        "ver_string": { "type": ["string", "null"] }
+      }
+    }
+  }
+}
