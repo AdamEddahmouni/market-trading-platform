@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — install-opend BLOCKED when uv venv has no pip
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tools/moomoo`, `tests/providers` |
+| **Summary** | `env install-opend` now probes the target interpreter for `pip` before `python -m pip install`. Fresh `uv venv` (no bundled pip) returns JSON `BLOCKED` with `reason_code` `PIP_MISSING` and operator remediation (`uv pip install pip` / `ensurepip`) instead of a generic pip-install failure. Live stays off; vendor pin unchanged. |
+| **Key files** | `tools/moomoo/opend_hop_interpreter.py`, `tests/providers/test_opend_hop_interpreter.py`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py validate full` (IMP Validation 9/9 including validate-ui) |
+| **Related** | AdamsGalaxyBook weekday OpenD hop dry-run (`weekday-opend-hop-dryrun.md`) |
+| **Notes** | Did not activate Live. Did not flip FTEP. Did not weaken OpenD/vendor-pin tests. |
+
 ## 2026-09-14 — PROGRAM_STATUS SHA pin after merged #62
 
 | Field | Value |
