@@ -39,6 +39,7 @@
 | Lane module IDs | Canonical set in `WORKSPACE_LANE_REGISTRY` / `WORKSPACE_LANE_MODULE_IDS` ([laneRegistry.ts](../../ui/src/components/workspace-module-shared/laneRegistry.ts)); UI paper provenance derives from it; backend validates structurally, never enumerates |
 | Attention IDs | Backend-assigned attention item identity |
 | Opportunity review IDs | `summary_id` plus optional governed `opportunity_id`; HTTP `GET /opportunities/summary` — not an order id |
+| Opportunity evidence | `GET /opportunities/{id}/evidence` projects review-row `evidence_class` / promotion reason / family admission / data quality plus persist `created_at_ns`; `items` remains lineage refs. Not an ingest timestamp stamp. |
 
 Do not overload `correlation_id` with display labels or reuse for unrelated caches.
 

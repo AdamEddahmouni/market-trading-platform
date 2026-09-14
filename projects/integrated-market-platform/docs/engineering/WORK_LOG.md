@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — OE-07 API projection of evidence and persist contract fields
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui_api`, `docs/architecture` |
+| **Summary** | `GET /opportunities/summary|{id}` and `GET /opportunities/{id}/evidence` now lift already-computed review-row evidence, family admission, and dedupe/supersession facts to first-class JSON, and project persist `OpportunityV1.created_at_ns` / expected-edge at read time. Ingest does not stamp `decision_time_ns` onto review-row metadata (supersession stays fail-closed unless tests inject timestamps). No `MONITORED` / `OUTCOME_RECORDED` states. |
+| **Key files** | `src/market_platform_foundation/ui_api/opportunity_projections.py`, `tests/ui1/test_opportunity_api.py`, `tests/intelligence/test_opportunity_ingest.py`, `manifests/ui1/schemas/opportunity_summary.schema.json`, `manifests/ui1/schemas/opportunity_evidence.schema.json`, `docs/architecture/OPPORTUNITY_CONTRACT.md`, `docs/architecture/DATA_CONTRACTS.md`, `docs/product/OPPORTUNITY_ENGINE_CURRENT_STATE_AND_IMPLEMENTATION_PLAN.md` |
+| **Tests** | Focused unittest on `tests.ui1.test_opportunity_api` and `tests.intelligence.test_opportunity_ingest`; then IMP Validation ladder (`imp.py` format/lint/fast/affected/changed plus docs links). UI untouched. |
+| **Related** | [OPPORTUNITY_CONTRACT.md](../architecture/OPPORTUNITY_CONTRACT.md); OE-04 #106; OE-05 #105 |
+| **Notes** | Isolated branch `cursor/oe-api-projection-d1ba`. Merge forbidden until after RTH. Live off. Did not touch hop/OpenD/G7/Path A/ForecastV1/FTEP/SQLite schema/V1-002/execution gates/provider roles. |
+
 ## 2026-09-14 — Track H leftover: fail-close remaining backend error_category gaps
 
 | Field | Value |
