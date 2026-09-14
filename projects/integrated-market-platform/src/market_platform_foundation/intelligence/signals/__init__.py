@@ -16,6 +16,7 @@ from .models import (
 )
 from .prepared import PreparedSnapshotState
 from .calculators import ALL_SIGNAL_TYPES
+from .factor_adapter import research_signal_from_factor_observation
 
 __all__ = [
   "ALL_SIGNAL_TYPES",
@@ -34,4 +35,5 @@ __all__ = [
   "compute_fast_signals",
   "compute_from_snapshot",
   "derive_signal_id",
+  "research_signal_from_factor_observation",
 ]
