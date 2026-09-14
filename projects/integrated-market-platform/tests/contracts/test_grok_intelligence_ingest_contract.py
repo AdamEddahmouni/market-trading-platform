@@ -28,6 +28,12 @@ from market_platform_foundation.intelligence.contracts.ingest_ui_timing import (
     IntelligenceSurfacePhase,
     evaluate_ui_intelligence_render_gate,
 )
+from market_platform_foundation.intelligence.ingest.runtime import (  # noqa: E402
+    AgentEnrichmentIngestRuntime,
+)
+from market_platform_foundation.intelligence.persistence import (  # noqa: E402
+    InMemoryIntelligenceRepository,
+)
 
 
 class GrokIntelligenceIngestContractTests(unittest.TestCase):
@@ -124,6 +130,28 @@ class GrokIntelligenceIngestContractTests(unittest.TestCase):
         )
         self.assertFalse(gate.allowed)
         self.assertEqual(gate.reason_code, "DETERMINISTIC_DETECTION_MISSING")
+
+    def test_runtime_rejects_paper_submit_mutation_hint(self) -> None:
+        runtime = AgentEnrichmentIngestRuntime(InMemoryIntelligenceRepository())
+        payload = agent_enrichment_evidence_v1_to_dict(
+            AgentEnrichmentEvidenceV1(
+                record_id="aer-forbidden",
+                schema_version="1",
+                opportunity_id="opp-x",
+                retrieved_at="2026-09-14T14:00:00-04:00",
+                agent_id="grok.sentinel.v1",
+                bot_role=AgentBotRole.SENTINEL,
+                skill=AgentSkillRef(skill_id="imp.sentinel.verify", version="1.0.0"),
+                claim_type=AgentClaimType.VERIFICATION,
+                confidence=0.5,
+                expires_at="2099-01-01T00:00:00+00:00",
+                provenance={"ingest_plane": "grok"},
+                operation=IngestOperation.ATTACH_EVIDENCE,
+            )
+        )
+        payload["requested_mutation"] = ForbiddenIngestMutation.PAPER_SUBMIT.value
+        with self.assertRaises(ValueError):
+            runtime.ingest(payload, as_of_iso="2026-09-14T15:00:00+00:00")
 
 
 if __name__ == "__main__":

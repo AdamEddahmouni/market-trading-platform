@@ -101,6 +101,71 @@ class InMemoryIntelligenceRepository:
         self._stores["research_triggers"] = {}
         self._stores["adaptation_campaigns"] = {}
         self._stores["adaptation_events"] = {}
+        self._stores["agent_enrichment_evidence"] = {}
+
+    def put_agent_enrichment_evidence(
+        self,
+        record,
+        *,
+        allow_agent_update: bool = False,
+    ) -> RepositoryPutResult:
+        from ..contracts.agent_ingest import (
+            AgentEnrichmentEvidenceV1,
+            agent_enrichment_evidence_v1_from_dict,
+            agent_enrichment_evidence_v1_to_dict,
+        )
+
+        if not isinstance(record, AgentEnrichmentEvidenceV1):
+            raise TypeError("AGENT_ENRICHMENT_RECORD_INVALID")
+        document = agent_enrichment_evidence_v1_to_dict(record)
+        record_id = str(record.record_id)
+        document["_id"] = record_id
+        with self._lock:
+            store = self._stores["agent_enrichment_evidence"]
+            existing = store.get(record_id)
+            if existing is None:
+                store[record_id] = copy.deepcopy(document)
+                return RepositoryPutResult.INSERTED
+            if canonical_semantic_equal(existing, document):
+                return RepositoryPutResult.ALREADY_PRESENT
+            if allow_agent_update:
+                prior = agent_enrichment_evidence_v1_from_dict(
+                    {key: value for key, value in existing.items() if key != "_id"}
+                )
+                if prior.agent_id != record.agent_id:
+                    raise RepositoryConflictError(
+                        "IMMUTABLE_CONFLICT:agent_enrichment_evidence:agent_id",
+                        details={"kind": "agent_enrichment_evidence", "id": record_id},
+                    )
+                store[record_id] = copy.deepcopy(document)
+                return RepositoryPutResult.INSERTED
+            raise RepositoryConflictError(
+                "IMMUTABLE_CONFLICT:agent_enrichment_evidence:" + record_id,
+                details={"kind": "agent_enrichment_evidence", "id": record_id},
+            )
+
+    def get_agent_enrichment_evidence(self, record_id: str):
+        from ..contracts.agent_ingest import agent_enrichment_evidence_v1_from_dict
+
+        return self._get_sidecar(
+            "agent_enrichment_evidence",
+            record_id,
+            agent_enrichment_evidence_v1_from_dict,
+        )
+
+    def list_agent_enrichment_by_opportunity(self, opportunity_id: str):
+        from ..contracts.agent_ingest import AgentEnrichmentEvidenceV1, agent_enrichment_evidence_v1_from_dict
+
+        target = str(opportunity_id)
+        with self._lock:
+            bodies = list(self._stores["agent_enrichment_evidence"].values())
+        rows: list[AgentEnrichmentEvidenceV1] = []
+        for body in bodies:
+            payload = {key: value for key, value in body.items() if key != "_id"}
+            record = agent_enrichment_evidence_v1_from_dict(payload)
+            if record.opportunity_id == target:
+                rows.append(record)
+        return tuple(sorted(rows, key=lambda row: (row.retrieved_at, row.record_id)))
 
     def put_event(self, event: EventV1) -> RepositoryPutResult:
         return self._put(event)
