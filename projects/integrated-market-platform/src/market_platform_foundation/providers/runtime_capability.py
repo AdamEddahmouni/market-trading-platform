@@ -13,6 +13,13 @@ metadata) with per-provider runtime state axes. Never collapses:
 
 This module is the single runtime-capability facade; it does not replace
 ``ProviderRegistry`` — it reads from it and layers runtime dimensions.
+
+Capability axes never collapse:
+
+- supported (implemented descriptor)
+- configured (credentials/session present)
+- entitled (market-data entitlement)
+- fresh (timeliness is REAL_TIME)
 """
 
 from __future__ import annotations
@@ -58,6 +65,8 @@ class RuntimeCapabilityState(StrEnum):
     PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
     UNSUPPORTED_INSTRUMENT = "UNSUPPORTED_INSTRUMENT"
     LIVE_PROVIDER_UNVERIFIED = "LIVE_PROVIDER_UNVERIFIED"
+    NOT_CONFIGURED = "NOT_CONFIGURED"
+    FRESHNESS_UNKNOWN = "FRESHNESS_UNKNOWN"
 
 
 class EntitlementState(StrEnum):
@@ -80,6 +89,14 @@ class ProviderHealth(StrEnum):
     DEGRADED = "DEGRADED"
     DOWN = "DOWN"
     UNKNOWN = "UNKNOWN"
+
+
+class ConfiguredState(StrEnum):
+    """Distinct from entitlement and implemented support."""
+
+    UNKNOWN = "UNKNOWN"
+    CONFIGURED = "CONFIGURED"
+    NOT_CONFIGURED = "NOT_CONFIGURED"
 
 
 class ObservationalAuthority(StrEnum):
@@ -150,11 +167,13 @@ class RuntimeCapabilityView:
     observational_authority: ObservationalAuthority
     instrument_id: str | None = None
     reason_code: str | None = None
+    configured: ConfiguredState = ConfiguredState.UNKNOWN
     provenance: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "capability_id": self.capability_id,
+            "configured": self.configured.value,
             "entitlement": self.entitlement.value,
             "implemented": self.implemented,
             "instrument_id": self.instrument_id,
@@ -178,6 +197,7 @@ class ProviderRuntimeState:
     entitlement: EntitlementState = EntitlementState.UNKNOWN
     timeliness: DataTimeliness = DataTimeliness.UNKNOWN
     live_verified: bool = False
+    configured: ConfiguredState = ConfiguredState.UNKNOWN
     notes: str = ""
 
 
@@ -218,6 +238,7 @@ class RuntimeCapabilityRegistry:
                 entitlement=EntitlementState.UNKNOWN,
                 timeliness=DataTimeliness.UNKNOWN,
                 live_verified=False,
+                configured=ConfiguredState.UNKNOWN,
                 notes="LIVE_PROVIDER_UNVERIFIED",
             )
         if MOOMOO_OPEND_PROVIDER_ID not in self._runtime_states:
@@ -228,6 +249,7 @@ class RuntimeCapabilityRegistry:
                 entitlement=EntitlementState.UNKNOWN,
                 timeliness=DataTimeliness.UNKNOWN,
                 live_verified=False,
+                configured=ConfiguredState.NOT_CONFIGURED,
                 notes="OPEND_UNVERIFIED_FAIL_CLOSED",
             )
         if YAHOO_PROVIDER_ID not in known_ids:
@@ -242,6 +264,7 @@ class RuntimeCapabilityRegistry:
                 entitlement=EntitlementState.DELAYED,
                 timeliness=DataTimeliness.DELAYED,
                 live_verified=False,
+                configured=ConfiguredState.CONFIGURED,
                 notes="DELAYED_OVERLAY_NOT_HOP_L1",
             )
         else:
@@ -328,7 +351,10 @@ class RuntimeCapabilityRegistry:
             instrument_id=instrument_id,
             require_real_time=require_real_time,
         )
-        return _with_yahoo_overlay_invariants(view, require_real_time=require_real_time)
+        view = _with_yahoo_overlay_invariants(view, require_real_time=require_real_time)
+        return _with_capability_axis_honesty(
+            view, configured=self.runtime_state_for(view.provider_id).configured
+        )
 
     def _evaluate_capability(
         self,
@@ -426,6 +452,21 @@ class RuntimeCapabilityRegistry:
                 reason_code="PROVIDER_HEALTH_DOWN",
             )
 
+        if runtime.configured is ConfiguredState.NOT_CONFIGURED:
+            return RuntimeCapabilityView(
+                provider_id=provider_id,
+                capability_id=capability_id,
+                lane_capability_id=lane_cap,
+                implemented=True,
+                runtime_state=RuntimeCapabilityState.NOT_CONFIGURED,
+                entitlement=entitlement,
+                timeliness=timeliness,
+                provider_health=health,
+                observational_authority=ObservationalAuthority.OBSERVATIONAL,
+                instrument_id=instrument_id,
+                reason_code="NOT_CONFIGURED",
+            )
+
         if entitlement == EntitlementState.NOT_ENTITLED:
             return RuntimeCapabilityView(
                 provider_id=provider_id,
@@ -492,6 +533,36 @@ class RuntimeCapabilityRegistry:
                 provenance={"replay_eligible": True},
             )
 
+        if require_real_time and entitlement is EntitlementState.UNKNOWN:
+            return RuntimeCapabilityView(
+                provider_id=provider_id,
+                capability_id=capability_id,
+                lane_capability_id=lane_cap,
+                implemented=True,
+                runtime_state=RuntimeCapabilityState.NOT_ENTITLED,
+                entitlement=entitlement,
+                timeliness=timeliness,
+                provider_health=health,
+                observational_authority=ObservationalAuthority.OBSERVATIONAL,
+                instrument_id=instrument_id,
+                reason_code="ENTITLEMENT_UNKNOWN",
+            )
+
+        if require_real_time and timeliness is DataTimeliness.UNKNOWN:
+            return RuntimeCapabilityView(
+                provider_id=provider_id,
+                capability_id=capability_id,
+                lane_capability_id=lane_cap,
+                implemented=True,
+                runtime_state=RuntimeCapabilityState.FRESHNESS_UNKNOWN,
+                entitlement=entitlement,
+                timeliness=timeliness,
+                provider_health=health,
+                observational_authority=ObservationalAuthority.OBSERVATIONAL,
+                instrument_id=instrument_id,
+                reason_code="FRESHNESS_UNKNOWN",
+            )
+
         runtime_state = (
             RuntimeCapabilityState.DEGRADED
             if health == ProviderHealth.DEGRADED
@@ -529,6 +600,7 @@ class RuntimeCapabilityRegistry:
         base["runtime_capability_schema"] = "g7/v1"
         base["runtime_states"] = {
             pid: {
+                "configured": state.configured.value,
                 "entitlement": state.entitlement.value,
                 "health": state.health.value,
                 "live_verified": state.live_verified,
@@ -558,6 +630,11 @@ def _coerce_yahoo_runtime_state(state: ProviderRuntimeState) -> ProviderRuntimeS
         entitlement=entitlement,
         timeliness=timeliness,
         live_verified=False,
+        configured=(
+            ConfiguredState.CONFIGURED
+            if state.configured is ConfiguredState.UNKNOWN
+            else state.configured
+        ),
         notes=notes,
     )
 
@@ -591,6 +668,8 @@ def _with_yahoo_overlay_invariants(
         RuntimeCapabilityState.PROVIDER_UNAVAILABLE,
         RuntimeCapabilityState.NOT_ENTITLED,
         RuntimeCapabilityState.STALE,
+        RuntimeCapabilityState.NOT_CONFIGURED,
+        RuntimeCapabilityState.FRESHNESS_UNKNOWN,
     }
     if view.implemented and runtime_state not in blocked:
         if require_real_time and timeliness is DataTimeliness.DELAYED:
@@ -618,6 +697,24 @@ def _with_yahoo_overlay_invariants(
     )
 
 
+def _with_capability_axis_honesty(
+    view: RuntimeCapabilityView,
+    *,
+    configured: ConfiguredState,
+) -> RuntimeCapabilityView:
+    """Stamp supported ≠ configured ≠ entitled ≠ fresh without collapsing axes."""
+    if view.provider_id == YAHOO_PROVIDER_ID and configured is ConfiguredState.UNKNOWN:
+        configured = ConfiguredState.CONFIGURED
+    provenance = dict(view.provenance)
+    provenance["axes"] = {
+        "configured": configured.value,
+        "entitled": view.entitlement.value,
+        "fresh": view.timeliness is DataTimeliness.REAL_TIME,
+        "supported": view.implemented,
+    }
+    return replace(view, configured=configured, provenance=provenance)
+
+
 __all__ = [
     "CAP_CONTRACT_RESOLUTION",
     "CAP_DELAYED_OVERLAY",
@@ -629,6 +726,7 @@ __all__ = [
     "CAP_OPTION_CONTRACT",
     "CAP_REPLAY",
     "CAP_TRADES",
+    "ConfiguredState",
     "DataTimeliness",
     "EntitlementState",
     "ObservationalAuthority",
