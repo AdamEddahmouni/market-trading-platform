@@ -40,6 +40,13 @@ from .promotion import (
     assert_not_opportunity_engine_input,
     assert_research_only,
 )
+from .security import (
+    FactorSecurityBindingV1,
+    bind_factor_observation,
+    build_security_binding,
+    security_binding_from_dict,
+    security_binding_to_dict,
+)
 
 __all__ = [
     "CharacteristicTransform",
@@ -50,6 +57,7 @@ __all__ = [
     "FactorExpressionClass",
     "FactorFamily",
     "FactorObservationV1",
+    "FactorSecurityBindingV1",
     "FactorSign",
     "InvalidDenominatorRule",
     "LIVE_ELIGIBLE",
@@ -59,13 +67,17 @@ __all__ = [
     "OPPORTUNITY_ENGINE_RANKING_ELIGIBLE",
     "assert_not_opportunity_engine_input",
     "assert_research_only",
+    "bind_factor_observation",
     "build_construction_spec",
     "build_experiment_manifest",
     "build_factor_observation",
+    "build_security_binding",
     "construction_spec_from_dict",
     "construction_spec_to_dict",
     "experiment_manifest_from_dict",
     "experiment_manifest_to_dict",
     "factor_observation_from_dict",
     "factor_observation_to_dict",
+    "security_binding_from_dict",
+    "security_binding_to_dict",
 ]
