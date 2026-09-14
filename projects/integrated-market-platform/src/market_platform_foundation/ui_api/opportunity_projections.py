@@ -13,6 +13,13 @@ from .agent_enrichment_ingest import overlay_agent_enrichment_on_detail
 from .research_artifact_evidence import overlay_research_artifact_evidence_on_detail
 from .store import ReplayStore
 
+try:
+    from ..hot_path_telemetry.collector import HotPathClockCollector
+    from ..rt01.clock import monotonic_process_ns
+except ImportError:  # pragma: no cover
+    HotPathClockCollector = None  # type: ignore[misc, assignment]
+    monotonic_process_ns = None  # type: ignore[assignment]
+
 _REVIEW_METADATA_PROJECTION = (
     "evidence_promotion_reason",
     "family_admission_status",
@@ -178,6 +185,7 @@ def build_opportunities_summary_payload(
     *,
     cursor: str | None = None,
     limit: int | None = None,
+    hot_path_collector: HotPathClockCollector | None = None,
 ) -> dict[str, Any]:
     if _is_live(store):
         return {
@@ -199,11 +207,17 @@ def build_opportunities_summary_payload(
     page = ranked[start : start + page_size]
     next_cursor = page[-1].summary_id if len(page) == page_size and start + page_size < len(ranked) else None
     status, unready_reason = _feed_status(store, len(ranked))
+    items: list[dict[str, Any]] = []
+    for row in page:
+        serialized = _serialize_review_row(row, store)
+        items.append(serialized)
+        if hot_path_collector is not None and row.opportunity_id and monotonic_process_ns is not None:
+            hot_path_collector.note_operator_surfaced(str(row.opportunity_id), monotonic_process_ns())
     payload: dict[str, Any] = {
         "as_of_context": projections.build_as_of_context(store),
         "quality_summary": projections.build_quality_summary(store),
         "feed_status": status,
-        "items": [_serialize_review_row(row, store) for row in page],
+        "items": items,
         "next_cursor": next_cursor,
     }
     if status == "UNREADY":
