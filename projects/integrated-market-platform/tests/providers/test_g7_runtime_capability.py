@@ -19,6 +19,7 @@ from market_platform_foundation.providers.registry import ProviderRegistry  # no
 from market_platform_foundation.providers.runtime_capability import (  # noqa: E402
     CAP_L1,
     CAP_L2,
+    ConfiguredState,
     DataTimeliness,
     EntitlementState,
     ProviderHealth,
@@ -419,6 +420,128 @@ class RuntimeCapabilityTests(unittest.TestCase):
             result.diagnostics,
             ("ES_FUTURES_NOT_SUPPORTED_BY_DELAYED_EQUITY_OVERLAY",),
         )
+
+    def test_supported_is_not_configured(self) -> None:
+        from market_platform_foundation.providers.ibkr_observational.capability import (
+            IBKR_PROVIDER_ID,
+        )
+
+        registry = RuntimeCapabilityRegistry()
+        registry.set_runtime_state(
+            ProviderRuntimeState(
+                provider_id=IBKR_PROVIDER_ID,
+                health=ProviderHealth.HEALTHY,
+                entitlement=EntitlementState.ENTITLED,
+                timeliness=DataTimeliness.REAL_TIME,
+                live_verified=True,
+                configured=ConfiguredState.NOT_CONFIGURED,
+            )
+        )
+        view = registry.view_capability(IBKR_PROVIDER_ID, CAP_L1, instrument_id="AAPL")
+        self.assertTrue(view.implemented)
+        self.assertEqual(view.configured, ConfiguredState.NOT_CONFIGURED)
+        self.assertEqual(view.runtime_state, RuntimeCapabilityState.NOT_CONFIGURED)
+        self.assertEqual(view.provenance["axes"]["supported"], True)
+        self.assertEqual(view.provenance["axes"]["configured"], "NOT_CONFIGURED")
+        selector = ObservationalProviderSelector(registry)
+        result = selector.select(
+            ObservationalSelectionRequest(
+                capability_id=CAP_L1,
+                instrument_id="AAPL",
+                require_real_time=True,
+                provider_id=IBKR_PROVIDER_ID,
+            )
+        )
+        self.assertEqual(result.outcome, SelectionOutcome.NOT_CONFIGURED)
+
+    def test_configured_is_not_entitled(self) -> None:
+        from market_platform_foundation.providers.ibkr_observational.capability import (
+            IBKR_PROVIDER_ID,
+        )
+
+        registry = RuntimeCapabilityRegistry()
+        registry.set_runtime_state(
+            ProviderRuntimeState(
+                provider_id=IBKR_PROVIDER_ID,
+                health=ProviderHealth.HEALTHY,
+                entitlement=EntitlementState.UNKNOWN,
+                timeliness=DataTimeliness.REAL_TIME,
+                live_verified=True,
+                configured=ConfiguredState.CONFIGURED,
+            )
+        )
+        view = registry.view_capability(
+            IBKR_PROVIDER_ID, CAP_L1, instrument_id="AAPL", require_real_time=True
+        )
+        self.assertEqual(view.configured, ConfiguredState.CONFIGURED)
+        self.assertEqual(view.entitlement, EntitlementState.UNKNOWN)
+        self.assertEqual(view.runtime_state, RuntimeCapabilityState.NOT_ENTITLED)
+        self.assertEqual(view.reason_code, "ENTITLEMENT_UNKNOWN")
+        self.assertEqual(view.provenance["axes"]["configured"], "CONFIGURED")
+        self.assertNotEqual(view.provenance["axes"]["entitled"], "ENTITLED")
+
+    def test_entitled_is_not_fresh(self) -> None:
+        from market_platform_foundation.providers.ibkr_observational.capability import (
+            IBKR_PROVIDER_ID,
+        )
+
+        registry = RuntimeCapabilityRegistry()
+        registry.set_runtime_state(
+            ProviderRuntimeState(
+                provider_id=IBKR_PROVIDER_ID,
+                health=ProviderHealth.HEALTHY,
+                entitlement=EntitlementState.ENTITLED,
+                timeliness=DataTimeliness.UNKNOWN,
+                live_verified=True,
+                configured=ConfiguredState.CONFIGURED,
+            )
+        )
+        view = registry.view_capability(
+            IBKR_PROVIDER_ID, CAP_L1, instrument_id="AAPL", require_real_time=True
+        )
+        self.assertEqual(view.entitlement, EntitlementState.ENTITLED)
+        self.assertEqual(view.timeliness, DataTimeliness.UNKNOWN)
+        self.assertFalse(view.provenance["axes"]["fresh"])
+        self.assertEqual(view.runtime_state, RuntimeCapabilityState.FRESHNESS_UNKNOWN)
+        selector = ObservationalProviderSelector(registry)
+        result = selector.select(
+            ObservationalSelectionRequest(
+                capability_id=CAP_L1,
+                instrument_id="AAPL",
+                require_real_time=True,
+                provider_id=IBKR_PROVIDER_ID,
+            )
+        )
+        self.assertEqual(result.outcome, SelectionOutcome.FRESHNESS_UNKNOWN)
+
+    def test_yahoo_overlay_configured_is_still_not_hop_l1_or_fresh(self) -> None:
+        from market_platform_foundation.providers.adapters.yahoo_delayed_equity_quote import (
+            YAHOO_PROVIDER_ID,
+        )
+        from market_platform_foundation.providers.runtime_capability import (
+            CAP_DELAYED_OVERLAY,
+        )
+
+        registry = RuntimeCapabilityRegistry()
+        view = registry.view_capability(
+            YAHOO_PROVIDER_ID, CAP_DELAYED_OVERLAY, instrument_id="AAPL"
+        )
+        self.assertTrue(view.implemented)
+        self.assertEqual(view.configured, ConfiguredState.CONFIGURED)
+        self.assertEqual(view.entitlement, EntitlementState.DELAYED)
+        self.assertFalse(view.provenance["axes"]["fresh"])
+        self.assertFalse(view.provenance.get("hop_l1"))
+        selector = ObservationalProviderSelector(registry)
+        result = selector.select(
+            ObservationalSelectionRequest(
+                capability_id=CAP_L1,
+                instrument_id="AAPL",
+                require_real_time=True,
+                provider_id=YAHOO_PROVIDER_ID,
+            )
+        )
+        self.assertEqual(result.outcome, SelectionOutcome.NO_PROVIDER)
+        self.assertEqual(result.diagnostics, (f"UNKNOWN_PROVIDER:{YAHOO_PROVIDER_ID}",))
 
 
 if __name__ == "__main__":

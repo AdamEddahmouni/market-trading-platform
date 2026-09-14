@@ -29,6 +29,8 @@ class SelectionOutcome(StrEnum):
     UNSUPPORTED_INSTRUMENT = "UNSUPPORTED_INSTRUMENT"
     AMBIGUOUS = "AMBIGUOUS"
     REPLAY_ONLY = "REPLAY_ONLY"
+    NOT_CONFIGURED = "NOT_CONFIGURED"
+    FRESHNESS_UNKNOWN = "FRESHNESS_UNKNOWN"
 
 
 @dataclass(frozen=True, slots=True)
@@ -146,8 +148,14 @@ class ObservationalProviderSelector:
             if view.runtime_state == RuntimeCapabilityState.PROVIDER_UNAVAILABLE:
                 diagnostics.append(f"PROVIDER_DOWN:{pid}")
                 continue
+            if view.runtime_state == RuntimeCapabilityState.NOT_CONFIGURED:
+                diagnostics.append(f"NOT_CONFIGURED:{pid}")
+                continue
             if view.runtime_state == RuntimeCapabilityState.NOT_ENTITLED:
                 diagnostics.append(f"NOT_ENTITLED:{pid}")
+                continue
+            if view.runtime_state == RuntimeCapabilityState.FRESHNESS_UNKNOWN:
+                diagnostics.append(f"FRESHNESS_UNKNOWN:{pid}")
                 continue
             if view.runtime_state == RuntimeCapabilityState.STALE:
                 diagnostics.append(f"STALE:{pid}")
@@ -193,7 +201,7 @@ class ObservationalProviderSelector:
                 "provider_id": selected_id,
                 "selection_policy": "deterministic_priority",
             }
-            for key in ("overlay_role", "hop_l1", "timeliness"):
+            for key in ("overlay_role", "hop_l1", "timeliness", "axes"):
                 if key in selected_view.provenance:
                     provenance[key] = selected_view.provenance[key]
 
@@ -245,8 +253,12 @@ def _validate_instrument_kind(
 
 def _failure_outcome(diagnostics: list[str]) -> SelectionOutcome:
     joined = " ".join(diagnostics)
+    if "NOT_CONFIGURED" in joined:
+        return SelectionOutcome.NOT_CONFIGURED
     if "NOT_ENTITLED" in joined:
         return SelectionOutcome.NOT_ENTITLED
+    if "FRESHNESS_UNKNOWN" in joined:
+        return SelectionOutcome.FRESHNESS_UNKNOWN
     if "DELAYED" in joined:
         return SelectionOutcome.DELAYED_REJECTED
     if "STALE" in joined:
