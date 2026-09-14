@@ -36,17 +36,6 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-14 — Phase 3 Lane F: Edge Stats opportunity evidence attach
-
-| Field | Value |
-|-------|-------|
-| **Status** | `complete` |
-| **Area** | `intelligence`, `ui_api`, `research` |
-| **Summary** | Generic `research_artifact_evidence` read-model on opportunity detail/evidence (cold path only): precomputed `EDGE_STATS_EVIDENCE_ARTIFACT` catalog resolve by `content_sha256`, attachment sidecar on `strategy_repository`, HTTP `POST /intelligence/ingest/research-artifact-attachment`. Projects sample N, CI, recent/full, stability, regime/time splits, dataset identity, `INSUFFICIENT_DATA` honesty. Readiness `EDGE_STATS_OPPORTUNITY_EVIDENCE_READY`. `EVIDENCE_NOT_PREDICTION` — no ranking/side/order authority. |
-| **Key files** | `intelligence/opportunity/research_artifact_evidence.py`, `intelligence/ingest/research_artifact_attachment.py`, `ui_api/research_artifact_evidence.py`, `research/edge_stats/precomputed_catalog.py` |
-| **Tests** | `tests/intelligence/test_opportunity_research_artifact_evidence.py` |
-| **Related** | Phase 2 #151 edge-stats artifact; Lane C consumes API only |
-
 ## 2026-09-15 — PROGRAM_STATUS: Phase 2 merge queue empty at `0eca0c8b`
 
 | Field | Value |
