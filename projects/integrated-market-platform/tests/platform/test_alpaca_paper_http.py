@@ -9,6 +9,7 @@ import os
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
 
@@ -20,6 +21,7 @@ from market_platform_foundation.paper.calibration.runner import (  # noqa: E402
     STATUS_ENVIRONMENT_AMBIGUOUS,
     STATUS_HARNESS_READY,
     STATUS_LIVE_FORBIDDEN,
+    STATUS_WAITING_FOR_MARKET,
     alpaca_paper_configured,
     classify_calibration_run,
     run_calibration_campaign,
@@ -226,6 +228,18 @@ class RunnerFailClosedTests(unittest.TestCase):
             classify_calibration_run(env=PAPER_ENV, now_ns=T0, requested_mode="LIVE"),
             STATUS_LIVE_FORBIDDEN,
         )
+
+    def test_pre_rth_utc_now_is_waiting_not_ready(self) -> None:
+        # Monday 2026-09-14 12:54 UTC = 08:54 ET premarket. Naive UTC must not
+        # be treated as America/New_York (that would false-ready the harness).
+        now_ns = int(datetime(2026, 9, 14, 12, 54, 15, tzinfo=timezone.utc).timestamp() * 1_000_000_000)
+        result = run_calibration_campaign(env=PAPER_ENV, now_ns=now_ns)
+        self.assertEqual(result.status, STATUS_WAITING_FOR_MARKET)
+        self.assertNotEqual(result.status, STATUS_HARNESS_READY)
+        self.assertFalse(result.calibrated)
+        self.assertFalse(result.empirical_active)
+        self.assertFalse(result.detail["orders_placed"])
+        self.assertEqual(result.pair_count, 0)
 
     def test_place_orders_flag_cannot_place_or_claim_calibrated(self) -> None:
         result = run_calibration_campaign(

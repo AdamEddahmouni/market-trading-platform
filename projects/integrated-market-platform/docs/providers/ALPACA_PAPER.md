@@ -61,7 +61,11 @@ Names may be supplied via process env or gitignored `.private` env files.
 | `IMP_ALPACA_PAPER_HTTP=1` | unset | fixture / `BROKER_TRANSPORT_NOT_IMPLEMENTED` |
 
 Composition is xor with Tradier 4A and Moomoo 4C (`PAPER_EXECUTION_PROVIDER_CONFLICT`).
+Composition is xor with Tradier 4A and Moomoo 4C (`PAPER_EXECUTION_PROVIDER_CONFLICT`).
 The harness `--place-sandbox-orders` flag is ignored; `orders_placed` stays false.
+Classifier session labels use timezone-aware UTC converted to
+`America/New_York`. A UTC-only VM must not treat 12:xx UTC as Eastern cash RTH
+(`HARNESS_READY`). Premarket and closed clocks stay `WAITING_FOR_MARKET`.
 
 ---
 
