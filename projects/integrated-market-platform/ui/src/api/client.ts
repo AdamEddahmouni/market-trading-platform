@@ -2,3 +2,4 @@
 export * from "./schemas";
 export { api } from "./endpoints";
 export * from "./hooks";
+export * from "./errors";

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ApiRequestError } from "../../api/fetchJson";
+import { ApiRequestError, formatApiRequestError } from "../../api/errors";
 import { usePaperPortfolioQuery, usePreviewPaperOrderMutation } from "../../api/hooks";
 import type { PaperOrderPreviewResponse } from "../../api/schemas";
 import type { Mode } from "../mode-session/types";
@@ -51,7 +51,7 @@ export function DerivativePaperPreviewPanel({
       setPreview(response.preview);
     } catch (err) {
       setPreview(null);
-      setError(err instanceof ApiRequestError ? err.message : err instanceof Error ? err.message : "Preview failed");
+      setError(err instanceof ApiRequestError ? formatApiRequestError(err) : err instanceof Error ? err.message : "Preview failed");
     }
   }
 

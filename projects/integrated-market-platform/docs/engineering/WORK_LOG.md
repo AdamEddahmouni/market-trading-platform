@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — UI consumes API `error_category` taxonomy
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/api` |
+| **Summary** | Frontend typed union in `ui/src/api/errors.ts` matches the twelve backend WS05 `error_category` values from PR #90. Request failures parse `{ error, reason_code, error_category }` and fail closed when the category is omitted or unknown — no frontend `reason_code` map and no server-map expansion. Classified Paper preview/submit errors surface `error_category: reason_code: error`. |
+| **Key files** | `ui/src/api/errors.ts`, `ui/src/api/fetchJson.ts`, `ui/src/components/paper/OrderTicket.tsx`, `ui/src/components/paper-now/PaperNowPage.tsx`, `ui/src/components/paper-derivative/DerivativePaperPreviewPanel.tsx`, `tests/ui1/test_error_taxonomy.py`, `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | pending local `npm test` / `npm run typecheck` / `npm run build` and `python3 -m unittest tests.ui1.test_error_taxonomy` |
+| **Related** | PR #90 backend taxonomy; TD-AP1 / API-004 frontend union |
+| **Notes** | Opportunity API semantics, board-03 chrome, and `ui_api/errors.py` reason-code map unchanged. |
+
 ## 2026-09-14 — Developer runbook P2 nav names
 
 | Field | Value |

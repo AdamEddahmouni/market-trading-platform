@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { AttentionItem, PaperPortfolioResponse } from "../../api/client";
-import { ApiRequestError } from "../../api/fetchJson";
+import { ApiRequestError, formatApiRequestError } from "../../api/errors";
 import { usePreviewPaperOrderMutation } from "../../api/hooks";
 import { useOpportunitiesSummaryQuery, useOpportunityAckMutation } from "../../api/opportunityClient";
 import { workspacePathForInstrument } from "../../api/instrumentIdentity";
@@ -87,7 +87,7 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
       const response = await previewMutation.mutateAsync(buildPaperOrderRequest(draft, createPaperPreviewAttemptKey("paper-now")));
       if (previewGeneration.current === generation) setConfirmedPreview({ fingerprint: requestFingerprint, value: response.preview });
     } catch (error) {
-      if (previewGeneration.current === generation) setPreviewError(error instanceof ApiRequestError ? `${error.code}: ${error.message}` : "Preview failed. Retry when ready.");
+      if (previewGeneration.current === generation) setPreviewError(error instanceof ApiRequestError ? formatApiRequestError(error) : "Preview failed. Retry when ready.");
     }
   }
 

@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiRequestError } from "../../api/errors";
 import type { PaperOrderPreviewResponse } from "../../api/schemas";
 import paperNowCss from "../../styles/paper-now.css?raw";
 import { PaperNowPage, type PaperNowPageProps } from "./PaperNowPage";
@@ -233,6 +234,22 @@ describe("PaperNowPage", () => {
     expect(screen.getByRole("radio", { name: "BUY" })).toBeChecked();
     expect(screen.getByRole("spinbutton", { name: "Quantity" })).toHaveValue(17);
     expect(screen.getByRole("button", { name: "Retry preview" })).toBeEnabled();
+  });
+
+  it("surfaces API error_category on classified preview failure", async () => {
+    mocks.previewPaperOrder.mockRejectedValueOnce(
+      new ApiRequestError({
+        error: "Account is unknown",
+        reason_code: "OPERATIONAL_ACCOUNT_UNKNOWN",
+        error_category: "ACCOUNT_UNAVAILABLE",
+      }),
+    );
+    renderPage();
+    completeDraft("17");
+    fireEvent.click(screen.getByRole("button", { name: "Preview order" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "ACCOUNT_UNAVAILABLE: OPERATIONAL_ACCOUNT_UNKNOWN: Account is unknown",
+    );
   });
 
   it("contains no submission, cancellation, or session mutation controls", () => {

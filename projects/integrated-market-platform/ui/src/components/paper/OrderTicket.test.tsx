@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiRequestError } from "../../api/errors";
 import type { PaperOrderPreviewResponse } from "../../api/schemas";
 import type { PaperOrderDraft } from "../paper-now/paperOrderDraft";
 import { OrderTicket } from "./OrderTicket";
@@ -57,6 +58,22 @@ describe("OrderTicket workspace revalidation", () => {
     mocks.previewPaperOrder.mockRejectedValueOnce(new Error("offline"));
     renderTicket(validDraft);
     expect(await screen.findByText("Preview failed")).toBeInTheDocument();
+    expect(screen.getByRole("spinbutton", { name: "Quantity" })).toHaveValue(12);
+    expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
+  });
+
+  it("surfaces API error_category when preview is classified", async () => {
+    mocks.previewPaperOrder.mockRejectedValueOnce(
+      new ApiRequestError({
+        error: "Paper execution is not authorized",
+        reason_code: "PAPER_EXECUTION_NOT_AUTHORIZED",
+        error_category: "MODE_BLOCKED",
+      }),
+    );
+    renderTicket(validDraft);
+    expect(
+      await screen.findByText("MODE_BLOCKED: PAPER_EXECUTION_NOT_AUTHORIZED: Paper execution is not authorized"),
+    ).toBeInTheDocument();
     expect(screen.getByRole("spinbutton", { name: "Quantity" })).toHaveValue(12);
     expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
   });
