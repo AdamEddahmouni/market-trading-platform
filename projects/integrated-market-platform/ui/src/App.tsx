@@ -119,6 +119,11 @@ const OperatorSettingsPage = lazy(() =>
     default: module.OperatorSettingsPage,
   })),
 );
+const ImpContextTrustLayer = lazy(() =>
+  import("./components/imp-product/ImpContextTrustLayer").then((module) => ({
+    default: module.ImpContextTrustLayer,
+  })),
+);
 const OperatorControlCenterPage = lazy(() =>
   import("./components/OperatorControlCenterPage").then((module) => ({
     default: module.OperatorControlCenterPage,
@@ -185,7 +190,6 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [assistantBusy, setAssistantBusy] = useState(false);
   const [selectionRef, setSelectionRef] = useState<string | null>(null);
-
   const contextQuery = useContextQuery();
   const attentionQuery = useAttentionQuery();
   const replaySessionQuery = useReplaySessionQuery();
@@ -359,10 +363,15 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
             contextState={contextState}
           />
           {contextQuery.data ? (
-            <ContextBar
-              context={contextQuery.data}
-              onQualityClick={() => navigate("/diagnostics/provider")}
-            />
+            <>
+              <ContextBar
+                context={contextQuery.data}
+                onQualityClick={() => navigate("/diagnostics/provider")}
+              />
+              <LazyBoundary>
+                <ImpContextTrustLayer context={contextQuery.data} />
+              </LazyBoundary>
+            </>
           ) : (
             <div className="context-bar context-bar-unavailable" aria-hidden="true">
               Backend context is not available.
@@ -395,7 +404,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
               }
             />
             <Route path="/workspace" element={<WorkspaceIndex />} />
-            <Route path="/lab" element={<WorkspaceIndex />} />
+            <Route path="/lab" element={<Navigate to="/research" replace />} />
             <Route
               path="/workspace/:symbol"
               element={

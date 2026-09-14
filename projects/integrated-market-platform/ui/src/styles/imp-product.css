@@ -651,3 +651,123 @@
     transform: none;
   }
 }
+
+.imp-posture-account {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.imp-capability-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 6px 16px;
+  min-height: 32px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(8, 10, 16, 0.85);
+  font-size: 12px;
+}
+
+.imp-capability-strip-label {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.imp-capability-strip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+}
+
+.imp-capability-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-1);
+}
+
+.imp-capability-ok {
+  border-color: rgba(61, 153, 112, 0.45);
+}
+
+.imp-capability-warn {
+  border-color: rgba(212, 160, 23, 0.45);
+}
+
+.imp-capability-blocked,
+.imp-capability-muted {
+  border-color: rgba(180, 90, 90, 0.35);
+  opacity: 0.92;
+}
+
+.imp-capability-icon {
+  font-size: 10px;
+}
+
+.imp-capability-name {
+  font-weight: 600;
+}
+
+.imp-capability-state {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.imp-capability-reason {
+  color: var(--text-muted);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.imp-capability-matrix-trigger {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.imp-provider-matrix-drawer .imp-provider-matrix-body {
+  display: grid;
+  gap: 18px;
+}
+
+.imp-provider-matrix-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.imp-provider-matrix-row {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.imp-provider-matrix-links {
+  margin: 0;
+  padding-left: 18px;
+}

@@ -51,6 +51,7 @@ export const queryKeys = {
   liveCanaryReconciliation: (accountId?: string) =>
     ["live", "canary-reconciliation", accountId ?? "fp-canary-local"] as const,
   providerHealth: ["provider", "health"] as const,
+  operatorReadiness: ["operator", "readiness"] as const,
   symbolSearch: (query: string) => ["symbols", "search", query] as const,
   instrumentSearch: (query: string, limit = 25) => ["is", query, String(limit)] as const,
   optionsProduct: (instrumentId: string, mode: Mode, accountId?: string, provider = "fixture") =>
@@ -63,6 +64,15 @@ export const queryKeys = {
 
 export function useContextQuery() {
   return useQuery({ queryKey: queryKeys.context, queryFn: api.getContext });
+}
+
+export function useOperatorReadinessQuery(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.operatorReadiness,
+    queryFn: api.getOperatorReadiness,
+    enabled,
+    staleTime: 60_000,
+  });
 }
 
 export function useAttentionQuery() {
@@ -226,11 +236,12 @@ export function useAssistantMessagesQuery(conversationId: string | null) {
   });
 }
 
-export function usePaperPortfolioQuery(viewMode: "DEMO" | "PAPER" = "PAPER") {
+export function usePaperPortfolioQuery(viewMode: "DEMO" | "PAPER" = "PAPER", enabled = true) {
   const queryKey = viewMode === "DEMO" ? queryKeys.demoPortfolio : queryKeys.paperPortfolio;
   return useQuery({
     queryKey,
     queryFn: () => api.getPaperPortfolio(viewMode),
+    enabled,
   });
 }
 

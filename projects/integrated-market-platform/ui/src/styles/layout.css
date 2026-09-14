@@ -672,10 +672,25 @@ body,
   color: var(--text-secondary);
 }
 
+.workspace-module-nav-sticky {
+  position: sticky;
+  top: calc(var(--nav-height) + var(--context-bar-height) + 36px);
+  z-index: 5;
+  margin-top: 12px;
+  padding: 8px 0 10px;
+  background: linear-gradient(
+    180deg,
+    rgba(12, 14, 20, 0.98) 0%,
+    rgba(12, 14, 20, 0.92) 70%,
+    rgba(12, 14, 20, 0) 100%
+  );
+  backdrop-filter: blur(6px);
+}
+
 .workspace-module-nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
-  margin-top: 12px;
 }
 
 .workspace-module-nav a {
@@ -691,6 +706,7 @@ body,
   color: var(--text-primary);
   border-color: var(--border-focus);
   background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px rgba(91, 141, 239, 0.35);
 }
 
 .squeeze-state-machine {

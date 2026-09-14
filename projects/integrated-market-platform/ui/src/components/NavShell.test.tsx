@@ -29,8 +29,9 @@ describe("NavShell", () => {
 
   it("adds Paper simulation hints", () => {
     renderNav("PAPER");
-    expect(screen.getByRole("link", { name: "Portfolio — Simulation" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Orders — Simulation" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Portfolio — Orders history" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Workspace — Decision desk" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Lab — Model & sim labs" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Opportunity Radar — Discovery desk" })).toBeInTheDocument();
   });
 
