@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — PROGRAM_STATUS: Phase 2 merge queue empty at `0eca0c8b`
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `platform` |
+| **Summary** | Pin Canonical origin/main SHA to `0eca0c8b` (merge #153). Record Phase 2 orchestrator merge queue **EMPTY** with merged lanes A/B/C/D/F/G/H (#151–#157), Lane E **NO-GO** (no governed Path A training corpus), ingress default still `put_event` unless `ingress_router=`, SEC vertical honest limits (not `SEC_TO_OPPORTUNITY_VERTICAL_READY`; Market Trackers live **NOT_EXECUTED**), Vela lab-only, Grok detail-only attach. Item 7/9 stay **PARTIAL**; FTEP **not** `EMPIRICAL_ACTIVE`; Live OFF; simulator **not** `CALIBRATED`. FTEP-V1-002 durable sessions **2**, empirical locks **0** unchanged. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/check_docs_links.py` (pending on docs PR) |
+| **Related** | [PR #153](https://github.com/AdamEddahmouni/market-trading-platform/pull/153) tip; Phase 2 merges #151–#157 |
+| **Notes** | Docs-only orchestrator closure. Did not mass-rebase Lane I. Did not close #21 or UX stack. Did not claim tomorrow RTH work executed. |
+
 ## 2026-09-14 — Lane D PR #154: classify hot_path_telemetry for closure
 
 | Field | Value |
