@@ -55,6 +55,13 @@ Any request classified as below must be rejected at the ingest boundary — **no
 - Position, risk, strategy, or credential mutation
 - `MODE_AUTHORITY` mutation
 
+Typed `ForbiddenIngestMutation` members (must match docs):
+
+| Paper/Live | Other |
+|------------|-------|
+| `PAPER_SUBMIT`, `PAPER_CANCEL`, `PAPER_REPLACE` | `POSITION_MUTATION`, `RISK_MUTATION`, `STRATEGY_MUTATION` |
+| `LIVE_SUBMIT`, `LIVE_CANCEL`, `LIVE_REPLACE` | `CREDENTIAL_MUTATION`, `MODE_AUTHORITY_MUTATION` |
+
 Typed guard: `reject_forbidden_ingest_mutation()` in `intelligence/contracts/agent_ingest.py`.
 
 ## Evidence object (`AgentEnrichmentEvidenceV1`)

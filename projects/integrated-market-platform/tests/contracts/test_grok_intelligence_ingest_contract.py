@@ -71,12 +71,24 @@ class GrokIntelligenceIngestContractTests(unittest.TestCase):
             validate_ingest_operation_allowed("PAPER_SUBMIT")
 
     def test_forbidden_mutations_fail_closed(self) -> None:
-        for mutation in (
-            ForbiddenIngestMutation.PAPER_SUBMIT,
-            ForbiddenIngestMutation.MODE_AUTHORITY_MUTATION,
-        ):
-            with self.assertRaises(ValueError):
-                reject_forbidden_ingest_mutation(mutation)
+        """Every ForbiddenIngestMutation value matches GROK_INTELLIGENCE_INGEST_API.md."""
+        doc_paper_live = frozenset(
+            {
+                ForbiddenIngestMutation.PAPER_SUBMIT,
+                ForbiddenIngestMutation.PAPER_CANCEL,
+                ForbiddenIngestMutation.PAPER_REPLACE,
+                ForbiddenIngestMutation.LIVE_SUBMIT,
+                ForbiddenIngestMutation.LIVE_CANCEL,
+                ForbiddenIngestMutation.LIVE_REPLACE,
+            }
+        )
+        self.assertTrue(doc_paper_live.issubset(frozenset(ForbiddenIngestMutation)))
+        for mutation in ForbiddenIngestMutation:
+            with self.subTest(mutation=mutation.value):
+                with self.assertRaises(ValueError):
+                    reject_forbidden_ingest_mutation(mutation)
+                with self.assertRaises(ValueError):
+                    reject_forbidden_ingest_mutation(mutation.value)
 
     def test_bot_capability_matrix(self) -> None:
         self.assertTrue(
