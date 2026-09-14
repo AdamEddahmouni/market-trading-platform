@@ -162,6 +162,17 @@ When documents disagree, resolve in this order (highest first):
 
 ---
 
+## Research
+
+| Topic | Document |
+|-------|----------|
+| Research Export v1 (PIT package + MATLAB handoff) | [RESEARCH_EXPORT_V1.md](research/RESEARCH_EXPORT_V1.md) |
+| Strategy readiness model | [STRATEGY_READINESS_MODEL.md](research/STRATEGY_READINESS_MODEL.md) |
+
+MATLAB consumes Research Export v1 JSON. The overnight Parquet-bridge blueprint is historical (`DEFER-MATLAB-BRIDGE`). Do not stamp `PIT-PASS` on fixture exports.
+
+---
+
 ## Audits
 
 | Topic | Document |

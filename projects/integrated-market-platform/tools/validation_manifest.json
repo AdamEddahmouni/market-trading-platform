@@ -427,6 +427,11 @@
       "source_globs": [
         "src/market_platform_foundation/research/decision_research/**",
         "src/market_platform_foundation/research/wave1/**",
+        "src/market_platform_foundation/research/export_v1*.py",
+        "src/market_platform_foundation/research/matlab_environment.py",
+        "src/market_platform_foundation/research/pit_export.py",
+        "research/matlab/**",
+        "tools/research/build_research_export_v1.py",
         "config/wave1/**",
         "tests/fixtures/research/**"
       ],
