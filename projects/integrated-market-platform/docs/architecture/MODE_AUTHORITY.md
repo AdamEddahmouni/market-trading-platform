@@ -67,7 +67,7 @@
 
 ## Broker paper (P4-4A/4B)
 
-Separate sandbox adapter — requires explicit env gates (`IMP_TRADIER_PAPER`, `IMP_BROKER_PAPER_EXECUTION`, token, sandbox endpoint). Never mixed with internal Paper authority without explicit composition rules.
+Separate sandbox/Paper adapters — Tradier `#41` remains fail-closed (`IMP_TRADIER_PAPER`, `IMP_BROKER_PAPER_EXECUTION`, token, sandbox endpoint). Alpaca Paper (stdlib urllib to `https://paper-api.alpaca.markets` only) uses `IMP_ALPACA_PAPER`, paper keys, and the Paper origin; `api.alpaca.markets` is `LIVE_FORBIDDEN`. At most one external paper provider per composition. Never mixed with internal Paper authority without explicit composition rules. Live Alpaca and the Alpaca SDK stay unauthorized.
 
 ## Implementation references
 

@@ -64,8 +64,10 @@ python tools/imp.py validate full   # Paper-execution-path / release only
 | `FINRA_CLIENT_ID` | FINRA OAuth client ID |
 | `FINRA_CLIENT_SECRET` | FINRA OAuth client secret |
 | `ANTHROPIC_API_KEY` | Assistant inference (not used by BUILD 09) |
+| `APCA_API_KEY_ID` | Alpaca **Paper** key id (optional; missing → `COMPARATOR_NOT_CONFIGURED`) |
+| `APCA_API_SECRET_KEY` | Alpaca **Paper** secret (optional; never commit; live host forbidden) |
 
-See `.env.example` for the complete variable catalog.
+See `.env.example` for the complete variable catalog. Paper keys belong in gitignored `.private`. Never set `APCA_API_BASE_URL` to `https://api.alpaca.markets`.
 
 ## Local-only services (not available in cloud VM)
 

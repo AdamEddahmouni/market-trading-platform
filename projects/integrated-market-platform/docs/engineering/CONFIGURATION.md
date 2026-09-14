@@ -42,6 +42,10 @@ Each provider has `IMP_*_LIVE=1` gate + credential vars. See `.env.example` and 
 | `IMP_BROKER_PAPER_EXECUTION=1` | Broker paper authority |
 | `IMP_TRADIER_TOKEN` | **Sensitive** — sandbox only |
 | `IMP_TRADIER_ENDPOINT` | Must be sandbox URL |
+| `IMP_ALPACA_PAPER=1` | Enable Alpaca Paper adapter (stdlib urllib; no SDK) |
+| `APCA_API_KEY_ID` / `APCA_API_SECRET_KEY` | **Sensitive** — Paper keys only; missing → `COMPARATOR_NOT_CONFIGURED` |
+| `APCA_API_BASE_URL` | Must be `https://paper-api.alpaca.markets`; live host `LIVE_FORBIDDEN` |
+| `IMP_ALPACA_PAPER_HTTP=1` | Opt-in Paper HTTPS (first probe `GET /v2/account`) |
 
 ## Testing / debug
 

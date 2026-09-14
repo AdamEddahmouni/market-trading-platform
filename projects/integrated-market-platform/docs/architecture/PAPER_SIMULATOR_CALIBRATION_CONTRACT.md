@@ -46,9 +46,15 @@ Observations persist on PD-09 schema v6 `forward_test_observations` — no
 second campaign DB.
 
 The campaign runner classifies `COMPARATOR_NOT_CONFIGURED` or
-`WAITING_FOR_MARKET` when credentials are absent or the session is closed. It
-does not fabricate empirical fills, does not declare `CALIBRATED`, and does
-not flip FTEP to `EMPIRICAL_ACTIVE`. Numeric gates remain `UNSET/BLOCKING`.
+`WAITING_FOR_MARKET` when credentials are absent or the session is closed.
+Alpaca Paper (`https://paper-api.alpaca.markets`, stdlib urllib, no SDK import)
+is the no-fee HTTPS comparator; missing keys stay `COMPARATOR_NOT_CONFIGURED`
+with `orders_placed=false` and `fabricated_fills=false`. Live
+`api.alpaca.markets` is `LIVE_FORBIDDEN` before `urlopen`. Tradier `#41` remains
+in tree and fail-closed. The runner does not fabricate empirical fills, does not
+declare `CALIBRATED`, and does not flip FTEP to `EMPIRICAL_ACTIVE`. Numeric
+gates remain `UNSET/BLOCKING`. Item 9 stays PARTIAL until operator Paper keys
+exist in gitignored `.private`.
 
 ## Required comparison metrics
 

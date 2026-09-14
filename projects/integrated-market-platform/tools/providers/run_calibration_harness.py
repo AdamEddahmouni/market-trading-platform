@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Classify IMP vs Tradier sandbox calibration without fabricating fills.
+"""Classify IMP vs Tradier sandbox or Alpaca Paper calibration without fabricating fills.
 
 Default: print harness status (COMPARATOR_NOT_CONFIGURED / WAITING_FOR_MARKET /
-HARNESS_READY). Never places Live orders. Does not declare CALIBRATED or
-FTEP EMPIRICAL_ACTIVE. Equity Paper does not validate ES futures fills.
+HARNESS_READY / LIVE_FORBIDDEN). Never places Live orders. Does not declare
+CALIBRATED or FTEP EMPIRICAL_ACTIVE. Equity Paper does not validate ES futures fills.
+Missing Alpaca Paper keys stay COMPARATOR_NOT_CONFIGURED.
 """
 
 from __future__ import annotations
