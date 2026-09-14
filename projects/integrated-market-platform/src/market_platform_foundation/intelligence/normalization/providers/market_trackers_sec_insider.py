@@ -54,7 +54,7 @@ def normalize_sec_insider_row(
     context: NormalizationContext,
     edgar_primary: Mapping[str, Any] | EdgarPrimarySubmission | None = None,
 ) -> NormalizationResult:
-    """Normalize a Market Trackers insider JSON row to EventV1 with EDGAR-primary clocks."""
+    """Normalize a Market Trackers insider JSON row to EventV1 (optional EDGAR-primary reconcile)."""
     raw = copy.deepcopy(row)
     validation = validate_market_trackers_row(raw)
     if not validation.ok:
@@ -164,26 +164,27 @@ def normalize_sec_insider_row(
         )
 
     if clocks.economic_event_time_ns is not None and available_time_ns <= clocks.economic_event_time_ns:
-        if clocks.sec_acceptance_time_ns == 0:
-            pass
-        elif available_time_ns == clocks.economic_event_time_ns:
-            return NormalizationResult(
-                event=None,
-                diagnostics=(
-                    NormalizationDiagnostic(
-                        code=NormalizationErrorCode.INVALID_TIMESTAMP,
-                        message="available_time_ns must not equal transaction date",
-                        field="available_time_ns",
-                    ),
+        return NormalizationResult(
+            event=None,
+            diagnostics=(
+                NormalizationDiagnostic(
+                    code=NormalizationErrorCode.INVALID_TIMESTAMP,
+                    message="available_time_ns must be after economic transaction attribution",
+                    field="available_time_ns",
                 ),
-            )
+            ),
+        )
+
+    edgar_primary_supplied = edgar_primary is not None
+    publication_authority = PRIMARY_PUBLISHER_ID if edgar_primary_supplied else PROVIDER_ID
 
     payload = sanitize_payload(
         {
             **event_prep.payload_core,
             "clocks": clocks.to_payload_clocks(),
             "clock_doctrine": {
-                "primary_authority": PRIMARY_PUBLISHER_ID,
+                "edgar_primary_supplied": edgar_primary_supplied,
+                "publication_authority": publication_authority,
                 "aggregator_provider": PROVIDER_ID,
                 "event_time_role": "economic_attribution_when_transactedAt_present",
                 "available_time_role": "lawful_publication_acceptance_retrieved_received",

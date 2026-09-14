@@ -39,12 +39,29 @@ def _load_edgar(name: str) -> dict:
 
 
 class MarketTrackersSecInsiderEventV1Tests(unittest.TestCase):
-    def test_registry_exposes_normalizer_for_lane_a(self) -> None:
+    def test_registry_default_path_is_aggregator_only(self) -> None:
         fn = get_normalizer("market_trackers.sec_insider")
         self.assertIsNotNone(fn)
         self.assertIs(fn, normalize_sec_insider_row)
+        row = _load_mt("form4_open_market_purchase.json")
+        ctx = NormalizationContext(
+            received_time_ns=_PLATFORM_RECEIVED_NS,
+            ingestion_mode=IngestionMode.FIXTURE,
+        )
+        result = fn(row, context=ctx)
+        self.assertTrue(result.ok, result.diagnostics)
+        assert result.event is not None
+        flags = result.event.payload["reconcile_flags"]
+        self.assertIn("SEC_PRIMARY_NOT_SUPPLIED_AGGREGATOR_FILING_ONLY", flags)
+        self.assertIn("AGGREGATOR_FILING_PUBLICATION_ONLY", flags)
+        self.assertNotIn("PRIMARY_SOURCE_EDGAR_WINS", flags)
+        self.assertFalse(result.event.payload["clock_doctrine"]["edgar_primary_supplied"])
+        self.assertEqual(
+            result.event.payload["clock_doctrine"]["publication_authority"],
+            "market_trackers.sec_insider",
+        )
 
-    def test_form4_golden_event_v1_five_clocks(self) -> None:
+    def test_form4_golden_event_v1_five_clocks_with_edgar_primary(self) -> None:
         row = _load_mt("form4_open_market_purchase.json")
         edgar = _load_edgar("insider_form4_nvda_submission.json")
         ctx = NormalizationContext(
@@ -62,7 +79,36 @@ class MarketTrackersSecInsiderEventV1Tests(unittest.TestCase):
         self.assertEqual(clocks["platform_received_time_ns"], _PLATFORM_RECEIVED_NS)
         self.assertGreater(result.event.available_time_ns, clocks["economic_event_time_ns"])
         self.assertNotEqual(result.event.available_time_ns, clocks["economic_event_time_ns"])
-        self.assertIn("PRIMARY_SOURCE_EDGAR_WINS", result.event.payload["reconcile_flags"])
+        flags = result.event.payload["reconcile_flags"]
+        self.assertIn("PRIMARY_SOURCE_EDGAR_WINS", flags)
+        self.assertIn("SEC_ACCEPTANCE_FROM_PRIMARY", flags)
+        self.assertNotIn("SEC_PRIMARY_NOT_SUPPLIED_AGGREGATOR_FILING_ONLY", flags)
+        self.assertNotIn("AGGREGATOR_FILING_PUBLICATION_ONLY", flags)
+        self.assertTrue(result.event.payload["clock_doctrine"]["edgar_primary_supplied"])
+        self.assertEqual(result.event.payload["clock_doctrine"]["publication_authority"], "sec.edgar")
+
+    def test_reconcile_flags_match_omitted_edgar_primary(self) -> None:
+        row = _load_mt("form4_open_market_purchase.json")
+        clocks = reconcile_sec_insider_clocks(row, platform_received_time_ns=_PLATFORM_RECEIVED_NS)
+        self.assertIn("SEC_PRIMARY_NOT_SUPPLIED_AGGREGATOR_FILING_ONLY", clocks.reconcile_flags)
+        self.assertIn("AGGREGATOR_FILING_PUBLICATION_ONLY", clocks.reconcile_flags)
+        self.assertNotIn("PRIMARY_SOURCE_EDGAR_WINS", clocks.reconcile_flags)
+        self.assertEqual(clocks.sec_acceptance_time_ns, 0)
+        self.assertNotIn("sec_edgar", clocks.available_time_basis)
+
+    def test_reconcile_flags_match_supplied_edgar_primary(self) -> None:
+        row = _load_mt("form4_open_market_purchase.json")
+        edgar = _load_edgar("insider_form4_nvda_submission.json")
+        clocks = reconcile_sec_insider_clocks(
+            row,
+            platform_received_time_ns=_PLATFORM_RECEIVED_NS,
+            edgar_primary=edgar,
+        )
+        self.assertIn("PRIMARY_SOURCE_EDGAR_WINS", clocks.reconcile_flags)
+        self.assertIn("SEC_ACCEPTANCE_FROM_PRIMARY", clocks.reconcile_flags)
+        self.assertNotIn("SEC_PRIMARY_NOT_SUPPLIED_AGGREGATOR_FILING_ONLY", clocks.reconcile_flags)
+        self.assertGreater(clocks.sec_acceptance_time_ns, 0)
+        self.assertGreaterEqual(clocks.available_time_ns, clocks.sec_acceptance_time_ns)
 
     def test_transaction_date_is_not_available_time(self) -> None:
         row = _load_mt("form4_open_market_purchase.json")

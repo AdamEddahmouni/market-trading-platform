@@ -121,11 +121,15 @@ def reconcile_sec_insider_clocks(
     primary_filing_date = primary.filing_date if primary else aggregator_filed_at
     flags: list[str] = [
         "PUBLIC_KNOWLEDGE_NOT_TRANSACTION_DATE",
-        "PRIMARY_SOURCE_EDGAR_WINS",
         "MARKET_TRACKERS_REPLACEABLE",
     ]
-    if primary and primary.filing_date != aggregator_filed_at:
-        flags.append("AGGREGATOR_FILING_DATE_OVERRIDDEN_BY_EDGAR")
+    if primary:
+        flags.append("PRIMARY_SOURCE_EDGAR_WINS")
+        if primary.filing_date != aggregator_filed_at:
+            flags.append("AGGREGATOR_FILING_DATE_OVERRIDDEN_BY_EDGAR")
+    else:
+        flags.append("SEC_PRIMARY_NOT_SUPPLIED_AGGREGATOR_FILING_ONLY")
+        flags.append("AGGREGATOR_FILING_PUBLICATION_ONLY")
 
     transacted = row.get("transactedAt")
     economic_ns: int | None = None
@@ -151,18 +155,23 @@ def reconcile_sec_insider_clocks(
         else:
             flags.append("SEC_ACCEPTANCE_MISSING_DAY_BOUNDED_FILING")
     else:
-        flags.append("SEC_PRIMARY_NOT_SUPPLIED_AGGREGATOR_FILING_ONLY")
+        flags.append("SEC_ACCEPTANCE_NOT_AVAILABLE_AGGREGATOR_PATH")
 
     provenance = row.get("provenance") if isinstance(row.get("provenance"), Mapping) else {}
     retrieved_ns = _iso_ns(str(provenance.get("retrievedAt") or ""), field_name="provenance.retrievedAt")
 
     lawful_candidates: list[tuple[int, str]] = []
-    if sec_acceptance_ns:
-        lawful_candidates.append((sec_acceptance_ns, "sec_edgar.acceptanceDateTime"))
+    if primary:
+        if sec_acceptance_ns:
+            lawful_candidates.append((sec_acceptance_ns, "sec_edgar.acceptanceDateTime"))
+        else:
+            end_day = _date_end_ns(primary_filing_date)
+            if end_day:
+                lawful_candidates.append((end_day, "sec_edgar.filing_date_end_of_utc_day"))
     else:
-        end_day = _date_end_ns(primary_filing_date)
+        end_day = _date_end_ns(aggregator_filed_at)
         if end_day:
-            lawful_candidates.append((end_day, "sec_edgar.filing_date_end_of_utc_day"))
+            lawful_candidates.append((end_day, "market_trackers.filedAt_end_of_utc_day"))
     if retrieved_ns:
         lawful_candidates.append((retrieved_ns, "market_trackers.provenance.retrievedAt"))
     if platform_received_time_ns:
