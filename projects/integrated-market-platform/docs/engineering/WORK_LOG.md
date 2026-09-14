@@ -40,13 +40,13 @@ For large features, also add or update a completion note under `docs/superpowers
 
 | Field | Value |
 |-------|-------|
-| **Status** | `complete` |
+| **Status** | `in-progress` — diagnostics-only foundation; Item 7 **`ITEM7_PARTIAL`** (not complete) |
 | **Area** | `intelligence/production`, Item 7 Lane D |
 | **Summary** | Added fail-closed Item 7 progression reporting for lawful quote → grid → pre-existing PRODUCTION `ForecastV1` → ledger → settlement → specialist/calibration empirical floors. Emits machine-readable JSON plus a readable summary with stage vector and first failing stage. Does not mint forecasts from quotes or assert `ITEM7_COMPLETE`. |
 | **Key files** | `src/market_platform_foundation/intelligence/production/progression.py`, `tools/item7_forecast_progression_report.py`, `tests/intelligence/test_item7_production_forecast_progression.py` |
-| **Tests** | `PYTHONPATH=src python -m unittest tests.intelligence.test_item7_production_forecast_progression -v` |
-| **Related** | Item 7 PARTIAL; OpenD capture → ledger bridge (read-only); Path A `path_a_forecast_store` / `path_a_forecast_producer` |
-| **Notes** | Independent of BBO snapshot lane. No edits to `opend_capture_ledger.py`, FTEP, or hop CLI. |
+| **Tests** | `PYTHONPATH=src python -m unittest tests.intelligence.test_item7_production_forecast_progression -v`; `python tools/imp.py validate fast` |
+| **Related** | Item 7 PARTIAL; OpenD capture → ledger bridge (read-only); Path A `path_a_forecast_store` / `path_a_forecast_producer`; draft PR #144 |
+| **Notes** | Software diagnostics only — approve-as-draft, not Item 7 closure. Independent of BBO snapshot lane. No edits to `opend_capture_ledger.py`, FTEP, or hop CLI. |
 
 ## 2026-09-14 — Merge origin/main (1b60b5a) into PR #136 test-only branch
 
