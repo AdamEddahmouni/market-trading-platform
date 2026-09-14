@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — POST_BUILD35 inventory for ci_job_selector (PR #132)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ci`, `validation` |
+| **Summary** | `validate-python-changed` failed repository-closure audit with `unclassified path: tools/ci_job_selector.py`. Added the path to the `validation-control-plane` scope in `POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` (inventory only; no prose rewrite). |
+| **Key files** | `artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` |
+| **Tests** | `PYTHONPATH=src .venv/Scripts/python.exe -m unittest tests.validation.test_repository_closure.CanonicalRepositoryClosureAuditTests.test_canonical_audit_is_complete_non_destructive_and_uses_closed_vocabulary tests.validation.test_ci_job_selector` → **16 passed** |
+| **Related** | PR #132 (`reconcile/ci-skip-slices-20260914`) |
+| **Notes** | PR #132 remains draft; PR #121 stays open. |
+
 ## 2026-09-14 — CI skips unchanged expensive slices (rebased on main)
 
 | Field | Value |
