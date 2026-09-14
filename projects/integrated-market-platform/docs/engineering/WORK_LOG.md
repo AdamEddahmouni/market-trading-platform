@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Item 7 Lane B PRODUCTION forecast readiness
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` — software readiness; Item 7 **`ITEM7_PARTIAL`** (not complete) |
+| **Area** | `intelligence/production`, Item 7 Lane B |
+| **Summary** | Fail-closed PRODUCTION contributor/calibration assessment, governed training-manifest build (skip failed feature rows; no hardcoded calibration probability), versioned specialist model JSON store, and `tools/item7_production_readiness.py` (assess / scan-contributors / validate-binding / build). Default assess disposition `PRODUCTION_FORECAST_BLOCKED_NO_GOVERNED_PATH_A_TRAINING_CORPUS`. Does not mint from quotes, weaken floors, or label CONTROL as PRODUCTION. |
+| **Key files** | `src/market_platform_foundation/intelligence/production/readiness.py`, `model_store.py`, `training_build.py`, `tools/item7_production_readiness.py`, `tests/intelligence/test_item7_production_readiness.py` |
+| **Tests** | `PYTHONPATH=src python -m unittest tests.intelligence.test_item7_production_readiness tests.intelligence.test_item7_production_forecast_progression -v` → **22 passed** |
+| **Related** | Item 7 PARTIAL; Lane D `production/progression.py`; Path A `path_a_production_emit` / `path_a_forecast_producer`; branch `work/phase1-item7-production-readiness` @ `4dc4e4bb` |
+| **Notes** | Independent review **APPROVE_MERGE_CANDIDATE**. No committed PRODUCTION JSON or training corpora. Empirical Item 7 still requires operator manifest + weekday RTH hop with `--contributor-path` / `--calibration-path`. |
+
 ## 2026-09-14 — Grok intelligence ingest API (Lane I contracts)
 
 | Field | Value |
