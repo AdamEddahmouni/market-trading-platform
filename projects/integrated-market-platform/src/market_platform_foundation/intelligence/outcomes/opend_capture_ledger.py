@@ -18,6 +18,7 @@ from ..contracts.event import EventV1
 from ..contracts.prediction_ledger import PredictionLedgerEntryV1
 from ..normalization.models import IngestionMode, NormalizationContext
 from ..normalization.providers.moomoo import normalize_moomoo_capture
+from ..persistence.errors import RepositoryConflictError
 from ..persistence.repository import IntelligenceRepository, RepositoryPutResult
 from ..production.identity import PATH_A_HORIZON_NS
 from .observations import is_valid_settlement_observation
@@ -424,7 +425,11 @@ def materialize_opend_capture_jsonl(
         if event is None:
             result.note_refusal("NORMALIZATION_FAILED")
             continue
-        put_result = repository.put_event(event)
+        try:
+            put_result = repository.put_event(event)
+        except RepositoryConflictError:
+            result.note_refusal("EVENT_PERSIST_CONFLICT")
+            continue
         if put_result == RepositoryPutResult.INSERTED:
             result.events_persisted += 1
         elif put_result == RepositoryPutResult.ALREADY_PRESENT:
