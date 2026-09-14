@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — FTEP session-release CLI and persist test isolation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep`, `tools/imp.py`, `paper_forward_bridge`, `tests/intelligence` |
+| **Summary** | Added governed operator path `python tools/imp.py ftep session-release` wrapping durable `release_binding` with account/session/campaign guards, optional manifest fingerprint and path substring checks, dry-run gates, and JSONL release evidence. Stopped persistence tests from writing default `.local` when `IMP_PERSIST_STATE=1` leaks across cases by isolating `ActivatedForwardTestCase` / API forward-test tests to temp `IMP_STATE_DIR` and restoring env in FTEP session-start tests. |
+| **Key files** | `projects/integrated-market-platform/tools/ftep_session_release.py` (new); `tools/imp.py`; `tests/intelligence/test_ftep_session_release.py` (new); `tests/intelligence/forward_test_activation_support.py`; `tests/intelligence/test_paper_forward_bridge.py`; `tests/intelligence/test_ftep_session_start.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `unittest discover -s tests/intelligence -p test_ftep*.py` → **43 passed**; `tests.intelligence.test_forward_test_persistence` → **48 passed**; targeted forward-test/FTEP subset → **14 passed**; `python tools/imp.py test affected` → intelligence/runtime **passed**; validation/providers suites reported pre-existing failures on this branch snapshot |
+| **Related** | Prior handoff entry documenting leftover `fts-BDF1D132A88A3EDF` fixture binding |
+| **Notes** | No frozen manifest edits; no Paper/Live orders in tests. Operator may release the known temp-manifest binding via guarded CLI against primary `.local` state. |
+
 ## 2026-09-14 — Alpaca Paper GET-only comparator probe (live host blocked)
 
 | Field | Value |
