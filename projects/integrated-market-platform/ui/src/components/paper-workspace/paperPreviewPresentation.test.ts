@@ -9,7 +9,7 @@ describe("derivePreviewPresentationState", () => {
     confirmedRequestIsCurrent: false,
     previewMutationPending: false,
     error: null,
-    previewOrigin: null as const,
+    previewOrigin: null,
   };
 
   it("maps not previewed", () => {

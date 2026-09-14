@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Isolated UI test type/lint hygiene (no production runtime)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui` tests |
+| **Summary** | Test-only TypeScript hygiene from a static audit: unused imports, a missing type re-export, an invalid `null as const`, a null/undefined draft helper argument, and a route-case helper that required unused `heading`. No production UI/runtime change. Live off. Did not touch hop, OpenD, G7, Path A, FTEP, or V1-002. |
+| **Key files** | `ui/src/components/options/OptionsProductSurface.test.tsx`, `ui/src/components/paper-now/PaperNowPage.test.tsx`, `ui/src/components/paper-now/paperOrderDraft.test.ts`, `ui/src/components/paper-strategy-profitability/paperStrategyProfitabilityModel.test.ts`, `ui/src/components/paper-workspace/paperPreviewPresentation.test.ts`, `ui/src/components/workspace-module-shared/ModeWorkspaceRoutes.test.tsx` |
+| **Tests** | Focused vitest on the six files (run after commit); production `npm run typecheck` unchanged. Do not merge before RTH. |
+| **Related** | Static audit findings (Project store `docs/static-audit-findings.md`); `origin/main` `5459619a` |
+| **Notes** | Remaining test-project `tsc` errors (`App.test.tsx`, `PaperPortfolioPage.test.tsx`, missing `@types/node` / vitest globals because `tsconfig.typecheck.json` excludes tests) are documented, not expanded here. |
+
 ## 2026-09-14 — Track H leftover: fail-close remaining backend error_category gaps
 
 | Field | Value |
