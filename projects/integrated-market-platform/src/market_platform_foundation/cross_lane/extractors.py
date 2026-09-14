@@ -211,6 +211,24 @@ def extract_cost_input(
     )
 
 
+_STALE_ORDER_FLOW = "STALE_ORDER_FLOW"
+_STALE_MARKERS = frozenset({"STALE", "STALE_BOOK", "STALE_TRADES", "STALE_ORDER_FLOW"})
+
+
+def _order_flow_reject_reason(payload: dict[str, Any] | None) -> str | None:
+    """Return a fail-closed reason when live/canonical order-flow is not admitted."""
+    if not isinstance(payload, dict):
+        return None
+    state = str(payload.get("state") or "").upper()
+    reason = str(payload.get("reason") or "").upper()
+    provenance = payload.get("provenance") if isinstance(payload.get("provenance"), dict) else {}
+    freshness = str(provenance.get("freshness_state") or "").upper()
+    stale = state in _STALE_MARKERS or reason in _STALE_MARKERS or freshness == "STALE"
+    if stale:
+        return _STALE_ORDER_FLOW
+    return None
+
+
 def extract_liquidity_input(
     *,
     strategy_snapshot: dict[str, Any] | None = None,
@@ -220,6 +238,15 @@ def extract_liquidity_input(
 ) -> LiquidityInput:
     """Extract liquidity gates and order-flow confidence."""
     quality_flags: list[str] = []
+    reject_reason = _order_flow_reject_reason(order_flow_payload)
+    if reject_reason == _STALE_ORDER_FLOW:
+        quality_flags.append(OpportunityQualityFlag.FUSION_INPUTS_INCOMPLETE.value)
+        return LiquidityInput(
+            available=False,
+            gates_passed=False,
+            quality_flags=tuple(quality_flags),
+            reason=_STALE_ORDER_FLOW,
+        )
     cross_lane = cross_lane_snapshot or {}
 
     gates_passed = True
