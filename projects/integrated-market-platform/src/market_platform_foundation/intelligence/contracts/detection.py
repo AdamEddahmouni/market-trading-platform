@@ -36,6 +36,7 @@ class SemanticEventType(StrEnum):
     LIQUIDITY_EVENT = "LIQUIDITY_EVENT"
     NEWS_EVENT = "NEWS_EVENT"
     REGIME_SHIFT = "REGIME_SHIFT"
+    SEC_INSIDER_DISCLOSURE = "SEC_INSIDER_DISCLOSURE"
 
 
 class DetectionSeverity(StrEnum):

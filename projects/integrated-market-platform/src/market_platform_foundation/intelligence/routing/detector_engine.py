@@ -196,6 +196,13 @@ class EventDetectorEngine:
                 "explicit regime-key transition detector",
                 "BUILD 09 does not produce regime keys",
             ),
+            DetectorSupport(
+                SemanticEventType.SEC_INSIDER_DISCLOSURE,
+                "FILING EventV1 with payload.sec_insider / lane_payload_kind adapter",
+                DetectorSupportStatus.IMPLEMENTED_WITH_EXTERNAL_CONTEXT,
+                "Lane C isolated vertical in intelligence.opportunity.sec_insider",
+                "not invoked from EventDetectorEngine.detect(); FILING_IS_NOT_NEWS guard unchanged",
+            ),
         )
 
     def detect(self, frame: DetectionFrame) -> DetectionEngineResult:
