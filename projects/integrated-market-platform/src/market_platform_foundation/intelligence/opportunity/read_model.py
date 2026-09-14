@@ -15,6 +15,15 @@ READ_MODEL_SCHEMA_VERSION = "opportunity/read_model/1.1.0"
 RANKING_BASIS_COMPARATOR = "COMPARATOR_LEXICOGRAPHIC"
 RANKING_BASIS_STUB = "PROVISIONAL_STUB_NOT_FTEP"
 RANKING_BASIS_ATTENTION = "ATTENTION_ORDER"
+PROVISIONAL_ORDER_COPY = "Provisional order — not FTEP-tuned / not campaign-calibrated"
+
+
+def ranking_copy_for_basis(basis: str) -> str | None:
+    """Operator copy when order is not comparator lexicographic. Not a score."""
+
+    if basis == RANKING_BASIS_COMPARATOR:
+        return None
+    return PROVISIONAL_ORDER_COPY
 
 COMPARATOR_DIMENSION_NAMES: tuple[str, ...] = (
     "actionability",
@@ -64,6 +73,7 @@ class RankingVectorV1:
     basis: str
     dimensions: tuple[RankingDimensionV1, ...] = ()
     rank_order: int | None = None
+    copy: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         body: dict[str, Any] = {
@@ -72,6 +82,8 @@ class RankingVectorV1:
         }
         if self.rank_order is not None:
             body["rank_order"] = self.rank_order
+        if self.copy:
+            body["copy"] = self.copy
         return body
 
 
@@ -251,6 +263,7 @@ __all__ = [
     "InMemoryOpportunitySummaryStore",
     "OpportunitySummary",
     "OpportunitySummaryStore",
+    "PROVISIONAL_ORDER_COPY",
     "PROVISIONAL_RANKING_WEIGHTS",
     "RANKING_BASIS_ATTENTION",
     "RANKING_BASIS_COMPARATOR",
@@ -258,6 +271,7 @@ __all__ = [
     "READ_MODEL_SCHEMA_VERSION",
     "RankingDimensionV1",
     "RankingVectorV1",
+    "ranking_copy_for_basis",
     "ftep_attention_candidate_to_summary",
     "ftep_pipeline_result_to_summary",
     "provisional_rank_score",

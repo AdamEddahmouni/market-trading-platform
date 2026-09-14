@@ -21,6 +21,7 @@ from .read_model import (
     RankingDimensionV1,
     RankingVectorV1,
     provisional_rank_score,
+    ranking_copy_for_basis,
 )
 
 
@@ -132,12 +133,14 @@ def rank_review_rows(
                 basis=RANKING_BASIS_STUB,
                 dimensions=unavailable_comparator_dimensions(),
                 rank_order=index,
+                copy=ranking_copy_for_basis(RANKING_BASIS_STUB),
             )
         else:
             ranking_vector = RankingVectorV1(
                 basis=RANKING_BASIS_ATTENTION,
                 dimensions=unavailable_comparator_dimensions(),
                 rank_order=index,
+                copy=ranking_copy_for_basis(RANKING_BASIS_ATTENTION),
             )
         lifecycle = row.lifecycle_state or OperatorLifecycleState.RANKED.value
         if row.lifecycle_state in {None, OperatorLifecycleState.ELIGIBLE.value, OperatorLifecycleState.NORMALIZED.value}:
