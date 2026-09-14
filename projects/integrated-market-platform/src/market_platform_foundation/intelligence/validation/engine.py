@@ -18,7 +18,7 @@ from .dataset_manifest import build_validation_dataset_manifest
 from .folds import fold_example_temporal_violation, generate_walk_forward_folds
 from .serialization import validation_dataset_manifest_v1_to_dict
 from .holdout import ValidationDataAccessGuard, verify_plan_matches_commitment
-from .identity import derive_validation_dataset_fingerprint, derive_validation_report_id
+from .identity import derive_validation_report_id
 from .metrics import aggregate_metric_values, compute_example_primary_metric, evaluate_guardrails
 from .planning import build_validation_plan
 from .purge import verify_training_purge_for_fold
@@ -232,7 +232,6 @@ class ValidationEngine:
         )
 
         holdout_results: list[HoldoutMetricResult] = []
-        dataset_fingerprints: list[str] = []
         for candidate in context.candidates:
             examples = context.holdout_examples
             candidate_values = tuple(
@@ -290,18 +289,6 @@ class ValidationEngine:
                 if holdout_disposition == ValidationDisposition.MEETS_PRE_REGISTERED_CRITERIA:
                     holdout_disposition = ValidationDisposition.DOES_NOT_MEET_PRE_REGISTERED_CRITERIA
 
-            forecast_ids = tuple(ex.forecast_id for ex in examples if ex.forecast_id)
-            outcome_ids = tuple(ex.outcome_id for ex in examples if ex.outcome_id)
-            fingerprint = derive_validation_dataset_fingerprint(
-                validation_plan_id=plan.validation_plan_id,
-                fold_or_holdout_ref="holdout",
-                forecast_ids=forecast_ids,
-                outcome_ids=outcome_ids,
-                decision_start_ns=plan.holdout_spec.holdout_start_ns,
-                decision_end_ns=plan.holdout_spec.holdout_end_ns,
-            )
-            dataset_fingerprints.append(fingerprint)
-
             holdout_results.append(
                 HoldoutMetricResult(
                     candidate_id=candidate.candidate_id,
@@ -335,7 +322,9 @@ class ValidationEngine:
             candidate_artifact_hashes=plan.candidate_artifact_hashes,
             control_ref=plan.control_ref,
             holdout_commitment_id=commitment.holdout_commitment_id,
-            validation_dataset_fingerprints=tuple(dataset_fingerprints),
+            validation_dataset_fingerprints=tuple(
+                item.dataset_fingerprint for item in dataset_manifests
+            ),
             knowledge_assessment_status=knowledge_status.value,
             contamination_disposition=contamination_ledger.disposition.value,
             implementation_version=plan.implementation_version,

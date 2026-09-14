@@ -13,6 +13,7 @@ from market_platform_foundation.intelligence.validation import (
     WalkForwardMode,
     build_validation_dataset_manifest,
     build_validation_plan,
+    derive_validation_report_id,
     generate_walk_forward_folds,
     require_clean_validation_dataset_manifest,
     statistical_candidate_profile,
@@ -39,6 +40,34 @@ def _in_window_example(*, decision_time_ns: int, example_id: str = "ex-in") -> V
         forecast_id=f"fc-{example_id}",
         outcome_id=f"out-{example_id}",
     )
+
+
+def _engine_report(*, fold_examples: dict[str, tuple[ValidationExample, ...]]):
+    repo = InMemoryIntelligenceRepository()
+    experiment = _manifest_with_holdout(T + 8)
+    candidate, _dataset, artifact_bytes = _trained_candidate(repo, experiment)
+    plan = build_validation_plan(
+        experiment,
+        (candidate,),
+        control_ref="baseline_control",
+        fold_boundaries_ns=(T, T + 4, T + 8),
+        minimum_paired_sample=3,
+    )
+    report = ValidationEngine(repo).validate(
+        ValidationRunContext(
+            plan=plan,
+            experiment=experiment,
+            candidates=(candidate,),
+            training_dataset=None,
+            holdout_examples=_holdout_examples(candidate_better=True),
+            fold_examples=fold_examples,
+            knowledge_profiles={candidate.candidate_id: statistical_candidate_profile(candidate.candidate_id)},
+            artifact_bytes_by_candidate={candidate.candidate_id: artifact_bytes},
+            guardrail_thresholds={},
+        ),
+        persist=False,
+    )
+    return plan, report
 
 
 class ValidationDatasetManifestTests(unittest.TestCase):
@@ -193,6 +222,46 @@ class ValidationDatasetManifestTests(unittest.TestCase):
         self.assertTrue(all(row["validation_dataset_id"].startswith("VALSET-") for row in wraps))
         self.assertEqual(wraps[0]["metadata"]["pit_violations"], [])
         self.assertIn("VALIDATION_WINDOW_MISMATCH", wraps[-1]["metadata"]["pit_violations"])
+
+    def test_fold_membership_binds_validation_report_id(self) -> None:
+        fold_a = {
+            "fold-1": (_in_window_example(decision_time_ns=T, example_id="f1a"),),
+            "fold-2": (_in_window_example(decision_time_ns=T + 4, example_id="f2"),),
+        }
+        fold_b = {
+            "fold-1": (_in_window_example(decision_time_ns=T, example_id="f1b"),),
+            "fold-2": fold_a["fold-2"],
+        }
+        plan, first = _engine_report(fold_examples=fold_a)
+        _, same = _engine_report(fold_examples=fold_a)
+        _, mutated = _engine_report(fold_examples=fold_b)
+        wraps = first.metadata["validation_dataset_manifests"]
+        self.assertEqual([row["fold_or_holdout_ref"] for row in wraps], ["fold-1", "fold-2", "holdout"])
+        bound = derive_validation_report_id(
+            validation_plan_id=first.validation_plan_id,
+            candidate_artifact_hashes=first.candidate_artifact_hashes,
+            control_ref=first.control_ref,
+            holdout_commitment_id=first.holdout_commitment_id,
+            validation_dataset_fingerprints=tuple(row["dataset_fingerprint"] for row in wraps),
+            knowledge_assessment_status=first.knowledge_assessment_status.value,
+            contamination_disposition=first.contamination_disposition.value,
+            implementation_version=plan.implementation_version,
+        )
+        self.assertEqual(first.validation_report_id, bound)
+        self.assertEqual(first.validation_report_id, same.validation_report_id)
+        self.assertNotEqual(first.validation_report_id, mutated.validation_report_id)
+        self.assertNotEqual(
+            wraps[0]["dataset_fingerprint"],
+            mutated.metadata["validation_dataset_manifests"][0]["dataset_fingerprint"],
+        )
+        self.assertEqual(
+            wraps[1]["dataset_fingerprint"],
+            mutated.metadata["validation_dataset_manifests"][1]["dataset_fingerprint"],
+        )
+        self.assertEqual(
+            wraps[2]["dataset_fingerprint"],
+            mutated.metadata["validation_dataset_manifests"][2]["dataset_fingerprint"],
+        )
 
 
 if __name__ == "__main__":
