@@ -28,6 +28,11 @@ from market_platform_foundation.intelligence.ingest.runtime import (
     is_agent_enrichment_expired,
 )
 from market_platform_foundation.intelligence.persistence import InMemoryIntelligenceRepository
+from market_platform_foundation.intelligence.ingest.boundary import (
+    AGENT_ENRICHMENT_INGEST_MAX_BODY_BYTES,
+    enforce_agent_enrichment_body_limit,
+    resolve_agent_enrichment_persistence,
+)
 
 _IMP_SRC = Path(__file__).resolve().parents[2] / "src" / "market_platform_foundation"
 
@@ -76,7 +81,10 @@ class AgentEnrichmentIngestRuntimeTests(unittest.TestCase):
     def setUp(self) -> None:
         self.repository = InMemoryIntelligenceRepository()
         self.repository.put_opportunity(_opportunity())
-        self.runtime = AgentEnrichmentIngestRuntime(self.repository)
+        self.runtime = AgentEnrichmentIngestRuntime(
+            self.repository,
+            get_opportunity=self.repository.get_opportunity,
+        )
 
     def test_forbidden_mutation_matrix(self) -> None:
         for mutation in ForbiddenIngestMutation:
@@ -145,6 +153,29 @@ class AgentEnrichmentIngestRuntimeTests(unittest.TestCase):
             agent_enrichment_expected=True,
         )
         self.assertTrue(gate.allowed)
+
+    def test_rejects_missing_opportunity(self) -> None:
+        body = _payload()
+        body["opportunity_id"] = "opp-missing"
+        with self.assertRaises(ValueError) as ctx:
+            self.runtime.ingest(body, as_of_iso="2026-09-14T15:00:00+00:00")
+        self.assertIn("AGENT_ENRICHMENT_OPPORTUNITY_NOT_FOUND", str(ctx.exception))
+
+    def test_http_body_limit_fail_closed(self) -> None:
+        over = AGENT_ENRICHMENT_INGEST_MAX_BODY_BYTES + 1
+        with self.assertRaises(ValueError) as ctx:
+            enforce_agent_enrichment_body_limit(over)
+        self.assertIn("AGENT_ENRICHMENT_BODY_TOO_LARGE", str(ctx.exception))
+        enforce_agent_enrichment_body_limit(AGENT_ENRICHMENT_INGEST_MAX_BODY_BYTES)
+
+    def test_no_silent_sidecar_when_strategy_repository_unsupported(self) -> None:
+        class _ForeignRepository:
+            def get_opportunity(self, opportunity_id: str) -> None:
+                return None
+
+        with self.assertRaises(ValueError) as ctx:
+            resolve_agent_enrichment_persistence(_ForeignRepository())
+        self.assertIn("AGENT_ENRICHMENT_REPOSITORY_UNSUPPORTED", str(ctx.exception))
 
     def test_detail_overlay_attaches_without_touching_assembler(self) -> None:
         self.runtime.ingest(_payload(), as_of_iso="2026-09-14T15:00:00+00:00")

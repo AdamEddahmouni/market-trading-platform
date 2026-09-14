@@ -5,7 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import StrEnum
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Callable, Protocol, runtime_checkable
+
+from ..contracts.opportunity import OpportunityV1
 
 from ..contracts.agent_ingest import (
     AGENT_ENRICHMENT_SCHEMA_ID,
@@ -116,8 +118,20 @@ def _validate_claim_operation_alignment(record: AgentEnrichmentEvidenceV1) -> No
 class AgentEnrichmentIngestRuntime:
     """Smallest safe ingest plane: enrichment records only, no execution authority."""
 
-    def __init__(self, repository: AgentEnrichmentPersistence) -> None:
+    def __init__(
+        self,
+        repository: AgentEnrichmentPersistence,
+        *,
+        get_opportunity: Callable[[str], OpportunityV1 | None] | None = None,
+    ) -> None:
         self._repository = repository
+        self._get_opportunity = get_opportunity
+
+    def _require_attachable_opportunity(self, opportunity_id: str) -> None:
+        if self._get_opportunity is None:
+            raise ValueError("AGENT_ENRICHMENT_OPPORTUNITY_VALIDATION_UNAVAILABLE")
+        if self._get_opportunity(opportunity_id) is None:
+            raise ValueError("AGENT_ENRICHMENT_OPPORTUNITY_NOT_FOUND")
 
     def ingest(
         self,
@@ -129,6 +143,7 @@ class AgentEnrichmentIngestRuntime:
         _scan_forbidden_mutations(payload)
         record = agent_enrichment_evidence_v1_from_dict(payload)
         _validate_claim_operation_alignment(record)
+        self._require_attachable_opportunity(record.opportunity_id)
         if is_agent_enrichment_expired(record, as_of_iso=as_of_iso):
             raise ValueError("AGENT_ENRICHMENT_ALREADY_EXPIRED")
         allow_update = record.operation == IngestOperation.UPDATE_OWN_EVIDENCE_RECORD

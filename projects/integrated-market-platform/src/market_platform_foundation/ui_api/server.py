@@ -951,6 +951,17 @@ class UiApiHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
         length = int(self.headers.get("Content-Length", "0"))
+        if path.startswith("/intelligence/ingest/enrichment"):
+            try:
+                agent_enrichment_ingest.enforce_agent_enrichment_body_limit(length)
+            except ValueError as exc:
+                status = (
+                    HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+                    if "BODY_TOO_LARGE" in str(exc)
+                    else HTTPStatus.BAD_REQUEST
+                )
+                self._send_error_json(str(exc), str(exc), status=status)
+                return
         raw = self.rfile.read(length) if length else b"{}"
         try:
             body = json.loads(raw.decode("utf-8"))
@@ -984,6 +995,12 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 if "INGEST_MUTATION" in code or "FORBIDDEN" in code:
                     self._send_error_json("INGEST_MUTATION_FORBIDDEN", code, status=HTTPStatus.FORBIDDEN)
                     return
+                if "OPPORTUNITY_NOT_FOUND" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.NOT_FOUND)
+                    return
+                if "REPOSITORY_UNSUPPORTED" in code or "REPOSITORY_UNAVAILABLE" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.SERVICE_UNAVAILABLE)
+                    return
                 self._send_error_json("AGENT_ENRICHMENT_INGEST_FAILED", code, status=HTTPStatus.BAD_REQUEST)
             return
         self._send_error_json("UI_ROUTE_NOT_FOUND", f"Unknown path: {path}", status=HTTPStatus.NOT_FOUND)
@@ -992,6 +1009,17 @@ class UiApiHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
         length = int(self.headers.get("Content-Length", "0"))
+        if path == "/intelligence/ingest/enrichment" or path.startswith("/intelligence/ingest/enrichment/"):
+            try:
+                agent_enrichment_ingest.enforce_agent_enrichment_body_limit(length)
+            except ValueError as exc:
+                status = (
+                    HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+                    if "BODY_TOO_LARGE" in str(exc)
+                    else HTTPStatus.BAD_REQUEST
+                )
+                self._send_error_json(str(exc), str(exc), status=status)
+                return
         raw = self.rfile.read(length) if length else b"{}"
         try:
             body = json.loads(raw.decode("utf-8"))
@@ -1053,6 +1081,12 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 if "INGEST_MUTATION" in code or "FORBIDDEN" in code:
                     self._send_error_json("INGEST_MUTATION_FORBIDDEN", code, status=HTTPStatus.FORBIDDEN)
                     return
+                if "OPPORTUNITY_NOT_FOUND" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.NOT_FOUND)
+                    return
+                if "REPOSITORY_UNSUPPORTED" in code or "REPOSITORY_UNAVAILABLE" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.SERVICE_UNAVAILABLE)
+                    return
                 self._send_error_json("AGENT_ENRICHMENT_INGEST_FAILED", code, status=HTTPStatus.BAD_REQUEST)
             return
         if path.startswith("/intelligence/ingest/enrichment/"):
@@ -1076,6 +1110,12 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 code = str(exc)
                 if "INGEST_MUTATION" in code or "FORBIDDEN" in code:
                     self._send_error_json("INGEST_MUTATION_FORBIDDEN", code, status=HTTPStatus.FORBIDDEN)
+                    return
+                if "OPPORTUNITY_NOT_FOUND" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.NOT_FOUND)
+                    return
+                if "REPOSITORY_UNSUPPORTED" in code or "REPOSITORY_UNAVAILABLE" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.SERVICE_UNAVAILABLE)
                     return
                 self._send_error_json("AGENT_ENRICHMENT_INGEST_FAILED", code, status=HTTPStatus.BAD_REQUEST)
             return

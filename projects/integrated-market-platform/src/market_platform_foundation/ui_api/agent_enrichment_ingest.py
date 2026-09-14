@@ -3,13 +3,18 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Callable
 
+from ..intelligence.contracts.opportunity import OpportunityV1
+from ..intelligence.ingest.boundary import (
+    AGENT_ENRICHMENT_INGEST_MAX_BODY_BYTES,
+    enforce_agent_enrichment_body_limit,
+    resolve_agent_enrichment_persistence,
+)
 from ..intelligence.ingest.runtime import (
     AgentEnrichmentIngestRuntime,
     enrichments_for_opportunity_detail,
 )
-from ..intelligence.persistence.memory import InMemoryIntelligenceRepository
 from .store import ReplayStore
 
 
@@ -17,23 +22,37 @@ def _utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _repository_for_store(store: ReplayStore) -> InMemoryIntelligenceRepository | None:
-    repository = getattr(store, "strategy_repository", None)
-    if isinstance(repository, InMemoryIntelligenceRepository):
-        return repository
-    cached = getattr(store, "agent_enrichment_repository", None)
-    if isinstance(cached, InMemoryIntelligenceRepository):
-        return cached
-    created = InMemoryIntelligenceRepository()
-    store.agent_enrichment_repository = created
-    return created
+def _opportunity_getter(repository: Any) -> Callable[[str], OpportunityV1 | None] | None:
+    getter = getattr(repository, "get_opportunity", None)
+    if not callable(getter):
+        return None
+
+    def _lookup(opportunity_id: str) -> OpportunityV1 | None:
+        record = getter(str(opportunity_id))
+        return record if isinstance(record, OpportunityV1) else None
+
+    return _lookup
+
+
+def agent_enrichment_repository_for_store(store: ReplayStore):
+    """Primary strategy repository only — never a silent sidecar."""
+
+    return resolve_agent_enrichment_persistence(getattr(store, "strategy_repository", None))
 
 
 def _runtime_for_store(store: ReplayStore) -> AgentEnrichmentIngestRuntime:
-    repository = _repository_for_store(store)
-    if repository is None:
-        raise ValueError("AGENT_ENRICHMENT_REPOSITORY_UNAVAILABLE")
-    return AgentEnrichmentIngestRuntime(repository)
+    repository = agent_enrichment_repository_for_store(store)
+    return AgentEnrichmentIngestRuntime(
+        repository,
+        get_opportunity=_opportunity_getter(repository),
+    )
+
+
+def _optional_runtime_for_store(store: ReplayStore) -> AgentEnrichmentIngestRuntime | None:
+    try:
+        return _runtime_for_store(store)
+    except ValueError:
+        return None
 
 
 def handle_agent_enrichment_ingest_post(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
@@ -74,7 +93,9 @@ def overlay_agent_enrichment_on_detail(
     opportunity_id = str(detail.get("opportunity_id") or detail.get("summary_id") or "")
     if not opportunity_id:
         return detail
-    runtime = _runtime_for_store(store)
+    runtime = _optional_runtime_for_store(store)
+    if runtime is None:
+        return detail
     overlay = enrichments_for_opportunity_detail(
         runtime,
         opportunity_id=opportunity_id,
