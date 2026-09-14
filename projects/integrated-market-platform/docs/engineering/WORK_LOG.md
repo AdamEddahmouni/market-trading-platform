@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Alpaca Paper GET-only comparator probe (live host blocked)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers/alpaca.paper`, `paper/calibration` |
+| **Summary** | Weekday Paper comparator probe is now GET-only (`/v2/account`, `/v2/clock`, `/v2/positions`) via `AlpacaPaperReadOnlyHttpTransport`. `POST`/`DELETE` and `/v2/orders` fail closed as `ALPACA_READONLY_FORBIDDEN` before `urlopen`. Live `https://api.alpaca.markets` remains `LIVE_FORBIDDEN`. Probe always stamps `orders_placed=false` / `fabricated_fills=false`. Harness `--place-sandbox-orders` still cannot place orders or claim `CALIBRATED`. Classifier now converts timezone-aware UTC to `America/New_York` so a UTC VM cannot false-ready premarket as cash RTH. Item 9 stays PARTIAL. |
+| **Key files** | `src/market_platform_foundation/providers/adapters/alpaca_paper_http.py`, `src/market_platform_foundation/paper/calibration/runner.py`, `tools/providers/probe_alpaca_paper.py`, `tests/platform/test_alpaca_paper_http.py`, `docs/providers/ALPACA_PAPER.md` |
+| **Tests** | `PYTHONPATH=src python3 -m unittest tests.platform.test_alpaca_paper_http tests.platform.test_calibration_harness` → **48 passed**. Focused timezone selector 1/1. `python3 tools/check_docs_links.py` → OK 189 files. Authenticated Paper GET probe: origin `https://paper-api.alpaca.markets`, `clock_is_open=false` (pre-RTH), `orders_placed=false`; harness after TZ fix `WAITING_FOR_MARKET`, `calibrated=false`, `pair_count=0`. |
+| **Related** | [ALPACA_PAPER.md](../providers/ALPACA_PAPER.md); Item 9 PARTIAL |
+| **Notes** | No orders. Did not touch hop `1381619`, OpenD, G7, Path A, FTEP session, or V1-002 Paper orders. Live off. Not `EMPIRICAL_ACTIVE` / not `CALIBRATED`. |
+
 ## 2026-09-14 — Provider-activation DoD item 2 CLOSED (RTH combined hop)
 
 | Field | Value |

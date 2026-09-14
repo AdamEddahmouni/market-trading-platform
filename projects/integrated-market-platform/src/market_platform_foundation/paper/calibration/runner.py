@@ -9,7 +9,7 @@ status is WAITING_FOR_MARKET.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Mapping, Sequence
 from urllib.parse import urlparse
 
@@ -154,7 +154,7 @@ def classify_calibration_run(
     if not tradier_ok and not alpaca_ok:
         return STATUS_COMPARATOR_NOT_CONFIGURED
     label = session_label if session_label is not None else us_equity_session_label(
-        datetime.fromtimestamp(now_ns / 1_000_000_000)
+        datetime.fromtimestamp(now_ns / 1_000_000_000, tz=timezone.utc)
     )
     if label != "REGULAR" and not is_within_us_equity_rth(now_ns):
         return STATUS_WAITING_FOR_MARKET
