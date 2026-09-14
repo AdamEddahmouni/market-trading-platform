@@ -72,6 +72,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | Track B overnight program; [PR #91](https://github.com/AdamEddahmouni/market-trading-platform/pull/91); rebased onto `origin/main` @ `ed80caa4` (#93 merged) |
 | **Notes** | Preflight exit 0 for READY and MARKET_CLOSED; exit 1 otherwise. Stale Moomoo capability probe applies only during RTH. |
 
+## 2026-09-14 — Hop JSON Item 2 / EMIT gate checker in tools
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tools`, `tests/intelligence` |
+| **Summary** | Ported Monday cash RTH hop JSON gate classifier from project store into `tools/hop_json_gate_check.py` so operators can run ITEM2_FLIP / EMIT checks without a store-only script. |
+| **Key files** | `tools/hop_json_gate_check.py` (created), `tests/intelligence/test_hop_json_gate_check.py` (created) |
+| **Tests** | `PYTHONPATH=src python3 -m unittest tests.intelligence.test_hop_json_gate_check -v` — 7 passed |
+| **Related** | Track I overnight program; `path_a_prospective_run.py` hop artifact shape |
+| **Notes** | FTEP stays NOT_READY; does not run Path A hop or declare EMPIRICAL_ACTIVE. Classified `tools/hop_json_gate_check.py` in repository-closure + `paper_forward_bridge` manifest partition (fixes `validate-python-changed` closure audit error). |
+
 ## 2026-09-14 — install-opend BLOCKED when uv venv has no pip
 
 | Field | Value |
