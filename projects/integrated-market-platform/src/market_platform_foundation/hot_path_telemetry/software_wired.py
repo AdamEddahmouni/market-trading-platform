@@ -1,4 +1,11 @@
-"""Fixture/replay proof that production software paths emit hot-path clocks."""
+"""Fixture/replay proof that production software paths emit hot-path clocks.
+
+Cross-stage segment latencies that merge BUILD 09 detections or opportunity/UI clocks
+onto the first ingress row (via ``_first_router_row`` / ``_first_detected_row``) are
+**non-authoritative**: they only prove the software path *emits* timestamps, not that
+those stages share one correlation id or clock domain. Missing pairs stay missing;
+``aggregate_software_clock_rows`` reports ``missing_pair_count`` without inventing values.
+"""
 
 from __future__ import annotations
 
@@ -41,6 +48,7 @@ def fixture_sha256(path: Path) -> str:
 
 
 def _first_router_row(collector: HotPathClockCollector):
+    """First ingress-dispatched row; anchor for optional demo merge only (not lineage)."""
     for row in collector.rows.values():
         if row.router_dispatched_at is not None:
             return row
