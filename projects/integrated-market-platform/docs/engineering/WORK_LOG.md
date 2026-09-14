@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Classify capture ledger immutable persist conflicts
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/outcomes`, OpenD capture → ledger bridge (Item 7) |
+| **Summary** | `materialize_opend_capture_jsonl` now catches `RepositoryConflictError` from `put_event` and records `EVENT_PERSIST_CONFLICT` instead of aborting ingest. Fail-closed semantics preserved: conflicting payloads are refused, not overwritten. Regression test covers cross-file `sequence` reuse with differing quote payloads. |
+| **Key files** | `src/market_platform_foundation/intelligence/outcomes/opend_capture_ledger.py`, `tests/intelligence/test_opend_capture_ledger_bridge.py` |
+| **Tests** | `python -m unittest tests.intelligence.test_opend_capture_ledger_bridge` → **10 passed**. `python tools/imp.py test affected` → intelligence **passed**; platform suite **5 errors** (unchanged baseline on this host, unrelated paths). |
+| **Related** | Item 7 capture→ledger bridge; hop ingest `source_record_id=str(sequence)` collision class |
+| **Notes** | Does not create ledger examples, change Path A grid/BBO, mint forecasts, or scope event identity across capture files. Identity scoping remains follow-up. |
+
 ## 2026-09-14 — FTEP session-release test closure (PR #131)
 
 | Field | Value |
