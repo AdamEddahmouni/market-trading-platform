@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Provider-activation DoD item 2 CLOSED (RTH combined hop)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Record 2026-09-14 US cash RTH closure of provider-activation DoD item 2 (OpenD primary L1 + Finviz overlay on one Path A hop JSON; `tools/hop_json_gate_check.py` → `ITEM2_FLIP=yes`, `EMIT=run`, checker `FTEP=NOT_READY`). Items 7 and 9 stay PARTIAL; program FTEP stays `FTEP_EMPIRICAL_NOT_READY`. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/providers/MOOMOO_OBSERVATIONAL.md`, `docs/providers/FINVIZ_ELITE.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | Docs-only; not run on this pass |
+| **Related** | `tools/hop_json_gate_check.py`; Path A prospective hop; draft PR from `cursor/item2-closed-rth-d1ba` |
+| **Notes** | Honest composer `EMPTY` / `NO_MATCHED_STRATEGY` documented as non-blocking for item 2. Did not hop, merge, or declare `EMPIRICAL_ACTIVE`. |
+
 ## 2026-09-14 — Runbook API probe paths
 
 | Field | Value |

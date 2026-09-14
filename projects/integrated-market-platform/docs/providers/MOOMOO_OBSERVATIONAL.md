@@ -162,6 +162,24 @@ observational**.
   hop-L1 identity, Yahoo overlay is not, and unstamped OpenD is
   `PROVIDER_DOWN`.
 
+### DoD item 2 acceptance (provider-activation)
+
+**Status: CLOSED** (2026-09-14 US cash RTH; independent of items 7/9).
+
+Acceptance is the combined $0 stack on one Path A hop JSON, classified by
+`tools/hop_json_gate_check.py`:
+
+- `result.freshness.actionable=true`
+- `discovery.provider_id` and `result.provider_id` are
+  `moomoo.opend.observational` (OpenD primary L1; Yahoo remains overlay-only)
+- `equity_context.discovery.auto_fetch_status=FETCHED` for
+  `finviz.elite.context` (overlay never L1)
+- No top-level `last_price` on the hop artifact
+
+Observed gate: `ITEM2_FLIP=yes`, `EMIT=run`, checker `FTEP=NOT_READY`.
+Composer `result.status=EMPTY` with `NO_MATCHED_STRATEGY` is honest Path A
+behavior, not a failed item 2 hop. FTEP is not `EMPIRICAL_ACTIVE`.
+
 ## SDK requirement
 
 Optional extra on the IMP interpreter (not a `market_platform_foundation`
