@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -44,6 +45,28 @@ def _ready_hop() -> dict:
 
 
 class PathARthPreflightTests(unittest.TestCase):
+    _ENV_KEYS = (
+        "IMP_FINVIZ_LIVE",
+        "IMP_LIVE_INTERNAL_SIMULATION",
+        "IMP_LIVE_OBSERVATIONAL",
+        "IMP_MOOMOO_LIVE",
+        "IMP_PAPER_EXECUTION",
+        "IMP_PERSIST_STATE",
+        "IMP_STATE_DIR",
+    )
+
+    def setUp(self) -> None:
+        self._saved_env = {key: os.environ.get(key) for key in self._ENV_KEYS}
+        for key in self._ENV_KEYS:
+            os.environ.pop(key, None)
+
+    def tearDown(self) -> None:
+        for key, value in self._saved_env.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
     def test_market_closed_when_rth_closed_and_software_ready(self) -> None:
         report = run_path_a_rth_preflight(
             options=PathARthPreflightOptions(now_ns=T_RTH_CLOSED_NS, probe_local_opend=False),
