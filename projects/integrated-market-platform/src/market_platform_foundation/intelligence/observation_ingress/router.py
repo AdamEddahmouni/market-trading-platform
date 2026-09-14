@@ -22,6 +22,11 @@ from .types import (
     validate_event_for_dispatch,
 )
 
+try:
+    from ...hot_path_telemetry.collector import HotPathIngressDispatchObserver
+except ImportError:  # pragma: no cover - optional telemetry lane
+    HotPathIngressDispatchObserver = None  # type: ignore[misc, assignment]
+
 
 class ObservationIngressRouter:
     """Fan-out normalized EventV1 to typed consumers without broker side effects."""
@@ -32,9 +37,11 @@ class ObservationIngressRouter:
         *,
         policy: IngressRouterPolicyV1 | None = None,
         journal: IngressDispatchJournal | None = None,
+        dispatch_observer: HotPathIngressDispatchObserver | None = None,
     ) -> None:
         self.policy = policy or IngressRouterPolicyV1()
         self.journal = journal or IngressDispatchJournal(max_entries=self.policy.max_journal_entries)
+        self._dispatch_observer = dispatch_observer
         self._consumers = self._normalize_consumers(consumers)
         self._idempotency: OrderedDict[str, IngressDispatchReceiptV1] = OrderedDict()
         self._enrichment_triggers: list[IngressEnrichmentTriggerV1] = []
@@ -66,7 +73,7 @@ class ObservationIngressRouter:
         existing = self._idempotency.get(event.event_id)
         if existing is not None and not allow_duplicate_replay:
             self._metrics["duplicates"] += 1
-            return IngressDispatchReceiptV1(
+            duplicate_receipt = IngressDispatchReceiptV1(
                 dispatch_id=existing.dispatch_id,
                 schema_version="1",
                 event_id=event.event_id,
@@ -83,6 +90,8 @@ class ObservationIngressRouter:
                 ),
                 metadata={"router_policy_identity": self.policy.identity},
             )
+            self._notify_dispatch_observer(event, duplicate_receipt, context)
+            return duplicate_receipt
 
         dispatch_id = derive_ingress_dispatch_id(
             event_id=event.event_id,
@@ -140,7 +149,19 @@ class ObservationIngressRouter:
         self._remember_idempotent(receipt)
         self.journal.append(receipt)
         self._metrics["dispatched"] += 1
+        self._notify_dispatch_observer(event, receipt, context)
         return receipt
+
+    def _notify_dispatch_observer(
+        self,
+        event: EventV1,
+        receipt: IngressDispatchReceiptV1,
+        context: IngressDispatchContext,
+    ) -> None:
+        observer = self._dispatch_observer
+        if observer is None:
+            return
+        observer.on_dispatch(event, receipt, context)
 
     def replay_from_journal(self, events_by_id: dict[str, EventV1], *, dispatch_time_ns: int) -> tuple[IngressDispatchReceiptV1, ...]:
         """Re-dispatch journal event_ids in order (for deterministic replay tests)."""
