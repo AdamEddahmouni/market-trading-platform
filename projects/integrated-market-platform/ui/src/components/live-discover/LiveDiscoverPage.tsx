@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { DiscoverObservability } from "../discover-shared/DiscoverObservability";
 import { OpportunityRadarDensePanel } from "../imp-product/OpportunityRadarDensePanel";
-import { OpportunityRadarDensePanel } from "../imp-product/OpportunityRadarDensePanel";
 import { OpportunityRadarIntro } from "../imp-product/OpportunityRadarIntro";
 
 export function LiveDiscoverPage() {
