@@ -138,6 +138,15 @@ _DEFAULT_TEMPLATES = {
         5 * ONE_MINUTE_NS,
         60 * ONE_MINUTE_NS,
     ),
+    SemanticEventType.SEC_INSIDER_DISCLOSURE: RouteTemplate(
+        SemanticEventType.SEC_INSIDER_DISCLOSURE,
+        ExpertDomain.CORPORATE_FUNDAMENTAL,
+        (IntelligenceCapability.FILINGS,),
+        (),
+        RoutingPriority.NORMAL,
+        2 * ONE_MINUTE_NS,
+        30 * ONE_MINUTE_NS,
+    ),
 }
 
 
