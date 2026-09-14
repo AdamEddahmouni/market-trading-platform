@@ -23,38 +23,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Checkout admitted replay fixture
+      - name: Checkout repository (full history)
+        if: inputs.mode == 'changed'
         uses: actions/checkout@v4
         with:
-          repository: AdamEddahmouni/short-squeeze-screener-internship
-          ref: ee4de9f09128b6316c9d122da3af0fe4707fc0f0
-          path: short-squeeze-project
-          sparse-checkout: |
-            short-squeeze-core/src
-            short-squeeze-core/tests/fixtures/validation/outcome_amendment/biya_market_bars_intraday.jsonl
-          sparse-checkout-cone-mode: false
-      - name: Expose admitted replay fixture at collection root
-        shell: bash
-        run: ln -s "$GITHUB_WORKSPACE/short-squeeze-project" "$GITHUB_WORKSPACE/../short-squeeze-project"
-      - uses: actions/setup-python@v5
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Checkout repository (shallow)
+        if: inputs.mode != 'changed'
+        uses: actions/checkout@v4
         with:
-          python-version: "3.11"
-          cache: pip
-          cache-dependency-path: projects/integrated-market-platform/phase0-dependency-lock.json
-      - name: Cache Python validation state
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pip
-            projects/integrated-market-platform/.pytest_cache
-          key: imp-python-${{ runner.os }}-${{ hashFiles('projects/integrated-market-platform/phase0-dependency-lock.json') }}
-          restore-keys: |
-            imp-python-${{ runner.os }}-
-      - name: Install Python validation dependencies
-        run: python -m pip install --disable-pip-version-check --no-input numpy pymongo scikit-learn
+          persist-credentials: false
       - name: Select merge-base paths
         if: inputs.mode == 'changed'
         shell: bash
@@ -70,6 +49,55 @@ jobs:
           fi
           git diff --name-only "$base...${{ github.sha }}" | sed 's#^projects/integrated-market-platform/##' > .local/developer-workflow/changed-paths.txt
           printf 'Selected %s changed paths\n' "$(wc -l < .local/developer-workflow/changed-paths.txt)"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: projects/integrated-market-platform/phase0-dependency-lock.json
+      - name: Classify CI slices
+        if: inputs.mode == 'changed'
+        id: ci_slices
+        shell: bash
+        run: |
+          mkdir -p .local/developer-workflow
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            python tools/ci_job_selector.py --always-run --quiet \
+              --github-output \
+              --json .local/developer-workflow/ci-job-selection.json
+            exit 0
+          fi
+          python tools/ci_job_selector.py \
+            --paths-file .local/developer-workflow/changed-paths.txt \
+            --quiet \
+            --github-output \
+            --json .local/developer-workflow/ci-job-selection.json
+      - name: Checkout admitted replay fixture
+        if: inputs.mode == 'changed' && steps.ci_slices.outputs.checkout_replay_fixture == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: AdamEddahmouni/short-squeeze-screener-internship
+          ref: ee4de9f09128b6316c9d122da3af0fe4707fc0f0
+          path: short-squeeze-project
+          persist-credentials: false
+          sparse-checkout: |
+            short-squeeze-core/src
+            short-squeeze-core/tests/fixtures/validation/outcome_amendment/biya_market_bars_intraday.jsonl
+          sparse-checkout-cone-mode: false
+      - name: Expose admitted replay fixture at collection root
+        if: inputs.mode == 'changed' && steps.ci_slices.outputs.checkout_replay_fixture == 'true'
+        shell: bash
+        run: ln -s "$GITHUB_WORKSPACE/short-squeeze-project" "$GITHUB_WORKSPACE/../short-squeeze-project"
+      - name: Cache Python validation state
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            projects/integrated-market-platform/.pytest_cache
+          key: imp-python-${{ runner.os }}-${{ hashFiles('projects/integrated-market-platform/phase0-dependency-lock.json') }}
+          restore-keys: |
+            imp-python-${{ runner.os }}-
+      - name: Install Python validation dependencies
+        run: python -m pip install --disable-pip-version-check --no-input numpy pymongo scikit-learn
       - name: Run manifest validation
         shell: bash
         run: |

@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Merge origin/main (79ae537) into PR #136 test-only branch
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, merge hygiene |
+| **Summary** | Merged `origin/main` at `79ae537` (#132) into `work/rebase-pr-118-20260914` for draft PR #136. Resolved `WORK_LOG.md` conflict only; test-only scope preserved (no `src/` changes on branch). |
+| **Key files** | `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py test affected` and `validate fast` (recorded in PR #136 handoff) |
+| **Related** | PR #136; Cloud PR #118 |
+| **Notes** | PR #136 remains draft; #118 not closed. No force-push. |
+
 ## 2026-09-14 — Non-semantic coverage tests for OE, FTEP, providers, Radar, persistence, comparator
 
 | Field | Value |
@@ -47,6 +59,30 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | Rebased onto `origin/main` `2e022383` (post #125/#131). `unittest` on new modules + `test_ftep_integrity` + `test_ftep_session_release` → **52 passed**. `ui` vitest on `OpportunityFeedStatusBanner` + `OpportunityRadarDensePanel` → **7 passed**. |
 | **Related** | Cloud PR #118; coverage-gap audit receipt `internal/coverage-gap-audit.md` (project store); FTEP durable-state #125, session-release #131 |
 | **Notes** | Did not mutate FTEP-V1-002 artifacts, hop worktree `1381619`, Path A, G7, OpenD, Alpaca, or production runtime. Live off. Not `EMPIRICAL_ACTIVE` / not `CALIBRATED`. |
+
+## 2026-09-14 — POST_BUILD35 inventory for ci_job_selector (PR #132)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ci`, `validation` |
+| **Summary** | `validate-python-changed` failed repository-closure audit with `unclassified path: tools/ci_job_selector.py`. Added the path to the `validation-control-plane` scope in `POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` (inventory only; no prose rewrite). |
+| **Key files** | `artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` |
+| **Tests** | `PYTHONPATH=src .venv/Scripts/python.exe -m unittest tests.validation.test_repository_closure.CanonicalRepositoryClosureAuditTests.test_canonical_audit_is_complete_non_destructive_and_uses_closed_vocabulary tests.validation.test_ci_job_selector` → **16 passed** |
+| **Related** | PR #132 (`reconcile/ci-skip-slices-20260914`) |
+| **Notes** | PR #132 remains draft; PR #121 stays open. |
+
+## 2026-09-14 — CI skips unchanged expensive slices (rebased on main)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ci`, `developer-tooling` |
+| **Summary** | Rebased PR #121 onto `origin/main` (includes #130). Path-classified GitHub CI so PRs skip UI `npm ci`/vitest/build, docs-link, and the admitted short-squeeze replay-fixture clone when those trees are unchanged; donor-bridge paths force the fixture clone so `SkipTest` cannot hide required failures. Jobs still report success (required 9/9 preserved). FAST is shallow and never clones the fixture. Push-to-`main` and `workflow_dispatch` pass `--always-run` in `imp-validate.yml` and in `imp-python.yml` changed mode. `python tools/imp.py ci jobs` is the local classifier. No `POST_BUILD35` closure artifact rewrite. |
+| **Key files** | `tools/ci_job_selector.py`, `tests/validation/test_ci_job_selector.py`, `tools/imp.py`, `tools/validation_manifest.json`, `.github/workflows/{imp-validate,imp-python,monorepo-guardrails}.yml`, `.github/actions/install-actionlint/action.yml`, `docs/engineering/{VALIDATION,DEVELOPER_RUNBOOK,DEVELOPER_OPERATING_SYSTEM,WORK_LOG}.md`, `AGENTS.md` |
+| **Tests** | `PYTHONPATH=src .venv/Scripts/python.exe -m unittest tests.validation.test_ci_job_selector tests.validation.test_imp_cli` → **25 passed** |
+| **Related** | [VALIDATION.md](VALIDATION.md); PR #121 |
+| **Notes** | Isolated `reconcile/ci-skip-slices-20260914` worktree. No hop/OpenD/G7/Path A/FTEP/persistence/V1-002/execution-gate changes. Live off. |
 
 ## 2026-09-14 — Classify capture ledger immutable persist conflicts
 

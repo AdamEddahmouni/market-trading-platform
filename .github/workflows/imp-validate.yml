@@ -6,12 +6,14 @@ on:
       - "projects/integrated-market-platform/**"
       - ".github/workflows/imp-validate.yml"
       - ".github/workflows/imp-python.yml"
+      - ".github/actions/install-actionlint/**"
   push:
     branches: ["main"]
     paths:
       - "projects/integrated-market-platform/**"
       - ".github/workflows/imp-validate.yml"
       - ".github/workflows/imp-python.yml"
+      - ".github/actions/install-actionlint/**"
   workflow_dispatch:
 
 concurrency:
@@ -26,10 +28,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Download actionlint
+        with:
+          persist-credentials: false
+      - name: Install actionlint
         id: get_actionlint
-        run: bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash 1.7.12)
-        shell: bash
+        uses: ./.github/actions/install-actionlint
       - name: Lint workflow files
         run: ${{ steps.get_actionlint.outputs.executable }} -color
         shell: bash
@@ -50,29 +53,92 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Classify CI slices
+        id: ci_slices
+        working-directory: projects/integrated-market-platform
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p .local/developer-workflow
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
+            python3 tools/ci_job_selector.py --always-run --quiet \
+              --github-output \
+              --json .local/developer-workflow/ci-job-selection.json
+            exit 0
+          fi
+          git -C "$GITHUB_WORKSPACE" fetch --depth=1 origin "$BASE_SHA"
+          git -C "$GITHUB_WORKSPACE" diff --name-only "$BASE_SHA" "$HEAD_SHA" \
+            > .local/developer-workflow/changed-paths.txt
+          python3 tools/ci_job_selector.py \
+            --paths-file .local/developer-workflow/changed-paths.txt \
+            --quiet \
+            --github-output \
+            --json .local/developer-workflow/ci-job-selection.json
       - uses: actions/setup-python@v5
+        if: steps.ci_slices.outputs.run_docs == 'true'
         with:
           python-version: "3.11"
       - name: Check documentation links
+        if: steps.ci_slices.outputs.run_docs == 'true'
         working-directory: projects/integrated-market-platform
         run: python tools/check_docs_links.py
+      - name: Skip docs when governance markdown is unchanged
+        if: steps.ci_slices.outputs.run_docs != 'true'
+        run: echo "Skipping docs link check; governance markdown unchanged."
 
   validate-ui:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Classify CI slices
+        id: ci_slices
+        working-directory: projects/integrated-market-platform
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p .local/developer-workflow
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
+            python3 tools/ci_job_selector.py --always-run --quiet \
+              --github-output \
+              --json .local/developer-workflow/ci-job-selection.json
+            exit 0
+          fi
+          git -C "$GITHUB_WORKSPACE" fetch --depth=1 origin "$BASE_SHA"
+          git -C "$GITHUB_WORKSPACE" diff --name-only "$BASE_SHA" "$HEAD_SHA" \
+            > .local/developer-workflow/changed-paths.txt
+          python3 tools/ci_job_selector.py \
+            --paths-file .local/developer-workflow/changed-paths.txt \
+            --quiet \
+            --github-output \
+            --json .local/developer-workflow/ci-job-selection.json
       - uses: actions/setup-node@v4
+        if: steps.ci_slices.outputs.run_ui == 'true'
         with:
           node-version: "20"
           cache: npm
           cache-dependency-path: projects/integrated-market-platform/ui/package-lock.json
       - name: Install UI dependencies
+        if: steps.ci_slices.outputs.run_ui == 'true'
         working-directory: projects/integrated-market-platform/ui
         run: npm ci
       - name: Typecheck, test, and build UI
+        if: steps.ci_slices.outputs.run_ui == 'true'
         working-directory: projects/integrated-market-platform/ui
         run: |
           npm run typecheck
           npm test -- --run
-          npm run build
+          npm run build
+      - name: Skip UI when frontend paths are unchanged
+        if: steps.ci_slices.outputs.run_ui != 'true'
+        run: echo "Skipping npm ci/typecheck/test/build; frontend paths unchanged."
