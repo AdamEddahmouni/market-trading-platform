@@ -46,7 +46,7 @@ export function ImpProductChrome({ mode, onSwitchMode, children, topStack }: Pro
             <span className="imp-wordmark-tag">Integrated Market Platform</span>
           </div>
         </div>
-        <NavShell mode={mode} layout="sidebar" />
+        <NavShell mode={mode} />
         <footer className="imp-sidebar-footer">
           <span className="imp-sidebar-version">UI v1 · board 03 · Ctrl+K search</span>
         </footer>
