@@ -697,6 +697,7 @@ describe("App mode launcher integration", () => {
     await openNavLink(/^Signals —/i);
     expect(await screen.findByRole("heading", { name: "Signals desk" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Overview KPIs" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Primary review queue" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "See the market unfold" })).not.toBeInTheDocument();
   });
 

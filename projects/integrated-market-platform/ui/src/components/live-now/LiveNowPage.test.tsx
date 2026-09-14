@@ -60,11 +60,10 @@ describe("LiveNowPage", () => {
     );
     expect(screen.getByRole("heading", { level: 1, name: "Live Watch" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Overview KPIs" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Top opportunities" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Primary review queue" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Connection summary" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Operational safety" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Symbol lookup" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "What matters now" })).toBeInTheDocument();
   });
 
   it("preserves attention callbacks and links to deeper live surfaces", () => {
@@ -74,6 +73,7 @@ describe("LiveNowPage", () => {
         <LiveNowPage {...props} />
       </MemoryRouter>,
     );
+    fireEvent.click(screen.getByRole("tab", { name: "Attention" }));
     fireEvent.click(screen.getByRole("button", { name: "Why here?" }));
     fireEvent.click(screen.getAllByRole("button", { name: "Explain" })[0]);
     fireEvent.click(screen.getByRole("button", { name: "Inspect" }));
@@ -103,6 +103,7 @@ describe("LiveNowPage", () => {
     );
     expect(screen.getByText("Provider health unavailable.")).toBeInTheDocument();
     expect(screen.getByText("Live execution blocked")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "Attention" }));
     expect(screen.getByText("Live feed requires review")).toBeInTheDocument();
   });
 
