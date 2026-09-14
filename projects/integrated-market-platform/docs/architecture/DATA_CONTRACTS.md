@@ -62,6 +62,18 @@ Do not overload `correlation_id` with display labels or reuse for unrelated cach
 - JSON schemas in `manifests/ui1/schemas/` for shared contracts
 - Parse failures: omit field or show degraded state — not silent coercion
 
+## API error envelope
+
+HTTP JSON errors from `ui_api` and the loopback operator control plane emit:
+
+| Field | Meaning |
+|-------|---------|
+| `error` | Human-readable message (legacy) |
+| `reason_code` | Stable domain code (legacy; unchanged) |
+| `error_category` | One of the twelve canonical WS05 categories (`VALIDATION_ERROR`, `MODE_BLOCKED`, …) |
+
+`error_category` is additive. Demo mutation (`DEMO_MUTATIONS_PROHIBITED`) and Live observational opportunity mutation (`LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`) are `MODE_BLOCKED`, not `INTERNAL_ERROR`.
+
 ## Versioning
 
 - Draft `version` field for client-side draft contract

@@ -156,6 +156,25 @@ def shutil_which(name: str) -> str | None:
     return shutil.which(name)
 
 
+def control_error_payload(reason_code: str, message: str) -> dict[str, str]:
+    """Loopback control HTTP errors use the same envelope as ui_api (BL-0702)."""
+    categories = {
+        "OPERATION_NOT_FOUND": "VALIDATION_ERROR",
+        "CONTROL_ROUTE_NOT_FOUND": "VALIDATION_ERROR",
+        "CONTROL_JSON_INVALID": "VALIDATION_ERROR",
+        "CONTROL_ACTION_INVALID": "VALIDATION_ERROR",
+    }
+    try:
+        category = categories[reason_code]
+    except KeyError as exc:
+        raise ValueError(f"unmapped control reason_code: {reason_code}") from exc
+    return {
+        "error": message,
+        "reason_code": reason_code,
+        "error_category": category,
+    }
+
+
 def _spawn_action(root: Path, action: str) -> dict[str, Any]:
     operation_id = f"op-{uuid.uuid4().hex[:16]}"
     operation = {
@@ -199,6 +218,9 @@ class ControlHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _send_error(self, reason_code: str, message: str, *, status: HTTPStatus) -> None:
+        self._send(control_error_payload(reason_code, message), status)
+
     def do_OPTIONS(self) -> None:
         origin = self.headers.get("Origin")
         if origin is not None and origin not in ALLOWED_ORIGINS:
@@ -221,26 +243,46 @@ class ControlHandler(BaseHTTPRequestHandler):
             operation_id = parsed.path.removeprefix("/control/operations/")
             operation = _read_operations(self.root).get(operation_id)
             if operation is None:
-                self._send({"error": "Operation not found", "reason_code": "OPERATION_NOT_FOUND"}, HTTPStatus.NOT_FOUND)
+                self._send_error(
+                    "OPERATION_NOT_FOUND",
+                    "Operation not found",
+                    status=HTTPStatus.NOT_FOUND,
+                )
             else:
                 self._send(operation)
             return
-        self._send({"error": "Unknown control path", "reason_code": "CONTROL_ROUTE_NOT_FOUND"}, HTTPStatus.NOT_FOUND)
+        self._send_error(
+            "CONTROL_ROUTE_NOT_FOUND",
+            "Unknown control path",
+            status=HTTPStatus.NOT_FOUND,
+        )
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
         if parsed.path != "/control/actions":
-            self._send({"error": "Unknown control path", "reason_code": "CONTROL_ROUTE_NOT_FOUND"}, HTTPStatus.NOT_FOUND)
+            self._send_error(
+                "CONTROL_ROUTE_NOT_FOUND",
+                "Unknown control path",
+                status=HTTPStatus.NOT_FOUND,
+            )
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))
             body = json.loads(self.rfile.read(length).decode("utf-8") or "{}")
         except (ValueError, json.JSONDecodeError):
-            self._send({"error": "Invalid JSON body", "reason_code": "CONTROL_JSON_INVALID"}, HTTPStatus.BAD_REQUEST)
+            self._send_error(
+                "CONTROL_JSON_INVALID",
+                "Invalid JSON body",
+                status=HTTPStatus.BAD_REQUEST,
+            )
             return
         action = normalize_action(body.get("action") if isinstance(body, dict) else None)
         if action is None:
-            self._send({"error": "Unsupported lifecycle action", "reason_code": "CONTROL_ACTION_INVALID"}, HTTPStatus.BAD_REQUEST)
+            self._send_error(
+                "CONTROL_ACTION_INVALID",
+                "Unsupported lifecycle action",
+                status=HTTPStatus.BAD_REQUEST,
+            )
             return
         if action == "check_update":
             self._send({"operation_id": "check-update", "status": "SUCCEEDED", "result": check_update(self.root), "secrets_included": False})
