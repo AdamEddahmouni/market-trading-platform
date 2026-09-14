@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Lane D PR #154: classify hot_path_telemetry for closure
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `validation`, `repository-closure`, Lane D |
+| **Summary** | `validate-python-changed` on PR #154 failed with one closure audit error (`unclassified path: src/market_platform_foundation/hot_path_telemetry`), not perf gating (`perf=INCOMPATIBLE_BASELINE` is OBSERVE_ONLY telemetry). Classified the Lane D package under `rt01-trace-latency` and merged `origin/main` (#152) before re-push. |
+| **Key files** | `artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` |
+| **Tests** | `python -m unittest tests.validation.test_repository_closure.CanonicalRepositoryClosureAuditTests` → **1 passed**; awaiting IMP Validation on pushed HEAD |
+| **Related** | PR #154 `phase2/lane-d-replay-latency-baseline` |
+| **Notes** | P7 `INCOMPATIBLE_BASELINE` on changed workload reflects 4 vs 8 logical CPUs on CI; does not affect `validate.py` exit code when tests pass. |
+
 ## 2026-09-14 — Phase 1 Lane A: canonical state-path contract (worktrees)
 
 | Field | Value |
