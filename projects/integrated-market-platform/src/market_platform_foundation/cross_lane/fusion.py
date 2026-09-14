@@ -166,6 +166,16 @@ def fuse_opportunity_v1(
             "quality_flags": list(dict.fromkeys(quality_flags)),
             "fusion": None,
         }
+    if liquidity.reason == "STALE_ORDER_FLOW":
+        quality_flags.append(OpportunityQualityFlag.FUSION_INPUTS_INCOMPLETE.value)
+        return {
+            "available": False,
+            "status": "UNAVAILABLE",
+            "outcome": "UNAVAILABLE",
+            "reason": "STALE_ORDER_FLOW",
+            "quality_flags": list(dict.fromkeys(quality_flags)),
+            "fusion": None,
+        }
 
     friction = costs.friction_cost if costs.available and costs.friction_cost is not None else 0.0
     expected_gross = payoff.expected_pnl
