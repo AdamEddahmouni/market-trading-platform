@@ -54,8 +54,9 @@ def derive_pit_clocks(row: Mapping[str, Any]) -> PitClocksPrep:
 
     flags: list[str] = [
         "PUBLIC_KNOWLEDGE_NOT_TRANSACTION_DATE",
-        "PRIMARY_SOURCE_EDGAR_WINS",
         "MARKET_TRACKERS_REPLACEABLE",
+        "SEC_PRIMARY_NOT_SUPPLIED_AGGREGATOR_FILING_ONLY",
+        "AGGREGATOR_FILING_PUBLICATION_ONLY",
     ]
     if economic:
         flags.append("ECONOMIC_DATE_PRESENT")
@@ -67,7 +68,7 @@ def derive_pit_clocks(row: Mapping[str, Any]) -> PitClocksPrep:
     return PitClocksPrep(
         economic_event_date=economic,
         filing_date=filed_at,
-        public_knowledge_date_basis=f"sec_edgar_filing_date:{filed_at}",
+        public_knowledge_date_basis=f"market_trackers.filedAt:{filed_at}",
         available_time_basis=f"market_trackers.filedAt:{filed_at}",
         aggregator_retrieved_at=retrieved_at,
         event_time_role="economic_attribution_only_when_transactedAt_present",
