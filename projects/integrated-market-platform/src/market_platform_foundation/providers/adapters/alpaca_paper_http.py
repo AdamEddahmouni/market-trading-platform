@@ -101,6 +101,21 @@ def assert_alpaca_paper_url(url: str) -> str:
     return candidate
 
 
+def canonicalize_alpaca_paper_origin(url: str | None) -> str:
+    """Return the exact Paper origin. ``/v2`` is not an origin (it is an API path)."""
+    candidate = str(url or "").strip() or ALPACA_PAPER_ORIGIN
+    parsed = urllib.parse.urlparse(candidate)
+    host = (parsed.hostname or "").lower()
+    if host == ALPACA_LIVE_HOST or host in _LIVE_HOSTS:
+        raise AlpacaPaperHttpError("LIVE_FORBIDDEN")
+    if host != "paper-api.alpaca.markets" or parsed.scheme != "https":
+        raise AlpacaPaperHttpError("ALPACA_HOST_FORBIDDEN")
+    path = (parsed.path or "").rstrip("/")
+    if path not in ("", "/v2"):
+        raise AlpacaPaperHttpError("ALPACA_HOST_FORBIDDEN")
+    return ALPACA_PAPER_ORIGIN
+
+
 def map_alpaca_wire_status(status_raw: str) -> str:
     raw = str(status_raw or "").strip().lower()
     if raw not in _WIRE_STATUS_TO_CANONICAL:
@@ -250,9 +265,8 @@ class AlpacaPaperHttpTransport:
 
 
 def paper_api_url(origin: str, *parts: str) -> str:
-    assert_alpaca_paper_url(origin)
+    base = canonicalize_alpaca_paper_origin(origin)
     suffix = "/".join(urllib.parse.quote(str(part), safe="") for part in parts)
-    base = origin.rstrip("/")
     if suffix:
         return f"{base}/{suffix}"
     return base
@@ -400,6 +414,7 @@ __all__ = [
     "alpaca_http_fetch_positions",
     "alpaca_http_place_order",
     "assert_alpaca_paper_url",
+    "canonicalize_alpaca_paper_origin",
     "build_equity_order_json",
     "map_alpaca_wire_status",
     "normalize_alpaca_wire_order",

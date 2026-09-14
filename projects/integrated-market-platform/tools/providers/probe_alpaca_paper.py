@@ -3,16 +3,18 @@
 
 Exercises GET /v2/account against https://paper-api.alpaca.markets only.
 Standard library only. Never imports the Alpaca SDK. Never contacts
-api.alpaca.markets.
+api.alpaca.markets. ``/v2`` is a path, not an origin.
 
 Without paper keys the probe prints COMPARATOR_NOT_CONFIGURED and exits
 nonzero BEFORE any network activity. Live host URLs are LIVE_FORBIDDEN.
 
 Token resolution order:
   1. env APCA_API_KEY_ID / APCA_API_SECRET_KEY
-  2. .private/providers.env lines with those names
+  2. --env-file or IMP_ALPACA_PAPER_ENV (gitignored operator file)
+  3. .private/alpaca-paper.env
+  4. .private/providers.env
 
-Secrets are never printed.
+Secrets are never printed. Presence is names_present true/false only.
 """
 
 from __future__ import annotations
@@ -32,9 +34,11 @@ from market_platform_foundation.providers.adapters.alpaca_paper_http import (  #
     AlpacaPaperHttpError,
     AlpacaPaperHttpTransport,
     alpaca_http_fetch_account,
-    assert_alpaca_paper_url,
+    canonicalize_alpaca_paper_origin,
+    paper_api_url,
 )
 
+DEFAULT_PAPER_ENV = ROOT / ".private" / "alpaca-paper.env"
 PROVIDERS_ENV_PATH = ROOT / ".private" / "providers.env"
 
 EXIT_OK = 0
@@ -60,11 +64,11 @@ def _scrub(value: Any) -> Any:
     return value
 
 
-def _load_private_env() -> dict[str, str]:
+def _parse_env_file(path: Path) -> dict[str, str]:
     values: dict[str, str] = {}
-    if not PROVIDERS_ENV_PATH.is_file():
+    if not path.is_file():
         return values
-    for raw_line in PROVIDERS_ENV_PATH.read_text(encoding="utf-8").splitlines():
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
         line = raw_line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue
@@ -73,30 +77,50 @@ def _load_private_env() -> dict[str, str]:
     return values
 
 
-def load_keys() -> tuple[str, str]:
-    private = _load_private_env()
+def _candidate_env_files(explicit: str | None) -> list[Path]:
+    files: list[Path] = []
+    if explicit:
+        files.append(Path(explicit))
+    override = os.environ.get("IMP_ALPACA_PAPER_ENV", "").strip()
+    if override:
+        files.append(Path(override))
+    files.append(DEFAULT_PAPER_ENV)
+    files.append(PROVIDERS_ENV_PATH)
+    return files
+
+
+def load_private_values(explicit: str | None = None) -> dict[str, str]:
+    merged: dict[str, str] = {}
+    for path in reversed(_candidate_env_files(explicit)):
+        merged.update(_parse_env_file(path))
+    return merged
+
+
+def load_keys(explicit: str | None = None) -> tuple[str, str]:
+    private = load_private_values(explicit)
     key_id = os.environ.get("APCA_API_KEY_ID") or private.get("APCA_API_KEY_ID") or ""
     secret = os.environ.get("APCA_API_SECRET_KEY") or private.get("APCA_API_SECRET_KEY") or ""
     return key_id.strip(), secret.strip()
 
 
-def resolve_origin(endpoint_arg: str | None) -> str:
+def presence_payload(*, key_id: str, secret: str, base_url: str) -> dict[str, bool]:
+    return {
+        "APCA_API_KEY_ID": bool(key_id),
+        "APCA_API_SECRET_KEY": bool(secret),
+        "APCA_API_BASE_URL": bool(str(base_url or "").strip()),
+    }
+
+
+def resolve_origin(endpoint_arg: str | None, private: dict[str, str]) -> str:
     origin = (
         endpoint_arg
         or os.environ.get("APCA_API_BASE_URL")
         or os.environ.get("ALPACA_BASE_URL")
+        or private.get("APCA_API_BASE_URL")
+        or private.get("ALPACA_BASE_URL")
         or ALPACA_PAPER_ORIGIN
     )
-    try:
-        assert_alpaca_paper_url(origin)
-    except AlpacaPaperHttpError as exc:
-        code = str(exc)
-        if code == "LIVE_FORBIDDEN":
-            raise SystemExit(
-                f"[fail] LIVE_FORBIDDEN: origin {origin!r} is not the Paper host; refusing to probe"
-            ) from exc
-        raise SystemExit(f"[fail] {code}: origin {origin!r} refused") from exc
-    return origin
+    return canonicalize_alpaca_paper_origin(origin)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -106,24 +130,41 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--endpoint",
         default=None,
-        help="override APCA_API_BASE_URL (must be the Paper origin)",
+        help="override APCA_API_BASE_URL (must canonicalize to the Paper origin)",
+    )
+    parser.add_argument(
+        "--env-file",
+        default=None,
+        help="gitignored env file with APCA_* names (values never printed)",
     )
     args = parser.parse_args(argv)
-    key_id, secret = load_keys()
+    private = load_private_values(args.env_file)
+    key_id, secret = load_keys(args.env_file)
+    base_url = (
+        args.endpoint
+        or os.environ.get("APCA_API_BASE_URL")
+        or os.environ.get("ALPACA_BASE_URL")
+        or private.get("APCA_API_BASE_URL")
+        or private.get("ALPACA_BASE_URL")
+        or ""
+    )
+    print("names_present " + json.dumps(presence_payload(key_id=key_id, secret=secret, base_url=base_url), sort_keys=True))
     if not key_id or not secret:
         print("[fail] COMPARATOR_NOT_CONFIGURED: APCA_API_KEY_ID / APCA_API_SECRET_KEY absent")
         print("orders_placed=false")
         print("fabricated_fills=false")
         return EXIT_NOT_CONFIGURED
     try:
-        origin = resolve_origin(args.endpoint)
-    except SystemExit as exc:
-        detail = str(exc)
-        if "LIVE_FORBIDDEN" in detail:
-            print(detail)
+        origin = resolve_origin(args.endpoint, private)
+    except AlpacaPaperHttpError as exc:
+        code = str(exc)
+        print(f"[fail] {code}")
+        if code == "LIVE_FORBIDDEN":
             return EXIT_LIVE_FORBIDDEN
-        print(detail)
         return EXIT_NOT_CONFIGURED
+    account_url = paper_api_url(origin, "v2", "account")
+    print(f"origin={origin}")
+    print(f"request=GET {account_url.removeprefix(origin)}")
     transport = AlpacaPaperHttpTransport()
     try:
         account = alpaca_http_fetch_account(
@@ -132,6 +173,8 @@ def main(argv: list[str] | None = None) -> int:
     except AlpacaPaperHttpError as exc:
         code = str(exc)
         print(f"[fail] {code}")
+        print("orders_placed=false")
+        print("fabricated_fills=false")
         if code.startswith("ALPACA_PAPER_NETWORK") or code == "ALPACA_PAPER_AUTH_REJECTED":
             return EXIT_NETWORK
         if code == "LIVE_FORBIDDEN":
@@ -139,9 +182,11 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_NOT_CONFIGURED
     if account is None:
         print("[fail] BROKER_RESPONSE_INVALID: GET /v2/account did not return an account object")
+        print("orders_placed=false")
+        print("fabricated_fills=false")
         return EXIT_NETWORK
-    print(f"[gate] Paper origin {origin}; GET /v2/account")
-    print(f"response-body: {json.dumps(_scrub(account), indent=2, sort_keys=True)[:4000]}")
+    print("account_present=true")
+    print(f"status_raw={account.get('status_raw') or ''}")
     print("[done] PROBE_PASSED")
     print("orders_placed=false")
     print("fabricated_fills=false")

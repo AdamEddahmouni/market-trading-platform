@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -32,7 +33,9 @@ from market_platform_foundation.providers.adapters.alpaca_paper_http import (  #
     AlpacaPaperHttpTransport,
     alpaca_http_fetch_account,
     assert_alpaca_paper_url,
+    canonicalize_alpaca_paper_origin,
     normalize_alpaca_wire_order,
+    paper_api_url,
 )
 from market_platform_foundation.providers.adapters.tradier_paper import (  # noqa: E402
     TRADIER_PROVIDER_ID,
@@ -80,11 +83,22 @@ class UrlGuardTests(unittest.TestCase):
             assert_alpaca_paper_url(f"{ALPACA_PAPER_ORIGIN}/v2/account"),
             f"{ALPACA_PAPER_ORIGIN}/v2/account",
         )
+        self.assertEqual(canonicalize_alpaca_paper_origin(None), ALPACA_PAPER_ORIGIN)
+        self.assertEqual(canonicalize_alpaca_paper_origin(ALPACA_PAPER_ORIGIN), ALPACA_PAPER_ORIGIN)
+        self.assertEqual(
+            canonicalize_alpaca_paper_origin(f"{ALPACA_PAPER_ORIGIN}/v2"),
+            ALPACA_PAPER_ORIGIN,
+        )
+        self.assertEqual(paper_api_url(f"{ALPACA_PAPER_ORIGIN}/v2", "v2", "account"), f"{ALPACA_PAPER_ORIGIN}/v2/account")
+        self.assertEqual(paper_api_url(ALPACA_PAPER_ORIGIN, "v2", "account"), f"{ALPACA_PAPER_ORIGIN}/v2/account")
 
     def test_live_host_blocked_before_urlopen(self) -> None:
         with self.assertRaises(AlpacaPaperHttpError) as ctx:
             assert_alpaca_paper_url("https://api.alpaca.markets/v2/account")
         self.assertEqual(str(ctx.exception), "LIVE_FORBIDDEN")
+        with self.assertRaises(AlpacaPaperHttpError) as origin_ctx:
+            canonicalize_alpaca_paper_origin("https://api.alpaca.markets")
+        self.assertEqual(str(origin_ctx.exception), "LIVE_FORBIDDEN")
         transport = AlpacaPaperHttpTransport()
         with mock.patch("urllib.request.urlopen", side_effect=AssertionError("network")):
             with self.assertRaises(AlpacaPaperHttpError) as blocked:
@@ -286,8 +300,32 @@ class ProbeTests(unittest.TestCase):
         from tools.providers.probe_alpaca_paper import EXIT_NOT_CONFIGURED, main
 
         with mock.patch("tools.providers.probe_alpaca_paper.load_keys", return_value=("", "")):
-            code = main([])
+            with mock.patch("tools.providers.probe_alpaca_paper.load_private_values", return_value={}):
+                code = main([])
         self.assertEqual(code, EXIT_NOT_CONFIGURED)
+
+    def test_probe_env_file_dummy_keys_do_not_print_secrets(self) -> None:
+        from tools.providers.probe_alpaca_paper import EXIT_NETWORK, main
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "alpaca-paper.env"
+            path.write_text(
+                "APCA_API_KEY_ID=PKTESTDUMMY\n"
+                "APCA_API_SECRET_KEY=not-a-real-secret\n"
+                "APCA_API_BASE_URL=https://paper-api.alpaca.markets\n",
+                encoding="utf-8",
+            )
+            with mock.patch(
+                "tools.providers.probe_alpaca_paper.alpaca_http_fetch_account",
+                side_effect=AlpacaPaperHttpError("ALPACA_PAPER_NETWORK:refused"),
+            ):
+                with mock.patch("sys.stdout", new_callable=lambda: __import__("io").StringIO()) as buf:
+                    code = main(["--env-file", str(path)])
+                    text = buf.getvalue()
+        self.assertEqual(code, EXIT_NETWORK)
+        self.assertIn('"APCA_API_KEY_ID": true', text)
+        self.assertNotIn("PKTESTDUMMY", text)
+        self.assertNotIn("not-a-real-secret", text)
 
 
 if __name__ == "__main__":

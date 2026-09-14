@@ -36,7 +36,7 @@ from .alpaca_paper_http import (
     alpaca_http_fetch_order,
     alpaca_http_fetch_positions,
     alpaca_http_place_order,
-    assert_alpaca_paper_url,
+    canonicalize_alpaca_paper_origin,
 )
 
 ALPACA_PROVIDER_ID = "alpaca.paper"
@@ -143,8 +143,7 @@ class AlpacaPaperExecutionProvider:
                 capability=self.capability,
             )
         try:
-            origin = self._origin()
-            assert_alpaca_paper_url(origin)
+            canonicalize_alpaca_paper_origin(self._origin_raw())
         except AlpacaPaperHttpError as exc:
             code = str(exc)
             return ProviderResult(
@@ -164,12 +163,13 @@ class AlpacaPaperExecutionProvider:
     def _secret_key(self) -> str:
         return str(self._env.get("APCA_API_SECRET_KEY") or "").strip()
 
-    def _origin(self) -> str:
-        raw = str(
+    def _origin_raw(self) -> str:
+        return str(
             self._env.get("APCA_API_BASE_URL") or self._env.get("ALPACA_BASE_URL") or ALPACA_PAPER_ORIGIN
         ).strip()
-        assert_alpaca_paper_url(raw)
-        return ALPACA_PAPER_ORIGIN
+
+    def _origin(self) -> str:
+        return canonicalize_alpaca_paper_origin(self._origin_raw() or None)
 
     def _http_transport(self) -> AlpacaHttpTransport:
         if self._http is not None:
