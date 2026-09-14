@@ -42,9 +42,9 @@ For large features, also add or update a completion note under `docs/superpowers
 |-------|-------|
 | **Status** | `complete` |
 | **Area** | `backend`, `intelligence/paper_forward_bridge` |
-| **Summary** | Fixed `signal_only_session_requires_durable_state` to pass when `signal_only_session_started` is true and durable `governed_session_count` is positive (removed committed always-fail stub). Added regression test seeding two forward-test sessions against FTEP-V1-002 campaign id. |
+| **Summary** | Fixed `signal_only_session_requires_durable_state` to pass when `signal_only_session_started` is true and durable `governed_session_count` is positive (removed committed always-fail stub). Added RTH session-id regression plus negative tests (no sessions, wrong campaign, corrupt/unavailable persistence, authorization unchanged). |
 | **Key files** | `src/market_platform_foundation/intelligence/paper_forward_bridge/ftep_integrity.py`, `tests/intelligence/test_ftep_integrity.py` |
-| **Tests** | `python -m unittest tests.intelligence.test_ftep_integrity -v` |
+| **Tests** | `python -m unittest tests.intelligence.test_ftep_integrity -v` (11 passed) |
 | **Related** | RTH integrity checker leftover (`c8471a74`) |
 | **Notes** | Does not weaken EMPIRICAL_ACTIVE, auto-record locks, or change V1-002 manifest. |
 
