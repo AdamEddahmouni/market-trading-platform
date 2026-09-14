@@ -10,7 +10,7 @@ from .comparison import (
     OpportunityComparisonError,
     comparison_vector_from_sidecar,
 )
-from .dedup import dedup_review_rows
+from .dedup import dedup_review_rows, keep_ranked_thesis_winners
 from .lifecycle import OperatorLifecycleState
 from .read_model import (
     COMPARATOR_DIMENSION_NAMES,
@@ -121,7 +121,7 @@ def rank_review_rows(
             return (1, -provisional_rank_score(row), row.summary_id)
         return (2, row.summary_id)
 
-    ordered = sorted(visible, key=sort_key)
+    ordered = keep_ranked_thesis_winners(tuple(sorted(visible, key=sort_key)))
     ranked: list[OpportunitySummary] = []
     for index, row in enumerate(ordered, start=1):
         vector = vectors.get(row.opportunity_id or "") if row.opportunity_id else None
