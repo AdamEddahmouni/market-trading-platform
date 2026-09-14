@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — PROGRAM_STATUS Canonical SHA pin after merged #89 (Item 18)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Pin Canonical origin/main SHA to live tip `f4dcb69` (merge pull request #89 atop #88 `1e066148`). Lists hop chain through #63 plus burst #73, #78, #81, #83–#89. Leftover #43 never landed — DoD item **18 stays PARTIAL** (Git ≠ full docs rebaseline / historical Notion hub SHAs). FTEP remains `FTEP_EMPIRICAL_NOT_READY` — **not** `EMPIRICAL_ACTIVE`. Items **2 / 7 / 9** stay **PARTIAL** (no hop/fill verdict flips). Simulator **not** `CALIBRATED`. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py validate full` (IMP Validation 9/9 including validate-ui) |
+| **Related** | [PR #89](https://github.com/AdamEddahmouni/market-trading-platform/pull/89); merge SHA `f4dcb69a1fe995c96256726e253e434590492605`; Track A Item 18 store receipt |
+| **Notes** | PR #46 independent OpenD Primary-L1 draft **skipped** — functionality superseded on main via #47/#42/#50; `CONFLICTING`. Did not merge #46. Live forbidden. |
+
 ## 2026-09-14 — install-opend BLOCKED when uv venv has no pip
 
 | Field | Value |

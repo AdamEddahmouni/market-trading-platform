@@ -7,9 +7,9 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Mutable current program state and material limitations |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.15` |
+| Version | `1.16` |
 | Last Verified | `2026-09-14` |
-| Canonical origin/main SHA | `3d2c44866f3d937d9a7b3c063438cd391423710d` (merged #32, #34–#42, #45, #47, #48, #50, #52, #55–#62; leftover #43 never landed) |
+| Canonical origin/main SHA | `f4dcb69a1fe995c96256726e253e434590492605` (merged #32, #34–#42, #45, #47, #48, #50, #52, #55–#63, #73, #78, #81, #83–#89; leftover #43 never landed) |
 | Supersedes | Root README as whole-program status authority |
 | Superseded By | None |
 
