@@ -104,12 +104,21 @@ def _load_attention_rows_safe(
     return [dict(item) for item in sample_rows], "sample"
 
 
+def _attention_data_kind_from_source(source_label: str, *, live: bool) -> str:
+    if live:
+        return "LIVE_PROSPECTIVE"
+    if source_label == "sample":
+        return "SAMPLE"
+    return "FIXTURE"
+
+
 def collect_ftep_catalyst_watch(
     repository_root: Path,
     campaign_slug: str = "FTEP-V1-002",
     *,
     fixture_only: bool = False,
     input_path: Path | None = None,
+    live_ingress: bool = False,
 ) -> dict[str, Any]:
     """Compose campaign status, evidence session_ids, and ranked fixture summaries (no writes)."""
 
@@ -143,11 +152,66 @@ def collect_ftep_catalyst_watch(
             "After RTH session-start, re-run watch-catalysts to correlate session_ids."
         )
 
-    rows, source_label = _load_attention_rows_safe(
-        repository_root,
-        campaign_slug,
-        fixture_only=use_fixture,
-        input_path=input_path,
+    prospective_ingress_report: dict[str, object] | None = None
+    used_live_ingress = False
+    rows: list[dict[str, object]]
+    source_label: str
+    if not use_fixture and live_ingress and input_path is None:
+        from .ftep_prospective_catalyst_ingress import collect_finviz_prospective_attention_rows
+
+        ingress = collect_finviz_prospective_attention_rows(
+            repository_root,
+            campaign_slug,
+            live_ingress=True,
+        )
+        prospective_ingress_report = ingress.to_report_dict()
+        if ingress.ready and ingress.rows:
+            rows = [dict(item) for item in ingress.rows]
+            source_label = ingress.source_label
+            used_live_ingress = True
+        else:
+            if ingress.attempted and ingress.reason == "INGRESS_GATES_INACTIVE":
+                blockers.append("PROSPECTIVE_CATALYST_INGRESS_GATES_INACTIVE")
+                operator_hints.append(
+                    "Set IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS=1 with IMP_FINVIZ_LIVE and "
+                    "a configured Finviz Elite token before --live-ingress during RTH."
+                )
+            elif ingress.attempted and ingress.reason == "FINVIZ_FETCH_FAILED":
+                blockers.append("FINVIZ_PROSPECTIVE_FETCH_FAILED")
+                operator_hints.append(
+                    "Finviz prospective fetch failed; attention rows are not live-labelled."
+                )
+            elif ingress.attempted and ingress.ready and not ingress.rows:
+                operator_hints.append(
+                    "Live Finviz ingress returned zero universe-qualified catalyst rows "
+                    "(pipeline or recency filters)."
+                )
+            fixture_rows, fixture_source = _load_attention_rows_safe(
+                repository_root,
+                campaign_slug,
+                fixture_only=False,
+                input_path=None,
+            )
+            rows = fixture_rows
+            source_label = fixture_source
+            if ingress.attempted and not used_live_ingress:
+                operator_hints.append(
+                    f"Attention rows from non-live source {fixture_source!r} "
+                    "(explicit FIXTURE/SAMPLE; not prospective Finviz ingress)."
+                )
+    else:
+        loaded_rows, loaded_source = _load_attention_rows_safe(
+            repository_root,
+            campaign_slug,
+            fixture_only=use_fixture,
+            input_path=input_path,
+        )
+        rows = loaded_rows
+        source_label = loaded_source
+
+    attention_data_kind = _attention_data_kind_from_source(
+        source_label,
+        live=used_live_ingress,
     )
 
     from market_platform_foundation.intelligence.opportunity.read_model import (
@@ -172,12 +236,16 @@ def collect_ftep_catalyst_watch(
                 }
             )
 
+    if used_live_ingress and watch_mode != "FIXTURE_SMOKE":
+        watch_mode = "PROSPECTIVE_FINVIZ_INGRESS"
+
     disposition = "PASS" if not blockers else "BLOCKED"
     return {
         "schema_version": "1.0.0",
         "artifact_kind": _ARTIFACT_KIND,
         "campaign_slug": campaign_slug,
         "dry_run": True,
+        "test_mode": "SIGNAL_ONLY",
         "watch_mode": watch_mode,
         "disposition": disposition,
         "blockers": blockers,
@@ -191,6 +259,8 @@ def collect_ftep_catalyst_watch(
         "governed_session_ids": session_ids,
         "evidence_path": evidence_path,
         "attention_source": source_label,
+        "attention_data_kind": attention_data_kind,
+        "prospective_ingress": prospective_ingress_report,
         "summary_count": len(ranked),
         "summaries": [item.to_dict() for item in ranked],
         "session_correlation": correlation,

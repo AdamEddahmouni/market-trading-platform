@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — FTEP-V1-002 prospective Finviz catalyst ingress (watch-catalysts)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, FTEP-V1-002 SIGNAL_ONLY |
+| **Summary** | Wired opt-in Finviz Elite prospective ingress into read-only `watch-catalysts`: frozen-manifest catalyst pipeline, explicit `attention_data_kind` (FIXTURE vs LIVE_PROSPECTIVE), provider vs ingest timestamps on summaries, session correlation unchanged, no locks or manifest mutation. Gates: `IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS=1` + `IMP_FINVIZ_LIVE` + configured token (env or credential store); CLI `--live-ingress` on `tools/ftep_watch_catalysts.py` only. `--live-ingress` fails closed under `FIXTURE_SMOKE`. |
+| **Key files** | `ftep_prospective_catalyst_ingress.py`, `ftep_catalyst_watch.py`, `opportunity/read_model.py`, `tools/ftep_watch_catalysts.py`, `tests/intelligence/test_ftep_prospective_catalyst_ingress.py`, `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md` |
+| **Tests** | `python -m unittest tests.intelligence.test_ftep_prospective_catalyst_ingress tests.intelligence.test_ftep_catalyst_watch` → **passed** (rebased on `origin/main` `0e2d731`) |
+| **Related** | PR #133; `SIGNAL_ONLY_LAUNCH_PREP.md` catalyst operator path |
+| **Notes** | SIGNAL_ONLY — not `FTEP_EMPIRICAL_ACTIVE`. Live fetch operator-gated; RTH empirical proof pending owner gates. |
+
 ## 2026-09-14 — Merge origin/main (1b60b5a) into PR #136 test-only branch
 
 | Field | Value |
