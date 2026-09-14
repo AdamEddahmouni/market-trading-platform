@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Lane A: reconcile landing-branch docs to git HEAD 5e0ec717
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | After `git fetch origin main`, updated stale `3bb5aa2f` landing banners in `AGENTS.md`, `CURSOR_CLOUD_ENVIRONMENT.md`, and `DEVELOPER_OPERATING_SYSTEM.md` to git HEAD `5e0ec717` (#100). Clarified that `PROGRAM_STATUS` Canonical SHA **field** remains `a03f94cb` (#95) by policy — no PROGRAM_STATUS pin for #99/#100. |
+| **Key files** | `AGENTS.md`, `docs/engineering/CURSOR_CLOUD_ENVIRONMENT.md`, `docs/engineering/DEVELOPER_OPERATING_SYSTEM.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | Docs-only; no operator CLI changes |
+| **Related** | Lane A reconciliation receipt in Project store `internal/lane-a-github-docs.md` |
+| **Notes** | Notion hub body/tables may still cite historical SHAs; top CURRENT banners authoritative. Item 18 stays PARTIAL. |
+
 ## 2026-09-14 — Board 03 overview KPI strip and Opportunity Radar density
 
 | Field | Value |
