@@ -1,0 +1,32 @@
+{
+  "id": "senate:PTR-EXAMPLE-2025-00099:0",
+  "chamber": "senate",
+  "docId": "PTR-EXAMPLE-2025-00099",
+  "rowIndex": 0,
+  "member": {
+    "name": "Senator Example C.",
+    "bioguideId": null,
+    "party": "D",
+    "state": "EX"
+  },
+  "filedAt": "2025-04-01",
+  "transactedAt": "2025-03-15",
+  "ticker": null,
+  "assetDescription": "Example Mutual Fund Class I",
+  "assetType": "fund",
+  "side": "buy",
+  "amountRange": {
+    "min": 50000000,
+    "max": null,
+    "text": "Over $50,000,000"
+  },
+  "owner": "joint",
+  "provenance": {
+    "source": "senate-efd",
+    "sourceUrl": "https://efdsearch.senate.gov/search/view/ptr/example-ptr-2025-00099/",
+    "retrievedAt": "2026-08-24T16:00:00.000Z",
+    "parser": "congress-ptr@1",
+    "confidence": 1,
+    "needsReview": false
+  }
+}
