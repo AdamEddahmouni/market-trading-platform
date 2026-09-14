@@ -5,6 +5,8 @@ const DIST_DIR = new URL("../dist/", import.meta.url);
 const MANIFEST_URL = new URL(".vite/manifest.json", DIST_DIR);
 const MAX_INITIAL_GZIP_BYTES = 203 * 1024;
 const MAX_CHUNK_RAW_BYTES = 500_000;
+/** Lane F: @luxalgo/vela lazy engine (~252 KiB gzip); must never join the entry graph. */
+const MAX_VELA_LAZY_CHUNK_RAW_BYTES = 950_000;
 
 const manifest = JSON.parse(await readFile(MANIFEST_URL, "utf8"));
 const entryRecords = Object.values(manifest).filter((record) => record.isEntry);
@@ -40,7 +42,10 @@ const chunkSizes = await Promise.all(
     return { name, rawBytes: source.byteLength };
   }),
 );
-const oversizedChunks = chunkSizes.filter(({ rawBytes }) => rawBytes > MAX_CHUNK_RAW_BYTES);
+const oversizedChunks = chunkSizes.filter(({ name, rawBytes }) => {
+  if (name.startsWith("vela-")) return rawBytes > MAX_VELA_LAZY_CHUNK_RAW_BYTES;
+  return rawBytes > MAX_CHUNK_RAW_BYTES;
+});
 const failures = [];
 
 if (initialGzipBytes > MAX_INITIAL_GZIP_BYTES) {
@@ -52,10 +57,19 @@ for (const { name, rawBytes } of oversizedChunks) {
   failures.push(`${name} is ${rawBytes} raw bytes; budget is ${MAX_CHUNK_RAW_BYTES}.`);
 }
 
+const velaChunk = chunkSizes.find(({ name }) => name.startsWith("vela-"));
+const velaOnInitialPath = [...initialFiles].some((relativePath) => relativePath.includes("/vela-"));
+if (velaOnInitialPath) {
+  failures.push("@luxalgo/vela must stay off the Vite entry static import graph.");
+}
+
 const largestChunk = [...chunkSizes].sort((a, b) => b.rawBytes - a.rawBytes)[0];
+const velaNote = velaChunk
+  ? `; vela lazy ${(gzipSync(await readFile(new URL(velaChunk.name, assetsDir))).byteLength / 1024).toFixed(2)} KiB gzip`
+  : "";
 console.log(
   `Bundle metrics: initial ${(initialGzipBytes / 1024).toFixed(2)} KiB gzip; ` +
-    `largest chunk ${largestChunk.name} ${(largestChunk.rawBytes / 1024).toFixed(2)} KiB raw.`,
+    `largest chunk ${largestChunk.name} ${(largestChunk.rawBytes / 1024).toFixed(2)} KiB raw${velaNote}.`,
 );
 
 if (failures.length > 0) {
