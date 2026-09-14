@@ -1,0 +1,19 @@
+{
+  "name": "@imp/spike-vela-cockpit",
+  "private": true,
+  "version": "0.0.0-spike",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "measure": "vite build && node scripts/measure-bundle.mjs"
+  },
+  "dependencies": {
+    "@luxalgo/vela": "^0.7.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vite": "^5.4.9"
+  }
+}

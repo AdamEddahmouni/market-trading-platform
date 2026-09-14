@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Lane G — Vela charting spike (isolated)</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="imp-spike-shell">
+      <header class="imp-spike-header">
+        <div>
+          <h1>Vela cockpit spike</h1>
+          <p class="imp-spike-sub">
+            Lane G · governed synthetic bars only · <code>@luxalgo/vela</code> (Apache-2.0) · no PineTS /
+            AGPL addons
+          </p>
+        </div>
+        <div class="imp-spike-controls" id="imp-spike-controls"></div>
+      </header>
+      <main class="imp-spike-main">
+        <div id="chart" class="imp-spike-chart" aria-label="Vela chart prototype"></div>
+        <aside class="imp-spike-aside" id="imp-spike-log" aria-live="polite"></aside>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

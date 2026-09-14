@@ -1,0 +1,114 @@
+:root {
+  --surface-0: #0c0e12;
+  --surface-1: #13161c;
+  --surface-2: #1a1f28;
+  --border-subtle: #2c323c;
+  --text-primary: #e8ecf4;
+  --text-secondary: #9aa3b5;
+  --accent-primary: #ff6a00;
+  --font-ui: "Inter", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--surface-0);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+}
+
+#imp-spike-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  min-height: 100dvh;
+}
+
+.imp-spike-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-1);
+}
+
+.imp-spike-header h1 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.imp-spike-sub {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.imp-spike-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.imp-spike-controls button {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.imp-spike-controls button[aria-pressed="true"] {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 1px rgba(255, 106, 0, 0.35);
+}
+
+.imp-spike-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr minmax(220px, 28%);
+  min-height: 0;
+}
+
+.imp-spike-chart {
+  min-height: 320px;
+  height: 100%;
+  touch-action: none;
+}
+
+.imp-spike-aside {
+  border-left: 1px solid var(--border-subtle);
+  background: var(--surface-1);
+  padding: 10px 12px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  overflow: auto;
+}
+
+.imp-spike-aside p {
+  margin: 0 0 8px;
+}
+
+@media (max-width: 768px) {
+  .imp-spike-main {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+
+  .imp-spike-aside {
+    border-left: none;
+    border-top: 1px solid var(--border-subtle);
+    max-height: 160px;
+  }
+}

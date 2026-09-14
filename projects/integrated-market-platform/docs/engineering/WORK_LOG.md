@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Lane G Vela charting spike (isolated cockpit)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/spikes`, charting evaluation |
+| **Summary** | Isolated `@luxalgo/vela` spike on `spike/vela-cockpit`: IMP-owned bar identity + governed synthetic feed, native SMA/RSI/volume, semantic markers via drawings, lazy-loaded chunk, resize/mobile shell. Documented Apache vs AGPL (no PineTS). Decision **`ADOPT_WITH_WRAPPER`**. No production UI routes; Lane E preview / Lane J UX untouched. |
+| **Key files** | `ui/spikes/vela-cockpit/**`, `artifacts/spikes/vela-cockpit/LANE_G_VELA_CHARTING_DECISION.md`, `artifacts/spikes/vela-cockpit/MEASUREMENTS.json` |
+| **Tests** | `ui/spikes/vela-cockpit`: `npm run measure` → Vite build pass; Vela chunk **~245 KiB gzip** (vs LWC **~48 KiB**); shell **~3.4 KiB gzip** |
+| **Related** | [LANE_G_VELA_CHARTING_DECISION.md](../../artifacts/spikes/vela-cockpit/LANE_G_VELA_CHARTING_DECISION.md) |
+| **Notes** | Worktree-only; do not merge without bundle-budget + adapter design. Incremental updates use `setMarket` reload — custom `MarketDataFeed` is follow-up. |
+
 ## 2026-09-14 — Merge origin/main (1b60b5a) into PR #136 test-only branch
 
 | Field | Value |

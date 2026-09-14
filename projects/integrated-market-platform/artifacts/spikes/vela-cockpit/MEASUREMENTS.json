@@ -1,0 +1,15 @@
+{
+  "captured_at": "2026-09-14",
+  "environment": "windows-vite-5.4.21-production",
+  "spike_path": "ui/spikes/vela-cockpit",
+  "vela_version": "^0.7.1",
+  "lazy_import": true,
+  "chunks": [
+    { "name": "vela-*.js", "raw_kib": 866.8, "gzip_kib": 244.9 },
+    { "name": "index-*.js", "raw_kib": 7.7, "gzip_kib": 3.4 }
+  ],
+  "total_js_gzip_kib": 248.3,
+  "comparison_lightweight_charts_production_mjs_gzip_kib": 48.2,
+  "imp_main_initial_gzip_budget_kib": 203,
+  "pinets_installed": false
+}
