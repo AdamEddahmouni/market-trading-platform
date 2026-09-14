@@ -103,16 +103,34 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--persist-strategy-id", default=None)
     parser.add_argument("--persist-strategy-version", default=None)
+    parser.add_argument(
+        "--preregistration-path",
+        default=None,
+        help=(
+            "Previously persisted Phase-6 preregistration JSON file or "
+            "directory. Create is a separate operator step that stamps "
+            "registered_at before any hop; this hop only loads. Load "
+            "requires identity match and registered_at before quote "
+            "event_time_ns. Paper/Demo only."
+        ),
+    )
     args = parser.parse_args(argv)
     _, discovery = discover_equity_quote_stack()
     provider = primary_equity_quote_provider()
-    invoke = build_paper_demo_path_a_invoke(args.symbol, mode=args.mode)
     persist_context = build_cli_persist_context(args)
+    prereg_path = args.preregistration_path
+    caller = None
+    request = None
+    if prereg_path is None:
+        invoke = build_paper_demo_path_a_invoke(args.symbol, mode=args.mode)
+        caller = invoke.caller
+        request = invoke.scan_request
     result = PathAProspectiveComposer(
         quote_provider=provider,
-        path_a_caller=invoke.caller,
+        path_a_caller=caller,
         persist=persist_context,
-    ).run(args.symbol, mode=args.mode, scan_request=invoke.scan_request)
+        preregistration_path=prereg_path,
+    ).run(args.symbol, mode=args.mode, scan_request=request)
     payload = {
         "discovery": {
             "classification": discovery.classification,

@@ -6,6 +6,7 @@ Not a daemon. Does not start LiveObservationalRuntime. Ingest stays a reader.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Mapping
 
 from market_platform_foundation.clock import monotonic_wall_ns
@@ -44,7 +45,14 @@ from .path_a_scan_caller import (
     PathAScanCaller,
     PathAScanCallerError,
 )
-from .path_a_strategy_catalog import build_paper_demo_strategy_catalog
+from .path_a_preregistration_store import (
+    load_paper_demo_preregistrations,
+    select_eligible_preregistration,
+)
+from .path_a_strategy_catalog import (
+    build_paper_demo_strategy_catalog,
+    paper_demo_catalog_specs,
+)
 from .scanning import (
     CapabilityContextSnapshot,
     PointInTimeUniverse,
@@ -104,6 +112,35 @@ def _quote_context_from_event(event: Mapping[str, Any] | None) -> dict[str, Any]
     return context
 
 
+def _quote_event_time_ns(event: Mapping[str, Any] | None) -> int | None:
+    if not isinstance(event, Mapping):
+        return None
+    clocks = event.get("clocks")
+    event_time_ns = clocks.get("event_time_ns") if isinstance(clocks, Mapping) else None
+    return event_time_ns if isinstance(event_time_ns, int) else None
+
+
+def _eligible_preregistrations(
+    *,
+    preregistration_path: str | Path | None,
+    quote_event: Mapping[str, Any] | None,
+) -> dict[str, dict[str, Any]]:
+    if preregistration_path is None:
+        return {}
+    event_time_ns = _quote_event_time_ns(quote_event)
+    if event_time_ns is None:
+        return {}
+    records = load_paper_demo_preregistrations(preregistration_path)
+    eligible: dict[str, dict[str, Any]] = {}
+    for spec in paper_demo_catalog_specs():
+        selected = select_eligible_preregistration(
+            spec, records, quote_event_time_ns=event_time_ns
+        )
+        if selected is not None:
+            eligible[str(spec["strategy_identity_hash"])] = selected
+    return eligible
+
+
 def build_paper_demo_path_a_invoke(
     symbol: str,
     *,
@@ -111,15 +148,16 @@ def build_paper_demo_path_a_invoke(
     as_of_time_ns: int | None = None,
     account_id: str | None = None,
     quote_event: Mapping[str, Any] | None = None,
+    preregistration_path: str | Path | None = None,
 ) -> PathAHonestyInvoke:
     """Build a one-shot Paper/Demo Path A caller.
 
     Registers the real (non-fixture) baseline strategy catalog
     (``build_paper_demo_strategy_catalog``) so the scanner actually evaluates
-    against real quote data when ``quote_event`` is supplied. No
-    preregistration authority is wired into this one-shot hop, so every
-    baseline entry legitimately abstains — this never mints a fabricated
-    ``MATCHED`` row.
+    against real quote data when ``quote_event`` is supplied. Loads a
+    previously persisted Phase-6 record only when identity matches the spec
+    and ``registered_at`` is before quote ``event_time_ns``. Does not mint a
+    preregistration at eval time. ``forecast_resolver`` stays ``None``.
     """
 
     mode_n = _normalize_mode(mode)
@@ -172,13 +210,21 @@ def build_paper_demo_path_a_invoke(
         ),
     )
     quote_context = _quote_context_from_event(quote_event)
+    eligible = _eligible_preregistrations(
+        preregistration_path=preregistration_path,
+        quote_event=quote_event,
+    )
     scan_context: dict[str, Any] = {
-        "honesty": "NO_PREREGISTRATION_AUTHORITY_FOR_PATH_A_HOP",
+        "honesty": (
+            "LOADED_PHASE6_PREREGISTRATION"
+            if eligible
+            else "NO_PREREGISTRATION_AUTHORITY_FOR_PATH_A_HOP"
+        ),
         "session": "REGULAR",
     }
     if quote_context is not None:
         scan_context["quote"] = quote_context
-    catalog = build_paper_demo_strategy_catalog()
+    catalog = build_paper_demo_strategy_catalog(preregistrations=eligible)
     request = ScanRequest(
         universe=PointInTimeUniverse(
             as_of,
@@ -271,6 +317,7 @@ class PathAProspectiveComposer:
         path_a_caller: PathAScanCaller | None = None,
         freshness_policy: OpportunityFreshnessPolicy | None = None,
         persist: PathAPersistContext | None = None,
+        preregistration_path: str | Path | None = None,
     ) -> None:
         self.quote_provider = quote_provider
         self.composition = composition or ObservationalRuntimeComposition()
@@ -278,6 +325,7 @@ class PathAProspectiveComposer:
         self.path_a_caller = path_a_caller
         self.freshness_policy = freshness_policy or OpportunityFreshnessPolicy()
         self.persist = persist
+        self.preregistration_path = preregistration_path
 
     def run(
         self,
@@ -359,7 +407,11 @@ class PathAProspectiveComposer:
         request = scan_request
         if caller is None and request is None:
             invoke = build_paper_demo_path_a_invoke(
-                instrument, mode=mode_n, as_of_time_ns=as_of, quote_event=event
+                instrument,
+                mode=mode_n,
+                as_of_time_ns=as_of,
+                quote_event=event,
+                preregistration_path=self.preregistration_path,
             )
             caller = invoke.caller
             request = invoke.scan_request
