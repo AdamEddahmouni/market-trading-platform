@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Item 9 OpenD BAR_OHLCV_1M prospective proof operator (Phase 1 Lane C)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` — software `ITEM9_PROSPECTIVE_PROOF_TOOL_READY`; empirical prospective 1m `SOFTWARE_READY_RTH_REQUIRED` |
+| **Area** | `paper/calibration`, `tools/moomoo`, Item 9 |
+| **Summary** | Added `opend_bar_1m_prospective_proof.py` with Mode A `RETROSPECTIVE_TRANSPORT_PROOF` / `NOT_PROSPECTIVE_EVIDENCE` and Mode B prospective (records `signal_time` at start, refuses retrospective `--signal-time-ns`, RTH-gated `--poll`, `POLL_REQUIRED` when RTH active without `--poll`, off-hours `SOFTWARE_READY_RTH_REQUIRED`, versioned JSON receipt with operator `--experiment-id`). Core contract in `bar_ohlcv_prospective_proof.py`. Item 9 stays PARTIAL, NOT_CALIBRATED. |
+| **Key files** | `src/market_platform_foundation/paper/calibration/bar_ohlcv_prospective_proof.py`; `tools/moomoo/opend_bar_1m_prospective_proof.py`; `tests/platform/test_bar_ohlcv_prospective_proof.py`; `tests/platform/test_bar_ohlcv_comparator_experiment.py`; `docs/engineering/ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md` |
+| **Tests** | `PYTHONPATH=src python -m unittest tests.platform.test_bar_ohlcv_prospective_proof tests.platform.test_bar_ohlcv_comparator_experiment` → **35 passed** |
+| **Related** | Item 9 PARTIAL; PR (Lane C); [ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md](ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md); base `origin/main` `f2a38a19` |
+| **Notes** | No broker orders; no `CALIBRATED`; tomorrow RTH: `prospective --instrument-id AAPL --poll`. Independent review APPROVE_MERGE_CANDIDATE @ `b3daea2c`. |
+
 ## 2026-09-14 — Grok intelligence ingest API (Lane I contracts)
 
 | Field | Value |
