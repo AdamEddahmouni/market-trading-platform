@@ -159,7 +159,14 @@ class AgentEnrichmentIngestRuntimeTests(unittest.TestCase):
         body["opportunity_id"] = "opp-missing"
         with self.assertRaises(ValueError) as ctx:
             self.runtime.ingest(body, as_of_iso="2026-09-14T15:00:00+00:00")
-        self.assertIn("AGENT_ENRICHMENT_OPPORTUNITY_NOT_FOUND", str(ctx.exception))
+        self.assertIn("OPPORTUNITY_NOT_FOUND", str(ctx.exception))
+
+    def test_nested_forbidden_mutation_in_provenance(self) -> None:
+        body = _payload()
+        body["provenance"] = {"nested": {"requested_mutation": ForbiddenIngestMutation.LIVE_SUBMIT.value}}
+        with self.assertRaises(ValueError) as ctx:
+            self.runtime.ingest(body, as_of_iso="2026-09-14T15:00:00+00:00")
+        self.assertIn("INGEST_MUTATION_FORBIDDEN", str(ctx.exception))
 
     def test_http_body_limit_fail_closed(self) -> None:
         over = AGENT_ENRICHMENT_INGEST_MAX_BODY_BYTES + 1

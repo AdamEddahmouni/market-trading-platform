@@ -93,17 +93,34 @@ def is_agent_enrichment_expired(record: AgentEnrichmentEvidenceV1, *, as_of_iso:
     return expires <= as_of
 
 
+_FORBIDDEN_MUTATION_VALUES = frozenset(item.value for item in ForbiddenIngestMutation)
+_MAX_NESTED_SCAN_DEPTH = 32
+
+
 def _scan_forbidden_mutations(payload: dict[str, Any]) -> None:
-    for key in payload:
-        lowered = str(key).lower()
-        if lowered in _FORBIDDEN_PAYLOAD_KEYS:
-            raise ValueError("INGEST_MUTATION_FORBIDDEN")
-    mutation = payload.get("requested_mutation") or payload.get("mutation")
-    if mutation is not None:
-        reject_forbidden_ingest_mutation(str(mutation))
-    for forbidden in ForbiddenIngestMutation:
-        if str(payload.get("operation") or "") == forbidden.value:
-            reject_forbidden_ingest_mutation(forbidden)
+    _scan_forbidden_value(payload, depth=0)
+
+
+def _scan_forbidden_value(value: Any, *, depth: int) -> None:
+    if depth > _MAX_NESTED_SCAN_DEPTH:
+        raise ValueError("INGEST_PAYLOAD_TOO_DEEP")
+    if isinstance(value, dict):
+        for key, child in value.items():
+            lowered = str(key).lower()
+            if lowered in _FORBIDDEN_PAYLOAD_KEYS:
+                raise ValueError("INGEST_MUTATION_FORBIDDEN")
+            if str(key) in {"requested_mutation", "mutation"} and child is not None:
+                reject_forbidden_ingest_mutation(str(child))
+            if str(key) == "operation" and str(child) in _FORBIDDEN_MUTATION_VALUES:
+                reject_forbidden_ingest_mutation(str(child))
+            _scan_forbidden_value(child, depth=depth + 1)
+        return
+    if isinstance(value, list):
+        for item in value:
+            _scan_forbidden_value(item, depth=depth + 1)
+        return
+    if isinstance(value, str) and value in _FORBIDDEN_MUTATION_VALUES:
+        reject_forbidden_ingest_mutation(value)
 
 
 def _validate_claim_operation_alignment(record: AgentEnrichmentEvidenceV1) -> None:
@@ -131,7 +148,7 @@ class AgentEnrichmentIngestRuntime:
         if self._get_opportunity is None:
             raise ValueError("AGENT_ENRICHMENT_OPPORTUNITY_VALIDATION_UNAVAILABLE")
         if self._get_opportunity(opportunity_id) is None:
-            raise ValueError("AGENT_ENRICHMENT_OPPORTUNITY_NOT_FOUND")
+            raise ValueError("OPPORTUNITY_NOT_FOUND")
 
     def ingest(
         self,
