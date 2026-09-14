@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from market_platform_foundation.intelligence.paper_forward_bridge.campaign_status import (
     collect_ftep_campaign_status,
@@ -17,7 +18,11 @@ class FtepCampaignStatusTests(unittest.TestCase):
         os.environ["IMP_PERSIST_STATE"] = "1"
 
     def test_ftep_v1_002_status_snapshot(self) -> None:
-        payload = collect_ftep_campaign_status(REPO_ROOT, "FTEP-V1-002")
+        with patch(
+            "market_platform_foundation.intelligence.paper_forward_bridge.campaign_status.is_within_us_equity_rth",
+            return_value=False,
+        ):
+            payload = collect_ftep_campaign_status(REPO_ROOT, "FTEP-V1-002")
         self.assertEqual(payload["campaign_slug"], "FTEP-V1-002")
         self.assertEqual(payload["calendar_scope"], "US_EQUITY_RTH")
         self.assertFalse(payload["us_equity_rth_open"])

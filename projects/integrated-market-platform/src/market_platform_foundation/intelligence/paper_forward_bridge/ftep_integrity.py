@@ -149,12 +149,20 @@ def collect_ftep_integrity_checks(
             ),
         )
     )
-    if status.get("signal_only_session_started"):
+    signal_only_started = bool(status.get("signal_only_session_started"))
+    governed_for_signal_only = int(status.get("governed_session_count") or 0)
+    if signal_only_started:
+        durable_sessions_present = counts_backed_by_durable and governed_for_signal_only > 0
         checks.append(
             _check(
                 "signal_only_session_requires_durable_state",
-                False,
-                "signal_only_session_started=true but session/lock counts are zero",
+                durable_sessions_present,
+                (
+                    "signal_only_session_started=true; "
+                    f"locks={status['empirical_lock_count']} "
+                    f"sessions={governed_for_signal_only} "
+                    f"source={empirical_source or 'unknown'}"
+                ),
             )
         )
     else:
@@ -162,7 +170,7 @@ def collect_ftep_integrity_checks(
             _check(
                 "signal_only_session_requires_durable_state",
                 True,
-                "no governed session flag without durable counters",
+                "signal_only_session_started=false; durable session counts not required",
             )
         )
 

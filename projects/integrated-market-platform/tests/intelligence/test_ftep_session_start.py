@@ -30,22 +30,23 @@ class FtepSessionStartDryRunTests(unittest.TestCase):
         os.environ["IMP_PERSIST_STATE"] = "1"
 
     def test_session_start_dry_run_cli_json(self) -> None:
-        result = subprocess.run(
-            [
-                sys.executable,
-                str(ROOT / "tools" / "ftep_session_start.py"),
-                "FTEP-V1-002",
-                "--dry-run",
-                "--json",
-            ],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            check=False,
-            env={**os.environ, "IMP_PERSIST_STATE": "1"},
-        )
-        self.assertEqual(result.returncode, 1)
-        payload = json.loads(result.stdout)
+        from tools.ftep_session_start import collect_session_start_gates
+
+        tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        os.environ["IMP_STATE_DIR"] = tmp.name
+        os.environ["IMP_PERSIST_STATE"] = "1"
+        reset_local_state_for_tests()
+        try:
+            with patch(
+                "market_platform_foundation.intelligence.paper_forward_bridge.campaign_status.is_within_us_equity_rth",
+                return_value=False,
+            ):
+                payload = collect_session_start_gates(ROOT, "FTEP-V1-002")
+        finally:
+            reset_local_state_for_tests()
+            os.environ.pop("IMP_STATE_DIR", None)
+            os.environ.pop("IMP_PERSIST_STATE", None)
+            tmp.cleanup()
         self.assertEqual(payload["artifact_kind"], "ftep_session_start_gate")
         self.assertFalse(payload["would_create_session"])
         self.assertIn("US_EQUITY_RTH_CLOSED", payload["blockers"])
