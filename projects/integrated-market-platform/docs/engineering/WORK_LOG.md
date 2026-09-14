@@ -82,7 +82,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | `tools/hop_json_gate_check.py` (created), `tests/intelligence/test_hop_json_gate_check.py` (created) |
 | **Tests** | `PYTHONPATH=src python3 -m unittest tests.intelligence.test_hop_json_gate_check -v` — 7 passed |
 | **Related** | Track I overnight program; `path_a_prospective_run.py` hop artifact shape |
-| **Notes** | FTEP stays NOT_READY; does not run Path A hop or declare EMPIRICAL_ACTIVE |
+| **Notes** | FTEP stays NOT_READY; does not run Path A hop or declare EMPIRICAL_ACTIVE. Classified `tools/hop_json_gate_check.py` in repository-closure + `paper_forward_bridge` manifest partition (fixes `validate-python-changed` closure audit error). |
 
 ## 2026-09-14 — install-opend BLOCKED when uv venv has no pip
 
