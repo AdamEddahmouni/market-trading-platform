@@ -22,7 +22,10 @@ from market_platform_foundation.intelligence.contracts import (
     QualityState,
     QualitySummary,
 )
-from market_platform_foundation.intelligence.fusion.types import PRODUCTION_FORECAST_STAGE
+from market_platform_foundation.intelligence.fusion.types import (
+    ForecastContributorRole,
+    PRODUCTION_FORECAST_STAGE,
+)
 from market_platform_foundation.intelligence.persistence import InMemoryIntelligenceRepository
 from market_platform_foundation.intelligence.production.corpus_collector import (
     LABEL_SOURCE_FIXTURE,
@@ -38,6 +41,7 @@ from market_platform_foundation.intelligence.production.corpus_collector import 
 )
 from market_platform_foundation.intelligence.production.identity import path_a_horizon
 from market_platform_foundation.intelligence.production.training_build import load_governed_training_manifest
+from tests.intelligence.outcome_fixtures import baseline_control_forecast
 from tests.intelligence.test_path_a_production_emit import (
     PATH_A_HORIZON,
     PATH_A_TARGET,
@@ -161,6 +165,46 @@ class Item7CorpusCollectorTests(unittest.TestCase):
         self.assertEqual(report.governed_candidate_rows, 1)
         self.assertEqual(report.pit_valid_governed_rows, 1)
         self.assertEqual(report.governed_training_manifest_status, "GOVERNED_ROWS_INSUFFICIENT_FOR_FLOORS")
+
+    def test_control_and_research_forecasts_excluded_from_collection(self) -> None:
+        repo = InMemoryIntelligenceRepository()
+        control = baseline_control_forecast(repo)
+        self.assertEqual(
+            collect_candidates_from_repository(repo, training_cutoff_ns=T + HORIZON * 2),
+            (),
+        )
+        research = ForecastV1(
+            forecast_id="fc-corpus-research-1",
+            schema_version="1",
+            scope=control.scope,
+            decision_time_ns=control.decision_time_ns,
+            snapshot_id=control.snapshot_id,
+            target=PATH_A_TARGET,
+            horizon=path_a_horizon(),
+            estimate=ForecastEstimate(estimate_kind="probability", probability=0.5),
+            quality=QualitySummary(state=QualityState.GOOD),
+            metadata={
+                "contributor_role": ForecastContributorRole.RESEARCH.value,
+                "forecast_stage": PRODUCTION_FORECAST_STAGE,
+                "calibration_status": "UNCALIBRATED",
+            },
+        )
+        repo.put_forecast(research)
+        repo.put_outcome(
+            OutcomeV1(
+                outcome_id="out-research-1",
+                schema_version="1",
+                forecast_id=research.forecast_id,
+                adjudicated_at_ns=control.decision_time_ns + HORIZON,
+                resolution_status=OutcomeResolutionStatus.SETTLED,
+                quality=QualitySummary(state=QualityState.GOOD),
+                realized_direction=Direction.LONG,
+            )
+        )
+        self.assertEqual(
+            collect_candidates_from_repository(repo, training_cutoff_ns=T + HORIZON * 2),
+            (),
+        )
 
 
 if __name__ == "__main__":
