@@ -227,11 +227,10 @@ def run_calibration_campaign(
         "fabricated_fills": False,
     }
     if status != STATUS_HARNESS_READY:
-        label = (
-            "WAITING_FOR_MARKET"
-            if status == STATUS_WAITING_FOR_MARKET
-            else "NOT_OBSERVABLE"
-        )
+        if status in {STATUS_WAITING_FOR_MARKET, STATUS_COMPARATOR_NOT_CONFIGURED}:
+            label = status
+        else:
+            label = "NOT_OBSERVABLE"
         if decision is not None and repository is not None:
             persist_run_status(
                 repository,

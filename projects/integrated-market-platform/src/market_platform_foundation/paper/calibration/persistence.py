@@ -142,7 +142,11 @@ def persist_run_status(
     detail: Mapping[str, Any] | None = None,
     observed_at_ns: int | None = None,
 ) -> ForwardTestDecision:
-    """Append a harness status row (WAITING_FOR_MARKET / COMPARATOR_NOT_CONFIGURED)."""
+    """Append a harness status row (WAITING_FOR_MARKET / COMPARATOR_NOT_CONFIGURED).
+
+    Those two classifiers stay distinct on disk so a closed session without
+    credentials cannot be reconstructed as WAITING_FOR_MARKET.
+    """
     _reject_live(decision.mode)
     now_ns = observed_at_ns if observed_at_ns is not None else monotonic_wall_ns()
     observation_id = forward_test_observation_id(
@@ -154,6 +158,11 @@ def persist_run_status(
         "kind": CALIBRATION_STATUS_KIND,
         "schema": CALIBRATION_OBSERVATION_SCHEMA,
         "status": status,
+        "observation_label": (
+            status
+            if status in {"WAITING_FOR_MARKET", "COMPARATOR_NOT_CONFIGURED"}
+            else "NOT_OBSERVABLE"
+        ),
         "correlation_id": forward_test_correlation_id(decision.forward_test_id),
         "simulator_version": SIMULATOR_VERSION,
         "is_market_truth": False,

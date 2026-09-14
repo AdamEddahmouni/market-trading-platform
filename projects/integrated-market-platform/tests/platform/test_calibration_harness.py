@@ -53,6 +53,7 @@ from market_platform_foundation.paper.calibration.pairing import (  # noqa: E402
 )
 from market_platform_foundation.paper.calibration.persistence import (  # noqa: E402
     CALIBRATION_PAIR_KIND,
+    CALIBRATION_STATUS_KIND,
     CalibrationPersistenceError,
     persist_pairing_result,
 )
@@ -94,6 +95,13 @@ SANDBOX_ENV = {
     "IMP_TRADIER_ENDPOINT": TRADIER_SANDBOX_ENDPOINT,
     "IMP_TRADIER_ACCOUNT_ID": "VA0001",
     "IMP_TRADIER_SANDBOX_HTTP": "1",
+}
+ALPACA_PAPER_ENV = {
+    "IMP_ALPACA_PAPER": "1",
+    "IMP_BROKER_PAPER_EXECUTION": "1",
+    "APCA_API_KEY_ID": "paper-key",
+    "APCA_API_SECRET_KEY": "paper-secret",
+    "APCA_API_BASE_URL": "https://paper-api.alpaca.markets",
 }
 
 
@@ -449,8 +457,90 @@ class RunnerTests(unittest.TestCase):
             session_label="CLOSED",
         )
         self.assertEqual(result.status, STATUS_WAITING_FOR_MARKET)
+        self.assertEqual(result.observation_label, STATUS_WAITING_FOR_MARKET)
+        self.assertNotEqual(result.status, STATUS_COMPARATOR_NOT_CONFIGURED)
         self.assertEqual(result.pair_count, 0)
         self.assertIsNone(result.metrics.fill_disagreement_rate)
+        self.assertFalse(result.calibrated)
+        self.assertFalse(result.detail["fabricated_fills"])
+
+    def test_closed_session_without_keys_is_not_waiting_for_market(self) -> None:
+        result = run_calibration_campaign(
+            env={},
+            now_ns=T0,
+            decision=_decision(),
+            session_label="CLOSED",
+        )
+        self.assertEqual(result.status, STATUS_COMPARATOR_NOT_CONFIGURED)
+        self.assertEqual(result.observation_label, STATUS_COMPARATOR_NOT_CONFIGURED)
+        self.assertNotEqual(result.status, STATUS_WAITING_FOR_MARKET)
+        self.assertNotEqual(result.observation_label, STATUS_WAITING_FOR_MARKET)
+        self.assertEqual(result.pair_count, 0)
+        self.assertFalse(result.calibrated)
+        self.assertFalse(result.detail["orders_placed"])
+        self.assertFalse(result.detail["fabricated_fills"])
+
+    def test_alpaca_configured_closed_session_is_waiting_not_unconfigured(self) -> None:
+        result = run_calibration_campaign(
+            env=ALPACA_PAPER_ENV,
+            now_ns=T0,
+            decision=_decision(),
+            session_label="CLOSED",
+        )
+        self.assertEqual(result.status, STATUS_WAITING_FOR_MARKET)
+        self.assertEqual(result.observation_label, STATUS_WAITING_FOR_MARKET)
+        self.assertNotEqual(result.status, STATUS_COMPARATOR_NOT_CONFIGURED)
+        self.assertFalse(result.calibrated)
+        self.assertFalse(result.empirical_active)
+
+    def test_status_classifiers_persist_distinctly_across_restart(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "imp-state.sqlite3"
+            conn = LocalStateConnection(path)
+            repo = SqliteForwardTestRepository(conn)
+            missing = _decision(forward_test_id="ftd-cal-missing")
+            waiting = _decision(forward_test_id="ftd-cal-waiting")
+            repo.put_decision(missing)
+            repo.put_decision(waiting)
+            missing_result = run_calibration_campaign(
+                env={},
+                now_ns=T0,
+                decision=missing,
+                repository=repo,
+                session_label="CLOSED",
+            )
+            waiting_result = run_calibration_campaign(
+                env=SANDBOX_ENV,
+                now_ns=T0 + 1,
+                decision=waiting,
+                repository=repo,
+                session_label="CLOSED",
+            )
+            self.assertEqual(missing_result.status, STATUS_COMPARATOR_NOT_CONFIGURED)
+            self.assertEqual(waiting_result.status, STATUS_WAITING_FOR_MARKET)
+            conn.close()
+            restarted = SqliteForwardTestRepository(LocalStateConnection(path))
+            loaded_missing = restarted.get_decision("ftd-cal-missing")
+            loaded_waiting = restarted.get_decision("ftd-cal-waiting")
+            assert loaded_missing is not None
+            assert loaded_waiting is not None
+            missing_payload = loaded_missing.observations[-1].payload
+            waiting_payload = loaded_waiting.observations[-1].payload
+            self.assertEqual(missing_payload["kind"], CALIBRATION_STATUS_KIND)
+            self.assertEqual(waiting_payload["kind"], CALIBRATION_STATUS_KIND)
+            self.assertEqual(missing_payload["status"], STATUS_COMPARATOR_NOT_CONFIGURED)
+            self.assertEqual(
+                missing_payload["observation_label"], STATUS_COMPARATOR_NOT_CONFIGURED
+            )
+            self.assertEqual(waiting_payload["status"], STATUS_WAITING_FOR_MARKET)
+            self.assertEqual(
+                waiting_payload["observation_label"], STATUS_WAITING_FOR_MARKET
+            )
+            self.assertNotEqual(missing_payload["status"], waiting_payload["status"])
+            self.assertFalse(missing_payload["calibrated"])
+            self.assertFalse(waiting_payload["calibrated"])
+            self.assertFalse(missing_payload["empirical_active"])
+            self.assertFalse(waiting_payload["empirical_active"])
 
     def test_equity_firewall_blocks_es_with_tradier(self) -> None:
         with self.assertRaises(CalibrationAssetScopeError):
