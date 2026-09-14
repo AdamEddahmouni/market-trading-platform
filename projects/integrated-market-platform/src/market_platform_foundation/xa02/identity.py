@@ -5,6 +5,7 @@ from __future__ import annotations
 from market_platform_foundation.canonical import canonical_bytes, sha256_bytes
 from market_platform_foundation.fred.contracts import MacroObservation
 
+from .contracts import AdmittedObservation
 from .enums import (
     IDENTITY_PROFILE,
     RELATIONSHIP_PROFILE,
@@ -49,6 +50,19 @@ def derive_observation_id_from_macro(obs: MacroObservation) -> str:
         vintage_identity=vintage_identity_material(obs),
         source_provider=SourceProvider.FRED,
     )
+
+
+def vintage_identity_from_admitted(obs: AdmittedObservation) -> str:
+    """Mirror ``vintage_identity_material`` from admitted provenance clocks."""
+
+    prov = obs.provenance
+    if prov.realtime_start:
+        return f"{prov.realtime_start}:{prov.revision_number}"
+    if prov.vintage_date:
+        return f"{prov.vintage_date}:{prov.revision_number}"
+    if obs.available_time:
+        return f"available:{obs.available_time}:{prov.revision_number}"
+    return f"unknown:{prov.revision_number}"
 
 
 def derive_relationship_id(
