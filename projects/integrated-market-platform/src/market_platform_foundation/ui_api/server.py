@@ -40,6 +40,7 @@ from .assistant_projections import (
     create_assistant_conversation,
     submit_assistant_prompt,
 )
+from .errors import build_error_response_payload
 from .lane_provenance import attach_lane_provenance
 from .request_auth import (
     authorization_http_status,
@@ -106,7 +107,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _send_error_json(self, code: str, message: str, *, status: HTTPStatus) -> None:
-        self._send_json({"error": message, "reason_code": code}, status=status)
+        self._send_json(build_error_response_payload(code, message), status=status)
 
     def do_OPTIONS(self) -> None:
         self.send_response(HTTPStatus.NO_CONTENT)
