@@ -36,6 +36,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — PROGRAM_STATUS Canonical SHA pin after merged #95 (Item 18)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Pin Canonical origin/main SHA to live tip `a03f94cb090d4f0dec1a96ae5e262cc24266490f` (merge pull request #95 Wave 1 experiment harness atop #94 `13816192`). Lists hop chain through #63 plus overnight #90–#97. Leftover #43 never landed — DoD item **18 stays PARTIAL** (Notion hub NOW/SYSTEM TRUTH inner SHAs historical). FTEP **`FTEP_EMPIRICAL_NOT_READY`**. Items **2 / 7 / 9** stay **PARTIAL**. Simulator **not** `CALIBRATED`. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | GitHub IMP Validation 9/9 incl. validate-ui on Item 18 PR |
+| **Related** | [PR #95](https://github.com/AdamEddahmouni/market-trading-platform/pull/95); branch `cursor/item18-pin-1381619-d1ba` |
+| **Notes** | Skip #46 superseded. Live forbidden. Wave 1 harness is software-only until lawful export + run. |
+
+## 2026-09-14 — PROGRAM_STATUS Canonical SHA pin after merged #94 (RTH tip Item 18)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `superseded` |
+| **Area** | `docs/platform` |
+| **Summary** | Superseded by pin to `a03f94c` (#95) — do not treat `13816192` as canonical tip. |
+| **Key files** | — |
+| **Tests** | — |
+| **Related** | — |
+| **Notes** | Coordinator redirect. |
+
 ## 2026-09-14 — Research Export v1 (Track D)
 
 | Field | Value |
