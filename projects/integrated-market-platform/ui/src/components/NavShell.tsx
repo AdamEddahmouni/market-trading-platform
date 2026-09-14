@@ -45,9 +45,9 @@ const primaryLinks: NavLinkDef[] = [
     label: "Research",
     gated: true,
     modeHint: {
-      DEMO: "Replay-bound",
-      PAPER: "Research to sim",
-      LIVE: "Read-only",
+      DEMO: "Replay-bound labs",
+      PAPER: "Research & model labs",
+      LIVE: "Read-only labs",
     },
   },
   {
@@ -75,15 +75,6 @@ const primaryLinks: NavLinkDef[] = [
       DEMO: "Operator controls",
       PAPER: "Operator controls",
       LIVE: "Operator controls",
-    },
-  },
-  {
-    to: "/research",
-    label: "Lab",
-    modeHint: {
-      DEMO: "Model & sim labs",
-      PAPER: "Model & sim labs",
-      LIVE: "Read-only labs",
     },
   },
 ];

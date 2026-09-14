@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — UX-00 P2: single Research nav entry (drop duplicate Lab)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui` |
+| **Summary** | Removed duplicate sidebar link that pointed Lab and Research at the same `/research` route; kept `/lab` redirect unchanged. Research mode hints now carry the former Lab copy. |
+| **Key files** | `ui/src/components/NavShell.tsx`, `ui/src/components/NavShell.test.tsx`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `cd ui && npm test -- NavShell.test.tsx` (pending on PR CI) |
+| **Related** | [UX-00 forensic audit](https://github.com/AdamEddahmouni/market-trading-platform/blob/main/docs/README.md) store `ux-00-forensic-audit.md` §13 P2 #7 |
+| **Notes** | Isolated IA only. No hop, FTEP, PROGRAM_STATUS SHA, or opportunity API changes. |
+
 ## 2026-09-14 — Track H leftover: fail-close remaining backend error_category gaps
 
 | Field | Value |
