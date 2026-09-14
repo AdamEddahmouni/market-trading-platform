@@ -36,17 +36,29 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-14 — Item 9 BAR_OHLCV_1M comparator dry-run path
+## 2026-09-14 — Item 9 BAR_OHLCV_1M comparator input reconcile (PR #134)
 
 | Field | Value |
 |-------|-------|
 | **Status** | `complete` |
 | **Area** | `paper/calibration`, `providers/moomoo`, `tools` |
-| **Summary** | Added fail-closed Item 9 bounded experiment: load lawful `BAR_OHLCV_1M` from admitted BIYA fixture or loopback OpenD 1m klines (`available_time` at bar end), surface signal/bar/provenance timestamps, dry-run `BarConservativeSimulator` (no orders, not `CALIBRATED`). Classifies `EXPERIMENT_CONTRACT_MISMATCH` when no post-signal bar (e.g. prior L1-only runner gap). OpenD transport adds read-only `fetch_history_kline_1m`. |
-| **Key files** | `src/market_platform_foundation/paper/calibration/bar_ohlcv_sources.py`; `src/market_platform_foundation/paper/calibration/bar_ohlcv_experiment.py`; `tools/providers/run_bar_ohlcv_comparator_experiment.py`; `tools/moomoo/opend_quote_transport.py`; `tests/platform/test_bar_ohlcv_comparator_experiment.py`; `docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md` |
-| **Tests** | `python -m unittest tests.platform.test_bar_ohlcv_comparator_experiment -v` — 5 passed (CPython 3.11 venv) |
-| **Related** | [PAPER_SIMULATOR_CALIBRATION_CONTRACT.md](../architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md); Item 9 PARTIAL |
-| **Notes** | Alpaca comparator leg unchanged (GET-only). AAPL prospective bars need `--source moomoo-opend` with loopback OpenD during session. |
+| **Summary** | Reconciled `work/item9-bar-ohlcv-1m` onto `origin/main` `0e2d731a` for PR #134. Lawful `BAR_OHLCV_1M` comparator dry-run harness loads admitted BIYA fixture or injected OpenD 1m klines with `available_time` at bar end, preserves signal/bar/provenance timing, and dry-runs `BarConservativeSimulator` without broker orders or `CALIBRATED`. Expanded fail-closed tests for malformed, stale, empty, same-time, and first post-signal fill paths. |
+| **Key files** | `src/market_platform_foundation/paper/calibration/bar_ohlcv_sources.py`; `src/market_platform_foundation/paper/calibration/bar_ohlcv_experiment.py`; `tools/providers/run_bar_ohlcv_comparator_experiment.py`; `tools/moomoo/opend_quote_transport.py`; `tests/platform/test_bar_ohlcv_comparator_experiment.py`; `docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py validate fast`; `python tools/imp.py test focused test_bar_ohlcv_comparator_experiment` |
+| **Related** | [PAPER_SIMULATOR_CALIBRATION_CONTRACT.md](../architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md); PR #134; Item 9 PARTIAL — `COMPARATOR_INPUT_READY` / `RTH_PROOF_PENDING` |
+| **Notes** | Alpaca comparator leg unchanged (GET-only). Live RTH OpenD 1m proof remains operator-dependent; no merge. |
+
+## 2026-09-14 — Merge origin/main (1b60b5a) into PR #136 test-only branch
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, merge hygiene |
+| **Summary** | Merged `origin/main` at `1b60b5a` (#138 OE-07, atop #137 research) into `work/rebase-pr-118-20260914` for PR #136. Resolved `WORK_LOG.md` by stacking newest-first entries; test-only scope preserved (no branch `src/` changes). |
+| **Key files** | `docs/engineering/WORK_LOG.md` |
+| **Tests** | Await CI on pushed merge head (PR #136) |
+| **Related** | PR #136; Cloud PR #118; PR #138 |
+| **Notes** | No force-push. |
 
 ## 2026-09-14 — OE-07 API projection of evidence and persist contract fields (rebased)
 
@@ -57,8 +69,32 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Summary** | `GET /opportunities/summary|{id}` and `GET /opportunities/{id}/evidence` lift review-row evidence, family admission, and dedupe/supersession facts to first-class JSON, and project persist `OpportunityV1.created_at_ns` / expected-edge at read time. Ingest does not stamp `decision_time_ns` onto review-row metadata (OE-05 fail-closed). No `MONITORED` / `OUTCOME_RECORDED` states. |
 | **Key files** | `src/market_platform_foundation/ui_api/opportunity_projections.py`, `tests/ui1/test_opportunity_api.py`, `tests/intelligence/test_opportunity_ingest.py`, `manifests/ui1/schemas/opportunity_summary.schema.json`, `manifests/ui1/schemas/opportunity_evidence.schema.json`, `docs/architecture/OPPORTUNITY_CONTRACT.md`, `docs/architecture/DATA_CONTRACTS.md`, `docs/product/OPPORTUNITY_ENGINE_CURRENT_STATE_AND_IMPLEMENTATION_PLAN.md` |
 | **Tests** | `PYTHONPATH=src .venv/Scripts/python.exe -m unittest tests.ui1.test_opportunity_api tests.intelligence.test_opportunity_ingest -v` → **18 passed** |
-| **Related** | [OPPORTUNITY_CONTRACT.md](../architecture/OPPORTUNITY_CONTRACT.md); OE-04 #106; OE-05 #105; supersedes rebased landing for #116 |
-| **Notes** | Isolated worktree `.worktrees/rebase-pr-116`, branch `work/rebase-pr-116-20260914` on `origin/main` `79ae537`. Live off. No hop/OpenD/G7/Path A/FTEP/SQLite schema/V1-002/execution gates. |
+| **Related** | [OPPORTUNITY_CONTRACT.md](../architecture/OPPORTUNITY_CONTRACT.md); OE-04 #106; OE-05 #105; landed PR #138 (supersedes rebased #116) |
+| **Notes** | Live off. No hop/OpenD/G7/Path A/FTEP/SQLite schema/V1-002/execution gates. |
+
+## 2026-09-14 — Merge origin/main (79ae537) into PR #136 test-only branch
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, merge hygiene |
+| **Summary** | Merged `origin/main` at `79ae537` (#132) into `work/rebase-pr-118-20260914` for draft PR #136. Resolved `WORK_LOG.md` conflict only; test-only scope preserved (no `src/` changes on branch). |
+| **Key files** | `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py test affected` and `validate fast` (recorded in PR #136 handoff) |
+| **Related** | PR #136; Cloud PR #118 |
+| **Notes** | Prior merge before #137/#138 landed on main. |
+
+## 2026-09-14 — Non-semantic coverage tests for OE, FTEP, providers, Radar, persistence, comparator
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/intelligence`, `tests/providers`, `tests/platform`, `tests/ui1`, `ui/imp-product` |
+| **Summary** | Added fail-closed/wiring tests only: OE ingest timestamps and lifecycle enum bounds; FTEP identity/provenance and V1-002 manifest immutability; provider unknown-profile and coverage-gap serialization; Radar UNREADY/Live/INELIGIBLE surfaces; persist-off and Paper ledger join; comparator binding and threshold schema. No production runtime changes. |
+| **Key files** | `tests/intelligence/test_opportunity_non_semantic_contracts.py`, `tests/intelligence/test_ftep_non_semantic_contracts.py`, `tests/providers/test_coverage_gap_fail_closed.py`, `tests/platform/test_persistence_and_comparator_contracts.py`, `tests/ui1/test_opportunity_radar_feed.py`, `ui/src/components/imp-product/OpportunityRadarDensePanel.test.tsx`, `ui/src/components/imp-product/OpportunityFeedStatusBanner.test.tsx` |
+| **Tests** | Rebased onto `origin/main` `2e022383` (post #125/#131). `unittest` on new modules + `test_ftep_integrity` + `test_ftep_session_release` → **52 passed**. `ui` vitest on `OpportunityFeedStatusBanner` + `OpportunityRadarDensePanel` → **7 passed**. |
+| **Related** | Cloud PR #118; coverage-gap audit receipt `internal/coverage-gap-audit.md` (project store); FTEP durable-state #125, session-release #131; PR #136 |
+| **Notes** | Did not mutate FTEP-V1-002 artifacts, hop worktree `1381619`, Path A, G7, OpenD, Alpaca, or production runtime. Live off. Not `EMPIRICAL_ACTIVE` / not `CALIBRATED`. |
 
 ## 2026-09-14 — Research Export PIT-PENDING + EXTERNAL_RESEARCH_DATA fail-closed
 
