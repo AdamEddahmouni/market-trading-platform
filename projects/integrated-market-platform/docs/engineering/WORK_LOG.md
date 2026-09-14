@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Item 9 BAR_OHLCV_1M comparator input reconcile (PR #134)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, `providers/moomoo`, `tools` |
+| **Summary** | Reconciled `work/item9-bar-ohlcv-1m` onto `origin/main` `0e2d731a` for PR #134. Lawful `BAR_OHLCV_1M` comparator dry-run harness loads admitted BIYA fixture or injected OpenD 1m klines with `available_time` at bar end, preserves signal/bar/provenance timing, and dry-runs `BarConservativeSimulator` without broker orders or `CALIBRATED`. Expanded fail-closed tests for malformed, stale, empty, same-time, and first post-signal fill paths. |
+| **Key files** | `src/market_platform_foundation/paper/calibration/bar_ohlcv_sources.py`; `src/market_platform_foundation/paper/calibration/bar_ohlcv_experiment.py`; `tools/providers/run_bar_ohlcv_comparator_experiment.py`; `tools/moomoo/opend_quote_transport.py`; `tests/platform/test_bar_ohlcv_comparator_experiment.py`; `docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py validate fast`; `python tools/imp.py test focused test_bar_ohlcv_comparator_experiment` |
+| **Related** | [PAPER_SIMULATOR_CALIBRATION_CONTRACT.md](../architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md); PR #134; Item 9 PARTIAL — `COMPARATOR_INPUT_READY` / `RTH_PROOF_PENDING` |
+| **Notes** | Alpaca comparator leg unchanged (GET-only). Live RTH OpenD 1m proof remains operator-dependent; no merge. |
+
 ## 2026-09-14 — FTEP-V1-002 prospective Finviz catalyst ingress (PR #133)
 
 | Field | Value |

@@ -33,6 +33,61 @@ def sdk_available() -> bool:
     return load_vendor_sdk() is not None
 
 
+def fetch_history_kline_1m(
+    symbol: str,
+    *,
+    host: str,
+    port: int,
+    max_count: int = 120,
+    sdk: Any | None = None,
+) -> dict[str, Any]:
+    """Return recent completed 1m klines via quote context only (no trade APIs)."""
+
+    if host not in _LOOPBACK_HOSTS:
+        return {"reason_code": OPEND_NON_LOOPBACK_BLOCKED, "rows": None}
+    ft = sdk if sdk is not None else load_vendor_sdk()
+    if ft is None or not hasattr(ft, "OpenQuoteContext"):
+        return {"reason_code": MOOMOO_SDK_MISSING, "rows": None}
+    if not hasattr(ft, "RET_OK") or not hasattr(ft, "KLType"):
+        return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None}
+
+    code = _provider_code(symbol)
+    if not code:
+        return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None}
+
+    ctx = None
+    try:
+        ctx = ft.OpenQuoteContext(host=host, port=port)
+        ret, state = ctx.get_global_state()
+        if ret != ft.RET_OK:
+            return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None}
+        if not _qot_logined(state):
+            return {"reason_code": MOOMOO_AUTH_FAILURE, "rows": None}
+        k_ret, data, _page = ctx.request_history_kline(
+            code,
+            start=None,
+            end=None,
+            ktype=ft.KLType.K_1M,
+            autype=ft.AuType.QFQ,
+            max_count=max_count,
+            extended_time=True,
+            session=ft.Session.ALL,
+        )
+        if k_ret != ft.RET_OK:
+            return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None}
+        return {"reason_code": None, "rows": _snapshot_rows(data)}
+    except Exception:  # noqa: BLE001
+        return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None}
+    finally:
+        if ctx is not None:
+            closer = getattr(ctx, "close", None)
+            if callable(closer):
+                try:
+                    closer()
+                except Exception:  # noqa: BLE001
+                    pass
+
+
 def fetch_snapshot(
     symbol: str,
     *,
@@ -237,6 +292,7 @@ __all__ = [
     "MOOMOO_PROTOCOL_ERROR",
     "MOOMOO_SDK_MISSING",
     "OPEND_NON_LOOPBACK_BLOCKED",
+    "fetch_history_kline_1m",
     "fetch_snapshot",
     "is_vendor_sdk",
     "load_vendor_sdk",
