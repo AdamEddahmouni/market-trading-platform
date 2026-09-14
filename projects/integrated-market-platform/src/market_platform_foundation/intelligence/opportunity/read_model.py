@@ -247,6 +247,20 @@ def ftep_attention_candidate_to_summary(
     symbol = str(row.get("instrument_id") or row.get("symbol") or "")
     attention_id = str(row.get("attention_id") or f"ftep-attn-{symbol.lower()}")
     headline = str(row.get("headline") or f"{symbol} catalyst signal")
+    metadata: dict[str, Any] = {
+        "adapter": "ftep_attention_candidate",
+        "tier": row.get("tier"),
+    }
+    for key in (
+        "attention_data_kind",
+        "published_time",
+        "retrieved_time",
+        "provider_id",
+        "source_id",
+        "source_event_id",
+    ):
+        if row.get(key) is not None:
+            metadata[key] = row.get(key)
     return OpportunitySummary(
         summary_id=attention_id,
         instrument_id=symbol,
@@ -254,7 +268,7 @@ def ftep_attention_candidate_to_summary(
         catalyst_ids=tuple(str(item) for item in row.get("catalyst_ids", ()) if item),
         campaign_slug=campaign_slug,
         accepted=True,
-        metadata={"adapter": "ftep_attention_candidate", "tier": row.get("tier")},
+        metadata=metadata,
     )
 
 
