@@ -15,12 +15,13 @@ import { ExplanationDrawer } from "./components/ExplanationDrawer";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { LazyBoundary } from "./components/LazyBoundary";
 import { ImpProductChrome } from "./components/imp-product/ImpProductChrome";
+import { IMP_COMMAND_SEARCH_INPUT_ID } from "./components/imp-product/ImpCommandSearch";
 import { ModeDiscoverRoute } from "./components/ModeDiscoverRoute";
 import { ModeExploreRoute } from "./components/ModeExploreRoute";
 import { ModeNowRoute } from "./components/ModeNowRoute";
 import { ModePortfolioRoute } from "./components/ModePortfolioRoute";
 import { ModeResearchRoute } from "./components/ModeResearchRoute";
-import type { ScrubState } from "./components/demo-now/DemoNowPage";
+import type { LoadState, ScrubState } from "./components/demo-now/DemoNowPage";
 import { AuthProvider, useOptionalAuth } from "./auth/AuthProvider";
 import { OperatorLoginGate } from "./auth/OperatorLoginGate";
 import { ApplicationBootstrap } from "./components/mode-session/ApplicationBootstrap";
@@ -201,12 +202,12 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
   const auth = useOptionalAuth();
   const operatorPaperSubmitPermitted =
     paperActionsPermitted && (auth?.permitsCapability("paper.order.submit") ?? true);
-  const attentionState = attentionQuery.isLoading
+  const attentionState: LoadState = attentionQuery.isLoading
     ? "loading"
     : attentionQuery.error || !attentionQuery.data
       ? "error"
       : "ready";
-  const replayState = replaySessionQuery.isLoading
+  const replayState: LoadState = replaySessionQuery.isLoading
     ? "loading"
     : replaySessionQuery.error || !replaySessionQuery.data
       ? "error"
@@ -230,6 +231,12 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
         const target = event.target as HTMLElement | null;
         if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") return;
         setAssistantOpen((open) => !open);
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        const target = event.target as HTMLElement | null;
+        if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") return;
+        event.preventDefault();
+        document.getElementById(IMP_COMMAND_SEARCH_INPUT_ID)?.focus();
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -313,29 +320,32 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
     onSwitchMode();
   };
 
-  const nowRoute = (
-    <ModeNowRoute
-      mode={mode}
-      paperActionsPermitted={operatorPaperSubmitPermitted}
-      items={attentionQuery.data?.items ?? []}
-      tierSummary={attentionQuery.data?.tier_summary}
-      attentionState={attentionState}
-      replayState={replayState}
-      cursorIndex={cursorIndex}
-      eventCount={replaySessionQuery.data?.event_count}
-      scrubState={scrubState}
-      onScrub={(index) => {
-        void scrub(index);
-      }}
-      onOpenTimeline={() => navigate(`/workspace/${encodeURIComponent(ADMITTED_REPLAY_INSTRUMENT_ID)}`)}
-      onWhy={openExplain}
-      onExplain={openExplain}
-      onInspect={openInspect}
-      onOpenWorkspace={(item) => {
-        if (item.instrument_id) navigate(`/workspace/${encodeURIComponent(item.instrument_id)}`);
-      }}
-    />
-  );
+  const openAttentionWorkspace = (item: AttentionItem) => {
+    if (item.instrument_id) navigate(`/workspace/${encodeURIComponent(item.instrument_id)}`);
+  };
+
+  const nowRouteProps = {
+    mode,
+    paperActionsPermitted: operatorPaperSubmitPermitted,
+    items: attentionQuery.data?.items ?? [],
+    tierSummary: attentionQuery.data?.tier_summary,
+    attentionState,
+    replayState,
+    cursorIndex,
+    eventCount: replaySessionQuery.data?.event_count,
+    scrubState,
+    onScrub: (index: number) => {
+      void scrub(index);
+    },
+    onOpenTimeline: () => navigate(`/workspace/${encodeURIComponent(ADMITTED_REPLAY_INSTRUMENT_ID)}`),
+    onWhy: openExplain,
+    onExplain: openExplain,
+    onInspect: openInspect,
+    onOpenWorkspace: openAttentionWorkspace,
+  };
+
+  const overviewRoute = <ModeNowRoute {...nowRouteProps} desk="overview" />;
+  const signalsRoute = <ModeNowRoute {...nowRouteProps} desk="signals" />;
 
   return (
     <ImpProductChrome
@@ -347,10 +357,12 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
             mode={mode}
             context={contextQuery.data?.as_of_context}
             contextState={contextState}
-            onSwitchMode={returnToLauncher}
           />
           {contextQuery.data ? (
-            <ContextBar context={contextQuery.data} />
+            <ContextBar
+              context={contextQuery.data}
+              onQualityClick={() => navigate("/diagnostics/provider")}
+            />
           ) : (
             <div className="context-bar context-bar-unavailable" aria-hidden="true">
               Backend context is not available.
@@ -365,13 +377,23 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
         <main className="main-content">
           <LazyBoundary>
             <Routes>
-            <Route path="/" element={nowRoute} />
-            <Route path="/signals" element={nowRoute} />
+            <Route path="/" element={overviewRoute} />
+            <Route path="/signals" element={signalsRoute} />
             <Route
               path="/explore"
               element={<ModeExploreRoute mode={mode} onExplain={openExplainRef} />}
             />
-            <Route path="/discover" element={<ModeDiscoverRoute mode={mode} />} />
+            <Route
+              path="/discover"
+              element={
+                <ModeDiscoverRoute
+                  mode={mode}
+                  onExplain={openExplain}
+                  onInspect={openInspect}
+                  onOpenWorkspace={openAttentionWorkspace}
+                />
+              }
+            />
             <Route path="/workspace" element={<WorkspaceIndex />} />
             <Route path="/lab" element={<WorkspaceIndex />} />
             <Route

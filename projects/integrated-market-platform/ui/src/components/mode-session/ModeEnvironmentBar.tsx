@@ -6,7 +6,6 @@ type Props = {
   mode: Mode;
   context?: AsOfContext;
   contextState: "loading" | "ready" | "error";
-  onSwitchMode: () => void;
 };
 
 const boundaries: Record<Mode, string> = {
@@ -15,7 +14,7 @@ const boundaries: Record<Mode, string> = {
   LIVE: "Current market observation · Execution locked",
 };
 
-export function ModeEnvironmentBar({ mode, context, contextState, onSwitchMode }: Props) {
+export function ModeEnvironmentBar({ mode, context, contextState }: Props) {
   const evaluation = evaluateModeContext(mode, context);
 
   let contextStatus;
@@ -58,9 +57,6 @@ export function ModeEnvironmentBar({ mode, context, contextState, onSwitchMode }
         <span>{boundaries[mode]}</span>
       </div>
       <div className="mode-environment-context">{contextStatus}</div>
-      <button type="button" onClick={onSwitchMode}>
-        Switch mode
-      </button>
     </section>
   );
 }

@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 import type { AsOfContext } from "../../api/client";
 import { ModeEnvironmentBar } from "./ModeEnvironmentBar";
 import type { Mode } from "./types";
@@ -27,7 +27,6 @@ describe("ModeEnvironmentBar", () => {
         mode={mode}
         context={context()}
         contextState="ready"
-        onSwitchMode={() => undefined}
       />,
     );
 
@@ -37,27 +36,11 @@ describe("ModeEnvironmentBar", () => {
     expect(region).toHaveAttribute("data-mode", mode);
   });
 
-  it("uses a native switch control", () => {
-    const onSwitchMode = vi.fn();
-    render(
-      <ModeEnvironmentBar
-        mode="DEMO"
-        context={context()}
-        contextState="ready"
-        onSwitchMode={onSwitchMode}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Switch mode" }));
-    expect(onSwitchMode).toHaveBeenCalledOnce();
-  });
-
   it("announces context verification politely", () => {
     render(
       <ModeEnvironmentBar
         mode="PAPER"
         contextState="loading"
-        onSwitchMode={() => undefined}
       />,
     );
 
@@ -70,7 +53,6 @@ describe("ModeEnvironmentBar", () => {
       <ModeEnvironmentBar
         mode="LIVE"
         contextState="error"
-        onSwitchMode={() => undefined}
       />,
     );
 
@@ -85,7 +67,6 @@ describe("ModeEnvironmentBar", () => {
         mode="PAPER"
         context={context()}
         contextState="ready"
-        onSwitchMode={() => undefined}
       />,
     );
 

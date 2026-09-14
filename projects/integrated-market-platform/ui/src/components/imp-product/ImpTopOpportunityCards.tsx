@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import type { AttentionItem } from "../../api/client";
 import type { OpportunityReviewRow } from "../../api/opportunityClient";
 import { attentionItemFromOpportunity } from "../now/OpportunityReviewCard";
+import { OpportunityFeedStatusBanner } from "./OpportunityFeedStatusBanner";
 import { opportunityRankLabel, opportunitySymbol, opportunityTags } from "./impOpportunityDisplay";
 
 export type ImpTopOpportunityCardsProps = {
@@ -93,16 +94,12 @@ export function ImpTopOpportunityCards({
           Open full radar
         </Link>
       </header>
-      {state === "loading" ? <p role="status">Loading ranked opportunities…</p> : null}
-      {state === "error" ? (
-        <p className="unavailable" role="alert">Opportunity ranking unavailable.</p>
-      ) : null}
-      {state === "ready" && feedStatus === "UNREADY" ? (
-        <p className="unavailable" role="status">
-          Radar unready{unreadyReason ? ` (${unreadyReason})` : ""}.{" "}
-          <a href={nextAction || "/control"}>Open Control Center</a>
-        </p>
-      ) : null}
+      <OpportunityFeedStatusBanner
+        state={state}
+        feedStatus={feedStatus}
+        unreadyReason={unreadyReason}
+        nextAction={nextAction}
+      />
       {state === "ready" && feedStatus !== "UNREADY" && !visible.length ? (
         <p className="unavailable">
           No ranked candidates yet. An empty queue is valid when nothing has been minted.

@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
+export const IMP_COMMAND_SEARCH_INPUT_ID = "imp-command-search-input";
+
 const TICKER_PATTERN = /^[A-Z][A-Z0-9.\-]{0,15}$/;
 
 function normalizeQuery(raw: string): string {
@@ -28,7 +30,7 @@ export function ImpCommandSearch() {
         Search symbols, ideas, research
       </label>
       <input
-        id="imp-command-search-input"
+        id={IMP_COMMAND_SEARCH_INPUT_ID}
         type="search"
         name="q"
         placeholder="Search symbols, ideas, research…"

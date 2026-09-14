@@ -25,7 +25,7 @@ export function ImpProductChrome({ mode, onSwitchMode, children, topStack }: Pro
         </div>
         <NavShell mode={mode} layout="sidebar" />
         <footer className="imp-sidebar-footer">
-          <span className="imp-sidebar-version">UI v1 · board 03</span>
+          <span className="imp-sidebar-version">UI v1 · board 03 · Ctrl+K search</span>
         </footer>
       </aside>
       <div className="imp-product-main">

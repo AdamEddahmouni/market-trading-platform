@@ -15,29 +15,33 @@ type Props = {
   nextAction?: string;
   paperAccountId?: string;
   onAck?: (row: OpportunityReviewRow, action: OpportunityAckAction) => void;
+  showRankedOpportunities?: boolean;
 };
 
 export function PaperCandidateQueue({
   items, state, selectedAttentionId, onSelect, onWhy, onExplain, onInspect, onOpenWorkspace,
   opportunityItems = [], opportunityState = "ready", feedStatus, unreadyReason, nextAction, paperAccountId, onAck,
+  showRankedOpportunities = true,
 }: Props) {
   const sorted = sortPaperCandidates(items);
   const hasEligible = sorted.some((item) => Boolean(item.instrument_id?.trim()));
   return (
     <section className="paper-panel paper-candidate-panel" aria-label="Candidate queue">
       <header><h2>Candidate queue</h2><span>{sorted.length} signals</span></header>
-      <OpportunityReviewList
-        items={opportunityItems}
-        state={opportunityState}
-        feedStatus={feedStatus}
-        unreadyReason={unreadyReason}
-        nextAction={nextAction}
-        paperAccountId={paperAccountId}
-        onExplain={onExplain}
-        onInspect={onInspect}
-        onOpenWorkspace={onOpenWorkspace}
-        onAck={onAck}
-      />
+      {showRankedOpportunities ? (
+        <OpportunityReviewList
+          items={opportunityItems}
+          state={opportunityState}
+          feedStatus={feedStatus}
+          unreadyReason={unreadyReason}
+          nextAction={nextAction}
+          paperAccountId={paperAccountId}
+          onExplain={onExplain}
+          onInspect={onInspect}
+          onOpenWorkspace={onOpenWorkspace}
+          onAck={onAck}
+        />
+      ) : null}
       {state === "loading" ? <p role="status">Loading attention feed…</p> : null}
       {state === "error" ? <p role="alert">Attention feed unavailable.</p> : null}
       {state === "ready" ? (

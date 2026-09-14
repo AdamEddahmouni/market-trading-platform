@@ -7,6 +7,7 @@ import { overviewKpisFromPortfolio } from "../imp-product/impOverviewMetrics";
 import { DemoInspectNext } from "./DemoInspectNext";
 import { DemoPortfolioSummary } from "./DemoPortfolioSummary";
 import { DemoReplayOverview, deriveReplayProgress } from "./DemoReplayOverview";
+import type { NowDeskVariant } from "../now/nowDeskVariant";
 
 export type LoadState = "loading" | "ready" | "error";
 export type ScrubState = "idle" | "pending" | "error";
@@ -26,9 +27,10 @@ export type DemoNowPageProps = {
   onExplain: (item: AttentionItem) => void;
   onInspect: (item: AttentionItem) => void;
   onOpenWorkspace: (item: AttentionItem) => void;
+  desk?: NowDeskVariant;
 };
 
-export function DemoNowPage(props: DemoNowPageProps) {
+export function DemoNowPage({ desk = "overview", ...props }: DemoNowPageProps) {
   const opportunitiesQuery = useOpportunitiesSummaryQuery(true);
   const opportunityState = opportunitiesQuery.isLoading
     ? "loading"
@@ -44,31 +46,43 @@ export function DemoNowPage(props: DemoNowPageProps) {
         ? "error"
         : "ready";
   const kpiCells = overviewKpisFromPortfolio(props.portfolio, kpiState);
-  return (
-    <div className="page demo-now-page">
-      <header className="demo-now-intro">
+  const signalsDesk = desk === "signals";
+
+  const attentionPanel = (
+    <section className="demo-now-panel demo-attention-panel" aria-labelledby="demo-attention-title">
+      <div className="demo-panel-heading">
         <div>
-          <p className="demo-eyebrow">Demo · Historical research</p>
-          <h1>See the market unfold</h1>
-          <p>
-            Move through a known historical sequence, inspect the evidence at each event, and learn without
-            execution risk.
-          </p>
+          <p className="demo-eyebrow">Evidence queue</p>
+          <h2 id="demo-attention-title">What matters now</h2>
         </div>
-        <span className="demo-intro-mark">BIYA / REPLAY</span>
-      </header>
-      <ImpOverviewBoard
-        kpiCells={kpiCells}
-        kpiState={kpiState}
-        opportunityItems={opportunitiesQuery.data?.items ?? []}
-        opportunityState={opportunityState}
-        feedStatus={opportunitiesQuery.data?.feed_status}
-        unreadyReason={opportunitiesQuery.data?.unready_reason}
-        nextAction={opportunitiesQuery.data?.next_action}
+      </div>
+      {!signalsDesk ? (
+        <OpportunityReviewList
+          items={opportunitiesQuery.data?.items ?? []}
+          state={opportunityState}
+          feedStatus={opportunitiesQuery.data?.feed_status}
+          unreadyReason={opportunitiesQuery.data?.unready_reason}
+          nextAction={opportunitiesQuery.data?.next_action}
+          readOnly
+          onExplain={props.onExplain}
+          onInspect={props.onInspect}
+          onOpenWorkspace={props.onOpenWorkspace}
+        />
+      ) : null}
+      <AttentionFeed
+        items={props.items}
+        state={props.attentionState}
+        emptyMessage="Nothing requires attention at the current event."
+        onWhy={props.onWhy}
         onExplain={props.onExplain}
         onInspect={props.onInspect}
         onOpenWorkspace={props.onOpenWorkspace}
-      >
+      />
+    </section>
+  );
+
+  const bodyGrid = (
+    <>
       <div className="demo-now-grid demo-now-grid-top">
         <DemoReplayOverview
           cursorIndex={props.cursorIndex}
@@ -78,37 +92,12 @@ export function DemoNowPage(props: DemoNowPageProps) {
           onScrub={props.onScrub}
           onOpenTimeline={props.onOpenTimeline}
         />
-        <DemoPortfolioSummary state={props.portfolioState} portfolio={props.portfolio} />
+        {!signalsDesk ? (
+          <DemoPortfolioSummary state={props.portfolioState} portfolio={props.portfolio} />
+        ) : null}
       </div>
       <div className="demo-now-grid demo-now-grid-bottom">
-        <section className="demo-now-panel demo-attention-panel" aria-labelledby="demo-attention-title">
-          <div className="demo-panel-heading">
-            <div>
-              <p className="demo-eyebrow">Evidence queue</p>
-              <h2 id="demo-attention-title">What matters now</h2>
-            </div>
-          </div>
-          <OpportunityReviewList
-            items={opportunitiesQuery.data?.items ?? []}
-            state={opportunityState}
-            feedStatus={opportunitiesQuery.data?.feed_status}
-            unreadyReason={opportunitiesQuery.data?.unready_reason}
-            nextAction={opportunitiesQuery.data?.next_action}
-            readOnly
-            onExplain={props.onExplain}
-            onInspect={props.onInspect}
-            onOpenWorkspace={props.onOpenWorkspace}
-          />
-          <AttentionFeed
-            items={props.items}
-            state={props.attentionState}
-            emptyMessage="Nothing requires attention at the current event."
-            onWhy={props.onWhy}
-            onExplain={props.onExplain}
-            onInspect={props.onInspect}
-            onOpenWorkspace={props.onOpenWorkspace}
-          />
-        </section>
+        {attentionPanel}
         <DemoInspectNext
           items={props.items}
           canAdvance={canAdvance}
@@ -121,7 +110,41 @@ export function DemoNowPage(props: DemoNowPageProps) {
           }}
         />
       </div>
+    </>
+  );
+
+  return (
+    <div className={`page demo-now-page${signalsDesk ? " demo-signals-desk" : ""}`}>
+      <header className="demo-now-intro">
+        <div>
+          <p className="demo-eyebrow">Demo · Historical research</p>
+          <h1>{signalsDesk ? "Signals desk" : "See the market unfold"}</h1>
+          <p>
+            {signalsDesk
+              ? "Replay-bound attention queue with reason codes. Ranked opportunities stay on Overview and Radar."
+              : "Move through a known historical sequence, inspect the evidence at each event, and learn without execution risk."}
+          </p>
+        </div>
+        <span className="demo-intro-mark">BIYA / REPLAY</span>
+      </header>
+      {signalsDesk ? (
+        bodyGrid
+      ) : (
+      <ImpOverviewBoard
+        kpiCells={kpiCells}
+        kpiState={kpiState}
+        opportunityItems={opportunitiesQuery.data?.items ?? []}
+        opportunityState={opportunityState}
+        feedStatus={opportunitiesQuery.data?.feed_status}
+        unreadyReason={opportunitiesQuery.data?.unready_reason}
+        nextAction={opportunitiesQuery.data?.next_action}
+        onExplain={props.onExplain}
+        onInspect={props.onInspect}
+        onOpenWorkspace={props.onOpenWorkspace}
+      >
+      {bodyGrid}
       </ImpOverviewBoard>
+      )}
     </div>
   );
 }

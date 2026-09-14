@@ -1,4 +1,5 @@
 import { lazy } from "react";
+import type { DiscoverInspectorActions } from "./discover-shared/discoverInspectorActions";
 import type { Mode } from "./mode-session/types";
 
 const DemoDiscoverPage = lazy(() =>
@@ -17,12 +18,12 @@ const LiveDiscoverPage = lazy(() =>
   })),
 );
 
-type Props = {
+type Props = DiscoverInspectorActions & {
   mode: Mode;
 };
 
-export function ModeDiscoverRoute({ mode }: Props) {
-  if (mode === "DEMO") return <DemoDiscoverPage />;
-  if (mode === "PAPER") return <PaperDiscoverPage />;
-  return <LiveDiscoverPage />;
+export function ModeDiscoverRoute({ mode, ...actions }: Props) {
+  if (mode === "DEMO") return <DemoDiscoverPage {...actions} />;
+  if (mode === "PAPER") return <PaperDiscoverPage {...actions} />;
+  return <LiveDiscoverPage {...actions} />;
 }

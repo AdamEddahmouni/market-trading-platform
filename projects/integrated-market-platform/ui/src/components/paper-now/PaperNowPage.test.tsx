@@ -155,13 +155,14 @@ describe("PaperNowPage", () => {
     expect(await screen.findByTestId("workspace-draft")).toBeInTheDocument();
   });
 
-  it("shows BLOCKED reasons without offering continuation", async () => {
+  it("shows BLOCKED preview reasons while still offering workspace handoff", async () => {
     mocks.previewPaperOrder.mockResolvedValueOnce(previewResponse({ risk_status: "BLOCKED", decision: "BLOCK", reason_codes: ["POSITION_LIMIT"] }));
     renderPage();
     completeDraft();
+    expect(screen.getByRole("button", { name: "Open workspace and revalidate" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Preview order" }));
     expect(await screen.findByText(/POSITION_LIMIT/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Open workspace and revalidate" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open workspace and revalidate" })).toBeInTheDocument();
   });
 
   it("invalidates a PASS immediately when the draft changes", async () => {
@@ -171,7 +172,7 @@ describe("PaperNowPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Preview order" }));
     expect(await screen.findByRole("button", { name: "Open workspace and revalidate" })).toBeInTheDocument();
     fireEvent.change(screen.getByRole("spinbutton", { name: "Quantity" }), { target: { value: "11" } });
-    expect(screen.queryByRole("button", { name: "Open workspace and revalidate" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open workspace and revalidate" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Preview result" })).not.toBeInTheDocument();
   });
 
@@ -206,7 +207,7 @@ describe("PaperNowPage", () => {
     await act(async () => { resolvePreview(previewResponse({ projected_position_shares: 10 })); });
 
     expect(screen.queryByRole("heading", { name: "Preview result" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Open workspace and revalidate" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open workspace and revalidate" })).toBeInTheDocument();
   });
 
   it("withdraws continuation when current Paper authority is revoked after PASS", async () => {
