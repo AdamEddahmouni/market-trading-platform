@@ -12,9 +12,20 @@ sys.path.insert(0, str(ROOT / "src"))
 from market_platform_foundation.cross_lane.runtime_inputs import (  # noqa: E402
     build_order_flow_lane_snapshot,
 )
+from market_platform_foundation.market_data.depth_admission import (  # noqa: E402
+    DepthAdmissibilityStatus,
+)
 from market_platform_foundation.market_data.observational_state import (  # noqa: E402
     ObservationalStateStore,
 )
+from market_platform_foundation.order_flow.order_book.contracts import (  # noqa: E402
+    DepthOperation,
+    DepthSide,
+    build_depth_update,
+)
+
+
+NS = 1_000_000_000
 
 
 class CrossLaneRuntimeInputTests(unittest.TestCase):
@@ -46,6 +57,42 @@ class CrossLaneRuntimeInputTests(unittest.TestCase):
         assert l1 is not None
         self.assertEqual(l1["provenance"]["provider"], "replay")
         self.assertEqual(l1["provenance"]["source_time_ns"], 1000)
+
+    def test_ttl_stale_depth_blocks_fusion_ofi(self) -> None:
+        store = ObservationalStateStore()
+        for event in (
+            build_depth_update(
+                instrument_id="AAPL",
+                operation=DepthOperation.RESET,
+                received_time_ns=0,
+            ),
+            build_depth_update(
+                instrument_id="AAPL",
+                operation=DepthOperation.INSERT,
+                side=DepthSide.BID,
+                price="100",
+                size="5",
+                received_time_ns=0,
+            ),
+            build_depth_update(
+                instrument_id="AAPL",
+                operation=DepthOperation.INSERT,
+                side=DepthSide.ASK,
+                price="101",
+                size="5",
+                received_time_ns=0,
+            ),
+        ):
+            store.apply_depth_update(event)
+        snapshot = build_order_flow_lane_snapshot(
+            store, "AAPL", as_of_time_ns=(5 * NS) + 1
+        )
+        ofi = snapshot["ofi"]
+        features = snapshot["book_features"]
+        self.assertFalse(ofi["available"])
+        self.assertEqual(ofi["state"], DepthAdmissibilityStatus.STALE.value)
+        self.assertFalse(features["available"])
+        self.assertEqual(features["state"], DepthAdmissibilityStatus.STALE.value)
 
 
 if __name__ == "__main__":

@@ -16,9 +16,13 @@ from ..market_data.observational_state import ObservationalStateStore
 def build_order_flow_lane_snapshot(
     store: ObservationalStateStore,
     instrument_id: str,
+    *,
+    as_of_time_ns: int | None = None,
 ) -> dict[str, Any]:
     """Produce an order-flow payload dict for cross-lane fusion from canonical state."""
     lanes = ObservationalLaneRuntime(store)
+    if as_of_time_ns is not None:
+        lanes.configure_depth_context(as_of_time_ns=as_of_time_ns)
     cvd = lanes.build_cvd_payload(instrument_id)
     ofi = lanes.build_ofi_payload(instrument_id)
     book_features = lanes.build_book_features_payload(instrument_id)

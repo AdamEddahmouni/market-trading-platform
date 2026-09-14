@@ -75,28 +75,42 @@ class ObservationalLaneRuntimeTests(unittest.TestCase):
         self.assertFalse(ofi["available"])
         self.assertEqual(ofi["reason"], "INVALID_BOOK")
 
-    def test_stale_book_degraded_ofi(self) -> None:
-        payload1 = {
+    def test_stale_freshness_blocks_authoritative_ofi(self) -> None:
+        p1 = {
             "bids": [{"price": 100.0, "size": 10.0}],
             "asks": [{"price": 101.0, "size": 5.0}],
         }
-        self.store.apply_admitted(_admitted_depth(payload1))
+        p2 = {
+            "bids": [{"price": 100.0, "size": 12.0}],
+            "asks": [{"price": 101.0, "size": 5.0}],
+        }
+        self.store.apply_admitted(_admitted_depth(p1, received_ns=1000))
+        self.lanes.build_ofi_payload("AAPL")
+        self.store.apply_admitted(_admitted_depth(p2, received_ns=2000))
         book = self.store.book_for("AAPL")
         assert book is not None
-        book["book_status"] = "STALE"
+        book["freshness_status"] = "STALE"
         self.store.books["AAPL"] = book
-        # First snapshot — awaiting pair
-        first = self.lanes.build_ofi_payload("AAPL")
-        self.assertEqual(first["state"], "DEGRADED")
-        # Second snapshot with stale flag
-        self.store.apply_admitted(_admitted_depth(payload1))
+        ofi = self.lanes.build_ofi_payload("AAPL")
+        self.assertFalse(ofi["available"])
+        self.assertEqual(ofi["reason"], "STALE_BOOK")
+        self.assertEqual(ofi["state"], "STALE")
+        self.assertNotIn("ofi_value", ofi)
+
+    def test_stale_freshness_blocks_book_features(self) -> None:
+        payload = {
+            "bids": [{"price": 100.0, "size": 10.0}],
+            "asks": [{"price": 101.0, "size": 5.0}],
+        }
+        self.store.apply_admitted(_admitted_depth(payload))
         book = self.store.book_for("AAPL")
         assert book is not None
-        book["book_status"] = "STALE"
+        book["freshness_status"] = "STALE"
         self.store.books["AAPL"] = book
-        second = self.lanes.build_ofi_payload("AAPL")
-        self.assertEqual(second["state"], "DEGRADED")
-        self.assertEqual(second["reason"], "AWAITING_SECOND_SNAPSHOT")
+        features = self.lanes.build_book_features_payload("AAPL")
+        self.assertFalse(features["available"])
+        self.assertEqual(features["reason"], "STALE_BOOK")
+        self.assertEqual(features["state"], "STALE")
 
     def test_price_aligned_ofi_from_canonical_l2(self) -> None:
         p1 = {
