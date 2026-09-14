@@ -48,6 +48,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | Project store `docs/ui-concepts.md`, board 03 reference; [PR #93](https://github.com/AdamEddahmouni/market-trading-platform/pull/93) |
 | **Notes** | `/signals` and `/lab` alias overview and workspace index; no backend or live-execution changes. Rebased onto `main` @ `6defaf18` after #90. |
 
+## 2026-09-14 — Path A Monday RTH preflight command (Track B)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `tools`, `docs` |
+| **Summary** | Added software-only `tools/path_a_rth_preflight.py` for Monday OpenD Path A / G7 / ForecastV1: aggregate disposition READY / BLOCKED / STALE / MISSING / MARKET_CLOSED covering interpreter/pip, install-opend PIP_MISSING fail-closed, loopback OpenD diagnostics, G7 freshness axes, Yahoo-never-L1 and Finviz overlay-only checks, hop `--mode live` argparse refusal, persist-off default, repository vs operator PRODUCTION JSON paths, and Paper-vs-Live gates. No MATCHED hop and no PRODUCTION mint. |
+| **Key files** | `src/market_platform_foundation/strategy/path_a_rth_preflight.py`, `tools/path_a_rth_preflight.py`, `tests/intelligence/test_path_a_rth_preflight.py`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | `validate changed` paths-file **2734 passed / 0 fail** after closure + env-isolation fixes; `tests.intelligence.test_path_a_rth_preflight` **8 passed** |
+| **Related** | Track B overnight program; [PR #91](https://github.com/AdamEddahmouni/market-trading-platform/pull/91); rebased onto `origin/main` @ `ed80caa4` (#93 merged) |
+| **Notes** | Preflight exit 0 for READY and MARKET_CLOSED; exit 1 otherwise. Stale Moomoo capability probe applies only during RTH. |
+
 ## 2026-09-14 — install-opend BLOCKED when uv venv has no pip
 
 | Field | Value |

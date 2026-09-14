@@ -218,6 +218,15 @@ Operator watch/review/dismiss acknowledgements:
 Factory: `create_forward_test_repository()` in
 `paper_forward_bridge/repository.py` (in-memory when persistence is off).
 
+Path A US equity RTH preflight (software only; no hop, no PRODUCTION mint):
+`tools/path_a_rth_preflight.py` reports aggregate disposition
+`READY` / `BLOCKED` / `STALE` / `MISSING` / `MARKET_CLOSED` for interpreter/pip,
+`install-opend` fail-closed (`PIP_MISSING`), loopback OpenD diagnostics,
+G7 freshness axes, Yahoo-never-L1 / Finviz-overlay-only policy, hop CLI
+`--mode live` refusal, persist-off default, optional operator PRODUCTION JSON
+paths, and Paper-vs-Live gates. Run before the weekday hop; it never executes
+`PathAProspectiveComposer` or a MATCHED loop.
+
 Path A prospective hop (`PathAProspectiveComposer`): Paper/Demo CLI
 `tools/path_a_prospective_run.py` does not pre-build the invoke before fetch.
 Composer fetches once (OpenD primary via `primary_equity_quote_provider()`),
