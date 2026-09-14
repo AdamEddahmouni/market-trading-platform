@@ -563,6 +563,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="install optional vendor OpenD SDK (moomoo-api) into the IMP interpreter",
     )
 
+    state_path = groups.add_parser(
+        "state-path",
+        help="compare effective vs canonical IMP durable state directories",
+    )
+    state_path.add_argument("--json", dest="json_path", type=Path)
+
     ci = groups.add_parser("ci", help="classify expensive CI slices without running product code")
     ci_actions = ci.add_subparsers(dest="action", required=True)
     ci_jobs = ci_actions.add_parser(
@@ -998,6 +1004,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return 1
         return 0
+
+    if args.group == "state-path":
+        command = [sys.executable, str(root / "tools" / "state_path_diagnostic.py")]
+        if args.json_path:
+            command.extend(["--json", str(args.json_path)])
+        result = _run(root, label="state-path", command=command, env=_python_environment(root))
+        return int(result["exit_code"])
 
     if args.group == "ci":
         return _ci_jobs_command(root, args)

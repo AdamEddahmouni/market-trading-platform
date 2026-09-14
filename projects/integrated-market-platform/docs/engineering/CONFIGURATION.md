@@ -20,6 +20,7 @@
 | `IMP_LIVE_INTERNAL_SIMULATION` | off | Interactive simulation |
 | `IMP_PERSIST_STATE` | off | SQLite local state |
 | `IMP_STATE_DIR` | optional | State directory override |
+| `IMP_CANONICAL_STATE_DIR` | optional | Primary-workstation `.local` path for `python tools/imp.py state-path` comparison (see [STATE_PATH_OPERATOR_CONVENTION.md](STATE_PATH_OPERATOR_CONVENTION.md)) |
 
 ## Live observational
 

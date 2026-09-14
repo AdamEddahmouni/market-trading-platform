@@ -35,4 +35,9 @@ pipelines/stock_data/*.log
 pipelines/stock_data/*.egg-info/
 # Regenerated on every `ftep campaign-status` (volatile observed_at_ns).
 artifacts/ftep-v1-002/campaign-progress.json
+# Workstation append-only FTEP operator evidence (local empirical; not software truth).
+artifacts/ftep-v1-002/governed-session-start-evidence.jsonl
+artifacts/ftep-v1-002/governed-session-release-evidence.jsonl
+artifacts/ftep-v1-001/governed-session-start-evidence.jsonl
+artifacts/ftep-v1-001/governed-session-release-evidence.jsonl
 research/matlab/environment/toolbox_manifest.json
