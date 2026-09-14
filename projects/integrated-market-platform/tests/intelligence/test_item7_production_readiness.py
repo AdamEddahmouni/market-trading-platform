@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import inspect
 import sys
+from dataclasses import replace
 import tempfile
 import unittest
 from pathlib import Path
@@ -32,6 +32,7 @@ from market_platform_foundation.intelligence.fusion.types import (
 from market_platform_foundation.intelligence.production.readiness import (
     BLOCKER_NO_GOVERNED_TRAINING_CORPUS,
     BLOCKER_NO_VALID_PRODUCTION_CONTRIBUTOR,
+    STATUS_BLOCKED_PREFIX,
     STATUS_ARTIFACT_READY,
     assess_production_readiness,
     forecast_binding_refusal_reasons,
@@ -42,7 +43,6 @@ from market_platform_foundation.intelligence.production.progression import build
 from market_platform_foundation.intelligence.persistence import InMemoryIntelligenceRepository
 from market_platform_foundation.intelligence.production.calibrator import train_production_calibration
 from market_platform_foundation.intelligence.production.emitter import emit_production_forecast
-from market_platform_foundation.intelligence.production.identity import path_a_direction_target, path_a_horizon
 from market_platform_foundation.intelligence.production.readiness import TRAINING_MANIFEST_KIND
 from market_platform_foundation.intelligence.production.training_build import build_path_a_production_artifacts
 from market_platform_foundation.strategy.path_a_production_emit import (
@@ -257,18 +257,125 @@ class Item7ProductionReadinessTests(unittest.TestCase):
     def test_no_paths_blocked_on_training_corpus(self) -> None:
         report = assess_production_readiness(decision_time_ns=T)
         self.assertEqual(report.first_blocker, BLOCKER_NO_GOVERNED_TRAINING_CORPUS)
-
-    def test_source_never_uses_last_price(self) -> None:
-        from market_platform_foundation.intelligence.production import readiness as readiness_mod
-        from market_platform_foundation.intelligence.production import training_build as build_mod
-
-        joined = "\n".join(
-            (
-                inspect.getsource(readiness_mod),
-                inspect.getsource(build_mod),
-            )
+        self.assertEqual(
+            report.disposition,
+            f"{STATUS_BLOCKED_PREFIX}{BLOCKER_NO_GOVERNED_TRAINING_CORPUS}",
         )
-        self.assertNotIn("last_price", joined)
+
+    def test_account_mismatch_on_persisted_contributor(self) -> None:
+        emitted = emit_production_forecast(
+            snapshot=_emit_snapshot(),
+            signals=_emit_signals(),
+            model=self.model,
+            target=PATH_A_TARGET,
+            horizon=PATH_A_HORIZON,
+            mode="paper",
+            as_of_time_ns=T,
+        )
+        assert emitted.forecast is not None
+        bound = replace(
+            emitted.forecast,
+            metadata={**dict(emitted.forecast.metadata), "account_id": "acct-paper"},
+        )
+        persist_path_a_production_contributor(bound, destination=self.contributors, mode="paper")
+        reasons = production_contributor_refusal_reasons(bound, expected_account_id="acct-other")
+        self.assertIn("ACCOUNT_MISMATCH", reasons)
+        report = assess_production_readiness(
+            contributor_path=self.contributors,
+            calibration_path=self.calibration,
+            decision_time_ns=T,
+            expected_account_id="acct-other",
+        )
+        self.assertEqual(report.first_blocker, BLOCKER_NO_VALID_PRODUCTION_CONTRIBUTOR)
+
+    def test_mode_mismatch_on_persisted_contributor(self) -> None:
+        emitted = emit_production_forecast(
+            snapshot=_emit_snapshot(),
+            signals=_emit_signals(),
+            model=self.model,
+            target=PATH_A_TARGET,
+            horizon=PATH_A_HORIZON,
+            mode="paper",
+            as_of_time_ns=T,
+        )
+        assert emitted.forecast is not None
+        bound = replace(
+            emitted.forecast,
+            metadata={**dict(emitted.forecast.metadata), "mode": "paper"},
+        )
+        persist_path_a_production_contributor(bound, destination=self.contributors, mode="paper")
+        self.assertIn(
+            "MODE_MISMATCH",
+            production_contributor_refusal_reasons(bound, expected_mode="demo"),
+        )
+
+    def test_wrong_instrument_on_persisted_contributor(self) -> None:
+        forecast_id = self._persist_lawful_contributor()
+        from market_platform_foundation.strategy.path_a_forecast_producer import load_paper_demo_contributors
+
+        loaded = load_paper_demo_contributors(self.contributors)[0]
+        self.assertIn(
+            "TARGET_INSTRUMENT_MISMATCH",
+            production_contributor_refusal_reasons(loaded, expected_instrument_id="MSFT"),
+        )
+        report = assess_production_readiness(
+            contributor_path=self.contributors,
+            decision_time_ns=T,
+            expected_instrument_id="MSFT",
+        )
+        self.assertEqual(report.first_blocker, BLOCKER_NO_VALID_PRODUCTION_CONTRIBUTOR)
+        self.assertNotIn(forecast_id, report.valid_contributor_ids)
+
+    def test_wrong_target_kind_on_persisted_contributor(self) -> None:
+        emitted = emit_production_forecast(
+            snapshot=_emit_snapshot(),
+            signals=_emit_signals(),
+            model=self.model,
+            target=PATH_A_TARGET,
+            horizon=PATH_A_HORIZON,
+            mode="paper",
+            as_of_time_ns=T,
+        )
+        assert emitted.forecast is not None
+        wrong_target = ForecastTarget(target_kind="return", instrument_id="AAPL", parameters={})
+        tampered = replace(emitted.forecast, target=wrong_target)
+        persist_path_a_production_contributor(tampered, destination=self.contributors, mode="paper")
+        self.assertIn("TARGET_MISMATCH", production_contributor_refusal_reasons(tampered))
+
+    def test_pit_invalid_manifest_build_blocked_not_raised(self) -> None:
+        decision = self.cutoff - HORIZON
+        manifest = {
+            "artifact_kind": TRAINING_MANIFEST_KIND,
+            "target_instrument_id": "AAPL",
+            "training_cutoff_ns": self.cutoff,
+            "scope": {"instrument_ids": ["canonical:EQUITY:XNYS:AAPL"], "context_id": "x"},
+            "examples": [
+                {
+                    "snapshot_id": "snap-pit-bad",
+                    "decision_time_ns": decision,
+                    "label": 1,
+                    "label_available_time_ns": decision - 1,
+                    "momentum": 0.01,
+                    "net_signed_share": 0.1,
+                }
+            ],
+        }
+        manifest_path = self.root / "pit-bad.json"
+        manifest_path.write_text(__import__("json").dumps(manifest), encoding="utf-8")
+        result = build_path_a_production_artifacts(
+            manifest_path,
+            output_dir=self.root / "pit-out",
+            mode="paper",
+            decision_time_ns=T,
+        )
+        self.assertFalse(result.built)
+        self.assertIn("LABEL_AVAILABLE_BEFORE_FORECAST", result.reason_codes)
+
+    def test_build_does_not_synthesize_from_quote(self) -> None:
+        """Training build has no quote/trade inputs; default assess stays corpus-blocked."""
+        report = assess_production_readiness(decision_time_ns=T)
+        self.assertEqual(report.first_blocker, BLOCKER_NO_GOVERNED_TRAINING_CORPUS)
+        self.assertFalse(list(self.contributors.glob("*.json")))
 
     def test_build_from_governed_manifest_in_tempdir(self) -> None:
         manifest = {

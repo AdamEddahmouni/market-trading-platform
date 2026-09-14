@@ -33,7 +33,6 @@ BLOCKER_NO_CALIBRATION_PATH = "NO_CALIBRATION_PATH"
 BLOCKER_NO_VALID_CALIBRATION_ARTIFACT = "NO_VALID_CALIBRATION_ARTIFACT"
 BLOCKER_NO_GOVERNED_TRAINING_CORPUS = "NO_GOVERNED_PATH_A_TRAINING_CORPUS"
 BLOCKER_SOFTWARE_READY_RTH_REQUIRED = "SOFTWARE_READY_RTH_REQUIRED"
-BLOCKER_PRODUCTION_CONTRIBUTOR_NOT_PREREGISTERED = "PRODUCTION_CONTRIBUTOR_NOT_PREREGISTERED"
 
 TRAINING_MANIFEST_KIND = "path_a_production_training_manifest_v1"
 
@@ -44,6 +43,7 @@ def production_contributor_refusal_reasons(
     as_of_time_ns: int | None = None,
     expected_account_id: str | None = None,
     expected_mode: str | None = None,
+    expected_instrument_id: str | None = None,
 ) -> tuple[str, ...]:
     """Return refusal codes for a candidate contributor. Empty → lawful PRODUCTION_RAW."""
 
@@ -85,6 +85,12 @@ def production_contributor_refusal_reasons(
         if bound_mode and bound_mode != expected:
             reasons.append("MODE_MISMATCH")
 
+    if expected_instrument_id is not None:
+        bound_instrument = str(forecast.target.instrument_id or "").strip().upper()
+        expected = str(expected_instrument_id).strip().upper()
+        if bound_instrument and bound_instrument != expected:
+            reasons.append("TARGET_INSTRUMENT_MISMATCH")
+
     return tuple(dict.fromkeys(reasons))
 
 
@@ -94,12 +100,14 @@ def is_lawful_production_raw_contributor(
     as_of_time_ns: int | None = None,
     expected_account_id: str | None = None,
     expected_mode: str | None = None,
+    expected_instrument_id: str | None = None,
 ) -> bool:
     return not production_contributor_refusal_reasons(
         forecast,
         as_of_time_ns=as_of_time_ns,
         expected_account_id=expected_account_id,
         expected_mode=expected_mode,
+        expected_instrument_id=expected_instrument_id,
     )
 
 
@@ -206,6 +214,7 @@ def scan_contributor_directory(
     as_of_time_ns: int | None = None,
     expected_account_id: str | None = None,
     expected_mode: str | None = None,
+    expected_instrument_id: str | None = None,
 ) -> tuple[ContributorScanRow, ...]:
     from ...strategy.path_a_forecast_producer import load_paper_demo_contributors
 
@@ -218,6 +227,7 @@ def scan_contributor_directory(
             as_of_time_ns=as_of_time_ns,
             expected_account_id=expected_account_id,
             expected_mode=expected_mode,
+            expected_instrument_id=expected_instrument_id,
         )
         rows.append(
             ContributorScanRow(
@@ -239,6 +249,7 @@ def assess_production_readiness(
     as_of_time_ns: int | None = None,
     expected_account_id: str | None = None,
     expected_mode: str | None = None,
+    expected_instrument_id: str | None = None,
 ) -> ProductionReadinessReport:
     """Assess operator-side PRODUCTION artifact readiness (software, not empirical)."""
 
@@ -253,6 +264,7 @@ def assess_production_readiness(
         as_of_time_ns=as_of,
         expected_account_id=expected_account_id,
         expected_mode=expected_mode,
+        expected_instrument_id=expected_instrument_id,
     )
     valid_ids = tuple(row.forecast_id for row in scan if row.lawful)
 
@@ -353,7 +365,6 @@ __all__ = [
     "BLOCKER_NO_GOVERNED_TRAINING_CORPUS",
     "BLOCKER_NO_VALID_CALIBRATION_ARTIFACT",
     "BLOCKER_NO_VALID_PRODUCTION_CONTRIBUTOR",
-    "BLOCKER_PRODUCTION_CONTRIBUTOR_NOT_PREREGISTERED",
     "BLOCKER_SOFTWARE_READY_RTH_REQUIRED",
     "STATUS_ARTIFACT_READY",
     "STATUS_BLOCKED_PREFIX",

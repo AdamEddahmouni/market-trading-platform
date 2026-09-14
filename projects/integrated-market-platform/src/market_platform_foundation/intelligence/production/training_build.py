@@ -20,6 +20,7 @@ from ..fusion.types import CalibrationExample
 from .calibrator import train_production_calibration
 from .emitter import emit_production_forecast
 from .identity import path_a_direction_target, path_a_horizon
+from .errors import ProductionTrainingError
 from .model import ProductionTrainingExample, fit_production_specialist
 from .model_store import persist_production_specialist_model
 from .readiness import TRAINING_MANIFEST_KIND
@@ -188,12 +189,15 @@ def build_path_a_production_artifacts(
     except (KeyError, TypeError, ValueError) as error:
         return ProductionBuildResult(status="BLOCKED", reason_codes=(str(error),))
 
-    model = fit_production_specialist(
-        train_rows,
-        target=target,
-        horizon=horizon,
-        training_cutoff_ns=training_cutoff_ns,
-    )
+    try:
+        model = fit_production_specialist(
+            train_rows,
+            target=target,
+            horizon=horizon,
+            training_cutoff_ns=training_cutoff_ns,
+        )
+    except ProductionTrainingError as error:
+        return ProductionBuildResult(status="BLOCKED", reason_codes=(str(error),))
     if model is None:
         return ProductionBuildResult(
             status="BLOCKED",
@@ -215,9 +219,9 @@ def build_path_a_production_artifacts(
                 example.signals,
                 allow_degraded=False,
             )
-            raw_probability = (
-                model.predict_probability_up(built) if built is not None and not diagnostics else 0.5
-            )
+            if built is None or diagnostics:
+                continue
+            raw_probability = model.predict_probability_up(built)
             cal_rows.append(
                 CalibrationExample(
                     raw_fusion_id=f"RFF-hist-{index}",
