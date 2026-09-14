@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Research Export v1 (Track D)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `research`, `docs` |
+| **Summary** | Implemented immutable Research Export v1 packages with deterministic `export_id` / manifest and table content hashes, PIT-A-001 `pit_export` binding, embedded `ValidationDatasetManifestV1` wrap, leakage firewall, and fixture-backed Profile A (NVDA bars) plus Profile C (ES macro events). Added Python loader, MATLAB parity sidecar, CLI, docs, and regression tests. No Live I/O; no duplicate backtester or provider stores. |
+| **Key files** | `src/market_platform_foundation/research/export_v1.py`, `export_v1_audit.py`, `export_v1_profiles.py`, `tests/research/test_research_export_v1.py`, `tools/research/build_research_export_v1.py`, `docs/research/RESEARCH_EXPORT_V1.md` |
+| **Tests** | `python3 -m unittest tests.research.test_research_export_v1` (5/5); `python3 tools/imp.py validate full` — IMP Validation 9/9 including validate-ui |
+| **Related** | Notion IMP Research Export v1; `docs/engineering/PROVIDER_ACTIVATION_INCREMENT.md`; [PR #96](https://github.com/AdamEddahmouni/market-trading-platform/pull/96) |
+| **Notes** | Rebased onto `origin/main` @ `ed80caa4` after #93. Did not touch `PROGRAM_STATUS` SHA field, hop CLI, Alpaca adapter, or `ui/`. |
+
 ## 2026-09-14 — Track G: IMP board 03 product shell (UI)
 
 | Field | Value |
