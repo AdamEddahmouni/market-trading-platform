@@ -11,6 +11,7 @@ from market_platform_foundation.intelligence.paper_forward_bridge.ftep_catalyst_
     collect_ftep_catalyst_watch,
 )
 from market_platform_foundation.intelligence.paper_forward_bridge.ftep_prospective_catalyst_ingress import (
+    ProspectiveCatalystIngressResult,
     collect_finviz_prospective_attention_rows,
     prospective_catalyst_ingress_enabled,
 )
@@ -136,6 +137,52 @@ class FtepProspectiveCatalystIngressTests(unittest.TestCase):
         self.assertEqual(payload["summary_count"], 0)
         self.assertEqual(payload["attention_data_kind"], "UNAVAILABLE")
         self.assertIsNone(payload["prospective_ingress"])
+
+    def test_live_ingress_zero_qualifying_rows_passes_without_legacy_blocker(self) -> None:
+        empty_ingress = ProspectiveCatalystIngressResult(
+            attempted=True,
+            ready=True,
+            reason=None,
+            source_label="live:finviz_elite_prospective",
+            rows=(),
+            stats={"accepted_pipeline_events": 0},
+        )
+        status = {
+            "us_equity_rth_open": True,
+            "governed_session_count": 2,
+            "empirical_lock_count": 0,
+        }
+        with (
+            patch(
+                "market_platform_foundation.intelligence.paper_forward_bridge."
+                "ftep_catalyst_watch.collect_ftep_campaign_status",
+                return_value=status,
+            ),
+            patch(
+                "market_platform_foundation.intelligence.paper_forward_bridge."
+                "ftep_catalyst_watch.load_governed_session_ids_from_evidence",
+                return_value=(["fts-A", "fts-B"], "evidence.jsonl"),
+            ),
+            patch(
+                "market_platform_foundation.intelligence.paper_forward_bridge."
+                "ftep_prospective_catalyst_ingress.collect_finviz_prospective_attention_rows",
+                return_value=empty_ingress,
+            ),
+        ):
+            payload = collect_ftep_catalyst_watch(
+                REPO_ROOT,
+                "FTEP-V1-002",
+                live_ingress=True,
+            )
+        self.assertEqual(payload["disposition"], "PASS")
+        self.assertEqual(payload["watch_mode"], "PROSPECTIVE_FINVIZ_INGRESS")
+        self.assertEqual(
+            payload["ingress_outcome"],
+            "LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS",
+        )
+        self.assertEqual(payload["summary_count"], 0)
+        self.assertEqual(payload["attention_data_kind"], "LIVE_PROSPECTIVE")
+        self.assertNotIn("PROSPECTIVE_CATALYST_INGRESS_ZERO_ROWS", payload["blockers"])
 
     def test_watch_live_ingress_blocked_when_gates_inactive(self) -> None:
         os.environ["IMP_PERSIST_STATE"] = "1"

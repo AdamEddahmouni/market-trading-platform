@@ -788,7 +788,11 @@ def build_parser() -> argparse.ArgumentParser:
     session_release.add_argument("--json", action="store_true", help="Machine-readable JSON")
     watch_catalysts = ftep_actions.add_parser(
         "watch-catalysts",
-        help="read-only catalyst attention watch (fixture dry-run; no locks)",
+        help=(
+            "read-only catalyst attention watch (fixture dry-run; no locks). "
+            "Does not forward --live-ingress; use tools/ftep_watch_catalysts.py "
+            "FTEP-V1-002 --live-ingress for prospective Finviz ingress."
+        ),
     )
     watch_catalysts.add_argument(
         "campaign_slug",
