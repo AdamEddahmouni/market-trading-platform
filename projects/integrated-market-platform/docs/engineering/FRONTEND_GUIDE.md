@@ -68,6 +68,10 @@ Paper draft handoffs use React Router `location.state` — short-lived, not a pe
 
 `paperOrderDraft.ts` — version field, `sourceContext`, provenance parsing. Preserve `initialDraft.sourceContext` through OrderTicket lifecycle.
 
+## API errors
+
+UI API failures use `{ error, reason_code, error_category }`. `error_category` is one of the twelve backend WS05 values in `ui_api/errors.py` (`CanonicalErrorCategory`). Frontend `ui/src/api/errors.ts` is a typed union of those values only — it does not map `reason_code` onto a category and does not invent categories. If the API omits `error_category` or returns an unknown value, parsing fails closed (generic request failure). Classified errors surface as `error_category: reason_code: error`. `fetchJson` dynamically imports the envelope parser so it stays off the initial JS budget; Paper mutation surfaces format classified errors from already-lazy pages.
+
 ## Paper cockpit
 
 **Workspace** is the decision desk: `PaperWorkspacePage` → `PaperDecisionCockpit` + `WorkspaceObservability`. **Portfolio** (`/portfolio`) is orders history, not the submit surface. See [PAPER_DECISION_LIFECYCLE.md](../architecture/PAPER_DECISION_LIFECYCLE.md).

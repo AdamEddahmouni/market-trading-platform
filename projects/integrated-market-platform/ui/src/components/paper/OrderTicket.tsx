@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ApiRequestError } from "../../api/fetchJson";
+import { ApiRequestError, formatApiRequestError } from "../../api/errors";
 import {
   useOpenPaperSessionMutation,
   usePaperPortfolioQuery,
@@ -146,7 +146,7 @@ export function OrderTicket({
       setPreviewOrigin(origin);
     } catch (err) {
       if (previewGeneration.current !== generation) return;
-      setError(err instanceof ApiRequestError ? `${err.code}: ${err.message}` : "Preview failed");
+      setError(err instanceof ApiRequestError ? formatApiRequestError(err) : "Preview failed");
     }
   }
 
@@ -175,7 +175,7 @@ export function OrderTicket({
       setConfirmedRequest(null);
       setPreviewOrigin(null);
     } catch (err) {
-      setError(err instanceof ApiRequestError ? `${err.code}: ${err.message}` : "Submit failed");
+      setError(err instanceof ApiRequestError ? formatApiRequestError(err) : "Submit failed");
     } finally {
       setSubmitting(false);
     }
@@ -187,7 +187,7 @@ export function OrderTicket({
       await sessionMutation.mutateAsync(ticketSymbol || undefined);
       await portfolioQuery.refetch();
     } catch (err) {
-      setError(err instanceof ApiRequestError ? `${err.code}: ${err.message}` : "Session open failed");
+      setError(err instanceof ApiRequestError ? formatApiRequestError(err) : "Session open failed");
     }
   }
 

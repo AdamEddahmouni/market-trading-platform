@@ -81,6 +81,15 @@ class ErrorTaxonomyTests(unittest.TestCase):
                 category = canonical_error_category(code)
                 self.assertIn(category.value, CANONICAL_ERROR_CATEGORY_VALUES)
 
+    def test_frontend_errors_ts_matches_canonical_categories(self) -> None:
+        source = (ROOT / "ui/src/api/errors.ts").read_text(encoding="utf-8")
+        match = re.search(r"export const CANONICAL_ERROR_CATEGORIES = \[([^\]]+)\] as const", source)
+        self.assertIsNotNone(match, "expected CANONICAL_ERROR_CATEGORIES in ui/src/api/errors.ts")
+        values = set(re.findall(r'"([A-Z_]+)"', match.group(1)))
+        self.assertEqual(values, CANONICAL_ERROR_CATEGORY_VALUES)
+        self.assertNotIn("_REASON_CODE_TO_CATEGORY", source)
+        self.assertNotIn("canonical_error_category", source)
+
 
 if __name__ == "__main__":
     unittest.main()

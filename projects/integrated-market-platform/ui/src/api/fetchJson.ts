@@ -1,24 +1,16 @@
 import type { z } from "zod";
 import { authHeaders } from "../auth/session";
 
-export class ApiRequestError extends Error {
-  code: string;
-
-  constructor(code: string, message: string) {
-    super(message);
-    this.code = code;
-    this.name = "ApiRequestError";
-  }
-}
-
 async function parseError(response: Response, path: string): Promise<never> {
   try {
     const payload = await response.json();
-    if (typeof payload === "object" && payload !== null && "code" in payload) {
-      throw new ApiRequestError(String(payload.code), String(payload.message ?? path));
+    const { ApiRequestError, parseApiErrorEnvelope } = await import("./errors");
+    const envelope = parseApiErrorEnvelope(payload);
+    if (envelope) {
+      throw new ApiRequestError(envelope);
     }
   } catch (error) {
-    if (error instanceof ApiRequestError) throw error;
+    if (error instanceof Error && error.name === "ApiRequestError") throw error;
   }
   throw new Error(`Request failed: ${path}`);
 }
@@ -46,7 +38,7 @@ export async function postJson<T>(path: string, body: unknown, schema: z.ZodSche
 export async function fetchRawJson(path: string): Promise<Record<string, unknown>> {
   const response = await fetch(path, { headers: authHeaders() });
   if (!response.ok) {
-    throw new Error(`Request failed: ${path}`);
+    await parseError(response, path);
   }
   const payload = await response.json();
   if (typeof payload !== "object" || payload === null) {
