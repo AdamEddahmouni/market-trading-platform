@@ -92,11 +92,17 @@ After env changes on Windows: `powershell -File tools/ui1/restart_ui_api.ps1`.
 | UI API | `http://127.0.0.1:8766` | `tools/ui1/run_ui_api.py` |
 | Launcher supervisor | `http://127.0.0.1:8767` | Loopback-only; Windows launcher |
 | Control center | `http://127.0.0.1:5173/control` | Lifecycle, masked provider config, readiness |
+| UI Diagnostics | `http://127.0.0.1:5173/diagnostics/provider` | Operator-only SPA (`NavShell`); not an API route |
 | Moomoo OpenD | `127.0.0.1:11111` | Local only; not on cloud VM |
 | IBKR TWS socket | `127.0.0.1:4001` | Observational transport; not execution authority |
 | IBKR Client Portal | `https://127.0.0.1:5000/v1/api` | Second transport; not TWS |
 
-Example read-only API probe (no orders): `curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8766/diagnostics/provider`
+Read-only API probes (no orders). `/diagnostics/provider` is the UI page on `:5173`, not `:8766`.
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8766/provider/health
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8766/context
+```
 
 ### Primary UI surfaces (shipped)
 

@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Runbook API probe paths
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Replaced `DEVELOPER_RUNBOOK` example curl `:8766/diagnostics/provider` (UI route; API 404) with honest read-only probes `/provider/health` and `/context`. Documented UI Diagnostics at `:5173/diagnostics/provider`. |
+| **Key files** | `docs/engineering/DEVELOPER_RUNBOOK.md` |
+| **Tests** | `python3 tools/check_docs_links.py` (targeted docs) |
+| **Related** | Project store `docs/runbook-reconciliation.md`; PR #103 / #110 |
+| **Notes** | Docs only. Hop worktree stays `1381619`. No OpenD / FTEP / G7 / Path A runtime / Live changes. |
+
 ## 2026-09-14 — Item 7 OpenD capture → BUILD 15 ledger bridge
 
 | Field | Value |
