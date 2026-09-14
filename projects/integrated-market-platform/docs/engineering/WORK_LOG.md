@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — OE-07 API projection of evidence and persist contract fields (rebased)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui_api`, `docs/architecture` |
+| **Summary** | `GET /opportunities/summary|{id}` and `GET /opportunities/{id}/evidence` lift review-row evidence, family admission, and dedupe/supersession facts to first-class JSON, and project persist `OpportunityV1.created_at_ns` / expected-edge at read time. Ingest does not stamp `decision_time_ns` onto review-row metadata (OE-05 fail-closed). No `MONITORED` / `OUTCOME_RECORDED` states. |
+| **Key files** | `src/market_platform_foundation/ui_api/opportunity_projections.py`, `tests/ui1/test_opportunity_api.py`, `tests/intelligence/test_opportunity_ingest.py`, `manifests/ui1/schemas/opportunity_summary.schema.json`, `manifests/ui1/schemas/opportunity_evidence.schema.json`, `docs/architecture/OPPORTUNITY_CONTRACT.md`, `docs/architecture/DATA_CONTRACTS.md`, `docs/product/OPPORTUNITY_ENGINE_CURRENT_STATE_AND_IMPLEMENTATION_PLAN.md` |
+| **Tests** | `PYTHONPATH=src .venv/Scripts/python.exe -m unittest tests.ui1.test_opportunity_api tests.intelligence.test_opportunity_ingest -v` → **18 passed** |
+| **Related** | [OPPORTUNITY_CONTRACT.md](../architecture/OPPORTUNITY_CONTRACT.md); OE-04 #106; OE-05 #105; supersedes rebased landing for #116 |
+| **Notes** | Isolated worktree `.worktrees/rebase-pr-116`, branch `work/rebase-pr-116-20260914` on `origin/main` `79ae537`. Live off. No hop/OpenD/G7/Path A/FTEP/SQLite schema/V1-002/execution gates. |
+
 ## 2026-09-14 — POST_BUILD35 inventory for ci_job_selector (PR #132)
 
 | Field | Value |

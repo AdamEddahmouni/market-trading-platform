@@ -65,6 +65,14 @@ class OpportunityIngestTests(unittest.TestCase):
         self.assertNotIn("UniversalStrategyScanner", source)
         self.assertNotIn("StrategyPaperRuntime", source)
 
+    def test_ingest_does_not_stamp_decision_time_metadata(self) -> None:
+        import market_platform_foundation.intelligence.opportunity.ingest as ingest
+
+        source = inspect.getsource(ingest)
+        self.assertNotIn("decision_time_ns", source)
+        self.assertNotIn("created_at_ns", source)
+        self.assertNotIn("opportunity_decision_time_ns", source)
+
     def test_storage_id_is_stripped_and_not_added_to_opportunity_v1(self) -> None:
         class FakeRepo:
             _stores = {
