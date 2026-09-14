@@ -170,7 +170,7 @@ def with_moomoo_opend_primary_quote(composition: ProviderComposition) -> Provide
 
     Additive: the default composition keeps ``UnconfiguredEquityQuoteProvider``;
     callers opt in explicitly. The returned adapter is fail-closed at call time
-    (loopback OpenD reachability + in-tree transport state are both checked
+    (loopback OpenD reachability, vendor SDK, auth, and protocol are checked
     inside ``fetch_quote``) and never fabricates a tick. This does not touch
     the Yahoo delayed cloud overlay, which is a distinct, separately-selected
     provider identity and is never substituted into this slot.
