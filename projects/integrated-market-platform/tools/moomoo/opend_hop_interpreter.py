@@ -25,6 +25,7 @@ HOP_RUNTIME_MODULE = "sklearn"
 HOP_SKLEARN_MISSING = "HOP_SKLEARN_MISSING"
 MOOMOO_SDK_MISSING = "MOOMOO_SDK_MISSING"
 HOP_MIXED_FOREIGN_VENV = "HOP_MIXED_FOREIGN_VENV"
+PIP_MISSING = "PIP_MISSING"
 
 
 def opend_extra_requirements_path() -> Path:
@@ -107,6 +108,16 @@ def diagnose_hop_interpreter() -> dict[str, Any]:
     }
 
 
+def _pip_importable(python: Path, runner: Any) -> bool:
+    probe = runner(
+        [str(python), "-c", "import pip"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    return int(getattr(probe, "returncode", 1) or 0) == 0
+
+
 def install_opend_extra(*, python: Path, runner: Any | None = None) -> dict[str, Any]:
     """Install the optional vendor SDK into ``python`` (the IMP interpreter).
 
@@ -121,8 +132,23 @@ def install_opend_extra(*, python: Path, runner: Any | None = None) -> dict[str,
             "error": "opend extra requirements file is missing",
             "vendor_pin": VENDOR_SDK_PIN,
         }
-    command = [str(python), "-m", "pip", "install", "-r", str(requirements)]
     run = runner if runner is not None else subprocess.run
+    if not _pip_importable(python, run):
+        return {
+            "python": str(python),
+            "requirements": str(requirements),
+            "secrets_included": False,
+            "status": "BLOCKED",
+            "reason_code": PIP_MISSING,
+            "error": (
+                "interpreter has no pip module (common after uv venv); "
+                "install pip then retry: uv pip install pip "
+                "(or python -m ensurepip --upgrade)"
+            ),
+            "vendor_distribution": VENDOR_SDK_DISTRIBUTION,
+            "vendor_pin": VENDOR_SDK_PIN,
+        }
+    command = [str(python), "-m", "pip", "install", "-r", str(requirements)]
     completed = run(command, check=False, capture_output=True, text=True)
     status = "READY" if int(getattr(completed, "returncode", 1) or 0) == 0 else "BLOCKED"
     payload: dict[str, Any] = {
@@ -142,6 +168,7 @@ __all__ = [
     "HOP_MIXED_FOREIGN_VENV",
     "HOP_SKLEARN_MISSING",
     "MOOMOO_SDK_MISSING",
+    "PIP_MISSING",
     "REQUIREMENTS_OPEND",
     "VENDOR_SDK_DISTRIBUTION",
     "VENDOR_SDK_PIN",

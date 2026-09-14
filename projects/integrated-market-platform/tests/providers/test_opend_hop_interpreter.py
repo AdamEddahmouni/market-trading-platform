@@ -19,6 +19,7 @@ if str(_ROOT) not in sys.path:
 from tools.moomoo.opend_hop_interpreter import (
     HOP_MIXED_FOREIGN_VENV,
     MOOMOO_SDK_MISSING,
+    PIP_MISSING,
     REQUIREMENTS_OPEND,
     VENDOR_SDK_DISTRIBUTION,
     VENDOR_SDK_PIN,
@@ -109,11 +110,35 @@ class OpenDHopInterpreterTests(unittest.TestCase):
 
     def test_install_opend_extra_fail_closed_on_pip_error(self) -> None:
         def fake_run(command, check=False, capture_output=False, text=False):  # noqa: ARG001
+            if len(command) >= 3 and command[-1] == "import pip":
+                return SimpleNamespace(returncode=0, stdout="", stderr="")
             return SimpleNamespace(returncode=1, stdout="", stderr="denied")
 
         report = install_opend_extra(python=Path("python"), runner=fake_run)
         self.assertEqual(report["status"], "BLOCKED")
         self.assertEqual(report["error"], "opend extra install failed")
+        self.assertFalse(report["secrets_included"])
+
+    def test_install_opend_extra_blocked_when_pip_module_missing(self) -> None:
+        pip_probe_ran = False
+        install_attempted = False
+
+        def fake_run(command, check=False, capture_output=False, text=False):  # noqa: ARG001
+            nonlocal pip_probe_ran, install_attempted
+            if command[-2:] == ["-c", "import pip"]:
+                pip_probe_ran = True
+                return SimpleNamespace(returncode=1, stdout="", stderr="No module named pip")
+            install_attempted = True
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+        python = Path("/imp/.venv/bin/python")
+        report = install_opend_extra(python=python, runner=fake_run)
+        self.assertTrue(pip_probe_ran)
+        self.assertFalse(install_attempted)
+        self.assertEqual(report["status"], "BLOCKED")
+        self.assertEqual(report["reason_code"], PIP_MISSING)
+        self.assertIn("uv pip install pip", report["error"])
+        self.assertEqual(report["python"], str(python))
         self.assertFalse(report["secrets_included"])
 
 
