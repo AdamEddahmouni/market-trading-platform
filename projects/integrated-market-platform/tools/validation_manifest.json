@@ -2284,6 +2284,7 @@
         "tests/intelligence/test_ftep_empirical_not_ready_fail_closed.py",
         "src/market_platform_foundation/intelligence/paper_forward_bridge/campaign_status.py",
         "tools/ftep_campaign_status.py",
+        "tools/hop_json_gate_check.py",
         "tests/intelligence/test_recorded_eval_bridge.py",
         "src/market_platform_foundation/intelligence/paper_forward_bridge/frozen_manifest_verifier.py",
         "tests/intelligence/forward_test_activation_support.py",
