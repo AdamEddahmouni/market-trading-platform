@@ -60,6 +60,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | Item 9 PARTIAL; PR (Lane C); [ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md](ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md); base `origin/main` `f2a38a19` |
 | **Notes** | No broker orders; no `CALIBRATED`; tomorrow RTH: `prospective --instrument-id AAPL --poll`. Independent review APPROVE_MERGE_CANDIDATE @ `b3daea2c`. |
 
+## 2026-09-14 — Phase 1 Lane D: FTEP Finviz prospective preflight + durable session truth
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `docs`, FTEP-V1-002 |
+| **Summary** | Lane D: Added read-only `ftep_finviz_prospective_preflight` (+ `imp.py ftep finviz-prospective-preflight`) validating canonical `IMP_STATE_DIR`, integrity PASS, two governed SIGNAL_ONLY sessions, zero empirical locks, Finviz credential presence, `IMP_FINVIZ_LIVE` / `IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS` gates, and RTH calendar. Off-hours disposition `SOFTWARE_READY_RTH_REQUIRED` is software-readiness success. Updated `PROGRAM_STATUS` and `SIGNAL_ONLY_LAUNCH_PREP` for durable session truth; catalyst watch distinguishes `LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS` vs failed ingress. FTEP not `EMPIRICAL_ACTIVE`. |
+| **Key files** | `paper_forward_bridge/ftep_finviz_prospective_preflight.py`, `tools/ftep_finviz_prospective_preflight.py`, `ftep_catalyst_watch.py`, `docs/platform/PROGRAM_STATUS.md`, `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md`, `tools/imp.py` |
+| **Tests** | `tests.intelligence.test_ftep_finviz_prospective_preflight` 3 passed; `tests.intelligence.test_ftep_prospective_catalyst_ingress` zero-row live ingress regression |
+| **Related** | Phase 1 closed-market empirical readiness; branch `work/phase1-ftep-finviz-readiness` |
+| **Notes** | Tomorrow live watch: `python tools/ftep_watch_catalysts.py FTEP-V1-002 --live-ingress --json` with `IMP_STATE_DIR` on primary `.local`; owner-temporary `IMP_FINVIZ_LIVE=1` only |
+
 ## 2026-09-14 — Grok intelligence ingest API (Lane I contracts)
 
 | Field | Value |

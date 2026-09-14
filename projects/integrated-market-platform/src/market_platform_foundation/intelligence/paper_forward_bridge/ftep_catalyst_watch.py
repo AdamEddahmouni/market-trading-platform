@@ -190,6 +190,10 @@ def collect_ftep_catalyst_watch(
             rows = [dict(item) for item in ingress.rows]
             source_label = ingress.source_label
             used_live_ingress = True
+        elif ingress.ready and not ingress.rows:
+            rows = []
+            source_label = ingress.source_label
+            used_live_ingress = True
         else:
             if ingress.attempted and ingress.reason == "INGRESS_GATES_INACTIVE":
                 blockers.append("PROSPECTIVE_CATALYST_INGRESS_GATES_INACTIVE")
@@ -203,10 +207,9 @@ def collect_ftep_catalyst_watch(
                     "Finviz prospective fetch failed; attention rows are not live-labelled."
                 )
             elif ingress.attempted and ingress.ready and not ingress.rows:
-                blockers.append("PROSPECTIVE_CATALYST_INGRESS_ZERO_ROWS")
                 operator_hints.append(
-                    "Live Finviz ingress returned zero universe-qualified catalyst rows "
-                    "(pipeline or recency filters); no fixture/SAMPLE substitute with --live-ingress."
+                    "Live Finviz ingress succeeded with zero universe-qualified catalyst rows "
+                    "(LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS); no fixture/SAMPLE substitute."
                 )
             if not used_live_ingress:
                 rows = []
@@ -248,7 +251,29 @@ def collect_ftep_catalyst_watch(
                 }
             )
 
+    ingress_outcome: str | None = None
+    if live_ingress_requested and prospective_ingress_report:
+        if prospective_ingress_report.get("reason") == "FINVIZ_FETCH_FAILED":
+            ingress_outcome = "LIVE_INGRESS_FAILED"
+        elif used_live_ingress:
+            ingress_outcome = (
+                "LIVE_INGRESS_SUCCESS"
+                if ranked
+                else "LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS"
+            )
+        elif prospective_ingress_report.get("attempted") and not used_live_ingress:
+            ingress_outcome = "LIVE_INGRESS_FAILED"
+
     if used_live_ingress and watch_mode != "FIXTURE_SMOKE":
+        watch_mode = "PROSPECTIVE_FINVIZ_INGRESS"
+    elif (
+        live_ingress_requested
+        and prospective_ingress_report
+        and prospective_ingress_report.get("ready")
+        and not used_live_ingress
+        and prospective_ingress_report.get("reason") is None
+        and int(prospective_ingress_report.get("row_count") or 0) == 0
+    ):
         watch_mode = "PROSPECTIVE_FINVIZ_INGRESS"
 
     disposition = "PASS" if not blockers else "BLOCKED"
@@ -273,6 +298,7 @@ def collect_ftep_catalyst_watch(
         "attention_source": source_label,
         "attention_data_kind": attention_data_kind,
         "prospective_ingress": prospective_ingress_report,
+        "ingress_outcome": ingress_outcome,
         "summary_count": len(ranked),
         "summaries": [item.to_dict() for item in ranked],
         "session_correlation": correlation,
