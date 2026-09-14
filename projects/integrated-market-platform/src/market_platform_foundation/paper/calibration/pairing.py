@@ -14,6 +14,10 @@ from ...execution.simulator import SIMULATOR_VERSION, SOURCE_CAPABILITY
 from ...intelligence.paper_forward_bridge.paper_handoff import (
     forward_test_correlation_id,
 )
+from .comparator_contract import (
+    assert_alpaca_paper_pairing_host,
+    assert_paper_only_environment,
+)
 from .metrics import CalibrationDivergenceClass, FillObservation
 
 PAIR_METHOD_CORRELATION_ID = "CORRELATION_ID"
@@ -145,8 +149,23 @@ def pair_imp_and_comparator(
     instrument_id: str = "",
     asset_class: str = "EQUITY",
     simulator_version: str = SIMULATOR_VERSION,
+    comparator_id: str = "",
+    comparator_environment: str = "",
 ) -> PairingResult:
-    """Join IMP and comparator legs for one locked forward-test intent."""
+    """Join IMP and comparator legs for one locked forward-test intent.
+
+    Pairing never invents fills. Alpaca observations must carry the Paper host;
+    a Live Alpaca origin fails closed before any join.
+    """
+    if comparator_environment:
+        assert_paper_only_environment(
+            environment=comparator_environment,
+            account_mode="paper",
+        )
+    if "alpaca" in comparator_id.strip().lower():
+        assert_alpaca_paper_pairing_host(comparator_environment)
+    elif "alpaca" in comparator_environment.lower():
+        assert_alpaca_paper_pairing_host(comparator_environment)
     correlation_id = forward_test_correlation_id(forward_test_id)
     imp = _index_observations(imp_fills)
     comp = _index_observations(comparator_fills)

@@ -22,6 +22,7 @@ from .accounting import (
 )
 from .canonical import CanonicalPortfolio, CashBalance, PositionInput, QuantityUnit
 from .instrument_economics import kind_default_quantity_unit
+from ..paper.cost_friction import resolve_paper_cost_friction
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,15 +100,10 @@ def apply_paper_fill_to_portfolio(
     signed_qty = _signed_fill_quantity(fill)
     abs_qty = abs(signed_qty)
 
-    commission_minor = (
-        int(fill["commission_minor"])
-        if "commission_minor" in fill
-        else int(abs_qty) * int(policy.get("commission_minor_per_share", 0))
-    )
-    fees_minor = (
-        int(fill["fees_minor"])
-        if "fees_minor" in fill
-        else int(policy.get("fee_minor_per_order", 0))
+    commission_minor, fees_minor = resolve_paper_cost_friction(
+        fill=fill,
+        policy=policy,
+        quantity=int(abs_qty),
     )
     fees = _minor_to_decimal(commission_minor + fees_minor, scale)
 
