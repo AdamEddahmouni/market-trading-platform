@@ -693,6 +693,48 @@ def build_parser() -> argparse.ArgumentParser:
         help="Evaluate gates only; no session or lock writes",
     )
     session_start.add_argument("--json", action="store_true", help="Machine-readable JSON")
+    session_release = ftep_actions.add_parser(
+        "session-release",
+        help="governed campaign binding release (--dry-run gates only)",
+    )
+    session_release.add_argument(
+        "campaign_slug",
+        nargs="?",
+        default="FTEP-V1-002",
+        help="Forward-test campaign slug for evidence routing (default: FTEP-V1-002)",
+    )
+    session_release.add_argument(
+        "--account-id",
+        required=True,
+        help="Paper account id scoped to the active campaign binding",
+    )
+    session_release.add_argument(
+        "--campaign-id",
+        help="Optional campaign id; fail closed when active binding differs",
+    )
+    session_release.add_argument(
+        "--session-id",
+        help="Optional forward_test_session_id; fail closed when binding differs",
+    )
+    session_release.add_argument(
+        "--expect-manifest-fingerprint",
+        help="Fail closed unless the active binding fingerprint matches exactly",
+    )
+    session_release.add_argument(
+        "--expect-manifest-path-substring",
+        help="Fail closed unless manifest_path contains this substring",
+    )
+    session_release.add_argument(
+        "--require-frozen-manifest-fingerprint",
+        action="store_true",
+        help="Fail closed when binding fingerprint differs from frozen manifest",
+    )
+    session_release.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate release gates without durable writes",
+    )
+    session_release.add_argument("--json", action="store_true", help="Machine-readable JSON")
     watch_catalysts = ftep_actions.add_parser(
         "watch-catalysts",
         help="read-only catalyst attention watch (fixture dry-run; no locks)",
@@ -797,6 +839,30 @@ def _ftep_command(root: Path, args: argparse.Namespace) -> int:
             command.append("--json")
     elif args.action == "session-start":
         command = [python, str(root / "tools" / "ftep_session_start.py"), args.campaign_slug]
+        if getattr(args, "dry_run", False):
+            command.append("--dry-run")
+        if getattr(args, "json", False):
+            command.append("--json")
+    elif args.action == "session-release":
+        command = [python, str(root / "tools" / "ftep_session_release.py"), args.campaign_slug]
+        command.extend(["--account-id", args.account_id])
+        if getattr(args, "campaign_id", None):
+            command.extend(["--campaign-id", args.campaign_id])
+        if getattr(args, "session_id", None):
+            command.extend(["--session-id", args.session_id])
+        if getattr(args, "expect_manifest_fingerprint", None):
+            command.extend(
+                ["--expect-manifest-fingerprint", args.expect_manifest_fingerprint]
+            )
+        if getattr(args, "expect_manifest_path_substring", None):
+            command.extend(
+                [
+                    "--expect-manifest-path-substring",
+                    args.expect_manifest_path_substring,
+                ]
+            )
+        if getattr(args, "require_frozen_manifest_fingerprint", False):
+            command.append("--require-frozen-manifest-fingerprint")
         if getattr(args, "dry_run", False):
             command.append("--dry-run")
         if getattr(args, "json", False):
