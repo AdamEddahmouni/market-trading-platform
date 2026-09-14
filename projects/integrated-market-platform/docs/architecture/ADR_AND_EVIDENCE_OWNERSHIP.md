@@ -14,9 +14,13 @@ statement only.
   decision records are written here.
 - Structured JSON under `docs/superpowers/decisions/` remains as
   machine-readable mirrors where useful; it is not a competing ADR home.
-- `docs/research/donors/` records such as `ADR-DONOR-001` and
-  `ADR-GRIDIQ-001` are historical donor-governance records. They are preserved
-  for provenance, marked SUPERSEDED, and are not ADR homes.
+- `ADR-DONOR-001` and `ADR-GRIDIQ-001` live under
+  `docs/superpowers/decisions/` (not `docs/research/donors/`). They are
+  historical donor-governance records, marked SUPERSEDED, and are not ADR
+  homes. GridIQ / DS-340W are **not** IMP donors; independent `storage/*`
+  **ADAPT** implementations do not take authorization from ADR-GRIDIQ-001.
+  Current identity authority:
+  [Donor Authority Supersession Notice](../superpowers/governance/2026-09-07-donor-authority-supersession-notice.md).
 - Do not create new competing ADR homes.
 
 Consolidation of the historical three-home duplication is tracked by the

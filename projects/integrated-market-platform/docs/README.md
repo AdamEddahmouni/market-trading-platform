@@ -80,7 +80,7 @@ When documents disagree, resolve in this order (highest first):
 | Threat model (lite) | [THREAT_MODEL.md](architecture/THREAT_MODEL.md) |
 | Architecture decisions | [adr/README.md](architecture/adr/README.md) |
 | Multi-source data foundation | [MULTI_SOURCE_DATA_FOUNDATION.md](providers/MULTI_SOURCE_DATA_FOUNDATION.md) |
-| Foundation Revision 3 | [spec](superpowers/specs/2026-08-14-integrated-market-platform-foundation-design-revision-3.md) |
+| Foundation Revision 3 | [spec](superpowers/specs/2026-08-14-integrated-market-platform-foundation-design-revision-3.md) (Heller / GridIQ / DS-340W donor-authorization language superseded by the [Donor Authority Supersession Notice](superpowers/governance/2026-09-07-donor-authority-supersession-notice.md)) |
 | Platformization | [roadmap](research/PLATFORMIZATION_ROADMAP.md) |
 
 ---
@@ -169,6 +169,7 @@ When documents disagree, resolve in this order (highest first):
 | Pre-implementation planning closure (2026-09-11) | [PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md](platform/PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md) |
 | Post-G15 professor-directed CCN forensic audit | [post-g15-professor-directed/](audits/post-g15-professor-directed/README.md) |
 | IMP reconciliation program (G0–G15) | [imp-reconciliation/](audits/imp-reconciliation/README.md) |
+| Donor-identity correction (GridIQ / DS-340W) | [Donor Authority Supersession Notice](superpowers/governance/2026-09-07-donor-authority-supersession-notice.md) |
 
 ---
 

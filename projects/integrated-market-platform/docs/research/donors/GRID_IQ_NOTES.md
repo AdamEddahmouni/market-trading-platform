@@ -9,9 +9,14 @@
 > preserved for provenance only and must not be used as authorization for
 > future implementation.
 
-These notes describe an external, immutable donor snapshot. Revision 3 is the
-authority if this summary conflicts with it. Nothing here authorizes donor
-execution, network access, data copying, AI-provider use, or a phase transition.
+These notes describe an external, immutable snapshot that was **mistakenly
+treated as an IMP donor**. Current identity authority is the
+[Donor Authority Supersession Notice](../../superpowers/governance/2026-09-07-donor-authority-supersession-notice.md).
+Revision 3 is hash-bound historical specification and must not be read as
+re-authorizing GridIQ as a donor. Independent IMP `storage/*` dataset/cache
+code remains **ADAPT** from platform requirement. Nothing here authorizes
+donor execution, network access, data copying, AI-provider use, or a phase
+transition.
 
 ## Identity and inspection boundary
 
