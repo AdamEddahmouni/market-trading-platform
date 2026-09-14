@@ -1,4 +1,5 @@
 import { DiscoverObservability } from "../discover-shared/DiscoverObservability";
+import { OpportunityRadarDensePanel } from "../imp-product/OpportunityRadarDensePanel";
 import { OpportunityRadarIntro } from "../imp-product/OpportunityRadarIntro";
 
 export function PaperDiscoverPage() {
@@ -18,6 +19,8 @@ export function PaperDiscoverPage() {
       <OpportunityRadarIntro>
         Promote candidates into workspace lanes for paper simulation review; broker execution stays off.
       </OpportunityRadarIntro>
+
+      <OpportunityRadarDensePanel />
 
       <DiscoverObservability allowMutations autoRefreshOnMount />
     </section>

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import type { AttentionItem, PaperPortfolioResponse } from "../../api/client";
 import demoNowCss from "../../styles/demo-now.css?raw";
@@ -49,10 +50,20 @@ function props(overrides: Partial<DemoNowPageProps> = {}): DemoNowPageProps {
   };
 }
 
+function renderPage(overrides: Partial<DemoNowPageProps> = {}) {
+  return render(
+    <MemoryRouter>
+      <DemoNowPage {...props(overrides)} />
+    </MemoryRouter>,
+  );
+}
+
 describe("DemoNowPage", () => {
   it("composes one page heading and four named operational regions", () => {
-    render(<DemoNowPage {...props()} />);
+    renderPage();
     expect(screen.getByRole("heading", { level: 1, name: "See the market unfold" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Overview KPIs" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Top opportunities" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Replay overview" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Simulated portfolio" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "What matters now" })).toBeInTheDocument();
@@ -61,7 +72,11 @@ describe("DemoNowPage", () => {
 
   it("preserves attention callbacks and supplies the confirmed next cursor", () => {
     const value = props({ cursorIndex: 1 });
-    render(<DemoNowPage {...value} />);
+    render(
+      <MemoryRouter>
+        <DemoNowPage {...value} />
+      </MemoryRouter>,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Why here?" }));
     fireEvent.click(screen.getAllByRole("button", { name: "Explain" })[0]);
     fireEvent.click(screen.getByRole("button", { name: "Inspect" }));
@@ -75,18 +90,14 @@ describe("DemoNowPage", () => {
   });
 
   it("degrades attention and portfolio independently while replay remains usable", () => {
-    render(
-      <DemoNowPage
-        {...props({ attentionState: "error", portfolioState: "error", portfolio: undefined })}
-      />,
-    );
-    expect(screen.getByRole("alert")).toHaveTextContent("Attention feed unavailable");
+    renderPage({ attentionState: "error", portfolioState: "error", portfolio: undefined });
+    expect(screen.getByText("Attention feed unavailable.")).toBeInTheDocument();
     expect(screen.getByText(/Simulated portfolio unavailable/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Next event" })).toBeEnabled();
   });
 
   it("renders no execution or session mutation controls", () => {
-    render(<DemoNowPage {...props()} />);
+    renderPage();
     for (const name of [/order ticket/i, /paper session/i, /kill switch/i, /authorization/i, /execute/i]) {
       expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
     }
@@ -95,7 +106,7 @@ describe("DemoNowPage", () => {
 
 describe("Demo Now layout structure", () => {
   it("exposes the balanced command grid and panel hierarchy", () => {
-    render(<DemoNowPage {...props()} />);
+    renderPage();
     expect(document.querySelector(".demo-now-page")).toBeTruthy();
     expect(document.querySelector(".demo-now-grid-top")).toBeTruthy();
     expect(document.querySelector(".demo-now-grid-bottom")).toBeTruthy();

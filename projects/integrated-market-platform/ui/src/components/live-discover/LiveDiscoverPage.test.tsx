@@ -3,6 +3,14 @@ import { MemoryRouter } from "react-router-dom";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { LiveDiscoverPage } from "./LiveDiscoverPage";
 
+vi.mock("../../api/opportunityClient", () => ({
+  useOpportunitiesSummaryQuery: () => ({
+    data: { items: [], feed_status: "EMPTY" },
+    isLoading: false,
+    isError: false,
+  }),
+}));
+
 const mixedPayload = {
   available: true,
   mode: "SEMI_LIVE",

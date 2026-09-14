@@ -1,5 +1,8 @@
 import type { AttentionItem } from "../../api/client";
+import { useOpportunitiesSummaryQuery } from "../../api/opportunityClient";
 import { AttentionFeed } from "../AttentionFeed";
+import { ImpOverviewBoard } from "../imp-product/ImpOverviewBoard";
+import { overviewKpisFromLiveContext } from "../imp-product/impOverviewMetrics";
 import type { LiveCanarySnapshot } from "./liveCanarySnapshot";
 import { LiveProviderRibbon } from "./LiveProviderRibbon";
 import { LiveSafetySnapshot } from "./LiveSafetySnapshot";
@@ -35,6 +38,24 @@ export function LiveNowPage({
   onInspect,
   onOpenWorkspace,
 }: LiveNowPageProps) {
+  const opportunitiesQuery = useOpportunitiesSummaryQuery(true);
+  const opportunityState = opportunitiesQuery.isLoading
+    ? "loading"
+    : opportunitiesQuery.isError || !opportunitiesQuery.data
+      ? "error"
+      : "ready";
+  const contextReady = providerState !== "loading";
+  const kpiState = !contextReady ? "loading" : providerState === "error" ? "error" : "ready";
+  const kpiCells = overviewKpisFromLiveContext({
+    state: kpiState,
+    attentionCount: items.length,
+    dataMode,
+    executionAuthority,
+    providerName: providerHealth?.provider_summary?.provider,
+    connectionState: providerHealth?.lifecycle?.connection_state,
+    opportunityFeedStatus: opportunitiesQuery.data?.feed_status,
+  });
+
   return (
     <section className="page live-now-page">
       <header className="live-now-header">
@@ -66,6 +87,18 @@ export function LiveNowPage({
         </dl>
       </header>
 
+      <ImpOverviewBoard
+        kpiCells={kpiCells}
+        kpiState={kpiState}
+        opportunityItems={opportunitiesQuery.data?.items ?? []}
+        opportunityState={opportunityState}
+        feedStatus={opportunitiesQuery.data?.feed_status}
+        unreadyReason={opportunitiesQuery.data?.unready_reason}
+        nextAction={opportunitiesQuery.data?.next_action}
+        onExplain={onExplain}
+        onInspect={onInspect}
+        onOpenWorkspace={onOpenWorkspace}
+      >
       <LiveProviderRibbon health={providerHealth} state={providerState} />
 
       <div className="live-now-grid live-now-grid-top">
@@ -90,6 +123,7 @@ export function LiveNowPage({
           onOpenWorkspace={onOpenWorkspace}
         />
       </section>
+      </ImpOverviewBoard>
     </section>
   );
 }

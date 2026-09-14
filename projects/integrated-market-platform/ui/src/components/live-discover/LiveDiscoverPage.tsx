@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { DiscoverObservability } from "../discover-shared/DiscoverObservability";
+import { OpportunityRadarDensePanel } from "../imp-product/OpportunityRadarDensePanel";
+import { OpportunityRadarDensePanel } from "../imp-product/OpportunityRadarDensePanel";
 import { OpportunityRadarIntro } from "../imp-product/OpportunityRadarIntro";
 
 export function LiveDiscoverPage() {
@@ -25,6 +27,8 @@ export function LiveDiscoverPage() {
         <strong>Live is read-only here.</strong>
         <p>Refresh and promote controls are hidden. Workspace links navigate without changing live analysis subscriptions.</p>
       </aside>
+
+      <OpportunityRadarDensePanel readOnly />
 
       <DiscoverObservability />
     </section>

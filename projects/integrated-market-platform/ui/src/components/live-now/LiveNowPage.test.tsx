@@ -12,6 +12,14 @@ vi.mock("../../api/hooks", () => ({
   useSubscribeMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
+vi.mock("../../api/opportunityClient", () => ({
+  useOpportunitiesSummaryQuery: () => ({
+    data: { items: [], feed_status: "EMPTY" },
+    isLoading: false,
+    isError: false,
+  }),
+}));
+
 const attention: AttentionItem = {
   attention_id: "attention-1",
   priority_rank: 1,
@@ -51,6 +59,8 @@ describe("LiveNowPage", () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole("heading", { level: 1, name: "Live Watch" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Overview KPIs" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Top opportunities" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Connection summary" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Operational safety" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Symbol lookup" })).toBeInTheDocument();
@@ -65,7 +75,7 @@ describe("LiveNowPage", () => {
       </MemoryRouter>,
     );
     fireEvent.click(screen.getByRole("button", { name: "Why here?" }));
-    fireEvent.click(screen.getByRole("button", { name: "Explain" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Explain" })[0]);
     fireEvent.click(screen.getByRole("button", { name: "Inspect" }));
     fireEvent.click(screen.getByRole("button", { name: "Open workspace" }));
     expect(props.onWhy).toHaveBeenCalledWith(attention);

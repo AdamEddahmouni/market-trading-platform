@@ -2,6 +2,8 @@ import type { AttentionItem, PaperPortfolioResponse } from "../../api/client";
 import { useOpportunitiesSummaryQuery } from "../../api/opportunityClient";
 import { AttentionFeed } from "../AttentionFeed";
 import { OpportunityReviewList } from "../now/OpportunityReviewCard";
+import { ImpOverviewBoard } from "../imp-product/ImpOverviewBoard";
+import { overviewKpisFromPortfolio } from "../imp-product/impOverviewMetrics";
 import { DemoInspectNext } from "./DemoInspectNext";
 import { DemoPortfolioSummary } from "./DemoPortfolioSummary";
 import { DemoReplayOverview, deriveReplayProgress } from "./DemoReplayOverview";
@@ -35,6 +37,13 @@ export function DemoNowPage(props: DemoNowPageProps) {
       : "ready";
   const progress = props.replayState === "ready" ? deriveReplayProgress(props.cursorIndex, props.eventCount) : null;
   const canAdvance = Boolean(progress?.hasNext);
+  const kpiState =
+    props.portfolioState === "loading"
+      ? "loading"
+      : props.portfolioState === "error"
+        ? "error"
+        : "ready";
+  const kpiCells = overviewKpisFromPortfolio(props.portfolio, kpiState);
   return (
     <div className="page demo-now-page">
       <header className="demo-now-intro">
@@ -48,6 +57,18 @@ export function DemoNowPage(props: DemoNowPageProps) {
         </div>
         <span className="demo-intro-mark">BIYA / REPLAY</span>
       </header>
+      <ImpOverviewBoard
+        kpiCells={kpiCells}
+        kpiState={kpiState}
+        opportunityItems={opportunitiesQuery.data?.items ?? []}
+        opportunityState={opportunityState}
+        feedStatus={opportunitiesQuery.data?.feed_status}
+        unreadyReason={opportunitiesQuery.data?.unready_reason}
+        nextAction={opportunitiesQuery.data?.next_action}
+        onExplain={props.onExplain}
+        onInspect={props.onInspect}
+        onOpenWorkspace={props.onOpenWorkspace}
+      >
       <div className="demo-now-grid demo-now-grid-top">
         <DemoReplayOverview
           cursorIndex={props.cursorIndex}
@@ -100,6 +121,7 @@ export function DemoNowPage(props: DemoNowPageProps) {
           }}
         />
       </div>
+      </ImpOverviewBoard>
     </div>
   );
 }
