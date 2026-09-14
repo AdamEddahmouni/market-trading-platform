@@ -36,6 +36,19 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Item 7 OpenD capture → BUILD 15 ledger bridge
+
+| Field | Value |
+|---|---|
+| **Status** | Complete (draft PR) |
+| **Area** | Intelligence / BUILD 15 / Item 7 |
+| **Summary** | Added `opend_capture_ledger.py` to ingest prospective OpenD `market_data.provider_envelope` JSONL via canonical `normalize_moomoo_capture`, classify raw vs tape-eligible vs Path A grid points, persist `EventV1` idempotently, and optionally register existing forecasts through `PredictionLedgerService` without settlement or synthetic probabilities. |
+| **Key files** | `src/market_platform_foundation/intelligence/outcomes/opend_capture_ledger.py`; `tests/intelligence/test_opend_capture_ledger_bridge.py` |
+| **Tests** | `PYTHONPATH=src python3 -m unittest tests.intelligence.test_opend_capture_ledger_bridge` — **9 passed** |
+| **Related** | Item 7 capture funnel; BUILD 15 ledger/settlement |
+| **Notes** | No AdamsGalaxyBook JSONL processed on cloud. Pre-existing normalizer wired; orchestrator is new. |
+
+
 ## 2026-09-14 — FTEP integrity: durable counts when SIGNAL_ONLY started
 
 | Field | Value |
