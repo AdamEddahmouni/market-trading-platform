@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Observation ingress router foundation (Lane F)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `intelligence`, `docs` |
+| **Summary** | Added in-process `ObservationIngressRouter` for idempotent, bounded, deterministic `EventV1` fan-out to typed consumers (store, detector stub, OE evidence, audit/replay journal, enrichment triggers) plus `dispatch_normalization_result` bridge. Documented missing capability gap in `OBSERVATION_INGRESS_ROUTER_V1.md`. Proved dispatch via existing Moomoo BUILD 03 normalization in unit tests only — not yet wired into live normalize paths. |
+| **Key files** | `src/market_platform_foundation/intelligence/observation_ingress/**`, `docs/engineering/OBSERVATION_INGRESS_ROUTER_V1.md`, `tests/intelligence/test_observation_ingress_router.py` |
+| **Tests** | `python -m unittest tests.intelligence.test_observation_ingress_router -v` |
+| **Related** | Lane F observation ingress; PR #140; BUILD 03 normalization; BUILD 07 replay |
+| **Notes** | Foundation / draft until normalize-path wiring; no broker subscribers; no FTEP/OpenD ledger edits. |
+
 ## 2026-09-14 — Lane E: preview stale server codes → REVALIDATION_REQUIRED
 
 | Field | Value |
