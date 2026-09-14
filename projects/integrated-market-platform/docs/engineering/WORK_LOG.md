@@ -36,6 +36,54 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Observation ingress router foundation (Lane F)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `intelligence`, `docs` |
+| **Summary** | Added in-process `ObservationIngressRouter` for idempotent, bounded, deterministic `EventV1` fan-out to typed consumers (store, detector stub, OE evidence, audit/replay journal, enrichment triggers) plus `dispatch_normalization_result` bridge. Documented missing capability gap in `OBSERVATION_INGRESS_ROUTER_V1.md`. Proved dispatch via existing Moomoo BUILD 03 normalization in unit tests only — not yet wired into live normalize paths. |
+| **Key files** | `src/market_platform_foundation/intelligence/observation_ingress/**`, `docs/engineering/OBSERVATION_INGRESS_ROUTER_V1.md`, `tests/intelligence/test_observation_ingress_router.py` |
+| **Tests** | `python -m unittest tests.intelligence.test_observation_ingress_router -v` |
+| **Related** | Lane F observation ingress; PR #140; BUILD 03 normalization; BUILD 07 replay |
+| **Notes** | Foundation / draft until normalize-path wiring; no broker subscribers; no FTEP/OpenD ledger edits. |
+
+## 2026-09-14 — Lane E: preview stale server codes → REVALIDATION_REQUIRED
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/paper-workspace` |
+| **Summary** | Reconciled UX-00 P2 #6 onto `reconcile/ux-preview-revalidation-20260914`: removed unreachable `STALE` presentation status; map `PREVIEW_*_STALE`, `PREVIEW_EXPIRED`, `PREVIEW_INTENT_MISMATCH`, and `PREVIEW_REQUIRED` errors to `REVALIDATION_REQUIRED` (supersedes draft PR #127). |
+| **Key files** | `ui/src/components/paper-workspace/paperPreviewPresentation.ts`, `PaperPreviewStatus.tsx`, `paperPreviewPresentation.test.ts`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `cd ui && npm run typecheck`; `npm test -- paperPreviewPresentation.test.ts PaperPreviewStatus.test.tsx` |
+| **Related** | UX-00 forensic audit §13 P2 #6; supersedes PR #127 |
+| **Notes** | No submit authority or backend risk changes. Lane J (#128/#126/#124/#123/#114/#115) untouched. Empirical: NONE. |
+
+## 2026-09-14 — Item 7 Lane D production forecast progression diagnostics
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` — diagnostics-only foundation; Item 7 **`ITEM7_PARTIAL`** (not complete) |
+| **Area** | `intelligence/production`, Item 7 Lane D |
+| **Summary** | Added fail-closed Item 7 progression reporting for lawful quote → grid → pre-existing PRODUCTION `ForecastV1` → ledger → settlement → specialist/calibration empirical floors. Emits machine-readable JSON plus a readable summary with stage vector and first failing stage. Does not mint forecasts from quotes or assert `ITEM7_COMPLETE`. |
+| **Key files** | `src/market_platform_foundation/intelligence/production/progression.py`, `tools/item7_forecast_progression_report.py`, `tests/intelligence/test_item7_production_forecast_progression.py` |
+| **Tests** | `PYTHONPATH=src python -m unittest tests.intelligence.test_item7_production_forecast_progression -v`; `python tools/imp.py validate fast` |
+| **Related** | Item 7 PARTIAL; OpenD capture → ledger bridge (read-only); Path A `path_a_forecast_store` / `path_a_forecast_producer`; draft PR #144 |
+| **Notes** | Software diagnostics only — approve-as-draft, not Item 7 closure. Independent of BBO snapshot lane. No edits to `opend_capture_ledger.py`, FTEP, or hop CLI. |
+
+## 2026-09-14 — Item 7 Lane C SNAPSHOT_BBO market-snapshot diagnostic
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `tools/moomoo`, `tests/providers`, Item 7 BBO |
+| **Summary** | Added read-only Item 7 harness that classifies vendor `get_market_snapshot` bid/ask without synthesizing from `last_price`, under distinct capability `SNAPSHOT_BBO` (not `US_EQUITY_L1`). Fixture tests cover missing/invalid spread/stale/delayed/valid BBO, temporal order, identity, and entitlement failure; live CLI probes only when US RTH and loopback OpenD are available, else honest block. Outcomes are `REAL_SNAPSHOT_BBO_VALIDATED` or `DERIVED_BBO_DESIGN_REQUIRED` only — never `ITEM7_COMPLETE`. Program Item 7 remains **PARTIAL**. |
+| **Key files** | `tools/moomoo/item7_bbo_snapshot.py`, `tools/item7_bbo_snapshot_probe.py`, `tests/providers/test_item7_bbo_snapshot.py`, `artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` |
+| **Tests** | `PYTHONPATH=src python -m unittest tests.providers.test_item7_bbo_snapshot -v` |
+| **Related** | Lane C Item 7; `docs/providers/MOOMOO_OBSERVATIONAL.md`; G5 depth remains separate derived path |
+| **Notes** | Did not touch opend_capture_ledger, FTEP, paper/calibration, UI, or L1 adapter semantics. No orders. Classified top-level probe CLI in POST_BUILD35 closure inventory (fixes CI `validation` suite ERROR on unclassified path). |
+
 ## 2026-09-14 — Item 9 BAR_OHLCV_1M comparator input reconcile (PR #134)
 
 | Field | Value |
