@@ -44,7 +44,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Area** | `docs` |
 | **Summary** | Aligned operator/dev instructions with shipped #108 nav: **Workspace** (decision desk) vs **Portfolio** (orders history); **Lab** → `/research` with `/lab` redirect. Docs-only; no UI/backend or frozen-lane changes. |
 | **Key files** | `docs/engineering/DEVELOPER_RUNBOOK.md`, `docs/engineering/FRONTEND_GUIDE.md` |
-| **Tests** | Pending local `python3 tools/check_docs_links.py` and IMP Validation (incl. `validate-ui`) |
+| **Tests** | `python3 tools/check_docs_links.py` — OK (189 files). UI `npm run typecheck` + `npm test -- --run` + `npm run build` — **476** vitest passed; initial bundle 203.00 KiB gzip. Docs-only; no `validate full`. |
 | **Related** | [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md), [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md), PR #108 @ `0cf1c414` |
 | **Notes** | Did not invent routes. Live remains off. |
 
