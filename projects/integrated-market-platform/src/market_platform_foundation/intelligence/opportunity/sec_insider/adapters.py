@@ -1,27 +1,51 @@
-"""EventV1 payload adapters — no EventV1 schema changes."""
+"""EventV1 payload adapters — Lane B primary, legacy compat optional."""
 
 from __future__ import annotations
 
 from typing import Any, Mapping
 
 from ...contracts import EventV1
-from .constants import LANE_PAYLOAD_KIND, PAYLOAD_SECTION
-from .facts import SecInsiderDisclosureFacts, facts_from_market_trackers_row
+from .constants import (
+    LANE_B_EVENT_TYPE,
+    LANE_B_PROVIDER_ID,
+    LANE_PAYLOAD_KIND,
+    PAYLOAD_SECTION,
+)
+from .facts import (
+    SecInsiderDisclosureFacts,
+    facts_from_lane_b_payload,
+    facts_from_market_trackers_row,
+)
 
 
-def accepts_sec_insider_event(event: EventV1) -> bool:
+def is_lane_b_insider_ownership_event(event: EventV1) -> bool:
+    if str(event.event_type) != LANE_B_EVENT_TYPE:
+        return False
+    if event.source.provider_id != LANE_B_PROVIDER_ID:
+        return False
+    clocks = event.payload.get("clocks")
+    if not isinstance(clocks, Mapping):
+        return False
+    return bool(str(event.payload.get("accession_number") or "").strip())
+
+
+def is_legacy_sec_insider_compat_event(event: EventV1) -> bool:
     payload = event.payload
     section = payload.get(PAYLOAD_SECTION)
     if not isinstance(section, Mapping):
         return False
     if payload.get("lane_payload_kind") == LANE_PAYLOAD_KIND:
         return True
-    if str(event.event_type).upper() == "FILING":
-        return True
-    return payload.get("lane_payload_kind") == LANE_PAYLOAD_KIND
+    return str(event.event_type).upper() == "FILING"
+
+
+def accepts_sec_insider_event(event: EventV1) -> bool:
+    return is_lane_b_insider_ownership_event(event) or is_legacy_sec_insider_compat_event(event)
 
 
 def extract_sec_insider_facts(event: EventV1) -> SecInsiderDisclosureFacts | None:
+    if is_lane_b_insider_ownership_event(event):
+        return facts_from_lane_b_payload(event)
     payload = event.payload
     section = payload.get(PAYLOAD_SECTION)
     if isinstance(section, Mapping):
@@ -47,6 +71,7 @@ def filing_payload_with_sec_insider_section(
     sec_insider_row: Mapping[str, Any],
     lane_payload_kind: str = LANE_PAYLOAD_KIND,
 ) -> dict[str, Any]:
+    """Legacy compat helper — not Lane B production EventV1."""
     body = dict(filing_payload)
     body["lane_payload_kind"] = lane_payload_kind
     body[PAYLOAD_SECTION] = dict(sec_insider_row)
@@ -57,4 +82,6 @@ __all__ = [
     "accepts_sec_insider_event",
     "extract_sec_insider_facts",
     "filing_payload_with_sec_insider_section",
+    "is_lane_b_insider_ownership_event",
+    "is_legacy_sec_insider_compat_event",
 ]

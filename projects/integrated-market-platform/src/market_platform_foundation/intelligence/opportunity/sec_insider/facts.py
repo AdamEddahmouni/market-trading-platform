@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any, Mapping
 
+from ...contracts import EventV1
 from .constants import STRATEGY_FAMILY
 
 
@@ -29,6 +30,58 @@ class SecInsiderDisclosureFacts:
     is_derivative: bool
     primary_source_url: str
     strategy_family: str = STRATEGY_FAMILY
+    event_shape: str = "unknown"
+
+
+def facts_from_lane_b_payload(event: EventV1) -> SecInsiderDisclosureFacts | None:
+    """Extract facts from Lane B ``normalize_sec_insider_row`` EventV1 payload."""
+    payload = event.payload
+    accession = str(payload.get("accession_number") or "")
+    if not accession:
+        return None
+    shares = _coerce_float(payload.get("shares"))
+    price = _coerce_float(payload.get("price_per_share"))
+    notional = shares * price if shares is not None and price is not None else None
+    transacted = payload.get("transacted_at")
+    filed = payload.get("filed_at")
+    code = payload.get("transaction_code")
+    transaction_code = str(code) if code not in (None, "") else None
+    ad = payload.get("acquired_disposed")
+    acquired_disposed = str(ad) if ad not in (None, "") else None
+    cluster_raw = payload.get("insider_count_in_cluster") or payload.get("cluster_insider_count") or 1
+    try:
+        cluster_count = max(1, int(cluster_raw))
+    except (TypeError, ValueError):
+        cluster_count = 1
+    role_raw = payload.get("reporting_owner_role_flags")
+    if isinstance(role_raw, (list, tuple)):
+        role_flags = tuple(str(item) for item in role_raw if str(item).strip())
+    else:
+        role_flags = ()
+    row_id = event.source.source_record_id or str(payload.get("source_record_id") or "")
+    return SecInsiderDisclosureFacts(
+        accession_number=accession,
+        form_type=str(payload.get("form_type") or ""),
+        instrument_id=event.instrument_id,
+        row_id=row_id or None,
+        transaction_code=transaction_code,
+        acquired_disposed=acquired_disposed,
+        shares=shares,
+        price_per_share=price,
+        notional_usd=notional,
+        shares_owned_after=_coerce_float(payload.get("shares_owned_after")),
+        transacted_date=str(transacted) if transacted not in (None, "") else None,
+        filing_date=str(filed) if filed not in (None, "") else None,
+        filing_lag_days=_filing_lag_days(
+            str(transacted) if transacted not in (None, "") else None,
+            str(filed) if filed not in (None, "") else None,
+        ),
+        role_flags=role_flags,
+        insider_count_in_cluster=cluster_count,
+        is_derivative=bool(payload.get("is_derivative")),
+        primary_source_url=str(payload.get("primary_source_url") or event.source.raw_reference or ""),
+        event_shape="lane_b_insider_ownership_row",
+    )
 
 
 def _parse_iso_date(value: object) -> date | None:
@@ -111,7 +164,8 @@ def facts_from_market_trackers_row(row: Mapping[str, Any]) -> SecInsiderDisclosu
         insider_count_in_cluster=cluster_count,
         is_derivative=bool(row.get("isDerivative")),
         primary_source_url=str(provenance.get("sourceUrl") or provenance.get("source_url") or ""),
+        event_shape="legacy_market_trackers_row",
     )
 
 
-__all__ = ["SecInsiderDisclosureFacts", "facts_from_market_trackers_row"]
+__all__ = ["SecInsiderDisclosureFacts", "facts_from_lane_b_payload", "facts_from_market_trackers_row"]
