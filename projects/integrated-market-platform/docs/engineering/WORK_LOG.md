@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — CI skips unchanged expensive slices (rebased on main)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ci`, `developer-tooling` |
+| **Summary** | Rebased PR #121 onto `origin/main` (includes #130). Path-classified GitHub CI so PRs skip UI `npm ci`/vitest/build, docs-link, and the admitted short-squeeze replay-fixture clone when those trees are unchanged; donor-bridge paths force the fixture clone so `SkipTest` cannot hide required failures. Jobs still report success (required 9/9 preserved). FAST is shallow and never clones the fixture. Push-to-`main` and `workflow_dispatch` pass `--always-run`. `python tools/imp.py ci jobs` is the local classifier. No `POST_BUILD35` closure artifact rewrite. |
+| **Key files** | `tools/ci_job_selector.py`, `tests/validation/test_ci_job_selector.py`, `tools/imp.py`, `tools/validation_manifest.json`, `.github/workflows/{imp-validate,imp-python,monorepo-guardrails}.yml`, `.github/actions/install-actionlint/action.yml`, `docs/engineering/{VALIDATION,DEVELOPER_RUNBOOK,DEVELOPER_OPERATING_SYSTEM,WORK_LOG}.md`, `AGENTS.md` |
+| **Tests** | `PYTHONPATH=src .venv/Scripts/python.exe -m unittest tests.validation.test_ci_job_selector tests.validation.test_imp_cli` → **25 passed** |
+| **Related** | [VALIDATION.md](VALIDATION.md); PR #121 |
+| **Notes** | Isolated `reconcile/ci-skip-slices-20260914` worktree. No hop/OpenD/G7/Path A/FTEP/persistence/V1-002/execution-gate changes. Live off. |
+
 ## 2026-09-14 — Classify capture ledger immutable persist conflicts
 
 | Field | Value |

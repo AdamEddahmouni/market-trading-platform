@@ -1,0 +1,38 @@
+name: Install actionlint
+description: Install a pinned actionlint binary from GitHub Releases and cache it.
+
+inputs:
+  version:
+    description: actionlint version without a leading v
+    required: false
+    default: "1.7.12"
+
+outputs:
+  executable:
+    description: Absolute path to the actionlint binary
+    value: ${{ steps.install.outputs.executable }}
+
+runs:
+  using: composite
+  steps:
+    - name: Cache actionlint
+      uses: actions/cache@v4
+      with:
+        path: ${{ github.workspace }}/.local/actionlint
+        key: actionlint-${{ runner.os }}-${{ inputs.version }}
+    - name: Install actionlint
+      id: install
+      shell: bash
+      env:
+        ACTIONLINT_VERSION: ${{ inputs.version }}
+      run: |
+        dest="${GITHUB_WORKSPACE}/.local/actionlint"
+        mkdir -p "$dest"
+        if [[ ! -x "$dest/actionlint" ]]; then
+          curl -fsSL \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" \
+            | tar -xz -C "$dest" actionlint
+          chmod +x "$dest/actionlint"
+        fi
+        echo "executable=$dest/actionlint" >> "$GITHUB_OUTPUT"
+        "$dest/actionlint" -version
