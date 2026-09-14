@@ -71,8 +71,14 @@ $env:PYTHONPATH='src'
 
 `.github/workflows/imp-validate.yml`: cancellable parallel FAST, merge-base
 CHANGED, docs-link, and UI typecheck/test/build jobs on PR/push to `main`.
-FULL remains the final local closure gate through `python tools/imp.py closure`
-unless a release workflow explicitly promotes it.
+PRs skip expensive UI (`npm ci` / vitest / build) and docs-link steps when those
+trees did not change; the jobs still report success so required checks stay 9/9.
+FAST uses a shallow checkout and never clones the admitted short-squeeze replay
+fixture. CHANGED clones that fixture only when formulas/squeeze suites (or
+`imp-python.yml`) are in the merge-base diff. Push-to-main and
+`workflow_dispatch` still run every slice. Classify locally with
+`python tools/imp.py ci jobs`. FULL remains the final local closure gate through
+`python tools/imp.py closure` unless a release workflow explicitly promotes it.
 
 ## Dependency audit
 

@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — CI skips unchanged expensive slices
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ci`, `developer-tooling` |
+| **Summary** | Path-classified GitHub CI so PRs skip UI `npm ci`/vitest/build, docs-link, and the admitted short-squeeze replay-fixture clone when those trees are unchanged. Jobs still report success (required 9/9 preserved). FAST is shallow and never clones the fixture. `python tools/imp.py ci jobs` is the local classifier. Production runtime unchanged. |
+| **Key files** | `tools/ci_job_selector.py`, `tests/validation/test_ci_job_selector.py`, `tools/imp.py`, `tools/validation_manifest.json`, `artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json`, `.github/workflows/{imp-validate,imp-python,monorepo-guardrails}.yml`, `.github/actions/install-actionlint/action.yml`, `docs/engineering/{VALIDATION,DEVELOPER_RUNBOOK,DEVELOPER_OPERATING_SYSTEM,WORK_LOG}.md`, `AGENTS.md` |
+| **Tests** | `PYTHONPATH=src:. python3 -m unittest tests.validation.test_ci_job_selector tests.validation.test_imp_cli tests.validation.test_repository_closure` **19 passed** (plus the same files in the validation worker). Validation suite worker **152/152 passed**. `python3 tools/validate.py fast` **23 passed**. `python3 tools/validate.py changed --paths-file` **1373 passed / 3 skipped / 0 fail / 0 err** (`core_checkpoint_required=true` from `tools/validation_manifest.json`). `python3 tools/check_docs_links.py` **OK (189 files)**. `git diff --check` clean after YAML whitespace strip. GitHub IMP Validation 9/9 including `validate-ui` pending on this PR (workflow change forces UI; FAST skips replay fixture). |
+| **Related** | [VALIDATION.md](VALIDATION.md); P6 CI audit leftover (duplicate actionlint download, UI-on-docs PRs) |
+| **Notes** | Isolated `cursor/ci-tooling-d1ba`. No hop/OpenD/G7/Path A/FTEP/persistence/V1-002/execution-gate changes. Live off. Do not merge from this lane. |
+
 ## 2026-09-14 — Track H leftover: fail-close remaining backend error_category gaps
 
 | Field | Value |

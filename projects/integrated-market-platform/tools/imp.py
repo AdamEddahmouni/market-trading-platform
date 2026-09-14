@@ -387,6 +387,46 @@ def _load_environment_module():
     return environment_module
 
 
+def _load_ci_job_selector():
+    try:
+        from tools import ci_job_selector as selector_module
+    except ModuleNotFoundError:  # pragma: no cover - direct script execution.
+        import ci_job_selector as selector_module  # type: ignore[no-redef]
+    return selector_module
+
+
+def _ci_jobs_command(root: Path, args: argparse.Namespace) -> int:
+    selector = _load_ci_job_selector()
+    paths_readable = True
+    try:
+        explicit = selector.load_paths(getattr(args, "paths", ()), paths_file=args.paths_file)
+    except OSError as exc:
+        print(f"ci jobs: failed to read paths: {exc}", file=sys.stderr)
+        explicit = ()
+        paths_readable = False
+    if explicit:
+        paths = explicit
+    elif not paths_readable:
+        paths = ()
+    elif args.always_run:
+        paths = ()
+    else:
+        paths = tuple(
+            path
+            for path in (selector.normalize_changed_path(item) for item in _git_changed_files(root))
+            if path
+        )
+    selection = selector.select_ci_jobs(
+        paths,
+        always_run=args.always_run,
+        paths_readable=paths_readable,
+    )
+    if args.json_path:
+        _write_json(args.json_path, selection)
+    print(json.dumps(selection, indent=2, sort_keys=True))
+    return 0
+
+
 def _load_opend_hop_interpreter():
     root = str(REPOSITORY_ROOT)
     if root not in sys.path:
@@ -522,6 +562,17 @@ def build_parser() -> argparse.ArgumentParser:
         "install-opend",
         help="install optional vendor OpenD SDK (moomoo-api) into the IMP interpreter",
     )
+
+    ci = groups.add_parser("ci", help="classify expensive CI slices without running product code")
+    ci_actions = ci.add_subparsers(dest="action", required=True)
+    ci_jobs = ci_actions.add_parser(
+        "jobs",
+        help="report which expensive GitHub CI slices current changes need",
+    )
+    ci_jobs.add_argument("paths", nargs="*", help="optional explicit changed paths")
+    ci_jobs.add_argument("--paths-file", type=Path)
+    ci_jobs.add_argument("--always-run", action="store_true")
+    ci_jobs.add_argument("--json", dest="json_path", type=Path)
 
     formatting = groups.add_parser("format", help="check changed-file whitespace")
     formatting.add_argument("--json", dest="json_path", type=Path)
@@ -881,6 +932,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return 1
         return 0
+
+    if args.group == "ci":
+        return _ci_jobs_command(root, args)
 
     if args.group == "format":
         result = _run(root, label="format", command=["git", "diff", "--check"])

@@ -154,7 +154,7 @@ npm run build    # includes gzip bundle budget
 
 **Docs-only PRs:** `python3 tools/check_docs_links.py`
 
-**CI (monorepo):** `.github/workflows/imp-validate.yml` — nine jobs on `main` / IMP PRs: `validate-workflows`, `validate-python` (fast), `validate-python-changed`, `validate-docs`, `validate-ui`, plus reusable workflow slices (9/9 green required before merge).
+**CI (monorepo):** `.github/workflows/imp-validate.yml` — nine jobs on `main` / IMP PRs: `validate-workflows`, `validate-python` (fast), `validate-python-changed`, `validate-docs`, `validate-ui`, plus reusable workflow slices (9/9 green required before merge). Jobs still report; expensive UI/docs/replay-fixture steps skip on PRs when those trees are unchanged. Classify slices with `python3 tools/imp.py ci jobs`.
 
 Lane G cloud verification (2026-09-14 @ `5e0ec717`): `tools/validate.py fast` + `domain core` (**4326** passed / 48 skipped) + `full` (**5202** passed / 48 skipped) via `.venv/bin/python3`; UI **468** vitest + typecheck + build; `check_docs_links.py` OK. Store receipt: Project store `internal/lane-g-runbook.md`.
 
