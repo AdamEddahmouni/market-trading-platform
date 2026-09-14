@@ -37,6 +37,7 @@ When documents disagree, resolve in this order (highest first):
 | Current program status | [PROGRAM_STATUS.md](platform/PROGRAM_STATUS.md) |
 | FTEP / Paper-validation doctrine | [IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md](architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md) |
 | Developer operating system | [DEVELOPER_OPERATING_SYSTEM.md](engineering/DEVELOPER_OPERATING_SYSTEM.md) |
+| Developer runbook (current commands) | [DEVELOPER_RUNBOOK.md](engineering/DEVELOPER_RUNBOOK.md) |
 | Project status snapshot (2026-09-11 @ `a4858103`, **not** current campaign state) | [PROJECT_STATUS.md](PROJECT_STATUS.md) |
 | Pre-implementation planning closure | [PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md](platform/PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md) |
 | FTEP activation gates | [FTEP_ACTIVATION_GATES.md](engineering/FTEP_ACTIVATION_GATES.md) |
