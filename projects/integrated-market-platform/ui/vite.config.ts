@@ -14,6 +14,7 @@ export default defineConfig({
         manualChunks(id) {
           if (id.includes("/node_modules/victory-vendor/")) return "chart-primitives";
           if (id.includes("/node_modules/recharts/")) return "recharts";
+          if (id.includes("/node_modules/@luxalgo/vela")) return "vela";
         },
       },
     },

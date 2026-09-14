@@ -20,7 +20,6 @@ import { ModeDiscoverRoute } from "./components/ModeDiscoverRoute";
 import { ModeExploreRoute } from "./components/ModeExploreRoute";
 import { ModeNowRoute } from "./components/ModeNowRoute";
 import { ModePortfolioRoute } from "./components/ModePortfolioRoute";
-import { ModeResearchRoute } from "./components/ModeResearchRoute";
 import type { LoadState, ScrubState } from "./components/demo-now/DemoNowPage";
 import { AuthProvider, useOptionalAuth } from "./auth/AuthProvider";
 import { OperatorLoginGate } from "./auth/OperatorLoginGate";
@@ -145,7 +144,11 @@ const WorkspaceRoute = lazy(() =>
 const WorkspaceIndex = lazy(() =>
   import("./components/WorkspaceIndex").then((module) => ({ default: module.WorkspaceIndex })),
 );
-
+const ModeResearchRoute = lazy(() =>
+  import("./components/ModeResearchRoute").then((module) => ({
+    default: module.ModeResearchRoute,
+  })),
+);
 const queryClient = new QueryClient();
 
 function StartupRecoveryBanner() {
@@ -521,7 +524,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
                 />
               }
             />
-            <Route path="/research" element={<ModeResearchRoute mode={mode} />} />
+            <Route path="/research/*" element={<ModeResearchRoute mode={mode} />} />
             <Route
               path="/portfolio"
               element={
