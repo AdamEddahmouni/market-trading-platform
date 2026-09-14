@@ -12,6 +12,7 @@ from .consumers import (
 from .errors import IngressDispatchError
 from .journal import IngressDispatchJournal
 from .normalization_bridge import dispatch_normalization_result
+from .production_wire import build_production_observation_ingress_router
 from .router import ObservationIngressRouter
 from .types import (
     IngressConsumerKind,
@@ -37,6 +38,7 @@ __all__ = [
     "IngressRouterPolicyV1",
     "ObservationIngressRouter",
     "audit_sink_consumer",
+    "build_production_observation_ingress_router",
     "detector_stub_consumer",
     "dispatch_normalization_result",
     "enrichment_trigger_consumer",
