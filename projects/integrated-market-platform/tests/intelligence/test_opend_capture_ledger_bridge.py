@@ -200,6 +200,46 @@ class OpendCaptureLedgerBridgeTests(unittest.TestCase):
             self.assertIn(status, {SettlementStatus.NOT_DUE, SettlementStatus.DUE})
             self.assertEqual(repo.get_outcomes_by_forecast(forecast.forecast_id), ())
 
+    def test_same_sequence_different_payload_refused_as_persist_conflict(self) -> None:
+        """Cross-file sequence reuse must not overwrite an existing event (fail closed)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            path_a = base / "capture_a.jsonl"
+            path_b = base / "capture_b.jsonl"
+            _write_jsonl(path_a, [_quote_line(sequence=0)])
+            conflicting = _quote_line(sequence=0)
+            conflicting = {
+                **conflicting,
+                "raw_payload": {
+                    "bid_price": 191.0,
+                    "ask_price": 191.2,
+                    "bid_vol": 100,
+                    "ask_vol": 200,
+                    "code": "US.NVDA",
+                },
+            }
+            _write_jsonl(path_b, [conflicting])
+            repo = InMemoryIntelligenceRepository()
+            first = materialize_opend_capture_jsonl(
+                path_a,
+                repo,
+                as_of_ns=AS_OF,
+                session_start_ns=SESSION_START,
+            )
+            second = materialize_opend_capture_jsonl(
+                path_b,
+                repo,
+                as_of_ns=AS_OF,
+                session_start_ns=SESSION_START,
+            )
+            self.assertEqual(first.events_persisted, 1)
+            self.assertEqual(second.events_persisted, 0)
+            self.assertIn("EVENT_PERSIST_CONFLICT", second.refusal_reasons)
+            self.assertEqual(second.refusal_reasons["EVENT_PERSIST_CONFLICT"], 1)
+            stored = repo.get_event(first.candidates[0].event_id)
+            self.assertIsNotNone(stored)
+            self.assertEqual(stored.payload.get("bid"), 190.0)
+
     def test_candidate_id_is_deterministic(self) -> None:
         candidate_id = derive_capture_ledger_candidate_id(
             capture_path="/tmp/capture.jsonl",
