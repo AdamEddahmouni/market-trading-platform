@@ -37,6 +37,20 @@ from .pit_export import build_research_export_manifest, research_export_fingerpr
 EXPORT_SCHEMA_VERSION = "1.0.0"
 RESEARCH_EXPORT_IMPLEMENTATION = "research_export_v1/1.0.0"
 RESEARCH_EXPORT_EXPERIMENT_ID = "RESEARCH-EXPORT-V1"
+EXPORT_OPERATOR_PIT_STATUS_PENDING = "PIT-PENDING"
+EXPORT_EVIDENCE_CLASS_NON_EMPIRICAL_FIXTURE = "NON_EMPIRICAL_FIXTURE"
+MATLAB_HANDOFF_CONTRACT = "research_export_v1_matlab_handoff/1.0.0"
+
+
+def default_export_operator_metadata() -> dict[str, Any]:
+    """Operator-facing PIT classification for fixture-built exports (not Wave 1 OOS authorization)."""
+    return {
+        "pit_status": EXPORT_OPERATOR_PIT_STATUS_PENDING,
+        "evidence_class": EXPORT_EVIDENCE_CLASS_NON_EMPIRICAL_FIXTURE,
+        "pit_classification_note": (
+            "Fixture-backed Research Export v1 build; pit_audit PASS does not authorize Wave 1 OOS."
+        ),
+    }
 
 
 def producing_code_sha256() -> str:
@@ -273,6 +287,7 @@ def build_research_export_v1(
             "source_field": "source_time_ns",
         },
         "validation_dataset_manifest": validation_dataset_manifest_v1_to_dict(validation_manifest),
+        "metadata": default_export_operator_metadata(),
     }
     if repository_head_sha:
         manifest_body["repository_head_sha"] = repository_head_sha.strip().lower()
@@ -298,6 +313,11 @@ def write_research_export_v1_package(output_dir: Path, package: ResearchExportV1
         write_canonical_json(table_path, rows)
     parity = build_matlab_parity_reference(package)
     write_canonical_json(output_dir / "matlab_parity_reference.json", parity)
+    validation_payload = package.manifest.get("validation_dataset_manifest")
+    if isinstance(validation_payload, dict):
+        write_canonical_json(output_dir / "validation_dataset_manifest.json", validation_payload)
+    handoff = build_matlab_handoff_manifest(package)
+    write_canonical_json(output_dir / "matlab_handoff_manifest.json", handoff)
     return manifest_path
 
 
@@ -308,7 +328,12 @@ def load_research_export_v1_package(package_dir: Path) -> ResearchExportV1Packag
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     tables: dict[str, list[dict[str, Any]]] = {}
     for path in sorted(package_dir.glob("*.json")):
-        if path.name in {"research_export_manifest.json", "matlab_parity_reference.json"}:
+        if path.name in {
+            "research_export_manifest.json",
+            "matlab_parity_reference.json",
+            "matlab_handoff_manifest.json",
+            "validation_dataset_manifest.json",
+        }:
             continue
         tables[path.stem] = json.loads(path.read_text(encoding="utf-8"))
     package = ResearchExportV1Package(manifest=manifest, tables=tables)
@@ -345,6 +370,29 @@ def verify_research_export_v1_package(package: ResearchExportV1Package) -> None:
 
         wrapped = validation_dataset_manifest_v1_from_dict(validation_payload)
         require_clean_validation_dataset_manifest(wrapped)
+
+
+def build_matlab_handoff_manifest(package: ResearchExportV1Package) -> dict[str, Any]:
+    """Entry-point manifest for MATLAB jsondecode loaders (tables remain per-table JSON files)."""
+    validation_payload = package.manifest.get("validation_dataset_manifest")
+    return {
+        "export_id": package.manifest.get("export_id"),
+        "export_profile": package.manifest.get("export_profile"),
+        "manifest_file": "research_export_manifest.json",
+        "matlab_handoff_contract": MATLAB_HANDOFF_CONTRACT,
+        "metadata": package.manifest.get("metadata"),
+        "parity_reference_file": "matlab_parity_reference.json",
+        "table_files": {name: f"{name}.json" for name in sorted(package.tables.keys())},
+        "validation_dataset_manifest": validation_payload,
+        "validation_dataset_manifest_file": "validation_dataset_manifest.json",
+    }
+
+
+def load_matlab_handoff_manifest(package_dir: Path) -> dict[str, Any]:
+    path = package_dir / "matlab_handoff_manifest.json"
+    if not path.is_file():
+        raise ValueError("MATLAB_HANDOFF_MANIFEST_MISSING")
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def build_matlab_parity_reference(package: ResearchExportV1Package) -> dict[str, Any]:
@@ -392,15 +440,21 @@ def matlab_parity_check(package: ResearchExportV1Package, reference: dict[str, A
 
 
 __all__ = [
+    "EXPORT_EVIDENCE_CLASS_NON_EMPIRICAL_FIXTURE",
+    "EXPORT_OPERATOR_PIT_STATUS_PENDING",
     "EXPORT_SCHEMA_VERSION",
+    "MATLAB_HANDOFF_CONTRACT",
     "PROFILE_A",
     "PROFILE_C",
     "PROFILE_EVENT_MACRO",
     "PROFILE_MARKET_TECHNICAL",
     "ResearchExportV1Package",
+    "build_matlab_handoff_manifest",
     "build_matlab_parity_reference",
     "build_research_export_v1",
+    "default_export_operator_metadata",
     "derive_export_id",
+    "load_matlab_handoff_manifest",
     "load_research_export_v1_package",
     "manifest_hash",
     "matlab_parity_check",

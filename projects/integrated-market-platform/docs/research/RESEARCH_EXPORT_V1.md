@@ -24,8 +24,12 @@ interface; export consumes canonical identities, does not replace persistence).
 
 Both profiles emit separated `feature_snapshots` and `realized_outcomes` tables,
 audit exclusions for unreleased macro events and terminal bars, deterministic
-`export_id` / `manifest_hash`, `producing_code_sha256`, and embedded
-`validation_dataset_manifest` when PIT audit passes.
+`export_id` / `manifest_hash`, `producing_code_sha256`, embedded
+`validation_dataset_manifest` when PIT audit passes, and operator metadata
+`metadata.pit_status=PIT-PENDING` with `evidence_class=NON_EMPIRICAL_FIXTURE`.
+Fixture `pit_audit.status=PASS` does **not** set `PIT-PASS`; Wave 1 OOS stays
+blocked until an operator-classified export marks `metadata.pit_status=PIT-PASS`
+without the non-empirical fixture class.
 
 ## Build (offline)
 
@@ -51,12 +55,19 @@ package = load_research_export_v1_package(Path("/tmp/research-export-a"))
 assert package.manifest["pit_audit"]["status"] == "PASS"
 ```
 
-## MATLAB parity
+## MATLAB parity and handoff
 
-Each written package includes `matlab_parity_reference.json` with declared
-reference statistics (`bar_close_sum`, row counts, macro actual sums). MATLAB
-loaders should recompute the same aggregates from the table JSON files and match
-this sidecar; Python tests enforce parity via `matlab_parity_check`.
+Each written package includes:
+
+- Per-table `*.json` files (MATLAB `jsondecode`)
+- `validation_dataset_manifest.json` — copy of embedded `ValidationDatasetManifestV1`
+- `matlab_handoff_manifest.json` — entry contract (`research_export_v1_matlab_handoff/1.0.0`)
+  listing table files, operator metadata, and validation manifest
+- `matlab_parity_reference.json` — reference statistics (`bar_close_sum`, row counts)
+
+MATLAB loaders should start from `matlab_handoff_manifest.json`, load tables via
+`jsondecode`, and recompute parity statistics to match `matlab_parity_reference.json`.
+Python: `load_matlab_handoff_manifest`, `load_research_export_v1_package`, `matlab_parity_check`.
 
 ## Validation gates
 

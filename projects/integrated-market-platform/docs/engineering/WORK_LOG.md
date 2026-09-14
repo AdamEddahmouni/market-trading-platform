@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Research Export v1 honest PIT-PENDING metadata
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `research`, `wave1` |
+| **Summary** | Fixture-built Research Export v1 packages now emit explicit operator metadata (`pit_status=PIT-PENDING`, `evidence_class=NON_EMPIRICAL_FIXTURE`) so Wave 1 assesses pending classification instead of accidental `PIT-UNKNOWN`, while OOS remains blocked. Written packages add `matlab_handoff_manifest.json` and standalone `validation_dataset_manifest.json` for MATLAB `jsondecode` loaders. |
+| **Key files** | `src/market_platform_foundation/research/export_v1.py`, `tests/research/test_research_export_v1.py`, `docs/research/RESEARCH_EXPORT_V1.md` |
+| **Tests** | `python3 -m unittest tests.research.test_research_export_v1 tests.research.test_wave1_experiment_harness` → 13/13 OK |
+| **Related** | [RESEARCH_EXPORT_V1.md](../research/RESEARCH_EXPORT_V1.md), Wave 1 `export_gate.py` |
+| **Notes** | Does not auto-derive `PIT-PASS` from `pit_audit`; operator must classify empirical exports separately. |
+
 ## 2026-09-14 — PROGRAM_STATUS Canonical SHA pin after merged #95 (Item 18)
 
 | Field | Value |
