@@ -34,6 +34,7 @@ REASON_PROSPECTIVE_RETROSPECTIVE_SIGNAL = "PROSPECTIVE_REFUSES_RETROSPECTIVE_SIG
 REASON_PROSPECTIVE_WRONG_SOURCE = "PROSPECTIVE_REQUIRES_MOOMOO_OPEND"
 REASON_PROSPECTIVE_RTH_REQUIRED = READINESS_RTH_REQUIRED
 REASON_NO_POST_SIGNAL_BAR = "PROSPECTIVE_NO_POST_SIGNAL_BAR"
+REASON_POLL_REQUIRED = "POLL_REQUIRED"
 REASON_PROVIDER_UNAVAILABLE = "PROVIDER_UNAVAILABLE"
 
 DEFAULT_RECEIPT_DIR = Path("artifacts/ftep-v1-002/item9-prospective-proof-receipts")
@@ -146,6 +147,36 @@ def item9_prospective_readiness(*, now_ns: int) -> dict[str, Any]:
         "empirical_active": False,
         "item9_status": "PARTIAL_NOT_CALIBRATED",
         "receipt_contract_version": RECEIPT_CONTRACT_VERSION,
+    }
+
+
+def prospective_run_without_poll_outcome(
+    *,
+    now_ns: int,
+    signal_time_ns: int,
+    signal_established_at_ns: int,
+) -> dict[str, Any]:
+    """Operator hint when Mode B is started without ``--poll`` (no OpenD polling)."""
+
+    readiness = item9_prospective_readiness(now_ns=now_ns)
+    if readiness["rth_active"]:
+        return {
+            "ok": False,
+            "reason_code": REASON_POLL_REQUIRED,
+            "readiness": readiness,
+            "signal_time_ns": signal_time_ns,
+            "signal_established_at_ns": signal_established_at_ns,
+            "receipt": None,
+            "message": "RTH active: re-run with --poll to wait for the first post-signal bar.",
+        }
+    return {
+        "ok": False,
+        "reason_code": READINESS_RTH_REQUIRED,
+        "readiness": readiness,
+        "signal_time_ns": signal_time_ns,
+        "signal_established_at_ns": signal_established_at_ns,
+        "receipt": None,
+        "message": "US equity RTH is closed; use --poll during RTH to wait for the first post-signal bar.",
     }
 
 
@@ -323,6 +354,7 @@ def poll_prospective_proof(
     signal_established_at_ns: int,
     max_wait_s: float,
     poll_interval_s: float,
+    experiment_id: str | None = None,
     sleep_fn: Callable[[float], None] = time.sleep,
     now_fn: Callable[[], int] | None = None,
     loader: Callable[..., BarLoadResult] | None = None,
@@ -350,6 +382,7 @@ def poll_prospective_proof(
             signal_established_at_ns=signal_established_at_ns,
             observation_time_ns=observation_ns,
             kline_rows=None,
+            experiment_id=experiment_id,
         )
         if outcome.get("ok"):
             outcome["readiness"] = item9_prospective_readiness(now_ns=observation_ns)
@@ -414,8 +447,10 @@ __all__ = [
     "build_evidence_receipt",
     "hash_raw_kline_rows",
     "imp_package_root",
+    "REASON_POLL_REQUIRED",
     "item9_prospective_readiness",
     "load_latest_completed_bars_for_display",
+    "prospective_run_without_poll_outcome",
     "persist_receipt",
     "poll_prospective_proof",
     "resolve_runtime_git_sha",

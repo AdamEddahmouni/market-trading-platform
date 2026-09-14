@@ -18,17 +18,18 @@ from market_platform_foundation.paper.calibration.bar_ohlcv_experiment import ( 
 )
 from market_platform_foundation.paper.calibration.bar_ohlcv_prospective_proof import (  # noqa: E402
     DEFAULT_RECEIPT_DIR,
-    PROOF_MODE_PROSPECTIVE,
     PROOF_MODE_RETROSPECTIVE,
+    REASON_POLL_REQUIRED,
+    REASON_PROSPECTIVE_EXPLICIT_SIGNAL,
     READINESS_RTH_REQUIRED,
     imp_package_root,
     item9_prospective_readiness,
     load_latest_completed_bars_for_display,
     persist_receipt,
     poll_prospective_proof,
+    prospective_run_without_poll_outcome,
     resolve_runtime_git_sha,
     run_transport_proof,
-    validate_prospective_signal_request,
 )
 
 PROOF_MODE_RETROSPECTIVE_LABEL = PROOF_MODE_RETROSPECTIVE
@@ -84,16 +85,10 @@ def _cmd_transport_proof(args: argparse.Namespace) -> int:
 
 
 def _cmd_prospective(args: argparse.Namespace) -> int:
-    gate = validate_prospective_signal_request(
-        proof_mode=PROOF_MODE_PROSPECTIVE,
-        signal_time_ns=args.signal_time_ns,
-        signal_established_at_ns=None,
-        source="moomoo-opend",
-    )
     if args.signal_time_ns is not None:
         print(
             json.dumps(
-                {"ok": False, "reason_code": gate.reason_code},
+                {"ok": False, "reason_code": REASON_PROSPECTIVE_EXPLICIT_SIGNAL},
                 indent=2,
                 sort_keys=True,
             ),
@@ -114,19 +109,14 @@ def _cmd_prospective(args: argparse.Namespace) -> int:
             signal_established_at_ns=signal_established_at_ns,
             max_wait_s=float(args.timeout_s),
             poll_interval_s=float(args.poll_interval_s),
+            experiment_id=args.experiment_id,
         )
     else:
-        now_ns = monotonic_wall_ns()
-        readiness = item9_prospective_readiness(now_ns=now_ns)
-        outcome = {
-            "ok": False,
-            "reason_code": READINESS_RTH_REQUIRED,
-            "readiness": readiness,
-            "signal_time_ns": signal_time_ns,
-            "signal_established_at_ns": signal_established_at_ns,
-            "receipt": None,
-            "message": "Use --poll during US equity RTH to wait for the first post-signal bar.",
-        }
+        outcome = prospective_run_without_poll_outcome(
+            now_ns=monotonic_wall_ns(),
+            signal_time_ns=signal_time_ns,
+            signal_established_at_ns=signal_established_at_ns,
+        )
 
     if outcome.get("receipt"):
         path = persist_receipt(outcome["receipt"], out_dir=receipt_dir)
@@ -136,6 +126,8 @@ def _cmd_prospective(args: argparse.Namespace) -> int:
         return 0
     if outcome.get("reason_code") == READINESS_RTH_REQUIRED:
         return 3
+    if outcome.get("reason_code") == REASON_POLL_REQUIRED:
+        return 4
     return 1
 
 

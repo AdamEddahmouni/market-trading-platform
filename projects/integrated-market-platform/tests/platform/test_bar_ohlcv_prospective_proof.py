@@ -22,6 +22,7 @@ from market_platform_foundation.paper.calibration.bar_ohlcv_prospective_proof im
     READINESS_RTH_REQUIRED,
     READINESS_TOOL_READY,
     REASON_NO_POST_SIGNAL_BAR,
+    REASON_POLL_REQUIRED,
     REASON_PROSPECTIVE_EXPLICIT_SIGNAL,
     REASON_PROSPECTIVE_RETROSPECTIVE_SIGNAL,
     REASON_PROSPECTIVE_WRONG_SOURCE,
@@ -30,6 +31,7 @@ from market_platform_foundation.paper.calibration.bar_ohlcv_prospective_proof im
     item9_prospective_readiness,
     load_latest_completed_bars_for_display,
     poll_prospective_proof,
+    prospective_run_without_poll_outcome,
     run_prospective_proof,
     run_transport_proof,
     validate_prospective_signal_request,
@@ -63,6 +65,31 @@ class BarOhlcvProspectiveProofTests(unittest.TestCase):
         self.assertEqual(closed["readiness"], READINESS_TOOL_READY)
         self.assertEqual(closed["empirical_status"], READINESS_RTH_REQUIRED)
         self.assertFalse(closed["calibrated"])
+
+    def test_without_poll_off_hours_reports_rth_required(self) -> None:
+        outcome = prospective_run_without_poll_outcome(
+            now_ns=1_700_000_000_000_000_000,
+            signal_time_ns=100,
+            signal_established_at_ns=100,
+        )
+        self.assertFalse(outcome["ok"])
+        self.assertEqual(outcome["reason_code"], READINESS_RTH_REQUIRED)
+        self.assertFalse(outcome["readiness"]["rth_active"])
+
+    @mock.patch(
+        "market_platform_foundation.paper.calibration.bar_ohlcv_prospective_proof.is_within_us_equity_rth",
+        return_value=True,
+    )
+    def test_without_poll_during_rth_reports_poll_required(self, _rth: mock.Mock) -> None:
+        outcome = prospective_run_without_poll_outcome(
+            now_ns=1,
+            signal_time_ns=100,
+            signal_established_at_ns=100,
+        )
+        self.assertFalse(outcome["ok"])
+        self.assertEqual(outcome["reason_code"], REASON_POLL_REQUIRED)
+        self.assertNotEqual(outcome["reason_code"], READINESS_RTH_REQUIRED)
+        self.assertTrue(outcome["readiness"]["rth_active"])
 
     def test_prospective_refuses_explicit_signal_time(self) -> None:
         gate = validate_prospective_signal_request(
@@ -155,6 +182,35 @@ class BarOhlcvProspectiveProofTests(unittest.TestCase):
         self.assertFalse(receipt["not_prospective_evidence"])
         self.assertFalse(receipt["calibrated"])
         self.assertFalse(receipt["orders_placed"])
+
+    def test_prospective_receipt_uses_operator_experiment_id(self) -> None:
+        rows = (_kline_row(time_key="2023-11-14 10:29:00"), _kline_row())
+        first = normalize_moomoo_kline_row(
+            rows[0],
+            instrument_id="AAPL",
+            fetched_at_ns=9_999_999_999_999_999_999,
+        )
+        second = normalize_moomoo_kline_row(
+            rows[1],
+            instrument_id="AAPL",
+            fetched_at_ns=9_999_999_999_999_999_999,
+        )
+        assert first is not None and second is not None
+        operator_id = "item9-rth-20260915-aapl"
+        outcome = run_prospective_proof(
+            instrument_id="AAPL",
+            collection_root=COLLECTION_ROOT,
+            env={},
+            signal_time_ns=int(first["event_time"]),
+            signal_established_at_ns=int(first["event_time"]),
+            observation_time_ns=int(second["available_time"]),
+            kline_rows=rows,
+            experiment_id=operator_id,
+        )
+        self.assertTrue(outcome["ok"])
+        receipt = outcome["receipt"]
+        assert receipt is not None
+        self.assertEqual(receipt["experiment_id"], operator_id)
 
     def test_no_post_signal_bar(self) -> None:
         row = _kline_row()

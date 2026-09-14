@@ -11,6 +11,10 @@ python tools/moomoo/opend_bar_1m_prospective_proof.py readiness
 python tools/moomoo/opend_bar_1m_prospective_proof.py display --instrument-id AAPL
 ```
 
+`display` may call loopback OpenD for recent completed 1m bars. Off-hours that
+fetch is **diagnostic / transport visibility only** — not prospective evidence
+and not RTH empirical proof.
+
 ### Mode A — transport / replay (`RETROSPECTIVE_TRANSPORT_PROOF`)
 
 Not prospective evidence. Uses operator-supplied signal and observation times.
@@ -45,7 +49,10 @@ python tools/moomoo/opend_bar_1m_prospective_proof.py prospective `
   --receipt-out artifacts/ftep-v1-002/item9-prospective-proof-receipts
 ```
 
-Off-hours without `--poll` returns `SOFTWARE_READY_RTH_REQUIRED` without polling OpenD.
+Without `--poll`: off-hours → `SOFTWARE_READY_RTH_REQUIRED` (exit 3, no OpenD
+poll). During RTH → `POLL_REQUIRED` (exit 4) — re-run with `--poll`.
+
+Optional stable receipt id: `--experiment-id <id>` (passed through to the JSON receipt).
 
 ## Evidence receipt
 
