@@ -18,6 +18,10 @@ React 18, TypeScript, Vite, React Router 6, TanStack Query 5, Zod, Lightweight C
 
 A gated **Research** item also links to `/research`. Paper mode hints: Workspace — Decision desk; Portfolio — Orders history; Lab — Model & sim labs. Operator URLs: [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md).
 
+## Keyboard (board-03 chrome)
+
+`ImpProductChrome` owns search focus (`/` and `Ctrl/Cmd+K`), the `?` shortcut dialog, skip-to-main, and mobile-nav Escape/focus trap. `App.tsx` still owns `A` (assistant) and Escape for explanation/inspector/assistant. Letter shortcuts skip typing targets (`INPUT` / `TEXTAREA` / `SELECT` / contenteditable / combobox). See [ACCESSIBILITY.md](ACCESSIBILITY.md).
+
 ## Mode route pattern
 
 ```

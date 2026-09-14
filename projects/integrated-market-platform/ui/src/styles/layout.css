@@ -415,6 +415,33 @@ body,
   color: var(--text-secondary);
 }
 
+.app-loading::before {
+  content: "";
+  display: block;
+  height: 0.5rem;
+  max-width: 16rem;
+  margin-bottom: 0.75rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-1) 45%, var(--surface-2) 100%);
+  background-size: 200% 100%;
+  animation: imp-skeleton 1.2s ease-in-out infinite;
+}
+
+@keyframes imp-skeleton {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-loading::before {
+    animation: none;
+  }
+}
+
 .explore-page .explore-table {
   width: 100%;
   border-collapse: collapse;
