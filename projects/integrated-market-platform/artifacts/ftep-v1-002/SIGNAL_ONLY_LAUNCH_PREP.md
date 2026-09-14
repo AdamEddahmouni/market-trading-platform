@@ -1,6 +1,28 @@
 # FTEP-V1-002 — governed SIGNAL_ONLY session launch prep
 
-**Status:** Owner SIGNAL_ONLY authorization recorded (`signal-only-authorization-receipt-2026-09-12.json`). **No session started** in orchestrator pass (US equity RTH closed; weekend).
+**Status:** Owner SIGNAL_ONLY authorization recorded (`signal-only-authorization-receipt-2026-09-12.json`). **Two governed sessions active** on canonical durable SQLite (**BASELINE** `fts-6DB7771FD9B3A991`, **AI_ENHANCED** `fts-D93189A042A1BEF2`); **0** empirical locks; FTEP **not** `EMPIRICAL_ACTIVE`.
+
+## Finviz prospective observation (one-command preflight)
+
+From `projects/integrated-market-platform`, point durable reads at the **primary** checkout `.local` (never copy `.private` into worktrees):
+
+```powershell
+Set-Location "C:\Users\adame\Desktop\market-trading-platform\projects\integrated-market-platform"
+$env:IMP_STATE_DIR = "C:\Users\adame\Desktop\market-trading-platform\projects\integrated-market-platform\.local"
+python tools/ftep_finviz_prospective_preflight.py FTEP-V1-002 --json
+```
+
+Off-hours expect `disposition=SOFTWARE_READY_RTH_REQUIRED` with `RTH_CLOSED` (not a preflight failure). At RTH with owner gates: set `IMP_FINVIZ_LIVE=1` and `IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS=1`, re-run preflight → `disposition=READY`, then:
+
+```powershell
+python tools/ftep_watch_catalysts.py FTEP-V1-002 --live-ingress --json
+```
+
+`python tools/imp.py ftep watch-catalysts` does **not** pass `--live-ingress`; use `tools/ftep_watch_catalysts.py` for prospective Finviz ingress.
+
+Successful live ingress evidence (no orders, no durable lock): `attention_data_kind=LIVE_PROSPECTIVE`, `watch_mode=PROSPECTIVE_FINVIZ_INGRESS`, `ingress_outcome` of `LIVE_INGRESS_SUCCESS` or `LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS`, summaries preserving `published_time` / `retrieved_time` / provider fields, `governed_session_ids` from evidence, `prospective_ingress.durable_lock=false`. Fetch/gate failures: `LIVE_INGRESS_FAILED` / `disposition=BLOCKED`.
+
+**JSONL policy:** `artifacts/ftep-v1-002/governed-session-start-evidence.jsonl` is operator empirical evidence; it may be untracked in git without being absent on disk. Lane A owns the governed track/ignore choice — do not treat missing git index as missing sessions.
 
 ## Preconditions (machine gates)
 
@@ -78,7 +100,7 @@ Abort if `us_equity_rth_open` is false, `campaign_readiness_disposition` is not 
 
 Run once per US equity session day after **09:30 America/New_York** and before first `create_session` (skip weekends and US market holidays):
 
-1. Confirm calendar: `python tools/imp.py ftep campaign-status FTEP-V1-002 --json` → `us_equity_rth_open=true`, `manifest_status=FROZEN`, `signal_only_authorized=true`, `governed_session_count=0` (until first session).
+1. Confirm calendar: `python tools/imp.py ftep campaign-status FTEP-V1-002 --json` → `us_equity_rth_open=true`, `manifest_status=FROZEN`, `signal_only_authorized=true`, `governed_session_count=2` (canonical durable state).
 2. Enable persistence: `$env:IMP_PERSIST_STATE = "1"`.
 3. Machine gates: `python tools/imp.py providers campaign-readiness FTEP-V1-002 --json` → `disposition=READY`; `python tools/imp.py ftep integrity-check FTEP-V1-002 --json` → `disposition=PASS` (includes unchanged **FTEP-V1-001** fingerprint).
 4. Dry-run session gate: `python tools/imp.py ftep session-start FTEP-V1-002 --dry-run --json` → `would_create_session=true`, empty `blockers`, non-empty `forward_test_invoke_steps`.
