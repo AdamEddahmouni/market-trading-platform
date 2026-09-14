@@ -72,7 +72,7 @@ def _cmd_transport_proof(args: argparse.Namespace) -> int:
         collection_root=collection_root,
         env=dict(os.environ),
         experiment_id=args.experiment_id,
-        runtime_git_sha=resolve_runtime_git_sha(),
+        runtime_git_sha=resolve_runtime_git_sha(start=ROOT),
     )
     payload["proof_mode_label"] = PROOF_MODE_RETROSPECTIVE_LABEL
     payload["not_prospective_evidence"] = True
@@ -100,6 +100,7 @@ def _cmd_prospective(args: argparse.Namespace) -> int:
     collection_root = args.collection_root if args.collection_root is not None else default_collection_root()
     receipt_dir = args.receipt_out if args.receipt_out is not None else imp_package_root() / DEFAULT_RECEIPT_DIR
 
+    runtime_sha = resolve_runtime_git_sha(start=ROOT)
     if args.poll:
         outcome = poll_prospective_proof(
             instrument_id=str(args.instrument_id),
@@ -110,6 +111,7 @@ def _cmd_prospective(args: argparse.Namespace) -> int:
             max_wait_s=float(args.timeout_s),
             poll_interval_s=float(args.poll_interval_s),
             experiment_id=args.experiment_id,
+            runtime_git_sha=runtime_sha,
         )
     else:
         outcome = prospective_run_without_poll_outcome(
