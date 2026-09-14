@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Track H leftover: fail-close remaining backend error_category gaps
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui_api`, `tools/platform` |
+| **Summary** | Canonical taxonomy now maps Demo/Live opportunity-mutation reason codes to `MODE_BLOCKED` (they previously collapsed to `INTERNAL_ERROR` because they are raised as `PermissionError` rather than `_send_error_json("…")` literals). Loopback control-plane HTTP errors emit additive `error_category` using the same twelve-category envelope. |
+| **Key files** | `src/market_platform_foundation/ui_api/errors.py`, `tools/platform/control_service.py`, `tests/ui1/test_error_taxonomy.py`, `tests/platform/test_operator_control_service.py`, `docs/architecture/DATA_CONTRACTS.md` |
+| **Tests** | `PYTHONPATH=src python3 -m unittest tests.ui1.test_error_taxonomy tests.platform.test_operator_control_service -v` → **13 passed** after #109 frontend lock; local UI `typecheck` + vitest **476** + `build` (~203 KiB gzip) |
+| **Related** | PR #90 error taxonomy; BL-0702 / RC-010; rebased onto `origin/main` `b842f37d` after #112 |
+| **Notes** | Did not touch `ui/`, hop CLIs, Path A, G7, OpenD, Alpaca, FTEP, persistence, or research export. Live off. Not `EMPIRICAL_ACTIVE` / not `CALIBRATED`. Kept #112, #109, #110, and #108 WORK_LOG entries. |
+
 ## 2026-09-14 — Re-attribute remaining GridIQ / DS-340W mistaken-donor governance
 
 | Field | Value |

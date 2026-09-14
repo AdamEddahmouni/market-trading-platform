@@ -4,7 +4,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.platform.control_service import ALLOWED_ACTIONS, build_control_status, normalize_action
+from tools.platform.control_service import (
+    ALLOWED_ACTIONS,
+    build_control_status,
+    control_error_payload,
+    normalize_action,
+)
 from market_platform_foundation.platform.security.route_policy import policy_for_route
 
 
@@ -41,6 +46,33 @@ class OperatorControlServiceTests(unittest.TestCase):
         self.assertIn("bootstrap.py", contents)
         self.assertIn("choice /c DC", contents)
         self.assertIn("START_PLATFORM.cmd", contents)
+
+    def test_control_http_errors_include_canonical_error_category(self) -> None:
+        payload = control_error_payload("CONTROL_ROUTE_NOT_FOUND", "Unknown control path")
+        self.assertEqual(
+            payload,
+            {
+                "error": "Unknown control path",
+                "reason_code": "CONTROL_ROUTE_NOT_FOUND",
+                "error_category": "VALIDATION_ERROR",
+            },
+        )
+        self.assertEqual(
+            control_error_payload("CONTROL_JSON_INVALID", "Invalid JSON body")["error_category"],
+            "VALIDATION_ERROR",
+        )
+        self.assertEqual(
+            control_error_payload("CONTROL_ACTION_INVALID", "Unsupported lifecycle action")[
+                "error_category"
+            ],
+            "VALIDATION_ERROR",
+        )
+        self.assertEqual(
+            control_error_payload("OPERATION_NOT_FOUND", "Operation not found")["error_category"],
+            "VALIDATION_ERROR",
+        )
+        with self.assertRaises(ValueError):
+            control_error_payload("NOT_A_CONTROL_CODE", "nope")
 
 
 if __name__ == "__main__":

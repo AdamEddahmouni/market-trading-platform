@@ -60,6 +60,12 @@ _REASON_CODE_TO_CATEGORY: dict[str, CanonicalErrorCategory] = {
     "PAPER_EXECUTION_NOT_AUTHORIZED": CanonicalErrorCategory.MODE_BLOCKED,
     "PAPER_EXECUTION_MODE_INVALID": CanonicalErrorCategory.MODE_BLOCKED,
     "LIVE_OBSERVATIONAL_DISABLED": CanonicalErrorCategory.MODE_BLOCKED,
+    "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE": CanonicalErrorCategory.MODE_BLOCKED,
+    "DEMO_MUTATIONS_PROHIBITED": CanonicalErrorCategory.MODE_BLOCKED,
+    # Operator control-plane HTTP (loopback 8767)
+    "CONTROL_ROUTE_NOT_FOUND": CanonicalErrorCategory.VALIDATION_ERROR,
+    "CONTROL_JSON_INVALID": CanonicalErrorCategory.VALIDATION_ERROR,
+    "CONTROL_ACTION_INVALID": CanonicalErrorCategory.VALIDATION_ERROR,
     # Provider connectivity
     "OPEND_UNAVAILABLE": CanonicalErrorCategory.PROVIDER_UNAVAILABLE,
     "PROVIDER_UNAVAILABLE": CanonicalErrorCategory.PROVIDER_UNAVAILABLE,
@@ -125,6 +131,9 @@ _PREFIX_CATEGORY_RULES: tuple[tuple[str, CanonicalErrorCategory], ...] = (
     ("STALE_", CanonicalErrorCategory.STALE_DATA),
     ("PROVIDER_", CanonicalErrorCategory.PROVIDER_UNAVAILABLE),
     ("OPEND_", CanonicalErrorCategory.PROVIDER_UNAVAILABLE),
+    ("LIVE_OBSERVATIONAL_", CanonicalErrorCategory.MODE_BLOCKED),
+    ("DEMO_MUTATIONS_", CanonicalErrorCategory.MODE_BLOCKED),
+    ("CONTROL_", CanonicalErrorCategory.VALIDATION_ERROR),
 )
 
 _SUFFIX_CATEGORY_RULES: tuple[tuple[str, CanonicalErrorCategory], ...] = (
