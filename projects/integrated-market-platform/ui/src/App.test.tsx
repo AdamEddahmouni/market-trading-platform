@@ -595,24 +595,23 @@ describe("App mode launcher integration", () => {
   }
 
   async function openNavLink(name: RegExp) {
-    const nav = screen.getByRole("navigation", { name: "Primary" });
-    fireEvent.click(within(nav).getByRole("link", { name }));
+    fireEvent.click(screen.getByRole("link", { name }));
   }
 
   async function openPortfolio() {
-    await openNavLink(/^PORTFOLIO —/);
+    await openNavLink(/^Portfolio —/i);
   }
 
   async function openExplore() {
-    await openNavLink(/^EXPLORE —/);
+    await openNavLink(/^Markets —/i);
   }
 
   async function openResearch() {
-    await openNavLink(/^RESEARCH —/);
+    await openNavLink(/^Research —/i);
   }
 
   async function openDiscover() {
-    await openNavLink(/^DISCOVER —/);
+    await openNavLink(/^Opportunity Radar —/i);
   }
 
   async function openSqueezeFromExplore() {
@@ -624,7 +623,7 @@ describe("App mode launcher integration", () => {
   }
 
   async function openWorkspaceOverview() {
-    await openNavLink(/^WORKSPACE —/);
+    await openNavLink(/^Orders —/i);
     expect(await screen.findByRole("heading", { name: "BIYA" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Workspace modules" })).toBeInTheDocument();
   }
@@ -637,15 +636,15 @@ describe("App mode launcher integration", () => {
   }
 
   async function openSettings() {
-    await openNavLink(/^SETTINGS$/);
+    await openNavLink(/^Settings$/i);
   }
 
   async function openDiagnostics() {
-    await openNavLink(/^DIAGNOSTICS$/);
+    await openNavLink(/^Diagnostics$/i);
   }
 
   async function openLiveCanary() {
-    await openNavLink(/^LIVE CANARY/);
+    await openNavLink(/^Live Canary/i);
   }
 
   async function openPaperCommand() {
@@ -702,7 +701,7 @@ describe("App mode launcher integration", () => {
 
     await enterMode("Demo");
     expect(await screen.findByRole("heading", { name: "See the market unfold" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "NOW" })).toHaveClass("active");
+    expect(screen.getByRole("link", { name: "Overview" })).toHaveClass("active");
   });
 
   it("confirms a scrub before changing the cursor and refreshes existing queries", async () => {
@@ -818,7 +817,7 @@ describe("App mode launcher integration", () => {
     render(<App />);
     await enterMode("Demo");
     await openDiscover();
-    expect(await screen.findByRole("heading", { name: "Discover" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Opportunity Radar" })).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
     expect(screen.getByText("AAPL")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Refresh all screens" })).not.toBeInTheDocument();
@@ -828,7 +827,7 @@ describe("App mode launcher integration", () => {
     render(<App />);
     await enterMode("Paper");
     await openDiscover();
-    expect(await screen.findByRole("heading", { name: "Discover" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Opportunity Radar" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Refresh all screens" })).toBeInTheDocument();
     expect(screen.getByText("AAPL")).toBeInTheDocument();
   });
@@ -837,7 +836,7 @@ describe("App mode launcher integration", () => {
     render(<App />);
     await enterMode("Live");
     await openDiscover();
-    expect(await screen.findByRole("heading", { name: "Discover" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Opportunity Radar" })).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/read-only/i);
     expect(screen.getByRole("link", { name: "Open live canary" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Refresh all screens" })).not.toBeInTheDocument();

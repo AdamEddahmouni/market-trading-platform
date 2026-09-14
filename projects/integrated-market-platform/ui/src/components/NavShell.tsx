@@ -5,14 +5,16 @@ type NavLinkDef = {
   to: string;
   label: string;
   gated?: boolean;
+  emphasis?: "radar";
   modeHint?: Partial<Record<Mode, string>>;
+  operatorOnly?: boolean;
 };
 
-const links: NavLinkDef[] = [
-  { to: "/", label: "NOW" },
+const primaryLinks: NavLinkDef[] = [
+  { to: "/", label: "Overview" },
   {
     to: "/explore",
-    label: "EXPLORE",
+    label: "Markets",
     modeHint: {
       DEMO: "Frozen bridges",
       PAPER: "Candidate discovery",
@@ -21,7 +23,8 @@ const links: NavLinkDef[] = [
   },
   {
     to: "/discover",
-    label: "DISCOVER",
+    label: "Opportunity Radar",
+    emphasis: "radar",
     modeHint: {
       DEMO: "Observational queue",
       PAPER: "Discovery desk",
@@ -29,17 +32,17 @@ const links: NavLinkDef[] = [
     },
   },
   {
-    to: "/workspace",
-    label: "WORKSPACE",
+    to: "/signals",
+    label: "Signals",
     modeHint: {
-      DEMO: "Read-only",
-      PAPER: "Simulation",
-      LIVE: "Observational",
+      DEMO: "Replay attention",
+      PAPER: "Attention queue",
+      LIVE: "Live attention",
     },
   },
   {
     to: "/research",
-    label: "RESEARCH",
+    label: "Research",
     gated: true,
     modeHint: {
       DEMO: "Replay-bound",
@@ -49,7 +52,7 @@ const links: NavLinkDef[] = [
   },
   {
     to: "/portfolio",
-    label: "PORTFOLIO",
+    label: "Portfolio",
     modeHint: {
       DEMO: "Read-only",
       PAPER: "Simulation",
@@ -57,19 +60,50 @@ const links: NavLinkDef[] = [
     },
   },
   {
+    to: "/workspace",
+    label: "Orders",
+    modeHint: {
+      DEMO: "Read-only",
+      PAPER: "Simulation",
+      LIVE: "Observational",
+    },
+  },
+  {
+    to: "/control",
+    label: "Risk",
+    modeHint: {
+      DEMO: "Operator controls",
+      PAPER: "Operator controls",
+      LIVE: "Operator controls",
+    },
+  },
+  {
+    to: "/lab",
+    label: "Lab",
+    modeHint: {
+      DEMO: "Workspace lanes",
+      PAPER: "Workspace lanes",
+      LIVE: "Observational lanes",
+    },
+  },
+];
+
+const operatorLinks: NavLinkDef[] = [
+  {
     to: "/live-canary",
-    label: "LIVE CANARY",
+    label: "Live Canary",
+    operatorOnly: true,
     modeHint: {
       LIVE: "Safety review",
     },
   },
-  { to: "/settings", label: "SETTINGS" },
-  { to: "/control", label: "CONTROL" },
-  { to: "/diagnostics/provider", label: "DIAGNOSTICS" },
+  { to: "/settings", label: "Settings", operatorOnly: true },
+  { to: "/diagnostics/provider", label: "Diagnostics", operatorOnly: true },
 ];
 
 type Props = {
   mode?: Mode;
+  layout?: "horizontal" | "sidebar";
 };
 
 function accessibleLabel(link: NavLinkDef, mode?: Mode): string | undefined {
@@ -77,27 +111,45 @@ function accessibleLabel(link: NavLinkDef, mode?: Mode): string | undefined {
   return `${link.label} — ${link.modeHint[mode]}`;
 }
 
-export function NavShell({ mode }: Props) {
+function NavItem({ link, mode }: { link: NavLinkDef; mode?: Mode }) {
+  const ariaLabel = accessibleLabel(link, mode);
+  const isOverview = link.to === "/" && link.label === "Overview";
   return (
-    <nav className="nav-shell" aria-label="Primary">
-      {links.map((link) => {
-        const ariaLabel = accessibleLabel(link, mode);
-        return (
-          <NavLink
-            key={link.to}
-            to={link.to}
-            className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
-            end={link.to === "/"}
-            aria-label={ariaLabel}
-          >
-            {link.label}
-            {link.gated ? <span className="gated-badge">GATED</span> : null}
-            {mode && link.modeHint?.[mode] ? (
-              <span className="nav-mode-hint">{link.modeHint[mode]}</span>
-            ) : null}
-          </NavLink>
-        );
-      })}
+    <NavLink
+      to={link.to}
+      className={({ isActive }) => {
+        const classes = ["nav-link"];
+        if (isActive) classes.push("active");
+        if (link.emphasis === "radar") classes.push("nav-link-radar");
+        if (link.operatorOnly) classes.push("nav-link-operator");
+        return classes.join(" ");
+      }}
+      end={isOverview}
+      aria-label={ariaLabel}
+    >
+      {link.label}
+      {link.gated ? <span className="gated-badge">GATED</span> : null}
+      {mode && link.modeHint?.[mode] ? (
+        <span className="nav-mode-hint">{link.modeHint[mode]}</span>
+      ) : null}
+    </NavLink>
+  );
+}
+
+export function NavShell({ mode, layout = "sidebar" }: Props) {
+  const navClass = layout === "sidebar" ? "nav-shell nav-shell-sidebar" : "nav-shell";
+  return (
+    <nav className={navClass} aria-label="Primary">
+      <div className="nav-primary-group">
+        {primaryLinks.map((link) => (
+          <NavItem key={`${link.to}-${link.label}`} link={link} mode={mode} />
+        ))}
+      </div>
+      <div className="nav-operator-group" aria-label="Operator">
+        {operatorLinks.map((link) => (
+          <NavItem key={link.to} link={link} mode={mode} />
+        ))}
+      </div>
     </nav>
   );
 }

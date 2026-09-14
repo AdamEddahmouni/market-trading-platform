@@ -1,10 +1,13 @@
 :root {
-  --surface-0: #0d0f12;
-  --surface-1: #141820;
-  --surface-2: #1a2030;
-  --surface-3: #12161e;
-  --border-subtle: #2a3142;
-  --border-focus: #5b8def;
+  --surface-0: #0c0e12;
+  --surface-1: #13161c;
+  --surface-2: #1a1f28;
+  --surface-3: #10141a;
+  --border-subtle: #2c323c;
+  --border-focus: #ff7a1a;
+  --accent-primary: #ff6a00;
+  --accent-primary-bright: #ff8a00;
+  --accent-glow: rgba(255, 106, 0, 0.22);
   --text-primary: #e8ecf4;
   --text-secondary: #9aa3b5;
   --text-muted: #6b7280;

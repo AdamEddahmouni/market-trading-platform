@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Track G: IMP board 03 product shell (UI)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/shell`, `ui/discover`, `ui/tokens` |
+| **Summary** | Applied board 03 graphite/steel + molten orange styling in the existing Vite app: left sidebar with bull mark, command search, execution-off posture, product nav labels (Overview, Markets, Opportunity Radar, …), and Opportunity Radar as the discover surface title. Demo/Paper/Live copy and API wiring unchanged. |
+| **Key files** | `ui/src/components/imp-product/*`, `ui/src/components/NavShell.tsx`, `ui/src/App.tsx`, `ui/src/styles/tokens.css`, `ui/src/styles/imp-product.css`, `ui/src/styles/mode-session.css`, discover page headers |
+| **Tests** | `ui`: `npm run typecheck`, `npm test` (463 passed), `npm run build` (bundle budget pass) |
+| **Related** | Project store `docs/ui-concepts.md`, board 03 reference; [PR #93](https://github.com/AdamEddahmouni/market-trading-platform/pull/93) |
+| **Notes** | `/signals` and `/lab` alias overview and workspace index; no backend or live-execution changes. Rebased onto `main` @ `6defaf18` after #90. |
+
 ## 2026-09-14 — install-opend BLOCKED when uv venv has no pip
 
 | Field | Value |
@@ -47,6 +59,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `python tools/imp.py validate full` (IMP Validation 9/9 including validate-ui) |
 | **Related** | AdamsGalaxyBook weekday OpenD hop dry-run (`weekday-opend-hop-dryrun.md`) |
 | **Notes** | Did not activate Live. Did not flip FTEP. Did not weaken OpenD/vendor-pin tests. |
+
 
 ## 2026-09-14 — PROGRAM_STATUS SHA pin after merged #62
 
