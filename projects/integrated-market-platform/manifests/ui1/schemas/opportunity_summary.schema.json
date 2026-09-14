@@ -55,6 +55,16 @@
     "duplicates": { "type": "array", "items": { "type": "string" } },
     "identity_kind": { "type": "string" },
     "explanation_ref": { "type": "string" },
+    "instrument_key": { "type": ["string", "null"] },
+    "created_at_ns": { "type": ["integer", "null"], "description": "Persist OpportunityV1.created_at_ns projected at HTTP read time; not review-row metadata" },
+    "expected_return": { "type": ["number", "null"] },
+    "expected_net_edge": { "type": ["number", "null"] },
+    "evidence_promotion_reason": { "type": ["string", "null"] },
+    "family_admission_status": { "type": ["string", "null"] },
+    "family_admission_reason": { "type": ["string", "null"] },
+    "family_admission_kind": { "type": ["string", "null"] },
+    "supersession_reason": { "type": ["string", "null"] },
+    "duplicate_reason": { "type": ["string", "null"] },
     "decision_support": {
       "type": "object",
       "properties": {

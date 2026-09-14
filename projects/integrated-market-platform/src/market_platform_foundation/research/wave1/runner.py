@@ -7,7 +7,7 @@ from typing import Any
 
 from .adapters.export_dataset import examples_from_export_stub, validation_manifest_from_export
 from .config import Wave1FrozenRegistry, load_frozen_registry
-from .export_gate import PIT_PASS_STATUS, assess_research_export_pit
+from .export_gate import assess_research_export_pit, oos_evaluation_authorized
 from .harness import evaluate_family
 from .reproducibility import deterministic_run_id, examples_fingerprint, run_fingerprint
 from .reports import WAVE1_REPORT_SCHEMA_VERSION, Wave1RunReport, wave1_run_report_to_dict
@@ -36,7 +36,7 @@ def run_wave1_registry(
         pit_status = assessment.status
         evidence_class = assessment.evidence_class
         export_fp = assessment.export_fingerprint
-        if allow_oos and pit_status == PIT_PASS_STATUS and evidence_class != "NON_EMPIRICAL_FIXTURE":
+        if allow_oos and oos_evaluation_authorized(assessment):
             oos_mode = "OOS_PIT_PASS"
     ex_fp = examples_fingerprint(examples)
     family_ids = tuple(f.family_id for f in reg.families)

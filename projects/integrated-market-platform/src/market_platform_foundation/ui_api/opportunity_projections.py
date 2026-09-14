@@ -4,11 +4,25 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..intelligence.contracts.opportunity import OpportunityV1
 from ..intelligence.opportunity.ingest import assemble_opportunity_review_rows
 from ..intelligence.opportunity.ranking import comparison_vectors_from_repository, rank_review_rows
 from . import projections
 from .operator_opportunity_state import dismissed_ids, list_operator_acks, record_operator_ack
 from .store import ReplayStore
+
+_REVIEW_METADATA_PROJECTION = (
+    "evidence_promotion_reason",
+    "family_admission_status",
+    "family_admission_reason",
+    "family_admission_kind",
+    "supersession_reason",
+    "duplicate_reason",
+)
+
+_INGEST_TIMESTAMP_METADATA_KEYS = frozenset(
+    {"decision_time_ns", "created_at_ns", "opportunity_decision_time_ns"}
+)
 
 
 def decision_support_overlay() -> dict[str, Any]:
@@ -24,9 +38,58 @@ def decision_support_overlay() -> dict[str, Any]:
     }
 
 
-def _serialize_review_row(row: Any) -> dict[str, Any]:
+def _persist_opportunity(store: ReplayStore | None, opportunity_id: str | None) -> OpportunityV1 | None:
+    """Read-only persist lookup for HTTP projection. Does not mutate review-row metadata."""
+
+    if store is None or not opportunity_id:
+        return None
+    getter = getattr(getattr(store, "strategy_repository", None), "get_opportunity", None)
+    if not callable(getter):
+        return None
+    try:
+        record = getter(str(opportunity_id))
+    except (TypeError, ValueError, KeyError):
+        return None
+    return record if isinstance(record, OpportunityV1) else None
+
+
+def _append_unavailable(fields: list[str], name: str) -> None:
+    if name not in fields:
+        fields.append(name)
+
+
+def _serialize_review_row(row: Any, store: ReplayStore | None = None) -> dict[str, Any]:
     body = row.to_dict()
     body.pop("rank_score", None)
+    metadata = dict(body.get("metadata") or {}) if isinstance(body.get("metadata"), dict) else {}
+    for key in _INGEST_TIMESTAMP_METADATA_KEYS:
+        metadata.pop(key, None)
+    body["metadata"] = metadata
+    for key in _REVIEW_METADATA_PROJECTION:
+        if key in metadata and key not in body:
+            body[key] = metadata[key]
+    instrument_id = str(body.get("instrument_id") or "")
+    body["instrument_key"] = instrument_id or None
+    persist = _persist_opportunity(store, row.opportunity_id)
+    unavailable = [str(item) for item in (body.get("unavailable_fields") or [])]
+    if persist is not None:
+        body["created_at_ns"] = persist.created_at_ns
+        if persist.expected_return is not None:
+            body["expected_return"] = persist.expected_return
+            unavailable = [item for item in unavailable if item != "expected_return"]
+        else:
+            _append_unavailable(unavailable, "expected_return")
+        if persist.expected_net_edge is not None:
+            body["expected_net_edge"] = persist.expected_net_edge
+            unavailable = [item for item in unavailable if item != "expected_net_edge"]
+        else:
+            _append_unavailable(unavailable, "expected_net_edge")
+    else:
+        body["created_at_ns"] = None
+        _append_unavailable(unavailable, "created_at_ns")
+    if not instrument_id:
+        _append_unavailable(unavailable, "instrument_key")
+    body["unavailable_fields"] = unavailable
     body["decision_support"] = decision_support_overlay()
     if row.opportunity_id:
         body["explanation_ref"] = f"explain:opportunity:{row.opportunity_id}"
@@ -138,7 +201,7 @@ def build_opportunities_summary_payload(
         "as_of_context": projections.build_as_of_context(store),
         "quality_summary": projections.build_quality_summary(store),
         "feed_status": status,
-        "items": [_serialize_review_row(row) for row in page],
+        "items": [_serialize_review_row(row, store) for row in page],
         "next_cursor": next_cursor,
     }
     if status == "UNREADY":
@@ -154,7 +217,7 @@ def build_opportunity_detail_payload(store: ReplayStore, row_id: str) -> dict[st
     acks = list_operator_acks()
     for row in ranked:
         if row.summary_id == row_id or row.opportunity_id == row_id:
-            body = _serialize_review_row(row)
+            body = _serialize_review_row(row, store)
             if row.instrument_id:
                 body["preview_href"] = f"/workspace/{row.instrument_id}"
             matching = [ack for ack in acks if row.summary_id == ack["summary_id"] or row.opportunity_id == ack.get("opportunity_id")]
@@ -176,8 +239,25 @@ def build_opportunity_detail_payload(store: ReplayStore, row_id: str) -> dict[st
 def build_opportunity_evidence_payload(store: ReplayStore, row_id: str) -> dict[str, Any]:
     detail = build_opportunity_detail_payload(store, row_id)
     lineage = detail.get("lineage_refs") or []
-    copy = "not OpportunityV1" if detail.get("identity_kind") == "NOT_OPPORTUNITY_V1" else None
-    return {"items": lineage, "copy": copy}
+    identity = detail.get("identity_kind")
+    ranking_vector = detail.get("ranking_vector") if isinstance(detail.get("ranking_vector"), dict) else {}
+    copy = "not OpportunityV1" if identity == "NOT_OPPORTUNITY_V1" else None
+    return {
+        "identity_kind": identity,
+        "evidence_class": detail.get("evidence_class"),
+        "evidence_promotion_reason": detail.get("evidence_promotion_reason"),
+        "family_admission_status": detail.get("family_admission_status"),
+        "family_admission_reason": detail.get("family_admission_reason"),
+        "data_quality": detail.get("data_quality"),
+        "ranking_basis": ranking_vector.get("basis"),
+        "created_at_ns": detail.get("created_at_ns"),
+        "duplicates": detail.get("duplicates") or [],
+        "supersession_reason": detail.get("supersession_reason"),
+        "unavailable_fields": detail.get("unavailable_fields") or [],
+        "lineage_refs": lineage,
+        "items": lineage,
+        "copy": copy,
+    }
 
 
 def build_opportunity_explain_body(store: ReplayStore, ref: str) -> dict[str, Any]:

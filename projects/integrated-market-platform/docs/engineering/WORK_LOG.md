@@ -36,6 +36,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Merge origin/main (1b60b5a) into PR #136 test-only branch
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, merge hygiene |
+| **Summary** | Merged `origin/main` at `1b60b5a` (#138 OE-07, atop #137 research) into `work/rebase-pr-118-20260914` for PR #136. Resolved `WORK_LOG.md` by stacking newest-first entries; test-only scope preserved (no branch `src/` changes). |
+| **Key files** | `docs/engineering/WORK_LOG.md` |
+| **Tests** | Await CI on pushed merge head (PR #136) |
+| **Related** | PR #136; Cloud PR #118; PR #138 |
+| **Notes** | No force-push. |
+
+## 2026-09-14 — OE-07 API projection of evidence and persist contract fields (rebased)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui_api`, `docs/architecture` |
+| **Summary** | `GET /opportunities/summary|{id}` and `GET /opportunities/{id}/evidence` lift review-row evidence, family admission, and dedupe/supersession facts to first-class JSON, and project persist `OpportunityV1.created_at_ns` / expected-edge at read time. Ingest does not stamp `decision_time_ns` onto review-row metadata (OE-05 fail-closed). No `MONITORED` / `OUTCOME_RECORDED` states. |
+| **Key files** | `src/market_platform_foundation/ui_api/opportunity_projections.py`, `tests/ui1/test_opportunity_api.py`, `tests/intelligence/test_opportunity_ingest.py`, `manifests/ui1/schemas/opportunity_summary.schema.json`, `manifests/ui1/schemas/opportunity_evidence.schema.json`, `docs/architecture/OPPORTUNITY_CONTRACT.md`, `docs/architecture/DATA_CONTRACTS.md`, `docs/product/OPPORTUNITY_ENGINE_CURRENT_STATE_AND_IMPLEMENTATION_PLAN.md` |
+| **Tests** | `PYTHONPATH=src .venv/Scripts/python.exe -m unittest tests.ui1.test_opportunity_api tests.intelligence.test_opportunity_ingest -v` → **18 passed** |
+| **Related** | [OPPORTUNITY_CONTRACT.md](../architecture/OPPORTUNITY_CONTRACT.md); OE-04 #106; OE-05 #105; landed PR #138 (supersedes rebased #116) |
+| **Notes** | Live off. No hop/OpenD/G7/Path A/FTEP/SQLite schema/V1-002/execution gates. |
+
 ## 2026-09-14 — Merge origin/main (79ae537) into PR #136 test-only branch
 
 | Field | Value |
@@ -46,7 +70,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | `docs/engineering/WORK_LOG.md` |
 | **Tests** | `python tools/imp.py test affected` and `validate fast` (recorded in PR #136 handoff) |
 | **Related** | PR #136; Cloud PR #118 |
-| **Notes** | PR #136 remains draft; #118 not closed. No force-push. |
+| **Notes** | Prior merge before #137/#138 landed on main. |
 
 ## 2026-09-14 — Non-semantic coverage tests for OE, FTEP, providers, Radar, persistence, comparator
 
@@ -57,8 +81,20 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Summary** | Added fail-closed/wiring tests only: OE ingest timestamps and lifecycle enum bounds; FTEP identity/provenance and V1-002 manifest immutability; provider unknown-profile and coverage-gap serialization; Radar UNREADY/Live/INELIGIBLE surfaces; persist-off and Paper ledger join; comparator binding and threshold schema. No production runtime changes. |
 | **Key files** | `tests/intelligence/test_opportunity_non_semantic_contracts.py`, `tests/intelligence/test_ftep_non_semantic_contracts.py`, `tests/providers/test_coverage_gap_fail_closed.py`, `tests/platform/test_persistence_and_comparator_contracts.py`, `tests/ui1/test_opportunity_radar_feed.py`, `ui/src/components/imp-product/OpportunityRadarDensePanel.test.tsx`, `ui/src/components/imp-product/OpportunityFeedStatusBanner.test.tsx` |
 | **Tests** | Rebased onto `origin/main` `2e022383` (post #125/#131). `unittest` on new modules + `test_ftep_integrity` + `test_ftep_session_release` → **52 passed**. `ui` vitest on `OpportunityFeedStatusBanner` + `OpportunityRadarDensePanel` → **7 passed**. |
-| **Related** | Cloud PR #118; coverage-gap audit receipt `internal/coverage-gap-audit.md` (project store); FTEP durable-state #125, session-release #131 |
+| **Related** | Cloud PR #118; coverage-gap audit receipt `internal/coverage-gap-audit.md` (project store); FTEP durable-state #125, session-release #131; PR #136 |
 | **Notes** | Did not mutate FTEP-V1-002 artifacts, hop worktree `1381619`, Path A, G7, OpenD, Alpaca, or production runtime. Live off. Not `EMPIRICAL_ACTIVE` / not `CALIBRATED`. |
+
+## 2026-09-14 — Research Export PIT-PENDING + EXTERNAL_RESEARCH_DATA fail-closed
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `research/export_v1`, `research/wave1`, `research/matlab` |
+| **Summary** | Fixture Research Export v1 packages still emit honest `metadata.pit_status=PIT-PENDING` / `NON_EMPIRICAL_FIXTURE`. Loaders now require operator PIT metadata, refuse mixed `EXTERNAL_RESEARCH_DATA` on canonical IMP packages, and Wave 1 OOS stays blocked for fixture, external, and mixed classes. QR-01 MATLAB toolbox schema + UNAVAILABLE example landed (cloud `BLOCKED_NO_MATLAB`; not a production runtime). MATLAB consumes Research Export v1 JSON; overnight Parquet bridge remains historical. |
+| **Key files** | `src/market_platform_foundation/research/export_v1.py`, `wave1/export_gate.py`, `wave1/runner.py`, `wave1/harness.py`, `matlab_environment.py`, `research/matlab/**`, `tests/research/test_research_export_v1.py`, `tests/research/test_wave1_experiment_harness.py`, `tests/research/test_matlab_environment.py`, `docs/research/RESEARCH_EXPORT_V1.md`, `docs/README.md`, `tools/research/build_research_export_v1.py`, `tools/validation_manifest.json` |
+| **Tests** | Focused: `PYTHONPATH=src .venv/Scripts/python.exe -m unittest tests.research.test_research_export_v1 tests.research.test_wave1_experiment_harness tests.research.test_matlab_environment -v` → **24 passed** (rebase worktree on `origin/main` `2e022383`). |
+| **Related** | [RESEARCH_EXPORT_V1.md](../research/RESEARCH_EXPORT_V1.md), QR-01/QR-03 MATLAB lab plan, Wave 1 `export_gate.py`; landed via squash-merge PR #137 (supersedes #119) |
+| **Notes** | Did not stamp `PIT-PASS`. Did not run Wave 1 OOS. No hop `1381619`, no FTEP session, Live off. MATLAB not installed on this host. |
 
 ## 2026-09-14 — POST_BUILD35 inventory for ci_job_selector (PR #132)
 

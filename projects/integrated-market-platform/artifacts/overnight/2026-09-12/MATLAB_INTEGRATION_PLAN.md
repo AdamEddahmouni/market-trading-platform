@@ -1,5 +1,10 @@
 # MATLAB integration readiness blueprint
 
+**Current MATLAB path:** Research Export v1 JSON handoff
+([RESEARCH_EXPORT_V1.md](../../../docs/research/RESEARCH_EXPORT_V1.md)).
+This overnight Parquet-bridge blueprint is **historical** (`DEFER-MATLAB-BRIDGE`).
+Do not implement `export_matlab_bundle.py` as the v1 MATLAB path.
+
 **Lane:** G | **Date:** 2026-09-12  
 **Gate:** `DEFER-MATLAB-BRIDGE` (reconciliation-gate)
 

@@ -7,10 +7,9 @@ from typing import Any
 from .adapters.base import Wave1ExampleAdapter, get_family_adapter
 from .config import Wave1FamilyConfig
 from .export_gate import (
-    NON_EMPIRICAL_EVIDENCE_CLASS,
-    PIT_PASS_STATUS,
     ResearchExportPitAssessment,
     assess_research_export_pit,
+    oos_evaluation_authorized,
     require_pit_pass_for_oos,
 )
 from .metrics import compute_primary_metric, realized_outcome_bps
@@ -196,9 +195,7 @@ def evaluate_family(
         allow_oos
         and export_manifest is not None
         and assessment is not None
-        and assessment.status == PIT_PASS_STATUS
-        and assessment.evidence_class != NON_EMPIRICAL_EVIDENCE_CLASS
-        and not assessment.pit_codes
+        and oos_evaluation_authorized(assessment)
     ):
         return evaluate_family_oos(
             config,
