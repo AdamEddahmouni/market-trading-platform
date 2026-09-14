@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — PROGRAM_STATUS SHA pin after merged #62
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Pin Canonical origin/main SHA to live tip `3d2c448` (Merge pull request #62). Lists hop chain #32, #34–#42, #45, #47, #48, #50, #52, #55–#62. Leftover #43 never landed. FTEP remains `FTEP_EMPIRICAL_NOT_READY` — **not** `EMPIRICAL_ACTIVE`. ES-news `BLOCKED_ON_ES_DATA` / `FROZEN_BLOCKED_EXTERNAL_DATA_ENTITLEMENT`. Live forbidden. Item 7 stays PARTIAL. Item 9 stays PARTIAL: Alpaca Paper is the $0 HTTPS comparator on main; Tradier unused; missing keys → `COMPARATOR_NOT_CONFIGURED`. Simulator **not** `CALIBRATED`. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python3 tools/check_docs_links.py`; GitHub IMP Validation 9/9 including `validate-ui` on this docs PR |
+| **Related** | [PR #62](https://github.com/AdamEddahmouni/market-trading-platform/pull/62); merge SHA `3d2c44866f3d937d9a7b3c063438cd391423710d` |
+| **Notes** | Docs-only SHA honesty after #62. Did not mint ForecastV1. Did not mock ticks. Did not merge leftover #43 or #46. Did not activate Live. Did not flip DoD items 2/7/9 to complete. |
+
 ## 2026-09-14 — PROGRAM_STATUS SHA pin after merged #60
 
 | Field | Value |
