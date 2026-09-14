@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..canonical import canonical_bytes, sha256_bytes
+from .fill_model import assert_simulation_execution_allowed, stamp_fill_model_provenance
 from .simulator import BarConservativeSimulator
 
 BOOK_AWARE_SIMULATOR_VERSION = "phase9.book-aware-l2/1.0.0"
@@ -41,6 +41,26 @@ class BookAwareL2Simulator(BarConservativeSimulator):
 
     registry_id = "simulation.book_aware_l2_v1"
 
+    def _restamp(
+        self,
+        order: dict[str, Any],
+        fill: dict[str, Any] | None,
+        *,
+        intent: dict[str, Any],
+    ) -> tuple[dict[str, Any], dict[str, Any] | None]:
+        mode = assert_simulation_execution_allowed(
+            intent.get("execution_mode") or self.policy.get("execution_mode")
+        )
+        return stamp_fill_model_provenance(
+            order=order,
+            fill=fill,
+            simulator_version=BOOK_AWARE_SIMULATOR_VERSION,
+            source_capability=str(order.get("source_capability") or "BAR_OHLCV_1M"),
+            registry_id=self.registry_id,
+            execution_mode=mode,
+            git_sha=str(order.get("git_sha") or "") or None,
+        )
+
     def simulate(
         self,
         *,
@@ -56,7 +76,7 @@ class BookAwareL2Simulator(BarConservativeSimulator):
             squeeze_context=squeeze_context,
         )
         if fill is None:
-            return order, None
+            return self._restamp(order, None, intent=intent)
 
         book_snapshot = intent.get("book_snapshot")
         approved_qty = int(risk_decision.get("approved_quantity", 0))
@@ -66,7 +86,7 @@ class BookAwareL2Simulator(BarConservativeSimulator):
             fill["queue_model_version"] = QUEUE_MODEL_VERSION
             fill["fill_reason_codes"] = list(fill.get("fill_reason_codes", [])) + ["NO_BOOK_SNAPSHOT"]
             fill["unfilled_quantity"] = max(approved_qty - int(fill.get("fill_quantity", 0)), 0)
-            return order, fill
+            return self._restamp(order, fill, intent=intent)
 
         direction = str(intent.get("direction", ""))
         touch_cap = _touch_depth_cap(book_snapshot, direction)
@@ -76,7 +96,7 @@ class BookAwareL2Simulator(BarConservativeSimulator):
             fill["queue_model_version"] = QUEUE_MODEL_VERSION
             fill["fill_reason_codes"] = list(fill.get("fill_reason_codes", [])) + ["BOOK_DEPTH_UNKNOWN"]
             fill["unfilled_quantity"] = max(approved_qty - int(fill.get("fill_quantity", 0)), 0)
-            return order, fill
+            return self._restamp(order, fill, intent=intent)
 
         bar_filled_qty = int(fill.get("fill_quantity", 0))
         book_capped_qty = min(bar_filled_qty, touch_cap)
@@ -98,7 +118,7 @@ class BookAwareL2Simulator(BarConservativeSimulator):
         fill["queue_model_version"] = QUEUE_MODEL_VERSION
         fill["fill_reason_codes"] = reason_codes
         fill["touch_depth_cap"] = touch_cap
-        return order, fill
+        return self._restamp(order, fill, intent=intent)
 
 
 __all__ = [
