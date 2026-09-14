@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — FTEP session-release fail-closed guards (PR #131)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ftep`, `tools/ftep_session_release.py`, `tests/intelligence` |
+| **Summary** | Hardened governed `session-release` execute: requires an explicit manifest guard (`--expect-manifest-fingerprint`, `--expect-manifest-path-substring`, or `--require-frozen-manifest-fingerprint`), blocks repo `artifacts/forward-test-campaigns/` bindings without those guards, and compares `campaign_slug` to the active binding `campaign_id`. Added regression tests for dry-run immutability, `NO_ACTIVE_BINDING`, frozen-guard happy path, slug mismatch, and unguarded execute refusal. |
+| **Key files** | `tools/ftep_session_release.py`, `tests/intelligence/test_ftep_session_release.py` |
+| **Tests** | `PYTHONPATH=src .venv/Scripts/python.exe -m unittest tests.intelligence.test_ftep_session_release -v` — 10 passed |
+| **Related** | Draft PR #131 |
+| **Notes** | Rebased onto `origin/main` at `bcf7be98` when clean; execute path unchanged for operators who already pass frozen/fingerprint guards. |
+
 ## 2026-09-14 — FTEP session-release CLI and persist test isolation
 
 | Field | Value |

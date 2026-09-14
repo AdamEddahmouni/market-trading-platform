@@ -21,6 +21,37 @@ def _persistence_configured() -> bool:
     return os.environ.get("IMP_PERSIST_STATE") == "1" or bool(os.environ.get("IMP_STATE_DIR"))
 
 
+def _explicit_release_guard_present(
+    *,
+    expect_manifest_fingerprint: str | None,
+    expect_manifest_path_substring: str | None,
+    require_frozen_manifest_fingerprint: bool,
+) -> bool:
+    if require_frozen_manifest_fingerprint:
+        return True
+    if expect_manifest_path_substring and expect_manifest_path_substring.strip():
+        return True
+    return bool(expect_manifest_fingerprint and expect_manifest_fingerprint.strip())
+
+
+def _repo_empirical_manifest_path(repository_root: Path, manifest_path_str: str) -> bool:
+    empirical_root = (repository_root / "artifacts" / "forward-test-campaigns").resolve()
+    try:
+        return Path(manifest_path_str).resolve().is_relative_to(empirical_root)
+    except (OSError, ValueError):
+        normalized = manifest_path_str.replace("\\", "/")
+        return "artifacts/forward-test-campaigns/" in normalized
+
+
+def _expected_campaign_id_for_slug(campaign_slug: str) -> str:
+    from market_platform_foundation.intelligence.paper_forward_bridge.activation import (
+        load_activation_manifest,
+    )
+
+    manifest = load_activation_manifest(campaign_slug)
+    return str(manifest.campaign_id or manifest.campaign_slug or campaign_slug)
+
+
 def collect_session_release_gates(
     repository_root: Path,
     campaign_slug: str,
@@ -32,6 +63,7 @@ def collect_session_release_gates(
     expect_manifest_path_substring: str | None = None,
     require_frozen_manifest_fingerprint: bool = False,
     require_persistence: bool = False,
+    require_explicit_release_guard: bool = False,
 ) -> dict[str, object]:
     src = repository_root / "src"
     if str(src) not in sys.path:
@@ -48,8 +80,22 @@ def collect_session_release_gates(
     from market_platform_foundation.local_state.startup import open_local_state
 
     blockers: list[str] = []
+    guard_present = _explicit_release_guard_present(
+        expect_manifest_fingerprint=expect_manifest_fingerprint,
+        expect_manifest_path_substring=expect_manifest_path_substring,
+        require_frozen_manifest_fingerprint=require_frozen_manifest_fingerprint,
+    )
+    if require_explicit_release_guard and not guard_present:
+        blockers.append("RELEASE_GUARD_REQUIRED")
+
     if require_persistence and not _persistence_configured():
         blockers.append("PERSISTENCE_NOT_CONFIGURED")
+
+    expected_campaign_id: str | None = None
+    try:
+        expected_campaign_id = _expected_campaign_id_for_slug(campaign_slug)
+    except Exception:
+        blockers.append("ACTIVATION_MANIFEST_NOT_LOADABLE")
 
     active_binding: dict[str, Any] | None = None
     if not blockers:
@@ -64,8 +110,12 @@ def collect_session_release_gates(
                 active_binding = binding.to_dict()
                 if binding.campaign_state != CampaignBindingState.ACTIVE:
                     blockers.append("BINDING_NOT_ACTIVE")
+                if expected_campaign_id and binding.campaign_id != expected_campaign_id:
+                    blockers.append("CAMPAIGN_SLUG_MISMATCH")
                 if campaign_id and binding.campaign_id != campaign_id:
                     blockers.append("CAMPAIGN_ID_MISMATCH")
+                if _repo_empirical_manifest_path(repository_root, binding.manifest_path) and not guard_present:
+                    blockers.append("REPO_EMPIRICAL_MANIFEST_GUARD_REQUIRED")
                 if session_id and binding.forward_test_session_id != session_id:
                     blockers.append("SESSION_ID_MISMATCH")
                 if expect_manifest_fingerprint:
@@ -147,6 +197,7 @@ def execute_governed_session_release(
         expect_manifest_path_substring=expect_manifest_path_substring,
         require_frozen_manifest_fingerprint=require_frozen_manifest_fingerprint,
         require_persistence=True,
+        require_explicit_release_guard=True,
     )
     gate["dry_run"] = False
     gate["artifact_kind"] = "ftep_session_release_result"
