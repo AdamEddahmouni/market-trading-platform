@@ -24,9 +24,7 @@ from ...market_data.live_config import moomoo_host, moomoo_port
 from ...market_data.normalization import NORMALIZATION_VERSION, canonical_symbol
 from ...market_data.provider_time import parse_provider_datetime_ns
 from ..contracts import ProviderResult
-
-MOOMOO_OPEND_PROVIDER_ID = "moomoo.opend.observational"
-US_EQUITY_L1_CAPABILITY = "US_EQUITY_L1"
+from ..moomoo_opend_capability import MOOMOO_OPEND_PROVIDER_ID, US_EQUITY_L1_CAPABILITY
 
 _LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
 _TOOLS_TRANSPORT_PATH = REPO_ROOT / "tools" / "moomoo" / "opend_quote_transport.py"

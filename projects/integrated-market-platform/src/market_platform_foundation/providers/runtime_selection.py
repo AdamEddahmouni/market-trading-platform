@@ -127,11 +127,13 @@ class ObservationalProviderSelector:
                 diagnostics=("NO_IMPLEMENTED_PROVIDER",),
             )
 
-        registry_cap = _lane_to_registry_capability(request.capability_id)
         candidates: list[tuple[str, RuntimeCapabilityView]] = []
         diagnostics: list[str] = []
 
         for pid in sorted(provider_ids):
+            registry_cap = self._capability_registry.resolve_registry_capability(
+                pid, request.capability_id
+            )
             view = self._capability_registry.view_capability(
                 pid,
                 registry_cap,
@@ -195,15 +197,6 @@ class ObservationalProviderSelector:
                 "selection_policy": "deterministic_priority",
             } if outcome != SelectionOutcome.NO_PROVIDER else {},
         )
-
-
-def _lane_to_registry_capability(lane_capability_id: str) -> str:
-    from .runtime_capability import _LANE_TO_REGISTRY_CAPABILITIES
-
-    caps = _LANE_TO_REGISTRY_CAPABILITIES.get(lane_capability_id)
-    if caps:
-        return caps[0]
-    return lane_capability_id
 
 
 def _validate_instrument_kind(

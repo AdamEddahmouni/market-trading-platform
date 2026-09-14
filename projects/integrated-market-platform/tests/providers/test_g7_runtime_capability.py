@@ -52,6 +52,14 @@ class RuntimeCapabilityTests(unittest.TestCase):
         for cap in IBKR_FORBIDDEN_CAPABILITIES:
             view = registry.view_capability(IBKR_PROVIDER_ID, cap)
             self.assertEqual(view.reason_code, "EXECUTION_CAPABILITY_FORBIDDEN")
+        from market_platform_foundation.providers.moomoo_opend_capability import (
+            MOOMOO_OPEND_FORBIDDEN_CAPABILITIES,
+            MOOMOO_OPEND_PROVIDER_ID,
+        )
+
+        for cap in MOOMOO_OPEND_FORBIDDEN_CAPABILITIES:
+            view = registry.view_capability(MOOMOO_OPEND_PROVIDER_ID, cap)
+            self.assertEqual(view.reason_code, "EXECUTION_CAPABILITY_FORBIDDEN")
 
     def test_not_entitled_degraded(self) -> None:
         registry = RuntimeCapabilityRegistry()
@@ -171,6 +179,91 @@ class RuntimeCapabilityTests(unittest.TestCase):
         self.assertIn(result.outcome, {SelectionOutcome.SELECTED, SelectionOutcome.REPLAY_ONLY})
         self.assertIn("instrument_id", result.provenance)
         self.assertEqual(result.provenance["instrument_id"], "NVDA")
+
+    def test_opend_is_known_observational_l1_provider(self) -> None:
+        from market_platform_foundation.providers.adapters.yahoo_delayed_equity_quote import (
+            YAHOO_PROVIDER_ID,
+        )
+        from market_platform_foundation.providers.moomoo_opend_capability import (
+            MOOMOO_OPEND_PROVIDER_ID,
+            US_EQUITY_L1_CAPABILITY,
+        )
+
+        registry = RuntimeCapabilityRegistry()
+        self.assertIn(MOOMOO_OPEND_PROVIDER_ID, registry.providers_for_lane_capability(CAP_L1))
+        self.assertNotIn(YAHOO_PROVIDER_ID, registry.providers_for_lane_capability(CAP_L1))
+        view = registry.view_capability(MOOMOO_OPEND_PROVIDER_ID, CAP_L1)
+        self.assertTrue(view.implemented)
+        self.assertEqual(view.capability_id, US_EQUITY_L1_CAPABILITY)
+        self.assertEqual(view.lane_capability_id, CAP_L1)
+        self.assertEqual(view.runtime_state, RuntimeCapabilityState.PROVIDER_UNAVAILABLE)
+
+    def test_opend_hop_l1_selects_after_healthy_stamp(self) -> None:
+        from market_platform_foundation.providers.moomoo_opend_capability import (
+            MOOMOO_OPEND_PROVIDER_ID,
+        )
+
+        registry = RuntimeCapabilityRegistry()
+        registry.set_runtime_state(
+            ProviderRuntimeState(
+                provider_id=MOOMOO_OPEND_PROVIDER_ID,
+                health=ProviderHealth.HEALTHY,
+                entitlement=EntitlementState.ENTITLED,
+                timeliness=DataTimeliness.REAL_TIME,
+                live_verified=False,
+                notes="PATH_A_ONE_SHOT",
+            )
+        )
+        selector = ObservationalProviderSelector(registry)
+        result = selector.select(
+            ObservationalSelectionRequest(
+                capability_id=CAP_L1,
+                instrument_id="AAPL",
+                require_real_time=True,
+                provider_id=MOOMOO_OPEND_PROVIDER_ID,
+            )
+        )
+        self.assertEqual(result.outcome, SelectionOutcome.SELECTED)
+        self.assertEqual(result.provider_id, MOOMOO_OPEND_PROVIDER_ID)
+        self.assertFalse(
+            any(item.startswith("UNKNOWN_PROVIDER:") for item in result.diagnostics)
+        )
+
+    def test_opend_down_is_provider_down_not_unknown(self) -> None:
+        from market_platform_foundation.providers.moomoo_opend_capability import (
+            MOOMOO_OPEND_PROVIDER_ID,
+        )
+
+        selector = ObservationalProviderSelector()
+        result = selector.select(
+            ObservationalSelectionRequest(
+                capability_id=CAP_L1,
+                instrument_id="AAPL",
+                require_real_time=True,
+                provider_id=MOOMOO_OPEND_PROVIDER_ID,
+            )
+        )
+        self.assertEqual(result.outcome, SelectionOutcome.PROVIDER_DOWN)
+        self.assertIsNone(result.provider_id)
+        self.assertIn(f"PROVIDER_DOWN:{MOOMOO_OPEND_PROVIDER_ID}", result.diagnostics)
+        self.assertNotIn(f"UNKNOWN_PROVIDER:{MOOMOO_OPEND_PROVIDER_ID}", result.diagnostics)
+
+    def test_yahoo_overlay_is_never_hop_l1(self) -> None:
+        from market_platform_foundation.providers.adapters.yahoo_delayed_equity_quote import (
+            YAHOO_PROVIDER_ID,
+        )
+
+        selector = ObservationalProviderSelector()
+        result = selector.select(
+            ObservationalSelectionRequest(
+                capability_id=CAP_L1,
+                instrument_id="AAPL",
+                provider_id=YAHOO_PROVIDER_ID,
+            )
+        )
+        self.assertEqual(result.outcome, SelectionOutcome.NO_PROVIDER)
+        self.assertIsNone(result.provider_id)
+        self.assertEqual(result.diagnostics, (f"UNKNOWN_PROVIDER:{YAHOO_PROVIDER_ID}",))
 
 
 if __name__ == "__main__":

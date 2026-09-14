@@ -33,6 +33,11 @@ from .ibkr_observational.capability import (
     IBKR_PROVIDER_ID,
     register_ibkr_observational,
 )
+from .moomoo_opend_capability import (
+    MOOMOO_OPEND_FORBIDDEN_CAPABILITIES,
+    MOOMOO_OPEND_PROVIDER_ID,
+    register_moomoo_opend_observational,
+)
 
 
 class RuntimeCapabilityState(StrEnum):
@@ -192,6 +197,11 @@ class RuntimeCapabilityRegistry:
                 register_ibkr_observational(self._registry)
             except Exception:
                 pass  # already registered
+        if MOOMOO_OPEND_PROVIDER_ID not in known_ids:
+            try:
+                register_moomoo_opend_observational(self._registry)
+            except Exception:
+                pass  # already registered
         if IBKR_PROVIDER_ID not in self._runtime_states:
             self._runtime_states[IBKR_PROVIDER_ID] = ProviderRuntimeState(
                 provider_id=IBKR_PROVIDER_ID,
@@ -200,6 +210,16 @@ class RuntimeCapabilityRegistry:
                 timeliness=DataTimeliness.UNKNOWN,
                 live_verified=False,
                 notes="LIVE_PROVIDER_UNVERIFIED",
+            )
+        if MOOMOO_OPEND_PROVIDER_ID not in self._runtime_states:
+            # Fail closed until a hop stamps HEALTHY after a real OpenD fetch.
+            self._runtime_states[MOOMOO_OPEND_PROVIDER_ID] = ProviderRuntimeState(
+                provider_id=MOOMOO_OPEND_PROVIDER_ID,
+                health=ProviderHealth.DOWN,
+                entitlement=EntitlementState.UNKNOWN,
+                timeliness=DataTimeliness.UNKNOWN,
+                live_verified=False,
+                notes="OPEND_UNVERIFIED_FAIL_CLOSED",
             )
 
     def set_runtime_state(self, state: ProviderRuntimeState) -> None:
@@ -226,6 +246,23 @@ class RuntimeCapabilityRegistry:
             provider_id,
             ProviderRuntimeState(provider_id=provider_id),
         )
+
+    def resolve_registry_capability(self, provider_id: str, capability_id: str) -> str:
+        """Map a lane-facing id to the registry capability this provider implements.
+
+        ``OBSERVATIONAL_L1`` is IBKR_L1 on IBKR and ``US_EQUITY_L1`` on OpenD.
+        Yahoo delayed overlay is not registered for hop L1.
+        """
+        registry_caps = _LANE_TO_REGISTRY_CAPABILITIES.get(capability_id)
+        if not registry_caps:
+            return capability_id
+        implemented_ids = {
+            item.capability_id for item in self.implemented_capabilities(provider_id)
+        }
+        for cap in registry_caps:
+            if cap in implemented_ids:
+                return cap
+        return registry_caps[0]
 
     def implemented_capabilities(self, provider_id: str) -> tuple[CapabilityDescriptor, ...]:
         for cap_id in (
@@ -255,7 +292,11 @@ class RuntimeCapabilityRegistry:
         require_real_time: bool = False,
     ) -> RuntimeCapabilityView:
         """Evaluate all axes for one provider+capability pair."""
-        if capability_id in IBKR_FORBIDDEN_CAPABILITIES or capability_id.endswith("_EXECUTION"):
+        if (
+            capability_id in IBKR_FORBIDDEN_CAPABILITIES
+            or capability_id in MOOMOO_OPEND_FORBIDDEN_CAPABILITIES
+            or capability_id.endswith("_EXECUTION")
+        ):
             return RuntimeCapabilityView(
                 provider_id=provider_id,
                 capability_id=capability_id,
@@ -270,6 +311,7 @@ class RuntimeCapabilityRegistry:
                 reason_code="EXECUTION_CAPABILITY_FORBIDDEN",
             )
 
+        capability_id = self.resolve_registry_capability(provider_id, capability_id)
         runtime = self.runtime_state_for(provider_id)
         override = self.capability_override_for(provider_id, capability_id)
         descriptors = self.implemented_capabilities(provider_id)

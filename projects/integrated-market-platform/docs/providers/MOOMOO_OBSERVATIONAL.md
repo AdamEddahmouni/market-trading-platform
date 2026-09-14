@@ -110,6 +110,15 @@ observational**.
   (`ES=F`, `/ES`, `MES`, … fail closed with
   `ES_FUTURES_NOT_SUPPORTED_BY_DELAYED_EQUITY_OVERLAY` before any HTTP call).
   Overlay events stamp `capability=US_EQUITY_SNAPSHOT` (not `US_EQUITY_L1`).
+  G7 does **not** register Yahoo for `OBSERVATIONAL_L1`; selecting
+  `yahoo.finance.delayed` as hop L1 is `UNKNOWN_PROVIDER`.
+- `providers/moomoo_opend_capability.py` — G7 `ProviderRegistry` identity
+  `moomoo.opend.observational` with implemented `US_EQUITY_L1`.
+  `RuntimeCapabilityRegistry` auto-registers it. Default runtime health is
+  `DOWN` (fail closed) until a hop stamps `HEALTHY` after an admitted OpenD
+  fetch. Lane `OBSERVATIONAL_L1` resolves per provider (`US_EQUITY_L1` on
+  OpenD, `IBKR_L1` on IBKR) so a hop with that `provider_id` is not
+  `UNKNOWN_PROVIDER`.
 - `providers/equity_quote_selection.py` — `primary_equity_quote_provider()`
   always returns the Moomoo OpenD adapter; `opend_readiness()` is a
   diagnostic-only reachability snapshot that never changes which provider is
@@ -144,7 +153,10 @@ observational**.
   generated quotes" path is exercised unconditionally; a local loopback TCP
   listener (never a moomoo protocol/tick) proves the reachable-but-SDK-missing
   branch also fails closed (`MOOMOO_SDK_MISSING`). Injected vendor-row mapping
-  is a contract test, not empirical evidence.
+  is a contract test, not empirical evidence. G7 selection tests in
+  `tests/providers/test_g7_runtime_capability.py` prove OpenD is a known
+  hop-L1 identity, Yahoo overlay is not, and unstamped OpenD is
+  `PROVIDER_DOWN`.
 
 ## SDK requirement
 

@@ -471,6 +471,27 @@ class PathAProspectiveTests(unittest.TestCase):
         self.assertEqual(result.reason_codes, (OPEND_UNAVAILABLE,))
         self.assertEqual(result.provenance.get("provider"), MOOMOO_OPEND_PROVIDER_ID)
 
+    def test_opend_hop_l1_is_known_g7_provider(self) -> None:
+        event = _quote_event(delayed=False)
+        event["provider"] = MOOMOO_OPEND_PROVIDER_ID
+        event["capability"] = "US_EQUITY_L1"
+        quote = ProviderResult(
+            status="available",
+            events=(event,),
+            provider_id=MOOMOO_OPEND_PROVIDER_ID,
+            capability="US_EQUITY_L1",
+        )
+        result = PathAProspectiveComposer(
+            quote_provider=ScriptedQuoteProvider(
+                quote, provider_id=MOOMOO_OPEND_PROVIDER_ID
+            ),
+        ).run("AAPL", mode="paper", as_of_time_ns=T + 1_000_000)
+        diagnostics = tuple(result.selection.get("diagnostics") or ())
+        self.assertNotIn(f"UNKNOWN_PROVIDER:{MOOMOO_OPEND_PROVIDER_ID}", diagnostics)
+        self.assertEqual(result.selection.get("provider_id"), MOOMOO_OPEND_PROVIDER_ID)
+        self.assertEqual(result.selection.get("outcome"), "SELECTED")
+        self.assertNotIn("G7_SELECTION_NO_PROVIDER", result.reason_codes)
+
     def test_discovery_does_not_swap_yahoo_when_opend_down(self) -> None:
         with patch.dict(os.environ, {"IMP_MOOMOO_HOST": "127.0.0.1", "IMP_MOOMOO_PORT": "1"}):
             provider, discovery = discover_equity_quote_stack()
