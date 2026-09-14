@@ -16,8 +16,12 @@ from ...market_data.capture import CAPTURE_SCHEMA_VERSION
 from ...market_data.timestamps import TimestampSet, clocks_from_capture
 from ..contracts.event import EventV1
 from ..contracts.prediction_ledger import PredictionLedgerEntryV1
-from ..normalization.models import IngestionMode, NormalizationContext
+from ..normalization.models import IngestionMode, NormalizationContext, NormalizationResult
 from ..normalization.providers.moomoo import normalize_moomoo_capture
+from ..observation_ingress.errors import IngressDispatchError
+from ..observation_ingress.normalization_bridge import dispatch_normalization_result
+from ..observation_ingress.router import ObservationIngressRouter
+from ..observation_ingress.types import IngressConsumerStatus, IngressDispatchContext, IngressDispatchReceiptV1
 from ..persistence.errors import RepositoryConflictError
 from ..persistence.repository import IntelligenceRepository, RepositoryPutResult
 from ..production.identity import PATH_A_HORIZON_NS
@@ -267,12 +271,12 @@ def build_capture_provenance(
     )
 
 
-def normalize_capture_record(
+def normalize_capture_record_result(
     record: dict[str, Any],
     *,
     capture_path: Path,
     line_index: int,
-) -> EventV1 | None:
+) -> NormalizationResult:
     canonical = canonicalize_opend_capture_envelope(record)
     clocks = clocks_from_capture(canonical)
     received = clocks.received_time_ns or clocks.available_time_ns or 0
@@ -281,8 +285,71 @@ def normalize_capture_record(
         ingestion_mode=IngestionMode.REPLAY,
         raw_payload_ref=f"{capture_path}:{line_index}",
     )
-    result = normalize_moomoo_capture(canonical, context=context)
-    return result.event
+    return normalize_moomoo_capture(canonical, context=context)
+
+
+def normalize_capture_record(
+    record: dict[str, Any],
+    *,
+    capture_path: Path,
+    line_index: int,
+) -> EventV1 | None:
+    return normalize_capture_record_result(record, capture_path=capture_path, line_index=line_index).event
+
+
+def _note_ingress_persistence(
+    result: CaptureLedgerMaterializationResult,
+    receipt: IngressDispatchReceiptV1,
+) -> bool:
+    if receipt.duplicate:
+        result.events_idempotent += 1
+        return True
+    store = next((row for row in receipt.outcomes if row.consumer_id == "ingress.store"), None)
+    if store is None:
+        result.note_refusal("INGRESS_STORE_OUTCOME_MISSING")
+        return False
+    if store.status == IngressConsumerStatus.OK and store.detail == RepositoryPutResult.INSERTED.value:
+        result.events_persisted += 1
+        return True
+    if store.status == IngressConsumerStatus.DUPLICATE or store.detail == RepositoryPutResult.ALREADY_PRESENT.value:
+        result.events_idempotent += 1
+        return True
+    result.note_refusal(f"INGRESS_STORE_{store.status.value}")
+    return False
+
+
+def _dispatch_capture_via_ingress_router(
+    router: ObservationIngressRouter,
+    normalization: NormalizationResult,
+    *,
+    capture_path: Path,
+    line_index: int,
+    result: CaptureLedgerMaterializationResult,
+) -> EventV1 | None:
+    if normalization.event is None:
+        result.note_refusal("NORMALIZATION_FAILED")
+        return None
+    event = normalization.event
+    dispatch_time_ns = event.available_time_ns
+    try:
+        receipt = dispatch_normalization_result(
+            router,
+            normalization,
+            context=IngressDispatchContext(
+                dispatch_time_ns=dispatch_time_ns,
+                ingestion_mode=IngestionMode.REPLAY,
+                source_label=f"moomoo.capture:{capture_path.name}:{line_index}",
+            ),
+        )
+    except IngressDispatchError as exc:
+        result.note_refusal(exc.code)
+        return None
+    if receipt is None:
+        result.note_refusal("NORMALIZATION_FAILED")
+        return None
+    if not _note_ingress_persistence(result, receipt):
+        return None
+    return event
 
 
 def iter_jsonl_envelopes(path: Path) -> Iterator[tuple[int, dict[str, Any] | None, str | None]]:
@@ -392,6 +459,7 @@ def materialize_opend_capture_jsonl(
     session_start_ns: int,
     forecast_bindings: dict[str, str] | None = None,
     register_ledger: bool = True,
+    ingress_router: ObservationIngressRouter | None = None,
 ) -> CaptureLedgerMaterializationResult:
     """Ingest capture envelopes as events and optionally register BUILD 15 ledger rows.
 
@@ -421,22 +489,34 @@ def materialize_opend_capture_jsonl(
         if reason is not None:
             result.note_refusal(reason)
             continue
-        event = normalize_capture_record(record, capture_path=path, line_index=line_index)
-        if event is None:
-            result.note_refusal("NORMALIZATION_FAILED")
-            continue
-        try:
-            put_result = repository.put_event(event)
-        except RepositoryConflictError:
-            result.note_refusal("EVENT_PERSIST_CONFLICT")
-            continue
-        if put_result == RepositoryPutResult.INSERTED:
-            result.events_persisted += 1
-        elif put_result == RepositoryPutResult.ALREADY_PRESENT:
-            result.events_idempotent += 1
+        if ingress_router is not None:
+            normalization = normalize_capture_record_result(record, capture_path=path, line_index=line_index)
+            event = _dispatch_capture_via_ingress_router(
+                ingress_router,
+                normalization,
+                capture_path=path,
+                line_index=line_index,
+                result=result,
+            )
+            if event is None:
+                continue
         else:
-            result.note_refusal("EVENT_PERSIST_CONFLICT")
-            continue
+            event = normalize_capture_record(record, capture_path=path, line_index=line_index)
+            if event is None:
+                result.note_refusal("NORMALIZATION_FAILED")
+                continue
+            try:
+                put_result = repository.put_event(event)
+            except RepositoryConflictError:
+                result.note_refusal("EVENT_PERSIST_CONFLICT")
+                continue
+            if put_result == RepositoryPutResult.INSERTED:
+                result.events_persisted += 1
+            elif put_result == RepositoryPutResult.ALREADY_PRESENT:
+                result.events_idempotent += 1
+            else:
+                result.note_refusal("EVENT_PERSIST_CONFLICT")
+                continue
 
         if is_tape_eligible_event(event, as_of_ns=as_of_ns):
             result.funnel = CaptureFunnelCounts(
@@ -546,6 +626,7 @@ def materialize_capture_paths(
     as_of_ns: int,
     session_start_ns: int,
     forecast_bindings: dict[str, str] | None = None,
+    ingress_router: ObservationIngressRouter | None = None,
 ) -> CaptureLedgerMaterializationResult:
     aggregate = CaptureLedgerMaterializationResult()
     for path in paths:
@@ -555,6 +636,7 @@ def materialize_capture_paths(
             as_of_ns=as_of_ns,
             session_start_ns=session_start_ns,
             forecast_bindings=forecast_bindings,
+            ingress_router=ingress_router,
         )
         aggregate.candidates.extend(partial.candidates)
         aggregate.events_persisted += partial.events_persisted
@@ -591,6 +673,7 @@ __all__ = [
     "materialize_capture_paths",
     "materialize_opend_capture_jsonl",
     "normalize_capture_record",
+    "normalize_capture_record_result",
     "pit_refusal_reason",
     "scan_capture_funnel",
 ]
