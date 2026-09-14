@@ -6,17 +6,11 @@ from typing import Any
 
 from .models import HOT_PATH_TIMESTAMP_NAMES, TimestampExerciseClass
 
-_ALWAYS_NOT_EXERCISED = frozenset({"opportunity_created_at", "operator_surfaced_at"})
-
-
 def derive_timestamp_exercise(
     presence: dict[str, dict[str, int]],
 ) -> dict[str, str]:
     exercise: dict[str, str] = {}
     for name in HOT_PATH_TIMESTAMP_NAMES:
-        if name in _ALWAYS_NOT_EXERCISED:
-            exercise[name] = TimestampExerciseClass.NOT_EXERCISED.value
-            continue
         present = int((presence.get(name) or {}).get("present_count", 0))
         if present > 0:
             exercise[name] = TimestampExerciseClass.MEASURED.value

@@ -1989,10 +1989,13 @@
       "source_globs": [
         "src/market_platform_foundation/hot_path_telemetry/**",
         "tests/artifact/replay_latency_baseline.json",
-        "tests/artifact/hot_path_telemetry_baseline_acceptance.json"
+        "tests/artifact/hot_path_telemetry_baseline_acceptance.json",
+        "tests/artifact/software_wired_hot_path.json",
+        "tests/artifact/hot_path_telemetry_software_wired_acceptance.json"
       ],
       "test_globs": [
-        "tests/artifact/test_hot_path_telemetry_baseline.py"
+        "tests/artifact/test_hot_path_telemetry_baseline.py",
+        "tests/artifact/test_hot_path_telemetry_software_wired.py"
       ],
       "neighbors": [
         "hot_path_telemetry",
