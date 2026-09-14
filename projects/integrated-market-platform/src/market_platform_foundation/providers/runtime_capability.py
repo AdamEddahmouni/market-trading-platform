@@ -151,6 +151,11 @@ _LANE_TO_REGISTRY_CAPABILITIES: dict[str, tuple[str, ...]] = {
     CAP_DELAYED_OVERLAY: (YAHOO_CAPABILITY,),
 }
 
+#: Lane and registry ids that mean hop L1. Yahoo overlay is never these.
+_HOP_L1_CAPABILITY_IDS = frozenset(
+    {CAP_L1, IBKR_CAPABILITY_L1, "US_EQUITY_L1"}
+)
+
 
 @dataclass(frozen=True, slots=True)
 class RuntimeCapabilityView:
@@ -345,6 +350,14 @@ class RuntimeCapabilityRegistry:
         require_real_time: bool = False,
     ) -> RuntimeCapabilityView:
         """Evaluate all axes for one provider+capability pair."""
+        if provider_id == YAHOO_PROVIDER_ID and _is_hop_l1_capability(capability_id):
+            view = _yahoo_not_hop_l1_view(instrument_id)
+            view = _with_yahoo_overlay_invariants(
+                view, require_real_time=require_real_time
+            )
+            return _with_capability_axis_honesty(
+                view, configured=self.runtime_state_for(view.provider_id).configured
+            )
         view = self._evaluate_capability(
             provider_id,
             capability_id,
@@ -609,6 +622,40 @@ class RuntimeCapabilityRegistry:
             for pid, state in sorted(self._runtime_states.items())
         }
         return base
+
+
+def _is_hop_l1_capability(capability_id: str) -> bool:
+    """True for hop L1 lane/registry ids. Overlay snapshot is not hop L1."""
+    if capability_id in _HOP_L1_CAPABILITY_IDS:
+        return True
+    mapped = _LANE_TO_REGISTRY_CAPABILITIES.get(capability_id)
+    return mapped is not None and mapped == _LANE_TO_REGISTRY_CAPABILITIES[CAP_L1]
+
+
+def _yahoo_not_hop_l1_view(instrument_id: str | None) -> RuntimeCapabilityView:
+    """Yahoo delayed overlay must not masquerade as hop L1 (OpenD/IBKR)."""
+    provenance: dict[str, Any] = {
+        "hop_l1": False,
+        "live_verified": False,
+        "overlay_role": "DELAYED_EOD",
+        "timeliness": DataTimeliness.DELAYED.value,
+    }
+    if instrument_id:
+        provenance["instrument_id"] = instrument_id
+    return RuntimeCapabilityView(
+        provider_id=YAHOO_PROVIDER_ID,
+        capability_id=YAHOO_CAPABILITY,
+        lane_capability_id=CAP_L1,
+        implemented=False,
+        runtime_state=RuntimeCapabilityState.UNAVAILABLE,
+        entitlement=EntitlementState.DELAYED,
+        timeliness=DataTimeliness.DELAYED,
+        provider_health=ProviderHealth.UNKNOWN,
+        observational_authority=ObservationalAuthority.OBSERVATIONAL,
+        instrument_id=instrument_id,
+        reason_code="DELAYED_OVERLAY_NOT_HOP_L1",
+        provenance=provenance,
+    )
 
 
 def _coerce_yahoo_runtime_state(state: ProviderRuntimeState) -> ProviderRuntimeState:
