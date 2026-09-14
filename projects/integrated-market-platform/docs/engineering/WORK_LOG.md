@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Item 9 BAR_OHLCV_1M comparator dry-run path
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, `providers/moomoo`, `tools` |
+| **Summary** | Added fail-closed Item 9 bounded experiment: load lawful `BAR_OHLCV_1M` from admitted BIYA fixture or loopback OpenD 1m klines (`available_time` at bar end), surface signal/bar/provenance timestamps, dry-run `BarConservativeSimulator` (no orders, not `CALIBRATED`). Classifies `EXPERIMENT_CONTRACT_MISMATCH` when no post-signal bar (e.g. prior L1-only runner gap). OpenD transport adds read-only `fetch_history_kline_1m`. |
+| **Key files** | `src/market_platform_foundation/paper/calibration/bar_ohlcv_sources.py`; `src/market_platform_foundation/paper/calibration/bar_ohlcv_experiment.py`; `tools/providers/run_bar_ohlcv_comparator_experiment.py`; `tools/moomoo/opend_quote_transport.py`; `tests/platform/test_bar_ohlcv_comparator_experiment.py`; `docs/architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md` |
+| **Tests** | `python -m unittest tests.platform.test_bar_ohlcv_comparator_experiment -v` — 5 passed (CPython 3.11 venv) |
+| **Related** | [PAPER_SIMULATOR_CALIBRATION_CONTRACT.md](../architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md); Item 9 PARTIAL |
+| **Notes** | Alpaca comparator leg unchanged (GET-only). AAPL prospective bars need `--source moomoo-opend` with loopback OpenD during session. |
+
 ## 2026-09-14 — Classify capture ledger immutable persist conflicts
 
 | Field | Value |
