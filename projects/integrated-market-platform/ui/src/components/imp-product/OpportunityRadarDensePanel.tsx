@@ -1,7 +1,8 @@
 import type { AttentionItem } from "../../api/client";
 import { useOpportunitiesSummaryQuery } from "../../api/opportunityClient";
-import { opportunityRankLabel, opportunitySymbol, opportunityTags } from "./impOpportunityDisplay";
 import { attentionItemFromOpportunity } from "../now/OpportunityReviewCard";
+import { OpportunityFeedStatusBanner } from "./OpportunityFeedStatusBanner";
+import { opportunityRankLabel, opportunitySymbol, opportunityTags } from "./impOpportunityDisplay";
 
 type Props = {
   readOnly?: boolean;
@@ -33,13 +34,12 @@ export function OpportunityRadarDensePanel({
           </span>
         ) : null}
       </header>
-      {state === "loading" ? <p role="status">Loading opportunity queue…</p> : null}
-      {state === "error" ? <p className="unavailable" role="alert">Opportunity queue unavailable.</p> : null}
-      {state === "ready" && query.data?.feed_status === "UNREADY" ? (
-        <p className="unavailable" role="status">
-          Queue unready{query.data.unready_reason ? ` (${query.data.unready_reason})` : ""}.
-        </p>
-      ) : null}
+      <OpportunityFeedStatusBanner
+        state={state}
+        feedStatus={query.data?.feed_status}
+        unreadyReason={query.data?.unready_reason}
+        nextAction={query.data?.next_action}
+      />
       {state === "ready" && query.data?.feed_status !== "UNREADY" && !items.length ? (
         <p className="unavailable">No candidates in the ranked queue.</p>
       ) : null}

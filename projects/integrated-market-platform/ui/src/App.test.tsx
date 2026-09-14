@@ -691,6 +691,15 @@ describe("App mode launcher integration", () => {
     expect(screen.queryByRole("heading", { name: "Command Center" })).not.toBeInTheDocument();
   });
 
+  it("opens the Signals desk without duplicating the overview KPI board", async () => {
+    render(<App />);
+    await enterMode("Demo");
+    await openNavLink(/^Signals —/i);
+    expect(await screen.findByRole("heading", { name: "Signals desk" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Overview KPIs" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "See the market unfold" })).not.toBeInTheDocument();
+  });
+
   it("resets the route before switching and re-entering", async () => {
     render(<App />);
     await enterMode("Demo");

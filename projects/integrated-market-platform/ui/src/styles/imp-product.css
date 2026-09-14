@@ -512,3 +512,35 @@
   font-size: 0.68rem;
   padding: 0.2rem 0.4rem;
 }
+
+.imp-opportunity-feed-banner {
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-2);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.imp-opportunity-feed-banner-alert {
+  border-color: rgba(196, 78, 82, 0.45);
+  color: var(--text-primary);
+}
+
+.imp-discover-section {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.imp-discover-section-header {
+  margin-bottom: 0.75rem;
+}
+
+.imp-discover-section-lead {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  max-width: 52rem;
+}

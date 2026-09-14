@@ -1,8 +1,12 @@
+import type { DiscoverInspectorActions } from "../discover-shared/discoverInspectorActions";
+import { DiscoverMixedScreenerSection, DiscoverRankedQueueSection } from "../discover-shared/DiscoverPageSections";
 import { DiscoverObservability } from "../discover-shared/DiscoverObservability";
 import { OpportunityRadarDensePanel } from "../imp-product/OpportunityRadarDensePanel";
 import { OpportunityRadarIntro } from "../imp-product/OpportunityRadarIntro";
 
-export function PaperDiscoverPage() {
+type Props = DiscoverInspectorActions;
+
+export function PaperDiscoverPage({ onExplain, onInspect, onOpenWorkspace }: Props) {
   return (
     <section className="page discover-page paper-discover-page">
       <header className="paper-discover-header">
@@ -20,9 +24,17 @@ export function PaperDiscoverPage() {
         Promote candidates into workspace lanes for paper simulation review; broker execution stays off.
       </OpportunityRadarIntro>
 
-      <OpportunityRadarDensePanel />
+      <DiscoverRankedQueueSection>
+        <OpportunityRadarDensePanel
+          onExplain={onExplain}
+          onInspect={onInspect}
+          onOpenWorkspace={onOpenWorkspace}
+        />
+      </DiscoverRankedQueueSection>
 
-      <DiscoverObservability allowMutations autoRefreshOnMount />
+      <DiscoverMixedScreenerSection>
+        <DiscoverObservability allowMutations autoRefreshOnMount />
+      </DiscoverMixedScreenerSection>
     </section>
   );
 }

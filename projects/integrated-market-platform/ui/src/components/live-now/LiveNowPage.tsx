@@ -8,9 +8,11 @@ import { LiveProviderRibbon } from "./LiveProviderRibbon";
 import { LiveSafetySnapshot } from "./LiveSafetySnapshot";
 import { LiveSymbolLookup } from "./LiveSymbolLookup";
 import type { ProviderHealthResponse } from "./liveDashboardViewModel";
+import type { NowDeskVariant } from "../now/nowDeskVariant";
 
 export type LiveNowPageProps = {
   items: AttentionItem[];
+  desk?: NowDeskVariant;
   attentionState: "loading" | "ready" | "error";
   dataMode?: string;
   executionAuthority?: string;
@@ -26,6 +28,7 @@ export type LiveNowPageProps = {
 
 export function LiveNowPage({
   items,
+  desk = "overview",
   attentionState,
   dataMode,
   executionAuthority,
@@ -46,6 +49,7 @@ export function LiveNowPage({
       : "ready";
   const contextReady = providerState !== "loading";
   const kpiState = !contextReady ? "loading" : providerState === "error" ? "error" : "ready";
+  const signalsDesk = desk === "signals";
   const kpiCells = overviewKpisFromLiveContext({
     state: kpiState,
     attentionCount: items.length,
@@ -56,15 +60,36 @@ export function LiveNowPage({
     opportunityFeedStatus: opportunitiesQuery.data?.feed_status,
   });
 
+  const attentionSection = (
+    <section className="live-panel live-attention-panel" aria-labelledby="live-attention-title">
+      <header className="live-panel-heading">
+        <div>
+          <p className="live-eyebrow">Evidence queue</p>
+          <h2 id="live-attention-title">What matters now</h2>
+        </div>
+      </header>
+      <AttentionFeed
+        items={items}
+        state={attentionState}
+        emptyMessage="Nothing requires attention in the current live feed."
+        onWhy={onWhy}
+        onExplain={onExplain}
+        onInspect={onInspect}
+        onOpenWorkspace={onOpenWorkspace}
+      />
+    </section>
+  );
+
   return (
-    <section className="page live-now-page">
+    <section className={`page live-now-page${signalsDesk ? " live-signals-desk" : ""}`}>
       <header className="live-now-header">
         <div>
           <span className="live-eyebrow">Live · Read-only observational</span>
-          <h1>Live Watch</h1>
+          <h1>{signalsDesk ? "Signals desk" : "Live Watch"}</h1>
           <p>
-            Monitor current market data, provider health, and operational safety without execution
-            authority. Use workspaces for instrument-level observation only.
+            {signalsDesk
+              ? "Live attention feed with reason codes. Ranked opportunities remain on Overview and Radar."
+              : "Monitor current market data, provider health, and operational safety without execution authority. Use workspaces for instrument-level observation only."}
           </p>
         </div>
         <dl>
@@ -87,6 +112,12 @@ export function LiveNowPage({
         </dl>
       </header>
 
+      {signalsDesk ? (
+        <>
+          <LiveProviderRibbon health={providerHealth} state={providerState} />
+          {attentionSection}
+        </>
+      ) : (
       <ImpOverviewBoard
         kpiCells={kpiCells}
         kpiState={kpiState}
@@ -106,24 +137,9 @@ export function LiveNowPage({
         <LiveSymbolLookup health={providerHealth} state={providerState} />
       </div>
 
-      <section className="live-panel live-attention-panel" aria-labelledby="live-attention-title">
-        <header className="live-panel-heading">
-          <div>
-            <p className="live-eyebrow">Evidence queue</p>
-            <h2 id="live-attention-title">What matters now</h2>
-          </div>
-        </header>
-        <AttentionFeed
-          items={items}
-          state={attentionState}
-          emptyMessage="Nothing requires attention in the current live feed."
-          onWhy={onWhy}
-          onExplain={onExplain}
-          onInspect={onInspect}
-          onOpenWorkspace={onOpenWorkspace}
-        />
-      </section>
+      {attentionSection}
       </ImpOverviewBoard>
+      )}
     </section>
   );
 }

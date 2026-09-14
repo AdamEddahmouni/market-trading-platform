@@ -14,6 +14,7 @@ import { nextPaperCandidateId } from "./paperDashboardViewModel";
 import { ImpOverviewBoard } from "../imp-product/ImpOverviewBoard";
 import { overviewKpisFromPortfolio } from "../imp-product/impOverviewMetrics";
 import { buildPaperOrderRequest, createAttentionPaperOrderDraft, createPaperOrderDraft, createPaperPreviewAttemptKey, paperOrderDraftFingerprint, type PaperOrderDraft, type PaperOrderSide, attentionSourceContextFromItem } from "./paperOrderDraft";
+import type { NowDeskVariant } from "../now/nowDeskVariant";
 
 export type PaperNowPageProps = {
   items: AttentionItem[];
@@ -24,11 +25,12 @@ export type PaperNowPageProps = {
   onWhy: (item: AttentionItem) => void;
   onExplain: (item: AttentionItem) => void;
   onInspect: (item: AttentionItem) => void;
+  desk?: NowDeskVariant;
 };
 
 type ConfirmedPreview = { fingerprint: string; value: PaperOrderPreviewResponse["preview"] };
 
-export function PaperNowPage({ items, attentionState, portfolio, portfolioState, paperActionsPermitted, onWhy, onExplain, onInspect }: PaperNowPageProps) {
+export function PaperNowPage({ items, attentionState, portfolio, portfolioState, paperActionsPermitted, onWhy, onExplain, onInspect, desk = "overview" }: PaperNowPageProps) {
   const navigate = useNavigate();
   const opportunitiesQuery = useOpportunitiesSummaryQuery(true);
   const opportunityState = opportunitiesQuery.isLoading
@@ -65,8 +67,8 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
     sourceAttentionId: selected.attention_id,
     sourceContext: attentionSourceContextFromItem(selected),
   }) : null;
-  const fingerprint = draft ? paperOrderDraftFingerprint(draft) : "";
-  const canContinue = Boolean(authorized && portfolioState === "ready" && draft && confirmedPreview?.fingerprint === fingerprint && confirmedPreview.value.risk_status === "PASS");
+  const canOpenWorkspace = Boolean(authorized && portfolioState === "ready" && draft);
+  const signalsDesk = desk === "signals";
 
   useEffect(() => {
     if (authorized && portfolioState === "ready") return;
@@ -112,9 +114,92 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
     openAttentionWorkspace(item);
   }
 
+  const header = (
+    <header className="paper-now-header">
+      <div>
+        <span className="paper-eyebrow">Paper-only simulation</span>
+        <h1>{signalsDesk ? "Signals desk" : "Paper Command"}</h1>
+        <p>
+          {signalsDesk
+            ? "Attention queue and reason codes for Paper simulation. Ranked opportunities and drafting stay on Overview; submit only from workspace."
+            : "Review portfolio risk, draft intent, then revalidate in the instrument workspace before simulated submission."}
+        </p>
+      </div>
+      <dl>
+        <div><dt>Account</dt><dd>{portfolio?.account.paper_account_id ?? "Unavailable"}</dd></div>
+        <div><dt>Session</dt><dd>{portfolio?.account.session_id ?? "Unavailable"}</dd></div>
+        <div><dt>Execution</dt><dd>{portfolio?.account.execution_mode ?? "Unavailable"}</dd></div>
+        <div><dt>Authority</dt><dd>{portfolio?.account.execution_authority ?? "Unavailable"}</dd></div>
+        <div><dt>Data health</dt><dd>{portfolio?.data_health.state ?? "Unavailable"}</dd></div>
+      </dl>
+    </header>
+  );
+
+  const decisionGrid = (
+    <div className="paper-decision-grid">
+      <PaperCandidateQueue
+        items={items}
+        state={attentionState}
+        selectedAttentionId={selectedAttentionId}
+        onSelect={(id) => {
+          invalidatePreview();
+          setSelectedAttentionId(id);
+        }}
+        onWhy={onWhy}
+        onExplain={onExplain}
+        onInspect={onInspect}
+        onOpenWorkspace={openAttentionWorkspace}
+        opportunityItems={opportunitiesQuery.data?.items ?? []}
+        opportunityState={opportunityState}
+        feedStatus={opportunitiesQuery.data?.feed_status}
+        unreadyReason={opportunitiesQuery.data?.unready_reason}
+        nextAction={opportunitiesQuery.data?.next_action}
+        paperAccountId={portfolio?.account.paper_account_id}
+        onAck={(row, action) => {
+          opportunityAck.mutate({ rowId: row.opportunity_id || row.summary_id, action });
+        }}
+        showRankedOpportunities={!signalsDesk}
+      />
+      {!signalsDesk ? (
+        <PaperPreviewComposer
+          instrumentId={selected?.instrument_id ?? null}
+          side={side}
+          quantityText={quantityText}
+          maxOrderShares={portfolio?.risk.limits.max_order_shares}
+          disabledReason={disabledReason}
+          pending={previewMutation.isPending}
+          error={previewError}
+          preview={confirmedPreview?.value ?? null}
+          canOpenWorkspace={canOpenWorkspace}
+          onSideChange={(value) => {
+            invalidatePreview();
+            setSide(value);
+          }}
+          onQuantityChange={(value) => {
+            invalidatePreview();
+            setQuantityText(value);
+          }}
+          onPreview={() => {
+            void previewDraft();
+          }}
+          onOpenWorkspace={() => {
+            if (draft && canOpenWorkspace) continueToWorkspace(draft);
+          }}
+        />
+      ) : null}
+      <PaperExceptionsPanel portfolio={portfolio} state={portfolioState} />
+    </div>
+  );
+
   return (
-    <section className="page paper-now-page">
-      <header className="paper-now-header"><div><span className="paper-eyebrow">Paper-only simulation</span><h1>Paper Command</h1><p>Review portfolio risk, validate a deliberate draft, then revalidate in the instrument workspace before simulated submission.</p></div><dl><div><dt>Account</dt><dd>{portfolio?.account.paper_account_id ?? "Unavailable"}</dd></div><div><dt>Session</dt><dd>{portfolio?.account.session_id ?? "Unavailable"}</dd></div><div><dt>Execution</dt><dd>{portfolio?.account.execution_mode ?? "Unavailable"}</dd></div><div><dt>Authority</dt><dd>{portfolio?.account.execution_authority ?? "Unavailable"}</dd></div><div><dt>Data health</dt><dd>{portfolio?.data_health.state ?? "Unavailable"}</dd></div></dl></header>
+    <section className={`page paper-now-page${signalsDesk ? " paper-signals-desk" : ""}`}>
+      {header}
+      {signalsDesk ? (
+        <>
+          <PaperRiskRibbon portfolio={portfolio} state={portfolioState} />
+          {decisionGrid}
+        </>
+      ) : (
       <ImpOverviewBoard
         kpiCells={kpiCells}
         kpiState={kpiState}
@@ -128,12 +213,9 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
         onOpenWorkspace={openOpportunityWorkspace}
       >
       <PaperRiskRibbon portfolio={portfolio} state={portfolioState} />
-      <div className="paper-decision-grid">
-        <PaperCandidateQueue items={items} state={attentionState} selectedAttentionId={selectedAttentionId} onSelect={(id) => { invalidatePreview(); setSelectedAttentionId(id); }} onWhy={onWhy} onExplain={onExplain} onInspect={onInspect} onOpenWorkspace={openAttentionWorkspace} opportunityItems={opportunitiesQuery.data?.items ?? []} opportunityState={opportunityState} feedStatus={opportunitiesQuery.data?.feed_status} unreadyReason={opportunitiesQuery.data?.unready_reason} nextAction={opportunitiesQuery.data?.next_action} paperAccountId={portfolio?.account.paper_account_id} onAck={(row, action) => { opportunityAck.mutate({ rowId: row.opportunity_id || row.summary_id, action }); }} />
-        <PaperPreviewComposer instrumentId={selected?.instrument_id ?? null} side={side} quantityText={quantityText} maxOrderShares={portfolio?.risk.limits.max_order_shares} disabledReason={disabledReason} pending={previewMutation.isPending} error={previewError} preview={confirmedPreview?.value ?? null} canContinue={canContinue} onSideChange={(value) => { invalidatePreview(); setSide(value); }} onQuantityChange={(value) => { invalidatePreview(); setQuantityText(value); }} onPreview={() => { void previewDraft(); }} onContinue={() => { if (draft && canContinue) continueToWorkspace(draft); }} />
-        <PaperExceptionsPanel portfolio={portfolio} state={portfolioState} />
-      </div>
+      {decisionGrid}
       </ImpOverviewBoard>
+      )}
     </section>
   );
 }

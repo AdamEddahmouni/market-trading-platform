@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { discoverPageTestActions } from "../discover-shared/discoverPageTestActions";
 import { PaperDiscoverPage } from "./PaperDiscoverPage";
 
 vi.mock("../../api/opportunityClient", () => ({
@@ -114,7 +115,7 @@ function renderPage() {
   return render(
     <MemoryRouter initialEntries={["/discover"]}>
       <Routes>
-        <Route path="/discover" element={<PaperDiscoverPage />} />
+        <Route path="/discover" element={<PaperDiscoverPage {...discoverPageTestActions()} />} />
         <Route path="/workspace/:instrumentId" element={<div>Workspace opened</div>} />
       </Routes>
     </MemoryRouter>,

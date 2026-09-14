@@ -1,6 +1,7 @@
 import { lazy } from "react";
 import { useContextQuery, useLiveCanarySnapshotQuery, usePaperPortfolioQuery, useProviderHealthQuery } from "../api/hooks";
 import type { DemoNowPageProps } from "./demo-now/DemoNowPage";
+import type { NowDeskVariant } from "./now/nowDeskVariant";
 
 const DemoNowPage = lazy(() =>
   import("./demo-now/DemoNowPage").then((module) => ({ default: module.DemoNowPage })),
@@ -17,6 +18,7 @@ type SharedProps = Omit<DemoNowPageProps, "portfolio" | "portfolioState">;
 type Props = SharedProps & {
   mode: import("./mode-session/types").Mode;
   paperActionsPermitted: boolean;
+  desk?: NowDeskVariant;
   tierSummary?: import("../lib/chartTransforms").ChartCountPoint[];
 };
 
@@ -44,6 +46,7 @@ function PaperNowRoute({ paperActionsPermitted, ...props }: SharedProps & { pape
       portfolio={portfolioQuery.data}
       portfolioState={portfolioState}
       paperActionsPermitted={paperActionsPermitted}
+      desk={props.desk}
       onWhy={props.onWhy}
       onExplain={props.onExplain}
       onInspect={props.onInspect}
@@ -68,6 +71,7 @@ function LiveNowRoute(props: SharedProps) {
     <LiveNowPage
       items={props.items}
       attentionState={props.attentionState}
+      desk={props.desk}
       dataMode={context?.data_mode}
       executionAuthority={context?.execution_authority}
       providerHealth={providerQuery.data}
@@ -82,8 +86,9 @@ function LiveNowRoute(props: SharedProps) {
   );
 }
 
-export function ModeNowRoute({ mode, tierSummary: _tierSummary, paperActionsPermitted, ...props }: Props) {
-  if (mode === "DEMO") return <DemoNowRoute {...props} />;
-  if (mode === "PAPER") return <PaperNowRoute {...props} paperActionsPermitted={paperActionsPermitted} />;
-  return <LiveNowRoute {...props} />;
+export function ModeNowRoute({ mode, tierSummary: _tierSummary, paperActionsPermitted, desk = "overview", ...props }: Props) {
+  const routed = { ...props, desk };
+  if (mode === "DEMO") return <DemoNowRoute {...routed} />;
+  if (mode === "PAPER") return <PaperNowRoute {...routed} paperActionsPermitted={paperActionsPermitted} />;
+  return <LiveNowRoute {...routed} />;
 }

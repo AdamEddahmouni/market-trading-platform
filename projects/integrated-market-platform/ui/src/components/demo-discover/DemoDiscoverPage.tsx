@@ -1,8 +1,12 @@
+import type { DiscoverInspectorActions } from "../discover-shared/discoverInspectorActions";
+import { DiscoverMixedScreenerSection, DiscoverRankedQueueSection } from "../discover-shared/DiscoverPageSections";
 import { DiscoverObservability } from "../discover-shared/DiscoverObservability";
 import { OpportunityRadarDensePanel } from "../imp-product/OpportunityRadarDensePanel";
 import { OpportunityRadarIntro } from "../imp-product/OpportunityRadarIntro";
 
-export function DemoDiscoverPage() {
+type Props = DiscoverInspectorActions;
+
+export function DemoDiscoverPage({ onExplain, onInspect, onOpenWorkspace }: Props) {
   return (
     <section className="page discover-page demo-discover-page">
       <header className="demo-discover-header">
@@ -26,9 +30,18 @@ export function DemoDiscoverPage() {
         <p>Discovery refresh and promote actions are unavailable. Switch to Paper mode to run the full discovery desk.</p>
       </aside>
 
-      <OpportunityRadarDensePanel readOnly />
+      <DiscoverRankedQueueSection>
+        <OpportunityRadarDensePanel
+          readOnly
+          onExplain={onExplain}
+          onInspect={onInspect}
+          onOpenWorkspace={onOpenWorkspace}
+        />
+      </DiscoverRankedQueueSection>
 
-      <DiscoverObservability />
+      <DiscoverMixedScreenerSection>
+        <DiscoverObservability />
+      </DiscoverMixedScreenerSection>
     </section>
   );
 }

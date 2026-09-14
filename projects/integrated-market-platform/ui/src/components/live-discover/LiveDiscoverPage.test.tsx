@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { discoverPageTestActions } from "../discover-shared/discoverPageTestActions";
 import { LiveDiscoverPage } from "./LiveDiscoverPage";
 
 vi.mock("../../api/opportunityClient", () => ({
@@ -31,7 +32,7 @@ const mixedPayload = {
 function renderPage() {
   return render(
     <MemoryRouter>
-      <LiveDiscoverPage />
+      <LiveDiscoverPage {...discoverPageTestActions()} />
     </MemoryRouter>,
   );
 }

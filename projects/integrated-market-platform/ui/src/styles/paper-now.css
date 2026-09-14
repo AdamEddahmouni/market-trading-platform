@@ -41,6 +41,7 @@
 .paper-panel > header { display: flex; justify-content: space-between; gap: 12px; align-items: start; margin-bottom: 14px; }
 .paper-panel h2, .paper-panel h3 { margin: 0; }
 .paper-preview-panel { border-color: rgba(72, 214, 196, 0.48); background: radial-gradient(circle at 90% 0, rgba(72, 214, 196, 0.13), transparent 34%), linear-gradient(145deg, #132632, #111923); box-shadow: 0 20px 55px rgba(0, 0, 0, 0.22); }
+.paper-preview-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
 
 .paper-candidate-panel [role="radiogroup"] { display: grid; gap: 10px; }
 .paper-candidate { padding: 13px; border: 1px solid var(--paper-line); background: rgba(5, 11, 17, 0.42); }
