@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
@@ -139,14 +140,17 @@ class BarOhlcvComparatorExperimentTests(unittest.TestCase):
         self.assertFalse(loaded.ok)
         self.assertEqual(loaded.reason_code, CLASSIFICATION_CONTRACT_MISMATCH)
 
-    def test_opend_unavailable_without_injected_rows(self) -> None:
+    @mock.patch(
+        "market_platform_foundation.paper.calibration.bar_ohlcv_sources.opend_reachable",
+        return_value=False,
+    )
+    def test_opend_unavailable_without_injected_rows(self, _reachable: mock.Mock) -> None:
         loaded = load_moomoo_opend_kline_bars(
             instrument_id="AAPL",
             observation_time_ns=1_700_000_000_000_000_000,
         )
         self.assertFalse(loaded.ok)
-        self.assertIsNotNone(loaded.reason_code)
-        self.assertFalse(loaded.ok)
+        self.assertEqual(loaded.reason_code, "OPEND_UNAVAILABLE")
 
     def test_lawful_first_post_signal_bar_drives_simulator_fill(self) -> None:
         rows = (
@@ -184,7 +188,11 @@ class BarOhlcvComparatorExperimentTests(unittest.TestCase):
         self.assertFalse(result.calibrated)
         self.assertFalse(result.orders_placed)
 
-    def test_experiment_source_unavailable_when_opend_missing(self) -> None:
+    @mock.patch(
+        "market_platform_foundation.paper.calibration.bar_ohlcv_sources.opend_reachable",
+        return_value=False,
+    )
+    def test_experiment_source_unavailable_when_opend_missing(self, _reachable: mock.Mock) -> None:
         result = run_bounded_bar_ohlcv_experiment(
             signal_time_ns=1,
             observation_time_ns=2,
@@ -195,8 +203,10 @@ class BarOhlcvComparatorExperimentTests(unittest.TestCase):
         self.assertEqual(result.classification, CLASSIFICATION_SOURCE_UNAVAILABLE)
 
     def test_admitted_fixture_experiment_runnable_when_signal_before_bar(self) -> None:
-        if not SOURCE_PATH.is_file():
-            self.skipTest("admitted BIYA bar fixture unavailable")
+        self.assertTrue(
+            SOURCE_PATH.is_file(),
+            "admitted BIYA bar fixture must be present for Item 9 offline tests",
+        )
         adapter = EquityIntradayJsonlAdapter(ingest_run_id="item9-test")
         ingested = adapter.ingest_path(SOURCE_PATH)
         self.assertGreater(len(ingested.canonical_events), 2)
