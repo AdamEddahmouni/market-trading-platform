@@ -48,6 +48,54 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [PAPER_SIMULATOR_CALIBRATION_CONTRACT.md](../architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md); Item 9 PARTIAL |
 | **Notes** | Alpaca comparator leg unchanged (GET-only). AAPL prospective bars need `--source moomoo-opend` with loopback OpenD during session. |
 
+## 2026-09-14 — OE-07 API projection of evidence and persist contract fields (rebased)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui_api`, `docs/architecture` |
+| **Summary** | `GET /opportunities/summary|{id}` and `GET /opportunities/{id}/evidence` lift review-row evidence, family admission, and dedupe/supersession facts to first-class JSON, and project persist `OpportunityV1.created_at_ns` / expected-edge at read time. Ingest does not stamp `decision_time_ns` onto review-row metadata (OE-05 fail-closed). No `MONITORED` / `OUTCOME_RECORDED` states. |
+| **Key files** | `src/market_platform_foundation/ui_api/opportunity_projections.py`, `tests/ui1/test_opportunity_api.py`, `tests/intelligence/test_opportunity_ingest.py`, `manifests/ui1/schemas/opportunity_summary.schema.json`, `manifests/ui1/schemas/opportunity_evidence.schema.json`, `docs/architecture/OPPORTUNITY_CONTRACT.md`, `docs/architecture/DATA_CONTRACTS.md`, `docs/product/OPPORTUNITY_ENGINE_CURRENT_STATE_AND_IMPLEMENTATION_PLAN.md` |
+| **Tests** | `PYTHONPATH=src .venv/Scripts/python.exe -m unittest tests.ui1.test_opportunity_api tests.intelligence.test_opportunity_ingest -v` → **18 passed** |
+| **Related** | [OPPORTUNITY_CONTRACT.md](../architecture/OPPORTUNITY_CONTRACT.md); OE-04 #106; OE-05 #105; supersedes rebased landing for #116 |
+| **Notes** | Isolated worktree `.worktrees/rebase-pr-116`, branch `work/rebase-pr-116-20260914` on `origin/main` `79ae537`. Live off. No hop/OpenD/G7/Path A/FTEP/SQLite schema/V1-002/execution gates. |
+
+## 2026-09-14 — Research Export PIT-PENDING + EXTERNAL_RESEARCH_DATA fail-closed
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `research/export_v1`, `research/wave1`, `research/matlab` |
+| **Summary** | Fixture Research Export v1 packages still emit honest `metadata.pit_status=PIT-PENDING` / `NON_EMPIRICAL_FIXTURE`. Loaders now require operator PIT metadata, refuse mixed `EXTERNAL_RESEARCH_DATA` on canonical IMP packages, and Wave 1 OOS stays blocked for fixture, external, and mixed classes. QR-01 MATLAB toolbox schema + UNAVAILABLE example landed (cloud `BLOCKED_NO_MATLAB`; not a production runtime). MATLAB consumes Research Export v1 JSON; overnight Parquet bridge remains historical. |
+| **Key files** | `src/market_platform_foundation/research/export_v1.py`, `wave1/export_gate.py`, `wave1/runner.py`, `wave1/harness.py`, `matlab_environment.py`, `research/matlab/**`, `tests/research/test_research_export_v1.py`, `tests/research/test_wave1_experiment_harness.py`, `tests/research/test_matlab_environment.py`, `docs/research/RESEARCH_EXPORT_V1.md`, `docs/README.md`, `tools/research/build_research_export_v1.py`, `tools/validation_manifest.json` |
+| **Tests** | Focused: `PYTHONPATH=src .venv/Scripts/python.exe -m unittest tests.research.test_research_export_v1 tests.research.test_wave1_experiment_harness tests.research.test_matlab_environment -v` → **24 passed** (rebase worktree on `origin/main` `2e022383`). |
+| **Related** | [RESEARCH_EXPORT_V1.md](../research/RESEARCH_EXPORT_V1.md), QR-01/QR-03 MATLAB lab plan, Wave 1 `export_gate.py`; landed via squash-merge PR #137 (supersedes #119) |
+| **Notes** | Did not stamp `PIT-PASS`. Did not run Wave 1 OOS. No hop `1381619`, no FTEP session, Live off. MATLAB not installed on this host. |
+
+## 2026-09-14 — POST_BUILD35 inventory for ci_job_selector (PR #132)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ci`, `validation` |
+| **Summary** | `validate-python-changed` failed repository-closure audit with `unclassified path: tools/ci_job_selector.py`. Added the path to the `validation-control-plane` scope in `POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` (inventory only; no prose rewrite). |
+| **Key files** | `artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` |
+| **Tests** | `PYTHONPATH=src .venv/Scripts/python.exe -m unittest tests.validation.test_repository_closure.CanonicalRepositoryClosureAuditTests.test_canonical_audit_is_complete_non_destructive_and_uses_closed_vocabulary tests.validation.test_ci_job_selector` → **16 passed** |
+| **Related** | PR #132 (`reconcile/ci-skip-slices-20260914`) |
+| **Notes** | PR #132 remains draft; PR #121 stays open. |
+
+## 2026-09-14 — CI skips unchanged expensive slices (rebased on main)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ci`, `developer-tooling` |
+| **Summary** | Rebased PR #121 onto `origin/main` (includes #130). Path-classified GitHub CI so PRs skip UI `npm ci`/vitest/build, docs-link, and the admitted short-squeeze replay-fixture clone when those trees are unchanged; donor-bridge paths force the fixture clone so `SkipTest` cannot hide required failures. Jobs still report success (required 9/9 preserved). FAST is shallow and never clones the fixture. Push-to-`main` and `workflow_dispatch` pass `--always-run` in `imp-validate.yml` and in `imp-python.yml` changed mode. `python tools/imp.py ci jobs` is the local classifier. No `POST_BUILD35` closure artifact rewrite. |
+| **Key files** | `tools/ci_job_selector.py`, `tests/validation/test_ci_job_selector.py`, `tools/imp.py`, `tools/validation_manifest.json`, `.github/workflows/{imp-validate,imp-python,monorepo-guardrails}.yml`, `.github/actions/install-actionlint/action.yml`, `docs/engineering/{VALIDATION,DEVELOPER_RUNBOOK,DEVELOPER_OPERATING_SYSTEM,WORK_LOG}.md`, `AGENTS.md` |
+| **Tests** | `PYTHONPATH=src .venv/Scripts/python.exe -m unittest tests.validation.test_ci_job_selector tests.validation.test_imp_cli` → **25 passed** |
+| **Related** | [VALIDATION.md](VALIDATION.md); PR #121 |
+| **Notes** | Isolated `reconcile/ci-skip-slices-20260914` worktree. No hop/OpenD/G7/Path A/FTEP/persistence/V1-002/execution-gate changes. Live off. |
+
 ## 2026-09-14 — Classify capture ledger immutable persist conflicts
 
 | Field | Value |

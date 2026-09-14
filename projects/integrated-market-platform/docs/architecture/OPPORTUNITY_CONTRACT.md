@@ -105,6 +105,8 @@ The operator-facing representation should prioritize:
 
 Goal 001 projects that presentation onto the operator **review row** (`OpportunitySummary` 1.1 / `GET /opportunities/summary`), not a second persist type. Demo/Paper NOW renders it as the Opportunity Review Card. Missing fields are `UNAVAILABLE`. Ranking is a named vector plus 1-based `rank_order`; HTTP omits `rank_score`. Live NOW does not query or rank. An empty or unready queue is valid when no `OpportunityV1` has been minted.
 
+HTTP serialization (`ui_api/opportunity_projections.py`) lifts already-computed review-row facts to first-class JSON: `evidence_class`, `evidence_promotion_reason`, family admission, duplicates/supersession reason, and `instrument_key` (same identity as `instrument_id`). Persist `OpportunityV1.created_at_ns` (BUILD 21 decision time) and expected-edge fields are read at GET time from the repository; they are **not** copied onto review-row metadata, so temporal supersession remains fail-closed unless tests inject timestamps. `GET /opportunities/{id}/evidence` projects those evidence fields and keeps `items` as lineage refs. Attention rows stay `identity_kind=NOT_OPPORTUNITY_V1` with `evidence_class` null.
+
 Operator lifecycle (`DETECTED` → `NORMALIZED` → `ELIGIBLE`/`INELIGIBLE` → `RANKED` → `REVIEWED`/`WATCHED`/`DISMISSED`) lives on the review row only. It does not mutate frozen `OpportunityV1`.
 
 ## Lifecycle

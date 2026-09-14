@@ -1,0 +1,30 @@
+{
+  "schema_version": "matlab_toolbox_manifest/1.0.0",
+  "matlab_release": "UNAVAILABLE",
+  "matlab_root": null,
+  "recorded_at_ns": 0,
+  "recorded_host_id": "UNAVAILABLE",
+  "repository_head_sha": "UNAVAILABLE",
+  "toolboxes": [
+    { "product": "MATLAB", "class": "PRIMARY", "status": "UNAVAILABLE", "ver_string": null },
+    { "product": "Econometrics Toolbox", "class": "PRIMARY", "status": "UNAVAILABLE", "ver_string": null },
+    { "product": "Statistics and Machine Learning Toolbox", "class": "PRIMARY", "status": "UNAVAILABLE", "ver_string": null },
+    { "product": "Optimization Toolbox", "class": "PRIMARY", "status": "UNAVAILABLE", "ver_string": null },
+    { "product": "Financial Toolbox", "class": "PRIMARY", "status": "UNAVAILABLE", "ver_string": null },
+    { "product": "Financial Instruments Toolbox", "class": "HIGH_VALUE_SPECIALIZED", "status": "UNAVAILABLE", "ver_string": null },
+    { "product": "Risk Management Toolbox", "class": "SPECIALIZED", "status": "UNAVAILABLE", "ver_string": null },
+    { "product": "Parallel Computing Toolbox", "class": "ON_DEMAND", "status": "UNAVAILABLE", "ver_string": null },
+    { "product": "Signal Processing Toolbox", "class": "OPTIONAL", "status": "UNAVAILABLE", "ver_string": null },
+    { "product": "Text Analytics Toolbox", "class": "OPTIONAL", "status": "UNAVAILABLE", "ver_string": null },
+    { "product": "Deep Learning Toolbox", "class": "OPTIONAL", "status": "UNAVAILABLE", "ver_string": null },
+    { "product": "Reinforcement Learning Toolbox", "class": "OPTIONAL", "status": "UNAVAILABLE", "ver_string": null },
+    { "product": "Datafeed Toolbox", "class": "PROHIBITED_AS_CANONICAL", "status": "PROHIBITED", "ver_string": null },
+    { "product": "Database Toolbox", "class": "PROHIBITED_AS_CANONICAL", "status": "PROHIBITED", "ver_string": null }
+  ],
+  "isolation": {
+    "production_runtime": false,
+    "mode_authority": "NONE",
+    "paper_live_broker": "DENIED"
+  },
+  "smoke_status": "BLOCKED_NO_MATLAB"
+}

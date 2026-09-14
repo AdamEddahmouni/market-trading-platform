@@ -7,10 +7,13 @@ import unittest
 from pathlib import Path
 
 from market_platform_foundation.research.export_v1 import (
+    EXPORT_EVIDENCE_CLASS_EXTERNAL_RESEARCH_DATA,
     EXPORT_EVIDENCE_CLASS_NON_EMPIRICAL_FIXTURE,
+    EXPORT_OPERATOR_PIT_STATUS_PASS,
     EXPORT_OPERATOR_PIT_STATUS_PENDING,
     PROFILE_EVENT_MACRO,
     PROFILE_MARKET_TECHNICAL,
+    ResearchExportV1Package,
     build_research_export_v1,
     build_matlab_handoff_manifest,
     build_matlab_parity_reference,
@@ -19,6 +22,8 @@ from market_platform_foundation.research.export_v1 import (
     load_research_export_v1_package,
     manifest_hash,
     matlab_parity_check,
+    require_unmixed_evidence_class,
+    verify_matlab_handoff_manifest,
     verify_research_export_v1_package,
     write_research_export_v1_package,
 )
@@ -26,6 +31,7 @@ from market_platform_foundation.research.wave1.errors import Wave1ExportGateErro
 from market_platform_foundation.research.wave1.export_gate import (
     PIT_PASS_STATUS,
     assess_research_export_pit,
+    oos_evaluation_authorized,
     require_pit_pass_for_oos,
 )
 from market_platform_foundation.research.export_v1_audit import run_pit_audit
@@ -48,6 +54,7 @@ class ResearchExportV1Tests(unittest.TestCase):
         self.assertEqual(first.manifest["leakage_firewall"]["status"], "PASS")
         meta = first.manifest["metadata"]
         self.assertEqual(meta["pit_status"], EXPORT_OPERATOR_PIT_STATUS_PENDING)
+        self.assertNotEqual(meta["pit_status"], EXPORT_OPERATOR_PIT_STATUS_PASS)
         self.assertEqual(meta["evidence_class"], EXPORT_EVIDENCE_CLASS_NON_EMPIRICAL_FIXTURE)
         self.assertIn("validation_dataset_manifest", first.manifest)
         self.assertIn("pit_export_binding", first.manifest)
@@ -123,6 +130,88 @@ class ResearchExportV1Tests(unittest.TestCase):
         bad = type(package)(manifest=tampered, tables=package.tables)
         with self.assertRaises(ValueError):
             verify_research_export_v1_package(bad)
+
+    def test_verify_requires_operator_pit_status(self) -> None:
+        package = build_research_export_v1(profile=PROFILE_MARKET_TECHNICAL)
+        meta = dict(package.manifest["metadata"])
+        meta.pop("pit_status")
+        rebound = _rebind_manifest({**package.manifest, "metadata": meta})
+        bad = ResearchExportV1Package(manifest=rebound, tables=package.tables)
+        with self.assertRaises(ValueError) as ctx:
+            verify_research_export_v1_package(bad)
+        self.assertEqual(str(ctx.exception), "OPERATOR_PIT_STATUS_REQUIRED")
+
+    def test_external_research_data_cannot_mix_with_canonical_fixture(self) -> None:
+        package = build_research_export_v1(profile=PROFILE_MARKET_TECHNICAL)
+        meta = dict(package.manifest["metadata"])
+        meta["evidence_class"] = EXPORT_EVIDENCE_CLASS_EXTERNAL_RESEARCH_DATA
+        rebound = _rebind_manifest({**package.manifest, "metadata": meta})
+        mixed = ResearchExportV1Package(manifest=rebound, tables=package.tables)
+        with self.assertRaises(ValueError) as ctx:
+            verify_research_export_v1_package(mixed)
+        self.assertEqual(str(ctx.exception), "MIXED_EXTERNAL_RESEARCH_DATA")
+        with self.assertRaises(ValueError) as mix_ctx:
+            require_unmixed_evidence_class(rebound, package.tables)
+        self.assertEqual(str(mix_ctx.exception), "MIXED_EXTERNAL_RESEARCH_DATA")
+
+    def test_row_level_external_research_data_mixes_with_fixture_class(self) -> None:
+        package = build_research_export_v1(profile=PROFILE_EVENT_MACRO)
+        tables = {
+            name: [dict(row) for row in rows] for name, rows in package.tables.items()
+        }
+        features = tables["feature_snapshots"]
+        features[0]["evidence_class"] = EXPORT_EVIDENCE_CLASS_EXTERNAL_RESEARCH_DATA
+        with self.assertRaises(ValueError) as ctx:
+            require_unmixed_evidence_class(package.manifest, tables)
+        self.assertEqual(str(ctx.exception), "MIXED_EXTERNAL_RESEARCH_DATA")
+
+    def test_matlab_handoff_keeps_pending_and_rejects_external_mix(self) -> None:
+        package = build_research_export_v1(profile=PROFILE_MARKET_TECHNICAL)
+        handoff = build_matlab_handoff_manifest(package)
+        verify_matlab_handoff_manifest(handoff)
+        self.assertEqual(
+            handoff["metadata"]["pit_status"],
+            EXPORT_OPERATOR_PIT_STATUS_PENDING,
+        )
+        mixed = dict(handoff)
+        mixed["metadata"] = {
+            **dict(handoff["metadata"]),
+            "evidence_class": EXPORT_EVIDENCE_CLASS_EXTERNAL_RESEARCH_DATA,
+        }
+        mixed["export_profile"] = PROFILE_MARKET_TECHNICAL
+        with self.assertRaises(ValueError) as ctx:
+            verify_matlab_handoff_manifest(mixed)
+        self.assertEqual(str(ctx.exception), "MIXED_EXTERNAL_RESEARCH_DATA")
+
+    def test_external_research_data_blocks_wave1_oos_even_if_pit_pass(self) -> None:
+        package = build_research_export_v1(profile=PROFILE_MARKET_TECHNICAL)
+        vdm = package.manifest["validation_dataset_manifest"]
+        assessment = assess_research_export_pit(package.manifest, validation_dataset_manifest=vdm)
+        self.assertFalse(oos_evaluation_authorized(assessment))
+        stub = {
+            "metadata": {
+                "evidence_class": EXPORT_EVIDENCE_CLASS_EXTERNAL_RESEARCH_DATA,
+                "pit_status": EXPORT_OPERATOR_PIT_STATUS_PASS,
+            },
+            "validation_dataset_manifest": vdm,
+        }
+        with self.assertRaises(Wave1ExportGateError) as ctx:
+            require_pit_pass_for_oos(stub, validation_dataset_manifest=vdm)
+        self.assertEqual(ctx.exception.code, "W1_OOS_BLOCKED_EXTERNAL_RESEARCH_DATA")
+        self.assertFalse(
+            oos_evaluation_authorized(
+                assess_research_export_pit(stub, validation_dataset_manifest=vdm)
+            )
+        )
+
+
+def _rebind_manifest(manifest: dict) -> dict:
+    body = dict(manifest)
+    body.pop("export_id", None)
+    body.pop("manifest_hash", None)
+    body["export_id"] = derive_export_id(body)
+    body["manifest_hash"] = manifest_hash(body)
+    return body
 
 
 if __name__ == "__main__":

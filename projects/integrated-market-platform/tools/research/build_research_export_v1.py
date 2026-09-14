@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import subprocess
 import sys
 from pathlib import Path
 
@@ -18,6 +19,20 @@ from market_platform_foundation.research.export_v1 import (  # noqa: E402
 )
 
 
+def _git_head_sha() -> str:
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+    )
+    sha = result.stdout.strip().lower()
+    if not sha:
+        raise SystemExit("REPOSITORY_HEAD_SHA_UNAVAILABLE")
+    return sha
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build Research Export v1 package")
     parser.add_argument(
@@ -27,10 +42,18 @@ def main() -> int:
     )
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--repository-head-sha", default=None)
+    parser.add_argument(
+        "--stamp-git-head",
+        action="store_true",
+        help="Stamp repository_head_sha from git rev-parse HEAD (operator builds; never PIT-PASS)",
+    )
     args = parser.parse_args()
+    repository_head_sha = args.repository_head_sha
+    if repository_head_sha is None and args.stamp_git_head:
+        repository_head_sha = _git_head_sha()
     package = build_research_export_v1(
         profile=args.profile,
-        repository_head_sha=args.repository_head_sha,
+        repository_head_sha=repository_head_sha,
     )
     manifest_path = write_research_export_v1_package(args.output_dir, package)
     print(manifest_path)

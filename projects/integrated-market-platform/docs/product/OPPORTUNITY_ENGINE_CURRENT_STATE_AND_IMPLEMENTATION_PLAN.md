@@ -39,6 +39,7 @@ IMP has a **canonical Opportunity Contract** (`docs/architecture/OPPORTUNITY_CON
 
 - `OpportunitySummary` 1.1 + `GET /opportunities/summary|{id}` on existing `ui_api`.
 - HTTP JSON: `manifests/ui1/schemas/opportunity_summary.schema.json`.
+- `GET /opportunities/{id}/evidence` projects review-row evidence class, promotion reason, family admission, and persist `created_at_ns` without stamping ingest metadata (`opportunity_evidence.schema.json`).
 - React Query: `queryKeys.opportunitiesSummary` (not `queryKeys.attention`). Opportunity Zod/fetch loads only from lazy Demo/Paper NOW.
 
 ### Phase 2 — Registry and admission

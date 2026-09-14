@@ -41,12 +41,14 @@ class ImpCliTests(unittest.TestCase):
         gaps = build_parser().parse_args(
             ["providers", "gaps", "--profile", "FTEP-V1-001", "--json"]
         )
+        ci_jobs = build_parser().parse_args(["ci", "jobs", "--always-run"])
 
         self.assertEqual((affected.group, affected.action, affected.workers), ("test", "affected", 4))
         self.assertEqual((gaps.group, gaps.action, gaps.profile), ("providers", "gaps", "FTEP-V1-001"))
         self.assertEqual((focused.group, focused.action), ("test", "focused"))
         self.assertEqual(fast.action, "fast")
         self.assertEqual(changed.action, "changed")
+        self.assertEqual((ci_jobs.group, ci_jobs.action, ci_jobs.always_run), ("ci", "jobs", True))
         self.assertIn(_npm_executable(), ("npm", "npm.cmd"))
 
     def test_changed_area_classification_is_deterministic_and_non_authoritative(self) -> None:
