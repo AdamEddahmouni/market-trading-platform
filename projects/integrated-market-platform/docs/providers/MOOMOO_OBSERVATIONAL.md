@@ -94,6 +94,10 @@ observational**.
   OpenD then uses the quote-only vendor transport in
   `tools/moomoo/opend_quote_transport.py` (`OpenQuoteContext.get_market_snapshot`
   only; the `moomoo-api` SDK is still not a dependency of this package).
+  Item 7 Lane C adds a separate read-only `SNAPSHOT_BBO` diagnostic
+  (`tools/moomoo/item7_bbo_snapshot.py`, CLI `tools/item7_bbo_snapshot_probe.py`)
+  that classifies vendor snapshot bid/ask without redefining `US_EQUITY_L1` and
+  never synthesizes bid/ask from `last_price`.
   Missing SDK → `MOOMOO_SDK_MISSING`. Auth failure (`qot_logined` false) →
   `MOOMOO_AUTH_FAILURE`. Protocol/SDK exception or non-`RET_OK` →
   `MOOMOO_PROTOCOL_ERROR`. A vendor row without `last_price` or without a
