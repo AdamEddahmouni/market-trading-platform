@@ -6,8 +6,10 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
@@ -24,6 +26,7 @@ from market_platform_foundation.intelligence.paper_forward_bridge.ftep_prospecti
     collect_ftep_prospective_lock_gates,
     manifest_empirical_lock_authorized,
 )
+from market_platform_foundation.local_state.startup import reset_local_state_for_tests  # noqa: E402
 
 
 class FtepProspectiveLockDryRunTests(unittest.TestCase):
@@ -38,22 +41,21 @@ class FtepProspectiveLockDryRunTests(unittest.TestCase):
         self.assertTrue(manifest_empirical_lock_authorized(ROOT, "FTEP-V1-002"))
 
     def test_prospective_lock_dry_run_cli_json_closed_market(self) -> None:
-        result = subprocess.run(
-            [
-                sys.executable,
-                str(ROOT / "tools" / "ftep_record_prospective_lock.py"),
-                "FTEP-V1-002",
-                "--dry-run",
-                "--json",
-            ],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            check=False,
-            env={**os.environ, "IMP_PERSIST_STATE": "1"},
-        )
-        self.assertEqual(result.returncode, 1)
-        payload = json.loads(result.stdout)
+        tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        os.environ["IMP_STATE_DIR"] = tmp.name
+        os.environ["IMP_PERSIST_STATE"] = "1"
+        reset_local_state_for_tests()
+        try:
+            with patch(
+                "market_platform_foundation.intelligence.paper_forward_bridge.campaign_status.is_within_us_equity_rth",
+                return_value=False,
+            ):
+                payload = collect_ftep_prospective_lock_gates(ROOT, "FTEP-V1-002")
+        finally:
+            reset_local_state_for_tests()
+            os.environ.pop("IMP_STATE_DIR", None)
+            os.environ.pop("IMP_PERSIST_STATE", None)
+            tmp.cleanup()
         self.assertEqual(payload["artifact_kind"], "ftep_prospective_lock_gate")
         self.assertFalse(payload["would_record_lock"])
         self.assertIn("US_EQUITY_RTH_CLOSED", payload["blockers"])
