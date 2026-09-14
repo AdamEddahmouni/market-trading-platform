@@ -1,0 +1,167 @@
+"""Item 7 Lane G corpus collection pipeline tests."""
+
+from __future__ import annotations
+
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "src"))
+
+from market_platform_foundation.intelligence.contracts import (
+    ContractKind,
+    ContractReference,
+    Direction,
+    ForecastEstimate,
+    ForecastV1,
+    OutcomeResolutionStatus,
+    OutcomeV1,
+    QualityState,
+    QualitySummary,
+)
+from market_platform_foundation.intelligence.fusion.types import PRODUCTION_FORECAST_STAGE
+from market_platform_foundation.intelligence.persistence import InMemoryIntelligenceRepository
+from market_platform_foundation.intelligence.production.corpus_collector import (
+    LABEL_SOURCE_FIXTURE,
+    LABEL_SOURCE_OUTCOME_V1,
+    MANIFEST_CANDIDATE_KIND,
+    STATUS_PIPELINE_READY,
+    assert_not_governed_production_manifest,
+    collect_candidates_from_repository,
+    export_manifest_candidate,
+    floor_counters,
+    pit_validate_candidate,
+    run_corpus_collection_pipeline,
+)
+from market_platform_foundation.intelligence.production.identity import path_a_horizon
+from market_platform_foundation.intelligence.production.training_build import load_governed_training_manifest
+from tests.intelligence.test_path_a_production_emit import (
+    PATH_A_HORIZON,
+    PATH_A_TARGET,
+    T,
+    _emit_signals,
+    _emit_snapshot,
+)
+
+HORIZON = PATH_A_HORIZON.duration_ns
+CUTOFF = T - (HORIZON * 40)
+
+
+class Item7CorpusCollectorTests(unittest.TestCase):
+    def test_fixture_proof_pipeline_ready_without_governed_rows(self) -> None:
+        repo_root = ROOT
+        report, rows = run_corpus_collection_pipeline(
+            repository=InMemoryIntelligenceRepository(),
+            repo_root=repo_root,
+            training_cutoff_ns=CUTOFF,
+            include_fixture_proof=True,
+        )
+        self.assertEqual(report.status, STATUS_PIPELINE_READY)
+        self.assertEqual(report.governed_candidate_rows, 0)
+        self.assertEqual(report.pit_valid_governed_rows, 0)
+        self.assertEqual(report.fixture_only_rows, 8)
+        self.assertTrue(any(row.label_source == LABEL_SOURCE_FIXTURE for row in rows))
+        self.assertEqual(
+            report.production_artifact_status,
+            "PRODUCTION_FORECAST_BLOCKED_NO_GOVERNED_PATH_A_TRAINING_CORPUS",
+        )
+
+    def test_manual_label_source_rejected(self) -> None:
+        snapshot = _emit_snapshot()
+        signals = _emit_signals()
+        ok, reasons = pit_validate_candidate(
+            snapshot=snapshot,
+            signals=signals,
+            label=1,
+            label_source="manual",
+            label_available_time_ns=snapshot.decision_time_ns + HORIZON,
+        )
+        self.assertFalse(ok)
+        self.assertIn("MANUAL_LABEL_SOURCE_REJECTED", reasons)
+
+    def test_manifest_candidate_not_loadable_as_governed(self) -> None:
+        report, rows = run_corpus_collection_pipeline(
+            repository=InMemoryIntelligenceRepository(),
+            training_cutoff_ns=CUTOFF,
+            include_fixture_proof=True,
+        )
+        self.assertEqual(report.status, STATUS_PIPELINE_READY)
+        manifest = export_manifest_candidate(rows, training_cutoff_ns=CUTOFF)
+        self.assertEqual(manifest["artifact_kind"], MANIFEST_CANDIDATE_KIND)
+        self.assertFalse(manifest["production_claim"])
+        reasons = assert_not_governed_production_manifest(manifest)
+        self.assertIn("MANIFEST_CANDIDATE_NOT_GOVERNED", reasons)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "candidate.json"
+            path.write_text(__import__("json").dumps(manifest), encoding="utf-8")
+            self.assertIsNone(load_governed_training_manifest(path))
+
+    def test_fixture_rows_excluded_from_governed_floor_counters(self) -> None:
+        _report, rows = run_corpus_collection_pipeline(
+            repository=InMemoryIntelligenceRepository(),
+            training_cutoff_ns=CUTOFF,
+            include_fixture_proof=True,
+        )
+        governed_floors = floor_counters(rows, governed_only=True)
+        self.assertEqual(governed_floors.total_rows, 0)
+        all_floors = floor_counters(rows, governed_only=False)
+        self.assertGreaterEqual(all_floors.total_rows, 8)
+
+    def test_collect_governed_row_from_repository_join(self) -> None:
+        repo = InMemoryIntelligenceRepository()
+        snapshot = _emit_snapshot()
+        signals = _emit_signals()
+        repo.put_snapshot(snapshot)
+        for signal in signals:
+            repo.put_signal(signal)
+        forecast = ForecastV1(
+            forecast_id="fc-corpus-governed-1",
+            schema_version="1",
+            scope=snapshot.scope,
+            decision_time_ns=snapshot.decision_time_ns,
+            snapshot_id=snapshot.snapshot_id,
+            target=PATH_A_TARGET,
+            horizon=path_a_horizon(),
+            estimate=ForecastEstimate(estimate_kind="probability", probability=0.55),
+            quality=QualitySummary(state=QualityState.GOOD),
+            metadata={
+                "contributor_role": "PRODUCTION",
+                "forecast_stage": PRODUCTION_FORECAST_STAGE,
+                "calibration_status": "UNCALIBRATED",
+            },
+        )
+        repo.put_forecast(forecast)
+        outcome = OutcomeV1(
+            outcome_id="out-corpus-1",
+            schema_version="1",
+            forecast_id=forecast.forecast_id,
+            adjudicated_at_ns=snapshot.decision_time_ns + HORIZON,
+            resolution_status=OutcomeResolutionStatus.SETTLED,
+            quality=QualitySummary(state=QualityState.GOOD),
+            realized_direction=Direction.LONG,
+            realized_return=0.01,
+            lineage_refs=(ContractReference(kind=ContractKind.FORECAST.value, id=forecast.forecast_id),),
+            metadata={"dataset_id": "replay-session-1", "provider_id": "paper-replay"},
+        )
+        repo.put_outcome(outcome)
+        rows = collect_candidates_from_repository(repo, training_cutoff_ns=T + HORIZON * 2)
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual(row.label_source, LABEL_SOURCE_OUTCOME_V1)
+        self.assertTrue(row.pit_passed)
+        self.assertEqual(row.outcome_id, "out-corpus-1")
+        report, _ = run_corpus_collection_pipeline(
+            repository=repo,
+            training_cutoff_ns=T + HORIZON * 2,
+            include_fixture_proof=False,
+        )
+        self.assertEqual(report.governed_candidate_rows, 1)
+        self.assertEqual(report.pit_valid_governed_rows, 1)
+        self.assertEqual(report.governed_training_manifest_status, "GOVERNED_ROWS_INSUFFICIENT_FOR_FLOORS")
+
+
+if __name__ == "__main__":
+    unittest.main()
