@@ -2258,6 +2258,13 @@
         "AGENTS.md"
       ],
       "reason": "Repository agent routing prose; governance validation only"
+    },
+    {
+      "id": "gitignore",
+      "patterns": [
+        ".gitignore"
+      ],
+      "reason": "Repository ignore rules; governance validation only"
     }
   ],
   "subsystem_partitions": [
