@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Alpaca Paper wire probe — credential-gated, read-only first.
 
-Exercises GET /v2/account against https://paper-api.alpaca.markets only.
-Standard library only. Never imports the Alpaca SDK. Never contacts
-api.alpaca.markets. ``/v2`` is a path, not an origin.
+Exercises GET /v2/account, GET /v2/clock, and GET /v2/positions against
+https://paper-api.alpaca.markets only. Standard library only. Never imports
+the Alpaca SDK. Never contacts api.alpaca.markets. ``/v2`` is a path, not
+an origin. Uses the GET-only Paper transport so POST/DELETE order paths are
+refused before the socket is opened.
 
 Without paper keys the probe prints COMPARATOR_NOT_CONFIGURED and exits
 nonzero BEFORE any network activity. Live host URLs are LIVE_FORBIDDEN.
@@ -32,8 +34,10 @@ sys.path.insert(0, str(ROOT / "src"))
 from market_platform_foundation.providers.adapters.alpaca_paper_http import (  # noqa: E402
     ALPACA_PAPER_ORIGIN,
     AlpacaPaperHttpError,
-    AlpacaPaperHttpTransport,
+    AlpacaPaperReadOnlyHttpTransport,
     alpaca_http_fetch_account,
+    alpaca_http_fetch_clock,
+    alpaca_http_fetch_positions,
     canonicalize_alpaca_paper_origin,
     paper_api_url,
 )
@@ -103,6 +107,11 @@ def load_keys(explicit: str | None = None) -> tuple[str, str]:
     return key_id.strip(), secret.strip()
 
 
+def stamp_no_orders() -> None:
+    print("orders_placed=false")
+    print("fabricated_fills=false")
+
+
 def presence_payload(*, key_id: str, secret: str, base_url: str) -> dict[str, bool]:
     return {
         "APCA_API_KEY_ID": bool(key_id),
@@ -125,7 +134,10 @@ def resolve_origin(endpoint_arg: str | None, private: dict[str, str]) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Credential-gated Alpaca Paper probe (read-only GET /v2/account)."
+        description=(
+            "Credential-gated Alpaca Paper probe "
+            "(read-only GET /v2/account, /v2/clock, /v2/positions)."
+        )
     )
     parser.add_argument(
         "--endpoint",
@@ -151,45 +163,66 @@ def main(argv: list[str] | None = None) -> int:
     print("names_present " + json.dumps(presence_payload(key_id=key_id, secret=secret, base_url=base_url), sort_keys=True))
     if not key_id or not secret:
         print("[fail] COMPARATOR_NOT_CONFIGURED: APCA_API_KEY_ID / APCA_API_SECRET_KEY absent")
-        print("orders_placed=false")
-        print("fabricated_fills=false")
+        stamp_no_orders()
         return EXIT_NOT_CONFIGURED
     try:
         origin = resolve_origin(args.endpoint, private)
     except AlpacaPaperHttpError as exc:
         code = str(exc)
         print(f"[fail] {code}")
+        stamp_no_orders()
         if code == "LIVE_FORBIDDEN":
             return EXIT_LIVE_FORBIDDEN
         return EXIT_NOT_CONFIGURED
     account_url = paper_api_url(origin, "v2", "account")
+    clock_url = paper_api_url(origin, "v2", "clock")
+    positions_url = paper_api_url(origin, "v2", "positions")
     print(f"origin={origin}")
     print(f"request=GET {account_url.removeprefix(origin)}")
-    transport = AlpacaPaperHttpTransport()
+    print(f"request=GET {clock_url.removeprefix(origin)}")
+    print(f"request=GET {positions_url.removeprefix(origin)}")
+    transport = AlpacaPaperReadOnlyHttpTransport()
     try:
         account = alpaca_http_fetch_account(
+            transport, origin=origin, key_id=key_id, secret_key=secret
+        )
+        clock = alpaca_http_fetch_clock(
+            transport, origin=origin, key_id=key_id, secret_key=secret
+        )
+        positions = alpaca_http_fetch_positions(
             transport, origin=origin, key_id=key_id, secret_key=secret
         )
     except AlpacaPaperHttpError as exc:
         code = str(exc)
         print(f"[fail] {code}")
-        print("orders_placed=false")
-        print("fabricated_fills=false")
+        stamp_no_orders()
         if code.startswith("ALPACA_PAPER_NETWORK") or code == "ALPACA_PAPER_AUTH_REJECTED":
             return EXIT_NETWORK
         if code == "LIVE_FORBIDDEN":
             return EXIT_LIVE_FORBIDDEN
+        if code == "ALPACA_READONLY_FORBIDDEN":
+            return EXIT_NOT_CONFIGURED
         return EXIT_NOT_CONFIGURED
     if account is None:
         print("[fail] BROKER_RESPONSE_INVALID: GET /v2/account did not return an account object")
-        print("orders_placed=false")
-        print("fabricated_fills=false")
+        stamp_no_orders()
+        return EXIT_NETWORK
+    if clock is None:
+        print("[fail] BROKER_RESPONSE_INVALID: GET /v2/clock did not return a clock object")
+        stamp_no_orders()
+        return EXIT_NETWORK
+    if positions is None:
+        print("[fail] BROKER_RESPONSE_INVALID: GET /v2/positions did not return a positions list")
+        stamp_no_orders()
         return EXIT_NETWORK
     print("account_present=true")
     print(f"status_raw={account.get('status_raw') or ''}")
+    print(f"clock_is_open={str(clock.get('is_open')).lower()}")
+    print(f"next_open={clock.get('next_open') or ''}")
+    print(f"next_close={clock.get('next_close') or ''}")
+    print(f"positions_count={len(positions.get('positions') or [])}")
     print("[done] PROBE_PASSED")
-    print("orders_placed=false")
-    print("fabricated_fills=false")
+    stamp_no_orders()
     return EXIT_OK
 
 

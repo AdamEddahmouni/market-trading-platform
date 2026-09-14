@@ -19,6 +19,7 @@ from ...numeric import decimal_to_minor_units
 ALPACA_PAPER_ORIGIN = "https://paper-api.alpaca.markets"
 ALPACA_PAPER_API_ROOT = f"{ALPACA_PAPER_ORIGIN}/v2"
 ALPACA_LIVE_HOST = "api.alpaca.markets"
+ALPACA_PAPER_READONLY_PATHS = frozenset({"/v2/account", "/v2/clock", "/v2/positions"})
 
 _LIVE_HOSTS = frozenset(
     {
@@ -98,6 +99,21 @@ def assert_alpaca_paper_url(url: str) -> str:
         raise AlpacaPaperHttpError("ALPACA_HOST_FORBIDDEN")
     if not candidate.startswith(ALPACA_PAPER_ORIGIN):
         raise AlpacaPaperHttpError("ALPACA_HOST_FORBIDDEN")
+    return candidate
+
+
+def assert_alpaca_paper_readonly_request(method: str, url: str) -> str:
+    """Allow GET account/clock/positions on the Paper origin. Refuse orders."""
+    candidate = assert_alpaca_paper_url(url)
+    verb = str(method or "").strip().upper()
+    if verb != "GET":
+        raise AlpacaPaperHttpError("ALPACA_READONLY_FORBIDDEN")
+    parsed = urllib.parse.urlparse(candidate)
+    path = (parsed.path or "").rstrip("/") or "/"
+    if path not in ALPACA_PAPER_READONLY_PATHS:
+        raise AlpacaPaperHttpError("ALPACA_READONLY_FORBIDDEN")
+    if parsed.query or parsed.fragment:
+        raise AlpacaPaperHttpError("ALPACA_READONLY_FORBIDDEN")
     return candidate
 
 
@@ -264,6 +280,34 @@ class AlpacaPaperHttpTransport:
         return status, body
 
 
+class AlpacaPaperReadOnlyHttpTransport:
+    """GET-only Paper transport. POST/DELETE and order paths fail closed."""
+
+    def __init__(
+        self,
+        *,
+        timeout_seconds: float = 15.0,
+        inner: AlpacaHttpTransport | None = None,
+    ) -> None:
+        self._inner = inner or AlpacaPaperHttpTransport(timeout_seconds=timeout_seconds)
+
+    def request(
+        self,
+        method: str,
+        url: str,
+        *,
+        key_id: str,
+        secret_key: str,
+        json_body: dict[str, Any] | None = None,
+    ) -> tuple[int, Any]:
+        assert_alpaca_paper_readonly_request(method, url)
+        if json_body is not None:
+            raise AlpacaPaperHttpError("ALPACA_READONLY_FORBIDDEN")
+        return self._inner.request(
+            method, url, key_id=key_id, secret_key=secret_key, json_body=None
+        )
+
+
 def paper_api_url(origin: str, *parts: str) -> str:
     base = canonicalize_alpaca_paper_origin(origin)
     suffix = "/".join(urllib.parse.quote(str(part), safe="") for part in parts)
@@ -386,6 +430,31 @@ def alpaca_http_fetch_account(
     }
 
 
+def alpaca_http_fetch_clock(
+    transport: AlpacaHttpTransport,
+    *,
+    origin: str,
+    key_id: str,
+    secret_key: str,
+) -> dict[str, Any] | None:
+    """Read-only GET /v2/clock on the Paper origin only."""
+    url = paper_api_url(origin, "v2", "clock")
+    status, body = transport.request("GET", url, key_id=key_id, secret_key=secret_key)
+    if status in (401, 403):
+        raise AlpacaPaperHttpError("ALPACA_PAPER_AUTH_REJECTED")
+    if status != 200 or not isinstance(body, dict):
+        return None
+    is_open = body.get("is_open")
+    if not isinstance(is_open, bool):
+        return None
+    return {
+        "is_open": is_open,
+        "timestamp": str(body.get("timestamp") or ""),
+        "next_open": str(body.get("next_open") or ""),
+        "next_close": str(body.get("next_close") or ""),
+    }
+
+
 def alpaca_http_fetch_positions(
     transport: AlpacaHttpTransport,
     *,
@@ -395,6 +464,8 @@ def alpaca_http_fetch_positions(
 ) -> dict[str, Any] | None:
     url = paper_api_url(origin, "v2", "positions")
     status, body = transport.request("GET", url, key_id=key_id, secret_key=secret_key)
+    if status in (401, 403):
+        raise AlpacaPaperHttpError("ALPACA_PAPER_AUTH_REJECTED")
     if status != 200:
         return None
     rows = body if isinstance(body, list) else []
@@ -405,14 +476,18 @@ __all__ = [
     "ALPACA_LIVE_HOST",
     "ALPACA_PAPER_API_ROOT",
     "ALPACA_PAPER_ORIGIN",
+    "ALPACA_PAPER_READONLY_PATHS",
     "AlpacaHttpTransport",
     "AlpacaPaperHttpError",
     "AlpacaPaperHttpTransport",
+    "AlpacaPaperReadOnlyHttpTransport",
     "alpaca_http_cancel_order",
     "alpaca_http_fetch_account",
+    "alpaca_http_fetch_clock",
     "alpaca_http_fetch_order",
     "alpaca_http_fetch_positions",
     "alpaca_http_place_order",
+    "assert_alpaca_paper_readonly_request",
     "assert_alpaca_paper_url",
     "canonicalize_alpaca_paper_origin",
     "build_equity_order_json",
