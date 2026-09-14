@@ -16,8 +16,12 @@ legitimately abstains on ``ABSTAIN_NO_PREREGISTRATION`` (whale alignments also
 This module never returns a hardcoded ``MATCHED`` disposition.
 
 A scanner MATCHED from a lawful loaded record is still not an Opportunity
-Engine EMIT and not a tradable edge: the honesty invoke leaves
-``forecast_resolver`` returning ``None``.
+Engine EMIT unless a PRODUCTION ``ForecastV1`` is produced or loaded through
+the fail-closed hop. Create on the hop is ``produce_paper_demo_forecast``
+(BUILD 14 fusion) from caller-supplied PRODUCTION contributors plus a
+pre-existing calibrator; absent either input is ``FORECAST_UNAVAILABLE``.
+The catalog never mints a probability from last_price and never calls
+``build_preregistration``.
 """
 
 from __future__ import annotations

@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-13 — Restack Path A MATCHED produce onto leftover OpenD hop
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy`, `providers`, Path A hop CLI |
+| **Summary** | Cherry-picked Path A ForecastV1 load (#49), fail-closed producer (#51), and hop-side `--contributor-path`/`--calibration-path` produce (#53) onto leftover OpenD hop #57. Weekday hops can now run produce + G7 OpenD identity + Finviz leftover overlay on one branch. Conflicts kept OpenD as hop L1, Finviz overlay-only (never L1), leftover leftover-login discovery, one-interpreter `hop_interpreter`, and `diagnose_opend(start=True)`. BOOTSTRAP honesty champion `effective_from_ns=0`. Did not mint ForecastV1 JSON. Did not treat CONTROL/fixture `0.8` as empirical. Item 7 stays **PARTIAL**. FTEP is not `EMPIRICAL_ACTIVE`. Live off. Frozen FTEP-V1-001 JSON not touched. |
+| **Key files** | `src/market_platform_foundation/strategy/path_a_forecast_store.py` (new on this stack), `src/market_platform_foundation/strategy/path_a_forecast_producer.py` (new on this stack), `src/market_platform_foundation/strategy/path_a_prospective.py`, `tools/path_a_prospective_run.py` (produce flags kept beside OpenD/Finviz leftover hop JSON), `tests/intelligence/test_path_a_forecast_producer.py`, `tests/intelligence/test_path_a_forecast_store.py`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md`, `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | `PYTHONPATH=src .venv/bin/python -m unittest tests.intelligence.test_path_a_forecast_producer` **16 passed**. Producer + store **31 passed**. Path A producer + store + prereg + prospective + catalog + scan caller **104 passed**. Leftover leftover-login + OpenD hop interpreter + OpenD Primary L1 + Finviz overlay + producer **106 passed**. Honest CLI OpenD down: `discovery.provider_id=moomoo.opend.observational`, `overlay_provider_id=yahoo.finance.delayed`, `equity_context.discovery.classification=NOT_CONFIGURED`, `auto_fetch_status=CREDENTIALS_ABSENT`, `is_l1=false`, `result.status=PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE`. `--mode live` argparse refused. `.venv/bin/python tools/validate.py changed --paths-file` (13 paths vs #57 `ee32e7a`) **2623 passed / 25 skipped / 0 fail / 0 err** (`core_checkpoint_required=true` from unowned `tools/path_a_prospective_run.py`). `python3 tools/imp.py lint` passed. `python3 tools/check_docs_links.py` **OK (188 files)**. `python` absent; `python3` / `.venv/bin/python` used. GitHub CI on produce restack tip `be2ede4` **9/9 SUCCESS**, mergeable `MERGEABLE`. |
+| **Related** | Draft #58 on base `cursor/finviz-leftover-discovery-d1ba`. Source produce from #53 `6f0ead8` (`09edef2` feat). Did not merge #53 onto main. Did not merge #58. |
+| **Notes** | Software `MINTED` / `OPPORTUNITY_EMITTED` is not an empirical hop. Item 7 stays PARTIAL until a real PRODUCTION ForecastV1 exists and a weekday G7-actionable MATCHED hop. No mock data. Did not activate Live. GitHub CI 9/9 is software-green, not FTEP `EMPIRICAL_ACTIVE`. |
+
 ## 2026-09-13 — Worktree-aware Finviz leftover login discovery
 
 | Field | Value |
@@ -47,6 +59,42 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `PYTHONPATH=src .venv/bin/python -m unittest` leftover discovery + git_ref + Finviz overlay autofetch **56 ran / 1 skipped / 0 fail**. Full `tests/finviz` **65 passed**. `.venv/bin/python tools/validate.py changed --paths-file` (7 paths vs #56 `4418b91`) **1526 passed / 14 skipped / 0 fail / 0 err** (`core_checkpoint_required=true` from unowned `git_ref.py`). `python3 tools/imp.py lint` passed. `python3 tools/check_docs_links.py` **OK (188 files)**. |
 | **Related** | Stacked on #56 `4418b91` (`cursor/finviz-hop-overlay-d1ba`). Operator-zero after leftover login exists. |
 | **Notes** | Did not merge. Did not activate Live. Did not declare FTEP `EMPIRICAL_ACTIVE`. Paper only. |
+
+## 2026-09-13 — Path A hop MATCHED/OE EMIT from fail-closed produce
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy`, `opportunity`, `fusion` |
+| **Summary** | Paper/Demo Path A hop now *produces* on the composer/CLI from `--contributor-path` + `--calibration-path` via BUILD 14 `produce_paper_demo_forecast`, then loads the fused artifact. Absent PRODUCTION contributors or calibrator persist nothing (`FORECAST_UNAVAILABLE`). The BOOTSTRAP honesty champion is effective from 0 so a quote-print forecast is not OE-suppressed at receive/as_of. Tests prove composer `MINTED` / `OPPORTUNITY_EMITTED` on a G7-actionable REAL_TIME quote without fixture `probability=0.8`. Catalog evaluators still never call `build_preregistration`. Software MATCHED/OE EMIT is not FTEP `EMPIRICAL_ACTIVE`. Item 7 stays **PARTIAL**. Live stays off. |
+| **Key files** | `src/market_platform_foundation/strategy/path_a_forecast_producer.py` (contributor/calibrator load), `src/market_platform_foundation/strategy/path_a_prospective.py`, `src/market_platform_foundation/strategy/path_a_strategy_catalog.py`, `tools/path_a_prospective_run.py` (`--contributor-path` / `--calibration-path`; no `--probability`), `tests/intelligence/test_path_a_forecast_producer.py`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/platform/PROGRAM_STATUS.md`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | `tests.intelligence.test_path_a_forecast_producer` **16 passed**. Path A producer + store + prereg + prospective + catalog + scan caller **98 passed / 0 fail**. Live still `LIVE_SCAN_CALLER_FORBIDDEN`. |
+| **Related** | Originally stacked on #51 `65e19cd`. Cherry-picked onto leftover OpenD hop #57 so weekday hops can run produce + G7 OpenD identity + Finviz leftover overlay on one branch. Item 7 of the provider activation program. |
+| **Notes** | A fused software artifact is not empirical. Default production fusion still has no live specialist contributors on an operator weekday hop unless those JSON inputs exist. Did not declare FTEP `EMPIRICAL_ACTIVE` or Live. Frozen FTEP-V1-001 JSON not touched. |
+
+## 2026-09-13 — Path A fail-closed PRODUCTION ForecastV1 producer
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy`, `opportunity`, `fusion` |
+| **Summary** | Paper/Demo Path A can now *produce* a PRODUCTION `ForecastV1` through BUILD 14 `ForecastFusionService` (`strategy/path_a_forecast_producer.py`) and persist it only via `persist_paper_demo_forecast` when fusion emits `EMITTED_CALIBRATED` with `calibration_status=CALIBRATED` and identity/PIT/champion/horizon/account/mode hop gates pass. CONTROL-only, RESEARCH dicts, IDENTITY_CONTROL, missing calibration, uncalibrated contributors, and Live persist nothing (`FORECAST_UNAVAILABLE` / `LIVE_FORBIDDEN`). The hop remains load-only (`--forecast-path`). Catalog evaluators still never call `build_preregistration`. No last_price mint, no fixture `probability=0.8`. Software producer wiring is not FTEP `EMPIRICAL_ACTIVE`. Item 7 stays **PARTIAL**. Live stays off. |
+| **Key files** | `src/market_platform_foundation/strategy/path_a_forecast_producer.py` (new), `src/market_platform_foundation/strategy/path_a_forecast_store.py` (`forecast_matches_path_a_hop_policy`), `src/market_platform_foundation/strategy/path_a_prospective.py`, `src/market_platform_foundation/strategy/path_a_strategy_catalog.py`, `tools/path_a_prospective_run.py` (help text only; no `--probability`), `tests/intelligence/test_path_a_forecast_producer.py` (new), `tests/intelligence/test_path_a_forecast_store.py`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/platform/PROGRAM_STATUS.md`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | New `tests.intelligence.test_path_a_forecast_producer` **12 passed** (CONTROL-only / missing calibration / IDENTITY_CONTROL / research dict / CONTROL-tagged-as-PRODUCTION / horizon mismatch do not persist; Live forbidden; fused+calibrated persist loads and Path A `MINTED` / OE EMIT — software-only). Store + producer **27 passed**. Focused Path A + catalog + scan caller + freshness + producer **124 passed**. `python3 tools/validate.py changed --paths-file` (10 paths vs `origin/cursor/path-a-forecast-load-d1ba`@`f920ef5`) **2559 passed / 25 skipped / 0 fail / 0 err** (`core_checkpoint_required=true`, same unowned `tools/path_a_prospective_run.py` escalation as prior Path A CLI PRs). `python3 tools/check_docs_links.py` **OK (188 files)**. Live still `LIVE_SCAN_CALLER_FORBIDDEN`. |
+| **Related** | Originally stacked on #49 `f920ef5`. Cherry-picked onto leftover OpenD hop #57. Item 7 of the provider activation program. |
+| **Notes** | A fused software artifact is not empirical. Default production fusion still has no live specialist contributors on this hop, so the operator path fail-closes without them. Did not declare FTEP `EMPIRICAL_ACTIVE` or Live. Frozen FTEP-V1-001 JSON not touched. |
+
+## 2026-09-13 — Path A loads a previously persisted PRODUCTION ForecastV1
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `strategy`, `opportunity` |
+| **Summary** | Paper/Demo Path A CLI no longer pre-builds the invoke before fetch. Composer fetches once (OpenD primary), G7 remains freshness authority, and auto-builds the honesty invoke with the admitted `quote_event` so the catalog is not stuck on `FCAST_NO_QUOTE_OBSERVATION`. `forecast_resolver` loads a previously persisted PRODUCTION `ForecastV1` (`strategy/path_a_forecast_store.py`) only when identity/PIT/champion/horizon/account/mode match Opportunity Engine hop policy; CONTROL, RESEARCH, uncalibrated, or absent artifacts return `None` (`FORECAST_UNAVAILABLE`). Persist is serialization of an already-constructed `ForecastV1`, not a producer. The hop does not mint a probability from last_price, does not call CONTROL `build_forecast_v1`, and does not add a CLI `--probability`. Live stays `LIVE_FORBIDDEN`. Item 7 stays **PARTIAL**. FTEP is not `EMPIRICAL_ACTIVE`. Frozen FTEP-V1-001 JSON not touched. |
+| **Key files** | `src/market_platform_foundation/strategy/path_a_forecast_store.py` (new), `src/market_platform_foundation/strategy/path_a_prospective.py`, `src/market_platform_foundation/strategy/path_a_strategy_catalog.py`, `tools/path_a_prospective_run.py` (additive `--forecast-path`; no pre-fetch invoke), `tests/intelligence/test_path_a_forecast_store.py` (new), `tests/intelligence/test_path_a_preregistration_store.py`, `tests/intelligence/test_path_a_prospective.py`, `docs/engineering/OPPORTUNITY_ENGINE_V1.md`, `docs/platform/PROGRAM_STATUS.md`, `docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md` |
+| **Tests** | New `tests.intelligence.test_path_a_forecast_store` **15 passed** (missing → `FORECAST_UNAVAILABLE`; CONTROL/RESEARCH/uncalibrated rejected at load not OE SUPPRESS; research `build_forecast` dict rejected; catalog never calls `build_preregistration`; Live still forbidden; composer threads fetched quote into scan context). Focused Path A + catalog + scan caller + ingest + freshness **112 passed**. `python3 tools/check_docs_links.py` **OK (188 files)**. `python3 tools/validate.py changed --paths-file` vs merge-base `origin/cursor/path-a-prereg-load-d1ba`@`ff139ac` recorded in the follow-up note if a later commit lands counts. Live still `LIVE_SCAN_CALLER_FORBIDDEN`. |
+| **Related** | Originally stacked on restacked #48 `ff139ac`. Cherry-picked onto leftover OpenD hop #57 so weekday hops can load ForecastV1 on the G7 OpenD / Finviz leftover stack. Item 7 of the provider activation program. |
+| **Notes** | A software-constructed PRODUCTION `ForecastV1` used in tests is not empirical and is not item 7 PROVED. No empirical fused/calibrated producer exists on this hop. Whale alignments still abstain on `ABSTAIN_INSTITUTIONAL_UNAVAILABLE`. Did not declare FTEP `EMPIRICAL_ACTIVE` or Live. |
 
 ## 2026-09-13 — Finviz Elite overlay on OpenD Path A hop CLI
 

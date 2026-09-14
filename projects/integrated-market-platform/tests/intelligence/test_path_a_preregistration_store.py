@@ -3,9 +3,9 @@
 Create is a separate operator step. The hop only loads a previously persisted
 record when identity matches and ``registered_at`` is before quote
 ``event_time_ns``. Catalog evaluators never call ``build_preregistration``.
-A scanner MATCHED is not item 7 PROVED: ``forecast_resolver`` stays None and
-Path A returns ``FORECAST_UNAVAILABLE`` rather than minting from a fixture
-ForecastV1.
+A scanner MATCHED is not item 7 PROVED: missing or ineligible forecast load
+is ``FORECAST_UNAVAILABLE``. Tests must not mint a probability or treat a
+software-constructed ForecastV1 as empirical.
 """
 
 from __future__ import annotations
@@ -156,8 +156,9 @@ class PathAPreregistrationLoadHopTests(unittest.TestCase):
     def test_load_eligible_forecast_momentum_scanner_matched_is_not_oe_emit(self) -> None:
         """Load+PASS can produce a scanner MATCHED. That is not item 7 PROVED.
 
-        ``forecast_resolver`` still returns None, so Path A is
-        FORECAST_UNAVAILABLE. Tests must not inject a fixture ForecastV1.
+        Missing forecast load is FORECAST_UNAVAILABLE. Tests must not mint
+        a probability from last_price or inject a fixture ForecastV1 as
+        empirical.
         """
 
         spec = default_forecast_momentum_spec()
@@ -198,7 +199,9 @@ class PathAPreregistrationLoadHopTests(unittest.TestCase):
         self.assertIsNone(invoke.caller.forecast_resolver(matched[0]))
         from market_platform_foundation.strategy import path_a_prospective
 
-        self.assertIn("forecast_resolver=lambda _match: None", inspect.getsource(path_a_prospective))
+        source = inspect.getsource(path_a_prospective)
+        self.assertNotIn("build_forecast_v1", source)
+        self.assertNotIn("probability=0.8", source)
 
     def test_late_registration_abstains(self) -> None:
         spec = default_forecast_momentum_spec()
@@ -328,6 +331,8 @@ class PathAPreregistrationLoadHopTests(unittest.TestCase):
         self.assertEqual(result.path_a.matched_count, 1)
         self.assertEqual(result.path_a.opportunities, ())
         self.assertNotEqual(result.path_a.status, "MINTED")
+        self.assertIn("quote", result.path_a.scan.matches[0].context)
+        self.assertEqual(result.path_a.scan.matches[0].context["quote"]["last_price"], 190.1)
 
     def test_cli_flag_is_additive_and_does_not_change_quote_provider(self) -> None:
         from tools import path_a_prospective_run
@@ -335,11 +340,19 @@ class PathAPreregistrationLoadHopTests(unittest.TestCase):
         source = inspect.getsource(path_a_prospective_run.main)
         self.assertIn("--preregistration-path", source)
         self.assertIn("preregistration_path", source)
+        self.assertIn("--forecast-path", source)
+        self.assertIn("forecast_path", source)
+        self.assertIn("--contributor-path", source)
+        self.assertIn("contributor_path", source)
+        self.assertIn("--calibration-path", source)
+        self.assertIn("calibration_path", source)
         self.assertIn("discover_equity_quote_stack", source)
         self.assertNotIn("quote_provider=", source.split("discover_equity_quote_stack", 1)[0])
         self.assertIn("primary_equity_quote_provider", source)
         self.assertIn("diagnose_opend(start=True)", source)
         self.assertNotIn("ForecastV1", source)
+        self.assertNotIn("build_paper_demo_path_a_invoke", source)
+        self.assertNotIn("--probability", source)
 
 
 if __name__ == "__main__":

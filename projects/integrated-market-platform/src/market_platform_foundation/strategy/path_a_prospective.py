@@ -5,6 +5,7 @@ Not a daemon. Does not start LiveObservationalRuntime. Ingest stays a reader.
 
 from __future__ import annotations
 
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping
@@ -19,7 +20,10 @@ from market_platform_foundation.intelligence.opportunity.freshness import (
     merge_freshness_into_payload,
 )
 from market_platform_foundation.intelligence.opportunity.policy import build_opportunity_policy
-from market_platform_foundation.intelligence.opportunity.types import OpportunityContext
+from market_platform_foundation.intelligence.opportunity.types import (
+    OpportunityContext,
+    OpportunityPolicyV1,
+)
 from market_platform_foundation.intelligence.persistence import InMemoryIntelligenceRepository
 from market_platform_foundation.intelligence.promotion.types import (
     ChampionAssignmentReason,
@@ -44,6 +48,15 @@ from .path_a_scan_caller import (
     PathAScanCallResult,
     PathAScanCaller,
     PathAScanCallerError,
+)
+from .path_a_forecast_producer import (
+    load_paper_demo_calibration,
+    load_paper_demo_contributors,
+    produce_paper_demo_forecast,
+)
+from .path_a_forecast_store import (
+    load_paper_demo_forecasts,
+    select_eligible_forecast,
 )
 from .path_a_preregistration_store import (
     load_paper_demo_preregistrations,
@@ -141,6 +154,64 @@ def _eligible_preregistrations(
     return eligible
 
 
+def _paper_demo_forecast_resolver(
+    *,
+    forecast_path: str | Path | None,
+    request: ScanRequest,
+    champion: ChampionAssignmentV1,
+    policy: OpportunityPolicyV1,
+):
+    records = load_paper_demo_forecasts(forecast_path) if forecast_path is not None else ()
+
+    def resolve(match):
+        return select_eligible_forecast(
+            match,
+            records,
+            request=request,
+            champion=champion,
+            policy=policy,
+        )
+
+    return resolve
+
+
+def _produce_hop_forecast_if_requested(
+    *,
+    contributor_path: str | Path | None,
+    calibration_path: str | Path | None,
+    forecast_path: str | Path | None,
+    champion: ChampionAssignmentV1,
+    policy: OpportunityPolicyV1,
+    account_id: str,
+    mode: str,
+    as_of_time_ns: int,
+) -> str | Path | None:
+    """Fuse hop contributors when those paths are supplied. Fail closed if empty.
+
+    Does not mint a probability from last_price. Absent PRODUCTION contributors
+    or calibrator persist nothing; the resolver then returns None
+    (``FORECAST_UNAVAILABLE``) unless a previously fused ``forecast_path``
+    already exists.
+    """
+
+    if contributor_path is None and calibration_path is None:
+        return forecast_path
+    dest = Path(forecast_path) if forecast_path is not None else Path(
+        tempfile.mkdtemp(prefix="path-a-produced-")
+    )
+    produce_paper_demo_forecast(
+        contributors=load_paper_demo_contributors(contributor_path),
+        calibration_artifact=load_paper_demo_calibration(calibration_path),
+        champion=champion,
+        policy=policy,
+        destination=dest,
+        account_id=account_id,
+        mode=mode,
+        as_of_time_ns=as_of_time_ns,
+    )
+    return dest
+
+
 def build_paper_demo_path_a_invoke(
     symbol: str,
     *,
@@ -149,6 +220,9 @@ def build_paper_demo_path_a_invoke(
     account_id: str | None = None,
     quote_event: Mapping[str, Any] | None = None,
     preregistration_path: str | Path | None = None,
+    forecast_path: str | Path | None = None,
+    contributor_path: str | Path | None = None,
+    calibration_path: str | Path | None = None,
 ) -> PathAHonestyInvoke:
     """Build a one-shot Paper/Demo Path A caller.
 
@@ -157,7 +231,16 @@ def build_paper_demo_path_a_invoke(
     against real quote data when ``quote_event`` is supplied. Loads a
     previously persisted Phase-6 record only when identity matches the spec
     and ``registered_at`` is before quote ``event_time_ns``. Does not mint a
-    preregistration at eval time. ``forecast_resolver`` stays ``None``.
+    preregistration at eval time.
+
+    When ``contributor_path`` / ``calibration_path`` are supplied, the hop
+    calls ``produce_paper_demo_forecast`` (BUILD 14 production fusion) and
+    persists only ``EMITTED_CALIBRATED``. Absent PRODUCTION contributors or
+    calibrator persist nothing (``FORECAST_UNAVAILABLE``). ``forecast_path``
+    remains the load dest; it is also the produce dest when produce is
+    requested. The BOOTSTRAP honesty champion is effective from 0 so a
+    quote-print ``decision_time_ns`` is not suppressed by receive/as_of.
+    Does not mint a probability from last_price.
     """
 
     mode_n = _normalize_mode(mode)
@@ -186,28 +269,17 @@ def build_paper_demo_path_a_invoke(
         candidate_artifact_hash="artifact-path-a-honesty",
         promotion_decision_id=None,
         previous_assignment_id=None,
-        effective_from_ns=as_of - 1 if as_of > 0 else 0,
+        # BOOTSTRAP honesty champion: effective at quote-print forecast
+        # decision_time, not only 1 ns before receive/as_of. Otherwise OE
+        # SUPPRESS CHAMPION_NOT_EFFECTIVE on a weekday hop.
+        effective_from_ns=0,
         assignment_reason=ChampionAssignmentReason.BOOTSTRAP,
     )
-    caller = PathAScanCaller(
-        scanner=UniversalStrategyScanner(query_planner=None, repository=repository),
-        repository=repository,
-        forecast_resolver=lambda _match: None,
-        champion_at_forecast=champion,
-        champion_at_opportunity=champion,
-        opportunity_policy=build_opportunity_policy(
-            champion_scope=champion.champion_scope,
-            max_forecast_age_ns=HONESTY_HORIZON_NS,
-            max_opportunity_lifetime_ns=20_000_000_000,
-            minimum_probability_edge=0.05,
-        ),
-        opportunity_context=OpportunityContext(
-            snapshot_ref=ContractReference(kind="snapshot", id=snapshot_id),
-            snapshot_available_time_ns=as_of,
-            mode=mode_n,
-            scenario_id="path-a-honesty",
-            account_id=account,
-        ),
+    policy = build_opportunity_policy(
+        champion_scope=champion.champion_scope,
+        max_forecast_age_ns=HONESTY_HORIZON_NS,
+        max_opportunity_lifetime_ns=20_000_000_000,
+        minimum_probability_edge=0.05,
     )
     quote_context = _quote_context_from_event(quote_event)
     eligible = _eligible_preregistrations(
@@ -242,6 +314,36 @@ def build_paper_demo_path_a_invoke(
         decision_time_ns=as_of,
         expires_at_ns=as_of + HONESTY_SCAN_TTL_NS,
         budget=ScanBudget(max_evaluations=len(catalog), max_cost_units=len(catalog)),
+    )
+    produced_path = _produce_hop_forecast_if_requested(
+        contributor_path=contributor_path,
+        calibration_path=calibration_path,
+        forecast_path=forecast_path,
+        champion=champion,
+        policy=policy,
+        account_id=account,
+        mode=mode_n,
+        as_of_time_ns=as_of,
+    )
+    caller = PathAScanCaller(
+        scanner=UniversalStrategyScanner(query_planner=None, repository=repository),
+        repository=repository,
+        forecast_resolver=_paper_demo_forecast_resolver(
+            forecast_path=produced_path,
+            request=request,
+            champion=champion,
+            policy=policy,
+        ),
+        champion_at_forecast=champion,
+        champion_at_opportunity=champion,
+        opportunity_policy=policy,
+        opportunity_context=OpportunityContext(
+            snapshot_ref=ContractReference(kind="snapshot", id=snapshot_id),
+            snapshot_available_time_ns=as_of,
+            mode=mode_n,
+            scenario_id="path-a-honesty",
+            account_id=account,
+        ),
     )
     return PathAHonestyInvoke(caller=caller, scan_request=request)
 
@@ -318,6 +420,9 @@ class PathAProspectiveComposer:
         freshness_policy: OpportunityFreshnessPolicy | None = None,
         persist: PathAPersistContext | None = None,
         preregistration_path: str | Path | None = None,
+        forecast_path: str | Path | None = None,
+        contributor_path: str | Path | None = None,
+        calibration_path: str | Path | None = None,
     ) -> None:
         self.quote_provider = quote_provider
         self.composition = composition or ObservationalRuntimeComposition()
@@ -326,6 +431,9 @@ class PathAProspectiveComposer:
         self.freshness_policy = freshness_policy or OpportunityFreshnessPolicy()
         self.persist = persist
         self.preregistration_path = preregistration_path
+        self.forecast_path = forecast_path
+        self.contributor_path = contributor_path
+        self.calibration_path = calibration_path
 
     def run(
         self,
@@ -412,6 +520,9 @@ class PathAProspectiveComposer:
                 as_of_time_ns=as_of,
                 quote_event=event,
                 preregistration_path=self.preregistration_path,
+                forecast_path=self.forecast_path,
+                contributor_path=self.contributor_path,
+                calibration_path=self.calibration_path,
             )
             caller = invoke.caller
             request = invoke.scan_request
