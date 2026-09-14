@@ -89,6 +89,21 @@ class FtepProspectiveCatalystIngressTests(unittest.TestCase):
         catalyst_ids = row.get("catalyst_ids") or ()
         self.assertIn("earnings", catalyst_ids)
 
+    def test_live_ingress_fail_closed_under_fixture_smoke(self) -> None:
+        os.environ["IMP_PERSIST_STATE"] = "1"
+        payload = collect_ftep_catalyst_watch(
+            REPO_ROOT,
+            "FTEP-V1-002",
+            live_ingress=True,
+            fixture_only=True,
+        )
+        self.assertEqual(payload["watch_mode"], "FIXTURE_SMOKE")
+        self.assertEqual(payload["disposition"], "BLOCKED")
+        self.assertIn("LIVE_INGRESS_UNAVAILABLE", payload["blockers"])
+        self.assertEqual(payload["summary_count"], 0)
+        self.assertEqual(payload["attention_data_kind"], "UNAVAILABLE")
+        self.assertIsNone(payload["prospective_ingress"])
+
     def test_watch_live_ingress_blocked_when_gates_inactive(self) -> None:
         os.environ["IMP_PERSIST_STATE"] = "1"
         payload = collect_ftep_catalyst_watch(
@@ -96,9 +111,14 @@ class FtepProspectiveCatalystIngressTests(unittest.TestCase):
             "FTEP-V1-002",
             live_ingress=True,
         )
-        if payload["watch_mode"] != "FIXTURE_SMOKE":
+        if payload["watch_mode"] == "FIXTURE_SMOKE":
+            self.assertIn("LIVE_INGRESS_UNAVAILABLE", payload["blockers"])
+            self.assertEqual(payload["disposition"], "BLOCKED")
+            self.assertEqual(payload["attention_data_kind"], "UNAVAILABLE")
+        else:
             self.assertIn("PROSPECTIVE_CATALYST_INGRESS_GATES_INACTIVE", payload["blockers"])
-            self.assertEqual(payload["attention_data_kind"], "FIXTURE")
+            self.assertEqual(payload["attention_data_kind"], "UNAVAILABLE")
+            self.assertEqual(payload["summary_count"], 0)
 
 
 if __name__ == "__main__":

@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — watch-catalysts --live-ingress fail-closed in FIXTURE_SMOKE
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, FTEP-V1-002 SIGNAL_ONLY |
+| **Summary** | When `--live-ingress` is requested but watch mode is FIXTURE_SMOKE (no governed session, RTH closed, or `--fixture`), catalyst watch now fails closed with `LIVE_INGRESS_UNAVAILABLE` instead of silently serving fixture/SAMPLE rows. Fixture fallback remains only when live ingress is not requested; failed live ingress no longer substitutes fixture data. |
+| **Key files** | `ftep_catalyst_watch.py`, `tests/intelligence/test_ftep_prospective_catalyst_ingress.py` |
+| **Tests** | `python -m unittest tests.intelligence.test_ftep_prospective_catalyst_ingress tests.intelligence.test_ftep_catalyst_watch` → **6 passed** |
+| **Related** | PR #133 KEEP_DRAFT follow-up |
+| **Notes** | No Finviz credential calls in tests; zero-row live ingress uses `PROSPECTIVE_CATALYST_INGRESS_ZERO_ROWS`. |
+
 ## 2026-09-14 — FTEP-V1-002 prospective Finviz catalyst ingress (watch-catalysts)
 
 | Field | Value |

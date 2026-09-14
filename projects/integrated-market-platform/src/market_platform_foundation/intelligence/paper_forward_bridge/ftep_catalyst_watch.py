@@ -107,6 +107,8 @@ def _load_attention_rows_safe(
 def _attention_data_kind_from_source(source_label: str, *, live: bool) -> str:
     if live:
         return "LIVE_PROSPECTIVE"
+    if source_label == "none":
+        return "UNAVAILABLE"
     if source_label == "sample":
         return "SAMPLE"
     return "FIXTURE"
@@ -146,17 +148,36 @@ def collect_ftep_catalyst_watch(
             "US_EQUITY_RTH closed: catalyst watch uses fixture summaries only "
             "(no live Finviz ingress; correlate when RTH reopens)."
         )
-    if governed_count == 0:
+    if governed_count == 0 and not live_ingress:
         operator_hints.append(
             "No governed sessions yet: fixture smoke only. "
             "After RTH session-start, re-run watch-catalysts to correlate session_ids."
         )
 
+    live_ingress_requested = live_ingress and input_path is None
     prospective_ingress_report: dict[str, object] | None = None
     used_live_ingress = False
     rows: list[dict[str, object]]
     source_label: str
-    if not use_fixture and live_ingress and input_path is None:
+    if live_ingress_requested and use_fixture:
+        blockers.append("LIVE_INGRESS_UNAVAILABLE")
+        if fixture_only:
+            operator_hints.append(
+                "--fixture forces FIXTURE_SMOKE; --live-ingress cannot run until fixture mode is cleared."
+            )
+        elif governed_count == 0:
+            operator_hints.append(
+                "--live-ingress requires at least one governed session during US equity RTH "
+                "(no fixture/SAMPLE substitute)."
+            )
+        elif not rth_open:
+            operator_hints.append(
+                "--live-ingress requires US equity RTH open "
+                "(no fixture/SAMPLE substitute while RTH is closed)."
+            )
+        rows = []
+        source_label = "none"
+    elif not use_fixture and live_ingress_requested:
         from .ftep_prospective_catalyst_ingress import collect_finviz_prospective_attention_rows
 
         ingress = collect_finviz_prospective_attention_rows(
@@ -182,23 +203,14 @@ def collect_ftep_catalyst_watch(
                     "Finviz prospective fetch failed; attention rows are not live-labelled."
                 )
             elif ingress.attempted and ingress.ready and not ingress.rows:
+                blockers.append("PROSPECTIVE_CATALYST_INGRESS_ZERO_ROWS")
                 operator_hints.append(
                     "Live Finviz ingress returned zero universe-qualified catalyst rows "
-                    "(pipeline or recency filters)."
+                    "(pipeline or recency filters); no fixture/SAMPLE substitute with --live-ingress."
                 )
-            fixture_rows, fixture_source = _load_attention_rows_safe(
-                repository_root,
-                campaign_slug,
-                fixture_only=False,
-                input_path=None,
-            )
-            rows = fixture_rows
-            source_label = fixture_source
-            if ingress.attempted and not used_live_ingress:
-                operator_hints.append(
-                    f"Attention rows from non-live source {fixture_source!r} "
-                    "(explicit FIXTURE/SAMPLE; not prospective Finviz ingress)."
-                )
+            if not used_live_ingress:
+                rows = []
+                source_label = "none"
     else:
         loaded_rows, loaded_source = _load_attention_rows_safe(
             repository_root,
