@@ -20,7 +20,10 @@ from market_platform_foundation.intelligence.opportunity.ingest import assemble_
 from market_platform_foundation.intelligence.opportunity.ranking import rank_review_rows
 from market_platform_foundation.intelligence.opportunity.read_model import (
     OpportunitySummary,
+    PROVISIONAL_ORDER_COPY,
+    RANKING_BASIS_ATTENTION,
     RANKING_BASIS_COMPARATOR,
+    RANKING_BASIS_STUB,
     rank_opportunity_summaries,
 )
 from market_platform_foundation.intelligence.opportunity.comparison import ComparisonVectorV1
@@ -79,6 +82,7 @@ class OpportunityRankingVectorTests(unittest.TestCase):
         self.assertNotIn("rank_score", payload)
         self.assertEqual(payload["ranking_vector"]["basis"], RANKING_BASIS_COMPARATOR)
         self.assertTrue(payload["ranking_vector"]["dimensions"])
+        self.assertNotIn("copy", payload["ranking_vector"])
 
     def test_stub_cannot_outrank_actionable_comparator_row(self) -> None:
         governed = assemble_opportunity_review_rows(
@@ -101,6 +105,21 @@ class OpportunityRankingVectorTests(unittest.TestCase):
         )
         self.assertEqual(ranked[0].opportunity_id, "opp-governed")
         self.assertEqual(ranked[1].identity_kind, "NOT_OPPORTUNITY_V1")
+        self.assertNotIn("copy", ranked[0].to_dict()["ranking_vector"])
+        self.assertEqual(ranked[1].to_dict()["ranking_vector"]["copy"], PROVISIONAL_ORDER_COPY)
+        self.assertEqual(ranked[1].to_dict()["ranking_vector"]["basis"], RANKING_BASIS_ATTENTION)
+
+    def test_stub_without_sidecar_serializes_provisional_copy_not_rank_score(self) -> None:
+        rows = assemble_opportunity_review_rows(
+            opportunities=(_opportunity("opp-stub"),),
+            assessments_by_opportunity={"opp-stub": AssessmentAction.EMIT},
+        )
+        ranked = rank_review_rows(rows)
+        payload = ranked[0].to_dict()
+        self.assertEqual(payload["ranking_vector"]["basis"], RANKING_BASIS_STUB)
+        self.assertEqual(payload["ranking_vector"]["copy"], PROVISIONAL_ORDER_COPY)
+        self.assertNotIn("rank_score", payload)
+        self.assertNotIn("universal_score", payload)
 
     def test_internal_stub_score_is_not_serialized(self) -> None:
         ranked = rank_opportunity_summaries(
