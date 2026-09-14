@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ui1.opportunity_evidence",
+  "title": "OpportunityEvidence",
+  "type": "object",
+  "required": ["items"],
+  "properties": {
+    "identity_kind": { "type": ["string", "null"] },
+    "evidence_class": { "type": ["string", "null"] },
+    "evidence_promotion_reason": { "type": ["string", "null"] },
+    "family_admission_status": { "type": ["string", "null"] },
+    "family_admission_reason": { "type": ["string", "null"] },
+    "data_quality": { "type": ["object", "null"] },
+    "ranking_basis": { "type": ["string", "null"] },
+    "created_at_ns": { "type": ["integer", "null"], "description": "Epoch nanoseconds from persist OpportunityV1; not ingest metadata" },
+    "duplicates": { "type": "array", "items": { "type": "string" } },
+    "supersession_reason": { "type": ["string", "null"] },
+    "unavailable_fields": { "type": "array", "items": { "type": "string" } },
+    "lineage_refs": { "type": "array" },
+    "items": { "type": "array" },
+    "copy": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true,
+  "not": {
+    "anyOf": [
+      { "required": ["rank_score"] },
+      { "required": ["universal_score"] },
+      { "required": ["opaque_score"] },
+      { "required": ["order_id"] }
+    ]
+  }
+}
