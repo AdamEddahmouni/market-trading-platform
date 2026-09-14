@@ -9,7 +9,6 @@ const STATUS_CLASS: Record<PaperPreviewPresentationState["status"], string> = {
   PREVIEWING: "preview-loading",
   ACCEPTED: "preview-pass",
   REJECTED: "preview-blocked",
-  STALE: "preview-stale",
   REVALIDATION_REQUIRED: "preview-stale",
   AUTHORITY_UNAVAILABLE: "preview-authority",
   ERROR: "preview-error",
