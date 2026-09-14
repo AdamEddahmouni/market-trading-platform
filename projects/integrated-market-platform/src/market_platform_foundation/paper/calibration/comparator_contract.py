@@ -12,6 +12,8 @@ COMPARATOR_NOT_MARKET_TRUTH_STATEMENT = (
     "must not silently override IMP simulation results."
 )
 
+ALPACA_PAPER_HOST = "paper-api.alpaca.markets"
+
 _LIVE_HOSTS = frozenset(
     {
         "api.tradier.com",
@@ -55,6 +57,10 @@ def _environment_host(environment: str) -> str:
     return ""
 
 
+def _is_alpaca_comparator(comparator_id: str) -> bool:
+    return "alpaca" in comparator_id.strip().lower()
+
+
 def assert_paper_only_environment(*, environment: str, account_mode: str) -> None:
     """Fail closed on Live/production hosts or ambiguous live account modes."""
     host = _environment_host(environment)
@@ -67,6 +73,19 @@ def assert_paper_only_environment(*, environment: str, account_mode: str) -> Non
         raise ComparatorContractError("COMPARATOR_LIVE_ACCOUNT_FORBIDDEN")
 
 
+def assert_alpaca_paper_pairing_host(environment: str) -> None:
+    """Alpaca pairing is paper-api.alpaca.markets only. Live host is forbidden."""
+    text = str(environment or "").strip()
+    host = _environment_host(text)
+    if host in _LIVE_HOSTS:
+        raise ComparatorContractError("COMPARATOR_LIVE_HOST_FORBIDDEN")
+    parsed = urlparse(text) if "://" in text else None
+    if parsed is None or (parsed.hostname or "").lower() != ALPACA_PAPER_HOST:
+        raise ComparatorContractError("COMPARATOR_ALPACA_PAPER_HOST_REQUIRED")
+    if parsed.scheme != "https":
+        raise ComparatorContractError("COMPARATOR_ALPACA_PAPER_HOST_REQUIRED")
+
+
 def validate_comparator_binding(payload: Mapping[str, Any]) -> ExternalPaperComparatorBinding:
     comparator_id = str(payload.get("comparator_id") or "").strip()
     environment = str(payload.get("environment") or "").strip()
@@ -76,6 +95,8 @@ def validate_comparator_binding(payload: Mapping[str, Any]) -> ExternalPaperComp
     if bool(payload.get("is_market_truth")):
         raise ComparatorContractError("COMPARATOR_MARKET_TRUTH_FORBIDDEN")
     assert_paper_only_environment(environment=environment, account_mode=account_mode)
+    if _is_alpaca_comparator(comparator_id):
+        assert_alpaca_paper_pairing_host(environment)
     limitations_raw = payload.get("limitations") or []
     if not isinstance(limitations_raw, list) or not limitations_raw:
         raise ComparatorContractError("COMPARATOR_LIMITATIONS_REQUIRED")
@@ -93,9 +114,11 @@ def validate_comparator_binding(payload: Mapping[str, Any]) -> ExternalPaperComp
 
 
 __all__ = [
+    "ALPACA_PAPER_HOST",
     "COMPARATOR_NOT_MARKET_TRUTH_STATEMENT",
     "ComparatorContractError",
     "ExternalPaperComparatorBinding",
+    "assert_alpaca_paper_pairing_host",
     "assert_paper_only_environment",
     "validate_comparator_binding",
 ]

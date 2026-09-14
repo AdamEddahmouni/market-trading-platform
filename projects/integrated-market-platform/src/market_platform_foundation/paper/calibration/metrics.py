@@ -47,6 +47,8 @@ class FillObservation:
     paper_account_id: str = ""
     instrument_id: str = ""
     asset_class: str = ""
+    commission_minor: int | None = None
+    fees_minor: int | None = None
 
     @classmethod
     def from_mapping(cls, row: Mapping[str, Any]) -> FillObservation:
@@ -69,6 +71,10 @@ class FillObservation:
             paper_account_id=str(row.get("paper_account_id") or ""),
             instrument_id=str(row.get("instrument_id") or ""),
             asset_class=str(row.get("asset_class") or ""),
+            commission_minor=_optional_int(row.get("commission_minor"))
+            if "commission_minor" in row
+            else None,
+            fees_minor=_optional_int(row.get("fees_minor")) if "fees_minor" in row else None,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -91,6 +97,8 @@ class FillObservation:
             "paper_account_id": self.paper_account_id,
             "instrument_id": self.instrument_id,
             "asset_class": self.asset_class,
+            "commission_minor": self.commission_minor,
+            "fees_minor": self.fees_minor,
         }
 
 
@@ -197,6 +205,8 @@ class CalibrationMetricReport:
     position_qty_delta: int | None
     unexplained_divergence_rate: float | None
     divergence_classes: tuple[CalibrationDivergenceClass, ...]
+    cost_friction_honesty: SampleHonesty = SampleHonesty.NOT_OBSERVABLE
+    cost_friction_delta_minor: int | None = None
     calibrated: bool = False
 
     def to_dict(self) -> dict[str, Any]:
@@ -218,6 +228,8 @@ class CalibrationMetricReport:
             "position_qty_delta": self.position_qty_delta,
             "unexplained_divergence_rate": self.unexplained_divergence_rate,
             "divergence_classes": [item.value for item in self.divergence_classes],
+            "cost_friction_honesty": self.cost_friction_honesty.value,
+            "cost_friction_delta_minor": self.cost_friction_delta_minor,
             "calibrated": False,
         }
 
@@ -289,6 +301,8 @@ def compute_calibration_metric_report(
             position_qty_delta=None,
             unexplained_divergence_rate=None,
             divergence_classes=(CalibrationDivergenceClass.NOT_OBSERVABLE,),
+            cost_friction_honesty=SampleHonesty.NOT_OBSERVABLE,
+            cost_friction_delta_minor=None,
             calibrated=False,
         )
 
@@ -362,6 +376,22 @@ def compute_calibration_metric_report(
             position_compared += 1
 
     pair_count = len(shared_ids)
+    cost_observable = True
+    cost_delta = 0
+    for order_id in shared_ids:
+        imp_row = imp_by_id[order_id]
+        comp_row = comp_by_id[order_id]
+        if (
+            imp_row.commission_minor is None
+            or imp_row.fees_minor is None
+            or comp_row.commission_minor is None
+            or comp_row.fees_minor is None
+        ):
+            cost_observable = False
+            break
+        cost_delta += (imp_row.commission_minor + imp_row.fees_minor) - (
+            comp_row.commission_minor + comp_row.fees_minor
+        )
     return CalibrationMetricReport(
         pair_count=pair_count,
         unpaired_imp_count=unpaired_imp_count,
@@ -380,6 +410,12 @@ def compute_calibration_metric_report(
         position_qty_delta=position_delta if position_compared else None,
         unexplained_divergence_rate=_rate(unexplained, pair_count),
         divergence_classes=tuple(classes),
+        cost_friction_honesty=(
+            _honesty(pair_count=pair_count, minimum_n=minimum_n)
+            if cost_observable
+            else SampleHonesty.NOT_OBSERVABLE
+        ),
+        cost_friction_delta_minor=cost_delta if cost_observable else None,
         calibrated=False,
     )
 
