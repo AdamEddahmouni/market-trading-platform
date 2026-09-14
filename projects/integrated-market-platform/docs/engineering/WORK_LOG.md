@@ -44,9 +44,21 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Area** | `market_trackers/sec_insider`, `docs/providers`, fixtures |
 | **Summary** | Preparation-only adapter for LuxAlgo Market Trackers `insider-transactions`: pinned upstream commits/licenses, schema characterization, external source receipt, PIT clocks (no transaction-date public knowledge), EventV1 map prep with XA-01 fail-closed ticker resolution, deterministic public-record evidence for OE, candidate feature catalog, and golden fixtures — independent of Observation Ingress Router (Lane F). |
 | **Key files** | `src/market_platform_foundation/market_trackers/**`, `docs/providers/MARKET_TRACKERS_SEC_INSIDER.md`, `docs/engineering/specs/MARKET_TRACKERS_SEC_INSIDER_ADAPTER_PREP.md`, `tests/fixtures/market_trackers/sec_insider/**`, `tests/market_trackers/test_sec_insider_adapter_prep.py`, `tools/validation_manifest.json` |
-| **Tests** | `PYTHONPATH=src python -m unittest tests.market_trackers.test_sec_insider_adapter_prep` → **8 passed** |
-| **Related** | Lane H takeover; `docs/providers/SEC_EDGAR.md`; `PROVIDER_NORMALIZATION_V1.md` |
+| **Tests** | `PYTHONPATH=src python -m unittest tests.market_trackers.test_sec_insider_adapter_prep` → **9 passed** (post review fixes) |
+| **Related** | PR #143; Lane H takeover; `docs/providers/SEC_EDGAR.md`; `PROVIDER_NORMALIZATION_V1.md` |
 | **Notes** | Live Market Trackers fetch NOT_EXECUTED; no execution dependency; Market Trackers replaceable over EDGAR primary. |
+
+## 2026-09-14 — FTEP-V1-002 prospective Finviz catalyst ingress (PR #133)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, FTEP-V1-002 SIGNAL_ONLY |
+| **Summary** | Opt-in Finviz Elite prospective ingress for read-only `watch-catalysts`: frozen-manifest catalyst pipeline, explicit `attention_data_kind` (FIXTURE vs LIVE_PROSPECTIVE), published vs retrieved timestamps on summaries, session correlation unchanged, no locks or manifest mutation. Gates: `IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS=1` + `IMP_FINVIZ_LIVE` + configured token (env or credential store via `configured_token`); CLI `--live-ingress` only. `--live-ingress` fails closed in FIXTURE_SMOKE (`LIVE_INGRESS_UNAVAILABLE`); failed/zero-row live ingress does not substitute fixture rows. |
+| **Key files** | `ftep_prospective_catalyst_ingress.py`, `ftep_catalyst_watch.py`, `opportunity/read_model.py`, `tools/ftep_watch_catalysts.py`, `tests/intelligence/test_ftep_prospective_catalyst_ingress.py`, `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md` |
+| **Tests** | `tools/imp.py test focused` on `test_ftep_prospective_catalyst_ingress` + `test_ftep_catalyst_watch`; `validate fast` (rebased on `origin/main` `0e2d731`) |
+| **Related** | PR #133; `SIGNAL_ONLY_LAUNCH_PREP.md` |
+| **Notes** | SIGNAL_ONLY — not `FTEP_EMPIRICAL_ACTIVE`. Owner RTH live proof still pending operator gates + governed sessions. |
 
 ## 2026-09-14 — Merge origin/main (1b60b5a) into PR #136 test-only branch
 
