@@ -1,11 +1,16 @@
 import type { AttentionItem } from "../../api/client";
+import type { OpportunityReviewRow } from "../../api/opportunityClient";
 import { useOpportunitiesSummaryQuery } from "../../api/opportunityClient";
 import { attentionItemFromOpportunity } from "../now/OpportunityReviewCard";
 import { OpportunityFeedStatusBanner } from "./OpportunityFeedStatusBanner";
 import { opportunityRankLabel, opportunitySymbol, opportunityTags } from "./impOpportunityDisplay";
+import { stableOpportunityKey } from "./progressiveOpportunityModel";
 
 type Props = {
   readOnly?: boolean;
+  selectedStableKey?: string | null;
+  hideFeedBanner?: boolean;
+  onSelectRow?: (row: OpportunityReviewRow) => void;
   onExplain?: (item: AttentionItem) => void;
   onInspect?: (item: AttentionItem) => void;
   onOpenWorkspace?: (item: AttentionItem) => void;
@@ -13,6 +18,9 @@ type Props = {
 
 export function OpportunityRadarDensePanel({
   readOnly = false,
+  selectedStableKey = null,
+  hideFeedBanner = false,
+  onSelectRow,
   onExplain,
   onInspect,
   onOpenWorkspace,
@@ -34,12 +42,14 @@ export function OpportunityRadarDensePanel({
           </span>
         ) : null}
       </header>
-      <OpportunityFeedStatusBanner
-        state={state}
-        feedStatus={query.data?.feed_status}
-        unreadyReason={query.data?.unready_reason}
-        nextAction={query.data?.next_action}
-      />
+      {hideFeedBanner ? null : (
+        <OpportunityFeedStatusBanner
+          state={state}
+          feedStatus={query.data?.feed_status}
+          unreadyReason={query.data?.unready_reason}
+          nextAction={query.data?.next_action}
+        />
+      )}
       {state === "ready" && query.data?.feed_status !== "UNREADY" && !items.length ? (
         <p className="unavailable">No candidates in the ranked queue.</p>
       ) : null}
@@ -64,8 +74,27 @@ export function OpportunityRadarDensePanel({
                   row.instrument_id && row.next_safe_action === "OPEN_WORKSPACE" && !ineligible,
                 );
                 const tags = opportunityTags(row, 4);
+                const rowKey = stableOpportunityKey(row);
+                const selected = selectedStableKey === rowKey;
                 return (
-                  <tr key={row.summary_id}>
+                  <tr
+                    key={row.summary_id}
+                    data-stable-key={rowKey}
+                    tabIndex={onSelectRow ? 0 : undefined}
+                    aria-selected={onSelectRow ? selected : undefined}
+                    className={selected ? "imp-radar-row-selected" : undefined}
+                    onClick={onSelectRow ? () => onSelectRow(row) : undefined}
+                    onKeyDown={
+                      onSelectRow
+                        ? (event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              onSelectRow(row);
+                            }
+                          }
+                        : undefined
+                    }
+                  >
                     <td>{opportunityRankLabel(row) ?? "—"}</td>
                     <td><code>{opportunitySymbol(row)}</code></td>
                     <td className="imp-radar-dense-headline">{row.headline}</td>

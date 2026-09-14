@@ -771,3 +771,140 @@
   margin: 0;
   padding-left: 18px;
 }
+
+.imp-opportunity-radar-cockpit {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 1080px) {
+  .imp-opportunity-radar-cockpit {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.imp-opportunity-cockpit-detail {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--surface-1) 82%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-primary) 12%, transparent);
+}
+
+.imp-opportunity-cockpit-detail-header h2 {
+  margin: 0.15rem 0 0.5rem;
+  font-size: 1rem;
+}
+
+.imp-radar-dense-table tr.imp-radar-row-selected {
+  background: color-mix(in srgb, var(--accent-primary) 10%, var(--surface-2));
+  outline: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
+}
+
+.imp-radar-dense-table tr[tabindex="0"] {
+  cursor: pointer;
+}
+
+.progressive-opportunity-card {
+  display: grid;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+}
+
+.progressive-opp-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.progressive-opp-head h3 {
+  margin: 0.25rem 0 0;
+  font-size: 1.05rem;
+}
+
+.progressive-opp-state {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 45%, transparent);
+  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
+}
+
+.progressive-opp-surface-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+}
+
+.progressive-opp-surface-meta dt {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.progressive-opp-surface-meta dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.progressive-opp-surface-why {
+  grid-column: 1 / -1;
+}
+
+.progressive-opp-section h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.progressive-opp-meta-grid {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.progressive-opp-meta-row {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px dashed var(--border-subtle);
+}
+
+.progressive-opp-meta-row dt {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
+.progressive-opp-meta-row dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  word-break: break-word;
+}
+
+.progressive-opp-lines {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.progressive-opp-visibility-note {
+  font-size: 0.72rem;
+}
+
+.progressive-opp-actions {
+  flex-wrap: wrap;
+}

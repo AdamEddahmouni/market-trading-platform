@@ -95,3 +95,48 @@ export function useOpportunityAckMutation() {
     },
   });
 }
+
+export const OpportunityEvidenceResponseSchema = z
+  .object({
+    identity_kind: z.string().optional(),
+    evidence_class: z.string().nullable().optional(),
+    evidence_promotion_reason: z.string().nullable().optional(),
+    family_admission_status: z.string().nullable().optional(),
+    family_admission_reason: z.string().nullable().optional(),
+    data_quality: z.record(z.string(), z.unknown()).nullable().optional(),
+    ranking_basis: z.string().nullable().optional(),
+    created_at_ns: z.number().nullable().optional(),
+    duplicates: z.array(z.unknown()).optional(),
+    supersession_reason: z.string().nullable().optional(),
+    unavailable_fields: z.array(z.string()).optional(),
+    lineage_refs: z.array(z.unknown()).optional(),
+    items: z.array(z.unknown()).optional(),
+    copy: z.string().nullable().optional(),
+  })
+  .passthrough();
+
+export type OpportunityEvidenceResponse = z.infer<typeof OpportunityEvidenceResponseSchema>;
+
+export const OpportunityDetailResponseSchema = OpportunityReviewRowSchema.extend({
+  preview_href: z.string().optional(),
+  agent_enrichment_records: z.array(z.unknown()).optional(),
+  lineage_refs: z.array(z.unknown()).optional(),
+}).passthrough();
+
+export type OpportunityDetailResponse = z.infer<typeof OpportunityDetailResponseSchema>;
+
+export function getOpportunityDetail(rowId: string) {
+  return fetchJson(`/opportunities/${rowId}`, OpportunityDetailResponseSchema);
+}
+
+export function getOpportunityEvidence(rowId: string) {
+  return fetchJson(`/opportunities/${rowId}/evidence`, OpportunityEvidenceResponseSchema);
+}
+
+export function useOpportunityEvidenceQuery(rowId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ["opportunities", "evidence", rowId],
+    queryFn: () => getOpportunityEvidence(rowId as string),
+    enabled: enabled && Boolean(rowId),
+  });
+}

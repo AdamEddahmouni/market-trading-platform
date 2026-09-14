@@ -53,7 +53,7 @@ describe("OpportunityReviewCard", () => {
         onAck={onAck}
       />,
     );
-    expect(screen.getByText(/not OpportunityV1/)).toBeInTheDocument();
+    expect(screen.getAllByText(/not OpportunityV1/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Provisional order — not FTEP-tuned/)).toBeInTheDocument();
     expect(screen.getByText(/actionability/)).toBeInTheDocument();
     expect(screen.getAllByText(/UNAVAILABLE/).length).toBeGreaterThan(0);
