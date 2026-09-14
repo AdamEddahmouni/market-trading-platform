@@ -15,6 +15,11 @@ from .journal import IngressDispatchJournal
 from .router import ObservationIngressRouter
 from .types import IngressRouterPolicyV1
 
+try:
+    from ...hot_path_telemetry.collector import HotPathIngressDispatchObserver
+except ImportError:  # pragma: no cover
+    HotPathIngressDispatchObserver = None  # type: ignore[misc, assignment]
+
 
 def build_production_observation_ingress_router(
     repository: IntelligenceRepository,
@@ -24,6 +29,7 @@ def build_production_observation_ingress_router(
     detector_seen: set[str] | None = None,
     policy: IngressRouterPolicyV1 | None = None,
     journal: IngressDispatchJournal | None = None,
+    dispatch_observer: HotPathIngressDispatchObserver | None = None,
 ) -> ObservationIngressRouter:
     """Canonical production consumers — no broker or order-submit lanes."""
     audit = audit_replay_sink if audit_replay_sink is not None else []
@@ -44,6 +50,7 @@ def build_production_observation_ingress_router(
         ],
         policy=policy,
         journal=journal,
+        dispatch_observer=dispatch_observer,
     )
 
 
