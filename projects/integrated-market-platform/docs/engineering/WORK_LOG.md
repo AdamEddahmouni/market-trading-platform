@@ -36,41 +36,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-14 — prospective ingress Finviz token store fallback
+## 2026-09-14 — FTEP-V1-002 prospective Finviz catalyst ingress (PR #133)
 
 | Field | Value |
 |-------|-------|
 | **Status** | `complete` |
 | **Area** | `intelligence/paper_forward_bridge`, FTEP-V1-002 SIGNAL_ONLY |
-| **Summary** | `prospective_catalyst_ingress_enabled` and live Finviz client construction now pass the original `env` into `configured_token` so process-default resolution matches the rest of IMP (credential manager / secure store when env vars are absent). Fixes false `PROSPECTIVE_CATALYST_INGRESS_GATES_INACTIVE` when the Elite token exists only in the operator store. |
-| **Key files** | `ftep_prospective_catalyst_ingress.py`, `tests/intelligence/test_ftep_prospective_catalyst_ingress.py` |
-| **Tests** | `python -m unittest tests.intelligence.test_ftep_prospective_catalyst_ingress -v` → **6 passed** |
-| **Related** | PR #133 (`work/v1-002-prospective-catalyst-ingress`) |
-| **Notes** | Injected test `env` dicts still skip store fallback by design (`configured_token` contract). No live Finviz calls in new tests. |
-
-## 2026-09-14 — watch-catalysts --live-ingress fail-closed in FIXTURE_SMOKE
-
-| Field | Value |
-|-------|-------|
-| **Status** | `complete` |
-| **Area** | `intelligence/paper_forward_bridge`, FTEP-V1-002 SIGNAL_ONLY |
-| **Summary** | When `--live-ingress` is requested but watch mode is FIXTURE_SMOKE (no governed session, RTH closed, or `--fixture`), catalyst watch now fails closed with `LIVE_INGRESS_UNAVAILABLE` instead of silently serving fixture/SAMPLE rows. Fixture fallback remains only when live ingress is not requested; failed live ingress no longer substitutes fixture data. |
-| **Key files** | `ftep_catalyst_watch.py`, `tests/intelligence/test_ftep_prospective_catalyst_ingress.py` |
-| **Tests** | `python -m unittest tests.intelligence.test_ftep_prospective_catalyst_ingress tests.intelligence.test_ftep_catalyst_watch` → **6 passed** |
-| **Related** | PR #133 KEEP_DRAFT follow-up |
-| **Notes** | No Finviz credential calls in tests; zero-row live ingress uses `PROSPECTIVE_CATALYST_INGRESS_ZERO_ROWS`. |
-
-## 2026-09-14 — FTEP-V1-002 prospective Finviz catalyst ingress (watch-catalysts)
-
-| Field | Value |
-|-------|-------|
-| **Status** | `complete` |
-| **Area** | `intelligence/paper_forward_bridge`, FTEP-V1-002 SIGNAL_ONLY |
-| **Summary** | Wired opt-in Finviz Elite prospective ingress into read-only `watch-catalysts`: frozen-manifest catalyst pipeline, explicit `attention_data_kind` (FIXTURE vs LIVE_PROSPECTIVE), provider vs ingest timestamps on summaries, session correlation unchanged, no locks or manifest mutation. Gates: `IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS=1` + `IMP_FINVIZ_LIVE` + configured token (env or credential store); CLI `--live-ingress` on `tools/ftep_watch_catalysts.py` only. `--live-ingress` fails closed under `FIXTURE_SMOKE`. |
+| **Summary** | Opt-in Finviz Elite prospective ingress for read-only `watch-catalysts`: frozen-manifest catalyst pipeline, explicit `attention_data_kind` (FIXTURE vs LIVE_PROSPECTIVE), published vs retrieved timestamps on summaries, session correlation unchanged, no locks or manifest mutation. Gates: `IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS=1` + `IMP_FINVIZ_LIVE` + configured token (env or credential store via `configured_token`); CLI `--live-ingress` only. `--live-ingress` fails closed in FIXTURE_SMOKE (`LIVE_INGRESS_UNAVAILABLE`); failed/zero-row live ingress does not substitute fixture rows. |
 | **Key files** | `ftep_prospective_catalyst_ingress.py`, `ftep_catalyst_watch.py`, `opportunity/read_model.py`, `tools/ftep_watch_catalysts.py`, `tests/intelligence/test_ftep_prospective_catalyst_ingress.py`, `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md` |
-| **Tests** | `python -m unittest tests.intelligence.test_ftep_prospective_catalyst_ingress tests.intelligence.test_ftep_catalyst_watch` → **passed** (rebased on `origin/main` `0e2d731`) |
-| **Related** | PR #133; `SIGNAL_ONLY_LAUNCH_PREP.md` catalyst operator path |
-| **Notes** | SIGNAL_ONLY — not `FTEP_EMPIRICAL_ACTIVE`. Live fetch operator-gated; RTH empirical proof pending owner gates. |
+| **Tests** | `tools/imp.py test focused` on `test_ftep_prospective_catalyst_ingress` + `test_ftep_catalyst_watch`; `validate fast` (rebased on `origin/main` `0e2d731`) |
+| **Related** | PR #133; `SIGNAL_ONLY_LAUNCH_PREP.md` |
+| **Notes** | SIGNAL_ONLY — not `FTEP_EMPIRICAL_ACTIVE`. Owner RTH live proof still pending operator gates + governed sessions. |
 
 ## 2026-09-14 — Merge origin/main (1b60b5a) into PR #136 test-only branch
 
