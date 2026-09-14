@@ -102,6 +102,56 @@ class InMemoryIntelligenceRepository:
         self._stores["adaptation_campaigns"] = {}
         self._stores["adaptation_events"] = {}
         self._stores["agent_enrichment_evidence"] = {}
+        self._stores["opportunity_research_artifact_attachments"] = {}
+
+    def put_opportunity_research_artifact_attachment(self, record) -> RepositoryPutResult:
+        from ..contracts.research_artifact_attachment import (
+            OpportunityResearchArtifactAttachmentV1,
+            opportunity_research_artifact_attachment_v1_from_dict,
+        )
+
+        if not isinstance(record, OpportunityResearchArtifactAttachmentV1):
+            raise TypeError("RESEARCH_ARTIFACT_ATTACHMENT_RECORD_INVALID")
+        document = record.to_dict()
+        attachment_id = str(record.attachment_id)
+        document["_id"] = attachment_id
+        with self._lock:
+            store = self._stores["opportunity_research_artifact_attachments"]
+            existing = store.get(attachment_id)
+            if existing is None:
+                store[attachment_id] = copy.deepcopy(document)
+                return RepositoryPutResult.INSERTED
+            prior = opportunity_research_artifact_attachment_v1_from_dict(
+                {key: value for key, value in existing.items() if key != "_id"}
+            )
+            if prior.opportunity_id != record.opportunity_id:
+                raise RepositoryConflictError(
+                    "IMMUTABLE_CONFLICT:opportunity_research_artifact_attachment:opportunity_id",
+                    details={"kind": "opportunity_research_artifact_attachment", "id": attachment_id},
+                )
+            if canonical_semantic_equal(existing, document):
+                return RepositoryPutResult.ALREADY_PRESENT
+            raise RepositoryConflictError(
+                "IMMUTABLE_CONFLICT:opportunity_research_artifact_attachment:" + attachment_id,
+                details={"kind": "opportunity_research_artifact_attachment", "id": attachment_id},
+            )
+
+    def list_opportunity_research_artifact_attachments(self, opportunity_id: str):
+        from ..contracts.research_artifact_attachment import (
+            OpportunityResearchArtifactAttachmentV1,
+            opportunity_research_artifact_attachment_v1_from_dict,
+        )
+
+        target = str(opportunity_id)
+        with self._lock:
+            bodies = list(self._stores["opportunity_research_artifact_attachments"].values())
+        rows: list[OpportunityResearchArtifactAttachmentV1] = []
+        for body in bodies:
+            payload = {key: value for key, value in body.items() if key != "_id"}
+            record = opportunity_research_artifact_attachment_v1_from_dict(payload)
+            if record.opportunity_id == target:
+                rows.append(record)
+        return tuple(sorted(rows, key=lambda row: (row.attached_at, row.attachment_id)))
 
     def put_agent_enrichment_evidence(
         self,
