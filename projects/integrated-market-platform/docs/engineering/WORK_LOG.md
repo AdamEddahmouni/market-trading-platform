@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — PROGRAM_STATUS SHA pin after merged #60
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Pin Canonical origin/main SHA to live tip `555c179` (Merge pull request #60). Lists hop chain #32, #34–#42, #45, #47, #48, #50, #52, #55–#60. Leftover #43 never landed. FTEP remains `FTEP_EMPIRICAL_NOT_READY` — **not** `EMPIRICAL_ACTIVE`. ES-news `BLOCKED_ON_ES_DATA` / `FROZEN_BLOCKED_EXTERNAL_DATA_ENTITLEMENT`. Live forbidden. Item 7 stays PARTIAL. Item 9 stays PARTIAL: Tradier sandbox skipped; Alpaca Paper WAITING (no keys). Simulator **not** `CALIBRATED`. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python3 tools/check_docs_links.py`; GitHub IMP Validation + Guardrails on this docs PR |
+| **Related** | [PR #60](https://github.com/AdamEddahmouni/market-trading-platform/pull/60); merge SHA `555c179ec53b5c71184d4e47841250bcf6c34fc9` |
+| **Notes** | Docs-only SHA honesty after #60. Did not mint ForecastV1. Did not mock ticks. Did not merge leftover #43 or #46. Did not activate Live. Did not flip DoD items 2/7/9. |
+
 ## 2026-09-14 — PROGRAM_STATUS SHA pin after merged #59
 
 | Field | Value |
