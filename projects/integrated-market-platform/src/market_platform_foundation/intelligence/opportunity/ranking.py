@@ -11,6 +11,7 @@ from .comparison import (
     comparison_vector_from_sidecar,
 )
 from .dedup import dedup_review_rows, keep_ranked_thesis_winners
+from .evidence_promotion import apply_evidence_promotion_to_rows
 from .lifecycle import OperatorLifecycleState
 from .read_model import (
     COMPARATOR_DIMENSION_NAMES,
@@ -153,4 +154,4 @@ def rank_review_rows(
                 lifecycle_state=lifecycle,
             )
         )
-    return tuple(ranked)
+    return apply_evidence_promotion_to_rows(tuple(ranked))
