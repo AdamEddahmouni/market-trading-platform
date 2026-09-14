@@ -36,18 +36,6 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-15 — Phase 3 Lane D: workspace Vela shadow + BAR_OHLCV_1M feed
-
-| Field | Value |
-|-------|-------|
-| **Status** | `complete` |
-| **Area** | `ui/workspace`, `ui/charts`, `ui_api` |
-| **Summary** | Feature-gated workspace Vela shadow chart with lazy `@luxalgo/vela`, canonical `BAR_OHLCV_1M` identity on instrument overview bars, IMP semantic overlay projection from workspace evidence, and lightweight-charts fallback (not production default). |
-| **Key files** | `ui/src/components/charts/WorkspacePriceChart.tsx`, `workspaceImpBarFeed.ts`, `impWorkspaceVelaShadow.ts`, `workspaceSemanticMarkers.ts`, `workspace-shared/WorkspaceObservability.tsx`, `ui_api/projections.py` |
-| **Tests** | `ui` typecheck; focused Vitest charts/workspace shadow suite |
-| **Related** | Phase 2 #156 `ImpVelaChartAdapter` lab wrapper |
-| **Notes** | Vela offline updates use `setMarket({ data })` full series; fingerprint skips redundant calls. Acceptance gate: `VELA_WORKSPACE_SHADOW_READY` badge when flag on + canonical feed present. |
-
 ## 2026-09-15 — PROGRAM_STATUS: Phase 2 merge queue empty at `0eca0c8b`
 
 | Field | Value |
