@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — PROGRAM_STATUS SHA pin after merged #59
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Pin Canonical origin/main SHA to `30d34c2` (Merge pull request #59). Lists merged #32, #34–#42, #45, #47, #48, #50, #52, #55–#59. Does **not** list unmerged #33 / #43 / #46. Restores a truncated Path A scan-caller evidence URL and drops a stray `#59` draft fragment. FTEP remains `FTEP_EMPIRICAL_NOT_READY` — **not** `EMPIRICAL_ACTIVE`. Simulator **not** `CALIBRATED`. Live forbidden. Item 7 stays PARTIAL (no empirical hop consuming PRODUCTION JSON). |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python3 tools/check_docs_links.py`; GitHub IMP Validation + Guardrails on this docs PR |
+| **Related** | [PR #59](https://github.com/AdamEddahmouni/market-trading-platform/pull/59); merge SHA `30d34c22d2b4d82af2aef4faee04418246ad1a9f` |
+| **Notes** | Docs-only SHA honesty. Did not mint ForecastV1. Did not mock ticks. Did not merge #43 or #46. Did not activate Live. |
+
 ## 2026-09-13 — Path A PRODUCTION specialist ForecastV1 emitter + temporal calibrator
 
 | Field | Value |
