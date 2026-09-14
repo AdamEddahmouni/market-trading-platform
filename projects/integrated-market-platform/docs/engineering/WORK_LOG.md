@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Lane G developer runbook (current vs historical)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Verified developer workflow against current `origin/main` and added authoritative [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md) with CURRENT setup, launch/shutdown, ports, logs, validation, provider/FTEP dry-run commands, and SQLite-vs-ephemeral persistence clarification. Refreshed stale pinned-SHA landing banners in AGENTS/CURSOR_CLOUD/DEVELOPER_OPERATING_SYSTEM in favor of `git fetch` + Program Status; linked operations troubleshooting runbook to the new sheet. |
+| **Key files** | `docs/engineering/DEVELOPER_RUNBOOK.md` (new), `docs/README.md`, `docs/engineering/LOCAL_DEVELOPMENT.md`, `docs/engineering/CURSOR_CLOUD_ENVIRONMENT.md`, `docs/engineering/DEVELOPER_OPERATING_SYSTEM.md`, `docs/operations/RUNBOOK.md`, `AGENTS.md` |
+| **Tests** | `python3 tools/check_docs_links.py` OK; `tools/validate.py` fast + `domain core` + `full` (5202/48/0); `ui` typecheck + 468 vitest + build; FTEP dry-run only (`session-start --dry-run`) |
+| **Related** | Project store `docs/lane-g-runbook-verification.md`, `internal/lane-g-runbook.md`; PR #103 |
+| **Notes** | No governed session, no orders. Rebased onto `origin/main` after #102. |
+
 ## 2026-09-14 — Lane D professor source and keyword catalog
 
 | Field | Value |
@@ -58,7 +70,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | `AGENTS.md`, `docs/engineering/CURSOR_CLOUD_ENVIRONMENT.md`, `docs/engineering/DEVELOPER_OPERATING_SYSTEM.md`, `docs/engineering/WORK_LOG.md` |
 | **Tests** | Docs-only; no operator CLI changes |
 | **Related** | Lane A reconciliation receipt in Project store `internal/lane-a-github-docs.md` |
-| **Notes** | Notion hub body/tables may still cite historical SHAs; top CURRENT banners authoritative. Item 18 stays PARTIAL. |
+| **Notes** | Superseded for ongoing SHA pins by Lane G fetch-based banners; Notion hub body/tables may still cite historical SHAs. Item 18 stays PARTIAL. |
 
 ## 2026-09-14 — Board 03 overview KPI strip and Opportunity Radar density
 

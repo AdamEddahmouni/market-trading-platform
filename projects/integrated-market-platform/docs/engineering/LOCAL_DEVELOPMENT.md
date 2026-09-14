@@ -22,8 +22,10 @@ workstation, or **Continue setup** to finish provider configuration first.
 
 ### Python venv
 
+Monorepo checkout: `cd projects\integrated-market-platform` (not the nested
+repo-root clone).
+
 ```powershell
-cd integrated-market-platform
 uv venv --python <cpython-3.11-path> .venv
 uv pip install --python .venv\Scripts\python.exe tzdata
 ```
@@ -84,8 +86,9 @@ npm test
 npm run build
 ```
 
-The complete developer command surface, validation pyramid, closure report,
-and local telemetry behavior are documented in
+**Current runbook** (launch, shutdown, ports, logs, FTEP dry-run, CI jobs):
+[DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md). The validation pyramid and
+closure report remain in
 [DEVELOPER_OPERATING_SYSTEM.md](DEVELOPER_OPERATING_SYSTEM.md).
 
 ## Common issues

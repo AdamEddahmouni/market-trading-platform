@@ -1,6 +1,8 @@
 # Operations Runbook
 
-**Status:** Lightweight local operations guide.
+**Status:** Lightweight local operations guide (troubleshooting).  
+**Current developer workflow** (setup, validation, provider/FTEP probes, ports):
+[DEVELOPER_RUNBOOK.md](../engineering/DEVELOPER_RUNBOOK.md).
 
 ## UI fails to start
 
@@ -51,6 +53,7 @@
 ## Full validation failure
 
 ```powershell
+$env:PYTHONPATH='src'
 .venv\Scripts\python.exe tools\validate.py changed --explain
 ```
 

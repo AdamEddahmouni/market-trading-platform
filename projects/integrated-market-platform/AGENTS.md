@@ -99,7 +99,7 @@ Default cloud validation is the `python tools/imp.py` pyramid from current
 
 - **MongoDB**: optional. Unit tests use `InMemoryIntelligenceRepository`; Mongo integration tests skip without `IMP_TEST_MONGODB_URI`.
 - **Moomoo OpenD / IBKR**: not available on cloud VM. IBKR TWS (`4001`) and Client Portal Gateway (`5000`) are two transports; neither is execution authority. Use fixtures, replay, and mock paths; keep live gates off. Do not claim IBKR is available now.
-- **Landing branch**: current landing is this monorepo's `origin/main` (`5e0ec717`, merged #100 atop #99 `477614d`). `PROGRAM_STATUS` Canonical SHA **field** cites software tip `a03f94cb` (#95) — not git HEAD; do not open another SHA-pin PR for #99/#100. `cloud-handoff/full-state-2026-08-25` is historical.
+- **Landing branch**: `git fetch origin main` then use `origin/main` (see [PROGRAM_STATUS.md](docs/platform/PROGRAM_STATUS.md); do not pin stale SHAs in agent docs). The `PROGRAM_STATUS` Canonical SHA **field** may cite a software tip that is not git HEAD — follow that doc; do not open SHA-pin PRs without policy. `cloud-handoff/full-state-2026-08-25` is historical.
 - See `docs/engineering/CURSOR_CLOUD_ENVIRONMENT.md` for secret names (values via Cursor Cloud Secrets only).
 
 ## Canonical program truth and change isolation

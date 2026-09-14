@@ -22,18 +22,21 @@ Installs:
 
 ## Validation commands
 
-Default cloud validation is the `python tools/imp.py` pyramid from current
-`main` (FAST → focused/affected → domain/changed → FULL), not
+Default cloud validation is the `python3 tools/imp.py` pyramid from current
+`origin/main` (FAST → focused/affected → domain/changed → FULL), not
 `python -m unittest discover`. `cloud-handoff/full-state-2026-08-25` is
-historical; current landing is this monorepo's `origin/main` (`5e0ec717`, merged #100). `PROGRAM_STATUS` Canonical SHA field cites `a03f94cb` (#95), not git HEAD.
+historical. After `git fetch origin main`, verify the tip in
+[PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) (Canonical SHA field may differ
+from git HEAD). Command detail: [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md).
 
 ```bash
 export PYTHONPATH=src
 source .venv/bin/activate
-python tools/imp.py validate fast
-python tools/imp.py test affected
-python tools/imp.py validate changed
-python tools/imp.py validate full   # Paper-execution-path / release only
+python3 tools/imp.py validate fast
+python3 tools/imp.py test affected
+python3 tools/imp.py validate changed
+python3 tools/imp.py validate full   # Paper-execution-path / release only
+cd ui && npm run typecheck && npm test -- --run && npm run build
 ```
 
 ## Required secrets (names only)
