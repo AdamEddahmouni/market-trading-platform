@@ -60,6 +60,12 @@ jobs:
         shell: bash
         run: |
           mkdir -p .local/developer-workflow
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            python tools/ci_job_selector.py --always-run --quiet \
+              --github-output \
+              --json .local/developer-workflow/ci-job-selection.json
+            exit 0
+          fi
           python tools/ci_job_selector.py \
             --paths-file .local/developer-workflow/changed-paths.txt \
             --quiet \

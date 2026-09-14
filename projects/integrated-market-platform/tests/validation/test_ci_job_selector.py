@@ -159,6 +159,7 @@ class CiJobSelectorTests(unittest.TestCase):
         self.assertIn('!= "pull_request"', validate)
         self.assertIn("Checkout repository (shallow)", python_workflow)
         self.assertIn("checkout_replay_fixture == 'true'", python_workflow)
+        self.assertIn('!= "pull_request"', python_workflow)
         self.assertIn(
             "inputs.mode == 'changed' && steps.ci_slices.outputs.checkout_replay_fixture == 'true'",
             python_workflow,
