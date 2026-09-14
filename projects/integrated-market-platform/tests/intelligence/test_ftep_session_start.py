@@ -27,7 +27,20 @@ from tools.ftep_session_start import (  # noqa: E402
 
 class FtepSessionStartDryRunTests(unittest.TestCase):
     def setUp(self) -> None:
+        self._saved_persist = os.environ.get("IMP_PERSIST_STATE")
+        self._saved_state_dir = os.environ.get("IMP_STATE_DIR")
         os.environ["IMP_PERSIST_STATE"] = "1"
+
+    def tearDown(self) -> None:
+        reset_local_state_for_tests()
+        if self._saved_state_dir is None:
+            os.environ.pop("IMP_STATE_DIR", None)
+        else:
+            os.environ["IMP_STATE_DIR"] = self._saved_state_dir
+        if self._saved_persist is None:
+            os.environ.pop("IMP_PERSIST_STATE", None)
+        else:
+            os.environ["IMP_PERSIST_STATE"] = self._saved_persist
 
     def test_session_start_dry_run_cli_json(self) -> None:
         from tools.ftep_session_start import collect_session_start_gates
