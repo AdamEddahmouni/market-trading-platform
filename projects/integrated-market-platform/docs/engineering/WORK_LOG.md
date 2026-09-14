@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — UX-00 P2: remove dead NavShell horizontal layout
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui` |
+| **Summary** | Dropped unused `NavShell` `layout="horizontal"` branch; product chrome always uses sidebar nav. Removed legacy horizontal `.nav-shell` bar styles and unused `.discover-screen-inspector` CSS. |
+| **Key files** | `ui/src/components/NavShell.tsx`, `ui/src/components/imp-product/ImpProductChrome.tsx`, `ui/src/styles/layout.css`, `ui/src/styles/imp-product.css`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `cd ui && npm test` — 488 passed |
+| **Related** | UX-00 forensic audit §13 P2 #5 |
+| **Notes** | Isolated IA/CSS cleanup. No hop, FTEP, Paper fills, PROGRAM_STATUS SHA, or #125. |
+
 ## 2026-09-14 — Track H leftover: fail-close remaining backend error_category gaps
 
 | Field | Value |

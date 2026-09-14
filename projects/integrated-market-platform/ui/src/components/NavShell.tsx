@@ -103,7 +103,6 @@ const operatorLinks: NavLinkDef[] = [
 
 type Props = {
   mode?: Mode;
-  layout?: "horizontal" | "sidebar";
 };
 
 function accessibleLabel(link: NavLinkDef, mode?: Mode): string | undefined {
@@ -136,10 +135,9 @@ function NavItem({ link, mode }: { link: NavLinkDef; mode?: Mode }) {
   );
 }
 
-export function NavShell({ mode, layout = "sidebar" }: Props) {
-  const navClass = layout === "sidebar" ? "nav-shell nav-shell-sidebar" : "nav-shell";
+export function NavShell({ mode }: Props) {
   return (
-    <nav className={navClass} aria-label="Primary">
+    <nav className="nav-shell nav-shell-sidebar" aria-label="Primary">
       <div className="nav-primary-group">
         {primaryLinks.map((link) => (
           <NavItem key={`${link.to}-${link.label}`} link={link} mode={mode} />
