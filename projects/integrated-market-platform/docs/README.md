@@ -103,6 +103,7 @@ When documents disagree, resolve in this order (highest first):
 | Dependencies | [DEPENDENCIES.md](engineering/DEPENDENCIES.md) |
 | Stack inventory | [STACK.md](engineering/STACK.md) |
 | Configuration / env vars | [CONFIGURATION.md](engineering/CONFIGURATION.md) |
+| State path / worktree `.local` convention | [STATE_PATH_OPERATOR_CONVENTION.md](engineering/STATE_PATH_OPERATOR_CONVENTION.md) |
 | Provider readiness | [PROVIDER_READINESS.md](engineering/PROVIDER_READINESS.md) |
 | Operator probe runbook (FTEP-V1) | [OPERATOR_PROBE_RUNBOOK.md](engineering/OPERATOR_PROBE_RUNBOOK.md) |
 | Performance & bundle budget | [PERFORMANCE.md](engineering/PERFORMANCE.md) |

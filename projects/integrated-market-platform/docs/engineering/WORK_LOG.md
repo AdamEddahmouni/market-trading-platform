@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-14 — Phase 1 Lane A: canonical state-path contract (worktrees)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `platform`, `ftep`, `git hygiene` |
+| **Summary** | Verified `origin/main` at `f2a38a19`; created clean worktree `.worktrees/phase1-state-path-contract` on `work/phase1-state-path-contract`. Added `python tools/imp.py state-path`, `tools/state_path_diagnostic.py`, and `STATE_PATH_OPERATOR_CONVENTION.md` so linked worktrees cannot treat empty `.local` as missing FTEP sessions; gitignored governed session/release JSONL as local empirical evidence. Confirmed Item 7/9 tools on current main; documented binding `manifest_path` worktree provenance (immutable SQLite). |
+| **Key files** | `tools/imp.py`, `tools/state_path_diagnostic.py`, `docs/engineering/STATE_PATH_OPERATOR_CONVENTION.md`, `docs/engineering/CONFIGURATION.md`, `docs/engineering/DEVELOPER_OPERATING_SYSTEM.md`, `tests/platform/test_state_path_diagnostic.py`, `.gitignore` |
+| **Tests** | `python -m unittest tests.platform.test_state_path_diagnostic` → **3 passed** |
+| **Related** | Canonical `.local/imp-state.sqlite3`; [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) governed-session count doc lag (Lane D) |
+| **Notes** | Lane: Phase 1 Lane A (state-path / workspace). No FTEP default persistence behavior change; no SQLite mutation. Independent review: `APPROVE_MERGE_CANDIDATE` @ `9610d477`. |
+
 ## 2026-09-14 — Item 7 Lane B PRODUCTION forecast readiness
 
 | Field | Value |

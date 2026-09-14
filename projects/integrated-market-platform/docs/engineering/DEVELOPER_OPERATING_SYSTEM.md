@@ -174,6 +174,11 @@ Git's `commondir` indirection. Ordinary single-checkout clones are unchanged.
 symlink to the canonical shared environment. Validation commands launched through
 `tools/imp.py` automatically use the resolved interpreter.
 
+**Durable state paths:** linked worktrees use a local `.local/` that is test/dev
+only. Canonical FTEP empirical SQLite stays on the primary IMP checkout unless
+`IMP_STATE_DIR` overrides it. Run `python tools/imp.py state-path` before FTEP
+operator reads; see [STATE_PATH_OPERATOR_CONVENTION.md](STATE_PATH_OPERATOR_CONVENTION.md).
+
 ## Safety and ownership
 
 The control plane does not authorize or execute trades. It preserves
