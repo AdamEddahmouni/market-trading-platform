@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-import subprocess
 import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
+from ...git_ref import read_git_head
 from ...intelligence.paper_forward_bridge.session_policy import is_within_us_equity_rth
 from .bar_ohlcv_experiment import BarOhlcvExperimentResult, run_bounded_bar_ohlcv_experiment
 from .bar_ohlcv_sources import (
@@ -79,19 +79,14 @@ def imp_package_root() -> Path:
     return Path(__file__).resolve().parents[5]
 
 
-def resolve_runtime_git_sha(*, repo_root: Path | None = None) -> str:
-    root = repo_root if repo_root is not None else imp_package_root().parent.parent
-    try:
-        completed = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=root,
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-    except (OSError, subprocess.CalledProcessError):
+def resolve_runtime_git_sha(*, start: Path | None = None) -> str:
+    """Current HEAD via stdlib ``git_ref`` (no subprocess)."""
+
+    anchor = start if start is not None else Path(__file__).resolve()
+    head = read_git_head(start=anchor)
+    if head is None or not head.strip():
         return "unknown"
-    return completed.stdout.strip() or "unknown"
+    return head.strip()
 
 
 def hash_raw_kline_rows(rows: Sequence[Mapping[str, Any]]) -> str:
@@ -355,6 +350,7 @@ def poll_prospective_proof(
     max_wait_s: float,
     poll_interval_s: float,
     experiment_id: str | None = None,
+    runtime_git_sha: str | None = None,
     sleep_fn: Callable[[float], None] = time.sleep,
     now_fn: Callable[[], int] | None = None,
     loader: Callable[..., BarLoadResult] | None = None,
@@ -383,6 +379,7 @@ def poll_prospective_proof(
             observation_time_ns=observation_ns,
             kline_rows=None,
             experiment_id=experiment_id,
+            runtime_git_sha=runtime_git_sha,
         )
         if outcome.get("ok"):
             outcome["readiness"] = item9_prospective_readiness(now_ns=observation_ns)
