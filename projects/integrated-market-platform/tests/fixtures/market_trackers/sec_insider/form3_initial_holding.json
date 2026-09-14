@@ -1,0 +1,34 @@
+{
+  "id": "0000320193-24-000099:nd:0",
+  "accessionNumber": "0000320193-24-000099",
+  "formType": "3",
+  "ticker": "AAPL",
+  "issuerCik": "0000320193",
+  "issuerName": "Apple Inc.",
+  "insider": {
+    "name": "Director Example",
+    "cik": "0007654321",
+    "title": null,
+    "isDirector": true,
+    "isOfficer": false,
+    "isTenPctOwner": false
+  },
+  "transactedAt": null,
+  "filedAt": "2024-06-01",
+  "code": null,
+  "acquiredDisposed": null,
+  "securityTitle": "Common Stock",
+  "shares": 1000,
+  "pricePerShare": null,
+  "sharesOwnedAfter": 1000,
+  "ownership": "direct",
+  "isDerivative": false,
+  "provenance": {
+    "source": "edgar",
+    "sourceUrl": "https://www.sec.gov/Archives/edgar/data/320193/000032019324000099/xslF345X03/form3.xml",
+    "retrievedAt": "2026-08-24T12:00:00.000Z",
+    "parser": "form-ownership-xml@1",
+    "confidence": 1,
+    "needsReview": false
+  }
+}

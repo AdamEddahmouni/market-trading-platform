@@ -96,6 +96,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [PAPER_SIMULATOR_CALIBRATION_CONTRACT.md](../architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md); PR #134; Item 9 PARTIAL — `COMPARATOR_INPUT_READY` / `RTH_PROOF_PENDING` |
 | **Notes** | Alpaca comparator leg unchanged (GET-only). Live RTH OpenD 1m proof remains operator-dependent; no merge. |
 
+## 2026-09-14 — Lane H Market Trackers SEC 3/4/5 adapter prep
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `market_trackers/sec_insider`, `docs/providers`, fixtures |
+| **Summary** | Preparation-only adapter for LuxAlgo Market Trackers `insider-transactions`: pinned upstream commits/licenses, schema characterization, external source receipt, PIT clocks (no transaction-date public knowledge), EventV1 map prep with XA-01 fail-closed ticker resolution, deterministic public-record evidence for OE, candidate feature catalog, and golden fixtures — independent of Observation Ingress Router (Lane F). |
+| **Key files** | `src/market_platform_foundation/market_trackers/**`, `docs/providers/MARKET_TRACKERS_SEC_INSIDER.md`, `docs/engineering/specs/MARKET_TRACKERS_SEC_INSIDER_ADAPTER_PREP.md`, `tests/fixtures/market_trackers/sec_insider/**`, `tests/market_trackers/test_sec_insider_adapter_prep.py`, `tools/validation_manifest.json` |
+| **Tests** | `PYTHONPATH=src python -m unittest tests.market_trackers.test_sec_insider_adapter_prep` → **9 passed** (post review fixes) |
+| **Related** | PR #143; Lane H takeover; `docs/providers/SEC_EDGAR.md`; `PROVIDER_NORMALIZATION_V1.md` |
+| **Notes** | Live Market Trackers fetch NOT_EXECUTED; no execution dependency; Market Trackers replaceable over EDGAR primary. |
+
 ## 2026-09-14 — FTEP-V1-002 prospective Finviz catalyst ingress (PR #133)
 
 | Field | Value |

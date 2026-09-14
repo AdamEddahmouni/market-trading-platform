@@ -135,6 +135,7 @@
         "src/market_platform_foundation/finra",
         "src/market_platform_foundation/finviz",
         "src/market_platform_foundation/fred",
+        "src/market_platform_foundation/market_trackers",
         "src/market_platform_foundation/nasdaq_regsho",
         "src/market_platform_foundation/nyse_regsho",
         "src/market_platform_foundation/news",
