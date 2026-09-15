@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from ...git_ref import main_working_tree
 from .campaign_status import collect_ftep_campaign_status
 
 _ARTIFACT_KIND = "ftep_catalyst_watch_report"
@@ -24,17 +25,28 @@ def governed_session_start_evidence_path(repository_root: Path, campaign_slug: s
     )
 
 
-def load_governed_session_ids_from_evidence(
-    repository_root: Path,
-    campaign_slug: str,
-) -> tuple[list[str], str | None]:
-    """Return session_ids from append-only evidence; error detail if file missing."""
+def operator_primary_imp_root_for_evidence(repository_root: Path) -> Path | None:
+    """Canonical IMP tree on the git primary checkout (monorepo layout)."""
 
-    path = governed_session_start_evidence_path(repository_root, campaign_slug)
-    if not path.is_file():
-        return [], None
+    main = main_working_tree(start=repository_root)
+    if main is None:
+        return None
+    candidate = main / "projects" / "integrated-market-platform"
+    try:
+        if (candidate / "phase0-dependency-lock.json").is_file():
+            return candidate
+    except OSError:
+        return None
+    return None
+
+
+def _session_ids_from_evidence_file(path: Path) -> list[str]:
     session_ids: list[str] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return session_ids
+    for line in lines:
         line = line.strip()
         if not line:
             continue
@@ -47,7 +59,42 @@ def load_governed_session_ids_from_evidence(
         for item in record.get("sessions_created") or []:
             if isinstance(item, dict) and item.get("session_id"):
                 session_ids.append(str(item["session_id"]))
-    return session_ids, str(path)
+    return session_ids
+
+
+def _evidence_search_roots(repository_root: Path) -> tuple[Path, ...]:
+    roots: list[Path] = [repository_root]
+    primary = operator_primary_imp_root_for_evidence(repository_root)
+    if primary is None:
+        return tuple(roots)
+    try:
+        if primary.resolve() != repository_root.resolve():
+            roots.append(primary)
+    except OSError:
+        roots.append(primary)
+    return tuple(roots)
+
+
+def load_governed_session_ids_from_evidence(
+    repository_root: Path,
+    campaign_slug: str,
+) -> tuple[list[str], str | None]:
+    """Return session_ids from append-only evidence; missing file is empty.
+
+    Gitignored operator evidence lives on the primary IMP checkout. Linked
+    worktrees must not treat that absence as a missing campaign.
+    """
+
+    last_path: str | None = None
+    for root in _evidence_search_roots(repository_root):
+        path = governed_session_start_evidence_path(root, campaign_slug)
+        if not path.is_file():
+            continue
+        last_path = str(path)
+        session_ids = _session_ids_from_evidence_file(path)
+        if session_ids:
+            return session_ids, last_path
+    return [], last_path
 
 
 def campaign_attention_fixture_path(repository_root: Path, campaign_slug: str) -> Path:
@@ -310,4 +357,5 @@ __all__ = [
     "collect_ftep_catalyst_watch",
     "governed_session_start_evidence_path",
     "load_governed_session_ids_from_evidence",
+    "operator_primary_imp_root_for_evidence",
 ]

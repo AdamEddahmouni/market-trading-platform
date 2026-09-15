@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — FTEP integrity: resolve gitignored session evidence from operator primary checkout
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, `rth-ops` |
+| **Summary** | Linked worktrees failed `ftep integrity-check` / RTH ops preflight with `governed_session_start_evidence_present` because gitignored `governed-session-start-evidence.jsonl` lives only on the primary IMP checkout. Load session IDs from the operator primary tree when the worktree file is absent or has no `session_id` rows. Does not create empirical locks, copy evidence into git, or flip FTEP empirical gates. |
+| **Key files** | `src/market_platform_foundation/intelligence/paper_forward_bridge/ftep_catalyst_watch.py`, `tests/intelligence/test_ftep_catalyst_watch.py`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python -m unittest tests.intelligence.test_ftep_catalyst_watch tests.intelligence.test_ftep_integrity tests.intelligence.test_rth_empirical_ops tests.intelligence.test_ftep_finviz_prospective_preflight tests.intelligence.test_item7_corpus_collector` **29/29 OK**; Item 9 `tests.platform.test_bar_ohlcv_prospective_proof` + comparator bridge **28/28 OK**. After fix: `ftep integrity-check FTEP-V1-002` **PASS** (`evidence_ids=2` from primary jsonl); `rth_empirical_ops --json preflight` **acceptance_label=RTH_EMPIRICAL_OPS_READY**, `hard_blockers=[]`, `disposition=SOFTWARE_READY_RTH_REQUIRED` (RTH closed). |
+| **Related** | Lane B+E Tuesday RTH preflight; [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKLIST.md) |
+| **Notes** | Worktree SHA base `d588728d`. Live OFF. No Paper/Live orders. |
+
 ## 2026-09-15 — PROGRAM_STATUS: refresh `main` SHA after #197/#198 (Lane J fix)
 
 | Field | Value |
