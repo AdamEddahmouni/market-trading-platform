@@ -71,8 +71,8 @@ setup, choose **Enter Demo** to launch the workstation or **Continue setup**
 to exit and configure providers later.
 
 From File Explorer, double-click [START_PLATFORM.cmd](START_PLATFORM.cmd)
-to start the API and UI, wait for both to become ready, and open the Mixed Live
-screener. Double-click [STOP_PLATFORM.cmd](STOP_PLATFORM.cmd) to stop only
+to start the API and UI, wait for both to become ready, and open the operator
+SPA at `http://127.0.0.1:5173/`. Double-click [STOP_PLATFORM.cmd](STOP_PLATFORM.cmd) to stop only
 the launcher-owned API/UI process trees. [PLATFORM_CONTROL.cmd](PLATFORM_CONTROL.cmd)
 provides Start/Open, Open Browser, Status, Finviz Status, Stop/Exit, and
 leave-running choices in one menu.
@@ -96,8 +96,9 @@ responses.
 Prerequisites are the repository CPython 3.11 `.venv`, Node.js/npm, and a prior
 `npm install` in `ui/`. Path A hop uses that IMP `.venv` after
 `python tools/imp.py env install-opend` (`PYTHONPATH=src` only). Do not mix a
-second venv's `site-packages`. When `%USERPROFILE%\moomoo-api-test\.venv` exists, the
-API launcher may still select it; hop itself must use the IMP interpreter. Moomoo OpenD must be running separately on loopback port
+second venv's `site-packages`. The API launcher selects the repository `.venv`
+(or `IMP_PLATFORM_BACKEND_PYTHON` when set). It does not auto-select
+`%USERPROFILE%\moomoo-api-test\.venv`. Moomoo OpenD must be running separately on loopback port
 `11111` for Moomoo quotes. The launcher enables observational data and internal
 paper simulation but never enables live order execution.
 

@@ -17,7 +17,7 @@ The easiest first-run path is to return to the repository root and double-click
 `SETUP_PLATFORM.cmd`. It repairs the project environment and offers an
 **Enter Demo** choice. For normal launches, double-click `START_PLATFORM.cmd`;
 it starts the API, this Vite UI, and the loopback lifecycle supervisor, then
-opens `/discover`. Use `STOP_PLATFORM.cmd` to stop only launcher-owned
+opens `http://127.0.0.1:5173/`. Use `STOP_PLATFORM.cmd` to stop only launcher-owned
 processes, or `PLATFORM_CONTROL.cmd` for the compatibility menu. Logs are kept
 under `.local/`, including `platform-control.log`; the supervisor listens only
 on `127.0.0.1:8767`.

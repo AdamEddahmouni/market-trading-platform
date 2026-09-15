@@ -8,5 +8,6 @@ if not exist "%IMP_LAUNCHER_PYTHON%" (
   pause
   exit /b 2
 )
+if not defined IMP_PLATFORM_BACKEND_PYTHON set "IMP_PLATFORM_BACKEND_PYTHON=%IMP_LAUNCHER_PYTHON%"
 "%IMP_LAUNCHER_PYTHON%" "%~dp0tools\platform\local_launcher.py" menu
 exit /b %errorlevel%

@@ -16,7 +16,7 @@ import urllib.request
 import webbrowser
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Mapping, Protocol, Sequence
+from typing import Callable, Mapping, Protocol, Sequence
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -29,8 +29,9 @@ CONTROL_PORT = 8767
 API_URL = f"http://{API_HOST}:{API_PORT}/context"
 UI_URL = f"http://{UI_HOST}:{UI_PORT}/"
 CONTROL_URL = f"http://{CONTROL_HOST}:{CONTROL_PORT}/control/status"
-DISCOVER_URL = f"http://{UI_HOST}:{UI_PORT}/discover"
+OPERATOR_URL = UI_URL
 STATE_RELATIVE_PATH = Path(".local/platform-launcher.json")
+BACKEND_RUNTIME_IMPORT = "import sklearn"
 
 
 class LauncherError(RuntimeError):
@@ -172,6 +173,7 @@ class WindowsSystem:
 
 
 def select_backend_python(root: Path, environ: Mapping[str, str], user_profile: Path | None = None) -> Path:
+    del user_profile  # retained for call-site compatibility; never auto-select moomoo-api-test
     override = str(environ.get("IMP_PLATFORM_BACKEND_PYTHON") or "").strip()
     if override:
         candidate = Path(override).expanduser()
@@ -179,18 +181,27 @@ def select_backend_python(root: Path, environ: Mapping[str, str], user_profile: 
             raise LauncherError("IMP_PLATFORM_BACKEND_PYTHON does not point to an existing file")
         return candidate
 
-    profile = user_profile
-    if profile is None:
-        raw_profile = str(environ.get("USERPROFILE") or "").strip()
-        profile = Path(raw_profile) if raw_profile else Path.home()
-    moomoo_python = profile / "moomoo-api-test/.venv/Scripts/python.exe"
-    if moomoo_python.is_file():
-        return moomoo_python
-
     repository_python = root / ".venv/Scripts/python.exe"
     if repository_python.is_file():
         return repository_python
+    posix_python = root / ".venv/bin/python"
+    if posix_python.is_file():
+        return posix_python
     raise LauncherError("Python 3.11 environment missing: create .venv before starting the platform")
+
+
+def backend_python_has_runtime(python: Path) -> bool:
+    try:
+        result = subprocess.run(
+            [str(python), "-c", BACKEND_RUNTIME_IMPORT],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return result.returncode == 0
 
 
 def build_backend_environment(environ: Mapping[str, str]) -> dict[str, str]:
@@ -225,6 +236,7 @@ class PlatformController:
         environ: Mapping[str, str] | None = None,
         readiness_attempts: int = 30,
         readiness_interval_seconds: float = 0.5,
+        python_runtime_probe: Callable[[Path], bool] | None = None,
     ) -> None:
         self.root = root.resolve()
         self.system = system or WindowsSystem()
@@ -232,6 +244,7 @@ class PlatformController:
         self.readiness_attempts = max(1, int(readiness_attempts))
         self.readiness_interval_seconds = max(0.0, float(readiness_interval_seconds))
         self.state_path = self.root / STATE_RELATIVE_PATH
+        self._python_runtime_probe = backend_python_has_runtime if python_runtime_probe is None else python_runtime_probe
 
     def _read_state(self) -> list[ServiceRecord]:
         if not self.state_path.is_file():
@@ -282,11 +295,19 @@ class PlatformController:
         if not backend_entrypoint.is_file():
             raise LauncherError("Backend entry point missing: tools/ui1/run_ui_api.py")
         if not (self.root / "ui/node_modules").is_dir():
-            raise LauncherError("UI dependencies missing: run 'npm install' inside the ui directory")
+            raise LauncherError(
+                "UI dependencies missing: run SETUP_PLATFORM.cmd, or 'npm ci' inside the ui directory of this checkout"
+            )
         npm = self.system.which("npm.cmd") or self.system.which("npm")
         if not npm:
             raise LauncherError("npm is not available on PATH; install Node.js before starting")
         backend_python = select_backend_python(self.root, self.environ)
+        probe = self._python_runtime_probe
+        if not probe(backend_python):
+            raise LauncherError(
+                "Selected Python is missing required runtime packages (sklearn). "
+                "Use the repository .venv from SETUP_PLATFORM.cmd, not moomoo-api-test."
+            )
         return backend_python, npm
 
     def _rollback(self, services: Sequence[ServiceRecord]) -> None:
@@ -306,7 +327,7 @@ class PlatformController:
         ):
             print("Platform is already running.")
             if open_browser:
-                self.system.open_browser(DISCOVER_URL)
+                self.system.open_browser(OPERATOR_URL)
             return 0
         if existing:
             self.stop()
@@ -402,11 +423,11 @@ class PlatformController:
             print(f"UI log:      {ui_log}")
             return 1
 
-        print(f"Platform ready: {DISCOVER_URL}")
+        print(f"Platform ready: {OPERATOR_URL}")
         print(f"Backend log: {backend_log}")
         print(f"UI log:      {ui_log}")
         if open_browser:
-            self.system.open_browser(DISCOVER_URL)
+            self.system.open_browser(OPERATOR_URL)
         return 0
 
     def stop(self) -> int:
@@ -437,7 +458,7 @@ class PlatformController:
         print(f"API loopback ready      {'YES' if api_ready else 'NO'}")
         print(f"UI loopback ready       {'YES' if ui_ready else 'NO'}")
         if all((owned.get("api"), owned.get("ui"), api_ready, ui_ready)):
-            print(f"READY                  {DISCOVER_URL}")
+            print(f"READY                  {OPERATOR_URL}")
             return 0
         print("NOT RUNNING OR PARTIAL")
         return 1
@@ -446,8 +467,8 @@ class PlatformController:
         if not self.system.url_ready(UI_URL):
             print("ERROR: UI is not ready. Run START_PLATFORM.cmd first.")
             return 1
-        self.system.open_browser(DISCOVER_URL)
-        print(f"Opened {DISCOVER_URL}")
+        self.system.open_browser(OPERATOR_URL)
+        print(f"Opened {OPERATOR_URL}")
         return 0
 
     def finviz_status(self) -> int:

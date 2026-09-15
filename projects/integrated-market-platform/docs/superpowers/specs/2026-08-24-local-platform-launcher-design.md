@@ -11,7 +11,7 @@ terminal commands or killing unrelated processes.
 The repository root exposes three entry points:
 
 - `START_PLATFORM.cmd` starts the API and Vite UI, waits for both local ports,
-  and opens `http://127.0.0.1:5173/discover`.
+  and opens `http://127.0.0.1:5173/`.
 - `STOP_PLATFORM.cmd` stops only processes owned by the launcher.
 - `PLATFORM_CONTROL.cmd` presents Start/Open, Open Browser, Status, Stop/Exit,
   and Finviz Status options in one small terminal menu.
@@ -36,11 +36,12 @@ verified launcher-owned root are stopped with Windows `taskkill /T`.
 
 ## Runtime selection and gates
 
-The controller uses the repository CPython 3.11 venv for itself. For the API it
-prefers, in order: `IMP_PLATFORM_BACKEND_PYTHON`, the existing
-`%USERPROFILE%\moomoo-api-test\.venv\Scripts\python.exe`, and the repository
-venv. This keeps the Moomoo SDK available without modifying the governed
-foundation dependency lock.
+The controller uses the repository CPython 3.11 venv for itself and for the
+API. Optional override: `IMP_PLATFORM_BACKEND_PYTHON`. The launcher never
+auto-selects `%USERPROFILE%\moomoo-api-test\.venv`; that interpreter lacks IMP
+runtime packages such as sklearn. `START_PLATFORM.cmd` pins
+`IMP_PLATFORM_BACKEND_PYTHON` to the repository venv when unset. Start also
+probes `import sklearn` before spawning the API.
 
 The API child receives these defaults unless the operator already supplied an
 explicit value: `IMP_LIVE_OBSERVATIONAL=1`, `IMP_MOOMOO_LIVE=1`,
