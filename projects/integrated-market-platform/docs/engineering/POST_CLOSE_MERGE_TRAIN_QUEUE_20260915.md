@@ -7,7 +7,7 @@
 **Frozen RTH runtime:** `.rth-operator-20260915` at the same SHA — **do not thaw, patch, or merge into it**  
 **This document does not update** [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md)
 
-Snapshot time: 2026-09-15 ~14:55 ET (refresh of `99628808`). P8 software-only fullstack: draft [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) `b0836b90` on `7aade60b` — **NOT FOR MERGE** until RTH reconciliation; auto-merge **off**. On main, chain **FAILS** `P1_HANDLER_ADMIT_MISSING`. Stacked `aa826110` on `96ede754` / [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) clears that after retarget to `POST /intelligence/ingest/news`. **Not empirical.**
+Snapshot time: 2026-09-15 ~15:12 ET (refresh of `49c4f618`). P8 stacked tip is now `64764c29` (local; was `aa826110`; **not** a second PR). Draft [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) remains the main-based `P1_HANDLER_ADMIT_MISSING` gate. On live-OE, ingest+PIT+detector work; next hard fail `P4_RANKED_SUMMARY_BLOCKED` (`UI_SECRET_LEAK_BLOCKED`). **Do not delete the leak audit.** **Not empirical.**
 
 ## Rebase-required flags (vs `origin/main` `7aade60b`)
 
@@ -16,7 +16,7 @@ Snapshot time: 2026-09-15 ~14:55 ET (refresh of `99628808`). P8 software-only fu
 | Q1 / TRAIN 1 launcher | `80792ea7` | `7aade60b` | Draft [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206). All six claims **SAFE-TO-RETAIN-AFTER-REBASE**. No MUST-FIX. Reconstruct `f1aaacaa` on `7aade60b` — **not** a merge of `diagnosis/launcher-routing-20260915`. **Do not merge during RTH.** Rebase if `main` moved |
 | Q2–Q4 live-OE / cockpit | `96ede754` | `7aade60b` | Draft [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) **SAFE-TO-RETAIN-AFTER-REBASE** (ingest review). **Do not merge during RTH.** Residuals: `received=available`; POST can rewrite `as_of`. **ACK/WATCH fail-closed.** **rebase-required=yes** |
 | Q5 WATCH harness | `7a5cbe48` | `7aade60b` | **YES if** `origin/main` moves after close. Independent of Item 9. Paper fixture path; acks stay blocked in `LIVE_OBSERVATIONAL`. Draft [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204) opened at `f8c03183`, being updated |
-| P8 fullstack acceptance | `b0836b90` (PR) / `aa826110` (stacked) | `7aade60b` / `96ede754` | Draft [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208). **NOT FOR MERGE** until RTH reconciliation. Auto-merge **off**. Depends on TRAIN 3/4 [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205). **Not empirical.** Not in `validation_manifest.json` |
+| P8 fullstack acceptance | `b0836b90` (PR) / `64764c29` (stacked local) | `7aade60b` / `96ede754` | [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) main-base `P1_HANDLER_ADMIT_MISSING`. Stacked next fail `P4_RANKED_SUMMARY_BLOCKED`. **Do not delete leak audit.** **Not pushed** as a second PR. **Not empirical** |
 | Q6 Item 9 | `fe8cac6d` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves. Draft [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203). Local tip 1 ahead of remote `77d448c3` |
 | Q6 P12 review | `49ae216e` | (review branch) | Gate only — **not merge cargo** |
 | Finviz reliability | `f696f00d` | (draft [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207)) | Receipts only. **NOT FOR MERGE** until RTH reconciliation. Not a “fix HTTP 429” product patch |
@@ -24,7 +24,7 @@ Snapshot time: 2026-09-15 ~14:55 ET (refresh of `99628808`). P8 software-only fu
 | Q8 Item 7 notes | `d588728d` + untracked notes | `d588728d` | **YES** onto post-close `origin/main` before committing notes |
 | Q9a test-gap | `145fee4f` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
 | Q9b runbook | `134924c3` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
-| This queue | `99628808` + this refresh | `7aade60b` | Docs only; **YES if** `origin/main` moves |
+| This queue | `49c4f618` + this refresh | `7aade60b` | Docs only; **YES if** `origin/main` moves |
 
 ## Operating holds
 
@@ -62,7 +62,7 @@ Recommended post-close landing sequence:
 2. **Q4** `8189af4c` + honesty `91b07b4f` + ingest `96ede754` / [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) — **SAFE-TO-RETAIN-AFTER-REBASE**; **do not merge during RTH**
 3. **Q3** `c43688ed` + `91b07b4f` + `96ede754` ranked READ — same hold; **ACK/WATCH fail-closed**
 4. **Q2** `c4d88ef7` + `91b07b4f` + `POST /intelligence/ingest/news` `96ede754` / [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) — same hold; residuals `received=available`, POST can rewrite `as_of`
-5. **P8 fullstack** [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) `b0836b90` after TRAIN 3/4 [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) (stacked probe `aa826110`) — **NOT FOR MERGE** until RTH reconciliation; auto-merge **off**
+5. **P8 fullstack** [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) `b0836b90` after TRAIN 3/4 [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205); stacked local `64764c29` — **NOT FOR MERGE** until RTH reconciliation; do **not** delete leak audit
 6. **Q5** `7a5cbe48` WATCH harness (Paper `INTERNAL_SIMULATION` fixtures; **not** empirical; failure cases 6/6; draft [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204) being updated from `f8c03183`)
 7. **Q6 Item 9 session-day kline** `fe8cac6d` / draft [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203) (independent; not calibration)  
 8. **Q7 latency notes/telemetry**  
@@ -73,7 +73,7 @@ P12 diagnosis review **FINISHED** `PARTIALLY_CONFIRMED` (`5f965f32`). P13 flagge
 
 Prior must-fix list (**closed** on honesty `91b07b4f` + ingest review of `96ede754`): live `INELIGIBLE` not on current book; no `READY` when `as_of` UNAVAILABLE; `inspect` / `store.as_of_time()` UNAVAILABLE without live receive; `replay_shelf` is `DEMO_REPLAY` and out of current items. Request-path admit is **SAFE-TO-RETAIN-AFTER-REBASE**.
 
-**Residuals (do not block retain):** `received=available`; POST can rewrite `as_of`. Also: no Finviz auto-fetch; mixed-discovery EMPTY vs UNAVAILABLE; residual `store.as_of_time_ns` footgun if someone assigns fixture `prediction_cutoff()`. **ACK/WATCH stay fail-closed.** Vite `/opportunities` is TRAIN 1 / [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206). P8 fullstack [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) `b0836b90` / stacked `aa826110` depends on [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205). Q5 `7a5cbe48` / [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204). Q6 `fe8cac6d` / [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203).
+**Residuals (do not block retain):** `received=available`; POST can rewrite `as_of`. Also: no Finviz auto-fetch; mixed-discovery EMPTY vs UNAVAILABLE; residual `store.as_of_time_ns` footgun if someone assigns fixture `prediction_cutoff()`. **ACK/WATCH stay fail-closed.** Vite `/opportunities` is TRAIN 1 / [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206). P8 fullstack [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) `b0836b90` / stacked local `64764c29` depends on [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205); next fail `P4_RANKED_SUMMARY_BLOCKED`. Q5 `7a5cbe48` / [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204). Q6 `fe8cac6d` / [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203).
 
 ---
 
@@ -183,13 +183,13 @@ Prior must-fix list (**closed** on honesty `91b07b4f` + ingest review of `96ede7
 |---|---|
 | **Status** | Draft [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) — **NOT FOR MERGE UNTIL 2026-09-15 RTH RECONCILIATION COMPLETE**. Auto-merge **off**. Software-only. **Not empirical** |
 | **Branch / worktree (PR)** | `repair/live-fullstack-acceptance-20260915` @ `b0836b908938a48f76b160c9c0adf63349d4567f` on `origin/main` `7aade60b` |
-| **Stacked local branch** | `repair/live-fullstack-on-oe-20260915` @ `aa8261105ee3ff65cfbe612e47953b3f26fae1e0` (base live-OE `96ede754` / [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205)) |
+| **Stacked local branch** | `repair/live-fullstack-on-oe-20260915` @ `64764c29f09f971c748568796b9218c899f62477` (was `aa826110`; **not pushed** as a second PR). Base live-OE `96ede754` / [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) |
 | **Source baseline SHA** | PR: `7aade60b`. Stacked: `96ede754` |
-| **Purpose** | Honest next-RTH software gate: fail closed when P1 EventV1 handler admit is missing. Do not pass via ReplayStore, library ingress, Live, Grok, or a broker order |
-| **Issue addressed** | On **main** (`b0836b90`): chain **FAILS** `P1_HANDLER_ADMIT_MISSING` (honest). After retargeting the probe to `POST /intelligence/ingest/news` on stacked `aa826110`, `P1_HANDLER_ADMIT_MISSING` is **GONE**. Next hard fail: remaining EventV1 → PIT → detector → OE → ranked → API → WATCH/DISMISS → DecisionTrace → TradeReview path is **not** yet exercised by a known request-path contract (fail-closed; production code **not** changed) |
+| **Purpose** | Honest next-RTH software gate. Do not pass via ReplayStore, library ingress, Live, Grok, or a broker order |
+| **Issue addressed** | Draft [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) on **main** still **FAILS** `P1_HANDLER_ADMIT_MISSING` (honest). On live-OE stack with current clocks: `POST /intelligence/ingest/news` admits EventV1, PIT (publication ≠ retrieval), detector minted `OpportunityV1`, persist/readback, in-process ranked assembly `READY` `items=1`. Next hard fail: **`P4_RANKED_SUMMARY_BLOCKED`** — `GET /opportunities/summary` status 500 reason `UI_SECRET_LEAK_BLOCKED` (`items[0].decision_support.authority` / `instrument_key` → `SECRET_SHAPED_KEY_WITH_LIVE_VALUE`). WATCH not reached. Frozen-runtime mutation/read gate remains `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`, **not** this HTTP 500. **Do not treat this as license to delete the leak audit** |
 | **Empirical evidence** | **None.** Software-only. Do not describe as live evidence |
-| **Affected files** | Acceptance tests + probe retarget. **Not** in `validation_manifest.json` yet |
-| **Focused tests** | **5 supporting tests pass** on both bases |
+| **Affected files** | `tests/acceptance/test_software_fullstack_acceptance.py` only so far (`64764c29` +241/−14). **Not** in `validation_manifest.json` |
+| **Focused tests** | Stacked tip exercises POST ingest then fail-closed HTTP ranked read. Supporting tests still pass on both bases |
 | **Broader validation** | Depends on TRAIN 3/4 [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205). Do not enable Live or enrichment |
 | **Dependencies** | **Hard:** land / rebase after [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205). Independent of Item 9 |
 | **Must rebase** | PR vs `7aade60b`: **YES if** `origin/main` moves. Stacked branch must stay on post-rebase [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) |
@@ -313,7 +313,7 @@ Prior must-fix list (**closed** on honesty `91b07b4f` + ingest review of `96ede7
 | Grok / durable enrichment worker | n/a | **DEFERRED.** `#189` wiring remains OFF by default; not `GROK_AUTOMATION_PRODUCTION_ACTIVE` |
 | Stale launcher | `diagnosis/launcher-routing-20260915` `9b0781c9` on `d588728d` | **DO NOT LAND.** Superseded by TRAIN 1 `80792ea7` / [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) |
 | Launcher reconstruct review | `c39ab0af` vs [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) `80792ea7` / `f1aaacaa` | **FINISHED.** All six TRAIN 1 claims **SAFE-TO-RETAIN-AFTER-REBASE**. No MUST-FIX. **Not merge cargo** |
-| P8 fullstack draft | [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) `b0836b90` | **NOT FOR MERGE** until RTH reconciliation. Auto-merge **off**. Main-base fail `P1_HANDLER_ADMIT_MISSING` is honest. Stacked `aa826110` on [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) |
+| P8 fullstack draft | [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) `b0836b90` | Main-base `P1_HANDLER_ADMIT_MISSING`. Stacked local `64764c29` next fail `P4_RANKED_SUMMARY_BLOCKED`. **Do not delete leak audit.** **Not** a second PR |
 | Frozen RTH | `.rth-operator-20260915` @ `7aade60b` | Observational collection only through 16:00 ET |
 
 ---
@@ -328,14 +328,14 @@ Prior must-fix list (**closed** on honesty `91b07b4f` + ingest review of `96ede7
 | `opportunity_projections.py` live-gate, projections as_of/attention, news EventV1, UI API ingress | Q2–Q4 (P1+P4) |
 | Item 7 corpus **writers** / fabricated rows | **Nobody today.** Q8 notes only |
 | New watch-dismiss tests | Q5 (P5) |
-| Software fullstack acceptance probe | P8 ([#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208); stacked `aa826110`) |
+| Software fullstack acceptance probe | P8 ([#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208); stacked local `64764c29`; `tests/acceptance/test_software_fullstack_acceptance.py` only) |
 | New latency audit doc | Q7 (P6) |
 | Canonical `PROGRAM_STATUS.md` | **Not this queue.** Coordinator updates after software lands |
 
 ## Coordinator checklist (post-close, not now)
 
 1. Re-fetch `origin/main`. If SHA ≠ `7aade60b`, every candidate **must rebase** except already-rebased tips.
-2. Re-read porcelain/SHAs: Q1 / TRAIN 1 `80792ea7` / [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206); Q2–Q4 `96ede754` / [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205); P8 fullstack [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) `b0836b90` (main-base `P1_HANDLER_ADMIT_MISSING`) + stacked `aa826110` on [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) — **NOT FOR MERGE** until RTH reconciliation; auto-merge **off**; **not empirical**; not in `validation_manifest.json`; Q5 `7a5cbe48` / [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204); Q6 `fe8cac6d` / [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203); Finviz [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207); Q7 `49529d64`; Q8 notes on `d588728d`; Q9a `145fee4f`; Q9b `134924c3`.
+2. Re-read porcelain/SHAs: Q1 / TRAIN 1 `80792ea7` / [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206); Q2–Q4 `96ede754` / [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205); P8 fullstack [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) `b0836b90` (main-base `P1_HANDLER_ADMIT_MISSING`) + stacked local `64764c29` on [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) next fail `P4_RANKED_SUMMARY_BLOCKED` (`UI_SECRET_LEAK_BLOCKED`) — **do not delete leak audit**; **not pushed** as a second PR; **not empirical**; Q5 `7a5cbe48` / [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204); Q6 `fe8cac6d` / [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203); Finviz [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207); Q7 `49529d64`; Q8 notes on `d588728d`; Q9a `145fee4f`; Q9b `134924c3`.
 3. Honesty + ingest **SAFE-TO-RETAIN-AFTER-REBASE**. Residuals: `received=available`; POST can rewrite `as_of`. **ACK/WATCH stay fail-closed.** **Do not merge during RTH.**
 4. Honor Item 9 P12: do not land `max_count=120`; do not treat unique-security `historyKLQuota` as proven.
 5. Merge **nothing** into frozen RTH. Do not land this queue as product software.
