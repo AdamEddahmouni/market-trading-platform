@@ -15,7 +15,9 @@ from market_platform_foundation.ui_api.projections import (
     REPLAY_SHELF_LABEL,
     build_as_of_context,
     build_attention_page,
+    build_inspect_payload,
     build_quality_summary,
+    display_as_of_time,
     is_fixture_rth_attention_id,
 )
 from market_platform_foundation.ui_api.store import ReplayStore
@@ -48,6 +50,9 @@ class LiveObservationalStateTests(unittest.TestCase):
         self.assertNotIn("fixture", str(quality.get("detail") or "").lower())
         self.assertEqual(quality["state"], "UNAVAILABLE")
         self.assertEqual(quality["detail"], "LIVE_OBSERVATIONAL_NO_LIVE_RECEIVE_TIME")
+        self.assertEqual(self.store.as_of_time(), LIVE_AS_OF_UNAVAILABLE)
+        self.assertNotIn("2026-07-21", self.store.as_of_time())
+        self.assertEqual(display_as_of_time(self.store), LIVE_AS_OF_UNAVAILABLE)
 
     def test_live_as_of_uses_admitted_receive_time(self) -> None:
         self.store.last_source_time_ns = 1_779_000_000_000_000_000
@@ -73,6 +78,22 @@ class LiveObservationalStateTests(unittest.TestCase):
             self.assertEqual(item.get("attention_data_kind"), "FIXTURE_REPLAY")
         shelf_ids = {item.get("attention_id") for item in shelf}
         self.assertIn("att-replay-context", shelf_ids)
+        self.assertIn("att-futures-es-imbalance", shelf_ids)
+        current_symbols = {str(item.get("instrument_id") or "") for item in (page.get("items") or [])}
+        self.assertNotIn("ES", current_symbols)
+        for item_id in shelf_ids:
+            self.assertNotIn(item_id, current_ids)
+
+    def test_live_inspect_and_store_as_of_are_not_july_21(self) -> None:
+        inspect = build_inspect_payload(self.store, "inspect:replay:context")
+        self.assertEqual(self.store.as_of_time(), LIVE_AS_OF_UNAVAILABLE)
+        self.assertNotIn("2026-07-21", self.store.as_of_time())
+        self.assertEqual(inspect["as_of_context"]["as_of_time"], LIVE_AS_OF_UNAVAILABLE)
+        evidence_items = inspect["tabs"]["EVIDENCE"]["items"]
+        for item in evidence_items:
+            if isinstance(item, dict) and "as_of" in item:
+                self.assertEqual(item["as_of"], LIVE_AS_OF_UNAVAILABLE)
+                self.assertNotIn("2026-07-21", str(item["as_of"]))
 
     def test_zero_qualifying_live_book_is_empty_not_fixture_unavailable(self) -> None:
         payload = build_opportunities_summary_payload(self.store)

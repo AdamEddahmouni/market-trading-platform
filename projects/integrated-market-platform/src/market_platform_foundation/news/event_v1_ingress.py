@@ -20,10 +20,11 @@ def admit_news_article_event(
     store: Any | None = None,
     source_label: str = "finviz_elite_news",
 ) -> tuple[EventV1, IngressDispatchReceiptV1]:
-    """Map one news article to EventV1 and dispatch through the production router.
+    """Helper: map one news article to EventV1 and dispatch if a caller invokes it.
 
-    Updates ``store.last_source_time_ns`` from retrieval time when a store is
-    provided. Does not mint OpportunityV1 and does not enable Live execution.
+    Not a ``UiApiHandler`` request-path. Updates ``store.last_source_time_ns``
+    from retrieval time when a store is provided. Does not mint OpportunityV1,
+    does not auto-fetch Finviz, and does not enable Live execution.
     """
 
     event = news_article_to_event_v1(article)

@@ -56,6 +56,20 @@ def is_fixture_rth_attention_id(attention_id: object) -> bool:
     return text in _FIXTURE_ATTENTION_IDS or text.startswith("att-mc9-")
 
 
+def display_as_of_time(store: ReplayStore) -> str:
+    """Operator-visible as_of. Live without receive time is UNAVAILABLE, never the fixture cursor."""
+
+    from .live_projections import resolve_live_operating_modes
+
+    data_mode, _execution_mode, _data_provider, _execution_authority = resolve_live_operating_modes(store)
+    if data_mode == "LIVE_OBSERVATIONAL" or is_live_observational(store):
+        receive_ns = _live_receive_ns(store)
+        if receive_ns is None:
+            return LIVE_AS_OF_UNAVAILABLE
+        return _iso_from_epoch_ns(receive_ns)
+    return store.fixture_cursor_as_of_time()
+
+
 def build_as_of_context(store: ReplayStore) -> dict[str, object]:
     from ..operating_modes import build_operating_context
     from .live_projections import resolve_live_operating_modes
@@ -70,16 +84,10 @@ def build_as_of_context(store: ReplayStore) -> dict[str, object]:
     ):
         execution_mode = "NONE"
         execution_authority = "BLOCKED"
-    as_of_time = store.as_of_time()
+    as_of_time = display_as_of_time(store)
     as_of_provenance = "FIXTURE_REPLAY"
     if data_mode == "LIVE_OBSERVATIONAL":
-        receive_ns = _live_receive_ns(store)
-        if receive_ns is None:
-            as_of_time = LIVE_AS_OF_UNAVAILABLE
-            as_of_provenance = "UNAVAILABLE"
-        else:
-            as_of_time = _iso_from_epoch_ns(receive_ns)
-            as_of_provenance = "LIVE_RECEIVE"
+        as_of_provenance = "UNAVAILABLE" if as_of_time == LIVE_AS_OF_UNAVAILABLE else "LIVE_RECEIVE"
 
     exec_provider = None
     if execution_mode == "INTERNAL_SIMULATION":
@@ -408,7 +416,7 @@ def _strategy_signal_items(store: ReplayStore) -> list[dict[str, object]]:
             {
                 "attention_id": f"att-strategy-{obs_time}",
                 "explanation_ref": ref,
-                "headline": f"Strategy signal at {store.as_of_time()}",
+                "headline": f"Strategy signal at {store.fixture_cursor_as_of_time()}",
                 "instrument_id": store.instrument_id,
                 "priority_rank": rank,
                 "reasons": [
@@ -1091,7 +1099,7 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
                     "evidence_id": ref,
                     "epistemic_class": "DERIVED" if "strategy" in ref else "OBSERVED",
                     "family": "strategy" if "strategy" in ref else "platform",
-                    "as_of": store.as_of_time(),
+                    "as_of": display_as_of_time(store),
                     "quality": build_quality_summary(store),
                 }
             ],
@@ -1133,7 +1141,7 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
                 "evidence_id": ref,
                 "epistemic_class": "OBSERVED",
                 "family": "squeeze",
-                "as_of": store.as_of_time(),
+                "as_of": display_as_of_time(store),
                 "quality": {"state": str(squeeze.get("freshness", "FROZEN"))},
             }
         ]
@@ -1192,7 +1200,7 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
                 "evidence_id": ref,
                 "epistemic_class": "INFERRED",
                 "family": "public_catalyst",
-                "as_of": store.as_of_time(),
+                "as_of": display_as_of_time(store),
                 "quality": {"state": "FIXTURE" if catalyst.get("catalysts") else "DEMO"},
             }
         ]
@@ -1229,7 +1237,7 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
                 "evidence_id": ref,
                 "epistemic_class": "DERIVED",
                 "family": "fund_etf_cross_asset",
-                "as_of": store.as_of_time(),
+                "as_of": display_as_of_time(store),
                 "quality": {
                     "state": "FIXTURE",
                     "event_count": fund_etf.get("event_count", len(fund_etf.get("events", []))),
@@ -1257,7 +1265,7 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
                 "evidence_id": ref,
                 "epistemic_class": "OBSERVED",
                 "family": "regulatory_disclosure",
-                "as_of": store.as_of_time(),
+                "as_of": display_as_of_time(store),
                 "quality": {"state": "DELAYED_DISCLOSURE"},
             }
         ]
@@ -1287,7 +1295,7 @@ def build_inspect_payload(store: ReplayStore, ref: str) -> dict[str, object]:
                 "epistemic_class": "DERIVED",
                 "family": "futures_depth",
                 "legacy_family": "futures_positioning",
-                "as_of": store.as_of_time(),
+                "as_of": display_as_of_time(store),
                 "quality": {
                     "state": provenance,
                     "snapshot_count": futures.get("snapshot_count", len(futures.get("snapshots", []))),
