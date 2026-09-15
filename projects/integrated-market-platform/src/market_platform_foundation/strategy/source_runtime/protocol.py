@@ -90,18 +90,6 @@ class _UnavailableRuntime:
         )
 
 
-class PineTSRuntime(_UnavailableRuntime):
-    """PineTS adapter stub — do not import PineTS into production authority."""
-
-    def __init__(self) -> None:
-        super().__init__(
-            runtime_id="imp.pinets_strategy_runtime",
-            runtime_version="0.0.0-stub",
-            pine_status=PineRuntimeCompatibilityStatus.UNTESTED,
-            reason_code="PINETS_RUNTIME_NOT_IMPLEMENTED",
-        )
-
-
 class TypeScriptRuntime(_UnavailableRuntime):
     def __init__(self) -> None:
         super().__init__(
