@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — PROGRAM_STATUS: Phase 4 software close at `e2079aac`
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `platform` |
+| **Summary** | Pin Canonical origin/main SHA to `e2079aac89c13e6c3db4cded9f6f7f9a32cc6ce8` (merged #171–#182 through #176 tip). Record Phase 4 orchestrator merge queue **EMPTY** with lanes **A–J** + refills: #175 `DURABLE_ASYNC_INTELLIGENCE_OUTBOX_READY`; #173 `SEC_DETECTION_AUTHORITY_CONVERGED`; #171 `PRODUCTION_INGRESS_DEFAULT_ENFORCED` (OpenD materialize only); #177 Item 7 collection software (governed rows **0**, **PARTIAL**); #172 Item 9 `SOFTWARE_READY_RTH_REQUIRED` (not `CALIBRATED`); #176 `CONGRESSIONAL_DISCLOSURE_RUNTIME_READY` (fixture/runtime, not live feed); #180 `MATLAB_CONTRACT_READY`; #174 `STRATEGY_RUNTIME_FOUNDATION_READY`; #178 `TRADE_REVIEW_FOUNDATION_READY` (in-memory); #179 `EXECUTION_DECISION_TRACE_FOUNDATION_READY` (library-only); #181 options UI (not `OPTIONS_FLOW_LIVE`); #182 Edge Stats `EVIDENCE_NOT_PREDICTION`. Label `PHASE4_SOFTWARE_COMPLETE` + `RTH_EMPIRICAL_FOLLOWUP_REQUIRED` (not started; no corpus manufacture). **HOLD:** Item 7/9 **PARTIAL**; FTEP **not** `EMPIRICAL_ACTIVE`; simulator **not** `CALIBRATED`; Live OFF; no Paper/Live orders. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | Docs-only; `python tools/check_docs_links.py` on PR |
+| **Related** | [PR #171](https://github.com/AdamEddahmouni/market-trading-platform/pull/171)–[#182](https://github.com/AdamEddahmouni/market-trading-platform/pull/182); Phase 3 closure at `8885d38a` (#169) |
+| **Notes** | Branch `phase4/status-close` from `origin/main` `e2079aac`. No RTH collection. No empirical claims. |
+
 ## 2026-09-15 — PROGRAM_STATUS: Phase 3 burst close at `8885d38a`
 
 | Field | Value |
