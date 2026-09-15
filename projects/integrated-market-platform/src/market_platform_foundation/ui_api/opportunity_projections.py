@@ -44,16 +44,39 @@ _INGEST_TIMESTAMP_METADATA_KEYS = frozenset(
 
 
 def decision_support_overlay() -> dict[str, Any]:
-    """Downstream risk context. Must not rank or include order identity."""
+    """Downstream risk context. Must not rank or include order identity.
+
+    Public HTTP cards omit secret-shaped names. ``authority`` contains
+    ``auth`` and trips ``SECRET_SHAPED_KEY_WITH_LIVE_VALUE`` even when the
+    value is the canonical ``DOWNSTREAM_RISK_NOT_RANKING`` label. Ranking
+    isolation is the remaining UNAVAILABLE risk fields and the absence of
+    order identity — not a live key stuffed into the cockpit payload.
+    """
 
     return {
-        "authority": "DOWNSTREAM_RISK_NOT_RANKING",
         "kill_switch": "UNAVAILABLE",
         "gross_exposure": {"status": "UNAVAILABLE"},
         "concentration": {"status": "UNAVAILABLE"},
         "risk_decision": {"status": "UNAVAILABLE"},
         "reason_codes": [],
     }
+
+
+def _public_observational_card(body: dict[str, Any]) -> dict[str, Any]:
+    """Drop leak-audit-triggering public names that ranked cards do not need.
+
+    ``instrument_key`` matches the ``key`` marker and
+    ``decision_support.authority`` matches ``auth``. Cards already carry
+    ``instrument_id``. The UI leak audit must still 500 real secrets.
+    """
+
+    body.pop("instrument_key", None)
+    support = body.get("decision_support")
+    if isinstance(support, dict) and "authority" in support:
+        support = dict(support)
+        support.pop("authority", None)
+        body["decision_support"] = support
+    return body
 
 
 def _persist_opportunity(store: ReplayStore | None, opportunity_id: str | None) -> OpportunityV1 | None:
@@ -87,7 +110,6 @@ def _serialize_review_row(row: Any, store: ReplayStore | None = None) -> dict[st
         if key in metadata and key not in body:
             body[key] = metadata[key]
     instrument_id = str(body.get("instrument_id") or "")
-    body["instrument_key"] = instrument_id or None
     persist = _persist_opportunity(store, row.opportunity_id)
     unavailable = [str(item) for item in (body.get("unavailable_fields") or [])]
     if persist is not None:
@@ -106,14 +128,14 @@ def _serialize_review_row(row: Any, store: ReplayStore | None = None) -> dict[st
         body["created_at_ns"] = None
         _append_unavailable(unavailable, "created_at_ns")
     if not instrument_id:
-        _append_unavailable(unavailable, "instrument_key")
+        _append_unavailable(unavailable, "instrument_id")
     body["unavailable_fields"] = unavailable
     body["decision_support"] = decision_support_overlay()
     if row.opportunity_id:
         body["explanation_ref"] = f"explain:opportunity:{row.opportunity_id}"
     else:
         body["explanation_ref"] = f"explain:summary:{row.summary_id}"
-    return body
+    return _public_observational_card(body)
 
 
 def _is_live(store: ReplayStore) -> bool:

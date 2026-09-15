@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — Ranked HTTP summary vs UI leak audit
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui_api`, `platform/security`, `docs` |
+| **Summary** | Isolated stack on `repair/live-fullstack-on-oe-20260915` @ `64764c29`. Public `GET /opportunities/summary` cards omit leak-shaped `instrument_key` and `decision_support.authority` (`key` / `auth` markers) so observational READY after news ingest is not `UI_SECRET_LEAK_BLOCKED`. Leak audit still 500s real secrets. ACK/WATCH stay `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`. No Live/Grok/enrichment enable, no merge. |
+| **Key files** | `ui_api/opportunity_projections.py`, `tests/ui1/test_opportunity_summary_leak_audit.py`, `tests/ui1/test_opportunity_api.py`, `manifests/ui1/schemas/opportunity_summary.schema.json`, `docs/architecture/DATA_CONTRACTS.md` |
+| **Tests** | IMP `.venv` `python -m unittest` of leak-audit + opportunity + radar + P5 security + fullstack acceptance: **64 passed**, 1 honest fail `P5_WATCH_DISMISS_BLOCKED` (WATCH/DISMISS still `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`). GET `/opportunities/summary` after news ingest is no longer `UI_SECRET_LEAK_BLOCKED`. |
+| **Related** | Fullstack finding on `repair/live-fullstack-on-oe-20260915` @ `64764c29`; live-OE `96ede754` |
+| **Notes** | **rebase-required=yes** after close. Branch `repair/ranked-summary-leak-audit-20260915`. Frozen `.rth-operator-20260915` not edited. Next honest chain fail remains WATCH/DISMISS mutation authority (`P5_WATCH_DISMISS_BLOCKED`). Do not push over #208 main-based admit-missing gate. |
+
 ## 2026-09-15 — Request-path Finviz news EventV1 admission
 
 | Field | Value |
