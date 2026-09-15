@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — Fixture WATCH/DISMISS learning-loop acceptance harness (Lane P5)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/opportunity`, `validation` |
+| **Summary** | Isolated software harness proves ranked fixture OpportunityV1 → operator WATCH/DISMISS → durable ack → ExecutionDecisionTrace → TradeReviewV1 → SQLite persist → restart readback. **FIXTURE_SOFTWARE_PLUMBING only** — not live empirical evidence, not FTEP `EMPIRICAL_ACTIVE`, not live ranking restoration. Live WATCH/DISMISS stay fail-closed (`LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`). No production `opportunity_projections` live-gate edit (P1-owned); documented gap: trace `review_id` and WATCHED/REJECTED `execution_decision_trace_id` remain unwired. |
+| **Key files** | `tests/opportunity/test_watch_dismiss_learning_loop_acceptance.py` (created), `tests/opportunity/__init__.py` (created), `tools/validation_manifest.json` (new offline suite `opportunity_watch_dismiss_acceptance`; offline count 66→67), `tests/validation/test_validation_manifest.py`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | Focused **5/5 passed**. `python tools/imp.py test affected --workers 2`: opportunity harness **5/5**; validation **passed** after suite-count bump; **core_checkpoint_required=true**. Providers **11 failures** are this-host OpenD/SDK reachable (`available` vs expected `unavailable`) — environmental baseline on the RTH operator machine, not introduced by this harness. Format/lint **pass**. |
+| **Related** | Phase 5 Lane B `TRADE_REVIEW_DURABLE_LOOP_READY` (#191); Lane C `EXECUTION_DECISION_TRACE_RUNTIME_READY` (#187) |
+| **Notes** | Branch `repair/watch-dismiss-acceptance-20260915` from `origin/main` **`7aade60bf8041df5ebf9f0ac856d5d8802845c8d`**. Isolated only; **do not merge** during frozen RTH. Live OFF. No Paper/Live orders. No Item 7/9/corpus/kline/vite/launcher edits. |
+
 ## 2026-09-15 — FTEP integrity: resolve gitignored session evidence from operator primary checkout
 
 | Field | Value |
