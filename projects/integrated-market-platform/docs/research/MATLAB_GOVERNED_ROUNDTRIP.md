@@ -28,6 +28,9 @@ $env:PYTHONPATH = "src"
 .venv\Scripts\python.exe tools\research\matlab_governed_roundtrip.py --work-dir .local\matlab-roundtrip-smoke
 ```
 
-Python API: `market_platform_foundation.research.export_v1_matlab_roundtrip`.
+Foundation (lineage / evidence, no subprocess): `market_platform_foundation.research.export_v1_matlab_roundtrip`.
 
-MATLAB smoke: `research/matlab/smoke/imp_matlab_parity_smoke.m` (base MATLAB only).
+MATLAB probe and smoke (subprocess): `tools/research/matlab_runtime.py` and
+`tools/research/matlab_governed_roundtrip.execute_governed_roundtrip_with_matlab`.
+
+MATLAB smoke script: `research/matlab/smoke/imp_matlab_parity_smoke.m` (base MATLAB only).
