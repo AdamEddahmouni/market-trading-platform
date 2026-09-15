@@ -571,6 +571,7 @@
         "tools/item7_forecast_progression_report.py",
         "tools/item7_production_readiness.py",
         "tools/item7_corpus_collector.py",
+        "tools/item7_corpus_evidence_validator.py",
         "tools/opportunity_summaries.py",
         "tools/path_a_prospective_run.py",
         "tools/path_a_rth_preflight.py",
