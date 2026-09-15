@@ -46,6 +46,8 @@ CORPUS_COLLECTOR_VERSION = "1.0.0"
 
 STATUS_PIPELINE_READY = "ITEM7_CORPUS_COLLECTION_PIPELINE_READY"
 STATUS_PIPELINE_BLOCKED = "ITEM7_CORPUS_COLLECTION_PIPELINE_BLOCKED"
+STATUS_REAL_CORPUS_SOFTWARE_READY = "ITEM7_REAL_CORPUS_COLLECTION_SOFTWARE_READY"
+BLOCKER_RTH_OR_FUTURE_OUTCOMES_REQUIRED = "RTH_OR_FUTURE_OUTCOMES_REQUIRED"
 
 CANDIDATE_CORPUS_KIND = "path_a_training_corpus_candidate_v1"
 PIT_VALIDATED_CORPUS_KIND = "path_a_training_corpus_pit_validated_v1"
@@ -169,11 +171,17 @@ class CorpusCollectionReport:
     corpus_layers: dict[str, str] = field(default_factory=dict)
     jsonl_scan: JsonlOutcomeScanSummary | None = None
     notes: tuple[str, ...] = field(default_factory=tuple)
+    acceptance_label: str = ""
+    market_rth_open: bool | None = None
+    blockers: tuple[str, ...] = ()
+    persistence_load: dict[str, Any] | None = None
+    join_diagnostics: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         body: dict[str, Any] = {
             "artifact_kind": "item7_path_a_corpus_collection_report_v1",
             "status": self.status,
+            "acceptance_label": self.acceptance_label or self.status,
             "pipeline_version": self.pipeline_version,
             "governed_candidate_rows": self.governed_candidate_rows,
             "pit_valid_governed_rows": self.pit_valid_governed_rows,
@@ -183,7 +191,14 @@ class CorpusCollectionReport:
             "production_artifact_status": self.production_artifact_status,
             "corpus_layers": dict(self.corpus_layers),
             "notes": list(self.notes),
+            "blockers": list(self.blockers),
         }
+        if self.market_rth_open is not None:
+            body["market_rth_open"] = self.market_rth_open
+        if self.persistence_load is not None:
+            body["persistence_load"] = self.persistence_load
+        if self.join_diagnostics is not None:
+            body["join_diagnostics"] = self.join_diagnostics
         if self.jsonl_scan is not None:
             body["jsonl_scan"] = {
                 "paths_scanned": self.jsonl_scan.paths_scanned,
@@ -764,7 +779,9 @@ __all__ = [
     "MANIFEST_CANDIDATE_KIND",
     "PIT_VALIDATED_CORPUS_KIND",
     "PathATrainingCandidateRow",
+    "BLOCKER_RTH_OR_FUTURE_OUTCOMES_REQUIRED",
     "STATUS_PIPELINE_READY",
+    "STATUS_REAL_CORPUS_SOFTWARE_READY",
     "assert_not_governed_production_manifest",
     "build_fixture_proof_candidates",
     "collect_candidates_from_repository",
