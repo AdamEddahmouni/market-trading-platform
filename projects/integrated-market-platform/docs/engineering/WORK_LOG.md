@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — Item 9: empty RET_OK / RET_ERROR / year-old / incomplete-bar tests
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, Item 9 kline transport tests |
+| **Summary** | Close remaining Item 9 kline fail-closed cases without changing PIT or adding `get_cur_kline`: empty `RET_OK` page is `EXPERIMENT_CONTRACT_MISMATCH` (not a bar); vendor `RET_ERROR` stays `MOOMOO_PROTOCOL_ERROR` through transport→loader→proof; a year-old page still fails `available_time > signal_time`; an incomplete current bar stays hidden. Existing `raw_row_count` / first-last `time_key` / `retMsg` logging is unchanged. Not calibrated. |
+| **Key files** | `tests/providers/test_opend_history_kline_1m.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `PYTHONPATH=src .venv/Scripts/python.exe -m unittest tests.providers.test_opend_history_kline_1m tests.platform.test_bar_ohlcv_prospective_proof tests.platform.test_bar_ohlcv_comparator_experiment` — **48/48 passed** (12 kline-window + 25 prospective + 11 comparator). No live OpenD. |
+| **Related** | Isolated branch `diagnosis/item9-prospective-bar-20260915` at `77d448c3` |
+| **Notes** | `get_cur_kline` remains a follow-up. Do not merge. Lane B polls untouched. **Not calibrated.** |
+
 ## 2026-09-15 — Item 9: kline-fetch diagnostics + premarket max_count=120 (P12)
 
 | Field | Value |

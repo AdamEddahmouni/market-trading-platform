@@ -390,3 +390,174 @@ class OpenDHistoryKlineLoadWindowTests(unittest.TestCase):
         self.assertGreaterEqual(int(captured["max_count"]), 390)
         hit = first_admissible_post_signal_bar(loaded.bars, signal_time_ns=SIGNAL_NS)
         self.assertIsNotNone(hit)
+
+    def _patched_live_load(self, fetcher: Any):
+        fake_module = type("M", (), {"fetch_history_kline_1m": staticmethod(fetcher)})()
+        return mock.patch(
+            "market_platform_foundation.paper.calibration.bar_ohlcv_sources._load_tools_kline_module",
+            return_value=fake_module,
+        ), mock.patch(
+            "market_platform_foundation.paper.calibration.bar_ohlcv_sources.opend_reachable",
+            return_value=True,
+        ), mock.patch(
+            "market_platform_foundation.paper.calibration.bar_ohlcv_sources.opend_is_loopback",
+            return_value=True,
+        )
+
+    def _transport_fetcher(self, sdk: Any):
+        from tools.moomoo.opend_quote_transport import fetch_history_kline_1m
+
+        def _fetcher(symbol: str, *, host: str, port: int, max_count: int = 120, **kwargs: Any) -> dict[str, Any]:
+            return fetch_history_kline_1m(
+                symbol,
+                host=host,
+                port=port,
+                max_count=max_count,
+                sdk=sdk,
+                session_date=kwargs.get("session_date") or SESSION_DAY,
+            )
+
+        return _fetcher
+
+    def _load_with_fetcher(self, fetcher: Any) -> Any:
+        load_patch, reach_patch, loop_patch = self._patched_live_load(fetcher)
+        with load_patch, reach_patch, loop_patch:
+            return load_moomoo_opend_kline_bars(
+                instrument_id="AAPL",
+                observation_time_ns=OBSERVATION_NS,
+                fetched_at_ns=OBSERVATION_NS,
+            )
+
+    def _proof_with_fetcher(self, fetcher: Any) -> dict[str, Any]:
+        load_patch, reach_patch, loop_patch = self._patched_live_load(fetcher)
+        with load_patch, reach_patch, loop_patch:
+            return run_prospective_proof(
+                instrument_id="AAPL",
+                collection_root=COLLECTION_ROOT,
+                env={},
+                signal_time_ns=SIGNAL_NS,
+                signal_established_at_ns=SIGNAL_NS,
+                observation_time_ns=OBSERVATION_NS,
+                kline_rows=None,
+                runtime_git_sha="diagnosis-test",
+            )
+
+    def test_empty_ret_ok_page_is_contract_mismatch_not_a_bar(self) -> None:
+        from tools.moomoo.opend_quote_transport import fetch_history_kline_1m
+
+        ctx = _OldestFirstKlineContext([])
+        payload = fetch_history_kline_1m(
+            "AAPL",
+            host="127.0.0.1",
+            port=11111,
+            sdk=_FakeKlineSdk(ctx),
+            session_date=SESSION_DAY,
+        )
+        self.assertIsNone(payload["reason_code"])
+        self.assertEqual(payload["rows"], [])
+        self.assertEqual(int(payload["raw_row_count"]), 0)
+        self.assertIsNone(payload["first_raw_time_key"])
+        self.assertIsNone(payload["last_raw_time_key"])
+        self.assertEqual(payload["vendor_ret"], 0)
+        self.assertIsNone(payload["vendor_ret_msg"])
+        self.assertTrue(ctx.closed)
+
+        fetcher = self._transport_fetcher(_FakeKlineSdk(_OldestFirstKlineContext([])))
+        loaded = self._load_with_fetcher(fetcher)
+        self.assertFalse(loaded.ok)
+        self.assertEqual(loaded.reason_code, "EXPERIMENT_CONTRACT_MISMATCH")
+        self.assertEqual(int(loaded.provenance["raw_row_count"]), 0)
+        self.assertIsNone(loaded.provenance["first_raw_time_key"])
+        self.assertEqual(len(loaded.bars), 0)
+
+        outcome = self._proof_with_fetcher(self._transport_fetcher(_FakeKlineSdk(_OldestFirstKlineContext([]))))
+        self.assertFalse(outcome["ok"])
+        self.assertEqual(outcome["reason_code"], "EXPERIMENT_CONTRACT_MISMATCH")
+        self.assertIsNone(outcome["receipt"])
+        self.assertEqual(int(outcome["kline_fetch"]["raw_row_count"]), 0)
+
+    def test_loader_ret_error_is_moomoo_protocol_error(self) -> None:
+        ctx = _ProtocolErrorKlineContext("RET_ERROR: no right to get the historical K-line")
+        fetcher = self._transport_fetcher(_FakeKlineSdk(ctx))
+        loaded = self._load_with_fetcher(fetcher)
+        self.assertFalse(loaded.ok)
+        self.assertEqual(loaded.reason_code, "MOOMOO_PROTOCOL_ERROR")
+        self.assertEqual(
+            loaded.provenance["vendor_ret_msg"],
+            "RET_ERROR: no right to get the historical K-line",
+        )
+        self.assertEqual(loaded.provenance["vendor_ret"], -1)
+        self.assertEqual(int(loaded.provenance["raw_row_count"]), 0)
+
+        outcome = self._proof_with_fetcher(
+            self._transport_fetcher(
+                _FakeKlineSdk(_ProtocolErrorKlineContext("RET_ERROR: no right to get the historical K-line"))
+            )
+        )
+        self.assertFalse(outcome["ok"])
+        self.assertEqual(outcome["reason_code"], "MOOMOO_PROTOCOL_ERROR")
+        self.assertIsNone(outcome["receipt"])
+        self.assertEqual(
+            outcome["kline_fetch"]["vendor_ret_msg"],
+            "RET_ERROR: no right to get the historical K-line",
+        )
+
+    def test_year_old_page_loads_but_pit_still_rejects(self) -> None:
+        rows = tuple(_minute_rows(YEAR_AGO_DAY, hour=9, minute=30, count=5))
+        loaded = load_moomoo_opend_kline_bars(
+            instrument_id="AAPL",
+            observation_time_ns=OBSERVATION_NS,
+            fetched_at_ns=OBSERVATION_NS,
+            kline_rows=rows,
+        )
+        self.assertTrue(loaded.ok)
+        self.assertEqual(len(loaded.bars), 5)
+        self.assertIsNone(first_admissible_post_signal_bar(loaded.bars, signal_time_ns=SIGNAL_NS))
+
+        outcome = run_prospective_proof(
+            instrument_id="AAPL",
+            collection_root=COLLECTION_ROOT,
+            env={},
+            signal_time_ns=SIGNAL_NS,
+            signal_established_at_ns=SIGNAL_NS,
+            observation_time_ns=OBSERVATION_NS,
+            kline_rows=rows,
+            runtime_git_sha="diagnosis-test",
+        )
+        self.assertFalse(outcome["ok"])
+        self.assertEqual(outcome["reason_code"], REASON_NO_POST_SIGNAL_BAR)
+        self.assertIsNone(outcome["receipt"])
+        self.assertEqual(int(outcome["kline_fetch"]["raw_row_count"]), 5)
+        self.assertTrue(str(outcome["kline_fetch"]["first_raw_time_key"]).startswith(YEAR_AGO_DAY))
+
+    def test_incomplete_current_bar_hidden_by_loader(self) -> None:
+        row = _kline_row(f"{SESSION_DAY} 10:39:00")
+        mid_bar_ns = int(
+            datetime(2026, 9, 15, 10, 39, 30, tzinfo=US_EQUITY_BAR_TZ).timestamp() * 1_000_000_000
+        )
+        loaded = load_moomoo_opend_kline_bars(
+            instrument_id="AAPL",
+            observation_time_ns=mid_bar_ns,
+            fetched_at_ns=mid_bar_ns,
+            kline_rows=(row,),
+        )
+        self.assertFalse(loaded.ok)
+        self.assertEqual(loaded.reason_code, "EXPERIMENT_CONTRACT_MISMATCH")
+        self.assertEqual(int(loaded.provenance["raw_row_count"]), 1)
+        self.assertEqual(loaded.provenance["first_raw_time_key"], f"{SESSION_DAY} 10:39:00")
+        self.assertEqual(len(loaded.bars), 0)
+
+        outcome = run_prospective_proof(
+            instrument_id="AAPL",
+            collection_root=COLLECTION_ROOT,
+            env={},
+            signal_time_ns=SIGNAL_NS,
+            signal_established_at_ns=SIGNAL_NS,
+            observation_time_ns=mid_bar_ns,
+            kline_rows=(row,),
+            runtime_git_sha="diagnosis-test",
+        )
+        self.assertFalse(outcome["ok"])
+        self.assertEqual(outcome["reason_code"], "EXPERIMENT_CONTRACT_MISMATCH")
+        self.assertIsNone(outcome["receipt"])
+        self.assertEqual(int(outcome["kline_fetch"]["raw_row_count"]), 1)
