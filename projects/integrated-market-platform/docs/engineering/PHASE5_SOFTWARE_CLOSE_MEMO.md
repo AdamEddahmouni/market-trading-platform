@@ -85,11 +85,13 @@ Subcommands: `preflight`, `status`, `run-observational`, `summarize`.
 Global flags: `--json`, `--campaign` (default `FTEP-V1-002`), `--training-cutoff-ns`, `--write-run-artifact` (persists under `IMP_STATE_DIR`; does **not** create FTEP empirical locks).
 
 ```powershell
-python tools\rth_empirical_ops.py preflight --json
-python tools\rth_empirical_ops.py status --json
-python tools\rth_empirical_ops.py run-observational --json
-python tools\rth_empirical_ops.py summarize --json
+python tools\rth_empirical_ops.py --json preflight
+python tools\rth_empirical_ops.py --json status
+python tools\rth_empirical_ops.py --json run-observational
+python tools\rth_empirical_ops.py --json summarize
 ```
+
+Operator checklist: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKLIST.md).
 
 `run-observational` is a **dry-run** bundle (`live_ingress=False`); live Finviz ingress uses delegated watch CLI below.
 
@@ -114,9 +116,9 @@ $env:IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS = "1"
 | Step | Command | Expected |
 |------|---------|----------|
 | Finviz prospective read | `python tools\ftep_watch_catalysts.py FTEP-V1-002 --live-ingress --json` | `watch_mode=PROSPECTIVE_FINVIZ_INGRESS`; zero rows → `LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS` |
-| Item 9 prospective 1m | `python tools\moomoo\opend_bar_1m_prospective_proof.py prospective --poll --instrument-id AAPL --json` | Receipt `item9.bar-ohlcv-prospective-proof/1.1.0`; `orders_placed=false`, `calibrated=false` |
-| Item 7 status | `python tools\item7_corpus_collector.py status --persistence-root $env:IMP_STATE_DIR` | Read-only; no forced settlement |
-| Ops dry-run bundle | `python tools\rth_empirical_ops.py run-observational --json` | `operator_run_id=RTHOPS-*`; sub-artifact refs only |
+| Item 9 prospective 1m | See [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKLIST.md) Item 9 block | Receipt `item9.bar-ohlcv-prospective-proof/1.1.0`; `orders_placed=false`, `calibrated=false` |
+| Item 7 status | `python tools\item7_corpus_collector.py status --persistence-root $env:IMP_STATE_DIR --training-cutoff-ns <ns>` | Read-only; no forced settlement |
+| Ops dry-run bundle | `python tools\rth_empirical_ops.py --json run-observational` | `operator_run_id=RTHOPS-*`; sub-artifact refs only |
 
 Full failure-code table: [RTH_EMPIRICAL_OPS_RUNBOOK.md](RTH_EMPIRICAL_OPS_RUNBOOK.md).
 
