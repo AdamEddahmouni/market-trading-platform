@@ -1,4 +1,8 @@
 import type { OpportunityEvidenceResponse, OpportunityReviewRow } from "../../api/opportunityClient";
+import {
+  projectResearchArtifactEvidenceLines,
+  researchArtifactEvidenceFromEvidence,
+} from "./researchArtifactEvidenceProjection";
 
 export type ProgressivePresentationState =
   | "DETECTED"
@@ -143,23 +147,30 @@ export function buildProgressiveOpportunitySections(
   if (!contradictions.length) contradictions.push({ label: "Conflicts", value: "None reported" });
 
   const historicalLines: string[] = [];
-  const edgeArtifact = row.edge_stats_artifact ?? row.historical_context;
-  if (edgeArtifact && typeof edgeArtifact === "object") {
-    const artifact = edgeArtifact as Record<string, unknown>;
-    if (artifact.artifact_type) historicalLines.push(`Artifact ${displayValue(artifact.artifact_type)}`);
-    const ci = artifact.ci;
-    if (ci && typeof ci === "object") {
-      const c = ci as Record<string, unknown>;
-      historicalLines.push(
-        `Sample N ${displayValue(c.sample_count)} · estimate ${displayValue(artifact.estimate)} · CI [${displayValue(c.ci_lower)}, ${displayValue(c.ci_upper)}]`,
-      );
+  const researchBlock = researchArtifactEvidenceFromEvidence(evidence);
+  if (researchBlock) {
+    historicalLines.push(...projectResearchArtifactEvidenceLines(researchBlock));
+  } else {
+    const edgeArtifact = row.edge_stats_artifact ?? row.historical_context;
+    if (edgeArtifact && typeof edgeArtifact === "object") {
+      const artifact = edgeArtifact as Record<string, unknown>;
+      if (artifact.artifact_type) historicalLines.push(`Artifact ${displayValue(artifact.artifact_type)}`);
+      const ci = artifact.ci;
+      if (ci && typeof ci === "object") {
+        const c = ci as Record<string, unknown>;
+        historicalLines.push(
+          `Sample N ${displayValue(c.sample_count)} · estimate ${displayValue(artifact.estimate)} · CI [${displayValue(c.ci_lower)}, ${displayValue(c.ci_upper)}]`,
+        );
+      }
     }
   }
   const historicalContext: ProgressiveOpportunitySections["historicalContext"] = {
     status: historicalLines.length ? "PARTIAL" : "UNAVAILABLE",
     lines: historicalLines.length
       ? historicalLines
-      : ["Edge Stats / historical evidence artifacts are not linked on this review row yet."],
+      : [
+          "Research artifact evidence (Edge Stats / options-flow replay) is not attached on this opportunity yet.",
+        ],
   };
 
   const gross = (overlay as Record<string, unknown>).gross_exposure;
