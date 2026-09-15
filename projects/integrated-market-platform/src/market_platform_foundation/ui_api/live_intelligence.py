@@ -1,4 +1,4 @@
-"""Bind IntelligenceRepository + production ingress onto the UI API ReplayStore."""
+"""Attach an empty IntelligenceRepository and unused ingress router to ReplayStore."""
 
 from __future__ import annotations
 
@@ -10,13 +10,13 @@ from .store import ReplayStore
 
 
 def bind_ui_api_intelligence(store: ReplayStore) -> ReplayStore:
-    """Attach observational ranked-read persistence to the UI API process.
+    """Attach persistence helpers. This is not UI API request-path news admission.
 
-    Necessary for EventV1 ``put_event`` in this process. Not sufficient for a
-    live ranked book: P12 showed today's ``UNAVAILABLE`` was the
-    ``_is_live`` request-path gate *before* ``build_ranked_rows``. Moomoo quotes
-    remain ``ObservationalStateStore``, not EventV1. Does not fetch providers,
-    start enrichment, or enable Live execution.
+    ``UiApiHandler`` does not call ``admit_news_article_event`` or ``put_event``.
+    The EventV1 mapper and ``admit_news_article_event`` remain call-site helpers
+    (tests / explicit callers). Binding a router is necessary for those helpers
+    in this process and not sufficient for a live ranked book. Does not fetch
+    Finviz, start enrichment, or enable Live execution.
     """
 
     if store.strategy_repository is None:

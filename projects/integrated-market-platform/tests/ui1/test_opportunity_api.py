@@ -109,11 +109,15 @@ class OpportunityApiTests(unittest.TestCase):
         self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
 
     def test_live_observational_read_ranks_repository_not_fixture_attention(self) -> None:
-        # P12: a populated repo must be visible after the read/mutation split.
-        # EventV1 admission alone is not sufficient; this is the request-path fix.
+        # Ranked READ can surface OpportunityV1 after the read/mutation split.
+        # READY requires a live receive clock. INELIGIBLE rows stay off the book.
         # Fixture attention must stay quarantined so July cards are not ranked.
+        # EventV1 admission is a helper, not a UiApiHandler request-path.
         self.store.data_mode = "LIVE_OBSERVATIONAL"
         self.store.mode = "LIVE"
+        receive_ns = 1_779_000_000_000_000_000
+        self.store.last_source_time_ns = receive_ns
+        self.store.as_of_time_ns = receive_ns
         opportunity = self._seed_opportunity()
         with patch(
             "market_platform_foundation.market_data.live_runtime.get_live_runtime",
@@ -121,8 +125,10 @@ class OpportunityApiTests(unittest.TestCase):
         ):
             payload = build_opportunities_summary_payload(self.store)
         self.assertEqual(payload["feed_status"], "READY")
+        self.assertNotEqual(payload["as_of_context"]["as_of_time"], "UNAVAILABLE")
         item = self._item_by_opportunity(payload, opportunity.opportunity_id)
         self.assertEqual(item["identity_kind"], "OPPORTUNITY_V1")
+        self.assertNotEqual(item.get("lifecycle_state"), "INELIGIBLE")
         self.assertFalse(
             any(row.get("attention_id") == "att-replay-context" for row in payload["items"])
         )
@@ -131,6 +137,26 @@ class OpportunityApiTests(unittest.TestCase):
         with self.assertRaises(PermissionError) as ack_ctx:
             apply_opportunity_ack(self.store, row_id=opportunity.opportunity_id, action="WATCHED")
         self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
+
+    def test_live_ineligible_or_no_clock_is_not_ready(self) -> None:
+        self.store.data_mode = "LIVE_OBSERVATIONAL"
+        self.store.mode = "LIVE"
+        opportunity = self._seed_opportunity()
+        with patch(
+            "market_platform_foundation.market_data.live_runtime.get_live_runtime",
+            return_value=None,
+        ):
+            payload = build_opportunities_summary_payload(self.store)
+            ranked = build_ranked_rows(self.store)
+        self.assertNotEqual(payload["feed_status"], "READY")
+        self.assertEqual(payload["feed_status"], "EMPTY")
+        self.assertEqual(payload["items"], [])
+        self.assertEqual(ranked, ())
+        self.assertEqual(payload["as_of_context"]["as_of_time"], "UNAVAILABLE")
+        self.assertNotIn("2026-07-21", str(payload["as_of_context"]["as_of_time"]))
+        self.assertNotIn("2026-07-21", self.store.as_of_time())
+        with self.assertRaises(KeyError):
+            build_opportunity_detail_payload(self.store, opportunity.opportunity_id)
 
     def test_demo_cannot_dismiss(self) -> None:
         summary = build_opportunities_summary_payload(self.store)

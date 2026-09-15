@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — P13 MUST-FIX honesty on isolated live OE candidate
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `ui_api`, `news`, `docs` |
+| **Summary** | Isolated P13 (`4176d0b6`) MUST-FIX on `repair/live-oe-cockpit-state-20260915`. Strip UiApiHandler request-path Finviz→EventV1 admission claims (helpers + unused bind only). Stop ranking live INELIGIBLE rows. Live `feed_status` is never `READY` when `as_of_time` is `UNAVAILABLE`. Close July 21 on `store.as_of_time()` and inspect EVIDENCE. Keep `replay_shelf` explicitly `DEMO_REPLAY` and out of current RTH items. ACK/WATCH stay `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`. Mixed-discovery EMPTY vs UNAVAILABLE left isolated and not treated as required for this honesty patch. No merge, no Live enable, no empirical claim. |
+| **Key files** | `ui_api/store.py`, `ui_api/projections.py`, `ui_api/opportunity_projections.py`, `ui_api/live_intelligence.py`, `intelligence/opportunity/ranking.py`, `news/event_v1_ingress.py`, `tools/ui1/run_ui_api.py`, `ui/src/api/schemas.ts`, `docs/architecture/DATA_CONTRACTS.md`, `docs/architecture/MODE_AUTHORITY.md`, focused tests under `tests/ui1`, `tests/news` |
+| **Tests** | `python -m unittest tests.ui1.test_live_observational_state tests.ui1.test_opportunity_api tests.ui1.test_opportunity_radar_feed tests.news.test_finviz_news_event_v1_ingress tests.platform.test_discovery_p33 tests.platform.test_mixed_discovery` **62/62 OK**. Not empirical RTH. |
+| **Related** | P13 review `review/live-oe-patch-20260915`; P12 `5f965f32`; prior candidate HEAD `c43688ed` |
+| **Notes** | **rebase-required=yes** after close. Base SHA `7aade60bf8041df5ebf9f0ac856d5d8802845c8d`. Worktree `.worktrees/repair-live-oe-cockpit-state-20260915`. Frozen `.rth-operator-20260915` not edited. Remaining unfixed: no UiApiHandler news admit (intentional helper); no auto-fetch Finviz; focus-none + quotes on other symbols still `UNAVAILABLE`; FTEP CLI still dry-run; BUILD 09 `NEWS_EVENT` still inactive; mixed discovery still isolated and not OE. |
+
 ## 2026-09-15 — Isolated live OE cockpit-state candidate (P1+P4, P12-adjusted)
 
 | Field | Value |
