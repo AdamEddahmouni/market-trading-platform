@@ -10,6 +10,7 @@ from ..intelligence.opportunity.ranking import comparison_vectors_from_repositor
 from . import projections
 from .operator_opportunity_state import dismissed_ids, list_operator_acks, record_operator_ack
 from .agent_enrichment_ingest import overlay_agent_enrichment_on_detail
+from .research_artifact_evidence import overlay_research_artifact_evidence_on_detail
 from .store import ReplayStore
 
 try:
@@ -238,7 +239,8 @@ def build_opportunity_detail_payload(store: ReplayStore, row_id: str) -> dict[st
             matching = [ack for ack in acks if row.summary_id == ack["summary_id"] or row.opportunity_id == ack.get("opportunity_id")]
             if matching:
                 body["lifecycle_state"] = matching[-1]["action"]
-            return overlay_agent_enrichment_on_detail(store, body)
+            body = overlay_agent_enrichment_on_detail(store, body)
+            return overlay_research_artifact_evidence_on_detail(store, body)
     dismissed = [ack for ack in acks if row_id in {ack["summary_id"], ack.get("opportunity_id")}]
     if dismissed:
         last = dismissed[-1]
@@ -257,7 +259,7 @@ def build_opportunity_evidence_payload(store: ReplayStore, row_id: str) -> dict[
     identity = detail.get("identity_kind")
     ranking_vector = detail.get("ranking_vector") if isinstance(detail.get("ranking_vector"), dict) else {}
     copy = "not OpportunityV1" if identity == "NOT_OPPORTUNITY_V1" else None
-    return {
+    payload: dict[str, Any] = {
         "identity_kind": identity,
         "evidence_class": detail.get("evidence_class"),
         "evidence_promotion_reason": detail.get("evidence_promotion_reason"),
@@ -273,6 +275,9 @@ def build_opportunity_evidence_payload(store: ReplayStore, row_id: str) -> dict[
         "items": lineage,
         "copy": copy,
     }
+    if detail.get("research_artifact_evidence") is not None:
+        payload["research_artifact_evidence"] = detail["research_artifact_evidence"]
+    return payload
 
 
 def build_opportunity_explain_body(store: ReplayStore, ref: str) -> dict[str, Any]:

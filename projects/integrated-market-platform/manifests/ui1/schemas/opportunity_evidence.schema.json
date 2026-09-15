@@ -18,7 +18,11 @@
     "unavailable_fields": { "type": "array", "items": { "type": "string" } },
     "lineage_refs": { "type": "array" },
     "items": { "type": "array" },
-    "copy": { "type": ["string", "null"] }
+    "copy": { "type": ["string", "null"] },
+    "research_artifact_evidence": {
+      "type": ["object", "null"],
+      "description": "Governed precomputed research artifacts (EVIDENCE_NOT_PREDICTION); not ranking authority"
+    }
   },
   "additionalProperties": true,
   "not": {

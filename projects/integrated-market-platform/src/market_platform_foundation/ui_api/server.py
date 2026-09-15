@@ -19,6 +19,7 @@ from . import canary_projections
 from . import live_projections
 from . import operator_projections
 from . import agent_enrichment_ingest
+from . import research_artifact_evidence
 from . import opportunity_projections
 from . import forward_test_projections
 from . import paper_projections
@@ -1072,6 +1073,21 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(_spawn_action(Path(__file__).resolve().parents[3], action), status=HTTPStatus.ACCEPTED)
             except (OSError, ValueError) as exc:
                 self._send_error_json("OPERATOR_LIFECYCLE_ACTION_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/intelligence/ingest/research-artifact-attachment":
+            try:
+                self._send_json(
+                    research_artifact_evidence.handle_research_artifact_attachment_post(self.store, body)
+                )
+            except ValueError as exc:
+                code = str(exc)
+                if "OPPORTUNITY_NOT_FOUND" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.NOT_FOUND)
+                    return
+                if "REPOSITORY_UNSUPPORTED" in code or "REPOSITORY_UNAVAILABLE" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.SERVICE_UNAVAILABLE)
+                    return
+                self._send_error_json("RESEARCH_ARTIFACT_ATTACHMENT_FAILED", code, status=HTTPStatus.BAD_REQUEST)
             return
         if path == "/intelligence/ingest/enrichment":
             try:
