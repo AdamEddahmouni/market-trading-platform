@@ -35,6 +35,7 @@ def _register_defaults() -> None:
     from .providers.ibkr import normalize_ibkr_record
     from .providers.macro import normalize_macro_observation
     from .providers.moomoo import normalize_moomoo_capture
+    from .providers.market_trackers_congressional_disclosure import normalize_congressional_disclosure_row
     from .providers.market_trackers_sec_insider import normalize_sec_insider_row
     from .providers.sec_edgar import normalize_sec_filing
     from .providers.sec_ftd import normalize_ftd_observation
@@ -47,6 +48,11 @@ def _register_defaults() -> None:
     register_normalizer("sec.edgar", normalize_sec_filing)
     register_normalizer("market_trackers.sec_insider", normalize_sec_insider_row)
     register_normalizer("market_trackers.sec_insider.row", normalize_sec_insider_row)
+    register_normalizer("market_trackers.congressional_disclosure", normalize_congressional_disclosure_row)
+    register_normalizer(
+        "market_trackers.congressional_disclosure.row",
+        normalize_congressional_disclosure_row,
+    )
     register_normalizer("finviz.candidate", normalize_finviz_candidate)
     register_normalizer("finviz", normalize_finviz_candidate)
     register_normalizer("sec.ftd", normalize_ftd_observation)

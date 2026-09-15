@@ -1,9 +1,4 @@
-"""EventV1 mapping contract for congressional PTR rows (prep lane; schema unchanged).
-
-Runtime normalization (`normalize_congressional_disclosure_row`) is intentionally **not**
-registered in `intelligence.normalization.registry` in this lane — see adapter prep spec
-for the proposed registry patch after ingress maturity review.
-"""
+"""EventV1 mapping contract for congressional PTR rows (runtime registry wired in Lane F)."""
 
 from __future__ import annotations
 

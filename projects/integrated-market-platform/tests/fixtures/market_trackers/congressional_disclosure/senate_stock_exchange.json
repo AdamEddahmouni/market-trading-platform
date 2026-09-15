@@ -1,0 +1,32 @@
+{
+  "id": "senate:PTR-EXAMPLE-2025-00088:0",
+  "chamber": "senate",
+  "docId": "PTR-EXAMPLE-2025-00088",
+  "rowIndex": 0,
+  "member": {
+    "name": "Senator Example C.",
+    "bioguideId": "E000002",
+    "party": "D",
+    "state": "EX"
+  },
+  "filedAt": "2025-04-01",
+  "transactedAt": "2025-01-05",
+  "ticker": "NVDA",
+  "assetDescription": "NVIDIA Corporation (NVDA)",
+  "assetType": "stock",
+  "side": "exchange",
+  "amountRange": {
+    "min": 1001,
+    "max": 15000,
+    "text": "$1,001 - $15,000"
+  },
+  "owner": "self",
+  "provenance": {
+    "source": "senate-efd",
+    "sourceUrl": "https://efdsearch.senate.gov/search/view/ptr/example-ptr-2025-00088/",
+    "retrievedAt": "2026-08-24T16:00:00.000Z",
+    "parser": "congress-ptr@1",
+    "confidence": 1,
+    "needsReview": false
+  }
+}
