@@ -14,8 +14,6 @@ import { ContextBar } from "./components/ContextBar";
 import { ExplanationDrawer } from "./components/ExplanationDrawer";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { LazyBoundary } from "./components/LazyBoundary";
-import { ImpProductChrome } from "./components/imp-product/ImpProductChrome";
-import { IMP_COMMAND_SEARCH_INPUT_ID } from "./components/imp-product/ImpCommandSearch";
 import { ModeDiscoverRoute } from "./components/ModeDiscoverRoute";
 import { ModeExploreRoute } from "./components/ModeExploreRoute";
 import { ModeNowRoute } from "./components/ModeNowRoute";
@@ -121,6 +119,11 @@ const OperatorSettingsPage = lazy(() =>
 const ImpContextTrustLayer = lazy(() =>
   import("./components/imp-product/ImpContextTrustLayer").then((module) => ({
     default: module.ImpContextTrustLayer,
+  })),
+);
+const ImpProductChrome = lazy(() =>
+  import("./components/imp-product/ImpProductChrome").then((module) => ({
+    default: module.ImpProductChrome,
   })),
 );
 const OperatorControlCenterPage = lazy(() =>
@@ -234,17 +237,6 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
         setInspectorPayload(null);
         if (assistantOpen) setAssistantOpen(false);
       }
-      if (event.key === "a" || event.key === "A") {
-        const target = event.target as HTMLElement | null;
-        if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") return;
-        setAssistantOpen((open) => !open);
-      }
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-        const target = event.target as HTMLElement | null;
-        if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") return;
-        event.preventDefault();
-        document.getElementById(IMP_COMMAND_SEARCH_INPUT_ID)?.focus();
-      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -355,9 +347,11 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
   const signalsRoute = <ModeNowRoute {...nowRouteProps} desk="signals" />;
 
   return (
+    <LazyBoundary label="Loading workstation…">
     <ImpProductChrome
       mode={mode}
       onSwitchMode={returnToLauncher}
+      onToggleAssistant={() => setAssistantOpen((open) => !open)}
       topStack={
         <>
           <ModeEnvironmentBar
@@ -386,7 +380,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
     >
       <div className="app-shell imp-product-embedded">
       <div className="app-body">
-        <main className="main-content">
+        <main className="main-content" id="imp-main-content" tabIndex={-1}>
           <LazyBoundary>
             <Routes>
             <Route path="/" element={overviewRoute} />
@@ -589,6 +583,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
       />
       </div>
     </ImpProductChrome>
+    </LazyBoundary>
   );
 }
 
