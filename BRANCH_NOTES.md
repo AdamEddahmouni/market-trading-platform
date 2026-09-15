@@ -7,7 +7,7 @@ Diagnostic/candidate only. **Do not merge as-is. Do not land this `d588728d` pat
 | **Branch** | `diagnosis/launcher-routing-20260915` |
 | **Worktree** | `.worktrees/diagnosis-launcher-routing-20260915` |
 | **Base SHA** | `d588728d60b139ae44b5a3667a8e120d1e21ee1c` (`main` at branch creation) |
-| **HEAD** | *filled after commit* |
+| **HEAD** | `a2dd6cedaf0d600457e46f9fd33b7896ed9be4f4` |
 | **Frozen RTH SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` (do not thaw / do not edit) |
 | **rebase-required** | **YES** — rebase or reproduce onto **post-close `origin/main`**, then re-run focused tests |
 
