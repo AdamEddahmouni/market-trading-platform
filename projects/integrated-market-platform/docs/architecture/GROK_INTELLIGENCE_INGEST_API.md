@@ -97,14 +97,14 @@ Serialization: `agent_enrichment_evidence_v1_to_dict` / `from_dict`.
 
 Capability matrix is enforced in tests via `bot_role_allows_capability()`.
 
-## HTTP / API shape (logical)
+## HTTP / API shape
 
-Lane I defines contracts only; transport is implemented by ingest adapters in later increments.
+| Endpoint | Method | Auth capability | Notes |
+|----------|--------|-----------------|-------|
+| `/intelligence/ingest/enrichment` | `POST` | `intelligence.ingest.write` | Append-only |
+| `/intelligence/ingest/enrichment/{record_id}` | `PUT` | `intelligence.ingest.write` | `operation=UPDATE_OWN_EVIDENCE_RECORD` only |
 
-| Endpoint (logical) | Method | Body | Notes |
-|------------------|--------|------|-------|
-| `/intelligence/ingest/enrichment` | `POST` | `AgentEnrichmentEvidenceV1` JSON | Append-only |
-| `/intelligence/ingest/enrichment/{record_id}` | `PUT` | Same schema | Only when `operation=UPDATE_OWN_EVIDENCE_RECORD` and caller owns `record_id` |
+Under `ENFORCED` auth, unauthenticated or VIEWER sessions receive `401`/`403` before payload parsing completes. Payload and source-ref guards are documented in [INTELLIGENCE_INGEST_BOUNDARY_SECURITY.md](INTELLIGENCE_INGEST_BOUNDARY_SECURITY.md).
 
 Responses must not include execution tokens, order drafts, or mode flags.
 
@@ -123,6 +123,8 @@ Use [GROK_AGENT_WORKSPACE_CONFIG.md](../engineering/templates/GROK_AGENT_WORKSPA
 ## Tests
 
 - `tests/contracts/test_grok_intelligence_ingest_contract.py` — round-trip, authority matrix, UI non-blocking gate
+- `tests/intelligence/test_agent_enrichment_ingest_enforced_http.py` — ENFORCED HTTP boundary acceptance
+- `tests/intelligence/test_agent_enrichment_ingest_boundary.py` — payload limits and source-ref policy
 
 ## References
 

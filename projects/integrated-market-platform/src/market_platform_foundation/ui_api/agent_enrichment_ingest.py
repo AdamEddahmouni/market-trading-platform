@@ -9,6 +9,7 @@ from ..intelligence.contracts.opportunity import OpportunityV1
 from ..intelligence.ingest.boundary import (
     AGENT_ENRICHMENT_INGEST_MAX_BODY_BYTES,
     enforce_agent_enrichment_body_limit,
+    enforce_intelligence_ingest_auth_posture,
     resolve_agent_enrichment_persistence,
 )
 from ..intelligence.ingest.runtime import (
@@ -56,6 +57,7 @@ def _optional_runtime_for_store(store: ReplayStore) -> AgentEnrichmentIngestRunt
 
 
 def handle_agent_enrichment_ingest_post(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
+    enforce_intelligence_ingest_auth_posture()
     runtime = _runtime_for_store(store)
     result = runtime.ingest(body, as_of_iso=_utc_now_iso())
     return {
@@ -71,6 +73,7 @@ def handle_agent_enrichment_ingest_put(
     record_id: str,
     body: dict[str, Any],
 ) -> dict[str, Any]:
+    enforce_intelligence_ingest_auth_posture()
     if str(body.get("record_id") or record_id) != str(record_id):
         raise ValueError("AGENT_ENRICHMENT_RECORD_ID_MISMATCH")
     body = dict(body)

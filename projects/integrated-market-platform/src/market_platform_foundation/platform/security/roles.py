@@ -37,6 +37,7 @@ OPERATOR_ROLES: tuple[OperatorRole, ...] = (
 CAPABILITIES: tuple[str, ...] = (
     "state.read",
     "state.write",
+    "intelligence.ingest.write",
     "paper.order.submit",
     "paper.order.cancel",
     "audit.read",
@@ -65,6 +66,7 @@ ROLE_CAPABILITY_MATRIX: dict[OperatorRole, frozenset[str]] = {
     OperatorRole.OPERATOR: _froze(
         "state.read",
         "state.write",
+        "intelligence.ingest.write",
         "paper.order.submit",
         "paper.order.cancel",
         "audit.read",

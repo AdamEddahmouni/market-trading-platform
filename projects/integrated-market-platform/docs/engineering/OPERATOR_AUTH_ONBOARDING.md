@@ -40,6 +40,26 @@ Send `Authorization: Bearer <token>` or `X-IMP-Session: <token>` on subsequent r
 
 Account ACL is independent: a VIEWER with `fp-canary-local` can read that canary account but cannot submit paper orders.
 
+## Intelligence ingest (agent enrichment)
+
+| Route | Capability | LOOPBACK_TRUST | ENFORCED |
+|-------|------------|----------------|----------|
+| `POST/PUT /intelligence/ingest/enrichment` | `intelligence.ingest.write` | Implicit ADMIN | Session + OPERATOR or ADMIN |
+
+VIEWER principals cannot call ingest routes even when they can read scoped accounts.
+
+For any UI API surface exposed beyond loopback (hosted agent runners, tunnel, reverse proxy), set `IMP_AUTH_ENFORCEMENT_MODE=ENFORCED` and configure principals before enabling agent automation.
+
+Optional fail-closed guard for ingest-only deployments:
+
+```bash
+export IMP_INTELLIGENCE_INGEST_REQUIRE_ENFORCED=true
+```
+
+When set, ingest handlers reject requests while auth remains in `LOOPBACK_TRUST` (`INTELLIGENCE_INGEST_LOOPBACK_TRUST_FORBIDDEN`).
+
+See [INTELLIGENCE_INGEST_BOUNDARY_SECURITY.md](../architecture/INTELLIGENCE_INGEST_BOUNDARY_SECURITY.md).
+
 ## Hosted path (deferred)
 
 External OIDC/SSO is not implemented in TD-005. A future increment can map IdP identities onto the same principal registry and ACL model (ADR-0008).
