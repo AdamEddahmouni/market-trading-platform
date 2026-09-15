@@ -22,6 +22,7 @@ from . import agent_enrichment_ingest
 from . import research_artifact_evidence
 from . import opportunity_projections
 from . import forward_test_projections
+from . import trade_review_projections
 from . import paper_projections
 from . import projections
 from . import strategy_runtime_projections
@@ -297,6 +298,32 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     self._send_json(opportunity_projections.build_opportunity_detail_payload(self.store, row_id))
                 except KeyError:
                     self._send_error_json("OPPORTUNITY_NOT_FOUND", "Unknown opportunity", status=HTTPStatus.NOT_FOUND)
+                return
+            if path == "/intelligence/trade-reviews":
+                opportunity_id = query.get("opportunity_id", [None])[0]
+                if not opportunity_id:
+                    self._send_error_json(
+                        "TRADE_REVIEW_OPPORTUNITY_ID_REQUIRED",
+                        "opportunity_id query parameter required",
+                        status=HTTPStatus.BAD_REQUEST,
+                    )
+                    return
+                self._send_json(
+                    trade_review_projections.build_trade_reviews_for_opportunity_payload(
+                        self.store, str(opportunity_id)
+                    )
+                )
+                return
+            if path.startswith("/intelligence/trade-reviews/") and path.count("/") == 3:
+                review_id = path.removeprefix("/intelligence/trade-reviews/").strip("/")
+                try:
+                    self._send_json(
+                        trade_review_projections.build_trade_review_detail_payload(self.store, review_id)
+                    )
+                except KeyError:
+                    self._send_error_json("TRADE_REVIEW_NOT_FOUND", "Unknown trade review", status=HTTPStatus.NOT_FOUND)
+                except PermissionError as exc:
+                    self._send_error_json(str(exc), str(exc), status=HTTPStatus.FORBIDDEN)
                 return
             if path.startswith("/instruments/") and path.endswith("/overview"):
                 instrument_id = path.removeprefix("/instruments/").removesuffix("/overview")
@@ -973,6 +1000,28 @@ class UiApiHandler(BaseHTTPRequestHandler):
             self._send_error_json("UI_JSON_INVALID", "Body must be an object", status=HTTPStatus.BAD_REQUEST)
             return
         if not self._authorize_request("PUT", path, parse_qs(parsed.query), body):
+            return
+        if path.startswith("/intelligence/trade-reviews/") and path.endswith("/operator"):
+            review_id = path.removeprefix("/intelligence/trade-reviews/").removesuffix("/operator").strip("/")
+            if not review_id:
+                self._send_error_json(
+                    "TRADE_REVIEW_ID_REQUIRED",
+                    "review_id required",
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            try:
+                self._send_json(
+                    trade_review_projections.apply_trade_review_operator_patch(
+                        self.store, review_id, body
+                    )
+                )
+            except KeyError:
+                self._send_error_json("TRADE_REVIEW_NOT_FOUND", "Unknown trade review", status=HTTPStatus.NOT_FOUND)
+            except PermissionError as exc:
+                self._send_error_json(str(exc), str(exc), status=HTTPStatus.FORBIDDEN)
+            except ValueError as exc:
+                self._send_error_json("TRADE_REVIEW_OPERATOR_PATCH_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
         if path.startswith("/intelligence/ingest/enrichment/"):
             record_id = path.removeprefix("/intelligence/ingest/enrichment/").strip("/")
