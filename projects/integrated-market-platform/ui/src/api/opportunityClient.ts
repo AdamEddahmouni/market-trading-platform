@@ -112,6 +112,15 @@ export const OpportunityEvidenceResponseSchema = z
     lineage_refs: z.array(z.unknown()).optional(),
     items: z.array(z.unknown()).optional(),
     copy: z.string().nullable().optional(),
+    research_artifact_evidence: z
+      .object({
+        authority_class: z.string().optional(),
+        readiness: z.string().optional(),
+        attachments: z.array(z.record(z.string(), z.unknown())).optional(),
+      })
+      .passthrough()
+      .nullable()
+      .optional(),
   })
   .passthrough();
 
