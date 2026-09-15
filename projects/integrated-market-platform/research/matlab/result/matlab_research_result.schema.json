@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "imp://research/matlab-research-result/1.0.0",
+  "title": "IMP MATLAB governed research result v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "matlab_result_contract",
+    "export_id",
+    "analysis_type",
+    "input_manifest_hash",
+    "input_source_sha256",
+    "dataset_lineage",
+    "parameters",
+    "result_values",
+    "diagnostics",
+    "generated_at",
+    "authority_class",
+    "content_sha256"
+  ],
+  "properties": {
+    "schema_version": { "const": "matlab_research_result/1.0.0" },
+    "matlab_result_contract": { "const": "research_export_v1_matlab_result/1.0.0" },
+    "authority_class": { "const": "EVIDENCE_NOT_PREDICTION" },
+    "analysis_type": { "type": "string" },
+    "export_id": { "type": "string" },
+    "content_sha256": { "type": "string", "minLength": 64 }
+  },
+  "additionalProperties": true
+}
