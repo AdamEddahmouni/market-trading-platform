@@ -7,7 +7,22 @@
 **Frozen RTH runtime:** `.rth-operator-20260915` at the same SHA — **do not thaw, patch, or merge into it**  
 **This document does not update** [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md)
 
-Snapshot time: 2026-09-15 ~11:59 ET (mid-RTH). Parallel isolated lanes are still writing; Q1 and Q9a were refreshed after their first isolated commits landed. Re-read worktree porcelain before any post-close merge. **Do not merge anything during the session.**
+Snapshot time: 2026-09-15 ~12:02 ET (mid-RTH refresh of `989ac2ef`). Parallel isolated lanes are still writing. Re-read worktree porcelain before any post-close merge. **Do not merge anything during the session.**
+
+## Rebase-required flags (vs `origin/main` `7aade60b`)
+
+| Slot | Tip | Merge-base | Must rebase before land |
+|---|---|---|---|
+| Q1 launcher | `9b0781c9` | `d588728d` | **YES — do not merge as-is** |
+| Q2–Q4 live-OE / cockpit | `7aade60b` (no unique commits) | `7aade60b` | **YES if** `origin/main` moves; wait for P1+P4 + P12 live-OE gate |
+| Q5 WATCH harness | `7aade60b` (no unique commits) | `7aade60b` | **YES if** `origin/main` moves |
+| Q6 Item 9 | `77d448c3` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
+| Q6 P12 review | `49ae216e` | (review branch) | Gate only — **not merge cargo** |
+| Q7 latency | `49529d64` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
+| Q8 Item 7 notes | `d588728d` + untracked notes | `d588728d` | **YES** onto post-close `origin/main` before committing notes |
+| Q9a test-gap | `145fee4f` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
+| Q9b runbook | `134924c3` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
+| This queue | `989ac2ef` + this refresh | `7aade60b` | Docs only; **YES if** `origin/main` moves |
 
 ## Operating holds
 
@@ -51,7 +66,7 @@ Recommended post-close landing sequence:
 8. **Q8 Item 7 upstream wiring** (priority 7; no corpus fabrication)  
 9. **Q9 runbook / test-gap docs** (land with corresponding software)
 
-Adversarial review `review/live-oe-diagnosis-20260915` (Lane P12) is a **gate**, not a merge member. If that review **DISPROVES** the admission diagnosis, discard or rewrite Q2–Q4.
+Adversarial review `review/live-oe-diagnosis-20260915` (Lane P12 / `8048d5f7`) remains a **gate** on Q2–Q4, not a merge member. Branch exists at `7aade60b` with uncommitted `docs/engineering/reviews/P12_LIVE_OE_DIAGNOSIS_FALSIFICATION_20260915.md` — treat as **PENDING / IN_FLIGHT**. If that review **DISPROVES** the admission diagnosis, discard or rewrite Q2–Q4. Item 9 P12 (`review/item9-kline-diagnosis-20260915` `49ae216e`) is a separate gate on Q6 only.
 
 ---
 
@@ -157,19 +172,20 @@ Adversarial review `review/live-oe-diagnosis-20260915` (Lane P12) is a **gate**,
 
 | Field | Value |
 |---|---|
-| **Status** | `COMMITTED_ISOLATED` |
+| **Status** | `COMMITTED_ISOLATED` + P12 `PARTIALLY_CONFIRMED` |
 | **Branch / worktree** | `diagnosis/item9-prospective-bar-20260915` at `.worktrees/diagnosis-item9-prospective-bar-20260915` |
 | **Source baseline SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` |
-| **Unique commit** | `e2d89348b51f02884ad3a0b3f3105bcb624acccd` `fix(item9): request session-day OpenD 1m kline window` |
-| **Purpose** | Bind OpenD `request_history_kline` to the observation `America/New_York` session date (`max_count>=1000`) so prospective poll can see today’s 1m bars |
-| **Issue addressed** | Vendor `start=None,end=None` expands to `[today-365d, today]` and returns the **oldest** page; PIT correctly rejects year-old bars as `PROSPECTIVE_NO_POST_SIGNAL_BAR` |
-| **Empirical evidence** | Poll #1 2026-09-15: `PROSPECTIVE_NO_POST_SIGNAL_BAR`. Capability-report `time_key` `2025-09-15 00:00:00` on a 2026-09-15 probe. Hour-2 follow-up `MOOMOO_PROTOCOL_ERROR` / `historyKLQuota` is **out of scope** (`get_cur_kline` reuse) |
-| **Affected files** | `tools/moomoo/opend_quote_transport.py`, `src/market_platform_foundation/paper/calibration/bar_ohlcv_sources.py`, `tests/providers/test_opend_history_kline_1m.py`, `docs/engineering/ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md`, `docs/engineering/WORK_LOG.md` |
-| **Focused tests** | Isolated worktree **41/41**: `tests.providers.test_opend_history_kline_1m` (5 new: `test_session_day_window_returns_today_1m_not_365d_oldest_page`, `test_none_none_window_replays_captured_oldest_page_and_fails_pit`, `test_today_rth_rows_are_admissible_without_loosening_pit`, `test_incomplete_in_progress_bar_still_hidden`, `test_loader_passes_observation_session_date_into_fetcher`) + `tests.platform.test_bar_ohlcv_prospective_proof` (25) + `tests.platform.test_bar_ohlcv_comparator_experiment` (11). PIT unchanged. **Not calibrated. No orders. No live OpenD in tests** |
-| **Broader validation** | `python tools/imp.py test affected` after rebase; do **not** claim `ITEM9_PROSPECTIVE_BAR_RECEIPT_CAPTURED` or `CALIBRATED` |
-| **Dependencies** | **Independent** of Q1–Q5 file sets. May land in parallel |
-| **Must rebase** | **Only if** post-close `origin/main` ≠ `7aade60b`. Currently merge-base **is** `origin/main` |
-| **Safely discarded if diagnosis changes** | **NO** — oldest-page kline is independently evidenced. Discard only a *wrong* window helper, not the PIT rule |
+| **Unique commits** | `e2d89348` `fix(item9): request session-day OpenD 1m kline window`; tip `77d448c3c062ba70fad1d14cd1b4d405b5066354` `fix(item9): log kline fetch diagnostics without loosening PIT` (past `e2d89348`) |
+| **P12 review** | `review/item9-kline-diagnosis-20260915` `49ae216e682ea506dcb3c5ec6bc9fc0ee592ee0b` — overall **PARTIALLY_CONFIRMED**. `K_1M` oldest-first **NEEDS_MORE_EVIDENCE**. Unique-security `historyKLQuota` as hour-2 cause **DISPROVEN**. Do not land session-day with `max_count=120` |
+| **Purpose** | Bind OpenD `request_history_kline` to the observation `America/New_York` session date (`max_count>=1000`); log `raw_row_count` / first-last `time_key` / vendor `retMsg`; prove `max_count=120` still misses RTH after 330 premarket minutes **if** paging is oldest-first |
+| **Issue addressed** | Vendor `start=None,end=None` expands to `[today-365d, today]`. Poll #1 `PROSPECTIVE_NO_POST_SIGNAL_BAR` — timeout reason is **not** uniquely a post-signal PIT reject (collapsed codes). PIT (`available_time > signal_time`, incomplete-bar hide) **unchanged** |
+| **Empirical evidence** | Poll #1 2026-09-15: `PROSPECTIVE_NO_POST_SIGNAL_BAR`, `receipt=null`. Capability-report `time_key` `2025-09-15` is mechanism inference, not a captured 1m page. **Not calibration. Independent of the live-OE stack** |
+| **Affected files** | `e2d89348` + `77d448c3`: `tools/moomoo/opend_quote_transport.py`, `src/market_platform_foundation/paper/calibration/bar_ohlcv_sources.py`, `src/market_platform_foundation/paper/calibration/bar_ohlcv_prospective_proof.py`, `tests/providers/test_opend_history_kline_1m.py`, `docs/engineering/ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md`, `docs/engineering/WORK_LOG.md`. Review doc: `docs/engineering/ITEM9_KLINE_WINDOW_DIAGNOSIS_P12_REVIEW.md` |
+| **Focused tests** | Prior **41/41** plus `77d448c3` logging / `max_count=120` premarket miss test in `tests.providers.test_opend_history_kline_1m`. Keep PIT. No `get_cur_kline`. No live OpenD in tests |
+| **Broader validation** | `python tools/imp.py test affected`; do **not** claim `ITEM9_PROSPECTIVE_BAR_RECEIPT_CAPTURED` or `CALIBRATED` |
+| **Dependencies** | **Independent** of Q1–Q5 / live-OE file sets. May land in parallel after P12 caveats |
+| **Must rebase** | **NO vs current `origin/main`.** **YES if** post-close `origin/main` ≠ `7aade60b` |
+| **Safely discarded if diagnosis changes** | **NO** for PIT. **YES** for unique-security `historyKLQuota` story (DISPROVEN). Session-day window stays **necessary if** oldest-first; `K_1M` paging still **NEEDS_MORE_EVIDENCE** |
 
 ---
 
@@ -177,18 +193,19 @@ Adversarial review `review/live-oe-diagnosis-20260915` (Lane P12) is a **gate**,
 
 | Field | Value |
 |---|---|
-| **Status** | `IN_PROGRESS` / `PENDING_OWNER` payload (branch exists, locked, no unique commits or diagnosis file at snapshot) |
-| **Branch / worktree** | `diagnosis/observability-latency-20260915` at `.worktrees/diagnosis-observability-latency-20260915` (**locked**) |
+| **Status** | `COMMITTED_ISOLATED` |
+| **Branch / worktree** | `diagnosis/observability-latency-20260915` at `.worktrees/diagnosis-observability-latency-20260915` |
 | **Source baseline SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` |
-| **Purpose** | Classify source→operator timing fields (AVAILABLE / DERIVABLE / MISSING / AMBIGUOUS) and propose a **minimal** telemetry patch using existing EventV1 / clocks / DecisionTrace — not an invasive platform |
+| **Unique commit** | `49529d64ed2d84cb55ab6afd7bcdbba4642bd774` `docs(imp): audit next-RTH source-to-operator hop clocks` |
+| **Purpose** | Classify source→operator hop clocks and add a **wiring-only** helper — not an invasive telemetry platform. EventV1 / API / UI schema changes remain a **P1 plan**, not this commit |
 | **Issue addressed** | `PROSPECTIVE_HOT_PATH_LATENCY_CAPTURED` unearned; next-RTH needs honest deltas: source→receive, receive→normalization, …, source→operator |
-| **Empirical evidence** | Not collected in this queue snapshot. Phase 5: `HOT_PATH_TELEMETRY_SOFTWARE_WIRED` ≠ `LIVE_HOT_PATH_LATENCY_VALIDATED` |
-| **Affected files (allowed)** | New audit doc + new helper/tests only. **Do not** edit `opportunity_projections.py`, news EventV1 mapper, Item 9 kline, launcher, Vite |
-| **Focused tests** | New tests only if clocks are asserted; otherwise notes-only |
-| **Broader validation** | rt01 / hot_path_telemetry affected if a tiny patch lands |
-| **Dependencies** | Useful **after** Q2 clocks exist; notes can land independently |
-| **Must rebase** | **YES** if `origin/main` moves |
-| **Safely discarded if diagnosis changes** | **YES** — audit notes are disposable; do not invent a second telemetry architecture |
+| **Empirical evidence** | Software audit only. Phase 5: `HOT_PATH_TELEMETRY_SOFTWARE_WIRED` ≠ `LIVE_HOT_PATH_LATENCY_VALIDATED` |
+| **Affected files** | `src/market_platform_foundation/hot_path_telemetry/next_rth_latency_audit.py`, `tests/hot_path_telemetry/test_next_rth_latency_audit.py`, audit README (+622). **Did not** edit `opportunity_projections.py`, news EventV1 mapper, Item 9 kline, launcher, Vite |
+| **Focused tests** | `test_next_rth_latency_audit` (helper classification only) |
+| **Broader validation** | hot_path_telemetry affected; do not claim live latency validated |
+| **Dependencies** | Notes/helper can land independently; useful **after** Q2 clocks exist for real hops |
+| **Must rebase** | **NO vs current `origin/main`.** **YES if** `origin/main` moves |
+| **Safely discarded if diagnosis changes** | **YES** — wiring helper is disposable; do not invent a second telemetry architecture |
 
 ---
 
@@ -196,17 +213,18 @@ Adversarial review `review/live-oe-diagnosis-20260915` (Lane P12) is a **gate**,
 
 | Field | Value |
 |---|---|
-| **Status** | `NOTES_UNCOMMITTED` |
+| **Status** | `NOTES_UNCOMMITTED` + refined copy on Q9b |
 | **Branch / worktree** | `diagnosis/item7-upstream-20260915` at `.worktrees/diagnosis-item7-upstream-20260915` |
 | **Source baseline SHA** | `d588728d60b139ae44b5a3667a8e120d1e21ee1c` (behind `origin/main` by `#195`/`#199`/`#202`) |
 | **HEAD vs origin/main** | No unique commits. Untracked: `docs/engineering/ITEM7_UPSTREAM_GAP_DIAGNOSIS_20260915.md` |
-| **Purpose** | Record the missing generating loop. Collector is a **reader**. **No corpus fabrication** |
+| **Refined copy** | Q9b `134924c3` includes `docs/engineering/drafts/20260915-rth-runbook-item7-provider/ITEM7_UPSTREAM_GAP_DIAGNOSIS.md` — do not fight that branch; notes stay notes |
+| **Purpose** | Record the missing generating loop. Collector is a **reader**. **No corpus fabrication. No fake rows** |
 | **Issue addressed** | Lane C collector `governed_candidate_rows=0` is honest empty-corpus evidence, not software success of the gate |
 | **Empirical evidence** | Cutoff `2026-09-15T09:34:05-04:00`; status `ITEM7_REAL_CORPUS_COLLECTION_SOFTWARE_READY`; `pit_valid_governed_rows=0`; blockers `NO_GOVERNED_PATH_A_TRAINING_CORPUS`, `RTH_OR_FUTURE_OUTCOMES_REQUIRED`. Prior-day capture: 3540 envelopes, **0 grid** (`NOT_TAPE_ELIGIBLE_QUOTE_MISSING_VALID_BID_ASK`). Cockpit: `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE` is **upstream**, not a collector bug. `CAPTURE_CONTEXT_ABSENT` (PR #196) is **not** today’s row blocker |
-| **Affected files** | Notes only today. Later software (not this queue snapshot): append-only `intelligence_records.jsonl` writers; admit **vendor** bid/ask into grid (**never** derive BBO from `last_price`); bind pre-existing PRODUCTION `ForecastV1` → ledger → 5m settle |
-| **Focused tests** | None for the notes commit. Do not add tests that mint forecasts |
+| **Affected files** | Notes only on Q8. Later software: append-only `intelligence_records.jsonl` writers; admit **vendor** bid/ask into grid (**never** derive BBO from `last_price`); bind pre-existing PRODUCTION `ForecastV1` → ledger → 5m settle |
+| **Focused tests** | None for the notes. Do not add tests that mint forecasts |
 | **Broader validation** | `tests.intelligence.test_item7_corpus_collector` already on frozen SHA via `#199`. Must remain empty-corpus honest |
-| **Dependencies** | **After** live OE loop (Q2–Q3), Item 9, launcher, staleness. Priority **7** |
+| **Dependencies** | **After** live OE loop (Q2–Q3). Priority **7** (after live path) |
 | **Must rebase** | **YES** onto post-close `origin/main` before committing notes (currently on `d588728d`) |
 | **Safely discarded if diagnosis changes** | **NO** for “0 governed rows + no generating loop.” **YES** for any later writer design if a lawful PRODUCTION ForecastV1 path already exists |
 
@@ -236,17 +254,18 @@ Adversarial review `review/live-oe-diagnosis-20260915` (Lane P12) is a **gate**,
 
 | Field | Value |
 |---|---|
-| **Status** | `IN_PROGRESS` (worktree **locked**; no unique commits at snapshot) |
+| **Status** | `COMMITTED_ISOLATED` — experimental drafts |
 | **Branch / worktree** | `diagnosis/rth-runbook-item7-provider-20260915` at `.worktrees/diagnosis-rth-runbook-item7-provider-20260915` |
 | **Source baseline SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` |
-| **Purpose** | Drafts only: provider/session reliability from **today’s** evidence; Item 7 stage classification; operator runbook (`START_PLATFORM.cmd`, SPA `/`, IMP `.venv`, FTEP ≠ cockpit, enrichment OFF, Item 9 expected outcomes, CallClose, UTF-8 receipts); Sept 16 08:30 ET macro **checklist only — do not execute** |
+| **Unique commit** | `134924c3887aa2fbb3e77512718b7c72928f3a08` `docs(imp): isolate P7/P8/P10 RTH diagnosis drafts from 2026-09-15 evidence` |
+| **Purpose** | Experimental drafts only: provider/session reliability from **today’s** evidence; Item 7 stage classification; operator runbook (`START_PLATFORM.cmd`, SPA `/`, IMP `.venv`, FTEP ≠ cockpit, enrichment OFF, Item 9 expected outcomes, CallClose, UTF-8 receipts); Sept 16 08:30 ET macro **checklist — not executed** |
 | **Issue addressed** | Operator docs still describe wrong start URL/interpreter; FTEP ingress confused with live discovery; Item 7 vs collector honesty |
 | **Empirical evidence** | Same session as Q1/Q6/Q8. Drafts must not become canonical program-status ahead of software |
-| **Affected files (planned)** | Isolated drafts under this worktree. **Do not** update canonical PROGRAM_STATUS / doctrine as truth ahead of software. Do not fight Q8 notes — copy/refine if needed |
+| **Affected files** | `docs/engineering/drafts/20260915-rth-runbook-item7-provider/{README.md,P7_PROVIDER_SESSION_RELIABILITY.md,ITEM7_UPSTREAM_GAP_DIAGNOSIS.md,P10_OPERATOR_RUNBOOK_DRAFT.md,SEPT16_0830_ET_MACRO_WINDOW_CHECKLIST.md}`, `docs/engineering/WORK_LOG.md` (+680). Land **with** corresponding software |
 | **Focused tests** | Docs-only |
-| **Broader validation** | Land **with** corresponding software (Q1, Q6, Q8) |
+| **Broader validation** | Land with Q1/Q6/Q8 software; Sept 16 checklist is PREP only |
 | **Dependencies** | After or with Q1/Q6/Q8 |
-| **Must rebase** | **YES** if `origin/main` moves |
+| **Must rebase** | **NO vs current `origin/main`.** **YES if** `origin/main` moves |
 | **Safely discarded if diagnosis changes** | **YES** as drafts; rewrite from Q8 + operator evidence |
 
 ---
@@ -255,7 +274,9 @@ Adversarial review `review/live-oe-diagnosis-20260915` (Lane P12) is a **gate**,
 
 | Slot | Branch / worktree | Notes |
 |---|---|---|
-| P12 adversarial OE review | `review/live-oe-diagnosis-20260915` | **PENDING_OWNER** at snapshot (no branch). Gate on Q2–Q4. Read-only; do not implement |
+| P12 live-OE review (`8048d5f7`) | `review/live-oe-diagnosis-20260915` at `.review-live-oe-diagnosis-20260915` | **PENDING / IN_FLIGHT.** Branch on `7aade60b`; uncommitted `docs/engineering/reviews/P12_LIVE_OE_DIAGNOSIS_FALSIFICATION_20260915.md`. **Gate on Q2–Q4.** Read-only; do not implement |
+| P12 Item 9 review | `review/item9-kline-diagnosis-20260915` `49ae216e` | Gate on Q6 only. `PARTIALLY_CONFIRMED` |
+| Finviz 11:49 ET HTTP 429 | n/a | **Empirical PROVIDER evidence**, not merge cargo. Do not open a software PR to “fix” rate-limit as if it were an IMP defect |
 | PR #196 | `work/phase55b-lane-b-evidence-capture-context` `ec93809e` | Sidecar SOFTWARE only. **Rebase after session, not today.** `CAPTURE_CONTEXT_ABSENT` ≠ Item 7 row blocker |
 | Grok / durable enrichment worker | n/a | **DEFERRED.** `#189` wiring remains OFF by default; not `GROK_AUTOMATION_PRODUCTION_ACTIVE` |
 | Frozen RTH | `.rth-operator-20260915` @ `7aade60b` | Observational collection only through 16:00 ET |
@@ -276,9 +297,10 @@ Adversarial review `review/live-oe-diagnosis-20260915` (Lane P12) is a **gate**,
 
 ## Coordinator checklist (post-close, not now)
 
-1. Re-fetch `origin/main`. If SHA ≠ `7aade60b`, every candidate **must rebase** except already-rebased tips.  
-2. Re-read porcelain/SHAs: Q1 tip `9b0781c9` still on `d588728d` (**rebase**); Q2–Q4 locked; Q5; Q6 `e2d89348`; Q7 locked; Q8 untracked notes on `d588728d`; Q9a `145fee4f`; Q9b locked.  
-3. Wait for P12 classification before merging Q2–Q4.  
-4. Merge **nothing** into frozen RTH.  
-5. Do not flip empirical gates from these software/docs commits.  
-6. Update canonical PROGRAM_STATUS only after accepted landings — not from this isolated document.
+1. Re-fetch `origin/main`. If SHA ≠ `7aade60b`, every candidate **must rebase** except already-rebased tips.
+2. Re-read porcelain/SHAs: Q1 tip `9b0781c9` still on `d588728d` (**MUST rebase**); Q2–Q4 wait P1+P4 + P12 live-OE gate; Q5; Q6 tip `77d448c3` + P12 `49ae216e`; Q7 `49529d64`; Q8 untracked notes on `d588728d` (**MUST rebase** before commit); Q9a `145fee4f`; Q9b `134924c3`.
+3. Wait for P12 live-OE (`8048d5f7`) classification before merging Q2–Q4.
+4. Honor Item 9 P12: do not land `max_count=120`; do not treat unique-security `historyKLQuota` as proven.
+5. Merge **nothing** into frozen RTH. Do not land this queue as product software.
+6. Do not flip empirical gates from these software/docs commits. Finviz 429 is provider evidence, not a queue member.
+7. Update canonical PROGRAM_STATUS only after accepted landings — not from this isolated document.
