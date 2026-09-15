@@ -1,7 +1,7 @@
 """Governed strategy source execution runtime (research/replay/parity)."""
 
+from .matlab_runtime import MATLABRuntime
 from .protocol import (
-    MATLABRuntime,
     PineTSRuntime,
     StrategyRuntime,
     StrategyRuntimeError,
@@ -13,6 +13,8 @@ from .types import (
     FOUNDATION_SCHEMA_VERSION,
     HOLD_LABEL_LIVE_OFF,
     HOLD_LABEL_SIMULATOR,
+    MATLAB_RUNTIME_UNAVAILABLE,
+    MATLAB_STRATEGY_RUNTIME_READY,
     PineRuntimeCompatibilityStatus,
     STRATEGY_RUNTIME_FOUNDATION_READY,
     STRATEGY_RUNTIME_STUB_UNAVAILABLE,
@@ -29,6 +31,8 @@ __all__ = [
     "FOUNDATION_SCHEMA_VERSION",
     "HOLD_LABEL_LIVE_OFF",
     "HOLD_LABEL_SIMULATOR",
+    "MATLAB_RUNTIME_UNAVAILABLE",
+    "MATLAB_STRATEGY_RUNTIME_READY",
     "MATLABRuntime",
     "PineRuntimeCompatibilityStatus",
     "PineTSRuntime",
