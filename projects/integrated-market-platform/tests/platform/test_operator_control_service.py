@@ -74,6 +74,15 @@ class OperatorControlServiceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             control_error_payload("NOT_A_CONTROL_CODE", "nope")
 
+    def test_control_status_does_not_http_self_probe(self) -> None:
+        source = Path(__file__).resolve().parents[2] / "tools/platform/control_service.py"
+        text = source.read_text(encoding="utf-8")
+        self.assertIn("control_ready = controller.system.port_is_open(CONTROL_HOST, CONTROL_PORT)", text)
+        self.assertNotIn(
+            'url_ready(f"http://{CONTROL_HOST}:{CONTROL_PORT}/control/status")',
+            text,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

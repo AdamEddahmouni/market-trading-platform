@@ -5,6 +5,14 @@ const apiPort = process.env.IMP_E2E_API_PORT ?? "8766";
 const apiTarget = `http://127.0.0.1:${apiPort}`;
 const uiPort = Number(process.env.IMP_E2E_UI_PORT ?? "5173");
 
+function spaHtmlBypass(req: { method?: string; headers: { accept?: string } }) {
+  const accept = req.headers.accept ?? "";
+  if (req.method === "GET" && accept.includes("text/html")) {
+    return "/index.html";
+  }
+  return undefined;
+}
+
 export default defineConfig({
   plugins: [react()],
   build: {
@@ -31,7 +39,15 @@ export default defineConfig({
       "/auth": apiTarget,
       "/capabilities": apiTarget,
       "/attention": apiTarget,
-      "/discover": apiTarget,
+      "/opportunities": apiTarget,
+      "/intelligence": apiTarget,
+      "/canary": apiTarget,
+      "/accounts": apiTarget,
+      "/security": apiTarget,
+      "/discover": {
+        target: apiTarget,
+        bypass: spaHtmlBypass,
+      },
       "/instruments": apiTarget,
       "/explain": apiTarget,
       "/inspect": apiTarget,
@@ -41,22 +57,26 @@ export default defineConfig({
       "/explore/catalyst": apiTarget,
       "/workspace": {
         target: apiTarget,
-        bypass(req) {
-          const accept = req.headers.accept ?? "";
-          if (req.method === "GET" && accept.includes("text/html")) {
-            return "/index.html";
-          }
-        },
+        bypass: spaHtmlBypass,
       },
-      "/assistant": apiTarget,
-      "/research": apiTarget,
+      "/assistant": {
+        target: apiTarget,
+        bypass: spaHtmlBypass,
+      },
+      "/research": {
+        target: apiTarget,
+        bypass: spaHtmlBypass,
+      },
       "/paper": apiTarget,
       "/provider": apiTarget,
       "/symbols": apiTarget,
       "/market-state": apiTarget,
       "/subscriptions": apiTarget,
       "/operator": apiTarget,
-      "/control": "http://127.0.0.1:8767",
+      "/control": {
+        target: "http://127.0.0.1:8767",
+        bypass: spaHtmlBypass,
+      },
       "/state": apiTarget,
       "/captures": apiTarget,
     },

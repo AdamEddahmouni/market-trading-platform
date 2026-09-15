@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — Reconstruct launcher/Vite routing onto origin/main (isolated)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tools/platform`, `ui/vite` |
+| **Summary** | Reconstruct the `d588728d`-based launcher/routing candidate (`a2dd6ced`) onto current `origin/main` `7aade60b`. Repo `.venv` only (no `moomoo-api-test` auto-select), sklearn probe, operator URL `http://127.0.0.1:5173/`, Vite HTML bypass for `/discover` plus `/opportunities` `/intelligence` `/canary` proxies, control `port_is_open` instead of HTTP self-probe. **Skipped** `server.py` `normalize_ui_path` unquote because P1 owns that file. |
+| **Key files** | `tools/platform/local_launcher.py`, `tools/platform/control_service.py`, `START_PLATFORM.cmd`, `PLATFORM_CONTROL.cmd`, `ui/vite.config.ts`, `tests/platform/test_local_launcher.py`, `tests/platform/test_operator_control_service.py`, `tools/validation_manifest.json`, `README.md`, `ui/README.md`, `docs/engineering/LOCAL_DEVELOPMENT.md`, `docs/superpowers/specs/2026-08-24-local-platform-launcher-design.md` |
+| **Tests** | Isolated worktree, primary IMP `.venv`: `python -m unittest tests.platform.test_local_launcher tests.platform.test_operator_control_service` — **24 passed**. Percent-decode explain-ref test **not** run (server.py skipped). |
+| **Related** | Source `diagnosis/launcher-routing-20260915` (`9b0781c9` / `a2dd6ced`); new branch `repair/launcher-routing-from-main-20260915`; frozen RTH not edited |
+| **Notes** | **NOT FOR MERGE UNTIL 2026-09-15 RTH RECONCILIATION COMPLETE.** Keep stale diagnosis branch; do not merge it. Follow-on: P1 or a tiny separate commit for `normalize_ui_path` unquote. |
+
 ## 2026-09-15 — FTEP integrity: resolve gitignored session evidence from operator primary checkout
 
 | Field | Value |

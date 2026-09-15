@@ -59,6 +59,8 @@ npm run dev
 ```
 
 Opens `http://127.0.0.1:5173`. API at `http://127.0.0.1:8766`.
+`START_PLATFORM.cmd` selects the repository `.venv` automatically and opens that
+SPA root (not `/discover`, which Vite proxies to the API).
 The canonical browser control center is `http://127.0.0.1:5173/control`.
 The launcher supervisor uses `http://127.0.0.1:8767` and is loopback-only.
 

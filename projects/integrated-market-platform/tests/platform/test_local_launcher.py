@@ -1,12 +1,22 @@
 from __future__ import annotations
 
+import contextlib
+import io
 import json
-import os
 import tempfile
 import unittest
 from pathlib import Path
 
-from tools.platform.local_launcher import PlatformController, build_backend_environment, select_backend_python
+from tools.platform.local_launcher import (
+    LauncherError,
+    PlatformController,
+    build_backend_environment,
+    select_backend_python,
+)
+
+
+def always_usable(_python: Path) -> bool:
+    return True
 
 
 class FakeSystem:
@@ -17,6 +27,7 @@ class FakeSystem:
         self.terminated: list[int] = []
         self.opened: list[str] = []
         self.ready: dict[str, bool] = {}
+        self.open_ports: set[int] = set()
 
     def which(self, executable: str) -> str | None:
         if executable == "npm.cmd":
@@ -24,7 +35,7 @@ class FakeSystem:
         return None
 
     def port_is_open(self, host: str, port: int) -> bool:
-        return False
+        return int(port) in self.open_ports
 
     def spawn(self, argv, *, cwd: Path, env, log_path: Path) -> int:  # type: ignore[no-untyped-def]
         pid = self.next_pid
@@ -75,7 +86,7 @@ def make_root(base: Path) -> Path:
 
 
 class LocalLauncherTests(unittest.TestCase):
-    def test_backend_python_precedence_is_override_then_moomoo_then_repo(self) -> None:
+    def test_backend_python_precedence_is_override_then_repo_not_moomoo(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             root = make_root(base)
@@ -88,9 +99,10 @@ class LocalLauncherTests(unittest.TestCase):
             override.write_text("fixture", encoding="utf-8")
 
             self.assertEqual(select_backend_python(root, {"IMP_PLATFORM_BACKEND_PYTHON": str(override)}, profile), override)
-            self.assertEqual(select_backend_python(root, {}, profile), moomoo)
-            moomoo.unlink()
             self.assertEqual(select_backend_python(root, {}, profile), root / ".venv/Scripts/python.exe")
+            (root / ".venv/Scripts/python.exe").unlink()
+            with self.assertRaises(LauncherError):
+                select_backend_python(root, {}, profile)
 
     def test_backend_environment_defaults_to_observational_and_paper_only(self) -> None:
         env = build_backend_environment({"IMP_MOOMOO_LIVE": "0", "EXISTING": "yes"})
@@ -113,14 +125,19 @@ class LocalLauncherTests(unittest.TestCase):
                 "http://127.0.0.1:8766/context": True,
                 "http://127.0.0.1:5173/": True,
             }
-            controller = PlatformController(root=root, system=fake, environ={"USERPROFILE": str(Path(tmp) / "profile")})
+            controller = PlatformController(
+                root=root,
+                system=fake,
+                environ={"USERPROFILE": str(Path(tmp) / "profile")},
+                python_runtime_probe=always_usable,
+            )
 
             self.assertEqual(controller.start(open_browser=False), 0)
             self.assertEqual(len(fake.spawn_calls), 3)
             self.assertEqual(controller.start(open_browser=True), 0)
 
             self.assertEqual(len(fake.spawn_calls), 3)
-            self.assertEqual(fake.opened, ["http://127.0.0.1:5173/discover"])
+            self.assertEqual(fake.opened, ["http://127.0.0.1:5173/"])
 
     def test_failed_readiness_rolls_back_every_process_started(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -132,6 +149,7 @@ class LocalLauncherTests(unittest.TestCase):
                 system=fake,
                 environ={"USERPROFILE": str(Path(tmp) / "profile")},
                 readiness_attempts=1,
+                python_runtime_probe=always_usable,
             )
 
             self.assertEqual(controller.start(open_browser=False), 1)
@@ -172,12 +190,142 @@ class LocalLauncherTests(unittest.TestCase):
                 "http://127.0.0.1:8766/context": True,
                 "http://127.0.0.1:5173/": True,
             }
-            controller = PlatformController(root=root, system=fake, environ={"USERPROFILE": str(Path(tmp) / "profile")})
+            controller = PlatformController(
+                root=root,
+                system=fake,
+                environ={"USERPROFILE": str(Path(tmp) / "profile")},
+                python_runtime_probe=always_usable,
+            )
             self.assertEqual(controller.start(open_browser=False), 0)
 
             self.assertEqual(controller.stop(), 0)
 
             self.assertEqual(fake.terminated, [1002, 1001, 1000])
+
+    def test_missing_node_modules_blocks_start(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            (root / "ui/node_modules/.ready").unlink()
+            (root / "ui/node_modules").rmdir()
+            fake = FakeSystem()
+            controller = PlatformController(
+                root=root,
+                system=fake,
+                environ={"USERPROFILE": str(Path(tmp) / "profile")},
+                python_runtime_probe=always_usable,
+            )
+            self.assertEqual(controller.start(open_browser=False), 1)
+            self.assertEqual(fake.spawn_calls, [])
+
+    def test_missing_venv_blocks_start_even_when_moomoo_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            (root / ".venv/Scripts/python.exe").unlink()
+            (root / ".venv/Scripts").rmdir()
+            (root / ".venv").rmdir()
+            profile = Path(tmp) / "profile"
+            moomoo = profile / "moomoo-api-test/.venv/Scripts/python.exe"
+            moomoo.parent.mkdir(parents=True)
+            moomoo.write_text("fixture", encoding="utf-8")
+            fake = FakeSystem()
+            controller = PlatformController(
+                root=root,
+                system=fake,
+                environ={"USERPROFILE": str(profile)},
+                python_runtime_probe=always_usable,
+            )
+            self.assertEqual(controller.start(open_browser=False), 1)
+            self.assertEqual(fake.spawn_calls, [])
+            with self.assertRaises(LauncherError):
+                select_backend_python(root, {}, profile)
+
+    def test_override_missing_file_raises(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            missing = Path(tmp) / "missing-python.exe"
+            with self.assertRaises(LauncherError):
+                select_backend_python(root, {"IMP_PLATFORM_BACKEND_PYTHON": str(missing)})
+
+    def test_open_uses_spa_root_not_discover_proxy(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            fake = FakeSystem()
+            fake.ready = {"http://127.0.0.1:5173/": True}
+            controller = PlatformController(
+                root=root,
+                system=fake,
+                environ={"USERPROFILE": str(Path(tmp) / "profile")},
+                python_runtime_probe=always_usable,
+            )
+            self.assertEqual(controller.open(), 0)
+            self.assertEqual(fake.opened, ["http://127.0.0.1:5173/"])
+
+    def test_status_ready_prints_spa_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            fake = FakeSystem()
+            fake.ready = {
+                "http://127.0.0.1:8766/context": True,
+                "http://127.0.0.1:5173/": True,
+            }
+            controller = PlatformController(
+                root=root,
+                system=fake,
+                environ={"USERPROFILE": str(Path(tmp) / "profile")},
+                python_runtime_probe=always_usable,
+            )
+            self.assertEqual(controller.start(open_browser=False), 0)
+            captured = io.StringIO()
+            with contextlib.redirect_stdout(captured):
+                self.assertEqual(controller.status(), 0)
+            text = captured.getvalue()
+            self.assertIn("http://127.0.0.1:5173/", text)
+            self.assertNotIn("/discover", text)
+
+    def test_status_partial_when_owned_identity_lost(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            fake = FakeSystem()
+            fake.ready = {
+                "http://127.0.0.1:8766/context": True,
+                "http://127.0.0.1:5173/": True,
+            }
+            controller = PlatformController(
+                root=root,
+                system=fake,
+                environ={"USERPROFILE": str(Path(tmp) / "profile")},
+                python_runtime_probe=always_usable,
+            )
+            self.assertEqual(controller.start(open_browser=False), 0)
+            fake.command_lines[1000] = "python unrelated_backup.py"
+            captured = io.StringIO()
+            with contextlib.redirect_stdout(captured):
+                self.assertEqual(controller.status(), 1)
+            text = captured.getvalue()
+            self.assertIn("NOT RUNNING OR PARTIAL", text)
+            self.assertIn("API process owned       NO", text)
+
+    def test_occupied_unowned_port_blocks_start(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            fake = FakeSystem()
+            fake.open_ports.add(8766)
+            controller = PlatformController(
+                root=root,
+                system=fake,
+                environ={"USERPROFILE": str(Path(tmp) / "profile")},
+                python_runtime_probe=always_usable,
+            )
+            self.assertEqual(controller.start(open_browser=False), 1)
+            self.assertEqual(fake.spawn_calls, [])
+
+    def test_stop_is_noop_without_state(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            fake = FakeSystem()
+            controller = PlatformController(root=root, system=fake, environ={})
+            self.assertEqual(controller.stop(), 0)
+            self.assertEqual(fake.terminated, [])
 
     def test_root_command_files_expose_start_stop_and_control(self) -> None:
         repository = Path(__file__).resolve().parents[2]
@@ -197,6 +345,36 @@ class LocalLauncherTests(unittest.TestCase):
                 if filename != "PLATFORM_CONTROL.cmd":
                     self.assertIn('set "IMP_EXIT_CODE=%ERRORLEVEL%"', text)
                     self.assertIn("exit /b %IMP_EXIT_CODE%", text)
+
+                if filename == "START_PLATFORM.cmd":
+                    self.assertIn("IMP_PLATFORM_BACKEND_PYTHON", text)
+
+    def test_missing_sklearn_blocks_start(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            fake = FakeSystem()
+            controller = PlatformController(
+                root=root,
+                system=fake,
+                environ={"USERPROFILE": str(Path(tmp) / "profile")},
+                python_runtime_probe=lambda _python: False,
+            )
+            self.assertEqual(controller.start(open_browser=False), 1)
+            self.assertEqual(fake.spawn_calls, [])
+
+    def test_vite_proxy_covers_operator_json_and_spa_html_bypass(self) -> None:
+        repository = Path(__file__).resolve().parents[2]
+        text = (repository / "ui/vite.config.ts").read_text(encoding="utf-8")
+        for token in (
+            '"/opportunities"',
+            '"/intelligence"',
+            '"/canary"',
+            "spaHtmlBypass",
+            '"/discover"',
+            '"/control"',
+        ):
+            with self.subTest(token=token):
+                self.assertIn(token, text)
 
     def test_operator_docs_name_one_click_start_logs_and_safe_stop(self) -> None:
         repository = Path(__file__).resolve().parents[2]
