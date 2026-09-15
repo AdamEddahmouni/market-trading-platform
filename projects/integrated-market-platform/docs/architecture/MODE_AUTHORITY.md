@@ -42,6 +42,7 @@
 | Mutations | **Prohibited** — no order submission, no paper submit |
 | Backend context | `data_mode` ∈ {`LIVE_OBSERVATIONAL`, `BROKER_DELAYED`}; `execution_mode=NONE`, `execution_authority=BLOCKED` |
 | Canary | Operational visibility only — not execution authority |
+| Observational clock | If `LIVE_OBSERVATIONAL` and no live quote/event receive time, `as_of_time` is `UNAVAILABLE` — never the admitted fixture replay cursor. Fixture/replay attention may appear only on an explicit `DEMO_REPLAY` shelf, not as current RTH cards. Ranked opportunity **reads** may be `EMPTY`/`READY` from the intelligence repository; live **mutations** (WATCH/DISMISS/ack) remain `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`. |
 
 **LIVE-001 production execution is blocked** in this repository.
 
