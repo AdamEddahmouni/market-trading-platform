@@ -757,6 +757,7 @@
         "src/market_platform_foundation/intelligence/**",
         "src/market_platform_foundation/operations/**",
         "tools/rth_empirical_ops.py",
+        "tools/ftep_watch_catalysts.py",
         "tools/intelligence_enrichment_worker.py"
       ],
       "test_globs": [
