@@ -204,6 +204,73 @@ def _provider_code(symbol: str) -> str:
     return f"US.{wanted}"
 
 
+def probe_quote_login(*, host: str, port: int) -> dict[str, Any]:
+    """Quote-login diagnostic for operator tooling. Not a market-data tick."""
+
+    if host not in _LOOPBACK_HOSTS:
+        sdk = load_vendor_sdk()
+        return {
+            "sdk": "PRESENT" if sdk is not None else "ABSENT",
+            "quote_login": "INVALID",
+            "qot_entitled": False,
+            "reason": "OPEND_NOT_LOOPBACK",
+        }
+    ft = load_vendor_sdk()
+    if ft is None:
+        return {
+            "sdk": "ABSENT",
+            "quote_login": "UNAVAILABLE",
+            "qot_entitled": False,
+            "reason": "MOOMOO_SDK_NOT_INSTALLED",
+        }
+    import socket
+
+    try:
+        sock = socket.create_connection((host, port), timeout=2.0)
+        sock.close()
+    except OSError as exc:
+        return {
+            "sdk": "PRESENT",
+            "quote_login": "UNAVAILABLE",
+            "qot_entitled": False,
+            "reason": type(exc).__name__,
+        }
+
+    ctx = None
+    try:
+        ctx = ft.OpenQuoteContext(host=host, port=port)
+        ret, state = ctx.get_global_state()
+        if ret != ft.RET_OK or not isinstance(state, dict):
+            return {
+                "sdk": "PRESENT",
+                "quote_login": "INVALID",
+                "qot_entitled": False,
+                "reason": "MOOMOO_PROTOCOL_ERROR",
+                "ret": ret,
+            }
+        entitled = _qot_logined(state)
+        return {
+            "sdk": "PRESENT",
+            "quote_login": "VALID" if entitled else "INVALID",
+            "qot_entitled": entitled,
+        }
+    except Exception as exc:  # noqa: BLE001 — operator diagnostic only
+        return {
+            "sdk": "PRESENT",
+            "quote_login": "UNAVAILABLE",
+            "qot_entitled": False,
+            "reason": type(exc).__name__,
+        }
+    finally:
+        if ctx is not None:
+            closer = getattr(ctx, "close", None)
+            if callable(closer):
+                try:
+                    closer()
+                except Exception:  # noqa: BLE001
+                    pass
+
+
 def _qot_logined(state: Any) -> bool:
     if not isinstance(state, dict):
         return False
@@ -294,6 +361,7 @@ __all__ = [
     "OPEND_NON_LOOPBACK_BLOCKED",
     "fetch_history_kline_1m",
     "fetch_snapshot",
+    "probe_quote_login",
     "is_vendor_sdk",
     "load_vendor_sdk",
     "sdk_available",

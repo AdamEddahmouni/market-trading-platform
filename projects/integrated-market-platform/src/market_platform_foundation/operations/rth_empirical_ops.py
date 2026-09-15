@@ -10,7 +10,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import socket
 import time
 import uuid
 from dataclasses import dataclass
@@ -46,15 +45,14 @@ from ..paper.calibration.runner import (
     classify_calibration_run,
 )
 from ..providers.adapters.finviz_elite_context import configured_token, finviz_live_enabled
+from ..providers.adapters.moomoo_opend_equity_quote import opend_moomoo_auth_entitlements
 from ..providers.equity_quote_selection import opend_readiness
-from ..providers.moomoo_opend_capability import US_EQUITY_L1_CAPABILITY
 
 ACCEPTANCE_LABEL_READY = "RTH_EMPIRICAL_OPS_READY"
 ARTIFACT_KIND_PREFLIGHT = "rth_empirical_ops_preflight"
 ARTIFACT_KIND_RUN = "rth_empirical_ops_run"
 _SCHEMA_VERSION = "1.0.0"
 _DEFAULT_CAMPAIGN = "FTEP-V1-002"
-_LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
 
 _SECRET_SUBSTRINGS = (
     "password",
@@ -120,54 +118,7 @@ def _moomoo_auth_entitlements(
     port: int,
     reachable: bool,
 ) -> tuple[dict[str, str], dict[str, Any]]:
-    auth: dict[str, str] = {"quote_login": "UNAVAILABLE", "sdk": "ABSENT"}
-    entitlements: dict[str, Any] = {
-        "primary_capability": US_EQUITY_L1_CAPABILITY,
-        "us_equity_l1": "UNAVAILABLE",
-    }
-    detail: dict[str, Any] = {"loopback_only": host in _LOOPBACK_HOSTS}
-
-    if not reachable:
-        return auth, {**entitlements, "detail": detail}
-
-    try:
-        import moomoo as ft  # type: ignore[import-not-found]
-    except ImportError:
-        auth["sdk"] = "ABSENT"
-        detail["reason"] = "MOOMOO_SDK_NOT_INSTALLED"
-        return auth, {**entitlements, "detail": detail}
-
-    auth["sdk"] = "PRESENT"
-    if host not in _LOOPBACK_HOSTS:
-        auth["quote_login"] = "INVALID"
-        detail["reason"] = "OPEND_NOT_LOOPBACK"
-        return auth, {**entitlements, "detail": detail}
-
-    try:
-        sock = socket.create_connection((host, port), timeout=2.0)
-        sock.close()
-    except OSError as exc:
-        auth["quote_login"] = "UNAVAILABLE"
-        detail["reason"] = type(exc).__name__
-        return auth, {**entitlements, "detail": detail}
-
-    quote_ctx = ft.OpenQuoteContext(host=host, port=port)
-    try:
-        ret, state = quote_ctx.get_global_state()
-        if ret != ft.RET_OK or not isinstance(state, dict):
-            auth["quote_login"] = "INVALID"
-            detail["ret"] = ret
-        else:
-            qot = str(state.get("qot_logined", "")).lower()
-            auth["quote_login"] = "VALID" if qot in {"true", "1"} else "INVALID"
-            entitlements["us_equity_l1"] = "ENTITLED" if auth["quote_login"] == "VALID" else "NOT_ENTITLED"
-    except Exception as exc:  # noqa: BLE001 — operator diagnostic only
-        auth["quote_login"] = "UNAVAILABLE"
-        detail["reason"] = type(exc).__name__
-    finally:
-        quote_ctx.close()
-
-    return auth, {**entitlements, "detail": detail}
+    return opend_moomoo_auth_entitlements(host=host, port=port, reachable=reachable)
 
 
 def _paper_comparator_configuration(env: Mapping[str, str], now_ns: int) -> dict[str, Any]:
