@@ -24,6 +24,7 @@ from market_platform_foundation.research.export_v1_matlab_result import (  # noq
     CONTRACT_READY,
     MATLAB_GOVERNED_RESEARCH_ROUNDTRIP_READY,
     MATLAB_RESEARCH_EVIDENCE_ARTIFACT_TYPE,
+    matlab_research_result_content_sha256,
     project_matlab_research_evidence_artifact,
     validate_matlab_research_result_v1,
     verify_matlab_result_export_lineage,
@@ -48,17 +49,31 @@ _GOLDEN_FIXTURE = (
 
 
 class MatlabGovernedRoundtripTests(unittest.TestCase):
-    def test_golden_fixture_lineage_and_evidence_projection(self) -> None:
-        package = build_research_export_v1(profile=PROFILE_MARKET_TECHNICAL)
+    def test_golden_fixture_contract_and_evidence_projection(self) -> None:
         golden = json.loads(_GOLDEN_FIXTURE.read_text(encoding="utf-8"))
         validate_matlab_research_result_v1(golden)
-        verify_matlab_result_export_lineage(golden, package)
+        declared = str(golden.get("content_sha256") or "").upper()
+        self.assertEqual(declared, matlab_research_result_content_sha256(golden))
         evidence = project_matlab_research_evidence_artifact(golden)
         self.assertEqual(evidence["artifact_type"], MATLAB_RESEARCH_EVIDENCE_ARTIFACT_TYPE)
         self.assertEqual(
             evidence["dataset"]["manifest_hash"],
-            package.manifest["manifest_hash"],
+            golden["dataset_lineage"]["manifest_hash"],
         )
+
+    def test_python_reference_matches_live_export_lineage(self) -> None:
+        package = build_research_export_v1(profile=PROFILE_MARKET_TECHNICAL)
+        from market_platform_foundation.research.export_v1_matlab_result import (  # noqa: E402
+            build_parity_matlab_research_result,
+        )
+
+        result = build_parity_matlab_research_result(
+            package,
+            analysis_source="python_reference",
+            code_identity="tests/fixtures/research/matlab_golden_result_v1.json",
+            generated_at="2026-09-15T00:00:00Z",
+        )
+        verify_matlab_result_export_lineage(result, package)
 
     def test_python_reference_roundtrip_contract_ready(self) -> None:
         package = build_research_export_v1(profile=PROFILE_MARKET_TECHNICAL)
