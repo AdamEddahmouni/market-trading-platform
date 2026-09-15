@@ -7,13 +7,13 @@
 **Frozen RTH runtime:** `.rth-operator-20260915` at the same SHA — **do not thaw, patch, or merge into it**  
 **This document does not update** [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md)
 
-Snapshot time: 2026-09-15 ~14:32 ET (refresh of `5a7c78d7`). Q2–Q4 / [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) `96ede754` is **SAFE-TO-RETAIN-AFTER-REBASE** (ingest review). **Do not merge during RTH.** Residuals: `received=available`; POST can rewrite `as_of`. Finviz reliability draft [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207). TRAIN 1 [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) already recorded.
+Snapshot time: 2026-09-15 ~14:42 ET (refresh of `06fb2235`). TRAIN 1 / [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) `80792ea7` (unique repair `f1aaacaa` on `7aade60b`) — all six claims **SAFE-TO-RETAIN-AFTER-REBASE**. No MUST-FIX-BEFORE-MERGE. Reconstruction, **not** a merge of stale `diagnosis/launcher-routing-20260915`. **24/24** re-run. **Do not merge during RTH.**
 
 ## Rebase-required flags (vs `origin/main` `7aade60b`)
 
 | Slot | Tip | Merge-base | Must rebase before land |
 |---|---|---|---|
-| Q1 / TRAIN 1 launcher | `80792ea7` | `7aade60b` | Draft [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206). Review **in flight** (`c39ab0af`). **NOT FOR MERGE** until RTH reconciliation. **Do NOT land** stale `diagnosis/launcher-routing-20260915` (`d588728d`) |
+| Q1 / TRAIN 1 launcher | `80792ea7` | `7aade60b` | Draft [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206). All six claims **SAFE-TO-RETAIN-AFTER-REBASE**. No MUST-FIX. Reconstruct `f1aaacaa` on `7aade60b` — **not** a merge of `diagnosis/launcher-routing-20260915`. **Do not merge during RTH.** Rebase if `main` moved |
 | Q2–Q4 live-OE / cockpit | `96ede754` | `7aade60b` | Draft [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) **SAFE-TO-RETAIN-AFTER-REBASE** (ingest review). **Do not merge during RTH.** Residuals: `received=available`; POST can rewrite `as_of`. **ACK/WATCH fail-closed.** **rebase-required=yes** |
 | Q5 WATCH harness | `7a5cbe48` | `7aade60b` | **YES if** `origin/main` moves after close. Independent of Item 9. Paper fixture path; acks stay blocked in `LIVE_OBSERVATIONAL`. Draft [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204) opened at `f8c03183`, being updated |
 | Q6 Item 9 | `fe8cac6d` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves. Draft [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203). Local tip 1 ahead of remote `77d448c3` |
@@ -23,7 +23,7 @@ Snapshot time: 2026-09-15 ~14:32 ET (refresh of `5a7c78d7`). Q2–Q4 / [#205](ht
 | Q8 Item 7 notes | `d588728d` + untracked notes | `d588728d` | **YES** onto post-close `origin/main` before committing notes |
 | Q9a test-gap | `145fee4f` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
 | Q9b runbook | `134924c3` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
-| This queue | `5a7c78d7` + this refresh | `7aade60b` | Docs only; **YES if** `origin/main` moves |
+| This queue | `06fb2235` + this refresh | `7aade60b` | Docs only; **YES if** `origin/main` moves |
 
 ## Operating holds
 
@@ -57,7 +57,7 @@ launcher
 
 Recommended post-close landing sequence:
 
-1. **Q1 / TRAIN 1** `80792ea7` / draft [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) — reconstruct on `origin/main`; **NOT FOR MERGE** until RTH reconciliation. **Do NOT land** `diagnosis/launcher-routing-20260915`
+1. **Q1 / TRAIN 1** `80792ea7` / [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) — **SAFE-TO-RETAIN-AFTER-REBASE**. Wait for 2026-09-15 RTH reconciliation → rebase if `main` moved → **do not merge** `diagnosis/launcher-routing-20260915` → coordinate P1 before any `server.py` unquote
 2. **Q4** `8189af4c` + honesty `91b07b4f` + ingest `96ede754` / [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) — **SAFE-TO-RETAIN-AFTER-REBASE**; **do not merge during RTH**
 3. **Q3** `c43688ed` + `91b07b4f` + `96ede754` ranked READ — same hold; **ACK/WATCH fail-closed**
 4. **Q2** `c4d88ef7` + `91b07b4f` + `POST /intelligence/ingest/news` `96ede754` / [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) — same hold; residuals `received=available`, POST can rewrite `as_of`
@@ -67,7 +67,7 @@ Recommended post-close landing sequence:
 8. **Q8 Item 7 upstream wiring** (priority 7; no corpus fabrication)  
 9. **Q9 runbook / test-gap docs** (land with corresponding software)
 
-P12 diagnosis review **FINISHED** `PARTIALLY_CONFIRMED` (`5f965f32`). P13 flagged `c43688ed` **MUST-FIX-BEFORE-MERGE**. P1 closed those leaks at `91b07b4f342f8a73dcaa237dc4de1e5c69c86593` `Close live OE honesty leaks flagged by P13`. P13B `4176d0b6` classifies **honesty** **SAFE-TO-RETAIN-AFTER-REBASE**. Tip is now `96ede7548911f384e65014d2d015b7a142675eac` `Admit already-fetched Finviz news on the UI API request path` (`POST /intelligence/ingest/news` `put_event`s EventV1 through `ObservationIngressRouter`; already-fetched only, no auto-fetch). Stack: `8189af4c` → `c4d88ef7` → `c43688ed` → `91b07b4f` → `96ede754`. Ingest review classifies tip **SAFE-TO-RETAIN-AFTER-REBASE**. Draft [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) — **do not merge during RTH.** **ACK/WATCH fail-closed.** **rebase-required=yes**. Finviz reliability draft [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207) (`repair/finviz-ingress-reliability-20260915` `f696f00d`). TRAIN 1 [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) already recorded.
+P12 diagnosis review **FINISHED** `PARTIALLY_CONFIRMED` (`5f965f32`). P13 flagged `c43688ed` **MUST-FIX-BEFORE-MERGE**. P1 closed those leaks at `91b07b4f342f8a73dcaa237dc4de1e5c69c86593` `Close live OE honesty leaks flagged by P13`. P13B `4176d0b6` classifies **honesty** **SAFE-TO-RETAIN-AFTER-REBASE**. Tip is now `96ede7548911f384e65014d2d015b7a142675eac` `Admit already-fetched Finviz news on the UI API request path` (`POST /intelligence/ingest/news` `put_event`s EventV1 through `ObservationIngressRouter`; already-fetched only, no auto-fetch). Stack: `8189af4c` → `c4d88ef7` → `c43688ed` → `91b07b4f` → `96ede754`. Ingest review classifies tip **SAFE-TO-RETAIN-AFTER-REBASE**. Draft [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) — **do not merge during RTH.** **ACK/WATCH fail-closed.** **rebase-required=yes**. Finviz reliability draft [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207) (`repair/finviz-ingress-reliability-20260915` `f696f00d`). TRAIN 1 [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) `80792ea7` / `f1aaacaa`: all six claims **SAFE-TO-RETAIN-AFTER-REBASE**; no MUST-FIX; reconstruct on `7aade60b`, **not** a merge of stale `d588728d`.
 
 Prior must-fix list (**closed** on honesty `91b07b4f` + ingest review of `96ede754`): live `INELIGIBLE` not on current book; no `READY` when `as_of` UNAVAILABLE; `inspect` / `store.as_of_time()` UNAVAILABLE without live receive; `replay_shelf` is `DEMO_REPLAY` and out of current items. Request-path admit is **SAFE-TO-RETAIN-AFTER-REBASE**.
 
@@ -79,20 +79,21 @@ Prior must-fix list (**closed** on honesty `91b07b4f` + ingest review of `96ede7
 
 | Field | Value |
 |---|---|
-| **Status** | `COMMITTED_ISOLATED` on `origin/main` — draft [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) **NOT FOR MERGE** until RTH reconciliation. Review **in flight** (`c39ab0af`) |
+| **Status** | All six TRAIN 1 claims **SAFE-TO-RETAIN-AFTER-REBASE**. No MUST-FIX-BEFORE-MERGE. Draft [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206). **Do not merge during RTH** |
 | **Branch / worktree** | `repair/launcher-routing-from-main-20260915` HEAD `80792ea75b0e49ddff35603964e22dd92460c316` |
 | **Source baseline SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` |
-| **HEAD vs origin/main** | `f1aaacaa` `fix(platform): reconstruct launcher routing on origin/main` then tip `80792ea7` `chore(platform): record reconstructed launcher-routing HEAD SHA`. Merge-base **is** current `origin/main` |
+| **HEAD vs origin/main** | Unique repair `f1aaacaa` `fix(platform): reconstruct launcher routing on origin/main` then tip `80792ea7` (notes SHA). Reconstruction on `7aade60b` — **not** a merge of `diagnosis/launcher-routing-20260915` / `d588728d` |
 | **Superseded / do not land** | `diagnosis/launcher-routing-20260915` (`9b0781c9` on stale `d588728d`) — **DO NOT LAND** |
 | **Purpose** | One-click IMP Python + SPA URL + Vite proxy so operator JSON is not swallowed by `index.html` |
-| **Issue addressed** | Launcher auto-selected `moomoo-api-test` (no sklearn); `START_PLATFORM` opened proxied `/discover` (API 404); `/opportunities` unproxied (Zod parse of HTML); `/discover` HTML not bypassed. Reconstruct skips P1-owned `server.py` unquote |
+| **Issue addressed** | Launcher auto-selected `moomoo-api-test` (no sklearn); `START_PLATFORM` opened proxied `/discover` (API 404); `/opportunities` unproxied (Zod parse of HTML); `/discover` HTML not bypassed. `server.py` percent-decode/unquote **OMITTED / OUT OF SCOPE** — P1/tiny follow-on, not TRAIN 1 |
 | **Empirical evidence** | 2026-09-15 Lane E: `http://127.0.0.1:5173/` Paper loads; GET `/discover` 404; ranked fetch via UI origin failed; API `:8766` returned `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`. Proxy-only would still show an empty live book |
-| **Affected files** | `f1aaacaa` (14 files, +357/−48): `tools/platform/local_launcher.py`, `tools/platform/control_service.py`, `START_PLATFORM.cmd`, `PLATFORM_CONTROL.cmd`, `ui/vite.config.ts`, `tests/platform/test_local_launcher.py`, `tests/platform/test_operator_control_service.py`, `tools/validation_manifest.json`, `README.md`, `ui/README.md`, `docs/engineering/LOCAL_DEVELOPMENT.md`, launcher design spec, `WORK_LOG.md`, `BRANCH_NOTES.md`. **No** `ui_api/server.py` (unquote left to P1). Tip `80792ea7` is notes-only |
-| **Focused tests** | **24 tests** on the reconstructed branch. PIT/live-OE not in this diff |
-| **Broader validation** | After review: `python tools/imp.py test affected`; UI `npm run typecheck` / `npm test` if Vite remains; **not** FULL until stacked with Q2–Q4 |
-| **Dependencies** | None for merge of proxy/Python. Does **not** populate the ranked book. `server.py` unquote is P1 — do not add it here |
-| **Must rebase** | **NO vs current `origin/main`.** **YES if** `origin/main` moves. Still **NOT FOR MERGE** until RTH reconciliation |
-| **Safely discarded if diagnosis changes** | **NO** for Vite `/opportunities` + `/discover` HTML bypass and sklearn interpreter — independently observed. Stale `d588728d` branch **is** discarded in favor of this reconstruct |
+| **Affected files** | `f1aaacaa` (14 files, +357/−48): `tools/platform/local_launcher.py`, `tools/platform/control_service.py`, `START_PLATFORM.cmd`, `PLATFORM_CONTROL.cmd`, `ui/vite.config.ts`, `tests/platform/test_local_launcher.py`, `tests/platform/test_operator_control_service.py`, `tools/validation_manifest.json`, `README.md`, `ui/README.md`, `docs/engineering/LOCAL_DEVELOPMENT.md`, launcher design spec, `WORK_LOG.md`, `BRANCH_NOTES.md`. **No** `ui_api/server.py`. Tip `80792ea7` is notes-only |
+| **Focused tests** | Review re-ran `tests.platform.test_local_launcher` + `tests.platform.test_operator_control_service`: **24 passed** |
+| **Broader validation** | After RTH reconciliation: rebase if `main` moved; `python tools/imp.py test affected`; UI typecheck/test if Vite remains; **not** FULL until stacked with Q2–Q4 |
+| **Dependencies** | Does **not** populate the ranked book. Coordinate P1 before any `server.py` unquote |
+| **Must rebase** | **NO vs current `origin/main`.** **YES if** `origin/main` moves after close. Land only after 2026-09-15 RTH reconciliation |
+| **Residuals (not blockers)** | sklearn-only probe; Mixed Live menu copy vs SPA root `/`; `BRANCH_NOTES` HEAD field `f1aaacaa` vs git HEAD `80792ea7`; Vite/control proofs are token greps |
+| **Safely discarded if diagnosis changes** | **NO** for Vite `/opportunities` + `/discover` HTML bypass and sklearn interpreter. Stale `d588728d` diagnosis branch **must not** land |
 
 ---
 
@@ -289,7 +290,7 @@ Prior must-fix list (**closed** on honesty `91b07b4f` + ingest review of `96ede7
 | PR #196 | `work/phase55b-lane-b-evidence-capture-context` `ec93809e` | Sidecar SOFTWARE only. **Rebase after session, not today.** `CAPTURE_CONTEXT_ABSENT` ≠ Item 7 row blocker |
 | Grok / durable enrichment worker | n/a | **DEFERRED.** `#189` wiring remains OFF by default; not `GROK_AUTOMATION_PRODUCTION_ACTIVE` |
 | Stale launcher | `diagnosis/launcher-routing-20260915` `9b0781c9` on `d588728d` | **DO NOT LAND.** Superseded by TRAIN 1 `80792ea7` / [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) |
-| Launcher reconstruct review | `c39ab0af` vs `80792ea7` | **In flight.** **Not merge cargo** |
+| Launcher reconstruct review | `c39ab0af` vs [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) `80792ea7` / `f1aaacaa` | **FINISHED.** All six TRAIN 1 claims **SAFE-TO-RETAIN-AFTER-REBASE**. No MUST-FIX. **Not merge cargo** |
 | Frozen RTH | `.rth-operator-20260915` @ `7aade60b` | Observational collection only through 16:00 ET |
 
 ---
@@ -298,7 +299,8 @@ Prior must-fix list (**closed** on honesty `91b07b4f` + ingest review of `96ede7
 
 | Path / concern | Owner |
 |---|---|
-| `ui/vite.config.ts`, `tools/platform/local_launcher.py` | Q1 (P3) |
+| `ui/vite.config.ts`, `tools/platform/local_launcher.py` | Q1 / TRAIN 1 ([#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206)) |
+| `ui_api/server.py` percent-decode/unquote | **P1** — omitted from TRAIN 1; coordinate before adding |
 | Item 9 kline fetch / `opend_quote_transport.py` history window | Q6 (P2) |
 | `opportunity_projections.py` live-gate, projections as_of/attention, news EventV1, UI API ingress | Q2–Q4 (P1+P4) |
 | Item 7 corpus **writers** / fabricated rows | **Nobody today.** Q8 notes only |
@@ -309,7 +311,7 @@ Prior must-fix list (**closed** on honesty `91b07b4f` + ingest review of `96ede7
 ## Coordinator checklist (post-close, not now)
 
 1. Re-fetch `origin/main`. If SHA ≠ `7aade60b`, every candidate **must rebase** except already-rebased tips.
-2. Re-read porcelain/SHAs: Q1 / TRAIN 1 tip `80792ea7` / draft [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) already recorded; Q2–Q4 tip `96ede754` / [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) **SAFE-TO-RETAIN-AFTER-REBASE** — **do not merge during RTH**; residuals `received=available`, POST can rewrite `as_of`; Finviz reliability [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207) `f696f00d`; Q5 tip `7a5cbe48` / [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204); Q6 tip `fe8cac6d` / [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203) + P12 `49ae216e`; Q7 `49529d64`; Q8 untracked notes on `d588728d`; Q9a `145fee4f`; Q9b `134924c3`.
+2. Re-read porcelain/SHAs: Q1 / TRAIN 1 tip `80792ea7` / unique repair `f1aaacaa` / [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) — all six claims **SAFE-TO-RETAIN-AFTER-REBASE**; no MUST-FIX; reconstruct on `7aade60b`, **do not land** `diagnosis/launcher-routing-20260915`; wait for RTH reconciliation → rebase if `main` moved → coordinate P1 before `server.py` unquote; Q2–Q4 tip `96ede754` / [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) **SAFE-TO-RETAIN-AFTER-REBASE** — **do not merge during RTH**; Finviz reliability [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207) `f696f00d`; Q5 tip `7a5cbe48` / [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204); Q6 tip `fe8cac6d` / [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203) + P12 `49ae216e`; Q7 `49529d64`; Q8 untracked notes on `d588728d`; Q9a `145fee4f`; Q9b `134924c3`.
 3. Honesty + ingest **SAFE-TO-RETAIN-AFTER-REBASE**. Residuals: `received=available`; POST can rewrite `as_of`. **ACK/WATCH stay fail-closed.** **Do not merge during RTH.**
 4. Honor Item 9 P12: do not land `max_count=120`; do not treat unique-security `historyKLQuota` as proven.
 5. Merge **nothing** into frozen RTH. Do not land this queue as product software.
