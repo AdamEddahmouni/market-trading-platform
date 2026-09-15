@@ -90,18 +90,6 @@ class _UnavailableRuntime:
         )
 
 
-class MATLABRuntime(_UnavailableRuntime):
-    """MATLAB governed export round-trip adapter (Lane G owns implementation)."""
-
-    def __init__(self) -> None:
-        super().__init__(
-            runtime_id="imp.matlab_strategy_runtime",
-            runtime_version="0.0.0-stub",
-            pine_status=PineRuntimeCompatibilityStatus.UNTESTED,
-            reason_code="MATLAB_RUNTIME_NOT_IMPLEMENTED",
-        )
-
-
 class PineTSRuntime(_UnavailableRuntime):
     """PineTS adapter stub — do not import PineTS into production authority."""
 
