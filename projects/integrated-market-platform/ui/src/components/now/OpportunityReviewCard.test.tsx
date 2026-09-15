@@ -1,7 +1,14 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactElement } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpportunityReviewRow } from "../../api/opportunityClient";
 import { OpportunityReviewCard, OpportunityReviewList } from "./OpportunityReviewCard";
+
+function renderCard(ui: ReactElement) {
+  const client = new QueryClient();
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+}
 
 function row(overrides: Partial<OpportunityReviewRow> = {}): OpportunityReviewRow {
   return {
@@ -38,12 +45,22 @@ function row(overrides: Partial<OpportunityReviewRow> = {}): OpportunityReviewRo
 }
 
 describe("OpportunityReviewCard", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ opportunity_id: "sum-attn-1", items: [] }),
+      }),
+    );
+  });
+
   it("shows explainable dimensions, UNAVAILABLE honesty, and no 0-100 score", () => {
     const onExplain = vi.fn();
     const onInspect = vi.fn();
     const onOpenWorkspace = vi.fn();
     const onAck = vi.fn();
-    const { container } = render(
+    const { container } = renderCard(
       <OpportunityReviewCard
         row={row()}
         paperAccountId="paper-acct"
@@ -75,7 +92,7 @@ describe("OpportunityReviewCard", () => {
   });
 
   it("keeps Demo review read-only without watch or dismiss", () => {
-    render(
+    renderCard(
       <OpportunityReviewCard
         row={row()}
         readOnly
@@ -90,7 +107,7 @@ describe("OpportunityReviewCard", () => {
   });
 
   it("stops preview for ineligible rows", () => {
-    render(
+    renderCard(
       <OpportunityReviewCard
         row={row({ next_safe_action: "STOP", eligibility_state: "INELIGIBLE" })}
         onExplain={vi.fn()}
