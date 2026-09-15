@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — Request-path Finviz news EventV1 admission
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `ui_api`, `news`, `observation_ingress`, `docs` |
+| **Summary** | Isolated BUILD on `repair/live-oe-cockpit-state-20260915` after honesty HEAD `91b07b4f`. `UiApiHandler` `POST /intelligence/ingest/news` admits already-fetched Finviz/news rows as EventV1 through `ObservationIngressRouter` (`put_event` / `admit_news_article_event`). Observational detector mints `OpportunityV1` only on instrument + catalyst match; zero-qualifying stays EventV1 + `EMPTY`. ACK/WATCH remain `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`. No auto-fetch loop, no Live enable, no merge. |
+| **Key files** | `ui_api/news_ingest.py`, `ui_api/server.py`, `ui_api/live_intelligence.py`, `ui_api/opportunity_projections.py`, `news/event_v1_ingress.py`, `news/observational_opportunity.py`, `observation_ingress/consumers.py`, `docs/architecture/DATA_CONTRACTS.md`, `docs/architecture/MODE_AUTHORITY.md`, `tests/ui1/test_news_event_v1_request_path.py` |
+| **Tests** | `python -m unittest tests.ui1.test_news_event_v1_request_path tests.news.test_finviz_news_event_v1_ingress` **9/9 OK**; `tests.ui1.test_live_observational_state tests.ui1.test_opportunity_api tests.ui1.test_opportunity_radar_feed` **22/22 OK**. Not empirical RTH. |
+| **Related** | Honesty HEAD `91b07b4f`; P13 `4176d0b6`; P12 `5f965f32` |
+| **Notes** | **rebase-required=yes** after close. Base SHA `7aade60bf8041df5ebf9f0ac856d5d8802845c8d`. Worktree `.worktrees/repair-live-oe-cockpit-state-20260915`. Frozen `.rth-operator-20260915` not edited. Still missing: auto-fetch Finviz loop; BUILD 09 `NEWS_EVENT` inactive; Moomoo quotes still not EventV1. |
+
 ## 2026-09-15 — P13 MUST-FIX honesty on isolated live OE candidate
 
 | Field | Value |

@@ -228,11 +228,15 @@ def detector_stub_consumer(
                 detail="CONGRESSIONAL_PTR_VERTICAL_OK",
             )
         if accepts_news_article_event(event):
+            from ...news.observational_opportunity import persist_observational_news_opportunity
+
+            minted = persist_observational_news_opportunity(event, repository)
+            detail = "NEWS_ARTICLE_OPPORTUNITY_MINTED" if minted is not None else "NEWS_ARTICLE_ADMITTED"
             return IngressConsumerOutcome(
                 consumer_id=consumer_id,
                 kind=kind,
                 status=IngressConsumerStatus.OK,
-                detail="NEWS_ARTICLE_ADMITTED",
+                detail=detail,
             )
         if repository is None or not accepts_sec_insider_event(event):
             return IngressConsumerOutcome(

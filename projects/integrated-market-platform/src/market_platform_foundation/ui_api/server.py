@@ -19,6 +19,7 @@ from . import canary_projections
 from . import live_projections
 from . import operator_projections
 from . import agent_enrichment_ingest
+from . import news_ingest
 from . import research_artifact_evidence
 from . import opportunity_projections
 from . import forward_test_projections
@@ -1076,6 +1077,17 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 )
                 self._send_error_json(str(exc), str(exc), status=status)
                 return
+        if path == news_ingest.NEWS_INGEST_ROUTE:
+            try:
+                news_ingest.enforce_news_ingest_body_limit(length)
+            except ValueError as exc:
+                status = (
+                    HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+                    if "BODY_TOO_LARGE" in str(exc)
+                    else HTTPStatus.BAD_REQUEST
+                )
+                self._send_error_json(str(exc), str(exc), status=status)
+                return
         raw = self.rfile.read(length) if length else b"{}"
         try:
             body = json.loads(raw.decode("utf-8"))
@@ -1128,6 +1140,16 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(_spawn_action(Path(__file__).resolve().parents[3], action), status=HTTPStatus.ACCEPTED)
             except (OSError, ValueError) as exc:
                 self._send_error_json("OPERATOR_LIFECYCLE_ACTION_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == news_ingest.NEWS_INGEST_ROUTE:
+            try:
+                self._send_json(news_ingest.handle_news_ingest_post(self.store, body))
+            except ValueError as exc:
+                code = str(exc)
+                if "ROUTER_UNAVAILABLE" in code or "REPOSITORY" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.SERVICE_UNAVAILABLE)
+                    return
+                self._send_error_json(code, code, status=HTTPStatus.BAD_REQUEST)
             return
         if path == "/intelligence/ingest/research-artifact-attachment":
             try:
