@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — PROGRAM_STATUS: Phase 5 software close at `d16511d2`
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `platform` |
+| **Summary** | Pin canonical `origin/main` SHA to `d16511d25b6ee1d79b8a5f89784922776b981e31` (merged #184–#193; tip #191). Record Phase 5 engineering merge queue **EMPTY** with lanes **A–J**: #189 `PRODUCTION_ASYNC_INTELLIGENCE_WORKER_READY` (default off; not Grok production); #191 `TRADE_REVIEW_DURABLE_LOOP_READY`; #187 `EXECUTION_DECISION_TRACE_RUNTIME_READY`; #185 `MATLAB_STRATEGY_RUNTIME_READY` (R2026a; CI UNAVAILABLE/fixture); #192 `PINETS_PARTIAL_PARITY_READY` (not FTEP_ELIGIBLE); #184 `VELA_SHADOW_RETAINED_INCOMPLETE_INTERACTIVE_ACCEPTANCE`; #193 `INTELLIGENCE_BOUNDARY_SECURITY_HARDENED`; #188 `RTH_EMPIRICAL_OPS_READY` (no live collection this session); #186 `PUBLIC_RECORD_PRIMARY_SOURCE_VERIFICATION_READY` (congressional NOT_SUPPORTED); #190 `STRATEGY_RESEARCH_PROMOTION_REGISTRY_READY` (in-memory; no auto Paper/Live). Labels `PHASE5_ENGINEERING_READY` + `RTH_EMPIRICAL_RUN_PENDING`. Empirical gates FINVIZ/Item9/Item7/hot-path latency **unearned**. **HOLD:** Item 7/9 **PARTIAL**; FTEP **not** `EMPIRICAL_ACTIVE`; simulator **not** `CALIBRATED`; Live OFF; empirical locks **0**; no Paper/Live orders. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md`, `docs/engineering/PHASE5_SOFTWARE_CLOSE_MEMO.md` |
+| **Tests** | Docs-only; `python tools/check_docs_links.py` on PR |
+| **Related** | [PR #184](https://github.com/AdamEddahmouni/market-trading-platform/pull/184)–[#193](https://github.com/AdamEddahmouni/market-trading-platform/pull/193); Phase 4 close at `e2079aac` (#183) |
+| **Notes** | Branch `phase5/software-close-pin` from `origin/main` `d16511d2`. Next RTH commands in close memo (`IMP_STATE_DIR=.local`). No empirical lock auto-create. |
+
 ## 2026-09-15 — PROGRAM_STATUS: Phase 4 software close at `e2079aac`
 
 | Field | Value |
