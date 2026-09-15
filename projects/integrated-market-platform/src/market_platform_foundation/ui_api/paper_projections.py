@@ -503,6 +503,9 @@ def _require_valid_preview(
     """
     preview_id = str(body.get("preview_id", "")).strip()
     if not preview_id:
+        from ..rt01.execution_decision_trace.runtime import record_preview_gate_block_trace
+
+        record_preview_gate_block_trace(store, body, reason="PREVIEW_REQUIRED")
         raise ValueError("PREVIEW_REQUIRED: submit requires a current server preview")
     ledger = store.paper_ledger
     observation_time = _paper_observation_time(store, instrument_id=focus)
@@ -535,6 +538,9 @@ def _require_valid_preview(
             margin_facts_revision=claims["margin_facts_revision"],
         )
     except PreviewError as exc:
+        from ..rt01.execution_decision_trace.runtime import record_preview_gate_block_from_error
+
+        record_preview_gate_block_from_error(store, body, exc)
         raise ValueError(str(exc)) from exc
 
 
@@ -643,6 +649,9 @@ def _preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, 
         "risk_policy_revision": record.risk_policy_revision,
         "margin_facts_revision": record.margin_facts_revision,
     }
+    from ..rt01.execution_decision_trace.runtime import record_preview_allowed_trace
+
+    record_preview_allowed_trace(store, body, preview_id=record.preview_id, decision_time_ns=record.issued_at_ns)
     return envelope
 
 
