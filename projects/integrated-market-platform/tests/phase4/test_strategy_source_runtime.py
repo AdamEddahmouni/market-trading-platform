@@ -10,8 +10,6 @@ from market_platform_foundation.strategy.evaluation import (
     run_strategy_evaluation,
 )
 from market_platform_foundation.strategy.source_runtime import (
-    MATLABRuntime,
-    PineTSRuntime,
     PythonRuntime,
     STRATEGY_RUNTIME_FOUNDATION_READY,
     STRATEGY_RUNTIME_STUB_UNAVAILABLE,
@@ -109,7 +107,7 @@ class StrategySourceRuntimeFoundationTests(unittest.TestCase):
             mode=StrategyExecutionMode.PARITY,
             generated_at="2026-09-14T00:00:00.000000000Z",
         )
-        for stub in (PineTSRuntime(), TypeScriptRuntime(), WasmStrategyRuntime()):
+        for stub in (TypeScriptRuntime(), WasmStrategyRuntime()):
             result = stub.execute(source, dataset, parameters, context)
             self.assertTrue(result.errors)
             self.assertEqual(result.metrics, {})
