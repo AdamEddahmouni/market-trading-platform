@@ -36,6 +36,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — PROGRAM_STATUS: refresh `main` SHA after #197/#198 (Lane J fix)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `platform` |
+| **Summary** | Reconcile [#200](https://github.com/AdamEddahmouni/market-trading-platform/pull/200) with live `origin/main` `aa063102468a3ca3dde3bf805f59c4d7d13965ce` after [#197](https://github.com/AdamEddahmouni/market-trading-platform/pull/197) **MERGED** and [#198](https://github.com/AdamEddahmouni/market-trading-platform/pull/198) **MERGED**. Phase 5.5B queue: #195/#196/#199/#200 **OPEN**; four empirical gates **NO**; **no** Tuesday RTH observational results invented. Labels `PHASE5_ENGINEERING_READY` + `RTH_EMPIRICAL_RUN_PENDING` unchanged. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | Docs-only |
+| **Related** | Independent review REQUEST_CHANGES on #200 (stale `e0c7a923` pin) |
+| **Notes** | Merge commit reconciles branch with `origin/main`; safety counters **0**. |
+
+## 2026-09-15 — PROGRAM_STATUS: Phase 5.5B pre-RTH sync (Lane J)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `platform`, `notion-sync` |
+| **Summary** | Sync canonical pre-RTH state after Phase 5 close pin `e0c7a923` (#194): `PHASE5_ENGINEERING_READY` + `RTH_EMPIRICAL_RUN_PENDING`; FTEP-V1-002 sessions `fts-6DB7771FD9B3A991` / `fts-D93189A042A1BEF2`; four empirical gates **NO**; Item 7/9 **PARTIAL**; locks **0**; Live OFF; FTEP **not** `EMPIRICAL_ACTIVE`. Record Phase 5.5B **OPEN** software PRs [#195](https://github.com/AdamEddahmouni/market-trading-platform/pull/195)–[#197](https://github.com/AdamEddahmouni/market-trading-platform/pull/197) (**not** on `main`). **No** Tuesday RTH empirical results invented. Notion CURRENT banner payload prepared (MCP insert attempted). |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | Docs-only |
+| **Related** | Phase 5 close [#194](https://github.com/AdamEddahmouni/market-trading-platform/pull/194); [PHASE5_SOFTWARE_CLOSE_MEMO.md](PHASE5_SOFTWARE_CLOSE_MEMO.md) |
+| **Notes** | Branch `phase55b/lane-j-notion-sync` from `e0c7a923`. Safety counters **0** (locks, Paper/Live orders, gate flips). |
+
 ## 2026-09-15 — PROGRAM_STATUS: Phase 5 software close at `d16511d2`
 
 | Field | Value |
