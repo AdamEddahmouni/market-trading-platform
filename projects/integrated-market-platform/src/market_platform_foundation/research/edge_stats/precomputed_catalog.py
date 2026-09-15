@@ -39,15 +39,22 @@ def resolve_precomputed_research_artifact(
     artifact_type: str,
     content_sha256: str,
 ) -> dict[str, Any] | None:
+    from ...research.options_flow_replay.precomputed_catalog import (
+        list_precomputed_options_flow_replay_artifacts,
+    )
+
     target_type = str(artifact_type)
     target_sha = str(content_sha256).upper()
-    if target_type != "EDGE_STATS_EVIDENCE_ARTIFACT":
-        return None
-    for artifact in list_precomputed_edge_stats_artifacts():
-        if str(artifact.get("artifact_type")) != target_type:
-            continue
-        if str(artifact.get("content_sha256") or "").upper() == target_sha:
-            return artifact
+    catalogs: tuple[tuple[dict[str, Any], ...], ...] = (
+        list_precomputed_edge_stats_artifacts(),
+        list_precomputed_options_flow_replay_artifacts(),
+    )
+    for catalog in catalogs:
+        for artifact in catalog:
+            if str(artifact.get("artifact_type")) != target_type:
+                continue
+            if str(artifact.get("content_sha256") or "").upper() == target_sha:
+                return artifact
     return None
 
 
