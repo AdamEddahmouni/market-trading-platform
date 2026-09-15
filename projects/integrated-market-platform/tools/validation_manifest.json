@@ -755,6 +755,8 @@
       "source_globs": [
         "src/market_platform_foundation/intelligence/**",
         "src/market_platform_foundation/operations/**",
+        "src/market_platform_foundation/evidence_capture/**",
+        "tools/evidence_capture_context.py",
         "tools/rth_empirical_ops.py",
         "tools/intelligence_enrichment_worker.py"
       ],
@@ -2401,6 +2403,11 @@
         "tools/ftep_campaign_status.py",
         "tools/hop_json_gate_check.py",
         "src/market_platform_foundation/operations/**",
+        "src/market_platform_foundation/evidence_capture/**",
+        "tools/evidence_capture_context.py",
+        "tests/intelligence/test_evidence_capture_context.py",
+        "tests/fixtures/evidence_capture/**",
+        "manifests/evidence/capture_context_sidecar.schema.json",
         "tools/rth_empirical_ops.py",
         "tests/intelligence/test_rth_empirical_ops.py",
         "docs/engineering/RTH_EMPIRICAL_OPS_RUNBOOK.md",
