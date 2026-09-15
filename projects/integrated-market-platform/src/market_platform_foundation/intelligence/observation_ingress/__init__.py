@@ -12,6 +12,10 @@ from .consumers import (
 from .errors import IngressDispatchError
 from .journal import IngressDispatchJournal
 from .normalization_bridge import dispatch_normalization_result
+from .congressional_disclosure_dispatch import (
+    dispatch_congressional_disclosure_row,
+    normalize_congressional_disclosure_row_for_ingress,
+)
 from .production_wire import (
     build_production_observation_ingress_router,
     resolve_production_ingress_router,
@@ -45,9 +49,11 @@ __all__ = [
     "build_production_observation_ingress_router",
     "resolve_production_ingress_router",
     "detector_stub_consumer",
+    "dispatch_congressional_disclosure_row",
     "dispatch_normalization_result",
     "dispatch_sec_insider_row",
     "enrichment_trigger_consumer",
+    "normalize_congressional_disclosure_row_for_ingress",
     "normalize_sec_insider_row_for_ingress",
     "oe_evidence_consumer",
     "store_consumer",

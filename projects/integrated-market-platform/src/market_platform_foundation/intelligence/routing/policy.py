@@ -147,6 +147,15 @@ _DEFAULT_TEMPLATES = {
         2 * ONE_MINUTE_NS,
         30 * ONE_MINUTE_NS,
     ),
+    SemanticEventType.CONGRESSIONAL_PTR_DISCLOSURE: RouteTemplate(
+        SemanticEventType.CONGRESSIONAL_PTR_DISCLOSURE,
+        ExpertDomain.CORPORATE_FUNDAMENTAL,
+        (IntelligenceCapability.FILINGS,),
+        (),
+        RoutingPriority.NORMAL,
+        2 * ONE_MINUTE_NS,
+        30 * ONE_MINUTE_NS,
+    ),
 }
 
 
