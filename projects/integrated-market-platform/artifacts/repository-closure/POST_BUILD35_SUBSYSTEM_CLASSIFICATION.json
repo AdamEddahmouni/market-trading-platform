@@ -177,7 +177,8 @@
         "src/market_platform_foundation/intelligence",
         "src/market_platform_foundation/research",
         "src/market_platform_foundation/shadow",
-        "src/market_platform_foundation/strategy"
+        "src/market_platform_foundation/strategy",
+        "tools/intelligence_enrichment_worker.py"
       ],
       "responsibility": "Research orchestration, training, validation, prediction/evaluation, promotion, adaptation, shadow qualification, and preregistered strategy interpretation.",
       "evidence": [
