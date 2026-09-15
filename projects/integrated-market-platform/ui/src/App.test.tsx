@@ -1064,6 +1064,40 @@ describe("App mode launcher integration", () => {
     expect(await screen.findByText("BIYA squeeze context")).toBeInTheDocument();
   });
 
+  it("keeps skip-to-main and shipped keyboard shortcuts in the workstation chrome", async () => {
+    render(<App />);
+    await enterMode("Demo");
+    await waitFor(() => {
+      expect(screen.getByRole("link", { name: "Skip to main content" })).toHaveAttribute(
+        "href",
+        "#imp-main-content",
+      );
+    });
+    expect(screen.getByRole("main")).toHaveAttribute("id", "imp-main-content");
+    await waitFor(() => {
+      fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+      expect(screen.getByRole("searchbox")).toHaveFocus();
+    });
+    fireEvent.keyDown(window, { key: "?" });
+    expect(await screen.findByRole("dialog", { name: "Keyboard shortcuts" })).toBeInTheDocument();
+  });
+
+  it("does not toggle the assistant when A is pressed in a select", async () => {
+    render(<App />);
+    await enterMode("Demo");
+    await waitFor(() => {
+      fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+      expect(screen.getByRole("searchbox")).toHaveFocus();
+    });
+    const select = document.createElement("select");
+    document.body.appendChild(select);
+    fireEvent.keyDown(select, { key: "a" });
+    expect(screen.queryByRole("complementary", { name: "AI research assistant" })).not.toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "a" });
+    expect(await screen.findByRole("complementary", { name: "AI research assistant" })).toBeInTheDocument();
+    select.remove();
+  });
+
   it("routes lane draft link to Paper workspace overview", async () => {
     render(<App />);
     await enterMode("Paper");

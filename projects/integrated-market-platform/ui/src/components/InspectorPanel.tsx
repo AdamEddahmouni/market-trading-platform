@@ -28,7 +28,7 @@ export function InspectorPanel({ payload, preferredTab, onClose }: Props) {
     <aside className="inspector-panel" aria-label="Evidence Inspector">
       <header>
         <h2>Evidence Inspector</h2>
-        <button type="button" onClick={onClose}>
+        <button type="button" onClick={onClose} aria-label="Close inspector">
           Close
         </button>
       </header>

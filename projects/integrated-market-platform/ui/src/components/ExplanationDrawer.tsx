@@ -10,7 +10,7 @@ export function ExplanationDrawer({ payload, onClose }: Props) {
     <aside className="drawer explanation-drawer" aria-label="Explanation">
       <header>
         <h2>Explanation</h2>
-        <button type="button" onClick={onClose}>
+        <button type="button" onClick={onClose} aria-label="Close explanation">
           Esc
         </button>
       </header>

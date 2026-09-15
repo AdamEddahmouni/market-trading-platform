@@ -24,7 +24,7 @@ export function ImpProviderMatrixDrawer({ open, onClose, capabilityStates }: Pro
     <aside className="drawer imp-provider-matrix-drawer" aria-label="Provider matrix">
       <header>
         <h2>Provider matrix</h2>
-        <button type="button" onClick={onClose}>
+        <button type="button" onClick={onClose} aria-label="Close provider matrix">
           Close
         </button>
       </header>
