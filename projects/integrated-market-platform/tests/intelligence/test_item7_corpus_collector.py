@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import unittest
@@ -32,12 +33,23 @@ from market_platform_foundation.intelligence.production.corpus_collector import 
     LABEL_SOURCE_OUTCOME_V1,
     MANIFEST_CANDIDATE_KIND,
     STATUS_PIPELINE_READY,
+    STATUS_REAL_CORPUS_SOFTWARE_READY,
     assert_not_governed_production_manifest,
     collect_candidates_from_repository,
     export_manifest_candidate,
     floor_counters,
     pit_validate_candidate,
     run_corpus_collection_pipeline,
+)
+from market_platform_foundation.intelligence.production.corpus_collection_status import (
+    BLOCKER_RTH_OR_FUTURE_OUTCOMES_REQUIRED,
+    run_governed_corpus_collection_status,
+)
+from market_platform_foundation.intelligence.production.corpus_join_diagnostics import (
+    diagnose_corpus_join_edges,
+)
+from market_platform_foundation.intelligence.production.corpus_persistence import (
+    load_governed_intelligence_repository,
 )
 from market_platform_foundation.intelligence.production.identity import path_a_horizon
 from market_platform_foundation.intelligence.production.training_build import load_governed_training_manifest
@@ -205,6 +217,70 @@ class Item7CorpusCollectorTests(unittest.TestCase):
             collect_candidates_from_repository(repo, training_cutoff_ns=T + HORIZON * 2),
             (),
         )
+
+    def test_load_governed_intelligence_jsonl_and_join(self) -> None:
+        repo = InMemoryIntelligenceRepository()
+        snapshot = _emit_snapshot()
+        signals = _emit_signals()
+        forecast = ForecastV1(
+            forecast_id="fc-jsonl-1",
+            schema_version="1",
+            scope=snapshot.scope,
+            decision_time_ns=snapshot.decision_time_ns,
+            snapshot_id=snapshot.snapshot_id,
+            target=PATH_A_TARGET,
+            horizon=path_a_horizon(),
+            estimate=ForecastEstimate(estimate_kind="probability", probability=0.55),
+            quality=QualitySummary(state=QualityState.GOOD),
+            metadata={
+                "contributor_role": "PRODUCTION",
+                "forecast_stage": PRODUCTION_FORECAST_STAGE,
+                "calibration_status": "UNCALIBRATED",
+            },
+        )
+        outcome = OutcomeV1(
+            outcome_id="out-jsonl-1",
+            schema_version="1",
+            forecast_id=forecast.forecast_id,
+            adjudicated_at_ns=snapshot.decision_time_ns + HORIZON,
+            resolution_status=OutcomeResolutionStatus.SETTLED,
+            quality=QualitySummary(state=QualityState.GOOD),
+            realized_direction=Direction.LONG,
+        )
+        from market_platform_foundation.intelligence.contracts.forecast import forecast_v1_to_dict
+        from market_platform_foundation.intelligence.contracts.outcome import outcome_v1_to_dict
+        from market_platform_foundation.intelligence.contracts.signal import signal_v1_to_dict
+        from market_platform_foundation.intelligence.contracts.snapshot import snapshot_v1_to_dict
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            jsonl = root / "intelligence_records.jsonl"
+            lines = [
+                {"record_type": "snapshot", "payload": snapshot_v1_to_dict(snapshot)},
+                {"record_type": "signal", "payload": signal_v1_to_dict(signals[0])},
+                {"record_type": "signal", "payload": signal_v1_to_dict(signals[1])},
+                {"record_type": "forecast", "payload": forecast_v1_to_dict(forecast)},
+                {"record_type": "outcome", "payload": outcome_v1_to_dict(outcome)},
+            ]
+            jsonl.write_text("\n".join(json.dumps(row, sort_keys=True) for row in lines) + "\n", encoding="utf-8")
+            loaded, report = load_governed_intelligence_repository(persistence_root=root)
+            self.assertEqual(report.forecasts, 1)
+            self.assertEqual(report.outcomes, 1)
+            diag = diagnose_corpus_join_edges(loaded, training_cutoff_ns=T + HORIZON * 2)
+            self.assertEqual(diag.pit_valid_governed_rows, 1)
+            self.assertEqual(diag.missing_edges.get("SIGNALS_MISSING_FOR_SNAPSHOT", 0), 0)
+
+    def test_governed_status_software_ready_without_rows(self) -> None:
+        report, _rows, _repo, _load = run_governed_corpus_collection_status(
+            training_cutoff_ns=CUTOFF,
+            repo_root=ROOT,
+            persistence_root=None,
+            include_fixture_proof=False,
+            now_ns=T,
+        )
+        self.assertEqual(report.acceptance_label, STATUS_REAL_CORPUS_SOFTWARE_READY)
+        self.assertIn(BLOCKER_RTH_OR_FUTURE_OUTCOMES_REQUIRED, report.blockers)
+        self.assertEqual(report.governed_candidate_rows, 0)
 
 
 if __name__ == "__main__":
