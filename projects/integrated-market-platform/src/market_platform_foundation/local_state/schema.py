@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 PAPER_EVENT_SCHEMA_VERSION = 1
 LAYOUT_SCHEMA_VERSION = 1
 RECENT_INSTRUMENT_LIMIT = 24
@@ -314,5 +314,33 @@ FORWARD_TEST_DURABLE_V6: tuple[str, ...] = (
         persist_time_ns INTEGER NOT NULL,
         PRIMARY KEY (forward_test_id, opportunity_id)
     )
+    """,
+)
+
+ENRICHMENT_OUTBOX_V7: tuple[str, ...] = (
+    """
+    CREATE TABLE IF NOT EXISTS enrichment_outbox (
+        request_id TEXT PRIMARY KEY,
+        opportunity_id TEXT NOT NULL,
+        hard_expiry_ns INTEGER NOT NULL,
+        request_json TEXT NOT NULL,
+        delivery_state TEXT NOT NULL,
+        created_at_ns INTEGER NOT NULL,
+        retry_count INTEGER NOT NULL DEFAULT 0,
+        next_retry_at_ns INTEGER NOT NULL,
+        claim_owner TEXT,
+        claim_lease_until_ns INTEGER,
+        last_error TEXT,
+        dispatched_at_ns INTEGER,
+        acknowledged_at_ns INTEGER
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_enrichment_outbox_dispatch
+    ON enrichment_outbox(delivery_state, next_retry_at_ns, hard_expiry_ns)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_enrichment_outbox_opportunity
+    ON enrichment_outbox(opportunity_id, created_at_ns)
     """,
 )
