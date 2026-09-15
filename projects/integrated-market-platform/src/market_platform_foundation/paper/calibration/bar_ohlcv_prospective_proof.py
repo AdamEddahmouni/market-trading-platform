@@ -21,7 +21,7 @@ from .bar_ohlcv_sources import (
     pit_visible_bars,
 )
 
-RECEIPT_CONTRACT_VERSION = "item9.bar-ohlcv-prospective-proof/1.0.0"
+RECEIPT_CONTRACT_VERSION = "item9.bar-ohlcv-prospective-proof/1.1.0"
 PROOF_MODE_RETROSPECTIVE = "RETROSPECTIVE_TRANSPORT_PROOF"
 PROOF_MODE_PROSPECTIVE = "PROSPECTIVE_BAR_OHLCV_1M"
 NOT_PROSPECTIVE_EVIDENCE = "NOT_PROSPECTIVE_EVIDENCE"
@@ -76,7 +76,51 @@ class BarDisplayRow:
 
 
 def imp_package_root() -> Path:
-    return Path(__file__).resolve().parents[5]
+    """IMP package root ``projects/integrated-market-platform/``."""
+
+    return Path(__file__).resolve().parents[4]
+
+
+def build_first_post_signal_proof(
+    *,
+    signal_time_ns: int,
+    signal_established_at_ns: int | None,
+    bar: Mapping[str, Any] | None,
+    observation_time_ns: int | None = None,
+) -> dict[str, Any]:
+    """Document strict first-post-signal admissibility (no retrospective selection)."""
+
+    if bar is None or bar.get("available_time") is None:
+        return {
+            "ok": False,
+            "reason_code": REASON_NO_POST_SIGNAL_BAR,
+            "signal_time_ns": signal_time_ns,
+            "signal_established_at_ns": signal_established_at_ns,
+        }
+    bar_available = int(bar["available_time"])
+    bar_start = int(bar.get("event_time") or 0)
+    gate = validate_prospective_signal_vs_bar(
+        signal_time_ns=signal_time_ns,
+        signal_established_at_ns=signal_established_at_ns or signal_time_ns,
+        bar_available_time_ns=bar_available,
+    )
+    return {
+        "ok": gate.ok,
+        "reason_code": gate.reason_code,
+        "signal_time_ns": signal_time_ns,
+        "signal_established_at_ns": signal_established_at_ns,
+        "bar_id": str(bar.get("normalized_event_id") or ""),
+        "bar_start_ns": bar_start,
+        "bar_end_ns": bar_available,
+        "bar_available_time_ns": bar_available,
+        "strict_available_after_signal": bar_available > signal_time_ns,
+        "signal_established_before_bar_available": (
+            signal_established_at_ns is not None and signal_established_at_ns < bar_available
+        ),
+        "observation_at_or_after_bar_available": (
+            observation_time_ns is not None and observation_time_ns >= bar_available
+        ),
+    }
 
 
 def resolve_runtime_git_sha(*, start: Path | None = None) -> str:
@@ -215,6 +259,15 @@ def build_evidence_receipt(
 ) -> dict[str, Any]:
     first = experiment.first_post_signal_bar
     not_prospective = proof_mode == PROOF_MODE_RETROSPECTIVE
+    bar_event_ns = None if first is None else int(first.get("event_time") or 0)
+    bar_available_ns = None if first is None else int(first["available_time"])
+    bar_id = None if first is None else str(first.get("normalized_event_id") or "")
+    first_post_signal_proof = build_first_post_signal_proof(
+        signal_time_ns=experiment.signal_time_ns,
+        signal_established_at_ns=signal_established_at_ns,
+        bar=first,
+        observation_time_ns=experiment.observation_time_ns,
+    )
     receipt: dict[str, Any] = {
         "receipt_contract_version": RECEIPT_CONTRACT_VERSION,
         "experiment_id": experiment_id,
@@ -225,20 +278,31 @@ def build_evidence_receipt(
         "signal_time_ns": experiment.signal_time_ns,
         "signal_established_at_ns": signal_established_at_ns,
         "observation_time_ns": experiment.observation_time_ns,
-        "bar_event_time_ns": None if first is None else int(first.get("event_time") or 0),
-        "bar_available_time_ns": None if first is None else int(first["available_time"]),
+        "bar_id": bar_id,
+        "bar_event_time_ns": bar_event_ns,
+        "bar_start_ns": bar_event_ns,
+        "bar_end_ns": bar_available_ns,
+        "bar_available_time_ns": bar_available_ns,
         "provider_id": str(experiment.bar_provenance.get("provider_id") or "moomoo.opend"),
         "bar_source_id": experiment.bar_source_id,
         "raw_provenance_hash": raw_provenance_hash,
         "bar_provenance": dict(experiment.bar_provenance),
         "first_post_signal_bar": experiment.to_dict().get("first_post_signal_bar"),
+        "first_post_signal_proof": first_post_signal_proof,
         "simulator_version": experiment.simulator_version,
         "sim_order_state": experiment.sim_order_state,
         "sim_reason_codes": list(experiment.sim_reason_codes),
         "simulator_decision": experiment.sim_order_state,
+        "simulator_output": {
+            "classification": experiment.classification,
+            "sim_order_state": experiment.sim_order_state,
+            "sim_reason_codes": list(experiment.sim_reason_codes),
+            "sim_fill": experiment.sim_fill,
+        },
         "orders_placed": False,
         "calibrated": False,
         "empirical_active": False,
+        "item9_status": "PARTIAL_NOT_CALIBRATED",
         "runtime_git_sha": runtime_git_sha,
         "classification": experiment.classification,
         "comparator_harness_status": experiment.comparator_harness_status,
@@ -442,6 +506,7 @@ __all__ = [
     "RECEIPT_CONTRACT_VERSION",
     "build_bar_display_rows",
     "build_evidence_receipt",
+    "build_first_post_signal_proof",
     "hash_raw_kline_rows",
     "imp_package_root",
     "REASON_POLL_REQUIRED",
