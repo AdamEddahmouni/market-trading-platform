@@ -524,6 +524,7 @@
         "src/market_platform_foundation/discovery/**",
         "src/market_platform_foundation/finviz/**",
         "src/market_platform_foundation/ui_api/server.py",
+        "tools/platform/**",
         "tools/provider_readiness.py",
         "tools/state_path_diagnostic.py",
         ".github/workflows/imp-validate.yml",

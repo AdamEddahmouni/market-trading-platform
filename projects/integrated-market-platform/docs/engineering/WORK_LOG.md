@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — Launcher Python/URL plus Vite proxy correctness
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tools/platform`, `ui/vite`, `ui_api` |
+| **Summary** | Stop auto-selecting `moomoo-api-test` Python (no sklearn), open the SPA at `/` instead of proxied `/discover`, proxy `/opportunities` and sibling JSON prefixes, HTML-bypass SPA/API collisions, stop control-status HTTP self-probe, and unquote percent-encoded `/explain` refs. |
+| **Key files** | Modified: `tools/platform/local_launcher.py`, `tools/platform/control_service.py`, `START_PLATFORM.cmd`, `PLATFORM_CONTROL.cmd`, `ui/vite.config.ts`, `src/market_platform_foundation/ui_api/server.py`, `tests/platform/test_local_launcher.py`, `tests/platform/test_operator_control_service.py`, `tests/ui1/test_ui_api.py`, `tools/validation_manifest.json`, `README.md`, `ui/README.md`, `docs/engineering/LOCAL_DEVELOPMENT.md`, `docs/superpowers/specs/2026-08-24-local-platform-launcher-design.md` |
+| **Tests** | Isolated worktree: `python -m unittest tests.platform.test_local_launcher tests.platform.test_operator_control_service tests.ui1.test_ui_api.Ui1ApiTests.test_percent_encoded_explain_ref_round_trips` — **25 passed** |
+| **Related** | Lane E RTH 2026-09-15 launcher/routing diagnosis; no frozen-runtime thaw |
+| **Notes** | Next operator command is `START_PLATFORM.cmd` from the IMP checkout (not the frozen `.rth-operator-20260915` tree). In-app `/signals` already works; full document load still remounts ModeLauncher because session mode is in-memory. |
+
 ## 2026-09-15 — PROGRAM_STATUS: refresh `main` SHA after #197/#198 (Lane J fix)
 
 | Field | Value |

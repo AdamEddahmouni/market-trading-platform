@@ -9,7 +9,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 from ..canonical import canonical_bytes, write_canonical_json
 from ..platform.security.access_control import AuthorizationFailure, authenticate_session_token
@@ -64,6 +64,11 @@ def _enrich_lane_payload(payload: dict[str, Any], *, lane_id: str) -> dict[str, 
 # serialize on this single lock. Deliberately coarse: no server restructure,
 # no per-store locking; responses are sent after releasing the lock.
 LEDGER_ROUTE_LOCK = threading.Lock()
+
+
+def normalize_ui_path(raw_path: str) -> str:
+    """Decode percent-encoded route refs (e.g. explain:replay:context) once."""
+    return unquote(urlparse(raw_path).path).rstrip("/") or "/"
 
 
 class UiApiHandler(BaseHTTPRequestHandler):
@@ -145,7 +150,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
-        path = parsed.path.rstrip("/") or "/"
+        path = normalize_ui_path(self.path)
         query = parse_qs(parsed.query)
         if path == "/auth/status":
             self._send_json(build_auth_status_payload())
@@ -977,7 +982,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
     def do_PUT(self) -> None:
         parsed = urlparse(self.path)
-        path = parsed.path.rstrip("/") or "/"
+        path = normalize_ui_path(self.path)
         length = int(self.headers.get("Content-Length", "0"))
         if path.startswith("/intelligence/ingest/enrichment"):
             try:
@@ -1063,7 +1068,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
-        path = parsed.path.rstrip("/") or "/"
+        path = normalize_ui_path(self.path)
         length = int(self.headers.get("Content-Length", "0"))
         if path == "/intelligence/ingest/enrichment" or path.startswith("/intelligence/ingest/enrichment/"):
             try:

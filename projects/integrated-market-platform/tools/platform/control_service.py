@@ -104,7 +104,7 @@ def build_control_status(root: Path | None = None) -> dict[str, Any]:
         )
     api_ready = controller.system.url_ready(f"http://{API_HOST}:{API_PORT}/context")
     ui_ready = controller.system.url_ready(f"http://{UI_HOST}:{UI_PORT}/")
-    control_ready = controller.system.url_ready(f"http://{CONTROL_HOST}:{CONTROL_PORT}/control/status")
+    control_ready = controller.system.port_is_open(CONTROL_HOST, CONTROL_PORT)
     required_owned = all(
         any(row["name"] == name and row["owned"] for row in services)
         for name in ("api", "ui", "control")

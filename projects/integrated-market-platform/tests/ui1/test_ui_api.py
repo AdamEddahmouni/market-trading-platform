@@ -21,7 +21,7 @@ from market_platform_foundation.ui_api.projections import (
     build_explain_payload,
     build_inspect_payload,
 )
-from market_platform_foundation.ui_api.server import canonical_response_bytes
+from market_platform_foundation.ui_api.server import canonical_response_bytes, normalize_ui_path
 from market_platform_foundation.ui_api.store import ReplayStore
 from tools.ui1.run_ui_api import build_evidence
 
@@ -84,6 +84,12 @@ class Ui1ApiTests(unittest.TestCase):
             }
         ]
         self.assertTrue(all(row["state"] == "UNSUPPORTED" for row in unsupported))
+
+    def test_percent_encoded_explain_ref_round_trips(self) -> None:
+        encoded = "/explain/explain%3Areplay%3Acontext"
+        self.assertEqual(normalize_ui_path(encoded), "/explain/explain:replay:context")
+        payload = build_explain_payload(self.store, normalize_ui_path(encoded).removeprefix("/explain/"))
+        self.assertEqual(payload["explanation"]["ref"], "explain:replay:context")
 
     def test_attention_explain_chain(self) -> None:
         page = build_attention_page(self.store)
