@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — WATCH/DISMISS fixture failure-case acceptance (Lane P5)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/opportunity` |
+| **Summary** | Add fixture-only fail-closed cases on the isolated WATCH/DISMISS harness: stale observational opportunity not ranked / ack KeyError; missing lineage does not fabricate evidence and unknown row fails; duplicate WATCH is idempotent; UNKNOWN instrument and invalid action fail-closed; LIVE_OBSERVATIONAL still fail-closed. Persistence restart remains in the happy-path module. **Not** empirical. No P1 live-gate edit. |
+| **Key files** | `tests/opportunity/test_watch_dismiss_learning_loop_failure_cases.py` (created), `docs/engineering/WORK_LOG.md` |
+| **Tests** | Focused **6/6 passed**. `python tools/imp.py test affected --workers 2`: **34/0/0**. Format pass. |
+| **Related** | Prior entry on `repair/watch-dismiss-acceptance-20260915` `f8c03183` |
+| **Notes** | Isolated only; **do not merge**. Live OFF. Base remains `7aade60b`. |
+
 ## 2026-09-15 — Fixture WATCH/DISMISS learning-loop acceptance harness (Lane P5)
 
 | Field | Value |
