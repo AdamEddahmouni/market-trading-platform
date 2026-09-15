@@ -7,14 +7,14 @@
 **Frozen RTH runtime:** `.rth-operator-20260915` at the same SHA — **do not thaw, patch, or merge into it**  
 **This document does not update** [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md)
 
-Snapshot time: 2026-09-15 ~12:06 ET (refresh of `41f5a948`). P12 live-OE review **FINISHED** `PARTIALLY_CONFIRMED`. **Do not merge anything during the session.**
+Snapshot time: 2026-09-15 ~12:12 ET (refresh of `9fac1344`). Q2–Q4 candidate now **exists** at `c43688ed`. **Do not merge anything during the session.**
 
 ## Rebase-required flags (vs `origin/main` `7aade60b`)
 
 | Slot | Tip | Merge-base | Must rebase before land |
 |---|---|---|---|
 | Q1 launcher | `9b0781c9` | `d588728d` | **YES — do not merge as-is** |
-| Q2–Q4 live-OE / cockpit | `7aade60b` (P1 patch in flight) | `7aade60b` | **YES if** `origin/main` moves; gated on **P1 patch** (`e19b0346`), not on P12 review |
+| Q2–Q4 live-OE / cockpit | `c43688ed` | `7aade60b` | **YES after close** (rebase onto post-close `origin/main`). Do **not** land `c43688ed` without first commit `8189af4c` |
 | Q5 WATCH harness | `7aade60b` (no unique commits) | `7aade60b` | **YES if** `origin/main` moves |
 | Q6 Item 9 | `77d448c3` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
 | Q6 P12 review | `49ae216e` | (review branch) | Gate only — **not merge cargo** |
@@ -57,16 +57,16 @@ launcher
 Recommended post-close landing sequence:
 
 1. **Q1 launcher / Vite proxy** (operator can even *see* JSON)
-2. **Q4 cockpit fixture quarantine** (P1 first)
-3. **Q3 OE observational READ split** (keep mutation block)
-4. **Q2 EventV1 admission** (not sufficient for today's ranked UNAVAILABLE)
+2. **Q4** `8189af4c` fixture/`as_of` honesty (already first on the branch)
+3. **Q3** `c43688ed` observational READ split (ACK/WATCH blocked; do not land without `8189af4c`)
+4. **Q2** `c4d88ef7` EventV1 ingress (not sufficient for today's ranked UNAVAILABLE)
 5. **Q5 WATCH/DISMISS harness** (fixtures; not empirical)  
 6. **Q6 Item 9 session-day kline** (independent; not calibration)  
 7. **Q7 latency notes/telemetry**  
 8. **Q8 Item 7 upstream wiring** (priority 7; no corpus fabrication)  
 9. **Q9 runbook / test-gap docs** (land with corresponding software)
 
-P12 live-OE review **FINISHED** `PARTIALLY_CONFIRMED` on `review/live-oe-diagnosis-20260915` `5f965f3237d3e513b6a9f8dd4e1fb5a7a99384af`. Today's ranked `UNAVAILABLE` is the `_is_live` gate **before** `build_ranked_rows`, **not** missing EventV1. P1 (`e19b0346`) was interrupted to incorporate: **fixture quarantine first**, then observational **READ** split; EventV1 is **not sufficient**; **keep the mutation block**. Q2–Q4 remain gated on that **P1 patch**, not on an in-flight review. Item 9 P12 (`49ae216e`) is a separate gate on Q6 only.
+P12 live-OE review **FINISHED** `PARTIALLY_CONFIRMED` (`5f965f32`). Today's ranked `UNAVAILABLE` is the `_is_live` gate **before** `build_ranked_rows`, **not** missing EventV1. Q2–Q4 candidate **exists**: `repair/live-oe-cockpit-state-20260915` HEAD `c43688ed1171e5c64e70d49746507cf8a083f114` (base `7aade60b`). Stacked `8189af4c` fixture/`as_of` honesty → `c4d88ef7` EventV1 ingress → `c43688ed` observational ranked **READ** split (ACK/WATCH still blocked). Tests **60/60**. **rebase-required=yes** after close. Do **not** land the ranked-read split without `8189af4c`. Remaining gaps: no UI API Finviz auto-fetch; FTEP still dry-run; `NEWS_EVENT` inactive; Moomoo still `ObservationalStateStore`; Vite `/opportunities` is P3/Q1. Item 9 P12 (`49ae216e`) is a separate gate on Q6 only.
 
 ---
 
@@ -94,18 +94,18 @@ P12 live-OE review **FINISHED** `PARTIALLY_CONFIRMED` on `review/live-oe-diagnos
 
 | Field | Value |
 |---|---|
-| **Status** | `IN_PROGRESS` — P1 interrupted to incorporate P12; EventV1 **not sufficient** for today's ranked UNAVAILABLE |
-| **Branch / worktree** | `repair/live-oe-cockpit-state-20260915` at `.worktrees/repair-live-oe-cockpit-state-20260915` (**locked**; same file set as Q3+Q4) |
-| **Source baseline SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` (`origin/main`) |
-| **HEAD vs origin/main** | Identical; porcelain empty at snapshot. Owning lane P1+P4 may still commit |
-| **Purpose** | Admit live Finviz news (already fetched by FTEP CLI) as `EventV1` + PIT clocks into the **UI API process** via `build_production_observation_ingress_router` + `IntelligenceRepository` on `ReplayStore` |
-| **Issue addressed** | P12: today's ranked `UNAVAILABLE` is `_is_live` before `build_ranked_rows`, not missing EventV1. FTEP `--live-ingress` remains `dry_run=True` `NewsArticleEvent`. EventV1 admission may still be needed later but does **not** explain today's empty ranked book |
-| **Empirical evidence** | Lane A `LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS` (~10:01 ET, ~100 ingested, 0 qualifying). Moomoo `CONNECTED_DEGRADED` 0/12 live quotes. Mixed discovery 0 candidates / `FINVIZ_SCREEN_UNAVAILABLE` (empty-vs-failed unlabeled). Diagnosis: [520aeed6](520aeed6-3d55-47a3-85ff-6b314fcdfd9a) |
-| **Affected files (planned; P1 owns)** | `news` normalize / EventV1 mapper; `observation_ingress/production_wire.py` attach from `tools/ui1/run_ui_api.py`; `ReplayStore.strategy_repository`; **not** `vite.config.ts` / `local_launcher.py` (Q1); **not** Item 9 kline; **not** Item 7 corpus writers |
-| **Focused tests (required by diagnosis)** | FTEP news → EventV1 → ingress (`put_event` once, PIT clocks, no fixture substitute on zero qualifying); detector consumes Finviz EventV1 without claiming `NEWS_EVENT` until canonical lane exists; screener 0-row success ≠ `FINVIZ_SCREEN_UNAVAILABLE` |
+| **Status** | `COMMITTED_ISOLATED` — stacked commit `c4d88ef7` on shared branch tip `c43688ed` |
+| **Branch / worktree** | `repair/live-oe-cockpit-state-20260915` at `.worktrees/repair-live-oe-cockpit-state-20260915` (same file set as Q3+Q4) |
+| **Source baseline SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` |
+| **HEAD vs origin/main** | Tip `c43688ed1171e5c64e70d49746507cf8a083f114`. Stack: `8189af4c` → `c4d88ef7` `Admit Finviz news as EventV1 through UI API production ingress` → `c43688ed` |
+| **Purpose** | Admit Finviz news as `EventV1` + PIT clocks through UI API production ingress |
+| **Issue addressed** | P12: today's ranked `UNAVAILABLE` is `_is_live`, not missing EventV1. This commit is **not sufficient** for the ranked book. FTEP still dry-run; no UI API Finviz auto-fetch; `NEWS_EVENT` inactive; Moomoo still `ObservationalStateStore` |
+| **Empirical evidence** | Lane A `LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS`. Moomoo `CONNECTED_DEGRADED` 0/12. Diagnosis [520aeed6](520aeed6-3d55-47a3-85ff-6b314fcdfd9a); P12 `5f965f32` |
+| **Affected files** | `c4d88ef7` (+303/−1): `news/event_v1.py`, `news/event_v1_ingress.py`, `ui_api/live_intelligence.py`, `observation_ingress/consumers.py`, `ui_api/store.py`, `tools/ui1/run_ui_api.py`, `tests/news/test_finviz_news_event_v1_ingress.py`. **Not** Vite/launcher (Q1/P3) |
+| **Focused tests** | Shared stack **60/60**. Includes `tests.news.test_finviz_news_event_v1_ingress` |
 | **Broader validation** | `python tools/imp.py test affected` on intelligence/news/ui_api; do not enable Live or enrichment |
-| **Dependencies** | Q4 fixture quarantine **before** any ranked read of the new store. Q1 so the UI origin can fetch `/opportunities` |
-| **Must rebase** | **YES** if `origin/main` moves after close; currently already on frozen SHA |
+| **Dependencies** | Lands **after** `8189af4c` in this branch. Does not replace Q3. Vite `/opportunities` is P3/Q1 |
+| **Must rebase** | **YES after close** onto post-close `origin/main` |
 | **Safely discarded if diagnosis changes** | EventV1-as-today's-UNAVAILABLE-cause is **weakened** (P12). Keep FTEP dry-run honesty. Do not treat EventV1 as sufficient for Q3 |
 
 ---
@@ -114,18 +114,18 @@ P12 live-OE review **FINISHED** `PARTIALLY_CONFIRMED` on `review/live-oe-diagnos
 
 | Field | Value |
 |---|---|
-| **Status** | `IN_PROGRESS` — P1 to land observational **READ** split after Q4 quarantine; keep mutation block |
+| **Status** | `COMMITTED_ISOLATED` — tip `c43688ed` `Split live OE ranked reads from blocked ACK mutations` |
 | **Branch / worktree** | Same as Q2: `repair/live-oe-cockpit-state-20260915` |
 | **Source baseline SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` |
-| **Purpose** | Allow `LIVE_OBSERVATIONAL` **reads** of a live (possibly EMPTY) ranked repository; keep WATCH/DISMISS/acks `PermissionError LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE` |
-| **Issue addressed** | P12 **PARTIALLY_CONFIRMED**: `_is_live` returns UNAVAILABLE **before** `build_ranked_rows`. Tests lock mutations. Split **read** vs mutation; do not delete the mutation gate |
-| **Empirical evidence** | Lane E `opportunities-summary-1050.json`: `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`, ranked items `[]`. `tests/ui1/test_opportunity_api.py::test_live_mode_returns_unavailable_empty_queue` encodes the gate. Paper UI with `IMP_LIVE_OBSERVATIONAL=1` is classified live for OE |
-| **Affected files (planned)** | `ui_api/opportunity_projections.py` (split read vs mutation); ranked repository wiring; **do not** delete the mutation gate |
-| **Focused tests** | Split the locked test: observational summary may be `EMPTY`/`READY` from repository; acks still fail-closed; zero-qualifying → `EMPTY` + live provenance, **not** fixture attention |
-| **Broader validation** | ui1 opportunity API + opportunity ingest; Playwright only if UI ranking chrome changes |
-| **Dependencies** | **Hard:** Q4 fixture quarantine **first**, then this READ split. EventV1 (Q2) is **not sufficient**. Q1 for UI-origin JSON. Gated on P1 patch |
-| **Must rebase** | Same as Q2 |
-| **Safely discarded if diagnosis changes** | **NO** for keeping live **mutations** fail-closed. The *read* split is discardable if P12 shows ranked OE already had a live path |
+| **Purpose** | Allow `LIVE_OBSERVATIONAL` **reads** of a live (possibly EMPTY) ranked repository; ACK/WATCH still blocked |
+| **Issue addressed** | P12: `_is_live` returned UNAVAILABLE **before** `build_ranked_rows`. Split **read** vs mutation; do not delete the mutation gate |
+| **Empirical evidence** | Lane E `opportunities-summary-1050.json` UNAVAILABLE / `items=[]`. Software tests lock ACK/WATCH fail-closed |
+| **Affected files** | `c43688ed` (+189/−33): `ui_api/opportunity_projections.py`, `discovery/engine.py`, `opportunity/ranking.py`, `ui_api/mixed_discovery_projections.py`, `tests/ui1/test_opportunity_api.py`, `tests/ui1/test_opportunity_radar_feed.py`, `tests/platform/test_discovery_p33.py`, `tests/platform/test_mixed_discovery.py`, docs |
+| **Focused tests** | Shared stack **60/60**. Ranked READ allowed; ACK/WATCH still blocked |
+| **Broader validation** | ui1 opportunity API + discovery; Vite `/opportunities` still P3/Q1 |
+| **Dependencies** | **Hard:** do **not** land this commit without first-stack `8189af4c` (Q4). EventV1 (`c4d88ef7`) is **not sufficient**. Landing order on the branch already has quarantine first |
+| **Must rebase** | **YES after close** (same as Q2) |
+| **Safely discarded if diagnosis changes** | **NO** for keeping live **mutations** fail-closed |
 
 ---
 
@@ -133,18 +133,18 @@ P12 live-OE review **FINISHED** `PARTIALLY_CONFIRMED` on `review/live-oe-diagnos
 
 | Field | Value |
 |---|---|
-| **Status** | `IN_PROGRESS` — P1 interrupted: **fixture quarantine first** (then Q3 read split) |
+| **Status** | `COMMITTED_ISOLATED` — first stack commit `8189af4c` `Stop presenting BIYA fixture time and replay cards as live RTH` |
 | **Branch / worktree** | Same as Q2: `repair/live-oe-cockpit-state-20260915` |
 | **Source baseline SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` |
-| **Purpose** | Honest RTH clock and attention: `LIVE_OBSERVATIONAL` without live receive time → `as_of` UNAVAILABLE (never BIYA 2026-07-21 as “now”); quality summary must not claim admitted fixture; replay/MC9/ES cards quarantined or DEMO/REPLAY shelf |
-| **Issue addressed** | `ReplayStore` always loads pinned BIYA JSONL; `as_of_time=2026-07-21T21:01:09Z`; live quote fallback skipped then still uses `store.as_of_time()`; attention concatenates `att-replay-context` + MC9 BOXL + ES fixture with no live filter |
-| **Empirical evidence** | Lane E cockpit: 7 replay/fixture attention cards; ranked banner “Opportunity ranking unavailable.” WATCH/DISMISS not on those cards (ranked-OE only) |
-| **Affected files (planned)** | `ui_api/projections.py` (`build_as_of_context`, `build_quality_summary`); attention admission; **not** Vite/launcher |
-| **Focused tests** | Live as_of without quotes: no `2026-07-21`, no fixture quality copy; live attention admission: no `att-replay-context` / MC9 / ES as current RTH cards |
-| **Broader validation** | ui1 projection tests; `validate-ui` if chrome copy changes |
-| **Dependencies** | **Land before Q3.** Independent of Item 9 / Item 7 |
-| **Must rebase** | Same as Q2 |
-| **Safely discarded if diagnosis changes** | **NO** if July-21 `as_of` remains empirically observed — honesty is required even if OE stays empty |
+| **Purpose** | Honest RTH clock and attention: `LIVE_OBSERVATIONAL` without live receive time → `as_of` UNAVAILABLE (never BIYA 2026-07-21 as “now”); quarantine replay/MC9/ES as current RTH cards |
+| **Issue addressed** | `ReplayStore` pinned BIYA JSONL; `as_of_time=2026-07-21T21:01:09Z`; attention concatenated fixture cards with no live filter |
+| **Empirical evidence** | Lane E: 7 replay/fixture attention cards; ranked banner unavailable |
+| **Affected files** | `8189af4c` (+177/−22): `ui_api/projections.py`, `tests/ui1/test_live_observational_state.py`, `docs/architecture/MODE_AUTHORITY.md` |
+| **Focused tests** | Shared stack **60/60**. Includes `tests.ui1.test_live_observational_state` |
+| **Broader validation** | ui1 projection tests |
+| **Dependencies** | **Already first** on this branch. Must remain first: do not land `c43688ed` without this commit |
+| **Must rebase** | **YES after close** (same as Q2) |
+| **Safely discarded if diagnosis changes** | **NO** if July-21 `as_of` remains empirically observed |
 
 ---
 
@@ -274,7 +274,7 @@ P12 live-OE review **FINISHED** `PARTIALLY_CONFIRMED` on `review/live-oe-diagnos
 
 | Slot | Branch / worktree | Notes |
 |---|---|---|
-| P12 live-OE review | `review/live-oe-diagnosis-20260915` `5f965f32` | **FINISHED** `PARTIALLY_CONFIRMED`. Ranked UNAVAILABLE = `_is_live` before `build_ranked_rows`, not missing EventV1. **Not merge cargo.** Q2–Q4 gated on **P1 patch**, not this review |
+| P12 live-OE review | `review/live-oe-diagnosis-20260915` `5f965f32` | **FINISHED** `PARTIALLY_CONFIRMED`. **Not merge cargo.** Q2–Q4 candidate is now `c43688ed` |
 | P12 Item 9 review | `review/item9-kline-diagnosis-20260915` `49ae216e` | Gate on Q6 only. `PARTIALLY_CONFIRMED` |
 | Finviz 11:49 ET HTTP 429 | n/a | **Empirical PROVIDER evidence**, not merge cargo. Do not open a software PR to “fix” rate-limit as if it were an IMP defect |
 | PR #196 | `work/phase55b-lane-b-evidence-capture-context` `ec93809e` | Sidecar SOFTWARE only. **Rebase after session, not today.** `CAPTURE_CONTEXT_ABSENT` ≠ Item 7 row blocker |
@@ -298,8 +298,8 @@ P12 live-OE review **FINISHED** `PARTIALLY_CONFIRMED` on `review/live-oe-diagnos
 ## Coordinator checklist (post-close, not now)
 
 1. Re-fetch `origin/main`. If SHA ≠ `7aade60b`, every candidate **must rebase** except already-rebased tips.
-2. Re-read porcelain/SHAs: Q1 tip `9b0781c9` still on `d588728d` (**MUST rebase**); Q2–Q4 wait **P1 patch** (`e19b0346`: quarantine → read split; EventV1 not sufficient; keep mutation block); Q5; Q6 tip `77d448c3` + P12 `49ae216e`; Q7 `49529d64`; Q8 untracked notes on `d588728d` (**MUST rebase** before commit); Q9a `145fee4f`; Q9b `134924c3`.
-3. P12 live-OE is **done** (`5f965f32` `PARTIALLY_CONFIRMED`). Do not wait on that review; wait on the P1 patch.
+2. Re-read porcelain/SHAs: Q1 tip `9b0781c9` still on `d588728d` (**MUST rebase**); Q2–Q4 tip `c43688ed` on `7aade60b` (**MUST rebase after close**; keep `8189af4c` first; do not land ranked-read without it; tests 60/60); Q5; Q6 tip `77d448c3` + P12 `49ae216e`; Q7 `49529d64`; Q8 untracked notes on `d588728d` (**MUST rebase** before commit); Q9a `145fee4f`; Q9b `134924c3`.
+3. P12 live-OE is **done** (`5f965f32`). Q2–Q4 remaining gaps: no UI API Finviz auto-fetch; FTEP dry-run; `NEWS_EVENT` inactive; Moomoo `ObservationalStateStore`; Vite `/opportunities` is P3.
 4. Honor Item 9 P12: do not land `max_count=120`; do not treat unique-security `historyKLQuota` as proven.
 5. Merge **nothing** into frozen RTH. Do not land this queue as product software.
 6. Do not flip empirical gates from these software/docs commits. Finviz 429 is provider evidence, not a queue member.
