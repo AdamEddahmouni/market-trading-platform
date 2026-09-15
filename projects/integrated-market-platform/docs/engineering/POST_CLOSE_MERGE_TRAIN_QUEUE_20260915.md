@@ -7,7 +7,7 @@
 **Frozen RTH runtime:** `.rth-operator-20260915` at the same SHA — **do not thaw, patch, or merge into it**  
 **This document does not update** [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md)
 
-Snapshot time: 2026-09-15 ~14:09 ET (refresh of `a15f524b`). Q6 Item 9 tip is now `fe8cac6d` (empty RET_OK / RET_ERROR protocol / year-old PIT reject / incomplete-bar; **48/48**; PIT preserved; **not calibrated**; **not pushed** — 1 ahead of `origin/diagnosis/item9-prospective-bar-20260915` @ `77d448c3`). Independent of live-OE. Q2–Q4 `91b07b4f` remains **SAFE-TO-RETAIN-AFTER-REBASE**. **Do not land during RTH.**
+Snapshot time: 2026-09-15 ~14:13 ET (refresh of `fab2c13f`). Q5 tip is now `7a5cbe48` (fixture failure cases **6/6**, **not empirical**). Draft PR [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204) opened at `f8c03183` and is being updated. Q6 remains `fe8cac6d` / draft [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203). **Do not land during RTH.**
 
 ## Rebase-required flags (vs `origin/main` `7aade60b`)
 
@@ -15,14 +15,14 @@ Snapshot time: 2026-09-15 ~14:09 ET (refresh of `a15f524b`). Q6 Item 9 tip is no
 |---|---|---|---|
 | Q1 launcher | `9b0781c9` | `d588728d` | **YES — do not merge as-is** |
 | Q2–Q4 live-OE / cockpit | `91b07b4f` | `7aade60b` | **SAFE-TO-RETAIN-AFTER-REBASE** (P13B `4176d0b6`; prior MUST-FIX closed). **Do not land during RTH.** After close: rebase onto `origin/main`, rerun focused tests, then consider merge. **rebase-required=yes** |
-| Q5 WATCH harness | `f8c03183` | `7aade60b` | **YES if** `origin/main` moves after close. Independent of Item 9. Paper fixture path; acks stay blocked in `LIVE_OBSERVATIONAL` even after P1 |
-| Q6 Item 9 | `fe8cac6d` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves. **Not pushed** (1 ahead of remote `77d448c3`) |
+| Q5 WATCH harness | `7a5cbe48` | `7aade60b` | **YES if** `origin/main` moves after close. Independent of Item 9. Paper fixture path; acks stay blocked in `LIVE_OBSERVATIONAL`. Draft [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204) opened at `f8c03183`, being updated |
+| Q6 Item 9 | `fe8cac6d` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves. Draft [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203). Local tip 1 ahead of remote `77d448c3` |
 | Q6 P12 review | `49ae216e` | (review branch) | Gate only — **not merge cargo** |
 | Q7 latency | `49529d64` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
 | Q8 Item 7 notes | `d588728d` + untracked notes | `d588728d` | **YES** onto post-close `origin/main` before committing notes |
 | Q9a test-gap | `145fee4f` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
 | Q9b runbook | `134924c3` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
-| This queue | `a15f524b` + this refresh | `7aade60b` | Docs only; **YES if** `origin/main` moves |
+| This queue | `fab2c13f` + this refresh | `7aade60b` | Docs only; **YES if** `origin/main` moves |
 
 ## Operating holds
 
@@ -60,8 +60,8 @@ Recommended post-close landing sequence:
 2. **Q4** `8189af4c` + `91b07b4f` — **do not land during RTH**; after close rebase + focused tests, then consider merge
 3. **Q3** `c43688ed` + `91b07b4f` ranked READ — same RTH hold
 4. **Q2** `c4d88ef7` + `91b07b4f` EventV1 helpers — same RTH hold
-5. **Q5** `f8c03183` WATCH harness (Paper `INTERNAL_SIMULATION` fixtures; **not** empirical; acks stay blocked in `LIVE_OBSERVATIONAL`)
-6. **Q6 Item 9 session-day kline** (independent; not calibration)  
+5. **Q5** `7a5cbe48` WATCH harness (Paper `INTERNAL_SIMULATION` fixtures; **not** empirical; failure cases 6/6; draft [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204) being updated from `f8c03183`)
+6. **Q6 Item 9 session-day kline** `fe8cac6d` / draft [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203) (independent; not calibration)  
 7. **Q7 latency notes/telemetry**  
 8. **Q8 Item 7 upstream wiring** (priority 7; no corpus fabrication)  
 9. **Q9 runbook / test-gap docs** (land with corresponding software)
@@ -156,15 +156,15 @@ Prior must-fix list (**closed** on request-path surfaces P13 named): EventV1 no 
 
 | Field | Value |
 |---|---|
-| **Status** | `COMMITTED_ISOLATED` |
+| **Status** | `COMMITTED_ISOLATED` — draft [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204) opened at `f8c03183`, being updated |
 | **Branch / worktree** | `repair/watch-dismiss-acceptance-20260915` at `.worktrees/repair-watch-dismiss-acceptance-20260915` |
 | **Source baseline SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` |
-| **Unique commit** | `f8c0318352bd5edc1c3400c80777f67defd67b91` `test(imp): add fixture WATCH/DISMISS learning-loop acceptance` |
+| **Unique commits** | `f8c0318352bd5edc1c3400c80777f67defd67b91` happy-path acceptance; tip `7a5cbe48032f88dd55b3e91cdb76211358aa4bc7` `test(imp): add WATCH/DISMISS fixture failure cases` |
 | **Purpose** | Fixture-only: ranked `OpportunityV1` → operator ack → `ExecutionDecisionTrace` → `TradeReviewV1` → SQLite persist → restart readback. Paper `INTERNAL_SIMULATION` path |
-| **Issue addressed** | Downstream WATCH/DISMISS plumbing unproven on RTH (no ranked OE cards). This harness does **not** unblock live acks |
+| **Issue addressed** | Downstream WATCH/DISMISS plumbing unproven on RTH (no ranked OE cards). This harness does **not** unblock live acks. `7a5cbe48` adds fail-closed cases: stale, missing evidence, duplicate ack, invalid opportunity, `LIVE_OBSERVATIONAL` |
 | **Empirical evidence** | **None — harness, not empirical.** Do not describe as live evidence. Live mutations still fail-closed on this SHA (P1 live-gate **not** edited) |
-| **Affected files** | `tests/opportunity/test_watch_dismiss_learning_loop_acceptance.py`, `tests/opportunity/__init__.py`, `tools/validation_manifest.json` (`core_checkpoint_required=true`), `tests/validation/test_validation_manifest.py`, `docs/engineering/WORK_LOG.md` (+403/−3) |
-| **Focused tests** | **5/5** in `tests.opportunity.test_watch_dismiss_learning_loop_acceptance` |
+| **Affected files** | `f8c03183`: `tests/opportunity/test_watch_dismiss_learning_loop_acceptance.py`, `tests/opportunity/__init__.py`, `tools/validation_manifest.json` (`core_checkpoint_required=true`), `tests/validation/test_validation_manifest.py`, `docs/engineering/WORK_LOG.md`. Tip `7a5cbe48` (+270): `tests/opportunity/test_watch_dismiss_learning_loop_failure_cases.py`, `docs/engineering/WORK_LOG.md` |
+| **Focused tests** | Happy path **5/5** in `tests.opportunity.test_watch_dismiss_learning_loop_acceptance`. Failure cases **6/6** in `tests.opportunity.test_watch_dismiss_learning_loop_failure_cases`. **Not empirical** |
 | **Broader validation** | Manifest change sets `core_checkpoint_required=true` — run `python tools/imp.py validate changed` / FULL before land, not focused-only |
 | **Dependencies** | **Independent of Item 9.** Acks stay blocked in `LIVE_OBSERVATIONAL` even after P1 ranked-read (`c43688ed`). Do **not** require landing after P1 for this Paper fixture path. Correlation is `opportunity_id`+`action` — `review_id` is **not** on the trace; `WATCHED`/`REJECTED` forbid `execution_decision_trace_id` |
 | **Must rebase** | **YES if** post-close `origin/main` ≠ `7aade60b` |
@@ -176,7 +176,7 @@ Prior must-fix list (**closed** on request-path surfaces P13 named): EventV1 no 
 
 | Field | Value |
 |---|---|
-| **Status** | `COMMITTED_ISOLATED` + P12 `PARTIALLY_CONFIRMED` |
+| **Status** | `COMMITTED_ISOLATED` + P12 `PARTIALLY_CONFIRMED` — draft [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203) (GitHub head at snapshot still `77d448c3`; queue tip `fe8cac6d`) |
 | **Branch / worktree** | `diagnosis/item9-prospective-bar-20260915` at `.worktrees/diagnosis-item9-prospective-bar-20260915` |
 | **Source baseline SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` |
 | **Unique commits** | `e2d89348` session-day window; `77d448c3` kline diagnostics; tip `fe8cac6dc82725318d0f3557517f5284e3042a32` `test(item9): cover empty RET_OK, RET_ERROR, year-old, and incomplete-bar fail-closed paths`. **Not pushed** (local 1 ahead of `origin/diagnosis/item9-prospective-bar-20260915` `77d448c3`) |
@@ -303,7 +303,7 @@ Prior must-fix list (**closed** on request-path surfaces P13 named): EventV1 no 
 ## Coordinator checklist (post-close, not now)
 
 1. Re-fetch `origin/main`. If SHA ≠ `7aade60b`, every candidate **must rebase** except already-rebased tips.
-2. Re-read porcelain/SHAs: Q1 tip `9b0781c9` still on `d588728d` (**MUST rebase**); Q2–Q4 tip `91b07b4f` is **SAFE-TO-RETAIN-AFTER-REBASE** (P13B `4176d0b6`; prior MUST-FIX closed) — **do not land during RTH**; after close rebase onto `origin/main`, rerun focused tests, then consider merge; Q5 tip `f8c03183`; Q6 tip `fe8cac6d` (48/48; PIT preserved; **not calibrated**; **not pushed**, 1 ahead of remote `77d448c3`; independent of live-OE) + P12 `49ae216e`; Q7 `49529d64`; Q8 untracked notes on `d588728d`; Q9a `145fee4f`; Q9b `134924c3`.
+2. Re-read porcelain/SHAs: Q1 tip `9b0781c9` still on `d588728d` (**MUST rebase**); Q2–Q4 tip `91b07b4f` is **SAFE-TO-RETAIN-AFTER-REBASE** (P13B `4176d0b6`; prior MUST-FIX closed) — **do not land during RTH**; after close rebase onto `origin/main`, rerun focused tests, then consider merge; Q5 tip `7a5cbe48` (failure cases 6/6, **not empirical**; draft [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204) opened at `f8c03183`, being updated); Q6 tip `fe8cac6d` / draft [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203) (48/48; PIT preserved; **not calibrated**; independent of live-OE) + P12 `49ae216e`; Q7 `49529d64`; Q8 untracked notes on `d588728d`; Q9a `145fee4f`; Q9b `134924c3`.
 3. Q2–Q4 prior must-fix **closed**. Follow-ons (do not block): no `UiApiHandler` news admit; no auto-fetch; mixed-discovery EMPTY vs UNAVAILABLE; residual `store.as_of_time_ns` footgun if someone sets fixture cutoff. **ACK/WATCH stay fail-closed.** Retain current-item quarantine, context UNAVAILABLE, `_is_live`.
 4. Honor Item 9 P12: do not land `max_count=120`; do not treat unique-security `historyKLQuota` as proven.
 5. Merge **nothing** into frozen RTH. Do not land this queue as product software.
