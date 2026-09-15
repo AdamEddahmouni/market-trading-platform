@@ -54,11 +54,11 @@ For large features, also add or update a completion note under `docs/superpowers
 |-------|-------|
 | **Status** | `in-progress` |
 | **Area** | `ui_api`, `news`, `discovery`, `docs` |
-| **Summary** | Successor to draft PR #205 on branch `rth15-live-oe-convergence` from `origin/main` `5d8163e5` (includes merged #206 launcher/Vite). Stack: (1) live as_of/attention honesty (RTH15-02), (2) Finviz `NewsArticleEvent`→EventV1+production ingress on UI API ReplayStore, (3) `POST /intelligence/ingest/news` request-path admission, (4) observational ranked **READ** from canonical OE repository while ACK/WATCH stay `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`. Frozen Sep 15 empirical runtime `7aade60` not rewritten. No Live enable, no empirical claim. |
-| **Key files** | `ui_api/projections.py`, `ui_api/opportunity_projections.py`, `ui_api/news_ingest.py`, `ui_api/live_intelligence.py`, `news/event_v1.py`, `news/event_v1_ingress.py`, `news/observational_opportunity.py`, `observation_ingress/consumers.py`, `discovery/engine.py`, `mixed_discovery_projections.py`, `tools/ui1/run_ui_api.py`, focused tests under `tests/ui1`, `tests/news`, `tests/platform` |
+| **Summary** | Successor to draft PR #205 on branch `rth15-live-oe-convergence` from `origin/main` `5d8163e5` (includes merged #206 launcher/Vite). Stack: (1) RTH15-02 live as_of/attention honesty — no July fixture as live, `replay_shelf`=`DEMO_REPLAY`, INELIGIBLE not ranked, `feed_status` never `READY` without clock; (2) Finviz `NewsArticleEvent`→EventV1+production ingress; (3) `POST /intelligence/ingest/news` request-path admission; (4) observational ranked **READ** from canonical OE repository; ACK/WATCH stay `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`. Frozen Sep 15 empirical runtime `7aade60` not rewritten. No Live enable, no empirical claim. |
+| **Key files** | `ui_api/store.py`, `ui_api/projections.py`, `ui_api/opportunity_projections.py`, `ui_api/news_ingest.py`, `ui_api/live_intelligence.py`, `news/event_v1.py`, `news/event_v1_ingress.py`, `news/observational_opportunity.py`, `intelligence/opportunity/ranking.py`, `observation_ingress/consumers.py`, `discovery/engine.py`, `mixed_discovery_projections.py`, `tools/ui1/run_ui_api.py`, focused tests under `tests/ui1`, `tests/news`, `tests/platform` |
 | **Tests** | See PR body after validation run. Not empirical RTH. |
-| **Related** | Draft [PR #205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205); P12 review `review/live-oe-diagnosis-20260915` |
-| **Notes** | Item 9/Item 7/Finviz HTTP internals (#207)/OpenD kline (#203) not touched. Remaining gaps: no background Finviz fetch loop; BUILD 09 `NEWS_EVENT` inactive; Moomoo quotes not EventV1. |
+| **Related** | Draft [PR #205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205); P12/P13 live OE reviews |
+| **Notes** | Worktree `.worktrees/rth15-live-oe`. Item 9/Item 7/Finviz HTTP internals (#207)/OpenD kline (#203) not touched. Remaining gaps: no background Finviz fetch loop; BUILD 09 `NEWS_EVENT` inactive; Moomoo quotes not EventV1. |
 
 ## 2026-09-15 — FTEP integrity: resolve gitignored session evidence from operator primary checkout
 

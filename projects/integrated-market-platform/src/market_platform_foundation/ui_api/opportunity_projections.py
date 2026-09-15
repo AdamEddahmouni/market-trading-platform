@@ -117,15 +117,14 @@ def _serialize_review_row(row: Any, store: ReplayStore | None = None) -> dict[st
 
 
 def _is_live(store: ReplayStore) -> bool:
-    """Observational data-mode tripwire. Keep for mutations; do not use to skip ranked reads.
+    """Observational data-mode tripwire. Keep for mutations and fixture quarantine.
 
     P12 (`review/live-oe-diagnosis-20260915` @ ``5f965f32``): today's
     ``LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`` on ``/opportunities/summary``
-    was returned *before* ``build_ranked_rows``. A populated EventV1 /
-    OpportunityV1 repository would still have been invisible. Admission is
-    not the request-path cause of that reason code. Finviz→EventV1 is
-    necessary later, not sufficient here. Do not delete this helper before
-    fixture attention is quarantined (live ``_attention_rows`` is empty).
+    was returned *before* ``build_ranked_rows``. Do not use this helper to skip
+    ranked reads. Do not delete it before fixture attention is quarantined
+    (live ``_attention_rows`` is empty). Finviz→EventV1 is a helper, not a
+    ``UiApiHandler`` request-path admission.
     """
 
     return projections.is_live_observational(store)
@@ -162,10 +161,18 @@ def _attention_rows(store: ReplayStore) -> tuple[dict[str, Any], ...]:
     return tuple(rows)
 
 
+def _live_as_of_unavailable(store: ReplayStore) -> bool:
+    return str(projections.display_as_of_time(store)) == projections.LIVE_AS_OF_UNAVAILABLE
+
+
 def _feed_status(store: ReplayStore, ranked_count: int) -> tuple[str, str | None]:
     if _is_live(store):
-        # Observational ranked READ: EMPTY/READY from the repository, never the
-        # request-path reason LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE.
+        # Observational ranked READ: never LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE.
+        # A current book is READY only when a live clock exists and rows rank.
+        if _live_as_of_unavailable(store):
+            if ranked_count == 0:
+                return "EMPTY", None
+            return "UNREADY", "LIVE_AS_OF_UNAVAILABLE"
         if ranked_count == 0:
             return "EMPTY", None
         return "READY", None
@@ -205,7 +212,6 @@ def build_ranked_rows(store: ReplayStore) -> tuple[Any, ...]:
         assembled,
         comparison_vectors=comparison_vectors_from_repository(repository),
         dismissed_ids=dismissed_ids(),
-        include_ineligible=_is_live(store),
     )
 
 
@@ -217,6 +223,8 @@ def build_opportunities_summary_payload(
     hot_path_collector: HotPathClockCollector | None = None,
 ) -> dict[str, Any]:
     ranked = build_ranked_rows(store)
+    if _is_live(store) and _live_as_of_unavailable(store):
+        ranked = ()
     page_size = limit or store.page_size
     start = 0
     if cursor:
@@ -247,6 +255,8 @@ def build_opportunities_summary_payload(
 
 
 def build_opportunity_detail_payload(store: ReplayStore, row_id: str) -> dict[str, Any]:
+    if _is_live(store) and _live_as_of_unavailable(store):
+        raise KeyError(row_id)
     ranked = build_ranked_rows(store)
     acks = list_operator_acks()
     for row in ranked:
