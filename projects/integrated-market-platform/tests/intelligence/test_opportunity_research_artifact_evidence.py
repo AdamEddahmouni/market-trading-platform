@@ -18,8 +18,14 @@ from market_platform_foundation.intelligence.ingest.research_artifact_attachment
     ResearchArtifactAttachmentRuntime,
 )
 from market_platform_foundation.intelligence.opportunity.research_artifact_evidence import (
+    EDGE_STATS_OPPORTUNITY_EVIDENCE_PLATFORM_READY,
     EDGE_STATS_OPPORTUNITY_EVIDENCE_READY,
+    RESEARCH_ARTIFACT_EVIDENCE_ATTACHED,
+    RESEARCH_ARTIFACT_EVIDENCE_NOT_ATTACHED,
     project_historical_statistical_context,
+)
+from market_platform_foundation.research.edge_stats.precomputed_catalog import (
+    runtime_precomputed_catalog_path,
 )
 from market_platform_foundation.intelligence.persistence import InMemoryIntelligenceRepository
 from market_platform_foundation.research.edge_stats.artifact import AUTHORITY_CLASS_EVIDENCE_NOT_PREDICTION
@@ -81,7 +87,25 @@ class OpportunityResearchArtifactEvidenceTests(unittest.TestCase):
         )
 
     def test_readiness_marker(self) -> None:
-        self.assertEqual(EDGE_STATS_OPPORTUNITY_EVIDENCE_READY, "EDGE_STATS_OPPORTUNITY_EVIDENCE_READY")
+        self.assertEqual(
+            EDGE_STATS_OPPORTUNITY_EVIDENCE_READY,
+            EDGE_STATS_OPPORTUNITY_EVIDENCE_PLATFORM_READY,
+        )
+
+    def test_runtime_catalog_is_not_under_tests_fixtures(self) -> None:
+        catalog_path = runtime_precomputed_catalog_path()
+        self.assertTrue(catalog_path.is_file())
+        self.assertIn("artifacts", catalog_path.parts)
+        self.assertNotIn("tests", catalog_path.parts)
+
+    def test_evidence_without_attach_marks_platform_ready_not_attached(self) -> None:
+        evidence = build_opportunity_evidence_payload(self.store, self.opportunity.opportunity_id)
+        block = evidence.get("research_artifact_evidence") or {}
+        self.assertEqual(
+            block.get("platform_readiness"),
+            "MULTI_RESEARCH_ARTIFACT_EVIDENCE_PLATFORM_READY",
+        )
+        self.assertEqual(block.get("attachment_status"), RESEARCH_ARTIFACT_EVIDENCE_NOT_ATTACHED)
 
     def test_summary_does_not_block_on_research_artifact_overlay(self) -> None:
         self._attach_default()
@@ -97,7 +121,9 @@ class OpportunityResearchArtifactEvidenceTests(unittest.TestCase):
         self._attach_default()
         evidence = build_opportunity_evidence_payload(self.store, self.opportunity.opportunity_id)
         block = evidence.get("research_artifact_evidence") or {}
-        self.assertEqual(block.get("readiness"), EDGE_STATS_OPPORTUNITY_EVIDENCE_READY)
+        self.assertEqual(block.get("readiness"), EDGE_STATS_OPPORTUNITY_EVIDENCE_PLATFORM_READY)
+        self.assertEqual(block.get("platform_readiness"), "MULTI_RESEARCH_ARTIFACT_EVIDENCE_PLATFORM_READY")
+        self.assertEqual(block.get("attachment_status"), RESEARCH_ARTIFACT_EVIDENCE_ATTACHED)
         self.assertEqual(block.get("authority_class"), AUTHORITY_CLASS_EVIDENCE_NOT_PREDICTION)
         attachments = block.get("attachments") or []
         self.assertEqual(len(attachments), 1)
@@ -144,6 +170,33 @@ class OpportunityResearchArtifactEvidenceTests(unittest.TestCase):
                 },
             )
         self.assertIn("OPPORTUNITY_NOT_FOUND", str(ctx.exception))
+
+    def test_attach_fails_closed_on_scope_mismatch(self) -> None:
+        wrong_scope = OpportunityV1(
+            opportunity_id="opp-edge-stats-wrong-scope",
+            schema_version="1",
+            scope=IntelligenceScope(instrument_ids=("AAPL",), context_id="regular"),
+            created_at_ns=1_700_000_000_000_000_001,
+            quality=QualitySummary(state=QualityState.GOOD),
+            side=OpportunitySide.LONG,
+            expected_return=0.1,
+            expected_net_edge=0.05,
+            reason_summary="wrong instrument scope",
+            lineage_refs=(ContractReference(kind="forecast", id="fc-aapl-1"),),
+        )
+        self.repo.put_opportunity(wrong_scope)
+        with self.assertRaises(ValueError) as ctx:
+            handle_research_artifact_attachment_post(
+                self.store,
+                {
+                    "attachment_id": "esa-scope-mismatch",
+                    "opportunity_id": wrong_scope.opportunity_id,
+                    "artifact_type": "EDGE_STATS_EVIDENCE_ARTIFACT",
+                    "content_sha256": _GOLDEN_SHA,
+                    "attached_at": "2026-09-14T22:05:00.000000Z",
+                },
+            )
+        self.assertIn("SCOPE_MISMATCH", str(ctx.exception))
 
     def test_runtime_does_not_invoke_edge_stats_pipeline(self) -> None:
         runtime = ResearchArtifactAttachmentRuntime(

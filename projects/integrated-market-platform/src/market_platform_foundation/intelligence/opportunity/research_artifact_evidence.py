@@ -8,9 +8,16 @@ from ...research.edge_stats.artifact import AUTHORITY_CLASS_EVIDENCE_NOT_PREDICT
 from ...research.edge_stats.precomputed_catalog import resolve_precomputed_research_artifact
 from ...research.options_flow_replay import OPTIONS_FLOW_REPLAY_EVIDENCE_READY
 from ...research.options_flow_replay.artifact import ARTIFACT_TYPE as OPTIONS_FLOW_REPLAY_ARTIFACT_TYPE
+from ...research.options_flow_replay.precomputed_catalog import (
+    list_precomputed_options_flow_replay_artifacts,
+)
 from ..contracts.research_artifact_attachment import OpportunityResearchArtifactAttachmentV1
+from ...research.edge_stats.precomputed_catalog import list_precomputed_edge_stats_artifacts
 
-EDGE_STATS_OPPORTUNITY_EVIDENCE_READY = "EDGE_STATS_OPPORTUNITY_EVIDENCE_READY"
+EDGE_STATS_OPPORTUNITY_EVIDENCE_PLATFORM_READY = "EDGE_STATS_OPPORTUNITY_EVIDENCE_PLATFORM_READY"
+EDGE_STATS_OPPORTUNITY_EVIDENCE_READY = EDGE_STATS_OPPORTUNITY_EVIDENCE_PLATFORM_READY
+RESEARCH_ARTIFACT_EVIDENCE_ATTACHED = "EVIDENCE_ATTACHED"
+RESEARCH_ARTIFACT_EVIDENCE_NOT_ATTACHED = "NO_EVIDENCE_ATTACHMENTS"
 RESEARCH_EVIDENCE_ARTIFACT_LINEAGE_KIND = "research_evidence_artifact"
 _EDGE_STATS_ARTIFACT_TYPE = "EDGE_STATS_EVIDENCE_ARTIFACT"
 
@@ -116,14 +123,34 @@ def project_options_flow_transparent_context(artifact: dict[str, Any]) -> dict[s
     }
 
 
+def _platform_readiness_marker() -> str:
+    edge_count = len(list_precomputed_edge_stats_artifacts())
+    options_count = len(list_precomputed_options_flow_replay_artifacts())
+    if edge_count and options_count:
+        return "MULTI_RESEARCH_ARTIFACT_EVIDENCE_PLATFORM_READY"
+    if options_count and not edge_count:
+        return OPTIONS_FLOW_REPLAY_EVIDENCE_READY
+    if edge_count:
+        return EDGE_STATS_OPPORTUNITY_EVIDENCE_PLATFORM_READY
+    return "RESEARCH_ARTIFACT_EVIDENCE_PLATFORM_UNAVAILABLE"
+
+
 def _readiness_for_resolved_types(resolved_types: set[str]) -> str:
     if not resolved_types:
-        return EDGE_STATS_OPPORTUNITY_EVIDENCE_READY
+        return _platform_readiness_marker()
     if resolved_types == {OPTIONS_FLOW_REPLAY_ARTIFACT_TYPE}:
         return OPTIONS_FLOW_REPLAY_EVIDENCE_READY
     if resolved_types == {_EDGE_STATS_ARTIFACT_TYPE}:
-        return EDGE_STATS_OPPORTUNITY_EVIDENCE_READY
+        return EDGE_STATS_OPPORTUNITY_EVIDENCE_PLATFORM_READY
     return "MULTI_RESEARCH_ARTIFACT_EVIDENCE_READY"
+
+
+def _attachment_status(models: list[dict[str, Any]]) -> str:
+    if any(model.get("status") == "RESOLVED" for model in models):
+        return RESEARCH_ARTIFACT_EVIDENCE_ATTACHED
+    if models:
+        return RESEARCH_ARTIFACT_EVIDENCE_NOT_ATTACHED
+    return RESEARCH_ARTIFACT_EVIDENCE_NOT_ATTACHED
 
 
 def resolve_attachment_artifact(
@@ -182,16 +209,23 @@ def project_opportunity_research_artifact_evidence(
         for model in models
         if model.get("status") == "RESOLVED" and model.get("artifact_type")
     }
+    platform_readiness = _platform_readiness_marker()
+    attachment_status = _attachment_status(models)
     return {
         "authority_class": AUTHORITY_CLASS_EVIDENCE_NOT_PREDICTION,
+        "platform_readiness": platform_readiness,
+        "attachment_status": attachment_status,
         "readiness": _readiness_for_resolved_types(resolved_types),
         "attachments": models,
     }
 
 
 __all__ = [
+    "EDGE_STATS_OPPORTUNITY_EVIDENCE_PLATFORM_READY",
     "EDGE_STATS_OPPORTUNITY_EVIDENCE_READY",
     "OPTIONS_FLOW_REPLAY_EVIDENCE_READY",
+    "RESEARCH_ARTIFACT_EVIDENCE_ATTACHED",
+    "RESEARCH_ARTIFACT_EVIDENCE_NOT_ATTACHED",
     "RESEARCH_EVIDENCE_ARTIFACT_LINEAGE_KIND",
     "derive_stability_status",
     "project_attachment_read_model",

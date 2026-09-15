@@ -9,29 +9,36 @@ from typing import Any
 from ...canonical import load_json_strict
 from .artifact import evidence_artifact_content_sha256
 
-_GOLDEN_FIXTURE = (
-    Path(__file__).resolve().parents[4]
-    / "tests"
-    / "fixtures"
-    / "research"
-    / "edge_stats_golden_artifact.json"
+_IMP_ROOT = Path(__file__).resolve().parents[4]
+_RUNTIME_CATALOG_ARTIFACT = (
+    _IMP_ROOT / "artifacts" / "research" / "precomputed" / "edge_stats_biya_default.json"
 )
 
 
-@lru_cache(maxsize=1)
-def _golden_biya_default_artifact() -> dict[str, Any]:
-    artifact = load_json_strict(_GOLDEN_FIXTURE)
+def _load_catalog_artifact(path: Path) -> dict[str, Any]:
+    artifact = load_json_strict(path)
     if not isinstance(artifact, dict):
-        raise ValueError("EDGE_STATS_GOLDEN_FIXTURE_INVALID")
+        raise ValueError("EDGE_STATS_PRECOMPUTED_CATALOG_INVALID")
     computed = evidence_artifact_content_sha256(artifact)
     declared = str(artifact.get("content_sha256") or "").upper()
     if computed != declared:
-        raise ValueError("EDGE_STATS_GOLDEN_CONTENT_SHA256_MISMATCH")
+        raise ValueError("EDGE_STATS_PRECOMPUTED_CONTENT_SHA256_MISMATCH")
     return artifact
 
 
+@lru_cache(maxsize=1)
+def _biya_default_artifact() -> dict[str, Any]:
+    if not _RUNTIME_CATALOG_ARTIFACT.is_file():
+        raise ValueError("EDGE_STATS_PRECOMPUTED_CATALOG_MISSING")
+    return _load_catalog_artifact(_RUNTIME_CATALOG_ARTIFACT)
+
+
+def runtime_precomputed_catalog_path() -> Path:
+    return _RUNTIME_CATALOG_ARTIFACT
+
+
 def list_precomputed_edge_stats_artifacts() -> tuple[dict[str, Any], ...]:
-    return (_golden_biya_default_artifact(),)
+    return (_biya_default_artifact(),)
 
 
 def resolve_precomputed_research_artifact(
@@ -61,4 +68,5 @@ def resolve_precomputed_research_artifact(
 __all__ = [
     "list_precomputed_edge_stats_artifacts",
     "resolve_precomputed_research_artifact",
+    "runtime_precomputed_catalog_path",
 ]
