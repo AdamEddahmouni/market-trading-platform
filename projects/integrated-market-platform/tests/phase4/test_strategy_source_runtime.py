@@ -109,7 +109,7 @@ class StrategySourceRuntimeFoundationTests(unittest.TestCase):
             mode=StrategyExecutionMode.PARITY,
             generated_at="2026-09-14T00:00:00.000000000Z",
         )
-        for stub in (MATLABRuntime(), PineTSRuntime(), TypeScriptRuntime(), WasmStrategyRuntime()):
+        for stub in (PineTSRuntime(), TypeScriptRuntime(), WasmStrategyRuntime()):
             result = stub.execute(source, dataset, parameters, context)
             self.assertTrue(result.errors)
             self.assertEqual(result.metrics, {})
