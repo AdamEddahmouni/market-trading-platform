@@ -11,6 +11,17 @@ from .replay import (
     verify_execution_decision_trace_replay,
 )
 from .repository import ExecutionDecisionTraceRepository, InMemoryExecutionDecisionTraceRepository
+from .runtime import (
+    EXECUTION_DECISION_TRACE_RUNTIME_READY,
+    execution_decision_trace_repository,
+    record_opportunity_surface_trace,
+    record_operator_lifecycle_trace,
+    record_preview_allowed_trace,
+    record_preview_gate_block_from_error,
+    record_preview_gate_block_trace,
+    reset_execution_decision_trace_runtime_for_tests,
+)
+from .sqlite_repository import SqliteExecutionDecisionTraceRepository, ensure_execution_decision_trace_schema
 from .serialization import (
     execution_decision_trace_identity_hash,
     execution_decision_trace_v1_from_dict,
@@ -35,9 +46,19 @@ __all__ = [
     "ExecutionDecisionKind",
     "ExecutionDecisionTraceDraft",
     "ExecutionDecisionTraceReplayResult",
+    "EXECUTION_DECISION_TRACE_RUNTIME_READY",
     "ExecutionDecisionTraceRepository",
     "ExecutionDecisionTraceV1",
     "InMemoryExecutionDecisionTraceRepository",
+    "SqliteExecutionDecisionTraceRepository",
+    "ensure_execution_decision_trace_schema",
+    "execution_decision_trace_repository",
+    "record_opportunity_surface_trace",
+    "record_operator_lifecycle_trace",
+    "record_preview_allowed_trace",
+    "record_preview_gate_block_from_error",
+    "record_preview_gate_block_trace",
+    "reset_execution_decision_trace_runtime_for_tests",
     "PreviewDecisionSnapshot",
     "RuleEvaluationOutcome",
     "RuleEvaluationV1",
