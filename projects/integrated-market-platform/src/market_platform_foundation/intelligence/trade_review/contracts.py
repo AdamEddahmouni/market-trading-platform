@@ -9,8 +9,9 @@ from typing import Any
 from ..contracts.common import ContractReference
 
 TRADE_REVIEW_SCHEMA_VERSION = "intelligence/trade_review/1.0.0"
-TRADE_REVIEW_IMPLEMENTATION_VERSION = "trade-review-foundation-v1"
+TRADE_REVIEW_IMPLEMENTATION_VERSION = "trade-review-durable-v1"
 TRADE_REVIEW_FOUNDATION_READY = "TRADE_REVIEW_FOUNDATION_READY"
+TRADE_REVIEW_DURABLE_LOOP_READY = "TRADE_REVIEW_DURABLE_LOOP_READY"
 
 _NON_EXECUTED_MODES = frozenset(
     {
@@ -112,6 +113,7 @@ def default_trade_review_schema_version() -> str:
 
 
 __all__ = [
+    "TRADE_REVIEW_DURABLE_LOOP_READY",
     "TRADE_REVIEW_FOUNDATION_READY",
     "TRADE_REVIEW_IMPLEMENTATION_VERSION",
     "TRADE_REVIEW_SCHEMA_VERSION",

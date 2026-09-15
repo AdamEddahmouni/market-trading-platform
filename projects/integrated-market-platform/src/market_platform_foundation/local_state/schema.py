@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 PAPER_EVENT_SCHEMA_VERSION = 1
 LAYOUT_SCHEMA_VERSION = 1
 RECENT_INSTRUMENT_LIMIT = 24
@@ -314,6 +314,41 @@ FORWARD_TEST_DURABLE_V6: tuple[str, ...] = (
         persist_time_ns INTEGER NOT NULL,
         PRIMARY KEY (forward_test_id, opportunity_id)
     )
+    """,
+)
+
+TRADE_REVIEW_V8: tuple[str, ...] = (
+    """
+    CREATE TABLE IF NOT EXISTS trade_reviews (
+        review_id TEXT PRIMARY KEY,
+        opportunity_id TEXT,
+        review_mode TEXT NOT NULL,
+        decision TEXT NOT NULL,
+        decision_time_ns INTEGER NOT NULL,
+        created_at_ns INTEGER NOT NULL,
+        execution_decision_trace_id TEXT,
+        review_json TEXT NOT NULL,
+        persist_time_ns INTEGER NOT NULL
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_trade_reviews_opportunity
+    ON trade_reviews(opportunity_id, created_at_ns)
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS trade_review_operator_edits (
+        edit_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        review_id TEXT NOT NULL,
+        edit_kind TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        created_at_ns INTEGER NOT NULL,
+        source_kind TEXT NOT NULL DEFAULT 'OPERATOR',
+        model_identity TEXT
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_trade_review_operator_edits_review
+    ON trade_review_operator_edits(review_id, created_at_ns)
     """,
 )
 

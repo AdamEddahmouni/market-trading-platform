@@ -11,7 +11,12 @@ from . import projections
 from .operator_opportunity_state import dismissed_ids, list_operator_acks, record_operator_ack
 from .agent_enrichment_ingest import overlay_agent_enrichment_on_detail
 from .research_artifact_evidence import overlay_research_artifact_evidence_on_detail
+from .trade_review_projections import overlay_trade_reviews_on_detail
 from .store import ReplayStore
+from ..intelligence.trade_review.materialize import (
+    _refs_from_lineage,
+    materialize_trade_review_for_operator_ack,
+)
 
 try:
     from ..hot_path_telemetry.collector import HotPathClockCollector
@@ -240,7 +245,8 @@ def build_opportunity_detail_payload(store: ReplayStore, row_id: str) -> dict[st
             if matching:
                 body["lifecycle_state"] = matching[-1]["action"]
             body = overlay_agent_enrichment_on_detail(store, body)
-            return overlay_research_artifact_evidence_on_detail(store, body)
+            body = overlay_research_artifact_evidence_on_detail(store, body)
+            return overlay_trade_reviews_on_detail(store, body)
     dismissed = [ack for ack in acks if row_id in {ack["summary_id"], ack.get("opportunity_id")}]
     if dismissed:
         last = dismissed[-1]
@@ -326,10 +332,26 @@ def apply_opportunity_ack(
     as_of = projections.build_as_of_context(store)
     created_at_ns = int(as_of.get("as_of_time_ns") or 0)
     account_id = getattr(store.paper_ledger, "paper_account_id", None) or "paper-default"
-    return record_operator_ack(
+    ack = record_operator_ack(
         summary_id=target.summary_id,
         opportunity_id=target.opportunity_id,
         paper_account_id=str(account_id),
         action=action,
         created_at_ns=created_at_ns,
     )
+    row_dict = target.to_dict() if hasattr(target, "to_dict") else {}
+    metadata = dict(row_dict.get("metadata") or {}) if isinstance(row_dict.get("metadata"), dict) else {}
+    lineage = row_dict.get("lineage_refs") or metadata.get("lineage_refs") or ()
+    review = materialize_trade_review_for_operator_ack(
+        action=action,
+        opportunity_id=target.opportunity_id or target.summary_id,
+        strategy_id=row_dict.get("strategy_family") or metadata.get("strategy_family"),
+        decision_time_ns=created_at_ns,
+        created_at_ns=created_at_ns,
+        evidence_snapshot_refs=_refs_from_lineage(tuple(lineage) if isinstance(lineage, (list, tuple)) else ()),
+        metadata={"operator_ack": ack},
+    )
+    if review is not None:
+        ack = dict(ack)
+        ack["trade_review_id"] = review.review_id
+    return ack

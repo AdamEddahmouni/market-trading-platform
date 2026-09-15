@@ -7,6 +7,7 @@ import {
   buildProgressiveOpportunitySections,
   type ProgressivePresentationState,
 } from "./progressiveOpportunityModel";
+import { TradeReviewLearningPanel } from "./TradeReviewLearningPanel";
 
 const STATE_LABEL: Record<ProgressivePresentationState, string> = {
   DETECTED: "Detected",
@@ -176,6 +177,10 @@ export function ProgressiveOpportunityCard({
             {overlay.kill_switch ?? "UNAVAILABLE"}
           </p>
         ) : null}
+      </Section>
+
+      <Section title="Trade review" id={`${model.stableKey}-trade-review`}>
+        <TradeReviewLearningPanel row={row} />
       </Section>
 
       <Section title="Action readiness" id={`${model.stableKey}-actions`}>

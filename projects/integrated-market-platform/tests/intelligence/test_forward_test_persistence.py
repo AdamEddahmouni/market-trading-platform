@@ -455,14 +455,15 @@ class DurableForwardTestPersistenceV7Tests(IsolatedForwardTestPersistenceTest):
             ).fetchall()
         }
 
-    def test_schema_version_is_seven(self) -> None:
+    def test_schema_version_is_eight(self) -> None:
         local = open_local_state(force=True)
         assert local is not None
         self.assertEqual(local.connection.schema_version(), SCHEMA_VERSION)
-        self.assertEqual(SCHEMA_VERSION, 7)
+        self.assertEqual(SCHEMA_VERSION, 8)
         tables = self._table_names(local)
         self.assertIn("forward_test_signal_links", tables)
         self.assertIn("enrichment_outbox", tables)
+        self.assertIn("trade_reviews", tables)
 
     def test_populated_v2_migrates_to_v7(self) -> None:
         import sqlite3
