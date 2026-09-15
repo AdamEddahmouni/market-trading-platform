@@ -36,13 +36,19 @@ launcher, or Item 9.
 from __future__ import annotations
 
 import ast
+import http.client
 import inspect
+import json
 import os
 import sys
 import tempfile
 import textwrap
+import threading
 import unittest
+from datetime import datetime, timedelta, timezone
+from http.server import ThreadingHTTPServer
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
@@ -68,11 +74,34 @@ from market_platform_foundation.intelligence.persistence import (  # noqa: E402
 from market_platform_foundation.market_data.live_config import (  # noqa: E402
     live_observational_enabled,
 )
+from market_platform_foundation.ui_api.live_intelligence import (  # noqa: E402
+    bind_ui_api_intelligence,
+)
+from market_platform_foundation.ui_api.news_ingest import (  # noqa: E402
+    NEWS_INGEST_ROUTE,
+)
+from market_platform_foundation.ui_api.opportunity_projections import (  # noqa: E402
+    build_opportunities_summary_payload,
+)
+from market_platform_foundation.ui_api.operator_opportunity_state import (  # noqa: E402
+    reset_operator_acks,
+)
 from market_platform_foundation.ui_api.server import UiApiHandler  # noqa: E402
+from market_platform_foundation.ui_api.store import ReplayStore  # noqa: E402
 
 P1_HANDLER_ADMIT_MISSING = "P1_HANDLER_ADMIT_MISSING"
 P1_HANDLER_ADMIT_PRESENT = "P1_HANDLER_ADMIT_PRESENT"
+P2_EVENTV1_ADMIT_FAILED = "P2_EVENTV1_ADMIT_FAILED"
+P2_PIT_CLOCKS_INVALID = "P2_PIT_CLOCKS_INVALID"
+P3_DETECTOR_OPPORTUNITY_MISSING = "P3_DETECTOR_OPPORTUNITY_MISSING"
+P4_RANKED_SUMMARY_MISSING = "P4_RANKED_SUMMARY_MISSING"
+P4_RANKED_SUMMARY_BLOCKED = "P4_RANKED_SUMMARY_BLOCKED"
+P5_WATCH_DISMISS_BLOCKED = "P5_WATCH_DISMISS_BLOCKED"
+P6_DECISION_TRACE_UNREACHABLE = "P6_DECISION_TRACE_UNREACHABLE"
+P7_TRADE_REVIEW_UNREACHABLE = "P7_TRADE_REVIEW_UNREACHABLE"
 SOFTWARE_FULLSTACK_ACCEPTANCE = "SOFTWARE_FULLSTACK_ACCEPTANCE"
+LIVE_OE_NO_MUTATION = "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE"
+LIVE_OE_NO_TRADE_REVIEW = "LIVE_OBSERVATIONAL_NO_TRADE_REVIEW"
 
 _ADMIT_METHOD_NAMES = (
     "admit_event",
@@ -265,6 +294,57 @@ def _controlled_lawful_like_provider_payload(*, event_time_ns: int, received_tim
     }
 
 
+def _current_news_clocks() -> tuple[str, str]:
+    """Publication then retrieval. Current UTC, never 2026-07-21 fixture time."""
+
+    retrieved_dt = datetime.now(timezone.utc).replace(microsecond=0)
+    published_dt = retrieved_dt - timedelta(seconds=8)
+    published = published_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    retrieved = retrieved_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    if "2026-07-21" in published or "2026-07-21" in retrieved:
+        raise AssertionError("controlled news clocks must not use 2026-07-21 fixture time")
+    return published, retrieved
+
+
+def _controlled_lawful_like_news_ingest_body(*, published_time: str, retrieved_time: str) -> dict:
+    """Known POST /intelligence/ingest/news body. Not a new HTTP shape."""
+
+    return {
+        "retrieved_time": retrieved_time,
+        "articles": [
+            {
+                "headline": "Example Corp reports quarterly earnings",
+                "published_time": published_time,
+                "url": "https://example.com/software-fullstack-news",
+                "tickers": ["AAPL"],
+                "publisher_source": "Wire",
+                "provider_native_id": "software-fullstack-news-1",
+            }
+        ],
+    }
+
+
+def _http_json(
+    port: int,
+    method: str,
+    path: str,
+    *,
+    body: dict | None = None,
+) -> tuple[int, dict | str]:
+    payload = b"" if body is None else json.dumps(body).encode("utf-8")
+    headers = {"Content-Type": "application/json", "Content-Length": str(len(payload))}
+    conn = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+    conn.request(method, path, body=payload, headers=headers)
+    response = conn.getresponse()
+    raw = response.read().decode("utf-8")
+    conn.close()
+    try:
+        parsed: dict | str = json.loads(raw) if raw else {}
+    except json.JSONDecodeError:
+        parsed = raw
+    return response.status, parsed
+
+
 class SoftwareFullstackAcceptanceTests(unittest.TestCase):
     def setUp(self) -> None:
         _clear_live_and_grok_env()
@@ -387,22 +467,169 @@ class SoftwareFullstackAcceptanceTests(unittest.TestCase):
         self.assertFalse(live_observational_enabled())
         require_ui_handler_eventv1_admit()
 
-        event_time_ns = 1_800_000_000_000_000_000
-        received_time_ns = event_time_ns + 5_000_000_000
-        payload = _controlled_lawful_like_provider_payload(
-            event_time_ns=event_time_ns,
-            received_time_ns=received_time_ns,
+        published_time, retrieved_time = _current_news_clocks()
+        ingest_body = _controlled_lawful_like_news_ingest_body(
+            published_time=published_time,
+            retrieved_time=retrieved_time,
         )
-        self.assertFalse(payload["replay_substitute"])
-        self.assertEqual(payload["live_claim"], "NOT_CLAIMED")
+        self.assertNotEqual(ingest_body.get("live_claim"), "CLAIMED")
+        self.assertNotIn("collection_root", ingest_body)
+        self.assertEqual(NEWS_INGEST_ROUTE, "/intelligence/ingest/news")
 
-        raise AssertionError(
-            "P1_HANDLER_ADMIT_PRESENT but the remaining EventV1 → PIT → "
-            "detector → OE → ranked → API → WATCH/DISMISS → DecisionTrace → "
-            "TradeReview persist/readback path is not yet exercised by a "
-            "known request-path contract. Fail closed rather than invent an "
-            "admit HTTP shape."
+        reset_operator_acks()
+        store = ReplayStore(collection_root=self._tmp.name)
+        store.data_mode = "LIVE_OBSERVATIONAL"
+        store.mode = "LIVE"
+        bind_ui_api_intelligence(store)
+        previous_store = getattr(UiApiHandler, "store", None)
+        UiApiHandler.store = store
+        httpd = ThreadingHTTPServer(("127.0.0.1", 0), UiApiHandler)
+        port = httpd.server_address[1]
+        thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+        thread.start()
+        runtime_patch = patch(
+            "market_platform_foundation.market_data.live_runtime.get_live_runtime",
+            return_value=None,
         )
+        auth_patch = patch.object(UiApiHandler, "_authorize_request", return_value=True)
+        runtime_patch.start()
+        auth_patch.start()
+        try:
+            status, ingest = _http_json(port, "POST", NEWS_INGEST_ROUTE, body=ingest_body)
+            if status != 200 or not isinstance(ingest, dict) or int(ingest.get("admitted_count") or 0) < 1:
+                raise AssertionError(
+                    f"{P2_EVENTV1_ADMIT_FAILED}: POST {NEWS_INGEST_ROUTE} did not admit "
+                    f"EventV1. status={status} body={ingest!r}. This is a FAIL, not a skip."
+                )
+            events = ingest.get("events") or []
+            if not events or not isinstance(events[0], dict) or not events[0].get("event_id"):
+                raise AssertionError(
+                    f"{P2_EVENTV1_ADMIT_FAILED}: ingest response has no event_id. body={ingest!r}"
+                )
+            row = events[0]
+            event_time_ns = row.get("event_time_ns")
+            available_time_ns = row.get("available_time_ns")
+            received_time_ns = row.get("received_time_ns")
+            if event_time_ns is None or available_time_ns is None or event_time_ns == available_time_ns:
+                raise AssertionError(
+                    f"{P2_PIT_CLOCKS_INVALID}: EventV1 publication and retrieval clocks "
+                    f"must stay distinct. event={row!r}"
+                )
+            if received_time_ns is not None and event_time_ns >= received_time_ns:
+                raise AssertionError(
+                    f"{P2_PIT_CLOCKS_INVALID}: event_time_ns must precede received_time_ns. "
+                    f"event={row!r}"
+                )
+            stored = store.strategy_repository.get_event(row["event_id"])
+            if stored is None:
+                raise AssertionError(
+                    f"{P2_EVENTV1_ADMIT_FAILED}: admitted event_id={row['event_id']!r} "
+                    "did not persist/read back from the handler repository."
+                )
+            self.assertEqual(stored.event_type, "NEWS_ARTICLE")
+            self.assertNotIn("2026-07-21", str(ingest))
+
+            opportunity_ids = ingest.get("opportunity_ids") or []
+            if (
+                int(ingest.get("opportunity_count") or 0) < 1
+                or not opportunity_ids
+                or row.get("detector_detail") != "NEWS_ARTICLE_OPPORTUNITY_MINTED"
+            ):
+                raise AssertionError(
+                    f"{P3_DETECTOR_OPPORTUNITY_MISSING}: EventV1 admitted but detector "
+                    f"did not mint OpportunityV1. ingest={ingest!r}. This is a FAIL, not a skip."
+                )
+            opportunity_id = str(opportunity_ids[0])
+            persisted_opportunity = store.strategy_repository.get_opportunity(opportunity_id)
+            if persisted_opportunity is None:
+                raise AssertionError(
+                    f"{P3_DETECTOR_OPPORTUNITY_MISSING}: opportunity_id={opportunity_id!r} "
+                    "did not persist/read back."
+                )
+
+            summary_status, summary = _http_json(port, "GET", "/opportunities/summary")
+            summary_text = str(summary)
+            assembled = build_opportunities_summary_payload(store)
+            if summary_status == 403 and LIVE_OE_NO_MUTATION in summary_text:
+                raise AssertionError(
+                    f"{P4_RANKED_SUMMARY_BLOCKED}: {LIVE_OE_NO_MUTATION} on "
+                    "GET /opportunities/summary. Ranked observational read is fail-closed. "
+                    "This is a FAIL, not a skip."
+                )
+            if summary_status != 200 or not isinstance(summary, dict):
+                reason = ""
+                if isinstance(summary, dict):
+                    reason = str(summary.get("reason_code") or summary.get("error") or "")
+                raise AssertionError(
+                    f"{P4_RANKED_SUMMARY_BLOCKED}: GET /opportunities/summary is not "
+                    f"reachable on the request path. status={summary_status} "
+                    f"reason={reason or summary!r}. In-process ranked assembly "
+                    f"feed_status={assembled.get('feed_status')!r} "
+                    f"items={len(assembled.get('items') or [])} "
+                    f"(not a substitute for the HTTP read). This is a FAIL, not a skip."
+                )
+            items = summary.get("items") or []
+            if summary.get("feed_status") != "READY" or not items:
+                raise AssertionError(
+                    f"{P4_RANKED_SUMMARY_MISSING}: ranked observational summary is not READY "
+                    f"with OpportunityV1 items. summary={summary!r}"
+                )
+            if "2026-07-21" in str(summary.get("as_of_context", {})):
+                raise AssertionError(
+                    f"{P4_RANKED_SUMMARY_MISSING}: ranked as_of used 2026-07-21 fixture time. "
+                    f"as_of_context={summary.get('as_of_context')!r}"
+                )
+            self.assertEqual(items[0].get("identity_kind"), "OPPORTUNITY_V1")
+            self.assertEqual(items[0].get("opportunity_id"), opportunity_id)
+
+            watch_status, watch_body = _http_json(
+                port,
+                "POST",
+                f"/opportunities/{opportunity_id}/watch",
+                body={},
+            )
+            if watch_status == 200:
+                detail_status, detail = _http_json(port, "GET", f"/opportunities/{opportunity_id}")
+                if detail_status != 200 or not isinstance(detail, dict):
+                    raise AssertionError(
+                        f"{P6_DECISION_TRACE_UNREACHABLE}: WATCH succeeded but opportunity "
+                        f"detail/DecisionTrace readback failed. status={detail_status} body={detail!r}"
+                    )
+                review_status, review = _http_json(
+                    port,
+                    "GET",
+                    f"/intelligence/trade-reviews?opportunity_id={opportunity_id}",
+                )
+                if (
+                    review_status != 200
+                    or not isinstance(review, dict)
+                    or not review.get("items")
+                    or LIVE_OE_NO_TRADE_REVIEW in str(review)
+                ):
+                    raise AssertionError(
+                        f"{P7_TRADE_REVIEW_UNREACHABLE}: WATCH succeeded but TradeReview "
+                        f"persist/readback is not wired. status={review_status} body={review!r}"
+                    )
+                raise AssertionError(
+                    f"{P6_DECISION_TRACE_UNREACHABLE}: WATCH/TradeReview reads succeeded "
+                    "but DecisionTrace request-path readback is not a known UiApiHandler route."
+                )
+            raise AssertionError(
+                f"{P5_WATCH_DISMISS_BLOCKED}: {LIVE_OE_NO_MUTATION}. EventV1 admit, PIT "
+                "clocks, detector OpportunityV1, and GET /opportunities/summary are wired. "
+                "WATCH/DISMISS are not reachable without mutation authority. "
+                f"status={watch_status} body={watch_body!r}. This is a FAIL, not a skip."
+            )
+        finally:
+            auth_patch.stop()
+            runtime_patch.stop()
+            httpd.shutdown()
+            httpd.server_close()
+            thread.join(timeout=5)
+            if previous_store is not None:
+                UiApiHandler.store = previous_store
+            elif hasattr(UiApiHandler, "store"):
+                delattr(UiApiHandler, "store")
 
 
 if __name__ == "__main__":
