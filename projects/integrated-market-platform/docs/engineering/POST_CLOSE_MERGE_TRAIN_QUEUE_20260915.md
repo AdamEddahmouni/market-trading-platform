@@ -7,14 +7,14 @@
 **Frozen RTH runtime:** `.rth-operator-20260915` at the same SHA — **do not thaw, patch, or merge into it**  
 **This document does not update** [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md)
 
-Snapshot time: 2026-09-15 ~12:51 ET (refresh of `b449da76`). Q2–Q4 tip is now `91b07b4f` (must-fix attempt after `c43688ed`). Re-review **in flight**. **Do not land today.**
+Snapshot time: 2026-09-15 ~13:00 ET (refresh of `65fe5f5d`). Q2–Q4 tip `91b07b4f` is **SAFE-TO-RETAIN-AFTER-REBASE** per P13B re-probe `4176d0b6`. Prior MUST-FIX **closed**. **Do not land during RTH.** After close: rebase onto `origin/main`, rerun focused tests, then consider merge.
 
 ## Rebase-required flags (vs `origin/main` `7aade60b`)
 
 | Slot | Tip | Merge-base | Must rebase before land |
 |---|---|---|---|
 | Q1 launcher | `9b0781c9` | `d588728d` | **YES — do not merge as-is** |
-| Q2–Q4 live-OE / cockpit | `91b07b4f` | `7aade60b` | **MUST-FIX-BEFORE-MERGE** / re-review in flight. **Do not land today.** **rebase-required=yes** after close |
+| Q2–Q4 live-OE / cockpit | `91b07b4f` | `7aade60b` | **SAFE-TO-RETAIN-AFTER-REBASE** (P13B `4176d0b6`; prior MUST-FIX closed). **Do not land during RTH.** After close: rebase onto `origin/main`, rerun focused tests, then consider merge. **rebase-required=yes** |
 | Q5 WATCH harness | `f8c03183` | `7aade60b` | **YES if** `origin/main` moves after close. Independent of Item 9. Paper fixture path; acks stay blocked in `LIVE_OBSERVATIONAL` even after P1 |
 | Q6 Item 9 | `77d448c3` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
 | Q6 P12 review | `49ae216e` | (review branch) | Gate only — **not merge cargo** |
@@ -22,7 +22,7 @@ Snapshot time: 2026-09-15 ~12:51 ET (refresh of `b449da76`). Q2–Q4 tip is now 
 | Q8 Item 7 notes | `d588728d` + untracked notes | `d588728d` | **YES** onto post-close `origin/main` before committing notes |
 | Q9a test-gap | `145fee4f` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
 | Q9b runbook | `134924c3` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
-| This queue | `989ac2ef` + this refresh | `7aade60b` | Docs only; **YES if** `origin/main` moves |
+| This queue | `65fe5f5d` + this refresh | `7aade60b` | Docs only; **YES if** `origin/main` moves |
 
 ## Operating holds
 
@@ -57,20 +57,20 @@ launcher
 Recommended post-close landing sequence:
 
 1. **Q1 launcher / Vite proxy** (operator can even *see* JSON)
-2. **Q4** `8189af4c` + must-fix `91b07b4f` — **do not land today** (re-review in flight)
-3. **Q3** `c43688ed` + must-fix `91b07b4f` ranked READ — **do not land today**
-4. **Q2** `c4d88ef7` + must-fix `91b07b4f` EventV1 — **do not land today**
+2. **Q4** `8189af4c` + `91b07b4f` — **do not land during RTH**; after close rebase + focused tests, then consider merge
+3. **Q3** `c43688ed` + `91b07b4f` ranked READ — same RTH hold
+4. **Q2** `c4d88ef7` + `91b07b4f` EventV1 helpers — same RTH hold
 5. **Q5** `f8c03183` WATCH harness (Paper `INTERNAL_SIMULATION` fixtures; **not** empirical; acks stay blocked in `LIVE_OBSERVATIONAL`)
 6. **Q6 Item 9 session-day kline** (independent; not calibration)  
 7. **Q7 latency notes/telemetry**  
 8. **Q8 Item 7 upstream wiring** (priority 7; no corpus fabrication)  
 9. **Q9 runbook / test-gap docs** (land with corresponding software)
 
-P12 diagnosis review **FINISHED** `PARTIALLY_CONFIRMED` (`5f965f32`). Patch review `review/live-oe-patch-20260915` flagged `c43688ed` **MUST-FIX-BEFORE-MERGE**. P1 must-fix attempt is now tip `91b07b4f342f8a73dcaa237dc4de1e5c69c86593` `Close live OE honesty leaks flagged by P13` (after `c43688ed`; base `7aade60b`). Stack: `8189af4c` → `c4d88ef7` → `c43688ed` → `91b07b4f`. Re-review **in flight**. **Do not land today.** **rebase-required=yes** after close.
+P12 diagnosis review **FINISHED** `PARTIALLY_CONFIRMED` (`5f965f32`). P13 flagged `c43688ed` **MUST-FIX-BEFORE-MERGE**. P1 closed those leaks at tip `91b07b4f342f8a73dcaa237dc4de1e5c69c86593` `Close live OE honesty leaks flagged by P13` (after `c43688ed`; base `7aade60b`). Stack: `8189af4c` → `c4d88ef7` → `c43688ed` → `91b07b4f`. P13B re-probe `4176d0b6` (`docs/engineering/reviews/P13B_LIVE_OE_PATCH_REPROBE_20260915.md` on `review/live-oe-patch-20260915`) classifies the tip **SAFE-TO-RETAIN-AFTER-REBASE**. Prior MUST-FIX **closed**. **Do not land during RTH.** After close: rebase onto `origin/main`, rerun focused tests (P13B **62/62**), then consider merge. **rebase-required=yes**.
 
-Prior must-fix list (open until re-review closes them): EventV1 not on `UiApiHandler` request path; do not rank `INELIGIBLE` on current book; no `READY` when `as_of` UNAVAILABLE; `inspect` / `store.as_of_time` July 21; `replay_shelf` fixtures OK only if `DEMO_REPLAY`.
+Prior must-fix list (**closed** on request-path surfaces P13 named): EventV1 no longer claimed as `UiApiHandler` request-path admission (helpers only); live `INELIGIBLE` not on current book; no `READY` when `as_of` UNAVAILABLE; `inspect` / `store.as_of_time()` UNAVAILABLE without live receive; `replay_shelf` is `DEMO_REPLAY` and out of current items.
 
-**Retainable:** mutation fail-close; current-item quarantine; context UNAVAILABLE; `_is_live` kept. Vite `/opportunities` is P3/Q1.
+**Follow-ons (do not block merge after rebase):** no `UiApiHandler` news admit; no Finviz auto-fetch; mixed-discovery EMPTY vs UNAVAILABLE (next-session empty-screen honesty, not a live-mutation leak); residual `store.as_of_time_ns` footgun if someone assigns fixture `prediction_cutoff()` (production `run_ui_api` does not). **ACK/WATCH stay fail-closed.** Vite `/opportunities` is P3/Q1.
 
 ---
 
@@ -98,18 +98,18 @@ Prior must-fix list (open until re-review closes them): EventV1 not on `UiApiHan
 
 | Field | Value |
 |---|---|
-| **Status** | `MUST-FIX-BEFORE-MERGE` — must-fix attempt `91b07b4f` after `c4d88ef7`. Re-review in flight. **Do not land today** |
+| **Status** | `SAFE-TO-RETAIN-AFTER-REBASE` — P13B `4176d0b6` closed prior MUST-FIX on tip `91b07b4f`. **Do not land during RTH** |
 | **Branch / worktree** | `repair/live-oe-cockpit-state-20260915` at `.worktrees/repair-live-oe-cockpit-state-20260915` (same file set as Q3+Q4) |
 | **Source baseline SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` |
 | **HEAD vs origin/main** | Tip `91b07b4f342f8a73dcaa237dc4de1e5c69c86593`. Stack: `8189af4c` → `c4d88ef7` → `c43688ed` → `91b07b4f` |
-| **Purpose** | Admit Finviz news as `EventV1` + PIT clocks through UI API production ingress |
-| **Issue addressed** | Patch review: EventV1 is **not** on the `UiApiHandler` request path (claimed ingress does not run on handler requests). P12: today's ranked `UNAVAILABLE` is `_is_live`, not missing EventV1 |
-| **Empirical evidence** | Lane A `LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS`. Moomoo `CONNECTED_DEGRADED` 0/12. Diagnosis [520aeed6](520aeed6-3d55-47a3-85ff-6b314fcdfd9a); P12 `5f965f32` |
-| **Affected files** | `c4d88ef7` (+303/−1): `news/event_v1.py`, `news/event_v1_ingress.py`, `ui_api/live_intelligence.py`, `observation_ingress/consumers.py`, `ui_api/store.py`, `tools/ui1/run_ui_api.py`, `tests/news/test_finviz_news_event_v1_ingress.py`. **Not** Vite/launcher (Q1/P3) |
-| **Focused tests** | Shared stack **60/60**. Includes `tests.news.test_finviz_news_event_v1_ingress` |
-| **Broader validation** | `python tools/imp.py test affected` on intelligence/news/ui_api; do not enable Live or enrichment |
-| **Dependencies** | Lands **after** `8189af4c` in this branch. Does not replace Q3. Vite `/opportunities` is P3/Q1 |
-| **Must rebase** | **YES after close**, and only after P1 isolated must-fix. **Do not land today** |
+| **Purpose** | Bind Finviz news as `EventV1` + PIT clocks via UI API **helpers** (not `UiApiHandler` request-path admit) |
+| **Issue addressed** | P13B **CONFIRMED**: EventV1 no longer claimed as `UiApiHandler` request-path admission (`admit_news` / `put_event` absent; helper-only). Historical `c4d88ef7` subject still overclaims; current tree does not. P12: today's ranked `UNAVAILABLE` is `_is_live`, not missing EventV1 |
+| **Empirical evidence** | Lane A `LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS`. Moomoo `CONNECTED_DEGRADED` 0/12. Diagnosis [520aeed6](520aeed6-3d55-47a3-85ff-6b314fcdfd9a); P12 `5f965f32`; P13B software re-probe 62/62 |
+| **Affected files** | `c4d88ef7` (+303/−1) plus honesty edits in `91b07b4f`: `news/event_v1.py`, `news/event_v1_ingress.py`, `ui_api/live_intelligence.py`, `observation_ingress/consumers.py`, `ui_api/store.py`, `tools/ui1/run_ui_api.py`, `tests/news/test_finviz_news_event_v1_ingress.py`. **Not** Vite/launcher (Q1/P3) |
+| **Focused tests** | Shared stack **62/62** (P13B). Includes `tests.news.test_finviz_news_event_v1_ingress` |
+| **Broader validation** | After close rebase: `python tools/imp.py test affected` on intelligence/news/ui_api; do not enable Live or enrichment |
+| **Dependencies** | Lands **after** `8189af4c` in this branch. Does not replace Q3. Vite `/opportunities` is P3/Q1. Follow-on (does not block): no handler news admit; no auto-fetch |
+| **Must rebase** | **YES after close** onto `origin/main`; rerun focused tests; then consider merge. **Do not land during RTH** |
 | **Safely discarded if diagnosis changes** | EventV1-as-today's-UNAVAILABLE-cause is **weakened** (P12). Keep FTEP dry-run honesty. Do not treat EventV1 as sufficient for Q3 |
 
 ---
@@ -118,17 +118,17 @@ Prior must-fix list (open until re-review closes them): EventV1 not on `UiApiHan
 
 | Field | Value |
 |---|---|
-| **Status** | `MUST-FIX-BEFORE-MERGE` — tip `91b07b4f` (after `c43688ed`). Re-review in flight. **Do not land today** |
+| **Status** | `SAFE-TO-RETAIN-AFTER-REBASE` — tip `91b07b4f` (after `c43688ed`). P13B closed MUST-FIX. **Do not land during RTH** |
 | **Branch / worktree** | Same as Q2: `repair/live-oe-cockpit-state-20260915` |
 | **Source baseline SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` |
 | **Purpose** | Allow `LIVE_OBSERVATIONAL` **reads** of a live (possibly EMPTY) ranked repository; ACK/WATCH still blocked |
-| **Issue addressed** | Patch review must-fix: do **not** rank `INELIGIBLE` on the current book; no `READY` when `as_of` is UNAVAILABLE. Retainable: mutation fail-close; `_is_live` kept |
-| **Empirical evidence** | Lane E `opportunities-summary-1050.json` UNAVAILABLE / `items=[]`. Software tests lock ACK/WATCH fail-closed |
-| **Affected files** | `c43688ed` (+189/−33): `ui_api/opportunity_projections.py`, `discovery/engine.py`, `opportunity/ranking.py`, `ui_api/mixed_discovery_projections.py`, `tests/ui1/test_opportunity_api.py`, `tests/ui1/test_opportunity_radar_feed.py`, `tests/platform/test_discovery_p33.py`, `tests/platform/test_mixed_discovery.py`, docs |
-| **Focused tests** | Shared stack **60/60**. Ranked READ allowed; ACK/WATCH still blocked |
-| **Broader validation** | ui1 opportunity API + discovery; Vite `/opportunities` still P3/Q1 |
-| **Dependencies** | **Hard:** do **not** land this commit without first-stack `8189af4c` (Q4). EventV1 (`c4d88ef7`) is **not sufficient**. **Do not land today** |
-| **Must rebase** | **YES after close**, after P1 must-fix. **Do not land today** |
+| **Issue addressed** | P13B **CONFIRMED**: `include_ineligible` gone; live INELIGIBLE not on current book (denied-family + live clock → `feed_status=EMPTY`, `ranked_n=0`). `READY` never when `as_of` UNAVAILABLE; READY needs clock + eligible rows. **ACK/WATCH stay fail-closed** (`WATCH_BLOCKED` / `DISMISS_BLOCKED` `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`) |
+| **Empirical evidence** | Lane E `opportunities-summary-1050.json` UNAVAILABLE / `items=[]`. P13B software tests lock ACK/WATCH fail-closed |
+| **Affected files** | `c43688ed` (+189/−33) plus `91b07b4f` honesty: `ui_api/opportunity_projections.py`, `discovery/engine.py`, `opportunity/ranking.py`, `ui_api/mixed_discovery_projections.py`, `tests/ui1/test_opportunity_api.py`, `tests/ui1/test_opportunity_radar_feed.py`, `tests/platform/test_discovery_p33.py`, `tests/platform/test_mixed_discovery.py`, docs |
+| **Focused tests** | Shared stack **62/62**. Ranked READ allowed; ACK/WATCH still blocked |
+| **Broader validation** | After close rebase: ui1 opportunity API + discovery; Vite `/opportunities` still P3/Q1 |
+| **Dependencies** | **Hard:** do **not** land this commit without first-stack `8189af4c` (Q4). EventV1 (`c4d88ef7`) is **not sufficient**. Follow-on (does not block): mixed-discovery EMPTY vs UNAVAILABLE |
+| **Must rebase** | **YES after close** onto `origin/main`; rerun focused tests; then consider merge. **Do not land during RTH** |
 | **Safely discarded if diagnosis changes** | **NO** for keeping live **mutations** fail-closed |
 
 ---
@@ -137,17 +137,17 @@ Prior must-fix list (open until re-review closes them): EventV1 not on `UiApiHan
 
 | Field | Value |
 |---|---|
-| **Status** | `MUST-FIX-BEFORE-MERGE` — first stack `8189af4c`; honesty leaks addressed in `91b07b4f` pending re-review. **Do not land today** |
+| **Status** | `SAFE-TO-RETAIN-AFTER-REBASE` — first stack `8189af4c`; honesty closed in `91b07b4f` per P13B. **Do not land during RTH** |
 | **Branch / worktree** | Same as Q2: `repair/live-oe-cockpit-state-20260915` |
 | **Source baseline SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` |
 | **Purpose** | Honest RTH clock and attention: `LIVE_OBSERVATIONAL` without live receive time → `as_of` UNAVAILABLE (never BIYA 2026-07-21 as “now”); quarantine replay/MC9/ES as current RTH cards |
-| **Issue addressed** | Patch review must-fix: `inspect` / `store.as_of_time` still July 21; `replay_shelf` still has fixture cards (OK only if `DEMO_REPLAY`, not current). Retainable: current-item quarantine; context UNAVAILABLE |
-| **Empirical evidence** | Lane E: 7 replay/fixture attention cards; ranked banner unavailable |
-| **Affected files** | `8189af4c` (+177/−22): `ui_api/projections.py`, `tests/ui1/test_live_observational_state.py`, `docs/architecture/MODE_AUTHORITY.md` |
-| **Focused tests** | Shared stack **60/60**. Includes `tests.ui1.test_live_observational_state` |
-| **Broader validation** | ui1 projection tests |
-| **Dependencies** | **Already first** on this branch. Must remain first. **Do not land today** until inspect/`as_of_time` and shelf labeling are fixed |
-| **Must rebase** | **YES after close**, after P1 must-fix. **Do not land today** |
+| **Issue addressed** | P13B **CONFIRMED**: default live `store.as_of_time()` and inspect EVIDENCE `as_of` are UNAVAILABLE without live receive. `replay_shelf` count 8, label `DEMO_REPLAY`, no id overlap with current `items=[]`. Residual **follow-on** (does not block): if `as_of_time_ns` is set to `prediction_cutoff()`, `store.as_of_time()` becomes July 21 while `display_as_of_time` stays UNAVAILABLE — production `run_ui_api` does not assign `as_of_time_ns` |
+| **Empirical evidence** | Lane E: 7 replay/fixture attention cards; ranked banner unavailable. P13B software: current items empty; shelf locked out |
+| **Affected files** | `8189af4c` (+177/−22) plus `91b07b4f`: `ui_api/projections.py`, `ui_api/store.py`, `tests/ui1/test_live_observational_state.py`, `docs/architecture/MODE_AUTHORITY.md` |
+| **Focused tests** | Shared stack **62/62**. Includes `tests.ui1.test_live_observational_state` |
+| **Broader validation** | After close rebase: ui1 projection tests |
+| **Dependencies** | **Already first** on this branch. Must remain first |
+| **Must rebase** | **YES after close** onto `origin/main`; rerun focused tests; then consider merge. **Do not land during RTH** |
 | **Safely discarded if diagnosis changes** | **NO** if July-21 `as_of` remains empirically observed |
 
 ---
@@ -279,7 +279,7 @@ Prior must-fix list (open until re-review closes them): EventV1 not on `UiApiHan
 | Slot | Branch / worktree | Notes |
 |---|---|---|
 | P12 live-OE diagnosis | `review/live-oe-diagnosis-20260915` `5f965f32` | **FINISHED** `PARTIALLY_CONFIRMED`. **Not merge cargo** |
-| Live-OE **patch** review | `review/live-oe-patch-20260915` on `c43688ed`; re-review of `91b07b4f` **in flight** | **MUST-FIX-BEFORE-MERGE.** **Do not land today** |
+| Live-OE **patch** re-probe | `review/live-oe-patch-20260915` note `P13B_LIVE_OE_PATCH_REPROBE_20260915.md` (P13B `4176d0b6`) vs tip `91b07b4f` | **SAFE-TO-RETAIN-AFTER-REBASE.** Prior MUST-FIX closed. **Not merge cargo.** **Do not land during RTH** |
 | P12 Item 9 review | `review/item9-kline-diagnosis-20260915` `49ae216e` | Gate on Q6 only. `PARTIALLY_CONFIRMED` |
 | Finviz 11:49 ET HTTP 429 | n/a | **Empirical PROVIDER evidence**, not merge cargo. Do not open a software PR to “fix” rate-limit as if it were an IMP defect |
 | PR #196 | `work/phase55b-lane-b-evidence-capture-context` `ec93809e` | Sidecar SOFTWARE only. **Rebase after session, not today.** `CAPTURE_CONTEXT_ABSENT` ≠ Item 7 row blocker |
@@ -303,8 +303,8 @@ Prior must-fix list (open until re-review closes them): EventV1 not on `UiApiHan
 ## Coordinator checklist (post-close, not now)
 
 1. Re-fetch `origin/main`. If SHA ≠ `7aade60b`, every candidate **must rebase** except already-rebased tips.
-2. Re-read porcelain/SHAs: Q1 tip `9b0781c9` still on `d588728d` (**MUST rebase**); Q2–Q4 tip `91b07b4f` (must-fix after `c43688ed`) is **MUST-FIX-BEFORE-MERGE**, re-review in flight — **do not land today**; **rebase after close**; Q5 tip `f8c03183`; Q6 tip `77d448c3` + P12 `49ae216e`; Q7 `49529d64`; Q8 untracked notes on `d588728d`; Q9a `145fee4f`; Q9b `134924c3`.
-3. Q2–Q4 must-fix before any land: EventV1 not on `UiApiHandler` request path; no INELIGIBLE on current book; no READY when `as_of` UNAVAILABLE; inspect/`store.as_of_time` still July 21; `replay_shelf` fixtures only if `DEMO_REPLAY`. Retain mutation fail-close, current-item quarantine, context UNAVAILABLE, `_is_live`.
+2. Re-read porcelain/SHAs: Q1 tip `9b0781c9` still on `d588728d` (**MUST rebase**); Q2–Q4 tip `91b07b4f` is **SAFE-TO-RETAIN-AFTER-REBASE** (P13B `4176d0b6`; prior MUST-FIX closed) — **do not land during RTH**; after close rebase onto `origin/main`, rerun focused tests, then consider merge; Q5 tip `f8c03183`; Q6 tip `77d448c3` + P12 `49ae216e`; Q7 `49529d64`; Q8 untracked notes on `d588728d`; Q9a `145fee4f`; Q9b `134924c3`.
+3. Q2–Q4 prior must-fix **closed**. Follow-ons (do not block): no `UiApiHandler` news admit; no auto-fetch; mixed-discovery EMPTY vs UNAVAILABLE; residual `store.as_of_time_ns` footgun if someone sets fixture cutoff. **ACK/WATCH stay fail-closed.** Retain current-item quarantine, context UNAVAILABLE, `_is_live`.
 4. Honor Item 9 P12: do not land `max_count=120`; do not treat unique-security `historyKLQuota` as proven.
 5. Merge **nothing** into frozen RTH. Do not land this queue as product software.
 6. Do not flip empirical gates from these software/docs commits. Finviz 429 is provider evidence, not a queue member.
