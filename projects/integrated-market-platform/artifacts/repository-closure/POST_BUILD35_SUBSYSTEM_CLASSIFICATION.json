@@ -571,6 +571,8 @@
         "tools/opportunity_summaries.py",
         "tools/path_a_prospective_run.py",
         "tools/path_a_rth_preflight.py",
+        "tools/rth_empirical_ops.py",
+        "src/market_platform_foundation/operations/rth_empirical_ops.py",
         "tools/research",
         "tools/state",
         "tools/state_path_diagnostic.py",
