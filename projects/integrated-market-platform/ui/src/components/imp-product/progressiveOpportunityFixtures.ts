@@ -51,6 +51,58 @@ export const fixtureOpportunityEvidenceVerified: OpportunityEvidenceResponse = {
   ],
 };
 
+/** Replay-only options-flow attachment (matches golden fixture projection; not live feed). */
+export const fixtureOpportunityOptionsFlowReplayEvidence: OpportunityEvidenceResponse = {
+  ...fixtureOpportunityEvidenceRefresh,
+  research_artifact_evidence: {
+    authority_class: "EVIDENCE_NOT_PREDICTION",
+    readiness: "OPTIONS_FLOW_REPLAY_EVIDENCE_READY",
+    attachments: [
+      {
+        attachment_id: "ofr-nvda-default",
+        artifact_type: "OPTIONS_FLOW_REPLAY_EVIDENCE_ARTIFACT",
+        content_sha256: "8396D6B3FF31ECE0743F728F5AA2D753133A8F7C689FD566EBCB3C68CC0EF3BF",
+        status: "RESOLVED",
+        authority_class: "EVIDENCE_NOT_PREDICTION",
+        options_flow_transparent_context: {
+          authority_class: "EVIDENCE_NOT_PREDICTION",
+          artifact_type: "OPTIONS_FLOW_REPLAY_EVIDENCE_ARTIFACT",
+          replay_mode: "SYNTHETIC_FIXTURE_ONLY",
+          live_feed_claim: "NOT_CLAIMED",
+          print_count: 3,
+          trade_class_counts: { block: 1, sweep: 2 },
+          missing_data_fields_union: ["gex_context.net_gamma_oi_weighted", "quote_age_ms"],
+          explicit_exclusions: ["vendor_composite_score", "confirmation_score", "opaque_whale_score"],
+          decomposed_prints: [
+            {
+              print_index: 0,
+              option_type: "call",
+              strike: 130,
+              expiry: "2026-08-15",
+              trade_classification: { trade_class: "sweep" },
+              quote_age: { available: true, quote_age_ms: 120, staleness: "fresh" },
+              aggressor_confidence: { available: true, band: "medium", confidence: 0.81 },
+              signed_flow: { direction: "buy_initiated", open_close: "open", quality_flags: [] },
+              missing_data_fields: [],
+            },
+            {
+              print_index: 2,
+              option_type: "put",
+              strike: 125,
+              expiry: "2026-08-15",
+              trade_classification: { trade_class: "sweep" },
+              quote_age: { available: false, reason: "QUOTE_AGE_MISSING" },
+              aggressor_confidence: { available: true, band: "low", confidence: 0.62 },
+              signed_flow: { direction: "sell_initiated", open_close: "close", quality_flags: [] },
+              missing_data_fields: ["quote_age_ms", "gex_context.net_gamma_oi_weighted"],
+            },
+          ],
+        },
+      },
+    ],
+  },
+};
+
 export function fixtureRowAfterEvidenceRefresh(): OpportunityReviewRow {
   return {
     ...fixtureOpportunityRowBase,
