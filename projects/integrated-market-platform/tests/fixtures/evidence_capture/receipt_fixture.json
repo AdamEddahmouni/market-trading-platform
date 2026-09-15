@@ -1,0 +1,11 @@
+{
+  "artifact_kind": "ftep_catalyst_watch_report",
+  "schema_version": "1.0.0",
+  "campaign": "FTEP-V1-002",
+  "attention_data_kind": "FIXTURE_SMOKE",
+  "watch_mode": "FIXTURE_SMOKE",
+  "test_mode": "SIGNAL_ONLY",
+  "dry_run": true,
+  "evidence_class": "SOFTWARE",
+  "row_count": 0
+}

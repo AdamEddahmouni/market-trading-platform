@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — Phase 5.5B Lane B: evidence capture-context sidecar
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tools`, `evidence` |
+| **Summary** | Add optional `receipt.capture-context.json` sidecar (`schema_version` 1.0.0) with create/verify CLI (`tools/evidence_capture_context.py`). Binds SHA-256 of the artifact, records runtime/origin SHAs and operator metadata without mutating Finviz/Item7/Item9 receipt contracts; verification fails closed on post-hash artifact mutation or evidence-class upgrade attempts. |
+| **Key files** | `src/market_platform_foundation/evidence_capture/sidecar.py`, `tools/evidence_capture_context.py`, `manifests/evidence/capture_context_sidecar.schema.json`, `tests/intelligence/test_evidence_capture_context.py` |
+| **Tests** | `python -m unittest tests.intelligence.test_evidence_capture_context` |
+| **Related** | Phase 5.5B Lane B brief; optional consumption by Lane C/D validators via `--context` |
+| **Notes** | Evidence class SOFTWARE only; `orders_placed` / `empirical_lock_created` forced false. |
+
 ## 2026-09-15 — PROGRAM_STATUS: Phase 5 software close at `d16511d2`
 
 | Field | Value |
