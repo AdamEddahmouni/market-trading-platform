@@ -19,6 +19,8 @@ from market_platform_foundation.intelligence.ingest.research_artifact_attachment
 )
 from market_platform_foundation.intelligence.opportunity.research_artifact_evidence import (
     OPTIONS_FLOW_REPLAY_EVIDENCE_READY,
+    RESEARCH_ARTIFACT_EVIDENCE_ATTACHED,
+    RESEARCH_ARTIFACT_EVIDENCE_NOT_ATTACHED,
     project_options_flow_transparent_context,
 )
 from market_platform_foundation.intelligence.persistence import InMemoryIntelligenceRepository
@@ -93,6 +95,7 @@ class OpportunityOptionsFlowReplayEvidenceTests(unittest.TestCase):
         evidence = build_opportunity_evidence_payload(self.store, self.opportunity.opportunity_id)
         block = evidence.get("research_artifact_evidence") or {}
         self.assertEqual(block.get("readiness"), OPTIONS_FLOW_REPLAY_EVIDENCE_READY)
+        self.assertEqual(block.get("attachment_status"), RESEARCH_ARTIFACT_EVIDENCE_ATTACHED)
         attachments = block.get("attachments") or []
         self.assertEqual(len(attachments), 1)
         ctx = attachments[0].get("options_flow_transparent_context") or {}

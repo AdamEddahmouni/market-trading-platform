@@ -16,6 +16,7 @@ from ..opportunity.research_artifact_evidence import (
     resolve_attachment_artifact,
 )
 from ...research.edge_stats.precomputed_catalog import resolve_precomputed_research_artifact
+from .research_artifact_scope import validate_research_artifact_opportunity_scope
 
 
 class ResearchArtifactAttachmentPersistence(Protocol):
@@ -64,13 +65,19 @@ class ResearchArtifactAttachmentRuntime:
 
     def attach(self, body: dict[str, Any]) -> ResearchArtifactAttachmentResult:
         record = opportunity_research_artifact_attachment_v1_from_dict(body)
-        if self._get_opportunity is not None and self._get_opportunity(record.opportunity_id) is None:
-            raise ValueError("RESEARCH_ARTIFACT_ATTACHMENT_OPPORTUNITY_NOT_FOUND")
-        if resolve_precomputed_research_artifact(
+        opportunity = None
+        if self._get_opportunity is not None:
+            opportunity = self._get_opportunity(record.opportunity_id)
+            if opportunity is None:
+                raise ValueError("RESEARCH_ARTIFACT_ATTACHMENT_OPPORTUNITY_NOT_FOUND")
+        catalog_artifact = resolve_precomputed_research_artifact(
             artifact_type=record.artifact_type,
             content_sha256=record.content_sha256,
-        ) is None:
+        )
+        if catalog_artifact is None:
             raise ValueError("RESEARCH_ARTIFACT_ATTACHMENT_ARTIFACT_NOT_IN_CATALOG")
+        if opportunity is not None:
+            validate_research_artifact_opportunity_scope(opportunity, catalog_artifact)
         if resolve_attachment_artifact(record) is None:
             raise ValueError("RESEARCH_ARTIFACT_ATTACHMENT_QUERY_HASH_MISMATCH")
         self._repository.put_opportunity_research_artifact_attachment(record)
