@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildPaperStrategyProfitabilityModel,
-  type PaperStrategyProfitabilityResponse,
-} from "./paperStrategyProfitabilityModel";
+import type { PaperStrategyProfitabilityResponse } from "../../api/schemas";
+import { buildPaperStrategyProfitabilityModel } from "./paperStrategyProfitabilityModel";
 
 describe("buildPaperStrategyProfitabilityModel", () => {
   it("keeps cumulative attribution snapshots non-additive", () => {

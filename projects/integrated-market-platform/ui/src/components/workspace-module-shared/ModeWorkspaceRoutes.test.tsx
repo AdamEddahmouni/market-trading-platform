@@ -198,7 +198,7 @@ const routeCases: RouteCase[] = [
   },
 ];
 
-function renderRouteCase({ path, Component }: RouteCase, mode: Mode) {
+function renderRouteCase({ path, Component }: Pick<RouteCase, "path" | "Component">, mode: Mode) {
   const routePath = path.replace(/\/workspace\/[^/]+/, "/workspace/:symbol");
   return render(
     <MemoryRouter initialEntries={[path]}>
