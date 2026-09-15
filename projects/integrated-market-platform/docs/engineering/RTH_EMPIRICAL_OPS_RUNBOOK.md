@@ -59,7 +59,7 @@ $env:IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS = "1"
 
 | Step | Command | Expected receipt / code |
 |------|---------|-------------------------|
-| Finviz prospective read | `python tools\ftep_watch_catalysts.py FTEP-V1-002 --live-ingress --json` | `watch_mode=PROSPECTIVE_FINVIZ_INGRESS`; zero rows → `LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS` |
+| Finviz prospective read | `python tools\ftep_watch_catalysts.py FTEP-V1-002 --live-ingress --json` | UTF-8 JSON even on 429/token-absent/gates-inactive; `watch_mode=PROSPECTIVE_FINVIZ_INGRESS`; zero rows → `LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS`; no immediate 429 retry |
 | Item 9 prospective 1m | `python tools\moomoo\opend_bar_1m_prospective_proof.py prospective --poll --instrument-id AAPL --experiment-id item9-prospective-20260915-rth-aapl --receipt-out artifacts\ftep-v1-002\item9-prospective-proof-receipts --poll-interval-s 5.0 --timeout-s 3900.0` | JSON on stdout; receipt `item9.bar-ohlcv-prospective-proof/1.1.0`; `orders_placed=false`, `calibrated=false` |
 | Item 7 status | `python tools\item7_corpus_collector.py status --persistence-root $env:IMP_STATE_DIR --training-cutoff-ns <ns>` | Read-only status; no forced settlement (`--training-cutoff-ns` required) |
 | Ops dry-run bundle | `python tools\rth_empirical_ops.py --json run-observational` | `operator_run_id=RTHOPS-*`; sub-artifact refs only |

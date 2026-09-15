@@ -58,7 +58,7 @@ Recompute `$item7CutoffNs` at session start if Item 7 commands run again.
 
 | Step | Command | Receipt / acceptance |
 |------|---------|----------------------|
-| Finviz prospective | `python tools\ftep_watch_catalysts.py FTEP-V1-002 --live-ingress --json` | JSON stdout; `watch_mode=PROSPECTIVE_FINVIZ_INGRESS`; zero rows → `LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS` |
+| Finviz prospective | `python tools\ftep_watch_catalysts.py FTEP-V1-002 --live-ingress --json` | UTF-8 JSON stdout even on 429/token-absent/gates-inactive/provider-failure; `watch_mode=PROSPECTIVE_FINVIZ_INGRESS`; zero rows → `LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS`; do not immediately retry 429 |
 | Item 9 OpenD 1m | See **Item 9** below | Versioned JSON under receipt dir; contract `item9.bar-ohlcv-prospective-proof/1.1.0` |
 | Item 7 status | `python tools\item7_corpus_collector.py status --persistence-root $env:IMP_STATE_DIR --training-cutoff-ns $item7CutoffNs` | Read-only; no forced settlement |
 | Ops dry-run bundle | `python tools\rth_empirical_ops.py --json run-observational` | `operator_run_id=RTHOPS-*`; `orders_placed=false`; optional artifact with `--write-run-artifact` |
