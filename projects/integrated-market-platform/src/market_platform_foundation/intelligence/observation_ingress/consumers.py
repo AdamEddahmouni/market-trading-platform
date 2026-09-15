@@ -8,7 +8,8 @@ from typing import Callable, Protocol, runtime_checkable
 from ..contracts.event import EventV1
 from ..opportunity.sec_insider import accepts_sec_insider_event, run_sec_insider_vertical
 from ..persistence.repository import IntelligenceRepository, RepositoryPutResult
-from .sec_insider_snapshot import build_sec_insider_ingress_snapshot
+from ..opportunity.sec_insider.canonical_snapshot import build_sec_insider_canonical_detection_snapshot
+from ..opportunity.sec_insider.persistence import persist_sec_insider_vertical
 from .types import (
     IngressConsumerKind,
     IngressConsumerOutcome,
@@ -177,9 +178,7 @@ def detector_stub_consumer(
                 status=IngressConsumerStatus.OK,
                 detail="OBSERVED",
             )
-        decision_time_ns = max(context.dispatch_time_ns, event.available_time_ns + 1)
-        snapshot = build_sec_insider_ingress_snapshot(event, decision_time_ns=decision_time_ns)
-        repository.put_snapshot(snapshot)
+        snapshot = build_sec_insider_canonical_detection_snapshot(event)
         vertical = run_sec_insider_vertical(event=event, snapshot=snapshot)
         if not vertical.ok:
             return IngressConsumerOutcome(
@@ -190,8 +189,7 @@ def detector_stub_consumer(
             )
         assert vertical.detection is not None
         assert vertical.evidence is not None
-        repository.put_detection(vertical.detection)
-        repository.put_evidence(vertical.evidence)
+        persist_sec_insider_vertical(repository, vertical, snapshot=snapshot)
         if oe_evidence_enrichment is not None and vertical.candidate is not None:
             oe_evidence_enrichment[event.event_id] = {
                 "dispatch_time_ns": str(context.dispatch_time_ns),

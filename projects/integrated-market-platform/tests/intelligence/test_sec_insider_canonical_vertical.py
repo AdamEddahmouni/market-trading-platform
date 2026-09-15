@@ -119,6 +119,7 @@ class SecInsiderCanonicalVerticalTests(unittest.TestCase):
             detected.detections[0].semantic_event_type.value,
             "SEC_INSIDER_DISCLOSURE",
         )
+        self.assertEqual(detected.detections[0].detection_id, oe_row["detection_id"])
 
         # Candidate projection is forecast-gated; not OpportunityV1 mint via assess().
         self.assertNotIn(
