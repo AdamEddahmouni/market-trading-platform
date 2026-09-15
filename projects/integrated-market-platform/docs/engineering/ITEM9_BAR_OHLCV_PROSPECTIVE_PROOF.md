@@ -15,6 +15,18 @@ python tools/moomoo/opend_bar_1m_prospective_proof.py display --instrument-id AA
 fetch is **diagnostic / transport visibility only** — not prospective evidence
 and not RTH empirical proof.
 
+Mode B `--poll` fetches 1m history kline for the **observation session date**
+in `America/New_York` (`start=end=YYYY-MM-DD`, `max_count>=1000`). Do not use
+the vendor default `start=None, end=None`: that expands to `[today-365d, today]`
+and returns the **oldest** page (a year old). Those bars correctly fail
+`available_time > signal_time` and are not prospective evidence.
+
+PIT is unchanged: incomplete bars (`bar_end > fetched_at`) stay hidden; the
+first admissible bar still requires `available_time > signal_time`.
+
+Follow-up (not in this repair): reuse one quote context and poll `get_cur_kline`
+so a 5s history-kline loop does not burn `historyKLQuota`.
+
 ### Mode A — transport / replay (`RETROSPECTIVE_TRANSPORT_PROOF`)
 
 Not prospective evidence. Uses operator-supplied signal and observation times.

@@ -8,11 +8,17 @@ from __future__ import annotations
 
 import importlib
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 _LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
 _TOOLS_DIR = Path(__file__).resolve().parent.parent
+_US_EQUITY_TZ = ZoneInfo("America/New_York")
+# Vendor history kline is oldest-first inside [start, end]. One extended US
+# session is ~960 1m bars; 1000 is the SDK per-request cap.
+US_EQUITY_1M_HISTORY_MIN_COUNT = 1000
 
 MOOMOO_SDK_MISSING = "MOOMOO_SDK_MISSING"
 MOOMOO_AUTH_FAILURE = "MOOMOO_AUTH_FAILURE"
@@ -33,15 +39,31 @@ def sdk_available() -> bool:
     return load_vendor_sdk() is not None
 
 
+def us_equity_session_date(*, observation_time_ns: int | None = None) -> str:
+    """America/New_York calendar date for an observation clock (ns) or now."""
+
+    if observation_time_ns is None:
+        now = datetime.now(_US_EQUITY_TZ)
+    else:
+        now = datetime.fromtimestamp(int(observation_time_ns) / 1_000_000_000, tz=_US_EQUITY_TZ)
+    return now.strftime("%Y-%m-%d")
+
+
 def fetch_history_kline_1m(
     symbol: str,
     *,
     host: str,
     port: int,
-    max_count: int = 120,
+    max_count: int = US_EQUITY_1M_HISTORY_MIN_COUNT,
     sdk: Any | None = None,
+    session_date: str | None = None,
 ) -> dict[str, Any]:
-    """Return recent completed 1m klines via quote context only (no trade APIs)."""
+    """Return completed 1m klines for the US equity session day (quote context only).
+
+    Do not pass ``start=None, end=None``: the vendor SDK expands that to
+    ``[today-365d, today]`` and returns the **oldest** ``max_count`` bars, which
+    are a year old and fail ``available_time > signal_time``.
+    """
 
     if host not in _LOOPBACK_HOSTS:
         return {"reason_code": OPEND_NON_LOOPBACK_BLOCKED, "rows": None}
@@ -55,6 +77,9 @@ def fetch_history_kline_1m(
     if not code:
         return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None}
 
+    day = str(session_date or "").strip() or us_equity_session_date()
+    request_count = max(int(max_count), US_EQUITY_1M_HISTORY_MIN_COUNT)
+
     ctx = None
     try:
         ctx = ft.OpenQuoteContext(host=host, port=port)
@@ -65,17 +90,17 @@ def fetch_history_kline_1m(
             return {"reason_code": MOOMOO_AUTH_FAILURE, "rows": None}
         k_ret, data, _page = ctx.request_history_kline(
             code,
-            start=None,
-            end=None,
+            start=day,
+            end=day,
             ktype=ft.KLType.K_1M,
             autype=ft.AuType.QFQ,
-            max_count=max_count,
+            max_count=request_count,
             extended_time=True,
             session=ft.Session.ALL,
         )
         if k_ret != ft.RET_OK:
             return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None}
-        return {"reason_code": None, "rows": _snapshot_rows(data)}
+        return {"reason_code": None, "rows": _snapshot_rows(data), "session_date": day}
     except Exception:  # noqa: BLE001
         return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None}
     finally:
@@ -359,10 +384,12 @@ __all__ = [
     "MOOMOO_PROTOCOL_ERROR",
     "MOOMOO_SDK_MISSING",
     "OPEND_NON_LOOPBACK_BLOCKED",
+    "US_EQUITY_1M_HISTORY_MIN_COUNT",
     "fetch_history_kline_1m",
     "fetch_snapshot",
     "probe_quote_login",
     "is_vendor_sdk",
     "load_vendor_sdk",
     "sdk_available",
+    "us_equity_session_date",
 ]

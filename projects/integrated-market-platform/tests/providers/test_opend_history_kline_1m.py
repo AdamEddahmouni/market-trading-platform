@@ -1,0 +1,294 @@
+"""Item 9 OpenD 1m history-kline window: oldest-page vs session-day.
+
+Vendor ``request_history_kline(start=None, end=None, max_count=N)`` normalizes
+to ``[today-365d, today]`` and returns the **oldest** N rows (moomoo-api
+``normalize_start_end_date(..., 365)``). Lawful captured evidence:
+``evidence/market_data/moomoo/capability-report.json`` probed 2026-09-15 UTC
+with ``K_DAY`` ``max_count=5`` and sampled ``time_key`` ``2025-09-15 00:00:00``.
+
+These tests replay that oldest-first contract with a fake SDK. They are not
+empirical OpenD ticks and do not loosen PIT.
+"""
+
+from __future__ import annotations
+
+import sys
+import unittest
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any
+from unittest import mock
+
+_ROOT = Path(__file__).resolve().parents[2]
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+sys.path.insert(0, str(_ROOT / "src"))
+
+from market_platform_foundation.paper.calibration.bar_ohlcv_prospective_proof import (  # noqa: E402
+    REASON_NO_POST_SIGNAL_BAR,
+    run_prospective_proof,
+)
+from market_platform_foundation.paper.calibration.bar_ohlcv_sources import (  # noqa: E402
+    US_EQUITY_BAR_TZ,
+    first_admissible_post_signal_bar,
+    load_moomoo_opend_kline_bars,
+    normalize_moomoo_kline_row,
+)
+
+COLLECTION_ROOT = _ROOT.parent
+SESSION_DAY = "2026-09-15"
+YEAR_AGO_DAY = "2025-09-15"
+# 09:34:30.709 ET — poll #1 signal clock (wall ns).
+SIGNAL_NS = int(
+    datetime(2026, 9, 15, 9, 34, 30, 709000, tzinfo=US_EQUITY_BAR_TZ).timestamp() * 1_000_000_000
+)
+# 10:39:31 ET — poll #1 observation at timeout, after many completed 1m bars.
+OBSERVATION_NS = int(
+    datetime(2026, 9, 15, 10, 39, 31, tzinfo=US_EQUITY_BAR_TZ).timestamp() * 1_000_000_000
+)
+
+
+def _kline_row(time_key: str) -> dict[str, Any]:
+    return {
+        "code": "US.AAPL",
+        "time_key": time_key,
+        "open": 230.0,
+        "high": 231.0,
+        "low": 229.0,
+        "close": 230.5,
+        "volume": 1000,
+    }
+
+
+def _vendor_normalize_window(start: str | None, end: str | None, *, today: str) -> tuple[str, str]:
+    """Mirror moomoo-api ``normalize_start_end_date(start, end, 365)`` date half."""
+
+    today_dt = datetime.strptime(today, "%Y-%m-%d")
+    if not start and not end:
+        return (today_dt - timedelta(days=365)).strftime("%Y-%m-%d"), today
+    if start and not end:
+        return start[:10], (datetime.strptime(start[:10], "%Y-%m-%d") + timedelta(days=365)).strftime(
+            "%Y-%m-%d"
+        )
+    if end and not start:
+        return (datetime.strptime(end[:10], "%Y-%m-%d") - timedelta(days=365)).strftime("%Y-%m-%d"), end[:10]
+    return str(start)[:10], str(end)[:10]
+
+
+class _OldestFirstKlineContext:
+    """Fake OpenD quote context: history kline is oldest-first inside [start, end]."""
+
+    def __init__(self, catalog: list[dict[str, Any]], *, today: str = SESSION_DAY) -> None:
+        self.catalog = catalog
+        self.today = today
+        self.closed = False
+        self.calls: list[dict[str, Any]] = []
+
+    def get_global_state(self) -> tuple[int, dict[str, Any]]:
+        return 0, {"qot_logined": True}
+
+    def request_history_kline(
+        self,
+        code: str,
+        start: str | None = None,
+        end: str | None = None,
+        ktype: str | None = None,
+        autype: str | None = None,
+        max_count: int = 120,
+        extended_time: bool = False,
+        session: str | None = None,
+    ) -> tuple[int, list[dict[str, Any]], None]:
+        window_start, window_end = _vendor_normalize_window(start, end, today=self.today)
+        self.calls.append(
+            {
+                "code": code,
+                "start": start,
+                "end": end,
+                "window_start": window_start,
+                "window_end": window_end,
+                "ktype": ktype,
+                "max_count": max_count,
+                "extended_time": extended_time,
+                "session": session,
+            }
+        )
+        matched: list[dict[str, Any]] = []
+        for row in sorted(self.catalog, key=lambda item: str(item["time_key"])):
+            day = str(row["time_key"])[:10]
+            if window_start <= day <= window_end:
+                matched.append(row)
+            if len(matched) >= int(max_count):
+                break
+        return 0, matched, None
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class _FakeKlineSdk:
+    RET_OK = 0
+
+    class KLType:
+        K_1M = "K_1M"
+
+    class AuType:
+        QFQ = "QFQ"
+
+    class Session:
+        ALL = "ALL"
+        NONE = "NONE"
+
+    def __init__(self, context: _OldestFirstKlineContext) -> None:
+        self._context = context
+        self.OpenQuoteContext = lambda **_kwargs: context
+
+
+def _minute_rows(day: str, *, hour: int, minute: int, count: int) -> list[dict[str, Any]]:
+    start = datetime.strptime(f"{day} {hour:02d}:{minute:02d}:00", "%Y-%m-%d %H:%M:%S")
+    rows: list[dict[str, Any]] = []
+    for offset in range(count):
+        stamp = start + timedelta(minutes=offset)
+        rows.append(_kline_row(stamp.strftime("%Y-%m-%d %H:%M:%S")))
+    return rows
+
+
+def _catalog() -> list[dict[str, Any]]:
+    # 120 oldest 1m bars fill max_count when the window is [today-365d, today].
+    return _minute_rows(YEAR_AGO_DAY, hour=9, minute=30, count=120) + [
+        _kline_row(f"{SESSION_DAY} 09:30:00"),
+        _kline_row(f"{SESSION_DAY} 09:35:00"),
+        _kline_row(f"{SESSION_DAY} 09:36:00"),
+        _kline_row(f"{SESSION_DAY} 10:38:00"),
+    ]
+
+
+class OpenDHistoryKline1mWindowTests(unittest.TestCase):
+    def test_session_day_window_returns_today_1m_not_365d_oldest_page(self) -> None:
+        from tools.moomoo.opend_quote_transport import fetch_history_kline_1m
+
+        ctx = _OldestFirstKlineContext(_catalog())
+        payload = fetch_history_kline_1m(
+            "AAPL",
+            host="127.0.0.1",
+            port=11111,
+            max_count=120,
+            sdk=_FakeKlineSdk(ctx),
+            session_date=SESSION_DAY,
+        )
+        self.assertIsNone(payload["reason_code"])
+        rows = payload["rows"] or []
+        keys = [str(row["time_key"]) for row in rows]
+        self.assertTrue(keys, "expected 1m rows from the observation session")
+        self.assertTrue(any(key.startswith(SESSION_DAY) for key in keys))
+        self.assertFalse(any(key.startswith(YEAR_AGO_DAY) for key in keys))
+        self.assertEqual(len(ctx.calls), 1)
+        call = ctx.calls[0]
+        self.assertEqual(call["start"], SESSION_DAY)
+        self.assertEqual(call["end"], SESSION_DAY)
+        self.assertGreaterEqual(int(call["max_count"]), 390)
+        self.assertTrue(ctx.closed)
+
+    def test_none_none_window_replays_captured_oldest_page_and_fails_pit(self) -> None:
+        """Document live poll #1: vendor oldest page is a year old; PIT must still reject it."""
+
+        ctx = _OldestFirstKlineContext(_catalog())
+        k_ret, data, _page = ctx.request_history_kline(
+            "US.AAPL",
+            start=None,
+            end=None,
+            ktype="K_1M",
+            max_count=120,
+        )
+        self.assertEqual(k_ret, 0)
+        keys = [str(row["time_key"]) for row in data]
+        self.assertTrue(all(key.startswith(YEAR_AGO_DAY) for key in keys))
+        self.assertEqual(keys[0], f"{YEAR_AGO_DAY} 09:30:00")
+
+        fetched_at = OBSERVATION_NS
+        canonical = [
+            row
+            for raw in data
+            if (row := normalize_moomoo_kline_row(raw, instrument_id="AAPL", fetched_at_ns=fetched_at))
+            is not None
+        ]
+        self.assertTrue(canonical)
+        self.assertIsNone(first_admissible_post_signal_bar(canonical, signal_time_ns=SIGNAL_NS))
+
+        outcome = run_prospective_proof(
+            instrument_id="AAPL",
+            collection_root=COLLECTION_ROOT,
+            env={},
+            signal_time_ns=SIGNAL_NS,
+            signal_established_at_ns=SIGNAL_NS,
+            observation_time_ns=OBSERVATION_NS,
+            kline_rows=tuple(data),
+            runtime_git_sha="diagnosis-test",
+        )
+        self.assertFalse(outcome["ok"])
+        self.assertEqual(outcome["reason_code"], REASON_NO_POST_SIGNAL_BAR)
+        self.assertIsNone(outcome["receipt"])
+
+    def test_today_rth_rows_are_admissible_without_loosening_pit(self) -> None:
+        rows = (
+            _kline_row(f"{SESSION_DAY} 09:30:00"),
+            _kline_row(f"{SESSION_DAY} 09:35:00"),
+        )
+        outcome = run_prospective_proof(
+            instrument_id="AAPL",
+            collection_root=COLLECTION_ROOT,
+            env={},
+            signal_time_ns=SIGNAL_NS,
+            signal_established_at_ns=SIGNAL_NS,
+            observation_time_ns=OBSERVATION_NS,
+            kline_rows=rows,
+            runtime_git_sha="diagnosis-test",
+        )
+        self.assertTrue(outcome["ok"])
+        receipt = outcome["receipt"]
+        assert receipt is not None
+        self.assertFalse(receipt["calibrated"])
+        self.assertFalse(receipt["orders_placed"])
+        self.assertGreater(int(receipt["bar_available_time_ns"]), SIGNAL_NS)
+
+    def test_incomplete_in_progress_bar_still_hidden(self) -> None:
+        row = _kline_row(f"{SESSION_DAY} 10:39:00")
+        mid = SIGNAL_NS  # well before this bar's end
+        self.assertIsNone(normalize_moomoo_kline_row(row, instrument_id="AAPL", fetched_at_ns=mid))
+
+
+class OpenDHistoryKlineLoadWindowTests(unittest.TestCase):
+    def test_loader_passes_observation_session_date_into_fetcher(self) -> None:
+        captured: dict[str, Any] = {}
+
+        def _fetcher(symbol: str, *, host: str, port: int, max_count: int = 120, **kwargs: Any) -> dict[str, Any]:
+            captured["symbol"] = symbol
+            captured["host"] = host
+            captured["port"] = port
+            captured["max_count"] = max_count
+            captured["session_date"] = kwargs.get("session_date")
+            return {
+                "reason_code": None,
+                "rows": [_kline_row(f"{SESSION_DAY} 09:35:00")],
+            }
+
+        fake_module = type("M", (), {"fetch_history_kline_1m": staticmethod(_fetcher)})()
+        with mock.patch(
+            "market_platform_foundation.paper.calibration.bar_ohlcv_sources._load_tools_kline_module",
+            return_value=fake_module,
+        ), mock.patch(
+            "market_platform_foundation.paper.calibration.bar_ohlcv_sources.opend_reachable",
+            return_value=True,
+        ), mock.patch(
+            "market_platform_foundation.paper.calibration.bar_ohlcv_sources.opend_is_loopback",
+            return_value=True,
+        ):
+            loaded = load_moomoo_opend_kline_bars(
+                instrument_id="AAPL",
+                observation_time_ns=OBSERVATION_NS,
+                fetched_at_ns=OBSERVATION_NS,
+            )
+        self.assertTrue(loaded.ok)
+        self.assertEqual(captured["session_date"], SESSION_DAY)
+        self.assertGreaterEqual(int(captured["max_count"]), 390)
+        hit = first_admissible_post_signal_bar(loaded.bars, signal_time_ns=SIGNAL_NS)
+        self.assertIsNotNone(hit)

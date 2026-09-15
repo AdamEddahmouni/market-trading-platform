@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — Item 9: session-day 1m history-kline window (isolated repair)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, `tools/moomoo`, Item 9 prospective proof |
+| **Summary** | Isolated repair for poll #1 `PROSPECTIVE_NO_POST_SIGNAL_BAR`. Vendor `request_history_kline(start=None, end=None)` expands to `[today-365d, today]` and returns the oldest page (capability-report `time_key` `2025-09-15 00:00:00` on a 2026-09-15 probe). Fetch now uses the observation `America/New_York` session date with `max_count>=1000`. PIT (`available_time > signal_time`, incomplete-bar hide) is unchanged. Not calibrated. |
+| **Key files** | `tools/moomoo/opend_quote_transport.py`; `src/market_platform_foundation/paper/calibration/bar_ohlcv_sources.py`; `tests/providers/test_opend_history_kline_1m.py`; `docs/engineering/ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md` |
+| **Tests** | `python -m unittest tests.providers.test_opend_history_kline_1m tests.platform.test_bar_ohlcv_prospective_proof tests.platform.test_bar_ohlcv_comparator_experiment` — **41/41 passed** (5 new + 25 prospective + 11 comparator). No live OpenD, no Lane B poll touch. |
+| **Related** | [ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md](ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md); branch `diagnosis/item9-prospective-bar-20260915` from `7aade60` |
+| **Notes** | Isolated commit only; rebase onto `origin/main` after close. `get_cur_kline` / quote-context reuse is a follow-up to avoid `historyKLQuota` burn (hour-2 `MOOMOO_PROTOCOL_ERROR`). **Not calibrated. No orders.** |
+
 ## 2026-09-15 — FTEP integrity: resolve gitignored session evidence from operator primary checkout
 
 | Field | Value |
