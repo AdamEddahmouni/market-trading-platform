@@ -11,6 +11,7 @@ import {
   removeImpMarkerDrawings,
   type ImpChartMarker,
 } from "./impSemanticAnnotations";
+import { impBarSeriesFingerprint } from "./workspaceImpBarFeed";
 import { loadVelaConstructor, type ImpVelaChartInstance } from "./velaDynamicLoader";
 
 export type ImpVelaChartAdapterProps = {
@@ -31,6 +32,7 @@ export function ImpVelaChartAdapter({
   const hostRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<ImpVelaChartInstance | null>(null);
   const markerDrawingIdsRef = useRef<string[]>([]);
+  const marketFingerprintRef = useRef<string | null>(null);
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
@@ -96,7 +98,11 @@ export function ImpVelaChartAdapter({
     if (!chart || loadState !== "ready") return;
     try {
       assertMonotonicBarIdentity(bars);
-      void chart.setMarket({ bars: toVelaSeries(bars) });
+      const fingerprint = impBarSeriesFingerprint(bars);
+      if (marketFingerprintRef.current === fingerprint) return;
+      marketFingerprintRef.current = fingerprint;
+      // Vela offline host feed: lawful update path is setMarket({ data }) — no per-bar patch API.
+      void chart.setMarket({ data: toVelaSeries(bars) });
     } catch {
       setLoadState("error");
     }

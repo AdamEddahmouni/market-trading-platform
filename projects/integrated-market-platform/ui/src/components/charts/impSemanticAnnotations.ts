@@ -5,8 +5,10 @@ import { impBarOpenMs } from "./impBarIdentity";
 /** IMP-owned semantic markers — projected to Vela drawings (not TradingView shapes). */
 export type ImpMarkerKind =
   | "opportunity"
+  | "sec_public_record"
   | "catalyst"
-  | "options"
+  | "agent_verification"
+  | "contradiction"
   | "paper"
   | "stop"
   | "target";
@@ -22,8 +24,10 @@ export type ImpChartMarker = {
 
 const KIND_COLOR: Record<ImpMarkerKind, string> = {
   opportunity: "#ff8a00",
+  sec_public_record: CHART_COLORS.accent,
   catalyst: CHART_COLORS.warning,
-  options: CHART_COLORS.accent,
+  agent_verification: "#6eb5ff",
+  contradiction: CHART_COLORS.short,
   paper: CHART_COLORS.long,
   stop: CHART_COLORS.short,
   target: CHART_COLORS.long,
@@ -43,6 +47,7 @@ export function sampleImpMarkers(bars: ImpBarRecord[]): ImpChartMarker[] {
   const b20 = pick(20);
   const b45 = pick(45);
   const b70 = pick(70);
+  const b80 = pick(80);
   const b90 = pick(90);
   const last = bars[bars.length - 1];
   return [
@@ -53,16 +58,28 @@ export function sampleImpMarkers(bars: ImpBarRecord[]): ImpChartMarker[] {
       label: "Opportunity surfaced",
     },
     {
-      marker_id: "cat-1",
-      kind: "catalyst",
+      marker_id: "sec-1",
+      kind: "sec_public_record",
       bar_id: b45.bar_id,
-      label: "Catalyst watch",
+      label: "SEC / public record",
     },
     {
-      marker_id: "opt-1",
-      kind: "options",
+      marker_id: "cat-1",
+      kind: "catalyst",
       bar_id: b70.bar_id,
-      label: "Options flow context",
+      label: "News / catalyst",
+    },
+    {
+      marker_id: "agent-1",
+      kind: "agent_verification",
+      bar_id: b70.bar_id,
+      label: "Agent verification",
+    },
+    {
+      marker_id: "contra-1",
+      kind: "contradiction",
+      bar_id: b80.bar_id,
+      label: "Contradiction flagged",
     },
     {
       marker_id: "paper-1",

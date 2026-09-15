@@ -363,6 +363,18 @@ export const InstrumentOverviewSchema = z.object({
       close: z.string(),
       volume: z.number(),
       epistemic_class: z.string(),
+      bar_id: z.string().optional(),
+      source_time_ns: z.number().optional(),
+      available_time_ns: z.number().optional(),
+      provenance: z
+        .object({
+          event_type: z.literal("BAR_OHLCV_1M"),
+          normalized_event_id: z.string(),
+          raw_reference: z.string().optional(),
+          ingest_run_id: z.string().optional(),
+          source_instance_id: z.string().optional(),
+        })
+        .optional(),
     }),
   ),
   features: z.array(

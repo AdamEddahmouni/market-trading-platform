@@ -7,11 +7,13 @@ import {
 } from "./impBarIdentity";
 
 function bar(openMs: number, seed: number): ImpBarRecord {
+  const barId = `IMP:ES:5m:${openMs}`;
   return {
-    bar_id: `IMP:ES:5m:${openMs}`,
+    bar_id: barId,
     instrument_id: "IMP:ADMITTED:ES",
     timeframe: "5m",
     source_time_ns: openMs * 1_000_000,
+    available_time_ns: (openMs + 300_000) * 1_000_000,
     ohlcv: {
       open: 100 + seed,
       high: 101 + seed,
@@ -20,6 +22,7 @@ function bar(openMs: number, seed: number): ImpBarRecord {
       volume: 1000,
     },
     data_kind: "SYNTHETIC_GOVERNED",
+    provenance: { event_type: "BAR_OHLCV_1M", normalized_event_id: barId },
   };
 }
 
