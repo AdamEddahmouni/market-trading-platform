@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — Finviz prospective ingress: structured receipts and primary secret-dir
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/paper_forward_bridge`, `tools/ftep_watch_catalysts` |
+| **Summary** | NEXT-runtime Finviz watch now always emits a UTF-8 JSON receipt for HTTP 429, token-absent, secret-dir-missing, gates-inactive, provider-failure, and successful-empty. 429 is classified explicitly with no immediate retry. Secret-dir resolution prefers `IMP_FINVIZ_SECRET_DIR` then the primary checkout `.private` and fails closed when that dir is missing (worktree-empty `.private` is no longer conflated with `INGRESS_GATES_INACTIVE`). Isolated from today's frozen RTH worktree; not for merge until 2026-09-15 RTH reconciliation completes. |
+| **Key files** | `tools/ftep_watch_catalysts.py`, `src/market_platform_foundation/intelligence/paper_forward_bridge/ftep_prospective_catalyst_ingress.py`, `src/market_platform_foundation/intelligence/paper_forward_bridge/ftep_catalyst_watch.py`, `tests/intelligence/test_ftep_prospective_catalyst_ingress.py`, `tools/validation_manifest.json`, `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md`, `docs/engineering/TUESDAY_RTH_OPERATOR_CHECKLIST.md`, `docs/engineering/RTH_EMPIRICAL_OPS_RUNBOOK.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python -m unittest tests.intelligence.test_ftep_prospective_catalyst_ingress tests.intelligence.test_ftep_catalyst_watch tests.intelligence.test_ftep_finviz_prospective_preflight` **26/26 OK**; `tests.intelligence.test_rth_empirical_ops` **3/3 OK** |
+| **Related** | Today's RTH evidence: success with 0 and with qualifying rows; worktree `.private` token-absent reported as `INGRESS_GATES_INACTIVE`; HTTP 429 crashed before JSON. Frozen `.rth-operator-20260915` not edited. |
+| **Notes** | Branch `repair/finviz-ingress-reliability-20260915` from `origin/main` `7aade60b`. No aggressive retries. News EventV1 mapper, vite/launcher untouched. Live OFF. No Paper/Live orders. |
+
 ## 2026-09-15 — FTEP integrity: resolve gitignored session evidence from operator primary checkout
 
 | Field | Value |

@@ -233,6 +233,7 @@ def collect_ftep_catalyst_watch(
             live_ingress=True,
         )
         prospective_ingress_report = ingress.to_report_dict()
+        classification = str(prospective_ingress_report.get("classification") or "")
         if ingress.ready and ingress.rows:
             rows = [dict(item) for item in ingress.rows]
             source_label = ingress.source_label
@@ -241,22 +242,44 @@ def collect_ftep_catalyst_watch(
             rows = []
             source_label = ingress.source_label
             used_live_ingress = True
+            operator_hints.append(
+                "Live Finviz ingress succeeded with zero universe-qualified catalyst rows "
+                "(LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS); no fixture/SAMPLE substitute."
+            )
         else:
-            if ingress.attempted and ingress.reason == "INGRESS_GATES_INACTIVE":
+            if classification == "GATES_INACTIVE" or ingress.reason == "INGRESS_GATES_INACTIVE":
                 blockers.append("PROSPECTIVE_CATALYST_INGRESS_GATES_INACTIVE")
                 operator_hints.append(
                     "Set IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS=1 with IMP_FINVIZ_LIVE and "
                     "a configured Finviz Elite token before --live-ingress during RTH."
                 )
-            elif ingress.attempted and ingress.reason == "FINVIZ_FETCH_FAILED":
+            elif classification == "TOKEN_ABSENT" or ingress.reason == "FINVIZ_TOKEN_ABSENT":
+                blockers.append("FINVIZ_PROSPECTIVE_TOKEN_ABSENT")
+                operator_hints.append(
+                    "Gates are on but no Finviz Elite token was found. Point "
+                    "IMP_FINVIZ_SECRET_DIR at the primary checkout .private "
+                    "(never copy .private into worktrees)."
+                )
+            elif (
+                classification == "SECRET_DIR_MISSING"
+                or ingress.reason == "FINVIZ_SECRET_DIR_MISSING"
+            ):
+                blockers.append("FINVIZ_PROSPECTIVE_SECRET_DIR_MISSING")
+                operator_hints.append(
+                    "Configured Finviz secret dir is missing. Prefer "
+                    "IMP_FINVIZ_SECRET_DIR or the primary checkout .private; "
+                    "do not search leftover nested clones."
+                )
+            elif classification == "HTTP_429" or ingress.reason == "FINVIZ_HTTP_429":
+                blockers.append("FINVIZ_PROSPECTIVE_RATE_LIMITED")
+                operator_hints.append(
+                    "Finviz returned HTTP 429. Do not immediately retry; wait and "
+                    "re-run a single --live-ingress command later."
+                )
+            elif classification == "PROVIDER_FAILURE" or ingress.reason == "FINVIZ_FETCH_FAILED":
                 blockers.append("FINVIZ_PROSPECTIVE_FETCH_FAILED")
                 operator_hints.append(
                     "Finviz prospective fetch failed; attention rows are not live-labelled."
-                )
-            elif ingress.attempted and ingress.ready and not ingress.rows:
-                operator_hints.append(
-                    "Live Finviz ingress succeeded with zero universe-qualified catalyst rows "
-                    "(LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS); no fixture/SAMPLE substitute."
                 )
             if not used_live_ingress:
                 rows = []
@@ -299,28 +322,33 @@ def collect_ftep_catalyst_watch(
             )
 
     ingress_outcome: str | None = None
+    ingress_classification: str | None = None
     if live_ingress_requested and prospective_ingress_report:
-        if prospective_ingress_report.get("reason") == "FINVIZ_FETCH_FAILED":
-            ingress_outcome = "LIVE_INGRESS_FAILED"
-        elif used_live_ingress:
+        ingress_classification = str(prospective_ingress_report.get("classification") or "") or None
+        reason = prospective_ingress_report.get("reason")
+        if used_live_ingress:
             ingress_outcome = (
                 "LIVE_INGRESS_SUCCESS"
                 if ranked
                 else "LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS"
             )
+        elif ingress_classification == "HTTP_429" or reason == "FINVIZ_HTTP_429":
+            ingress_outcome = "LIVE_INGRESS_RATE_LIMITED"
+        elif ingress_classification == "TOKEN_ABSENT" or reason == "FINVIZ_TOKEN_ABSENT":
+            ingress_outcome = "LIVE_INGRESS_TOKEN_ABSENT"
+        elif (
+            ingress_classification == "SECRET_DIR_MISSING"
+            or reason == "FINVIZ_SECRET_DIR_MISSING"
+        ):
+            ingress_outcome = "LIVE_INGRESS_SECRET_DIR_MISSING"
+        elif ingress_classification == "GATES_INACTIVE" or reason == "INGRESS_GATES_INACTIVE":
+            ingress_outcome = "LIVE_INGRESS_GATES_INACTIVE"
+        elif reason == "FINVIZ_FETCH_FAILED" or ingress_classification == "PROVIDER_FAILURE":
+            ingress_outcome = "LIVE_INGRESS_FAILED"
         elif prospective_ingress_report.get("attempted") and not used_live_ingress:
             ingress_outcome = "LIVE_INGRESS_FAILED"
 
-    if used_live_ingress and watch_mode != "FIXTURE_SMOKE":
-        watch_mode = "PROSPECTIVE_FINVIZ_INGRESS"
-    elif (
-        live_ingress_requested
-        and prospective_ingress_report
-        and prospective_ingress_report.get("ready")
-        and not used_live_ingress
-        and prospective_ingress_report.get("reason") is None
-        and int(prospective_ingress_report.get("row_count") or 0) == 0
-    ):
+    if live_ingress_requested and prospective_ingress_report and watch_mode != "FIXTURE_SMOKE":
         watch_mode = "PROSPECTIVE_FINVIZ_INGRESS"
 
     disposition = "PASS" if not blockers else "BLOCKED"
@@ -346,6 +374,7 @@ def collect_ftep_catalyst_watch(
         "attention_data_kind": attention_data_kind,
         "prospective_ingress": prospective_ingress_report,
         "ingress_outcome": ingress_outcome,
+        "ingress_classification": ingress_classification,
         "summary_count": len(ranked),
         "summaries": [item.to_dict() for item in ranked],
         "session_correlation": correlation,
