@@ -21,6 +21,27 @@ except ImportError:  # pragma: no cover
     HotPathIngressDispatchObserver = None  # type: ignore[misc, assignment]
 
 
+def resolve_production_ingress_router(
+    repository: IntelligenceRepository,
+    *,
+    ingress_router: ObservationIngressRouter | None = None,
+    use_production_ingress: bool = True,
+) -> ObservationIngressRouter | None:
+    """Return an ingress router for materialize/dispatch entrypoints.
+
+    - Explicit ``ingress_router`` wins (caller-owned lifecycle).
+    - When ``use_production_ingress`` and no router is passed, build the canonical
+      production consumer set for ``repository``.
+    - When ``use_production_ingress`` is false and no router is passed, return
+      ``None`` (direct ``IntelligenceRepository.put_event`` store lane).
+    """
+    if ingress_router is not None:
+        return ingress_router
+    if not use_production_ingress:
+        return None
+    return build_production_observation_ingress_router(repository)
+
+
 def build_production_observation_ingress_router(
     repository: IntelligenceRepository,
     *,
@@ -54,4 +75,7 @@ def build_production_observation_ingress_router(
     )
 
 
-__all__ = ["build_production_observation_ingress_router"]
+__all__ = [
+    "build_production_observation_ingress_router",
+    "resolve_production_ingress_router",
+]
