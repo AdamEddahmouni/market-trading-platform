@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — Isolated drafts: P7 provider reliability, Item 7 generating loop, P10 runbook, Sept 16 PREP
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (isolated drafts only) |
+| **Area** | `docs` (diagnosis; not canonical program-status) |
+| **Summary** | Record 2026-09-15 RTH evidence and operator corrections on branch `diagnosis/rth-runbook-item7-provider-20260915` from `origin/main` `7aade60bf8041df5ebf9f0ac856d5d8802845c8d`. Drafts are `EXPERIMENTAL`: Finviz three-part gates, one-shot live-ingress, FTEP ≠ cockpit, OpenD quote vs kline, CallClose as poll-iteration close, poll #1 `PROSPECTIVE_NO_POST_SIGNAL_BAR` (oldest-page kline), poll #2 `MOOMOO_PROTOCOL_ERROR`, Item 7 collector-ready/0-row generating-loop classification, launch SPA `/` + IMP `.venv`, Sept 16 08:30 ET checklist **not executed**. Did **not** edit frozen RTH, `PROGRAM_STATUS.md`, or doctrine. |
+| **Key files** | Created: `docs/engineering/drafts/20260915-rth-runbook-item7-provider/README.md`, `P7_PROVIDER_SESSION_RELIABILITY.md`, `ITEM7_UPSTREAM_GAP_DIAGNOSIS.md`, `P10_OPERATOR_RUNBOOK_DRAFT.md`, `SEPT16_0830_ET_MACRO_WINDOW_CHECKLIST.md`. Modified: `docs/engineering/WORK_LOG.md` |
+| **Tests** | Docs-only; no product behavior change |
+| **Related** | Sister notes `diagnosis/item7-upstream-20260915`; sister software `diagnosis/launcher-routing-20260915`, `diagnosis/item9-prospective-bar-20260915` — drafts must land **with** that software, not as truth ahead of it |
+| **Notes** | No merge. No new providers. No fake Item 7 rows. Enrichment worker OFF. Live OFF. FTEP not `EMPIRICAL_ACTIVE`. |
+
 ## 2026-09-15 — FTEP integrity: resolve gitignored session evidence from operator primary checkout
 
 | Field | Value |
