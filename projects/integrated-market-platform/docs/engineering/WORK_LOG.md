@@ -36,6 +36,42 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — PROGRAM_STATUS: Phase 3 burst close at `8885d38a`
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `platform` |
+| **Summary** | Pin Canonical origin/main SHA to `8885d38aec2fc08984f357e2ceb86c7d273c5fc2` (merged #159–#169). Record Phase 3 orchestrator merge queue **EMPTY** after burst lanes **I** (#168 options-flow replay) and UI (#169 a11y). Truthful gates unchanged: Item 7/9 **PARTIAL**; FTEP **not** `EMPIRICAL_ACTIVE`; simulator **not** `CALIBRATED`; Live OFF. #168 `OPTIONS_FLOW_REPLAY_EVIDENCE_READY` with `live_feed_claim=NOT_CLAIMED` (replay/fixture only). #169 UI-only; supersedes #114. List pending DRAFT PRs (#145, UX #128/#126/#124/#123, #117, #115). |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | Docs-only; `python tools/check_docs_links.py` on PR |
+| **Related** | [PR #167](https://github.com/AdamEddahmouni/market-trading-platform/pull/167)–[#169](https://github.com/AdamEddahmouni/market-trading-platform/pull/169); prior closure at `3b9e506` (#167) |
+| **Notes** | Branch `phase3/status-close-burst` from `origin/main` `8885d38a`. No merge. |
+
+## 2026-09-15 — Phase 3 Lane I: options-flow replay evidence (#168)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `research`, `intelligence/opportunity` |
+| **Summary** | Merged replay pipeline for admitted options-flow slice → `OPTIONS_FLOW_REPLAY_EVIDENCE_ARTIFACT` with `authority_class=EVIDENCE_NOT_PREDICTION` and readiness `OPTIONS_FLOW_REPLAY_EVIDENCE_READY`. Opportunity detail attach via research artifact evidence bridge. Golden fixture `FIXTURE-OPTIONS-FLOW-REPLAY-NVDA`; `live_feed_claim=NOT_CLAIMED` — synthetic/replay only, not live whale/options tape. No execution or FTEP authority. |
+| **Key files** | `src/market_platform_foundation/research/options_flow_replay/`; `intelligence/opportunity/research_artifact_evidence.py`; `tests/research/test_options_flow_replay_evidence_artifact.py`; `tests/intelligence/test_opportunity_options_flow_replay_evidence.py` |
+| **Tests** | Focused unittest modules on PR CI |
+| **Related** | [PR #168](https://github.com/AdamEddahmouni/market-trading-platform/pull/168); base `f986f5c551b1624c896d36562867f3136fcad4cb` |
+| **Notes** | Does not close Item 7/9 or activate FTEP empirical mode. |
+
+## 2026-09-15 — Phase 3 UI: skip-link, focus trap, keyboard a11y (#169)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui`, `a11y` |
+| **Summary** | Merged product chrome skip-link to `#imp-main-content`, mobile nav focus trap, and keyboard-friendly disclosure patterns. UI-only — no Path A hop, opportunity mint, FTEP, Paper, or Live execution changes. Closes UX-01 track; [#114](https://github.com/AdamEddahmouni/market-trading-platform/pull/114) closed as superseded. |
+| **Key files** | `ui/src/components/imp-product/ImpProductChrome.tsx`, `ui/src/styles/imp-product.css`, related nav tests |
+| **Tests** | UI validation on PR |
+| **Related** | [PR #169](https://github.com/AdamEddahmouni/market-trading-platform/pull/169); supersedes #114 |
+| **Notes** | Independent of #115 DRAFT (do not merge before RTH). |
+
 ## 2026-09-15 — PROGRAM_STATUS: Phase 3 merge queue empty at `3b9e506`
 
 | Field | Value |
