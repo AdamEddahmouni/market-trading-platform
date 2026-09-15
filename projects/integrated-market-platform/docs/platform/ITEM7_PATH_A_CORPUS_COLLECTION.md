@@ -1,4 +1,4 @@
-# Item 7 Lane G — Path A corpus collection
+# Item 7 Lane D — Path A corpus collection
 
 Lawful **Path A production training** examples are not manufactured by this
 repository today. Item 7 remains `PARTIAL` with blocker
@@ -24,24 +24,43 @@ Collecting or exporting rows **does not** set `PRODUCTION_FORECAST_ARTIFACT_READ
 
 The collector reports floor status; it does not lower thresholds.
 
-## Operator entrypoint
+## Operator entrypoints
 
-From `projects/integrated-market-platform/`:
+From `projects/integrated-market-platform/` (set `IMP_STATE_DIR` to governed operator
+persistence; the CLI never writes back to that root):
 
 ```powershell
-python tools/item7_corpus_collector.py `
+# Status + missing-edge diagnostics (closed market OK)
+python tools/item7_corpus_collector.py status `
   --training-cutoff-ns <ns> `
+  --persistence-root $env:IMP_STATE_DIR
+
+python tools/item7_corpus_collector.py diagnose `
+  --training-cutoff-ns <ns> `
+  --persistence-root $env:IMP_STATE_DIR
+
+# Export artifacts (use --require-rth during lawful US equity RTH)
+python tools/item7_corpus_collector.py collect `
+  --training-cutoff-ns <ns> `
+  --persistence-root $env:IMP_STATE_DIR `
   --output-dir .local/corpus-export `
-  --include-fixture-proof
+  --require-rth
 ```
 
-`--include-fixture-proof` labels rows `FIXTURE_ONLY` for machinery verification
-when no governed repository or JSONL joins exist. Do not promote fixture output
-to production training.
+`--include-fixture-proof` on `collect` labels rows `FIXTURE_ONLY` for machinery
+verification when no governed joins exist. Do not promote fixture output to
+production training.
+
+Software acceptance without governed rows:
+`ITEM7_REAL_CORPUS_COLLECTION_SOFTWARE_READY` with blocker
+`RTH_OR_FUTURE_OUTCOMES_REQUIRED`.
 
 ## Implementation
 
 - Library: `src/market_platform_foundation/intelligence/production/corpus_collector.py`
+- Persistence loader: `corpus_persistence.py`
+- Join diagnostics: `corpus_join_diagnostics.py`
+- Status assembly: `corpus_collection_status.py`
 - CLI: `tools/item7_corpus_collector.py`
 - Tests: `tests/intelligence/test_item7_corpus_collector.py`
 

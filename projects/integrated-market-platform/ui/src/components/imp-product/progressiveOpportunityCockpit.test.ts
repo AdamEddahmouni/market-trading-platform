@@ -7,6 +7,7 @@ import {
 import {
   fixtureOpportunityEvidenceRefresh,
   fixtureOpportunityEvidenceVerified,
+  fixtureOpportunityOptionsFlowReplayEvidence,
   fixtureOpportunityRowBase,
   fixtureRowAfterEvidenceRefresh,
   PROGRESSIVE_OPPORTUNITY_COCKPIT_READY,
@@ -33,10 +34,28 @@ describe(PROGRESSIVE_OPPORTUNITY_COCKPIT_READY, () => {
       evidence: fixtureOpportunityEvidenceRefresh,
     });
     expect(sections.historicalContext.status).toBe("UNAVAILABLE");
-    expect(sections.historicalContext.lines[0]).toMatch(/not linked/i);
+    expect(sections.historicalContext.lines[0]).toMatch(/not attached/i);
     const serialized = JSON.stringify(sections);
     expect(serialized).not.toMatch(/probability/i);
     expect(serialized).not.toMatch(/%/);
+  });
+
+  it("surfaces replay options-flow evidence without live feed or rank scores", () => {
+    const sections = buildProgressiveOpportunitySections(fixtureOpportunityRowBase, {
+      evidence: fixtureOpportunityOptionsFlowReplayEvidence,
+    });
+    expect(sections.historicalContext.status).toBe("PARTIAL");
+    const blob = sections.historicalContext.lines.join("\n");
+    expect(blob).toMatch(/OPTIONS_FLOW_REPLAY_EVIDENCE_READY/);
+    expect(blob).toMatch(/NOT_CLAIMED/);
+    expect(blob).toMatch(/SYNTHETIC_FIXTURE_ONLY/);
+    expect(blob).toMatch(/quote age 120 ms/);
+    expect(blob).toMatch(/QUOTE_AGE_MISSING/);
+    expect(blob).toMatch(/aggressor medium/);
+    expect(blob).toMatch(/missing quote_age_ms/);
+    expect(blob).toMatch(/Excluded vendor scores/);
+    expect(blob).not.toMatch(/rank_score/i);
+    expect(blob).not.toMatch(/probability/i);
   });
 
   it("separates visibility from actionability when gates fail", () => {
