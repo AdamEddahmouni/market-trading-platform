@@ -7,7 +7,7 @@ from typing import Callable, Protocol, runtime_checkable
 
 from ..contracts.event import EventV1
 from ..opportunity.sec_insider import accepts_sec_insider_event, run_sec_insider_vertical
-from ..persistence.repository import IntelligenceRepository
+from ..persistence.repository import IntelligenceRepository, RepositoryPutResult
 from ..opportunity.sec_insider.canonical_snapshot import build_sec_insider_canonical_detection_snapshot
 from ..opportunity.sec_insider.persistence import persist_sec_insider_vertical
 from .types import (
