@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import type { DiscoverInspectorActions } from "../discover-shared/discoverInspectorActions";
 import { DiscoverMixedScreenerSection, DiscoverRankedQueueSection } from "../discover-shared/DiscoverPageSections";
 import { DiscoverObservability } from "../discover-shared/DiscoverObservability";
-import { OpportunityRadarDensePanel } from "../imp-product/OpportunityRadarDensePanel";
+import { OpportunityRadarCockpit } from "../imp-product/OpportunityRadarCockpit";
 import { OpportunityRadarIntro } from "../imp-product/OpportunityRadarIntro";
 
 type Props = DiscoverInspectorActions;
@@ -32,7 +32,7 @@ export function LiveDiscoverPage({ onExplain, onInspect, onOpenWorkspace }: Prop
       </aside>
 
       <DiscoverRankedQueueSection>
-        <OpportunityRadarDensePanel
+        <OpportunityRadarCockpit
           readOnly
           onExplain={onExplain}
           onInspect={onInspect}

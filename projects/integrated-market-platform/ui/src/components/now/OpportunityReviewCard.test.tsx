@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { OpportunityReviewRow } from "../../api/opportunityClient";
 import { OpportunityReviewCard, OpportunityReviewList } from "./OpportunityReviewCard";
@@ -43,7 +43,7 @@ describe("OpportunityReviewCard", () => {
     const onInspect = vi.fn();
     const onOpenWorkspace = vi.fn();
     const onAck = vi.fn();
-    render(
+    const { container } = render(
       <OpportunityReviewCard
         row={row()}
         paperAccountId="paper-acct"
@@ -53,9 +53,11 @@ describe("OpportunityReviewCard", () => {
         onAck={onAck}
       />,
     );
-    expect(screen.getByText(/not OpportunityV1/)).toBeInTheDocument();
+    expect(screen.getAllByText(/not OpportunityV1/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Provisional order — not FTEP-tuned/)).toBeInTheDocument();
-    expect(screen.getByText(/actionability/)).toBeInTheDocument();
+    const reasonCodes = container.querySelector(".reason-codes");
+    expect(reasonCodes).not.toBeNull();
+    expect(within(reasonCodes as HTMLElement).getByText("actionability")).toBeInTheDocument();
     expect(screen.getAllByText(/UNAVAILABLE/).length).toBeGreaterThan(0);
     expect(screen.getByText(/12 minor/)).toBeInTheDocument();
     expect(screen.getByText(/Paper account/)).toHaveTextContent("paper-acct");
