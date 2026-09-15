@@ -42,6 +42,7 @@
 | Mutations | **Prohibited** — no order submission, no paper submit |
 | Backend context | `data_mode` ∈ {`LIVE_OBSERVATIONAL`, `BROKER_DELAYED`}; `execution_mode=NONE`, `execution_authority=BLOCKED` |
 | Canary | Operational visibility only — not execution authority |
+| Observational clock | If `LIVE_OBSERVATIONAL` and no live quote/event receive time, `as_of_time` is `UNAVAILABLE` — never the admitted fixture replay cursor — on context, `store.as_of_time()`, and inspect EVIDENCE. Fixture/replay attention may appear only on an explicit `DEMO_REPLAY` shelf, not as current RTH cards. Ranked opportunity **reads** may be `EMPTY` without a live clock, or `READY` only when a live receive time exists and eligible repository rows rank. Live **mutations** (WATCH/DISMISS/ack) remain `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`. Already-fetched Finviz/news may be admitted on `POST /intelligence/ingest/news` as EventV1 (observational detector, not Live authority, not BUILD 09 `NEWS_EVENT`). |
 
 **LIVE-001 production execution is blocked** in this repository.
 

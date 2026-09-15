@@ -117,7 +117,7 @@ class MixedDiscoveryService:
         if not self._screen_outcomes:
             return "UNAVAILABLE", "NO_SCREEN_OUTCOMES"
         finviz_states = {str(row.get("status") or "") for row in self._screen_outcomes}
-        if finviz_states == {"PASS"}:
+        if finviz_states <= {"PASS", "EMPTY"}:
             return "HEALTHY", None
         if finviz_states == {"FALLBACK"} and self._candidate_sets:
             reasons = {str(row.get("reason") or "") for row in self._screen_outcomes}
@@ -125,7 +125,7 @@ class MixedDiscoveryService:
                 return "HEALTHY", None
         if finviz_states == {"UNAVAILABLE"}:
             return "UNAVAILABLE", "DISCOVERY_UNAVAILABLE"
-        if "PASS" in finviz_states or "FALLBACK" in finviz_states:
+        if "PASS" in finviz_states or "EMPTY" in finviz_states or "FALLBACK" in finviz_states:
             return "DEGRADED", "USING_PARTIAL_OR_SAVED_DISCOVERY"
         return "UNAVAILABLE", "DISCOVERY_UNAVAILABLE"
 
@@ -234,13 +234,23 @@ class MixedDiscoveryService:
                     )
                     continue
                 candidate_sets.append(result)
-                status = "PASS" if result.get("quality") != "UNAVAILABLE" else "UNAVAILABLE"
+                quality = str(result.get("quality") or "")
+                count = len(result.get("candidates") or [])
+                if quality == "UNAVAILABLE":
+                    status = "UNAVAILABLE"
+                    reason = "FINVIZ_SCREEN_UNAVAILABLE"
+                elif quality == "EMPTY" or count == 0:
+                    status = "EMPTY"
+                    reason = None
+                else:
+                    status = "PASS"
+                    reason = None
                 outcomes.append(
                     {
                         "screen_id": screen_id,
                         "status": status,
-                        "candidate_count": len(result.get("candidates") or []),
-                        "reason": None if status == "PASS" else "FINVIZ_SCREEN_UNAVAILABLE",
+                        "candidate_count": count,
+                        "reason": reason,
                     }
                 )
             self._candidate_sets = candidate_sets

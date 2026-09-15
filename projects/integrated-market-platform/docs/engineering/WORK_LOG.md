@@ -36,6 +36,42 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — Request-path Finviz news EventV1 admission
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `ui_api`, `news`, `observation_ingress`, `docs` |
+| **Summary** | Isolated BUILD on `repair/live-oe-cockpit-state-20260915` after honesty HEAD `91b07b4f`. `UiApiHandler` `POST /intelligence/ingest/news` admits already-fetched Finviz/news rows as EventV1 through `ObservationIngressRouter` (`put_event` / `admit_news_article_event`). Observational detector mints `OpportunityV1` only on instrument + catalyst match; zero-qualifying stays EventV1 + `EMPTY`. ACK/WATCH remain `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`. No auto-fetch loop, no Live enable, no merge. |
+| **Key files** | `ui_api/news_ingest.py`, `ui_api/server.py`, `ui_api/live_intelligence.py`, `ui_api/opportunity_projections.py`, `news/event_v1_ingress.py`, `news/observational_opportunity.py`, `observation_ingress/consumers.py`, `docs/architecture/DATA_CONTRACTS.md`, `docs/architecture/MODE_AUTHORITY.md`, `tests/ui1/test_news_event_v1_request_path.py` |
+| **Tests** | `python -m unittest tests.ui1.test_news_event_v1_request_path tests.news.test_finviz_news_event_v1_ingress` **9/9 OK**; `tests.ui1.test_live_observational_state tests.ui1.test_opportunity_api tests.ui1.test_opportunity_radar_feed` **22/22 OK**. Not empirical RTH. |
+| **Related** | Honesty HEAD `91b07b4f`; P13 `4176d0b6`; P12 `5f965f32` |
+| **Notes** | **rebase-required=yes** after close. Base SHA `7aade60bf8041df5ebf9f0ac856d5d8802845c8d`. Worktree `.worktrees/repair-live-oe-cockpit-state-20260915`. Frozen `.rth-operator-20260915` not edited. Still missing: auto-fetch Finviz loop; BUILD 09 `NEWS_EVENT` inactive; Moomoo quotes still not EventV1. |
+
+## 2026-09-15 — P13 MUST-FIX honesty on isolated live OE candidate
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `ui_api`, `news`, `docs` |
+| **Summary** | Isolated P13 (`4176d0b6`) MUST-FIX on `repair/live-oe-cockpit-state-20260915`. Strip UiApiHandler request-path Finviz→EventV1 admission claims (helpers + unused bind only). Stop ranking live INELIGIBLE rows. Live `feed_status` is never `READY` when `as_of_time` is `UNAVAILABLE`. Close July 21 on `store.as_of_time()` and inspect EVIDENCE. Keep `replay_shelf` explicitly `DEMO_REPLAY` and out of current RTH items. ACK/WATCH stay `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`. Mixed-discovery EMPTY vs UNAVAILABLE left isolated and not treated as required for this honesty patch. No merge, no Live enable, no empirical claim. |
+| **Key files** | `ui_api/store.py`, `ui_api/projections.py`, `ui_api/opportunity_projections.py`, `ui_api/live_intelligence.py`, `intelligence/opportunity/ranking.py`, `news/event_v1_ingress.py`, `tools/ui1/run_ui_api.py`, `ui/src/api/schemas.ts`, `docs/architecture/DATA_CONTRACTS.md`, `docs/architecture/MODE_AUTHORITY.md`, focused tests under `tests/ui1`, `tests/news` |
+| **Tests** | `python -m unittest tests.ui1.test_live_observational_state tests.ui1.test_opportunity_api tests.ui1.test_opportunity_radar_feed tests.news.test_finviz_news_event_v1_ingress tests.platform.test_discovery_p33 tests.platform.test_mixed_discovery` **62/62 OK**. Not empirical RTH. |
+| **Related** | P13 review `review/live-oe-patch-20260915`; P12 `5f965f32`; prior candidate HEAD `c43688ed` |
+| **Notes** | **rebase-required=yes** after close. Base SHA `7aade60bf8041df5ebf9f0ac856d5d8802845c8d`. Worktree `.worktrees/repair-live-oe-cockpit-state-20260915`. Frozen `.rth-operator-20260915` not edited. Remaining unfixed: no UiApiHandler news admit (intentional helper); no auto-fetch Finviz; focus-none + quotes on other symbols still `UNAVAILABLE`; FTEP CLI still dry-run; BUILD 09 `NEWS_EVENT` still inactive; mixed discovery still isolated and not OE. |
+
+## 2026-09-15 — Isolated live OE cockpit-state candidate (P1+P4, P12-adjusted)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `ui_api`, `news`, `discovery`, `docs` |
+| **Summary** | Isolated candidate on `repair/live-oe-cockpit-state-20260915` from origin/main `7aade60`. Stack: (1) live as_of/attention honesty, (2) Finviz `NewsArticleEvent`→EventV1+production ingress bind on UI API ReplayStore, (3) observational ranked **READ** split so `/opportunities/summary` is EMPTY/READY from the repository. ACK/WATCH stay `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`. Incorporates P12 `5f965f32`: today's UNAVAILABLE was the `_is_live` request-path gate *before* `build_ranked_rows`; admission is not the proximate reason-code cause; EventV1 is not sufficient; do not delete the live helper before fixture quarantine. Mixed discovery remains INVESTIGATE. No Live enable, no enrichment, no merge, no empirical claim. |
+| **Key files** | `ui_api/projections.py`, `ui_api/opportunity_projections.py`, `ui_api/live_intelligence.py`, `news/event_v1.py`, `news/event_v1_ingress.py`, `observation_ingress/consumers.py`, `discovery/engine.py`, `mixed_discovery_projections.py`, `tools/ui1/run_ui_api.py`, focused tests under `tests/ui1`, `tests/news`, `tests/platform` |
+| **Tests** | `python -m unittest tests.ui1.test_live_observational_state tests.ui1.test_opportunity_api tests.ui1.test_opportunity_radar_feed tests.news.test_finviz_news_event_v1_ingress tests.platform.test_discovery_p33 tests.platform.test_mixed_discovery` **60/60 OK**. Not empirical RTH. |
+| **Related** | P12 review `review/live-oe-diagnosis-20260915` @ `5f965f32`; diagnosis agent `520aeed6` |
+| **Notes** | **rebase-required=yes** after close. Base SHA `7aade60bf8041df5ebf9f0ac856d5d8802845c8d`. Worktree `.worktrees/repair-live-oe-cockpit-state-20260915`. Frozen `.rth-operator-20260915` not edited. Vite/launcher owned by P3. Item 9/Item 7 not touched. Remaining gaps: no auto-fetch Finviz loop in UI API; FTEP CLI still dry-run; BUILD 09 `NEWS_EVENT` still inactive; mixed discovery is not OE; no Vite `/opportunities` proxy. |
+
 ## 2026-09-15 — FTEP integrity: resolve gitignored session evidence from operator primary checkout
 
 | Field | Value |

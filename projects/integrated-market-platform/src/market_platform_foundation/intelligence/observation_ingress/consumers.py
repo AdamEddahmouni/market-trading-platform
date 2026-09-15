@@ -25,6 +25,13 @@ from .types import (
 )
 
 
+_NEWS_ARTICLE_EVENT_TYPES = frozenset({"NEWS_ARTICLE", "NEWS"})
+
+
+def accepts_news_article_event(event: EventV1) -> bool:
+    return str(event.event_type).upper() in _NEWS_ARTICLE_EVENT_TYPES
+
+
 @runtime_checkable
 class IngressConsumerHandler(Protocol):
     consumer_id: str
@@ -179,7 +186,7 @@ def detector_stub_consumer(
     repository: IntelligenceRepository | None = None,
     oe_evidence_enrichment: dict[str, dict[str, str]] | None = None,
 ) -> IngressConsumerHandler:
-    """DETECTOR lane: observe all events; SEC / congressional rows run canonical verticals."""
+    """DETECTOR lane: observe all events; SEC / congressional / news rows are typed."""
 
     kind = validate_consumer_kind(IngressConsumerKind.DETECTOR)
 
@@ -219,6 +226,17 @@ def detector_stub_consumer(
                 kind=kind,
                 status=IngressConsumerStatus.OK,
                 detail="CONGRESSIONAL_PTR_VERTICAL_OK",
+            )
+        if accepts_news_article_event(event):
+            from ...news.observational_opportunity import persist_observational_news_opportunity
+
+            minted = persist_observational_news_opportunity(event, repository)
+            detail = "NEWS_ARTICLE_OPPORTUNITY_MINTED" if minted is not None else "NEWS_ARTICLE_ADMITTED"
+            return IngressConsumerOutcome(
+                consumer_id=consumer_id,
+                kind=kind,
+                status=IngressConsumerStatus.OK,
+                detail=detail,
             )
         if repository is None or not accepts_sec_insider_event(event):
             return IngressConsumerOutcome(
@@ -267,6 +285,7 @@ def detector_stub_consumer(
 __all__ = [
     "CallableIngressConsumer",
     "IngressConsumerHandler",
+    "accepts_news_article_event",
     "audit_sink_consumer",
     "detector_stub_consumer",
     "enrichment_trigger_consumer",

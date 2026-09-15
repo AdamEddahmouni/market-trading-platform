@@ -695,6 +695,42 @@ class MixedProjectionTests(unittest.TestCase):
         self.assertIsNotNone(loaded)
         self.assertEqual(loaded["run_id"], "new")
 
+    def test_empty_success_is_not_finviz_screen_unavailable(self) -> None:
+        empty = {
+            "run_id": "run-empty",
+            "screen_id": "SHORT_SQUEEZE_DISCOVERY",
+            "screen_version": "1.0.0",
+            "received_at": "2026-09-15T14:00:00Z",
+            "available_time_ns": 1_000_000_000,
+            "provider": "FINVIZ_ELITE",
+            "quality": "EMPTY",
+            "candidates": [],
+        }
+        failed = {
+            "run_id": "run-failed",
+            "screen_id": "UNUSUAL_VOLUME_DISCOVERY",
+            "screen_version": "1.0.0",
+            "received_at": "2026-09-15T14:00:00Z",
+            "available_time_ns": 1_000_000_000,
+            "provider": "FINVIZ_ELITE",
+            "quality": "UNAVAILABLE",
+            "candidates": [],
+        }
+        engine = FakeEngine(
+            {
+                "SHORT_SQUEEZE_DISCOVERY": empty,
+                "UNUSUAL_VOLUME_DISCOVERY": failed,
+            }
+        )
+        service, _, _ = self.make_service(engine=engine)
+        payload = service.refresh(["SHORT_SQUEEZE_DISCOVERY", "UNUSUAL_VOLUME_DISCOVERY"])
+        by_id = {row["screen_id"]: row for row in payload["screen_outcomes"]}
+        self.assertEqual(by_id["SHORT_SQUEEZE_DISCOVERY"]["status"], "EMPTY")
+        self.assertIsNone(by_id["SHORT_SQUEEZE_DISCOVERY"]["reason"])
+        self.assertNotEqual(by_id["SHORT_SQUEEZE_DISCOVERY"]["reason"], "FINVIZ_SCREEN_UNAVAILABLE")
+        self.assertEqual(by_id["UNUSUAL_VOLUME_DISCOVERY"]["status"], "UNAVAILABLE")
+        self.assertEqual(by_id["UNUSUAL_VOLUME_DISCOVERY"]["reason"], "FINVIZ_SCREEN_UNAVAILABLE")
+
 
 FORBIDDEN_MIXED_KEYS = {"buy_score", "sell_score", "order_intent", "paper_order", "broker_order"}
 

@@ -117,7 +117,17 @@ def _serialize_review_row(row: Any, store: ReplayStore | None = None) -> dict[st
 
 
 def _is_live(store: ReplayStore) -> bool:
-    return store.data_mode == "LIVE_OBSERVATIONAL" or str(store.mode).upper() == "LIVE"
+    """Observational data-mode tripwire. Keep for mutations and fixture quarantine.
+
+    P12 (`review/live-oe-diagnosis-20260915` @ ``5f965f32``): today's
+    ``LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`` on ``/opportunities/summary``
+    was returned *before* ``build_ranked_rows``. Do not use this helper to skip
+    ranked reads. Do not delete it before fixture attention is quarantined
+    (live ``_attention_rows`` is empty). Finviz news admits on
+    ``POST /intelligence/ingest/news`` only.
+    """
+
+    return projections.is_live_observational(store)
 
 
 def _paper_mutations_allowed(store: ReplayStore) -> bool:
@@ -125,6 +135,10 @@ def _paper_mutations_allowed(store: ReplayStore) -> bool:
 
 
 def _attention_rows(store: ReplayStore) -> tuple[dict[str, Any], ...]:
+    # Live ranked reads must not ingest fixture/replay attention. Deleting the
+    # read gate without this quarantine would rank July BIYA/MC9/ES cards.
+    if _is_live(store):
+        return ()
     page = projections.build_attention_page(store, limit=50)
     items = page.get("items") or []
     rows: list[dict[str, Any]] = []
@@ -147,10 +161,22 @@ def _attention_rows(store: ReplayStore) -> tuple[dict[str, Any], ...]:
     return tuple(rows)
 
 
+def _live_as_of_unavailable(store: ReplayStore) -> bool:
+    return str(projections.display_as_of_time(store)) == projections.LIVE_AS_OF_UNAVAILABLE
+
+
 def _feed_status(store: ReplayStore, ranked_count: int) -> tuple[str, str | None]:
-    quality = projections.build_quality_summary(store)
     if _is_live(store):
-        return "UNAVAILABLE", "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE"
+        # Observational ranked READ: never LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE.
+        # A current book is READY only when a live clock exists and rows rank.
+        if _live_as_of_unavailable(store):
+            if ranked_count == 0:
+                return "EMPTY", None
+            return "UNREADY", "LIVE_AS_OF_UNAVAILABLE"
+        if ranked_count == 0:
+            return "EMPTY", None
+        return "READY", None
+    quality = projections.build_quality_summary(store)
     state = str(quality.get("state") or "")
     if state and state not in {"HEALTHY", "GOOD", "AVAILABLE"}:
         return "UNREADY", "QUALITY_SUMMARY_NOT_HEALTHY"
@@ -172,12 +198,19 @@ def _opportunity_source(store: ReplayStore) -> str:
 
 def build_ranked_rows(store: ReplayStore) -> tuple[Any, ...]:
     repository = getattr(store, "strategy_repository", None)
+    receive_ns = projections._live_receive_ns(store) if _is_live(store) else None
+    as_of_ns = getattr(store, "as_of_time_ns", None)
+    last_ns = getattr(store, "last_source_time_ns", None)
+    if as_of_ns is None:
+        as_of_ns = receive_ns
+    if last_ns is None:
+        last_ns = receive_ns
     assembled = assemble_opportunity_review_rows(
         attention_rows=_attention_rows(store),
         repository=repository,
         source=_opportunity_source(store),
-        as_of_time_ns=getattr(store, "as_of_time_ns", None),
-        last_source_time_ns=getattr(store, "last_source_time_ns", None),
+        as_of_time_ns=as_of_ns,
+        last_source_time_ns=last_ns,
         runtime_capability=getattr(store, "runtime_capability", None),
         session_state=getattr(store, "session_state", None),
         book_validity=getattr(store, "book_validity", None),
@@ -196,16 +229,9 @@ def build_opportunities_summary_payload(
     limit: int | None = None,
     hot_path_collector: HotPathClockCollector | None = None,
 ) -> dict[str, Any]:
-    if _is_live(store):
-        return {
-            "as_of_context": projections.build_as_of_context(store),
-            "quality_summary": projections.build_quality_summary(store),
-            "feed_status": "UNAVAILABLE",
-            "reason": "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE",
-            "items": [],
-            "next_cursor": None,
-        }
     ranked = build_ranked_rows(store)
+    if _is_live(store) and _live_as_of_unavailable(store):
+        ranked = ()
     page_size = limit or store.page_size
     start = 0
     if cursor:
@@ -236,8 +262,8 @@ def build_opportunities_summary_payload(
 
 
 def build_opportunity_detail_payload(store: ReplayStore, row_id: str) -> dict[str, Any]:
-    if _is_live(store):
-        raise KeyError("LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
+    if _is_live(store) and _live_as_of_unavailable(store):
+        raise KeyError(row_id)
     ranked = build_ranked_rows(store)
     acks = list_operator_acks()
     for row in ranked:
@@ -296,8 +322,6 @@ def build_opportunity_evidence_payload(store: ReplayStore, row_id: str) -> dict[
 
 
 def build_opportunity_explain_body(store: ReplayStore, ref: str) -> dict[str, Any]:
-    if _is_live(store):
-        raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
     if ref.startswith("explain:opportunity:"):
         row_id = ref.removeprefix("explain:opportunity:")
     elif ref.startswith("explain:summary:"):

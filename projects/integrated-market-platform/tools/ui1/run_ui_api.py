@@ -59,6 +59,10 @@ def _load_store() -> ReplayStore:
         assistant_audit_root=TRACKED_ASSISTANT_AUDIT_ROOT,
     )
     store.load()
+    from market_platform_foundation.ui_api.live_intelligence import bind_ui_api_intelligence
+
+    # Persistence + unused router bind. Not Finviz request-path EventV1 admission.
+    bind_ui_api_intelligence(store)
     if os.environ.get("IMP_LIVE_OBSERVATIONAL") == "1":
         from market_platform_foundation.market_data.live_runtime import get_live_runtime
         from tools.ibkr.runtime_bootstrap import install_ibkr_observational_provider
