@@ -129,11 +129,11 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
         if path in {"/subscriptions", "/subscriptions/release"}:
             return RoutePolicy(capability="state.write")
         if path == "/intelligence/ingest/enrichment" or path.startswith("/intelligence/ingest/enrichment/"):
-            return RoutePolicy(capability="state.write")
+            return RoutePolicy(capability="intelligence.ingest.write")
 
     if method_upper == "PUT":
         if path.startswith("/intelligence/ingest/enrichment/"):
-            return RoutePolicy(capability="state.write")
+            return RoutePolicy(capability="intelligence.ingest.write")
 
     return RoutePolicy(capability="state.read")
 
