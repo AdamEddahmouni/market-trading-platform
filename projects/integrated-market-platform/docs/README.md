@@ -182,6 +182,7 @@ MATLAB consumes Research Export v1 JSON. The overnight Parquet-bridge blueprint 
 | Pre-implementation planning closure (2026-09-11) | [PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md](platform/PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md) |
 | Post-G15 professor-directed CCN forensic audit | [post-g15-professor-directed/](audits/post-g15-professor-directed/README.md) |
 | IMP reconciliation program (G0–G15) | [imp-reconciliation/](audits/imp-reconciliation/README.md) |
+| RTH 2026-09-15 live-integration test gaps | [rth-live-integration-20260915/](audits/rth-live-integration-20260915/README.md) |
 | Donor-identity correction (GridIQ / DS-340W) | [Donor Authority Supersession Notice](superpowers/governance/2026-09-07-donor-authority-supersession-notice.md) |
 
 ---

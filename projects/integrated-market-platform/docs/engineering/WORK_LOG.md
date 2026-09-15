@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — P9 diagnosis: RTH live-integration test-gap matrix
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `audits` |
+| **Summary** | Isolated audit of how pre-RTH validation passed while 2026-09-15 live composition failed. Seven gaps (provider→OE unwired, Live ranked-book fail-closed by design/test, fixture as_of 2026-07-21, launcher `moomoo-api-test`, Vite `/discover` proxy, OpenD kline oldest page, WATCH/DISMISS unreachable) mapped to missing unit/contract/integration/full-stack/provider-sandbox/prospective-RTH tests and owning lanes P1–P5 / Item 9. Existing fail-closed gates not weakened; no production edits; no frozen RTH edits. |
+| **Key files** | `docs/audits/rth-live-integration-20260915/README.md` (created), `docs/audits/rth-live-integration-20260915/TEST_GAP_MATRIX.md` (created), `docs/audits/rth-live-integration-20260915/TEST_GAP_MATRIX.json` (created), `docs/README.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | Docs-only diagnosis; no new test files (avoid collision with P1 live as_of, P3 launcher, P5 watch-dismiss, `test_opend_history_kline_1m.py`) |
+| **Related** | [TEST_GAP_MATRIX.md](../audits/rth-live-integration-20260915/TEST_GAP_MATRIX.md); branch `diagnosis/test-gap-audit-20260915` from `origin/main` `7aade60b` |
+| **Notes** | P9 must not merge as a product fix. Live `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE` remains required. |
+
 ## 2026-09-15 — FTEP integrity: resolve gitignored session evidence from operator primary checkout
 
 | Field | Value |
