@@ -446,20 +446,25 @@ class IsolatedForwardTestPersistenceTest(unittest.TestCase):
         )
 
 
-class DurableForwardTestPersistenceV6Tests(IsolatedForwardTestPersistenceTest):
-    def test_schema_version_is_six(self) -> None:
-        local = open_local_state(force=True)
-        assert local is not None
-        self.assertEqual(local.connection.schema_version(), 6)
-        tables = {
+class DurableForwardTestPersistenceV7Tests(IsolatedForwardTestPersistenceTest):
+    def _table_names(self, local) -> set[str]:
+        return {
             str(row[0])
             for row in local.connection.execute(
                 "SELECT name FROM sqlite_master WHERE type='table'"
             ).fetchall()
         }
-        self.assertIn("forward_test_signal_links", tables)
 
-    def test_populated_v2_migrates_to_v6(self) -> None:
+    def test_schema_version_is_seven(self) -> None:
+        local = open_local_state(force=True)
+        assert local is not None
+        self.assertEqual(local.connection.schema_version(), SCHEMA_VERSION)
+        self.assertEqual(SCHEMA_VERSION, 7)
+        tables = self._table_names(local)
+        self.assertIn("forward_test_signal_links", tables)
+        self.assertIn("enrichment_outbox", tables)
+
+    def test_populated_v2_migrates_to_v7(self) -> None:
         import sqlite3
 
         from market_platform_foundation.local_state.schema import (
@@ -490,7 +495,9 @@ class DurableForwardTestPersistenceV6Tests(IsolatedForwardTestPersistenceTest):
         conn.close()
         local = open_local_state(force=True)
         assert local is not None
-        self.assertEqual(local.connection.schema_version(), 6)
+        self.assertEqual(local.connection.schema_version(), SCHEMA_VERSION)
+        tables = self._table_names(local)
+        self.assertIn("enrichment_outbox", tables)
         row = local.connection.execute(
             "SELECT session_id, git_sha FROM forward_test_sessions WHERE session_id='fts-legacy'"
         ).fetchone()
@@ -504,7 +511,7 @@ class DurableForwardTestPersistenceV6Tests(IsolatedForwardTestPersistenceTest):
         self.assertIn("persist_time_ns", columns)
         self.assertIn("simulator_version", columns)
 
-    def test_v5_duplicate_acks_deduped_on_v6(self) -> None:
+    def test_v5_duplicate_acks_deduped_on_v7(self) -> None:
         import sqlite3
 
         from market_platform_foundation.local_state.schema import (
@@ -547,7 +554,8 @@ class DurableForwardTestPersistenceV6Tests(IsolatedForwardTestPersistenceTest):
         conn.close()
         local = open_local_state(force=True)
         assert local is not None
-        self.assertEqual(local.connection.schema_version(), 6)
+        self.assertEqual(local.connection.schema_version(), SCHEMA_VERSION)
+        self.assertIn("enrichment_outbox", self._table_names(local))
         count = local.connection.execute(
             "SELECT COUNT(*) FROM opportunity_operator_acks WHERE paper_account_id='paper-a'"
         ).fetchone()

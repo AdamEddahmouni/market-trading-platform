@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ...contracts import DetectionSeverity, DetectionV1, EventV1, SnapshotV1
+from .canonical_snapshot import build_sec_insider_canonical_detection_snapshot
 from .facts import SecInsiderDisclosureFacts
 from .identity import build_sec_insider_detection
 
@@ -28,6 +29,8 @@ def build_detection(
     snapshot: SnapshotV1,
     facts: SecInsiderDisclosureFacts,
 ) -> DetectionV1:
+    _ = snapshot  # frame snapshot may differ; identity uses canonical anchor only
+    canonical = build_sec_insider_canonical_detection_snapshot(event)
     severity = _severity_for_facts(facts)
     reason_codes = ("SEC_INSIDER_DISCLOSURE_FACT", "FORM4_NOT_AUTO_DIRECTIONAL")
     metadata = {
@@ -40,7 +43,7 @@ def build_detection(
         "severity_semantics": "deterministic_materiality_not_probability",
     }
     return build_sec_insider_detection(
-        snapshot=snapshot,
+        snapshot=canonical,
         event=event,
         facts=facts,
         severity=severity,

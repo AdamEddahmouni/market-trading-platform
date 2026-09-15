@@ -2,35 +2,27 @@
 
 from __future__ import annotations
 
-from ..contracts import (
-    ContractKind,
-    ContractReference,
-    IntelligenceScope,
-    QualityState,
-    QualitySummary,
-    SnapshotV1,
-)
 from ..contracts.event import EventV1
+from ..contracts.snapshot import SnapshotV1
+from ..opportunity.sec_insider.canonical_snapshot import (
+    build_sec_insider_canonical_detection_snapshot,
+)
 
 
 def build_sec_insider_ingress_snapshot(
     event: EventV1,
     *,
-    decision_time_ns: int,
+    decision_time_ns: int | None = None,
     snapshot_id: str | None = None,
 ) -> SnapshotV1:
-    """PIT-safe snapshot at ingress dispatch time (decision_time >= event availability)."""
-    instrument = event.instrument_id or ""
-    scope = IntelligenceScope(instrument_ids=(instrument,) if instrument else ())
-    sid = snapshot_id or f"SNAP-SEC-ING-{event.event_id}"
-    return SnapshotV1(
-        snapshot_id=sid,
-        schema_version="1",
-        decision_time_ns=decision_time_ns,
-        scope=scope,
-        quality=QualitySummary(state=event.quality.state, flags=event.quality.flags),
-        source_event_refs=(ContractReference(kind=ContractKind.EVENT.value, id=event.event_id),),
-    )
+    """Canonical detection snapshot (ingress and BUILD 09 share one identity anchor)."""
+    canonical = build_sec_insider_canonical_detection_snapshot(event)
+    if snapshot_id is not None or (
+        decision_time_ns is not None
+        and decision_time_ns != canonical.decision_time_ns
+    ):
+        raise ValueError("SEC_INSIDER_INGRESS_SNAPSHOT_MUST_USE_CANONICAL_ANCHOR")
+    return canonical
 
 
 __all__ = ["build_sec_insider_ingress_snapshot"]
