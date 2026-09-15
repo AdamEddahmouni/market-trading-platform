@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — Lane P12: Item 9 kline-window diagnosis review (notes only)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, Item 9 prospective proof, review |
+| **Summary** | Adversarial review of diagnosis `819114a1`. Verdict **PARTIALLY_CONFIRMED**. 365-day `None/None` expansion is real; K_DAY oldest-first is observed; poll #1 stdout never showed 1m rows vs empty; timeout collapses `EXPERIMENT_CONTRACT_MISMATCH`; hour-2-resume 358 more kline cycles **falsifies** unique-security `historyKLQuota` as the protocol-error cause. Session-day + `max_count=120` would still miss RTH under oldest-first. No patch, no PIT change, no calibration claim. |
+| **Key files** | `docs/engineering/ITEM9_KLINE_WINDOW_DIAGNOSIS_P12_REVIEW.md` (created); `docs/engineering/WORK_LOG.md` |
+| **Tests** | None (review notes only; no product code) |
+| **Related** | [ITEM9_KLINE_WINDOW_DIAGNOSIS_P12_REVIEW.md](ITEM9_KLINE_WINDOW_DIAGNOSIS_P12_REVIEW.md); diagnosis branch `diagnosis/item9-prospective-bar-20260915` |
+| **Notes** | Branch `review/item9-kline-diagnosis-20260915` from poll SHA `7aade60b`. Frozen RTH worktree not edited. Live Lane B not signaled. |
+
 ## 2026-09-15 — FTEP integrity: resolve gitignored session evidence from operator primary checkout
 
 | Field | Value |
