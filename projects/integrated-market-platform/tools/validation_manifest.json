@@ -337,7 +337,10 @@
         "tools/phase5/**",
         "tools/research/matlab_governed_roundtrip.py",
         "tools/research/matlab_runtime.py",
+        "tools/research/pinets_engine_probe.py",
         "src/market_platform_foundation/strategy/source_runtime/matlab_runtime.py",
+        "src/market_platform_foundation/strategy/source_runtime/pinets_engine_probe.py",
+        "src/market_platform_foundation/strategy/source_runtime/pinets_runtime.py",
         "src/market_platform_foundation/research/export_v1_matlab_roundtrip.py",
         "src/market_platform_foundation/research/export_v1_matlab_result.py"
       ],
@@ -750,7 +753,8 @@
       "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 1,
       "source_globs": [
-        "src/market_platform_foundation/intelligence/**"
+        "src/market_platform_foundation/intelligence/**",
+        "tools/intelligence_enrichment_worker.py"
       ],
       "test_globs": [
         "tests/intelligence/test_*.py"

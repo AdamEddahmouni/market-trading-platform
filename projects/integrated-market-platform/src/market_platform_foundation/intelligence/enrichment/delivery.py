@@ -40,6 +40,7 @@ class EnrichmentRetryPolicy:
     base_backoff_ns: int = 1_000_000_000
     max_backoff_ns: int = 300_000_000_000
     claim_lease_ns: int = 60_000_000_000
+    dispatch_timeout_sec: float | None = None
 
 
 DEFAULT_RETRY_POLICY = EnrichmentRetryPolicy()

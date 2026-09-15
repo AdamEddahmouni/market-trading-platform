@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import os
 from typing import Any, Protocol, runtime_checkable
 
 from .contracts import EnrichmentRequestV1
+
+ENRICHMENT_DISPATCHER_ENV = "IMP_INTELLIGENCE_ENRICHMENT_DISPATCHER"
 
 
 @runtime_checkable
@@ -33,6 +36,17 @@ class RecordingEnrichmentDispatcher:
         self.dispatched.append(enrichment_request_v1_to_dict(request))
 
 
+def resolve_enrichment_dispatcher() -> EnrichmentDispatcher:
+    """Provider-neutral dispatcher; default NOOP (no external routing)."""
+
+    raw = (os.environ.get(ENRICHMENT_DISPATCHER_ENV) or "").strip().lower()
+    if raw in {"", "noop", "disabled", "off"}:
+        return NoOpEnrichmentDispatcher()
+    if raw in {"recording", "record"}:
+        return RecordingEnrichmentDispatcher()
+    raise ValueError("ENRICHMENT_DISPATCHER_UNSUPPORTED")
+
+
 def flush_outbox_to_dispatcher(
     outbox: Any,
     dispatcher: EnrichmentDispatcher,
@@ -49,8 +63,10 @@ def flush_outbox_to_dispatcher(
 
 
 __all__ = [
+    "ENRICHMENT_DISPATCHER_ENV",
     "EnrichmentDispatcher",
     "NoOpEnrichmentDispatcher",
     "RecordingEnrichmentDispatcher",
     "flush_outbox_to_dispatcher",
+    "resolve_enrichment_dispatcher",
 ]

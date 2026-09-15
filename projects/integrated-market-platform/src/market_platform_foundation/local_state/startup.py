@@ -19,6 +19,7 @@ from .schema import SCHEMA_VERSION
 
 _CONNECTION: LocalStateConnection | None = None
 _REPOSITORY: LocalStateRepository | None = None
+_ENRICHMENT_OUTBOX = None
 
 
 def configuration_hash(
@@ -44,6 +45,21 @@ def configuration_hash(
     )
 
 
+def open_enrichment_outbox(*, force: bool = False):
+    """Durable intelligence enrichment outbox on the canonical local_state database."""
+
+    global _ENRICHMENT_OUTBOX
+    if _ENRICHMENT_OUTBOX is not None and not force:
+        return _ENRICHMENT_OUTBOX
+    repo = open_local_state(force=force)
+    if repo is None:
+        return None
+    from ..intelligence.enrichment.sqlite_outbox import SqliteEnrichmentOutbox
+
+    _ENRICHMENT_OUTBOX = SqliteEnrichmentOutbox(repo.connection)
+    return _ENRICHMENT_OUTBOX
+
+
 def open_local_state(*, force: bool = False) -> LocalStateRepository | None:
     global _CONNECTION, _REPOSITORY
     if not persistence_enabled() and not force:
@@ -58,11 +74,12 @@ def open_local_state(*, force: bool = False) -> LocalStateRepository | None:
 
 
 def reset_local_state_for_tests() -> None:
-    global _CONNECTION, _REPOSITORY
+    global _CONNECTION, _REPOSITORY, _ENRICHMENT_OUTBOX
     if _CONNECTION is not None:
         _CONNECTION.close()
     _CONNECTION = None
     _REPOSITORY = None
+    _ENRICHMENT_OUTBOX = None
 
 
 def session_record_from_ledger(ledger: PaperExecutionLedger, *, status: str = SESSION_OPEN) -> dict[str, Any]:
