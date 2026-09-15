@@ -334,12 +334,19 @@
       "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 1,
       "source_globs": [
-        "tools/phase5/**"
+        "tools/phase5/**",
+        "tools/research/matlab_governed_roundtrip.py",
+        "tools/research/matlab_runtime.py",
+        "src/market_platform_foundation/strategy/source_runtime/matlab_runtime.py",
+        "src/market_platform_foundation/research/export_v1_matlab_roundtrip.py",
+        "src/market_platform_foundation/research/export_v1_matlab_result.py"
       ],
       "test_globs": [
         "tests/phase5/test_*.py"
       ],
-      "neighbors": []
+      "neighbors": [
+        "research"
+      ]
     },
     {
       "id": "phase5r",
