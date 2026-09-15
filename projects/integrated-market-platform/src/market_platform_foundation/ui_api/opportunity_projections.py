@@ -8,6 +8,10 @@ from ..intelligence.contracts.opportunity import OpportunityV1
 from ..intelligence.opportunity.ingest import assemble_opportunity_review_rows
 from ..intelligence.opportunity.ranking import comparison_vectors_from_repository, rank_review_rows
 from . import projections
+from ..rt01.execution_decision_trace.runtime import (
+    record_opportunity_surface_trace,
+    record_operator_lifecycle_trace,
+)
 from .operator_opportunity_state import dismissed_ids, list_operator_acks, record_operator_ack
 from .agent_enrichment_ingest import overlay_agent_enrichment_on_detail
 from .research_artifact_evidence import overlay_research_artifact_evidence_on_detail
@@ -246,6 +250,11 @@ def build_opportunity_detail_payload(store: ReplayStore, row_id: str) -> dict[st
                 body["lifecycle_state"] = matching[-1]["action"]
             body = overlay_agent_enrichment_on_detail(store, body)
             body = overlay_research_artifact_evidence_on_detail(store, body)
+            record_opportunity_surface_trace(
+                store,
+                row,
+                decision_time_ns=int(getattr(store, "as_of_time_ns", None) or 0) or None,
+            )
             return overlay_trade_reviews_on_detail(store, body)
     dismissed = [ack for ack in acks if row_id in {ack["summary_id"], ack.get("opportunity_id")}]
     if dismissed:
@@ -338,6 +347,12 @@ def apply_opportunity_ack(
         paper_account_id=str(account_id),
         action=action,
         created_at_ns=created_at_ns,
+    )
+    record_operator_lifecycle_trace(
+        store,
+        target,
+        action=action,
+        decision_time_ns=created_at_ns,
     )
     row_dict = target.to_dict() if hasattr(target, "to_dict") else {}
     metadata = dict(row_dict.get("metadata") or {}) if isinstance(row_dict.get("metadata"), dict) else {}

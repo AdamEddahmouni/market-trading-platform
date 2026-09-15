@@ -1042,7 +1042,10 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 )
             except ValueError as exc:
                 code = str(exc)
-                if "INGEST_MUTATION" in code or "FORBIDDEN" in code:
+                if "INTELLIGENCE_INGEST_LOOPBACK_TRUST_FORBIDDEN" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.SERVICE_UNAVAILABLE)
+                    return
+                if "INGEST_MUTATION" in code:
                     self._send_error_json("INGEST_MUTATION_FORBIDDEN", code, status=HTTPStatus.FORBIDDEN)
                     return
                 if "OPPORTUNITY_NOT_FOUND" in code:
@@ -1050,6 +1053,9 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 if "REPOSITORY_UNSUPPORTED" in code or "REPOSITORY_UNAVAILABLE" in code:
                     self._send_error_json(code, code, status=HTTPStatus.SERVICE_UNAVAILABLE)
+                    return
+                if code.startswith(("INGEST_", "AGENT_ENRICHMENT_")):
+                    self._send_error_json(code, code, status=HTTPStatus.BAD_REQUEST)
                     return
                 self._send_error_json("AGENT_ENRICHMENT_INGEST_FAILED", code, status=HTTPStatus.BAD_REQUEST)
             return
@@ -1143,7 +1149,10 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(agent_enrichment_ingest.handle_agent_enrichment_ingest_post(self.store, body))
             except ValueError as exc:
                 code = str(exc)
-                if "INGEST_MUTATION" in code or "FORBIDDEN" in code:
+                if "INTELLIGENCE_INGEST_LOOPBACK_TRUST_FORBIDDEN" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.SERVICE_UNAVAILABLE)
+                    return
+                if "INGEST_MUTATION" in code:
                     self._send_error_json("INGEST_MUTATION_FORBIDDEN", code, status=HTTPStatus.FORBIDDEN)
                     return
                 if "OPPORTUNITY_NOT_FOUND" in code:
@@ -1151,6 +1160,9 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 if "REPOSITORY_UNSUPPORTED" in code or "REPOSITORY_UNAVAILABLE" in code:
                     self._send_error_json(code, code, status=HTTPStatus.SERVICE_UNAVAILABLE)
+                    return
+                if code.startswith(("INGEST_", "AGENT_ENRICHMENT_")):
+                    self._send_error_json(code, code, status=HTTPStatus.BAD_REQUEST)
                     return
                 self._send_error_json("AGENT_ENRICHMENT_INGEST_FAILED", code, status=HTTPStatus.BAD_REQUEST)
             return
@@ -1173,7 +1185,10 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 )
             except ValueError as exc:
                 code = str(exc)
-                if "INGEST_MUTATION" in code or "FORBIDDEN" in code:
+                if "INTELLIGENCE_INGEST_LOOPBACK_TRUST_FORBIDDEN" in code:
+                    self._send_error_json(code, code, status=HTTPStatus.SERVICE_UNAVAILABLE)
+                    return
+                if "INGEST_MUTATION" in code:
                     self._send_error_json("INGEST_MUTATION_FORBIDDEN", code, status=HTTPStatus.FORBIDDEN)
                     return
                 if "OPPORTUNITY_NOT_FOUND" in code:
@@ -1181,6 +1196,9 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 if "REPOSITORY_UNSUPPORTED" in code or "REPOSITORY_UNAVAILABLE" in code:
                     self._send_error_json(code, code, status=HTTPStatus.SERVICE_UNAVAILABLE)
+                    return
+                if code.startswith(("INGEST_", "AGENT_ENRICHMENT_")):
+                    self._send_error_json(code, code, status=HTTPStatus.BAD_REQUEST)
                     return
                 self._send_error_json("AGENT_ENRICHMENT_INGEST_FAILED", code, status=HTTPStatus.BAD_REQUEST)
             return

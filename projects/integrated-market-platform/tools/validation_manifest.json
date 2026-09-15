@@ -1290,6 +1290,7 @@
       "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 1,
       "source_globs": [
+        "src/market_platform_foundation/research/public_record_primary_source/**",
         "src/market_platform_foundation/sec_edgar/**",
         "tools/sec_edgar/**",
         "tests/fixtures/sec_edgar/**"
@@ -1372,7 +1373,10 @@
       "parallel_safety": "PARALLEL_SAFE",
       "resource_weight": 1,
       "source_globs": [
+        "src/market_platform_foundation/congressional_ptr/**",
         "src/market_platform_foundation/market_trackers/**",
+        "src/market_platform_foundation/research/public_record_primary_source/**",
+        "tests/fixtures/congressional_disclosure/**",
         "tests/fixtures/market_trackers/**"
       ],
       "test_globs": [

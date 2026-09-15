@@ -9,6 +9,10 @@ from typing import Any, Callable, Protocol, runtime_checkable
 
 from ..contracts.opportunity import OpportunityV1
 
+from .boundary import (
+    validate_agent_enrichment_ingest_payload,
+    validate_agent_enrichment_record_policy,
+)
 from ..contracts.agent_ingest import (
     AGENT_ENRICHMENT_SCHEMA_ID,
     AgentClaimType,
@@ -181,7 +185,9 @@ class AgentEnrichmentIngestRuntime:
         existing_record: AgentEnrichmentEvidenceV1 | None = None,
     ) -> AgentEnrichmentIngestResult:
         _scan_forbidden_mutations(payload)
+        validate_agent_enrichment_ingest_payload(payload)
         record = agent_enrichment_evidence_v1_from_dict(payload)
+        validate_agent_enrichment_record_policy(record)
         _validate_claim_operation_alignment(record)
         opportunity = None
         if self._get_opportunity is not None:
