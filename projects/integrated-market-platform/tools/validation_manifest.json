@@ -767,6 +767,36 @@
       ]
     },
     {
+      "id": "opportunity_watch_dismiss_acceptance",
+      "path": "tests/opportunity",
+      "classification": "offline",
+      "tiers": [
+        "full",
+        "changed"
+      ],
+      "domains": [
+        "core"
+      ],
+      "parallel_safety": "PARALLEL_SAFE",
+      "resource_weight": 1,
+      "source_globs": [
+        "src/market_platform_foundation/ui_api/opportunity_projections.py",
+        "src/market_platform_foundation/ui_api/operator_opportunity_state.py",
+        "src/market_platform_foundation/ui_api/trade_review_projections.py",
+        "src/market_platform_foundation/intelligence/trade_review/**",
+        "src/market_platform_foundation/intelligence/opportunity/**",
+        "src/market_platform_foundation/rt01/execution_decision_trace/**"
+      ],
+      "test_globs": [
+        "tests/opportunity/test_*.py"
+      ],
+      "neighbors": [
+        "intelligence",
+        "rt01",
+        "ui1"
+      ]
+    },
+    {
       "id": "cross_lane",
       "path": "tests/cross_lane",
       "classification": "offline",
