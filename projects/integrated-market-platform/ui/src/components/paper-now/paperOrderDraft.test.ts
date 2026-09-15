@@ -182,7 +182,7 @@ describe("paper order draft", () => {
       sourceContext: attentionSourceContextFromItem(item),
     });
     expect(parsePaperDraftProvenance(draft!).type).toBe("ATTENTION");
-    expect(formatPaperDraftSourceLabel(draft)).toBe("Paper Command attention ATT-123");
+    expect(formatPaperDraftSourceLabel(draft!)).toBe("Paper Command attention ATT-123");
   });
 
   it("parses provenance variants and malformed ids", () => {
