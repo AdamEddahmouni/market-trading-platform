@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 
 from market_platform_foundation.intelligence.contracts import (
     ContractReference,
@@ -85,13 +86,51 @@ class OpportunityApiTests(unittest.TestCase):
             metadata = item.get("metadata") or {}
             self.assertTrue(_INGEST_TIMESTAMP_KEYS.isdisjoint(metadata))
 
-    def test_live_mode_returns_unavailable_empty_queue(self) -> None:
+    def test_live_mode_observational_read_is_empty_without_repository_rows(self) -> None:
+        # P12: request-path must not emit LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE
+        # on ranked READ. Empty live book is EMPTY with live provenance.
         self.store.data_mode = "LIVE_OBSERVATIONAL"
         self.store.mode = "LIVE"
-        payload = build_opportunities_summary_payload(self.store)
-        self.assertEqual(payload["feed_status"], "UNAVAILABLE")
-        self.assertEqual(payload["reason"], "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
+        with patch(
+            "market_platform_foundation.market_data.live_runtime.get_live_runtime",
+            return_value=None,
+        ):
+            payload = build_opportunities_summary_payload(self.store)
+        self.assertEqual(payload["feed_status"], "EMPTY")
+        self.assertNotEqual(payload.get("reason"), "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
         self.assertEqual(payload["items"], [])
+        self.assertNotIn("2026-07-21", str(payload["as_of_context"].get("as_of_time")))
+
+    def test_live_mode_mutations_remain_blocked(self) -> None:
+        self.store.data_mode = "LIVE_OBSERVATIONAL"
+        self.store.mode = "LIVE"
+        with self.assertRaises(PermissionError) as ack_ctx:
+            apply_opportunity_ack(self.store, row_id="any-id", action="DISMISSED")
+        self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
+
+    def test_live_observational_read_ranks_repository_not_fixture_attention(self) -> None:
+        # P12: a populated repo must be visible after the read/mutation split.
+        # EventV1 admission alone is not sufficient; this is the request-path fix.
+        # Fixture attention must stay quarantined so July cards are not ranked.
+        self.store.data_mode = "LIVE_OBSERVATIONAL"
+        self.store.mode = "LIVE"
+        opportunity = self._seed_opportunity()
+        with patch(
+            "market_platform_foundation.market_data.live_runtime.get_live_runtime",
+            return_value=None,
+        ):
+            payload = build_opportunities_summary_payload(self.store)
+        self.assertEqual(payload["feed_status"], "READY")
+        item = self._item_by_opportunity(payload, opportunity.opportunity_id)
+        self.assertEqual(item["identity_kind"], "OPPORTUNITY_V1")
+        self.assertFalse(
+            any(row.get("attention_id") == "att-replay-context" for row in payload["items"])
+        )
+        detail = build_opportunity_detail_payload(self.store, opportunity.opportunity_id)
+        self.assertEqual(detail["opportunity_id"], opportunity.opportunity_id)
+        with self.assertRaises(PermissionError) as ack_ctx:
+            apply_opportunity_ack(self.store, row_id=opportunity.opportunity_id, action="WATCHED")
+        self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
 
     def test_demo_cannot_dismiss(self) -> None:
         summary = build_opportunities_summary_payload(self.store)

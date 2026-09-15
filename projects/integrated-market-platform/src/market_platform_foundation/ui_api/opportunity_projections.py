@@ -117,7 +117,18 @@ def _serialize_review_row(row: Any, store: ReplayStore | None = None) -> dict[st
 
 
 def _is_live(store: ReplayStore) -> bool:
-    return store.data_mode == "LIVE_OBSERVATIONAL" or str(store.mode).upper() == "LIVE"
+    """Observational data-mode tripwire. Keep for mutations; do not use to skip ranked reads.
+
+    P12 (`review/live-oe-diagnosis-20260915` @ ``5f965f32``): today's
+    ``LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`` on ``/opportunities/summary``
+    was returned *before* ``build_ranked_rows``. A populated EventV1 /
+    OpportunityV1 repository would still have been invisible. Admission is
+    not the request-path cause of that reason code. Finviz→EventV1 is
+    necessary later, not sufficient here. Do not delete this helper before
+    fixture attention is quarantined (live ``_attention_rows`` is empty).
+    """
+
+    return projections.is_live_observational(store)
 
 
 def _paper_mutations_allowed(store: ReplayStore) -> bool:
@@ -125,6 +136,10 @@ def _paper_mutations_allowed(store: ReplayStore) -> bool:
 
 
 def _attention_rows(store: ReplayStore) -> tuple[dict[str, Any], ...]:
+    # Live ranked reads must not ingest fixture/replay attention. Deleting the
+    # read gate without this quarantine would rank July BIYA/MC9/ES cards.
+    if _is_live(store):
+        return ()
     page = projections.build_attention_page(store, limit=50)
     items = page.get("items") or []
     rows: list[dict[str, Any]] = []
@@ -148,9 +163,13 @@ def _attention_rows(store: ReplayStore) -> tuple[dict[str, Any], ...]:
 
 
 def _feed_status(store: ReplayStore, ranked_count: int) -> tuple[str, str | None]:
-    quality = projections.build_quality_summary(store)
     if _is_live(store):
-        return "UNAVAILABLE", "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE"
+        # Observational ranked READ: EMPTY/READY from the repository, never the
+        # request-path reason LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE.
+        if ranked_count == 0:
+            return "EMPTY", None
+        return "READY", None
+    quality = projections.build_quality_summary(store)
     state = str(quality.get("state") or "")
     if state and state not in {"HEALTHY", "GOOD", "AVAILABLE"}:
         return "UNREADY", "QUALITY_SUMMARY_NOT_HEALTHY"
@@ -186,6 +205,7 @@ def build_ranked_rows(store: ReplayStore) -> tuple[Any, ...]:
         assembled,
         comparison_vectors=comparison_vectors_from_repository(repository),
         dismissed_ids=dismissed_ids(),
+        include_ineligible=_is_live(store),
     )
 
 
@@ -196,15 +216,6 @@ def build_opportunities_summary_payload(
     limit: int | None = None,
     hot_path_collector: HotPathClockCollector | None = None,
 ) -> dict[str, Any]:
-    if _is_live(store):
-        return {
-            "as_of_context": projections.build_as_of_context(store),
-            "quality_summary": projections.build_quality_summary(store),
-            "feed_status": "UNAVAILABLE",
-            "reason": "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE",
-            "items": [],
-            "next_cursor": None,
-        }
     ranked = build_ranked_rows(store)
     page_size = limit or store.page_size
     start = 0
@@ -236,8 +247,6 @@ def build_opportunities_summary_payload(
 
 
 def build_opportunity_detail_payload(store: ReplayStore, row_id: str) -> dict[str, Any]:
-    if _is_live(store):
-        raise KeyError("LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
     ranked = build_ranked_rows(store)
     acks = list_operator_acks()
     for row in ranked:
@@ -296,8 +305,6 @@ def build_opportunity_evidence_payload(store: ReplayStore, row_id: str) -> dict[
 
 
 def build_opportunity_explain_body(store: ReplayStore, ref: str) -> dict[str, Any]:
-    if _is_live(store):
-        raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
     if ref.startswith("explain:opportunity:"):
         row_id = ref.removeprefix("explain:opportunity:")
     elif ref.startswith("explain:summary:"):

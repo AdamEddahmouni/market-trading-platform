@@ -125,6 +125,45 @@ class DiscoveryP33Tests(unittest.TestCase):
             for c in result.candidates:
                 self.assertEqual(c.to_dict()["candidate_role"], "INVESTIGATE")
 
+    def test_empty_successful_export_is_empty_not_unavailable(self) -> None:
+        class StubClient:
+            configured = True
+
+            def fetch_export(self, **kwargs):
+                return {
+                    "success": True,
+                    "rows": [],
+                    "columns": ["Ticker"],
+                    "received_at": "2026-09-15T14:00:00Z",
+                    "available_time_ns": 2000,
+                    "raw_response_hash": "empty",
+                }
+
+        engine = DiscoveryEngine(screener=StubClient())
+        result = engine.run_screen("SHORT_SQUEEZE_DISCOVERY", persist=False)
+        self.assertEqual(result.candidate_count, 0)
+        self.assertEqual(result.quality, "EMPTY")
+        self.assertNotEqual(result.quality, "UNAVAILABLE")
+
+    def test_failed_export_is_unavailable(self) -> None:
+        class StubClient:
+            configured = True
+
+            def fetch_export(self, **kwargs):
+                return {
+                    "success": False,
+                    "rows": [],
+                    "columns": [],
+                    "received_at": "2026-09-15T14:00:00Z",
+                    "available_time_ns": 2000,
+                    "error": "timeout",
+                }
+
+        engine = DiscoveryEngine(screener=StubClient())
+        result = engine.run_screen("SHORT_SQUEEZE_DISCOVERY", persist=False)
+        self.assertEqual(result.candidate_count, 0)
+        self.assertEqual(result.quality, "UNAVAILABLE")
+
 
 if __name__ == "__main__":
     unittest.main()

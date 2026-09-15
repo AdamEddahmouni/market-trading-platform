@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — Isolated live OE cockpit-state candidate (P1+P4, P12-adjusted)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `ui_api`, `news`, `discovery`, `docs` |
+| **Summary** | Isolated candidate on `repair/live-oe-cockpit-state-20260915` from origin/main `7aade60`. Stack: (1) live as_of/attention honesty, (2) Finviz `NewsArticleEvent`→EventV1+production ingress bind on UI API ReplayStore, (3) observational ranked **READ** split so `/opportunities/summary` is EMPTY/READY from the repository. ACK/WATCH stay `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`. Incorporates P12 `5f965f32`: today's UNAVAILABLE was the `_is_live` request-path gate *before* `build_ranked_rows`; admission is not the proximate reason-code cause; EventV1 is not sufficient; do not delete the live helper before fixture quarantine. Mixed discovery remains INVESTIGATE. No Live enable, no enrichment, no merge, no empirical claim. |
+| **Key files** | `ui_api/projections.py`, `ui_api/opportunity_projections.py`, `ui_api/live_intelligence.py`, `news/event_v1.py`, `news/event_v1_ingress.py`, `observation_ingress/consumers.py`, `discovery/engine.py`, `mixed_discovery_projections.py`, `tools/ui1/run_ui_api.py`, focused tests under `tests/ui1`, `tests/news`, `tests/platform` |
+| **Tests** | `python -m unittest tests.ui1.test_live_observational_state tests.ui1.test_opportunity_api tests.ui1.test_opportunity_radar_feed tests.news.test_finviz_news_event_v1_ingress tests.platform.test_discovery_p33 tests.platform.test_mixed_discovery` **60/60 OK**. Not empirical RTH. |
+| **Related** | P12 review `review/live-oe-diagnosis-20260915` @ `5f965f32`; diagnosis agent `520aeed6` |
+| **Notes** | **rebase-required=yes** after close. Base SHA `7aade60bf8041df5ebf9f0ac856d5d8802845c8d`. Worktree `.worktrees/repair-live-oe-cockpit-state-20260915`. Frozen `.rth-operator-20260915` not edited. Vite/launcher owned by P3. Item 9/Item 7 not touched. Remaining gaps: no auto-fetch Finviz loop in UI API; FTEP CLI still dry-run; BUILD 09 `NEWS_EVENT` still inactive; mixed discovery is not OE; no Vite `/opportunities` proxy. |
+
 ## 2026-09-15 — FTEP integrity: resolve gitignored session evidence from operator primary checkout
 
 | Field | Value |

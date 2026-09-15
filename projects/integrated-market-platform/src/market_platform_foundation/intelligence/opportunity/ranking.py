@@ -102,12 +102,13 @@ def rank_review_rows(
     *,
     comparison_vectors: dict[str, ComparisonVectorV1] | None = None,
     dismissed_ids: set[str] | None = None,
+    include_ineligible: bool = False,
 ) -> tuple[OpportunitySummary, ...]:
     dismissed = dismissed_ids or set()
     visible = [
         row
         for row in dedup_review_rows(rows)
-        if row.lifecycle_state != OperatorLifecycleState.INELIGIBLE.value
+        if (include_ineligible or row.lifecycle_state != OperatorLifecycleState.INELIGIBLE.value)
         and row.summary_id not in dismissed
         and (row.opportunity_id or "") not in dismissed
     ]
