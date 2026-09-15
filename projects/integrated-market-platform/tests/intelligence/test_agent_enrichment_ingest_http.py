@@ -40,7 +40,7 @@ def _payload(opportunity_id: str = "opp-http") -> dict:
         "claim_type": "SUPPORTING_EVIDENCE",
         "confidence": 0.5,
         "expires_at": "2099-01-01T00:00:00+00:00",
-        "provenance": {"ingest_plane": "grok"},
+        "provenance": {"ingest_plane": "grok", "worker_id": "http-test"},
         "operation": "ATTACH_EVIDENCE",
         "claim_body": {"summary": "http test"},
     }

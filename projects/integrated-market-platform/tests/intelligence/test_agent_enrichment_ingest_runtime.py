@@ -53,25 +53,37 @@ def _opportunity(opportunity_id: str = "opp-lane-g") -> OpportunityV1:
     )
 
 
+_CLAIM_BOT_ROLE = {
+    "SUPPORTING_EVIDENCE": "SENTINEL",
+    "SOURCE_ATTRIBUTION": "RESEARCH_SCOUT",
+    "CONTRADICTION": "SKEPTIC",
+    "CROWD_CONTEXT": "CROWD_WATCH",
+    "HYPOTHESIS_SUGGESTION": "RESEARCH_SCOUT",
+    "VERIFICATION": "SENTINEL",
+}
+
+
 def _payload(
     *,
     record_id: str = "aer-lane-g-1",
     claim_type: str = "SUPPORTING_EVIDENCE",
     operation: str = "ATTACH_EVIDENCE",
     expires_at: str = "2099-01-01T00:00:00+00:00",
+    bot_role: str | None = None,
 ) -> dict:
+    resolved_role = bot_role or _CLAIM_BOT_ROLE.get(claim_type, "SENTINEL")
     return {
         "record_id": record_id,
         "schema_version": "1",
         "opportunity_id": "opp-lane-g",
         "retrieved_at": "2026-09-14T14:00:00+00:00",
         "agent_id": "grok.sentinel.v1",
-        "bot_role": "SENTINEL",
+        "bot_role": resolved_role,
         "skill": {"skill_id": "imp.sentinel.verify", "version": "1.0.0"},
         "claim_type": claim_type,
         "confidence": 0.5,
         "expires_at": expires_at,
-        "provenance": {"ingest_plane": "grok"},
+        "provenance": {"ingest_plane": "grok", "worker_id": "runtime-test"},
         "operation": operation,
         "claim_body": {"summary": "supporting context"},
     }
