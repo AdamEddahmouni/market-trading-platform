@@ -40,7 +40,7 @@ class EnrichmentOutboxWorker:
         if request is None:
             return False
         try:
-            self._dispatcher.dispatch(request)
+            self._dispatch_with_optional_timeout(request)
             self._outbox.mark_dispatched(request.request_id, at_ns=clock_ns)
         except Exception as exc:  # noqa: BLE001 — bounded retry boundary
             if hasattr(self._outbox, "record_dispatch_failure"):
@@ -53,6 +53,20 @@ class EnrichmentOutboxWorker:
             else:
                 raise
         return True
+
+    def _dispatch_with_optional_timeout(self, request: Any) -> None:
+        timeout = self._policy.dispatch_timeout_sec
+        if timeout is None or timeout <= 0:
+            self._dispatcher.dispatch(request)
+            return
+        from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
+
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(self._dispatcher.dispatch, request)
+            try:
+                future.result(timeout=timeout)
+            except FuturesTimeoutError:
+                raise TimeoutError("ENRICHMENT_DISPATCH_TIMEOUT") from None
 
     def drain(self, *, max_iterations: int = 256, now_ns: int | None = None) -> int:
         from .schedule_clock import resolve_outbox_schedule_now_ns
