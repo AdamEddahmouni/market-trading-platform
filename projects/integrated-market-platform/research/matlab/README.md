@@ -13,6 +13,10 @@ stays local and gitignored.
 MATLAB loaders start at `matlab_handoff_manifest.json` from a Research Export v1
 package. Contract: [RESEARCH_EXPORT_V1.md](../../docs/research/RESEARCH_EXPORT_V1.md).
 
+Governed result import and smoke round-trip:
+[MATLAB_GOVERNED_ROUNDTRIP.md](../../docs/research/MATLAB_GOVERNED_ROUNDTRIP.md).
+Smoke script: `smoke/imp_matlab_parity_smoke.m`.
+
 The overnight Parquet blueprint
 (`artifacts/overnight/2026-09-12/MATLAB_INTEGRATION_PLAN.md`) is **historical**.
 Do not implement `export_matlab_bundle.py` as the v1 MATLAB path.
