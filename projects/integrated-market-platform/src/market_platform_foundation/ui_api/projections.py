@@ -17,6 +17,44 @@ CAPABILITY_DEFINITIONS: tuple[tuple[str, str], ...] = (
     ("paper.execution", "Paper trading execution"),
 )
 
+LIVE_AS_OF_UNAVAILABLE = "UNAVAILABLE"
+REPLAY_SHELF_LABEL = "DEMO_REPLAY"
+_FIXTURE_ATTENTION_IDS = frozenset({"att-replay-context", "att-futures-es-imbalance"})
+
+
+def is_live_observational(store: ReplayStore) -> bool:
+    return store.data_mode == "LIVE_OBSERVATIONAL" or str(getattr(store, "mode", "")).upper() == "LIVE"
+
+
+def _iso_from_epoch_ns(epoch_ns: int) -> str:
+    seconds = epoch_ns // 1_000_000_000
+    nanos = epoch_ns % 1_000_000_000
+    from datetime import datetime, timezone
+
+    return datetime.fromtimestamp(seconds, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S") + f".{nanos:09d}Z"
+
+
+def _live_receive_ns(store: ReplayStore) -> int | None:
+    from ..market_data.live_runtime import get_live_runtime
+
+    runtime = get_live_runtime(create=False)
+    if runtime is not None:
+        from .operator_instrument import resolve_active_operator_instrument
+
+        focus, _source = resolve_active_operator_instrument(store)
+        quote = runtime.state.quote_for(focus) if focus else None
+        if quote is not None:
+            return int(quote.received_ns)
+    last_source = getattr(store, "last_source_time_ns", None)
+    if last_source is not None:
+        return int(last_source)
+    return None
+
+
+def is_fixture_rth_attention_id(attention_id: object) -> bool:
+    text = str(attention_id or "")
+    return text in _FIXTURE_ATTENTION_IDS or text.startswith("att-mc9-")
+
 
 def build_as_of_context(store: ReplayStore) -> dict[str, object]:
     from ..operating_modes import build_operating_context
@@ -33,32 +71,22 @@ def build_as_of_context(store: ReplayStore) -> dict[str, object]:
         execution_mode = "NONE"
         execution_authority = "BLOCKED"
     as_of_time = store.as_of_time()
+    as_of_provenance = "FIXTURE_REPLAY"
     if data_mode == "LIVE_OBSERVATIONAL":
-        import time
-
-        from ..market_data.live_runtime import get_live_runtime
-
-        runtime = get_live_runtime(create=False)
-        if runtime is not None:
-            from .operator_instrument import resolve_active_operator_instrument
-
-            focus, _source = resolve_active_operator_instrument(store)
-            quote = runtime.state.quote_for(focus) if focus else None
-            if quote is not None:
-                seconds = quote.received_ns // 1_000_000_000
-                nanos = quote.received_ns % 1_000_000_000
-                from datetime import datetime, timezone
-
-                as_of_time = datetime.fromtimestamp(seconds, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S") + f".{nanos:09d}Z"
-            else:
-                as_of_time = store.as_of_time()
+        receive_ns = _live_receive_ns(store)
+        if receive_ns is None:
+            as_of_time = LIVE_AS_OF_UNAVAILABLE
+            as_of_provenance = "UNAVAILABLE"
+        else:
+            as_of_time = _iso_from_epoch_ns(receive_ns)
+            as_of_provenance = "LIVE_RECEIVE"
 
     exec_provider = None
     if execution_mode == "INTERNAL_SIMULATION":
         exec_provider = "INTERNAL"
     elif execution_mode != "NONE":
         exec_provider = store.execution_provider
-    return build_operating_context(
+    ctx = build_operating_context(
         as_of_time=as_of_time,
         timezone=store.timezone,
         replay_session_id=store.session_id if data_mode == "FIXTURE_REPLAY" else None,
@@ -68,9 +96,25 @@ def build_as_of_context(store: ReplayStore) -> dict[str, object]:
         data_provider=data_provider,
         execution_provider=exec_provider,
     )
+    if data_mode == "LIVE_OBSERVATIONAL":
+        ctx["as_of_provenance"] = as_of_provenance
+    return ctx
 
 
 def build_quality_summary(store: ReplayStore) -> dict[str, object]:
+    if is_live_observational(store):
+        receive_ns = _live_receive_ns(store)
+        if receive_ns is None:
+            return {
+                "affected_symbols": [],
+                "detail": "LIVE_OBSERVATIONAL_NO_LIVE_RECEIVE_TIME",
+                "state": "UNAVAILABLE",
+            }
+        return {
+            "affected_symbols": [],
+            "detail": "Live observational receive; fixture bars are not current market time",
+            "state": "GOOD",
+        }
     bar = store.current_bar()
     quality = bar.get("quality_state", "GOOD")
     state = str(quality) if quality else "GOOD"
@@ -475,7 +519,7 @@ def _tier1_attention_items(store: ReplayStore) -> list[dict[str, object]]:
     return tier1
 
 
-def _all_attention_items(store: ReplayStore) -> list[dict[str, object]]:
+def _fixture_attention_bundle(store: ReplayStore) -> list[dict[str, object]]:
     return (
         _tier1_attention_items(store)
         + _squeeze_attention_items()
@@ -483,6 +527,22 @@ def _all_attention_items(store: ReplayStore) -> list[dict[str, object]]:
         + _futures_attention_items(store)
         + _strategy_signal_items(store)
     )
+
+
+def _label_replay_shelf(items: list[dict[str, object]]) -> list[dict[str, object]]:
+    labeled: list[dict[str, object]] = []
+    for item in items:
+        row = dict(item)
+        row["attention_shelf"] = REPLAY_SHELF_LABEL
+        row["attention_data_kind"] = "FIXTURE_REPLAY"
+        labeled.append(row)
+    return labeled
+
+
+def _all_attention_items(store: ReplayStore) -> list[dict[str, object]]:
+    if is_live_observational(store):
+        return []
+    return _fixture_attention_bundle(store)
 
 
 def _count_series(rows: list[dict[str, object]], label_key: str) -> list[dict[str, object]]:
@@ -511,14 +571,18 @@ def build_attention_page(
     page = combined[start : start + page_size]
     next_cursor = page[-1]["attention_id"] if len(page) == page_size and start + page_size < len(combined) else None
     tier_rows = [{"tier": str(item.get("tier", 2))} for item in combined]
-    return {
+    payload: dict[str, object] = {
         "as_of_context": build_as_of_context(store),
         "capability_states": build_capabilities(store),
         "items": page,
         "next_cursor": next_cursor,
-        "pinned_tier1_count": len(tier1),
+        "pinned_tier1_count": 0 if is_live_observational(store) else len(tier1),
         "tier_summary": _count_series(tier_rows, "tier"),
     }
+    if is_live_observational(store):
+        payload["replay_shelf"] = _label_replay_shelf(_fixture_attention_bundle(store))
+        payload["replay_shelf_label"] = REPLAY_SHELF_LABEL
+    return payload
 
 
 def build_instrument_overview(store: ReplayStore, instrument_id: str) -> dict[str, object]:
