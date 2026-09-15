@@ -1,4 +1,4 @@
-"""Finviz NewsArticleEvent → EventV1 helper. Not a UiApiHandler request-path."""
+"""Finviz NewsArticleEvent → EventV1 mapper and helper used by the request path."""
 
 from __future__ import annotations
 
@@ -73,7 +73,7 @@ class FinvizNewsEventV1IngressTests(unittest.TestCase):
         self.assertTrue(accepts_news_article_event(event))
 
     def test_ftep_news_helper_dispatches_put_event_once_and_detector_is_not_observed_noop(self) -> None:
-        # Helper/call-site only. UiApiHandler does not invoke this on a request path.
+        # Helper used by POST /intelligence/ingest/news. Zero-qualifying stays admitted EventV1.
         article = _sample_article()
         repo = self.store.strategy_repository
         self.assertIsNotNone(repo)
