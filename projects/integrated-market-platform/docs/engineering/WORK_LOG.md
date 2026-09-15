@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — Item 9: kline-fetch diagnostics + premarket max_count=120 (P12)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, `tools/moomoo`, Item 9 prospective proof |
+| **Summary** | Adversarial P12: year-old PIT-reject is not the only poll #1 explanation; `K_1M` oldest-first is unsampled. Keep session-day + `max_count>=1000`. Log `raw_row_count`, first/last `time_key`, and vendor `retMsg` on each kline fetch (stderr + `kline_fetch` on outcomes). Prove session-day with `max_count=120` still misses RTH after 330 premarket minutes if paging is oldest-first. No `get_cur_kline`. PIT unchanged. Not calibrated. |
+| **Key files** | `tools/moomoo/opend_quote_transport.py`; `src/market_platform_foundation/paper/calibration/bar_ohlcv_sources.py`; `src/market_platform_foundation/paper/calibration/bar_ohlcv_prospective_proof.py`; `tests/providers/test_opend_history_kline_1m.py`; `docs/engineering/ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md` |
+| **Tests** | `python -m unittest tests.providers.test_opend_history_kline_1m tests.platform.test_bar_ohlcv_prospective_proof tests.platform.test_bar_ohlcv_comparator_experiment` — **44/44 passed** (8 kline-window + 25 prospective + 11 comparator). No live OpenD. |
+| **Related** | Isolated branch `diagnosis/item9-prospective-bar-20260915`; P12 `054e11fb` PARTIALLY_CONFIRMED |
+| **Notes** | Unique-security `historyKLQuota` disproven (hour2-resume 358 more cycles). Remaining protocol-error hypotheses: timeout / 5s connect-churn / frequency limit. Rebase onto `origin/main` after close. **Not calibrated.** |
+
 ## 2026-09-15 — Item 9: session-day 1m history-kline window (isolated repair)
 
 | Field | Value |

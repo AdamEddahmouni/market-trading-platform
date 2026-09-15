@@ -277,29 +277,40 @@ def load_moomoo_opend_kline_bars(
                 reason_code="MOOMOO_PROTOCOL_ERROR",
             )
         reason = payload.get("reason_code")
+        fetch_diag = {
+            "kline_session_date": session_date,
+            "raw_row_count": payload.get("raw_row_count", 0),
+            "first_raw_time_key": payload.get("first_raw_time_key"),
+            "last_raw_time_key": payload.get("last_raw_time_key"),
+            "vendor_ret": payload.get("vendor_ret"),
+            "vendor_ret_msg": payload.get("vendor_ret_msg"),
+        }
         if reason:
             return BarLoadResult(
                 source_id=SOURCE_MOOMOO_OPEND_KLINE_1M,
                 instrument_id=instrument_id,
                 bars=(),
-                provenance={"host": host, "port": port, "transport_reason": str(reason)},
+                provenance={"host": host, "port": port, "transport_reason": str(reason), **fetch_diag},
                 reason_code=str(reason),
             )
         raw_rows = payload.get("rows") or ()
     else:
         raw_rows = kline_rows
+        fetch_diag = {}
 
     raw_tuple = tuple(raw_rows)
     raw_time_keys = [
         str(row.get("time_key") or "")
         for row in raw_tuple
-        if isinstance(row, Mapping)
+        if isinstance(row, Mapping) and row.get("time_key")
     ]
     window_provenance = {
         "kline_session_date": session_date,
-        "raw_row_count": len(raw_tuple),
-        "first_raw_time_key": raw_time_keys[0] if raw_time_keys else None,
-        "last_raw_time_key": raw_time_keys[-1] if raw_time_keys else None,
+        "raw_row_count": int(fetch_diag.get("raw_row_count") or len(raw_tuple)),
+        "first_raw_time_key": fetch_diag.get("first_raw_time_key") or (raw_time_keys[0] if raw_time_keys else None),
+        "last_raw_time_key": fetch_diag.get("last_raw_time_key") or (raw_time_keys[-1] if raw_time_keys else None),
+        "vendor_ret": fetch_diag.get("vendor_ret"),
+        "vendor_ret_msg": fetch_diag.get("vendor_ret_msg"),
     }
 
     canonical: list[dict[str, Any]] = []

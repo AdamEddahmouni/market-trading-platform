@@ -7,6 +7,7 @@ and protocol errors fail closed. This module never synthesizes ``last_price``.
 from __future__ import annotations
 
 import importlib
+import json
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -49,6 +50,73 @@ def us_equity_session_date(*, observation_time_ns: int | None = None) -> str:
     return now.strftime("%Y-%m-%d")
 
 
+def _bounded_vendor_msg(value: Any, *, limit: int = 500) -> str | None:
+    """Copy a vendor retMsg/error string. Never treat a kline table as a message."""
+
+    if value is None:
+        return None
+    if hasattr(value, "to_dict") and hasattr(value, "columns"):
+        return None
+    if isinstance(value, (list, tuple)):
+        return None
+    text = str(value).strip()
+    if not text or text in {"None", "nan", "NaN"}:
+        return None
+    if len(text) > limit:
+        return text[:limit]
+    return text
+
+
+def _kline_time_keys(rows: list[dict[str, Any]]) -> tuple[str | None, str | None, int]:
+    keys = [str(row.get("time_key") or "") for row in rows if isinstance(row, dict) and row.get("time_key")]
+    if not keys:
+        return None, None, len(rows)
+    return keys[0], keys[-1], len(rows)
+
+
+def _kline_fetch_result(
+    *,
+    reason_code: str | None,
+    session_date: str,
+    rows: list[dict[str, Any]] | None = None,
+    vendor_ret: Any = None,
+    vendor_ret_msg: str | None = None,
+) -> dict[str, Any]:
+    """Fail-closed kline payload plus diagnostics (stderr JSON, no PIT change)."""
+
+    raw_rows = list(rows) if rows is not None else []
+    first_key, last_key, raw_count = _kline_time_keys(raw_rows)
+    payload: dict[str, Any] = {
+        "reason_code": reason_code,
+        "rows": None if reason_code else raw_rows,
+        "session_date": session_date,
+        "raw_row_count": 0 if reason_code else raw_count,
+        "first_raw_time_key": None if reason_code else first_key,
+        "last_raw_time_key": None if reason_code else last_key,
+        "vendor_ret": vendor_ret,
+        "vendor_ret_msg": vendor_ret_msg,
+    }
+    print(
+        json.dumps(
+            {
+                "item9_kline_fetch": True,
+                "first_raw_time_key": payload["first_raw_time_key"],
+                "last_raw_time_key": payload["last_raw_time_key"],
+                "raw_row_count": payload["raw_row_count"],
+                "reason_code": reason_code,
+                "session_date": session_date,
+                "vendor_ret": vendor_ret,
+                "vendor_ret_msg": vendor_ret_msg,
+            },
+            sort_keys=True,
+            default=str,
+        ),
+        file=sys.stderr,
+        flush=True,
+    )
+    return payload
+
+
 def fetch_history_kline_1m(
     symbol: str,
     *,
@@ -85,9 +153,19 @@ def fetch_history_kline_1m(
         ctx = ft.OpenQuoteContext(host=host, port=port)
         ret, state = ctx.get_global_state()
         if ret != ft.RET_OK:
-            return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None}
+            return _kline_fetch_result(
+                reason_code=MOOMOO_PROTOCOL_ERROR,
+                session_date=day,
+                vendor_ret=ret,
+                vendor_ret_msg=_bounded_vendor_msg(state),
+            )
         if not _qot_logined(state):
-            return {"reason_code": MOOMOO_AUTH_FAILURE, "rows": None}
+            return _kline_fetch_result(
+                reason_code=MOOMOO_AUTH_FAILURE,
+                session_date=day,
+                vendor_ret=ret,
+                vendor_ret_msg="qot_logined=false",
+            )
         k_ret, data, _page = ctx.request_history_kline(
             code,
             start=day,
@@ -99,10 +177,27 @@ def fetch_history_kline_1m(
             session=ft.Session.ALL,
         )
         if k_ret != ft.RET_OK:
-            return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None}
-        return {"reason_code": None, "rows": _snapshot_rows(data), "session_date": day}
-    except Exception:  # noqa: BLE001
-        return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None}
+            return _kline_fetch_result(
+                reason_code=MOOMOO_PROTOCOL_ERROR,
+                session_date=day,
+                vendor_ret=k_ret,
+                vendor_ret_msg=_bounded_vendor_msg(data),
+            )
+        rows = _snapshot_rows(data)
+        return _kline_fetch_result(
+            reason_code=None,
+            session_date=day,
+            rows=rows,
+            vendor_ret=k_ret,
+            vendor_ret_msg=None,
+        )
+    except Exception as exc:  # noqa: BLE001
+        return _kline_fetch_result(
+            reason_code=MOOMOO_PROTOCOL_ERROR,
+            session_date=day,
+            vendor_ret=None,
+            vendor_ret_msg=_bounded_vendor_msg(f"{type(exc).__name__}: {exc}"),
+        )
     finally:
         if ctx is not None:
             closer = getattr(ctx, "close", None)

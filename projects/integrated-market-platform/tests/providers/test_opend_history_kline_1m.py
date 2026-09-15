@@ -6,8 +6,9 @@ to ``[today-365d, today]`` and returns the **oldest** N rows (moomoo-api
 ``evidence/market_data/moomoo/capability-report.json`` probed 2026-09-15 UTC
 with ``K_DAY`` ``max_count=5`` and sampled ``time_key`` ``2025-09-15 00:00:00``.
 
-These tests replay that oldest-first contract with a fake SDK. They are not
-empirical OpenD ticks and do not loosen PIT.
+These tests replay that oldest-first contract with a fake SDK. ``K_DAY``
+oldest-first is captured; ``K_1M`` paging is hypothesized, not live-sampled.
+They are not empirical OpenD ticks and do not loosen PIT.
 """
 
 from __future__ import annotations
@@ -125,6 +126,21 @@ class _OldestFirstKlineContext:
         self.closed = True
 
 
+class _ProtocolErrorKlineContext:
+    def __init__(self, message: str = "freq limit: too many history kline requests") -> None:
+        self.message = message
+        self.closed = False
+
+    def get_global_state(self) -> tuple[int, dict[str, Any]]:
+        return 0, {"qot_logined": True}
+
+    def request_history_kline(self, *_args: Any, **_kwargs: Any) -> tuple[int, str, None]:
+        return -1, self.message, None
+
+    def close(self) -> None:
+        self.closed = True
+
+
 class _FakeKlineSdk:
     RET_OK = 0
 
@@ -189,7 +205,7 @@ class OpenDHistoryKline1mWindowTests(unittest.TestCase):
         self.assertTrue(ctx.closed)
 
     def test_none_none_window_replays_captured_oldest_page_and_fails_pit(self) -> None:
-        """Document live poll #1: vendor oldest page is a year old; PIT must still reject it."""
+        """Year-old page is one lawful fail-closed path; not the only poll #1 explanation."""
 
         ctx = _OldestFirstKlineContext(_catalog())
         k_ret, data, _page = ctx.request_history_kline(
@@ -227,6 +243,88 @@ class OpenDHistoryKline1mWindowTests(unittest.TestCase):
         self.assertFalse(outcome["ok"])
         self.assertEqual(outcome["reason_code"], REASON_NO_POST_SIGNAL_BAR)
         self.assertIsNone(outcome["receipt"])
+        fetch = outcome["kline_fetch"]
+        self.assertEqual(int(fetch["raw_row_count"]), 120)
+        self.assertTrue(str(fetch["first_raw_time_key"]).startswith(YEAR_AGO_DAY))
+        self.assertTrue(str(fetch["last_raw_time_key"]).startswith(YEAR_AGO_DAY))
+
+    def test_session_day_max_count_120_oldest_first_misses_rth_after_premarket(self) -> None:
+        """Even with today's date, 120 oldest-first bars are 04:00–05:59, all before 09:34."""
+
+        catalog = _minute_rows(SESSION_DAY, hour=4, minute=0, count=330) + [
+            _kline_row(f"{SESSION_DAY} 09:30:00"),
+            _kline_row(f"{SESSION_DAY} 09:35:00"),
+        ]
+        ctx = _OldestFirstKlineContext(catalog)
+        k_ret, data, _page = ctx.request_history_kline(
+            "US.AAPL",
+            start=SESSION_DAY,
+            end=SESSION_DAY,
+            ktype="K_1M",
+            max_count=120,
+            extended_time=True,
+            session="ALL",
+        )
+        self.assertEqual(k_ret, 0)
+        keys = [str(row["time_key"]) for row in data]
+        self.assertEqual(len(keys), 120)
+        self.assertEqual(keys[0], f"{SESSION_DAY} 04:00:00")
+        self.assertEqual(keys[-1], f"{SESSION_DAY} 05:59:00")
+        self.assertFalse(any("09:3" in key for key in keys))
+
+        outcome = run_prospective_proof(
+            instrument_id="AAPL",
+            collection_root=COLLECTION_ROOT,
+            env={},
+            signal_time_ns=SIGNAL_NS,
+            signal_established_at_ns=SIGNAL_NS,
+            observation_time_ns=OBSERVATION_NS,
+            kline_rows=tuple(data),
+            runtime_git_sha="diagnosis-test",
+        )
+        self.assertFalse(outcome["ok"])
+        self.assertEqual(outcome["reason_code"], REASON_NO_POST_SIGNAL_BAR)
+        self.assertIsNone(outcome["receipt"])
+        fetch = outcome["kline_fetch"]
+        self.assertEqual(int(fetch["raw_row_count"]), 120)
+        self.assertEqual(fetch["first_raw_time_key"], f"{SESSION_DAY} 04:00:00")
+        self.assertEqual(fetch["last_raw_time_key"], f"{SESSION_DAY} 05:59:00")
+
+    def test_kline_fetch_surfaces_vendor_ret_msg_on_protocol_error(self) -> None:
+        from tools.moomoo.opend_quote_transport import fetch_history_kline_1m
+
+        ctx = _ProtocolErrorKlineContext("freq limit: too many history kline requests")
+        payload = fetch_history_kline_1m(
+            "AAPL",
+            host="127.0.0.1",
+            port=11111,
+            sdk=_FakeKlineSdk(ctx),
+            session_date=SESSION_DAY,
+        )
+        self.assertEqual(payload["reason_code"], "MOOMOO_PROTOCOL_ERROR")
+        self.assertIsNone(payload["rows"])
+        self.assertEqual(payload["vendor_ret"], -1)
+        self.assertEqual(payload["vendor_ret_msg"], "freq limit: too many history kline requests")
+        self.assertEqual(payload["raw_row_count"], 0)
+        self.assertTrue(ctx.closed)
+
+    def test_kline_fetch_logs_row_count_and_time_keys_on_success(self) -> None:
+        from tools.moomoo.opend_quote_transport import fetch_history_kline_1m
+
+        ctx = _OldestFirstKlineContext(_catalog())
+        payload = fetch_history_kline_1m(
+            "AAPL",
+            host="127.0.0.1",
+            port=11111,
+            sdk=_FakeKlineSdk(ctx),
+            session_date=SESSION_DAY,
+        )
+        self.assertIsNone(payload["reason_code"])
+        self.assertGreater(int(payload["raw_row_count"]), 0)
+        self.assertIsNotNone(payload["first_raw_time_key"])
+        self.assertIsNotNone(payload["last_raw_time_key"])
+        self.assertTrue(str(payload["first_raw_time_key"]).startswith(SESSION_DAY))
+        self.assertIsNone(payload["vendor_ret_msg"])
 
     def test_today_rth_rows_are_admissible_without_loosening_pit(self) -> None:
         rows = (

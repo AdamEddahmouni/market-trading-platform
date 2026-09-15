@@ -21,11 +21,21 @@ the vendor default `start=None, end=None`: that expands to `[today-365d, today]`
 and returns the **oldest** page (a year old). Those bars correctly fail
 `available_time > signal_time` and are not prospective evidence.
 
-PIT is unchanged: incomplete bars (`bar_end > fetched_at`) stay hidden; the
-first admissible bar still requires `available_time > signal_time`.
+If paging is oldest-first, session-day plus `max_count=120` is still wrong:
+extended-hours 04:00–05:59 fills the page and every bar is before a 09:34
+signal. `max_count>=1000` is required so RTH minutes are not truncated.
+
+Each `request_history_kline` attempt writes fail-closed diagnostics to stderr
+(`raw_row_count`, `first_raw_time_key`, `last_raw_time_key`, `vendor_ret`,
+`vendor_ret_msg`) and attaches the same fields as `kline_fetch` on poll
+outcomes. Timeout still reports `PROSPECTIVE_NO_POST_SIGNAL_BAR`; the last
+fetch stats distinguish empty vs TZ-dropped vs pre-signal rows. PIT is
+unchanged.
 
 Follow-up (not in this repair): reuse one quote context and poll `get_cur_kline`
-so a 5s history-kline loop does not burn `historyKLQuota`.
+to cut 5s connect-churn. Hour-2 `MOOMOO_PROTOCOL_ERROR` is not unique-security
+`historyKLQuota` (resume completed 358 more cycles); remaining hypotheses are
+timeout / frequency limit / connect-churn. `retMsg` is now preserved.
 
 ### Mode A — transport / replay (`RETROSPECTIVE_TRANSPORT_PROOF`)
 
