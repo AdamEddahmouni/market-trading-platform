@@ -123,8 +123,8 @@ def _is_live(store: ReplayStore) -> bool:
     ``LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`` on ``/opportunities/summary``
     was returned *before* ``build_ranked_rows``. Do not use this helper to skip
     ranked reads. Do not delete it before fixture attention is quarantined
-    (live ``_attention_rows`` is empty). Finviz→EventV1 is a helper, not a
-    ``UiApiHandler`` request-path admission.
+    (live ``_attention_rows`` is empty). Finviz news admits on
+    ``POST /intelligence/ingest/news`` only.
     """
 
     return projections.is_live_observational(store)
@@ -198,12 +198,19 @@ def _opportunity_source(store: ReplayStore) -> str:
 
 def build_ranked_rows(store: ReplayStore) -> tuple[Any, ...]:
     repository = getattr(store, "strategy_repository", None)
+    receive_ns = projections._live_receive_ns(store) if _is_live(store) else None
+    as_of_ns = getattr(store, "as_of_time_ns", None)
+    last_ns = getattr(store, "last_source_time_ns", None)
+    if as_of_ns is None:
+        as_of_ns = receive_ns
+    if last_ns is None:
+        last_ns = receive_ns
     assembled = assemble_opportunity_review_rows(
         attention_rows=_attention_rows(store),
         repository=repository,
         source=_opportunity_source(store),
-        as_of_time_ns=getattr(store, "as_of_time_ns", None),
-        last_source_time_ns=getattr(store, "last_source_time_ns", None),
+        as_of_time_ns=as_of_ns,
+        last_source_time_ns=last_ns,
         runtime_capability=getattr(store, "runtime_capability", None),
         session_state=getattr(store, "session_state", None),
         book_validity=getattr(store, "book_validity", None),
