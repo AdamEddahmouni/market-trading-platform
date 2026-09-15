@@ -7,7 +7,7 @@
 **Frozen RTH runtime:** `.rth-operator-20260915` at the same SHA — **do not thaw, patch, or merge into it**  
 **This document does not update** [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md)
 
-Snapshot time: 2026-09-15 ~13:00 ET (refresh of `65fe5f5d`). Q2–Q4 tip `91b07b4f` is **SAFE-TO-RETAIN-AFTER-REBASE** per P13B re-probe `4176d0b6`. Prior MUST-FIX **closed**. **Do not land during RTH.** After close: rebase onto `origin/main`, rerun focused tests, then consider merge.
+Snapshot time: 2026-09-15 ~14:09 ET (refresh of `a15f524b`). Q6 Item 9 tip is now `fe8cac6d` (empty RET_OK / RET_ERROR protocol / year-old PIT reject / incomplete-bar; **48/48**; PIT preserved; **not calibrated**; **not pushed** — 1 ahead of `origin/diagnosis/item9-prospective-bar-20260915` @ `77d448c3`). Independent of live-OE. Q2–Q4 `91b07b4f` remains **SAFE-TO-RETAIN-AFTER-REBASE**. **Do not land during RTH.**
 
 ## Rebase-required flags (vs `origin/main` `7aade60b`)
 
@@ -16,13 +16,13 @@ Snapshot time: 2026-09-15 ~13:00 ET (refresh of `65fe5f5d`). Q2–Q4 tip `91b07b
 | Q1 launcher | `9b0781c9` | `d588728d` | **YES — do not merge as-is** |
 | Q2–Q4 live-OE / cockpit | `91b07b4f` | `7aade60b` | **SAFE-TO-RETAIN-AFTER-REBASE** (P13B `4176d0b6`; prior MUST-FIX closed). **Do not land during RTH.** After close: rebase onto `origin/main`, rerun focused tests, then consider merge. **rebase-required=yes** |
 | Q5 WATCH harness | `f8c03183` | `7aade60b` | **YES if** `origin/main` moves after close. Independent of Item 9. Paper fixture path; acks stay blocked in `LIVE_OBSERVATIONAL` even after P1 |
-| Q6 Item 9 | `77d448c3` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
+| Q6 Item 9 | `fe8cac6d` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves. **Not pushed** (1 ahead of remote `77d448c3`) |
 | Q6 P12 review | `49ae216e` | (review branch) | Gate only — **not merge cargo** |
 | Q7 latency | `49529d64` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
 | Q8 Item 7 notes | `d588728d` + untracked notes | `d588728d` | **YES** onto post-close `origin/main` before committing notes |
 | Q9a test-gap | `145fee4f` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
 | Q9b runbook | `134924c3` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
-| This queue | `65fe5f5d` + this refresh | `7aade60b` | Docs only; **YES if** `origin/main` moves |
+| This queue | `a15f524b` + this refresh | `7aade60b` | Docs only; **YES if** `origin/main` moves |
 
 ## Operating holds
 
@@ -179,13 +179,13 @@ Prior must-fix list (**closed** on request-path surfaces P13 named): EventV1 no 
 | **Status** | `COMMITTED_ISOLATED` + P12 `PARTIALLY_CONFIRMED` |
 | **Branch / worktree** | `diagnosis/item9-prospective-bar-20260915` at `.worktrees/diagnosis-item9-prospective-bar-20260915` |
 | **Source baseline SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` |
-| **Unique commits** | `e2d89348` `fix(item9): request session-day OpenD 1m kline window`; tip `77d448c3c062ba70fad1d14cd1b4d405b5066354` `fix(item9): log kline fetch diagnostics without loosening PIT` (past `e2d89348`) |
+| **Unique commits** | `e2d89348` session-day window; `77d448c3` kline diagnostics; tip `fe8cac6dc82725318d0f3557517f5284e3042a32` `test(item9): cover empty RET_OK, RET_ERROR, year-old, and incomplete-bar fail-closed paths`. **Not pushed** (local 1 ahead of `origin/diagnosis/item9-prospective-bar-20260915` `77d448c3`) |
 | **P12 review** | `review/item9-kline-diagnosis-20260915` `49ae216e682ea506dcb3c5ec6bc9fc0ee592ee0b` — overall **PARTIALLY_CONFIRMED**. `K_1M` oldest-first **NEEDS_MORE_EVIDENCE**. Unique-security `historyKLQuota` as hour-2 cause **DISPROVEN**. Do not land session-day with `max_count=120` |
 | **Purpose** | Bind OpenD `request_history_kline` to the observation `America/New_York` session date (`max_count>=1000`); log `raw_row_count` / first-last `time_key` / vendor `retMsg`; prove `max_count=120` still misses RTH after 330 premarket minutes **if** paging is oldest-first |
-| **Issue addressed** | Vendor `start=None,end=None` expands to `[today-365d, today]`. Poll #1 `PROSPECTIVE_NO_POST_SIGNAL_BAR` — timeout reason is **not** uniquely a post-signal PIT reject (collapsed codes). PIT (`available_time > signal_time`, incomplete-bar hide) **unchanged** |
+| **Issue addressed** | Vendor `start=None,end=None` expands to `[today-365d, today]`. Poll #1 `PROSPECTIVE_NO_POST_SIGNAL_BAR` — timeout reason is **not** uniquely a post-signal PIT reject (collapsed codes). PIT (`available_time > signal_time`, incomplete-bar hide) **unchanged**. `fe8cac6d` adds fail-closed coverage for empty `RET_OK`, `RET_ERROR` protocol, year-old PIT reject, and incomplete bar — no `get_cur_kline` |
 | **Empirical evidence** | Poll #1 2026-09-15: `PROSPECTIVE_NO_POST_SIGNAL_BAR`, `receipt=null`. Capability-report `time_key` `2025-09-15` is mechanism inference, not a captured 1m page. **Not calibration. Independent of the live-OE stack** |
-| **Affected files** | `e2d89348` + `77d448c3`: `tools/moomoo/opend_quote_transport.py`, `src/market_platform_foundation/paper/calibration/bar_ohlcv_sources.py`, `src/market_platform_foundation/paper/calibration/bar_ohlcv_prospective_proof.py`, `tests/providers/test_opend_history_kline_1m.py`, `docs/engineering/ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md`, `docs/engineering/WORK_LOG.md`. Review doc: `docs/engineering/ITEM9_KLINE_WINDOW_DIAGNOSIS_P12_REVIEW.md` |
-| **Focused tests** | Prior **41/41** plus `77d448c3` logging / `max_count=120` premarket miss test in `tests.providers.test_opend_history_kline_1m`. Keep PIT. No `get_cur_kline`. No live OpenD in tests |
+| **Affected files** | `e2d89348` + `77d448c3` + `fe8cac6d` (+183 tests/log only on the tip): `tools/moomoo/opend_quote_transport.py`, `src/market_platform_foundation/paper/calibration/bar_ohlcv_sources.py`, `src/market_platform_foundation/paper/calibration/bar_ohlcv_prospective_proof.py`, `tests/providers/test_opend_history_kline_1m.py`, `docs/engineering/ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md`, `docs/engineering/WORK_LOG.md`. Review doc: `docs/engineering/ITEM9_KLINE_WINDOW_DIAGNOSIS_P12_REVIEW.md`. Tip does **not** edit live-OE / cockpit |
+| **Focused tests** | **48/48** in `tests.providers.test_opend_history_kline_1m` covering empty `RET_OK`, `RET_ERROR` protocol, year-old PIT reject, and incomplete-bar fail-closed. PIT preserved. No `get_cur_kline`. No live OpenD in tests. **Not calibrated** |
 | **Broader validation** | `python tools/imp.py test affected`; do **not** claim `ITEM9_PROSPECTIVE_BAR_RECEIPT_CAPTURED` or `CALIBRATED` |
 | **Dependencies** | **Independent** of Q1–Q5 / live-OE file sets. May land in parallel after P12 caveats |
 | **Must rebase** | **NO vs current `origin/main`.** **YES if** post-close `origin/main` ≠ `7aade60b` |
@@ -303,7 +303,7 @@ Prior must-fix list (**closed** on request-path surfaces P13 named): EventV1 no 
 ## Coordinator checklist (post-close, not now)
 
 1. Re-fetch `origin/main`. If SHA ≠ `7aade60b`, every candidate **must rebase** except already-rebased tips.
-2. Re-read porcelain/SHAs: Q1 tip `9b0781c9` still on `d588728d` (**MUST rebase**); Q2–Q4 tip `91b07b4f` is **SAFE-TO-RETAIN-AFTER-REBASE** (P13B `4176d0b6`; prior MUST-FIX closed) — **do not land during RTH**; after close rebase onto `origin/main`, rerun focused tests, then consider merge; Q5 tip `f8c03183`; Q6 tip `77d448c3` + P12 `49ae216e`; Q7 `49529d64`; Q8 untracked notes on `d588728d`; Q9a `145fee4f`; Q9b `134924c3`.
+2. Re-read porcelain/SHAs: Q1 tip `9b0781c9` still on `d588728d` (**MUST rebase**); Q2–Q4 tip `91b07b4f` is **SAFE-TO-RETAIN-AFTER-REBASE** (P13B `4176d0b6`; prior MUST-FIX closed) — **do not land during RTH**; after close rebase onto `origin/main`, rerun focused tests, then consider merge; Q5 tip `f8c03183`; Q6 tip `fe8cac6d` (48/48; PIT preserved; **not calibrated**; **not pushed**, 1 ahead of remote `77d448c3`; independent of live-OE) + P12 `49ae216e`; Q7 `49529d64`; Q8 untracked notes on `d588728d`; Q9a `145fee4f`; Q9b `134924c3`.
 3. Q2–Q4 prior must-fix **closed**. Follow-ons (do not block): no `UiApiHandler` news admit; no auto-fetch; mixed-discovery EMPTY vs UNAVAILABLE; residual `store.as_of_time_ns` footgun if someone sets fixture cutoff. **ACK/WATCH stay fail-closed.** Retain current-item quarantine, context UNAVAILABLE, `_is_live`.
 4. Honor Item 9 P12: do not land `max_count=120`; do not treat unique-security `historyKLQuota` as proven.
 5. Merge **nothing** into frozen RTH. Do not land this queue as product software.
