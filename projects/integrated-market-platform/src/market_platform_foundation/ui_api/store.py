@@ -130,6 +130,7 @@ class ReplayStore:
     execution_provider: str = "INTERNAL"
     assistant_audit_root: Path | None = None
     strategy_repository: Any | None = None
+    observation_ingress_router: Any | None = None
     opportunity_source: str | None = None
     last_source_time_ns: int | None = None
     as_of_time_ns: int | None = None
