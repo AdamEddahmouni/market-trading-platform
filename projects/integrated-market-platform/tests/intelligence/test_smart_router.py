@@ -42,6 +42,15 @@ class SmartRouterTests(unittest.TestCase):
     def setUp(self) -> None:
         self.router = SmartRouter()
 
+    def test_routing_policy_v1_includes_congressional_ptr_disclosure(self) -> None:
+        policy = RoutingPolicyV1()
+        template = policy.template_for(SemanticEventType.CONGRESSIONAL_PTR_DISCLOSURE)
+        self.assertEqual(template.expert_domain, ExpertDomain.CORPORATE_FUNDAMENTAL)
+        self.assertEqual(template.required_capabilities, (IntelligenceCapability.FILINGS,))
+        self.assertEqual(template.base_priority, RoutingPriority.NORMAL)
+        router = SmartRouter(policy)
+        self.assertIs(router.policy, policy)
+
     def test_all_event_types_map_to_primitive_domains(self) -> None:
         expected = {
             SemanticEventType.ORDER_FLOW_REVERSAL: ExpertDomain.MICROSTRUCTURE,
@@ -51,6 +60,7 @@ class SmartRouterTests(unittest.TestCase):
             SemanticEventType.NEWS_EVENT: ExpertDomain.NARRATIVE_SENTIMENT,
             SemanticEventType.REGIME_SHIFT: ExpertDomain.REGIME_CROSS_ASSET,
             SemanticEventType.SEC_INSIDER_DISCLOSURE: ExpertDomain.CORPORATE_FUNDAMENTAL,
+            SemanticEventType.CONGRESSIONAL_PTR_DISCLOSURE: ExpertDomain.CORPORATE_FUNDAMENTAL,
         }
         for event_type, domain in expected.items():
             template = self.router.policy.template_for(event_type)
