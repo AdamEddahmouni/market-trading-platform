@@ -16,6 +16,10 @@ from market_platform_foundation.clock import monotonic_wall_ns  # noqa: E402
 from market_platform_foundation.paper.calibration.bar_ohlcv_experiment import (  # noqa: E402
     default_collection_root,
 )
+from market_platform_foundation.paper.calibration.bar_ohlcv_prospective_comparator_bridge import (  # noqa: E402
+    build_comparator_bridge_from_receipt,
+    load_prospective_receipt,
+)
 from market_platform_foundation.paper.calibration.bar_ohlcv_prospective_proof import (  # noqa: E402
     DEFAULT_RECEIPT_DIR,
     PROOF_MODE_RETROSPECTIVE,
@@ -82,6 +86,19 @@ def _cmd_transport_proof(args: argparse.Namespace) -> int:
         payload["receipt_path"] = str(path)
     print(json.dumps(payload, indent=2, sort_keys=True))
     return 0
+
+
+def _cmd_comparator_bridge(args: argparse.Namespace) -> int:
+    receipt_path = Path(args.receipt_path)
+    receipt = load_prospective_receipt(receipt_path)
+    collection_root = args.collection_root if args.collection_root is not None else default_collection_root()
+    payload = build_comparator_bridge_from_receipt(
+        receipt,
+        env=dict(os.environ),
+        collection_root=collection_root,
+    )
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0 if payload.get("ok") else 1
 
 
 def _cmd_prospective(args: argparse.Namespace) -> int:
@@ -196,6 +213,19 @@ def main(argv: list[str] | None = None) -> int:
     prospective.add_argument("--poll-interval-s", type=float, default=5.0)
     prospective.add_argument("--timeout-s", type=float, default=3900.0)
     prospective.set_defaults(func=_cmd_prospective)
+
+    bridge = sub.add_parser(
+        "comparator-bridge",
+        help="Map a prospective JSON receipt to comparator analysis (no Paper orders).",
+    )
+    bridge.add_argument(
+        "--receipt-path",
+        type=Path,
+        required=True,
+        help="Path to item9 prospective proof receipt JSON.",
+    )
+    bridge.add_argument("--collection-root", type=Path, default=None)
+    bridge.set_defaults(func=_cmd_comparator_bridge)
 
     args = parser.parse_args(argv)
     return int(args.func(args))
