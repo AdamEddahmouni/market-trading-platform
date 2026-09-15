@@ -3,6 +3,9 @@
 Software-only coordination layer. Does **not** replace underlying CLIs, declare
 `EMPIRICAL_ACTIVE`, create empirical locks, or place Paper/Live orders.
 
+**Operator one-pager (Tuesday 2026-09-15):**
+[TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKLIST.md).
+
 ## Environment (operator workstation)
 
 ```powershell
@@ -16,11 +19,13 @@ Use the project `.venv` on Windows (tzdata / zoneinfo).
 ## Command center
 
 ```powershell
-python tools\rth_empirical_ops.py preflight --json
-python tools\rth_empirical_ops.py status --json
-python tools\rth_empirical_ops.py run-observational --json
-python tools\rth_empirical_ops.py summarize --json
+python tools\rth_empirical_ops.py --json preflight
+python tools\rth_empirical_ops.py --json status
+python tools\rth_empirical_ops.py --json run-observational
+python tools\rth_empirical_ops.py --json summarize
 ```
+
+`--json` is a **global** option (before the subcommand). `preflight --json` is rejected by argparse.
 
 Acceptance label when the ops layer is wired and hard blockers are absent:
 `RTH_EMPIRICAL_OPS_READY` (software only — not an empirical evidence gate).
@@ -55,9 +60,9 @@ $env:IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS = "1"
 | Step | Command | Expected receipt / code |
 |------|---------|-------------------------|
 | Finviz prospective read | `python tools\ftep_watch_catalysts.py FTEP-V1-002 --live-ingress --json` | `watch_mode=PROSPECTIVE_FINVIZ_INGRESS`; zero rows → `LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS` |
-| Item 9 prospective 1m | `python tools\moomoo\opend_bar_1m_prospective_proof.py prospective --poll --instrument-id AAPL --json` | Receipt `item9.bar-ohlcv-prospective-proof/1.1.0`; `orders_placed=false`, `calibrated=false` |
-| Item 7 status | `python tools\item7_corpus_collector.py status --persistence-root $env:IMP_STATE_DIR` | Read-only status; no forced settlement |
-| Ops dry-run bundle | `python tools\rth_empirical_ops.py run-observational --json` | `operator_run_id=RTHOPS-*`; sub-artifact refs only |
+| Item 9 prospective 1m | `python tools\moomoo\opend_bar_1m_prospective_proof.py prospective --poll --instrument-id AAPL --experiment-id item9-prospective-20260915-rth-aapl --receipt-out artifacts\ftep-v1-002\item9-prospective-proof-receipts --poll-interval-s 5.0 --timeout-s 3900.0` | JSON on stdout; receipt `item9.bar-ohlcv-prospective-proof/1.1.0`; `orders_placed=false`, `calibrated=false` |
+| Item 7 status | `python tools\item7_corpus_collector.py status --persistence-root $env:IMP_STATE_DIR --training-cutoff-ns <ns>` | Read-only status; no forced settlement (`--training-cutoff-ns` required) |
+| Ops dry-run bundle | `python tools\rth_empirical_ops.py --json run-observational` | `operator_run_id=RTHOPS-*`; sub-artifact refs only |
 
 ### 4. Failure codes (fail closed)
 
