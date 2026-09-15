@@ -36,15 +36,16 @@ class RecordingEnrichmentDispatcher:
 def flush_outbox_to_dispatcher(
     outbox: Any,
     dispatcher: EnrichmentDispatcher,
+    *,
+    now_ns: int | None = None,
 ) -> int:
-    """Warm-path drain: dispatch pending rows without blocking opportunity surface."""
+    """Warm-path drain via worker claim/dispatch (does not block opportunity surface)."""
 
-    pending = outbox.list_pending()
-    for request in pending:
-        dispatcher.dispatch(request)
-        if hasattr(outbox, "mark_dispatched"):
-            outbox.mark_dispatched(request.request_id)
-    return len(pending)
+    from .schedule_clock import resolve_outbox_schedule_now_ns
+    from .worker import EnrichmentOutboxWorker
+
+    worker = EnrichmentOutboxWorker(outbox, dispatcher)
+    return worker.drain(now_ns=resolve_outbox_schedule_now_ns(outbox, now_ns))
 
 
 __all__ = [

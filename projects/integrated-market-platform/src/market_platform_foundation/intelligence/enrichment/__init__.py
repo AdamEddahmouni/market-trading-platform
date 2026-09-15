@@ -24,17 +24,29 @@ from .outbox import (
     derive_enrichment_request_id,
 )
 from .read_model import async_enrichment_fields_for_detail, overlay_async_enrichment_on_detail
+from .delivery import (
+    DEFAULT_RETRY_POLICY,
+    EnrichmentDeliveryState,
+    EnrichmentRetryPolicy,
+)
+from .sqlite_outbox import SqliteEnrichmentOutbox
+from .worker import EnrichmentOutboxWorker
 
 __all__ = [
+    "DEFAULT_RETRY_POLICY",
     "ENRICHMENT_REQUEST_SCHEMA_ID",
+    "EnrichmentDeliveryState",
     "EnrichmentDispatcher",
     "EnrichmentOutbox",
     "EnrichmentOutboxPutResult",
+    "EnrichmentOutboxWorker",
     "EnrichmentRequestV1",
+    "EnrichmentRetryPolicy",
     "EnrichmentUrgency",
     "InMemoryEnrichmentOutbox",
     "NoOpEnrichmentDispatcher",
     "RecordingEnrichmentDispatcher",
+    "SqliteEnrichmentOutbox",
     "async_enrichment_fields_for_detail",
     "build_enrichment_request_for_opportunity",
     "derive_enrichment_request_id",
