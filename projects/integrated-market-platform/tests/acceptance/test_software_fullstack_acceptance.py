@@ -94,6 +94,9 @@ _ADMIT_SOURCE_TOKENS = (
     "admit_provider_event",
     "put_event(",
     "EventV1(",
+    "handle_news_ingest_post",
+    "NEWS_INGEST_ROUTE",
+    "/intelligence/ingest/news",
 )
 
 _GROK_EXCLUSION_TOKENS = (
@@ -103,6 +106,7 @@ _GROK_EXCLUSION_TOKENS = (
 )
 
 _CANDIDATE_ADMIT_PATHS = (
+    "/intelligence/ingest/news",
     "/intelligence/ingest/event",
     "/intelligence/ingest/events",
     "/intelligence/observations/admit",
