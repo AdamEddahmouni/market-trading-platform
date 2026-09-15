@@ -10,7 +10,7 @@ The stale diagnosis branch is **kept**, not merged.
 | **Branch** | `repair/launcher-routing-from-main-20260915` |
 | **Worktree** | `.worktrees/repair-launcher-routing-from-main-20260915` |
 | **Base SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` (`origin/main` at reconstruction) |
-| **HEAD** | *filled after commit* |
+| **HEAD** | `f1aaacaa38a2ed950e802d9155a6e711d9b74f14` |
 | **Source candidate** | `diagnosis/launcher-routing-20260915` (`9b0781c9` / patch `a2dd6ced`) |
 | **Stale diagnosis base** | `d588728d60b139ae44b5a3667a8e120d1e21ee1c` (do not merge that branch) |
 | **Frozen RTH** | `.rth-operator-20260915` at `7aade60b` — not edited |
