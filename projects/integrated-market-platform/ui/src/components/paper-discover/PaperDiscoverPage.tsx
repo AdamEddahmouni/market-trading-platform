@@ -1,7 +1,7 @@
 import type { DiscoverInspectorActions } from "../discover-shared/discoverInspectorActions";
 import { DiscoverMixedScreenerSection, DiscoverRankedQueueSection } from "../discover-shared/DiscoverPageSections";
 import { DiscoverObservability } from "../discover-shared/DiscoverObservability";
-import { OpportunityRadarDensePanel } from "../imp-product/OpportunityRadarDensePanel";
+import { OpportunityRadarCockpit } from "../imp-product/OpportunityRadarCockpit";
 import { OpportunityRadarIntro } from "../imp-product/OpportunityRadarIntro";
 
 type Props = DiscoverInspectorActions;
@@ -25,7 +25,8 @@ export function PaperDiscoverPage({ onExplain, onInspect, onOpenWorkspace }: Pro
       </OpportunityRadarIntro>
 
       <DiscoverRankedQueueSection>
-        <OpportunityRadarDensePanel
+        <OpportunityRadarCockpit
+          paperActions
           onExplain={onExplain}
           onInspect={onInspect}
           onOpenWorkspace={onOpenWorkspace}

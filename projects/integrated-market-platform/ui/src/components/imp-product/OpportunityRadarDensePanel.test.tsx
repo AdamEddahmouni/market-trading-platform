@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import type { OpportunityReviewRow } from "../../api/opportunityClient";
@@ -41,6 +41,11 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../../api/opportunityClient", () => ({
   useOpportunitiesSummaryQuery: () => mocks.query,
+  useOpportunityEvidenceQuery: () => ({
+    data: null,
+    isLoading: false,
+    isError: false,
+  }),
 }));
 
 function renderPanel(
@@ -100,5 +105,27 @@ describe("OpportunityRadarDensePanel", () => {
     renderPanel({ items: [eligible], feed_status: "READY" }, { readOnly: true });
     expect(screen.getByText("Feed READY")).toBeInTheDocument();
     expect(screen.getByText("Read-only")).toBeInTheDocument();
+  });
+
+  it("highlights selected row when onSelectRow is provided", () => {
+    const onSelect = vi.fn();
+    mocks.query.data = { items: [eligible, ineligible], feed_status: "READY" };
+    mocks.query.isLoading = false;
+    mocks.query.isError = false;
+    render(
+      <MemoryRouter>
+        <OpportunityRadarDensePanel
+          selectedStableKey="sum-1"
+          onSelectRow={onSelect}
+          onExplain={vi.fn()}
+          onInspect={vi.fn()}
+          onOpenWorkspace={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+    const row = screen.getByText("NVDA").closest("tr");
+    expect(row).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(screen.getByText("AAPL"));
+    expect(onSelect).toHaveBeenCalled();
   });
 });

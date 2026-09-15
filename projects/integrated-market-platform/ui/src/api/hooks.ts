@@ -8,6 +8,7 @@ export const queryKeys = {
   context: ["context"] as const,
   attention: ["attention"] as const,
   opportunitiesSummary: ["opportunities", "summary"] as const,
+  opportunityEvidence: (rowId: string) => ["opportunities", "evidence", rowId] as const,
   instrument: (instrumentId: string) => ["instrument", instrumentId] as const,
   exploreSqueeze: ["explore", "squeeze"] as const,
   exploreSqueezeScanner: ["explore", "squeeze", "scanner"] as const,

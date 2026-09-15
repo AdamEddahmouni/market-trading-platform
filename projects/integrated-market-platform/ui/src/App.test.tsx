@@ -31,6 +31,11 @@ vi.mock("./api/opportunityClient", () => ({
     isLoading: false,
     isError: false,
   }),
+  useOpportunityEvidenceQuery: () => ({
+    data: null,
+    isLoading: false,
+    isError: false,
+  }),
   useOpportunityAckMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
