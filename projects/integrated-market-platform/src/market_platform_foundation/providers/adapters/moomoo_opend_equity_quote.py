@@ -97,6 +97,53 @@ def opend_sdk_available() -> bool:
         return False
 
 
+def opend_moomoo_auth_entitlements(
+    *,
+    host: str,
+    port: int,
+    reachable: bool,
+) -> tuple[dict[str, str], dict[str, Any]]:
+    """Operator quote-login diagnostic. Not a market-data tick."""
+
+    auth: dict[str, str] = {"quote_login": "UNAVAILABLE", "sdk": "ABSENT"}
+    entitlements: dict[str, Any] = {
+        "primary_capability": US_EQUITY_L1_CAPABILITY,
+        "us_equity_l1": "UNAVAILABLE",
+    }
+    detail: dict[str, Any] = {"loopback_only": opend_is_loopback(host)}
+    if not reachable:
+        return auth, {**entitlements, "detail": detail}
+
+    module = _load_tools_transport_module()
+    probe = getattr(module, "probe_quote_login", None) if module is not None else None
+    if not callable(probe):
+        detail["reason"] = MOOMOO_TRANSPORT_NOT_IMPLEMENTED
+        return auth, {**entitlements, "detail": detail}
+    try:
+        payload = probe(host=host, port=port)
+    except Exception as exc:  # noqa: BLE001 — operator diagnostic only
+        auth["sdk"] = "PRESENT" if opend_sdk_available() else "ABSENT"
+        detail["reason"] = type(exc).__name__
+        return auth, {**entitlements, "detail": detail}
+    if not isinstance(payload, dict):
+        detail["reason"] = MOOMOO_PROTOCOL_ERROR
+        return auth, {**entitlements, "detail": detail}
+
+    auth["sdk"] = str(payload.get("sdk") or "ABSENT")
+    auth["quote_login"] = str(payload.get("quote_login") or "UNAVAILABLE")
+    if payload.get("qot_entitled"):
+        entitlements["us_equity_l1"] = "ENTITLED"
+    elif auth["quote_login"] == "VALID":
+        entitlements["us_equity_l1"] = "NOT_ENTITLED"
+    reason = payload.get("reason")
+    if reason:
+        detail["reason"] = str(reason)
+    ret = payload.get("ret")
+    if ret is not None:
+        detail["ret"] = ret
+    return auth, {**entitlements, "detail": detail}
+
+
 def _load_tools_transport_module() -> Any | None:
     path = _TOOLS_TRANSPORT_PATH
     if not path.is_file():
@@ -288,6 +335,7 @@ __all__ = [
     "VendorSdkOpenDQuoteTransport",
     "opend_endpoint",
     "opend_is_loopback",
+    "opend_moomoo_auth_entitlements",
     "opend_reachable",
     "opend_sdk_available",
 ]
