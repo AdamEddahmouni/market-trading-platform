@@ -7,7 +7,7 @@
 **Frozen RTH runtime:** `.rth-operator-20260915` at the same SHA — **do not thaw, patch, or merge into it**  
 **This document does not update** [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md)
 
-Snapshot time: 2026-09-15 ~12:12 ET (refresh of `9fac1344`). Q2–Q4 candidate now **exists** at `c43688ed`. **Do not merge anything during the session.**
+Snapshot time: 2026-09-15 ~12:24 ET (refresh of `a75c4626`). Q5 WATCH harness now **committed** `f8c03183`. **Do not merge anything during the session.**
 
 ## Rebase-required flags (vs `origin/main` `7aade60b`)
 
@@ -15,7 +15,7 @@ Snapshot time: 2026-09-15 ~12:12 ET (refresh of `9fac1344`). Q2–Q4 candidate n
 |---|---|---|---|
 | Q1 launcher | `9b0781c9` | `d588728d` | **YES — do not merge as-is** |
 | Q2–Q4 live-OE / cockpit | `c43688ed` | `7aade60b` | **YES after close** (rebase onto post-close `origin/main`). Do **not** land `c43688ed` without first commit `8189af4c` |
-| Q5 WATCH harness | `7aade60b` (no unique commits) | `7aade60b` | **YES if** `origin/main` moves |
+| Q5 WATCH harness | `f8c03183` | `7aade60b` | **YES if** `origin/main` moves after close. Independent of Item 9. Paper fixture path; acks stay blocked in `LIVE_OBSERVATIONAL` even after P1 |
 | Q6 Item 9 | `77d448c3` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
 | Q6 P12 review | `49ae216e` | (review branch) | Gate only — **not merge cargo** |
 | Q7 latency | `49529d64` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
@@ -60,7 +60,7 @@ Recommended post-close landing sequence:
 2. **Q4** `8189af4c` fixture/`as_of` honesty (already first on the branch)
 3. **Q3** `c43688ed` observational READ split (ACK/WATCH blocked; do not land without `8189af4c`)
 4. **Q2** `c4d88ef7` EventV1 ingress (not sufficient for today's ranked UNAVAILABLE)
-5. **Q5 WATCH/DISMISS harness** (fixtures; not empirical)  
+5. **Q5** `f8c03183` WATCH harness (Paper `INTERNAL_SIMULATION` fixtures; **not** empirical; acks stay blocked in `LIVE_OBSERVATIONAL`)
 6. **Q6 Item 9 session-day kline** (independent; not calibration)  
 7. **Q7 latency notes/telemetry**  
 8. **Q8 Item 7 upstream wiring** (priority 7; no corpus fabrication)  
@@ -152,19 +152,19 @@ P12 live-OE review **FINISHED** `PARTIALLY_CONFIRMED` (`5f965f32`). Today's rank
 
 | Field | Value |
 |---|---|
-| **Status** | `BRANCH_EXISTS_NO_COMMITS` (Lane P5 in flight) |
+| **Status** | `COMMITTED_ISOLATED` |
 | **Branch / worktree** | `repair/watch-dismiss-acceptance-20260915` at `.worktrees/repair-watch-dismiss-acceptance-20260915` |
 | **Source baseline SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` |
-| **HEAD vs origin/main** | Identical at snapshot; no unique commits |
-| **Purpose** | Deterministic fixture harness: ranked opportunity → WATCH/DISMISS → operator ack → `ExecutionDecisionTrace` → `TradeReviewV1` → persist → restart → readback |
-| **Issue addressed** | RTH could not exercise WATCH/DISMISS (no ranked OE cards). Downstream plumbing unproven |
-| **Empirical evidence** | **None — harness, not empirical.** Do not describe as live evidence. Lane E: controls absent on fixture cards; live acks already `PermissionError` |
-| **Affected files (planned)** | New tests e.g. `tests/opportunity/test_watch_dismiss_learning_loop_acceptance.py`; tiny production hooks **only** if not owned by P1. **Do not** edit `opportunity_projections` live-gate, `vite.config.ts`, `local_launcher.py`, Item 9 kline, Item 7 corpus |
-| **Focused tests** | New acceptance module only; keep live mutations fail-closed |
-| **Broader validation** | opportunity + paper_forward / trade-review affected suites |
-| **Dependencies** | None to *land the harness*. Live ranking restoration (Q3) is required before the path is operator-visible |
-| **Must rebase** | **YES** if `origin/main` moves; currently on frozen SHA |
-| **Safely discarded if diagnosis changes** | **YES** if a better existing loop test already covers the chain — the gap is process proof, not a frozen-runtime defect |
+| **Unique commit** | `f8c0318352bd5edc1c3400c80777f67defd67b91` `test(imp): add fixture WATCH/DISMISS learning-loop acceptance` |
+| **Purpose** | Fixture-only: ranked `OpportunityV1` → operator ack → `ExecutionDecisionTrace` → `TradeReviewV1` → SQLite persist → restart readback. Paper `INTERNAL_SIMULATION` path |
+| **Issue addressed** | Downstream WATCH/DISMISS plumbing unproven on RTH (no ranked OE cards). This harness does **not** unblock live acks |
+| **Empirical evidence** | **None — harness, not empirical.** Do not describe as live evidence. Live mutations still fail-closed on this SHA (P1 live-gate **not** edited) |
+| **Affected files** | `tests/opportunity/test_watch_dismiss_learning_loop_acceptance.py`, `tests/opportunity/__init__.py`, `tools/validation_manifest.json` (`core_checkpoint_required=true`), `tests/validation/test_validation_manifest.py`, `docs/engineering/WORK_LOG.md` (+403/−3) |
+| **Focused tests** | **5/5** in `tests.opportunity.test_watch_dismiss_learning_loop_acceptance` |
+| **Broader validation** | Manifest change sets `core_checkpoint_required=true` — run `python tools/imp.py validate changed` / FULL before land, not focused-only |
+| **Dependencies** | **Independent of Item 9.** Acks stay blocked in `LIVE_OBSERVATIONAL` even after P1 ranked-read (`c43688ed`). Do **not** require landing after P1 for this Paper fixture path. Correlation is `opportunity_id`+`action` — `review_id` is **not** on the trace; `WATCHED`/`REJECTED` forbid `execution_decision_trace_id` |
+| **Must rebase** | **YES if** post-close `origin/main` ≠ `7aade60b` |
+| **Safely discarded if diagnosis changes** | **YES** if a better existing loop test already covers the chain |
 
 ---
 
@@ -298,7 +298,7 @@ P12 live-OE review **FINISHED** `PARTIALLY_CONFIRMED` (`5f965f32`). Today's rank
 ## Coordinator checklist (post-close, not now)
 
 1. Re-fetch `origin/main`. If SHA ≠ `7aade60b`, every candidate **must rebase** except already-rebased tips.
-2. Re-read porcelain/SHAs: Q1 tip `9b0781c9` still on `d588728d` (**MUST rebase**); Q2–Q4 tip `c43688ed` on `7aade60b` (**MUST rebase after close**; keep `8189af4c` first; do not land ranked-read without it; tests 60/60); Q5; Q6 tip `77d448c3` + P12 `49ae216e`; Q7 `49529d64`; Q8 untracked notes on `d588728d` (**MUST rebase** before commit); Q9a `145fee4f`; Q9b `134924c3`.
+2. Re-read porcelain/SHAs: Q1 tip `9b0781c9` still on `d588728d` (**MUST rebase**); Q2–Q4 tip `c43688ed` on `7aade60b` (**MUST rebase after close**; keep `8189af4c` first); Q5 tip `f8c03183` (5/5 fixture-only; `core_checkpoint_required=true`; Paper path, not live acks); Q6 tip `77d448c3` + P12 `49ae216e`; Q7 `49529d64`; Q8 untracked notes on `d588728d` (**MUST rebase** before commit); Q9a `145fee4f`; Q9b `134924c3`.
 3. P12 live-OE is **done** (`5f965f32`). Q2–Q4 remaining gaps: no UI API Finviz auto-fetch; FTEP dry-run; `NEWS_EVENT` inactive; Moomoo `ObservationalStateStore`; Vite `/opportunities` is P3.
 4. Honor Item 9 P12: do not land `max_count=120`; do not treat unique-security `historyKLQuota` as proven.
 5. Merge **nothing** into frozen RTH. Do not land this queue as product software.
