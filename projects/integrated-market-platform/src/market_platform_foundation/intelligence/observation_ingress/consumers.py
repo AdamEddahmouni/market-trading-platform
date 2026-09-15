@@ -7,6 +7,7 @@ from typing import Callable, Protocol, runtime_checkable
 
 from ..contracts.event import EventV1
 from ..opportunity.sec_insider import accepts_sec_insider_event, run_sec_insider_vertical
+from ..persistence.errors import RepositoryConflictError
 from ..persistence.repository import IntelligenceRepository, RepositoryPutResult
 from ..opportunity.sec_insider.canonical_snapshot import build_sec_insider_canonical_detection_snapshot
 from ..opportunity.sec_insider.persistence import persist_sec_insider_vertical
@@ -53,7 +54,15 @@ def store_consumer(
     kind = validate_consumer_kind(IngressConsumerKind.STORE)
 
     def _consume(event: EventV1, context: IngressDispatchContext) -> IngressConsumerOutcome:
-        result = repository.put_event(event)
+        try:
+            result = repository.put_event(event)
+        except RepositoryConflictError:
+            return IngressConsumerOutcome(
+                consumer_id=consumer_id,
+                kind=kind,
+                status=IngressConsumerStatus.FAILED,
+                detail="EVENT_PERSIST_CONFLICT",
+            )
         if result == RepositoryPutResult.ALREADY_PRESENT:
             return IngressConsumerOutcome(
                 consumer_id=consumer_id,

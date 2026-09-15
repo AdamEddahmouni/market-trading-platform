@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
@@ -30,6 +31,59 @@ from tests.intelligence.test_opend_capture_ledger_bridge import (  # noqa: E402
 
 
 class ProductionIngressPathWiredTests(unittest.TestCase):
+    def test_PRODUCTION_INGRESS_DEFAULT_ENFORCED(self) -> None:
+        """Default materialize builds canonical production router (no opt-in ingress_router=)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "capture.jsonl"
+            _write_jsonl(path, [_quote_line(), _quote_line(sequence=2)])
+            repo = InMemoryIntelligenceRepository()
+            audit: list = []
+            evidence: list[dict[str, str]] = []
+            detector_seen: set[str] = set()
+
+            def _build_router(repository, **kwargs):
+                return build_production_observation_ingress_router(
+                    repository,
+                    audit_replay_sink=audit,
+                    oe_evidence_sink=evidence,
+                    detector_seen=detector_seen,
+                    **kwargs,
+                )
+
+            with patch(
+                "market_platform_foundation.intelligence.observation_ingress.production_wire.build_production_observation_ingress_router",
+                side_effect=_build_router,
+            ) as build_router:
+                result = materialize_opend_capture_jsonl(
+                    path,
+                    repo,
+                    as_of_ns=AS_OF,
+                    session_start_ns=SESSION_START,
+                )
+                build_router.assert_called_once()
+            self.assertEqual(result.events_persisted, 2)
+            self.assertEqual(len(audit), 2)
+            self.assertEqual(len(evidence), 2)
+            self.assertEqual(len(detector_seen), 2)
+
+    def test_materialize_does_not_double_dispatch_store(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "capture.jsonl"
+            _write_jsonl(path, [_quote_line()])
+            repo = InMemoryIntelligenceRepository()
+            with patch.object(
+                InMemoryIntelligenceRepository,
+                "put_event",
+                wraps=repo.put_event,
+            ) as put_event:
+                materialize_opend_capture_jsonl(
+                    path,
+                    repo,
+                    as_of_ns=AS_OF,
+                    session_start_ns=SESSION_START,
+                )
+                self.assertEqual(put_event.call_count, 1)
+
     def test_PRODUCTION_INGRESS_PATH_WIRED(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "capture.jsonl"

@@ -20,6 +20,7 @@ from ..normalization.models import IngestionMode, NormalizationContext, Normaliz
 from ..normalization.providers.moomoo import normalize_moomoo_capture
 from ..observation_ingress.errors import IngressDispatchError
 from ..observation_ingress.normalization_bridge import dispatch_normalization_result
+from ..observation_ingress.production_wire import resolve_production_ingress_router
 from ..observation_ingress.router import ObservationIngressRouter
 from ..observation_ingress.types import IngressConsumerStatus, IngressDispatchContext, IngressDispatchReceiptV1
 from ..persistence.errors import RepositoryConflictError
@@ -314,6 +315,9 @@ def _note_ingress_persistence(
     if store.status == IngressConsumerStatus.DUPLICATE or store.detail == RepositoryPutResult.ALREADY_PRESENT.value:
         result.events_idempotent += 1
         return True
+    if store.status == IngressConsumerStatus.FAILED and store.detail == "EVENT_PERSIST_CONFLICT":
+        result.note_refusal("EVENT_PERSIST_CONFLICT")
+        return False
     result.note_refusal(f"INGRESS_STORE_{store.status.value}")
     return False
 
@@ -342,6 +346,12 @@ def _dispatch_capture_via_ingress_router(
             ),
         )
     except IngressDispatchError as exc:
+        for row in exc.partial_outcomes or ():
+            if not isinstance(row, dict):
+                continue
+            if row.get("consumer_id") == "ingress.store" and row.get("detail") == "EVENT_PERSIST_CONFLICT":
+                result.note_refusal("EVENT_PERSIST_CONFLICT")
+                return None
         result.note_refusal(exc.code)
         return None
     if receipt is None:
@@ -460,15 +470,27 @@ def materialize_opend_capture_jsonl(
     forecast_bindings: dict[str, str] | None = None,
     register_ledger: bool = True,
     ingress_router: ObservationIngressRouter | None = None,
+    use_production_ingress: bool = True,
 ) -> CaptureLedgerMaterializationResult:
     """Ingest capture envelopes as events and optionally register BUILD 15 ledger rows.
 
     ``forecast_bindings`` maps ``candidate_id`` → existing ``forecast_id`` (forecast
     must already be present in ``repository``). No forecast synthesis occurs here.
+
+    By default ``use_production_ingress=True`` dispatches normalized events through
+    ``build_production_observation_ingress_router`` (store, audit, detector, OE
+    evidence, enrichment trigger). Pass ``use_production_ingress=False`` for direct
+    repository store only (replay fixtures / migration tests). An explicit
+    ``ingress_router`` overrides auto-build but still uses ingress dispatch.
     """
     result = CaptureLedgerMaterializationResult()
     bindings = forecast_bindings or {}
     ledger_service = PredictionLedgerService(repository)
+    effective_router = resolve_production_ingress_router(
+        repository,
+        ingress_router=ingress_router,
+        use_production_ingress=use_production_ingress,
+    )
 
     for line_index, record, parse_error in iter_jsonl_envelopes(path):
         if parse_error is not None or record is None:
@@ -489,10 +511,10 @@ def materialize_opend_capture_jsonl(
         if reason is not None:
             result.note_refusal(reason)
             continue
-        if ingress_router is not None:
+        if effective_router is not None:
             normalization = normalize_capture_record_result(record, capture_path=path, line_index=line_index)
             event = _dispatch_capture_via_ingress_router(
-                ingress_router,
+                effective_router,
                 normalization,
                 capture_path=path,
                 line_index=line_index,
@@ -627,6 +649,7 @@ def materialize_capture_paths(
     session_start_ns: int,
     forecast_bindings: dict[str, str] | None = None,
     ingress_router: ObservationIngressRouter | None = None,
+    use_production_ingress: bool = True,
 ) -> CaptureLedgerMaterializationResult:
     aggregate = CaptureLedgerMaterializationResult()
     for path in paths:
@@ -637,6 +660,7 @@ def materialize_capture_paths(
             session_start_ns=session_start_ns,
             forecast_bindings=forecast_bindings,
             ingress_router=ingress_router,
+            use_production_ingress=use_production_ingress,
         )
         aggregate.candidates.extend(partial.candidates)
         aggregate.events_persisted += partial.events_persisted
