@@ -14,6 +14,7 @@ from market_platform_foundation.strategy.source_runtime import (
     PineTSRuntime,
     PythonRuntime,
     STRATEGY_RUNTIME_FOUNDATION_READY,
+    STRATEGY_RUNTIME_STUB_UNAVAILABLE,
     StrategyDatasetRef,
     StrategyExecutionContext,
     StrategyExecutionMode,
@@ -112,6 +113,8 @@ class StrategySourceRuntimeFoundationTests(unittest.TestCase):
             result = stub.execute(source, dataset, parameters, context)
             self.assertTrue(result.errors)
             self.assertEqual(result.metrics, {})
+            self.assertEqual(result.foundation_gate, STRATEGY_RUNTIME_STUB_UNAVAILABLE)
+            self.assertNotEqual(result.foundation_gate, STRATEGY_RUNTIME_FOUNDATION_READY)
 
     def test_live_hold_label_rejected(self) -> None:
         runtime = PythonRuntime()

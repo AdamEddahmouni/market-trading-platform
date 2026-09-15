@@ -9,6 +9,7 @@ from ..evaluation import DEFAULT_REGISTERED_AT
 from ..strategy_spec import coerce_strategy_spec
 from .protocol import StrategyRuntimeError
 from .types import (
+    STRATEGY_RUNTIME_FOUNDATION_READY,
     PineRuntimeCompatibilityStatus,
     StrategyDatasetRef,
     StrategyExecutionContext,
@@ -110,6 +111,7 @@ class PythonRuntime:
             errors=(),
             generated_at=context.generated_at,
             pine_compatibility_status=PineRuntimeCompatibilityStatus.UNTESTED,
+            foundation_gate=STRATEGY_RUNTIME_FOUNDATION_READY,
         )
 
 

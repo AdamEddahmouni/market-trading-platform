@@ -58,7 +58,7 @@ class _UnavailableRuntime:
         parameters: StrategyParameterRef,
         context: StrategyExecutionContext,
     ) -> StrategySourceRuntimeResult:
-        from .types import compute_result_identity
+        from .types import STRATEGY_RUNTIME_STUB_UNAVAILABLE, compute_result_identity
 
         source_hash = source.content_hash()
         dataset_hash = dataset.content_hash()
@@ -86,6 +86,7 @@ class _UnavailableRuntime:
             errors=(self._reason_code,),
             generated_at=context.generated_at,
             pine_compatibility_status=self._pine_status,
+            foundation_gate=STRATEGY_RUNTIME_STUB_UNAVAILABLE,
         )
 
 

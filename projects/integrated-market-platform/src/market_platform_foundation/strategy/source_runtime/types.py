@@ -10,6 +10,7 @@ from ...canonical import canonical_bytes, sha256_bytes
 
 FOUNDATION_SCHEMA_VERSION = "1.0.0"
 STRATEGY_RUNTIME_FOUNDATION_READY = "STRATEGY_RUNTIME_FOUNDATION_READY"
+STRATEGY_RUNTIME_STUB_UNAVAILABLE = "STRATEGY_RUNTIME_STUB_UNAVAILABLE"
 
 # Hold labels — simulator is not CALIBRATED; Live remains off for this lane.
 HOLD_LABEL_SIMULATOR = "SIMULATOR"
@@ -125,7 +126,7 @@ class StrategySourceRuntimeResult:
     errors: tuple[str, ...] = ()
     generated_at: str = ""
     pine_compatibility_status: PineRuntimeCompatibilityStatus = PineRuntimeCompatibilityStatus.UNTESTED
-    foundation_gate: str = STRATEGY_RUNTIME_FOUNDATION_READY
+    foundation_gate: str = ""
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "events", tuple(dict(row) for row in self.events))
