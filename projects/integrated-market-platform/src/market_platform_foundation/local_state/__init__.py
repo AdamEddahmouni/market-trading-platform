@@ -5,7 +5,13 @@ from .migrations import SchemaVersionError
 from .paths import persistence_enabled, state_dir
 from .repository import LocalStateRepository
 from .schema import SCHEMA_VERSION
-from .startup import open_local_state, persist_ledger, reset_local_state_for_tests, startup_report
+from .startup import (
+    open_enrichment_outbox,
+    open_local_state,
+    persist_ledger,
+    reset_local_state_for_tests,
+    startup_report,
+)
 
 __all__ = [
     "CorruptStateError",
@@ -13,6 +19,7 @@ __all__ = [
     "LocalStateRepository",
     "SCHEMA_VERSION",
     "SchemaVersionError",
+    "open_enrichment_outbox",
     "open_local_state",
     "persist_ledger",
     "persistence_enabled",
