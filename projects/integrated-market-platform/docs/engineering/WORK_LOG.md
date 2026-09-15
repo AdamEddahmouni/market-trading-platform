@@ -36,6 +36,42 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-15 — Item 9: empty RET_OK / RET_ERROR / year-old / incomplete-bar tests
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, Item 9 kline transport tests |
+| **Summary** | Close remaining Item 9 kline fail-closed cases without changing PIT or adding `get_cur_kline`: empty `RET_OK` page is `EXPERIMENT_CONTRACT_MISMATCH` (not a bar); vendor `RET_ERROR` stays `MOOMOO_PROTOCOL_ERROR` through transport→loader→proof; a year-old page still fails `available_time > signal_time`; an incomplete current bar stays hidden. Existing `raw_row_count` / first-last `time_key` / `retMsg` logging is unchanged. Not calibrated. |
+| **Key files** | `tests/providers/test_opend_history_kline_1m.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `PYTHONPATH=src .venv/Scripts/python.exe -m unittest tests.providers.test_opend_history_kline_1m tests.platform.test_bar_ohlcv_prospective_proof tests.platform.test_bar_ohlcv_comparator_experiment` — **48/48 passed** (12 kline-window + 25 prospective + 11 comparator). No live OpenD. |
+| **Related** | Isolated branch `diagnosis/item9-prospective-bar-20260915` at `77d448c3` |
+| **Notes** | `get_cur_kline` remains a follow-up. Do not merge. Lane B polls untouched. **Not calibrated.** |
+
+## 2026-09-15 — Item 9: kline-fetch diagnostics + premarket max_count=120 (P12)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, `tools/moomoo`, Item 9 prospective proof |
+| **Summary** | Adversarial P12: year-old PIT-reject is not the only poll #1 explanation; `K_1M` oldest-first is unsampled. Keep session-day + `max_count>=1000`. Log `raw_row_count`, first/last `time_key`, and vendor `retMsg` on each kline fetch (stderr + `kline_fetch` on outcomes). Prove session-day with `max_count=120` still misses RTH after 330 premarket minutes if paging is oldest-first. No `get_cur_kline`. PIT unchanged. Not calibrated. |
+| **Key files** | `tools/moomoo/opend_quote_transport.py`; `src/market_platform_foundation/paper/calibration/bar_ohlcv_sources.py`; `src/market_platform_foundation/paper/calibration/bar_ohlcv_prospective_proof.py`; `tests/providers/test_opend_history_kline_1m.py`; `docs/engineering/ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md` |
+| **Tests** | `python -m unittest tests.providers.test_opend_history_kline_1m tests.platform.test_bar_ohlcv_prospective_proof tests.platform.test_bar_ohlcv_comparator_experiment` — **44/44 passed** (8 kline-window + 25 prospective + 11 comparator). No live OpenD. |
+| **Related** | Isolated branch `diagnosis/item9-prospective-bar-20260915`; P12 `054e11fb` PARTIALLY_CONFIRMED |
+| **Notes** | Unique-security `historyKLQuota` disproven (hour2-resume 358 more cycles). Remaining protocol-error hypotheses: timeout / 5s connect-churn / frequency limit. Rebase onto `origin/main` after close. **Not calibrated.** |
+
+## 2026-09-15 — Item 9: session-day 1m history-kline window (isolated repair)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, `tools/moomoo`, Item 9 prospective proof |
+| **Summary** | Isolated repair for poll #1 `PROSPECTIVE_NO_POST_SIGNAL_BAR`. Vendor `request_history_kline(start=None, end=None)` expands to `[today-365d, today]` and returns the oldest page (capability-report `time_key` `2025-09-15 00:00:00` on a 2026-09-15 probe). Fetch now uses the observation `America/New_York` session date with `max_count>=1000`. PIT (`available_time > signal_time`, incomplete-bar hide) is unchanged. Not calibrated. |
+| **Key files** | `tools/moomoo/opend_quote_transport.py`; `src/market_platform_foundation/paper/calibration/bar_ohlcv_sources.py`; `tests/providers/test_opend_history_kline_1m.py`; `docs/engineering/ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md` |
+| **Tests** | `python -m unittest tests.providers.test_opend_history_kline_1m tests.platform.test_bar_ohlcv_prospective_proof tests.platform.test_bar_ohlcv_comparator_experiment` — **41/41 passed** (5 new + 25 prospective + 11 comparator). No live OpenD, no Lane B poll touch. |
+| **Related** | [ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md](ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md); branch `diagnosis/item9-prospective-bar-20260915` from `7aade60` |
+| **Notes** | Isolated commit only; rebase onto `origin/main` after close. `get_cur_kline` / quote-context reuse is a follow-up to avoid `historyKLQuota` burn (hour-2 `MOOMOO_PROTOCOL_ERROR`). **Not calibrated. No orders.** |
+
 ## 2026-09-15 — FTEP integrity: resolve gitignored session evidence from operator primary checkout
 
 | Field | Value |

@@ -231,13 +231,17 @@ def load_moomoo_opend_kline_bars(
     instrument_id: str,
     observation_time_ns: int,
     fetched_at_ns: int | None = None,
-    max_count: int = 120,
+    max_count: int = 1000,
     kline_rows: Sequence[Mapping[str, Any]] | None = None,
 ) -> BarLoadResult:
     """Prospective 1m bars from loopback OpenD history kline (quote context only)."""
 
     fetched_at = fetched_at_ns if fetched_at_ns is not None else observation_time_ns
     host, port = opend_endpoint()
+    session_date = datetime.fromtimestamp(
+        int(observation_time_ns) / 1_000_000_000,
+        tz=US_EQUITY_BAR_TZ,
+    ).strftime("%Y-%m-%d")
     if kline_rows is None:
         if not opend_is_loopback(host) or not opend_reachable(host=host, port=port):
             return BarLoadResult(
@@ -257,7 +261,13 @@ def load_moomoo_opend_kline_bars(
                 provenance={"transport": str(_TOOLS_KLINE_PATH)},
                 reason_code=MOOMOO_TRANSPORT_NOT_IMPLEMENTED,
             )
-        payload = fetcher(instrument_id, host=host, port=port, max_count=max_count)
+        payload = fetcher(
+            instrument_id,
+            host=host,
+            port=port,
+            max_count=max(int(max_count), 1000),
+            session_date=session_date,
+        )
         if not isinstance(payload, dict):
             return BarLoadResult(
                 source_id=SOURCE_MOOMOO_OPEND_KLINE_1M,
@@ -267,20 +277,44 @@ def load_moomoo_opend_kline_bars(
                 reason_code="MOOMOO_PROTOCOL_ERROR",
             )
         reason = payload.get("reason_code")
+        fetch_diag = {
+            "kline_session_date": session_date,
+            "raw_row_count": payload.get("raw_row_count", 0),
+            "first_raw_time_key": payload.get("first_raw_time_key"),
+            "last_raw_time_key": payload.get("last_raw_time_key"),
+            "vendor_ret": payload.get("vendor_ret"),
+            "vendor_ret_msg": payload.get("vendor_ret_msg"),
+        }
         if reason:
             return BarLoadResult(
                 source_id=SOURCE_MOOMOO_OPEND_KLINE_1M,
                 instrument_id=instrument_id,
                 bars=(),
-                provenance={"host": host, "port": port, "transport_reason": str(reason)},
+                provenance={"host": host, "port": port, "transport_reason": str(reason), **fetch_diag},
                 reason_code=str(reason),
             )
         raw_rows = payload.get("rows") or ()
     else:
         raw_rows = kline_rows
+        fetch_diag = {}
+
+    raw_tuple = tuple(raw_rows)
+    raw_time_keys = [
+        str(row.get("time_key") or "")
+        for row in raw_tuple
+        if isinstance(row, Mapping) and row.get("time_key")
+    ]
+    window_provenance = {
+        "kline_session_date": session_date,
+        "raw_row_count": int(fetch_diag.get("raw_row_count") or len(raw_tuple)),
+        "first_raw_time_key": fetch_diag.get("first_raw_time_key") or (raw_time_keys[0] if raw_time_keys else None),
+        "last_raw_time_key": fetch_diag.get("last_raw_time_key") or (raw_time_keys[-1] if raw_time_keys else None),
+        "vendor_ret": fetch_diag.get("vendor_ret"),
+        "vendor_ret_msg": fetch_diag.get("vendor_ret_msg"),
+    }
 
     canonical: list[dict[str, Any]] = []
-    for row in raw_rows:
+    for row in raw_tuple:
         if not isinstance(row, Mapping):
             continue
         normalized = normalize_moomoo_kline_row(row, instrument_id=instrument_id, fetched_at_ns=fetched_at)
@@ -298,7 +332,7 @@ def load_moomoo_opend_kline_bars(
                 "evidence_class": "PROSPECTIVE_OPEND_KLINE",
                 "fetched_at_ns": fetched_at,
                 "observation_time_ns": observation_time_ns,
-                "raw_row_count": len(tuple(raw_rows)),
+                **window_provenance,
             },
             reason_code="EXPERIMENT_CONTRACT_MISMATCH",
         )
@@ -314,6 +348,7 @@ def load_moomoo_opend_kline_bars(
             "fetched_at_ns": fetched_at,
             "observation_time_ns": observation_time_ns,
             "timing_basis": "available_time_at_bar_end",
+            **window_provenance,
         },
     )
 
