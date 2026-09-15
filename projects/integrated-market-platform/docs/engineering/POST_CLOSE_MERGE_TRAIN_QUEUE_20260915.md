@@ -7,13 +7,13 @@
 **Frozen RTH runtime:** `.rth-operator-20260915` at the same SHA — **do not thaw, patch, or merge into it**  
 **This document does not update** [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md)
 
-Snapshot time: 2026-09-15 ~14:25 ET (refresh of `f667e492`). Q2–Q4 tip `96ede754` has draft [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) — **NOT FOR MERGE** until RTH reconciliation. Q5 [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204) and Q6 [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203) already recorded. Review **in flight.** **Do not land during RTH.**
+Snapshot time: 2026-09-15 ~14:28 ET (refresh of `292fa5bc`). TRAIN 1 launcher is `repair/launcher-routing-from-main-20260915` HEAD `80792ea7` / draft [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206). **Do NOT land** `diagnosis/launcher-routing-20260915` (stale `d588728d`). `server.py` unquote skipped (P1). **24 tests.** Review **in flight** (`c39ab0af`). **Do not land during RTH.**
 
 ## Rebase-required flags (vs `origin/main` `7aade60b`)
 
 | Slot | Tip | Merge-base | Must rebase before land |
 |---|---|---|---|
-| Q1 launcher | `9b0781c9` | `d588728d` | **YES — do not merge as-is** |
+| Q1 / TRAIN 1 launcher | `80792ea7` | `7aade60b` | Draft [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206). Review **in flight** (`c39ab0af`). **NOT FOR MERGE** until RTH reconciliation. **Do NOT land** stale `diagnosis/launcher-routing-20260915` (`d588728d`) |
 | Q2–Q4 live-OE / cockpit | `96ede754` | `7aade60b` | Draft [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) — **NOT FOR MERGE** until RTH reconciliation. Honesty `91b07b4f` **SAFE-TO-RETAIN-AFTER-REBASE**. Ingest review **in flight**. **ACK/WATCH fail-closed.** **rebase-required=yes** |
 | Q5 WATCH harness | `7a5cbe48` | `7aade60b` | **YES if** `origin/main` moves after close. Independent of Item 9. Paper fixture path; acks stay blocked in `LIVE_OBSERVATIONAL`. Draft [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204) opened at `f8c03183`, being updated |
 | Q6 Item 9 | `fe8cac6d` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves. Draft [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203). Local tip 1 ahead of remote `77d448c3` |
@@ -22,7 +22,7 @@ Snapshot time: 2026-09-15 ~14:25 ET (refresh of `f667e492`). Q2–Q4 tip `96ede7
 | Q8 Item 7 notes | `d588728d` + untracked notes | `d588728d` | **YES** onto post-close `origin/main` before committing notes |
 | Q9a test-gap | `145fee4f` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
 | Q9b runbook | `134924c3` | `7aade60b` | **NO vs current main**; **YES if** `origin/main` moves |
-| This queue | `f667e492` + this refresh | `7aade60b` | Docs only; **YES if** `origin/main` moves |
+| This queue | `292fa5bc` + this refresh | `7aade60b` | Docs only; **YES if** `origin/main` moves |
 
 ## Operating holds
 
@@ -56,7 +56,7 @@ launcher
 
 Recommended post-close landing sequence:
 
-1. **Q1 launcher / Vite proxy** (operator can even *see* JSON)
+1. **Q1 / TRAIN 1** `80792ea7` / draft [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) — reconstruct on `origin/main`; **NOT FOR MERGE** until RTH reconciliation. **Do NOT land** `diagnosis/launcher-routing-20260915`
 2. **Q4** `8189af4c` + honesty `91b07b4f` + ingest `96ede754` — **do not land during RTH**; rebase-required; review in flight
 3. **Q3** `c43688ed` + `91b07b4f` + `96ede754` ranked READ — same hold; **ACK/WATCH fail-closed**
 4. **Q2** `c4d88ef7` + `91b07b4f` + `POST /intelligence/ingest/news` `96ede754` / draft [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) — **NOT FOR MERGE** until RTH reconciliation
@@ -74,23 +74,24 @@ Prior must-fix list (**closed** on honesty `91b07b4f`): live `INELIGIBLE` not on
 
 ---
 
-## Q1 — Launcher / SPA routing
+## Q1 — Launcher / SPA routing (TRAIN 1)
 
 | Field | Value |
 |---|---|
-| **Status** | `COMMITTED_ISOLATED` — **DO NOT MERGE AS-IS** |
-| **Branch / worktree** | `diagnosis/launcher-routing-20260915` at `.worktrees/diagnosis-launcher-routing-20260915` |
-| **Source baseline SHA** | `d588728d60b139ae44b5a3667a8e120d1e21ee1c` (**not** frozen `7aade60b`) |
-| **HEAD vs origin/main** | Unique commits `a2dd6ced` `fix(platform): select repo venv and open SPA root` then `9b0781c924ad23abc37eb9b51c3249e71d269e73` `chore(platform): record isolated launcher-routing candidate SHA`. Behind `origin/main` by `#195` `3daab7f2`, `#199` `64f1cb42`, `#202` `7aade60b` |
+| **Status** | `COMMITTED_ISOLATED` on `origin/main` — draft [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) **NOT FOR MERGE** until RTH reconciliation. Review **in flight** (`c39ab0af`) |
+| **Branch / worktree** | `repair/launcher-routing-from-main-20260915` HEAD `80792ea75b0e49ddff35603964e22dd92460c316` |
+| **Source baseline SHA** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` |
+| **HEAD vs origin/main** | `f1aaacaa` `fix(platform): reconstruct launcher routing on origin/main` then tip `80792ea7` `chore(platform): record reconstructed launcher-routing HEAD SHA`. Merge-base **is** current `origin/main` |
+| **Superseded / do not land** | `diagnosis/launcher-routing-20260915` (`9b0781c9` on stale `d588728d`) — **DO NOT LAND** |
 | **Purpose** | One-click IMP Python + SPA URL + Vite proxy so operator JSON is not swallowed by `index.html` |
-| **Issue addressed** | Launcher auto-selected `moomoo-api-test` (no sklearn); `START_PLATFORM` opened proxied `/discover` (API 404); `/opportunities` unproxied (Zod parse of HTML); `/discover` HTML not bypassed |
+| **Issue addressed** | Launcher auto-selected `moomoo-api-test` (no sklearn); `START_PLATFORM` opened proxied `/discover` (API 404); `/opportunities` unproxied (Zod parse of HTML); `/discover` HTML not bypassed. Reconstruct skips P1-owned `server.py` unquote |
 | **Empirical evidence** | 2026-09-15 Lane E: `http://127.0.0.1:5173/` Paper loads; GET `/discover` 404; ranked fetch via UI origin failed; API `:8766` returned `LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE`. Proxy-only would still show an empty live book |
-| **Affected files** | `a2dd6ced` (16 files, +357/−53): `tools/platform/local_launcher.py`, `tools/platform/control_service.py`, `START_PLATFORM.cmd`, `PLATFORM_CONTROL.cmd`, `ui/vite.config.ts`, `src/market_platform_foundation/ui_api/server.py`, `tests/platform/test_local_launcher.py`, `tests/platform/test_operator_control_service.py`, `tests/ui1/test_ui_api.py`, `tools/validation_manifest.json`, `README.md`, `ui/README.md`, `docs/engineering/LOCAL_DEVELOPMENT.md`, `docs/superpowers/specs/2026-08-24-local-platform-launcher-design.md`, `docs/engineering/WORK_LOG.md`, `BRANCH_NOTES.md`. Tip `9b0781c9` is notes-only |
-| **Focused tests** | Isolated worktree reported **25 passed**: `tests.platform.test_local_launcher` (incl. `test_open_uses_spa_root_not_discover_proxy`, `test_vite_proxy_covers_operator_json_and_spa_html_bypass`, `test_missing_sklearn_blocks_start`); `tests.platform.test_operator_control_service` (incl. `test_control_status_does_not_http_self_probe`); `tests.ui1.test_ui_api.Ui1ApiTests.test_percent_encoded_explain_ref_round_trips` |
-| **Broader validation** | After rebase: `python tools/imp.py test affected`; UI `npm run typecheck` / `npm test` if Vite remains in the diff; **not** FULL until stacked with Q2–Q4 |
-| **Dependencies** | None for merge of proxy/Python. Does **not** populate the ranked book |
-| **Must rebase** | **YES** onto post-close `origin/main`. **Do not merge `d588728d` as-is** |
-| **Safely discarded if diagnosis changes** | **NO** for Vite `/opportunities` + `/discover` HTML bypass and sklearn interpreter — independently observed. Interpreter-precedence details may be rewritten |
+| **Affected files** | `f1aaacaa` (14 files, +357/−48): `tools/platform/local_launcher.py`, `tools/platform/control_service.py`, `START_PLATFORM.cmd`, `PLATFORM_CONTROL.cmd`, `ui/vite.config.ts`, `tests/platform/test_local_launcher.py`, `tests/platform/test_operator_control_service.py`, `tools/validation_manifest.json`, `README.md`, `ui/README.md`, `docs/engineering/LOCAL_DEVELOPMENT.md`, launcher design spec, `WORK_LOG.md`, `BRANCH_NOTES.md`. **No** `ui_api/server.py` (unquote left to P1). Tip `80792ea7` is notes-only |
+| **Focused tests** | **24 tests** on the reconstructed branch. PIT/live-OE not in this diff |
+| **Broader validation** | After review: `python tools/imp.py test affected`; UI `npm run typecheck` / `npm test` if Vite remains; **not** FULL until stacked with Q2–Q4 |
+| **Dependencies** | None for merge of proxy/Python. Does **not** populate the ranked book. `server.py` unquote is P1 — do not add it here |
+| **Must rebase** | **NO vs current `origin/main`.** **YES if** `origin/main` moves. Still **NOT FOR MERGE** until RTH reconciliation |
+| **Safely discarded if diagnosis changes** | **NO** for Vite `/opportunities` + `/discover` HTML bypass and sklearn interpreter — independently observed. Stale `d588728d` branch **is** discarded in favor of this reconstruct |
 
 ---
 
@@ -285,6 +286,8 @@ Prior must-fix list (**closed** on honesty `91b07b4f`): live `INELIGIBLE` not on
 | Finviz 11:49 ET HTTP 429 | n/a | **Empirical PROVIDER evidence**, not merge cargo. Do not open a software PR to “fix” rate-limit as if it were an IMP defect |
 | PR #196 | `work/phase55b-lane-b-evidence-capture-context` `ec93809e` | Sidecar SOFTWARE only. **Rebase after session, not today.** `CAPTURE_CONTEXT_ABSENT` ≠ Item 7 row blocker |
 | Grok / durable enrichment worker | n/a | **DEFERRED.** `#189` wiring remains OFF by default; not `GROK_AUTOMATION_PRODUCTION_ACTIVE` |
+| Stale launcher | `diagnosis/launcher-routing-20260915` `9b0781c9` on `d588728d` | **DO NOT LAND.** Superseded by TRAIN 1 `80792ea7` / [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) |
+| Launcher reconstruct review | `c39ab0af` vs `80792ea7` | **In flight.** **Not merge cargo** |
 | Frozen RTH | `.rth-operator-20260915` @ `7aade60b` | Observational collection only through 16:00 ET |
 
 ---
@@ -304,7 +307,7 @@ Prior must-fix list (**closed** on honesty `91b07b4f`): live `INELIGIBLE` not on
 ## Coordinator checklist (post-close, not now)
 
 1. Re-fetch `origin/main`. If SHA ≠ `7aade60b`, every candidate **must rebase** except already-rebased tips.
-2. Re-read porcelain/SHAs: Q1 tip `9b0781c9` still on `d588728d` (**MUST rebase**); Q2–Q4 tip `96ede754` / draft [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) — **NOT FOR MERGE** until RTH reconciliation (honesty `91b07b4f` + ingest; **ACK/WATCH fail-closed**; **rebase-required**; review **in flight**); Q5 tip `7a5cbe48` / [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204); Q6 tip `fe8cac6d` / [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203) + P12 `49ae216e`; Q7 `49529d64`; Q8 untracked notes on `d588728d`; Q9a `145fee4f`; Q9b `134924c3`.
+2. Re-read porcelain/SHAs: Q1 / TRAIN 1 tip `80792ea7` / draft [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) on `origin/main` (24 tests; `server.py` unquote skipped; review **in flight** `c39ab0af`) — **NOT FOR MERGE** until RTH reconciliation; **Do NOT land** `diagnosis/launcher-routing-20260915` (`d588728d`); Q2–Q4 tip `96ede754` / draft [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) — **NOT FOR MERGE** until RTH reconciliation; Q5 tip `7a5cbe48` / [#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204); Q6 tip `fe8cac6d` / [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203) + P12 `49ae216e`; Q7 `49529d64`; Q8 untracked notes on `d588728d`; Q9a `145fee4f`; Q9b `134924c3`.
 3. Honesty must-fix **closed** on `91b07b4f`. Ingest `96ede754` is **not** re-confirmed. Follow-ons: no auto-fetch; mixed-discovery EMPTY vs UNAVAILABLE; residual `store.as_of_time_ns` footgun. **ACK/WATCH stay fail-closed.**
 4. Honor Item 9 P12: do not land `max_count=120`; do not treat unique-security `historyKLQuota` as proven.
 5. Merge **nothing** into frozen RTH. Do not land this queue as product software.
