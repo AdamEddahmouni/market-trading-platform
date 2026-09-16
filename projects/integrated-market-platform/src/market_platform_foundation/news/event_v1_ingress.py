@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..clock import monotonic_wall_ns
 from ..intelligence.contracts.event import EventV1
 from ..intelligence.normalization.models import IngestionMode
 from ..intelligence.observation_ingress.router import ObservationIngressRouter
@@ -20,6 +21,7 @@ def admit_news_article_event(
     store: Any | None = None,
     source_label: str = "finviz_elite_news",
     prebuilt_event: EventV1 | None = None,
+    ingestion_mode: IngestionMode | None = None,
 ) -> tuple[EventV1, IngressDispatchReceiptV1]:
     """Map one news article to EventV1 and dispatch through the production router.
 
@@ -28,11 +30,21 @@ def admit_news_article_event(
     enable Live broker execution.
     """
 
-    event = prebuilt_event or news_article_to_event_v1(article)
+    when = int(
+        dispatch_time_ns
+        if dispatch_time_ns is not None
+        else (prebuilt_event.received_time_ns if prebuilt_event is not None else monotonic_wall_ns())
+    )
+    mode = ingestion_mode if ingestion_mode is not None else IngestionMode.LIVE_OBSERVED
+    event = prebuilt_event or news_article_to_event_v1(
+        article,
+        server_received_time_ns=when,
+        ingestion_mode=mode,
+    )
     received_ns = event.received_time_ns if event.received_time_ns is not None else event.available_time_ns
     context = IngressDispatchContext(
-        dispatch_time_ns=dispatch_time_ns if dispatch_time_ns is not None else received_ns,
-        ingestion_mode=IngestionMode.LIVE_OBSERVED,
+        dispatch_time_ns=when,
+        ingestion_mode=mode,
         source_label=source_label,
     )
     receipt = router.dispatch(event, context=context)

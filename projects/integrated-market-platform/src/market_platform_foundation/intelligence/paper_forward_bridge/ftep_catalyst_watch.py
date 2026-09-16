@@ -203,6 +203,8 @@ def collect_ftep_catalyst_watch(
 
     live_ingress_requested = live_ingress and input_path is None
     prospective_ingress_report: dict[str, object] | None = None
+    prospective_ingress_result: Any | None = None
+    observational_cockpit_admit: dict[str, object] | None = None
     used_live_ingress = False
     rows: list[dict[str, object]]
     source_label: str
@@ -239,6 +241,7 @@ def collect_ftep_catalyst_watch(
             campaign_slug,
             live_ingress=True,
         )
+        prospective_ingress_result = ingress
         prospective_ingress_report = ingress.to_report_dict()
         classification = str(prospective_ingress_report.get("classification") or "")
         if ingress.ready and ingress.rows:
@@ -365,6 +368,17 @@ def collect_ftep_catalyst_watch(
     if live_ingress_requested and prospective_ingress_report and watch_mode != "FIXTURE_SMOKE":
         watch_mode = "PROSPECTIVE_FINVIZ_INGRESS"
 
+    if used_live_ingress and prospective_ingress_result is not None:
+        from ...ui_api.cockpit_admit import (
+            admit_prospective_catalyst_ingress_into_cockpit,
+            resolve_imp_collection_root,
+        )
+
+        observational_cockpit_admit = admit_prospective_catalyst_ingress_into_cockpit(
+            prospective_ingress_result,
+            collection_root=resolve_imp_collection_root(repository_root),
+        )
+
     disposition = "PASS" if not blockers else "BLOCKED"
     return {
         "schema_version": "1.0.0",
@@ -387,6 +401,7 @@ def collect_ftep_catalyst_watch(
         "attention_source": source_label,
         "attention_data_kind": attention_data_kind,
         "prospective_ingress": prospective_ingress_report,
+        "observational_cockpit_admit": observational_cockpit_admit,
         "ingress_outcome": ingress_outcome,
         "ingress_classification": ingress_classification,
         "summary_count": len(ranked),

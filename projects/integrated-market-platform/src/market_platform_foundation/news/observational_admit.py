@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from ..clock import monotonic_wall_ns
+from ..intelligence.normalization.models import IngestionMode
 from ..intelligence.paper_forward_bridge.ftep_prospective_catalyst_ingress import (
     CLASS_SUCCESS,
     ProspectiveCatalystIngressResult,
@@ -58,6 +59,7 @@ def admit_news_article_for_observation(
     server_received_time_ns: int | None = None,
     pipeline_config: PipelineConfig | None = None,
     source_label: str = "finviz_elite_news",
+    ingestion_mode: IngestionMode = IngestionMode.LIVE_OBSERVED,
 ) -> NewsObservationalAdmitOutcome:
     when = int(server_received_time_ns if server_received_time_ns is not None else monotonic_wall_ns())
     pit_reason = validate_news_pit_clocks(article, server_received_time_ns=when)
@@ -76,7 +78,11 @@ def admit_news_article_for_observation(
             detail = str(last.detail or "")
         return NewsObservationalAdmitOutcome(accepted=False, reason_code=reason, detail=detail or None)
 
-    event = news_article_to_event_v1(article, server_received_time_ns=when)
+    event = news_article_to_event_v1(
+        article,
+        server_received_time_ns=when,
+        ingestion_mode=ingestion_mode,
+    )
     event, receipt = admit_news_article_event(
         article,
         router=router,
@@ -84,6 +90,7 @@ def admit_news_article_for_observation(
         dispatch_time_ns=when,
         source_label=source_label,
         prebuilt_event=event,
+        ingestion_mode=ingestion_mode,
     )
     return NewsObservationalAdmitOutcome(accepted=True, event=event, receipt=receipt)
 
@@ -148,6 +155,8 @@ def admit_prospective_catalyst_ingress_result(
     server_received_time_ns = stats.get("as_of_ns") if isinstance(stats, dict) else None
     if server_received_time_ns is not None:
         server_received_time_ns = int(server_received_time_ns)
+    else:
+        server_received_time_ns = int(monotonic_wall_ns())
     outcomes: list[NewsObservationalAdmitOutcome] = []
     for row in rows:
         if not isinstance(row, dict):
@@ -185,6 +194,7 @@ def admit_finviz_export_item_for_observation(
     server_received_time_ns: int | None = None,
     pipeline_config: PipelineConfig | None = None,
     source_label: str = "finviz_elite_news",
+    ingestion_mode: IngestionMode = IngestionMode.LIVE_OBSERVED,
 ) -> NewsObservationalAdmitOutcome:
     """Runtime convergence entry: normalized Finviz export row → EventV1 admit."""
 
@@ -196,6 +206,7 @@ def admit_finviz_export_item_for_observation(
         server_received_time_ns=server_received_time_ns,
         pipeline_config=pipeline_config,
         source_label=source_label,
+        ingestion_mode=ingestion_mode,
     )
 
 

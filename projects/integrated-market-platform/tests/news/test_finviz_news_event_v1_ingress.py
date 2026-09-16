@@ -26,6 +26,7 @@ from tests.ui1.test_ui_api import COLLECTION_ROOT
 
 _PUBLISHED = "2026-09-15T14:05:00Z"
 _RETRIEVED = "2026-09-15T14:05:08Z"
+_SERVER = "2026-09-15T14:05:10Z"
 
 
 def _sample_article():
@@ -61,14 +62,16 @@ class FinvizNewsEventV1IngressTests(unittest.TestCase):
 
     def test_news_article_maps_pit_clocks_without_conflating_publication(self) -> None:
         article = _sample_article()
-        event = news_article_to_event_v1(article)
+        server_ns = int(epoch_ns_from_iso(_SERVER) or 0)
+        event = news_article_to_event_v1(article, server_received_time_ns=server_ns)
         published_ns = epoch_ns_from_iso(_PUBLISHED)
         retrieved_ns = epoch_ns_from_iso(_RETRIEVED)
         self.assertEqual(event.event_type, NEWS_EVENT_TYPE)
         self.assertEqual(event.event_time_ns, published_ns)
         self.assertEqual(event.provider_time_ns, published_ns)
         self.assertEqual(event.available_time_ns, retrieved_ns)
-        self.assertEqual(event.received_time_ns, retrieved_ns)
+        self.assertEqual(event.received_time_ns, server_ns)
+        self.assertNotEqual(event.received_time_ns, retrieved_ns)
         self.assertNotEqual(event.event_time_ns, event.available_time_ns)
         self.assertTrue(accepts_news_article_event(event))
 
@@ -87,12 +90,13 @@ class FinvizNewsEventV1IngressTests(unittest.TestCase):
         stored = repo.get_event(event.event_id)
         self.assertIsNotNone(stored)
         self.assertEqual(stored.event_type, NEWS_EVENT_TYPE)
-        detector_rows = [
-            row for row in receipt.outcomes if str(row.kind) == "DETECTOR"
+        news_detector = [
+            row
+            for row in receipt.outcomes
+            if str(row.kind) == "DETECTOR" and row.consumer_id == "ingress.observational_news_detector"
         ]
-        self.assertEqual(len(detector_rows), 1)
-        self.assertEqual(detector_rows[0].detail, "NEWS_ARTICLE_ADMITTED")
-        self.assertNotEqual(detector_rows[0].detail, "OBSERVED")
+        self.assertEqual(len(news_detector), 1)
+        self.assertEqual(news_detector[0].detail, "NEWS_ARTICLE_ADMITTED")
         self.assertEqual(self.store.last_source_time_ns, event.received_time_ns)
 
     def test_zero_qualifying_news_does_not_substitute_fixture_ranked_book(self) -> None:

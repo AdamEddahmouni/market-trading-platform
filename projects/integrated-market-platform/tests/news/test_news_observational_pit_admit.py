@@ -27,6 +27,9 @@ from market_platform_foundation.ui_api.opportunity_projections import (
 )
 from market_platform_foundation.ui_api.operator_opportunity_state import list_operator_acks, reset_operator_acks
 from market_platform_foundation.ui_api.news_ingest import handle_news_ingest_post
+from market_platform_foundation.ui_api.trade_review_projections import (
+    build_trade_reviews_for_opportunity_payload,
+)
 from market_platform_foundation.ui_api.live_intelligence import bind_ui_api_intelligence
 from market_platform_foundation.ui_api.store import ReplayStore
 from market_platform_foundation.rt01.execution_decision_trace.runtime import (
@@ -158,6 +161,29 @@ class NewsObservationalPitAdmitTests(unittest.TestCase):
         assert outcomes[0].event is not None
         self.assertEqual(outcomes[0].event.received_time_ns, self.server_ns)
         self.assertNotEqual(outcomes[0].event.received_time_ns, outcomes[0].event.available_time_ns)
+
+    def test_post_rejects_forged_server_receive_time(self) -> None:
+        with self.assertRaises(ValueError) as ctx:
+            handle_news_ingest_post(
+                self.store,
+                {
+                    "retrieved_time": _RETRIEVED,
+                    "server_received_time_ns": self.server_ns,
+                    "articles": [_item()],
+                },
+            )
+        self.assertEqual(str(ctx.exception), "NEWS_INGEST_FORGED_SERVER_RECEIVE_TIME")
+
+    def test_watch_trade_review_readable_on_live_observational(self) -> None:
+        payload = handle_news_ingest_post(
+            self.store,
+            {"retrieved_time": _RETRIEVED, "articles": [_item()]},
+        )
+        opp_id = payload["opportunity_ids"][0]
+        apply_opportunity_ack(self.store, row_id=opp_id, action="WATCHED")
+        reviews = build_trade_reviews_for_opportunity_payload(self.store, opp_id)
+        self.assertEqual(len(reviews["items"]), 1)
+        self.assertNotIn("reason", reviews)
 
     def test_duplicate_watch_fail_closed(self) -> None:
         payload = handle_news_ingest_post(
