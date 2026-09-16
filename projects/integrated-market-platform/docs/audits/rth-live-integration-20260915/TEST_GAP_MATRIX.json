@@ -1,0 +1,161 @@
+{
+  "document_id": "IMP-AUDIT-RTH-20260915-TEST-GAP",
+  "classification": "DIAGNOSIS",
+  "base_sha": "7aade60bf8041df5ebf9f0ac856d5d8802845c8d",
+  "base_ref": "origin/main",
+  "lane": "P9",
+  "branch": "diagnosis/test-gap-audit-20260915",
+  "date": "2026-09-15",
+  "constraints": [
+    "do_not_weaken_existing_gates",
+    "do_not_edit_frozen_rth",
+    "do_not_merge",
+    "do_not_steal_production_from_p1_p4_p2_p3"
+  ],
+  "why_pyramid_passed": "FAST/CHANGED/FULL and G15 Playwright exercise fixture, unit, contract, and client-side navigation. They do not boot Vite hard navigation, launcher interpreter selection vs hop policy, OpenD kline page direction, or Live as_of without a quote.",
+  "gaps": [
+    {
+      "id": "G1",
+      "title": "live provider to Opportunity Engine unwired",
+      "owner": "P2",
+      "live_failure": "Live quotes/books/ingress do not populate the operator ranked opportunity queue.",
+      "why_tests_passed": "Live HTTP contract tests assert UNAVAILABLE empty items; OE tests seed replay repositories; Path A hop is a separate CLI.",
+      "existing_tests_do_not_weaken": [
+        "tests/ui1/test_opportunity_api.py::OpportunityApiTests::test_live_mode_returns_unavailable_empty_queue",
+        "tests/ui1/test_opportunity_radar_feed.py::OpportunityRadarFeedTests::test_live_detail_and_ack_fail_closed"
+      ],
+      "missing_classes": ["integration", "full-stack", "prospective_rth_only"],
+      "exact_missing_tests": [
+        {
+          "class": "contract",
+          "path": "tests/ui1/test_live_provider_oe_composition_honesty.py",
+          "assertion": "LIVE_OBSERVATIONAL summary stays UNAVAILABLE with reason LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE even if a fake live quote exists."
+        }
+      ],
+      "collision_avoidance": "Do not replace fail-closed Live OE tests with a ranked live feed."
+    },
+    {
+      "id": "G2",
+      "title": "LIVE_OBSERVATIONAL ranked book fail-closed by design and test",
+      "owner": "P2",
+      "live_failure": "Ranked opportunity queue is empty/UNAVAILABLE during Live observational RTH.",
+      "why_tests_passed": "Tests encode that design. Discover Vitest mocks items=[].",
+      "existing_tests_do_not_weaken": [
+        "tests/ui1/test_opportunity_api.py::OpportunityApiTests::test_live_mode_returns_unavailable_empty_queue",
+        "tests/ui1/test_opportunity_radar_feed.py::OpportunityRadarFeedTests::test_live_detail_and_ack_fail_closed"
+      ],
+      "missing_classes": ["contract", "prospective_rth_only"],
+      "exact_missing_tests": [
+        {
+          "class": "contract",
+          "path": "tests/ui1/test_live_ranked_book_unavailable_honesty.py",
+          "assertion": "UI/API expose feed_status UNAVAILABLE and reason; items remain []. Do not require live ranked rows."
+        }
+      ],
+      "collision_avoidance": "Honesty tests only; do not add a test that expects live ranked opportunities."
+    },
+    {
+      "id": "G3",
+      "title": "fixture as_of 2026-07-21 shown as now",
+      "owner": "P1",
+      "live_failure": "Operator as_of shows admitted BIYA fixture clock (capture 2026-07-21) while mode is LIVE_OBSERVATIONAL.",
+      "why_tests_passed": "test_context_replay_mode only asserts as_of_time is truthy; live as_of falls back to ReplayStore.as_of_time() when no quote.",
+      "existing_tests_do_not_weaken": [
+        "tests/ui1/test_ui_api.py::Ui1ApiTests::test_context_replay_mode"
+      ],
+      "missing_classes": ["unit", "contract", "prospective_rth_only"],
+      "exact_missing_tests": [
+        {
+          "class": "unit",
+          "path": "P1-owned live as_of tests (do not add from P9)",
+          "assertion": "LIVE_OBSERVATIONAL without a quote must not present fixture 2026-07-21 as wall-clock now."
+        }
+      ],
+      "collision_avoidance": "P1 is adding live as_of tests; P9 adds none."
+    },
+    {
+      "id": "G4",
+      "title": "launcher prefers moomoo-api-test",
+      "owner": "P3",
+      "live_failure": "API child process uses %USERPROFILE%\\moomoo-api-test\\.venv when present, against hop interpreter policy.",
+      "why_tests_passed": "test_backend_python_precedence_is_override_then_moomoo_then_repo locks that order.",
+      "existing_tests_do_not_weaken": [
+        "tests/providers/test_opend_hop_interpreter.py (moomoo-api-test PYTHONPATH rejected)"
+      ],
+      "missing_classes": ["unit", "integration"],
+      "exact_missing_tests": [
+        {
+          "class": "unit",
+          "path": "P3-owned launcher tests (do not add from P9)",
+          "assertion": "Default backend python is IMP .venv; moomoo-api-test is not preferred over repo venv."
+        }
+      ],
+      "collision_avoidance": "P3 is adding launcher tests; do not edit test_local_launcher.py from P9."
+    },
+    {
+      "id": "G5",
+      "title": "/discover advertised into Vite API proxy",
+      "owner": "P4",
+      "live_failure": "Hard navigation to http://127.0.0.1:5173/discover is proxied to API GET /discover which does not exist; /workspace has HTML bypass, /discover does not.",
+      "why_tests_passed": "MemoryRouter and Playwright navigateClient never hard-load /discover; launcher test asserts DISCOVER_URL.",
+      "existing_tests_do_not_weaken": [
+        "tests/platform/test_local_launcher.py start URL assertion is evidence of the advertisement, not a safety gate to delete blindly"
+      ],
+      "missing_classes": ["unit", "full-stack", "e2e"],
+      "exact_missing_tests": [
+        {
+          "class": "unit",
+          "path": "tests/platform/test_vite_discover_spa_html_bypass.py",
+          "assertion": "HTML GET /discover bypasses Vite API proxy like /workspace; /discover/mixed still proxies."
+        },
+        {
+          "class": "e2e",
+          "path": "e2e/tests/discover-hard-navigation.spec.ts",
+          "assertion": "page.goto('/discover') serves Opportunity Radar HTML, not API 404 JSON."
+        }
+      ],
+      "collision_avoidance": "Do not steal P4 Vite production edits."
+    },
+    {
+      "id": "G6",
+      "title": "OpenD history kline oldest page",
+      "owner": "item9_opend_kline",
+      "live_failure": "request_history_kline(start=None,end=None) returns oldest page; page token discarded.",
+      "why_tests_passed": "Item 9 tests inject kline_rows and never call fetch_history_kline_1m pagination.",
+      "existing_tests_do_not_weaken": [
+        "tests/platform/test_bar_ohlcv_prospective_proof.py",
+        "tests/platform/test_bar_ohlcv_comparator_experiment.py"
+      ],
+      "missing_classes": ["unit", "provider_sandbox", "prospective_rth_only"],
+      "exact_missing_tests": [
+        {
+          "class": "unit",
+          "path": "tests/providers/test_opend_kline_page_direction.py",
+          "assertion": "Oldest-first fake SDK page is not accepted as prospective latest bars; page_req_key must be used or fail closed."
+        }
+      ],
+      "collision_avoidance": "Do not add test_opend_history_kline_1m.py."
+    },
+    {
+      "id": "G7",
+      "title": "WATCH/DISMISS unreachable",
+      "owner": "P5",
+      "live_failure": "Discover radar never passes onAck/paperAccountId; Live API fail-closes acks; operator cannot WATCH/DISMISS from the advertised Discover surface.",
+      "why_tests_passed": "Paper NOW tests mock useOpportunityAckMutation; card tests pass props; Live ack fail-closed is asserted.",
+      "existing_tests_do_not_weaken": [
+        "tests/ui1/test_opportunity_api.py Paper dismiss round-trip",
+        "tests/ui1/test_opportunity_radar_feed.py Live ack fail-closed",
+        "ui/src/components/now/OpportunityReviewCard.test.tsx"
+      ],
+      "missing_classes": ["integration", "full-stack", "acceptance"],
+      "exact_missing_tests": [
+        {
+          "class": "acceptance",
+          "path": "P5-owned watch-dismiss acceptance (do not add from P9)",
+          "assertion": "Paper operator surface posts /opportunities/{id}/watch and /dismiss; Live remains fail-closed."
+        }
+      ],
+      "collision_avoidance": "P5 is adding watch-dismiss acceptance; P9 adds none."
+    }
+  ]
+}

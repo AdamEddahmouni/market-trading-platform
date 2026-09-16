@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-16 — RTH15-00 isolated-work reconciliation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (software/docs increment; Item 7 #222 still isolated) |
+| **Area** | `evidence_capture`, `ui_api`, `hot_path_telemetry`, `ui`, `docs` |
+| **Summary** | Reconciled isolated/post-close RTH-cycle work onto `origin/main` `d06f1f4c`. Recovered the optional evidence capture-context sidecar, ranked-summary leak hygiene, selected UX on current contracts, next-RTH hop catalog, and Sep 15 diagnosis archives. Did not mutate empirical/prospective evidence, Item 7 settlement, or schedulers. |
+| **Key files** | `src/market_platform_foundation/evidence_capture/`, `tools/evidence_capture_context.py`, `src/market_platform_foundation/ui_api/opportunity_projections.py`, `src/market_platform_foundation/hot_path_telemetry/next_rth_latency_audit.py`, Discover/NavShell UI hygiene, `docs/engineering/RTH15_00_TARGET_STATE.md`, `docs/engineering/RTH15_00_RECONCILIATION_MATRIX.md` |
+| **Tests** | `imp.py format` 0; `imp.py lint` 0 (after worktree `ui/npm ci`); FAST 23/0/0; focused unittest 33/0; docs links OK (223); intelligence worker 1937/0; UI vitest 526/0, typecheck 0, build 0. `validate changed` providers 11 failures = OpenD/SDK `ENVIRONMENT` on this VM (not product). FULL/closure `NOT_RUN`. Benchmark **not executed**. |
+| **Related** | [RTH15_00_TARGET_STATE.md](RTH15_00_TARGET_STATE.md), [RTH15_00_RECONCILIATION_MATRIX.md](RTH15_00_RECONCILIATION_MATRIX.md), [AGENT_HANDOFF.md](AGENT_HANDOFF.md), PRs #196 #123 #124 #126 #128 #201 #222 |
+| **Notes** | `STAGE_2_APPLIED_AWAITING_NATURAL_CYCLE` **NONE OBSERVED**. Primary `item7/natural-settlement` checkout not mutated. Intelligence Benchmark Protocol not found. |
+
 ## 2026-09-16 — OPS-00 canonical agent operating system
 
 | Field | Value |
