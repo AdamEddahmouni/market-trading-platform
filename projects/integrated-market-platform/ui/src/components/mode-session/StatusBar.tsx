@@ -138,6 +138,10 @@ export function StatusBar({ mode, context, contextState }: Props) {
               <dd>{context?.quality_summary.state ?? "UNAVAILABLE"}</dd>
             </div>
             <div>
+              <dt>Scope</dt>
+              <dd>{scopeLabel}</dd>
+            </div>
+            <div>
               <dt>As of (raw)</dt>
               <dd>{asOf?.as_of_time ?? "UNAVAILABLE"}</dd>
             </div>

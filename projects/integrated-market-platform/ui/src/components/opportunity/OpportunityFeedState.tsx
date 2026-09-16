@@ -4,6 +4,7 @@ import { AttentionBanner } from "../imp-ui/AttentionBanner";
 import { EmptyState, ErrorState } from "../imp-ui/FeedbackStates";
 import { LoadingState } from "../shared/LoadingState";
 import type { Mode } from "../mode-session/types";
+import { humanizeUnreadyReason } from "./opportunityPresentation";
 
 export type OpportunityFeedStateProps = {
   state: "loading" | "ready" | "error";
@@ -57,8 +58,9 @@ export function OpportunityFeedState({
   }
 
   if (feedStatus === "UNREADY") {
+    const reason = humanizeUnreadyReason(unreadyReason);
     const unready = resolveSemanticState("research", "UNREADY", {
-      params: { reason: unreadyReason },
+      params: { reason: reason ?? "" },
     });
     return (
       <AttentionBanner
@@ -67,7 +69,12 @@ export function OpportunityFeedState({
         action={{ label: "Open Control", href: controlHref(nextAction) }}
       >
         {unready.sentence ?? unready.label}
-        {unreadyReason ? <span className="imp-radar-muted"> ({unreadyReason})</span> : null}
+        {unreadyReason ? (
+          <span className="imp-radar-muted" title="Raw reason code">
+            {" "}
+            ({unreadyReason})
+          </span>
+        ) : null}
       </AttentionBanner>
     );
   }

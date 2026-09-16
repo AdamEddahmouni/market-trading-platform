@@ -178,8 +178,9 @@ function renderRadar(
   mode: "DEMO" | "PAPER" | "LIVE",
   tab: "opportunities" | "screeners" = "opportunities",
   paperActionsPermitted = false,
+  initialPath?: string,
 ) {
-  const path = tab === "screeners" ? "/radar/screeners" : "/radar";
+  const path = initialPath ?? (tab === "screeners" ? "/radar/screeners" : "/radar");
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
@@ -335,6 +336,22 @@ describe("RadarPage opportunities tab", () => {
     const queue = screen.getByTestId("imp-radar-queue");
     fireEvent.click(within(queue).getByText("BIYA momentum ignition watch"));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("follows the Command bridge deep link to the preselected row", async () => {
+    const bridgedRow: OpportunityReviewRow = {
+      ...rankedRow,
+      summary_id: "att-strategy-9",
+      opportunity_id: null,
+      identity_kind: "NOT_OPPORTUNITY_V1",
+      headline: "Strategy signal review",
+      rank_order: 2,
+    };
+    summaryMock.data = { items: [rankedRow, bridgedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
+    renderRadar("PAPER", "opportunities", true, "/radar?selected=att-strategy-9");
+    const card = await screen.findByTestId("imp-radar-detail-card");
+    expect(card).toHaveTextContent("Strategy signal review");
+    expect(card).not.toHaveTextContent("BIYA momentum ignition watch");
   });
 });
 

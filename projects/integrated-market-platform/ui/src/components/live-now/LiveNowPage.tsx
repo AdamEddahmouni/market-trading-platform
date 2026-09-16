@@ -1,9 +1,11 @@
+import { useMemo } from "react";
 import type { AttentionItem } from "../../api/client";
 import { useOpportunitiesSummaryQuery } from "../../api/opportunityClient";
 import { resolveSemanticState } from "../../state/semanticState";
 import { AttentionFeed } from "../AttentionFeed";
 import { ImpOverviewBoard } from "../imp-product/ImpOverviewBoard";
-import { overviewKpisFromLiveContext } from "../imp-product/impOverviewMetrics";
+import { overviewDecisionKpis } from "../imp-product/impOverviewMetrics";
+import { attentionOpportunityLinks } from "../opportunity/opportunityPresentation";
 import type { LiveCanarySnapshot } from "./liveCanarySnapshot";
 import { LiveProviderRibbon } from "./LiveProviderRibbon";
 import { LiveSafetySnapshot } from "./LiveSafetySnapshot";
@@ -25,6 +27,8 @@ export type LiveNowPageProps = {
   onExplain: (item: AttentionItem) => void;
   onInspect: (item: AttentionItem) => void;
   onOpenWorkspace: (item: AttentionItem) => void;
+  /** Retries the shell-owned attention query (invalidation flows from App). */
+  onAttentionRetry?: () => void;
 };
 
 export function LiveNowPage({
@@ -41,6 +45,7 @@ export function LiveNowPage({
   onExplain,
   onInspect,
   onOpenWorkspace,
+  onAttentionRetry,
 }: LiveNowPageProps) {
   const opportunitiesQuery = useOpportunitiesSummaryQuery(true);
   const opportunityState = opportunitiesQuery.isLoading
@@ -48,18 +53,20 @@ export function LiveNowPage({
     : opportunitiesQuery.isError || !opportunitiesQuery.data
       ? "error"
       : "ready";
-  const contextReady = providerState !== "loading";
-  const kpiState = !contextReady ? "loading" : providerState === "error" ? "error" : "ready";
+  const opportunityItems = useMemo(
+    () => opportunitiesQuery.data?.items ?? [],
+    [opportunitiesQuery.data],
+  );
   const signalsDesk = desk === "signals";
-  const kpiCells = overviewKpisFromLiveContext({
-    state: kpiState,
-    attentionCount: items.length,
-    dataMode,
-    executionAuthority,
-    providerName: providerHealth?.provider_summary?.provider,
-    connectionState: providerHealth?.lifecycle?.connection_state,
-    opportunityFeedStatus: opportunitiesQuery.data?.feed_status,
+  const kpiCells = overviewDecisionKpis({
+    opportunityState,
+    feedStatus: opportunitiesQuery.data?.feed_status,
+    unreadyReason: opportunitiesQuery.data?.unready_reason,
+    opportunityItems,
+    attentionState,
+    attentionItems: items,
   });
+  const opportunityLinks = useMemo(() => attentionOpportunityLinks(opportunityItems), [opportunityItems]);
 
   const attentionSection = (
     <section className="live-panel live-attention-panel" aria-labelledby="live-attention-title">
@@ -73,10 +80,12 @@ export function LiveNowPage({
         items={items}
         state={attentionState}
         emptyMessage="Nothing requires attention in the current live feed."
+        opportunityLinks={opportunityLinks}
         onWhy={onWhy}
         onExplain={onExplain}
         onInspect={onInspect}
         onOpenWorkspace={onOpenWorkspace}
+        onRetry={onAttentionRetry}
       />
     </section>
   );
@@ -137,17 +146,17 @@ export function LiveNowPage({
       ) : (
       <ImpOverviewBoard
         kpiCells={kpiCells}
-        kpiState={kpiState}
         attentionItems={items}
         attentionState={attentionState}
         attentionEmptyMessage="Nothing requires attention in the current live feed."
-        opportunityItems={opportunitiesQuery.data?.items ?? []}
+        opportunityItems={opportunityItems}
         opportunityState={opportunityState}
         feedStatus={opportunitiesQuery.data?.feed_status}
         unreadyReason={opportunitiesQuery.data?.unready_reason}
         nextAction={opportunitiesQuery.data?.next_action}
         mode="LIVE"
         onOpportunityRetry={() => void opportunitiesQuery.refetch()}
+        onAttentionRetry={onAttentionRetry}
         onWhy={onWhy}
         onExplain={onExplain}
         onInspect={onInspect}

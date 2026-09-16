@@ -246,7 +246,7 @@
   background: rgba(7, 13, 21, 0.52);
 }
 
-.demo-attention-panel .attention-card h2 {
+.demo-attention-panel .attention-card h3 {
   margin: 0;
   font-size: 1rem;
 }
@@ -283,7 +283,8 @@
   gap: 14px;
 }
 
-@media (max-width: 980px) {
+/* BP_MD: Command grids collapse to one column (responsive-contract §1). */
+@media (max-width: 1024px) {
   .demo-now-grid-top,
   .demo-now-grid-bottom {
     grid-template-columns: 1fr;

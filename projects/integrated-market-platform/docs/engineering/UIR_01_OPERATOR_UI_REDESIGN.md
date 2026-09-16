@@ -2,12 +2,15 @@
 
 **Status:** Active implementation note. Increment A+B landed on
 `ui/operator-redesign-current` (PR #226); Increment C landed on
-`ui/operator-redesign-command-convergence`.
+`ui/operator-redesign-command-convergence`; Increment D landed on
+`ui/operator-redesign-command-depth`.
 **Scope:** Increment A (design system + shell + navigation) and Increment B
 (Discover/Radar + opportunity state/evidence presentation) on top of current
 canonical contracts at `origin/main` (`42b1237a`). Increment C (Command /
 Paper-Now convergence on the Radar opportunity language, provider-health
-semantic routing, mobile Radar detail sheet) on `21ab1ac1`.
+semantic routing, mobile Radar detail sheet) on `21ab1ac1`. Increment D
+(Command decision depth: decision KPIs, attention-card why-now/evidence,
+signal→opportunity bridge, responsive prioritization) on `02ac7072`.
 **Design guidance:** `docs/ui-redesign-v2/` (recovered RTH15-00 plans) is used as
 design guidance only. The stale `ui/operator-redesign-v2` branch was read as
 reference (`git show`) and was **not** used as an implementation base.
@@ -210,6 +213,46 @@ composition per mode).
 - Desk tabs (Overview | Signals) wired to `?desk=`; layouts per mode unchanged.
 - Increment C (above) converged the overview queue onto the shared opportunity
   primitives; the deeper Command rebuild remains future work.
+
+### Increment D — Command decision depth (landed)
+- **Decision KPIs** (`impOverviewMetrics.overviewDecisionKpis`): the strip
+  answers orientation questions only — Opportunity feed trust (feed_status
+  with humanized unready reason), Actionable now (eligible + OPEN_WORKSPACE
+  rows), Needs review (attention count + tier-1 urgent callout), Stale or
+  degraded (STALE freshness / DEGRADED / INVALID quality rows). Tones route
+  through the semantic system (`data-tone` + icon + text); neutral cells stay
+  unaccented. Portfolio/live-context KPI duplicates were removed (StatusBar,
+  Paper risk ribbon, and page headers own account/provider context).
+- **Attention-card depth** (`AttentionFeed` + `attentionPresentation.ts`):
+  explicit Signal object class, tier StatePill (text + tone), why-now from
+  human reason labels (raw codes in an L4 disclosure), replay-aware absolute
+  surfaced timing (`FreshnessIndicator decays={false}`), and shared
+  loading/error/empty states with retry. Signals remain their own object
+  class — cards never become opportunity cards.
+- **Signal→opportunity bridge**: the backend ingests attention rows into the
+  ranked queue with `summary_id = attention_id`
+  (`ftep_attention_candidate_to_summary`), so an exact key match is the only
+  supported relationship. Linked signals show the shared presentation state,
+  rank, and evidence-input coverage plus an "Open in Radar" link to
+  `/radar?selected=<summary_id>`, which preselects the row (auto-opening the
+  detail sheet below BP_MD). Unlinked signals show nothing — no implied
+  opportunity.
+- **Queue structure**: the overview queue shows both queues by default with
+  subsection headings and tab counts (Ranked/Attention/Both); full ARIA tabs
+  keyboard pattern (arrow/Home/End, roving tabindex). Paper defaults to
+  ranked — its decision grid already presents the signals as the candidate
+  queue, so each information class appears once per page.
+- **Freshness copy**: backend words render operator labels ("Stale",
+  "Replay", "Unavailable" — never mechanical lowercase); UNAVAILABLE
+  freshness is neutral honesty (replay sources carry it by design), not a
+  critical alarm.
+- **Responsive**: below BP_SM the Command board orders queue → decision
+  metrics → mode rows (KPI cells are non-interactive, so the visual reorder
+  cannot trap focus) and the KPI strip compacts to two columns; the StatusBar
+  collapses the data/scope segments into the details popover (scope added to
+  the popover). Command page breakpoints re-mapped to the contract scale
+  (980/1080 → 1024); the Paper header stacks at BP_MD (latent nowrap-pill
+  overflow fix).
 
 ## 5. Explicitly preserved
 

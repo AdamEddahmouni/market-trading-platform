@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { OpportunityReviewRow } from "../../api/opportunityClient";
 import {
   attentionItemFromOpportunity,
+  attentionOpportunityLinks,
   canAckOpportunity,
   canOpenOpportunityWorkspace,
   derivePresentationState,
@@ -9,6 +10,7 @@ import {
   evidenceInputsSummary,
   explanationRefForRow,
   hasProvisionalOrder,
+  humanizeUnreadyReason,
   isOpportunityIneligible,
   opportunityNextActionState,
   stableOpportunityKey,
@@ -96,5 +98,38 @@ describe("opportunityPresentation", () => {
         row({ ranking_vector: { basis: "ATTENTION_ORDER", dimensions: [], rank_order: 1 } }),
       ),
     ).toBe(true);
+  });
+
+  it("bridges attention signals to ranked rows by exact summary-id identity", () => {
+    const links = attentionOpportunityLinks([
+      row(),
+      row({
+        summary_id: "att-strategy-42",
+        opportunity_id: null,
+        identity_kind: "NOT_OPPORTUNITY_V1",
+        rank_order: 2,
+      }),
+    ]);
+    const bridged = links.get("att-strategy-42");
+    expect(bridged).toMatchObject({
+      summaryId: "att-strategy-42",
+      rank: "#2",
+      stateLabel: "Provisional",
+      stateTone: "caution",
+      evidence: "2/3 inputs",
+    });
+    // Engine rows key on opportunity ids, never attention ids.
+    expect(links.get("sum-1")?.summaryId).toBe("sum-1");
+    expect(links.get("att-missing")).toBeUndefined();
+  });
+
+  it("humanizes known feed-unready reasons and falls back without raw SNAKE_CASE", () => {
+    expect(humanizeUnreadyReason("QUALITY_SUMMARY_NOT_HEALTHY")).toBe(
+      "market data quality is degraded",
+    );
+    expect(humanizeUnreadyReason("LIVE_AS_OF_UNAVAILABLE")).toBe("the live clock is unavailable");
+    expect(humanizeUnreadyReason("PROVIDER_WARMUP")).toBe("Provider warmup");
+    expect(humanizeUnreadyReason(undefined)).toBeNull();
+    expect(humanizeUnreadyReason("")).toBeNull();
   });
 });

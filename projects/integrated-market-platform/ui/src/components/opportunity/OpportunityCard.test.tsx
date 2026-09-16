@@ -56,7 +56,7 @@ describe("OpportunityCard", () => {
     expect(card).toHaveTextContent("AAPL attention adapter");
     expect(card).toHaveTextContent("Provisional");
     expect(card).toHaveTextContent("1/2 inputs");
-    expect(card).toHaveTextContent("unavailable"); // freshness word humanized
+    expect(card).toHaveTextContent("Unavailable"); // freshness word humanized
     expect(card).toHaveTextContent("Open workspace");
     expect(card).toHaveTextContent("Provisional order — not FTEP-tuned");
     expect(card).toHaveTextContent("Visibility is not actionability");

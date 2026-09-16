@@ -23,6 +23,8 @@ type Props = {
   readOnly?: boolean;
   paperAccountId?: string;
   paperActions?: boolean;
+  /** Deep-link selection (`/radar?selected=<stable key>`) from the Command bridge. */
+  initialSelectedKey?: string | null;
   onExplain: (item: AttentionItem) => void;
   onInspect: (item: AttentionItem) => void;
   onOpenWorkspace: (item: AttentionItem) => void;
@@ -39,6 +41,7 @@ export function RadarOpportunitiesPanel({
   readOnly = false,
   paperAccountId,
   paperActions = false,
+  initialSelectedKey = null,
   onExplain,
   onInspect,
   onOpenWorkspace,
@@ -48,9 +51,17 @@ export function RadarOpportunitiesPanel({
   const state = query.isLoading ? "loading" : query.isError || !query.data ? "error" : "ready";
   const items = query.data?.items ?? [];
   const feedStatus = query.data?.feed_status;
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const sheetLayout = useMediaQuery(`(max-width: ${BP_MD}px)`);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [selectedKey, setSelectedKey] = useState<string | null>(initialSelectedKey);
+  const [sheetOpen, setSheetOpen] = useState(() => Boolean(initialSelectedKey) && sheetLayout);
+
+  // A deep-linked selection takes effect when it changes (e.g. following a
+  // Command bridge link while already on Radar).
+  useEffect(() => {
+    if (!initialSelectedKey) return;
+    setSelectedKey(initialSelectedKey);
+    if (sheetLayout) setSheetOpen(true);
+  }, [initialSelectedKey, sheetLayout]);
 
   const selectedRow = useMemo(() => {
     if (!items.length) return null;

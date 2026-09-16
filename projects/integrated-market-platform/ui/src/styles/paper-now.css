@@ -50,6 +50,7 @@
 
 .paper-candidate-panel [role="radiogroup"] { display: grid; gap: 10px; }
 .paper-candidate { padding: 13px; border: 1px solid var(--paper-line); background: rgba(5, 11, 17, 0.42); }
+.paper-candidate-context { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0 2px; }
 .paper-candidate.selected { border: 2px solid var(--paper-accent); background: var(--paper-accent-soft); }
 .paper-candidate .card-head { display: flex; justify-content: space-between; gap: 8px; }
 .paper-candidate .card-head h3 { font-size: 0.98rem; }
@@ -86,7 +87,11 @@
 .paper-now-page button:disabled { cursor: not-allowed; opacity: 0.45; }
 .paper-now-page button:focus-visible, .paper-now-page a:focus-visible, .paper-now-page input:focus-visible { outline: 3px solid var(--paper-accent); outline-offset: 3px; }
 
-@media (max-width: 1080px) {
+/* BP_MD: decision grid goes 3 → 2 columns (responsive-contract §1/§5). The
+   header stacks so the context grid gets full width — nowrap authority pills
+   cannot shrink below their content and would overflow squeezed tracks. */
+@media (max-width: 1024px) {
+  .paper-now-header { flex-direction: column; align-items: stretch; }
   .paper-risk-ribbon dl { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .paper-decision-grid { grid-template-columns: minmax(260px, 0.85fr) minmax(360px, 1.15fr); }
   .paper-exceptions-panel { grid-column: 1 / -1; }

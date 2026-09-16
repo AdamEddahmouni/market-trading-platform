@@ -15,7 +15,7 @@ import { PaperPreviewComposer } from "./PaperPreviewComposer";
 import { PaperRiskRibbon } from "./PaperRiskRibbon";
 import { nextPaperCandidateId } from "./paperDashboardViewModel";
 import { ImpOverviewBoard } from "../imp-product/ImpOverviewBoard";
-import { overviewKpisFromPortfolio } from "../imp-product/impOverviewMetrics";
+import { overviewDecisionKpis } from "../imp-product/impOverviewMetrics";
 import { buildPaperOrderRequest, createAttentionPaperOrderDraft, createPaperOrderDraft, createPaperPreviewAttemptKey, paperOrderDraftFingerprint, type PaperOrderDraft, type PaperOrderSide, attentionSourceContextFromItem } from "./paperOrderDraft";
 import type { NowDeskVariant } from "../now/nowDeskVariant";
 
@@ -28,12 +28,14 @@ export type PaperNowPageProps = {
   onWhy: (item: AttentionItem) => void;
   onExplain: (item: AttentionItem) => void;
   onInspect: (item: AttentionItem) => void;
+  /** Retries the shell-owned attention query (invalidation flows from App). */
+  onAttentionRetry?: () => void;
   desk?: NowDeskVariant;
 };
 
 type ConfirmedPreview = { fingerprint: string; value: PaperOrderPreviewResponse["preview"] };
 
-export function PaperNowPage({ items, attentionState, portfolio, portfolioState, paperActionsPermitted, onWhy, onExplain, onInspect, desk = "overview" }: PaperNowPageProps) {
+export function PaperNowPage({ items, attentionState, portfolio, portfolioState, paperActionsPermitted, onWhy, onExplain, onInspect, onAttentionRetry, desk = "overview" }: PaperNowPageProps) {
   const navigate = useNavigate();
   const opportunitiesQuery = useOpportunitiesSummaryQuery(true);
   const opportunityState = opportunitiesQuery.isLoading
@@ -41,6 +43,7 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
     : opportunitiesQuery.isError || !opportunitiesQuery.data
       ? "error"
       : "ready";
+  const opportunityItems = opportunitiesQuery.data?.items ?? [];
   const [selectedAttentionId, setSelectedAttentionId] = useState<string | null>(() => nextPaperCandidateId(items, null));
   const [side, setSide] = useState<PaperOrderSide | null>(null);
   const [quantityText, setQuantityText] = useState("");
@@ -109,9 +112,14 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
 
   const disabledReason = portfolioState === "loading" ? "Portfolio limits are loading." : portfolioState === "error" || !portfolio ? "Portfolio limits are unavailable." : !selected ? "Select an instrument-backed candidate." : !authorized ? "Paper authority is unavailable. Manage the simulation session in Portfolio." : !draft ? `Choose Buy or Sell and enter 1–${portfolio.risk.limits.max_order_shares} shares.` : undefined;
 
-  const kpiState =
-    portfolioState === "loading" ? "loading" : portfolioState === "error" ? "error" : "ready";
-  const kpiCells = overviewKpisFromPortfolio(portfolio, kpiState);
+  const kpiCells = overviewDecisionKpis({
+    opportunityState,
+    feedStatus: opportunitiesQuery.data?.feed_status,
+    unreadyReason: opportunitiesQuery.data?.unready_reason,
+    opportunityItems,
+    attentionState,
+    attentionItems: items,
+  });
 
   function openOpportunityWorkspace(item: AttentionItem) {
     openAttentionWorkspace(item);
@@ -205,6 +213,7 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
         onExplain={onExplain}
         onInspect={onInspect}
         onOpenWorkspace={openAttentionWorkspace}
+        onRetry={onAttentionRetry}
       />
       {!signalsDesk ? (
         <PaperPreviewComposer
@@ -248,17 +257,18 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
       ) : (
       <ImpOverviewBoard
         kpiCells={kpiCells}
-        kpiState={kpiState}
         attentionItems={items}
         attentionState={attentionState}
-        opportunityItems={opportunitiesQuery.data?.items ?? []}
+        opportunityItems={opportunityItems}
         opportunityState={opportunityState}
         feedStatus={opportunitiesQuery.data?.feed_status}
         unreadyReason={opportunitiesQuery.data?.unready_reason}
         nextAction={opportunitiesQuery.data?.next_action}
         mode="PAPER"
         paperAccountId={portfolio?.account.paper_account_id}
+        defaultQueueFilter="ranked"
         onOpportunityRetry={() => void opportunitiesQuery.refetch()}
+        onAttentionRetry={onAttentionRetry}
         onWhy={onWhy}
         onExplain={onExplain}
         onInspect={onInspect}

@@ -272,7 +272,7 @@ describe("Paper Command visual accessibility contract", () => {
     expect(paperNowCss).toContain(".paper-now-page a { display: inline-flex");
     expect(paperNowCss).toContain(".paper-preview-result h3:focus { outline: 3px solid var(--paper-accent)");
     expect(paperNowCss).toContain(":focus-visible");
-    expect(paperNowCss).toContain("@media (max-width: 1080px)");
+    expect(paperNowCss).toContain("@media (max-width: 1024px)");
     expect(paperNowCss).toContain("@media (max-width: 720px)");
     expect(paperNowCss).toContain("@media (prefers-reduced-motion: reduce)");
     expect(paperNowCss).toContain("@media (forced-colors: active)");

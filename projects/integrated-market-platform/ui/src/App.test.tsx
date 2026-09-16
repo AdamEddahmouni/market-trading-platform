@@ -702,12 +702,12 @@ describe("App mode launcher integration", () => {
     expect(screen.queryByRole("heading", { name: "Command Center" })).not.toBeInTheDocument();
   });
 
-  it("opens the Signals desk without duplicating the overview KPI board", async () => {
+  it("opens the Signals desk without duplicating the overview decision board", async () => {
     render(<App />);
     await enterMode("Demo");
     fireEvent.click(screen.getByRole("link", { name: "Signals" }));
     expect(await screen.findByRole("heading", { name: "Signals desk" })).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Overview KPIs" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Decision metrics" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Primary review queue" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "See the market unfold" })).not.toBeInTheDocument();
   });
@@ -765,7 +765,8 @@ describe("App mode launcher integration", () => {
     expect(await screen.findByRole("heading", { name: "Demo Portfolio" })).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
     expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();
-    expect(screen.getByText("BIYA")).toBeInTheDocument();
+    // Portfolio content renders in main (the StatusBar scope symbol stays in chrome).
+    expect(within(screen.getByRole("main")).getByRole("heading", { name: "Positions" })).toBeInTheDocument();
   });
 
   it("opens Paper Portfolio from /portfolio", async () => {

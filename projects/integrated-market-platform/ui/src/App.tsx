@@ -407,6 +407,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
     onExplain: openExplain,
     onInspect: openInspect,
     onOpenWorkspace: openAttentionWorkspace,
+    onAttentionRetry: () => void client.invalidateQueries({ queryKey: queryKeys.attention }),
   };
 
   const commandRoute = <CommandRoute nowRouteProps={nowRouteProps} />;
