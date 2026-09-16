@@ -44,6 +44,9 @@ it in the authoritative doc — do not silently choose.
 | Developer operating system | [DEVELOPER_OPERATING_SYSTEM.md](engineering/DEVELOPER_OPERATING_SYSTEM.md) |
 | Developer runbook (current commands) | [DEVELOPER_RUNBOOK.md](engineering/DEVELOPER_RUNBOOK.md) |
 | Next US equity RTH campaign (current `main`) | [NEXT_RTH_CAMPAIGN_RUNBOOK.md](engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md) |
+| RTH15-00 reconciliation target | [RTH15_00_TARGET_STATE.md](engineering/RTH15_00_TARGET_STATE.md) |
+| RTH15-00 reconciliation matrix | [RTH15_00_RECONCILIATION_MATRIX.md](engineering/RTH15_00_RECONCILIATION_MATRIX.md) |
+| Current agent handoff | [AGENT_HANDOFF.md](engineering/AGENT_HANDOFF.md) |
 | Project status snapshot (2026-09-11 @ `a4858103`, **not** current campaign state) | [PROJECT_STATUS.md](PROJECT_STATUS.md) |
 | Pre-implementation planning closure | [PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md](platform/PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md) |
 | FTEP activation gates | [FTEP_ACTIVATION_GATES.md](engineering/FTEP_ACTIVATION_GATES.md) |
@@ -191,6 +194,9 @@ MATLAB consumes Research Export v1 JSON. The overnight Parquet-bridge blueprint 
 | Pre-implementation planning closure (2026-09-11) | [PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md](platform/PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md) |
 | Post-G15 professor-directed CCN forensic audit | [post-g15-professor-directed/](audits/post-g15-professor-directed/README.md) |
 | IMP reconciliation program (G0–G15) | [imp-reconciliation/](audits/imp-reconciliation/README.md) |
+| Sep 15 live-integration test-gap matrix | [rth-live-integration-20260915/](audits/rth-live-integration-20260915/README.md) |
+| Next-RTH source→operator latency catalog | [next-rth-source-operator-latency-20260915/](audits/next-rth-source-operator-latency-20260915/README.md) |
+| UI/UX redesign v2 plan (implementation isolated) | [ui-redesign-v2/](ui-redesign-v2/README.md) |
 | Donor-identity correction (GridIQ / DS-340W) | [Donor Authority Supersession Notice](superpowers/governance/2026-09-07-donor-authority-supersession-notice.md) |
 
 ---
@@ -204,3 +210,7 @@ MATLAB consumes Research Export v1 JSON. The overnight Parquet-bridge blueprint 
 | BUILD specifications | `docs/engineering/*_V1.md` |
 | Phase evidence | `docs/engineering/EVIDENCE_01*.md` |
 | ADRs | [architecture/adr/](architecture/adr/) |
+| Sep 15 Item 7 upstream diagnosis | [ITEM7_UPSTREAM_GAP_DIAGNOSIS_20260915.md](engineering/ITEM7_UPSTREAM_GAP_DIAGNOSIS_20260915.md) |
+| Sep 15 Item 9 kline P12 review | [ITEM9_KLINE_WINDOW_DIAGNOSIS_P12_REVIEW.md](engineering/ITEM9_KLINE_WINDOW_DIAGNOSIS_P12_REVIEW.md) |
+| Sep 15 live OE P12/P13 reviews | [reviews/](engineering/reviews/) |
+| Sep 15 Item 7 / provider drafts | [drafts/20260915-rth-runbook-item7-provider/](engineering/drafts/20260915-rth-runbook-item7-provider/README.md) |

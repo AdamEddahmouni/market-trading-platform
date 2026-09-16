@@ -45,9 +45,9 @@ const primaryLinks: NavLinkDef[] = [
     label: "Research",
     gated: true,
     modeHint: {
-      DEMO: "Replay-bound",
-      PAPER: "Research to sim",
-      LIVE: "Read-only",
+      DEMO: "Replay-bound labs",
+      PAPER: "Research & model labs",
+      LIVE: "Read-only labs",
     },
   },
   {
@@ -77,15 +77,6 @@ const primaryLinks: NavLinkDef[] = [
       LIVE: "Operator controls",
     },
   },
-  {
-    to: "/research",
-    label: "Lab",
-    modeHint: {
-      DEMO: "Model & sim labs",
-      PAPER: "Model & sim labs",
-      LIVE: "Read-only labs",
-    },
-  },
 ];
 
 const operatorLinks: NavLinkDef[] = [
@@ -103,7 +94,6 @@ const operatorLinks: NavLinkDef[] = [
 
 type Props = {
   mode?: Mode;
-  layout?: "horizontal" | "sidebar";
 };
 
 function accessibleLabel(link: NavLinkDef, mode?: Mode): string | undefined {
@@ -136,10 +126,9 @@ function NavItem({ link, mode }: { link: NavLinkDef; mode?: Mode }) {
   );
 }
 
-export function NavShell({ mode, layout = "sidebar" }: Props) {
-  const navClass = layout === "sidebar" ? "nav-shell nav-shell-sidebar" : "nav-shell";
+export function NavShell({ mode }: Props) {
   return (
-    <nav className={navClass} aria-label="Primary">
+    <nav className="nav-shell nav-shell-sidebar" aria-label="Primary">
       <div className="nav-primary-group">
         {primaryLinks.map((link) => (
           <NavItem key={`${link.to}-${link.label}`} link={link} mode={mode} />

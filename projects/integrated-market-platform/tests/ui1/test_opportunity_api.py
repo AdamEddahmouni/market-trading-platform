@@ -246,12 +246,14 @@ class OpportunityApiTests(unittest.TestCase):
         overlay = decision_support_overlay()
         overlay["concentration"] = {"status": "WORSE"}
         self.assertNotIn("order_id", overlay)
+        self.assertNotIn("authority", overlay)
         again = build_opportunities_summary_payload(self.store)
         self.assertEqual([item.get("rank_order") for item in again["items"]], orders)
         self.assertEqual([item.get("summary_id") for item in again["items"]], ids)
         for item in payload["items"]:
             support = item.get("decision_support") or {}
-            self.assertEqual(support.get("authority"), "DOWNSTREAM_RISK_NOT_RANKING")
+            self.assertNotIn("authority", support)
+            self.assertNotIn("instrument_key", item)
             self.assertNotIn("order_id", support)
             self.assertNotIn("rank_score", item)
 
@@ -282,7 +284,8 @@ class OpportunityApiTests(unittest.TestCase):
         payload = build_opportunities_summary_payload(self.store)
         item = self._item_by_opportunity(payload, opportunity.opportunity_id)
         self.assertEqual(item["identity_kind"], "OPPORTUNITY_V1")
-        self.assertEqual(item["instrument_key"], item["instrument_id"])
+        self.assertEqual(item["instrument_id"], opportunity.scope.instrument_ids[0])
+        self.assertNotIn("instrument_key", item)
         self.assertEqual(item["created_at_ns"], opportunity.created_at_ns)
         self.assertEqual(item["expected_return"], opportunity.expected_return)
         self.assertEqual(item["expected_net_edge"], opportunity.expected_net_edge)
@@ -332,7 +335,8 @@ class OpportunityApiTests(unittest.TestCase):
         if not attention:
             self.skipTest("no adapter rows in replay fixture")
         item = attention[0]
-        self.assertEqual(item.get("instrument_key"), item.get("instrument_id"))
+        self.assertTrue(item.get("instrument_id"))
+        self.assertNotIn("instrument_key", item)
         self.assertIsNone(item.get("created_at_ns"))
         self.assertIsNone(item.get("evidence_class"))
         evidence = build_opportunity_evidence_payload(self.store, item["summary_id"])

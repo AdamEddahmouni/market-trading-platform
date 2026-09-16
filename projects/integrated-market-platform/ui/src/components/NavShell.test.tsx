@@ -24,14 +24,15 @@ describe("NavShell", () => {
     renderNav("DEMO");
     expect(screen.getByRole("link", { name: "Markets — Frozen bridges" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Portfolio — Read-only" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Research — Replay-bound" })).toHaveTextContent("GATED");
+    expect(screen.getByRole("link", { name: "Research — Replay-bound labs" })).toHaveTextContent("GATED");
   });
 
   it("adds Paper simulation hints", () => {
     renderNav("PAPER");
     expect(screen.getByRole("link", { name: "Portfolio — Orders history" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Workspace — Decision desk" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Lab — Model & sim labs" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Lab —/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Research — Research & model labs" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Opportunity Radar — Discovery desk" })).toBeInTheDocument();
   });
 
