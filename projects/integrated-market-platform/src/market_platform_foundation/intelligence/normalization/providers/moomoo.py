@@ -126,7 +126,11 @@ def normalize_moomoo_capture(
             ingestion_mode=IngestionMode.HISTORICAL_RECONSTRUCTED,
             adapter_version=context.adapter_version,
             raw_payload_ref=context.raw_payload_ref,
-            historical_available_time_ns=clocks.received_time_ns or context.received_time_ns,
+            historical_available_time_ns=(
+                clocks.available_time_ns
+                or clocks.received_time_ns
+                or context.received_time_ns
+            ),
             availability_basis=AvailabilityBasis.RECONSTRUCTED_FROM_SOURCE,
             availability_confidence=AvailabilityConfidence.DERIVED,
         )

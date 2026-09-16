@@ -12,8 +12,8 @@ _SRC = _ROOT / "src"
 if str(_SRC) not in sys.path:
     sys.path.insert(0, str(_SRC))
 
-from market_platform_foundation.intelligence.outcomes.opend_capture_ledger import (  # noqa: E402
-    materialize_opend_capture_jsonl,
+from market_platform_foundation.intelligence.production.item7_p0_anchor import (  # noqa: E402
+    materialize_item7_lawful_capture_ledger,
 )
 from market_platform_foundation.intelligence.persistence import InMemoryIntelligenceRepository  # noqa: E402
 from market_platform_foundation.intelligence.production.item7_capture_forecast_binding import (  # noqa: E402
@@ -58,14 +58,13 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     repository = InMemoryIntelligenceRepository()
-    result = materialize_opend_capture_jsonl(
-        args.capture_path,
+    result = materialize_item7_lawful_capture_ledger(
+        (args.capture_path,),
         repository,
         as_of_ns=args.as_of_ns,
         session_start_ns=args.session_start_ns,
         contributor_path=args.contributor_path,
         forecast_path=args.forecast_path,
-        auto_bind_production_forecasts=True,
         bind_expected_account_id=args.account_id,
         bind_expected_mode=args.mode,
         register_ledger=args.register_ledger,
