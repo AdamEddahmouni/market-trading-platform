@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-16 — PROGRAM_STATUS pin after RTH15-00 merge (#224)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Pin PROGRAM_STATUS v1.35 to canonical `origin/main` `dbccd92d` after #224 merge. RTH15-00 row is MERGED. No product or evidence change. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md`, `docs/engineering/AGENT_HANDOFF.md` |
+| **Tests** | docs-only pin; `check_docs_links.py` on this worktree |
+| **Related** | [#224](https://github.com/AdamEddahmouni/market-trading-platform/pull/224), [RTH15_00_TARGET_STATE.md](RTH15_00_TARGET_STATE.md) |
+| **Notes** | Item 7 #222 remains isolated. No evidence mutation. |
+
 ## 2026-09-16 — RTH15-00 isolated-work reconciliation
 
 | Field | Value |
