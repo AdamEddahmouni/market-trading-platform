@@ -1,5 +1,6 @@
 """UiApiHandler request-path for already-fetched Finviz/news → EventV1 admission.
 
+Operator/test override after runtime ``admit_finviz_export_item_for_observation``.
 Does not auto-fetch providers or start a retry loop. Observational only.
 """
 
@@ -7,8 +8,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..news.event_v1_ingress import admit_news_article_event
-from ..news.normalize import normalize_finviz_export_item
+from ..clock import monotonic_wall_ns
+from ..news.observational_admit import admit_finviz_export_item_for_observation
 from ..news.observational_opportunity import observational_news_opportunity_id
 from .live_intelligence import bind_ui_api_intelligence
 from .store import ReplayStore
@@ -37,6 +38,9 @@ def handle_news_ingest_post(store: ReplayStore, body: dict[str, Any]) -> dict[st
     if not isinstance(articles_raw, list):
         raise ValueError("NEWS_INGEST_ARTICLES_INVALID")
     retrieved_time = str(body.get("retrieved_time") or "").strip()
+    server_received_time_ns = body.get("server_received_time_ns")
+    if server_received_time_ns is not None:
+        server_received_time_ns = int(server_received_time_ns)
     admitted: list[dict[str, Any]] = []
     opportunity_ids: list[str] = []
     skipped: list[dict[str, str]] = []
@@ -49,13 +53,29 @@ def handle_news_ingest_post(store: ReplayStore, body: dict[str, Any]) -> dict[st
         if not item_retrieved:
             skipped.append({"reason": "NEWS_RETRIEVED_TIME_REQUIRED"})
             continue
-        article = normalize_finviz_export_item(item, retrieved_time=item_retrieved)
-        event, receipt = admit_news_article_event(article, router=router, store=store)
+        outcome = admit_finviz_export_item_for_observation(
+            item,
+            retrieved_time=item_retrieved,
+            router=router,
+            store=store,
+            server_received_time_ns=server_received_time_ns or monotonic_wall_ns(),
+        )
+        if not outcome.accepted or outcome.event is None:
+            skipped.append(
+                {
+                    "reason": str(outcome.reason_code or "NEWS_ADMIT_REJECTED"),
+                    "detail": str(outcome.detail or ""),
+                }
+            )
+            continue
+        event = outcome.event
+        receipt = outcome.receipt
         detector_detail = None
-        for row in receipt.outcomes:
-            if str(row.kind) == "DETECTOR":
-                detector_detail = row.detail
-                break
+        if receipt is not None:
+            for row in receipt.outcomes:
+                if str(row.kind) == "DETECTOR":
+                    detector_detail = row.detail
+                    break
         opportunity_id = observational_news_opportunity_id(event.event_id)
         persisted = None
         getter = getattr(repository, "get_opportunity", None)

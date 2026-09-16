@@ -104,7 +104,7 @@ class LiveObservationalStateTests(unittest.TestCase):
         self.assertNotIn("2026-07-21", str(payload["as_of_context"]["as_of_time"]))
         with self.assertRaises(PermissionError) as ack_ctx:
             apply_opportunity_ack(self.store, row_id="any-id", action="DISMISSED")
-        self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
+        self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_ACK_REQUIRES_LIVE_CLOCK")
 
 
 if __name__ == "__main__":

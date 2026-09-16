@@ -19,16 +19,16 @@ def admit_news_article_event(
     dispatch_time_ns: int | None = None,
     store: Any | None = None,
     source_label: str = "finviz_elite_news",
+    prebuilt_event: EventV1 | None = None,
 ) -> tuple[EventV1, IngressDispatchReceiptV1]:
     """Map one news article to EventV1 and dispatch through the production router.
 
-    Called by ``UiApiHandler`` ``POST /intelligence/ingest/news`` for already-fetched
-    rows. Updates ``store.last_source_time_ns`` / ``as_of_time_ns`` from retrieval
-    time when a store is provided. Does not auto-fetch Finviz or enable Live
-    execution. Opportunity minting is the observational detector's job.
+    Updates ``store.last_source_time_ns`` / ``as_of_time_ns`` from **server**
+    ``received_time_ns`` when a store is provided. Does not auto-fetch Finviz or
+    enable Live broker execution.
     """
 
-    event = news_article_to_event_v1(article)
+    event = prebuilt_event or news_article_to_event_v1(article)
     received_ns = event.received_time_ns if event.received_time_ns is not None else event.available_time_ns
     context = IngressDispatchContext(
         dispatch_time_ns=dispatch_time_ns if dispatch_time_ns is not None else received_ns,

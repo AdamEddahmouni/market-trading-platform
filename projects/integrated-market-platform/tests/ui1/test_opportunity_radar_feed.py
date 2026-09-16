@@ -38,7 +38,7 @@ class OpportunityRadarFeedTests(unittest.TestCase):
         self.store.mode = "LIVE"
         with self.assertRaises(PermissionError) as ack_ctx:
             apply_opportunity_ack(self.store, row_id="any-id", action="DISMISSED")
-        self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
+        self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_ACK_REQUIRES_LIVE_CLOCK")
 
     def test_live_detail_read_missing_id_is_not_found(self) -> None:
         self.store.data_mode = "LIVE_OBSERVATIONAL"
