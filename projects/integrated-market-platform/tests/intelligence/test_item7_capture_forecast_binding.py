@@ -17,14 +17,24 @@ from market_platform_foundation.intelligence.outcomes.opend_capture_ledger impor
     CaptureProvenance,
     materialize_opend_capture_jsonl,
 )
-from market_platform_foundation.intelligence.contracts import EventV1  # noqa: E402
+from market_platform_foundation.intelligence.contracts import (  # noqa: E402
+    ContractKind,
+    ContractReference,
+    EventV1,
+    SnapshotV1,
+)
 from market_platform_foundation.intelligence.persistence import InMemoryIntelligenceRepository  # noqa: E402
+from market_platform_foundation.intelligence.outcomes.policy import (  # noqa: E402
+    DIRECTION_UP_DOWN_5M_POLICY,
+    policy_for_forecast,
+)
 from market_platform_foundation.intelligence.production.item7_capture_forecast_binding import (  # noqa: E402
     REFUSAL_LEDGER_POLICY_UNSUPPORTED,
     REFUSAL_NO_LAWFUL_PRODUCTION_FORECAST,
     REFUSAL_NO_PRODUCTION_FORECAST_SOURCE,
     lookup_production_forecast_for_candidate,
     load_binding_eligible_production_contributors,
+    production_forecast_ledger_refusal_reasons,
 )
 from market_platform_foundation.intelligence.production.emitter import emit_production_forecast  # noqa: E402
 from market_platform_foundation.strategy.path_a_production_emit import (  # noqa: E402
@@ -41,6 +51,8 @@ from tests.intelligence.test_opend_capture_ledger_bridge import (  # noqa: E402
     _write_jsonl,
 )
 from tests.intelligence.test_path_a_production_emit import (  # noqa: E402
+    EMIT_SNAPSHOT_ID,
+    HONESTY_SCOPE,
     PATH_A_HORIZON,
     PATH_A_TARGET,
     QUALITY,
@@ -62,10 +74,10 @@ def _aapl_quote_line(**kwargs: object) -> dict:
 
 
 def _seed_forecast_ledger_prerequisites(repo: InMemoryIntelligenceRepository) -> None:
-    repo.put_snapshot(_emit_snapshot())
+    anchor_id = "anchor-aapl-trade"
     repo.put_event(
         EventV1(
-            event_id="anchor-aapl-trade",
+            event_id=anchor_id,
             schema_version="1",
             event_type="TRADE",
             event_time_ns=T,
@@ -75,6 +87,17 @@ def _seed_forecast_ledger_prerequisites(repo: InMemoryIntelligenceRepository) ->
             source=SOURCE,
             instrument_id="AAPL",
             received_time_ns=T,
+        )
+    )
+    base = _emit_snapshot()
+    repo.put_snapshot(
+        SnapshotV1(
+            snapshot_id=EMIT_SNAPSHOT_ID,
+            schema_version=base.schema_version,
+            decision_time_ns=base.decision_time_ns,
+            scope=HONESTY_SCOPE,
+            quality=QUALITY,
+            source_event_refs=(ContractReference(kind=ContractKind.EVENT.value, id=anchor_id),),
         )
     )
 
@@ -129,12 +152,13 @@ class Item7CaptureForecastBindingTests(unittest.TestCase):
         resolved = lookup_production_forecast_for_candidate(candidate, contributors=())
         self.assertEqual(resolved.refusal_reasons, (REFUSAL_NO_PRODUCTION_FORECAST_SOURCE,))
 
-    def test_auto_bind_links_lawful_contributor_fail_closed_on_ledger(self) -> None:
+    def test_auto_bind_registers_ledger_for_path_a_direction_policy_bridge(self) -> None:
         forecast_id = self._persist_lawful_contributor()
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "capture.jsonl"
             _write_jsonl(path, [_aapl_quote_line()])
             repo = InMemoryIntelligenceRepository()
+            _seed_forecast_ledger_prerequisites(repo)
             result = materialize_opend_capture_jsonl(
                 path,
                 repo,
@@ -144,11 +168,34 @@ class Item7CaptureForecastBindingTests(unittest.TestCase):
                 auto_bind_production_forecasts=True,
                 use_production_ingress=False,
             )
-            self.assertEqual(result.ledger_registered, 0)
+            self.assertEqual(result.ledger_registered, 1)
             self.assertEqual(len(result.candidates), 1)
             self.assertEqual(result.candidates[0].forecast_id, forecast_id)
-            self.assertIn(REFUSAL_LEDGER_POLICY_UNSUPPORTED, result.refusal_reasons)
+            self.assertIsNotNone(result.candidates[0].ledger_entry_id)
+            self.assertNotIn(REFUSAL_LEDGER_POLICY_UNSUPPORTED, result.refusal_reasons)
             self.assertIsNotNone(repo.get_forecast(forecast_id))
+
+    def test_path_a_direction_resolves_build15_five_minute_policy(self) -> None:
+        policy = policy_for_forecast(target_kind="direction", horizon_ns=HORIZON)
+        self.assertIs(policy, DIRECTION_UP_DOWN_5M_POLICY)
+        emitted = emit_production_forecast(
+            snapshot=_emit_snapshot(),
+            signals=_emit_signals(),
+            model=self.model,
+            target=PATH_A_TARGET,
+            horizon=PATH_A_HORIZON,
+            mode="paper",
+            as_of_time_ns=T,
+        )
+        assert emitted.forecast is not None
+        self.assertEqual(
+            production_forecast_ledger_refusal_reasons(emitted.forecast),
+            (),
+        )
+
+    def test_direction_wrong_horizon_still_refuses_ledger_policy(self) -> None:
+        policy = policy_for_forecast(target_kind="direction", horizon_ns=HORIZON + 1)
+        self.assertIsNone(policy)
 
     def test_auto_bind_refuses_without_contributor(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
