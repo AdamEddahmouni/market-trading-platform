@@ -101,8 +101,28 @@ P6_DIRECTION_POLICY = OutcomeSettlementPolicy(
 )
 
 
+def settlement_policy_target_kind(target_kind: str, horizon_ns: int) -> str | None:
+    """Map forecast ``target_kind`` to BUILD 15 policy vocabulary (fail closed).
+
+    Path A PRODUCTION_RAW contributors use ``direction`` with a locked 5m horizon
+    (see ``production.identity``). That scope is semantically identical to the
+    BUILD 15 ``direction_up_down`` 5m policy (P6 return sign adjudication).
+    Other ``direction`` horizons are not bridged.
+    """
+
+    if target_kind == "direction_up_down":
+        return target_kind
+    if target_kind == "direction":
+        from ..production.identity import PATH_A_HORIZON_NS, PATH_A_TARGET_KIND
+
+        if target_kind == PATH_A_TARGET_KIND and horizon_ns == PATH_A_HORIZON_NS:
+            return "direction_up_down"
+    return None
+
+
 def policy_for_forecast(*, target_kind: str, horizon_ns: int) -> OutcomeSettlementPolicy | None:
-    if target_kind != "direction_up_down":
+    canonical_kind = settlement_policy_target_kind(target_kind, horizon_ns)
+    if canonical_kind != "direction_up_down":
         return None
     if horizon_ns == 1800 * _NS:
         return P6_DIRECTION_POLICY
@@ -118,4 +138,5 @@ __all__ = [
     "OutcomeSettlementPolicy",
     "derive_settlement_policy_identity",
     "policy_for_forecast",
+    "settlement_policy_target_kind",
 ]
