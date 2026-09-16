@@ -1,4 +1,4 @@
-# Next US equity RTH campaign runbook (post–`origin/main` `5d8163e`)
+# Next US equity RTH campaign runbook (post–`origin/main` `73da9fdb`)
 
 **Evidence class:** SOFTWARE coordination only. **Live OFF.** No Paper/Live orders. No empirical locks. Do not declare FTEP `EMPIRICAL_ACTIVE`.
 
@@ -8,7 +8,7 @@ This document is the **current-main** operator surface for the **next** US equit
 
 | Layer | Git SHA | Role |
 |-------|---------|------|
-| **Current implementation** | `5d8163e582e4bceb2354785c75638687d4959fef` (`origin/main`; [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) launcher/Vite routing landed) | Commands, ports, and software labels below |
+| **Current implementation** | `73da9fdbccb63c0842940175f6e948c584da9a80` (`origin/main`; [#210](https://github.com/AdamEddahmouni/market-trading-platform/pull/210) Item 7 upstream SNAPSHOT_BBO envelope; [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) launcher/Vite at `5d8163e` in history) | Commands, ports, and software labels below |
 | **Frozen Sep 15 empirical authority** | `7aade60b…` (historical RTH evidence pin) | Accepted observational receipts and Sep 15 session truth — **not** overridden by this runbook |
 | **Repair train (sibling lanes)** | Base `7aade60` on open PRs [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) | **Not on `main`** until merged; merge SHAs **`<pending>`** per lane — do not assume live OE / Item 9 / Finviz / 8766 fixes are shipped |
 
@@ -37,7 +37,7 @@ $env:IMP_PERSIST_STATE = "1"
 
 Use the project **CPython 3.11** `.venv` only (`python tools\imp.py env`). Never commit session gates.
 
-## Platform surfaces (`5d8163e` / #206)
+## Platform surfaces (`73da9fdb` / #210 tip; #206 launcher in history)
 
 | Check | Endpoint / command | Notes |
 |-------|-------------------|--------|
@@ -125,10 +125,11 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 4. If preflight `integrity_disposition=FAIL`, fix `IMP_STATE_DIR` / manifest drift before any live ingress.
 5. Repair-train merges: after any #203–#208 lands, re-run preflight and update sibling SHA placeholders in [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) — not here.
 
-## Sibling-lane merge SHA placeholders (`main` = `5d8163e` until updated)
+## Sibling-lane merge SHA placeholders (`main` tip = `73da9fdb` until updated)
 
 | PR | Purpose | Merge SHA on `main` |
 |----|---------|---------------------|
+| [#210](https://github.com/AdamEddahmouni/market-trading-platform/pull/210) | Item 7 upstream SNAPSHOT_BBO capture envelope | `73da9fdbccb63c0842940175f6e948c584da9a80` (**merged**, current tip) |
 | [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) | Launcher / Vite routing | `5d8163e582e4bceb2354785c75638687d4959fef` (**merged**) |
 | [#195](https://github.com/AdamEddahmouni/market-trading-platform/pull/195) | Finviz prospective receipt validator (software) | `3daab7f2` (**merged** on `main`) |
 | [#196](https://github.com/AdamEddahmouni/market-trading-platform/pull/196) | Evidence capture-context sidecar | `<pending>` |
@@ -136,13 +137,13 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 | [#200](https://github.com/AdamEddahmouni/market-trading-platform/pull/200) | PROGRAM_STATUS pre-RTH sync | `d588728d` (**merged** on `main`) |
 | [#196](https://github.com/AdamEddahmouni/market-trading-platform/pull/196) | Evidence capture-context sidecar | **OPEN** — `<pending merge on main>` |
 | [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207) | Finviz ingress reliability / receipts | **OPEN** head `ca3c53a9` — `<pending merge on main>` |
-| [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205), [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) | RTH15 repair train (from `7aade60`) | `<pending>` each |
+| [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205), [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208), [#211](https://github.com/AdamEddahmouni/market-trading-platform/pull/211) | RTH15 repair train (from `7aade60`) | **OPEN** — `<pending merge on main>` each |
 
 ## Pre-RTH verification checklist (Agent H, off-session)
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| `origin/main` SHA `5d8163e` | **VERIFIED** | `git rev-parse origin/main` |
+| `origin/main` SHA `73da9fdb` | **VERIFIED** | `git rev-parse origin/main` |
 | Worktree branch clean | **VERIFIED** | `rth15-next-rth-runbook` tracking `origin/main` |
 | Python 3.11 interpreter | **VERIFIED** | Primary IMP `.venv` → 3.11.15 |
 | Worktree `.venv` link | **UNVERIFIED** | Run `imp.py env bootstrap --link-venv` on workstation |
@@ -162,7 +163,7 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 ## Recommended next RTH operator actions (current `main` only)
 
 1. Merge or rebase repair train as orchestrator directs; **do not** assume #207 Finviz ingress fixes until SHA is on `main`.
-2. Night before: `git fetch origin main`; confirm `git rev-parse origin/main` = `5d8163e` (or newer tip after merges).
+2. Night before: `git fetch origin main`; confirm `git rev-parse origin/main` = `73da9fdb` (or newer tip after merges).
 3. Morning: bootstrap venv/state path; start platform; confirm `:8766` / `:5173` / SPA at `http://127.0.0.1:5173/`.
 4. T−15: run full preflight block; set temporary Finviz/catalyst gates; confirm OpenD loopback.
 5. ≥ 09:30: execute Finviz watch → Item 9 poll → Item 7 status → ops dry-run; persist receipts; summarize.
