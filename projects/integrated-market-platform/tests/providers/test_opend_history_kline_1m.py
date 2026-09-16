@@ -583,7 +583,7 @@ class OpenDHistoryKlineExtendedDiagnosticsTests(unittest.TestCase):
         self.assertGreaterEqual(int(payload["max_count_requested"]), 1000)
         self.assertIsNotNone(payload["request_duration_ms"])
         self.assertGreaterEqual(float(payload["request_duration_ms"]), 0.0)
-        self.assertEqual(payload["request_retry_index"], 0)
+        self.assertNotIn("request_retry_index", payload)
         self.assertIsNone(payload["protocol_error_category"])
 
     def test_protocol_error_category_frequency_limit(self) -> None:
@@ -611,6 +611,39 @@ class OpenDHistoryKlineExtendedDiagnosticsTests(unittest.TestCase):
         self.assertEqual(payload["protocol_error_category"], "vendor_frequency_limit")
         self.assertIsNotNone(payload["request_duration_ms"])
 
+    def test_unmatched_protocol_error_is_unclassified_not_exception(self) -> None:
+        from tools.moomoo.opend_quote_transport import (
+            KLINE_PROTOCOL_UNCLASSIFIED,
+            classify_kline_protocol_error_category,
+            fetch_history_kline_1m,
+        )
+
+        self.assertEqual(
+            classify_kline_protocol_error_category(
+                reason_code="MOOMOO_PROTOCOL_ERROR",
+                vendor_ret=0,
+                vendor_ret_msg=None,
+            ),
+            KLINE_PROTOCOL_UNCLASSIFIED,
+        )
+        incomplete_sdk = type(
+            "IncompleteSdk",
+            (),
+            {
+                "OpenQuoteContext": _ProtocolErrorKlineContext,
+                "KLType": _FakeKlineSdk.KLType,
+            },
+        )()
+        payload = fetch_history_kline_1m(
+            "AAPL",
+            host="127.0.0.1",
+            port=11111,
+            sdk=incomplete_sdk,
+            session_date=SESSION_DAY,
+        )
+        self.assertEqual(payload["reason_code"], "MOOMOO_PROTOCOL_ERROR")
+        self.assertEqual(payload["protocol_error_category"], KLINE_PROTOCOL_UNCLASSIFIED)
+
     def test_loader_attaches_extended_diagnostics_from_payload(self) -> None:
         def _fetcher(symbol: str, *, host: str, port: int, max_count: int = 120, **kwargs: Any) -> dict[str, Any]:
             return {
@@ -624,7 +657,6 @@ class OpenDHistoryKlineExtendedDiagnosticsTests(unittest.TestCase):
                 "kline_end": SESSION_DAY,
                 "max_count_requested": max_count,
                 "request_duration_ms": 12.5,
-                "request_retry_index": 0,
                 "protocol_error_category": "vendor_ret_error",
             }
 

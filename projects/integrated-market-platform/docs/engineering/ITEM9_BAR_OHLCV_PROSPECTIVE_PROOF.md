@@ -17,11 +17,14 @@ and not RTH empirical proof.
 
 Mode B `--poll` fetches 1m history kline for the **observation session date**
 in `America/New_York` (`start=end=YYYY-MM-DD`, `max_count>=1000`). Do not use
-the vendor default `start=None, end=None`: that expands to `[today-365d, today]`
-and returns the **oldest** page (a year old). Those bars correctly fail
-`available_time > signal_time` and are not prospective evidence.
+the vendor default `start=None, end=None`: SDK docs expand that to
+`[today-365d, today]`. **K_1M oldest-first paging is same-API inference** from
+proven `K_DAY` oldest-first behavior plus the SDK window — not a live-sampled
+1m receipt. Under that inference, an unbounded window can yield a year-old
+oldest page; those bars correctly fail `available_time > signal_time` and are
+not prospective evidence.
 
-If paging is oldest-first, session-day plus `max_count=120` is still wrong:
+If paging is oldest-first (inferred for `K_1M`), session-day plus `max_count=120` is still wrong:
 extended-hours 04:00–05:59 fills the page and every bar is before a 09:34
 signal. `max_count>=1000` is required so RTH minutes are not truncated.
 
@@ -29,17 +32,21 @@ Each `request_history_kline` attempt writes fail-closed diagnostics to stderr
 (`raw_row_count`, `first_raw_time_key`, `last_raw_time_key`, `vendor_ret`,
 `vendor_ret_msg`, `kline_start`/`kline_end`, `max_count_requested`,
 `connection_host`/`connection_port`, `request_duration_ms`,
-`request_retry_index`, `protocol_error_category`) and attaches the same fields
-as `kline_fetch` on poll outcomes, plus `poll_attempt_index` during Mode B
-`--poll`. Categories classify transport for logging only — they do **not**
-uniquely explain Sep 15 poll #1 or hour-2 `MOOMOO_PROTOCOL_ERROR`. Timeout
+`protocol_error_category`) and attaches the same fields as `kline_fetch` on poll
+outcomes, plus `poll_attempt_index` during Mode B `--poll` (one OpenD history
+call per poll step — not a transport retry counter). Unmatched
+`MOOMOO_PROTOCOL_ERROR` maps to `protocol_unclassified`, not a fabricated
+exception label. Categories classify transport for logging only — they do **not**
+uniquely explain Sep 15 poll #1 (no row-level detail in poll #1 logs) or
+hour-2 `MOOMOO_PROTOCOL_ERROR` (separate open hypotheses). Timeout
 still reports `PROSPECTIVE_NO_POST_SIGNAL_BAR`; the last fetch stats distinguish
 empty vs TZ-dropped vs pre-signal rows. PIT is unchanged.
 
 Follow-up (not in this repair): reuse one quote context and poll `get_cur_kline`
-to cut 5s connect-churn. Hour-2 `MOOMOO_PROTOCOL_ERROR` is not unique-security
-`historyKLQuota` (resume completed 358 more cycles); remaining hypotheses are
-timeout / frequency limit / connect-churn. `retMsg` is now preserved.
+to cut 5s connect-churn. Hour-2 `MOOMOO_PROTOCOL_ERROR` may include frequency
+limit, timeout, connect-churn, or other vendor conditions — operator notes about
+quota/resume are lore, not receipt-cited facts. `retMsg` is preserved for the
+next RTH attempt.
 
 ### Mode A — transport / replay (`RETROSPECTIVE_TRANSPORT_PROOF`)
 

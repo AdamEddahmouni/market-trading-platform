@@ -247,7 +247,6 @@ def _transport_fetch_diag(
         "connection_host": payload.get("connection_host", host),
         "connection_port": payload.get("connection_port", port),
         "request_duration_ms": payload.get("request_duration_ms"),
-        "request_retry_index": payload.get("request_retry_index", 0),
         "protocol_error_category": payload.get("protocol_error_category"),
     }
     if poll_attempt_index is not None:

@@ -362,7 +362,6 @@ def kline_fetch_diagnostics(loaded: BarLoadResult) -> dict[str, Any]:
         "connection_host": provenance.get("connection_host", provenance.get("host")),
         "connection_port": provenance.get("connection_port", provenance.get("port")),
         "request_duration_ms": provenance.get("request_duration_ms"),
-        "request_retry_index": provenance.get("request_retry_index"),
         "poll_attempt_index": provenance.get("poll_attempt_index"),
         "protocol_error_category": provenance.get("protocol_error_category"),
         "load_reason_code": loaded.reason_code,
