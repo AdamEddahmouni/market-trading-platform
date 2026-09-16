@@ -6,80 +6,41 @@ Read-only. Never fabricates bid/ask from ``last_price``. Never redefines
 
 from __future__ import annotations
 
-import hashlib
 import importlib.util
-import json
 import socket
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Mapping
 from zoneinfo import ZoneInfo
+
+from market_platform_foundation.market_data.moomoo_snapshot_bbo import (
+    BboClocks,
+    BboDiagnostic,
+    DEFAULT_STALE_THRESHOLD_NS,
+    DEFAULT_SYMBOL,
+    ITEM7_ADAPTER_VERSION,
+    MOOMOO_OPEND_PROVIDER_ID,
+    OUTCOME_DERIVED_BBO_DESIGN_REQUIRED,
+    OUTCOME_REAL_SNAPSHOT_BBO_VALIDATED,
+    SNAPSHOT_BBO_CAPABILITY,
+    VENDOR_API_METHOD,
+    assess_snapshot_bbo,
+    provider_time_ns_from_row,
+    raw_row_sha256,
+)
 
 _ET = ZoneInfo("America/New_York")
 _LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _TRANSPORT_PATH = _REPO_ROOT / "tools" / "moomoo" / "opend_quote_transport.py"
 
-MOOMOO_OPEND_PROVIDER_ID = "moomoo.opend.observational"
-SNAPSHOT_BBO_CAPABILITY = "SNAPSHOT_BBO"
-ITEM7_ADAPTER_VERSION = "1.0.0"
-VENDOR_API_METHOD = "OpenQuoteContext.get_market_snapshot"
-
-OUTCOME_REAL_SNAPSHOT_BBO_VALIDATED = "REAL_SNAPSHOT_BBO_VALIDATED"
-OUTCOME_DERIVED_BBO_DESIGN_REQUIRED = "DERIVED_BBO_DESIGN_REQUIRED"
-
-DEFAULT_SYMBOL = "US.AAPL"
-DEFAULT_STALE_THRESHOLD_NS = 120_000_000_000
-
 
 @dataclass(frozen=True, slots=True)
 class VendorSnapshotFetch:
     reason_code: str | None
     row: Mapping[str, Any] | None
-
-
-@dataclass(frozen=True, slots=True)
-class BboClocks:
-    request_time_ns: int
-    provider_time_ns: int | None
-    receive_time_ns: int
-    available_time_ns: int
-
-
-@dataclass(frozen=True, slots=True)
-class BboDiagnostic:
-    lane: str = "ITEM7_BBO_SNAPSHOT"
-    symbol: str = DEFAULT_SYMBOL
-    provider_id: str = MOOMOO_OPEND_PROVIDER_ID
-    capability: str = SNAPSHOT_BBO_CAPABILITY
-    identity: str = f"{MOOMOO_OPEND_PROVIDER_ID}:{SNAPSHOT_BBO_CAPABILITY}"
-    clocks: BboClocks | None = None
-    last_price: float | None = None
-    bid_price: float | None = None
-    ask_price: float | None = None
-    bid_size: float | None = None
-    ask_size: float | None = None
-    market_status: str | None = None
-    entitlement: str = "UNKNOWN"
-    bbo_source: str = "VENDOR_MARKET_SNAPSHOT"
-    quality_flags: tuple[str, ...] = ()
-    temporal_order_valid: bool = True
-    raw_hash: str | None = None
-    adapter_version: str = ITEM7_ADAPTER_VERSION
-    vendor_api_method: str = VENDOR_API_METHOD
-    lane_outcome: str = ""
-    derived_design_note: str | None = None
-    probe_status: str = "OK"
-    block_reason: str | None = None
-    extra: dict[str, Any] = field(default_factory=dict)
-
-    def to_dict(self) -> dict[str, Any]:
-        payload = asdict(self)
-        if self.clocks is not None:
-            payload["clocks"] = asdict(self.clocks)
-        return payload
 
 
 def monotonic_wall_ns() -> int:
@@ -106,35 +67,6 @@ def opend_reachable(host: str, port: int, timeout_sec: float = 0.4) -> bool:
             return True
     except OSError:
         return False
-
-
-def raw_row_sha256(row: Mapping[str, Any]) -> str:
-    canonical = json.dumps(dict(row), sort_keys=True, separators=(",", ":"), default=str)
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-
-
-def _parse_positive_price(value: Any) -> float | None:
-    if value in {None, ""}:
-        return None
-    try:
-        price = float(value)
-    except (TypeError, ValueError):
-        return None
-    if price != price or price in {float("inf"), float("-inf")}:
-        return None
-    return price
-
-
-def _parse_size(value: Any) -> float | None:
-    if value in {None, ""}:
-        return None
-    try:
-        size = float(value)
-    except (TypeError, ValueError):
-        return None
-    if size < 0 or size != size:
-        return None
-    return size
 
 
 def _load_transport_module() -> Any | None:
@@ -201,106 +133,6 @@ def fetch_vendor_market_snapshot(
                     closer()
                 except Exception:  # noqa: BLE001
                     pass
-
-
-def provider_time_ns_from_row(row: Mapping[str, Any], *, receive_time_ns: int) -> int | None:
-    from market_platform_foundation.market_data.provider_time import event_time_ns_from_payload
-
-    return event_time_ns_from_payload(dict(row), received_ns=receive_time_ns)
-
-
-def assess_snapshot_bbo(
-    row: Mapping[str, Any],
-    *,
-    clocks: BboClocks,
-    stale_threshold_ns: int = DEFAULT_STALE_THRESHOLD_NS,
-    delayed_sec_statuses: frozenset[str] | None = None,
-) -> BboDiagnostic:
-    """Classify vendor snapshot BBO without deriving prices from last."""
-
-    delayed_tokens = delayed_sec_statuses or frozenset({"DELAYED", "DELAY", "NON_REALTIME"})
-    receive_ns = clocks.receive_time_ns
-    provider_ns = clocks.provider_time_ns
-    if provider_ns is None:
-        provider_ns = provider_time_ns_from_row(row, receive_time_ns=receive_ns)
-
-    bid = _parse_positive_price(row.get("bid_price"))
-    ask = _parse_positive_price(row.get("ask_price"))
-    last = _parse_positive_price(row.get("last_price"))
-    bid_size = _parse_size(row.get("bid_vol"))
-    ask_size = _parse_size(row.get("ask_vol"))
-    market_status = str(row.get("sec_status") or row.get("market_status") or "").strip() or None
-
-    flags: list[str] = []
-    temporal_valid = (
-        clocks.request_time_ns <= receive_ns <= clocks.available_time_ns
-        and (provider_ns is None or clocks.request_time_ns <= provider_ns <= receive_ns)
-    )
-    if not temporal_valid:
-        flags.append("TEMPORAL_ORDER_VIOLATION")
-
-    entitlement = "ENTITLED"
-    if bid is None or ask is None:
-        flags.append("BBO_MISSING_BID_ASK")
-    elif bid > ask:
-        flags.append("BBO_INVALID_SPREAD")
-
-    if provider_ns is not None and receive_ns - provider_ns > stale_threshold_ns:
-        flags.append("BBO_STALE")
-
-    status_upper = (market_status or "").upper()
-    if status_upper and any(token in status_upper for token in delayed_tokens):
-        flags.append("BBO_DELAYED")
-
-    bbo_valid = (
-        bid is not None
-        and ask is not None
-        and bid <= ask
-        and "BBO_STALE" not in flags
-        and "BBO_DELAYED" not in flags
-        and temporal_valid
-    )
-    if bbo_valid:
-        flags.append("BBO_VALID")
-
-    if bbo_valid:
-        lane_outcome = OUTCOME_REAL_SNAPSHOT_BBO_VALIDATED
-        derived_note = None
-    elif last is not None and ("BBO_MISSING_BID_ASK" in flags or "BBO_INVALID_SPREAD" in flags):
-        lane_outcome = OUTCOME_DERIVED_BBO_DESIGN_REQUIRED
-        derived_note = (
-            "Vendor snapshot lacks lawful top-of-book; G5/depth-derived BBO would be "
-            "a separate labeled capability — not SNAPSHOT_BBO."
-        )
-    else:
-        lane_outcome = OUTCOME_DERIVED_BBO_DESIGN_REQUIRED
-        derived_note = (
-            "Snapshot row does not admit REAL_SNAPSHOT_BBO_VALIDATED; depth/G5 design "
-            "review required before any derived BBO."
-        )
-
-    symbol = str(row.get("code") or DEFAULT_SYMBOL).strip() or DEFAULT_SYMBOL
-    return BboDiagnostic(
-        symbol=symbol,
-        clocks=BboClocks(
-            request_time_ns=clocks.request_time_ns,
-            provider_time_ns=provider_ns,
-            receive_time_ns=receive_ns,
-            available_time_ns=clocks.available_time_ns,
-        ),
-        last_price=last,
-        bid_price=bid,
-        ask_price=ask,
-        bid_size=bid_size,
-        ask_size=ask_size,
-        market_status=market_status,
-        entitlement=entitlement,
-        quality_flags=tuple(dict.fromkeys(flags)),
-        temporal_order_valid=temporal_valid,
-        raw_hash=raw_row_sha256(row),
-        lane_outcome=lane_outcome,
-        derived_design_note=derived_note,
-    )
 
 
 def blocked_diagnostic(
@@ -398,15 +230,19 @@ __all__ = [
     "BboClocks",
     "BboDiagnostic",
     "DEFAULT_SYMBOL",
+    "ITEM7_ADAPTER_VERSION",
+    "MOOMOO_OPEND_PROVIDER_ID",
     "OUTCOME_DERIVED_BBO_DESIGN_REQUIRED",
     "OUTCOME_REAL_SNAPSHOT_BBO_VALIDATED",
     "SNAPSHOT_BBO_CAPABILITY",
+    "VENDOR_API_METHOD",
     "VendorSnapshotFetch",
     "assess_snapshot_bbo",
     "blocked_diagnostic",
     "fetch_vendor_market_snapshot",
     "is_us_equity_rth",
     "opend_reachable",
+    "provider_time_ns_from_row",
     "raw_row_sha256",
     "run_live_probe",
 ]

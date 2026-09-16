@@ -13,6 +13,7 @@ from typing import Any, Iterable, Iterator
 
 from ...canonical import canonical_bytes, sha256_bytes
 from ...market_data.capture import CAPTURE_SCHEMA_VERSION
+from ...market_data.moomoo_snapshot_bbo import SNAPSHOT_BBO_CAPABILITY, snapshot_bbo_quality_flags
 from ...market_data.timestamps import TimestampSet, clocks_from_capture
 from ..contracts.event import EventV1
 from ..contracts.prediction_ledger import PredictionLedgerEntryV1
@@ -154,6 +155,11 @@ def canonicalize_opend_capture_envelope(record: dict[str, Any]) -> dict[str, Any
     """Map OpenD JSONL capability names onto the moomoo.capture normalizer vocabulary."""
     body = dict(record)
     capability = str(body.get("capability") or "").upper()
+    if capability == SNAPSHOT_BBO_CAPABILITY:
+        if "BBO_VALID" in snapshot_bbo_quality_flags(body):
+            body["source_capability"] = SNAPSHOT_BBO_CAPABILITY
+            body["capability"] = "QUOTE"
+        return body
     alias = _OPEND_CAPABILITY_ALIASES.get(capability)
     if alias is not None:
         body["capability"] = alias
