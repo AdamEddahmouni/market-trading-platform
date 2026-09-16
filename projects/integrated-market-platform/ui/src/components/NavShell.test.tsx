@@ -27,7 +27,7 @@ describe("NavShell", () => {
     renderNav("DEMO");
     expect(screen.getByRole("link", { name: "Radar — Replay discovery" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Portfolio — Read-only" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Research — Replay-bound labs" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Research — Replay-bound evidence" })).toBeInTheDocument();
   });
 
   it("adds Paper simulation hints", () => {
@@ -35,7 +35,7 @@ describe("NavShell", () => {
     expect(screen.getByRole("link", { name: "Portfolio — Orders history" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Workspace — Decision desk" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Lab —/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Research — Research & model labs" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Research — Evidence & validation" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Radar — Candidate discovery" })).toBeInTheDocument();
   });
 

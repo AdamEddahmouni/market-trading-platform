@@ -1,0 +1,257 @@
+/* Research surface (UIR-01F) — interpretation-first evidence workspace.
+ * Uses the shared token layer and imp-ui primitives; no parallel visual
+ * system. Analytical, calm, evidence-oriented: hierarchy and whitespace over
+ * card walls. */
+
+.research-page {
+  display: grid;
+  gap: var(--imp-space-5);
+  max-width: 1540px;
+  margin: 0 auto;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.research-panel {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--imp-space-4) var(--imp-space-5);
+  background: var(--surface-1);
+  min-width: 0;
+}
+
+.research-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--imp-space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--imp-space-3);
+}
+
+.research-panel-heading h2 {
+  margin: 2px 0 0;
+  font-size: var(--imp-text-xl);
+}
+
+.research-panel-kicker {
+  font-size: var(--imp-text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.research-muted {
+  color: var(--text-secondary);
+  font-size: var(--imp-text-sm);
+  margin: var(--imp-space-2) 0 0;
+}
+
+.research-trust-row {
+  display: flex;
+  gap: var(--imp-space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--imp-space-3);
+}
+
+.research-synthesis-lines {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: var(--imp-space-2);
+  font-size: var(--imp-text-md);
+}
+
+.research-availability-list,
+.research-bridge-list,
+.research-gap-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--imp-space-3);
+}
+
+.research-availability-row {
+  display: flex;
+  gap: var(--imp-space-3);
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.research-availability-body {
+  min-width: 0;
+}
+
+.research-availability-body p {
+  margin: 2px 0 0;
+}
+
+.research-bridge-list,
+.research-gap-list {
+  list-style: disc;
+  padding-left: 20px;
+  font-size: var(--imp-text-md);
+  color: var(--text-primary);
+}
+
+.research-gap-list strong {
+  color: var(--text-primary);
+}
+
+/* Evidence findings */
+
+.research-evidence {
+  display: grid;
+  gap: var(--imp-space-4);
+  min-width: 0;
+}
+
+.research-finding {
+  display: grid;
+  gap: var(--imp-space-3);
+  min-width: 0;
+}
+
+.research-finding[data-highlighted="true"] .chart-panel {
+  border-color: var(--imp-state-research-border);
+  box-shadow: 0 0 0 1px var(--imp-state-research-border);
+}
+
+.research-finding-intro {
+  display: grid;
+  gap: var(--imp-space-2);
+  margin-bottom: var(--imp-space-3);
+}
+
+.research-finding-claim {
+  margin: 0;
+  font-size: var(--imp-text-md);
+  color: var(--text-primary);
+}
+
+.research-finding-why {
+  margin: 0;
+  font-size: var(--imp-text-sm);
+  color: var(--text-secondary);
+}
+
+.research-finding-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--imp-space-2);
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: var(--imp-text-xs);
+  color: var(--text-muted);
+}
+
+.research-evidence-class {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Fact grids (validation / simulation / methodology) */
+
+.research-fact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--imp-space-3);
+  margin: 0 0 var(--imp-space-3);
+}
+
+.research-fact-grid dt {
+  font-size: var(--imp-text-xs);
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.research-fact-grid dd {
+  margin: 0;
+  font-size: var(--imp-text-md);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Methodology / audit disclosure (L4) */
+
+.research-methodology summary {
+  cursor: pointer;
+  font-size: var(--imp-text-sm);
+  color: var(--text-secondary);
+}
+
+.research-methodology[open] summary {
+  margin-bottom: var(--imp-space-3);
+}
+
+/* Tables stay contained — no page-level horizontal overflow */
+
+.research-table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.research-reason-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.research-table-wrap tr[data-conflicted="true"] {
+  background: var(--imp-state-caution-bg);
+}
+
+.research-local-filter {
+  display: grid;
+  gap: var(--imp-space-2);
+  margin-bottom: var(--imp-space-3);
+  max-width: 28rem;
+}
+
+.research-local-filter label {
+  font-size: var(--imp-text-xs);
+  color: var(--text-muted);
+}
+
+.research-local-filter select {
+  min-height: 44px;
+  width: 100%;
+}
+
+.research-source-list {
+  list-style: none;
+  margin: var(--imp-space-3) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--imp-space-2);
+}
+
+/* Mode accents on the restriction note (carried over from the mode skins) */
+
+.demo-research-page .mode-restriction-note {
+  border-color: rgba(128, 161, 188, 0.35);
+}
+
+.live-research-page .mode-restriction-note {
+  border-color: var(--imp-state-caution-border);
+}
+
+@media (max-width: 720px) {
+  .research-panel {
+    padding: var(--imp-space-3) var(--imp-space-4);
+  }
+
+  .research-fact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .research-availability-row,
+  .research-finding-meta,
+  .research-trust-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

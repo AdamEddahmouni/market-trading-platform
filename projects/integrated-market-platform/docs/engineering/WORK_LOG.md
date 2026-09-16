@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-16 — UIR-01 Increment F: Research surface redesign
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui`, `docs` |
+| **Summary** | Rebuilt `/research` as an interpretation-first evidence workspace on current IMP contracts (`origin/main` `6f5b6f3e`). Overview synthesizes what the evidence currently shows; Evidence, Validation, and Simulation are deep-linkable sections that fetch only their own endpoints. Claims, state, and honest availability lead; hashes, raw enums, and timestamps stay in methodology disclosures. Hypotheses, domains, source catalogs, supporting/contradictory flags, and FTEP campaign state are disclosed as contract gaps. The only conflict signal rendered is `ABSTAIN_CONFLICTING_EVIDENCE`. Radar Screeners and Opportunity L3 bridge into Research without fabricating relations. `/lab` still redirects here — Lab is unbuilt. |
+| **Key files** | Created: `docs/ui-redesign-v2/research-contract-map.md`; `ui/src/components/research-shared/{ResearchSurface,ResearchOverviewSection,ResearchEvidenceSection,ResearchValidationSection,ResearchSimulationSection,researchPresentation}.{ts,tsx}` (+tests); `ui/src/styles/research.css`; `ui/src/components/charts/ResearchChartPanels.test.tsx`. Modified: `ModeResearchRoute.tsx`, `{Demo,Paper,Live}ResearchPage.tsx`(+tests), `App.tsx`/`App.test.tsx`, `NavShell.tsx`(+test), `RadarPage.tsx`(+test), `OpportunityDetailCard.tsx`, `ResearchChartPanels.tsx` (timeline table + claim slot), `semanticState.ts`(+test), `FRONTEND_GUIDE.md`, `UIR_01_OPERATOR_UI_REDESIGN.md`, `pages/research.md`, `information-architecture.md`. Deleted: `ResearchObservability.tsx`, `research/{ModelLabPanel,ResearchAnalyticsPanel,SimulationLabPanel}.tsx`, mode-specific `*-research.css`. |
+| **Tests** | `ui`: vitest **713/713 passed** (prior Control baseline 652; +61 net), `tsc --noEmit` pass, `vite build` pass (initial **200.57 KiB gzip**; budget check passed). Repo: `imp.py env` healthy, `format` pass, `lint` pass (UI typecheck), `test affected` **80/80 pass**, `validate changed` **80/80 pass** (first `validate changed` hit a one-off ui1 ERROR; retry and direct `tests/ui1` **57/57 pass**), `check_docs_links.py` **OK 226 files**. |
+| **Related** | [research-contract-map.md](../ui-redesign-v2/research-contract-map.md), [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md), [UIR_01_OPERATOR_UI_REDESIGN.md](UIR_01_OPERATOR_UI_REDESIGN.md) |
+| **Notes** | `item7/natural-settlement` untouched. No backend rewrite. Live populated visual walkthrough not clicked (protected Live boundary); behavioral coverage includes loading/empty/failure/conflict/deep-link/bridges. Remaining UI: Lab (deferred), Portfolio redesign. |
+
 ## 2026-09-16 — BE-01: operator endpoint leak-audit false positives
 
 | Field | Value |

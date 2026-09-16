@@ -121,14 +121,18 @@ and hashes live behind disclosure. After the LAB split (D7/D8), Research hosts t
 
 ## Implementation notes
 
-- `ResearchObservability` loses its tab bar (tabs move to LAB as routes); the page
-  becomes single-purpose Analytics + synthesis.
-- Synthesis strip content derives **only** from payload fields (counts, window,
-  epistemic class) — no invented conclusions; template sentences via the adapter.
-- `ResearchAnalyticsPanel` charts re-themed via `chartTokens.ts` (IMP orange accent,
-  token grid/text); keep recharts lazy (out of entry chunk).
-- "Phase 5R"/"admitted fixture" copy moves to Methodology; footers use human
-  sentences ("Research-only evidence — not tradeable").
+Landed on current contracts (UIR-01F). The older "Lab split" note below is
+guidance for a future increment; this increment keeps validation and
+simulation on Research as evidence records because Lab is unbuilt.
+
+- Presentation lives in `research-shared/` (`ResearchSurface` + section
+  components). `ResearchObservability` (eager triple-fetch tab widget) is gone.
+- Synthesis strip content derives **only** from payload fields — no invented
+  conclusions; template sentences via `researchPresentation.ts`.
+- Every chart ships a tabular summary (`CountBarChartPanel`,
+  `SignalTimelineChartPanel`).
+- Hypotheses, domains, source catalogs, and FTEP campaign state are disclosed
+  as contract gaps, not fabricated tabs.
 
 ## Open questions
 
@@ -142,6 +146,7 @@ and hashes live behind disclosure. After the LAB split (D7/D8), Research hosts t
 1. Page leads with human synthesis + trust summary; epistemic/boundary vocabulary
    only in Methodology; zero raw timestamps above L3.
 2. Every chart has a text summary + data table; recharts stays lazy.
-3. Only `researchAnalytics` fetched on this page; Lab routes fetch the other two.
+3. Evidence fetches analytics only; Validation fetches models; Simulation fetches
+   simulation; Overview is the only synthesizer.
 4. No page-level horizontal scroll at the 7 widths.
-5. `App.test.tsx` updated (Research per mode; Lab routes); npm gates green.
+5. `App.test.tsx` updated (Research per mode; `/lab` redirect); npm gates green.

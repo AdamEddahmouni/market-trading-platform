@@ -304,6 +304,11 @@ describe("RadarPage opportunities tab", () => {
     const technical = screen.getByText("Technical details");
     fireEvent.click(technical);
     expect(card).toHaveTextContent("summary_id");
+    fireEvent.click(screen.getByText("Historical & research context"));
+    expect(screen.getByRole("link", { name: "Open Research evidence" })).toHaveAttribute(
+      "href",
+      "/research/evidence",
+    );
   });
 
   it("offers watch/dismiss/review acks only with paper authority", () => {
@@ -496,5 +501,12 @@ describe("RadarPage screeners tab", () => {
     await screen.findAllByText("AAPL");
     expect(screen.queryByRole("button", { name: "Refresh all screens" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open live canary" })).toBeInTheDocument();
+  });
+
+  it("bridges research screens to the Research evidence finding", async () => {
+    renderRadar("PAPER", "screeners", true);
+    expect(
+      await screen.findByRole("link", { name: "Open the research evidence behind these screens" }),
+    ).toHaveAttribute("href", "/research/evidence?panel=squeeze_outcomes");
   });
 });

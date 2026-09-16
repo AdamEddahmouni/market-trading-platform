@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import type { ReactNode } from "react";
 import type { ChartCountPoint } from "../../lib/chartTransforms";
 import { hasChartData } from "../../lib/chartTransforms";
 import { ChartEmptyState } from "./ChartEmptyState";
@@ -21,6 +22,8 @@ type PanelProps = {
   provenance: { source: string; method?: string };
   emptyMessage?: string;
   ariaLabel: string;
+  /** Interpretation-first slot: claim/state content between heading and chart. */
+  children?: ReactNode;
 };
 
 export function CountBarChartPanel({
@@ -29,11 +32,13 @@ export function CountBarChartPanel({
   provenance,
   emptyMessage = "No data at current replay cutoff.",
   ariaLabel,
+  children,
 }: PanelProps) {
   if (!hasChartData(series)) {
     return (
       <section className="chart-panel" aria-label={ariaLabel}>
         <h3>{title}</h3>
+        {children}
         <ChartEmptyState message={emptyMessage} />
         <ChartProvenance source={provenance.source} method={provenance.method} />
       </section>
@@ -43,6 +48,7 @@ export function CountBarChartPanel({
   return (
     <section className="chart-panel" aria-label={ariaLabel}>
       <h3>{title}</h3>
+      {children}
       <div className="chart-canvas" role="img" aria-label={ariaLabel}>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={series} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -64,8 +70,8 @@ export function CountBarChartPanel({
         <caption className="chart-data-caption">{title} tabular summary</caption>
         <thead>
           <tr>
-            <th>Label</th>
-            <th>Count</th>
+            <th scope="col">Label</th>
+            <th scope="col">Count</th>
           </tr>
         </thead>
         <tbody>
@@ -140,6 +146,25 @@ export function SignalTimelineChartPanel({ title, timeline, provenance, ariaLabe
           </LineChart>
         </ResponsiveContainer>
       </div>
+      <table className="chart-data-table">
+        <caption className="chart-data-caption">{title} tabular summary</caption>
+        <thead>
+          <tr>
+            <th scope="col">Observation</th>
+            <th scope="col">Cumulative signals</th>
+            <th scope="col">Outcome</th>
+          </tr>
+        </thead>
+        <tbody>
+          {timeline.map((row) => (
+            <tr key={row.observation_index}>
+              <td>{row.observation_index}</td>
+              <td>{row.cumulative_signals}</td>
+              <td>{row.outcome}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
       <ChartProvenance source={provenance.source} method={provenance.method} />
     </section>
   );

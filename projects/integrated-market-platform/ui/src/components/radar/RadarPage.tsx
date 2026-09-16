@@ -147,6 +147,11 @@ export function RadarPage({
                 Donor screener bridges with provenance — squeeze cohort, scanner, futures, and
                 catalyst screens.
               </p>
+              <p className="imp-radar-section-lead">
+                <Link to="/research/evidence?panel=squeeze_outcomes">
+                  Open the research evidence behind these screens
+                </Link>
+              </p>
             </header>
             <ExploreObservability
               onExplain={onExplainRef}
