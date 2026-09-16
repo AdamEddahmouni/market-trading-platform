@@ -18,9 +18,17 @@ class FtepCampaignStatusTests(unittest.TestCase):
         os.environ["IMP_PERSIST_STATE"] = "1"
 
     def test_ftep_v1_002_status_snapshot(self) -> None:
+        durable_zero = {
+            "governed_session_count": 0,
+            "empirical_lock_count": 0,
+            "empirical_counts_source": "durable",
+        }
         with patch(
             "market_platform_foundation.intelligence.paper_forward_bridge.campaign_status.is_within_us_equity_rth",
             return_value=False,
+        ), patch(
+            "market_platform_foundation.intelligence.paper_forward_bridge.campaign_status._collect_durable_empirical_counts",
+            return_value=durable_zero,
         ):
             payload = collect_ftep_campaign_status(REPO_ROOT, "FTEP-V1-002")
         self.assertEqual(payload["campaign_slug"], "FTEP-V1-002")
