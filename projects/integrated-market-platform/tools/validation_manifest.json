@@ -799,6 +799,39 @@
       ]
     },
     {
+      "id": "software_fullstack_acceptance",
+      "path": "tests/acceptance",
+      "classification": "offline",
+      "tiers": [
+        "full",
+        "changed"
+      ],
+      "domains": [
+        "core",
+        "ui"
+      ],
+      "parallel_safety": "PARALLEL_SAFE",
+      "resource_weight": 2,
+      "source_globs": [
+        "src/market_platform_foundation/ui_api/server.py",
+        "src/market_platform_foundation/ui_api/news_ingest.py",
+        "src/market_platform_foundation/ui_api/opportunity_projections.py",
+        "src/market_platform_foundation/ui_api/live_intelligence.py",
+        "src/market_platform_foundation/news/observational_admit.py",
+        "src/market_platform_foundation/news/observational_opportunity.py",
+        "src/market_platform_foundation/intelligence/observation_ingress/**"
+      ],
+      "test_globs": [
+        "tests/acceptance/test_*.py"
+      ],
+      "neighbors": [
+        "ui1",
+        "news",
+        "opportunity_watch_dismiss_acceptance",
+        "intelligence"
+      ]
+    },
+    {
       "id": "cross_lane",
       "path": "tests/cross_lane",
       "classification": "offline",
