@@ -41,11 +41,14 @@ export const OperationStatusSchema = z.object({
 export const ProviderReadinessSchema = z.object({
   provider: z.string(),
   label: z.string().optional(),
+  /** Backend capability role (tools/provider_readiness.py `_row`), e.g. primary_observational_market_data. */
+  role: z.string().optional(),
   credential_state: z.string(),
   gate_state: z.string(),
   transport_state: z.string(),
   freshness: z.string().optional(),
   last_updated: z.string().nullable().optional(),
+  required_credentials: z.array(z.string()).optional(),
   next_action: z.string(),
 });
 

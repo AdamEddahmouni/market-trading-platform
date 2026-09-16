@@ -44,6 +44,7 @@ export type StateDomain =
   | "dataHealth"
   | "portfolio"
   | "research"
+  | "platform"
   | "error";
 
 export type SemanticStateParams = Record<string, string | number | null | undefined>;
@@ -138,7 +139,7 @@ const MODE_TABLE: Record<string, Entry> = {
     tone: "caution",
     label: "Backend context unavailable",
     sentence: "Backend context unavailable. Execution controls remain locked.",
-    action: { label: "Open Control", href: "/control" },
+    action: { label: "Open Control", href: "/control#control-authority" },
   },
 };
 
@@ -258,6 +259,48 @@ const PROVIDER_HEALTH_TABLE: Record<string, Entry> = {
   FIXTURE_ONLY: { tone: "replay", label: "Fixture data only" },
   BLOCKED_NON_LOOPBACK: { tone: "critical", label: "Blocked — non-loopback address refused" },
   COMPARATOR_NOT_CONFIGURED: { tone: "neutral", label: "Comparator not configured" },
+  // Transport variants (semantic-state-system §3.4: IMPLEMENTED* → "Available",
+  // variant detail stays in TechnicalDetails via `raw`).
+  IMPLEMENTED: { tone: "live", label: "Available" },
+  IMPLEMENTED_READ_ONLY: { tone: "live", label: "Available — read-only" },
+  IMPLEMENTED_PUBLIC: { tone: "live", label: "Available" },
+  IMPLEMENTED_OPTIONAL: { tone: "live", label: "Available" },
+  REACHABLE: { tone: "live", label: "Reachable" },
+  NOT_CHECKED: { tone: "neutral", label: "Not checked" },
+  HTTPS_PAPER_HOST: { tone: "paper", label: "Paper endpoint configured" },
+  // Interactive-broker credential states (tools/provider_readiness.py).
+  CREDENTIAL_FILE_PRESENT_MANUAL_LOGIN_REQUIRED: {
+    tone: "caution",
+    label: "Credential file present — manual login required",
+  },
+  MANUAL_SESSION_REQUIRED: { tone: "caution", label: "Manual brokerage login required" },
+};
+
+const PLATFORM_TABLE: Record<string, Entry> = {
+  // Local platform lifecycle aggregate (tools/platform/service_health.py).
+  READY: { tone: "live", label: "Ready" },
+  RUNNING: { tone: "live", label: "Running" },
+  PARTIAL: {
+    tone: "caution",
+    label: "Partially running",
+    sentence: "Some local platform services are not healthy.",
+  },
+  STOPPED: { tone: "neutral", label: "Stopped" },
+  // Setup readiness aggregate (tools/platform/bootstrap.py + provider gate probe).
+  ACTION_REQUIRED: { tone: "caution", label: "Action required" },
+  // BLOCKED is shared by readiness (required checks failed) and update status
+  // (local changes block the fast-forward) — the surrounding section and the
+  // backend `detail` text disambiguate; the tone stays honest either way.
+  BLOCKED: { tone: "critical", label: "Blocked" },
+  // Setup checks.
+  PASS: { tone: "live", label: "Pass" },
+  FAIL: { tone: "critical", label: "Failed" },
+  OPTIONAL: { tone: "neutral", label: "Optional" },
+  // Fast-forward update status (tools/platform/control_service.py).
+  AVAILABLE: { tone: "caution", label: "Update available" },
+  CURRENT: { tone: "live", label: "Up to date" },
+  UNAVAILABLE: { tone: "neutral", label: "Unavailable" },
+  QUEUED: { tone: "neutral", label: "Queued" },
 };
 
 const DATA_HEALTH_TABLE: Record<string, Entry> = {
@@ -342,7 +385,7 @@ const RESEARCH_TABLE: Record<string, Entry> = {
     sentence: "Opportunity radar isn't ready: {reason}",
     fallback: "Opportunity radar isn't ready.",
     affects: "The ranked opportunity queue may be incomplete.",
-    action: { label: "Open Control", href: "/control" },
+    action: { label: "Open Control", href: "/control#control-feed" },
   },
   EMPTY: {
     tone: "neutral",
@@ -353,7 +396,7 @@ const RESEARCH_TABLE: Record<string, Entry> = {
     tone: "critical",
     label: "Opportunity feed unavailable",
     sentence: "The opportunity feed is unavailable.",
-    action: { label: "Open Control", href: "/control" },
+    action: { label: "Open Control", href: "/control#control-feed" },
   },
   DISMISSED: { tone: "neutral", label: "Dismissed" },
   OPEN_WORKSPACE: { tone: "live", label: "Open workspace" },
@@ -394,6 +437,7 @@ const DOMAIN_TABLES: Record<StateDomain, Record<string, Entry>> = {
   dataHealth: DATA_HEALTH_TABLE,
   portfolio: PORTFOLIO_TABLE,
   research: RESEARCH_TABLE,
+  platform: PLATFORM_TABLE,
   error: ERROR_TABLE,
 };
 

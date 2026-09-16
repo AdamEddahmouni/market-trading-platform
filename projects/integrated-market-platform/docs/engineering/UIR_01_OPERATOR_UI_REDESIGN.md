@@ -3,7 +3,8 @@
 **Status:** Active implementation note. Increment A+B landed on
 `ui/operator-redesign-current` (PR #226); Increment C landed on
 `ui/operator-redesign-command-convergence`; Increment D landed on
-`ui/operator-redesign-command-depth`.
+`ui/operator-redesign-command-depth`; Increment E landed on
+`ui/operator-redesign-control`.
 **Scope:** Increment A (design system + shell + navigation) and Increment B
 (Discover/Radar + opportunity state/evidence presentation) on top of current
 canonical contracts at `origin/main` (`42b1237a`). Increment C (Command /
@@ -253,6 +254,49 @@ composition per mode).
   the popover). Command page breakpoints re-mapped to the contract scale
   (980/1080 → 1024); the Paper header stacks at BP_MD (latent nowrap-pill
   overflow fix).
+
+### Increment E — Control center rebuild (landed)
+
+- **Role**: `/control` (`ui/src/components/control/`) is the operator's answer
+  to "can IMP operate correctly and safely right now?" — not a second Settings
+  (persistent configuration stays put; credential forms moved behind an
+  Advanced disclosure) and not Diagnostics (raw telemetry stays on
+  `/diagnostics/provider`, linked as "View provider diagnostics").
+- **Information hierarchy** (single column in priority order, desktop and
+  mobile alike): A. Platform status (readiness / runtime / backend context /
+  market data as four distinct real facts — never a synthetic composite
+  score) with lifecycle actions; B. Execution & authority (mode, data mode,
+  execution mode, authority as separate pills + a plain-language "what you can
+  do" summary; Paper account/session line in Paper mode); E. Needs your
+  attention (only actionable items, tone icon + text + link); C. Providers
+  (attention-first rows with capability/impact language translated from the
+  backend `role` contract, refresh actions, inactive providers behind
+  disclosure); D. Opportunity feed readiness (READY/UNREADY/UNAVAILABLE/EMPTY
+  with the same humanized reasons as Command/Radar); F. Technical detail
+  (router links + raw states behind disclosures).
+- **Fail-closed**: sections degrade independently — a failing endpoint renders
+  that section's ErrorState + retry while the rest of the page stays useful;
+  unknown/unavailable state never renders as healthy.
+- **Deep links**: sections carry stable anchors (`controlPresentation.
+  CONTROL_SECTIONS`); Command/Radar "Open Control" lands on
+  `/control#control-feed`, StatusBar's context-unavailable banner on
+  `/control#control-authority`; the page scrolls to and marks the target.
+- **Semantic adapter**: new `platform` domain (lifecycle READY/PARTIAL/STOPPED,
+  readiness ACTION_REQUIRED, checks PASS/FAIL/OPTIONAL, update
+  AVAILABLE/CURRENT/BLOCKED/UNAVAILABLE) and the documented-but-missing
+  providerHealth transport/credential values (IMPLEMENTED*, REACHABLE,
+  NOT_CHECKED, HTTPS_PAPER_HOST, manual-login states) — reusable, unit-tested.
+- **Contracts**: readiness provider rows now surface the backend `role` and
+  `required_credentials` fields (previously stripped by the UI schema).
+  Lifecycle/config moved onto React Query (`operatorLifecycleStatus` 30s,
+  `operatorConfig` 60s) — same endpoints, same transport.
+- **Actions**: lifecycle restart/check_update preserved; apply_update confirm
+  moved from `window.confirm` to an inline two-step confirm; provider refresh
+  and credential save contracts unchanged. No new mutating surface; no Live
+  capability added or implied.
+- **Retired**: the legacy `operator-*` page (raw enum pills, blue off-system
+  styling, `<a href>` full reloads) and its CSS; stale "Risk control" labels
+  in the provider matrix drawer.
 
 ## 5. Explicitly preserved
 
