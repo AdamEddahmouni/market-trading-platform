@@ -169,7 +169,12 @@ def collect_ftep_catalyst_watch(
     input_path: Path | None = None,
     live_ingress: bool = False,
 ) -> dict[str, Any]:
-    """Compose campaign status, evidence session_ids, and ranked fixture summaries (no writes)."""
+    """Compose campaign status, evidence session_ids, and ranked attention summaries.
+
+    Fixture/smoke paths are dry-run (no cockpit writes). ``--live-ingress`` fetches Finviz
+    (#207) then POSTs already-fetched rows to the **running** UI API store via HTTP
+    (``IMP_UI_API_BASE_URL``); that hop is not dry-run.
+    """
 
     status = collect_ftep_campaign_status(repository_root, campaign_slug)
     governed_count = int(status.get("governed_session_count") or 0)
@@ -203,6 +208,8 @@ def collect_ftep_catalyst_watch(
 
     live_ingress_requested = live_ingress and input_path is None
     prospective_ingress_report: dict[str, object] | None = None
+    prospective_ingress_result: Any | None = None
+    observational_cockpit_admit: dict[str, object] | None = None
     used_live_ingress = False
     rows: list[dict[str, object]]
     source_label: str
@@ -239,6 +246,7 @@ def collect_ftep_catalyst_watch(
             campaign_slug,
             live_ingress=True,
         )
+        prospective_ingress_result = ingress
         prospective_ingress_report = ingress.to_report_dict()
         classification = str(prospective_ingress_report.get("classification") or "")
         if ingress.ready and ingress.rows:
@@ -328,49 +336,84 @@ def collect_ftep_catalyst_watch(
                 }
             )
 
+    finviz_ingress_outcome: str | None = None
     ingress_outcome: str | None = None
     ingress_classification: str | None = None
     if live_ingress_requested and prospective_ingress_report is not None:
         ingress_classification = str(prospective_ingress_report.get("classification") or "") or None
         reason = prospective_ingress_report.get("reason")
         if used_live_ingress:
-            ingress_outcome = (
-                "LIVE_INGRESS_SUCCESS"
+            finviz_ingress_outcome = (
+                "FINVIZ_LIVE_INGRESS_SUCCESS"
                 if ranked
-                else "LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS"
+                else "FINVIZ_LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS"
             )
         elif ingress_classification == "HTTP_429" or reason == "FINVIZ_HTTP_429":
-            ingress_outcome = "LIVE_INGRESS_RATE_LIMITED"
+            finviz_ingress_outcome = "LIVE_INGRESS_RATE_LIMITED"
         elif ingress_classification == "TOKEN_ABSENT" or reason == "FINVIZ_TOKEN_ABSENT":
-            ingress_outcome = "LIVE_INGRESS_TOKEN_ABSENT"
+            finviz_ingress_outcome = "LIVE_INGRESS_TOKEN_ABSENT"
         elif (
             ingress_classification == "SECRET_DIR_MISSING"
             or reason == "FINVIZ_SECRET_DIR_MISSING"
         ):
-            ingress_outcome = "LIVE_INGRESS_SECRET_DIR_MISSING"
+            finviz_ingress_outcome = "LIVE_INGRESS_SECRET_DIR_MISSING"
         elif ingress_classification == "GATES_INACTIVE" or reason == "INGRESS_GATES_INACTIVE":
-            ingress_outcome = "LIVE_INGRESS_GATES_INACTIVE"
+            finviz_ingress_outcome = "LIVE_INGRESS_GATES_INACTIVE"
         elif (
             ingress_classification == "SESSION_UNAVAILABLE"
             or reason == "LIVE_INGRESS_UNAVAILABLE"
         ):
-            ingress_outcome = "LIVE_INGRESS_UNAVAILABLE"
+            finviz_ingress_outcome = "LIVE_INGRESS_UNAVAILABLE"
         elif ingress_classification in {"TIMEOUT", "MALFORMED_RESPONSE"}:
-            ingress_outcome = "LIVE_INGRESS_FAILED"
+            finviz_ingress_outcome = "LIVE_INGRESS_FAILED"
         elif reason == "FINVIZ_FETCH_FAILED" or ingress_classification == "PROVIDER_FAILURE":
-            ingress_outcome = "LIVE_INGRESS_FAILED"
+            finviz_ingress_outcome = "LIVE_INGRESS_FAILED"
         elif prospective_ingress_report.get("attempted") and not used_live_ingress:
-            ingress_outcome = "LIVE_INGRESS_FAILED"
+            finviz_ingress_outcome = "LIVE_INGRESS_FAILED"
+    ingress_outcome = finviz_ingress_outcome
 
     if live_ingress_requested and prospective_ingress_report and watch_mode != "FIXTURE_SMOKE":
         watch_mode = "PROSPECTIVE_FINVIZ_INGRESS"
+
+    cockpit_http_post = False
+    cockpit_admit_hop: str | None = None
+    if used_live_ingress and prospective_ingress_result is not None:
+        from ...ui_api.cockpit_admit import post_prospective_ingress_to_running_ui_api
+
+        if prospective_ingress_result.rows:
+            cockpit_http_post = True
+            cockpit_admit_hop = "HTTP_UI_API"
+            observational_cockpit_admit = post_prospective_ingress_to_running_ui_api(
+                prospective_ingress_result,
+            )
+            if observational_cockpit_admit.get("ok"):
+                ingress_outcome = "COCKPIT_ADMIT_HTTP_OK"
+            else:
+                ingress_outcome = "COCKPIT_ADMIT_UI_API_UNAVAILABLE"
+                blockers.append("COCKPIT_ADMIT_UI_API_UNAVAILABLE")
+                operator_hints.append(
+                    "Start UI API (run_ui_api.py --serve) before --live-ingress so FTEP can "
+                    f"POST to {observational_cockpit_admit.get('ui_api_base_url')}."
+                )
+        else:
+            observational_cockpit_admit = post_prospective_ingress_to_running_ui_api(
+                prospective_ingress_result,
+            )
 
     disposition = "PASS" if not blockers else "BLOCKED"
     return {
         "schema_version": "1.0.0",
         "artifact_kind": _ARTIFACT_KIND,
         "campaign_slug": campaign_slug,
-        "dry_run": True,
+        "dry_run": not cockpit_http_post,
+        "writes_observational_cockpit": cockpit_http_post
+        and bool(
+            observational_cockpit_admit
+            and isinstance(observational_cockpit_admit, dict)
+            and observational_cockpit_admit.get("ok")
+        ),
+        "cockpit_admit_hop": cockpit_admit_hop,
+        "finviz_ingress_outcome": finviz_ingress_outcome,
         "test_mode": "SIGNAL_ONLY",
         "watch_mode": watch_mode,
         "disposition": disposition,
@@ -387,6 +430,7 @@ def collect_ftep_catalyst_watch(
         "attention_source": source_label,
         "attention_data_kind": attention_data_kind,
         "prospective_ingress": prospective_ingress_report,
+        "observational_cockpit_admit": observational_cockpit_admit,
         "ingress_outcome": ingress_outcome,
         "ingress_classification": ingress_classification,
         "summary_count": len(ranked),

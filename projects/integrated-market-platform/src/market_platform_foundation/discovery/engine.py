@@ -89,7 +89,6 @@ class DiscoveryEngine:
         received_at = str(export.get("received_at") or _utc_iso())
         available_ns = int(export.get("available_time_ns") or 0)
         run_id = uuid.uuid4().hex
-        quality = "PASS" if export.get("success") else "UNAVAILABLE"
         rows = export.get("rows") or []
         ranked = _rank_rows(rows, screen)[:screen.max_results]
         candidates: list[DiscoveryCandidate] = []
@@ -115,6 +114,12 @@ class DiscoveryEngine:
                     rank=idx + 1,
                 )
             )
+        if not export.get("success"):
+            quality = "UNAVAILABLE"
+        elif not candidates:
+            quality = "EMPTY"
+        else:
+            quality = "PASS"
         previous = load_previous_symbols(previous_catalog)
         current = {c.instrument_id for c in candidates}
         reentered = previous - current  # simplified; true reentry needs history
@@ -142,7 +147,7 @@ class DiscoveryEngine:
             schema_version=SCHEMA_VERSION,
             candidate_count=len(candidates),
             candidates=candidates,
-            quality=quality if candidates else "UNAVAILABLE",
+            quality=quality,
             raw_response_hash=export.get("raw_response_hash"),
             transitions=transitions,
         )

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import unittest
+from unittest.mock import patch
 
 from market_platform_foundation.intelligence.contracts import (
     ContractReference,
@@ -17,6 +19,8 @@ from market_platform_foundation.intelligence.opportunity.evidence_promotion impo
     EVIDENCE_CLASS_VERIFIED,
 )
 from market_platform_foundation.intelligence.persistence import InMemoryIntelligenceRepository
+from market_platform_foundation.ui_api.live_intelligence import bind_ui_api_intelligence
+from market_platform_foundation.ui_api.news_ingest import handle_news_ingest_post
 from market_platform_foundation.ui_api.opportunity_projections import (
     apply_opportunity_ack,
     build_opportunity_detail_payload,
@@ -24,7 +28,12 @@ from market_platform_foundation.ui_api.opportunity_projections import (
     build_opportunities_summary_payload,
     build_ranked_rows,
 )
+from market_platform_foundation.news.timestamps import epoch_ns_from_iso
+from market_platform_foundation.ui_api.cockpit_admit import reset_registered_cockpit_replay_store_for_tests
 from market_platform_foundation.ui_api.operator_opportunity_state import reset_operator_acks
+from market_platform_foundation.rt01.execution_decision_trace.runtime import (
+    reset_execution_decision_trace_runtime_for_tests,
+)
 from market_platform_foundation.ui_api.store import ReplayStore
 
 from tests.ui1.test_ui_api import COLLECTION_ROOT
@@ -35,9 +44,20 @@ _INGEST_TIMESTAMP_KEYS = {"decision_time_ns", "created_at_ns", "opportunity_deci
 
 class OpportunityApiTests(unittest.TestCase):
     def setUp(self) -> None:
+        self._persist_env_patch = patch.dict(
+            os.environ,
+            {"IMP_PERSIST_STATE": "0", "IMP_STATE_DIR": ""},
+            clear=False,
+        )
+        self._persist_env_patch.start()
         reset_operator_acks()
+        reset_execution_decision_trace_runtime_for_tests()
+        reset_registered_cockpit_replay_store_for_tests()
         self.store = ReplayStore(collection_root=COLLECTION_ROOT)
         self.store.load()
+
+    def tearDown(self) -> None:
+        self._persist_env_patch.stop()
 
     def _seed_opportunity(
         self,
@@ -85,13 +105,113 @@ class OpportunityApiTests(unittest.TestCase):
             metadata = item.get("metadata") or {}
             self.assertTrue(_INGEST_TIMESTAMP_KEYS.isdisjoint(metadata))
 
-    def test_live_mode_returns_unavailable_empty_queue(self) -> None:
+    def test_live_mode_observational_read_is_empty_without_repository_rows(self) -> None:
+        # P12: request-path must not emit LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE
+        # on ranked READ. Empty live book is EMPTY with live provenance.
         self.store.data_mode = "LIVE_OBSERVATIONAL"
         self.store.mode = "LIVE"
-        payload = build_opportunities_summary_payload(self.store)
-        self.assertEqual(payload["feed_status"], "UNAVAILABLE")
-        self.assertEqual(payload["reason"], "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
+        with patch(
+            "market_platform_foundation.market_data.live_runtime.get_live_runtime",
+            return_value=None,
+        ):
+            payload = build_opportunities_summary_payload(self.store)
+        self.assertEqual(payload["feed_status"], "EMPTY")
+        self.assertNotEqual(payload.get("reason"), "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
         self.assertEqual(payload["items"], [])
+        self.assertNotIn("2026-07-21", str(payload["as_of_context"].get("as_of_time")))
+
+    def test_live_mode_mutations_require_live_clock(self) -> None:
+        self.store.data_mode = "LIVE_OBSERVATIONAL"
+        self.store.mode = "LIVE"
+        with self.assertRaises(PermissionError) as ack_ctx:
+            apply_opportunity_ack(self.store, row_id="any-id", action="DISMISSED")
+        self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_ACK_REQUIRES_LIVE_CLOCK")
+
+    def test_live_observational_read_ranks_after_eventv1_admit_not_fixture(self) -> None:
+        self.store.data_mode = "LIVE_OBSERVATIONAL"
+        self.store.mode = "LIVE"
+        bind_ui_api_intelligence(self.store)
+        server_ns = int(epoch_ns_from_iso("2026-09-15T14:05:10Z"))
+        with patch(
+            "market_platform_foundation.market_data.live_runtime.get_live_runtime",
+            return_value=None,
+        ), patch(
+            "market_platform_foundation.ui_api.news_ingest.monotonic_wall_ns",
+            return_value=server_ns,
+        ):
+            ingest = handle_news_ingest_post(
+                self.store,
+                {
+                    "retrieved_time": "2026-09-15T14:05:08Z",
+                    "articles": [
+                        {
+                            "headline": "Example Corp reports quarterly earnings",
+                            "published_time": "2026-09-15T14:05:00Z",
+                            "url": "https://example.com/story",
+                            "tickers": ["AAPL"],
+                            "provider_native_id": "fv-opp-api-1",
+                        }
+                    ],
+                },
+            )
+            payload = build_opportunities_summary_payload(self.store)
+        self.assertEqual(ingest["opportunity_count"], 1)
+        opp_id = ingest["opportunity_ids"][0]
+        self.assertEqual(payload["feed_status"], "READY")
+        self.assertNotEqual(payload["as_of_context"]["as_of_time"], "UNAVAILABLE")
+        item = self._item_by_opportunity(payload, opp_id)
+        self.assertEqual(item["identity_kind"], "OPPORTUNITY_V1")
+        self.assertFalse(
+            any(row.get("attention_id") == "att-replay-context" for row in payload["items"])
+        )
+        detail = build_opportunity_detail_payload(self.store, opp_id)
+        self.assertEqual(detail["opportunity_id"], opp_id)
+        ack = apply_opportunity_ack(self.store, row_id=opp_id, action="WATCHED")
+        self.assertEqual(ack["action"], "WATCHED")
+
+    def test_live_repository_without_clock_is_unready_not_ready(self) -> None:
+        self.store.data_mode = "LIVE_OBSERVATIONAL"
+        self.store.mode = "LIVE"
+        bind_ui_api_intelligence(self.store)
+        server_ns = int(epoch_ns_from_iso("2026-09-15T14:05:10Z"))
+        with patch(
+            "market_platform_foundation.market_data.live_runtime.get_live_runtime",
+            return_value=None,
+        ), patch(
+            "market_platform_foundation.ui_api.news_ingest.monotonic_wall_ns",
+            return_value=server_ns,
+        ):
+            ingest = handle_news_ingest_post(
+                self.store,
+                {
+                    "retrieved_time": "2026-09-15T14:05:08Z",
+                    "articles": [
+                        {
+                            "headline": "Example Corp reports quarterly earnings",
+                            "published_time": "2026-09-15T14:05:00Z",
+                            "url": "https://example.com/story",
+                            "tickers": ["AAPL"],
+                            "provider_native_id": "fv-opp-api-withheld",
+                        }
+                    ],
+                },
+            )
+            self.store.last_source_time_ns = None
+            self.store.as_of_time_ns = None
+            payload = build_opportunities_summary_payload(self.store)
+            ranked = build_ranked_rows(self.store)
+        self.assertEqual(ingest["opportunity_count"], 1)
+        opp_id = ingest["opportunity_ids"][0]
+        self.assertEqual(payload["feed_status"], "UNREADY")
+        self.assertEqual(payload["unready_reason"], "LIVE_AS_OF_UNAVAILABLE")
+        self.assertEqual(payload.get("withheld_ranked_count"), 1)
+        self.assertEqual(payload["items"], [])
+        self.assertEqual(len(ranked), 1)
+        self.assertEqual(payload["as_of_context"]["as_of_time"], "UNAVAILABLE")
+        self.assertNotIn("2026-07-21", str(payload["as_of_context"]["as_of_time"]))
+        self.assertNotIn("2026-07-21", self.store.as_of_time())
+        with self.assertRaises(KeyError):
+            build_opportunity_detail_payload(self.store, opp_id)
 
     def test_demo_cannot_dismiss(self) -> None:
         summary = build_opportunities_summary_payload(self.store)

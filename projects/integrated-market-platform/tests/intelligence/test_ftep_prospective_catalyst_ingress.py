@@ -396,12 +396,51 @@ class FtepProspectiveCatalystIngressTests(unittest.TestCase):
         self.assertEqual(payload["watch_mode"], "PROSPECTIVE_FINVIZ_INGRESS")
         self.assertEqual(
             payload["ingress_outcome"],
-            "LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS",
+            "FINVIZ_LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS",
         )
+        self.assertTrue(payload["dry_run"])
         self.assertEqual(payload["ingress_classification"], CLASS_SUCCESS_EMPTY)
         self.assertEqual(payload["summary_count"], 0)
         self.assertEqual(payload["attention_data_kind"], "LIVE_PROSPECTIVE")
         self.assertNotIn("PROSPECTIVE_CATALYST_INGRESS_ZERO_ROWS", payload["blockers"])
+        admit = payload.get("observational_cockpit_admit")
+        self.assertIsNotNone(admit)
+        assert isinstance(admit, dict)
+        self.assertTrue(admit.get("ok"))
+        self.assertEqual(admit.get("opportunity_count"), 0)
+
+    def test_watch_live_ingress_ui_api_down_fail_closed(self) -> None:
+        server_ns = int(epoch_ns_from_iso("2026-09-15T14:00:10Z") or 0)
+        ingress = ProspectiveCatalystIngressResult(
+            attempted=True,
+            ready=True,
+            reason=None,
+            source_label="live:finviz_elite_prospective",
+            rows=(
+                {
+                    "symbol": "AAPL",
+                    "headline": "Example Corp reports quarterly earnings",
+                    "published_time": "2026-09-15T14:00:05Z",
+                    "retrieved_time": "2026-09-15T14:00:08Z",
+                    "source_event_id": "evt-ftep-unreachable",
+                },
+            ),
+            stats={"as_of_ns": server_ns},
+            classification=CLASS_SUCCESS,
+        )
+        with patch(
+            "market_platform_foundation.ui_api.cockpit_admit.resolve_ui_api_base_url",
+            return_value="http://127.0.0.1:1",
+        ):
+            payload = _watch_payload_for_ingress(ingress)
+        admit = payload.get("observational_cockpit_admit")
+        assert isinstance(admit, dict)
+        self.assertFalse(admit.get("ok"))
+        self.assertIn("COCKPIT_ADMIT_UI_API_UNAVAILABLE", payload["blockers"])
+        self.assertEqual(payload["ingress_outcome"], "COCKPIT_ADMIT_UI_API_UNAVAILABLE")
+        self.assertEqual(payload["finviz_ingress_outcome"], "FINVIZ_LIVE_INGRESS_SUCCESS")
+        self.assertFalse(payload["dry_run"])
+        self.assertEqual(payload["cockpit_admit_hop"], "HTTP_UI_API")
 
     def test_watch_live_ingress_blocked_when_gates_inactive(self) -> None:
         ingress = ProspectiveCatalystIngressResult(

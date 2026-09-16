@@ -130,6 +130,7 @@ class ReplayStore:
     execution_provider: str = "INTERNAL"
     assistant_audit_root: Path | None = None
     strategy_repository: Any | None = None
+    observation_ingress_router: Any | None = None
     opportunity_source: str | None = None
     last_source_time_ns: int | None = None
     as_of_time_ns: int | None = None
@@ -280,8 +281,17 @@ class ReplayStore:
     def prediction_cutoff(self) -> int:
         return int(self.current_bar()["available_time"])
 
-    def as_of_time(self) -> str:
+    def fixture_cursor_as_of_time(self) -> str:
+        """Replay-bar cursor clock. Never use as the live observational display as_of."""
+
         return _epoch_ns_to_iso(self.prediction_cutoff())
+
+    def as_of_time(self) -> str:
+        if self.data_mode == "LIVE_OBSERVATIONAL" or str(self.mode).upper() == "LIVE":
+            from .projections import display_as_of_time
+
+            return display_as_of_time(self)
+        return self.fixture_cursor_as_of_time()
 
     def bars_visible(self) -> list[dict[str, Any]]:
         cutoff = self.prediction_cutoff()

@@ -22,6 +22,8 @@ from ..intelligence.trade_review.materialize import (
     materialize_trade_review_for_operator_ack,
 )
 
+LIVE_OBSERVATIONAL_OPERATOR_ACCOUNT = "live-observational"
+
 try:
     from ..hot_path_telemetry.collector import HotPathClockCollector
     from ..rt01.clock import monotonic_process_ns
@@ -117,7 +119,9 @@ def _serialize_review_row(row: Any, store: ReplayStore | None = None) -> dict[st
 
 
 def _is_live(store: ReplayStore) -> bool:
-    return store.data_mode == "LIVE_OBSERVATIONAL" or str(store.mode).upper() == "LIVE"
+    """True when ``LIVE_OBSERVATIONAL`` — quarantine fixture attention; broker execution stays off."""
+
+    return projections.is_live_observational(store)
 
 
 def _paper_mutations_allowed(store: ReplayStore) -> bool:
@@ -125,6 +129,10 @@ def _paper_mutations_allowed(store: ReplayStore) -> bool:
 
 
 def _attention_rows(store: ReplayStore) -> tuple[dict[str, Any], ...]:
+    # Live ranked reads must not ingest fixture/replay attention. Deleting the
+    # read gate without this quarantine would rank July BIYA/MC9/ES cards.
+    if _is_live(store):
+        return ()
     page = projections.build_attention_page(store, limit=50)
     items = page.get("items") or []
     rows: list[dict[str, Any]] = []
@@ -147,10 +155,21 @@ def _attention_rows(store: ReplayStore) -> tuple[dict[str, Any], ...]:
     return tuple(rows)
 
 
-def _feed_status(store: ReplayStore, ranked_count: int) -> tuple[str, str | None]:
-    quality = projections.build_quality_summary(store)
+def _live_as_of_unavailable(store: ReplayStore) -> bool:
+    return str(projections.display_as_of_time(store)) == projections.LIVE_AS_OF_UNAVAILABLE
+
+
+def _feed_status(store: ReplayStore, ranked_count: int, *, repository_ranked_count: int | None = None) -> tuple[str, str | None]:
     if _is_live(store):
-        return "UNAVAILABLE", "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE"
+        repo_count = repository_ranked_count if repository_ranked_count is not None else ranked_count
+        if _live_as_of_unavailable(store):
+            if repo_count == 0:
+                return "EMPTY", None
+            return "UNREADY", "LIVE_AS_OF_UNAVAILABLE"
+        if ranked_count == 0:
+            return "EMPTY", None
+        return "READY", None
+    quality = projections.build_quality_summary(store)
     state = str(quality.get("state") or "")
     if state and state not in {"HEALTHY", "GOOD", "AVAILABLE"}:
         return "UNREADY", "QUALITY_SUMMARY_NOT_HEALTHY"
@@ -170,14 +189,37 @@ def _opportunity_source(store: ReplayStore) -> str:
     return "REPLAY"
 
 
+def _latest_repository_opportunity_created_at_ns(repository: Any | None) -> int | None:
+    from ..intelligence.opportunity.ingest import _opportunities_from_repository
+
+    latest = 0
+    found = False
+    for opportunity in _opportunities_from_repository(repository):
+        created = int(getattr(opportunity, "created_at_ns", 0) or 0)
+        if created > latest:
+            latest = created
+            found = True
+    return latest if found else None
+
+
 def build_ranked_rows(store: ReplayStore) -> tuple[Any, ...]:
     repository = getattr(store, "strategy_repository", None)
+    receive_ns = projections._live_receive_ns(store) if _is_live(store) else None
+    as_of_ns = getattr(store, "as_of_time_ns", None)
+    last_ns = getattr(store, "last_source_time_ns", None)
+    if as_of_ns is None:
+        as_of_ns = receive_ns
+    if last_ns is None:
+        last_ns = receive_ns
+    if _is_live(store) and receive_ns is None and as_of_ns is None:
+        as_of_ns = _latest_repository_opportunity_created_at_ns(repository)
+        last_ns = as_of_ns
     assembled = assemble_opportunity_review_rows(
         attention_rows=_attention_rows(store),
         repository=repository,
         source=_opportunity_source(store),
-        as_of_time_ns=getattr(store, "as_of_time_ns", None),
-        last_source_time_ns=getattr(store, "last_source_time_ns", None),
+        as_of_time_ns=as_of_ns,
+        last_source_time_ns=last_ns,
         runtime_capability=getattr(store, "runtime_capability", None),
         session_state=getattr(store, "session_state", None),
         book_validity=getattr(store, "book_validity", None),
@@ -196,16 +238,12 @@ def build_opportunities_summary_payload(
     limit: int | None = None,
     hot_path_collector: HotPathClockCollector | None = None,
 ) -> dict[str, Any]:
-    if _is_live(store):
-        return {
-            "as_of_context": projections.build_as_of_context(store),
-            "quality_summary": projections.build_quality_summary(store),
-            "feed_status": "UNAVAILABLE",
-            "reason": "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE",
-            "items": [],
-            "next_cursor": None,
-        }
-    ranked = build_ranked_rows(store)
+    ranked_all = build_ranked_rows(store)
+    ranked = ranked_all
+    withheld_ranked_count = 0
+    if _is_live(store) and _live_as_of_unavailable(store):
+        withheld_ranked_count = len(ranked_all)
+        ranked = ()
     page_size = limit or store.page_size
     start = 0
     if cursor:
@@ -215,7 +253,11 @@ def build_opportunities_summary_payload(
                 break
     page = ranked[start : start + page_size]
     next_cursor = page[-1].summary_id if len(page) == page_size and start + page_size < len(ranked) else None
-    status, unready_reason = _feed_status(store, len(ranked))
+    status, unready_reason = _feed_status(
+        store,
+        len(ranked),
+        repository_ranked_count=len(ranked_all),
+    )
     items: list[dict[str, Any]] = []
     for row in page:
         serialized = _serialize_review_row(row, store)
@@ -232,12 +274,15 @@ def build_opportunities_summary_payload(
     if status == "UNREADY":
         payload["unready_reason"] = unready_reason
         payload["next_action"] = "/control"
+    if withheld_ranked_count:
+        payload["withheld_ranked_count"] = withheld_ranked_count
+        payload["book_honesty"] = "RANKED_ROWS_WITHHELD_NO_LIVE_CLOCK"
     return payload
 
 
 def build_opportunity_detail_payload(store: ReplayStore, row_id: str) -> dict[str, Any]:
-    if _is_live(store):
-        raise KeyError("LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
+    if _is_live(store) and _live_as_of_unavailable(store):
+        raise KeyError(row_id)
     ranked = build_ranked_rows(store)
     acks = list_operator_acks()
     for row in ranked:
@@ -296,8 +341,6 @@ def build_opportunity_evidence_payload(store: ReplayStore, row_id: str) -> dict[
 
 
 def build_opportunity_explain_body(store: ReplayStore, ref: str) -> dict[str, Any]:
-    if _is_live(store):
-        raise ValueError("UI_EXPLAIN_REF_NOT_FOUND")
     if ref.startswith("explain:opportunity:"):
         row_id = ref.removeprefix("explain:opportunity:")
     elif ref.startswith("explain:summary:"):
@@ -320,6 +363,63 @@ def build_opportunity_explain_body(store: ReplayStore, ref: str) -> dict[str, An
     }
 
 
+def _apply_live_observational_opportunity_ack(
+    store: ReplayStore,
+    *,
+    row_id: str,
+    action: str,
+) -> dict[str, Any]:
+    if _live_as_of_unavailable(store):
+        raise PermissionError("LIVE_OBSERVATIONAL_ACK_REQUIRES_LIVE_CLOCK")
+    ranked = list(build_ranked_rows(store))
+    target = None
+    for row in ranked:
+        if row.summary_id == row_id or row.opportunity_id == row_id:
+            target = row
+            break
+    if target is None:
+        raise KeyError(row_id)
+    for prior in list_operator_acks(paper_account_id=LIVE_OBSERVATIONAL_OPERATOR_ACCOUNT):
+        if prior.get("action") != action:
+            continue
+        if prior.get("summary_id") == target.summary_id or prior.get("opportunity_id") == target.opportunity_id:
+            raise PermissionError("LIVE_OBSERVATIONAL_OPERATOR_ACK_DUPLICATE")
+    receive_ns = projections._live_receive_ns(store)
+    if receive_ns is None:
+        raise PermissionError("LIVE_OBSERVATIONAL_ACK_REQUIRES_LIVE_CLOCK")
+    created_at_ns = int(receive_ns)
+    ack = record_operator_ack(
+        summary_id=target.summary_id,
+        opportunity_id=target.opportunity_id,
+        paper_account_id=LIVE_OBSERVATIONAL_OPERATOR_ACCOUNT,
+        action=action,
+        created_at_ns=created_at_ns,
+    )
+    record_operator_lifecycle_trace(
+        store,
+        target,
+        action=action,
+        decision_time_ns=created_at_ns,
+    )
+    row_dict = target.to_dict() if hasattr(target, "to_dict") else {}
+    metadata = dict(row_dict.get("metadata") or {}) if isinstance(row_dict.get("metadata"), dict) else {}
+    lineage = row_dict.get("lineage_refs") or metadata.get("lineage_refs") or ()
+    review = materialize_trade_review_for_operator_ack(
+        action=action,
+        opportunity_id=target.opportunity_id or target.summary_id,
+        strategy_id=row_dict.get("strategy_family") or metadata.get("strategy_family"),
+        decision_time_ns=created_at_ns,
+        created_at_ns=created_at_ns,
+        evidence_snapshot_refs=_refs_from_lineage(tuple(lineage) if isinstance(lineage, (list, tuple)) else ()),
+        metadata={"operator_ack": ack, "live_broker_execution": False, "observational_only": True},
+    )
+    if review is not None:
+        ack = dict(ack)
+        ack["trade_review_id"] = review.review_id
+        ack["decision_trace_mode"] = "LIVE_OBSERVATIONAL"
+    return ack
+
+
 def apply_opportunity_ack(
     store: ReplayStore,
     *,
@@ -327,7 +427,7 @@ def apply_opportunity_ack(
     action: str,
 ) -> dict[str, Any]:
     if _is_live(store):
-        raise PermissionError("LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
+        return _apply_live_observational_opportunity_ack(store, row_id=row_id, action=action)
     if not _paper_mutations_allowed(store):
         raise PermissionError("DEMO_MUTATIONS_PROHIBITED")
     ranked = list(build_ranked_rows(store))

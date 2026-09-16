@@ -18,18 +18,16 @@ def _is_live(store: ReplayStore) -> bool:
     return store.data_mode == "LIVE_OBSERVATIONAL" or str(store.mode).upper() == "LIVE"
 
 
+def _live_blocks_trade_review_mutation(store: ReplayStore) -> bool:
+    return _is_live(store)
+
+
 def build_trade_reviews_for_opportunity_payload(
     store: ReplayStore,
     opportunity_id: str,
     *,
     alternate_ids: tuple[str, ...] = (),
 ) -> dict[str, Any]:
-    if _is_live(store):
-        return {
-            "opportunity_id": opportunity_id,
-            "items": [],
-            "reason": "LIVE_OBSERVATIONAL_NO_TRADE_REVIEW",
-        }
     repo = open_trade_review_repository()
     seen: set[str] = set()
     items: list[dict[str, Any]] = []
@@ -42,16 +40,17 @@ def build_trade_reviews_for_opportunity_payload(
             projection = repo.get_trade_review_projection(review.review_id)
             if projection is not None:
                 items.append(projection)
-    return {
+    payload: dict[str, Any] = {
         "opportunity_id": opportunity_id,
         "acceptance_label": "TRADE_REVIEW_DURABLE_LOOP_READY",
         "items": items,
     }
+    if _is_live(store) and not items:
+        payload["reason"] = "LIVE_OBSERVATIONAL_NO_TRADE_REVIEW"
+    return payload
 
 
 def build_trade_review_detail_payload(store: ReplayStore, review_id: str) -> dict[str, Any]:
-    if _is_live(store):
-        raise PermissionError("LIVE_OBSERVATIONAL_NO_TRADE_REVIEW")
     repo = open_trade_review_repository()
     projection = repo.get_trade_review_projection(str(review_id))
     if projection is None:
@@ -64,7 +63,7 @@ def apply_trade_review_operator_patch(
     review_id: str,
     body: dict[str, Any],
 ) -> dict[str, Any]:
-    if _is_live(store):
+    if _live_blocks_trade_review_mutation(store):
         raise PermissionError("LIVE_OBSERVATIONAL_NO_TRADE_REVIEW")
     repo = open_trade_review_repository()
     if repo.get_trade_review_projection(review_id) is None:

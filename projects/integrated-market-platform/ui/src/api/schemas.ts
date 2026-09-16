@@ -101,6 +101,7 @@ export const AsOfContextSchema = z.object({
   data_provider: z.string().optional(),
   execution_provider: z.string().optional(),
   as_of_time: z.string(),
+  as_of_provenance: z.string().optional(),
   replay_session_id: z.string().optional(),
   timezone: z.string(),
 });
@@ -130,6 +131,8 @@ export const AttentionItemSchema = z.object({
   tier: z.number().optional(),
   /** Epoch nanoseconds when the attention item was surfaced/created (server-derived when available). */
   surfaced_time: z.number().optional(),
+  attention_shelf: z.string().optional(),
+  attention_data_kind: z.string().optional(),
 });
 
 export const ContextResponseSchema = z.object({
@@ -349,6 +352,9 @@ export const AttentionResponseSchema = z.object({
   next_cursor: z.string().nullable().optional(),
   pinned_tier1_count: z.number().optional(),
   tier_summary: z.array(z.object({ label: z.string(), count: z.number() })).optional(),
+  /** Fixture/demo cards only — never current RTH; requires replay_shelf_label DEMO_REPLAY */
+  replay_shelf: z.array(AttentionItemSchema).optional(),
+  replay_shelf_label: z.literal("DEMO_REPLAY").optional(),
 });
 
 export const InstrumentOverviewSchema = z.object({

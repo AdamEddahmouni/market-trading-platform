@@ -8,6 +8,7 @@ from .consumers import (
     audit_sink_consumer,
     detector_stub_consumer,
     enrichment_trigger_consumer,
+    observational_news_detector_consumer,
     oe_evidence_consumer,
     store_consumer,
 )
@@ -61,6 +62,7 @@ def build_production_observation_ingress_router(
         [
             store_consumer(repository),
             audit_sink_consumer(audit),
+            observational_news_detector_consumer(repository=repository),
             detector_stub_consumer(
                 seen,
                 repository=repository,

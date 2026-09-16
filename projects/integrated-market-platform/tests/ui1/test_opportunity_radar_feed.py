@@ -33,15 +33,20 @@ class OpportunityRadarFeedTests(unittest.TestCase):
             self.assertNotIn("universal_score", item)
             self.assertNotIn("order_id", item)
 
-    def test_live_detail_and_ack_fail_closed(self) -> None:
+    def test_live_ack_fail_closed(self) -> None:
+        self.store.data_mode = "LIVE_OBSERVATIONAL"
+        self.store.mode = "LIVE"
+        with self.assertRaises(PermissionError) as ack_ctx:
+            apply_opportunity_ack(self.store, row_id="any-id", action="DISMISSED")
+        self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_ACK_REQUIRES_LIVE_CLOCK")
+
+    def test_live_detail_read_missing_id_is_not_found(self) -> None:
         self.store.data_mode = "LIVE_OBSERVATIONAL"
         self.store.mode = "LIVE"
         with self.assertRaises(KeyError) as detail_ctx:
             build_opportunity_detail_payload(self.store, "any-id")
-        self.assertEqual(str(detail_ctx.exception), "'LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE'")
-        with self.assertRaises(PermissionError) as ack_ctx:
-            apply_opportunity_ack(self.store, row_id="any-id", action="DISMISSED")
-        self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
+        self.assertEqual(str(detail_ctx.exception), "'any-id'")
+        self.assertNotIn("LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE", str(detail_ctx.exception))
 
 
 if __name__ == "__main__":
