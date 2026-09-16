@@ -159,6 +159,29 @@ describe("resolveSemanticState", () => {
         "caution",
       );
     });
+
+    it("maps research surface epistemic classes and authority boundaries", () => {
+      const projection = resolveSemanticState("research", "RESEARCH_PROJECTION");
+      expect(projection.tone).toBe("research");
+      expect(projection.label).toBe("Research projection");
+      expect(projection.sentence).toContain("evidence, not prediction");
+      expect(resolveSemanticState("research", "SIMULATION_PROJECTION").label).toBe(
+        "Deterministic simulation",
+      );
+      expect(resolveSemanticState("research", "READ_ONLY_RESEARCH_VISUALIZATION").label).toBe(
+        "Research-only evidence — not tradeable",
+      );
+      expect(resolveSemanticState("research", "READ_ONLY_RESEARCH").label).toBe(
+        "Research-only — not tradeable",
+      );
+      expect(resolveSemanticState("research", "READ_ONLY_SIMULATION").tone).toBe("paper");
+    });
+
+    it("maps strategy interpretation outcomes", () => {
+      expect(resolveSemanticState("research", "signal").label).toBe("Signal");
+      expect(resolveSemanticState("research", "abstention").label).toBe("Abstained");
+      expect(resolveSemanticState("research", "abstention").tone).toBe("neutral");
+    });
   });
 
   describe("platform domain", () => {

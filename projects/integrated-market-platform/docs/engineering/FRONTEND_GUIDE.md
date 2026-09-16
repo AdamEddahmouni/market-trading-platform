@@ -16,10 +16,10 @@ React 18, TypeScript, Vite, React Router 6, TanStack Query 5, Zod, Lightweight C
 | Radar | `/radar` | Discovery queue (Opportunities + Screeners tabs). `/discover` → `/radar`; `/explore` → `/radar/screeners` |
 | Workspace | `/workspace` | Decision desk (Paper submit boundary) |
 | Portfolio | `/portfolio` | Orders history |
-| Research | `/research` | Research & model labs. `/lab` redirects here; it is not a workspace alias |
+| Research | `/research` | Interpretation-first evidence workspace: Overview, Evidence, Validation, Simulation sections (routable). `/lab` redirects here; it is not a workspace alias |
 | Control | `/control` | Operator control center (was labeled "Risk") |
 
-Operator group: Live Canary `/live-canary`, Settings `/settings`, Diagnostics `/diagnostics/provider`. Paper mode hints: Workspace — Decision desk; Portfolio — Orders history; Research — Research & model labs. Operator URLs: [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md).
+Operator group: Live Canary `/live-canary`, Settings `/settings`, Diagnostics `/diagnostics/provider`. Paper mode hints: Workspace — Decision desk; Portfolio — Orders history; Research — Evidence & validation. Operator URLs: [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md).
 
 ## Mode route pattern
 
@@ -81,7 +81,7 @@ UI API failures use `{ error, reason_code, error_category }`. `error_category` i
 
 ## CSS organization
 
-Mode-specific styles: `ui/src/styles/{demo,paper,live}-*.css`. Shared tokens: `tokens.css`, `layout.css`. Operator design system: `ui/src/components/imp-ui/imp-ui.css` (primitives) + `ui/src/styles/radar.css` (Radar surface) + `ui/src/components/opportunity/opportunity.css` (shared opportunity card/queue). Semantic state tones (`--imp-state-{tone}-{fg,bg,border}`) live in `tokens.css`; all enum/state rendering goes through `ui/src/state/semanticState.ts` (`resolveSemanticState`) — translate, never invent; unknown values render neutral with the raw string preserved.
+Mode-specific styles: `ui/src/styles/{demo,paper,live}-*.css`. Shared tokens: `tokens.css`, `layout.css`. Operator design system: `ui/src/components/imp-ui/imp-ui.css` (primitives) + `ui/src/styles/radar.css` (Radar surface) + `ui/src/styles/research.css` (Research surface) + `ui/src/components/opportunity/opportunity.css` (shared opportunity card/queue). Semantic state tones (`--imp-state-{tone}-{fg,bg,border}`) live in `tokens.css`; all enum/state rendering goes through `ui/src/state/semanticState.ts` (`resolveSemanticState`) — translate, never invent; unknown values render neutral with the raw string preserved.
 
 ## Opportunity presentation (one language)
 
@@ -128,6 +128,32 @@ Advanced disclosure for parity). Rules:
 - Queries: `operatorReadiness` (60s), `operatorLifecycleStatus` (30s),
   `operatorConfig` (60s), plus shared `context` / `opportunitiesSummary` /
   `paperPortfolio` caches.
+
+## Research (interpretation-first evidence)
+
+`/research` (`ui/src/components/research-shared/`) answers what the evidence currently
+shows, how validated it is, and how it relates to Radar/Paper — never prediction,
+ranked opportunity, or execution. Contract map:
+[docs/ui-redesign-v2/research-contract-map.md](../ui-redesign-v2/research-contract-map.md).
+
+Routable sections (one fetch family per section; Overview synthesizes all three):
+
+| Route | Section | Endpoints |
+|-------|---------|-----------|
+| `/research` | Overview | analytics + models + simulation |
+| `/research/evidence` | Evidence | `/research/analytics` (`?panel=` deep-link) |
+| `/research/validation` | Validation | `/research/models` (+ Paper strategy-profitability in Paper) |
+| `/research/simulation` | Simulation | `/research/simulation` |
+| `/research/vela-chart-lab` | Chart Lab | local synthetic (unchanged) |
+
+`/lab` still redirects to `/research`. Lab workbench is unbuilt; validation and
+simulation stay on Research as evidence records, not experiment tools. Hypotheses,
+domains, source catalogs, supporting/contradictory flags, and FTEP campaign
+state have **no UI contract** and are disclosed as gaps. The only conflict signal
+is `ABSTAIN_CONFLICTING_EVIDENCE` on walk-forward interpretations. Radar Screeners
+deep-link to `/research/evidence?panel=squeeze_outcomes`; Opportunity L3 links
+to `/research/evidence` without fabricating per-opportunity relations. Presentation:
+`researchPresentation.ts` + `research` domain in `semanticState.ts`.
 
 ## Testing patterns
 

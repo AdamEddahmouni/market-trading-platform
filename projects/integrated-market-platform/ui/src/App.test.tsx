@@ -839,7 +839,34 @@ describe("App mode launcher integration", () => {
     await openResearch();
     expect(await screen.findByRole("heading", { name: "Research" })).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
-    expect(screen.getByRole("tab", { name: "Analytics" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("navigates Demo Research sections as routes", async () => {
+    render(<App />);
+    await enterMode("Demo");
+    await openResearch();
+    await screen.findByRole("heading", { name: "Research" });
+    fireEvent.click(screen.getByRole("link", { name: "Evidence" }));
+    expect(
+      await screen.findByRole("heading", { name: "Evidence at the current cutoff" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Evidence" })).toHaveAttribute("aria-current", "page");
+    fireEvent.click(screen.getByRole("link", { name: "Simulation" }));
+    // The simulation hook mock returns no payload — the section must degrade
+    // honestly instead of rendering an empty ledger.
+    expect(
+      await screen.findByText(/simulation record is unavailable right now/i),
+    ).toBeInTheDocument();
+  });
+
+  it("redirects /lab to Research", async () => {
+    render(<App />);
+    await enterMode("Demo");
+    window.history.pushState({}, "", "/lab");
+    fireEvent.popState(window);
+    expect(await screen.findByRole("heading", { name: "Research" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/research");
   });
 
   it("opens Paper Research from /research", async () => {

@@ -63,15 +63,15 @@ Fingerprints/hashes/enums move to a Methodology disclosure.
 - How were these analytics produced (methodology, authority boundary)?
 - What is the distribution of outcomes/signals over the research window?
 
+Landed IA (UIR-01F): Overview (default), Evidence, Validation, Simulation. Current
+contracts have no hypothesis, domain, or source-catalog objects — those stay
+honest gaps on Overview. See [research-contract-map.md](research-contract-map.md).
+
 ### LAB — `/lab` (+ `/lab/simulation`, `/lab/chart-lab`)
-**Responsibility:** models, strategies, replay/simulation, calibration, walk-forward,
-evaluation. Dense but legible. Absorbs the Model Lab and Simulation tabs from today's
-`/research` and the Vela chart lab. **No backend change**: still served by
-`/research/models` and `/research/simulation`.
-**Questions answered:**
-- What models/strategies exist, and what are they allowed to influence?
-- How did the simulation ledger behave (decisions, fills, reconciliation)?
-- Is this model any good (walk-forward, preregistration, abstentions)?
+**Responsibility (future):** models, strategies, replay/simulation, calibration,
+walk-forward, evaluation. **Not built.** `/lab` still redirects to `/research`.
+Validation and simulation remain Research evidence records until a Lab increment
+splits the workbench. Endpoints stay `/research/models` and `/research/simulation`.
 
 ### CONTROL — `/control` (+ `/diagnostics/provider`, `/live-canary`, `/settings`)
 **Responsibility:** platform operations: provider health matrix (state / provides /

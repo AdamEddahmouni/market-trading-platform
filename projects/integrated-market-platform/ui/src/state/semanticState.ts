@@ -373,6 +373,30 @@ const RESEARCH_TABLE: Record<string, Entry> = {
   DERIVED: { tone: "research", label: "Calculated by IMP" },
   INFERRED: { tone: "caution", label: "IMP inference — unverified" },
   RESEARCH_ONLY: { tone: "research", label: "Research-only evidence — not tradeable" },
+  // Research surface epistemic classes (ui_api/projections.py research payloads).
+  RESEARCH_PROJECTION: {
+    tone: "research",
+    label: "Research projection",
+    sentence: "Replay-bound research projection — evidence, not prediction.",
+  },
+  SIMULATION_PROJECTION: {
+    tone: "paper",
+    label: "Deterministic simulation",
+    sentence: "Deterministic simulation output — not live market evidence.",
+  },
+  // Research surface authority boundaries (never trade authority).
+  READ_ONLY_RESEARCH_VISUALIZATION: {
+    tone: "research",
+    label: "Research-only evidence — not tradeable",
+  },
+  READ_ONLY_RESEARCH: { tone: "research", label: "Research-only — not tradeable" },
+  READ_ONLY_SIMULATION: {
+    tone: "paper",
+    label: "Read-only simulation — no execution authority",
+  },
+  // Strategy walk-forward interpretation outcomes (strategy/interpretation.py).
+  signal: { tone: "research", label: "Signal" },
+  abstention: { tone: "neutral", label: "Abstained" },
   PAPER_OBSERVABILITY: { tone: "paper", label: "Paper simulation observability — read-only" },
   PAPER_OBSERVABILITY_READ_ONLY: {
     tone: "paper",

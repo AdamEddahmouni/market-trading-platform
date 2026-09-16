@@ -6,9 +6,15 @@ import { LiveResearchPage } from "./LiveResearchPage";
 
 const analyticsFixture = {
   epistemic_class: "RESEARCH_PROJECTION",
-  authority_boundary: "READ_ONLY",
+  authority_boundary: "READ_ONLY_RESEARCH_VISUALIZATION",
   disclaimer: "Research only.",
-  panels: [],
+  panels: {
+    attention_tiers: { available: false, provenance: { source: "test" }, series: [] },
+    squeeze_outcomes: { available: false, provenance: { source: "test" }, series: [] },
+    squeeze_historical_cohort: { available: false, provenance: { source: "test" }, series: [] },
+    strategy_outcomes: { available: false, provenance: { source: "test" }, series: [] },
+    risk_decisions: { available: false, provenance: { source: "test" }, series: [] },
+  },
 };
 
 vi.mock("../../api/hooks", () => ({
@@ -17,16 +23,12 @@ vi.mock("../../api/hooks", () => ({
   useResearchSimulationQuery: () => ({ isLoading: false, data: undefined }),
 }));
 
-vi.mock("../research/ResearchAnalyticsPanel", () => ({
-  ResearchAnalyticsPanel: () => <div data-testid="analytics-panel" />,
-}));
-
 function renderPage() {
   const client = new QueryClient();
   return render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
-        <LiveResearchPage />
+        <LiveResearchPage section="overview" />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -45,6 +47,10 @@ describe("LiveResearchPage", () => {
       "href",
       "/live-canary",
     );
-    expect(screen.getByTestId("analytics-panel")).toBeInTheDocument();
+  });
+
+  it("states that Live research stays replay-bound in the bridges", () => {
+    renderPage();
+    expect(screen.getByText(/stays replay-bound in Live mode/i)).toBeInTheDocument();
   });
 });

@@ -4,7 +4,8 @@
 `ui/operator-redesign-current` (PR #226); Increment C landed on
 `ui/operator-redesign-command-convergence`; Increment D landed on
 `ui/operator-redesign-command-depth`; Increment E landed on
-`ui/operator-redesign-control`.
+`ui/operator-redesign-control`; Increment F (Research) lands on
+`ui/operator-redesign-research`.
 **Scope:** Increment A (design system + shell + navigation) and Increment B
 (Discover/Radar + opportunity state/evidence presentation) on top of current
 canonical contracts at `origin/main` (`42b1237a`). Increment C (Command /

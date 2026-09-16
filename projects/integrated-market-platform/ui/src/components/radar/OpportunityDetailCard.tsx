@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import type { AttentionItem } from "../../api/client";
 import type {
   OpportunityAckAction,
@@ -250,6 +251,10 @@ export function OpportunityDetailCard({
             ))}
           </ul>
         )}
+        <p className="imp-radar-lines">
+          <Link to="/research/evidence">Open Research evidence</Link> — interpretation-first view of
+          the research behind attachments like these.
+        </p>
         <TradeReviewLearningPanel row={row} />
       </Disclosure>
 

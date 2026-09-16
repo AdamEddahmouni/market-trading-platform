@@ -55,9 +55,9 @@ const primaryLinks: NavLinkDef[] = [
     to: "/research",
     label: "Research",
     modeHint: {
-      DEMO: "Replay-bound labs",
-      PAPER: "Research & model labs",
-      LIVE: "Read-only labs",
+      DEMO: "Replay-bound evidence",
+      PAPER: "Evidence & validation",
+      LIVE: "Read-only evidence",
     },
   },
   {
