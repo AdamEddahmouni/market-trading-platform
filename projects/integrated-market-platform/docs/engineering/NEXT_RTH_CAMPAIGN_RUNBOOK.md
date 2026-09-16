@@ -1,4 +1,4 @@
-# Next US equity RTH campaign runbook (post–`origin/main` `e925c36c`)
+# Next US equity RTH campaign runbook (post–`origin/main` `16dfebde`)
 
 **Evidence class:** SOFTWARE coordination only. **Live OFF.** No Paper/Live orders. No empirical locks. Do not declare FTEP `EMPIRICAL_ACTIVE`.
 
@@ -8,9 +8,9 @@ This document is the **current-main** operator surface for the **next** US equit
 
 | Layer | Git SHA | Role |
 |-------|---------|------|
-| **Current implementation** | `e925c36c16d5dafb5d366bb9b30503bef82a40d0` (`origin/main`; [#217](https://github.com/AdamEddahmouni/market-trading-platform/pull/217) post-#205 validation alignment; [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) live OE HTTP-wire **SOFTWARE**; [#215](https://github.com/AdamEddahmouni/market-trading-platform/pull/215) Item 7 P0/anchor wiring; [#214](https://github.com/AdamEddahmouni/market-trading-platform/pull/214) ledger policy) | Commands, ports, and software labels below |
+| **Current implementation** | `16dfebde57f1408ccf6a170de86d3b543a2e92af` (`origin/main`; [#218](https://github.com/AdamEddahmouni/market-trading-platform/pull/218) Item 7 capture-only auto-persist **SOFTWARE/CONTROLLED**; [#217](https://github.com/AdamEddahmouni/market-trading-platform/pull/217) post-#205 validation alignment; [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) live OE HTTP-wire **SOFTWARE**; [#215](https://github.com/AdamEddahmouni/market-trading-platform/pull/215) Item 7 P0/anchor wiring; [#214](https://github.com/AdamEddahmouni/market-trading-platform/pull/214) ledger policy) | Commands, ports, and software labels below |
 | **Frozen Sep 15 empirical authority** | `7aade60b…` (historical RTH evidence pin) | Accepted observational receipts and Sep 15 session truth — **not** overridden by this runbook |
-| **Repair train (sibling lanes)** | Most RTH15 lanes **merged** on `main@e925c36c` ([#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204), [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206)–[#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207), [#209](https://github.com/AdamEddahmouni/market-trading-platform/pull/209)–[#217](https://github.com/AdamEddahmouni/market-trading-platform/pull/217), [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205)). **Open:** [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) draft fullstack — restack onto `e925c36c` before land-review | #205 live hop is **SOFTWARE** on `main`; in-memory OE; not empirical RTH readiness |
+| **Repair train (sibling lanes)** | Most RTH15 lanes **merged** on `main@16dfebde` ([#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204), [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206)–[#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207), [#209](https://github.com/AdamEddahmouni/market-trading-platform/pull/209)–[#218](https://github.com/AdamEddahmouni/market-trading-platform/pull/218), [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205)). **Open:** [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) draft fullstack — restack onto `16dfebde` before land-review | #205 live hop is **SOFTWARE** on `main`; in-memory OE; not empirical RTH readiness |
 
 **Checklist overlap:** [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207) (head `ca3c53a9`, Composer review) owns deltas to [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKLIST.md), [RTH_EMPIRICAL_OPS_RUNBOOK.md](RTH_EMPIRICAL_OPS_RUNBOOK.md), and `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md`. **Not on `main`** until merge — this runbook does **not** edit those paths. Use current `main` files plus this page until `origin/main` contains `ca3c53a9` or the merge SHA.
 
@@ -96,7 +96,7 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 |------|------|-------------------|
 | Finviz prospective | `python tools\ftep_watch_catalysts.py FTEP-V1-002 --live-ingress --json` | Not via `rth_empirical_ops` live ingress |
 | **Item 9** | `python tools\moomoo\opend_bar_1m_prospective_proof.py prospective --poll …` | Contract `item9.bar-ohlcv-prospective-proof/1.1.0`; `orders_placed=false`, `calibrated=false` |
-| **Item 7** | `item7_corpus_collector.py status|diagnose|collect …` | `--training-cutoff-ns` required; governed rows **0** on `main` until earned |
+| **Item 7** | `item7_corpus_collector.py status|diagnose|collect …`; optional `item7_opend_capture_append.py` (lawful SNAPSHOT_BBO; auto-persist default **on** → `intelligence_records.jsonl`; `--no-auto-persist` to skip; fail-closed bind/P0 → event only, **no** ledger) | `--training-cutoff-ns` required; governed rows **0** on `main` until earned; auto-persist is **SOFTWARE/CONTROLLED**, not empirical corpus |
 | Ops bundle | `python tools\rth_empirical_ops.py --json run-observational` | Optional `--write-run-artifact`; dry-run (`live_ingress=False`) |
 | Close | `python tools\rth_empirical_ops.py --json summarize` | |
 
@@ -163,7 +163,7 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 ## Recommended next RTH operator actions (current `main` only)
 
 1. Merge or rebase repair train as orchestrator directs; **do not** assume #207 Finviz ingress fixes until SHA is on `main`.
-2. Night before: `git fetch origin main`; confirm `git rev-parse origin/main` = `73da9fdb` (or newer tip after merges).
+2. Night before: `git fetch origin main`; confirm `git rev-parse origin/main` = `16dfebde` (or newer tip after merges).
 3. Morning: bootstrap venv/state path; start platform; confirm `:8766` / `:5173` / SPA at `http://127.0.0.1:5173/`.
 4. T−15: run full preflight block; set temporary Finviz/catalyst gates; confirm OpenD loopback.
 5. ≥ 09:30: execute Finviz watch → Item 9 poll → Item 7 status → ops dry-run; persist receipts; summarize.
