@@ -103,6 +103,27 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--dry-run", action="store_true", help="Validate without appending capture JSONL.")
     parser.add_argument(
+        "--no-auto-persist",
+        action="store_true",
+        help="Skip governed intelligence auto-persist after lawful append.",
+    )
+    parser.add_argument("--as-of-ns", type=int, default=None, help="Materialize as-of clock (default: envelope/wall).")
+    parser.add_argument(
+        "--session-start-ns",
+        type=int,
+        default=None,
+        help="Prospective session start (default: US/Eastern RTH open for envelope day).",
+    )
+    parser.add_argument("--contributor-path", type=Path, default=None)
+    parser.add_argument("--forecast-path", type=Path, default=None)
+    parser.add_argument("--account-id", type=str, default=None)
+    parser.add_argument("--mode", type=str, default="paper")
+    parser.add_argument(
+        "--no-register-ledger",
+        action="store_true",
+        help="Persist capture events only; do not register BUILD 15 ledger rows.",
+    )
+    parser.add_argument(
         "--write-failure-receipt",
         action="store_true",
         help="Append structured refusal receipt JSONL (never a fake quote).",
@@ -144,6 +165,14 @@ def main(argv: list[str] | None = None) -> int:
             capture_path=args.capture_path,
             dry_run=args.dry_run,
             write_failure_receipt=args.write_failure_receipt,
+            auto_persist=not args.no_auto_persist,
+            as_of_ns=args.as_of_ns,
+            session_start_ns=args.session_start_ns,
+            contributor_path=args.contributor_path,
+            forecast_path=args.forecast_path,
+            bind_expected_account_id=args.account_id,
+            bind_expected_mode=args.mode,
+            register_ledger=not args.no_register_ledger,
         )
     else:
         row = _load_vendor_row(args.vendor_row_json)
@@ -153,6 +182,14 @@ def main(argv: list[str] | None = None) -> int:
             capture_path=args.capture_path,
             dry_run=args.dry_run,
             write_failure_receipt=args.write_failure_receipt,
+            auto_persist=not args.no_auto_persist,
+            as_of_ns=args.as_of_ns,
+            session_start_ns=args.session_start_ns,
+            contributor_path=args.contributor_path,
+            forecast_path=args.forecast_path,
+            bind_expected_account_id=args.account_id,
+            bind_expected_mode=args.mode,
+            register_ledger=not args.no_register_ledger,
         )
 
     payload = json.dumps(result.to_dict(), indent=2, sort_keys=True) + "\n"

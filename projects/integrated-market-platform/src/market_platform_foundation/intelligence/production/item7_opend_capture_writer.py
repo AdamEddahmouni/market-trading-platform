@@ -48,10 +48,12 @@ class Item7CaptureAppendResult:
     envelope: dict[str, Any] | None
     diagnostic: dict[str, Any] | None
     receipt: dict[str, Any]
+    auto_persist: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "artifact_kind": RECEIPT_ARTIFACT_KIND,
+            "auto_persist": self.auto_persist,
             "capture_path": self.capture_path,
             "diagnostic": self.diagnostic,
             "disposition": self.disposition,
@@ -117,10 +119,12 @@ def _receipt(
     refusal_reason: str | None,
     envelope: dict[str, Any] | None,
     diagnostic: BboDiagnostic | None,
+    auto_persist: dict[str, Any] | None = None,
 ) -> Item7CaptureAppendResult:
     diag_dict = diagnostic.to_dict() if diagnostic is not None else None
     receipt_body = {
         "artifact_kind": RECEIPT_ARTIFACT_KIND,
+        "auto_persist": auto_persist,
         "capture_path": str(capture_path) if capture_path is not None else None,
         "disposition": disposition,
         "refusal_reason": refusal_reason,
@@ -134,6 +138,7 @@ def _receipt(
         envelope=envelope,
         diagnostic=diag_dict,
         receipt=receipt_body,
+        auto_persist=auto_persist,
     )
 
 
@@ -147,6 +152,14 @@ def append_vendor_snapshot_capture(
     dry_run: bool = False,
     write_failure_receipt: bool = False,
     max_records: int = DEFAULT_MAX_RECORDS,
+    auto_persist: bool = True,
+    as_of_ns: int | None = None,
+    session_start_ns: int | None = None,
+    contributor_path: Path | None = None,
+    forecast_path: Path | None = None,
+    bind_expected_account_id: str | None = None,
+    bind_expected_mode: str | None = None,
+    register_ledger: bool = True,
 ) -> Item7CaptureAppendResult:
     """Build capture envelope from vendor snapshot row and append when lawful."""
 
@@ -213,6 +226,26 @@ def append_vendor_snapshot_capture(
             )
         return result
 
+    persist_receipt: dict[str, Any] | None = None
+    from .item7_opend_capture_persist import maybe_auto_persist_capture_append
+
+    persist_result = maybe_auto_persist_capture_append(
+        append_disposition=DISPOSITION_APPENDED,
+        envelope=mapping.envelope,
+        dry_run=dry_run,
+        auto_persist=auto_persist,
+        capture_path=path,
+        as_of_ns=as_of_ns,
+        session_start_ns=session_start_ns,
+        contributor_path=contributor_path,
+        forecast_path=forecast_path,
+        bind_expected_account_id=bind_expected_account_id,
+        bind_expected_mode=bind_expected_mode,
+        register_ledger=register_ledger,
+    )
+    if persist_result is not None:
+        persist_receipt = persist_result.to_dict()
+
     return _receipt(
         disposition=DISPOSITION_APPENDED,
         capture_path=path,
@@ -220,6 +253,7 @@ def append_vendor_snapshot_capture(
         refusal_reason=None,
         envelope=mapping.envelope,
         diagnostic=mapping.diagnostic,
+        auto_persist=persist_receipt,
     )
 
 
@@ -233,6 +267,14 @@ def append_from_probe_diagnostic(
     dry_run: bool = False,
     write_failure_receipt: bool = False,
     max_records: int = DEFAULT_MAX_RECORDS,
+    auto_persist: bool = True,
+    as_of_ns: int | None = None,
+    session_start_ns: int | None = None,
+    contributor_path: Path | None = None,
+    forecast_path: Path | None = None,
+    bind_expected_account_id: str | None = None,
+    bind_expected_mode: str | None = None,
+    register_ledger: bool = True,
 ) -> Item7CaptureAppendResult:
     """Append when probe succeeded with validated BBO; refuse blocked probes."""
 
@@ -279,6 +321,14 @@ def append_from_probe_diagnostic(
         dry_run=dry_run,
         write_failure_receipt=write_failure_receipt,
         max_records=max_records,
+        auto_persist=auto_persist,
+        as_of_ns=as_of_ns,
+        session_start_ns=session_start_ns,
+        contributor_path=contributor_path,
+        forecast_path=forecast_path,
+        bind_expected_account_id=bind_expected_account_id,
+        bind_expected_mode=bind_expected_mode,
+        register_ledger=register_ledger,
     )
 
 

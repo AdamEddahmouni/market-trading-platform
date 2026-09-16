@@ -84,6 +84,7 @@ class Item7OpendCaptureWriterTests(unittest.TestCase):
                 clocks=_clocks(),
                 capture_path=capture,
                 require_imp_state_dir=False,
+                auto_persist=False,
             )
             self.assertEqual(result.disposition, DISPOSITION_APPENDED)
             self.assertIsNotNone(result.envelope)
@@ -102,6 +103,7 @@ class Item7OpendCaptureWriterTests(unittest.TestCase):
                 clocks=_clocks(),
                 capture_path=capture,
                 require_imp_state_dir=False,
+                auto_persist=False,
             )
             self.assertEqual(result.disposition, DISPOSITION_REFUSED)
             self.assertFalse(capture.is_file())
@@ -130,6 +132,7 @@ class Item7OpendCaptureWriterTests(unittest.TestCase):
             _vendor_row(),
             clocks=_clocks(),
             require_imp_state_dir=True,
+            auto_persist=False,
         )
         self.assertEqual(result.disposition, DISPOSITION_REFUSED)
         self.assertEqual(result.refusal_reason, REFUSAL_IMP_STATE_DIR_MISSING)
@@ -163,6 +166,7 @@ class Item7OpendCaptureWriterTests(unittest.TestCase):
                 diag,
                 capture_path=capture,
                 require_imp_state_dir=False,
+                auto_persist=False,
             )
             self.assertEqual(result.disposition, DISPOSITION_REFUSED)
             self.assertFalse(capture.is_file())
@@ -181,6 +185,7 @@ class Item7OpendCaptureWriterTests(unittest.TestCase):
                 clocks=clocks,
                 capture_path=capture,
                 require_imp_state_dir=False,
+                auto_persist=False,
             )
             self.assertEqual(result.disposition, DISPOSITION_REFUSED)
             self.assertFalse(capture.is_file())
@@ -193,12 +198,14 @@ class Item7OpendCaptureWriterTests(unittest.TestCase):
                 clocks=_clocks(),
                 capture_path=capture,
                 require_imp_state_dir=False,
+                auto_persist=False,
             )
             second = append_vendor_snapshot_capture(
                 _vendor_row(),
                 clocks=_clocks(),
                 capture_path=capture,
                 require_imp_state_dir=False,
+                auto_persist=False,
             )
             self.assertEqual(first.sequence, 1)
             self.assertEqual(second.sequence, 2)
@@ -213,6 +220,7 @@ class Item7OpendCaptureWriterTests(unittest.TestCase):
                 clocks=_clocks(),
                 capture_path=capture,
                 require_imp_state_dir=False,
+                auto_persist=False,
             )
             blob = json.dumps(result.to_dict())
             self.assertNotIn("ITEM7_GOVERNED_ROW_CAPTURED", blob)
