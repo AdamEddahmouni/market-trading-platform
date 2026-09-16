@@ -5,7 +5,6 @@
     "docs/engineering/AGENT_OPERATING_SYSTEM.md",
     "docs/engineering/AI_MODEL_STRATEGY.md"
   ],
-  "canonical_copy": "Keep identical to repo-root .cursor/model-routing.json",
   "default_model": {
     "name": "Composer",
     "cursor_slug": "composer-2.5",

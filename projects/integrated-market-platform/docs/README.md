@@ -10,13 +10,17 @@ This index points to authoritative documents. It does not duplicate their conten
 When documents disagree, resolve in this order (highest first):
 
 1. **Safety invariants** — [MODE_AUTHORITY.md](architecture/MODE_AUTHORITY.md), [SECURITY.md](engineering/SECURITY.md), env gates in [CONFIGURATION.md](engineering/CONFIGURATION.md)
-2. **[AGENTS.md](../AGENTS.md)** — agent entry point
-3. **Scoped agent files** — `ui/AGENTS.md`, `src/market_platform_foundation/paper/AGENTS.md`
-4. **Architecture** — [ARCHITECTURE.md](architecture/ARCHITECTURE.md) and linked specs
-5. **Engineering handbook & SOPs** — [ENGINEERING_HANDBOOK.md](engineering/ENGINEERING_HANDBOOK.md), [sops/](engineering/sops/)
-6. **Current product/engineering specs** — `docs/superpowers/specs/`, BUILD specs in `docs/engineering/*_V1.md`
-7. **Completion records** — `docs/superpowers/plans/*-completion.md` (historical snapshots of delivered work)
-8. **Work log** — [WORK_LOG.md](engineering/WORK_LOG.md) (chronological change record)
+2. **Always-on agent operating rules** — repo-root `.cursor/rules/imp-*.mdc` and [AGENT_OPERATING_SYSTEM.md](engineering/AGENT_OPERATING_SYSTEM.md)
+3. **[AGENTS.md](../AGENTS.md)** — agent entry point (plus repo-root `AGENTS.md`)
+4. **Scoped agent files** — `ui/AGENTS.md`, `src/market_platform_foundation/paper/AGENTS.md`
+5. **Architecture** — [ARCHITECTURE.md](architecture/ARCHITECTURE.md) and linked specs
+6. **Engineering handbook & SOPs** — [ENGINEERING_HANDBOOK.md](engineering/ENGINEERING_HANDBOOK.md), [sops/](engineering/sops/)
+7. **Current product/engineering specs** — `docs/superpowers/specs/`, BUILD specs in `docs/engineering/*_V1.md`
+8. **Completion records** — `docs/superpowers/plans/*-completion.md` (historical snapshots of delivered work)
+9. **Work log** — [WORK_LOG.md](engineering/WORK_LOG.md) (chronological change record)
+
+If two documents at the same layer conflict, identify the conflict and reconcile
+it in the authoritative doc — do not silently choose.
 
 **Completion records are not automatically current architecture.** Verify against code and authoritative architecture docs.
 
@@ -34,6 +38,7 @@ When documents disagree, resolve in this order (highest first):
 | Topic | Document |
 |-------|----------|
 | What IMP is | [README.md](../README.md) |
+| Agent operating system (models, parallelism, worktrees, handoff) | [AGENT_OPERATING_SYSTEM.md](engineering/AGENT_OPERATING_SYSTEM.md) |
 | Current program status | [PROGRAM_STATUS.md](platform/PROGRAM_STATUS.md) |
 | FTEP / Paper-validation doctrine | [IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md](architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md) |
 | Developer operating system | [DEVELOPER_OPERATING_SYSTEM.md](engineering/DEVELOPER_OPERATING_SYSTEM.md) |
@@ -92,6 +97,7 @@ When documents disagree, resolve in this order (highest first):
 | Topic | Document |
 |-------|----------|
 | Handbook (primary reference) | [ENGINEERING_HANDBOOK.md](engineering/ENGINEERING_HANDBOOK.md) |
+| Agent operating system | [AGENT_OPERATING_SYSTEM.md](engineering/AGENT_OPERATING_SYSTEM.md) |
 | Frontend patterns | [FRONTEND_GUIDE.md](engineering/FRONTEND_GUIDE.md) |
 | Backend patterns | [BACKEND_GUIDE.md](engineering/BACKEND_GUIDE.md) |
 | Testing strategy | [TESTING.md](engineering/TESTING.md) |
@@ -121,6 +127,8 @@ When documents disagree, resolve in this order (highest first):
 
 | SOP | Path |
 |-----|------|
+| Git worktrees / isolated implementation | [sops/GIT_WORKTREE.md](engineering/sops/GIT_WORKTREE.md) |
+| Branch reconciliation onto current main | [sops/BRANCH_RECONCILIATION.md](engineering/sops/BRANCH_RECONCILIATION.md) |
 | API / schema change | [sops/API_SCHEMA_CHANGE.md](engineering/sops/API_SCHEMA_CHANGE.md) |
 | Frontend feature | [sops/FRONTEND_FEATURE.md](engineering/sops/FRONTEND_FEATURE.md) |
 | Paper execution change | [sops/PAPER_EXECUTION_CHANGE.md](engineering/sops/PAPER_EXECUTION_CHANGE.md) |
@@ -135,7 +143,7 @@ When documents disagree, resolve in this order (highest first):
 ### Checklists & templates
 
 - [checklists/](engineering/checklists/) — quick verification lists
-- [templates/](engineering/templates/) — completion, handoff, bug report
+- [templates/](engineering/templates/) — completion, handoff, task contract, bug report
 - [prompts/](engineering/prompts/) — reusable AI task templates
 
 ---

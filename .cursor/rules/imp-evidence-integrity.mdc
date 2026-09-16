@@ -1,0 +1,29 @@
+---
+description: Preserve evidence class; never upgrade, rewrite, or silently fill missing observations
+alwaysApply: true
+---
+
+# Evidence integrity
+
+Keep evidence classes distinct. Never upgrade one into another:
+
+historical · replay · backtest · simulation · shadow · prospective forward
+test · paper · live
+
+Never overwrite failed observations, insert later-known data, rewrite
+timestamps, fabricate missing evidence, or rerun and substitute results while
+preserving the original label.
+
+Missing or ambiguous evidence stays explicit (`UNKNOWN`, `PENDING`, `STALE`,
+`UNAVAILABLE`, `NOT_OBSERVED`, or the platform's existing canonical token).
+Do not coerce a gap into a passing result.
+
+No AI development task may enable or place live real-money trades.
+`LIVE-001` remains blocked. Any move from simulation/paper toward live
+execution requires explicit governed authorization.
+
+RTH / FTEP / scheduler / prospective runs: inspect only unless the task
+explicitly authorizes mutation. Do not restart, relabel, or "fix" active
+evidence collection.
+
+Audit workflow: skill `imp-evidence-integrity`.

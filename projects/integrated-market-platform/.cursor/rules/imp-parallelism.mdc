@@ -1,0 +1,29 @@
+---
+description: Single-agent default; parallelize only independent work; one owner; isolate mutable state
+alwaysApply: true
+---
+
+# IMP Parallelism Policy
+
+Use **one agent** by default. More agents is not better execution.
+
+Parallelize only when the work is genuinely independent and parallel execution
+materially improves speed or coverage without meaningful coordination,
+architectural, evidence, or Git-state risk.
+
+Do **not** create agents merely because parallel agents are available.
+
+**Owner:** every task has exactly one primary owner. Subagents own only a
+bounded lane. The primary owns final architecture, integration, validation,
+canonical Git state, and the final report.
+
+**Mutable state:** multiple agents must not concurrently mutate the same
+working tree. Parallel implementation uses separate worktrees/branches with
+file ownership; the primary integrates afterward. Read-only audits may share
+a tree.
+
+Do not parallelize when tasks share files, order/architecture is undecided,
+evidence-sensitive runtime/schedulers are involved, or one agent is not a
+bottleneck.
+
+Workflow: skill `imp-agent-orchestration`. Worktrees: `docs/engineering/sops/GIT_WORKTREE.md`.

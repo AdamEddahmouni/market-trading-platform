@@ -5,9 +5,10 @@
 ## First reads (new session)
 
 1. [AGENTS.md](../../AGENTS.md)
-2. [DEVELOPER_OPERATING_SYSTEM.md](DEVELOPER_OPERATING_SYSTEM.md)
-3. [MODE_AUTHORITY.md](../architecture/MODE_AUTHORITY.md) if touching Paper/Live
-4. [WORK_LOG.md](WORK_LOG.md) — recent changes (newest first)
+2. [AGENT_OPERATING_SYSTEM.md](AGENT_OPERATING_SYSTEM.md)
+3. [DEVELOPER_OPERATING_SYSTEM.md](DEVELOPER_OPERATING_SYSTEM.md)
+4. [MODE_AUTHORITY.md](../architecture/MODE_AUTHORITY.md) if touching Paper/Live
+5. [WORK_LOG.md](WORK_LOG.md) — recent changes (newest first)
 
 ## Establish baseline
 
@@ -80,8 +81,11 @@ Reusable task starters: [prompts/](prompts/)
 
 ## Model selection
 
-[AI_MODEL_STRATEGY.md](AI_MODEL_STRATEGY.md)
+Start on Composer. Escalate only per
+[AGENT_OPERATING_SYSTEM.md](AGENT_OPERATING_SYSTEM.md) and
+[AI_MODEL_STRATEGY.md](AI_MODEL_STRATEGY.md). Never Fast variants.
 
 ## Handoff
 
-Long sessions: [templates/AGENT_HANDOFF.md](templates/AGENT_HANDOFF.md)
+Long sessions: skill `imp-handoff` and
+[templates/AGENT_HANDOFF.md](templates/AGENT_HANDOFF.md)

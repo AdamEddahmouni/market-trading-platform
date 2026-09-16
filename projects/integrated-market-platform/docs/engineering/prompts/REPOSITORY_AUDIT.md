@@ -2,6 +2,8 @@
 
 Audit `{scope}` in IMP.
 
+Prefer skill `imp-repo-recon` for Git/worktree starting state, then:
+
 1. Read [docs/README.md](../../README.md) for authority map
 2. Inspect code — verify docs against reality
 3. Classify docs: authoritative / historical / stale
@@ -9,3 +11,4 @@ Audit `{scope}` in IMP.
 5. WORK_LOG + update PROJECT_STATUS if needed
 
 Do not treat completion records as current architecture without verification.
+One agent by default. Do not mutate evidence-sensitive runtime as part of an audit.

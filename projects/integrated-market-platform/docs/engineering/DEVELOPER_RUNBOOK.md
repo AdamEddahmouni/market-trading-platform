@@ -6,6 +6,8 @@
 
 **Historical topology and lane tables** live in [DEVELOPER_OPERATING_SYSTEM.md](DEVELOPER_OPERATING_SYSTEM.md) under *Local lane topology (historical 2026-09-10)* — not current procedure.
 
+Agent model, parallelism, and isolated-worktree rules: [AGENT_OPERATING_SYSTEM.md](AGENT_OPERATING_SYSTEM.md) and [sops/GIT_WORKTREE.md](sops/GIT_WORKTREE.md).
+
 Use **`python3`** (CPython 3.11) from an activated project `.venv`. On Windows, `.venv\Scripts\python.exe` is equivalent. Never print or commit secrets.
 
 ---

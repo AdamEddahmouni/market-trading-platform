@@ -2,10 +2,10 @@
 
 Implement `{feature}` in IMP.
 
-1. Read [AGENTS.md](../../../AGENTS.md) and [AI_AGENT_GUIDE.md](../AI_AGENT_GUIDE.md)
+1. Read [AGENTS.md](../../../AGENTS.md) and [AGENT_OPERATING_SYSTEM.md](../AGENT_OPERATING_SYSTEM.md)
 2. Inspect existing patterns — do not invent parallel architecture
 3. Assess Demo/Paper/Live implications
-4. Implement minimal coherent diff
+4. Implement minimal coherent diff (Composer default; never Fast models)
 5. Add tests (vitest/unittest as appropriate)
 6. Run: `validate.py changed`, `npm test`, `npm run build` if UI
 7. Update authoritative docs + WORK_LOG

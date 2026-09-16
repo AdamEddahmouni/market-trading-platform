@@ -81,10 +81,11 @@ Hierarchy in [TESTING.md](TESTING.md). Regression rule: every real bug fix gets 
 
 ## Developer operating system
 
-Use [DEVELOPER_OPERATING_SYSTEM.md](DEVELOPER_OPERATING_SYSTEM.md) and the
-`python tools/imp.py` router for discovery, progressive validation, review, and
-closure. It delegates to the existing manifest and preserves all safety
-authorities.
+Use [AGENT_OPERATING_SYSTEM.md](AGENT_OPERATING_SYSTEM.md) for model selection,
+parallelism, worktrees, evidence integrity, and handoff. Use
+[DEVELOPER_OPERATING_SYSTEM.md](DEVELOPER_OPERATING_SYSTEM.md) and
+`python tools/imp.py` for discovery, progressive validation, review, and
+closure. Both preserve MODE_AUTHORITY and the validation manifest.
 
 ## Performance budgets
 
