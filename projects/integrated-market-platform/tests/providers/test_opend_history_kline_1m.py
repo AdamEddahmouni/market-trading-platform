@@ -561,3 +561,91 @@ class OpenDHistoryKlineLoadWindowTests(unittest.TestCase):
         self.assertEqual(outcome["reason_code"], "EXPERIMENT_CONTRACT_MISMATCH")
         self.assertIsNone(outcome["receipt"])
         self.assertEqual(int(outcome["kline_fetch"]["raw_row_count"]), 1)
+
+
+class OpenDHistoryKlineExtendedDiagnosticsTests(unittest.TestCase):
+    def test_success_payload_includes_timing_connection_and_window(self) -> None:
+        from tools.moomoo.opend_quote_transport import fetch_history_kline_1m
+
+        ctx = _OldestFirstKlineContext(_catalog())
+        payload = fetch_history_kline_1m(
+            "AAPL",
+            host="127.0.0.1",
+            port=11111,
+            sdk=_FakeKlineSdk(ctx),
+            session_date=SESSION_DAY,
+        )
+        self.assertIsNone(payload["reason_code"])
+        self.assertEqual(payload["connection_host"], "127.0.0.1")
+        self.assertEqual(payload["connection_port"], 11111)
+        self.assertEqual(payload["kline_start"], SESSION_DAY)
+        self.assertEqual(payload["kline_end"], SESSION_DAY)
+        self.assertGreaterEqual(int(payload["max_count_requested"]), 1000)
+        self.assertIsNotNone(payload["request_duration_ms"])
+        self.assertGreaterEqual(float(payload["request_duration_ms"]), 0.0)
+        self.assertEqual(payload["request_retry_index"], 0)
+        self.assertIsNone(payload["protocol_error_category"])
+
+    def test_protocol_error_category_frequency_limit(self) -> None:
+        from tools.moomoo.opend_quote_transport import (
+            classify_kline_protocol_error_category,
+            fetch_history_kline_1m,
+        )
+
+        self.assertEqual(
+            classify_kline_protocol_error_category(
+                reason_code="MOOMOO_PROTOCOL_ERROR",
+                vendor_ret=-1,
+                vendor_ret_msg="freq limit: too many history kline requests",
+            ),
+            "vendor_frequency_limit",
+        )
+        ctx = _ProtocolErrorKlineContext("freq limit: too many history kline requests")
+        payload = fetch_history_kline_1m(
+            "AAPL",
+            host="127.0.0.1",
+            port=11111,
+            sdk=_FakeKlineSdk(ctx),
+            session_date=SESSION_DAY,
+        )
+        self.assertEqual(payload["protocol_error_category"], "vendor_frequency_limit")
+        self.assertIsNotNone(payload["request_duration_ms"])
+
+    def test_loader_attaches_extended_diagnostics_from_payload(self) -> None:
+        def _fetcher(symbol: str, *, host: str, port: int, max_count: int = 120, **kwargs: Any) -> dict[str, Any]:
+            return {
+                "reason_code": "MOOMOO_PROTOCOL_ERROR",
+                "raw_row_count": 0,
+                "vendor_ret": -1,
+                "vendor_ret_msg": "RET_ERROR: no right",
+                "connection_host": host,
+                "connection_port": port,
+                "kline_start": SESSION_DAY,
+                "kline_end": SESSION_DAY,
+                "max_count_requested": max_count,
+                "request_duration_ms": 12.5,
+                "request_retry_index": 0,
+                "protocol_error_category": "vendor_ret_error",
+            }
+
+        fake_module = type("M", (), {"fetch_history_kline_1m": staticmethod(_fetcher)})()
+        with mock.patch(
+            "market_platform_foundation.paper.calibration.bar_ohlcv_sources._load_tools_kline_module",
+            return_value=fake_module,
+        ), mock.patch(
+            "market_platform_foundation.paper.calibration.bar_ohlcv_sources.opend_reachable",
+            return_value=True,
+        ), mock.patch(
+            "market_platform_foundation.paper.calibration.bar_ohlcv_sources.opend_is_loopback",
+            return_value=True,
+        ):
+            loaded = load_moomoo_opend_kline_bars(
+                instrument_id="AAPL",
+                observation_time_ns=OBSERVATION_NS,
+                poll_attempt_index=2,
+            )
+        self.assertFalse(loaded.ok)
+        self.assertEqual(loaded.provenance["poll_attempt_index"], 2)
+        self.assertEqual(loaded.provenance["protocol_error_category"], "vendor_ret_error")
+        self.assertEqual(float(loaded.provenance["request_duration_ms"]), 12.5)
+        self.assertEqual(loaded.provenance["connection_host"], loaded.provenance["host"])

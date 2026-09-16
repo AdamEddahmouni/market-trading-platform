@@ -347,6 +347,73 @@ class BarOhlcvProspectiveProofTests(unittest.TestCase):
         self.assertEqual(outcome["reason_code"], READINESS_RTH_REQUIRED)
         loader.assert_not_called()
 
+    @mock.patch(
+        "market_platform_foundation.paper.calibration.bar_ohlcv_prospective_proof.is_within_us_equity_rth",
+        return_value=True,
+    )
+    @mock.patch(
+        "market_platform_foundation.paper.calibration.bar_ohlcv_prospective_proof.load_moomoo_opend_kline_bars",
+    )
+    def test_poll_timeout_kline_fetch_carries_poll_attempt_index(
+        self,
+        load_mock: mock.Mock,
+        _rth: mock.Mock,
+    ) -> None:
+        from market_platform_foundation.paper.calibration.bar_ohlcv_sources import (
+            SOURCE_MOOMOO_OPEND_KLINE_1M,
+            BarLoadResult,
+        )
+
+        row = {
+            "time_key": "2026-09-15 09:30:00",
+            "open": 1.0,
+            "high": 1.0,
+            "low": 1.0,
+            "close": 1.0,
+            "volume": 100,
+        }
+        bar = normalize_moomoo_kline_row(row, instrument_id="AAPL", fetched_at_ns=9_999_999_999_999_999_999)
+        assert bar is not None
+
+        def _loaded(**kwargs: object) -> BarLoadResult:
+            idx = kwargs.get("poll_attempt_index")
+            return BarLoadResult(
+                source_id=SOURCE_MOOMOO_OPEND_KLINE_1M,
+                instrument_id="AAPL",
+                bars=(bar,),
+                provenance={
+                    "poll_attempt_index": idx,
+                    "raw_row_count": 1,
+                    "kline_session_date": "2026-09-15",
+                },
+                reason_code=None,
+            )
+
+        load_mock.side_effect = _loaded
+        mono = iter([0.0, 0.0, 0.2, 2.0])
+        with mock.patch(
+            "market_platform_foundation.paper.calibration.bar_ohlcv_prospective_proof.time.monotonic",
+            side_effect=lambda: next(mono),
+        ):
+            outcome = poll_prospective_proof(
+                instrument_id="AAPL",
+                collection_root=ROOT.parent,
+                env={},
+                signal_time_ns=9_999_999_999_999_999_999,
+                signal_established_at_ns=9_999_999_999_999_999_999,
+                max_wait_s=1.0,
+                poll_interval_s=0.01,
+                sleep_fn=lambda _s: None,
+                now_fn=lambda: 1_700_000_000_000_000_000,
+            )
+        self.assertFalse(outcome["ok"])
+        self.assertEqual(outcome["reason_code"], REASON_NO_POST_SIGNAL_BAR)
+        fetch = outcome["kline_fetch"]
+        assert fetch is not None
+        self.assertEqual(fetch["poll_attempt_index"], 1)
+        seen = [call.kwargs.get("poll_attempt_index") for call in load_mock.call_args_list]
+        self.assertEqual(seen, [0, 1])
+
     def test_transport_experiment_classifies_runnable(self) -> None:
         rows = (_kline_row(time_key="2023-11-14 10:29:00"), _kline_row())
         first = normalize_moomoo_kline_row(

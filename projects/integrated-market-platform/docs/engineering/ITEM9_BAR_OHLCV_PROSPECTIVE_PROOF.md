@@ -27,10 +27,14 @@ signal. `max_count>=1000` is required so RTH minutes are not truncated.
 
 Each `request_history_kline` attempt writes fail-closed diagnostics to stderr
 (`raw_row_count`, `first_raw_time_key`, `last_raw_time_key`, `vendor_ret`,
-`vendor_ret_msg`) and attaches the same fields as `kline_fetch` on poll
-outcomes. Timeout still reports `PROSPECTIVE_NO_POST_SIGNAL_BAR`; the last
-fetch stats distinguish empty vs TZ-dropped vs pre-signal rows. PIT is
-unchanged.
+`vendor_ret_msg`, `kline_start`/`kline_end`, `max_count_requested`,
+`connection_host`/`connection_port`, `request_duration_ms`,
+`request_retry_index`, `protocol_error_category`) and attaches the same fields
+as `kline_fetch` on poll outcomes, plus `poll_attempt_index` during Mode B
+`--poll`. Categories classify transport for logging only — they do **not**
+uniquely explain Sep 15 poll #1 or hour-2 `MOOMOO_PROTOCOL_ERROR`. Timeout
+still reports `PROSPECTIVE_NO_POST_SIGNAL_BAR`; the last fetch stats distinguish
+empty vs TZ-dropped vs pre-signal rows. PIT is unchanged.
 
 Follow-up (not in this repair): reuse one quote context and poll `get_cur_kline`
 to cut 5s connect-churn. Hour-2 `MOOMOO_PROTOCOL_ERROR` is not unique-security

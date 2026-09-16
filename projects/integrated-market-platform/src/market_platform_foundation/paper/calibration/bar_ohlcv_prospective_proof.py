@@ -356,6 +356,15 @@ def kline_fetch_diagnostics(loaded: BarLoadResult) -> dict[str, Any]:
         "vendor_ret": provenance.get("vendor_ret"),
         "vendor_ret_msg": provenance.get("vendor_ret_msg"),
         "kline_session_date": provenance.get("kline_session_date"),
+        "kline_start": provenance.get("kline_start"),
+        "kline_end": provenance.get("kline_end"),
+        "max_count_requested": provenance.get("max_count_requested"),
+        "connection_host": provenance.get("connection_host", provenance.get("host")),
+        "connection_port": provenance.get("connection_port", provenance.get("port")),
+        "request_duration_ms": provenance.get("request_duration_ms"),
+        "request_retry_index": provenance.get("request_retry_index"),
+        "poll_attempt_index": provenance.get("poll_attempt_index"),
+        "protocol_error_category": provenance.get("protocol_error_category"),
         "load_reason_code": loaded.reason_code,
     }
 
@@ -371,6 +380,7 @@ def run_prospective_proof(
     experiment_id: str | None = None,
     kline_rows: tuple[Mapping[str, Any], ...] | None = None,
     runtime_git_sha: str | None = None,
+    poll_attempt_index: int | None = None,
 ) -> dict[str, Any]:
     exp_id = experiment_id or f"item9-prospective-{uuid.uuid4().hex[:12]}"
     sha = runtime_git_sha or resolve_runtime_git_sha()
@@ -380,6 +390,7 @@ def run_prospective_proof(
         observation_time_ns=observation_time_ns,
         fetched_at_ns=observation_time_ns,
         kline_rows=kline_rows,
+        poll_attempt_index=poll_attempt_index,
     )
     kline_fetch = kline_fetch_diagnostics(loaded)
     if not loaded.ok:
@@ -466,6 +477,7 @@ def poll_prospective_proof(
             "receipt": None,
         }
     last_kline_fetch: dict[str, Any] | None = None
+    poll_attempt_index = 0
     while time.monotonic() < deadline:
         observation_ns = clock()
         outcome = run_prospective_proof(
@@ -478,6 +490,7 @@ def poll_prospective_proof(
             kline_rows=None,
             experiment_id=experiment_id,
             runtime_git_sha=runtime_git_sha,
+            poll_attempt_index=poll_attempt_index,
         )
         fetch = outcome.get("kline_fetch")
         if isinstance(fetch, dict):
@@ -489,6 +502,7 @@ def poll_prospective_proof(
         if reason not in {REASON_NO_POST_SIGNAL_BAR, "EXPERIMENT_CONTRACT_MISMATCH"}:
             outcome["readiness"] = item9_prospective_readiness(now_ns=observation_ns)
             return outcome
+        poll_attempt_index += 1
         sleep_fn(poll_interval_s)
     return {
         "ok": False,

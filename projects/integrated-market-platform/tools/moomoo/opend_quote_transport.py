@@ -9,6 +9,7 @@ from __future__ import annotations
 import importlib
 import json
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -74,6 +75,36 @@ def _kline_time_keys(rows: list[dict[str, Any]]) -> tuple[str | None, str | None
     return keys[0], keys[-1], len(rows)
 
 
+def classify_kline_protocol_error_category(
+    *,
+    reason_code: str | None,
+    vendor_ret: Any = None,
+    vendor_ret_msg: str | None = None,
+) -> str | None:
+    """Structured transport category for logs — not a root-cause verdict."""
+
+    if reason_code is None:
+        return None
+    if reason_code == MOOMOO_AUTH_FAILURE:
+        return "auth_failure"
+    if reason_code == MOOMOO_SDK_MISSING:
+        return "sdk_missing"
+    if reason_code == OPEND_NON_LOOPBACK_BLOCKED:
+        return "connection_blocked_non_loopback"
+    if reason_code != MOOMOO_PROTOCOL_ERROR:
+        return "transport_unavailable"
+    msg = (vendor_ret_msg or "").lower()
+    if "freq" in msg or "frequency" in msg or "too many" in msg:
+        return "vendor_frequency_limit"
+    if "timeout" in msg or "timed out" in msg:
+        return "transport_timeout"
+    if "ret_error" in msg or "no right" in msg:
+        return "vendor_ret_error"
+    if vendor_ret is not None and vendor_ret != 0:
+        return "vendor_ret_not_ok"
+    return "transport_exception"
+
+
 def _kline_fetch_result(
     *,
     reason_code: str | None,
@@ -81,11 +112,28 @@ def _kline_fetch_result(
     rows: list[dict[str, Any]] | None = None,
     vendor_ret: Any = None,
     vendor_ret_msg: str | None = None,
+    connection_host: str | None = None,
+    connection_port: int | None = None,
+    kline_start: str | None = None,
+    kline_end: str | None = None,
+    max_count_requested: int | None = None,
+    request_duration_ms: float | None = None,
+    request_retry_index: int = 0,
+    protocol_error_category: str | None = None,
 ) -> dict[str, Any]:
     """Fail-closed kline payload plus diagnostics (stderr JSON, no PIT change)."""
 
     raw_rows = list(rows) if rows is not None else []
     first_key, last_key, raw_count = _kline_time_keys(raw_rows)
+    window_start = kline_start if kline_start is not None else session_date
+    window_end = kline_end if kline_end is not None else session_date
+    category = protocol_error_category
+    if category is None:
+        category = classify_kline_protocol_error_category(
+            reason_code=reason_code,
+            vendor_ret=vendor_ret,
+            vendor_ret_msg=vendor_ret_msg,
+        )
     payload: dict[str, Any] = {
         "reason_code": reason_code,
         "rows": None if reason_code else raw_rows,
@@ -95,15 +143,31 @@ def _kline_fetch_result(
         "last_raw_time_key": None if reason_code else last_key,
         "vendor_ret": vendor_ret,
         "vendor_ret_msg": vendor_ret_msg,
+        "connection_host": connection_host,
+        "connection_port": connection_port,
+        "kline_start": window_start,
+        "kline_end": window_end,
+        "max_count_requested": max_count_requested,
+        "request_duration_ms": request_duration_ms,
+        "request_retry_index": int(request_retry_index),
+        "protocol_error_category": category,
     }
     print(
         json.dumps(
             {
                 "item9_kline_fetch": True,
+                "connection_host": connection_host,
+                "connection_port": connection_port,
                 "first_raw_time_key": payload["first_raw_time_key"],
+                "kline_end": window_end,
+                "kline_start": window_start,
                 "last_raw_time_key": payload["last_raw_time_key"],
+                "max_count_requested": max_count_requested,
+                "protocol_error_category": category,
                 "raw_row_count": payload["raw_row_count"],
                 "reason_code": reason_code,
+                "request_duration_ms": request_duration_ms,
+                "request_retry_index": int(request_retry_index),
                 "session_date": session_date,
                 "vendor_ret": vendor_ret,
                 "vendor_ret_msg": vendor_ret_msg,
@@ -133,36 +197,49 @@ def fetch_history_kline_1m(
     are a year old and fail ``available_time > signal_time``.
     """
 
+    day = str(session_date or "").strip() or us_equity_session_date()
+    request_count = max(int(max_count), US_EQUITY_1M_HISTORY_MIN_COUNT)
+    started = time.monotonic()
+
+    def _finish(**kwargs: Any) -> dict[str, Any]:
+        duration_ms = round((time.monotonic() - started) * 1000.0, 3)
+        return _kline_fetch_result(
+            session_date=day,
+            connection_host=host,
+            connection_port=int(port),
+            kline_start=day,
+            kline_end=day,
+            max_count_requested=request_count,
+            request_duration_ms=duration_ms,
+            request_retry_index=0,
+            **kwargs,
+        )
+
     if host not in _LOOPBACK_HOSTS:
-        return {"reason_code": OPEND_NON_LOOPBACK_BLOCKED, "rows": None}
+        return _finish(reason_code=OPEND_NON_LOOPBACK_BLOCKED, rows=None)
     ft = sdk if sdk is not None else load_vendor_sdk()
     if ft is None or not hasattr(ft, "OpenQuoteContext"):
-        return {"reason_code": MOOMOO_SDK_MISSING, "rows": None}
+        return _finish(reason_code=MOOMOO_SDK_MISSING, rows=None)
     if not hasattr(ft, "RET_OK") or not hasattr(ft, "KLType"):
-        return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None}
+        return _finish(reason_code=MOOMOO_PROTOCOL_ERROR, rows=None)
 
     code = _provider_code(symbol)
     if not code:
-        return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None}
-
-    day = str(session_date or "").strip() or us_equity_session_date()
-    request_count = max(int(max_count), US_EQUITY_1M_HISTORY_MIN_COUNT)
+        return _finish(reason_code=MOOMOO_PROTOCOL_ERROR, rows=None)
 
     ctx = None
     try:
         ctx = ft.OpenQuoteContext(host=host, port=port)
         ret, state = ctx.get_global_state()
         if ret != ft.RET_OK:
-            return _kline_fetch_result(
+            return _finish(
                 reason_code=MOOMOO_PROTOCOL_ERROR,
-                session_date=day,
                 vendor_ret=ret,
                 vendor_ret_msg=_bounded_vendor_msg(state),
             )
         if not _qot_logined(state):
-            return _kline_fetch_result(
+            return _finish(
                 reason_code=MOOMOO_AUTH_FAILURE,
-                session_date=day,
                 vendor_ret=ret,
                 vendor_ret_msg="qot_logined=false",
             )
@@ -177,24 +254,21 @@ def fetch_history_kline_1m(
             session=ft.Session.ALL,
         )
         if k_ret != ft.RET_OK:
-            return _kline_fetch_result(
+            return _finish(
                 reason_code=MOOMOO_PROTOCOL_ERROR,
-                session_date=day,
                 vendor_ret=k_ret,
                 vendor_ret_msg=_bounded_vendor_msg(data),
             )
         rows = _snapshot_rows(data)
-        return _kline_fetch_result(
+        return _finish(
             reason_code=None,
-            session_date=day,
             rows=rows,
             vendor_ret=k_ret,
             vendor_ret_msg=None,
         )
     except Exception as exc:  # noqa: BLE001
-        return _kline_fetch_result(
+        return _finish(
             reason_code=MOOMOO_PROTOCOL_ERROR,
-            session_date=day,
             vendor_ret=None,
             vendor_ret_msg=_bounded_vendor_msg(f"{type(exc).__name__}: {exc}"),
         )
@@ -480,6 +554,7 @@ __all__ = [
     "MOOMOO_SDK_MISSING",
     "OPEND_NON_LOOPBACK_BLOCKED",
     "US_EQUITY_1M_HISTORY_MIN_COUNT",
+    "classify_kline_protocol_error_category",
     "fetch_history_kline_1m",
     "fetch_snapshot",
     "probe_quote_login",

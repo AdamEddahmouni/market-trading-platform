@@ -226,6 +226,35 @@ def _load_tools_kline_module() -> Any | None:
     return module
 
 
+def _transport_fetch_diag(
+    payload: Mapping[str, Any],
+    *,
+    session_date: str,
+    host: str,
+    port: int,
+    poll_attempt_index: int | None,
+) -> dict[str, Any]:
+    diag: dict[str, Any] = {
+        "kline_session_date": session_date,
+        "kline_start": payload.get("kline_start", session_date),
+        "kline_end": payload.get("kline_end", session_date),
+        "max_count_requested": payload.get("max_count_requested"),
+        "raw_row_count": payload.get("raw_row_count", 0),
+        "first_raw_time_key": payload.get("first_raw_time_key"),
+        "last_raw_time_key": payload.get("last_raw_time_key"),
+        "vendor_ret": payload.get("vendor_ret"),
+        "vendor_ret_msg": payload.get("vendor_ret_msg"),
+        "connection_host": payload.get("connection_host", host),
+        "connection_port": payload.get("connection_port", port),
+        "request_duration_ms": payload.get("request_duration_ms"),
+        "request_retry_index": payload.get("request_retry_index", 0),
+        "protocol_error_category": payload.get("protocol_error_category"),
+    }
+    if poll_attempt_index is not None:
+        diag["poll_attempt_index"] = int(poll_attempt_index)
+    return diag
+
+
 def load_moomoo_opend_kline_bars(
     *,
     instrument_id: str,
@@ -233,6 +262,7 @@ def load_moomoo_opend_kline_bars(
     fetched_at_ns: int | None = None,
     max_count: int = 1000,
     kline_rows: Sequence[Mapping[str, Any]] | None = None,
+    poll_attempt_index: int | None = None,
 ) -> BarLoadResult:
     """Prospective 1m bars from loopback OpenD history kline (quote context only)."""
 
@@ -244,11 +274,19 @@ def load_moomoo_opend_kline_bars(
     ).strftime("%Y-%m-%d")
     if kline_rows is None:
         if not opend_is_loopback(host) or not opend_reachable(host=host, port=port):
+            unavailable_prov: dict[str, Any] = {
+                "host": host,
+                "port": port,
+                "connection_host": host,
+                "connection_port": port,
+            }
+            if poll_attempt_index is not None:
+                unavailable_prov["poll_attempt_index"] = int(poll_attempt_index)
             return BarLoadResult(
                 source_id=SOURCE_MOOMOO_OPEND_KLINE_1M,
                 instrument_id=instrument_id,
                 bars=(),
-                provenance={"host": host, "port": port},
+                provenance=unavailable_prov,
                 reason_code="OPEND_UNAVAILABLE",
             )
         module = _load_tools_kline_module()
@@ -277,14 +315,13 @@ def load_moomoo_opend_kline_bars(
                 reason_code="MOOMOO_PROTOCOL_ERROR",
             )
         reason = payload.get("reason_code")
-        fetch_diag = {
-            "kline_session_date": session_date,
-            "raw_row_count": payload.get("raw_row_count", 0),
-            "first_raw_time_key": payload.get("first_raw_time_key"),
-            "last_raw_time_key": payload.get("last_raw_time_key"),
-            "vendor_ret": payload.get("vendor_ret"),
-            "vendor_ret_msg": payload.get("vendor_ret_msg"),
-        }
+        fetch_diag = _transport_fetch_diag(
+            payload,
+            session_date=session_date,
+            host=host,
+            port=port,
+            poll_attempt_index=poll_attempt_index,
+        )
         if reason:
             return BarLoadResult(
                 source_id=SOURCE_MOOMOO_OPEND_KLINE_1M,
@@ -297,6 +334,8 @@ def load_moomoo_opend_kline_bars(
     else:
         raw_rows = kline_rows
         fetch_diag = {}
+        if poll_attempt_index is not None:
+            fetch_diag["poll_attempt_index"] = int(poll_attempt_index)
 
     raw_tuple = tuple(raw_rows)
     raw_time_keys = [
@@ -305,7 +344,12 @@ def load_moomoo_opend_kline_bars(
         if isinstance(row, Mapping) and row.get("time_key")
     ]
     window_provenance = {
+        **fetch_diag,
         "kline_session_date": session_date,
+        "kline_start": fetch_diag.get("kline_start", session_date),
+        "kline_end": fetch_diag.get("kline_end", session_date),
+        "connection_host": fetch_diag.get("connection_host", host),
+        "connection_port": fetch_diag.get("connection_port", port),
         "raw_row_count": int(fetch_diag.get("raw_row_count") or len(raw_tuple)),
         "first_raw_time_key": fetch_diag.get("first_raw_time_key") or (raw_time_keys[0] if raw_time_keys else None),
         "last_raw_time_key": fetch_diag.get("last_raw_time_key") or (raw_time_keys[-1] if raw_time_keys else None),
