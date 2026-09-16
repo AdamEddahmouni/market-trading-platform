@@ -20,7 +20,7 @@ python tools/ftep_watch_catalysts.py FTEP-V1-002 --live-ingress --json
 
 `python tools/imp.py ftep watch-catalysts` does **not** pass `--live-ingress`; use `tools/ftep_watch_catalysts.py` for prospective Finviz ingress.
 
-Successful live ingress evidence (no orders, no durable lock): `attention_data_kind=LIVE_PROSPECTIVE`, `watch_mode=PROSPECTIVE_FINVIZ_INGRESS`, `ingress_outcome` of `LIVE_INGRESS_SUCCESS` or `LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS`, summaries preserving `published_time` / `retrieved_time` / provider fields, `governed_session_ids` from evidence, `prospective_ingress.durable_lock=false`. Fetch/gate failures: `LIVE_INGRESS_FAILED` / `disposition=BLOCKED`.
+Successful live ingress evidence (no orders, no durable lock): `attention_data_kind=LIVE_PROSPECTIVE`, `watch_mode=PROSPECTIVE_FINVIZ_INGRESS`, `ingress_outcome` of `LIVE_INGRESS_SUCCESS` or `LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS`, summaries preserving `published_time` / `retrieved_time` / provider fields, `governed_session_ids` from evidence, `prospective_ingress.durable_lock=false`. Classified failures still emit UTF-8 JSON with `watch_mode=PROSPECTIVE_FINVIZ_INGRESS`: `LIVE_INGRESS_RATE_LIMITED` (HTTP 429, no immediate retry), `LIVE_INGRESS_TOKEN_ABSENT`, `LIVE_INGRESS_SECRET_DIR_MISSING`, `LIVE_INGRESS_GATES_INACTIVE`, `LIVE_INGRESS_FAILED`. Point `IMP_FINVIZ_SECRET_DIR` at the primary checkout `.private` (never copy `.private` into worktrees).
 
 **JSONL policy:** `artifacts/ftep-v1-002/governed-session-start-evidence.jsonl` is operator empirical evidence; it may be untracked in git without being absent on disk. Lane A owns the governed track/ignore choice — do not treat missing git index as missing sessions.
 
