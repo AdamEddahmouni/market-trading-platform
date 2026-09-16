@@ -18,6 +18,8 @@ from market_platform_foundation.intelligence.opportunity.evidence_promotion impo
     EVIDENCE_CLASS_VERIFIED,
 )
 from market_platform_foundation.intelligence.persistence import InMemoryIntelligenceRepository
+from market_platform_foundation.ui_api.live_intelligence import bind_ui_api_intelligence
+from market_platform_foundation.ui_api.news_ingest import handle_news_ingest_post
 from market_platform_foundation.ui_api.opportunity_projections import (
     apply_opportunity_ack,
     build_opportunity_detail_payload,
@@ -25,6 +27,7 @@ from market_platform_foundation.ui_api.opportunity_projections import (
     build_opportunities_summary_payload,
     build_ranked_rows,
 )
+from market_platform_foundation.news.timestamps import epoch_ns_from_iso
 from market_platform_foundation.ui_api.operator_opportunity_state import reset_operator_acks
 from market_platform_foundation.ui_api.store import ReplayStore
 
@@ -101,62 +104,98 @@ class OpportunityApiTests(unittest.TestCase):
         self.assertEqual(payload["items"], [])
         self.assertNotIn("2026-07-21", str(payload["as_of_context"].get("as_of_time")))
 
-    def test_live_mode_mutations_remain_blocked(self) -> None:
+    def test_live_mode_mutations_require_live_clock(self) -> None:
         self.store.data_mode = "LIVE_OBSERVATIONAL"
         self.store.mode = "LIVE"
         with self.assertRaises(PermissionError) as ack_ctx:
             apply_opportunity_ack(self.store, row_id="any-id", action="DISMISSED")
-        self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
+        self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_ACK_REQUIRES_LIVE_CLOCK")
 
-    def test_live_observational_read_ranks_repository_not_fixture_attention(self) -> None:
-        # Ranked READ can surface OpportunityV1 after the read/mutation split.
-        # READY requires a live receive clock. INELIGIBLE rows stay off the book.
-        # Fixture attention must stay quarantined so July cards are not ranked.
-        # EventV1 admission is a helper, not a UiApiHandler request-path.
+    def test_live_observational_read_ranks_after_eventv1_admit_not_fixture(self) -> None:
         self.store.data_mode = "LIVE_OBSERVATIONAL"
         self.store.mode = "LIVE"
-        receive_ns = 1_779_000_000_000_000_000
-        self.store.last_source_time_ns = receive_ns
-        self.store.as_of_time_ns = receive_ns
-        opportunity = self._seed_opportunity()
+        bind_ui_api_intelligence(self.store)
+        server_ns = int(epoch_ns_from_iso("2026-09-15T14:05:10Z"))
         with patch(
             "market_platform_foundation.market_data.live_runtime.get_live_runtime",
             return_value=None,
+        ), patch(
+            "market_platform_foundation.ui_api.news_ingest.monotonic_wall_ns",
+            return_value=server_ns,
         ):
+            ingest = handle_news_ingest_post(
+                self.store,
+                {
+                    "retrieved_time": "2026-09-15T14:05:08Z",
+                    "articles": [
+                        {
+                            "headline": "Example Corp reports quarterly earnings",
+                            "published_time": "2026-09-15T14:05:00Z",
+                            "url": "https://example.com/story",
+                            "tickers": ["AAPL"],
+                            "provider_native_id": "fv-opp-api-1",
+                        }
+                    ],
+                },
+            )
             payload = build_opportunities_summary_payload(self.store)
+        self.assertEqual(ingest["opportunity_count"], 1)
+        opp_id = ingest["opportunity_ids"][0]
         self.assertEqual(payload["feed_status"], "READY")
         self.assertNotEqual(payload["as_of_context"]["as_of_time"], "UNAVAILABLE")
-        item = self._item_by_opportunity(payload, opportunity.opportunity_id)
+        item = self._item_by_opportunity(payload, opp_id)
         self.assertEqual(item["identity_kind"], "OPPORTUNITY_V1")
-        self.assertNotEqual(item.get("lifecycle_state"), "INELIGIBLE")
         self.assertFalse(
             any(row.get("attention_id") == "att-replay-context" for row in payload["items"])
         )
-        detail = build_opportunity_detail_payload(self.store, opportunity.opportunity_id)
-        self.assertEqual(detail["opportunity_id"], opportunity.opportunity_id)
-        with self.assertRaises(PermissionError) as ack_ctx:
-            apply_opportunity_ack(self.store, row_id=opportunity.opportunity_id, action="WATCHED")
-        self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
+        detail = build_opportunity_detail_payload(self.store, opp_id)
+        self.assertEqual(detail["opportunity_id"], opp_id)
+        ack = apply_opportunity_ack(self.store, row_id=opp_id, action="WATCHED")
+        self.assertEqual(ack["action"], "WATCHED")
 
-    def test_live_ineligible_or_no_clock_is_not_ready(self) -> None:
+    def test_live_repository_without_clock_is_unready_not_ready(self) -> None:
         self.store.data_mode = "LIVE_OBSERVATIONAL"
         self.store.mode = "LIVE"
-        opportunity = self._seed_opportunity()
+        bind_ui_api_intelligence(self.store)
+        server_ns = int(epoch_ns_from_iso("2026-09-15T14:05:10Z"))
         with patch(
             "market_platform_foundation.market_data.live_runtime.get_live_runtime",
             return_value=None,
+        ), patch(
+            "market_platform_foundation.ui_api.news_ingest.monotonic_wall_ns",
+            return_value=server_ns,
         ):
+            ingest = handle_news_ingest_post(
+                self.store,
+                {
+                    "retrieved_time": "2026-09-15T14:05:08Z",
+                    "articles": [
+                        {
+                            "headline": "Example Corp reports quarterly earnings",
+                            "published_time": "2026-09-15T14:05:00Z",
+                            "url": "https://example.com/story",
+                            "tickers": ["AAPL"],
+                            "provider_native_id": "fv-opp-api-withheld",
+                        }
+                    ],
+                },
+            )
+            self.store.last_source_time_ns = None
+            self.store.as_of_time_ns = None
             payload = build_opportunities_summary_payload(self.store)
             ranked = build_ranked_rows(self.store)
-        self.assertNotEqual(payload["feed_status"], "READY")
-        self.assertEqual(payload["feed_status"], "EMPTY")
+        self.assertEqual(ingest["opportunity_count"], 1)
+        opp_id = ingest["opportunity_ids"][0]
+        self.assertEqual(payload["feed_status"], "UNREADY")
+        self.assertEqual(payload["unready_reason"], "LIVE_AS_OF_UNAVAILABLE")
+        self.assertEqual(payload.get("withheld_ranked_count"), 1)
         self.assertEqual(payload["items"], [])
-        self.assertEqual(ranked, ())
+        self.assertEqual(len(ranked), 1)
         self.assertEqual(payload["as_of_context"]["as_of_time"], "UNAVAILABLE")
         self.assertNotIn("2026-07-21", str(payload["as_of_context"]["as_of_time"]))
         self.assertNotIn("2026-07-21", self.store.as_of_time())
         with self.assertRaises(KeyError):
-            build_opportunity_detail_payload(self.store, opportunity.opportunity_id)
+            build_opportunity_detail_payload(self.store, opp_id)
 
     def test_demo_cannot_dismiss(self) -> None:
         summary = build_opportunities_summary_payload(self.store)

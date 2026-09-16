@@ -288,11 +288,9 @@ class ReplayStore:
 
     def as_of_time(self) -> str:
         if self.data_mode == "LIVE_OBSERVATIONAL" or str(self.mode).upper() == "LIVE":
-            if self.last_source_time_ns is not None:
-                return _epoch_ns_to_iso(int(self.last_source_time_ns))
-            if self.as_of_time_ns is not None:
-                return _epoch_ns_to_iso(int(self.as_of_time_ns))
-            return "UNAVAILABLE"
+            from .projections import display_as_of_time
+
+            return display_as_of_time(self)
         return self.fixture_cursor_as_of_time()
 
     def bars_visible(self) -> list[dict[str, Any]]:

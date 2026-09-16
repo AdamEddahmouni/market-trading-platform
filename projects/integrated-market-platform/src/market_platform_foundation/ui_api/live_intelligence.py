@@ -1,4 +1,4 @@
-"""Attach an empty IntelligenceRepository and unused ingress router to ReplayStore."""
+"""Attach IntelligenceRepository + production ObservationIngressRouter to ReplayStore."""
 
 from __future__ import annotations
 
@@ -10,12 +10,7 @@ from .store import ReplayStore
 
 
 def bind_ui_api_intelligence(store: ReplayStore) -> ReplayStore:
-    """Attach persistence + ingress router used by ``POST /intelligence/ingest/news``.
-
-    Necessary for EventV1 ``put_event`` in this process. Request-path admission
-    is ``news_ingest.handle_news_ingest_post`` via ``UiApiHandler``. Does not
-    auto-fetch Finviz, start enrichment, or enable Live execution.
-    """
+    """Wire canonical persistence and ingress used by news observational admit paths."""
 
     if store.strategy_repository is None:
         store.strategy_repository = InMemoryIntelligenceRepository()

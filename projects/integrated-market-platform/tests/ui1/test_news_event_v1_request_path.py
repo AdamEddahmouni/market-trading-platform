@@ -37,6 +37,7 @@ from tests.ui1.test_ui_api import COLLECTION_ROOT
 
 _PUBLISHED = "2026-09-15T14:05:00Z"
 _RETRIEVED = "2026-09-15T14:05:08Z"
+_SERVER = "2026-09-15T14:05:10Z"
 
 
 def _raw_article(*, headline: str, tickers: list[str] | None = None) -> dict:
@@ -87,14 +88,32 @@ class NewsIngestRequestPathTests(unittest.TestCase):
         self.store.data_mode = "LIVE_OBSERVATIONAL"
         self.store.mode = "LIVE"
         bind_ui_api_intelligence(self.store)
+        self._server_ns = int(epoch_ns_from_iso(_SERVER))
         self._runtime_patch = patch(
             "market_platform_foundation.market_data.live_runtime.get_live_runtime",
             return_value=None,
         )
         self._runtime_patch.start()
+        self._clock_patch = patch(
+            "market_platform_foundation.ui_api.news_ingest.monotonic_wall_ns",
+            return_value=self._server_ns,
+        )
+        self._clock_patch.start()
 
     def tearDown(self) -> None:
+        self._clock_patch.stop()
         self._runtime_patch.stop()
+
+    def test_non_catalyst_headline_skipped_by_pipeline_stays_empty(self) -> None:
+        payload = handle_news_ingest_post(
+            self.store,
+            {"retrieved_time": _RETRIEVED, "articles": [_raw_article(headline="Example Corp beats estimates")]},
+        )
+        self.assertEqual(payload["admitted_count"], 0)
+        self.assertGreaterEqual(payload["skipped_count"], 1)
+        summary = build_opportunities_summary_payload(self.store)
+        self.assertEqual(summary["feed_status"], "EMPTY")
+        self.assertEqual(summary["items"], [])
 
     def test_handler_admits_put_event_and_zero_qualifying_stays_empty(self) -> None:
         repo = self.store.strategy_repository
@@ -102,12 +121,17 @@ class NewsIngestRequestPathTests(unittest.TestCase):
         with patch.object(InMemoryIntelligenceRepository, "put_event", wraps=repo.put_event) as put_event:
             payload = handle_news_ingest_post(
                 self.store,
-                {"retrieved_time": _RETRIEVED, "articles": [_raw_article(headline="Example Corp beats estimates")]},
+                {
+                    "retrieved_time": _RETRIEVED,
+                    "articles": [
+                        _raw_article(headline="Example Corp reports quarterly earnings"),
+                    ],
+                },
             )
         put_event.assert_called_once()
         self.assertEqual(payload["admitted_count"], 1)
-        self.assertEqual(payload["opportunity_count"], 0)
-        self.assertEqual(payload["zero_qualifying_count"], 1)
+        self.assertEqual(payload["opportunity_count"], 1)
+        self.assertEqual(payload["zero_qualifying_count"], 0)
         self.assertFalse(payload["auto_fetch"])
         self.assertFalse(payload["live_authority"])
         event_id = payload["events"][0]["event_id"]
@@ -115,8 +139,8 @@ class NewsIngestRequestPathTests(unittest.TestCase):
         self.assertIsNotNone(stored)
         self.assertNotEqual(stored.event_time_ns, stored.available_time_ns)
         summary = build_opportunities_summary_payload(self.store)
-        self.assertEqual(summary["feed_status"], "EMPTY")
-        self.assertEqual(summary["items"], [])
+        self.assertEqual(summary["feed_status"], "READY")
+        self.assertEqual(len(summary["items"]), 1)
         self.assertNotIn("2026-07-21", str(summary["as_of_context"]["as_of_time"]))
 
     def test_qualifying_news_ranks_without_fixture_cards_and_mutations_stay_blocked(self) -> None:
@@ -143,9 +167,9 @@ class NewsIngestRequestPathTests(unittest.TestCase):
         attention = build_attention_page(self.store, limit=50)
         current_ids = [item.get("attention_id") for item in (attention.get("items") or [])]
         self.assertNotIn("att-replay-context", current_ids)
-        with self.assertRaises(PermissionError) as ack_ctx:
-            apply_opportunity_ack(self.store, row_id=payload["opportunity_ids"][0], action="WATCHED")
-        self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
+        ack = apply_opportunity_ack(self.store, row_id=payload["opportunity_ids"][0], action="WATCHED")
+        self.assertEqual(ack["action"], "WATCHED")
+        self.assertIn("trade_review_id", ack)
 
 
 class NewsIngestHttpTests(unittest.TestCase):
@@ -166,11 +190,18 @@ class NewsIngestHttpTests(unittest.TestCase):
             return_value=None,
         )
         self._runtime_patch.start()
+        self._server_ns = int(epoch_ns_from_iso(_SERVER))
+        self._clock_patch = patch(
+            "market_platform_foundation.ui_api.news_ingest.monotonic_wall_ns",
+            return_value=self._server_ns,
+        )
+        self._clock_patch.start()
         self._auth_patch = patch.object(UiApiHandler, "_authorize_request", return_value=True)
         self._auth_patch.start()
 
     def tearDown(self) -> None:
         self._auth_patch.stop()
+        self._clock_patch.stop()
         self._runtime_patch.stop()
         self.httpd.shutdown()
         self.httpd.server_close()
@@ -208,9 +239,9 @@ class NewsIngestHttpTests(unittest.TestCase):
             f"/opportunities/{ingest['opportunity_ids'][0]}/watch",
             body=b"{}",
         )
-        self.assertEqual(ack.status, 403)
-        denied = json.loads(ack.read().decode("utf-8"))
-        self.assertIn("LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE", str(denied))
+        self.assertEqual(ack.status, 200)
+        body = json.loads(ack.read().decode("utf-8"))
+        self.assertEqual(body["action"], "WATCHED")
 
     def test_http_post_rejects_oversized_body(self) -> None:
         response = self._request(

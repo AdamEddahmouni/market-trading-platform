@@ -159,6 +159,13 @@ def record_opportunity_surface_trace(
     return _persist_draft(draft)
 
 
+def _trace_mode_for_store(store: Any) -> str:
+    data_mode = str(getattr(store, "data_mode", "") or "")
+    if data_mode == "LIVE_OBSERVATIONAL" or str(getattr(store, "mode", "")).upper() == "LIVE":
+        return "LIVE_OBSERVATIONAL"
+    return "PAPER"
+
+
 def record_operator_lifecycle_trace(
     store: Any,
     row: Any,
@@ -174,19 +181,20 @@ def record_operator_lifecycle_trace(
     kind = kind_by_action.get(ack)
     if kind is None:
         return None
+    trace_mode = _trace_mode_for_store(store)
     provider_state, freshness = _provider_and_freshness_refs(store)
     opportunity_id = getattr(row, "opportunity_id", None)
     immutable_inputs = {
         "action": ack.value,
         "decision_kind": kind.value,
-        "mode": "PAPER",
+        "mode": trace_mode,
         "opportunity_id": opportunity_id,
         "summary_id": getattr(row, "summary_id", None),
     }
     draft = ExecutionDecisionTraceDraft(
         opportunity_id=opportunity_id,
         decision_time_ns=int(decision_time_ns),
-        mode="PAPER",
+        mode=trace_mode,
         decision_kind=kind,
         eligibility=_eligibility_from_row(row),
         provider_state=provider_state,

@@ -27,14 +27,22 @@ ADAPTER_VERSION = "1"
 NORMALIZATION_VERSION = "intelligence/normalization/finviz-news/1"
 
 
-def news_article_to_event_v1(article: NewsArticleEvent) -> EventV1:
+def news_article_to_event_v1(
+    article: NewsArticleEvent,
+    *,
+    server_received_time_ns: int | None = None,
+) -> EventV1:
     """Convert a normalized news article into EventV1. Does not persist."""
 
     retrieved_ns = epoch_ns_from_iso(article.retrieved_time)
     if retrieved_ns is None:
         raise ValueError("NEWS_RETRIEVED_TIME_REQUIRED")
     published_ns = epoch_ns_from_iso(article.published_time)
-    event_time_ns = published_ns if published_ns is not None else retrieved_ns
+    if published_ns is None:
+        raise ValueError("NEWS_PUBLICATION_TIME_REQUIRED")
+    event_time_ns = published_ns
+    received_ns = int(server_received_time_ns) if server_received_time_ns is not None else int(retrieved_ns)
+    available_ns = int(retrieved_ns)
     instrument_id = None
     native_symbol = None
     if article.instrument_linkages:
@@ -44,8 +52,8 @@ def news_article_to_event_v1(article: NewsArticleEvent) -> EventV1:
         basis=AvailabilityBasis.LOCAL_RECEIPT,
         confidence=AvailabilityConfidence.DIRECTLY_OBSERVED,
         source_precision=SourcePrecision.SECOND,
-        provider_reported_available_time_ns=retrieved_ns,
-        notes="available_time_ns is retrieval time; event_time_ns is publication when known",
+        provider_reported_available_time_ns=available_ns,
+        notes="available_time_ns is client retrieval; received_time_ns is server receive when stamped",
     )
     provenance = ProviderProvenance(
         provider_id=article.provider_id,
@@ -77,13 +85,13 @@ def news_article_to_event_v1(article: NewsArticleEvent) -> EventV1:
         event_id=article.event_id,
         event_type=NEWS_EVENT_TYPE,
         event_time_ns=event_time_ns,
-        available_time_ns=retrieved_ns,
+        available_time_ns=available_ns,
         payload=article.to_dict(),
         source=source,
         provenance=provenance,
         instrument_id=instrument_id,
         provider_time_ns=published_ns,
-        received_time_ns=retrieved_ns,
+        received_time_ns=received_ns,
         quality_state=quality_state,
         quality_flags=article.quality_flags,
     )

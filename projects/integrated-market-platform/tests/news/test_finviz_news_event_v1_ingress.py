@@ -110,9 +110,8 @@ class FinvizNewsEventV1IngressTests(unittest.TestCase):
         attention = build_attention_page(self.store, limit=50)
         current_ids = [item.get("attention_id") for item in (attention.get("items") or [])]
         self.assertNotIn("att-replay-context", current_ids)
-        with self.assertRaises(PermissionError) as ack_ctx:
+        with self.assertRaises(KeyError):
             apply_opportunity_ack(self.store, row_id="any-id", action="WATCHED")
-        self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
 
 
 if __name__ == "__main__":
