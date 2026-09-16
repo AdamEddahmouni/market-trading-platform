@@ -292,6 +292,93 @@ class SecretAuditTest(unittest.TestCase):
                 context="log_line",
             )
 
+    def test_assert_no_secrets_allows_operator_readiness_metadata(self) -> None:
+        assert_no_secrets_in_payload(
+            {
+                "schema_version": "operator-readiness/1.0",
+                "providers": [
+                    {
+                        "provider": "ibkr_observational",
+                        "credential_state": "MANUAL_SESSION_REQUIRED",
+                        "gate_state": "DISABLED",
+                    },
+                    {
+                        "provider": "ibkr_observational",
+                        "credential_state": "CREDENTIAL_FILE_PRESENT_MANUAL_LOGIN_REQUIRED",
+                    },
+                ],
+            },
+            context="operator_readiness",
+        )
+
+    def test_assert_no_secrets_allows_operator_config_field_descriptors(self) -> None:
+        assert_no_secrets_in_payload(
+            {
+                "schema_version": "operator-config/1.0",
+                "providers": [
+                    {
+                        "provider": "alpaca",
+                        "fields": [
+                            {
+                                "key": "APCA_API_KEY_ID",
+                                "label": "Key ID",
+                                "sensitive": True,
+                                "configured": False,
+                            }
+                        ],
+                    }
+                ],
+                "secrets_included": False,
+            },
+            context="operator_config",
+        )
+
+    def test_assert_no_secrets_blocks_secret_value_in_api_key_field(self) -> None:
+        with self.assertRaises(SecretLeakError):
+            assert_no_secrets_in_payload(
+                {"FINVIZ_API_KEY": "synthetic-test-secret-value-001"},
+                context="response",
+            )
+
+    def test_assert_no_secrets_blocks_config_descriptor_with_secret_shaped_value(self) -> None:
+        with self.assertRaises(SecretLeakError):
+            assert_no_secrets_in_payload(
+                {
+                    "providers": [
+                        {
+                            "fields": [
+                                {"key": "sk-synthetic-test-only-secret-material"},
+                            ]
+                        }
+                    ]
+                },
+                context="operator_config",
+            )
+
+    def test_assert_no_secrets_blocks_bare_key_property_with_env_name(self) -> None:
+        with self.assertRaises(SecretLeakError):
+            assert_no_secrets_in_payload(
+                {"key": "FINVIZ_API_KEY"},
+                context="unrelated_payload",
+            )
+
+    def test_assert_no_secrets_blocks_non_enum_credential_state_value(self) -> None:
+        with self.assertRaises(SecretLeakError):
+            assert_no_secrets_in_payload(
+                {"credential_state": "sk-synthetic-test-only-secret"},
+                context="operator_readiness",
+            )
+
+    def test_assert_no_secrets_blocks_live_secret_alongside_safe_metadata(self) -> None:
+        with self.assertRaises(SecretLeakError):
+            assert_no_secrets_in_payload(
+                {
+                    "credential_state": "CONFIGURED",
+                    "nested": {"IMP_TRADIER_TOKEN": "synthetic-test-token-value"},
+                },
+                context="mixed_payload",
+            )
+
 
 class ReadinessTest(unittest.TestCase):
     def test_ready_when_all_gates_pass(self) -> None:
