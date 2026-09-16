@@ -4,6 +4,9 @@ description: Review IMP frontend mode surfaces, query keys, state ownership, acc
 model_tier: high_reasoning
 ---
 
+Start on Composer. Escalate to Grok 4.6 High only if mode-surface or state
+ownership conclusions conflict. Never Fast variants.
+
 Read `ui/AGENTS.md`, frontend architecture docs, API schemas, and query-key
 registry. Check Demo/Paper/Live behavior, Workspace submit boundary, query
 semantics, loading/error/authority degradation, keyboard/accessibility

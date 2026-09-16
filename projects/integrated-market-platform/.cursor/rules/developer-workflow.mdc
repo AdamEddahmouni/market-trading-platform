@@ -5,8 +5,10 @@ alwaysApply: true
 
 # IMP developer workflow
 
-- Start at root `AGENTS.md`; use `docs/engineering/DEVELOPER_OPERATING_SYSTEM.md`
-  for commands, validation tiers, delegation, and closure.
+- Start at root `AGENTS.md`. Use `docs/engineering/AGENT_OPERATING_SYSTEM.md`
+  for model, parallelism, worktrees, evidence, and handoff. Use
+  `docs/engineering/DEVELOPER_OPERATING_SYSTEM.md` for commands, validation
+  tiers, and closure.
 - In a linked worktree, run `python tools/imp.py env` before validation; use
   `python tools/imp.py env bootstrap --link-venv` when no local `.venv` exists.
 - Prefer `python tools/imp.py` over assembling equivalent commands manually.

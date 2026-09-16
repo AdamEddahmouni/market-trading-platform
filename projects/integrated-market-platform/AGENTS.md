@@ -9,9 +9,11 @@ details live in the linked architecture and engineering references.
 1. [docs/README.md](docs/README.md) — authority map
 2. [docs/architecture/MODE_AUTHORITY.md](docs/architecture/MODE_AUTHORITY.md) —
    non-negotiable safety model
-3. [docs/engineering/DEVELOPER_OPERATING_SYSTEM.md](docs/engineering/DEVELOPER_OPERATING_SYSTEM.md) —
-   command and delegation contract
-4. [docs/engineering/WORK_LOG.md](docs/engineering/WORK_LOG.md) — current history
+3. [docs/engineering/AGENT_OPERATING_SYSTEM.md](docs/engineering/AGENT_OPERATING_SYSTEM.md) —
+   model, parallelism, worktree, evidence, and handoff control plane
+4. [docs/engineering/DEVELOPER_OPERATING_SYSTEM.md](docs/engineering/DEVELOPER_OPERATING_SYSTEM.md) —
+   command and validation contract
+5. [docs/engineering/WORK_LOG.md](docs/engineering/WORK_LOG.md) — current history
 
 Read [ui/AGENTS.md](ui/AGENTS.md) for UI work and
 [paper/AGENTS.md](src/market_platform_foundation/paper/AGENTS.md) for Paper
@@ -70,11 +72,13 @@ repo-root `integrated-market-platform/`.
 - Add regression tests for real bugs and do not weaken tests or safety gates.
 - Substantive work updates `WORK_LOG.md`; behavior/architecture changes update
   the authoritative doc, not only a completion record.
-- Use repo-local skills/subagents only for their declared scope. Parallelize
-  independent read-only or isolated validation work; keep authority,
-  persistence, execution, and shared-state changes serial.
+- Use repo-local skills/subagents only for their declared scope. Default to
+  one agent. Parallelize only independent read-only or isolated worktrees;
+  keep authority, persistence, execution, evidence-sensitive, and shared-state
+  changes serial. Start on Composer; never Fast models.
 
 Detailed validation, closure, model routing, and delegation rules:
+[Agent Operating System](docs/engineering/AGENT_OPERATING_SYSTEM.md) and
 [Developer Operating System](docs/engineering/DEVELOPER_OPERATING_SYSTEM.md).
 On this machine the uv-managed 3.11 interpreter is
 `C:\Users\adame\AppData\Roaming\uv\python\cpython-3.11.15-windows-x86_64-none\python.exe`. uv-managed

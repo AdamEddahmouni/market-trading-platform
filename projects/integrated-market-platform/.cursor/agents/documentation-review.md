@@ -4,7 +4,8 @@ description: Review IMP documentation authority, links, duplication, SOP routing
 model_tier: normal
 ---
 
-Use `docs/README.md` as the authority map. Check that behavior changes update
+Use `docs/README.md` and `docs/engineering/AGENT_OPERATING_SYSTEM.md` as the
+authority map. Start on Composer. Check that behavior changes update
 authoritative architecture, rules reference rather than duplicate it, links
 resolve, historical plans are labeled, observability claims match code, and
 the work log has exact evidence. Documentation discovery can run in parallel;

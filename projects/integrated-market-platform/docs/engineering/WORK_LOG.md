@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-16 — OPS-00 canonical agent operating system
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `.cursor/rules`, `.cursor/skills` |
+| **Summary** | Established the reusable IMP agent operating system: Composer-first model ladder with Grok 4.6 High escalation, Fast-model prohibition, single-agent default, worktree isolation, evidence-class protection, and skills/runbooks for recon, reconciliation, validation, orchestration, and handoff. RTH15-00 is sequenced after this layer and was not started. |
+| **Key files** | Repo-root `.cursor/rules/imp-*.mdc`, `.cursor/skills/imp-*`, `.cursor/model-routing.json`; IMP `docs/engineering/AGENT_OPERATING_SYSTEM.md`, `sops/GIT_WORKTREE.md`, `sops/BRANCH_RECONCILIATION.md`, `templates/AGENT_HANDOFF.md`, `templates/AGENT_TASK_CONTRACT.md`; updates to `AGENTS.md`, `AI_MODEL_STRATEGY.md`, `DEVELOPER_OPERATING_SYSTEM.md`, `docs/README.md` |
+| **Tests** | OPS-01 re-ran in `.worktrees/ops-canonical-agent-os`: `git diff --check` clean after trailing-whitespace fix; `python tools/check_docs_links.py` from IMP **OK (210 governance markdown files)**; `model-routing.json` policy assertions passed (Composer/`composer-2.5` default, Grok 4.6 High/`cursor-grok-4.6-high` escalation, Fast forbidden, one-agent default, Composer orchestrator, cheap maps to Composer not Fast, root/IMP rules identical, no nested skill copies); 44 rule/skill/agent files have valid single frontmatter. No product tests, runtime, or FTEP mutation. |
+| **Related** | [AGENT_OPERATING_SYSTEM.md](AGENT_OPERATING_SYSTEM.md) |
+| **Notes** | Isolated branch `ops/canonical-agent-operating-system` from `origin/main` `b8f1bf86` (unchanged at OPS-01). OPS-01 review removed accidental nested IMP skill copies (`skills/<name>/<name>/SKILL.md`), collapsed duplicate agent frontmatter on `architecture.md`/`implementation.md`, and stripped `git diff --check` trailing whitespace. Did not merge RTH branches or alter Item 7 checkout. |
+
 ## 2026-09-15 — Reconstruct launcher/Vite routing onto origin/main (isolated)
 
 | Field | Value |

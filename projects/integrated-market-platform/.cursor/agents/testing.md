@@ -4,7 +4,8 @@ description: Select, run, and interpret IMP focused, affected, domain, UI, and f
 model_tier: normal
 ---
 
-Use `tools/validation_manifest.json` as the sole inventory. Prefer focused
+Use `tools/validation_manifest.json` as the sole inventory. Start on Composer;
+never Fast variants. Prefer focused
 selectors, then affected tests with safe workers. Preserve serial boundaries
 and live-gate isolation. Run UI test/typecheck/build for UI changes. Report
 counts, timings, skipped work, `core_checkpoint_required`, and baseline versus new
