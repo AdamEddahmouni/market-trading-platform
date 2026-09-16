@@ -14,7 +14,7 @@ const item: AttentionItem = {
 };
 
 describe("PaperCandidateQueue", () => {
-  it("keeps attention candidates and can host an empty opportunity review", () => {
+  it("presents attention signals as draftable candidates, not opportunities", () => {
     const onSelect = vi.fn();
     const onOpenWorkspace = vi.fn();
     render(
@@ -27,14 +27,28 @@ describe("PaperCandidateQueue", () => {
         onExplain={vi.fn()}
         onInspect={vi.fn()}
         onOpenWorkspace={onOpenWorkspace}
-        opportunityItems={[]}
-        opportunityState="ready"
-        feedStatus="EMPTY"
-        paperAccountId="paper-acct"
       />,
     );
-    expect(screen.getByText(/No OpportunityV1 candidates/)).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: "Paper candidates" })).toBeInTheDocument();
+    expect(screen.getByText("1 signals")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Draft BIYA in Paper workspace" }));
     expect(onOpenWorkspace).toHaveBeenCalledWith(item);
+  });
+
+  it("marks signal-only items as research only", () => {
+    render(
+      <PaperCandidateQueue
+        items={[{ ...item, attention_id: "attention-2", instrument_id: undefined, headline: "Macro review" }]}
+        state="ready"
+        selectedAttentionId={null}
+        onSelect={vi.fn()}
+        onWhy={vi.fn()}
+        onExplain={vi.fn()}
+        onInspect={vi.fn()}
+        onOpenWorkspace={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Research only")).toBeInTheDocument();
+    expect(screen.getByText(/No instrument-backed candidate is available/)).toBeInTheDocument();
   });
 });

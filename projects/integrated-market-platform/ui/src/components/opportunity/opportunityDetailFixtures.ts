@@ -1,6 +1,6 @@
 import type { OpportunityEvidenceResponse, OpportunityReviewRow } from "../../api/opportunityClient";
 
-export const PROGRESSIVE_OPPORTUNITY_COCKPIT_READY = "PROGRESSIVE_OPPORTUNITY_COCKPIT_READY";
+export const OPPORTUNITY_DETAIL_MODEL_READY = "OPPORTUNITY_DETAIL_MODEL_READY";
 
 export const fixtureOpportunityRowBase: OpportunityReviewRow = {
   summary_id: "sum-progressive-1",

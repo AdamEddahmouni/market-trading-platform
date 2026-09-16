@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { AttentionItem } from "../../api/client";
 import type { OpportunityAckAction, OpportunityReviewRow } from "../../api/opportunityClient";
+import type { Mode } from "../mode-session/types";
 import { ImpOverviewKpiStrip } from "./ImpOverviewKpiStrip";
 import { ImpOverviewPrimaryQueue } from "./ImpOverviewPrimaryQueue";
 import type { OverviewKpiCell, OverviewKpiState } from "./impOverviewMetrics";
@@ -16,8 +17,10 @@ export type ImpOverviewBoardProps = {
   feedStatus?: string;
   unreadyReason?: string;
   nextAction?: string;
+  mode?: Mode;
   paperAccountId?: string;
   readOnly?: boolean;
+  onOpportunityRetry?: () => void;
   onWhy: (item: AttentionItem) => void;
   onExplain: (item: AttentionItem) => void;
   onInspect: (item: AttentionItem) => void;
@@ -37,8 +40,10 @@ export function ImpOverviewBoard({
   feedStatus,
   unreadyReason,
   nextAction,
+  mode,
   paperAccountId,
   readOnly,
+  onOpportunityRetry,
   onWhy,
   onExplain,
   onInspect,
@@ -58,8 +63,10 @@ export function ImpOverviewBoard({
         feedStatus={feedStatus}
         unreadyReason={unreadyReason}
         nextAction={nextAction}
+        mode={mode}
         paperAccountId={paperAccountId}
         readOnly={readOnly}
+        onOpportunityRetry={onOpportunityRetry}
         onWhy={onWhy}
         onExplain={onExplain}
         onInspect={onInspect}

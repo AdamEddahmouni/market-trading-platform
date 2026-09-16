@@ -10,34 +10,16 @@ import { StatePill } from "../imp-ui/StatePill";
 import { FreshnessIndicator } from "../imp-ui/FreshnessIndicator";
 import { AttentionBanner } from "../imp-ui/AttentionBanner";
 import { JsonDetailPanel } from "../shared/JsonDetailPanel";
-import { attentionItemFromOpportunity } from "../now/OpportunityReviewCard";
-import { opportunityRankLabel } from "../imp-product/impOpportunityDisplay";
+import { buildOpportunityDetailSections } from "../opportunity/opportunityDetailModel";
 import {
-  buildProgressiveOpportunitySections,
-  type ProgressivePresentationState,
-} from "../imp-product/progressiveOpportunityModel";
+  attentionItemFromOpportunity,
+  evidenceInputsSentence,
+  hasProvisionalOrder,
+  OPPORTUNITY_STATE_LABEL,
+  OPPORTUNITY_STATE_TONE,
+  opportunityRankLabel,
+} from "../opportunity/opportunityPresentation";
 import { TradeReviewLearningPanel } from "../imp-product/TradeReviewLearningPanel";
-
-const STATE_LABEL: Record<ProgressivePresentationState, string> = {
-  DETECTED: "Detected",
-  PROVISIONAL: "Provisional",
-  VERIFYING: "Verifying",
-  VERIFIED: "Verified",
-  CONTRADICTED: "Contradicted",
-  EXPIRED: "Expired",
-};
-
-const STATE_TONE: Record<
-  ProgressivePresentationState,
-  "live" | "paper" | "replay" | "research" | "caution" | "critical" | "neutral"
-> = {
-  DETECTED: "neutral",
-  PROVISIONAL: "caution",
-  VERIFYING: "research",
-  VERIFIED: "live",
-  CONTRADICTED: "critical",
-  EXPIRED: "neutral",
-};
 
 export type OpportunityDetailCardProps = {
   row: OpportunityReviewRow;
@@ -90,7 +72,7 @@ function Disclosure({
  * Selected-opportunity detail with progressive disclosure:
  * L1 decision summary always visible; L2 evidence/verification, L3
  * historical/research context, and L4 technical detail behind disclosures.
- * Content derives from `buildProgressiveOpportunitySections` (backend fields
+ * Content derives from `buildOpportunityDetailSections` (backend fields
  * only — no invented truth).
  */
 export function OpportunityDetailCard({
@@ -106,13 +88,10 @@ export function OpportunityDetailCard({
   onAck,
 }: OpportunityDetailCardProps) {
   const attention = attentionItemFromOpportunity(row);
-  const model = buildProgressiveOpportunitySections(row, { evidence, paperActions, readOnly });
+  const model = buildOpportunityDetailSections(row, { evidence, paperActions, readOnly });
   const rank = opportunityRankLabel(row);
-  const basis = row.ranking_vector?.basis;
-  const provisionalOrder = Boolean(basis && basis !== "COMPARATOR_LEXICOGRAPHIC");
+  const provisionalOrder = hasProvisionalOrder(row);
   const quality = row.data_quality ?? {};
-  const dimensions = row.ranking_vector?.dimensions ?? [];
-  const presentDimensions = dimensions.filter((d) => d.status === "PRESENT").length;
   const nextAction = resolveSemanticState("research", model.actionReadiness.nextSafeAction);
   const eligibility = row.eligibility_state
     ? resolveSemanticState("research", row.eligibility_state)
@@ -130,8 +109,8 @@ export function OpportunityDetailCard({
       <header className="imp-radar-detail-head">
         <div className="imp-radar-detail-state-row">
           <StatePill
-            tone={STATE_TONE[model.presentationState]}
-            label={STATE_LABEL[model.presentationState]}
+            tone={OPPORTUNITY_STATE_TONE[model.presentationState]}
+            label={OPPORTUNITY_STATE_LABEL[model.presentationState]}
             raw={model.presentationState}
           />
           {eligibility && row.eligibility_state !== "ELIGIBLE" ? (
@@ -158,11 +137,7 @@ export function OpportunityDetailCard({
           </div>
           <div>
             <dt>Evidence</dt>
-            <dd data-testid="imp-radar-detail-evidence">
-              {dimensions.length
-                ? `${presentDimensions} of ${dimensions.length} ranking inputs present`
-                : "Ranking inputs unavailable"}
-            </dd>
+            <dd data-testid="imp-radar-detail-evidence">{evidenceInputsSentence(row)}</dd>
           </div>
           <div>
             <dt>Freshness</dt>

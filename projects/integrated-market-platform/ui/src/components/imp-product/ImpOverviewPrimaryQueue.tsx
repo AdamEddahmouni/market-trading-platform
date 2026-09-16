@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { AttentionItem } from "../../api/client";
 import type { OpportunityAckAction, OpportunityReviewRow } from "../../api/opportunityClient";
+import type { Mode } from "../mode-session/types";
 import { AttentionFeed } from "../AttentionFeed";
-import { OpportunityReviewList } from "../now/OpportunityReviewCard";
-import { OpportunityFeedStatusBanner } from "./OpportunityFeedStatusBanner";
+import { OpportunityQueue } from "../opportunity/OpportunityQueue";
 
 export type OverviewQueueFilter = "ranked" | "attention" | "both";
 
@@ -17,9 +17,11 @@ export type ImpOverviewPrimaryQueueProps = {
   feedStatus?: string;
   unreadyReason?: string;
   nextAction?: string;
-  discoverPath?: string;
+  mode?: Mode;
+  radarPath?: string;
   paperAccountId?: string;
   readOnly?: boolean;
+  onOpportunityRetry?: () => void;
   onWhy: (item: AttentionItem) => void;
   onExplain: (item: AttentionItem) => void;
   onInspect: (item: AttentionItem) => void;
@@ -33,6 +35,12 @@ const FILTERS: { id: OverviewQueueFilter; label: string }[] = [
   { id: "both", label: "Both" },
 ];
 
+/**
+ * Command's primary queue: the ranked opportunity queue (shared opportunity
+ * primitives — same state/evidence/freshness/next-action language as Radar)
+ * alongside the attention feed. Compact and high-signal; deep detail lives
+ * on Radar.
+ */
 export function ImpOverviewPrimaryQueue({
   attentionItems,
   attentionState,
@@ -42,9 +50,11 @@ export function ImpOverviewPrimaryQueue({
   feedStatus,
   unreadyReason,
   nextAction,
-  discoverPath = "/discover",
+  mode,
+  radarPath = "/radar",
   paperAccountId,
   readOnly = false,
+  onOpportunityRetry,
   onWhy,
   onExplain,
   onInspect,
@@ -62,7 +72,7 @@ export function ImpOverviewPrimaryQueue({
           <p className="imp-section-eyebrow">Opportunity Radar</p>
           <h2 id="imp-overview-primary-queue-title">Primary review queue</h2>
         </div>
-        <Link className="imp-top-opportunities-link" to={discoverPath}>
+        <Link className="imp-top-opportunities-link" to={radarPath}>
           Open full radar
         </Link>
       </header>
@@ -92,20 +102,16 @@ export function ImpOverviewPrimaryQueue({
       >
         {showRanked ? (
           <div className="imp-overview-queue-ranked">
-            <OpportunityFeedStatusBanner
-              state={opportunityState}
-              feedStatus={feedStatus}
-              unreadyReason={unreadyReason}
-              nextAction={nextAction}
-            />
-            <OpportunityReviewList
+            <OpportunityQueue
               items={opportunityItems}
               state={opportunityState}
               feedStatus={feedStatus}
               unreadyReason={unreadyReason}
               nextAction={nextAction}
+              mode={mode}
               paperAccountId={paperAccountId}
               readOnly={readOnly}
+              onRetry={onOpportunityRetry}
               onExplain={onExplain}
               onInspect={onInspect}
               onOpenWorkspace={onOpenWorkspace}

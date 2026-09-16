@@ -80,7 +80,12 @@ describe("PaperNowPage", () => {
   it("composes one Paper Command heading and four named decision regions", () => {
     renderPage();
     expect(screen.getByRole("heading", { level: 1, name: "Paper Command" })).toBeInTheDocument();
-    expect(screen.getByText("paper-acct")).toBeInTheDocument();
+    // Account/session identifiers render truncate-middle with the full value preserved.
+    const identifiers = screen.getAllByTestId("imp-ui-copyable-id");
+    expect(identifiers.map((node) => node.getAttribute("title"))).toEqual([
+      "paper-acct",
+      "paper-session",
+    ]);
     expect(screen.getByRole("region", { name: "Risk summary" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Candidate queue" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Order preview" })).toBeInTheDocument();

@@ -451,21 +451,6 @@
   border-color: var(--accent-primary);
 }
 
-.imp-opportunity-feed-banner {
-  margin: 0 0 0.75rem;
-  padding: 0.55rem 0.75rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-2);
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-}
-
-.imp-opportunity-feed-banner-alert {
-  border-color: rgba(196, 78, 82, 0.45);
-  color: var(--text-primary);
-}
-
 .imp-overview-primary-queue {
   margin: 0.75rem 0 1rem;
   padding: 0.85rem 1rem;
@@ -518,15 +503,14 @@
 .imp-overview-primary-queue,
 .imp-overview-queue-panels,
 .imp-overview-queue-ranked,
-.opportunity-review-list,
-.progressive-opportunity-card {
+.imp-opportunity-queue,
+.imp-opportunity-card {
   min-width: 0;
 }
 
 /* Raw 64-char account/session hex IDs and enum words wrap instead of
    overflowing (same rule as .paper-risk-ribbon dd). */
-.progressive-opp-surface-meta dd,
-.progressive-opportunity-card code {
+.imp-opportunity-card code {
   overflow-wrap: anywhere;
 }
 
@@ -709,108 +693,6 @@
 .imp-provider-matrix-links {
   margin: 0;
   padding-left: 18px;
-}
-
-.progressive-opportunity-card {
-  display: grid;
-  gap: 0.75rem;
-  font-size: 0.82rem;
-}
-
-.progressive-opp-head {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.progressive-opp-head h3 {
-  margin: 0.25rem 0 0;
-  font-size: 1.05rem;
-}
-
-.progressive-opp-state {
-  display: inline-block;
-  font-size: 0.62rem;
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 0.15rem 0.45rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid color-mix(in srgb, var(--accent-primary) 45%, transparent);
-  color: var(--accent-primary);
-  background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
-}
-
-.progressive-opp-surface-meta {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
-  gap: 0.35rem 0.75rem;
-  margin: 0;
-}
-
-.progressive-opp-surface-meta dt {
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-}
-
-.progressive-opp-surface-meta dd {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-}
-
-.progressive-opp-surface-why {
-  grid-column: 1 / -1;
-}
-
-.progressive-opp-section h4 {
-  margin: 0 0 0.35rem;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-}
-
-.progressive-opp-meta-grid {
-  display: grid;
-  gap: 0.25rem;
-  margin: 0;
-}
-
-.progressive-opp-meta-row {
-  display: grid;
-  grid-template-columns: 8.5rem 1fr;
-  gap: 0.5rem;
-  padding: 0.2rem 0;
-  border-bottom: 1px dashed var(--border-subtle);
-}
-
-.progressive-opp-meta-row dt {
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-}
-
-.progressive-opp-meta-row dd {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  word-break: break-word;
-}
-
-.progressive-opp-lines {
-  margin: 0;
-  padding-left: 1.1rem;
-}
-
-.progressive-opp-visibility-note {
-  font-size: 0.72rem;
-}
-
-.progressive-opp-actions {
-  flex-wrap: wrap;
 }
 
 .imp-shortcuts-layer {

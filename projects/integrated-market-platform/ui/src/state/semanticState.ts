@@ -357,6 +357,7 @@ const RESEARCH_TABLE: Record<string, Entry> = {
   },
   DISMISSED: { tone: "neutral", label: "Dismissed" },
   OPEN_WORKSPACE: { tone: "live", label: "Open workspace" },
+  ELIGIBLE: { tone: "live", label: "Eligible" },
   STOP: { tone: "critical", label: "Stop — do not act on this opportunity" },
   NONE: { tone: "neutral", label: "No action" },
   INELIGIBLE: { tone: "neutral", label: "Not eligible" },

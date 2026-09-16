@@ -1,9 +1,13 @@
 # UIR-01 — Current-Contract Operator UI Redesign
 
-**Status:** Active implementation note for branch `ui/operator-redesign-current`.
+**Status:** Active implementation note. Increment A+B landed on
+`ui/operator-redesign-current` (PR #226); Increment C landed on
+`ui/operator-redesign-command-convergence`.
 **Scope:** Increment A (design system + shell + navigation) and Increment B
 (Discover/Radar + opportunity state/evidence presentation) on top of current
-canonical contracts at `origin/main` (`42b1237a`).
+canonical contracts at `origin/main` (`42b1237a`). Increment C (Command /
+Paper-Now convergence on the Radar opportunity language, provider-health
+semantic routing, mobile Radar detail sheet) on `21ab1ac1`.
 **Design guidance:** `docs/ui-redesign-v2/` (recovered RTH15-00 plans) is used as
 design guidance only. The stale `ui/operator-redesign-v2` branch was read as
 reference (`git show`) and was **not** used as an implementation base.
@@ -168,7 +172,35 @@ composition per mode).
 - **States:** loading skeleton; UNREADY → AttentionBanner (human reason +
   Control action); EMPTY → why-empty; error → ErrorState with retry; Live
   UNAVAILABLE → by-design explanation.
-- **Responsive:** ≥1024 split queue+detail; <1024 stacked, detail below queue.
+- **Responsive:** ≥1024 split queue+detail; <1024 the queue stays scannable and
+  the selected opportunity opens in an overlay detail sheet (backdrop, focus
+  trap, Escape/close, scroll lock; full-screen below 720px).
+
+### Increment C — one opportunity language (landed)
+
+- Shared module `ui/src/components/opportunity/`: `opportunityPresentation.ts`
+  (stable key, presentation-state derivation, state label/tone maps, evidence
+  input summaries, eligibility/workspace/ack predicates, next-action
+  resolution — the single copy), `opportunityDetailModel.ts` (L1–L4 detail
+  sections), `OpportunityCard` (compact queue card), `OpportunityQueue` +
+  `OpportunityFeedState` (one feed-state presentation: loading / error+retry /
+  UNREADY banner / UNAVAILABLE / empty-why).
+- Command overview (`ImpOverviewPrimaryQueue`) and Radar render the same
+  state/evidence/freshness/next-action primitives; Command stays compact and
+  leads into Radar for deep detail.
+- Paper-Now: candidate queue holds attention **signals** (not opportunities);
+  the dead embedded opportunity list was removed. Header account/session IDs
+  use `CopyableIdentifier`; execution mode/authority and data health render
+  through `resolveSemanticState`. Action gating unchanged (Workspace remains
+  the only submit boundary; preview composer authority check untouched).
+- Provider health: `LiveProviderRibbon`, the Live header, and Live KPI strip
+  route connection/channel/authority states through the semantic adapter
+  (healthy/degraded/stale/unavailable/unknown tones; no synthetic scores).
+  `/diagnostics/provider` stays the raw L4 technical surface by design.
+- Retired: `ProgressiveOpportunityCard`, `now/OpportunityReviewCard(.test)`,
+  `OpportunityFeedStatusBanner`(+test), `impOpportunityDisplay.ts`
+  (`opportunityTags` was dead), legacy `progressive-opp-*`/review-list CSS.
+  The detail model/fixtures moved to `opportunity/` (renamed, behavior kept).
 
 ### Radar — Screeners (`/radar/screeners`)
 - Today's `/explore` per-mode content; headline/label mismatches resolved
@@ -176,7 +208,8 @@ composition per mode).
 
 ### Command (`/`)
 - Desk tabs (Overview | Signals) wired to `?desk=`; layouts per mode unchanged.
-- (Deeper Command rebuild is Increment C — out of this branch's scope.)
+- Increment C (above) converged the overview queue onto the shared opportunity
+  primitives; the deeper Command rebuild remains future work.
 
 ## 5. Explicitly preserved
 

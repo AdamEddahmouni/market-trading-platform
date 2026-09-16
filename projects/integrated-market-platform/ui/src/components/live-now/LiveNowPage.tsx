@@ -1,5 +1,6 @@
 import type { AttentionItem } from "../../api/client";
 import { useOpportunitiesSummaryQuery } from "../../api/opportunityClient";
+import { resolveSemanticState } from "../../state/semanticState";
 import { AttentionFeed } from "../AttentionFeed";
 import { ImpOverviewBoard } from "../imp-product/ImpOverviewBoard";
 import { overviewKpisFromLiveContext } from "../imp-product/impOverviewMetrics";
@@ -95,11 +96,21 @@ export function LiveNowPage({
         <dl>
           <div>
             <dt>Data mode</dt>
-            <dd>{dataMode?.replace(/_/g, " ") ?? "Unavailable"}</dd>
+            <dd>
+              {dataMode
+                ? resolveSemanticState("session", dataMode, {
+                    params: { provider: providerHealth?.provider_summary?.provider },
+                  }).label
+                : "Unavailable"}
+            </dd>
           </div>
           <div>
             <dt>Execution authority</dt>
-            <dd>{executionAuthority?.replace(/_/g, " ") ?? "Unavailable"}</dd>
+            <dd>
+              {executionAuthority
+                ? resolveSemanticState("executionAuthority", executionAuthority).label
+                : "Unavailable"}
+            </dd>
           </div>
           <div>
             <dt>Provider</dt>
@@ -107,7 +118,13 @@ export function LiveNowPage({
           </div>
           <div>
             <dt>Connection</dt>
-            <dd>{providerHealth?.lifecycle?.connection_state ?? "Unavailable"}</dd>
+            <dd>
+              {providerHealth?.lifecycle?.connection_state
+                ? resolveSemanticState("providerHealth", providerHealth.lifecycle.connection_state, {
+                    params: { provider: providerHealth.provider_summary?.provider },
+                  }).label
+                : "Unavailable"}
+            </dd>
           </div>
         </dl>
       </header>
@@ -129,6 +146,8 @@ export function LiveNowPage({
         feedStatus={opportunitiesQuery.data?.feed_status}
         unreadyReason={opportunitiesQuery.data?.unready_reason}
         nextAction={opportunitiesQuery.data?.next_action}
+        mode="LIVE"
+        onOpportunityRetry={() => void opportunitiesQuery.refetch()}
         onWhy={onWhy}
         onExplain={onExplain}
         onInspect={onInspect}

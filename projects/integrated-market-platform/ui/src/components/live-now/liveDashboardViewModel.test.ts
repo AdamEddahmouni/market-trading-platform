@@ -25,9 +25,28 @@ describe("live dashboard view model", () => {
 
   it("derives truthful provider metrics when observational mode is available", () => {
     const metrics = liveConnectionMetrics(providerHealth());
-    expect(metrics.find((metric) => metric.id === "connection")?.value).toBe("CONNECTED");
+    const connection = metrics.find((metric) => metric.id === "connection");
+    expect(connection?.value).toBe("MOOMOO — connected");
+    expect(connection?.tone).toBe("live");
+    expect(connection?.raw).toBe("CONNECTED");
     expect(metrics.find((metric) => metric.id === "quota")?.value).toBe("2 / 50");
-    expect(metrics.find((metric) => metric.id === "execution")?.value).toBe("DISPLAY_ONLY");
+    const execution = metrics.find((metric) => metric.id === "execution");
+    expect(execution?.value).toBe("Market data only — cannot route orders");
+    expect(execution?.raw).toBe("DISPLAY_ONLY");
+    const quote = metrics.find((metric) => metric.id === "quote");
+    expect(quote?.value).toBe("Working");
+    expect(quote?.tone).toBe("live");
+  });
+
+  it("keeps provider state presentation inside the semantic adapter", () => {
+    const degraded = liveConnectionMetrics(
+      providerHealth({
+        lifecycle: { connection_state: "CONNECTED_DEGRADED" },
+      }),
+    );
+    const connection = degraded.find((metric) => metric.id === "connection");
+    expect(connection?.value).toBe("MOOMOO — connected with problems");
+    expect(connection?.tone).toBe("caution");
   });
 
   it("builds safety summary and caps explicit alerts", () => {
