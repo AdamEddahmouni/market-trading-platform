@@ -246,6 +246,15 @@ describe("RadarPage opportunities tab", () => {
     );
   });
 
+  it("treats a non-live UNAVAILABLE feed as a fault with a Control action", () => {
+    summaryMock.data = { items: [], feed_status: "UNAVAILABLE", unready_reason: undefined, next_action: "/control" };
+    renderRadar("PAPER", "opportunities", true);
+    const empty = screen.getByTestId("imp-ui-empty-state");
+    expect(empty).toHaveTextContent(/Opportunity feed unavailable/i);
+    expect(empty).not.toHaveTextContent(/Live mode has no opportunity engine/i);
+    expect(screen.getByRole("link", { name: "Open Control" })).toHaveAttribute("href", "/control");
+  });
+
   it("renders the error state with retry", () => {
     summaryMock.isError = true;
     renderRadar("PAPER", "opportunities", true);

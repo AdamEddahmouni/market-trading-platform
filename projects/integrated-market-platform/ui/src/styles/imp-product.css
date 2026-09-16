@@ -512,6 +512,24 @@
   gap: 0.85rem;
 }
 
+/* UIR-01 review fix: allow the queue → panels → card chain to shrink below
+   content min-width so long unbreakable tokens cannot force page-level
+   horizontal overflow on narrow viewports. */
+.imp-overview-primary-queue,
+.imp-overview-queue-panels,
+.imp-overview-queue-ranked,
+.opportunity-review-list,
+.progressive-opportunity-card {
+  min-width: 0;
+}
+
+/* Raw 64-char account/session hex IDs and enum words wrap instead of
+   overflowing (same rule as .paper-risk-ribbon dd). */
+.progressive-opp-surface-meta dd,
+.progressive-opportunity-card code {
+  overflow-wrap: anywhere;
+}
+
 .imp-nav-toggle {
   display: none;
   padding: 0.45rem 0.65rem;

@@ -14,10 +14,12 @@ import { AttentionBanner } from "../imp-ui/AttentionBanner";
 import { EmptyState, ErrorState } from "../imp-ui/FeedbackStates";
 import { LoadingState } from "../shared/LoadingState";
 import { stableOpportunityKey } from "../imp-product/progressiveOpportunityModel";
+import type { Mode } from "../mode-session/types";
 import { OpportunityDetailCard } from "./OpportunityDetailCard";
 import { RadarQueueTable } from "./RadarQueueTable";
 
 type Props = {
+  mode: Mode;
   readOnly?: boolean;
   paperAccountId?: string;
   paperActions?: boolean;
@@ -37,6 +39,7 @@ function controlHref(nextAction?: string): string {
  * and the selected opportunity's progressive-disclosure detail.
  */
 export function RadarOpportunitiesPanel({
+  mode,
   readOnly = false,
   paperAccountId,
   paperActions = false,
@@ -122,10 +125,22 @@ export function RadarOpportunitiesPanel({
   }
 
   if (feedStatus === "UNAVAILABLE") {
+    // Live: UNAVAILABLE is by design (no opportunity engine in Live). Other
+    // modes: the feed should exist, so point the operator at Control.
+    if (mode === "LIVE") {
+      return (
+        <EmptyState
+          title="Opportunity feed unavailable"
+          reason="Live mode has no opportunity engine — use the Screeners tab and workspace evidence to investigate instruments."
+        />
+      );
+    }
+    const unavailable = resolveSemanticState("research", "UNAVAILABLE");
     return (
       <EmptyState
-        title="Opportunity feed unavailable"
-        reason="Live mode has no opportunity engine — use the Screeners tab and workspace evidence to investigate instruments."
+        title={unavailable.label}
+        reason={unavailable.sentence ?? "The opportunity feed is unavailable."}
+        action={{ label: "Open Control", href: controlHref(query.data?.next_action) }}
       />
     );
   }

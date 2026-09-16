@@ -109,6 +109,7 @@ export function RadarPage({
 
       {tab === "opportunities" ? (
         <RadarOpportunitiesPanel
+          mode={mode}
           readOnly={!paper}
           paperAccountId={paperAccountId}
           paperActions={paperActions}

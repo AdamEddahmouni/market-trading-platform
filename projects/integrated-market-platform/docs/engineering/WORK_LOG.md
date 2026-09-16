@@ -36,6 +36,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-16 — UIR-01 A+B review gate: feed-copy mode fix + mobile overflow fixes
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui` |
+| **Summary** | Review-gate fixes on `ui/operator-redesign-current` before PR. (1) `RadarOpportunitiesPanel` rendered the Live by-design copy ("Live mode has no opportunity engine") for `feed_status=UNAVAILABLE` in **all** modes; now mode-aware — Live keeps the by-design explanation, other modes get the generic feed-unavailable empty state with an Open Control action (plus regression test). (2) Fresh CDP measurement at 390px in Paper mode found page-level horizontal overflow (648px) from two pre-existing unbreakable-token surfaces: the Paper-Now header `dl` (raw 64-char account/session hex IDs; `align-items: start` shrink-to-fit sized children to max-content) and the Command overview `ProgressiveOpportunityCard` (`Paper account <code>` hex + raw enum `dd`s). Fixed with `min-width: 0` on the grid/flex chain, `overflow-wrap: anywhere` on the token elements (mirroring the existing `.paper-risk-ribbon dd` rule), and `align-items: stretch` in the ≤720px header media query. No component/API changes; Increment C scope untouched. |
+| **Key files** | `ui/src/components/radar/RadarOpportunitiesPanel.tsx`, `ui/src/components/radar/RadarPage.tsx` (pass `mode`), `ui/src/components/radar/RadarPage.test.tsx` (+1 test), `ui/src/styles/paper-now.css`, `ui/src/styles/imp-product.css` |
+| **Tests** | `ui`: vitest **567/567 passed**, `tsc --noEmit` pass, `vite build` pass (initial **200.36 KiB gzip ≤ 203 KiB**). Repo: `imp.py format`/`lint` pass, `imp.py test affected` **80/80 pass**, `check_docs_links.py` OK (226 files). Browser re-verified: no page-level horizontal overflow at 390/768/1440 in Demo and Paper; `/signals`→`/?desk=signals`, `/explore?q=GME`→`/radar/screeners?q=GME` (filter note renders), `/discover`→`/radar`, `/lab`→`/research` verified live. |
+| **Related** | [UIR_01_OPERATOR_UI_REDESIGN.md](UIR_01_OPERATOR_UI_REDESIGN.md) |
+
 ## 2026-09-16 — UIR-01 operator UI redesign: design system + shell + Radar (Increment A+B)
 
 | Field | Value |
