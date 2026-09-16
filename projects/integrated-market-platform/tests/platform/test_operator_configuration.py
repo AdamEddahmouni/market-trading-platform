@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from market_platform_foundation.platform.security.leak_audit import assert_no_secrets_in_payload
 from market_platform_foundation.ui_api.operator_config import (
     build_config_payload,
     write_provider_values,
@@ -48,6 +49,13 @@ class OperatorConfigurationTests(unittest.TestCase):
             key = next(field for field in anthropic["fields"] if field["key"] == "ANTHROPIC_API_KEY")
             self.assertTrue(key["configured"])
             self.assertNotIn("secret-value", str(payload))
+
+    def test_config_payload_passes_response_leak_audit(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "providers.env"
+            path.write_text("FINVIZ_API_KEY=secret-value\n", encoding="utf-8")
+            payload = build_config_payload(path=path)
+            assert_no_secrets_in_payload(payload, context="operator_config")
 
 
 if __name__ == "__main__":

@@ -35,6 +35,13 @@ BENIGN_SECRET_SHAPED_KEYS: frozenset[str] = frozenset(
     )
 )
 
+# Provider readiness ``credential_state`` values are uppercase status enums only.
+_CREDENTIAL_STATE_VALUE_RE = re.compile(r"^[A-Z][A-Z0-9_]{2,127}$")
+
+# Operator config field descriptors use ``key`` for env-var identifiers only.
+_CONFIG_FIELD_DESCRIPTOR_KEY_PATH_RE = re.compile(r"fields\[\d+\]\.key$")
+_ENV_VAR_IDENTIFIER_RE = re.compile(r"^[A-Z][A-Z0-9]*(_[A-Z0-9]+)+$")
+
 PLACEHOLDER_VALUES: frozenset[str] = frozenset(
     {"", "CHANGEME", "EXAMPLE", "PLACEHOLDER", "NOT_A_SECRET"}
 )
@@ -60,6 +67,37 @@ def _fingerprint(value: str) -> str:
     return digest[:_FINGERPRINT_HEX_CHARS].upper()
 
 
+def _is_public_credential_state_field(key: str, value: Any) -> bool:
+    return (
+        normalize_key(key) == "credentialstate"
+        and isinstance(value, str)
+        and bool(_CREDENTIAL_STATE_VALUE_RE.fullmatch(value.strip()))
+    )
+
+
+def _is_operator_config_field_descriptor_key(path: str, key: str, value: Any) -> bool:
+    """``fields[n].key`` holds env-var names in operator config, not secret values."""
+
+    if normalize_key(key) != "key":
+        return False
+    if not _CONFIG_FIELD_DESCRIPTOR_KEY_PATH_RE.search(path):
+        return False
+    if not isinstance(value, str):
+        return False
+    return bool(_ENV_VAR_IDENTIFIER_RE.fullmatch(value.strip()))
+
+
+def _structural_secret_key_is_benign(path: str, key: str, value: Any) -> bool:
+    normalized = normalize_key(str(key))
+    if normalized in BENIGN_SECRET_SHAPED_KEYS:
+        return True
+    if _is_public_credential_state_field(str(key), value):
+        return True
+    if _is_operator_config_field_descriptor_key(path, str(key), value):
+        return True
+    return False
+
+
 def scan_snapshot(
     snapshot: Any,
     *,
@@ -77,7 +115,9 @@ def scan_snapshot(
     if isinstance(snapshot, Mapping):
         for key, value in snapshot.items():
             child_path = f"{path}.{key}" if path else str(key)
-            if is_secret_key(str(key)) and normalize_key(str(key)) not in BENIGN_SECRET_SHAPED_KEYS:
+            if is_secret_key(str(key)) and not _structural_secret_key_is_benign(
+                child_path, str(key), value
+            ):
                 if isinstance(value, str) and value.strip().upper() not in PLACEHOLDER_VALUES:
                     findings.append(
                         SecretFinding(

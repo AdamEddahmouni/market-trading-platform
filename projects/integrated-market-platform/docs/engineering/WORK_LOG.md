@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-16 — BE-01: operator endpoint leak-audit false positives
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `platform/security` |
+| **Summary** | Fixed pre-existing `UI_SECRET_LEAK_BLOCKED` 500s on `GET /operator/readiness` and `GET /operator/config` by teaching `leak_audit.scan_snapshot` to treat provider `credential_state` status enums and operator-config `fields[n].key` env-var identifiers as benign metadata (path- and shape-bounded). Real secret-shaped keys with live values and textual `SECRET_SCAN_RULES` matches remain blocked. Opportunity `instrument_key` stays DTO-stripped per RTH15 (`test_opportunity_summary_leak_audit.py`). |
+| **Key files** | `src/market_platform_foundation/platform/security/leak_audit.py`; `tests/platform/test_security_foundations_p5.py`, `test_operator_configuration.py`, `test_operator_endpoint_leak_audit.py` (new) |
+| **Tests** | `unittest` SecretAuditTest + OperatorConfigurationTests + OperatorEndpointLeakAuditTests (19 cases) pass; `imp.py format`/`lint` pass; `validate changed` hit unrelated Windows baseline noise in platform/providers (sqlite temp cleanup, service health port probe) |
+| **Related** | UIR-01E Control isolation note in prior WORK_LOG entry; P5 `leak_audit.py` spec |
+| **Notes** | No UI contract rename; `item7/natural-settlement` untouched |
+
 ## 2026-09-16 — UIR-01 Increment E: Control center rebuild
 
 | Field | Value |
