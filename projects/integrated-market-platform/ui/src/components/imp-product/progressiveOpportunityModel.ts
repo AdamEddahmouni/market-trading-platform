@@ -52,8 +52,19 @@ function formatAgeFromNs(createdAtNs: unknown): string {
   const ns = Number(createdAtNs);
   if (!Number.isFinite(ns) || ns <= 0) return "UNAVAILABLE";
   const ms = ns / 1_000_000;
-  const iso = new Date(ms).toISOString();
-  return iso;
+  const date = new Date(ms);
+  if (Number.isNaN(date.getTime())) return "UNAVAILABLE";
+  // Human time at L1 (design-principles §2); raw epoch stays in L4 details.
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date);
+  } catch {
+    return date.toISOString();
+  }
 }
 
 export function stableOpportunityKey(row: OpportunityReviewRow): string {

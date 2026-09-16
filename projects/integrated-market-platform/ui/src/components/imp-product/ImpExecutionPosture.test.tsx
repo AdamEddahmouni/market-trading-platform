@@ -11,6 +11,8 @@ vi.mock("../../api/hooks", () => ({
 describe("ImpExecutionPosture", () => {
   it("shows paper account chip in paper mode", () => {
     render(<ImpExecutionPosture mode="PAPER" />);
-    expect(screen.getByText(/paper-acct-99/)).toBeInTheDocument();
+    const chip = screen.getByTestId("imp-ui-copyable-id");
+    expect(chip).toHaveTextContent("Acct pape…t-99");
+    expect(chip).toHaveAttribute("title", "paper-acct-99");
   });
 });

@@ -1,25 +1,137 @@
+/*
+ * IMP design tokens — single frozen layer.
+ *
+ * Design guidance: docs/ui-redesign-v2/component-system.md §2 (token layer) and
+ * docs/ui-redesign-v2/semantic-state-system.md §1 (7 semantic tones).
+ *
+ * Breakpoint scale (CSS media queries cannot read custom properties; the JS
+ * mirror lives in ui/src/lib/breakpoints.ts):
+ *   BP_SM = 720px   below: handset/small window, everything overlays
+ *   BP_MD = 1024px  below: sidebar + drawers are overlays
+ *   BP_LG = 1440px  above: full-density operator layout
+ */
 :root {
+  /* Surfaces — near-black/graphite foundation */
   --surface-0: #0c0e12;
   --surface-1: #13161c;
   --surface-2: #1a1f28;
   --surface-3: #10141a;
+  --surface-elevated: #20262f;
+
+  /* Borders */
   --border-subtle: #2c323c;
   --border-focus: #ff7a1a;
+  --color-border: var(--border-subtle); /* legacy alias (was undefined) */
+
+  /* Brand accent — warm orange/lava IMP identity */
   --accent-primary: #ff6a00;
   --accent-primary-bright: #ff8a00;
   --accent-glow: rgba(255, 106, 0, 0.22);
+  --accent: var(--accent-primary); /* legacy alias (was undefined) */
+
+  /* Text — --text-muted is AA-fixed (was #6b7280, ~4.0:1 on surface-0) */
   --text-primary: #e8ecf4;
   --text-secondary: #9aa3b5;
-  --text-muted: #6b7280;
+  --text-muted: #8b94a5;
+  --muted: var(--text-muted); /* legacy alias (was undefined) */
+  --color-text-muted: var(--text-muted); /* legacy alias (was undefined) */
+
+  /* Market direction — direction is NOT state (a down price is not a failure).
+     --direction-short is AA-fixed (was #c44e52, ~4.2:1 borderline). */
   --direction-long: #3d9970;
-  --direction-short: #c44e52;
-  --warning: #d4a017;
-  --replay-bg: rgba(212, 160, 23, 0.08);
-  --font-ui: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
-  --radius-md: 6px;
+  --direction-short: #d96368;
+
+  /*
+   * Semantic state tones — 7 tones × (fg, bg, border).
+   * Color is never the sole encoder: every tone pairs with text and/or icon.
+   * -bg is for badges/pills/banners; -border for card/row accents; -fg for
+   * text and icons. Do not use state colors for non-state decoration.
+   */
+  --imp-state-live-fg: #3dd68c;
+  --imp-state-live-bg: rgba(61, 214, 140, 0.1);
+  --imp-state-live-border: rgba(61, 214, 140, 0.35);
+
+  --imp-state-paper-fg: #ff8a00;
+  --imp-state-paper-bg: rgba(255, 138, 0, 0.1);
+  --imp-state-paper-border: rgba(255, 138, 0, 0.35);
+
+  --imp-state-replay-fg: #a78bfa;
+  --imp-state-replay-bg: rgba(167, 139, 250, 0.1);
+  --imp-state-replay-border: rgba(167, 139, 250, 0.35);
+
+  --imp-state-research-fg: #8ba3c7;
+  --imp-state-research-bg: rgba(139, 163, 199, 0.1);
+  --imp-state-research-border: rgba(139, 163, 199, 0.3);
+
+  --imp-state-caution-fg: #d4a017;
+  --imp-state-caution-bg: rgba(212, 160, 23, 0.1);
+  --imp-state-caution-border: rgba(212, 160, 23, 0.35);
+
+  --imp-state-critical-fg: #e36d77;
+  --imp-state-critical-bg: rgba(227, 109, 119, 0.1);
+  --imp-state-critical-border: rgba(227, 109, 119, 0.35);
+
+  --imp-state-neutral-fg: #9aa3b5;
+  --imp-state-neutral-bg: rgba(154, 163, 181, 0.08);
+  --imp-state-neutral-border: rgba(154, 163, 181, 0.25);
+
+  /* Legacy state aliases (migration aids) */
+  --warning: var(--imp-state-caution-fg);
+  --danger: var(--imp-state-critical-fg); /* legacy alias (was undefined) */
+  --replay-bg: var(--imp-state-replay-bg);
+
+  /* Typography — deliberate system stack, no webfonts (Inter/JetBrains Mono
+     were declared but never loaded; system stack keeps the entry budget and
+     the offline workstation packaging intact) */
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
+
+  /* Type scale — fixed steps; nothing below the 11px floor ships */
+  --imp-text-micro: 0.6875rem;
+  --imp-text-xs: 0.75rem;
+  --imp-text-sm: 0.8125rem;
+  --imp-text-md: 0.875rem;
+  --imp-text-lg: 1rem;
+  --imp-text-xl: 1.25rem;
+  --imp-text-display: 1.75rem;
+
+  /* Spacing scale — the only allowed gap/padding steps */
+  --imp-space-1: 4px;
+  --imp-space-2: 8px;
+  --imp-space-3: 12px;
+  --imp-space-4: 16px;
+  --imp-space-5: 24px;
+  --imp-space-6: 32px;
+
+  /* Radii — restrained; pills (999px) only for tone badges */
+  --imp-radius-sm: 4px;
+  --imp-radius-md: 6px;
+  --imp-radius-lg: 10px;
+  --radius-sm: var(--imp-radius-sm); /* legacy alias (was undefined) */
+  --radius-md: var(--imp-radius-md);
+  --radius-lg: var(--imp-radius-lg); /* legacy alias (was undefined) */
+
+  /* Layout constants — chrome geometry derives from these so drawer/sticky
+     offsets cannot drift again */
+  --imp-topbar-height: 48px;
+  --imp-statusbar-height: 40px;
+  --imp-sidebar-width: 220px; /* was referenced but never defined */
+  --imp-drawer-width: 360px;
+  --imp-drawer-max-width: 420px; /* overlay drawers: min(420px, 100vw) */
+
+  /* Table containment */
+  --imp-table-min-compact: 640px;
+  --imp-table-min-standard: 900px;
+
+  /* Chart theme — one source for all chart stacks */
+  --imp-chart-accent: var(--accent-primary);
+  --imp-chart-up: var(--direction-long);
+  --imp-chart-down: var(--direction-short);
+  --imp-chart-grid: var(--border-subtle);
+  --imp-chart-text: var(--text-secondary);
+
+  /* Legacy layout aliases — retained for shell/drawer CSS that still reads
+     them; new work uses the --imp-* layout tokens */
   --inspector-width: 360px;
   --drawer-width: 360px;
-  --context-bar-height: 40px;
-  --nav-height: 44px;
 }

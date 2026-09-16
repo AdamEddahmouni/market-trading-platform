@@ -112,11 +112,14 @@ Open `http://127.0.0.1:5173` after API + UI start. Use **sidebar labels** from `
 
 | Nav label | Route | Operator meaning |
 |-----------|-------|------------------|
+| **Command** | `/` | Now desk (Overview + Signals desks via `?desk=`); `/signals` redirects to `/?desk=signals` |
+| **Radar** | `/radar` | Discovery queue: Opportunities tab + Screeners tab (`/radar/screeners`); `/discover` → `/radar`, `/explore` → `/radar/screeners` |
 | **Workspace** | `/workspace` | Decision desk (canonical Paper submit boundary) |
 | **Portfolio** | `/portfolio` | Orders history — not the submit surface |
-| **Lab** | `/research` | Model and sim labs. `/lab` redirects to `/research` |
+| **Research** | `/research` | Research and model labs. `/lab` redirects to `/research` |
+| **Control** | `/control` | Operator control center (lifecycle, readiness, safety) |
 
-A gated **Research** item also opens `/research`. **Risk** in the sidebar is `/control` (control center row above). Live stays observational; this runbook does not enable Live execution.
+Operator group: **Live Canary** `/live-canary`, **Settings** `/settings`, **Diagnostics** `/diagnostics/provider`. Live stays observational; this runbook does not enable Live execution.
 
 Source: `ui/src/components/NavShell.tsx` and `ui/src/App.tsx`. Patterns: [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md).
 

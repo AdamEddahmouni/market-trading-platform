@@ -17,15 +17,20 @@
   gap: 28px;
   padding: 18px 4px;
   border-bottom: 1px solid var(--paper-line);
+  /* grid item of .paper-now-page: allow shrinking below content min-width */
+  min-width: 0;
 }
 
 .paper-now-header h1 { margin: 4px 0 8px; font-size: clamp(2rem, 4vw, 3.4rem); line-height: 1; letter-spacing: -0.04em; }
 .paper-now-header p { max-width: 760px; margin: 0; color: var(--text-secondary); }
 .paper-eyebrow { color: var(--paper-accent); font: 0.7rem var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; }
-.paper-now-header dl { display: grid; grid-template-columns: repeat(2, minmax(120px, 1fr)); gap: 8px; margin: 0; }
-.paper-now-header dl div { padding: 9px 11px; border: 1px solid var(--paper-line); background: rgba(255, 255, 255, 0.02); }
+.paper-now-header dl { display: grid; grid-template-columns: repeat(2, minmax(120px, 1fr)); gap: 8px; margin: 0; min-width: 0; }
+.paper-now-header dl div { min-width: 0; padding: 9px 11px; border: 1px solid var(--paper-line); background: rgba(255, 255, 255, 0.02); }
 .paper-now-header dt, .paper-risk-ribbon dt, .paper-order-fixed dt { color: var(--text-muted); font: 0.64rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
-.paper-now-header dd, .paper-risk-ribbon dd, .paper-order-fixed dd { margin: 5px 0 0; font-family: var(--font-mono); }
+/* overflow-wrap anywhere: raw 64-char account/session hex IDs must not force
+   page-level horizontal overflow on narrow viewports (same rule as the risk
+   ribbon below). */
+.paper-now-header dd, .paper-risk-ribbon dd, .paper-order-fixed dd { margin: 5px 0 0; font-family: var(--font-mono); overflow-wrap: anywhere; }
 
 .paper-risk-ribbon { padding: 16px 18px; border: 1px solid rgba(72, 214, 196, 0.28); background: linear-gradient(120deg, rgba(72, 214, 196, 0.08), rgba(15, 23, 33, 0.96)); }
 .paper-risk-ribbon h2 { margin: 0 0 12px; font-size: 0.92rem; }
@@ -89,7 +94,9 @@
 
 @media (max-width: 720px) {
   .paper-now-page { padding: 0; }
-  .paper-now-header { align-items: start; flex-direction: column; }
+  /* stretch (not start): shrink-to-fit children size to their max-content
+     (unwrapped sentences/hex IDs) and force page-level horizontal overflow */
+  .paper-now-header { align-items: stretch; flex-direction: column; }
   .paper-now-header dl, .paper-risk-ribbon dl, .paper-decision-grid { grid-template-columns: 1fr; }
   .paper-exceptions-panel { grid-column: auto; }
   .paper-panel, .paper-risk-ribbon { border-radius: 6px; }

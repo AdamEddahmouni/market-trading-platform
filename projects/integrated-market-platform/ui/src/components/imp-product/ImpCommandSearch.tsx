@@ -21,7 +21,7 @@ export function ImpCommandSearch() {
       navigate(`/workspace/${encodeURIComponent(normalized)}`);
       return;
     }
-    navigate(`/explore?q=${encodeURIComponent(normalized)}`);
+    navigate(`/radar/screeners?q=${encodeURIComponent(normalized)}`);
   };
 
   return (
