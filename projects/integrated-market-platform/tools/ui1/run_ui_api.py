@@ -322,8 +322,40 @@ def build_evidence(output_dir: Path) -> dict[str, object]:
     }
 
 
+def _install_process_diagnostics() -> None:
+    import atexit
+    import faulthandler
+    import traceback
+
+    faulthandler.enable()
+    previous_hook = sys.excepthook
+
+    def _log_uncaught(exc_type, exc, tb):  # type: ignore[no-untyped-def]
+        print(
+            json.dumps(
+                {
+                    "event": "ui_api.uncaught_exception",
+                    "error": str(exc),
+                    "exc_type": getattr(exc_type, "__name__", str(exc_type)),
+                }
+            ),
+            flush=True,
+        )
+        traceback.print_exception(exc_type, exc, tb)
+        if previous_hook is not _log_uncaught:
+            previous_hook(exc_type, exc, tb)
+
+    sys.excepthook = _log_uncaught
+
+    def _log_exit() -> None:
+        print(json.dumps({"event": "ui_api.process_exit", "status": "shutdown"}), flush=True)
+
+    atexit.register(_log_exit)
+
+
 def serve(*, host: str, port: int) -> None:
     os.environ.setdefault("IMP_PERSIST_STATE", "1")
+    _install_process_diagnostics()
     store = _load_store()
     handler = type("BoundUiApiHandler", (UiApiHandler,), {"store": store})
     server = ThreadingHTTPServer((host, port), handler)

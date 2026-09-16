@@ -71,6 +71,9 @@ class FakeSystem:
     def sleep(self, seconds: float) -> None:
         return None
 
+    def process_alive(self, pid: int) -> bool:
+        return pid in self.command_lines
+
 
 def make_root(base: Path) -> Path:
     root = base / "repo"
@@ -275,6 +278,7 @@ class LocalLauncherTests(unittest.TestCase):
                 python_runtime_probe=always_usable,
             )
             self.assertEqual(controller.start(open_browser=False), 0)
+            fake.open_ports.update({8766, 5173, 8767})
             captured = io.StringIO()
             with contextlib.redirect_stdout(captured):
                 self.assertEqual(controller.status(), 0)
@@ -303,7 +307,7 @@ class LocalLauncherTests(unittest.TestCase):
                 self.assertEqual(controller.status(), 1)
             text = captured.getvalue()
             self.assertIn("NOT RUNNING OR PARTIAL", text)
-            self.assertIn("API process owned       NO", text)
+            self.assertIn("API identity owned  NO", text)
 
     def test_occupied_unowned_port_blocks_start(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -375,6 +379,26 @@ class LocalLauncherTests(unittest.TestCase):
         ):
             with self.subTest(token=token):
                 self.assertIn(token, text)
+
+    def test_restart_subcommand_stops_then_starts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            fake = FakeSystem()
+            fake.ready = {
+                "http://127.0.0.1:8766/context": True,
+                "http://127.0.0.1:5173/": True,
+            }
+            controller = PlatformController(
+                root=root,
+                system=fake,
+                environ={"USERPROFILE": str(Path(tmp) / "profile")},
+                python_runtime_probe=lambda _python: True,
+            )
+            self.assertEqual(controller.start(open_browser=False), 0)
+            self.assertEqual(len(fake.spawn_calls), 3)
+            self.assertEqual(controller.restart(open_browser=False), 0)
+            self.assertEqual(len(fake.spawn_calls), 6)
+            self.assertEqual(fake.terminated, [1002, 1001, 1000])
 
     def test_operator_docs_name_one_click_start_logs_and_safe_stop(self) -> None:
         repository = Path(__file__).resolve().parents[2]
