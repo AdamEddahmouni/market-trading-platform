@@ -345,6 +345,21 @@ def run_transport_proof(
     return {"result": result.to_dict(), "receipt": receipt}
 
 
+def kline_fetch_diagnostics(loaded: BarLoadResult) -> dict[str, Any]:
+    """Last kline-fetch stats for timeout/protocol outcomes (no PIT change)."""
+
+    provenance = loaded.provenance
+    return {
+        "raw_row_count": provenance.get("raw_row_count"),
+        "first_raw_time_key": provenance.get("first_raw_time_key"),
+        "last_raw_time_key": provenance.get("last_raw_time_key"),
+        "vendor_ret": provenance.get("vendor_ret"),
+        "vendor_ret_msg": provenance.get("vendor_ret_msg"),
+        "kline_session_date": provenance.get("kline_session_date"),
+        "load_reason_code": loaded.reason_code,
+    }
+
+
 def run_prospective_proof(
     *,
     instrument_id: str,
@@ -366,16 +381,23 @@ def run_prospective_proof(
         fetched_at_ns=observation_time_ns,
         kline_rows=kline_rows,
     )
+    kline_fetch = kline_fetch_diagnostics(loaded)
     if not loaded.ok:
         reason = loaded.reason_code or REASON_PROVIDER_UNAVAILABLE
         return {
             "ok": False,
             "reason_code": reason,
             "receipt": None,
+            "kline_fetch": kline_fetch,
         }
     first = first_admissible_post_signal_bar(loaded.bars, signal_time_ns=signal_time_ns)
     if first is None:
-        return {"ok": False, "reason_code": REASON_NO_POST_SIGNAL_BAR, "receipt": None}
+        return {
+            "ok": False,
+            "reason_code": REASON_NO_POST_SIGNAL_BAR,
+            "receipt": None,
+            "kline_fetch": kline_fetch,
+        }
     bar_available = int(first["available_time"])
     gate = validate_prospective_signal_vs_bar(
         signal_time_ns=signal_time_ns,
@@ -383,7 +405,12 @@ def run_prospective_proof(
         bar_available_time_ns=bar_available,
     )
     if not gate.ok:
-        return {"ok": False, "reason_code": gate.reason_code, "receipt": None}
+        return {
+            "ok": False,
+            "reason_code": gate.reason_code,
+            "receipt": None,
+            "kline_fetch": kline_fetch,
+        }
     result = run_bounded_bar_ohlcv_experiment(
         signal_time_ns=signal_time_ns,
         observation_time_ns=observation_time_ns,
@@ -401,7 +428,13 @@ def run_prospective_proof(
         raw_provenance_hash=raw_hash,
         signal_established_at_ns=signal_established_at_ns,
     )
-    return {"ok": True, "reason_code": None, "result": result.to_dict(), "receipt": receipt}
+    return {
+        "ok": True,
+        "reason_code": None,
+        "result": result.to_dict(),
+        "receipt": receipt,
+        "kline_fetch": kline_fetch,
+    }
 
 
 def poll_prospective_proof(
@@ -432,6 +465,7 @@ def poll_prospective_proof(
             "readiness": rth_gate,
             "receipt": None,
         }
+    last_kline_fetch: dict[str, Any] | None = None
     while time.monotonic() < deadline:
         observation_ns = clock()
         outcome = run_prospective_proof(
@@ -445,6 +479,9 @@ def poll_prospective_proof(
             experiment_id=experiment_id,
             runtime_git_sha=runtime_git_sha,
         )
+        fetch = outcome.get("kline_fetch")
+        if isinstance(fetch, dict):
+            last_kline_fetch = fetch
         if outcome.get("ok"):
             outcome["readiness"] = item9_prospective_readiness(now_ns=observation_ns)
             return outcome
@@ -458,6 +495,7 @@ def poll_prospective_proof(
         "reason_code": REASON_NO_POST_SIGNAL_BAR,
         "readiness": item9_prospective_readiness(now_ns=clock()),
         "receipt": None,
+        "kline_fetch": last_kline_fetch,
     }
 
 
@@ -511,6 +549,7 @@ __all__ = [
     "imp_package_root",
     "REASON_POLL_REQUIRED",
     "item9_prospective_readiness",
+    "kline_fetch_diagnostics",
     "load_latest_completed_bars_for_display",
     "prospective_run_without_poll_outcome",
     "persist_receipt",
