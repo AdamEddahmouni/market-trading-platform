@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
+from ..contracts.event import EventV1, event_v1_from_dict
 from ..contracts.forecast import ForecastV1, forecast_v1_from_dict
 from ..contracts.outcome import OutcomeV1, outcome_v1_from_dict
 from ..contracts.signal import SignalV1, signal_v1_from_dict
@@ -24,6 +25,7 @@ from ..persistence import InMemoryIntelligenceRepository
 from ..persistence.repository import IntelligenceRepository
 
 _RECORD_LOADERS: dict[str, Any] = {
+    "event": (event_v1_from_dict, "put_event", "event_id"),
     "forecast": (forecast_v1_from_dict, "put_forecast", "forecast_id"),
     "outcome": (outcome_v1_from_dict, "put_outcome", "outcome_id"),
     "snapshot": (snapshot_v1_from_dict, "put_snapshot", "snapshot_id"),
