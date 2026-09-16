@@ -1,7 +1,9 @@
 """UiApiHandler request-path for already-fetched Finviz/news → EventV1 admission.
 
-Operator/test override after runtime ``admit_finviz_export_item_for_observation``.
-Does not auto-fetch providers or start a retry loop. Observational only.
+Second hop of already-fetched JSON: FTEP ``--live-ingress`` POSTs #207 rows here after
+Finviz fetch; ingestion is labeled ``HISTORICAL_RECONSTRUCTED`` (not ``LIVE_OBSERVED``)
+because the CLI carried provider JSON — server still stamps ``received_time_ns`` and rejects
+forged ``server_received_time_ns`` in the body. Does not auto-fetch providers.
 """
 
 from __future__ import annotations

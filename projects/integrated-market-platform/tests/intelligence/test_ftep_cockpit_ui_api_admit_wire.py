@@ -10,10 +10,14 @@ import unittest
 from http.server import ThreadingHTTPServer
 from unittest.mock import patch
 
+from market_platform_foundation.intelligence.paper_forward_bridge.ftep_catalyst_watch import (
+    collect_ftep_catalyst_watch,
+)
 from market_platform_foundation.intelligence.paper_forward_bridge.ftep_prospective_catalyst_ingress import (
     CLASS_SUCCESS,
     ProspectiveCatalystIngressResult,
 )
+from market_platform_foundation.local_state.paths import REPO_ROOT
 from market_platform_foundation.news.timestamps import epoch_ns_from_iso
 from market_platform_foundation.ui_api.cockpit_admit import (
     build_news_ingest_body_from_prospective_ingress,
@@ -139,6 +143,46 @@ class FtepCockpitUiApiAdmitWireTests(unittest.TestCase):
         )
         response = conn.getresponse()
         self.assertNotEqual(response.status, 200)
+
+    def test_collect_ftep_catalyst_watch_posts_to_serving_ui_api(self) -> None:
+        ingress = _sample_ingress()
+        status = {
+            "us_equity_rth_open": True,
+            "governed_session_count": 2,
+            "empirical_lock_count": 0,
+        }
+        with (
+            patch(
+                "market_platform_foundation.intelligence.paper_forward_bridge."
+                "ftep_catalyst_watch.collect_ftep_campaign_status",
+                return_value=status,
+            ),
+            patch(
+                "market_platform_foundation.intelligence.paper_forward_bridge."
+                "ftep_catalyst_watch.load_governed_session_ids_from_evidence",
+                return_value=(["fts-A"], "evidence.jsonl"),
+            ),
+            patch(
+                "market_platform_foundation.intelligence.paper_forward_bridge."
+                "ftep_prospective_catalyst_ingress.collect_finviz_prospective_attention_rows",
+                return_value=ingress,
+            ),
+            patch(
+                "market_platform_foundation.ui_api.cockpit_admit.resolve_ui_api_base_url",
+                return_value=self.base_url,
+            ),
+        ):
+            payload = collect_ftep_catalyst_watch(REPO_ROOT, "FTEP-V1-002", live_ingress=True)
+        self.assertFalse(payload["dry_run"])
+        self.assertEqual(payload["ingress_outcome"], "COCKPIT_ADMIT_HTTP_OK")
+        self.assertEqual(payload["cockpit_admit_hop"], "HTTP_UI_API")
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
+        conn.request("GET", "/opportunities/summary")
+        response = conn.getresponse()
+        self.assertEqual(response.status, 200)
+        summary = json.loads(response.read().decode("utf-8"))
+        self.assertEqual(summary["feed_status"], "READY")
+        self.assertGreaterEqual(len(summary.get("items") or []), 1)
 
 
 if __name__ == "__main__":

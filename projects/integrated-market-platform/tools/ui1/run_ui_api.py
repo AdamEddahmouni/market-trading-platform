@@ -62,10 +62,10 @@ def _load_store() -> ReplayStore:
     from market_platform_foundation.ui_api.live_intelligence import bind_ui_api_intelligence
 
     bind_ui_api_intelligence(store)
-    # Same-process test helper only (see ui_api/cockpit_admit.py); RTH uses HTTP admit.
-    from market_platform_foundation.ui_api.cockpit_admit import register_cockpit_replay_store
+    if os.environ.get("IMP_COCKPIT_TEST_REGISTER") == "1":
+        from market_platform_foundation.ui_api.cockpit_admit import register_cockpit_replay_store
 
-    register_cockpit_replay_store(store)
+        register_cockpit_replay_store(store)
     if os.environ.get("IMP_LIVE_OBSERVATIONAL") == "1":
         from market_platform_foundation.market_data.live_runtime import get_live_runtime
         from tools.ibkr.runtime_bootstrap import install_ibkr_observational_provider
