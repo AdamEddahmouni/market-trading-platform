@@ -11,8 +11,13 @@ from market_platform_foundation.intelligence.observation_ingress.production_wire
 from market_platform_foundation.intelligence.persistence import InMemoryIntelligenceRepository
 from market_platform_foundation.news.event_v1 import news_article_to_event_v1
 from market_platform_foundation.news.normalize import normalize_finviz_export_item
+from market_platform_foundation.intelligence.paper_forward_bridge.ftep_prospective_catalyst_ingress import (
+    CLASS_SUCCESS,
+    ProspectiveCatalystIngressResult,
+)
 from market_platform_foundation.news.observational_admit import (
     admit_finviz_export_item_for_observation,
+    admit_prospective_catalyst_ingress_result,
     validate_news_pit_clocks,
 )
 from market_platform_foundation.news.timestamps import epoch_ns_from_iso
@@ -122,6 +127,37 @@ class NewsObservationalPitAdmitTests(unittest.TestCase):
         self.assertTrue(any(row.mode == "LIVE_OBSERVATIONAL" for row in traces))
         acks = list_operator_acks(paper_account_id=LIVE_OBSERVATIONAL_OPERATOR_ACCOUNT)
         self.assertEqual(len(acks), 1)
+
+    def test_prospective_ingress_receipt_row_admits_event_v1(self) -> None:
+        router = self.store.observation_ingress_router
+        ingress = ProspectiveCatalystIngressResult(
+            attempted=True,
+            ready=True,
+            reason=None,
+            source_label="live:finviz_elite_prospective",
+            rows=(
+                {
+                    "symbol": "AAPL",
+                    "headline": "Example Corp reports quarterly earnings",
+                    "published_time": _PUBLISHED,
+                    "retrieved_time": _RETRIEVED,
+                    "source_event_id": "evt-prospective-1",
+                },
+            ),
+            stats={"as_of_ns": self.server_ns},
+            classification=CLASS_SUCCESS,
+        )
+        outcomes = admit_prospective_catalyst_ingress_result(
+            ingress,
+            router=router,
+            store=self.store,
+        )
+        self.assertEqual(len(outcomes), 1)
+        self.assertTrue(outcomes[0].accepted)
+        self.assertIsNotNone(outcomes[0].event)
+        assert outcomes[0].event is not None
+        self.assertEqual(outcomes[0].event.received_time_ns, self.server_ns)
+        self.assertNotEqual(outcomes[0].event.received_time_ns, outcomes[0].event.available_time_ns)
 
     def test_duplicate_watch_fail_closed(self) -> None:
         payload = handle_news_ingest_post(
