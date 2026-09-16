@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://imp.local/manifests/evidence/capture_context_sidecar.schema.json",
+  "title": "Evidence capture context sidecar",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_kind",
+    "capture_context_id",
+    "artifact_path",
+    "artifact_sha256",
+    "captured_at_ns",
+    "operator_run_id",
+    "campaign",
+    "evidence_class",
+    "artifact_evidence_class",
+    "orders_placed",
+    "empirical_lock_created",
+    "temporary_gate_states"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "artifact_kind": { "const": "evidence_capture_context_sidecar" },
+    "capture_context_id": { "type": "string", "minLength": 1 },
+    "artifact_path": { "type": "string", "minLength": 1 },
+    "artifact_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "runtime_git_sha": { "type": ["string", "null"] },
+    "origin_main_sha": { "type": ["string", "null"] },
+    "captured_at_ns": { "type": "integer", "minimum": 0 },
+    "operator_run_id": { "type": "string", "minLength": 1 },
+    "command": { "type": ["string", "null"] },
+    "working_directory": { "type": ["string", "null"] },
+    "campaign": { "type": "string", "minLength": 1 },
+    "evidence_class": { "type": "string", "minLength": 1 },
+    "artifact_evidence_class": { "type": "string", "minLength": 1 },
+    "provider": { "type": ["string", "null"] },
+    "temporary_gate_states": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "orders_placed": { "const": false },
+    "empirical_lock_created": { "const": false }
+  }
+}

@@ -578,6 +578,8 @@
         "tools/path_a_prospective_run.py",
         "tools/path_a_rth_preflight.py",
         "tools/rth_empirical_ops.py",
+        "tools/evidence_capture_context.py",
+        "src/market_platform_foundation/evidence_capture",
         "src/market_platform_foundation/operations",
         "tools/research",
         "tools/state",
