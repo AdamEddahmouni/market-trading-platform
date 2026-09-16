@@ -1,6 +1,4 @@
 import type { AttentionItem } from "../../api/client";
-import type { OpportunityAckAction, OpportunityReviewRow } from "../../api/opportunityClient";
-import { OpportunityReviewList } from "../now/OpportunityReviewCard";
 import { sortPaperCandidates } from "./paperDashboardViewModel";
 
 type Props = {
@@ -8,40 +6,22 @@ type Props = {
   onSelect: (attentionId: string) => void; onWhy: (item: AttentionItem) => void;
   onExplain: (item: AttentionItem) => void; onInspect: (item: AttentionItem) => void;
   onOpenWorkspace: (item: AttentionItem) => void;
-  opportunityItems?: OpportunityReviewRow[];
-  opportunityState?: "loading" | "ready" | "error";
-  feedStatus?: string;
-  unreadyReason?: string;
-  nextAction?: string;
-  paperAccountId?: string;
-  onAck?: (row: OpportunityReviewRow, action: OpportunityAckAction) => void;
-  showRankedOpportunities?: boolean;
 };
 
+/**
+ * Paper-Now candidate queue: attention signals the operator can draft from.
+ * These are signals, not ranked opportunities — the ranked queue lives on the
+ * Command overview and Radar; instrument-backed candidates bridge to the
+ * Workspace decision desk.
+ */
 export function PaperCandidateQueue({
   items, state, selectedAttentionId, onSelect, onWhy, onExplain, onInspect, onOpenWorkspace,
-  opportunityItems = [], opportunityState = "ready", feedStatus, unreadyReason, nextAction, paperAccountId, onAck,
-  showRankedOpportunities = true,
 }: Props) {
   const sorted = sortPaperCandidates(items);
   const hasEligible = sorted.some((item) => Boolean(item.instrument_id?.trim()));
   return (
     <section className="paper-panel paper-candidate-panel" aria-label="Candidate queue">
       <header><h2>Candidate queue</h2><span>{sorted.length} signals</span></header>
-      {showRankedOpportunities ? (
-        <OpportunityReviewList
-          items={opportunityItems}
-          state={opportunityState}
-          feedStatus={feedStatus}
-          unreadyReason={unreadyReason}
-          nextAction={nextAction}
-          paperAccountId={paperAccountId}
-          onExplain={onExplain}
-          onInspect={onInspect}
-          onOpenWorkspace={onOpenWorkspace}
-          onAck={onAck}
-        />
-      ) : null}
       {state === "loading" ? <p role="status">Loading attention feed…</p> : null}
       {state === "error" ? <p role="alert">Attention feed unavailable.</p> : null}
       {state === "ready" ? (

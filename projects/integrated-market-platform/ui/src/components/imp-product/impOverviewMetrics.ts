@@ -1,4 +1,5 @@
 import type { PaperPortfolioResponse } from "../../api/client";
+import { resolveSemanticState } from "../../state/semanticState";
 
 export type OverviewKpiCell = {
   id: string;
@@ -88,13 +89,19 @@ export function overviewKpisFromLiveContext(input: {
     {
       id: "data-mode",
       label: "Data mode",
-      value: input.dataMode?.replace(/_/g, " ") ?? "—",
+      value: input.dataMode
+        ? resolveSemanticState("session", input.dataMode, {
+            params: { provider: input.providerName },
+          }).label
+        : "—",
       detail: "Observational only",
     },
     {
       id: "authority",
       label: "Execution",
-      value: input.executionAuthority?.replace(/_/g, " ") ?? "—",
+      value: input.executionAuthority
+        ? resolveSemanticState("executionAuthority", input.executionAuthority).label
+        : "—",
       detail: "Live execution off",
       tone: "muted",
     },
@@ -106,7 +113,11 @@ export function overviewKpisFromLiveContext(input: {
     {
       id: "connection",
       label: "Connection",
-      value: input.connectionState ?? "—",
+      value: input.connectionState
+        ? resolveSemanticState("providerHealth", input.connectionState, {
+            params: { provider: input.providerName },
+          }).label
+        : "—",
       detail: input.opportunityFeedStatus ? `Radar ${input.opportunityFeedStatus}` : undefined,
     },
     {

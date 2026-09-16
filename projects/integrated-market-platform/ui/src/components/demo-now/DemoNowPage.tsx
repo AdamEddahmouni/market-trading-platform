@@ -127,7 +127,9 @@ export function DemoNowPage({ desk = "overview", ...props }: DemoNowPageProps) {
         feedStatus={opportunitiesQuery.data?.feed_status}
         unreadyReason={opportunitiesQuery.data?.unready_reason}
         nextAction={opportunitiesQuery.data?.next_action}
+        mode="DEMO"
         readOnly
+        onOpportunityRetry={() => void opportunitiesQuery.refetch()}
         onWhy={props.onWhy}
         onExplain={props.onExplain}
         onInspect={props.onInspect}

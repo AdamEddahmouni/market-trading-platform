@@ -33,7 +33,7 @@ export function TradeReviewLearningPanel({ row }: Props) {
   return (
     <div className="trade-review-learning-panel">
       <p className="imp-section-eyebrow">Durable learning record</p>
-      <ul className="progressive-opp-lines">
+      <ul className="imp-opportunity-lines">
         {items.map((item) => (
           <li key={item.review_id}>
             <strong>{item.review_mode}</strong> · {item.decision}

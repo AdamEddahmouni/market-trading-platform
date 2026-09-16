@@ -51,6 +51,7 @@ import "./styles/shared-ui.css";
 import "./styles/operator-control.css";
 import "./styles/imp-product.css";
 import "./styles/radar.css";
+import "./components/opportunity/opportunity.css";
 import "./components/imp-ui/imp-ui.css";
 
 const AssistantHistoryPage = lazy(() =>

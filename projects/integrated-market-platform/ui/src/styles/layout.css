@@ -247,43 +247,10 @@ body,
   font-size: var(--imp-text-xs);
 }
 
-.opportunity-review-list {
-  display: grid;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.opportunity-review-card {
-  background: var(--surface-1);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 14px;
-}
-
-.opportunity-review-card .card-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.opportunity-review-card .card-head h3 {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.opportunity-identity,
-.opportunity-provisional,
-.opportunity-quality,
-.opportunity-account,
-.opportunity-decision-support,
-.opportunity-next {
+.opportunity-quality {
   margin: 8px 0 0;
   color: var(--text-secondary);
   font-size: 0.82rem;
-}
-
-.opportunity-provisional {
-  color: var(--warning, #e1b85b);
 }
 
 .reason-codes {

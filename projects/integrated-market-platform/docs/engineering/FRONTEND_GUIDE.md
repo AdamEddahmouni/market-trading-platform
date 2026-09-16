@@ -81,7 +81,17 @@ UI API failures use `{ error, reason_code, error_category }`. `error_category` i
 
 ## CSS organization
 
-Mode-specific styles: `ui/src/styles/{demo,paper,live}-*.css`. Shared tokens: `tokens.css`, `layout.css`. Operator design system: `ui/src/components/imp-ui/imp-ui.css` (primitives) + `ui/src/styles/radar.css` (Radar surface). Semantic state tones (`--imp-state-{tone}-{fg,bg,border}`) live in `tokens.css`; all enum/state rendering goes through `ui/src/state/semanticState.ts` (`resolveSemanticState`) — translate, never invent; unknown values render neutral with the raw string preserved.
+Mode-specific styles: `ui/src/styles/{demo,paper,live}-*.css`. Shared tokens: `tokens.css`, `layout.css`. Operator design system: `ui/src/components/imp-ui/imp-ui.css` (primitives) + `ui/src/styles/radar.css` (Radar surface) + `ui/src/components/opportunity/opportunity.css` (shared opportunity card/queue). Semantic state tones (`--imp-state-{tone}-{fg,bg,border}`) live in `tokens.css`; all enum/state rendering goes through `ui/src/state/semanticState.ts` (`resolveSemanticState`) — translate, never invent; unknown values render neutral with the raw string preserved.
+
+## Opportunity presentation (one language)
+
+Radar, Command, and Paper surfaces share `ui/src/components/opportunity/`:
+`opportunityPresentation.ts` (presentation state, evidence/freshness/next-action
+derivation, eligibility predicates), `opportunityDetailModel.ts` (L1–L4 detail
+sections), `OpportunityCard`/`OpportunityQueue`/`OpportunityFeedState` (compact
+queue + feed states), used by Radar (dense table + detail) and the Command
+overview queue. Page context changes layout, never semantic meaning. Below
+1024px the Radar detail opens in an overlay sheet (`RadarDetailSheet`).
 
 ## Testing patterns
 

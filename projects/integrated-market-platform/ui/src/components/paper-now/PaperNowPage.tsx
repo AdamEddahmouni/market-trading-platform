@@ -6,6 +6,9 @@ import { usePreviewPaperOrderMutation } from "../../api/hooks";
 import { useOpportunitiesSummaryQuery, useOpportunityAckMutation } from "../../api/opportunityClient";
 import { workspacePathForInstrument } from "../../api/instrumentIdentity";
 import type { PaperOrderPreviewResponse } from "../../api/schemas";
+import { resolveSemanticState } from "../../state/semanticState";
+import { CopyableIdentifier } from "../imp-ui/CopyableIdentifier";
+import { StatePill } from "../imp-ui/StatePill";
 import { PaperCandidateQueue } from "./PaperCandidateQueue";
 import { PaperExceptionsPanel } from "./PaperExceptionsPanel";
 import { PaperPreviewComposer } from "./PaperPreviewComposer";
@@ -126,11 +129,64 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
         </p>
       </div>
       <dl>
-        <div><dt>Account</dt><dd>{portfolio?.account.paper_account_id ?? "Unavailable"}</dd></div>
-        <div><dt>Session</dt><dd>{portfolio?.account.session_id ?? "Unavailable"}</dd></div>
-        <div><dt>Execution</dt><dd>{portfolio?.account.execution_mode ?? "Unavailable"}</dd></div>
-        <div><dt>Authority</dt><dd>{portfolio?.account.execution_authority ?? "Unavailable"}</dd></div>
-        <div><dt>Data health</dt><dd>{portfolio?.data_health.state ?? "Unavailable"}</dd></div>
+        <div>
+          <dt>Account</dt>
+          <dd>
+            {portfolio?.account.paper_account_id ? (
+              <CopyableIdentifier value={portfolio.account.paper_account_id} />
+            ) : (
+              "Unavailable"
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>Session</dt>
+          <dd>
+            {portfolio?.account.session_id ? (
+              <CopyableIdentifier value={portfolio.account.session_id} />
+            ) : (
+              "Unavailable"
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>Execution</dt>
+          <dd>
+            {portfolio?.account.execution_mode
+              ? resolveSemanticState("executionAuthority", portfolio.account.execution_mode).label
+              : "Unavailable"}
+          </dd>
+        </div>
+        <div>
+          <dt>Authority</dt>
+          <dd>
+            {portfolio?.account.execution_authority ? (
+              <StatePill
+                tone={resolveSemanticState("executionAuthority", portfolio.account.execution_authority).tone}
+                label={resolveSemanticState("executionAuthority", portfolio.account.execution_authority).label}
+                raw={portfolio.account.execution_authority}
+                size="sm"
+              />
+            ) : (
+              "Unavailable"
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>Data health</dt>
+          <dd>
+            {portfolio?.data_health.state ? (
+              <StatePill
+                tone={resolveSemanticState("dataHealth", portfolio.data_health.state).tone}
+                label={resolveSemanticState("dataHealth", portfolio.data_health.state).label}
+                raw={portfolio.data_health.state}
+                size="sm"
+              />
+            ) : (
+              "Unavailable"
+            )}
+          </dd>
+        </div>
       </dl>
     </header>
   );
@@ -149,16 +205,6 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
         onExplain={onExplain}
         onInspect={onInspect}
         onOpenWorkspace={openAttentionWorkspace}
-        opportunityItems={opportunitiesQuery.data?.items ?? []}
-        opportunityState={opportunityState}
-        feedStatus={opportunitiesQuery.data?.feed_status}
-        unreadyReason={opportunitiesQuery.data?.unready_reason}
-        nextAction={opportunitiesQuery.data?.next_action}
-        paperAccountId={portfolio?.account.paper_account_id}
-        onAck={(row, action) => {
-          opportunityAck.mutate({ rowId: row.opportunity_id || row.summary_id, action });
-        }}
-        showRankedOpportunities={false}
       />
       {!signalsDesk ? (
         <PaperPreviewComposer
@@ -210,7 +256,9 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
         feedStatus={opportunitiesQuery.data?.feed_status}
         unreadyReason={opportunitiesQuery.data?.unready_reason}
         nextAction={opportunitiesQuery.data?.next_action}
+        mode="PAPER"
         paperAccountId={portfolio?.account.paper_account_id}
+        onOpportunityRetry={() => void opportunitiesQuery.refetch()}
         onWhy={onWhy}
         onExplain={onExplain}
         onInspect={onInspect}

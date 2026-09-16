@@ -9,13 +9,13 @@ import {
   useOpportunityEvidenceQuery,
   useOpportunitiesSummaryQuery,
 } from "../../api/opportunityClient";
-import { resolveSemanticState } from "../../state/semanticState";
-import { AttentionBanner } from "../imp-ui/AttentionBanner";
-import { EmptyState, ErrorState } from "../imp-ui/FeedbackStates";
-import { LoadingState } from "../shared/LoadingState";
-import { stableOpportunityKey } from "../imp-product/progressiveOpportunityModel";
+import { BP_MD } from "../../lib/breakpoints";
+import { useMediaQuery } from "../../lib/useMediaQuery";
+import { OpportunityFeedState } from "../opportunity/OpportunityFeedState";
+import { stableOpportunityKey } from "../opportunity/opportunityPresentation";
 import type { Mode } from "../mode-session/types";
 import { OpportunityDetailCard } from "./OpportunityDetailCard";
+import { RadarDetailSheet } from "./RadarDetailSheet";
 import { RadarQueueTable } from "./RadarQueueTable";
 
 type Props = {
@@ -28,15 +28,11 @@ type Props = {
   onOpenWorkspace: (item: AttentionItem) => void;
 };
 
-function controlHref(nextAction?: string): string {
-  if (!nextAction) return "/control";
-  if (nextAction.startsWith("/")) return nextAction;
-  return "/control";
-}
-
 /**
  * Radar Opportunities tab: feed status as human language, the ranked queue,
- * and the selected opportunity's progressive-disclosure detail.
+ * and the selected opportunity's progressive-disclosure detail. Below BP_MD
+ * the grid collapses and detail opens in an overlay sheet so the queue stays
+ * scannable and selection never destroys operator context.
  */
 export function RadarOpportunitiesPanel({
   mode,
@@ -53,6 +49,8 @@ export function RadarOpportunitiesPanel({
   const items = query.data?.items ?? [];
   const feedStatus = query.data?.feed_status;
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const sheetLayout = useMediaQuery(`(max-width: ${BP_MD}px)`);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const selectedRow = useMemo(() => {
     if (!items.length) return null;
@@ -81,9 +79,18 @@ export function RadarOpportunitiesPanel({
         ? "ready"
         : "idle";
 
-  const handleSelectRow = useCallback((row: OpportunityReviewRow) => {
-    setSelectedKey(stableOpportunityKey(row));
-  }, []);
+  const handleSelectRow = useCallback(
+    (row: OpportunityReviewRow) => {
+      setSelectedKey(stableOpportunityKey(row));
+      if (sheetLayout) setSheetOpen(true);
+    },
+    [sheetLayout],
+  );
+
+  // Leaving the sheet layout dismisses the overlay; the inline detail takes over.
+  useEffect(() => {
+    if (!sheetLayout) setSheetOpen(false);
+  }, [sheetLayout]);
 
   const handleAck = useCallback(
     (row: OpportunityReviewRow, action: OpportunityAckAction) => {
@@ -92,69 +99,17 @@ export function RadarOpportunitiesPanel({
     [ackMutation],
   );
 
-  if (state === "loading") {
-    return <LoadingState label="Loading ranked opportunities…" />;
-  }
-
-  if (state === "error") {
-    return (
-      <ErrorState
-        title="Opportunity ranking is unavailable."
-        affects="The ranked queue cannot be loaded. Screeners and workspace evidence remain available."
-        onRetry={() => void query.refetch()}
-      />
-    );
-  }
-
-  if (feedStatus === "UNREADY") {
-    const unready = resolveSemanticState("research", "UNREADY", {
-      params: { reason: query.data?.unready_reason },
-    });
-    return (
-      <AttentionBanner
-        tone={unready.tone}
-        affects={unready.affects}
-        action={{ label: "Open Control", href: controlHref(query.data?.next_action) }}
-      >
-        {unready.sentence ?? unready.label}
-        {query.data?.unready_reason ? (
-          <span className="imp-radar-muted"> ({query.data.unready_reason})</span>
-        ) : null}
-      </AttentionBanner>
-    );
-  }
-
-  if (feedStatus === "UNAVAILABLE") {
-    // Live: UNAVAILABLE is by design (no opportunity engine in Live). Other
-    // modes: the feed should exist, so point the operator at Control.
-    if (mode === "LIVE") {
-      return (
-        <EmptyState
-          title="Opportunity feed unavailable"
-          reason="Live mode has no opportunity engine — use the Screeners tab and workspace evidence to investigate instruments."
-        />
-      );
-    }
-    const unavailable = resolveSemanticState("research", "UNAVAILABLE");
-    return (
-      <EmptyState
-        title={unavailable.label}
-        reason={unavailable.sentence ?? "The opportunity feed is unavailable."}
-        action={{ label: "Open Control", href: controlHref(query.data?.next_action) }}
-      />
-    );
-  }
-
-  if (!items.length) {
-    return (
-      <EmptyState
-        title="No opportunities right now"
-        reason="An empty queue is valid: nothing has been minted for the current coverage. The mixed live screener on the Screeners tab shows what discovery is seeing."
-      />
-    );
-  }
-
   return (
+    <OpportunityFeedState
+      state={state}
+      feedStatus={feedStatus}
+      unreadyReason={query.data?.unready_reason}
+      nextAction={query.data?.next_action}
+      mode={mode}
+      itemCount={items.length}
+      onRetry={() => void query.refetch()}
+      emptyReason="An empty queue is valid: nothing has been minted for the current coverage. The mixed live screener on the Screeners tab shows what discovery is seeing."
+    >
     <div className="imp-radar-opportunities" data-testid="imp-radar-opportunities">
       <section className="imp-radar-queue-section" aria-label="Ranked opportunity queue">
         <RadarQueueTable
@@ -167,6 +122,7 @@ export function RadarOpportunitiesPanel({
           onOpenWorkspace={onOpenWorkspace}
         />
       </section>
+      {!sheetLayout ? (
       <section className="imp-radar-detail-section" aria-label="Selected opportunity">
         {selectedRow ? (
           <OpportunityDetailCard
@@ -185,6 +141,26 @@ export function RadarOpportunitiesPanel({
           <p className="imp-radar-muted">Select a ranked row to open the opportunity detail.</p>
         )}
       </section>
+      ) : null}
     </div>
+    {sheetLayout ? (
+      <RadarDetailSheet open={sheetOpen && Boolean(selectedRow)} onClose={() => setSheetOpen(false)}>
+        {selectedRow ? (
+          <OpportunityDetailCard
+            row={selectedRow}
+            evidence={evidenceQuery.data}
+            evidencePhase={evidencePhase}
+            paperAccountId={paperAccountId}
+            paperActions={paperActions}
+            readOnly={readOnly}
+            onExplain={onExplain}
+            onInspect={onInspect}
+            onOpenWorkspace={onOpenWorkspace}
+            onAck={paperActions && !readOnly ? handleAck : undefined}
+          />
+        ) : null}
+      </RadarDetailSheet>
+    ) : null}
+    </OpportunityFeedState>
   );
 }

@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpportunityReviewRow } from "../../api/opportunityClient";
@@ -16,6 +16,22 @@ const summaryMock = vi.hoisted(() => ({
 }));
 
 const ackMutate = vi.hoisted(() => vi.fn());
+
+const mediaState = vi.hoisted(() => ({ narrow: false }));
+
+vi.stubGlobal(
+  "matchMedia",
+  (query: string) => ({
+    matches: mediaState.narrow && query.includes("max-width"),
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }),
+);
 
 vi.mock("../../api/opportunityClient", () => ({
   useOpportunitiesSummaryQuery: () => ({
@@ -208,6 +224,7 @@ describe("RadarPage opportunities tab", () => {
     summaryMock.isLoading = false;
     summaryMock.isError = false;
     ackMutate.mockClear();
+    mediaState.narrow = false;
   });
 
   it("renders the page header and tabs", () => {
@@ -309,6 +326,61 @@ describe("RadarPage opportunities tab", () => {
     renderRadar("DEMO");
     expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
     expect(screen.getAllByText(/Read-only in this mode/i).length).toBeGreaterThan(0);
+  });
+
+  it("keeps detail inline on wide layouts without a sheet", async () => {
+    summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
+    renderRadar("PAPER", "opportunities", true);
+    expect(await screen.findByTestId("imp-radar-detail-card")).toBeInTheDocument();
+    const queue = screen.getByTestId("imp-radar-queue");
+    fireEvent.click(within(queue).getByText("BIYA momentum ignition watch"));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});
+
+describe("RadarPage mobile detail sheet", () => {
+  beforeEach(() => {
+    summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
+    summaryMock.isLoading = false;
+    summaryMock.isError = false;
+    ackMutate.mockClear();
+    mediaState.narrow = true;
+  });
+
+  it("opens the detail as a dismissable sheet and keeps the queue scannable", async () => {
+    renderRadar("PAPER", "opportunities", true);
+    // Narrow layout: no inline detail column, queue stays visible.
+    expect(screen.queryByTestId("imp-radar-detail-card")).not.toBeInTheDocument();
+    expect(screen.getByTestId("imp-radar-queue")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("BIYA momentum ignition watch"));
+    const sheet = await screen.findByRole("dialog");
+    expect(sheet).toHaveAttribute("aria-label", "Opportunity detail");
+    expect(sheet).toHaveTextContent("BIYA momentum ignition watch");
+    expect(sheet).toHaveTextContent("2 of 3 ranking inputs present");
+    // Queue context is preserved behind the sheet.
+    expect(screen.getByTestId("imp-radar-queue")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close detail" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("closes on Escape and reopens on the next selection", async () => {
+    renderRadar("PAPER", "opportunities", true);
+    fireEvent.click(screen.getByText("BIYA momentum ignition watch"));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("BIYA momentum ignition watch"));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("keeps paper ack gating identical inside the sheet", async () => {
+    renderRadar("PAPER", "opportunities", true);
+    fireEvent.click(screen.getByText("BIYA momentum ignition watch"));
+    const sheet = await screen.findByRole("dialog");
+    fireEvent.click(within(sheet).getByRole("button", { name: "Watch" }));
+    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" });
   });
 });
 

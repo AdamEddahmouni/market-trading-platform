@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
   assertStableIdentityAcrossEvidenceRefresh,
-  buildProgressiveOpportunitySections,
-  derivePresentationState,
-} from "./progressiveOpportunityModel";
+  buildOpportunityDetailSections,
+} from "./opportunityDetailModel";
+import { derivePresentationState } from "./opportunityPresentation";
 import {
   fixtureOpportunityEvidenceRefresh,
   fixtureOpportunityEvidenceVerified,
   fixtureOpportunityOptionsFlowReplayEvidence,
   fixtureOpportunityRowBase,
   fixtureRowAfterEvidenceRefresh,
-  PROGRESSIVE_OPPORTUNITY_COCKPIT_READY,
-} from "./progressiveOpportunityFixtures";
+  OPPORTUNITY_DETAIL_MODEL_READY,
+} from "./opportunityDetailFixtures";
 
-describe(PROGRESSIVE_OPPORTUNITY_COCKPIT_READY, () => {
+describe(OPPORTUNITY_DETAIL_MODEL_READY, () => {
   it("keeps stable opportunity identity when evidence refreshes without summary drift", () => {
     const before = fixtureOpportunityRowBase;
     const after = fixtureRowAfterEvidenceRefresh();
@@ -30,7 +30,7 @@ describe(PROGRESSIVE_OPPORTUNITY_COCKPIT_READY, () => {
   });
 
   it("surfaces honest UNAVAILABLE historical context when no artifact is linked", () => {
-    const sections = buildProgressiveOpportunitySections(fixtureOpportunityRowBase, {
+    const sections = buildOpportunityDetailSections(fixtureOpportunityRowBase, {
       evidence: fixtureOpportunityEvidenceRefresh,
     });
     expect(sections.historicalContext.status).toBe("UNAVAILABLE");
@@ -41,7 +41,7 @@ describe(PROGRESSIVE_OPPORTUNITY_COCKPIT_READY, () => {
   });
 
   it("surfaces replay options-flow evidence without live feed or rank scores", () => {
-    const sections = buildProgressiveOpportunitySections(fixtureOpportunityRowBase, {
+    const sections = buildOpportunityDetailSections(fixtureOpportunityRowBase, {
       evidence: fixtureOpportunityOptionsFlowReplayEvidence,
     });
     expect(sections.historicalContext.status).toBe("PARTIAL");
@@ -59,7 +59,7 @@ describe(PROGRESSIVE_OPPORTUNITY_COCKPIT_READY, () => {
   });
 
   it("separates visibility from actionability when gates fail", () => {
-    const blocked = buildProgressiveOpportunitySections(
+    const blocked = buildOpportunityDetailSections(
       {
         ...fixtureOpportunityRowBase,
         eligibility_state: "INELIGIBLE",

@@ -1,19 +1,19 @@
 import type { OpportunityEvidenceResponse, OpportunityReviewRow } from "../../api/opportunityClient";
 import {
+  canAckOpportunity,
+  canOpenOpportunityWorkspace,
+  derivePresentationState,
+  isOpportunityIneligible,
+  stableOpportunityKey,
+  type OpportunityPresentationState,
+} from "./opportunityPresentation";
+import {
   projectResearchArtifactEvidenceLines,
   researchArtifactEvidenceFromEvidence,
 } from "./researchArtifactEvidenceProjection";
 
-export type ProgressivePresentationState =
-  | "DETECTED"
-  | "PROVISIONAL"
-  | "VERIFYING"
-  | "VERIFIED"
-  | "CONTRADICTED"
-  | "EXPIRED";
-
-export type ProgressiveOpportunitySections = {
-  presentationState: ProgressivePresentationState;
+export type OpportunityDetailSections = {
+  presentationState: OpportunityPresentationState;
   stableKey: string;
   instrumentLabel: string;
   entityLabel: string;
@@ -67,10 +67,6 @@ function formatAgeFromNs(createdAtNs: unknown): string {
   }
 }
 
-export function stableOpportunityKey(row: OpportunityReviewRow): string {
-  return row.opportunity_id ?? row.summary_id;
-}
-
 function agentEnrichmentMeta(row: OpportunityReviewRow): Record<string, unknown> | undefined {
   const metadata = row.metadata;
   if (!metadata || typeof metadata !== "object") return undefined;
@@ -78,45 +74,24 @@ function agentEnrichmentMeta(row: OpportunityReviewRow): Record<string, unknown>
   return agent && typeof agent === "object" ? (agent as Record<string, unknown>) : undefined;
 }
 
-export function derivePresentationState(
-  row: OpportunityReviewRow,
-  evidence?: OpportunityEvidenceResponse | null,
-): ProgressivePresentationState {
-  const lifecycle = String(row.lifecycle_state ?? "").toUpperCase();
-  if (lifecycle.includes("EXPIRED")) return "EXPIRED";
-
-  const evidenceClass = String(evidence?.evidence_class ?? row.evidence_class ?? "").toUpperCase();
-  const supersession = displayValue(evidence?.supersession_reason ?? row.supersession_reason);
-  const duplicates = evidence?.duplicates?.length ?? (Array.isArray(row.duplicates) ? row.duplicates.length : 0);
-  const agent = agentEnrichmentMeta(row);
-  const agentStatus = String(agent?.status ?? "").toUpperCase();
-
-  if (supersession !== "UNAVAILABLE" || duplicates > 0 || agentStatus === "CONTRADICTED") {
-    return "CONTRADICTED";
-  }
-  if (evidenceClass.includes("VERIFIED")) return "VERIFIED";
-  if (agentStatus === "PENDING" || agentStatus === "INGESTING") return "VERIFYING";
-
-  const basis = row.ranking_vector?.basis;
-  const provisional =
-    row.identity_kind !== "OPPORTUNITY_V1" || Boolean(basis && basis !== "COMPARATOR_LEXICOGRAPHIC");
-  if (provisional) return "PROVISIONAL";
-  return "DETECTED";
-}
-
-export function buildProgressiveOpportunitySections(
+/**
+ * L1–L4 detail model for a selected opportunity. Backend fields only — no
+ * invented truth. Shared by the Radar detail card and any surface that needs
+ * the same progressive-disclosure sections.
+ */
+export function buildOpportunityDetailSections(
   row: OpportunityReviewRow,
   options: {
     evidence?: OpportunityEvidenceResponse | null;
     paperActions?: boolean;
     readOnly?: boolean;
   } = {},
-): ProgressiveOpportunitySections {
+): OpportunityDetailSections {
   const { evidence, paperActions = false, readOnly = false } = options;
   const quality = (row.data_quality ?? {}) as Record<string, unknown>;
   const overlay = row.decision_support ?? {};
-  const ineligible = row.eligibility_state === "INELIGIBLE" || row.next_safe_action === "STOP";
-  const canOpen = Boolean(row.instrument_id && row.next_safe_action === "OPEN_WORKSPACE" && !ineligible);
+  const ineligible = isOpportunityIneligible(row);
+  const canOpen = canOpenOpportunityWorkspace(row);
 
   const deterministicEvidence: Array<{ label: string; value: string }> = [
     { label: "Source", value: displayValue(quality.source) },
@@ -175,7 +150,7 @@ export function buildProgressiveOpportunitySections(
       }
     }
   }
-  const historicalContext: ProgressiveOpportunitySections["historicalContext"] = {
+  const historicalContext: OpportunityDetailSections["historicalContext"] = {
     status: historicalLines.length ? "PARTIAL" : "UNAVAILABLE",
     lines: historicalLines.length
       ? historicalLines
@@ -214,6 +189,7 @@ export function buildProgressiveOpportunitySections(
   ];
 
   const presentationState = derivePresentationState(row, evidence);
+  const canAck = Boolean(paperActions && !readOnly && canAckOpportunity(row));
 
   return {
     presentationState,
@@ -232,8 +208,8 @@ export function buildProgressiveOpportunitySections(
     historicalContext,
     riskLiquidity,
     actionReadiness: {
-      canWatch: Boolean(paperActions && !readOnly && onAckAllowed(row)),
-      canDismiss: Boolean(paperActions && !readOnly && onAckAllowed(row)),
+      canWatch: canAck,
+      canDismiss: canAck,
       canPreviewWorkspace: canOpen,
       canRevalidate: canOpen,
       paperActions,
@@ -243,19 +219,15 @@ export function buildProgressiveOpportunitySections(
   };
 }
 
-function onAckAllowed(row: OpportunityReviewRow): boolean {
-  return row.next_safe_action !== "STOP" && row.eligibility_state !== "INELIGIBLE";
-}
-
 /** Replay helper: evidence refresh must not change stable identity key. */
 export function assertStableIdentityAcrossEvidenceRefresh(
   before: OpportunityReviewRow,
   after: OpportunityReviewRow,
 ): void {
   if (stableOpportunityKey(before) !== stableOpportunityKey(after)) {
-    throw new Error("PROGRESSIVE_OPPORTUNITY_IDENTITY_DRIFT");
+    throw new Error("OPPORTUNITY_IDENTITY_DRIFT");
   }
   if (before.summary_id !== after.summary_id) {
-    throw new Error("PROGRESSIVE_OPPORTUNITY_SUMMARY_DRIFT");
+    throw new Error("OPPORTUNITY_SUMMARY_DRIFT");
   }
 }
