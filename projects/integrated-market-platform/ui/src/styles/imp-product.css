@@ -268,16 +268,6 @@
   gap: 0.5rem;
 }
 
-.imp-overview-kpi-banner {
-  margin: 0;
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 106, 0, 0.25);
-  background: rgba(255, 106, 0, 0.06);
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-}
-
 .imp-overview-kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
@@ -287,14 +277,41 @@
   list-style: none;
 }
 
+/*
+ * Decision-metric cards. Tone is semantic, not decorative: a left accent +
+ * icon in the tone color, label/value in normal text. Neutral cells stay
+ * unaccented so caution/critical cells carry the visual weight (UIR-01D).
+ */
 .imp-overview-kpi-card {
   display: grid;
   gap: 0.15rem;
   padding: 0.65rem 0.75rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
+  border-left: 3px solid transparent;
   background: linear-gradient(165deg, var(--surface-2), var(--surface-1));
   min-height: 4.25rem;
+}
+
+.imp-overview-kpi-card[data-tone="live"] {
+  border-left-color: var(--imp-state-live-border);
+}
+.imp-overview-kpi-card[data-tone="paper"] {
+  border-left-color: var(--imp-state-paper-border);
+}
+.imp-overview-kpi-card[data-tone="replay"] {
+  border-left-color: var(--imp-state-replay-border);
+}
+.imp-overview-kpi-card[data-tone="research"] {
+  border-left-color: var(--imp-state-research-border);
+}
+.imp-overview-kpi-card[data-tone="caution"] {
+  border-left-color: var(--imp-state-caution-border);
+  background: linear-gradient(165deg, var(--imp-state-caution-bg), var(--surface-1) 70%);
+}
+.imp-overview-kpi-card[data-tone="critical"] {
+  border-left-color: var(--imp-state-critical-border);
+  background: linear-gradient(165deg, var(--imp-state-critical-bg), var(--surface-1) 70%);
 }
 
 .imp-overview-kpi-label {
@@ -306,9 +323,38 @@
 }
 
 .imp-overview-kpi-value {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--imp-space-1);
   font-size: 1.05rem;
   font-weight: 600;
   color: var(--text-primary);
+  min-width: 0;
+}
+
+.imp-overview-kpi-icon {
+  font-size: 0.75em;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+.imp-overview-kpi-card[data-tone="live"] .imp-overview-kpi-icon {
+  color: var(--imp-state-live-fg);
+}
+.imp-overview-kpi-card[data-tone="paper"] .imp-overview-kpi-icon {
+  color: var(--imp-state-paper-fg);
+}
+.imp-overview-kpi-card[data-tone="replay"] .imp-overview-kpi-icon {
+  color: var(--imp-state-replay-fg);
+}
+.imp-overview-kpi-card[data-tone="research"] .imp-overview-kpi-icon {
+  color: var(--imp-state-research-fg);
+}
+.imp-overview-kpi-card[data-tone="caution"] .imp-overview-kpi-icon {
+  color: var(--imp-state-caution-fg);
+}
+.imp-overview-kpi-card[data-tone="critical"] .imp-overview-kpi-icon {
+  color: var(--imp-state-critical-fg);
 }
 
 .imp-overview-kpi-detail {
@@ -316,139 +362,11 @@
   color: var(--text-muted);
 }
 
-.imp-top-opportunities {
-  display: grid;
-  gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 106, 0, 0.22);
-  background: linear-gradient(135deg, rgba(255, 106, 0, 0.08), transparent 55%), var(--surface-1);
-}
-
-.imp-top-opportunities-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
-}
-
-.imp-top-opportunities-header h2 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.imp-top-opportunities-link {
+.imp-overview-radar-link {
   font-size: 0.78rem;
   color: var(--accent-primary-bright);
   text-decoration: none;
   border-bottom: 1px solid rgba(255, 106, 0, 0.35);
-}
-
-.imp-top-opportunity-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-  gap: 0.65rem;
-}
-
-.imp-top-opportunity-card {
-  display: grid;
-  gap: 0.45rem;
-  padding: 0.65rem 0.75rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-0);
-}
-
-.imp-top-opportunity-card-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.imp-top-opportunity-rank {
-  display: inline-block;
-  margin-right: 0.35rem;
-  font-size: 0.65rem;
-  font-family: var(--font-mono);
-  color: var(--accent-primary-bright);
-}
-
-.imp-top-opportunity-symbol {
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-
-.imp-top-opportunity-chip {
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.15rem 0.4rem;
-  border-radius: 999px;
-  border: 1px solid var(--border-subtle);
-}
-
-.imp-top-opportunity-chip.chip-ok {
-  border-color: rgba(255, 106, 0, 0.35);
-  color: var(--accent-primary-bright);
-}
-
-.imp-top-opportunity-chip.chip-stop {
-  border-color: rgba(220, 80, 80, 0.45);
-  color: #f0a0a0;
-}
-
-.imp-top-opportunity-headline {
-  margin: 0;
-  font-size: 0.82rem;
-  line-height: 1.35;
-  color: var(--text-secondary);
-}
-
-.imp-top-opportunity-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.imp-top-opportunity-tags li {
-  font-size: 0.62rem;
-  padding: 0.12rem 0.4rem;
-  border-radius: 999px;
-  background: rgba(255, 106, 0, 0.12);
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.imp-top-opportunity-tags-empty {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-
-.imp-top-opportunity-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.imp-top-opportunity-actions button {
-  font-size: 0.72rem;
-  padding: 0.25rem 0.45rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-2);
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-.imp-top-opportunity-actions button:hover,
-.imp-top-opportunity-actions button:focus-visible {
-  border-color: var(--accent-primary);
 }
 
 .imp-overview-primary-queue {
@@ -495,6 +413,22 @@
 .imp-overview-queue-panels {
   display: grid;
   gap: 0.85rem;
+}
+
+.imp-overview-queue-ranked,
+.imp-overview-queue-attention {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.imp-overview-queue-subhead {
+  margin: 0;
+  font-size: var(--imp-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 /* UIR-01 review fix: allow the queue → panels → card chain to shrink below
@@ -770,6 +704,14 @@
   }
 }
 
+/* Tone-coded decision-metric cards keep a visible border under forced colors;
+   the icon + text encoding is unaffected. */
+@media (forced-colors: active) {
+  .imp-overview-kpi-card {
+    border: 2px solid CanvasText;
+  }
+}
+
 /* ---- UIR-01 StatusBar (consolidates ModeEnvironmentBar + ContextBar) ---- */
 .imp-status-bar-stack {
   display: flex;
@@ -944,6 +886,39 @@
 
   .imp-status-bar-mode-sentence {
     white-space: normal;
+  }
+
+  /*
+   * StatusBar segment collapse (responsive-contract §3): below BP_SM the bar
+   * keeps ModeBadge + authority + data health + the details popover; the
+   * data-mode sentence and scope move into the popover (nothing is lost).
+   */
+  .imp-status-bar-data,
+  .imp-status-bar-scope {
+    display: none;
+  }
+
+  /*
+   * Command mobile prioritization (UIR-01D): the actionable queue leads;
+   * the decision-metric strip follows compactly, then mode-specific rows.
+   * KPI cells are non-interactive, so visual reorder cannot trap focus.
+   */
+  .imp-overview-primary-queue {
+    order: -1;
+  }
+
+  .imp-overview-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .imp-overview-kpi-card {
+    min-height: 0;
+    padding: 0.5rem 0.65rem;
+  }
+
+  .imp-overview-kpi-value {
+    font-size: 0.95rem;
   }
 
   /* Capability chips truncate their reason harder instead of overflowing */

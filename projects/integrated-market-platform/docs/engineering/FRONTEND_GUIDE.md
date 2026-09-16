@@ -93,6 +93,19 @@ queue + feed states), used by Radar (dense table + detail) and the Command
 overview queue. Page context changes layout, never semantic meaning. Below
 1024px the Radar detail opens in an overlay sheet (`RadarDetailSheet`).
 
+## Attention signals (one language)
+
+Attention items are signals, not opportunities. `ui/src/components/attentionPresentation.ts`
+holds the shared signal language (tier urgency, why-now from reason labels);
+`AttentionFeed` renders it on Command Overview, the Signals desk, and (as the
+drafting variant `PaperCandidateQueue`) Paper. The signal→opportunity bridge is
+`attentionOpportunityLinks(rows)` in `opportunityPresentation.ts`: the backend
+ingests attention rows with `summary_id = attention_id`, so an exact key match
+is the only supported link — linked signals deep-link to `/radar?selected=<id>`.
+Command's KPI strip is decision-oriented (`overviewDecisionKpis`): feed trust,
+actionable count, attention load, degradation — never portfolio/account metrics
+(those live in the risk ribbon and page headers).
+
 ## Testing patterns
 
 - Pure helper: `*.test.ts` colocated or in same folder

@@ -165,6 +165,9 @@
 .imp-ui-confidence[data-tone="critical"] {
   color: var(--imp-state-critical-fg);
 }
+.imp-ui-freshness[data-tone="replay"] {
+  color: var(--imp-state-replay-fg);
+}
 
 /* ---- EmptyState ---- */
 .imp-ui-empty-state {

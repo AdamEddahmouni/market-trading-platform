@@ -215,8 +215,23 @@ body,
   padding: 14px;
 }
 
+.attention-card {
+  display: grid;
+  gap: var(--imp-space-2);
+  min-width: 0;
+}
+
+/* Tier accent: paired with the tier StatePill text — never color alone. */
 .attention-card.tier-1 {
   border-color: rgba(212, 160, 23, 0.4);
+}
+
+.attention-card .card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--imp-space-2) var(--imp-space-3);
 }
 
 .attention-card-title {
@@ -226,16 +241,91 @@ body,
   min-width: 0;
 }
 
-.attention-tier-label {
+.attention-card-title h3 {
+  margin: 0;
+  font-size: var(--imp-text-md);
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+/* Object-class eyebrow: attention cards are signals, not opportunities. */
+.attention-card-kind {
   font-size: var(--imp-text-micro);
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.attention-card-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--imp-space-2);
+  flex-shrink: 0;
+}
+
+.attention-card-badges .symbol {
+  font-family: var(--font-mono);
+  font-size: var(--imp-text-xs);
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.attention-card-why {
+  margin: 0;
+  font-size: var(--imp-text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.attention-card-why-label {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.attention-card-bridge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--imp-space-2);
+  margin: 0;
+  font-size: var(--imp-text-xs);
+  color: var(--text-secondary);
+}
+
+.attention-card-bridge a {
+  color: var(--accent-primary-bright);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.attention-card-bridge a:hover {
+  text-decoration: underline;
+}
+
+.attention-card-raw {
+  font-size: var(--imp-text-xs);
   color: var(--text-muted);
 }
 
-.attention-tier-label[data-tier="1"] {
-  color: var(--imp-state-caution-fg);
+.attention-card-raw > summary {
+  cursor: pointer;
+  padding: var(--imp-space-1) 0;
+  border-radius: var(--imp-radius-sm);
+}
+
+.attention-card-raw > summary:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}
+
+.attention-card-raw .reason-codes {
+  margin: var(--imp-space-1) 0 0;
 }
 
 .reason-label {

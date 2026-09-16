@@ -3,12 +3,11 @@ import type { AttentionItem } from "../../api/client";
 import type { OpportunityAckAction, OpportunityReviewRow } from "../../api/opportunityClient";
 import type { Mode } from "../mode-session/types";
 import { ImpOverviewKpiStrip } from "./ImpOverviewKpiStrip";
-import { ImpOverviewPrimaryQueue } from "./ImpOverviewPrimaryQueue";
-import type { OverviewKpiCell, OverviewKpiState } from "./impOverviewMetrics";
+import { ImpOverviewPrimaryQueue, type OverviewQueueFilter } from "./ImpOverviewPrimaryQueue";
+import type { OverviewKpiCell } from "./impOverviewMetrics";
 
 export type ImpOverviewBoardProps = {
   kpiCells: OverviewKpiCell[];
-  kpiState: OverviewKpiState;
   attentionItems: AttentionItem[];
   attentionState: "loading" | "ready" | "error";
   attentionEmptyMessage?: string;
@@ -20,7 +19,10 @@ export type ImpOverviewBoardProps = {
   mode?: Mode;
   paperAccountId?: string;
   readOnly?: boolean;
+  /** Forwarded to the primary queue (Paper defaults to ranked — see queue). */
+  defaultQueueFilter?: OverviewQueueFilter;
   onOpportunityRetry?: () => void;
+  onAttentionRetry?: () => void;
   onWhy: (item: AttentionItem) => void;
   onExplain: (item: AttentionItem) => void;
   onInspect: (item: AttentionItem) => void;
@@ -31,7 +33,6 @@ export type ImpOverviewBoardProps = {
 
 export function ImpOverviewBoard({
   kpiCells,
-  kpiState,
   attentionItems,
   attentionState,
   attentionEmptyMessage,
@@ -43,7 +44,9 @@ export function ImpOverviewBoard({
   mode,
   paperAccountId,
   readOnly,
+  defaultQueueFilter,
   onOpportunityRetry,
+  onAttentionRetry,
   onWhy,
   onExplain,
   onInspect,
@@ -53,7 +56,7 @@ export function ImpOverviewBoard({
 }: ImpOverviewBoardProps) {
   return (
     <div className="imp-overview-board">
-      <ImpOverviewKpiStrip cells={kpiCells} state={kpiState} />
+      <ImpOverviewKpiStrip cells={kpiCells} />
       <ImpOverviewPrimaryQueue
         attentionItems={attentionItems}
         attentionState={attentionState}
@@ -66,7 +69,9 @@ export function ImpOverviewBoard({
         mode={mode}
         paperAccountId={paperAccountId}
         readOnly={readOnly}
+        defaultFilter={defaultQueueFilter}
         onOpportunityRetry={onOpportunityRetry}
+        onAttentionRetry={onAttentionRetry}
         onWhy={onWhy}
         onExplain={onExplain}
         onInspect={onInspect}

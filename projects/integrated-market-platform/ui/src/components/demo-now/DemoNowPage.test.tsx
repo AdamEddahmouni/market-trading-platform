@@ -62,7 +62,7 @@ describe("DemoNowPage", () => {
   it("composes one page heading and four named operational regions", () => {
     renderPage();
     expect(screen.getByRole("heading", { level: 1, name: "See the market unfold" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Overview KPIs" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Decision metrics" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Primary review queue" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Replay overview" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Simulated portfolio" })).toBeInTheDocument();
@@ -76,7 +76,7 @@ describe("DemoNowPage", () => {
         <DemoNowPage {...value} />
       </MemoryRouter>,
     );
-    fireEvent.click(screen.getByRole("tab", { name: "Attention" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Attention (1)" }));
     fireEvent.click(screen.getByRole("button", { name: "Why here?" }));
     fireEvent.click(screen.getAllByRole("button", { name: "Explain" })[0]);
     fireEvent.click(screen.getByRole("button", { name: "Inspect" }));
@@ -91,8 +91,9 @@ describe("DemoNowPage", () => {
 
   it("degrades attention and portfolio independently while replay remains usable", () => {
     renderPage({ attentionState: "error", portfolioState: "error", portfolio: undefined });
+    // Errored feeds carry no count on the tab.
     fireEvent.click(screen.getByRole("tab", { name: "Attention" }));
-    expect(screen.getByText("Attention feed unavailable.")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Attention feed unavailable.");
     expect(screen.getByText(/Simulated portfolio unavailable/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Next event" })).toBeEnabled();
   });
@@ -122,7 +123,7 @@ describe("Demo Now visual accessibility contract", () => {
   it("keeps targets, focus, responsive, reduced-motion, and forced-color rules explicit", () => {
     expect(demoNowCss).toContain("min-height: 44px");
     expect(demoNowCss).toContain(":focus-visible");
-    expect(demoNowCss).toContain("@media (max-width: 980px)");
+    expect(demoNowCss).toContain("@media (max-width: 1024px)");
     expect(demoNowCss).toContain("@media (max-width: 720px)");
     expect(demoNowCss).toContain("@media (prefers-reduced-motion: reduce)");
     expect(demoNowCss).toContain("@media (forced-colors: active)");

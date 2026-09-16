@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { SemanticTone } from "../../state/semanticState";
-import { SEMANTIC_TONE_ICON } from "../../state/semanticState";
+import { SEMANTIC_TONE_ICON, humanizeEnum } from "../../state/semanticState";
 
 type Props = {
   /** Backend freshness word (e.g. FRESH/STALE/UNKNOWN/NOT_APPLICABLE) — wins when present. */
@@ -9,6 +9,12 @@ type Props = {
   asOf?: string | number | null;
   /** Expected update cadence in seconds; drives the fresh/lagging/stale bands. */
   cadenceSeconds?: number;
+  /**
+   * false for replay/frozen data: it does not decay (semantic-state-system
+   * §6), so render "as of {human time}" with the replay tone instead of a
+   * wall-clock age band.
+   */
+  decays?: boolean;
   className?: string;
 };
 
@@ -25,9 +31,24 @@ const BACKEND_WORD_TONE: Record<string, SemanticTone> = {
   STALE: "caution",
   DELAYED: "caution",
   UNKNOWN: "neutral",
-  UNAVAILABLE: "critical",
+  UNAVAILABLE: "neutral",
   NOT_APPLICABLE: "neutral",
   SNAPSHOT: "neutral",
+  REPLAY: "replay",
+};
+
+/** Operator-readable labels for known backend freshness words (never raw enums). */
+const BACKEND_WORD_LABEL: Record<string, string> = {
+  FRESH: "Fresh",
+  LIVE: "Fresh",
+  CURRENT: "Fresh",
+  STALE: "Stale",
+  DELAYED: "Delayed",
+  UNKNOWN: "Unknown",
+  UNAVAILABLE: "Unavailable",
+  NOT_APPLICABLE: "Not applicable",
+  SNAPSHOT: "Snapshot",
+  REPLAY: "Replay",
 };
 
 export function parseAsOfMs(asOf: string | number | null | undefined): number | null {
@@ -53,6 +74,20 @@ export function formatRelativeAge(ms: number, nowMs: number): string {
   return `${days}d ago`;
 }
 
+/** Absolute human time for non-decaying (replay/frozen) surfaces. */
+export function formatAbsoluteTime(ms: number): string {
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(ms));
+  } catch {
+    return new Date(ms).toISOString();
+  }
+}
+
 export function freshnessBand(
   ageMs: number,
   cadenceSeconds: number,
@@ -65,14 +100,15 @@ export function freshnessBand(
 
 /**
  * One freshness presentation: backend word wins when present; otherwise a
- * relative "updated …" label banded by cadence. Tone is always paired with
- * text. Raw timestamps belong in TechnicalDetails, not here.
+ * relative "updated …" label banded by cadence (decaying data) or an
+ * absolute "as of …" label (replay/frozen data, `decays={false}`). Tone is
+ * always paired with text. Raw timestamps belong in TechnicalDetails.
  */
-export function FreshnessIndicator({ backendLabel, asOf, cadenceSeconds = 5, className }: Props) {
+export function FreshnessIndicator({ backendLabel, asOf, cadenceSeconds = 5, decays = true, className }: Props) {
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   const asOfMs = parseAsOfMs(asOf);
-  const needsTick = !backendLabel && asOfMs != null;
+  const needsTick = decays && !backendLabel && asOfMs != null;
 
   useEffect(() => {
     if (!needsTick) return;
@@ -85,12 +121,7 @@ export function FreshnessIndicator({ backendLabel, asOf, cadenceSeconds = 5, cla
   if (backendLabel) {
     const upper = backendLabel.toUpperCase();
     const tone = BACKEND_WORD_TONE[upper] ?? "neutral";
-    const text =
-      upper === "FRESH" || upper === "LIVE" || upper === "CURRENT"
-        ? "Fresh"
-        : upper === "NOT_APPLICABLE"
-          ? "Not applicable"
-          : backendLabel.replace(/_/g, " ").toLowerCase();
+    const text = BACKEND_WORD_LABEL[upper] ?? humanizeEnum(backendLabel);
     return (
       <span className={classes} data-tone={tone} data-testid="imp-ui-freshness">
         <span aria-hidden="true">{SEMANTIC_TONE_ICON[tone]}</span> {text}
@@ -102,6 +133,15 @@ export function FreshnessIndicator({ backendLabel, asOf, cadenceSeconds = 5, cla
     return (
       <span className={classes} data-tone="neutral" data-testid="imp-ui-freshness">
         <span aria-hidden="true">{SEMANTIC_TONE_ICON.neutral}</span> Freshness unknown
+      </span>
+    );
+  }
+
+  if (!decays) {
+    return (
+      <span className={classes} data-tone="replay" data-testid="imp-ui-freshness">
+        <span aria-hidden="true">{SEMANTIC_TONE_ICON.replay}</span> as of{" "}
+        {formatAbsoluteTime(asOfMs)}
       </span>
     );
   }

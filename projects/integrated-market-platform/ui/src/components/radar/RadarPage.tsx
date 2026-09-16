@@ -82,6 +82,9 @@ export function RadarPage({
     : undefined;
   const [searchParams] = useSearchParams();
   const filterQuery = tab === "screeners" ? (searchParams.get("q") ?? undefined) : undefined;
+  // Deep link from the Command signal→opportunity bridge: `/radar?selected=<id>`
+  // preselects the ranked row (and opens the detail sheet on narrow layouts).
+  const selectedParam = tab === "opportunities" ? searchParams.get("selected") : null;
 
   return (
     <section className="page imp-radar-page" data-mode={mode}>
@@ -113,6 +116,7 @@ export function RadarPage({
           readOnly={!paper}
           paperAccountId={paperAccountId}
           paperActions={paperActions}
+          initialSelectedKey={selectedParam}
           onExplain={onExplain}
           onInspect={onInspect}
           onOpenWorkspace={onOpenWorkspace}

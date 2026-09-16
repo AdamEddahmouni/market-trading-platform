@@ -11,7 +11,13 @@ import type {
   OpportunityEvidenceResponse,
   OpportunityReviewRow,
 } from "../../api/opportunityClient";
-import { resolveSemanticState, type SemanticState, type SemanticTone } from "../../state/semanticState";
+import {
+  humanizeEnum,
+  resolveSemanticState,
+  type SemanticState,
+  type SemanticTone,
+} from "../../state/semanticState";
+import type { AttentionOpportunityLink } from "../attentionPresentation";
 
 /** Presentation lifecycle derived from backend fields (never stored). */
 export type OpportunityPresentationState =
@@ -156,4 +162,45 @@ export function opportunityNextActionState(row: OpportunityReviewRow): SemanticS
 export function hasProvisionalOrder(row: OpportunityReviewRow): boolean {
   const basis = row.ranking_vector?.basis;
   return Boolean(basis && basis !== "COMPARATOR_LEXICOGRAPHIC");
+}
+
+/**
+ * Signal→opportunity bridge map, keyed by attention id. The backend ingests
+ * attention rows into the ranked queue with `summary_id = attention_id`
+ * (`ftep_attention_candidate_to_summary`), so an exact key match is the only
+ * supported signal→opportunity relationship: the signal is also ranked.
+ * OpportunityV1 rows key on engine ids that never collide with attention ids.
+ * No match → no relationship is implied.
+ */
+export function attentionOpportunityLinks(
+  rows: OpportunityReviewRow[],
+): ReadonlyMap<string, AttentionOpportunityLink> {
+  const links = new Map<string, AttentionOpportunityLink>();
+  for (const row of rows) {
+    const presentation = derivePresentationState(row);
+    links.set(row.summary_id, {
+      summaryId: row.summary_id,
+      rank: opportunityRankLabel(row),
+      stateLabel: OPPORTUNITY_STATE_LABEL[presentation],
+      stateTone: OPPORTUNITY_STATE_TONE[presentation],
+      evidence: evidenceInputsSummary(row),
+    });
+  }
+  return links;
+}
+
+/** Human labels for the backend's known feed-unready reason codes. */
+const UNREADY_REASON_LABEL: Record<string, string> = {
+  QUALITY_SUMMARY_NOT_HEALTHY: "market data quality is degraded",
+  LIVE_AS_OF_UNAVAILABLE: "the live clock is unavailable",
+};
+
+/**
+ * Operator-readable feed-unready reason: known codes map to human language;
+ * unknown codes humanize mechanically (never a guessed sentence, never raw
+ * SNAKE_CASE in L1 copy). The raw code stays available to L4 surfaces.
+ */
+export function humanizeUnreadyReason(reason: string | undefined | null): string | null {
+  if (!reason) return null;
+  return UNREADY_REASON_LABEL[reason] ?? humanizeEnum(reason);
 }

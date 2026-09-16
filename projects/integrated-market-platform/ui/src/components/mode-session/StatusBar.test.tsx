@@ -52,6 +52,13 @@ describe("StatusBar", () => {
     expect(region).toHaveTextContent("2026-08-30T12:00:00Z");
   });
 
+  it("carries the instrument scope in the details popover so narrow layouts lose nothing", () => {
+    renderBar();
+    const details = screen.getByText("Technical details").closest("details");
+    expect(details).toHaveTextContent("Scope");
+    expect(details).toHaveTextContent("BIYA");
+  });
+
   it("warns with a caution banner when backend context is unavailable", () => {
     render(
       <MemoryRouter>

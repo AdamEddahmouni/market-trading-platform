@@ -62,7 +62,41 @@ describe("FreshnessIndicator", () => {
   it("lets the backend word win when present", () => {
     render(<FreshnessIndicator backendLabel="STALE" />);
     expect(screen.getByTestId("imp-ui-freshness")).toHaveAttribute("data-tone", "caution");
-    expect(screen.getByTestId("imp-ui-freshness")).toHaveTextContent("stale");
+    expect(screen.getByTestId("imp-ui-freshness")).toHaveTextContent("Stale");
+  });
+
+  it("renders known backend words as operator-readable labels, never mechanical case", () => {
+    const cases: Array<[string, string, string]> = [
+      ["FRESH", "Fresh", "live"],
+      ["REPLAY", "Replay", "replay"],
+      ["UNAVAILABLE", "Unavailable", "neutral"],
+      ["NOT_APPLICABLE", "Not applicable", "neutral"],
+      ["UNKNOWN", "Unknown", "neutral"],
+    ];
+    for (const [word, label, tone] of cases) {
+      const { unmount } = render(<FreshnessIndicator backendLabel={word} />);
+      const indicator = screen.getByTestId("imp-ui-freshness");
+      expect(indicator).toHaveTextContent(label);
+      expect(indicator).toHaveAttribute("data-tone", tone);
+      unmount();
+    }
+  });
+
+  it("humanizes unknown backend words instead of lowercasing them", () => {
+    render(<FreshnessIndicator backendLabel="PARTIAL_REFRESH" />);
+    const indicator = screen.getByTestId("imp-ui-freshness");
+    expect(indicator).toHaveTextContent("Partial refresh");
+    expect(indicator).toHaveAttribute("data-tone", "neutral");
+  });
+
+  it("renders replay-bound timestamps as absolute as-of time without decay", () => {
+    const eventMs = Date.parse("2026-07-14T14:31:00Z");
+    render(<FreshnessIndicator asOf={eventMs} decays={false} />);
+    const indicator = screen.getByTestId("imp-ui-freshness");
+    expect(indicator).toHaveAttribute("data-tone", "replay");
+    expect(indicator).toHaveTextContent("as of");
+    expect(indicator).not.toHaveTextContent("ago");
+    expect(indicator).not.toHaveTextContent("may be delayed");
   });
 
   it("renders relative age with a stale consequence", () => {
