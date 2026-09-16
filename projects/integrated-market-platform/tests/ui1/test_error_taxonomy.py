@@ -104,7 +104,11 @@ class ErrorTaxonomyTests(unittest.TestCase):
         codes = sorted(set(_PERMISSION_ERROR_LITERAL.findall(source)))
         self.assertEqual(
             codes,
-            ["DEMO_MUTATIONS_PROHIBITED", "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE"],
+            [
+                "DEMO_MUTATIONS_PROHIBITED",
+                "LIVE_OBSERVATIONAL_ACK_REQUIRES_LIVE_CLOCK",
+                "LIVE_OBSERVATIONAL_OPERATOR_ACK_DUPLICATE",
+            ],
         )
         for code in codes:
             with self.subTest(reason_code=code):
