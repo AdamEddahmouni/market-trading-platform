@@ -27,6 +27,7 @@ MOOMOO_AUTH_FAILURE = "MOOMOO_AUTH_FAILURE"
 MOOMOO_PROTOCOL_ERROR = "MOOMOO_PROTOCOL_ERROR"
 OPEND_NON_LOOPBACK_BLOCKED = "OPEND_NON_LOOPBACK_BLOCKED"
 MOOMOO_LAST_PRICE_MISSING = "MOOMOO_LAST_PRICE_MISSING"
+KLINE_PROTOCOL_UNCLASSIFIED = "protocol_unclassified"
 
 
 def load_vendor_sdk() -> Any | None:
@@ -102,7 +103,7 @@ def classify_kline_protocol_error_category(
         return "vendor_ret_error"
     if vendor_ret is not None and vendor_ret != 0:
         return "vendor_ret_not_ok"
-    return "transport_exception"
+    return KLINE_PROTOCOL_UNCLASSIFIED
 
 
 def _kline_fetch_result(
@@ -118,7 +119,6 @@ def _kline_fetch_result(
     kline_end: str | None = None,
     max_count_requested: int | None = None,
     request_duration_ms: float | None = None,
-    request_retry_index: int = 0,
     protocol_error_category: str | None = None,
 ) -> dict[str, Any]:
     """Fail-closed kline payload plus diagnostics (stderr JSON, no PIT change)."""
@@ -149,7 +149,6 @@ def _kline_fetch_result(
         "kline_end": window_end,
         "max_count_requested": max_count_requested,
         "request_duration_ms": request_duration_ms,
-        "request_retry_index": int(request_retry_index),
         "protocol_error_category": category,
     }
     print(
@@ -167,7 +166,6 @@ def _kline_fetch_result(
                 "raw_row_count": payload["raw_row_count"],
                 "reason_code": reason_code,
                 "request_duration_ms": request_duration_ms,
-                "request_retry_index": int(request_retry_index),
                 "session_date": session_date,
                 "vendor_ret": vendor_ret,
                 "vendor_ret_msg": vendor_ret_msg,
@@ -193,8 +191,10 @@ def fetch_history_kline_1m(
     """Return completed 1m klines for the US equity session day (quote context only).
 
     Do not pass ``start=None, end=None``: the vendor SDK expands that to
-    ``[today-365d, today]`` and returns the **oldest** ``max_count`` bars, which
-    are a year old and fail ``available_time > signal_time``.
+    ``[today-365d, today]``. For ``K_1M`` we infer (same API as proven
+    ``K_DAY`` oldest-first paging + SDK window) that the **oldest** ``max_count``
+    bars may be returned — not a live-sampled 1m receipt. Year-old pages fail
+    ``available_time > signal_time``.
     """
 
     day = str(session_date or "").strip() or us_equity_session_date()
@@ -211,7 +211,6 @@ def fetch_history_kline_1m(
             kline_end=day,
             max_count_requested=request_count,
             request_duration_ms=duration_ms,
-            request_retry_index=0,
             **kwargs,
         )
 
@@ -554,6 +553,7 @@ __all__ = [
     "MOOMOO_SDK_MISSING",
     "OPEND_NON_LOOPBACK_BLOCKED",
     "US_EQUITY_1M_HISTORY_MIN_COUNT",
+    "KLINE_PROTOCOL_UNCLASSIFIED",
     "classify_kline_protocol_error_category",
     "fetch_history_kline_1m",
     "fetch_snapshot",
