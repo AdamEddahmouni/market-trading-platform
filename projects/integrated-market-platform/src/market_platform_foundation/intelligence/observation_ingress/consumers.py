@@ -97,6 +97,50 @@ def store_consumer(
     )
 
 
+def observational_news_detector_consumer(
+    *,
+    consumer_id: str = "ingress.observational_news_detector",
+    required: bool = False,
+    repository: IntelligenceRepository | None = None,
+) -> IngressConsumerHandler:
+    """DETECTOR lane dedicated to observational news → opportunity mint (not BUILD 09)."""
+
+    kind = validate_consumer_kind(IngressConsumerKind.DETECTOR)
+
+    def _consume(event: EventV1, context: IngressDispatchContext) -> IngressConsumerOutcome:
+        if not accepts_news_article_event(event):
+            return IngressConsumerOutcome(
+                consumer_id=consumer_id,
+                kind=kind,
+                status=IngressConsumerStatus.OK,
+                detail="NOT_NEWS_ARTICLE",
+            )
+        if repository is None:
+            return IngressConsumerOutcome(
+                consumer_id=consumer_id,
+                kind=kind,
+                status=IngressConsumerStatus.OK,
+                detail="NEWS_ARTICLE_NO_REPOSITORY",
+            )
+        from ...news.observational_opportunity import persist_observational_news_opportunity
+
+        minted = persist_observational_news_opportunity(event, repository)
+        detail = "NEWS_ARTICLE_OPPORTUNITY_MINTED" if minted is not None else "NEWS_ARTICLE_ADMITTED"
+        return IngressConsumerOutcome(
+            consumer_id=consumer_id,
+            kind=kind,
+            status=IngressConsumerStatus.OK,
+            detail=detail,
+        )
+
+    return CallableIngressConsumer(
+        consumer_id=consumer_id,
+        kind=kind,
+        required=required,
+        _handler=_consume,
+    )
+
+
 def audit_sink_consumer(
     sink: list[EventV1],
     *,
@@ -227,17 +271,6 @@ def detector_stub_consumer(
                 status=IngressConsumerStatus.OK,
                 detail="CONGRESSIONAL_PTR_VERTICAL_OK",
             )
-        if accepts_news_article_event(event):
-            from ...news.observational_opportunity import persist_observational_news_opportunity
-
-            minted = persist_observational_news_opportunity(event, repository)
-            detail = "NEWS_ARTICLE_OPPORTUNITY_MINTED" if minted is not None else "NEWS_ARTICLE_ADMITTED"
-            return IngressConsumerOutcome(
-                consumer_id=consumer_id,
-                kind=kind,
-                status=IngressConsumerStatus.OK,
-                detail=detail,
-            )
         if repository is None or not accepts_sec_insider_event(event):
             return IngressConsumerOutcome(
                 consumer_id=consumer_id,
@@ -288,6 +321,7 @@ __all__ = [
     "accepts_news_article_event",
     "audit_sink_consumer",
     "detector_stub_consumer",
+    "observational_news_detector_consumer",
     "enrichment_trigger_consumer",
     "oe_evidence_consumer",
     "store_consumer",

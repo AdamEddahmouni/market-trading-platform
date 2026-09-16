@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..clock import monotonic_wall_ns
+from ..intelligence.normalization.models import IngestionMode
 from ..news.observational_admit import admit_finviz_export_item_for_observation
 from ..news.observational_opportunity import observational_news_opportunity_id
 from .live_intelligence import bind_ui_api_intelligence
@@ -38,9 +39,9 @@ def handle_news_ingest_post(store: ReplayStore, body: dict[str, Any]) -> dict[st
     if not isinstance(articles_raw, list):
         raise ValueError("NEWS_INGEST_ARTICLES_INVALID")
     retrieved_time = str(body.get("retrieved_time") or "").strip()
-    server_received_time_ns = body.get("server_received_time_ns")
-    if server_received_time_ns is not None:
-        server_received_time_ns = int(server_received_time_ns)
+    if body.get("server_received_time_ns") is not None:
+        raise ValueError("NEWS_INGEST_FORGED_SERVER_RECEIVE_TIME")
+    server_received_time_ns = int(monotonic_wall_ns())
     admitted: list[dict[str, Any]] = []
     opportunity_ids: list[str] = []
     skipped: list[dict[str, str]] = []
@@ -58,7 +59,8 @@ def handle_news_ingest_post(store: ReplayStore, body: dict[str, Any]) -> dict[st
             retrieved_time=item_retrieved,
             router=router,
             store=store,
-            server_received_time_ns=server_received_time_ns or monotonic_wall_ns(),
+            server_received_time_ns=server_received_time_ns,
+            ingestion_mode=IngestionMode.HISTORICAL_RECONSTRUCTED,
         )
         if not outcome.accepted or outcome.event is None:
             skipped.append(
@@ -73,9 +75,16 @@ def handle_news_ingest_post(store: ReplayStore, body: dict[str, Any]) -> dict[st
         detector_detail = None
         if receipt is not None:
             for row in receipt.outcomes:
-                if str(row.kind) == "DETECTOR":
+                if str(row.kind) != "DETECTOR":
+                    continue
+                if row.consumer_id == "ingress.observational_news_detector":
                     detector_detail = row.detail
                     break
+            if detector_detail is None:
+                for row in receipt.outcomes:
+                    if str(row.kind) == "DETECTOR":
+                        detector_detail = row.detail
+                        break
         opportunity_id = observational_news_opportunity_id(event.event_id)
         persisted = None
         getter = getattr(repository, "get_opportunity", None)

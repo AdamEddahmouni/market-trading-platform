@@ -57,10 +57,12 @@ class ObservationalNewsOpportunityUnitTests(unittest.TestCase):
             _raw_article(headline="Example Corp beats estimates"),
             retrieved_time=_RETRIEVED,
         )
-        event = news_article_to_event_v1(article)
+        server_ns = int(epoch_ns_from_iso(_SERVER) or 0)
+        event = news_article_to_event_v1(article, server_received_time_ns=server_ns)
         self.assertNotEqual(event.event_time_ns, event.available_time_ns)
         self.assertEqual(event.event_time_ns, epoch_ns_from_iso(_PUBLISHED))
         self.assertEqual(event.available_time_ns, epoch_ns_from_iso(_RETRIEVED))
+        self.assertEqual(event.received_time_ns, server_ns)
         self.assertFalse(qualifies_observational_news_opportunity(event))
         self.assertIsNone(build_observational_news_opportunity(event))
 
@@ -69,7 +71,8 @@ class ObservationalNewsOpportunityUnitTests(unittest.TestCase):
             _raw_article(headline="Example Corp reports quarterly earnings"),
             retrieved_time=_RETRIEVED,
         )
-        event = news_article_to_event_v1(article)
+        server_ns = int(epoch_ns_from_iso(_SERVER) or 0)
+        event = news_article_to_event_v1(article, server_received_time_ns=server_ns)
         opportunity = build_observational_news_opportunity(event)
         self.assertIsNotNone(opportunity)
         assert opportunity is not None

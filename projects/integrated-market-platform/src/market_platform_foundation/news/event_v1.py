@@ -30,7 +30,8 @@ NORMALIZATION_VERSION = "intelligence/normalization/finviz-news/1"
 def news_article_to_event_v1(
     article: NewsArticleEvent,
     *,
-    server_received_time_ns: int | None = None,
+    server_received_time_ns: int,
+    ingestion_mode: IngestionMode = IngestionMode.LIVE_OBSERVED,
 ) -> EventV1:
     """Convert a normalized news article into EventV1. Does not persist."""
 
@@ -41,7 +42,7 @@ def news_article_to_event_v1(
     if published_ns is None:
         raise ValueError("NEWS_PUBLICATION_TIME_REQUIRED")
     event_time_ns = published_ns
-    received_ns = int(server_received_time_ns) if server_received_time_ns is not None else int(retrieved_ns)
+    received_ns = int(server_received_time_ns)
     available_ns = int(retrieved_ns)
     instrument_id = None
     native_symbol = None
@@ -66,7 +67,7 @@ def news_article_to_event_v1(
         provider_event_type=NEWS_EVENT_TYPE,
         raw_payload_ref=article.raw_reference or None,
         availability=availability,
-        ingestion_mode=IngestionMode.LIVE_OBSERVED,
+        ingestion_mode=ingestion_mode,
         source_publication_id=article.url or None,
     )
     source = SourceReference(
