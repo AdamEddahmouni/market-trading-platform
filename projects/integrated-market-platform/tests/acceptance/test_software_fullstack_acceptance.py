@@ -51,6 +51,9 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
+from market_platform_foundation.intelligence.normalization.event_builder import (  # noqa: E402
+    provenance_from_event,
+)
 from market_platform_foundation.intelligence.normalization.models import (  # noqa: E402
     IngestionMode,
 )
@@ -324,6 +327,8 @@ def _exercise_controlled_news_http_chain(state_dir: str) -> None:
         "market_platform_foundation.ui_api.news_ingest.monotonic_wall_ns",
         return_value=_SERVER_NS,
     )
+    # Test harness bypass: patched True so HTTP chain tests run without operator
+    # session headers. Production operator auth is not ENFORCED in this suite.
     auth_patch = patch.object(UiApiHandler, "_authorize_request", return_value=True)
     secret_patch = patch(
         "market_platform_foundation.ui_api.server.assert_no_secrets_in_payload",
@@ -338,6 +343,10 @@ def _exercise_controlled_news_http_chain(state_dir: str) -> None:
 
     try:
         with runtime_patch, clock_patch, auth_patch, secret_patch:
+            # Harness-only auth bypass (MagicMock), not ENFORCED operator auth.
+            assert hasattr(UiApiHandler._authorize_request, "return_value")
+            assert UiApiHandler._authorize_request.return_value is True
+
             ingest_body = json.dumps(
                 {
                     "retrieved_time": _RETRIEVED,
@@ -370,6 +379,9 @@ def _exercise_controlled_news_http_chain(state_dir: str) -> None:
             assert event.event_type == "NEWS_ARTICLE"
             assert event.event_time_ns != event.available_time_ns
             assert event.received_time_ns == _SERVER_NS
+            provenance = provenance_from_event(event)
+            assert provenance is not None
+            assert provenance.ingestion_mode == IngestionMode.HISTORICAL_RECONSTRUCTED
 
             summary_status, summary = _http_json(conn, "GET", "/opportunities/summary")
             assert summary_status == 200, summary
