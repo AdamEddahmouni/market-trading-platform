@@ -405,18 +405,10 @@ class FtepProspectiveCatalystIngressTests(unittest.TestCase):
         admit = payload.get("observational_cockpit_admit")
         self.assertIsNotNone(admit)
         assert isinstance(admit, dict)
+        self.assertTrue(admit.get("ok"))
         self.assertEqual(admit.get("opportunity_count"), 0)
 
-    def test_live_ingress_wires_prospective_rows_into_cockpit_store(self) -> None:
-        from market_platform_foundation.ui_api.cockpit_admit import (
-            get_registered_cockpit_replay_store,
-            reset_registered_cockpit_replay_store_for_tests,
-        )
-        from market_platform_foundation.ui_api.opportunity_projections import (
-            build_opportunities_summary_payload,
-        )
-
-        reset_registered_cockpit_replay_store_for_tests()
+    def test_watch_live_ingress_ui_api_down_fail_closed(self) -> None:
         server_ns = int(epoch_ns_from_iso("2026-09-15T14:00:10Z") or 0)
         ingress = ProspectiveCatalystIngressResult(
             attempted=True,
@@ -429,29 +421,21 @@ class FtepProspectiveCatalystIngressTests(unittest.TestCase):
                     "headline": "Example Corp reports quarterly earnings",
                     "published_time": "2026-09-15T14:00:05Z",
                     "retrieved_time": "2026-09-15T14:00:08Z",
-                    "source_event_id": "evt-ftep-cockpit-wire",
+                    "source_event_id": "evt-ftep-unreachable",
                 },
             ),
             stats={"as_of_ns": server_ns},
             classification=CLASS_SUCCESS,
         )
-        payload = _watch_payload_for_ingress(ingress)
-        admit = payload.get("observational_cockpit_admit")
-        self.assertIsNotNone(admit)
-        assert isinstance(admit, dict)
-        self.assertEqual(admit.get("opportunity_count"), 1)
-        store = get_registered_cockpit_replay_store()
-        self.assertIsNotNone(store)
-        assert store is not None
-        store.data_mode = "LIVE_OBSERVATIONAL"
-        store.mode = "LIVE"
         with patch(
-            "market_platform_foundation.market_data.live_runtime.get_live_runtime",
-            return_value=None,
+            "market_platform_foundation.ui_api.cockpit_admit.resolve_ui_api_base_url",
+            return_value="http://127.0.0.1:1",
         ):
-            summary = build_opportunities_summary_payload(store)
-        self.assertEqual(summary["feed_status"], "READY")
-        reset_registered_cockpit_replay_store_for_tests()
+            payload = _watch_payload_for_ingress(ingress)
+        admit = payload.get("observational_cockpit_admit")
+        assert isinstance(admit, dict)
+        self.assertFalse(admit.get("ok"))
+        self.assertIn("COCKPIT_ADMIT_UI_API_UNAVAILABLE", payload["blockers"])
 
     def test_watch_live_ingress_blocked_when_gates_inactive(self) -> None:
         ingress = ProspectiveCatalystIngressResult(

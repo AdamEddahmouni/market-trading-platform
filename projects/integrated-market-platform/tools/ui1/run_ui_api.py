@@ -62,6 +62,7 @@ def _load_store() -> ReplayStore:
     from market_platform_foundation.ui_api.live_intelligence import bind_ui_api_intelligence
 
     bind_ui_api_intelligence(store)
+    # Same-process test helper only (see ui_api/cockpit_admit.py); RTH uses HTTP admit.
     from market_platform_foundation.ui_api.cockpit_admit import register_cockpit_replay_store
 
     register_cockpit_replay_store(store)

@@ -152,11 +152,8 @@ def admit_prospective_catalyst_ingress_result(
         return (
             NewsObservationalAdmitOutcome(accepted=False, reason_code=reason, detail=classification),
         )
-    server_received_time_ns = stats.get("as_of_ns") if isinstance(stats, dict) else None
-    if server_received_time_ns is not None:
-        server_received_time_ns = int(server_received_time_ns)
-    else:
-        server_received_time_ns = int(monotonic_wall_ns())
+    del stats  # ingress as_of_ns is client-side; never forge server receive from it
+    server_received_time_ns = int(monotonic_wall_ns())
     outcomes: list[NewsObservationalAdmitOutcome] = []
     for row in rows:
         if not isinstance(row, dict):
