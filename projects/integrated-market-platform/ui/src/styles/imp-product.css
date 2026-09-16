@@ -235,14 +235,6 @@
   box-shadow: 0 0 20px rgba(255, 106, 0, 0.12);
 }
 
-.nav-shell-sidebar .nav-link-radar {
-  font-weight: 600;
-}
-
-.nav-shell-sidebar .nav-link-radar:not(.active) {
-  color: var(--text-primary);
-}
-
 .nav-shell-sidebar .nav-link-operator {
   font-size: 0.75rem;
   color: var(--text-muted);
@@ -250,24 +242,6 @@
 
 .nav-shell-sidebar .nav-mode-hint {
   font-size: 0.62rem;
-}
-
-.imp-product-main .mode-environment-bar button {
-  display: none;
-}
-
-.opportunity-radar-banner {
-  margin: 0 0 1rem;
-  padding: 0.65rem 0.85rem;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 106, 0, 0.3);
-  background: linear-gradient(90deg, rgba(255, 106, 0, 0.12), transparent);
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.opportunity-radar-banner strong {
-  color: var(--accent-primary-bright);
 }
 
 .imp-overview-board {
@@ -477,82 +451,6 @@
   border-color: var(--accent-primary);
 }
 
-.imp-radar-dense-panel {
-  display: grid;
-  gap: 0.75rem;
-  margin: 0 0 1.25rem;
-  padding: 0.85rem 1rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-1);
-}
-
-.imp-radar-dense-header {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 0.5rem;
-}
-
-.imp-radar-dense-header h2 {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.imp-radar-dense-feed {
-  font-size: 0.68rem;
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-}
-
-.imp-radar-dense-table-wrap {
-  overflow-x: auto;
-}
-
-.imp-radar-dense-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.78rem;
-}
-
-.imp-radar-dense-table th,
-.imp-radar-dense-table td {
-  padding: 0.45rem 0.5rem;
-  border-bottom: 1px solid var(--border-subtle);
-  text-align: left;
-  vertical-align: top;
-}
-
-.imp-radar-dense-table th {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-}
-
-.imp-radar-dense-headline {
-  max-width: 22rem;
-  line-height: 1.35;
-}
-
-.imp-radar-dense-tags {
-  justify-content: flex-start;
-}
-
-.imp-radar-dense-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-}
-
-.imp-radar-dense-actions button {
-  font-size: 0.68rem;
-  padding: 0.2rem 0.4rem;
-}
-
 .imp-opportunity-feed-banner {
   margin: 0 0 0.75rem;
   padding: 0.55rem 0.75rem;
@@ -566,69 +464,6 @@
 .imp-opportunity-feed-banner-alert {
   border-color: rgba(196, 78, 82, 0.45);
   color: var(--text-primary);
-}
-
-.imp-discover-section {
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-subtle);
-}
-
-.imp-discover-section-header {
-  margin-bottom: 0.75rem;
-}
-
-.imp-discover-section-lead {
-  margin: 0.35rem 0 0;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  max-width: 52rem;
-}
-
-.imp-discover-section-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-bottom: 0.45rem;
-}
-
-.imp-discover-badge {
-  font-size: 0.62rem;
-  font-family: var(--font-mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 0.15rem 0.45rem;
-  border-radius: 999px;
-  border: 1px solid var(--border-subtle);
-}
-
-.imp-discover-badge-contract {
-  border-color: rgba(255, 106, 0, 0.45);
-  color: var(--accent-primary-bright);
-  background: rgba(255, 106, 0, 0.08);
-}
-
-.imp-discover-badge-investigate {
-  border-color: rgba(140, 160, 200, 0.45);
-  color: var(--text-secondary);
-  background: rgba(140, 160, 200, 0.08);
-}
-
-.imp-discover-badge-not-contract {
-  color: var(--text-muted);
-  background: var(--surface-0);
-}
-
-.imp-discover-contract-queue {
-  border-left: 3px solid rgba(255, 106, 0, 0.55);
-  padding-left: 0.75rem;
-}
-
-.imp-discover-investigation-only {
-  border-left: 3px solid rgba(140, 160, 200, 0.45);
-  padding-left: 0.75rem;
-  background: linear-gradient(90deg, rgba(140, 160, 200, 0.06), transparent 40%);
-  border-radius: var(--radius-sm);
 }
 
 .imp-overview-primary-queue {
@@ -858,41 +693,6 @@
   padding-left: 18px;
 }
 
-.imp-opportunity-radar-cockpit {
-  display: grid;
-  gap: 1rem;
-}
-
-@media (min-width: 1080px) {
-  .imp-opportunity-radar-cockpit {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-    align-items: start;
-  }
-}
-
-.imp-opportunity-cockpit-detail {
-  padding: 0.85rem 1rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-subtle);
-  background: color-mix(in srgb, var(--surface-1) 82%, transparent);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-primary) 12%, transparent);
-}
-
-.imp-opportunity-cockpit-detail-header h2 {
-  margin: 0.15rem 0 0.5rem;
-  font-size: 1rem;
-}
-
-.imp-radar-dense-table tr.imp-radar-row-selected {
-  background: color-mix(in srgb, var(--accent-primary) 10%, var(--surface-2));
-  outline: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
-}
-
-.imp-radar-dense-table tr[tabindex="0"] {
-  cursor: pointer;
-}
-
 .progressive-opportunity-card {
   display: grid;
   gap: 0.75rem;
@@ -1067,5 +867,193 @@
 @media (prefers-reduced-motion: reduce) {
   .imp-product-sidebar {
     transition: none;
+  }
+}
+
+/* ---- UIR-01 StatusBar (consolidates ModeEnvironmentBar + ContextBar) ---- */
+.imp-status-bar-stack {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-1);
+}
+
+.imp-status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--imp-space-2) var(--imp-space-4);
+  min-height: var(--imp-statusbar-height);
+  padding: var(--imp-space-1) var(--imp-space-4);
+  font-size: var(--imp-text-sm);
+}
+
+.imp-status-bar-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--imp-space-2);
+  color: var(--text-secondary);
+  min-width: 0;
+}
+
+.imp-status-bar-data {
+  color: var(--text-secondary);
+}
+
+.imp-status-bar-data time {
+  color: var(--text-muted);
+  font-size: var(--imp-text-xs);
+}
+
+.imp-status-bar-scope {
+  font-family: var(--font-mono);
+  font-size: var(--imp-text-xs);
+  color: var(--text-secondary);
+  max-width: 28ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.imp-status-bar-health {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--imp-space-2);
+  padding: 2px var(--imp-space-1);
+  border: 1px solid transparent;
+  border-radius: var(--imp-radius-md);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.imp-status-bar-health:hover {
+  background: var(--surface-2);
+}
+
+.imp-status-bar-health:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}
+
+.imp-status-bar-details {
+  margin-left: auto;
+  position: relative;
+  font-size: var(--imp-text-xs);
+  color: var(--text-muted);
+}
+
+.imp-status-bar-details > summary {
+  cursor: pointer;
+  padding: var(--imp-space-1) var(--imp-space-2);
+  border-radius: var(--imp-radius-sm);
+  list-style: none;
+}
+
+.imp-status-bar-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.imp-status-bar-details > summary::before {
+  content: "? ";
+}
+
+.imp-status-bar-details[open] > summary::before {
+  content: "? ";
+}
+
+.imp-status-bar-details > summary:focus-visible {
+  outline: 2px solid var(--border-focus);
+}
+
+.imp-status-bar-details-grid {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--imp-space-1));
+  z-index: 40;
+  min-width: 260px;
+  margin: 0;
+  padding: var(--imp-space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--imp-radius-md);
+  background: var(--surface-elevated);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  display: grid;
+  gap: var(--imp-space-1) var(--imp-space-3);
+}
+
+.imp-status-bar-details-grid div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--imp-space-3);
+}
+
+.imp-status-bar-details-grid dt {
+  color: var(--text-muted);
+}
+
+.imp-status-bar-details-grid dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.imp-status-bar-note {
+  margin: 0;
+  padding: var(--imp-space-1) var(--imp-space-4);
+  font-size: var(--imp-text-xs);
+  color: var(--text-muted);
+}
+
+.imp-status-bar-stack .imp-ui-attention-banner {
+  margin: var(--imp-space-2) var(--imp-space-4);
+}
+
+/* Command desk tabs sit directly above the desk page header */
+.imp-command-desk-tabs {
+  padding: 0 var(--imp-space-4);
+  margin-bottom: 0;
+}
+
+.imp-status-bar-mode {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--imp-space-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.imp-status-bar-mode-sentence {
+  color: var(--text-secondary);
+  font-size: var(--imp-text-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+/* ---- Small-viewport containment (BP_SM = 720px) ---- */
+@media (max-width: 720px) {
+  /* The mode sentence wraps instead of forcing the status bar wide */
+  .imp-status-bar-mode {
+    flex: 1 1 100%;
+  }
+
+  .imp-status-bar-mode-sentence {
+    white-space: normal;
+  }
+
+  /* Capability chips truncate their reason harder instead of overflowing */
+  .imp-capability-chip {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .imp-capability-reason {
+    max-width: 120px;
+    min-width: 0;
   }
 }

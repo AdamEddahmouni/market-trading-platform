@@ -612,21 +612,22 @@ describe("App mode launcher integration", () => {
     await openNavLink(/^Portfolio —/i);
   }
 
-  async function openExplore() {
-    await openNavLink(/^Markets —/i);
+  async function openRadarScreeners() {
+    await openNavLink(/^Radar —/i);
+    fireEvent.click(await screen.findByRole("link", { name: "Screeners" }));
   }
 
   async function openResearch() {
     await openNavLink(/^Research —/i);
   }
 
-  async function openDiscover() {
-    await openNavLink(/^Opportunity Radar —/i);
+  async function openRadar() {
+    await openNavLink(/^Radar —/i);
   }
 
-  async function openSqueezeFromExplore() {
-    await openExplore();
-    fireEvent.click(screen.getByRole("link", { name: "GME" }));
+  async function openSqueezeFromScreeners() {
+    await openRadarScreeners();
+    fireEvent.click(await screen.findByRole("link", { name: "GME" }));
     expect(
       await screen.findByRole("heading", { name: /GME — Short Squeeze Workspace/i }),
     ).toBeInTheDocument();
@@ -704,11 +705,21 @@ describe("App mode launcher integration", () => {
   it("opens the Signals desk without duplicating the overview KPI board", async () => {
     render(<App />);
     await enterMode("Demo");
-    await openNavLink(/^Signals —/i);
+    fireEvent.click(screen.getByRole("link", { name: "Signals" }));
     expect(await screen.findByRole("heading", { name: "Signals desk" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Overview KPIs" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Primary review queue" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "See the market unfold" })).not.toBeInTheDocument();
+  });
+
+  it("redirects the legacy /signals route to the Command Signals desk", async () => {
+    render(<App />);
+    await enterMode("Demo");
+    window.history.pushState({}, "", "/signals");
+    fireEvent.popState(window);
+    expect(await screen.findByRole("heading", { name: "Signals desk" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/");
+    expect(window.location.search).toBe("?desk=signals");
   });
 
   it("resets the route before switching and re-entering", async () => {
@@ -721,7 +732,7 @@ describe("App mode launcher integration", () => {
 
     await enterMode("Demo");
     expect(await screen.findByRole("heading", { name: "See the market unfold" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Overview" })).toHaveClass("active");
+    expect(screen.getByRole("link", { name: /^Command/ })).toHaveClass("active");
   });
 
   it("confirms a scrub before changing the cursor and refreshes existing queries", async () => {
@@ -781,28 +792,32 @@ describe("App mode launcher integration", () => {
     );
   });
 
-  it("opens Demo Explore from /explore", async () => {
+  it("opens Demo Radar screeners from /explore (redirect)", async () => {
     render(<App />);
     await enterMode("Demo");
-    await openExplore();
-    expect(await screen.findByRole("heading", { name: "Explore" })).toBeInTheDocument();
+    window.history.pushState({}, "", "/explore");
+    fireEvent.popState(window);
+    expect(await screen.findByRole("heading", { name: "Radar" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/radar/screeners");
     expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
-    expect(screen.getByText("GME")).toBeInTheDocument();
+    expect(await screen.findByText("GME")).toBeInTheDocument();
   });
 
-  it("opens Paper Explore from /explore", async () => {
+  it("opens Paper Radar screeners from /explore (redirect)", async () => {
     render(<App />);
     await enterMode("Paper");
-    await openExplore();
-    expect(await screen.findByRole("heading", { name: "Explore" })).toBeInTheDocument();
+    window.history.pushState({}, "", "/explore");
+    fireEvent.popState(window);
+    expect(await screen.findByRole("heading", { name: "Radar" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open paper portfolio" })).toBeInTheDocument();
   });
 
-  it("opens Live Explore from /explore", async () => {
+  it("opens Live Radar screeners from /explore (redirect)", async () => {
     render(<App />);
     await enterMode("Live");
-    await openExplore();
-    expect(await screen.findByRole("heading", { name: "Explore" })).toBeInTheDocument();
+    window.history.pushState({}, "", "/explore");
+    fireEvent.popState(window);
+    expect(await screen.findByRole("heading", { name: "Radar" })).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/read-only/i);
     expect(screen.getByRole("link", { name: "Open live canary" })).toBeInTheDocument();
   });
@@ -833,39 +848,44 @@ describe("App mode launcher integration", () => {
     expect(screen.getByRole("link", { name: "Open live canary" })).toBeInTheDocument();
   });
 
-  it("opens Demo Discover from /discover", async () => {
+  it("opens Demo Radar from /discover (redirect)", async () => {
     render(<App />);
     await enterMode("Demo");
-    await openDiscover();
-    expect(await screen.findByRole("heading", { name: "Opportunity Radar" })).toBeInTheDocument();
+    window.history.pushState({}, "", "/discover");
+    fireEvent.popState(window);
+    expect(await screen.findByRole("heading", { name: "Radar" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/radar");
     expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
-    expect(screen.getByText("AAPL")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Refresh all screens" })).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(/No opportunities right now/i),
+    ).toBeInTheDocument();
   });
 
-  it("opens Paper Discover from /discover", async () => {
+  it("opens Paper Radar with the mixed screener on the Screeners tab", async () => {
     render(<App />);
     await enterMode("Paper");
-    await openDiscover();
-    expect(await screen.findByRole("heading", { name: "Opportunity Radar" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Refresh all screens" })).toBeInTheDocument();
-    expect(screen.getByText("AAPL")).toBeInTheDocument();
+    await openRadar();
+    expect(await screen.findByRole("heading", { name: "Radar" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("link", { name: "Screeners" }));
+    expect(await screen.findByRole("button", { name: "Refresh all screens" })).toBeInTheDocument();
+    expect(await screen.findByText("AAPL")).toBeInTheDocument();
   });
 
-  it("opens Live Discover from /discover", async () => {
+  it("opens Live Radar read-only with the canary link on Screeners", async () => {
     render(<App />);
     await enterMode("Live");
-    await openDiscover();
-    expect(await screen.findByRole("heading", { name: "Opportunity Radar" })).toBeInTheDocument();
+    await openRadar();
+    expect(await screen.findByRole("heading", { name: "Radar" })).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/read-only/i);
-    expect(screen.getByRole("link", { name: "Open live canary" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("link", { name: "Screeners" }));
+    expect(await screen.findByRole("link", { name: "Open live canary" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Refresh all screens" })).not.toBeInTheDocument();
   });
 
   it("opens Demo Squeeze workspace from /workspace/GME/squeeze", async () => {
     render(<App />);
     await enterMode("Demo");
-    await openSqueezeFromExplore();
+    await openSqueezeFromScreeners();
     expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
     expect(screen.getByText(/frozen research cohort evidence/i)).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Workspace modules" })).toBeInTheDocument();
@@ -874,7 +894,7 @@ describe("App mode launcher integration", () => {
   it("opens Paper Squeeze workspace from /workspace/GME/squeeze", async () => {
     render(<App />);
     await enterMode("Paper");
-    await openSqueezeFromExplore();
+    await openSqueezeFromScreeners();
     expect(screen.getByText(/Preview squeeze ignition/i)).toBeInTheDocument();
     expect(screen.getByText(/Paper simulation context/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open paper portfolio" })).toBeInTheDocument();
@@ -883,7 +903,7 @@ describe("App mode launcher integration", () => {
   it("opens Live Squeeze workspace from /workspace/GME/squeeze", async () => {
     render(<App />);
     await enterMode("Live");
-    await openSqueezeFromExplore();
+    await openSqueezeFromScreeners();
     expect(screen.getByText(/broker-observed squeeze signals/i)).toBeInTheDocument();
     expect(screen.getByTestId("workspace-mode-restriction-note")).toHaveTextContent(/read-only/i);
     expect(screen.getAllByRole("link", { name: "Open live canary" }).length).toBeGreaterThan(0);

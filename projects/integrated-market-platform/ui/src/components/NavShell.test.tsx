@@ -12,19 +12,22 @@ function renderNav(mode?: "DEMO" | "PAPER" | "LIVE") {
 }
 
 describe("NavShell", () => {
-  it("renders primary navigation links without mode hints when mode is omitted", () => {
+  it("renders the operator IA without mode hints when mode is omitted", () => {
     renderNav();
-    expect(screen.getByRole("link", { name: "Overview" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Markets" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Opportunity Radar" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Command" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Radar" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Workspace" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Portfolio" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Research" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Control" })).toBeInTheDocument();
     expect(screen.queryByText("Frozen bridges")).not.toBeInTheDocument();
   });
 
   it("adds mode hints and accessible labels in Demo mode", () => {
     renderNav("DEMO");
-    expect(screen.getByRole("link", { name: "Markets — Frozen bridges" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Radar — Replay discovery" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Portfolio — Read-only" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Research — Replay-bound labs" })).toHaveTextContent("GATED");
+    expect(screen.getByRole("link", { name: "Research — Replay-bound labs" })).toBeInTheDocument();
   });
 
   it("adds Paper simulation hints", () => {
@@ -33,13 +36,18 @@ describe("NavShell", () => {
     expect(screen.getByRole("link", { name: "Workspace — Decision desk" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Lab —/ })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Research — Research & model labs" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Opportunity Radar — Discovery desk" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Radar — Candidate discovery" })).toBeInTheDocument();
   });
 
   it("adds Live observational hints", () => {
     renderNav("LIVE");
     expect(screen.getByRole("link", { name: "Live Canary — Safety review" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Markets — Live scanner" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Opportunity Radar — Read-only monitor" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Radar — Live monitor" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Control — Platform operations" })).toBeInTheDocument();
+  });
+
+  it("does not render the removed GATED badge", () => {
+    renderNav("PAPER");
+    expect(screen.queryByText("GATED")).not.toBeInTheDocument();
   });
 });

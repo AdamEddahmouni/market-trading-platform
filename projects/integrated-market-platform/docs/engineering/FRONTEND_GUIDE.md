@@ -8,15 +8,18 @@ React 18, TypeScript, Vite, React Router 6, TanStack Query 5, Zod, Lightweight C
 
 ## Primary nav (shipped)
 
-`NavShell` labels after UX-00 P2. Keep labels and `App.tsx` routes in lockstep; do not invent paths.
+`NavShell` labels after UIR-01. Keep labels and `App.tsx` routes in lockstep; do not invent paths.
 
 | Label | Route | Meaning |
 |-------|-------|---------|
+| Command | `/` | Now desk; Signals desk is `?desk=signals` (`/signals` redirects) |
+| Radar | `/radar` | Discovery queue (Opportunities + Screeners tabs). `/discover` → `/radar`; `/explore` → `/radar/screeners` |
 | Workspace | `/workspace` | Decision desk (Paper submit boundary) |
 | Portfolio | `/portfolio` | Orders history |
-| Lab | `/research` | Model & sim labs. `/lab` redirects here; it is not a workspace alias |
+| Research | `/research` | Research & model labs. `/lab` redirects here; it is not a workspace alias |
+| Control | `/control` | Operator control center (was labeled "Risk") |
 
-A gated **Research** item also links to `/research`. Paper mode hints: Workspace — Decision desk; Portfolio — Orders history; Lab — Model & sim labs. Operator URLs: [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md).
+Operator group: Live Canary `/live-canary`, Settings `/settings`, Diagnostics `/diagnostics/provider`. Paper mode hints: Workspace — Decision desk; Portfolio — Orders history; Research — Research & model labs. Operator URLs: [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md).
 
 ## Mode route pattern
 
@@ -78,7 +81,7 @@ UI API failures use `{ error, reason_code, error_category }`. `error_category` i
 
 ## CSS organization
 
-Mode-specific styles: `ui/src/styles/{demo,paper,live}-*.css`. Shared tokens: `tokens.css`, `layout.css`.
+Mode-specific styles: `ui/src/styles/{demo,paper,live}-*.css`. Shared tokens: `tokens.css`, `layout.css`. Operator design system: `ui/src/components/imp-ui/imp-ui.css` (primitives) + `ui/src/styles/radar.css` (Radar surface). Semantic state tones (`--imp-state-{tone}-{fg,bg,border}`) live in `tokens.css`; all enum/state rendering goes through `ui/src/state/semanticState.ts` (`resolveSemanticState`) — translate, never invent; unknown values render neutral with the raw string preserved.
 
 ## Testing patterns
 

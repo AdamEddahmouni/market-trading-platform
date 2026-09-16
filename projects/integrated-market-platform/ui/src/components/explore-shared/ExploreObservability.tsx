@@ -12,7 +12,14 @@ import { LiveObservationalPanel } from "../live/LiveObservationalPanel";
 export type ExploreObservabilityProps = {
   onExplain?: (ref: string) => void;
   showLivePanel?: boolean;
+  /** Client-side symbol filter (from `/radar/screeners?q=`). */
+  filterQuery?: string;
 };
+
+function symbolMatches(symbol: string, filterQuery?: string): boolean {
+  if (!filterQuery) return true;
+  return symbol.toUpperCase().includes(filterQuery.trim().toUpperCase());
+}
 
 function formatProvenanceValue(value: unknown): string {
   if (value === null || value === undefined) return "—";
@@ -87,7 +94,7 @@ function ExploreSqueezeTable({ rows, workspacePath, onExplain, showScannerRank =
 const SCANNER_PLACEHOLDER_DISCLAIMER =
   "Ephemeral provider scanner snapshot. Not the frozen research cohort.";
 
-export function ExploreObservability({ onExplain, showLivePanel = false }: ExploreObservabilityProps) {
+export function ExploreObservability({ onExplain, showLivePanel = false, filterQuery }: ExploreObservabilityProps) {
   const squeezeQuery = useExploreSqueezeQuery();
   const scannerQuery = useExploreSqueezeScannerQuery();
   const futuresQuery = useExploreFuturesQuery();
@@ -107,9 +114,24 @@ export function ExploreObservability({ onExplain, showLivePanel = false }: Explo
     );
   }
 
+  const squeezeRows = payload.rows.filter((row) => symbolMatches(row.symbol, filterQuery));
+  const scannerRows = (scannerPayload?.rows ?? []).filter((row) =>
+    symbolMatches(row.symbol, filterQuery),
+  );
+  const catalystRows = (catalystQuery.data?.rows ?? []).filter((row) =>
+    symbolMatches(row.symbol, filterQuery),
+  );
+
   return (
     <>
       {showLivePanel ? <LiveObservationalPanel /> : null}
+
+      {filterQuery ? (
+        <p className="explore-header-note" role="status">
+          Filtering screens to symbols matching “{filterQuery}”.{" "}
+          <Link to="/radar/screeners">Clear filter</Link>
+        </p>
+      ) : null}
 
       <section className="explore-section">
         <h2>Short Squeeze Screener (read-only bridge)</h2>
@@ -154,7 +176,7 @@ export function ExploreObservability({ onExplain, showLivePanel = false }: Explo
               </div>
             ) : null}
             <ExploreSqueezeTable
-              rows={payload.rows}
+              rows={squeezeRows}
               workspacePath={(symbol) => `/workspace/${symbol}/squeeze`}
               onExplain={onExplain}
             />
@@ -193,9 +215,9 @@ export function ExploreObservability({ onExplain, showLivePanel = false }: Explo
                 />
               </div>
             ) : null}
-            {scannerPayload.rows.length > 0 ? (
+            {scannerRows.length > 0 ? (
               <ExploreSqueezeTable
-                rows={scannerPayload.rows}
+                rows={scannerRows}
                 workspacePath={(symbol) => `/workspace/${symbol}/squeeze?data_mode=current`}
                 onExplain={onExplain}
                 showScannerRank
@@ -298,7 +320,7 @@ export function ExploreObservability({ onExplain, showLivePanel = false }: Explo
                     />
                   </div>
                 ) : null}
-                {catalystQuery.data.rows && catalystQuery.data.rows.length > 0 ? (
+                {catalystRows.length > 0 ? (
                   <table className="explore-table">
                     <thead>
                       <tr>
@@ -309,7 +331,7 @@ export function ExploreObservability({ onExplain, showLivePanel = false }: Explo
                       </tr>
                     </thead>
                     <tbody>
-                      {catalystQuery.data.rows.map((row) => (
+                      {catalystRows.map((row) => (
                         <tr key={row.catalyst_id}>
                           <td>
                             <Link className="explore-symbol-link" to={`/workspace/${row.symbol}/catalyst`}>
