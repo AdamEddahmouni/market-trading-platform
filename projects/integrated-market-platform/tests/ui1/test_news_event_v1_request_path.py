@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import http.client
 import json
+import os
 import threading
 import unittest
 from http.server import ThreadingHTTPServer
@@ -177,6 +178,12 @@ class NewsIngestRequestPathTests(unittest.TestCase):
 
 class NewsIngestHttpTests(unittest.TestCase):
     def setUp(self) -> None:
+        self._persist_env_patch = patch.dict(
+            os.environ,
+            {"IMP_PERSIST_STATE": "0", "IMP_STATE_DIR": ""},
+            clear=False,
+        )
+        self._persist_env_patch.start()
         reset_operator_acks()
         self.store = ReplayStore(collection_root=COLLECTION_ROOT)
         self.store.load()
@@ -203,6 +210,7 @@ class NewsIngestHttpTests(unittest.TestCase):
         self._auth_patch.start()
 
     def tearDown(self) -> None:
+        self._persist_env_patch.stop()
         self._auth_patch.stop()
         self._clock_patch.stop()
         self._runtime_patch.stop()
