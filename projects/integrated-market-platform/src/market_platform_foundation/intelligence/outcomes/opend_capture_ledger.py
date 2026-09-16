@@ -16,6 +16,7 @@ from ...market_data.capture import CAPTURE_SCHEMA_VERSION
 from ...market_data.moomoo_snapshot_bbo import SNAPSHOT_BBO_CAPABILITY, snapshot_bbo_quality_flags
 from ...market_data.timestamps import TimestampSet, clocks_from_capture
 from ..contracts.event import EventV1
+from ..contracts.forecast import ForecastV1
 from ..contracts.prediction_ledger import PredictionLedgerEntryV1
 from ..normalization.models import IngestionMode, NormalizationContext, NormalizationResult
 from ..normalization.providers.moomoo import normalize_moomoo_capture
@@ -474,6 +475,11 @@ def materialize_opend_capture_jsonl(
     as_of_ns: int,
     session_start_ns: int,
     forecast_bindings: dict[str, str] | None = None,
+    contributor_path: Path | None = None,
+    forecast_path: Path | None = None,
+    auto_bind_production_forecasts: bool = False,
+    bind_expected_account_id: str | None = None,
+    bind_expected_mode: str | None = None,
     register_ledger: bool = True,
     ingress_router: ObservationIngressRouter | None = None,
     use_production_ingress: bool = True,
@@ -483,14 +489,32 @@ def materialize_opend_capture_jsonl(
     ``forecast_bindings`` maps ``candidate_id`` → existing ``forecast_id`` (forecast
     must already be present in ``repository``). No forecast synthesis occurs here.
 
+    When ``auto_bind_production_forecasts=True``, lawful PRODUCTION_RAW contributors
+    are resolved from ``contributor_path`` / ``forecast_path`` / repository for each
+    grid candidate (explicit bindings win). Lookup never mints forecasts.
+
     By default ``use_production_ingress=True`` dispatches normalized events through
     ``build_production_observation_ingress_router`` (store, audit, detector, OE
     evidence, enrichment trigger). Pass ``use_production_ingress=False`` for direct
     repository store only (replay fixtures / migration tests). An explicit
     ``ingress_router`` overrides auto-build but still uses ingress dispatch.
     """
+    from ..production.item7_capture_forecast_binding import (
+        ensure_production_forecast_in_repository,
+        load_binding_eligible_production_contributors,
+        lookup_production_forecast_for_candidate,
+        production_forecast_ledger_refusal_reasons,
+    )
+
     result = CaptureLedgerMaterializationResult()
-    bindings = forecast_bindings or {}
+    bindings = dict(forecast_bindings or {})
+    contributor_pool: tuple[ForecastV1, ...] | None = None
+    if auto_bind_production_forecasts:
+        contributor_pool = load_binding_eligible_production_contributors(
+            repository=repository,
+            contributor_path=contributor_path,
+            forecast_path=forecast_path,
+        )
     ledger_service = PredictionLedgerService(repository)
     effective_router = resolve_production_ingress_router(
         repository,
@@ -595,6 +619,19 @@ def materialize_opend_capture_jsonl(
         )
 
         forecast_id = bindings.get(candidate_id)
+        if forecast_id is None and auto_bind_production_forecasts:
+            bind = lookup_production_forecast_for_candidate(
+                candidate,
+                contributors=contributor_pool or (),
+                expected_account_id=bind_expected_account_id,
+                expected_mode=bind_expected_mode,
+            )
+            for reason in bind.refusal_reasons:
+                result.note_refusal(reason)
+            if bind.forecast is not None:
+                ensure_production_forecast_in_repository(repository, bind.forecast)
+                forecast_id = bind.forecast_id
+                bindings[candidate_id] = str(forecast_id)
         if forecast_id is None:
             result.candidates.append(candidate)
             continue
@@ -618,6 +655,22 @@ def materialize_opend_capture_jsonl(
             result.note_refusal("FORECAST_NOT_FOUND")
             result.candidates.append(candidate)
             continue
+        ledger_refusals = production_forecast_ledger_refusal_reasons(forecast)
+        if ledger_refusals:
+            for reason in ledger_refusals:
+                result.note_refusal(reason)
+            result.candidates.append(
+                CaptureLedgerCandidate(
+                    candidate_id=candidate.candidate_id,
+                    event_id=candidate.event_id,
+                    instrument_id=candidate.instrument_id,
+                    decision_time_ns=candidate.decision_time_ns,
+                    horizon_ns=candidate.horizon_ns,
+                    provenance=candidate.provenance,
+                    forecast_id=forecast_id,
+                )
+            )
+            continue
         registered_at_ns = min(as_of_ns, event.available_time_ns)
         register_result = ledger_service.register_forecast(
             forecast,
@@ -625,8 +678,19 @@ def materialize_opend_capture_jsonl(
             mode=SettlementMode.ACTUAL_LIVE,
         )
         if isinstance(register_result, SettlementResult):
-            result.note_refusal(str(register_result.status.value))
-            result.candidates.append(candidate)
+            reason = str(register_result.unlabelable_reason or register_result.status.value)
+            result.note_refusal(reason)
+            result.candidates.append(
+                CaptureLedgerCandidate(
+                    candidate_id=candidate.candidate_id,
+                    event_id=candidate.event_id,
+                    instrument_id=candidate.instrument_id,
+                    decision_time_ns=candidate.decision_time_ns,
+                    horizon_ns=candidate.horizon_ns,
+                    provenance=candidate.provenance,
+                    forecast_id=forecast_id,
+                )
+            )
             continue
         entry = register_result
         result.ledger_registered += 1
@@ -654,6 +718,11 @@ def materialize_capture_paths(
     as_of_ns: int,
     session_start_ns: int,
     forecast_bindings: dict[str, str] | None = None,
+    contributor_path: Path | None = None,
+    forecast_path: Path | None = None,
+    auto_bind_production_forecasts: bool = False,
+    bind_expected_account_id: str | None = None,
+    bind_expected_mode: str | None = None,
     ingress_router: ObservationIngressRouter | None = None,
     use_production_ingress: bool = True,
 ) -> CaptureLedgerMaterializationResult:
@@ -665,6 +734,11 @@ def materialize_capture_paths(
             as_of_ns=as_of_ns,
             session_start_ns=session_start_ns,
             forecast_bindings=forecast_bindings,
+            contributor_path=contributor_path,
+            forecast_path=forecast_path,
+            auto_bind_production_forecasts=auto_bind_production_forecasts,
+            bind_expected_account_id=bind_expected_account_id,
+            bind_expected_mode=bind_expected_mode,
             ingress_router=ingress_router,
             use_production_ingress=use_production_ingress,
         )
