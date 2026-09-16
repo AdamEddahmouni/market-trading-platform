@@ -136,6 +136,7 @@ class ProductionIngressPathWiredTests(unittest.TestCase):
                 "ingress.audit_replay",
                 "ingress.detector_stub",
                 "ingress.enrichment_trigger",
+                "ingress.observational_news_detector",
                 "ingress.oe_evidence",
                 "ingress.store",
             }))

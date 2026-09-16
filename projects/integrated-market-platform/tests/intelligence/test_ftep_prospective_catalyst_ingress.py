@@ -126,13 +126,18 @@ def _watch_payload_for_ingress(ingress: ProspectiveCatalystIngressResult) -> dic
 class FtepProspectiveCatalystIngressTests(unittest.TestCase):
     def test_injected_env_does_not_use_credential_store_for_gate(self) -> None:
         env = _gates_env()
-        with patch(
-            "market_platform_foundation.finviz.credential_manager.read_secure_token",
-            return_value=_STORE_FIXTURE_TOKEN,
-        ):
-            reset_finviz_credential_manager()
-            self.assertFalse(prospective_catalyst_ingress_enabled(env))
-            reset_finviz_credential_manager()
+        with tempfile.TemporaryDirectory() as tmp:
+            isolated_root = Path(tmp) / "imp"
+            isolated_root.mkdir()
+            with patch(
+                "market_platform_foundation.finviz.credential_manager.read_secure_token",
+                return_value=_STORE_FIXTURE_TOKEN,
+            ):
+                reset_finviz_credential_manager()
+                self.assertFalse(
+                    prospective_catalyst_ingress_enabled(env, repository_root=isolated_root)
+                )
+                reset_finviz_credential_manager()
 
     def test_gates_inactive_without_env(self) -> None:
         env = {
@@ -155,19 +160,22 @@ class FtepProspectiveCatalystIngressTests(unittest.TestCase):
 
     def test_token_absent_when_gates_on_and_no_secret(self) -> None:
         env = _gates_env()
-        result = collect_finviz_prospective_attention_rows(
-            REPO_ROOT,
-            "FTEP-V1-002",
-            live_ingress=True,
-            env=env,
-        )
-        self.assertTrue(result.attempted)
-        self.assertFalse(result.ready)
-        self.assertEqual(result.reason, "FINVIZ_TOKEN_ABSENT")
-        self.assertEqual(result.classification, CLASS_TOKEN_ABSENT)
-        report = result.to_report_dict()
-        encoded = json.dumps(report)
-        self.assertNotIn(_STORE_FIXTURE_TOKEN, encoded)
+        with tempfile.TemporaryDirectory() as tmp:
+            isolated_root = Path(tmp) / "imp"
+            isolated_root.mkdir()
+            result = collect_finviz_prospective_attention_rows(
+                isolated_root,
+                "FTEP-V1-002",
+                live_ingress=True,
+                env=env,
+            )
+            self.assertTrue(result.attempted)
+            self.assertFalse(result.ready)
+            self.assertEqual(result.reason, "FINVIZ_TOKEN_ABSENT")
+            self.assertEqual(result.classification, CLASS_TOKEN_ABSENT)
+            report = result.to_report_dict()
+            encoded = json.dumps(report)
+            self.assertNotIn(_STORE_FIXTURE_TOKEN, encoded)
 
     def test_secret_dir_missing_when_configured_path_absent(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

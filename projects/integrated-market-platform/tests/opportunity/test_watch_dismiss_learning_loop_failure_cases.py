@@ -12,6 +12,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
@@ -47,6 +48,7 @@ from market_platform_foundation.ui_api.opportunity_projections import (  # noqa:
     build_opportunities_summary_payload,
     build_opportunity_detail_payload,
     build_opportunity_evidence_payload,
+    build_ranked_rows,
 )
 from market_platform_foundation.ui_api.operator_opportunity_state import (  # noqa: E402
     list_operator_acks,
@@ -235,18 +237,34 @@ class WatchDismissLearningLoopFailureCaseTests(unittest.TestCase):
         self.store.data_mode = "LIVE_OBSERVATIONAL"
         self.store.mode = "LIVE"
         summary = build_opportunities_summary_payload(self.store)
-        self.assertEqual(summary["feed_status"], "UNAVAILABLE")
-        self.assertEqual(summary["reason"], "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
-        self.assertEqual(summary["items"], [])
-        with self.assertRaises(KeyError) as detail_ctx:
-            build_opportunity_detail_payload(self.store, _WATCH_OPP)
-        self.assertEqual(str(detail_ctx.exception), "'LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE'")
-        with self.assertRaises(PermissionError) as ack_ctx:
-            apply_opportunity_ack(self.store, row_id=_WATCH_OPP, action="WATCHED")
-        self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
-        with self.assertRaises(PermissionError) as dismiss_ctx:
-            apply_opportunity_ack(self.store, row_id=_DISMISS_OPP, action="DISMISSED")
-        self.assertEqual(str(dismiss_ctx.exception), "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
+        # P12/#205: ranked READ no longer emits LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE.
+        self.assertIn(summary["feed_status"], {"READY", "EMPTY", "UNREADY"})
+        self.assertNotEqual(summary.get("reason"), "LIVE_OBSERVATIONAL_NO_OPPORTUNITY_ENGINE")
+        self.assertNotEqual(summary.get("feed_status"), "UNAVAILABLE")
+        self.store.as_of_time_ns = None
+        self.store.last_source_time_ns = None
+        self.repo.put_opportunity(
+            _fixture_opportunity(
+                opportunity_id=_DISMISS_OPP,
+                instrument_id="MSFT",
+                headline="fixture dismiss candidate",
+            )
+        )
+        ranked = build_ranked_rows(self.store)
+        watch_row = next(row for row in ranked if row.opportunity_id == _WATCH_OPP)
+        dismiss_row = next(row for row in ranked if row.opportunity_id == _DISMISS_OPP)
+        row_id = watch_row.summary_id
+        dismiss_row_id = dismiss_row.summary_id
+        with patch(
+            "market_platform_foundation.ui_api.opportunity_projections.projections._live_receive_ns",
+            return_value=None,
+        ):
+            with self.assertRaises(PermissionError) as ack_ctx:
+                apply_opportunity_ack(self.store, row_id=row_id, action="WATCHED")
+            self.assertEqual(str(ack_ctx.exception), "LIVE_OBSERVATIONAL_ACK_REQUIRES_LIVE_CLOCK")
+            with self.assertRaises(PermissionError) as dismiss_ctx:
+                apply_opportunity_ack(self.store, row_id=dismiss_row_id, action="DISMISSED")
+            self.assertEqual(str(dismiss_ctx.exception), "LIVE_OBSERVATIONAL_ACK_REQUIRES_LIVE_CLOCK")
         self.assertEqual(list_operator_acks(), ())
         live_reviews = build_trade_reviews_for_opportunity_payload(self.store, _WATCH_OPP)
         self.assertEqual(live_reviews["items"], [])

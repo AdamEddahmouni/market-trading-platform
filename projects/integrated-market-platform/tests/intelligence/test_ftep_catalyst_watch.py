@@ -25,9 +25,21 @@ class FtepCatalystWatchTests(unittest.TestCase):
         os.environ["IMP_PERSIST_STATE"] = "1"
 
     def test_fixture_smoke_when_no_governed_sessions(self) -> None:
+        status_no_sessions = {
+            "governed_session_count": 0,
+            "empirical_lock_count": 0,
+            "us_equity_rth_open": False,
+            "manifest_fingerprint": "F7083180990BC59578CA045E1E1318A356421BBC9B81EE514C14130CB0B356B1",
+        }
         with patch(
             "market_platform_foundation.intelligence.paper_forward_bridge.ftep_catalyst_watch.operator_primary_imp_root_for_evidence",
             return_value=None,
+        ), patch(
+            "market_platform_foundation.intelligence.paper_forward_bridge.ftep_catalyst_watch.collect_ftep_campaign_status",
+            return_value=status_no_sessions,
+        ), patch(
+            "market_platform_foundation.intelligence.paper_forward_bridge.ftep_catalyst_watch.load_governed_session_ids_from_evidence",
+            return_value=([], None),
         ):
             payload = collect_ftep_catalyst_watch(REPO_ROOT, "FTEP-V1-002", fixture_only=True)
         self.assertEqual(payload["disposition"], "PASS")
