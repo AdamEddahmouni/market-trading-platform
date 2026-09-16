@@ -28,13 +28,29 @@ from tools.platform.local_launcher import (
     PlatformController,
     ServiceRecord,
     WindowsSystem,
+    command_identity_matches,
 )
+from tools.platform.service_health import aggregate_platform_health, evaluate_service_health
 
 
 CONTROL_HOST = "127.0.0.1"
 CONTROL_PORT = 8767
 ALLOWED_ACTIONS = frozenset({"setup", "start", "stop", "restart", "open", "check_update", "apply_update"})
 ALLOWED_ORIGINS = frozenset({"http://127.0.0.1:5173", "http://localhost:5173"})
+_CHECK_UPDATE_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
+CHECK_UPDATE_TTL_SECONDS = 45.0
+
+_SERVICE_HTTP_URLS: dict[str, str | None] = {
+    "api": f"http://{API_HOST}:{API_PORT}/context",
+    "ui": f"http://{UI_HOST}:{UI_PORT}/",
+    "control": None,
+}
+
+_SERVICE_PORTS: dict[str, tuple[str, int]] = {
+    "api": (API_HOST, API_PORT),
+    "ui": (UI_HOST, UI_PORT),
+    "control": (CONTROL_HOST, CONTROL_PORT),
+}
 
 
 def normalize_action(value: object) -> str | None:
@@ -88,35 +104,56 @@ def update_operation(root: Path, operation_id: str, *, status: str, detail: str 
     _write_operation(root, operation)
 
 
+def check_update_cached(root: Path, *, ttl_seconds: float = CHECK_UPDATE_TTL_SECONDS) -> dict[str, Any]:
+    key = str(root.resolve())
+    now = time.time()
+    cached = _CHECK_UPDATE_CACHE.get(key)
+    if cached is not None and now - cached[0] < ttl_seconds:
+        return cached[1]
+    payload = check_update(root)
+    _CHECK_UPDATE_CACHE[key] = (now, payload)
+    return payload
+
+
 def build_control_status(root: Path | None = None) -> dict[str, Any]:
     repository = (root or Path(__file__).resolve().parents[2]).resolve()
     controller = PlatformController(root=repository)
     records = controller._read_state()
+    health_by_name: dict[str, Any] = {}
     services: list[dict[str, Any]] = []
     for record in records:
+        host, port = _SERVICE_PORTS.get(record.name, (API_HOST, API_PORT))
+        health = evaluate_service_health(
+            pid=record.pid,
+            host=host,
+            port=port,
+            http_url=_SERVICE_HTTP_URLS.get(record.name),
+            identity=record.identity,
+            command_line=controller.system.command_line,
+            identity_matches=command_identity_matches,
+            port_is_open=controller.system.port_is_open,
+            http_timeout_seconds=0.75,
+            process_alive_fn=controller._process_alive,
+            http_probe=controller.system.url_ready,
+        )
+        health_by_name[record.name] = health
         services.append(
             {
                 "name": record.name,
                 "pid": record.pid,
-                "owned": controller._is_owned(record),
+                "owned": health.identity_owned,
                 "log_path": record.log_path,
+                "health": health.as_dict(),
             }
         )
-    api_ready = controller.system.url_ready(f"http://{API_HOST}:{API_PORT}/context")
-    ui_ready = controller.system.url_ready(f"http://{UI_HOST}:{UI_PORT}/")
-    control_ready = controller.system.port_is_open(CONTROL_HOST, CONTROL_PORT)
-    required_owned = all(
-        any(row["name"] == name and row["owned"] for row in services)
-        for name in ("api", "ui", "control")
-    )
-    status = "READY" if api_ready and ui_ready and control_ready and required_owned else "PARTIAL" if records else "STOPPED"
+    status = aggregate_platform_health(health_by_name) if records else "STOPPED"
     return {
-        "schema_version": "operator-lifecycle/1.0",
+        "schema_version": "operator-lifecycle/1.1",
         "status": status,
         "services": services,
         "logs": sorted({str(row["log_path"]) for row in services}),
         "last_action": None,
-        "update": check_update(repository),
+        "update": check_update_cached(repository),
     }
 
 

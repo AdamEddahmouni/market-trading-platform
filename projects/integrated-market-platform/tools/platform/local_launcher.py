@@ -62,6 +62,8 @@ class SystemOperations(Protocol):
 
     def sleep(self, seconds: float) -> None: ...
 
+    def process_alive(self, pid: int) -> bool: ...
+
 
 @dataclass(frozen=True)
 class ServiceRecord:
@@ -171,6 +173,11 @@ class WindowsSystem:
     def sleep(self, seconds: float) -> None:
         time.sleep(seconds)
 
+    def process_alive(self, pid: int) -> bool:
+        from tools.platform.service_health import process_alive as platform_process_alive
+
+        return platform_process_alive(pid)
+
 
 def select_backend_python(root: Path, environ: Mapping[str, str], user_profile: Path | None = None) -> Path:
     del user_profile  # retained for call-site compatibility; never auto-select moomoo-api-test
@@ -246,6 +253,9 @@ class PlatformController:
         self.state_path = self.root / STATE_RELATIVE_PATH
         self._python_runtime_probe = backend_python_has_runtime if python_runtime_probe is None else python_runtime_probe
 
+    def _process_alive(self, pid: int) -> bool:
+        return self.system.process_alive(pid)
+
     def _read_state(self) -> list[ServiceRecord]:
         if not self.state_path.is_file():
             return []
@@ -277,6 +287,8 @@ class PlatformController:
         self.state_path.unlink(missing_ok=True)
 
     def _is_owned(self, service: ServiceRecord) -> bool:
+        if not self._process_alive(service.pid):
+            return False
         return command_identity_matches(self.system.command_line(service.pid), service.identity)
 
     def _both_ready(self) -> bool:
@@ -430,6 +442,11 @@ class PlatformController:
             self.system.open_browser(OPERATOR_URL)
         return 0
 
+    def restart(self, *, open_browser: bool = False) -> int:
+        """Stop launcher-owned services and start a fresh platform stack."""
+        self.stop()
+        return self.start(open_browser=open_browser)
+
     def stop(self) -> int:
         services = self._read_state()
         if not services:
@@ -448,19 +465,45 @@ class PlatformController:
         return 0
 
     def status(self) -> int:
+        from tools.platform.service_health import aggregate_platform_health, evaluate_service_health
+
         services = self._read_state()
-        owned = {service.name: self._is_owned(service) for service in services}
-        api_ready = self.system.url_ready(API_URL)
-        ui_ready = self.system.url_ready(UI_URL)
+        health_by_name = {}
         print("LOCAL PLATFORM STATUS")
-        print(f"API process owned       {'YES' if owned.get('api') else 'NO'}")
-        print(f"UI process owned        {'YES' if owned.get('ui') else 'NO'}")
-        print(f"API loopback ready      {'YES' if api_ready else 'NO'}")
-        print(f"UI loopback ready       {'YES' if ui_ready else 'NO'}")
-        if all((owned.get("api"), owned.get("ui"), api_ready, ui_ready)):
+        for service in services:
+            host, port = {
+                "api": (API_HOST, API_PORT),
+                "ui": (UI_HOST, UI_PORT),
+                "control": (CONTROL_HOST, CONTROL_PORT),
+            }.get(service.name, (API_HOST, API_PORT))
+            http_url = {
+                "api": API_URL,
+                "ui": UI_URL,
+                "control": None,
+            }.get(service.name)
+            health = evaluate_service_health(
+                pid=service.pid,
+                host=host,
+                port=port,
+                http_url=http_url,
+                identity=service.identity,
+                command_line=self.system.command_line,
+                identity_matches=command_identity_matches,
+                port_is_open=self.system.port_is_open,
+                process_alive_fn=self._process_alive,
+                http_probe=self.system.url_ready,
+            )
+            health_by_name[service.name] = health
+            print(f"{service.name.upper()} process alive   {'YES' if health.process_alive else 'NO'}")
+            print(f"{service.name.upper()} identity owned  {'YES' if health.identity_owned else 'NO'}")
+            print(f"{service.name.upper()} port bound        {'YES' if health.port_bound else 'NO'}")
+            if health.http_alive is not None:
+                print(f"{service.name.upper()} HTTP alive        {'YES' if health.http_alive else 'NO'}")
+        aggregate = aggregate_platform_health(health_by_name) if services else "STOPPED"
+        if aggregate == "READY":
             print(f"READY                  {OPERATOR_URL}")
             return 0
-        print("NOT RUNNING OR PARTIAL")
+        print(f"NOT RUNNING OR PARTIAL ({aggregate})")
         return 1
 
     def open(self) -> int:
@@ -553,6 +596,8 @@ def build_parser() -> argparse.ArgumentParser:
     start = subcommands.add_parser("start", help="Start API, UI, and local control service")
     start.add_argument("--open", action="store_true", dest="open_browser", help="Open Mixed Live after readiness")
     subcommands.add_parser("stop", help="Stop launcher-owned API, UI, and control process trees")
+    restart = subcommands.add_parser("restart", help="Stop and start API, UI, and control (state persisted when enabled)")
+    restart.add_argument("--open", action="store_true", dest="open_browser", help="Open Mixed Live after readiness")
     subcommands.add_parser("status", help="Show process ownership and local readiness")
     subcommands.add_parser("open", help="Open Mixed Live if the UI is ready")
     subcommands.add_parser("finviz-status", help="Show sanitized Finviz credential status")
@@ -571,6 +616,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         result = controller.start(open_browser=bool(args.open_browser))
     elif args.command == "stop":
         result = controller.stop()
+    elif args.command == "restart":
+        result = controller.restart(open_browser=bool(args.open_browser))
     elif args.command == "status":
         result = controller.status()
     elif args.command == "open":

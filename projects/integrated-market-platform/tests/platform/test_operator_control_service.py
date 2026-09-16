@@ -23,7 +23,7 @@ class OperatorControlServiceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             payload = build_control_status(Path(tmp))
 
-        self.assertEqual(payload["schema_version"], "operator-lifecycle/1.0")
+        self.assertEqual(payload["schema_version"], "operator-lifecycle/1.1")
         self.assertEqual(payload["status"], "STOPPED")
         self.assertNotIn("secrets_included", payload)
         self.assertEqual(payload["services"], [])
@@ -77,7 +77,7 @@ class OperatorControlServiceTests(unittest.TestCase):
     def test_control_status_does_not_http_self_probe(self) -> None:
         source = Path(__file__).resolve().parents[2] / "tools/platform/control_service.py"
         text = source.read_text(encoding="utf-8")
-        self.assertIn("control_ready = controller.system.port_is_open(CONTROL_HOST, CONTROL_PORT)", text)
+        self.assertIn('"control": None', text)
         self.assertNotIn(
             'url_ready(f"http://{CONTROL_HOST}:{CONTROL_PORT}/control/status")',
             text,
