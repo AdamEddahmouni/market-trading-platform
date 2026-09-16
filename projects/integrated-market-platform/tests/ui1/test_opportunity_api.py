@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import unittest
 from unittest.mock import patch
 
@@ -28,7 +29,11 @@ from market_platform_foundation.ui_api.opportunity_projections import (
     build_ranked_rows,
 )
 from market_platform_foundation.news.timestamps import epoch_ns_from_iso
+from market_platform_foundation.ui_api.cockpit_admit import reset_registered_cockpit_replay_store_for_tests
 from market_platform_foundation.ui_api.operator_opportunity_state import reset_operator_acks
+from market_platform_foundation.rt01.execution_decision_trace.runtime import (
+    reset_execution_decision_trace_runtime_for_tests,
+)
 from market_platform_foundation.ui_api.store import ReplayStore
 
 from tests.ui1.test_ui_api import COLLECTION_ROOT
@@ -39,9 +44,20 @@ _INGEST_TIMESTAMP_KEYS = {"decision_time_ns", "created_at_ns", "opportunity_deci
 
 class OpportunityApiTests(unittest.TestCase):
     def setUp(self) -> None:
+        self._persist_env_patch = patch.dict(
+            os.environ,
+            {"IMP_PERSIST_STATE": "0", "IMP_STATE_DIR": ""},
+            clear=False,
+        )
+        self._persist_env_patch.start()
         reset_operator_acks()
+        reset_execution_decision_trace_runtime_for_tests()
+        reset_registered_cockpit_replay_store_for_tests()
         self.store = ReplayStore(collection_root=COLLECTION_ROOT)
         self.store.load()
+
+    def tearDown(self) -> None:
+        self._persist_env_patch.stop()
 
     def _seed_opportunity(
         self,
