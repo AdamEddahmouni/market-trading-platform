@@ -12,7 +12,7 @@ This document is the **current-main** operator surface for the **next** US equit
 | **Frozen Sep 15 empirical authority** | `7aade60b…` (historical RTH evidence pin) | Accepted observational receipts and Sep 15 session truth — **not** overridden by this runbook |
 | **Repair train (sibling lanes)** | Base `7aade60` on open PRs [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) | **Not on `main`** until merged; merge SHAs **`<pending>`** per lane — do not assume live OE / Item 9 / Finviz / 8766 fixes are shipped |
 
-**Checklist overlap:** [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207) owns small deltas to [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKLIST.md) and [RTH_EMPIRICAL_OPS_RUNBOOK.md](RTH_EMPIRICAL_OPS_RUNBOOK.md). Until #207 merges, use those files plus this page for SHA truth and repair-train placeholders.
+**Checklist overlap:** [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207) (head `ca3c53a9`, Composer review) owns deltas to [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKLIST.md), [RTH_EMPIRICAL_OPS_RUNBOOK.md](RTH_EMPIRICAL_OPS_RUNBOOK.md), and `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md`. **Not on `main`** until merge — this runbook does **not** edit those paths. Use current `main` files plus this page until `origin/main` contains `ca3c53a9` or the merge SHA.
 
 ## Campaign timing (US/Eastern)
 
@@ -134,7 +134,8 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 | [#196](https://github.com/AdamEddahmouni/market-trading-platform/pull/196) | Evidence capture-context sidecar | `<pending>` |
 | [#199](https://github.com/AdamEddahmouni/market-trading-platform/pull/199) | Item 7 corpus evidence validator | `<pending>` |
 | [#200](https://github.com/AdamEddahmouni/market-trading-platform/pull/200) | PROGRAM_STATUS pre-RTH sync | `<pending>` (superseded in part by this runbook PR) |
-| [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205), [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207)–[#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) | RTH15 repair train (rebased from `7aade60`) | `<pending>` each |
+| [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207) | Finviz ingress reliability / receipts | **OPEN** head `ca3c53a9` — `<pending merge on main>` |
+| [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205), [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) | RTH15 repair train (from `7aade60`) | `<pending>` each |
 
 ## Pre-RTH verification checklist (Agent H, off-session)
 
