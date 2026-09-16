@@ -48,18 +48,21 @@ def _events_for_forecast_context(
     resolved = resolve_snapshot(snapshot, repository, strict=False)
     if resolved.events:
         return resolved.events
-    instrument_ids = forecast.scope.instrument_ids
     instrument_id = forecast.target.instrument_id
+    queried = repository.query_events_as_of(
+        forecast.decision_time_ns,
+        instrument_id=instrument_id,
+        limit=10_000,
+    )
+    if queried:
+        return queried
+    instrument_ids = forecast.scope.instrument_ids
     if instrument_ids and instrument_id not in instrument_ids:
         raise OutcomeRegistrationError(
             "TARGET_INSTRUMENT_NOT_IN_SCOPE",
             details={"instrument_id": instrument_id},
         )
-    return repository.query_events_as_of(
-        forecast.decision_time_ns,
-        instrument_id=instrument_id,
-        limit=10_000,
-    )
+    return ()
 
 
 def freeze_anchor_observation(

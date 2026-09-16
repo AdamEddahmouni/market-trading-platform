@@ -521,6 +521,7 @@ def materialize_opend_capture_jsonl(
         ingress_router=ingress_router,
         use_production_ingress=use_production_ingress,
     )
+    pending_ledger: list[tuple[CaptureLedgerCandidate, str, int]] = []
 
     for line_index, record, parse_error in iter_jsonl_envelopes(path):
         if parse_error is not None or record is None:
@@ -650,6 +651,15 @@ def materialize_opend_capture_jsonl(
             )
             continue
 
+        registered_at_ns = min(as_of_ns, event.available_time_ns)
+        pending_ledger.append((candidate, str(forecast_id), registered_at_ns))
+
+    from ..production.item7_p0_anchor import (
+        ensure_forecast_snapshot_trade_anchor,
+        p0_anchor_refusal_reasons,
+    )
+
+    for candidate, forecast_id, registered_at_ns in pending_ledger:
         forecast = repository.get_forecast(forecast_id)
         if forecast is None:
             result.note_refusal("FORECAST_NOT_FOUND")
@@ -671,7 +681,43 @@ def materialize_opend_capture_jsonl(
                 )
             )
             continue
-        registered_at_ns = min(as_of_ns, event.available_time_ns)
+        anchor_bind_refusals = ensure_forecast_snapshot_trade_anchor(
+            forecast,
+            repository,
+            decision_time_ns=candidate.decision_time_ns,
+            instrument_id=candidate.instrument_id,
+        )
+        if anchor_bind_refusals:
+            for reason in anchor_bind_refusals:
+                result.note_refusal(reason)
+            result.candidates.append(
+                CaptureLedgerCandidate(
+                    candidate_id=candidate.candidate_id,
+                    event_id=candidate.event_id,
+                    instrument_id=candidate.instrument_id,
+                    decision_time_ns=candidate.decision_time_ns,
+                    horizon_ns=candidate.horizon_ns,
+                    provenance=candidate.provenance,
+                    forecast_id=forecast_id,
+                )
+            )
+            continue
+        anchor_refusals = p0_anchor_refusal_reasons(forecast, repository)
+        if anchor_refusals:
+            for reason in anchor_refusals:
+                result.note_refusal(reason)
+            result.candidates.append(
+                CaptureLedgerCandidate(
+                    candidate_id=candidate.candidate_id,
+                    event_id=candidate.event_id,
+                    instrument_id=candidate.instrument_id,
+                    decision_time_ns=candidate.decision_time_ns,
+                    horizon_ns=candidate.horizon_ns,
+                    provenance=candidate.provenance,
+                    forecast_id=forecast_id,
+                )
+            )
+            continue
         register_result = ledger_service.register_forecast(
             forecast,
             now_ns=registered_at_ns,
