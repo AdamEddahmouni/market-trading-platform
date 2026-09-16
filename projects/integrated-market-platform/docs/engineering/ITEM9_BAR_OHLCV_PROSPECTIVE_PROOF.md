@@ -15,6 +15,28 @@ python tools/moomoo/opend_bar_1m_prospective_proof.py display --instrument-id AA
 fetch is **diagnostic / transport visibility only** — not prospective evidence
 and not RTH empirical proof.
 
+Mode B `--poll` fetches 1m history kline for the **observation session date**
+in `America/New_York` (`start=end=YYYY-MM-DD`, `max_count>=1000`). Do not use
+the vendor default `start=None, end=None`: that expands to `[today-365d, today]`
+and returns the **oldest** page (a year old). Those bars correctly fail
+`available_time > signal_time` and are not prospective evidence.
+
+If paging is oldest-first, session-day plus `max_count=120` is still wrong:
+extended-hours 04:00–05:59 fills the page and every bar is before a 09:34
+signal. `max_count>=1000` is required so RTH minutes are not truncated.
+
+Each `request_history_kline` attempt writes fail-closed diagnostics to stderr
+(`raw_row_count`, `first_raw_time_key`, `last_raw_time_key`, `vendor_ret`,
+`vendor_ret_msg`) and attaches the same fields as `kline_fetch` on poll
+outcomes. Timeout still reports `PROSPECTIVE_NO_POST_SIGNAL_BAR`; the last
+fetch stats distinguish empty vs TZ-dropped vs pre-signal rows. PIT is
+unchanged.
+
+Follow-up (not in this repair): reuse one quote context and poll `get_cur_kline`
+to cut 5s connect-churn. Hour-2 `MOOMOO_PROTOCOL_ERROR` is not unique-security
+`historyKLQuota` (resume completed 358 more cycles); remaining hypotheses are
+timeout / frequency limit / connect-churn. `retMsg` is now preserved.
+
 ### Mode A — transport / replay (`RETROSPECTIVE_TRANSPORT_PROOF`)
 
 Not prospective evidence. Uses operator-supplied signal and observation times.
