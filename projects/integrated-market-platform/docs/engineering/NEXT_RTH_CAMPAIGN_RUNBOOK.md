@@ -1,4 +1,4 @@
-# Next US equity RTH campaign runbook (post–`origin/main` `73da9fdb`)
+# Next US equity RTH campaign runbook (post–`origin/main` `e925c36c`)
 
 **Evidence class:** SOFTWARE coordination only. **Live OFF.** No Paper/Live orders. No empirical locks. Do not declare FTEP `EMPIRICAL_ACTIVE`.
 
@@ -8,9 +8,9 @@ This document is the **current-main** operator surface for the **next** US equit
 
 | Layer | Git SHA | Role |
 |-------|---------|------|
-| **Current implementation** | `73da9fdbccb63c0842940175f6e948c584da9a80` (`origin/main`; [#210](https://github.com/AdamEddahmouni/market-trading-platform/pull/210) Item 7 upstream SNAPSHOT_BBO envelope; [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) launcher/Vite at `5d8163e` in history) | Commands, ports, and software labels below |
+| **Current implementation** | `e925c36c16d5dafb5d366bb9b30503bef82a40d0` (`origin/main`; [#217](https://github.com/AdamEddahmouni/market-trading-platform/pull/217) post-#205 validation alignment; [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) live OE HTTP-wire **SOFTWARE**; [#215](https://github.com/AdamEddahmouni/market-trading-platform/pull/215) Item 7 P0/anchor wiring; [#214](https://github.com/AdamEddahmouni/market-trading-platform/pull/214) ledger policy) | Commands, ports, and software labels below |
 | **Frozen Sep 15 empirical authority** | `7aade60b…` (historical RTH evidence pin) | Accepted observational receipts and Sep 15 session truth — **not** overridden by this runbook |
-| **Repair train (sibling lanes)** | Base `7aade60` on open PRs [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) | **Not on `main`** until merged; merge SHAs **`<pending>`** per lane — do not assume live OE / Item 9 / Finviz / 8766 fixes are shipped |
+| **Repair train (sibling lanes)** | Most RTH15 lanes **merged** on `main@e925c36c` ([#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204), [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206)–[#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207), [#209](https://github.com/AdamEddahmouni/market-trading-platform/pull/209)–[#217](https://github.com/AdamEddahmouni/market-trading-platform/pull/217), [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205)). **Open:** [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) draft fullstack — restack onto `e925c36c` before land-review | #205 live hop is **SOFTWARE** on `main`; in-memory OE; not empirical RTH readiness |
 
 **Checklist overlap:** [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207) (head `ca3c53a9`, Composer review) owns deltas to [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKLIST.md), [RTH_EMPIRICAL_OPS_RUNBOOK.md](RTH_EMPIRICAL_OPS_RUNBOOK.md), and `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md`. **Not on `main`** until merge — this runbook does **not** edit those paths. Use current `main` files plus this page until `origin/main` contains `ca3c53a9` or the merge SHA.
 
