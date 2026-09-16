@@ -169,7 +169,7 @@ export function ImpProductChrome({ mode, onSwitchMode, onToggleAssistant, childr
             </button>
           ) : null}
         </div>
-        <NavShell mode={mode} layout="sidebar" />
+        <NavShell mode={mode} />
         <footer className="imp-sidebar-footer">
           <span className="imp-sidebar-version">UI v1 · board 03 · Ctrl+K · ?</span>
         </footer>

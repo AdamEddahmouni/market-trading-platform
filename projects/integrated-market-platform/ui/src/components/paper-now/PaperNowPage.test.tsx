@@ -142,7 +142,7 @@ describe("PaperNowPage", () => {
       execution_model: "INTERNAL_FILL",
       execution_model_version: "v1",
     }));
-    const { props } = renderPage();
+    renderPage();
     completeDraft();
     fireEvent.click(screen.getByRole("button", { name: "Preview order" }));
 
