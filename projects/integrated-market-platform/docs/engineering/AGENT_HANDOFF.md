@@ -5,11 +5,12 @@ Skill: `imp-handoff`. Session: RTH15-00 orchestration & reconciliation.
 ## Canonical state
 
 - repository: `AdamEddahmouni/market-trading-platform` (IMP at `projects/integrated-market-platform/`)
-- branch: `reconcile/rth15-00`
-- worktree: `.worktrees/reconcile-rth15-00`
-- HEAD SHA: set at commit time on this branch (base `origin/main` `d06f1f4c1154913c561fc3c7c42aa46f452a2a15`)
-- upstream / ahead-behind vs `origin/main`: this branch only; do not use stale local `main` `3aaa3e8a`
-- worktree cleanliness: product changes on this worktree; primary checkout `item7/natural-settlement` remains dirty/untracked and **was not cleaned**
+- branch: `docs/post-224-rth15-00-pin` (docs pin after merge)
+- worktree: `.worktrees/docs-post-224`
+- HEAD SHA of merged RTH15-00: `dbccd92d9b7a6316c74c70336e1efd5ab25120b1` (`origin/main` after [#224](https://github.com/AdamEddahmouni/market-trading-platform/pull/224))
+- starting SHA: `d06f1f4c1154913c561fc3c7c42aa46f452a2a15`
+- upstream / ahead-behind vs `origin/main`: pin branch from that merge commit; do not use stale local `main` `3aaa3e8a`
+- worktree cleanliness: docs pin only; primary checkout `item7/natural-settlement` remains dirty/untracked and **was not cleaned**
 
 ## Objective
 
@@ -76,7 +77,7 @@ Item 7 #222 remains isolated. Frozen Sep 15 empirical pin `7aade60`. `PROSPECTIV
 
 Highest leverage after this PR merges: **Item 7 #222 natural-settlement review on its own isolated tree** (do not mix with this worktree), or continue operator UX redesign **reimplementation** on current Opportunity contracts — Composer default; Grok 4.6 High only if schema/architecture conflict appears.
 
-Starting SHA: current `origin/main` after this PR merges (verify explicitly).
+Starting SHA: `origin/main` `dbccd92d9b7a6316c74c70336e1efd5ab25120b1`.
 
 ## Model / escalation notes
 
