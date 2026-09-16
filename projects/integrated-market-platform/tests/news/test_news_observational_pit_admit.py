@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import unittest
 from unittest.mock import patch
 
@@ -57,6 +58,12 @@ def _item(*, published: str = _PUBLISHED, headline: str = "Example Corp reports 
 
 class NewsObservationalPitAdmitTests(unittest.TestCase):
     def setUp(self) -> None:
+        self._persist_env_patch = patch.dict(
+            os.environ,
+            {"IMP_PERSIST_STATE": "0", "IMP_STATE_DIR": ""},
+            clear=False,
+        )
+        self._persist_env_patch.start()
         reset_operator_acks()
         reset_execution_decision_trace_runtime_for_tests()
         self.store = ReplayStore(collection_root=COLLECTION_ROOT)
@@ -70,9 +77,16 @@ class NewsObservationalPitAdmitTests(unittest.TestCase):
             return_value=self.server_ns,
         )
         self._clock_patch.start()
+        self._admit_clock_patch = patch(
+            "market_platform_foundation.news.observational_admit.monotonic_wall_ns",
+            return_value=self.server_ns,
+        )
+        self._admit_clock_patch.start()
 
     def tearDown(self) -> None:
+        self._admit_clock_patch.stop()
         self._clock_patch.stop()
+        self._persist_env_patch.stop()
 
     def test_server_receive_differs_from_client_retrieved(self) -> None:
         article = normalize_finviz_export_item(_item(), retrieved_time=_RETRIEVED)

@@ -10,7 +10,12 @@ from .store import ReplayStore
 
 
 def bind_ui_api_intelligence(store: ReplayStore) -> ReplayStore:
-    """Wire canonical persistence and ingress used by news observational admit paths."""
+    """Wire canonical persistence and ingress used by news observational admit paths.
+
+    Ranked opportunities live in ``InMemoryIntelligenceRepository`` unless a future
+    durable intelligence plane is added. UI API restart clears the live observational
+    book even when ``IMP_PERSIST_STATE=1`` (operator acks/trade reviews persist separately).
+    """
 
     if store.strategy_repository is None:
         store.strategy_repository = InMemoryIntelligenceRepository()

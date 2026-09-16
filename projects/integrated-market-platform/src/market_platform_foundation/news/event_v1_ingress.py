@@ -41,14 +41,16 @@ def admit_news_article_event(
         server_received_time_ns=when,
         ingestion_mode=mode,
     )
-    received_ns = event.received_time_ns if event.received_time_ns is not None else event.available_time_ns
+    received_ns = event.received_time_ns
+    if received_ns is None:
+        raise ValueError("NEWS_SERVER_RECEIVED_TIME_REQUIRED")
     context = IngressDispatchContext(
         dispatch_time_ns=when,
         ingestion_mode=mode,
         source_label=source_label,
     )
     receipt = router.dispatch(event, context=context)
-    if store is not None and received_ns is not None:
+    if store is not None:
         store.last_source_time_ns = int(received_ns)
         existing = getattr(store, "as_of_time_ns", None)
         store.as_of_time_ns = int(received_ns) if existing is None else max(int(existing), int(received_ns))

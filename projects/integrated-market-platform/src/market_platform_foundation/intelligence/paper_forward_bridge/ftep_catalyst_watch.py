@@ -369,15 +369,17 @@ def collect_ftep_catalyst_watch(
         watch_mode = "PROSPECTIVE_FINVIZ_INGRESS"
 
     if used_live_ingress and prospective_ingress_result is not None:
-        from ...ui_api.cockpit_admit import (
-            admit_prospective_catalyst_ingress_into_cockpit,
-            resolve_imp_collection_root,
-        )
+        from ...ui_api.cockpit_admit import post_prospective_ingress_to_running_ui_api
 
-        observational_cockpit_admit = admit_prospective_catalyst_ingress_into_cockpit(
+        observational_cockpit_admit = post_prospective_ingress_to_running_ui_api(
             prospective_ingress_result,
-            collection_root=resolve_imp_collection_root(repository_root),
         )
+        if prospective_ingress_result.rows and not observational_cockpit_admit.get("ok"):
+            blockers.append("COCKPIT_ADMIT_UI_API_UNAVAILABLE")
+            operator_hints.append(
+                "Start UI API (run_ui_api.py --serve) before --live-ingress so FTEP can "
+                f"POST to {observational_cockpit_admit.get('ui_api_base_url')}."
+            )
 
     disposition = "PASS" if not blockers else "BLOCKED"
     return {
