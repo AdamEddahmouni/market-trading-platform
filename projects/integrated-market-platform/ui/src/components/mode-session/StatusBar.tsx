@@ -157,7 +157,7 @@ export function StatusBar({ mode, context, contextState }: Props) {
         <AttentionBanner
           tone="caution"
           affects="Execution controls remain locked."
-          action={{ label: "Open Control", href: "/control" }}
+          action={{ label: "Open Control", href: "/control#control-authority" }}
         >
           Backend context unavailable.
         </AttentionBanner>

@@ -53,7 +53,7 @@ export function ImpProviderMatrixDrawer({ open, onClose, capabilityStates }: Pro
           <h3 id="imp-matrix-readiness-heading">Control readiness</h3>
           {readinessState === "loading" ? <p className="muted">Loading readiness…</p> : null}
           {readinessState === "error" ? (
-            <p className="muted">Readiness unavailable — open Risk control for detail.</p>
+            <p className="muted">Readiness unavailable — open Control for detail.</p>
           ) : null}
           {readiness ? (
             <>
@@ -72,7 +72,7 @@ export function ImpProviderMatrixDrawer({ open, onClose, capabilityStates }: Pro
             </>
           ) : null}
           <p>
-            <Link to="/control" onClick={onClose}>Open Risk control</Link>
+            <Link to="/control#control-providers" onClick={onClose}>Open Control</Link>
           </p>
         </section>
 
@@ -83,7 +83,7 @@ export function ImpProviderMatrixDrawer({ open, onClose, capabilityStates }: Pro
               <Link to="/diagnostics/provider" onClick={onClose}>Provider diagnostics</Link>
             </li>
             <li>
-              <Link to="/discover" onClick={onClose}>Opportunity Radar (discovery provider strip)</Link>
+              <Link to="/radar" onClick={onClose}>Opportunity Radar</Link>
             </li>
           </ul>
         </section>

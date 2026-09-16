@@ -106,6 +106,29 @@ Command's KPI strip is decision-oriented (`overviewDecisionKpis`): feed trust,
 actionable count, attention load, degradation — never portfolio/account metrics
 (those live in the risk ribbon and page headers).
 
+## Control (operator platform health)
+
+`/control` (`ui/src/components/control/`) answers "can IMP operate correctly and
+safely right now?" — operating state, execution authority, provider/data health,
+opportunity-feed readiness, and legitimate corrective actions. It is not
+Diagnostics (raw telemetry stays on `/diagnostics/provider`) and not Settings
+(persistent configuration stays on `/settings`; credential forms live behind the
+Advanced disclosure for parity). Rules:
+
+- Every state renders through `resolveSemanticState` (`platform` domain covers
+  lifecycle/readiness/check/update values); unknown or failed endpoints render
+  honestly (neutral "Unavailable" + per-section retry), never as healthy.
+- Sections degrade independently — one failing endpoint never collapses the page.
+- Sections carry stable anchors (`controlPresentation.CONTROL_SECTIONS`);
+  Command/StatusBar degraded-state links deep-link to `/control#control-feed` /
+  `/control#control-authority`, and the page scrolls to and marks the target.
+- Lifecycle actions (restart / check_update / apply_update) manage the local
+  workstation only; apply-update is confirm-gated inline. No trading authority
+  is granted or implied anywhere on the page.
+- Queries: `operatorReadiness` (60s), `operatorLifecycleStatus` (30s),
+  `operatorConfig` (60s), plus shared `context` / `opportunitiesSummary` /
+  `paperPortfolio` caches.
+
 ## Testing patterns
 
 - Pure helper: `*.test.ts` colocated or in same folder

@@ -240,6 +240,16 @@ vi.mock("./api/hooks", () => ({
     error: null,
     data: { status: "READY", checks: [], providers: [] },
   }),
+  useOperatorLifecycleStatusQuery: () => ({
+    isLoading: false,
+    error: null,
+    data: { status: "READY", services: [], logs: [] },
+  }),
+  useOperatorConfigQuery: () => ({
+    isLoading: false,
+    error: null,
+    data: { providers: [] },
+  }),
   usePaperForwardTestsQuery: () => ({
     isLoading: false,
     isError: false,
@@ -1068,6 +1078,21 @@ describe("App mode launcher integration", () => {
     await openLiveCanary();
     expect(await screen.findByTestId("live-canary-control-plane")).toBeInTheDocument();
     expect(screen.getByText(/REAL MONEY/i)).toBeInTheDocument();
+  });
+
+  it("opens Control from navigation with operating state and authority sections", async () => {
+    render(<App />);
+    await enterMode("Demo");
+    await openNavLink(/^Control —/i);
+    expect(
+      await screen.findByRole("heading", { name: "Platform control" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Execution & authority" }),
+    ).toHaveTextContent(/order entry is disabled/i);
+    expect(
+      screen.getByRole("region", { name: "Opportunity feed readiness" }),
+    ).toBeInTheDocument();
   });
 
   it("opens provider diagnostics from navigation", async () => {

@@ -22,9 +22,9 @@ export type OpportunityFeedStateProps = {
 };
 
 function controlHref(nextAction?: string): string {
-  if (!nextAction) return "/control";
+  if (!nextAction) return "/control#control-feed";
   if (nextAction.startsWith("/")) return nextAction;
-  return "/control";
+  return "/control#control-feed";
 }
 
 /**

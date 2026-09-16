@@ -21,7 +21,9 @@ describe("resolveSemanticState", () => {
     it("maps alignment states", () => {
       expect(resolveSemanticState("mode", "compatible").tone).toBe("live");
       expect(resolveSemanticState("mode", "mismatch").tone).toBe("critical");
-      expect(resolveSemanticState("mode", "unavailable").action?.href).toBe("/control");
+      expect(resolveSemanticState("mode", "unavailable").action?.href).toBe(
+        "/control#control-authority",
+      );
     });
   });
 
@@ -143,7 +145,7 @@ describe("resolveSemanticState", () => {
       });
       expect(unready.tone).toBe("caution");
       expect(unready.sentence).toContain("provider warmup");
-      expect(unready.action?.href).toBe("/control");
+      expect(unready.action?.href).toBe("/control#control-feed");
       expect(resolveSemanticState("research", "EMPTY").tone).toBe("neutral");
       expect(resolveSemanticState("research", "UNAVAILABLE").tone).toBe("critical");
     });
@@ -154,6 +156,70 @@ describe("resolveSemanticState", () => {
       expect(resolveSemanticState("research", "NONE").label).toBe("No action");
       expect(resolveSemanticState("research", "INELIGIBLE").label).toBe("Not eligible");
       expect(resolveSemanticState("research", "NORMALIZED_AWAITING_FORECAST").tone).toBe(
+        "caution",
+      );
+    });
+  });
+
+  describe("platform domain", () => {
+    it("maps lifecycle aggregate states", () => {
+      expect(resolveSemanticState("platform", "READY")).toMatchObject({
+        tone: "live",
+        label: "Ready",
+      });
+      expect(resolveSemanticState("platform", "PARTIAL")).toMatchObject({
+        tone: "caution",
+        label: "Partially running",
+      });
+      expect(resolveSemanticState("platform", "STOPPED").tone).toBe("neutral");
+    });
+
+    it("maps setup readiness and check states", () => {
+      expect(resolveSemanticState("platform", "ACTION_REQUIRED")).toMatchObject({
+        tone: "caution",
+        label: "Action required",
+      });
+      expect(resolveSemanticState("platform", "PASS").tone).toBe("live");
+      expect(resolveSemanticState("platform", "FAIL").tone).toBe("critical");
+      expect(resolveSemanticState("platform", "OPTIONAL").tone).toBe("neutral");
+    });
+
+    it("maps update states", () => {
+      expect(resolveSemanticState("platform", "AVAILABLE").label).toBe("Update available");
+      expect(resolveSemanticState("platform", "CURRENT").label).toBe("Up to date");
+      expect(resolveSemanticState("platform", "UNAVAILABLE").tone).toBe("neutral");
+    });
+
+    it("maps the shared BLOCKED value critically (readiness and update)", () => {
+      // collect_preflight emits BLOCKED when required checks fail — never caution.
+      expect(resolveSemanticState("platform", "BLOCKED")).toMatchObject({
+        tone: "critical",
+        label: "Blocked",
+      });
+    });
+
+    it("renders unknown platform values neutral with raw preserved", () => {
+      const state = resolveSemanticState("platform", "DEGRADED_FUTURE");
+      expect(state.tone).toBe("neutral");
+      expect(state.raw).toBe("DEGRADED_FUTURE");
+    });
+  });
+
+  describe("providerHealth transport and credential gaps", () => {
+    it("maps IMPLEMENTED transport variants to available", () => {
+      for (const raw of ["IMPLEMENTED", "IMPLEMENTED_READ_ONLY", "IMPLEMENTED_PUBLIC", "IMPLEMENTED_OPTIONAL"]) {
+        expect(resolveSemanticState("providerHealth", raw).tone).toBe("live");
+      }
+      expect(resolveSemanticState("providerHealth", "REACHABLE").tone).toBe("live");
+      expect(resolveSemanticState("providerHealth", "NOT_CHECKED").tone).toBe("neutral");
+      expect(resolveSemanticState("providerHealth", "HTTPS_PAPER_HOST").tone).toBe("paper");
+    });
+
+    it("maps interactive brokerage credential states", () => {
+      expect(
+        resolveSemanticState("providerHealth", "CREDENTIAL_FILE_PRESENT_MANUAL_LOGIN_REQUIRED").tone,
+      ).toBe("caution");
+      expect(resolveSemanticState("providerHealth", "MANUAL_SESSION_REQUIRED").tone).toBe(
         "caution",
       );
     });

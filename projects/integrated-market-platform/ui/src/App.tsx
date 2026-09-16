@@ -130,7 +130,7 @@ const ImpProductChrome = lazy(() =>
   })),
 );
 const OperatorControlCenterPage = lazy(() =>
-  import("./components/OperatorControlCenterPage").then((module) => ({
+  import("./components/control/OperatorControlCenterPage").then((module) => ({
     default: module.OperatorControlCenterPage,
   })),
 );
@@ -606,7 +606,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
               element={<LiveCanaryControlPlanePage mode={mode} />}
             />
             <Route path="/settings" element={<OperatorSettingsPage mode={mode} />} />
-            <Route path="/control" element={<OperatorControlCenterPage />} />
+            <Route path="/control" element={<OperatorControlCenterPage mode={mode} />} />
             <Route path="/diagnostics/provider" element={<ProviderHealthPanel />} />
             <Route path="/assistant/history" element={<AssistantHistoryPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -66,7 +66,10 @@ describe("StatusBar", () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole("status")).toHaveTextContent(/Backend context unavailable/);
-    expect(screen.getByRole("link", { name: "Open Control" })).toHaveAttribute("href", "/control");
+    expect(screen.getByRole("link", { name: "Open Control" })).toHaveAttribute(
+      "href",
+      "/control#control-authority",
+    );
   });
 
   it("alerts critically when UI mode and backend context disagree", () => {
