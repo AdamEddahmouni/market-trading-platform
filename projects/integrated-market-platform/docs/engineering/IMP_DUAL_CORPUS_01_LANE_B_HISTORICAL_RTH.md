@@ -61,3 +61,8 @@ Paths are excluded from Item 9 prospective discovery (`historical-rth-developmen
 - `tools/historical_data/build_cli.py` — CLI implementation
 
 Item 9 remains `NOT_CALIBRATED`; historical corpora never admit as prospective.
+
+## Methodology gaps (this pass)
+
+- **Early-close sessions:** `--early-closes` excludes a date from the build calendar but does not yet shorten expected RTH minute grids for partial sessions; quality `missing_intervals` and `incomplete_final_bar_count` assume full 390-minute RTH until a dedicated calendar lands.
+- **Corporate actions:** provider QFQ only; no cross-source reconciliation.

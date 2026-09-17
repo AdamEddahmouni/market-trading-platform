@@ -25,7 +25,7 @@ from ...paper.calibration.dual_corpus.evidence_authority import (
 from .artifacts import RunArtifactPaths, run_artifact_paths
 from .instrument import resolve_us_equity_instrument_id, symbol_from_instrument_id
 from .provider import HistoricalMarketDataProvider, ProviderFetchStatus
-from .quality import build_quality_report
+from .quality import build_quality_report, count_incomplete_final_bars
 from .rth_session import (
     US_EQUITY_BAR_TZ,
     US_EQUITY_RTH_SESSION_POLICY,
@@ -62,13 +62,17 @@ class HistoricalDevelopmentBuildResult:
     reason_code: str | None = None
 
 
-def _dedupe_raw_rows(rows: Sequence[Mapping[str, Any]]) -> tuple[list[dict[str, Any]], int]:
+def _dedupe_raw_rows(
+    rows: Sequence[Mapping[str, Any]],
+) -> tuple[list[dict[str, Any]], int, int]:
     seen: set[str] = set()
     kept: list[dict[str, Any]] = []
     dups = 0
+    empty_time_keys = 0
     for row in rows:
         key = str(row.get("time_key") or "")
         if not key:
+            empty_time_keys += 1
             continue
         if key in seen:
             dups += 1
@@ -76,7 +80,7 @@ def _dedupe_raw_rows(rows: Sequence[Mapping[str, Any]]) -> tuple[list[dict[str, 
         seen.add(key)
         kept.append(dict(row))
     kept.sort(key=lambda item: str(item.get("time_key") or ""))
-    return kept, dups
+    return kept, dups, empty_time_keys
 
 
 def _interval_ns(start_date: str, end_date: str) -> tuple[int, int]:
@@ -160,8 +164,10 @@ def build_historical_rth_dataset(
             time.sleep(0.05)
 
     rth_rows, outside_session = filter_raw_rows_rth(all_raw)
-    deduped, duplicate_count = _dedupe_raw_rows(rth_rows)
-    malformed = sum(1 for row in deduped if parse_moomoo_time_key_local(str(row.get("time_key") or "")) is None)
+    deduped, duplicate_count, empty_time_key_count = _dedupe_raw_rows(rth_rows)
+    malformed = empty_time_key_count + sum(
+        1 for row in deduped if parse_moomoo_time_key_local(str(row.get("time_key") or "")) is None
+    )
     invalid_ohlc_count = sum(1 for row in deduped if not ohlc_row_valid(row))
     excluded = outside_session + invalid_ohlc_count + malformed
     valid_rows = [
@@ -283,7 +289,7 @@ def build_historical_rth_dataset(
         excluded_row_count=excluded,
         malformed_timestamp_count=malformed,
         outside_session_count=outside_session,
-        incomplete_final_bar_count=0,
+        incomplete_final_bar_count=count_incomplete_final_bars(session_dates, valid_rows),
         provider_gap_pages=provider_gap_pages,
         holidays=sorted(holidays),
         early_closes=sorted(early_closes),

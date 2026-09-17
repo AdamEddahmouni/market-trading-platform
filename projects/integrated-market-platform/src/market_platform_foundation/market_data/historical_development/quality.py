@@ -13,6 +13,32 @@ from .rth_session import (
 )
 
 
+def count_incomplete_final_bars(
+    session_dates: Sequence[str],
+    raw_rows: Sequence[Mapping[str, Any]],
+) -> int:
+    """Count session days missing the expected final RTH 1m bar (15:59 ET start)."""
+
+    incomplete = 0
+    for day in session_dates:
+        expected = expected_rth_minute_keys(day)
+        if not expected:
+            continue
+        final_key = expected[-1]
+        found_final = False
+        for row in raw_rows:
+            key = str(row.get("time_key") or "")
+            if not key.startswith(day):
+                continue
+            parsed = parse_moomoo_time_key_local(key)
+            if parsed is not None and parsed.strftime("%Y-%m-%d %H:%M:%S") == final_key:
+                found_final = True
+                break
+        if not found_final:
+            incomplete += 1
+    return incomplete
+
+
 def build_quality_report(
     *,
     session_dates: Sequence[str],
@@ -81,4 +107,4 @@ def build_quality_report(
     return body
 
 
-__all__ = ["build_quality_report"]
+__all__ = ["build_quality_report", "count_incomplete_final_bars"]

@@ -2,20 +2,28 @@
 
 from __future__ import annotations
 
+import io
 import json
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
 from market_platform_foundation.market_data.historical_development import (  # noqa: E402
     FixtureHistoricalMarketDataProvider,
     build_historical_rth_dataset,
 )
+from market_platform_foundation.market_data.historical_development.builder import (  # noqa: E402
+    _dedupe_raw_rows,
+)
 from market_platform_foundation.market_data.historical_development.provider import (  # noqa: E402
+    MoomooOpendHistoricalMarketDataProvider,
     load_fixture_rows_from_json,
 )
 from market_platform_foundation.market_data.historical_development.rth_session import (  # noqa: E402
@@ -79,6 +87,18 @@ class HistoricalRthBuildTests(unittest.TestCase):
             self.assertIn("missing_intervals", result.manifest)
             self.assertTrue(result.quality["forward_fill_applied"] is False)
             self.assertTrue(result.manifest["dataset_fingerprint"])
+            self.assertEqual(result.quality["incomplete_final_bar_count"], 1)
+
+    def test_dedupe_empty_time_key_increments_malformed_exclusion(self) -> None:
+        kept, dups, empty = _dedupe_raw_rows(
+            (
+                {"time_key": ""},
+                {"time_key": "2026-09-15 09:30:00", "open": 1, "high": 1, "low": 1, "close": 1},
+            )
+        )
+        self.assertEqual(empty, 1)
+        self.assertEqual(dups, 0)
+        self.assertEqual(len(kept), 1)
 
     def test_item9_discovery_refuses_artifact_root(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -121,6 +141,52 @@ class HistoricalRthBuildTests(unittest.TestCase):
             times = [int(b["available_time"]) for b in bars]
             self.assertEqual(times, sorted(times))
             self.assertEqual(result.manifest["row_count"], 2)
+
+
+class HistoricalRthCliGovernanceTests(unittest.TestCase):
+    def test_build_cli_prints_governance_lines(self) -> None:
+        from tools.historical_data.build_cli import main
+
+        buffer = io.StringIO()
+        with redirect_stdout(buffer):
+            code = main(
+                [
+                    "--provider",
+                    "fixture",
+                    "--fixture-path",
+                    str(FIXTURE),
+                    "--instrument",
+                    "AAPL",
+                    "--start",
+                    SESSION_DAY,
+                    "--end",
+                    SESSION_DAY,
+                ]
+            )
+        output = buffer.getvalue()
+        self.assertEqual(code, 0)
+        self.assertIn("AUTHORITY: HISTORICAL_DEVELOPMENT", output)
+        self.assertIn("PROSPECTIVE_ITEM9_ADMISSION: NOT_ALLOWED", output)
+        self.assertIn("CALIBRATION_STATE_CHANGED: NO", output)
+        self.assertIn("FTEP_STATE_CHANGED: NO", output)
+
+
+class MoomooHistoricalProviderTests(unittest.TestCase):
+    def test_status_provider_unverified_when_opend_unavailable(self) -> None:
+        provider = MoomooOpendHistoricalMarketDataProvider(repository_root=ROOT)
+        with mock.patch(
+            "market_platform_foundation.providers.adapters.moomoo_opend_equity_quote.opend_endpoint",
+            return_value=("127.0.0.1", 11111),
+        ), mock.patch(
+            "market_platform_foundation.providers.adapters.moomoo_opend_equity_quote.opend_is_loopback",
+            return_value=True,
+        ), mock.patch(
+            "market_platform_foundation.providers.adapters.moomoo_opend_equity_quote.opend_reachable",
+            return_value=False,
+        ):
+            status = provider.status()
+        self.assertFalse(status.verified)
+        self.assertIn("PROVIDER_UNVERIFIED", str(status.reason_code))
 
 
 if __name__ == "__main__":
