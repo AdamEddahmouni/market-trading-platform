@@ -138,6 +138,9 @@ def hash_raw_kline_rows(rows: Sequence[Mapping[str, Any]]) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+EMPTY_RAW_KLINE_HASH = hash_raw_kline_rows(())
+
+
 def validate_prospective_signal_request(
     *,
     proof_mode: str,
@@ -383,7 +386,6 @@ def run_prospective_proof(
 ) -> dict[str, Any]:
     exp_id = experiment_id or f"item9-prospective-{uuid.uuid4().hex[:12]}"
     sha = runtime_git_sha or resolve_runtime_git_sha()
-    raw_hash = hash_raw_kline_rows(kline_rows or ())
     loaded = load_moomoo_opend_kline_bars(
         instrument_id=instrument_id,
         observation_time_ns=observation_time_ns,
@@ -391,6 +393,12 @@ def run_prospective_proof(
         kline_rows=kline_rows,
         poll_attempt_index=poll_attempt_index,
     )
+    raw_source: Sequence[Mapping[str, Any]]
+    if kline_rows is not None:
+        raw_source = kline_rows
+    else:
+        raw_source = loaded.raw_rows
+    raw_hash = hash_raw_kline_rows(raw_source)
     kline_fetch = kline_fetch_diagnostics(loaded)
     if not loaded.ok:
         reason = loaded.reason_code or REASON_PROVIDER_UNAVAILABLE
@@ -548,6 +556,7 @@ def load_latest_completed_bars_for_display(
 __all__ = [
     "BarDisplayRow",
     "DEFAULT_RECEIPT_DIR",
+    "EMPTY_RAW_KLINE_HASH",
     "NOT_PROSPECTIVE_EVIDENCE",
     "PROOF_MODE_PROSPECTIVE",
     "PROOF_MODE_RETROSPECTIVE",

@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — Item 9 governed calibration protocol V1 (ITEM9-02)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` — `ITEM9_CALIBRATION_PROTOCOL_READY`; Item 9 remains `PARTIAL / NOT_CALIBRATED` |
+| **Area** | `paper/calibration`, Item 9 |
+| **Summary** | Froze Item 9 calibration protocol/schema/tests without fitting. Path A 5m labels remain TRADE-only (bars cannot compose them). Future Mode B receipts hash fetched kline rows; the 2026-09-17 path-proof receipt is immutable and `PATH_PROOF_ONLY` due to SHA256(`[]`). |
+| **Key files** | `docs/architecture/ITEM9_CALIBRATION_PROTOCOL_V1.md`; `manifests/paper/item9_calibration_dataset_v1.json`; `src/market_platform_foundation/paper/calibration/item9_calibration_protocol.py`; `bar_ohlcv_sources.py`; `bar_ohlcv_prospective_proof.py`; `tests/platform/test_item9_calibration_protocol.py` |
+| **Tests** | `PYTHONPATH=src` venv 3.11 `unittest tests.platform.test_item9_calibration_protocol tests.platform.test_bar_ohlcv_prospective_proof` → **42 passed**. `imp.py format` / `lint` pass. `check_docs_links.py` **OK 227 files**. `validate changed` **3779 / 29 skip / 12 fail / 5 err** — OpenD-live + SDK-present provider tests, port-bound health, and Windows SQLite temp cleanup; not Item 9 protocol regressions. |
+| **Related** | [ITEM9_CALIBRATION_PROTOCOL_V1.md](../architecture/ITEM9_CALIBRATION_PROTOCOL_V1.md); Sep 17 `ITEM9_PROSPECTIVE_BAR_PATH_PROVEN` |
+| **Notes** | Did not calibrate, did not edit the Sep 17 receipt, did not touch Item 7 / PR #222. Connect-churn left as a separate increment. |
+
 ## 2026-09-16 — UIR-01 Increment H: Lab experimental workbench
 
 | Field | Value |

@@ -108,6 +108,10 @@ python tools/providers/run_bar_ohlcv_comparator_experiment.py `
 ```
 
 Item 9 remains **PARTIAL / NOT_CALIBRATED** after receipts; a successful bar fetch is not calibration.
+Governed future calibration follows [ITEM9_CALIBRATION_PROTOCOL_V1.md](../architecture/ITEM9_CALIBRATION_PROTOCOL_V1.md).
+Mode B receipts must hash fetched kline rows (`BarLoadResult.raw_rows`). Empty
+`raw_provenance_hash` (SHA256 of `[]`) is path-proof only and is not corpus-admissible.
+Do not rewrite already-persisted receipts.
 
 ## Related harness
 
