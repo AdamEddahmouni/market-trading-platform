@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import type { Mode } from "./mode-session/types";
 import type { ResearchSectionKey } from "./research-shared/researchPresentation";
 
@@ -18,11 +18,6 @@ const LiveResearchPage = lazy(() =>
     default: module.LiveResearchPage,
   })),
 );
-const ImpVelaChartLabPage = lazy(() =>
-  import("./charts/ImpVelaChartLabPage").then((module) => ({
-    default: module.ImpVelaChartLabPage,
-  })),
-);
 
 type Props = {
   mode: Mode;
@@ -36,16 +31,14 @@ function ModeResearchHome({ mode, section }: Props & { section: ResearchSectionK
 
 /**
  * Research sections are real routes (deep-linkable, one fetch per section):
- * Overview (default), Evidence, Validation, Simulation. The Vela chart lab
- * keeps its existing route. `/lab` continues to redirect to `/research` —
- * the Lab workbench is a separate future increment (see
- * docs/ui-redesign-v2/research-contract-map.md).
+ * Overview (default), Evidence, Validation, Simulation. Chart Lab now lives
+ * under `/lab/chart-lab`; the old Research deep link redirects.
  */
 export function ModeResearchRoute({ mode }: Props) {
   return (
     <Suspense fallback={<p role="status">Loading research…</p>}>
       <Routes>
-        <Route path="vela-chart-lab" element={<ImpVelaChartLabPage />} />
+        <Route path="vela-chart-lab" element={<Navigate to="/lab/chart-lab" replace />} />
         <Route path="evidence" element={<ModeResearchHome mode={mode} section="evidence" />} />
         <Route path="validation" element={<ModeResearchHome mode={mode} section="validation" />} />
         <Route path="simulation" element={<ModeResearchHome mode={mode} section="simulation" />} />

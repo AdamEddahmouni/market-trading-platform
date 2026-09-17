@@ -631,6 +631,10 @@ describe("App mode launcher integration", () => {
     await openNavLink(/^Research —/i);
   }
 
+  async function openLab() {
+    await openNavLink(/^Lab —/i);
+  }
+
   async function openRadar() {
     await openNavLink(/^Radar —/i);
   }
@@ -860,13 +864,62 @@ describe("App mode launcher integration", () => {
     ).toBeInTheDocument();
   });
 
-  it("redirects /lab to Research", async () => {
+  it("opens Demo Lab from /lab instead of redirecting to Research", async () => {
     render(<App />);
     await enterMode("Demo");
-    window.history.pushState({}, "", "/lab");
-    fireEvent.popState(window);
+    await openLab();
+    expect(await screen.findByRole("heading", { name: "Lab" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/lab");
+    expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
+    expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("navigation", { name: "Lab sections" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /run/i })).not.toBeInTheDocument();
+  });
+
+  it("navigates Demo Lab sections and keeps Research distinct", async () => {
+    render(<App />);
+    await enterMode("Demo");
+    await openLab();
+    await screen.findByRole("heading", { name: "Lab" });
+    fireEvent.click(screen.getByRole("link", { name: "Validation" }));
+    expect(
+      await screen.findByText(/validation workflow snapshot is unavailable/i),
+    ).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/lab/validation");
+    fireEvent.click(screen.getByRole("link", { name: "Simulation" }));
+    expect(
+      await screen.findByText(/simulation workflow snapshot is unavailable/i),
+    ).toBeInTheDocument();
+    await openResearch();
     expect(await screen.findByRole("heading", { name: "Research" })).toBeInTheDocument();
-    expect(window.location.pathname).toBe("/research");
+  });
+
+  it("opens Paper Lab without unlocking experiment mutations", async () => {
+    render(<App />);
+    await enterMode("Paper");
+    await openLab();
+    expect(await screen.findByRole("heading", { name: "Lab" })).toBeInTheDocument();
+    expect(screen.getByRole("note")).toHaveTextContent(/Paper execution stays in Workspace/i);
+    expect(screen.queryByRole("button", { name: /run/i })).not.toBeInTheDocument();
+  });
+
+  it("opens Live Lab as observational, not Live experiment authority", async () => {
+    render(<App />);
+    await enterMode("Live");
+    await openLab();
+    expect(await screen.findByRole("heading", { name: "Lab" })).toBeInTheDocument();
+    expect(screen.getByRole("note")).toHaveTextContent(/observational/i);
+    expect(screen.queryByRole("button", { name: /run/i })).not.toBeInTheDocument();
+  });
+
+  it("redirects /research/vela-chart-lab to Lab Chart Lab", async () => {
+    render(<App />);
+    await enterMode("Demo");
+    window.history.pushState({}, "", "/research/vela-chart-lab");
+    fireEvent.popState(window);
+    expect(await screen.findByRole("heading", { name: "Lab" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/lab/chart-lab");
+    expect(await screen.findByRole("heading", { name: "Chart adapter playground" })).toBeInTheDocument();
   });
 
   it("opens Paper Research from /research", async () => {

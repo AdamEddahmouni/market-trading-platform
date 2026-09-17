@@ -193,9 +193,10 @@ export function ResearchOverviewSection({ mode }: Props) {
           </li>
           <li>
             <strong>Experiment campaigns (FTEP).</strong> Governed forward-test campaign state is
-            not exposed to this surface. The deterministic simulation in the{" "}
-            <Link to="/research/simulation">Simulation section</Link> is a research run — it is not
-            a governed campaign result and not production readiness.
+            not exposed to this surface. The{" "}
+            <Link to="/lab">Lab workbench</Link> documents that gap; the deterministic simulation
+            in the <Link to="/research/simulation">Simulation section</Link> is a research run — it
+            is not a governed campaign result and not production readiness.
           </li>
         </ul>
       </section>

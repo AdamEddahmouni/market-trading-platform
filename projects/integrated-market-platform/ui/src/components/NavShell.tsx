@@ -61,6 +61,15 @@ const primaryLinks: NavLinkDef[] = [
     },
   },
   {
+    to: "/lab",
+    label: "Lab",
+    modeHint: {
+      DEMO: "Experimental workbench",
+      PAPER: "Experimental workbench",
+      LIVE: "Read-only workbench",
+    },
+  },
+  {
     to: "/control",
     label: "Control",
     modeHint: {

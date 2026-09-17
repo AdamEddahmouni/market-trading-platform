@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useResearchModelsQuery } from "../../api/hooks";
 import { resolveSemanticState } from "../../state/semanticState";
 import { StatePill } from "../imp-ui/StatePill";
@@ -107,6 +108,10 @@ export function ResearchValidationSection({ mode }: Props) {
           Walk-forward evaluation replays the strategy against historical observations in order;
           preregistration means the strategy was frozen before it saw the data. Neither makes the
           output a prediction or grants trade authority.
+        </p>
+        <p className="research-muted">
+          <Link to="/lab/validation">Inspect this validation workflow in Lab</Link> — Lab is the
+          process surface; this page stays the interpretation of the result.
         </p>
       </section>
 

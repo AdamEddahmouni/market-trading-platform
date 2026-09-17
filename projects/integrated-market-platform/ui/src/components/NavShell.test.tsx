@@ -19,6 +19,7 @@ describe("NavShell", () => {
     expect(screen.getByRole("link", { name: "Workspace" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Portfolio" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Research" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Lab" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Control" })).toBeInTheDocument();
     expect(screen.queryByText("Frozen bridges")).not.toBeInTheDocument();
   });
@@ -28,13 +29,14 @@ describe("NavShell", () => {
     expect(screen.getByRole("link", { name: "Radar — Replay discovery" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Portfolio — Read-only" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Research — Replay-bound evidence" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Lab — Experimental workbench" })).toBeInTheDocument();
   });
 
   it("adds Paper simulation hints", () => {
     renderNav("PAPER");
     expect(screen.getByRole("link", { name: "Portfolio — Paper positions" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Workspace — Decision desk" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Lab —/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Lab — Experimental workbench" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Research — Evidence & validation" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Radar — Candidate discovery" })).toBeInTheDocument();
   });
@@ -44,6 +46,7 @@ describe("NavShell", () => {
     expect(screen.getByRole("link", { name: "Live Canary — Safety review" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Radar — Live monitor" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Control — Platform operations" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Lab — Read-only workbench" })).toBeInTheDocument();
   });
 
   it("does not render the removed GATED badge", () => {
