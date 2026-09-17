@@ -48,6 +48,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md); IMP-ACTUAL-01 Phase A/B/C entries below |
 | **Notes** | Did not calibrate, collect receipts, touch Item 7 / PR #222 / `item7/natural-settlement`, or mutate Sep 17 / Phase D receipt files. |
 
+## 2026-09-17 — Offline unit-test environment hermeticity (Lane B)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests`, `backend` |
+| **Summary** | Offline provider/platform tests no longer assume OpenD is down on default loopback or that ``moomoo-api`` is absent. Unit cases inject unreachable loopback ports and explicit SDK-absence patches; live loopback reachability moved to ``tests/live_moomoo`` behind ``IMP_MOOMOO_LIVE``. Service-health unit probe uses an ephemeral port plus injected HTTP probe. SQLite forward-test repos and ``LocalStateConnection`` close before temp-dir cleanup on Windows. |
+| **Key files** | `tests/support/hermetic_environment.py`; `tests/providers/test_moomoo_opend_primary_l1.py`; `tests/providers/test_opend_hop_interpreter.py`; `tests/platform/test_service_health.py`; `tests/platform/test_calibration_harness.py`; `tests/validation/test_offline_environment_hermeticity.py`; `src/market_platform_foundation/local_state/connection.py`; `src/market_platform_foundation/intelligence/paper_forward_bridge/sqlite_repository.py` |
+| **Tests** | Focused unittest on changed modules; `imp.py validate fast` |
+| **Related** | IMP-NEXT Lane B; Item 9 collector may keep OpenD on ``127.0.0.1:11111`` |
+| **Notes** | Did not stop the collector, mutate Item 7/9 evidence, or merge. |
+
 ## 2026-09-17 — Item 9 Mode B OpenD quote-context reuse (IMP-ACTUAL-01 Phase B)
 
 | Field | Value |
