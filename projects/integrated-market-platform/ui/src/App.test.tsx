@@ -919,7 +919,15 @@ describe("App mode launcher integration", () => {
     fireEvent.popState(window);
     expect(await screen.findByRole("heading", { name: "Lab" })).toBeInTheDocument();
     expect(window.location.pathname).toBe("/lab/chart-lab");
-    expect(await screen.findByRole("heading", { name: "Chart adapter playground" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Chart adapter playground", level: 2 }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Vela chart adapter (Lane F)", level: 3 }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start live tick sim" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Backfill +50 bars" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Lab sections" })).toBeInTheDocument();
   });
 
   it("opens Paper Research from /research", async () => {

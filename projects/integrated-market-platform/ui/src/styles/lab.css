@@ -41,7 +41,7 @@
 
 .lab-muted {
   color: var(--text-secondary);
-  font-size: var(--imp-text-sm);
+  font-size: var(--imp-text-md);
   margin: var(--imp-space-2) 0 0;
 }
 
@@ -127,7 +127,7 @@
 
 .lab-dl-compact dd {
   margin: 2px 0 0;
-  font-size: var(--imp-text-sm);
+  font-size: var(--imp-text-md);
   overflow-wrap: anywhere;
 }
 
@@ -159,7 +159,7 @@
 
 .lab-methodology summary {
   cursor: pointer;
-  font-size: var(--imp-text-sm);
+  font-size: var(--imp-text-md);
   color: var(--text-secondary);
   min-height: 44px;
   display: flex;

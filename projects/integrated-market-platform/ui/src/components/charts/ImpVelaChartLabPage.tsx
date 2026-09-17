@@ -41,7 +41,7 @@ export function ImpVelaChartLabPage() {
   return (
     <section className="imp-vela-chart-lab" aria-labelledby="imp-vela-lab-title">
       <header className="imp-vela-chart-lab-header">
-        <h2 id="imp-vela-lab-title">Vela chart adapter (Lane F)</h2>
+        <h3 id="imp-vela-lab-title">Vela chart adapter (Lane F)</h3>
         <p>
           IMP-owned bar identity with lazy <code>@luxalgo/vela</code> rendering. No PineTS; workspace
           lightweight-charts unchanged.

@@ -4,15 +4,17 @@
   gap: 0.75rem;
   padding: 1rem;
   min-height: 60vh;
+  min-width: 0;
 }
 
-.imp-vela-chart-lab-header h1 {
+.imp-vela-chart-lab-header h3 {
   margin: 0 0 0.25rem;
-  font-size: 1.25rem;
+  font-size: var(--imp-text-xl, 1.25rem);
 }
 
 .imp-vela-chart-lab-header p {
   margin: 0;
+  font-size: var(--imp-text-md, 0.875rem);
   color: var(--color-text-muted, #9aa3b5);
   max-width: 52rem;
 }
@@ -23,10 +25,17 @@
   gap: 0.5rem;
 }
 
+.imp-vela-chart-lab-controls button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: var(--imp-space-2, 8px) var(--imp-space-3, 12px);
+}
+
 .imp-vela-chart-lab-meta {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--imp-text-md, 0.875rem);
   color: var(--color-text-muted, #9aa3b5);
+  overflow-wrap: anywhere;
 }
 
 .imp-vela-chart-host {
@@ -50,10 +59,21 @@
   inset: auto 0 0 0;
   margin: 0;
   padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
+  font-size: var(--imp-text-md, 0.875rem);
   background: rgba(12, 14, 18, 0.85);
 }
 
 .imp-vela-chart-status-error {
   color: #c44e52;
+}
+
+@media (max-width: 720px) {
+  .imp-vela-chart-lab {
+    padding: var(--imp-space-3, 12px);
+    overflow-x: clip;
+  }
+
+  .imp-vela-chart-lab-controls button {
+    min-height: 44px;
+  }
 }
