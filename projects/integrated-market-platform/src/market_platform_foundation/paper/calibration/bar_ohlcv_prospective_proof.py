@@ -529,8 +529,18 @@ def poll_prospective_proof(
         close_moomoo_opend_kline_poll_session(opend_session)
 
 
+def _is_mode_b_prospective_receipt(receipt: Mapping[str, Any]) -> bool:
+    return (
+        str(receipt.get("proof_mode") or "") == PROOF_MODE_PROSPECTIVE
+        and not receipt.get("not_prospective_evidence")
+    )
+
+
 def persist_receipt(receipt: Mapping[str, Any], *, out_dir: Path) -> Path:
     from .dual_corpus.discovery import validate_item9_prospective_receipt_output_dir
+    from .dual_corpus.evidence_authority import (
+        CORPUS_EVIDENCE_AUTHORITY_PROSPECTIVE_FEATURE_EVIDENCE,
+    )
 
     gate = validate_item9_prospective_receipt_output_dir(out_dir)
     if not gate["ok"]:
@@ -538,7 +548,12 @@ def persist_receipt(receipt: Mapping[str, Any], *, out_dir: Path) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     experiment_id = str(receipt.get("experiment_id") or uuid.uuid4().hex)
     path = out_dir / f"{experiment_id}.json"
-    path.write_text(json.dumps(dict(receipt), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    payload = dict(receipt)
+    if _is_mode_b_prospective_receipt(payload):
+        existing = str(payload.get("corpus_evidence_authority") or "").strip()
+        if not existing:
+            payload["corpus_evidence_authority"] = CORPUS_EVIDENCE_AUTHORITY_PROSPECTIVE_FEATURE_EVIDENCE
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path
 
 
