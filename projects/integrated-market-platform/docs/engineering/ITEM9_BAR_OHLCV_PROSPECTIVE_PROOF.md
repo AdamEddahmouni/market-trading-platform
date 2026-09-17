@@ -33,8 +33,12 @@ Each `request_history_kline` attempt writes fail-closed diagnostics to stderr
 `vendor_ret_msg`, `kline_start`/`kline_end`, `max_count_requested`,
 `connection_host`/`connection_port`, `request_duration_ms`,
 `protocol_error_category`) and attaches the same fields as `kline_fetch` on poll
-outcomes, plus `poll_attempt_index` during Mode B `--poll` (one OpenD history
-call per poll step — not a transport retry counter). Unmatched
+outcomes, plus `poll_attempt_index` during Mode B `--poll` (one history
+`request_history_kline` per poll step — not a transport retry counter). Mode B
+`--poll` reuses one loopback OpenD **quote context** for the bounded run
+(opens on first fetch, closes in `finally` on success, timeout, or fail-closed
+exit). Single-shot `display` and non-poll loads still open/close per call.
+Unmatched
 `MOOMOO_PROTOCOL_ERROR` maps to `protocol_unclassified`, not a fabricated
 exception label. Categories classify transport for logging only — they do **not**
 uniquely explain Sep 15 poll #1 (no row-level detail in poll #1 logs) or
@@ -42,8 +46,8 @@ hour-2 `MOOMOO_PROTOCOL_ERROR` (separate open hypotheses). Timeout
 still reports `PROSPECTIVE_NO_POST_SIGNAL_BAR`; the last fetch stats distinguish
 empty vs TZ-dropped vs pre-signal rows. PIT is unchanged.
 
-Follow-up (not in this repair): reuse one quote context and poll `get_cur_kline`
-to cut 5s connect-churn. Hour-2 `MOOMOO_PROTOCOL_ERROR` may include frequency
+Follow-up (not in this repair): poll `get_cur_kline` instead of repeated history
+pulls where vendor semantics allow. Hour-2 `MOOMOO_PROTOCOL_ERROR` may include frequency
 limit, timeout, connect-churn, or other vendor conditions — operator notes about
 quota/resume are lore, not receipt-cited facts. `retMsg` is preserved for the
 next RTH attempt.

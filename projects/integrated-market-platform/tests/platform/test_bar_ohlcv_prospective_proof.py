@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import importlib.util
 import sys
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -413,6 +415,79 @@ class BarOhlcvProspectiveProofTests(unittest.TestCase):
         self.assertEqual(fetch["poll_attempt_index"], 1)
         seen = [call.kwargs.get("poll_attempt_index") for call in load_mock.call_args_list]
         self.assertEqual(seen, [0, 1])
+
+    @mock.patch(
+        "market_platform_foundation.paper.calibration.bar_ohlcv_prospective_proof.is_within_us_equity_rth",
+        return_value=True,
+    )
+    def test_poll_reuses_opend_kline_session_across_attempts(self, _rth: mock.Mock) -> None:
+        helper_path = ROOT / "tests" / "providers" / "test_opend_history_kline_1m.py"
+        spec = importlib.util.spec_from_file_location("opend_kline_test_helpers", helper_path)
+        assert spec is not None and spec.loader is not None
+        helpers = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(helpers)
+        SESSION_DAY = helpers.SESSION_DAY
+        _catalog = helpers._catalog
+        _FakeKlineSdk = helpers._FakeKlineSdk
+        _OldestFirstKlineContext = helpers._OldestFirstKlineContext
+        from tools.moomoo.opend_quote_transport import OpendQuoteKlineSession, fetch_history_kline_1m
+
+        ctx = _OldestFirstKlineContext(_catalog())
+        _counting_kline_sdk = helpers._counting_kline_sdk
+        sdk, open_calls = _counting_kline_sdk(ctx)
+
+        def _fetcher(symbol: str, *, host: str, port: int, max_count: int = 120, **kwargs: object) -> dict:
+            return fetch_history_kline_1m(
+                symbol,
+                host=host,
+                port=port,
+                max_count=max_count,
+                sdk=sdk,
+                session_date=kwargs.get("session_date") or SESSION_DAY,
+                opend_kline_session=kwargs.get("opend_kline_session"),
+            )
+
+        fake_module = type(
+            "M",
+            (),
+            {
+                "fetch_history_kline_1m": staticmethod(_fetcher),
+                "OpendQuoteKlineSession": OpendQuoteKlineSession,
+            },
+        )()
+        poll_session = OpendQuoteKlineSession(host="127.0.0.1", port=11111, sdk=sdk)
+        mono = iter([0.0, 0.0, 0.2, 2.0, 3.0])
+        with mock.patch(
+            "market_platform_foundation.paper.calibration.bar_ohlcv_prospective_proof.open_moomoo_opend_kline_poll_session",
+            return_value=poll_session,
+        ), mock.patch(
+            "market_platform_foundation.paper.calibration.bar_ohlcv_sources._load_tools_kline_module",
+            return_value=fake_module,
+        ), mock.patch(
+            "market_platform_foundation.paper.calibration.bar_ohlcv_sources.opend_reachable",
+            return_value=True,
+        ), mock.patch(
+            "market_platform_foundation.paper.calibration.bar_ohlcv_sources.opend_is_loopback",
+            return_value=True,
+        ), mock.patch(
+            "market_platform_foundation.paper.calibration.bar_ohlcv_prospective_proof.time.monotonic",
+            side_effect=lambda: next(mono),
+        ):
+            outcome = poll_prospective_proof(
+                instrument_id="AAPL",
+                collection_root=COLLECTION_ROOT,
+                env={},
+                signal_time_ns=9_999_999_999_999_999_999,
+                signal_established_at_ns=9_999_999_999_999_999_999,
+                max_wait_s=1.0,
+                poll_interval_s=0.01,
+                sleep_fn=lambda _s: None,
+                now_fn=lambda: 1_700_000_000_000_000_000,
+            )
+        self.assertFalse(outcome["ok"])
+        self.assertEqual(outcome["reason_code"], REASON_NO_POST_SIGNAL_BAR)
+        self.assertEqual(open_calls[0], 1)
+        self.assertTrue(ctx.closed)
 
     def test_transport_experiment_classifies_runnable(self) -> None:
         rows = (_kline_row(time_key="2023-11-14 10:29:00"), _kline_row())

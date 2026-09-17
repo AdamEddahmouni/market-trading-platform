@@ -212,6 +212,27 @@ def load_admitted_equity_intraday_bars(
     )
 
 
+def open_moomoo_opend_kline_poll_session() -> Any | None:
+    """Open a reusable OpenD quote session for bounded Mode B ``--poll``."""
+
+    host, port = opend_endpoint()
+    if not opend_is_loopback(host) or not opend_reachable(host=host, port=port):
+        return None
+    module = _load_tools_kline_module()
+    session_cls = getattr(module, "OpendQuoteKlineSession", None) if module is not None else None
+    if session_cls is None:
+        return None
+    return session_cls(host=host, port=port)
+
+
+def close_moomoo_opend_kline_poll_session(session: Any | None) -> None:
+    if session is None:
+        return
+    closer = getattr(session, "close", None)
+    if callable(closer):
+        closer()
+
+
 def _load_tools_kline_module() -> Any | None:
     path = _TOOLS_KLINE_PATH
     if not path.is_file():
@@ -263,6 +284,7 @@ def load_moomoo_opend_kline_bars(
     max_count: int = 1000,
     kline_rows: Sequence[Mapping[str, Any]] | None = None,
     poll_attempt_index: int | None = None,
+    opend_kline_session: Any | None = None,
 ) -> BarLoadResult:
     """Prospective 1m bars from loopback OpenD history kline (quote context only)."""
 
@@ -299,12 +321,17 @@ def load_moomoo_opend_kline_bars(
                 provenance={"transport": str(_TOOLS_KLINE_PATH)},
                 reason_code=MOOMOO_TRANSPORT_NOT_IMPLEMENTED,
             )
+        fetch_kwargs: dict[str, Any] = {
+            "max_count": max(int(max_count), 1000),
+            "session_date": session_date,
+        }
+        if opend_kline_session is not None:
+            fetch_kwargs["opend_kline_session"] = opend_kline_session
         payload = fetcher(
             instrument_id,
             host=host,
             port=port,
-            max_count=max(int(max_count), 1000),
-            session_date=session_date,
+            **fetch_kwargs,
         )
         if not isinstance(payload, dict):
             return BarLoadResult(
@@ -404,9 +431,11 @@ __all__ = [
     "SOURCE_ADMITTED_EQUITY_INTRADAY",
     "SOURCE_MOOMOO_OPEND_KLINE_1M",
     "BarLoadResult",
+    "close_moomoo_opend_kline_poll_session",
     "first_admissible_post_signal_bar",
     "load_admitted_equity_intraday_bars",
     "load_moomoo_opend_kline_bars",
+    "open_moomoo_opend_kline_poll_session",
     "normalize_moomoo_kline_row",
     "pit_visible_bars",
     "simulator_bars",

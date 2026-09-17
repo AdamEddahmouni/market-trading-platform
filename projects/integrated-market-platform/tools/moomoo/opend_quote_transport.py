@@ -179,28 +179,90 @@ def _kline_fetch_result(
     return payload
 
 
-def fetch_history_kline_1m(
-    symbol: str,
+def _close_quote_context(ctx: Any) -> None:
+    if ctx is None:
+        return
+    closer = getattr(ctx, "close", None)
+    if callable(closer):
+        try:
+            closer()
+        except Exception:  # noqa: BLE001
+            pass
+
+
+class OpendQuoteKlineSession:
+    """Reuse one loopback OpenD quote context across bounded Mode B poll steps."""
+
+    __slots__ = ("_ctx", "_ft", "_host", "_port", "_sdk")
+
+    def __init__(self, *, host: str, port: int, sdk: Any | None = None) -> None:
+        self._host = host
+        self._port = int(port)
+        self._sdk = sdk
+        self._ft: Any | None = None
+        self._ctx: Any | None = None
+
+    @property
+    def is_open(self) -> bool:
+        return self._ctx is not None
+
+    def close(self) -> None:
+        _close_quote_context(self._ctx)
+        self._ctx = None
+        self._ft = None
+
+    def _invalidate_context(self) -> None:
+        self.close()
+
+    def _ensure_quote_context(self) -> tuple[Any, Any] | None:
+        if self._ctx is not None and self._ft is not None:
+            return self._ctx, self._ft
+        if self._host not in _LOOPBACK_HOSTS:
+            return None
+        ft = self._sdk if self._sdk is not None else load_vendor_sdk()
+        if ft is None or not hasattr(ft, "OpenQuoteContext"):
+            return None
+        if not hasattr(ft, "RET_OK") or not hasattr(ft, "KLType"):
+            return None
+        try:
+            ctx = ft.OpenQuoteContext(host=self._host, port=self._port)
+        except Exception:  # noqa: BLE001
+            return None
+        self._ft = ft
+        self._ctx = ctx
+        return ctx, ft
+
+    def fetch_history_kline_1m(
+        self,
+        symbol: str,
+        *,
+        max_count: int = US_EQUITY_1M_HISTORY_MIN_COUNT,
+        session_date: str | None = None,
+    ) -> dict[str, Any]:
+        """History kline on the persistent quote context (caller closes the session)."""
+
+        return fetch_history_kline_1m(
+            symbol,
+            host=self._host,
+            port=self._port,
+            max_count=max_count,
+            sdk=self._sdk,
+            session_date=session_date,
+            opend_kline_session=self,
+        )
+
+
+def _history_kline_on_open_context(
+    ctx: Any,
+    ft: Any,
     *,
+    symbol: str,
+    day: str,
+    request_count: int,
+    started: float,
     host: str,
     port: int,
-    max_count: int = US_EQUITY_1M_HISTORY_MIN_COUNT,
-    sdk: Any | None = None,
-    session_date: str | None = None,
 ) -> dict[str, Any]:
-    """Return completed 1m klines for the US equity session day (quote context only).
-
-    Do not pass ``start=None, end=None``: the vendor SDK expands that to
-    ``[today-365d, today]``. For ``K_1M`` we infer (same API as proven
-    ``K_DAY`` oldest-first paging + SDK window) that the **oldest** ``max_count``
-    bars may be returned — not a live-sampled 1m receipt. Year-old pages fail
-    ``available_time > signal_time``.
-    """
-
-    day = str(session_date or "").strip() or us_equity_session_date()
-    request_count = max(int(max_count), US_EQUITY_1M_HISTORY_MIN_COUNT)
-    started = time.monotonic()
-
     def _finish(**kwargs: Any) -> dict[str, Any]:
         duration_ms = round((time.monotonic() - started) * 1000.0, 3)
         return _kline_fetch_result(
@@ -214,21 +276,10 @@ def fetch_history_kline_1m(
             **kwargs,
         )
 
-    if host not in _LOOPBACK_HOSTS:
-        return _finish(reason_code=OPEND_NON_LOOPBACK_BLOCKED, rows=None)
-    ft = sdk if sdk is not None else load_vendor_sdk()
-    if ft is None or not hasattr(ft, "OpenQuoteContext"):
-        return _finish(reason_code=MOOMOO_SDK_MISSING, rows=None)
-    if not hasattr(ft, "RET_OK") or not hasattr(ft, "KLType"):
-        return _finish(reason_code=MOOMOO_PROTOCOL_ERROR, rows=None)
-
     code = _provider_code(symbol)
     if not code:
         return _finish(reason_code=MOOMOO_PROTOCOL_ERROR, rows=None)
-
-    ctx = None
     try:
-        ctx = ft.OpenQuoteContext(host=host, port=port)
         ret, state = ctx.get_global_state()
         if ret != ft.RET_OK:
             return _finish(
@@ -271,14 +322,105 @@ def fetch_history_kline_1m(
             vendor_ret=None,
             vendor_ret_msg=_bounded_vendor_msg(f"{type(exc).__name__}: {exc}"),
         )
+
+
+def fetch_history_kline_1m(
+    symbol: str,
+    *,
+    host: str,
+    port: int,
+    max_count: int = US_EQUITY_1M_HISTORY_MIN_COUNT,
+    sdk: Any | None = None,
+    session_date: str | None = None,
+    opend_kline_session: OpendQuoteKlineSession | None = None,
+) -> dict[str, Any]:
+    """Return completed 1m klines for the US equity session day (quote context only).
+
+    Do not pass ``start=None, end=None``: the vendor SDK expands that to
+    ``[today-365d, today]``. For ``K_1M`` we infer (same API as proven
+    ``K_DAY`` oldest-first paging + SDK window) that the **oldest** ``max_count``
+    bars may be returned — not a live-sampled 1m receipt. Year-old pages fail
+    ``available_time > signal_time``.
+
+    When ``opend_kline_session`` is set, reuse its quote context and do not
+    close it after this call (bounded Mode B ``--poll``).
+    """
+
+    day = str(session_date or "").strip() or us_equity_session_date()
+    request_count = max(int(max_count), US_EQUITY_1M_HISTORY_MIN_COUNT)
+    started = time.monotonic()
+
+    def _finish(**kwargs: Any) -> dict[str, Any]:
+        duration_ms = round((time.monotonic() - started) * 1000.0, 3)
+        return _kline_fetch_result(
+            session_date=day,
+            connection_host=host,
+            connection_port=int(port),
+            kline_start=day,
+            kline_end=day,
+            max_count_requested=request_count,
+            request_duration_ms=duration_ms,
+            **kwargs,
+        )
+
+    if host not in _LOOPBACK_HOSTS:
+        return _finish(reason_code=OPEND_NON_LOOPBACK_BLOCKED, rows=None)
+    ft = sdk if sdk is not None else load_vendor_sdk()
+    if ft is None or not hasattr(ft, "OpenQuoteContext"):
+        return _finish(reason_code=MOOMOO_SDK_MISSING, rows=None)
+    if not hasattr(ft, "RET_OK") or not hasattr(ft, "KLType"):
+        return _finish(reason_code=MOOMOO_PROTOCOL_ERROR, rows=None)
+
+    owns_context = False
+    ctx: Any | None = None
+    if opend_kline_session is not None:
+        pair = opend_kline_session._ensure_quote_context()
+        if pair is None:
+            return _finish(reason_code=MOOMOO_SDK_MISSING, rows=None)
+        ctx, ft = pair
+    else:
+        owns_context = True
+        try:
+            ctx = ft.OpenQuoteContext(host=host, port=port)
+        except Exception as exc:  # noqa: BLE001
+            return _finish(
+                reason_code=MOOMOO_PROTOCOL_ERROR,
+                vendor_ret=None,
+                vendor_ret_msg=_bounded_vendor_msg(f"{type(exc).__name__}: {exc}"),
+            )
+
+    try:
+        payload = _history_kline_on_open_context(
+            ctx,
+            ft,
+            symbol=symbol,
+            day=day,
+            request_count=request_count,
+            started=started,
+            host=host,
+            port=port,
+        )
+        if (
+            opend_kline_session is not None
+            and payload.get("reason_code") == MOOMOO_PROTOCOL_ERROR
+            and payload.get("vendor_ret") is None
+            and payload.get("vendor_ret_msg")
+        ):
+            msg = str(payload.get("vendor_ret_msg") or "").lower()
+            if "disconnect" in msg or "connection" in msg or "broken pipe" in msg:
+                opend_kline_session._invalidate_context()
+        return payload
+    except Exception as exc:  # noqa: BLE001
+        if opend_kline_session is not None:
+            opend_kline_session._invalidate_context()
+        return _finish(
+            reason_code=MOOMOO_PROTOCOL_ERROR,
+            vendor_ret=None,
+            vendor_ret_msg=_bounded_vendor_msg(f"{type(exc).__name__}: {exc}"),
+        )
     finally:
-        if ctx is not None:
-            closer = getattr(ctx, "close", None)
-            if callable(closer):
-                try:
-                    closer()
-                except Exception:  # noqa: BLE001
-                    pass
+        if owns_context:
+            _close_quote_context(ctx)
 
 
 def fetch_snapshot(
@@ -554,6 +696,7 @@ __all__ = [
     "OPEND_NON_LOOPBACK_BLOCKED",
     "US_EQUITY_1M_HISTORY_MIN_COUNT",
     "KLINE_PROTOCOL_UNCLASSIFIED",
+    "OpendQuoteKlineSession",
     "classify_kline_protocol_error_category",
     "fetch_history_kline_1m",
     "fetch_snapshot",
