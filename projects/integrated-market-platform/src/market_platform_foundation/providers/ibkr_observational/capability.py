@@ -18,6 +18,7 @@ IBKR_CAPABILITY_L2 = "IBKR_L2"
 IBKR_CAPABILITY_TRADES = "IBKR_TRADES"
 IBKR_CAPABILITY_CONTRACT_RESOLUTION = "IBKR_CONTRACT_RESOLUTION"
 IBKR_CAPABILITY_HISTORICAL_BARS = "IBKR_HISTORICAL_BARS"
+IBKR_CAPABILITY_HISTORICAL_TRADES = "IBKR_HISTORICAL_TRADES"
 IBKR_CAPABILITY_ACCOUNT_READ = "IBKR_ACCOUNT_READ"
 
 #: Capabilities IMP never registers for IBKR (execution authority).
@@ -93,6 +94,18 @@ def register_ibkr_observational(
             normalizer_version="ibkr_observational/historical_bars/1.0.0",
         ),
         CapabilityDescriptor(
+            capability_id=IBKR_CAPABILITY_HISTORICAL_TRADES,
+            asset_classes=("EQUITY", "FUTURE", "OPTION"),
+            venues=("SMART",),
+            interfaces=("ibkr_tws",),
+            supports_history=True,
+            supports_pit=True,
+            freshness_sla_ns=None,
+            license_class="RESTRICTED",
+            rate_policy_id="ibkr.pacing.history",
+            normalizer_version="ibkr_observational/historical_trades/1.0.0",
+        ),
+        CapabilityDescriptor(
             capability_id=IBKR_CAPABILITY_ACCOUNT_READ,
             asset_classes=("EQUITY", "FUTURE", "OPTION"),
             venues=("SMART",),
@@ -122,6 +135,7 @@ __all__ = [
     "IBKR_CAPABILITY_ACCOUNT_READ",
     "IBKR_CAPABILITY_CONTRACT_RESOLUTION",
     "IBKR_CAPABILITY_HISTORICAL_BARS",
+    "IBKR_CAPABILITY_HISTORICAL_TRADES",
     "IBKR_CAPABILITY_L1",
     "IBKR_CAPABILITY_L2",
     "IBKR_CAPABILITY_TRADES",

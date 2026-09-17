@@ -14,6 +14,7 @@ from ..runtime_capability import (
     CAP_ACCOUNT_READ,
     CAP_CONTRACT_RESOLUTION,
     CAP_HISTORICAL_BARS,
+    CAP_HISTORICAL_TRADES,
     RuntimeCapabilityRegistry,
     RuntimeCapabilityState,
 )
@@ -21,6 +22,7 @@ from .capability import (
     IBKR_CAPABILITY_ACCOUNT_READ,
     IBKR_CAPABILITY_CONTRACT_RESOLUTION,
     IBKR_CAPABILITY_HISTORICAL_BARS,
+    IBKR_CAPABILITY_HISTORICAL_TRADES,
     IBKR_PROVIDER_ID,
 )
 from .account_observation import (
@@ -38,6 +40,10 @@ from .historical_bars import (
     ObservationalHistoricalBar,
     normalize_ibkr_history_payload,
 )
+from .historical_trades import (
+    ObservationalHistoricalTrade,
+    normalize_ibkr_historical_trades_payload,
+)
 from .identity import IdentityAdmissionError, InstrumentLookup, Xa01Admission
 
 
@@ -54,6 +60,14 @@ class IbkrReadOnlyQueryProvider(Protocol):
         con_id: int,
         period: str,
         bar: str,
+    ) -> Mapping[str, Any]: ...
+
+    def fetch_historical_trades(
+        self,
+        *,
+        con_id: int,
+        start_time_ns: int,
+        end_time_ns: int,
     ) -> Mapping[str, Any]: ...
 
     def fetch_portfolio_accounts(self) -> Mapping[str, Any]: ...
@@ -93,6 +107,23 @@ class HistoricalBarsResult:
             "accepted": self.accepted,
             "bar_count": len(self.bars),
             "bars": [bar.to_dict() for bar in self.bars],
+            "reason": self.reason,
+            "selection": dict(self.selection),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class HistoricalTradesResult:
+    accepted: bool
+    trades: tuple[ObservationalHistoricalTrade, ...] = ()
+    reason: str | None = None
+    selection: dict[str, Any] = field(default_factory=dict)
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "accepted": self.accepted,
+            "trade_count": len(self.trades),
+            "trades": [trade.to_dict() for trade in self.trades],
             "reason": self.reason,
             "selection": dict(self.selection),
         }
@@ -200,6 +231,7 @@ class IbkrObservationalQueryService:
         registry_cap = {
             CAP_CONTRACT_RESOLUTION: IBKR_CAPABILITY_CONTRACT_RESOLUTION,
             CAP_HISTORICAL_BARS: IBKR_CAPABILITY_HISTORICAL_BARS,
+            CAP_HISTORICAL_TRADES: IBKR_CAPABILITY_HISTORICAL_TRADES,
             CAP_ACCOUNT_READ: IBKR_CAPABILITY_ACCOUNT_READ,
         }.get(lane_capability_id, lane_capability_id)
         view = registry.view_capability(
@@ -397,6 +429,99 @@ class IbkrObservationalQueryService:
             accepted=True, bars=tuple(bars), selection=selection
         )
 
+    def fetch_historical_trades(
+        self,
+        instrument_id: str,
+        *,
+        start_time_ns: int,
+        end_time_ns: int,
+        con_id: int | None = None,
+        received_time_ns: int | None = None,
+        request_time_ns: int | None = None,
+        terminal_window_end_ns: int | None = None,
+    ) -> HistoricalTradesResult:
+        if self._shutdown_complete or not self.provider.is_available():
+            return HistoricalTradesResult(
+                accepted=False, reason="QUERY_PROVIDER_UNAVAILABLE"
+            )
+        if request_time_ns is None or terminal_window_end_ns is None:
+            return HistoricalTradesResult(
+                accepted=False,
+                reason="POST_HORIZON_RETRIEVAL_TIMING_REQUIRED",
+                selection={
+                    "request_time_ns": request_time_ns,
+                    "terminal_window_end_ns": terminal_window_end_ns,
+                },
+            )
+        if request_time_ns < terminal_window_end_ns:
+            return HistoricalTradesResult(
+                accepted=False,
+                reason="RETRIEVAL_BEFORE_TERMINAL_WINDOW_END",
+                selection={
+                    "request_time_ns": request_time_ns,
+                    "terminal_window_end_ns": terminal_window_end_ns,
+                },
+            )
+        selection = self._gate(
+            CAP_HISTORICAL_TRADES, instrument_id, require_real_time=False
+        )
+        if selection.get("outcome") != "SELECTED":
+            return HistoricalTradesResult(
+                accepted=False, reason="CAPABILITY_REJECTED", selection=selection
+            )
+        resolved_con_id = con_id
+        if resolved_con_id is None:
+            resolution = self.resolve_contract(instrument_id)
+            if not resolution.accepted or resolution.qualification is None:
+                return HistoricalTradesResult(
+                    accepted=False,
+                    reason=resolution.reason or "CONTRACT_RESOLUTION_FAILED",
+                    selection=selection,
+                )
+            resolved_con_id = resolution.qualification.con_id
+        fetch = getattr(self.provider, "fetch_historical_trades", None)
+        if not callable(fetch):
+            return HistoricalTradesResult(
+                accepted=False,
+                reason="HISTORICAL_TRADES_NOT_IMPLEMENTED",
+                selection=selection,
+            )
+        try:
+            payload = fetch(
+                con_id=int(resolved_con_id),
+                start_time_ns=int(start_time_ns),
+                end_time_ns=int(end_time_ns),
+            )
+            trades = normalize_ibkr_historical_trades_payload(
+                payload,
+                instrument_id=instrument_id,
+                received_time_ns=received_time_ns,
+            )
+        except ValueError as exc:
+            return HistoricalTradesResult(
+                accepted=False, reason=str(exc), selection=selection
+            )
+        except Exception as exc:
+            return HistoricalTradesResult(
+                accepted=False, reason=f"PROVIDER_ERROR:{exc}", selection=selection
+            )
+        if self.capture is not None:
+            self.capture.record(
+                capture_query_record(
+                    query_kind="HISTORICAL_TRADES",
+                    instrument_id=instrument_id.upper(),
+                    request={
+                        "con_id": resolved_con_id,
+                        "start_time_ns": start_time_ns,
+                        "end_time_ns": end_time_ns,
+                    },
+                    response={"trade_count": len(trades)},
+                )
+            )
+        return HistoricalTradesResult(
+            accepted=True, trades=tuple(trades), selection=selection
+        )
+
     def fetch_account_observation(
         self,
         *,
@@ -445,6 +570,7 @@ __all__ = [
     "AccountObservationResult",
     "ContractResolutionResult",
     "HistoricalBarsResult",
+    "HistoricalTradesResult",
     "IbkrObservationalQueryService",
     "IbkrReadOnlyQueryProvider",
 ]

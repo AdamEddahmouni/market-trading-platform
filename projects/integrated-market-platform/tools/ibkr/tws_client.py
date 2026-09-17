@@ -232,6 +232,46 @@ class TwsIbkrClient:
             )
         return {"symbol": str(getattr(contract, "symbol", "")), "data": data}
 
+    def fetch_historical_trades(
+        self,
+        *,
+        con_id: int,
+        start_time_ns: int,
+        end_time_ns: int,
+        number_of_ticks: int = 1000,
+    ) -> dict[str, object]:
+        """Historical TRADE prints via TWS ``reqHistoricalTicks`` (RTH, TRADES only)."""
+        from datetime import datetime, timezone
+
+        contract = self._contract(con_id)
+        start_dt = datetime.fromtimestamp(start_time_ns / 1_000_000_000, tz=timezone.utc)
+        end_dt = datetime.fromtimestamp(end_time_ns / 1_000_000_000, tz=timezone.utc)
+        ticks = self._broker.reqHistoricalTicks(
+            contract,
+            start_dt,
+            end_dt,
+            numberOfTicks=int(number_of_ticks),
+            whatToShow="TRADES",
+            useRTH=True,
+        )
+        data: list[dict[str, object]] = []
+        for item in ticks or ():
+            source_ns = _serializable_timestamp(getattr(item, "time", None))
+            data.append(
+                {
+                    "t": source_ns,
+                    "price": getattr(item, "price", None),
+                    "size": getattr(item, "size", None),
+                    "exchange": getattr(item, "exchange", None),
+                }
+            )
+        return {
+            "symbol": str(getattr(contract, "symbol", "")),
+            "data": data,
+            "whatToShow": "TRADES",
+            "useRTH": True,
+        }
+
     def _options(self, params: Mapping[str, object]) -> list[dict[str, object]]:
         symbol = str(params.get("symbols") or "").strip().upper()
         conid = int(str(params.get("conid") or next(iter(self._contracts), 0)))

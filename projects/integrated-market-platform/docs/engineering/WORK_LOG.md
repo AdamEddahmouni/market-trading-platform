@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — Lane C post-horizon review fixes + main merge
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/outcomes`, IBKR observational query |
+| **Summary** | Merged `main` @ `859251ae` (dual-corpus #242) into PR #244; fail-closed IBKR historical TRADE fetch when post-horizon timing omitted; `NO_ELIGIBLE_TRADE` provenance uses filtered terminal candidates only. Item 9 remains `NOT_CALIBRATED`; frozen empirical artifacts untouched; IBKR live still `PROVIDER_UNVERIFIED`. |
+| **Key files** | `providers/ibkr_observational/query_provider.py`; `intelligence/outcomes/label_evidence.py`; `docs/engineering/IMP_DUAL_CORPUS_01_LANE_C.md`; `tests/providers/test_g11_historical_trades.py`; `tests/intelligence/test_post_horizon_label_evidence.py` |
+| **Tests** | `imp.py format` + `lint` pass; `test affected` / `validate changed` — 0 selected (clean vs merge-base in worktree); focused review tests — **3 passed**, 0 fail |
+| **Related** | PR #244 `intelligence/post-horizon-label-evidence` |
+| **Notes** | PR #244 not merged; Item 9 linker / feature-pipeline wiring / >1000 tick pagination still deferred. |
+
 ## 2026-09-17 — Item 9 persist stamps prospective corpus authority
 
 | Field | Value |
