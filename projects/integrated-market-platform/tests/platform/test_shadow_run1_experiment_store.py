@@ -11,7 +11,7 @@ from market_platform_foundation.shadow.experiment import ShadowExperimentStore
 
 class ExperimentStoreTests(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.store = ShadowExperimentStore(Path(self.tmp.name) / "exp.sqlite3")
 
     def tearDown(self):

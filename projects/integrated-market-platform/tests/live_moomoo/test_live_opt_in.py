@@ -8,6 +8,7 @@ import sys
 import time
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 LIVE_ENABLED = os.environ.get("IMP_MOOMOO_LIVE") == "1"
 HOST = os.environ.get("IMP_MOOMOO_HOST", "127.0.0.1")
@@ -30,6 +31,18 @@ def _opend_available() -> bool:
 
 @unittest.skipUnless(LIVE_ENABLED and _opend_available(), "IMP_MOOMOO_LIVE=1 and localhost OpenD required")
 class LiveMoomooOptInTests(unittest.TestCase):
+    def test_opend_readiness_reports_reachable_on_loopback_when_live(self) -> None:
+        from market_platform_foundation.providers.equity_quote_selection import opend_readiness
+
+        with patch.dict(
+            os.environ,
+            {"IMP_MOOMOO_HOST": HOST, "IMP_MOOMOO_PORT": str(PORT)},
+            clear=False,
+        ):
+            readiness = opend_readiness()
+        self.assertTrue(readiness.loopback)
+        self.assertTrue(readiness.reachable)
+
     def test_quote_context_snapshot_two_symbols(self) -> None:
         import moomoo as ft
 
