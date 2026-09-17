@@ -563,6 +563,84 @@ class OpenDHistoryKlineLoadWindowTests(unittest.TestCase):
         self.assertEqual(int(outcome["kline_fetch"]["raw_row_count"]), 1)
 
 
+def _counting_kline_sdk(context: Any) -> tuple[Any, list[int]]:
+    open_calls: list[int] = [0]
+
+    class _Sdk:
+        RET_OK = 0
+
+        class KLType:
+            K_1M = "K_1M"
+
+        class AuType:
+            QFQ = "QFQ"
+
+        class Session:
+            ALL = "ALL"
+
+        @staticmethod
+        def OpenQuoteContext(**_kwargs: Any) -> Any:
+            open_calls[0] += 1
+            return context
+
+    return _Sdk(), open_calls
+
+
+class OpenDQuoteKlineSessionTests(unittest.TestCase):
+    def test_persistent_session_reuses_one_connect(self) -> None:
+        from tools.moomoo.opend_quote_transport import OpendQuoteKlineSession
+
+        ctx = _OldestFirstKlineContext(_catalog())
+        sdk, open_calls = _counting_kline_sdk(ctx)
+        session = OpendQuoteKlineSession(host="127.0.0.1", port=11111, sdk=sdk)
+        for _ in range(3):
+            payload = session.fetch_history_kline_1m("AAPL", session_date=SESSION_DAY)
+            self.assertIsNone(payload["reason_code"])
+        self.assertEqual(open_calls[0], 1)
+        self.assertFalse(ctx.closed)
+        session.close()
+        self.assertTrue(ctx.closed)
+
+    def test_ephemeral_fetch_closes_after_single_call(self) -> None:
+        from tools.moomoo.opend_quote_transport import fetch_history_kline_1m
+
+        ctx = _OldestFirstKlineContext(_catalog())
+        sdk, open_calls = _counting_kline_sdk(ctx)
+        fetch_history_kline_1m(
+            "AAPL",
+            host="127.0.0.1",
+            port=11111,
+            sdk=sdk,
+            session_date=SESSION_DAY,
+        )
+        self.assertEqual(open_calls[0], 1)
+        self.assertTrue(ctx.closed)
+
+    def test_session_invalidates_on_disconnect_exception_path(self) -> None:
+        from tools.moomoo.opend_quote_transport import OpendQuoteKlineSession
+
+        class _FlakyContext(_OldestFirstKlineContext):
+            def __init__(self, catalog: list[dict[str, Any]]) -> None:
+                super().__init__(catalog)
+                self.fail_once = True
+
+            def request_history_kline(self, *args: Any, **kwargs: Any) -> tuple[int, Any, None]:
+                if self.fail_once:
+                    self.fail_once = False
+                    raise ConnectionError("disconnect from peer")
+                return super().request_history_kline(*args, **kwargs)
+
+        ctx = _FlakyContext(_catalog())
+        sdk, open_calls = _counting_kline_sdk(ctx)
+        session = OpendQuoteKlineSession(host="127.0.0.1", port=11111, sdk=sdk)
+        first = session.fetch_history_kline_1m("AAPL", session_date=SESSION_DAY)
+        self.assertEqual(first["reason_code"], "MOOMOO_PROTOCOL_ERROR")
+        second = session.fetch_history_kline_1m("AAPL", session_date=SESSION_DAY)
+        self.assertIsNone(second["reason_code"])
+        self.assertEqual(open_calls[0], 2)
+        session.close()
+
+
 class OpenDHistoryKlineExtendedDiagnosticsTests(unittest.TestCase):
     def test_success_payload_includes_timing_connection_and_window(self) -> None:
         from tools.moomoo.opend_quote_transport import fetch_history_kline_1m

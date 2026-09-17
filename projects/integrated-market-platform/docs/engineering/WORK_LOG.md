@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — Item 9 Mode B OpenD quote-context reuse (IMP-ACTUAL-01 Phase B)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, Item 9 OpenD transport |
+| **Summary** | Mode B `--poll` reuses one loopback OpenD quote context for the bounded run (open on first fetch, `finally` close on success/timeout/fail-closed exit). Each poll step still issues one `request_history_kline`; PIT, receipt schema, `raw_provenance_hash`, and fail-closed semantics unchanged. Single-shot `display`/non-poll loads remain open/close per call. |
+| **Key files** | `tools/moomoo/opend_quote_transport.py` (`OpendQuoteKlineSession`); `bar_ohlcv_sources.py`, `bar_ohlcv_prospective_proof.py`; `ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md`; `tests/providers/test_opend_history_kline_1m.py`, `tests/platform/test_bar_ohlcv_prospective_proof.py` |
+| **Tests** | `unittest` `test_bar_ohlcv_prospective_proof` + `test_opend_history_kline_1m` (46 OK); platform `test_bar_ohlcv*` (41 OK); `imp.py format`/`lint` OK |
+| **Related** | [ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md](ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md); Phase A PR #234; base includes Phase C PR #235 (`e2c55dd4`) |
+| **Notes** | Item 9 remains `NOT_CALIBRATED`; Item 7 `ITEM7_PENDING_NATURAL_EVIDENCE`. No calibration, no new prospective receipts. Live reconnect smoke not claimed. |
+
 ## 2026-09-17 — Governed JSONL discovery scope (IMP-ACTUAL-01 Phase C)
 
 | Field | Value |
