@@ -20,16 +20,27 @@ class ServiceHealthTests(unittest.TestCase):
         self.assertFalse(process_alive(-1))
 
     def test_health_distinguishes_port_bound_from_http_and_process(self) -> None:
-        health = evaluate_service_health(
-            pid=999999,
-            host="127.0.0.1",
-            port=8766,
-            http_url="http://127.0.0.1:8766/context",
-            identity=["run_ui_api.py"],
-            command_line=lambda _pid: None,
-            identity_matches=lambda _line, _identity: False,
-            port_is_open=lambda _host, _port: True,
-        )
+        import socket
+
+        listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        listener.bind(("127.0.0.1", 0))
+        listener.listen(1)
+        _host, port = listener.getsockname()
+        try:
+            health = evaluate_service_health(
+                pid=999999,
+                host=_host,
+                port=port,
+                http_url=f"http://{_host}:{port}/context",
+                identity=["run_ui_api.py"],
+                command_line=lambda _pid: None,
+                identity_matches=lambda _line, _identity: False,
+                port_is_open=lambda _host, _port: True,
+                http_probe=lambda _url: False,
+            )
+        finally:
+            listener.close()
         self.assertTrue(health.port_bound)
         self.assertFalse(health.process_alive)
         self.assertFalse(health.identity_owned)

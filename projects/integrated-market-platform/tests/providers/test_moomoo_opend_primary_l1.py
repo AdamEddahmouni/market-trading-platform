@@ -64,6 +64,11 @@ from market_platform_foundation.providers.equity_quote_selection import (
     opend_readiness,
     primary_equity_quote_provider,
 )
+from tests.support.hermetic_environment import (
+    cleared_moomoo_endpoint_env,
+    unreachable_opend_env,
+    vendor_sdk_absent,
+)
 
 _MOOMOO_ENV_NAMES = ("IMP_MOOMOO_HOST", "IMP_MOOMOO_PORT")
 _ADAPTER_SOURCE = (
@@ -89,13 +94,10 @@ def _env(**overrides: str):
 
 @contextlib.contextmanager
 def _cleared_moomoo_env():
-    previous = {name: os.environ.pop(name, None) for name in _MOOMOO_ENV_NAMES}
-    try:
+    """Legacy name — forces unreachable loopback OpenD, not the live collector port."""
+
+    with cleared_moomoo_endpoint_env():
         yield
-    finally:
-        for name, value in previous.items():
-            if value is not None:
-                os.environ[name] = value
 
 
 class _ScriptedOpenDTransport:
@@ -221,8 +223,7 @@ class MoomooOpenDPrimaryL1Tests(unittest.TestCase):
         listener.listen(32)
         host, port = listener.getsockname()
         try:
-            with _env(IMP_MOOMOO_HOST=host, IMP_MOOMOO_PORT=str(port)):
-                self.assertFalse(opend_sdk_available())
+            with vendor_sdk_absent(), _env(IMP_MOOMOO_HOST=host, IMP_MOOMOO_PORT=str(port)):
                 self.assertTrue(opend_reachable(host=host, port=port))
                 result = MoomooOpenDEquityQuoteProvider().fetch_quote("AAPL")
         finally:
@@ -381,30 +382,24 @@ class OpenDVendorTransportTests(unittest.TestCase):
     def test_sdk_missing_without_fake(self) -> None:
         from tools.moomoo.opend_quote_transport import fetch_snapshot
 
-        payload = fetch_snapshot("AAPL", host="127.0.0.1", port=11111)
+        with vendor_sdk_absent():
+            payload = fetch_snapshot("AAPL", host="127.0.0.1", port=1)
         self.assertEqual(payload["reason_code"], MOOMOO_SDK_MISSING)
         self.assertIsNone(payload["row"])
 
     def test_tools_dir_on_sys_path_is_not_vendor_sdk(self) -> None:
-        """``python tools/validation_worker.py`` puts tools/ on sys.path[0]."""
-        from tools.moomoo.opend_quote_transport import fetch_snapshot, sdk_available
+        """``tools/moomoo`` is not a top-level vendor package (no ``__init__.py``)."""
+        from tools.moomoo import opend_quote_transport as transport
 
-        tools_dir = str(_ROOT / "tools")
-        prior_path = list(sys.path)
-        prior = sys.modules.get("moomoo")
-        try:
-            sys.path.insert(0, tools_dir)
-            sys.modules.pop("moomoo", None)
-            self.assertFalse(sdk_available())
-            self.assertFalse(opend_sdk_available())
-            payload = fetch_snapshot("AAPL", host="127.0.0.1", port=11111)
-            self.assertEqual(payload["reason_code"], MOOMOO_SDK_MISSING)
-            self.assertIsNone(payload["row"])
-        finally:
-            sys.path[:] = prior_path
-            sys.modules.pop("moomoo", None)
-            if prior is not None:
-                sys.modules["moomoo"] = prior
+        from types import ModuleType
+
+        self.assertFalse((_ROOT / "tools" / "moomoo" / "__init__.py").is_file())
+        shadow = ModuleType("shadow_moomoo")
+        self.assertFalse(transport.is_vendor_sdk(shadow))
+        with vendor_sdk_absent():
+            payload = transport.fetch_snapshot("AAPL", host="127.0.0.1", port=1)
+        self.assertEqual(payload["reason_code"], MOOMOO_SDK_MISSING)
+        self.assertIsNone(payload["row"])
 
     def test_non_loopback_blocked_even_with_fake_sdk(self) -> None:
         from tools.moomoo.opend_quote_transport import fetch_snapshot
@@ -476,7 +471,7 @@ class OpenDDiscoveryTests(unittest.TestCase):
         listener.listen(32)
         host, port = listener.getsockname()
         try:
-            with _env(IMP_MOOMOO_HOST=host, IMP_MOOMOO_PORT=str(port)):
+            with vendor_sdk_absent(), _env(IMP_MOOMOO_HOST=host, IMP_MOOMOO_PORT=str(port)):
                 _provider, discovery = discover_equity_quote_stack()
         finally:
             listener.close()
@@ -592,14 +587,14 @@ class EquityQuoteSelectionTests(unittest.TestCase):
         self.assertIsInstance(overlay, YahooDelayedEquityQuoteProvider)
         self.assertNotEqual(overlay.provider_id, MOOMOO_OPEND_PROVIDER_ID)
 
-    def test_opend_readiness_reports_unreachable_on_this_vm(self) -> None:
-        with _cleared_moomoo_env():
+    def test_opend_readiness_reports_unreachable_when_injected_closed(self) -> None:
+        with unreachable_opend_env():
             readiness = opend_readiness()
         self.assertTrue(readiness.loopback)
         self.assertFalse(readiness.reachable)
 
     def test_readiness_is_diagnostic_and_does_not_change_primary_selection(self) -> None:
-        with _cleared_moomoo_env():
+        with unreachable_opend_env():
             readiness = opend_readiness()
             provider = primary_equity_quote_provider()
         self.assertFalse(readiness.reachable)
@@ -615,7 +610,7 @@ class CompositionWiringTests(unittest.TestCase):
 
     def test_wired_slot_still_fails_closed_without_live_opend(self) -> None:
         composition = with_moomoo_opend_primary_quote(ProviderComposition())
-        with _cleared_moomoo_env():
+        with unreachable_opend_env():
             result = composition.equity_quote.fetch_quote("AAPL")
         self.assertEqual(result.status, "unavailable")
         self.assertEqual(result.reason_code, OPEND_UNAVAILABLE)
