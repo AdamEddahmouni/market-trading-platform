@@ -874,6 +874,19 @@ def build_parser() -> argparse.ArgumentParser:
     hist_build.add_argument("--early-closes", default="")
     hist_build.add_argument("--json", action="store_true")
 
+    hist_demo = historical_actions.add_parser(
+        "demo",
+        help="Lane D e2e: fixture corpus → features → risk simulation (HISTORICAL_DEVELOPMENT)",
+    )
+    hist_demo.add_argument("--provider", default="fixture", choices=("fixture",))
+    hist_demo.add_argument("--instrument", default="AAPL")
+    hist_demo.add_argument("--start", required=True, dest="start_date")
+    hist_demo.add_argument("--end", required=True, dest="end_date")
+    hist_demo.add_argument("--fixture-path", type=Path, required=True)
+    hist_demo.add_argument("--corpus-artifact-root", type=Path)
+    hist_demo.add_argument("--demo-artifact-root", type=Path)
+    hist_demo.add_argument("--json", action="store_true")
+
     return parser
 
 
@@ -908,41 +921,62 @@ def _providers_command(root: Path, args: argparse.Namespace) -> int:
 
 
 def _historical_data_command(root: Path, args: argparse.Namespace) -> int:
-    if args.action != "build":
+    if args.action not in {"build", "demo"}:
         print(f"unknown historical-data action: {args.action}", file=sys.stderr)
         return 2
     python = _validation_python(root)
     env = _python_environment(root)
-    command = [python, str(root / "tools" / "historical_data" / "build_cli.py")]
-    command.extend(
-        [
-            "--provider",
-            args.provider,
-            "--instrument",
-            args.instrument,
-            "--start",
-            args.start_date,
-            "--end",
-            args.end_date,
-            "--resolution",
-            args.resolution,
-            "--session",
-            args.session,
-        ]
-    )
-    if args.fixture_path:
-        command.extend(["--fixture-path", str(args.fixture_path)])
-    if args.artifact_root:
-        command.extend(["--artifact-root", str(args.artifact_root)])
-    if args.holidays:
-        command.extend(["--holidays", args.holidays])
-    if args.early_closes:
-        command.extend(["--early-closes", args.early_closes])
+    script = "build_cli.py" if args.action == "build" else "demo_cli.py"
+    command = [python, str(root / "tools" / "historical_data" / script)]
+    if args.action == "build":
+        command.extend(
+            [
+                "--provider",
+                args.provider,
+                "--instrument",
+                args.instrument,
+                "--start",
+                args.start_date,
+                "--end",
+                args.end_date,
+                "--resolution",
+                args.resolution,
+                "--session",
+                args.session,
+            ]
+        )
+        if args.fixture_path:
+            command.extend(["--fixture-path", str(args.fixture_path)])
+        if args.artifact_root:
+            command.extend(["--artifact-root", str(args.artifact_root)])
+        if args.holidays:
+            command.extend(["--holidays", args.holidays])
+        if args.early_closes:
+            command.extend(["--early-closes", args.early_closes])
+    else:
+        command.extend(
+            [
+                "--provider",
+                args.provider,
+                "--instrument",
+                args.instrument,
+                "--start",
+                args.start_date,
+                "--end",
+                args.end_date,
+                "--fixture-path",
+                str(args.fixture_path),
+            ]
+        )
+        if args.corpus_artifact_root:
+            command.extend(["--corpus-artifact-root", str(args.corpus_artifact_root)])
+        if args.demo_artifact_root:
+            command.extend(["--demo-artifact-root", str(args.demo_artifact_root)])
     if args.json:
         command.append("--json")
     result = _run(
         root,
-        label="historical-data build",
+        label=f"historical-data {args.action}",
         command=command,
         env=env,
         stream_output=True,
