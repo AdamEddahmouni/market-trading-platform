@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — PROGRAM_STATUS SHA classes: git tip vs frozen collector
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Distinguish **current git `origin/main` tip** `03cd7280` (#238/#239/#240/#237) from the **frozen collector / evidence** SHA `fed2d9f7` (Sep 17 Mode B epoch through 16:00 ET) and the Sep 15 **historical pin** `7aade60b`. Item 9 stays **PARTIAL** / **NOT_CALIBRATED**; Item 7 stays **`ITEM7_PENDING_NATURAL_EVIDENCE`**. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | `python tools/check_docs_links.py` |
+| **Related** | [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md); prior 2026-09-17 canonical-SHA entry |
+| **Notes** | Docs-only. Did not retarget the collector, rewrite receipts, calibrate, or touch Item 7 / PR #222. |
+
 ## 2026-09-17 — PROGRAM_STATUS canonical SHA after IMP-ACTUAL-01
 
 | Field | Value |
