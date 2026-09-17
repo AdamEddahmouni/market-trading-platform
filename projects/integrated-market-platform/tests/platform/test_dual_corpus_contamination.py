@@ -200,6 +200,39 @@ class DualCorpusContaminationTests(unittest.TestCase):
                 persist_receipt({"experiment_id": "x"}, out_dir=bad)
             self.assertEqual(str(ctx.exception), ITEM9_DISCOVERY_REFUSED_HISTORICAL_ROOT)
 
+    def test_persist_receipt_stamps_prospective_feature_authority_for_mode_b(self) -> None:
+        receipt = _prospective_item9_receipt()
+        self.assertNotIn("corpus_evidence_authority", receipt)
+        with tempfile.TemporaryDirectory() as tmp:
+            good = Path(tmp) / "item9-prospective-proof-receipts"
+            path = persist_receipt(receipt, out_dir=good)
+            persisted = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            persisted["corpus_evidence_authority"],
+            CORPUS_EVIDENCE_AUTHORITY_PROSPECTIVE_FEATURE_EVIDENCE,
+        )
+        classified = classify_item9_receipt(persisted)
+        self.assertTrue(classified.corpus_admissible)
+
+    def test_persist_receipt_does_not_upgrade_stamped_historical_authority(self) -> None:
+        receipt = _prospective_item9_receipt(
+            corpus_evidence_authority=CORPUS_EVIDENCE_AUTHORITY_HISTORICAL_DEVELOPMENT,
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            good = Path(tmp) / "item9-prospective-proof-receipts"
+            path = persist_receipt(receipt, out_dir=good)
+            persisted = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            persisted["corpus_evidence_authority"],
+            CORPUS_EVIDENCE_AUTHORITY_HISTORICAL_DEVELOPMENT,
+        )
+        classified = classify_item9_receipt(persisted)
+        self.assertFalse(classified.corpus_admissible)
+        self.assertEqual(classified.exclusion_reason, REFUSAL_HISTORICAL_DEVELOPMENT)
+        admission = evaluate_item9_prospective_corpus_admission(payload=persisted)
+        self.assertEqual(admission["disposition"], ITEM9_ADMISSION_REFUSED)
+        self.assertEqual(admission["reason_code"], REFUSAL_HISTORICAL_DEVELOPMENT)
+
     def test_admission_refuses_empty_authority_without_prospective_receipt_shape(self) -> None:
         outcome = evaluate_item9_prospective_corpus_admission(payload={"experiment_id": "x"})
         self.assertEqual(outcome["disposition"], ITEM9_ADMISSION_REFUSED)
