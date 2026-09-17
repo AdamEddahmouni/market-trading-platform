@@ -1,6 +1,6 @@
 # IMP-DUAL-CORPUS-01 Lane B — Historical RTH Development Corpus
 
-**Branch:** `data/historical-rth-development` (stack on `data/dual-corpus-contract`)  
+**Status:** **MERGED** on `origin/main` at `60bf9e73` ([#243](https://github.com/AdamEddahmouni/market-trading-platform/pull/243))
 **Authority:** `HISTORICAL_DEVELOPMENT` only (via Lane A `dual_corpus` APIs)
 
 ## CLI

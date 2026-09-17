@@ -45,3 +45,10 @@ Use explicit **HISTORICAL_DEVELOPMENT** vs **PROSPECTIVE** labels. Do not descri
 - Authority + admission: `src/market_platform_foundation/paper/calibration/dual_corpus/`
 - Item 9 receipt persist guard: `bar_ohlcv_prospective_proof.persist_receipt`
 - Path A training guard: `intelligence/production/training_build.py`
+
+## Related engineering notes (IMP-DUAL-CORPUS-01)
+
+- Lane A recon: [IMP_DUAL_CORPUS_01_LANE_A_RECON.md](../engineering/IMP_DUAL_CORPUS_01_LANE_A_RECON.md)
+- Lane B historical RTH builder: [IMP_DUAL_CORPUS_01_LANE_B_HISTORICAL_RTH.md](../engineering/IMP_DUAL_CORPUS_01_LANE_B_HISTORICAL_RTH.md)
+- Lane C post-horizon labels: [IMP_DUAL_CORPUS_01_LANE_C.md](../engineering/IMP_DUAL_CORPUS_01_LANE_C.md)
+- Operator Notion sync snapshot: [IMP_DUAL_CORPUS_01_NOTION_SYNC.md](../engineering/IMP_DUAL_CORPUS_01_NOTION_SYNC.md)

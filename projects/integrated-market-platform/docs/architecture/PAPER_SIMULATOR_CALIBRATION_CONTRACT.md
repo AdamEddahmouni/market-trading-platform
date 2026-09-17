@@ -66,6 +66,10 @@ Operator Paper keys in gitignored `.private` are required only for
 execution-claim comparator pairing, not for protocol freeze or corpus
 accumulation.
 
+**Dual corpus:** Offline `HISTORICAL_DEVELOPMENT` datasets (Lane B) never compose
+Item 9 prospective calibration corpus — see
+[DUAL_CORPUS_EVIDENCE_CONTRACT.md](DUAL_CORPUS_EVIDENCE_CONTRACT.md).
+
 ## Required comparison metrics
 
 Use every metric material to the campaign claim:

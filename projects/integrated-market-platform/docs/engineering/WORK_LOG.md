@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — IMP-DUAL-CORPUS-01 PR D docs/status sync
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, dual-corpus architecture |
+| **Summary** | Pin `PROGRAM_STATUS` v1.38 to `origin/main` `84d197d2` after IMP-DUAL-CORPUS-01 [#242](https://github.com/AdamEddahmouni/market-trading-platform/pull/242)–[#244](https://github.com/AdamEddahmouni/market-trading-platform/pull/244). Record dual-corpus authority boundaries, Item 9 `NOT_CALIBRATED` sample-gate honesty (floors 20/3/5; epoch **1**/1 below gate), Phase 5.5B #196 superseded by #224, #222 isolated. Add Notion sync summary markdown. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/IMP_DUAL_CORPUS_01_NOTION_SYNC.md`; `docs/README.md`; `docs/architecture/DUAL_CORPUS_EVIDENCE_CONTRACT.md`; `docs/engineering/IMP_DUAL_CORPUS_01_LANE_{A_RECON,B_HISTORICAL_RTH,C}.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md` |
+| **Tests** | `python tools/imp.py format`; `lint`; `validate changed` (docs-heavy) |
+| **Related** | [IMP_DUAL_CORPUS_01_NOTION_SYNC.md](IMP_DUAL_CORPUS_01_NOTION_SYNC.md); branch `docs/dual-corpus-status-sync` |
+| **Notes** | Did not recalibrate Item 9, merge #222, or mutate frozen receipts. Item 9 counts from canonical PROGRAM_STATUS + protocol constants; operator receipt dir not re-scanned in CI. |
+
 ## 2026-09-17 — Lane C post-horizon review fixes + main merge
 
 | Field | Value |
