@@ -1,7 +1,7 @@
 # IMP-DUAL-CORPUS-01 Lane A — Recon Matrix & Lane Ownership
 
-**Increment:** Lane A (`data/dual-corpus-contract`)  
-**Base:** `origin/main` @ `cb6cbb7d2b156b97eb45eb36f4c97bf24cff175b` (docs #241)
+**Increment:** Lane A — **MERGED** on `origin/main` at `859251ae` ([#242](https://github.com/AdamEddahmouni/market-trading-platform/pull/242))
+**Closure tip:** `84d197d227b38665f4cdbfe6746fff48ef5542d6` (IMP-DUAL-CORPUS-01 lanes A–C on `main`)
 
 ## Canonical state vs expected (2026-09-17)
 
