@@ -47,7 +47,7 @@ const primaryLinks: NavLinkDef[] = [
     label: "Portfolio",
     modeHint: {
       DEMO: "Read-only",
-      PAPER: "Orders history",
+      PAPER: "Paper positions",
       LIVE: "Broker-observed",
     },
   },

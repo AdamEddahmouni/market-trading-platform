@@ -15,11 +15,11 @@ React 18, TypeScript, Vite, React Router 6, TanStack Query 5, Zod, Lightweight C
 | Command | `/` | Now desk; Signals desk is `?desk=signals` (`/signals` redirects) |
 | Radar | `/radar` | Discovery queue (Opportunities + Screeners tabs). `/discover` → `/radar`; `/explore` → `/radar/screeners` |
 | Workspace | `/workspace` | Decision desk (Paper submit boundary) |
-| Portfolio | `/portfolio` | Orders history |
+| Portfolio | `/portfolio` | Simulated/observed holdings, P&L, risk context, order history (not the submit surface) |
 | Research | `/research` | Interpretation-first evidence workspace: Overview, Evidence, Validation, Simulation sections (routable). `/lab` redirects here; it is not a workspace alias |
 | Control | `/control` | Operator control center (was labeled "Risk") |
 
-Operator group: Live Canary `/live-canary`, Settings `/settings`, Diagnostics `/diagnostics/provider`. Paper mode hints: Workspace — Decision desk; Portfolio — Orders history; Research — Evidence & validation. Operator URLs: [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md).
+Operator group: Live Canary `/live-canary`, Settings `/settings`, Diagnostics `/diagnostics/provider`. Paper mode hints: Workspace — Decision desk; Portfolio — Paper positions; Research — Evidence & validation. Operator URLs: [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md).
 
 ## Mode route pattern
 
@@ -77,7 +77,7 @@ UI API failures use `{ error, reason_code, error_category }`. `error_category` i
 
 ## Paper cockpit
 
-**Workspace** is the decision desk: `PaperWorkspacePage` → `PaperDecisionCockpit` + `WorkspaceObservability`. **Portfolio** (`/portfolio`) is orders history, not the submit surface. See [PAPER_DECISION_LIFECYCLE.md](../architecture/PAPER_DECISION_LIFECYCLE.md).
+**Workspace** is the decision desk: `PaperWorkspacePage` → `PaperDecisionCockpit` + `WorkspaceObservability`. **Portfolio** (`/portfolio`) is the operator view of simulated/observed holdings, exposure, P&L, and order history — not the submit surface. See [PAPER_DECISION_LIFECYCLE.md](../architecture/PAPER_DECISION_LIFECYCLE.md) and [portfolio-contract-map.md](../ui-redesign-v2/portfolio-contract-map.md).
 
 ## CSS organization
 

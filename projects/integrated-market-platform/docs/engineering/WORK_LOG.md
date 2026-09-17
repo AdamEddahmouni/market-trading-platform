@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-16 — UIR-01 Increment G: Portfolio surface redesign
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui`, `docs` |
+| **Summary** | Rebuilt `/portfolio` as the operator view of simulated/observed holdings, cash, P&L, risk context, and position-level Workspace handoff on current contracts (`origin/main` `54b82805`). Removed in-page `OrderTicket` so Workspace stays the Paper submit boundary. Buying power is formatted from `buying_power_minor` (never substituted with cash). No NAV, daily P&L, dollar allocation, or frontend risk score. Paper/Demo P&L is labeled simulated; Live is observational broker-reported. Attention reuses `derivePaperExceptions`. Desktop tables / mobile cards; trace overlay instead of a 360px column. |
+| **Key files** | Created: `docs/ui-redesign-v2/portfolio-contract-map.md`; `ui/src/components/paper-portfolio/paperPortfolioPresentation.ts`(+test). Modified: `PaperPortfolioPage.tsx`(+test), `PaperPortfolioObservability.tsx`, `{Demo,Live}PortfolioPage.tsx`(+tests), `App.test.tsx`, `NavShell.tsx`(+test), `layout.css`, `{paper,demo,live}-portfolio.css`, `FRONTEND_GUIDE.md`, `DEVELOPER_RUNBOOK.md`, `UIR_01_OPERATOR_UI_REDESIGN.md`, `pages/portfolio.md`, `information-architecture.md`. |
+| **Tests** | `ui`: vitest **720/720 passed**, `tsc --noEmit` pass, `vite build` pass (initial **200.60 KiB gzip**). Repo: `imp.py env` healthy, `format` pass, `lint` pass, `test affected` **80/80**, `validate changed` **80/80**, `check_docs_links.py` **OK 226 files**. Browser (worktree API `:8878` + Vite `:5204`): Paper empty/degraded authority at 1440/768/390 with CDP **no page-level overflow** (1425/1425, 753/753, 390/390); StatusBar intact; Workspace `/workspace/BIYA` cockpit still loads. |
+| **Related** | [portfolio-contract-map.md](../ui-redesign-v2/portfolio-contract-map.md), [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md), [UIR_01_OPERATOR_UI_REDESIGN.md](UIR_01_OPERATOR_UI_REDESIGN.md) |
+| **Notes** | `item7/natural-settlement` untouched. Lab not started. Paper execution remains env-gated (`IMP_PAPER_EXECUTION`). Live populated broker P&L is still canary snapshot only. Remaining UI: Lab. |
+
 ## 2026-09-16 — UIR-01 Increment F: Research surface redesign
 
 | Field | Value |

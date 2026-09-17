@@ -76,7 +76,7 @@ function portfolioPayload() {
       execution_provider: "INTERNAL",
     },
     authority_boundary: "PAPER_OBSERVABILITY",
-    positions: [{ instrument_id: "BIYA", quantity: 10, side: "LONG" }],
+    positions: [{ instrument_id: "BIYA", symbol: "BIYA", quantity: 10, side: "LONG" }],
     orders: [],
     fills: [],
     risk: {
@@ -794,10 +794,10 @@ describe("App mode launcher integration", () => {
     await enterMode("Live");
     await openPortfolio();
     expect(await screen.findByRole("heading", { name: "Live Portfolio" })).toBeInTheDocument();
-    expect(screen.getByText("AAPL")).toBeInTheDocument();
-    expect(screen.getByText("ord-live-1")).toBeInTheDocument();
+    expect(screen.getAllByText("AAPL").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("ord-live-1").length).toBeGreaterThan(0);
     expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open live canary" })).toHaveAttribute(
+    expect(screen.getAllByRole("link", { name: "Open live canary" })[0]).toHaveAttribute(
       "href",
       "/live-canary",
     );

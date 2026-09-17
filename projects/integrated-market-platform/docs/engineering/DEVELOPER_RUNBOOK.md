@@ -115,7 +115,7 @@ Open `http://127.0.0.1:5173` after API + UI start. Use **sidebar labels** from `
 | **Command** | `/` | Now desk (Overview + Signals desks via `?desk=`); `/signals` redirects to `/?desk=signals` |
 | **Radar** | `/radar` | Discovery queue: Opportunities tab + Screeners tab (`/radar/screeners`); `/discover` → `/radar`, `/explore` → `/radar/screeners` |
 | **Workspace** | `/workspace` | Decision desk (canonical Paper submit boundary) |
-| **Portfolio** | `/portfolio` | Orders history — not the submit surface |
+| **Portfolio** | `/portfolio` | Paper/Demo simulated holdings and P&L; Live broker-observed positions — not the submit surface |
 | **Research** | `/research` | Research and model labs. `/lab` redirects to `/research` |
 | **Control** | `/control` | Operator control center (lifecycle, readiness, safety) |
 

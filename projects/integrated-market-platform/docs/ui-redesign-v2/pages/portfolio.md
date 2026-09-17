@@ -166,7 +166,7 @@ replaced by "Open in Workspace" handoff CTA carrying the symbol.
 
 ## Open questions
 
-- Q7 — confirm removal of in-page order submit (default: proceed; handoff CTA).
+- Q7 — **resolved (UIR-01G):** in-page order submit removed; Workspace handoff CTA.
 - Q9 — strategy-profitability params (default: document, no transport change).
 - Should Demo portfolio show the simulated account at all, or a pure replay view?
   Default: keep simulated snapshot, labeled "Simulated account" (parity).
