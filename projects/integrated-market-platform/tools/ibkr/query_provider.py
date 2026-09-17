@@ -54,6 +54,29 @@ class IbkrOuterReadOnlyQueryProvider:
             return {"data": []}
         return payload
 
+    def fetch_historical_trades(
+        self,
+        *,
+        con_id: int,
+        start_time_ns: int,
+        end_time_ns: int,
+    ) -> Mapping[str, Any]:
+        fetch = getattr(self._client, "fetch_historical_trades", None)
+        if not callable(fetch):
+            return {
+                "data": [],
+                "reason": "REST_HISTORICAL_TRADES_UNAVAILABLE",
+                "transport": "rest",
+            }
+        payload = fetch(
+            con_id=con_id,
+            start_time_ns=start_time_ns,
+            end_time_ns=end_time_ns,
+        )
+        if not isinstance(payload, Mapping):
+            return {"data": []}
+        return payload
+
     def fetch_portfolio_accounts(self) -> Mapping[str, Any]:
         payload = self._client.request_json("GET", "/portfolio/accounts")
         if isinstance(payload, Mapping):
