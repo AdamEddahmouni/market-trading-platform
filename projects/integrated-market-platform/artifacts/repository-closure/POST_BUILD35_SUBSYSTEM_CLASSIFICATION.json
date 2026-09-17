@@ -525,6 +525,7 @@
         "tools/finviz",
         "tools/fred",
         "tools/futures",
+        "tools/historical_data",
         "tools/ibkr",
         "tools/integration",
         "tools/market_context",

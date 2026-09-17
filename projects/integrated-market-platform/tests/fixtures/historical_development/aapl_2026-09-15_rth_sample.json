@@ -1,0 +1,49 @@
+{
+  "2026-09-15": [
+    {
+      "code": "US.AAPL",
+      "time_key": "2026-09-15 09:30:00",
+      "open": 230.0,
+      "high": 230.5,
+      "low": 229.8,
+      "close": 230.2,
+      "volume": 1200
+    },
+    {
+      "code": "US.AAPL",
+      "time_key": "2026-09-15 09:31:00",
+      "open": 230.2,
+      "high": 230.6,
+      "low": 230.0,
+      "close": 230.4,
+      "volume": 980
+    },
+    {
+      "code": "US.AAPL",
+      "time_key": "2026-09-15 09:30:00",
+      "open": 230.0,
+      "high": 230.5,
+      "low": 229.8,
+      "close": 230.2,
+      "volume": 1200
+    },
+    {
+      "code": "US.AAPL",
+      "time_key": "2026-09-15 08:00:00",
+      "open": 229.0,
+      "high": 229.5,
+      "low": 228.5,
+      "close": 229.2,
+      "volume": 500
+    },
+    {
+      "code": "US.AAPL",
+      "time_key": "not-a-timestamp",
+      "open": 1,
+      "high": 2,
+      "low": 0.5,
+      "close": 1.5,
+      "volume": 1
+    }
+  ]
+}
