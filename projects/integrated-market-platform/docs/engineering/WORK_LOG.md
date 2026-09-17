@@ -72,6 +72,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [ACCESSIBILITY.md](ACCESSIBILITY.md); [pages/lab.md](../ui-redesign-v2/pages/lab.md) |
 | **Notes** | Browser on `/lab/chart-lab` (vite preview): tick/backfill and LinkTabs measured 44px at 760 and 390; muted/meta 14px; headings `h1` Lab / `h2` playground / `h3` Vela; backfill 120→170; no page overflow at 390. Vela vendor toolbar targets unchanged. Global `--imp-text-sm` unchanged. Item 7/9 out of scope. |
 
+## 2026-09-17 — Item 9 read-only corpus-status CLI (Lane D)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, `tools`, `tests/platform` |
+| **Summary** | Added governed-receipt corpus status and validation helpers on the frozen Item 9 calibration protocol, plus `tools/item9_corpus_status.py` (`corpus-status`, `classify`, `validate`) for operator read-only scans of `artifacts/ftep-v1-002/item9-prospective-proof-receipts/*.json` with sample-gate progress (never fits or writes receipts). |
+| **Key files** | `item9_calibration_protocol.py`, `tools/item9_corpus_status.py`, `tests/platform/test_item9_corpus_status_cli.py`, `POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` |
+| **Tests** | `python -m unittest tests.platform.test_item9_corpus_status_cli tests.platform.test_item9_calibration_protocol` |
+| **Related** | `ITEM9_CALIBRATION_PROTOCOL_V1.md`, Item 7 `item7_corpus_collector.py` (separate semantics) |
+| **Notes** | Skipped OpenD readiness sidecar (PR #236); not needed for JSON receipt scans. Classified `tools/item9_corpus_status.py` under `qualification-and-operations-tooling` after CI `unclassified path` on `validate-python-changed`. |
+
 ## 2026-09-17 — Item 9 Mode B OpenD quote-context reuse (IMP-ACTUAL-01 Phase B)
 
 | Field | Value |

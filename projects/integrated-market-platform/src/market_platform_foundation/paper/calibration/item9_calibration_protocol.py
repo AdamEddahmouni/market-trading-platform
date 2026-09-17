@@ -501,6 +501,103 @@ def chronological_split(rows: Sequence[Mapping[str, Any]]) -> dict[str, tuple[st
     }
 
 
+ITEM9_CORPUS_STATUS_ARTIFACT_KIND = "item9_corpus_status_v1"
+ITEM9_CORPUS_VALIDATION_ARTIFACT_KIND = "item9_corpus_validation_v1"
+
+
+def _included_dataset_rows_for_gate(receipt_dir: Path) -> list[dict[str, Any]]:
+    """Unique corpus-admissible rows for sample-gate evaluation (read-only)."""
+
+    seen: set[str] = set()
+    rows: list[dict[str, Any]] = []
+    for path in governed_receipt_paths(receipt_dir):
+        payload, _load_error = load_governed_receipt(path)
+        if payload is None:
+            continue
+        classified = classify_item9_receipt(payload)
+        obs_id = classified.observation_id
+        if obs_id and obs_id in seen:
+            continue
+        if obs_id:
+            seen.add(obs_id)
+        if classified.corpus_admissible or classified.inclusion_state == INCLUSION_INCLUDED:
+            rows.append(build_dataset_row(payload, classification=classified))
+    return rows
+
+
+def build_item9_corpus_status_report(receipt_dir: Path) -> dict[str, Any]:
+    """Read-only governed receipt scan; never fits or mutates receipts."""
+
+    audit = audit_receipt_directory(receipt_dir)
+    counts = audit["counts"]
+    included_rows = _included_dataset_rows_for_gate(receipt_dir)
+    gate = evaluate_sample_gate(included_rows)
+    dates = sorted(
+        {
+            session_date_et(int(row["signal_timestamp_ns"]))
+            for row in included_rows
+            if row.get("signal_timestamp_ns")
+        }
+    )
+    eval_size = len(gate["split"][SPLIT_EVALUATION])
+    return {
+        "artifact_kind": ITEM9_CORPUS_STATUS_ARTIFACT_KIND,
+        "protocol_version": PROTOCOL_VERSION,
+        "receipt_dir": str(receipt_dir.resolve()),
+        "calibration_state": CALIBRATION_STATE,
+        "item9_status": ITEM9_STATUS_NOT_CALIBRATED,
+        "calibrated": False,
+        "empirical_active": False,
+        "fitting_allowed": False,
+        "counts": {
+            "corpus_admissible": int(counts.get("corpus_admissible", 0)),
+            "path_proof_only": int(counts.get("path_proof_only", 0)),
+            "invalid": int(counts.get("invalid", 0)),
+            "duplicate": int(counts.get("duplicate", 0)),
+            "excluded": int(counts.get("excluded", 0)),
+        },
+        "session_dates_rth": dates,
+        "evaluation_split_size": eval_size,
+        "sample_gate": gate,
+        "sample_gate_progress": {
+            "admissible": f"{gate['included_count']}/{gate['minimum_included']}",
+            "distinct_rth_dates": f"{gate['distinct_rth_dates']}/{gate['minimum_distinct_rth_dates']}",
+            "evaluation_rows": f"{gate['evaluation_count']}/{gate['minimum_evaluation_rows']}",
+        },
+    }
+
+
+def validate_item9_governed_receipt_dir(receipt_dir: Path) -> dict[str, Any]:
+    """Classifier/validator pass over governed receipts only (read-only)."""
+
+    audit = audit_receipt_directory(receipt_dir)
+    counts = audit["counts"]
+    invalid = int(counts.get("invalid", 0))
+    calibrated_claims = sum(
+        1
+        for obs in audit["observations"]
+        if obs.get("exclusion_reason") == EXCL_CALIBRATED_CLAIM
+    )
+    blockers: list[str] = []
+    if invalid:
+        blockers.append(f"INVALID_RECEIPTS:{invalid}")
+    if calibrated_claims:
+        blockers.append(f"CALIBRATED_CLAIM_IN_RECEIPT:{calibrated_claims}")
+    return {
+        "artifact_kind": ITEM9_CORPUS_VALIDATION_ARTIFACT_KIND,
+        "protocol_version": PROTOCOL_VERSION,
+        "receipt_dir": str(receipt_dir.resolve()),
+        "verdict": "VALID" if not blockers else "INVALID",
+        "blockers": blockers,
+        "counts": dict(counts),
+        "calibration_state": CALIBRATION_STATE,
+        "item9_status": ITEM9_STATUS_NOT_CALIBRATED,
+        "calibrated": False,
+        "empirical_active": False,
+        "fitting_allowed": False,
+    }
+
+
 def evaluate_sample_gate(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     included = [
         row
@@ -570,9 +667,12 @@ __all__ = [
     "INSUFFICIENT_CALIBRATION_EVIDENCE",
     "ITEM9_STATUS_NOT_CALIBRATED",
     "PROTOCOL_VERSION",
+    "ITEM9_CORPUS_STATUS_ARTIFACT_KIND",
+    "ITEM9_CORPUS_VALIDATION_ARTIFACT_KIND",
     "audit_receipt_directory",
     "bar_may_compose_path_a_label",
     "build_dataset_row",
+    "build_item9_corpus_status_report",
     "chronological_split",
     "classify_item9_receipt",
     "evaluate_sample_gate",
@@ -584,4 +684,5 @@ __all__ = [
     "path_a_terminal_window",
     "protocol_freeze_record",
     "reject_incomplete_bar",
+    "validate_item9_governed_receipt_dir",
 ]
