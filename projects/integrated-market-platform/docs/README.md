@@ -72,6 +72,10 @@ it in the authoritative doc — do not silently choose.
 | Market-data capability contract | [MARKET_DATA_CAPABILITY_CONTRACT.md](architecture/MARKET_DATA_CAPABILITY_CONTRACT.md) |
 | Paper simulator calibration contract | [PAPER_SIMULATOR_CALIBRATION_CONTRACT.md](architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md) |
 | Dual-corpus evidence (historical vs prospective) | [DUAL_CORPUS_EVIDENCE_CONTRACT.md](architecture/DUAL_CORPUS_EVIDENCE_CONTRACT.md) |
+| IMP-DUAL-CORPUS-01 Lane A recon | [IMP_DUAL_CORPUS_01_LANE_A_RECON.md](engineering/IMP_DUAL_CORPUS_01_LANE_A_RECON.md) |
+| IMP-DUAL-CORPUS-01 Lane B historical RTH | [IMP_DUAL_CORPUS_01_LANE_B_HISTORICAL_RTH.md](engineering/IMP_DUAL_CORPUS_01_LANE_B_HISTORICAL_RTH.md) |
+| IMP-DUAL-CORPUS-01 Lane C post-horizon labels | [IMP_DUAL_CORPUS_01_LANE_C.md](engineering/IMP_DUAL_CORPUS_01_LANE_C.md) |
+| IMP-DUAL-CORPUS-01 Notion sync summary | [IMP_DUAL_CORPUS_01_NOTION_SYNC.md](engineering/IMP_DUAL_CORPUS_01_NOTION_SYNC.md) |
 | Item 9 calibration protocol V1 | [ITEM9_CALIBRATION_PROTOCOL_V1.md](architecture/ITEM9_CALIBRATION_PROTOCOL_V1.md) |
 | Common Opportunity Contract | [OPPORTUNITY_CONTRACT.md](architecture/OPPORTUNITY_CONTRACT.md) |
 | Strategy readiness model | [STRATEGY_READINESS_MODEL.md](research/STRATEGY_READINESS_MODEL.md) |

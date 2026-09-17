@@ -1,7 +1,7 @@
 # IMP-DUAL-CORPUS-01 Lane C — Post-Horizon Historical Label Evidence
 
-**Branch:** `intelligence/post-horizon-label-evidence` (stacked on `main` @ `859251ae`, includes dual-corpus @ `f9009723`)
-**Increment:** Lane C only — label artifacts + IBKR historical TRADE capability spike
+**Status:** **MERGED** on `origin/main` at `84d197d2` ([#244](https://github.com/AdamEddahmouni/market-trading-platform/pull/244); ancestry includes dual-corpus [#242](https://github.com/AdamEddahmouni/market-trading-platform/pull/242) `859251ae`)
+**Increment:** Lane C — label artifacts + IBKR historical TRADE capability spike
 
 ## Scope delivered
 

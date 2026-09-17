@@ -132,10 +132,9 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 | [#210](https://github.com/AdamEddahmouni/market-trading-platform/pull/210) | Item 7 upstream SNAPSHOT_BBO capture envelope | `73da9fdbccb63c0842940175f6e948c584da9a80` (**merged**, current tip) |
 | [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206) | Launcher / Vite routing | `5d8163e582e4bceb2354785c75638687d4959fef` (**merged**) |
 | [#195](https://github.com/AdamEddahmouni/market-trading-platform/pull/195) | Finviz prospective receipt validator (software) | `3daab7f2` (**merged** on `main`) |
-| [#196](https://github.com/AdamEddahmouni/market-trading-platform/pull/196) | Evidence capture-context sidecar | `<pending>` |
+| [#196](https://github.com/AdamEddahmouni/market-trading-platform/pull/196) | Evidence capture-context sidecar | **superseded by** [#224](https://github.com/AdamEddahmouni/market-trading-platform/pull/224) `dbccd92d` (**merged** on `main`) |
 | [#199](https://github.com/AdamEddahmouni/market-trading-platform/pull/199) | Item 7 corpus evidence validator | `64f1cb42` (**merged** on `main`) |
 | [#200](https://github.com/AdamEddahmouni/market-trading-platform/pull/200) | PROGRAM_STATUS pre-RTH sync | `d588728d` (**merged** on `main`) |
-| [#196](https://github.com/AdamEddahmouni/market-trading-platform/pull/196) | Evidence capture-context sidecar | **OPEN** — `<pending merge on main>` |
 | [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207) | Finviz ingress reliability / receipts | **OPEN** head `ca3c53a9` — `<pending merge on main>` |
 | [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) | SOFTWARE fullstack acceptance (controlled HTTP chain) | `6e9e88bde56fe7aae4bf29b0858d9a86a955b56b` (**merged**, current tip) |
 | [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205), [#211](https://github.com/AdamEddahmouni/market-trading-platform/pull/211) | RTH15 repair train (from `7aade60`) | **merged** on ancestry (see #208 tip) |
