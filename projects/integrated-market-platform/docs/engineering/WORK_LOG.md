@@ -60,6 +60,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | IMP-NEXT Lane B; Item 9 collector may keep OpenD on ``127.0.0.1:11111`` |
 | **Notes** | Did not stop the collector, mutate Item 7/9 evidence, or merge. |
 
+## 2026-09-17 — Lab Chart Lab accessibility polish
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/lab` |
+| **Summary** | Closed known Lab defects without redesign: Chart Lab tick/backfill and LinkTabs reach the 44px touch floor (including BP_SM), Lab/chart-lab muted/meta copy uses `--imp-text-md` instead of 13px `--imp-text-sm`, and the inner Vela heading is an `h3` aligned with CSS. Canonical `/lab/chart-lab` and `/research/vela-chart-lab` redirect unchanged. |
+| **Key files** | `ui/src/styles/lab.css`; `ui/src/styles/imp-vela-chart-lab.css`; `ui/src/components/imp-ui/imp-ui.css`; `ui/src/components/charts/ImpVelaChartLabPage.tsx`; `ui/src/components/lab-shared/labAccessibilityContract.test.ts`; `ui/src/App.test.tsx` |
+| **Tests** | Focused UI: 100/100 (`labAccessibilityContract`, `impVelaLazyRoute`, `imp-ui`, `App.test` including `/research/vela-chart-lab` redirect). `npm run typecheck` pass. `npm run build` **200.66 KiB gzip** initial JS (budget 203 KiB unchanged). |
+| **Related** | [ACCESSIBILITY.md](ACCESSIBILITY.md); [pages/lab.md](../ui-redesign-v2/pages/lab.md) |
+| **Notes** | Browser on `/lab/chart-lab` (vite preview): tick/backfill and LinkTabs measured 44px at 760 and 390; muted/meta 14px; headings `h1` Lab / `h2` playground / `h3` Vela; backfill 120→170; no page overflow at 390. Vela vendor toolbar targets unchanged. Global `--imp-text-sm` unchanged. Item 7/9 out of scope. |
+
 ## 2026-09-17 — Item 9 Mode B OpenD quote-context reuse (IMP-ACTUAL-01 Phase B)
 
 | Field | Value |

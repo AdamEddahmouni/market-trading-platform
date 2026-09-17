@@ -253,6 +253,7 @@
 .imp-ui-link-tab {
   display: inline-flex;
   align-items: center;
+  min-height: 44px;
   padding: var(--imp-space-2) var(--imp-space-3);
   border: 1px solid transparent;
   border-bottom: none;
@@ -283,6 +284,13 @@
 @media (prefers-reduced-motion: no-preference) {
   .imp-ui-link-tab {
     transition: background-color 120ms ease, color 120ms ease;
+  }
+}
+
+@media (max-width: 720px) {
+  .imp-ui-link-tab {
+    min-height: 44px;
+    padding: var(--imp-space-3);
   }
 }
 
